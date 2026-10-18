@@ -346,6 +346,10 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
       tally.add('dungeon.elites_sum', {}, num(p, 'elites'));
       tally.add('dungeon.pack_found_sum', {}, num(p, 'packFound'));
       tally.add('dungeon.pack_kept_sum', {}, num(p, 'packKept'));
+      // The Undercroft: how many levels a run cleared, and what its carved door added.
+      if (typeof p['deepest'] === 'number')
+        tally.add('dungeon.deepest', { levels: num(p, 'deepest') });
+      for (const m of list(p, 'marks')) tally.add('dungeon.mark', { mark: m });
       for (const t of list(p, 'team')) {
         const member = record(t);
         tally.add('dungeon.team_species', { species: str(member, 'species') });
@@ -358,6 +362,9 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
       break;
     case 'dungeon_camp':
       tally.add('dungeon.camp', { choice: str(p, 'choice') });
+      break;
+    case 'dungeon_descend':
+      tally.add('dungeon.descend', { level: num(p, 'level') });
       break;
     case 'dungeon_reward':
       if (num(p, 'streakBonusDay') > 0) {

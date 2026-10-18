@@ -15,7 +15,16 @@ import { IdSchema } from '../content/schema';
 import { chance, int, pickWeighted, type Rng } from '../rng';
 import { RULES } from './config';
 
-export const NODE_KINDS = ['fight', 'elite', 'mystery', 'cache', 'camp', 'boss'] as const;
+export const NODE_KINDS = [
+  'fight',
+  'elite',
+  'mystery',
+  'cache',
+  'camp',
+  'boss',
+  'door',
+  'epic',
+] as const;
 export type NodeKind = (typeof NODE_KINDS)[number];
 
 /** The lane the camp and the room boss stand in. */
@@ -40,6 +49,13 @@ export interface MapNode {
 export interface DungeonMap {
   floors: number;
   nodes: MapNode[];
+  /**
+   * An Undercroft map only: its level (1 to `RULES.dungeon.undercroft.maxLevels`). Absent on the day's
+   * main map. Its node ids are `u<level>f<floor>l<lane>`, so they never clash with the main map's.
+   */
+  level?: number;
+  /** An Undercroft map only: the keeper's room has a cracked floor, which opens a deeper level when the keeper falls. */
+  crack?: boolean;
 }
 
 /** What a map is drawn from: the foes, the room modifiers and the events (the shipped content by default). */
@@ -56,12 +72,13 @@ const shipped = (): MapContent => ({
 });
 
 /** The shape of a stored map: strict, with the lengths the rules allow. Rules beyond shape are `dungeonMapValid`'s. */
+const NODE_ID = /^(?:u\d+)?f\d+l\d+$/;
 const MapNodeSchema = v.strictObject({
-  id: v.pipe(v.string(), v.regex(/^f\d+l\d+$/)),
+  id: v.pipe(v.string(), v.regex(NODE_ID)),
   floor: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(20)),
   lane: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(LANES - 1)),
   kind: v.picklist(NODE_KINDS),
-  next: v.pipe(v.array(v.pipe(v.string(), v.regex(/^f\d+l\d+$/))), v.maxLength(LANES)),
+  next: v.pipe(v.array(v.pipe(v.string(), v.regex(NODE_ID))), v.maxLength(LANES)),
   foeId: v.optional(IdSchema),
   modifierId: v.optional(IdSchema),
   eventId: v.optional(IdSchema),
@@ -69,6 +86,8 @@ const MapNodeSchema = v.strictObject({
 export const DungeonMapSchema = v.strictObject({
   floors: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(20)),
   nodes: v.pipe(v.array(MapNodeSchema), v.maxLength(40)),
+  level: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(9))),
+  crack: v.optional(v.boolean()),
 });
 
 export const nodeId = (floor: number, lane: number): string => `f${String(floor)}l${String(lane)}`;
@@ -150,7 +169,7 @@ function siblingsOf(nodes: readonly MapNode[], node: MapNode): MapNode[] {
 }
 
 /** One try at a map: the shape, then the kinds, then what fills each room. Null when a rule could not be met (draw again). */
-function drawMap(rng: Rng, pack: MapContent): DungeonMap | null {
+function drawMap(rng: Rng, pack: MapContent, doors: boolean): DungeonMap | null {
   const rules = RULES.dungeon;
   const last = rules.floors - 1;
   const lanesOf = new Map<number, number[]>();
@@ -251,6 +270,19 @@ function drawMap(rng: Rng, pack: MapContent): DungeonMap | null {
     if (event === undefined) return null;
     node.eventId = event.id;
   }
+  // The carved door (only when asked for), drawn last so a map without one is exactly the map it was before doors: a fight
+  // on one of the door floors becomes the door (it holds no foe, no modifier, no event).
+  const door = rules.undercroft;
+  if (doors && chance(rng, door.doorBp, 10_000)) {
+    const doorFloors: readonly number[] = door.doorFloors;
+    const options = nodes.filter((n) => n.kind === 'fight' && doorFloors.includes(n.floor));
+    const pick = options[int(rng, options.length || 1)];
+    if (pick !== undefined) {
+      pick.kind = 'door';
+      delete pick.foeId;
+      delete pick.modifierId;
+    }
+  }
   return { floors: rules.floors, nodes };
 }
 
@@ -258,14 +290,27 @@ function drawMap(rng: Rng, pack: MapContent): DungeonMap | null {
 const MAX_DRAWS = 200;
 
 /**
- * Draws a day's map from `rng`: the same stream always gives the same map. The shape, the kinds and
+ * What else a day's map may have. `doors`: it may hold a carved door (`RULES.dungeon.undercroft.doorBp`).
+ * Off by default, so a caller that does not play the Undercroft (the balance simulator, until it does)
+ * draws exactly the maps it always drew; the server turns it on.
+ */
+export interface MapOptions {
+  doors?: boolean;
+}
+
+/**
+ * Draws a day's map from `rng`: the same stream (and options) always give the same map. The shape, the kinds and
  * the contents all follow the rules of `dungeonMapValid`, and a draw that cannot be made to follow
  * them (for example, fewer than three elements among the fights) is thrown away and drawn again.
  * Throws if the content cannot fill a map (too few foes or events).
  */
-export function generateDungeonMap(rng: Rng, pack: MapContent = shipped()): DungeonMap {
+export function generateDungeonMap(
+  rng: Rng,
+  pack: MapContent = shipped(),
+  options: MapOptions = {},
+): DungeonMap {
   for (let attempt = 0; attempt < MAX_DRAWS; attempt++) {
-    const map = drawMap(rng, pack);
+    const map = drawMap(rng, pack, options.doors === true);
     if (map !== null && dungeonMapValid(map, pack)) return map;
   }
   throw new Error('could not draw a valid dungeon map from the content');
@@ -283,7 +328,9 @@ export function generateDungeonMap(rng: Rng, pack: MapContent = shipped()): Dung
 export function dungeonMapValid(map: unknown, pack: MapContent = shipped()): map is DungeonMap {
   const parsed = v.safeParse(DungeonMapSchema, map);
   if (!parsed.success) return false;
-  const { floors, nodes } = parsed.output as { floors: number; nodes: MapNode[] };
+  const { floors, nodes, level, crack } = parsed.output as DungeonMap;
+  // The day's map is never an Undercroft level.
+  if ((level !== undefined && level !== 0) || crack !== undefined) return false;
   const rules = RULES.dungeon;
   const m = rules.map;
   const last = rules.floors - 1;
@@ -356,8 +403,16 @@ export function dungeonMapValid(map: unknown, pack: MapContent = shipped()): map
     if (n.kind === 'camp' && n.floor !== rules.campFloor) return false;
     if (n.kind === 'boss' && n.floor !== last) return false;
     if (n.kind === 'elite' && !(m.eliteFloors as readonly number[]).includes(n.floor)) return false;
+    if (n.kind === 'epic') return false;
+    if (
+      n.kind === 'door' &&
+      !(rules.undercroft.doorFloors as readonly number[]).includes(n.floor)
+    ) {
+      return false;
+    }
   }
   const ofKind = (kind: NodeKind): MapNode[] => nodes.filter((n) => n.kind === kind);
+  if (ofKind('door').length > 1) return false;
   const elites = ofKind('elite').length;
   const mysteries = ofKind('mystery').length;
   if (elites < m.minElites || elites > m.maxElites) return false;
@@ -397,6 +452,286 @@ export function dungeonMapValid(map: unknown, pack: MapContent = shipped()): map
   }
   if (elements.size < m.minElements) return false;
   for (let f = 0; f < last; f++) {
+    const ids = floorNodes(f)
+      .map((n) => n.foeId)
+      .filter((id): id is string => id !== undefined);
+    if (new Set(ids).size !== ids.length) return false;
+  }
+  return true;
+}
+
+// --- The Undercroft's maps (docs/design/dungeon-paths.md, "The Undercroft") ---
+
+/**
+ * What a carved door can add to the Undercroft: one room of any kind but a boss, drawn when the player
+ * steps through. It becomes a floor of its own, a single room.
+ */
+export const UNDERCROFT_MARKS = ['fight', 'elite', 'mystery', 'cache', 'camp', 'epic'] as const;
+export type UndercroftMark = (typeof UNDERCROFT_MARKS)[number];
+
+/** Draws what a carved door adds: `RULES.dungeon.undercroft.markOdds`, from the caller's live rng. */
+export function drawMark(rng: Rng): UndercroftMark {
+  const odds = RULES.dungeon.undercroft.markOdds;
+  return pickWeighted<{ mark: UndercroftMark; weight: number }>(
+    rng,
+    UNDERCROFT_MARKS.map((mark) => ({ mark, weight: odds[mark] })),
+  ).mark;
+}
+
+/** What an Undercroft level is drawn from. */
+export interface UndercroftSpec {
+  /** 1 for the first Undercroft, up to `RULES.dungeon.undercroft.maxLevels`. */
+  level: number;
+  /** Floors of two rooms before the marked floors and the keeper (`undercroftBaseFloors`). */
+  floors: number;
+  /** The marks the run has: each adds one floor of one room of that kind before the keeper. */
+  marks: readonly UndercroftMark[];
+}
+
+/** The lanes of a floor of two rooms. They are never joined across: a lane is a path until a floor with one room. */
+export const UNDERCROFT_LANES = [0, 2] as const;
+
+type Shape = 'pair' | 'single';
+
+/**
+ * The floors of a level, bottom to top: the floors of two rooms, then the marked floors of one room
+ * (every mark in the order it was drawn, but camps last: a rest before the keeper), then the keeper.
+ */
+function undercroftLayout(spec: UndercroftSpec): { shape: Shape; kind: NodeKind | null }[] {
+  const marks = [
+    ...spec.marks.filter((m) => m !== 'camp'),
+    ...spec.marks.filter((m) => m === 'camp'),
+  ];
+  return [
+    ...Array.from({ length: spec.floors }, () => ({ shape: 'pair' as const, kind: null })),
+    ...marks.map((kind) => ({ shape: 'single' as const, kind: kind })),
+    { shape: 'single' as const, kind: 'boss' },
+  ];
+}
+
+/** The number of floors (the keeper's included) an Undercroft level of `spec` has. */
+export function undercroftFloorCount(spec: UndercroftSpec): number {
+  return spec.floors + spec.marks.length + 1;
+}
+
+export const undercroftNodeId = (level: number, floor: number, lane: number): string =>
+  `u${String(level)}f${String(floor)}l${String(lane)}`;
+
+/** The nodes of the floor above that a node leads to: straight up its lane, or to the single room (and from a single room to both). */
+function undercroftNext(
+  level: number,
+  from: Shape,
+  lane: number,
+  to: Shape,
+  floor: number,
+): string[] {
+  const lanes = to === 'pair' ? (from === 'pair' ? [lane] : [...UNDERCROFT_LANES]) : [MIDDLE_LANE];
+  return lanes.map((l) => undercroftNodeId(level, floor + 1, l));
+}
+
+function drawUndercroftMap(rng: Rng, spec: UndercroftSpec, pack: MapContent): DungeonMap | null {
+  const u = RULES.dungeon.undercroft;
+  const m = RULES.dungeon.map;
+  const layout = undercroftLayout(spec);
+  const nodes: MapNode[] = [];
+  layout.forEach(({ shape, kind }, floor) => {
+    for (const lane of shape === 'pair' ? UNDERCROFT_LANES : [MIDDLE_LANE]) {
+      const above = layout[floor + 1];
+      nodes.push({
+        id: undercroftNodeId(spec.level, floor, lane),
+        floor,
+        lane,
+        kind: kind ?? 'fight',
+        next:
+          above === undefined ? [] : undercroftNext(spec.level, shape, lane, above.shape, floor),
+      });
+    }
+  });
+
+  // The rooms of the floors of two: the first floor is fights, the rest roll like the main map's rooms.
+  const counts = { elite: 0, cache: 0, mystery: 0 };
+  for (const node of nodes) {
+    if (layout[node.floor]?.shape !== 'pair' || node.floor === 0) continue;
+    const mate = nodes.find((n) => n.floor === node.floor && n.id !== node.id);
+    const eliteOk = counts.elite < u.map.maxElites && mate?.kind !== 'elite';
+    const cacheOk = counts.cache < u.map.maxCaches && mate?.kind !== 'cache';
+    const mysteryOk = counts.mystery < u.map.maxMysteries && mate?.kind !== 'mystery';
+    const kind = pickWeighted<{ kind: NodeKind; weight: number }>(rng, [
+      { kind: 'fight', weight: m.kinds.fight },
+      { kind: 'mystery', weight: mysteryOk ? m.kinds.mystery : 0 },
+      { kind: 'cache', weight: cacheOk ? m.kinds.cache : 0 },
+      { kind: 'elite', weight: eliteOk ? m.kinds.elite : 0 },
+    ]).kind;
+    node.kind = kind;
+    if (kind === 'elite' || kind === 'cache' || kind === 'mystery') counts[kind] += 1;
+  }
+
+  // What fills them: a different normal foe for each room of a floor, a modifier each, the keeper (a
+  // room boss) and an event for each mystery room.
+  const normal = pack.foes.filter((f) => f.kind === 'foe');
+  const bosses = pack.foes.filter((f) => f.kind === 'boss');
+  const modifier = (): string =>
+    (pack.modifiers[int(rng, pack.modifiers.length)] as RoomModifierDef).id;
+  for (let f = 0; f < layout.length - 1; f++) {
+    const rooms = nodes.filter(
+      (n) => n.floor === f && (n.kind === 'fight' || n.kind === 'elite' || n.kind === 'epic'),
+    );
+    const foes = shuffled(rng, normal);
+    for (const [i, node] of rooms.entries()) {
+      const foe = foes[i];
+      if (foe === undefined) return null;
+      node.foeId = foe.id;
+      node.modifierId = modifier();
+    }
+  }
+  const boss = bosses[int(rng, bosses.length || 1)];
+  const keeper = nodes[nodes.length - 1];
+  if (boss === undefined || keeper === undefined) return null;
+  keeper.foeId = boss.id;
+  keeper.modifierId = modifier();
+  const events = shuffled(rng, pack.events);
+  for (const [i, node] of nodes.filter((n) => n.kind === 'mystery').entries()) {
+    const event = events[i];
+    if (event === undefined) return null;
+    node.eventId = event.id;
+  }
+  // The keeper's floor is cracked now and then (never on the deepest level), which opens another level.
+  const crack = spec.level < u.maxLevels && chance(rng, u.crackBp, 10_000);
+  return { floors: layout.length, nodes, level: spec.level, crack };
+}
+
+/**
+ * Draws one Undercroft level from `rng` (the worker's live source: it is the player's own, drawn when
+ * they descend). Floors of two rooms (fight, elite, mystery or cache, like the main map, never a camp),
+ * then a floor of one room for each mark (any kind but a boss; camps last), then the keeper's floor: a
+ * single room boss. The same stream always gives the same map. Throws if the content cannot fill it.
+ */
+export function generateUndercroftMap(
+  rng: Rng,
+  spec: UndercroftSpec,
+  pack: MapContent = shipped(),
+): DungeonMap {
+  for (let attempt = 0; attempt < MAX_DRAWS; attempt++) {
+    const map = drawUndercroftMap(rng, spec, pack);
+    if (map !== null && undercroftMapValid(map, pack)) return map;
+  }
+  throw new Error('could not draw a valid undercroft map from the content');
+}
+
+/** The kinds of room a floor of one room may hold besides the keeper's. */
+const SINGLE_KINDS: readonly NodeKind[] = UNDERCROFT_MARKS;
+
+/**
+ * True when `map` is a valid Undercroft level: ids `u<level>f<floor>l<lane>`, floors of two rooms
+ * (lanes 0 and 2, each leading straight up its lane), then floors of one room (any kind but a boss,
+ * camps last), then the keeper alone on the last floor; every room reachable, kinds within their caps,
+ * real foes and events, no foe twice on a floor, and a crack only below the deepest level. Never throws,
+ * whatever it is given.
+ */
+export function undercroftMapValid(map: unknown, pack: MapContent = shipped()): map is DungeonMap {
+  const parsed = v.safeParse(DungeonMapSchema, map);
+  if (!parsed.success) return false;
+  const { floors, nodes, level, crack } = parsed.output as DungeonMap;
+  const u = RULES.dungeon.undercroft;
+  if (level === undefined || level < 1 || level > u.maxLevels) return false;
+  if (typeof crack !== 'boolean' || (crack && level >= u.maxLevels)) return false;
+  if (floors < 2 || nodes.length === 0) return false;
+  const byId = new Map<string, MapNode>();
+  for (const n of nodes) {
+    if (n.id !== undercroftNodeId(level, n.floor, n.lane) || n.floor >= floors || byId.has(n.id)) {
+      return false;
+    }
+    byId.set(n.id, n);
+  }
+  const floorNodes = (f: number): MapNode[] =>
+    nodes.filter((n) => n.floor === f).sort((a, b) => a.lane - b.lane);
+
+  // The shape: pairs first, then single rooms, the keeper last; camps after the other single rooms.
+  const shapes: Shape[] = [];
+  for (let f = 0; f < floors; f++) {
+    const lanes = floorNodes(f)
+      .map((n) => n.lane)
+      .join();
+    if (lanes === UNDERCROFT_LANES.join()) shapes.push('pair');
+    else if (lanes === String(MIDDLE_LANE)) shapes.push('single');
+    else return false;
+  }
+  const pairs = shapes.filter((s) => s === 'pair').length;
+  if (pairs < 1 || shapes.slice(0, pairs).some((s) => s !== 'pair')) return false;
+  if (shapes[floors - 1] !== 'single') return false;
+  let sawCamp = false;
+  for (let f = pairs; f < floors - 1; f++) {
+    const kind = floorNodes(f)[0]?.kind;
+    if (kind === 'camp') sawCamp = true;
+    else if (sawCamp) return false;
+  }
+
+  // The paths.
+  for (const n of nodes) {
+    const above = shapes[n.floor + 1];
+    const expected =
+      above === undefined
+        ? []
+        : undercroftNext(level, shapes[n.floor] as Shape, n.lane, above, n.floor);
+    if (n.next.length !== expected.length || !expected.every((id, i) => n.next[i] === id)) {
+      return false;
+    }
+  }
+
+  // Kinds. The caps count the floors of two rooms only: a marked room is a gift of the door.
+  const counts = { elite: 0, cache: 0, mystery: 0 };
+  for (const n of nodes) {
+    const allowed: readonly NodeKind[] =
+      n.floor === floors - 1
+        ? ['boss']
+        : shapes[n.floor] === 'single'
+          ? SINGLE_KINDS
+          : n.floor === 0
+            ? ['fight']
+            : ['fight', 'elite', 'mystery', 'cache'];
+    if (!allowed.includes(n.kind)) return false;
+    if (
+      shapes[n.floor] === 'pair' &&
+      (n.kind === 'elite' || n.kind === 'cache' || n.kind === 'mystery')
+    ) {
+      counts[n.kind] += 1;
+    }
+  }
+  if (counts.elite > u.map.maxElites) return false;
+  if (counts.cache > u.map.maxCaches) return false;
+  if (counts.mystery > u.map.maxMysteries) return false;
+  for (let f = 0; f < pairs; f++) {
+    const here = floorNodes(f);
+    for (const k of ['elite', 'cache', 'mystery'] as const) {
+      if (here.filter((n) => n.kind === k).length > 1) return false;
+    }
+  }
+
+  // Contents.
+  const foes = new Map(pack.foes.map((x) => [x.id, x]));
+  const modifiers = new Set(pack.modifiers.map((x) => x.id));
+  const eventIds = new Set(pack.events.map((e) => e.id));
+  const usedEvents = new Set<string>();
+  for (const n of nodes) {
+    const holdsFoe =
+      n.kind === 'fight' || n.kind === 'elite' || n.kind === 'epic' || n.kind === 'boss';
+    const foe = n.foeId === undefined ? undefined : foes.get(n.foeId);
+    if (holdsFoe) {
+      if (foe === undefined || foe.kind !== (n.kind === 'boss' ? 'boss' : 'foe')) return false;
+      if (n.modifierId === undefined || !modifiers.has(n.modifierId)) return false;
+    } else if (n.foeId !== undefined || n.modifierId !== undefined) {
+      return false;
+    }
+    if (n.kind === 'mystery') {
+      if (n.eventId === undefined || !eventIds.has(n.eventId) || usedEvents.has(n.eventId)) {
+        return false;
+      }
+      usedEvents.add(n.eventId);
+    } else if (n.eventId !== undefined) {
+      return false;
+    }
+  }
+  for (let f = 0; f < floors; f++) {
     const ids = floorNodes(f)
       .map((n) => n.foeId)
       .filter((id): id is string => id !== undefined);

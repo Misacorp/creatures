@@ -10,10 +10,16 @@
 import {
   RULES,
   abilitiesFor,
+  undercroftBaseFloors,
+  undercroftFloorCount,
+  type GearRarity,
+  type PartsBundle,
+  type UndercroftMark,
   dungeonContent,
   dungeonEvent,
   dungeonKeepsake,
   isLandmark,
+  mapNode,
   mapView,
   reachableNodes,
   type DungeonMap,
@@ -30,6 +36,7 @@ import {
   type DungeonRunInput,
 } from '@creatures/engine';
 import type {
+  DungeonBankedView,
   DungeonEventView,
   DungeonKeepsakeView,
   DungeonOutcome,
@@ -41,9 +48,23 @@ import type {
 /** The engine's key for the one player of a solo run. Never shown to anyone. */
 export const PLAYER = 'p1';
 
-/** What a run is waiting for: the scene of a mystery room, or the camp's choice (its two stored offers). */
+/**
+ * What a run is waiting for: the scene of a mystery room, the camp's choice (its two stored offers), or
+ * the choice to head home or go down into Undercroft level `level` (a safe point: closing there is home).
+ */
 export type PendingState =
-  null | { kind: 'event'; eventId: string } | { kind: 'camp'; offers: string[] };
+  | null
+  | { kind: 'event'; eventId: string }
+  | { kind: 'camp'; offers: string[] }
+  | { kind: 'descend'; level: number };
+
+/** What the boss chests already gave, kept to show on the descent card and to add to the summary's rewards at the end. */
+export interface BankedRewards {
+  parts: PartsBundle;
+  gear: { id: string; baseId: string; rarity: GearRarity; itemLevel?: number }[];
+  converted: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
+  supplies: string[];
+}
 
 export interface RunState {
   /** Bumped when the stored shape changes. */
@@ -106,6 +127,20 @@ export interface RunState {
   elites: number;
   /** One entry per visited room, in order (no fight events). A run stored before the log has none. */
   history: DungeonStepLog[];
+  /** The level the run stands in: 0 is `map`, level n is `under[n - 1]`. Absent in a state stored before the Undercroft. */
+  level: number;
+  /** The Undercroft levels drawn so far (the player's own, drawn when they descended). */
+  under: DungeonMap[];
+  /** What the carved door added, in order (kinds of room). Only the first Undercroft uses them. */
+  marks: UndercroftMark[];
+  /** The main boss was beaten: depth is locked in, whatever happens next. */
+  bossCleared: boolean;
+  /** The ids of the row that beat the main boss: the full-clear experience is theirs. Absent before the Undercroft (the row at the end). */
+  fullClear?: string[];
+  /** Undercroft levels cleared (keepers beaten). */
+  deepest: number;
+  /** The gear, supply and shards the boss chests paid already (their grant keys are stable). Null: the run's end pays the chest. */
+  banked: BankedRewards | null;
 }
 
 /** Reads a stored state, or null when it is missing or is not a state this code wrote. */
@@ -118,6 +153,13 @@ export function parseState(json: string | null): RunState | null {
     parsed.gear ??= [];
     // A state stored before the room log has no history.
     if (!Array.isArray(parsed.history)) parsed.history = [];
+    // A state stored before the Undercroft stands on the main map.
+    parsed.level ??= 0;
+    parsed.under ??= [];
+    parsed.marks ??= [];
+    parsed.bossCleared ??= false;
+    parsed.deepest ??= 0;
+    parsed.banked ??= null;
     return parsed as RunState;
   } catch {
     return null;
@@ -170,6 +212,23 @@ export function maxHpOfRow(
   return rowMaxHp(input, neutralRoom(heldKeepsakes(keepsakes)));
 }
 
+/** The map the run stands on: the day's map, or the Undercroft level it went down into. */
+export function currentMap(st: Pick<RunState, 'level' | 'map' | 'under'>): DungeonMap {
+  return st.level === 0 ? st.map : (st.under[st.level - 1] ?? st.map);
+}
+
+/** A node of any map of the run (the main map's or an Undercroft level's), or undefined. */
+export function runNode(
+  st: Pick<RunState, 'map' | 'under'>,
+  id: string,
+): ReturnType<typeof mapNode> {
+  for (const map of [st.map, ...st.under]) {
+    const found = mapNode(map, id);
+    if (found !== undefined) return found;
+  }
+  return undefined;
+}
+
 /** The HP of every creature of the row now: what it carries, or its max when it has not fought yet. */
 export function currentHp(st: RunState): Record<string, number> {
   const out: Record<string, number> = {};
@@ -204,8 +263,41 @@ export function eventView(eventId: string): DungeonEventView | null {
   };
 }
 
-function pendingView(pending: PendingState): DungeonPendingView {
+/** The floors of the level a descent opens (the keeper's included): the first has the marks, a deeper one has its own two. */
+export function descentFloors(st: Pick<RunState, 'marks'>, depth: number, level: number): number {
+  return undercroftFloorCount({
+    level,
+    floors: undercroftBaseFloors(depth, level),
+    marks: level === 1 ? st.marks : [],
+  });
+}
+
+function bankedView(banked: BankedRewards | null): DungeonBankedView {
+  return {
+    gear: (banked?.gear ?? []).map((g) => ({
+      baseId: g.baseId,
+      rarity: g.rarity,
+      ...(g.itemLevel === undefined ? {} : { itemLevel: g.itemLevel }),
+    })),
+    supplies: [...(banked?.supplies ?? [])],
+    parts: { ...banked?.parts },
+  };
+}
+
+function pendingView(st: RunState, depth: number): DungeonPendingView {
+  const pending = st.pending;
   if (pending === null) return null;
+  if (pending.kind === 'descend') {
+    return {
+      kind: 'descend',
+      level: pending.level,
+      floors: descentFloors(st, depth, pending.level),
+      depthBonus: RULES.dungeon.undercroft.depthBonus,
+      catchBreathBp: RULES.dungeon.undercroft.catchBreathBp,
+      newDepth: depth + 1,
+      banked: bankedView(st.banked),
+    };
+  }
   if (pending.kind === 'event') {
     const event = eventView(pending.eventId);
     return event === null ? null : { kind: 'event', event };
@@ -246,10 +338,15 @@ export function runView(meta: RunMeta, st: RunState): DungeonRunState {
     outcome: meta.outcome,
     step: st.step,
     map: mapView(st.map, meta.depth),
+    level: st.level,
+    undercroft:
+      st.under.length === 0 && st.marks.length === 0
+        ? null
+        : { maps: st.under.map((m) => mapView(m, meta.depth)), marks: st.marks.length },
     at: st.at,
     path: [...st.path],
-    reachable: open ? reachableNodes(st.map, st.at) : [],
-    pending: meta.status === 'active' ? pendingView(st.pending) : null,
+    reachable: open ? reachableNodes(currentMap(st), st.at) : [],
+    pending: meta.status === 'active' ? pendingView(st, meta.depth) : null,
     team: st.input.team.map((slot) => ({
       id: slot.id,
       name: slot.name,

@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "38b7feb6-87da-4416-adfd-3279b9fc6488",
+    "id": "43915d1e-e24b-4663-a2d3-2cc9bfd62abe",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -204,20 +204,11 @@
           "id": "f4l2",
           "floor": 4,
           "lane": 2,
-          "kind": "fight",
+          "kind": "mystery",
           "next": ["f5l1", "f5l2"],
-          "foe": {
-            "id": "moss-lurker",
-            "name": "Moss Lurker",
-            "element": "grove",
-            "kind": "foe",
-            "hpMax": 48,
-            "elite": false
-          },
-          "modifier": {
-            "id": "overgrown",
-            "name": "Overgrown",
-            "description": "Grove creatures hit 20% harder."
+          "event": {
+            "id": "quiet-room",
+            "name": "Quiet room"
           }
         },
         {
@@ -293,6 +284,8 @@
         }
       ]
     },
+    "level": 0,
+    "undercroft": null,
     "at": "f3l1",
     "path": ["f0l0", "f1l0", "f2l0", "f3l1"],
     "reachable": [],

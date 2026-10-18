@@ -4,7 +4,7 @@
  * `apps/activity/src/dungeon-types.ts`, and `test/dungeon-fixtures.test.ts` checks that the server
  * still sends what the captured fixtures have. Types only. No seed is ever part of any of them.
  */
-import type { DungeonMapView, Element, Role } from '@creatures/game';
+import type { DungeonMapView, Element, GearRarity, PartsBundle, Role } from '@creatures/game';
 
 export type { DungeonMapView };
 
@@ -46,10 +46,33 @@ export interface DungeonEventView {
   options: { label: string; description: string }[];
 }
 
+/** What the boss chest already gave (the Undercroft's descent card shows it): gear and supplies are in the player's stock, shards and glimmer in their parts. */
+export interface DungeonBankedView {
+  gear: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
+  supplies: string[];
+  parts: PartsBundle;
+}
+
 export type DungeonPendingView =
   | null
   | { kind: 'event'; event: DungeonEventView }
-  | { kind: 'camp'; offers: DungeonKeepsakeView[]; restBp: number };
+  | { kind: 'camp'; offers: DungeonKeepsakeView[]; restBp: number }
+  | {
+      /**
+       * The room boss (or an Undercroft keeper with a cracked floor) is down: head home with the pack, or
+       * descend. What is known of the level below: its number, its floors (the keeper's included), that
+       * its foes are fiercer (`depthBonus` more depth per level), the breath the team catches on the way
+       * (`catchBreathBp` of max HP) and what the chest banked. The pack stays at risk all the way down.
+       */
+      kind: 'descend';
+      level: number;
+      floors: number;
+      depthBonus: number;
+      catchBreathBp: number;
+      /** The depth the player is at now (locked in when the main boss fell). */
+      newDepth: number;
+      banked: DungeonBankedView;
+    };
 
 /**
  * What a room on the path gave or took, one entry per visited room, in order (no fight events: the
@@ -60,7 +83,7 @@ export type DungeonPendingView =
 export type DungeonStepLog =
   | {
       node: string;
-      kind: 'fight' | 'elite' | 'boss';
+      kind: 'fight' | 'elite' | 'boss' | 'epic';
       result: 'fight';
       cleared: boolean;
       rounds: number;
@@ -68,7 +91,7 @@ export type DungeonStepLog =
       foeHpEnd: number;
       foeHpMax: number;
       loot: DungeonPack;
-      /** An elite's keepsake. */
+      /** An elite's or an epic fight's keepsake. */
       keepsake?: DungeonKeepsakeView;
       /** This fight earned the run's supply (the first fight cleared). */
       supply?: boolean;
@@ -96,7 +119,37 @@ export type DungeonStepLog =
       keepsake?: DungeonKeepsakeView;
     }
   | { node: string; kind: 'camp'; result: 'pending' }
-  | { node: string; kind: 'mystery'; result: 'pending'; event: string };
+  | { node: string; kind: 'mystery'; result: 'pending'; event: string }
+  | {
+      /**
+       * A carved door was walked through. `added`: it added a room to the Undercroft (false when the run
+       * already had `maxMarks`). Which room is NOT said: the player finds out when the Undercroft is drawn.
+       */
+      node: string;
+      kind: 'door';
+      result: 'door';
+      added: boolean;
+    }
+  | {
+      /** A boss chest opened: the main boss's (level 0) or an Undercroft keeper's. Gear and supply are banked at once. */
+      node: string;
+      kind: 'boss';
+      result: 'chest';
+      level: number;
+      /** What went into the pack. */
+      loot: DungeonPack;
+      gear: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
+    }
+  | { node: string; kind: 'descend'; result: 'pending'; level: number }
+  | {
+      node: string;
+      kind: 'descend';
+      result: 'descend';
+      level: number;
+      /** HP the row recovered on the way down, all creatures together. */
+      healed: number;
+    }
+  | { node: string; kind: 'descend'; result: 'home'; level: number };
 
 /** The state of a run, open or done. Every act answers with it. */
 export interface DungeonRunState {
@@ -110,7 +163,15 @@ export interface DungeonRunState {
   /** Sent back with the next act; a mismatch is `stale_step`. */
   step: number;
   map: DungeonMapView;
-  /** The room the run stands in, or null before the entrance. */
+  /** The level the run stands in: 0 is the main map, 1 and up are the Undercroft's levels (the last of `undercroft.maps`). */
+  level: number;
+  /**
+   * The Undercroft levels drawn so far, in order, each labelled (`label`, and `crack` on a keeper's cracked
+   * floor). Null until the run has a carved door's room or a level. `marks` is how many rooms the carved
+   * door added (not which: that shows when the level is drawn).
+   */
+  undercroft: { maps: DungeonMapView[]; marks: number } | null;
+  /** The room the run stands in, or null before the entrance (of the main map or of the level the run just went down into). */
   at: string | null;
   /** The rooms visited, in order. */
   path: string[];

@@ -85,7 +85,18 @@ export type DungeonOutcome = 'cleared' | 'home' | 'defeat';
 const DUNGEON_OUTCOMES = ['cleared', 'home', 'defeat'] as const;
 export type CampChoice = 'rest' | 'swap' | 'keepsake';
 const CAMP_CHOICES = ['rest', 'swap', 'keepsake'] as const;
-const NODE_KIND_IDS = ['fight', 'elite', 'mystery', 'cache', 'camp', 'boss'] as const;
+const NODE_KIND_IDS = [
+  'fight',
+  'elite',
+  'mystery',
+  'cache',
+  'camp',
+  'boss',
+  'door',
+  'epic',
+] as const;
+/** What a carved door added to the Undercroft: a room kind, never a boss. */
+const UNDERCROFT_MARK_IDS = ['fight', 'elite', 'mystery', 'cache', 'camp', 'epic'] as const;
 
 /** Where a gear grant came from. */
 export const GEAR_SOURCES = [
@@ -442,6 +453,17 @@ export type AnalyticsEvent =
       elites?: number;
       packFound?: number;
       packKept?: number;
+      /**
+       * The Undercroft: how many levels the run cleared (its keepers beaten, 0 when it never went down),
+       * and the room kinds its carved door added. Absent on events written before it.
+       */
+      deepest?: number;
+      marks?: readonly string[];
+    }
+  | {
+      /** The run went down into an Undercroft level (1 is the first). */
+      kind: 'dungeon_descend';
+      level: number;
     }
   | {
       /** A mystery room's option was picked: the event's content id, the option (0 or 1), and a gamble's result if it had one. */
@@ -913,7 +935,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
           : { outcome: oneOf(DUNGEON_OUTCOMES, event.outcome, 'defeat') }),
         ...(event.path === undefined
           ? {}
-          : { path: event.path.slice(0, 8).map((k) => oneOf(NODE_KIND_IDS, k, 'fight')) }),
+          : { path: event.path.slice(0, 24).map((k) => oneOf(NODE_KIND_IDS, k, 'fight')) }),
         ...(event.keepsakes === undefined
           ? {}
           : { keepsakes: event.keepsakes.slice(0, 12).map((k) => fromSet(KEEPSAKE_IDS, k)) }),
@@ -923,7 +945,13 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         ...(event.elites === undefined ? {} : { elites: int(event.elites, 9) }),
         ...(event.packFound === undefined ? {} : { packFound: int(event.packFound, 999) }),
         ...(event.packKept === undefined ? {} : { packKept: int(event.packKept, 999) }),
+        ...(event.deepest === undefined ? {} : { deepest: int(event.deepest, 3) }),
+        ...(event.marks === undefined
+          ? {}
+          : { marks: event.marks.slice(0, 2).map((m) => oneOf(UNDERCROFT_MARK_IDS, m, 'fight')) }),
       };
+    case 'dungeon_descend':
+      return { level: int(event.level, 3) };
     case 'dungeon_event':
       return {
         event: fromSet(DUNGEON_EVENT_IDS, event.event),

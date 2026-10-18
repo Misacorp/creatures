@@ -13,7 +13,7 @@
  * replay) were captured from the all-at-once run that no longer exists; they stay, as the shapes of the
  * runs stored before the map, and are not captured again.
  */
-import { createSeededRng } from '@creatures/game';
+import { RULES, createSeededRng } from '@creatures/game';
 import {
   deadlyFoes,
   dungeonPlayer,
@@ -240,5 +240,60 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<DungeonCaptu
     '/api/dungeon/start',
     fresh.body({ team: fresh.creatureIds.slice(0, 2) }),
   );
+
+  // --- The Undercroft: a carved door, the boss, the way down and the keeper ---
+  // (After everything above, so the rngs the earlier fixtures were captured with are used in the same
+  // order. It runs on later game days until a day's map has a carved door.)
+  restore = scaleFoes(...FOES);
+  const diver = await dungeonPlayer(ctx, 8, {
+    level: 20,
+    creatures: 4,
+    species: ['cindle', 'sproutle', 'splashet', 'zipmouse'],
+  });
+  const [dCindle, dSproutle, dSplashet] = diver.creatureIds as [string, string, string, string];
+  ctx.sql.exec(
+    "INSERT INTO dungeon_progress (user_id, depth, first_day) VALUES (?, ?, '2027-01-01')",
+    diver.id,
+    // A landmark depth the Undercroft is open at: the boss chest's gear drop is certain, so it shows.
+    RULES.dungeon.landmarkEvery * 2,
+  );
+  let hasDoor = false;
+  for (let day = 0; day < 40 && !hasDoor; day++) {
+    ctx.clock.t += 24 * 3_600_000;
+    hasDoor = (await diver.today()).map.nodes.some((n) => n.kind === 'door');
+  }
+  if (!hasDoor) throw new Error('no day of the scenario has a carved door');
+  const dived = await diver.start({ team: [dSproutle, dSplashet, dCindle] });
+  let under = dived.body.state;
+  const doorId = under.map.nodes.find((n) => n.kind === 'door')?.id as string;
+  const toDoor = routeThrough(under.map, (n) => n.id === doorId) as string[];
+  under = await walk(diver, under, toDoor, (s) => s.reachable.includes(doorId));
+  // Stepping through the door adds a room to the Undercroft; nothing waits.
+  under = await step(diver, 'dungeon-act-door', under, { type: 'move', node: doorId });
+  const bossId = under.map.nodes.find((n) => n.kind === 'boss')?.id as string;
+  under = await walk(diver, under, [], (s) => s.reachable.includes(bossId));
+  // The boss falls: the run does not end. The chest is banked and the way down is offered.
+  under = await step(diver, 'dungeon-act-descend-pending', under, { type: 'move', node: bossId });
+  if (under.pending?.kind !== 'descend') throw new Error('the boss did not offer the descent');
+  // Down: the level is drawn, the row catches its breath.
+  under = await step(diver, 'dungeon-act-descend', under, { type: 'descend' });
+  // A cracked floor would offer a deeper level instead of ending the run: this fixture shows the end.
+  if (under.undercroft?.maps[0]?.crack === true) {
+    const row = ctx.sql
+      .exec<{ state_json: string }>('SELECT state_json FROM dungeon_runs WHERE id = ?', under.id)
+      .one();
+    const st = JSON.parse(row.state_json) as { under: { crack?: boolean }[] };
+    (st.under[0] as { crack?: boolean }).crack = false;
+    ctx.sql.exec(
+      'UPDATE dungeon_runs SET state_json = ? WHERE id = ?',
+      JSON.stringify(st),
+      under.id,
+    );
+  }
+  const level = (s: DungeonRunState) => s.undercroft?.maps[s.level - 1] ?? s.map;
+  const keeperId = level(under).nodes.find((n) => n.kind === 'boss')?.id as string;
+  under = await walk(diver, under, [], (s) => s.reachable.includes(keeperId));
+  await step(diver, 'dungeon-act-keeper', under, { type: 'move', node: keeperId });
+  restore();
   return out;
 }

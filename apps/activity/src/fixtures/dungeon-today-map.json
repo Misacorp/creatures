@@ -230,20 +230,11 @@
         "id": "f4l2",
         "floor": 4,
         "lane": 2,
-        "kind": "fight",
+        "kind": "mystery",
         "next": ["f5l1", "f5l2"],
-        "foe": {
-          "id": "moss-lurker",
-          "name": "Moss Lurker",
-          "element": "grove",
-          "kind": "foe",
-          "hpMax": 48,
-          "elite": false
-        },
-        "modifier": {
-          "id": "overgrown",
-          "name": "Overgrown",
-          "description": "Grove creatures hit 20% harder."
+        "event": {
+          "id": "quiet-room",
+          "name": "Quiet room"
         }
       },
       {

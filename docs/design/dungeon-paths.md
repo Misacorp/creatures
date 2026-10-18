@@ -135,12 +135,12 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
   - Then a floor with the **Undercroft keeper**: a room boss at the Undercroft's depth, with its landmark signature.
   - Each floor has 2 rooms.
   - Its map is drawn with live randomness when the player descends (it is the player's own, not the server's), and it is stored with the run.
-- **Carved doors add rooms.** From depth 8, the main map may hold one **carved door** on floor 4 or 5, at most one per map. It is a room with no fight.
-  - Stepping in offers three marks, and each adds one floor to the Undercroft before its keeper, up to `maxFloors + 2`:
-    - **an epic fight**: one fierce foe at boss strength, paying Essence 1, scrap 2 and a keepsake;
-    - **a camp**: rest, swap or a keepsake, and the only place in the Undercroft to head home;
-    - **an unknown room**: rolled like any other.
-  - A mark costs nothing. It only counts if the player descends.
+- **Carved doors add a room.** From depth 8, the main map may hold one **carved door** on floor 4 or 5, at most one per map (`doorBp`, 35% of maps). It is a room with no fight, and the player does not choose anything there.
+  - Stepping through resolves at once, like a cache. It adds ONE room to the Undercroft, of a kind drawn with live randomness at that moment: a fight, a fierce foe (elite), a mystery, a cache, a camp or an epic fight, never a boss (`markOdds`: fight 30, elite 15, mystery 15, cache 10, camp 15, epic 15).
+  - The player is told only what it could be ("A carved door. Stepping through adds a room to the Undercroft: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight."), and the history says only that a room was added. Which kind shows when the Undercroft is drawn on descent.
+  - The added room is a floor of its own with one room, before the keeper (camps last: a rest before the keeper). A run holds at most `maxMarks` (2); past it the door adds nothing and says so. Only the first Undercroft takes marks; a deeper one has its own two floors.
+  - The room only counts if the player descends. Below depth 8 a door is a quiet room: its view is a mystery room named "Quiet room" (no scene), and nothing happens in it.
+  - The room kinds of an added room: **an epic fight** (one fierce foe at boss strength, paying Essence 1, scrap 2 and a keepsake), **a camp** (rest, swap or a keepsake, and the only place in the Undercroft to head home), or any other kind, which plays as on the main map (fights, elites and caches there pay double).
 - **Loot.**
   - Undercroft fights put twice their usual loot into the pack.
   - Every fight there pays experience as usual.
@@ -157,7 +157,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
 - **Client.**
   - After the boss, a descent card: what is banked, what stays at risk, "foes are fiercer", and two buttons.
   - The Undercroft map continues above the main map's boss, in a darker palette with a band labelled "Undercroft · harder".
-  - A carved door is a card with three marks.
+  - A carved door's drawer says what stepping through could add (the six kinds). Stepping in shows one line ("a room was added"), never which.
   - The results show how deep the run went ("Undercroft 1 cleared").
 - **Simulator.**
   - The policy descends when the team is healthy (average HP over 60% after catching breath and nobody knocked out), and takes the camp mark when it can.
@@ -183,12 +183,16 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
     - `cache`: adds its loot.
     - `mystery`: sets `pending = {kind:'event', ...}`.
     - `camp`: draws the two keepsake offers and sets `pending = {kind:'camp', ...}`.
+    - `door`: from depth 8, draws a mark and records it (nothing is pending; below depth 8 it is a quiet room).
+    - `epic`: an Undercroft room played as a fight.
+    - The node id may be an Undercroft node (`u1f0l0`).
   - `{type:'event', option: 0|1}`: resolves the pending event.
   - `{type:'camp', choice:'rest'|'swap'|'keepsake', order?: [id,id,id], out?, in?, keepsake?}`: resolves the pending camp.
     - `order` is a permutation of the row, applied before the choice.
     - `swap` needs `out` (in the row) and `in` (the player's own creature, not in the row).
     - `keepsake` must be one of the two offers.
-  - `{type:'home'}`: only while the camp is pending. Ends the run as home.
+  - `{type:'home'}`: only while a camp or the descent card is pending. Ends the run: `home` before the main boss was beaten, `cleared` after it.
+  - `{type:'descend'}`: only while the descent card is pending (see "The Undercroft on the server" below).
 - **Act responses:**
   - Each act returns `{ state, room?: DungeonReplayRoom, summary?: DungeonRunSummary, today? }`.
     - `room` is the fight just played, in today's replay shape, so the client plays it at once.
@@ -225,12 +229,29 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
   - `dungeon-reset` also deletes the day's active run and its steps.
   - New `dungeon-map {seed?}`: rerolls today's map for the guild by redrawing the day seed. `dungeon-seed` already does this; make sure it clears `map_json`.
 
+### The Undercroft on the server
+
+- **Rules** (`RULES.dungeon.undercroft`, `packages/game/src/rules/dungeon-map.ts`, `dungeon-run.ts`): `fromDepth 8`, `catchBreathBp 2000`, `depthBonus 3`, `baseFloors 2`, `perLandmark 1`, `maxFloors 5`, `deeperFloors 2`, `maxMarks 2`, `lootMultiplier 2`, `crackBp 1500`, `maxLevels 3`, `epic {hpBp 16000, atkBp 13000, loot {0, 1, 2}}`, `chest {essence 1, scrap 2, gearBp 4000, rareBonusBp 1500, epicBonusBp 500, itemLevelBonus 2}`, `doorFloors [4, 5]`, `doorBp 3500`, `markOdds`.
+  - The first Undercroft has `min(maxFloors, baseFloors + perLandmark x (landmarks passed - 1))` floors of two rooms, where the landmarks passed by a run at depth d are `floor((d - 1) / 7)` (depth 8 to 14: 2 floors, 15 to 21: 3, up to 5), plus one floor for each mark, plus the keeper's floor. A deeper level has `deeperFloors` floors plus the keeper, and no marks.
+- **The main map's door** is drawn last in `generateDungeonMap`, only when the caller asks (`{ doors: true }`: the server does, the simulator does not yet, so its maps are the maps it always drew), so a map without a door is the map it was before doors: a fight on floor 4 or 5 becomes a `door` node (no foe, modifier or event). `mapView(map, depth)` shows it as `door` at depth 8 and over, and as a `mystery` node with no event below it.
+- **Undercroft maps** come from `generateUndercroftMap(rng, {level, floors, marks})`: node ids `u<level>f<floor>l<lane>`; floors of two rooms in lanes 0 and 2 that lead straight up their lane (the first floor is all fights, the rest roll like the main map's rooms with caps of 2 elites, 1 cache and 2 mysteries per level, none beside its mate); a floor of one room (lane 1) for each mark (camps last); the keeper alone on the last floor (a room boss, its own foe whatever the depth, with its `signature` on). `crack` is drawn last with `crackBp` (never on level `maxLevels`). `undercroftMapValid` checks it.
+- **Rooms.** Foes there are scaled at `depth + depthBonus x level`. An epic room is a normal foe with `epic` on top (stronger than an elite), shown as `elite: true` with `epic: true`.
+- **The boss clear at depth 8 and over** (main boss, or a keeper with a crack and levels left, and someone standing):
+  - Main boss: `cleared`, depth + 1 is written to `dungeon_progress` at once (`MAX`, never lowered, so a later defeat or a left-open close cannot undo it), and the chest opens: its gear, shard, landmark glimmer and supply are paid now under the grant key `dungeon:<day>:<attempt>:chest`; its Essence and scrap (the boss's, the full clear's, a landmark's) go into the pack.
+  - Keeper: its gear (`rollUndercroftChest`) is paid under `dungeon:<day>:<attempt>:u<level>`; its Essence and scrap are already in the pack (the keeper's room pays them).
+  - Then `pending = {kind:'descend', level}` waits. `{type:'descend'}` draws the level with live randomness, heals standing creatures `catchBreathBp` and stands the run before the new map's floor 0. `{type:'home'}` ends the run as `cleared` and keeps the whole pack.
+  - A keeper without a crack (or the deepest level, or nobody standing) ends the run as `cleared`. A main boss below depth 8 ends it as before (the chest is paid with the run).
+- **The end of such a run** pays the pack through the ledger under the usual keys `dungeon:<day>:<attempt>:bait|essence`, scrap and anything else through the grant `dungeon:<day>:<attempt>`; what the chests paid on the way is added to the summary's rewards and not paid again. Experience: the full-clear bonus is for the row that beat the main boss, whatever happens below.
+- **Outcomes.** `outcome` stays `cleared | home | defeat`. A run that beat the main boss ends `cleared` when it heads home or is closed at a safe point, and `defeat` when it is lost below (half the pack, rounded up; its summary still has `cleared: true`, and the depth stays). `deepest` counts the Undercroft levels cleared (keepers beaten).
+- **Left open:** a run waiting at a camp or the descent card closes with the whole pack (`home` before the main boss, `cleared` after it); anywhere else it closes as a defeat.
+- **Analytics:** `dungeon_run` gains `deepest` (number) and `marks` (room kinds the door added); new `dungeon_descend {level}`. `path` may be up to 24 kinds. Content ids and numbers only.
+
 ### Shapes (the client mirrors these by hand in `dungeon-types.ts`)
 
 ```ts
-type NodeKind = 'fight' | 'elite' | 'mystery' | 'cache' | 'camp' | 'boss';
+type NodeKind = 'fight' | 'elite' | 'mystery' | 'cache' | 'camp' | 'boss' | 'door' | 'epic';
 interface DungeonMapNode {
-  id: string; // 'f2l1'
+  id: string; // 'f2l1', or 'u1f0l0' on an Undercroft level
   floor: number; // 0..6
   lane: number; // 0..2
   kind: NodeKind;
@@ -241,7 +262,7 @@ interface DungeonMapNode {
     element: Element;
     kind: 'foe' | 'boss';
     hpMax: number;
-    elite: boolean;
+    elite: boolean; // an elite or an epic fight
   };
   modifier?: { id: string; name: string; description: string };
   event?: { id: string; name: string }; // the scene and options appear only once the player is in the room
@@ -249,6 +270,10 @@ interface DungeonMapNode {
 interface DungeonMapView {
   floors: number;
   nodes: DungeonMapNode[];
+  // An Undercroft level only (absent on the main map):
+  level?: number; // 1..3
+  label?: string; // 'Undercroft · foes are fiercer here' ('Undercroft II · foes are fiercer still')
+  crack?: boolean; // the keeper's floor is cracked (only present when true)
 }
 interface DungeonPack {
   bait: number;
@@ -286,21 +311,45 @@ interface DungeonRunState {
   status: 'active' | 'done';
   outcome: 'cleared' | 'home' | 'defeat' | null;
   step: number;
-  map: DungeonMapView;
-  at: string | null; // the node the run stands on (null before floor 0)
+  map: DungeonMapView; // the day's main map (always)
+  level: number; // 0 on the main map; 1.. in the Undercroft (the last of undercroft.maps)
+  undercroft: { maps: DungeonMapView[]; marks: number } | null; // levels drawn so far; marks = rooms the door added (not which); null with neither
+  at: string | null; // the node the run stands on (null before floor 0 of the main map or of a new level)
   path: string[]; // nodes visited, in order
   reachable: string[]; // nodes a move may go to now (empty while something is pending or the run is done)
   pending:
     | null
     | { kind: 'event'; event: DungeonEventView }
-    | { kind: 'camp'; offers: DungeonKeepsakeView[]; restBp: number };
+    | { kind: 'camp'; offers: DungeonKeepsakeView[]; restBp: number }
+    | {
+        kind: 'descend'; // head home ({type:'home'}) or go down ({type:'descend'})
+        level: number; // the level it opens (1, or 2 and 3 after a cracked floor)
+        floors: number; // its floors, the keeper's included
+        depthBonus: number; // foes are this many depths harder per level
+        catchBreathBp: number; // HP the standing creatures recover on the way down
+        newDepth: number; // the player's depth now (locked in)
+        banked: {
+          gear: { baseId: string; rarity: string; itemLevel?: number }[];
+          supplies: string[];
+          parts: Record<string, number>;
+        }; // already paid
+      };
   team: DungeonRunCreature[]; // the row now, left to right
   keepsakes: DungeonKeepsakeView[];
   pack: DungeonPack; // at risk
   roomsCleared: number;
   supply: boolean; // the safe supply is earned
   lastEvent: { name: string; option: string; outcome: string } | null; // the plain line of what the last event did
+  history: DungeonStepLog[]; // one entry per visited room, see dungeon-types.ts
 }
+
+// New history entries of the Undercroft (the full union is in apps/worker/src/dungeon-types.ts):
+//   { node, kind: 'door', result: 'door', added: boolean }                    // which room it added is NOT said
+//   { node, kind: 'boss', result: 'chest', level, loot, gear: {baseId, rarity, itemLevel?}[] } // level 0: the main boss's
+//   { node, kind: 'descend', result: 'pending' | 'home', level }
+//   { node, kind: 'descend', result: 'descend', level, healed }
+//   fight entries may be of kind 'epic'
+// The summary gains `deepest: number` (levels cleared) and `route.undercroft?: DungeonMapView[]`.
 ```
 
 ## Client

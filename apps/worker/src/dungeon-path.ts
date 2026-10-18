@@ -10,20 +10,31 @@
 import {
   addFightsCleared,
   addPack,
+  addParts,
   campOffers,
   campRest,
+  catchBreath,
+  drawMark,
   dungeonEvent,
   dungeonKeepsakes,
   dungeonScrapPerRoom,
+  generateUndercroftMap,
   int,
+  isLandmark,
   mapNode,
   mergeMods,
+  nodeFoe,
   nodeLoot,
   reachableNodes,
   resolveEvent,
+  rollDungeonLoot,
+  rollUndercroftChest,
   RULES,
   roomSpecForNode,
+  undercroftBaseFloors,
+  undercroftOpen,
   weatherSheet,
+  type PartsBundle,
   type Rng,
   type WeatherDay,
 } from '@creatures/game';
@@ -40,11 +51,13 @@ import {
   PLAYER,
   abilityChoices,
   currentHp,
+  currentMap,
   heldKeepsakes,
   keepsakeView,
   maxHpOfRow,
   type RunState,
 } from './dungeon-state';
+import type { Draft, GrantView } from './gear-grants';
 import type {
   DungeonKeepsakeView,
   DungeonOutcome,
@@ -55,12 +68,29 @@ import { GameError } from './outcome';
 import { drawSeed, slotFor } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
 
+/** The supply a run's chest carries (the first fight cleared earns it; it is safe and never in the pack). */
+export const SUPPLIES_PER_RUN = 1;
+
+/** What a boss chest's dice give, before the grant pays it: parts, gear (with its origin) and supplies. */
+export interface ChestDraw {
+  parts: PartsBundle;
+  gear: Draft['gear'];
+  supplies?: string[];
+}
+
 export interface PathEnv {
   sql: SqlStorage;
   userId: string;
   /** Live randomness. Crypto in production. */
   rng: Rng;
   analytics?: Analytics | undefined;
+  /**
+   * Pays a boss chest's gear, shards and supply now, once, under the stable key `<run>:<tag>` (`chest`,
+   * or `u<level>` for an Undercroft keeper's), drawing its dice from the live gear rng. Answers what it gave.
+   */
+  bank: (tag: string, draw: (rng: Rng) => ChestDraw) => GrantView;
+  /** Locks the player's depth in at `depth` (never lowers it): the main boss is beaten, whatever happens next. */
+  lockDepth: (depth: number) => void;
 }
 
 /** A fight that was just played, as stored in `dungeon_steps`. */
@@ -103,12 +133,19 @@ function drawKeepsake(rng: Rng, held: readonly string[]): string | null {
   return pick === undefined ? null : pick.id;
 }
 
-/** The loot of a cleared room goes in the pack, with Market Day's scrap for a fight. Returns what went in. */
+/**
+ * The loot of a cleared room goes in the pack, with Market Day's scrap for a fight. In the Undercroft
+ * fights, elites and caches pay `lootMultiplier` times as much (Market Day's scrap too). Returns what went in.
+ */
 function packLoot(st: RunState, kind: Parameters<typeof nodeLoot>[0], fight: boolean): DungeonPack {
-  const loot = nodeLoot(kind);
+  const loot = nodeLoot(kind, st.level);
+  const doubled =
+    st.level > 0 && (kind === 'fight' || kind === 'elite' || kind === 'cache')
+      ? RULES.dungeon.undercroft.lootMultiplier
+      : 1;
   const gained = {
     ...loot,
-    scrap: loot.scrap + (fight ? dungeonScrapPerRoom(st.weather) : 0),
+    scrap: loot.scrap + (fight ? dungeonScrapPerRoom(st.weather) * doubled : 0),
   };
   st.pack = addPack(st.pack, gained);
   return gained;
@@ -129,11 +166,134 @@ function settleStep(st: RunState, entry: DungeonStepLog): void {
 
 // --- Move ---
 
+/** The ids of the row now, left to right. */
+const rowIds = (st: RunState): string[] => st.input.team.map((slot) => slot.id);
+
+/** Adds what a chest's grant gave to what the run has banked. */
+function bankInto(st: RunState, view: GrantView): void {
+  const had = st.banked;
+  st.banked = {
+    parts: addParts(had?.parts ?? {}, view.parts),
+    gear: [...(had?.gear ?? []), ...view.gear],
+    converted: [...(had?.converted ?? []), ...view.converted],
+    supplies: [...(had?.supplies ?? []), ...(view.supplies ?? [])],
+  };
+}
+
+/**
+ * The main boss is beaten at a depth that opens the Undercroft: depth +1 is locked in, and the chest
+ * opens now. Its gear, shard and supply are paid at once (key `chest`) and so can never be lost; its
+ * Essence and scrap (the boss's loot, the full clear's, a landmark's) go into the pack with the rest.
+ */
+function openMainChest(env: PathEnv, st: RunState, node: MapNodeLike, depth: number): void {
+  const landmark = isLandmark(depth);
+  const element = nodeFoe(node, depth)?.element ?? 'tide';
+  const view = env.bank('chest', (rng) => {
+    const loot = rollDungeonLoot(
+      rng,
+      depth,
+      {
+        landmark,
+        fullClear: true,
+        bossCleared: true,
+        supplies: st.supply ? SUPPLIES_PER_RUN : 0,
+      },
+      element,
+    );
+    return {
+      parts: addParts({ glimmer: landmark ? RULES.dungeon.landmark.glimmer : 0 }, loot.parts),
+      gear: loot.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
+      supplies: loot.supplies,
+    };
+  });
+  bankInto(st, view);
+  const extras: DungeonPack = {
+    bait: 0,
+    essence: RULES.dungeon.fullClear.essence + (landmark ? RULES.dungeon.landmark.essence : 0),
+    scrap: landmark ? RULES.dungeon.landmark.scrap : 0,
+  };
+  st.pack = addPack(st.pack, extras);
+  env.lockDepth(depth + 1);
+  st.history.push({
+    node: node.id,
+    kind: 'boss',
+    result: 'chest',
+    level: 0,
+    loot: addPack(nodeLoot('boss'), extras),
+    gear: view.gear.map(({ baseId, rarity, itemLevel }) => ({
+      baseId,
+      rarity,
+      ...(itemLevel === undefined ? {} : { itemLevel }),
+    })),
+  });
+}
+
+type MapNodeLike = NonNullable<ReturnType<typeof mapNode>>;
+
+/** An Undercroft keeper is beaten: its chest's gear is paid now (key `u<level>`); its Essence and scrap are already in the pack. */
+function openKeeperChest(env: PathEnv, st: RunState, node: MapNodeLike, depth: number): void {
+  const level = st.level;
+  const element = nodeFoe(node, depth, level)?.element ?? 'tide';
+  const view = env.bank(`u${String(level)}`, (rng) => ({
+    parts: {},
+    gear: rollUndercroftChest(rng, depth, element).map((item) => ({
+      item,
+      origin: { kind: 'dungeon' as const, depth },
+    })),
+  }));
+  bankInto(st, view);
+  st.history.push({
+    node: node.id,
+    kind: 'boss',
+    result: 'chest',
+    level,
+    loot: nodeLoot('boss', level),
+    gear: view.gear.map(({ baseId, rarity, itemLevel }) => ({
+      baseId,
+      rarity,
+      ...(itemLevel === undefined ? {} : { itemLevel }),
+    })),
+  });
+}
+
+/** The way down is offered: the run waits for the player to head home or descend into `level`. */
+function offerDescent(st: RunState, level: number): void {
+  st.pending = { kind: 'descend', level };
+  st.history.push({ node: st.at ?? '', kind: 'descend', result: 'pending', level });
+}
+
+/**
+ * What a cleared boss room does to the run. The main boss, at a depth that opens the Undercroft, banks
+ * its chest and offers the descent (below that depth the run simply ends cleared, and the run's end pays
+ * the chest). An Undercroft keeper banks its chest, then offers another descent if its floor was cracked
+ * (and the run has levels left), otherwise the run ends cleared. With nobody left standing there is
+ * nobody to go on with: the run ends cleared.
+ */
+function bossCleared(env: PathEnv, st: RunState, node: MapNodeLike, depth: number): boolean {
+  const u = RULES.dungeon.undercroft;
+  if (st.level === 0) {
+    st.bossCleared = true;
+    st.fullClear = rowIds(st);
+    if (!undercroftOpen(depth)) return false;
+    openMainChest(env, st, node, depth);
+    if (!someoneStands(st)) return false;
+    offerDescent(st, 1);
+    return true;
+  }
+  st.deepest = st.level;
+  openKeeperChest(env, st, node, depth);
+  if (currentMap(st).crack === true && st.level < u.maxLevels && someoneStands(st)) {
+    offerDescent(st, st.level + 1);
+    return true;
+  }
+  return false;
+}
+
 export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: number): ActOutcome {
   if (st.pending !== null) throw invalidAct('answer what is waiting first');
-  if (!reachableNodes(st.map, st.at).includes(nodeId))
-    throw invalidAct('that room is not reachable');
-  const node = mapNode(st.map, nodeId);
+  const map = currentMap(st);
+  if (!reachableNodes(map, st.at).includes(nodeId)) throw invalidAct('that room is not reachable');
+  const node = mapNode(map, nodeId);
   if (node === undefined) throw invalidAct('that room is not on the map');
   st.at = nodeId;
   st.path.push(nodeId);
@@ -141,9 +301,10 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
   switch (node.kind) {
     case 'fight':
     case 'elite':
+    case 'epic':
     case 'boss': {
       const held = heldKeepsakes(st.keepsakes);
-      const base = roomSpecForNode(st.map, nodeId, depth, st.fights);
+      const base = roomSpecForNode(map, nodeId, depth, st.fights);
       const spec: DungeonRoomSpec = held.length === 0 ? base : { ...base, keepsakes: held };
       // The seed is drawn now: a client can neither know it before nor pick it.
       const seed = drawSeed(env.rng);
@@ -151,7 +312,7 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       const hpIn = st.hp === null ? null : { ...st.hp };
       const result = simulateDungeonRoom(input, spec, hpIn, seed);
       const fight: PlayedFight = { node: nodeId, seed, input, hpIn, result };
-      const standing = st.input.team.map((slot) => slot.id);
+      const standing = rowIds(st);
       st.fights += 1;
       st.hp = { ...result.result.hpEnd };
       st.hpMax = { ...st.hpMax, ...result.hpMax };
@@ -174,8 +335,8 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       const earnedSupply = !st.supply;
       st.supply = true;
       let keepsake: DungeonKeepsakeView | null = null;
-      if (node.kind === 'elite') {
-        st.elites += 1;
+      if (node.kind === 'elite' || node.kind === 'epic') {
+        if (node.kind === 'elite') st.elites += 1;
         const gift = drawKeepsake(env.rng, st.keepsakes);
         if (gift !== null) {
           st.keepsakes.push(gift);
@@ -188,7 +349,9 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
         ...(keepsake === null ? {} : { keepsake }),
         ...(earnedSupply ? { supply: true } : {}),
       });
-      if (node.kind === 'boss') return { fight, end: 'cleared' };
+      if (node.kind === 'boss') {
+        return bossCleared(env, st, node, depth) ? { fight } : { fight, end: 'cleared' };
+      }
       // A fight that was won with nobody left standing leaves nobody to go on with.
       if (!someoneStands(st)) return { fight, end: 'defeat' };
       return { fight };
@@ -219,6 +382,16 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       st.pending = { kind: 'camp', offers: campOffers(env.rng, st.keepsakes) };
       st.history.push({ node: nodeId, kind: 'camp', result: 'pending' });
       return {};
+    case 'door': {
+      // Below the depth that opens the Undercroft the door is a quiet room (its view says mystery).
+      if (!undercroftOpen(depth)) return {};
+      // Stepping through adds one room, of a kind drawn now and not told: the Undercroft shows it when
+      // it is drawn. At the most (`maxMarks`) the door adds nothing, and says so.
+      const added = st.marks.length < RULES.dungeon.undercroft.maxMarks;
+      if (added) st.marks.push(drawMark(env.rng));
+      st.history.push({ node: nodeId, kind: 'door', result: 'door', added });
+      return {};
+    }
   }
 }
 
@@ -376,8 +549,29 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
 
 // --- Home ---
 
+/**
+ * How a run that heads home (or is closed at a safe point) ends: `home` before the main boss has been
+ * beaten, `cleared` after it (the depth was won; the pack comes home whole either way).
+ */
+export function homeOutcome(st: Pick<RunState, 'bossCleared'>): DungeonOutcome {
+  return st.bossCleared ? 'cleared' : 'home';
+}
+
+/** Heading home: from the camp, or from the descent card. Keeps the whole pack. */
 export function applyHome(st: RunState): ActOutcome {
-  if (st.pending?.kind !== 'camp') throw invalidAct('you can only head home from the camp');
+  const pending = st.pending;
+  if (pending?.kind === 'descend') {
+    settleStep(st, {
+      node: st.at ?? '',
+      kind: 'descend',
+      result: 'home',
+      level: pending.level,
+    });
+    st.pending = null;
+    return { end: homeOutcome(st) };
+  }
+  if (pending?.kind !== 'camp')
+    throw invalidAct('you can only head home from a camp or the descent');
   settleStep(st, {
     node: st.at ?? '',
     kind: 'camp',
@@ -386,5 +580,36 @@ export function applyHome(st: RunState): ActOutcome {
     detail: 'Headed home with the pack.',
   });
   st.pending = null;
-  return { end: 'home' };
+  return { end: homeOutcome(st) };
+}
+
+// --- Descend ---
+
+/**
+ * Goes down into the Undercroft level the run is offered. The level's map is drawn now with live
+ * randomness (it is the player's own), stored with the run, and the row catches its breath on the way
+ * (`catchBreathBp` of max HP, standing creatures only). The run then stands before the new map's floor 0.
+ */
+export function applyDescend(env: PathEnv, st: RunState, depth: number): ActOutcome {
+  if (st.pending?.kind !== 'descend') throw invalidAct('there is no way down waiting');
+  const level = st.pending.level;
+  if (level !== st.under.length + 1 || level > RULES.dungeon.undercroft.maxLevels) {
+    throw invalidAct('that level cannot be opened');
+  }
+  const map = generateUndercroftMap(env.rng, {
+    level,
+    floors: undercroftBaseFloors(depth, level),
+    marks: level === 1 ? st.marks : [],
+  });
+  const before = currentHp(st);
+  const after = catchBreath(before, st.hpMax);
+  const healed = Object.keys(after).reduce((n, id) => n + (after[id] ?? 0) - (before[id] ?? 0), 0);
+  st.hp = after;
+  st.under.push(map);
+  st.level = level;
+  settleStep(st, { node: st.at ?? '', kind: 'descend', result: 'descend', level, healed });
+  st.pending = null;
+  st.at = null;
+  env.analytics?.record({ kind: 'dungeon_descend', level }, env.userId);
+  return {};
 }

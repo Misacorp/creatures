@@ -25,7 +25,7 @@ import type {
 import type { Element } from '../content/schema';
 import { chance, int, type Rng } from '../rng';
 import { RULES } from './config';
-import { landmarkBossId, scaledFoe } from './dungeon';
+import { landmarkBossId, scaledFoe, undercroftDepth } from './dungeon';
 import { mapNode, type DungeonMap, type MapNode, type NodeKind } from './dungeon-map';
 
 // --- Rooms ---
@@ -46,6 +46,10 @@ export interface DungeonRoomSpecData {
   elite?: boolean;
   /** The keepsakes the run holds when the room is fought, folded in after the modifier. Absent: none. */
   keepsakes?: KeepsakeDef[];
+  /** An epic fight of the Undercroft (also `elite`, for the display: "Fierce"). The boost is already in `hp` and `atk`. */
+  epic?: boolean;
+  /** The Undercroft keeper: the room boss has its landmark signature whatever the depth. Absent: the depth decides. */
+  signature?: boolean;
 }
 
 /** A bonus on a number given as basis points of itself (14000 is 140%), floored, at least 1. */
@@ -57,9 +61,10 @@ function boosted(value: number, bp: number): number {
  * The foe a node holds at a depth: its own, except that the boss node holds the landmark boss
  * (`landmarkBossId`) when the depth is a landmark. Undefined for a node with no foe.
  */
-export function nodeFoe(node: MapNode, depth: number): DungeonFoeDef | undefined {
+export function nodeFoe(node: MapNode, depth: number, level = 0): DungeonFoeDef | undefined {
   if (node.foeId === undefined) return undefined;
-  if (node.kind === 'boss') {
+  // The Undercroft's keeper is its own room boss, whatever the depth.
+  if (node.kind === 'boss' && level === 0) {
     const landmark = landmarkBossId(depth);
     if (landmark !== null) return dungeonFoe(landmark);
   }
@@ -67,9 +72,12 @@ export function nodeFoe(node: MapNode, depth: number): DungeonFoeDef | undefined
 }
 
 /**
- * The room of a fight, an elite or the boss, at `depth`, as room number `index` of the run. The foe is
- * scaled to the depth (`scaledFoe`); an elite has `RULES.dungeon.elite` on top. Foe and modifier are
- * embedded in full. Throws for a node that is not a room with a foe, or one the content does not know.
+ * The room of a fight, an elite, an epic fight or the boss, at `depth`, as room number `index` of the
+ * run. The foe is scaled to the depth (`scaledFoe`); an elite has `RULES.dungeon.elite` on top and an
+ * epic fight `RULES.dungeon.undercroft.epic`. On an Undercroft map (`map.level`) the foes are scaled at
+ * `undercroftDepth(depth, level)` and the keeper (the boss node) is its own room boss with its
+ * signature. Foe and modifier are embedded in full. Throws for a node that is not a room with a foe, or
+ * one the content does not know.
  */
 export function roomSpecForNode(
   map: DungeonMap,
@@ -79,24 +87,39 @@ export function roomSpecForNode(
 ): DungeonRoomSpecData {
   const node = mapNode(map, nodeIdValue);
   if (node === undefined) throw new RangeError(`no node "${nodeIdValue}" on the map`);
-  if (node.kind !== 'fight' && node.kind !== 'elite' && node.kind !== 'boss') {
+  if (
+    node.kind !== 'fight' &&
+    node.kind !== 'elite' &&
+    node.kind !== 'boss' &&
+    node.kind !== 'epic'
+  ) {
     throw new RangeError(`node "${nodeIdValue}" is a ${node.kind}, not a fight`);
   }
-  const foe = nodeFoe(node, depth);
+  const level = map.level ?? 0;
+  const foe = nodeFoe(node, depth, level);
   const modifier = node.modifierId === undefined ? undefined : roomModifier(node.modifierId);
   if (foe === undefined || modifier === undefined) {
     throw new RangeError(`node "${nodeIdValue}" holds content that is not known`);
   }
-  const scaled = scaledFoe(foe, depth);
-  const elite = node.kind === 'elite';
+  const scaled = scaledFoe(foe, undercroftDepth(depth, level));
+  const boost = roomBoost(node.kind);
   return {
     index,
     foe,
     modifier,
-    hp: elite ? boosted(scaled.hp, RULES.dungeon.elite.hpBp) : scaled.hp,
-    atk: elite ? boosted(scaled.atk, RULES.dungeon.elite.atkBp) : scaled.atk,
-    ...(elite ? { elite: true } : {}),
+    hp: boost === null ? scaled.hp : boosted(scaled.hp, boost.hpBp),
+    atk: boost === null ? scaled.atk : boosted(scaled.atk, boost.atkBp),
+    ...(boost === null ? {} : { elite: true }),
+    ...(node.kind === 'epic' ? { epic: true } : {}),
+    ...(level > 0 && node.kind === 'boss' ? { signature: true } : {}),
   };
+}
+
+/** The boost on top of a room's foe: an elite's, an epic fight's, or none. */
+function roomBoost(kind: NodeKind): { hpBp: number; atkBp: number } | null {
+  if (kind === 'elite') return RULES.dungeon.elite;
+  if (kind === 'epic') return RULES.dungeon.undercroft.epic;
+  return null;
 }
 
 // --- The pack ---
@@ -115,10 +138,33 @@ export function addPack(a: DungeonRunPack, b: DungeonRunPack): DungeonRunPack {
 }
 
 /**
- * What clearing a room of this kind puts in the pack (`RULES.dungeon.loot`). The camp and a mystery
- * room give nothing here: a mystery pays by the option the player picks.
+ * What clearing a room of this kind puts in the pack (`RULES.dungeon.loot`). The camp, a carved door and
+ * a mystery room give nothing here: a mystery pays by the option the player picks. In the Undercroft
+ * (`level` above 0) fights, elites and caches put `lootMultiplier` times as much in the pack, an epic
+ * fight pays its own loot, and the keeper (the boss node) pays the Undercroft chest's Essence and scrap.
  */
-export function nodeLoot(kind: NodeKind): DungeonRunPack {
+export function nodeLoot(kind: NodeKind, level = 0): DungeonRunPack {
+  const u = RULES.dungeon.undercroft;
+  if (level > 0) {
+    switch (kind) {
+      case 'fight':
+      case 'elite':
+      case 'cache': {
+        const loot = RULES.dungeon.loot[kind];
+        return {
+          bait: loot.bait * u.lootMultiplier,
+          essence: loot.essence * u.lootMultiplier,
+          scrap: loot.scrap * u.lootMultiplier,
+        };
+      }
+      case 'epic':
+        return { ...u.epic.loot };
+      case 'boss':
+        return { bait: 0, essence: u.chest.essence, scrap: u.chest.scrap };
+      default:
+        return emptyPack();
+    }
+  }
   switch (kind) {
     case 'fight':
     case 'elite':
@@ -279,17 +325,33 @@ export function campOffers(
   return left.slice(0, count);
 }
 
+function recover(
+  hp: Readonly<Record<string, number>>,
+  hpMax: Readonly<Record<string, number>>,
+  bp: number,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [id, now] of Object.entries(hp)) {
+    const max = hpMax[id] ?? now;
+    out[id] = now <= 0 ? now : Math.min(max, now + share(max, bp));
+  }
+  return out;
+}
+
 /** The team's HP after a camp Rest: standing creatures recover `RULES.dungeon.camp.restBp` of max HP, never above max. A new record. */
 export function campRest(
   hp: Readonly<Record<string, number>>,
   hpMax: Readonly<Record<string, number>>,
 ): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const [id, now] of Object.entries(hp)) {
-    const max = hpMax[id] ?? now;
-    out[id] = now <= 0 ? now : Math.min(max, now + share(max, RULES.dungeon.camp.restBp));
-  }
-  return out;
+  return recover(hp, hpMax, RULES.dungeon.camp.restBp);
+}
+
+/** The team's HP after the way down into the Undercroft: standing creatures recover `catchBreathBp` of max HP (a fallen one stays down). A new record. */
+export function catchBreath(
+  hp: Readonly<Record<string, number>>,
+  hpMax: Readonly<Record<string, number>>,
+): Record<string, number> {
+  return recover(hp, hpMax, RULES.dungeon.undercroft.catchBreathBp);
 }
 
 /** True when a keepsake id is a real one (for a stored run's list). */
@@ -339,34 +401,58 @@ export interface DungeonMapNode {
 export interface DungeonMapView {
   floors: number;
   nodes: DungeonMapNode[];
+  /** An Undercroft level only (absent on the main map): its level, from 1. */
+  level?: number;
+  /** An Undercroft level only: the band's label ("Undercroft · foes are fiercer here"). */
+  label?: string;
+  /** An Undercroft level only: the keeper's floor is cracked, so beating it opens a deeper level. */
+  crack?: boolean;
 }
 
+/** The label of an Undercroft level's map: the first says foes are fiercer, a deeper one fiercer still. */
+export function undercroftLabel(level: number): string {
+  return level <= 1
+    ? 'Undercroft · foes are fiercer here'
+    : `Undercroft ${romanNumeral(level)} · foes are fiercer still`;
+}
+
+const romanNumeral = (n: number): string => ['', 'I', 'II', 'III', 'IV', 'V'][n] ?? String(n);
+
+/** What a carved door is called on the map of a player the Undercroft is not open to. It is not an event: stepping in does nothing. */
+export const QUIET_ROOM = { id: 'quiet-room', name: 'Quiet room' } as const;
+
 /**
- * The map as a player at `depth` sees it: each fight's foe with its HP at that depth (an elite's boost
- * included), the elite flag, the modifier, and a mystery room's name only. At a landmark depth the boss
- * node shows the landmark boss. The map is shown before the run starts, which is safe: it decides what
- * is where, never a fight's dice.
+ * The map as a player at `depth` sees it: each fight's foe with its HP at that depth (an elite's or an
+ * epic fight's boost included), the elite flag, the modifier, and a mystery room's name only. At a
+ * landmark depth the boss node shows the landmark boss. The map is shown before the run starts, which is
+ * safe: it decides what is where, never a fight's dice.
+ *
+ * An Undercroft map (`map.level`) is shown at `undercroftDepth(depth, level)`, labelled, with its crack.
+ * The main map's carved door is shown only to a player whose depth opens the Undercroft; below it the
+ * door is a mystery room named "Quiet room" that plays as nothing at all.
  */
 export function mapView(map: DungeonMap, depth: number): DungeonMapView {
+  const level = map.level ?? 0;
+  const open = depth >= RULES.dungeon.undercroft.fromDepth;
   const nodes = map.nodes.map((node): DungeonMapNode => {
     const view: DungeonMapNode = {
       id: node.id,
       floor: node.floor,
       lane: node.lane,
-      kind: node.kind,
+      kind: node.kind === 'door' && !open ? 'mystery' : node.kind,
       next: [...node.next],
     };
-    const foe = nodeFoe(node, depth);
+    const foe = nodeFoe(node, depth, level);
     if (foe !== undefined) {
-      const elite = node.kind === 'elite';
-      const hp = scaledFoe(foe, depth).hp;
+      const boost = roomBoost(node.kind);
+      const hp = scaledFoe(foe, undercroftDepth(depth, level)).hp;
       view.foe = {
         id: foe.id,
         name: foe.name,
         element: foe.element,
         kind: foe.kind,
-        hpMax: elite ? boosted(hp, RULES.dungeon.elite.hpBp) : hp,
-        elite,
+        hpMax: boost === null ? hp : boosted(hp, boost.hpBp),
+        elite: boost !== null,
       };
     }
     const modifier = node.modifierId === undefined ? undefined : roomModifier(node.modifierId);
@@ -375,9 +461,17 @@ export function mapView(map: DungeonMap, depth: number): DungeonMapView {
     }
     const event = node.eventId === undefined ? undefined : dungeonEvent(node.eventId);
     if (event !== undefined) view.event = { id: event.id, name: event.name };
+    // A carved door below the Undercroft's depth: a mystery room that is only a quiet room.
+    if (node.kind === 'door' && !open) view.event = { id: QUIET_ROOM.id, name: QUIET_ROOM.name };
     return view;
   });
-  return { floors: map.floors, nodes };
+  return {
+    floors: map.floors,
+    nodes,
+    ...(level > 0
+      ? { level, label: undercroftLabel(level), ...(map.crack === true ? { crack: true } : {}) }
+      : {}),
+  };
 }
 
 /** The name of a foe in its room: an elite is "Fierce <name>". */

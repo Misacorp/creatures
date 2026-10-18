@@ -451,6 +451,6 @@ export function dungeonSeed(ctx: ToolCtx) {
     ctx.now,
   );
   ctx.state.delete(devKey.modifiers(day));
-  const map = generateDungeonMap(createSeededRng(`${seed}:map`));
+  const map = generateDungeonMap(createSeededRng(`${seed}:map`), undefined, { doors: true });
   return { day, modifiers: legacyModifierIds(map) };
 }

@@ -324,7 +324,7 @@ describe('the event writer', () => {
       packKept: 999,
     });
     const props = run as { path: string[]; keepsakes: string[] };
-    expect(props.path).toHaveLength(8);
+    expect(props.path).toHaveLength(13); // the longest path of a run is its main map and its Undercroft levels
     expect(props.path.slice(0, 4)).toEqual(['fight', 'mystery', 'fight', 'camp']); // an unknown kind is a fight
     expect(props.keepsakes).toHaveLength(12);
     expect(props.keepsakes.slice(0, 2)).toEqual([keepsake, 'unknown']);
@@ -366,6 +366,41 @@ describe('the event writer', () => {
       event: 'unknown',
       option: 1,
     });
+    // The Undercroft: levels cleared and the rooms a carved door added, as numbers and room kinds only.
+    const deep = propsOf({
+      kind: 'dungeon_run',
+      depth: 9,
+      attempt: 1,
+      roomsCleared: 9,
+      cleared: true,
+      landmark: false,
+      modifiers: [],
+      team: [],
+      gear: 0,
+      path: ['fight', 'door', 'epic', 'boss', 'Misa', ...Array.from({ length: 30 }, () => 'epic')],
+      deepest: 99,
+      marks: ['epic', 'Misa was here', 'camp'],
+    }) as { deepest: number; marks: string[]; path: string[] };
+    expect(deep.deepest).toBe(3);
+    expect(deep.marks).toEqual(['epic', 'fight']); // at most two, and an unknown kind is a fight
+    expect(deep.path).toHaveLength(24);
+    expect(deep.path.slice(0, 5)).toEqual(['fight', 'door', 'epic', 'boss', 'fight']);
+    expect(propsOf({ kind: 'dungeon_descend', level: 2 })).toEqual({ level: 2 });
+    expect(propsOf({ kind: 'dungeon_descend', level: 40 })).toEqual({ level: 3 });
+    expect(propsOf({ kind: 'dungeon_descend', level: -1 })).toEqual({ level: 0 });
+    expect(
+      propsOf({
+        kind: 'dungeon_run',
+        depth: 1,
+        attempt: 1,
+        roomsCleared: 0,
+        cleared: false,
+        landmark: false,
+        modifiers: [],
+        team: [],
+        gear: 0,
+      }),
+    ).not.toHaveProperty('deepest');
     expect(propsOf({ kind: 'dungeon_camp', choice: 'keepsake' })).toEqual({ choice: 'keepsake' });
     expect(propsOf({ kind: 'dungeon_camp', choice: 'nap' as never })).toEqual({ choice: 'rest' });
     // The fullest dungeon_run fits the cap.
@@ -380,7 +415,9 @@ describe('the event writer', () => {
       team: Array.from({ length: 3 }, () => ({ species: 'hearthshell', role: 'support' as const })),
       gear: 3,
       outcome: 'cleared',
-      path: Array.from({ length: 8 }, () => 'mystery'),
+      path: Array.from({ length: 24 }, () => 'mystery'),
+      deepest: 3,
+      marks: ['camp', 'camp'],
       keepsakes: Array.from({ length: 12 }, () => dungeonKeepsakes.at(-1)?.id as string),
       campChoice: 'keepsake',
       elites: 2,

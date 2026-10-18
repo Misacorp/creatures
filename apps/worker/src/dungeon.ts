@@ -38,7 +38,6 @@ import {
   isLandmark,
   keptOnDefeat,
   landmarkBossId,
-  mapNode,
   mapView,
   nodeFoe,
   rollDungeonLoot,
@@ -73,7 +72,12 @@ import { devKey, type DevFlags } from './dev-state';
 import { awardExperience, type ExperienceView } from './creature-exp';
 import { keyTaken, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
-import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
+import {
+  grantDungeonChest,
+  grantDungeonRun,
+  grantDungeonStreak,
+  type GrantDeps,
+} from './gear-grants';
 import { spend, type LedgerStorage } from './ledger';
 import { drawSeed } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
@@ -85,10 +89,13 @@ import {
   type StartBody,
 } from './dungeon-schemas';
 import {
+  SUPPLIES_PER_RUN,
   applyCamp,
+  applyDescend,
   applyEvent,
   applyHome,
   applyMove,
+  homeOutcome,
   slotOf,
   type ActOutcome,
   type PathEnv,
@@ -101,6 +108,7 @@ import {
   keepsakeViews,
   maxHpOfRow,
   parseState,
+  runNode,
   runView,
   type RunMeta,
   type RunState,
@@ -125,9 +133,6 @@ export type {
 
 /** Runs (their events and inputs) are kept this long; the summary and rewards stay. */
 export const RUN_RETENTION_MS = 90 * 86_400_000;
-/** A run's supply (the first fight cleared drops one; it is safe and never in the pack). */
-const SUPPLIES_PER_RUN = 1;
-
 export interface DungeonDeps {
   storage: LedgerStorage;
   now: () => number;
@@ -178,8 +183,10 @@ export interface DungeonRewards {
 export interface DungeonRoomSummary {
   index: number;
   kind: 'foe' | 'boss';
-  /** A fiercer foe (map runs only; absent otherwise). */
+  /** A fiercer foe (map runs only; absent otherwise). An epic fight is one too. */
   elite?: boolean;
+  /** An Undercroft epic fight (also `elite`, so it shows as "Fierce"). */
+  epic?: boolean;
   foe: { id: string; name: string; element: Element; hpMax: number };
   modifier: { id: string; name: string; description: string };
   /** False for the rooms after the one that was lost (three-room runs only: a map run lists the fights it played). */
@@ -224,13 +231,24 @@ export interface DungeonRunSummary {
   rewards: DungeonRewards;
   /** The Boon and Omen the run was fought under (absent: none, and in runs stored before the weather). */
   weather?: { boon: string; omen: string | null };
+  /**
+   * Undercroft levels the run cleared (keepers beaten): 0 for a run that never went down. Absent in
+   * summaries stored before the Undercroft.
+   */
+  deepest?: number;
   /** Map runs only: how it ended (absent while it is open), the node kinds of the path, the pack and the keepsakes. */
   outcome?: DungeonOutcome;
   path?: string[];
   pack?: { found: DungeonPack; kept: DungeonPack };
   keepsakes?: DungeonKeepsakeView[];
   /** Map runs that ended: the run's map at its depth, the rooms visited in order and what each did. Absent in older summaries. */
-  route?: { map: DungeonMapView; path: string[]; history: DungeonStepLog[] };
+  route?: {
+    map: DungeonMapView;
+    path: string[];
+    history: DungeonStepLog[];
+    /** The Undercroft levels the run went down into, in order (absent when it never did). */
+    undercroft?: DungeonMapView[];
+  };
 }
 
 export interface DungeonToday {
@@ -305,8 +323,10 @@ export interface DungeonActResponse {
 export interface DungeonReplayRoom {
   index: number;
   kind: 'foe' | 'boss';
-  /** A fiercer foe (map runs only; absent otherwise). */
+  /** A fiercer foe (map runs only; absent otherwise). An epic fight is one too. */
   elite?: boolean;
+  /** An Undercroft epic fight (also `elite`, so it shows as "Fierce"). */
+  epic?: boolean;
   /** The map node of the fight (map runs only). */
   node?: string;
   /** The run's keepsakes in that fight (map runs only; absent when it held none). */
@@ -465,6 +485,10 @@ const emptyRewards = (): DungeonRewards => ({
 
 const totalOf = (pack: DungeonPack): number => pack.bait + pack.essence + pack.scrap;
 
+/** The run waits where heading home is possible: a camp with its choice pending, or the descent card. */
+const safePoint = (st: RunState): boolean =>
+  st.pending?.kind === 'camp' || st.pending?.kind === 'descend';
+
 export class Dungeon {
   constructor(private readonly deps: DungeonDeps) {}
 
@@ -610,7 +634,7 @@ export class Dungeon {
       }
     }
     if (map === null) {
-      map = generateDungeonMap(createSeededRng(`${seed}:map`));
+      map = generateDungeonMap(createSeededRng(`${seed}:map`), undefined, { doors: true });
       this.sql.exec('UPDATE dungeon_days SET map_json = ? WHERE day = ?', JSON.stringify(map), day);
     }
     const forced = this.forcedModifiers(day);
@@ -828,6 +852,7 @@ export class Dungeon {
       index: result.index,
       kind: spec.foe.kind,
       ...(elite ? { elite: true } : {}),
+      ...(spec.epic === true ? { epic: true } : {}),
       ...(node === null ? {} : { node, row: rowOf(input.team) }),
       ...(spec.keepsakes === undefined || spec.keepsakes.length === 0
         ? {}
@@ -1118,6 +1143,12 @@ export class Dungeon {
       campChoice: null,
       elites: 0,
       history: [],
+      level: 0,
+      under: [],
+      marks: [],
+      bossCleared: false,
+      deepest: 0,
+      banked: null,
     };
     // A map run has no run-level seed (every fight draws its own when the player steps in, stored in
     // `dungeon_steps`): the NOT NULL column holds an empty string.
@@ -1212,6 +1243,9 @@ export class Dungeon {
       userId,
       rng: this.deps.rng,
       analytics: this.deps.analytics,
+      bank: (tag, draw) =>
+        grantDungeonChest(this.gearDeps(), userId, row.day, row.attempt, tag, draw),
+      lockDepth: (depth) => this.lockDepth(userId, depth),
     };
     const act = body.act;
     let outcome: ActOutcome;
@@ -1227,6 +1261,9 @@ export class Dungeon {
         break;
       case 'home':
         outcome = applyHome(work);
+        break;
+      case 'descend':
+        outcome = applyDescend(env, work, row.depth);
         break;
     }
     work.step = st.step + 1;
@@ -1337,9 +1374,11 @@ export class Dungeon {
   // --- Ending a run ---
 
   /**
-   * Runs left open on an earlier game day are closed, for one player: as `home` (the pack comes home
-   * whole) only when the run stands at the camp with its choice pending, where the player could have
-   * pressed Head home, and as a `defeat` (half the pack, rounded up, no depth) anywhere else.
+   * Runs left open on an earlier game day are closed, for one player: with the pack coming home whole
+   * only when the run waits at a safe point, where the player could have pressed Head home (a camp with
+   * its choice pending, or the descent card), as `home` before the main boss was beaten and as `cleared`
+   * after it; as a `defeat` (half the pack, rounded up) anywhere else. Depth won by the main boss is kept
+   * either way (it was locked in when the boss fell).
    * Otherwise quitting the app would be a free safe exit at every step and the camp's push-on choice
    * would mean nothing. The experience and the supply earned so far are paid either way, as for any
    * end. Idempotent: a closed run is no longer open. Call inside a transaction.
@@ -1359,7 +1398,7 @@ export class Dungeon {
         // Its own savepoint: a run that cannot be closed leaves nothing half paid, and never stops the
         // player from looking at today or starting a run (it is of an earlier day).
         this.deps.storage.transactionSync(() =>
-          this.finish(userId, row, st, st.pending?.kind === 'camp' ? 'home' : 'defeat'),
+          this.finish(userId, row, st, safePoint(st) ? homeOutcome(st) : 'defeat'),
         );
       } catch (err) {
         // Only the error's name: a message could carry data. The next look tries again.
@@ -1404,7 +1443,8 @@ export class Dungeon {
     st: RunState,
     outcome: DungeonOutcome,
   ): { summary: DungeonRunSummary; rewards: DungeonRewards } {
-    const cleared = outcome === 'cleared';
+    // The main boss was beaten: the run is cleared even when the Undercroft below it was lost.
+    const cleared = outcome === 'cleared' || st.bossCleared;
     const { day, depth } = row;
 
     // --- Progress: counted when the run ends. A run that went home or was lost counts for the streak too. ---
@@ -1448,8 +1488,8 @@ export class Dungeon {
       const treat = st.treats.includes(id);
       const gained = dungeonExperience(
         st.tally[id] ?? 0,
-        // The full-clear bonus is for the row that beat the boss.
-        cleared && inRow.has(id),
+        // The full-clear bonus is for the row that beat the boss (a state stored before the Undercroft: the row at the end).
+        st.fullClear !== undefined ? st.fullClear.includes(id) : cleared && inRow.has(id),
         treat,
         xpWeather(st.weather),
       );
@@ -1502,33 +1542,33 @@ export class Dungeon {
     firstOfDay: boolean,
   ): DungeonRewards {
     const { day, attempt, depth } = row;
-    const cleared = outcome === 'cleared';
+    const cleared = outcome === 'cleared' || st.bossCleared;
     const landmark = cleared && isLandmark(depth);
+    // A run that went down (or was offered the way down) opened the main boss's chest at that moment:
+    // its gear, shard and supply are paid (`banked`) and its extras are in the pack, so nothing of the
+    // chest is rolled or added again here.
+    const chestPaid = st.banked !== null;
     // The boss chest of a clear: its Essence and scrap came into the pack with the boss's loot (and
     // are kept whole); on top come the full clear's Essence and the landmark's extras. The shard and
     // gear dice are rolled below, with the live gear rng.
     const bait = kept.bait;
     const essence =
       kept.essence +
-      (cleared ? RULES.dungeon.fullClear.essence : 0) +
-      (landmark ? RULES.dungeon.landmark.essence : 0);
-    const scrap = kept.scrap + (landmark ? RULES.dungeon.landmark.scrap : 0);
-    const glimmer = landmark ? RULES.dungeon.landmark.glimmer : 0;
+      (cleared && !chestPaid ? RULES.dungeon.fullClear.essence : 0) +
+      (landmark && !chestPaid ? RULES.dungeon.landmark.essence : 0);
+    const scrap = kept.scrap + (landmark && !chestPaid ? RULES.dungeon.landmark.scrap : 0);
+    const glimmer = landmark && !chestPaid ? RULES.dungeon.landmark.glimmer : 0;
     const bossNode = st.map.nodes.find((n) => n.kind === 'boss');
     const bossElement =
       (bossNode === undefined ? undefined : nodeFoe(bossNode, depth))?.element ?? 'tide';
-    const gearDeps: GrantDeps = {
-      storage: this.deps.storage,
-      now: this.deps.now,
-      rng: this.deps.gearRng,
-      analytics: this.deps.analytics,
-    };
+    const gearDeps = this.gearDeps();
     const grant = grantDungeonRun(
       gearDeps,
       userId,
       day,
       attempt,
       (rng) => {
+        if (chestPaid) return { parts: addParts({ scrap, glimmer }, {}), gear: [], supplies: [] };
         const loot = rollDungeonLoot(
           rng,
           depth,
@@ -1563,16 +1603,42 @@ export class Dungeon {
       ).parts;
       streakPaid = { day: bonus.day, bait: bonus.bait, essence: bonus.essence, parts };
     }
+    // What the boss chests paid on the way (see `chestPaid`) is part of what the run paid.
+    const banked = st.banked;
     return {
       bait,
       essence,
-      parts: grant.parts,
-      gear: grant.gear,
-      converted: grant.converted,
-      supplies: grant.supplies ?? [],
+      parts: addParts(banked?.parts ?? {}, grant.parts),
+      gear: [...(banked?.gear ?? []), ...grant.gear],
+      converted: [...(banked?.converted ?? []), ...grant.converted],
+      supplies: [...(banked?.supplies ?? []), ...(grant.supplies ?? [])],
       landmark,
       streak: streakPaid,
     };
+  }
+
+  /** The deps of the gear grants: the live gear rng, and the same storage and clock. */
+  private gearDeps(): GrantDeps {
+    return {
+      storage: this.deps.storage,
+      now: this.deps.now,
+      rng: this.deps.gearRng,
+      analytics: this.deps.analytics,
+    };
+  }
+
+  /**
+   * Locks the player's depth in at `depth` the moment the main boss falls: it never goes down again, so
+   * a defeat in the Undercroft or a run left open cannot undo it. Creates the progress row if there is
+   * none yet (the run's end fills in the streak and the counts).
+   */
+  private lockDepth(userId: string, depth: number): void {
+    this.sql.exec(
+      `INSERT INTO dungeon_progress (user_id, depth) VALUES (?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET depth = MAX(depth, excluded.depth)`,
+      userId,
+      depth,
+    );
   }
 
   /** The summary of a run: the fights it played, the row at the end, what it paid and how it ended (null while it is open). */
@@ -1600,6 +1666,7 @@ export class Dungeon {
         index: spec.index,
         kind: spec.foe.kind,
         ...(elite ? { elite: true } : {}),
+        ...(spec.epic === true ? { epic: true } : {}),
         foe: {
           id: spec.foe.id,
           name: spec.foe.name,
@@ -1623,7 +1690,8 @@ export class Dungeon {
       attempt: row.attempt,
       depth: row.depth,
       newDepth: args.newDepth,
-      cleared: outcome === 'cleared',
+      cleared: outcome === 'cleared' || st.bossCleared,
+      deepest: st.deepest,
       roomsCleared: st.roomsCleared,
       landmark: isLandmark(row.depth),
       streak: args.streak,
@@ -1642,7 +1710,7 @@ export class Dungeon {
       rewards: args.rewards,
       ...(st.weather === null ? {} : { weather: { boon: st.weather.boon, omen: st.weather.omen } }),
       ...(outcome === null ? {} : { outcome }),
-      path: st.path.map((id) => mapNode(st.map, id)?.kind ?? 'fight'),
+      path: st.path.map((id) => runNode(st, id)?.kind ?? 'fight'),
       pack: { found: { ...args.found }, kept: { ...args.kept } },
       keepsakes: keepsakeViews(st.keepsakes),
       ...(outcome === null
@@ -1652,6 +1720,9 @@ export class Dungeon {
               map: mapView(st.map, row.depth),
               path: [...st.path],
               history: structuredClone(st.history),
+              ...(st.under.length === 0
+                ? {}
+                : { undercroft: st.under.map((m) => mapView(m, row.depth)) }),
             },
           }),
     };
@@ -1687,6 +1758,8 @@ export class Dungeon {
         elites: st.elites,
         packFound: totalOf(found),
         packKept: totalOf(kept),
+        deepest: st.deepest,
+        marks: st.marks,
       },
       userId,
     );

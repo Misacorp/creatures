@@ -37,7 +37,11 @@ export type CampAct = {
   keepsake?: string;
 };
 export type Act =
-  { type: 'move'; node: string } | { type: 'event'; option: 0 | 1 } | CampAct | { type: 'home' };
+  | { type: 'move'; node: string }
+  | { type: 'event'; option: 0 | 1 }
+  | CampAct
+  | { type: 'home' }
+  | { type: 'descend' };
 
 /** How a scripted player walks the map. Everything is optional: the default takes the first room, rests at the camp and goes on. */
 export interface Policy {
@@ -46,6 +50,8 @@ export interface Policy {
   event?: (state: DungeonRunState) => 0 | 1;
   /** What to do at the camp (default: rest). */
   camp?: (state: DungeonRunState) => Act;
+  /** What to do at the descent card (default: head home, which ends the run cleared). */
+  descend?: (state: DungeonRunState) => Act;
   /** Stop (without acting) when this is true: the open state is returned. */
   stopWhen?: (state: DungeonRunState) => boolean;
 }
@@ -101,6 +107,8 @@ export async function playFrom(
       next = { type: 'event', option: policy.event?.(state) ?? 0 };
     } else if (state.pending?.kind === 'camp') {
       next = policy.camp?.(state) ?? { type: 'camp', choice: 'rest' };
+    } else if (state.pending?.kind === 'descend') {
+      next = policy.descend?.(state) ?? { type: 'home' };
     } else {
       const to = policy.pick?.(state) ?? state.reachable[0] ?? '';
       next = { type: 'move', node: to };

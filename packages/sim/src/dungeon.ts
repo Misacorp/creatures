@@ -326,6 +326,8 @@ export function routeScore(
     case 'cache':
       return hurt ? 4.5 : 2;
     case 'camp':
+    case 'door': // the Undercroft's carved door and epic rooms: the simulator does not play them yet
+    case 'epic':
       return 0;
   }
 }

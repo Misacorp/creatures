@@ -659,6 +659,10 @@ describe('the glossary covers the daily dungeon', () => {
     'elite',
     'mystery-room',
     'cache',
+    'undercroft',
+    'carved-door',
+    'cracked-floor',
+    'epic-fight',
     'depth',
     'room-modifiers',
     'room-boss',
@@ -724,6 +728,26 @@ describe('the glossary covers the daily dungeon', () => {
         expect(m.description).toContain(percent(first.bp));
       }
     }
+  });
+
+  it('explains the Undercroft with the numbers the rules have', () => {
+    const u = RULES.dungeon.undercroft;
+    expect(text('undercroft')).toContain(`depth ${String(u.fromDepth)}`);
+    expect(text('undercroft')).toContain(`${String(u.catchBreathBp / 100)}% of max HP`);
+    expect(text('undercroft')).toContain('twice their loot');
+    expect(u.lootMultiplier).toBe(2);
+    expect(text('undercroft')).toContain('Your pack stays at risk');
+    expect(text('undercroft')).toContain('up to five');
+    expect(u.maxFloors).toBe(5);
+    expect(text('carved-door')).toContain(`depth ${String(u.fromDepth)}`);
+    expect(text('carved-door')).toContain(
+      'a fight, a fierce foe, a mystery, a cache, a camp or an epic fight',
+    );
+    expect(text('cracked-floor')).toContain(`at most ${String(u.maxLevels)} Undercrofts`);
+    expect(text('cracked-floor')).toContain(`${String(u.deeperFloors)} floors`);
+    expect(text('epic-fight')).toContain(`${String(u.epic.loot.essence)} Essence`);
+    expect(text('epic-fight')).toContain(`${String(u.epic.loot.scrap)} scrap`);
+    expect(text('dungeon')).toContain(`From depth ${String(u.fromDepth)}, the Undercroft`);
   });
 
   it('says the dungeon order is yours, left to right, then the foe, and never a foe or modifier choice', () => {

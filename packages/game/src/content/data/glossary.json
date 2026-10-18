@@ -1229,7 +1229,7 @@
       "Pick three creatures and their order, then walk a map one room at a time. A camp sits halfway.",
       "The map is the same for the whole server. HP carries over. At the camp, push on or head home.",
       "Home keeps your whole pack. A defeat keeps half of it, rounded up. Experience and the supply are always safe.",
-      "One run per day. The day resets at 13:37 in the server's time zone. A lost first run can be retried once."
+      "One run per day. The day resets at 13:37. A lost first run can be retried once. From depth 8, the Undercroft waits."
     ],
     "section": "dungeon"
   },
@@ -1318,6 +1318,50 @@
     "title": "Cache",
     "short": "A free chest. Nothing guards it.",
     "lines": ["A cache puts 1 Bait and 1 scrap in your pack."],
+    "section": "dungeon"
+  },
+  {
+    "id": "undercroft",
+    "title": "Undercroft",
+    "short": "A deeper level below the room boss. Optional, and harder.",
+    "lines": [
+      "Beat the boss at depth 8 or more and you may descend. Your creatures catch their breath (20% of max HP).",
+      "Its foes are fiercer, fights put twice their loot in your pack, and a keeper waits at the bottom with a better chest.",
+      "Your pack stays at risk all the way down. You can head home only before descending, or at an Undercroft camp.",
+      "More landmarks passed means more floors, up to five."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "carved-door",
+    "title": "Carved door",
+    "short": "A door in the wall. Stepping through adds a room below.",
+    "lines": [
+      "From depth 8 a map may hold one. It has no fight.",
+      "Stepping through adds one room to the Undercroft: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight.",
+      "You find out which only when you descend. It costs nothing, and it only counts if you go down."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "cracked-floor",
+    "title": "Cracked floor",
+    "short": "The keeper's floor is cracked. Another descent waits.",
+    "lines": [
+      "Now and then an Undercroft keeper stands on a cracked floor.",
+      "Beat it and you may go deeper still: foes are fiercer again, with 2 floors and a new keeper and chest.",
+      "A run goes down at most 3 Undercrofts."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "epic-fight",
+    "title": "Epic fight",
+    "short": "One mighty foe, at boss strength.",
+    "lines": [
+      "Found in the Undercroft, where a carved door can add one.",
+      "Beat it for 1 Essence, 2 scrap and a keepsake."
+    ],
     "section": "dungeon"
   },
   {

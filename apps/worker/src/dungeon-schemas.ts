@@ -29,8 +29,8 @@ export type RunBody = v.InferOutput<typeof RunBodySchema>;
 export const StartBodySchema = RunBodySchema;
 export type StartBody = RunBody;
 
-/** A node of the map: `f<floor>l<lane>`. Whether it is on this run's map and reachable is the server's check. */
-const NodeIdSchema = v.pipe(v.string(), v.regex(/^f\d{1,2}l\d$/));
+/** A node of the map: `f<floor>l<lane>`, or `u<level>f<floor>l<lane>` in an Undercroft. Whether it is on this run's map and reachable is the server's check. */
+const NodeIdSchema = v.pipe(v.string(), v.regex(/^(?:u\d)?f\d{1,2}l\d$/));
 /** A content id (a keepsake). Whether it is one of the camp's offers is the server's check. */
 const ContentIdSchema = v.pipe(
   v.string(),
@@ -57,7 +57,10 @@ export const ActSchema = v.variant('type', [
     /** Keepsake: one of the two offers. */
     keepsake: v.optional(ContentIdSchema),
   }),
+  /** Heads home from the camp, or from the descent card (the run ends and keeps the whole pack). */
   v.strictObject({ type: v.literal('home') }),
+  /** Goes down into the Undercroft, when the descent card is waiting. */
+  v.strictObject({ type: v.literal('descend') }),
 ]);
 export type Act = v.InferOutput<typeof ActSchema>;
 

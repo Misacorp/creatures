@@ -1,6 +1,6 @@
 # The daily dungeon: foes, room bosses, modifiers, the map, keepsakes and mystery rooms
 
-Status: 2026-10-18. Covers the foes, the room bosses and the room modifiers of the daily dungeon, and the map redesign (the map, the camp, the pack, keepsakes and mystery rooms), as in-world things.
+Status: 2026-10-18. Covers the foes, the room bosses and the room modifiers of the daily dungeon, and the map redesign (the map, the camp, the pack, keepsakes, mystery rooms and the Undercroft), as in-world things.
 
 Read `README.md` for the tags. The dungeon has no look brief in the shipped data, so every visual line here is `(compendium detail, not shipped)`.
 
@@ -165,6 +165,8 @@ New with the map redesign. Read `docs/design/dungeon-paths.md` for the rules; th
 | **Cache**   | A basket, a chest or a sack that somebody left in a quiet room. Nothing guards it. The dungeon is generous that way. `(design)` |
 | **Camp**    | See below. `(design)`                                                                                                           |
 | **Boss**    | The room boss, at the top. At a landmark depth it is the landmark boss, as before. `(design)`                                   |
+| **Door**    | A carved door, from depth 8. No fight: stepping through adds a room to the Undercroft. See "The Undercroft" below. `(design)`   |
+| **Epic**    | The Undercroft's one-foe room at boss strength. See "The Undercroft" below. `(design)`                                          |
 
 An elite is not a new creature. It is a foe "having a day": the same name with "Fierce" before it, never scary, only larger and louder `(inferred)`.
 
@@ -180,6 +182,25 @@ An elite is not a new creature. It is a foe "having a day": the same name with "
 - The **pack** is the team's shared satchel: the Bait, Essence and scrap they pick up on the way `(design)`.
 - Heading home from the camp keeps all of it. A defeat keeps half: the knocked-out team is carried home and half of the satchel comes along, because a good pack has a strap that holds `(compendium detail, not shipped)`.
 - Experience and the day's supply are never in the satchel. They are in the creatures: what they learned and what they were handed `(design, in-world reading is compendium detail)`.
+
+### The Undercroft
+
+A deeper, optional level below the room boss, for explorers who have passed the first landmark (depth 8 and on). New 2026-10-18. Read `docs/design/dungeon-paths.md` ("The Undercroft") for the rules; this section is the feel. `(content: glossary.json "undercroft", "carved-door", "cracked-floor", "epic-fight"; design)`
+
+- **What it is.** The room boss's hall has a stair at the back, and the stair goes down. Nobody built the Undercroft; the dungeon simply has more of itself underneath, older and a little grumpier. `(compendium detail, not shipped)`
+- **It is harder, and it says so.** The banner reads "Undercroft · foes are fiercer here". The foes are the same creatures as upstairs, only more awake `(inferred)`. A deeper level (below a cracked floor) says "fiercer still".
+- **Catching breath.** On the way down the team stops on the stair for a moment, and a little of their strength comes back. The stair is the one place in the dungeon where nobody is ever hurried `(compendium detail, not shipped)`.
+- **The pack at risk.** Everything the team is carrying comes down with them. The satchel strap still holds, but only half of it, if the team is carried home `(design, in-world reading is compendium detail)`.
+- **Floors.** Floors of two rooms, side by side, with no way to cross from one to the other until a room that is on its own. More landmarks passed means a longer stair `(design)`.
+- **The keeper.** The Undercroft's keeper is a room boss, the same kind that guards the hall above, with the same charged move it has at a landmark. It is not "the real boss". It is the one who was left in charge `(inferred)`. Its chest is better than the hall's.
+
+**Carved door.** A door with no handle, carved with a pattern that nobody can read twice the same way. It stands in the upper halls only (depth 8 and on), and it is never guarded. Stepping through it fights nothing. It asks the Undercroft for one more room, and the Undercroft decides which: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight, never a boss. The player is told only that list, and finds out on the stair `(design; the door's patterns are compendium detail, not shipped)`.
+
+**Epic fight.** A single room with one foe in a very large mood: the same kind of foe as in a normal room, at boss strength. Shown as "Fierce <name>". It leaves an Essence, two scrap and a keepsake `(design)`.
+
+**Camp (Undercroft).** The same small fire as upstairs, set on a landing of the stair. The only place down there where the team can go home `(design)`.
+
+**Cracked floor.** Now and then the keeper's hall has a crack across its floor, with cold air coming up through it. It means there is a further level down, with more of the same and a new keeper `(design)`. A run goes down at most three levels, which is as deep as the stair goes `(compendium detail, not shipped)`.
 
 ---
 

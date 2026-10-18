@@ -859,6 +859,59 @@ export const RULES = {
      * 2): generous on purpose, so an early defeat costs almost nothing and a late one costs more.
      */
     defeatKeepBp: 5_000,
+    /**
+     * The Undercroft (docs/design/dungeon-paths.md): a deeper, optional level below the room boss, from
+     * depth `fromDepth` (the first landmark has been passed). Its foes are scaled as if the depth were
+     * `depthBonus` higher for every level. It has `baseFloors` floors of two rooms, plus `perLandmark`
+     * for every landmark passed after the first, at most `maxFloors`, then the keeper (a room boss with
+     * its landmark signature). A carved door on the main map (`doorBp` of maps, on one of `doorFloors`)
+     * adds one floor of one room of a random kind but a boss (`markOdds`, basis points that add up to
+     * 10000) when the player steps through, at most `maxMarks` a run; the player is told only what it could be. A level's keeper
+     * has a cracked floor with chance `crackBp`, which opens another level (a deeper one has
+     * `deeperFloors` floors), at most `maxLevels` in a run. Fights there put `lootMultiplier` times their
+     * loot in the pack; standing creatures recover `catchBreathBp` of max HP on the way down. All
+     * starting values for the simulator to tune.
+     */
+    undercroft: {
+      fromDepth: 8,
+      catchBreathBp: 2_000,
+      depthBonus: 3,
+      baseFloors: 2,
+      perLandmark: 1,
+      maxFloors: 5,
+      deeperFloors: 2,
+      maxMarks: 2,
+      lootMultiplier: 2,
+      crackBp: 1_500,
+      maxLevels: 3,
+      /** A level's map: the same weights as the main map's rooms (`map.kinds`), with these caps per level. */
+      map: { maxElites: 2, maxCaches: 1, maxMysteries: 2 },
+      /** The epic fight: one normal foe at boss strength (basis points of its depth-scaled numbers) and what it pays into the pack. */
+      epic: { hpBp: 16_000, atkBp: 13_000, loot: { bait: 0, essence: 1, scrap: 2 } },
+      /**
+       * The keeper's chest: Essence and scrap into the pack, a `gearBp` chance of a piece with
+       * `rareBonusBp` and `epicBonusBp` added to the dungeon's gear odds and `itemLevelBonus` item levels more.
+       */
+      chest: {
+        essence: 1,
+        scrap: 2,
+        gearBp: 4_000,
+        rareBonusBp: 1_500,
+        epicBonusBp: 500,
+        itemLevelBonus: 2,
+      },
+      /** The carved door: on the main map, floors it can stand on, chance a map has one, and what stepping through adds. */
+      doorFloors: [4, 5],
+      doorBp: 3_500,
+      markOdds: {
+        fight: 3_000,
+        elite: 1_500,
+        mystery: 1_500,
+        cache: 1_000,
+        camp: 1_500,
+        epic: 1_500,
+      },
+    },
   },
   /**
    * Expeditions v2 (docs/design/expeditions-v2.md): trip lengths, explorer ranks, familiarity, slots,

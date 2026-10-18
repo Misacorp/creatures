@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "d015d89b-1dd1-4f62-9137-4c556cab045a",
+    "id": "c8e91733-233b-4812-9867-7a0544e9d1ef",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -204,20 +204,11 @@
           "id": "f4l2",
           "floor": 4,
           "lane": 2,
-          "kind": "fight",
+          "kind": "mystery",
           "next": ["f5l1", "f5l2"],
-          "foe": {
-            "id": "moss-lurker",
-            "name": "Moss Lurker",
-            "element": "grove",
-            "kind": "foe",
-            "hpMax": 72000,
-            "elite": false
-          },
-          "modifier": {
-            "id": "overgrown",
-            "name": "Overgrown",
-            "description": "Grove creatures hit 20% harder."
+          "event": {
+            "id": "quiet-room",
+            "name": "Quiet room"
           }
         },
         {
@@ -293,13 +284,15 @@
         }
       ]
     },
+    "level": 0,
+    "undercroft": null,
     "at": "f0l0",
     "path": ["f0l0"],
     "reachable": [],
     "pending": null,
     "team": [
       {
-        "id": "3cef3179-b362-4d52-93b0-84cc7f744bab",
+        "id": "ab02df6f-393c-4f27-8a6a-7b5b87908782",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
@@ -310,7 +303,7 @@
         "treat": false
       },
       {
-        "id": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
+        "id": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
         "name": "Ashmole",
         "speciesId": "ashmole",
         "element": "ember",
@@ -321,7 +314,7 @@
         "treat": false
       },
       {
-        "id": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+        "id": "04c7b3be-4978-4cd3-911f-422b5d03f843",
         "name": "Stormray",
         "speciesId": "stormray",
         "element": "spark",
@@ -365,7 +358,7 @@
     "row": [
       {
         "position": 0,
-        "id": "3cef3179-b362-4d52-93b0-84cc7f744bab",
+        "id": "ab02df6f-393c-4f27-8a6a-7b5b87908782",
         "name": "Mistnewt",
         "species": "mistnewt",
         "element": "tide",
@@ -374,7 +367,7 @@
       },
       {
         "position": 1,
-        "id": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
+        "id": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
         "name": "Ashmole",
         "species": "ashmole",
         "element": "ember",
@@ -383,7 +376,7 @@
       },
       {
         "position": 2,
-        "id": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+        "id": "04c7b3be-4978-4cd3-911f-422b5d03f843",
         "name": "Stormray",
         "species": "stormray",
         "element": "spark",
@@ -405,14 +398,14 @@
     "cleared": false,
     "rounds": 3,
     "hpStart": {
-      "3cef3179-b362-4d52-93b0-84cc7f744bab": 160,
-      "e61a16a9-9217-44c4-b618-5afbae4cd99a": 128,
-      "a7313181-8399-42e0-9fc1-786219ba7cf9": 120
+      "ab02df6f-393c-4f27-8a6a-7b5b87908782": 160,
+      "5604fa80-427e-4e6f-8cf2-342af7efad0b": 128,
+      "04c7b3be-4978-4cd3-911f-422b5d03f843": 120
     },
     "hpMax": {
-      "3cef3179-b362-4d52-93b0-84cc7f744bab": 160,
-      "e61a16a9-9217-44c4-b618-5afbae4cd99a": 128,
-      "a7313181-8399-42e0-9fc1-786219ba7cf9": 120
+      "ab02df6f-393c-4f27-8a6a-7b5b87908782": 160,
+      "5604fa80-427e-4e6f-8cf2-342af7efad0b": 128,
+      "04c7b3be-4978-4cd3-911f-422b5d03f843": 120
     },
     "events": [
       {
@@ -424,26 +417,26 @@
       {
         "t": "support_buff",
         "round": 1,
-        "supporter": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
-        "target": "3cef3179-b362-4d52-93b0-84cc7f744bab",
+        "supporter": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
+        "target": "ab02df6f-393c-4f27-8a6a-7b5b87908782",
         "bp": 2500
       },
       {
         "t": "support_buff",
         "round": 1,
-        "supporter": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
-        "target": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+        "supporter": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
+        "target": "04c7b3be-4978-4cd3-911f-422b5d03f843",
         "bp": 2500
       },
       {
         "t": "turn",
         "round": 1,
-        "creature": "3cef3179-b362-4d52-93b0-84cc7f744bab"
+        "creature": "ab02df6f-393c-4f27-8a6a-7b5b87908782"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "3cef3179-b362-4d52-93b0-84cc7f744bab",
+        "creature": "ab02df6f-393c-4f27-8a6a-7b5b87908782",
         "damage": 30,
         "matchupBp": 7500,
         "bonusBp": 2500,
@@ -453,7 +446,7 @@
       {
         "t": "mark",
         "round": 1,
-        "creature": "3cef3179-b362-4d52-93b0-84cc7f744bab",
+        "creature": "ab02df6f-393c-4f27-8a6a-7b5b87908782",
         "player": "p1",
         "element": "tide",
         "replaced": null
@@ -461,12 +454,12 @@
       {
         "t": "turn",
         "round": 1,
-        "creature": "e61a16a9-9217-44c4-b618-5afbae4cd99a"
+        "creature": "5604fa80-427e-4e6f-8cf2-342af7efad0b"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
+        "creature": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
         "damage": 24,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -476,12 +469,12 @@
       {
         "t": "turn",
         "round": 1,
-        "creature": "a7313181-8399-42e0-9fc1-786219ba7cf9"
+        "creature": "04c7b3be-4978-4cd3-911f-422b5d03f843"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+        "creature": "04c7b3be-4978-4cd3-911f-422b5d03f843",
         "damage": 306,
         "matchupBp": 10000,
         "bonusBp": 2500,
@@ -492,9 +485,9 @@
         "t": "reaction",
         "round": 1,
         "reaction": "overload",
-        "setupCreature": "3cef3179-b362-4d52-93b0-84cc7f744bab",
+        "setupCreature": "ab02df6f-393c-4f27-8a6a-7b5b87908782",
         "setupPlayer": "p1",
-        "payoff": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+        "payoff": "04c7b3be-4978-4cd3-911f-422b5d03f843",
         "bonus": 244,
         "reflected": false
       },
@@ -502,13 +495,13 @@
         "t": "boss_hit",
         "round": 1,
         "source": "attack",
-        "target": "3cef3179-b362-4d52-93b0-84cc7f744bab",
+        "target": "ab02df6f-393c-4f27-8a6a-7b5b87908782",
         "damage": 2475
       },
       {
         "t": "knockout",
         "round": 1,
-        "creature": "3cef3179-b362-4d52-93b0-84cc7f744bab"
+        "creature": "ab02df6f-393c-4f27-8a6a-7b5b87908782"
       },
       {
         "t": "round_end",
@@ -524,19 +517,19 @@
       {
         "t": "support_buff",
         "round": 2,
-        "supporter": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
-        "target": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+        "supporter": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
+        "target": "04c7b3be-4978-4cd3-911f-422b5d03f843",
         "bp": 2500
       },
       {
         "t": "turn",
         "round": 2,
-        "creature": "e61a16a9-9217-44c4-b618-5afbae4cd99a"
+        "creature": "5604fa80-427e-4e6f-8cf2-342af7efad0b"
       },
       {
         "t": "hit",
         "round": 2,
-        "creature": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
+        "creature": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
         "damage": 24,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -546,7 +539,7 @@
       {
         "t": "mark",
         "round": 2,
-        "creature": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
+        "creature": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
         "player": "p1",
         "element": "ember",
         "replaced": null
@@ -554,12 +547,12 @@
       {
         "t": "turn",
         "round": 2,
-        "creature": "a7313181-8399-42e0-9fc1-786219ba7cf9"
+        "creature": "04c7b3be-4978-4cd3-911f-422b5d03f843"
       },
       {
         "t": "hit",
         "round": 2,
-        "creature": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+        "creature": "04c7b3be-4978-4cd3-911f-422b5d03f843",
         "damage": 62,
         "matchupBp": 10000,
         "bonusBp": 2500,
@@ -570,13 +563,13 @@
         "t": "boss_hit",
         "round": 2,
         "source": "attack",
-        "target": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
+        "target": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
         "damage": 3300
       },
       {
         "t": "knockout",
         "round": 2,
-        "creature": "e61a16a9-9217-44c4-b618-5afbae4cd99a"
+        "creature": "5604fa80-427e-4e6f-8cf2-342af7efad0b"
       },
       {
         "t": "round_end",
@@ -592,12 +585,12 @@
       {
         "t": "turn",
         "round": 3,
-        "creature": "a7313181-8399-42e0-9fc1-786219ba7cf9"
+        "creature": "04c7b3be-4978-4cd3-911f-422b5d03f843"
       },
       {
         "t": "hit",
         "round": 3,
-        "creature": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+        "creature": "04c7b3be-4978-4cd3-911f-422b5d03f843",
         "damage": 50,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -609,19 +602,19 @@
         "round": 3,
         "gimmick": "zap-dive",
         "op": "strike_highest_atk",
-        "targets": ["a7313181-8399-42e0-9fc1-786219ba7cf9"]
+        "targets": ["04c7b3be-4978-4cd3-911f-422b5d03f843"]
       },
       {
         "t": "boss_hit",
         "round": 3,
         "source": "gimmick",
-        "target": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+        "target": "04c7b3be-4978-4cd3-911f-422b5d03f843",
         "damage": 2805
       },
       {
         "t": "knockout",
         "round": 3,
-        "creature": "a7313181-8399-42e0-9fc1-786219ba7cf9"
+        "creature": "04c7b3be-4978-4cd3-911f-422b5d03f843"
       },
       {
         "t": "round_end",
@@ -632,9 +625,9 @@
     "names": {
       "boss": "Static Bat",
       "creatures": {
-        "3cef3179-b362-4d52-93b0-84cc7f744bab": "Mistnewt",
-        "e61a16a9-9217-44c4-b618-5afbae4cd99a": "Ashmole",
-        "a7313181-8399-42e0-9fc1-786219ba7cf9": "Stormray"
+        "ab02df6f-393c-4f27-8a6a-7b5b87908782": "Mistnewt",
+        "5604fa80-427e-4e6f-8cf2-342af7efad0b": "Ashmole",
+        "04c7b3be-4978-4cd3-911f-422b5d03f843": "Stormray"
       },
       "players": {
         "p1": "Player 4"
@@ -695,19 +688,20 @@
     }
   },
   "summary": {
-    "id": "d015d89b-1dd1-4f62-9137-4c556cab045a",
+    "id": "c8e91733-233b-4812-9867-7a0544e9d1ef",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
     "newDepth": 1,
     "cleared": false,
+    "deepest": 0,
     "roomsCleared": 0,
     "landmark": false,
     "streak": 1,
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "3cef3179-b362-4d52-93b0-84cc7f744bab",
+        "id": "ab02df6f-393c-4f27-8a6a-7b5b87908782",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
@@ -717,7 +711,7 @@
         "hpEnd": 0
       },
       {
-        "id": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
+        "id": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
         "name": "Ashmole",
         "speciesId": "ashmole",
         "element": "ember",
@@ -727,7 +721,7 @@
         "hpEnd": 0
       },
       {
-        "id": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+        "id": "04c7b3be-4978-4cd3-911f-422b5d03f843",
         "name": "Stormray",
         "speciesId": "stormray",
         "element": "spark",
@@ -769,7 +763,7 @@
       "streak": null,
       "experience": [
         {
-          "creatureId": "3cef3179-b362-4d52-93b0-84cc7f744bab",
+          "creatureId": "ab02df6f-393c-4f27-8a6a-7b5b87908782",
           "gained": 0,
           "treat": false,
           "levelBefore": 1,
@@ -780,7 +774,7 @@
           "gold": false
         },
         {
-          "creatureId": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
+          "creatureId": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
           "gained": 0,
           "treat": false,
           "levelBefore": 1,
@@ -791,7 +785,7 @@
           "gold": false
         },
         {
-          "creatureId": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+          "creatureId": "04c7b3be-4978-4cd3-911f-422b5d03f843",
           "gained": 0,
           "treat": false,
           "levelBefore": 1,
@@ -1015,20 +1009,11 @@
             "id": "f4l2",
             "floor": 4,
             "lane": 2,
-            "kind": "fight",
+            "kind": "mystery",
             "next": ["f5l1", "f5l2"],
-            "foe": {
-              "id": "moss-lurker",
-              "name": "Moss Lurker",
-              "element": "grove",
-              "kind": "foe",
-              "hpMax": 72000,
-              "elite": false
-            },
-            "modifier": {
-              "id": "overgrown",
-              "name": "Overgrown",
-              "description": "Grove creatures hit 20% harder."
+            "event": {
+              "id": "quiet-room",
+              "name": "Quiet room"
             }
           },
           {
@@ -1157,19 +1142,20 @@
     "canRun": true,
     "blocked": null,
     "last": {
-      "id": "d015d89b-1dd1-4f62-9137-4c556cab045a",
+      "id": "c8e91733-233b-4812-9867-7a0544e9d1ef",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 1,
       "newDepth": 1,
       "cleared": false,
+      "deepest": 0,
       "roomsCleared": 0,
       "landmark": false,
       "streak": 1,
       "createdAt": 1799755200000,
       "team": [
         {
-          "id": "3cef3179-b362-4d52-93b0-84cc7f744bab",
+          "id": "ab02df6f-393c-4f27-8a6a-7b5b87908782",
           "name": "Mistnewt",
           "speciesId": "mistnewt",
           "element": "tide",
@@ -1179,7 +1165,7 @@
           "hpEnd": 0
         },
         {
-          "id": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
+          "id": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
           "name": "Ashmole",
           "speciesId": "ashmole",
           "element": "ember",
@@ -1189,7 +1175,7 @@
           "hpEnd": 0
         },
         {
-          "id": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+          "id": "04c7b3be-4978-4cd3-911f-422b5d03f843",
           "name": "Stormray",
           "speciesId": "stormray",
           "element": "spark",
@@ -1231,7 +1217,7 @@
         "streak": null,
         "experience": [
           {
-            "creatureId": "3cef3179-b362-4d52-93b0-84cc7f744bab",
+            "creatureId": "ab02df6f-393c-4f27-8a6a-7b5b87908782",
             "gained": 0,
             "treat": false,
             "levelBefore": 1,
@@ -1242,7 +1228,7 @@
             "gold": false
           },
           {
-            "creatureId": "e61a16a9-9217-44c4-b618-5afbae4cd99a",
+            "creatureId": "5604fa80-427e-4e6f-8cf2-342af7efad0b",
             "gained": 0,
             "treat": false,
             "levelBefore": 1,
@@ -1253,7 +1239,7 @@
             "gold": false
           },
           {
-            "creatureId": "a7313181-8399-42e0-9fc1-786219ba7cf9",
+            "creatureId": "04c7b3be-4978-4cd3-911f-422b5d03f843",
             "gained": 0,
             "treat": false,
             "levelBefore": 1,
@@ -1477,20 +1463,11 @@
               "id": "f4l2",
               "floor": 4,
               "lane": 2,
-              "kind": "fight",
+              "kind": "mystery",
               "next": ["f5l1", "f5l2"],
-              "foe": {
-                "id": "moss-lurker",
-                "name": "Moss Lurker",
-                "element": "grove",
-                "kind": "foe",
-                "hpMax": 72000,
-                "elite": false
-              },
-              "modifier": {
-                "id": "overgrown",
-                "name": "Overgrown",
-                "description": "Grove creatures hit 20% harder."
+              "event": {
+                "id": "quiet-room",
+                "name": "Quiet room"
               }
             },
             {
@@ -1586,9 +1563,9 @@
       }
     },
     "lastTeam": [
-      "3cef3179-b362-4d52-93b0-84cc7f744bab",
-      "e61a16a9-9217-44c4-b618-5afbae4cd99a",
-      "a7313181-8399-42e0-9fc1-786219ba7cf9"
+      "ab02df6f-393c-4f27-8a6a-7b5b87908782",
+      "5604fa80-427e-4e6f-8cf2-342af7efad0b",
+      "04c7b3be-4978-4cd3-911f-422b5d03f843"
     ],
     "draftTeam": null,
     "map": {
@@ -1787,20 +1764,11 @@
           "id": "f4l2",
           "floor": 4,
           "lane": 2,
-          "kind": "fight",
+          "kind": "mystery",
           "next": ["f5l1", "f5l2"],
-          "foe": {
-            "id": "moss-lurker",
-            "name": "Moss Lurker",
-            "element": "grove",
-            "kind": "foe",
-            "hpMax": 72000,
-            "elite": false
-          },
-          "modifier": {
-            "id": "overgrown",
-            "name": "Overgrown",
-            "description": "Grove creatures hit 20% harder."
+          "event": {
+            "id": "quiet-room",
+            "name": "Quiet room"
           }
         },
         {

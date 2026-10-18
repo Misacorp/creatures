@@ -422,3 +422,57 @@ export function rollDungeonLoot(
   for (let i = 0; i < payout.supplies; i++) supplies.push(rollDungeonSupply(rng, depth));
   return { parts, gear, supplies };
 }
+
+// --- The Undercroft (docs/design/dungeon-paths.md) ---
+
+/** True when a run at `depth` may go down into the Undercroft (`RULES.dungeon.undercroft.fromDepth`). */
+export function undercroftOpen(depth: number): boolean {
+  return Number.isInteger(depth) && depth >= RULES.dungeon.undercroft.fromDepth;
+}
+
+/**
+ * The floors of a run's first Undercroft before the keeper (marks not counted): `baseFloors`, plus
+ * `perLandmark` for every landmark passed after the first, at most `maxFloors`. A deeper level (cracked
+ * floor) has `deeperFloors`. The landmarks passed by a run at `depth` are those below it.
+ */
+export function undercroftBaseFloors(depth: number, level: number): number {
+  const u = RULES.dungeon.undercroft;
+  if (level > 1) return u.deeperFloors;
+  const passed = Math.floor((Math.max(1, Math.floor(depth)) - 1) / RULES.dungeon.landmarkEvery);
+  return Math.min(u.maxFloors, u.baseFloors + u.perLandmark * Math.max(0, passed - 1));
+}
+
+/** The depth an Undercroft level's foes are scaled at: the run's depth, plus `depthBonus` for each level. */
+export function undercroftDepth(depth: number, level: number): number {
+  return depth + RULES.dungeon.undercroft.depthBonus * Math.max(0, level);
+}
+
+/** Gear odds (basis points) of the keeper's chest: the dungeon's own at this depth, plus the chest's bonuses on rare and epic. */
+export function undercroftGearOddsBp(depth: number): {
+  rare: number;
+  epic: number;
+  common: number;
+} {
+  const base = dungeonGearOddsBp(depth, false);
+  const c = RULES.dungeon.undercroft.chest;
+  const rare = base.rare + c.rareBonusBp;
+  const epic = base.epic + c.epicBonusBp;
+  return { rare, epic, common: Math.max(0, 10_000 - rare - epic) };
+}
+
+/**
+ * The gear dice of a keeper's chest: a `gearBp` chance of one piece (rarity by `undercroftGearOddsBp`,
+ * item level `itemLevelBonus` above the dungeon's), the keeper's element as its tag. Drawn in a fixed
+ * order from `rng` (the worker's live gear source).
+ */
+export function rollUndercroftChest(rng: Rng, depth: number, element: Element): GearItem[] {
+  const c = RULES.dungeon.undercroft.chest;
+  if (!chance(rng, c.gearBp, 10_000)) return [];
+  const odds = undercroftGearOddsBp(depth);
+  const rarity = pickWeighted<{ rarity: 'common' | 'rare' | 'epic'; weight: number }>(rng, [
+    { rarity: 'common', weight: odds.common },
+    { rarity: 'rare', weight: odds.rare },
+    { rarity: 'epic', weight: odds.epic },
+  ]).rarity;
+  return [rollDungeonItem(rng, rarity, depth, false, element, c.itemLevelBonus)];
+}

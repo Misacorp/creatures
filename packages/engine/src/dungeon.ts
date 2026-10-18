@@ -181,8 +181,8 @@ export function buildRoomInput(
   if (
     bossRoom &&
     signature !== undefined &&
-    run.depth !== undefined &&
-    isLandmark(run.depth) &&
+    // At a landmark depth, or in the Undercroft keeper's room (`room.signature`, whatever the depth).
+    (room.signature === true || (run.depth !== undefined && isLandmark(run.depth))) &&
     !gimmicks.some((g) => g.id === signature.id)
   ) {
     gimmicks.push(signature);

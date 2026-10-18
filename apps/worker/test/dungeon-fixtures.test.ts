@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest';
 import actCamp from '../../activity/src/fixtures/dungeon-act-camp.json';
 import actCampPending from '../../activity/src/fixtures/dungeon-act-camp-pending.json';
 import actCleared from '../../activity/src/fixtures/dungeon-act-cleared.json';
+import actDescend from '../../activity/src/fixtures/dungeon-act-descend.json';
+import actDescendPending from '../../activity/src/fixtures/dungeon-act-descend-pending.json';
+import actDoor from '../../activity/src/fixtures/dungeon-act-door.json';
+import actKeeper from '../../activity/src/fixtures/dungeon-act-keeper.json';
 import actDefeat from '../../activity/src/fixtures/dungeon-act-defeat.json';
 import actEvent from '../../activity/src/fixtures/dungeon-act-event.json';
 import actEventPending from '../../activity/src/fixtures/dungeon-act-event-pending.json';
@@ -100,6 +104,10 @@ const NEW_RESPONSES = {
   'dungeon-act-defeat': actDefeat,
   'dungeon-act-cleared': actCleared,
   'dungeon-replay-path': replayPath,
+  'dungeon-act-door': actDoor,
+  'dungeon-act-descend-pending': actDescendPending,
+  'dungeon-act-descend': actDescend,
+  'dungeon-act-keeper': actKeeper,
 } as const;
 
 describe('the dungeon fixtures match what the server sends', () => {
@@ -254,6 +262,67 @@ describe('the dungeon fixtures match what the server sends', () => {
     for (const fixture of Object.values(NEW_RESPONSES)) {
       expect(JSON.stringify(fixture)).not.toMatch(/seed/i);
     }
+    // The Undercroft: a carved door adds a room without saying which, the boss offers the way down,
+    // going down draws a labelled level, and the keeper's clear ends the run with the summary.
+    expect(actDoor.state.pending).toBeNull();
+    expect(actDoor.state.history.at(-1)).toMatchObject({
+      kind: 'door',
+      result: 'door',
+      added: true,
+    });
+    expect(Object.keys(actDoor.state.history.at(-1) ?? {}).sort()).toEqual(
+      ['added', 'kind', 'node', 'result'].sort(),
+    );
+    expect(actDoor.state.undercroft).toEqual({ maps: [], marks: 1 });
+    expect(actDoor.state.level).toBe(0);
+    expect(actDoor.state.map.nodes.some((n) => n.kind === 'door')).toBe(true);
+    const card = actDescendPending.state.pending;
+    expect(card).toMatchObject({
+      kind: 'descend',
+      level: 1,
+      depthBonus: RULES.dungeon.undercroft.depthBonus,
+      catchBreathBp: RULES.dungeon.undercroft.catchBreathBp,
+    });
+    expect(card?.kind === 'descend' ? card.floors : 0).toBe(2 + actDoor.state.undercroft.marks + 1);
+    expect(card?.kind === 'descend' ? card.banked.gear.length : 0).toBeGreaterThan(0);
+    expect(actDescendPending.state).toMatchObject({
+      status: 'active',
+      outcome: null,
+      reachable: [],
+    });
+    expect(actDescendPending.room).toMatchObject({ cleared: true });
+    expect(actDescendPending.state.history.at(-1)).toMatchObject({
+      kind: 'descend',
+      result: 'pending',
+      level: 1,
+    });
+    expect(
+      actDescendPending.state.history.some((h) => h.kind === 'boss' && h.result === 'chest'),
+    ).toBe(true);
+    expect(actDescend.state).toMatchObject({ level: 1, pending: null, at: null, status: 'active' });
+    expect(actDescend.state.undercroft?.maps).toHaveLength(1);
+    const lowerMap = actDescend.state.undercroft?.maps[0];
+    expect(lowerMap?.level).toBe(1);
+    expect(lowerMap?.label).toContain('Undercroft');
+    expect(lowerMap?.nodes.every((n) => n.id.startsWith('u1'))).toBe(true);
+    expect(actDescend.state.reachable.every((id) => id.startsWith('u1'))).toBe(true);
+    expect(actDescend.state.history.at(-1)).toMatchObject({
+      kind: 'descend',
+      result: 'descend',
+      level: 1,
+    });
+    expect(actKeeper.state).toMatchObject({ status: 'done', outcome: 'cleared', level: 1 });
+    expect(actKeeper.summary).toMatchObject({
+      outcome: 'cleared',
+      cleared: true,
+      deepest: 1,
+      newDepth: 15,
+    });
+    expect(actKeeper.summary.route?.undercroft).toHaveLength(1);
+    expect(actKeeper.summary.rewards.gear.length).toBeGreaterThan(0);
+    expect(actKeeper.room?.node?.startsWith('u1')).toBe(true);
+    // The run's own four creatures keep their ids across the fixtures.
+    expect(actKeeper.state.team.map((t) => t.id)).toEqual(dungeonStart.state.team.map((t) => t.id));
     // The errors the client has to write text for.
     const codes = new Set(codes0(dungeonErrors));
     for (const code of [
@@ -401,6 +470,10 @@ describe('the request bodies the client sends', () => {
       'dungeon-act-home',
       'dungeon-act-defeat',
       'dungeon-act-cleared',
+      'dungeon-act-door',
+      'dungeon-act-descend-pending',
+      'dungeon-act-descend',
+      'dungeon-act-keeper',
     ];
     for (const name of acts) {
       const entry = bodies[name];

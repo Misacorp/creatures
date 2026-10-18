@@ -343,7 +343,8 @@ describe('mapView', () => {
     expect(view.nodes.map((n) => n.id)).toEqual(map.nodes.map((n) => n.id));
     for (const n of view.nodes) {
       const raw = mapNode(map, n.id) as MapNode;
-      expect(n.kind).toBe(raw.kind);
+      // Depth 4 is below the Undercroft: a carved door shows as a quiet room there.
+      expect(n.kind).toBe(raw.kind === 'door' ? 'mystery' : raw.kind);
       expect(n.next).toEqual(raw.next);
       if (raw.kind === 'fight' || raw.kind === 'elite' || raw.kind === 'boss') {
         const foe = dungeonContent.foes.find((f) => f.id === raw.foeId);
@@ -365,6 +366,9 @@ describe('mapView', () => {
       if (raw.kind === 'mystery') {
         const e = dungeonEvent(raw.eventId as string);
         expect(n.event).toEqual({ id: e?.id, name: e?.name });
+      } else if (raw.kind === 'door') {
+        // Below the Undercroft's depth the door is a mystery room that holds nothing.
+        expect(n.event).toEqual({ id: 'quiet-room', name: 'Quiet room' });
       } else {
         expect(n.event).toBeUndefined();
       }

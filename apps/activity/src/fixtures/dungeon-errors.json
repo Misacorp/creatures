@@ -109,7 +109,7 @@
     "status": 400,
     "body": {
       "error": "invalid_act",
-      "reason": "you can only head home from the camp"
+      "reason": "you can only head home from a camp or the descent"
     }
   },
   {

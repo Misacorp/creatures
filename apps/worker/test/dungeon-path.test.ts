@@ -352,7 +352,11 @@ describe('the day’s map in GET /api/dungeon/today', () => {
         expect(day).toHaveLength(1);
         const map: unknown = JSON.parse(day[0]?.map_json ?? 'null');
         expect(dungeonMapValid(map)).toBe(true);
-        expect(map).toEqual(generateDungeonMap(createSeededRng(`${day[0]?.modifier_seed}:map`)));
+        expect(map).toEqual(
+          generateDungeonMap(createSeededRng(`${day[0]?.modifier_seed}:map`), undefined, {
+            doors: true,
+          }),
+        );
         // The seed is never sent, and the old clients' modifiers come from the map.
         expect(JSON.stringify(first)).not.toContain(day[0]?.modifier_seed ?? 'x');
         expect(first.modifiers.map((m) => m.id)).toEqual(legacyIds(first.map));
@@ -962,7 +966,7 @@ function seedWithRoom(kind: string): string {
   for (let i = 0; i < 400; i++) {
     const seed = `find-${kind}-${String(i)}`;
     const day = drawSeed(createSeededRng(seed));
-    const map = generateDungeonMap(createSeededRng(`${day}:map`));
+    const map = generateDungeonMap(createSeededRng(`${day}:map`), undefined, { doors: true });
     if (map.nodes.some((n) => n.kind === kind)) return seed;
   }
   throw new Error(`no map with a ${kind}`);
@@ -1958,6 +1962,7 @@ describe('the run’s state', () => {
             'keepsakes',
             'landmark',
             'lastEvent',
+            'level',
             'map',
             'outcome',
             'pack',
@@ -1969,6 +1974,7 @@ describe('the run’s state', () => {
             'step',
             'supply',
             'team',
+            'undercroft',
           ].sort(),
         );
         expect(Object.keys(state.team[0] ?? {}).sort()).toEqual(

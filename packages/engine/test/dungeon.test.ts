@@ -627,6 +627,25 @@ describe('the boss room: enrage and the landmark signature', () => {
     expect(ids(1, withOwn)).toEqual(['own']);
   });
 
+  it("gives the Undercroft keeper's room its signature whatever the depth, and only when asked", () => {
+    const keeper: DungeonRoomSpec = { ...room(2, bossFoe(), 100, 1), signature: true };
+    const ids = (r: DungeonRoomSpec, depth: number | undefined) =>
+      buildRoomInput(
+        { ...oneRoom(bossFoe()), ...(depth === undefined ? {} : { depth }) },
+        r,
+        null,
+      ).boss.gimmicks.map((g) => g.id);
+    for (const depth of [undefined, 1, 8, 11, RULES.dungeon.landmarkEvery]) {
+      expect(ids(keeper, depth), String(depth)).toEqual(['sig']);
+    }
+    // Once, not twice, at a landmark depth.
+    expect(ids(keeper, RULES.dungeon.landmarkEvery)).toEqual(['sig']);
+    // A room without the flag is as before; a normal foe never gains one, flag or not.
+    expect(ids(room(2, bossFoe(), 100, 1), 8)).toEqual([]);
+    const normal: DungeonRoomSpec = { ...room(0, foe({ signature }), 100, 1), signature: true };
+    expect(buildRoomInput(oneRoom(foe()), normal, null).boss.gimmicks).toEqual([]);
+  });
+
   it('gives the signature to a room boss only: a normal foe never gains one', () => {
     const normal = room(0, foe({ signature }), 100, 1);
     expect(

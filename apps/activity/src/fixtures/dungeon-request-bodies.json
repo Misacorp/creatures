@@ -87,7 +87,7 @@
     "path": "/api/dungeon/act",
     "method": "POST",
     "body": {
-      "runId": "38b7feb6-87da-4416-adfd-3279b9fc6488",
+      "runId": "43915d1e-e24b-4663-a2d3-2cc9bfd62abe",
       "step": 0,
       "idempotencyKey": "dungeon-00000002-test",
       "act": {
@@ -100,7 +100,7 @@
     "path": "/api/dungeon/act",
     "method": "POST",
     "body": {
-      "runId": "38b7feb6-87da-4416-adfd-3279b9fc6488",
+      "runId": "43915d1e-e24b-4663-a2d3-2cc9bfd62abe",
       "step": 5,
       "idempotencyKey": "dungeon-00000007-test",
       "act": {
@@ -113,7 +113,7 @@
     "path": "/api/dungeon/act",
     "method": "POST",
     "body": {
-      "runId": "38b7feb6-87da-4416-adfd-3279b9fc6488",
+      "runId": "43915d1e-e24b-4663-a2d3-2cc9bfd62abe",
       "step": 6,
       "idempotencyKey": "dungeon-00000008-test",
       "act": {
@@ -133,7 +133,7 @@
     "path": "/api/dungeon/act",
     "method": "POST",
     "body": {
-      "runId": "38b7feb6-87da-4416-adfd-3279b9fc6488",
+      "runId": "43915d1e-e24b-4663-a2d3-2cc9bfd62abe",
       "step": 9,
       "idempotencyKey": "dungeon-00000011-test",
       "act": {
@@ -143,7 +143,7 @@
     }
   },
   "dungeon-replay-path": {
-    "path": "/api/dungeon/run/38b7feb6-87da-4416-adfd-3279b9fc6488",
+    "path": "/api/dungeon/run/43915d1e-e24b-4663-a2d3-2cc9bfd62abe",
     "method": "GET",
     "body": null
   },
@@ -151,7 +151,7 @@
     "path": "/api/dungeon/act",
     "method": "POST",
     "body": {
-      "runId": "e2b18fe3-8f99-4147-b7e7-c7c54058ddbb",
+      "runId": "9b3cc5b2-6657-40b1-aef1-72949472e657",
       "step": 1,
       "idempotencyKey": "dungeon-00000014-test",
       "act": {
@@ -164,7 +164,7 @@
     "path": "/api/dungeon/act",
     "method": "POST",
     "body": {
-      "runId": "e2b18fe3-8f99-4147-b7e7-c7c54058ddbb",
+      "runId": "9b3cc5b2-6657-40b1-aef1-72949472e657",
       "step": 2,
       "idempotencyKey": "dungeon-00000015-test",
       "act": {
@@ -177,7 +177,7 @@
     "path": "/api/dungeon/act",
     "method": "POST",
     "body": {
-      "runId": "ca0d62f9-0920-4edb-a88d-3e753cd66721",
+      "runId": "e6f64d42-512c-486f-93f0-cb4a18907c01",
       "step": 6,
       "idempotencyKey": "dungeon-00000023-test",
       "act": {
@@ -189,12 +189,63 @@
     "path": "/api/dungeon/act",
     "method": "POST",
     "body": {
-      "runId": "d015d89b-1dd1-4f62-9137-4c556cab045a",
+      "runId": "c8e91733-233b-4812-9867-7a0544e9d1ef",
       "step": 0,
       "idempotencyKey": "dungeon-00000025-test",
       "act": {
         "type": "move",
         "node": "f0l0"
+      }
+    }
+  },
+  "dungeon-act-door": {
+    "path": "/api/dungeon/act",
+    "method": "POST",
+    "body": {
+      "runId": "d404d0ba-3a6d-49be-952b-92a920ba37d5",
+      "step": 8,
+      "idempotencyKey": "dungeon-00000050-test",
+      "act": {
+        "type": "move",
+        "node": "f5l1"
+      }
+    }
+  },
+  "dungeon-act-descend-pending": {
+    "path": "/api/dungeon/act",
+    "method": "POST",
+    "body": {
+      "runId": "d404d0ba-3a6d-49be-952b-92a920ba37d5",
+      "step": 9,
+      "idempotencyKey": "dungeon-00000051-test",
+      "act": {
+        "type": "move",
+        "node": "f6l1"
+      }
+    }
+  },
+  "dungeon-act-descend": {
+    "path": "/api/dungeon/act",
+    "method": "POST",
+    "body": {
+      "runId": "d404d0ba-3a6d-49be-952b-92a920ba37d5",
+      "step": 10,
+      "idempotencyKey": "dungeon-00000052-test",
+      "act": {
+        "type": "descend"
+      }
+    }
+  },
+  "dungeon-act-keeper": {
+    "path": "/api/dungeon/act",
+    "method": "POST",
+    "body": {
+      "runId": "d404d0ba-3a6d-49be-952b-92a920ba37d5",
+      "step": 14,
+      "idempotencyKey": "dungeon-00000056-test",
+      "act": {
+        "type": "move",
+        "node": "u1f3l1"
       }
     }
   }

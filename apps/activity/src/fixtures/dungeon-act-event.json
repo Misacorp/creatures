@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "e2b18fe3-8f99-4147-b7e7-c7c54058ddbb",
+    "id": "9b3cc5b2-6657-40b1-aef1-72949472e657",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -204,20 +204,11 @@
           "id": "f4l2",
           "floor": 4,
           "lane": 2,
-          "kind": "fight",
+          "kind": "mystery",
           "next": ["f5l1", "f5l2"],
-          "foe": {
-            "id": "moss-lurker",
-            "name": "Moss Lurker",
-            "element": "grove",
-            "kind": "foe",
-            "hpMax": 48,
-            "elite": false
-          },
-          "modifier": {
-            "id": "overgrown",
-            "name": "Overgrown",
-            "description": "Grove creatures hit 20% harder."
+          "event": {
+            "id": "quiet-room",
+            "name": "Quiet room"
           }
         },
         {
@@ -293,13 +284,15 @@
         }
       ]
     },
+    "level": 0,
+    "undercroft": null,
     "at": "f1l0",
     "path": ["f0l0", "f1l0"],
     "reachable": ["f2l0", "f2l1"],
     "pending": null,
     "team": [
       {
-        "id": "1c1acc50-94df-42e5-a452-9908f48ecc34",
+        "id": "1df10c17-5080-4278-8d4d-b763edceda85",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -310,7 +303,7 @@
         "treat": false
       },
       {
-        "id": "b5b220c7-a02d-4011-b311-a8c664ac02c6",
+        "id": "67478d17-71aa-4ec1-b695-018388339151",
         "name": "Zipmouse",
         "speciesId": "zipmouse",
         "element": "spark",
@@ -321,7 +314,7 @@
         "treat": false
       },
       {
-        "id": "47f86d3b-ba21-42f9-83a4-a7bc4210ae24",
+        "id": "feee58f2-b7a7-4185-9870-394c4ddf787e",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
