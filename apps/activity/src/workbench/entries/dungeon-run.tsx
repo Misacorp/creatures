@@ -29,6 +29,7 @@ import {
   undercroftState,
   undercroftSummary,
 } from '../../dungeon-undercroft-sample';
+import type { ExperienceView } from '../../experience';
 import type { DungeonRunState, DungeonRunSummary } from '../../dungeon-types';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
@@ -277,6 +278,117 @@ const dungeonDescend: Entry = {
   render: (p) => <DescendDemo p={p} />,
 };
 
+const EXPERIENCE_MODES = [
+  'a level up with a treat',
+  'Hearty Breakfast and a treat',
+  'waiting and top level',
+  'as the server sent it',
+] as const;
+
+/** What the run paid the team, made up for the workbench: one case of each thing the team section can show. */
+function experienceFor(
+  team: DungeonRunSummary['team'],
+  mode: string,
+): ExperienceView[] | undefined {
+  const base = { treat: false, treatTimes: null, dayEffects: [], gold: false, waiting: false };
+  const at = (i: number): string => team[i]?.id ?? `missing-${String(i)}`;
+  switch (mode) {
+    case 'a level up with a treat':
+      return [
+        {
+          ...base,
+          creatureId: at(0),
+          gained: 260,
+          treat: true,
+          treatTimes: 2,
+          levelBefore: 7,
+          level: 8,
+          exp: 90,
+          needed: 330,
+        },
+        {
+          ...base,
+          creatureId: at(1),
+          gained: 130,
+          levelBefore: 7,
+          level: 7,
+          exp: 190,
+          needed: 330,
+        },
+        { ...base, creatureId: at(2), gained: 130, levelBefore: 3, level: 3, exp: 60, needed: 140 },
+      ];
+    case 'Hearty Breakfast and a treat':
+      return [
+        {
+          ...base,
+          creatureId: at(0),
+          gained: 810,
+          treat: true,
+          treatTimes: 3,
+          dayEffects: [{ name: 'Hearty Breakfast', bp: 2500 }],
+          levelBefore: 7,
+          level: 9,
+          exp: 120,
+          needed: 350,
+        },
+        {
+          ...base,
+          creatureId: at(1),
+          gained: 160,
+          dayEffects: [{ name: 'Hearty Breakfast', bp: 2500 }],
+          levelBefore: 7,
+          level: 7,
+          exp: 200,
+          needed: 330,
+        },
+        {
+          ...base,
+          creatureId: at(2),
+          gained: 100,
+          dayEffects: [{ name: 'Cold Snap', bp: -2000 }],
+          levelBefore: 3,
+          level: 3,
+          exp: 10,
+          needed: 140,
+        },
+      ];
+    case 'waiting and top level':
+      return [
+        {
+          ...base,
+          creatureId: at(0),
+          gained: 200,
+          levelBefore: 10,
+          level: 10,
+          exp: 380,
+          needed: 380,
+          waiting: true,
+        },
+        {
+          ...base,
+          creatureId: at(1),
+          gained: 200,
+          levelBefore: 29,
+          level: 30,
+          exp: 0,
+          needed: null,
+          gold: true,
+        },
+        {
+          ...base,
+          creatureId: at(2),
+          gained: 90,
+          levelBefore: 30,
+          level: 30,
+          exp: 0,
+          needed: null,
+        },
+      ];
+    default:
+      return undefined;
+  }
+}
+
 function ResultsDemo({ p }: { p: Props }) {
   const outcome = str(p, 'outcome');
   const noRewards = outcome === 'no rewards (lost in the first room)';
@@ -318,17 +430,20 @@ function ResultsDemo({ p }: { p: Props }) {
           return old as unknown as typeof base;
         })()
       : base;
-  const shown =
+  const routed =
     bool(p, 'route') || run.route === undefined
       ? run
       : (() => {
           return omitKey(run, 'route');
         })();
+  const paid = experienceFor(routed.team, str(p, 'experience'));
+  const shown: typeof routed =
+    paid === undefined ? routed : { ...routed, rewards: { ...routed.rewards, experience: paid } };
   const view = str(p, 'view');
   return (
     <DungeonResults
       run={shown}
-      initialView={view === 'map' ? 'map' : 'fights'}
+      initialView={view === 'rooms' ? 'rooms' : 'map'}
       today={sampleToday({ canRun: false, last: shown })}
       offset={0}
       canRetry={bool(p, 'canRetry')}
@@ -345,56 +460,95 @@ const dungeonResults: Entry = {
   file: 'apps/activity/src/DungeonResults.tsx',
   group: 'Loot & reveals',
   description:
-    'The end of a dungeon run. A path run says how it ended in its headline (cleared with the new depth, home safe with the whole pack, or defeated with half of it), the pack on one line (what was lost after a defeat is struck through), the keepsakes it held as chips, the route as the fights it played or as the map (a Fights / Map switch; a tap on a room tells what happened there) and the team; an older three-room run keeps its old headline. Rewards, experience, the streak and "Watch again" are the same for both. A run that paid nothing says "No rewards this time." with a small sad creature and a hint. The Fights / Map switch keeps a gap between its two buttons.',
+    'The end of a dungeon run. A short title (green when cleared or home safe, red when defeated) and one line that sums the run up; the rewards as badges only; the route as the map (opens first) or as Rooms, every room the run went through in order with a Cleared or Defeated banner and, for a camp, a mystery room, a cache or a door, a short line of what happened; the team, each creature with its level (a green +1 when it levelled up), its experience bar with the part just gained drawn brighter, and a line saying what multiplied the experience ("Treat gave 2x experience"); then the keepsakes the run held. An older three-room run keeps a plain line about its rooms. A run that paid nothing says "No rewards this time." with a small sad creature and a hint.',
   controls: {
     outcome: { kind: 'select', options: OUTCOMES },
+    experience: { kind: 'select', options: EXPERIENCE_MODES },
     canRetry: { kind: 'toggle' },
     capture: { kind: 'toggle' },
     route: { kind: 'toggle' },
-    view: { kind: 'select', options: ['fights', 'map'] },
+    view: { kind: 'select', options: ['map', 'rooms'] },
   },
-  defaults: { outcome: 'cleared', canRetry: false, capture: false, route: true, view: 'fights' },
+  defaults: {
+    outcome: 'cleared',
+    experience: 'a level up with a treat',
+    canRetry: false,
+    capture: false,
+    route: true,
+    view: 'map',
+  },
   presets: [
     { name: 'Cleared', props: {} },
     { name: 'Home safe', props: { outcome: 'home' } },
-    { name: 'Defeated (half the pack)', props: { outcome: 'defeat', canRetry: true } },
-    { name: 'Cleared, as the server sent it', props: { capture: true } },
-    { name: 'Home safe, as the server sent it', props: { outcome: 'home', capture: true } },
     {
-      name: 'Defeated, as the server sent it',
-      props: { outcome: 'defeat', capture: true, canRetry: true },
-    },
-    { name: 'Cleared, the route as a map', props: { view: 'map' } },
-    {
-      name: 'Cleared an Undercroft floor (as the server sent it)',
-      props: { outcome: 'cleared an Undercroft floor' },
-    },
-    {
-      name: 'Cleared an Undercroft floor, the route as a map',
-      props: { outcome: 'cleared an Undercroft floor', view: 'map' },
+      name: "Defeated on the day's floor (half the pack)",
+      props: { outcome: 'defeat', canRetry: true },
     },
     {
       name: 'Lost in the Undercroft (half the pack)',
       props: { outcome: 'lost in the Undercroft' },
     },
     {
-      name: 'Lost in the Undercroft, the route as a map',
-      props: { outcome: 'lost in the Undercroft', view: 'map' },
+      name: 'Cleared an Undercroft floor (as the server sent it)',
+      props: { outcome: 'cleared an Undercroft floor' },
+    },
+    {
+      name: 'No rewards: an empty pack, a small sad creature and a hint',
+      props: { outcome: 'no rewards (lost in the first room)', canRetry: true },
+    },
+    { name: 'Cleared, the rooms', props: { view: 'rooms' } },
+    { name: 'Home safe, the rooms', props: { outcome: 'home', view: 'rooms' } },
+    {
+      name: 'Defeated, the rooms (the last one Defeated)',
+      props: { outcome: 'defeat', view: 'rooms' },
+    },
+    {
+      name: 'Lost in the Undercroft, the rooms',
+      props: { outcome: 'lost in the Undercroft', view: 'rooms' },
+    },
+    {
+      name: 'Cleared an Undercroft floor, the rooms',
+      props: { outcome: 'cleared an Undercroft floor', view: 'rooms' },
+    },
+    {
+      name: 'A creature that levelled up with a treat',
+      props: { experience: 'a level up with a treat' },
+    },
+    {
+      name: 'Hearty Breakfast (3x treat) and Cold Snap',
+      props: { experience: 'Hearty Breakfast and a treat' },
+    },
+    {
+      name: 'Waiting at a level, a Gold Ribbon and the top level',
+      props: { experience: 'waiting and top level' },
+    },
+    {
+      name: 'Cleared, as the server sent it',
+      props: { capture: true, experience: 'as the server sent it' },
+    },
+    {
+      name: 'Home safe, as the server sent it',
+      props: { outcome: 'home', capture: true, experience: 'as the server sent it' },
+    },
+    {
+      name: 'Defeated, as the server sent it',
+      props: {
+        outcome: 'defeat',
+        capture: true,
+        canRetry: true,
+        experience: 'as the server sent it',
+      },
     },
     {
       name: 'Defeated, the route as a map (a red cross on the lost room)',
       props: { outcome: 'defeat', view: 'map' },
     },
-    {
-      name: 'No rewards: a small sad creature and a hint',
-      props: { outcome: 'no rewards (lost in the first room)', canRetry: true },
-    },
-    { name: 'A run with no route (no Fights / Map switch)', props: { route: false } },
+    { name: 'A run with no route (no Map / Rooms switch)', props: { route: false } },
     { name: 'An older three-room run', props: { outcome: 'an older run (no outcome)' } },
   ],
   render: (p) => (
     <ResultsDemo
-      key={`${str(p, 'outcome')}-${String(bool(p, 'capture'))}-${String(bool(p, 'route'))}-${str(p, 'view')}`}
+      key={`${str(p, 'outcome')}-${String(bool(p, 'capture'))}-${String(bool(p, 'route'))}-${str(p, 'view')}-${str(p, 'experience')}`}
       p={p}
     />
   ),

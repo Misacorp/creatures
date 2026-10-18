@@ -6,7 +6,7 @@
  */
 import { dungeonContent, roomModifier, type Gimmick } from '@creatures/game';
 import { groupSupplies } from './claim-view';
-import { experienceText } from './experience';
+import { experienceBar, type ExperienceBarView } from './experience';
 import { partsEntries, partsText } from './gear-view';
 import type { GrantLoot } from './gear-types';
 import type {
@@ -20,7 +20,7 @@ import type {
   DungeonTeamMember,
 } from './dungeon-types';
 import { nodeLevel } from './dungeon-map';
-import { fierceName, floorLine, nodeFloor, resultHeadline, undercroftName } from './dungeon-text';
+import { fierceName, floorLine, nodeFloor, undercroftName } from './dungeon-text';
 import type { ReplayRowEntry } from './raid-api';
 import { gimmickGlyphKey, gimmickShort } from './raid-text';
 import type { Speed } from './replay';
@@ -221,13 +221,13 @@ export function roomOutcome(room: Pick<DungeonRoomSummary, 'played' | 'cleared'>
 
 // --- The end report: the room strip and the team breakdown ---
 
-/** How a room reads in the strip: cleared, failed (DEFEAT), or never reached (locked). */
+/** How a room reads in the strip: cleared, failed (DEFEATED), or never reached (locked). */
 type RoomState = 'cleared' | 'defeat' | 'locked';
 
-/** The word across a room's panel: CLEARED, DEFEAT, or a muted "Not reached". */
+/** The word across a room's panel: CLEARED, DEFEATED, or a muted "Not reached". */
 export const ROOM_BANNER: Readonly<Record<RoomState, string>> = {
   cleared: 'CLEARED',
-  defeat: 'DEFEAT',
+  defeat: 'DEFEATED',
   locked: 'LOCKED',
 };
 
@@ -342,8 +342,8 @@ export interface TeamEntry {
   hp: string;
   knockedOut: boolean;
   spoken: string;
-  /** What the run paid this creature in experience ("+180 experience, level 4 to 5"), or null (a run from before experience). */
-  experience: string | null;
+  /** The experience bar and lines of what the run paid this creature, or null (a run from before experience). */
+  exp: ExperienceBarView | null;
 }
 
 /** The team in its fighting order (left to right) with its HP lines. No role or element chips here. */
@@ -362,7 +362,7 @@ export function teamBreakdown(run: Pick<DungeonRunSummary, 'team' | 'rewards'>):
       hp,
       knockedOut,
       spoken: `${m.name}, level ${String(m.level)}: ${hp}${knockedOut ? ', knocked out' : ''}.`,
-      experience: paid === undefined ? null : experienceText(paid),
+      exp: paid === undefined ? null : experienceBar(paid),
     };
   });
 }
@@ -498,18 +498,6 @@ export function streakBonusText(rewards: DungeonRewards): string | null {
   const parts = partsEntries(bonus.parts).length === 0 ? '' : partsText(bonus.parts);
   if (parts !== '') items.push(parts);
   return `Day ${String(bonus.day)} streak bonus: ${items.length === 0 ? 'nothing this time' : items.join(', ')}`;
-}
-
-/** The whole run in one sentence for a screen reader, and for the summary line on the card. */
-export function runSentence(run: DungeonRunSummary): string {
-  if (run.outcome !== undefined) {
-    const fights = run.rooms.filter((r) => r.played).length;
-    return `${resultHeadline(run)}. ${String(run.roomsCleared)} / ${String(fights)} fights cleared at depth ${String(run.depth)}.`;
-  }
-  const rooms = `${String(run.roomsCleared)} / ${String(run.rooms.length)} rooms cleared`;
-  return run.cleared
-    ? `Cleared at depth ${String(run.depth)}: ${rooms}.`
-    : `Not cleared at depth ${String(run.depth)}: ${rooms}.`;
 }
 
 /**

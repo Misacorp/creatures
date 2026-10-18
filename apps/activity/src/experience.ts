@@ -24,6 +24,19 @@ export interface ExperienceView {
   waiting: boolean;
   /** The Gold Ribbon came with this gain. */
   gold: boolean;
+  /**
+   * A dungeon run's award only (absent on a trip's, a job's and older runs): what the treat multiplied the
+   * experience by (null: no treat), and the day's Boons and Omens that changed it, by name, with the change in
+   * basis points (negative: less).
+   */
+  treatTimes?: number | null;
+  dayEffects?: DayEffect[];
+}
+
+/** A Boon or Omen that changed the experience of a day. */
+export interface DayEffect {
+  name: string;
+  bp: number;
 }
 
 /** A ribbon a creature waits for, with its price and whether the player can pay it now. */
@@ -37,9 +50,18 @@ export interface RibbonView {
   ready: boolean;
 }
 
+function isDayEffect(value: unknown): value is DayEffect {
+  return isRecord(value) && typeof value['name'] === 'string' && isInt(value['bp']);
+}
+
 export function isExperienceView(value: unknown): value is ExperienceView {
   return (
     isRecord(value) &&
+    (value['treatTimes'] === undefined ||
+      value['treatTimes'] === null ||
+      isInt(value['treatTimes'])) &&
+    (value['dayEffects'] === undefined ||
+      (Array.isArray(value['dayEffects']) && value['dayEffects'].every(isDayEffect))) &&
     typeof value['creatureId'] === 'string' &&
     isInt(value['gained']) &&
     typeof value['treat'] === 'boolean' &&
@@ -125,4 +147,66 @@ export function experienceText(view: ExperienceView): string {
   if (view.gold) parts.push('Gold Ribbon');
   else if (view.waiting) parts.push('waiting at this level');
   return parts.join(', ');
+}
+
+/** "25%" or "2.5%": basis points as a percentage, without the sign. */
+function pctText(bp: number): string {
+  return `${String(Math.abs(bp) / 100)}%`;
+}
+
+/**
+ * The one short line under a creature's experience bar saying what changed the amount, from the source and
+ * the factor the server sent: "Treat gave 2x experience", "Treat gave 3x experience and Hearty Breakfast gave
+ * +25%", "Cold Snap gave -20% experience". Null when nothing did (or the run is from before the server said).
+ */
+export function experienceBoostLine(view: ExperienceView): string | null {
+  const parts: string[] = [];
+  if (view.treat) parts.push(`Treat gave ${String(view.treatTimes ?? 2)}x experience`);
+  for (const d of view.dayEffects ?? []) {
+    if (d.bp !== 0) parts.push(`${d.name} gave ${d.bp > 0 ? '+' : '-'}${pctText(d.bp)}`);
+  }
+  if (parts.length === 0) return null;
+  if (!view.treat) parts[parts.length - 1] += ' experience';
+  const last = parts.pop() ?? '';
+  return parts.length === 0 ? last : `${parts.join(', ')} and ${last}`;
+}
+
+/** One creature's experience bar on the results, from what the run paid it. */
+export interface ExperienceBarView {
+  /** The level it has now, and how many levels this run added ("+1" shows in green). */
+  level: number;
+  levelsGained: number;
+  /** The bar: experience into the level, what the level needs, the words over it and the part this run added. */
+  value: number;
+  max: number;
+  text: string;
+  gained: number;
+  /** "+130 experience". */
+  gainedLine: string;
+  /** What multiplied it ("Treat gave 2x experience"), or null. */
+  boostLine: string | null;
+  /** "Waiting at this level" while a ribbon or an evolution is needed, "Gold Ribbon!" at the top; otherwise null. */
+  note: string | null;
+}
+
+/**
+ * The bar for a creature after a run: where it stands in its level now, with the part this run added drawn
+ * apart. A level reached in this run fills the new level's bar from the start; the top level shows a full
+ * bar ("Top level"). The server decides every number.
+ */
+export function experienceBar(view: ExperienceView): ExperienceBarView {
+  const levelsGained = Math.max(0, view.level - view.levelBefore);
+  const top = view.needed === null;
+  const max = view.needed ?? 1;
+  return {
+    level: view.level,
+    levelsGained,
+    value: top ? 1 : view.exp,
+    max,
+    text: top ? 'Top level' : `${String(view.exp)} / ${String(max)} XP`,
+    gained: top ? 0 : levelsGained > 0 ? view.exp : Math.min(view.gained, view.exp),
+    gainedLine: `+${String(view.gained)} experience`,
+    boostLine: experienceBoostLine(view),
+    note: view.gold ? 'Gold Ribbon!' : view.waiting ? 'Waiting at this level' : null,
+  };
 }

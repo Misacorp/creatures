@@ -177,18 +177,21 @@ const xpBar: Entry = {
     text: { kind: 'text' },
     startCap: { kind: 'text', maxLength: 12 },
     endCap: { kind: 'text', maxLength: 12 },
+    gained: { kind: 'number', min: 0, max: 1000 },
   },
-  defaults: { value: 120, max: 200, text: '', startCap: 'Rank 2', endCap: 'Rank 3' },
+  defaults: { value: 120, max: 200, text: '', startCap: 'Rank 2', endCap: 'Rank 3', gained: 0 },
   presets: [
     { name: 'Empty', props: { value: 0 } },
     { name: 'Half', props: { value: 100 } },
     { name: 'Nearly full', props: { value: 199 } },
     { name: 'Top rank', props: { value: 200, text: 'Top rank', endCap: '' } },
+    { name: 'Just gained 50', props: { value: 120, gained: 50 } },
   ],
   render: (p) => (
     <XpBar
       value={num(p, 'value')}
       max={num(p, 'max')}
+      gained={num(p, 'gained')}
       label="Explorer XP"
       text={str(p, 'text') === '' ? undefined : str(p, 'text')}
       startCap={str(p, 'startCap') === '' ? undefined : str(p, 'startCap')}

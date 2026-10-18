@@ -141,58 +141,88 @@ export function fierceName(name: string, elite: boolean | undefined): string {
   return elite === true && !name.startsWith('Fierce ') ? `Fierce ${name}` : name;
 }
 
+/** What the title of the results is coloured: green for a success (cleared, or home safe), red for a defeat. */
+export type ResultTone = 'good' | 'bad';
+
+/** The fields of a run summary that the results' title and summary line read. */
+type ResultRun = Pick<DungeonRunSummary, 'cleared' | 'roomsCleared' | 'rooms'> &
+  Partial<Pick<DungeonRunSummary, 'outcome' | 'depth' | 'newDepth' | 'pack' | 'deepest' | 'route'>>;
+
 /**
- * The headline of a finished run. A path run says how it ended: cleared (one depth deeper, and how many
- * Undercroft floors it cleared), home (the whole pack kept) or defeated (half the pack kept; below the
- * floor boss it is "Lost in the Undercroft", since the boss fell and the depth went up). A run from before
- * the map has no outcome, and keeps the old words about its three rooms.
+ * The title of a finished run, a few words: "Cleared!", "Home safe", "Defeated", or "Lost in the
+ * Undercroft" (the floor boss fell first, then the run was lost below it). A run from before the map has
+ * no outcome: it is "Cleared!" or "Defeated".
  */
-export function resultHeadline(
-  run: Pick<DungeonRunSummary, 'cleared' | 'roomsCleared' | 'rooms'> &
-    Partial<Pick<DungeonRunSummary, 'outcome' | 'depth' | 'newDepth' | 'pack' | 'deepest'>>,
-): string {
+export function resultTitle(run: ResultRun): string {
+  if (run.outcome === 'home') return 'Home safe';
+  if (run.outcome === 'defeat' && run.cleared) return 'Lost in the Undercroft';
+  return run.outcome === 'cleared' || (run.outcome === undefined && run.cleared)
+    ? 'Cleared!'
+    : 'Defeated';
+}
+
+/** The title's colour: a defeat is red, everything else green. */
+export function resultTone(run: Pick<ResultRun, 'cleared' | 'outcome'>): ResultTone {
+  return run.outcome === 'defeat' || (run.outcome === undefined && !run.cleared) ? 'bad' : 'good';
+}
+
+/** "room 4 / 7": the room of the day's floor the run was lost in, from its log; null when the log does not say. */
+function lostRoomText(run: Pick<ResultRun, 'route'>): string | null {
+  const route = run.route;
+  if (route === undefined) return null;
+  const lost = [...route.history].reverse().find((e) => e.result === 'fight' && !e.cleared);
+  const floor = lost === undefined || nodeLevel(lost.node) > 0 ? null : nodeFloor(lost.node);
+  return floor === null ? null : `room ${String(floor + 1)} / ${String(route.map.floors)}`;
+}
+
+/** "cleared 2 Undercroft floors". */
+function undercroftFloorsText(floors: number): string {
+  return `cleared ${String(floors)} Undercroft ${floors === 1 ? 'floor' : 'floors'}`;
+}
+
+/**
+ * The line under the title: the whole run in plain words, in one or two short sentences. A clear says the
+ * floor boss fell, the new depth, any Undercroft floors cleared and that the whole pack came home; a defeat in
+ * the Undercroft names the floor boss that fell first; a defeat on the day's floor names the room it fell in;
+ * a run that headed home from the camp says it kept the depth. A defeat with an empty pack does not promise
+ * half of nothing (the rewards say so). Older runs, from before the map, keep a line about their rooms.
+ */
+export function resultSummary(run: ResultRun): string {
+  const depth = run.depth ?? 0;
+  const newDepth = run.newDepth ?? depth;
+  const floors = run.deepest ?? 0;
+  const empty = run.pack !== undefined && isPackEmpty(run.pack.found);
   switch (run.outcome) {
     case 'cleared': {
-      const depth = `Cleared! Depth ${String(run.depth ?? 0)} to ${String(run.newDepth ?? 0)}`;
-      const deepest = run.deepest ?? 0;
-      return deepest > 0 ? `${depth} · ${undercroftClearedText(deepest)}` : depth;
+      const down = floors > 0 ? ` and ${undercroftFloorsText(floors)}` : '';
+      const lead = `You defeated the floor boss and advanced to depth ${String(newDepth)}${down}.`;
+      return empty ? lead : `${lead} You brought your whole pack home.`;
     }
     case 'home':
-      return 'Home safe with your whole pack';
+      return `You headed home from the camp with ${empty ? 'an empty pack' : 'your whole pack'}. You stay at depth ${String(depth)}.`;
     case 'defeat': {
-      // A defeat with nothing in the pack had nothing to halve: do not promise what did not happen.
-      const empty = run.pack !== undefined && isPackEmpty(run.pack.found);
-      // The floor boss fell first (`cleared` stays true), so this was a loss in the Undercroft.
-      const lead = run.cleared ? 'Lost in the Undercroft' : 'Defeated';
-      return empty ? `${lead}: your pack was empty` : `${lead}: half your pack made it home`;
+      const kept = empty ? ' with an empty pack' : ' and kept half of your loot pack';
+      if (run.cleared) {
+        const below = floors > 0 ? `, then ${undercroftFloorsText(floors)}` : '';
+        return `You defeated the first floor boss and advanced to depth ${String(newDepth)}${below}. You were defeated in the Undercroft${kept}.`;
+      }
+      const room = lostRoomText(run);
+      return `You were defeated ${room === null ? 'on the way to the floor boss' : `in ${room}`}${kept}.`;
     }
     case undefined:
       break;
   }
-  if (run.cleared) return 'Dungeon cleared!';
   const total = run.rooms.length;
-  return run.roomsCleared === 0
-    ? 'Your team was beaten in the first room.'
-    : `Your team fell in room ${String(run.roomsCleared + 1)} / ${String(total)}.`;
-}
-
-/**
- * What the run did to the depth. A run lost below the floor boss still went one deeper: it says so (the
- * boss fell first, so the depth stays) and how many Undercroft floors it had cleared.
- */
-export function depthChangeText(
-  run: Pick<DungeonRunSummary, 'depth' | 'newDepth'> &
-    Partial<Pick<DungeonRunSummary, 'outcome' | 'cleared' | 'deepest'>>,
-): string {
-  if (run.newDepth > run.depth) {
-    const change = `Depth ${String(run.depth)} to ${String(run.newDepth)}`;
-    if (run.outcome !== 'defeat') return change;
-    const floors = run.deepest ?? 0;
-    const cleared = floors > 0 ? ` ${undercroftClearedText(floors)}.` : '';
-    return `${change}.${cleared} The floor boss fell first, so the new depth stays.`;
+  if (run.cleared) {
+    return newDepth > depth
+      ? `You cleared all ${String(total)} rooms and went from depth ${String(depth)} to ${String(newDepth)}.`
+      : `You cleared all ${String(total)} rooms. You stay at depth ${String(depth)}.`;
   }
-  const again = run.outcome === undefined ? 'Clear all three rooms' : 'Beat the floor boss';
-  return `Still at depth ${String(run.depth)}. ${again} to go deeper.`;
+  const fell =
+    run.roomsCleared === 0
+      ? 'Your team was beaten in the first room.'
+      : `Your team fell in room ${String(run.roomsCleared + 1)} / ${String(total)}.`;
+  return `${fell} You stay at depth ${String(depth)}.`;
 }
 
 // --- The pack and the run strip ---

@@ -7,7 +7,7 @@ import todayDone from './fixtures/dungeon-today-done.json';
 import todayNeed from './fixtures/dungeon-today-need-creatures.json';
 import todayRetry from './fixtures/dungeon-today-retry.json';
 import { ApiError } from './api';
-import { EMPTY_PACK, sampleState, sampleSummary } from './dungeon-path-samples';
+import { EMPTY_PACK, omitKey, sampleState, sampleSummary } from './dungeon-path-samples';
 import {
   CAMP_HOME_BUTTON,
   CAMP_HOME_LINE,
@@ -18,7 +18,6 @@ import {
   ORDER_LINE,
   blockedText,
   campChoiceLines,
-  depthChangeText,
   dungeonErrorText,
   fierceName,
   floorLine,
@@ -32,7 +31,9 @@ import {
   packLine,
   packText,
   percentText,
-  resultHeadline,
+  resultSummary,
+  resultTitle,
+  resultTone,
   roomLine,
   roomPlaceLine,
   runHpText,
@@ -156,15 +157,24 @@ describe('the results words', () => {
   const cleared = (runCleared as unknown as DungeonRunResponse).run;
   const lost = (runLost as unknown as DungeonRunResponse).run;
 
-  it('has a headline for a clear, a loss in the first room and a loss later', () => {
-    expect(resultHeadline(cleared)).toBe('Dungeon cleared!');
-    expect(resultHeadline(lost)).toBe('Your team was beaten in the first room.');
-    expect(resultHeadline({ ...lost, roomsCleared: 1 })).toBe('Your team fell in room 2 / 3.');
+  it('has a short title for a run from before the map, red for a loss and green for a clear', () => {
+    expect(resultTitle(cleared)).toBe('Cleared!');
+    expect(resultTitle(lost)).toBe('Defeated');
+    expect(resultTone(cleared)).toBe('good');
+    expect(resultTone(lost)).toBe('bad');
   });
 
-  it('says what the run did to the depth', () => {
-    expect(depthChangeText(cleared)).toBe('Depth 1 to 2');
-    expect(depthChangeText(lost)).toContain('Still at depth');
+  it('keeps a sensible line for a run from before the map', () => {
+    expect(resultSummary(cleared)).toBe('You cleared all 3 rooms and went from depth 1 to 2.');
+    expect(resultSummary(lost)).toBe(
+      `Your team was beaten in the first room. You stay at depth ${String(lost.depth)}.`,
+    );
+    expect(resultSummary({ ...lost, roomsCleared: 1 })).toBe(
+      `Your team fell in room 2 / 3. You stay at depth ${String(lost.depth)}.`,
+    );
+    expect(resultSummary({ ...cleared, newDepth: cleared.depth })).toBe(
+      'You cleared all 3 rooms. You stay at depth 1.',
+    );
   });
 
   it('words the room line the way the design says', () => {
@@ -173,29 +183,72 @@ describe('the results words', () => {
   });
 });
 
-describe('the headline of a path run', () => {
+describe('the title and summary of a path run', () => {
   const cleared = sampleSummary('cleared');
   const home = sampleSummary('home');
   const defeat = sampleSummary('defeat');
 
-  it('says how the run ended', () => {
-    expect(resultHeadline(cleared)).toBe('Cleared! Depth 3 to 4');
-    expect(resultHeadline(home)).toBe('Home safe with your whole pack');
-    expect(resultHeadline(defeat)).toBe('Defeated: half your pack made it home');
+  it('has a short title, green for a success and red for a defeat', () => {
+    expect(resultTitle(cleared)).toBe('Cleared!');
+    expect(resultTitle(home)).toBe('Home safe');
+    expect(resultTitle(defeat)).toBe('Defeated');
+    expect(resultTitle({ ...defeat, cleared: true })).toBe('Lost in the Undercroft');
+    expect([cleared, home, defeat].map(resultTone)).toEqual(['good', 'good', 'bad']);
+    expect(resultTone({ ...defeat, cleared: true })).toBe('bad');
   });
 
-  it('keeps the old words for a run from before the map', () => {
-    const old = (runCleared as unknown as DungeonRunResponse).run;
-    expect(old.outcome).toBeUndefined();
-    expect(resultHeadline(old)).toBe('Dungeon cleared!');
+  it('sums up a clear, with the Undercroft floors it cleared', () => {
+    expect(resultSummary(cleared)).toBe(
+      'You defeated the floor boss and advanced to depth 4. You brought your whole pack home.',
+    );
+    expect(resultSummary({ ...cleared, deepest: 1 })).toBe(
+      'You defeated the floor boss and advanced to depth 4 and cleared 1 Undercroft floor. You brought your whole pack home.',
+    );
+    expect(resultSummary({ ...cleared, deepest: 2 })).toContain('and cleared 2 Undercroft floors.');
   });
 
-  it('says what the depth did, and what takes the run deeper', () => {
-    expect(depthChangeText(cleared)).toBe('Depth 3 to 4');
-    expect(depthChangeText(home)).toBe('Still at depth 3. Beat the floor boss to go deeper.');
-    expect(depthChangeText(defeat)).toContain('Beat the floor boss');
-    const old = (runLost as unknown as DungeonRunResponse).run;
-    expect(depthChangeText(old)).toContain('Clear all three rooms');
+  it('sums up a run that headed home from the camp, and keeps the depth', () => {
+    expect(resultSummary(home)).toBe(
+      'You headed home from the camp with your whole pack. You stay at depth 3.',
+    );
+    expect(resultSummary({ ...home, pack: { found: EMPTY_PACK, kept: EMPTY_PACK } })).toBe(
+      'You headed home from the camp with an empty pack. You stay at depth 3.',
+    );
+  });
+
+  it("names the room a defeat on the day's floor fell in", () => {
+    // The sample's lost fight is the elite on the third floor of seven.
+    expect(resultSummary(defeat)).toBe(
+      'You were defeated in room 3 / 7 and kept half of your loot pack.',
+    );
+    // No route (an older server): no room to name.
+    expect(resultSummary(omitKey(defeat, 'route'))).toBe(
+      'You were defeated on the way to the floor boss and kept half of your loot pack.',
+    );
+  });
+
+  it('says it was the Undercroft when the floor boss fell first', () => {
+    const lostBelow = { ...defeat, cleared: true, newDepth: 4 };
+    expect(resultSummary(lostBelow)).toBe(
+      'You defeated the first floor boss and advanced to depth 4. You were defeated in the Undercroft and kept half of your loot pack.',
+    );
+    expect(resultSummary({ ...lostBelow, deepest: 2 })).toBe(
+      'You defeated the first floor boss and advanced to depth 4, then cleared 2 Undercroft floors. You were defeated in the Undercroft and kept half of your loot pack.',
+    );
+  });
+
+  it('does not promise half of an empty pack', () => {
+    const empty = { found: EMPTY_PACK, kept: EMPTY_PACK };
+    expect(resultSummary({ ...defeat, pack: empty })).toBe(
+      'You were defeated in room 3 / 7 with an empty pack.',
+    );
+    expect(resultSummary({ ...defeat, cleared: true, newDepth: 4, pack: empty })).toBe(
+      'You defeated the first floor boss and advanced to depth 4. You were defeated in the Undercroft with an empty pack.',
+    );
+    // A clear with nothing in the pack just leaves the pack out.
+    expect(resultSummary({ ...sampleSummary('cleared'), pack: empty })).toBe(
+      'You defeated the floor boss and advanced to depth 4.',
+    );
   });
 });
 
@@ -211,23 +264,6 @@ describe('the pack words', () => {
   it('says it on the strip, empty or not', () => {
     expect(packLine({ bait: 2, essence: 0, scrap: 1 })).toBe('In your pack: 2 Bait · 1 Scrap');
     expect(packLine(EMPTY_PACK)).toBe('Your pack is empty.');
-  });
-});
-
-describe('the headline of a defeat with an empty pack', () => {
-  it('does not say half the pack made it home when there was nothing in it', () => {
-    const base = { cleared: false, roomsCleared: 0, rooms: [], outcome: 'defeat' as const };
-    expect(resultHeadline({ ...base, pack: { found: EMPTY_PACK, kept: EMPTY_PACK } })).toBe(
-      'Defeated: your pack was empty',
-    );
-    expect(
-      resultHeadline({
-        ...base,
-        pack: { found: { bait: 3, essence: 0, scrap: 0 }, kept: { bait: 2, essence: 0, scrap: 0 } },
-      }),
-    ).toBe('Defeated: half your pack made it home');
-    // No pack field (an older server): the usual words.
-    expect(resultHeadline(base)).toBe('Defeated: half your pack made it home');
   });
 });
 

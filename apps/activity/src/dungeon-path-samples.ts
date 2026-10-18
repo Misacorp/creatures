@@ -296,10 +296,15 @@ export function sampleSummary(
       cleared: !lost,
       foeHpEnd: lost ? 120 : 0,
     },
-    ...(outcome === 'cleared' ? [{ ...boss, index: 2, played: true, cleared: true }] : []),
+    ...(outcome === 'cleared'
+      ? [
+          { ...first, index: 2, elite: false, played: true, cleared: true },
+          { ...boss, index: 3, played: true, cleared: true },
+        ]
+      : []),
   ];
   const paths: Record<typeof outcome, DungeonNodeKind[]> = {
-    cleared: ['fight', 'mystery', 'elite', 'camp', 'fight', 'boss'],
+    cleared: ['fight', 'mystery', 'elite', 'camp', 'cache', 'fight', 'boss'],
     home: ['fight', 'mystery', 'elite', 'camp'],
     defeat: ['fight', 'elite'],
   };
@@ -325,7 +330,7 @@ export function sampleSummary(
 
 /** The rooms each outcome walked on `sampleMap()`: a defeat ends in the elite, home at the camp, a clear at the boss. */
 const ROUTES = {
-  cleared: ['f0l1', 'f1l1', 'f2l1', 'f3l1', 'f4l0', 'f5l0', 'f6l1'],
+  cleared: ['f0l1', 'f1l1', 'f2l1', 'f3l1', 'f4l1', 'f5l0', 'f6l1'],
   home: ['f0l1', 'f1l1', 'f2l1', 'f3l1'],
   defeat: ['f0l1', 'f1l1', 'f2l1'],
 } as const;

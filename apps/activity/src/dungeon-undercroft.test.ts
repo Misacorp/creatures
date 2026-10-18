@@ -31,7 +31,6 @@ import {
   DESCEND_HOME_BUTTON,
   catchBreathText,
   reviveText,
-  depthChangeText,
   descendIntro,
   descendLines,
   descendTitle,
@@ -39,7 +38,9 @@ import {
   DESCEND_RISK_LINE,
   DESCEND_HOME_LINE,
   nodeFloor,
-  resultHeadline,
+  resultSummary,
+  resultTitle,
+  resultTone,
   roomPlaceLine,
   runStatusLine,
 } from './dungeon-text';
@@ -147,35 +148,37 @@ describe('the results of a run that went down', () => {
   const summary = undercroftSummary();
   const lost = undercroftLostSummary();
 
-  it('says how deep the run went, and the way down to the lost run', () => {
-    expect(resultHeadline(summary)).toBe('Cleared! Depth 14 to 15 · 1 Undercroft floor cleared');
-    expect(resultHeadline({ ...summary, deepest: 0 })).toBe('Cleared! Depth 14 to 15');
-    expect(resultHeadline({ ...summary, deepest: 2 })).toBe(
-      'Cleared! Depth 14 to 15 · 2 Undercroft floors cleared',
+  it('titles and sums up the run that went down, and the one lost below', () => {
+    expect(resultTitle(summary)).toBe('Cleared!');
+    expect(resultTitle(lost)).toBe('Lost in the Undercroft');
+    expect(resultTone(summary)).toBe('good');
+    expect(resultTone(lost)).toBe('bad');
+    expect(resultSummary(summary)).toBe(
+      'You defeated the floor boss and advanced to depth 15 and cleared 1 Undercroft floor. You brought your whole pack home.',
     );
-    expect(resultHeadline(lost)).toBe('Lost in the Undercroft: half your pack made it home');
-    // A lost run whose floor boss did not fall is the old "Defeated".
-    expect(resultHeadline({ ...lost, cleared: false })).toBe(
-      'Defeated: half your pack made it home',
+    expect(resultSummary({ ...summary, deepest: 0 })).toBe(
+      'You defeated the floor boss and advanced to depth 15. You brought your whole pack home.',
+    );
+    expect(resultSummary({ ...summary, deepest: 2 })).toContain('cleared 2 Undercroft floors');
+    expect(resultSummary(lost)).toBe(
+      'You defeated the first floor boss and advanced to depth 15. You were defeated in the Undercroft and kept half of your loot pack.',
+    );
+    expect(resultSummary({ ...lost, deepest: 1 })).toBe(
+      'You defeated the first floor boss and advanced to depth 15, then cleared 1 Undercroft floor. You were defeated in the Undercroft and kept half of your loot pack.',
+    );
+    // A lost run whose floor boss did not fall is a plain defeat, in a room of the day's floor.
+    expect(resultTitle({ ...lost, cleared: false })).toBe('Defeated');
+    expect(resultSummary({ ...lost, cleared: false })).toMatch(
+      /^You were defeated (in room \d \/ 7|on the way to the floor boss) and kept half of your loot pack\.$/,
     );
     expect(
-      resultHeadline({
+      resultSummary({
         ...lost,
         pack: { found: { bait: 0, essence: 0, scrap: 0 }, kept: { bait: 0, essence: 0, scrap: 0 } },
       }),
-    ).toBe('Lost in the Undercroft: your pack was empty');
-  });
-
-  it('says that the depth still went up after a loss below, and what was cleared', () => {
-    expect(depthChangeText(summary)).toBe('Depth 14 to 15');
-    expect(depthChangeText(lost)).toBe(
-      'Depth 14 to 15. The floor boss fell first, so the new depth stays.',
+    ).toBe(
+      'You defeated the first floor boss and advanced to depth 15. You were defeated in the Undercroft with an empty pack.',
     );
-    expect(depthChangeText({ ...lost, deepest: 1 })).toBe(
-      'Depth 14 to 15. 1 Undercroft floor cleared. The floor boss fell first, so the new depth stays.',
-    );
-    // A defeat that did not get past the boss keeps the old line.
-    expect(depthChangeText({ ...lost, newDepth: lost.depth })).toContain('Still at depth 14');
   });
 
   it('labels the fights of the Undercroft in the strip: Undercroft floor 1, Undercroft elite, Epic and Floor boss', () => {

@@ -406,26 +406,78 @@ describe('the results of a path run', () => {
     return page.root;
   }
 
-  it('says how a cleared run ended: the pack on one line (all kept) and the keepsakes as chips', () => {
+  const titleOf = (root: FakeElement): FakeElement =>
+    byClass(root, 'result-title')[0] as FakeElement;
+
+  /** The creatures of a run's team as the server paid them experience: one level up with a treat, one plain, one waiting. */
+  function withExperience(run: ReturnType<typeof sampleSummary>): ReturnType<typeof sampleSummary> {
+    const [a, b, c] = run.team.map((m) => m.id) as [string, string, string];
+    const base = { treatTimes: null, dayEffects: [], gold: false, waiting: false, treat: false };
+    return {
+      ...run,
+      rewards: {
+        ...run.rewards,
+        experience: [
+          {
+            ...base,
+            creatureId: a,
+            gained: 260,
+            treat: true,
+            treatTimes: 2,
+            levelBefore: 7,
+            level: 8,
+            exp: 90,
+            needed: 330,
+          },
+          { ...base, creatureId: b, gained: 130, levelBefore: 7, level: 7, exp: 190, needed: 330 },
+          {
+            ...base,
+            creatureId: c,
+            gained: 90,
+            levelBefore: 10,
+            level: 10,
+            exp: 380,
+            needed: 380,
+            waiting: true,
+          },
+        ],
+      },
+    };
+  }
+
+  it('says how a cleared run ended: a green title, one summing-up line, and the rewards as badges only', () => {
     const root = results(sampleSummary('cleared'));
     const text = visibleText(root);
-    expect(text).toContain('Cleared! Depth 3 to 4');
-    // One line, not Found and Kept, with the kinds as icons and numbers.
-    expect(text).toMatch(/Pack\s*:\s*all kept/);
-    expect(text).not.toContain('Found:');
-    expect(text).not.toContain('Kept:');
-    expect(byName(root, 'span', 'Bait: 3')).toHaveLength(1);
-    expect(byName(root, 'span', 'Essence: 1')).toHaveLength(1);
-    expect(byName(root, 'span', 'Scrap: 2')).toHaveLength(1);
+    expect(visibleText(titleOf(root))).toBe('Cleared!');
+    expect(titleOf(root).getAttribute('class')).toContain('good');
+    expect(text).toContain(
+      'You defeated the floor boss and advanced to depth 4. You brought your whole pack home.',
+    );
+    // The old depth sentence and the pack line are gone.
+    expect(text).not.toContain('Depth 3 to 4');
+    expect(text).not.toContain('Pack:');
+    expect(text).not.toContain('half kept');
     expect(find(root, (e) => e.localName === 's')).toHaveLength(0);
+    // The loot pile picture is gone: only the badges (with their "?" help) show.
+    expect(byClass(root, 'reward-pile')).toHaveLength(0);
+    expect(byClass(root, 'reward-badges')).toHaveLength(1);
+    expect(visibleText(byClass(root, 'reward-badges')[0] as FakeElement)).toContain('3');
+  });
+
+  it('puts the keepsakes under the team, as chips, and not in the rewards', () => {
+    const root = results(sampleSummary('cleared'));
+    const text = visibleText(root);
+    expect(text.indexOf('Your team')).toBeGreaterThan(-1);
+    expect(text.indexOf('Keepsakes')).toBeGreaterThan(text.indexOf('Your team'));
+    expect(text.indexOf('Keepsakes')).toBeLessThan(text.indexOf('Next run'));
+    const rewards = byClass(root, 'reward-row')[0] as FakeElement;
+    expect(visibleText(rewards)).not.toContain('Keepsakes');
     // The keepsake is a chip, not a sentence: its text is in the tap.
     expect(byName(root, 'button', /^Lantern Moth: Your creatures crit/)).toHaveLength(1);
     expect(text).not.toContain('Your creatures crit 5 points more often.');
-    expect(byClass(root, 'room-panel')).toHaveLength(3);
-    expect(byClass(root, 'path')).toHaveLength(1);
   });
 
-  it('does not repeat the headline in a badge, and has no pack line for an empty pack', () => {
+  it('does not repeat the title in a badge, and says nothing about an empty pack beyond the rewards note', () => {
     const root = results(sampleSummary('cleared'));
     expect(byClass(root, 'badge')).toHaveLength(0);
     const empty = results(
@@ -437,39 +489,52 @@ describe('the results of a path run', () => {
       }),
     );
     expect(visibleText(empty)).not.toContain('Pack');
+    expect(visibleText(empty)).toContain('with an empty pack.');
+    expect(visibleText(empty)).not.toContain('half of your loot pack');
   });
 
-  it('says home safe and defeated in their own words, striking through what was lost', () => {
-    const home = visibleText(results(sampleSummary('home')));
-    expect(home).toContain('Home safe with your whole pack');
-    expect(home).toMatch(/Pack\s*:\s*all kept/);
+  it('says home safe in green and defeated in red, in their own words', () => {
+    const homeRoot = results(sampleSummary('home'));
+    expect(visibleText(titleOf(homeRoot))).toBe('Home safe');
+    expect(titleOf(homeRoot).getAttribute('class')).toContain('good');
+    expect(visibleText(homeRoot)).toContain(
+      'You headed home from the camp with your whole pack. You stay at depth 3.',
+    );
     const root = results(sampleSummary('defeat'));
-    const defeated = visibleText(root);
-    expect(defeated).toContain('Defeated: half your pack made it home');
-    expect(defeated).toMatch(/Pack\s*:\s*half kept/);
-    expect(defeated).toContain('Still at depth 3. Beat the floor boss to go deeper.');
-    // What was found is struck and dim before what came home; spoken as found and kept.
-    expect(find(root, (e) => e.localName === 's').map((e) => visibleText(e))).toEqual(['3', '3']);
-    expect(byName(root, 'span', 'Bait: found 3, kept 2')).toHaveLength(1);
-    expect(byName(root, 'span', 'Scrap: found 3, kept 2')).toHaveLength(1);
+    expect(visibleText(titleOf(root))).toBe('Defeated');
+    expect(titleOf(root).getAttribute('class')).toContain('bad');
+    expect(visibleText(root)).toContain(
+      'You were defeated in room 3 / 7 and kept half of your loot pack.',
+    );
+    expect(visibleText(root)).not.toContain('Defeated:');
   });
 
-  it('has a Fights and Map switch for a run with a route, and shows the fights first', () => {
+  it('says a loss below the floor boss was in the Undercroft', () => {
+    const root = results({ ...sampleSummary('defeat'), cleared: true, newDepth: 4 });
+    expect(visibleText(titleOf(root))).toBe('Lost in the Undercroft');
+    expect(titleOf(root).getAttribute('class')).toContain('bad');
+    expect(visibleText(root)).toContain(
+      'You defeated the first floor boss and advanced to depth 4. You were defeated in the Undercroft and kept half of your loot pack.',
+    );
+  });
+
+  it('has a Map and Rooms switch for a run with a route, and shows the map first', () => {
     const root = results(sampleSummary('cleared'));
-    const fights = button(root, 'Fights');
     const map = button(root, 'Map');
-    expect(fights.getAttribute('aria-pressed')).toBe('true');
-    expect(map.getAttribute('aria-pressed')).toBe('false');
-    expect(byClass(root, 'room-strip')).toHaveLength(1);
-    expect(byClass(root, 'dmap')).toHaveLength(0);
+    const rooms = button(root, 'Rooms');
+    expect(byName(root, 'button', 'Fights')).toHaveLength(0);
+    expect(map.getAttribute('aria-pressed')).toBe('true');
+    expect(rooms.getAttribute('aria-pressed')).toBe('false');
+    // The map is the left button.
+    const toggle = byClass(root, 'route-toggle')[0] as FakeElement;
+    expect(byName(toggle, 'button', /.*/).map((b) => visibleText(b))).toEqual(['Map', 'Rooms']);
+    expect(byClass(root, 'room-strip')).toHaveLength(0);
+    expect(byClass(root, 'dmap')).toHaveLength(1);
   });
 
-  it('swaps to the map of the route: the walked rooms visited, no Go, and back to the fights', () => {
+  it('swaps to the map of the route: the walked rooms visited, no Go, and to the rooms and back', () => {
     const run = sampleSummary('cleared');
     const root = results(run);
-    page?.click(button(root, 'Map'));
-    expect(button(root, 'Map').getAttribute('aria-pressed')).toBe('true');
-    expect(byClass(root, 'room-strip')).toHaveLength(0);
     const nodes = byClass(root, 'dmap-node');
     expect(nodes).toHaveLength(run.route?.map.nodes.length ?? -1);
     const visited = nodes.filter((n) => (n.getAttribute('class') ?? '').includes('s-visited'));
@@ -479,14 +544,113 @@ describe('the results of a path run', () => {
     );
     expect(nodes.some((n) => (n.getAttribute('class') ?? '').includes('s-reachable'))).toBe(false);
     expect(byName(root, 'button', /^Go/)).toHaveLength(0);
-    page?.click(button(root, 'Fights'));
-    expect(byClass(root, 'room-strip')).toHaveLength(1);
+    page?.click(button(root, 'Rooms'));
+    expect(button(root, 'Rooms').getAttribute('aria-pressed')).toBe('true');
     expect(byClass(root, 'dmap')).toHaveLength(0);
+    expect(byClass(root, 'room-strip')).toHaveLength(1);
+    page?.click(button(root, 'Map'));
+    expect(byClass(root, 'room-strip')).toHaveLength(0);
+    expect(byClass(root, 'dmap')).toHaveLength(1);
+  });
+
+  it('lists every room of a cleared run in order, not only the fights, each Cleared', () => {
+    const run = sampleSummary('cleared');
+    const root = results(run);
+    page?.click(button(root, 'Rooms'));
+    const panels = byClass(root, 'room-panel');
+    // Seven rooms: four fights (one an elite, the last the floor boss), a mystery room, the camp and a cache.
+    expect(panels).toHaveLength(run.route?.path.length ?? -1);
+    expect(panels.map((p) => p.getAttribute('aria-label'))).toEqual([
+      expect.stringMatching(/^Room 1: .*Cleared\.$/),
+      expect.stringMatching(/^Room 2: Glowing Pool\. You gain 1 scrap\. Cleared\.$/),
+      expect.stringMatching(/^Room 3 · Elite: Fierce .*Cleared\.$/),
+      'Room 4: Camp. Rested. Cleared.',
+      'Room 5: Cache. 1 Bait · 1 Scrap. Cleared.',
+      expect.stringMatching(/^Room 6: .*Cleared\.$/),
+      expect.stringMatching(/^Room 7 · Floor boss: Drowned Warden, Thorns\. Cleared\.$/),
+    ]);
+    const text = visibleText(byClass(root, 'room-strip')[0] as FakeElement);
+    expect(text.match(/CLEARED/g)).toHaveLength(7);
+    expect(text).not.toContain('DEFEATED');
+    // A line of what happened in the rooms that are not fights, as text.
+    expect(text).toContain('Rested');
+    expect(text).toContain('1 Bait · 1 Scrap');
+    expect(text).toContain('You gain 1 scrap.');
+  });
+
+  it('marks the room the run fell in as Defeated, and every room before it Cleared', () => {
+    const root = results(sampleSummary('defeat'));
+    page?.click(button(root, 'Rooms'));
+    const panels = byClass(root, 'room-panel');
+    expect(panels).toHaveLength(3);
+    expect(panels.map((p) => (p.getAttribute('class') ?? '').split(' ')[1])).toEqual([
+      'cleared',
+      'cleared',
+      'defeat',
+    ]);
+    expect(visibleText(panels[2] as FakeElement)).toContain('DEFEATED');
+    expect(visibleText(panels[2] as FakeElement)).toContain('HP left');
+    expect(panels[2]?.getAttribute('aria-label')).toMatch(/Defeated\.$/);
+    expect(panels[1]?.getAttribute('aria-label')).toMatch(/Cleared\.$/);
+  });
+
+  it('lists the rooms of a run that headed home from the camp, the camp last and Cleared', () => {
+    const root = results(sampleSummary('home'));
+    page?.click(button(root, 'Rooms'));
+    const panels = byClass(root, 'room-panel');
+    expect(panels).toHaveLength(4);
+    expect(panels[3]?.getAttribute('aria-label')).toBe('Room 4: Camp. Rested. Cleared.');
+  });
+
+  /** What a creature's experience bar says to a screen reader (its words are not drawn over the narrow bar). */
+  const barOf = (member: FakeElement): string | null =>
+    find(member, (e) => e.getAttribute('role') === 'progressbar')[0]?.getAttribute(
+      'aria-valuetext',
+    ) ?? null;
+
+  it('shows each creature with its level, an experience bar and what the run paid it', () => {
+    const run = withExperience(sampleSummary('cleared'));
+    const root = results(run);
+    const members = byClass(root, 'team-member');
+    expect(members).toHaveLength(3);
+    // A level up with a treat: Lv 8, a green +1, the bar at 90 / 330, +260 and the factor.
+    const first = visibleText(members[0] as FakeElement);
+    expect(first).toContain('Lv 8');
+    expect(first).toContain('+1');
+    expect(barOf(members[0] as FakeElement)).toBe('90 / 330 XP');
+    expect(first).toContain('+260 experience');
+    expect(first).toContain('Treat gave 2x experience');
+    expect(byClass(members[0] as FakeElement, 'lvl-up')).toHaveLength(1);
+    expect(byName(members[0] as FakeElement, 'div', 'Sproutle: experience')).toHaveLength(1);
+    // No level up, no treat: the bar and the plain gain, and no factor line.
+    const second = visibleText(members[1] as FakeElement);
+    expect(second).toContain('Lv 7');
+    expect(barOf(members[1] as FakeElement)).toBe('190 / 330 XP');
+    expect(second).toContain('+130 experience');
+    expect(byClass(members[1] as FakeElement, 'lvl-up')).toHaveLength(0);
+    expect(second).not.toContain('Treat');
+    // A creature waiting at its level says so, shortly.
+    expect(visibleText(members[2] as FakeElement)).toContain('Waiting at this level');
+    // The old sentence is gone.
+    expect(visibleText(root)).not.toContain('(treat)');
+    expect(visibleText(root)).not.toContain('level 7 to 8');
+  });
+
+  it('keeps the HP line, red for a creature that is down', () => {
+    const run = sampleSummary('defeat');
+    const root = results({
+      ...run,
+      team: run.team.map((m, i) => (i === 0 ? { ...m, hpEnd: 0 } : m)),
+    });
+    const members = byClass(root, 'team-member');
+    expect(members[0]?.getAttribute('class')).toContain('ko');
+    expect(visibleText(members[0] as FakeElement)).toContain(
+      `0 / ${String(run.team[0]?.hpMax)} HP`,
+    );
   });
 
   it('opens what happened in a room when it is tapped on the results map', () => {
     const root = results(sampleSummary('defeat'));
-    page?.click(button(root, 'Map'));
     page?.click(button(root, /^Fierce Flicker Swarm/));
     const dialog = find(root, (e) => e.getAttribute('role') === 'dialog')[0] as FakeElement;
     const text = visibleText(dialog);
@@ -499,7 +663,6 @@ describe('the results of a path run', () => {
   it('marks the room where the run was lost with a red cross, and ticks the cleared ones', () => {
     const run = sampleSummary('defeat');
     const root = results(run);
-    page?.click(button(root, 'Map'));
     expect(byClass(root, 'dmap-lost')).toHaveLength(1);
     expect(byClass(root, 'dmap-check')).toHaveLength((run.route?.path.length ?? 0) - 1);
     const lost = byClass(root, 'dmap-node').filter((n) => byClass(n, 'dmap-lost').length > 0);
@@ -535,7 +698,6 @@ describe('the results of a path run', () => {
 
   it('says a room the run did not go to was not visited', () => {
     const root = results(sampleSummary('home'));
-    page?.click(button(root, 'Map'));
     page?.click(button(root, /^Fight: Puddle Imp/));
     const dialog = find(root, (e) => e.getAttribute('role') === 'dialog')[0] as FakeElement;
     expect(visibleText(dialog)).toContain('Your run did not go here.');
@@ -550,14 +712,15 @@ describe('the results of a path run', () => {
     expect(visibleText(root)).toContain('Fights');
   });
 
-  it('keeps the old headline and no pack lines for a run from before the map', () => {
+  it('keeps a plain title and line for a run from before the map', () => {
     const old = { ...sampleSummary('cleared') } as Record<string, unknown>;
     for (const key of ['outcome', 'path', 'pack', 'keepsakes', 'route']) delete old[key];
     const root = results(old as unknown as ReturnType<typeof sampleSummary>);
-    expect(visibleText(root)).toContain('Dungeon cleared!');
+    expect(visibleText(titleOf(root))).toBe('Cleared!');
+    expect(visibleText(root)).toContain('You cleared all 4 rooms and went from depth 3 to 4.');
     expect(visibleText(root)).not.toContain('Pack');
     expect(byName(root, 'button', 'Map')).toHaveLength(0);
-    expect(byClass(root, 'badge')).toHaveLength(1);
+    expect(byClass(root, 'badge')).toHaveLength(0);
     expect(byClass(root, 'path')).toHaveLength(0);
   });
 });
@@ -756,7 +919,8 @@ describe('the tab', () => {
     page.click(button(page.root, 'Yes, head home'));
     await settle();
     expect(api.dungeonAct.mock.calls[0]?.[0]).toMatchObject({ act: { type: 'home' } });
-    expect(visibleText(page.root)).toContain('Home safe with your whole pack');
+    expect(visibleText(page.root)).toContain('Home safe');
+    expect(visibleText(page.root)).toContain('You headed home from the camp with your whole pack.');
     expect(finished).toHaveBeenCalledTimes(1);
   });
 
@@ -828,7 +992,8 @@ describe('the tab', () => {
         await vi.advanceTimersByTimeAsync(1000);
       });
     }
-    expect(visibleText(page.root)).toContain('Defeated: half your pack made it home');
+    expect(visibleText(page.root)).toContain('Defeated');
+    expect(visibleText(page.root)).toContain('kept half of your loot pack.');
     expect(finished).toHaveBeenCalledTimes(1);
   });
 

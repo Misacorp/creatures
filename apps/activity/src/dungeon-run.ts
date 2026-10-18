@@ -75,18 +75,6 @@ export function packKinds(found: DungeonPack, kept: DungeonPack): PackKind[] {
     .map((key) => ({ key, ...PACK_ICON[key], found: found[key], kept: kept[key] }));
 }
 
-/** True when part of the pack did not come home (a defeat). */
-export function packLost(found: DungeonPack, kept: DungeonPack): boolean {
-  return kept.bait < found.bait || kept.essence < found.essence || kept.scrap < found.scrap;
-}
-
-/** What a screen reader hears for a kind: "Scrap: 3" when all came home, "Scrap: found 3, kept 2" when not. */
-export function packKindLabel(kind: Pick<PackKind, 'label' | 'found' | 'kept'>): string {
-  return kind.kept === kind.found
-    ? `${kind.label}: ${String(kind.kept)}`
-    : `${kind.label}: found ${String(kind.found)}, kept ${String(kind.kept)}`;
-}
-
 /** How a creature's tile reads: knocked out, hurt (under a third of its HP) or fine. */
 export function tileState(creature: Pick<DungeonRunCreature, 'hp' | 'hpMax'>): 'ko' | 'low' | 'ok' {
   if (creature.hp <= 0) return 'ko';

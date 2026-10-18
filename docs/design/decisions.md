@@ -1753,3 +1753,14 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 - The glossary entry `room-boss` is now `floor-boss` (nothing stored or sent to the server refers to a glossary id).
 
 **Internal names stay.** In code, API fields and stored run JSON, `floor` is still a row (step) of a map, `floors` the steps of a map, `level` an Undercroft floor (1 to 3, 0 is the day's map), `campFloor` and node ids (`f2l1`, `u1f0l0`) are unchanged, and `keeper` stays in function, file and workbench stage names (`isKeeper`, `openKeeperChest`, `dungeon-act-keeper.json`). Renaming them would change stored runs and the API for no player-visible gain. `docs/design/dungeon-paths.md` has a "Terminology" section that says so. Older dated entries above keep the old words.
+
+## 2026-10-18: The dungeon results screen, reworked
+
+**Decision.** Misa's feedback on the end-of-run screen:
+
+- The **title** is short and coloured with the existing tokens: "Cleared!" and "Home safe" in green (`--good`), "Defeated" and "Lost in the Undercroft" in red (`--bad`). Under it, one **summary line** sums the run up in plain words ("You defeated the first floor boss and advanced to depth 9. You were defeated in the Undercroft and kept half of your loot pack."; a defeat on the day's floor names the room it fell in, "room 3 / 7", with the spaced slash the count-wording rule asks for; a camp exit says "You stay at depth 8"). A defeat with an empty pack does not promise half of nothing. It replaces the old "Depth 8 to 9" sentence and the "Pack: half kept" line.
+- **Rewards** show only the count badges (no loot-pile picture). **Keepsakes** moved under "Your team": they are run stats, not a reward.
+- The route toggle is **Map | Rooms**, the map first. Rooms lists every room visited in order (fights, elites, the floor boss, mystery rooms, caches, camps, doors, Undercroft rooms) from the run's route log, with CLEARED or DEFEATED (the room the run fell in) and a short line of what happened in the rooms that are not fights. A run with no route keeps the old strip of fights.
+- **Your team** shows each creature's level (a green "+1" when the run levelled it up), an experience bar with the part just gained drawn brighter, "+130 experience", one line saying what multiplied it ("Treat gave 2x experience", "Treat gave 3x experience and Hearty Breakfast gave +25%") and "Waiting at this level" when it waits.
+
+**Server.** The experience entries of a dungeon run (`rewards.experience`) gained `treatTimes` (what the treat multiplied by: 2, or 3 on Hearty Breakfast; null without a treat) and `dayEffects` (the day's Boons and Omens that changed experience, by name, with basis points). Both are optional for the client, so runs stored before read as "no extra line". Nothing in the gear changes dungeon experience, so a treat and the day's weather are the only sources.
