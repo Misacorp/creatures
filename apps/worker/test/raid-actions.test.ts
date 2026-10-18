@@ -192,11 +192,11 @@ describe('placement', () => {
         error: 'invalid_slot',
       });
       expect(ctx.core.raid.place(b.id, HELSINKI, b0, -1).ok).toBe(false);
-      // Only own creatures can be moved.
+      // Only own creatures can be moved, or those of a teammate who is away (a is not).
       expect(ctx.core.raid.place(b.id, HELSINKI, a0, 5)).toEqual({
         ok: false,
         status: 409,
-        error: 'not_your_creature',
+        error: 'not_away',
       });
       expect(ctx.core.raid.unplace(b.id, HELSINKI, a0)).toEqual({
         ok: false,
@@ -379,6 +379,7 @@ describe('GET /api/raid', () => {
       expect(Object.keys(body.party ?? {}).sort()).toEqual(
         [
           'adaptation',
+          'away',
           'bossHp',
           'guests',
           'party',
@@ -423,7 +424,8 @@ describe('GET /api/raid', () => {
         mine: false,
       });
       expect(body.party?.row[5]?.creature).not.toHaveProperty('creatureId');
-      expect(body.party?.row[1]?.creature).toBeNull();
+      // Nobody placed slot 1: the creature that joins by itself is drawn there, marked auto.
+      expect(body.party?.row[1]?.creature).toMatchObject({ auto: true, movable: false });
       expect(body.party?.results).toEqual([]);
       expect(body.party?.adaptation).toBeNull();
 
@@ -526,7 +528,7 @@ describe('raid mutation routes', () => {
       expect(taken).toMatchObject({ status: 409, body: { error: 'slot_taken' } });
       // Another player sees the owner but cannot move the creature.
       const steal = await api(ctx, sb, 'PUT', '/api/raid/placement', { creatureId: a0, slot: 4 });
-      expect(steal).toMatchObject({ status: 409, body: { error: 'not_your_creature' } });
+      expect(steal).toMatchObject({ status: 409, body: { error: 'not_away' } });
       const outside = await api(ctx, sb, 'PUT', '/api/raid/placement', { creatureId: b0, slot: 9 });
       expect(outside).toMatchObject({ status: 400, body: { error: 'invalid_slot' } });
       for (const bad of [
@@ -542,7 +544,8 @@ describe('raid mutation routes', () => {
       }
       const removed = await api(ctx, sa, 'DELETE', '/api/raid/placement', { creatureId: a0 });
       expect(removed.status).toBe(200);
-      expect(removed.body.party?.row[2]?.creature).toBeNull();
+      // The slot is not empty: the creature that joins by itself stands there, marked auto.
+      expect(removed.body.party?.row[2]?.creature?.auto).toBe(true);
       expect((await api(ctx, sa, 'DELETE', '/api/raid/placement', {})).status).toBe(400);
     });
   });

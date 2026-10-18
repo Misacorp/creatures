@@ -7,7 +7,9 @@
  * "Its row" is a zone in the raid (Front, Middle, Back; the neighbours it has stop at the zone's edge, as
  * on the board), and the whole line in the dungeon and in the simulator's reference fights, where each of
  * the three zones is one slot. The caller says which with a `RowLayout` (the engine's `rowLayout` builds
- * both). Pure, deterministic, no randomness.
+ * both). A row that has gaps (the raid board's empty slots) says who is beside whom in `RowLayout.beside`,
+ * so a creature next to a gap has no neighbour on that side; its "ends" and "middle" are the first and last
+ * creature of its row, as the boss's row-end silence counts them. Pure, deterministic, no randomness.
  */
 import type { CritBonus, Element, Stats, Zone } from '../content/schema';
 import { gearLine, gearSet } from '../content/gear';
@@ -48,6 +50,12 @@ export interface RowMember {
 export interface RowLayout {
   rows: readonly (readonly number[])[];
   zones: readonly Zone[];
+  /**
+   * Who stands beside each slot (slot indices), when it is not simply the slot before and after it in its
+   * row: a raid row built from the board's own positions, where an empty board slot breaks "beside". Absent:
+   * the neighbours in the row's list (a row with no gaps).
+   */
+  beside?: readonly (readonly number[])[] | undefined;
 }
 
 /** A creature's numbers after its place is known. */
@@ -101,7 +109,9 @@ function placementOf(
   const zone = layout.zones[index];
   if (row === undefined || zone === undefined) return undefined;
   const at = row.indexOf(index);
-  const sides = [row[at - 1], row[at + 1]].filter((i): i is number => i !== undefined);
+  const sides = (layout.beside?.[index] ?? [row[at - 1], row[at + 1]]).filter(
+    (i): i is number => i !== undefined && members[i] !== undefined,
+  );
   let lantern = 0;
   for (const i of sides) lantern += lanternGift(members[i]?.kit?.items ?? []);
   const wall = row.some((i) => giftsShieldWall(members[i]?.kit?.items ?? []));

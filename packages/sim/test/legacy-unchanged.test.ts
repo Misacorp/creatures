@@ -63,6 +63,11 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * first player's top-3 power and raids won are what they were before the change (333, 361, 261, 203);
  * Bait earned is the same, and some Bait now goes to slotting.
  *
+ * Re-pinned again on 2026-10-18 (silence by row), on purpose: the raid bosses' silences (Bramble Bind,
+ * Choking Vines) now silence the ends of each row instead of the two ends of the line, so Thornmother
+ * weeks play out differently. Checked by setting both back to the whole line: the old fixture matched.
+ * The fight input carrying the board's row sizes moved nothing here (the sim's rows are full).
+ *
  * Branch evolutions (2026-10-18) leave every digest as it was: the journey takes the original form of a
  * line that grows two ways (`firstForm`), so the baselines hold while the dungeon is reworked.
  *
@@ -85,7 +90,6 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * Weather numbers then became readable (whole percent from 10 up, halves below, `scaleStrength`): the
  * hashes moved, the headlines did not.
  *
- *
  * Re-pinned again on 2026-10-18 (chance lines and trigger lines), on purpose: nine chance lines and twelve
  * trigger lines (Rare and up) joined the pool of lines, and each of the three Festival pieces has a chance line
  * in its narrow pool, so every seeded drop and craft that rolls a line from a Rare or an Epic is a different item.
@@ -93,6 +97,10 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * and are drawn only when a creature wears a chance line); Tinker's luck and Second look are not played, since
  * the sim's Workshop and trips do not read them. The run without gear is the same; Bait earned and raids won
  * are the same in every run; the first player's top-3 power moved a little (375, 248 and 209 to 370, 246 and 205).
+ *
+ * Merged with the board-rows change (2026-10-18): the sim builds dense rows (no `board`), so the position lines, set
+ * reach and Morning Haze play as before; only the raid bosses' silence by row (above) moved the numbers. The first
+ * player's top-3 power is now 341, 314, 246 and 207, and raids won 6, 4, 5 and 4; Bait earned is the same.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

@@ -6,7 +6,9 @@ import {
   MAX_ON_BOARD,
   ON_BOARD_NOTE,
   SHOW_PICKER_EFFECTS,
+  ALREADY_JOINING,
   allPlaced,
+  awayPickerOptions,
   boardTotalLine,
   effectPreview,
   pickerOptions,
@@ -23,6 +25,8 @@ const mine = (id: string, species: string, level = 5): NonNullable<RowSlotView['
   name: species,
   level,
   mine: true,
+  auto: false,
+  movable: false,
   creatureId: id,
 });
 const theirs = (species: string): NonNullable<RowSlotView['creature']> => ({
@@ -31,6 +35,8 @@ const theirs = (species: string): NonNullable<RowSlotView['creature']> => ({
   name: species,
   level: 5,
   mine: false,
+  auto: false,
+  movable: false,
 });
 
 /** A row of nine slots (three players): Front 0-2, Middle 3-5, Back 6-8, with `at` filled in. */
@@ -221,5 +227,41 @@ describe('the effect preview', () => {
         mode: { row: 'raid', turnOrder: 'left_to_right' },
       }),
     ).toBe('Covers its row');
+  });
+});
+
+describe('auto tiles and the swap picker', () => {
+  it('does not count a creature that joins by itself as placed, or as on the board', () => {
+    const auto = { ...mine('a', 'splashet'), auto: true };
+    const row = rowOf({ 0: auto, 1: mine('b', 'cindle') });
+    expect(placedCount(row)).toBe(1);
+    // It still counts among the filled team slots.
+    expect(boardTotalLine(row, 9)).toBe('2 / 9 team slots filled');
+    const creatures: PickerCreature[] = [
+      { id: 'a', species: 'splashet', nickname: null, level: 5, power: 10, caughtAt: 1 },
+      { id: 'b', species: 'cindle', nickname: null, level: 5, power: 11, caughtAt: 2 },
+    ];
+    const options = pickerOptions({
+      creatures,
+      row,
+      length: 9,
+      slot: 5,
+      turnOrder: 'left_to_right',
+      showEffects: false,
+    });
+    expect(options.find((o) => o.id === 'a')?.onBoard).toBe(false);
+    expect(options.find((o) => o.id === 'b')?.onBoard).toBe(true);
+  });
+
+  it('lists an away teammate’s creatures: the ones not in the fight first, the joining ones disabled', () => {
+    const options = awayPickerOptions([
+      { creatureId: 'j1', species: 'cindle', name: 'Ash', level: 9, joining: true },
+      { creatureId: 'j2', species: 'splashet', name: 'Bub', level: 3, joining: false },
+      { creatureId: 'j3', species: 'sproutle', name: 'Cob', level: 7, joining: false },
+    ]);
+    expect(options.map((o) => o.id)).toEqual(['j3', 'j2', 'j1']);
+    expect(options.map((o) => o.disabled)).toEqual([null, null, ALREADY_JOINING]);
+    expect(options.every((o) => o.effect === null && !o.recommended && !o.onBoard)).toBe(true);
+    expect(options[0]).toMatchObject({ name: 'Cob', element: expect.any(String) as string });
   });
 });

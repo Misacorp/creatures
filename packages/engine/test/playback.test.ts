@@ -331,7 +331,7 @@ describe('bossWarnings', () => {
       ['briar-pincer'],
       ['bramble-bind', 'seed-burst'],
     ]);
-    expect(bossWarnings(thorn, 2)[0]?.target).toEqual({ kind: 'ends' });
+    expect(bossWarnings(thorn, 2)[0]?.target).toEqual({ kind: 'ends', scope: 'rows' });
     expect(bossWarnings(thorn, 3)[0]?.target).toEqual({ kind: 'pincer', scope: 'rows' });
     expect(bossWarnings(boss('cinder-wyrm'), 5)[0]?.target).toEqual({ kind: 'reaction' });
   });

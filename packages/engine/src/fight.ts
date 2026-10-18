@@ -51,9 +51,11 @@ import {
   ZONES,
   nearestLivingZone,
   neighbours,
+  fightRowShape,
   zoneIndices,
   zoneNeighbours,
   zoneOfIndex,
+  zoneTwoAway,
 } from './zones';
 
 export interface FightOptions {
@@ -223,6 +225,8 @@ export function simulateFight(
 
   // ---- validation ----
   if (n < 1) fail('the row is empty');
+  /** Where the row stands: the board's own positions when the input carries them. */
+  const shape = fightRowShape(input);
   const pool = input.bossHpPool;
   if (!isCount(pool.max, 1) || !isCount(pool.current, 0) || pool.current > pool.max) {
     fail('bossHpPool needs integers with 0 <= current <= max and max >= 1');
@@ -534,7 +538,7 @@ export function simulateFight(
   // ---- damage to creatures ----
   const shields: { zone: Zone; reduceBp: number; until: number }[] = [];
   const livingIn = (zone: Zone): Creature[] =>
-    zoneIndices(zone, n)
+    zoneIndices(zone, shape)
       .map((i) => creatures[i] as Creature)
       .filter((c) => c.alive);
 
@@ -548,23 +552,23 @@ export function simulateFight(
    * reach: a row of three, one slot per zone) has no usable zones, so it keeps the plain line.
    */
   const besides = (idx: number): number[] =>
-    guardReach === 'adjacent' ? neighbours(idx, n) : zoneNeighbours(idx, n);
+    guardReach === 'adjacent' ? neighbours(idx, n) : zoneNeighbours(idx, shape);
   /**
    * The slots two places away from `idx` in its row (a gear set's longer reach: a Guard's cover, a Support's
-   * boost): the raid's row is a zone, so the slot must be in the same zone; the dungeon's line has no zones.
+   * boost): the raid's row is a zone, so the slot must be in the same zone and, on the board, reached across
+   * an occupied slot (a gap breaks the reach, as it breaks "beside"); the dungeon's line has no zones.
    */
   const further = (idx: number): number[] =>
-    [idx - 2, idx + 2].filter(
-      (i) =>
-        i >= 0 && i < n && (guardReach === 'adjacent' || zoneOfIndex(i, n) === zoneOfIndex(idx, n)),
-    );
+    guardReach === 'adjacent'
+      ? [idx - 2, idx + 2].filter((i) => i >= 0 && i < n)
+      : zoneTwoAway(idx, shape);
   function guardFor(target: Creature): Creature | undefined {
     const candidates =
       guardReach === 'adjacent'
         ? besides(target.idx)
             .map((i) => creatures[i] as Creature)
             .filter((c) => c.alive && c.role === 'guard')
-        : livingIn(zoneOfIndex(target.idx, n)).filter((c) => c.role === 'guard');
+        : livingIn(zoneOfIndex(target.idx, shape)).filter((c) => c.role === 'guard');
     return pickGuard(candidates, target.idx);
   }
 
@@ -680,7 +684,7 @@ export function simulateFight(
     // wall that counts is the one on the zone of the creature that TAKES the hit (after a Guard
     // stepped in); without `rules` it is the zone the hit was aimed at (stored fights replay so).
     const walled = rules === undefined ? target : victim;
-    const zone = zoneOfIndex(walled.idx, n);
+    const zone = zoneOfIndex(walled.idx, shape);
     let remainingBp = 10_000;
     for (const w of shields) {
       if (w.zone === zone && w.until >= currentRound) {
@@ -1320,7 +1324,7 @@ export function simulateFight(
       if (e.op === 'shield_wall') {
         zone =
           e.zone === 'own' && source !== null
-            ? zoneOfIndex(source.idx, n)
+            ? zoneOfIndex(source.idx, shape)
             : (choice.params?.zone ?? zoneHit?.zone ?? 'front');
       } else if (e.op === 're_mark') {
         // The player's own creature for the default element: a living one first.
@@ -1405,8 +1409,9 @@ export function simulateFight(
    *   front-side zone before the back-side one on a tie), so a wiped-out zone does not make the
    *   attack miss. Nothing happens only when the whole row is down. A sweep of a named row does the
    *   same.
-   * - row ends (`silence_ends`): the leftmost and the rightmost LIVING creature (one creature
-   *   standing is silenced once; nobody standing, nothing).
+   * - row ends (`silence_ends`): the leftmost and the rightmost LIVING creature of the whole line
+   *   (`scope: row`, the dungeon) or of each row (`scope: rows`, the raid); one creature standing is
+   *   silenced once, an empty row is skipped, nobody standing, nothing.
    * - strongest (`strike_highest_atk`): the living creature with the highest Attack, ties to the
    *   lower slot; with `jumps`, the next strongest after it.
    * - the plain attack: the front-most living creature (or the Guard of its zone), see `bossAttack`.
@@ -1433,6 +1438,7 @@ export function simulateFight(
     return {
       creatures,
       n,
+      shape,
       firing: firingIndex(g, atRound),
       dice: diceWindow(patternDice, gimmickIndex),
       ...(rules === undefined ? {} : { guardDice }),
@@ -1536,7 +1542,7 @@ export function simulateFight(
       if (pending === undefined) return;
       pendingCharges.delete(key);
       const standing = pending.targets.filter((i) => (creatures[i] as Creature).alive);
-      const rows = pending.rows?.filter((z) => standing.some((i) => zoneOfIndex(i, n) === z));
+      const rows = pending.rows?.filter((z) => standing.some((i) => zoneOfIndex(i, shape) === z));
       events.push(
         named({
           ...pending,
@@ -1558,11 +1564,16 @@ export function simulateFight(
       }
       case 'silence_ends': {
         events.push(base);
-        const standing = creatures.filter((c) => c.alive);
-        const first = standing[0];
-        const last = standing[standing.length - 1];
-        if (first === undefined || last === undefined) break;
-        for (const c of first === last ? [first] : [first, last]) {
+        // The two ends of the whole line (`row`), or of each board row (`rows`).
+        const lines =
+          g.scope === 'rows' ? ZONES.map((z) => livingIn(z)) : [creatures.filter((c) => c.alive)];
+        const ends = lines.flatMap((line) => {
+          const first = line[0];
+          const last = line[line.length - 1];
+          if (first === undefined || last === undefined) return [];
+          return first === last ? [first] : [first, last];
+        });
+        for (const c of ends) {
           // Unbothered: the silence still picks it (the ends), and does nothing to it.
           if (c.mods.ignoreSilence) continue;
           // Steady paws: a chance to shrug it off (the creature's die 2 of this round).

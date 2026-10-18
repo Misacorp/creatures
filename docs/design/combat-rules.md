@@ -25,11 +25,13 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 
 **1.5 Beside.** The slot directly left or right of a creature.
 
-1.5.1 In the raid, beside stops at the edge of a row (`zoneNeighbours`). The last Front slot is not beside the first Middle slot (decision 2026-10-14, "Raid neighbours stop at row edges").
+1.5.1 In the raid, beside stops at the edge of a row (`zoneNeighbours`). The last Front slot is not beside the first Middle slot (decision 2026-10-14, "Raid neighbours stop at row edges"). A raid fight stands on the board: two creatures are beside each other only if their board slots are exactly one apart, so an empty board slot between them breaks it (decision 2026-10-18, board positions).
 
 1.5.2 In the dungeon, beside is the plain line (`neighbours`): the left and the right slot, whatever the rows. (Every slot is its own row there, so a row edge would leave nothing beside anyone.)
 
-**1.6 Lane.** A slot position inside a row, read across all three rows: the creature at position 2 of Front, of Middle and of Back are in the same lane. With a line of 3N slots, a lane has three creatures. In the dungeon there is one lane.
+1.5.3 **Two places away** (the longer reach of two gear sets, `coverReach` and `boostReach`) is the same idea one step on: in the raid the creature two board slots away in the same row, with a creature standing in the slot between (a gap breaks it, as it breaks beside); in the dungeon, two slots along the line. The position lines of gear (Front-liner, Back-row patience, Four winds, Lantern bearer, the ends and the middle of a row) and Lantern Night's Shield Wall for the Guards of a row are folded onto the sheet before the fight, from the same board: a creature next to an empty board slot has no neighbour on that side, and its row's ends and middle are its first and last creature (as the row-end silence counts them).
+
+**1.6 Lane.** A slot position inside a row, read across all three rows: the creature at position 2 of Front, of Middle and of Back are in the same lane. With a line of 3N slots, a lane has three creatures. The position is the board's: an empty board slot keeps its column, so creatures after a gap do not shift left (`laneOfIndex`). In the dungeon there is one lane.
 
 **1.7 Living, knocked out.** A creature is living while its HP is above 0. At 0 it is knocked out (the game never says "dead"). A knocked-out creature stays out for the rest of the fight. It does not act, is not a target of any boss rule, gives no buff and receives no buff or healing. Nothing revives it. (In the dungeon the run carries HP from room to room, so it stays out for the run.)
 
@@ -275,7 +277,7 @@ _Example._ Undertow aims Front. Front is knocked out, Middle and Back stand. It 
 
 6.3.2 In the dungeon every row is one slot: a row attack hits the creature at that place, and passes to the next one if it is down.
 
-**6.4 Silence (`silence_ends`: Bramble Bind, Sea Mist, Thorn Snap, Tangle).** No damage. The leftmost and the rightmost living creature of the whole line (not of each row) are silenced: they skip their next `turns` turns (1 for every boss today). One creature standing is silenced once. A silence already running is not added to, it lasts as long as the longer one. A silenced creature skips its turn when it would have acted, and the count goes down then. A silenced Support gives nothing (4.5.5). A Tide Support beside a silenced creature clears it at the next round start (4.5.3).
+**6.4 Silence (`silence_ends`: Bramble Bind, Sea Mist, Thorn Snap, Tangle).** No damage. With `scope` `rows` (the raid: Bramble Bind, Choking Vines) the leftmost and the rightmost living creature of each row (Front first, the board's rows, see 1.4) are silenced; a row with one creature standing silences it once, an empty row is skipped. With `scope` `row` (the dungeon) it is the two ends of the whole line, as in 6.11. A silenced creature skips its next `turns` turns (1 or 2 today). A silence already running is not added to, it lasts as long as the longer one. A silenced creature skips its turn when it would have acted, and the count goes down then. A silenced Support gives nothing (4.5.5). A Tide Support beside a silenced creature clears it at the next round start (4.5.3).
 
 6.4.1 Silence is applied after the creatures act, so it first bites in the next round.
 
@@ -311,9 +313,9 @@ _Example._ Attack order A (strongest), G (a Guard), C, D. The strike aimed at A 
 
 6.10.1 An empty or knocked-out slot is passed through: it takes nothing and the next row keeps its own falloff. **A living Guard in the lane takes its hit (with armor) and stops the lance**: nobody behind it is hit.
 
-6.10.2 With a line that is not a multiple of three, Middle is the widest row, and a lane past the end of a shorter row has nobody there.
+6.10.2 With a line that is not a multiple of three, Middle is the widest row, and a lane past the end of a shorter row has nobody there. The same goes for an empty board slot (a gap): the lance passes through it and hits the creature further back in that column.
 
-**6.11 Pincer (`pincer`: Briar Pincer, Briar Cage).** An area hit on the first and the last living creature of each row (`scope` `rows`, Front first) or of the whole line (`scope` `row`, used by Briar Cage in the dungeon). A group with one creature is hit once. A group with nobody is skipped.
+**6.11 Pincer (`pincer`: Briar Pincer, Briar Cage).** (Silence, 6.4, picks its ends the same way.) An area hit on the first and the last living creature of each row (`scope` `rows`, Front first) or of the whole line (`scope` `row`, used by Briar Cage in the dungeon). A group with one creature is hit once. A group with nobody is skipped.
 
 **6.12 Charge (`charge`: Great Wave, Seed Burst, and the dungeon bosses' signature moves).** A charge wraps a sweep, barrage, slam, lance or pincer. Its trigger is the **landing** round.
 
@@ -456,17 +458,17 @@ The order matters only through rounding, and it is fixed. _Example._ A hit of 11
 **10.7 Abilities and silence.**
 
 - `lingerRounds` adds rounds to the Rally, Shield Wall and timed Purge of the creature's **own** ability (8.2, 8.3, 8.5; an ability with a creature, `AbilityChoice.creatureId`). A Purge without `rounds` already lasts to the end. A basic ability belongs to no creature and is never lengthened.
-- `ignoreSilence: 1` makes silence (6.4) do nothing to it. The silence still picks the two ends of the line as always, so it is wasted on this creature, and no `silence` event is written for it.
+- `ignoreSilence: 1` makes silence (6.4) do nothing to it. The silence still picks the ends (of each row in the raid, of the line in the dungeon) as always, so it is wasted on this creature, and no `silence` event is written for it.
 
 **10.8 In the log.** `describeEvent` mentions the sheet in plain text where a player would ask why: a hit or a reaction that carries `sheetBp` ("(+12% from modifiers)"), and a boss hit that carries `warded` ("Its modifiers take off 20."). Names are text only.
 
 **10.9 The three hooks of the weather (2026-10-18).** Kind Rain, Morning Haze and Bramble Season are not sheet numbers, so each is an optional field of the fight input (`FightInput`; the dungeon run has `rainHealBp`, `hazeLeft` and `brambleBp`, copied into every room). Absent, empty or 0 means exactly the fight as it was: no event, no die, so every stored fight replays. None of them draws a die. The builders (`skyFightFields`, `skyRunFields` in `sky.ts`, from `weatherSky` in `@creatures/game`) leave a field out on a plain day.
 
-| Field           | Meaning                                                                                                                                                                                                                                                                                 |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `rainHealBp`    | Kind Rain. Each living creature heals this share of its max HP (rounded down) at round start, after the Supports' Mend (2.3 step 5a). Its own `healReceivedBp` applies like for a Mend (Long Shadows makes it weaker), never above what is missing, never a revival.                    |
-| `skipFirstTurn` | Morning Haze. Creature ids that skip their first turn (2.4.2). The raid names the leftmost creature of each row (zone, `firstOfEachRow`: a row of one or two is all Middle, so one creature); the dungeon names `team[0]` in every room (`hazeLeft`), since each room is a fresh fight. |
-| `brambleBp`     | Bramble Season. The share of the first reaction's bonus each round that goes back at the creature that set it off (5.4.5).                                                                                                                                                              |
+| Field           | Meaning                                                                                                                                                                                                                                                                                                                                                                 |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rainHealBp`    | Kind Rain. Each living creature heals this share of its max HP (rounded down) at round start, after the Supports' Mend (2.3 step 5a). Its own `healReceivedBp` applies like for a Mend (Long Shadows makes it weaker), never above what is missing, never a revival.                                                                                                    |
+| `skipFirstTurn` | Morning Haze. Creature ids that skip their first turn (2.4.2). The raid names the first creature standing in each board row (zone, `firstOfEachRow`, read from the fight's `board`: empty slots before it do not matter; a row of one or two is all Middle, so one creature); the dungeon names `team[0]` in every room (`hazeLeft`), since each room is a fresh fight. |
+| `brambleBp`     | Bramble Season. The share of the first reaction's bonus each round that goes back at the creature that set it off (5.4.5).                                                                                                                                                                                                                                              |
 
 The log: `sky_heal` (`heals`: creature and HP really healed, in row order, not written when nobody needed healing), `skip` with `reason: 'haze'`, and on a `reaction` the optional `bramble` (`bp`, `amount` sent back; the event's `bonus` is what the boss took) followed by a `boss_hit` with source `reflect`.
 

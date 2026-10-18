@@ -347,7 +347,8 @@
         }
       }
     ],
-    "readiness": null
+    "readiness": null,
+    "away": []
   },
   "channel": {
     "pinned": false,

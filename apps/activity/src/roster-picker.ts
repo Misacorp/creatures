@@ -8,7 +8,7 @@ import { affects, type AffectMode } from '@creatures/engine';
 import { RULES, content, creaturePower, strongest } from '@creatures/game';
 import type { Creature } from './api';
 import { creatureName, getSpecies, speciesName } from './game';
-import type { RaidEventId, RowSlotView } from './raid-api';
+import type { AwayView, RaidEventId, RowSlotView } from './raid-api';
 import { boardAffectRow, boardKeys, parseTurnOrder } from './raid-board';
 import { phaseName } from './raid-text';
 
@@ -93,7 +93,7 @@ export interface PickerOption {
 
 /** How many of the player's creatures are on the board. */
 export function placedCount(row: readonly RowSlotView[]): number {
-  return row.filter((s) => s.creature?.mine === true).length;
+  return row.filter((s) => s.creature?.mine === true && !s.creature.auto).length;
 }
 
 /**
@@ -179,6 +179,40 @@ export function effectPreview(args: {
   return parts.length === 0 ? null : parts.join(' · ');
 }
 
+/** Why an away teammate's joining creature is not offered as a swap-in. */
+export const ALREADY_JOINING = 'Already joining the fight';
+
+/**
+ * The options of the swap picker for an away teammate's creature: everything they own. The ones that
+ * are not in the fight come first (picking one takes the tile's place); the ones already joining stay
+ * listed but cannot be picked. Highest level first. No effect preview, no recommendation.
+ */
+export function awayPickerOptions(creatures: AwayView['creatures']): PickerOption[] {
+  const options = creatures.map((c): PickerOption => {
+    const species = getSpecies(c.species);
+    return {
+      id: c.creatureId,
+      name: c.name,
+      species: c.species,
+      level: c.level,
+      element: species?.element ?? 'unknown',
+      role: species?.role ?? '',
+      onBoard: false,
+      disabled: c.joining ? ALREADY_JOINING : null,
+      effect: null,
+      recommended: false,
+    };
+  });
+  const rank = (o: PickerOption): number => (o.disabled === null ? 0 : 1);
+  return options.sort(
+    (a, b) =>
+      rank(a) - rank(b) ||
+      b.level - a.level ||
+      a.name.localeCompare(b.name) ||
+      (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  );
+}
+
 /**
  * The options for filling the empty `slot` of the raid board: every creature the player owns. Those
  * that are free come first, then those already on the board (picking moves them), then, when the
@@ -196,7 +230,7 @@ export function pickerOptions(args: {
   const { row, length } = args;
   const onBoard = new Set(
     row.flatMap((s) =>
-      s.creature?.mine === true && s.creature.creatureId !== undefined
+      s.creature?.mine === true && !s.creature.auto && s.creature.creatureId !== undefined
         ? [s.creature.creatureId]
         : [],
     ),

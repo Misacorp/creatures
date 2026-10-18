@@ -813,11 +813,53 @@ describe('the raid stage under the weather', () => {
         expect(one.input.rainHealBp).toBe(200);
         expect(one.input.brambleBp).toBeUndefined();
         const ids = one.input.row.map((s) => s.id);
-        expect(one.input.skipFirstTurn).toEqual(firstOfEachRow(one.input.row));
+        expect(one.input.skipFirstTurn).toEqual(firstOfEachRow(one.input.row, one.input.board));
         for (const id of one.input.skipFirstTurn ?? []) expect(ids).toContain(id);
         expect(two.input.brambleBp).toBe(1_200);
         expect(two.input.rainHealBp).toBeUndefined();
         expect(two.input.skipFirstTurn).toBeUndefined();
+      },
+      { core: { weather: true } },
+    );
+  });
+
+  it('Morning Haze names the first creature standing in each board row, with holes on the board', async () => {
+    await runRaid(
+      (ctx) => {
+        const a = seedPlayer(ctx, 1, { level: 15 });
+        const b = seedPlayer(ctx, 2, { level: 15, creatures: 1 });
+        const c = seedPlayer(ctx, 3, { level: 15 });
+        ctx.core.raid.currentWeek(HELSINKI);
+        // Nine slots (Front 0-2, Middle 3-5, Back 6-8) with seven creatures, all placed: Front is slots
+        // 0-2, the lone creature stands in the Middle at slot 4, Back is slots 6-8 (3 / 1 / 3). Squeezed
+        // into a line of seven the rows would be 2 / 3 / 2 and the haze would name other creatures.
+        const place = (slot: number, userId: string, creatureId: string) =>
+          ctx.sql.exec(
+            'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, ?, ?, ?, ?)',
+            W02.id,
+            1,
+            slot,
+            userId,
+            creatureId,
+          );
+        a.creatureIds.forEach((id, k) => place(k, a.id, id));
+        place(4, b.id, b.creatureIds[0] as string);
+        c.creatureIds.forEach((id, k) => place(6 + k, c.id, id));
+        const times = eventTimes(W02.id, HELSINKI);
+        ctx.core.weather.force(
+          gameDay(times.phase1, HELSINKI, RULES.daily.reset),
+          'kind-rain',
+          'morning-haze',
+        );
+        forcePool(ctx.sql, 20_000);
+        ctx.clock.t = W02.afterPhase2;
+        ctx.core.raid.runDue(HELSINKI);
+        const one = storedRuns(ctx.sql)[0];
+        if (one === undefined) throw new Error('the stage did not run');
+        const { row, board } = one.input;
+        expect(board?.slots).toEqual([0, 1, 2, 4, 6, 7, 8]);
+        expect(one.input.skipFirstTurn).toEqual([row[0]?.id, row[3]?.id, row[4]?.id]);
+        expect(one.input.skipFirstTurn).not.toEqual(firstOfEachRow(row));
       },
       { core: { weather: true } },
     );

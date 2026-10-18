@@ -353,6 +353,16 @@ describe('raid content', () => {
     for (const b of content.bosses) expect(b.finaleRounds).toBe(12);
   });
 
+  it('gives every raid silence the scope of each row, and every dungeon silence the whole line', () => {
+    const silences = (gs: readonly Gimmick[]) => gs.filter((g) => g.op === 'silence_ends');
+    const raid = content.bosses.flatMap((b) => silences(b.gimmicks));
+    expect(raid.map((g) => g.id)).toEqual(['bramble-bind', 'choking-vines']);
+    for (const g of raid) expect(g.scope, g.id).toBe('rows');
+    const dungeon = dungeonContent.foes.flatMap((f) => silences(f.gimmicks));
+    expect(dungeon.length).toBeGreaterThan(0);
+    for (const g of dungeon) expect(g.scope, g.id).toBe('row');
+  });
+
   // docs/design/attack-patterns.md 3.1: a round stays readable and round 1 is calm. The raid bosses
   // are checked as they fight at Boss Ranks 1, 4, 7 and 10, so every rank-gated move is counted.
   const damaging = (g: Gimmick) => g.op !== 'reflect_first_reaction' && g.op !== 'silence_ends';

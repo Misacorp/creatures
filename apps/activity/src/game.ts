@@ -192,6 +192,9 @@ const ERROR_TEXT: Record<string, string> = {
   not_your_creature: 'That is not one of your creatures.',
   not_in_team: 'Only creatures in your team can be placed. Choose your team first.',
   not_in_roster: "You are not in this week's raid.",
+  not_away: 'They are back in the game, so only they can move their creatures now.',
+  not_in_party: 'That player is not in your party.',
+  not_movable: 'They placed that one themselves, so only they can move it.',
   duplicate_creatures: 'Pick three different creatures.',
   invalid_slot: 'That slot does not exist.',
   // The live finale.

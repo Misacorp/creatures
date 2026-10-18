@@ -264,7 +264,7 @@
   {
     "id": "gimmick-silence-ends",
     "title": "Silence",
-    "short": "The leftmost and rightmost creature still standing in the line skip a turn.",
+    "short": "The leftmost and rightmost creature still standing in each row skip a turn.",
     "lines": [],
     "visual": {
       "kind": "glyph",

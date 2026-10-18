@@ -47,7 +47,7 @@ export type PatternTarget =
 
 export type WarningTarget =
   | PatternTarget
-  | { kind: 'ends' }
+  | { kind: 'ends'; scope: 'rows' | 'row' }
   | { kind: 'strongest'; jumps: number }
   | { kind: 'reaction' }
   | { kind: 'charge'; stage: 'gathering' | 'landing'; inner: PatternTarget };
@@ -125,7 +125,7 @@ export function bossWarnings(boss: BossDef, round: number): BossWarning[] {
         out.push({ ...base, target: { kind: 'zone', zone: g.zone } });
         break;
       case 'silence_ends':
-        out.push({ ...base, target: { kind: 'ends' } });
+        out.push({ ...base, target: { kind: 'ends', scope: g.scope } });
         break;
       case 'strike_highest_atk':
         out.push({ ...base, target: { kind: 'strongest', jumps: g.jumps ?? 0 } });

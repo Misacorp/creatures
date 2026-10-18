@@ -113,6 +113,27 @@ function startBoard(players: number, yourLane: number, placed: number, empty: nu
  * else's slot refuses. Returns the new board, or the reason it was refused.
  */
 function applyIntent(board: Board, intent: Intent): Board | string {
+  // The away teammate's tiles (owner 1) are moved or swapped by id: `other-<slot>` for a tile, `bench-<n>` for a creature off the board.
+  if (intent.type === 'place' && /^(other|bench)-\d+$/.test(intent.creatureId)) {
+    const others = [...board.others];
+    const index = Number(intent.creatureId.split('-')[1]);
+    const target = others[intent.slot] ?? null;
+    if (target !== null && target.owner !== AWAY_OWNER) return 'that slot is not theirs to give';
+    if (intent.creatureId.startsWith('bench-')) {
+      if (target === null) return 'their board is full';
+      others[intent.slot] = {
+        ...BENCH[index % BENCH.length]!,
+        owner: AWAY_OWNER,
+        level: target.level,
+      };
+      return { ...board, others };
+    }
+    const moving = others[index] ?? null;
+    if (moving === null) return 'that creature is not on the board';
+    others[index] = target;
+    others[intent.slot] = moving;
+    return { ...board, others };
+  }
   const mine = [...board.mine];
   const from = mine.indexOf(intent.creatureId);
   if (intent.type === 'unplace') {
@@ -127,8 +148,23 @@ function applyIntent(board: Board, intent: Intent): Board | string {
   return { ...board, mine };
 }
 
+/** The teammate the demo can mark as away, and the creatures they own beyond the board. */
+const AWAY_OWNER = 1;
+const BENCH: { species: string }[] = [{ species: 'stormray' }, { species: 'mossback' }];
+
+interface DemoFlags {
+  /** Other players' creatures join by themselves: drawn as auto tiles. */
+  auto: boolean;
+  /** One teammate has not opened the game this week: their tiles can be moved and swapped. */
+  away: boolean;
+}
+
 /** The party view the Placement draws, from the demo's board. */
-function partyView(board: Board, owned: readonly PickerCreature[]): NonNullable<RaidView['party']> {
+function partyView(
+  board: Board,
+  owned: readonly PickerCreature[],
+  flags: DemoFlags = { auto: false, away: false },
+): NonNullable<RaidView['party']> {
   const length = board.mine.length;
   const row: RowSlotView[] = board.mine.map((id, slot) => {
     const zone = ZONES.find((z) => zoneIndices(z, length).includes(slot)) ?? 'middle';
@@ -144,6 +180,8 @@ function partyView(board: Board, owned: readonly PickerCreature[]): NonNullable<
           name: speciesLabel(own.species),
           level: own.level,
           mine: true,
+          auto: false,
+          movable: false,
           creatureId: own.id,
         },
       };
@@ -160,6 +198,11 @@ function partyView(board: Board, owned: readonly PickerCreature[]): NonNullable<
               name: speciesLabel(other.species),
               level: other.level,
               mine: false,
+              auto: flags.auto || (flags.away && other.owner === AWAY_OWNER),
+              movable: flags.away && other.owner === AWAY_OWNER,
+              ...(flags.away && other.owner === AWAY_OWNER
+                ? { creatureId: `other-${String(slot)}` }
+                : {}),
             },
     };
   });
@@ -167,6 +210,35 @@ function partyView(board: Board, owned: readonly PickerCreature[]): NonNullable<
     party: 1,
     rowLength: length,
     row,
+    away: flags.away
+      ? [
+          {
+            ownerName: NAMES[AWAY_OWNER],
+            creatures: [
+              ...row.flatMap((r) =>
+                r.creature?.ownerName === NAMES[AWAY_OWNER] && r.creature.creatureId !== undefined
+                  ? [
+                      {
+                        creatureId: r.creature.creatureId,
+                        species: r.creature.species,
+                        name: r.creature.name,
+                        level: r.creature.level,
+                        joining: true,
+                      },
+                    ]
+                  : [],
+              ),
+              ...BENCH.map((b, i) => ({
+                creatureId: `bench-${String(i)}`,
+                species: b.species,
+                name: speciesLabel(b.species),
+                level: 6 + i * 4,
+                joining: false,
+              })),
+            ],
+          },
+        ]
+      : [],
     guests: length === 9,
     bossHp: null,
     adaptation: null,
@@ -195,7 +267,7 @@ function RosterDemo({ p }: { p: Props }) {
     setBoard(next);
   }
 
-  const party = partyView(board, owned);
+  const party = partyView(board, owned, { auto: bool(p, 'autoOthers'), away: bool(p, 'away') });
   return (
     <>
       <Placement
@@ -237,6 +309,8 @@ function SingleRowDemo({ p }: { p: Props }) {
         level: 5 + index * 3,
         ownId: null,
         mine: true,
+        auto: false,
+        movable: false,
       },
     };
   });
@@ -273,6 +347,8 @@ const raidBoard: Entry = {
     owned: { kind: 'number', min: 1, max: 12 },
     turnOrder: { kind: 'select', options: ['left_to_right', 'right_to_left', 'speed'] },
     locked: { kind: 'toggle' },
+    autoOthers: { kind: 'toggle' },
+    away: { kind: 'toggle' },
   },
   defaults: {
     board: 'Raid Roster',
@@ -284,6 +360,8 @@ const raidBoard: Entry = {
     owned: 7,
     turnOrder: 'left_to_right',
     locked: false,
+    autoOthers: false,
+    away: false,
   },
   presets: [
     { name: 'Eleven players, one of yours placed', props: {} },
@@ -296,6 +374,14 @@ const raidBoard: Entry = {
     { name: 'Four players', props: { players: 4, yourLane: 2, empty: 1 } },
     { name: 'Full server (45 slots)', props: { players: 15, yourLane: 12, empty: 4 } },
     { name: 'Locked (read-only, no remove button)', props: { locked: true, placed: 2 } },
+    {
+      name: 'Others join by themselves (auto tiles: dashed and muted, with an auto tag)',
+      props: { autoOthers: true },
+    },
+    {
+      name: 'A teammate is away (their tiles can be dragged, or swapped from the popover)',
+      props: { away: true },
+    },
     { name: 'Single row, the raid size (the default size)', props: { board: 'Single row' } },
     {
       name: 'Single row, large (the dungeon team: about halfway to the old big tiles)',
@@ -307,7 +393,7 @@ const raidBoard: Entry = {
       <SingleRowDemo key={`${str(p, 'board')}-${String(num(p, 'slots'))}`} p={p} />
     ) : (
       <RosterDemo
-        key={`${String(num(p, 'players'))}-${String(num(p, 'yourLane'))}-${String(num(p, 'placed'))}-${String(num(p, 'empty'))}-${String(num(p, 'owned'))}-${str(p, 'turnOrder')}-${String(bool(p, 'locked'))}`}
+        key={`${String(num(p, 'players'))}-${String(num(p, 'yourLane'))}-${String(num(p, 'placed'))}-${String(num(p, 'empty'))}-${String(num(p, 'owned'))}-${str(p, 'turnOrder')}-${String(bool(p, 'locked'))}-${String(bool(p, 'autoOthers'))}-${String(bool(p, 'away'))}`}
         p={p}
       />
     ),

@@ -5,7 +5,14 @@ import { formatBossReveal, formatPhasePost } from '../src/discord-format';
 import { addWeeks, eventTimes, weekIdFor, weekIndex } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
 import { readWeatherDay, type ForecastView } from '../src/weather';
-import { T0, USER_ID, runCore, undoWeatherMigration, type CoreContext } from './helpers';
+import {
+  LATEST_SCHEMA_VERSION,
+  T0,
+  USER_ID,
+  runCore,
+  undoWeatherMigration,
+  type CoreContext,
+} from './helpers';
 import { DAY, HELSINKI, HOUR, MINUTE, count, nextGuild, rows } from './raid-helpers';
 
 const USER = { id: USER_ID, displayName: 'Misa' };
@@ -94,7 +101,9 @@ describe('migration 31 (the weather)', () => {
         ctx.core.migrate();
         expect(columns('weather_days')).toContain('boon_bp');
         expect(columns('expeditions')).toContain('weather_json');
-        expect(ctx.sql.exec('SELECT MAX(version) AS v FROM schema_version').one()['v']).toBe(31);
+        expect(ctx.sql.exec('SELECT MAX(version) AS v FROM schema_version').one()['v']).toBe(
+          LATEST_SCHEMA_VERSION,
+        );
         // The check constraints hold: a wild flag is 0 or 1, a strength is never 0.
         expect(() =>
           ctx.sql.exec(

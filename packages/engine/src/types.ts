@@ -252,6 +252,13 @@ export interface FightInput {
   adaptation: ActiveAdaptation | null;
   /** The row, left to right. */
   row: readonly FightSlot[];
+  /**
+   * Where the row's creatures stand on the board: `length` is the board row's full length and
+   * `slots[i]` the board slot of `row[i]` (strictly increasing, below `length`). A raid fight carries
+   * the board's own positions here, so zones, lanes and "beside" are the board's even when it has
+   * empty slots. Absent: the dense row (creature i in slot i), so a stored input replays as it did.
+   */
+  board?: { length: number; slots: readonly number[] };
   /** Signed-up player ids. */
   players: readonly string[];
   finaleAbilities: readonly AbilityChoice[];

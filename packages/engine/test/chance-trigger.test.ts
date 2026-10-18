@@ -37,6 +37,7 @@ const silenceEnds = (every?: number): Gimmick => ({
   name: 'sil',
   trigger: every === undefined ? { eachRound: true } : { every },
   op: 'silence_ends',
+  scope: 'row',
   turns: 1,
 });
 

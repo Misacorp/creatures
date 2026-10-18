@@ -148,6 +148,54 @@ describe('the raid row', () => {
   });
 });
 
+describe('the raid board with empty slots', () => {
+  it('a Lantern bearer gives HP only to a creature that stands right beside it, not across an empty slot', async () => {
+    await runRaid(
+      (ctx) => {
+        const a = seedPlayer(ctx, 1, { level: 12, species: ['sproutle', 'zipmouse', 'cindle'] });
+        const b = seedPlayer(ctx, 2, { level: 12, creatures: 1 });
+        const c = seedPlayer(ctx, 3, { level: 12 });
+        ctx.core.raid.currentWeek(HELSINKI);
+        const [sproutle, zipmouse, cindle] = a.creatureIds as [string, string, string];
+        // Seven creatures on a board of nine, all placed: the Guard at slot 0 and the bearer at slot 2
+        // with slot 1 empty, Cindle in the Middle at slot 3.
+        const place = (slot: number, userId: string, creatureId: string) =>
+          ctx.sql.exec(
+            'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, ?, ?, ?, ?)',
+            W02.id,
+            1,
+            slot,
+            userId,
+            creatureId,
+          );
+        place(0, a.id, sproutle);
+        place(2, a.id, zipmouse);
+        place(3, a.id, cindle);
+        place(4, b.id, b.creatureIds[0] as string);
+        c.creatureIds.forEach((id, k) => place(6 + k, c.id, id));
+        ctx.clock.t = W02.afterPhase2;
+        ctx.core.raid.runDue(HELSINKI);
+        forcePool(ctx.sql, BIG, BIG, 1);
+        wear(ctx, a.id, zipmouse, 'trail-cap', [['lantern-bearer', 4]]);
+        const bare = new Map(loadCreatures(ctx.sql, a.id).map((x) => [x.id, x]));
+
+        ctx.clock.t = W02.afterPhase2 + 5000;
+        expect(ctx.core.raid.startPractice(a.id, HELSINKI).ok).toBe(true);
+        const stored = rows<{ input: string }>(
+          ctx.sql,
+          'SELECT input FROM raid_live WHERE practice = 1',
+        )[0];
+        const input = JSON.parse(stored?.input ?? '{}') as FightInput;
+        expect(input.board?.slots).toEqual([0, 2, 3, 4, 6, 7, 8]);
+        // The Guard is two board slots from the bearer with a gap between: no gift, its numbers as built.
+        expect(input.row.find((s) => s.id === sproutle)?.stats).toEqual(bare.get(sproutle)?.stats);
+        expect(() => simulateFight(input, createSeededRng('replay'))).not.toThrow();
+      },
+      { core: { raidPractice: true, gearRng: createSeededRng('gap') } },
+    );
+  });
+});
+
 describe('the dungeon line', () => {
   it('folds position lines along the row in the order of the request, left to right', async () => {
     await runCore(

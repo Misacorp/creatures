@@ -8,7 +8,7 @@ import statsCloseLoss from './fixtures/raid-stats-close-loss.json';
 import statsCloseWin from './fixtures/raid-stats-close-win.json';
 import statsFinale from './fixtures/raid-stats-finale.json';
 import statsWiped from './fixtures/raid-stats-wiped.json';
-import { parseRaidView, parseReplayView, parseStats } from './raid-api';
+import { isOptBoard, parseRaidView, parseReplayView, parseStats } from './raid-api';
 
 const raid = {
   weekId: '2026-W41',
@@ -81,10 +81,13 @@ const raid = {
           name: 'Splashet',
           level: 3,
           mine: true,
+          auto: false,
+          movable: false,
           creatureId: 'c1',
         },
       },
     ],
+    away: [],
     guests: true,
     bossHp: { max: 100, current: 100 },
     adaptation: null,
@@ -92,6 +95,61 @@ const raid = {
     readiness: 'likely',
   },
 };
+
+describe('parseRaidView and the board tiles of the auto-join and away rules', () => {
+  const party = raid.party;
+  const withRow = (creature: unknown) => ({
+    ...raid,
+    party: { ...party, row: [{ slot: 0, zone: 'middle', creature }] },
+  });
+  const tile = { ownerName: 'Jun', species: 'cindle', name: 'Cindle', level: 4, mine: false };
+
+  it('reads an auto tile, a movable tile of an away teammate and who moved it', () => {
+    const parsed = parseRaidView(
+      withRow({ ...tile, auto: true, movable: true, creatureId: 'c9', movedBy: 'Kim' }),
+    );
+    expect(parsed.party?.row[0]?.creature).toMatchObject({
+      auto: true,
+      movable: true,
+      movedBy: 'Kim',
+      creatureId: 'c9',
+    });
+  });
+
+  it('refuses a tile without the flags or with the wrong types', () => {
+    expect(() => parseRaidView(withRow({ ...tile, movable: false }))).toThrow();
+    expect(() => parseRaidView(withRow({ ...tile, auto: false }))).toThrow();
+    expect(() => parseRaidView(withRow({ ...tile, auto: 'yes', movable: false }))).toThrow();
+    expect(() => parseRaidView(withRow({ ...tile, auto: false, movable: 1 }))).toThrow();
+    expect(() =>
+      parseRaidView(withRow({ ...tile, auto: false, movable: false, movedBy: 4 })),
+    ).toThrow();
+  });
+
+  it('reads the away teammates and refuses a broken list', () => {
+    const away = [
+      {
+        ownerName: 'Jun',
+        creatures: [
+          { creatureId: 'c9', species: 'cindle', name: 'Cindle', level: 4, joining: true },
+          { creatureId: 'c8', species: 'splashet', name: 'Splashet', level: 2, joining: false },
+        ],
+      },
+    ];
+    expect(parseRaidView({ ...raid, party: { ...party, away } }).party?.away).toEqual(away);
+    const bad = (value: unknown) => parseRaidView({ ...raid, party: { ...party, away: value } });
+    expect(() => bad(undefined)).toThrow();
+    expect(() => bad('Jun')).toThrow();
+    expect(() => bad([{ ownerName: 'Jun' }])).toThrow();
+    expect(() => bad([{ ...away[0], ownerName: 4 }])).toThrow();
+    expect(() =>
+      bad([{ ownerName: 'Jun', creatures: [{ ...away[0]?.creatures[0], joining: 'yes' }] }]),
+    ).toThrow();
+    expect(() =>
+      bad([{ ownerName: 'Jun', creatures: [{ ...away[0]?.creatures[0], level: 1.5 }] }]),
+    ).toThrow();
+  });
+});
 
 describe('parseRaidView and the rank-gated moves', () => {
   it('reads a move with its fromRank and refuses a fromRank that is not a whole number', () => {
@@ -190,6 +248,7 @@ describe('parseRaidView with a Festival week (real server responses)', () => {
     expect(Object.keys(parsed.party ?? {}).sort()).toEqual(
       [
         'adaptation',
+        'away',
         'bossHp',
         'guests',
         'party',
@@ -597,5 +656,26 @@ describe('parseStats with real server responses', () => {
     const withoutBoss: Record<string, unknown> = { ...statsFinale };
     delete withoutBoss['boss'];
     expect(() => parseStats(withoutBoss)).toThrow();
+  });
+});
+
+describe('the fight board positions', () => {
+  it('accepts none, null, or a length with strictly increasing slots below it', () => {
+    expect(isOptBoard(undefined)).toBe(true);
+    expect(isOptBoard(null)).toBe(true);
+    expect(isOptBoard({ length: 9, slots: [] })).toBe(true);
+    expect(isOptBoard({ length: 9, slots: [1, 2, 4, 8] })).toBe(true);
+  });
+
+  it('refuses anything else', () => {
+    expect(isOptBoard({ front: 3, middle: 3, back: 3 })).toBe(false);
+    expect(isOptBoard({ length: 9 })).toBe(false);
+    expect(isOptBoard({ length: 9, slots: [2, 2] })).toBe(false);
+    expect(isOptBoard({ length: 9, slots: [3, 1] })).toBe(false);
+    expect(isOptBoard({ length: 9, slots: [9] })).toBe(false);
+    expect(isOptBoard({ length: 9, slots: [-1] })).toBe(false);
+    expect(isOptBoard({ length: 9, slots: [0.5] })).toBe(false);
+    expect(isOptBoard({ length: 9, slots: [], extra: 1 })).toBe(false);
+    expect(isOptBoard('board')).toBe(false);
   });
 });

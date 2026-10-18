@@ -13,7 +13,7 @@ import {
 } from '@creatures/engine';
 import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
 import { fightRank, rankChangeOf, type RankChangeView } from './raid-ladder';
-import { bossFor, guardRulesOf, type StoredSummary } from './raid-resolve';
+import { boardOf, bossFor, guardRulesOf, type StoredSummary } from './raid-resolve';
 import { totalEssenceOf } from './raid-reveal';
 import {
   PACING_CONTENT,
@@ -105,6 +105,8 @@ export interface LiveSnapshot {
   row: ReplayView['row'];
   /** The Guard numbers the fight is played with. Null: none known (no row yet, or an old fight). */
   rules: ReplayView['rules'];
+  /** Where the row stands on the board (length and each creature's slot). Null: none stored (no row yet, or an old fight). */
+  board: { length: number; slots: number[] } | null;
   names: EventNames | null;
   abilities: LiveAbilityView[];
   /** Every event of rounds 1..round. */
@@ -166,6 +168,7 @@ export function emptySnapshot(
     },
     row: [],
     rules: null,
+    board: null,
     names: null,
     abilities: [],
     events: [],
@@ -263,6 +266,7 @@ export function lobbySnapshot(
       owner: s.ownerId,
     })),
     rules: guardRulesOf(input),
+    board: boardOf(input).board ?? null,
     names: buildNames(input, aliasNames, content),
     abilities: mine,
     events: [],
@@ -375,6 +379,7 @@ export function liveSnapshot(
       owner: s.ownerId,
     })),
     rules: guardRulesOf(row.input),
+    board: boardOf(row.input).board ?? null,
     names: buildNames(row.input, aliasNames, content),
     abilities,
     events,

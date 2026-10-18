@@ -216,7 +216,14 @@ describe('support', () => {
   it('consumes the buff on the hit and does not stack unused buffs', () => {
     // Boss silences the row ends every 2nd round: a and b skip round 3 and keep one buff only.
     const gimmicks = [
-      { id: 'bind', name: 'Bind', trigger: { every: 2 }, op: 'silence_ends', turns: 1 },
+      {
+        id: 'bind',
+        name: 'Bind',
+        trigger: { every: 2 },
+        op: 'silence_ends',
+        scope: 'row',
+        turns: 1,
+      },
     ] as const;
     const r = run(line(), {
       guardReach: 'adjacent',
@@ -234,7 +241,14 @@ describe('support', () => {
 
   it('does not buff while the supporter is silenced', () => {
     const gimmicks = [
-      { id: 'bind', name: 'Bind', trigger: { every: 2 }, op: 'silence_ends', turns: 1 },
+      {
+        id: 'bind',
+        name: 'Bind',
+        trigger: { every: 2 },
+        op: 'silence_ends',
+        scope: 'row',
+        turns: 1,
+      },
     ] as const;
     const r = run(
       [

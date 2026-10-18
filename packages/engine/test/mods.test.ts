@@ -626,6 +626,7 @@ describe('abilities and silence', () => {
       name: 'Bind',
       trigger: { every: 2 },
       op: 'silence_ends',
+      scope: 'row',
       turns: 1,
     };
     const skips = (mods: SlotMods) => {

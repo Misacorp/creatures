@@ -3,7 +3,7 @@
  * (`apps/worker/src/raid-view.ts`). Everything here is display data; the server decides every
  * outcome, and the client only sends intents (team, placement).
  */
-import type { EventNames, FightEvent, Zone } from '@creatures/engine';
+import type { EventNames, FightEvent, Zone, FightBoard } from '@creatures/engine';
 import { apiFetch, jsonRequest } from './api';
 import {
   isArrayOf,
@@ -40,9 +40,28 @@ export interface RowSlotView {
     name: string;
     level: number;
     mine: boolean;
-    /** Only present for the caller's own creatures. */
+    /** It joins by itself (nobody placed it): drawn where the fight will put it. */
+    auto: boolean;
+    /** The caller may move or swap it: its owner is away and did not place it themselves. */
+    movable: boolean;
+    /** The teammate who placed it for an away owner (a name, plain text); absent otherwise. */
+    movedBy?: string;
+    /** Only present for the caller's own creatures and the ones the caller may move. */
     creatureId?: string;
   };
+}
+
+/** A party member who has not opened the game this week, with everything they own (for a swap). */
+export interface AwayView {
+  ownerName: string;
+  creatures: {
+    creatureId: string;
+    species: string;
+    name: string;
+    level: number;
+    /** It is in the fight now (a swap brings in one that is not). */
+    joining: boolean;
+  }[];
 }
 
 export interface TeamCreatureView {
@@ -204,6 +223,8 @@ export interface RaidView {
     party: number;
     rowLength: number;
     row: RowSlotView[];
+    /** Away teammates (never the caller); empty once the board is locked. */
+    away: AwayView[];
     guests: boolean;
     bossHp: { max: number; current: number } | null;
     adaptation: { description: string; rule: string | null; target: string | null } | null;
@@ -252,6 +273,8 @@ export interface ReplayView {
   bossHpEnd: number;
   /** The Guard numbers the fight was played with; null (or absent) for a fight stored without rules. */
   rules?: FightGuardRules | null;
+  /** Where the row stood on the board (its length and each creature's slot); absent: the dense row. */
+  board?: FightBoard | null;
   /** The caller's opaque owner key in this fight (see `ReplayRowEntry.owner`), or null if not in it. */
   you: string | null;
   row: ReplayRowEntry[];
@@ -290,7 +313,27 @@ function isRowSlot(value: unknown): value is RowSlotView {
     isStr(c['name']) &&
     isInt(c['level']) &&
     isBool(c['mine']) &&
+    isBool(c['auto']) &&
+    isBool(c['movable']) &&
+    (c['movedBy'] === undefined || isStr(c['movedBy'])) &&
     (c['creatureId'] === undefined || isStr(c['creatureId']))
+  );
+}
+
+function isAwayView(value: unknown): value is AwayView {
+  return (
+    isRecord(value) &&
+    isStr(value['ownerName']) &&
+    isArrayOf(
+      value['creatures'],
+      (c): c is AwayView['creatures'][number] =>
+        isRecord(c) &&
+        isStr(c['creatureId']) &&
+        isStr(c['species']) &&
+        isStr(c['name']) &&
+        isInt(c['level']) &&
+        isBool(c['joining']),
+    )
   );
 }
 
@@ -459,6 +502,7 @@ function isPartyView(value: unknown): value is NonNullable<RaidView['party']> {
     !isInt(value['party']) ||
     !isInt(value['rowLength']) ||
     !isArrayOf(value['row'], isRowSlot) ||
+    !isArrayOf(value['away'], isAwayView) ||
     !isBool(value['guests']) ||
     !isArrayOf(value['results'], isResult) ||
     !(value['readiness'] === null || isReadiness(value['readiness']))
@@ -551,6 +595,21 @@ export const isGuardRules = (value: unknown): value is FightGuardRules =>
 export const isOptGuardRules = (value: unknown): boolean =>
   value === undefined || value === null || isGuardRules(value);
 
+/** Absent, null (a fight stored before board positions), or a length and strictly increasing slots below it. */
+export const isOptBoard = (value: unknown): boolean =>
+  value === undefined ||
+  value === null ||
+  (isRecord(value) &&
+    Object.keys(value).every((k) => k === 'length' || k === 'slots') &&
+    isCount(value['length']) &&
+    Array.isArray(value['slots']) &&
+    value['slots'].every(
+      (slot, i, all) =>
+        isCount(slot) &&
+        slot < (value['length'] as number) &&
+        (i === 0 || slot > (all[i - 1] as number)),
+    ));
+
 export const isEvent = (value: unknown): value is FightEvent =>
   isRecord(value) && isStr(value['t']) && EVENT_TYPES.has(value['t']) && isInt(value['round']);
 
@@ -598,6 +657,7 @@ export function parseReplayView(data: unknown): ReplayView {
     !isInt(data['bossHpStart']) ||
     !isInt(data['bossHpEnd']) ||
     !isOptGuardRules(data['rules']) ||
+    !isOptBoard(data['board']) ||
     !isNullableStr(data['you']) ||
     !isArrayOf(data['row'], isReplayRow) ||
     !isArrayOf(data['events'], isEvent) ||
