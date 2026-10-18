@@ -78,6 +78,6 @@ Run all of these before proposing a PR. CI runs the same.
 ## Conventions
 
 - TypeScript strict everywhere. Small modules, plain functions, no frameworks in the Worker unless justified.
-- Tests for every behaviour change; deterministic seeds in tests.
+- Tests for every behaviour change; deterministic seeds in tests. Prove each rule once, at the lowest layer that can (`docs/design/testing.md`: layers, speed budgets, when to move a slow check down).
 - Times are stored as UTC epoch milliseconds; game-calendar logic converts to the guild's timezone (default `Europe/Helsinki`) in one place, and the timezone is always passed explicitly, never defaulted in a function signature.
 - Integer amounts only for currencies; never negative balances.
