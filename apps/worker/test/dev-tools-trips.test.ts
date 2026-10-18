@@ -459,6 +459,24 @@ describe('dungeon tools', () => {
     );
   });
 
+  it('a reset clears runs from days ahead of a clock that was moved back, so the dungeon opens again', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 30 });
+        await p.tool('clock', { advanceMs: 2 * 24 * 60 * 60 * 1000 });
+        expect((await run(p)).status).toBe(200);
+        await p.tool('clock', { reset: true });
+        // Today is now before the day that run was on: nothing ran today, yet the day looks spent.
+        expect(await today(p)).toMatchObject({ attemptsToday: 0, canRun: false });
+        expect(await p.tool('dungeon-reset')).toMatchObject({ removed: 1 });
+        expect(await today(p)).toMatchObject({ attemptsToday: 0, canRun: true, blocked: null });
+        expect((await run(p)).status).toBe(200);
+      },
+      ON,
+    );
+  });
+
   it('opens the first-day retry for a run that went home or cleared, too', async () => {
     await runCore(
       nextGuild(),

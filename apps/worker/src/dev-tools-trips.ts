@@ -288,9 +288,11 @@ export function dungeonDepth(ctx: ToolCtx, body: Body<typeof DungeonDepthBodySch
  */
 export function dungeonReset(ctx: ToolCtx) {
   const day = todayOf(ctx);
+  // Today's runs, and any on a later day: those exist only when the dev clock was moved forward, run
+  // and then moved back, and they would leave the day looking spent (a last day ahead of today).
   const all = ctx.sql
-    .exec<{ id: string; depth: number; cleared: number; status: string }>(
-      'SELECT id, depth, cleared, status FROM dungeon_runs WHERE user_id = ? AND day = ? ORDER BY attempt',
+    .exec<{ id: string; day: string; depth: number; cleared: number; status: string }>(
+      'SELECT id, day, depth, cleared, status FROM dungeon_runs WHERE user_id = ? AND day >= ? ORDER BY day, attempt',
       ctx.userId,
       day,
     )
@@ -299,9 +301,43 @@ export function dungeonReset(ctx: ToolCtx) {
   // Only the runs that ended were counted in the progress and paid.
   const runs = all.filter((r) => r.status === 'done');
   for (const run of all) ctx.sql.exec('DELETE FROM dungeon_steps WHERE run_id = ?', run.id);
-  ctx.sql.exec('DELETE FROM dungeon_runs WHERE user_id = ? AND day = ?', ctx.userId, day);
+  ctx.sql.exec('DELETE FROM dungeon_runs WHERE user_id = ? AND day >= ?', ctx.userId, day);
   if (runs.length === 0) return { removed: all.length, day };
 
+  for (const runDay of new Set(runs.map((r) => r.day))) takeBackDay(ctx, runDay);
+
+  const progress = progressOf(ctx);
+  const left = Math.max(0, progress.runs - runs.length);
+  const clears = Math.max(0, progress.clears - runs.filter((r) => r.cleared === 1).length);
+  const firstRun = runs[0];
+  const lastRunDay =
+    ctx.sql
+      .exec<{ day: string | null }>(
+        "SELECT MAX(day) AS day FROM dungeon_runs WHERE user_id = ? AND status = 'done'",
+        ctx.userId,
+      )
+      .one().day ?? null;
+  ctx.sql.exec(
+    `UPDATE dungeon_progress SET runs = ?, clears = ?, depth = ?, streak = ?, last_day = ?, first_day = ?
+     WHERE user_id = ?`,
+    left,
+    clears,
+    Math.min(progress.depth, firstRun?.depth ?? progress.depth),
+    progress.last_day !== null && progress.last_day >= day
+      ? Math.max(0, progress.streak - 1)
+      : progress.streak,
+    lastRunDay,
+    left === 0 ? null : progress.first_day,
+    ctx.userId,
+  );
+  return { removed: all.length, day };
+}
+
+/**
+ * Takes back what a game day's dungeon runs paid, as far as the balances allow (see `dungeonReset`), and
+ * deletes that day's gear grants so they can be granted again.
+ */
+function takeBackDay(ctx: ToolCtx, day: string): void {
   const prefix = `dungeon:${day}:%`;
   const paid = ctx.sql
     .exec<{ currency: Currency; total: number }>(
@@ -338,30 +374,6 @@ export function dungeonReset(ctx: ToolCtx) {
     );
   }
   ctx.sql.exec('DELETE FROM gear_grants WHERE user_id = ? AND key LIKE ?', ctx.userId, prefix);
-
-  const progress = progressOf(ctx);
-  const left = Math.max(0, progress.runs - runs.length);
-  const clears = Math.max(0, progress.clears - runs.filter((r) => r.cleared === 1).length);
-  const firstRun = runs[0];
-  const lastRunDay =
-    ctx.sql
-      .exec<{ day: string | null }>(
-        "SELECT MAX(day) AS day FROM dungeon_runs WHERE user_id = ? AND status = 'done'",
-        ctx.userId,
-      )
-      .one().day ?? null;
-  ctx.sql.exec(
-    `UPDATE dungeon_progress SET runs = ?, clears = ?, depth = ?, streak = ?, last_day = ?, first_day = ?
-     WHERE user_id = ?`,
-    left,
-    clears,
-    Math.min(progress.depth, firstRun?.depth ?? progress.depth),
-    progress.last_day === day ? Math.max(0, progress.streak - 1) : progress.streak,
-    lastRunDay,
-    left === 0 ? null : progress.first_day,
-    ctx.userId,
-  );
-  return { removed: all.length, day };
 }
 
 /**
