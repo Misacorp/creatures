@@ -377,15 +377,19 @@ describe('parseGameState with a real server response (fixtures/collection-state.
 });
 
 describe('parseGameState and a line that grows two ways', () => {
-  it('reads the second form of Sproutle from the real response, and none for a single-form line', () => {
+  it('reads the second form of Sproutle and of Cindle from the real response', () => {
     const state = parseGameState(collectionState);
     const sproutle = state.creatures.find((c) => c.species === 'sproutle');
     expect(sproutle?.evolution).toMatchObject({
       toSpecies: 'thornbuck',
       alt: { toSpecies: 'sunfawn' },
     });
+    // Every evolving line grows two ways now, so a Cindle has its second form too.
     const cindle = state.creatures.find((c) => c.species === 'cindle');
-    expect(cindle?.evolution?.alt).toBeUndefined();
+    expect(cindle?.evolution).toMatchObject({
+      toSpecies: 'pyrelynx',
+      alt: { toSpecies: 'wickat' },
+    });
   });
 
   it('refuses a second form of the wrong shape', () => {

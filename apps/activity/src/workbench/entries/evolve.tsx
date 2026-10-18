@@ -5,25 +5,38 @@ import type { Creature } from '../../api';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
-const LINES = ['Sproutle', 'Zipmouse'] as const;
+/** Every line that evolves: its stage-1 species, its two forms, and what the evolution costs. */
+const FORMS = {
+  Splashet: { species: 'splashet', first: 'tidewing', second: 'geyserpup', essence: 20 },
+  Cindle: { species: 'cindle', first: 'pyrelynx', second: 'wickat', essence: 20 },
+  Sproutle: { species: 'sproutle', first: 'thornbuck', second: 'sunfawn', essence: 20 },
+  Zipmouse: { species: 'zipmouse', first: 'voltaro', second: 'ohmouse', essence: 20 },
+  Mistnewt: { species: 'mistnewt', first: 'fogwyrm', second: 'drizzlewt', essence: 20 },
+  Ashmole: { species: 'ashmole', first: 'magmole', second: 'kilnmole', essence: 20 },
+  Stormray: { species: 'stormray', first: 'tempestray', second: 'halcyray', essence: 40 },
+  Mossback: { species: 'mossback', first: 'ancientshell', second: 'bloomback', essence: 40 },
+} as const;
+const LINES = Object.keys(FORMS) as readonly (keyof typeof FORMS)[];
 
-/** The creature the screen is for: a Sproutle or a Zipmouse at its evolution level, with the forms of its line. */
+/** The creature the screen is for: a stage-1 creature of the line at its evolution level, with its two forms. */
 function creatureFor(p: Props): Creature {
   const base = sampleCreature('evolve choice');
-  const zip = str(p, 'line') === 'Zipmouse';
+  const name = str(p, 'line');
+  const form = LINES.map((line) => FORMS[line]).find((f) => f.species === name.toLowerCase());
+  const { species, first, second, essence } = form ?? FORMS.Sproutle;
   return {
     ...base,
-    species: zip ? 'zipmouse' : 'sproutle',
-    line: zip ? 'zipmouse' : 'sproutle',
+    species,
+    line: species,
     level: num(p, 'level'),
     fusionCount: num(p, 'fusions'),
     shiny: bool(p, 'shiny'),
     evolution: {
-      toSpecies: zip ? 'voltaro' : 'thornbuck',
+      toSpecies: first,
       level: 15,
-      essence: 20,
+      essence,
       available: bool(p, 'ready'),
-      alt: { toSpecies: zip ? 'ohmouse' : 'sunfawn' },
+      alt: { toSpecies: second },
     },
   };
 }
@@ -72,7 +85,7 @@ const evolveDrawer: Entry = {
   file: 'apps/activity/src/EvolveDrawer.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The evolve screen of a line that grows two ways, in a Drawer: both forms side by side (picture, name, element and role, ability, HP, Attack and Speed on the new form), nothing picked at first, one button for the form that is picked and a line that the choice is permanent. A line with one form skips it and evolves at once.',
+    'The evolve screen of an evolving line (every line has two forms), in a Drawer: both forms side by side (picture, name, element and role, ability, HP, Attack and Speed on the new form), nothing picked at first, one button for the form that is picked and a line that the choice is permanent. A line with one form (none ships today) skips it and evolves at once.',
   controls: {
     line: { kind: 'select', options: LINES },
     level: { kind: 'number', min: 15, max: 30 },
@@ -85,6 +98,13 @@ const evolveDrawer: Entry = {
   presets: [
     { name: 'Sproutle: Thornbuck or Sunfawn', props: {} },
     { name: 'Zipmouse: Voltaro or Ohmouse', props: { line: 'Zipmouse' } },
+    { name: 'Splashet: Tidewing or Geyserpup', props: { line: 'Splashet' } },
+    { name: 'Cindle: Pyrelynx or Wickat', props: { line: 'Cindle' } },
+    { name: 'Mistnewt: Fogwyrm or Drizzlewt', props: { line: 'Mistnewt' } },
+    { name: 'Ashmole: Magmole or Kilnmole', props: { line: 'Ashmole' } },
+    { name: 'Stormray: Tempestray or Halcyray', props: { line: 'Stormray' } },
+    { name: 'Mossback: Ancientshell or Bloomback', props: { line: 'Mossback' } },
+    { name: 'Shiny Mossback (the longest names)', props: { line: 'Mossback', shiny: true } },
     { name: 'Fused and shiny', props: { fusions: 3, shiny: true, level: 18 } },
     { name: 'Not ready (the button stays off)', props: { ready: false } },
     { name: 'Busy', props: { busy: true } },

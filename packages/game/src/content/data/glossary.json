@@ -736,7 +736,7 @@
     "lines": [
       "Teach: its talent goes into your creature's Talent Book. Fuse: one more fusion, up to 5.",
       "Release: parts, never Bait.",
-      "Keep: it stays as a second creature of a line with two forms, so you can evolve it the other way.",
+      "Keep: it stays as a second creature of an evolving line (it has two forms), so you can evolve it the other way.",
       "The card marks Recommended. Up to 10 wait, then the oldest takes the Recommended choice."
     ],
     "section": "creatures"
@@ -747,7 +747,7 @@
     "short": "A creature grows into its final form.",
     "lines": [
       "At level 15, for Essence. The level cap rises to 30.",
-      "Some lines grow one of two ways: a different role and ability. The choice is permanent.",
+      "Every line that evolves grows one of two ways: a different role and ability. The choice is permanent.",
       "To own both forms, Keep a duplicate and evolve it the other way."
     ],
     "section": "creatures"

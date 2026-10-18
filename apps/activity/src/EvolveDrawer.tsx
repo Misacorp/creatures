@@ -69,8 +69,8 @@ function FormChoice({
 }
 
 /**
- * The evolve screen of a line that grows two ways (Sproutle: Thornbuck or Sunfawn; Zipmouse: Voltaro or
- * Ohmouse), in a Drawer: both forms side by side, then one button for the form that is picked, with one
+ * The evolve screen of a line that grows two ways (every evolving line does: Sproutle is Thornbuck or
+ * Sunfawn, Mossback is Ancientshell or Bloomback), in a Drawer: both forms side by side, then one button for the form that is picked, with one
  * line that the choice is permanent. Nothing is picked at first: there is no default for a choice that
  * cannot be undone. A line with one form never opens this (it evolves at once). The server checks the
  * form, the level and the Essence; this only asks.

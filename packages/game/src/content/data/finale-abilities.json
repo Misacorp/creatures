@@ -92,6 +92,24 @@
     "description": "Leaves the boss Soaked; all creatures hit 12% harder this round."
   },
   {
+    "id": "slow-burn",
+    "name": "Slow Burn",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "re_mark",
+        "element": "own"
+      },
+      {
+        "op": "rally",
+        "damageBp": 600,
+        "rounds": 2
+      }
+    ],
+    "defaultRound": 3,
+    "description": "Leaves the boss Scorched; all creatures hit 6% harder for 2 rounds."
+  },
+  {
     "id": "flare-strike",
     "name": "Flare Strike",
     "kind": "creature",
@@ -107,6 +125,19 @@
   {
     "id": "flare-strike-2",
     "name": "Inferno Strike",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 32000
+      }
+    ],
+    "defaultRound": 5,
+    "description": "Hits the boss at once for 320% of its Attack."
+  },
+  {
+    "id": "geyser-burst",
+    "name": "Geyser Burst",
     "kind": "creature",
     "effects": [
       {
@@ -274,6 +305,24 @@
     "defaultAtZoneHit": true
   },
   {
+    "id": "soft-rain",
+    "name": "Soft Rain",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "rally",
+        "damageBp": 500,
+        "rounds": 2
+      },
+      {
+        "op": "purge",
+        "rounds": 2
+      }
+    ],
+    "defaultRound": 5,
+    "description": "All creatures hit 5% harder for 2 rounds; the boss's adaptation is off for 2 rounds."
+  },
+  {
     "id": "warm-glow",
     "name": "Warm Glow",
     "kind": "creature",
@@ -302,6 +351,27 @@
     "description": "All creatures hit 8% harder for 2 rounds."
   },
   {
+    "id": "banked-embers",
+    "name": "Banked Embers",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 7000,
+        "rounds": 2
+      },
+      {
+        "op": "rally",
+        "damageBp": 500,
+        "rounds": 1
+      }
+    ],
+    "defaultRound": 3,
+    "defaultAtZoneHit": true,
+    "description": "Its zone takes 70% less damage for 2 rounds; all creatures hit 5% harder this round."
+  },
+  {
     "id": "thunder-strike",
     "name": "Thunder Strike",
     "kind": "creature",
@@ -326,6 +396,26 @@
     ],
     "defaultRound": 4,
     "description": "Hits the boss at once for 300% of its Attack."
+  },
+  {
+    "id": "afterglow",
+    "name": "Afterglow",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "rally",
+        "damageBp": 800,
+        "rounds": 2
+      },
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 3000,
+        "rounds": 1
+      }
+    ],
+    "defaultRound": 5,
+    "description": "All creatures hit 8% harder for 2 rounds; its zone takes 30% less damage this round."
   },
   {
     "id": "moss-bloom",
@@ -372,6 +462,19 @@
     ],
     "defaultRound": 3,
     "description": "Hits the boss at once for 140% of its Attack; leaves the boss Overgrown; its zone takes 50% less damage for 2 rounds."
+  },
+  {
+    "id": "full-bloom",
+    "name": "Full Bloom",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "strike",
+        "atkBp": 30000
+      }
+    ],
+    "defaultRound": 5,
+    "description": "Hits the boss at once for 300% of its Attack."
   },
   {
     "id": "coral-lance",

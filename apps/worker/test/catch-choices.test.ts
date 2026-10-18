@@ -128,10 +128,10 @@ describe('a duplicate card', () => {
         expect(view?.species).toBe('splashet');
         expect(view?.talent.id).toBe(card.talentId);
         expect(view?.offered.release).toBe(true);
-        // No shipped line has two branches yet, so Keep is not offered.
-        expect(view?.offered.keep).toBe(false);
+        // Splashet grows two ways and the player owns neither form, so Keep is offered.
+        expect(view?.offered.keep).toBe(true);
         expect(view?.offered.fuse).toEqual([p.creatureIds[0]]);
-        expect(['teach', 'fuse', 'release']).toContain(view?.recommended.choice);
+        expect(['teach', 'fuse', 'release', 'keep']).toContain(view?.recommended.choice);
       },
       { talentRng: draws([1, 5]) },
     );
@@ -401,7 +401,9 @@ describe('Fuse', () => {
       expect(fusionOf(ctx, splashet)).toBe(5);
       const rec = await choose(p, card.id, { choice: 'recommended' });
       expect(rec.status).toBe(200);
-      expect(['teach', 'release']).toContain((rec.body['result'] as { choice: string }).choice);
+      expect(['teach', 'release', 'keep']).toContain(
+        (rec.body['result'] as { choice: string }).choice,
+      );
     });
   });
 });
@@ -452,10 +454,10 @@ describe('Keep', () => {
     branchesOf: (line: string) => (line === 'splashet' ? ['tidewing', 'tidecrest'] : []),
   };
 
-  it('is not offered, and refused, for a line without a second branch', async () => {
+  it('is not offered, and refused, for a line without a second branch (a single-stage species)', async () => {
     await runCore(nextGuild(), async (ctx) => {
-      const p = await player(ctx, 1, ['splashet']);
-      const card = p.addCard('splashet');
+      const p = await player(ctx, 1, ['coralynx']);
+      const card = p.addCard('coralynx');
       const res = await choose(p, card.id, { choice: 'keep' });
       expect(res.status).toBe(409);
       expect(res.body['error']).toBe('keep_not_offered');
@@ -543,7 +545,22 @@ describe('Recommended', () => {
     });
   });
 
-  it('fuses a talent the book already holds (nothing to teach)', async () => {
+  it('fuses a talent the book already holds (nothing to teach) when Keep is not offered', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      // Coralynx has no second form, so Keep is not on the card and Fuse is the answer.
+      const p = await player(ctx, 1, ['coralynx']);
+      const [coralynx] = p.creatureIds as [string];
+      const card = p.addCard('coralynx');
+      holdTalent(ctx.sql, coralynx, { talentId: card.talentId, golden: false }, null, ctx.clock.t);
+      const [view] = await p.pending();
+      expect(view?.offered.keep).toBe(false);
+      expect(view?.recommended.choice).toBe('fuse');
+      const res = await choose(p, card.id, { choice: 'recommended' });
+      expect(res.body['result']).toMatchObject({ choice: 'fuse', creatureId: coralynx });
+    });
+  });
+
+  it('keeps a talent the book already holds when the line has a second form to reach', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -558,9 +575,10 @@ describe('Recommended', () => {
         );
         const card = p.addCard('splashet');
         const [view] = await p.pending();
-        expect(view?.recommended.choice).toBe('fuse');
+        expect(view?.offered.keep).toBe(true);
+        expect(view?.recommended.choice).toBe('keep');
         const res = await choose(p, card.id, { choice: 'recommended' });
-        expect(res.body['result']).toMatchObject({ choice: 'fuse', creatureId: splashet });
+        expect(res.body['result']).toMatchObject({ choice: 'keep' });
       },
       { talentRng: draws([1, 5]) },
     );
@@ -924,7 +942,7 @@ describe('analytics of the duplicate choice and the Talent Book', () => {
         expect(events(ctx, 'duplicate_choice').map((e) => [e['choice'], e['auto']])).toEqual([
           ['teach', false],
           ['release', false],
-          [expect.stringMatching(/teach|fuse|release/), true],
+          [expect.stringMatching(/teach|fuse|release|keep/), true],
         ]);
         // Three cards rolled a talent each.
         expect(events(ctx, 'talent_roll')).toHaveLength(3);

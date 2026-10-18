@@ -28,7 +28,12 @@
     "ability": {
       "id": "tidal-mark"
     },
-    "flavor": "A small, playful creature that leaves wet footprints wherever it goes."
+    "flavor": "A small, playful creature that leaves wet footprints wherever it goes.",
+    "altEvolvesTo": {
+      "species": "geyserpup",
+      "level": 15,
+      "essence": 20
+    }
   },
   {
     "id": "tidewing",
@@ -89,7 +94,12 @@
       "chanceBp": 500,
       "damageBp": 2500
     },
-    "flavor": "A kitten-sized cat with a flickering ember at the tip of its tail."
+    "flavor": "A kitten-sized cat with a flickering ember at the tip of its tail.",
+    "altEvolvesTo": {
+      "species": "wickat",
+      "level": 15,
+      "essence": 20
+    }
   },
   {
     "id": "pyrelynx",
@@ -274,7 +284,12 @@
     "ability": {
       "id": "fog-veil"
     },
-    "flavor": "A slow newt that carries a soft cloud of mist on its back."
+    "flavor": "A slow newt that carries a soft cloud of mist on its back.",
+    "altEvolvesTo": {
+      "species": "drizzlewt",
+      "level": 15,
+      "essence": 20
+    }
   },
   {
     "id": "fogwyrm",
@@ -331,7 +346,12 @@
     "ability": {
       "id": "warm-glow"
     },
-    "flavor": "A busy digger that warms its burrow with glowing ash."
+    "flavor": "A busy digger that warms its burrow with glowing ash.",
+    "altEvolvesTo": {
+      "species": "kilnmole",
+      "level": 15,
+      "essence": 20
+    }
   },
   {
     "id": "magmole",
@@ -392,7 +412,12 @@
       "chanceBp": 500,
       "damageBp": 2500
     },
-    "flavor": "A ray that rides the edge of thunderclouds."
+    "flavor": "A ray that rides the edge of thunderclouds.",
+    "altEvolvesTo": {
+      "species": "halcyray",
+      "level": 15,
+      "essence": 40
+    }
   },
   {
     "id": "tempestray",
@@ -453,7 +478,12 @@
     "ability": {
       "id": "moss-bloom"
     },
-    "flavor": "A patient turtle with a garden growing on its shell."
+    "flavor": "A patient turtle with a garden growing on its shell.",
+    "altEvolvesTo": {
+      "species": "bloomback",
+      "level": 15,
+      "essence": 40
+    }
   },
   {
     "id": "ancientshell",
@@ -690,5 +720,161 @@
       "id": "static-wall"
     },
     "flavor": "A round, puffed-up mouse whose giant ears catch stray bolts."
+  },
+  {
+    "id": "geyserpup",
+    "name": "Geyserpup",
+    "line": "splashet",
+    "stage": 2,
+    "element": "tide",
+    "rarity": "common",
+    "role": "payoff",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 134,
+      "atk": 56,
+      "spd": 39
+    },
+    "growth": {
+      "hp": 9,
+      "atk": 3,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "geyser-burst"
+    },
+    "flavor": "A sturdy pup whose droplet tuft has grown into a spout that bursts on cue."
+  },
+  {
+    "id": "wickat",
+    "name": "Wickat",
+    "line": "cindle",
+    "stage": 2,
+    "element": "ember",
+    "rarity": "common",
+    "role": "setter",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 157,
+      "atk": 39,
+      "spd": 45
+    },
+    "growth": {
+      "hp": 11,
+      "atk": 3,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "slow-burn"
+    },
+    "flavor": "A kitten with a tall, steady flame on its head, like a lit wick."
+  },
+  {
+    "id": "drizzlewt",
+    "name": "Drizzlewt",
+    "line": "mistnewt",
+    "stage": 2,
+    "element": "tide",
+    "rarity": "common",
+    "role": "support",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 179,
+      "atk": 34,
+      "spd": 39
+    },
+    "growth": {
+      "hp": 12,
+      "atk": 2,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "soft-rain"
+    },
+    "flavor": "A slow newt whose mist has gathered into a little rain cloud."
+  },
+  {
+    "id": "kilnmole",
+    "name": "Kilnmole",
+    "line": "ashmole",
+    "stage": 2,
+    "element": "ember",
+    "rarity": "common",
+    "role": "guard",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 224,
+      "atk": 34,
+      "spd": 22
+    },
+    "growth": {
+      "hp": 15,
+      "atk": 2,
+      "spd": 2
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "banked-embers"
+    },
+    "flavor": "A broad mole in a shell of baked clay, with a small chimney that glows."
+  },
+  {
+    "id": "halcyray",
+    "name": "Halcyray",
+    "line": "stormray",
+    "stage": 2,
+    "element": "spark",
+    "rarity": "rare",
+    "role": "support",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 224,
+      "atk": 42,
+      "spd": 49
+    },
+    "growth": {
+      "hp": 15,
+      "atk": 2,
+      "spd": 4
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "afterglow"
+    },
+    "flavor": "A calm ray that arrives after the storm and leaves a small rainbow behind."
+  },
+  {
+    "id": "bloomback",
+    "name": "Bloomback",
+    "line": "mossback",
+    "stage": 2,
+    "element": "grove",
+    "rarity": "rare",
+    "role": "payoff",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 168,
+      "atk": 70,
+      "spd": 49
+    },
+    "growth": {
+      "hp": 12,
+      "atk": 5,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "full-bloom"
+    },
+    "flavor": "A turtle whose shell garden has opened into one enormous flower."
   }
 ]

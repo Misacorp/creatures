@@ -62,6 +62,10 @@ export function creaturesScenarioOptions() {
     talentRng: scriptedThenSeeded(talents, 'creatures-fixture-talent') as Rng,
     gearRng: createSeededRng('creatures-fixture-gear'),
     tripRng: createSeededRng('creatures-fixture-trip'),
+    // The scenario answers Splashet duplicates with Teach, Fuse and Release, and shows Keep refused ("no
+    // branch to keep it for"). Splashet grows two ways now, so the scenario plays with no branches, as when
+    // it was written; Keep through the real content has its own scenario (`branches-scenario.ts`).
+    branchesOf: () => [],
   };
 }
 

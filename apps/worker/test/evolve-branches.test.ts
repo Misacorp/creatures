@@ -4,8 +4,8 @@ import type { CoreContext } from './helpers';
 import { count, rows, runRaid, seedPlayer } from './raid-helpers';
 
 /**
- * Branch evolutions (docs/design/gear-and-creatures-v2.md section 8.4): Sproutle grows into Thornbuck or
- * Sunfawn, Zipmouse into Voltaro or Ohmouse. The request names the form; the server checks it is one of
+ * Branch evolutions (docs/design/gear-and-creatures-v2.md section 8.4): every evolving line grows into one
+ * of two forms (Sproutle: Thornbuck or Sunfawn; Zipmouse: Voltaro or Ohmouse; and the six other lines). The request names the form; the server checks it is one of
  * the creature's branches, the level and the Essence; the choice is permanent and idempotent per key.
  */
 
@@ -106,10 +106,21 @@ describe('branch evolutions (Sproutle and Zipmouse)', () => {
         available: true,
         alt: { toSpecies: 'ohmouse' },
       });
-      const other = seedPlayer(ctx, 2, { creatures: 1, level: 15, species: ['splashet'] });
-      const single = ctx.core.collection.state(other.id).creatures[0]?.evolution;
-      expect(single?.toSpecies).toBe('tidewing');
-      expect(single).not.toHaveProperty('alt');
+      // Every evolving line now has two forms; a single-stage species has no evolution at all.
+      const other = seedPlayer(ctx, 2, {
+        creatures: 2,
+        level: 15,
+        species: ['splashet', 'coralynx'],
+      });
+      const [splashet, coralynx] = ctx.core.collection.state(other.id).creatures;
+      expect(splashet?.evolution).toEqual({
+        toSpecies: 'tidewing',
+        level: 15,
+        essence: 20,
+        available: false,
+        alt: { toSpecies: 'geyserpup' },
+      });
+      expect(coralynx?.evolution).toBeUndefined();
     });
   });
 
@@ -279,4 +290,96 @@ describe('branch evolutions (Sproutle and Zipmouse)', () => {
       expect(wornOn(ctx, bell)).toBe(sproutle);
     });
   });
+});
+
+/** Every evolving line: its stage-1 species, its first and second form, and the Essence the choice costs. */
+const LINES = [
+  ['splashet', 'tidewing', 'geyserpup', 20],
+  ['cindle', 'pyrelynx', 'wickat', 20],
+  ['sproutle', 'thornbuck', 'sunfawn', 20],
+  ['zipmouse', 'voltaro', 'ohmouse', 20],
+  ['mistnewt', 'fogwyrm', 'drizzlewt', 20],
+  ['ashmole', 'magmole', 'kilnmole', 20],
+  ['stormray', 'tempestray', 'halcyray', 40],
+  ['mossback', 'ancientshell', 'bloomback', 40],
+] as const;
+
+/** One player with one creature of the line at level 15 and 200 Essence. */
+async function oneOf(ctx: CoreContext, line: string) {
+  const p = seedPlayer(ctx, 1, { creatures: 1, level: 15, species: [line] });
+  const secret = await ctx.core.createSession(ctx.guildId, { id: p.id, displayName: p.name });
+  giveEssence(ctx, p.id, 200);
+  return { p, secret, creature: p.creatureIds[0] as string };
+}
+
+describe('branch evolutions of every evolving line', () => {
+  it.each(LINES)(
+    '%s shows its two forms at one price, level 15',
+    async (line, first, second, essence) => {
+      await runRaid(async (ctx) => {
+        const { p, creature } = await oneOf(ctx, line);
+        const view = ctx.core.collection.state(p.id).creatures.find((c) => c.id === creature);
+        expect(view?.evolution).toEqual({
+          toSpecies: first,
+          level: 15,
+          essence,
+          available: true,
+          alt: { toSpecies: second },
+        });
+      });
+    },
+  );
+
+  it.each(
+    LINES.flatMap(([line, first, second, essence]) => [
+      [line, first, essence, second] as const,
+      [line, second, essence, first] as const,
+    ]),
+  )(
+    '%s grows into %s for %i Essence, for good (the other form is refused afterwards)',
+    async (line, form, essence, other) => {
+      await runRaid(async (ctx) => {
+        const { p, secret, creature } = await oneOf(ctx, line);
+        const res = await evolve(ctx, secret, creature, newKey(), form);
+        expect(res.status).toBe(200);
+        expect(res.body.species).toBe(form);
+        expect(res.body.state.creatures.find((c) => c.id === creature)).toMatchObject({
+          species: form,
+          line,
+          level: 15,
+          levelCap: 30,
+        });
+        expect(speciesOf(ctx, creature)).toBe(form);
+        expect(ctx.core.balances(p.id).essence).toBe(200 - essence);
+        // The choice cannot be undone, and nothing more is charged.
+        for (const species of [other, form]) {
+          expect(await evolve(ctx, secret, creature, newKey(), species)).toMatchObject({
+            status: 409,
+            body: { error: 'not_evolvable' },
+          });
+        }
+        expect(speciesOf(ctx, creature)).toBe(form);
+        expect(ctx.core.balances(p.id).essence).toBe(200 - essence);
+      });
+    },
+  );
+
+  it.each(LINES)(
+    '%s refuses a form of another line, and naming none gives the first',
+    async (line, first, second) => {
+      await runRaid(async (ctx) => {
+        const { p, secret, creature } = await oneOf(ctx, line);
+        const foreign = LINES.flatMap(([l, a, b]) => (l === line ? [] : [a, b]));
+        for (const species of foreign) {
+          expect(await evolve(ctx, secret, creature, newKey(), species), species).toMatchObject({
+            status: 409,
+            body: { error: 'not_a_branch' },
+          });
+        }
+        expect(ctx.core.balances(p.id).essence).toBe(200);
+        expect((await evolve(ctx, secret, creature)).body.species).toBe(first);
+        expect(first).not.toBe(second);
+      });
+    },
+  );
 });

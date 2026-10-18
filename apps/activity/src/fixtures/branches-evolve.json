@@ -98,7 +98,10 @@
           "toSpecies": "pyrelynx",
           "level": 15,
           "essence": 20,
-          "available": true
+          "available": true,
+          "alt": {
+            "toSpecies": "wickat"
+          }
         }
       },
       {
@@ -277,7 +280,10 @@
           "toSpecies": "ancientshell",
           "level": 15,
           "essence": 40,
-          "available": true
+          "available": true,
+          "alt": {
+            "toSpecies": "bloomback"
+          }
         }
       },
       {

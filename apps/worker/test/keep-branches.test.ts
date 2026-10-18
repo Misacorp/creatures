@@ -4,8 +4,8 @@ import { runCore, type CoreContext } from './helpers';
 import { count, nextGuild, rows, scriptedThenSeeded, seedPlayer } from './raid-helpers';
 
 /**
- * Keep, live for the two branching lines (docs/design/gear-and-creatures-v2.md section 8.2 and 8.4): a
- * duplicate catch of Sproutle or Zipmouse is offered Keep while the line has a form the player does not
+ * Keep, live for every evolving line (docs/design/gear-and-creatures-v2.md section 8.2 and 8.4): a
+ * duplicate catch of a line that evolves is offered Keep while the line has a form the player does not
  * own and fewer than two creatures; a Kept duplicate is a second creature of the line, which can grow into
  * the other form. Everything goes through the real routes and the shipped content (no injected branches).
  */
@@ -163,19 +163,32 @@ describe('Keep for a branching line, through a real trip', () => {
   });
 });
 
+/** Every evolving line: its stage-1 species and its two forms. */
+const EVERY_LINE = [
+  ['splashet', 'tidewing', 'geyserpup'],
+  ['cindle', 'pyrelynx', 'wickat'],
+  ['sproutle', 'thornbuck', 'sunfawn'],
+  ['zipmouse', 'voltaro', 'ohmouse'],
+  ['mistnewt', 'fogwyrm', 'drizzlewt'],
+  ['ashmole', 'magmole', 'kilnmole'],
+  ['stormray', 'tempestray', 'halcyray'],
+  ['mossback', 'ancientshell', 'bloomback'],
+] as const;
+
 describe('Keep: when it is offered', () => {
-  it('is offered for Sproutle and Zipmouse while a form is missing, and never for a line with one', async () => {
+  it('is offered for every evolving line while a form is missing, and never for a single-stage species', async () => {
     await runCore(nextGuild(), async (ctx) => {
-      const p = await player(ctx, ['sproutle', 'zipmouse', 'splashet']);
-      const sproutle = p.addCard('sproutle');
-      const zipmouse = p.addCard('zipmouse');
-      const splashet = p.addCard('splashet');
-      expect((await cardOf(p, sproutle.id)).offered.keep).toBe(true);
-      expect((await cardOf(p, zipmouse.id)).offered.keep).toBe(true);
-      expect((await cardOf(p, splashet.id)).offered.keep).toBe(false);
-      const refused = await p.keep(splashet.id);
+      const lines = EVERY_LINE.map(([line]) => line);
+      const p = await player(ctx, [...lines, 'coralynx']);
+      for (const line of lines) {
+        const card = p.addCard(line);
+        expect((await cardOf(p, card.id)).offered.keep, line).toBe(true);
+      }
+      const coralynx = p.addCard('coralynx');
+      expect((await cardOf(p, coralynx.id)).offered.keep).toBe(false);
+      const refused = await p.keep(coralynx.id);
       expect(refused).toMatchObject({ status: 409, body: { error: 'keep_not_offered' } });
-      expect(count(ctx.sql, 'creatures')).toBe(3);
+      expect(count(ctx.sql, 'creatures')).toBe(lines.length + 1);
     });
   });
 
@@ -275,4 +288,35 @@ describe('Keep: when it is offered', () => {
       ).toEqual([{ talent_id: card.talentId, slot: 1 }]);
     });
   });
+});
+
+describe('Keep for every evolving line', () => {
+  it.each(EVERY_LINE)(
+    '%s: a Kept duplicate grows into the other form, and then Keep is gone',
+    async (line, first, second) => {
+      await runCore(nextGuild(), async (ctx) => {
+        const p = await player(ctx, [line]);
+        const [original] = p.creatureIds as [string];
+        expect((await p.evolve(original, first)).status).toBe(200);
+        // A duplicate arrives: Keep is offered (one creature, and the second form is not owned).
+        const card = p.addCard(line);
+        expect((await cardOf(p, card.id)).offered.keep).toBe(true);
+        const kept = await p.keep(card.id);
+        expect(kept.status).toBe(200);
+        const made = (kept.body['result'] as { creatureId: string }).creatureId;
+        ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', made);
+        const grown = await p.evolve(made, second);
+        expect(grown.status).toBe(200);
+        expect(grown.body['species']).toBe(second);
+        expect(speciesOfLine(ctx, line)).toEqual([first, second]);
+        // Both forms owned and two creatures of the line: another duplicate is not offered Keep.
+        const again = p.addCard(line);
+        expect((await cardOf(p, again.id)).offered.keep).toBe(false);
+        expect(await p.keep(again.id)).toMatchObject({
+          status: 409,
+          body: { error: 'keep_not_offered' },
+        });
+      });
+    },
+  );
 });

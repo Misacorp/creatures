@@ -34,9 +34,13 @@ describe('a creature whose line grows two ways', () => {
       'thornbuck',
       'sunfawn',
     ]);
-    // A creature of a line with one form has no second form.
+    // Every evolving line has two forms now: a Cindle can grow into Pyrelynx or Wickat.
     const cindle = parsed.creatures.find((c) => c.species === 'cindle');
-    expect(hasBranches(cindle ?? {})).toBe(false);
+    expect(hasBranches(cindle ?? {})).toBe(true);
+    expect(evolveForms(cindle ?? { level: 1, fusionCount: 0 }).map((f) => f.species)).toEqual([
+      'pyrelynx',
+      'wickat',
+    ]);
   });
 
   it('reads the duplicate that offers Keep, as a find with a Keep row', () => {

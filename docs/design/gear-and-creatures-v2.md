@@ -669,6 +669,8 @@ Both new forms need a sprite (16x16), lore, quirks (the line's pool), compendium
 
 **Built 2026-10-18:** Sunfawn has the stats of Magmole (the common Support budget) and Ohmouse the HP and speed of Thornbuck with a little more Attack (the common Guard budget); both cost what their sibling costs (level 15, 20 Essence, one price per choice). See `decisions.md`.
 
+**The other six lines (2026-10-18):** every evolving line now has two forms, each element has all four roles at stage 2 between its lines, and Keep is offered for every evolving line. Splashet: Tidewing or **Geyserpup** (Tide Payoff, Geyser Burst). Cindle: Pyrelynx or **Wickat** (Ember Setter, Slow Burn). Mistnewt: Fogwyrm or **Drizzlewt** (Tide Support, Soft Rain). Ashmole: Magmole or **Kilnmole** (Ember Guard, Banked Embers). Stormray: Tempestray or **Halcyray** (Spark Support, Afterglow). Mossback: Ancientshell or **Bloomback** (Grove Payoff, Full Bloom). Names, stats and reasons are in `decisions.md`.
+
 ## 9. Training by activity
 
 ### 9.1 Experience

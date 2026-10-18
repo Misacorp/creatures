@@ -48,7 +48,8 @@ export const firstForm: BranchPick = (_creatures, creature) =>
 
 /**
  * The form a creature grows into. A line with one form has only that one. A line that grows two ways
- * (Sproutle: Thornbuck, a Guard, or Sunfawn, a Support; Zipmouse: Voltaro, a Setter, or Ohmouse, a Guard)
+ * (every evolving line: Sproutle is Thornbuck, a Guard, or Sunfawn, a Support; Zipmouse is Voltaro, a Setter,
+ * or Ohmouse, a Guard; Stormray is Tempestray, a Payoff, or Halcyray, a Support; and so on)
  * takes the form whose role the rest of the team does not have yet, else the first form (the original
  * evolution). The rest of the team is the three strongest creatures without this one. It is deliberately
  * the simple choice an engaged player makes without a spreadsheet: "my team has no healer, so the healer".
