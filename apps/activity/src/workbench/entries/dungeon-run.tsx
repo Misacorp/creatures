@@ -217,7 +217,7 @@ const dungeonCamp: Entry = {
   file: 'apps/activity/src/DungeonCamp.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The camp halfway up the dungeon map: the row on the same board as the dungeon entry (drag a creature onto another, or tap one and then another, to swap places; the HP stays under its creature, a downed one in red), three choices that each say what they do (Rest, take a keepsake, Swap a creature), and, set apart, "Head home with your pack" with what pushing on risks. Keepsakes shows the two on offer; "who goes home" is the second step of a swap, with the knocked-out creature plain to see; "arrange after a swap" is the third, the row as the swap leaves it (the new creature in the place of the one that left, at full HP) to rearrange before "Swap and push on"; heading home asks once more.',
+    'The camp halfway up the dungeon map: the row on the same board as the dungeon entry (drag a creature onto another, or tap one and then another, to swap places; the HP stays under its creature, a downed one in red), one line of help, three short choices (Rest, take a keepsake, Swap a creature), and, set apart, "Head home with your pack". Keepsakes shows the two on offer; "who goes home" is the second step of a swap, with the knocked-out creature plain to see; "arrange after a swap" is the third, the row as the swap leaves it (the new creature in the place of the one that left, at full HP) to rearrange before "Swap and push on"; heading home asks once more.',
   controls: {
     step: {
       kind: 'select',
