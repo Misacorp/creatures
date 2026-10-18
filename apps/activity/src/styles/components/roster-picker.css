@@ -41,7 +41,7 @@
 
 .sheet-title {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: var(--fs-heading);
   line-height: 1.2;
 }
 
@@ -112,13 +112,13 @@
 }
 
 .ro-name {
-  font-size: 1rem;
+  font-size: var(--fs-row);
   line-height: 1.2;
 }
 
 .ro-level {
   color: var(--haze);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
 }
 
 /* A quiet tag, no louder than the level: it says which creatures are recommended and nothing about why. */
@@ -149,7 +149,7 @@
 
 .ro-note {
   color: var(--gold);
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
 }
 
 .ro-reason {

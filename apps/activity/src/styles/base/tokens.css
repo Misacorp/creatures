@@ -18,6 +18,17 @@
   --display: 'Jersey 10', 'Courier New', ui-monospace, monospace;
   --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --px: 3px; /* one "pixel" of UI chrome */
+  /*
+    The type scale (2026-10-18), for the pixel font (Jersey 10, which draws about 28% bigger than its
+    value says: see fonts.css). Use these, not a raw rem, so the same kind of text is the same size everywhere.
+    Body text (Atkinson, 15px) has its own sizes. Where each is used so far: the item card, the item picker's
+    detail panel, the dismantle panel, the Equip on row and the creature picker sheet; the rest of the app still
+    has raw sizes (a follow-up, see decisions.md).
+  */
+  --fs-title: 1.5rem; /* a drawer's or page's title; the creature's name */
+  --fs-heading: 1.25rem; /* a card's name (the item card), a sheet's title */
+  --fs-row: 1rem; /* a row: a stat, a modifier line, a picker option, a button in a panel */
+  --fs-small: 0.875rem; /* a note under a row, a badge, a reason */
   --frame:
     0 calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
     calc(var(--px) * -1) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),

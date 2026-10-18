@@ -1,4 +1,4 @@
-import { content, type ItemLine } from '@creatures/game';
+import { content, dismantleRange, type ItemLine } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature } from '../../api';
 import { CreatureCard } from '../../CreatureCard';
@@ -19,7 +19,8 @@ import {
 import type { GearActions } from '../../gear-actions';
 import { ItemFrame, ItemSprite } from '../../GearArt';
 import { LootList } from '../../GearLoot';
-import type { GearItem, GearState, GrantLoot } from '../../gear-types';
+import type { DismantlePreview, GearItem, GearState, GrantLoot } from '../../gear-types';
+import { dismantleDurationFor } from '../../gear-view';
 import { InventoryGrid } from '../../InventoryGrid';
 import { ItemDetail } from '../../ItemDetail';
 import { bool, str } from '../props';
@@ -53,6 +54,10 @@ interface SceneDef {
   /** `compare`: a long Epic against a long worn Epic (many lines, changed, new and lost), to show the card scroll. */
   long?: boolean;
   open?: PageOpen;
+  /** `item`: what the item drawer shows open: the creature picker of "Equip on", or the dismantle panel. */
+  drawer?: 'equip' | 'dismantle';
+  /** `item`: creatures of every state beside the two of the sample (a Guard, a low level, away, on a job). */
+  crowd?: boolean;
   /** The gear view has not loaded yet. */
   loading?: boolean;
   bait?: number;
@@ -163,6 +168,14 @@ const SCENE_LIST: readonly SceneDef[] = [
     pick: 'bag-hat-02',
     long: true,
   },
+  {
+    id: 'K8',
+    label: 'K8 · Item picker: an item this creature cannot wear (the reason, in the pixel font)',
+    kind: 'level 15',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'hat' },
+    pick: 'bag-hat-16',
+  },
   { id: 'T1', label: 'T1 · Talent slots', kind: 'talents: golden and locked', show: 'talents' },
   {
     id: 'T1b',
@@ -228,6 +241,41 @@ const SCENE_LIST: readonly SceneDef[] = [
     kind: 'level 15',
     show: 'item',
     pick: 'hat:19',
+  },
+  {
+    id: 'W4',
+    label: 'W4 · Item drawer: Equip on, the creature picker (a Guards-only Charm, every reason)',
+    kind: 'level 15',
+    show: 'item',
+    pick: 'charm:4',
+    drawer: 'equip',
+    crowd: true,
+  },
+  {
+    id: 'W5',
+    label: 'W5 · Item drawer: Equip on for a worn item (Take off first)',
+    kind: 'level 15',
+    show: 'item',
+    pick: 'hat:0',
+    drawer: 'equip',
+    crowd: true,
+  },
+  {
+    id: 'W6',
+    label: 'W6 · Item drawer: Dismantle open (yields as badges, the time, quality)',
+    kind: 'level 15',
+    show: 'item',
+    pick: 'hat:2',
+    drawer: 'dismantle',
+    crowd: true,
+  },
+  {
+    id: 'W7',
+    label: 'W7 · Item drawer: Equip on row, closed (nobody wears it)',
+    kind: 'level 15',
+    show: 'item',
+    pick: 'hat:19',
+    crowd: true,
   },
   { id: 'L1', label: 'L1 · Loot list, compact rows', kind: 'level 15', show: 'loot' },
   { id: 'B1', label: 'B1 · Workshop bag', kind: 'level 15', show: 'bag' },
@@ -524,22 +572,75 @@ const NO_JOB_ACTIONS: GearActions = {
   claimJob: () => Promise.resolve(undefined),
 };
 
+/** A species of this role (the first in the content), so the picker scenes can show a Guard. */
+function speciesOfRole(role: string): string {
+  return content.creatures.find((c) => c.role === role)?.id ?? 'sproutle';
+}
+
+/**
+ * The creatures of the Equip on picker scenes: the page's two, a Guard who can wear a Guards-only piece, a Guard
+ * of a low level, one away on a trip and one on a job, so the picker shows every reason there is.
+ */
+function crowdOf(creatures: readonly Creature[]): Creature[] {
+  const make = (id: string, over: Partial<Creature>): Creature => ({
+    ...sampleCreature('growing'),
+    id,
+    gear: [],
+    ...over,
+  });
+  return [
+    ...creatures,
+    make('wb-guard', { nickname: 'Bulwark', species: speciesOfRole('guard'), level: 16 }),
+    make('wb-low', { nickname: 'Pip', species: speciesOfRole('guard'), level: 5 }),
+    make('wb-away', {
+      nickname: 'Wanderer',
+      level: 14,
+      away: true,
+      busy: { kind: 'expedition', id: 'wb-trip' },
+    }),
+    make('wb-job', { nickname: 'Tinker', level: 15, busy: { kind: 'job', id: 'wb-job-1' } }),
+  ];
+}
+
+/** The server's answer to "what would dismantling this give", worked out by the game's own rules. */
+function previewOf(item: GearItem, creatureId: string): Promise<DismantlePreview> {
+  const piece = { baseId: item.baseId, rarity: item.rarity, itemLevel: item.itemLevel };
+  return Promise.resolve({
+    kind: 'dismantle',
+    creatureId,
+    items: [{ id: item.id, ...piece }],
+    range: dismantleRange([piece]),
+    durationMs: dismantleDurationFor(item.rarity, 1),
+    xp: 12,
+    learnBp: 700,
+    teachers: 1,
+  });
+}
+
 /** The Workshop's item card for one item of the sample bag ("hat:0" is the first hat of the table). */
 function ItemScene({ def }: { def: SceneDef }) {
-  const { gear, state } = pageScene(def.kind);
+  const scene = pageScene(def.kind);
+  const { gear } = scene;
+  const creatures = def.crowd === true ? crowdOf(scene.state.creatures) : scene.state.creatures;
   const [slot, index] = (def.pick ?? 'hat:0').split(':');
   const item = gear.items.filter((i) => i.slot === slot)[Number(index)];
   if (item === undefined) return null;
+  const actions: GearActions = {
+    ...NO_JOB_ACTIONS,
+    previewDismantle: (creatureId) => previewOf(item, creatureId),
+  };
   return (
     <div>
       <div class="workshop">
         <ItemDetail
           item={item}
           gear={gear}
-          creatures={state.creatures}
+          creatures={creatures}
           busy={false}
-          actions={NO_JOB_ACTIONS}
+          actions={actions}
           onGone={() => undefined}
+          initialDismantle={def.drawer === 'dismantle'}
+          initialPicking={def.drawer === 'equip'}
         />
       </div>
     </div>

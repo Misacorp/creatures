@@ -7,7 +7,7 @@ import type { GearItem, JobResult } from './gear-types';
 import {
   gearName,
   jobVerb,
-  marksText,
+  qualityText,
   partsText,
   rarityName,
   reachName,
@@ -74,7 +74,7 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
           ))}
           {result.marked.map((m) => (
             <p key={m.baseId} class="good-note">
-              {gearName(m.baseId)} is well-thumbed {marksText(m.marks)}.
+              {gearName(m.baseId)}: {qualityText(m.marks)}.
             </p>
           ))}
         </>

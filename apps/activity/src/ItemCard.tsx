@@ -25,7 +25,7 @@ export type ItemCardItem = Pick<
  * detail panel): the item's image at the top left (rarity border, item level in its corner), to its right the
  * name (in its rarity's colour), small badges for the slot, rarity and tag (element, role or explorer), and the base stats, one row each in the same size ("Attack 14", "HP 24", the
  * bonus its own lines add after it: "Attack 41 +22"); then a full-width divider and the modifiers with their
- * values and tier pips. Everything is in the pixel font. A Charm has no stats, so it is name, badge, divider,
+ * values and tier pips. Everything is in the pixel font, set once on the card (`.pix-panel`). A Charm has no stats, so it is name, badge, divider,
  * modifiers. `aside` is a spot at the top right (a button), `note` a line under the badge.
  */
 export function ItemCard({
@@ -64,7 +64,7 @@ export function ItemCard({
   const set = itemSet(item.baseId);
   const nameClass = `idc-name rarity-name rarity-${item.rarity}`;
   return (
-    <div class={`idc pix${extra === undefined ? '' : ` ${extra}`}`}>
+    <div class={`idc pix-panel${extra === undefined ? '' : ` ${extra}`}`}>
       <div class="idc-head">
         <ItemFrame rarity={item.rarity} baseId={item.baseId} level={item.itemLevel} class="big">
           <ItemSprite baseId={item.baseId} scale={spriteScale} />

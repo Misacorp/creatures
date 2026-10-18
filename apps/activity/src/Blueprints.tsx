@@ -8,7 +8,7 @@ import { blueprintViews, marksText, nominalHours, slotName } from './gear-view';
 import { ElementChip } from './sprites/ElementChip';
 
 /**
- * The blueprints a player has learned, each with its well-thumbed marks, the parts a plain craft costs
+ * The blueprints a player has learned, each with its quality, the parts a plain craft costs
  * and a Craft button that opens the craft panel (who does it, how hard to reach, the exact odds). A craft
  * takes hours; the parts and Essence are paid when it starts and the item is rolled when the job is
  * claimed.
@@ -55,7 +55,7 @@ export function Blueprints({
                   )}
                   <p class="muted">
                     Takes about {nominalHours()} h ·{' '}
-                    <GlossaryTag entry="well-thumbed">Well-thumbed</GlossaryTag>{' '}
+                    <GlossaryTag entry="blueprint-quality">Quality</GlossaryTag>{' '}
                     {marksText(bp.marks)}
                   </p>
                 </div>

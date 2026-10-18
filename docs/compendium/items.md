@@ -188,7 +188,7 @@ Parts are the raw material. They pay for crafts. `(content: glossary.json "part-
 
 ## Blueprints
 
-A blueprint teaches a creature to craft one kind of item. You learn each one once. A blueprint you already know is not wasted: each repeat find makes it **well-thumbed**, up to ten marks, and each mark helps the next crafts of that item come out a rarity better (at ten marks a repeat find turns into scrap) `(content: glossary.json "blueprint", "well-thumbed")`. A creature taking an item apart can find the item's blueprint in its working notes, or thumb the one you already own `(content: glossary.json "job-dismantle")`.
+A blueprint teaches a creature to craft one kind of item. You learn each one once. A blueprint you already know is not wasted: each repeat find raises its **quality**, up to ten points, and each point helps the next crafts of that item come out a rarity better (at ten marks a repeat find turns into scrap) `(content: glossary.json "blueprint", "blueprint-quality")`. A creature taking an item apart can find the item's blueprint in its working notes, or raise the quality of the one you already own `(content: glossary.json "job-dismantle")`.
 
 Sources: expeditions (more often on long ones, and some push-on rewards), the welcome kit, a won finale's reward slot (sometimes a blueprint instead of gear), and taking an item apart in the Workshop `(content: glossary.json; design: gear-and-creatures-v2.md section 3)`. The dungeon and Festivals do not grant blueprints. See `README.md`, contradiction 10 (resolved).
 

@@ -41,7 +41,7 @@ const marks = (p: Page): number =>
   byClass(p.root, 'cmp-new').length +
   byClass(p.root, 'cmp-gone').length;
 
-const switchOf = (p: Page): FakeElement | undefined => byClass(p.root, 'ip-switch')[0];
+const switchOf = (p: Page): FakeElement | undefined => byClass(p.root, 'switch')[0];
 
 /** What the picker has selected. */
 function selected(p: Page): { name: string; worn: boolean; equip: boolean } {

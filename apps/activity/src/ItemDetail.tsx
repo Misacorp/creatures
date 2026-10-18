@@ -1,102 +1,81 @@
 import { gearBase } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
+import { TAKE_OFF_ID, WEARS_IT_NOTE, equipOptions } from './equip-picker';
 import { creatureName } from './game';
 import type { GearActions } from './gear-actions';
 import type { GearItem, GearState } from './gear-types';
-import { detailLines, gearName, needsText, setPiecesWith, wearReason } from './gear-view';
+import { detailLines, setPiecesWith } from './gear-view';
 import { ItemCard } from './ItemCard';
 import { DismantlePanel } from './ItemPanels';
+import { Sprite } from './sprites/Sprite';
+import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Accordion } from './ui/Accordion';
+import { RosterPicker } from './ui/RosterPicker';
 
-type Panel = 'dismantle' | 'equip' | null;
-
-/** Equip on a creature (a list to pick from, with the reason when one cannot wear it) or take it off. */
-function EquipPanel({
+/**
+ * The "Equip on" row: a trigger that looks and acts like a dropdown, showing who wears the item (their
+ * sprite and name) or "Choose a creature". It opens the creature picker sheet; the pick equips right away.
+ */
+function EquipOn({
   item,
-  creatures,
+  wearer,
   busy,
-  onEquip,
-  onCancel,
+  open,
+  triggerRef,
+  onOpen,
 }: {
   item: GearItem;
-  creatures: readonly Creature[];
+  wearer: Creature | undefined;
   busy: boolean;
-  onEquip: (creatureId: string) => void;
-  onCancel: () => void;
+  open: boolean;
+  triggerRef: { current: HTMLButtonElement | null };
+  onOpen: () => void;
 }) {
-  const options = creatures
-    .filter((c) => c.id !== item.equippedOn)
-    .map((c) => ({ creature: c, blocked: wearReason(item, c) }));
-  const usable = options.filter((o) => o.blocked === null);
-  const [picked, setPicked] = useState(usable[0]?.creature.id ?? '');
-  const target = usable.find((o) => o.creature.id === picked)?.creature ?? usable[0]?.creature;
-  const selectId = `equip-${item.id}`;
-  const slotWorn = target?.gear.find((g) => g.slot === item.slot);
+  const labelId = `equip-on-${item.id}`;
+  const valueId = `equip-on-${item.id}-value`;
   return (
-    <section class="equip-panel" aria-label="Equip">
-      {target === undefined ? (
-        <p class="muted">No creature can wear this.</p>
-      ) : (
-        <>
-          <label for={selectId}>Equip on</label>
-          <select
-            id={selectId}
-            value={target.id}
-            onChange={(event) => {
-              setPicked(event.currentTarget.value);
-            }}
-          >
-            {usable.map(({ creature: c }) => (
-              <option key={c.id} value={c.id}>
-                {creatureName(c)} (level {c.level})
-                {c.gear.some((g) => g.slot === item.slot)
-                  ? `, wears ${gearName(c.gear.find((g) => g.slot === item.slot)?.baseId ?? '')}`
-                  : ''}
-              </option>
-            ))}
-          </select>
-          {slotWorn !== undefined && <p class="muted">Replaces {gearName(slotWorn.baseId)}.</p>}
-        </>
-      )}
-      {options.some((o) => o.blocked !== null) && (
-        <Accordion title="Who cannot wear it" variant="compact" class="blocked-note">
-          <ul>
-            {options
-              .filter((o) => o.blocked !== null)
-              .map((o) => (
-                <li key={o.creature.id}>
-                  {creatureName(o.creature)}: {o.blocked}
-                </li>
-              ))}
-          </ul>
-        </Accordion>
-      )}
-      <p class="actions">
-        {target !== undefined && (
-          <button
-            type="button"
-            class="primary"
-            disabled={busy}
-            onClick={() => {
-              onEquip(target.id);
-            }}
-          >
-            Equip on {creatureName(target)}
-          </button>
+    <div class="equip-on">
+      <span id={labelId} class="equip-on-label">
+        Equip on
+      </span>
+      <button
+        ref={triggerRef}
+        type="button"
+        class="equip-trigger"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-labelledby={`${labelId} ${valueId}`}
+        disabled={busy}
+        onClick={onOpen}
+      >
+        {wearer !== undefined && (
+          <Sprite sprite={creatureSpriteOrFallback(wearer.species)} scale={2} />
         )}
-        <button type="button" onClick={onCancel}>
-          Cancel
-        </button>
-      </p>
-    </section>
+        <span id={valueId} class={wearer === undefined ? 'equip-name equip-empty' : 'equip-name'}>
+          {wearer === undefined ? 'Choose a creature' : creatureName(wearer)}
+        </span>
+        <svg
+          class="equip-chevron"
+          viewBox="0 0 7 4"
+          aria-hidden="true"
+          shape-rendering="crispEdges"
+        >
+          <rect x="0" y="0" width="7" height="1" />
+          <rect x="1" y="1" width="5" height="1" />
+          <rect x="2" y="2" width="3" height="1" />
+          <rect x="3" y="3" width="1" height="1" />
+        </svg>
+      </button>
+    </div>
   );
 }
 
 /**
- * One item of the bag: its card (image with its level, name, rarity, base stats, modifiers with their tiers), who wears it and what you
- * can do with it (Equip or Take off, Dismantle). Where it came from and who made it sit one tap away
- * under "Details".
+ * One item of the bag: its card (image with its level, name, rarity, base stats, modifiers with their tiers),
+ * then the "Equip on" row (who wears it, or "Choose a creature": the creature picker sheet equips right away,
+ * and offers "Take off" first for a worn item), Dismantle, and where it came from and who made it one tap away
+ * under "Details". The font is set once on the section (`.pix-panel`); only the Details text is body text.
  */
 export function ItemDetail({
   item,
@@ -106,6 +85,8 @@ export function ItemDetail({
   actions,
   focusName = true,
   onGone,
+  initialDismantle = false,
+  initialPicking = false,
 }: {
   item: GearItem;
   gear: GearState;
@@ -116,12 +97,23 @@ export function ItemDetail({
   focusName?: boolean;
   /** The item no longer exists (it went into a dismantle job): the screen drops the selection. */
   onGone: () => void;
+  /** The workbench shows the dismantle panel open. */
+  initialDismantle?: boolean;
+  /** The workbench shows the creature picker open. */
+  initialPicking?: boolean;
 }) {
-  const [panel, setPanel] = useState<Panel>(null);
+  const [dismantle, setDismantle] = useState(initialDismantle);
+  const [picking, setPicking] = useState(initialPicking);
   const heading = useRef<HTMLHeadingElement>(null);
+  const trigger = useRef<HTMLButtonElement | null>(null);
+  const shown = useRef(false);
   // Choosing another item starts clean and moves focus to its name.
   useEffect(() => {
-    setPanel(null);
+    if (shown.current) {
+      setDismantle(false);
+      setPicking(false);
+    }
+    shown.current = true;
     if (focusName) heading.current?.focus({ preventScroll: true });
   }, [item.id]);
 
@@ -129,7 +121,7 @@ export function ItemDetail({
   const wearer = creatures.find((c) => c.id === item.equippedOn);
 
   return (
-    <section class="item-detail" aria-labelledby={`item-${item.id}-name`}>
+    <section class="item-detail pix-panel" aria-labelledby={`item-${item.id}-name`}>
       <ItemCard
         item={item}
         heading
@@ -138,80 +130,50 @@ export function ItemDetail({
         spriteScale={6}
         wornInSet={wearer === undefined ? 0 : setPiecesWith(item, wearer.gear)}
       />
-      <p>
-        {wearer !== undefined && (
-          <>
-            Worn by <strong>{creatureName(wearer)}</strong>.{' '}
-          </>
-        )}
-        <span class="muted">Needs {needsText(item).toLowerCase()}.</span>
-      </p>
+      <EquipOn
+        item={item}
+        wearer={wearer}
+        busy={busy}
+        open={picking}
+        triggerRef={trigger}
+        onOpen={() => {
+          setPicking(true);
+        }}
+      />
+      {picking && (
+        <RosterPicker
+          title="Equip on"
+          options={equipOptions(item, creatures)}
+          placedNote={WEARS_IT_NOTE}
+          showEffects={false}
+          anchor={() => trigger.current}
+          onPick={(id) => {
+            setPicking(false);
+            // The creature that wears it already: nothing to ask the server.
+            if (id === item.equippedOn) return;
+            void actions.equip(item.id, id === TAKE_OFF_ID ? null : id);
+          }}
+          onClose={() => {
+            setPicking(false);
+          }}
+        />
+      )}
 
       <div class="item-actions">
         <p class="actions">
-          {item.equippedOn === null ? (
-            <button
-              type="button"
-              class="primary"
-              disabled={busy}
-              aria-expanded={panel === 'equip'}
-              onClick={() => {
-                setPanel(panel === 'equip' ? null : 'equip');
-              }}
-            >
-              Equip
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  void actions.equip(item.id, null);
-                }}
-              >
-                Take off
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                aria-expanded={panel === 'equip'}
-                onClick={() => {
-                  setPanel(panel === 'equip' ? null : 'equip');
-                }}
-              >
-                Give to another
-              </button>
-            </>
-          )}
           <button
             type="button"
             class="danger"
             disabled={busy}
-            aria-expanded={panel === 'dismantle'}
+            aria-expanded={dismantle}
             onClick={() => {
-              setPanel('dismantle');
+              setDismantle(true);
             }}
           >
             Dismantle
           </button>
         </p>
-        {panel === 'equip' && (
-          <EquipPanel
-            item={item}
-            creatures={creatures}
-            busy={busy}
-            onEquip={(creatureId) => {
-              void actions.equip(item.id, creatureId).then((result) => {
-                if (result !== undefined) setPanel(null);
-              });
-            }}
-            onCancel={() => {
-              setPanel(null);
-            }}
-          />
-        )}
-        {panel === 'dismantle' && (
+        {dismantle && (
           <DismantlePanel
             items={[item]}
             wearers={wearer === undefined ? [] : [wearer]}
@@ -224,17 +186,17 @@ export function ItemDetail({
                 .startJob({ kind: 'dismantle', creatureId, itemIds: [item.id] })
                 .then((result) => {
                   if (result !== undefined) onGone();
-                  else setPanel(null);
+                  else setDismantle(false);
                 });
             }}
             onCancel={() => {
-              setPanel(null);
+              setDismantle(false);
             }}
           />
         )}
       </div>
 
-      <Accordion title="Details" variant="compact" class="item-details">
+      <Accordion title="Details" variant="compact" class="item-details prose">
         {base !== undefined && <p class="muted flavor">{base.flavor}</p>}
         <ul class="detail-list">
           {detailLines(item).map((line) => (

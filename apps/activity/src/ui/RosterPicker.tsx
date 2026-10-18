@@ -7,8 +7,8 @@ import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 interface RosterPickerProps {
   /** The dialog's name, which also heads it ("Choose a creature for Middle, lane 3"). */
   title: string;
-  /** One line under the title ("2 / 3 placed"). */
-  status: string;
+  /** One line under the title ("2 / 3 placed"). Without one, no line is drawn. */
+  status?: string;
   options: readonly PickerOption[];
   /** What an option says for a creature that is placed already ("On the board · moves here"). */
   placedNote: string;
@@ -27,7 +27,8 @@ function firstEnabled(options: readonly PickerOption[]): number {
 }
 
 /**
- * The creature picker of the Raid Roster and the dungeon team: a bottom sheet with a listbox of the
+ * The creature picker of the Raid Roster and the dungeon team (and of the Workshop item drawer's "Equip on",
+ * which also lists a plain action, "Take off", as an option without a creature): a bottom sheet with a listbox of the
  * player's creatures. Each option shows the sprite, name, level, a small "Recommended" tag on the
  * three strongest, element and role, what it would do in the slot (when `showEffects`: a line led by
  * a bold "In this slot:"), and either `placedNote` ("On the board · moves here") or why it cannot be picked. Options that
@@ -89,9 +90,24 @@ export function RosterPicker(props: RosterPickerProps) {
     }
   }
 
-  /** Tab walks between the Close button and the list and never leaves the sheet. */
+  /**
+   * Escape closes the sheet, Tab walks between the Close button and the list and never leaves it, and
+   * Left and Right do nothing. None of these keys goes on to a drawer the sheet was opened from (it would
+   * close, trap the focus a second time, or flip the thing behind).
+   */
   function onSheetKey(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      props.onClose();
+      return;
+    }
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.stopPropagation();
+      return;
+    }
     if (event.key !== 'Tab') return;
+    event.stopPropagation();
     const sheet = sheetRef.current;
     if (sheet === null) return;
     const stops = [
@@ -105,7 +121,7 @@ export function RosterPicker(props: RosterPickerProps) {
   }
 
   return (
-    <div class="sheet-layer">
+    <div class="sheet-layer" data-no-flip="">
       <div
         class="sheet-backdrop"
         onPointerDown={() => {
@@ -114,19 +130,19 @@ export function RosterPicker(props: RosterPickerProps) {
       />
       <div
         ref={sheetRef}
-        class="sheet roster-picker"
+        class="sheet roster-picker pix-panel"
         role="dialog"
         aria-modal="true"
         aria-label={props.title}
         onKeyDown={onSheetKey}
       >
         <div class="sheet-head">
-          <h4 class="sheet-title pix">{props.title}</h4>
+          <h4 class="sheet-title">{props.title}</h4>
           <button type="button" class="sheet-close" onClick={props.onClose}>
             Close
           </button>
         </div>
-        <p class="muted small sheet-status">{props.status}</p>
+        {props.status !== undefined && <p class="muted small sheet-status">{props.status}</p>}
         <ul
           ref={listRef}
           class="roster-list"
@@ -147,18 +163,22 @@ export function RosterPicker(props: RosterPickerProps) {
                 else focusOption(index);
               }}
             >
-              <Sprite sprite={creatureSpriteOrFallback(o.species)} scale={2} />
+              {o.action !== true && (
+                <Sprite sprite={creatureSpriteOrFallback(o.species)} scale={2} />
+              )}
               <span class="ro-text">
                 <span class="ro-line">
-                  <span class="ro-name pix">{o.name}</span>
-                  <span class="ro-level">Lv {o.level}</span>
+                  <span class="ro-name">{o.name}</span>
+                  {o.action !== true && <span class="ro-level">Lv {o.level}</span>}
                   {o.recommended && <span class="ro-recommended">{RECOMMENDED_TAG}</span>}
                 </span>
-                <span class="tags ro-tags">
-                  <ElementChip as="plain" element={o.element} role={o.role} />
-                </span>
+                {o.action !== true && (
+                  <span class="tags ro-tags">
+                    <ElementChip as="plain" element={o.element} role={o.role} />
+                  </span>
+                )}
                 {props.showEffects && o.effect !== null && (
-                  <span class="ro-effect">
+                  <span class="ro-effect prose">
                     <strong>{EFFECT_PREFIX}</strong> {o.effect}
                   </span>
                 )}

@@ -6,6 +6,7 @@ import { TABS, type Tab } from '../../tabs';
 import { LiveRegion } from '../../ui/LiveRegion';
 import { PlaybackControls } from '../../ui/PlaybackControls';
 import { ScrollHint } from '../../ui/ScrollHint';
+import { Switch } from '../../ui/Switch';
 import { ToggleButton } from '../../ui/ToggleButton';
 import type { Speed } from '../../replay';
 import { bool, num, str } from '../props';
@@ -55,6 +56,48 @@ const toggleButton: Entry = {
     { name: 'Shows a region', props: { text: 'Show details', controlsRegion: true } },
   ],
   render: (p) => <ToggleDemo p={p} />,
+};
+
+function SwitchDemo({ p }: { p: Props }) {
+  const initial = bool(p, 'on');
+  const [on, setOn] = useState(initial);
+  useEffect(() => {
+    setOn(initial);
+  }, [initial]);
+  const label = str(p, 'label');
+  return (
+    <>
+      <Switch on={on} onChange={setOn} label={label} disabled={bool(p, 'disabled')} />
+      <p class="muted small">
+        Both states and a disabled one side by side (the knob has the same gap to the edge in each):
+      </p>
+      <div class="action-row">
+        <Switch on={false} onChange={() => undefined} label="Off" />
+        <Switch on onChange={() => undefined} label="On" />
+        <Switch on onChange={() => undefined} label="Disabled" disabled />
+      </div>
+    </>
+  );
+}
+
+const switchEntry: Entry = {
+  name: 'Switch',
+  file: 'apps/activity/src/ui/Switch.tsx',
+  group: 'Controls',
+  description:
+    'A small pixel switch with a label (a real button, role switch): the Compare switch of the item picker. The knob sits at the left when off and at the right when on, with the same gap to the edge in both. Tap it in the preview.',
+  controls: {
+    on: { kind: 'toggle' },
+    disabled: { kind: 'toggle' },
+    label: { kind: 'text', maxLength: 30 },
+  },
+  defaults: { on: false, disabled: false, label: 'Compare' },
+  presets: [
+    { name: 'Off', props: { on: false } },
+    { name: 'On', props: { on: true } },
+    { name: 'Disabled', props: { on: true, disabled: true } },
+  ],
+  render: (p) => <SwitchDemo p={p} />,
 };
 
 function PlaybackDemo({ p }: { p: Props }) {
@@ -265,6 +308,7 @@ const scrollHint: Entry = {
 
 export const controlEntries: readonly Entry[] = [
   toggleButton,
+  switchEntry,
   playbackControls,
   liveRegion,
   currencyPile,

@@ -3,7 +3,7 @@ import type { Creature } from '../../api';
 import { CreaturePage, type CardActions } from '../../CreaturePage';
 import { SAMPLE_GEAR, SAMPLE_STATE, sampleRoster } from '../../creature-card-sample';
 import { PageHeader } from '../../creature-page/PageHeader';
-import { PAGE_SAMPLE_ID, pageScene } from '../../creature-page/sample';
+import { pageScene } from '../../creature-page/sample';
 import { creatureName } from '../../game';
 import type { GearActions } from '../../gear-actions';
 import { sortItems } from '../../gear-view';
@@ -14,7 +14,7 @@ import { FlipArea, FlipLive, FlipNav } from '../../ui/Flipper';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
-const SCENES = ['arrows', 'swipe pad', 'creature page', 'item drawer', 'item picker'] as const;
+const SCENES = ['arrows', 'swipe pad', 'creature page', 'item drawer'] as const;
 
 const NO_ACTIONS: CardActions = {
   onEquip: () => Promise.resolve(true),
@@ -192,27 +192,6 @@ function ItemDrawerDemo({ p }: { p: Props }) {
   );
 }
 
-/** The creature page with the Hat picker up: the arrows flip through the slot's grid. */
-function PickerDemo() {
-  const { creature, state, gear } = pageScene('level 15');
-  return (
-    <div class="v3-phone">
-      <CreaturePage
-        key={PAGE_SAMPLE_ID}
-        creature={creature}
-        state={state}
-        gear={gear}
-        busy={false}
-        actions={NO_ACTIONS}
-        focus={null}
-        initialOpen={{ kind: 'gear', slot: 'hat' }}
-        onBack={() => undefined}
-        onAnswerCatch={() => undefined}
-      />
-    </div>
-  );
-}
-
 function renderScene(p: Props) {
   // A scene is drawn anew when its numbers change (the pages hold their own state).
   const key = `${str(p, 'scene')}|${String(num(p, 'count'))}|${String(num(p, 'position'))}|${String(bool(p, 'mouse'))}`;
@@ -223,8 +202,6 @@ function renderScene(p: Props) {
       return <PageDemo key={key} p={p} />;
     case 'item drawer':
       return <ItemDrawerDemo key={key} p={p} />;
-    case 'item picker':
-      return <PickerDemo key={key} />;
     default:
       return <Arrows p={p} />;
   }
@@ -235,7 +212,7 @@ const flipper: Entry = {
   file: 'apps/activity/src/ui/Flipper.tsx',
   group: 'Controls',
   description:
-    'How you flip between things in a detail view: the creature page (through the list you came from) and the item drawers (through the bag, or a slot\'s grid) share it. Previous and next arrows with the position ("3 / 12") sit in the header; a swipe left or right on the detail, or the Left and Right keys, do the same; the first and last thing stop gently (no wrap-around). A finger or pen swipes, and here the mouse can too (the "mouse" switch).',
+    'How you flip between things in a detail view: the creature page (through the list you came from) and the item drawers (through the bag) share it. Previous and next arrows with the position ("3 / 12") sit in the header; a swipe left or right on the detail, or the Left and Right keys, do the same; the first and last thing stop gently (no wrap-around). A finger or pen swipes, and here the mouse can too (the "mouse" switch).',
   covers: ['FlipArea', 'FlipLive'],
   controls: {
     scene: { kind: 'select', options: SCENES },
@@ -253,7 +230,6 @@ const flipper: Entry = {
       props: { scene: 'creature page', count: 8, position: 1 },
     },
     { name: 'Item drawer (Workshop bag)', props: { scene: 'item drawer', position: 4 } },
-    { name: 'Item picker (creature page slot)', props: { scene: 'item picker' } },
   ],
   render: (p) => renderScene(p),
 };

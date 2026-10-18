@@ -15,7 +15,10 @@ import {
   defaultPick,
   detailLines,
   dismantleDurationFor,
-  dismantleLines,
+  dismantleCountItems,
+  durationCountItem,
+  qualityText,
+  rangeBadge,
   durationFor,
   equipChoices,
   expeditionBlocked,
@@ -710,6 +713,8 @@ describe("writing the odds, the marks and the refund ranges (the numbers are the
     ]);
     expect(marksText(4)).toBe(`4 / ${String(RULES.gear.craft.marks.max)}`);
     expect(marksText(0)).toBe('0 / 10');
+    // Players read the marks as the blueprint's quality.
+    expect(qualityText(4)).toBe('Quality 4 / 10');
   });
 
   it('writes a range as one number when both ends are the same', () => {
@@ -717,16 +722,69 @@ describe("writing the odds, the marks and the refund ranges (the numbers are the
     expect(rangeText({ min: 1, max: 1 })).toBe('1');
   });
 
-  it('writes what a dismantle can give, leaving out what it never gives', () => {
-    expect(
-      dismantleLines(dismantleRange([{ baseId: 'trail-cap', rarity: 'common', itemLevel: 1 }])),
-    ).toEqual(['2 to 3 scrap']);
-    expect(
-      dismantleLines(dismantleRange([{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 10 }])),
-    ).toEqual(['2 to 3 scrap', '1 Tide shard', '3 to 8 Essence']);
-    expect(
-      dismantleLines(dismantleRange([{ baseId: 'wardens-bell', rarity: 'epic', itemLevel: 20 }])),
-    ).toEqual(['5 to 6 scrap', '1 to 2 shards (any kind)', '0 to 1 glimmer', '10 to 25 Essence']);
+  it('writes a yield as a number, or as a range with its spoken form', () => {
+    expect(rangeBadge({ min: 3, max: 3 })).toEqual({ amount: 3 });
+    expect(rangeBadge({ min: 3, max: 4 })).toEqual({ amount: '3\u20134', spokenAmount: '3 to 4' });
+  });
+
+  it('writes what a dismantle can give as count badges, leaving out what it never gives', () => {
+    const badges = (item: {
+      baseId: string;
+      rarity: 'common' | 'rare' | 'epic';
+      itemLevel: number;
+    }) =>
+      dismantleCountItems(dismantleRange([item])).map((b) => ({
+        key: b.key,
+        icon: b.icon,
+        amount: b.amount,
+        label: b.label,
+        ...(b.name === undefined ? {} : { name: b.name }),
+      }));
+    expect(badges({ baseId: 'trail-cap', rarity: 'common', itemLevel: 1 })).toEqual([
+      { key: 'scrap', icon: { kind: 'part', part: 'scrap' }, amount: '2\u20133', label: 'Scrap' },
+    ]);
+    expect(badges({ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 10 })).toEqual([
+      { key: 'scrap', icon: { kind: 'part', part: 'scrap' }, amount: '2\u20133', label: 'Scrap' },
+      {
+        key: 'tide-shard',
+        icon: { kind: 'part', part: 'tide-shard' },
+        amount: 1,
+        label: 'Tide Shard',
+      },
+      { key: 'essence', icon: { kind: 'glyph', id: 'gem' }, amount: '3\u20138', label: 'Essence' },
+    ]);
+    // An epic piece of no element gives shards of any kind, shown with its words, and maybe a glimmer.
+    expect(badges({ baseId: 'wardens-bell', rarity: 'epic', itemLevel: 20 })).toEqual([
+      { key: 'scrap', icon: { kind: 'part', part: 'scrap' }, amount: '5\u20136', label: 'Scrap' },
+      {
+        key: 'shards',
+        icon: { kind: 'glyph', id: 'sparkle' },
+        amount: '1\u20132',
+        label: 'Shards',
+        name: 'any kind',
+      },
+      {
+        key: 'glimmer',
+        icon: { kind: 'part', part: 'glimmer' },
+        amount: '0\u20131',
+        label: 'Glimmer',
+      },
+      {
+        key: 'essence',
+        icon: { kind: 'glyph', id: 'gem' },
+        amount: '10\u201325',
+        label: 'Essence',
+      },
+    ]);
+  });
+
+  it('writes a job time as a clock badge', () => {
+    expect(durationCountItem(51 * 60_000)).toEqual({
+      key: 'duration',
+      icon: { kind: 'glyph', id: 'clock' },
+      label: 'Takes',
+      amount: '51 min',
+    });
   });
 
   it('shows the time of a dismantle for the rarity and the worker', () => {

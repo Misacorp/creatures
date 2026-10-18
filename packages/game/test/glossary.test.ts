@@ -617,10 +617,12 @@ describe('the glossary covers gear and crafting', () => {
       `Reach for Epic needs level ${String(epic.minLevel)} (${String(epic.essence)} Essence, ${String(epic.glimmer)} glimmer, ${String(epic.hours)} hours)`,
     );
     expect(text('reach')).toContain(
-      `${percent(RULES.gear.skill.rarityUpBpPerLevel)} for each Crafting level above 1 and for each well-thumbed mark`,
+      `${percent(RULES.gear.skill.rarityUpBpPerLevel)} for each Crafting level above 1 and for each point of blueprint quality`,
     );
-    expect(text('well-thumbed')).toContain(`up to ${String(RULES.gear.craft.marks.max)}`);
-    expect(text('well-thumbed')).toContain(`${percent(RULES.gear.craft.marks.upBp)} to the chance`);
+    expect(text('blueprint-quality')).toContain(`up to ${String(RULES.gear.craft.marks.max)}`);
+    expect(text('blueprint-quality')).toContain(
+      `${percent(RULES.gear.craft.marks.upBp)} likelier to come out one rarity better`,
+    );
     expect(text('blueprint')).toContain(`up to ${String(RULES.gear.craft.marks.max)}`);
     const d = RULES.gear.dismantle;
     expect(text('job-dismantle')).toContain(

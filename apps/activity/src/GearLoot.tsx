@@ -2,7 +2,7 @@ import { Tag } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
 import { PartCount } from './GearArt';
 import { ItemRow } from './ItemRow';
-import { gearName, lootIsEmpty, lootItemName, marksText, partsEntries } from './gear-view';
+import { gearName, lootIsEmpty, lootItemName, partsEntries, qualityText } from './gear-view';
 import type { GrantLoot } from './gear-types';
 
 /**
@@ -53,9 +53,7 @@ export function LootList({
               {b.duplicate && (
                 <span class="muted">
                   {' '}
-                  {b.marks === undefined
-                    ? '(it became scrap)'
-                    : `(well-thumbed ${marksText(b.marks)})`}
+                  {b.marks === undefined ? '(it became scrap)' : `(${qualityText(b.marks)})`}
                 </span>
               )}
             </li>

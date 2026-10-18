@@ -225,6 +225,32 @@ export class FakeElement extends FakeNode {
   scrollIntoView(): void {
     this.scrolled += 1;
   }
+
+  /** True when `node` is this element or sits inside it. */
+  contains(node: FakeNode | null): boolean {
+    for (let current: FakeNode | null = node; current !== null; current = current.parentNode) {
+      if (current === this) return true;
+    }
+    return false;
+  }
+
+  /** Only the two selectors the app's components use: `[role="x"]` and `.class`; anything else throws. */
+  querySelectorAll<T = FakeElement>(selector: string): T[] {
+    const role = /^\[role="([^"]+)"\]$/.exec(selector)?.[1];
+    const cls = /^\.([\w-]+)$/.exec(selector)?.[1];
+    if (role === undefined && cls === undefined) {
+      throw new Error(`the fake DOM does not support the selector ${selector}`);
+    }
+    return find(
+      this,
+      (el) =>
+        el !== this &&
+        (role !== undefined ? el.getAttribute('role') === role : el.classList.contains(cls ?? '')),
+    ) as T[];
+  }
+  querySelector<T = FakeElement>(selector: string): T | null {
+    return this.querySelectorAll<T>(selector)[0] ?? null;
+  }
   getContext(): null {
     return null;
   }
@@ -238,6 +264,9 @@ class FakeDocument {
   activeElement: FakeElement | null = null;
   readonly body = new FakeElement('body', this);
 
+  /** Document-level listeners are accepted and never called (the tests send keys to an element). */
+  addEventListener(): void {}
+  removeEventListener(): void {}
   createElement(name: string): FakeElement {
     return new FakeElement(name, this);
   }

@@ -135,7 +135,7 @@ button.lounge-button {
 /* --- The detail panel: the item card (item-detail.css) in the drawer's footer, all in the pixel font. --- */
 
 .ip-detail {
-  font-size: 1.125rem;
+  font-size: var(--fs-row);
   line-height: 1.15;
 }
 
@@ -153,6 +153,13 @@ button.lounge-button {
 
 .ip-detail-scroll {
   max-height: 40vh;
+  /*
+    The scroll box clips whatever sticks out of it, and an item frame's border and the outline of a lit
+    element sit at its very edge: a little padding gives them room, and the same negative margin keeps the
+    content where it was (like `.flip-area`).
+  */
+  padding: 0.375rem;
+  margin: -0.375rem;
 }
 
 @supports (height: 1dvh) {
@@ -175,20 +182,20 @@ button.lounge-button {
 .ip-on {
   margin: 0.25rem 0 0;
   color: var(--haze);
-  font-size: 1rem;
+  font-size: var(--fs-small);
 }
 
 button.ip-act {
   min-width: 3.75rem;
   min-height: 2.5rem;
   padding-inline: 0.5rem;
-  font-size: 1.125rem;
+  font-size: var(--fs-row);
 }
 
 .ip-reason {
   max-width: 12rem;
   color: var(--haze);
-  font-size: 1rem;
+  font-size: var(--fs-row);
   line-height: 1.1;
   text-align: right;
 }
@@ -233,51 +240,6 @@ button.ip-act {
 
 .ip-actions > :last-child {
   margin-left: auto;
-}
-
-button.ip-switch {
-  display: inline-flex;
-  gap: 0.5rem;
-  align-items: center;
-  min-height: 2rem;
-  padding: 0 0.25rem;
-  background: none;
-  box-shadow: none;
-  color: var(--haze);
-  font-size: 1.125rem;
-}
-
-button.ip-switch:active:not(:disabled) {
-  box-shadow: none;
-}
-
-button.ip-switch.on {
-  color: var(--bone);
-}
-
-.ip-switch-track {
-  display: inline-flex;
-  align-items: center;
-  width: 2.25rem;
-  height: 1.25rem;
-  padding: 0.1875rem;
-  background: var(--ink);
-  box-shadow: inset 0 0 0 var(--px) var(--line);
-}
-
-button.ip-switch.on .ip-switch-track {
-  justify-content: flex-end;
-  box-shadow: inset 0 0 0 var(--px) var(--good);
-}
-
-.ip-switch-knob {
-  width: 0.75rem;
-  height: 0.75rem;
-  background: var(--haze);
-}
-
-button.ip-switch.on .ip-switch-knob {
-  background: var(--good);
 }
 
 /*

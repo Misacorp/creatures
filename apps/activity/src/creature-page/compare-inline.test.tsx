@@ -135,7 +135,7 @@ describe('the Compare switch', () => {
     const toggle = sw(p);
     expect(toggle?.localName).toBe('button');
     expect(toggle?.getAttribute('aria-checked')).toBe('false');
-    expect(visibleText(first(byClass(toggle as FakeElement, 'ip-switch-label')))).toBe('Compare');
+    expect(visibleText(first(byClass(toggle as FakeElement, 'switch-label')))).toBe('Compare');
     // Off is the plain card.
     expect(byClass(detail(p), 'cmp-delta')).toHaveLength(0);
     expect(byClass(detail(p), 'cmp-new')).toHaveLength(0);

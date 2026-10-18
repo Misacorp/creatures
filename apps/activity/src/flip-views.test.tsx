@@ -269,7 +269,7 @@ describe('the creature page flips through the list it came from', () => {
     expect(marked).toEqual([p.document.getElementById(cardDomId(at(4).id))]);
   });
 
-  it('keeps the arrow keys for an open drawer: they flip its items, not the creature behind', () => {
+  it('keeps the arrow keys for an open drawer: they do not flip the creature behind', () => {
     const p = drawTab();
     open(p, at(3));
     const hat = first(
@@ -403,17 +403,17 @@ describe('the Workshop item drawer flips through the bag in the grid order', () 
     expect(byClass(dialog(p), 'item-detail')[0]?.getAttribute('aria-labelledby')).toBe(
       `item-${shown.id}-name`,
     );
-    const equip = byName(dialog(p), 'button', 'Equip')[0];
-    const takeOff = byName(dialog(p), 'button', 'Take off')[0];
-    if (takeOff !== undefined) {
-      gearActions.equip = vi.fn(() => Promise.resolve(undefined));
-      p.click(takeOff);
-      expect(gearActions.equip).toHaveBeenCalledWith(shown.id, null);
-    } else {
-      expect(equip).toBeDefined();
-      p.click(first(byName(dialog(p), 'button', 'Equip')));
-      expect(byClass(dialog(p), 'equip-panel')).toHaveLength(1);
-    }
+    // The Equip on row is for the item now shown: its picker lists every creature, with the reason for
+    // each one that cannot take it (nobody in this sample can, so a tap on an option asks for nothing).
+    const trigger = first(byClass(dialog(p), 'equip-trigger'));
+    expect(trigger.getAttribute('aria-labelledby')).toContain(shown.id);
+    gearActions.equip = vi.fn(() => Promise.resolve(undefined));
+    p.click(trigger);
+    expect(byClass(p.root, 'roster-picker')).toHaveLength(1);
+    const options = byRole(p.root, 'option');
+    expect(options.length).toBeGreaterThan(1);
+    p.click(first(options.filter((o) => o.getAttribute('aria-disabled') === 'true')));
+    expect(gearActions.equip).not.toHaveBeenCalled();
   });
 
   it('starts the next item clean: an open panel is gone after the flip', () => {
@@ -454,7 +454,7 @@ describe('the Workshop item drawer flips through the bag in the grid order', () 
 
 // --- The creature page's item picker ---
 
-describe('the item picker flips through the slot grid', () => {
+describe('the item picker has no flip: the grid is how you move between items', () => {
   function drawPicker(): { page: Page; dialog: FakeElement; onEquip: ReturnType<typeof vi.fn> } {
     page = createPage();
     const scene = pageScene('level 15');
@@ -486,70 +486,51 @@ describe('the item picker flips through the slot grid', () => {
     return nameOf(first(find(dialog, (e) => e.getAttribute('aria-pressed') === 'true')));
   }
 
-  it('shows arrows in the heading row with the position among the grid cells', () => {
+  it('draws no Prev / Next row, no swipe area and no flip announcement', () => {
     const { dialog } = drawPicker();
-    const total = byClass(dialog, 'item-tile').length;
-    expect(total).toBeGreaterThan(3);
-    const nav = first(byClass(dialog, 'flip-nav'));
-    expect(nav.getAttribute('aria-label')).toBe('Flip between items');
-    expect(visibleText(first(byClass(nav, 'flip-count')))).toMatch(
-      new RegExp(`^\\d+ / ${String(total)}$`),
-    );
-    // The heading's count gave way to the position.
-    expect(visibleText(first(byClass(dialog, 'drawer-head')))).not.toContain('in the bag');
+    expect(byClass(dialog, 'item-tile').length).toBeGreaterThan(3);
+    expect(byClass(dialog, 'flip-nav')).toHaveLength(0);
+    expect(byName(dialog, 'button', /^(Previous|Next) item/)).toHaveLength(0);
+    expect(byClass(dialog, 'flip-area')).toHaveLength(0);
+    expect(byRole(dialog, 'status')).toHaveLength(0);
   });
 
-  it('selects the next cell in grid order and shows its detail, with the buttons and the keys', () => {
+  it('says how many items are in the bag in the heading, always', () => {
+    const { dialog } = drawPicker();
+    expect(visibleText(first(byClass(dialog, 'drawer-head')))).toMatch(/\d+ in the bag/);
+  });
+
+  it('selects the item that is tapped and shows its detail', () => {
     const { page: p, dialog } = drawPicker();
     const cells = byClass(dialog, 'item-tile');
     const start = cells.findIndex((c) => c.getAttribute('aria-pressed') === 'true');
-    const next = cells[start + 1] as FakeElement;
-    p.click(first(byName(dialog, 'button', /^Next item/)));
-    expect(pressed(dialog)).toBe(nameOf(next));
-    expect(next.getAttribute('aria-pressed')).toBe('true');
-    p.key(dialog, 'ArrowRight');
-    expect((cells[start + 2] as FakeElement).getAttribute('aria-pressed')).toBe('true');
-    p.key(dialog, 'ArrowLeft');
-    p.key(dialog, 'ArrowLeft');
-    expect((cells[start] as FakeElement).getAttribute('aria-pressed')).toBe('true');
+    const other = cells.find((_, index) => index !== start) as FakeElement;
+    p.click(other);
+    expect(pressed(dialog)).toBe(nameOf(other));
+    expect(other.getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('stops at the last cell', () => {
+  it('does nothing on the arrow keys (they stay off the creature behind, too)', () => {
     const { page: p, dialog } = drawPicker();
-    const cells = byClass(dialog, 'item-tile');
-    p.click(cells[cells.length - 1] as FakeElement);
+    const before = pressed(dialog);
     p.key(dialog, 'ArrowRight');
-    expect((cells[cells.length - 1] as FakeElement).getAttribute('aria-pressed')).toBe('true');
-    expect(first(byName(dialog, 'button', 'Next item')).getAttribute('aria-disabled')).toBe('true');
+    p.key(dialog, 'ArrowLeft');
+    expect(pressed(dialog)).toBe(before);
   });
 
-  it('equips the item now shown', async () => {
+  it('equips the item that is tapped and shown', async () => {
     const { page: p, dialog, onEquip } = drawPicker();
-    // Flip until an item that can be worn is shown, then equip it.
-    for (let i = 0; i < 12 && byName(dialog, 'button', 'Equip').length === 0; i += 1) {
-      p.key(dialog, 'ArrowRight');
+    // Tap tiles until an item that can be worn is shown, then equip it.
+    const cells = byClass(dialog, 'item-tile');
+    for (const cell of cells) {
+      if (byName(dialog, 'button', 'Equip').length > 0) break;
+      p.click(cell);
     }
-    const shown = find(
-      dialog,
-      (e) =>
-        e.getAttribute('aria-pressed') === 'true' &&
-        e.getAttribute('class')?.includes('item-tile') === true,
-    )[0] as FakeElement;
-    const label = nameOf(shown);
     p.click(first(byName(dialog, 'button', 'Equip')));
     await vi.waitFor(() => {
       expect(onEquip).toHaveBeenCalledTimes(1);
     });
-    const id = String((onEquip.mock.calls[0] as unknown[])[0]);
-    expect(label.length).toBeGreaterThan(0);
-    expect(id).toContain('bag-charm');
-  });
-
-  it('draws the same controls as the creature page and the Workshop drawer', () => {
-    const { dialog } = drawPicker();
-    expect(byClass(first(byClass(dialog, 'flip-nav')), 'flip-btn')).toHaveLength(2);
-    expect(byClass(dialog, 'flip-area')).toHaveLength(1);
-    expect(byRole(dialog, 'status')).toHaveLength(1);
+    expect(String((onEquip.mock.calls[0] as unknown[])[0])).toContain('bag-charm');
   });
 });
 
@@ -582,13 +563,18 @@ describe('every flipping view uses the shared building block', () => {
     expect(source).toContain('<FlipLive');
   });
 
-  it('the Workshop and the item picker build theirs the same way and hand it to the Drawer and a FlipArea', () => {
-    for (const name of ['./Workshop.tsx', './creature-page/ItemPicker.tsx']) {
-      const source = src(name);
-      expect(source, name).toContain('flipOver(');
-      expect(source, name).toMatch(/flip=\{flip\}/);
-      expect(source, name).toMatch(/<FlipArea /);
-    }
+  it('the Workshop builds its flip the same way and hands it to the Drawer and a FlipArea', () => {
+    const source = src('./Workshop.tsx');
+    expect(source).toContain('flipOver(');
+    expect(source).toMatch(/flip=\{flip\}/);
+    expect(source).toMatch(/<FlipArea /);
+  });
+
+  it('the item picker does not flip at all (2026-10-18: tapping in the grid is enough)', () => {
+    const source = src('./creature-page/ItemPicker.tsx');
+    expect(source).not.toContain('flipOver');
+    expect(source).not.toContain('FlipArea');
+    expect(source).not.toMatch(/flip=/);
   });
 
   it('the Drawer draws the arrows, the keys and the announcement of whatever flip it is given', () => {

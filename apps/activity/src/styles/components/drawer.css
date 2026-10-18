@@ -36,6 +36,14 @@
     calc(var(--px) * -1) 0 0 0 var(--ink),
     var(--px) 0 0 0 var(--ink),
     inset 0 var(--px) 0 0 #3d3570;
+}
+
+/*
+  The sheet only has a transform while it is pulled: a transform (even a zero one) makes the panel the
+  containing block of every `position: fixed` thing inside it, and a picker sheet opened from a drawer
+  (the Workshop item's "Equip on") must cover the screen, not the panel.
+*/
+.drawer-panel.dragging {
   transform: translateY(var(--drag, 0px));
 }
 

@@ -5,12 +5,10 @@ import { itemLabel, rarityName, setPiecesWith, slotName } from '../gear-view';
 import { ItemCard } from '../ItemCard';
 import { ItemTile } from '../ItemTile';
 import { Drawer } from '../ui/Drawer';
-import { flipOver } from '../ui/flip-logic';
-import { FlipArea } from '../ui/Flipper';
 import { ScrollHint } from '../ui/ScrollHint';
+import { Switch } from '../ui/Switch';
 import { diffItems } from './compare-diff';
 import { loadCompareOn, saveCompareOn } from './compare-pref';
-import { CompareSwitch } from './CompareSwitch';
 import { compactReason, firstPick, pickerChoices } from './picker-view';
 
 export interface ItemPickerProps {
@@ -72,7 +70,7 @@ function DetailPanel({
   const comparable = !worn && wornItem !== undefined;
   const comparing = comparable && compareOn;
   return (
-    <section class="ip-detail" aria-label="Selected item">
+    <section class="ip-detail pix-panel" aria-label="Selected item">
       {/* The card scrolls inside its own box (a long Epic with its lost lines is tall) and hints that it does; the actions below stay put. */}
       <ScrollHint
         class="ip-detail-scroll"
@@ -90,7 +88,7 @@ function DetailPanel({
         />
       </ScrollHint>
       <div class="ip-actions">
-        {comparable && <CompareSwitch on={compareOn} onChange={onCompareChange} />}
+        {comparable && <Switch on={compareOn} onChange={onCompareChange} label="Compare" />}
         {worn ? (
           <button
             type="button"
@@ -124,8 +122,9 @@ function DetailPanel({
 /**
  * The item picker in a Drawer: an icon grid (the worn item first, then the bag's wearable items, then the
  * ones this creature cannot wear, each with its short reason under it) and a detail panel pinned at the
- * bottom for the selected item, with Equip or Take off. While the gear view loads it says "Loading...". The
- * server decides what is accepted; the callbacks only ask.
+ * bottom for the selected item, with Equip or Take off. Tapping an item in the grid is how you move between
+ * items here (no Prev / Next row: the grid is right there). While the gear view loads it says "Loading...".
+ * The server decides what is accepted; the callbacks only ask.
  */
 export function ItemPickerDrawer({
   open,
@@ -164,50 +163,31 @@ export function ItemPickerDrawer({
     cells.find((c) => c.item.id === firstPick(choices)) ??
     cells[0];
   const selected = detailOpen ? shown : undefined;
-  // The detail flips through this slot's grid, in the grid's order; the arrows and the count then say
-  // where the picked item is (so the "in the bag" count gives way to them).
-  const flip =
-    selected === undefined
-      ? undefined
-      : flipOver({
-          list: cells,
-          at: cells.findIndex((c) => c.item.id === selected?.item.id),
-          noun: 'item',
-          nameOf: (cell) => itemLabel(cell.item.baseId, cell.item.itemLevel),
-          pick: (cell) => {
-            setPicked(cell.item.id);
-          },
-        });
   return (
     <Drawer
       open={open}
       onClose={onClose}
       title={slotName(slot)}
       meta={
-        flip !== undefined || items === null || choices.length === 0
-          ? undefined
-          : `${String(choices.length)} in the bag`
+        items === null || choices.length === 0 ? undefined : `${String(choices.length)} in the bag`
       }
-      flip={flip}
       {...(returnFocusTo === undefined ? {} : { returnFocusTo })}
       class="picker-drawer"
       footer={
         selected === undefined ? undefined : (
-          <FlipArea flip={flip}>
-            <DetailPanel
-              cell={selected}
-              creature={creature}
-              wornItem={worn}
-              compareOn={compareOn}
-              onCompareChange={(on) => {
-                setCompareOn(on);
-                saveCompareOn(on);
-              }}
-              busy={busy}
-              onEquip={onEquip}
-              onTakeOff={onTakeOff}
-            />
-          </FlipArea>
+          <DetailPanel
+            cell={selected}
+            creature={creature}
+            wornItem={worn}
+            compareOn={compareOn}
+            onCompareChange={(on) => {
+              setCompareOn(on);
+              saveCompareOn(on);
+            }}
+            busy={busy}
+            onEquip={onEquip}
+            onTakeOff={onTakeOff}
+          />
         )
       }
     >

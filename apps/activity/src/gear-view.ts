@@ -31,7 +31,9 @@ import {
 import type { Creature } from './api';
 import { capitalize, creatureName, getSpecies } from './game';
 import { percent } from './progress-math';
+import { formatDuration } from './time-format';
 import { destinationName, supplyName } from './trip-view';
+import type { CountItem } from './ui/CountBadge';
 import type {
   ConversionNotice,
   CraftOdds,
@@ -590,9 +592,14 @@ export function oddsText(odds: CraftOdds): string {
     .join(' · ');
 }
 
-/** "4 / 10", the well-thumbed marks of a blueprint. */
+/** "4 / 10", the marks of a blueprint (a player reads them as its quality). */
 export function marksText(marks: number): string {
   return `${String(marks)} / ${String(RULES.gear.craft.marks.max)}`;
+}
+
+/** "Quality 4 / 10": what a player reads of a blueprint's marks. */
+export function qualityText(marks: number): string {
+  return `Quality ${marksText(marks)}`;
 }
 
 /** "6 to 10": one number when both ends are the same. */
@@ -602,25 +609,66 @@ export function rangeText(range: Range): string {
     : `${String(range.min)} to ${String(range.max)}`;
 }
 
+/** The badge text of a yield: "3" for one number, "3–4" for a range, and how a screen reader says it ("3 to 4"). */
+export function rangeBadge(range: Range): Pick<CountItem, 'amount' | 'spokenAmount'> {
+  return range.min === range.max
+    ? { amount: range.max }
+    : { amount: `${String(range.min)}\u2013${String(range.max)}`, spokenAmount: rangeText(range) };
+}
+
 /**
- * What a dismantle can give, one short phrase each, the empty ones left out: "6 to 10 scrap",
- * "1 Tide shard", "1 to 2 shards (any kind)", "0 to 1 glimmer", "3 to 8 Essence".
+ * What a dismantle can give, as count badges (an icon and a number or a range), the empty ones left out:
+ * scrap, the element's shard (or shards of any kind), glimmer, Essence. Spoken as "Scrap: 3 to 4".
  */
-export function dismantleLines(range: DismantleRange): string[] {
-  const lines: string[] = [];
-  if (range.scrap.max > 0) lines.push(`${rangeText(range.scrap)} scrap`);
+export function dismantleCountItems(range: DismantleRange): CountItem[] {
+  const items: CountItem[] = [];
+  const part = (kind: PartKind, amount: Range): void => {
+    if (amount.max > 0) {
+      items.push({
+        key: kind,
+        icon: { kind: 'part', part: kind },
+        label: partName(kind),
+        entry: GLOSSARY_IDS.part(kind),
+        ...rangeBadge(amount),
+      });
+    }
+  };
+  part('scrap', range.scrap);
   if (range.shards.max > 0) {
-    const kind =
-      range.shards.element === null
-        ? range.shards.max === 1
-          ? 'shard (any kind)'
-          : 'shards (any kind)'
-        : `${capitalize(range.shards.element)} ${range.shards.max === 1 ? 'shard' : 'shards'}`;
-    lines.push(`${rangeText(range.shards)} ${kind}`);
+    const element = range.shards.element;
+    const kind = element === null ? undefined : PART_KINDS.find((k) => k === `${element}-shard`);
+    if (kind !== undefined) part(kind, range.shards);
+    else {
+      items.push({
+        key: 'shards',
+        icon: { kind: 'glyph', id: 'sparkle' },
+        label: 'Shards',
+        name: 'any kind',
+        ...rangeBadge(range.shards),
+      });
+    }
   }
-  if (range.glimmer.max > 0) lines.push(`${rangeText(range.glimmer)} glimmer`);
-  if (range.essence.max > 0) lines.push(`${rangeText(range.essence)} Essence`);
-  return lines;
+  part('glimmer', range.glimmer);
+  if (range.essence.max > 0) {
+    items.push({
+      key: 'essence',
+      icon: { kind: 'glyph', id: 'gem' },
+      label: 'Essence',
+      entry: 'essence',
+      ...rangeBadge(range.essence),
+    });
+  }
+  return items;
+}
+
+/** A job's time as one badge: a clock and "51 min" (spoken "Takes: 51 min"). */
+export function durationCountItem(durationMs: number): CountItem {
+  return {
+    key: 'duration',
+    icon: { kind: 'glyph', id: 'clock' },
+    label: 'Takes',
+    amount: formatDuration(durationMs),
+  };
 }
 
 /** The time a dismantle job of these items takes a creature of this Crafting level (the preview gives the server's). */
@@ -772,7 +820,7 @@ interface BlueprintView {
   slot: GearSlot;
   element: string | null;
   cost: PartsBundle;
-  /** Well-thumbed marks (finds of it the player already knew), 0 to the most. */
+  /** Marks, shown as blueprint quality (finds of it the player already knew), 0 to the most. */
   marks: number;
   /** The Crafting level a craft of it asks for (a better base unlocks at a higher item level); 1 for the plain ones. */
   needsCraftingLevel: number;
