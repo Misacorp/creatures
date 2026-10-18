@@ -67,16 +67,41 @@ describe('which form a branching line grows into', () => {
     expect(pickBranch(team, sproutle)?.species).toBe('thornbuck');
   });
 
-  it('falls back to the first form when both roles are covered, and has one form for a plain line', () => {
+  it('falls back to the first form when both roles are covered, and has none for an evolved creature', () => {
     // A Guard and a Support are already on the team: neither form fills a gap, so the original it is.
     const sproutle = owned('sproutle', 15);
     const covered = [owned('mistnewt', 14), owned('ashmole', 14), sproutle];
     expect(pickBranch(covered, sproutle)?.species).toBe('thornbuck');
+    // Alone on the team, a Splashet takes its first form: no role is taken.
     const splashet = owned('splashet', 15);
     expect(pickBranch([splashet], splashet)?.species).toBe('tidewing');
     const tidewing = owned('splashet', 15, 'tidewing');
     expect(pickBranch([tidewing], tidewing)).toBeUndefined();
   });
+});
+
+describe('every evolving line grows two ways', () => {
+  // The line, its first form and its second, then the line of a teammate whose role is the first form's.
+  const LINES = [
+    ['splashet', 'tidewing', 'geyserpup', 'zipmouse'], // Setter
+    ['cindle', 'pyrelynx', 'wickat', 'stormray'], // Payoff
+    ['sproutle', 'thornbuck', 'sunfawn', 'mistnewt'], // Guard
+    ['zipmouse', 'voltaro', 'ohmouse', 'splashet'], // Setter
+    ['mistnewt', 'fogwyrm', 'drizzlewt', 'sproutle'], // Guard
+    ['ashmole', 'magmole', 'kilnmole', 'aurorix'], // Support
+    ['stormray', 'tempestray', 'halcyray', 'cindle'], // Payoff
+    ['mossback', 'ancientshell', 'bloomback', 'splashet'], // Setter
+  ] as const;
+
+  it.each(LINES)(
+    '%s grows into %s, or into %s when the team already has its role',
+    (line, first, second, teammateLine) => {
+      const creature = owned(line, 15);
+      expect(pickBranch([creature], creature)?.species).toBe(first);
+      const team = [owned(teammateLine, 14, teammateLine), creature];
+      expect(pickBranch(team, creature)?.species).toBe(second);
+    },
+  );
 });
 
 describe('the evolve step of a check-in', () => {

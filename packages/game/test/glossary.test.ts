@@ -391,7 +391,9 @@ describe('the glossary text matches the rules', () => {
     expect(text('duplicate-choice')).toContain('two forms');
     expect(text('evolution')).toContain('permanent');
     expect(text('evolution')).toContain('Keep a duplicate');
-    expect(content.creatures.filter((c) => c.altEvolvesTo !== undefined)).toHaveLength(2);
+    // Every evolving line (8) has a second form, so Keep can be offered for each.
+    expect(content.creatures.filter((c) => c.altEvolvesTo !== undefined)).toHaveLength(8);
+    expect(content.creatures.filter((c) => c.evolvesTo !== undefined)).toHaveLength(8);
     // Bait pays for treats, lures and the book, and nothing turns into Bait.
     expect(text('bait')).toContain('lures');
     expect(text('bait')).not.toContain('turn into Bait');

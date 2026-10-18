@@ -120,7 +120,10 @@
           "toSpecies": "pyrelynx",
           "level": 15,
           "essence": 20,
-          "available": false
+          "available": false,
+          "alt": {
+            "toSpecies": "wickat"
+          }
         }
       },
       {
@@ -228,7 +231,10 @@
           "toSpecies": "tidewing",
           "level": 15,
           "essence": 20,
-          "available": false
+          "available": false,
+          "alt": {
+            "toSpecies": "geyserpup"
+          }
         }
       },
       {

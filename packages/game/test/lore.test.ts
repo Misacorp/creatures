@@ -81,8 +81,8 @@ function inBand(element: string, hex: string): boolean {
 }
 
 describe('shipped lore', () => {
-  it('has an entry for every one of the 24 species, and nothing else', () => {
-    expect(content.creatures).toHaveLength(24);
+  it('has an entry for every one of the 30 species, and nothing else', () => {
+    expect(content.creatures).toHaveLength(30);
     expect(Object.keys(lore.species).sort()).toEqual(content.creatures.map((c) => c.id).sort());
     expect(Object.keys(lore.species)).toEqual(
       expect.arrayContaining(['lanternfin', 'hearthshell']),

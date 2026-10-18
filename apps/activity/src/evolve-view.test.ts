@@ -118,3 +118,37 @@ describe('the words around a line that grows two ways', () => {
     expect(old?.teaser).toBe('Evolves into: Pyrelynx (Inferno Strike)');
   });
 });
+
+describe('the forms of every evolving line', () => {
+  const evolving = content.creatures.filter((c) => c.evolvesTo !== undefined);
+
+  it('shows two forms of one element and two roles, each with an ability and a short name', () => {
+    expect(evolving).toHaveLength(8);
+    for (const line of evolving) {
+      const creature = {
+        level: 15,
+        fusionCount: 0,
+        evolution: {
+          toSpecies: line.evolvesTo?.species ?? '',
+          level: 15,
+          essence: line.evolvesTo?.essence ?? 0,
+          available: true,
+          alt: { toSpecies: line.altEvolvesTo?.species ?? '' },
+        },
+      };
+      const [first, second] = evolveForms(creature);
+      expect(first, line.id).toBeDefined();
+      expect(second, line.id).toBeDefined();
+      if (first === undefined || second === undefined) continue;
+      expect(second.element, line.id).toBe(first.element);
+      expect(second.role, line.id).not.toBe(first.role);
+      expect(first.ability?.text, first.species).toBeTruthy();
+      expect(second.ability?.text, second.species).toBeTruthy();
+      // The two columns are half a 390 px phone: no name is longer than Ancientshell.
+      for (const form of [first, second]) {
+        expect(form.name.length, form.name).toBeLessThanOrEqual(12);
+      }
+      expect(evolveTargets(creature)).toEqual([first.species, second.species]);
+    }
+  });
+});

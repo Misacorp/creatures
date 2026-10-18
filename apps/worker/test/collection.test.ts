@@ -524,7 +524,13 @@ describe('GET /api/state', () => {
           nextUnlock: { level: 7, name: 'Scarf' },
           ribbon: null,
           treatCost: 4,
-          evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: false },
+          evolution: {
+            toSpecies: 'pyrelynx',
+            level: 15,
+            essence: 20,
+            available: false,
+            alt: { toSpecies: 'wickat' },
+          },
           ability: {
             id: 'flare-strike',
             unlocked: false,
@@ -1376,7 +1382,8 @@ describe('POST /api/expeditions/{id}/claim', () => {
           species: 'splashet',
           source: 'expedition',
           talent: { id: dupe?.talent?.id, golden: dupe?.talent?.golden },
-          offered: { fuse: [p.starterId], release: true, keep: false },
+          // Splashet grows two ways, so Keep is on the card (a line with no second form would not offer it).
+          offered: { fuse: [p.starterId], release: true, keep: true },
         });
         expect(
           ctx.sql.exec<{ s: number }>('SELECT dupe_streak AS s FROM player_progress').one().s,

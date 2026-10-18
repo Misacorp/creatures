@@ -544,20 +544,34 @@ describe('the duplicate choice', () => {
     expect(RULES.talents.maxPerLine).toBe(2);
   });
 
-  it('reads the branches of a line from the content: Sproutle and Zipmouse have two', () => {
+  it('reads the branches of a line from the content: every evolving line has two', () => {
     const branching = content.creatures.filter((c) => c.altEvolvesTo !== undefined);
-    expect(branching.map((c) => c.id)).toEqual(['sproutle', 'zipmouse']);
+    expect(branching.map((c) => c.id)).toEqual([
+      'splashet',
+      'cindle',
+      'sproutle',
+      'zipmouse',
+      'mistnewt',
+      'ashmole',
+      'stormray',
+      'mossback',
+    ]);
     for (const line of new Set(content.creatures.map((c) => c.line))) {
       expect(lineBranches(content, line).length, line).toBeLessThanOrEqual(2);
     }
     expect(lineBranches(content, 'sproutle')).toEqual(['thornbuck', 'sunfawn']);
     expect(lineBranches(content, 'zipmouse')).toEqual(['voltaro', 'ohmouse']);
-    expect(lineBranches(content, 'splashet')).toEqual(['tidewing']);
+    expect(lineBranches(content, 'splashet')).toEqual(['tidewing', 'geyserpup']);
+    expect(lineBranches(content, 'cindle')).toEqual(['pyrelynx', 'wickat']);
+    expect(lineBranches(content, 'mistnewt')).toEqual(['fogwyrm', 'drizzlewt']);
+    expect(lineBranches(content, 'ashmole')).toEqual(['magmole', 'kilnmole']);
+    expect(lineBranches(content, 'stormray')).toEqual(['tempestray', 'halcyray']);
+    expect(lineBranches(content, 'mossback')).toEqual(['ancientshell', 'bloomback']);
     expect(lineBranches(content, 'coralynx')).toEqual([]);
     expect(lineBranches(content, 'nobody')).toEqual([]);
   });
 
-  it('offers Keep for the two shipped branching lines, by what the player owns', () => {
+  it('offers Keep for every evolving line, by what the player owns', () => {
     expect(keepOfferedFor('sproutle', ['sproutle'])).toBe(true);
     expect(keepOfferedFor('sproutle', ['thornbuck'])).toBe(true);
     expect(keepOfferedFor('sproutle', ['sunfawn'])).toBe(true);
@@ -565,9 +579,24 @@ describe('the duplicate choice', () => {
     expect(keepOfferedFor('sproutle', ['sproutle', 'sproutle'])).toBe(false);
     expect(keepOfferedFor('zipmouse', ['voltaro'])).toBe(true);
     expect(keepOfferedFor('zipmouse', ['voltaro', 'ohmouse'])).toBe(false);
-    // A line that grows one way never offers it.
-    expect(keepOfferedFor('splashet', ['splashet'])).toBe(false);
-    expect(keepOfferedFor('mossback', ['mossback'])).toBe(false);
+    const lines: [string, string, string][] = [
+      ['splashet', 'tidewing', 'geyserpup'],
+      ['cindle', 'pyrelynx', 'wickat'],
+      ['mistnewt', 'fogwyrm', 'drizzlewt'],
+      ['ashmole', 'magmole', 'kilnmole'],
+      ['stormray', 'tempestray', 'halcyray'],
+      ['mossback', 'ancientshell', 'bloomback'],
+    ];
+    for (const [line, first, second] of lines) {
+      expect(keepOfferedFor(line, [line]), line).toBe(true);
+      expect(keepOfferedFor(line, [first]), line).toBe(true);
+      expect(keepOfferedFor(line, [second]), line).toBe(true);
+      expect(keepOfferedFor(line, [first, second]), line).toBe(false);
+      expect(keepOfferedFor(line, [line, line]), line).toBe(false);
+    }
+    // A line with no evolution at all (a single-stage species) never offers it.
+    expect(keepOfferedFor('coralynx', ['coralynx'])).toBe(false);
+    expect(keepOfferedFor('solmane', ['solmane'])).toBe(false);
   });
 
   it('recommends Teach for a new talent that does something, into an empty slot first', () => {
