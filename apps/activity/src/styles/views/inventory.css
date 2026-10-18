@@ -13,7 +13,7 @@ button.inv-cell {
   display: grid;
   place-items: center;
   width: 100%;
-  min-height: 4.75rem;
+  aspect-ratio: 1;
   padding: 0.25rem;
   background: var(--dusk);
   box-shadow: 0 0 0 var(--px) var(--ink);

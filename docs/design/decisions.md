@@ -1887,3 +1887,7 @@ Misa: players may not notice that the picker's detail panel scrolls, because it 
 ## 2026-10-18: A second tap closes the item details in the picker
 
 Misa asked how a player gets back to the grid once an item's details fill the bottom of the picker. Tapping the item shown again now closes its details (its cell's `aria-pressed` goes false), so the grid has the whole drawer and scrolls freely; tapping any item opens them again. With nothing shown, the Prev / Next row gives way to the "N in the bag" count. The picker still opens with an item shown (the worn one, else the first choice). Then (Misa): the item shown, or shown last after its details closed, keeps a selected look in the grid (lit from inside, with a light edge inside the rarity edge) and is scrolled into view when its details close; the creature list marks the card of the creature whose page was open last the same way (`current`), and Back makes sure that card is in view even if the list moved meanwhile.
+
+## 2026-10-18: Item grid cells are square
+
+Misa expected square item cells. The picker grid (`.ip-cell`) and the Workshop bag (`.inv-cell`) now take `aspect-ratio: 1` instead of a minimum height, so every cell is as tall as it is wide whatever the screen width (about 72 px and 78 px at 390 px).
