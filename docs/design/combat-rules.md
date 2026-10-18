@@ -88,13 +88,14 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 3. A charge that lands next round is announced and its victims are marked (6.12). Not in enrage rounds.
 4. If the boss has a reflect move due this round, it arms (5.4). Not in enrage rounds.
 5. Supports act (4.5): each living, non-silenced Support in slot order boosts, heals and cleanses the creatures beside it.
+   5a. **Kind Rain** (`FightInput.rainHealBp`, 10.9), if the day has it: every living creature heals that share of its max HP. One `sky_heal` event names who was healed.
 6. Finale abilities set for this round fire, in the order they were stored (section 8). Not in enrage rounds. If the boss has fallen or retreated, they do not fire.
 
 **2.4 Creature turns.** Creatures act one at a time in the boss's turn order.
 
 2.4.1 Turn order is fixed at the start of the fight. A raid boss has one of: `left_to_right`, `right_to_left`, or `speed` (highest Speed first, ties to the lower slot). Today: Tidal Colossus and Storm Sovereign left to right, Thornmother right to left, Cinder Wyrm by speed. The dungeon is always left to right (`RULES.dungeon.turnOrder`), whatever the foe or the room says.
 
-2.4.2 A knocked-out creature is skipped. A silenced creature skips its turn and its silence counts down by one (6.4). Every other creature hits the boss (2.4.3).
+2.4.2 A knocked-out creature is skipped. A silenced creature skips its turn and its silence counts down by one (6.4). Every other creature hits the boss (2.4.3). **Morning Haze** (`FightInput.skipFirstTurn`, 10.9): a creature named there also skips the first turn it reaches alive (a `skip` event with reason `haze`); if that turn was silenced anyway, the silence is the lost turn and the haze is spent on it, so it never costs two.
 
 2.4.3 A creature's hit on the boss deals its Attack, times the element matchup (`RULES.combat.strongBp` 150% against the element it beats, `weakBp` 75% against the element that beats it, otherwise 100%), times one combined bonus (Support boost, Rally, crit, mutators; they add together, then multiply once), minus the boss's resist if it has adapted. Then marks and reactions (section 5).
 
@@ -252,6 +253,8 @@ _Example._ Cindle (Ember) hits first and leaves Scorched. Splashet (Tide) acts a
 5.4.2 **Who takes it.** It is treated as an aimed hit on that creature: a Guard that can take hits for it takes it **instead** (raid: a living Guard in its row; dungeon: beside it; the roll of 4.2.3 if several), then the taker's Shield Wall and armor. A creature that is itself a Guard takes it with armor.
 
 5.4.3 The reaction still counts: the mark is cleared. The setup earns no credit.
+
+5.4.5 **Bramble Season** (`FightInput.brambleBp`, 10.9) is a smaller, always-on cousin of Backdraft that needs no boss move. The **first** reaction set off each round, by a creature that is still living, sends that share of its bonus damage back as a reflected hit on the creature that set it off (the payoff creature, as in 5.4.1); the boss takes the rest of the bonus. The returning part is the same kind of hit as Backdraft's: aimed at that creature, a Guard that can takes it instead, then the taker's Shield Wall, armor and sheet (`reflectedBp`, `takenBp`, the ward), no crit, no cover, no cap. The setup earns credit from what the boss took. If Backdraft already reflected that reaction whole, that reaction was the round's first and Bramble does nothing more (a second reaction is never Bramble's). It works in every round, enrage rounds included, and draws no die. A share too small to send anything back writes no hit.
 
 5.4.4 **One reflection a round.** It is armed for one round only; the next round arms it again. Only the first reaction of the round is reflected: a second reaction in the same round goes through unreflected, as an ordinary reaction. An ability's strike from a creature that is knocked out is never reflected.
 
@@ -454,3 +457,13 @@ The order matters only through rounding, and it is fixed. _Example._ A hit of 11
 - `ignoreSilence: 1` makes silence (6.4) do nothing to it. The silence still picks the two ends of the line as always, so it is wasted on this creature, and no `silence` event is written for it.
 
 **10.8 In the log.** `describeEvent` mentions the sheet in plain text where a player would ask why: a hit or a reaction that carries `sheetBp` ("(+12% from modifiers)"), and a boss hit that carries `warded` ("Its modifiers take off 20."). Names are text only.
+
+**10.9 The three hooks of the weather (2026-10-18).** Kind Rain, Morning Haze and Bramble Season are not sheet numbers, so each is an optional field of the fight input (`FightInput`; the dungeon run has `rainHealBp`, `hazeLeft` and `brambleBp`, copied into every room). Absent, empty or 0 means exactly the fight as it was: no event, no die, so every stored fight replays. None of them draws a die. The builders (`skyFightFields`, `skyRunFields` in `sky.ts`, from `weatherSky` in `@creatures/game`) leave a field out on a plain day.
+
+| Field           | Meaning                                                                                                                                                                                                                                                                                 |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rainHealBp`    | Kind Rain. Each living creature heals this share of its max HP (rounded down) at round start, after the Supports' Mend (2.3 step 5a). Its own `healReceivedBp` applies like for a Mend (Long Shadows makes it weaker), never above what is missing, never a revival.                    |
+| `skipFirstTurn` | Morning Haze. Creature ids that skip their first turn (2.4.2). The raid names the leftmost creature of each row (zone, `firstOfEachRow`: a row of one or two is all Middle, so one creature); the dungeon names `team[0]` in every room (`hazeLeft`), since each room is a fresh fight. |
+| `brambleBp`     | Bramble Season. The share of the first reaction's bonus each round that goes back at the creature that set it off (5.4.5).                                                                                                                                                              |
+
+The log: `sky_heal` (`heals`: creature and HP really healed, in row order, not written when nobody needed healing), `skip` with `reason: 'haze'`, and on a `reaction` the optional `bramble` (`bp`, `amount` sent back; the event's `bonus` is what the boss took) followed by a `boss_hit` with source `reflect`.

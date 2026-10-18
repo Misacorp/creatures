@@ -16,6 +16,7 @@ import {
   scaledFoe,
   streakBonus,
   weatherBossAttacks,
+  weatherSky,
   weatherLuck,
   weatherSheet,
   type Rng,
@@ -24,6 +25,7 @@ import {
 import {
   dungeonBossEnrage,
   simulateDungeon,
+  skyRunFields,
   type AbilityChoice,
   type DungeonRoomSpec,
   type DungeonRunInput,
@@ -182,6 +184,7 @@ export function buildRun(
     abilities,
     luck: { ...weatherLuck(weather, RULES.combat.luck) },
     ...(weatherBossAttacks(weather, 1) > 1 ? { bossAttacks: weatherBossAttacks(weather, 1) } : {}),
+    ...skyRunFields(weatherSky(weather)),
     ...(Object.keys(rest).length === 0 ? {} : { rest }),
     rules: studyRules(study),
     depth,

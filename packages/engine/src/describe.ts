@@ -95,7 +95,9 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
     case 'turn':
       return `${creature(event.creature)} acts.`;
     case 'skip':
-      return `${creature(event.creature)} is silenced and misses its turn.`;
+      return event.reason === 'haze'
+        ? `${creature(event.creature)} is lost in the Morning Haze and misses its first turn.`
+        : `${creature(event.creature)} is silenced and misses its turn.`;
     case 'hit':
       return `${
         event.ability === undefined
@@ -115,11 +117,16 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
     case 'reaction': {
       const mods =
         event.sheetBp === undefined ? '' : ` (${signedPct(event.sheetBp)} from modifiers)`;
-      return event.reflected
-        ? `${lookup(names.reactions, event.reaction)}! ${names.boss} reflects ${event.bonus} bonus damage onto ${creature(event.payoff)}${mods}.`
-        : `${lookup(names.reactions, event.reaction)}! ${creature(event.payoff)} cashes in the mark${
-            event.setupCreature === null ? '' : ` set by ${creature(event.setupCreature)}`
-          } for ${event.bonus} bonus damage${mods}.`;
+      if (event.reflected) {
+        return `${lookup(names.reactions, event.reaction)}! ${names.boss} reflects ${event.bonus} bonus damage onto ${creature(event.payoff)}${mods}.`;
+      }
+      const brambles =
+        event.bramble === undefined
+          ? ''
+          : ` Bramble Season throws ${event.bramble.amount} of it (${event.bramble.bp / 100}%) back at ${creature(event.payoff)}.`;
+      return `${lookup(names.reactions, event.reaction)}! ${creature(event.payoff)} cashes in the mark${
+        event.setupCreature === null ? '' : ` set by ${creature(event.setupCreature)}`
+      } for ${event.bonus} bonus damage${mods}.${brambles}`;
     }
     case 'gimmick': {
       const name = lookup(names.gimmicks, event.gimmick);
@@ -174,6 +181,11 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
       return `End of round ${event.round}: ${names.boss} has ${event.bossHp} HP.`;
     case 'heal':
       return `${creature(event.supporter)} mends ${creature(event.target)} (+${event.amount} HP).`;
+    case 'sky_heal':
+      return `Kind Rain mends ${list(
+        event.heals.map((h) => `${creature(h.creature)} (+${h.amount} HP)`),
+        6,
+      )}.`;
     case 'cleanse':
       return `${creature(event.supporter)} clears ${creature(event.target)}'s silence.`;
     case 'charge':

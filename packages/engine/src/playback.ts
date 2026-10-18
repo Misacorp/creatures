@@ -106,6 +106,7 @@ function isVisibleEvent(e: FightEvent): boolean {
     case 'knockout':
     case 'silence':
     case 'heal':
+    case 'sky_heal':
     case 'cleanse':
     case 'charge':
     case 'retreat':

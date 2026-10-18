@@ -40,6 +40,7 @@ import {
   dungeonScrapPerRoom,
   mergeMods,
   weatherBossAttacks,
+  weatherSky,
   weatherLuck,
   weatherSheet,
   xpWeather,
@@ -56,6 +57,7 @@ import {
   dungeonBossEnrage,
   liveFightRules,
   simulateDungeon,
+  skyRunFields,
   type AbilityChoice,
   type DungeonRoomSpec,
   type DungeonRunInput,
@@ -751,6 +753,8 @@ export class Dungeon {
       luck: { ...weatherLuck(wday, RULES.combat.luck) },
       ...(Object.keys(rest).length === 0 ? {} : { rest }),
       ...(weatherBossAttacks(wday, 1) > 1 ? { bossAttacks: weatherBossAttacks(wday, 1) } : {}),
+      // Kind Rain, Morning Haze and Bramble Season (stored in the run input).
+      ...skyRunFields(weatherSky(wday)),
       // The combat rules, the boss room's enrage and the depth (a landmark gives the room boss its
       // signature), stored with the input so a replay is exact.
       rules: liveFightRules(),

@@ -57,6 +57,26 @@ describe('the dungeon in the simulator', () => {
     ).toBeGreaterThan(5);
   });
 
+  it("puts the day's Kind Rain, Morning Haze and Bramble Season into the run input, and nothing on a plain day", () => {
+    const p = player(12);
+    const day = (boon: string, omen: string | null) => ({
+      day: '2027-01-13',
+      boon,
+      omen,
+      wild: false,
+      boonBp: 12_500,
+      omenBp: 15_000,
+    });
+    const build = (weather: ReturnType<typeof day> | null) =>
+      buildRun(p, 3, dayModifiers('s', 1), 'run-seed', {}, undefined, weather);
+    const plain = build(null);
+    for (const key of ['rainHealBp', 'hazeLeft', 'brambleBp'])
+      expect(plain).not.toHaveProperty(key);
+    expect(build(day('kind-rain', null)).rainHealBp).toBe(250);
+    expect(build(day('market-day', 'morning-haze')).hazeLeft).toBe(true);
+    expect(build(day('market-day', 'bramble-season')).brambleBp).toBe(4_500);
+  });
+
   it('builds the run like the worker: a row of three, the rooms, the abilities and the gear folded in', () => {
     const p = player(12);
     const run = buildRun(p, 3, dayModifiers('s', 1), 'run-seed');

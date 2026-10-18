@@ -542,7 +542,34 @@ export function cuesForEvents(
         cues.push({ kind: 'hop', i, creature: e.creature });
         break;
       case 'skip':
-        cues.push({ kind: 'silenced', i, creature: e.creature });
+        if (e.reason === 'haze') {
+          // Morning Haze: the creature loses its first turn. A small word over it, no silence mark.
+          cues.push({
+            kind: 'float',
+            i,
+            target: e.creature,
+            text: 'Hazy',
+            tone: 'blocked',
+            crit: false,
+            drift: driftFor(i),
+          });
+        } else {
+          cues.push({ kind: 'silenced', i, creature: e.creature });
+        }
+        break;
+      case 'sky_heal':
+        // Kind Rain at round start: a green number on every creature it healed.
+        for (const [k, h] of e.heals.entries()) {
+          cues.push({
+            kind: 'float',
+            i,
+            target: h.creature,
+            text: `+${String(h.amount)}`,
+            tone: 'heal',
+            crit: false,
+            drift: driftFor(i + k),
+          });
+        }
         break;
       case 'hit':
         cues.push({ kind: 'flash', i, target: null });
@@ -863,6 +890,13 @@ export function creatureHpAt(
   const end = Math.min(Math.max(0, Math.trunc(index)), events.length);
   for (let i = 0; i < end; i++) {
     const e = events[i] as FightEvent;
+    if (e.t === 'sky_heal') {
+      for (const h of e.heals) {
+        const before = hp[h.creature];
+        if (before !== undefined && before > 0) hp[h.creature] = before + h.amount;
+      }
+      continue;
+    }
     if (e.t === 'heal') {
       const before = hp[e.target];
       // Never a revival: a creature that is down stays down (a heal for one is ignored).

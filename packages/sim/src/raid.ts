@@ -12,6 +12,7 @@ import {
   mergeMods,
   rollJackpot,
   weatherBossAttacks,
+  weatherSky,
   weatherLuck,
   weatherSheet,
   type BossDef,
@@ -30,6 +31,7 @@ import {
   resolveGuests,
   scaleBoss,
   simulateFight,
+  skyFightFields,
   type AbilityChoice,
   type ActiveAdaptation,
   type FightEvent,
@@ -495,6 +497,7 @@ export function fightFor(
         : [],
     // As live play builds it: the curve's boss attacks and boss crit bonus for the rank.
     ...(bossAttacks > 1 ? { bossAttacks } : {}),
+    ...skyFightFields(weatherSky(day), row),
     ...(week.luck === undefined || !week.luckStages.includes(stage)
       ? {}
       : { luck: weatherLuck(day, luckAtRank(week.luck, week.rank)) }),

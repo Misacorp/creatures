@@ -32,6 +32,38 @@ describe('raid week', () => {
     expect(w.picks).toHaveLength(3);
   });
 
+  it("puts the day's Kind Rain, Morning Haze and Bramble Season in the fight input, as the worker does", () => {
+    const players = roster.slice(0, 5);
+    const w = openRaidWeek(boss, players);
+    const day = (boon: string, omen: string | null) => ({
+      day: '2027-01-15',
+      boon,
+      omen,
+      wild: false,
+      boonBp: 10_000,
+      omenBp: 10_000,
+    });
+    w.weather = {
+      phase1: day('kind-rain', 'morning-haze'),
+      phase2: day('market-day', 'bramble-season'),
+    };
+    const one = fightFor(w, 'phase1').fight;
+    expect(one.rainHealBp).toBe(200);
+    expect(one.brambleBp).toBeUndefined();
+    // 15 creatures: the first of the Front (0), Middle (5) and Back (10) rows.
+    expect(one.skipFirstTurn).toEqual(
+      w.row.map((s) => s.id).filter((_, i) => [0, 5, 10].includes(i)),
+    );
+    const two = fightFor(w, 'phase2').fight;
+    expect(two.brambleBp).toBe(3_000);
+    expect(two.rainHealBp).toBeUndefined();
+    expect(two.skipFirstTurn).toBeUndefined();
+    const plain = fightFor(w, 'finale').fight;
+    for (const key of ['rainHealBp', 'skipFirstTurn', 'brambleBp']) {
+      expect(plain).not.toHaveProperty(key);
+    }
+  });
+
   it('builds a 3-per-player row for larger groups and picks the 3 strongest creatures', () => {
     const players = roster.slice(0, 5);
     const w = openRaidWeek(boss, players);

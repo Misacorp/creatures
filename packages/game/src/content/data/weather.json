@@ -14,7 +14,11 @@
         "bp": 1000,
         "text": "Every creature's first hit deals {n}% more."
       },
-      { "op": "tripTime", "bp": -1000, "text": "Trips take {n}% less time." }
+      {
+        "op": "tripTime",
+        "bp": -1000,
+        "text": "Trips take {n}% less time."
+      }
     ]
   },
   {
@@ -33,7 +37,11 @@
         "roles": ["support"],
         "text": "Supports' boost is {n} pt stronger."
       },
-      { "op": "workshopTime", "bp": -1500, "text": "Workshop jobs take {n}% less time." }
+      {
+        "op": "workshopTime",
+        "bp": -1500,
+        "text": "Workshop jobs take {n}% less time."
+      }
     ]
   },
   {
@@ -42,10 +50,21 @@
     "name": "Kind Rain",
     "flavor": "A soft rain that mends what it falls on and feeds the tidepools and the hollow.",
     "bubbles": ["Soft rain, soft hearts"],
-    "status": "planned",
+    "status": "live",
     "cancels": [],
-    "effects": [],
-    "planned": "Every creature heals 2% of max HP at round start, and Tidepools and Verdant Hollow trips find 25% more parts. Waits for an engine hook: a heal at round start for every creature (the engine only heals through a Support's Mend)."
+    "effects": [
+      {
+        "op": "roundHeal",
+        "bp": 200,
+        "text": "Every creature heals {n}% of its max HP at the start of each round."
+      },
+      {
+        "op": "tripParts",
+        "bp": 2500,
+        "places": ["tidepools", "verdant-hollow"],
+        "text": "Trips to the Tidepools and the Verdant Hollow find {n}% more parts."
+      }
+    ]
   },
   {
     "id": "clear-skies",
@@ -56,8 +75,16 @@
     "status": "live",
     "cancels": [],
     "effects": [
-      { "op": "crit", "bp": 300, "text": "Crit chance +{n} pt." },
-      { "op": "tripRarity", "bp": 100, "text": "Rarer catches on trips: +{n} pt." }
+      {
+        "op": "crit",
+        "bp": 300,
+        "text": "Crit chance +{n} pt."
+      },
+      {
+        "op": "tripRarity",
+        "bp": 100,
+        "text": "Rarer catches on trips: +{n} pt."
+      }
     ]
   },
   {
@@ -139,7 +166,11 @@
         "rounds": 1,
         "text": "Shield Walls and other lasting abilities last 1 more round."
       },
-      { "op": "tripJournal", "bp": 10000, "text": "Journal pages are {n}% more likely." }
+      {
+        "op": "tripJournal",
+        "bp": 10000,
+        "text": "Journal pages are {n}% more likely."
+      }
     ]
   },
   {
@@ -158,7 +189,11 @@
         "dismantles": 2,
         "text": "Your first craft today gets +{n} pt one-step-up chance, and your first 2 dismantle jobs refund the top of their range."
       },
-      { "op": "dungeonScrap", "perRoom": 1, "text": "Dungeon rooms give +1 scrap." }
+      {
+        "op": "dungeonScrap",
+        "perRoom": 1,
+        "text": "Dungeon rooms give +1 scrap."
+      }
     ]
   },
   {
@@ -176,7 +211,10 @@
         "bp": 2500,
         "text": "The boss's adaptation is {n}% weaker."
       },
-      { "op": "reefOpen", "text": "The Moonlit Reef stays open all day." }
+      {
+        "op": "reefOpen",
+        "text": "The Moonlit Reef stays open all day."
+      }
     ]
   },
   {
@@ -185,10 +223,19 @@
     "name": "Morning Haze",
     "flavor": "A thick haze lies on the valley and everyone starts the day a step behind.",
     "bubbles": ["Hazy out there"],
-    "status": "planned",
+    "status": "live",
     "cancels": ["fair-winds"],
-    "effects": [],
-    "planned": "The first creature of each row (the left one in the dungeon) skips its first turn, and trips take 10% longer. Waits for an engine hook: a skipped first turn."
+    "effects": [
+      {
+        "op": "skipFirstTurn",
+        "text": "The first creature of each row (the left one in the dungeon) skips its first turn."
+      },
+      {
+        "op": "tripTime",
+        "bp": 1000,
+        "text": "Trips take {n}% longer."
+      }
+    ]
   },
   {
     "id": "heatwave",
@@ -202,10 +249,16 @@
       {
         "op": "foeAttack",
         "bp": 800,
-        "elements": { "ember": 1500 },
+        "elements": {
+          "ember": 1500
+        },
         "text": "Foes hit {n}% harder (Ember foes {e}% instead)."
       },
-      { "op": "tripShards", "bp": -2500, "text": "Shards are {n}% less likely on trips." }
+      {
+        "op": "tripShards",
+        "bp": -2500,
+        "text": "Shards are {n}% less likely on trips."
+      }
     ]
   },
   {
@@ -216,7 +269,13 @@
     "bubbles": ["My fur is standing up", "Crackly sky"],
     "status": "live",
     "cancels": [],
-    "effects": [{ "op": "foeCrit", "bp": 400, "text": "Foes' crit chance +{n} pt." }]
+    "effects": [
+      {
+        "op": "foeCrit",
+        "bp": 400,
+        "text": "Foes' crit chance +{n} pt."
+      }
+    ]
   },
   {
     "id": "heavy-rain",
@@ -227,8 +286,17 @@
     "status": "live",
     "cancels": ["fair-winds"],
     "effects": [
-      { "op": "sheet", "field": "areaBp", "bp": -1000, "text": "Area hits deal {n}% more." },
-      { "op": "tripTime", "bp": 1000, "text": "Trips take {n}% longer." }
+      {
+        "op": "sheet",
+        "field": "areaBp",
+        "bp": -1000,
+        "text": "Area hits deal {n}% more."
+      },
+      {
+        "op": "tripTime",
+        "bp": 1000,
+        "text": "Trips take {n}% longer."
+      }
     ]
   },
   {
@@ -247,7 +315,12 @@
         "roles": ["support"],
         "text": "Supports' boost is {n} pt weaker."
       },
-      { "op": "sheet", "field": "healReceivedBp", "bp": -2500, "text": "Healing is {n}% weaker." }
+      {
+        "op": "sheet",
+        "field": "healReceivedBp",
+        "bp": -2500,
+        "text": "Healing is {n}% weaker."
+      }
     ]
   },
   {
@@ -277,8 +350,16 @@
     "status": "live",
     "cancels": ["warm-hearth", "hearty-breakfast"],
     "effects": [
-      { "op": "xp", "bp": -2000, "text": "Creature experience -{n}%." },
-      { "op": "workshopTime", "bp": 1500, "text": "Workshop jobs take {n}% longer." }
+      {
+        "op": "xp",
+        "bp": -2000,
+        "text": "Creature experience -{n}%."
+      },
+      {
+        "op": "workshopTime",
+        "bp": 1500,
+        "text": "Workshop jobs take {n}% longer."
+      }
     ]
   },
   {
@@ -287,11 +368,16 @@
     "name": "Bramble Season",
     "flavor": "Thorns are everywhere. What you start the boss may well throw back.",
     "bubbles": ["Mind the brambles"],
-    "status": "planned",
+    "status": "live",
     "minRank": 6,
     "cancels": [],
-    "effects": [],
-    "planned": "The first reaction each round is reflected at 30% (Boss Rank 6 and up). Waits for an engine hook: a small reflect share on a reaction."
+    "effects": [
+      {
+        "op": "bramble",
+        "bp": 3000,
+        "text": "The first reaction each round sends {n}% of its bonus damage back at the creature that set it off."
+      }
+    ]
   },
   {
     "id": "muddy-roads",
@@ -302,8 +388,16 @@
     "status": "live",
     "cancels": ["fair-winds"],
     "effects": [
-      { "op": "tripTime", "bp": 1500, "text": "Trips take {n}% longer." },
-      { "op": "tripSupply", "bp": -3000, "text": "Supply finds are {n}% less likely." }
+      {
+        "op": "tripTime",
+        "bp": 1500,
+        "text": "Trips take {n}% longer."
+      },
+      {
+        "op": "tripSupply",
+        "bp": -3000,
+        "text": "Supply finds are {n}% less likely."
+      }
     ]
   },
   {
@@ -317,7 +411,11 @@
     "wild": true,
     "cancels": [],
     "effects": [
-      { "op": "foeAttacks", "extra": 1, "text": "The boss makes one more plain attack each round." }
+      {
+        "op": "foeAttacks",
+        "extra": 1,
+        "text": "The boss makes one more plain attack each round."
+      }
     ]
   }
 ]

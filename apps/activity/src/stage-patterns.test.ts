@@ -449,4 +449,20 @@ describe('state read from the events', () => {
     expect(creatureHpAt(events, 2, { a: 50, c: 100 })).toEqual({ a: 32, c: 100 });
     expect(creatureHpAt(events, 4, { a: 50, c: 100 })).toEqual({ a: 32, c: 0 });
   });
+
+  it("gives HP back for Kind Rain's sky heal, never reviving a creature that is down", () => {
+    const events: FightEvent[] = [
+      bossHit('a', 30),
+      bossHit('c', 100),
+      {
+        t: 'sky_heal',
+        round: 6,
+        heals: [
+          { creature: 'a', amount: 20 },
+          { creature: 'c', amount: 20 },
+        ],
+      },
+    ];
+    expect(creatureHpAt(events, 3, { a: 50, c: 100 })).toEqual({ a: 40, c: 0 });
+  });
 });

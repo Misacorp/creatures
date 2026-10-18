@@ -15,7 +15,7 @@ import {
   workshopExperience,
   type PartsBundle,
 } from '@creatures/game';
-import type { DungeonRunInput } from '@creatures/engine';
+import { firstOfEachRow, type DungeonRunInput } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { eventTimes } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
@@ -649,6 +649,33 @@ describe('the dungeon under the weather', () => {
     for (const slot of plain.team) expect(slot.mods).toBeUndefined();
   });
 
+  it('Kind Rain, Morning Haze and Bramble Season go into the stored run input; a plain day stores none of them', async () => {
+    const runUnder = async (boon: string, omen: string | null): Promise<DungeonRunInput> =>
+      runCore(
+        nextGuild(),
+        async (ctx) => {
+          ctx.clock.t = AFTERNOON;
+          const p = await dungeonPlayer(ctx, 1);
+          sky(ctx, boon, omen);
+          expect((await p.run()).status).toBe(200);
+          return JSON.parse(lastRun(ctx).input_json) as DungeonRunInput;
+        },
+        { weather: true },
+      );
+    const rain = await runUnder('kind-rain', null);
+    expect(rain.rainHealBp).toBe(200);
+    expect(rain).not.toHaveProperty('hazeLeft');
+    expect(rain).not.toHaveProperty('brambleBp');
+    const haze = await runUnder('market-day', 'morning-haze');
+    expect(haze.hazeLeft).toBe(true);
+    expect(haze).not.toHaveProperty('rainHealBp');
+    const bramble = await runUnder('market-day', 'bramble-season');
+    expect(bramble.brambleBp).toBe(3_000);
+    const plain = await runUnder('market-day', null);
+    for (const key of ['rainHealBp', 'hazeLeft', 'brambleBp'])
+      expect(plain).not.toHaveProperty(key);
+  });
+
   it('Market Day pays a scrap more for every room cleared, and nothing more otherwise', async () => {
     const scrapUnder = async (boon: string): Promise<{ scrap: number; rooms: number }> =>
       runCore(
@@ -764,6 +791,33 @@ describe('the raid stage under the weather', () => {
         expect(one?.input.bossAttacks).toBe(2);
         expect(two?.input.bossAttacks).toBeUndefined();
         expect(two?.input.row.every((s) => s.mods === undefined)).toBe(true);
+      },
+      { core: { weather: true } },
+    );
+  });
+
+  it('Kind Rain, Morning Haze and Bramble Season go into the stage input; Haze names the first creature of each row', async () => {
+    await runRaid(
+      (ctx) => {
+        players(ctx, 4);
+        ctx.core.raid.currentWeek(HELSINKI);
+        const times = eventTimes(W02.id, HELSINKI);
+        const day = (at: number): string => gameDay(at, HELSINKI, RULES.daily.reset);
+        ctx.core.weather.force(day(times.phase1), 'kind-rain', 'morning-haze');
+        ctx.core.weather.force(day(times.phase2), 'market-day', 'bramble-season');
+        forcePool(ctx.sql, 20_000);
+        ctx.clock.t = W02.afterPhase2;
+        ctx.core.raid.runDue(HELSINKI);
+        const [one, two] = storedRuns(ctx.sql);
+        if (one === undefined || two === undefined) throw new Error('the stages did not run');
+        expect(one.input.rainHealBp).toBe(200);
+        expect(one.input.brambleBp).toBeUndefined();
+        const ids = one.input.row.map((s) => s.id);
+        expect(one.input.skipFirstTurn).toEqual(firstOfEachRow(one.input.row));
+        for (const id of one.input.skipFirstTurn ?? []) expect(ids).toContain(id);
+        expect(two.input.brambleBp).toBe(3_000);
+        expect(two.input.rainHealBp).toBeUndefined();
+        expect(two.input.skipFirstTurn).toBeUndefined();
       },
       { core: { weather: true } },
     );
