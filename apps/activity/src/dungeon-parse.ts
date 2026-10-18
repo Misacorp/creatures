@@ -19,10 +19,10 @@ import type {
   DungeonPack,
   DungeonPending,
   DungeonReplay,
+  DungeonReplayRowEntry,
   DungeonRewards,
   DungeonRoomSummary,
   DungeonRunCreature,
-  DungeonRunResponse,
   DungeonRunState,
   DungeonRunSummary,
   DungeonStartResponse,
@@ -236,6 +236,13 @@ function isRunState(value: unknown): value is DungeonRunState {
   );
 }
 
+/** The Boon and Omen a run was fought under: content ids, the omen null when there was none. */
+function isWeather(value: unknown): boolean {
+  return (
+    isRecord(value) && isStr(value['boon']) && (value['omen'] === null || isStr(value['omen']))
+  );
+}
+
 function isRunSummary(value: unknown): value is DungeonRunSummary {
   return (
     isRecord(value) &&
@@ -252,6 +259,7 @@ function isRunSummary(value: unknown): value is DungeonRunSummary {
     isArrayOf(value['team'], isTeamMember) &&
     isArrayOf(value['rooms'], isRoomSummary) &&
     isRewards(value['rewards']) &&
+    (value['weather'] === undefined || isWeather(value['weather'])) &&
     (value['outcome'] === undefined || isOutcome(value['outcome'])) &&
     (value['path'] === undefined || isArrayOf(value['path'], isNodeKind)) &&
     (value['pack'] === undefined ||
@@ -327,6 +335,7 @@ function isReplayRoom(value: unknown): boolean {
     (value['elite'] === undefined || isBool(value['elite'])) &&
     (value['node'] === undefined || isStr(value['node'])) &&
     (value['keepsakes'] === undefined || isArrayOf(value['keepsakes'], isKeepsake)) &&
+    (value['row'] === undefined || isArrayOf(value['row'], isReplayRowEntry)) &&
     isFoe(value['foe']) &&
     isModifierText(value['modifier']) &&
     isBool(value['cleared']) &&
@@ -338,7 +347,7 @@ function isReplayRoom(value: unknown): boolean {
   );
 }
 
-function isReplayRowEntry(value: unknown): boolean {
+function isReplayRowEntry(value: unknown): value is DungeonReplayRowEntry {
   return (
     isRecord(value) &&
     isCount(value['position']) &&
@@ -394,14 +403,6 @@ export function parseDungeonAct(data: unknown): DungeonActResponse {
   return answer;
 }
 
-export function parseDungeonRun(data: unknown): DungeonRunResponse {
-  const today = isRecord(data) ? readToday(data['today']) : null;
-  if (!isRecord(data) || !isRunSummary(data['run']) || today === null) {
-    throw new Error('the server returned an unexpected dungeon run');
-  }
-  return { run: data['run'], today };
-}
-
 /** The answer of `PUT /api/dungeon/team`. */
 export function parseDungeonTeamSaved(data: unknown): DungeonTeamResponse {
   if (!isRecord(data) || !isDraftTeam(data['draftTeam'])) {
@@ -414,7 +415,7 @@ export function parseDungeonReplay(data: unknown): DungeonReplay {
   if (
     !isRecord(data) ||
     !isRunSummary(data['summary']) ||
-    !isArrayOf(data['row'], (r): r is DungeonReplay['row'][number] => isReplayRowEntry(r)) ||
+    !isArrayOf(data['row'], isReplayRowEntry) ||
     !isArrayOf(data['rooms'], (r): r is DungeonReplay['rooms'][number] => isReplayRoom(r))
   ) {
     throw new Error('the server returned an unexpected dungeon replay');

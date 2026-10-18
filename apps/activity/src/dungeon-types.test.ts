@@ -8,7 +8,7 @@ import today from './fixtures/dungeon-today.json';
 import {
   DUNGEON_ERRORS,
   type DungeonReplay,
-  type DungeonRunRequest,
+  type DungeonStartRequest,
   type DungeonRunResponse,
   type DungeonToday,
 } from './dungeon-types';
@@ -39,7 +39,7 @@ describe('the dungeon types', () => {
   });
 
   it('has request bodies of the type, and error codes the types know', () => {
-    const body = requests['dungeon-run-cleared'].body as unknown as DungeonRunRequest;
+    const body = requests['dungeon-run-cleared'].body as unknown as DungeonStartRequest;
     expect(body.team).toHaveLength(3);
     expect(Object.keys(body).sort()).toEqual(['idempotencyKey', 'team']);
     expect(new Set(body.team).size).toBe(3);

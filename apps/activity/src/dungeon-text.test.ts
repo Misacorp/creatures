@@ -29,7 +29,6 @@ import {
   lastEventText,
   nodeFloor,
   packLine,
-  packSummaryLine,
   packText,
   percentText,
   resultHeadline,
@@ -236,17 +235,22 @@ describe('the pack words', () => {
     expect(packLine({ bait: 2, essence: 0, scrap: 1 })).toBe('In your pack: 2 Bait · 1 Scrap');
     expect(packLine(EMPTY_PACK)).toBe('Your pack is empty.');
   });
+});
 
-  it('says what was found and what was kept', () => {
-    expect(
-      packSummaryLine({
-        found: { bait: 3, essence: 0, scrap: 3 },
-        kept: { bait: 2, essence: 0, scrap: 2 },
-      }),
-    ).toBe('Found: 3 Bait · 3 Scrap · Kept: 2 Bait · 2 Scrap');
-    expect(packSummaryLine({ found: EMPTY_PACK, kept: EMPTY_PACK })).toBe(
-      'Found: nothing · Kept: nothing',
+describe('the headline of a defeat with an empty pack', () => {
+  it('does not say half the pack made it home when there was nothing in it', () => {
+    const base = { cleared: false, roomsCleared: 0, rooms: [], outcome: 'defeat' as const };
+    expect(resultHeadline({ ...base, pack: { found: EMPTY_PACK, kept: EMPTY_PACK } })).toBe(
+      'Defeated: your pack was empty',
     );
+    expect(
+      resultHeadline({
+        ...base,
+        pack: { found: { bait: 3, essence: 0, scrap: 0 }, kept: { bait: 2, essence: 0, scrap: 0 } },
+      }),
+    ).toBe('Defeated: half your pack made it home');
+    // No pack field (an older server): the usual words.
+    expect(resultHeadline(base)).toBe('Defeated: half your pack made it home');
   });
 });
 

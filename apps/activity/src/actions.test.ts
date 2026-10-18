@@ -9,7 +9,7 @@ describe('action names', () => {
     expect(ActionIds.ribbon('c1')).toBe('ribbon:c1');
     expect(ActionIds.evolve('c1')).toBe('evolve:c1');
     expect(ActionIds.claimJob('j1')).toBe('claim-job:j1');
-    expect(ActionIds.dungeonRun(['a', 'b', 'c'])).toBe('dungeon-run:["a","b","c"]');
+    expect(ActionIds.dungeonStart(['a', 'b', 'c'])).toBe('dungeon-start:["a","b","c"]');
     expect(
       ActionIds.send({
         creatureId: 'c1',
@@ -39,11 +39,11 @@ describe('action names', () => {
     const supply = { kind: 'supply' as const, creatureId: 'c1', supplyId: 'lure-basic' };
     expect(ActionIds.job({ ...supply, treat: true })).not.toBe(ActionIds.job(supply));
     // A run is named by its team and by who got a treat, whatever order the treats came in.
-    expect(ActionIds.dungeonRun(['a', 'b', 'c'], ['b', 'a'])).toBe(
-      ActionIds.dungeonRun(['a', 'b', 'c'], ['a', 'b']),
+    expect(ActionIds.dungeonStart(['a', 'b', 'c'], ['b', 'a'])).toBe(
+      ActionIds.dungeonStart(['a', 'b', 'c'], ['a', 'b']),
     );
-    expect(ActionIds.dungeonRun(['a', 'b', 'c'], ['a'])).not.toBe(
-      ActionIds.dungeonRun(['a', 'b', 'c']),
+    expect(ActionIds.dungeonStart(['a', 'b', 'c'], ['a'])).not.toBe(
+      ActionIds.dungeonStart(['a', 'b', 'c']),
     );
   });
 
@@ -127,8 +127,10 @@ describe('action names', () => {
   });
 
   it('names a run by the order of its team', () => {
-    expect(ActionIds.dungeonRun(['a', 'b', 'c'])).toBe(ActionIds.dungeonRun(['a', 'b', 'c']));
-    expect(ActionIds.dungeonRun(['a', 'b', 'c'])).not.toBe(ActionIds.dungeonRun(['c', 'b', 'a']));
+    expect(ActionIds.dungeonStart(['a', 'b', 'c'])).toBe(ActionIds.dungeonStart(['a', 'b', 'c']));
+    expect(ActionIds.dungeonStart(['a', 'b', 'c'])).not.toBe(
+      ActionIds.dungeonStart(['c', 'b', 'a']),
+    );
   });
 
   it('names a dungeon act by its run, its step and what it does', () => {

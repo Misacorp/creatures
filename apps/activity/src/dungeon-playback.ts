@@ -80,14 +80,28 @@ export function rowOfCreatures(team: readonly DungeonRunCreature[]): DungeonRepl
   }));
 }
 
-/** One fight just played by an open run: its row now, the room, and the floors it counts against. */
+/**
+ * One fight just played by an open run: the row that fought it (the room's own `row`, else the
+ * state's team), the room, and the floors it counts against.
+ */
 export function roomInput(
   team: readonly DungeonRunCreature[],
   room: DungeonReplayRoom,
   landmark: boolean,
   floors: number,
 ): PlaybackInput {
-  return { row: rowOfCreatures(team), rooms: [room], landmark, total: floors };
+  return { row: room.row ?? rowOfCreatures(team), rooms: [room], landmark, total: floors };
+}
+
+/**
+ * The stage's row for one room: the row that fought it (`room.row`: a camp swap or reorder changes
+ * the row in the middle of a path run), else the input's row.
+ */
+export function roomStageRow(
+  input: Pick<PlaybackInput, 'row'>,
+  room: Pick<DungeonReplayRoom, 'row'>,
+): ReplayRowEntry[] {
+  return stageRow({ row: room.row ?? input.row });
 }
 
 /** The fight stage's row for a dungeon replay: the team front to back, every creature the player's own. */
@@ -209,7 +223,7 @@ export interface StripRoom {
   foeName: string;
   state: RoomState;
   banner: string;
-  /** "Room 1", or "Room boss" for the last ("Elite" for a fierce foe of a path). */
+  /** "Room 1", or "Room boss" for the last ("Fight 1" and "Elite" on a path run). */
   title: string;
   elite: boolean;
   modifierName: string;
@@ -237,7 +251,9 @@ export function roomStrip(
         ? 'Room boss'
         : elite
           ? 'Elite'
-          : `Room ${String(run.outcome === undefined ? room.index + 1 : place + 1)}`;
+          : run.outcome === undefined
+            ? `Room ${String(room.index + 1)}`
+            : `Fight ${String(place + 1)}`;
     const name = fierceName(room.foe.name, elite);
     const foeHp =
       state === 'defeat' ? `${String(room.foeHpEnd)} / ${String(room.foe.hpMax)} HP left` : null;

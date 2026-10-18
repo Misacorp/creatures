@@ -184,10 +184,22 @@ export interface DungeonRunState {
 
 export type DungeonOutcome = 'cleared' | 'home' | 'defeat';
 
-/** `POST /api/dungeon/start`. */
+/**
+ * The body of `POST /api/dungeon/start`. Strict: any other key is `invalid_body`. The user comes from
+ * the session; the seed, the stats and the rooms are the server's.
+ */
 export interface DungeonStartRequest {
+  /**
+   * The three creatures (ids of the player's own, all different), in the order they stand in the
+   * one row, left to right: `team[i]` is position i. There is no formation: the order is it.
+   */
   team: [string, string, string];
+  /**
+   * The creatures of the team that get a treat (Bait, paid with the run): they earn double experience.
+   * Each is in `team`, once. Left out when there are none.
+   */
   treats?: string[];
+  /** A fresh key for every new run (8 to 64 characters of A-Z a-z 0-9 _ -); a retry reuses it. */
   idempotencyKey: string;
 }
 
@@ -303,6 +315,8 @@ export interface DungeonRunSummary {
   /** All the rooms of the run, played or not. */
   rooms: DungeonRoomSummary[];
   rewards: DungeonRewards;
+  /** The Boon and Omen (content ids) the run was fought under. Absent: none, and in runs from before the weather. */
+  weather?: { boon: string; omen: string | null };
   /** How a path run ended. Absent in three-room runs from before the map (read: `cleared` decides). */
   outcome?: DungeonOutcome;
   /** The node kinds of the path taken, in order. Absent in older runs. */
@@ -313,7 +327,11 @@ export interface DungeonRunSummary {
   keepsakes?: DungeonKeepsakeView[];
 }
 
-/** `POST /api/dungeon/run` answers with this. Refresh the collection and gear views afterwards: balances and parts changed. */
+/**
+ * What the old `POST /api/dungeon/run` answered (it is `410 gone` now, and nothing sends it). Kept as
+ * the type of the captured old-route fixtures (`dungeon-run-*.json`), whose `run` is the shape of an
+ * old run summary and whose `today` carries it as `last`.
+ */
 export interface DungeonRunResponse {
   run: DungeonRunSummary;
   today: DungeonToday;
@@ -332,6 +350,17 @@ interface DungeonEventNames {
   adaptations?: Record<string, string>;
 }
 
+/** One creature of the fighting row as a replay writes it: `position` 0 is the left creature. */
+export interface DungeonReplayRowEntry {
+  position: number;
+  id: string;
+  name: string;
+  species: string;
+  element: Element;
+  role: Role;
+  level: number;
+}
+
 export interface DungeonReplayRoom {
   index: number;
   kind: 'foe' | 'boss';
@@ -341,6 +370,11 @@ export interface DungeonReplayRoom {
   node?: string;
   /** The run's keepsakes in that fight (path runs only). */
   keepsakes?: DungeonKeepsakeView[];
+  /**
+   * The row that fought this room (path runs only: a camp swap or reorder changes it). Absent: the
+   * replay's top-level `row`.
+   */
+  row?: DungeonReplayRowEntry[];
   foe: { id: string; name: string; element: Element; hpMax: number };
   modifier: { id: string; name: string; description: string };
   cleared: boolean;
@@ -357,37 +391,8 @@ export interface DungeonReplayRoom {
 export interface DungeonReplay {
   summary: DungeonRunSummary;
   /** The fighting row, left to right: `position` 0 is the left creature. */
-  row: {
-    position: number;
-    id: string;
-    name: string;
-    species: string;
-    element: Element;
-    role: Role;
-    level: number;
-  }[];
+  row: DungeonReplayRowEntry[];
   rooms: DungeonReplayRoom[];
-}
-
-/**
- * The body of `POST /api/dungeon/run`. Strict: any other key is `invalid_body`. The user comes from
- * the session; the seed, the stats and the rooms are the server's.
- */
-export interface DungeonRunRequest {
-  /**
-   * The three creatures (ids of the player's own, all different), in the order they stand in the
-   * one row, left to right: `team[i]` is position i. There is no formation: the order is it.
-   * There is no ability choice either (an old body with `abilities` is `invalid_body`): unlocked
-   * creature abilities fire at their default round.
-   */
-  team: [string, string, string];
-  /**
-   * The creatures of the team that get a treat (Bait, paid with the run): they earn double experience.
-   * Each is in `team`, once. Left out when there are none.
-   */
-  treats?: string[];
-  /** A fresh key for every new run (8 to 64 characters of A-Z a-z 0-9 _ -); a retry reuses it. */
-  idempotencyKey: string;
 }
 
 /** `PUT /api/dungeon/team`: the body (three places, left to right, null for an empty one; the creatures all different). */

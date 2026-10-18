@@ -1,10 +1,12 @@
 import { beatEnds, planRounds, roundPlaybackMs } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
+import actFightFixture from './fixtures/dungeon-act-fight.json';
+import replayPathFixture from './fixtures/dungeon-replay-path.json';
 import replayFixture from './fixtures/dungeon-replay.json';
 import landmarkFixture from './fixtures/dungeon-run-landmark.json';
 import lostFixture from './fixtures/dungeon-run-lost.json';
 import clearedFixture from './fixtures/dungeon-run-cleared.json';
-import { parseDungeonReplay } from './dungeon-parse';
+import { parseDungeonAct, parseDungeonReplay } from './dungeon-parse';
 import {
   ROOM_CARD_MS,
   ROOM_BANNER,
@@ -22,6 +24,7 @@ import {
   roomOutcome,
   roomIntroView,
   roomResultLine,
+  roomStageRow,
   roomState,
   roomStrip,
   runSentence,
@@ -522,6 +525,48 @@ describe('the fights of a path', () => {
     expect(nextRoom(input, 0)).toBeNull();
   });
 
+  it('plays each room of a path replay in the row that fought it (a camp swap changes the row)', () => {
+    const path = parseDungeonReplay(replayPathFixture);
+    const input = replayInput(path);
+    // The replay's own row is the starting one; the rooms after the camp carry the swapped row.
+    expect(stageRow(input).map((r) => r.name)).toEqual(['Sproutle', 'Splashet', 'Cindle']);
+    const rows = input.rooms.map((r) => roomStageRow(input, r).map((e) => e.name));
+    expect(rows[0]).toEqual(['Sproutle', 'Splashet', 'Cindle']);
+    expect(rows[1]).toEqual(['Splashet', 'Sproutle', 'Zipmouse']);
+    expect(rows[3]).toEqual(['Splashet', 'Sproutle', 'Zipmouse']);
+    const second = input.rooms[1];
+    if (second === undefined) throw new Error('room');
+    expect(roomStageRow(input, second).map((e) => e.position)).toEqual([0, 1, 2]);
+    expect(roomStageRow(input, second).every((e) => e.owner === 'p1')).toBe(true);
+  });
+
+  it('falls back to the replay row for a room with no row of its own', () => {
+    const [first] = replay.rooms;
+    if (first === undefined) throw new Error('room');
+    const input = replayInput(replay);
+    expect(first.row).toBeUndefined();
+    expect(roomStageRow(input, first)).toEqual(stageRow(replay));
+  });
+
+  it("plays the live fight after a move in the answer's room row, else in the state's team", () => {
+    const answer = parseDungeonAct(actFightFixture);
+    if (answer.room === undefined) throw new Error('room');
+    expect(answer.room.row).toBeDefined();
+    const withRow = roomInput(answer.state.team, answer.room, false, 7);
+    expect(withRow.row).toEqual(answer.room.row);
+    // A swapped row in the room wins over the state's team.
+    const swapped = (answer.room.row ?? []).map((r) => ({ ...r, name: `${r.name} II` }));
+    const own = roomInput(answer.state.team, { ...answer.room, row: swapped }, false, 7);
+    expect(roomStageRow(own, own.rooms[0] ?? answer.room).map((r) => r.name)).toEqual(
+      swapped.map((r) => r.name),
+    );
+    // Without a row of its own the room is played in the run's team.
+    const bare = { ...answer.room };
+    delete bare.row;
+    const fallback = roomInput(answer.state.team, bare, false, 7);
+    expect(fallback.row.map((r) => r.id)).toEqual(answer.state.team.map((c) => c.id));
+  });
+
   it('writes the row of the run the way a replay writes it', () => {
     const row = rowOfCreatures(sampleRunCreatures());
     expect(row.map((r) => r.species)).toEqual(['sproutle', 'splashet', 'cindle']);
@@ -595,13 +640,13 @@ describe('the fights of a path', () => {
 describe('the end report of a path run', () => {
   it('shows only the fights that were played, named by their order, an elite as Elite', () => {
     const home = roomStrip(sampleSummary('home'));
-    expect(home.map((r) => r.title)).toEqual(['Room 1', 'Elite']);
+    expect(home.map((r) => r.title)).toEqual(['Fight 1', 'Elite']);
     expect(home.map((r) => r.state)).toEqual(['cleared', 'cleared']);
     expect(home[1]?.foeName).toBe('Fierce Drift Wisp');
     expect(home[1]?.elite).toBe(true);
     expect(home[0]?.elite).toBe(false);
     const cleared = roomStrip(sampleSummary('cleared'));
-    expect(cleared.map((r) => r.title)).toEqual(['Room 1', 'Elite', 'Room boss']);
+    expect(cleared.map((r) => r.title)).toEqual(['Fight 1', 'Elite', 'Room boss']);
   });
 
   it('leaves the rooms never reached out, and marks the lost one', () => {

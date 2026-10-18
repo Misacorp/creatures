@@ -35,7 +35,19 @@ import workshopPreviewDismantle from './fixtures/workshop-preview-dismantle.json
 import workshopStartDismantle from './fixtures/workshop-start-dismantle.json';
 import workshopClaimRetired from './fixtures/workshop-claim-retired.json';
 import workshopStartCraft from './fixtures/workshop-start-craft.json';
+import dungeonActCampPending from './fixtures/dungeon-act-camp-pending.json';
+import dungeonActCamp from './fixtures/dungeon-act-camp.json';
+import dungeonActCleared from './fixtures/dungeon-act-cleared.json';
+import dungeonActDefeat from './fixtures/dungeon-act-defeat.json';
+import dungeonActEventPending from './fixtures/dungeon-act-event-pending.json';
+import dungeonActEvent from './fixtures/dungeon-act-event.json';
+import dungeonActFight from './fixtures/dungeon-act-fight.json';
+import dungeonActHome from './fixtures/dungeon-act-home.json';
 import dungeonErrors from './fixtures/dungeon-errors.json';
+import dungeonReplayPath from './fixtures/dungeon-replay-path.json';
+import dungeonStart from './fixtures/dungeon-start.json';
+import dungeonTodayActive from './fixtures/dungeon-today-active.json';
+import dungeonTodayMap from './fixtures/dungeon-today-map.json';
 import dungeonReplay from './fixtures/dungeon-replay.json';
 import dungeonRequestBodies from './fixtures/dungeon-request-bodies.json';
 import dungeonRunCleared from './fixtures/dungeon-run-cleared.json';
@@ -77,16 +89,23 @@ import {
 } from './expedition-api';
 import { parseDestinations, parseProfile } from './expedition-parse';
 import {
+  dungeonAct,
   fetchDungeonReplay,
   fetchDungeonToday,
   saveDungeonTeam,
   startDungeonRun,
 } from './dungeon-api';
-import { parseDungeonReplay, parseDungeonRun, parseDungeonToday } from './dungeon-parse';
-import { sampleState, sampleToday } from './dungeon-path-samples';
+import {
+  parseDungeonAct,
+  parseDungeonReplay,
+  parseDungeonStart,
+  parseDungeonToday,
+} from './dungeon-parse';
+import { sampleState } from './dungeon-path-samples';
 import { buildRunRequest, type Slots } from './dungeon-team';
-import { dungeonErrorText } from './dungeon-text';
-import type { DungeonRunRequest } from './dungeon-types';
+import { keepsakeAct, restAct, swapAct } from './dungeon-run';
+import { DUNGEON_ERROR_TEXT, dungeonErrorText, isStaleDungeonError } from './dungeon-text';
+import { DUNGEON_ERRORS, type DungeonActRequest, type DungeonStartRequest } from './dungeon-types';
 import {
   claimJob,
   dismissGearNotice,
@@ -536,36 +555,104 @@ describe('the dungeon requests the client sends', () => {
     return { path, method: init.method ?? 'GET', body: JSON.parse(init.body as string) };
   }
 
-  const bodyOf = (key: keyof typeof dungeonRequestBodies): DungeonRunRequest =>
-    dungeonRequestBodies[key].body as unknown as DungeonRunRequest;
+  type BodyKey = keyof typeof dungeonRequestBodies;
+  const bodyOf = (key: BodyKey): DungeonStartRequest =>
+    dungeonRequestBodies[key].body as unknown as DungeonStartRequest;
+  const actBodyOf = (key: BodyKey): DungeonActRequest =>
+    dungeonRequestBodies[key].body as unknown as DungeonActRequest;
 
-  // The captured bodies are those of the old run route; the start route takes the same strict body
-  // (team, treats, key). The worker's new captures replace them (docs/design/dungeon-paths.md).
+  const ACT_KEYS = [
+    'dungeon-act-fight',
+    'dungeon-act-event-pending',
+    'dungeon-act-event',
+    'dungeon-act-camp-pending',
+    'dungeon-act-camp',
+    'dungeon-act-home',
+    'dungeon-act-defeat',
+    'dungeon-act-cleared',
+  ] as const satisfies readonly BodyKey[];
+
   it('entering sends exactly the strict body the Worker accepts, at POST /api/dungeon/start', async () => {
-    for (const key of [
-      'dungeon-run-cleared',
-      'dungeon-run-retry',
-      'dungeon-run-landmark',
-      'dungeon-run-lost',
-      'dungeon-run-retry-attempt',
-    ] as const) {
+    apiFetch.mockResolvedValue(dungeonStart);
+    await startDungeonRun(bodyOf('dungeon-start'));
+    const { path, method, body } = dungeonRequestBodies['dungeon-start'];
+    expect(sent()).toEqual({ path, method, body });
+    expect(path).toBe('/api/dungeon/start');
+    expect(Object.keys(body).sort()).toEqual(['idempotencyKey', 'team']);
+  });
+
+  it('the screen builds the same start body from the same picks', () => {
+    const fixtureBody = bodyOf('dungeon-start');
+    const [front, middle, back] = fixtureBody.team;
+    const slots: Slots = [front, middle, back];
+    expect(buildRunRequest(slots, fixtureBody.idempotencyKey)).toEqual(fixtureBody);
+    // The run that was started is the run the next acts name.
+    expect(parseDungeonStart(dungeonStart).state.team.map((c) => c.id)).toEqual(fixtureBody.team);
+  });
+
+  it('every act sends exactly the strict body the Worker accepts, at POST /api/dungeon/act', async () => {
+    for (const key of ACT_KEYS) {
       apiFetch.mockReset();
-      apiFetch.mockResolvedValue({ state: sampleState(), today: sampleToday() });
-      await startDungeonRun(bodyOf(key));
-      const { method, body } = dungeonRequestBodies[key];
-      expect(sent(), key).toEqual({ path: '/api/dungeon/start', method, body });
+      apiFetch.mockResolvedValue({ state: sampleState() });
+      await dungeonAct(actBodyOf(key));
+      const { path, method, body } = dungeonRequestBodies[key];
+      expect(sent(), key).toEqual({ path, method, body });
+      expect(path).toBe('/api/dungeon/act');
+      expect(Object.keys(body as object).sort(), key).toEqual([
+        'act',
+        'idempotencyKey',
+        'runId',
+        'step',
+      ]);
     }
   });
 
-  it('the screen builds the same bodies from the same picks', () => {
-    for (const key of ['dungeon-run-cleared', 'dungeon-run-lost'] as const) {
-      const fixtureBody = bodyOf(key);
-      const [front, middle, back] = fixtureBody.team;
-      const slots: Slots = [front, middle, back];
-      expect(buildRunRequest(slots, fixtureBody.idempotencyKey)).toEqual(fixtureBody);
-      // Exactly the strict body: the team and the key, and nothing about abilities.
-      expect(Object.keys(fixtureBody).sort()).toEqual(['idempotencyKey', 'team']);
+  // The moves, the event pick and heading home are built by the screens themselves: the Dungeon tab
+  // tests (`dungeon-fixture-screens.test.tsx`) send them and compare with these bodies.
+  it('the camp builders make the same act as the captured one', () => {
+    // The camp: the order of the row, the creature that goes home and the one that comes in.
+    const camp = actBodyOf('dungeon-act-camp').act;
+    if (camp.type !== 'camp' || camp.out === undefined || camp.in === undefined) {
+      throw new Error('the captured camp act is a swap');
     }
+    const order = camp.order ?? [];
+    expect(swapAct(order, camp.out, camp.in)).toEqual(camp);
+    // Rest and a keepsake are built the same way; the order is sent with them too.
+    expect(restAct(order)).toEqual({ type: 'camp', choice: 'rest', order });
+    expect(keepsakeAct(order, 'lullaby-bell')).toEqual({
+      type: 'camp',
+      choice: 'keepsake',
+      keepsake: 'lullaby-bell',
+      order,
+    });
+  });
+
+  it('every act names the run and the step it was made at, and keeps its key a retry can reuse', () => {
+    const start = parseDungeonStart(dungeonStart).state;
+    // The first move: the run that was just started, at the step it stands at.
+    expect(actBodyOf('dungeon-act-fight')).toMatchObject({ runId: start.id, step: start.step });
+    // A step is the run's step before the act; the answer is the next one.
+    const pairs = [
+      ['dungeon-act-fight', dungeonActFight],
+      ['dungeon-act-event-pending', dungeonActEventPending],
+      ['dungeon-act-event', dungeonActEvent],
+      ['dungeon-act-camp-pending', dungeonActCampPending],
+      ['dungeon-act-camp', dungeonActCamp],
+      ['dungeon-act-home', dungeonActHome],
+      ['dungeon-act-defeat', dungeonActDefeat],
+      ['dungeon-act-cleared', dungeonActCleared],
+    ] as const;
+    for (const [key, answer] of pairs) {
+      const body = actBodyOf(key);
+      const state = parseDungeonAct(answer).state;
+      expect(state.id, key).toBe(body.runId);
+      // A move into a fight or the camp, an event pick, a camp choice or going home ends the act
+      // at the same step or one on: the state never goes backwards.
+      expect(state.step, key).toBeGreaterThan(body.step);
+    }
+    // Keys of different acts differ (the server answers a repeat with the stored step).
+    const keys = ACT_KEYS.map((k) => actBodyOf(k).idempotencyKey);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 
   it('every body has a key of the form the Worker wants, and is retried with the same one', () => {
@@ -575,8 +662,6 @@ describe('the dungeon requests the client sends', () => {
       if (body === null || method !== 'POST') continue;
       expect((body as { idempotencyKey: string }).idempotencyKey).toMatch(/^[A-Za-z0-9_-]{8,64}$/);
     }
-    // A retry of a run is the same call with the same body, so the key travels along unchanged.
-    expect(bodyOf('dungeon-run-retry')).toEqual(bodyOf('dungeon-run-cleared'));
   });
 
   it('saves the team draft with the PUT body of the fixture, which has no key, and reads the answer', async () => {
@@ -642,7 +727,7 @@ describe('the dungeon responses the server sends', () => {
     expect(states[2]?.lastTeam).toEqual(dungeonRunCleared.run.team.map((t) => t.id));
   });
 
-  it('parses the run and the new state of every captured old-route run fixture', () => {
+  it("parses the old-route run fixtures: an old run summary still reads, in today's `last`", () => {
     for (const fixture of [
       dungeonRunCleared,
       dungeonRunLost,
@@ -650,16 +735,122 @@ describe('the dungeon responses the server sends', () => {
       dungeonRunRetry,
       dungeonRunRetryAttempt,
     ]) {
-      const done = parseDungeonRun(fixture);
-      expect(done.run.rooms).toHaveLength(3);
+      const done = parseDungeonToday(fixture.today);
+      expect(done.last?.rooms).toHaveLength(3);
       // An old run has no path fields: they read as absent, and the map and open run as null.
-      expect(done.run.outcome).toBeUndefined();
-      expect(done.today.map).toBeNull();
-      expect(done.today.active).toBeNull();
-      expect(done.today.last?.id).toBe(done.run.id);
+      expect(done.last?.outcome).toBeUndefined();
+      expect(done.map).toBeNull();
+      expect(done.active).toBeNull();
+      expect(done.last?.id).toBe(fixture.run.id);
     }
-    expect(parseDungeonRun(dungeonRunLandmark).run.rewards.gear).toHaveLength(1);
-    expect(parseDungeonRun(dungeonRunLost).run.rewards.bait).toBe(0);
+    expect(dungeonRunLandmark.run.rewards.gear).toHaveLength(1);
+    expect(dungeonRunLost.run.rewards.bait).toBe(0);
+  });
+
+  it('parses today with a map and no open run: the same map for everyone, foe HP at the depth', () => {
+    const map = parseDungeonToday(dungeonTodayMap);
+    expect(map.canRun).toBe(true);
+    expect(map.active).toBeNull();
+    expect(map.map?.floors).toBe(7);
+    expect(map.map?.nodes.length).toBeGreaterThanOrEqual(10);
+    const kinds = new Set(map.map?.nodes.map((n) => n.kind));
+    expect(kinds.has('camp')).toBe(true);
+    expect(kinds.has('boss')).toBe(true);
+    for (const node of map.map?.nodes ?? []) {
+      expect(node.id).toBe(`f${String(node.floor)}l${String(node.lane)}`);
+      if (node.kind === 'fight' || node.kind === 'elite' || node.kind === 'boss') {
+        expect(node.foe?.hpMax, node.id).toBeGreaterThan(0);
+        expect(node.modifier, node.id).toBeDefined();
+      }
+      if (node.kind === 'mystery') expect(node.event?.name, node.id).toBeTruthy();
+    }
+  });
+
+  it('parses today with an open run: the run is the state the next act names', () => {
+    const today = parseDungeonToday(dungeonTodayActive);
+    // While a run is open the server says a new one cannot start.
+    expect(today.canRun).toBe(false);
+    expect(today.active?.status).toBe('active');
+    expect(today.active?.pending?.kind).toBe('camp');
+    expect(today.active?.map.nodes.length).toBe(today.map?.nodes.length);
+    // It is the very state the camp-pending answer carried.
+    expect(today.active).toEqual(parseDungeonAct(dungeonActCampPending).state);
+  });
+
+  it('parses the start: the run at step 0 before the entrance, and today with it open', () => {
+    const { state, today } = parseDungeonStart(dungeonStart);
+    expect(state).toMatchObject({ step: 0, at: null, path: [], status: 'active', outcome: null });
+    expect(state.reachable.every((id) => id.startsWith('f0'))).toBe(true);
+    expect(state.team).toHaveLength(3);
+    expect(state.pack).toEqual({ bait: 0, essence: 0, scrap: 0 });
+    expect(today.active).toEqual(state);
+    expect(today.canRun).toBe(false);
+  });
+
+  it('parses every act answer', () => {
+    const fight = parseDungeonAct(dungeonActFight);
+    // A fight: the room just played (with the row that fought it), no summary, the run goes on.
+    expect(fight.room?.node).toBe('f0l0');
+    expect(fight.room?.row?.map((r) => r.position)).toEqual([0, 1, 2]);
+    expect(fight.room?.events.length).toBeGreaterThan(0);
+    expect(fight.summary).toBeUndefined();
+    expect(fight.today).toBeUndefined();
+    expect(fight.state.step).toBe(1);
+
+    // A mystery room and the camp stop with a choice pending, and play nothing.
+    const event = parseDungeonAct(dungeonActEventPending);
+    expect(event.state.pending?.kind).toBe('event');
+    expect(event.room).toBeUndefined();
+    if (event.state.pending?.kind === 'event') {
+      expect(event.state.pending.event.options).toHaveLength(2);
+    }
+    const camp = parseDungeonAct(dungeonActCampPending);
+    expect(camp.state.pending?.kind).toBe('camp');
+    if (camp.state.pending?.kind === 'camp') expect(camp.state.pending.offers).toHaveLength(2);
+
+    // The choices resolve and leave the next rooms to go to.
+    const picked = parseDungeonAct(dungeonActEvent);
+    expect(picked.state.pending).toBeNull();
+    expect(picked.state.lastEvent?.name).toBeTruthy();
+    expect(picked.state.reachable.length).toBeGreaterThan(0);
+    const rested = parseDungeonAct(dungeonActCamp);
+    expect(rested.state.pending).toBeNull();
+    expect(rested.state.reachable.length).toBeGreaterThan(0);
+
+    // The three ends: home (no fight), defeat and cleared (the fight, then the summary and today).
+    const home = parseDungeonAct(dungeonActHome);
+    expect(home.room).toBeUndefined();
+    expect(home.summary?.outcome).toBe('home');
+    expect(home.state).toMatchObject({ status: 'done', outcome: 'home' });
+    const defeat = parseDungeonAct(dungeonActDefeat);
+    expect(defeat.room?.cleared).toBe(false);
+    expect(defeat.summary?.outcome).toBe('defeat');
+    expect(defeat.state).toMatchObject({ status: 'done', outcome: 'defeat' });
+    const cleared = parseDungeonAct(dungeonActCleared);
+    expect(cleared.room?.kind).toBe('boss');
+    expect(cleared.summary).toMatchObject({ outcome: 'cleared', cleared: true });
+    expect(cleared.summary?.newDepth).toBe((cleared.summary?.depth ?? 0) + 1);
+    expect(cleared.state).toMatchObject({ status: 'done', outcome: 'cleared' });
+    for (const ended of [home, defeat, cleared]) {
+      expect(ended.today?.active).toBeNull();
+      expect(ended.today?.last?.id).toBe(ended.summary?.id);
+      expect(ended.summary?.path?.length).toBeGreaterThan(0);
+      expect(ended.summary?.pack?.kept).toBeDefined();
+      expect(ended.summary?.keepsakes).toBeDefined();
+    }
+  });
+
+  it('a defeat keeps half the pack, rounded up, and the others keep all of it', () => {
+    const half = (n: number): number => Math.ceil(n / 2);
+    for (const answer of [dungeonActHome, dungeonActDefeat, dungeonActCleared]) {
+      const { summary } = parseDungeonAct(answer);
+      const pack = summary?.pack;
+      if (summary === undefined || pack === undefined) throw new Error('summary');
+      for (const kind of ['bait', 'essence', 'scrap'] as const) {
+        const kept = summary.outcome === 'defeat' ? half(pack.found[kind]) : pack.found[kind];
+        expect(pack.kept[kind], `${summary.outcome ?? ''} ${kind}`).toBe(kept);
+      }
+    }
   });
 
   it('parses the replay of a run: rooms with events, hpStart, hpMax and names', async () => {
@@ -674,14 +865,47 @@ describe('the dungeon responses the server sends', () => {
     }
   });
 
+  it('parses the replay of a path run: each room has its node and the row that fought it', async () => {
+    apiFetch.mockResolvedValue(dungeonReplayPath);
+    const { path } = dungeonRequestBodies['dungeon-replay-path'];
+    const replay = await fetchDungeonReplay(path.split('/')[4] as string);
+    expect(apiFetch).toHaveBeenCalledWith(path);
+    expect(replay.summary.outcome).toBe('cleared');
+    expect(replay.rooms.map((r) => r.node)).toEqual(['f0l0', 'f4l0', 'f5l0', 'f6l1']);
+    expect(replay.rooms.map((r) => r.index)).toEqual([0, 1, 2, 3]);
+    expect(replay.rooms.at(-1)?.kind).toBe('boss');
+    for (const room of replay.rooms) {
+      expect(room.row, room.node).toHaveLength(3);
+      // The creatures in the room's row are the creatures that have HP in it.
+      expect((room.row ?? []).map((r) => r.id).sort()).toEqual(Object.keys(room.hpStart).sort());
+    }
+    // The camp's swap changed the row: the replay's own row is the starting one.
+    const ids = (row: { id: string }[] | undefined): string[] => (row ?? []).map((r) => r.id);
+    expect(ids(replay.rooms[0]?.row)).toEqual(ids(replay.row));
+    expect(ids(replay.rooms[1]?.row)).not.toEqual(ids(replay.row));
+  });
+
   it('refuses a payload that is not the shape the server sends', () => {
     expect(() => parseDungeonToday({ ...dungeonToday, depth: 'deep' })).toThrow('dungeon state');
     expect(() => parseDungeonToday({ ...dungeonToday, blocked: 'because' })).toThrow();
     expect(() => parseDungeonToday({ ...dungeonToday, modifiers: [{ id: 'x' }] })).toThrow();
     expect(() => parseDungeonToday({ ...dungeonToday, lastTeam: [1, 2, 3] })).toThrow();
     expect(() => parseDungeonToday({ ...dungeonToday, lastTeam: undefined })).toThrow();
-    expect(() => parseDungeonRun({ run: {}, today: dungeonToday })).toThrow('dungeon run');
-    expect(() => parseDungeonRun({ ...dungeonRunCleared, today: null })).toThrow();
+    expect(() => parseDungeonStart({ state: {}, today: dungeonToday })).toThrow('dungeon run');
+    expect(() => parseDungeonStart({ ...dungeonStart, today: null })).toThrow();
+    expect(() => parseDungeonAct({ ...dungeonActFight, state: null })).toThrow('dungeon step');
+    expect(() =>
+      parseDungeonAct({ ...dungeonActFight, room: { ...dungeonActFight.room, row: [{ id: 1 }] } }),
+    ).toThrow();
+    expect(() =>
+      parseDungeonAct({
+        ...dungeonActHome,
+        summary: { ...dungeonActHome.summary, outcome: 'won' },
+      }),
+    ).toThrow();
+    expect(() =>
+      parseDungeonToday({ ...dungeonTodayMap, map: { floors: 7, nodes: [{ id: 'x' }] } }),
+    ).toThrow();
     const bad = {
       ...dungeonReplay,
       rooms: [{ ...dungeonReplay.rooms[0], events: [{ t: 'nope' }] }],
@@ -703,6 +927,46 @@ describe('the dungeon errors the server sends', () => {
       expect(text, `${route} ${String(status)} ${body.error}`).not.toMatch(GENERIC);
       expect(text.length).toBeGreaterThan(10);
     }
+  });
+
+  it('knows every captured code, with the status the server sent it at', () => {
+    for (const { route, status, body } of dungeonErrors) {
+      const label = `${route} ${body.error}`;
+      expect(Object.keys(DUNGEON_ERRORS), label).toContain(body.error);
+      expect(DUNGEON_ERRORS[body.error as keyof typeof DUNGEON_ERRORS], label).toBe(status);
+    }
+    // The codes the path runs added are all in the captures.
+    const seen = new Set(dungeonErrors.map((e) => e.body.error));
+    for (const code of [
+      'run_active',
+      'stale_step',
+      'invalid_act',
+      'gone',
+      'invalid_treat',
+      'insufficient_funds',
+    ]) {
+      expect(seen.has(code), code).toBe(true);
+    }
+  });
+
+  it('reads an invalid_act with its extra reason, and says the same plain thing for it', () => {
+    const rows = dungeonErrors.filter((e) => e.body.error === 'invalid_act');
+    expect(rows.length).toBeGreaterThan(0);
+    for (const { status, body } of rows) {
+      expect(typeof (body as { reason?: unknown }).reason).toBe('string');
+      const err = new ApiError(status, body.error, (body as { reason: string }).reason);
+      // The server's reason is for logs, not for the player: the text is the client's own.
+      expect(dungeonErrorText(err)).toBe(DUNGEON_ERROR_TEXT['invalid_act']);
+      expect(dungeonErrorText(err)).not.toContain((body as { reason: string }).reason);
+      // And the screen reloads quietly: it was showing an old state.
+      expect(isStaleDungeonError(err)).toBe(true);
+    }
+    expect(isStaleDungeonError(new ApiError(409, 'stale_step'))).toBe(true);
+    expect(isStaleDungeonError(new ApiError(409, 'key_conflict'))).toBe(false);
+  });
+
+  it('gives the 410 gone its own text: reload the Activity', () => {
+    expect(dungeonErrorText(new ApiError(410, 'gone'))).toMatch(/reopen the Activity/);
   });
 });
 

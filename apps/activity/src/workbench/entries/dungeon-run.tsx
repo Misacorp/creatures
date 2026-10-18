@@ -2,20 +2,40 @@ import { dungeonEvents, dungeonKeepsakes } from '@creatures/game';
 import { DungeonCamp } from '../../DungeonCamp';
 import { DungeonEvent } from '../../DungeonEvent';
 import { DungeonResults } from '../../DungeonResults';
+import { DungeonRun } from '../../DungeonRun';
 import { DungeonRunStrip } from '../../DungeonRunStrip';
 import { sampleRoster } from '../../creature-card-sample';
+import actCampPending from '../../fixtures/dungeon-act-camp-pending.json';
+import actCamp from '../../fixtures/dungeon-act-camp.json';
+import actCleared from '../../fixtures/dungeon-act-cleared.json';
+import actDefeat from '../../fixtures/dungeon-act-defeat.json';
+import actEventPending from '../../fixtures/dungeon-act-event-pending.json';
+import actEvent from '../../fixtures/dungeon-act-event.json';
+import actFight from '../../fixtures/dungeon-act-fight.json';
+import actHome from '../../fixtures/dungeon-act-home.json';
+import startFixture from '../../fixtures/dungeon-start.json';
+import { parseDungeonAct, parseDungeonStart } from '../../dungeon-parse';
 import {
   sampleRunCreatures,
   sampleStateCamp,
   sampleSummary,
   sampleToday,
 } from '../../dungeon-path-samples';
-import type { DungeonRunState } from '../../dungeon-types';
+import type { DungeonRunState, DungeonRunSummary } from '../../dungeon-types';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
 const EVENT_IDS = dungeonEvents.map((e) => e.id);
 const OUTCOMES = ['cleared', 'home', 'defeat', 'an older run (no outcome)'] as const;
+
+/** The summary of a run's end as a real server answered it (`fixtures/dungeon-act-*.json`). */
+function captured(outcome: 'cleared' | 'home' | 'defeat'): DungeonRunSummary {
+  const answer = parseDungeonAct(
+    outcome === 'cleared' ? actCleared : outcome === 'home' ? actHome : actDefeat,
+  );
+  if (answer.summary === undefined) throw new Error('the capture has a summary');
+  return answer.summary;
+}
 
 /** The run of the strip's page: the sample row hurt as asked, the pack and the keepsakes as set. */
 function stripState(p: Props): DungeonRunState {
@@ -190,13 +210,8 @@ const dungeonCamp: Entry = {
 
 function ResultsDemo({ p }: { p: Props }) {
   const outcome = str(p, 'outcome');
-  const base = sampleSummary(
-    outcome === 'an older run (no outcome)'
-      ? 'cleared'
-      : outcome === 'home' || outcome === 'defeat'
-        ? outcome
-        : 'cleared',
-  );
+  const kind = outcome === 'home' || outcome === 'defeat' ? outcome : 'cleared';
+  const base = bool(p, 'capture') ? captured(kind) : sampleSummary(kind);
   const run: typeof base =
     outcome === 'an older run (no outcome)'
       ? (() => {
@@ -228,18 +243,92 @@ const dungeonResults: Entry = {
   controls: {
     outcome: { kind: 'select', options: OUTCOMES },
     canRetry: { kind: 'toggle' },
+    capture: { kind: 'toggle' },
   },
-  defaults: { outcome: 'cleared', canRetry: false },
+  defaults: { outcome: 'cleared', canRetry: false, capture: false },
   presets: [
     { name: 'Cleared', props: {} },
     { name: 'Home safe', props: { outcome: 'home' } },
     { name: 'Defeated (half the pack)', props: { outcome: 'defeat', canRetry: true } },
+    { name: 'Cleared, as the server sent it', props: { capture: true } },
+    { name: 'Home safe, as the server sent it', props: { outcome: 'home', capture: true } },
+    {
+      name: 'Defeated, as the server sent it',
+      props: { outcome: 'defeat', capture: true, canRetry: true },
+    },
     { name: 'An older three-room run', props: { outcome: 'an older run (no outcome)' } },
   ],
-  render: (p) => <ResultsDemo key={str(p, 'outcome')} p={p} />,
+  render: (p) => <ResultsDemo key={`${str(p, 'outcome')}-${String(bool(p, 'capture'))}`} p={p} />,
+};
+
+const SCENES = {
+  'at the entrance': () => parseDungeonStart(startFixture).state,
+  'after the first fight': () => parseDungeonAct(actFight).state,
+  'a mystery room': () => parseDungeonAct(actEventPending).state,
+  'after the mystery room': () => parseDungeonAct(actEvent).state,
+  'at the camp': () => parseDungeonAct(actCampPending).state,
+  'after the camp (swapped)': () => parseDungeonAct(actCamp).state,
+  'the boss is next': () => {
+    const done = parseDungeonAct(actCleared).state;
+    return {
+      ...done,
+      status: 'active' as const,
+      outcome: null,
+      at: 'f5l0',
+      path: done.path.slice(0, -1),
+      reachable: ['f6l1'],
+    };
+  },
+} as const satisfies Record<string, () => DungeonRunState>;
+const SCENE_NAMES = Object.keys(SCENES) as (keyof typeof SCENES)[];
+
+function RunDemo({ p }: { p: Props }) {
+  const scene = SCENE_NAMES.find((n) => n === str(p, 'scene')) ?? 'at the entrance';
+  return (
+    <DungeonRun
+      key={scene}
+      state={SCENES[scene]()}
+      creatures={sampleRoster(6)}
+      busy={bool(p, 'busy')}
+      error={
+        bool(p, 'error') ? 'Your run moved on in another window. The map was refreshed.' : null
+      }
+      onAct={() => undefined}
+    />
+  );
+}
+
+const dungeonRun: Entry = {
+  name: 'DungeonRun',
+  file: 'apps/activity/src/DungeonRun.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'An open dungeon run as one screen, built from the states a real server sent: the strip at the top (the row with HP, keepsakes, the pack), then what the run stands at: the map with the rooms it can go to, a mystery room card, or the camp card. Tap a room for its drawer and Go; every pick is an act the screen above sends, which here goes nowhere.',
+  controls: {
+    scene: { kind: 'select', options: SCENE_NAMES },
+    busy: { kind: 'toggle' },
+    error: { kind: 'toggle' },
+  },
+  defaults: { scene: 'after the first fight', busy: false, error: false },
+  presets: [
+    { name: 'At the entrance', props: { scene: 'at the entrance' } },
+    { name: 'After the first fight', props: {} },
+    { name: 'A mystery room', props: { scene: 'a mystery room' } },
+    { name: 'After the mystery room', props: { scene: 'after the mystery room' } },
+    { name: 'At the camp', props: { scene: 'at the camp' } },
+    {
+      name: 'After the camp (a creature swapped in)',
+      props: { scene: 'after the camp (swapped)' },
+    },
+    { name: 'The boss is next', props: { scene: 'the boss is next' } },
+    { name: 'An act is on its way', props: { busy: true } },
+    { name: 'With an error line', props: { error: true } },
+  ],
+  render: (p) => <RunDemo p={p} />,
 };
 
 export const dungeonRunEntries: readonly Entry[] = [
+  dungeonRun,
   dungeonRunStrip,
   dungeonEvent,
   dungeonCamp,

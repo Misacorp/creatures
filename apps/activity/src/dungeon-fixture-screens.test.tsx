@@ -1,0 +1,558 @@
+import { act } from 'preact/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { sampleRoster } from './creature-card-sample';
+import type { Creature } from './api';
+import { Dungeon } from './Dungeon';
+import actCampPending from './fixtures/dungeon-act-camp-pending.json';
+import actCamp from './fixtures/dungeon-act-camp.json';
+import actCleared from './fixtures/dungeon-act-cleared.json';
+import actDefeat from './fixtures/dungeon-act-defeat.json';
+import actEventPending from './fixtures/dungeon-act-event-pending.json';
+import actEvent from './fixtures/dungeon-act-event.json';
+import actFight from './fixtures/dungeon-act-fight.json';
+import actHome from './fixtures/dungeon-act-home.json';
+import replayPath from './fixtures/dungeon-replay-path.json';
+import requestBodies from './fixtures/dungeon-request-bodies.json';
+import startFixture from './fixtures/dungeon-start.json';
+import todayActive from './fixtures/dungeon-today-active.json';
+import todayMap from './fixtures/dungeon-today-map.json';
+import { nodeLabel } from './dungeon-map';
+import {
+  parseDungeonAct,
+  parseDungeonReplay,
+  parseDungeonStart,
+  parseDungeonToday,
+} from './dungeon-parse';
+import type { DungeonAct, DungeonActResponse, DungeonRunState } from './dungeon-types';
+import {
+  byClass,
+  byName,
+  byRole,
+  createPage,
+  FakeElement,
+  visibleText,
+  type Page,
+} from './test-dom';
+
+/**
+ * The Dungeon tab driven by the real server answers (`fixtures/dungeon-*.json`, captured from the
+ * Worker): each answer is parsed by the client's own guards and handed to the screen as the mocked
+ * API's reply, and what the screen sends is compared with the captured request bodies. The
+ * fixtures are separate runs, so the state a step starts from is the state its answer came from, put
+ * one step back (`before`).
+ */
+const api = vi.hoisted(() => ({
+  dungeonAct: vi.fn(),
+  fetchDungeonToday: vi.fn(),
+  fetchDungeonReplay: vi.fn(),
+  saveDungeonTeam: vi.fn(),
+  startDungeonRun: vi.fn(),
+}));
+vi.mock('./dungeon-api', () => api);
+
+let page: Page | null = null;
+
+beforeEach(() => {
+  Reflect.set(globalThis, 'window', { innerHeight: 800 });
+  Reflect.set(globalThis, 'requestAnimationFrame', (cb: (t: number) => void) =>
+    setTimeout(() => {
+      cb(Date.now());
+    }, 16),
+  );
+  Reflect.set(globalThis, 'cancelAnimationFrame', (id: number) => {
+    clearTimeout(id);
+  });
+  Reflect.set(FakeElement.prototype, 'getBoundingClientRect', () => ({ top: 0 }));
+  // The roster picker moves focus between its options; the fake DOM has none to find.
+  Reflect.set(FakeElement.prototype, 'querySelectorAll', () => []);
+  for (const fn of Object.values(api)) fn.mockReset();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  page?.unmount();
+  page = null;
+  Reflect.deleteProperty(globalThis, 'window');
+  Reflect.deleteProperty(globalThis, 'requestAnimationFrame');
+  Reflect.deleteProperty(globalThis, 'cancelAnimationFrame');
+  Reflect.deleteProperty(FakeElement.prototype, 'getBoundingClientRect');
+  Reflect.deleteProperty(FakeElement.prototype, 'querySelectorAll');
+});
+
+const noop = (): void => undefined;
+
+type Bodies = typeof requestBodies;
+const bodyOf = (key: keyof Bodies) =>
+  requestBodies[key].body as unknown as {
+    runId: string;
+    step: number;
+    idempotencyKey: string;
+    act: DungeonAct;
+  };
+
+/** The player's creatures: the fixtures' own ids and species, so the screens find them by id. */
+function roster(): Creature[] {
+  const all = sampleRoster(30);
+  const wanted: [string, string][] = [
+    ['64ab0da2-cff5-47ec-8346-04317bb6b745', 'sproutle'],
+    ['5b8aea90-83c9-4de6-b9f4-2cd49763020f', 'splashet'],
+    ['ae8c7c8f-b190-470f-b09e-4ae48d278eb9', 'cindle'],
+    ['53072e75-7ff5-4f3a-91bc-7a61fe6ae84c', 'zipmouse'],
+  ];
+  const picked = wanted.map(([id, species]) => {
+    const found = all.find((c) => c.species === species);
+    if (found === undefined) throw new Error(`no ${species} in the sample roster`);
+    return { ...found, id, level: 12, nickname: null, waiting: false } satisfies Creature;
+  });
+  return picked;
+}
+
+/** The state an answer's step started from: one act back, the run still open. */
+function before(
+  state: DungeonRunState,
+  over: Partial<DungeonRunState> & Pick<DungeonRunState, 'step'>,
+): DungeonRunState {
+  return { ...state, status: 'active', outcome: null, pending: null, ...over };
+}
+
+function drawTab(draft: [string, string, string] | null = null, onRunFinished = noop): Page {
+  page = createPage();
+  // The roster picker listens for keys on the document, which the fake one cannot do.
+  Reflect.set(page.document, 'addEventListener', noop);
+  Reflect.set(page.document, 'removeEventListener', noop);
+  page.draw(
+    <Dungeon
+      creatures={roster()}
+      forecast={null}
+      bait={100}
+      draft={draft}
+      onDraftChange={noop}
+      onRunStarted={noop}
+      onCanRunChange={noop}
+      onRunFinished={onRunFinished}
+    />,
+  );
+  return page;
+}
+
+function button(root: FakeElement, name: RegExp | string): FakeElement {
+  const found = byName(root, 'button', name)[0];
+  if (found === undefined) throw new Error(`no button ${String(name)}`);
+  return found;
+}
+
+const escapeRe = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** The map's button for a room, by the label the map gives it. */
+function room(state: DungeonRunState, id: string, root: FakeElement): FakeElement {
+  const node = state.map.nodes.find((n) => n.id === id);
+  if (node === undefined) throw new Error(`no room ${id}`);
+  return button(root, new RegExp(`^${escapeRe(nodeLabel(node))}\\.`));
+}
+
+async function settle(): Promise<void> {
+  for (let i = 0; i < 6; i++) {
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+}
+
+/** Plays the fight on screen to its end, a second at a time (fake timers). */
+async function playOut(root: FakeElement): Promise<void> {
+  for (let i = 0; i < 900 && byClass(root, 'dungeon-playback').length > 0; i++) {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+  }
+  expect(byClass(root, 'dungeon-playback')).toHaveLength(0);
+}
+
+/** What the screen sent as the nth act: the body without its key, and the key apart. */
+function sentAct(n = 0): { body: Record<string, unknown>; key: string } {
+  const { idempotencyKey, ...body } = api.dungeonAct.mock.calls[n]?.[0] as Record<
+    string,
+    unknown
+  > & {
+    idempotencyKey: string;
+  };
+  return { body, key: idempotencyKey };
+}
+
+const KEY = /^[A-Za-z0-9_-]{8,64}$/;
+
+/** A move on the map: open the room, press Go. */
+async function goTo(state: DungeonRunState, id: string, root: FakeElement): Promise<void> {
+  page?.click(room(state, id, root));
+  page?.click(button(page.root, /^Go/));
+  await settle();
+}
+
+describe('the pre-run card with the real map', () => {
+  it("shows today's map in preview with its camp and boss, and no way to step into a room", async () => {
+    api.fetchDungeonToday.mockResolvedValue(parseDungeonToday(todayMap));
+    const { root } = drawTab();
+    await settle();
+    expect(byClass(root, 'dungeon-card')).toHaveLength(1);
+    expect(byClass(root, 'dungeon-preview')).toHaveLength(1);
+    expect(byClass(root, 'dmap')).toHaveLength(1);
+    expect(byClass(root, 'room-strip')).toHaveLength(0);
+    expect(byName(root, 'button', 'Enter the dungeon')).toHaveLength(1);
+    const map = parseDungeonToday(todayMap).map;
+    const nodes = map?.nodes ?? [];
+    // One button per room, each named for what it is.
+    const labels = byClass(root, 'dmap-node').map((n) => n.getAttribute('aria-label') ?? '');
+    expect(labels).toHaveLength(nodes.length);
+    expect(labels.some((l) => l.startsWith('Room boss:'))).toBe(true);
+    expect(labels.some((l) => l.startsWith('Camp.'))).toBe(true);
+    // The foe names come from the server's map, in each room's label.
+    const boss = nodes.find((n) => n.kind === 'boss');
+    expect(labels.some((l) => l.includes(boss?.foe?.name ?? 'no boss'))).toBe(true);
+  });
+
+  it('enters with the captured start body, then shows the run on its map at the entrance', async () => {
+    api.fetchDungeonToday.mockResolvedValue(parseDungeonToday(todayMap));
+    api.startDungeonRun.mockResolvedValue(parseDungeonStart(startFixture));
+    const started = vi.fn();
+    const sent = bodyOf('dungeon-start') as unknown as {
+      team: [string, string, string];
+      idempotencyKey: string;
+    };
+    page = createPage();
+    page.draw(
+      <Dungeon
+        creatures={roster()}
+        forecast={null}
+        bait={100}
+        draft={sent.team}
+        onDraftChange={noop}
+        onRunStarted={started}
+        onCanRunChange={noop}
+        onRunFinished={noop}
+      />,
+    );
+    await settle();
+    page.click(button(page.root, 'Enter the dungeon'));
+    await settle();
+    const request = api.startDungeonRun.mock.calls[0]?.[0] as {
+      team: string[];
+      idempotencyKey: string;
+    };
+    expect(request.team).toEqual(sent.team);
+    expect(Object.keys(request).sort()).toEqual(['idempotencyKey', 'team']);
+    expect(request.idempotencyKey).toMatch(KEY);
+    expect(started).toHaveBeenCalledTimes(1);
+    expect(byClass(page.root, 'dungeon-card')).toHaveLength(0);
+    expect(byClass(page.root, 'dungeon-run-map')).toHaveLength(1);
+    expect(visibleText(page.root)).toContain('At the entrance');
+    expect(visibleText(page.root)).toContain('Your pack is empty.');
+    // The three creatures of the row, in order.
+    expect(byClass(page.root, 'run-tile')).toHaveLength(3);
+  });
+});
+
+describe('a move into a fight, with the real answer', () => {
+  it('plays the room, then goes back to the map with the pack the fight paid', async () => {
+    vi.useFakeTimers();
+    const start = parseDungeonStart(startFixture);
+    api.fetchDungeonToday.mockResolvedValue(start.today);
+    const answer = parseDungeonAct(actFight);
+    api.dungeonAct.mockResolvedValue(answer);
+    const { root } = drawTab();
+    await settle();
+    expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
+    await goTo(start.state, 'f0l0', root);
+    const { body, key } = sentAct();
+    const fixture = bodyOf('dungeon-act-fight');
+    expect(body).toEqual({ runId: fixture.runId, step: fixture.step, act: fixture.act });
+    expect(key).toMatch(KEY);
+    // The room plays on the stage, in the row that fought it; the map is out of the way.
+    expect(byClass(root, 'dungeon-playback')).toHaveLength(1);
+    expect(byClass(root, 'dungeon-run')).toHaveLength(0);
+    await playOut(root);
+    // Back on the map, one step on, standing on the room that was played.
+    expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
+    expect(visibleText(root)).toContain('In your pack:');
+    expect(answer.state.at).toBe('f0l0');
+    expect(visibleText(root)).toContain('Floor 1 / 7');
+  });
+});
+
+describe('a mystery room, with the real answers', () => {
+  const pending = parseDungeonAct(actEventPending).state;
+  const resolved = parseDungeonAct(actEvent);
+
+  it('opens the event card after a move into the room, and its pick is the captured act', async () => {
+    const open = before(pending, { step: 1, at: 'f0l0', path: ['f0l0'], reachable: ['f1l0'] });
+    api.fetchDungeonToday.mockResolvedValue({ ...parseDungeonToday(todayActive), active: open });
+    api.dungeonAct.mockResolvedValueOnce({ state: pending }).mockResolvedValueOnce(resolved);
+    const { root } = drawTab();
+    await settle();
+    await goTo(open, 'f1l0', root);
+    expect(sentAct(0).body).toMatchObject({
+      runId: bodyOf('dungeon-act-event-pending').runId,
+      step: bodyOf('dungeon-act-event-pending').step,
+      act: bodyOf('dungeon-act-event-pending').act,
+    });
+    // The scene and both options are the server's, drawn as text; no map while it is open.
+    expect(byClass(root, 'dungeon-event')).toHaveLength(1);
+    expect(byClass(root, 'dungeon-run-map')).toHaveLength(0);
+    if (pending.pending?.kind !== 'event') throw new Error('pending event');
+    const event = pending.pending.event;
+    expect(visibleText(root)).toContain(event.name);
+    expect(visibleText(root)).toContain(event.text);
+    expect(byClass(root, 'event-option')).toHaveLength(2);
+    for (const option of event.options) expect(visibleText(root)).toContain(option.description);
+    // Picking the second option sends the captured pick and shows what it did.
+    page?.click(button(root, new RegExp(`^${escapeRe(event.options[1]?.label ?? '')}`)));
+    await settle();
+    expect(sentAct(1).body).toEqual({
+      runId: bodyOf('dungeon-act-event').runId,
+      step: bodyOf('dungeon-act-event').step,
+      act: bodyOf('dungeon-act-event').act,
+    });
+    expect(byClass(root, 'dungeon-event')).toHaveLength(0);
+    expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
+    expect(visibleText(root)).toContain(resolved.state.lastEvent?.outcome ?? 'no outcome');
+  });
+
+  it('opens at the event after a reload of the open run', async () => {
+    api.fetchDungeonToday.mockResolvedValue({ ...parseDungeonToday(todayActive), active: pending });
+    const { root } = drawTab();
+    await settle();
+    expect(byClass(root, 'dungeon-event')).toHaveLength(1);
+  });
+});
+
+describe('the camp, with the real answers', () => {
+  const campState = parseDungeonAct(actCampPending).state;
+
+  it('opens the camp after a move to it, with the keepsake offers and the pack at risk', async () => {
+    const open = before(campState, {
+      step: 5,
+      at: 'f2l0',
+      path: ['f0l0', 'f1l0', 'f2l0'],
+      reachable: ['f3l1'],
+    });
+    api.fetchDungeonToday.mockResolvedValue({ ...parseDungeonToday(todayActive), active: open });
+    api.dungeonAct.mockResolvedValue({ state: campState });
+    const { root } = drawTab();
+    await settle();
+    await goTo(open, 'f3l1', root);
+    expect(sentAct().body).toEqual({
+      runId: bodyOf('dungeon-act-camp-pending').runId,
+      step: bodyOf('dungeon-act-camp-pending').step,
+      act: bodyOf('dungeon-act-camp-pending').act,
+    });
+    expect(byClass(root, 'dungeon-camp')).toHaveLength(1);
+    expect(byClass(root, 'dungeon-run-map')).toHaveLength(0);
+    const text = visibleText(root);
+    expect(text).toContain('Standing creatures recover 40% HP.');
+    expect(text).toContain('Head home with your pack');
+    expect(byName(root, 'span', 'Bait: 2')).toHaveLength(1);
+    expect(byName(root, 'span', 'Scrap: 1')).toHaveLength(1);
+    expect(text).toContain('At risk');
+  });
+
+  it('resumes at the camp from today, and takes a keepsake offered by the server', async () => {
+    api.fetchDungeonToday.mockResolvedValue(parseDungeonToday(todayActive));
+    api.dungeonAct.mockResolvedValue(parseDungeonAct(actCamp));
+    const { root } = drawTab();
+    await settle();
+    expect(byClass(root, 'dungeon-camp')).toHaveLength(1);
+    page?.click(button(root, /^Take a keepsake/));
+    if (campState.pending?.kind !== 'camp') throw new Error('camp');
+    const offer = campState.pending.offers[0];
+    expect(visibleText(root)).toContain(offer?.description ?? 'no offer');
+    page?.click(button(root, new RegExp(escapeRe(offer?.name ?? '?'))));
+    await settle();
+    expect(sentAct().body).toMatchObject({
+      runId: campState.id,
+      step: campState.step,
+      act: {
+        type: 'camp',
+        choice: 'keepsake',
+        keepsake: offer?.id,
+        order: campState.team.map((c) => c.id),
+      },
+    });
+    // The answer left the camp and the map is back.
+    expect(byClass(root, 'dungeon-camp')).toHaveLength(0);
+    expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
+  });
+
+  it('rests with the row as the captured camp state has it', async () => {
+    api.fetchDungeonToday.mockResolvedValue(parseDungeonToday(todayActive));
+    api.dungeonAct.mockResolvedValue(parseDungeonAct(actCamp));
+    const { root } = drawTab();
+    await settle();
+    page?.click(button(root, /^Rest/));
+    await settle();
+    expect(sentAct().body['act']).toEqual({
+      type: 'camp',
+      choice: 'rest',
+      order: campState.team.map((c) => c.id),
+    });
+    expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
+  });
+
+  it('swaps, with the new row from the answer shown after it', async () => {
+    const swapped = parseDungeonAct(actCamp);
+    api.fetchDungeonToday.mockResolvedValue(parseDungeonToday(todayActive));
+    api.dungeonAct.mockResolvedValue(swapped);
+    const { root } = drawTab();
+    await settle();
+    const fixture = bodyOf('dungeon-act-camp').act;
+    if (fixture.type !== 'camp') throw new Error('camp act');
+    // The player moves the first creature right (the order of the capture), then swaps.
+    page?.click(button(root, `Move ${campState.team[0]?.name ?? ''} right`));
+    page?.click(button(root, /^Swap a creature/));
+    await settle();
+    // Who comes in: Zipmouse, the one creature outside the row.
+    const zip = byRole(root, 'option').find((o) => visibleText(o).includes('Zipmouse'));
+    if (zip === undefined) throw new Error('no Zipmouse in the picker');
+    page?.click(zip);
+    await settle();
+    expect(visibleText(root)).toContain('Who goes home?');
+    page?.click(button(root, /^Cindle/));
+    await settle();
+    expect(sentAct().body['act']).toEqual(fixture);
+    expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
+    expect(byClass(root, 'run-tile').map((t) => visibleText(t))).toEqual(
+      swapped.state.team.map((c) => expect.stringContaining(c.name) as unknown as string),
+    );
+  });
+});
+
+describe('the end of a run, with the real answers', () => {
+  async function runEnding(
+    answer: DungeonActResponse,
+    open: DungeonRunState,
+    goes: (root: FakeElement) => Promise<void>,
+  ): Promise<{ root: FakeElement; finished: ReturnType<typeof vi.fn> }> {
+    vi.useFakeTimers();
+    const finished = vi.fn();
+    api.fetchDungeonToday.mockResolvedValue({ ...parseDungeonToday(todayActive), active: open });
+    api.dungeonAct.mockResolvedValue(answer);
+    const { root } = drawTab(null, finished);
+    await settle();
+    await goes(root);
+    return { root, finished };
+  }
+
+  it('cleared: the boss fight plays, then "Cleared!" with the pack kept and the path taken', async () => {
+    const answer = parseDungeonAct(actCleared);
+    const open = before(answer.state, {
+      step: 9,
+      at: 'f5l0',
+      path: answer.state.path.slice(0, -1),
+      reachable: ['f6l1'],
+    });
+    const { root, finished } = await runEnding(answer, open, async (r) => {
+      await goTo(open, 'f6l1', r);
+    });
+    expect(sentAct().body).toEqual({
+      runId: bodyOf('dungeon-act-cleared').runId,
+      step: bodyOf('dungeon-act-cleared').step,
+      act: bodyOf('dungeon-act-cleared').act,
+    });
+    expect(byClass(root, 'dungeon-playback')).toHaveLength(1);
+    expect(finished).not.toHaveBeenCalled();
+    await playOut(root);
+    const text = visibleText(root);
+    const summary = answer.summary;
+    expect(text).toContain(
+      `Cleared! Depth ${String(summary?.depth)} to ${String(summary?.newDepth)}`,
+    );
+    expect(text).toContain('Kept: 4 Bait · 1 Essence · 2 Scrap');
+    expect(byClass(root, 'path')).toHaveLength(1);
+    expect(finished).toHaveBeenCalledTimes(1);
+  });
+
+  it('home: heading home from the camp goes straight to the results', async () => {
+    const answer = parseDungeonAct(actHome);
+    const open = before(answer.state, {
+      step: 6,
+      pending: parseDungeonAct(actCampPending).state.pending,
+    });
+    const { root, finished } = await runEnding(answer, open, async (r) => {
+      page?.click(button(r, 'Head home with your pack'));
+      page?.click(button(r, 'Yes, head home'));
+      await settle();
+    });
+    expect(sentAct().body).toEqual({
+      runId: bodyOf('dungeon-act-home').runId,
+      step: bodyOf('dungeon-act-home').step,
+      act: bodyOf('dungeon-act-home').act,
+    });
+    expect(byClass(root, 'dungeon-playback')).toHaveLength(0);
+    const text = visibleText(root);
+    expect(text).toContain('Home safe with your whole pack');
+    expect(text).toContain('Found: 2 Bait · 1 Scrap · Kept: 2 Bait · 1 Scrap');
+    expect(text).toContain('Still at depth');
+    expect(finished).toHaveBeenCalledTimes(1);
+  });
+
+  it('defeat: the lost fight plays, then the (empty) pack and the depth unchanged', async () => {
+    const answer = parseDungeonAct(actDefeat);
+    const hp = answer.room?.hpStart ?? {};
+    const open = before(answer.state, {
+      step: 0,
+      at: null,
+      path: [],
+      reachable: answer.state.map.nodes.filter((n) => n.floor === 0).map((n) => n.id),
+      team: answer.state.team.map((c) => ({ ...c, hp: hp[c.id] ?? c.hpMax })),
+    });
+    const { root, finished } = await runEnding(answer, open, async (r) => {
+      await goTo(open, 'f0l0', r);
+    });
+    expect(sentAct().body).toEqual({
+      runId: bodyOf('dungeon-act-defeat').runId,
+      step: bodyOf('dungeon-act-defeat').step,
+      act: bodyOf('dungeon-act-defeat').act,
+    });
+    expect(byClass(root, 'dungeon-playback')).toHaveLength(1);
+    await playOut(root);
+    const text = visibleText(root);
+    expect(text).toContain('Defeated: your pack was empty');
+    expect(text).toContain('Beat the room boss to go deeper.');
+    expect(finished).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('watching a path run again, with the real replay', () => {
+  it('plays each fight in the row that fought it: the swapped-in creature joins after the camp', async () => {
+    vi.useFakeTimers();
+    const ended = parseDungeonAct(actCleared);
+    api.fetchDungeonToday.mockResolvedValue(ended.today);
+    api.fetchDungeonReplay.mockResolvedValue(parseDungeonReplay(replayPath));
+    const { root } = drawTab();
+    await settle();
+    expect(visibleText(root)).toContain('Cleared!');
+    page?.click(button(root, /Watch again/));
+    await settle();
+    expect(api.fetchDungeonReplay).toHaveBeenCalledWith(ended.summary?.id);
+    expect(byClass(root, 'dungeon-playback')).toHaveLength(1);
+    // Watch the stage while the four fights play: which of Cindle (the creature that went home at
+    // the camp) and Zipmouse (the one that came in) stand in the row at each moment.
+    const seen = { start: false, swapped: false, both: false };
+    for (let i = 0; i < 900; i++) {
+      const stage = byClass(root, 'dungeon-playback')[0];
+      if (stage === undefined) break;
+      const text = visibleText(stage);
+      const cindle = text.includes('Cindle');
+      const zipmouse = text.includes('Zipmouse');
+      if (cindle && zipmouse) seen.both = true;
+      if (cindle && !zipmouse) seen.start = true;
+      if (zipmouse && !cindle) seen.swapped = true;
+      // Once the swapped row has been on stage, the old one never comes back.
+      if (seen.swapped && cindle) seen.both = true;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+    }
+    expect(seen.start).toBe(true);
+    expect(seen.swapped).toBe(true);
+    expect(seen.both).toBe(false);
+  });
+});

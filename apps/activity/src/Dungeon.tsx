@@ -254,7 +254,7 @@ export function Dungeon({
     const request = buildRunRequest(slots, '', treats);
     const picked = request?.treats ?? [];
     // One key per distinct run: a retry of the same picks (and treats) reuses it, other picks get their own.
-    await runner.runKeyed(ActionIds.dungeonRun(team, picked), async (key) => {
+    await runner.runKeyed(ActionIds.dungeonStart(team, picked), async (key) => {
       const answer = await startDungeonRun({
         team,
         ...(picked.length === 0 ? {} : { treats: picked }),

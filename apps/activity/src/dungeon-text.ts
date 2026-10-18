@@ -172,7 +172,7 @@ export function fierceName(name: string, elite: boolean | undefined): string {
  */
 export function resultHeadline(
   run: Pick<DungeonRunSummary, 'cleared' | 'roomsCleared' | 'rooms'> &
-    Partial<Pick<DungeonRunSummary, 'outcome' | 'depth' | 'newDepth'>>,
+    Partial<Pick<DungeonRunSummary, 'outcome' | 'depth' | 'newDepth' | 'pack'>>,
 ): string {
   switch (run.outcome) {
     case 'cleared':
@@ -180,7 +180,10 @@ export function resultHeadline(
     case 'home':
       return 'Home safe with your whole pack';
     case 'defeat':
-      return 'Defeated: half your pack made it home';
+      // A defeat with nothing in the pack had nothing to halve: do not promise what did not happen.
+      return run.pack !== undefined && isPackEmpty(run.pack.found)
+        ? 'Defeated: your pack was empty'
+        : 'Defeated: half your pack made it home';
     case undefined:
       break;
   }
@@ -224,11 +227,6 @@ export function packText(pack: DungeonPack): string {
 /** The pack on the run strip: "In your pack: 2 Bait · 1 Scrap", or that it is empty. */
 export function packLine(pack: DungeonPack): string {
   return isPackEmpty(pack) ? 'Your pack is empty.' : `In your pack: ${packText(pack)}`;
-}
-
-/** The end report's pack line: "Found: 3 Bait · 2 Scrap · Kept: 2 Bait · 1 Scrap". */
-export function packSummaryLine(pack: { found: DungeonPack; kept: DungeonPack }): string {
-  return `Found: ${packText(pack.found)} · Kept: ${packText(pack.kept)}`;
 }
 
 /** The floor of a node id ("f2l1" is floor 2), or null for an id that is not one. */

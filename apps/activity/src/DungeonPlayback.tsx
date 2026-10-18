@@ -15,7 +15,7 @@ import {
   roomBoss,
   roomIntroView,
   roomResultLine,
-  stageRow,
+  roomStageRow,
   type PlaybackInput,
 } from './dungeon-playback';
 import { roomPlaceLine } from './dungeon-text';
@@ -61,7 +61,11 @@ export function DungeonPlayback({ input, onDone, showControls = false }: Props) 
   const [speed, setSpeed] = useState<Speed>(1);
   const [paused, setPaused] = useState(false);
   const current = input.rooms[room];
-  const row = useMemo(() => stageRow(input), [input]);
+  // Each room's own row: a camp swap changes it part-way through a path run.
+  const row = useMemo(
+    () => (current === undefined ? [] : roomStageRow(input, current)),
+    [input, current],
+  );
   const fightRef = useRef<HTMLElement>(null);
   const reduced = usePrefersReducedMotion();
 
@@ -202,7 +206,7 @@ function RoomFight({
   room: DungeonReplayRoom;
   total: number;
   landmark: boolean;
-  row: ReturnType<typeof stageRow>;
+  row: ReturnType<typeof roomStageRow>;
   speed: Speed;
   paused: boolean;
   onFinished: () => void;

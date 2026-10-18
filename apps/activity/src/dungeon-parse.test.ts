@@ -12,7 +12,6 @@ import { dungeonAct, saveDungeonTeam, startDungeonRun } from './dungeon-api';
 import {
   parseDungeonAct,
   parseDungeonReplay,
-  parseDungeonRun,
   parseDungeonStart,
   parseDungeonTeamSaved,
   parseDungeonToday,
@@ -34,23 +33,25 @@ import type { DungeonRunState } from './dungeon-types';
 const withoutDraft: Record<string, unknown> = { ...today };
 delete withoutDraft['draftTeam'];
 
-describe('the supplies in a run answer', () => {
-  it('reads the supplies the run dropped, and an older answer with none', () => {
-    const run = parseDungeonRun(runCleared).run;
-    expect(run.rewards.supplies?.length).toBeGreaterThan(0);
+/** An old run's summary inside today's `last` (the old run route is gone; its summary still shows). */
+const todayWithLast = (rewards: unknown): unknown => ({
+  ...runCleared.today,
+  last: { ...runCleared.run, rewards },
+});
+
+describe('the supplies in an old run summary', () => {
+  it('reads the supplies the run dropped, and an older summary with none', () => {
+    const last = parseDungeonToday(runCleared.today).last;
+    expect(last?.rewards.supplies?.length).toBeGreaterThan(0);
     const older: Record<string, unknown> = { ...runCleared.run.rewards };
     delete older['supplies'];
-    const parsed = parseDungeonRun({ ...runCleared, run: { ...runCleared.run, rewards: older } });
-    expect(parsed.run.rewards.supplies).toBeUndefined();
+    expect(parseDungeonToday(todayWithLast(older)).last?.rewards.supplies).toBeUndefined();
   });
 
   it('refuses supplies that are not a list of ids', () => {
     for (const supplies of ['lure-basic', [1], [null], { id: 'lure-basic' }]) {
       expect(() =>
-        parseDungeonRun({
-          ...runCleared,
-          run: { ...runCleared.run, rewards: { ...runCleared.run.rewards, supplies } },
-        }),
+        parseDungeonToday(todayWithLast({ ...runCleared.run.rewards, supplies })),
       ).toThrow();
     }
   });
@@ -79,16 +80,16 @@ describe('the saved team draft in the dungeon answers', () => {
     expect(() => parseDungeonToday({ ...withoutDraft, draftTeam: ['a', undefined] })).toThrow();
   });
 
-  it('is read from the today inside a run answer too', () => {
-    const answer = parseDungeonRun(runCleared);
+  it('is read from the today inside a start or act answer too', () => {
+    const answer = parseDungeonStart({ state: sampleState(), today: sampleToday() });
     expect(answer.today.draftTeam).toBeNull();
-    const withDraft = parseDungeonRun({
-      ...runCleared,
-      today: { ...runCleared.today, draftTeam: ['a', 'b', null] },
+    const withDraft = parseDungeonStart({
+      state: sampleState(),
+      today: { ...sampleToday(), draftTeam: ['a', 'b', null] },
     });
     expect(withDraft.today.draftTeam).toEqual(['a', 'b', null]);
     expect(() =>
-      parseDungeonRun({ ...runCleared, today: { ...runCleared.today, draftTeam: [3] } }),
+      parseDungeonStart({ state: sampleState(), today: { ...sampleToday(), draftTeam: [3] } }),
     ).toThrow();
   });
 
@@ -314,12 +315,24 @@ describe('the new fields of a summary and of a replayed room', () => {
     }).summary;
 
   it('are optional: an old run has none of them', () => {
-    const old = parseDungeonRun(runCleared).run;
+    const old = parseDungeonToday(runCleared.today).last;
+    if (old === null) throw new Error('last');
     expect(old.outcome).toBeUndefined();
     expect(old.path).toBeUndefined();
     expect(old.pack).toBeUndefined();
     expect(old.keepsakes).toBeUndefined();
     expect(old.rooms[0]?.elite).toBeUndefined();
+  });
+
+  it('read the weather a run was fought under, and refuse a broken one', () => {
+    expect(summaryIn({})?.weather).toBeUndefined();
+    expect(summaryIn({ weather: { boon: 'sunny-nap', omen: null } })?.weather).toEqual({
+      boon: 'sunny-nap',
+      omen: null,
+    });
+    expect(summaryIn({ weather: { boon: 'sunny-nap', omen: 'fog' } })?.weather?.omen).toBe('fog');
+    expect(() => summaryIn({ weather: { boon: 1, omen: null } })).toThrow();
+    expect(() => summaryIn({ weather: { boon: 'sunny-nap' } })).toThrow();
   });
 
   it('read the outcome, the path, the pack and the keepsakes', () => {
