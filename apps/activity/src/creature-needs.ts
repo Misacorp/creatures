@@ -34,7 +34,10 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
   if (creature.evolution?.available === true) {
     needs.push({
       kind: 'evolve',
-      label: `Evolve into ${speciesName(creature.evolution.toSpecies)}`,
+      label:
+        creature.evolution.alt === undefined
+          ? `Evolve into ${speciesName(creature.evolution.toSpecies)}`
+          : 'Choose an evolution',
       detail: `${String(creature.evolution.essence)} Essence`,
     });
   }

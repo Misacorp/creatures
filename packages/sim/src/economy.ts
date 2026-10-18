@@ -43,6 +43,7 @@ import {
 } from './gear';
 import { chooseDungeonTeam, dayModifiers, playDungeonDay, type DungeonLogEntry } from './dungeon';
 import type { Setup } from './formations';
+import { pickBranch } from './policy';
 import { collect, fillSlots, newCreature } from './talents';
 import { awardRaidExperience, buyRibbons, focusFirst, giveExperience, packTreat } from './training';
 import { openRaidWeek, playStage, summarizeRaid, type RaidSummary, type RaidWeek } from './raid';
@@ -393,13 +394,14 @@ export function serverMedianTopLevel(players: readonly SimPlayer[]): number {
 }
 
 /** Evolves creatures that reached their evolution level while the player has the Essence. */
-function evolveCreatures(player: SimPlayer): void {
+export function evolveCreatures(player: SimPlayer): void {
   for (const c of byPowerDesc(player.creatures)) {
-    const species = speciesOf(c.speciesId);
-    const evo = species.evolvesTo;
+    // Both forms of a branching line cost the same (`checkCreatures`), so the readiness is the first one's.
+    const evo = speciesOf(c.speciesId).evolvesTo;
     if (evo === undefined || c.level < evo.level || player.essence < evo.essence) continue;
-    player.essence -= evo.essence;
-    c.speciesId = evo.species;
+    const form = pickBranch(player.creatures, c) ?? evo;
+    player.essence -= form.essence;
+    c.speciesId = form.species;
     player.week.evolutions += 1;
     // The higher level cap opens the way: what the creature banked while it waited is spent now.
     giveExperience(player, c, 0, null);

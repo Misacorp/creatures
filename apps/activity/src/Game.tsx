@@ -486,16 +486,19 @@ export function Game({
                 );
               });
             }}
-            onEvolve={(creature) => {
+            onEvolve={(creature, chosen) => {
+              // A line with one form names no form on the screen: it grows into its only one.
+              const species = chosen ?? creature.evolution?.toSpecies;
+              if (species === undefined) return;
               void runKeyed(
-                ActionIds.evolve(creature.id),
-                (key) => evolveCreature(creature.id, key),
+                ActionIds.evolve(creature.id, species),
+                (key) => evolveCreature(creature.id, species, key),
                 { currency: 'Essence' },
               ).then((done: EvolveResult | undefined) => {
                 if (done === undefined) return;
                 setCurrent(loaded(done.state));
                 setNotice(
-                  `${creatureName(creature)} evolved into ${speciesName(done.species)}!${done.firstOnServer ? ' First on server!' : ''}`,
+                  `${creatureName(creature)} evolved into ${speciesName(done.species)}!${done.firstOnServer ? ' First on server!' : ''}${done.unequipped > 0 ? ' A Charm for its old role went back to the bag.' : ''}`,
                 );
               });
             }}

@@ -1,0 +1,23 @@
+[
+  {
+    "route": "POST /api/creatures/:id/evolve",
+    "status": 409,
+    "body": {
+      "error": "level_too_low"
+    }
+  },
+  {
+    "route": "POST /api/creatures/:id/evolve",
+    "status": 409,
+    "body": {
+      "error": "not_a_branch"
+    }
+  },
+  {
+    "route": "POST /api/creatures/:id/evolve",
+    "status": 409,
+    "body": {
+      "error": "not_evolvable"
+    }
+  }
+]

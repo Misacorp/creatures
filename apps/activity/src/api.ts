@@ -326,7 +326,17 @@ export interface Creature extends CreatureGearFields {
   ribbon: RibbonView | null;
   /** Bait a treat costs for this creature now (3 + half its level, rounded up). */
   treatCost: number;
-  evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
+  /**
+   * The evolution it could reach. `alt` is the second form of a line that grows two ways (the choice is
+   * permanent); both cost the same.
+   */
+  evolution?: {
+    toSpecies: string;
+    level: number;
+    essence: number;
+    available: boolean;
+    alt?: { toSpecies: string };
+  };
   /** The creature's finale ability; null for a species without one. */
   ability: CreatureAbility | null;
   /** What it has earned as an explorer (rank, XP and trips). */
@@ -529,7 +539,9 @@ function isCreature(value: unknown): value is Creature {
         isStr(evolution['toSpecies']) &&
         isInt(evolution['level']) &&
         isInt(evolution['essence']) &&
-        typeof evolution['available'] === 'boolean'))
+        typeof evolution['available'] === 'boolean' &&
+        (evolution['alt'] === undefined ||
+          (isRecord(evolution['alt']) && isStr(evolution['alt']['toSpecies'])))))
   );
 }
 
@@ -667,22 +679,34 @@ export interface EvolveResult {
   /** The species the creature evolved into. */
   species: string;
   firstOnServer: boolean;
+  /** How many worn items came off because the new form cannot wear them (a Charm for the old role). */
+  unequipped: number;
   state: GameState;
 }
 
-/** Evolves a creature for Essence. The idempotency key makes a retry return the same result. */
+/**
+ * Evolves a creature for Essence into `species` (one of its forms; the choice is permanent). The
+ * idempotency key makes a retry return the same result, so a key belongs to one creature and one form.
+ */
 export async function evolveCreature(
   creatureId: string,
+  species: string,
   idempotencyKey: string,
 ): Promise<EvolveResult> {
   const data = await apiFetch(
     `/api/creatures/${creatureId}/evolve`,
-    jsonRequest('POST', { idempotencyKey }),
+    jsonRequest('POST', { species, idempotencyKey }),
   );
   if (!isRecord(data) || !isStr(data['species']) || typeof data['firstOnServer'] !== 'boolean') {
     throw new Error('the server returned an unexpected evolve result');
   }
-  return { species: data['species'], firstOnServer: data['firstOnServer'], state: stateFrom(data) };
+  return {
+    species: data['species'],
+    firstOnServer: data['firstOnServer'],
+    // An older server sends none.
+    unequipped: isInt(data['unequipped']) ? data['unequipped'] : 0,
+    state: stateFrom(data),
+  };
 }
 
 /** Makes this creature the one that lounges in the living room. Answers the new lounger's id. */

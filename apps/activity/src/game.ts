@@ -80,10 +80,14 @@ export function creatureAbilityText(
   let teaser: string | null = null;
   if (ability.nextId !== undefined) {
     const next = abilityById(ability.nextId)?.name ?? ability.nextId;
+    const evolution = creature.evolution;
     teaser =
-      creature.evolution === undefined
+      evolution === undefined
         ? `Evolves into: ${next}`
-        : `Evolves into: ${speciesName(creature.evolution.toSpecies)} (${next})`;
+        : evolution.alt === undefined
+          ? `Evolves into: ${speciesName(evolution.toSpecies)} (${next})`
+          : // Two forms, each with its own ability: the screen that chooses shows them.
+            `Evolves into: ${speciesName(evolution.toSpecies)} or ${speciesName(evolution.alt.toSpecies)}`;
   }
   if (!ability.unlocked) {
     return {
@@ -105,11 +109,17 @@ export function evolutionText(
   evolution: NonNullable<Creature['evolution']>,
   essence: number,
 ): { available: boolean; label: string } {
-  const target = speciesName(evolution.toSpecies);
+  const target =
+    evolution.alt === undefined
+      ? speciesName(evolution.toSpecies)
+      : `${speciesName(evolution.toSpecies)} or ${speciesName(evolution.alt.toSpecies)}`;
   if (evolution.available) {
     return {
       available: true,
-      label: `Evolve into ${target} (${String(evolution.essence)} Essence)`,
+      label:
+        evolution.alt === undefined
+          ? `Evolve into ${target} (${String(evolution.essence)} Essence)`
+          : `Choose an evolution (${String(evolution.essence)} Essence)`,
     };
   }
   const needs: string[] = [];
@@ -164,6 +174,7 @@ const ERROR_TEXT: Record<string, string> = {
   // Evolution.
   not_evolvable: 'That creature cannot evolve.',
   level_too_low: 'That creature is not high enough level to evolve yet.',
+  not_a_branch: 'That creature cannot grow into that form.',
   // The raid.
   locked: 'The raid is locked. Changes are closed for this week.',
   slot_taken: 'Someone else already has that slot.',

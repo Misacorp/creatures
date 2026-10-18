@@ -362,6 +362,33 @@ describe('parseGameState with a real server response (fixtures/collection-state.
   });
 });
 
+describe('parseGameState and a line that grows two ways', () => {
+  it('reads the second form of Sproutle from the real response, and none for a single-form line', () => {
+    const state = parseGameState(collectionState);
+    const sproutle = state.creatures.find((c) => c.species === 'sproutle');
+    expect(sproutle?.evolution).toMatchObject({
+      toSpecies: 'thornbuck',
+      alt: { toSpecies: 'sunfawn' },
+    });
+    const cindle = state.creatures.find((c) => c.species === 'cindle');
+    expect(cindle?.evolution?.alt).toBeUndefined();
+  });
+
+  it('refuses a second form of the wrong shape', () => {
+    const base = collectionState as unknown as { creatures: Record<string, unknown>[] };
+    const sproutle = base.creatures.find((c) => c['species'] === 'sproutle');
+    const evolution = sproutle?.['evolution'] as Record<string, unknown>;
+    for (const alt of [{ toSpecies: 7 }, 'sunfawn', null, {}]) {
+      expect(() =>
+        parseGameState({
+          ...collectionState,
+          creatures: [{ ...sproutle, evolution: { ...evolution, alt } }],
+        }),
+      ).toThrow();
+    }
+  });
+});
+
 describe('parseGameState and the server firsts', () => {
   it('has no jackpot record, and a server first never marks a creature that was not caught', () => {
     const state = parseGameState(collectionState);
