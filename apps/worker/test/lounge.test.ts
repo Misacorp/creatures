@@ -270,6 +270,27 @@ describe('the lounge message: the core', () => {
     });
   });
 
+  it('creates its tables where another branch already took migration 33 (shared staging)', async () => {
+    await withLounge(async (ctx, fake) => {
+      ctx.sql.exec('DROP TABLE lounge_instances');
+      ctx.sql.exec('DROP TABLE lounge_message');
+      ctx.core.migrate();
+      await start(ctx, fake);
+      expect(ctx.sql.exec('SELECT 1 FROM lounge_instances').toArray()).toHaveLength(1);
+      // Running it again changes nothing.
+      ctx.core.migrate();
+      expect(readLounge(ctx.sql).nextCheckAt).toBe(ctx.clock.t + 15 * SECOND);
+    });
+  });
+
+  it('never stops a login when the lounge cannot record', async () => {
+    await withLounge(async (ctx, fake) => {
+      ctx.sql.exec('DROP TABLE lounge_instances');
+      await expect(start(ctx, fake)).resolves.toBeUndefined();
+      expect(ctx.sql.exec('SELECT 1 FROM sessions').toArray()).toHaveLength(1);
+    });
+  });
+
   it('posts one silent message, and nothing before the check is due', async () => {
     await withLounge(async (ctx, fake) => {
       await start(ctx, fake);

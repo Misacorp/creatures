@@ -786,6 +786,10 @@ export class GuildCore {
         this.sql.exec('INSERT INTO schema_version (version) VALUES (?)', version);
       });
     }
+    // The lounge tables, even where another branch's migration 33 ran first (staging; see lounge.ts).
+    this.storage.transactionSync(() => {
+      loungeMigration(this.sql);
+    });
     // Rows of an earlier shape of gear v2 (staging ran one before its migration 27 was edited in place) are
     // brought to today's shape first, so nothing below or in a view meets an item it cannot read.
     normaliseGearRows(this.storage);
@@ -864,10 +868,15 @@ export class GuildCore {
         user.id,
         MAX_SESSIONS_PER_USER,
       );
-      if (this.options.lounge != null && typeof instanceId === 'string') {
-        recordInstance(this.sql, instanceId, user.id, t);
-      }
     });
+    if (this.options.lounge != null && typeof instanceId === 'string') {
+      // Its own transaction: the lounge message must never stop a login.
+      try {
+        this.storage.transactionSync(() => recordInstance(this.sql, instanceId, user.id, t));
+      } catch (err) {
+        console.error('lounge record failed', err instanceof Error ? err.name : 'unknown');
+      }
+    }
     await this.ensureAlarm();
     return secret;
   }

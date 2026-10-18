@@ -32,8 +32,13 @@ export function isInstanceId(id: string): boolean {
   return INSTANCE_ID_RE.test(id);
 }
 
+/**
+ * Migration 33. Idempotent: `migrate()` also runs it after the versioned migrations, because staging is
+ * shared between branches and a database another branch moved to version 33 would otherwise never get
+ * these tables.
+ */
 export function loungeMigration(sql: SqlStorage): void {
-  sql.exec(`CREATE TABLE lounge_instances (
+  sql.exec(`CREATE TABLE IF NOT EXISTS lounge_instances (
     instance_id TEXT PRIMARY KEY,
     user_ids TEXT NOT NULL,
     first_seen_at INTEGER NOT NULL,
@@ -42,7 +47,7 @@ export function loungeMigration(sql: SqlStorage): void {
   // One row. `content` is the last rendered text with its button label (to skip no-op edits);
   // `next_check_at` is NULL when no check is scheduled; `check_buried` is set when a session has started
   // since the last sync; `blocked_until` pauses message work after a 403.
-  sql.exec(`CREATE TABLE lounge_message (
+  sql.exec(`CREATE TABLE IF NOT EXISTS lounge_message (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     channel_id TEXT,
     message_id TEXT,
@@ -54,7 +59,7 @@ export function loungeMigration(sql: SqlStorage): void {
     failures INTEGER NOT NULL DEFAULT 0,
     check_buried INTEGER NOT NULL DEFAULT 0
   )`);
-  sql.exec('INSERT INTO lounge_message (id) VALUES (1)');
+  sql.exec('INSERT OR IGNORE INTO lounge_message (id) VALUES (1)');
 }
 
 export interface LoungeState {
