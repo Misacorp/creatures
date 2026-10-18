@@ -119,6 +119,51 @@ Or the player **heads home**: the run ends there and keeps the whole pack.
   - Market Day: +1 scrap for each fight cleared, as today.
 - **The streak, the first-day retry and treats** are unchanged. Any finished run, home included, counts for the streak. The first-day retry opens only after a **defeat** in the player's first run.
 
+## The Undercroft (a deeper, optional level)
+
+Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean more experience and loot), but by the player's choice, so the daily run never gets too long for anyone who does not want it. The deeper area must say it is harder, and a rare roll can open yet another one. The expeditions already say "deeper area", so this is the **Undercroft**.
+
+- **Unlocked** after the first landmark, from depth 8 (`RULES.dungeon.undercroft.fromDepth`).
+- **The descent.** When the room boss falls, the run is cleared: depth +1 is locked in, and the boss chest opens.
+  - The chest's gear and supply are banked at once.
+  - Its Bait, Essence and scrap go into the pack.
+  - Then the player chooses: **head home** with everything, or **descend into the Undercroft**.
+  - On the way down, standing creatures catch their breath (`catchBreathBp`, 20% of max HP).
+- **It is harder, and says so.** Undercroft foes are scaled as if the depth were higher (`depthBonus`, +3), and the map, the drawer and the room banner say "Undercroft · foes are fiercer here".
+- **Its length grows with landmarks:**
+  - 2 floors, plus 1 for every landmark passed after the first, at most 5 (`baseFloors`, `perLandmark`, `maxFloors`).
+  - Then a floor with the **Undercroft keeper**: a room boss at the Undercroft's depth, with its landmark signature.
+  - Each floor has 2 rooms.
+  - Its map is drawn with live randomness when the player descends (it is the player's own, not the server's), and it is stored with the run.
+- **Carved doors add rooms.** From depth 8, the main map may hold one **carved door** on floor 4 or 5, at most one per map. It is a room with no fight.
+  - Stepping in offers three marks, and each adds one floor to the Undercroft before its keeper, up to `maxFloors + 2`:
+    - **an epic fight**: one fierce foe at boss strength, paying Essence 1, scrap 2 and a keepsake;
+    - **a camp**: rest, swap or a keepsake, and the only place in the Undercroft to head home;
+    - **an unknown room**: rolled like any other.
+  - A mark costs nothing. It only counts if the player descends.
+- **Loot.**
+  - Undercroft fights put twice their usual loot into the pack.
+  - Every fight there pays experience as usual.
+  - The keeper's **Undercroft chest** is better: Essence 1, scrap 2, and a 40% gear chance with better rare and epic odds and +2 item level.
+  - There is no extra depth: depth moves only by the main boss.
+- **Risk.** The pack, now holding the boss chest's currencies, stays at risk all the way down:
+  - A defeat keeps half of it, rounded up.
+  - Heading home is only possible from an Undercroft camp, or before descending.
+  - A run left open in the Undercroft closes as a defeat unless it rests at a camp.
+- **A cracked floor (rare).** When an Undercroft map is drawn, 15% of the time (`crackBp`) its keeper's room shows a **cracked floor**. Beating that keeper offers another descent, into a deeper Undercroft:
+  - its foes are fiercer again (+3 more depth);
+  - it has 2 floors and its own keeper and chest;
+  - there are at most 3 Undercrofts in a run.
+- **Client.**
+  - After the boss, a descent card: what is banked, what stays at risk, "foes are fiercer", and two buttons.
+  - The Undercroft map continues above the main map's boss, in a darker palette with a band labelled "Undercroft · harder".
+  - A carved door is a card with three marks.
+  - The results show how deep the run went ("Undercroft 1 cleared").
+- **Simulator.**
+  - The policy descends when the team is healthy (average HP over 60% after catching breath and nobody knocked out), and takes the camp mark when it can.
+  - The targets must still hold, and the experience and gear targets are watched closely.
+  - The numbers above are starting values for the tuning.
+
 ## Server (authoritative)
 
 - **Migration 32:**
