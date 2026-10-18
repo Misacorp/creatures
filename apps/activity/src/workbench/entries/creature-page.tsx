@@ -1,4 +1,4 @@
-import { content } from '@creatures/game';
+import { content, type ItemLine } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature } from '../../api';
 import { CreatureCard } from '../../CreatureCard';
@@ -7,7 +7,7 @@ import { ItemPickerDrawer } from '../../creature-page/ItemPicker';
 import { sampleCreature } from '../../creature-card-sample';
 import { PageHeader } from '../../creature-page/PageHeader';
 import { GearSlots, TalentSlots } from '../../creature-page/PageSlots';
-import { wornFromBag } from '../../creature-page/bag-sample';
+import { sampleItem, wornFromBag } from '../../creature-page/bag-sample';
 import {
   PAGE_SAMPLE_ID,
   SCENE_KINDS,
@@ -19,7 +19,7 @@ import {
 import type { GearActions } from '../../gear-actions';
 import { ItemFrame, ItemSprite } from '../../GearArt';
 import { LootList } from '../../GearLoot';
-import type { GearItem, GrantLoot } from '../../gear-types';
+import type { GearItem, GearState, GrantLoot } from '../../gear-types';
 import { InventoryGrid } from '../../InventoryGrid';
 import { ItemDetail } from '../../ItemDetail';
 import { bool, str } from '../props';
@@ -50,6 +50,8 @@ interface SceneDef {
   pick?: string;
   /** `compare`: the Compare switch starts off (default on). */
   compareOff?: boolean;
+  /** `compare`: a long Epic against a long worn Epic (many lines, changed, new and lost), to show the card scroll. */
+  long?: boolean;
   open?: PageOpen;
   /** The gear view has not loaded yet. */
   loading?: boolean;
@@ -145,12 +147,21 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   {
     id: 'K6',
-    label: 'K6 · Compare switched off (the plain card)',
+    label: 'K6 · Compare off (the default: the plain card)',
     kind: 'level 15',
     show: 'compare',
     open: { kind: 'gear', slot: 'hat' },
     pick: 'bag-hat-14',
     compareOff: true,
+  },
+  {
+    id: 'K7',
+    label: 'K7 · Compare: a long Epic (the card scrolls, the actions stay)',
+    kind: 'level 15',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'hat' },
+    pick: 'bag-hat-02',
+    long: true,
   },
   { id: 'T1', label: 'T1 · Talent slots', kind: 'talents: golden and locked', show: 'talents' },
   {
@@ -340,9 +351,58 @@ function LivePage({ def, kind, bait }: { def: SceneDef; kind: SceneKind; bait: n
   );
 }
 
+/**
+ * K7: the worn Hat and the picked one are both Epics with six rolled lines and the local Attack line, with
+ * different lines, so the card has changed, new and lost lines (ten or more rows) and has to scroll.
+ */
+function longEpics(gear: GearState): GearState {
+  const lines = (rolled: readonly ItemLine[], localTier: number): ItemLine[] => [
+    ...rolled,
+    { id: 'attack-local-pct', tier: localTier },
+  ];
+  const worn = lines(
+    [
+      { id: 'ember-hunter', tier: 3 },
+      { id: 'first-pounce', tier: 2 },
+      { id: 'crit-chance', tier: 3 },
+      { id: 'ember-reaction', tier: 2 },
+      { id: 'attack', tier: 1 },
+      { id: 'strike', tier: 2 },
+    ],
+    1,
+  );
+  const next = lines(
+    [
+      { id: 'first-pounce', tier: 4 },
+      { id: 'crit-damage', tier: 2 },
+      { id: 'tide-hunter', tier: 2 },
+      { id: 'ember-reaction', tier: 4 },
+      { id: 'hp', tier: 3 },
+      { id: 'marked-foe', tier: 2 },
+    ],
+    3,
+  );
+  const swap = (id: string, rolled: ItemLine[], equippedOn: string | null): GearItem => ({
+    ...sampleItem(id, 'emberkeepers-crown', 'epic', 15, rolled),
+    equippedOn,
+  });
+  return {
+    ...gear,
+    items: gear.items.map((item) =>
+      item.id === 'bag-hat-01'
+        ? swap(item.id, worn, item.equippedOn)
+        : item.id === 'bag-hat-02'
+          ? swap(item.id, next, null)
+          : item,
+    ),
+  };
+}
+
 /** The item picker with one item picked: the compare block above Equip says what wearing it would change. */
 function CompareScene({ def }: { def: SceneDef }) {
-  const { creature, state, gear } = pageScene(def.kind);
+  const scene = pageScene(def.kind);
+  const { creature, state } = scene;
+  const gear = def.long === true ? longEpics(scene.gear) : scene.gear;
   const slot = def.open?.kind === 'gear' ? def.open.slot : 'hat';
   return (
     <div class="v3-phone">

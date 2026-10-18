@@ -3,7 +3,6 @@ import type { Creature, GameState } from './api';
 import { CreaturePage, startingDrawer, type CardActions } from './CreaturePage';
 import { SAMPLE_STATE } from './creature-card-sample';
 import { cardDomId, type PageFocus } from './creature-card-view';
-import { CompareBlock } from './creature-page/CompareBlock';
 import { pageScene, type SceneKind } from './creature-page/sample';
 import {
   byClass,
@@ -423,56 +422,6 @@ describe('the creature page: the item picker drawer', () => {
     const call: unknown[] = (actions.onEquip as ReturnType<typeof vi.fn>).mock.calls[0] ?? [];
     expect(String(call[0])).toContain('bag-charm');
     expect(call[1]).toBe(creature.id);
-  });
-
-  it('shows what Equip would change right above the Equip button, with the sign in the words', () => {
-    const { root, page: p } = draw('level 15');
-    p.click(slotButton(root, /^Hat: /));
-    const dialog = first(byRole(root, 'dialog'));
-    p.click(first(byName(dialog, 'button', /^Kelp Cap, item level 2/)));
-    const row = first(byClass(dialog, 'ip-equip'));
-    // The changes come first, then the button, in one row under the item card.
-    const kids = (row.childNodes as FakeElement[]).map(
-      (k) => k.getAttribute('class') ?? k.localName,
-    );
-    expect(kids).toEqual(['ip-equip-change', 'ip-act primary']);
-    const lines = find(first(byClass(row, 'ip-compare')), (e) => e.localName === 'li');
-    expect(lines.length).toBeGreaterThan(1);
-    for (const line of lines) {
-      expect(line.getAttribute('class')).toBe('down');
-      // The words on screen carry a real minus; a screen reader gets "minus" instead and not the symbol twice.
-      expect(visibleText(first(byClass(line, 'visually-hidden')))).toMatch(/ minus \d+/);
-      expect(line.textContent).toContain('\u2212');
-    }
-    expect(visibleText(row)).toMatch(/^HP \u2212\d+/);
-    expect(first(byClass(row, 'ip-compare')).getAttribute('aria-label')).toBe(
-      'Equipping it changes',
-    );
-  });
-
-  it('shows the set a swap completes, and nothing for the worn item or one that cannot be worn', () => {
-    const set = draw('set: two pieces');
-    set.page.click(slotButton(set.root, /^Charm: /));
-    const dialog = first(byRole(set.root, 'dialog'));
-    set.page.click(first(byName(dialog, 'button', /^Forge-Warm Token, item level 12/)));
-    expect(visibleText(first(byClass(dialog, 'ip-equip')))).toContain(
-      'Forge-Warm Kit 3 / 3: both bonuses',
-    );
-    page?.unmount();
-    const plain = draw('level 15');
-    plain.page.click(slotButton(plain.root, /^Hat: /));
-    const hats = first(byRole(plain.root, 'dialog'));
-    // The worn item (selected first) has Take off and no compare block; an unwearable one has its reason.
-    expect(byClass(hats, 'ip-equip')).toHaveLength(0);
-    plain.page.click(first(byName(hats, 'button', /^Thundercap, item level 16/)));
-    expect(byClass(hats, 'ip-equip')).toHaveLength(0);
-    expect(byClass(hats, 'ip-compare')).toHaveLength(0);
-  });
-
-  it('says "No stat change" when the swap changes nothing', () => {
-    page = createPage();
-    page.draw(<CompareBlock compare={{ stats: [], sets: [] }} />);
-    expect(visibleText(page.root)).toBe('No stat change');
   });
 
   it('keeps the drawer open when the server refuses', async () => {

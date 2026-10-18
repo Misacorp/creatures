@@ -11,7 +11,6 @@ export * from './abilities';
 export * from './progression';
 export * from './gear';
 export * from './gear-position';
-export * from './gear-compare';
 export * from './talents';
 export * from './duplicates';
 export * from './dungeon';

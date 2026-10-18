@@ -7,11 +7,9 @@ import { ItemCard } from '../ItemCard';
 import { Drawer } from '../ui/Drawer';
 import { flipOver } from '../ui/flip-logic';
 import { FlipArea } from '../ui/Flipper';
-import { CompareBlock } from './CompareBlock';
 import { diffItems } from './compare-diff';
 import { loadCompareOn, saveCompareOn } from './compare-pref';
 import { CompareSwitch } from './CompareSwitch';
-import { compareItem } from './compare-view';
 import { compactReason, firstPick, pickerChoices } from './picker-view';
 
 export interface ItemPickerProps {
@@ -91,7 +89,6 @@ function ItemCell({
 function DetailPanel({
   cell,
   creature,
-  bag,
   wornItem,
   compareOn,
   onCompareChange,
@@ -101,8 +98,6 @@ function DetailPanel({
 }: {
   cell: Cell;
   creature: Creature;
-  /** The gear view's items (the worn ones are looked up in it for the compare block). */
-  bag: readonly GearItem[];
   /** The item worn in this slot, to compare with; undefined when the slot is empty. */
   wornItem: GearItem | undefined;
   compareOn: boolean;
@@ -112,61 +107,38 @@ function DetailPanel({
   onTakeOff: (item: GearItem) => void;
 }) {
   const { item, worn, wornBy, blocked } = cell;
-  const wearable = !worn && blocked === null;
   // Nothing to compare when the slot is empty or the item is the worn one: no switch then.
   const comparable = !worn && wornItem !== undefined;
   const comparing = comparable && compareOn;
-  // What Equip changes for the creature follows the switch; with an empty slot there is no switch and it shows.
-  const compare =
-    wearable && (comparing || wornItem === undefined) ? compareItem(creature, item, bag) : null;
   return (
     <section class="ip-detail" aria-label="Selected item">
-      {comparable && (
-        <div class="ip-compare-switch">
-          <CompareSwitch on={compareOn} onChange={onCompareChange} />
-        </div>
-      )}
-      <ItemCard
-        item={item}
-        plainRarity
-        spriteScale={4}
-        wornInSet={setPiecesWith(item, creature.gear)}
-        {...(comparing ? { diff: diffItems(item, wornItem) } : {})}
-        {...(wornBy === null ? {} : { note: <p class="ip-on">On {wornBy}</p> })}
-        aside={
-          worn ? (
-            <button
-              type="button"
-              class="ip-act"
-              disabled={busy}
-              onClick={() => {
-                onTakeOff(item);
-              }}
-            >
-              Take off
-            </button>
-          ) : blocked !== null ? (
-            <span class="ip-reason">{blocked}</span>
-          ) : compare === null ? (
-            // Nothing to say about the swap (the switch is off, or the numbers are missing): Equip is where it always was.
-            <button
-              type="button"
-              class="ip-act primary"
-              disabled={busy}
-              onClick={() => {
-                onEquip(item);
-              }}
-            >
-              Equip
-            </button>
-          ) : undefined
-        }
-      />
-      {wearable && compare !== null && (
-        <div class="ip-equip">
-          <div class="ip-equip-change">
-            <CompareBlock compare={compare} />
-          </div>
+      {/* The card scrolls inside its own box (a long Epic with its lost lines is tall); the actions below stay put. */}
+      <div class="ip-detail-scroll" role="group" aria-label="Item details" tabIndex={0}>
+        <ItemCard
+          item={item}
+          plainRarity
+          spriteScale={4}
+          wornInSet={setPiecesWith(item, creature.gear)}
+          {...(comparing ? { diff: diffItems(item, wornItem) } : {})}
+          {...(wornBy === null ? {} : { note: <p class="ip-on">On {wornBy}</p> })}
+        />
+      </div>
+      <div class="ip-actions">
+        {comparable && <CompareSwitch on={compareOn} onChange={onCompareChange} />}
+        {worn ? (
+          <button
+            type="button"
+            class="ip-act"
+            disabled={busy}
+            onClick={() => {
+              onTakeOff(item);
+            }}
+          >
+            Take off
+          </button>
+        ) : blocked !== null ? (
+          <span class="ip-reason">{blocked}</span>
+        ) : (
           <button
             type="button"
             class="ip-act primary"
@@ -177,8 +149,8 @@ function DetailPanel({
           >
             Equip
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
@@ -253,7 +225,6 @@ export function ItemPickerDrawer({
             <DetailPanel
               cell={selected}
               creature={creature}
-              bag={items ?? []}
               wornItem={worn}
               compareOn={compareOn}
               onCompareChange={(on) => {

@@ -1,18 +1,18 @@
 /**
  * Whether the item picker compares: one setting per viewer, kept in the browser's storage (a convenience: where
  * storage is missing or blocked, which can happen inside Discord, the picker still works and starts with
- * the compare on). On by default.
+ * the compare off). Off by default; a viewer who switches it on keeps it on.
  */
 
 /** Where the setting is kept. */
 export const COMPARE_KEY = 'creatures:picker-compare';
 
-/** The stored setting; true unless the viewer switched it off. */
+/** The stored setting; false unless the viewer switched it on. */
 export function loadCompareOn(): boolean {
   try {
-    return typeof localStorage === 'undefined' ? true : localStorage.getItem(COMPARE_KEY) !== '0';
+    return typeof localStorage === 'undefined' ? false : localStorage.getItem(COMPARE_KEY) === '1';
   } catch {
-    return true;
+    return false;
   }
 }
 

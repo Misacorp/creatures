@@ -23,7 +23,9 @@ const stored = new Map<string, string>();
 let page: Page | null = null;
 
 beforeEach(() => {
+  // The viewer has switched the compare on, unless a test says otherwise.
   stored.clear();
+  stored.set(COMPARE_KEY, '1');
   Object.defineProperty(globalThis, 'localStorage', {
     configurable: true,
     value: {
@@ -127,60 +129,54 @@ describe('the inline compare on the picker card', () => {
 });
 
 describe('the Compare switch', () => {
-  it('is a real switch, on by default, labelled Compare', () => {
+  it('is a real switch labelled Compare, off by default', () => {
+    stored.clear();
     const p = draw('level 15', 'hat', KELP);
     const toggle = sw(p);
     expect(toggle?.localName).toBe('button');
-    expect(toggle?.getAttribute('aria-checked')).toBe('true');
+    expect(toggle?.getAttribute('aria-checked')).toBe('false');
     expect(visibleText(first(byClass(toggle as FakeElement, 'ip-switch-label')))).toBe('Compare');
-  });
-
-  it('switched off gives the plain card and no compare row, and remembers it', () => {
-    const p = draw('level 15', 'hat', KELP);
-    p.click(sw(p) as FakeElement);
-    expect(sw(p)?.getAttribute('aria-checked')).toBe('false');
+    // Off is the plain card.
     expect(byClass(detail(p), 'cmp-delta')).toHaveLength(0);
     expect(byClass(detail(p), 'cmp-new')).toHaveLength(0);
     expect(byClass(detail(p), 'cmp-gone')).toHaveLength(0);
-    expect(byClass(detail(p), 'ip-compare')).toHaveLength(0);
-    // Equip stays.
-    expect(byName(detail(p), 'button', 'Equip')).toHaveLength(1);
-    expect(stored.get(COMPARE_KEY)).toBe('0');
+  });
+
+  it('switched on shows the inline changes and remembers it; switched off goes back and remembers that', () => {
+    stored.clear();
+    const p = draw('level 15', 'hat', KELP);
     p.click(sw(p) as FakeElement);
     expect(sw(p)?.getAttribute('aria-checked')).toBe('true');
     expect(byClass(detail(p), 'cmp-delta').length).toBeGreaterThan(0);
     expect(stored.get(COMPARE_KEY)).toBe('1');
-  });
-
-  it('starts off when the viewer switched it off before', () => {
-    stored.set(COMPARE_KEY, '0');
-    const p = draw('level 15', 'hat', KELP);
+    p.click(sw(p) as FakeElement);
     expect(sw(p)?.getAttribute('aria-checked')).toBe('false');
     expect(byClass(detail(p), 'cmp-delta')).toHaveLength(0);
+    expect(stored.get(COMPARE_KEY)).toBe('0');
   });
 
-  it('is hidden for the worn item', () => {
+  it('starts on for a viewer who switched it on before', () => {
+    const p = draw('level 15', 'hat', KELP);
+    expect(sw(p)?.getAttribute('aria-checked')).toBe('true');
+    expect(byClass(detail(p), 'cmp-delta').length).toBeGreaterThan(0);
+  });
+
+  it('is hidden for the worn item, which has Take off at the bottom right', () => {
     const p = draw('level 15', 'hat');
-    expect(byName(detail(p), 'button', 'Take off')).toHaveLength(1);
     expect(sw(p)).toBeUndefined();
+    const row = first(byClass(detail(p), 'ip-actions'));
+    expect(byName(row, 'button', 'Take off')).toHaveLength(1);
     expect(byClass(detail(p), 'cmp-delta')).toHaveLength(0);
   });
 
-  it('is hidden when the slot is empty, where the stats gained still show beside Equip', () => {
+  it('is hidden when the slot is empty, and Equip stays at the bottom right', () => {
     const p = draw('level 8', 'hat', 'bag-hat-11');
     expect(sw(p)).toBeUndefined();
     expect(byClass(detail(p), 'cmp-delta')).toHaveLength(0);
-    expect(byClass(detail(p), 'ip-compare')).toHaveLength(1);
+    expect(byName(first(byClass(detail(p), 'ip-actions')), 'button', 'Equip')).toHaveLength(1);
   });
 
-  it('keeps the creature row beside Equip only while it is on', () => {
-    const p = draw('level 15', 'hat', KELP);
-    expect(byClass(detail(p), 'ip-compare')).toHaveLength(1);
-    p.click(sw(p) as FakeElement);
-    expect(byClass(detail(p), 'ip-compare')).toHaveLength(0);
-  });
-
-  it('still works when storage is blocked: on at first, and it toggles for the session', () => {
+  it('still works when storage is blocked: off at first, and it toggles for the session', () => {
     Object.defineProperty(globalThis, 'localStorage', {
       configurable: true,
       get: () => {
@@ -188,10 +184,10 @@ describe('the Compare switch', () => {
       },
     });
     const p = draw('level 15', 'hat', KELP);
-    expect(sw(p)?.getAttribute('aria-checked')).toBe('true');
-    p.click(sw(p) as FakeElement);
     expect(sw(p)?.getAttribute('aria-checked')).toBe('false');
-    expect(byClass(detail(p), 'cmp-delta')).toHaveLength(0);
+    p.click(sw(p) as FakeElement);
+    expect(sw(p)?.getAttribute('aria-checked')).toBe('true');
+    expect(byClass(detail(p), 'cmp-delta').length).toBeGreaterThan(0);
   });
 
   it('still works when reading or writing the setting throws', () => {
@@ -203,23 +199,40 @@ describe('the Compare switch', () => {
       value: { getItem: blocked, setItem: blocked },
     });
     const p = draw('level 15', 'hat', KELP);
-    expect(sw(p)?.getAttribute('aria-checked')).toBe('true');
+    expect(sw(p)?.getAttribute('aria-checked')).toBe('false');
     p.click(sw(p) as FakeElement);
+    expect(sw(p)?.getAttribute('aria-checked')).toBe('true');
+  });
+});
+
+describe('the bottom row of the detail panel', () => {
+  it('has the switch at the left and Equip at the right, in that order, for a wearable item', () => {
+    const p = draw('level 15', 'hat', KELP);
+    const row = first(byClass(detail(p), 'ip-actions'));
+    const kids = (row.childNodes as FakeElement[]).map(
+      (k) => k.getAttribute('role') ?? k.getAttribute('class') ?? k.localName,
+    );
+    expect(kids).toEqual(['switch', 'ip-act primary']);
+    // Nothing of the old box beside Equip, and no Equip in the corner of the card.
+    expect(byClass(detail(p), 'ip-equip')).toHaveLength(0);
+    expect(byClass(detail(p), 'ip-compare')).toHaveLength(0);
+    expect(byClass(detail(p), 'idc-aside')).toHaveLength(0);
+  });
+
+  it('keeps Equip in the same place with the switch off', () => {
+    stored.set(COMPARE_KEY, '0');
+    const p = draw('level 15', 'hat', KELP);
+    const row = first(byClass(detail(p), 'ip-actions'));
+    expect(byName(row, 'button', 'Equip')).toHaveLength(1);
     expect(sw(p)?.getAttribute('aria-checked')).toBe('false');
   });
 
-  it('puts Equip back in the corner of the card, with no row of its own, when the switch is off', () => {
-    stored.set(COMPARE_KEY, '0');
-    const p = draw('level 15', 'hat', KELP);
-    expect(byClass(detail(p), 'ip-equip')).toHaveLength(0);
-    const aside = first(byClass(detail(p), 'idc-aside'));
-    expect(byName(aside, 'button', 'Equip')).toHaveLength(1);
-  });
-
-  it('puts Equip in the row beside the changes while it is on', () => {
-    const p = draw('level 15', 'hat', KELP);
-    expect(byClass(detail(p), 'idc-aside')).toHaveLength(0);
-    expect(byName(first(byClass(detail(p), 'ip-equip')), 'button', 'Equip')).toHaveLength(1);
+  it('shows the reason an item cannot be worn instead of Equip, with the switch still there', () => {
+    const p = draw('level 15', 'hat', 'bag-hat-16');
+    const row = first(byClass(detail(p), 'ip-actions'));
+    expect(byName(row, 'button', 'Equip')).toHaveLength(0);
+    expect(visibleText(first(byClass(row, 'ip-reason')))).toBe('Needs Lv 16');
+    expect(sw(p)).toBeDefined();
   });
 });
 
@@ -231,7 +244,7 @@ describe('the delta marks', () => {
       visibleText(first(find(m, (e) => e.getAttribute('aria-hidden') === 'true'))),
     );
     expect(texts.length).toBeGreaterThan(1);
-    expect(texts.every((t) => /^\(\u25B2\d+(\.\d+)?( pt)?\)$/.test(t))).toBe(true);
+    expect(texts.every((t) => /^\(▲\d+(\.\d+)?( pt)?\)$/.test(t))).toBe(true);
     // The card's own local bonus ("+16") is still its own element, with no brackets.
     expect(byClass(stats, 'idc-stat-bonus').every((b) => !visibleText(b).includes('('))).toBe(true);
   });
@@ -242,5 +255,33 @@ describe('the delta marks', () => {
       visibleText(first(byClass(m, 'visually-hidden'))),
     );
     expect(spoken.every((t) => /^plus [\d.]+( pt)?, better$/.test(t))).toBe(true);
+  });
+});
+
+describe('the detail panel scrolls inside itself', () => {
+  it('has a scroll container for the card, with the action row outside it', () => {
+    const p = draw('level 15', 'hat', KELP);
+    const panel = detail(p);
+    const scroll = first(byClass(panel, 'ip-detail-scroll'));
+    // The card (with its lines and lost lines) is inside the scrolling box; the actions are not.
+    expect(byClass(scroll, 'idc')).toHaveLength(1);
+    expect(byClass(scroll, 'ip-actions')).toHaveLength(0);
+    expect(byName(scroll, 'button', 'Equip')).toHaveLength(0);
+    expect(find(scroll, (e) => e.getAttribute('role') === 'switch')).toHaveLength(0);
+    const row = first(byClass(panel, 'ip-actions'));
+    expect(row.parentNode).toBe(panel);
+    expect(scroll.parentNode).toBe(panel);
+    // Keyboard users can reach it to scroll.
+    expect(scroll.getAttribute('tabindex')).toBe('0');
+  });
+
+  it('keeps the actions outside the scroll for the worn item and an unwearable one too', () => {
+    for (const picked of [undefined, 'bag-hat-16']) {
+      const p = draw('level 15', 'hat', picked);
+      const scroll = first(byClass(detail(p), 'ip-detail-scroll'));
+      expect(byClass(scroll, 'ip-reason')).toHaveLength(0);
+      expect(byName(scroll, 'button', 'Take off')).toHaveLength(0);
+      expect(byClass(detail(p), 'ip-actions')).toHaveLength(1);
+    }
   });
 });
