@@ -317,7 +317,8 @@ describe('the dungeon targets', () => {
       expect(out.evaluation.find((t) => t.id === id)?.status, id).not.toBe('not_measured');
     }
     expect(out.analysis.dungeon.winRates.casual).toHaveLength(24);
-  });
+    // A full nine-week run, like the ones in run.test.ts: it gets the same long limit.
+  }, 300_000);
 
   it('has foes and modifiers for the rooms the model plays', () => {
     expect(dungeonContent.foes.length).toBeGreaterThanOrEqual(RULES.dungeon.rooms);

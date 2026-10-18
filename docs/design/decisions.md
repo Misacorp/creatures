@@ -1903,3 +1903,7 @@ Misa expected square item cells. The picker grid (`.ip-cell`) and the Workshop b
 ## 2026-10-18: One item grid
 
 Misa did not want two item grids. The item picker's look won (lead's call, Misa asked which): the rarity is the tile's single edge (the bag drew a dark tile and a framed image inside it, two edges, against the "one border" rule of 2026-10-17), the art fills the square, a gold "Worn" flag sits at the top right, and the selected tile is lit with a light edge. `ItemTile.tsx` is the one tile and `.item-grid` the one grid (`styles/components/item-tile.css`); the picker and the Workshop bag (`InventoryGrid`) both use them. A selected tile scrolls itself into view. The bag's own styles (`views/inventory.css`) are gone.
+
+## 2026-10-18: Keeping the gear fold fast
+
+PR #35's CI timed out on a nine-week sim run (`dungeon.test.ts`, 120 s): part 2 had made that run about 27% slower (32 s to 41 s locally). The profile put it in `wornEffects`, which every fold and every Equip best candidate runs: capping 19 possible sheet fields read each one off a mostly empty object (one fold went from 0.65 to 1.15 µs). The cap now walks only the fields the sheet holds, and the set fold skips counting when no worn item belongs to a set; one fold is 0.72 µs again and the run is about 13% over main (the rest is the new fight work). The nine-week test got the 300 s limit the other full runs (`run.test.ts`, `cli.test.ts`) already have. Nothing the fold returns changed; the legacy digest is untouched.

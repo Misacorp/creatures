@@ -735,6 +735,8 @@ function foldSets(
   out: WornEffects,
   apply: (line: GearLine, value: number, talentId: string | null, record: boolean) => void,
 ): void {
+  // Most creatures wear no set piece: skip the counting (it runs for every fold in the sim's Equip best).
+  if (!items.some((item) => gearBase(item.baseId)?.set !== undefined)) return;
   for (const [id, count] of setCounts(items)) {
     const set = gearSet(id);
     if (set === undefined || count < 2) continue;
@@ -784,6 +786,21 @@ function setEffect(three: GearSet['three'], wearer: Wearer, out: WornEffects): v
       break;
   }
 }
+
+/** The sheet fields capped at 100% (10000 bp) after the fold; one list, built once. */
+const CAPPED_AT_WHOLE = [
+  'pierceBp',
+  'takenBp',
+  'areaBp',
+  'aimedBp',
+  'reflectedBp',
+  'chargedBp',
+  ...CHANCE_FIELDS,
+  'stormWarningBp',
+  'lastStandBp',
+  'secondBreathBp',
+] as const;
+const CAPPED_SET: ReadonlySet<string> = new Set(CAPPED_AT_WHOLE);
 
 /**
  * Everything a creature's worn items give, summed. Lines that do nothing for the wearer (a Guard's
@@ -957,26 +974,12 @@ export function wornEffects(
     }
   }
   // Keep within what the engine's sheet accepts.
-  for (const field of [
-    'pierceBp',
-    'takenBp',
-    'areaBp',
-    'aimedBp',
-    'reflectedBp',
-    'chargedBp',
-  ] as const) {
-    const value = sheet[field];
-    if (value !== undefined) sheet[field] = Math.min(10_000, value);
-  }
-  // A chance never passes 100% (two items can carry the same line), nor a cut 100%.
-  for (const field of [
-    ...CHANCE_FIELDS,
-    'stormWarningBp',
-    'lastStandBp',
-    'secondBreathBp',
-  ] as const) {
-    const value = sheet[field];
-    if (value !== undefined) sheet[field] = Math.min(10_000, value);
+  // A reduction stays below 100%, a chance never passes 100% (two items can carry the same line), nor a cut.
+  // (Walks the few fields the sheet holds, not the whole list: this runs for every fold.)
+  for (const field of Object.keys(sheet) as (keyof GearMods)[]) {
+    if (!CAPPED_SET.has(field)) continue;
+    const value = sheet[field] as number;
+    (sheet as Record<string, number>)[field] = Math.min(10_000, value);
   }
   out.rules.tinkersLuckBp = Math.min(10_000, out.rules.tinkersLuckBp);
   out.rules.secondLookBp = Math.min(10_000, out.rules.secondLookBp);
