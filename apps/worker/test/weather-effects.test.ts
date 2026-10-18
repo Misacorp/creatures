@@ -713,6 +713,69 @@ describe('the dungeon under the weather', () => {
     );
   });
 
+  it("says what changed each creature's dungeon experience: the treat and the day, by name", async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        ctx.clock.t = AFTERNOON;
+        const p = await dungeonPlayer(ctx, 1);
+        ctx.core.credit({
+          userId: p.id,
+          currency: 'bait',
+          amount: 300,
+          source: 'test',
+          idempotencyKey: 'bait-xp-note',
+        });
+        sky(ctx, 'hearty-breakfast', 'cold-snap');
+        const [a] = p.creatureIds as [string];
+        const res = await p.run({ treats: [a] });
+        const exp = res.body.run.rewards.experience ?? [];
+        const dayEffects = [
+          { name: 'Hearty Breakfast', bp: 2_500 },
+          { name: 'Cold Snap', bp: -2_000 },
+        ];
+        // The treat triples on this day; the others have no treat. Both see the day's two effects.
+        expect(exp.find((e) => e.creatureId === a)).toMatchObject({
+          treat: true,
+          treatTimes: 3,
+          dayEffects,
+        });
+        const others = exp.filter((e) => e.creatureId !== a);
+        expect(others).toHaveLength(2);
+        for (const e of others)
+          expect(e).toMatchObject({ treat: false, treatTimes: null, dayEffects });
+      },
+      { weather: true },
+    );
+  });
+
+  it('a plain day with a treat says it doubled, and names no day', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        ctx.clock.t = AFTERNOON;
+        const p = await dungeonPlayer(ctx, 1);
+        ctx.core.credit({
+          userId: p.id,
+          currency: 'bait',
+          amount: 300,
+          source: 'test',
+          idempotencyKey: 'bait-xp-plain',
+        });
+        sky(ctx, 'quiet-night');
+        const [a] = p.creatureIds as [string];
+        const exp = (await p.run({ treats: [a] })).body.run.rewards.experience ?? [];
+        expect(exp.find((e) => e.creatureId === a)).toMatchObject({
+          treat: true,
+          treatTimes: 2,
+          dayEffects: [],
+        });
+        expect(exp.filter((e) => e.treatTimes === null)).toHaveLength(2);
+      },
+      { weather: true },
+    );
+  });
+
   it('a run replays as it was fought, whatever the weather is later', async () => {
     await runCore(
       nextGuild(),
