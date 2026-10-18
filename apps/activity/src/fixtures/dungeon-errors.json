@@ -1,15 +1,93 @@
 [
-  { "route": "POST /api/dungeon/run", "status": 409, "body": { "error": "already_run" } },
-  { "route": "PUT /api/dungeon/team", "status": 400, "body": { "error": "invalid_body" } },
-  { "route": "POST /api/dungeon/run", "status": 409, "body": { "error": "key_conflict" } },
-  { "route": "POST /api/dungeon/run", "status": 400, "body": { "error": "duplicate_creature" } },
-  { "route": "POST /api/dungeon/run", "status": 400, "body": { "error": "invalid_body" } },
-  { "route": "POST /api/dungeon/run", "status": 404, "body": { "error": "not_found" } },
-  { "route": "POST /api/dungeon/run", "status": 400, "body": { "error": "invalid_body" } },
-  { "route": "POST /api/dungeon/run", "status": 400, "body": { "error": "invalid_body" } },
-  { "route": "GET /api/dungeon/run/:id", "status": 404, "body": { "error": "not_found" } },
-  { "route": "GET /api/dungeon/run/not-a-uuid", "status": 400, "body": { "error": "invalid_id" } },
-  { "route": "POST /api/dungeon/run", "status": 400, "body": { "error": "invalid_body" } },
-  { "route": "POST /api/dungeon/run", "status": 409, "body": { "error": "already_run" } },
-  { "route": "POST /api/dungeon/run", "status": 400, "body": { "error": "invalid_body" } }
+  {
+    "route": "POST /api/dungeon/run",
+    "status": 409,
+    "body": {
+      "error": "already_run"
+    }
+  },
+  {
+    "route": "PUT /api/dungeon/team",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
+    "route": "POST /api/dungeon/run",
+    "status": 409,
+    "body": {
+      "error": "key_conflict"
+    }
+  },
+  {
+    "route": "POST /api/dungeon/run",
+    "status": 400,
+    "body": {
+      "error": "duplicate_creature"
+    }
+  },
+  {
+    "route": "POST /api/dungeon/run",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
+    "route": "POST /api/dungeon/run",
+    "status": 404,
+    "body": {
+      "error": "not_found"
+    }
+  },
+  {
+    "route": "POST /api/dungeon/run",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
+    "route": "POST /api/dungeon/run",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
+    "route": "GET /api/dungeon/run/:id",
+    "status": 404,
+    "body": {
+      "error": "not_found"
+    }
+  },
+  {
+    "route": "GET /api/dungeon/run/not-a-uuid",
+    "status": 400,
+    "body": {
+      "error": "invalid_id"
+    }
+  },
+  {
+    "route": "POST /api/dungeon/run",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
+    "route": "POST /api/dungeon/run",
+    "status": 409,
+    "body": {
+      "error": "already_run"
+    }
+  },
+  {
+    "route": "POST /api/dungeon/run",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  }
 ]

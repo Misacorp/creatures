@@ -1,10 +1,10 @@
 {
   "result": {
     "kind": "dismantle",
-    "creatureId": "32621523-b521-47e9-8f3d-faccb12a7aea",
+    "creatureId": "8b67f283-fdbc-4f81-985b-3673a45b070e",
     "items": [
       {
-        "id": "2226b699-5d95-45ff-b03f-79218c276f13",
+        "id": "e42b975f-0d5b-4277-9e68-ba66812f9d65",
         "baseId": "festival-hearth-scarf",
         "rarity": "epic",
         "itemLevel": 6

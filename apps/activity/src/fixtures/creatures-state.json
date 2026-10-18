@@ -1,11 +1,14 @@
 {
   "serverNow": 1799762400000,
-  "balances": { "bait": 100, "essence": 0 },
+  "balances": {
+    "bait": 100,
+    "essence": 0
+  },
   "starterChosen": false,
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "d745af61-ac5a-4579-a429-7595c1e017f5",
+      "id": "21380e7a-f0fc-42bd-a609-51825d758d9e",
       "species": "cindle",
       "line": "cindle",
       "level": 8,
@@ -33,7 +36,12 @@
               "idle": false
             }
           },
-          { "slot": 2, "opensAt": 20, "open": false, "talent": null }
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
         ],
         "signature": null,
         "book": [
@@ -48,8 +56,16 @@
           }
         ]
       },
-      "stats": { "hp": 145, "atk": 61, "spd": 42 },
-      "statsWithGear": { "hp": 145, "atk": 61, "spd": 42 },
+      "stats": {
+        "hp": 145,
+        "atk": 61,
+        "spd": 42
+      },
+      "statsWithGear": {
+        "hp": 145,
+        "atk": 61,
+        "spd": 42
+      },
       "gear": [],
       "busy": null,
       "ability": {
@@ -58,18 +74,31 @@
         "unlockLevel": 10,
         "nextId": "flare-strike-2"
       },
-      "explorer": { "rank": 1, "xp": 16, "nextRankXp": 200, "trips": 4 },
+      "explorer": {
+        "rank": 1,
+        "xp": 16,
+        "nextRankXp": 200,
+        "trips": 4
+      },
       "exp": 80,
       "expNeeded": 328,
       "waiting": false,
       "ribbons": 0,
-      "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+      "nextUnlock": {
+        "level": 10,
+        "name": "Bronze Ribbon"
+      },
       "ribbon": null,
       "treatCost": 7,
-      "evolution": { "toSpecies": "pyrelynx", "level": 15, "essence": 20, "available": false }
+      "evolution": {
+        "toSpecies": "pyrelynx",
+        "level": 15,
+        "essence": 20,
+        "available": false
+      }
     },
     {
-      "id": "3b882ba7-ef44-472f-a9cf-8c0fd8d70da5",
+      "id": "2258fec5-80ad-4eb2-9112-77e785eb19b4",
       "species": "splashet",
       "line": "splashet",
       "level": 8,
@@ -97,7 +126,12 @@
               "idle": false
             }
           },
-          { "slot": 2, "opensAt": 20, "open": false, "talent": null }
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
         ],
         "signature": null,
         "book": [
@@ -112,8 +146,16 @@
           }
         ]
       },
-      "stats": { "hp": 168, "atk": 42, "spd": 46 },
-      "statsWithGear": { "hp": 168, "atk": 42, "spd": 46 },
+      "stats": {
+        "hp": 168,
+        "atk": 42,
+        "spd": 46
+      },
+      "statsWithGear": {
+        "hp": 168,
+        "atk": 42,
+        "spd": 46
+      },
       "gear": [],
       "busy": null,
       "ability": {
@@ -122,18 +164,31 @@
         "unlockLevel": 10,
         "nextId": "tidal-mark-2"
       },
-      "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+      "explorer": {
+        "rank": 1,
+        "xp": 0,
+        "nextRankXp": 200,
+        "trips": 0
+      },
       "exp": 0,
       "expNeeded": 328,
       "waiting": false,
       "ribbons": 0,
-      "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+      "nextUnlock": {
+        "level": 10,
+        "name": "Bronze Ribbon"
+      },
       "ribbon": null,
       "treatCost": 7,
-      "evolution": { "toSpecies": "tidewing", "level": 15, "essence": 20, "available": false }
+      "evolution": {
+        "toSpecies": "tidewing",
+        "level": 15,
+        "essence": 20,
+        "available": false
+      }
     },
     {
-      "id": "ee180c2e-86da-4dc4-b714-6fcaedbcf4cc",
+      "id": "6aeefe15-2257-416f-83dc-20624dfb9486",
       "species": "sproutle",
       "line": "sproutle",
       "level": 8,
@@ -161,7 +216,12 @@
               "idle": false
             }
           },
-          { "slot": 2, "opensAt": 20, "open": false, "talent": null }
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
         ],
         "signature": null,
         "book": [
@@ -176,8 +236,16 @@
           }
         ]
       },
-      "stats": { "hp": 237, "atk": 29, "spd": 23 },
-      "statsWithGear": { "hp": 237, "atk": 29, "spd": 23 },
+      "stats": {
+        "hp": 237,
+        "atk": 29,
+        "spd": 23
+      },
+      "statsWithGear": {
+        "hp": 237,
+        "atk": 29,
+        "spd": 23
+      },
       "gear": [],
       "busy": null,
       "ability": {
@@ -186,20 +254,36 @@
         "unlockLevel": 10,
         "nextId": "bark-guard-2"
       },
-      "explorer": { "rank": 1, "xp": 0, "nextRankXp": 200, "trips": 0 },
+      "explorer": {
+        "rank": 1,
+        "xp": 0,
+        "nextRankXp": 200,
+        "trips": 0
+      },
       "exp": 0,
       "expNeeded": 328,
       "waiting": false,
       "ribbons": 0,
-      "nextUnlock": { "level": 10, "name": "Bronze Ribbon" },
+      "nextUnlock": {
+        "level": 10,
+        "name": "Bronze Ribbon"
+      },
       "ribbon": null,
       "treatCost": 7,
-      "evolution": { "toSpecies": "thornbuck", "level": 15, "essence": 20, "available": false }
+      "evolution": {
+        "toSpecies": "thornbuck",
+        "level": 15,
+        "essence": 20,
+        "available": false,
+        "alt": {
+          "toSpecies": "sunfawn"
+        }
+      }
     }
   ],
   "pending": [
     {
-      "id": "dacc7593-8cc1-4e3c-8036-5b359c9a34c1",
+      "id": "19330cfb-4ec6-4a7a-a150-8c697c321473",
       "species": "splashet",
       "line": "splashet",
       "shiny": false,
@@ -214,16 +298,21 @@
         "idle": false
       },
       "offered": {
-        "teach": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
-        "fuse": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
+        "teach": ["2258fec5-80ad-4eb2-9112-77e785eb19b4"],
+        "fuse": ["2258fec5-80ad-4eb2-9112-77e785eb19b4"],
         "release": true,
         "keep": false
       },
-      "releases": { "scrap": 3 },
-      "recommended": { "choice": "teach", "creatureId": "3b882ba7-ef44-472f-a9cf-8c0fd8d70da5" }
+      "releases": {
+        "scrap": 3
+      },
+      "recommended": {
+        "choice": "teach",
+        "creatureId": "2258fec5-80ad-4eb2-9112-77e785eb19b4"
+      }
     },
     {
-      "id": "b380c121-2666-44db-a42a-d6df1b7c17a7",
+      "id": "cb7072d6-7991-495d-91f9-c178543a7e43",
       "species": "splashet",
       "line": "splashet",
       "shiny": false,
@@ -238,16 +327,21 @@
         "idle": false
       },
       "offered": {
-        "teach": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
-        "fuse": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
+        "teach": ["2258fec5-80ad-4eb2-9112-77e785eb19b4"],
+        "fuse": ["2258fec5-80ad-4eb2-9112-77e785eb19b4"],
         "release": true,
         "keep": false
       },
-      "releases": { "scrap": 3 },
-      "recommended": { "choice": "teach", "creatureId": "3b882ba7-ef44-472f-a9cf-8c0fd8d70da5" }
+      "releases": {
+        "scrap": 3
+      },
+      "recommended": {
+        "choice": "teach",
+        "creatureId": "2258fec5-80ad-4eb2-9112-77e785eb19b4"
+      }
     },
     {
-      "id": "65daa282-d653-414c-b544-3c10edaefd9b",
+      "id": "bfc19e44-d840-417a-afd0-643dff8f126f",
       "species": "splashet",
       "line": "splashet",
       "shiny": false,
@@ -257,21 +351,26 @@
         "id": "puddle-hopper",
         "name": "Puddle Hopper",
         "golden": false,
-        "text": "Area ward \u22127%",
+        "text": "Area ward −7%",
         "about": "Area hits do less damage to the wearer.",
         "idle": false
       },
       "offered": {
-        "teach": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
-        "fuse": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
+        "teach": ["2258fec5-80ad-4eb2-9112-77e785eb19b4"],
+        "fuse": ["2258fec5-80ad-4eb2-9112-77e785eb19b4"],
         "release": true,
         "keep": false
       },
-      "releases": { "scrap": 3 },
-      "recommended": { "choice": "fuse", "creatureId": "3b882ba7-ef44-472f-a9cf-8c0fd8d70da5" }
+      "releases": {
+        "scrap": 3
+      },
+      "recommended": {
+        "choice": "fuse",
+        "creatureId": "2258fec5-80ad-4eb2-9112-77e785eb19b4"
+      }
     },
     {
-      "id": "6553d751-d270-4d5b-9deb-75beedb5022b",
+      "id": "628627b9-a014-4282-a44e-348238c5260b",
       "species": "splashet",
       "line": "splashet",
       "shiny": false,
@@ -287,19 +386,24 @@
       },
       "offered": {
         "teach": [],
-        "fuse": ["3b882ba7-ef44-472f-a9cf-8c0fd8d70da5"],
+        "fuse": ["2258fec5-80ad-4eb2-9112-77e785eb19b4"],
         "release": true,
         "keep": false
       },
-      "releases": { "scrap": 3 },
-      "recommended": { "choice": "fuse", "creatureId": "3b882ba7-ef44-472f-a9cf-8c0fd8d70da5" }
+      "releases": {
+        "scrap": 3
+      },
+      "recommended": {
+        "choice": "fuse",
+        "creatureId": "2258fec5-80ad-4eb2-9112-77e785eb19b4"
+      }
     }
   ],
   "bookSlotBait": 10,
   "expeditions": [
     {
-      "id": "ab6d56b9-447e-4dd5-878c-2e9a096f7498",
-      "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
+      "id": "5725948b-aadb-4467-9382-be7c3a60d697",
+      "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
@@ -321,7 +425,7 @@
             "shiny": false,
             "firstOnServer": false,
             "outcome": "duplicate",
-            "pendingId": "6553d751-d270-4d5b-9deb-75beedb5022b",
+            "pendingId": "628627b9-a014-4282-a44e-348238c5260b",
             "talent": {
               "id": "splashes-first",
               "name": "Splashes First",
@@ -332,10 +436,20 @@
             }
           }
         ],
-        "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] },
-        "xp": { "gained": 4, "total": 16, "rank": 1, "rankBefore": 1 },
+        "loot": {
+          "gear": [],
+          "converted": [],
+          "parts": {},
+          "blueprints": []
+        },
+        "xp": {
+          "gained": 4,
+          "total": 16,
+          "rank": 1,
+          "rankBefore": 1
+        },
         "experience": {
-          "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
+          "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
           "gained": 20,
           "treat": false,
           "levelBefore": 8,
@@ -345,14 +459,18 @@
           "waiting": false,
           "gold": false
         },
-        "familiarity": { "stars": 1, "starsBefore": 0, "trips": 4 }
+        "familiarity": {
+          "stars": 1,
+          "starsBefore": 0,
+          "trips": 4
+        }
       },
       "offer": null,
       "pushOn": null
     },
     {
-      "id": "6444d600-4c27-48fb-8990-84eb2b215fd4",
-      "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
+      "id": "dba401db-7874-4284-91cd-144ccf22c20f",
+      "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
@@ -374,21 +492,31 @@
             "shiny": false,
             "firstOnServer": false,
             "outcome": "duplicate",
-            "pendingId": "65daa282-d653-414c-b544-3c10edaefd9b",
+            "pendingId": "bfc19e44-d840-417a-afd0-643dff8f126f",
             "talent": {
               "id": "puddle-hopper",
               "name": "Puddle Hopper",
               "golden": false,
-              "text": "Area ward \u22127%",
+              "text": "Area ward −7%",
               "about": "Area hits do less damage to the wearer.",
               "idle": false
             }
           }
         ],
-        "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] },
-        "xp": { "gained": 4, "total": 12, "rank": 1, "rankBefore": 1 },
+        "loot": {
+          "gear": [],
+          "converted": [],
+          "parts": {},
+          "blueprints": []
+        },
+        "xp": {
+          "gained": 4,
+          "total": 12,
+          "rank": 1,
+          "rankBefore": 1
+        },
         "experience": {
-          "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
+          "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
           "gained": 20,
           "treat": false,
           "levelBefore": 8,
@@ -398,15 +526,21 @@
           "waiting": false,
           "gold": false
         },
-        "slotUnlocked": { "total": 2 },
-        "familiarity": { "stars": 0, "starsBefore": 0, "trips": 3 }
+        "slotUnlocked": {
+          "total": 2
+        },
+        "familiarity": {
+          "stars": 0,
+          "starsBefore": 0,
+          "trips": 3
+        }
       },
       "offer": null,
       "pushOn": null
     },
     {
-      "id": "55d34129-c60e-4f4b-8c72-ecf9af01ee79",
-      "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
+      "id": "dc083d7d-e42e-4762-bc44-da226dffa64c",
+      "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
@@ -428,7 +562,7 @@
             "shiny": false,
             "firstOnServer": false,
             "outcome": "duplicate",
-            "pendingId": "b380c121-2666-44db-a42a-d6df1b7c17a7",
+            "pendingId": "cb7072d6-7991-495d-91f9-c178543a7e43",
             "talent": {
               "id": "bigger-splash",
               "name": "Bigger Splash",
@@ -439,10 +573,20 @@
             }
           }
         ],
-        "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] },
-        "xp": { "gained": 4, "total": 8, "rank": 1, "rankBefore": 1 },
+        "loot": {
+          "gear": [],
+          "converted": [],
+          "parts": {},
+          "blueprints": []
+        },
+        "xp": {
+          "gained": 4,
+          "total": 8,
+          "rank": 1,
+          "rankBefore": 1
+        },
         "experience": {
-          "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
+          "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
           "gained": 20,
           "treat": false,
           "levelBefore": 8,
@@ -452,14 +596,18 @@
           "waiting": false,
           "gold": false
         },
-        "familiarity": { "stars": 0, "starsBefore": 0, "trips": 2 }
+        "familiarity": {
+          "stars": 0,
+          "starsBefore": 0,
+          "trips": 2
+        }
       },
       "offer": null,
       "pushOn": null
     },
     {
-      "id": "b6c12d85-1085-459e-b886-c8dee12d644f",
-      "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
+      "id": "8e10774b-ed94-441a-a9c6-95af46619b8d",
+      "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
@@ -481,7 +629,7 @@
             "shiny": false,
             "firstOnServer": true,
             "outcome": "duplicate",
-            "pendingId": "dacc7593-8cc1-4e3c-8036-5b359c9a34c1",
+            "pendingId": "19330cfb-4ec6-4a7a-a150-8c697c321473",
             "talent": {
               "id": "wet-footprints",
               "name": "Wet Footprints",
@@ -492,10 +640,20 @@
             }
           }
         ],
-        "loot": { "gear": [], "converted": [], "parts": {}, "blueprints": [] },
-        "xp": { "gained": 4, "total": 4, "rank": 1, "rankBefore": 1 },
+        "loot": {
+          "gear": [],
+          "converted": [],
+          "parts": {},
+          "blueprints": []
+        },
+        "xp": {
+          "gained": 4,
+          "total": 4,
+          "rank": 1,
+          "rankBefore": 1
+        },
         "experience": {
-          "creatureId": "d745af61-ac5a-4579-a429-7595c1e017f5",
+          "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
           "gained": 20,
           "treat": false,
           "levelBefore": 8,
@@ -505,7 +663,11 @@
           "waiting": false,
           "gold": false
         },
-        "familiarity": { "stars": 0, "starsBefore": 0, "trips": 1 }
+        "familiarity": {
+          "stars": 0,
+          "starsBefore": 0,
+          "trips": 1
+        }
       },
       "offer": null,
       "pushOn": null
@@ -518,7 +680,10 @@
     "used": 0,
     "rankSum": 0,
     "tripsFinished": 4,
-    "next": { "kind": "rank_sum", "at": 26 }
+    "next": {
+      "kind": "rank_sum",
+      "at": 26
+    }
   },
   "supplies": {},
   "serverFirsts": [
@@ -530,7 +695,7 @@
       "holders": ["Player 4"]
     }
   ],
-  "loungerId": "ee180c2e-86da-4dc4-b714-6fcaedbcf4cc",
+  "loungerId": "6aeefe15-2257-416f-83dc-20624dfb9486",
   "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {
@@ -540,5 +705,9 @@
     "lastError": "disabled",
     "lastDays": null
   },
-  "attention": { "dungeon": true, "raid": true, "recheckAt": 1799840220000 }
+  "attention": {
+    "dungeon": true,
+    "raid": true,
+    "recheckAt": 1799840220000
+  }
 }

@@ -184,32 +184,6 @@
     "flavor": "A sturdy stag with branching thorned antlers that shelter its herd."
   },
   {
-    "id": "sunfawn",
-    "name": "Sunfawn",
-    "line": "sproutle",
-    "stage": 2,
-    "element": "grove",
-    "rarity": "common",
-    "role": "support",
-    "catchable": false,
-    "starter": false,
-    "baseStats": {
-      "hp": 179,
-      "atk": 34,
-      "spd": 39
-    },
-    "growth": {
-      "hp": 12,
-      "atk": 2,
-      "spd": 3
-    },
-    "levelCap": 30,
-    "ability": {
-      "id": "sunny-patch"
-    },
-    "flavor": "A gentle fawn whose leaf ears have opened into blossoms."
-  },
-  {
     "id": "zipmouse",
     "name": "Zipmouse",
     "line": "zipmouse",
@@ -270,32 +244,6 @@
       "id": "static-zap-2"
     },
     "flavor": "A fast and fearless runner that leaves a trail of bright sparks."
-  },
-  {
-    "id": "ohmouse",
-    "name": "Ohmouse",
-    "line": "zipmouse",
-    "stage": 2,
-    "element": "spark",
-    "rarity": "common",
-    "role": "guard",
-    "catchable": false,
-    "starter": false,
-    "baseStats": {
-      "hp": 224,
-      "atk": 34,
-      "spd": 22
-    },
-    "growth": {
-      "hp": 15,
-      "atk": 2,
-      "spd": 2
-    },
-    "levelCap": 30,
-    "ability": {
-      "id": "static-wall"
-    },
-    "flavor": "A round, puffed-up mouse whose giant ears catch stray bolts."
   },
   {
     "id": "mistnewt",
@@ -690,5 +638,57 @@
       "id": "hearth-ward"
     },
     "flavor": "A tortoise that carries a small bonfire on its shell, and shows up when a festival starts."
+  },
+  {
+    "id": "sunfawn",
+    "name": "Sunfawn",
+    "line": "sproutle",
+    "stage": 2,
+    "element": "grove",
+    "rarity": "common",
+    "role": "support",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 179,
+      "atk": 34,
+      "spd": 39
+    },
+    "growth": {
+      "hp": 12,
+      "atk": 2,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "sunny-patch"
+    },
+    "flavor": "A gentle fawn whose leaf ears have opened into blossoms."
+  },
+  {
+    "id": "ohmouse",
+    "name": "Ohmouse",
+    "line": "zipmouse",
+    "stage": 2,
+    "element": "spark",
+    "rarity": "common",
+    "role": "guard",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 224,
+      "atk": 34,
+      "spd": 22
+    },
+    "growth": {
+      "hp": 15,
+      "atk": 2,
+      "spd": 2
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "static-wall"
+    },
+    "flavor": "A round, puffed-up mouse whose giant ears catch stray bolts."
   }
 ]

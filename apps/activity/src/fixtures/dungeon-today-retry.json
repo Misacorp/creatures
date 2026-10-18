@@ -32,7 +32,7 @@
   "canRun": true,
   "blocked": null,
   "last": {
-    "id": "2bdb690c-86ee-4144-ab30-4a6b6cb8ce93",
+    "id": "5f7c3f78-0280-4ae4-a43a-db4d8be6762e",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 45,
@@ -44,7 +44,7 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "3421798c-785c-4fb8-8d6b-035ce4056f7c",
+        "id": "1c39991d-1e30-4123-83f3-29b7c2e35fee",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
@@ -54,7 +54,7 @@
         "hpEnd": 0
       },
       {
-        "id": "6cf9a2f3-81a5-4b6e-8858-0fd272897fff",
+        "id": "0feb423e-c8f4-4409-825b-fce8dce5a801",
         "name": "Ashmole",
         "speciesId": "ashmole",
         "element": "ember",
@@ -64,7 +64,7 @@
         "hpEnd": 0
       },
       {
-        "id": "1355c06f-96b2-4a77-93d7-7711d772acd0",
+        "id": "a41a1fa7-a454-4944-b877-6f9e6f940d39",
         "name": "Stormray",
         "speciesId": "stormray",
         "element": "spark",
@@ -78,7 +78,12 @@
       {
         "index": 0,
         "kind": "foe",
-        "foe": { "id": "ash-sprite", "name": "Ash Sprite", "element": "ember", "hpMax": 21178 },
+        "foe": {
+          "id": "ash-sprite",
+          "name": "Ash Sprite",
+          "element": "ember",
+          "hpMax": 21178
+        },
         "modifier": {
           "id": "dark",
           "name": "Dark",
@@ -92,7 +97,12 @@
       {
         "index": 1,
         "kind": "foe",
-        "foe": { "id": "ember-mite", "name": "Ember Mite", "element": "ember", "hpMax": 19515 },
+        "foe": {
+          "id": "ember-mite",
+          "name": "Ember Mite",
+          "element": "ember",
+          "hpMax": 19515
+        },
         "modifier": {
           "id": "brittle",
           "name": "Brittle",
@@ -106,7 +116,12 @@
       {
         "index": 2,
         "kind": "boss",
-        "foe": { "id": "slag-tyrant", "name": "Slag Tyrant", "element": "ember", "hpMax": 32236 },
+        "foe": {
+          "id": "slag-tyrant",
+          "name": "Slag Tyrant",
+          "element": "ember",
+          "hpMax": 32236
+        },
         "modifier": {
           "id": "thorns",
           "name": "Thorns",
@@ -129,7 +144,7 @@
       "streak": null,
       "experience": [
         {
-          "creatureId": "3421798c-785c-4fb8-8d6b-035ce4056f7c",
+          "creatureId": "1c39991d-1e30-4123-83f3-29b7c2e35fee",
           "gained": 0,
           "treat": false,
           "levelBefore": 1,
@@ -140,7 +155,7 @@
           "gold": false
         },
         {
-          "creatureId": "6cf9a2f3-81a5-4b6e-8858-0fd272897fff",
+          "creatureId": "0feb423e-c8f4-4409-825b-fce8dce5a801",
           "gained": 0,
           "treat": false,
           "levelBefore": 1,
@@ -151,7 +166,7 @@
           "gold": false
         },
         {
-          "creatureId": "1355c06f-96b2-4a77-93d7-7711d772acd0",
+          "creatureId": "a41a1fa7-a454-4944-b877-6f9e6f940d39",
           "gained": 0,
           "treat": false,
           "levelBefore": 1,
@@ -165,9 +180,9 @@
     }
   },
   "lastTeam": [
-    "3421798c-785c-4fb8-8d6b-035ce4056f7c",
-    "6cf9a2f3-81a5-4b6e-8858-0fd272897fff",
-    "1355c06f-96b2-4a77-93d7-7711d772acd0"
+    "1c39991d-1e30-4123-83f3-29b7c2e35fee",
+    "0feb423e-c8f4-4409-825b-fce8dce5a801",
+    "a41a1fa7-a454-4944-b877-6f9e6f940d39"
   ],
   "draftTeam": null
 }

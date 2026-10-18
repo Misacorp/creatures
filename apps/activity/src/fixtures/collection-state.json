@@ -8,7 +8,7 @@
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "0006079c-6263-4604-b59e-f1a6a00f42de",
+      "id": "ee2fba1c-126e-41fb-89a8-1391732baa7f",
       "species": "cindle",
       "line": "cindle",
       "level": 15,
@@ -51,21 +51,21 @@
       },
       "gear": [
         {
-          "id": "978654ee-5090-4477-a92f-38bff6adbd55",
+          "id": "9bdcbf3d-b734-4536-bc61-67a9ee2fb0a7",
           "baseId": "emberkeepers-crown",
           "slot": "hat",
           "rarity": "epic",
           "itemLevel": 15
         },
         {
-          "id": "e0f699b8-75ab-4aa6-ac9b-abf795fe6a4c",
+          "id": "6d8d7046-3352-4150-a147-5f576f6004b5",
           "baseId": "bark-shawl",
           "slot": "scarf",
           "rarity": "rare",
           "itemLevel": 12
         },
         {
-          "id": "607f3f26-f7cb-484d-b678-14e2a53fee7b",
+          "id": "0aa4a71d-afdb-4602-8da9-e30f836c3edd",
           "baseId": "crossroads-compass",
           "slot": "charm",
           "rarity": "rare",
@@ -74,7 +74,7 @@
       ],
       "busy": {
         "kind": "job",
-        "id": "90dec4ac-6505-4df5-8e89-5498d98ae1a8"
+        "id": "6964a691-49dd-453a-abb3-61ae79f285ee"
       },
       "ability": {
         "id": "flare-strike",
@@ -106,7 +106,7 @@
       }
     },
     {
-      "id": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
+      "id": "eb17882a-2601-4293-ac20-638b5645459c",
       "species": "sproutle",
       "line": "sproutle",
       "level": 14,
@@ -149,14 +149,14 @@
       },
       "gear": [
         {
-          "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
+          "id": "dbc2331d-a433-407b-8903-fd9943a95b43",
           "baseId": "trail-cap",
           "slot": "hat",
           "rarity": "common",
           "itemLevel": 1
         },
         {
-          "id": "b52c5319-8e07-4816-9ac7-b6af0bef96bb",
+          "id": "1f804d8e-ace9-4124-a6d4-2b8d6b8504b7",
           "baseId": "wardens-bell",
           "slot": "charm",
           "rarity": "rare",
@@ -190,11 +190,14 @@
         "toSpecies": "thornbuck",
         "level": 15,
         "essence": 20,
-        "available": false
+        "available": false,
+        "alt": {
+          "toSpecies": "sunfawn"
+        }
       }
     },
     {
-      "id": "32621523-b521-47e9-8f3d-faccb12a7aea",
+      "id": "8b67f283-fdbc-4f81-985b-3673a45b070e",
       "species": "zipmouse",
       "line": "zipmouse",
       "level": 9,
@@ -263,7 +266,10 @@
         "toSpecies": "voltaro",
         "level": 15,
         "essence": 20,
-        "available": false
+        "available": false,
+        "alt": {
+          "toSpecies": "ohmouse"
+        }
       }
     }
   ],
@@ -284,7 +290,7 @@
   },
   "supplies": {},
   "serverFirsts": [],
-  "loungerId": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
+  "loungerId": "8b67f283-fdbc-4f81-985b-3673a45b070e",
   "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {
