@@ -40,9 +40,28 @@ export interface RowSlotView {
     name: string;
     level: number;
     mine: boolean;
-    /** Only present for the caller's own creatures. */
+    /** It joins by itself (nobody placed it): drawn where the fight will put it. */
+    auto: boolean;
+    /** The caller may move or swap it: its owner is away and did not place it themselves. */
+    movable: boolean;
+    /** The teammate who placed it for an away owner (a name, plain text); absent otherwise. */
+    movedBy?: string;
+    /** Only present for the caller's own creatures and the ones the caller may move. */
     creatureId?: string;
   };
+}
+
+/** A party member who has not opened the game this week, with everything they own (for a swap). */
+export interface AwayView {
+  ownerName: string;
+  creatures: {
+    creatureId: string;
+    species: string;
+    name: string;
+    level: number;
+    /** It is in the fight now (a swap brings in one that is not). */
+    joining: boolean;
+  }[];
 }
 
 export interface TeamCreatureView {
@@ -204,6 +223,8 @@ export interface RaidView {
     party: number;
     rowLength: number;
     row: RowSlotView[];
+    /** Away teammates (never the caller); empty once the board is locked. */
+    away: AwayView[];
     guests: boolean;
     bossHp: { max: number; current: number } | null;
     adaptation: { description: string; rule: string | null; target: string | null } | null;
@@ -292,7 +313,27 @@ function isRowSlot(value: unknown): value is RowSlotView {
     isStr(c['name']) &&
     isInt(c['level']) &&
     isBool(c['mine']) &&
+    isBool(c['auto']) &&
+    isBool(c['movable']) &&
+    (c['movedBy'] === undefined || isStr(c['movedBy'])) &&
     (c['creatureId'] === undefined || isStr(c['creatureId']))
+  );
+}
+
+function isAwayView(value: unknown): value is AwayView {
+  return (
+    isRecord(value) &&
+    isStr(value['ownerName']) &&
+    isArrayOf(
+      value['creatures'],
+      (c): c is AwayView['creatures'][number] =>
+        isRecord(c) &&
+        isStr(c['creatureId']) &&
+        isStr(c['species']) &&
+        isStr(c['name']) &&
+        isInt(c['level']) &&
+        isBool(c['joining']),
+    )
   );
 }
 
@@ -461,6 +502,7 @@ function isPartyView(value: unknown): value is NonNullable<RaidView['party']> {
     !isInt(value['party']) ||
     !isInt(value['rowLength']) ||
     !isArrayOf(value['row'], isRowSlot) ||
+    !isArrayOf(value['away'], isAwayView) ||
     !isBool(value['guests']) ||
     !isArrayOf(value['results'], isResult) ||
     !(value['readiness'] === null || isReadiness(value['readiness']))

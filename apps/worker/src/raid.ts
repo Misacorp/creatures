@@ -49,6 +49,7 @@ import { RAID_DIFFICULTY_VERSION } from './raid-difficulty';
 import { queueBossReveal } from './raid-posts';
 import { ReadinessCache } from './raid-readiness';
 import { redeclareWeek, staleOpenWeeks } from './raid-redeclare';
+import { placeForTeammate } from './raid-assist';
 import { buildPhaseInput, resolveParty } from './raid-resolve';
 import { markRevealSeen } from './raid-reveal';
 import { readStats, type AfterActionStats } from './raid-stats';
@@ -495,6 +496,23 @@ export class Raid {
     return this.atomically(() => {
       const { week, party } = this.memberContext(userId, tz);
       this.requireEditable(week);
+      // A creature of a teammate who is away is moved by the assist rules (the owner is read from the
+      // creature, never from the request); any other creature that is not yours is refused.
+      const ownerId = this.sql
+        .exec<{ user_id: string }>('SELECT user_id FROM creatures WHERE id = ?', creatureId)
+        .toArray()[0]?.user_id;
+      if (ownerId !== undefined && ownerId !== userId) {
+        this.readinessCache.invalidate();
+        placeForTeammate(
+          this.sql,
+          { weekId: week.weekId, party, weekStart: this.schedule(week.weekId, tz).weekStart },
+          userId,
+          ownerId,
+          creatureId,
+          slot,
+        );
+        return null;
+      }
       this.requireOwnedCreature(userId, creatureId);
       this.readinessCache.invalidate();
       const length = rowLength(partyMembers(this.sql, week.weekId, party).length);
@@ -626,6 +644,7 @@ export class Raid {
     userId: string,
     creatureId: string,
   ): void {
+    // Placed by the owner: `placed_by` stays NULL.
     this.sql.exec(
       'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, ?, ?, ?, ?)',
       weekId,

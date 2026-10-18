@@ -13,7 +13,6 @@ import {
   type Zone,
 } from '@creatures/engine';
 import { RULES, content, seasonOf, type ReadinessBand } from '@creatures/game';
-import { speciesOf } from './collection';
 import { BASIC_TARGET, loadAutofire } from './raid-autofire';
 import { readFestivalGrant, type FestivalGrantView } from './raid-festival';
 import {
@@ -28,6 +27,8 @@ import {
   abilityFor,
   aliasFor,
   basicKey,
+  buildPartyBoard,
+  type PartyBoard,
   bossFor,
   creatureKey,
   guardRulesOf,
@@ -38,7 +39,9 @@ import {
 import { latestReveal, totalEssenceOf, type RevealView } from './raid-reveal';
 import { partyMembers, partyOf } from './raid-roster';
 import { RAID_PHASES, isWeekId, weekIndex, type RaidEvent, type RaidPhase } from './raid-schedule';
+import { awayMembers } from './raid-assist';
 import {
+  loadCreatures,
   partyPlacements,
   raidTeam,
   rowLength,
@@ -117,9 +120,28 @@ export interface RowSlotView {
     name: string;
     level: number;
     mine: boolean;
-    /** Only for the caller's own creatures. */
+    /** It joins by itself (the fight would place it here), not placed on the board by anyone. */
+    auto: boolean;
+    /** The caller may move or swap it: its owner is away and a teammate (not the owner) put it here or it is auto. */
+    movable: boolean;
+    /** The teammate who placed it for an away owner; absent when the owner placed it (or it is auto). */
+    movedBy?: string;
+    /** Only for the caller's own creatures and the ones the caller may move. */
     creatureId?: string;
   };
+}
+
+/** A party member who has not opened the game this raid week: teammates may move their joining creatures. */
+export interface AwayView {
+  ownerName: string;
+  /** Everything they own (a swap may bring any of them in); `joining` is set for the ones in the fight. */
+  creatures: {
+    creatureId: string;
+    species: string;
+    name: string;
+    level: number;
+    joining: boolean;
+  }[];
 }
 
 export interface PhaseResultView {
@@ -231,6 +253,8 @@ export interface RaidView {
     /** Slots; creatures that are not placed are auto-placed when a phase resolves. */
     row: RowSlotView[];
     guests: boolean;
+    /** Away teammates (never the caller); empty once the board is locked. */
+    away: AwayView[];
     bossHp: { max: number; current: number } | null;
     /** The boss's phase 2 counter-move, once phase 1 has resolved. */
     adaptation: { description: string; rule: string | null; target: string | null } | null;
@@ -248,6 +272,11 @@ const PHASE_ORDER: readonly RaidStatus[] = ['open', 'phase1', 'phase2', 'finale'
 /** The first phase event a week in this status has not run yet (the view's `next`), or undefined. */
 export function nextPendingEvent(status: RaidStatus): RaidPhase | undefined {
   return RAID_PHASES.find((p) => PHASE_ORDER.indexOf(p) > PHASE_ORDER.indexOf(status));
+}
+
+/** The engine alias of a member in a board. */
+function aliasOf(board: PartyBoard, members: readonly string[], userId: string): string {
+  return board.aliases[members.indexOf(userId)] as string;
 }
 
 export function displayNames(sql: SqlStorage): Map<string, string> {
@@ -303,44 +332,65 @@ export function buildRaidView(
   if (myParty !== null) {
     const members = partyIds;
     const length = rowLength(members.length);
-    const creatureInfo = new Map<string, { species: string; name: string; level: number }>();
-    for (const p of placements) {
-      const c = sql
-        .exec<{ species: string; level: number; nickname: string | null }>(
-          'SELECT species, level, nickname FROM creatures WHERE id = ? AND user_id = ?',
-          p.creature_id,
-          p.user_id,
-        )
-        .toArray()[0];
-      if (c !== undefined) {
-        creatureInfo.set(p.creature_id, {
-          species: c.species,
-          name: c.nickname ?? speciesOf(c.species).name,
-          level: c.level,
-        });
+    const board = buildPartyBoard(sql, week.weekId, myParty, members);
+    const editable = week.status !== 'finale';
+    const awayIds = awayMembers(sql, members, schedule.weekStart);
+    const row: RowSlotView[] = board.cells.map((cell, slot) => {
+      const fight = cell.slot;
+      // Guests are not drawn: their slots show as empty, as before.
+      if (fight === null || cell.origin === 'guest') {
+        return { slot, zone: zoneOfIndex(slot, length), creature: null };
       }
-    }
-    const bySlot = new Map(placements.map((p) => [p.slot, p]));
-    const row: RowSlotView[] = [];
-    for (let slot = 0; slot < length; slot++) {
-      const p = bySlot.get(slot);
-      const info = p === undefined ? undefined : creatureInfo.get(p.creature_id);
-      const mine = p?.user_id === userId;
-      row.push({
+      const ownerId = members[board.aliases.indexOf(fight.ownerId as string)] as string;
+      const mine = ownerId === userId;
+      // A teammate may move this tile: its owner is away and did not place it themselves.
+      const movable =
+        editable &&
+        !mine &&
+        awayIds.has(ownerId) &&
+        (cell.origin === 'auto' || cell.placedBy !== null);
+      const movedBy = cell.placedBy !== null && cell.placedBy !== ownerId ? cell.placedBy : null;
+      return {
         slot,
         zone: zoneOfIndex(slot, length),
-        creature:
-          p === undefined || info === undefined
-            ? null
-            : {
-                ownerName: names.get(p.user_id) ?? 'Unknown',
-                species: info.species,
-                name: info.name,
-                level: info.level,
-                mine,
-                ...(mine ? { creatureId: p.creature_id } : {}),
-              },
-      });
+        creature: {
+          ownerName: names.get(ownerId) ?? 'Unknown',
+          species: fight.speciesId,
+          name: fight.name,
+          level: fight.level,
+          mine,
+          auto: cell.origin === 'auto',
+          movable,
+          ...(movedBy === null ? {} : { movedBy: names.get(movedBy) ?? 'Unknown' }),
+          ...(mine || movable ? { creatureId: fight.id } : {}),
+        },
+      };
+    });
+    // Away teammates, with everything they own (for a swap). Nothing once the board is locked.
+    const away: AwayView[] = [];
+    if (editable) {
+      for (const memberId of members) {
+        if (memberId === userId || !awayIds.has(memberId)) continue;
+        const joining = new Set(
+          board.cells.flatMap((c) =>
+            c.slot !== null &&
+            c.origin !== 'guest' &&
+            c.slot.ownerId === aliasOf(board, members, memberId)
+              ? [c.slot.id]
+              : [],
+          ),
+        );
+        away.push({
+          ownerName: names.get(memberId) ?? 'Unknown',
+          creatures: loadCreatures(sql, memberId).map((c) => ({
+            creatureId: c.id,
+            species: c.species.id,
+            name: c.nickname ?? c.species.name,
+            level: c.level,
+            joining: joining.has(c.id),
+          })),
+        });
+      }
     }
     const pool = sql
       .exec<{
@@ -379,6 +429,7 @@ export function buildRaidView(
       party: myParty,
       rowLength: length,
       row,
+      away,
       guests: members.length < 3,
       bossHp:
         pool.hp_max === null || pool.hp_current === null

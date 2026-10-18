@@ -12,6 +12,8 @@ const mine = (id: string, name: string): NonNullable<RowSlotView['creature']> =>
   name,
   level: 3,
   mine: true,
+  auto: false,
+  movable: false,
   creatureId: id,
 });
 const row: RowSlotView[] = [
@@ -20,7 +22,15 @@ const row: RowSlotView[] = [
   {
     slot: 2,
     zone: 'middle',
-    creature: { ownerName: 'Jun', species: 'cindle', name: 'Jay', level: 4, mine: false },
+    creature: {
+      ownerName: 'Jun',
+      species: 'cindle',
+      name: 'Jay',
+      level: 4,
+      mine: false,
+      auto: false,
+      movable: false,
+    },
   },
   { slot: 3, zone: 'middle', creature: mine('b', 'Beta') },
   { slot: 4, zone: 'back', creature: null },
@@ -108,6 +118,71 @@ describe('slotStatuses', () => {
       [2, 'invalid'],
       [3, 'valid'],
       [4, 'valid'],
+    ]);
+  });
+});
+
+describe('resolveDrop with an away teammate’s creatures', () => {
+  const jun = (
+    id: string | undefined,
+    movable: boolean,
+    name: string,
+  ): NonNullable<RowSlotView['creature']> => ({
+    ownerName: 'Jun',
+    species: 'cindle',
+    name,
+    level: 4,
+    mine: false,
+    auto: true,
+    movable,
+    ...(id === undefined ? {} : { creatureId: id }),
+  });
+  const awayRow: RowSlotView[] = [
+    { slot: 0, zone: 'front', creature: jun('j1', true, 'J1') },
+    { slot: 1, zone: 'middle', creature: null },
+    { slot: 2, zone: 'middle', creature: jun('j2', true, 'J2') },
+    { slot: 3, zone: 'middle', creature: jun(undefined, false, 'Own') },
+    { slot: 4, zone: 'back', creature: mine('a', 'Alpha') },
+  ];
+  const awayCtx: TapContext = { locked: false, row: awayRow };
+
+  it('moves a movable creature to an empty slot and swaps it with another of the same teammate’s', () => {
+    expect(resolveDrop(awayCtx, 'j1', 'J1', slot(1))).toMatchObject({
+      status: 'valid',
+      intent: { type: 'place', creatureId: 'j1', slot: 1 },
+    });
+    expect(resolveDrop(awayCtx, 'j1', 'J1', slot(2))).toMatchObject({
+      status: 'valid',
+      intent: { type: 'place', creatureId: 'j1', slot: 2 },
+      announce: 'Swapped J1 with J2.',
+    });
+  });
+
+  it('refuses a creature the teammate placed themselves, and your own tile', () => {
+    expect(resolveDrop(awayCtx, 'j1', 'J1', slot(3))).toMatchObject({
+      status: 'invalid',
+      intent: null,
+    });
+    expect(resolveDrop(awayCtx, 'j1', 'J1', slot(4))).toMatchObject({
+      status: 'invalid',
+      intent: null,
+    });
+    // And yours cannot be dropped on an away teammate's tile.
+    expect(resolveDrop(awayCtx, 'a', 'Alpha', slot(0))).toMatchObject({
+      status: 'invalid',
+      intent: null,
+      hint: 'That slot belongs to Jun.',
+    });
+  });
+
+  it('marks every slot for the carried creature', () => {
+    const statuses = slotStatuses(awayCtx, 'j1', 'J1');
+    expect([...statuses]).toEqual([
+      [0, 'none'],
+      [1, 'valid'],
+      [2, 'valid'],
+      [3, 'invalid'],
+      [4, 'invalid'],
     ]);
   });
 });

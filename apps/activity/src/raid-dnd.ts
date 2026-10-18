@@ -1,10 +1,10 @@
 /**
  * Drag-and-drop rules for the party row. Pure: given what the player dragged (one of their own
- * creatures on the board) and where they let go, say what to do. The server still validates every
+ * creatures on the board, or one of an away teammate's that the view marks movable) and where they let go, say what to do. The server still validates every
  * move. A creature that is not on the board yet is placed through the picker (`roster-picker.ts`),
  * never by a drag.
  */
-import { placeText } from './raid-board';
+import { canSwapWith, placeText } from './raid-board';
 import { slotOfCreature, type Intent, type TapContext } from './raid-slots';
 import {
   CANCEL_ANNOUNCEMENT,
@@ -46,8 +46,11 @@ export function resolveDrop(
   }
   if (target.slot === from) return outcome('none', null, null, `${name} stays where it is.`);
   const occupant = there.creature;
-  if (occupant !== null && !occupant.mine) {
-    const hint = `That slot belongs to ${occupant.ownerName}.`;
+  const carried = ctx.row.find((s) => s.slot === from)?.creature ?? undefined;
+  if (occupant !== null && carried !== undefined && !canSwapWith(carried, occupant)) {
+    const hint = occupant.mine
+      ? 'That one is not yours to move.'
+      : `That slot belongs to ${occupant.ownerName}.`;
     return outcome('invalid', null, hint, hint);
   }
   const intent: Intent = { type: 'place', creatureId, slot: target.slot };

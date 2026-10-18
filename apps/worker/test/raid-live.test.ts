@@ -1743,6 +1743,7 @@ describe('the API contract with the client', () => {
   ];
   const PARTY_KEYS = [
     'adaptation',
+    'away',
     'bossHp',
     'guests',
     'party',
@@ -1907,6 +1908,18 @@ describe('the API contract with the client', () => {
         );
         expect(keys(raidReveal), UPDATE).toEqual(RAID_KEYS);
         expect(keys(raidReveal.party), UPDATE).toEqual(PARTY_KEYS);
+        // A board tile: the same keys, plus `creatureId` (yours, or one you may move) and `movedBy`.
+        const tiles = [
+          ...(raid['party'] as { row: { creature: unknown }[] }).row,
+          ...raidReveal.party.row,
+        ].flatMap((slot) => (slot.creature === null ? [] : [slot.creature]));
+        expect(tiles.length, UPDATE).toBeGreaterThan(0);
+        for (const tile of tiles) {
+          expect(
+            keys(tile).filter((k) => k !== 'creatureId' && k !== 'movedBy'),
+            UPDATE,
+          ).toEqual(['auto', 'level', 'mine', 'movable', 'name', 'ownerName', 'species']);
+        }
         const results = (raid['party'] as { results: unknown[] }).results;
         expect(results.length, UPDATE).toBe(3);
         for (const result of [...results, ...raidReveal.party.results]) {

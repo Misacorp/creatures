@@ -9,6 +9,7 @@ import { resolveDrop, slotStatuses } from './raid-dnd';
 import type { RaidView } from './raid-api';
 import {
   ROW_NAMES,
+  awayNotes,
   boardCreatureInfo,
   boardCues,
   boardKeyTarget,
@@ -20,6 +21,7 @@ import type { Intent } from './raid-slots';
 import {
   SHOW_PICKER_EFFECTS,
   MAX_ON_BOARD,
+  awayPickerOptions,
   boardTotalLine,
   pickerOptions,
   pickerTitle,
@@ -70,6 +72,8 @@ export function Placement(props: Props) {
   const [hovered, setHovered] = useState<number | null>(null);
   /** The empty slot the picker is open for. */
   const [picking, setPicking] = useState<number | null>(null);
+  /** The tile of an away teammate's creature the swap picker is open for. */
+  const [swapping, setSwapping] = useState<number | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [announcement, announce] = useState('');
   /** The slot to focus again once the request that follows a pick or a remove is answered. */
@@ -86,7 +90,10 @@ export function Placement(props: Props) {
 
   // The picker closes by itself when the board locks under it.
   useEffect(() => {
-    if (!canEdit) setPicking(null);
+    if (!canEdit) {
+      setPicking(null);
+      setSwapping(null);
+    }
   }, [canEdit]);
 
   // After a pick or a remove the tiles are off while the request runs; focus goes back to the slot.
@@ -178,6 +185,41 @@ export function Placement(props: Props) {
     const shown = line === null ? info : { ...info, effect: line };
     const key = `raid-slot:${String(slot)}`;
     const id = occupant.creatureId;
+    if (occupant.mine && occupant.auto && id !== undefined) {
+      // Joins by itself: tapping it makes the place a real placement, so it stays where it is.
+      const own = {
+        ...creatureInfoOf(shown),
+        ...(shown.effect === undefined ? {} : { effect: shown.effect }),
+      };
+      popovers.openCreature(
+        key,
+        own,
+        button,
+        canEdit
+          ? {
+              label: 'Place here',
+              onAct: () => {
+                refocus.current = slot;
+                setHint(null);
+                announce(`${occupant.name} placed in ${placeText(slot, party.rowLength)}.`);
+                props.onIntent({ type: 'place', creatureId: id, slot });
+              },
+            }
+          : undefined,
+      );
+      return;
+    }
+    if (occupant.movable && canEdit && id !== undefined) {
+      // An away teammate's: it can be dragged, or swapped for another creature they own.
+      popovers.openCreature(key, shown, button, {
+        label: 'Swap for another',
+        onAct: () => {
+          setHint(null);
+          setSwapping(slot);
+        },
+      });
+      return;
+    }
     if (occupant.mine && id !== undefined) {
       // Your own: no owner line, and a way off the board while that is still allowed.
       const own = {
@@ -218,6 +260,24 @@ export function Placement(props: Props) {
     props.onIntent({ type: 'place', creatureId, slot });
   }
 
+  const swapTile = swapping === null ? undefined : bySlot.get(swapping)?.creature;
+  const swapOwner =
+    swapTile === undefined || swapTile === null
+      ? undefined
+      : party.away.find((a) => a.ownerName === swapTile.ownerName);
+  const notes = awayNotes(party.away, party.row);
+
+  function swap(creatureId: string): void {
+    if (swapping === null) return;
+    const slot = swapping;
+    const chosen = swapOwner?.creatures.find((c) => c.creatureId === creatureId);
+    refocus.current = slot;
+    setSwapping(null);
+    setHint(null);
+    announce(`${chosen?.name ?? 'Creature'} swapped in at ${placeText(slot, party.rowLength)}.`);
+    props.onIntent({ type: 'place', creatureId, slot });
+  }
+
   return (
     <div id="raid-placement" onKeyDown={onKeyDown}>
       <section class="raid-section placement" aria-labelledby="raid-place-heading">
@@ -253,6 +313,16 @@ export function Placement(props: Props) {
             {hint}
           </p>
         )}
+        {notes.away.map((line) => (
+          <p key={line} class="muted small roster-away">
+            {line}
+          </p>
+        ))}
+        {notes.moved.map((line) => (
+          <p key={line} class="muted small roster-moved">
+            {line}
+          </p>
+        ))}
         {party.guests && (
           <p class="muted roster-note">
             Guest creatures fill the row while fewer than 3 players are in.
@@ -262,6 +332,23 @@ export function Placement(props: Props) {
 
       <LiveRegion>{announcement}</LiveRegion>
       <DragGhost ghostRef={dragDrop.ghostRef} creature={dragged ?? undefined} />
+      {swapping !== null && swapOwner !== undefined && swapTile != null && (
+        <RosterPicker
+          title={`Swap ${swapTile.name} for another of ${swapOwner.ownerName}'s`}
+          status={`${swapOwner.ownerName} is away`}
+          options={awayPickerOptions(swapOwner.creatures)}
+          showEffects={false}
+          placedNote=""
+          anchor={() =>
+            stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(swapping)}"]`) ??
+            null
+          }
+          onPick={swap}
+          onClose={() => {
+            setSwapping(null);
+          }}
+        />
+      )}
       {picking !== null && (
         <RosterPicker
           title={pickerTitle(placeText(picking, party.rowLength))}

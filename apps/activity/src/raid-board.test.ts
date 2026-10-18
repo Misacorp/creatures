@@ -3,6 +3,7 @@ import { RULES, content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { RowSlotView } from './raid-api';
 import {
+  awayNotes,
   boardAffectRow,
   boardCreatureInfo,
   boardCues,
@@ -10,6 +11,7 @@ import {
   boardKeys,
   boardRows,
   boardSlot,
+  canSwapWith,
   laneCount,
   laneStates,
   keepSpanInView,
@@ -196,6 +198,8 @@ describe('the tile of a creature', () => {
     name: 'Cindle',
     level: 4,
     mine: false,
+    auto: false,
+    movable: false,
   };
 
   it("carries the owner's initial and colour, the element, and no slot number", () => {
@@ -207,13 +211,21 @@ describe('the tile of a creature', () => {
       level: 4,
       ownId: null,
       mine: false,
+      auto: false,
       element: 'ember',
       owner: { colour: 1, initial: 'J' },
     });
   });
 
   it('lets only your own creature be picked up, and says "you"', () => {
-    const own = { ...theirs, ownerName: 'Misa', mine: true, creatureId: 'c1' };
+    const own = {
+      ...theirs,
+      ownerName: 'Misa',
+      mine: true,
+      auto: false,
+      movable: false,
+      creatureId: 'c1',
+    };
     const model = boardSlot(row(own), 33, names);
     expect(model.occupant?.ownId).toBe('c1');
     expect(model.ariaLabel).toBe('Middle, lane 1, Cindle level 4, you');
@@ -232,7 +244,14 @@ describe('the tile of a creature', () => {
   });
 
   it('lets nobody drag once the board is locked', () => {
-    const own = { ...theirs, ownerName: 'Misa', mine: true, creatureId: 'c1' };
+    const own = {
+      ...theirs,
+      ownerName: 'Misa',
+      mine: true,
+      auto: false,
+      movable: false,
+      creatureId: 'c1',
+    };
     expect(boardSlot(row(own), 33, names, false).occupant?.ownId).toBeNull();
   });
 
@@ -258,6 +277,8 @@ describe('the placement cues', () => {
     name: species,
     level: 4,
     mine: id !== undefined,
+    auto: false,
+    movable: false,
     ...(id === undefined ? {} : { creatureId: id }),
   });
   // Six slots, two per row: Front 0-1, Middle 2-3, Back 4-5. Cindle (Ember) and Splashet (Tide) react (Steam).
@@ -363,5 +384,98 @@ describe('the placement cues', () => {
     const r = cues(null);
     expect(r.cues.slots.size).toBe(0);
     expect(r.cues.none).toBe(false);
+  });
+});
+
+describe('auto tiles and the tiles of an away teammate', () => {
+  const tile = (extra: Partial<NonNullable<RowSlotView['creature']>> = {}) => ({
+    ownerName: 'Jun',
+    species: 'cindle',
+    name: 'Cindle',
+    level: 4,
+    mine: false,
+    auto: false,
+    movable: false,
+    ...extra,
+  });
+  const at = (creature: RowSlotView['creature']): RowSlotView => ({
+    slot: 11,
+    zone: 'middle',
+    creature,
+  });
+  const names = ['Misa', 'Jun'];
+
+  it('marks an auto tile for the tile and for a screen reader', () => {
+    const model = boardSlot(at(tile({ auto: true })), 33, names);
+    expect(model.occupant?.auto).toBe(true);
+    expect(model.ariaLabel).toBe('Middle, lane 1, Cindle level 4, Jun, joins automatically');
+    expect(boardSlot(at(tile()), 33, names).occupant?.auto).toBe(false);
+  });
+
+  it('lets a tile be dragged only when it is yours or the view says you may move it', () => {
+    const movable = tile({ movable: true, creatureId: 'c9' });
+    expect(boardSlot(at(movable), 33, names).occupant?.ownId).toBe('c9');
+    expect(boardSlot(at(movable), 33, names).ariaLabel).toContain('away, you can move it');
+    expect(boardSlot(at(movable), 33, names, false).occupant?.ownId).toBeNull();
+    expect(boardSlot(at(tile({ creatureId: 'c9' })), 33, names).occupant?.ownId).toBeNull();
+    expect(
+      boardSlot(at(tile({ mine: true, auto: true, creatureId: 'c1' })), 33, names).occupant?.ownId,
+    ).toBe('c1');
+  });
+
+  it('says who moved a tile', () => {
+    const model = boardSlot(at(tile({ movedBy: 'Kim' })), 33, names);
+    expect(model.ariaLabel).toContain('moved by Kim');
+  });
+
+  it('lets yours trade with yours, and an away teammate’s with the same teammate’s movable tiles', () => {
+    const own = tile({ mine: true, ownerName: 'Misa', creatureId: 'c1' });
+    const junA = tile({ movable: true, creatureId: 'a' });
+    const junB = tile({ movable: true, creatureId: 'b' });
+    const junOwn = tile({ movable: false });
+    const kim = tile({ ownerName: 'Kim', movable: true, creatureId: 'k' });
+    expect(canSwapWith(own, tile({ mine: true }))).toBe(true);
+    expect(canSwapWith(own, junA)).toBe(false);
+    expect(canSwapWith(junA, junB)).toBe(true);
+    expect(canSwapWith(junA, junOwn)).toBe(false);
+    expect(canSwapWith(junA, kim)).toBe(false);
+    expect(canSwapWith(junA, own)).toBe(false);
+  });
+
+  it('writes the hint for an away teammate and a line for what a teammate moved, as plain text', () => {
+    const away = [{ ownerName: 'Jun <b>', creatures: [] }];
+    const row = [
+      at(tile({ ownerName: 'Jun <b>', movedBy: 'Kim <i>' })),
+      { slot: 12, zone: 'middle', creature: null } as RowSlotView,
+    ];
+    expect(awayNotes(away, row)).toEqual({
+      away: ['Jun <b> is away — teammates can move these.'],
+      moved: ['Cindle (Jun <b>) moved by Kim <i>.'],
+    });
+    expect(awayNotes([], [at(tile())])).toEqual({ away: [], moved: [] });
+  });
+
+  it('lets a carried away creature be dropped on its own teammate’s tiles and empty slots only', () => {
+    const row: RowSlotView[] = [
+      { slot: 0, zone: 'front', creature: tile({ movable: true, creatureId: 'a' }) },
+      { slot: 1, zone: 'front', creature: tile({ movable: true, creatureId: 'b' }) },
+      { slot: 2, zone: 'front', creature: tile({ movable: false }) },
+      { slot: 3, zone: 'middle', creature: tile({ ownerName: 'Kim', movable: false }) },
+      { slot: 4, zone: 'middle', creature: null },
+    ];
+    const over = (pointer: number) =>
+      boardCues({
+        row,
+        length: 5,
+        tray: [],
+        carried: 'a',
+        pointer,
+        turnOrder: 'left_to_right',
+      }).focus;
+    expect(over(4)).toBe(4);
+    expect(over(1)).toBe(1);
+    // Someone else's tile, and a tile its owner placed themselves, take no drop: the focus stays on the carried one.
+    expect(over(2)).toBe(0);
+    expect(over(3)).toBe(0);
   });
 });

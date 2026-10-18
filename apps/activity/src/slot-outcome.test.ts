@@ -23,6 +23,8 @@ describe('the raid and the dungeon rules say the same things', () => {
     name,
     level: 3,
     mine: true,
+    auto: false,
+    movable: false,
     creatureId: id,
   });
   const row: RowSlotView[] = [

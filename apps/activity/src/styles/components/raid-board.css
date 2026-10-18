@@ -61,6 +61,23 @@
   line-height: 1;
 }
 
+/* A creature nobody placed: it joins by itself. Dashed outline, and a small "auto" tag at the bottom. */
+.party-slot.auto {
+  border-style: dashed;
+}
+
+.party-slot .slot-auto {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 0 0.25rem;
+  background: var(--line);
+  color: var(--bone);
+  font-size: 0.5625rem;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
 /*
   The single-row mode (the dungeon team's places): no label column, no lane header and no scroller.
   The row is centred with roomy padding, and the tiles are the raid's own size and look, with the

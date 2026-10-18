@@ -156,7 +156,9 @@
           "name": "Cindle",
           "level": 10,
           "mine": true,
-          "creatureId": "8513fa8f-5509-4021-9938-bafae972a01c"
+          "creatureId": "8513fa8f-5509-4021-9938-bafae972a01c",
+          "auto": false,
+          "movable": false
         }
       },
       {
@@ -167,7 +169,9 @@
           "species": "mistnewt",
           "name": "Mistnewt",
           "level": 10,
-          "mine": false
+          "mine": false,
+          "auto": false,
+          "movable": false
         }
       },
       {
@@ -308,7 +312,8 @@
         "festivalGrant": null
       }
     ],
-    "readiness": null
+    "readiness": null,
+    "away": []
   },
   "channel": {
     "pinned": false,
