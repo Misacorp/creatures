@@ -533,7 +533,7 @@ function Scene({ p }: { p: Props }) {
       ) : def.show === 'bag' ? (
         <BagScene def={{ ...def, kind }} />
       ) : def.show === 'compare' ? (
-        <CompareScene def={{ ...def, kind }} />
+        <CompareScene key={`${def.id}-${kind}`} def={{ ...def, kind }} />
       ) : def.show === 'rarities' ? (
         <Rarities def={{ ...def, kind }} />
       ) : (
