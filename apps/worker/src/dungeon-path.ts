@@ -21,6 +21,7 @@ import {
   nodeLoot,
   reachableNodes,
   resolveEvent,
+  RULES,
   roomSpecForNode,
   weatherSheet,
   type Rng,
@@ -40,10 +41,16 @@ import {
   abilityChoices,
   currentHp,
   heldKeepsakes,
+  keepsakeView,
   maxHpOfRow,
   type RunState,
 } from './dungeon-state';
-import type { DungeonOutcome } from './dungeon-types';
+import type {
+  DungeonKeepsakeView,
+  DungeonOutcome,
+  DungeonPack,
+  DungeonStepLog,
+} from './dungeon-types';
 import { GameError } from './outcome';
 import { drawSeed, slotFor } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
@@ -96,13 +103,28 @@ function drawKeepsake(rng: Rng, held: readonly string[]): string | null {
   return pick === undefined ? null : pick.id;
 }
 
-/** The loot of a cleared room goes in the pack, with Market Day's scrap for a fight. */
-function packLoot(st: RunState, kind: Parameters<typeof nodeLoot>[0], fight: boolean): void {
+/** The loot of a cleared room goes in the pack, with Market Day's scrap for a fight. Returns what went in. */
+function packLoot(st: RunState, kind: Parameters<typeof nodeLoot>[0], fight: boolean): DungeonPack {
   const loot = nodeLoot(kind);
-  st.pack = addPack(st.pack, {
+  const gained = {
     ...loot,
     scrap: loot.scrap + (fight ? dungeonScrapPerRoom(st.weather) : 0),
-  });
+  };
+  st.pack = addPack(st.pack, gained);
+  return gained;
+}
+
+/**
+ * Answers the entry a room left `pending` in the log (the mystery room or the camp the run is standing
+ * in): it is replaced in place, so there is one entry per visited room. Without one it is added.
+ */
+function settleStep(st: RunState, entry: DungeonStepLog): void {
+  const last = st.history[st.history.length - 1];
+  if (last !== undefined && last.node === entry.node && last.result === 'pending') {
+    st.history[st.history.length - 1] = entry;
+  } else {
+    st.history.push(entry);
+  }
 }
 
 // --- Move ---
@@ -133,34 +155,69 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       st.fights += 1;
       st.hp = { ...result.result.hpEnd };
       st.hpMax = { ...st.hpMax, ...result.hpMax };
-      if (!result.cleared) return { fight, end: 'defeat' };
+      const step = {
+        node: nodeId,
+        kind: node.kind,
+        result: 'fight' as const,
+        cleared: result.cleared,
+        rounds: result.result.rounds,
+        foeHpEnd: result.result.bossHpEnd,
+        foeHpMax: result.result.bossHpStart,
+      };
+      if (!result.cleared) {
+        st.history.push({ ...step, loot: { bait: 0, essence: 0, scrap: 0 } });
+        return { fight, end: 'defeat' };
+      }
       st.roomsCleared += 1;
-      packLoot(st, node.kind, true);
+      const loot = packLoot(st, node.kind, true);
       st.tally = addFightsCleared(st.tally, standing);
+      const earnedSupply = !st.supply;
       st.supply = true;
+      let keepsake: DungeonKeepsakeView | null = null;
       if (node.kind === 'elite') {
         st.elites += 1;
         const gift = drawKeepsake(env.rng, st.keepsakes);
-        if (gift !== null) st.keepsakes.push(gift);
+        if (gift !== null) {
+          st.keepsakes.push(gift);
+          keepsake = keepsakeView(gift);
+        }
       }
+      st.history.push({
+        ...step,
+        loot,
+        ...(keepsake === null ? {} : { keepsake }),
+        ...(earnedSupply ? { supply: true } : {}),
+      });
       if (node.kind === 'boss') return { fight, end: 'cleared' };
       // A fight that was won with nobody left standing leaves nobody to go on with.
       if (!someoneStands(st)) return { fight, end: 'defeat' };
       return { fight };
     }
     case 'cache':
-      packLoot(st, 'cache', false);
+      st.history.push({
+        node: nodeId,
+        kind: 'cache',
+        result: 'cache',
+        loot: packLoot(st, 'cache', false),
+      });
       return {};
     case 'mystery': {
       // An event the content no longer has is a quiet room: nothing waits.
       if (node.eventId !== undefined && dungeonEvent(node.eventId) !== undefined) {
         st.pending = { kind: 'event', eventId: node.eventId };
+        st.history.push({
+          node: nodeId,
+          kind: 'mystery',
+          result: 'pending',
+          event: dungeonEvent(node.eventId)?.name ?? '',
+        });
       }
       return {};
     }
     case 'camp':
       // The two offers are drawn now and stored, so reloading the run does not reroll them.
       st.pending = { kind: 'camp', offers: campOffers(env.rng, st.keepsakes) };
+      st.history.push({ node: nodeId, kind: 'camp', result: 'pending' });
       return {};
   }
 }
@@ -183,6 +240,18 @@ export function applyEvent(env: PathEnv, st: RunState, option: 0 | 1): ActOutcom
   st.pack = addPack(st.pack, resolved.packDelta);
   st.keepsakes.push(...resolved.keepsakesGained);
   st.lastEvent = { name: event.name, option: chosen.label, outcome: resolved.outcome };
+  const gained = resolved.keepsakesGained[0];
+  const gainedView = gained === undefined ? null : keepsakeView(gained);
+  settleStep(st, {
+    node: st.at ?? '',
+    kind: 'mystery',
+    result: 'event',
+    event: event.name,
+    option: chosen.label,
+    outcome: resolved.outcome,
+    loot: { ...resolved.packDelta },
+    ...(gainedView === null ? {} : { keepsake: gainedView }),
+  });
   st.pending = null;
   env.analytics?.record(
     {
@@ -224,15 +293,21 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
     st.input.abilities = abilityChoices(st.input.team);
   }
 
+  // What the log says of the choice (creature and keepsake names are plain text for the client to render as text).
+  let detail = '';
+  let taken: DungeonKeepsakeView | null = null;
   switch (act.choice) {
     case 'rest':
       st.hp = campRest(currentHp(st), st.hpMax);
+      detail = `Rested: standing creatures recovered ${String(RULES.dungeon.camp.restBp / 100)}% HP.`;
       break;
     case 'keepsake': {
       if (act.keepsake === undefined || !offers.includes(act.keepsake)) {
         throw invalidAct('that keepsake is not on offer');
       }
       st.keepsakes.push(act.keepsake);
+      taken = keepsakeView(act.keepsake);
+      detail = `Took the ${taken?.name ?? 'keepsake'}.`;
       break;
     }
     case 'swap': {
@@ -254,8 +329,10 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
       if (coming === undefined) throw new GameError(404, 'not_found');
       st.gear.push(...coming.gearIds);
       const leaving = act.out;
+      const incoming = slotOf(coming, st.weather);
+      detail = `Swapped ${row[place]?.name ?? 'a creature'} out for ${incoming.name}.`;
       const next = [...row];
-      next[place] = slotOf(coming, st.weather);
+      next[place] = incoming;
       // Its gear and weather sheet are loaded now and frozen for the rest of the run. It is not rested
       // (it starts at full HP) and carries no treat.
       const rest = { ...st.input.rest };
@@ -284,6 +361,14 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
     }
   }
   st.campChoice = act.choice;
+  settleStep(st, {
+    node: st.at ?? '',
+    kind: 'camp',
+    result: 'camp',
+    choice: act.choice,
+    detail,
+    ...(taken === null ? {} : { keepsake: taken }),
+  });
   st.pending = null;
   env.analytics?.record({ kind: 'dungeon_camp', choice: act.choice }, env.userId);
   return {};
@@ -293,6 +378,13 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
 
 export function applyHome(st: RunState): ActOutcome {
   if (st.pending?.kind !== 'camp') throw invalidAct('you can only head home from the camp');
+  settleStep(st, {
+    node: st.at ?? '',
+    kind: 'camp',
+    result: 'camp',
+    choice: 'home',
+    detail: 'Headed home with the pack.',
+  });
   st.pending = null;
   return { end: 'home' };
 }

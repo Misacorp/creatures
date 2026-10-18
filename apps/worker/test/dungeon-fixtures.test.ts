@@ -203,6 +203,53 @@ describe('the dungeon fixtures match what the server sends', () => {
     expect(replayPath.rooms.at(-1)?.row?.map((r) => r.id)).not.toEqual(
       replayPath.row.map((r) => r.id),
     );
+    // The room history: one entry per visited room, in order, and a waiting room is `pending` until answered.
+    expect(dungeonStart.state.history).toEqual([]);
+    expect(actFight.state.history).toHaveLength(1);
+    expect(actFight.state.history[0]).toMatchObject({
+      node: actFight.state.at,
+      kind: 'fight',
+      result: 'fight',
+      cleared: true,
+      foeHpEnd: 0,
+      supply: true,
+    });
+    expect(actEventPending.state.history.at(-1)).toMatchObject({
+      kind: 'mystery',
+      result: 'pending',
+      event:
+        actEventPending.state.pending?.kind === 'event'
+          ? actEventPending.state.pending.event.name
+          : '',
+    });
+    expect(actEvent.state.history).toHaveLength(actEventPending.state.history.length);
+    expect(actEvent.state.history.at(-1)).toMatchObject({
+      kind: 'mystery',
+      result: 'event',
+      option: actEvent.state.lastEvent?.option,
+      outcome: actEvent.state.lastEvent?.outcome,
+    });
+    expect(actCampPending.state.history.at(-1)).toMatchObject({ kind: 'camp', result: 'pending' });
+    expect(todayActive.active?.history).toEqual(actCampPending.state.history);
+    expect(actCamp.state.history).toHaveLength(actCampPending.state.history.length);
+    expect(actCamp.state.history.at(-1)).toMatchObject({
+      kind: 'camp',
+      result: 'camp',
+      choice: 'swap',
+    });
+    expect(actHome.state.history.at(-1)).toMatchObject({ kind: 'camp', choice: 'home' });
+    expect(actDefeat.state.history.at(-1)).toMatchObject({ result: 'fight', cleared: false });
+    expect(actCleared.state.history.at(-1)).toMatchObject({ kind: 'boss', cleared: true });
+    // The route on the summary of every path run that ended: the map, the path and the same log.
+    for (const done of [actHome, actDefeat, actCleared]) {
+      expect(done.summary.route).toEqual({
+        map: done.state.map,
+        path: done.state.path,
+        history: done.state.history,
+      });
+      expect(done.state.history.map((h) => h.node)).toEqual(done.state.path);
+    }
+    expect(replayPath.summary.route).toEqual(actCleared.summary.route);
     // No seed anywhere a client can read, and no HP or loot in anything it sends.
     for (const fixture of Object.values(NEW_RESPONSES)) {
       expect(JSON.stringify(fixture)).not.toMatch(/seed/i);

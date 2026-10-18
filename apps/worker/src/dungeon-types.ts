@@ -51,6 +51,53 @@ export type DungeonPendingView =
   | { kind: 'event'; event: DungeonEventView }
   | { kind: 'camp'; offers: DungeonKeepsakeView[]; restBp: number };
 
+/**
+ * What a room on the path gave or took, one entry per visited room, in order (no fight events: the
+ * replay holds those). `loot` is what went into the pack there (zeros when nothing). A mystery room or the
+ * camp is `pending` while its choice waits, and the entry is replaced when it is answered. Free text in it
+ * (`detail` names a creature, which is player text) is plain text to render as text.
+ */
+export type DungeonStepLog =
+  | {
+      node: string;
+      kind: 'fight' | 'elite' | 'boss';
+      result: 'fight';
+      cleared: boolean;
+      rounds: number;
+      /** The foe's HP when the fight ended (0 when cleared) and at most. */
+      foeHpEnd: number;
+      foeHpMax: number;
+      loot: DungeonPack;
+      /** An elite's keepsake. */
+      keepsake?: DungeonKeepsakeView;
+      /** This fight earned the run's supply (the first fight cleared). */
+      supply?: boolean;
+    }
+  | { node: string; kind: 'cache'; result: 'cache'; loot: DungeonPack }
+  | {
+      node: string;
+      kind: 'mystery';
+      result: 'event';
+      event: string;
+      /** The option label picked, and the plain line of what it did. */
+      option: string;
+      outcome: string;
+      loot: DungeonPack;
+      keepsake?: DungeonKeepsakeView;
+    }
+  | {
+      node: string;
+      kind: 'camp';
+      result: 'camp';
+      /** `home` when the run headed home from the camp. */
+      choice: 'rest' | 'swap' | 'keepsake' | 'home';
+      /** The plain line of what was done ("Rested: standing creatures recovered 40% HP."). */
+      detail: string;
+      keepsake?: DungeonKeepsakeView;
+    }
+  | { node: string; kind: 'camp'; result: 'pending' }
+  | { node: string; kind: 'mystery'; result: 'pending'; event: string };
+
 /** The state of a run, open or done. Every act answers with it. */
 export interface DungeonRunState {
   id: string;
@@ -80,4 +127,6 @@ export interface DungeonRunState {
   supply: boolean;
   /** What the last mystery room did, in plain words, or null. */
   lastEvent: { name: string; option: string; outcome: string } | null;
+  /** What happened in each room the run has been through, in order. Empty for a run stored before the log. */
+  history: DungeonStepLog[];
 }

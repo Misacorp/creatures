@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "0db4bb58-f973-4405-8067-9fabcb7fdb8d",
+    "id": "38b7feb6-87da-4416-adfd-3279b9fc6488",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -340,7 +340,24 @@
     },
     "roomsCleared": 1,
     "supply": true,
-    "lastEvent": null
+    "lastEvent": null,
+    "history": [
+      {
+        "node": "f0l0",
+        "kind": "fight",
+        "result": "fight",
+        "cleared": true,
+        "rounds": 1,
+        "foeHpEnd": 0,
+        "foeHpMax": 44,
+        "loot": {
+          "bait": 1,
+          "essence": 0,
+          "scrap": 0
+        },
+        "supply": true
+      }
+    ]
   },
   "room": {
     "index": 0,

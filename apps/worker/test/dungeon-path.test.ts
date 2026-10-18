@@ -22,7 +22,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { giveItem } from './gear-helpers';
 import type { RunState } from '../src/dungeon-state';
-import type { DungeonRunState } from '../src/dungeon-types';
+import type { DungeonRunState, DungeonStepLog } from '../src/dungeon-types';
 import { drawSeed, slotFor } from '../src/raid-resolve';
 import { loadCreatures } from '../src/raid-teams';
 import {
@@ -1953,6 +1953,7 @@ describe('the run’s state', () => {
             'attempt',
             'day',
             'depth',
+            'history',
             'id',
             'keepsakes',
             'landmark',
@@ -1993,6 +1994,404 @@ describe('the run’s state', () => {
         const [fight] = fightSteps(ctx, state.id);
         const result = JSON.parse(fight?.result_json ?? '{}') as DungeonRoomResult;
         expect(result.cleared).toBe(false);
+      },
+      opts(),
+    );
+  });
+});
+
+// --- The room history and the route ---
+
+describe('the room history', () => {
+  const zero = { bait: 0, essence: 0, scrap: 0 };
+  const lootOf = (before: DungeonRunState, after: DungeonRunState) => ({
+    bait: after.pack.bait - before.pack.bait,
+    essence: after.pack.essence - before.pack.essence,
+    scrap: after.pack.scrap - before.pack.scrap,
+  });
+  const last = (state: DungeonRunState): DungeonStepLog => state.history.at(-1) as DungeonStepLog;
+
+  it('starts empty and gets one entry per fight, with the loot it put in the pack and the supply flag on the first clear', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const state = await begin(p);
+        expect(state.history).toEqual([]);
+        const first = await p.act(state, { type: 'move', node: state.reachable[0] as string });
+        const one = first.body.state;
+        expect(one.history).toHaveLength(1);
+        const entry = one.history[0];
+        expect(entry).toEqual({
+          node: one.at,
+          kind: 'fight',
+          result: 'fight',
+          cleared: true,
+          rounds: first.body.room?.rounds,
+          foeHpEnd: 0,
+          foeHpMax: first.body.room?.foe.hpMax,
+          loot: lootOf(state, one),
+          supply: true,
+        });
+        expect(lootOf(state, one).bait).toBe(nodeLoot('fight').bait);
+        expect(first.body.room?.rounds).toBeGreaterThan(0);
+        // The second fight earned no supply: the flag is only on the one that did.
+        const second = await p.act(one, { type: 'move', node: one.reachable[0] as string });
+        const two = second.body.state;
+        expect(two.history).toHaveLength(2);
+        expect(two.history[0]).toEqual(entry);
+        expect(two.history[1]).toMatchObject({ node: two.at, kind: 'fight', cleared: true });
+        expect(two.history[1]).not.toHaveProperty('supply');
+        expect(two.history.map((h) => h.node)).toEqual(two.path);
+        // The log holds no fight events, and today shows the same log for an open run.
+        expect(JSON.stringify(two.history)).not.toContain('events');
+        expect((await p.today()).active?.history).toEqual(two.history);
+        // A retried act answers with the log it left.
+        const key = newKey();
+        const move = { type: 'move', node: two.reachable[0] as string } as const;
+        const a = await p.act(two, move, key);
+        const b = await p.act(two, move, key);
+        expect(b.body.state.history).toEqual(a.body.state.history);
+      },
+      opts(),
+    );
+  });
+
+  it('logs a lost fight as not cleared, with the foe HP left, no loot and no supply', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const state = await begin(p);
+        const res = await withDeadlyFoes(() =>
+          p.act(state, { type: 'move', node: state.reachable[0] as string }),
+        );
+        const entry = res.body.state.history[0];
+        expect(res.body.state.history).toHaveLength(1);
+        expect(entry).toEqual({
+          node: res.body.state.at,
+          kind: 'fight',
+          result: 'fight',
+          cleared: false,
+          rounds: res.body.room?.rounds,
+          foeHpEnd: expect.any(Number) as number,
+          foeHpMax: res.body.room?.foe.hpMax,
+          loot: zero,
+        });
+        expect((entry as { foeHpEnd: number }).foeHpEnd).toBeGreaterThan(0);
+        expect(res.body.summary?.route?.history).toEqual(res.body.state.history);
+      },
+      opts(),
+    );
+  });
+
+  it('logs an elite with the keepsake it gave, and a boss as a boss', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const state = await begin(p);
+        const route = routeThrough(mapOf(state), (n) => n.kind === 'elite') as string[];
+        const target = route.at(-1) as string;
+        const after = await walk(p, state, route, (s) => s.at === target);
+        expect(last(after)).toMatchObject({
+          node: target,
+          kind: 'elite',
+          result: 'fight',
+          cleared: true,
+          loot: expect.objectContaining({ bait: nodeLoot('elite').bait }) as unknown,
+          keepsake: after.keepsakes[0],
+        });
+        // Fights that are not elites carry no keepsake.
+        for (const h of after.history.slice(0, -1)) expect(h).not.toHaveProperty('keepsake');
+        const done = await p.play(after);
+        const log = done.body.run?.route?.history as DungeonStepLog[];
+        expect(log.at(-1)).toMatchObject({ kind: 'boss', result: 'fight', cleared: true });
+        expect(
+          log.filter((h) => h.result === 'fight' && 'supply' in h && h.supply === true),
+        ).toHaveLength(1);
+      },
+      opts(),
+    );
+  });
+
+  it('logs a cache with its loot', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const state = await begin(p);
+        const route = routeThrough(mapOf(state), (n) => n.kind === 'cache') as string[];
+        const target = route.at(-1) as string;
+        const before = await walk(p, state, route, (s) => s.reachable.includes(target));
+        const res = await p.act(before, { type: 'move', node: target });
+        expect(last(res.body.state)).toEqual({
+          node: target,
+          kind: 'cache',
+          result: 'cache',
+          loot: nodeLoot('cache'),
+        });
+        expect(res.body.state.history).toHaveLength(before.history.length + 1);
+      },
+      opts(seedWithRoom('cache')),
+    );
+  });
+
+  it('logs a mystery room as pending with the event name, then replaces it with what the option did', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        for (const [n, option] of ([0, 1] as const).entries()) {
+          const p = await dungeonPlayer(ctx, n + 1, STRONG);
+          const state = await begin(p);
+          const route = routeThrough(mapOf(state), (m) => m.kind === 'mystery') as string[];
+          const waiting = await walk(p, state, route, (s) => s.pending?.kind === 'event');
+          const pending = waiting.pending;
+          if (pending?.kind !== 'event') throw new Error('no event');
+          expect(last(waiting)).toEqual({
+            node: waiting.at,
+            kind: 'mystery',
+            result: 'pending',
+            event: pending.event.name,
+          });
+          // Reloading shows the same waiting entry.
+          expect((await p.today()).active?.history).toEqual(waiting.history);
+          const res = await p.act(waiting, { type: 'event', option });
+          const next = res.body.state;
+          expect(next.history).toHaveLength(waiting.history.length); // replaced, not added
+          expect(next.history.slice(0, -1)).toEqual(waiting.history.slice(0, -1));
+          expect(last(next)).toMatchObject({
+            node: waiting.at,
+            kind: 'mystery',
+            result: 'event',
+            event: pending.event.name,
+            option: pending.event.options[option]?.label,
+            outcome: next.lastEvent?.outcome,
+            loot: lootOf(waiting, next),
+          });
+          const gained = next.keepsakes.length - waiting.keepsakes.length;
+          expect('keepsake' in last(next)).toBe(gained > 0);
+        }
+      },
+      opts(),
+    );
+  });
+
+  it('logs the camp as pending, then replaces it with each choice and its plain line', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        // Rest.
+        const p1 = await dungeonPlayer(ctx, 1, STRONG);
+        const w1 = await toCamp(p1);
+        expect(last(w1)).toEqual({ node: w1.at, kind: 'camp', result: 'pending' });
+        expect((await p1.today()).active?.history).toEqual(w1.history);
+        const rest = await p1.act(w1, { type: 'camp', choice: 'rest' });
+        expect(rest.body.state.history).toHaveLength(w1.history.length);
+        expect(last(rest.body.state)).toEqual({
+          node: w1.at,
+          kind: 'camp',
+          result: 'camp',
+          choice: 'rest',
+          detail: `Rested: standing creatures recovered ${String(RULES.dungeon.camp.restBp / 100)}% HP.`,
+        });
+
+        // Keepsake.
+        const p2 = await dungeonPlayer(ctx, 2, STRONG);
+        const w2 = await toCamp(p2);
+        const offer =
+          w2.pending?.kind === 'camp' ? (w2.pending.offers[1] as { name: string }) : null;
+        const took = await p2.act(w2, {
+          type: 'camp',
+          choice: 'keepsake',
+          keepsake: (offer as { id?: string } | null)?.id as string,
+        });
+        expect(last(took.body.state)).toEqual({
+          node: w2.at,
+          kind: 'camp',
+          result: 'camp',
+          choice: 'keepsake',
+          detail: `Took the ${offer?.name ?? ''}.`,
+          keepsake: took.body.state.keepsakes.at(-1),
+        });
+
+        // Swap, with the names of both creatures in the line (a nickname is plain text).
+        const p3 = await dungeonPlayer(ctx, 3, FOUR);
+        const [a, b, c, d] = p3.creatureIds as [string, string, string, string];
+        ctx.sql.exec('UPDATE creatures SET nickname = ? WHERE id = ?', 'Cindle <b>&', c);
+        ctx.sql.exec('UPDATE creatures SET nickname = ? WHERE id = ?', 'Zipmouse', d);
+        const s3 = await begin(p3, { team: [a, b, c] });
+        const route = routeThrough(mapOf(s3), (n) => n.kind === 'camp') as string[];
+        const w3 = await walk(p3, s3, route, (s) => s.pending?.kind === 'camp');
+        const swapped = await p3.act(w3, { type: 'camp', choice: 'swap', out: c, in: d });
+        expect(last(swapped.body.state)).toEqual({
+          node: w3.at,
+          kind: 'camp',
+          result: 'camp',
+          choice: 'swap',
+          detail: 'Swapped Cindle <b>& out for Zipmouse.',
+        });
+
+        // Home.
+        const p4 = await dungeonPlayer(ctx, 4, STRONG);
+        const w4 = await toCamp(p4);
+        const home = await p4.act(w4, { type: 'home' });
+        expect(home.body.state.history).toHaveLength(w4.history.length);
+        expect(last(home.body.state)).toEqual({
+          node: w4.at,
+          kind: 'camp',
+          result: 'camp',
+          choice: 'home',
+          detail: 'Headed home with the pack.',
+        });
+      },
+      opts(),
+    );
+  });
+
+  it('loads a run stored before the log with an empty history, and goes on from there', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const state = await begin(p);
+        const one = (await p.act(state, { type: 'move', node: state.reachable[0] as string })).body
+          .state;
+        expect(one.history).toHaveLength(1);
+        patchState(ctx, state.id, (st) => {
+          delete (st as { history?: unknown }).history;
+        });
+        expect(JSON.parse(runRow(ctx, state.id)?.state_json ?? '{}')).not.toHaveProperty('history');
+        const today = await p.today();
+        expect(today.active?.history).toEqual([]);
+        expect(today.active?.path).toEqual(one.path);
+        const two = await p.act(one, { type: 'move', node: one.reachable[0] as string });
+        expect(two.status).toBe(200);
+        expect(two.body.state.history).toHaveLength(1);
+        expect(two.body.state.history[0]).toMatchObject({ node: two.body.state.at });
+        // An answer stored before the log reads as an empty log, too.
+        const key = newKey();
+        const three = await p.act(
+          two.body.state,
+          { type: 'move', node: two.body.state.reachable[0] as string },
+          key,
+        );
+        const stepRow = rows<{ act_json: string }>(
+          ctx.sql,
+          'SELECT act_json FROM dungeon_steps WHERE run_id = ? AND idempotency_key = ?',
+          state.id,
+          key,
+        )[0];
+        const old = JSON.parse(stepRow?.act_json ?? '{}') as { state: Record<string, unknown> };
+        delete old.state['history'];
+        ctx.sql.exec(
+          'UPDATE dungeon_steps SET act_json = ? WHERE run_id = ? AND idempotency_key = ?',
+          JSON.stringify(old),
+          state.id,
+          key,
+        );
+        const again = await p.act(
+          two.body.state,
+          { type: 'move', node: two.body.state.reachable[0] as string },
+          key,
+        );
+        expect(again.status).toBe(200);
+        expect(again.body.state.history).toEqual([]);
+        expect(three.status).toBe(200);
+      },
+      opts(),
+    );
+  });
+});
+
+describe('the route on the summary', () => {
+  it('is on a cleared run: the map at its depth, the path and the log of every room', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const state = await begin(p);
+        const done = await p.play(state);
+        const run = done.body.run;
+        expect(run?.outcome).toBe('cleared');
+        const final = done.body.state as DungeonRunState;
+        expect(run?.route).toEqual({ map: state.map, path: final.path, history: final.history });
+        expect(run?.route?.history.map((h) => h.node)).toEqual(run?.route?.path);
+        expect(run?.route?.history.every((h) => h.result !== 'pending')).toBe(true);
+        // It is stored with the summary: today's last run and a later look show the same.
+        expect(done.body.today?.last?.route).toEqual(run?.route);
+        expect((await p.today()).last?.route).toEqual(run?.route);
+        expect((await p.replay(run?.id as string)).body.summary.route).toEqual(run?.route);
+      },
+      opts(),
+    );
+  });
+
+  it('is on a run that went home, with the camp’s home entry last', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const waiting = await toCamp(p);
+        const res = await p.act(waiting, { type: 'home' });
+        const route = res.body.summary?.route;
+        expect(route?.map).toEqual(waiting.map);
+        expect(route?.path).toEqual(waiting.path);
+        expect(route?.history).toEqual(res.body.state.history);
+        expect(route?.history.at(-1)).toMatchObject({ kind: 'camp', choice: 'home' });
+      },
+      opts(),
+    );
+  });
+
+  it('is on a run that was lost', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const state = await begin(p);
+        const mid = await walk(p, state, [], (s) => s.roomsCleared >= 2);
+        deadlyFoes();
+        const res = await p.act(mid, { type: 'move', node: mid.reachable[0] as string });
+        easyAgain();
+        const route = res.body.summary?.route;
+        expect(res.body.summary?.outcome).toBe('defeat');
+        // The foes' HP on the map moved with the deadly rules of this test; the rooms are the run's.
+        const shape = (m?: DungeonMapView) => m?.nodes.map((n) => [n.id, n.kind, n.next]);
+        expect(shape(route?.map)).toEqual(shape(state.map));
+        expect(route?.path).toEqual([...mid.path, res.body.state.at]);
+        expect(route?.history).toHaveLength(3);
+        expect(route?.history.at(-1)).toMatchObject({ result: 'fight', cleared: false });
+      },
+      opts(),
+    );
+  });
+
+  it('is on a run left open that closes on a later day, with the camp still pending when it stood there', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const first = await dungeonPlayer(ctx, 1, STRONG);
+        ctx.clock.t = AFTER_RESET;
+        const s1 = await begin(first);
+        const mid = await walk(first, s1, [], (s) => s.roomsCleared >= 1);
+        const second = await dungeonPlayer(ctx, 2, STRONG);
+        const camp = await toCamp(second);
+        ctx.clock.t = AFTER_RESET + DAY;
+        await first.today();
+        await second.today();
+        const closed = (id: string) =>
+          JSON.parse(runRow(ctx, id)?.summary_json ?? '{}') as {
+            route?: { map: DungeonMapView; path: string[]; history: DungeonStepLog[] };
+          };
+        expect(closed(mid.id).route).toEqual({
+          map: mid.map,
+          path: mid.path,
+          history: mid.history,
+        });
+        const atCamp = closed(camp.id).route;
+        expect(atCamp?.history).toEqual(camp.history);
+        expect(atCamp?.history.at(-1)).toMatchObject({ kind: 'camp', result: 'pending' });
       },
       opts(),
     );

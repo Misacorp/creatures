@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "f2d07d8e-5a2d-4547-bf74-6d935cb2b2a4",
+    "id": "e2b18fe3-8f99-4147-b7e7-c7c54058ddbb",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -299,7 +299,7 @@
     "pending": null,
     "team": [
       {
-        "id": "45c12812-b4eb-46ec-897d-28d9fad8650d",
+        "id": "1c1acc50-94df-42e5-a452-9908f48ecc34",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -310,7 +310,7 @@
         "treat": false
       },
       {
-        "id": "ac750058-a0e5-4827-bf17-4eaf839e477c",
+        "id": "b5b220c7-a02d-4011-b311-a8c664ac02c6",
         "name": "Zipmouse",
         "speciesId": "zipmouse",
         "element": "spark",
@@ -321,7 +321,7 @@
         "treat": false
       },
       {
-        "id": "9a9aee17-d3d2-43d7-b479-5dd7de98ef0c",
+        "id": "47f86d3b-ba21-42f9-83a4-a7bc4210ae24",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
@@ -344,6 +344,36 @@
       "name": "Lost Satchel",
       "option": "Shake it out",
       "outcome": "Lucky! You find 2 Bait and 1 scrap."
-    }
+    },
+    "history": [
+      {
+        "node": "f0l0",
+        "kind": "fight",
+        "result": "fight",
+        "cleared": true,
+        "rounds": 1,
+        "foeHpEnd": 0,
+        "foeHpMax": 44,
+        "loot": {
+          "bait": 1,
+          "essence": 0,
+          "scrap": 0
+        },
+        "supply": true
+      },
+      {
+        "node": "f1l0",
+        "kind": "mystery",
+        "result": "event",
+        "event": "Lost Satchel",
+        "option": "Shake it out",
+        "outcome": "Lucky! You find 2 Bait and 1 scrap.",
+        "loot": {
+          "bait": 2,
+          "essence": 0,
+          "scrap": 1
+        }
+      }
+    ]
   }
 }

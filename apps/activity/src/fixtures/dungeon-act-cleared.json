@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "0db4bb58-f973-4405-8067-9fabcb7fdb8d",
+    "id": "38b7feb6-87da-4416-adfd-3279b9fc6488",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -344,7 +344,99 @@
       "name": "Sleeping Beetle",
       "option": "Take one coin",
       "outcome": "You find 1 scrap."
-    }
+    },
+    "history": [
+      {
+        "node": "f0l0",
+        "kind": "fight",
+        "result": "fight",
+        "cleared": true,
+        "rounds": 1,
+        "foeHpEnd": 0,
+        "foeHpMax": 44,
+        "loot": {
+          "bait": 1,
+          "essence": 0,
+          "scrap": 0
+        },
+        "supply": true
+      },
+      {
+        "node": "f1l0",
+        "kind": "mystery",
+        "result": "event",
+        "event": "Lost Satchel",
+        "option": "Peek inside",
+        "outcome": "You find 1 Bait.",
+        "loot": {
+          "bait": 1,
+          "essence": 0,
+          "scrap": 0
+        }
+      },
+      {
+        "node": "f2l0",
+        "kind": "mystery",
+        "result": "event",
+        "event": "Sleeping Beetle",
+        "option": "Take one coin",
+        "outcome": "You find 1 scrap.",
+        "loot": {
+          "bait": 0,
+          "essence": 0,
+          "scrap": 1
+        }
+      },
+      {
+        "node": "f3l1",
+        "kind": "camp",
+        "result": "camp",
+        "choice": "swap",
+        "detail": "Swapped Cindle out for Zipmouse."
+      },
+      {
+        "node": "f4l0",
+        "kind": "fight",
+        "result": "fight",
+        "cleared": true,
+        "rounds": 1,
+        "foeHpEnd": 0,
+        "foeHpMax": 50,
+        "loot": {
+          "bait": 1,
+          "essence": 0,
+          "scrap": 0
+        }
+      },
+      {
+        "node": "f5l0",
+        "kind": "fight",
+        "result": "fight",
+        "cleared": true,
+        "rounds": 1,
+        "foeHpEnd": 0,
+        "foeHpMax": 48,
+        "loot": {
+          "bait": 1,
+          "essence": 0,
+          "scrap": 0
+        }
+      },
+      {
+        "node": "f6l1",
+        "kind": "boss",
+        "result": "fight",
+        "cleared": true,
+        "rounds": 1,
+        "foeHpEnd": 0,
+        "foeHpMax": 62,
+        "loot": {
+          "bait": 0,
+          "essence": 1,
+          "scrap": 1
+        }
+      }
+    ]
   },
   "room": {
     "index": 3,
@@ -522,7 +614,7 @@
     }
   },
   "summary": {
-    "id": "0db4bb58-f973-4405-8067-9fabcb7fdb8d",
+    "id": "38b7feb6-87da-4416-adfd-3279b9fc6488",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -715,7 +807,387 @@
         "scrap": 2
       }
     },
-    "keepsakes": []
+    "keepsakes": [],
+    "route": {
+      "map": {
+        "floors": 7,
+        "nodes": [
+          {
+            "id": "f0l0",
+            "floor": 0,
+            "lane": 0,
+            "kind": "fight",
+            "next": ["f1l0"],
+            "foe": {
+              "id": "static-bat",
+              "name": "Static Bat",
+              "element": "spark",
+              "kind": "foe",
+              "hpMax": 44,
+              "elite": false
+            },
+            "modifier": {
+              "id": "flooded",
+              "name": "Flooded",
+              "description": "Tide creatures hit 20% harder."
+            }
+          },
+          {
+            "id": "f0l1",
+            "floor": 0,
+            "lane": 1,
+            "kind": "fight",
+            "next": ["f1l0", "f1l1"],
+            "foe": {
+              "id": "ash-sprite",
+              "name": "Ash Sprite",
+              "element": "ember",
+              "kind": "foe",
+              "hpMax": 50,
+              "elite": false
+            },
+            "modifier": {
+              "id": "stormy",
+              "name": "Stormy",
+              "description": "Spark creatures hit 20% harder."
+            }
+          },
+          {
+            "id": "f0l2",
+            "floor": 0,
+            "lane": 2,
+            "kind": "fight",
+            "next": ["f1l1"],
+            "foe": {
+              "id": "drift-wisp",
+              "name": "Drift Wisp",
+              "element": "tide",
+              "kind": "foe",
+              "hpMax": 48,
+              "elite": false
+            },
+            "modifier": {
+              "id": "flooded",
+              "name": "Flooded",
+              "description": "Tide creatures hit 20% harder."
+            }
+          },
+          {
+            "id": "f1l0",
+            "floor": 1,
+            "lane": 0,
+            "kind": "mystery",
+            "next": ["f2l0", "f2l1"],
+            "event": {
+              "id": "lost-satchel",
+              "name": "Lost Satchel"
+            }
+          },
+          {
+            "id": "f1l1",
+            "floor": 1,
+            "lane": 1,
+            "kind": "fight",
+            "next": ["f2l2"],
+            "foe": {
+              "id": "moss-lurker",
+              "name": "Moss Lurker",
+              "element": "grove",
+              "kind": "foe",
+              "hpMax": 48,
+              "elite": false
+            },
+            "modifier": {
+              "id": "scorched",
+              "name": "Scorched",
+              "description": "Ember creatures hit 20% harder."
+            }
+          },
+          {
+            "id": "f2l0",
+            "floor": 2,
+            "lane": 0,
+            "kind": "mystery",
+            "next": ["f3l1"],
+            "event": {
+              "id": "sleeping-beetle",
+              "name": "Sleeping Beetle"
+            }
+          },
+          {
+            "id": "f2l1",
+            "floor": 2,
+            "lane": 1,
+            "kind": "fight",
+            "next": ["f3l1"],
+            "foe": {
+              "id": "drift-wisp",
+              "name": "Drift Wisp",
+              "element": "tide",
+              "kind": "foe",
+              "hpMax": 48,
+              "elite": false
+            },
+            "modifier": {
+              "id": "brittle",
+              "name": "Brittle",
+              "description": "The foe has 20% less HP but hits 25% harder."
+            }
+          },
+          {
+            "id": "f2l2",
+            "floor": 2,
+            "lane": 2,
+            "kind": "elite",
+            "next": ["f3l1"],
+            "foe": {
+              "id": "puddle-imp",
+              "name": "Puddle Imp",
+              "element": "tide",
+              "kind": "foe",
+              "hpMax": 72,
+              "elite": true
+            },
+            "modifier": {
+              "id": "stormy",
+              "name": "Stormy",
+              "description": "Spark creatures hit 20% harder."
+            }
+          },
+          {
+            "id": "f3l1",
+            "floor": 3,
+            "lane": 1,
+            "kind": "camp",
+            "next": ["f4l0", "f4l1", "f4l2"]
+          },
+          {
+            "id": "f4l0",
+            "floor": 4,
+            "lane": 0,
+            "kind": "fight",
+            "next": ["f5l0", "f5l1"],
+            "foe": {
+              "id": "flicker-swarm",
+              "name": "Flicker Swarm",
+              "element": "spark",
+              "kind": "foe",
+              "hpMax": 50,
+              "elite": false
+            },
+            "modifier": {
+              "id": "echoing",
+              "name": "Echoing",
+              "description": "Guards and supports hit 50% harder."
+            }
+          },
+          {
+            "id": "f4l1",
+            "floor": 4,
+            "lane": 1,
+            "kind": "fight",
+            "next": ["f5l1"],
+            "foe": {
+              "id": "drift-wisp",
+              "name": "Drift Wisp",
+              "element": "tide",
+              "kind": "foe",
+              "hpMax": 48,
+              "elite": false
+            },
+            "modifier": {
+              "id": "thorns",
+              "name": "Thorns",
+              "description": "The foe turns the first reaction of each round back on your team."
+            }
+          },
+          {
+            "id": "f4l2",
+            "floor": 4,
+            "lane": 2,
+            "kind": "fight",
+            "next": ["f5l1", "f5l2"],
+            "foe": {
+              "id": "moss-lurker",
+              "name": "Moss Lurker",
+              "element": "grove",
+              "kind": "foe",
+              "hpMax": 48,
+              "elite": false
+            },
+            "modifier": {
+              "id": "overgrown",
+              "name": "Overgrown",
+              "description": "Grove creatures hit 20% harder."
+            }
+          },
+          {
+            "id": "f5l0",
+            "floor": 5,
+            "lane": 0,
+            "kind": "fight",
+            "next": ["f6l1"],
+            "foe": {
+              "id": "drift-wisp",
+              "name": "Drift Wisp",
+              "element": "tide",
+              "kind": "foe",
+              "hpMax": 48,
+              "elite": false
+            },
+            "modifier": {
+              "id": "dark",
+              "name": "Dark",
+              "description": "Your creatures crit 5 points more often."
+            }
+          },
+          {
+            "id": "f5l1",
+            "floor": 5,
+            "lane": 1,
+            "kind": "fight",
+            "next": ["f6l1"],
+            "foe": {
+              "id": "static-bat",
+              "name": "Static Bat",
+              "element": "spark",
+              "kind": "foe",
+              "hpMax": 44,
+              "elite": false
+            },
+            "modifier": {
+              "id": "dark",
+              "name": "Dark",
+              "description": "Your creatures crit 5 points more often."
+            }
+          },
+          {
+            "id": "f5l2",
+            "floor": 5,
+            "lane": 2,
+            "kind": "mystery",
+            "next": ["f6l1"],
+            "event": {
+              "id": "loose-stones",
+              "name": "Loose Stones"
+            }
+          },
+          {
+            "id": "f6l1",
+            "floor": 6,
+            "lane": 1,
+            "kind": "boss",
+            "next": [],
+            "foe": {
+              "id": "coil-baron",
+              "name": "Coil Baron",
+              "element": "spark",
+              "kind": "boss",
+              "hpMax": 78,
+              "elite": false
+            },
+            "modifier": {
+              "id": "brittle",
+              "name": "Brittle",
+              "description": "The foe has 20% less HP but hits 25% harder."
+            }
+          }
+        ]
+      },
+      "path": ["f0l0", "f1l0", "f2l0", "f3l1", "f4l0", "f5l0", "f6l1"],
+      "history": [
+        {
+          "node": "f0l0",
+          "kind": "fight",
+          "result": "fight",
+          "cleared": true,
+          "rounds": 1,
+          "foeHpEnd": 0,
+          "foeHpMax": 44,
+          "loot": {
+            "bait": 1,
+            "essence": 0,
+            "scrap": 0
+          },
+          "supply": true
+        },
+        {
+          "node": "f1l0",
+          "kind": "mystery",
+          "result": "event",
+          "event": "Lost Satchel",
+          "option": "Peek inside",
+          "outcome": "You find 1 Bait.",
+          "loot": {
+            "bait": 1,
+            "essence": 0,
+            "scrap": 0
+          }
+        },
+        {
+          "node": "f2l0",
+          "kind": "mystery",
+          "result": "event",
+          "event": "Sleeping Beetle",
+          "option": "Take one coin",
+          "outcome": "You find 1 scrap.",
+          "loot": {
+            "bait": 0,
+            "essence": 0,
+            "scrap": 1
+          }
+        },
+        {
+          "node": "f3l1",
+          "kind": "camp",
+          "result": "camp",
+          "choice": "swap",
+          "detail": "Swapped Cindle out for Zipmouse."
+        },
+        {
+          "node": "f4l0",
+          "kind": "fight",
+          "result": "fight",
+          "cleared": true,
+          "rounds": 1,
+          "foeHpEnd": 0,
+          "foeHpMax": 50,
+          "loot": {
+            "bait": 1,
+            "essence": 0,
+            "scrap": 0
+          }
+        },
+        {
+          "node": "f5l0",
+          "kind": "fight",
+          "result": "fight",
+          "cleared": true,
+          "rounds": 1,
+          "foeHpEnd": 0,
+          "foeHpMax": 48,
+          "loot": {
+            "bait": 1,
+            "essence": 0,
+            "scrap": 0
+          }
+        },
+        {
+          "node": "f6l1",
+          "kind": "boss",
+          "result": "fight",
+          "cleared": true,
+          "rounds": 1,
+          "foeHpEnd": 0,
+          "foeHpMax": 62,
+          "loot": {
+            "bait": 0,
+            "essence": 1,
+            "scrap": 1
+          }
+        }
+      ]
+    }
   },
   "today": {
     "serverNow": 1799755200000,
@@ -751,7 +1223,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "0db4bb58-f973-4405-8067-9fabcb7fdb8d",
+      "id": "38b7feb6-87da-4416-adfd-3279b9fc6488",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 1,
@@ -944,7 +1416,387 @@
           "scrap": 2
         }
       },
-      "keepsakes": []
+      "keepsakes": [],
+      "route": {
+        "map": {
+          "floors": 7,
+          "nodes": [
+            {
+              "id": "f0l0",
+              "floor": 0,
+              "lane": 0,
+              "kind": "fight",
+              "next": ["f1l0"],
+              "foe": {
+                "id": "static-bat",
+                "name": "Static Bat",
+                "element": "spark",
+                "kind": "foe",
+                "hpMax": 44,
+                "elite": false
+              },
+              "modifier": {
+                "id": "flooded",
+                "name": "Flooded",
+                "description": "Tide creatures hit 20% harder."
+              }
+            },
+            {
+              "id": "f0l1",
+              "floor": 0,
+              "lane": 1,
+              "kind": "fight",
+              "next": ["f1l0", "f1l1"],
+              "foe": {
+                "id": "ash-sprite",
+                "name": "Ash Sprite",
+                "element": "ember",
+                "kind": "foe",
+                "hpMax": 50,
+                "elite": false
+              },
+              "modifier": {
+                "id": "stormy",
+                "name": "Stormy",
+                "description": "Spark creatures hit 20% harder."
+              }
+            },
+            {
+              "id": "f0l2",
+              "floor": 0,
+              "lane": 2,
+              "kind": "fight",
+              "next": ["f1l1"],
+              "foe": {
+                "id": "drift-wisp",
+                "name": "Drift Wisp",
+                "element": "tide",
+                "kind": "foe",
+                "hpMax": 48,
+                "elite": false
+              },
+              "modifier": {
+                "id": "flooded",
+                "name": "Flooded",
+                "description": "Tide creatures hit 20% harder."
+              }
+            },
+            {
+              "id": "f1l0",
+              "floor": 1,
+              "lane": 0,
+              "kind": "mystery",
+              "next": ["f2l0", "f2l1"],
+              "event": {
+                "id": "lost-satchel",
+                "name": "Lost Satchel"
+              }
+            },
+            {
+              "id": "f1l1",
+              "floor": 1,
+              "lane": 1,
+              "kind": "fight",
+              "next": ["f2l2"],
+              "foe": {
+                "id": "moss-lurker",
+                "name": "Moss Lurker",
+                "element": "grove",
+                "kind": "foe",
+                "hpMax": 48,
+                "elite": false
+              },
+              "modifier": {
+                "id": "scorched",
+                "name": "Scorched",
+                "description": "Ember creatures hit 20% harder."
+              }
+            },
+            {
+              "id": "f2l0",
+              "floor": 2,
+              "lane": 0,
+              "kind": "mystery",
+              "next": ["f3l1"],
+              "event": {
+                "id": "sleeping-beetle",
+                "name": "Sleeping Beetle"
+              }
+            },
+            {
+              "id": "f2l1",
+              "floor": 2,
+              "lane": 1,
+              "kind": "fight",
+              "next": ["f3l1"],
+              "foe": {
+                "id": "drift-wisp",
+                "name": "Drift Wisp",
+                "element": "tide",
+                "kind": "foe",
+                "hpMax": 48,
+                "elite": false
+              },
+              "modifier": {
+                "id": "brittle",
+                "name": "Brittle",
+                "description": "The foe has 20% less HP but hits 25% harder."
+              }
+            },
+            {
+              "id": "f2l2",
+              "floor": 2,
+              "lane": 2,
+              "kind": "elite",
+              "next": ["f3l1"],
+              "foe": {
+                "id": "puddle-imp",
+                "name": "Puddle Imp",
+                "element": "tide",
+                "kind": "foe",
+                "hpMax": 72,
+                "elite": true
+              },
+              "modifier": {
+                "id": "stormy",
+                "name": "Stormy",
+                "description": "Spark creatures hit 20% harder."
+              }
+            },
+            {
+              "id": "f3l1",
+              "floor": 3,
+              "lane": 1,
+              "kind": "camp",
+              "next": ["f4l0", "f4l1", "f4l2"]
+            },
+            {
+              "id": "f4l0",
+              "floor": 4,
+              "lane": 0,
+              "kind": "fight",
+              "next": ["f5l0", "f5l1"],
+              "foe": {
+                "id": "flicker-swarm",
+                "name": "Flicker Swarm",
+                "element": "spark",
+                "kind": "foe",
+                "hpMax": 50,
+                "elite": false
+              },
+              "modifier": {
+                "id": "echoing",
+                "name": "Echoing",
+                "description": "Guards and supports hit 50% harder."
+              }
+            },
+            {
+              "id": "f4l1",
+              "floor": 4,
+              "lane": 1,
+              "kind": "fight",
+              "next": ["f5l1"],
+              "foe": {
+                "id": "drift-wisp",
+                "name": "Drift Wisp",
+                "element": "tide",
+                "kind": "foe",
+                "hpMax": 48,
+                "elite": false
+              },
+              "modifier": {
+                "id": "thorns",
+                "name": "Thorns",
+                "description": "The foe turns the first reaction of each round back on your team."
+              }
+            },
+            {
+              "id": "f4l2",
+              "floor": 4,
+              "lane": 2,
+              "kind": "fight",
+              "next": ["f5l1", "f5l2"],
+              "foe": {
+                "id": "moss-lurker",
+                "name": "Moss Lurker",
+                "element": "grove",
+                "kind": "foe",
+                "hpMax": 48,
+                "elite": false
+              },
+              "modifier": {
+                "id": "overgrown",
+                "name": "Overgrown",
+                "description": "Grove creatures hit 20% harder."
+              }
+            },
+            {
+              "id": "f5l0",
+              "floor": 5,
+              "lane": 0,
+              "kind": "fight",
+              "next": ["f6l1"],
+              "foe": {
+                "id": "drift-wisp",
+                "name": "Drift Wisp",
+                "element": "tide",
+                "kind": "foe",
+                "hpMax": 48,
+                "elite": false
+              },
+              "modifier": {
+                "id": "dark",
+                "name": "Dark",
+                "description": "Your creatures crit 5 points more often."
+              }
+            },
+            {
+              "id": "f5l1",
+              "floor": 5,
+              "lane": 1,
+              "kind": "fight",
+              "next": ["f6l1"],
+              "foe": {
+                "id": "static-bat",
+                "name": "Static Bat",
+                "element": "spark",
+                "kind": "foe",
+                "hpMax": 44,
+                "elite": false
+              },
+              "modifier": {
+                "id": "dark",
+                "name": "Dark",
+                "description": "Your creatures crit 5 points more often."
+              }
+            },
+            {
+              "id": "f5l2",
+              "floor": 5,
+              "lane": 2,
+              "kind": "mystery",
+              "next": ["f6l1"],
+              "event": {
+                "id": "loose-stones",
+                "name": "Loose Stones"
+              }
+            },
+            {
+              "id": "f6l1",
+              "floor": 6,
+              "lane": 1,
+              "kind": "boss",
+              "next": [],
+              "foe": {
+                "id": "coil-baron",
+                "name": "Coil Baron",
+                "element": "spark",
+                "kind": "boss",
+                "hpMax": 78,
+                "elite": false
+              },
+              "modifier": {
+                "id": "brittle",
+                "name": "Brittle",
+                "description": "The foe has 20% less HP but hits 25% harder."
+              }
+            }
+          ]
+        },
+        "path": ["f0l0", "f1l0", "f2l0", "f3l1", "f4l0", "f5l0", "f6l1"],
+        "history": [
+          {
+            "node": "f0l0",
+            "kind": "fight",
+            "result": "fight",
+            "cleared": true,
+            "rounds": 1,
+            "foeHpEnd": 0,
+            "foeHpMax": 44,
+            "loot": {
+              "bait": 1,
+              "essence": 0,
+              "scrap": 0
+            },
+            "supply": true
+          },
+          {
+            "node": "f1l0",
+            "kind": "mystery",
+            "result": "event",
+            "event": "Lost Satchel",
+            "option": "Peek inside",
+            "outcome": "You find 1 Bait.",
+            "loot": {
+              "bait": 1,
+              "essence": 0,
+              "scrap": 0
+            }
+          },
+          {
+            "node": "f2l0",
+            "kind": "mystery",
+            "result": "event",
+            "event": "Sleeping Beetle",
+            "option": "Take one coin",
+            "outcome": "You find 1 scrap.",
+            "loot": {
+              "bait": 0,
+              "essence": 0,
+              "scrap": 1
+            }
+          },
+          {
+            "node": "f3l1",
+            "kind": "camp",
+            "result": "camp",
+            "choice": "swap",
+            "detail": "Swapped Cindle out for Zipmouse."
+          },
+          {
+            "node": "f4l0",
+            "kind": "fight",
+            "result": "fight",
+            "cleared": true,
+            "rounds": 1,
+            "foeHpEnd": 0,
+            "foeHpMax": 50,
+            "loot": {
+              "bait": 1,
+              "essence": 0,
+              "scrap": 0
+            }
+          },
+          {
+            "node": "f5l0",
+            "kind": "fight",
+            "result": "fight",
+            "cleared": true,
+            "rounds": 1,
+            "foeHpEnd": 0,
+            "foeHpMax": 48,
+            "loot": {
+              "bait": 1,
+              "essence": 0,
+              "scrap": 0
+            }
+          },
+          {
+            "node": "f6l1",
+            "kind": "boss",
+            "result": "fight",
+            "cleared": true,
+            "rounds": 1,
+            "foeHpEnd": 0,
+            "foeHpMax": 62,
+            "loot": {
+              "bait": 0,
+              "essence": 1,
+              "scrap": 1
+            }
+          }
+        ]
+      }
     },
     "lastTeam": [
       "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
@@ -966,7 +1818,7 @@
             "name": "Static Bat",
             "element": "spark",
             "kind": "foe",
-            "hpMax": 58,
+            "hpMax": 65,
             "elite": false
           },
           "modifier": {
@@ -986,7 +1838,7 @@
             "name": "Ash Sprite",
             "element": "ember",
             "kind": "foe",
-            "hpMax": 66,
+            "hpMax": 74,
             "elite": false
           },
           "modifier": {
@@ -1006,7 +1858,7 @@
             "name": "Drift Wisp",
             "element": "tide",
             "kind": "foe",
-            "hpMax": 63,
+            "hpMax": 71,
             "elite": false
           },
           "modifier": {
@@ -1037,7 +1889,7 @@
             "name": "Moss Lurker",
             "element": "grove",
             "kind": "foe",
-            "hpMax": 63,
+            "hpMax": 71,
             "elite": false
           },
           "modifier": {
@@ -1068,7 +1920,7 @@
             "name": "Drift Wisp",
             "element": "tide",
             "kind": "foe",
-            "hpMax": 63,
+            "hpMax": 71,
             "elite": false
           },
           "modifier": {
@@ -1088,7 +1940,7 @@
             "name": "Puddle Imp",
             "element": "tide",
             "kind": "foe",
-            "hpMax": 96,
+            "hpMax": 106,
             "elite": true
           },
           "modifier": {
@@ -1115,7 +1967,7 @@
             "name": "Flicker Swarm",
             "element": "spark",
             "kind": "foe",
-            "hpMax": 66,
+            "hpMax": 74,
             "elite": false
           },
           "modifier": {
@@ -1135,7 +1987,7 @@
             "name": "Drift Wisp",
             "element": "tide",
             "kind": "foe",
-            "hpMax": 63,
+            "hpMax": 71,
             "elite": false
           },
           "modifier": {
@@ -1155,7 +2007,7 @@
             "name": "Moss Lurker",
             "element": "grove",
             "kind": "foe",
-            "hpMax": 63,
+            "hpMax": 71,
             "elite": false
           },
           "modifier": {
@@ -1175,7 +2027,7 @@
             "name": "Drift Wisp",
             "element": "tide",
             "kind": "foe",
-            "hpMax": 63,
+            "hpMax": 71,
             "elite": false
           },
           "modifier": {
@@ -1195,7 +2047,7 @@
             "name": "Static Bat",
             "element": "spark",
             "kind": "foe",
-            "hpMax": 58,
+            "hpMax": 65,
             "elite": false
           },
           "modifier": {
@@ -1226,7 +2078,7 @@
             "name": "Coil Baron",
             "element": "spark",
             "kind": "boss",
-            "hpMax": 103,
+            "hpMax": 115,
             "elite": false
           },
           "modifier": {

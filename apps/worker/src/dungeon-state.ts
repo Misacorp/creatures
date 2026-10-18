@@ -35,6 +35,7 @@ import type {
   DungeonOutcome,
   DungeonPendingView,
   DungeonRunState,
+  DungeonStepLog,
 } from './dungeon-types';
 
 /** The engine's key for the one player of a solo run. Never shown to anyone. */
@@ -103,6 +104,8 @@ export interface RunState {
   campChoice: 'rest' | 'swap' | 'keepsake' | null;
   /** Elites cleared. */
   elites: number;
+  /** One entry per visited room, in order (no fight events). A run stored before the log has none. */
+  history: DungeonStepLog[];
 }
 
 /** Reads a stored state, or null when it is missing or is not a state this code wrote. */
@@ -113,6 +116,8 @@ export function parseState(json: string | null): RunState | null {
     if (parsed === null || typeof parsed !== 'object' || parsed.v !== 1) return null;
     // A state stored before the gear ids were kept holds none.
     parsed.gear ??= [];
+    // A state stored before the room log has no history.
+    if (!Array.isArray(parsed.history)) parsed.history = [];
     return parsed as RunState;
   } catch {
     return null;
@@ -261,5 +266,6 @@ export function runView(meta: RunMeta, st: RunState): DungeonRunState {
     roomsCleared: st.roomsCleared,
     supply: st.supply,
     lastEvent: st.lastEvent === null ? null : { ...st.lastEvent },
+    history: structuredClone(st.history),
   };
 }

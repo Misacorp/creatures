@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "0db4bb58-f973-4405-8067-9fabcb7fdb8d",
+    "id": "38b7feb6-87da-4416-adfd-3279b9fc6488",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -340,7 +340,8 @@
     },
     "roomsCleared": 0,
     "supply": false,
-    "lastEvent": null
+    "lastEvent": null,
+    "history": []
   },
   "today": {
     "serverNow": 1799755200000,
@@ -668,7 +669,7 @@
       ]
     },
     "active": {
-      "id": "0db4bb58-f973-4405-8067-9fabcb7fdb8d",
+      "id": "38b7feb6-87da-4416-adfd-3279b9fc6488",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 1,
@@ -1008,7 +1009,8 @@
       },
       "roomsCleared": 0,
       "supply": false,
-      "lastEvent": null
+      "lastEvent": null,
+      "history": []
     }
   }
 }

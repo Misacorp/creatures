@@ -110,6 +110,7 @@ import type {
   DungeonOutcome,
   DungeonPack,
   DungeonRunState,
+  DungeonStepLog,
 } from './dungeon-types';
 import { addDays, gameDay, gameDayEnd } from './time';
 import type { Weather } from './weather';
@@ -119,6 +120,7 @@ export type {
   DungeonOutcome,
   DungeonPack,
   DungeonRunState,
+  DungeonStepLog,
 } from './dungeon-types';
 
 /** Runs (their events and inputs) are kept this long; the summary and rewards stay. */
@@ -227,6 +229,8 @@ export interface DungeonRunSummary {
   path?: string[];
   pack?: { found: DungeonPack; kept: DungeonPack };
   keepsakes?: DungeonKeepsakeView[];
+  /** Map runs that ended: the run's map at its depth, the rooms visited in order and what each did. Absent in older summaries. */
+  route?: { map: DungeonMapView; path: string[]; history: DungeonStepLog[] };
 }
 
 export interface DungeonToday {
@@ -395,7 +399,8 @@ interface StoredFight {
 /** What `act_json` keeps: the act (for telling a retry from another request), the state it left (without the map) and whether it ended the run. */
 interface StoredAct {
   act: unknown;
-  state: Omit<DungeonRunState, 'map'>;
+  /** `history` is missing in answers stored before the room log. */
+  state: Omit<DungeonRunState, 'map' | 'history'> & { history?: DungeonStepLog[] };
   ended: boolean;
 }
 
@@ -1112,6 +1117,7 @@ export class Dungeon {
       lastEvent: null,
       campChoice: null,
       elites: 0,
+      history: [],
     };
     // A map run has no run-level seed (every fight draws its own when the player steps in, stored in
     // `dungeon_steps`): the NOT NULL column holds an empty string.
@@ -1301,7 +1307,12 @@ export class Dungeon {
   ): DungeonActResponse {
     const st = parseState(row.state_json);
     if (st === null) throw new Error('a run with stored steps has no state');
-    const state: DungeonRunState = { ...first.state, map: mapView(st.map, row.depth) };
+    // An answer stored before the room log has no history.
+    const state: DungeonRunState = {
+      ...first.state,
+      history: first.state.history ?? [],
+      map: mapView(st.map, row.depth),
+    };
     const room =
       step.node !== null && step.input_json !== null && step.result_json !== null
         ? this.replayRoom(
@@ -1634,6 +1645,15 @@ export class Dungeon {
       path: st.path.map((id) => mapNode(st.map, id)?.kind ?? 'fight'),
       pack: { found: { ...args.found }, kept: { ...args.kept } },
       keepsakes: keepsakeViews(st.keepsakes),
+      ...(outcome === null
+        ? {}
+        : {
+            route: {
+              map: mapView(st.map, row.depth),
+              path: [...st.path],
+              history: structuredClone(st.history),
+            },
+          }),
     };
   }
 
