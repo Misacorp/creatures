@@ -124,7 +124,7 @@ button.drawer-handle:active:not(:disabled) {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0 0.5rem 0.25rem 0.75rem;
+  padding: 0 var(--drawer-pad) 0.25rem;
 }
 
 /* With the heading only spoken, the close button sits in the handle's row, at the top right. */
@@ -180,13 +180,13 @@ button.drawer-close:active:not(:disabled) {
 
 .drawer-toolbar {
   flex: none;
-  padding: 0 0.75rem;
+  padding: 0 var(--drawer-pad);
 }
 
 .drawer-body {
   flex: 1 1 auto;
   min-height: 0;
-  padding: 0.25rem 0.75rem 0.75rem;
+  padding: 0.25rem var(--drawer-pad) 0.75rem;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -194,11 +194,20 @@ button.drawer-close:active:not(:disabled) {
 .drawer-footer {
   flex: none;
   max-height: 50%;
-  padding: 0.5rem 0.75rem 0.75rem;
+  padding: 0.5rem var(--drawer-pad) 0.75rem;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--dusk-2);
   box-shadow: inset 0 2px 0 0 var(--line);
+}
+
+/*
+  One width inside a drawer (2026-10-18): the heading, body, footer and rows all have the same left and right
+  edges (`--drawer-pad`). A pixel ring is drawn outside its box (3 px on a button, 2 px on an accordion), so
+  the things that have one sit in by the ring's width and their ring ends at that edge, like everything else.
+*/
+.drawer-panel .acc {
+  margin-inline: 2px;
 }
 
 /*

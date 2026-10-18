@@ -72,7 +72,7 @@ button.flip-btn[aria-disabled='true']:active {
 
 .drawer-flip {
   display: flex;
-  padding: 0 0.75rem;
+  padding: 0 calc(var(--drawer-pad) + var(--px));
   margin-bottom: 0.75rem;
 }
 

@@ -9,7 +9,7 @@ import {
 
 /** Flips by one step when there is a neighbour that way; true when it did. */
 export function tryFlip(flip: FlipProps, step: FlipStep, via: FlipVia): boolean {
-  if (!canStep(step, flip.index, flip.count)) return false;
+  if (flip.paused === true || !canStep(step, flip.index, flip.count)) return false;
   flip.onFlip(step, via);
   return true;
 }

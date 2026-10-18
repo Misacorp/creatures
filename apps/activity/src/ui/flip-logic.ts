@@ -44,6 +44,11 @@ export interface FlipProps {
   enter?: FlipStep | null | undefined;
   /** After a flip with a button, the owner draws the control anew: this one gets the focus back. */
   focusButton?: FlipStep | null | undefined;
+  /**
+   * What is shown is not the thing that flips (a drill-in view of the drawer, like the item's "Equip on"
+   * list): no arrows, no announcement, no keys and no swipe, while the drawn parts keep their place.
+   */
+  paused?: boolean | undefined;
 }
 
 /** A finger must travel this far (px) before the gesture counts as horizontal or vertical. */

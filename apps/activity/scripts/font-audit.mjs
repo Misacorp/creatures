@@ -52,16 +52,16 @@ const PRESETS = [
     panels: 2,
   },
   {
-    name: 'Equip on picker (every reason)',
+    name: 'Equip on list in the drawer (every reason)',
     entry: 'CreaturePage',
     props: { scene: 'W4' },
-    panels: 3,
+    panels: 1,
   },
   {
-    name: 'Equip on picker for a worn item',
+    name: 'Equip on list for a worn item',
     entry: 'CreaturePage',
     props: { scene: 'W5' },
-    panels: 3,
+    panels: 1,
   },
   { name: 'Dismantle panel open', entry: 'CreaturePage', props: { scene: 'W6' }, panels: 3 },
   {

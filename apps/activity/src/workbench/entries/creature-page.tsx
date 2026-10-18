@@ -20,9 +20,10 @@ import type { GearActions } from '../../gear-actions';
 import { ItemFrame, ItemSprite } from '../../GearArt';
 import { LootList } from '../../GearLoot';
 import type { DismantlePreview, GearItem, GearState, GrantLoot } from '../../gear-types';
-import { dismantleDurationFor } from '../../gear-view';
+import { dismantleDurationFor, gearName } from '../../gear-view';
 import { InventoryGrid } from '../../InventoryGrid';
 import { ItemDetail } from '../../ItemDetail';
+import { Drawer } from '../../ui/Drawer';
 import { bool, str } from '../props';
 import type { Entry, Props } from '../types';
 
@@ -54,7 +55,7 @@ interface SceneDef {
   /** `compare`: a long Epic against a long worn Epic (many lines, changed, new and lost), to show the card scroll. */
   long?: boolean;
   open?: PageOpen;
-  /** `item`: what the item drawer shows open: the creature picker of "Equip on", or the dismantle panel. */
+  /** `item`: what the item drawer shows open: the creature list of "Equip on" (a view of the drawer), or the dismantle panel. */
   drawer?: 'equip' | 'dismantle';
   /** `item`: creatures of every state beside the two of the sample (a Guard, a low level, away, on a job). */
   crowd?: boolean;
@@ -169,6 +170,13 @@ const SCENE_LIST: readonly SceneDef[] = [
     long: true,
   },
   {
+    id: 'K9',
+    label: 'K9 · Item picker on open: nothing selected, the grid has the whole drawer',
+    kind: 'level 15',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'hat' },
+  },
+  {
     id: 'K8',
     label: 'K8 · Item picker: an item this creature cannot wear (the reason, in the pixel font)',
     kind: 'level 15',
@@ -244,7 +252,7 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   {
     id: 'W4',
-    label: 'W4 · Item drawer: Equip on, the creature picker (a Guards-only Charm, every reason)',
+    label: 'W4 · Item drawer: the Equip on list (a Guards-only Charm, every reason)',
     kind: 'level 15',
     show: 'item',
     pick: 'charm:4',
@@ -253,7 +261,7 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   {
     id: 'W5',
-    label: 'W5 · Item drawer: Equip on for a worn item (Take off first)',
+    label: 'W5 · Item drawer: the Equip on list for a worn item (Take off first)',
     kind: 'level 15',
     show: 'item',
     pick: 'hat:0',
@@ -629,20 +637,34 @@ function ItemScene({ def }: { def: SceneDef }) {
     ...NO_JOB_ACTIONS,
     previewDismantle: (creatureId) => previewOf(item, creatureId),
   };
-  return (
+  const detail = (
+    <ItemDetail
+      item={item}
+      gear={gear}
+      creatures={creatures}
+      busy={false}
+      actions={actions}
+      onGone={() => undefined}
+      initialDismantle={def.drawer === 'dismantle'}
+      initialPicking={def.drawer === 'equip'}
+    />
+  );
+  // The scenes with a crowd show the content in a real drawer (its widths and padding are part of the look).
+  return def.crowd === true ? (
+    <div class="v3-phone">
+      <Drawer
+        open
+        title={gearName(item.baseId)}
+        titleHidden
+        class="item-drawer"
+        onClose={() => undefined}
+      >
+        {detail}
+      </Drawer>
+    </div>
+  ) : (
     <div>
-      <div class="workshop">
-        <ItemDetail
-          item={item}
-          gear={gear}
-          creatures={creatures}
-          busy={false}
-          actions={actions}
-          onGone={() => undefined}
-          initialDismantle={def.drawer === 'dismantle'}
-          initialPicking={def.drawer === 'equip'}
-        />
-      </div>
+      <div class="workshop">{detail}</div>
     </div>
   );
 }

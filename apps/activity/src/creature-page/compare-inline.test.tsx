@@ -162,7 +162,7 @@ describe('the Compare switch', () => {
   });
 
   it('is hidden for the worn item, which has Take off at the bottom right', () => {
-    const p = draw('level 15', 'hat');
+    const p = draw('level 15', 'hat', WORN_CROWN);
     expect(sw(p)).toBeUndefined();
     const row = first(byClass(detail(p), 'ip-actions'));
     expect(byName(row, 'button', 'Take off')).toHaveLength(1);
@@ -279,7 +279,7 @@ describe('the detail panel scrolls inside itself', () => {
   });
 
   it('keeps the actions outside the scroll for the worn item and an unwearable one too', () => {
-    for (const picked of [undefined, 'bag-hat-16']) {
+    for (const picked of [WORN_CROWN, 'bag-hat-16']) {
       const p = draw('level 15', 'hat', picked);
       const scroll = first(byClass(detail(p), 'ip-detail-scroll'));
       expect(byClass(scroll, 'ip-reason')).toHaveLength(0);

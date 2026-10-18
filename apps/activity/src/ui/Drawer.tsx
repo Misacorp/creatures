@@ -166,7 +166,7 @@ function DrawerSheet({
         }}
       />
       <div
-        class={`drawer-panel${titleHidden ? ' title-hidden' : ''}${flip === undefined ? '' : ' has-flip'}${extra === undefined ? '' : ` ${extra}`}`}
+        class={`drawer-panel${titleHidden ? ' title-hidden' : ''}${flip === undefined || flip.paused === true ? '' : ' has-flip'}${extra === undefined ? '' : ` ${extra}`}`}
         ref={panel}
         role="dialog"
         aria-modal="true"
@@ -222,7 +222,7 @@ function DrawerSheet({
             </button>
           </div>
         </div>
-        {flip !== undefined && (
+        {flip !== undefined && flip.paused !== true && (
           <div class="drawer-flip">
             <FlipNav flip={flip} />
           </div>
@@ -230,7 +230,7 @@ function DrawerSheet({
         {toolbar !== undefined && <div class="drawer-toolbar">{toolbar}</div>}
         <div class="drawer-body">{children}</div>
         {footer !== undefined && <div class="drawer-footer">{footer}</div>}
-        {flip !== undefined && <FlipLive flip={flip} />}
+        {flip !== undefined && flip.paused !== true && <FlipLive flip={flip} />}
       </div>
     </div>
   );

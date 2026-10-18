@@ -151,7 +151,7 @@ function SwipeArea({
   function down(event: JSX.TargetedPointerEvent<HTMLDivElement>): void {
     swallow.current = false;
     const current = flipRef.current;
-    if (current.count < 2 || !event.isPrimary) return;
+    if (current.count < 2 || current.paused === true || !event.isPrimary) return;
     if (!swipeAllowed(event.pointerType, current.pointers ?? 'touch')) return;
     if (startsOnBlocked(event.target, event.currentTarget)) return;
     gesture.current = {

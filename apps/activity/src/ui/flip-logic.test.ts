@@ -254,6 +254,13 @@ describe('handleFlipKey', () => {
     expect(left.defaultPrevented).toBe(false);
   });
 
+  it('does nothing while the flip is paused (a drill-in view is shown instead of the thing)', () => {
+    const paused = { ...flipAt(1), paused: true };
+    expect(handleFlipKey(keyEvent('ArrowRight'), paused)).toBe(false);
+    expect(handleFlipKey(keyEvent('ArrowLeft'), paused)).toBe(false);
+    expect(flips).toEqual([]);
+  });
+
   it('does nothing without a flip, or typing in a field', () => {
     expect(handleFlipKey(keyEvent('ArrowRight'), undefined)).toBe(false);
     expect(handleFlipKey(keyEvent('ArrowRight', node('input', { type: 'text' })), flipAt(1))).toBe(

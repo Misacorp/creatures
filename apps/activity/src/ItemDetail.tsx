@@ -11,24 +11,22 @@ import { DismantlePanel } from './ItemPanels';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Accordion } from './ui/Accordion';
-import { RosterPicker } from './ui/RosterPicker';
+import { RosterList } from './ui/RosterList';
 
 /**
  * The "Equip on" row: a trigger that looks and acts like a dropdown, showing who wears the item (their
- * sprite and name) or "Choose a creature". It opens the creature picker sheet; the pick equips right away.
+ * sprite and name) or "Choose a creature". It opens the creature list, a view of the same drawer; the pick equips right away.
  */
 function EquipOn({
   item,
   wearer,
   busy,
-  open,
   triggerRef,
   onOpen,
 }: {
   item: GearItem;
   wearer: Creature | undefined;
   busy: boolean;
-  open: boolean;
   triggerRef: { current: HTMLButtonElement | null };
   onOpen: () => void;
 }) {
@@ -43,8 +41,6 @@ function EquipOn({
         ref={triggerRef}
         type="button"
         class="equip-trigger"
-        aria-haspopup="dialog"
-        aria-expanded={open}
         aria-labelledby={`${labelId} ${valueId}`}
         disabled={busy}
         onClick={onOpen}
@@ -72,9 +68,65 @@ function EquipOn({
 }
 
 /**
+ * The "Equip on" view: a drill-in of the item drawer, in the place of the item (never a sheet over the drawer).
+ * "‹ Back" at the top left (or Escape) returns to the item with nothing changed; a pick asks the server and
+ * returns too. The list is the creature picker's (`RosterList`): Take off first for a worn item, who can wear it
+ * first, a short reason on the rest. Left and Right do not flip the item behind it, and a swipe is ignored.
+ */
+function EquipView({
+  item,
+  creatures,
+  onPick,
+  onBack,
+}: {
+  item: GearItem;
+  creatures: readonly Creature[];
+  onPick: (id: string) => void;
+  onBack: () => void;
+}) {
+  const head = useRef<HTMLDivElement>(null);
+  // The view starts at its top, whatever the item view had been scrolled to.
+  useEffect(() => {
+    head.current?.scrollIntoView?.({ block: 'start' });
+  }, []);
+  return (
+    <section
+      class="item-detail equip-view pix-panel"
+      aria-label="Equip on"
+      data-no-flip=""
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          // Back to the item, not out of the drawer.
+          event.preventDefault();
+          event.stopPropagation();
+          onBack();
+        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+          event.stopPropagation();
+        }
+      }}
+    >
+      <div ref={head} class="drill-head">
+        <button type="button" class="ghost cp-back drill-back" onClick={onBack}>
+          <span aria-hidden="true">‹</span> Back
+          <span class="visually-hidden"> to the item</span>
+        </button>
+        <h3 class="drill-title">Equip on</h3>
+      </div>
+      <RosterList
+        options={equipOptions(item, creatures)}
+        placedNote={WEARS_IT_NOTE}
+        showEffects={false}
+        onPick={onPick}
+        class="flat"
+      />
+    </section>
+  );
+}
+
+/**
  * One item of the bag: its card (image with its level, name, rarity, base stats, modifiers with their tiers),
- * then the "Equip on" row (who wears it, or "Choose a creature": the creature picker sheet equips right away,
- * and offers "Take off" first for a worn item), Dismantle, and where it came from and who made it one tap away
+ * then the "Equip on" row (who wears it, or "Choose a creature": it opens the creature list as a view of this
+ * same drawer, which equips right away and offers "Take off" first for a worn item), Dismantle, and where it came from and who made it one tap away
  * under "Details". The font is set once on the section (`.pix-panel`); only the Details text is body text.
  */
 export function ItemDetail({
@@ -87,6 +139,7 @@ export function ItemDetail({
   onGone,
   initialDismantle = false,
   initialPicking = false,
+  onDrill,
 }: {
   item: GearItem;
   gear: GearState;
@@ -99,8 +152,10 @@ export function ItemDetail({
   onGone: () => void;
   /** The workbench shows the dismantle panel open. */
   initialDismantle?: boolean;
-  /** The workbench shows the creature picker open. */
+  /** The workbench shows the creature list ("Equip on") open. */
   initialPicking?: boolean;
+  /** Told when the creature list opens and closes: the drawer turns its flipping off while it is shown. */
+  onDrill?: (open: boolean) => void;
 }) {
   const [dismantle, setDismantle] = useState(initialDismantle);
   const [picking, setPicking] = useState(initialPicking);
@@ -116,9 +171,40 @@ export function ItemDetail({
     shown.current = true;
     if (focusName) heading.current?.focus({ preventScroll: true });
   }, [item.id]);
+  // The drawer is told while the list is shown (and when this goes away), and the trigger gets the focus back.
+  const wasPicking = useRef(false);
+  useEffect(() => {
+    onDrill?.(picking);
+    if (!picking && wasPicking.current) trigger.current?.focus();
+    wasPicking.current = picking;
+  }, [picking]);
+  useEffect(
+    () => () => {
+      onDrill?.(false);
+    },
+    [],
+  );
 
   const base = gearBase(item.baseId);
   const wearer = creatures.find((c) => c.id === item.equippedOn);
+
+  if (picking) {
+    return (
+      <EquipView
+        item={item}
+        creatures={creatures}
+        onBack={() => {
+          setPicking(false);
+        }}
+        onPick={(id) => {
+          setPicking(false);
+          // The creature that wears it already: nothing to ask the server.
+          if (id === item.equippedOn) return;
+          void actions.equip(item.id, id === TAKE_OFF_ID ? null : id);
+        }}
+      />
+    );
+  }
 
   return (
     <section class="item-detail pix-panel" aria-labelledby={`item-${item.id}-name`}>
@@ -134,30 +220,11 @@ export function ItemDetail({
         item={item}
         wearer={wearer}
         busy={busy}
-        open={picking}
         triggerRef={trigger}
         onOpen={() => {
           setPicking(true);
         }}
       />
-      {picking && (
-        <RosterPicker
-          title="Equip on"
-          options={equipOptions(item, creatures)}
-          placedNote={WEARS_IT_NOTE}
-          showEffects={false}
-          anchor={() => trigger.current}
-          onPick={(id) => {
-            setPicking(false);
-            // The creature that wears it already: nothing to ask the server.
-            if (id === item.equippedOn) return;
-            void actions.equip(item.id, id === TAKE_OFF_ID ? null : id);
-          }}
-          onClose={() => {
-            setPicking(false);
-          }}
-        />
-      )}
 
       <div class="item-actions">
         <p class="actions">
