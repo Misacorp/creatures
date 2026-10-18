@@ -1,6 +1,6 @@
 # Player feedback and bug reports
 
-Status: **building**, 2026-10-16. Misa's request: players send feedback and bug reports from Discord, they become GitHub issues, and Misa marks the ones worth fixing on GitHub. A triage session (the `triage` skill) then summarises new reports and fixes the marked ones in one PR.
+Status: **shipped** (PR #28 and #30), by 2026-10-18; started 2026-10-16. Misa's request: players send feedback and bug reports from Discord, they become GitHub issues, and Misa marks the ones worth fixing on GitHub. A triage session (the `triage` skill) then summarises new reports and fixes the marked ones in one PR.
 
 ## Flow
 

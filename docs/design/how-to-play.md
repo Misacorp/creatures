@@ -1,6 +1,6 @@
 # How to play and clickable tags
 
-Status: **built** on branch `howto` (2026-10-13), roadmap item 1. The player-facing text lives in `packages/game/src/content/data/glossary.json` and `how-to-play.json`; tests pin its numbers to `RULES`. Where this page and the code disagreed, the code won (corrections below are already applied).
+Status: **shipped** (PR #9), by 2026-10-13. Built on branch `howto`, roadmap item 1. The player-facing text lives in `packages/game/src/content/data/glossary.json` and `how-to-play.json`; tests pin its numbers to `RULES`. Where this page and the code disagreed, the code won (corrections below are already applied).
 
 ## Goal
 

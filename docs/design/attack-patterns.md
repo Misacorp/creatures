@@ -1,6 +1,6 @@
 # Attack patterns: varied boss and foe attacks
 
-Status: **design and simulator prototype, 2026-10-14. Nothing here is built or shipped.** The prototype is an in-memory fork of the fight engine in the session scratchpad, run through Vite SSR like `packages/sim/scripts/*.mjs`; no repo code changed. Misa's brief:
+Status: **shipped** (PR #24), 2026-10-16, except section 7 (support reach shapes), which is still open. The design and simulator prototype were written on 2026-10-14: an in-memory fork of the fight engine in the session scratchpad, run through Vite SSR like `packages/sim/scripts/*.mjs`. Misa's brief:
 
 > vary up the attack patterns of raid bosses. Instead of single hits, they could hit entire rows at once quite often, drop "artillery" on X random creatures in any space, deal high damage hits to single creatures that radiate a portion of the damage to their neighbours, etc. These positional elements and adjacency rules would warrant placing creatures to cover more scenarios. I'd be interested in seeing if the dungeon could also use some form of varying attack patterns from enemies.
 

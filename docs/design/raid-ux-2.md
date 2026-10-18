@@ -1,6 +1,6 @@
 # Raid UX pass 2: a readable board, familiar patterns, a leaner page
 
-Status: **built, 2026-10-14** (all ten slices and the decided items; the raid fight stage got the same lane grid as the board). The raid structure section below is still a plan, built with the attack patterns. Details of each slice are in `decisions.md` (2026-10-14 entries). It comes from Misa's review of the raid page on a phone. It is the next build after PR #18 (the left-to-right dungeon), and it goes **before or together with** the attack-pattern build (`attack-patterns.md`), because the patterns need a board where rows, lanes and neighbours are easy to see.
+Status: **built, 2026-10-14** (all ten slices and the decided items; the raid fight stage got the same lane grid as the board). The raid structure section below was built with the attack patterns (PR #24). Details of each slice are in `decisions.md` (2026-10-14 entries). It comes from Misa's review of the raid page on a phone. It is the next build after PR #18 (the left-to-right dungeon), and it goes **before or together with** the attack-pattern build (`attack-patterns.md`), because the patterns need a board where rows, lanes and neighbours are easy to see.
 
 ## Misa's asks (verbatim intent)
 

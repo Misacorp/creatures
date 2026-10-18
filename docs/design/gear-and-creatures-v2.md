@@ -1,6 +1,6 @@
 # Gear and creatures v2: the foundation of the revamps
 
-Status: **proposal for Misa's review**, 2026-10-16. Nothing here is built. Asked for in decision 8 of "Misa's second round on the revamps" (`decisions.md`, 2026-10-16): the full gear modifier list, the creature talents and choices, and why each choice is meaningful, reviewed before anything is built.
+Status: **shipped** in parts (PR #31 and #35), by 2026-10-18. Proposed 2026-10-16 as decision 8 of "Misa's second round on the revamps" (`decisions.md`, 2026-10-16): the full gear modifier list, the creature talents and choices, and why each choice is meaningful, reviewed before anything was built.
 
 Binding inputs, in order of precedence: the three newest 2026-10-16 entries in `decisions.md` ("Misa's direction after the raid retune", "Misa's answers to the systems review", "Misa's second round on the revamps"), then `systems-review.md` sections 5 and 6 where they still fit. Research: `docs/research/bazaar-poe-traits.md`, `loops-gear-collection.md`, `idle-coop-raids.md`. Engine facts are checked against `packages/engine/src/` (`fight.ts`, `types.ts`, `mutators.ts`) and `packages/game/src/rules/` (`gear.ts`, `config.ts`).
 
