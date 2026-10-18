@@ -63,6 +63,7 @@ export function queueBossReveal(
       gimmicks: boss.gimmicks.map((g) => ({ name: g.name, text: describeGimmick(g) })),
       turnOrder: boss.turnOrder,
       schedule: { phase1: times.phase1, phase2: times.phase2, finale: times.finale },
+      timeZone: tz,
       players,
       parties: count(sql, 'raid_parties', week.weekId),
       rank: progression?.rank ?? null,

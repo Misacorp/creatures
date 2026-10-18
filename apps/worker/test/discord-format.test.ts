@@ -6,6 +6,7 @@ import {
   discordTime,
   escapeMarkdown,
   formatBossReveal,
+  dayAndTime,
   formatPhasePost,
   hpBar,
   PLAY_BUTTON_ID,
@@ -263,6 +264,7 @@ const REVEAL: RevealPost = {
     phase2: Date.parse('2027-01-16T11:37:00Z'),
     finale: Date.parse('2027-01-17T18:00:00Z'),
   },
+  timeZone: 'Europe/Helsinki',
   players: 7,
   parties: 1,
   rank: 4,
@@ -295,9 +297,9 @@ describe('formatBossReveal', () => {
       thumbnail: { url: '/discord/bosses/tidal-colossus.png' },
       fields: [
         { name: 'Moves', value: '**Undertow**: hits the front zone every 3 rounds', inline: false },
-        { name: 'Phase 1', value: '<t:1800013020:f>\n<t:1800013020:R>', inline: true },
-        { name: 'Phase 2', value: '<t:1800099420:f>\n<t:1800099420:R>', inline: true },
-        { name: 'Finale', value: '<t:1800208800:f>\n<t:1800208800:R>', inline: true },
+        { name: 'Phase 1', value: 'Fri <t:1800013020:t>', inline: true },
+        { name: 'Phase 2', value: 'Sat <t:1800099420:t>', inline: true },
+        { name: 'Finale', value: 'Sun <t:1800208800:t>', inline: true },
       ],
       footer: { text: '7 players in' },
     });
@@ -333,6 +335,13 @@ describe('formatBossReveal', () => {
     );
     expect(many.footer).toEqual({ text: '31 players in · 3 parties' });
     expect(many.description).toContain('creatures act right to left');
+  });
+
+  it('names the weekday in the guild\u2019s timezone', () => {
+    // 23:30 UTC on a Thursday is already Friday in Helsinki.
+    const late = Date.parse('2027-01-14T23:30:00Z');
+    expect(dayAndTime(late, 'Europe/Helsinki')).toBe('Fri <t:1799969400:t>');
+    expect(dayAndTime(late, 'UTC')).toBe('Thu <t:1799969400:t>');
   });
 
   it('takes the colour of the element, and a plain one for an unknown element', () => {

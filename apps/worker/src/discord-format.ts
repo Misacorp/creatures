@@ -234,8 +234,14 @@ function message(embed: PostEmbed): PostMessage {
   return { embeds: [limited], components: [playRow()] };
 }
 
-/** A Discord timestamp: the short date and time ("23 October 2026 13:37"). */
-const shortTime = (epochMs: number): string => `<t:${String(Math.floor(epochMs / 1000))}:f>`;
+/**
+ * "Fri 13:37": the weekday in the guild's timezone, then a Discord timestamp of the time, which each
+ * reader sees in their own timezone.
+ */
+export function dayAndTime(epochMs: number, timeZone: string): string {
+  const day = new Intl.DateTimeFormat('en-GB', { weekday: 'short', timeZone }).format(epochMs);
+  return `${day} <t:${String(Math.floor(epochMs / 1000))}:t>`;
+}
 /** A Discord timestamp: the relative time ("in 3 days"). */
 const relativeTime = (epochMs: number): string => `<t:${String(Math.floor(epochMs / 1000))}:R>`;
 
@@ -254,6 +260,8 @@ export interface RevealPost {
   turnOrder: TurnOrder;
   /** UTC epoch milliseconds of the three fights. */
   schedule: { phase1: number; phase2: number; finale: number };
+  /** The guild's timezone: the fights' weekdays are named in it. */
+  timeZone: string;
   players: number;
   parties: number;
   /** The server's Boss Rank this week; null when the week has none (an old week, or nobody in yet). */
@@ -290,7 +298,7 @@ export function formatBossReveal(post: RevealPost): PostMessage {
     ['Phase 2', post.schedule.phase2],
     ['Finale', post.schedule.finale],
   ] as const) {
-    fields.push(field(name, `${shortTime(at)}\n${relativeTime(at)}`));
+    fields.push(field(name, dayAndTime(at, post.timeZone)));
   }
   const players = `${String(post.players)} ${plural(post.players, 'player', 'players')} in`;
   return message({

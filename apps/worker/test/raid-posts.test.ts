@@ -96,11 +96,11 @@ describe('the Monday boss reveal', () => {
         const embed = embedOf(text);
         expect(embed.title).toBe(boss?.name);
         expect(embed.thumbnail).toEqual({ url: `/discord/bosses/${boss?.id ?? ''}.png` });
-        const at = (ms: number) => `<t:${String(ms / 1000)}:f>\n<t:${String(ms / 1000)}:R>`;
+        const at = (day: string, ms: number) => `${day} <t:${String(ms / 1000)}:t>`;
         expect(embed.fields.slice(-3)).toEqual([
-          { name: 'Phase 1', value: at(times.phase1), inline: true },
-          { name: 'Phase 2', value: at(times.phase2), inline: true },
-          { name: 'Finale', value: at(times.finale), inline: true },
+          { name: 'Phase 1', value: at('Fri', times.phase1), inline: true },
+          { name: 'Phase 2', value: at('Sat', times.phase2), inline: true },
+          { name: 'Finale', value: at('Sun', times.finale), inline: true },
         ]);
         expect(embed.footer).toEqual({ text: '4 players in' });
         // The server's rank, as stored for the week; a normal week says nothing about a Festival.

@@ -80,7 +80,7 @@ At the scheduled time, in one go per party:
 
 - **Channel:** the guild's announcement channel is the channel the Activity was most recently launched from. It comes from Discord's verified instance location, never from the client. An admin override comes later.
 - **Posts** are one embed each, with the boss's portrait in the corner and a "Play Leet Creatures" button (2026-10-18 entry in `decisions.md`). They sum up; the details live in the raid view.
-  - Monday boss reveal: the boss, its element and turn order, its moves, the three fight times in columns, and how many players are in.
+  - Monday boss reveal: the boss, its element and turn order, its moves, the three fight times in columns (weekday and time, "Fri 13:37"), and how many players are in.
   - Friday and Saturday: the boss retreats or holds firm, with an HP bar; the top three fighters, the big hit and the next fight in columns; after Phase 1, the counter-move.
   - Sunday finale: defeated or survived, the server's rank, when the next boss comes, the top three fighters, the big hit and the top reaction, and the creatures first caught or evolved on the server this week.
   - Never in a post: Essence amounts, the day's weather, contribution numbers, the jackpot.
