@@ -4,12 +4,7 @@ import { awayMembers } from '../src/raid-assist';
 import { buildPartyBoard, buildPhaseInput } from '../src/raid-resolve';
 import { partyMembers } from '../src/raid-roster';
 import { eventTimes } from '../src/raid-schedule';
-import {
-  LATEST_SCHEMA_VERSION,
-  undoDungeonPathsMigration,
-  undoPlacedByMigration,
-  type CoreContext,
-} from './helpers';
+import { LATEST_SCHEMA_VERSION, undoPlacedByMigration, type CoreContext } from './helpers';
 import { HELSINKI, HOUR, W02, count, rows, runRaid, seedPlayer, type Seeded } from './raid-helpers';
 
 const WEEK_START = eventTimes(W02.id, HELSINKI).weekStart;
@@ -508,12 +503,11 @@ describe('migration 32 (placed_by)', () => {
         ).map((r) => r.name);
       expect(columns()).toContain('placed_by');
       ctx.core.raid.place(me.id, HELSINKI, me.creatureIds[0] as string, 4);
-      // Migration 33 (the dungeon on a map) came after it, so it is undone first.
-      undoDungeonPathsMigration(ctx.sql);
+      // It undoes the newer migrations first (33, the lounge; 34, the dungeon on a map).
       undoPlacedByMigration(ctx.sql);
       expect(columns()).not.toContain('placed_by');
       expect(ctx.sql.exec('SELECT MAX(version) AS v FROM schema_version').one()['v']).toBe(
-        LATEST_SCHEMA_VERSION - 2,
+        LATEST_SCHEMA_VERSION - 3,
       );
       ctx.core.migrate();
       expect(columns()).toContain('placed_by');
