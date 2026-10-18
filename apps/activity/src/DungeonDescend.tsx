@@ -23,7 +23,6 @@ import { supplyKindOf } from './trip-view';
 import { CountBadge, type CountItem } from './ui/CountBadge';
 import { GameIcon } from './ui/GameIcon';
 import { RevealShell } from './ui/RevealShell';
-import { Tag } from './ui/Tag';
 
 type Descent = Extract<NonNullable<DungeonPending>, { kind: 'descend' }>;
 
@@ -139,11 +138,6 @@ export function DungeonDescend({
             <li key={line}>{line}</li>
           ))}
         </ul>
-        <p class="descend-help">
-          <Tag kind="chip" entry="undercroft">
-            What is the Undercroft?
-          </Tag>
-        </p>
       </section>
 
       <div class="descend-choices">

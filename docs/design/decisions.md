@@ -1753,3 +1753,11 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 - The glossary entry `room-boss` is now `floor-boss` (nothing stored or sent to the server refers to a glossary id).
 
 **Internal names stay.** In code, API fields and stored run JSON, `floor` is still a row (step) of a map, `floors` the steps of a map, `level` an Undercroft floor (1 to 3, 0 is the day's map), `campFloor` and node ids (`f2l1`, `u1f0l0`) are unchanged, and `keeper` stays in function, file and workbench stage names (`isKeeper`, `openKeeperChest`, `dungeon-act-keeper.json`). Renaming them would change stored runs and the API for no player-visible gain. `docs/design/dungeon-paths.md` has a "Terminology" section that says so. Older dated entries above keep the old words.
+
+## 2026-10-18: The dungeon map goes downward; the page follows the run
+
+**Decision.** Misa's test feedback: players delve deeper, so the map starts at the top (entrance row) and ends in the floor boss at the bottom. The Undercroft floors are drawn below the day's floor, each under a dashed seam with its label at the top of its darker band. The green start triangles sit above the entrance rooms and point down into them. The same map draws on the run screen, the pre-run card, the results and the workbench. Keyboard order follows the picture (top to bottom). The depth track is unchanged.
+
+**Page scroll.** The page itself scrolls (the Activity's iframe window; no inner container). A fight brings its arena to the top of the view when it starts (as before). A card that replaces the map (mystery room, camp, descent) brings itself into view. Back on the map, the room just played (or the entrance of the Undercroft floor just entered) goes into the top half of the view, unless it is already there, so the rooms below it are on screen: `dungeon-scroll.ts`. Smooth, or instant with reduced motion.
+
+**Smaller changes.** An unvisited mystery room's drawer no longer names its scene; the "?" help stands right after the drawer title (a `titleHelp` slot in `Drawer`). The descent card drops its "What is the Undercroft?" line.

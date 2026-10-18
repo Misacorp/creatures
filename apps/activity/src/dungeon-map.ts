@@ -5,8 +5,8 @@
  * Text is plain; names come from the server and are rendered as text only.
  *
  * The picture is a vertical map in a fixed coordinate space (`MAP_WIDTH` wide, like an SVG viewBox) that
- * the stylesheet scales to the width of the screen: the floor boss at the top, the entrance floor at the
- * bottom, three lanes across. At 320 px (the narrowest phone) one unit is one pixel, so every room
+ * the stylesheet scales to the width of the screen: the entrance row at the top, the floor boss at the
+ * bottom (the player delves downward, and the Undercroft's floors come below it), three lanes across. At 320 px (the narrowest phone) one unit is one pixel, so every room
  * button of `MIN_NODE` units is at least 44 px there, and bigger on wider screens.
  */
 import { undercroftOpen } from '@creatures/game';
@@ -58,9 +58,9 @@ export function nodeLevel(id: string): number {
 interface MapLayoutOptions {
   /** The width of the coordinate space (default `MAP_WIDTH`). */
   width?: number;
-  /** The distance between two floors (default 74). */
+  /** The distance between two rows (default 74). */
   floorGap?: number;
-  /** Space left above the boss and below the entrance floor (default 44). */
+  /** Space left above the entrance row and below the boss (default 44). */
   padding?: number;
 }
 
@@ -77,7 +77,7 @@ export interface LaidNode {
   size: number;
 }
 
-/** A path between two rooms, from the lower floor to the one above it, centre to centre. */
+/** A path between two rooms, from a row to the next one down, centre to centre. */
 export interface LaidEdge {
   from: string;
   to: string;
@@ -98,7 +98,7 @@ export interface MapLayout {
 const MIDDLE = 1;
 
 /**
- * Positions for every room of the map. Floor 0 is at the bottom and the last floor at the top. A floor
+ * Positions for every room of the map. Row 0 (the entrance) is at the top and the last row (the boss) at the bottom. A row
  * with one room (the camp, the boss) is centred; otherwise a room stands in its lane (left, middle or
  * right), so two rooms on a floor keep the lanes the server gave them and the paths never cross. A path to
  * a room the map does not have is left out. Always finite numbers, even for a map with no rooms.
@@ -126,7 +126,7 @@ export function mapLayout(map: DungeonMapView, opts: MapLayoutOptions = {}): Map
       perFloor.get(node.floor) === 1
         ? width / 2
         : laneX(Number.isFinite(node.lane) ? node.lane : MIDDLE),
-    y: padding + (floors - 1 - node.floor) * gap,
+    y: padding + node.floor * gap,
     size: NODE_SIZE[node.kind],
   }));
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -143,7 +143,7 @@ export function mapLayout(map: DungeonMapView, opts: MapLayoutOptions = {}): Map
   return { width, height, nodes, edges };
 }
 
-/** The space between two stacked levels, in units: room for the label of the level above. */
+/** The space between two stacked levels, in units: room for the label of the level below. */
 export const LEVEL_SEAM = 16;
 
 /** A darker band of the stacked picture: an Undercroft level, with its label. */
@@ -153,7 +153,7 @@ export interface LaidBand {
   level: number;
   y: number;
   height: number;
-  /** Where the label stands (its centre), in units. */
+  /** Where the label stands (its centre), in units: in the seam at the band's top. */
   labelY: number;
   label: string;
   /** The level's keeper stands on a cracked floor. */
@@ -170,10 +170,10 @@ export function levelLabel(map: Pick<DungeonMapView, 'level' | 'label'>): string
 }
 
 /**
- * The day's map with the Undercroft levels drawn so far stacked above its floor boss (the map grows
- * upward): each level is laid out like the day's map (its own entrance floor at the bottom, its keeper
- * at the top), the highest level on top, with a seam between two levels that holds the label of the one
- * above. Without a level it is the day's map exactly as `mapLayout` draws it. A level's `level` number does not matter: the order of the
+ * The day's map with the Undercroft levels drawn so far stacked below its floor boss (the map grows
+ * downward): each level is laid out like the day's map (its own entrance row at the top, its floor boss
+ * at the bottom), the first level right under the day's map, with a seam above each level that holds
+ * its label. Without a level it is the day's map exactly as `mapLayout` draws it. A level's `level` number does not matter: the order of the
  * list is the order of the stack.
  */
 export function stackLayout(
@@ -189,38 +189,37 @@ export function stackLayout(
   const edges: LaidEdge[] = [];
   const bands: LaidBand[] = [];
   let y = 0;
-  // From the top: the highest level first, the day's map last.
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const part = parts[i] as MapLayout;
+  // From the top: the day's map first, then each Undercroft level in order.
+  parts.forEach((part, i) => {
     const map = i === 0 ? main : (undercroft[i - 1] as DungeonMapView);
-    for (const n of part.nodes) nodes.push({ ...n, y: n.y + y });
-    for (const e of part.edges) edges.push({ ...e, y1: e.y1 + y, y2: e.y2 + y });
     if (i > 0) {
       bands.push({
         kind: 'undercroft',
         level: map.level ?? i,
         y,
         height: part.height + LEVEL_SEAM,
-        labelY: y + part.height + LEVEL_SEAM / 2,
+        labelY: y + LEVEL_SEAM / 2,
         label: levelLabel(map),
         crack: map.crack === true,
       });
       y += LEVEL_SEAM;
     }
+    for (const n of part.nodes) nodes.push({ ...n, y: n.y + y });
+    for (const e of part.edges) edges.push({ ...e, y1: e.y1 + y, y2: e.y2 + y });
     y += part.height;
-  }
-  // The day's map first in the list (the order of the rooms is the order of the picture, bottom up).
+  });
+  // The day's map first in the list (the order of the rooms is the order of the picture, top down).
   nodes.sort((a, b) => a.level - b.level);
   return { width, height, nodes, edges, bands };
 }
 
 // --- Where a run starts ---
 
-/** A start marker: a small triangle under an entrance room, pointing up into it. Units of the map's space. */
+/** A start marker: a small triangle above an entrance room, pointing down into it. Units of the map's space. */
 export interface StartMarker {
   /** The entrance room it points into. */
   id: string;
-  /** The three corners as an SVG `points` string: the apex touches the room's side, the base is below. */
+  /** The three corners as an SVG `points` string: the apex touches the room's top, the base is above. */
   points: string;
 }
 
@@ -239,13 +238,13 @@ export function startLevel(state: MapRun | null): number | null {
   return state.status === 'active' && state.at === null ? (state.level ?? 0) : null;
 }
 
-/** The start markers of a layout: one under every floor-0 room of `level`, pointing up into it. */
+/** The start markers of a layout: one above every row-0 room of `level`, pointing down into it. */
 export function startMarkers(layout: Pick<MapLayout, 'nodes'>, level: number): StartMarker[] {
   return layout.nodes
     .filter((n) => n.level === level && n.floor === 0)
     .map((n) => {
-      const apex = n.y + n.size / 2 + START_GAP;
-      const base = apex + START_HEIGHT;
+      const apex = n.y - n.size / 2 - START_GAP;
+      const base = apex - START_HEIGHT;
       const half = START_WIDTH / 2;
       return {
         id: n.id,
@@ -285,7 +284,7 @@ export function lostAt(history: MapRun['history'], id: string): boolean {
   return (history ?? []).some((e) => e.node === id && e.result === 'fight' && !e.cleared);
 }
 
-/** The SVG path of an edge: a gentle S that leaves a room straight up and arrives straight up. */
+/** The SVG path of an edge: a gentle S that leaves a room straight down and arrives straight down. */
 export function edgePath(edge: LaidEdge): string {
   const mid = (edge.y1 + edge.y2) / 2;
   return `M ${round(edge.x1)} ${round(edge.y1)} C ${round(edge.x1)} ${round(mid)}, ${round(edge.x2)} ${round(mid)}, ${round(edge.x2)} ${round(edge.y2)}`;

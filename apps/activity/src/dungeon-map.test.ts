@@ -113,15 +113,17 @@ describe('mapLayout', () => {
     }
   });
 
-  it('puts the boss at the top, the entrance floor at the bottom and floors in order', () => {
+  it('puts the entrance row at the top, the boss at the bottom and rows in order downward', () => {
     const boss = layout.nodes.find((n) => n.kind === 'boss');
     const ys = layout.nodes.map((n) => n.y);
-    expect(boss?.y).toBe(Math.min(...ys));
+    expect(boss?.y).toBe(Math.max(...ys));
+    expect(boss?.y).toBe(layout.height - 44);
     const floor0 = layout.nodes.filter((n) => n.floor === 0);
-    for (const n of floor0) expect(n.y).toBe(Math.max(...ys));
+    for (const n of floor0) expect(n.y).toBe(Math.min(...ys));
+    expect(Math.min(...ys)).toBe(44);
     for (const a of layout.nodes) {
       for (const b of layout.nodes) {
-        if (a.floor < b.floor) expect(a.y).toBeGreaterThan(b.y);
+        if (a.floor < b.floor) expect(a.y).toBeLessThan(b.y);
       }
     }
   });
@@ -143,10 +145,10 @@ describe('mapLayout', () => {
     expect(size('boss')).toBeGreaterThan(size('camp'));
   });
 
-  it('has an edge for every path, from the lower floor to the upper one', () => {
+  it('has an edge for every path, from a row to the next one down', () => {
     const total = SAMPLE_MAP.nodes.reduce((sum, n) => sum + n.next.length, 0);
     expect(layout.edges).toHaveLength(total);
-    for (const e of layout.edges) expect(e.y2).toBeLessThan(e.y1);
+    for (const e of layout.edges) expect(e.y2).toBeGreaterThan(e.y1);
     expect(edgePath(layout.edges[0] as (typeof layout.edges)[number])).toMatch(/^M [\d. ]+ C /);
   });
 
@@ -452,32 +454,34 @@ describe('the Undercroft on the map', () => {
     expect(stacked.bands).toEqual([]);
   });
 
-  it('stacks a level above the floor boss, with a seam for its label and a darker band', () => {
+  it('stacks a level below the floor boss, with a seam for its label and a darker band', () => {
     const main = mapLayout(down.map);
     const level = mapLayout(first);
     const layout = stackLayout(down.map, [first]);
     expect(layout.height).toBe(main.height + level.height + LEVEL_SEAM);
     const at = (id: string) => layout.nodes.find((n) => n.id === id);
-    // The level is above the whole day's map: its entrance floor is higher than the floor boss.
+    // The level is below the whole day's map: its entrance row is lower than the floor boss.
     const boss = at('f6l1');
     const entrance = at('u1f0l0');
     const keeper = at('u1f3l1');
-    expect(entrance && boss && entrance.y < boss.y - 31 - 23).toBe(true);
-    // The keeper is at the very top; the day's own entrance floor is at the very bottom.
-    expect(keeper?.y).toBe(44);
-    expect(at('f0l0')?.y).toBe(layout.height - 44);
+    expect(entrance && boss && entrance.y > boss.y + 31 + 23).toBe(true);
+    // The day's own entrance row is at the very top; the level's floor boss is at the very bottom.
+    expect(at('f0l0')?.y).toBe(44);
+    expect(keeper?.y).toBe(layout.height - 44);
     expect(layout.nodes.map((n) => n.level)).toEqual([
       ...down.map.nodes.map(() => 0),
       ...first.nodes.map(() => 1),
     ]);
-    // Its label stands in the seam, between the level and the boss's floor, and the band covers the level.
+    // Its label stands in the seam at the band's top, between the day's boss and the level's entrance,
+    // and the band covers the level down to the bottom of the picture.
     const [band] = layout.bands;
     expect(layout.bands).toHaveLength(1);
     expect(band).toMatchObject({ kind: 'undercroft', level: 1, label: first.label, crack: false });
-    expect(band?.y).toBe(0);
+    expect(band?.y).toBe(main.height);
     expect(band?.height).toBe(level.height + LEVEL_SEAM);
-    expect(band?.labelY).toBeGreaterThan(entrance?.y ?? 0);
-    expect(band?.labelY).toBeLessThan(boss?.y ?? 0);
+    expect((band?.y ?? 0) + (band?.height ?? 0)).toBe(layout.height);
+    expect(band?.labelY).toBeGreaterThan(boss?.y ?? 0);
+    expect(band?.labelY).toBeLessThan(entrance?.y ?? 0);
     // Every picture unit is inside the box, and every path of the level is drawn inside it.
     for (const n of layout.nodes) {
       expect(n.y).toBeGreaterThan(0);
@@ -487,21 +491,22 @@ describe('the Undercroft on the map', () => {
     for (const e of layout.edges) expect(Math.min(e.y1, e.y2)).toBeGreaterThan(0);
   });
 
-  it('stacks two levels, the second above the first', () => {
+  it('stacks two levels, the second below the first', () => {
     const deeper = undercroftState('cracked-deeper');
     const maps = deeper.undercroft?.maps ?? [];
     const layout = stackLayout(deeper.map, maps);
     expect(layout.bands.map((b) => [b.level, b.crack])).toEqual([
-      [2, false],
       [1, true],
+      [2, false],
     ]);
     const y = (id: string) => layout.nodes.find((n) => n.id === id)?.y ?? 0;
-    expect(y('u2f0l0')).toBeLessThan(y('u1f3l1'));
-    expect(y('u2f2l1')).toBeLessThan(y('u2f0l0'));
-    expect(layout.bands[0]?.labelY).toBeLessThan(y('u1f3l1'));
+    expect(y('u2f0l0')).toBeGreaterThan(y('u1f3l1'));
+    expect(y('u2f2l1')).toBeGreaterThan(y('u2f0l0'));
+    expect(layout.bands[1]?.labelY).toBeGreaterThan(y('u1f3l1'));
+    expect(layout.bands[1]?.labelY).toBeLessThan(y('u2f0l0'));
   });
 
-  it('has no band above the boss before any level is drawn, only the levels that are', () => {
+  it('has no band below the boss before any level is drawn, only the levels that are', () => {
     expect(stackLayout(SAMPLE_MAP, []).bands).toEqual([]);
     expect(stackLayout(SAMPLE_MAP, []).height).toBe(mapLayout(SAMPLE_MAP).height);
     expect(stackLayout(down.map, [first]).bands.map((b) => b.kind)).toEqual(['undercroft']);
@@ -578,7 +583,7 @@ describe('the Undercroft on the map', () => {
 describe('the start markers', () => {
   const laid = mapLayout(SAMPLE_MAP);
 
-  it('has one under every entrance room, pointing up into it, and none elsewhere', () => {
+  it('has one above every entrance room, pointing down into it, and none elsewhere', () => {
     const marks = startMarkers(laid, 0);
     expect(marks.map((m) => m.id)).toEqual(
       SAMPLE_MAP.nodes.filter((n) => n.floor === 0).map((n) => n.id),
@@ -589,14 +594,14 @@ describe('the start markers', () => {
       if (room === undefined || apex === undefined || left === undefined || right === undefined) {
         throw new Error('a triangle has three corners');
       }
-      // The apex is below the room's edge and centred under it; the base is wider and lower.
+      // The apex is above the room's edge and centred over it; the base is wider and higher.
       expect(apex[0]).toBeCloseTo(room.x);
-      expect(apex[1]).toBeGreaterThan(room.y + room.size / 2);
-      expect(left[1]).toBeGreaterThan(apex[1] ?? 0);
+      expect(apex[1]).toBeLessThan(room.y - room.size / 2);
+      expect(left[1]).toBeLessThan(apex[1] ?? 0);
       expect(right[1]).toBe(left[1]);
       expect(right[0]).toBeGreaterThan(left[0] ?? 0);
       // It stays on the picture.
-      expect(left[1]).toBeLessThan(laid.height);
+      expect(left[1]).toBeGreaterThan(0);
       expect(left[0]).toBeGreaterThan(0);
       expect(right[0]).toBeLessThan(laid.width);
     }

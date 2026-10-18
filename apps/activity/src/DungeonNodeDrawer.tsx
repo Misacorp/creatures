@@ -109,6 +109,9 @@ export function DungeonNodeDrawer({
   const entry = entries[0];
   const visited = status === 'visited' || status === 'current';
   const why = whyNot(status, state);
+  // The "?" for what the room is stands right after the title (the foe rooms carry their own tags).
+  const help =
+    node.foe !== undefined && node.kind !== 'mystery' ? null : nodeGlossaryEntry(node.kind);
   const footer = go ? (
     <button
       type="button"
@@ -130,6 +133,7 @@ export function DungeonNodeDrawer({
       open
       onClose={onClose}
       title={nodeTitle(node)}
+      titleHelp={help === null ? undefined : <GlossaryTag entry={help} look="help" />}
       class="dnd"
       footer={footer}
       returnFocusTo={returnFocusTo}
@@ -293,14 +297,14 @@ function PlainBody({
   visited: boolean;
   children?: ComponentChildren;
 }) {
-  const help = nodeGlossaryEntry(node.kind);
   // A carved door below depth 8 is a mystery room named "Quiet room": once the run has been in it, it says so.
   const quiet = node.kind === 'mystery' && node.event?.id === QUIET_ROOM.id;
   const lines =
     quiet && visited ? [QUIET_LINE] : entry === undefined || quiet ? nodeLines(node) : [];
   return (
     <div class="dnd-plain">
-      {node.kind === 'mystery' && node.event !== undefined && (
+      {/* An unvisited mystery room does not name its scene: it is hardly a mystery if it did. */}
+      {node.kind === 'mystery' && node.event !== undefined && visited && (
         <p class="dnd-event pix">{node.event.name}</p>
       )}
       {/* A room the run has been in says what happened there, not what it might be. */}
@@ -310,11 +314,6 @@ function PlainBody({
         </p>
       ))}
       {children}
-      {help !== null && (
-        <p class="dnd-help">
-          <GlossaryTag entry={help} look="help" />
-        </p>
-      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { DungeonEvent } from './DungeonEvent';
 import { DungeonMap } from './DungeonMap';
 import { DungeonRunStrip } from './DungeonRunStrip';
 import { runScreenOf } from './dungeon-flow';
+import { mapFocusNode, scrollRoomIntoTopHalf } from './dungeon-scroll';
 import type { DungeonAct, DungeonRunState } from './dungeon-types';
 import { usePrefersReducedMotion } from './hooks';
 import { arriveScroll, shouldScrollToCard } from './reveal-arrive';
@@ -14,7 +15,9 @@ import { arriveScroll, shouldScrollToCard } from './reveal-arrive';
  * An open run: the strip (the row with its HP, the keepsakes, the pack), then what the run stands at:
  * a mystery room's card, the camp's card, the descent card (the boss fell) or the map with its rooms to go to. Every choice is an act
  * the screen above sends; nothing here changes the run. Coming back to the map (after a fight, an
- * event or the camp) brings the top of the run into view when it is not.
+ * event or the camp) brings the room just played into the top half of the view, so the rooms below it
+ * (the map goes downward) are on screen; a card (mystery room, camp, descent) brings itself into view
+ * (`RevealShell`); with no room played yet (the run has just begun) the top of the run is shown.
  */
 export function DungeonRun({
   state,
@@ -36,11 +39,24 @@ export function DungeonRun({
   const reduced = usePrefersReducedMotion();
   useEffect(() => {
     const el = top.current;
-    if (el === null) return;
-    if (shouldScrollToCard(el.getBoundingClientRect().top, window.innerHeight)) {
-      el.scrollIntoView(arriveScroll(reduced));
-    }
-  }, [state.step]);
+    if (el === null || screen !== 'run') return undefined;
+    // After the new screen has laid out (the fight stage or a card that stood in its place is gone).
+    const frame = requestAnimationFrame(() => {
+      const id = mapFocusNode(state);
+      const room =
+        id === null || typeof el.querySelector !== 'function'
+          ? null
+          : el.querySelector(`[data-node="${id}"] button`);
+      if (room !== null) {
+        scrollRoomIntoTopHalf(room, reduced);
+      } else if (shouldScrollToCard(el.getBoundingClientRect().top, window.innerHeight)) {
+        el.scrollIntoView(arriveScroll(reduced));
+      }
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [state.step, screen]);
 
   return (
     <div ref={top} class="dungeon-run">

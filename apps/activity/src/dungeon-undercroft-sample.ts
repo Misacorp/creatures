@@ -84,7 +84,7 @@ export function undercroftState(stage: UndercroftStage): DungeonRunState {
   });
   switch (stage) {
     case 'locked':
-      // Standing on the floor before the boss: the quiet band above it says the Undercroft waits.
+      // Standing on the floor before the boss: the quiet band below it says the Undercroft waits.
       return {
         ...door,
         at: 'f4l1',

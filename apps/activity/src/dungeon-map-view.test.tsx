@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DungeonMap } from './DungeonMap';
+import { PopoverHost } from './PopoverHost';
 import { SAMPLE_MAP, sampleHistory, sampleState } from './dungeon-map-sample';
 import { omitKey } from './dungeon-path-samples';
 import { undercroftState, type UndercroftStage } from './dungeon-undercroft-sample';
@@ -142,6 +143,9 @@ describe('DungeonMap', () => {
     const p = draw(<DungeonMap map={SAMPLE_MAP} state={sampleState('camp')} onGo={vi.fn()} />);
     p.click(first(byName(p.root, 'button', /^Mystery room/)));
     expect(visibleText(p.root)).toContain("Something stirs. You'll see when you step in.");
+    // An unvisited mystery room does not name its scene.
+    expect(visibleText(first(byRole(p.root, 'dialog')))).not.toContain('The Singing Well');
+    expect(byClass(p.root, 'dnd-event')).toHaveLength(0);
     p.click(first(byName(p.root, 'button', 'Close')));
     p.click(first(byName(p.root, 'button', /^Cache/)));
     expect(visibleText(p.root)).toContain('Free loot: Bait and scrap for your pack.');
@@ -149,6 +153,29 @@ describe('DungeonMap', () => {
     p.click(first(byName(p.root, 'button', /^Camp/)));
     expect(visibleText(first(byRole(p.root, 'dialog')))).toContain('The camp is waiting.');
     expect(byName(p.root, 'button', /^Go/)).toHaveLength(0);
+  });
+
+  it('puts a room\'s "?" right after the drawer title, not below the text', () => {
+    const p = draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <DungeonMap map={SAMPLE_MAP} state={sampleState('camp')} onGo={vi.fn()} />
+      </PopoverHost>,
+    );
+    for (const [label, title] of [
+      [/^Mystery room/, 'Mystery room'],
+      [/^Cache/, 'Cache'],
+      [/^Camp/, 'Camp'],
+    ] as const) {
+      p.click(first(byName(p.root, 'button', label)));
+      const dialog = first(byRole(p.root, 'dialog'));
+      const heading = first(byClass(dialog, 'drawer-heading'));
+      expect(first(byClass(heading, 'drawer-title')).textContent).toBe(title);
+      const second = heading.childNodes[1] as { getAttribute?: (n: string) => string | null };
+      expect(second.getAttribute?.('class') ?? '').toContain('gtag-help');
+      // The dialog is named by the title alone, and the body has no "?" of its own.
+      expect(byClass(first(byClass(dialog, 'dnd-plain')), 'gtag-help')).toHaveLength(0);
+      p.click(first(byName(p.root, 'button', 'Close')));
+    }
   });
 
   it('shows an elite as Fierce, with an Elite tag', () => {
@@ -298,7 +325,7 @@ describe('DungeonMap with the Undercroft', () => {
     expect(byClass(p.root, 'dmap-uband')).toHaveLength(0);
   });
 
-  it('has no band or text above the boss before the run goes down, and no extra room', () => {
+  it('has no band or text below the boss before the run goes down, and no extra room', () => {
     const p = drawStage('locked');
     expect(byClass(p.root, 'dmap-label')).toHaveLength(0);
     expect(byClass(p.root, 'dmap-uband')).toHaveLength(0);
@@ -355,13 +382,13 @@ describe('DungeonMap with the Undercroft', () => {
     expect(dialogText(plain)).toContain('Undercroft chest');
   });
 
-  it('stacks a second level above the first, the cracked keeper behind it', () => {
+  it('stacks a second level below the first, whose floor boss stands on a cracked floor', () => {
     const p = drawStage('cracked-deeper');
     expect(byClass(p.root, 'dmap-label')).toHaveLength(2);
     const labels = byClass(p.root, 'dmap-label').map((l) => visibleText(l));
-    expect(labels[0]).toContain('Undercroft floor 2');
-    expect(labels[1]).toContain('Undercroft');
-    expect(labels[1]).toContain('The floor boss stands on a cracked floor.');
+    expect(labels[0]).toContain('Undercroft floor 1');
+    expect(labels[0]).toContain('The floor boss stands on a cracked floor.');
+    expect(labels[1]).toContain('Undercroft floor 2');
     const lit = byClass(p.root, 'dmap-node').filter((n) =>
       (n.getAttribute('class') ?? '').includes('s-reachable'),
     );
@@ -401,9 +428,9 @@ describe('DungeonMap with the Undercroft', () => {
     expect(dialogText(page)).toContain('Nothing more to add.');
   });
 
-  it('a door below depth 8 is a mystery room named "Quiet room", which says it was quiet once walked into', () => {
+  it('a door below depth 8 looks like any unvisited mystery room, and says it was quiet once walked into', () => {
     const quiet = drawStage('quiet-room', { initialOpen: 'f5l1' });
-    expect(dialogText(quiet)).toContain('Quiet room');
+    expect(dialogText(quiet)).not.toContain('Quiet room');
     expect(dialogText(quiet)).toContain("Something stirs. You'll see when you step in.");
   });
 

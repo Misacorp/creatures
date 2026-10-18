@@ -300,10 +300,6 @@ button.camp-home-button {
   line-height: 1.35;
 }
 
-.descend-help {
-  margin: 0.375rem 0 0;
-}
-
 /* Descend and Head Home side by side, each with its help text under it. */
 .descend-choices {
   display: grid;
