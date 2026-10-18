@@ -20,6 +20,7 @@ import {
   type DungeonRunInput,
 } from '@creatures/engine';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { giveItem } from './gear-helpers';
 import type { RunState } from '../src/dungeon-state';
 import type { DungeonRunState } from '../src/dungeon-types';
 import { drawSeed, slotFor } from '../src/raid-resolve';
@@ -1350,6 +1351,105 @@ describe('the camp', () => {
   });
 });
 
+describe('gear and creatures that change during a run', () => {
+  it('counts an item once: one taken off a creature of the row and put on a bench creature is left out when that one joins', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, FOUR);
+        const [a, b, c, d] = p.creatureIds as [string, string, string, string];
+        const hat = giveItem(ctx.sql, p.id, 'trail-cap', {
+          rarity: 'rare',
+          level: 5,
+          seed: 'once-hat',
+          now: ctx.clock.t,
+        });
+        const scarf = giveItem(ctx.sql, p.id, 'patch-scarf', {
+          rarity: 'rare',
+          level: 5,
+          seed: 'once-scarf',
+          now: ctx.clock.t,
+        });
+        const equip = async (item: string, creatureId: string | null) =>
+          expect((await p.call('POST', `/api/gear/${item}/equip`, { creatureId })).status).toBe(
+            200,
+          );
+        await equip(hat, a);
+        await equip(scarf, d); // worn by a creature that is not in the run: it counts when it joins
+        const state = await begin(p, { team: [a, b, c] });
+        expect(stored(ctx, state.id).gear).toEqual([hat]);
+        // The hat moves from a creature of the row to the bench creature.
+        await equip(hat, null);
+        await equip(hat, d);
+        const plain = (
+          (await p.call('GET', '/api/state')).body as {
+            creatures: { id: string; stats: { atk: number }; statsWithGear: { atk: number } }[];
+          }
+        ).creatures.find((x) => x.id === d);
+        expect(plain?.statsWithGear.atk).toBeGreaterThan(plain?.stats.atk ?? 0); // the hat gives Attack
+        const route = routeThrough(mapOf(state), (n) => n.kind === 'camp') as string[];
+        const waiting = await walk(p, state, route, (s) => s.pending?.kind === 'camp');
+        const res = await p.act(waiting, { type: 'camp', choice: 'swap', out: c, in: d });
+        expect(res.status).toBe(200);
+        const st = stored(ctx, state.id);
+        // The hat is still frozen into the row once (on a); the newcomer joins with the scarf only.
+        expect(st.gear.sort()).toEqual([hat, scarf].sort());
+        const slotA = st.input.team.find((x) => x.id === a);
+        const slotD = st.input.team.find((x) => x.id === d);
+        const atkWithHat = plain?.statsWithGear.atk ?? 0;
+        expect(slotD?.stats?.atk).toBeLessThan(atkWithHat);
+        expect(slotA?.stats?.atk).toBeGreaterThan(0);
+        expect(slotD?.mods).toEqual(expect.anything()); // the scarf's sheet is there
+      },
+      opts(),
+    );
+  });
+
+  it('cannot swap in a creature that was fused away or released, and never one that was in the row already', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, FOUR);
+        const [a, b, c, d] = p.creatureIds as [string, string, string, string];
+        const state = await begin(p, { team: [a, b, c] });
+        const route = routeThrough(mapOf(state), (n) => n.kind === 'camp') as string[];
+        const waiting = await walk(p, state, route, (s) => s.pending?.kind === 'camp');
+        // The bench creature is gone (fused away or released): it cannot come in.
+        ctx.sql.exec('DELETE FROM creatures WHERE id = ?', d);
+        const gone = await p.act(waiting, { type: 'camp', choice: 'swap', out: c, in: d });
+        expect({ status: gone.status, error: gone.body.error }).toEqual({
+          status: 404,
+          error: 'not_found',
+        });
+        // A creature of the row that is gone keeps fighting on its frozen stats: the run is a snapshot.
+        ctx.sql.exec('DELETE FROM creatures WHERE id = ?', c);
+        const rest = await p.act(waiting, { type: 'camp', choice: 'rest' });
+        expect(rest.status).toBe(200);
+        expect(rest.body.state.team.map((t) => t.id)).toEqual([a, b, c]);
+        // A creature that stood in the row once does not come back.
+        const q = await dungeonPlayer(ctx, 2, FOUR);
+        const [qa, qb, qc, qd] = q.creatureIds as [string, string, string, string];
+        const s2 = await begin(q, { team: [qa, qb, qc] });
+        const w2 = await walk(
+          q,
+          s2,
+          routeThrough(mapOf(s2), (n) => n.kind === 'camp') as string[],
+          (s) => s.pending?.kind === 'camp',
+        );
+        patchState(ctx, s2.id, (st) => {
+          st.everyone.push(qd);
+        });
+        const back = await q.act(w2, { type: 'camp', choice: 'swap', out: qc, in: qd });
+        expect({ status: back.status, error: back.body.error }).toEqual({
+          status: 400,
+          error: 'invalid_act',
+        });
+      },
+      opts(),
+    );
+  });
+});
+
 describe('heading home', () => {
   it('ends the run from the camp, keeps the whole pack, leaves the depth and gives no retry', async () => {
     await runCore(
@@ -1653,6 +1753,119 @@ describe('a run left open', () => {
         expect(replay.status).toBe(200);
         expect(replay.body.summary.outcome).toBe('home');
         expect(count(ctx.sql, 'dungeon_runs', "status = 'active'")).toBe(1); // the starter's new run
+      },
+      opts(),
+    );
+  });
+});
+
+describe('closing a late run and pruning', () => {
+  it('refuses a start while an earlier day’s run cannot be closed, and starts once it is closed', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        ctx.clock.t = AFTER_RESET;
+        const open = await begin(p);
+        const good = runRow(ctx, open.id)?.state_json as string;
+        // A state nobody can read: the close is skipped, and stays pending.
+        ctx.sql.exec('UPDATE dungeon_runs SET state_json = \'{"v":2}\' WHERE id = ?', open.id);
+        ctx.clock.t = AFTER_RESET + DAY;
+        const refused = await p.start();
+        expect({ status: refused.status, error: refused.body.error }).toEqual({
+          status: 409,
+          error: 'run_active',
+        });
+        expect(count(ctx.sql, 'dungeon_runs', "status = 'active'")).toBe(1);
+        ctx.sql.exec('UPDATE dungeon_runs SET state_json = ? WHERE id = ?', good, open.id);
+        expect((await p.start()).status).toBe(200);
+        expect(runRow(ctx, open.id)?.status).toBe('done');
+      },
+      opts(),
+    );
+  });
+
+  it('never rolls the progress back when an earlier day’s run closes after a later day’s', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        ctx.clock.t = AFTER_RESET;
+        const open = await begin(p);
+        // Meanwhile the player's progress moved on (as if a later day's run had finished).
+        ctx.sql.exec(
+          "INSERT INTO dungeon_progress (user_id, depth, streak, last_day, first_day, runs, clears) VALUES (?, 5, 7, '2027-01-17', '2027-01-01', 9, 4)",
+          p.id,
+        );
+        ctx.clock.t = AFTER_RESET + 3 * DAY;
+        await p.today();
+        const row = runRow(ctx, open.id);
+        expect(row?.status).toBe('done');
+        expect(progressOf(ctx, p.id)).toEqual({
+          depth: 5,
+          streak: 7,
+          last_day: '2027-01-17',
+          runs: 10,
+          clears: 4,
+        });
+        const summary = JSON.parse(row?.summary_json ?? '{}') as {
+          newDepth: number;
+          streak: number;
+        };
+        expect(summary).toMatchObject({ newDepth: 5, streak: 7 });
+      },
+      opts(),
+    );
+  });
+
+  it('empties the stored answers of steps and the state of runs that ended once past retention, and keeps what is shown', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        ctx.clock.t = AFTER_RESET;
+        const done = await p.run();
+        const run = done.body.run;
+        const first = rows<{ step: number; idempotency_key: string }>(
+          ctx.sql,
+          'SELECT step, idempotency_key FROM dungeon_steps WHERE run_id = ? ORDER BY step LIMIT 1',
+          run.id,
+        )[0];
+        ctx.clock.t += 91 * DAY;
+        // The next day's run is open (and not old enough to go).
+        const open = await begin(p);
+        ctx.clock.t += 0;
+        ctx.core.dungeon.prune();
+        expect(runRow(ctx, run.id)?.state_json).toBeNull();
+        expect(runRow(ctx, open.id)?.state_json).not.toBeNull();
+        expect(
+          rows(
+            ctx.sql,
+            "SELECT step FROM dungeon_steps WHERE run_id = ? AND act_json != '{}'",
+            run.id,
+          ),
+        ).toEqual([]);
+        expect(
+          rows(
+            ctx.sql,
+            "SELECT step FROM dungeon_steps WHERE run_id = ? AND act_json != '{}'",
+            open.id,
+          ),
+        ).toEqual([]); // none acted yet
+        // The summary stays, the team is remembered, and a retry of a pruned step is stale (never an error).
+        expect(JSON.parse(runRow(ctx, run.id)?.summary_json ?? '{}')).toEqual(run);
+        expect((await p.today()).active?.id).toBe(open.id);
+        const retry = await p.call('POST', '/api/dungeon/act', {
+          runId: run.id,
+          step: first?.step,
+          idempotencyKey: first?.idempotency_key,
+          act: { type: 'move', node: 'f0l0' },
+        });
+        expect({ status: retry.status, error: retry.body['error'] }).toEqual({
+          status: 409,
+          error: 'stale_step',
+        });
+        expect((await p.replay(run.id)).status).toBe(404);
       },
       opts(),
     );

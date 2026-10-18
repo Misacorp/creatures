@@ -242,9 +242,17 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
       const place = row.findIndex((slot) => slot.id === act.out);
       if (place < 0) throw invalidAct('out is not in the row');
       if (row.some((slot) => slot.id === act.in)) throw invalidAct('in is already in the row');
-      // The same answer for a creature that does not exist and one that belongs to someone else.
-      const coming = loadCreatures(env.sql, env.userId).find((c) => c.id === act.in);
+      // A creature that stood in the row once does not come back (a camp comes once, so this cannot
+      // happen today; it keeps a run from ever counting a creature twice).
+      if (st.everyone.includes(act.in)) throw invalidAct('in was in the row already');
+      // The same answer for a creature that does not exist (fused away, released) and one that belongs
+      // to someone else. It is loaded without the gear the run already carries: an item taken off a
+      // creature of the row and put on this one still counts once.
+      const coming = loadCreatures(env.sql, env.userId, new Set(st.gear)).find(
+        (c) => c.id === act.in,
+      );
       if (coming === undefined) throw new GameError(404, 'not_found');
+      st.gear.push(...coming.gearIds);
       const leaving = act.out;
       const next = [...row];
       next[place] = slotOf(coming, st.weather);

@@ -70,6 +70,11 @@ export interface RunState {
     role: Role;
     level: number;
   }[];
+  /**
+   * The ids of the gear items frozen into the row (at the start and at each swap). A creature that joins
+   * later is loaded without them, so an item moved to it from a creature of the row counts once.
+   */
+  gear: string[];
   /** How many creatures of the start team wore gear (for the analytics event). */
   gearWorn: number;
   /** The number of acts done so far: the `step` the next act must carry. */
@@ -106,6 +111,8 @@ export function parseState(json: string | null): RunState | null {
   try {
     const parsed = JSON.parse(json) as Partial<RunState> | null;
     if (parsed === null || typeof parsed !== 'object' || parsed.v !== 1) return null;
+    // A state stored before the gear ids were kept holds none.
+    parsed.gear ??= [];
     return parsed as RunState;
   } catch {
     return null;

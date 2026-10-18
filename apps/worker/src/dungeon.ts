@@ -978,6 +978,16 @@ export class Dungeon {
     const progress = this.progress(userId);
     const runs = this.runsOn(userId, day);
     if (runs.some((r) => r.status === 'active')) throw new GameError(409, 'run_active');
+    // A run of an earlier day that could not be closed (see `closeOpenRuns`) still has to be: until
+    // then it could overwrite the progress of this one when it finally closes.
+    const older = this.sql
+      .exec(
+        "SELECT 1 FROM dungeon_runs WHERE user_id = ? AND status = 'active' AND day < ?",
+        userId,
+        day,
+      )
+      .toArray();
+    if (older.length > 0) throw new GameError(409, 'run_active');
     if (!this.allowance(progress, day, runs).canRun) throw new GameError(409, 'already_run');
     const attempt = runs.length + 1;
 
@@ -1078,6 +1088,7 @@ export class Dungeon {
       everyone: row.map((s) => s.id),
       treats: row.filter((s) => treated.has(s.id)).map((s) => s.id),
       gearWorn: worn,
+      gear: standing.flatMap((c) => c.gearIds),
       start: row.map(({ id, name, speciesId, element, role, level }) => ({
         id,
         name,
@@ -1159,6 +1170,8 @@ export class Dungeon {
       .toArray()[0];
     if (stored !== undefined) {
       const first = JSON.parse(stored.act_json) as StoredAct;
+      // The stored answer was pruned (past retention): the run has long moved on.
+      if (first.act === undefined) throw new GameError(409, 'stale_step');
       if (
         stored.step !== body.step ||
         canonicalAct(first.act as object) !== canonicalAct(body.act)
@@ -1385,18 +1398,24 @@ export class Dungeon {
 
     // --- Progress: counted when the run ends. A run that went home or was lost counts for the streak too. ---
     const progress = this.progress(userId);
+    // Progress only moves forward. A run that closes late (an earlier day's, after a later day's run
+    // finished) must not roll the depth, the streak or the last day back: it leaves them alone.
+    const forward = progress.last_day === null || day > progress.last_day;
     const newStreak =
-      progress.last_day === day
+      progress.last_day === day || !forward
         ? progress.streak
         : progress.last_day === addDays(day, -1)
           ? progress.streak + 1
           : 1;
-    const newDepth = cleared ? depth + 1 : depth;
+    const newDepth = Math.max(progress.depth, cleared ? depth + 1 : depth);
     this.sql.exec(
       `INSERT INTO dungeon_progress (user_id, depth, streak, last_day, first_day, runs, clears)
        VALUES (?, ?, ?, ?, ?, 1, ?)
-       ON CONFLICT(user_id) DO UPDATE SET depth = excluded.depth, streak = excluded.streak,
-         last_day = excluded.last_day, first_day = COALESCE(first_day, excluded.first_day),
+       ON CONFLICT(user_id) DO UPDATE SET
+         depth = MAX(depth, excluded.depth),
+         streak = CASE WHEN last_day IS NULL OR excluded.last_day > last_day THEN excluded.streak ELSE streak END,
+         last_day = CASE WHEN last_day IS NULL OR excluded.last_day > last_day THEN excluded.last_day ELSE last_day END,
+         first_day = COALESCE(first_day, excluded.first_day),
          runs = runs + 1, clears = clears + excluded.clears`,
       userId,
       newDepth,
@@ -1711,6 +1730,16 @@ export class Dungeon {
     );
     this.sql.exec(
       'UPDATE dungeon_steps SET input_json = NULL, result_json = NULL WHERE created_at < ? AND (input_json IS NOT NULL OR result_json IS NOT NULL)',
+      cutoff,
+    );
+    // Past retention the stored answer of a step and the state of a run that ended go too: the summary
+    // and rewards say all that is shown of it. A retry of such a step is `stale_step`.
+    this.sql.exec(
+      "UPDATE dungeon_steps SET act_json = '{}' WHERE created_at < ? AND act_json != '{}'",
+      cutoff,
+    );
+    this.sql.exec(
+      "UPDATE dungeon_runs SET state_json = NULL WHERE created_at < ? AND status = 'done' AND state_json IS NOT NULL",
       cutoff,
     );
     this.sql.exec('DELETE FROM dungeon_days WHERE created_at < ?', cutoff);
