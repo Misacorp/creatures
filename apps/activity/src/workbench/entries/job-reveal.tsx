@@ -16,15 +16,18 @@ const KINDS = ['dismantle: one rare', 'dismantle: five commons', 'craft', 'suppl
 /** What the job paid its worker: from the controls (level up, waiting at the level, a treat). */
 function paid(p: Props): ExperienceView {
   const up = bool(p, 'levelUp');
+  // A creature waits only at a ribbon level (10, 20) or its evolution level: show it at 10.
+  const waiting = bool(p, 'waiting');
+  const level = waiting ? 10 : 6;
   return {
     creatureId: WORKER.id,
     gained: num(p, 'gained'),
     treat: bool(p, 'treat'),
-    levelBefore: up ? 5 : 6,
-    level: 6,
+    levelBefore: up ? level - 1 : level,
+    level,
     exp: up ? 12 : 140,
-    needed: 222,
-    waiting: bool(p, 'waiting'),
+    needed: waiting ? 450 : 222,
+    waiting,
     gold: false,
   };
 }

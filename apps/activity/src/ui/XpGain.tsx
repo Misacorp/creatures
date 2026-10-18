@@ -2,6 +2,7 @@ import type { ComponentChildren } from 'preact';
 import { glyphOrUnknown } from '../glyphs';
 import { Sprite } from '../sprites/Sprite';
 import { XpBar } from '../XpBar';
+import { Tag } from './Tag';
 
 /** The bar of one gain: the `XpBar` values. */
 export interface XpGainBar {
@@ -20,7 +21,8 @@ export interface XpGainBar {
 /**
  * One "XP gained" line, the same wherever the app shows what an activity paid: a label ("Experience",
  * "Explorer", "Crafting"), what changed (a level change "Lv 4 to Lv 5", anything in `head` such as a rank), the
- * gain in green ("+8"), small tags (a treat, "Rank up!", "Waiting at this level") and a short note, then the
+ * gain in green ("+8"), a green "Level up!" whenever the level went up (the same for every kind of XP, so no
+ * caller adds its own), small tags (a treat, "Rank up!", "Waiting at this level") and a short note, then the
  * bar under it (optional: a level change alone has none). It is a group of a description list: put it
  * inside an `XpList` (or any `dl` with the same two-column grid, as the trip result's).
  */
@@ -60,6 +62,11 @@ export function XpGain({
         )}
         {head}
         <span class="xp-plus pix">{gain}</span>
+        {levels !== undefined && levels.to > levels.from && (
+          <Tag kind="badge" tone="good">
+            Level up!
+          </Tag>
+        )}
         {tags}
         {note}
       </dd>

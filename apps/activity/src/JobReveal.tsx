@@ -136,13 +136,6 @@ function Worker({ result, creatures }: { result: JobResult; creatures: readonly 
           label={<GlossaryTag entry="skill-crafting">Crafting</GlossaryTag>}
           levels={crafting.levels.to > crafting.levels.from ? crafting.levels : undefined}
           gain={crafting.gain}
-          tags={
-            crafting.leveledUp ? (
-              <Tag kind="badge" tone="good">
-                Level up!
-              </Tag>
-            ) : undefined
-          }
           bar={crafting.bar}
         />
       </XpList>
