@@ -101,9 +101,8 @@ describe('the Undercroft rules', () => {
     expect(undercroftDepth(8, 1)).toBe(8 + u.depthBonus);
     expect(undercroftDepth(8, 2)).toBe(8 + 2 * u.depthBonus);
     expect(undercroftLabel(1)).toContain('Undercroft');
-    expect(undercroftLabel(1)).toContain('fiercer');
-    expect(undercroftLabel(1)).toBe('Undercroft floor 1 · foes are fiercer here');
-    expect(undercroftLabel(2)).toBe('Undercroft floor 2 · foes are fiercer still');
+    expect(undercroftLabel(1)).toBe('Undercroft 1');
+    expect(undercroftLabel(2)).toBe('Undercroft 2');
     expect(undercroftLabel(2)).not.toBe(undercroftLabel(1));
   });
 

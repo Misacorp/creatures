@@ -240,7 +240,7 @@ describe('where the run is', () => {
   });
 
   it('names Undercroft floors and how many a run cleared, singular for one', () => {
-    expect(undercroftName(1)).toBe('Undercroft floor 1');
+    expect(undercroftName(1)).toBe('Undercroft 1');
     expect(undercroftClearedText(1)).toBe('1 Undercroft floor cleared');
     expect(undercroftClearedText(2)).toBe('2 Undercroft floors cleared');
   });

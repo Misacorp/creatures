@@ -79,7 +79,7 @@ export function chestLine(entry: Pick<ChestLog, 'level'>): string {
 export const CHEST_GEAR_LABEL = 'Banked at once';
 
 /**
- * What the descent card's choice came to: "You went down into Undercroft floor 1. Your creatures caught their
+ * What the descent card's choice came to: "You went down into Undercroft 1. Your creatures caught their
  * breath (140 HP between them). 2 fallen creatures got back up." or "You headed home with the whole pack." (a card still waiting is
  * `PENDING_DESCEND_LINE`).
  */
@@ -93,7 +93,7 @@ export function descendLine(
         revived <= 0
           ? ''
           : ` ${String(revived)} fallen ${revived === 1 ? 'creature' : 'creatures'} got back up.`;
-      return `You went down into Undercroft floor ${String(entry.level)}. Your creatures caught their breath (${String(entry.healed ?? 0)} HP between them).${back}`;
+      return `You went down into Undercroft ${String(entry.level)}. Your creatures caught their breath (${String(entry.healed ?? 0)} HP between them).${back}`;
     }
     case 'home':
       return 'You headed home with the whole pack.';

@@ -414,16 +414,15 @@ export interface DungeonMapView {
   nodes: DungeonMapNode[];
   /** An Undercroft level only (absent on the main map): its level, from 1. */
   level?: number;
-  /** An Undercroft level only: the band's label ("Undercroft floor 1 · foes are fiercer here"). */
+  /** An Undercroft level only: the band's label ("Undercroft 1"). */
   label?: string;
   /** An Undercroft level only: its floor boss stands on a cracked floor, so beating it opens another floor below. */
   crack?: boolean;
 }
 
-/** The label of an Undercroft level's map: the first says foes are fiercer, a deeper one fiercer still. */
+/** The label of an Undercroft floor's map: "Undercroft 1", "Undercroft 2". */
 export function undercroftLabel(level: number): string {
-  const floor = `Undercroft floor ${String(Math.max(1, level))}`;
-  return level <= 1 ? `${floor} · foes are fiercer here` : `${floor} · foes are fiercer still`;
+  return `Undercroft ${String(Math.max(1, level))}`;
 }
 
 /** What a carved door is called on the map of a player the Undercroft is not open to. It is not an event: stepping in does nothing. */

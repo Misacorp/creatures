@@ -249,7 +249,7 @@ export interface StripRoom {
   foeName: string;
   state: RoomState;
   banner: string;
-  /** "Room 1", or "Floor boss" for the last ("Fight 1" and "Elite" on a path run; "Undercroft floor 1" and "Epic" below). */
+  /** "Room 1", or "Floor boss" for the last ("Fight 1" and "Elite" on a path run; "Undercroft 1" and "Epic" below). */
   title: string;
   elite: boolean;
   modifierName: string;
@@ -371,7 +371,7 @@ export function teamBreakdown(run: Pick<DungeonRunSummary, 'team' | 'rewards'>):
 interface RoomIntroView {
   /** "ROOM 2" in big letters, "FLOOR BOSS" for the last room, "FIGHT" for a room of a path ("EPIC FIGHT" below). */
   heading: string;
-  /** "2 / 3" (the room's place in an old run), "Room 3 / 7" (a room of a path) or "Undercroft floor 1 · Room 2 / 4". */
+  /** "2 / 3" (the room's place in an old run), "Room 3 / 7" (a room of a path) or "Undercroft 1 · Room 2 / 4". */
   place: string;
   boss: boolean;
   /** A fiercer foe of a path: the banner adds an Elite tag (an epic fight has its own, `epic`). */

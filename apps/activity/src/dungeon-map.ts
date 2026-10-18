@@ -143,8 +143,11 @@ export function mapLayout(map: DungeonMapView, opts: MapLayoutOptions = {}): Map
   return { width, height, nodes, edges };
 }
 
-/** The space between two stacked levels, in units: room for the label of the level below. */
-export const LEVEL_SEAM = 16;
+/** The space between two stacked levels, in units: a gap, the divider line, then the label of the level below. */
+export const LEVEL_SEAM = 44;
+
+/** The gap above the divider line, in units: between the floor boss above and the line. */
+const SEAM_GAP = 12;
 
 /** A darker band of the stacked picture: an Undercroft level, with its label. */
 export interface LaidBand {
@@ -164,9 +167,9 @@ export interface StackLayout extends MapLayout {
   bands: LaidBand[];
 }
 
-/** The label of an Undercroft floor: the server's own, or a plain one when it sent none. */
+/** The label of an Undercroft floor: the server's own ("Undercroft 1"), or the same plain one when it sent none. */
 export function levelLabel(map: Pick<DungeonMapView, 'level' | 'label'>): string {
-  return map.label ?? `Undercroft floor ${String(map.level ?? 1)}`;
+  return map.label ?? `Undercroft ${String(map.level ?? 1)}`;
 }
 
 /**
@@ -196,9 +199,10 @@ export function stackLayout(
       bands.push({
         kind: 'undercroft',
         level: map.level ?? i,
-        y,
-        height: part.height + LEVEL_SEAM,
-        labelY: y + LEVEL_SEAM / 2,
+        y: y + SEAM_GAP,
+        height: part.height + LEVEL_SEAM - SEAM_GAP,
+        // Halfway between the line and the level's entrance row.
+        labelY: y + SEAM_GAP + (LEVEL_SEAM - SEAM_GAP) / 2,
         label: levelLabel(map),
         crack: map.crack === true,
       });
@@ -544,7 +548,7 @@ export const CRACK_LINE = 'A cracked floor: beat the floor boss to go down anoth
 /** The day's floor boss, when beating it will let the player descend. */
 export const DESCEND_LINE = 'Beat it to descend into the Undercroft.';
 /** The line of every room of the Undercroft that says it is harder. */
-export const FIERCER_LINE = 'The Undercroft · foes are fiercer here.';
+export const FIERCER_LINE = 'The Undercroft.';
 /** A room that looked like a mystery and held nothing (a carved door below depth 8). */
 export const QUIET_LINE = 'Nothing stirred here. It was a quiet room.';
 export const NO_TRICK_LINE = 'No tricks. It just attacks.';

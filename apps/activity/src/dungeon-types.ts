@@ -114,7 +114,7 @@ export interface DungeonMapView {
   nodes: DungeonMapNode[];
   /** An Undercroft level only: 1 to 3 (absent on the day's map). */
   level?: number;
-  /** An Undercroft level only: its name on the map ("Undercroft floor 1 · foes are fiercer here"). Server text, drawn as text. */
+  /** An Undercroft level only: its name on the map ("Undercroft 1"). Server text, drawn as text. */
   label?: string;
   /** An Undercroft level only: the keeper's floor is cracked (present only when true). Beating it opens a deeper level. */
   crack?: boolean;

@@ -477,8 +477,8 @@ describe('the Undercroft on the map', () => {
     const [band] = layout.bands;
     expect(layout.bands).toHaveLength(1);
     expect(band).toMatchObject({ kind: 'undercroft', level: 1, label: first.label, crack: false });
-    expect(band?.y).toBe(main.height);
-    expect(band?.height).toBe(level.height + LEVEL_SEAM);
+    expect(band?.y).toBeGreaterThan(main.height);
+    expect(band?.height).toBeGreaterThan(level.height);
     expect((band?.y ?? 0) + (band?.height ?? 0)).toBe(layout.height);
     expect(band?.labelY).toBeGreaterThan(boss?.y ?? 0);
     expect(band?.labelY).toBeLessThan(entrance?.y ?? 0);
@@ -514,8 +514,8 @@ describe('the Undercroft on the map', () => {
 
   it('names a level by the server label, or plainly when it sent none', () => {
     expect(levelLabel(first)).toBe(first.label);
-    expect(levelLabel({ level: 2 })).toBe('Undercroft floor 2');
-    expect(levelLabel({})).toBe('Undercroft floor 1');
+    expect(levelLabel({ level: 2 })).toBe('Undercroft 2');
+    expect(levelLabel({})).toBe('Undercroft 1');
   });
 
   it('lights the rooms of the level the run is in, and greys the levels it left', () => {

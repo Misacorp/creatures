@@ -102,12 +102,10 @@ describe('the descent card words', () => {
 describe('the run strip and the stage place in the Undercroft', () => {
   it('says where the run is in the Undercroft, and at the descent card', () => {
     expect(runStatusLine(undercroftState('descent'))).toBe('Depth 15 · The floor boss is down');
-    expect(runStatusLine(undercroftState('entrance'))).toBe('Undercroft floor 1 · At the entrance');
-    expect(runStatusLine(undercroftState('midway'))).toBe('Undercroft floor 1 · Room 2 / 4');
-    expect(runStatusLine(undercroftState('keeper'))).toBe('Undercroft floor 1 · Room 3 / 4');
-    expect(runStatusLine(undercroftState('cracked-deeper'))).toBe(
-      'Undercroft floor 2 · At the entrance',
-    );
+    expect(runStatusLine(undercroftState('entrance'))).toBe('Undercroft 1 · At the entrance');
+    expect(runStatusLine(undercroftState('midway'))).toBe('Undercroft 1 · Room 2 / 4');
+    expect(runStatusLine(undercroftState('keeper'))).toBe('Undercroft 1 · Room 3 / 4');
+    expect(runStatusLine(undercroftState('cracked-deeper'))).toBe('Undercroft 2 · At the entrance');
     expect(runStatusLine(undercroftState('locked'))).toBe('Depth 14 · Room 5 / 7');
     const keeperDown = { ...undercroftState('descent') };
     expect(
@@ -137,7 +135,7 @@ describe('the run strip and the stage place in the Undercroft', () => {
     expect(nodeFloor('u2f1l0')).toBe(1);
     expect(nodeFloor('u2')).toBeNull();
     expect(nodeFloor('x1f1l0')).toBeNull();
-    expect(roomPlaceLine({ index: 6, node: 'u1f3l1' }, 4)).toBe('Undercroft floor 1 · Room 4 / 4');
+    expect(roomPlaceLine({ index: 6, node: 'u1f3l1' }, 4)).toBe('Undercroft 1 · Room 4 / 4');
     expect(roomPlaceLine({ index: 2, node: 'f2l1' }, 7)).toBe('Room 3 / 7');
     expect(roomPlaceLine({ index: 1 }, 3)).toBe('Room 2 / 3');
   });
@@ -178,14 +176,14 @@ describe('the results of a run that went down', () => {
     expect(depthChangeText({ ...lost, newDepth: lost.depth })).toContain('Still at depth 14');
   });
 
-  it('labels the fights of the Undercroft in the strip: Undercroft floor 1, Undercroft elite, Epic and Floor boss', () => {
+  it('labels the fights of the Undercroft in the strip: Undercroft 1, Undercroft elite, Epic and Floor boss', () => {
     const strip = roomStrip(summary);
     expect(strip.map((r) => r.title)).toEqual([
       'Fight 1',
       'Fight 2',
       'Floor boss',
-      'Undercroft floor 1',
-      'Undercroft floor 1',
+      'Undercroft 1',
+      'Undercroft 1',
       'Undercroft elite',
       'Floor boss',
     ]);
@@ -233,16 +231,16 @@ describe('what happened in the rooms of the Undercroft', () => {
     expect(CHEST_GEAR_LABEL).toBe('Banked at once');
     expect(descendLine({ result: 'pending', level: 1 })).toBe(PENDING_DESCEND_LINE);
     expect(descendLine({ result: 'descend', level: 1, healed: 140 })).toBe(
-      'You went down into Undercroft floor 1. Your creatures caught their breath (140 HP between them).',
+      'You went down into Undercroft 1. Your creatures caught their breath (140 HP between them).',
     );
     expect(descendLine({ result: 'descend', level: 1, healed: 140, revived: 0 })).toBe(
-      'You went down into Undercroft floor 1. Your creatures caught their breath (140 HP between them).',
+      'You went down into Undercroft 1. Your creatures caught their breath (140 HP between them).',
     );
     expect(descendLine({ result: 'descend', level: 1, healed: 140, revived: 1 })).toBe(
-      'You went down into Undercroft floor 1. Your creatures caught their breath (140 HP between them). 1 fallen creature got back up.',
+      'You went down into Undercroft 1. Your creatures caught their breath (140 HP between them). 1 fallen creature got back up.',
     );
     expect(descendLine({ result: 'descend', level: 1, healed: 140, revived: 2 })).toBe(
-      'You went down into Undercroft floor 1. Your creatures caught their breath (140 HP between them). 2 fallen creatures got back up.',
+      'You went down into Undercroft 1. Your creatures caught their breath (140 HP between them). 2 fallen creatures got back up.',
     );
     expect(descendLine({ result: 'home', level: 1 })).toBe('You headed home with the whole pack.');
   });
@@ -271,12 +269,12 @@ describe('the stage of an Undercroft fight', () => {
     const view = roomIntroView(room, 4);
     expect(view).toMatchObject({
       heading: 'FLOOR BOSS',
-      place: 'Undercroft floor 1 · Room 4 / 4',
+      place: 'Undercroft 1 · Room 4 / 4',
       boss: true,
       level: 1,
       epic: false,
     });
-    expect(view.spoken).toContain('Undercroft floor 1 · Room 4 / 4, floor boss: Slag Tyrant.');
+    expect(view.spoken).toContain('Undercroft 1 · Room 4 / 4, floor boss: Slag Tyrant.');
     const epic = roomIntroView(
       { ...room, kind: 'foe', elite: true, epic: true, node: 'u1f2l1' },
       4,

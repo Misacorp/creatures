@@ -227,9 +227,9 @@ export function nodeFloor(node: string): number | null {
   return found === null ? null : Number(found[1]);
 }
 
-/** "Undercroft floor 1": an Undercroft floor's name (its `level`) on the strip and the stage banner. */
+/** "Undercroft 1": an Undercroft floor's name (its `level`) on the strip and the stage banner. */
 export function undercroftName(level: number): string {
-  return `Undercroft floor ${String(level)}`;
+  return `Undercroft ${String(level)}`;
 }
 
 /** "1 Undercroft floor cleared" or "2 Undercroft floors cleared": how many Undercroft floors a run cleared. */
@@ -245,7 +245,7 @@ export function floorLine(floor: number, floors: number): string {
 /**
  * Where the run is, for the run strip: "Depth 3 · At the entrance", "Depth 3 · Room 3 / 7", and at
  * the camp "Depth 3 · At the camp". Once the floor boss has fallen: "Depth 9 · The floor boss is down" (the
- * depth it locked in) and, below, "Undercroft floor 1 · Room 2 / 4". `landmark` is added by the screen as a chip.
+ * depth it locked in) and, below, "Undercroft 1 · Room 2 / 4". `landmark` is added by the screen as a chip.
  */
 export function runStatusLine(
   state: Pick<DungeonRunState, 'at' | 'depth' | 'map' | 'pending'> &

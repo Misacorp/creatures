@@ -382,7 +382,7 @@ describe('going down', () => {
         const map = levelMap(down);
         expect(map).toMatchObject({
           level: 1,
-          label: 'Undercroft floor 1 · foes are fiercer here',
+          label: 'Undercroft 1',
         });
         expect(map.nodes.every((n) => /^u1f\d+l\d$/.test(n.id))).toBe(true);
         expect(down.undercroft?.maps).toHaveLength(1);
@@ -837,7 +837,7 @@ describe('the keeper and its chest', () => {
         const level2 = await descend(p, second);
         expect(level2).toMatchObject({ level: 2 });
         expect(levelMap(level2)).toMatchObject({ level: 2, floors: u.deeperFloors + 1 });
-        expect(levelMap(level2).label).toContain('Undercroft floor 2');
+        expect(levelMap(level2).label).toContain('Undercroft 2');
         expect(level2.undercroft?.maps).toHaveLength(2);
         expect(level2.reachable.every((id) => id.startsWith('u2'))).toBe(true);
         setCrack(ctx, state.id, 2, true);

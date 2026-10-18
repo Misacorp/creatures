@@ -229,7 +229,7 @@ function DescendDemo({ p }: { p: Props }) {
   const variant = str(p, 'card');
   if (base.pending?.kind !== 'descend') return <p class="muted">The capture has a descent.</p>;
   const descent =
-    variant === 'a cracked floor (Undercroft floor 2)'
+    variant === 'a cracked floor (Undercroft 2)'
       ? { ...base.pending, level: 2, floors: 3, banked: { gear: [], supplies: [], parts: {} } }
       : variant === 'nothing banked'
         ? { ...base.pending, banked: { gear: [], supplies: [], parts: {} } }
@@ -256,20 +256,20 @@ const dungeonDescend: Entry = {
     card: {
       kind: 'select',
       options: [
-        'the floor boss fell (Undercroft floor 1)',
-        'a cracked floor (Undercroft floor 2)',
+        'the floor boss fell (Undercroft 1)',
+        'a cracked floor (Undercroft 2)',
         'nothing banked',
       ],
     },
     emptyPack: { kind: 'toggle' },
     busy: { kind: 'toggle' },
   },
-  defaults: { card: 'the floor boss fell (Undercroft floor 1)', emptyPack: false, busy: false },
+  defaults: { card: 'the floor boss fell (Undercroft 1)', emptyPack: false, busy: false },
   presets: [
     { name: 'The floor boss fell', props: {} },
     {
       name: 'A cracked floor: another floor below',
-      props: { card: 'a cracked floor (Undercroft floor 2)' },
+      props: { card: 'a cracked floor (Undercroft 2)' },
     },
     { name: 'Nothing banked, an empty pack', props: { card: 'nothing banked', emptyPack: true } },
     { name: 'A step is on its way', props: { busy: true } },

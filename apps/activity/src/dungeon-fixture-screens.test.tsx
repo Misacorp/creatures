@@ -746,8 +746,8 @@ describe('the Undercroft, with the real answers', () => {
     expect(byClass(root, 'dungeon-descend')).toHaveLength(0);
     expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
     const text = visibleText(root);
-    expect(text).toContain('Undercroft floor 1 · At the entrance');
-    expect(text).toContain('Undercroft floor 1 · foes are fiercer here');
+    expect(text).toContain('Undercroft 1 · At the entrance');
+    expect(text).toContain('Undercroft 1');
     const down = parseDungeonAct(actDescend).state;
     const nodes = byClass(root, 'dmap-node');
     expect(nodes).toHaveLength(
@@ -781,7 +781,7 @@ describe('the Undercroft, with the real answers', () => {
     const keeper = parseDungeonAct(actKeeper);
     const open = undercroftState('keeper');
     const root = await openRunAt(open, [keeper]);
-    expect(visibleText(root)).toContain('Undercroft floor 1 · Room 3 / 4');
+    expect(visibleText(root)).toContain('Undercroft 1 · Room 3 / 4');
     await goTo(open, 'u1f3l1', root);
     expect(sentAct().body).toEqual({
       runId: bodyOf('dungeon-act-keeper').runId,
@@ -790,7 +790,7 @@ describe('the Undercroft, with the real answers', () => {
     });
     expect(byClass(root, 'dungeon-playback')).toHaveLength(1);
     // The banner names the level and its floors, and the keeper as the keeper.
-    expect(visibleText(root)).toContain('Undercroft floor 1 · Room 4 / 4');
+    expect(visibleText(root)).toContain('Undercroft 1 · Room 4 / 4');
     await playOut(root);
     const text = visibleText(root);
     expect(text).toContain('Cleared! Depth 14 to 15 · 1 Undercroft floor cleared');

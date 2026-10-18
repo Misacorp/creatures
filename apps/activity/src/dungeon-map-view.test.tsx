@@ -370,7 +370,7 @@ describe('DungeonMap with the Undercroft', () => {
       'A cracked floor: beat the floor boss to go down another floor.',
     );
     expect(dialogText(p)).toContain('Floor boss');
-    expect(dialogText(p)).toContain('The Undercroft · foes are fiercer here');
+    expect(dialogText(p)).toContain('The Undercroft');
     expect(dialogText(p)).toContain(
       'Undercroft chest: 1 Essence, 2 scrap and a 40% chance of a gear piece.',
     );
@@ -386,9 +386,9 @@ describe('DungeonMap with the Undercroft', () => {
     const p = drawStage('cracked-deeper');
     expect(byClass(p.root, 'dmap-label')).toHaveLength(2);
     const labels = byClass(p.root, 'dmap-label').map((l) => visibleText(l));
-    expect(labels[0]).toContain('Undercroft floor 1');
+    expect(labels[0]).toContain('Undercroft 1');
     expect(labels[0]).toContain('The floor boss stands on a cracked floor.');
-    expect(labels[1]).toContain('Undercroft floor 2');
+    expect(labels[1]).toContain('Undercroft 2');
     const lit = byClass(p.root, 'dmap-node').filter((n) =>
       (n.getAttribute('class') ?? '').includes('s-reachable'),
     );
@@ -457,7 +457,7 @@ describe('DungeonMap with the Undercroft', () => {
     expect(text).toContain(
       'One fierce foe at boss strength. Win it to earn 1 Essence, 2 scrap and a keepsake.',
     );
-    expect(text).toContain('The Undercroft · foes are fiercer here');
+    expect(text).toContain('The Undercroft');
   });
 
   it('tells the story of a boss that fell and went down: the fight, the chest and the way down', () => {
@@ -470,7 +470,7 @@ describe('DungeonMap with the Undercroft', () => {
     expect(text).toContain('The boss chest opened.');
     expect(text).toContain('Banked at once');
     expect(text).toContain('Cinder Charm');
-    expect(text).toContain('You went down into Undercroft floor 1.');
+    expect(text).toContain('You went down into Undercroft 1.');
     // The chest's loot is not counted twice: the fight itself added nothing to the pack.
     expect(text).not.toContain('Nothing went into the pack.');
   });
