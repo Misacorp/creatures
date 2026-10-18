@@ -10,7 +10,6 @@ on:
       - 'packages/game/**'
       - 'packages/engine/**'
       - 'packages/sim/**'
-      - 'apps/worker/src/economy.ts'
       - 'docs/design/balance-targets.md'
   workflow_dispatch:
 
