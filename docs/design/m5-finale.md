@@ -1,6 +1,6 @@
 # M5 design: the live Sunday finale and the loot reveal
 
-Status: **draft for M5**. Builds on `m3-combat.md` (engine, finale abilities), `m4-raids.md` (week, parties, resolve) and the decisions log. All times are in the guild's timezone.
+Status: **shipped** in #5, #7 and #8 (M5). WebSocket push (M5.1) is still open, roadmap item 8. Later changes live in `decisions.md` and the newer docs named there. Builds on `m3-combat.md` (engine, finale abilities), `m4-raids.md` (week, parties, resolve) and the decisions log. All times are in the guild's timezone.
 
 ## What players see
 

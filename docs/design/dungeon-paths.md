@@ -1,6 +1,6 @@
 # Dungeon paths: a daily map with camps and a pack
 
-Status: **building**, 2026-10-18. It replaces the fixed three-room run of `daily-dungeon.md`. Everything there that is not changed here still holds: one run a day (the game day from 13:37), the row of three acting left to right, foes, floor bosses and room modifiers, depth and landmarks, the streak, treats, weather, the first-day retry, the saved team. Misa asked for it on 2026-10-17 ("a Slay the Spire style gameplay loop, where players can push on and make intermittent choices on where to go"). His earlier notes are in `player-agency.md`, section 1. The research is summarised at the end.
+Status: **shipped** (PR #32), by 2026-10-18; weather and gear in rooms came with PR #35. It replaces the fixed three-room run of `daily-dungeon.md`. Everything there that is not changed here still holds: one run a day (the game day from 13:37), the row of three acting left to right, foes, floor bosses and room modifiers, depth and landmarks, the streak, treats, weather, the first-day retry, the saved team. Misa asked for it on 2026-10-17 ("a Slay the Spire style gameplay loop, where players can push on and make intermittent choices on where to go"). His earlier notes are in `player-agency.md`, section 1. The research is summarised at the end.
 
 ## Terminology
 

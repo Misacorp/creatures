@@ -1,5 +1,7 @@
 # Player agency: future plans (Misa, 2026-10-15)
 
+Status: items 1, 2 and 4 are **shipped** (dungeon paths in PR #32; gear modifiers in PR #31 and #35; talents and second forms in PR #31 and #35). Item 3 (Stagger) is not built.
+
 Ideas Misa wants on the roadmap, after the raid retune. The common thread: give players **meaningful choices** in raids, dungeons and creature growth, so setups differ and two creatures are rarely alike. Not designed yet; each becomes its own design doc (with a sim pass where it touches balance) when its turn comes. The combat terms are the ones in `combat-rules.md`.
 
 ## 1. Dungeon paths and camps (Slay the Spire as the model)

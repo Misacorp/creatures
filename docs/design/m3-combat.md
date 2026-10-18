@@ -1,6 +1,6 @@
 # M3 design: combat engine, raid loot rules, balance simulator
 
-Status: **draft for M3**. Numbers are starting values; the simulator tunes them against `balance-targets.md`. Rules Misa decided are in `decisions.md`.
+Status: **shipped** in #1 (M3), retuned in #24. Later changes live in `decisions.md` and the newer docs named there. Numbers started as values that the simulator tuned against `balance-targets.md`. Rules Misa decided are in `decisions.md`.
 
 ## Principles
 

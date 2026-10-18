@@ -2,7 +2,7 @@
 
 Misa wants to see what one player's progress looks like N weeks into the game, for different play styles: where they wait for meaningful upgrades, what those upgrades are, and what holds them back. The journeys then feed the raid and dungeon balance runs, so tuning reflects real play styles instead of one spending policy.
 
-Status: slices 1 to 4 are built (`packages/sim`, `pnpm sim:journey`); slices 5 and 6 are not. Nothing here changes the game.
+Status: slices 1 to 4 are built (`packages/sim`, `pnpm sim:journey`); slice 5 is in part (`pnpm sim:curve`); slice 6 is not. Nothing here changes the game.
 
 ## What existed before
 
