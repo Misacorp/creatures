@@ -7,6 +7,8 @@ import { ItemCard } from '../ItemCard';
 import { Drawer } from '../ui/Drawer';
 import { flipOver } from '../ui/flip-logic';
 import { FlipArea } from '../ui/Flipper';
+import { CompareBlock } from './CompareBlock';
+import { compareItem } from './compare-view';
 import { compactReason, firstPick, pickerChoices } from './picker-view';
 
 export interface ItemPickerProps {
@@ -24,6 +26,8 @@ export interface ItemPickerProps {
   /** Take the worn item off. */
   onTakeOff: (item: GearItem) => void;
   returnFocusTo?: HTMLElement | null;
+  /** The item the picker starts on (the workbench shows a swap); the worn item, else the best pick, when absent. */
+  initialPicked?: string;
 }
 
 /** One entry of the grid: an item, whether the creature wears it, who else does and why it cannot be worn. */
@@ -82,17 +86,22 @@ function ItemCell({
 function DetailPanel({
   cell,
   creature,
+  bag,
   busy,
   onEquip,
   onTakeOff,
 }: {
   cell: Cell;
   creature: Creature;
+  /** The gear view's items (the worn ones are looked up in it for the compare block). */
+  bag: readonly GearItem[];
   busy: boolean;
   onEquip: (item: GearItem) => void;
   onTakeOff: (item: GearItem) => void;
 }) {
   const { item, worn, wornBy, blocked } = cell;
+  const wearable = !worn && blocked === null;
+  const compare = wearable ? compareItem(creature, item, bag) : null;
   return (
     <section class="ip-detail" aria-label="Selected item">
       <ItemCard
@@ -115,20 +124,26 @@ function DetailPanel({
             </button>
           ) : blocked !== null ? (
             <span class="ip-reason">{blocked}</span>
-          ) : (
-            <button
-              type="button"
-              class="ip-act primary"
-              disabled={busy}
-              onClick={() => {
-                onEquip(item);
-              }}
-            >
-              Equip
-            </button>
-          )
+          ) : undefined
         }
       />
+      {wearable && (
+        <div class="ip-equip">
+          <div class="ip-equip-change">
+            {compare !== null && <CompareBlock compare={compare} />}
+          </div>
+          <button
+            type="button"
+            class="ip-act primary"
+            disabled={busy}
+            onClick={() => {
+              onEquip(item);
+            }}
+          >
+            Equip
+          </button>
+        </div>
+      )}
     </section>
   );
 }
@@ -150,6 +165,7 @@ export function ItemPickerDrawer({
   onEquip,
   onTakeOff,
   returnFocusTo,
+  initialPicked,
 }: ItemPickerProps) {
   const choices = items === null ? [] : pickerChoices(items, creature, creatures, slot);
   const wornId = creature.gear.find((g) => g.slot === slot)?.id;
@@ -163,7 +179,7 @@ export function ItemPickerDrawer({
       blocked: compactReason(choice.item, creature),
     })),
   ];
-  const [picked, setPicked] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(initialPicked ?? null);
   const selected =
     cells.find((c) => c.item.id === picked) ??
     cells.find((c) => c.worn) ??
@@ -199,6 +215,7 @@ export function ItemPickerDrawer({
             <DetailPanel
               cell={selected}
               creature={creature}
+              bag={items ?? []}
               busy={busy}
               onEquip={onEquip}
               onTakeOff={onTakeOff}

@@ -75,7 +75,11 @@ describe('the item card', () => {
     expect(visibleText(first(byClass(head, 'item-lv')))).toBe('Lv 15');
     expect(visibleText(first(byClass(head, 'rarity-tag')))).toBe('Epic');
     const rows = find(first(byClass(head, 'idc-stats')), (e) => e.localName === 'li');
-    expect(rows.map((r) => visibleText(r))).toEqual(['Attack 41 +22', 'HP 32']);
+    expect(rows.map((r) => visibleText(r))).toEqual([
+      'Attack 28 +16',
+      'HP 38',
+      'Crit damage 20 pt',
+    ]);
     expect(byClass(page.root, 'idc-divider')).toHaveLength(1);
     expect(first(byClass(page.root, 'idc-divider')).localName).toBe('hr');
     expect(byClass(page.root, 'pips').length).toBeGreaterThan(0);

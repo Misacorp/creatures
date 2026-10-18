@@ -36,7 +36,8 @@ export type SceneKind =
   | 'nickname'
   | 'evolve ready'
   | 'set: two pieces'
-  | 'set: three pieces';
+  | 'set: three pieces'
+  | 'compare: plain gear';
 
 export const SCENE_KINDS: readonly SceneKind[] = [
   'level 2',
@@ -54,6 +55,7 @@ export const SCENE_KINDS: readonly SceneKind[] = [
   'evolve ready',
   'set: two pieces',
   'set: three pieces',
+  'compare: plain gear',
 ];
 
 export function sceneKindOf(value: string): SceneKind {
@@ -198,6 +200,15 @@ function shapeOf(kind: SceneKind): Shape {
         talents: talentsOf(twoSlots(GOLDEN, true)),
         exp: 100,
         expNeeded: 1000,
+      };
+    case 'compare: plain gear':
+      // A plain Kelp Cap and Patch Scarf and no Charm: anything in the bag is a better item or an empty slot.
+      return {
+        level: 15,
+        worn: { hat: 13, scarf: 11 },
+        talents: talentsOf(twoSlots(GOLDEN, false)),
+        exp: 310,
+        expNeeded: 825,
       };
     case 'rarities':
       // A common Hat, a rare Scarf and an epic Charm: one of each, side by side.
