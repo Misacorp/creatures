@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { GearStat } from '../gear-types';
 import { allBagItems } from './bag-sample';
-import { compactReason, firstPick, pickerChoices, statRows } from './picker-view';
+import { compactReason, pickerChoices, statRows } from './picker-view';
 import { PAGE_SAMPLE_ID, pageScene } from './sample';
 
 describe('the item picker rules', () => {
@@ -22,12 +22,6 @@ describe('the item picker rules', () => {
   it('says who wears an item that would move, and leaves the worn item out of the choices', () => {
     expect(choices.some((c) => c.wornBy === 'Pebble')).toBe(true);
     expect(choices.some((c) => c.item.equippedOn === PAGE_SAMPLE_ID)).toBe(false);
-  });
-
-  it('selects the first wearable item when nothing is picked', () => {
-    const id = firstPick(choices);
-    expect(choices.find((c) => c.item.id === id)?.blocked).toBeNull();
-    expect(firstPick([])).toBeNull();
   });
 
   it('has a bag of thirteen to twenty-five items for each slot', () => {

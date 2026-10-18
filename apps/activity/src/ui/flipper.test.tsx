@@ -112,6 +112,54 @@ function swipe(
   p.pointer(on, 'pointerup', { ...to, at: options.ms ?? 200, kind, id });
 }
 
+describe('a paused flip', () => {
+  /** The same drawer as the Workshop's, with the flip paused or not, over one thing that must keep its place. */
+  function PausedOwner({ paused }: { paused: boolean }) {
+    const base = flipOver({
+      list: NAMES,
+      at: 1,
+      noun: 'item',
+      nameOf: (n) => n,
+      pick: () => undefined,
+    });
+    const flip = paused && base !== undefined ? { ...base, paused: true } : base;
+    return (
+      <Drawer open onClose={() => undefined} title="Item" flip={flip}>
+        <FlipArea flip={flip}>
+          <input type="text" class="kept" aria-label="Kept" />
+        </FlipArea>
+      </Drawer>
+    );
+  }
+
+  it('hides the arrows and the announcement, keeps the content in place, and shows them again after', () => {
+    page = createPage();
+    page.draw(<PausedOwner paused={false} />);
+    expect(byClass(page.root, 'flip-nav')).toHaveLength(1);
+    expect(byRole(page.root, 'status')).toHaveLength(1);
+    const kept = first(byClass(page.root, 'kept'));
+    page.draw(<PausedOwner paused />);
+    expect(byClass(page.root, 'flip-nav')).toHaveLength(0);
+    expect(byRole(page.root, 'status')).toHaveLength(0);
+    // The same element: pausing does not draw the content anew (a view held in it keeps its state).
+    expect(first(byClass(page.root, 'kept'))).toBe(kept);
+    page.draw(<PausedOwner paused={false} />);
+    expect(byClass(page.root, 'flip-nav')).toHaveLength(1);
+    expect(first(byClass(page.root, 'kept'))).toBe(kept);
+  });
+
+  it('ignores the arrow keys and a swipe while paused', () => {
+    page = createPage();
+    page.draw(<PausedOwner paused />);
+    const dialog = first(byRole(page.root, 'dialog'));
+    const event = page.key(dialog, 'ArrowRight');
+    expect(event.defaultPrevented).toBe(false);
+    const area = first(byClass(page.root, 'flip-area'));
+    swipe(page, area, { x: 300, y: 100 }, { x: 100, y: 102 });
+    expect(area.captured).toEqual([]);
+  });
+});
+
 describe('FlipNav', () => {
   it('has a previous and a next button that say where they lead, and the position with a slash', () => {
     const { page: p } = draw({ probe: { flips: [], pressed: 0 } });

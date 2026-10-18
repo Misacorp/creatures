@@ -403,16 +403,49 @@ describe('the Workshop item drawer flips through the bag in the grid order', () 
     expect(byClass(dialog(p), 'item-detail')[0]?.getAttribute('aria-labelledby')).toBe(
       `item-${shown.id}-name`,
     );
-    // The Equip on row is for the item now shown: its picker lists every creature, with the reason for
+    // The Equip on row is for the item now shown: its list lists every creature, with the reason for
     // each one that cannot take it (nobody in this sample can, so a tap on an option asks for nothing).
     const trigger = first(byClass(dialog(p), 'equip-trigger'));
     expect(trigger.getAttribute('aria-labelledby')).toContain(shown.id);
     gearActions.equip = vi.fn(() => Promise.resolve(undefined));
     p.click(trigger);
-    expect(byClass(p.root, 'roster-picker')).toHaveLength(1);
+    expect(byClass(p.root, 'equip-view')).toHaveLength(1);
     const options = byRole(p.root, 'option');
     expect(options.length).toBeGreaterThan(1);
     p.click(first(options.filter((o) => o.getAttribute('aria-disabled') === 'true')));
+    expect(gearActions.equip).not.toHaveBeenCalled();
+  });
+
+  it('turns flipping off while the Equip on list is shown, and back on when it is left', () => {
+    const p = drawWorkshop();
+    p.click(cells(p)[1] as FakeElement);
+    const shownId = (): string | null =>
+      byClass(dialog(p), 'item-detail')[0]?.getAttribute('aria-labelledby') ?? null;
+    const before = shownId();
+    expect(byClass(dialog(p), 'flip-nav')).toHaveLength(1);
+    p.click(first(byClass(dialog(p), 'equip-trigger')));
+    // The list takes the item's place: no arrows, no announcement, and Left and Right change nothing.
+    expect(byClass(dialog(p), 'flip-nav')).toHaveLength(0);
+    expect(byRole(dialog(p), 'status')).toHaveLength(0);
+    p.key(first(byClass(dialog(p), 'equip-view')), 'ArrowRight');
+    p.key(dialog(p), 'ArrowRight');
+    expect(byClass(dialog(p), 'equip-view')).toHaveLength(1);
+    // Back (the button) returns to the same item, with the arrows again.
+    p.click(first(byName(dialog(p), 'button', /^‹ Back/)));
+    expect(byClass(dialog(p), 'equip-view')).toHaveLength(0);
+    expect(shownId()).toBe(before);
+    expect(byClass(dialog(p), 'flip-nav')).toHaveLength(1);
+  });
+
+  it('leaves the Equip on list with Escape, to the item, without closing the drawer', () => {
+    const p = drawWorkshop();
+    p.click(cells(p)[1] as FakeElement);
+    gearActions.equip = vi.fn(() => Promise.resolve(undefined));
+    p.click(first(byClass(dialog(p), 'equip-trigger')));
+    p.key(first(byClass(dialog(p), 'equip-view')), 'Escape');
+    expect(byRole(p.root, 'dialog')).toHaveLength(1);
+    expect(byClass(dialog(p), 'equip-view')).toHaveLength(0);
+    expect(byClass(dialog(p), 'idc')).toHaveLength(1);
     expect(gearActions.equip).not.toHaveBeenCalled();
   });
 
@@ -512,6 +545,7 @@ describe('the item picker has no flip: the grid is how you move between items', 
 
   it('does nothing on the arrow keys (they stay off the creature behind, too)', () => {
     const { page: p, dialog } = drawPicker();
+    p.click(byClass(dialog, 'item-tile')[2] as FakeElement);
     const before = pressed(dialog);
     p.key(dialog, 'ArrowRight');
     p.key(dialog, 'ArrowLeft');

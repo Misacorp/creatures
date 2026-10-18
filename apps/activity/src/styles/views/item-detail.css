@@ -22,8 +22,9 @@
   align-items: start;
 }
 
+/* The frame's 3 px ring is outside its box: it sits in by the ring, so the ring ends at the content edge. */
 .idc-head .item-frame {
-  margin: 0;
+  margin: var(--px) 0 var(--px) var(--px);
 }
 
 .idc-info {
@@ -267,6 +268,10 @@ button.danger {
   display: flex;
 }
 
+.item-actions .actions {
+  padding-inline: var(--px);
+}
+
 /*
   The "Equip on" row of the Workshop item drawer: the label, then a trigger that looks like a dropdown (the
   wearer's sprite and name, or "Choose a creature", and a chevron). It opens the creature picker sheet.
@@ -286,6 +291,7 @@ button.danger {
 
 button.equip-trigger {
   display: flex;
+  margin-right: var(--px);
   flex: 1 1 auto;
   gap: 0.5rem;
   align-items: center;
@@ -315,4 +321,26 @@ button.equip-trigger canvas.sprite {
   width: 0.875rem;
   height: 0.5rem;
   fill: currentcolor;
+}
+
+/*
+  The "Equip on" view, a drill-in of the item drawer (never a sheet over it): "‹ Back" at the top left, the
+  title, then the creature list at the drawer's own width (the drawer body scrolls, the list does not).
+*/
+.drill-head {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0 0 0.5rem;
+}
+
+.drill-head button.drill-back {
+  flex: none;
+  font-size: var(--fs-row);
+}
+
+.drill-title {
+  margin: 0;
+  font-size: var(--fs-heading);
+  line-height: 1.2;
 }

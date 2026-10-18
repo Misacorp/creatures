@@ -25,6 +25,7 @@
     detail panel, the dismantle panel, the Equip on row and the creature picker sheet; the rest of the app still
     has raw sizes (a follow-up, see decisions.md).
   */
+  --drawer-pad: 0.75rem; /* the side padding of everything in a drawer: heading, body, footer, rows */
   --fs-title: 1.5rem; /* a drawer's or page's title; the creature's name */
   --fs-heading: 1.25rem; /* a card's name (the item card), a sheet's title */
   --fs-row: 1rem; /* a row: a stat, a modifier line, a picker option, a button in a panel */

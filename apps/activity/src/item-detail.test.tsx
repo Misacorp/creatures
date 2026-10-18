@@ -118,8 +118,7 @@ describe('the Equip on row', () => {
   it('says "Choose a creature" when nobody wears the item, and acts like a dropdown', () => {
     const p = draw(hat(), actionsOf());
     expect(visibleText(trigger(p))).toBe('Choose a creature');
-    expect(trigger(p).getAttribute('aria-haspopup')).toBe('dialog');
-    expect(trigger(p).getAttribute('aria-expanded')).toBe('false');
+    expect(trigger(p).localName).toBe('button');
   });
 
   it("shows the wearer's name when the item is worn", () => {
@@ -132,14 +131,26 @@ describe('the Equip on row', () => {
     expect(trigger(p).hasAttribute('disabled')).toBe(true);
   });
 
-  it('opens the creature picker sheet, in the pixel font, with who can wear it first and a reason for the rest', () => {
+  it("opens the creature list in the drawer itself, in the item's place, never as a sheet over it", () => {
     const p = draw(hat(), actionsOf());
     p.click(trigger(p));
-    expect(trigger(p).getAttribute('aria-expanded')).toBe('true');
-    const sheet = first(byClass(p.root, 'roster-picker'));
-    expect(sheet.getAttribute('class')).toContain('pix-panel');
-    expect(visibleText(first(byClass(sheet, 'sheet-title')))).toBe('Equip on');
-    expect(byClass(sheet, 'sheet-status')).toHaveLength(0);
+    const view = first(byClass(p.root, 'equip-view'));
+    expect(view.getAttribute('class')).toContain('pix-panel');
+    expect(byClass(p.root, 'sheet-layer')).toHaveLength(0);
+    expect(byRole(p.root, 'dialog')).toHaveLength(0);
+    // The item card and its buttons are gone from view; Back is at the top left, then the list.
+    expect(byClass(p.root, 'idc')).toHaveLength(0);
+    expect(byClass(p.root, 'equip-trigger')).toHaveLength(0);
+    const head = first(byClass(view, 'drill-head'));
+    expect(visibleText(head)).toContain('‹ Back');
+    expect(visibleText(head)).toContain('Equip on');
+    expect(head.childNodes[0] && (head.childNodes[0] as FakeElement).localName).toBe('button');
+    expect(first(byRole(view, 'listbox')).getAttribute('aria-label')).toBe('Your creatures');
+  });
+
+  it('lists who can wear it first (highest level first), then who cannot, each with a reason', () => {
+    const p = draw(hat(), actionsOf());
+    p.click(trigger(p));
     const names = options(p).map((o) => visibleText(o));
     expect(names.map((n) => n.split('Lv')[0])).toEqual(['high', 'mid', 'away', 'job', 'low']);
     expect(names[2]).toContain('Away on a trip');
@@ -154,23 +165,24 @@ describe('the Equip on row', () => {
     ]);
   });
 
-  it('equips right away on a pick, with the item and the creature, and closes the sheet', () => {
+  it('equips right away on a pick, with the item and the creature, and returns to the item', () => {
     const actions = actionsOf();
     const p = draw(hat(), actions);
     p.click(trigger(p));
     p.click(optionOf(p, 'mid'));
     expect(actions.equip).toHaveBeenCalledWith('hat-1', 'mid');
-    expect(byClass(p.root, 'roster-picker')).toHaveLength(0);
+    expect(byClass(p.root, 'equip-view')).toHaveLength(0);
+    expect(byClass(p.root, 'idc')).toHaveLength(1);
   });
 
-  it('asks for nothing when a creature that cannot wear it is tapped, and the sheet stays', () => {
+  it('asks for nothing when a creature that cannot wear it is tapped, and the list stays', () => {
     const actions = actionsOf();
     const p = draw(hat(), actions);
     p.click(trigger(p));
     p.click(optionOf(p, 'low'));
     p.click(optionOf(p, 'away'));
     expect(actions.equip).not.toHaveBeenCalled();
-    expect(byClass(p.root, 'roster-picker')).toHaveLength(1);
+    expect(byClass(p.root, 'equip-view')).toHaveLength(1);
   });
 
   it('offers Take off first for a worn item, then the wearer, and Take off asks for it with no creature', () => {
@@ -182,16 +194,16 @@ describe('the Equip on row', () => {
     expect(visibleText(options(p)[1] as FakeElement)).toContain('Wears it now');
     p.click(optionOf(p, 'Take off'));
     expect(actions.equip).toHaveBeenCalledWith('hat-1', null);
-    expect(byClass(p.root, 'roster-picker')).toHaveLength(0);
+    expect(byClass(p.root, 'equip-view')).toHaveLength(0);
   });
 
-  it('picking the creature that wears it already changes nothing and just closes', () => {
+  it('picking the creature that wears it already changes nothing and returns', () => {
     const actions = actionsOf();
     const p = draw(hat('mid'), actions);
     p.click(trigger(p));
     p.click(optionOf(p, 'mid'));
     expect(actions.equip).not.toHaveBeenCalled();
-    expect(byClass(p.root, 'roster-picker')).toHaveLength(0);
+    expect(byClass(p.root, 'equip-view')).toHaveLength(0);
   });
 
   it('freezes every option when the wearer is away (the server refuses to move the item)', () => {
@@ -201,7 +213,19 @@ describe('the Equip on row', () => {
     expect(visibleText(optionOf(p, 'Take off'))).toContain('away is away on a trip');
   });
 
-  it('closes on Escape without the key reaching the drawer behind it', () => {
+  it('goes back to the item with the Back button, changing nothing', () => {
+    const actions = actionsOf();
+    const p = draw(hat(), actions);
+    p.click(trigger(p));
+    p.click(first(byName(p.root, 'button', /^‹ Back/)));
+    expect(byClass(p.root, 'equip-view')).toHaveLength(0);
+    expect(byClass(p.root, 'idc')).toHaveLength(1);
+    expect(actions.equip).not.toHaveBeenCalled();
+    // The focus is back on the row that opened it.
+    expect(trigger(p).focused).toBeGreaterThan(0);
+  });
+
+  it('goes back on Escape, and the key does not reach the drawer behind it (it would close)', () => {
     const behind = vi.fn();
     page = createPage();
     const item = hat();
@@ -218,12 +242,13 @@ describe('the Equip on row', () => {
       </div>,
     );
     page.click(trigger(page));
-    page.key(first(byClass(page.root, 'sheet')), 'Escape');
-    expect(byClass(page.root, 'roster-picker')).toHaveLength(0);
+    page.key(first(byClass(page.root, 'equip-view')), 'Escape');
+    expect(byClass(page.root, 'equip-view')).toHaveLength(0);
+    expect(byClass(page.root, 'idc')).toHaveLength(1);
     expect(behind).not.toHaveBeenCalled();
   });
 
-  it('keeps Left, Right and Tab from reaching the drawer behind (it would flip the item or trap the focus twice)', () => {
+  it('keeps Left and Right from reaching the drawer behind it (they would flip the item) and is no swipe area', () => {
     const behind = vi.fn();
     page = createPage();
     const item = hat();
@@ -240,9 +265,30 @@ describe('the Equip on row', () => {
       </div>,
     );
     page.click(trigger(page));
-    const sheet = first(byClass(page.root, 'sheet'));
-    for (const key of ['ArrowLeft', 'ArrowRight', 'Tab']) page.key(sheet, key);
+    const view = first(byClass(page.root, 'equip-view'));
+    for (const key of ['ArrowLeft', 'ArrowRight']) page.key(view, key);
     expect(behind).not.toHaveBeenCalled();
+    expect(view.getAttribute('data-no-flip')).toBe('');
+  });
+
+  it('tells the drawer while the list is shown, and when it is gone', () => {
+    const told: boolean[] = [];
+    page = createPage();
+    const item = hat();
+    page.draw(
+      <ItemDetail
+        item={item}
+        gear={{ ...SAMPLE_GEAR, items: [item] }}
+        creatures={ROSTER}
+        busy={false}
+        actions={actionsOf()}
+        onGone={() => undefined}
+        onDrill={(open) => told.push(open)}
+      />,
+    );
+    page.click(trigger(page));
+    page.click(first(byName(page.root, 'button', /^‹ Back/)));
+    expect(told).toEqual([false, true, false]);
   });
 });
 

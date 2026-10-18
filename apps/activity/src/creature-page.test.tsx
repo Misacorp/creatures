@@ -389,12 +389,30 @@ describe('the creature page: the item picker drawer', () => {
     expect(visibleText(first(byClass(cell, 'item-lv')))).toMatch(/^Lv \d+$/);
   });
 
-  it('puts the worn item first and selected, with Take off, and takes it off', async () => {
+  it('opens with nothing selected: the grid has the whole drawer until an item is tapped', () => {
+    const { root, page: p } = draw('level 15');
+    p.click(slotButton(root, /^Hat: /));
+    const dialog = first(byRole(root, 'dialog'));
+    const cells = byClass(dialog, 'item-tile');
+    expect(cells.length).toBeGreaterThan(10);
+    expect(cells.some((c) => c.getAttribute('aria-pressed') === 'true')).toBe(false);
+    expect(cells.some((c) => (c.getAttribute('class') ?? '').includes('selected'))).toBe(false);
+    expect(byClass(dialog, 'ip-detail')).toHaveLength(0);
+    expect(byName(dialog, 'button', /^(Equip|Take off)$/)).toHaveLength(0);
+    // The count is there, and a tap shows the item.
+    expect(visibleText(first(byClass(dialog, 'drawer-head')))).toMatch(/\d+ in the bag/);
+    p.click(cells[3] as FakeElement);
+    expect(cells[3]?.getAttribute('aria-pressed')).toBe('true');
+    expect(byClass(dialog, 'ip-detail')).toHaveLength(1);
+  });
+
+  it('puts the worn item first; tapping it shows Take off, and that takes it off', async () => {
     const { root, page: p, actions } = draw('level 15');
     p.click(slotButton(root, /^Hat: /));
     const dialog = first(byRole(root, 'dialog'));
     const cells = byClass(dialog, 'item-tile');
     expect(visibleText(first(byClass(cells[0] as FakeElement, 'item-tile-flag')))).toBe('Worn');
+    p.click(cells[0] as FakeElement);
     expect(cells[0]?.getAttribute('aria-pressed')).toBe('true');
     p.click(first(byName(dialog, 'button', 'Take off')));
     await vi.waitFor(() => {
@@ -428,6 +446,7 @@ describe('the creature page: the item picker drawer', () => {
     const equip = vi.fn(() => Promise.resolve(false));
     const { root, page: p } = draw('level 15', { actions: { onEquip: equip } });
     p.click(slotButton(root, /^Hat: /));
+    p.click(first(byClass(first(byRole(root, 'dialog')), 'item-tile')));
     p.click(first(byName(first(byRole(root, 'dialog')), 'button', 'Take off')));
     await vi.waitFor(() => {
       expect(equip).toHaveBeenCalledTimes(1);
@@ -473,6 +492,7 @@ describe('the creature page: the item detail panel', () => {
   it('is the item card: image with its level, name, badge and stats, then a divider and the modifiers', () => {
     const { root, page: p } = draw('level 15');
     p.click(slotButton(root, /^Hat: /));
+    p.click(first(byClass(first(byRole(root, 'dialog')), 'item-tile')));
     const detail = first(byClass(first(byRole(root, 'dialog')), 'ip-detail'));
     const card = first(byClass(detail, 'idc'));
     expect(card.getAttribute('class')).toContain('pix');
@@ -512,6 +532,7 @@ describe('the creature page: the item detail panel', () => {
   it('has no stat rows for a Charm: name, badge, divider, modifiers', () => {
     const { root, page: p } = draw('level 15');
     p.click(slotButton(root, /^Charm: /));
+    p.click(first(byClass(first(byRole(root, 'dialog')), 'item-tile')));
     const detail = first(byClass(first(byRole(root, 'dialog')), 'ip-detail'));
     expect(byClass(detail, 'idc-stats')).toHaveLength(0);
     expect(byClass(detail, 'idc-divider')).toHaveLength(1);

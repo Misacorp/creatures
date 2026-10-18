@@ -53,6 +53,9 @@ export function Workshop({
   const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? null);
   // The drawer was flipped to another item: the new card does not take the focus from the arrows.
   const [flipped, setFlipped] = useState(false);
+  // The item's "Equip on" list is shown inside the drawer: flipping is paused while it is (no arrows, swipe or
+  // keys), so nothing acts on the item behind it. The drawer keeps its structure, so the item's state survives.
+  const [drilling, setDrilling] = useState(false);
   if (gear === null) {
     return failed ? (
       <section class="ws-section">
@@ -70,7 +73,7 @@ export function Workshop({
   const selected = gear.items.find((i) => i.id === selectedId) ?? null;
   // The drawer flips through the bag's items in the grid's order.
   const ordered = sortItems(gear.items);
-  const flip = flipOver({
+  const itemFlip = flipOver({
     list: ordered,
     at: ordered.findIndex((i) => i.id === selected?.id),
     noun: 'item',
@@ -80,6 +83,7 @@ export function Workshop({
       setFlipped(true);
     },
   });
+  const flip = drilling && itemFlip !== undefined ? { ...itemFlip, paused: true } : itemFlip;
   return (
     <div class="workshop">
       {gear.notice !== null && (
@@ -188,6 +192,7 @@ export function Workshop({
                 busy={busy}
                 actions={actions}
                 focusName={!flipped}
+                onDrill={setDrilling}
                 onGone={() => {
                   setSelectedId(null);
                 }}

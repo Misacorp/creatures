@@ -9,7 +9,7 @@ import { ScrollHint } from '../ui/ScrollHint';
 import { Switch } from '../ui/Switch';
 import { diffItems } from './compare-diff';
 import { loadCompareOn, saveCompareOn } from './compare-pref';
-import { compactReason, firstPick, pickerChoices } from './picker-view';
+import { compactReason, pickerChoices } from './picker-view';
 
 export interface ItemPickerProps {
   open: boolean;
@@ -155,13 +155,10 @@ export function ItemPickerDrawer({
     })),
   ];
   const [picked, setPicked] = useState<string | null>(initialPicked ?? null);
-  // A second tap on the item shown closes its details, so the grid has the whole drawer; any tap opens them.
-  const [detailOpen, setDetailOpen] = useState(true);
-  const shown =
-    cells.find((c) => c.item.id === picked) ??
-    cells.find((c) => c.worn) ??
-    cells.find((c) => c.item.id === firstPick(choices)) ??
-    cells[0];
+  // It opens with nothing selected (the grid has the whole drawer) until an item is tapped; a second tap on
+  // the item shown closes its details again. (The workbench starts on an item with `initialPicked`.)
+  const [detailOpen, setDetailOpen] = useState(initialPicked !== undefined);
+  const shown = cells.find((c) => c.item.id === picked);
   const selected = detailOpen ? shown : undefined;
   return (
     <Drawer
