@@ -61,7 +61,11 @@ export function FlipNav({ flip }: { flip: FlipProps }) {
           tryFlip(flip, step, 'button');
         }}
       >
-        <Arrow step={step} />
+        {step < 0 && <Arrow step={step} />}
+        <span class="flip-word pix" aria-hidden="true">
+          {step < 0 ? 'Prev' : 'Next'}
+        </span>
+        {step > 0 && <Arrow step={step} />}
       </button>
     );
   };

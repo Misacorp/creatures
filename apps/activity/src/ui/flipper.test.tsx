@@ -195,6 +195,20 @@ describe('FlipNav', () => {
     expect(page.document.activeElement).toBe(first(byName(page.root, 'button', /^Next item/)));
   });
 
+  it('says Prev and Next on the buttons, beside the arrows', () => {
+    page = createPage();
+    const flip = flipOver({
+      list: NAMES,
+      at: 1,
+      noun: 'item',
+      nameOf: (n) => n,
+      pick: () => undefined,
+    });
+    if (flip === undefined) throw new Error('no flip');
+    page.draw(<FlipNav flip={flip} />);
+    expect(byClass(page.root, 'flip-word').map(visibleText)).toEqual(['Prev', 'Next']);
+  });
+
   it('sits in a drawer as a full-width row under the heading, not in the heading', () => {
     page = createPage();
     const flip = flipOver({
