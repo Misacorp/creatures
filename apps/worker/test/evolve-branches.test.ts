@@ -250,8 +250,9 @@ describe('branch evolutions (Sproutle and Zipmouse)', () => {
       const { p, secret, sproutle, zipmouse, sproutle2 } = await branching(ctx);
       const bell = giveItem(ctx.sql, p.id, 'wardens-bell'); // a Guard Charm
       const print = giveItem(ctx.sql, p.id, 'footprint-charm'); // a Setter Charm
-      const wear = (item: string, creature: string): void =>
+      const wear = (item: string, creature: string): void => {
         ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creature, item);
+      };
       wear(bell, sproutle);
       wear(print, zipmouse);
       const second = giveItem(ctx.sql, p.id, 'wardens-bell', { seed: 'second' });
