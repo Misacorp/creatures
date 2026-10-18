@@ -1,7 +1,7 @@
 import { fetchGear } from './gear-api';
 import { grantsForWeek, lootIsEmpty } from './gear-view';
 import type { GrantRecord } from './gear-types';
-import { LootList } from './GearLoot';
+import { LootList } from './LootList';
 import { RevealLater } from './ui/RevealShell';
 import { useLoaded } from './use-loaded';
 

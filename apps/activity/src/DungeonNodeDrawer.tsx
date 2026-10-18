@@ -41,7 +41,7 @@ import {
   stepsAt,
 } from './dungeon-history';
 import { packBadges } from './dungeon-run';
-import { LootList } from './GearLoot';
+import { GearRows } from './ItemRow';
 import { modifierIcon } from './dungeon-rooms';
 import { roomTrick } from './dungeon-playback';
 import type {
@@ -55,7 +55,7 @@ import { glyphOrUnknown } from './glyphs';
 import { gimmickGlyphKey, gimmickShort } from './raid-text';
 import { Sprite } from './sprites/Sprite';
 import { ElementChip } from './sprites/ElementChip';
-import { CountBadge } from './ui/CountBadge';
+import { CountBadgeList } from './ui/CountBadge';
 import { Drawer } from './ui/Drawer';
 import { Tag } from './ui/Tag';
 
@@ -170,13 +170,7 @@ function LootRow({ pack }: { pack: DungeonPack }) {
   return (
     <div class="dnd-loot">
       <span>{LOOT_LABEL}:</span>
-      <ul class="dnd-loot-items" aria-label={LOOT_LABEL}>
-        {packBadges(pack).map(({ key, ...badge }) => (
-          <li key={key}>
-            <CountBadge {...badge} />
-          </li>
-        ))}
-      </ul>
+      <CountBadgeList items={packBadges(pack)} label={LOOT_LABEL} class="dnd-loot-items" />
     </div>
   );
 }
@@ -243,15 +237,9 @@ function Outcome({ entry }: { entry: DungeonStepLog }) {
         {entry.gear.length > 0 && (
           <div class="dnd-gear">
             <span>{CHEST_GEAR_LABEL}:</span>
-            <LootList
-              label={CHEST_GEAR_LABEL}
-              loot={{
-                gear: entry.gear.map((g, i) => ({ id: `chest-${String(i)}`, ...g })),
-                converted: [],
-                parts: {},
-                blueprints: [],
-              }}
-            />
+            <div class="loot" role="group" aria-label={CHEST_GEAR_LABEL}>
+              <GearRows pieces={entry.gear} label="Items" />
+            </div>
           </div>
         )}
       </div>
