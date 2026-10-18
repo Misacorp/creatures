@@ -6,6 +6,7 @@ import { content } from '@creatures/game';
 import { main, parseCli, type Io } from '../src/cli';
 import type { RunSettings } from '../src/run';
 import { applyOverrides } from '../src/tune';
+import { TINY } from './helpers';
 
 const dir = mkdtempSync(join(tmpdir(), 'sim-cli-'));
 afterAll(() => {
@@ -71,13 +72,14 @@ function withUnbeatableBosses<T>(body: () => T): T {
   }
 }
 
-/** The CLI tests check the command, not the balance: skip the 30-week studies so they stay fast. */
+/**
+ * The CLI tests check the command, not the balance: run the tiny settings (the shared test sizes
+ * and shortened horizons), keeping the seed and weeks the command line parsed.
+ */
 const small = (settings: RunSettings): RunSettings => ({
-  ...settings,
-  gearServers: 0,
-  creaturesServers: 0,
-  curveServers: 1,
-  suppliesServers: 1,
+  ...TINY,
+  seed: settings.seed,
+  weeks: settings.weeks,
 });
 
 describe('CLI run', () => {
@@ -93,16 +95,16 @@ describe('CLI run', () => {
       summary: { fail: number };
     };
     expect(json.summary.fail).toBeGreaterThan(0);
-  }, 300_000);
+  });
 
   it('exits 1 with --fail-on-violations when a target fails', () => {
     const { io } = capture();
     expect(
       withUnbeatableBosses(() =>
-        main(['--quick', '--weeks', '5', '--out', dir, '--fail-on-violations'], io, small),
+        main(['--quick', '--weeks', '1', '--out', dir, '--fail-on-violations'], io, small),
       ),
     ).toBe(1);
-  }, 300_000);
+  });
 
   it('exits non-zero on bad arguments', () => {
     const { io, err } = capture();

@@ -1,22 +1,56 @@
 import { describe, expect, it } from 'vitest';
 import { buildReportJson, buildReportMarkdown } from '../src/report';
-import { SWEEP_COUNTS, snapshotWeeks } from '../src/run';
-import { tinyRun } from './helpers';
+import { LONG_RUN_WEEKS } from '../src/ladder';
+import {
+  PITY_WEEKS,
+  SWEEP_COUNTS,
+  TRIP_LONG_WEEKS,
+  defaultSettings,
+  horizonsOf,
+  snapshotWeeks,
+} from '../src/run';
+import { sharedTinyRun, tinyRun } from './helpers';
 
 describe('simulation run', () => {
-  it('gives an identical report.json for the same seed', () => {
-    const a = buildReportJson(tinyRun());
-    const b = buildReportJson(tinyRun());
-    expect(a).toBe(b);
-    expect(buildReportMarkdown(tinyRun())).toBe(buildReportMarkdown(tinyRun()));
-  }, 300_000);
+  it('gives an identical report.json and report.md for the same seed', () => {
+    // The only test that builds two independent runs: the shared run and one more.
+    const first = sharedTinyRun();
+    const second = tinyRun();
+    expect(buildReportJson(first)).toBe(buildReportJson(second));
+    expect(buildReportMarkdown(first)).toBe(buildReportMarkdown(second));
+  });
 
   it('gives a different report for a different seed', () => {
-    expect(buildReportJson(tinyRun({ seed: 'other' }))).not.toBe(buildReportJson(tinyRun()));
+    expect(buildReportJson(tinyRun({ seed: 'other' }))).not.toBe(buildReportJson(sharedTinyRun()));
+  });
+
+  it('plays the shipped horizons unless a test shortens them', () => {
+    // `pnpm sim` and `pnpm sim:quick` carry no override, so their numbers cannot move.
+    for (const mode of ['full', 'quick'] as const) {
+      const settings = defaultSettings(mode);
+      expect(settings.pityWeeks).toBeUndefined();
+      expect(settings.longRunWeeks).toBeUndefined();
+      expect(settings.tripLongWeeks).toBeUndefined();
+      expect(settings.studyWeeks).toBeUndefined();
+      expect(horizonsOf(settings)).toEqual({
+        pityWeeks: 20,
+        longRunWeeks: 30,
+        tripLongWeeks: 60,
+        gearWeeks: 30,
+        creaturesWeeks: 30,
+      });
+    }
+    expect([PITY_WEEKS, LONG_RUN_WEEKS, TRIP_LONG_WEEKS]).toEqual([20, 30, 60]);
+    expect(horizonsOf({ ...defaultSettings('quick'), pityWeeks: 6, studyWeeks: 7 })).toMatchObject({
+      pityWeeks: 6,
+      longRunWeeks: 30,
+      gearWeeks: 7,
+      creaturesWeeks: 7,
+    });
   });
 
   it('writes a report with the required sections and valid JSON', () => {
-    const out = tinyRun();
+    const out = sharedTinyRun();
     const md = buildReportMarkdown(out);
     for (const heading of [
       '# Balance simulator report',

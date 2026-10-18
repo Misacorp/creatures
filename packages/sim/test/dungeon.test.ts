@@ -49,7 +49,6 @@ import { runEconomy } from '../src/economy';
 import { clonePlayer, createPlayer, type SimPlayer } from '../src/state';
 import { TARGETS } from '../src/targets';
 import { applyOverrides } from '../src/tune';
-import { tinyRun } from './helpers';
 
 function creature(player: string, line: string, level: number): OwnedCreature {
   return { id: `${player}/${line}`, line, speciesId: line, level, fusionCount: 0 };
@@ -1090,22 +1089,7 @@ describe('the dungeon targets', () => {
     });
   });
 
-  it('are measured by a run, and the report has a dungeon section', () => {
-    const out = tinyRun({ weeks: 9 });
-    for (const id of [
-      'dungeon-first-week-clear',
-      'dungeon-depth-growth',
-      'dungeon-essence-share',
-      'dungeon-gear-share-week8',
-      'dungeon-home-rate',
-      'dungeon-run-fights',
-      'dungeon-eligible-run-fights',
-    ]) {
-      expect(out.evaluation.find((t) => t.id === id)?.status, id).not.toBe('not_measured');
-    }
-    expect(out.analysis.dungeon.winRates.casual).toHaveLength(24);
-    // A full nine-week run, like the ones in run.test.ts: it gets the same long limit.
-  }, 300_000);
+  // "Are measured by a run" is in pipeline.test.ts (one shared run).
 
   it('has foes, events and keepsakes for the maps the model plays', () => {
     expect(dungeonContent.foes.filter((f) => f.kind === 'foe').length).toBeGreaterThanOrEqual(3);

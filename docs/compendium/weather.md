@@ -64,7 +64,7 @@ Ten Boons, all live. `(content: weather.json)`
 ### Lantern Light
 
 - Shipped flavour `(content)`: "Lanterns hang in every window and old pages come out of their drawers."
-- Compendium detail: the day the Journal gets browsed. Shield Walls and Rallies last a breath longer in the soft light.
+- Compendium detail: the day the Journal gets browsed. A creature's Rally, Shield Wall or Purge lasts a breath longer in the soft light. The plain basic abilities do not: they are no creature's own.
 
 ### Market Day
 

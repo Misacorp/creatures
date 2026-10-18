@@ -12,9 +12,7 @@ import {
   runRankCheck,
   runSetupStudy,
 } from '../src/setup-study';
-import { buildReportJson, buildReportMarkdown } from '../src/report';
 import { clonePlayer } from '../src/state';
-import { tinyRun } from './helpers';
 
 function slot(speciesId: string, id: string): FightSlot {
   const species = content.creatures.find((c) => c.id === speciesId);
@@ -166,15 +164,7 @@ describe('the setup study and the high-rank check', () => {
     }
   });
 
-  it('lands in the report, as markdown sections and JSON keys', () => {
-    const out = tinyRun();
-    const md = buildReportMarkdown(out);
-    expect(md).toContain('## Setups (greedy and protected rows)');
-    expect(md).toContain('## High Boss Ranks');
-    const json = JSON.parse(buildReportJson(out)) as { setups: unknown[]; ranks: unknown[] };
-    expect(json.setups.length).toBe(SETUPS.length * SETUP_RANK_OFFSETS.length);
-    expect(json.ranks.length).toBeGreaterThan(0);
-  });
+  // "Lands in the report, as markdown sections and JSON keys" is in pipeline.test.ts (one shared run).
 });
 
 describe('economy options for studies', () => {

@@ -109,7 +109,7 @@
       ]
     },
     "three": {
-      "text": "Shield Walls on its row last 1 more round.",
+      "text": "Guards in its row: their abilities last 1 more round.",
       "effect": "rowShieldWall",
       "value": 1
     }

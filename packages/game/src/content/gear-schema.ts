@@ -376,7 +376,7 @@ export type LegacyPack = v.InferOutput<typeof LegacyPackSchema>;
  * - `sealMark`: the first mark it leaves each fight cannot be replaced.
  * - `firstReactionCrit`: its first reaction each fight is a critical hit.
  * - `longTripCatch`: `value` extra catch rolls on 24 hour trips.
- * - `rowShieldWall`: Guards in the wearer's row have Shield Walls that last 1 more round.
+ * - `rowShieldWall`: Guards in the wearer's row have their abilities (Rally, Shield Wall, Purge) last 1 more round.
  */
 export const SET_EFFECTS = [
   'unreflected',

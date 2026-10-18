@@ -34,20 +34,30 @@ describe('performance', () => {
 
   it('resolves a 45-player week (three full parties, three phases each) well under budget', () => {
     const phases = ['phase1', 'phase2', 'finale'] as const;
-    const times: number[] = [];
+    // Like the test above: warm up, then take the median of several runs of each fight, so one
+    // slow tick on a busy machine cannot fail the test.
+    const medians: number[] = [];
     for (let party = 0; party < 3; party++) {
       for (const phase of phases) {
         const inp = randomInput(`perf-week-${party}`, 15, phase);
         inp.bossHpPool = { max: 100_000_000, current: 100_000_000 };
-        simulateFight(inp, rng()); // warm up
-        const start = performance.now();
-        simulateFight(inp, rng());
-        times.push(performance.now() - start);
+        for (let i = 0; i < 10; i++) simulateFight(inp, rng());
+        const times: number[] = [];
+        for (let i = 0; i < 9; i++) {
+          const start = performance.now();
+          simulateFight(inp, rng());
+          times.push(performance.now() - start);
+        }
+        times.sort((a, b) => a - b);
+        medians.push(times[Math.floor(times.length / 2)] as number);
       }
     }
-    const worst = Math.max(...times);
-    console.log(`45-player week: worst single fight ${worst.toFixed(2)} ms`);
+    const worst = Math.max(...medians);
+    const total = medians.reduce((a, b) => a + b, 0);
+    console.log(
+      `45-player week: slowest fight (median) ${worst.toFixed(2)} ms, all nine ${total.toFixed(2)} ms`,
+    );
     expect(worst).toBeLessThan(50);
-    expect(times.reduce((a, b) => a + b, 0)).toBeLessThan(250);
+    expect(total).toBeLessThan(250);
   });
 });
