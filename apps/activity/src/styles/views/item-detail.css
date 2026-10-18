@@ -6,10 +6,12 @@
 /*
   The item card (ItemCard.tsx), the one layout for an item's full details (the Workshop's item and the picker's
   detail panel): the image at the top left, to its right the name, a small rarity badge and the base stats (one
-  row each, the same size), then a full-width divider and the modifiers. All of it in the pixel font.
+  row each, the same size), then a full-width divider and the modifiers. All of it in the pixel font (a
+  `.pix-panel`), at the type scale's row size (`--fs-row`, the size of the creature page's rows), the name at
+  `--fs-heading`, notes at `--fs-small`.
 */
 .idc {
-  font-size: 1.125rem;
+  font-size: var(--fs-row);
   line-height: 1.15;
 }
 
@@ -20,8 +22,9 @@
   align-items: start;
 }
 
+/* The frame's 3 px ring is outside its box: it sits in by the ring, so the ring ends at the content edge. */
 .idc-head .item-frame {
-  margin: 0;
+  margin: var(--px) 0 var(--px) var(--px);
 }
 
 .idc-info {
@@ -30,7 +33,7 @@
 
 .idc .idc-name {
   margin: 0;
-  font-size: 1.375rem;
+  font-size: var(--fs-heading);
   font-weight: 400;
   line-height: 1.05;
   overflow-wrap: anywhere;
@@ -70,11 +73,59 @@
 
 .idc .line-list .line-text,
 .idc .line-list .line {
-  font-size: 1.125rem;
+  font-size: var(--fs-row);
 }
 
 .idc .line-note {
-  font-size: 1rem;
+  font-size: var(--fs-small);
+}
+
+/*
+  The gear set block of an item card: the set's name with how many pieces the wearer has, then the bonuses for
+  two and three pieces. The ones the wearer has are in the gear colour with a marker; the others are dimmed.
+*/
+.idc-set {
+  margin: 0.625rem 0 0;
+  padding: 0.375rem 0.5rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+}
+
+.idc-set-head {
+  margin: 0 0 0.25rem;
+  color: var(--bone);
+}
+
+.idc-set-count {
+  color: var(--gold);
+}
+
+.idc-set-list {
+  display: grid;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.idc-set-list li {
+  color: var(--haze);
+}
+
+.idc-set-list li.on {
+  color: var(--gear);
+}
+
+.idc-set-list li.on::before {
+  content: '>\00A0';
+}
+
+.idc-set-pieces {
+  color: var(--bone);
+}
+
+.set-tag {
+  color: var(--gear);
 }
 
 .item-tags {
@@ -111,8 +162,7 @@ button.danger {
 }
 
 .confirm,
-.job-starter,
-.equip-panel {
+.job-starter {
   margin: 0.5rem 0;
   padding: 0.625rem;
   background: var(--dusk);
@@ -202,4 +252,111 @@ button.danger {
 
 .dismantle-items .item-frame {
   margin: 0.25rem;
+}
+
+/* What a dismantle gives: count badges in a row, with the time as the last one (a clock and "51 min"). */
+.gives {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gives li {
+  display: flex;
+}
+
+/*
+  A destructive action sits last in its view, centred, apart from the rest: the item drawer's Dismantle. The
+  panel it opens (the confirmation) takes the full width under it.
+*/
+.item-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.item-actions .actions {
+  justify-content: center;
+  padding-inline: var(--px);
+}
+
+.item-actions .confirm {
+  align-self: stretch;
+}
+
+/*
+  The "Equip on" row of the Workshop item drawer: the label, then a trigger that looks like a dropdown (the
+  wearer's sprite and name, or "Choose a creature", and a chevron). It opens the creature picker sheet.
+*/
+.equip-on {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0.625rem 0 0;
+}
+
+.equip-on-label {
+  flex: none;
+  color: var(--haze);
+  font-size: var(--fs-row);
+}
+
+button.equip-trigger {
+  display: flex;
+  margin-right: var(--px);
+  flex: 1 1 auto;
+  gap: 0.5rem;
+  align-items: center;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.625rem;
+  font-size: var(--fs-row);
+  text-align: left;
+}
+
+button.equip-trigger canvas.sprite {
+  flex: none;
+}
+
+.equip-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.equip-empty {
+  color: var(--haze);
+}
+
+.equip-chevron {
+  flex: none;
+  width: 0.875rem;
+  height: 0.5rem;
+  fill: currentcolor;
+}
+
+/*
+  The "Equip on" view, a drill-in of the item drawer (never a sheet over it): "‹ Back" at the top left, the
+  title, then the creature list at the drawer's own width (the drawer body scrolls, the list does not).
+*/
+.drill-head {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0 0 0.5rem;
+}
+
+.drill-head button.drill-back {
+  flex: none;
+  font-size: var(--fs-row);
+}
+
+.drill-title {
+  margin: 0;
+  font-size: var(--fs-heading);
+  line-height: 1.2;
 }

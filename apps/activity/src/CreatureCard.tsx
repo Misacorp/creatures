@@ -29,6 +29,7 @@ export function CreatureCard({
   gear,
   busy,
   found,
+  current = false,
   actions,
   onAnswerCatch,
   onOpen,
@@ -39,6 +40,8 @@ export function CreatureCard({
   busy: boolean;
   /** The finder chose this card: it is marked until the player does something else. */
   found: boolean;
+  /** The creature whose page was open last: marked so the player sees where they were. */
+  current?: boolean;
   actions: Pick<CardActions, 'onRibbon' | 'onEvolve'>;
   /** Takes the player to the waiting catches at the top of the tab. */
   onAnswerCatch: () => void;
@@ -71,6 +74,7 @@ export function CreatureCard({
 
   const classes = ['card-item', 'creature-card', 'focused'];
   if (found) classes.push('found');
+  if (current) classes.push('current');
   return (
     <li
       id={domId}

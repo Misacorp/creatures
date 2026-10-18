@@ -407,6 +407,13 @@ describe('the Festival piece', () => {
   });
 });
 
+/** Lines that fold into the creature's own numbers wherever it stands (no position line), so the stored stats equal the fold. */
+const PLAIN_LINES: [string, number][] = [
+  ['attack-local-pct', 2],
+  ['hp-local-flat', 1],
+  ['crit-damage', 1],
+];
+
 /** Gives a player's creature an item straight into the tables, and equips it. */
 function wear(
   ctx: CoreContext,
@@ -612,7 +619,7 @@ describe('practice fights', () => {
         ctx.clock.t = W02.afterPhase2;
         ctx.core.raid.runDue(HELSINKI);
         forcePool(ctx.sql, BIG, BIG, 1);
-        wear(ctx, a.id, creatureId, 'trail-cap', 'epic', { level: 5 });
+        wear(ctx, a.id, creatureId, 'trail-cap', 'epic', { level: 5, lines: PLAIN_LINES });
         const worn = loadCreatures(ctx.sql, a.id).find((c) => c.id === creatureId);
         const grantsBefore = count(ctx.sql, 'gear_grants');
         const itemsBefore = count(ctx.sql, 'gear_items');
@@ -663,7 +670,10 @@ describe('stats freeze when the live finale starts', () => {
         forcePool(ctx.sql, BIG, BIG, 1);
         const [a] = players as [Seeded];
         const creatureId = a.creatureIds[0] as string;
-        const itemId = wear(ctx, a.id, creatureId, 'trail-cap', 'epic', { level: 5 });
+        const itemId = wear(ctx, a.id, creatureId, 'trail-cap', 'epic', {
+          level: 5,
+          lines: PLAIN_LINES,
+        });
         const worn = loadCreatures(ctx.sql, a.id).find((c) => c.id === creatureId);
 
         // The finale starts: the fight is frozen with the stats of this moment.

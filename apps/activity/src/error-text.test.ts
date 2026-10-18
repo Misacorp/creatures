@@ -19,6 +19,7 @@ const GAME_MESSAGES: Readonly<Record<string, string>> = {
   invalid_session: 'Your session ended. Close and reopen the Activity.',
   not_evolvable: 'That creature cannot evolve.',
   level_too_low: 'That creature is not high enough level to evolve yet.',
+  not_a_branch: 'That creature cannot grow into that form.',
   locked: 'The raid is locked. Changes are closed for this week.',
   slot_taken: 'Someone else already has that slot.',
   not_your_creature: 'That is not one of your creatures.',
@@ -109,7 +110,7 @@ describe('error messages', () => {
   });
 
   it('pins every code of the table', () => {
-    expect(Object.keys(GAME_MESSAGES)).toHaveLength(70);
+    expect(Object.keys(GAME_MESSAGES)).toHaveLength(71);
   });
 
   it('says the same words for every dungeon code', () => {

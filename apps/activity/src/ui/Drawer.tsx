@@ -1,6 +1,9 @@
 import type { ComponentChildren, JSX } from 'preact';
 import { useEffect, useId, useRef } from 'preact/hooks';
 import { dragOutcome, focusablesIn, trapTarget } from './drawer-logic';
+import { handleFlipKey } from './flip-keys';
+import type { FlipProps } from './flip-logic';
+import { FlipLive, FlipNav } from './Flipper';
 
 export interface DrawerProps {
   /** Whether the sheet is up. Closed, nothing is drawn and the focus goes back to where it was. */
@@ -26,8 +29,38 @@ export interface DrawerProps {
    * does not always focus a button, so the caller names it; without it the element focused at opening is used.
    */
   returnFocusTo?: HTMLElement | null | undefined;
+  /**
+   * Makes the sheet flip between things (the items of a bag): the previous and next arrows with the
+   * position sit in the heading row, Left and Right flip while the sheet is up, and a screen reader hears
+   * the new thing. The content swipes only where it is wrapped in a `FlipArea`.
+   */
+  flip?: FlipProps | undefined;
   /** Where it is used (extra look for one place). */
   class?: string | undefined;
+}
+
+/**
+ * The pixel X (seven squares by seven) of a close button: the drawer's own close button (shown to the keyboard
+ * only, no drawer shows an X) and the close button of a detail panel inside a drawer (the item picker's).
+ */
+export function CloseGlyph() {
+  return (
+    <svg class="drawer-x" viewBox="0 0 7 7" aria-hidden="true" shape-rendering="crispEdges">
+      <rect x="0" y="0" width="1" height="1" />
+      <rect x="1" y="1" width="1" height="1" />
+      <rect x="2" y="2" width="1" height="1" />
+      <rect x="3" y="3" width="1" height="1" />
+      <rect x="4" y="4" width="1" height="1" />
+      <rect x="5" y="5" width="1" height="1" />
+      <rect x="6" y="6" width="1" height="1" />
+      <rect x="6" y="0" width="1" height="1" />
+      <rect x="5" y="1" width="1" height="1" />
+      <rect x="4" y="2" width="1" height="1" />
+      <rect x="2" y="4" width="1" height="1" />
+      <rect x="1" y="5" width="1" height="1" />
+      <rect x="0" y="6" width="1" height="1" />
+    </svg>
+  );
 }
 
 /** True when `node` is `ancestor` or sits inside it (plain `parentNode` steps, so the fake DOM works too). */
@@ -60,6 +93,7 @@ function DrawerSheet({
   children,
   footer,
   returnFocusTo,
+  flip,
   class: extra,
 }: Omit<DrawerProps, 'open'>) {
   const titleId = useId();
@@ -78,7 +112,22 @@ function DrawerSheet({
     };
   }, []);
 
+  // A flip that drew the thing anew may have removed the control that had the focus: the sheet takes it,
+  // so the arrow keys keep working.
+  const flipIndex = flip?.index;
+  useEffect(() => {
+    const root = panel.current;
+    if (flipIndex === undefined || root === null) return;
+    if (!isInside(root, document.activeElement)) root.focus({ preventScroll: true });
+  }, [flipIndex]);
+
   function onKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      // A modal sheet keeps the arrow keys from the page behind it (which may flip too).
+      handleFlipKey(event, flip);
+      event.stopPropagation();
+      return;
+    }
     if (event.key === 'Escape') {
       // Only this sheet closes: the page around it must not also go back.
       event.stopPropagation();
@@ -144,7 +193,7 @@ function DrawerSheet({
         }}
       />
       <div
-        class={`drawer-panel${titleHidden ? ' title-hidden' : ''}${extra === undefined ? '' : ` ${extra}`}`}
+        class={`drawer-panel${titleHidden ? ' title-hidden' : ''}${flip === undefined || flip.paused === true ? '' : ' has-flip'}${extra === undefined ? '' : ` ${extra}`}`}
         ref={panel}
         role="dialog"
         aria-modal="true"
@@ -186,32 +235,19 @@ function DrawerSheet({
             )}
             {meta !== undefined && <span class="drawer-meta muted">{meta}</span>}
             <button type="button" class="drawer-close" aria-label="Close" onClick={onClose}>
-              <svg
-                class="drawer-x"
-                viewBox="0 0 7 7"
-                aria-hidden="true"
-                shape-rendering="crispEdges"
-              >
-                <rect x="0" y="0" width="1" height="1" />
-                <rect x="1" y="1" width="1" height="1" />
-                <rect x="2" y="2" width="1" height="1" />
-                <rect x="3" y="3" width="1" height="1" />
-                <rect x="4" y="4" width="1" height="1" />
-                <rect x="5" y="5" width="1" height="1" />
-                <rect x="6" y="6" width="1" height="1" />
-                <rect x="6" y="0" width="1" height="1" />
-                <rect x="5" y="1" width="1" height="1" />
-                <rect x="4" y="2" width="1" height="1" />
-                <rect x="2" y="4" width="1" height="1" />
-                <rect x="1" y="5" width="1" height="1" />
-                <rect x="0" y="6" width="1" height="1" />
-              </svg>
+              <CloseGlyph />
             </button>
           </div>
         </div>
+        {flip !== undefined && flip.paused !== true && (
+          <div class="drawer-flip">
+            <FlipNav flip={flip} />
+          </div>
+        )}
         {toolbar !== undefined && <div class="drawer-toolbar">{toolbar}</div>}
         <div class="drawer-body">{children}</div>
         {footer !== undefined && <div class="drawer-footer">{footer}</div>}
+        {flip !== undefined && flip.paused !== true && <FlipLive flip={flip} />}
       </div>
     </div>
   );

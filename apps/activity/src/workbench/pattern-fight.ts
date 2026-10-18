@@ -19,6 +19,11 @@ export const PATTERN_SCENARIOS = [
   'Charge: row marked',
   'Charge: creatures marked',
   'Support heal and cleanse',
+  'Kind Rain (a heal for everyone)',
+  'Morning Haze (first turns lost)',
+  'Bramble Season (a reaction thrown back)',
+  'Stubborn (stays up at 1 HP)',
+  'Chance and trigger lines (Echo, Sidestep, Payback)',
   'Cover pips (Guard beside)',
   'Armor pip (a Guard takes less)',
   'Crowded sweep (15 creatures)',
@@ -200,6 +205,88 @@ export function patternFight(scenario: PatternScenario): PatternFight {
         ],
         { moveAt: 1 },
       );
+    case 'Kind Rain (a heal for everyone)':
+      return done(wyrm, [
+        start(4),
+        {
+          t: 'sky_heal',
+          round: 4,
+          heals: [
+            { creature: 'c0', amount: 4 },
+            { creature: 'c1', amount: 2 },
+            { creature: 'c3', amount: 2 },
+            { creature: 'c4', amount: 4 },
+          ],
+        },
+        { t: 'turn', round: 4, creature: 'c0' },
+      ]);
+    case 'Morning Haze (first turns lost)':
+      return done(colossus, [
+        start(1),
+        { t: 'skip', round: 1, creature: 'c0', reason: 'haze' },
+        { t: 'turn', round: 1, creature: 'c1' },
+        { t: 'skip', round: 1, creature: 'c3', reason: 'haze' },
+        { t: 'turn', round: 1, creature: 'c4' },
+      ]);
+    case 'Bramble Season (a reaction thrown back)':
+      return done(colossus, [
+        start(3),
+        { t: 'turn', round: 3, creature: 'c1' },
+        {
+          t: 'reaction',
+          round: 3,
+          reaction: 'steam',
+          setupCreature: 'c0',
+          setupPlayer: 'p1',
+          payoff: 'c1',
+          bonus: 70,
+          reflected: false,
+          bramble: { bp: 3_000, amount: 30 },
+        },
+        { t: 'boss_hit', round: 3, source: 'reflect', target: 'c1', damage: 30 },
+      ]);
+    case 'Stubborn (stays up at 1 HP)': {
+      // c1 would be knocked out by the hit (it shows its full damage), but its Stubborn line keeps it at 1 HP.
+      const max =
+        estimatedMaxHp(row[1] as ReplayRowEntry, {
+          guardHpBp: RULES.combat.guard.hpBp,
+          guardArmorBp: RULES.combat.guard.armorBp,
+        }) ?? 100;
+      return done(colossus, [
+        start(3),
+        {
+          t: 'boss_hit',
+          round: 3,
+          source: 'attack',
+          target: 'c1',
+          damage: max + 40,
+          stubborn: true,
+        },
+        { t: 'proc', round: 3, creature: 'c1', kind: 'stubborn' },
+      ]);
+    }
+    case 'Chance and trigger lines (Echo, Sidestep, Payback)':
+      return done(colossus, [
+        start(4),
+        { t: 'proc', round: 4, creature: 'c1', kind: 'warm_heart', target: 'c2', amount: 1_000 },
+        { t: 'turn', round: 4, creature: 'c2' },
+        {
+          t: 'hit',
+          round: 4,
+          creature: 'c2',
+          damage: 120,
+          matchupBp: 10_000,
+          bonusBp: 1_000,
+          mark: null,
+          bossHp: 880,
+        },
+        { t: 'proc', round: 4, creature: 'c2', kind: 'echo', amount: 36, bossHp: 844 },
+        gimmick(4, 'undertow', 'hit_zone', { targets: ['c0', 'c1'] }),
+        hit(4, 'c0', 0, { sidestep: true }),
+        hit(4, 'c1', 70),
+        { t: 'boss_hit', round: 4, source: 'attack', target: 'c0', damage: 55, from: 'c3' },
+        { t: 'proc', round: 4, creature: 'c0', kind: 'payback', amount: 3_000 },
+      ]);
     case 'Cover pips (Guard beside)':
       return done(colossus, [
         start(3),

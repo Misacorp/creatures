@@ -62,6 +62,9 @@ function applyOne(s: StepState, e: FightEvent): StepState {
       };
     case 'hit':
       return { ...s, bossHp: e.bossHp };
+    case 'proc':
+      // Echo lands again on the boss: it carries the boss's HP after it.
+      return e.bossHp === undefined ? s : { ...s, bossHp: e.bossHp };
     case 'mark':
       return { ...s, mark: e.element };
     case 'reaction':

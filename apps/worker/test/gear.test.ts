@@ -19,6 +19,7 @@ import {
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { creditParts, insertItem } from '../src/gear-store';
+import { loadCreatures } from '../src/raid-teams';
 import {
   T0,
   runCore,
@@ -616,6 +617,41 @@ describe('equip and the wear rule', () => {
         expect((await p.call('POST', equipPath(scarf), { creatureId: cindle })).status).toBe(200);
         // Nothing the server refused was written.
         expect(count(ctx.sql, 'gear_items', 'equipped_on IS NOT NULL')).toBe(3);
+      },
+      opts(),
+    );
+  });
+
+  it('locks the Hat, Scarf and Charm of a role set to that role, and shows it in the item view', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, {
+          species: ['cindle', 'sproutle', 'splashet'],
+          level: 13,
+        });
+        skipWelcome(ctx, p.id);
+        const [cindle, sproutle] = p.creatureIds as [string, string, string];
+        const pieces = ['watchmans-cap', 'watchmans-cloak', 'watchmans-whistle'].map((base) =>
+          give(ctx, p.id, base, { level: 12 }),
+        );
+        for (const id of pieces) {
+          expect(await p.call('POST', equipPath(id), { creatureId: cindle })).toMatchObject({
+            status: 409,
+            body: { error: 'wrong_role' },
+          });
+          expect((await p.call('POST', equipPath(id), { creatureId: sproutle })).status).toBe(200);
+        }
+        const gear = await p.gear();
+        for (const id of pieces) {
+          const view = gear.items.find((i) => i.id === id);
+          expect(view?.needs.role).toBe('guard');
+          expect(view?.equippedOn).toBe(sproutle);
+        }
+        // Wearing all three pieces, the Guard has the set's Armor bonus and its cover reach in a fight.
+        const worn = loadCreatures(ctx.sql, p.id).find((c) => c.id === sproutle);
+        expect(worn?.mods?.coverReach).toBe(1);
+        expect(worn?.mods?.armorBp).toBeGreaterThanOrEqual(400);
       },
       opts(),
     );

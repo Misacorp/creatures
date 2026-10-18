@@ -389,6 +389,14 @@ describe('the glossary text matches the rules', () => {
     expect(text('duplicate-choice')).toContain(`Up to ${String(t.maxPending)} wait`);
     expect(text('duplicate-choice')).toContain(`up to ${String(RULES.fusion.maxFusions)}`);
     expect(text('duplicate-choice')).toContain('never Bait');
+    // Keep is explained, and so is the branch it is for.
+    expect(text('duplicate-choice')).toContain('Keep: it stays as a second creature');
+    expect(text('duplicate-choice')).toContain('two forms');
+    expect(text('evolution')).toContain('permanent');
+    expect(text('evolution')).toContain('Keep a duplicate');
+    // Every evolving line (8) has a second form, so Keep can be offered for each.
+    expect(content.creatures.filter((c) => c.altEvolvesTo !== undefined)).toHaveLength(8);
+    expect(content.creatures.filter((c) => c.evolvesTo !== undefined)).toHaveLength(8);
     // Bait pays for treats, lures and the book, and nothing turns into Bait.
     expect(text('bait')).toContain('lures');
     expect(text('bait')).not.toContain('turn into Bait');
@@ -580,9 +588,12 @@ describe('the glossary covers gear and crafting', () => {
       `II from ${String(tiers[1])}, III from ${String(tiers[2])}, IV from ${String(tiers[3])}, V at ${String(tiers[4])}`,
     );
     // The levels the better bases unlock at are the content's own.
-    const unlocks = [...new Set(gearContent.bases.map((b) => b.minItemLevel ?? 1))].filter(
-      (n) => n > 1,
-    );
+    // (Gear set pieces unlock higher, at 12; the entry names the better makes of the plain bases.)
+    const unlocks = [
+      ...new Set(
+        gearContent.bases.filter((b) => b.set === undefined).map((b) => b.minItemLevel ?? 1),
+      ),
+    ].filter((n) => n > 1);
     expect(unlocks).toEqual([5, 10]);
     expect(text('gear-item-level')).toContain(
       `item level ${String(unlocks[0])} and ${String(unlocks[1])}`,
@@ -609,10 +620,12 @@ describe('the glossary covers gear and crafting', () => {
       `Reach for Epic needs level ${String(epic.minLevel)} (${String(epic.essence)} Essence, ${String(epic.glimmer)} glimmer, ${String(epic.hours)} hours)`,
     );
     expect(text('reach')).toContain(
-      `${percent(RULES.gear.skill.rarityUpBpPerLevel)} for each Crafting level above 1 and for each well-thumbed mark`,
+      `${percent(RULES.gear.skill.rarityUpBpPerLevel)} for each Crafting level above 1 and for each point of blueprint quality`,
     );
-    expect(text('well-thumbed')).toContain(`up to ${String(RULES.gear.craft.marks.max)}`);
-    expect(text('well-thumbed')).toContain(`${percent(RULES.gear.craft.marks.upBp)} to the chance`);
+    expect(text('blueprint-quality')).toContain(`up to ${String(RULES.gear.craft.marks.max)}`);
+    expect(text('blueprint-quality')).toContain(
+      `${percent(RULES.gear.craft.marks.upBp)} likelier to come out one rarity better`,
+    );
     expect(text('blueprint')).toContain(`up to ${String(RULES.gear.craft.marks.max)}`);
     const d = RULES.gear.dismantle;
     expect(text('job-dismantle')).toContain(

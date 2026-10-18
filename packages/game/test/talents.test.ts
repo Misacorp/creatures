@@ -17,6 +17,7 @@ import {
   goldenValue,
   itemOf,
   keepOffered,
+  keepOfferedFor,
   lineBranches,
   loadContent,
   loadTalents,
@@ -543,22 +544,59 @@ describe('the duplicate choice', () => {
     expect(RULES.talents.maxPerLine).toBe(2);
   });
 
-  it('reads the branches of a line from the content: none of the shipped lines has two yet', () => {
+  it('reads the branches of a line from the content: every evolving line has two', () => {
+    const branching = content.creatures.filter((c) => c.altEvolvesTo !== undefined);
+    expect(branching.map((c) => c.id)).toEqual([
+      'splashet',
+      'cindle',
+      'sproutle',
+      'zipmouse',
+      'mistnewt',
+      'ashmole',
+      'stormray',
+      'mossback',
+    ]);
     for (const line of new Set(content.creatures.map((c) => c.line))) {
-      expect(lineBranches(content, line).length, line).toBeLessThanOrEqual(1);
+      expect(lineBranches(content, line).length, line).toBeLessThanOrEqual(2);
     }
-    expect(lineBranches(content, 'sproutle')).toEqual(['thornbuck']);
+    expect(lineBranches(content, 'sproutle')).toEqual(['thornbuck', 'sunfawn']);
+    expect(lineBranches(content, 'zipmouse')).toEqual(['voltaro', 'ohmouse']);
+    expect(lineBranches(content, 'splashet')).toEqual(['tidewing', 'geyserpup']);
+    expect(lineBranches(content, 'cindle')).toEqual(['pyrelynx', 'wickat']);
+    expect(lineBranches(content, 'mistnewt')).toEqual(['fogwyrm', 'drizzlewt']);
+    expect(lineBranches(content, 'ashmole')).toEqual(['magmole', 'kilnmole']);
+    expect(lineBranches(content, 'stormray')).toEqual(['tempestray', 'halcyray']);
+    expect(lineBranches(content, 'mossback')).toEqual(['ancientshell', 'bloomback']);
     expect(lineBranches(content, 'coralynx')).toEqual([]);
     expect(lineBranches(content, 'nobody')).toEqual([]);
-    const first = content.creatures.find((c) => c.id === 'sproutle');
-    const pack = {
-      creatures: content.creatures.map((c) =>
-        c.id === 'sproutle' && first !== undefined
-          ? { ...c, altEvolvesTo: { species: 'sunfawn', level: 15, essence: 20 } }
-          : c,
-      ),
-    };
-    expect(lineBranches(pack, 'sproutle')).toEqual(['thornbuck', 'sunfawn']);
+  });
+
+  it('offers Keep for every evolving line, by what the player owns', () => {
+    expect(keepOfferedFor('sproutle', ['sproutle'])).toBe(true);
+    expect(keepOfferedFor('sproutle', ['thornbuck'])).toBe(true);
+    expect(keepOfferedFor('sproutle', ['sunfawn'])).toBe(true);
+    expect(keepOfferedFor('sproutle', ['thornbuck', 'sunfawn'])).toBe(false);
+    expect(keepOfferedFor('sproutle', ['sproutle', 'sproutle'])).toBe(false);
+    expect(keepOfferedFor('zipmouse', ['voltaro'])).toBe(true);
+    expect(keepOfferedFor('zipmouse', ['voltaro', 'ohmouse'])).toBe(false);
+    const lines: [string, string, string][] = [
+      ['splashet', 'tidewing', 'geyserpup'],
+      ['cindle', 'pyrelynx', 'wickat'],
+      ['mistnewt', 'fogwyrm', 'drizzlewt'],
+      ['ashmole', 'magmole', 'kilnmole'],
+      ['stormray', 'tempestray', 'halcyray'],
+      ['mossback', 'ancientshell', 'bloomback'],
+    ];
+    for (const [line, first, second] of lines) {
+      expect(keepOfferedFor(line, [line]), line).toBe(true);
+      expect(keepOfferedFor(line, [first]), line).toBe(true);
+      expect(keepOfferedFor(line, [second]), line).toBe(true);
+      expect(keepOfferedFor(line, [first, second]), line).toBe(false);
+      expect(keepOfferedFor(line, [line, line]), line).toBe(false);
+    }
+    // A line with no evolution at all (a single-stage species) never offers it.
+    expect(keepOfferedFor('coralynx', ['coralynx'])).toBe(false);
+    expect(keepOfferedFor('solmane', ['solmane'])).toBe(false);
   });
 
   it('recommends Teach for a new talent that does something, into an empty slot first', () => {
@@ -671,47 +709,75 @@ describe('branches in the content', () => {
     return found;
   };
 
-  /** A second stage-2 form of Sproutle with its own copy of Thornbuck's ability. */
-  function withSunfawn(): Mut {
+  /**
+   * Sproutle with a synthetic second form (Budfawn, with its own copy of Thornbuck's ability) in the
+   * place of the shipped Sunfawn, so the loader's rules can be broken one at a time.
+   */
+  function withBudfawn(): Mut {
     const pack = raw();
+    pack.creatures = pack.creatures.filter((c) => c['id'] !== 'sunfawn');
+    pack.finaleAbilities = pack.finaleAbilities.filter((a) => a['id'] !== 'sunny-patch');
     const thornbuck = find(pack, 'thornbuck');
     const ability = pack.finaleAbilities.find(
       (a) => a['id'] === (thornbuck['ability'] as { id: string }).id,
     );
-    pack.finaleAbilities.push({ ...ability, id: 'sunny-patch', name: 'Sunny Patch' });
+    pack.finaleAbilities.push({ ...ability, id: 'bud-patch', name: 'Bud Patch' });
     pack.creatures.push({
       ...thornbuck,
-      id: 'sunfawn',
-      name: 'Sunfawn',
-      ability: { id: 'sunny-patch' },
+      id: 'budfawn',
+      name: 'Budfawn',
+      ability: { id: 'bud-patch' },
     });
-    find(pack, 'sproutle')['altEvolvesTo'] = { species: 'sunfawn', level: 15, essence: 20 };
+    find(pack, 'sproutle')['altEvolvesTo'] = { species: 'budfawn', level: 15, essence: 20 };
     return pack;
   }
 
   it('accepts a line with a second branch and finds both', () => {
-    const pack = loadContent(withSunfawn());
-    expect(lineBranches(pack, 'sproutle')).toEqual(['thornbuck', 'sunfawn']);
+    const pack = loadContent(withBudfawn());
+    expect(lineBranches(pack, 'sproutle')).toEqual(['thornbuck', 'budfawn']);
   });
 
   it('rejects a second branch without a first, the same twice, and one outside the line', () => {
-    const noFirst = withSunfawn();
+    const noFirst = withBudfawn();
     delete find(noFirst, 'sproutle')['evolvesTo'];
     expect(() => loadContent(noFirst)).toThrow();
-    const same = withSunfawn();
+    const same = withBudfawn();
     find(same, 'sproutle')['altEvolvesTo'] = { species: 'thornbuck', level: 15, essence: 20 };
     expect(() => loadContent(same)).toThrow(/both branches|exactly one species/);
-    const other = withSunfawn();
+    const other = withBudfawn();
     find(other, 'sproutle')['altEvolvesTo'] = { species: 'voltaro', level: 15, essence: 20 };
     expect(() => loadContent(other)).toThrow(/own line|exactly one species/);
-    const late = withSunfawn();
-    find(late, 'sproutle')['altEvolvesTo'] = { species: 'sunfawn', level: 40, essence: 20 };
+    const late = withBudfawn();
+    find(late, 'sproutle')['altEvolvesTo'] = { species: 'budfawn', level: 40, essence: 20 };
     expect(() => loadContent(late)).toThrow(/above its level cap/);
   });
 
+  it('requires one level and Essence price for both branches', () => {
+    const dearer = withBudfawn();
+    find(dearer, 'sproutle')['altEvolvesTo'] = { species: 'budfawn', level: 15, essence: 30 };
+    expect(() => loadContent(dearer)).toThrow(/same level and Essence/);
+    const later = withBudfawn();
+    find(later, 'sproutle')['altEvolvesTo'] = { species: 'budfawn', level: 14, essence: 20 };
+    expect(() => loadContent(later)).toThrow(/same level and Essence/);
+  });
+
+  it('does not ask the second branch to out-do the first stage, but the first still must', () => {
+    // A sidegrade is fine as the second branch (Sunfawn's Sunny Patch is weaker than Bark Guard in places).
+    expect(() => loadContent(withBudfawn())).not.toThrow();
+    const weak = withBudfawn();
+    const alt = weak.finaleAbilities.find((a) => a['id'] === 'bud-patch');
+    alt!['effects'] = [{ op: 'rally', damageBp: 100, rounds: 1 }];
+    expect(() => loadContent(weak)).not.toThrow();
+    // The first branch (evolvesTo) must still be an upgrade.
+    const weakFirst = raw();
+    const first = weakFirst.finaleAbilities.find((a) => a['id'] === 'bark-guard-2');
+    first!['effects'] = [{ op: 'rally', damageBp: 100, rounds: 1 }];
+    expect(() => loadContent(weakFirst)).toThrow(/lacks the "shield_wall" effect/);
+  });
+
   it('requires the second branch to be the target of one species only', () => {
-    const pack = withSunfawn();
-    find(pack, 'zipmouse')['altEvolvesTo'] = { species: 'sunfawn', level: 15, essence: 20 };
+    const pack = withBudfawn();
+    find(pack, 'zipmouse')['altEvolvesTo'] = { species: 'budfawn', level: 15, essence: 20 };
     expect(() => loadContent(pack)).toThrow();
   });
 });

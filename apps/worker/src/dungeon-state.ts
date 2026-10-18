@@ -26,6 +26,7 @@ import {
   type DungeonRunPack,
   type Element,
   type Role,
+  type FoldKit,
   type KeepsakeDef,
   type WeatherDay,
 } from '@creatures/game';
@@ -34,6 +35,7 @@ import {
   type AbilityChoice,
   type DungeonRoomSpec,
   type DungeonRunInput,
+  type FightSlot,
 } from '@creatures/engine';
 import type {
   DungeonBankedView,
@@ -66,6 +68,12 @@ export interface BankedRewards {
   supplies: string[];
 }
 
+/** One creature's seat in a run's row: its unplaced slot and its gear fold's kit (`RunState.seats`). */
+export interface Seat {
+  slot: FightSlot;
+  kit: FoldKit;
+}
+
 export interface RunState {
   /** Bumped when the stored shape changes. */
   v: 1;
@@ -79,6 +87,13 @@ export interface RunState {
   input: DungeonRunInput;
   /** The day's weather, fixed at the start (the sheet of a creature swapped in later, Market Day's scrap, the experience). */
   weather: WeatherDay | null;
+  /**
+   * By creature id, everyone who stood in the row: its slot before its place and the weather are known
+   * (`slotFor`) and its gear fold's kit, both frozen when it joined. The row is placed again from them
+   * after a camp swap or reorder, so the position lines and gear sets see the new neighbours (`seatedRow`).
+   * Absent in a state stored before them: the camp then keeps every slot as it was.
+   */
+  seats?: Record<string, Seat>;
   /** Every creature that stood in the row at any time, in the order they came (the start team first). */
   everyone: string[];
   /** The creatures of the start team that carry a treat. */

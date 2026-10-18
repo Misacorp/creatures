@@ -311,6 +311,8 @@ Plus the forecast, the fight log text (`describe.ts`) and playback. Conditions (
 
 The taker's steps run after Shield Wall, armor and cover and before the single-hit cap, in the order ward, charged, shape, every hit (`combat-rules.md` 3.2 and 10.5). Light Sleeper and Gentle but Stubborn ("ignores the first silence in each fight") are a count of silences, not a switch; they need `ignoreSilence` to grow into a count when the talents ship.
 
+**Added 2026-10-18 (chance and trigger lines).** The sheet gained seven chance fields (`secondWindBp`, `echoBp`, `sidestepBp`, `steadyPawsBp`, `warmHeartBp`, `quickRemarkBp`, `spillOverBp`: a chance in basis points, rolled on the creature's luck dice) and twelve trigger fields (`paybackBp`, `kindlingBp`, `openingMark`, `rallyCryBp`, `emberTailBp`, `stormWarningBp`, `stubborn`, `lastStandBp`, `overflowBp`, `secondBreathBp`, `patientBp`, `sharedWarmthBp`), each read at one defined moment, written to the log as a `proc` event (6.3, 6.4; `combat-rules.md` 11 and 12). The gear rules gained `tinkersLuckBp` and `secondLookBp` for the two chance lines that work outside the fight.
+
 ### 5.8 Position line for the first gear release
 
 Misa asked that the first gear release holds one line that depends on the board ("rollout fast" decision, 2026-10-16). It is the simplest one the board model already supports: a creature's neighbour is the slot directly left or right in the same row (`combat-rules.md` 1.5), and the engine looks at it when the hit is made, so nothing is cached and a knocked-out Guard stops counting.
@@ -349,6 +351,13 @@ Positions are fixed once a fight starts, so most of these can be folded when the
 
 _Promoted to the first gear release:_ **Guard's shadow** (5.8), the adjacency version of "Lane anchor" and "Beside the mark-maker". It reads the board in the engine (`besideRoleBp`), so it is not a fold.
 
+**Built 2026-10-18 (more gear and modifiers; `decisions.md`, same date).** Ten of these ship as lines: the nine fold lines (Shoulder to shoulder, Odd one out, Edge-walker, Heart of the row, Front-liner, Back-row patience, Lantern bearer, Four winds, Sheltered) and Beside the mark-maker, which uses `besideRoleBp: { setter }` like Guard's shadow (so it adds to every hit while a living Setter stands beside, not only to marked-foe hits). Warm burrow and Lane anchor still wait (they need a per-round check of who stands beside a creature, which the chance and trigger lines of 6.3 and 6.4 did not add). Values at tier V are the table's; lower tiers scale like Guard's shadow.
+
+- **Where it is folded.** `placeRow` (`packages/game/src/rules/gear-position.ts`) folds a creature's gear again with a `Placement` (index and length of its row, its zone, the elements beside it and in its row, the HP its neighbours' Lantern bearers give it) when the fight input is built; the engine only sees `FightSlot.stats`, `crit` and `mods`. "Its row" is a **zone** in the raid (the neighbours stop at the zone's edge, as on the board), and the **whole line** in the dungeon and in the simulator's reference fights, where each of the three zones is one slot (so Front-liner is the left slot there, Back-row patience the right one, and Four winds never fires: it needs four elements in a row). A creature whose numbers cannot change is not touched, so a row without position gear is exactly what it was.
+- **Sheltered** adds to the cover a Guard gives the creature (`SlotMods.shelterBp`, read at the cover step; no Guard beside it, no cover to add to).
+- **At most one special line per item.** A line group is "special" when it is in `SPECIAL_GROUPS` (position, chance and trigger lines, since 2026-10-18): `rollLines` takes the other special lines out of the pool once one is drawn, and every way an item gets lines goes through it (a drop, a craft, a Reach, the conversion, the dev tools). Nothing rerolls, so there is no other path.
+- **Equip best** counts a position line at its content `worth`, which is the line's worth if it works times the share of places where it does (Equip best cannot see the row).
+
 ### 6.2 Set bonuses
 
 A set is three named pieces (Hat, Scarf, Charm) sharing a tag. Bonuses count pieces worn by one creature.
@@ -367,6 +376,8 @@ A set is three named pieces (Hat, Scarf, Charm) sharing a tag. Bonuses count pie
 | Lantern Night       | Festival | Attack and HP +3%                                                   | Shield Walls on its row last 1 more round                  |
 | Maker's Mark        | Any      | Three pieces made by the same creature: every line +5% of its value | (one bonus only)                                           |
 
+**Built 2026-10-18** (all but Maker's Mark, which needs who made each piece in the fold; it stays a later idea). Each set is three **bases** in `gear.json` (`set` names the set, `gear-sets.json` has the bonuses). Set pieces have the base stats of the fine (item level 10) Hat or Scarf of their tag and the Charm line of the plain Charm of their tag: the bonus is the reward, there is no stat creep. They unlock at **item level 12** (the Lantern Night pieces are Festival pieces, there from item level 1), drop as ordinary bases of their slot and tag from item level 12 (a third of an element's drops then), roll lines like any base, and are crafted from blueprints (Crafting level 6). The role sets' Hats and Scarves are role-locked like the role Charms. Two pieces fold through the sheet and stat fold like any line (`wornEffects`); the three-piece effects are `SlotMods` fields (`unreflected`, `critWindowBp`, `healOnReactionBp`, `chainMark`, `coverReach`, `boostReach`, `sealMark`, `firstReactionCrit`), one trip rule (`dayTripRolls`) and a gift of the row (Lantern Night: the Guards in the wearer's row have Shield Walls that last one more round). Every effect that names a reaction works for a wearer of the element that sets it off (Steam is cashed by Tide wearers). `decisions.md`, 2026-10-18, has the reading of each.
+
 ### 6.3 Chance lines
 
 Chance grows with tier and rarity: **4 / 6 / 8 / 10 / 12%** at tiers I to V, +2 points on Epics and Festival pieces. Combat chances need a per-creature "luck die" each round, drawn after every existing die and only when the feature is on, so older fights draw exactly what they did.
@@ -383,6 +394,8 @@ Chance grows with tier and rarity: **4 / 6 / 8 / 10 / 12%** at tiers I to V, +2 
 | Lucky find    | Chance a trip brings back one extra catch roll                  | Collectors                    | Rules  |
 | Tinker's luck | Chance a dismantle refunds the full craft cost                  | Crafters                      | Rules  |
 | Second look   | Chance a duplicate's talent rolls twice and you keep the better | Talent hunters                | Rules  |
+
+**Built 2026-10-18 (chance lines; `decisions.md`, same date).** Nine of the ten ship, **including** Quick re-mark and Spill-over (both fell out of the mark code): Second wind, Echo, Sidestep, Quick re-mark, Steady paws, Spill-over, Warm heart, Tinker's luck and Second look. Lucky find was already there. All are group `chance`, unit `chance` (the card reads "Echo 8%"), special lines, **Rare and up** (never on a Common), tiers 4 / 6 / 8 / 10 / 12% by item level like every line, **+2 points on an Epic or a Festival piece** (`lineBonus`; the three Festival pieces each have one chance line in their narrow pool). What they do when they fire is not tiered (Second wind heals 5% of max HP, Echo repeats 30% of the plain hit, Warm heart gives a 10% boost). The combat ones roll on each creature's **luck dice** (`combat-rules.md` 11): ten per creature per round, drawn after every other die and only when some creature in the fight carries a chance line. Two readings the table left open: **Tinker's luck** refunds the plain craft cost of the item (`craftCost`: scrap by item level and one shard of the base's element; no Reach, no glimmer or Essence), lifted per kind of part where the ranges gave less, for each item of a job the wearer runs; **Second look** judges "the better" by `talentScore` (the worth Equip best uses) for the player's creature of that line, a tie keeping the first roll.
 
 ### 6.4 Trigger lines
 
@@ -402,6 +415,8 @@ Each names a defined moment from `combat-rules.md` and writes a log line when it
 | Second breath | The first enrage round starts           | Heals 10% of max HP                         | Teams that go to overtime                |
 | Patient       | It is silenced                          | Its next hit after the silence +25%         | Line ends                                |
 | Shared warmth | A Support heals it                      | The Support's next boost +3 pt              | Pairs of Support and Guard               |
+
+**Built 2026-10-18 (trigger lines; `decisions.md`, same date).** All twelve ship, optional ones included. Group `trigger`, special lines, **Rare and up**; Stubborn is an **Epic line from item level 12** with one value (no tiers) and Opening mark a Rare line with one value, like Lingering and Unbothered. Tier V is the table's number; tiers I to IV scale to about 25 / 40 / 60 / 80% of it, and Kindling is 40% at tier V because it works once (a Support's boost is 15% every round). Each is an optional `SlotMods` field (absent: exactly today's fight) and writes a `proc` event when it fires (`combat-rules.md` 12). "Next hit" is the creature's next turn hit; an ability's strike neither gets nor spends it.
 
 ## 7. Example items
 
@@ -641,16 +656,20 @@ At level 15 an evolving line can grow one of two ways. The evolve screen shows b
 **Sproutle: Thornbuck or Sunfawn.**
 
 - **Thornbuck** (Grove Guard, as today; ability Ironbark Guard). "A sturdy stag with branching, thorned antlers that shelter the whole herd."
-- **Sunfawn** _(working name)_, Grove **Support**, filling the empty Grove Support place. _"A gentle fawn whose leaf ears have opened into blossoms. It curls up beside tired friends and lends them the sun it has soaked up all day."_ Grows out of Sproutle's "Naps in any sunny patch". Ability **Sunny Patch**: Rally 6% for 2 rounds and a 30% Shield Wall on its own row for 1 round. As a Grove Support it heals its neighbours 6% a round.
+- **Sunfawn**, Grove **Support**, filling the empty Grove Support place. _"A gentle fawn whose leaf ears have opened into blossoms. It curls up beside tired friends and lends them the sun it has soaked up all day."_ Grows out of Sproutle's "Naps in any sunny patch". Ability **Sunny Patch**: Rally 6% for 2 rounds and a 30% Shield Wall on its own row for 1 round. As a Grove Support it heals its neighbours 6% a round.
 - **The choice:** a wall for the front of the row, or a healer for its middle. Many servers lack a Grove healer; many players lack a second Guard.
 
 **Zipmouse: Voltaro or Ohmouse.**
 
 - **Voltaro** (Spark Setter, as today; ability Storm Zap). "A fast, fearless runner that leaves a trail of bright sparks."
-- **Ohmouse** _(working name)_, Spark **Guard**, filling the empty Spark Guard place. _"A round, puffed-up mouse whose giant ears catch stray bolts before they reach its friends. It plants its feet, fizzes, and will not budge."_ Grows out of the Zipmouse quirk "Can freeze like a statue for an hour if asked nicely". Ability **Static Wall**: a 60% Shield Wall on its own row for 2 rounds, then it marks the boss Charged.
+- **Ohmouse**, Spark **Guard**, filling the empty Spark Guard place. _"A round, puffed-up mouse whose giant ears catch stray bolts before they reach its friends. It plants its feet, fizzes, and will not budge."_ Grows out of the Zipmouse quirk "Can freeze like a statue for an hour if asked nicely". Ability **Static Wall**: a 60% Shield Wall on its own row for 2 rounds, then it marks the boss Charged.
 - **The choice:** a Setter that starts Grounding for the Grove team, or a Guard that protects a Spark Payoff's row. A Spark-heavy server wants both, which is what Keep is for.
 
 Both new forms need a sprite (16x16), lore, quirks (the line's pool), compendium entries and a glossary entry; their stats follow the role budget the creature step sets (the review's "stats by role and stage").
+
+**Built 2026-10-18:** Sunfawn has the stats of Magmole (the common Support budget) and Ohmouse the HP and speed of Thornbuck with a little more Attack (the common Guard budget); both cost what their sibling costs (level 15, 20 Essence, one price per choice). See `decisions.md`.
+
+**The other six lines (2026-10-18):** every evolving line now has two forms, each element has all four roles at stage 2 between its lines, and Keep is offered for every evolving line. Splashet: Tidewing or **Geyserpup** (Tide Payoff, Geyser Burst). Cindle: Pyrelynx or **Wickat** (Ember Setter, Slow Burn). Mistnewt: Fogwyrm or **Drizzlewt** (Tide Support, Soft Rain). Ashmole: Magmole or **Kilnmole** (Ember Guard, Banked Embers). Stormray: Tempestray or **Halcyray** (Spark Support, Afterglow). Mossback: Ancientshell or **Bloomback** (Grove Payoff, Full Bloom). Names, stats and reasons are in `decisions.md`.
 
 ## 9. Training by activity
 
@@ -767,7 +786,7 @@ Values are at x1. Engine: **Mutator** (the engine's existing hooks: fight start,
 | Long Shadows                | Supports' boost −4 pt; healing −25%                                         | —                                                  | Input, Sheet                    |
 | Restless Wind               | Guards' cover −10 pt                                                        | —                                                  | Input                           |
 | Cold Snap                   | —                                                                           | Creature experience −20%; Workshop jobs 15% slower | Rules                           |
-| Bramble Season              | The first reaction each round is reflected at 30% (rank 6+)                 | —                                                  | Engine: a reflect share (small) |
+| Bramble Season              | The first reaction each round is reflected at 12% (rank 6+)                 | —                                                  | Engine: a reflect share (small) |
 | Muddy Roads                 | —                                                                           | Trips 15% longer; supply finds −30%                | Rules                           |
 | Stormfront (wild, rank 10+) | The boss makes one more plain attack each round                             | —                                                  | Input (`bossAttacks`)           |
 
@@ -855,10 +874,10 @@ Each step is simulated on paired seeds before it ships; neighbouring steps can s
 3. **Gear B** _(built 2026-10-16)_: the crafting loop: Reach, dismantle jobs with ranges, blueprint learning and well-thumbed marks, the maker's name on items. Technical decisions and deviations: `decisions.md`, "Gear B built".
 4. **Creatures A** _(built 2026-10-16, with the expedition change of 9.5)_: talents, the duplicate choice (Teach, Fuse, Release, Keep), the Talent Book, release for parts. Pools for all 14 lines (three talents are held back until their engine or training work exists, see 8.3); Keep is built and tested but no line has a second branch yet, so it is not offered; migration 28. The numbers of 9.5 are in `docs/balance/log.md` B-014.
 5. **Creatures B** _(built 2026-10-17, with the new-species pity)_: training by activity, treats (a per-creature checkbox), ribbons and slot unlocks; migration 30. The experience numbers are about twice (trips, jobs) to four times (raid) the starting values of 9.1, tuned to the pace of 9.2 (`docs/balance/log.md` B-016). The Shade Napper talent and the Growing gear line are still held back. Decisions: `decisions.md`, "Creatures B built" and "new-species pity".
-6. **Boons and Omens** _(built 2026-10-17)_: the daily weather (migration 31), 9 of the 10 Boons and 8 of the 10 Omens through the existing hooks (the sheet, `luck`, `bossAttacks`, trip and Workshop rules, experience), Market Day limited to the first craft and the first 2 dismantle jobs, the wall calendar and the sky lines. Kind Rain, Morning Haze and Bramble Season are in the content as `planned`: each needs engine work first (a per-round heal, a skip-turn hook, a reflect share). The numbers are the tiers of 10.1 in `RULES.weather`; the sim reports their effect on the raid without tuning it (`docs/balance/log.md` B-017). Decisions: `decisions.md`, "Boons and Omens built".
-7. **Content:** Sunfawn and Ohmouse, then branches for the other evolving lines; talent pools for every line.
+6. **Boons and Omens** _(built 2026-10-17)_: the daily weather (migration 31), 9 of the 10 Boons and 8 of the 10 Omens through the existing hooks (the sheet, `luck`, `bossAttacks`, trip and Workshop rules, experience), Market Day limited to the first craft and the first 2 dismantle jobs, the wall calendar and the sky lines. Kind Rain, Morning Haze and Bramble Season followed on 2026-10-18 (`decisions.md`, "The last three weathers are live"): a per-round heal, a skipped first turn and a reflect share, each an optional field of the fight input, so all 10 Boons and all 10 Omens are live. The numbers are the tiers of 10.1 in `RULES.weather`; the sim reports their effect on the raid without tuning it (`docs/balance/log.md` B-017). Decisions: `decisions.md`, "Boons and Omens built".
+7. **Content:** Sunfawn and Ohmouse _(built 2026-10-18)_: both forms with sprites, lore, abilities and compendium entries; the evolve request names the form; Keep is live for Sproutle and Zipmouse; the sim takes the original form for now. Decisions: `decisions.md`, "Branch evolutions built". Still to do: branches for the other evolving lines; talent pools for every line (the 14 lines have theirs).
 8. **Raid and dungeon rebalance** with the curve scalars, around the new foundation.
-9. **Later:** position lines, sets, chance and trigger lines (engine hooks and dice), second evolutions, dungeon choice rooms for Essence.
+9. **Later:** Warm burrow and Lane anchor, Maker's Mark, second evolutions, dungeon choice rooms for Essence (position lines, sets, chance and trigger lines are built).
 
 ## 15. Technical notes
 

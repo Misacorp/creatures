@@ -376,7 +376,7 @@ describe('the weather study', () => {
     const ids = weathers.slice(1).map((w) => w.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const id of ids) expect(weatherDef(id)?.status).toBe('live');
-    expect(ids).not.toContain('kind-rain');
+    expect(ids).toEqual(expect.arrayContaining(['kind-rain', 'morning-haze', 'bramble-season']));
   });
 
   const study = runEffectStudy({

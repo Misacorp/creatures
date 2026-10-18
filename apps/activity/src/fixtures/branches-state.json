@@ -1,0 +1,328 @@
+{
+  "serverNow": 1799733600000,
+  "balances": {
+    "bait": 0,
+    "essence": 100
+  },
+  "starterChosen": false,
+  "starterOptions": ["splashet", "cindle", "sproutle"],
+  "creatures": [
+    {
+      "id": "69752cb9-9882-4799-82ae-eca2d93b143c",
+      "species": "cindle",
+      "line": "cindle",
+      "level": 15,
+      "levelCap": 15,
+      "fusionCount": 0,
+      "shiny": false,
+      "nickname": null,
+      "away": false,
+      "origin": "test",
+      "caughtAt": 1799733600000,
+      "quirk": "proud-hiccups",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": {
+              "id": "warm-to-the-touch",
+              "name": "Warm to the Touch",
+              "golden": true,
+              "text": "Wildfire bonus +19%",
+              "about": "The bonus of the reaction Ember creatures set off is bigger.",
+              "idle": false
+            }
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": [
+          {
+            "id": "warm-to-the-touch",
+            "name": "Warm to the Touch",
+            "golden": true,
+            "text": "Wildfire bonus +19%",
+            "about": "The bonus of the reaction Ember creatures set off is bigger.",
+            "idle": false,
+            "slot": 1
+          }
+        ]
+      },
+      "stats": {
+        "hp": 194,
+        "atk": 82,
+        "spd": 56
+      },
+      "statsWithGear": {
+        "hp": 194,
+        "atk": 82,
+        "spd": 56
+      },
+      "gear": [],
+      "busy": null,
+      "ability": {
+        "id": "flare-strike",
+        "unlocked": true,
+        "unlockLevel": 10,
+        "nextId": "flare-strike-2"
+      },
+      "explorer": {
+        "rank": 1,
+        "xp": 0,
+        "nextRankXp": 200,
+        "trips": 0
+      },
+      "exp": 0,
+      "expNeeded": 825,
+      "waiting": false,
+      "ribbons": 1,
+      "nextUnlock": {
+        "level": 20,
+        "name": "Silver Ribbon"
+      },
+      "ribbon": null,
+      "treatCost": 11,
+      "evolution": {
+        "toSpecies": "pyrelynx",
+        "level": 15,
+        "essence": 20,
+        "available": true,
+        "alt": {
+          "toSpecies": "wickat"
+        }
+      }
+    },
+    {
+      "id": "7fc78e49-d335-4502-a9b3-c92cfd53ca10",
+      "species": "sproutle",
+      "line": "sproutle",
+      "level": 15,
+      "levelCap": 15,
+      "fusionCount": 0,
+      "shiny": false,
+      "nickname": null,
+      "away": false,
+      "origin": "test",
+      "caughtAt": 1799733600001,
+      "quirk": "sproutle-loud-waker",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": {
+              "id": "mossy-bed",
+              "name": "Mossy Bed",
+              "golden": true,
+              "text": "Creature HP +12%",
+              "about": "Raises the whole creature's HP by a share of its own, not just this item's.",
+              "idle": false
+            }
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": [
+          {
+            "id": "mossy-bed",
+            "name": "Mossy Bed",
+            "golden": true,
+            "text": "Creature HP +12%",
+            "about": "Raises the whole creature's HP by a share of its own, not just this item's.",
+            "idle": false,
+            "slot": 1
+          }
+        ]
+      },
+      "stats": {
+        "hp": 314,
+        "atk": 36,
+        "spd": 30
+      },
+      "statsWithGear": {
+        "hp": 351,
+        "atk": 36,
+        "spd": 30
+      },
+      "gear": [],
+      "busy": null,
+      "ability": {
+        "id": "bark-guard",
+        "unlocked": true,
+        "unlockLevel": 10,
+        "nextId": "bark-guard-2"
+      },
+      "explorer": {
+        "rank": 1,
+        "xp": 0,
+        "nextRankXp": 200,
+        "trips": 0
+      },
+      "exp": 0,
+      "expNeeded": 825,
+      "waiting": false,
+      "ribbons": 1,
+      "nextUnlock": {
+        "level": 20,
+        "name": "Silver Ribbon"
+      },
+      "ribbon": null,
+      "treatCost": 11,
+      "evolution": {
+        "toSpecies": "thornbuck",
+        "level": 15,
+        "essence": 20,
+        "available": true,
+        "alt": {
+          "toSpecies": "sunfawn"
+        }
+      }
+    },
+    {
+      "id": "7880428f-6f89-429f-937e-07a3caa2004e",
+      "species": "mossback",
+      "line": "mossback",
+      "level": 15,
+      "levelCap": 15,
+      "fusionCount": 0,
+      "shiny": false,
+      "nickname": null,
+      "away": false,
+      "origin": "test",
+      "caughtAt": 1799733600002,
+      "quirk": "mossback-secret-gardener",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": {
+              "id": "sturdy-shell",
+              "name": "Sturdy Shell",
+              "golden": false,
+              "text": "Creature HP +8%",
+              "about": "Raises the whole creature's HP by a share of its own, not just this item's.",
+              "idle": false
+            }
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          },
+          {
+            "slot": 3,
+            "opensAt": 25,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": [
+          {
+            "id": "sturdy-shell",
+            "name": "Sturdy Shell",
+            "golden": false,
+            "text": "Creature HP +8%",
+            "about": "Raises the whole creature's HP by a share of its own, not just this item's.",
+            "idle": false,
+            "slot": 1
+          }
+        ]
+      },
+      "stats": {
+        "hp": 280,
+        "atk": 63,
+        "spd": 82
+      },
+      "statsWithGear": {
+        "hp": 302,
+        "atk": 63,
+        "spd": 82
+      },
+      "gear": [],
+      "busy": null,
+      "ability": {
+        "id": "moss-bloom",
+        "unlocked": true,
+        "unlockLevel": 10,
+        "nextId": "moss-bloom-2"
+      },
+      "explorer": {
+        "rank": 1,
+        "xp": 0,
+        "nextRankXp": 200,
+        "trips": 0
+      },
+      "exp": 0,
+      "expNeeded": 825,
+      "waiting": false,
+      "ribbons": 1,
+      "nextUnlock": {
+        "level": 20,
+        "name": "Silver Ribbon"
+      },
+      "ribbon": null,
+      "treatCost": 11,
+      "evolution": {
+        "toSpecies": "ancientshell",
+        "level": 15,
+        "essence": 40,
+        "available": true,
+        "alt": {
+          "toSpecies": "bloomback"
+        }
+      }
+    }
+  ],
+  "pending": [],
+  "bookSlotBait": 10,
+  "expeditions": [],
+  "cancelled": [],
+  "levelReset": null,
+  "slots": {
+    "total": 1,
+    "used": 0,
+    "rankSum": 0,
+    "tripsFinished": 0,
+    "next": {
+      "kind": "trips",
+      "at": 3
+    }
+  },
+  "supplies": {},
+  "serverFirsts": [],
+  "loungerId": "69752cb9-9882-4799-82ae-eca2d93b143c",
+  "loungeSpot": null,
+  "timezone": "Europe/Helsinki",
+  "leetSync": {
+    "source": "disabled",
+    "lastAttemptAt": 1799733600000,
+    "lastSyncedAt": null,
+    "lastError": "disabled",
+    "lastDays": null
+  },
+  "attention": {
+    "dungeon": true,
+    "raid": true,
+    "recheckAt": 1799753820000
+  }
+}

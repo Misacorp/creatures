@@ -158,6 +158,30 @@ export function zoneNeighbours(index: number, shape: RowShape): number[] {
 }
 
 /**
+ * The row indices of the creatures two places away from `index` in its zone's row (a gear set's longer
+ * reach): board slot minus two or plus two, in the same zone, with a creature standing in the slot
+ * between (an empty board slot breaks the reach, as it breaks `zoneNeighbours`). For a plain length
+ * this is index +/- 2 in the same zone.
+ */
+export function zoneTwoAway(index: number, shape: RowShape): number[] {
+  const length = lengthOf(shape);
+  const slot = slotAt(shape, index);
+  const zone = zoneOfSlot(slot, length);
+  const count = countOf(shape);
+  const standing = (at: number): number | undefined => {
+    for (let i = 0; i < count; i++) if (slotAt(shape, i) === at) return i;
+    return undefined;
+  };
+  const out: number[] = [];
+  for (const step of [-1, 1]) {
+    if (standing(slot + step) === undefined) continue;
+    const far = standing(slot + 2 * step);
+    if (far !== undefined && zoneOfSlot(slot + 2 * step, length) === zone) out.push(far);
+  }
+  return out;
+}
+
+/**
  * Where a zone attack lands: the aimed zone if anyone is standing in it, otherwise the nearest zone
  * with someone standing (one step first; on a tie Front comes before Back), or undefined when the
  * whole row is down. The fight and the client's forecast both use it, so the warning names the zone
@@ -178,4 +202,32 @@ export function nearestLivingZone(
     }
   }
   return best;
+}
+
+/**
+ * How a row is cut into the rows the position lines read (`placeRow` of @creatures/game): `zones` (the
+ * raid) makes each zone one row, so a creature's neighbours stop at its zone's edge, as on the board;
+ * `line` (the dungeon and the simulator's reference fights, `FightInput.guardReach: 'adjacent'`) is one
+ * row of every slot. In both, each slot has the zone `zoneOfIndex` gives it (a row of three: one slot each).
+ * Given the board's own positions (`FightBoard`), `zones` also lists who is beside each creature
+ * (`zoneNeighbours`: an empty board slot breaks it), so the fold sees what the fight will.
+ */
+export function rowLayout(
+  shape: RowShape,
+  mode: 'zones' | 'line',
+): { rows: number[][]; zones: Zone[]; beside?: number[][] } {
+  const count = countOf(shape);
+  const zones = Array.from({ length: count }, (_, i) => zoneOfIndex(i, shape));
+  const rows =
+    mode === 'line'
+      ? [Array.from({ length: count }, (_, i) => i)]
+      : ZONES.map((z) => zoneIndices(z, shape)).filter((r) => r.length > 0);
+  if (mode === 'zones' && typeof shape !== 'number') {
+    return {
+      rows,
+      zones,
+      beside: Array.from({ length: count }, (_, i) => zoneNeighbours(i, shape)),
+    };
+  }
+  return { rows, zones };
 }

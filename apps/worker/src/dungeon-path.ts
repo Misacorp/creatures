@@ -40,6 +40,7 @@ import {
   type WeatherDay,
 } from '@creatures/game';
 import {
+  placeSlots,
   simulateDungeonRoom,
   type DungeonRoomResult,
   type DungeonRoomSpec,
@@ -57,6 +58,7 @@ import {
   keepsakeView,
   maxHpOfRow,
   type RunState,
+  type Seat,
 } from './dungeon-state';
 import type { Draft, GrantView } from './gear-grants';
 import type {
@@ -114,11 +116,80 @@ export interface ActOutcome {
 
 const invalidAct = (reason: string): GameError => new GameError(400, 'invalid_act', reason);
 
-/** A creature's slot for the dungeon: its stats and gear, with the day's weather sheet folded in. */
-export function slotOf(creature: TeamCreature, weather: WeatherDay | null): FightSlot {
-  const slot = slotFor(creature, PLAYER);
+/** A slot with the day's weather sheet folded in. */
+function withWeather(slot: FightSlot, weather: WeatherDay | null): FightSlot {
   const mods = mergeMods(slot.mods, weatherSheet(weather, slot));
   return mods === undefined ? slot : { ...slot, mods };
+}
+
+/**
+ * A creature's slot for a run stored before seats (`RunState.seats`): its stats and gear, with the day's
+ * weather sheet folded in, but not its place in the row.
+ */
+function slotOf(creature: TeamCreature, weather: WeatherDay | null): FightSlot {
+  return withWeather(slotFor(creature, PLAYER), weather);
+}
+
+/** The seats of creatures joining a run's row: each one's unplaced slot and its gear fold's kit. */
+export function seatsOf(creatures: readonly TeamCreature[]): Record<string, Seat> {
+  return Object.fromEntries(
+    creatures.map((c): [string, Seat] => [c.id, { slot: slotFor(c, PLAYER), kit: c.kit }]),
+  );
+}
+
+/**
+ * A run's row in this order, from its seats: the gear folded again with where each creature stands (the
+ * position lines and gear sets of one line, `placeSlots`), then the day's weather on every sheet.
+ */
+export function seatedRow(
+  ids: readonly string[],
+  seats: Readonly<Record<string, Seat>>,
+  weather: WeatherDay | null,
+): FightSlot[] {
+  const seated = ids.map((id) => {
+    const seat = seats[id];
+    if (seat === undefined) throw new Error(`no seat for ${id}`);
+    return seat;
+  });
+  const kits = new Map(seated.map((seat) => [seat.slot.id, seat.kit]));
+  return placeSlots(
+    seated.map((seat) => seat.slot),
+    kits,
+    'line',
+  ).map((slot) => withWeather(slot, weather));
+}
+
+/**
+ * Places the row again after the camp moved or swapped someone (a run with seats): its position lines see
+ * the new neighbours. Only a creature whose max HP the new place changed (a Lantern bearer's gift) gets a
+ * new max, and the HP it carries never stays above it; everyone else keeps the max of their last fight.
+ */
+function reseat(st: RunState): void {
+  if (st.seats === undefined) return;
+  const before = new Map(st.input.team.map((slot) => [slot.id, slot]));
+  const team = seatedRow(
+    st.input.team.map((slot) => slot.id),
+    st.seats,
+    st.weather,
+  );
+  if (JSON.stringify(team) === JSON.stringify(st.input.team)) return;
+  st.input = { ...st.input, team, abilities: abilityChoices(team) };
+  const changed = team
+    .filter((slot) => before.get(slot.id)?.stats?.hp !== slot.stats?.hp)
+    .map((slot) => slot.id);
+  if (changed.length === 0) return;
+  const max = maxHpOfRow(st.input, st.keepsakes);
+  const hpMax = { ...st.hpMax };
+  const hp = st.hp === null ? null : { ...st.hp };
+  for (const id of changed) {
+    const top = max[id];
+    if (top === undefined) continue;
+    hpMax[id] = top;
+    const now = hp?.[id];
+    if (hp !== null && now !== undefined && now > top) hp[id] = top;
+  }
+  st.hpMax = hpMax;
+  st.hp = hp;
 }
 
 /** Some creature of the row is still on its feet. */
@@ -504,6 +575,7 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
       st.gear.push(...coming.gearIds);
       const leaving = act.out;
       const incoming = slotOf(coming, st.weather);
+      if (st.seats !== undefined) st.seats = { ...st.seats, ...seatsOf([coming]) };
       detail = `Swapped ${row[place]?.name ?? 'a creature'} out for ${incoming.name}.`;
       const next = [...row];
       next[place] = incoming;
@@ -546,6 +618,8 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
     const team = act.order.map((id) => row.find((slot) => slot.id === id) as FightSlot);
     st.input = { ...st.input, team, abilities: abilityChoices(team) };
   }
+  // With the row's order final, its gear is placed again (only a run with seats; the same row if nothing moved).
+  reseat(st);
   st.campChoice = act.choice;
   settleStep(st, {
     node: st.at ?? '',

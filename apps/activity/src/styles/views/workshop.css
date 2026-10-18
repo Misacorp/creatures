@@ -29,10 +29,10 @@
   margin-top: 0.5rem;
 }
 
-/* An item from the bag in its drawer. */
+/* An item from the bag in its drawer: the drawer's body gives the side padding, so the item lines up with the arrow row. */
 .item-drawer .item-detail {
   margin: 0;
-  padding: 0 0.75rem 0.75rem;
+  padding: 0 0 0.75rem;
 }
 
 .empty {

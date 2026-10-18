@@ -572,6 +572,9 @@ const EVENT_TYPES: ReadonlySet<string> = new Set([
   'round_end',
   // The raid retune (attack patterns, Support Mend, phase floors, enrage).
   'heal',
+  'sky_heal',
+  // Chance lines and trigger lines of gear (a log line when one fires).
+  'proc',
   'cleanse',
   'charge',
   'retreat',

@@ -98,6 +98,21 @@ export const WeatherEffectSchema = v.variant('op', [
   }),
   /** The boss makes this many more plain attacks each round (at most three in all). Fixed. */
   v.strictObject({ op: v.literal('foeAttacks'), extra: Int(1, 2), text: EffectText }),
+  /**
+   * Every living creature heals this share of its max HP (basis points) at the start of every round
+   * (`FightInput.rainHealBp`). Scaled.
+   */
+  v.strictObject({ op: v.literal('roundHeal'), bp: Int(1, 1_000), text: EffectText }),
+  /**
+   * The first creature of each row (the left one in the dungeon) skips its first turn
+   * (`FightInput.skipFirstTurn`). Fixed.
+   */
+  v.strictObject({ op: v.literal('skipFirstTurn'), text: EffectText }),
+  /**
+   * The first reaction each round sends this share of its bonus damage back at the creature that set
+   * it off (`FightInput.brambleBp`). Scaled, at most the whole bonus.
+   */
+  v.strictObject({ op: v.literal('bramble'), bp: Int(1, 10_000), text: EffectText }),
 
   // --- Trips ---
   /** Trips started that day take this much longer (negative: shorter). Scaled. */
@@ -172,6 +187,8 @@ export const SCALED_OPS: ReadonlySet<string> = new Set([
   'crit',
   'foeCrit',
   'foeAttack',
+  'roundHeal',
+  'bramble',
   'tripTime',
   'tripParts',
   'tripShards',

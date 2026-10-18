@@ -1,9 +1,18 @@
 import type { ComponentChildren, Ref } from 'preact';
+import type { CardDiff } from './creature-page/compare-diff';
 import { statRows } from './creature-page/picker-view';
-import { FestivalTag, GearTagBadge, ItemFrame, ItemSprite, RarityTag, SlotTag } from './GearArt';
+import {
+  FestivalTag,
+  GearTagBadge,
+  ItemFrame,
+  ItemSprite,
+  RarityTag,
+  SetTag,
+  SlotTag,
+} from './GearArt';
 import type { GearItem } from './gear-types';
-import { gearName, isFestivalBase } from './gear-view';
-import { ItemLines } from './ItemLines';
+import { gearName, isFestivalBase, itemSet, setBonusRows, setCountText } from './gear-view';
+import { DeltaMark, ItemLines } from './ItemLines';
 
 /** What the card needs of an item: the part of a `GearItem` that is drawn. */
 export type ItemCardItem = Pick<
@@ -16,7 +25,7 @@ export type ItemCardItem = Pick<
  * detail panel): the item's image at the top left (rarity border, item level in its corner), to its right the
  * name (in its rarity's colour), small badges for the slot, rarity and tag (element, role or explorer), and the base stats, one row each in the same size ("Attack 14", "HP 24", the
  * bonus its own lines add after it: "Attack 41 +22"); then a full-width divider and the modifiers with their
- * values and tier pips. Everything is in the pixel font. A Charm has no stats, so it is name, badge, divider,
+ * values and tier pips. Everything is in the pixel font, set once on the card (`.pix-panel`). A Charm has no stats, so it is name, badge, divider,
  * modifiers. `aside` is a spot at the top right (a button), `note` a line under the badge.
  */
 export function ItemCard({
@@ -28,6 +37,8 @@ export function ItemCard({
   spriteScale = 5,
   aside,
   note,
+  wornInSet = 0,
+  diff,
   class: extra,
 }: {
   item: ItemCardItem;
@@ -42,13 +53,18 @@ export function ItemCard({
   spriteScale?: number;
   aside?: ComponentChildren;
   note?: ComponentChildren;
+  /** How many pieces of the item's set its wearer has (with this one on, if it is not worn yet); 0 when nobody wears it. */
+  wornInSet?: number;
+  /** The picker's compare: this item against the one worn in its slot, shown inline (stat rows and lines). */
+  diff?: CardDiff;
   class?: string;
 }) {
   const rows = statRows(item.stats);
   const name = gearName(item.baseId);
+  const set = itemSet(item.baseId);
   const nameClass = `idc-name rarity-name rarity-${item.rarity}`;
   return (
-    <div class={`idc pix${extra === undefined ? '' : ` ${extra}`}`}>
+    <div class={`idc pix-panel${extra === undefined ? '' : ` ${extra}`}`}>
       <div class="idc-head">
         <ItemFrame rarity={item.rarity} baseId={item.baseId} level={item.itemLevel} class="big">
           <ItemSprite baseId={item.baseId} scale={spriteScale} />
@@ -74,10 +90,11 @@ export function ItemCard({
             <SlotTag slot={item.slot} plain={plainRarity} />
             <RarityTag rarity={item.rarity} plain={plainRarity} />
             <GearTagBadge baseId={item.baseId} plain={plainRarity} />
+            <SetTag baseId={item.baseId} plain={plainRarity} />
             {isFestivalBase(item.baseId) && <FestivalTag />}
           </p>
           {note}
-          {rows.length > 0 && (
+          {(rows.length > 0 || (diff?.goneStats.length ?? 0) > 0) && (
             <ul class="idc-stats" aria-label="Base stats">
               {rows.map((row) => (
                 <li key={row.stat}>
@@ -93,6 +110,21 @@ export function ItemCard({
                       </span>
                     </>
                   )}
+                  {(() => {
+                    const mark = diff?.stats.get(row.stat);
+                    return mark === undefined ? null : (
+                      <>
+                        {' '}
+                        <DeltaMark mark={mark} />
+                      </>
+                    );
+                  })()}
+                </li>
+              ))}
+              {diff?.goneStats.map((gone) => (
+                <li key={`gone-${gone.stat}`} class="cmp-gone">
+                  <span aria-hidden="true">{gone.text}</span>
+                  <span class="visually-hidden">{gone.spoken}</span>
                 </li>
               ))}
             </ul>
@@ -100,11 +132,29 @@ export function ItemCard({
         </div>
         {aside !== undefined && <div class="idc-aside">{aside}</div>}
       </div>
-      {item.lines.length > 0 && (
+      {(item.lines.length > 0 || (diff?.goneLines.length ?? 0) > 0) && (
         <>
           <hr class="idc-divider" />
-          <ItemLines lines={item.lines} />
+          <ItemLines lines={item.lines} {...(diff === undefined ? {} : { diff })} />
         </>
+      )}
+      {set !== undefined && (
+        <section class="idc-set" aria-label={`${set.name} set`}>
+          <p class="idc-set-head">
+            <span class="idc-set-name">{set.name}</span>{' '}
+            <span class="idc-set-count" aria-label={`${String(wornInSet)} pieces worn`}>
+              {setCountText(wornInSet)}
+            </span>
+          </p>
+          <ul class="idc-set-list">
+            {setBonusRows(set, wornInSet).map((row) => (
+              <li key={row.pieces} class={row.active ? 'on' : 'off'}>
+                <span class="idc-set-pieces">{row.pieces} pieces</span> {row.text}
+                {row.active && <span class="visually-hidden"> (active)</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   );

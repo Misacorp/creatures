@@ -4,10 +4,13 @@ import { controlEntries } from './entries/controls';
 import { creatureCardEntries } from './entries/creature-card';
 import { creaturePageEntries } from './entries/creature-page';
 import { creatureEntries } from './entries/creatures';
+import { evolveEntries } from './entries/evolve';
+import { flipperEntries } from './entries/flipper';
 import { dungeonMapEntries } from './entries/dungeon-map';
 import { dungeonRunEntries } from './entries/dungeon-run';
 import { headingEntries } from './entries/headings';
 import { iconEntries } from './entries/icons';
+import { jobRevealEntries } from './entries/job-reveal';
 import { lootEntries } from './entries/loot';
 import { popoverEntries } from './entries/popovers';
 import { raidBoardEntries } from './entries/raid-board';
@@ -33,6 +36,7 @@ export const ENTRIES: readonly Entry[] = [
   ...slotDrawerEntries,
   ...raidBoardEntries,
   ...lootEntries,
+  ...jobRevealEntries,
   ...headingEntries,
   ...iconEntries,
   ...controlEntries,
@@ -40,6 +44,8 @@ export const ENTRIES: readonly Entry[] = [
   ...creatureEntries,
   ...creatureCardEntries,
   ...creaturePageEntries,
+  ...evolveEntries,
+  ...flipperEntries,
   ...talentEntries,
   tripResult,
   ...stageEntries,

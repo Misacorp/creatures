@@ -88,6 +88,7 @@ import {
 import basesJson from '../src/content/data/gear.json';
 import legacyJson from '../src/content/data/gear-legacy.json';
 import linesJson from '../src/content/data/gear-lines.json';
+import setsJson from '../src/content/data/gear-sets.json';
 import reactionsJson from '../src/content/data/reactions.json';
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
@@ -127,10 +128,12 @@ describe('the gear content', () => {
     expect(gearContent.bases.filter((b) => b.festival === true).length).toBeGreaterThanOrEqual(2);
     for (const role of ROLES) expect(baseFor('charm', role)?.slot).toBe('charm');
     expect(gearContent.bases.some((b) => b.tag === 'explorer')).toBe(true);
-    // 5 tags x 3 tiers of Hats and of Scarves, the Festival pieces and 11 Charms.
-    expect(gearContent.bases.filter((b) => b.slot === 'hat')).toHaveLength(15);
-    expect(gearContent.bases.filter((b) => b.slot === 'scarf')).toHaveLength(16);
-    expect(gearContent.bases.filter((b) => b.slot === 'charm')).toHaveLength(11);
+    // 5 tags x 3 makes of Hats and of Scarves, the Festival pieces, 11 Charms, and the nine plain gear
+    // sets (a Hat, a Scarf and a Charm each; Lantern Night is made of the three Festival pieces).
+    expect(gearContent.bases.filter((b) => b.slot === 'hat')).toHaveLength(25);
+    expect(gearContent.bases.filter((b) => b.slot === 'scarf')).toHaveLength(25);
+    expect(gearContent.bases.filter((b) => b.slot === 'charm')).toHaveLength(20);
+    expect(gearContent.bases).toHaveLength(70);
   });
 
   it('expands the element lines into 16 lines and keeps every line weighted somewhere (but the fixed-only ones)', () => {
@@ -349,7 +352,9 @@ describe('the gear content', () => {
       const bases = clone(basesJson) as Record<string, unknown>[];
       const lines = clone(linesJson) as Record<string, unknown>[];
       change(bases, lines);
-      expect(() => loadGear(bases, lines, legacyJson, reactions), name).toThrow(/Invalid gear/);
+      expect(() => loadGear(bases, lines, legacyJson, reactions, setsJson), name).toThrow(
+        /Invalid gear/,
+      );
     }
   });
 
@@ -362,6 +367,7 @@ describe('the gear content', () => {
         linesJson,
         legacyJson,
         reactions,
+        setsJson,
       ),
     ).toThrow(/Invalid gear/);
     expect(() =>
@@ -370,6 +376,7 @@ describe('the gear content', () => {
         linesJson,
         legacyJson,
         reactions,
+        setsJson,
       ),
     ).toThrow(/guard Charm/);
     expect(() =>
@@ -378,6 +385,7 @@ describe('the gear content', () => {
         linesJson,
         legacyJson,
         reactions,
+        setsJson,
       ),
     ).toThrow(/no tide hat/);
   });
@@ -1081,6 +1089,9 @@ describe('folding worn items', () => {
       apprenticeBp: 800,
       restBp: 700,
       glimmerFindBp: 0,
+      dayTripRolls: 0,
+      tinkersLuckBp: 0,
+      secondLookBp: 0,
     });
     expect(Object.keys(fx.mods)).toEqual([]);
   });
@@ -1317,15 +1328,19 @@ describe('drops', () => {
     }
   });
 
-  it('about 1 Charm in 20 of a finale is role-locked, and only Charms are', () => {
+  it('about 1 Charm in 20 of a finale is role-locked, and so is a Hat or Scarf of a role set once the level unlocks it', () => {
     const rng = createSeededRng('rolecharm');
     let charms = 0;
     let locked = 0;
+    const roles = ['setter', 'payoff', 'support', 'guard'];
     for (let i = 0; i < 30_000; i++) {
       const base = dropBase(rng, 'tide', 20, { roleCharm: true });
       if (base.slot === 'charm') {
         charms++;
-        if (['setter', 'payoff', 'support', 'guard'].includes(base.tag)) locked++;
+        if (roles.includes(base.tag)) locked++;
+      } else if (roles.includes(base.tag)) {
+        // Only the pieces of a role set (item level 12 and up) are locked besides the Charms.
+        expect(base.set).toBeDefined();
       } else {
         expect(base.tag).toBe('tide');
       }
@@ -1397,12 +1412,14 @@ describe('drops', () => {
     }
   });
 
-  it('blueprints are craftable bases only: no Festival piece and no role-locked Charm', () => {
+  it('blueprints are craftable bases only: no Festival piece and no role-locked Charm (a role set piece may be)', () => {
     const rng = createSeededRng('bp');
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 600; i++) {
       const base = gearBase(rollBlueprint(rng));
       expect(base?.festival).not.toBe(true);
-      expect(['setter', 'payoff', 'support', 'guard']).not.toContain(base?.tag);
+      if (['setter', 'payoff', 'support', 'guard'].includes(base?.tag ?? '')) {
+        expect(base?.set).toBeDefined();
+      }
     }
   });
 
@@ -1456,7 +1473,8 @@ describe('drops', () => {
         expect(lines.filter((l) => l.source === 'fixed')).toHaveLength(1);
       }
       expect(seen.size).toBeGreaterThan(1);
-      expect(seen.size).toBeLessThanOrEqual(5);
+      // The pool has five ordinary lines and one chance line (Second wind, Warm heart or Echo).
+      expect(seen.size).toBeLessThanOrEqual(6);
     }
     // The unique line is not in anyone's roll pool.
     for (const slot of GEAR_SLOTS) {
@@ -1492,14 +1510,17 @@ describe('drops', () => {
     expect(rollDungeonItem(rng, 'common', 7, true, 'spark').itemLevel).toBe(7);
   });
 
-  it('an expedition find has the place element and twice the explorer rank; the Crossroads gives the Compass', () => {
+  it('an expedition find has the place element and twice the explorer rank; the Crossroads gives explorer pieces (the Compass until item level 12)', () => {
     const rng = createSeededRng('trip');
     const find = rollExpeditionItem(rng, 'rare', { element: 'tide', crossroads: false }, 6);
     expect(find.itemLevel).toBe(12);
     expect(find.tag).toBe('tide');
-    const compass = rollExpeditionItem(rng, 'epic', { element: null, crossroads: true }, 10);
+    const compass = rollExpeditionItem(rng, 'epic', { element: null, crossroads: true }, 5);
     expect(compass.baseId).toBe('crossroads-compass');
-    expect(compass.itemLevel).toBe(20);
+    expect(compass.itemLevel).toBe(10);
+    const high = rollExpeditionItem(rng, 'epic', { element: null, crossroads: true }, 10);
+    expect(high.tag).toBe('explorer');
+    expect(high.itemLevel).toBe(20);
     expect(rollExpeditionItem(rng, 'rare', { element: null, crossroads: false }, 3).tag).toBe(
       'neutral',
     );

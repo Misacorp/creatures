@@ -325,16 +325,17 @@ describe('the weather tool', () => {
     });
   });
 
-  it('offers the live Boons and Omens only, and no Omen first', () => {
-    expect(BOON_OPTIONS.map((o) => o.value)).not.toContain('kind-rain');
-    expect(OMEN_OPTIONS.map((o) => o.value)).not.toContain('bramble-season');
+  it('offers the live Boons and Omens (all 10 and 10), and no Omen first', () => {
+    expect(BOON_OPTIONS.map((o) => o.value)).toContain('kind-rain');
+    expect(OMEN_OPTIONS.map((o) => o.value)).toContain('morning-haze');
+    expect(OMEN_OPTIONS.map((o) => o.value)).toContain('bramble-season');
     expect(OMEN_OPTIONS[0]).toEqual({ value: 'none', label: 'No Omen' });
-    expect(BOON_OPTIONS.length).toBe(9);
-    expect(OMEN_OPTIONS.length).toBe(1 + 8);
+    expect(BOON_OPTIONS.length).toBe(10);
+    expect(OMEN_OPTIONS.length).toBe(1 + 10);
   });
 
   it('refuses a Boon that is not on the list', () => {
-    expect(problem('set-weather', "Set today's sky", { boon: 'kind-rain' })).toMatch(
+    expect(problem('set-weather', "Set today's sky", { boon: 'no-such-boon' })).toMatch(
       /Boon: pick one/,
     );
   });

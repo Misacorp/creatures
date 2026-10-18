@@ -16,6 +16,32 @@ export type { Zone, TurnOrder };
 
 export type PhaseId = 'phase1' | 'phase2' | 'finale';
 
+/**
+ * The chance lines and trigger lines that write a `proc` event when they fire. Second wind and Second
+ * breath write a `heal` event with a `cause` instead, and Sidestep a `boss_hit` that carries `sidestep`.
+ */
+export const PROC_KINDS = [
+  // Chance lines.
+  'echo',
+  'steady_paws',
+  'warm_heart',
+  'quick_remark',
+  'spill_over',
+  // Trigger lines.
+  'payback',
+  'kindling',
+  'opening_mark',
+  'rally_cry',
+  'ember_tail',
+  'storm_warning',
+  'stubborn',
+  'last_stand',
+  'overflow',
+  'patient',
+  'shared_warmth',
+] as const;
+export type ProcKind = (typeof PROC_KINDS)[number];
+
 /** One creature standing in the row. Plain JSON, so fight inputs can be stored and replayed. */
 export interface FightSlot {
   /** Unique within the fight (a creature id, or a guest id). */
@@ -116,6 +142,70 @@ export interface SlotMods {
   lingerRounds?: number;
   /** 1: silence does nothing to it. */
   ignoreSilence?: 0 | 1;
+
+  // --- Gear sets and position lines (2026-10-18). Absent means exactly what it was before. ---
+  /** Cover a Guard's cover on this creature gains (the position line Sheltered), added to the Guard's. */
+  shelterBp?: number;
+  /** 1: its first reaction each fight cannot be reflected by the boss's trap (Tidepool Finery). */
+  unreflected?: 0 | 1;
+  /** After it sets off a reaction, its crits deal this much more crit damage until the end of the next round (Forge-Warm Kit). */
+  critWindowBp?: number;
+  /** It heals this share of its max HP (0 to 10000) whenever it sets off a reaction (Hollow Weave). */
+  healOnReactionBp?: number;
+  /** 1: after it sets off a reaction the boss keeps the creature's own mark, so a chain can follow (Ridge Copper). */
+  chainMark?: 0 | 1;
+  /** 1: a Guard's cover also reaches the creature one slot further out in its row (Warden's Watch). */
+  coverReach?: 0 | 1;
+  /** 1: a Support's boost also lands on the creature two slots away (Hearth Helpers). */
+  boostReach?: 0 | 1;
+  /** 1: the first mark it leaves each fight cannot be replaced by another creature's hit (First Footprints). */
+  sealMark?: 0 | 1;
+  /** 1: its first reaction each fight is a critical hit (Pounce Set; crits must be on). */
+  firstReactionCrit?: 0 | 1;
+
+  // --- Chance lines (2026-10-18, `combat-rules.md` 11). Each is a chance in basis points (0 to 10000), rolled
+  // on the creature's own luck dice (`LUCK_DICE`), drawn only when some creature of the fight has one. ---
+  /** Each round start: heal `CHANCE_FX.secondWindHealBp` of max HP. */
+  secondWindBp?: number;
+  /** Its turn hit lands again for `CHANCE_FX.echoBp` of its plain damage. */
+  echoBp?: number;
+  /** An area hit that would reach it deals nothing. */
+  sidestepBp?: number;
+  /** A silence that lands on it is shrugged off. */
+  steadyPawsBp?: number;
+  /** Round start: a creature beside it gets a `CHANCE_FX.warmHeartBp` boost on its next hit. */
+  warmHeartBp?: number;
+  /** Its hit replaces a mark of another element, like a Setter's. */
+  quickRemarkBp?: number;
+  /** A reaction it sets off leaves its own mark behind. */
+  spillOverBp?: number;
+
+  // --- Trigger lines (2026-10-18, `combat-rules.md` 12). Each names a moment, writes a `proc` log line when
+  // it fires, and carries its own number (a bonus or a cut in basis points, tiered by the line). ---
+  /** It takes a hit for a neighbour: its next turn hit deals this much more. */
+  paybackBp?: number;
+  /** Round 1 starts: the creatures beside it start with a boost of this size on their first hit. */
+  kindlingBp?: number;
+  /** 1: round 1 starts and the boss has no mark: it leaves its own. */
+  openingMark?: 0 | 1;
+  /** A creature beside it is knocked out: its hits deal this much more for the rest of the fight (per fallen neighbour). */
+  rallyCryBp?: number;
+  /** It crits: its next turn hit deals this much more. */
+  emberTailBp?: number;
+  /** A charge is announced with it marked: it takes this much less from the landing. */
+  stormWarningBp?: number;
+  /** 1: the first hit that would knock it out leaves it at 1 HP (once a fight). */
+  stubborn?: 0 | 1;
+  /** It falls to a quarter of its HP: it takes this much less for the rest of the fight. */
+  lastStandBp?: number;
+  /** It sets off a reaction: the next creature to act gets a boost of this size. */
+  overflowBp?: number;
+  /** The first enrage round starts: it heals this share of its max HP. */
+  secondBreathBp?: number;
+  /** It is silenced: its next turn hit deals this much more. */
+  patientBp?: number;
+  /** A Support heals it: that Support's next boost is this much bigger. */
+  sharedWarmthBp?: number;
 }
 
 export interface AbilityChoice {
@@ -209,6 +299,26 @@ export interface FightInput {
    * are both listed here and passed in `options.mutators` run.
    */
   mutators?: readonly string[];
+  /**
+   * The day's Kind Rain: every living creature heals this share of its max HP (basis points, 1 to
+   * 10000) at the start of every round, after the Supports' Mend, never above its max (and never a
+   * revival). A creature's `healReceivedBp` applies. Absent: no rain, so a stored fight replays as it was.
+   */
+  rainHealBp?: number;
+  /**
+   * The day's Morning Haze: the ids of creatures that skip their first turn of the fight (the first
+   * turn they would act; a silenced first turn already costs the turn, so the haze is spent on it).
+   * Whoever builds the input picks them (`hazeSkips`: the first creature of each row in the raid, the
+   * left one in the dungeon). Absent or empty: nobody, so a stored fight replays as it was.
+   */
+  skipFirstTurn?: readonly string[];
+  /**
+   * The day's Bramble Season: the first reaction set off each round sends this share of its bonus
+   * damage (basis points, 1 to 10000) back at the creature that set it off, and the boss takes the
+   * rest. The returning part is a reflected hit like Backdraft's (`reflectedBp`, Guards, Shield Walls,
+   * armor). Absent: none, so a stored fight replays as it was.
+   */
+  brambleBp?: number;
 }
 
 export interface FightRules {
@@ -246,9 +356,22 @@ export type FightEvent =
     }
   | { t: 'support_buff'; round: number; supporter: string; target: string; bp: number }
   /** A Support's Mend at round start: the HP actually restored (never above what was missing). */
-  | { t: 'heal'; round: number; supporter: string; target: string; amount: number }
+  | {
+      t: 'heal';
+      round: number;
+      supporter: string;
+      target: string;
+      amount: number;
+      /** Set when a gear line healed the creature (it is then both `supporter` and `target`). */
+      cause?: 'second_wind' | 'second_breath';
+    }
   /** A Tide Support's Mend cleared a neighbour's silence. */
   | { t: 'cleanse'; round: number; supporter: string; target: string }
+  /**
+   * The day's Kind Rain at round start (`FightInput.rainHealBp`): the creatures it really healed
+   * (never above what was missing), in row order. Not written when nobody needed healing.
+   */
+  | { t: 'sky_heal'; round: number; heals: { creature: string; amount: number }[] }
   /**
    * A charged pattern was announced at the start of `round` (after the dice, before abilities); it
    * lands in `landing` (= round + 1) on `marks` (creature ids) and, for a sweep, `rows`.
@@ -290,7 +413,7 @@ export type FightEvent =
       status: 'active' | 'purged' | 'restored' | 'suggested';
     }
   | { t: 'turn'; round: number; creature: string }
-  | { t: 'skip'; round: number; creature: string; reason: 'silenced' }
+  | { t: 'skip'; round: number; creature: string; reason: 'silenced' | 'haze' }
   | {
       t: 'hit';
       round: number;
@@ -313,6 +436,10 @@ export type FightEvent =
       critBp?: number;
       /** The creature's sheet added this much to the hit's damage bonus (basis points); absent if none. */
       sheetBp?: number;
+      /** Set when a gear set made this hit a crit (`firstReactionCrit`). */
+      setCrit?: true;
+      /** Set when a gear set's crit window added crit damage to this crit (`critWindowBp`). */
+      warm?: true;
     }
   | {
       t: 'mark';
@@ -322,6 +449,8 @@ export type FightEvent =
       player: string | null;
       element: Element;
       replaced: Element | null;
+      /** Set when a gear set sealed the mark: another creature's hit cannot replace it (`sealMark`). */
+      sealed?: true;
     }
   | {
       t: 'reaction';
@@ -333,8 +462,18 @@ export type FightEvent =
       /** Bonus damage of the reaction (dealt to the boss, or to the payoff creature if reflected). */
       bonus: number;
       reflected: boolean;
+      /**
+       * Bramble Season took part of this reaction (`FightInput.brambleBp`): the share in basis points
+       * and the bonus damage that went back at the payoff creature instead of the boss (the boss's
+       * `bonus` is what is left). Absent otherwise.
+       */
+      bramble?: { bp: number; amount: number };
       /** The sheets' share of the reaction: per-reaction and owner's mark bonus plus the pounce, in basis points; absent if none. */
       sheetBp?: number;
+      /** Set when a gear set turned the boss's reflection aside (`unreflected`). */
+      proof?: true;
+      /** Set when a gear set left the creature's own mark standing after the reaction (`chainMark`). */
+      chain?: true;
     }
   | {
       t: 'gimmick';
@@ -377,8 +516,27 @@ export type FightEvent =
       capped?: true;
       /** The taker's sheet reductions took this much off the hit (negative: its sheet made the hit bigger). */
       warded?: number;
+      /** Set when the taker's Sidestep made it take nothing from an area hit (the damage is 0). */
+      sidestep?: true;
+      /** Set when the taker's Stubborn left it at 1 HP instead of knocking it out (the damage is still the full hit). */
+      stubborn?: true;
     }
   | { t: 'knockout'; round: number; creature: string }
+  /**
+   * A chance line or a trigger line fired (`PROC_KINDS`). `creature` is the creature whose line it is;
+   * `target` the other creature it names (a boost's receiver, the fallen creature of Rally cry, the
+   * Support of Shared warmth); `amount` the number the line's words name (basis points of a bonus,
+   * boost or cut; the damage of an Echo); `bossHp` is set when the event changed the boss's HP (Echo).
+   */
+  | {
+      t: 'proc';
+      round: number;
+      creature: string;
+      kind: ProcKind;
+      target?: string;
+      amount?: number;
+      bossHp?: number;
+    }
   | { t: 'silence'; round: number; creature: string; turns: number }
   | { t: 'round_end'; round: number; bossHp: number };
 

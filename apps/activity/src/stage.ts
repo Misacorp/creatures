@@ -25,6 +25,7 @@ import {
   ZONES,
   type FightEvent,
   type PlaybackOptions,
+  type ProcKind,
   type Zone,
 } from '@creatures/engine';
 import { getSpecies } from './game';
@@ -292,6 +293,30 @@ function reflectGimmick(bossId: string | undefined): string | null {
   const added = dungeonGimmicks.find((g) => g.op === 'reflect_first_reaction');
   return (own ?? added)?.id ?? null;
 }
+
+/**
+ * The word floated over a creature when a chance line or a trigger line fires (a proc event). The lines
+ * that boost another creature (Kindling, Warm heart, Overflow) float the boost over that creature
+ * instead; Echo floats its damage over the boss.
+ */
+export const PROC_WORDS: Readonly<Record<ProcKind, string>> = {
+  echo: 'Echo',
+  steady_paws: 'Steady',
+  warm_heart: 'Warm heart',
+  quick_remark: 'Re-mark',
+  spill_over: 'Spill-over',
+  payback: 'Payback',
+  kindling: 'Kindling',
+  opening_mark: 'Opening mark',
+  rally_cry: 'Rally cry',
+  ember_tail: 'Ember tail',
+  storm_warning: 'Storm warning',
+  stubborn: 'Stubborn!',
+  last_stand: 'Last stand',
+  overflow: 'Overflow',
+  patient: 'Patient',
+  shared_warmth: 'Shared warmth',
+};
 
 const KNOWN_ACTIONS: ReadonlySet<string> = new Set([
   'hit_zone',
@@ -566,7 +591,76 @@ export function cuesForEvents(
         cues.push({ kind: 'hop', i, creature: e.creature });
         break;
       case 'skip':
-        cues.push({ kind: 'silenced', i, creature: e.creature });
+        if (e.reason === 'haze') {
+          // Morning Haze: the creature loses its first turn. A small word over it, no silence mark.
+          cues.push({
+            kind: 'float',
+            i,
+            target: e.creature,
+            text: 'Hazy',
+            tone: 'blocked',
+            crit: false,
+            drift: driftFor(i),
+          });
+        } else {
+          cues.push({ kind: 'silenced', i, creature: e.creature });
+        }
+        break;
+      case 'proc': {
+        const word = PROC_WORDS[e.kind];
+        if (e.kind === 'echo') {
+          // Echo: the hit lands again, a number over the boss.
+          cues.push({ kind: 'hop', i, creature: e.creature });
+          cues.push({
+            kind: 'float',
+            i,
+            target: null,
+            text: String(e.amount ?? 0),
+            tone: 'hit',
+            crit: false,
+            drift: driftFor(i),
+          });
+        } else if (
+          (e.kind === 'kindling' || e.kind === 'warm_heart' || e.kind === 'overflow') &&
+          e.target !== undefined
+        ) {
+          // A boost for another creature, like a Support's: +N% over the creature that gets it.
+          cues.push({ kind: 'hop', i, creature: e.creature });
+          cues.push({
+            kind: 'float',
+            i,
+            target: e.target,
+            text: `+${String(Math.round((e.amount ?? 0) / 100))}%`,
+            tone: 'buff',
+            crit: false,
+            drift: driftFor(i),
+          });
+        } else {
+          cues.push({
+            kind: 'float',
+            i,
+            target: e.creature,
+            text: word,
+            tone: 'buff',
+            crit: false,
+            drift: driftFor(i),
+          });
+        }
+        break;
+      }
+      case 'sky_heal':
+        // Kind Rain at round start: a green number on every creature it healed.
+        for (const [k, h] of e.heals.entries()) {
+          cues.push({
+            kind: 'float',
+            i,
+            target: h.creature,
+            text: `+${String(h.amount)}`,
+            tone: 'heal',
+            crit: false,
+            drift: driftFor(i + k),
+          });
+        }
         break;
       case 'hit':
         cues.push({ kind: 'flash', i, target: null });
@@ -595,6 +689,19 @@ export function cuesForEvents(
         break;
       case 'boss_hit': {
         const zone = zoneOf(e.target);
+        // A Sidestep takes nothing: a word over the creature, no flash and no shake.
+        if (e.sidestep === true) {
+          cues.push({
+            kind: 'float',
+            i,
+            target: e.target,
+            text: 'SIDESTEP',
+            tone: 'blocked',
+            crit: false,
+            drift: driftFor(i),
+          });
+          break;
+        }
         cues.push({ kind: 'flash', i, target: e.target });
         cues.push({
           kind: 'float',
@@ -890,6 +997,13 @@ export function creatureHpAt(
   const end = Math.min(Math.max(0, Math.trunc(index)), events.length);
   for (let i = 0; i < end; i++) {
     const e = events[i] as FightEvent;
+    if (e.t === 'sky_heal') {
+      for (const h of e.heals) {
+        const before = hp[h.creature];
+        if (before !== undefined && before > 0) hp[h.creature] = before + h.amount;
+      }
+      continue;
+    }
     if (e.t === 'heal') {
       const before = hp[e.target];
       // Never a revival: a creature that is down stays down (a heal for one is ignored).
@@ -898,7 +1012,10 @@ export function creatureHpAt(
     }
     if (e.t !== 'boss_hit') continue;
     const before = hp[e.target];
-    if (before !== undefined) hp[e.target] = Math.max(0, before - e.damage);
+    // Stubborn: the hit shows its full damage but the creature is left at 1 HP.
+    if (before !== undefined) {
+      hp[e.target] = e.stubborn === true && before > 0 ? 1 : Math.max(0, before - e.damage);
+    }
   }
   return hp;
 }

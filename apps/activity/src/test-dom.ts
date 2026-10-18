@@ -15,6 +15,13 @@ export interface FakeEvent {
   target: FakeElement;
   currentTarget: FakeElement;
   key?: string;
+  /** Pointer events: where, which pointer and what kind (a finger is `touch`). */
+  clientX?: number;
+  clientY?: number;
+  pointerId?: number;
+  pointerType?: string;
+  isPrimary?: boolean;
+  timeStamp?: number;
   defaultPrevented: boolean;
   preventDefault(): void;
   stopPropagation(): void;
@@ -67,7 +74,9 @@ const HANDLERS = [
   'onfocus',
   'onblur',
   'onpointerdown',
+  'onpointermove',
   'onpointerup',
+  'onpointercancel',
   'ontoggle',
 ];
 
@@ -76,6 +85,26 @@ export class FakeElement extends FakeNode {
   readonly childNodes: FakeNode[] = [];
   readonly attributes = new Map<string, string>();
   readonly listeners = new Map<string, Listener[]>();
+  /** The listeners added for the capture phase (Preact's `onClickCapture`), which run before the target's. */
+  readonly captureListeners = new Map<string, Listener[]>();
+  /** The pointers this element took with `setPointerCapture`. */
+  readonly captured: number[] = [];
+  readonly classList = {
+    add: (...names: string[]): void => {
+      const now = new Set((this.getAttribute('class') ?? '').split(/\s+/).filter((n) => n !== ''));
+      for (const name of names) now.add(name);
+      this.setAttribute('class', [...now].join(' '));
+    },
+    remove: (...names: string[]): void => {
+      const gone = new Set(names);
+      const rest = (this.getAttribute('class') ?? '')
+        .split(/\s+/)
+        .filter((n) => n !== '' && !gone.has(n));
+      this.setAttribute('class', rest.join(' '));
+    },
+    contains: (name: string): boolean =>
+      (this.getAttribute('class') ?? '').split(/\s+/).includes(name),
+  };
   readonly style = { setProperty: () => undefined, removeProperty: () => undefined };
   /** How often `scrollIntoView` and `focus` were called, for the tests. */
   scrolled = 0;
@@ -161,14 +190,27 @@ export class FakeElement extends FakeNode {
     this.parentNode?.removeChild(this);
   }
 
-  addEventListener(type: string, listener: Listener): void {
-    this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
+  addEventListener(
+    type: string,
+    listener: Listener,
+    capture?: boolean | { capture?: boolean },
+  ): void {
+    const map = isCapture(capture) ? this.captureListeners : this.listeners;
+    map.set(type, [...(map.get(type) ?? []), listener]);
   }
-  removeEventListener(type: string, listener: Listener): void {
-    this.listeners.set(
+  removeEventListener(
+    type: string,
+    listener: Listener,
+    capture?: boolean | { capture?: boolean },
+  ): void {
+    const map = isCapture(capture) ? this.captureListeners : this.listeners;
+    map.set(
       type,
-      (this.listeners.get(type) ?? []).filter((l) => l !== listener),
+      (map.get(type) ?? []).filter((l) => l !== listener),
     );
+  }
+  setPointerCapture(id: number): void {
+    this.captured.push(id);
   }
 
   focus(): void {
@@ -183,15 +225,48 @@ export class FakeElement extends FakeNode {
   scrollIntoView(): void {
     this.scrolled += 1;
   }
+
+  /** True when `node` is this element or sits inside it. */
+  contains(node: FakeNode | null): boolean {
+    for (let current: FakeNode | null = node; current !== null; current = current.parentNode) {
+      if (current === this) return true;
+    }
+    return false;
+  }
+
+  /** Only the two selectors the app's components use: `[role="x"]` and `.class`; anything else throws. */
+  querySelectorAll<T = FakeElement>(selector: string): T[] {
+    const role = /^\[role="([^"]+)"\]$/.exec(selector)?.[1];
+    const cls = /^\.([\w-]+)$/.exec(selector)?.[1];
+    if (role === undefined && cls === undefined) {
+      throw new Error(`the fake DOM does not support the selector ${selector}`);
+    }
+    return find(
+      this,
+      (el) =>
+        el !== this &&
+        (role !== undefined ? el.getAttribute('role') === role : el.classList.contains(cls ?? '')),
+    ) as T[];
+  }
+  querySelector<T = FakeElement>(selector: string): T | null {
+    return this.querySelectorAll<T>(selector)[0] ?? null;
+  }
   getContext(): null {
     return null;
   }
+}
+
+function isCapture(options: boolean | { capture?: boolean } | undefined): boolean {
+  return typeof options === 'boolean' ? options : options?.capture === true;
 }
 
 class FakeDocument {
   activeElement: FakeElement | null = null;
   readonly body = new FakeElement('body', this);
 
+  /** Document-level listeners are accepted and never called (the tests send keys to an element). */
+  addEventListener(): void {}
+  removeEventListener(): void {}
   createElement(name: string): FakeElement {
     return new FakeElement(name, this);
   }
@@ -258,6 +333,14 @@ export interface Page {
   /** Types into a text field: sets its value and fires `input`. */
   type(el: FakeElement, text: string): void;
   key(el: FakeElement, key: string): FakeEvent;
+  /** Any other event by name (`wheel`, `touchstart`, `focusin`, `scroll`), with effects flushed. */
+  event(el: FakeElement, type: string): FakeEvent;
+  /** A pointer event (`pointerdown`, `pointermove`, `pointerup`, `pointercancel`) with its position and kind. */
+  pointer(
+    el: FakeElement,
+    type: string,
+    init: { x: number; y: number; at?: number; id?: number; kind?: string; primary?: boolean },
+  ): FakeEvent;
   unmount(): void;
 }
 
@@ -289,7 +372,19 @@ export function createPage(): Page {
       },
     };
     void act(() => {
-      for (let node: FakeElement | null = el; node !== null && !stopped; node = node.parentNode) {
+      const path: FakeElement[] = [];
+      for (let node: FakeElement | null = el; node !== null; node = node.parentNode)
+        path.push(node);
+      // Capture phase from the top down, then the target and the bubble back up.
+      for (const node of [...path].reverse()) {
+        if (stopped) break;
+        full.currentTarget = node;
+        for (const listener of node.captureListeners.get(event.type) ?? []) {
+          listener.call(node, full);
+        }
+      }
+      for (const node of path) {
+        if (stopped) break;
         full.currentTarget = node;
         for (const listener of node.listeners.get(event.type) ?? []) listener.call(node, full);
       }
@@ -319,6 +414,20 @@ export function createPage(): Page {
     },
     key(el, key) {
       return fire(el, { type: 'keydown', key });
+    },
+    event(el, type) {
+      return fire(el, { type });
+    },
+    pointer(el, type, init) {
+      return fire(el, {
+        type,
+        clientX: init.x,
+        clientY: init.y,
+        timeStamp: init.at ?? 0,
+        pointerId: init.id ?? 1,
+        pointerType: init.kind ?? 'touch',
+        isPrimary: init.primary ?? true,
+      });
     },
     unmount() {
       void act(() => {

@@ -1,0 +1,65 @@
+/*
+  The claimed Workshop job (JobReveal.tsx). A dismantle is two rows. Row 1: the item or items taken apart, a pixel
+  arrow, and what they became as count badges (the dismantle panel's). Row 2: who did the work (their sprite
+  and name) with the shared XP list: their experience and the Crafting XP, each a label, a gain and a bar.
+*/
+.jr-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  justify-content: center;
+  margin: 0.5rem 0;
+}
+
+.jr-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jr-items .item-frame {
+  margin: var(--px);
+}
+
+.jr-chevron {
+  flex: none;
+  width: 0.75rem;
+  height: 1.3125rem;
+  fill: var(--bone);
+}
+
+.jr-gives {
+  margin: 0;
+}
+
+.jr-worker {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0.75rem 0;
+}
+
+.jr-worker .xp-list {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.jr-who {
+  display: grid;
+  flex: none;
+  gap: 0.25rem;
+  justify-items: center;
+  max-width: 4.5rem;
+  margin: 0;
+  text-align: center;
+}
+
+.jr-who figcaption {
+  font-size: var(--fs-small);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}

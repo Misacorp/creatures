@@ -174,6 +174,8 @@ export interface WorkshopMods {
 export interface DismantleRoll {
   parts: PartsBundle;
   essence: number;
+  /** How many items Tinker's luck refunded in full; absent when none did. */
+  tinkered?: number;
 }
 
 function between(rng: Rng, lo: number, hi: number, top = false): number {
@@ -189,23 +191,38 @@ export function rollDismantle(
   rng: Rng,
   items: readonly DismantleItem[],
   mods: WorkshopMods = {},
+  tinkersLuckBp = 0,
 ): DismantleRoll {
   const top = mods.dismantleTopOfRange === true;
   const parts: PartsBundle = {};
   let essence = 0;
+  let tinkered = 0;
   for (const item of items) {
     const r = itemRange(item);
     const element = tagElement(itemBase(item).tag);
-    addPart(parts, 'scrap', between(rng, r.scrap[0], r.scrap[1], top));
+    const own: PartsBundle = {};
+    addPart(own, 'scrap', between(rng, r.scrap[0], r.scrap[1], top));
     const shards = between(rng, r.shard[0], r.shard[1], top);
     for (let i = 0; i < shards; i++) {
       const kind = element ?? (ELEMENTS[int(rng, ELEMENTS.length)] as Element);
-      addPart(parts, shardOf(kind), 1);
+      addPart(own, shardOf(kind), 1);
     }
-    addPart(parts, 'glimmer', between(rng, r.glimmer[0], r.glimmer[1], top));
+    addPart(own, 'glimmer', between(rng, r.glimmer[0], r.glimmer[1], top));
     essence += between(rng, r.essence[0], r.essence[1], top);
+    // Tinker's luck: one more die for the item, drawn after its other draws and only when the worker has the
+    // line, so without it every draw is what it was. A hit lifts the item's scrap and shards to its full
+    // craft cost (the plain craft's `craftCost`; never below what the ranges rolled).
+    if (tinkersLuckBp > 0 && chance(rng, Math.min(10_000, tinkersLuckBp), 10_000)) {
+      tinkered += 1;
+      const cost = craftCost(item.baseId, item.itemLevel ?? 1);
+      for (const kind of PART_KINDS) {
+        const missing = (cost[kind] ?? 0) - (own[kind] ?? 0);
+        if (missing > 0) addPart(own, kind, missing);
+      }
+    }
+    for (const kind of PART_KINDS) addPart(parts, kind, own[kind] ?? 0);
   }
-  return { parts, essence };
+  return { parts, essence, ...(tinkered > 0 ? { tinkered } : {}) };
 }
 
 /** Why a set of items cannot go in one dismantle job, or null: Commons bundle up to 5, anything else goes alone. */
@@ -376,9 +393,29 @@ export function craftOdds(
   return { common, rare, epic: epic + (10_000 - common - rare - epic) };
 }
 
-/** True if a base can be made from a blueprint: not a Festival piece and not role-locked. */
-export function craftable(base: Pick<GearBase, 'festival' | 'tag'>): boolean {
-  return base.festival !== true && tagRole(base.tag) === null;
+/**
+ * True if a base can be made from a blueprint: not a Festival piece, and not a role-locked Charm. The pieces of
+ * a role's gear set are role-locked too but craftable: they are the way to collect that set (the drop is the
+ * finale's rare role lock), and they have a blueprint like any base.
+ */
+export function craftable(base: Pick<GearBase, 'festival' | 'tag' | 'set'>): boolean {
+  return base.festival !== true && (tagRole(base.tag) === null || base.set !== undefined);
+}
+
+/**
+ * One blueprint among `bases`: a gear set piece with `RULES.gear.setBlueprintBp` chance when there are
+ * both kinds to choose from, an ordinary base otherwise, evenly within the kind. Undefined for none.
+ */
+export function pickBlueprintBase(rng: Rng, bases: readonly GearBase[]): GearBase | undefined {
+  const sets = bases.filter((b) => b.set !== undefined);
+  const plain = bases.filter((b) => b.set === undefined);
+  // The plain draw is the likely one (a low roll), so a script of zeroes still gets an ordinary base.
+  const wantSet =
+    sets.length > 0 && plain.length > 0
+      ? !chance(rng, 10_000 - RULES.gear.setBlueprintBp, 10_000)
+      : null;
+  const pool = wantSet === null ? bases : wantSet ? sets : plain;
+  return pool[int(rng, Math.max(1, pool.length))];
 }
 
 /**
@@ -578,7 +615,7 @@ export function rollFinaleReward(
 ): FinaleReward {
   if (chance(rng, RULES.gear.drops.finale.blueprintBp, 10_000)) {
     const unowned = blueprintBases().filter((b) => !owned.has(b.id));
-    const base = unowned[int(rng, Math.max(1, unowned.length))];
+    const base = pickBlueprintBase(rng, unowned);
     if (base !== undefined) return { kind: 'blueprint', baseId: base.id };
   }
   return { kind: 'gear', item: rollFinaleItem(rng, rank, element) };
@@ -629,10 +666,9 @@ export function rollDungeonItem(
   return rollItem(rng, { baseId: base.id, rarity, itemLevel });
 }
 
-/** Rolls a blueprint's base evenly among the bases that can be crafted. */
+/** Rolls a blueprint's base among the bases that can be crafted (`pickBlueprintBase`: set pieces are one in five). */
 export function rollBlueprint(rng: Rng): string {
-  const bases = blueprintBases();
-  const base = bases[int(rng, bases.length)];
+  const base = pickBlueprintBase(rng, blueprintBases());
   if (base === undefined) throw new Error('no craftable bases');
   return base.id;
 }
@@ -649,7 +685,12 @@ export function rollExpeditionItem(
 ): GearItem {
   const itemLevel = expeditionItemLevel(explorerRank);
   if (place.crossroads) {
-    const compass = gearContent.bases.find((b) => b.tag === 'explorer');
+    // The explorer's pieces the level unlocks (the Compass, and from item level 12 the Crossroads Wanderer
+    // set), evenly; a single choice draws nothing.
+    const explorer = gearContent.bases
+      .filter((b) => b.tag === 'explorer' && baseMinLevel(b) <= itemLevel)
+      .sort((a, b) => baseMinLevel(a) - baseMinLevel(b));
+    const compass = explorer[explorer.length > 1 ? int(rng, explorer.length) : 0];
     if (compass === undefined) throw new Error('no explorer base');
     return rollItem(rng, { baseId: compass.id, rarity, itemLevel });
   }

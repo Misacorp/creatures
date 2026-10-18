@@ -63,8 +63,3 @@ export function pickerChoices(
 ): EquipChoice[] {
   return equipChoices(items, creature, creatures, slot);
 }
-
-/** The item to select first in the grid: the best one this creature can wear (the first), else the first. */
-export function firstPick(choices: readonly EquipChoice[]): string | null {
-  return (choices.find((c) => c.blocked === null) ?? choices[0])?.item.id ?? null;
-}

@@ -443,6 +443,15 @@ describe('playback of the retune events', () => {
     const cleanse: FightEvent = { t: 'cleanse', round: 3, supporter: 's', target: 'a' };
     expect(beatTiming([heal], 0, 1)).toEqual({ ms: 500, windupMs: 0, visible: true });
     expect(beatTiming([cleanse], 0, 1)).toEqual({ ms: 500, windupMs: 0, visible: true });
+    // Kind Rain's heal and a Morning Haze skip are shown too.
+    const rain: FightEvent = {
+      t: 'sky_heal',
+      round: 3,
+      heals: [{ creature: 'a', amount: 4 }],
+    };
+    expect(beatTiming([rain], 0, 1)).toEqual({ ms: 500, windupMs: 0, visible: true });
+    const haze: FightEvent = { t: 'skip', round: 1, creature: 'a', reason: 'haze' };
+    expect(beatTiming([haze], 0, 1)).toEqual({ ms: 500, windupMs: 0, visible: true });
   });
 
   it('plays the enraged boss as one action: its volley is one beat with a wind-up', () => {

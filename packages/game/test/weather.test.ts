@@ -25,6 +25,8 @@ import {
   weatherLines,
   weatherLuck,
   weatherSheet,
+  scaleStrength,
+  weatherSky,
   weatherStrength,
   workshopExperience,
   workshopMods,
@@ -37,7 +39,13 @@ import weatherJson from '../src/content/data/weather.json';
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const defs = (): Record<string, unknown>[] => clone(weatherJson);
 const reactions = content.reactions.map((r) => ({ id: r.id }));
-const places = new Set(['tidepools', 'ember-caves', 'moonlit-reef', 'storm-ridge']);
+const places = new Set([
+  'tidepools',
+  'ember-caves',
+  'moonlit-reef',
+  'storm-ridge',
+  'verdant-hollow',
+]);
 
 /** A day with the given Boon and Omen at a strength (x1 by default). */
 function day(
@@ -55,31 +63,58 @@ describe('the weather content', () => {
     expect(weatherContent.filter((d) => d.kind === 'omen')).toHaveLength(10);
   });
 
-  it('marks the ones that need a new engine hook as planned, with the reason, and never draws them', () => {
-    const planned = weatherContent.filter((d) => d.status === 'planned').map((d) => d.id);
-    expect(planned.sort()).toEqual(['bramble-season', 'kind-rain', 'morning-haze']);
-    for (const id of planned) {
-      expect(weatherDef(id)?.planned).toMatch(/engine hook/);
-      expect(activeEffects(day(id))).toEqual([]);
+  it('has nothing planned left: all 20 are live and can be drawn', () => {
+    expect(weatherContent.filter((d) => d.status === 'planned')).toEqual([]);
+    for (const id of ['kind-rain', 'morning-haze', 'bramble-season']) {
+      expect(weatherDef(id)?.status).toBe('live');
+      expect(weatherDef(id)?.planned).toBeUndefined();
+      expect(activeEffects(day(id)).length).toBeGreaterThan(0);
     }
-    const rng = createSeededRng('planned');
-    for (let i = 0; i < 400; i++) {
+  });
+
+  it('still draws the three that came last (Bramble Season only from Boss Rank 6)', () => {
+    const seen = new Set<string>();
+    const rng = createSeededRng('the-last-three');
+    for (let i = 0; i < 600; i++) {
       const draw = drawWeather(rng, {
-        rank: 12,
+        rank: 7,
         festival: false,
         previousOmen: null,
-        wildAllowed: true,
+        wildAllowed: false,
       });
-      expect(planned).not.toContain(draw.boon);
-      if (draw.omen !== null) expect(planned).not.toContain(draw.omen);
+      seen.add(draw.boon);
+      if (draw.omen !== null) seen.add(draw.omen);
+    }
+    for (const id of ['kind-rain', 'morning-haze', 'bramble-season']) expect(seen).toContain(id);
+    const early = createSeededRng('rank-four');
+    for (let i = 0; i < 600; i++) {
+      const draw = drawWeather(early, {
+        rank: 4,
+        festival: false,
+        previousOmen: null,
+        wildAllowed: false,
+      });
+      expect(draw.omen).not.toBe('bramble-season');
+    }
+  });
+
+  it('never draws Morning Haze with Fair Winds (it cancels)', () => {
+    const rng = createSeededRng('haze-cancel');
+    for (let i = 0; i < 600; i++) {
+      const draw = drawWeather(rng, {
+        rank: 5,
+        festival: false,
+        previousOmen: null,
+        wildAllowed: false,
+      });
+      expect(draw.boon === 'fair-winds' && draw.omen === 'morning-haze').toBe(false);
     }
   });
 
   it('uses every kind of effect at least once, and every effect text shows its number', () => {
     const used = new Set<string>(weatherContent.flatMap((d) => d.effects.map((e) => e.op)));
-    // Every op the schema knows is used by a live Boon or Omen, except parts, which only the planned
-    // Kind Rain will use (the rules already handle it).
-    expect(WEATHER_OPS.filter((op) => !used.has(op))).toEqual(['tripParts']);
+    // Every op the schema knows is used by a live Boon or Omen.
+    expect(WEATHER_OPS.filter((op) => !used.has(op))).toEqual([]);
     for (const d of weatherContent) {
       for (const e of d.effects) {
         expect(e.text.includes('{n}'), `${d.id} ${e.op}`).toBe(SCALED_OPS.has(e.op));
@@ -108,10 +143,32 @@ describe('the weather content', () => {
     expect(() => load((d) => (find(d, 'fair-winds').cancels = ['market-day']))).toThrow(
       /same kind/,
     );
+    // A planned one (an idea that waits for an engine hook) has a note and no effects.
     expect(() =>
-      load((d) => (find(d, 'kind-rain').effects = find(d, 'fair-winds').effects)),
+      load((d) => {
+        const rain = find(d, 'kind-rain');
+        rain.status = 'planned';
+        rain.effects = [];
+        rain.planned = 'Waits for a hook.';
+      }),
+    ).not.toThrow();
+    expect(() =>
+      load((d) => {
+        const rain = find(d, 'kind-rain');
+        rain.status = 'planned';
+        rain.planned = 'Waits for a hook.';
+      }),
     ).toThrow(/must not have effects/);
-    expect(() => load((d) => delete find(d, 'kind-rain').planned)).toThrow(/needs a "planned"/);
+    expect(() =>
+      load((d) => {
+        const rain = find(d, 'kind-rain');
+        rain.status = 'planned';
+        rain.effects = [];
+      }),
+    ).toThrow(/needs a "planned"/);
+    expect(() => load((d) => (find(d, 'kind-rain').planned = 'Done already.'))).toThrow(
+      /must not have a "planned"/,
+    );
     expect(() => load((d) => (find(d, 'fair-winds').effects = []))).toThrow(/no effect/);
     expect(() => load((d) => (find(d, 'fair-winds').minRank = 3))).toThrow(/no minRank/);
     expect(() => load((d) => (find(d, 'fair-winds').wild = true))).toThrow(/no minRank or wild/);
@@ -284,7 +341,7 @@ describe('fights: the sheet, luck and boss attacks', () => {
 
   it('Fair Winds: the first hit, at the day strength', () => {
     expect(weatherSheet(day('fair-winds'), setter)).toEqual({ firstHitBp: 1_000 });
-    expect(weatherSheet(day('fair-winds', null, 12_500), setter)).toEqual({ firstHitBp: 1_250 });
+    expect(weatherSheet(day('fair-winds', null, 12_500), setter)).toEqual({ firstHitBp: 1_200 });
     expect(weatherSheet(day('fair-winds', null, 15_000), setter)).toEqual({ firstHitBp: 1_500 });
   });
 
@@ -314,7 +371,7 @@ describe('fights: the sheet, luck and boss attacks', () => {
   it('Lantern Light adds a round and never scales it; Quiet Night pierces the adaptation', () => {
     expect(weatherSheet(day('lantern-light', null, 15_000), setter)).toEqual({ lingerRounds: 1 });
     expect(weatherSheet(day('quiet-night'), setter)).toEqual({ pierceBp: 2_500 });
-    expect(weatherSheet(day('quiet-night', null, 15_000), setter)).toEqual({ pierceBp: 3_750 });
+    expect(weatherSheet(day('quiet-night', null, 15_000), setter)).toEqual({ pierceBp: 3_700 });
   });
 
   it('Heavy Rain makes everyone take more area damage; Restless Wind loosens Guards only', () => {
@@ -396,6 +453,73 @@ describe('fights: the sheet, luck and boss attacks', () => {
     expect(dungeonScrapPerRoom(day('market-day', null, 15_000))).toBe(1);
     expect(dungeonScrapPerRoom(day('fair-winds'))).toBe(0);
     expect(dungeonScrapPerRoom(null)).toBe(0);
+  });
+});
+
+describe('Kind Rain, Morning Haze and Bramble Season', () => {
+  it("weatherSky is plain on a plain day and reads the three at the day's strength", () => {
+    expect(weatherSky(null)).toEqual({ rainHealBp: 0, haze: false, brambleBp: 0 });
+    expect(weatherSky(day('fair-winds', 'heatwave'))).toEqual({
+      rainHealBp: 0,
+      haze: false,
+      brambleBp: 0,
+    });
+    expect(weatherSky(day('kind-rain'))).toEqual({ rainHealBp: 200, haze: false, brambleBp: 0 });
+    // Boons scale by the Boon's strength: x1.25 at Boss Rank 6, x1.5 at 10.
+    expect(weatherSky(day('kind-rain', null, 12_500)).rainHealBp).toBe(250);
+    expect(weatherSky(day('kind-rain', null, 15_000)).rainHealBp).toBe(300);
+    expect(weatherSky(day('market-day', 'morning-haze')).haze).toBe(true);
+    // The haze is a count of turns, not a number: it never scales.
+    expect(weatherSky(day('market-day', 'morning-haze', 10_000, 25_000))).toEqual({
+      rainHealBp: 0,
+      haze: true,
+      brambleBp: 0,
+    });
+    expect(weatherSky(day('market-day', 'bramble-season')).brambleBp).toBe(1_200);
+    // Omens scale faster: x1.5 at Boss Rank 6 is 18%, x2.5 at 14 is 30%.
+    expect(weatherSky(day('market-day', 'bramble-season', 12_500, 15_000)).brambleBp).toBe(1_800);
+    expect(weatherSky(day('market-day', 'bramble-season', 15_000, 25_000)).brambleBp).toBe(3_000);
+  });
+
+  it('Kind Rain touches only the sky and the two places for trips; Haze only time', () => {
+    const rain = day('kind-rain');
+    expect(weatherSheet(rain, { role: 'guard', element: 'tide' })).toBeUndefined();
+    expect(weatherLuck(rain, RULES.combat.luck)).toBe(RULES.combat.luck);
+    expect(weatherBossAttacks(rain, 1)).toBe(1);
+    const trip = (destination: string) => ({ destination, length: 'long' as const });
+    expect(tripWeather(rain, trip('tidepools')).partsBp).toBe(2_500);
+    expect(tripWeather(rain, trip('verdant-hollow')).partsBp).toBe(2_500);
+    expect(tripWeather(rain, trip('ember-caves')).partsBp).toBe(0);
+    expect(tripWeather(day('kind-rain', null, 15_000), trip('tidepools')).partsBp).toBe(3_700);
+    const haze = day('market-day', 'morning-haze');
+    expect(tripWeather(haze, trip('tidepools')).timeBp).toBe(1_000);
+    expect(
+      tripWeather(day('market-day', 'morning-haze', 10_000, 20_000), trip('storm-ridge')).timeBp,
+    ).toBe(2_000);
+    expect(weatherSheet(haze, { role: 'guard', element: 'tide' })).toBeUndefined();
+  });
+
+  it('the schema checks the three new effects', () => {
+    const load = (id: string, edit: (e: Record<string, unknown>) => void): unknown => {
+      const raw = defs();
+      const def = raw.find((d) => d.id === id) as Record<string, unknown>;
+      edit((def.effects as Record<string, unknown>[])[0] as Record<string, unknown>);
+      return loadWeather(raw, { reactions }, places);
+    };
+    expect(() => load('kind-rain', (e) => (e.bp = 0))).toThrow(/schema/);
+    expect(() => load('kind-rain', (e) => (e.bp = 1_001))).toThrow(/schema/);
+    expect(() => load('kind-rain', (e) => (e.text = 'Heals.'))).toThrow(/\{n\}/);
+    expect(() => load('bramble-season', (e) => (e.bp = 10_001))).toThrow(/schema/);
+    expect(() => load('bramble-season', (e) => (e.unknown = 1))).toThrow(/schema/);
+    expect(() => load('morning-haze', (e) => (e.text = 'Skips {n} turns.'))).toThrow(/no number/);
+  });
+
+  it('a stored day of a new Boon or Omen from before they were live reads as nothing, not an error', () => {
+    expect(weatherSky(day('gone-boon', 'gone-omen'))).toEqual({
+      rainHealBp: 0,
+      haze: false,
+      brambleBp: 0,
+    });
   });
 });
 
@@ -573,7 +697,7 @@ describe('experience and the Workshop', () => {
     expect(workshopMods(market, 'dismantle', 30)).toEqual({});
     // Strength raises the step-up (rank 6 to 9: x1.25), never the number of boosted actions.
     expect(workshopMods(day('market-day', null, 12_500), 'craft', 0)).toEqual({
-      stepUpBonusBp: 625,
+      stepUpBonusBp: 600,
     });
     expect(workshopMods(day('market-day', null, 15_000), 'craft', 1)).toEqual({});
     expect(workshopMods(day('fair-winds'), 'craft', 0)).toEqual({});
@@ -613,8 +737,34 @@ describe('words', () => {
     ]);
   });
 
-  it('writes nothing for a planned, a missing or an unknown one', () => {
-    expect(weatherLines('kind-rain', 10_000)).toEqual({ fight: [], trips: [] });
+  it('writes the three new ones with the numbers of the day', () => {
+    expect(weatherLines('kind-rain', 10_000)).toEqual({
+      fight: ['Every creature heals 2% of its max HP at the start of each round.'],
+      trips: ['Trips to the Tidepools and the Verdant Hollow find 25% more parts.'],
+    });
+    expect(weatherLines('kind-rain', 15_000).fight).toEqual([
+      'Every creature heals 3% of its max HP at the start of each round.',
+    ]);
+    expect(weatherLines('morning-haze', 10_000)).toEqual({
+      fight: ['The first creature of each row (the left one in the dungeon) skips its first turn.'],
+      trips: ['Trips take 10% longer.'],
+    });
+    expect(weatherLines('bramble-season', 15_000).fight).toEqual([
+      'The first reaction each round sends 18% of its bonus damage back at the creature that set it off.',
+    ]);
+  });
+
+  it('writes nothing for a missing or an unknown one', () => {
     expect(weatherLines('nope', 10_000)).toEqual({ fight: [], trips: [] });
+  });
+});
+
+describe('scaled numbers a player can read', () => {
+  it('rounds towards zero to whole percent from 10 up and to halves below', () => {
+    expect(scaleStrength(2_500, 12_500)).toBe(3_100);
+    expect(scaleStrength(300, 12_500)).toBe(350);
+    expect(scaleStrength(200, 12_500)).toBe(250);
+    expect(scaleStrength(-1_000, 15_000)).toBe(-1_500);
+    expect(scaleStrength(-500, 12_500)).toBe(-600);
   });
 });

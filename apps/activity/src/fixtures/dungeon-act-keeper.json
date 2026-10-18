@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "efddfc08-1c6c-47ec-8c7c-99d440509659",
+    "id": "29cfc427-77f3-4b93-b626-c81b945cae79",
     "day": "2027-01-16",
     "attempt": 1,
     "depth": 14,
@@ -1188,20 +1188,28 @@
         "purge": "Purge",
         "tidal-mark": "Tidal Mark",
         "tidal-mark-2": "Riptide Mark",
+        "slow-burn": "Slow Burn",
         "flare-strike": "Flare Strike",
         "flare-strike-2": "Inferno Strike",
+        "geyser-burst": "Geyser Burst",
         "bark-guard": "Bark Guard",
         "bark-guard-2": "Ironbark Guard",
+        "sunny-patch": "Sunny Patch",
         "static-zap": "Static Zap",
         "static-zap-2": "Storm Zap",
+        "static-wall": "Static Wall",
         "fog-veil": "Fog Veil",
         "fog-veil-2": "Dense Fog",
+        "soft-rain": "Soft Rain",
         "warm-glow": "Warm Glow",
         "warm-glow-2": "Magma Glow",
+        "banked-embers": "Banked Embers",
         "thunder-strike": "Thunder Strike",
         "thunder-strike-2": "Tempest Strike",
+        "afterglow": "Afterglow",
         "moss-bloom": "Mossy Bloom",
         "moss-bloom-2": "Ancient Bloom",
+        "full-bloom": "Full Bloom",
         "coral-lance": "Coral Lance",
         "solar-brand": "Solar Brand",
         "verdant-roar": "Verdant Roar",
@@ -1228,7 +1236,7 @@
     }
   },
   "summary": {
-    "id": "efddfc08-1c6c-47ec-8c7c-99d440509659",
+    "id": "29cfc427-77f3-4b93-b626-c81b945cae79",
     "day": "2027-01-16",
     "attempt": 1,
     "depth": 14,
@@ -1416,7 +1424,7 @@
       },
       "gear": [
         {
-          "id": "02843196-a3ef-46bf-acc2-97eb4ee540ce",
+          "id": "d053ea07-df0e-4fb6-a6ed-478ddce9a95a",
           "baseId": "cinder-charm",
           "rarity": "epic",
           "itemLevel": 11
@@ -2093,7 +2101,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "efddfc08-1c6c-47ec-8c7c-99d440509659",
+      "id": "29cfc427-77f3-4b93-b626-c81b945cae79",
       "day": "2027-01-16",
       "attempt": 1,
       "depth": 14,
@@ -2281,7 +2289,7 @@
         },
         "gear": [
           {
-            "id": "02843196-a3ef-46bf-acc2-97eb4ee540ce",
+            "id": "d053ea07-df0e-4fb6-a6ed-478ddce9a95a",
             "baseId": "cinder-charm",
             "rarity": "epic",
             "itemLevel": 11

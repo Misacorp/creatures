@@ -41,8 +41,38 @@ function gearLineEntries(): unknown[] {
   }));
 }
 
+/** The roles' names for the "only a Guard can wear these" line of a role set. */
+const ROLE_NAMES: Readonly<Record<string, string>> = {
+  setter: 'Setter',
+  payoff: 'Payoff',
+  support: 'Support',
+  guard: 'Guard',
+};
+
+/**
+ * One entry for every gear set, written from the set's own content so the numbers stay true: what two
+ * and three pieces give, and who can wear it.
+ */
+function gearSetEntries(): unknown[] {
+  return gearContent.sets.map((set) => ({
+    id: `gear-set-${set.id}`,
+    title: set.name,
+    short: 'A Hat, a Scarf and a Charm worn by one creature.',
+    lines: [
+      `2 pieces: ${set.two.text}.`,
+      `3 pieces: ${set.three.text}`,
+      set.tag === 'festival'
+        ? 'Won by clearing a Festival finale. It cannot be crafted.'
+        : ROLE_NAMES[set.tag] !== undefined
+          ? `Only a ${ROLE_NAMES[set.tag] as string} can wear these pieces.`
+          : 'Any creature can wear these pieces.',
+    ],
+    section: 'gear',
+  }));
+}
+
 export const glossary: Glossary = loadGlossary(
-  [...(glossaryJson as unknown[]), ...gearLineEntries()],
+  [...(glossaryJson as unknown[]), ...gearLineEntries(), ...gearSetEntries()],
   content,
 );
 export const howToPlay = loadHowToPlay(howToPlayJson, content);
@@ -79,6 +109,8 @@ export const GLOSSARY_IDS = {
   gearSlot: (slot: string): string => `gear-slot-${slot}`,
   /** A gear line such as `tide-attunement`. */
   gearLine: (id: string): string => `gear-line-${id}`,
+  /** A gear set such as `tidepool-finery`. */
+  gearSet: (id: string): string => `gear-set-${id}`,
   /** What a base's tag means on an item: an element (`ember`: its lines lean Ember), a role or `explorer`. */
   gearTag: (tag: string): string => `gear-tag-${tag}`,
   /** What an element means on a boss or a floor boss (`ember`: who hits it hardest). */
@@ -127,6 +159,7 @@ export const FIXED_GLOSSARY_IDS = [
   'golden-talent',
   'talent-book',
   'duplicate-choice',
+  'evolution',
   'rarity',
   'shiny',
   'away',
@@ -138,6 +171,10 @@ export const FIXED_GLOSSARY_IDS = [
   'gear-stat',
   'gear-local',
   'gear-festival',
+  'gear-set',
+  'gear-position',
+  'gear-chance',
+  'gear-trigger',
   'workshop',
   'blueprint',
   'dungeon',
@@ -258,6 +295,7 @@ export function requiredGlossaryIds(pack: ContentPack): string[] {
   // Gear: every slot, line, rarity, part kind and job kind the rules know, and the Crafting skill.
   for (const slot of GEAR_SLOTS) ids.push(GLOSSARY_IDS.gearSlot(slot));
   for (const line of gearContent.lines) ids.push(GLOSSARY_IDS.gearLine(line.id));
+  for (const set of gearContent.sets) ids.push(GLOSSARY_IDS.gearSet(set.id));
   for (const rarity of GEAR_RARITIES) ids.push(GLOSSARY_IDS.gearRarity(rarity));
   // An element means something else on a creature, an item, a boss and a place: one entry each.
   for (const e of pack.elements) {

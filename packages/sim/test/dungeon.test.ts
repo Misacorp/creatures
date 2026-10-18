@@ -137,6 +137,26 @@ describe('the day map in the simulator', () => {
 });
 
 describe('the run input in the simulator', () => {
+  it("puts the day's Kind Rain, Morning Haze and Bramble Season into the run input, and nothing on a plain day", () => {
+    const p = player(12);
+    const day = (boon: string, omen: string | null) => ({
+      day: '2027-01-13',
+      boon,
+      omen,
+      wild: false,
+      boonBp: 12_500,
+      omenBp: 15_000,
+    });
+    const build = (weather: ReturnType<typeof day> | null) =>
+      buildRunInput(p, 3, {}, undefined, weather);
+    const plain = build(null);
+    for (const key of ['rainHealBp', 'hazeLeft', 'brambleBp'])
+      expect(plain).not.toHaveProperty(key);
+    expect(build(day('kind-rain', null)).rainHealBp).toBe(250);
+    expect(build(day('market-day', 'morning-haze')).hazeLeft).toBe(true);
+    expect(build(day('market-day', 'bramble-season')).brambleBp).toBe(1_800);
+  });
+
   it('builds the run like the worker: a row of three, the abilities and the gear folded in', () => {
     const p = player(12);
     const run = buildRunInput(p, 3);
@@ -1084,7 +1104,8 @@ describe('the dungeon targets', () => {
       expect(out.evaluation.find((t) => t.id === id)?.status, id).not.toBe('not_measured');
     }
     expect(out.analysis.dungeon.winRates.casual).toHaveLength(24);
-  });
+    // A full nine-week run, like the ones in run.test.ts: it gets the same long limit.
+  }, 300_000);
 
   it('has foes, events and keepsakes for the maps the model plays', () => {
     expect(dungeonContent.foes.filter((f) => f.kind === 'foe').length).toBeGreaterThanOrEqual(3);

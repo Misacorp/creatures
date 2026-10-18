@@ -67,7 +67,8 @@ export const ActionIds = {
   starter: (species: string): ActionId => `starter:${species}`,
   /** Earning the ribbon a creature waits for: one creature, one ribbon at a time. */
   ribbon: (creatureId: string): ActionId => `ribbon:${creatureId}`,
-  evolve: (creatureId: string): ActionId => `evolve:${creatureId}`,
+  /** One creature grows into one form: the other form is another action (it must not reuse the key). */
+  evolve: (creatureId: string, species: string): ActionId => `evolve:${creatureId}:${species}`,
   /** The same creature, place, length, supplies (in any order) and treat is the same trip. */
   send: (
     request: Pick<SendRequest, 'creatureId' | 'destination' | 'duration' | 'supplies' | 'treat'>,

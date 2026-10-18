@@ -17,9 +17,9 @@
       "lines": [
         "Each creature has an element (Tide, Ember, Grove or Spark) and a role (Setter, Payoff, Guard or Support).",
         "Whatever a creature does earns it experience. A treat (Bait) doubles it for one activity.",
-        "At levels 10 and 20 a creature waits for a ribbon, made from parts. Many evolve at 15 for Essence.",
+        "Ribbons (made from parts) wait at levels 10 and 20. Many evolve at 15 for Essence, and each picks one of two forms.",
         "Every catch rolls a talent. More talent slots open at higher levels, and the Talent Book keeps old ones.",
-        "A duplicate catch is a choice: Teach its talent, Fuse it, or Release it for parts."
+        "A duplicate catch is a choice: Teach its talent, Fuse it, Release it for parts, or sometimes Keep it."
       ]
     },
     {
@@ -106,8 +106,8 @@
         "Each creature wears a Hat, a Scarf from level 7 and a Charm from level 13, each up to its own level.",
         "Hats and Scarves carry Attack and HP of their own. A Charm carries a fixed line instead.",
         "A Common has 1 line, a Rare 2 and an Epic 3. Lines marked (this item) grow the item's own stats.",
-        "The pips show how strong a line rolled. The item's level sets the best it can be. Nothing re-rolls.",
-        "An Ember piece rolls Ember lines more often, and so on. Look for the pieces that fit your creature."
+        "The pips show how strong a line rolled; the item's level sets the best. An Ember piece rolls Ember lines more often.",
+        "Some lines depend on where a creature stands, fire by chance or react in a fight. Set pieces give a bonus worn together."
       ]
     },
     {

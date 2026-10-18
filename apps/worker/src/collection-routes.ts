@@ -192,11 +192,17 @@ export const collectionRoutes: Routes<CollectionRouteContext> = {
       if (id === undefined) return invalidId();
       const body = await parseBody(request, EvolveBodySchema);
       if (body === undefined) return invalidBody();
-      const outcome = ctx.core.collection.evolve(ctx.user.id, id, body.idempotencyKey);
+      const outcome = ctx.core.collection.evolve(
+        ctx.user.id,
+        id,
+        body.idempotencyKey,
+        body.species,
+      );
       if (!outcome.ok) return failure(outcome);
       return json({
         species: outcome.value.species,
         firstOnServer: outcome.value.firstOnServer,
+        unequipped: outcome.value.unequipped ?? 0,
         state: ctx.core.collection.state(ctx.user.id),
       });
     },

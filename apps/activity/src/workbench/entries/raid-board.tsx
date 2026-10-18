@@ -15,6 +15,7 @@ import {
   placedCount,
   type PickerCreature,
 } from '../../roster-picker';
+import { RosterList } from '../../ui/RosterList';
 import { RosterPicker } from '../../ui/RosterPicker';
 import { SPECIES_IDS, speciesLabel } from '../data';
 import { bool, num, str } from '../props';
@@ -479,4 +480,56 @@ const rosterPicker: Entry = {
   ),
 };
 
-export const raidBoardEntries: readonly Entry[] = [raidBoard, rosterPicker];
+/** The list on its own, as the item drawer's "Equip on" view draws it (flat, in a drawer's width). */
+function ListDemo({ p }: { p: Props }) {
+  const owned = useMemo(() => ownedCreatures(num(p, 'owned')), [num(p, 'owned')]);
+  const board = useMemo(() => startBoard(5, 2, num(p, 'placed'), 1), [num(p, 'placed')]);
+  const party = partyView(board, owned);
+  const slot = party.row.find((s) => s.zone === 'middle' && s.creature === null)?.slot ?? 0;
+  const options = pickerOptions({
+    creatures: owned,
+    row: party.row,
+    length: party.rowLength,
+    slot,
+    turnOrder: 'left_to_right',
+    showEffects: bool(p, 'effects'),
+  });
+  return (
+    <div class="workshop">
+      <RosterList
+        options={options}
+        placedNote={ON_BOARD_NOTE}
+        showEffects={bool(p, 'effects')}
+        onPick={() => undefined}
+        class={bool(p, 'flat') ? 'flat' : ''}
+      />
+    </div>
+  );
+}
+
+const rosterList: Entry = {
+  name: 'RosterList',
+  file: 'apps/activity/src/ui/RosterList.tsx',
+  group: 'Slots',
+  description:
+    'The list of creature options of the creature picker: a listbox with each creature\'s sprite, name, level, element and role, and either a note ("On the board") or why it cannot be picked. The raid and dungeon sheet (RosterPicker) and the Workshop item drawer\'s "Equip on" view, which shows it inside the drawer, both use it. Up, Down, Home and End move through it, Enter or a tap picks.',
+  controls: {
+    effects: { kind: 'toggle' },
+    placed: { kind: 'number', min: 0, max: 3 },
+    owned: { kind: 'number', min: 1, max: 12 },
+    flat: { kind: 'toggle' },
+  },
+  defaults: { effects: false, placed: 3, owned: 5, flat: true },
+  presets: [
+    { name: 'As the item drawer draws it (flat)', props: {} },
+    { name: 'As the sheet draws it (scrolls itself)', props: { flat: false, owned: 9 } },
+  ],
+  render: (p) => (
+    <ListDemo
+      key={`${String(bool(p, 'effects'))}-${String(num(p, 'placed'))}-${String(num(p, 'owned'))}`}
+      p={p}
+    />
+  ),
+};
+
+export const raidBoardEntries: readonly Entry[] = [raidBoard, rosterPicker, rosterList];

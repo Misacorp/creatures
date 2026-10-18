@@ -27,6 +27,7 @@ export const SAMPLE_KINDS = [
   'ribbon ready',
   'ribbon short',
   'evolve ready',
+  'evolve choice',
   'talent to fill',
   'talent book',
   'top level',
@@ -130,6 +131,26 @@ function sampleOf(kind: SampleKind): Creature {
         waiting: true,
         nextUnlock: { level: 20, name: 'Talent slot 2' },
         evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: true },
+      };
+    case 'evolve choice':
+      // A Sproutle: its line grows two ways (Thornbuck or Sunfawn), so the button asks which.
+      return {
+        ...creature,
+        species: 'sproutle',
+        line: 'sproutle',
+        level: 15,
+        exp: 825,
+        expNeeded: 825,
+        waiting: true,
+        nextUnlock: { level: 20, name: 'Talent slot 2' },
+        ability: { id: 'bark-guard', unlocked: true, unlockLevel: 10, nextId: 'bark-guard-2' },
+        evolution: {
+          toSpecies: 'thornbuck',
+          level: 15,
+          essence: 20,
+          available: true,
+          alt: { toSpecies: 'sunfawn' },
+        },
       };
     case 'talent to fill': {
       const filled = creature.talents.slots[0]?.talent ?? null;

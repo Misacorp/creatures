@@ -4,7 +4,10 @@ import { GameIcon } from './GameIcon';
 
 export interface CountBadgeProps {
   icon: IconRef;
-  amount: number;
+  /** A number, or a short text for a range ("3–4") or a time ("51 min"). */
+  amount: number | string;
+  /** What assistive technology says for a text amount instead of the text itself ("3 to 4"); a number is spoken as it is. */
+  spokenAmount?: string;
   /** What assistive technology says with the amount ("Scrap: 3"); the icon never carries the meaning alone. */
   label?: string;
   /** The glossary entry it opens when tapped. Without one it is not a button (it can sit inside one). */
@@ -20,7 +23,7 @@ export type CountItem = CountBadgeProps & { key: string };
  * An icon with a number (and, when asked for, its name): the one count badge of parts, Bait,
  * Essence and supplies on every reward and cost line.
  */
-export function CountBadge({ icon, amount, label, entry, name }: CountBadgeProps) {
+export function CountBadge({ icon, amount, spokenAmount, label, entry, name }: CountBadgeProps) {
   const body = (
     <>
       <GameIcon icon={icon} scale={2} />
@@ -28,7 +31,7 @@ export function CountBadge({ icon, amount, label, entry, name }: CountBadgeProps
       {name !== undefined && <span class="cost-name">{name}</span>}
     </>
   );
-  const spoken = label === undefined ? undefined : `${label}: ${String(amount)}`;
+  const spoken = label === undefined ? undefined : `${label}: ${spokenAmount ?? String(amount)}`;
   if (entry !== undefined) {
     return (
       <GlossaryTag

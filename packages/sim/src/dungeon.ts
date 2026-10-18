@@ -36,6 +36,7 @@ import {
   undercroftFloorCount,
   undercroftOpen,
   weatherBossAttacks,
+  weatherSky,
   weatherLuck,
   weatherSheet,
   type DungeonEventDef,
@@ -53,8 +54,10 @@ import {
 } from '@creatures/game';
 import {
   dungeonBossEnrage,
+  placeSlots,
   rowMaxHp,
   simulateDungeonRoom,
+  skyRunFields,
   type AbilityChoice,
   type DungeonRoomSpec,
   type DungeonRunInput,
@@ -63,6 +66,7 @@ import {
 import {
   byPowerDesc,
   creaturePower,
+  foldKitsOf,
   foldedCreature,
   pickTeam,
   TEAM_SIZE,
@@ -264,13 +268,15 @@ export function buildRunInput(
   const team = chosen?.creatures ?? pickTeam(player.creatures);
   const slots = team.map((c): FightSlot => {
     const slot = { ...slotFor(player, c.id), ownerId: DUNGEON_PLAYER };
-    const played =
-      study.neutralSupports === true && slot.role === 'support' ? neutralSupport(slot) : slot;
-    // The day's weather goes on every creature's sheet, as the worker's run builder puts it.
-    const mods = mergeMods(played.mods, weatherSheet(weather, played));
-    return mods === undefined ? played : { ...played, mods };
+    return study.neutralSupports === true && slot.role === 'support' ? neutralSupport(slot) : slot;
   });
-  const row = chosen?.ordered === false ? slots : dungeonRowOrder(slots);
+  const ordered = chosen?.ordered === false ? slots : dungeonRowOrder(slots);
+  // One row, left to right: the position lines of the gear see the neighbours and the ends of that line.
+  const row = placeSlots(ordered, foldKitsOf(team), 'line').map((slot): FightSlot => {
+    // The day's weather goes on every creature's sheet, as the worker's run builder puts it.
+    const mods = mergeMods(slot.mods, weatherSheet(weather, slot));
+    return mods === undefined ? slot : { ...slot, mods };
+  });
   const abilities: AbilityChoice[] = [];
   const unlocked = abilitiesFor(
     row.map((s) => ({ id: s.id, speciesId: s.speciesId, level: s.level })),
@@ -299,6 +305,7 @@ export function buildRunInput(
     abilities,
     luck: { ...weatherLuck(weather, RULES.combat.luck) },
     ...(weatherBossAttacks(weather, 1) > 1 ? { bossAttacks: weatherBossAttacks(weather, 1) } : {}),
+    ...skyRunFields(weatherSky(weather)),
     ...(Object.keys(rest).length === 0 ? {} : { rest }),
     rules: studyRules(study),
     depth,

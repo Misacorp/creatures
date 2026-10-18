@@ -7,7 +7,9 @@ describe('action names', () => {
   it('pins the name of every keyed action', () => {
     expect(ActionIds.starter('splashet')).toBe('starter:splashet');
     expect(ActionIds.ribbon('c1')).toBe('ribbon:c1');
-    expect(ActionIds.evolve('c1')).toBe('evolve:c1');
+    expect(ActionIds.evolve('c1', 'sunfawn')).toBe('evolve:c1:sunfawn');
+    // The other form is another action, so it never reuses the key of a request for this one.
+    expect(ActionIds.evolve('c1', 'thornbuck')).not.toBe(ActionIds.evolve('c1', 'sunfawn'));
     expect(ActionIds.claimJob('j1')).toBe('claim-job:j1');
     expect(ActionIds.dungeonStart(['a', 'b', 'c'])).toBe('dungeon-start:["a","b","c"]');
     expect(
@@ -173,7 +175,7 @@ describe('action names', () => {
     // Different kinds of action on the same id must not share a key.
     const names = [
       ActionIds.ribbon('x'),
-      ActionIds.evolve('x'),
+      ActionIds.evolve('x', 'y'),
       ActionIds.claimJob('x'),
       ActionIds.starter('x'),
     ];

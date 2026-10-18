@@ -248,6 +248,44 @@ describe('where a creature may go', () => {
     });
   });
 
+  it('gives a 24 hour trip one more catch roll for a creature that wears the Crossroads Wanderer set, and no other length', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = await join(ctx, USER, 0);
+      setRank(ctx.sql, USER_ID, p.starterId, RULES.expeditions.lengths.day.minRank);
+      const rollsOf = (id: string): number =>
+        rows<{ rolls: number }>(ctx.sql, 'SELECT rolls FROM expeditions WHERE id = ?', id)[0]
+          ?.rolls ?? 0;
+      const wear = (baseId: string): void => {
+        const id = giveItem(ctx.sql, USER_ID, baseId, { level: 12, now: ctx.clock.t, lines: [] });
+        ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', p.starterId, id);
+      };
+      const sendDay = async (): Promise<string> => {
+        const trip = tripOf(await send(p, p.starterId, 'day'));
+        return trip.id;
+      };
+      const plain = rollsOf(await sendDay());
+      expect(plain).toBe(RULES.expeditions.lengths.day.rolls);
+      // Free the creature (a recall brings nothing home), then dress it in the set: two pieces change nothing.
+      const free = async (id: string): Promise<void> => {
+        expect((await claim(p, id)).status).toBe(200);
+      };
+      await free(rows<{ id: string }>(ctx.sql, 'SELECT id FROM expeditions')[0]?.id as string);
+      wear('wanderers-hat');
+      wear('wanderers-scarf');
+      const two = await sendDay();
+      expect(rollsOf(two)).toBe(plain);
+      await free(two);
+      // Three pieces: one more roll on a 24 hour trip.
+      wear('wanderers-coin');
+      const three = await sendDay();
+      expect(rollsOf(three)).toBe(plain + 1);
+      await free(three);
+      // Only the 24 hour trip: a 12 hour one has the length's rolls.
+      const long = tripOf(await send(p, p.starterId, 'long')).id;
+      expect(rollsOf(long)).toBe(RULES.expeditions.lengths.long.rolls);
+    });
+  });
+
   it('opens the night place from 20:00 to 06:00 of the guild’s own clock, across daylight saving', async () => {
     const reef = expeditionContent.destinations.find((d) => d.access.night === true);
     if (reef === undefined) throw new Error('no night place');

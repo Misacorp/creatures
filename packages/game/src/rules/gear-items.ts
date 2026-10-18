@@ -14,19 +14,30 @@
  * reactions, wards, roles, utility).
  */
 import { content } from '../content';
-import { baseFor, eligibleBases, gearBase, gearContent, gearLine } from '../content/gear';
+import { eligibleBases, gearBase, gearContent, gearLine, gearSet } from '../content/gear';
 import {
+  CHANCE_FIELDS,
   GEAR_SLOTS,
+  TRIGGER_FIELDS,
   tagElement,
   tagRole,
   type BaseStatKind,
+  type PositionRule,
   type GearBase,
   type GearLine,
   type GearRarity,
+  type GearSet,
   type GearSlot,
   type GearTag,
 } from '../content/gear-schema';
-import { ELEMENTS, type CritBonus, type Element, type Role, type Stats } from '../content/schema';
+import {
+  ELEMENTS,
+  type CritBonus,
+  type Element,
+  type Role,
+  type Stats,
+  type Zone,
+} from '../content/schema';
 import type { TalentEffect } from '../content/talent-schema';
 import { int, pickWeighted, type Rng } from '../rng';
 import { RULES } from './config';
@@ -53,10 +64,31 @@ export interface GearItem {
   lines: readonly ItemLine[];
 }
 
-/** How a creature looks to the gear rules. */
+/**
+ * Where a creature stands, for the position lines (`rules/gear-position.ts` builds it from the row a fight is
+ * built with). Everything is already counted: the fold only reads numbers and flags.
+ */
+export interface Placement {
+  /** 0-based place in its row, and how many creatures the row holds. */
+  index: number;
+  length: number;
+  /** Its zone in the raid (Front, Middle, Back); the dungeon's single row of three has one slot in each. */
+  zone: Zone;
+  /** The elements of the creatures directly left and right of it in its row (guests count). */
+  beside: readonly Element[];
+  /** The elements of every creature in its row, itself included. */
+  rowElements: readonly Element[];
+  /** HP the Lantern bearers beside it give it, added up (basis points). */
+  lanternHpBp: number;
+  /** Rounds more that a Guard's Shield Wall lasts in this row (Lantern Night; 0 or 1). */
+  rowShieldWall: number;
+}
+
+/** How a creature looks to the gear rules. `placement` is absent where nobody knows the row (a card, "Equip best"). */
 export interface Wearer {
   role: Role;
   element: Element;
+  placement?: Placement | undefined;
 }
 
 export function clampItemLevel(level: number): number {
@@ -99,6 +131,20 @@ export function lineValue(line: GearLine, tier: number): number {
 /** The value of a base's fixed line (a Charm's implicit, a Festival piece's unique line) at an item level. */
 export function fixedValue(values: readonly number[], itemLevel: number): number {
   return values[tierCap(itemLevel)] as number;
+}
+
+/** Chance lines are this many basis points (2 points) higher on an Epic or a Festival piece. */
+export const CHANCE_BONUS_BP = 200;
+
+/**
+ * What a rolled line adds to its tier value on this item: chance lines (6.3) get +2 points on an Epic or a
+ * Festival piece, every other line nothing. The item's own rarity and base decide, so a stored item needs
+ * no change.
+ */
+export function lineBonus(line: GearLine, item: Pick<GearItem, 'rarity'>, base: GearBase): number {
+  return line.group === 'chance' && (item.rarity === 'epic' || base.festival === true)
+    ? CHANCE_BONUS_BP
+    : 0;
 }
 
 const RARITY_RANK: Record<GearRarity, number> = { common: 0, rare: 1, epic: 2 };
@@ -191,7 +237,10 @@ export function linePool(
 
 /**
  * Rolls an item's lines: as many as the rarity has, drawn by weight from the pool without taking
- * the same line twice, each with its own tier. Draws in a fixed order (the line, then its tier).
+ * the same line twice, each with its own tier. Draws in a fixed order (the line, then its tier). An item
+ * holds at most one special line (a position, chance or trigger line, `SPECIAL_GROUPS`):
+ * once one is drawn, the others leave the pool, so the next draw is among the ordinary lines. Every way
+ * an item gets lines (a drop, a craft, a Reach, the conversion) rolls through here.
  */
 export function rollLines(
   rng: Rng,
@@ -206,12 +255,22 @@ export function rollLines(
     if (pool.length === 0) break;
     const picked = pickWeighted(rng, pool);
     pool.splice(pool.indexOf(picked), 1);
+    if (picked.line.special) {
+      for (let j = pool.length - 1; j >= 0; j--) {
+        if ((pool[j] as PoolLine).line.special) pool.splice(j, 1);
+      }
+    }
     out.push({
       id: picked.line.id,
       tier: picked.line.single ? 0 : rollTier(rng, itemLevel, minTier),
     });
   }
   return out;
+}
+
+/** The special lines among an item's rolled lines (an item holds at most one; see `rollLines`). */
+export function specialLinesOf(lines: readonly ItemLine[]): ItemLine[] {
+  return lines.filter((l) => gearLine(l.id)?.special === true);
 }
 
 /** Rolls a whole item of a base. Throws RangeError for an unknown base. Any base can be of any rarity. */
@@ -252,6 +311,8 @@ export function formatLineValue(line: GearLine, value: number): string {
       return `${sign}${formatBp(value)} pt`;
     case 'flat':
       return `${sign}${String(value)}`;
+    case 'chance':
+      return `${formatBp(value)}%`;
     case 'once':
       return '';
   }
@@ -318,7 +379,7 @@ export function itemLines(item: GearItem): ResolvedLine[] {
   for (const rolled of item.lines) {
     const line = gearLine(rolled.id);
     if (line === undefined) throw new Error(`item has unknown line "${rolled.id}"`);
-    const value = lineValue(line, rolled.tier);
+    const value = lineValue(line, rolled.tier) + lineBonus(line, item, base);
     out.push({
       id: line.id,
       name: line.name,
@@ -464,6 +525,37 @@ export interface GearMods {
   mendBp?: number;
   lingerRounds?: number;
   ignoreSilence?: 0 | 1;
+  /** Cover a Guard's cover on it gains (the position line Sheltered). */
+  shelterBp?: number;
+  /** Gear sets, three pieces: see `SET_EFFECTS` in the content schema and `SlotMods` in the engine. */
+  unreflected?: 0 | 1;
+  critWindowBp?: number;
+  healOnReactionBp?: number;
+  chainMark?: 0 | 1;
+  coverReach?: 0 | 1;
+  boostReach?: 0 | 1;
+  sealMark?: 0 | 1;
+  firstReactionCrit?: 0 | 1;
+  /** Chance lines (a chance in basis points) and trigger lines: see `CHANCE_FIELDS`, `TRIGGER_FIELDS` and `SlotMods` in the engine. */
+  secondWindBp?: number;
+  echoBp?: number;
+  sidestepBp?: number;
+  steadyPawsBp?: number;
+  warmHeartBp?: number;
+  quickRemarkBp?: number;
+  spillOverBp?: number;
+  paybackBp?: number;
+  kindlingBp?: number;
+  openingMark?: 0 | 1;
+  rallyCryBp?: number;
+  emberTailBp?: number;
+  stormWarningBp?: number;
+  stubborn?: 0 | 1;
+  lastStandBp?: number;
+  overflowBp?: number;
+  secondBreathBp?: number;
+  patientBp?: number;
+  sharedWarmthBp?: number;
 }
 
 /** What gear does outside the fight, for the wearer (basis points; a time reduction is a positive number). */
@@ -486,6 +578,12 @@ export interface GearRules {
   restBp: number;
   /** The chance of a glimmer on its trips, more (a share of the chance; a talent, not a gear line). */
   glimmerFindBp: number;
+  /** Extra catch rolls on its 24 hour trips (the Crossroads Wanderer set). */
+  dayTripRolls: number;
+  /** Tinker's luck: the chance (basis points) that a dismantle job it runs refunds an item's full craft cost. */
+  tinkersLuckBp: number;
+  /** Second look: the chance (basis points) that a duplicate its trip brings rolls its talent twice. */
+  secondLookBp: number;
 }
 
 export const NO_GEAR_RULES: GearRules = Object.freeze({
@@ -498,6 +596,9 @@ export const NO_GEAR_RULES: GearRules = Object.freeze({
   apprenticeBp: 0,
   restBp: 0,
   glimmerFindBp: 0,
+  dayTripRolls: 0,
+  tinkersLuckBp: 0,
+  secondLookBp: 0,
 });
 
 const RULE_FIELD = {
@@ -508,6 +609,8 @@ const RULE_FIELD = {
   packer: 'packerBp',
   busyPaws: 'busyPawsBp',
   apprentice: 'apprenticeBp',
+  tinkersLuck: 'tinkersLuckBp',
+  secondLook: 'secondLookBp',
 } as const satisfies Record<string, keyof GearRules>;
 
 /**
@@ -583,7 +686,9 @@ type SheetNumeric =
   | 'armorBp'
   | 'coverBp'
   | 'boostBp'
-  | 'mendBp';
+  | 'mendBp'
+  | (typeof CHANCE_FIELDS)[number]
+  | Exclude<(typeof TRIGGER_FIELDS)[number], 'openingMark' | 'stubborn'>;
 
 function addTo<K extends string>(
   table: Partial<Record<K, number>> | undefined,
@@ -601,6 +706,101 @@ function lineApplies(line: GearLine, wearer: Wearer): boolean {
   if (line.effect.kind === 'attune') return line.element === wearer.element;
   return true;
 }
+
+// --- Gear sets ---
+
+/** The pieces of each set among these items, one per slot at most: set id to count (2 and 3 are the bonuses). */
+export function setCounts(
+  items: readonly Pick<GearItem, 'baseId' | 'slot'>[],
+): Map<string, number> {
+  const slots = new Map<string, Set<GearSlot>>();
+  for (const item of items) {
+    const id = gearBase(item.baseId)?.set;
+    if (id === undefined) continue;
+    const held = slots.get(id) ?? new Set<GearSlot>();
+    held.add(item.slot);
+    slots.set(id, held);
+  }
+  return new Map([...slots].map(([id, held]) => [id, held.size]));
+}
+
+/**
+ * The bonuses of the sets a creature wears: two pieces give the set's plain lines (folded like the same line
+ * on an item, but never reported as idle), three also its one named effect. Conditions (the wearer's
+ * element) are resolved here, so the engine sees numbers and flags only.
+ */
+function foldSets(
+  items: readonly GearItem[],
+  wearer: Wearer,
+  out: WornEffects,
+  apply: (line: GearLine, value: number, talentId: string | null, record: boolean) => void,
+): void {
+  // Most creatures wear no set piece: skip the counting (it runs for every fold in the sim's Equip best).
+  if (!items.some((item) => gearBase(item.baseId)?.set !== undefined)) return;
+  for (const [id, count] of setCounts(items)) {
+    const set = gearSet(id);
+    if (set === undefined || count < 2) continue;
+    for (const entry of set.two.lines) {
+      const line = gearLine(entry.line);
+      if (line !== undefined) apply(line, entry.value, null, false);
+    }
+    if (count >= 3) setEffect(set.three, wearer, out);
+  }
+}
+
+/** One three-piece effect into the sheet (or the trip rules), for a wearer it works for. */
+function setEffect(three: GearSet['three'], wearer: Wearer, out: WornEffects): void {
+  if (three.wearerElement !== undefined && three.wearerElement !== wearer.element) return;
+  const sheet = out.mods;
+  const value = three.value ?? 0;
+  switch (three.effect) {
+    case 'unreflected':
+      sheet.unreflected = 1;
+      break;
+    case 'critWindow':
+      sheet.critWindowBp = (sheet.critWindowBp ?? 0) + value;
+      break;
+    case 'healOnReaction':
+      sheet.healOnReactionBp = (sheet.healOnReactionBp ?? 0) + value;
+      break;
+    case 'chainMark':
+      sheet.chainMark = 1;
+      break;
+    case 'coverReach':
+      if (wearer.role === 'guard') sheet.coverReach = 1;
+      break;
+    case 'boostReach':
+      if (wearer.role === 'support') sheet.boostReach = 1;
+      break;
+    case 'sealMark':
+      sheet.sealMark = 1;
+      break;
+    case 'firstReactionCrit':
+      sheet.firstReactionCrit = 1;
+      break;
+    case 'longTripCatch':
+      out.rules.dayTripRolls += value;
+      break;
+    case 'rowShieldWall':
+      // A gift to the row: the row's builder counts the wearers (`Placement.rowShieldWall`).
+      break;
+  }
+}
+
+/** The sheet fields capped at 100% (10000 bp) after the fold; one list, built once. */
+const CAPPED_AT_WHOLE = [
+  'pierceBp',
+  'takenBp',
+  'areaBp',
+  'aimedBp',
+  'reflectedBp',
+  'chargedBp',
+  ...CHANCE_FIELDS,
+  'stormWarningBp',
+  'lastStandBp',
+  'secondBreathBp',
+] as const;
+const CAPPED_SET: ReadonlySet<string> = new Set(CAPPED_AT_WHOLE);
 
 /**
  * Everything a creature's worn items give, summed. Lines that do nothing for the wearer (a Guard's
@@ -638,8 +838,16 @@ export function wornEffects(
   const addSheet = (field: SheetNumeric, value: number): void => {
     sheet[field] = (sheet[field] ?? 0) + value;
   };
-  const apply = (line: GearLine, value: number, talentId: string | null = null): void => {
+  const place = wearer.placement;
+  const apply = (
+    line: GearLine,
+    value: number,
+    talentId: string | null = null,
+    /** A line a set gives is not an item's line: when it does nothing for the wearer, nothing is recorded as idle. */
+    record = true,
+  ): void => {
     if (!lineApplies(line, wearer)) {
+      if (!record) return;
       if (talentId === null) out.idle.push(line.id);
       else out.idleTalents.push(talentId);
       return;
@@ -678,11 +886,17 @@ export function wornEffects(
       case 'besideRole':
         sheet.besideRoleBp = addTo(sheet.besideRoleBp, effect.role, value);
         break;
+      case 'position':
+        // Where it stands decides: without a placement (a card, "Equip best") the line adds nothing.
+        if (place !== undefined) positionLine(effect.rule, value, place);
+        break;
       case 'sheet':
         if (effect.field === 'lingerRounds') {
           sheet.lingerRounds = Math.min(3, (sheet.lingerRounds ?? 0) + value);
         } else if (effect.field === 'ignoreSilence') {
           sheet.ignoreSilence = 1;
+        } else if (effect.field === 'openingMark' || effect.field === 'stubborn') {
+          sheet[effect.field] = 1;
         } else {
           addSheet(effect.field, value);
         }
@@ -692,6 +906,40 @@ export function wornEffects(
         break;
       case 'rest':
         out.rules.restBp += value;
+        break;
+    }
+  };
+  /** One position line's effect for a creature standing at `at`. All of these are folded here: the engine sees numbers. */
+  const positionLine = (rule: PositionRule, value: number, at: Placement): void => {
+    switch (rule) {
+      case 'sameElementBeside':
+        out.atkBp += value * Math.min(2, at.beside.filter((e) => e === wearer.element).length);
+        break;
+      case 'oddOneOut':
+        if (!at.beside.includes(wearer.element)) out.atkBp += value;
+        break;
+      case 'edge':
+        if (at.index === 0 || at.index === at.length - 1) out.atkBp += value;
+        break;
+      case 'heart':
+        if (at.index > 0 && at.index < at.length - 1) out.hpBp += value;
+        break;
+      case 'front':
+        if (at.zone === 'front') addSheet('takenBp', value);
+        break;
+      case 'back':
+        if (at.zone === 'back') out.critChanceBp += value;
+        break;
+      case 'lantern':
+        // Its gift goes to the creatures beside it (`Placement.lanternHpBp` of theirs), not to the bearer.
+        break;
+      case 'fourElements':
+        if (new Set(at.rowElements).size >= 4) {
+          sheet.reactionBp = addTo(sheet.reactionBp, reactionOf(wearer.element), value);
+        }
+        break;
+      case 'sheltered':
+        sheet.shelterBp = (sheet.shelterBp ?? 0) + value;
         break;
     }
   };
@@ -707,6 +955,14 @@ export function wornEffects(
       if (line !== undefined) apply(line, resolved.value);
     }
   }
+  foldSets(items, wearer, out, apply);
+  if (place !== undefined) {
+    // What the creatures beside it give it (Lantern bearer) and what its row gives (Lantern Night).
+    out.hpBp += place.lanternHpBp;
+    if (wearer.role === 'guard' && place.rowShieldWall > 0) {
+      sheet.lingerRounds = Math.min(3, (sheet.lingerRounds ?? 0) + place.rowShieldWall);
+    }
+  }
   for (const talent of talents) {
     if ('line' in talent.effect) {
       const line = gearLine(talent.effect.line);
@@ -718,17 +974,15 @@ export function wornEffects(
     }
   }
   // Keep within what the engine's sheet accepts.
-  for (const field of [
-    'pierceBp',
-    'takenBp',
-    'areaBp',
-    'aimedBp',
-    'reflectedBp',
-    'chargedBp',
-  ] as const) {
-    const value = sheet[field];
-    if (value !== undefined) sheet[field] = Math.min(10_000, value);
+  // A reduction stays below 100%, a chance never passes 100% (two items can carry the same line), nor a cut.
+  // (Walks the few fields the sheet holds, not the whole list: this runs for every fold.)
+  for (const field of Object.keys(sheet) as (keyof GearMods)[]) {
+    if (!CAPPED_SET.has(field)) continue;
+    const value = sheet[field] as number;
+    (sheet as Record<string, number>)[field] = Math.min(10_000, value);
   }
+  out.rules.tinkersLuckBp = Math.min(10_000, out.rules.tinkersLuckBp);
+  out.rules.secondLookBp = Math.min(10_000, out.rules.secondLookBp);
   out.rules.quickFeetBp = Math.min(5_000, out.rules.quickFeetBp);
   out.rules.busyPawsBp = Math.min(5_000, out.rules.busyPawsBp);
   return out;
@@ -755,7 +1009,10 @@ export function applyGear(
   items: readonly GearItem[],
   talents: readonly FoldTalent[] = [],
 ): { stats: Stats; crit: CritBonus | undefined; mods: GearMods | undefined; rules: GearRules } {
-  if (items.length === 0 && talents.length === 0) {
+  // A creature that wears nothing can still gain from the row (Lantern bearer, Lantern Night).
+  const gifts = wearer.placement;
+  const given = gifts !== undefined && (gifts.lanternHpBp > 0 || gifts.rowShieldWall > 0);
+  if (items.length === 0 && talents.length === 0 && !given) {
     return { stats, crit, mods: undefined, rules: NO_GEAR_RULES };
   }
   const fx = wornEffects(wearer, items, talents);
@@ -1003,7 +1260,11 @@ export function convertedItemLevel(rank: number, bestDepth: number): number {
  * A drop's base: the slot by `dropSlotWeights`, then the base of that slot and tag (`element`; null
  * is neutral). A Charm is role-locked with `roleCharmBp` when `roleCharm` is on, for a role drawn
  * evenly. Then the base among those of that slot and tag the item level unlocks (`minItemLevel`), evenly.
- * Draws the slot, then (for a Charm, when allowed) the role chance, then the base.
+ * A gear set's piece of that slot and tag is one of them once its level (12) is reached. The role lock
+ * (finale only, `roleCharm`) also covers the Hats and Scarves of the role sets from that level: a role's
+ * Charm, Hat or Scarf is drawn evenly among those of that role the level unlocks.
+ * Draws the slot, then (for a Charm, or a Hat or Scarf that a role set unlocks, when allowed) the role
+ * chance, then the base (a draw only when there is a choice).
  */
 export function dropBase(
   rng: Rng,
@@ -1016,18 +1277,23 @@ export function dropBase(
     rng,
     GEAR_SLOTS.map((s) => ({ slot: s, weight: weights[s] })),
   ).slot;
-  if (slot === 'charm' && options.roleCharm === true) {
+  const level = clampItemLevel(itemLevel);
+  const roles: Role[] = ['setter', 'payoff', 'support', 'guard'];
+  if (
+    options.roleCharm === true &&
+    (slot === 'charm' || roles.some((r) => eligibleBases(slot, r, level, false, true).length > 0))
+  ) {
     const lock = int(rng, 10_000) < RULES.gear.roleCharmBp;
     if (lock) {
-      const roles: Role[] = ['setter', 'payoff', 'support', 'guard'];
       const role = roles[int(rng, roles.length)] as Role;
-      const base = baseFor('charm', role);
+      const ofRole = eligibleBases(slot, role, level, false, true);
+      const base = ofRole[ofRole.length > 1 ? int(rng, ofRole.length) : 0];
       if (base !== undefined) return base;
     }
   }
   // Any base of the slot and tag that the item level unlocks, evenly (Path of Exile style: a high
   // level drop can still be a plain base, and the plain base's lines can still be great).
-  const eligible = eligibleBases(slot, element ?? 'neutral', clampItemLevel(itemLevel));
+  const eligible = eligibleBases(slot, element ?? 'neutral', level, false, true);
   const base = eligible[int(rng, Math.max(1, eligible.length))];
   if (base === undefined) throw new Error(`no ${slot} for ${element ?? 'neutral'}`);
   return base;

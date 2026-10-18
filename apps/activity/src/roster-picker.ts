@@ -89,6 +89,8 @@ export interface PickerOption {
   effect: string | null;
   /** One of the player's three strongest: the picker shows a small "Recommended" tag. */
   recommended: boolean;
+  /** A plain action, not a creature (the Workshop's "Take off"): its name is the whole option. */
+  action?: boolean;
 }
 
 /** How many of the player's creatures are on the board. */

@@ -2,13 +2,13 @@
   "serverNow": 1799751603000,
   "balances": {
     "bait": 100,
-    "essence": 85
+    "essence": 75
   },
   "starterChosen": false,
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "0006079c-6263-4604-b59e-f1a6a00f42de",
+      "id": "df73a9db-70ea-4afd-b654-868ba10a6ac4",
       "species": "cindle",
       "line": "cindle",
       "level": 15,
@@ -51,21 +51,21 @@
       },
       "gear": [
         {
-          "id": "978654ee-5090-4477-a92f-38bff6adbd55",
+          "id": "5a902296-2b12-48b0-bbc2-135b114f2752",
           "baseId": "emberkeepers-crown",
           "slot": "hat",
           "rarity": "epic",
           "itemLevel": 15
         },
         {
-          "id": "e0f699b8-75ab-4aa6-ac9b-abf795fe6a4c",
+          "id": "5cdfcff0-b4f2-486d-875a-0a64d64a5969",
           "baseId": "bark-shawl",
           "slot": "scarf",
           "rarity": "rare",
           "itemLevel": 12
         },
         {
-          "id": "607f3f26-f7cb-484d-b678-14e2a53fee7b",
+          "id": "609e966b-a387-4ebd-842b-001fccebb5fd",
           "baseId": "crossroads-compass",
           "slot": "charm",
           "rarity": "rare",
@@ -74,7 +74,7 @@
       ],
       "busy": {
         "kind": "job",
-        "id": "90dec4ac-6505-4df5-8e89-5498d98ae1a8"
+        "id": "c39d6dc1-835d-4020-9e2d-9b2fa4728f3d"
       },
       "ability": {
         "id": "flare-strike",
@@ -102,11 +102,14 @@
         "toSpecies": "pyrelynx",
         "level": 15,
         "essence": 20,
-        "available": true
+        "available": true,
+        "alt": {
+          "toSpecies": "wickat"
+        }
       }
     },
     {
-      "id": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
+      "id": "511935df-47e5-4791-b3d1-47f05259f00a",
       "species": "sproutle",
       "line": "sproutle",
       "level": 14,
@@ -149,14 +152,14 @@
       },
       "gear": [
         {
-          "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
+          "id": "94cfe2f5-d1a0-4010-ac43-1a9cf7863cba",
           "baseId": "trail-cap",
           "slot": "hat",
           "rarity": "common",
           "itemLevel": 1
         },
         {
-          "id": "b52c5319-8e07-4816-9ac7-b6af0bef96bb",
+          "id": "e4f4677e-304e-4e03-807d-c32c247655a8",
           "baseId": "wardens-bell",
           "slot": "charm",
           "rarity": "rare",
@@ -190,11 +193,14 @@
         "toSpecies": "thornbuck",
         "level": 15,
         "essence": 20,
-        "available": false
+        "available": false,
+        "alt": {
+          "toSpecies": "sunfawn"
+        }
       }
     },
     {
-      "id": "32621523-b521-47e9-8f3d-faccb12a7aea",
+      "id": "ffe187a8-7dd7-4180-ac50-b290e8528405",
       "species": "zipmouse",
       "line": "zipmouse",
       "level": 9,
@@ -249,7 +255,7 @@
         "nextRankXp": 200,
         "trips": 0
       },
-      "exp": 40,
+      "exp": 26,
       "expNeeded": 387,
       "waiting": false,
       "ribbons": 1,
@@ -263,7 +269,10 @@
         "toSpecies": "voltaro",
         "level": 15,
         "essence": 20,
-        "available": false
+        "available": false,
+        "alt": {
+          "toSpecies": "ohmouse"
+        }
       }
     }
   ],
@@ -284,7 +293,7 @@
   },
   "supplies": {},
   "serverFirsts": [],
-  "loungerId": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
+  "loungerId": "ffe187a8-7dd7-4180-ac50-b290e8528405",
   "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {

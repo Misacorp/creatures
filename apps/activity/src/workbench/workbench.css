@@ -427,3 +427,56 @@
   padding: 0.75rem;
   background: var(--dusk);
 }
+
+/* The FlipNav page: the arrow looks stacked with a title each, and the swipe pad. */
+.wb-flip-rows {
+  display: grid;
+  gap: 1rem;
+}
+
+.wb-flip-row h3 {
+  margin: 0 0 0.375rem;
+}
+
+.wb-flip-pad {
+  padding: 0.75rem;
+  background: var(--dusk);
+}
+
+.wb-flip-pad:focus-visible {
+  outline: var(--px) solid var(--bone);
+  outline-offset: calc(var(--px) * 2);
+}
+
+.wb-flip-top {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.wb-flip-card {
+  padding: 1rem 0;
+}
+
+/* The scroll hint page: a short scrolling box of sample lines with a button under it. */
+.wb-scroll-hint {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: start;
+}
+
+.wb-scroll-hint .scroll-hint {
+  width: 100%;
+  background: var(--dusk);
+}
+
+.wb-scroll-hint-box {
+  max-height: 10rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.wb-scroll-hint-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

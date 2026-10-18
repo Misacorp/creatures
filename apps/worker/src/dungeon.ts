@@ -50,6 +50,7 @@ import {
   weatherBossAttacks,
   weatherDef,
   weatherLuck,
+  weatherSky,
   xpWeather,
   type DungeonMap,
   type DungeonMapView,
@@ -65,6 +66,7 @@ import {
   buildRoomInput,
   dungeonBossEnrage,
   liveFightRules,
+  skyRunFields,
   type DungeonRoomResult,
   type DungeonRunInput,
   type EventNames,
@@ -101,7 +103,8 @@ import {
   applyHome,
   applyMove,
   homeOutcome,
-  slotOf,
+  seatedRow,
+  seatsOf,
   type ActOutcome,
   type PathEnv,
   type PlayedFight,
@@ -1074,7 +1077,15 @@ export class Dungeon {
     // The day's weather is fixed now and goes into the stored state: the sheet of every creature, the
     // luck and the foes' attacks. A replay never reads the weather.
     const wday = this.deps.weather?.at(now) ?? null;
-    const row: FightSlot[] = standing.map((c) => slotOf(c, wday));
+    // One row, left to right: the position lines of the gear see the neighbours and the ends of that
+    // line, then the day's weather goes on every sheet. The seats keep what it takes to place the row
+    // again after a camp swap or reorder.
+    const seats = seatsOf(standing);
+    const row: FightSlot[] = seatedRow(
+      standing.map((c) => c.id),
+      seats,
+      wday,
+    );
 
     // --- The treats cost Bait, paid when the run starts and with it: short Bait takes nothing ---
     const id = crypto.randomUUID();
@@ -1128,6 +1139,8 @@ export class Dungeon {
       luck: { ...weatherLuck(wday, RULES.combat.luck) },
       ...(Object.keys(rest).length === 0 ? {} : { rest }),
       ...(weatherBossAttacks(wday, 1) > 1 ? { bossAttacks: weatherBossAttacks(wday, 1) } : {}),
+      // Kind Rain, Morning Haze and Bramble Season (stored in the run input).
+      ...skyRunFields(weatherSky(wday)),
       // The combat rules, the boss room's enrage and the depth (a landmark gives the floor boss its
       // signature), stored with the input so a replay is exact.
       rules: liveFightRules(),
@@ -1148,6 +1161,7 @@ export class Dungeon {
       map,
       input,
       weather: wday,
+      seats,
       everyone: row.map((s) => s.id),
       treats: row.filter((s) => treated.has(s.id)).map((s) => s.id),
       gearWorn: worn,

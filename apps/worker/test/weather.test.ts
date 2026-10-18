@@ -390,8 +390,8 @@ describe('the forecast', () => {
             id: 'fair-winds',
             name: 'Fair Winds',
             // Boss Rank 7: Boons x1.25, Omens x1.5.
-            fight: ["Every creature's first hit deals 12.5% more."],
-            trips: ['Trips take 12.5% less time.'],
+            fight: ["Every creature's first hit deals 12% more."],
+            trips: ['Trips take 12% less time.'],
           },
           omen: {
             id: 'heavy-rain',
@@ -490,11 +490,10 @@ describe('the dev tool', () => {
         expect(ok).toMatchObject({ ok: true });
         const tomorrow = readWeatherDay(ctx.sql, addDays(dayOf(ctx), 1));
         expect(tomorrow).toMatchObject({ boon: 'high-water', omen: 'static-sky', wild: false });
-        // Planned ones, unknown ones and extra keys are refused, and nothing changes.
+        // Unknown ones and extra keys are refused, and nothing changes.
         for (const body of [
-          { day: 'today', boon: 'kind-rain', omen: null },
-          { day: 'today', boon: 'fair-winds', omen: 'morning-haze' },
           { day: 'today', boon: 'nope', omen: null },
+          { day: 'today', boon: 'fair-winds', omen: 'nope' },
           { day: 'yesterday', boon: 'fair-winds', omen: null },
           { day: 'today', boon: 'fair-winds', omen: null, extra: 1 },
           { day: 'today', boon: 'fair-winds' },
