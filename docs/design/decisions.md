@@ -1647,6 +1647,7 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 - The workbench gets a HowToPlay entry (pick a section).
 
 <<<<<<< HEAD
+
 ## 2026-10-18: The daily dungeon becomes a path on a daily map (camps, keepsakes and a pack)
 
 - **Misa (2026-10-17):** a Slay the Spire style loop in the existing room format: players push on and make choices on where to go, with push-your-luck mechanics, built on top of the gear and creature revamp. Design: `dungeon-paths.md`; research summary at its end (Slay the Spire's visible map and optional elites, Hades' rewards shown on the door, Loop Hero's camp retreat and partial loss, Quacks' safety net, daily seeds shared by everyone).
@@ -1658,7 +1659,8 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 - **Server review fixes:** a creature swapped in at the camp is loaded without gear already frozen into the run (otherwise moving an item from a row creature to a bench creature counted it twice); a creature that left the row cannot return; closing a late run never moves depth, streak or last day backwards; the prune also empties step answers and the state of finished runs.
 - **Client:** the pre-run card shows today's map (tap a room for its foe, trick, modifier and HP); during a run a strip shows the row's HP, the keepsakes and the pack "at risk"; a fight plays its one room on the existing stage; the camp card has the three choices, a free reorder and "Head home with your pack" (with one confirm). Results say how the run ended and what the pack kept; Watch again plays every room in its own row.
 - **Balance (B-019, `docs/balance/report-2026-10-18-dungeon-paths.md`):** the simulator walks the day's map with a simple policy (match foes the team beats, elites only when healthy, swap a knocked-out creature at the camp, head home when a depth beat the team before and someone is down). Runs now have 4 to 5 fights, so foe HP at depth 1 drops (`baseHpBp` 11 750 → 6 500) and the ladder steepens (`hpStepBp` 3 000 → 4 500); experience per fight 60 → 35 (a daily player's weekly dungeon experience stays about the same); an elite pays scrap and a keepsake but no Bait. Full run: first-week clear 89.4%, depth growth 1.83 a week, home rate 19.3%, 4.13 fights a run, dungeon Essence 4.1% of income. A full clear pays about Bait 3.8, Essence 1.06, scrap 2.3 (before: 3, 1, 2). Still failing: the week-8 gear share (22.8% against 20%; it was 21.7% before, and only dropping the dungeon's supply brings it under), and the raid got a few points easier (`curve-r6up-default` 72.7%); both go to the final balance pass agreed for the revamp.
-=======
+  \=======
+
 ## 2026-10-18: The trip result screen, and Teach goes to the Talent Book
 
 - **One trip result card** (`TripResult.tsx`, replacing `TripReveal`, `CatchList` and `DuplicateCard`):
@@ -1681,4 +1683,5 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 
 - **The talent a creature rolled sits in a box headed "Discovered talent"**, with a green New when no creature of its line holds it yet (a golden one is new unless a golden one is held). A new species' talent is new by definition.
 - **Teach puts the talent into the creature's Talent Book, never into a slot** (Misa). The player slots it later from the book for the usual `RULES.talents.bookSlotBait` (10 Bait). The server ignores a `slot` an old client still sends. Teach stays within the creature's own line, as before: each line has its own pool of 7 to 8 talents, so a talent can only ever come from a catch of that line, and teaching within the line does not shrink anyone's variety.
->>>>>>> origin/ccr-8ffccd88-e59k13
+
+> > > > > > > origin/ccr-8ffccd88-e59k13
