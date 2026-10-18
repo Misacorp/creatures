@@ -25,11 +25,11 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 
 **1.5 Beside.** The slot directly left or right of a creature.
 
-1.5.1 In the raid, beside stops at the edge of a row (`zoneNeighbours`). The last Front slot is not beside the first Middle slot (decision 2026-10-14, "Raid neighbours stop at row edges").
+1.5.1 In the raid, beside stops at the edge of a row (`zoneNeighbours`). The last Front slot is not beside the first Middle slot (decision 2026-10-14, "Raid neighbours stop at row edges"). A raid fight stands on the board: two creatures are beside each other only if their board slots are exactly one apart, so an empty board slot between them breaks it (decision 2026-10-18, board positions).
 
 1.5.2 In the dungeon, beside is the plain line (`neighbours`): the left and the right slot, whatever the rows. (Every slot is its own row there, so a row edge would leave nothing beside anyone.)
 
-**1.6 Lane.** A slot position inside a row, read across all three rows: the creature at position 2 of Front, of Middle and of Back are in the same lane. With a line of 3N slots, a lane has three creatures. In the dungeon there is one lane.
+**1.6 Lane.** A slot position inside a row, read across all three rows: the creature at position 2 of Front, of Middle and of Back are in the same lane. With a line of 3N slots, a lane has three creatures. The position is the board's: an empty board slot keeps its column, so creatures after a gap do not shift left (`laneOfIndex`). In the dungeon there is one lane.
 
 **1.7 Living, knocked out.** A creature is living while its HP is above 0. At 0 it is knocked out (the game never says "dead"). A knocked-out creature stays out for the rest of the fight. It does not act, is not a target of any boss rule, gives no buff and receives no buff or healing. Nothing revives it. (In the dungeon the run carries HP from room to room, so it stays out for the run.)
 
@@ -307,7 +307,7 @@ _Example._ Attack order A (strongest), G (a Guard), C, D. The strike aimed at A 
 
 6.10.1 An empty or knocked-out slot is passed through: it takes nothing and the next row keeps its own falloff. **A living Guard in the lane takes its hit (with armor) and stops the lance**: nobody behind it is hit.
 
-6.10.2 With a line that is not a multiple of three, Middle is the widest row, and a lane past the end of a shorter row has nobody there.
+6.10.2 With a line that is not a multiple of three, Middle is the widest row, and a lane past the end of a shorter row has nobody there. The same goes for an empty board slot (a gap): the lance passes through it and hits the creature further back in that column.
 
 **6.11 Pincer (`pincer`: Briar Pincer, Briar Cage).** (Silence, 6.4, picks its ends the same way.) An area hit on the first and the last living creature of each row (`scope` `rows`, Front first) or of the whole line (`scope` `row`, used by Briar Cage in the dungeon). A group with one creature is hit once. A group with nobody is skipped.
 

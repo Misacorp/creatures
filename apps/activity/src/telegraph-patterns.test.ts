@@ -228,14 +228,14 @@ describe('the forecast of the attack patterns in the raid', () => {
     expect(hurt?.ends).toEqual(['b', 'd', 'f']);
   });
 
-  it("reads the rows from the fight's zone sizes, and says the silence is the whole line", () => {
-    // Six creatures cut 1/4/1 by the board: the pincer's row ends are a, b, e, f (the middle is b to e).
+  it("reads the rows from the fight's board positions, and says the silence is the whole line", () => {
+    // Six creatures on a board of 9 (rows of 3), at slots 2, 3, 4, 5, 6, 8: a stands alone in Front, b to d
+    // in the Middle, e and f in the Back, so the pincer's row ends are a, b, d, e, f.
     const f = forecastNextRound('thornmother', 5, 12, row, [], {}, 'zones', [], {
-      front: 1,
-      middle: 4,
-      back: 1,
+      length: 9,
+      slots: [2, 3, 4, 5, 6, 8],
     });
-    expect(f?.ends).toEqual(['a', 'b', 'e', 'f']);
+    expect(f?.ends).toEqual(['a', 'b', 'd', 'e', 'f']);
     // Bramble Bind marks the two ends of the whole line, and the words say so.
     expect(f?.lines[1]).toBe('Bramble Bind silences both ends of each row');
     const byFormula = forecastNextRound('thornmother', 5, 12, row, [], {});

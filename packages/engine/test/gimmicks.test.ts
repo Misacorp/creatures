@@ -90,8 +90,9 @@ describe('silence_ends (Bramble Bind)', () => {
 
   it('scope rows silences the ends of each row of the board, not of the line', () => {
     const row = Array.from({ length: 13 }, (_, i) => slot(`s${String(i)}`, { atk: 1 }));
-    const board = { front: 5, middle: 4, back: 4 };
-    const withShape = run(row, { boss: bind('rows'), zones: board });
+    // A board of 15 (rows of 5) with a gap at the end of the middle row and of the back row.
+    const board = { length: 15, slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13] };
+    const withShape = run(row, { boss: bind('rows'), board });
     expect(silencedIn(withShape)).toEqual(['s0', 's4', 's5', 's8', 's9', 's12']);
     // Without a shape the rows are the length formula's 4 / 5 / 4.
     expect(silencedIn(run(row, { boss: bind('rows') }))).toEqual([
@@ -103,24 +104,24 @@ describe('silence_ends (Bramble Bind)', () => {
       's12',
     ]);
     // The whole line keeps its two ends, whatever the shape.
-    expect(silencedIn(run(row, { boss: bind('row'), zones: board }))).toEqual(['s0', 's12']);
+    expect(silencedIn(run(row, { boss: bind('row'), board }))).toEqual(['s0', 's12']);
   });
 
   it('scope rows silences a row with one creature standing once, and skips an empty row', () => {
     const row = ['a', 'b', 'c'].map((id) => slot(id, { atk: 1 }));
     // Front 1, middle 1, back 1: each is the end of its own row, silenced once.
     expect(
-      silencedIn(run(row, { boss: bind('rows'), zones: { front: 1, middle: 1, back: 1 } })),
+      silencedIn(run(row, { boss: bind('rows'), board: { length: 3, slots: [0, 1, 2] } })),
     ).toEqual(['a', 'b', 'c']);
     // An empty middle row is skipped.
     expect(
-      silencedIn(run(row, { boss: bind('rows'), zones: { front: 2, middle: 0, back: 1 } })),
+      silencedIn(run(row, { boss: bind('rows'), board: { length: 9, slots: [0, 1, 6] } })),
     ).toEqual(['a', 'b', 'c']);
     // A fallen row end passes the silence to the next one standing in its row.
     const hurt = [slot('a', { hp: 1 }), slot('b'), slot('c'), slot('d')];
     expect(
       silencedIn(
-        run(hurt, { bossAtk: 10, boss: bind('rows'), zones: { front: 2, middle: 0, back: 2 } }),
+        run(hurt, { bossAtk: 10, boss: bind('rows'), board: { length: 9, slots: [0, 1, 6, 7] } }),
       ),
     ).toEqual(['b', 'c', 'd']);
   });

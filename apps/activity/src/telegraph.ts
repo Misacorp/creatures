@@ -22,7 +22,7 @@ import {
   type PatternTarget,
   type RowShape,
   type Zone,
-  type ZoneSizes,
+  type FightBoard,
 } from '@creatures/engine';
 import type { BossStrike } from './stage';
 
@@ -241,7 +241,7 @@ export const MAX_FORECAST_CLAUSES = 2;
 interface Look {
   wording: Wording;
   row: readonly string[];
-  /** The row's shape: the fight's own zone sizes, else its length. */
+  /** The row's shape: the fight's own board positions, else its length. */
   shape: RowShape;
   /** The creatures still up, left to right. */
   living: readonly string[];
@@ -423,8 +423,8 @@ function priority(w: BossWarning): number {
  * the strongest depends on the creatures' Attack, which the stage does not know, so it is worded
  * generically. At most two clauses are said (`MAX_FORECAST_CLAUSES`): a charge first, then patterns,
  * then the older tricks. `addedGimmicks` are what a dungeon room's modifier gives its foe (see
- * `bossOrFoe`). `zones` is the fight's own zone sizes (absent: the length formula), so a zone is the
- * row the board shows.
+ * `bossOrFoe`). `board` is where the fight's creatures stand on the board (absent: the dense row), so a zone is
+ * the row the board shows.
  */
 export function forecastNextRound(
   bossId: string,
@@ -435,7 +435,7 @@ export function forecastNextRound(
   names: Pick<EventNames, 'gimmicks'>,
   wording: Wording = 'zones',
   addedGimmicks: readonly Gimmick[] = [],
-  zones?: ZoneSizes,
+  board?: FightBoard,
 ): Forecast | null {
   if (round < 1 || (rounds !== null && round >= rounds)) return null;
   const boss = bossOrFoe(bossId, addedGimmicks, names.gimmicks);
@@ -448,7 +448,7 @@ export function forecastNextRound(
   const look: Look = {
     wording,
     row,
-    shape: zones ?? row.length,
+    shape: board ?? row.length,
     living: row.filter(up),
     up,
     zones: [],

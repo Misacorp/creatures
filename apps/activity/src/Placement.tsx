@@ -5,7 +5,7 @@ import { creatureInfoOf } from './creature-info';
 import { creatureName } from './game';
 import { GlossaryTag } from './Glossary';
 import { usePopoverHost } from './PopoverHost';
-import { resolveDrop, slotStatuses } from './raid-dnd';
+import { resolveDrop, roomHint, slotStatuses } from './raid-dnd';
 import type { RaidView } from './raid-api';
 import {
   ROW_NAMES,
@@ -131,6 +131,10 @@ export function Placement(props: Props) {
     if (dragging !== null) popovers?.close();
   }, [dragging === null]);
 
+  // Over an auto tile of someone else: it will make room (it moves to a free place).
+  const overSlot = drag?.over?.slot;
+  const overHint =
+    dragging === null || overSlot === undefined ? null : roomHint(ctx, dragging, overSlot);
   const statuses = dragging === null ? null : slotStatuses(ctx, dragging, nameOf(dragging));
   const dragged =
     dragging === null
@@ -308,9 +312,9 @@ export function Placement(props: Props) {
           noneRow={noneRow}
           onTap={tapSlot}
         />
-        {hint !== null && (
+        {(overHint ?? hint) !== null && (
           <p class="muted" role="status">
-            {hint}
+            {overHint ?? hint}
           </p>
         )}
         {notes.away.map((line) => (

@@ -150,6 +150,23 @@ export function canSwapWith(carried: Tile, occupant: Tile): boolean {
     : occupant.movable && occupant.ownerName === carried.ownerName;
 }
 
+/**
+ * Whether the carried creature takes the place of the creature on `occupant` and sends it to a free
+ * place: true for a creature that joins by itself (an auto tile) that is not one the carried one may
+ * trade with. A placed creature never makes room. The server finds the free place and decides again.
+ */
+export function makesRoom(carried: Tile | undefined, occupant: Tile): boolean {
+  return (
+    occupant.auto && (carried === undefined ? !occupant.mine : !canSwapWith(carried, occupant))
+  );
+}
+
+/** Whether the carried creature (undefined: one from the picker, always yours) may be dropped on `occupant`. */
+export function canDropOn(carried: Tile | undefined, occupant: Tile): boolean {
+  if (occupant.auto) return true;
+  return carried === undefined ? occupant.mine : canSwapWith(carried, occupant);
+}
+
 /** Whether a tile can be picked up and dragged: yours, or one of an away teammate's you may move. */
 export const isDraggable = (tile: Tile): boolean => tile.mine || tile.movable;
 
@@ -322,7 +339,7 @@ export function boardCues(args: {
       const there = bySlot.get(slot)?.creature ?? null;
       if (there === null) return true;
       // A creature from the tray is yours; a carried tile trades with the right owner's tiles only.
-      return carriedTile === undefined ? there.mine : canSwapWith(carriedTile, there);
+      return canDropOn(carriedTile, there);
     },
   });
   const affectRow = boardAffectRow(scene.keys, known);

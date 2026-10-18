@@ -132,22 +132,15 @@ describe('the forecast one round ahead', () => {
       zones: [],
       ends: ['a', 'b', 'c', 'd', 'e', 'f'],
     });
-    // The board's rows 1 / 4 / 1: a, b and e, f.
+    // On a board of 9 at slots 2 to 6 and 8: a alone in Front, b to d in the Middle, e and f in the Back.
+    const board = { length: 9, slots: [2, 3, 4, 5, 6, 8] };
     expect(
-      forecastNextRound('thornmother', 1, 12, row, [], names, 'zones', [], {
-        front: 1,
-        middle: 4,
-        back: 1,
-      })?.ends,
-    ).toEqual(['a', 'b', 'e', 'f']);
+      forecastNextRound('thornmother', 1, 12, row, [], names, 'zones', [], board)?.ends,
+    ).toEqual(['a', 'b', 'd', 'e', 'f']);
     // A fallen end creature passes the silence to the next one standing in its row.
     expect(
-      forecastNextRound('thornmother', 1, 12, row, ['b'], names, 'zones', [], {
-        front: 1,
-        middle: 4,
-        back: 1,
-      })?.ends,
-    ).toEqual(['a', 'c', 'e', 'f']);
+      forecastNextRound('thornmother', 1, 12, row, ['b'], names, 'zones', [], board)?.ends,
+    ).toEqual(['a', 'c', 'd', 'e', 'f']);
     // A row with one creature standing is marked once.
     expect(forecastNextRound('thornmother', 1, 12, ['solo'], [], names)?.ends).toEqual(['solo']);
     // Round 3 has only the Briar Pincer (the bind is on even rounds): the ends of every row.

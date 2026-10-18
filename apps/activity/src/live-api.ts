@@ -11,14 +11,14 @@
  * fight yet, and `live` or `done` have the whole fight.
  */
 import type { Element } from '@creatures/game';
-import type { EventNames, FightEvent, Zone, ZoneSizes } from '@creatures/engine';
+import type { EventNames, FightEvent, Zone, FightBoard } from '@creatures/engine';
 import { apiFetch, jsonRequest } from './api';
 import {
   isEvent,
   isEventNames,
   isFestivalGrant,
   isGuardRules,
-  isOptZones,
+  isOptBoard,
   isRankChange,
   isReplayRow,
   type FestivalGrant,
@@ -106,8 +106,8 @@ interface LiveShared {
   row: ReplayRowEntry[];
   /** The Guard numbers the fight is played with; null when unknown (the Guard of the old rules). */
   rules: FightGuardRules | null;
-  /** How many creatures of the row are in each zone (the board's rows); absent or null: the length formula. */
-  zones: ZoneSizes | null;
+  /** Where the row stands on the board (its length and each creature's slot); null: the dense row. */
+  board: FightBoard | null;
   abilities: LiveAbility[];
   events: FightEvent[];
   /** Display names of the players who are watching. */
@@ -225,8 +225,8 @@ function hasSharedShape(data: Record<string, unknown>): boolean {
     isLiveBoss(data['boss']) &&
     isArrayOf(data['row'], isReplayRow) &&
     (data['rules'] === null || isGuardRules(data['rules'])) &&
-    data['zones'] !== undefined &&
-    isOptZones(data['zones']) &&
+    data['board'] !== undefined &&
+    isOptBoard(data['board']) &&
     (data['names'] === null || isEventNames(data['names'])) &&
     isArrayOf(data['abilities'], isLiveAbility) &&
     isArrayOf(data['events'], isEvent) &&

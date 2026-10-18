@@ -36,7 +36,7 @@ import {
   autoPlace,
   type AbilityChoice,
   compactRow,
-  sparseZones,
+  sparseBoard,
   fillWithGuests,
   liveFightRules,
   makeSlot,
@@ -139,13 +139,15 @@ export function guardRulesOf(
 }
 
 /**
- * The board's zone sizes a stored fight was played with, as a spread for a view: empty for a fight
- * stored before the input carried them (the client then uses the length formula).
+ * The board positions a stored fight was played with, as a spread for a view: empty for a fight
+ * stored before the input carried them (the client then uses the dense row).
  */
-export function zonesOf(input: FightInput): {
-  zones?: { front: number; middle: number; back: number };
+export function boardOf(input: FightInput): {
+  board?: { length: number; slots: number[] };
 } {
-  return input.zones === undefined ? {} : { zones: { ...input.zones } };
+  return input.board === undefined
+    ? {}
+    : { board: { length: input.board.length, slots: [...input.board.slots] } };
 }
 
 /** 128 random bits as 32 lowercase hex characters. */
@@ -411,7 +413,7 @@ export function buildPhaseInput(
   // The weather of the day the stage is scheduled in (Boon and Omen): for every creature in the row, guests
   // included, as numbers on its sheet. The stored input keeps them, so a replay never reads the weather.
   const day = stageWeather(sql, week.weekId, phase);
-  const zones = sparseZones(placed);
+  const fightBoard = sparseBoard(placed);
   const row = compactRow(placed).map((slot): FightSlot => {
     const mods = mergeMods(slot.mods, weatherSheet(day, slot));
     return mods === undefined ? slot : { ...slot, mods };
@@ -464,8 +466,8 @@ export function buildPhaseInput(
     bossHpPool: { max: hpMax, current: hpCurrent },
     adaptation,
     row,
-    // The board's own row sizes, so the fight's rows are the rows the board shows (empty slots included).
-    zones,
+    // Each creature's board slot, so the fight's rows, lanes and neighbours are the board's (gaps included).
+    board: fightBoard,
     players: aliases,
     // Each member's basic pick plus the abilities of their (frozen) team's unlocked creatures.
     finaleAbilities: abilityIds.flatMap((abilityId, i) =>

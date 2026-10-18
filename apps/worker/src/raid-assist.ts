@@ -45,7 +45,7 @@ type OwnRow = { slot: number; creature_id: string; placed_by: string | null };
 /**
  * `callerId` moves or swaps the creature `creatureId` of another party member into `slot`. The
  * creature's owner is read from the creature itself, never from the request. Throws a `GameError`:
- * `not_in_party`, `not_away`, `invalid_slot`, `slot_taken`, `not_movable` (the owner placed it
+ * `not_in_party`, `not_away`, `invalid_slot`, `slot_taken` (another member's placed creature; their auto creature makes room), `not_movable` (the owner placed it
  * themselves) or `board_full`. Rejections change nothing (the caller's transaction rolls back).
  */
 export function placeForTeammate(
@@ -70,11 +70,14 @@ export function placeForTeammate(
   const target = board.cells[slot];
   // Nothing to do: the creature already stands there (no pin either).
   if (target?.slot?.id === creatureId) return;
-  // The slot belongs to someone else's creature, or to a creature the owner placed themselves.
+  // Someone else's auto creature makes room (it reflows to a free slot); a creature another member
+  // placed stays put. A creature the owner placed themselves is theirs to move, not ours.
   const there = target?.slot ?? null;
   if (there !== null && there.ownerId !== null) {
-    if (there.ownerId !== ownerAlias) throw new GameError(409, 'slot_taken');
-    if (target?.origin === 'placed' && target.placedBy === null) {
+    if (there.ownerId !== ownerAlias && target?.origin !== 'auto') {
+      throw new GameError(409, 'slot_taken');
+    }
+    if (there.ownerId === ownerAlias && target?.origin === 'placed' && target.placedBy === null) {
       throw new GameError(409, 'not_movable');
     }
   }

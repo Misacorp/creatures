@@ -117,6 +117,112 @@ describe('the board view and the fight use one board', () => {
   });
 });
 
+describe('auto tiles are soft', () => {
+  /** Each member brings at most three and the board has three slots per member. */
+  const reflowed = (ctx: CoreContext) => {
+    const members = partyMembers(ctx.sql, W02.id, 1);
+    const board = buildPartyBoard(ctx.sql, W02.id, 1, members);
+    const week = ctx.core.raid.week(W02.id);
+    if (week === null) throw new Error('no week');
+    const built = buildPhaseInput(ctx.sql, week, 1, 'finale');
+    if (built === null) throw new Error('no input');
+    return { board, built };
+  };
+
+  it('a player drops their own creature on another player’s auto tile; the auto one reflows', async () => {
+    await runRaid((ctx) => {
+      const a = seedPlayer(ctx, 1, { level: 12 });
+      const b = seedPlayer(ctx, 2, { level: 9 });
+      seedPlayer(ctx, 3, { level: 7 });
+      ctx.core.raid.currentWeek(HELSINKI);
+      const before = buildPartyBoard(ctx.sql, W02.id, 1, partyMembers(ctx.sql, W02.id, 1));
+      const bAlias = before.aliases[1] as string;
+      const at = before.cells.findIndex((c) => c.origin === 'auto' && c.slot?.ownerId === bAlias);
+      expect(at).toBeGreaterThanOrEqual(0);
+      const displaced = before.cells[at]?.slot?.id as string;
+      const mine = a.creatureIds[0] as string;
+      expect(ctx.core.raid.place(a.id, HELSINKI, mine, at).ok).toBe(true);
+
+      const { board, built } = reflowed(ctx);
+      expect(board.cells[at]?.slot?.id).toBe(mine);
+      expect(board.cells[at]?.origin).toBe('placed');
+      // Nobody is lost: the displaced creature stands in another slot, still auto.
+      const now = board.cells.findIndex((c) => c.slot?.id === displaced);
+      expect(now).toBeGreaterThanOrEqual(0);
+      expect(now).not.toBe(at);
+      expect(board.cells[now]?.origin).toBe('auto');
+      const ids = board.cells.flatMap((c) => (c.slot === null ? [] : [c.slot.id]));
+      expect(new Set(ids).size).toBe(ids.length);
+      for (const p of [a, b]) for (const id of p.creatureIds) expect(ids).toContain(id);
+      // The fight is the board: same creatures, and each at its board slot.
+      expect(built.input.row.map((s) => s.id)).toEqual(ids);
+      expect(built.input.board?.slots).toEqual(
+        board.cells.flatMap((c, i) => (c.slot === null ? [] : [i])),
+      );
+      expect(built.input.board?.length).toBe(board.cells.length);
+    });
+  });
+
+  it('always leaves a free slot: three members with three creatures each fill the board exactly', async () => {
+    await runRaid((ctx) => {
+      const a = seedPlayer(ctx, 1, { level: 12 });
+      seedPlayer(ctx, 2, { level: 9 });
+      seedPlayer(ctx, 3, { level: 7 });
+      ctx.core.raid.currentWeek(HELSINKI);
+      // Drop each of a's three creatures on the first slots that hold others' auto creatures.
+      for (const id of a.creatureIds) {
+        const board = buildPartyBoard(ctx.sql, W02.id, 1, partyMembers(ctx.sql, W02.id, 1));
+        const aAlias = board.aliases[0] as string;
+        const at = board.cells.findIndex((c) => c.origin === 'auto' && c.slot?.ownerId !== aAlias);
+        expect(ctx.core.raid.place(a.id, HELSINKI, id, at).ok).toBe(true);
+      }
+      const { board } = reflowed(ctx);
+      expect(board.cells).toHaveLength(9);
+      expect(board.cells.every((c) => c.slot !== null)).toBe(true);
+      expect(board.cells.filter((c) => c.origin === 'placed')).toHaveLength(3);
+      expect(board.cells.filter((c) => c.origin === 'auto')).toHaveLength(6);
+    });
+  });
+
+  it('a placed creature stays hard: another player gets slot_taken', async () => {
+    await runRaid((ctx) => {
+      const a = seedPlayer(ctx, 1);
+      const b = seedPlayer(ctx, 2);
+      seedPlayer(ctx, 3);
+      ctx.core.raid.currentWeek(HELSINKI);
+      expect(ctx.core.raid.place(a.id, HELSINKI, a.creatureIds[0] as string, 4).ok).toBe(true);
+      expect(ctx.core.raid.place(b.id, HELSINKI, b.creatureIds[0] as string, 4)).toMatchObject({
+        ok: false,
+        error: 'slot_taken',
+      });
+    });
+  });
+
+  it('a teammate moves an away player’s creature onto another member’s auto tile', async () => {
+    await runRaid((ctx) => {
+      const me = seedPlayer(ctx, 1, { level: 10 });
+      const gone = seedPlayer(ctx, 2, { level: 10, lastSeenAt: BEFORE });
+      seedPlayer(ctx, 3, { level: 8 });
+      ctx.core.raid.currentWeek(HELSINKI);
+      const before = buildPartyBoard(ctx.sql, W02.id, 1, partyMembers(ctx.sql, W02.id, 1));
+      const meAlias = before.aliases[0] as string;
+      const at = before.cells.findIndex((c) => c.origin === 'auto' && c.slot?.ownerId === meAlias);
+      const displaced = before.cells[at]?.slot?.id as string;
+      const moved = gone.creatureIds[0] as string;
+      expect(ctx.core.raid.place(me.id, HELSINKI, moved, at).ok).toBe(true);
+      const { board, built } = reflowed(ctx);
+      expect(board.cells[at]?.slot?.id).toBe(moved);
+      const now = board.cells.findIndex((c) => c.slot?.id === displaced);
+      expect(now).toBeGreaterThanOrEqual(0);
+      expect(now).not.toBe(at);
+      expect(board.cells.filter((c) => c.slot !== null)).toHaveLength(9);
+      expect(built.input.row.map((s) => s.id)).toEqual(
+        board.cells.flatMap((c) => (c.slot === null ? [] : [c.slot.id])),
+      );
+    });
+  });
+});
+
 describe('who is away', () => {
   it('is whoever has not been seen since the week began, at the exact boundary', async () => {
     await runRaid((ctx) => {
@@ -336,13 +442,16 @@ describe('a teammate moves and swaps an away player’s creatures', () => {
           ctx.core.raid.place(me.id, HELSINKI, gone.creatureIds[0] as string, slot),
         ).toMatchObject({ ok: false, error: 'invalid_slot' });
       }
-      // A slot that holds the caller's own creature is taken.
+      // A slot that holds the caller's own placed creature is taken (an auto tile would make room).
       const mineAt = slotOf(ctx, me.creatureIds[0] as string);
+      expect(ctx.core.raid.place(me.id, HELSINKI, me.creatureIds[0] as string, mineAt).ok).toBe(
+        true,
+      );
       expect(
         ctx.core.raid.place(me.id, HELSINKI, gone.creatureIds[0] as string, mineAt),
       ).toMatchObject({ ok: false, error: 'slot_taken' });
-      // Nothing changed, nothing was pinned.
-      expect(count(ctx.sql, 'raid_placements')).toBe(0);
+      // Nothing changed beyond the caller's own placement, nothing was pinned.
+      expect(count(ctx.sql, 'raid_placements')).toBe(1);
     });
   });
 

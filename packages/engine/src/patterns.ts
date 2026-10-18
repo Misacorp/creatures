@@ -4,10 +4,9 @@ import {
   ZONES,
   nearestLivingZone,
   zoneIndices,
-  zoneOfIndex,
-  zoneSizes,
+  laneCount,
+  laneOfIndex,
   type RowShape,
-  type ZoneSizes,
 } from './zones';
 
 /**
@@ -86,8 +85,8 @@ export interface PatternContext {
   creatures: readonly PatternCreature[];
   /** The row's length (the creatures array's length). */
   n: number;
-  /** The board's zone sizes when the fight carries them (absent: the length formula on `n`). */
-  zones?: ZoneSizes;
+  /** Where the creatures stand on the board (absent: the dense row of `n`). */
+  shape?: RowShape;
   /** How many times the gimmick has fired up to this round (`firingIndex`); a sweep's walk. */
   firing: number;
   /** This gimmick's dice window (`diceWindow`). */
@@ -106,7 +105,7 @@ export interface PatternContext {
 }
 
 function shapeOf(ctx: PatternContext): RowShape {
-  return ctx.zones ?? ctx.n;
+  return ctx.shape ?? ctx.n;
 }
 
 function living(ctx: PatternContext): PatternCreature[] {
@@ -294,11 +293,11 @@ export function planSlam(
 }
 
 /**
- * Lance geometry. The row has `n` slots split into Front, Middle and Back by `zoneSizes`; with
- * `n = 3 x players` the three rows are equal, `n / 3` wide, and a lane is a slot position `l`
- * (0-based, left to right) read in every row: slot `zoneIndices(zone)[l]` of Front, of Middle and
- * of Back. For other lengths the middle row is the widest, so a lane position past the end of a
- * shorter row has nobody there and the lance passes through it.
+ * Lance geometry. The board's row is split into Front, Middle and Back by `zoneSizes`; with
+ * `3 x players` slots the three rows are equal, and a lane is a board position `l` (0-based, left
+ * to right) read in every row: board slot `l` of Front, of Middle and of Back (`laneOfIndex`). An
+ * empty board slot (a gap) or a position past the end of a shorter row has nobody there and the
+ * lance passes through it.
  *
  * The lane: `strongest` is the position of the highest-Attack living creature in its row; `random`
  * is one die over the lanes that have a living creature in some row (so a lance is never wasted on
@@ -312,13 +311,12 @@ export function planLance(
   ctx: PatternContext,
   spec: { lane: 'random' | 'strongest'; power: number; falloffBp: number },
 ): PatternPlan {
-  const rowsIdx = ZONES.map((z) => zoneIndices(z, shapeOf(ctx)));
-  const width = Math.max(...rowsIdx.map((r) => r.length));
-  const standingAt = (zoneRow: number, lane: number): PatternCreature | undefined => {
-    const idx = rowsIdx[zoneRow]?.[lane];
-    const c = idx === undefined ? undefined : ctx.creatures[idx];
-    return c?.alive === true ? c : undefined;
-  };
+  const shape = shapeOf(ctx);
+  const width = laneCount(shape);
+  const standingAt = (zoneRow: number, lane: number): PatternCreature | undefined =>
+    zoneIndices(ZONES[zoneRow] as Zone, shape)
+      .map((i) => ctx.creatures[i] as PatternCreature)
+      .find((c) => c.alive && laneOfIndex(c.idx, shape) === lane);
   const lanes: number[] = [];
   for (let l = 0; l < width; l++) {
     if (ZONES.some((_, r) => standingAt(r, l) !== undefined)) lanes.push(l);
@@ -326,10 +324,7 @@ export function planLance(
   let lane: number | undefined;
   if (spec.lane === 'strongest') {
     const top = byStrength(ctx.creatures)[0];
-    if (top !== undefined) {
-      const row = ZONES.indexOf(zoneOfIndex(top.idx, shapeOf(ctx)));
-      lane = rowsIdx[row]?.indexOf(top.idx);
-    }
+    if (top !== undefined) lane = laneOfIndex(top.idx, shape);
   } else {
     lane = pickWith(lanes, ctx.dice[0] ?? 0);
   }
@@ -411,10 +406,4 @@ export function planPattern(spec: PatternSpec, ctx: PatternContext): PatternPlan
     case 'pincer':
       return planPincer(ctx, spec);
   }
-}
-
-/** The widest row of a row of `length` slots (a lance's lane count). */
-export function laneCount(shape: RowShape): number {
-  const s = zoneSizes(shape);
-  return Math.max(s.front, s.middle, s.back);
 }

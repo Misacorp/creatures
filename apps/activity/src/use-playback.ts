@@ -1,4 +1,4 @@
-import type { FightEvent, ZoneSizes } from '@creatures/engine';
+import type { FightEvent, FightBoard } from '@creatures/engine';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { usePrefersReducedMotion } from './hooks';
 import { beatEnds, indexAfterBeat, type Speed } from './replay';
@@ -19,7 +19,7 @@ interface PlaybackArgs {
   /** The row's creature ids, left to right. */
   rowIds: readonly string[];
   /** The fight's own zone sizes; absent: the length formula. */
-  zones?: ZoneSizes;
+  board?: FightBoard;
   bossId: string;
   /** The fight's round LIMIT (not its real length), for the "Round N / M" overlay; null: none. */
   rounds: number | null;
@@ -55,14 +55,14 @@ export interface Playback {
  * time and overlap the next steps. With reduced motion the newest step's effects are shown still.
  */
 export function usePlayback(args: PlaybackArgs): Playback {
-  const { events, rowIds, zones, bossId, rounds, introMs, speed } = args;
+  const { events, rowIds, board, bossId, rounds, introMs, speed } = args;
   const ends = beatEnds(events);
   const total = ends.length;
   const [pos, setPos] = useState<Position>({ beat: 0, prev: 0, seq: 0 });
   const [playing, setPlaying] = useState(args.autoplay === true);
   // The same pacing as the live finale (the engine's); 2x halves all of it.
   const beats = useMemo(
-    () => buildBeats(events, 0, rowIds, bossId, { introMs, speed }, zones),
+    () => buildBeats(events, 0, rowIds, bossId, { introMs, speed }, board),
     [events, speed],
   );
   const [intro, setIntro] = useState<IntroView | null>(null);
@@ -142,13 +142,13 @@ export function usePlayback(args: PlaybackArgs): Playback {
       return;
     }
     if (!reduced) {
-      trail.push(cuesForEvents(events, anim.from, anim.to, rowIds, bossId, zones), speed);
+      trail.push(cuesForEvents(events, anim.from, anim.to, rowIds, bossId, board), speed);
     }
   }, [pos.seq]);
   const fx = reduced
     ? anim === null
       ? []
-      : staticFx(cuesForEvents(events, anim.from, anim.to, rowIds, bossId, zones))
+      : staticFx(cuesForEvents(events, anim.from, anim.to, rowIds, bossId, board))
     : trail.items;
 
   return { pos, total, index, finished, playing, setPlaying, move, anim, fx, intro };

@@ -3,7 +3,7 @@
  * (`apps/worker/src/raid-view.ts`). Everything here is display data; the server decides every
  * outcome, and the client only sends intents (team, placement).
  */
-import type { EventNames, FightEvent, Zone, ZoneSizes } from '@creatures/engine';
+import type { EventNames, FightEvent, Zone, FightBoard } from '@creatures/engine';
 import { apiFetch, jsonRequest } from './api';
 import {
   isArrayOf,
@@ -273,8 +273,8 @@ export interface ReplayView {
   bossHpEnd: number;
   /** The Guard numbers the fight was played with; null (or absent) for a fight stored without rules. */
   rules?: FightGuardRules | null;
-  /** How many creatures of the row are in each zone (the board's rows); absent: the length formula. */
-  zones?: ZoneSizes | null;
+  /** Where the row stood on the board (its length and each creature's slot); absent: the dense row. */
+  board?: FightBoard | null;
   /** The caller's opaque owner key in this fight (see `ReplayRowEntry.owner`), or null if not in it. */
   you: string | null;
   row: ReplayRowEntry[];
@@ -592,15 +592,20 @@ export const isGuardRules = (value: unknown): value is FightGuardRules =>
 export const isOptGuardRules = (value: unknown): boolean =>
   value === undefined || value === null || isGuardRules(value);
 
-/** Absent, null (a fight stored before zone sizes), or three counts. */
-export const isOptZones = (value: unknown): boolean =>
+/** Absent, null (a fight stored before board positions), or a length and strictly increasing slots below it. */
+export const isOptBoard = (value: unknown): boolean =>
   value === undefined ||
   value === null ||
   (isRecord(value) &&
-    Object.keys(value).every((k) => k === 'front' || k === 'middle' || k === 'back') &&
-    isCount(value['front']) &&
-    isCount(value['middle']) &&
-    isCount(value['back']));
+    Object.keys(value).every((k) => k === 'length' || k === 'slots') &&
+    isCount(value['length']) &&
+    Array.isArray(value['slots']) &&
+    value['slots'].every(
+      (slot, i, all) =>
+        isCount(slot) &&
+        slot < (value['length'] as number) &&
+        (i === 0 || slot > (all[i - 1] as number)),
+    ));
 
 export const isEvent = (value: unknown): value is FightEvent =>
   isRecord(value) && isStr(value['t']) && EVENT_TYPES.has(value['t']) && isInt(value['round']);
@@ -649,7 +654,7 @@ export function parseReplayView(data: unknown): ReplayView {
     !isInt(data['bossHpStart']) ||
     !isInt(data['bossHpEnd']) ||
     !isOptGuardRules(data['rules']) ||
-    !isOptZones(data['zones']) ||
+    !isOptBoard(data['board']) ||
     !isNullableStr(data['you']) ||
     !isArrayOf(data['row'], isReplayRow) ||
     !isArrayOf(data['events'], isEvent) ||

@@ -10,72 +10,122 @@ export interface ZoneSizes {
 }
 
 /**
- * The shape of a row: a plain length (the zones are the floor(length / 3) formula) or explicit zone
- * sizes (a raid fight carries the board's own row sizes, so the fight's rows are the board's rows).
+ * Where a fight's creatures stand on the board: the board's full row length and the board slot of
+ * each creature of the row (`slots[i]` is the slot of `row[i]`; strictly increasing, each below
+ * `length`). Zones, lanes and "beside" all come from these slots, so a gap in the board (an empty
+ * slot) stays a gap in the fight.
  */
-export type RowShape = number | ZoneSizes;
-
-function isCount(n: unknown): n is number {
-  return typeof n === 'number' && Number.isSafeInteger(n) && n >= 0;
+export interface FightBoard {
+  length: number;
+  slots: readonly number[];
 }
 
-/** Throws a RangeError unless `sizes` are three integers >= 0. */
-export function checkZoneSizes(sizes: ZoneSizes): ZoneSizes {
-  if (!isCount(sizes.front) || !isCount(sizes.middle) || !isCount(sizes.back)) {
-    throw new RangeError('zone sizes must be integers >= 0');
-  }
-  return sizes;
+/**
+ * The shape of a row: a plain length (a dense row, creature i in slot i, the zones the
+ * floor(length / 3) formula) or the board's own positions (`FightBoard`).
+ */
+export type RowShape = number | FightBoard;
+
+function checkLength(length: number): number {
+  if (!Number.isInteger(length) || length < 0) throw new RangeError('row length must be >= 0');
+  return length;
+}
+
+/** The board's full row length, empty slots included. */
+function lengthOf(shape: RowShape): number {
+  return checkLength(typeof shape === 'number' ? shape : shape.length);
+}
+
+/** How many creatures the shape places. */
+function countOf(shape: RowShape): number {
+  return typeof shape === 'number' ? checkLength(shape) : shape.slots.length;
+}
+
+/** The board slot of row index `index` (a plain length: the index itself). */
+function slotAt(shape: RowShape, index: number): number {
+  return typeof shape === 'number' ? index : (shape.slots[index] ?? Number.NaN);
 }
 
 /**
  * Splits a row of `length` slots into three contiguous zones. Front and back each get
  * floor(length / 3) slots; everything left goes to the middle. Rows of 1 or 2 slots are all middle.
- * Given explicit sizes, returns them.
+ * Given board positions, splits the board's full length.
  */
 export function zoneSizes(shape: RowShape): ZoneSizes {
-  if (typeof shape !== 'number') return shape;
-  if (!Number.isInteger(shape) || shape < 0) throw new RangeError('row length must be >= 0');
-  const side = Math.floor(shape / 3);
-  return { front: side, middle: shape - 2 * side, back: side };
+  const length = lengthOf(shape);
+  const side = Math.floor(length / 3);
+  return { front: side, middle: length - 2 * side, back: side };
 }
 
-/** The number of slots in a row of this shape. */
+/** The number of slots on the board row of this shape (empty ones included). */
 export function shapeLength(shape: RowShape): number {
-  if (typeof shape === 'number') return shape;
-  return shape.front + shape.middle + shape.back;
+  return lengthOf(shape);
 }
 
 /**
- * The shape a fight's row has: the input's `zones` when it carries them (checked: integers that add
- * up to the row), otherwise the length formula, so a stored input without them replays as it did.
+ * The shape a fight's row has: the input's `board` when it carries one (checked: one strictly
+ * increasing board slot below `length` per creature of the row), otherwise the dense row, so a
+ * stored input without it replays as it did.
  */
 export function fightRowShape(input: {
   row: readonly unknown[];
-  zones?: ZoneSizes | undefined;
-}): ZoneSizes {
+  board?: FightBoard | undefined;
+}): FightBoard {
   const n = input.row.length;
-  if (input.zones === undefined) return zoneSizes(n);
-  const z = checkZoneSizes(input.zones);
-  if (z.front + z.middle + z.back !== n) {
-    throw new RangeError('zones must add up to the length of the row');
+  if (input.board === undefined) {
+    return { length: n, slots: Array.from({ length: n }, (_, i) => i) };
   }
-  return { front: z.front, middle: z.middle, back: z.back };
+  const { length, slots } = input.board;
+  if (!Number.isSafeInteger(length) || length < n) {
+    throw new RangeError('board length must be an integer >= the number of creatures');
+  }
+  if (slots.length !== n) throw new RangeError('board needs one slot per creature of the row');
+  let previous = -1;
+  for (const slot of slots) {
+    if (!Number.isSafeInteger(slot) || slot <= previous || slot >= length) {
+      throw new RangeError('board slots must be strictly increasing integers below the length');
+    }
+    previous = slot;
+  }
+  return { length, slots: [...slots] };
 }
 
-export function zoneOfIndex(index: number, shape: RowShape): Zone {
-  const { front, middle } = zoneSizes(shape);
-  if (index < front) return 'front';
-  if (index < front + middle) return 'middle';
+/** The zone of a board slot on a board of `length` slots. */
+function zoneOfSlot(slot: number, length: number): Zone {
+  const { front, middle } = zoneSizes(length);
+  if (slot < front) return 'front';
+  if (slot < front + middle) return 'middle';
   return 'back';
 }
 
-/** Indices of the slots in a zone, left to right. */
+/** The zone of the creature at row index `index` (for a plain length: of that slot). */
+export function zoneOfIndex(index: number, shape: RowShape): Zone {
+  return zoneOfSlot(slotAt(shape, index), lengthOf(shape));
+}
+
+/** Row indices of the creatures in a zone, left to right. */
 export function zoneIndices(zone: Zone, shape: RowShape): number[] {
-  const sizes = zoneSizes(shape);
-  const length = shapeLength(sizes);
+  const length = lengthOf(shape);
   const out: number[] = [];
-  for (let i = 0; i < length; i++) if (zoneOfIndex(i, sizes) === zone) out.push(i);
+  for (let i = 0; i < countOf(shape); i++) {
+    if (zoneOfSlot(slotAt(shape, i), length) === zone) out.push(i);
+  }
   return out;
+}
+
+/** The lane of the creature at row index `index`: its board slot minus its zone's first slot. */
+export function laneOfIndex(index: number, shape: RowShape): number {
+  const length = lengthOf(shape);
+  const slot = slotAt(shape, index);
+  const { front, middle } = zoneSizes(length);
+  const zone = zoneOfSlot(slot, length);
+  return slot - (zone === 'front' ? 0 : zone === 'middle' ? front : front + middle);
+}
+
+/** How many lanes the board has: the width of its widest row. */
+export function laneCount(shape: RowShape): number {
+  const s = zoneSizes(shape);
+  return Math.max(s.front, s.middle, s.back);
 }
 
 /**
@@ -90,14 +140,21 @@ export function neighbours(index: number, length: number): number[] {
 }
 
 /**
- * The raid's "beside": the slots directly left and right of `index` that exist and are in the
- * same zone. Adjacency stops at zone edges, so the last Front slot is not beside the first Middle
- * slot, which is how the board draws it (one row per zone).
+ * The raid's "beside": the row indices of the creatures whose board slot is exactly one left or
+ * right of `index`'s and in the same zone. Adjacency stops at zone edges, so the last Front slot is
+ * not beside the first Middle slot, which is how the board draws it (one row per zone), and an empty
+ * board slot between two creatures breaks it.
  */
 export function zoneNeighbours(index: number, shape: RowShape): number[] {
-  const sizes = zoneSizes(shape);
-  const zone = zoneOfIndex(index, sizes);
-  return neighbours(index, shapeLength(sizes)).filter((i) => zoneOfIndex(i, sizes) === zone);
+  const length = lengthOf(shape);
+  const slot = slotAt(shape, index);
+  const zone = zoneOfSlot(slot, length);
+  const out: number[] = [];
+  for (let i = 0; i < countOf(shape); i++) {
+    const other = slotAt(shape, i);
+    if (Math.abs(other - slot) === 1 && zoneOfSlot(other, length) === zone) out.push(i);
+  }
+  return out;
 }
 
 /**

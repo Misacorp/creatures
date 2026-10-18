@@ -1654,6 +1654,7 @@ describe('the API contract with the client', () => {
 
   const SNAPSHOT_KEYS = [
     'abilities',
+    'board',
     'boss',
     'bossHp',
     'events',
@@ -1674,7 +1675,6 @@ describe('the API contract with the client', () => {
     'watching',
     'week',
     'you',
-    'zones',
   ];
   const BOSS_KEYS = ['element', 'hpMax', 'hpStart', 'id', 'name'];
   const ABILITY_KEYS = [

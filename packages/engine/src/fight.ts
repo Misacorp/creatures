@@ -196,7 +196,7 @@ export function simulateFight(
 
   // ---- validation ----
   if (n < 1) fail('the row is empty');
-  /** The row's zones: the board's own sizes when the input carries them. */
+  /** Where the row stands: the board's own positions when the input carries them. */
   const shape = fightRowShape(input);
   const pool = input.bossHpPool;
   if (!isCount(pool.max, 1) || !isCount(pool.current, 0) || pool.current > pool.max) {
@@ -1094,7 +1094,7 @@ export function simulateFight(
     return {
       creatures,
       n,
-      zones: shape,
+      shape,
       firing: firingIndex(g, atRound),
       dice: diceWindow(patternDice, gimmickIndex),
       ...(rules === undefined ? {} : { guardDice }),

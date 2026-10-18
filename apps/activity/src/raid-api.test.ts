@@ -8,7 +8,7 @@ import statsCloseLoss from './fixtures/raid-stats-close-loss.json';
 import statsCloseWin from './fixtures/raid-stats-close-win.json';
 import statsFinale from './fixtures/raid-stats-finale.json';
 import statsWiped from './fixtures/raid-stats-wiped.json';
-import { parseRaidView, parseReplayView, parseStats } from './raid-api';
+import { isOptBoard, parseRaidView, parseReplayView, parseStats } from './raid-api';
 
 const raid = {
   weekId: '2026-W41',
@@ -656,5 +656,26 @@ describe('parseStats with real server responses', () => {
     const withoutBoss: Record<string, unknown> = { ...statsFinale };
     delete withoutBoss['boss'];
     expect(() => parseStats(withoutBoss)).toThrow();
+  });
+});
+
+describe('the fight board positions', () => {
+  it('accepts none, null, or a length with strictly increasing slots below it', () => {
+    expect(isOptBoard(undefined)).toBe(true);
+    expect(isOptBoard(null)).toBe(true);
+    expect(isOptBoard({ length: 9, slots: [] })).toBe(true);
+    expect(isOptBoard({ length: 9, slots: [1, 2, 4, 8] })).toBe(true);
+  });
+
+  it('refuses anything else', () => {
+    expect(isOptBoard({ front: 3, middle: 3, back: 3 })).toBe(false);
+    expect(isOptBoard({ length: 9 })).toBe(false);
+    expect(isOptBoard({ length: 9, slots: [2, 2] })).toBe(false);
+    expect(isOptBoard({ length: 9, slots: [3, 1] })).toBe(false);
+    expect(isOptBoard({ length: 9, slots: [9] })).toBe(false);
+    expect(isOptBoard({ length: 9, slots: [-1] })).toBe(false);
+    expect(isOptBoard({ length: 9, slots: [0.5] })).toBe(false);
+    expect(isOptBoard({ length: 9, slots: [], extra: 1 })).toBe(false);
+    expect(isOptBoard('board')).toBe(false);
   });
 });

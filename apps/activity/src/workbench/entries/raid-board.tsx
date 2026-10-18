@@ -375,7 +375,7 @@ const raidBoard: Entry = {
     { name: 'Full server (45 slots)', props: { players: 15, yourLane: 12, empty: 4 } },
     { name: 'Locked (read-only, no remove button)', props: { locked: true, placed: 2 } },
     {
-      name: 'Others join by themselves (auto tiles: dashed, with an auto tag)',
+      name: 'Others join by themselves (auto tiles: dashed and muted, with an auto tag)',
       props: { autoOthers: true },
     },
     {

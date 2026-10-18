@@ -163,12 +163,12 @@ export interface FightInput {
   /** The row, left to right. */
   row: readonly FightSlot[];
   /**
-   * How many creatures of the row stand in each zone (Front, then Middle, then Back; they add up to
-   * the row's length). A raid fight carries the board's own zone sizes here, so the fight's rows are
-   * the rows the board shows even when the board has empty slots. Absent: the length formula
-   * (floor(n / 3) Front and Back, the rest Middle), so a stored input replays as it did.
+   * Where the row's creatures stand on the board: `length` is the board row's full length and
+   * `slots[i]` the board slot of `row[i]` (strictly increasing, below `length`). A raid fight carries
+   * the board's own positions here, so zones, lanes and "beside" are the board's even when it has
+   * empty slots. Absent: the dense row (creature i in slot i), so a stored input replays as it did.
    */
-  zones?: { front: number; middle: number; back: number };
+  board?: { length: number; slots: readonly number[] };
   /** Signed-up player ids. */
   players: readonly string[];
   finaleAbilities: readonly AbilityChoice[];
