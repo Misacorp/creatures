@@ -1,0 +1,323 @@
+[
+  {
+    "id": "fair-winds",
+    "kind": "boon",
+    "name": "Fair Winds",
+    "flavor": "The wind sits at everyone's back, and the first step lands harder.",
+    "bubbles": ["Fair winds today!", "Good day to roam"],
+    "status": "live",
+    "cancels": ["heavy-rain", "muddy-roads", "morning-haze"],
+    "effects": [
+      {
+        "op": "sheet",
+        "field": "firstHitBp",
+        "bp": 1000,
+        "text": "Every creature's first hit deals {n}% more."
+      },
+      { "op": "tripTime", "bp": -1000, "text": "Trips take {n}% less time." }
+    ]
+  },
+  {
+    "id": "warm-hearth",
+    "kind": "boon",
+    "name": "Warm Hearth",
+    "flavor": "Every fire in the valley burns a little brighter and every hand works a little faster.",
+    "bubbles": ["The fire is extra warm", "Hands feel quick"],
+    "status": "live",
+    "cancels": ["long-shadows", "cold-snap"],
+    "effects": [
+      {
+        "op": "sheet",
+        "field": "boostBp",
+        "bp": 400,
+        "roles": ["support"],
+        "text": "Supports' boost is {n} pt stronger."
+      },
+      { "op": "workshopTime", "bp": -1500, "text": "Workshop jobs take {n}% less time." }
+    ]
+  },
+  {
+    "id": "kind-rain",
+    "kind": "boon",
+    "name": "Kind Rain",
+    "flavor": "A soft rain that mends what it falls on and feeds the tidepools and the hollow.",
+    "bubbles": ["Soft rain, soft hearts"],
+    "status": "planned",
+    "cancels": [],
+    "effects": [],
+    "planned": "Every creature heals 2% of max HP at round start, and Tidepools and Verdant Hollow trips find 25% more parts. Waits for an engine hook: a heal at round start for every creature (the engine only heals through a Support's Mend)."
+  },
+  {
+    "id": "clear-skies",
+    "kind": "boon",
+    "name": "Clear Skies",
+    "flavor": "Not a cloud anywhere. Aim is true and the rare things show themselves.",
+    "bubbles": ["Not a cloud in sight", "I can see for miles"],
+    "status": "live",
+    "cancels": [],
+    "effects": [
+      { "op": "crit", "bp": 300, "text": "Crit chance +{n} pt." },
+      { "op": "tripRarity", "bp": 100, "text": "Rarer catches on trips: +{n} pt." }
+    ]
+  },
+  {
+    "id": "high-water",
+    "kind": "boon",
+    "name": "High Water",
+    "flavor": "The tide is all the way in, and the reef lets more things wander out.",
+    "bubbles": ["The tide is in!", "Splashy day"],
+    "status": "live",
+    "cancels": [],
+    "effects": [
+      {
+        "op": "reaction",
+        "reactions": ["steam", "overload"],
+        "bp": 1500,
+        "text": "Steam and Overload deal {n}% more."
+      },
+      {
+        "op": "tripRoll",
+        "places": ["tidepools", "moonlit-reef"],
+        "minLength": "long",
+        "extra": 1,
+        "text": "One extra catch roll on 12 h trips and longer at the Tidepools and the Moonlit Reef."
+      }
+    ]
+  },
+  {
+    "id": "bonfire-night",
+    "kind": "boon",
+    "name": "Bonfire Night",
+    "flavor": "Someone lit a bonfire on the ridge and now the whole valley wants to be near it.",
+    "bubbles": ["Bonfire tonight!", "Smells like smoke"],
+    "status": "live",
+    "cancels": [],
+    "effects": [
+      {
+        "op": "reaction",
+        "reactions": ["wildfire", "grounding"],
+        "bp": 1500,
+        "text": "Wildfire and Grounding deal {n}% more."
+      },
+      {
+        "op": "tripRoll",
+        "places": ["ember-caves", "storm-ridge"],
+        "minLength": "long",
+        "extra": 1,
+        "text": "One extra catch roll on 12 h trips and longer at the Ember Caves and Storm Ridge."
+      }
+    ]
+  },
+  {
+    "id": "hearty-breakfast",
+    "kind": "boon",
+    "name": "Hearty Breakfast",
+    "flavor": "Everyone had a proper breakfast, and it shows in how much they take in.",
+    "bubbles": ["Full tummy, big dreams", "Porridge!"],
+    "status": "live",
+    "cancels": ["cold-snap"],
+    "effects": [
+      {
+        "op": "xp",
+        "bp": 2500,
+        "treatMultiplier": 3,
+        "text": "Creature experience +{n}%, and a treat triples it instead of doubling it."
+      }
+    ]
+  },
+  {
+    "id": "lantern-light",
+    "kind": "boon",
+    "name": "Lantern Light",
+    "flavor": "Lanterns hang in every window and old pages come out of their drawers.",
+    "bubbles": ["The lanterns are lit", "Cozy glow"],
+    "status": "live",
+    "cancels": [],
+    "effects": [
+      {
+        "op": "linger",
+        "rounds": 1,
+        "text": "Shield Walls and other lasting abilities last 1 more round."
+      },
+      { "op": "tripJournal", "bp": 10000, "text": "Journal pages are {n}% more likely." }
+    ]
+  },
+  {
+    "id": "market-day",
+    "kind": "boon",
+    "name": "Market Day",
+    "flavor": "Stalls line the lane, and the first deal of the day is always the fairest.",
+    "bubbles": ["Market day!", "Fair prices today"],
+    "status": "live",
+    "cancels": [],
+    "effects": [
+      {
+        "op": "market",
+        "stepUpBp": 500,
+        "crafts": 1,
+        "dismantles": 2,
+        "text": "Your first craft today gets +{n} pt one-step-up chance, and your first 2 dismantle jobs refund the top of their range."
+      },
+      { "op": "dungeonScrap", "perRoom": 1, "text": "Dungeon rooms give +1 scrap." }
+    ]
+  },
+  {
+    "id": "quiet-night",
+    "kind": "boon",
+    "name": "Quiet Night",
+    "flavor": "The valley holds its breath. Even the boss forgets some of what it learned.",
+    "bubbles": ["Shh, so quiet", "Sleepy valley"],
+    "status": "live",
+    "cancels": [],
+    "effects": [
+      {
+        "op": "sheet",
+        "field": "pierceBp",
+        "bp": 2500,
+        "text": "The boss's adaptation is {n}% weaker."
+      },
+      { "op": "reefOpen", "text": "The Moonlit Reef stays open all day." }
+    ]
+  },
+  {
+    "id": "morning-haze",
+    "kind": "omen",
+    "name": "Morning Haze",
+    "flavor": "A thick haze lies on the valley and everyone starts the day a step behind.",
+    "bubbles": ["Hazy out there"],
+    "status": "planned",
+    "cancels": ["fair-winds"],
+    "effects": [],
+    "planned": "The first creature of each row (the left one in the dungeon) skips its first turn, and trips take 10% longer. Waits for an engine hook: a skipped first turn."
+  },
+  {
+    "id": "heatwave",
+    "kind": "omen",
+    "name": "Heatwave",
+    "flavor": "The air shimmers over the rocks, tempers run hot and the shards are hard to find.",
+    "bubbles": ["Hot one today", "Too warm to think"],
+    "status": "live",
+    "cancels": [],
+    "effects": [
+      {
+        "op": "foeAttack",
+        "bp": 800,
+        "elements": { "ember": 1500 },
+        "text": "Foes hit {n}% harder (Ember foes {e}% instead)."
+      },
+      { "op": "tripShards", "bp": -2500, "text": "Shards are {n}% less likely on trips." }
+    ]
+  },
+  {
+    "id": "static-sky",
+    "kind": "omen",
+    "name": "Static Sky",
+    "flavor": "Every hair stands up and the sky crackles. Foes find the soft spots.",
+    "bubbles": ["My fur is standing up", "Crackly sky"],
+    "status": "live",
+    "cancels": [],
+    "effects": [{ "op": "foeCrit", "bp": 400, "text": "Foes' crit chance +{n} pt." }]
+  },
+  {
+    "id": "heavy-rain",
+    "kind": "omen",
+    "name": "Heavy Rain",
+    "flavor": "It pours without a break. Everything that sweeps or splashes lands harder, and the roads slow down.",
+    "bubbles": ["It is pouring", "Soggy paws"],
+    "status": "live",
+    "cancels": ["fair-winds"],
+    "effects": [
+      { "op": "sheet", "field": "areaBp", "bp": -1000, "text": "Area hits deal {n}% more." },
+      { "op": "tripTime", "bp": 1000, "text": "Trips take {n}% longer." }
+    ]
+  },
+  {
+    "id": "long-shadows",
+    "kind": "omen",
+    "name": "Long Shadows",
+    "flavor": "The sun sits low all day and the shadows reach for everyone.",
+    "bubbles": ["The shadows are long", "Brr, gloomy"],
+    "status": "live",
+    "cancels": ["warm-hearth"],
+    "effects": [
+      {
+        "op": "sheet",
+        "field": "boostBp",
+        "bp": -400,
+        "roles": ["support"],
+        "text": "Supports' boost is {n} pt weaker."
+      },
+      { "op": "sheet", "field": "healReceivedBp", "bp": -2500, "text": "Healing is {n}% weaker." }
+    ]
+  },
+  {
+    "id": "restless-wind",
+    "kind": "omen",
+    "name": "Restless Wind",
+    "flavor": "A wind from nowhere pulls at every shield and every line.",
+    "bubbles": ["The wind won't settle", "Hold your hats"],
+    "status": "live",
+    "cancels": [],
+    "effects": [
+      {
+        "op": "sheet",
+        "field": "coverBp",
+        "bp": -1000,
+        "roles": ["guard"],
+        "text": "Guards' cover is {n} pt weaker."
+      }
+    ]
+  },
+  {
+    "id": "cold-snap",
+    "kind": "omen",
+    "name": "Cold Snap",
+    "flavor": "Frost on every window. Fingers are slow and lessons do not stick.",
+    "bubbles": ["Frost on the windows", "My paws are cold"],
+    "status": "live",
+    "cancels": ["warm-hearth", "hearty-breakfast"],
+    "effects": [
+      { "op": "xp", "bp": -2000, "text": "Creature experience -{n}%." },
+      { "op": "workshopTime", "bp": 1500, "text": "Workshop jobs take {n}% longer." }
+    ]
+  },
+  {
+    "id": "bramble-season",
+    "kind": "omen",
+    "name": "Bramble Season",
+    "flavor": "Thorns are everywhere. What you start the boss may well throw back.",
+    "bubbles": ["Mind the brambles"],
+    "status": "planned",
+    "minRank": 6,
+    "cancels": [],
+    "effects": [],
+    "planned": "The first reaction each round is reflected at 30% (Boss Rank 6 and up). Waits for an engine hook: a small reflect share on a reaction."
+  },
+  {
+    "id": "muddy-roads",
+    "kind": "omen",
+    "name": "Muddy Roads",
+    "flavor": "Every road is a bog. Trips drag on and the good finds stay buried.",
+    "bubbles": ["Squelch, squelch", "The roads are mud"],
+    "status": "live",
+    "cancels": ["fair-winds"],
+    "effects": [
+      { "op": "tripTime", "bp": 1500, "text": "Trips take {n}% longer." },
+      { "op": "tripSupply", "bp": -3000, "text": "Supply finds are {n}% less likely." }
+    ]
+  },
+  {
+    "id": "stormfront",
+    "kind": "omen",
+    "name": "Stormfront",
+    "flavor": "A wild storm is rolling in. The boss is not afraid of it. The boss is part of it.",
+    "bubbles": ["A storm is coming", "Storm on the horizon"],
+    "status": "live",
+    "minRank": 10,
+    "wild": true,
+    "cancels": [],
+    "effects": [
+      { "op": "foeAttacks", "extra": 1, "text": "The boss makes one more plain attack each round." }
+    ]
+  }
+]

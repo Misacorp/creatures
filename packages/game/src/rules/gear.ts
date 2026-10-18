@@ -1,20 +1,32 @@
 /**
- * Gear and crafting rules (docs/design/gear.md): pure functions over `RULES.gear` and the gear
- * content. Randomness is injected (`Rng`), so the server passes its live crypto source and tests pass
- * a seeded one. Nothing here touches the engine: `applyGear` folds an item into a creature's stats
- * and crit bonus before a fight.
+ * Gear, parts and crafting rules (docs/design/gear-and-creatures-v2.md): pure functions over
+ * `RULES.gear` and the gear content. The item model, its rolls and the fold of worn items into a
+ * fight are in `gear-items.ts`; this file holds what an item costs, yields and takes to craft, the
+ * Crafting skill, and every way an item drops. Randomness is injected (`Rng`).
  */
 import { int, chance, pickWeighted, type Rng } from '../rng';
-import { enchantDef, gearBase, gearContent } from '../content/gear';
+import { baseFor, baseMinLevel, gearBase, gearContent } from '../content/gear';
 import {
-  GEAR_STATS,
-  type EnchantDef,
+  GEAR_SLOTS,
+  tagElement,
+  tagRole,
   type GearBase,
   type GearRarity,
-  type GearStat,
+  type LegacyRarity,
 } from '../content/gear-schema';
-import type { CritBonus, Element, Role, Stats } from '../content/schema';
+import { ELEMENTS, type Element } from '../content/schema';
 import { RULES, type DurationId } from './config';
+import {
+  craftItemLevel,
+  dropBase,
+  dungeonItemLevel,
+  expeditionItemLevel,
+  finaleItemLevel,
+  rollItem,
+  type GearItem,
+} from './gear-items';
+
+export * from './gear-items';
 
 export const PART_KINDS = [
   'scrap',
@@ -29,266 +41,373 @@ export type PartKind = (typeof PART_KINDS)[number];
 /** Parts by kind; kinds that are absent count as 0. */
 export type PartsBundle = Partial<Record<PartKind, number>>;
 
-export const JOB_KINDS = ['craft', 'improve', 'enchant', 'supply'] as const;
+/** The jobs a player can start. Improve and enchant are gone; jobs started before v2 still finish. */
+export const JOB_KINDS = ['craft', 'supply', 'dismantle'] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
-/** The jobs that work on gear (a supply job has its own hours, from the supply's blueprint). */
-export type GearJobKind = Exclude<JobKind, 'supply'>;
+/** Job kinds a stored job may have: the current ones and the two removed in v2. */
+export type StoredJobKind = JobKind | 'improve' | 'enchant';
 
 /** The shard of an element. */
 export function shardOf(element: Element): PartKind {
   return `${element}-shard`;
 }
 
-/** The rolled numbers of an item: its primary amount and its secondaries (basis points). */
-export interface GearRolls {
-  /** The primary stat's roll at level 0 (the rarity multiplier is already in it). */
-  primary: number;
-  secondary: readonly { stat: GearStat; bp: number }[];
-}
-
-/** An item as the rules see it. */
-export interface GearItem {
-  baseId: string;
-  rarity: GearRarity;
-  /** Upgrade level, 0 to `RULES.gear.maxLevel`. */
-  level: number;
-  rolls: GearRolls;
-  enchantId: string | null;
-}
-
-/** A bonus per stat in basis points. */
-export type GearBonus = Record<GearStat, number>;
-
-const zeroBonus = (): GearBonus => ({ atk: 0, hp: 0, spd: 0, critChance: 0, critDamage: 0 });
-
-function baseOrThrow(baseId: string): GearBase {
-  const base = gearBase(baseId);
-  if (base === undefined) throw new RangeError(`unknown gear base "${baseId}"`);
-  return base;
-}
-
-/** True if `rarity` is a rarity this base can have: festival bases only festival, others never. */
-export function rarityFitsBase(base: Pick<GearBase, 'blueprint'>, rarity: GearRarity): boolean {
-  return (base.blueprint === 'festival') === (rarity === 'festival');
-}
-
-function rollRange(rng: Rng, range: { min: number; max: number }): number {
-  return range.min + int(rng, range.max - range.min + 1);
-}
-
-/** The stats a secondary of this base may be: everything but the primary. */
-export function secondaryChoices(base: Pick<GearBase, 'primary'>): GearStat[] {
-  return GEAR_STATS.filter((s) => s !== base.primary);
-}
-
-/**
- * Rolls a new item's numbers: the primary within its range times the rarity multiplier, then as many
- * distinct secondary stats (never the primary) as the rarity has, each within its range. Draws in a
- * fixed order. Throws RangeError for an unknown base or a rarity the base cannot have.
- */
-export function rollGear(rng: Rng, baseId: string, rarity: GearRarity): GearRolls {
-  const base = baseOrThrow(baseId);
-  if (!rarityFitsBase(base, rarity)) {
-    throw new RangeError(`base "${baseId}" cannot be ${rarity}`);
-  }
-  const { primaryBp, secondaries } = RULES.gear.rarity[rarity];
-  const raw = rollRange(rng, RULES.gear.rolls.primary[base.primary]);
-  const primary = Math.floor((raw * primaryBp) / 10_000);
-  const left = secondaryChoices(base);
-  const secondary: { stat: GearStat; bp: number }[] = [];
-  for (let i = 0; i < secondaries; i++) {
-    const [stat] = left.splice(int(rng, left.length), 1);
-    if (stat === undefined) throw new Error('no secondary stat left to roll');
-    secondary.push({ stat, bp: rollRange(rng, RULES.gear.rolls.secondary[stat]) });
-  }
-  return { primary, secondary };
-}
-
-/**
- * Improve: re-rolls the secondary at `index`. The new stat is drawn from those the item does not use
- * (not the primary, not the other secondaries; the old one may come back), the value within its range.
- * Returns the new rolls; throws RangeError if the item has no secondary at `index`.
- */
-export function rerollSecondary(
-  rng: Rng,
-  baseId: string,
-  rolls: GearRolls,
-  index: number,
-): GearRolls {
-  const base = baseOrThrow(baseId);
-  if (!Number.isInteger(index) || index < 0 || index >= rolls.secondary.length) {
-    throw new RangeError('no secondary at that index');
-  }
-  const taken = new Set(rolls.secondary.filter((_, i) => i !== index).map((s) => s.stat));
-  const choices = secondaryChoices(base).filter((s) => !taken.has(s));
-  const stat = choices[int(rng, choices.length)];
-  if (stat === undefined) throw new Error('no secondary stat left to roll');
-  const secondary = rolls.secondary.map((s, i) =>
-    i === index ? { stat, bp: rollRange(rng, RULES.gear.rolls.secondary[stat]) } : s,
-  );
-  return { primary: rolls.primary, secondary };
-}
-
-/** True if an enchant gives its bonus to a creature of this role and element. */
-export function enchantActive(enchant: EnchantDef, role: Role, element: Element): boolean {
-  const when = enchant.when;
-  if (when === undefined) return true;
-  return 'role' in when ? when.role === role : when.element === element;
-}
-
-/** Whether an item's enchant works for the wearer; false without an enchant. */
-export function itemEnchantActive(item: GearItem, role: Role, element: Element): boolean {
-  if (item.enchantId === null) return false;
-  const enchant = enchantDef(item.enchantId);
-  return enchant !== undefined && enchantActive(enchant, role, element);
-}
-
-/**
- * What an item gives before the caps: the primary (roll plus the level steps), the secondaries and,
- * when it works for this wearer, the enchant. Basis points per stat.
- */
-export function gearBonus(item: GearItem, role: Role, element: Element): GearBonus {
-  const base = baseOrThrow(item.baseId);
-  const level = Math.max(0, Math.min(RULES.gear.maxLevel, Math.trunc(item.level)));
-  const bonus = zeroBonus();
-  bonus[base.primary] += item.rolls.primary + RULES.gear.upgradeStepBp[base.primary] * level;
-  for (const s of item.rolls.secondary) bonus[s.stat] += s.bp;
-  if (item.enchantId !== null) {
-    const enchant = enchantDef(item.enchantId);
-    if (enchant !== undefined && enchantActive(enchant, role, element)) {
-      bonus[enchant.stat] += enchant.bp;
-    }
-  }
-  return bonus;
-}
-
-/** The bonus after the per-creature caps (`RULES.gear.caps`). */
-export function cappedBonus(bonus: GearBonus): GearBonus {
-  const out = zeroBonus();
-  for (const stat of GEAR_STATS) {
-    out[stat] = Math.max(0, Math.min(bonus[stat], RULES.gear.caps[stat]));
-  }
-  return out;
-}
-
-/**
- * Folds an item into a creature's fight numbers. `stats` are the effective stats (level, fusion) and
- * `crit` the species' crit bonus; the result has the item's Attack, HP and speed added as percentages,
- * and its crit chance and crit damage added to the crit bonus, all capped (`RULES.gear.caps`). The
- * engine adds the crit bonus to the baseline and applies its own caps, so the bonus never takes the
- * creature past them. Without an item the inputs come back unchanged. Integers only; stats never fall.
- */
-export function applyGear(
-  stats: Stats,
-  crit: CritBonus | undefined,
-  role: Role,
-  element: Element,
-  item: GearItem | null,
-): { stats: Stats; crit: CritBonus | undefined } {
-  if (item === null) return { stats, crit };
-  const capped = cappedBonus(gearBonus(item, role, element));
-  const scale = (value: number, bp: number): number => Math.floor((value * (10_000 + bp)) / 10_000);
-  const folded: Stats = {
-    hp: scale(stats.hp, capped.hp),
-    atk: scale(stats.atk, capped.atk),
-    spd: scale(stats.spd, capped.spd),
-  };
-  if (crit === undefined && capped.critChance === 0 && capped.critDamage === 0) {
-    return { stats: folded, crit: undefined };
-  }
-  const luck = RULES.combat.luck;
-  const ownChance = crit?.chanceBp ?? 0;
-  const ownDamage = crit?.damageBp ?? 0;
-  // The engine caps the total; keep the bonus inside the room that is left (never below the species' own).
-  const chanceRoom = Math.max(0, luck.critMaxChanceBp - luck.critChanceBp);
-  const damageRoom = Math.max(0, luck.critMaxBp - luck.critBp);
-  return {
-    stats: folded,
-    crit: {
-      chanceBp: Math.max(ownChance, Math.min(ownChance + capped.critChance, chanceRoom)),
-      damageBp: Math.max(ownDamage, Math.min(ownDamage + capped.critDamage, damageRoom)),
-    },
-  };
-}
-
-// --- Costs and yields ---
-
 function addPart(bundle: PartsBundle, kind: PartKind, amount: number): void {
   if (amount > 0) bundle[kind] = (bundle[kind] ?? 0) + amount;
 }
 
-/** Price of the next upgrade: Essence and scrap, or null at the top level. */
-export function upgradeCost(item: Pick<GearItem, 'rarity' | 'level'>): {
-  essence: number;
-  scrap: number;
-} | null {
-  if (!Number.isInteger(item.level) || item.level < 0) {
-    throw new RangeError('level must be an integer >= 0');
-  }
-  if (item.level >= RULES.gear.maxLevel) return null;
-  const mult = RULES.gear.upgrade.multiplierBp[item.rarity];
-  const essence = RULES.gear.upgrade.essence[item.level];
-  const scrap = RULES.gear.upgrade.scrap[item.level];
-  if (essence === undefined || scrap === undefined) throw new Error('missing upgrade price');
+// --- Costs and yields ---
+
+/** An inclusive range of whole numbers. */
+export interface Range {
+  min: number;
+  max: number;
+}
+
+/** What a dismantle job can return, as the screen shows it before the job starts. */
+export interface DismantleRange {
+  scrap: Range;
+  /** Shards; `element` is the shard's kind when the item has an element, null for a random kind (or no shards). */
+  shards: Range & { element: Element | null };
+  glimmer: Range;
+  essence: Range;
+}
+
+/** What dismantling needs to know about an item. */
+export type DismantleItem = Pick<GearItem, 'baseId' | 'rarity'> & { itemLevel?: number };
+
+function itemBase(item: DismantleItem): GearBase {
+  const base = gearBase(item.baseId);
+  if (base === undefined) throw new RangeError(`unknown gear base "${item.baseId}"`);
+  return base;
+}
+
+/**
+ * The scrap a craft of this base costs at this item level: the base's own cost (an element base's, or the
+ * plain one of every other base, role-locked and Festival pieces included) plus 1 for every
+ * `scrapPerItemLevels` item levels. Dropped items use the same table, so a piece is worth the same
+ * whoever made it.
+ */
+export function craftScrapCost(baseId: string, itemLevel: number): number {
+  const base = gearBase(baseId);
+  if (base === undefined) throw new RangeError(`unknown gear base "${baseId}"`);
+  const own = tagElement(base.tag) === null ? RULES.gear.craft.plainScrap : RULES.gear.craft.scrap;
+  return own + Math.floor(Math.max(0, itemLevel) / RULES.gear.craft.scrapPerItemLevels);
+}
+
+/** One item's ranges: its rarity's, with the scrap a share (under half) of its craft scrap cost. */
+function itemRange(item: DismantleItem): {
+  scrap: readonly [number, number];
+  shard: readonly [number, number];
+  glimmer: readonly [number, number];
+  essence: readonly [number, number];
+} {
+  const table = RULES.gear.dismantle;
+  const r = table.ranges[item.rarity];
+  const cost = craftScrapCost(item.baseId, item.itemLevel ?? 1);
+  const [lo, hi] = table.scrapShareBp[item.rarity];
+  const min = Math.max(1, Math.floor((cost * lo) / 10_000));
   return {
-    essence: Math.max(1, Math.floor((essence * mult) / 10_000)),
-    scrap: Math.max(1, Math.floor((scrap * mult) / 10_000)),
+    scrap: [min, Math.max(min, Math.floor((cost * hi) / 10_000))],
+    shard: r.shard,
+    glimmer: r.glimmer,
+    essence: r.essence,
   };
 }
 
-/** What dismantling an item returns: scrap (and part of the scrap its upgrades cost), a shard of its tint, glimmer. */
-export function dismantleYield(item: Pick<GearItem, 'baseId' | 'rarity' | 'level'>): PartsBundle {
-  const base = baseOrThrow(item.baseId);
-  const out: PartsBundle = {};
-  let spent = 0;
-  for (let level = 0; level < item.level; level++) {
-    spent += upgradeCost({ rarity: item.rarity, level })?.scrap ?? 0;
+/**
+ * The refund range of a dismantle job over `items` (the sum of each item's range). It does not depend
+ * on who works: the dismantler's Crafting level changes nothing here. Shards are of the item's element
+ * when it has one (a single item); neutral, explorer and role pieces give a random kind.
+ */
+export function dismantleRange(items: readonly DismantleItem[]): DismantleRange {
+  const out: DismantleRange = {
+    scrap: { min: 0, max: 0 },
+    shards: { min: 0, max: 0, element: null },
+    glimmer: { min: 0, max: 0 },
+    essence: { min: 0, max: 0 },
+  };
+  for (const item of items) {
+    const r = itemRange(item);
+    out.scrap.min += r.scrap[0];
+    out.scrap.max += r.scrap[1];
+    out.shards.min += r.shard[0];
+    out.shards.max += r.shard[1];
+    out.glimmer.min += r.glimmer[0];
+    out.glimmer.max += r.glimmer[1];
+    out.essence.min += r.essence[0];
+    out.essence.max += r.essence[1];
   }
-  addPart(
-    out,
-    'scrap',
-    RULES.gear.dismantle.scrap[item.rarity] +
-      Math.floor((spent * RULES.gear.upgrade.refundBp) / 10_000),
+  const only = items.length === 1 && items[0] !== undefined ? items[0] : undefined;
+  if (only !== undefined) out.shards.element = tagElement(itemBase(only).tag);
+  return out;
+}
+
+/**
+ * What an item returns when it cannot be rolled (a drop that does not fit a full bag): the bottom of
+ * its range, with a shard only for an element piece and no Essence.
+ */
+export function dismantleYield(item: DismantleItem): PartsBundle {
+  const element = tagElement(itemBase(item).tag);
+  const r = itemRange(item);
+  const out: PartsBundle = {};
+  addPart(out, 'scrap', r.scrap[0]);
+  if (element !== null) addPart(out, shardOf(element), r.shard[0]);
+  addPart(out, 'glimmer', r.glimmer[0]);
+  return out;
+}
+
+/**
+ * What the day's Boon changes in the Workshop (Market Day, `decisions.md` 2026-10-16: it boosts only the
+ * day's first craft and first 2 dismantle jobs, so hoarding until it rolls pays nothing). The Workshop
+ * asks `Gear.workshopMods` for these when a job is priced and when it is rolled; nothing sets them yet,
+ * the Boons step does. Both are optional and change nothing when absent.
+ */
+export interface WorkshopMods {
+  /** Added to a craft's one-step-up chance, in basis points (Market Day: 500). */
+  stepUpBonusBp?: number;
+  /** A dismantle refund rolls the top of every range. */
+  dismantleTopOfRange?: boolean;
+}
+
+/** The result of a dismantle claim: parts, and Essence (which goes to the ledger, not to the parts). */
+export interface DismantleRoll {
+  parts: PartsBundle;
+  essence: number;
+}
+
+function between(rng: Rng, lo: number, hi: number, top = false): number {
+  return top || hi <= lo ? hi : lo + int(rng, hi - lo + 1);
+}
+
+/**
+ * Rolls the refund of every item with the injected (live) RNG, item by item: scrap, shards (each of the
+ * item's element, or of a random one for pieces without), glimmer, Essence. The draws follow the items
+ * in order, so a fixed seed always gives the same refund. Nothing about the dismantler goes in.
+ */
+export function rollDismantle(
+  rng: Rng,
+  items: readonly DismantleItem[],
+  mods: WorkshopMods = {},
+): DismantleRoll {
+  const top = mods.dismantleTopOfRange === true;
+  const parts: PartsBundle = {};
+  let essence = 0;
+  for (const item of items) {
+    const r = itemRange(item);
+    const element = tagElement(itemBase(item).tag);
+    addPart(parts, 'scrap', between(rng, r.scrap[0], r.scrap[1], top));
+    const shards = between(rng, r.shard[0], r.shard[1], top);
+    for (let i = 0; i < shards; i++) {
+      const kind = element ?? (ELEMENTS[int(rng, ELEMENTS.length)] as Element);
+      addPart(parts, shardOf(kind), 1);
+    }
+    addPart(parts, 'glimmer', between(rng, r.glimmer[0], r.glimmer[1], top));
+    essence += between(rng, r.essence[0], r.essence[1], top);
+  }
+  return { parts, essence };
+}
+
+/** Why a set of items cannot go in one dismantle job, or null: Commons bundle up to 5, anything else goes alone. */
+export function dismantleBundleError(
+  rarities: readonly GearRarity[],
+): 'empty' | 'too_many' | 'mixed' | null {
+  if (rarities.length === 0) return 'empty';
+  if (rarities.length > RULES.gear.dismantle.bundleMax) return 'too_many';
+  if (rarities.length > 1 && rarities.some((r) => r !== 'common')) return 'mixed';
+  return null;
+}
+
+/** The nominal hours of a dismantle job for items of this rarity (a bundle of Commons is one job). */
+export function dismantleHours(rarity: GearRarity): number {
+  return RULES.gear.dismantle.minutes[rarity] / 60;
+}
+
+/** Crafting XP of a dismantle job: its nominal hours at `xpPerHour`, at least `minXp`, more by `extraBp` (Apprentice). */
+export function dismantleXp(rarity: GearRarity, extraBp = 0): number {
+  const base = Math.max(
+    RULES.gear.dismantle.minXp,
+    Math.floor(dismantleHours(rarity) * RULES.gear.skill.xpPerHour),
   );
-  if (base.tint !== null) addPart(out, shardOf(base.tint), RULES.gear.dismantle.shard[item.rarity]);
-  addPart(out, 'glimmer', RULES.gear.dismantle.glimmer[item.rarity]);
-  return out;
+  return Math.floor((base * (10_000 + extraBp)) / 10_000);
 }
 
-/** The parts a craft costs, by the blueprint's rarity (a shard is of the base's tint; neutral bases need none). */
-export function craftCost(baseId: string): PartsBundle {
-  const base = baseOrThrow(baseId);
-  const cost = RULES.gear.craft[base.blueprint];
+/**
+ * The chance (basis points) that each blueprintable item of a dismantle job teaches its blueprint (or,
+ * for one already known, adds a well-thumbed mark): 6% and 1 point for each Crafting level of the worker.
+ */
+export function dismantleLearnBp(craftingLevel: number): number {
+  const level = Math.max(1, Math.min(MAX_SKILL_LEVEL, Math.trunc(craftingLevel)));
+  const t = RULES.gear.dismantle;
+  return Math.min(10_000, t.learnBp + t.learnBpPerLevel * level);
+}
+
+/**
+ * The parts a plain craft of an item level costs: an element base takes scrap and one shard of its
+ * element; every other base takes more scrap and no shard. The scrap grows with the item level
+ * (`craftScrapCost`).
+ */
+export function craftCost(baseId: string, itemLevel: number): PartsBundle {
+  const base = gearBase(baseId);
+  if (base === undefined) throw new RangeError(`unknown gear base "${baseId}"`);
   const out: PartsBundle = {};
-  addPart(out, 'scrap', cost.scrap);
-  if (base.tint !== null) addPart(out, shardOf(base.tint), cost.shard);
-  addPart(out, 'glimmer', cost.glimmer);
+  addPart(out, 'scrap', craftScrapCost(baseId, itemLevel));
+  const element = tagElement(base.tag);
+  if (element !== null) addPart(out, shardOf(element), RULES.gear.craft.shard);
   return out;
 }
 
-/** The scrap an improve costs for an item of this rarity; null for rarities with no secondary to re-roll. */
-export function improveCost(rarity: GearRarity): PartsBundle | null {
-  const scrap = rarity === 'common' ? undefined : RULES.gear.improve.scrap[rarity];
-  return scrap === undefined ? null : { scrap };
+/** What a craft is aimed at: a plain craft (always a Common), or a Reach for a Rare or an Epic. */
+export const REACH_IDS = ['none', 'rare', 'epic'] as const;
+export type ReachId = (typeof REACH_IDS)[number];
+
+/** The rules of a Reach (everything but `none`). */
+function reachRules(
+  reach: Exclude<ReachId, 'none'>,
+): (typeof RULES.gear.craft.reach)[typeof reach] {
+  return RULES.gear.craft.reach[reach];
 }
 
-/** The parts an enchant costs: glimmer and shards of the enchant's element. Null for an unknown enchant. */
-export function enchantCost(enchantId: string): PartsBundle | null {
-  const enchant = enchantDef(enchantId);
-  if (enchant === undefined) return null;
+/** The Crafting level a Reach asks for (1 for a plain craft). */
+export function reachMinLevel(reach: ReachId): number {
+  return reach === 'none' ? 1 : reachRules(reach).minLevel;
+}
+
+/** The nominal hours of a craft job: 3 for a plain craft, longer for a Reach. */
+export function craftHours(reach: ReachId): number {
+  return reach === 'none' ? RULES.gear.craft.hours : reachRules(reach).hours;
+}
+
+/**
+ * Shards of any kind, taken from the biggest piles first (ties in element order). Used where a base has
+ * no element of its own. When the player holds fewer than `count`, the whole amount is put on the
+ * biggest pile, so the payment fails there and the screen shows what is missing.
+ */
+export function anyShards(held: PartsBundle, count: number): PartsBundle {
   const out: PartsBundle = {};
-  addPart(out, 'glimmer', RULES.gear.enchant.glimmer);
-  addPart(out, shardOf(enchant.shard), RULES.gear.enchant.shard);
+  if (count <= 0) return out;
+  const piles = ELEMENTS.map((e) => ({ kind: shardOf(e), have: held[shardOf(e)] ?? 0 })).sort(
+    (a, b) => b.have - a.have,
+  );
+  const total = piles.reduce((n, p) => n + p.have, 0);
+  const first = piles[0];
+  if (first === undefined) return out;
+  if (total < count) {
+    addPart(out, first.kind, count);
+    return out;
+  }
+  let left = count;
+  for (const pile of piles) {
+    const take = Math.min(left, pile.have);
+    addPart(out, pile.kind, take);
+    left -= take;
+  }
   return out;
+}
+
+/**
+ * What a craft costs: parts (the plain craft's, plus a Reach's shards and glimmer; the shards of a
+ * base without an element come from `held`, see `anyShards`) and Essence. Amounts are exact: this is
+ * what the server takes.
+ */
+export function craftCostFor(
+  baseId: string,
+  reach: ReachId,
+  held: PartsBundle,
+  itemLevel: number,
+): { parts: PartsBundle; essence: number } {
+  const parts = craftCost(baseId, itemLevel);
+  if (reach === 'none') return { parts, essence: 0 };
+  const rules = reachRules(reach);
+  const element = tagElement(gearBase(baseId)?.tag ?? 'neutral');
+  if (element !== null) {
+    addPart(parts, shardOf(element), rules.shard);
+  } else {
+    // Any shard: the pile choice sees what is left once the plain cost is counted (it has no shards).
+    for (const [kind, n] of Object.entries(anyShards(held, rules.shard)) as [PartKind, number][]) {
+      addPart(parts, kind, n);
+    }
+  }
+  addPart(parts, 'glimmer', rules.glimmer);
+  return { parts, essence: rules.essence };
+}
+
+/** Rarity odds in basis points (they add up to 10,000). */
+export interface CraftOdds {
+  common: number;
+  rare: number;
+  epic: number;
+}
+
+/**
+ * The one-step-up chance of a craft in basis points: 1 point per Crafting level above 1 (as
+ * `rarityUpBpPerLevel`) and 1 point per well-thumbed mark (at most `marks.max`), plus the day's bonus
+ * (`WorkshopMods`), at most 100%.
+ */
+export function stepUpBp(craftingLevel: number, marks: number, mods: WorkshopMods = {}): number {
+  const above = Math.max(0, Math.min(MAX_SKILL_LEVEL, Math.trunc(craftingLevel)) - 1);
+  const m = Math.max(0, Math.min(RULES.gear.craft.marks.max, Math.trunc(marks)));
+  return Math.min(
+    10_000,
+    RULES.gear.skill.rarityUpBpPerLevel * above +
+      RULES.gear.craft.marks.upBp * m +
+      Math.max(0, Math.trunc(mods.stepUpBonusBp ?? 0)),
+  );
+}
+
+/**
+ * The exact odds a craft comes out Common, Rare or Epic: the Reach's odds, then the one-step-up chance
+ * (Common to Rare, Rare to Epic). The server sends these numbers; the screen never works them out. They
+ * are exact in basis points because every input is a whole percent (checked by a test).
+ */
+export function craftOdds(
+  reach: ReachId,
+  craftingLevel: number,
+  marks: number,
+  mods: WorkshopMods = {},
+): CraftOdds {
+  const base: CraftOdds =
+    reach === 'none' ? { common: 10_000, rare: 0, epic: 0 } : { ...reachRules(reach).oddsBp };
+  const up = stepUpBp(craftingLevel, marks, mods);
+  const common = Math.floor((base.common * (10_000 - up)) / 10_000);
+  const rare =
+    Math.floor((base.common * up) / 10_000) + Math.floor((base.rare * (10_000 - up)) / 10_000);
+  const epic = base.epic + Math.floor((base.rare * up) / 10_000);
+  return { common, rare, epic: epic + (10_000 - common - rare - epic) };
+}
+
+/** True if a base can be made from a blueprint: not a Festival piece and not role-locked. */
+export function craftable(base: Pick<GearBase, 'festival' | 'tag'>): boolean {
+  return base.festival !== true && tagRole(base.tag) === null;
+}
+
+/**
+ * The Crafting level a base asks for: a craft makes an item of level `craftPerLevel` x the crafter's
+ * Crafting level, and a better base only unlocks at its `minItemLevel` (a Felt Hat at 8 is Crafting level 4).
+ */
+export function craftLevelNeeded(baseId: string): number {
+  const base = gearBase(baseId);
+  if (base === undefined) throw new RangeError(`unknown gear base "${baseId}"`);
+  return Math.max(1, Math.ceil(baseMinLevel(base) / RULES.gear.itemLevel.craftPerLevel));
+}
+
+/** The bases that can be learned as blueprints (everything craftable). */
+export function blueprintBases(): GearBase[] {
+  return gearContent.bases.filter(craftable);
+}
+
+/** The bases that can drop as gear: every plain base (role-locked Charms only through their own chance). */
+export function droppableBases(): GearBase[] {
+  return gearContent.bases.filter((b) => b.festival !== true);
 }
 
 // --- Jobs and the crafting skill ---
 
 const HOUR_MS = 3_600_000;
 
-/** A job's nominal length in hours, before the skill: a craft follows the rarity, improve and enchant are fixed. */
-export function jobHours(kind: GearJobKind, rarity: GearRarity): number {
-  return kind === 'craft' ? RULES.gear.jobHours.craft[rarity] : RULES.gear.jobHours[kind];
+/** A job's nominal length in hours, before the skill. */
+export function jobHours(): number {
+  return RULES.gear.craft.hours;
 }
 
 /** A skill level from total XP: 1 to the number of levels in `RULES.gear.skill.xpForLevel`. */
@@ -309,37 +428,109 @@ export function nextSkillXp(level: number): number | null {
 
 export const MAX_SKILL_LEVEL = RULES.gear.skill.xpForLevel.length;
 
-/** How long a job takes in milliseconds: its hours, less `timeReductionBpPerLevel` for each skill level above 1. */
-export function jobDuration(kind: GearJobKind, rarity: GearRarity, level: number): number {
+/**
+ * How long a job takes in milliseconds: its hours (a plain craft's by default), less
+ * `timeReductionBpPerLevel` for each skill level above 1 and less `extraBp` (the Busy paws lines the
+ * creature wears), at least a tenth of the hours.
+ */
+export function jobDuration(level: number, extraBp = 0, hours = jobHours()): number {
   const above = Math.max(0, Math.min(MAX_SKILL_LEVEL, Math.trunc(level)) - 1);
-  const keepBp = 10_000 - RULES.gear.skill.timeReductionBpPerLevel * above;
-  return Math.floor((jobHours(kind, rarity) * HOUR_MS * keepBp) / 10_000);
+  const keepBp = Math.max(
+    1_000,
+    10_000 - RULES.gear.skill.timeReductionBpPerLevel * above - extraBp,
+  );
+  return Math.floor((hours * HOUR_MS * keepBp) / 10_000);
 }
 
-/** XP a finished job gives: its nominal hours times `xpPerHour`. The skill does not change it. */
-export function jobXp(kind: GearJobKind, rarity: GearRarity): number {
-  return jobHours(kind, rarity) * RULES.gear.skill.xpPerHour;
+/** XP a finished job gives: its nominal hours times `xpPerHour`, more by `extraBp` (Apprentice). The skill does not change it. */
+export function jobXp(extraBp = 0, hours = jobHours()): number {
+  return Math.floor((hours * RULES.gear.skill.xpPerHour * (10_000 + extraBp)) / 10_000);
 }
 
 const NEXT_RARITY: Record<GearRarity, GearRarity> = {
   common: 'rare',
   rare: 'epic',
   epic: 'epic',
-  festival: 'festival',
 };
 
 /**
- * The rarity a craft comes out as: the blueprint's, or one higher with a chance of
- * `rarityUpBpPerLevel` for each skill level above 1 (epic and festival do not go higher).
- * Always draws once, so the draw count does not depend on the rarity.
+ * The rarity of a craft and whether the one-step-up chance raised it: the Reach's odds draw the rarity
+ * (a plain craft: Common), then a second draw gives the chance to come out one rarity higher. Two draws
+ * always. The distribution is exactly `craftOdds`.
  */
-export function craftRarity(rng: Rng, blueprintRarity: GearRarity, level: number): GearRarity {
-  const above = Math.max(0, Math.min(MAX_SKILL_LEVEL, Math.trunc(level)) - 1);
-  const up = chance(rng, RULES.gear.skill.rarityUpBpPerLevel * above, 10_000);
-  return up ? NEXT_RARITY[blueprintRarity] : blueprintRarity;
+export function rollCraftRarity(
+  rng: Rng,
+  reach: ReachId,
+  craftingLevel: number,
+  marks: number,
+  mods: WorkshopMods = {},
+): { rarity: GearRarity; upgraded: boolean } {
+  const base: CraftOdds =
+    reach === 'none' ? { common: 10_000, rare: 0, epic: 0 } : { ...reachRules(reach).oddsBp };
+  const r = int(rng, 10_000);
+  const drawn: GearRarity =
+    r < base.common ? 'common' : r < base.common + base.rare ? 'rare' : 'epic';
+  const up = chance(rng, stepUpBp(craftingLevel, marks, mods), 10_000);
+  const rarity = up ? NEXT_RARITY[drawn] : drawn;
+  return { rarity, upgraded: rarity !== drawn };
+}
+
+/** The rarity a plain craft comes out as (no Reach, no marks): Common, or one higher by the Crafting level. */
+export function craftRarity(rng: Rng, level: number): GearRarity {
+  return rollCraftRarity(rng, 'none', level, 0).rarity;
+}
+
+const RARITY_ORDER: readonly GearRarity[] = ['common', 'rare', 'epic'];
+
+/** What a craft was aimed at: the Reach, the blueprint's marks, and the least rarity (crafts started before v2). */
+export interface CraftOptions {
+  reach?: ReachId;
+  marks?: number;
+  /** The least rarity it may come out as (a craft started before gear v2 was sized by its blueprint's rarity; an old Festival floor counts as Epic). */
+  floor?: LegacyRarity;
+  /** The day's Workshop modifiers (the Boons step). */
+  mods?: WorkshopMods;
+}
+
+/**
+ * Crafts an item of a blueprint's base: its rarity (`rollCraftRarity`), item level (2 x Crafting level)
+ * and rolled lines. Returns the item and whether the one-step-up chance raised it.
+ */
+export function rollCraftItem(
+  rng: Rng,
+  baseId: string,
+  craftingLevel: number,
+  options: CraftOptions = {},
+): { item: GearItem; upgraded: boolean } {
+  const drawn = rollCraftRarity(
+    rng,
+    options.reach ?? 'none',
+    craftingLevel,
+    options.marks ?? 0,
+    options.mods,
+  );
+  const floor: GearRarity = options.floor === 'festival' ? 'epic' : (options.floor ?? 'common');
+  const raised = RARITY_ORDER.indexOf(floor) > RARITY_ORDER.indexOf(drawn.rarity);
+  const rarity = raised ? floor : drawn.rarity;
+  return {
+    item: rollItem(rng, { baseId, rarity, itemLevel: craftItemLevel(craftingLevel) }),
+    upgraded: raised ? false : drawn.upgraded,
+  };
+}
+
+/** `rollCraftItem`'s item alone. */
+export function rollCraft(
+  rng: Rng,
+  baseId: string,
+  craftingLevel: number,
+  options: CraftOptions = {},
+): GearItem {
+  return rollCraftItem(rng, baseId, craftingLevel, options).item;
 }
 
 // --- Drops ---
+
+type DropRarity = 'common' | 'rare' | 'epic';
 
 /** Finale gear odds in basis points at a Boss Rank; the rest is common. */
 export function finaleDropOddsBp(rank: number): { rare: number; epic: number; common: number } {
@@ -350,31 +541,8 @@ export function finaleDropOddsBp(rank: number): { rare: number; epic: number; co
   return { rare, epic, common: 10_000 - rare - epic };
 }
 
-/** The bases that can drop as gear (everything but the Festival bases). */
-export function droppableBases(): GearBase[] {
-  return gearContent.bases.filter((b) => b.blueprint !== 'festival');
-}
-
-/**
- * The upgrade level finale gear arrives with: one level for every `ranksPerUpgrade` Boss Ranks above 1,
- * up to `RULES.gear.maxLevel` (ranks 1-2: +0, 3-4: +1, and so on, +5 from rank 11 with the starting values).
- */
-export function finaleUpgradeLevel(rank: number): number {
-  const above = Math.max(0, Math.trunc(rank) - 1);
-  return Math.min(RULES.gear.maxLevel, Math.floor(above / RULES.gear.drops.finale.ranksPerUpgrade));
-}
-
-/** A gear drop: the base, rarity, rolled numbers and the upgrade level it arrives with. */
-export interface GearDrop {
-  baseId: string;
-  rarity: GearRarity;
-  rolls: GearRolls;
-  level: number;
-}
-
-type DropRarity = 'common' | 'rare' | 'epic';
-
-function rollFinaleRarity(rng: Rng, rank: number): DropRarity {
+/** The rarity of a finale drop at a Boss Rank (`finaleDropOddsBp`). Draws once. */
+export function rollFinaleRarity(rng: Rng, rank: number): DropRarity {
   const odds = finaleDropOddsBp(rank);
   return pickWeighted<{ rarity: DropRarity; weight: number }>(rng, [
     { rarity: 'common', weight: odds.common },
@@ -384,82 +552,108 @@ function rollFinaleRarity(rng: Rng, rank: number): DropRarity {
 }
 
 /**
- * Rolls a finale gear drop for a Boss Rank: the rarity by the rank's odds, a base evenly, then its
- * rolls. It arrives pre-upgraded by rank (`finaleUpgradeLevel`).
+ * A raid finale piece: the rarity by the Boss Rank's odds, the slot evenly, the boss's element as
+ * its tag (1 Charm in 20 is role-locked instead), item level `3 + Boss Rank`, then its lines.
  */
-export function rollFinaleDrop(rng: Rng, rank: number): GearDrop {
+export function rollFinaleItem(rng: Rng, rank: number, element: Element): GearItem {
   const rarity = rollFinaleRarity(rng, rank);
-  const bases = droppableBases();
-  const base = bases[int(rng, bases.length)];
-  if (base === undefined) throw new Error('no gear bases to drop');
-  return {
-    baseId: base.id,
-    rarity,
-    rolls: rollGear(rng, base.id, rarity),
-    level: finaleUpgradeLevel(rank),
-  };
+  const itemLevel = finaleItemLevel(rank);
+  const base = dropBase(rng, element, itemLevel, { roleCharm: true });
+  return rollItem(rng, { baseId: base.id, rarity, itemLevel });
 }
 
 /** What a won finale gives each participant: one gear piece or one blueprint. */
-export type FinaleReward =
-  ({ kind: 'gear' } & GearDrop) | { kind: 'blueprint'; baseId: string; rarity: GearRarity };
-
-const RARITY_FALLBACK: Record<DropRarity, readonly DropRarity[]> = {
-  common: ['common', 'rare', 'epic'],
-  rare: ['rare', 'common', 'epic'],
-  epic: ['epic', 'rare', 'common'],
-};
+export type FinaleReward = { kind: 'gear'; item: GearItem } | { kind: 'blueprint'; baseId: string };
 
 /**
- * The finale's reward slot. One draw decides gear or blueprint (`blueprintBp`). A blueprint takes its
- * rarity from the same rank odds as gear and a base of that rarity the player does not know yet
- * (`owned` holds the base ids they know). When they know every blueprint of that rarity it steps
- * down to the next rarity, then up. When they know them all, the reward is gear instead. Always
- * exactly one gear piece or one blueprint.
+ * The finale's reward slot. One draw decides gear or blueprint (`blueprintBp`). A blueprint is a base
+ * the player does not know yet (`owned` holds the base ids they know), drawn evenly. When they know
+ * them all, the reward is gear instead. Always exactly one gear piece or one blueprint.
  */
-export function rollFinaleReward(rng: Rng, rank: number, owned: ReadonlySet<string>): FinaleReward {
+export function rollFinaleReward(
+  rng: Rng,
+  rank: number,
+  element: Element,
+  owned: ReadonlySet<string>,
+): FinaleReward {
   if (chance(rng, RULES.gear.drops.finale.blueprintBp, 10_000)) {
-    const rolled = rollFinaleRarity(rng, rank);
-    const unowned = droppableBases().filter((b) => !owned.has(b.id));
-    for (const rarity of RARITY_FALLBACK[rolled]) {
-      const pool = unowned.filter((b) => b.blueprint === rarity);
-      if (pool.length === 0) continue;
-      const base = pool[int(rng, pool.length)];
-      if (base !== undefined) return { kind: 'blueprint', baseId: base.id, rarity };
-    }
+    const unowned = blueprintBases().filter((b) => !owned.has(b.id));
+    const base = unowned[int(rng, Math.max(1, unowned.length))];
+    if (base !== undefined) return { kind: 'blueprint', baseId: base.id };
   }
-  return { kind: 'gear', ...rollFinaleDrop(rng, rank) };
+  return { kind: 'gear', item: rollFinaleItem(rng, rank, element) };
 }
 
-/** The Festival base for a Festival creature's element: the base of that tint, else the first one. */
+/** The Festival piece for a Festival creature's element: the Festival base of that tag, else the first one. */
 export function festivalBaseFor(element: Element): GearBase {
-  const festival = gearContent.bases.filter((b) => b.blueprint === 'festival');
-  const base = festival.find((b) => b.tint === element) ?? festival[0];
+  const festival = gearContent.bases.filter((b) => b.festival === true);
+  const base = festival.find((b) => b.tag === element) ?? festival[0];
   if (base === undefined) throw new Error('no festival gear');
   return base;
 }
 
-/** Rolls the Festival piece for an element. */
-export function rollFestivalDrop(
-  rng: Rng,
-  element: Element,
-): { baseId: string; rarity: GearRarity; rolls: GearRolls } {
+/**
+ * Rolls the Festival piece for an element. It is special, not stronger (2026-10-17): the rarity comes from
+ * the finale's own odds at the Boss Rank (`finaleDropOddsBp`, no floor) and the item level is the finale's
+ * (`3 + Boss Rank`). What makes it a Festival piece is its base: the fixed unique line, the narrow roll
+ * pool and its look. Draws the rarity, then the lines.
+ */
+export function rollFestivalItem(rng: Rng, element: Element, rank: number): GearItem {
   const base = festivalBaseFor(element);
-  return { baseId: base.id, rarity: 'festival', rolls: rollGear(rng, base.id, 'festival') };
+  return rollItem(rng, {
+    baseId: base.id,
+    rarity: rollFinaleRarity(rng, rank),
+    itemLevel: finaleItemLevel(rank),
+  });
 }
 
-/** Rolls a blueprint's base: the rarity by `blueprintOddsBp`, then a base of that rarity evenly. */
+/**
+ * The rarity a converted item gets: the old rarity, except that an old Festival piece (the Festival was a
+ * fourth rarity) rolls the finale's normal odds at the server's Boss Rank. Draws only for a Festival piece.
+ */
+export function rollConvertedRarity(rng: Rng, rank: number, old: LegacyRarity): GearRarity {
+  return old === 'festival' ? rollFinaleRarity(rng, rank) : old;
+}
+
+/** A dungeon piece: the room boss's element as its tag, item level by depth, then its lines. */
+export function rollDungeonItem(
+  rng: Rng,
+  rarity: DropRarity,
+  depth: number,
+  landmark: boolean,
+  element: Element,
+): GearItem {
+  const itemLevel = dungeonItemLevel(depth, landmark);
+  const base = dropBase(rng, element, itemLevel);
+  return rollItem(rng, { baseId: base.id, rarity, itemLevel });
+}
+
+/** Rolls a blueprint's base evenly among the bases that can be crafted. */
 export function rollBlueprint(rng: Rng): string {
-  const odds = RULES.gear.drops.blueprintOddsBp;
-  const rarity = pickWeighted<{ rarity: GearRarity; weight: number }>(rng, [
-    { rarity: 'common', weight: odds.common },
-    { rarity: 'rare', weight: odds.rare },
-    { rarity: 'epic', weight: odds.epic },
-  ]).rarity;
-  const bases = droppableBases().filter((b) => b.blueprint === rarity);
+  const bases = blueprintBases();
   const base = bases[int(rng, bases.length)];
-  if (base === undefined) throw new Error(`no base with a ${rarity} blueprint`);
+  if (base === undefined) throw new Error('no craftable bases');
   return base.id;
+}
+
+/**
+ * A gear find of a trip's push-on goal: the place's element is the tag (the Old Crossroads gives the
+ * explorer's Compass, a place without an element a neutral piece), item level twice the explorer's rank.
+ */
+export function rollExpeditionItem(
+  rng: Rng,
+  rarity: DropRarity,
+  place: { element: Element | null; crossroads: boolean },
+  explorerRank: number,
+): GearItem {
+  const itemLevel = expeditionItemLevel(explorerRank);
+  if (place.crossroads) {
+    const compass = gearContent.bases.find((b) => b.tag === 'explorer');
+    if (compass === undefined) throw new Error('no explorer base');
+    return rollItem(rng, { baseId: compass.id, rarity, itemLevel });
+  }
+  const base = dropBase(rng, place.element, itemLevel);
+  return rollItem(rng, { baseId: base.id, rarity, itemLevel });
 }
 
 /** What an expedition claim drops besides the catches. */
@@ -470,10 +664,10 @@ export interface ExpeditionLoot {
 }
 
 /**
- * Loot of a claimed expedition. Scrap follows the duration; a recalled trip pays the share of it that
- * was brought back (`caught` of `rolls`) and nothing else. A completed trip also rolls a shard of the
- * explorer's element, a glimmer and a blueprint at the duration's odds. Draws in a fixed order, always
- * the same number of draws for a completed trip.
+ * Loot of a claimed expedition (the first version of trips). Scrap follows the duration; a recalled
+ * trip pays the share of it that was brought back (`caught` of `rolls`) and nothing else. A completed
+ * trip also rolls a shard of the explorer's element, a glimmer and a blueprint at the duration's
+ * odds. Draws in a fixed order, always the same number of draws for a completed trip.
  */
 export function expeditionLoot(
   rng: Rng,
@@ -497,24 +691,67 @@ export function expeditionLoot(
   return { parts, blueprint };
 }
 
-/** The welcome kit's rolls: a common item and a common blueprint, both of random common bases. */
-export function rollWelcomeKit(rng: Rng): {
-  item: { baseId: string; rarity: GearRarity; rolls: GearRolls };
-  blueprint: string;
-} {
-  const commons = droppableBases().filter((b) => b.blueprint === 'common');
-  const itemBase = commons[int(rng, commons.length)];
-  const blueprintBase = commons[int(rng, commons.length)];
-  if (itemBase === undefined || blueprintBase === undefined) throw new Error('no common bases');
-  return {
-    item: { baseId: itemBase.id, rarity: 'common', rolls: rollGear(rng, itemBase.id, 'common') },
-    blueprint: blueprintBase.id,
-  };
+/**
+ * The welcome kit's rolls: a Common Hat at item level 1 (the neutral Trail Cap) and the blueprint of a
+ * neutral piece (a Hat, a Scarf or a Charm, evenly), which costs scrap only, so the welcome scrap pays
+ * for the first craft on day 1 (an element piece also needs a shard, which a new player does not have).
+ */
+export function rollWelcomeKit(rng: Rng): { item: GearItem; blueprint: string } {
+  const hat = baseFor('hat', 'neutral');
+  if (hat === undefined) throw new Error('no neutral hat');
+  const item = rollItem(rng, {
+    baseId: hat.id,
+    rarity: 'common',
+    itemLevel: RULES.gear.itemLevel.welcome,
+  });
+  const neutral = GEAR_SLOTS.flatMap((slot) => {
+    const base = baseFor(slot, 'neutral');
+    return base === undefined ? [] : [base];
+  });
+  const pick = neutral[int(rng, neutral.length)];
+  if (pick === undefined) throw new Error('no neutral bases');
+  return { item, blueprint: pick.id };
 }
 
-/** Adds `amount` of a kind to a bundle (a new bundle is returned). */
+/** Adds two bundles (a new bundle is returned). */
 export function addParts(a: PartsBundle, b: PartsBundle): PartsBundle {
   const out: PartsBundle = { ...a };
   for (const kind of PART_KINDS) addPart(out, kind, b[kind] ?? 0);
+  return out;
+}
+
+// --- The conversion of old gear (one time) ---
+
+/** What an old item cost to upgrade to its level: the Essence and scrap its upgrades took (refunded in full). */
+export function legacyUpgradeSpent(
+  rarity: LegacyRarity,
+  level: number,
+): { essence: number; scrap: number } {
+  const t = RULES.gear.legacy.upgrade;
+  const mult = t.multiplierBp[rarity];
+  let essence = 0;
+  let scrap = 0;
+  for (let i = 0; i < Math.min(level, t.essence.length); i++) {
+    essence += Math.max(1, Math.floor(((t.essence[i] as number) * mult) / 10_000));
+    scrap += Math.max(1, Math.floor(((t.scrap[i] as number) * mult) / 10_000));
+  }
+  return { essence, scrap };
+}
+
+/** What dismantling an old item returned (the rules before v2), with the shard of its tint. */
+export function legacyDismantleYield(rarity: LegacyRarity, tint: Element | null): PartsBundle {
+  const t = RULES.gear.legacy.dismantle;
+  const out: PartsBundle = {};
+  addPart(out, 'scrap', t.scrap[rarity]);
+  if (tint !== null) addPart(out, shardOf(tint), t.shard[rarity]);
+  addPart(out, 'glimmer', t.glimmer[rarity]);
+  return out;
+}
+
+/** The parts an old enchant cost: glimmer and shards of the enchant's element (refunded). */
+export function legacyEnchantSpent(shard: Element): PartsBundle {
+  const out: PartsBundle = {};
+  addPart(out, 'glimmer', RULES.gear.legacy.enchant.glimmer);
+  addPart(out, shardOf(shard), RULES.gear.legacy.enchant.shard);
   return out;
 }

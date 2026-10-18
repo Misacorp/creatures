@@ -23,8 +23,10 @@
 import {
   EXPEDITION_LENGTHS,
   GEAR_RARITIES,
+  GEAR_SLOTS,
   GOAL_RISKS,
   JOB_KINDS,
+  REACH_IDS,
   PART_KINDS,
   RARITIES,
   RULES,
@@ -32,6 +34,8 @@ import {
   dungeonContent,
   expeditionContent,
   gearContent,
+  talentContent,
+  weatherContent,
   type ExpeditionLength,
   type GearRarity,
   type GoalRisk,
@@ -63,11 +67,16 @@ const CACHE_MAX = 512;
 // --- Typed events ---
 
 export type PhaseName = 'phase1' | 'phase2' | 'finale';
-export type CatchResult = 'new' | 'fused' | 'converted';
+/**
+ * What a catch came to: `new` (a species the player lacked) or `duplicate` (it waits as a choice). The
+ * older `fused` and `converted` stay valid, so events written before Creatures A still read.
+ */
+export type CatchResult = 'new' | 'duplicate' | 'fused' | 'converted';
+const CATCH_RESULTS = ['new', 'duplicate', 'fused', 'converted'] as const;
 /** What became of a push-on choice: it worked, it failed (a risky one), or the player came home instead. */
 export type PushOnOutcome = 'worked' | 'failed' | 'declined';
 const PUSH_ON_OUTCOMES = ['worked', 'failed', 'declined'] as const;
-export type FestivalResult = 'new' | 'fused' | 'converted';
+export type FestivalResult = CatchResult;
 
 /** Where a gear grant came from. */
 export const GEAR_SOURCES = [
@@ -89,6 +98,9 @@ export interface CatchProps {
   rarity: Rarity;
   shiny: boolean;
   result: CatchResult;
+  /** The talent the catch rolled (a content id) and whether it is golden. Absent in older events. */
+  talent?: string;
+  golden?: boolean;
 }
 
 /** What can be logged. `kind` names the action; the rest are its props. */
@@ -168,6 +180,44 @@ export type AnalyticsEvent =
   | { kind: 'familiarity_star'; destination: string; stars: number }
   | { kind: 'slot_unlock'; slots: number; rankSum: number }
   | { kind: 'train'; species: string; level: number; cost: number }
+  | {
+      /** An activity paid a creature experience (or a ribbon or evolution spent what it had banked). */
+      kind: 'creature_exp';
+      source: 'trip' | 'dungeon' | 'raid' | 'job' | 'ribbon' | 'evolve';
+      species: string;
+      gained: number;
+      treat: boolean;
+      levelBefore: number;
+      level: number;
+      waiting: boolean;
+    }
+  | {
+      /** A treat was packed when a trip, a dungeon run or a Workshop job started. */
+      kind: 'treat';
+      source: 'trip' | 'dungeon' | 'job';
+      species: string;
+      level: number;
+      cost: number;
+    }
+  | { kind: 'ribbon'; species: string; ribbon: 'bronze' | 'silver' | 'gold' }
+  | {
+      /**
+       * The one-time level reset of a player (levels halved at the switch to training by activity, the
+       * Bait they cost refunded). Counts only.
+       */
+      kind: 'level_reset';
+      creatures: number;
+      levels: number;
+      bait: number;
+      unequipped: number;
+      talentsToBook: number;
+    }
+  | {
+      /** The pity made a catch roll bring a creature: `new` a species the player lacked, `creature` any. */
+      kind: 'catch_pity';
+      pity: 'new' | 'creature';
+      species: string;
+    }
   | { kind: 'evolve'; from: string; to: string; cost: number }
   | {
       /** A catch that fused into a creature the player already had (or paid Bait at the limit). */
@@ -177,6 +227,32 @@ export type AnalyticsEvent =
       converted: boolean;
       fusionCount: number;
       bait: number;
+    }
+  | {
+      /** A creature rolled a talent: a new catch, a duplicate's card, or (`backfill`) an existing creature's slot. */
+      kind: 'talent_roll';
+      species: string;
+      talent: string;
+      golden: boolean;
+      backfill?: boolean;
+    }
+  | {
+      /** A duplicate was settled: what the player (or the server, `auto`) chose and the talent it carried. */
+      kind: 'duplicate_choice';
+      choice: 'teach' | 'fuse' | 'release' | 'keep';
+      auto: boolean;
+      species: string;
+      rarity: Rarity;
+      talent: string;
+      golden: boolean;
+    }
+  | {
+      /** A talent was slotted from a creature's Talent Book (Bait). */
+      kind: 'talent_slot';
+      species: string;
+      talent: string;
+      golden: boolean;
+      slot: number;
     }
   | { kind: 'roster_optout'; optOut: boolean }
   | { kind: 'team_set'; auto: boolean; species: readonly string[] }
@@ -235,7 +311,13 @@ export type AnalyticsEvent =
       /** A grant of gear, parts or a blueprint. Content ids and counts only. */
       kind: 'gear_drop';
       source: GearSource;
-      gear: readonly { base: string; rarity: GearRarity }[];
+      gear: readonly {
+        base: string;
+        rarity: GearRarity;
+        /** The item level and the rolled lines (content ids and tiers 0 to 4). */
+        level?: number;
+        lines?: readonly { id: string; tier: number }[];
+      }[];
       /** Items that did not fit in a full inventory and became parts instead. */
       converted: number;
       scrap: number;
@@ -252,7 +334,9 @@ export type AnalyticsEvent =
       kind: 'gear_equip';
       base: string;
       rarity: GearRarity;
+      /** The item level. */
       level: number;
+      slot?: 'hat' | 'scarf' | 'charm';
       /** The species of the creature that got the item (or lost it, for 'unequip'). */
       species: string;
       action: 'equip' | 'unequip';
@@ -279,6 +363,11 @@ export type AnalyticsEvent =
       unequipped: boolean;
       /** The parts it gave, by kind. */
       parts?: PartsBundle;
+      /** A dismantle job: items taken apart, the Essence it gave, blueprints learned and marks added (left out for older events). */
+      items?: number;
+      essence?: number;
+      learned?: number;
+      marks?: number;
     }
   | {
       kind: 'job_start';
@@ -291,6 +380,13 @@ export type AnalyticsEvent =
       skillLevel: number;
       /** The parts the job cost, by kind. */
       parts?: PartsBundle;
+      /** A craft: what it was aimed at, and the Essence it cost. */
+      reach?: 'none' | 'rare' | 'epic';
+      essence?: number;
+      /** A dismantle: how many items went in. */
+      items?: number;
+      /** The Bait a lure job cost (left out for every other job). */
+      bait?: number;
     }
   | {
       kind: 'job_claim';
@@ -298,14 +394,16 @@ export type AnalyticsEvent =
       base: string;
       /** The rarity that came out (a craft) or the item's rarity. */
       rarity: GearRarity;
-      /** A craft that came out one rarity above its blueprint. */
+      /** A craft that came out one rarity above Common. */
       upgraded: boolean;
-      enchant: string | null;
       xp: number;
       skillLevel: number;
       leveledUp: boolean;
       /** Supplies a supply job gave (left out for other jobs). */
       yield?: number;
+      /** A craft: what it was aimed at. A dismantle: how many items went in. */
+      reach?: 'none' | 'rare' | 'epic';
+      items?: number;
     }
   | {
       /** A daily dungeon run: how deep, how far it got, what the rooms rolled and who went. */
@@ -347,6 +445,25 @@ export type AnalyticsEvent =
       attempts: number;
     }
   | {
+      /** The valley's weather of a game day was drawn, a day ahead (a guild event: no player). */
+      kind: 'weather_draw';
+      boon: string;
+      omen: string | null;
+      wild: boolean;
+      /** The Boss Rank it was drawn at, whether the day is in a Festival week, and the strengths (10000 is x1). */
+      rank: number;
+      festival: boolean;
+      boonBp: number;
+      omenBp: number;
+    }
+  | {
+      /** Something started or fought under a day's weather: a trip, a Workshop job, a dungeon run or a raid stage. */
+      kind: 'weather_use';
+      where: 'trip' | 'job' | 'dungeon' | 'raid';
+      boon: string;
+      omen: string | null;
+    }
+  | {
       /**
        * A staging dev tool was used (`docs/design/dev-tools.md`). Reports must exclude this kind: staging
        * data is never mixed into production numbers, and these events are not player behaviour.
@@ -364,8 +481,10 @@ const SPECIES_IDS: ReadonlySet<string> = new Set(content.creatures.map((c) => c.
 const BOSS_IDS: ReadonlySet<string> = new Set(content.bosses.map((b) => b.id));
 const ABILITY_IDS: ReadonlySet<string> = new Set(content.finaleAbilities.map((a) => a.id));
 const GEAR_BASE_IDS: ReadonlySet<string> = new Set(gearContent.bases.map((b) => b.id));
-const ENCHANT_IDS: ReadonlySet<string> = new Set(gearContent.enchants.map((e) => e.id));
+const GEAR_LINE_IDS: ReadonlySet<string> = new Set(gearContent.lines.map((l) => l.id));
+const TALENT_IDS: ReadonlySet<string> = new Set(talentContent.byId.keys());
 const MODIFIER_IDS: ReadonlySet<string> = new Set(dungeonContent.modifiers.map((m) => m.id));
+const WEATHER_IDS: ReadonlySet<string> = new Set(weatherContent.map((d) => d.id));
 const ROLE_IDS = ['setter', 'payoff', 'support', 'guard'] as const;
 const DESTINATION_IDS: ReadonlySet<string> = new Set(
   expeditionContent.destinations.map((d) => d.id),
@@ -405,7 +524,10 @@ function catchProps(list: readonly CatchProps[]): unknown[] {
     species: species(c.species),
     rarity: oneOf(RARITIES, c.rarity, 'common'),
     shiny: bool(c.shiny),
-    result: oneOf(['new', 'fused', 'converted'] as const, c.result, 'new'),
+    result: oneOf(CATCH_RESULTS, c.result, 'new'),
+    ...(c.talent === undefined
+      ? {}
+      : { talent: fromSet(TALENT_IDS, c.talent), golden: bool(c.golden === true) }),
   }));
 }
 
@@ -511,6 +633,45 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       return { slots: int(event.slots, 99), rankSum: int(event.rankSum, 9_999) };
     case 'train':
       return { species: species(event.species), level: int(event.level), cost: int(event.cost) };
+    case 'creature_exp':
+      return {
+        source: oneOf(
+          ['trip', 'dungeon', 'raid', 'job', 'ribbon', 'evolve'] as const,
+          event.source,
+          'trip',
+        ),
+        species: species(event.species),
+        gained: int(event.gained, 1_000_000),
+        treat: bool(event.treat),
+        levelBefore: int(event.levelBefore, 99),
+        level: int(event.level, 99),
+        waiting: bool(event.waiting),
+      };
+    case 'treat':
+      return {
+        source: oneOf(['trip', 'dungeon', 'job'] as const, event.source, 'trip'),
+        species: species(event.species),
+        level: int(event.level, 99),
+        cost: int(event.cost, 1_000),
+      };
+    case 'ribbon':
+      return {
+        species: species(event.species),
+        ribbon: oneOf(['bronze', 'silver', 'gold'] as const, event.ribbon, 'bronze'),
+      };
+    case 'level_reset':
+      return {
+        creatures: int(event.creatures, 10_000),
+        levels: int(event.levels, 1_000_000),
+        bait: int(event.bait, 100_000_000),
+        unequipped: int(event.unequipped, 10_000),
+        talentsToBook: int(event.talentsToBook, 10_000),
+      };
+    case 'catch_pity':
+      return {
+        pity: oneOf(['new', 'creature'] as const, event.pity, 'creature'),
+        species: species(event.species),
+      };
     case 'evolve':
       return { from: species(event.from), to: species(event.to), cost: int(event.cost) };
     case 'fuse':
@@ -520,6 +681,29 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         converted: bool(event.converted),
         fusionCount: int(event.fusionCount, 99),
         bait: int(event.bait),
+      };
+    case 'talent_roll':
+      return {
+        species: species(event.species),
+        talent: fromSet(TALENT_IDS, event.talent),
+        golden: bool(event.golden),
+        ...(event.backfill === true ? { backfill: true } : {}),
+      };
+    case 'duplicate_choice':
+      return {
+        choice: oneOf(['teach', 'fuse', 'release', 'keep'] as const, event.choice, 'release'),
+        auto: bool(event.auto),
+        species: species(event.species),
+        rarity: oneOf(RARITIES, event.rarity, 'common'),
+        talent: fromSet(TALENT_IDS, event.talent),
+        golden: bool(event.golden),
+      };
+    case 'talent_slot':
+      return {
+        species: species(event.species),
+        talent: fromSet(TALENT_IDS, event.talent),
+        golden: bool(event.golden),
+        slot: int(event.slot, 3),
       };
     case 'roster_optout':
       return { optOut: bool(event.optOut) };
@@ -586,14 +770,24 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
     case 'festival_grant':
       return {
         species: species(event.species),
-        result: oneOf(['new', 'fused', 'converted'] as const, event.result, 'new'),
+        result: oneOf(CATCH_RESULTS, event.result, 'new'),
       };
     case 'gear_drop':
       return {
         source: oneOf(GEAR_SOURCES, event.source, 'raid_phase'),
-        gear: event.gear
-          .slice(0, MAX_DROP_ITEMS)
-          .map((g) => ({ base: gearBase(g.base), rarity: gearRarity(g.rarity) })),
+        gear: event.gear.slice(0, MAX_DROP_ITEMS).map((g) => ({
+          base: gearBase(g.base),
+          rarity: gearRarity(g.rarity),
+          ...(g.level === undefined ? {} : { level: int(g.level, RULES.gear.maxItemLevel) }),
+          ...(g.lines === undefined
+            ? {}
+            : {
+                lines: g.lines.slice(0, 3).map((l) => ({
+                  id: fromSet(GEAR_LINE_IDS, l.id),
+                  tier: int(l.tier, 4),
+                })),
+              }),
+        })),
         converted: int(event.converted, 99),
         scrap: int(event.scrap),
         shards: int(event.shards),
@@ -609,7 +803,8 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       return {
         base: gearBase(event.base),
         rarity: gearRarity(event.rarity),
-        level: int(event.level, RULES.gear.maxLevel),
+        level: int(event.level, RULES.gear.maxItemLevel),
+        ...(event.slot === undefined ? {} : { slot: oneOf(GEAR_SLOTS, event.slot, 'hat') }),
         species: species(event.species),
         action: event.action === 'unequip' ? 'unequip' : 'equip',
         swap: bool(event.swap),
@@ -618,8 +813,8 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       return {
         base: gearBase(event.base),
         rarity: gearRarity(event.rarity),
-        from: int(event.from, RULES.gear.maxLevel),
-        to: int(event.to, RULES.gear.maxLevel),
+        from: int(event.from, 5),
+        to: int(event.to, 5),
         essence: int(event.essence),
         scrap: int(event.scrap),
       };
@@ -627,12 +822,16 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       return {
         base: gearBase(event.base),
         rarity: gearRarity(event.rarity),
-        level: int(event.level, RULES.gear.maxLevel),
+        level: int(event.level, RULES.gear.maxItemLevel),
         scrap: int(event.scrap),
         shards: int(event.shards),
         glimmer: int(event.glimmer),
         unequipped: bool(event.unequipped),
         ...withParts(event.parts),
+        ...(event.items === undefined ? {} : { items: int(event.items, 5) }),
+        ...(event.essence === undefined ? {} : { essence: int(event.essence, 1_000) }),
+        ...(event.learned === undefined ? {} : { learned: int(event.learned, 5) }),
+        ...(event.marks === undefined ? {} : { marks: int(event.marks, 5) }),
       };
     case 'job_start':
       return {
@@ -643,6 +842,10 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         hours: int(event.hours, 99),
         skillLevel: int(event.skillLevel, 99),
         ...withParts(event.parts),
+        ...(event.reach === undefined ? {} : { reach: oneOf(REACH_IDS, event.reach, 'none') }),
+        ...(event.essence === undefined ? {} : { essence: int(event.essence, 1_000) }),
+        ...(event.items === undefined ? {} : { items: int(event.items, 5) }),
+        ...(event.bait === undefined || event.bait <= 0 ? {} : { bait: int(event.bait, 100_000) }),
       };
     case 'job_claim':
       return {
@@ -650,11 +853,12 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         base: fromSet(JOB_BASE_IDS, event.base),
         rarity: gearRarity(event.rarity),
         upgraded: bool(event.upgraded),
-        enchant: event.enchant === null ? null : fromSet(ENCHANT_IDS, event.enchant),
         xp: int(event.xp, 100_000),
         skillLevel: int(event.skillLevel, 99),
         leveledUp: bool(event.leveledUp),
         ...(event.yield === undefined || event.yield <= 0 ? {} : { yield: int(event.yield, 99) }),
+        ...(event.reach === undefined ? {} : { reach: oneOf(REACH_IDS, event.reach, 'none') }),
+        ...(event.items === undefined ? {} : { items: int(event.items, 5) }),
       };
     case 'dungeon_run':
       return {
@@ -667,7 +871,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         team: event.team
           .slice(0, 3)
           .map((t) => ({ species: species(t.species), role: oneOf(ROLE_IDS, t.role, 'setter') })),
-        gear: int(event.gear, 3),
+        gear: int(event.gear, 9),
       };
     case 'dungeon_reward':
       return {
@@ -681,6 +885,22 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         supplies: int(event.supplies, 99),
         landmark: bool(event.landmark),
         streakBonusDay: int(event.streakBonusDay, 99),
+      };
+    case 'weather_draw':
+      return {
+        boon: fromSet(WEATHER_IDS, event.boon),
+        omen: event.omen === null ? null : fromSet(WEATHER_IDS, event.omen),
+        wild: bool(event.wild),
+        rank: int(event.rank, 99),
+        festival: bool(event.festival),
+        boonBp: int(event.boonBp, 100_000),
+        omenBp: int(event.omenBp, 100_000),
+      };
+    case 'weather_use':
+      return {
+        where: oneOf(['trip', 'job', 'dungeon', 'raid'] as const, event.where, 'trip'),
+        boon: fromSet(WEATHER_IDS, event.boon),
+        omen: event.omen === null ? null : fromSet(WEATHER_IDS, event.omen),
       };
     case 'dev_action':
       return { tool: oneOf(DEV_ACTION_TOOLS, event.tool, 'clock') };

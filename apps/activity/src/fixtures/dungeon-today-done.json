@@ -32,7 +32,7 @@
   "canRun": false,
   "blocked": "already_run",
   "last": {
-    "id": "8a906b41-a31b-4720-b100-fe11ee159693",
+    "id": "d1a12d6d-5d5e-4f3f-9a23-8ff973672209",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -44,7 +44,7 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "29e47085-5309-4f73-abbe-ff73ad84d9cd",
+        "id": "4c18d0c4-919f-4d72-94da-90666e3d6e48",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -54,7 +54,7 @@
         "hpEnd": 240
       },
       {
-        "id": "a66820a0-b53a-4fea-a64e-bdef1f5b4075",
+        "id": "13651899-5ebf-4719-9d77-d32bfc8d7b04",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -64,7 +64,7 @@
         "hpEnd": 200
       },
       {
-        "id": "f3a4e314-4688-4100-b0ae-117850bb4c39",
+        "id": "6f907883-1549-45f7-8791-164012a60d2c",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
@@ -78,12 +78,7 @@
       {
         "index": 0,
         "kind": "foe",
-        "foe": {
-          "id": "bramble-hound",
-          "name": "Bramble Hound",
-          "element": "grove",
-          "hpMax": 317
-        },
+        "foe": { "id": "bramble-hound", "name": "Bramble Hound", "element": "grove", "hpMax": 317 },
         "modifier": {
           "id": "dark",
           "name": "Dark",
@@ -97,12 +92,7 @@
       {
         "index": 1,
         "kind": "foe",
-        "foe": {
-          "id": "drift-wisp",
-          "name": "Drift Wisp",
-          "element": "tide",
-          "hpMax": 225
-        },
+        "foe": { "id": "drift-wisp", "name": "Drift Wisp", "element": "tide", "hpMax": 225 },
         "modifier": {
           "id": "brittle",
           "name": "Brittle",
@@ -136,21 +126,53 @@
     "rewards": {
       "bait": 3,
       "essence": 1,
-      "parts": {
-        "scrap": 1,
-        "tide-shard": 1
-      },
+      "parts": { "scrap": 2, "tide-shard": 1 },
       "gear": [],
       "converted": [],
-      "supplies": ["lantern-basic"],
+      "supplies": ["satchel-basic"],
       "landmark": false,
-      "streak": null
+      "streak": null,
+      "experience": [
+        {
+          "creatureId": "4c18d0c4-919f-4d72-94da-90666e3d6e48",
+          "gained": 240,
+          "treat": false,
+          "levelBefore": 12,
+          "level": 12,
+          "exp": 240,
+          "needed": 588,
+          "waiting": false,
+          "gold": false
+        },
+        {
+          "creatureId": "13651899-5ebf-4719-9d77-d32bfc8d7b04",
+          "gained": 240,
+          "treat": false,
+          "levelBefore": 12,
+          "level": 12,
+          "exp": 240,
+          "needed": 588,
+          "waiting": false,
+          "gold": false
+        },
+        {
+          "creatureId": "6f907883-1549-45f7-8791-164012a60d2c",
+          "gained": 240,
+          "treat": false,
+          "levelBefore": 12,
+          "level": 12,
+          "exp": 240,
+          "needed": 588,
+          "waiting": false,
+          "gold": false
+        }
+      ]
     }
   },
   "lastTeam": [
-    "29e47085-5309-4f73-abbe-ff73ad84d9cd",
-    "a66820a0-b53a-4fea-a64e-bdef1f5b4075",
-    "f3a4e314-4688-4100-b0ae-117850bb4c39"
+    "4c18d0c4-919f-4d72-94da-90666e3d6e48",
+    "13651899-5ebf-4719-9d77-d32bfc8d7b04",
+    "6f907883-1549-45f7-8791-164012a60d2c"
   ],
   "draftTeam": null
 }

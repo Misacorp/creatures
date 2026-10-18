@@ -2,7 +2,6 @@ import {
   RULES,
   content,
   createSeededRng,
-  expeditionConvertBait,
   lore,
   pickQuirk,
   quirkText,
@@ -16,6 +15,7 @@ import {
   OTHER_USER_ID,
   T0,
   USER_ID,
+  certainCatches,
   callHandler,
   fakeDiscord,
   getWithToken,
@@ -30,9 +30,6 @@ import { createHandler } from '../src/index';
 
 const HOUR = 3_600_000;
 
-/** Bait to train from `level` to the next one (the game's rule, so retuning does not break tests). */
-const trainCostAt = (level: number): number =>
-  RULES.training.baseCost + RULES.training.perLevel * level;
 const USER = { id: USER_ID, displayName: 'Misa' };
 const OTHER = { id: OTHER_USER_ID, displayName: 'Other' };
 
@@ -57,10 +54,13 @@ function scriptedRng(values: number[]): Rng & { drawn: () => number } {
   };
 }
 
-/** Draws for one catch of a non-zipmouse common species that is not shiny: [rarity, species, shiny]. */
-const COMMON_SPLASHET_PLAIN = [0, 0, 1];
+/**
+ * Draws for one catch of a non-zipmouse common species that is not shiny: [the roll brings a creature,
+ * rarity, species, shiny].
+ */
+const COMMON_SPLASHET_PLAIN = [0, 0, 0, 1];
 /** Same, but shiny. */
-const COMMON_SPLASHET_SHINY = [0, 0, 0];
+const COMMON_SPLASHET_SHINY = [0, 0, 0, 0];
 
 function countingRng(seed: string): Rng & { drawn: () => number } {
   const inner = createSeededRng(seed);
@@ -96,7 +96,13 @@ interface CreatureBody {
   away: boolean;
   quirk: string | null;
   stats: { hp: number; atk: number; spd: number };
-  trainCost: number | null;
+  exp: number;
+  expNeeded: number | null;
+  waiting: boolean;
+  ribbons: number;
+  nextUnlock: { level: number; name: string } | null;
+  ribbon: { id: string; level: number } | null;
+  treatCost: number;
   evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
   ability: { id: string; unlocked: boolean; unlockLevel: number; nextId?: string } | null;
 }
@@ -105,9 +111,27 @@ interface CatchBody {
   species: string;
   shiny: boolean;
   outcome: string;
-  fusionCount?: number;
-  bait?: number;
+  talent?: {
+    id: string;
+    name: string;
+    golden: boolean;
+    text: string;
+    about: string;
+    idle: boolean;
+  };
+  pendingId?: string;
   firstOnServer: boolean;
+}
+
+interface PendingBody {
+  id: string;
+  species: string;
+  line: string;
+  shiny: boolean;
+  source: string;
+  talent: { id: string; golden: boolean };
+  offered: { teach: string[]; fuse: string[]; release: boolean; keep: boolean };
+  recommended: { choice: string; creatureId?: string; slot?: number };
 }
 
 interface ExpeditionBody {
@@ -126,7 +150,7 @@ interface ExpeditionBody {
   endsAt: number;
   status: string;
   claimedAt: number | null;
-  result: { recalled: boolean; catches: CatchBody[] } | null;
+  result: { recalled: boolean; catches: CatchBody[]; noCatch?: number } | null;
 }
 
 interface StateBody {
@@ -146,6 +170,8 @@ interface StateBody {
   starterChosen: boolean;
   starterOptions?: string[];
   creatures: CreatureBody[];
+  pending: PendingBody[];
+  bookSlotBait: number;
   expeditions: ExpeditionBody[];
   slots: {
     total: number;
@@ -156,7 +182,6 @@ interface StateBody {
   };
   supplies: Record<string, number>;
   cancelled: { id: string; reason: string }[];
-  trainingMedianLevel: number | null;
   serverFirsts: { kind: string; species: string; at: number; mine: boolean; holders: string[] }[];
   loungerId: string | null;
   loungeSpot: { id: string; at: number } | null;
@@ -288,8 +313,8 @@ function expeditionOf(res: Json): ExpeditionBody {
   return res.body['expedition'] as ExpeditionBody;
 }
 
-function resultOf(res: Json): { recalled: boolean; catches: CatchBody[] } {
-  return res.body['result'] as { recalled: boolean; catches: CatchBody[] };
+function resultOf(res: Json): { recalled: boolean; catches: CatchBody[]; noCatch?: number } {
+  return res.body['result'] as { recalled: boolean; catches: CatchBody[]; noCatch?: number };
 }
 
 function count(sql: SqlStorage, table: string, where = '1 = 1'): number {
@@ -380,12 +405,15 @@ describe('GET /api/state', () => {
           [
             'attention',
             'balances',
+            'bookSlotBait',
             'cancelled',
             'creatures',
             'expeditions',
             'leetSync',
+            'levelReset',
             'loungeSpot',
             'loungerId',
+            'pending',
             'serverFirsts',
             'serverNow',
             'slots',
@@ -393,7 +421,6 @@ describe('GET /api/state', () => {
             'starterOptions',
             'supplies',
             'timezone',
-            'trainingMedianLevel',
           ].sort(),
         );
         expect(before.serverNow).toBe(T0);
@@ -411,6 +438,8 @@ describe('GET /api/state', () => {
         expect(before.starterOptions).toEqual(['splashet', 'cindle', 'sproutle']);
         expect(before.creatures).toEqual([]);
         expect(before.expeditions).toEqual([]);
+        expect(before.pending).toEqual([]);
+        expect(before.bookSlotBait).toBe(RULES.talents.bookSlotBait);
         expect(before.slots).toEqual({
           total: 1,
           used: 0,
@@ -420,7 +449,6 @@ describe('GET /api/state', () => {
         });
         expect(before.supplies).toEqual({});
         expect(before.cancelled).toEqual([]);
-        expect(before.trainingMedianLevel).toBeNull();
         expect(before.serverFirsts).toEqual([]);
         expect(before.loungerId).toBeNull();
         expect(before.loungeSpot).toBeNull();
@@ -435,7 +463,6 @@ describe('GET /api/state', () => {
         const after = await player.state();
         expect(after.starterChosen).toBe(true);
         expect('starterOptions' in after).toBe(false);
-        expect(after.trainingMedianLevel).toBe(1);
         const [cindle] = after.creatures;
         // The only creature is the one that lounges.
         expect(after.loungerId).toBe(cindle?.id);
@@ -450,15 +477,53 @@ describe('GET /api/state', () => {
           nickname: null,
           away: false,
           quirk: expect.any(String) as string,
+          lineSlot: 1,
+          // The scripted talent draws are the second talent of the Cindle line, not golden.
+          talents: {
+            slots: [
+              {
+                slot: 1,
+                opensAt: 1,
+                open: true,
+                talent: {
+                  id: 'warm-to-the-touch',
+                  name: 'Warm to the Touch',
+                  golden: false,
+                  text: 'Wildfire bonus +13%',
+                  about: expect.any(String) as string,
+                  idle: false,
+                },
+              },
+              { slot: 2, opensAt: 20, open: false, talent: null },
+            ],
+            signature: null,
+            book: [
+              {
+                id: 'warm-to-the-touch',
+                name: 'Warm to the Touch',
+                golden: false,
+                text: 'Wildfire bonus +13%',
+                about: expect.any(String) as string,
+                idle: false,
+                slot: 1,
+              },
+            ],
+          },
           origin: 'starter',
           caughtAt: T0,
           explorer: { rank: 1, xp: 0, nextRankXp: RULES.expeditions.rank.xpForRank[1], trips: 0 },
           stats: { hp: 96, atk: 40, spd: 28 },
           // No gear yet: the fight stats are the same, nothing is worn and nothing is busy.
           statsWithGear: { hp: 96, atk: 40, spd: 28 },
-          gear: null,
+          gear: [],
           busy: null,
-          trainCost: trainCostAt(1),
+          exp: 0,
+          expNeeded: 27,
+          waiting: false,
+          ribbons: 0,
+          nextUnlock: { level: 7, name: 'Scarf' },
+          ribbon: null,
+          treatCost: 4,
           evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: false },
           ability: {
             id: 'flare-strike',
@@ -468,7 +533,7 @@ describe('GET /api/state', () => {
           },
         });
       },
-      seeded(),
+      { ...seeded(), talentRng: scriptedRng([1, 5]) },
     );
   });
 
@@ -983,41 +1048,47 @@ describe('Festival species', () => {
       expect(species.catchable).toBe(false);
       expect(species.starter).toBe(false);
     }
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 1_000_000);
-        // The Old Crossroads need explorer rank 2.
-        ctx.sql.exec(
-          'INSERT INTO explorer_progress (user_id, creature_id, xp, trips) VALUES (?, ?, ?, 0)',
-          USER_ID,
-          p.starterId,
-          RULES.expeditions.rank.xpForRank[1] ?? 0,
-        );
-        const seen = new Set<string>();
-        const places = [
-          'tidepools',
-          'ember-caves',
-          'verdant-hollow',
-          'storm-ridge',
-          'old-crossroads',
-        ];
-        for (let i = 0; i < 100; i++) {
-          const exp = expeditionOf(
-            await send(p, p.starterId, 'long', [], newKey(), places[i % places.length]),
+    // Every roll brings a creature, so 100 long trips are 100 catches (the shipped chance is small).
+    const restore = certainCatches(['long']);
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await joinWithStarter(ctx, USER, 1_000_000);
+          // The Old Crossroads need explorer rank 2.
+          ctx.sql.exec(
+            'INSERT INTO explorer_progress (user_id, creature_id, xp, trips) VALUES (?, ?, ?, 0)',
+            USER_ID,
+            p.starterId,
+            RULES.expeditions.rank.xpForRank[1] ?? 0,
           );
-          ctx.clock.t = exp.endsAt;
-          const res = await claim(p, exp.id);
-          expect(res.status).toBe(200);
-          for (const c of resultOf(res).catches) seen.add(c.species);
-        }
-        // Plenty of the catchable species showed up, and no Festival species did. (A Festival
-        // species comes from a won Festival finale, or from the Festival Grounds in a Festival week.)
-        expect(seen.size).toBeGreaterThan(6);
-        for (const species of festival) expect(seen.has(species.id)).toBe(false);
-      },
-      seeded(),
-    );
+          const seen = new Set<string>();
+          const places = [
+            'tidepools',
+            'ember-caves',
+            'verdant-hollow',
+            'storm-ridge',
+            'old-crossroads',
+          ];
+          for (let i = 0; i < 100; i++) {
+            const exp = expeditionOf(
+              await send(p, p.starterId, 'long', [], newKey(), places[i % places.length]),
+            );
+            ctx.clock.t = exp.endsAt;
+            const res = await claim(p, exp.id);
+            expect(res.status).toBe(200);
+            for (const c of resultOf(res).catches) seen.add(c.species);
+          }
+          // Plenty of the catchable species showed up, and no Festival species did. (A Festival
+          // species comes from a won Festival finale, or from the Festival Grounds in a Festival week.)
+          expect(seen.size).toBeGreaterThan(6);
+          for (const species of festival) expect(seen.has(species.id)).toBe(false);
+        },
+        seeded(),
+      );
+    } finally {
+      restore();
+    }
   });
 });
 
@@ -1033,17 +1104,23 @@ describe('POST /api/expeditions/{id}/claim', () => {
         expect(res.status).toBe(200);
         const result = resultOf(res);
         expect(result.recalled).toBe(false);
-        expect(result.catches).toHaveLength(RULES.expeditions.lengths.long.rolls);
+        // Every roll either brought a creature or came up empty (a small find instead).
+        expect(result.catches.length + (result.noCatch ?? 0)).toBe(
+          RULES.expeditions.lengths.long.rolls,
+        );
         const state = res.body['state'] as StateBody;
         expect(state.creatures.find((c) => c.id === p.starterId)?.away).toBe(false);
         expect(state.slots.used).toBe(0);
         const claimed = state.expeditions.find((e) => e.id === exp.id);
         expect(claimed).toMatchObject({ status: 'claimed', claimedAt: exp.endsAt });
         expect(claimed?.result).toEqual(result);
-        // Every catch ends up in the collection, as a new creature or a fusion.
+        // Every catch ends up in the collection (a new creature) or waits as a card (a duplicate).
         for (const c of result.catches) {
           const line = content.creatures.find((s) => s.id === c.species)?.line;
           expect(state.creatures.some((own) => own.line === line)).toBe(true);
+          if (c.outcome === 'duplicate') {
+            expect(state.pending.some((card) => card.id === c.pendingId)).toBe(true);
+          }
         }
       },
       seeded(),
@@ -1147,9 +1224,19 @@ describe('POST /api/expeditions/{id}/claim', () => {
     const single = await run(1);
     const many = await run(5);
     expect(many.drawn).toBe(single.drawn);
+    // The creature ids are random per database: everything else in the result is the same.
+    const plain = (r: Json) => {
+      const { experience, ...rest } = resultOf(r) as ReturnType<typeof resultOf> & {
+        experience?: Record<string, unknown>;
+      };
+      const exp = { ...(experience ?? {}) };
+      delete exp['creatureId'];
+      return { ...rest, experience: exp };
+    };
     for (const r of many.results) {
       expect(r.status).toBe(200);
-      expect(resultOf(r)).toEqual(resultOf(single.results[0] as Json));
+      expect(plain(r)).toEqual(plain(single.results[0] as Json));
+      expect(resultOf(r)).toEqual(resultOf(many.results[0] as Json));
     }
   });
 
@@ -1259,7 +1346,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
     );
   });
 
-  it('a duplicate fuses into the existing creature', async () => {
+  it('a duplicate waits as a card with the talent it rolled, and changes nothing else', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -1269,20 +1356,28 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const exp = expeditionOf(await send(p, p.starterId));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        expect(resultOf(res).catches).toEqual([
-          {
-            species: 'splashet',
-            shiny: false,
-            outcome: 'fused',
-            fusionCount: 1,
-            firstOnServer: true,
-          },
-        ]);
-        const after = (res.body['state'] as StateBody).creatures;
-        expect(after).toHaveLength(1);
-        expect(after[0]?.fusionCount).toBe(1);
-        // +6% stats on every stat, floored.
-        expect(after[0]?.stats.hp).toBe(Math.floor(((before?.stats.hp ?? 0) * 10600) / 10000));
+        const [dupe] = resultOf(res).catches;
+        expect(dupe).toMatchObject({
+          species: 'splashet',
+          shiny: false,
+          outcome: 'duplicate',
+          firstOnServer: true,
+        });
+        expect(dupe?.talent?.name).toBeTypeOf('string');
+        const state = res.body['state'] as StateBody;
+        // The creature the player owns is untouched: no fusion happened by itself.
+        expect(state.creatures).toHaveLength(1);
+        expect(state.creatures[0]?.fusionCount).toBe(0);
+        expect(state.creatures[0]?.stats).toEqual(before?.stats);
+        // The card is in the state, with the same talent, and four ways to answer.
+        expect(state.pending).toHaveLength(1);
+        expect(state.pending[0]).toMatchObject({
+          id: dupe?.pendingId,
+          species: 'splashet',
+          source: 'expedition',
+          talent: { id: dupe?.talent?.id, golden: dupe?.talent?.golden },
+          offered: { fuse: [p.starterId], release: true, keep: false },
+        });
         expect(
           ctx.sql.exec<{ s: number }>('SELECT dupe_streak AS s FROM player_progress').one().s,
         ).toBe(1);
@@ -1290,8 +1385,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
       { rng: scriptedRng(COMMON_SPLASHET_PLAIN) },
     );
   });
-
-  it('after five fusions a duplicate converts to Bait, exactly once even on a replayed claim', async () => {
+  it('a duplicate of a fully fused creature still waits as a card and pays no Bait, once even on a replayed claim', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -1302,33 +1396,23 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const exp = expeditionOf(await send(p, p.starterId, 'medium', OWNED_ATLAS)); // 2 rolls
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        const bait = expeditionConvertBait(RULES.fusion.convertBait.common);
-        expect(resultOf(res).catches.map((c) => [c.outcome, c.bait])).toEqual([
-          ['converted', bait],
-          ['converted', bait],
-        ]);
-        expect(ctx.core.balances(USER_ID).bait).toBe(100 + 2 * bait);
-        const credits = ctx.sql
-          .exec<{
-            amount: number;
-            idempotency_key: string;
-          }>("SELECT amount, idempotency_key FROM ledger WHERE source = 'fusion' ORDER BY id")
-          .toArray();
-        expect(credits).toEqual([
-          { amount: bait, idempotency_key: `fusion:${exp.id}:0` },
-          { amount: bait, idempotency_key: `fusion:${exp.id}:1` },
-        ]);
-        // A replayed claim pays nothing more.
+        expect(resultOf(res).catches.map((c) => c.outcome)).toEqual(['duplicate', 'duplicate']);
+        expect(ctx.core.balances(USER_ID).bait).toBe(100);
+        expect(count(ctx.sql, 'ledger', "source = 'fusion'")).toBe(0);
+        const state = res.body['state'] as StateBody;
+        // Fusing is not offered any more; teaching, releasing are.
+        expect(state.pending).toHaveLength(2);
+        for (const card of state.pending) expect(card.offered.fuse).toEqual([]);
+        // A replayed claim adds nothing: no second card, no Bait.
         const again = await claim(p, exp.id);
         expect(resultOf(again)).toEqual(resultOf(res));
-        expect(ctx.core.balances(USER_ID).bait).toBe(100 + 2 * bait);
-        expect(count(ctx.sql, 'ledger', "source = 'fusion'")).toBe(2);
+        expect(count(ctx.sql, 'pending_catches')).toBe(2);
+        expect(ctx.core.balances(USER_ID).bait).toBe(100);
         expect((await p.state()).creatures[0]?.fusionCount).toBe(5);
       },
       { rng: scriptedRng([...COMMON_SPLASHET_PLAIN, ...COMMON_SPLASHET_PLAIN]) },
     );
   });
-
   it('a shiny duplicate makes the existing creature shiny', async () => {
     await runCore(
       nextGuild(),
@@ -1339,14 +1423,14 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const exp = expeditionOf(await send(p, p.starterId));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        expect(resultOf(res).catches[0]).toMatchObject({ outcome: 'fused', shiny: true });
+        expect(resultOf(res).catches[0]).toMatchObject({ outcome: 'duplicate', shiny: true });
         expect((res.body['state'] as StateBody).creatures[0]?.shiny).toBe(true);
       },
       { rng: scriptedRng(COMMON_SPLASHET_SHINY) },
     );
   });
 
-  it('a shiny new catch is a shiny creature, and a shiny conversion also upgrades', async () => {
+  it('a shiny new catch is a shiny creature, and a shiny duplicate of a fully fused creature also upgrades', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -1378,14 +1462,14 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const exp = expeditionOf(await send(p, p.starterId));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        expect(resultOf(res).catches[0]).toMatchObject({ outcome: 'converted', shiny: true });
+        expect(resultOf(res).catches[0]).toMatchObject({ outcome: 'duplicate', shiny: true });
         expect((res.body['state'] as StateBody).creatures[0]?.shiny).toBe(true);
       },
       { rng: scriptedRng(COMMON_SPLASHET_SHINY) },
     );
   });
 
-  it('a second catch of a species within one claim fuses into the first', async () => {
+  it('a second catch of a species within one claim is a duplicate of the first', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -1395,15 +1479,15 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const exp = expeditionOf(await send(p, p.starterId, 'medium', OWNED_ATLAS));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        expect(resultOf(res).catches).toEqual([
-          { species: 'splashet', shiny: false, outcome: 'new', firstOnServer: true },
-          {
-            species: 'splashet',
-            shiny: false,
-            outcome: 'fused',
-            fusionCount: 1,
-            firstOnServer: false,
-          },
+        const [first, second] = resultOf(res).catches;
+        expect(first).toMatchObject({ species: 'splashet', outcome: 'new', firstOnServer: true });
+        expect(second).toMatchObject({
+          species: 'splashet',
+          outcome: 'duplicate',
+          firstOnServer: false,
+        });
+        expect((res.body['state'] as StateBody).pending.map((c) => c.id)).toEqual([
+          second?.pendingId,
         ]);
         expect((res.body['state'] as StateBody).creatures.map((c) => c.line)).toEqual([
           'cindle',
@@ -1505,198 +1589,22 @@ describe('POST /api/expeditions/{id}/claim', () => {
 });
 
 describe('POST /api/creatures/{id}/train', () => {
-  const train = (p: Player, id: string, key = newKey()) =>
-    p.call('POST', `/api/creatures/${id}/train`, { idempotencyKey: key });
-
-  it('charges the cost and raises the level by one', async () => {
+  it('is gone: levels come from experience, and an old client gets a clear answer and pays nothing', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
-        const res = await train(p, p.starterId);
-        expect(res.status).toBe(200);
-        expect(res.body['level']).toBe(2);
-        const state = res.body['state'] as StateBody;
-        expect(state.balances.bait).toBe(100 - trainCostAt(1));
-        expect(state.creatures[0]).toMatchObject({ level: 2, trainCost: trainCostAt(2) });
-        expect(
-          ctx.sql
-            .exec<{ amount: number }>("SELECT amount FROM ledger WHERE source = 'training'")
-            .toArray(),
-        ).toEqual([{ amount: -trainCostAt(1) }]);
-      },
-      seeded(),
-    );
-  });
-
-  it('replaying the key charges once and does not level twice', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 100);
-        const key = newKey();
-        await train(p, p.starterId, key);
-        const again = await train(p, p.starterId, key);
-        expect(again.status).toBe(200);
-        expect(again.body['level']).toBe(2);
-        expect((again.body['state'] as StateBody).balances.bait).toBe(100 - trainCostAt(1));
-        expect((again.body['state'] as StateBody).creatures[0]?.level).toBe(2);
-        expect(count(ctx.sql, 'ledger', "source = 'training'")).toBe(1);
-      },
-      seeded(),
-    );
-  });
-
-  it('refuses a key that was used for another creature', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 100);
-        ctx.sql.exec(
-          `INSERT INTO creatures (id, user_id, line, species, level, origin, caught_at)
-           VALUES ('00000000-0000-4000-8000-000000000008', ?, 'cindle', 'cindle', 1, 'test', ?)`,
-          USER_ID,
-          T0,
-        );
-        const key = newKey();
-        await train(p, p.starterId, key);
-        const res = await train(p, '00000000-0000-4000-8000-000000000008', key);
-        expect(res.status).toBe(409);
-        expect(res.body).toEqual({ error: 'key_conflict' });
-        expect(ctx.core.balances(USER_ID).bait).toBe(100 - trainCostAt(1));
-      },
-      seeded(),
-    );
-  });
-
-  it('409s when the creature is at its level cap', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 1000);
-        ctx.sql.exec('UPDATE creatures SET level = 15');
-        const res = await train(p, p.starterId);
-        expect(res.status).toBe(409);
-        expect(res.body).toEqual({ error: 'level_cap' });
+        const res = await p.call('POST', `/api/creatures/${p.starterId}/train`, {
+          idempotencyKey: newKey(),
+        });
+        expect(res.status).toBe(410);
+        expect(res.body).toEqual({ error: 'training_is_by_activity' });
+        // Whatever the body (or none), nothing is charged and the level does not move.
+        expect((await p.call('POST', `/api/creatures/${p.starterId}/train`, {})).status).toBe(410);
         const state = await p.state();
-        expect(state.creatures[0]).toMatchObject({ level: 15, trainCost: null });
-        expect(state.balances.bait).toBe(1000);
-      },
-      seeded(),
-    );
-  });
-
-  it('409s while the creature is away', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 100);
-        await send(p, p.starterId);
-        const res = await train(p, p.starterId);
-        expect(res.status).toBe(409);
-        expect(res.body).toEqual({ error: 'creature_away' });
-        expect(ctx.core.balances(USER_ID).bait).toBe(100);
-      },
-      seeded(),
-    );
-  });
-
-  it('409s without funds and writes nothing', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, trainCostAt(1) - 1);
-        const ledger = count(ctx.sql, 'ledger');
-        const res = await train(p, p.starterId);
-        expect(res.status).toBe(409);
-        expect(res.body).toEqual({ error: 'insufficient_funds' });
-        expect(count(ctx.sql, 'ledger')).toBe(ledger);
-        expect((await p.state()).creatures[0]?.level).toBe(1);
-      },
-      seeded(),
-    );
-  });
-
-  it('applies the catch-up discount when far below the server median', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await joinWithStarter(ctx, USER, 100);
-        await joinWithStarter(ctx, OTHER, 500, 'cindle');
-        ctx.sql.exec('UPDATE creatures SET level = 15 WHERE user_id = ?', OTHER_USER_ID);
-        // Top levels are 1 and 15: median 8, so level 1 < 8 - 5 gets half price (rounded up).
-        const state = await a.state();
-        expect(state.trainingMedianLevel).toBe(8);
-        expect(state.creatures[0]?.trainCost).toBe(Math.ceil(trainCostAt(1) / 2));
-        const res = await train(a, a.starterId);
-        expect(res.status).toBe(200);
-        expect((res.body['state'] as StateBody).balances.bait).toBe(
-          100 - Math.ceil(trainCostAt(1) / 2),
-        );
-        // Level 2 is still more than 5 below 8 (2 < 3): half price again.
-        expect((res.body['state'] as StateBody).creatures[0]?.trainCost).toBe(
-          Math.ceil(trainCostAt(2) / 2),
-        );
-      },
-      seeded(),
-    );
-  });
-
-  it('charges full price near the median', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await joinWithStarter(ctx, USER, 100);
-        await joinWithStarter(ctx, OTHER, 100, 'cindle');
-        ctx.sql.exec('UPDATE creatures SET level = 6 WHERE user_id = ?', OTHER_USER_ID);
-        // Tops 1 and 6: median 3.5; 1 < -1.5 is false.
-        const state = await a.state();
-        expect(state.trainingMedianLevel).toBe(3.5);
-        expect(state.creatures[0]?.trainCost).toBe(trainCostAt(1));
-      },
-      seeded(),
-    );
-  });
-
-  it("uses each player's highest creature, and ignores players without creatures", async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await joinWithStarter(ctx, USER, 100);
-        await join(ctx, OTHER); // no starter: not part of the median
-        ctx.sql.exec(
-          `INSERT INTO creatures (id, user_id, line, species, level, origin, caught_at)
-           VALUES ('00000000-0000-4000-8000-000000000007', ?, 'zipmouse', 'zipmouse', 9, 'test', ?)`,
-          USER_ID,
-          T0,
-        );
-        expect((await a.state()).trainingMedianLevel).toBe(9);
-      },
-      seeded(),
-    );
-  });
-
-  it('404s for creatures that are not yours and 400s for malformed ids and bodies', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const a = await joinWithStarter(ctx, USER, 100);
-        const b = await joinWithStarter(ctx, OTHER, 100, 'cindle');
-        const res = await train(b, a.starterId);
-        expect(res.status).toBe(404);
-        expect(res.body).toEqual({ error: 'not_found' });
-        expect((await train(a, 'nope')).status).toBe(400);
-        expect((await a.call('POST', `/api/creatures/${a.starterId}/train`, {})).status).toBe(400);
-        expect(
-          (
-            await a.call('POST', `/api/creatures/${a.starterId}/train`, {
-              idempotencyKey: newKey(),
-              amount: 0,
-            })
-          ).status,
-        ).toBe(400);
-        expect(ctx.core.balances(OTHER_USER_ID).bait).toBe(100);
-        expect(ctx.core.balances(USER_ID).bait).toBe(100);
+        expect(state.balances.bait).toBe(100);
+        expect(state.creatures[0]).toMatchObject({ level: 1, exp: 0 });
+        expect(count(ctx.sql, 'ledger', "source = 'training'")).toBe(0);
       },
       seeded(),
     );
@@ -1912,7 +1820,7 @@ describe('creature quirks', () => {
     });
   });
 
-  it('gives a caught creature a quirk, and the fusion of a duplicate changes nothing', async () => {
+  it('gives a caught creature a quirk, and a replayed claim changes nothing', async () => {
     const quirkRng = createSeededRng('quirk-catch');
     const replay = createSeededRng('quirk-catch');
     await runCore(
@@ -1938,7 +1846,7 @@ describe('creature quirks', () => {
     );
   });
 
-  it('keeps the quirk of an existing creature when a duplicate fuses, and draws nothing', async () => {
+  it('keeps the quirk of an existing creature when a duplicate arrives, and draws no quirk', async () => {
     const quirkRng = countingRng('quirk-fuse');
     await runCore(
       nextGuild(),
@@ -1951,7 +1859,10 @@ describe('creature quirks', () => {
         const exp = expeditionOf(await send(p, p.starterId));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
-        expect(resultOf(res).catches[0]).toMatchObject({ species: 'splashet', outcome: 'fused' });
+        expect(resultOf(res).catches[0]).toMatchObject({
+          species: 'splashet',
+          outcome: 'duplicate',
+        });
         expect(quirkOf(ctx, p.starterId)).toBe('hums-quietly');
         expect(quirkRng.drawn()).toBe(drawnAfterStarter);
         expect((await p.state()).creatures[0]?.quirk).toBe('hums-quietly');

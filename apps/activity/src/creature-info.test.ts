@@ -4,7 +4,7 @@ import {
   backLabel,
   creatureButtonLabel,
   creatureFacts,
-  shownWornItem,
+  shownWornItems,
   creatureInfoOf,
   ownedCreatureLabel,
   type CreatureInfo,
@@ -83,21 +83,23 @@ describe('creatureFacts', () => {
   });
 });
 
-describe('shownWornItem', () => {
-  const worn = { baseId: 'bark-band', rarity: 'rare' as const, level: 3, enchantId: null };
+describe('shownWornItems', () => {
+  const worn = [
+    { baseId: 'kelp-cap', slot: 'hat' as const, rarity: 'rare' as const, itemLevel: 3 },
+  ];
 
-  it('shows the item of a room creature (it has an owner)', () => {
-    expect(shownWornItem({ ...info, ownerName: 'Misa', gear: worn })).toEqual(worn);
+  it('shows the items of a room creature (it has an owner)', () => {
+    expect(shownWornItems({ ...info, ownerName: 'Misa', gear: worn })).toEqual(worn);
   });
 
   it('shows nothing when the creature wears nothing', () => {
-    expect(shownWornItem({ ...info, ownerName: 'Misa', gear: null })).toBeNull();
-    expect(shownWornItem({ ...info, ownerName: 'Misa' })).toBeNull();
+    expect(shownWornItems({ ...info, ownerName: 'Misa', gear: [] })).toEqual([]);
+    expect(shownWornItems({ ...info, ownerName: 'Misa' })).toEqual([]);
   });
 
   it('shows nothing in popovers that are not about a room creature', () => {
-    expect(shownWornItem({ ...info, gear: worn })).toBeNull();
-    expect(shownWornItem(info)).toBeNull();
+    expect(shownWornItems({ ...info, gear: worn })).toEqual([]);
+    expect(shownWornItems(info)).toEqual([]);
   });
 });
 

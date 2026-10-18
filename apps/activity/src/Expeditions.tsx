@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { ClaimResult, GameState } from './api';
+import type { CatchChoiceActions } from './find-view';
 import { ExplorerProfile } from './ExplorerProfile';
 import { fetchDestinations, fetchProfile, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
@@ -9,7 +10,8 @@ import { Journal } from './Journal';
 import { RunningTrip } from './RunningTrip';
 import { SendTrip } from './SendTrip';
 import { SlotsStrip } from './SlotsStrip';
-import { TripReveal } from './TripReveal';
+import { TripResult } from './TripResult';
+import { tripResultView } from './trip-result-view';
 import { ToggleButton } from './ui/ToggleButton';
 import { needsOfferRefresh } from './trip-view';
 import { useLoaded } from './use-loaded';
@@ -54,6 +56,10 @@ interface Props {
   timezone: string | null;
   /** What the last claim brought home, with the trip and the fresh state. */
   reveal: { result: ClaimResult; trip: Trip | undefined } | null;
+  /** Answers the waiting duplicates the reveal shows. */
+  catchActions: CatchChoiceActions;
+  /** What each duplicate answered this session became (a card id to a sentence). */
+  settled: Readonly<Record<string, string>>;
   /** Sends a trip; resolves true when it started. */
   onSend: (request: SendRequest) => Promise<boolean>;
   onPushOn: (trip: Trip, goalId: string) => void;
@@ -71,6 +77,8 @@ export function Expeditions({
   busy,
   timezone,
   reveal,
+  catchActions,
+  settled,
   onSend,
   onPushOn,
   onClaim,
@@ -107,11 +115,25 @@ export function Expeditions({
   return (
     <>
       {reveal !== null && (
-        <TripReveal
-          result={reveal.result}
-          trip={reveal.trip}
-          creature={revealCreature}
-          onDismiss={onDismissReveal}
+        <TripResult
+          view={tripResultView({
+            result: reveal.result,
+            trip: reveal.trip,
+            creature: revealCreature,
+            pending: state.pending,
+            creatures: state.creatures,
+            settled,
+          })}
+          busy={busy}
+          onClaim={(picks) => {
+            if (picks.length === 0) {
+              onDismissReveal();
+              return;
+            }
+            void catchActions.chooseMany(picks).then((all) => {
+              if (all) onDismissReveal();
+            });
+          }}
         />
       )}
       <SlotsStrip slots={state.slots} />
@@ -162,6 +184,7 @@ export function Expeditions({
               creatures={state.creatures}
               slots={state.slots}
               stock={state.supplies}
+              bait={state.balances.bait}
               busy={busy}
               view={destinations.value}
               viewFailed={destinations.failed}

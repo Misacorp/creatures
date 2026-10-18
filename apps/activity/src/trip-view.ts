@@ -30,7 +30,7 @@ export function percentText(bp: number): string {
 // --- Trip lengths ---
 
 /** The nominal hours of a trip length, from the rules. */
-function lengthHours(length: ExpeditionLength): number {
+export function lengthHours(length: ExpeditionLength): number {
   return lengthRules(length).ms / 3_600_000;
 }
 

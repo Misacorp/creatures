@@ -351,3 +351,32 @@
   align-items: center;
   gap: 0.375rem;
 }
+
+/* Creatures: what the levels bring, one row per level (the level badge, then what opens). */
+.growth-art {
+  display: grid;
+  gap: 0.25rem;
+  width: fit-content;
+  margin: 0.75rem auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+.growth-art li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.growth-art .lvl-tag {
+  justify-content: center;
+  min-width: 3.25rem;
+}
+
+/* Gear: one real item card. */
+.gear-art {
+  width: 100%;
+  max-width: 22rem;
+  margin: 0 auto;
+}

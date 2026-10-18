@@ -55,7 +55,7 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 
 **1.18 Redirect.** A rule that says a different creature takes a hit **instead**. A hit is redirected at most once, and never to a knocked-out creature. The only redirect is the Guard's (4.2). The creature that takes the hit is the **taker**; the creature it was aimed at is the **aimed creature**. They are the same unless a Guard stepped in.
 
-**1.19 Reduce.** Take a share off damage. The reductions are Shield Wall, armor and cover (section 3). Reducing never changes who is hit. Each reduction belongs to the taker: the Shield Wall of the taker's row, the taker's armor, the cover of a Guard beside the taker.
+**1.19 Reduce.** Take a share off damage. The reductions are Shield Wall, armor, cover and the taker's modifier sheet (section 3, 10.5). Reducing never changes who is hit. Each reduction belongs to the taker: the Shield Wall of the taker's row, the taker's armor, the cover of a Guard beside the taker.
 
 **1.20 Mark.** The element left on the boss by a creature's hit (Soaked, Scorched, Overgrown, Charged). The boss has at most one mark at a time.
 
@@ -70,6 +70,8 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 2.1.1 A raid week has three stages for each party: **Phase 1** (Friday), **Phase 2** (Saturday) and the **finale** (Sunday). Boss HP carries from stage to stage (`RULES.raid.phases`). A creature's HP does not: each stage starts everyone at full HP.
 
 2.1.2 A dungeon run is **three rooms** (`RULES.dungeon.rooms`): two normal foes, then a room boss. HP carries from room to room, and so does being knocked out. Every room is a fresh fight: no mark carries over, and the room's rounds start at 1.
+
+2.1.2a **Between-room rest.** A creature that wears a Between-room rest line (a Scarf line of gear v2) recovers that share of its maximum HP when a room is won and the next begins (`DungeonRunInput.rest`, by creature id, in basis points; the shares of all its worn lines add). It never goes above its maximum and a knocked-out creature stays out. The raid has no rooms, so the line does nothing there.
 
 2.1.3 Room modifiers (Flooded, Thorns, and so on) are plain changes to the room's numbers or one extra foe move, applied before the fight starts. They add no new rule.
 
@@ -141,8 +143,9 @@ The fight is checked after every creature turn: a hit that kills or retreats the
 2. **Shield Wall** on the taker's row (3.3).
 3. **Armor**, if the taker is a Guard (4.1).
 4. **Cover**, if it is an area hit and the taker is beside a living Guard (4.3).
-5. **The single-hit cap**: off (`RULES.combat.maxHitBp` 0). If it were above 0, no aimed or area hit would deal more than that share of the taker's maximum HP (never less than 1). It never limits a reflected hit.
-6. **HP**: the damage is taken, the taker loses that much HP, but never more than it has left (1.13).
+5. **The taker's modifier sheet** (10.5), if it has one: the ward against the boss's element, then charged moves, then the hit's shape (area, aimed or reflected), then every hit. Always after armor and cover.
+6. **The single-hit cap**: off (`RULES.combat.maxHitBp` 0). If it were above 0, no aimed or area hit would deal more than that share of the taker's maximum HP (never less than 1). It never limits a reflected hit.
+7. **HP**: the damage is taken, the taker loses that much HP, but never more than it has left (1.13).
 
 3.2.1 Rounding: every step rounds the amount **down**, so each reduction prevents a rounded-down share.
 
@@ -189,7 +192,7 @@ _Example._ Guards G1 and G2 are in the Front row, and the boss's plain attack an
 
 4.2.5 **The plain attack goes for the Guard.** In the raid, the plain attack aims at the front-most row that has someone standing and takes that row's Guard if it has one (the roll of 4.2.3 picks among several, using the die of the row's front-most creature), otherwise that row's leftmost living creature. In the dungeon it aims at the leftmost living creature, and a Guard beside it steps in.
 
-**4.3 Guard: cover.** A creature right beside a living Guard (1.5) takes 40% less from **area hits** (`RULES.combat.coverBp`). It applies at step 4 of 3.2, to splash, sweeps, barrage shells, lance hits, pincers, chain jumps and enrage hits alike. A creature beside two Guards is covered once (the left one counts and is credited). The damage prevented is credited to the Guard (a score, not a rule).
+**4.3 Guard: cover.** A creature right beside a living Guard (1.5) takes 40% less from **area hits** (`RULES.combat.coverBp`). It applies at step 4 of 3.2 (a Guard's own sheet can add to it, 10.6), to splash, sweeps, barrage shells, lance hits, pincers, chain jumps and enrage hits alike. A creature beside two Guards is covered once (the left one counts and is credited). The damage prevented is credited to the Guard (a score, not a rule).
 
 _Example._ In the raid, a Guard at the end of the Front row covers its Front neighbour but not the first Middle slot: beside stops at the row edge (1.5.1). In the dungeon, a Guard in the middle covers both its neighbours.
 
@@ -341,7 +344,7 @@ _Example._ Attack order A (strongest), G (a Guard), C, D. The strike aimed at A 
 
 7.2.2 Overtime ends on a kill (the creatures win), a wipe (they lose) or when the rounds run out (they lose; a boss still standing is a loss).
 
-_Example._ With a boss Attack of 100 and an enrage `powerBp` of 500%, the enrage hit proposes 500 on each creature. The cap is off (3.2 step 5), so a creature with 400 HP is knocked out (the hit shows 500). Beside a living Guard it takes 300 (cover) and survives with 100; a Guard itself takes 375 (armor) and survives with 25.
+_Example._ With a boss Attack of 100 and an enrage `powerBp` of 500%, the enrage hit proposes 500 on each creature. The cap is off (3.2 step 6), so a creature with 400 HP is knocked out (the hit shows 500). Beside a living Guard it takes 300 (cover) and survives with 100; a Guard itself takes 375 (armor) and survives with 25.
 
 ## 8. Finale abilities
 
@@ -386,3 +389,68 @@ Off today (`RULES.combat.luck`): damage spread (`spreadBp` 0), Fortune streaks (
 **9.2 Dice, not rolls on demand.** Randomness is dice drawn at round start (2.3 step 2), never later. A creature has a crit die per round for its turn and a second for an ability's strike. The boss has a crit die per slot per round for its plain attack and another for its moves. Pattern dice (40 a round) feed barrages, random slams and lanes. One Guard die per slot feeds the roll. When the boss makes more than one plain attack (2.5.2), the crit dice of the second and third attack (one per slot each) are drawn after all of these, and only then, so a fight with one attack a round draws exactly what it always did and a second attack never moves another die. Each kind of die is drawn every round whenever its feature is on (crits, patterns, the Guard roll), whether or not a rule uses it, so what one rule does never changes another's dice.
 
 **9.3 Where they come from.** The server draws a fresh seed from `crypto.getRandomValues` at the moment the fight is resolved (a raid stage, a dungeon run). Nobody, including the client, can know it before then. Dice come from that seed. The seed, the fight's input and its rules (`rules`, `luck`, floor, enrage) are stored, so a fight replays exactly, and a later retune never changes an old fight. Tests and the balance simulator use seeded dice.
+
+## 10. The modifier sheet
+
+Added 2026-10-16 (step 1 of `gear-and-creatures-v2.md`, section 14). Gear, talents and the day's weather will not touch the engine one by one. They are folded, before the fight, into one small table of plain integers per creature, **the sheet** (`FightSlot.mods`, type `SlotMods` in `packages/engine/src/types.ts`; checked by `resolveMods` in `mods.ts`). Nothing in the game fills it yet.
+
+**10.1 The rules of the sheet.**
+
+- **Absent means none.** A slot without `mods`, or with `mods: {}`, or with every number 0, plays exactly as before: the same dice, the same events, the same totals. Every stored fight and the replay fixture stay as they were. The log events carry the new optional fields (`sheetBp`, `warded`) only when a sheet changed something.
+- **Plain integers.** Basis points unless the field says otherwise (a "pt" on gear is 100 basis points). A negative bonus is a penalty; a negative reduction makes the creature take more (Boons and Omens can use both). Fields are checked on entry and a bad sheet throws: unknown fields, fractions, numbers outside the field's range (bonuses from -100000 to 100000, reductions from -100000 to 10000, `pierceBp` 0 to 10000, `lingerRounds` 0 to 3, `ignoreSilence` 0 or 1) and unknown element, role or reaction keys.
+- **Conditions are resolved before the fight.** "If the wearer is Tide" or "for this week's boss" is decided by whoever builds the sheet. The engine sees numbers, except where the answer depends on the fight itself: the boss's element (`vsElementBp` and `wardBp` are keyed by element, so one sheet serves a dungeon's three rooms) and who stands beside the creature (10.4).
+- **One step each.** Every field is read at exactly one step below. No field changes a die or the number of dice drawn.
+
+**10.2 The creature's hit (2.4.3).** These add to the hit's one combined bonus, together with the Support boost, Rally, crit and mutators (they add, then multiply once). The `hit` event's `bonusBp` includes them and `sheetBp` is their share.
+
+| Field          | Adds to                                                                                                                               |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `vsElementBp`  | Any hit on a boss of that element (by element).                                                                                       |
+| `markedFoeBp`  | A hit on a marked boss that does not set off a reaction (5.2): the hit that does nothing, or the Setter hit that replaces the mark.   |
+| `firstHitBp`   | The creature's first turn hit of the fight. An ability's strike (8.6) is not a turn hit: it neither gets this nor uses it up.         |
+| `markingHitBp` | A hit that leaves a mark (5.1) or, as a Setter, replaces one (5.2). A hit that sets off a reaction does neither.                      |
+| `strikeBp`     | An ability's strike (8.6) only.                                                                                                       |
+| `besideRoleBp` | Any hit while a living creature of that role stands beside it (10.4).                                                                 |
+| `pierceBp`     | Not a bonus: the boss's adaptation resists this creature's hits this much less (`resistBp` x (10000 - pierce) / 10000, rounded down). |
+
+**10.3 The reaction (5.3).** `keenReactionBp` is read where the crit die is compared; the others where the reaction's bonus is worked out.
+
+| Field            | Effect                                                                                                                                                                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reactionBp`     | The bonus of that reaction (by reaction id) when this creature sets it off.                                                                                                                                                                   |
+| `pounceBp`       | Added to the reaction multiplier's percentage next to a Payoff's own bonus: a Payoff's factor is 110%, and pounce 8 points makes it 118% (a creature that is not a Payoff: 108%).                                                             |
+| `ownerMarkBp`    | The reaction bonus when someone sets off a reaction on a mark **this creature** left. It is the Setter's sheet that counts, not the Payoff's.                                                                                                 |
+| `keenReactionBp` | Crit chance (basis points) on a hit that sets off a reaction. The chance stays under `critMaxChanceBp`, and crits stay off when `luck` has them off.                                                                                          |
+| `shareBp`        | A Support's: the bonus of reactions set off by the creatures beside it, added to the element's own (4.5.3: Spark's `reactionBp`). It works for any Support's element, is credited to the Support, and does not apply to a reflected reaction. |
+
+`reactionBp`, `ownerMarkBp`, Spark's `reactionBp` and `shareBp` all add together into the one factor on the reaction's bonus (`10000 + sum`). The `reaction` event's `sheetBp` is the sum of `reactionBp`, `ownerMarkBp` and `pounceBp` (the pounce counted in points of the multiplier, so the number is a guide, not an exact share).
+
+**10.4 The position line.** `besideRoleBp: { guard: 1000 }` means "+10% damage on every hit while a living Guard stands beside it". "Beside" is 1.5: in the raid the slots directly left and right **in the same row**, in the dungeon the plain line. It is looked at when the hit is made, so a Guard that was knocked out no longer counts and nothing is cached. One bonus per role however many creatures of that role stand beside (a Guard on each side counts once); different roles add. The first gear release uses this one line, _Guard's shadow_ (`gear-and-creatures-v2.md` 5.8). The other position lines in section 6.1 follow the same pattern later.
+
+**10.5 The taker (3.2 step 5).** The reductions of the creature that **takes** the hit (the Guard, if one stepped in), each a share taken off, each rounding down, in this order, always **after** Shield Wall, armor and cover and **before** the single-hit cap:
+
+1. `wardBp`: the hit comes from a boss of that element (by element).
+2. `chargedBp`: the hit is the landing of a charged move (6.12), including a charged slam's splash.
+3. The shape: `areaBp` for an area hit (1.16), `aimedBp` for an aimed hit (1.15, the plain attack included), `reflectedBp` for a reflected hit (1.17). A hit has one shape.
+4. `takenBp`: every hit.
+
+The order matters only through rounding, and it is fixed. _Example._ A hit of 11 on a creature with a 10% ward and 25% off every hit: the ward leaves 9, then every-hit leaves 6 (the other way round would leave 7). A Guard with 25% armor and 10% off every hit takes 11 down to 9 (armor), then 8 (sheet). The damage that armor or cover is credited for (4.8.1) is what it really saved given the steps after it, so the sheet never moves credit between creatures. The `boss_hit` event's `warded` is the damage the sheet took off (negative: added). A hit a Shield Wall stops has none.
+
+`healReceivedBp` is read where a Support's Mend (4.5.3) reaches the creature: the heal is scaled by `10000 + healReceivedBp` (rounded down), then limited to what is missing as always (4.5.4).
+
+**10.6 Roles (section 4).** Each is added to the number the rules already give:
+
+| Field     | Where                                                                                                                                     |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `armorBp` | A Guard's armor (4.1): `guardArmorBp` plus this, between 0 and 100%. Not a Guard: nothing.                                                |
+| `coverBp` | A Guard's cover (4.3) for the creatures beside it: `coverBp` plus the **covering Guard's** field (not the covered creature's), 0 to 100%. |
+| `boostBp` | A Support's boost (4.5.2) on each creature beside it, added to the boost (15%, or the element's).                                         |
+| `mendBp`  | A Support's heal (4.5.3), added to the element's: a Support whose element does not heal heals once this is above 0.                       |
+| `shareBp` | See 10.3.                                                                                                                                 |
+
+**10.7 Abilities and silence.**
+
+- `lingerRounds` adds rounds to the Rally, Shield Wall and timed Purge of the creature's **own** ability (8.2, 8.3, 8.5; an ability with a creature, `AbilityChoice.creatureId`). A Purge without `rounds` already lasts to the end. A basic ability belongs to no creature and is never lengthened.
+- `ignoreSilence: 1` makes silence (6.4) do nothing to it. The silence still picks the two ends of the line as always, so it is wasted on this creature, and no `silence` event is written for it.
+
+**10.8 In the log.** `describeEvent` mentions the sheet in plain text where a player would ask why: a hit or a reaction that carries `sheetBp` ("(+12% from modifiers)"), and a boss hit that carries `warded` ("Its modifiers take off 20."). Names are text only.

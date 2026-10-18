@@ -1,0 +1,384 @@
+/*
+  Talents and the duplicate choice: a talent chip (golden: shimmering title and number, no frame), the waiting duplicate cards
+  with their four buttons, the talent slots and Talent Book of a creature card, and the lure row of the
+  send screen. Built for a 390 px wide screen: everything stacks, nothing needs a second column.
+*/
+
+.talent-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  max-width: 100%;
+  padding: 0.125rem 0.375rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+.talent-chip.idle {
+  opacity: 0.8;
+}
+
+.talent-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
+.talent-name {
+  color: var(--bone);
+}
+
+/* A golden talent: the title and the number golden raised are gold text with a slow shine across. */
+.talent-chip.golden .talent-name,
+.gold-shimmer {
+  color: var(--gold);
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .talent-chip.golden .talent-name,
+  .gold-shimmer {
+    background-image: linear-gradient(
+      100deg,
+      var(--gold-shade) 0%,
+      var(--gold) 35%,
+      #fff3c4 50%,
+      var(--gold) 65%,
+      var(--gold-shade) 100%
+    );
+    background-size: 220% 100%;
+    background-position: 0 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* Without a request for less motion the shine drifts; with it the gold stays still. */
+  @media (prefers-reduced-motion: no-preference) {
+    .talent-chip.golden .talent-name,
+    .gold-shimmer {
+      animation: gold-shimmer 3.2s ease-in-out infinite alternate;
+    }
+  }
+}
+
+@keyframes gold-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: 0 0;
+  }
+}
+
+.talent-text {
+  color: var(--bone);
+}
+
+.talent-about,
+.talent-idle {
+  font-size: 0.875rem;
+}
+
+/* The duplicates that wait for an answer. */
+.pending-catches {
+  margin: 0 0 1rem;
+  padding: 0.5rem;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+}
+
+.pending-catches h3 {
+  margin: 0 0 0.25rem;
+}
+
+.dup-list {
+  display: grid;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+  A found creature (FindCard.tsx): picture, name, element and role, badges, the talent under a small
+  "Discovered talent" heading, and for a duplicate its choice as radio rows.
+*/
+.find-card {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.625rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+}
+
+.find-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.find-head canvas.sprite {
+  flex: none;
+}
+
+.find-name {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.find-name strong {
+  font-size: 1.25rem;
+}
+
+.find-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* The talent's box: the small heading on its own line, then the talent (the chip's own frame is the box). */
+.find-talent {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+.find-talent .talent-chip {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.find-talent-head {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+  color: var(--haze);
+  font-size: 0.8125rem;
+}
+
+.find-new {
+  padding: 0 0.3125rem;
+  background: var(--good);
+  color: var(--ink);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.find-choice {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.find-options {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.find-option label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--ink);
+  cursor: pointer;
+}
+
+.find-option.on label {
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+.find-option input:focus-visible + label {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.find-option.blocked label {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.find-radio {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--haze);
+}
+
+.find-option.on .find-radio {
+  background: var(--gold);
+  box-shadow:
+    inset 0 0 0 2px var(--gold),
+    inset 0 0 0 4px var(--ink);
+}
+
+.find-option-label {
+  flex: none;
+  min-width: 4.5rem;
+  font-size: 1rem;
+}
+
+.find-option-detail {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  min-width: 0;
+  color: var(--haze);
+  font-size: 0.875rem;
+}
+
+.find-who {
+  color: var(--bone);
+}
+
+.find-pays {
+  display: inline-flex;
+  gap: 0.375rem;
+}
+
+.find-rec {
+  flex: none;
+  color: var(--gold);
+}
+
+.find-answered {
+  margin: 0;
+}
+
+/* The star a fusion would add: green, and it pulses while motion is allowed. */
+.fusion-stars .star.gain {
+  filter: drop-shadow(0 0 2px #6fdc8c);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fusion-stars .star.gain {
+    animation: star-gain 1.2s steps(6) infinite;
+  }
+}
+
+@keyframes star-gain {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.25);
+    opacity: 0.6;
+  }
+}
+
+.pending-confirm .primary {
+  width: 100%;
+  min-height: 3rem;
+}
+
+.book-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+  The Talent Book (in a Drawer). Rows: in use first, lit, with a "Slot 1" mark; then the ones that can be
+  used, each with a compact button; then any that cannot (muted). Dividers sit between rows, never above
+  the first.
+*/
+.book-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.5rem;
+  padding: 0.5rem;
+}
+
+.book-entry + .book-entry {
+  border-top: 1px solid var(--line);
+}
+
+.book-talent {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
+/* A row is text and its action: the chip loses its own box here. */
+.book-entry .talent-chip {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.book-entry.in-use {
+  background: rgb(var(--gold-rgb) / 10%);
+  box-shadow: inset 0.1875rem 0 0 var(--gold);
+}
+
+.book-entry.blocked {
+  opacity: 0.6;
+}
+
+.book-slot-mark {
+  flex: none;
+  padding: 0.125rem 0.5rem;
+  background: var(--ink);
+  color: var(--gold);
+  font-size: 0.875rem;
+  line-height: 1.2;
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.book-use {
+  flex: none;
+  min-height: 2.5rem;
+  padding-inline: 0.75rem;
+  font-size: 0.9375rem;
+}
+
+/* The lure row of the send screen. */
+.lure-picker {
+  margin: 0 0 0.5rem;
+}
+
+.lure-tiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lure-tiers button {
+  min-height: 2.5rem;
+}
+
+.lure-effect {
+  margin: 0.25rem 0 0;
+}
+
+.bait-cost {
+  margin: 0.25rem 0;
+  color: var(--gold);
+}
+
+.bait-cost.short {
+  color: var(--bad);
+}

@@ -20,10 +20,7 @@
       "at": 5,
       "value": 3,
       "reached": false,
-      "bonus": {
-        "kind": "parts",
-        "bp": 100
-      }
+      "bonus": { "kind": "parts", "bp": 100 }
     },
     {
       "id": "seasoned",
@@ -31,10 +28,7 @@
       "at": 50,
       "value": 3,
       "reached": false,
-      "bonus": {
-        "kind": "rarity",
-        "bp": 100
-      }
+      "bonus": { "kind": "rarity", "bp": 100 }
     },
     {
       "id": "veteran",
@@ -42,10 +36,7 @@
       "at": 200,
       "value": 3,
       "reached": false,
-      "bonus": {
-        "kind": "rarity",
-        "bp": 100
-      }
+      "bonus": { "kind": "rarity", "bp": 100 }
     },
     {
       "id": "wanderer",
@@ -53,10 +44,7 @@
       "at": 4,
       "value": 1,
       "reached": false,
-      "bonus": {
-        "kind": "offer",
-        "bp": 100
-      }
+      "bonus": { "kind": "offer", "bp": 100 }
     },
     {
       "id": "globetrotter",
@@ -64,10 +52,7 @@
       "at": 7,
       "value": 1,
       "reached": false,
-      "bonus": {
-        "kind": "parts",
-        "bp": 100
-      }
+      "bonus": { "kind": "parts", "bp": 100 }
     },
     {
       "id": "collector",
@@ -75,10 +60,7 @@
       "at": 6,
       "value": 1,
       "reached": false,
-      "bonus": {
-        "kind": "xp",
-        "bp": 200
-      }
+      "bonus": { "kind": "xp", "bp": 200 }
     },
     {
       "id": "scholar",
@@ -86,10 +68,7 @@
       "at": 10,
       "value": 1,
       "reached": false,
-      "bonus": {
-        "kind": "xp",
-        "bp": 200
-      }
+      "bonus": { "kind": "xp", "bp": 200 }
     },
     {
       "id": "archivist",
@@ -97,10 +76,7 @@
       "at": 4,
       "value": 0,
       "reached": false,
-      "bonus": {
-        "kind": "offer",
-        "bp": 100
-      }
+      "bonus": { "kind": "offer", "bp": 100 }
     },
     {
       "id": "gambler",
@@ -108,10 +84,7 @@
       "at": 10,
       "value": 1,
       "reached": false,
-      "bonus": {
-        "kind": "offer",
-        "bp": 100
-      }
+      "bonus": { "kind": "offer", "bp": 100 }
     },
     {
       "id": "raid-watcher",
@@ -119,88 +92,47 @@
       "at": 200,
       "value": 0,
       "reached": false,
-      "bonus": {
-        "kind": "rarity",
-        "bp": 50
-      }
+      "bonus": { "kind": "rarity", "bp": 50 }
     }
   ],
-  "bonuses": {
-    "rarityBp": 0,
-    "partsBp": 0,
-    "offerBp": 0,
-    "xpBp": 0
-  },
+  "bonuses": { "rarityBp": 0, "partsBp": 0, "offerBp": 0, "xpBp": 0 },
   "journal": {
-    "found": [
-      {
-        "entryId": "tide-first-pool",
-        "foundAt": 1799830944002
-      }
-    ],
+    "found": [{ "entryId": "tide-first-pool", "foundAt": 1799830944002 }],
     "total": 40,
     "sets": [
-      {
-        "id": "tide-ledger",
-        "found": 1,
-        "total": 3
-      },
-      {
-        "id": "ash-records",
-        "found": 0,
-        "total": 3
-      },
-      {
-        "id": "rootwork-notes",
-        "found": 0,
-        "total": 3
-      },
-      {
-        "id": "static-letters",
-        "found": 0,
-        "total": 3
-      },
-      {
-        "id": "signpost-series",
-        "found": 0,
-        "total": 4
-      },
-      {
-        "id": "moonlit-verses",
-        "found": 0,
-        "total": 3
-      },
-      {
-        "id": "lost-pages",
-        "found": 0,
-        "total": 3
-      }
+      { "id": "tide-ledger", "found": 1, "total": 3 },
+      { "id": "ash-records", "found": 0, "total": 3 },
+      { "id": "rootwork-notes", "found": 0, "total": 3 },
+      { "id": "static-letters", "found": 0, "total": 3 },
+      { "id": "signpost-series", "found": 0, "total": 4 },
+      { "id": "moonlit-verses", "found": 0, "total": 3 },
+      { "id": "lost-pages", "found": 0, "total": 3 }
     ]
   },
   "explorers": [
     {
-      "creatureId": "06a002e2-d493-4a49-97c7-3bba83b7ff01",
+      "creatureId": "be62544c-7446-4c3e-ae3f-f8e80f3e8bba",
       "rank": 4,
       "xp": 2200,
       "nextRankXp": 4500,
       "trips": 1
     },
     {
-      "creatureId": "2c75d703-8931-420f-8f85-b46d20f5cbac",
+      "creatureId": "589c1ed0-4bce-40b5-ae1f-ed7ec8423765",
       "rank": 1,
       "xp": 0,
       "nextRankXp": 200,
       "trips": 0
     },
     {
-      "creatureId": "5cf57332-48ef-4202-a823-da5e5a49cc01",
+      "creatureId": "870602df-233b-4080-8115-b7b3a3ca9671",
       "rank": 1,
       "xp": 0,
       "nextRankXp": 200,
       "trips": 0
     },
     {
-      "creatureId": "c30f9fa8-ea76-43c1-9f09-a1f5c6e5d296",
+      "creatureId": "894034bd-f122-4861-8bc5-f0ba65684f36",
       "rank": 1,
       "xp": 0,
       "nextRankXp": 200,
@@ -212,9 +144,6 @@
     "used": 0,
     "rankSum": 3,
     "tripsFinished": 3,
-    "next": {
-      "kind": "rank_sum",
-      "at": 26
-    }
+    "next": { "kind": "rank_sum", "at": 26 }
   }
 }

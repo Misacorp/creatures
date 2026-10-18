@@ -1,11 +1,12 @@
 import { Tag } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
-import { ItemFrame, ItemSprite, PartCount, RarityTag } from './GearArt';
-import { gearName, lootIsEmpty, lootItemName, partsEntries } from './gear-view';
+import { PartCount } from './GearArt';
+import { ItemRow } from './ItemRow';
+import { gearName, lootIsEmpty, lootItemName, marksText, partsEntries } from './gear-view';
 import type { GrantLoot } from './gear-types';
 
 /**
- * What a grant gave, with pictures: each item (sprite, rarity frame, name, rarity), items that did
+ * What a grant gave, with pictures: each item as a compact row (image with its level in the corner and rarity border, name, rarity badge), items that did
  * not fit in the bag and became parts, blueprints, and parts as icons with numbers. The items pop
  * in when motion is allowed (`pop-in`, the same animation as the Festival creature). Text only.
  */
@@ -25,15 +26,9 @@ export function LootList({
   return (
     <div class="loot" role="group" aria-label={label}>
       {loot.gear.length > 0 && (
-        <ul class="loot-items">
+        <ul class="loot-items" aria-label="Items">
           {loot.gear.map((g) => (
-            <li key={g.id} class="loot-item">
-              <ItemFrame rarity={g.rarity} class="pop-in">
-                <ItemSprite baseId={g.baseId} scale={4} />
-              </ItemFrame>
-              <span class="loot-name">{lootItemName(g)}</span>
-              <RarityTag rarity={g.rarity} />
-            </li>
+            <ItemRow key={g.id} baseId={g.baseId} rarity={g.rarity} level={g.itemLevel} motion />
           ))}
         </ul>
       )}
@@ -54,8 +49,15 @@ export function LootList({
               <Tag kind="badge" entry="blueprint">
                 {b.duplicate ? 'Known blueprint' : 'New blueprint'}
               </Tag>{' '}
-              {gearName(b.baseId)} <RarityTag rarity={b.rarity} />
-              {b.duplicate && <span class="muted"> (it became scrap)</span>}
+              {gearName(b.baseId)}
+              {b.duplicate && (
+                <span class="muted">
+                  {' '}
+                  {b.marks === undefined
+                    ? '(it became scrap)'
+                    : `(well-thumbed ${marksText(b.marks)})`}
+                </span>
+              )}
             </li>
           ))}
         </ul>

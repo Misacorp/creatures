@@ -23,8 +23,8 @@ export const ROOM_POLL_MS = 45_000;
  */
 export type ResidentCreature = Omit<RoomCreature, 'craftingLevel' | 'gear'> & {
   craftingLevel: number | null;
-  /** The worn item; for your own creature without its main stat until the gear view has loaded. */
-  gear: WornItem | null;
+  /** The worn items; for your own creature without their lines until the gear view has loaded. */
+  gear: WornItem[];
 };
 
 export interface Resident {
@@ -161,7 +161,7 @@ export function ownResident(
             quirk: lounger.quirk,
             craftingLevel: craftingLevels.get(lounger.id) ?? null,
             explorerRank: lounger.explorer.rank,
-            gear: lounger.gear === null ? null : wornItemOf(lounger.gear, gearItems),
+            gear: lounger.gear.map((g) => wornItemOf(g, gearItems)),
           },
   };
 }

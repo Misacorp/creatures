@@ -14,6 +14,7 @@ import goalsJson from './data/push-on-goals.json';
 import journalJson from './data/journal.json';
 import specialsJson from './data/weekly-specials.json';
 import suppliesJson from './data/supplies.json';
+import talentsJson from './data/talents.json';
 import {
   loadExpeditions,
   type DestinationDef,
@@ -22,8 +23,11 @@ import {
   type PushOnGoalDef,
   type SupplyDef,
 } from './expedition-schema';
+import { gearContent } from './gear';
+import type { CreatureSpecies } from './schema';
 import { loadLore, pickQuirkFrom } from './lore';
 import { loadContent } from './load';
+import { loadTalents, type TalentDef, type TalentPack } from './talent-schema';
 
 export * from './schema';
 export { loadContent, upgradeProblem, STARTER_COUNT } from './load';
@@ -34,6 +38,9 @@ export * from './gear';
 export * from './dungeon-schema';
 export * from './dungeon';
 export * from './expedition-schema';
+export * from './talent-schema';
+export * from './weather-schema';
+export * from './weather';
 
 /** The shipped content pack, validated at module load. */
 export const content = loadContent({
@@ -117,4 +124,46 @@ export function goalDef(id: string): PushOnGoalDef | undefined {
 /** A journal entry by id, or undefined. */
 export function journalEntry(id: string): JournalEntryDef | undefined {
   return ENTRIES.get(id);
+}
+
+/**
+ * The talent pools of every line and the signature talents of the epic and Festival species
+ * (docs/design/gear-and-creatures-v2.md section 8), validated against the species and the gear lines
+ * at module load.
+ */
+export const talentContent: TalentPack = loadTalents(
+  talentsJson,
+  content.creatures,
+  new Map(gearContent.lines.map((l) => [l.id, l])),
+);
+
+/** A talent by id (pool or signature), or undefined. */
+export function talentDef(id: string): TalentDef | undefined {
+  return talentContent.byId.get(id);
+}
+
+/** The talents a catch of this line can roll, in content order (empty for an unknown line). */
+export function talentPool(line: string): readonly TalentDef[] {
+  return talentContent.pools.get(line) ?? [];
+}
+
+/** The fixed signature talent of a line (epic and Festival species), or undefined. */
+export function talentSignature(line: string): TalentDef | undefined {
+  return talentContent.signatures.get(line);
+}
+
+/**
+ * The stage-2 species a line's stage-1 species can grow into: one for a line that evolves one way, two
+ * for a branching line (`altEvolvesTo`), none for a single-stage line. A duplicate can be Kept only
+ * while the line has two branches and the player does not own both (`keepOffered`).
+ */
+export function lineBranches(
+  pack: { creatures: readonly CreatureSpecies[] },
+  line: string,
+): string[] {
+  const first = pack.creatures.find((c) => c.line === line && c.stage === 1);
+  if (first === undefined) return [];
+  return [first.evolvesTo?.species, first.altEvolvesTo?.species].filter(
+    (id): id is string => id !== undefined,
+  );
 }

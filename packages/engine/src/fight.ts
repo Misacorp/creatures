@@ -24,6 +24,7 @@ import {
 } from '@creatures/game';
 import { firingIndex, gimmickDue, sweepRow } from './gimmick-schedule';
 import { matchupBp } from './matchup';
+import { cutBp, resolveMods, type ResolvedMods } from './mods';
 import { sanitizeBp, type CreatureView, type Mutator, type MutatorHooks } from './mutators';
 import {
   DEFAULT_DECAY_BP,
@@ -81,6 +82,10 @@ interface Creature {
   /** This creature's crit chance and extra crit damage (basis points); 0 when crits are off. */
   critChanceBp: number;
   critBp: number;
+  /** The creature's modifier sheet, filled in (`FightSlot.mods`). */
+  mods: ResolvedMods;
+  /** Turn hits made so far (an ability's strike is not one), for the first hit's bonus. */
+  turnHits: number;
 }
 
 interface Mark {
@@ -292,6 +297,7 @@ export function simulateFight(
   let swingUntil = 0;
 
   // ---- state ----
+  const reactionIds = pack.reactions.map((r) => r.id);
   const creatures: Creature[] = input.row.map((s, idx) => {
     const stats: Stats = s.stats ?? statsFor(pack, s.speciesId, s.level, s.fusionCount);
     const crit = critOn ? creatureCritStats(luck, s.crit) : { chanceBp: 0, damageBp: 0 };
@@ -322,6 +328,8 @@ export function simulateFight(
       buffs: [],
       critChanceBp: crit.chanceBp,
       critBp: crit.damageBp,
+      mods: resolveMods(s.id, s.mods, reactionIds),
+      turnHits: 0,
     };
   });
 
@@ -490,11 +498,12 @@ export function simulateFight(
   }
 
   /**
-   * The share of damage a Guard does not take (basis points). One number per fight for now
-   * (`FightRules.guardArmorBp`); it takes the creature so it can follow level or gear later.
+   * The share of damage a Guard does not take (basis points): the rules' armor
+   * (`FightRules.guardArmorBp`) plus the Guard's own sheet (`mods.armorBp`).
    */
   function guardArmorFor(c: Creature): number {
-    return c.role === 'guard' ? (rules?.guardArmorBp ?? 0) : 0;
+    if (rules === undefined || c.role !== 'guard') return 0;
+    return Math.max(0, Math.min(10_000, rules.guardArmorBp + c.mods.armorBp));
   }
 
   /**
@@ -528,7 +537,10 @@ export function simulateFight(
    * 3. Armor: the creature taking the hit is a Guard (`guardArmorFor`, `rules` only).
    * 4. Cover: the creature taking the hit is beside a living Guard and the hit is an area hit
    *    (`rules` only; never on a Guard, so armor and cover never stack).
-   * 5. The single-hit cap (aimed and area only, `rules` only), on the victim's max HP.
+   * 5. The taker's sheet (`SlotMods`), each step rounding down: the ward against the boss's element
+   *    (`wardBp`), charged moves (`chargedBp`, only a charge landing), the hit's shape (`areaBp`,
+   *    `aimedBp` or `reflectedBp`), then every hit (`takenBp`). Works with or without `rules`.
+   * 6. The single-hit cap (aimed and area only, `rules` only), on the victim's max HP.
    *
    * Credit: a Guard is credited the damage it takes in place of another creature, and with it what
    * its armor really prevented on that hit; a cover credits the beside Guard with what it prevented.
@@ -547,6 +559,8 @@ export function simulateFight(
     die?: number,
     /** A slam's splash. */
     splash = false,
+    /** The hit is a charged move landing (`SlotMods.chargedBp`). */
+    charged = false,
   ): Creature {
     const crit = die !== undefined && bossCritOn && die < bossCrit.chanceBp;
     let amount = Math.max(
@@ -594,6 +608,15 @@ export function simulateFight(
     let covered: { guard: string; prevented: number } | undefined;
     let armored = 0;
     let capped = false;
+    // 5. The taker's sheet: ward, charged, shape, every hit, in this order (a no-op without one).
+    const sheet = (x: number): number => {
+      const m = victim.mods;
+      let out = cutBp(x, m.wardBp[boss.element] ?? 0);
+      if (charged) out = cutBp(out, m.chargedBp);
+      out = cutBp(out, mode === 'area' ? m.areaBp : mode === 'aimed' ? m.aimedBp : m.reflectedBp);
+      return cutBp(out, m.takenBp);
+    };
+    let warded: number;
     if (rules !== undefined) {
       const capAt =
         mode !== 'reflect' && rules.maxHitBp > 0
@@ -608,11 +631,18 @@ export function simulateFight(
         mode === 'area' && rules.coverBp > 0 && victim.role !== 'guard'
           ? coverGuardFor(victim)
           : undefined;
-      if (guard !== undefined) after = amount - Math.floor((amount * rules.coverBp) / 10_000);
-      // 5. The single-hit cap.
-      capped = after > capAt;
-      const final = Math.min(after, capAt);
-      const prevented = Math.min(amount, capAt, victim.hp) - Math.min(final, victim.hp);
+      if (guard !== undefined) {
+        const coverBp = Math.max(0, Math.min(10_000, rules.coverBp + guard.mods.coverBp));
+        after = amount - Math.floor((amount * coverBp) / 10_000);
+      }
+      // 5. The taker's sheet, on what armor or cover left.
+      const afterSheet = sheet(after);
+      warded = after - afterSheet;
+      // 6. The single-hit cap.
+      capped = afterSheet > capAt;
+      const final = Math.min(afterSheet, capAt);
+      // What armor or cover really saved: the hit as it would have ended without them, less the hit.
+      const prevented = Math.min(sheet(amount), capAt, victim.hp) - Math.min(final, victim.hp);
       if (guard !== undefined && prevented > 0) {
         covered = { guard: guard.id, prevented };
         credit(guard, null, 'guardCredit', prevented);
@@ -623,6 +653,10 @@ export function simulateFight(
         if (victim !== target) credit(victim, null, 'guardCredit', prevented);
       }
       amount = final;
+    } else {
+      const afterSheet = sheet(amount);
+      warded = amount - afterSheet;
+      amount = afterSheet;
     }
     const taken = Math.min(amount, victim.hp);
     victim.hp -= taken;
@@ -646,6 +680,7 @@ export function simulateFight(
       ...(covered === undefined ? {} : { covered }),
       ...(armored > 0 ? { armored } : {}),
       ...(capped ? { capped: true as const } : {}),
+      ...(warded === 0 ? {} : { warded }),
     });
     if (victim.hp === 0 && victim.alive) {
       victim.alive = false;
@@ -678,16 +713,7 @@ export function simulateFight(
     const supportBp = buffs.reduce((sum, b) => sum + b.bp, 0);
     const markBefore = mark;
 
-    const dice = (strike === undefined ? turnDice : strikeDice)[c.idx];
-    let luckBp = swingNow;
-    let crit = false;
-    if (dice !== undefined) {
-      if (critOn && dice.crit < c.critChanceBp) {
-        crit = true;
-        luckBp += c.critBp;
-      }
-      luckBp += dice.spread;
-    }
+    const m = c.mods;
 
     let reaction: ReactionDef | undefined;
     if (markBefore !== null) {
@@ -696,6 +722,47 @@ export function simulateFight(
     }
     const reflected = reaction !== undefined && c.alive && reflectArmed && !reflectUsed;
     if (reflected) reflectUsed = true;
+
+    const dice = (strike === undefined ? turnDice : strikeDice)[c.idx];
+    let luckBp = swingNow;
+    let crit = false;
+    if (dice !== undefined) {
+      // A hit that sets off a reaction crits more often with keen reactions (under the crit cap).
+      const critChanceBp =
+        reaction !== undefined && m.keenReactionBp !== 0
+          ? Math.max(0, Math.min(luck.critMaxChanceBp ?? 10_000, c.critChanceBp + m.keenReactionBp))
+          : c.critChanceBp;
+      if (critOn && dice.crit < critChanceBp) {
+        crit = true;
+        luckBp += c.critBp;
+      }
+      luckBp += dice.spread;
+    }
+
+    // The creature's sheet on its hit (`SlotMods`), added to the one combined bonus.
+    let sheetBp = m.vsElementBp[boss.element] ?? 0;
+    if (markBefore !== null && reaction === undefined) sheetBp += m.markedFoeBp;
+    if (
+      reaction === undefined &&
+      (markBefore === null || (c.role === 'setter' && markBefore.element !== c.element))
+    ) {
+      sheetBp += m.markingHitBp;
+    }
+    if (strike !== undefined) {
+      sheetBp += m.strikeBp;
+    } else {
+      if (c.turnHits === 0) sheetBp += m.firstHitBp;
+      c.turnHits += 1;
+    }
+    const roleBonuses = Object.entries(m.besideRoleBp);
+    if (roleBonuses.length > 0) {
+      const near = besides(c.idx)
+        .map((i) => creatures[i] as Creature)
+        .filter((o) => o.alive);
+      for (const [role, bp] of roleBonuses) {
+        if (near.some((o) => o.role === role)) sheetBp += bp;
+      }
+    }
 
     let hookBp = 0;
     runHook(
@@ -720,30 +787,36 @@ export function simulateFight(
     const adapting = adaptationOn();
     const elementResist =
       adapting && rule?.kind === 'top_element' && adaptationTarget === c.element
-        ? rule.resistBp
+        ? cutBp(rule.resistBp, m.pierceBp)
         : 0;
     const reactionResist =
       adapting &&
       reaction !== undefined &&
       rule?.kind === 'top_reaction' &&
       adaptationTarget === reaction.id
-        ? rule.resistBp
+        ? cutBp(rule.resistBp, m.pierceBp)
         : 0;
 
     // Element effects of Supports beside the hitter (`rules.supportFx[...].reactionBp`, Spark's
     // Overcharge): a living, non-silenced Support adds its share of the reaction's bonus. Not on a
     // reflected reaction (that bonus comes back at the hitter).
+    // A Support's sheet adds to it (`shareBp`).
     const overcharge: { s: Creature; bp: number }[] = [];
-    if (rules !== undefined && reaction !== undefined && !reflected) {
+    if (reaction !== undefined && !reflected) {
       for (const i of besides(c.idx)) {
         const s = creatures[i] as Creature;
-        const bp = rules.supportFx[s.element]?.reactionBp ?? 0;
+        const bp = (rules?.supportFx[s.element]?.reactionBp ?? 0) + s.mods.shareBp;
         if (s.role === 'support' && s.alive && s.silenced === 0 && bp > 0)
           overcharge.push({ s, bp });
       }
     }
     const overchargeBp = overcharge.reduce((sum, o) => sum + o.bp, 0);
 
+    // The sheets' share of the reaction bonus: the reaction's own line, and the setter's (`ownerMarkBp`).
+    const reactionSheetBp =
+      reaction === undefined
+        ? 0
+        : (m.reactionBp[reaction.id] ?? 0) + (markBefore?.creature?.mods.ownerMarkBp ?? 0);
     const calc = (
       modBp: number,
       fxBp = overchargeBp,
@@ -753,19 +826,23 @@ export function simulateFight(
       if (elementResist > 0) plain = Math.floor((plain * (10_000 - elementResist)) / 10_000);
       if (reaction === undefined) return { damage: plain, bonus: 0, reflect: 0 };
       let mult = reaction.multiplierBp;
-      if (c.role === 'payoff') mult = Math.floor((mult * reaction.payoffBonusBp) / 10_000);
+      // A Payoff's bonus, and every creature's pounce, are added together as a share of the multiplier.
+      const multFactorBp = (c.role === 'payoff' ? reaction.payoffBonusBp : 10_000) + m.pounceBp;
+      if (multFactorBp !== 10_000) mult = Math.floor((mult * Math.max(0, multFactorBp)) / 10_000);
       let bonus = Math.max(0, Math.floor((plain * mult) / 10_000) - plain);
       if (reactionResist > 0) bonus -= Math.floor((bonus * reactionResist) / 10_000);
       bonus = Math.max(
         0,
-        Math.floor((bonus * Math.max(0, 10_000 + reactionHookBp + fxBp)) / 10_000),
+        Math.floor(
+          (bonus * Math.max(0, 10_000 + reactionHookBp + reactionSheetBp + fxBp)) / 10_000,
+        ),
       );
       if (reflected) return { damage: plain, bonus: 0, reflect: bonus };
       return { damage: plain + bonus, bonus, reflect: 0 };
     };
 
     const rally = rallyBp();
-    const totalBp = supportBp + rally + roundBonusBp + hookBp + luckBp;
+    const totalBp = supportBp + rally + roundBonusBp + hookBp + luckBp + sheetBp;
     const full = calc(totalBp);
     // The phase floor: a hit that reaches it counts only down to it, so nothing is overkill (the
     // damage, the reaction bonus, the credit and the element totals). The plain hit is counted
@@ -843,6 +920,7 @@ export function simulateFight(
       ...(strike === undefined ? {} : { ability: strike.ability, key: strike.key }),
       ...(luckBp === 0 ? {} : { luckBp }),
       ...(crit ? { crit: true as const, critBp: c.critBp } : {}),
+      ...(sheetBp === 0 ? {} : { sheetBp }),
     });
 
     if (reaction !== undefined && markBefore !== null) {
@@ -857,6 +935,7 @@ export function simulateFight(
         payoff: c.id,
         bonus: reflected ? hit.reflect : hit.bonus,
         reflected,
+        ...(reactionSheetBp + m.pounceBp === 0 ? {} : { sheetBp: reactionSheetBp + m.pounceBp }),
       });
       mark = null;
       if (reflected) hurt(c, hit.reflect, 'reflect', 'reflect');
@@ -921,16 +1000,18 @@ export function simulateFight(
       ...(element === undefined ? {} : { element }),
       byDefault,
     });
+    // Lingering: the ability's creature makes its timed effects last longer (basic abilities have none).
+    const linger = source?.mods.lingerRounds ?? 0;
     for (const e of def.effects) {
       switch (e.op) {
         case 'rally':
-          rallies.push({ bp: e.damageBp, until: currentRound + e.rounds - 1 });
+          rallies.push({ bp: e.damageBp, until: currentRound + e.rounds + linger - 1 });
           break;
         case 'shield_wall':
           shields.push({
             zone: zone as Zone,
             reduceBp: e.reduceBp,
-            until: currentRound + e.rounds - 1,
+            until: currentRound + e.rounds + linger - 1,
           });
           break;
         case 're_mark':
@@ -957,7 +1038,9 @@ export function simulateFight(
           // A purge without `rounds` lasts to the end; the longest one wins.
           purgedThrough = Math.max(
             purgedThrough,
-            e.rounds === undefined ? Number.POSITIVE_INFINITY : currentRound + e.rounds - 1,
+            e.rounds === undefined
+              ? Number.POSITIVE_INFINITY
+              : currentRound + e.rounds + linger - 1,
           );
           break;
         case 'strike':
@@ -1019,7 +1102,7 @@ export function simulateFight(
    * With `rules`, a chain's jumps skip the creature that took its first hit (a Guard that stepped in
    * for it): each jump goes to the next strongest creature not yet hit (`plan.chain`).
    */
-  function resolvePlan(plan: PatternPlan): void {
+  function resolvePlan(plan: PatternPlan, charged = false): void {
     const chain = rules === undefined ? undefined : plan.chain;
     let jumps = chain?.rest ?? [];
     for (const [k, h] of plan.hits.entries()) {
@@ -1033,13 +1116,23 @@ export function simulateFight(
       // A creature that fell earlier in the same action is not hit again.
       if (!target.alive) continue;
       const raw = Math.floor((input.bossAtk * h.powerBp) / 10_000);
-      const impact = hurt(target, raw, 'gimmick', h.kind, bossGimmickDice[target.idx]);
+      const impact = hurt(
+        target,
+        raw,
+        'gimmick',
+        h.kind,
+        bossGimmickDice[target.idx],
+        false,
+        charged,
+      );
       if (chain !== undefined && k === 0) jumps = chain.rest.filter((i) => i !== impact.idx);
       if (plan.splashBp !== undefined && h.kind === 'aimed') {
         const splashRaw = Math.floor((raw * plan.splashBp) / 10_000);
         for (const i of besides(impact.idx)) {
           const next = creatures[i] as Creature;
-          if (next.alive) hurt(next, splashRaw, 'gimmick', 'area', bossGimmickDice[next.idx], true);
+          if (next.alive) {
+            hurt(next, splashRaw, 'gimmick', 'area', bossGimmickDice[next.idx], true, charged);
+          }
         }
       }
     }
@@ -1095,7 +1188,7 @@ export function simulateFight(
           ...(rows === undefined ? {} : { rows }),
         }),
       );
-      resolvePlan(pending);
+      resolvePlan(pending, true);
       return;
     }
     switch (g.op) {
@@ -1114,6 +1207,8 @@ export function simulateFight(
         const last = standing[standing.length - 1];
         if (first === undefined || last === undefined) break;
         for (const c of first === last ? [first] : [first, last]) {
+          // Unbothered: the silence still picks it (the ends), and does nothing to it.
+          if (c.mods.ignoreSilence) continue;
           c.silenced = Math.max(c.silenced, g.turns);
           events.push({ t: 'silence', round: currentRound, creature: c.id, turns: g.turns });
         }
@@ -1334,22 +1429,28 @@ export function simulateFight(
     for (const s of creatures) {
       if (s.role !== 'support' || !s.alive || s.silenced > 0) continue;
       const fx = rules?.supportFx[s.element];
-      const buffBp = fx?.buffBp ?? RULES.combat.supportBuffBp;
+      // The Support's own sheet adds to the boost and the mend (`boostBp`, `mendBp`).
+      const buffBp = (fx?.buffBp ?? RULES.combat.supportBuffBp) + s.mods.boostBp;
+      const mendBp = (fx?.healBp ?? 0) + s.mods.mendBp;
       for (const i of besides(s.idx)) {
         const t = creatures[i] as Creature;
         if (!t.alive) continue;
         t.buffs = t.buffs.filter((b) => b.from !== s.idx);
-        t.buffs.push({ from: s.idx, bp: buffBp });
+        t.buffs.push({ from: s.idx, bp: Math.max(-10_000, buffBp) });
         events.push({
           t: 'support_buff',
           round,
           supporter: s.id,
           target: t.id,
-          bp: buffBp,
+          bp: Math.max(-10_000, buffBp),
         });
-        if (fx?.healBp !== undefined && fx.healBp > 0) {
+        if (mendBp > 0) {
+          // What the neighbour receives: its own sheet can make a heal bigger or smaller.
+          const healed = Math.floor((t.maxHp * mendBp) / 10_000);
           const amount = Math.min(
-            Math.floor((t.maxHp * fx.healBp) / 10_000),
+            t.mods.healReceivedBp === 0
+              ? healed
+              : Math.floor((healed * Math.max(0, 10_000 + t.mods.healReceivedBp)) / 10_000),
             Math.max(0, t.maxHp - t.hp),
           );
           if (amount > 0) {

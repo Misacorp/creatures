@@ -148,6 +148,9 @@ const USER_FEATURE: Record<string, string> = {
   gear_upgrade: 'gear',
   gear_dismantle: 'gear',
   train: 'collection',
+  creature_exp: 'collection',
+  treat: 'collection',
+  ribbon: 'collection',
   evolve: 'collection',
   team_set: 'raid',
   placement: 'raid',
@@ -180,11 +183,63 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
     case 'train':
       tally.add('collection.train', {});
       break;
+    case 'creature_exp':
+      tally.add('collection.exp', { source: str(p, 'source'), treat: flag(p, 'treat') });
+      tally.add('collection.exp_sum', { source: str(p, 'source') }, num(p, 'gained'));
+      if (num(p, 'level') > num(p, 'levelBefore')) {
+        tally.add(
+          'collection.level_up',
+          { source: str(p, 'source') },
+          num(p, 'level') - num(p, 'levelBefore'),
+        );
+      }
+      if (flag(p, 'waiting') === 1) tally.add('collection.exp_waiting', { level: num(p, 'level') });
+      break;
+    case 'treat':
+      // The Bait itself is a ledger row (purpose `treat`) and reaches the flows from there.
+      tally.add('collection.treat', { source: str(p, 'source') });
+      break;
+    case 'ribbon': {
+      const ribbon = str(p, 'ribbon');
+      tally.add('collection.ribbon', { ribbon });
+      const def = RULES.experience.ribbons.find((r) => r.id === ribbon);
+      if (def !== undefined) {
+        flow(tally, 'scrap', 'sink', 'ribbon', def.scrap);
+        flow(tally, 'shard-any', 'sink', 'ribbon', def.shards);
+        flow(tally, 'glimmer', 'sink', 'ribbon', def.glimmer);
+      }
+      break;
+    }
+    case 'level_reset':
+      // The refunded Bait is a ledger row (source `level_reset`) and reaches the flows from there.
+      tally.add('collection.level_reset', {});
+      tally.add('collection.level_reset_levels', {}, num(p, 'levels'));
+      break;
+    case 'catch_pity':
+      tally.add('expedition.pity', { pity: str(p, 'pity') });
+      break;
     case 'evolve':
       tally.add('collection.evolve', {});
       break;
     case 'fuse':
       tally.add('collection.fuse', { converted: flag(p, 'converted') });
+      break;
+    case 'talent_roll':
+      tally.add('collection.talent_roll', {
+        golden: flag(p, 'golden'),
+        backfill: flag(p, 'backfill'),
+      });
+      break;
+    case 'duplicate_choice':
+      tally.add('collection.duplicate_choice', {
+        choice: str(p, 'choice'),
+        rarity: str(p, 'rarity'),
+        auto: flag(p, 'auto'),
+      });
+      break;
+    case 'talent_slot':
+      tally.add('collection.talent_slot', { slot: num(p, 'slot') });
+      flow(tally, 'bait', 'sink', 'talent_slot', RULES.talents.bookSlotBait);
       break;
 
     // --- Expeditions ---
@@ -258,6 +313,7 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
       tally.add('workshop.start_base', { job: str(p, 'job'), base: str(p, 'base') });
       for (const [part, n] of partsOf(p) ?? [])
         flow(tally, part, 'sink', `workshop_${str(p, 'job')}`, n);
+      if (num(p, 'bait') > 0) flow(tally, 'bait', 'sink', 'lure', num(p, 'bait'));
       break;
     }
     case 'job_claim':

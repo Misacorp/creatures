@@ -28,12 +28,6 @@
   margin: 0.5rem var(--px);
 }
 
-.others summary {
-  cursor: pointer;
-  color: var(--haze);
-  font-size: 0.875rem;
-}
-
 .others .plain-list {
   margin: 0.25rem 0 0;
   font-size: 0.8125rem;

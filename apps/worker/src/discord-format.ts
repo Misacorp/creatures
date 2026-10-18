@@ -161,6 +161,14 @@ export interface RevealPost {
   rank: number | null;
   /** Set in a Festival week: the name of the Festival creature every winner gets. */
   festivalCreature: string | null;
+  /** The names of today's Boon and Omen (our own content), or none: said in one short line. */
+  sky?: readonly string[];
+}
+
+/** One short line about the day's weather ("Today's sky: Fair Winds and Heavy Rain."), or none. */
+function skyLine(sky: readonly string[] | undefined, lead: string): string | null {
+  if (sky === undefined || sky.length === 0) return null;
+  return `${lead}: ${sky.map(escapeMarkdown).join(' and ')}.`;
 }
 
 /** Monday: the week's boss. */
@@ -170,6 +178,8 @@ export function formatBossReveal(post: RevealPost): string {
     `Element: ${escapeMarkdown(post.elementName)}. ${TURN_ORDER_WORDS[post.turnOrder]}`,
   ];
   if (post.rank !== null) lines.push(`Boss Rank ${String(post.rank)}.`);
+  const sky = skyLine(post.sky, "Today's sky");
+  if (sky !== null) lines.push(sky);
   if (post.festivalCreature !== null) {
     lines.push(
       `Festival week: ${escapeMarkdown(post.festivalCreature)} for every winner, bonus Essence.`,
@@ -230,6 +240,8 @@ export interface PhasePost {
   essenceFlat: number | null;
   /** Phase 1 only: the boss's counter-move for phase 2, in plain words. */
   counterMove: string | null;
+  /** The names of the day's Boon and Omen the stage was fought under (our own content), or none. */
+  sky?: readonly string[];
   /** Finale only. */
   finale?: {
     firsts: readonly { label: string; names: readonly string[] }[];
@@ -310,6 +322,8 @@ export function formatPhasePost(post: PhasePost): string {
   if (post.counterMove !== null) {
     lines.push(`The boss's counter-move for Phase 2: ${escapeMarkdown(post.counterMove)}`);
   }
+  const sky = skyLine(post.sky, 'Sky');
+  if (sky !== null) lines.push(sky);
   if (post.finale !== undefined) {
     const { firsts } = post.finale;
     if (post.finale.festival != null && post.finale.festival.winners.length > 0) {

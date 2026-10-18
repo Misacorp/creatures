@@ -1,4 +1,4 @@
-import { content, RULES } from '@creatures/game';
+import { content, RULES, finaleItemLevel } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import raidFestival from './fixtures/raid-festival.json';
 import raidReveal from './fixtures/raid-reveal.json';
@@ -25,19 +25,19 @@ import {
 
 describe('what a win pays', () => {
   it('promises Essence for everyone and a gear piece or blueprint, better at higher ranks', () => {
-    const text = winPaysText({ rank: 1 });
+    const text = winPaysText({ rank: null });
     expect(text).toBe(
       'Win: Essence for everyone, plus a gear piece or blueprint, better at higher ranks.',
     );
-    expect(winPaysText({ rank: null })).toBe(text);
-    expect(winPaysText({ rank: 2 })).toBe(text);
+    expect(winPaysText({ rank: 1 })).toContain(text);
   });
 
-  it('names the upgrade level the gear arrives at once the rank earns one, up to the cap', () => {
-    expect(winPaysText({ rank: 3 })).toContain("This week's gear arrives at +1.");
-    expect(winPaysText({ rank: 9 })).toContain('+4.');
-    expect(winPaysText({ rank: 11 })).toContain(`+${String(RULES.gear.maxLevel)}.`);
-    expect(winPaysText({ rank: 30 })).toContain(`+${String(RULES.gear.maxLevel)}.`);
+  it('names the item level the gear arrives at, from the rank, up to the cap', () => {
+    expect(winPaysText({ rank: 1 })).toContain(
+      `This week's gear arrives at item level ${String(finaleItemLevel(1))}.`,
+    );
+    expect(winPaysText({ rank: 9 })).toContain(`item level ${String(finaleItemLevel(9))}.`);
+    expect(winPaysText({ rank: 30 })).toContain(`item level ${String(RULES.gear.maxItemLevel)}.`);
   });
 });
 
@@ -191,6 +191,11 @@ describe('what a finale did', () => {
         firstOnServer: false,
       }),
     ).toContain('fusion 1 / 5');
+    expect(
+      festivalGrantText({ species: 'hearthshell', outcome: 'duplicate', firstOnServer: false }),
+    ).toBe(
+      'You won Hearthshell again! It waits on the Collection tab: Teach its talent, Fuse, Release or Keep it.',
+    );
     expect(
       festivalGrantText({
         species: 'lanternfin',

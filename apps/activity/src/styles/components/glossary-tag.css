@@ -15,6 +15,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* `all: unset` drops the font, so a tag that asks for the pixel font gets it back here. */
+.gtag.pix {
+  font-family: var(--display);
+  letter-spacing: 0.02em;
+}
+
 /* A bigger tap area than the words themselves, without moving anything. */
 .gtag::before {
   content: '';
@@ -65,6 +71,11 @@ button.gtag:active:not(:disabled) {
 
 .gtag-help::before {
   inset: -0.5rem;
+}
+
+/* An item's badges (slot, rarity, element) are tappable but, like the level badge, show no "?". */
+.item-badge.gtag-chip::after {
+  content: none;
 }
 
 /* The mark on the boss, a modifier's icon and the streak are tags without the "?" (`bare`). */

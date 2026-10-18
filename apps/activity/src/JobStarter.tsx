@@ -1,10 +1,12 @@
-import { GLOSSARY_IDS, type GearJobKind } from '@creatures/game';
+import { GLOSSARY_IDS } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { CreaturePicker } from './CreaturePicker';
 import { CostList } from './GearArt';
 import { GlossaryTag } from './Glossary';
-import type { GearItem, GearRarity, GearState, JobKind, PartsBundle } from './gear-types';
+import { TreatBox } from './TreatBox';
+import type { GearState, JobKind, PartsBundle } from './gear-types';
+import { creatureName } from './game';
 import { defaultPick, durationFor, pickerOptions, startBlocker } from './gear-view';
 
 interface JobStarterProps {
@@ -13,14 +15,12 @@ interface JobStarterProps {
   kind: JobKind;
   /** What is being worked on: "Craft Wave Band". */
   title: string;
-  /** The rarity that sets the length (the blueprint's for a craft, the item's otherwise). */
-  rarity: GearRarity;
   cost: PartsBundle;
-  /** The item an improve or an enchant works on (it cannot be in another job). */
-  item?: Pick<GearItem, 'jobId'>;
+  /** The Bait it costs besides the parts (a lure); absent: none. */
+  bait?: number;
   gear: GearState;
   creatures: readonly Creature[];
-  /** Another reason it cannot start (for example the same enchant again), shown like the others. */
+  /** Another reason it cannot start (the Crafting level a supply needs), shown like the others. */
   extraBlocker?: string | null;
   /** True while any action runs. */
   busy: boolean;
@@ -29,9 +29,8 @@ interface JobStarterProps {
   durationAtLevel?: (level: number) => number;
   /** The Crafting level a creature needs for this job (a supply's blueprint); lower ones cannot be picked. */
   minLevel?: number;
-  /** Extra controls above the creature list (which extra stat, which enchant). */
-  children?: preact.ComponentChildren;
-  onStart: (creatureId: string) => void;
+  /** Starts the job with the picked creature; `treat` is true when the player packed a treat for it. */
+  onStart: (creatureId: string, treat: boolean) => void;
   onCancel: () => void;
 }
 
@@ -41,9 +40,8 @@ interface JobStarterProps {
  * heading when it opens, and Escape closes it.
  */
 export function JobStarter(props: JobStarterProps) {
-  const { gear, creatures, kind, rarity, cost } = props;
-  const durationAt =
-    props.durationAtLevel ?? ((level: number) => durationFor(kind as GearJobKind, rarity, level));
+  const { gear, creatures, kind, cost } = props;
+  const durationAt = props.durationAtLevel ?? durationFor;
   const options = pickerOptions(creatures, gear.skills, durationAt).map((o) =>
     props.minLevel !== undefined && o.busy === null && o.level < props.minLevel
       ? { ...o, busy: `Needs Crafting level ${String(props.minLevel)}` }
@@ -53,19 +51,18 @@ export function JobStarter(props: JobStarterProps) {
   // The pick follows the list: a creature that became busy is no longer picked.
   const valid = options.find((o) => o.creature.id === picked && o.busy === null);
   const value = valid === undefined ? defaultPick(options) : picked;
+  const [treat, setTreat] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus();
   }, []);
 
-  const blocker =
-    startBlocker(gear, creatures, {
-      kind,
-      cost,
-      ...(props.item === undefined ? {} : { item: props.item }),
-    }) ??
-    props.extraBlocker ??
-    null;
+  const bait = props.bait ?? 0;
+  const worker = options.find((o) => o.creature.id === value)?.creature;
+  // The treat is paid on top of a lure's own Bait; one that cannot be paid is not packed.
+  const treatBait = gear.balances.bait - bait;
+  const packing = treat && worker !== undefined && treatBait >= worker.treatCost;
+  const blocker = startBlocker(gear, creatures, { kind, cost, bait }) ?? props.extraBlocker ?? null;
   const disabled = props.busy || blocker !== null || value === null;
   return (
     <section
@@ -78,15 +75,29 @@ export function JobStarter(props: JobStarterProps) {
       <h4 id={`${props.id}-title`} class="pix" tabIndex={-1} ref={heading}>
         {props.title} <GlossaryTag entry={GLOSSARY_IDS.job(kind)} look="help" />
       </h4>
-      {props.children}
       <p class="label">Cost</p>
       <CostList cost={cost} have={gear.parts} />
+      {bait > 0 && (
+        <p class={gear.balances.bait >= bait ? 'bait-cost' : 'bait-cost short'}>
+          {bait} Bait <span class="muted">(you have {gear.balances.bait})</span>
+        </p>
+      )}
       <CreaturePicker
         name={`${props.id}-who`}
         options={options}
         value={value}
         onChange={setPicked}
       />
+      {worker !== undefined && (
+        <TreatBox
+          cost={worker.treatCost}
+          bait={treatBait}
+          checked={packing}
+          disabled={props.busy}
+          who={creatureName(worker)}
+          onChange={setTreat}
+        />
+      )}
       {blocker !== null && (
         <p class="reason" role="status">
           {blocker}
@@ -98,7 +109,7 @@ export function JobStarter(props: JobStarterProps) {
           class="primary"
           disabled={disabled}
           onClick={() => {
-            if (value !== null) props.onStart(value);
+            if (value !== null) props.onStart(value, packing);
           }}
         >
           {props.startLabel}

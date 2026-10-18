@@ -13,6 +13,28 @@
   gap: 0.375rem;
 }
 
+/* A section heading with a short count on the same line, at the right (the bag's "Bag: 3 / 60"). */
+.ws-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ws-head h3 {
+  margin: 0;
+}
+
+.ws-head + * {
+  margin-top: 0.5rem;
+}
+
+/* An item from the bag in its drawer. */
+.item-drawer .item-detail {
+  margin: 0;
+  padding: 0 0.75rem 0.75rem;
+}
+
 .empty {
   padding: 0.5rem 0.75rem;
   border: 2px dashed var(--line);
@@ -23,8 +45,7 @@
 .cost-list,
 .loot-parts,
 .loot-notes,
-.loot-items,
-.stat-list {
+.loot-items {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem 0.625rem;
@@ -54,4 +75,43 @@
 .cost-name {
   color: var(--haze);
   font-size: 0.8125rem;
+}
+
+/* Ways to start a craft: a plain craft and the Reaches, each with its exact odds, time and cost. */
+fieldset.reach-options {
+  margin-top: 0.75rem;
+}
+
+label.pick.reach {
+  align-items: flex-start;
+  padding-block: 0.5rem;
+}
+
+label.pick.reach input[type='radio'] {
+  margin-top: 0.125rem;
+}
+
+label.pick.reach .pick-text {
+  gap: 0.125rem;
+}
+
+.reach-odds {
+  color: var(--bone);
+  font-size: 0.875rem;
+}
+
+.reach-details {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* Dismantle several: two selects side by side, wrapping on a narrow screen. */
+.bulk-dismantle .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.bulk-dismantle select {
+  min-height: 2.75rem;
 }

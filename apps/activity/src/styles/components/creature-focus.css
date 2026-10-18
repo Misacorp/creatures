@@ -1,0 +1,392 @@
+/*
+  The focused creature card of the Creatures tab (Misa's "Option B") and the creature page it opens. The
+  card is small on purpose: sprite, name, element, level, the XP bar with what comes next, the three gear
+  slots as icons, the talents as chips, and one gold button only when something is ready. About 250 px
+  tall at 390 px wide. Everything else is on the page.
+
+  The whole card is one tap target (the card handles the click; the name is a real button for the
+  keyboard and screen readers). The card's own buttons keep their own actions.
+*/
+
+/* Two columns of cards at most on a wide screen; one on a phone. */
+.creature-cards {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  align-items: start;
+}
+
+.creature-card.focused {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  scroll-margin-top: 0.5rem;
+}
+
+.creature-card.focused:focus {
+  outline: none;
+}
+
+/*
+  A card says it can be tapped: it lights up under a pointer and dips when pressed (not while the pointer
+  is on one of the card's own buttons, which do their own thing).
+*/
+.creature-card.focused {
+  position: relative;
+  cursor: pointer;
+}
+
+.creature-card.focused:hover:not(:has(button:hover)) {
+  background: var(--dusk);
+}
+
+.creature-card.focused:active:not(:has(button:active)) {
+  background: var(--line);
+}
+
+.creature-card.focused:has(.cc-open:focus-visible) {
+  outline: var(--px) solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* The name button: the keyboard's and the screen reader's way in; it looks like the heading. */
+button.cc-open {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+button.cc-open:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+button.cc-open:focus-visible {
+  outline: none;
+}
+
+.creature-card.focused button:not(.cc-open) {
+  cursor: pointer;
+}
+
+/* The small arrow at the right edge. */
+.cc-chev {
+  color: var(--haze);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+/* The card the finder chose: a gold edge until the player does something else. */
+.creature-card.found {
+  box-shadow:
+    inset 0 0 0 var(--px) var(--gold),
+    0 0 0 var(--px) var(--ink);
+}
+
+.creature-card.focused p {
+  margin: 0;
+}
+
+.cc-head {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 0.625rem;
+  align-items: center;
+}
+
+.creature-card.focused .portrait,
+.creature-page .portrait {
+  width: 56px;
+  height: 56px;
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  box-shadow: none;
+}
+
+.cc-head:has(> .cc-chev) {
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+}
+
+.cc-id {
+  min-width: 0;
+}
+
+.cc-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.cc-name h3 {
+  min-width: 0;
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.cc-name .lvl-tag {
+  margin-left: auto;
+}
+
+/* The element as a small icon-only chip (its name is the label); the sheet has the full chips. */
+.cc-element {
+  flex: none;
+  padding: 0.125rem 0.3125rem;
+}
+
+.cc-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem 0.5rem;
+  align-items: center;
+  margin-top: 0.125rem;
+  font-size: 0.8125rem;
+}
+
+.cc-id .xpbar-row {
+  margin: 0.3125rem 0 0;
+}
+
+.creature-card.focused .xpbar,
+.creature-page .xpbar {
+  height: 1.5rem;
+}
+
+.creature-card.focused .xpbar-text,
+.creature-page .xpbar-text {
+  font-size: 1.125rem;
+}
+
+/* Gear icons on the left, talent chips on the right. */
+.cc-kit {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.cc-gear {
+  display: flex;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cc-gear li {
+  display: flex;
+}
+
+button.cc-slot {
+  display: grid;
+  place-items: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+button.cc-slot:active:not(:disabled) {
+  box-shadow: none;
+}
+
+button.cc-slot .item-frame {
+  --lv-size: 0.75rem;
+
+  margin: 0.125rem;
+}
+
+.cc-slot-empty {
+  display: grid;
+  place-items: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  outline: 2px dashed var(--haze);
+  outline-offset: -2px;
+  color: var(--haze);
+  font-size: 1.125rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+button.cc-slot.locked .cc-slot-empty {
+  outline-color: var(--line);
+  font-size: 0.9375rem;
+}
+
+button.cc-slot:disabled {
+  opacity: 0.8;
+}
+
+/* The talents: one tap area that opens the sheet on them. */
+button.cc-talents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.125rem;
+  background: none;
+  box-shadow: none;
+}
+
+button.cc-talents:active:not(:disabled) {
+  box-shadow: none;
+}
+
+.cc-chip {
+  max-width: 100%;
+  padding: 0.0625rem 0.375rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 2px var(--line);
+  color: var(--bone);
+  font-size: 1rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.cc-chip.empty,
+.cc-chip.locked-slots {
+  background: transparent;
+  box-shadow: none;
+  outline: 2px dashed var(--line);
+  outline-offset: -2px;
+  color: var(--haze);
+}
+
+.cc-do button {
+  display: block;
+  width: 100%;
+  min-height: 3rem;
+  font-size: 1.2rem;
+  line-height: 1.1;
+}
+
+.cc-do button small {
+  display: block;
+  margin-top: 0.0625rem;
+  font-family: var(--body);
+  font-size: 0.75rem;
+}
+
+button.ghost {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--line);
+  color: var(--haze);
+}
+
+button.ghost.small {
+  min-height: 2rem;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.9375rem;
+}
+
+/* --- The creature page: it takes the list's place and holds everything that is not on the card. --- */
+
+.creature-page {
+  padding: 0.25rem 0.75rem 0.75rem;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+}
+
+.creature-page:focus {
+  outline: none;
+}
+
+.cp-top {
+  display: flex;
+  margin: 0.25rem 0 0.5rem;
+}
+
+button.cp-back {
+  min-height: 2.75rem;
+  padding: 0.125rem 0.875rem 0.125rem 0.625rem;
+  font-size: 1.25rem;
+}
+
+.cp-actions {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
+.cp-actions p {
+  margin: 0;
+}
+
+.cp-block {
+  margin-top: 0.75rem;
+  padding-top: 0.625rem;
+  border-top: 2px solid var(--line);
+}
+
+.cp-top + .cp-actions {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
+.cp-actions p {
+  margin: 0;
+}
+
+.cp-block {
+  margin-top: 0.5rem;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.cp-title {
+  margin: 0 0 0.375rem;
+  color: var(--haze);
+  font-size: 1.0625rem;
+  line-height: 1.1;
+}
+
+.cp-title:focus {
+  outline: none;
+}
+
+.sheet-stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.125rem 0.75rem;
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.sheet-stats dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet-facts {
+  margin: 0.5rem 0 0;
+}
+
+.sheet-fact {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.0625rem 0;
+}
+
+.cp-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.creature-page .rename {
+  margin-top: 0.5rem;
+}

@@ -2,6 +2,7 @@ import type { SupplyPick } from './expedition-types';
 import { ChoiceMark, supplyEntry } from './ExpeditionIcons';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
+import { LurePicker } from './LurePicker';
 import { Sprite } from './sprites/Sprite';
 import {
   canCarry,
@@ -67,7 +68,8 @@ function SupplyRow({
  * one again takes it off. A supply that makes the end-of-trip choice certain says "Choice guaranteed".
  */
 export function SupplyPicker({ picks, stock, onChange, onOpenWorkshop }: Props) {
-  const options = supplyOptions(stock).filter((o) => o.owned > 0);
+  // Lures have their own compact row; the picker below holds the other kinds.
+  const options = supplyOptions(stock).filter((o) => o.owned > 0 && o.kind !== 'lure');
   const kinds = [...new Set(options.map((o) => o.kind))];
   return (
     <div class="supply-picker">
@@ -78,7 +80,8 @@ export function SupplyPicker({ picks, stock, onChange, onOpenWorkshop }: Props) 
         </GlossaryTag>{' '}
         You get them from the daily dungeon and from trips, or craft them in the Workshop.
       </p>
-      {options.length === 0 && <p class="empty muted">You have no supplies right now.</p>}
+      <LurePicker picks={picks} stock={stock} onChange={onChange} onOpenWorkshop={onOpenWorkshop} />
+      {options.length === 0 && <p class="empty muted">You have no other supplies right now.</p>}
       {onOpenWorkshop !== undefined && (
         <p>
           <button type="button" onClick={onOpenWorkshop}>

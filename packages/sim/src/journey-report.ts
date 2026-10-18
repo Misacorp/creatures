@@ -31,6 +31,14 @@ export interface WeekSummary {
   /** Players with a record for the week. */
   players: number;
   power: Spread | null;
+  /**
+   * The raid team's fight-scored power (`fightPower`: damage per finale round against the four bosses
+   * at the server's rank) and the share of its HP it kept (basis points), next to the older score above.
+   */
+  fightPower: Spread | null;
+  fightSurvivalBp: Spread | null;
+  /** The share of the fight-scored power that the worn gear gives (percent), per player. */
+  fightGearShare: Spread | null;
   /** Median of each part of the raid team's power (`powerSplit`). */
   split: { base: number; levels: number; fusion: number; evolution: number; gear: number };
   topLevel: Spread | null;
@@ -167,6 +175,19 @@ function weekSummary(
     week,
     players: rows.length,
     power: col((d) => d.power),
+    fightPower: spreadOf(present(rows.map((r) => r.d.fightPower ?? undefined)), 0),
+    fightSurvivalBp: spreadOf(present(rows.map((r) => r.d.fightSurvivalBp ?? undefined)), 0),
+    fightGearShare: spreadOf(
+      present(
+        rows.map((r) => {
+          const { fightPower: power, fightPowerBare: bare } = r.d;
+          return power === null || bare === null || power <= 0
+            ? undefined
+            : Math.max(0, (100 * (power - bare)) / power);
+        }),
+      ),
+      1,
+    ),
     split: {
       base: med((d) => d.base),
       levels: med((d) => d.levels),

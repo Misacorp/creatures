@@ -1,11 +1,16 @@
 import type {
+  DismantleItem,
+  ExpWeather,
+  ReachId,
   ExpeditionLength,
   FamiliarityRecord,
-  GearRarity,
+  GearSlot,
   JobKind,
   PartKind,
+  TripWeather,
+  WorkshopMods,
 } from '@creatures/game';
-import { PART_KINDS } from '@creatures/game';
+import { GEAR_SLOTS, PART_KINDS } from '@creatures/game';
 import type { ArchetypeId } from './archetypes';
 import type { OwnedCreature, SimItem } from './data';
 import { LEGACY_PROFILES, type PlayerProfile } from './profiles';
@@ -21,6 +26,8 @@ export interface PendingExpedition {
   rolls: number;
   /** The weekly twist that applies (content id), if the trip went to the special place that week. */
   twist: string | null;
+  /** A treat was packed (Bait paid when it was sent): the explorer's experience for the trip doubles. */
+  treat?: boolean;
   /** Absolute simulated hours (since the start of the sim) it was sent at and ends at. */
   startHour: number;
   endsAtHour: number;
@@ -28,6 +35,8 @@ export interface PendingExpedition {
   offer?: string[];
   /** The chosen goal and the hour it ends. */
   push?: { goalId: string; endsAtHour: number };
+  /** What the day's weather did to the trip when it was sent (absent: nothing); the claim reads this. */
+  weather?: TripWeather;
 }
 
 /** Counters of everything a player did with expeditions, for the reports and the targets. */
@@ -55,6 +64,34 @@ export interface TripStats {
   trip_hours: number;
   /** Catch rolls rolled on trips. */
   catch_rolls: number;
+  /** Catch rolls that brought no creature (a small find of scrap instead). */
+  empty_rolls: number;
+  /** Creatures the trips and the Festival brought: new species and duplicates. */
+  catches: number;
+  /** Of those, the duplicates, and what each was answered with (the sim takes Recommended). */
+  dupes: number;
+  dupes_taught: number;
+  dupes_fused: number;
+  dupes_released: number;
+  /** Golden talents rolled (a new creature's first, or a duplicate's). */
+  golden_talents: number;
+  /** Talents put into a slot from the Talent Book for Bait. */
+  talent_slots: number;
+  /** Lures carried on a trip, lures crafted, and the Bait they cost. */
+  lures_used: number;
+  lures_crafted: number;
+  lure_bait: number;
+  /** Creature experience earned, by where it came from (a treat's doubling included). */
+  exp_trip: number;
+  exp_dungeon: number;
+  exp_raid: number;
+  exp_job: number;
+  /** Treats packed, and the ribbons bought. */
+  treats: number;
+  ribbons: number;
+  /** Catch rolls the pity forced: a species the player lacked, or a creature of any kind. */
+  pity_new: number;
+  pity_creature: number;
 }
 
 export const TRIP_STAT_KEYS: readonly (keyof TripStats)[] = [
@@ -78,6 +115,25 @@ export const TRIP_STAT_KEYS: readonly (keyof TripStats)[] = [
   'offers',
   'trip_hours',
   'catch_rolls',
+  'empty_rolls',
+  'catches',
+  'dupes',
+  'dupes_taught',
+  'dupes_fused',
+  'dupes_released',
+  'golden_talents',
+  'talent_slots',
+  'lures_used',
+  'lures_crafted',
+  'lure_bait',
+  'exp_trip',
+  'exp_dungeon',
+  'exp_raid',
+  'exp_job',
+  'treats',
+  'ribbons',
+  'pity_new',
+  'pity_creature',
 ];
 
 export function emptyTripStats(): TripStats {
@@ -87,22 +143,26 @@ export function emptyTripStats(): TripStats {
 /** Counters reset at the start of every week. */
 export interface WeekCounters {
   baitEarned: number;
-  baitConverted: number;
-  baitSpentTraining: number;
+  /** Bait spent crafting lures, and putting talents into slots from the Talent Book. */
+  baitLures: number;
+  baitSlots: number;
+  /** Bait spent on treats. */
+  baitTreats: number;
   essenceEarned: number;
-  trainings: number;
+  /** Levels gained this week, from experience. */
+  levelUps: number;
   evolutions: number;
   signedUp: boolean;
-  /** Essence spent on gear upgrades. */
-  essenceSpentGear: number;
-  /** Upgrade levels bought. */
-  gearUpgrades: number;
   /** Crafts claimed. */
   gearCrafts: number;
   /** Items that dropped or were crafted. */
   gearItems: number;
-  /** Items dismantled. */
+  /** Items taken apart in dismantle jobs (counted when the job is claimed). */
   gearDismantled: number;
+  /** Crafts claimed that were a Reach for a Rare or an Epic, and the Essence dismantle jobs gave back. */
+  gearReaches: number;
+  gearReachEpics: number;
+  dismantleEssence: number;
   /** Daily dungeon: runs made, runs cleared, and what they paid (Bait, Essence, scrap, gear items). */
   dungeonRuns: number;
   dungeonClears: number;
@@ -115,17 +175,19 @@ export interface WeekCounters {
 export function emptyWeek(): WeekCounters {
   return {
     baitEarned: 0,
-    baitConverted: 0,
-    baitSpentTraining: 0,
+    baitLures: 0,
+    baitSlots: 0,
+    baitTreats: 0,
     essenceEarned: 0,
-    trainings: 0,
+    levelUps: 0,
     evolutions: 0,
     signedUp: false,
-    essenceSpentGear: 0,
-    gearUpgrades: 0,
     gearCrafts: 0,
     gearItems: 0,
     gearDismantled: 0,
+    gearReaches: 0,
+    gearReachEpics: 0,
+    dismantleEssence: 0,
     dungeonRuns: 0,
     dungeonClears: 0,
     dungeonBait: 0,
@@ -154,18 +216,22 @@ export function emptyDungeonState(): DungeonState {
 export interface SimJob {
   kind: JobKind;
   creatureId: string;
-  /** The nominal rarity: the blueprint's for a craft, the item's otherwise (decides the XP). */
-  rarity: GearRarity;
   /** Absolute simulated hour (since the start of the sim) at which the job is done. */
   endsAtHour: number;
-  /** Craft: the base crafted. */
+  /** Craft: the base crafted, what it is aimed at and the blueprint's marks when it started. */
   baseId?: string;
+  reach?: ReachId;
+  marks?: number;
+  /** Dismantle: the items taken apart (they left the bag when the job started). */
+  items?: DismantleItem[];
   /** Supply: the supply crafted. */
   supplyId?: string;
-  /** Improve and enchant: the item's uid (the item may be in the bag or worn). */
-  itemUid?: number;
-  secondaryIndex?: number;
-  enchantId?: string;
+  /** A treat was packed (Bait paid when the job started): the worker's experience for it doubles. */
+  treat?: boolean;
+  /** The day's Market Day boost on a craft or a dismantle (`WorkshopMods`), fixed when it started. */
+  mods?: WorkshopMods;
+  /** What the day's weather did to the job's experience when it started (absent: nothing). */
+  xp?: ExpWeather;
 }
 
 /** Everything gear related a player has. */
@@ -175,6 +241,8 @@ export interface GearState {
   parts: Record<PartKind, number>;
   /** Base ids of the blueprints learned. */
   blueprints: string[];
+  /** Well-thumbed marks per blueprint base id (0 to the most). */
+  marks: Record<string, number>;
   jobs: SimJob[];
   /** Crafting XP per creature id. */
   skillXp: Record<string, number>;
@@ -186,6 +254,11 @@ export interface GearState {
   /** Highest Crafting level on any creature 30 days after joining; null before that. */
   bestSkillDay30: number | null;
   crafted: number;
+  /**
+   * The Workshop jobs the player started on one game day, by kind: Market Day boosts only the first craft and
+   * the first 2 dismantle jobs of a day, and every job counts, boosted or not.
+   */
+  startedToday: { day: number; craft: number; dismantle: number };
 }
 
 export function emptyGearState(): GearState {
@@ -193,6 +266,7 @@ export function emptyGearState(): GearState {
     bag: [],
     parts: Object.fromEntries(PART_KINDS.map((k) => [k, 0])) as Record<PartKind, number>,
     blueprints: [],
+    marks: {},
     jobs: [],
     skillXp: {},
     nextUid: 1,
@@ -200,14 +274,12 @@ export function emptyGearState(): GearState {
     firstCraftAfterDays: null,
     bestSkillDay30: null,
     crafted: 0,
+    startedToday: { day: -1, craft: 0, dismantle: 0 },
   };
 }
 
 function cloneItem(item: SimItem): SimItem {
-  return {
-    ...item,
-    rolls: { primary: item.rolls.primary, secondary: item.rolls.secondary.map((s) => ({ ...s })) },
-  };
+  return { ...item, lines: item.lines.map((l) => ({ ...l })) };
 }
 
 export interface SimPlayer {
@@ -226,6 +298,8 @@ export interface SimPlayer {
   essence: number;
   creatures: OwnedCreature[];
   dupeStreak: number;
+  /** The catch pity's counters (`RULES.catching.pity`): rolls since a new species, and since any creature. */
+  catchPity: { sinceNew: number; sinceCreature: number };
   firstExpeditionDone: boolean;
   /** Raids taken part in without a jackpot (the pity counter). */
   pity: number;
@@ -279,6 +353,7 @@ export function createPlayer(
     essence: 0,
     creatures: [],
     dupeStreak: 0,
+    catchPity: { sinceNew: 0, sinceCreature: 0 },
     firstExpeditionDone: false,
     pity: 0,
     maxPity: 0,
@@ -304,15 +379,25 @@ export function createPlayer(
 export function clonePlayer(p: SimPlayer): SimPlayer {
   return {
     ...p,
-    creatures: p.creatures.map((c) => ({
-      ...c,
-      ...(c.item === undefined || c.item === null ? {} : { item: cloneItem(c.item) }),
-    })),
+    catchPity: { ...p.catchPity },
+    creatures: p.creatures.map((c) => {
+      const { items, talents, ...rest } = c;
+      const own =
+        talents === undefined ? {} : { talents: { book: talents.book.map((b) => ({ ...b })) } };
+      if (items === undefined) return { ...rest, ...own };
+      const worn: Partial<Record<GearSlot, SimItem>> = {};
+      for (const slot of GEAR_SLOTS) {
+        const item = items[slot];
+        if (item !== undefined) worn[slot] = cloneItem(item);
+      }
+      return { ...rest, ...own, items: worn };
+    }),
     expeditions: p.expeditions.map((e) => ({
       ...e,
       kit: [...e.kit],
       ...(e.offer === undefined ? {} : { offer: [...e.offer] }),
       ...(e.push === undefined ? {} : { push: { ...e.push } }),
+      ...(e.weather === undefined ? {} : { weather: { ...e.weather } }),
     })),
     taste: { ...p.taste },
     explorerXp: { ...p.explorerXp },
@@ -330,7 +415,14 @@ export function clonePlayer(p: SimPlayer): SimPlayer {
       bag: p.gear.bag.map(cloneItem),
       parts: { ...p.gear.parts },
       blueprints: [...p.gear.blueprints],
-      jobs: p.gear.jobs.map((j) => ({ ...j })),
+      marks: { ...p.gear.marks },
+      startedToday: { ...p.gear.startedToday },
+      jobs: p.gear.jobs.map((j) => ({
+        ...j,
+        ...(j.items === undefined ? {} : { items: [...j.items] }),
+        ...(j.mods === undefined ? {} : { mods: { ...j.mods } }),
+        ...(j.xp === undefined ? {} : { xp: { ...j.xp } }),
+      })),
       skillXp: { ...p.gear.skillXp },
     },
     dungeon: { ...p.dungeon },

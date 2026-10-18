@@ -1,15 +1,14 @@
 import {
   RULES,
   applyGear,
+  blueprintBases,
   content,
   createSeededRng,
   dismantleYield,
   effectiveStats,
+  finaleItemLevel,
   festivalBaseFor,
-  droppableBases,
-  finaleUpgradeLevel,
   rollFinaleReward,
-  rollGear,
   type GearRarity,
   type PartKind,
   type Rng,
@@ -19,7 +18,8 @@ import { describe, expect, it } from 'vitest';
 import { evaluate, loadLive, roundStartsOf } from '../src/raid-live';
 import { loadCreatures } from '../src/raid-teams';
 import { eventTimes } from '../src/raid-schedule';
-import { insertItem, learnBlueprint, rowToItem, findItem } from '../src/gear-store';
+import { learnBlueprint, rowToItem, findItem, wearerOf } from '../src/gear-store';
+import { giveItem } from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
 import {
   DAY,
@@ -67,12 +67,12 @@ const itemsOf = (ctx: CoreContext, userId: string) =>
     id: string;
     base_id: string;
     rarity: GearRarity;
-    level: number;
+    item_level: number;
     source: string;
-    rolls_json: string;
+    lines_json: string;
   }>(
     ctx.sql,
-    'SELECT id, base_id, rarity, level, source, rolls_json FROM gear_items WHERE user_id = ? ORDER BY created_at, rowid',
+    'SELECT id, base_id, rarity, item_level, source, lines_json FROM gear_items WHERE user_id = ? ORDER BY created_at, rowid',
     userId,
   );
 
@@ -108,6 +108,9 @@ describe('drops from the weekly raid', () => {
         const members = membersOf(ctx.sql);
         expect(members).toHaveLength(5);
         const expectRng = createSeededRng('raid-gear');
+        const bossId = rows<{ boss_id: string }>(ctx.sql, 'SELECT boss_id FROM raid_weeks')[0]
+          ?.boss_id;
+        const element = content.bosses.find((b) => b.id === bossId)?.element ?? 'tide';
         for (const userId of members) {
           const mine = grants(ctx, userId);
           expect(mine.map((g) => g.key)).toEqual([
@@ -133,18 +136,23 @@ describe('drops from the weekly raid', () => {
         // week's Boss Rank. Nobody knew a blueprint yet, so each is a new one.
         let gearDrops = 0;
         for (const userId of members) {
-          const expected = rollFinaleReward(expectRng, rank, new Set());
+          const expected = rollFinaleReward(expectRng, rank, element, new Set());
           const items = itemsOf(ctx, userId);
           if (expected.kind === 'gear') {
             gearDrops++;
-            expect(items[0]).toMatchObject({ base_id: expected.baseId, rarity: expected.rarity });
-            expect(items[0]?.level).toBe(finaleUpgradeLevel(rank));
-            expect(JSON.parse(items[0]?.rolls_json ?? '{}')).toEqual(expected.rolls);
+            expect(items[0]).toMatchObject({
+              base_id: expected.item.baseId,
+              rarity: expected.item.rarity,
+              // 3 + Boss Rank, the boss's element as the tag.
+              item_level: Math.min(20, 3 + rank),
+            });
+            expect(JSON.parse(items[0]?.lines_json ?? '[]')).toEqual(expected.item.lines);
+            expect(expected.item.tag === element || expected.item.slot === 'charm').toBe(true);
           } else {
             expect(items).toEqual([]);
             expect(
-              rows(ctx.sql, 'SELECT base_id, rarity FROM blueprints WHERE user_id = ?', userId),
-            ).toEqual([{ base_id: expected.baseId, rarity: expected.rarity }]);
+              rows(ctx.sql, 'SELECT base_id FROM blueprints WHERE user_id = ?', userId),
+            ).toEqual([{ base_id: expected.baseId }]);
           }
         }
         // Nobody outside the party got anything.
@@ -237,17 +245,11 @@ describe('drops from the weekly raid', () => {
       (ctx) => {
         const [first] = openWeek(ctx, 3) as [Seeded];
         for (let i = 0; i < RULES.gear.inventoryCap; i++) {
-          insertItem(
-            ctx.sql,
-            first.id,
-            { baseId: 'trail-charm', rarity: 'common', rolls: { primary: 300, secondary: [] } },
-            'test',
-            ctx.clock.t,
-          );
+          giveItem(ctx.sql, first.id, 'trail-cap', { now: ctx.clock.t });
         }
         // They know every blueprint, so the reward slot is gear and has to turn into parts.
-        for (const base of droppableBases()) {
-          learnBlueprint(ctx.sql, first.id, base.id, base.blueprint, ctx.clock.t);
+        for (const base of blueprintBases()) {
+          learnBlueprint(ctx.sql, first.id, base.id, ctx.clock.t);
         }
         forcePool(ctx.sql, 12_000);
         ctx.clock.t = SUNDAY;
@@ -258,7 +260,7 @@ describe('drops from the weekly raid', () => {
         const grant = grants(ctx, first.id).find((g) => g.key.endsWith(':finale'));
         const view = JSON.parse(grant?.result_json ?? '{}') as {
           gear: unknown[];
-          converted: { baseId: string; rarity: GearRarity; level?: number }[];
+          converted: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
           parts: Record<string, number>;
         };
         expect(view.gear).toEqual([]);
@@ -266,7 +268,6 @@ describe('drops from the weekly raid', () => {
         const yielded = dismantleYield({
           baseId: view.converted[0]?.baseId ?? '',
           rarity: view.converted[0]?.rarity ?? 'common',
-          level: view.converted[0]?.level ?? 0,
         });
         expect(view.parts).toEqual(yielded);
         // The parts really arrived: the two phases plus the converted item.
@@ -356,10 +357,13 @@ describe('the Festival piece', () => {
             slot.gear.length === 1 ? ['festival', 'raid_finale'] : ['festival'],
           );
           const festive = items.find((i) => i.source === 'festival');
-          expect(festive).toMatchObject({ base_id: piece.id, rarity: 'festival' });
-          expect(
-            (JSON.parse(festive?.rolls_json ?? '{}') as { secondary: unknown[] }).secondary,
-          ).toHaveLength(RULES.gear.rarity.festival.secondaries);
+          // Special, not stronger: a normal rarity, the lines of that rarity, the finale's item level.
+          expect(festive).toMatchObject({ base_id: piece.id });
+          expect(['common', 'rare', 'epic']).toContain(festive?.rarity);
+          expect(JSON.parse(festive?.lines_json ?? '[]')).toHaveLength(
+            RULES.gear.rolledLines[festive?.rarity as 'common' | 'rare' | 'epic'],
+          );
+          expect(festive?.item_level).toBe(finaleItemLevel(weekPayout(ctx.sql).rank));
         }
         // Idempotent.
         ctx.core.raid.runDue(HELSINKI);
@@ -410,26 +414,16 @@ function wear(
   creatureId: string,
   baseId: string,
   rarity: GearRarity,
-  options: { level?: number; enchantId?: string; seed?: string } = {},
+  options: { level?: number; lines?: [string, number][]; seed?: string } = {},
 ): string {
-  const id = insertItem(
-    ctx.sql,
-    userId,
-    {
-      baseId,
-      rarity,
-      rolls: rollGear(createSeededRng(options.seed ?? `wear:${baseId}`), baseId, rarity),
-    },
-    'test',
-    ctx.clock.t,
-  );
-  ctx.sql.exec(
-    'UPDATE gear_items SET equipped_on = ?, level = ?, enchant_id = ? WHERE id = ?',
-    creatureId,
-    options.level ?? 0,
-    options.enchantId ?? null,
-    id,
-  );
+  const id = giveItem(ctx.sql, userId, baseId, {
+    rarity,
+    level: options.level ?? 1,
+    seed: options.seed ?? `wear:${baseId}`,
+    now: ctx.clock.t,
+    ...(options.lines === undefined ? {} : { lines: options.lines }),
+  });
+  ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creatureId, id);
   return id;
 }
 
@@ -447,22 +441,47 @@ describe('gear in fights', () => {
         )[0] as { species: string; level: number; fusion_count: number };
         const species = content.creatures.find((c) => c.id === row.species);
         if (species === undefined) throw new Error('species');
-        // A rare band with a crit secondary, upgraded: attack, crit chance and crit damage all move.
-        const itemId = wear(ctx, a.id, creatureId, 'bark-band', 'rare', {
-          level: 3,
-          enchantId: 'steady-hand',
+        // A rare Hat with Attack, crit chance and a First pounce: stats, crit and the sheet all move.
+        const itemId = wear(ctx, a.id, creatureId, 'coal-warm-cap', 'rare', {
+          level: 12,
+          lines: [
+            ['attack', 2],
+            ['crit-chance', 2],
+          ],
         });
-        const item = rowToItem(
-          findItem(ctx.sql, a.id, itemId) as NonNullable<ReturnType<typeof findItem>>,
+        wear(ctx, a.id, creatureId, 'ember-muffler', 'rare', {
+          level: 12,
+          lines: [
+            ['area-ward', 2],
+            ['all-damage-taken', 2],
+          ],
+        });
+        const worn = rows<{ id: string }>(
+          ctx.sql,
+          'SELECT id FROM gear_items WHERE equipped_on = ? ORDER BY slot',
+          creatureId,
+        ).map((r) => r.id);
+        expect(worn).toHaveLength(2);
+        expect(worn).toContain(itemId);
+        const items = worn.map((id) =>
+          rowToItem(findItem(ctx.sql, a.id, id) as NonNullable<ReturnType<typeof findItem>>),
         );
         const expected = applyGear(
           effectiveStats(species, row.level, row.fusion_count),
           species.crit,
-          species.role,
-          species.element,
-          item,
+          wearerOf(species),
+          items,
         );
+        expect(expected.mods).toEqual({ areaBp: 700, takenBp: 400 });
         expect(expected.stats.atk).toBeGreaterThan(effectiveStats(species, row.level, 0).atk);
+
+        const otherRow = rows<{ species: string; level: number; fusion_count: number }>(
+          ctx.sql,
+          'SELECT species, level, fusion_count FROM creatures WHERE id = ?',
+          a.creatureIds[1] as string,
+        )[0] as { species: string; level: number; fusion_count: number };
+        const otherSpecies = content.creatures.find((c) => c.id === otherRow.species);
+        if (otherSpecies === undefined) throw new Error('species');
 
         forcePool(ctx.sql, BIG);
         ctx.clock.t = W02.afterFinale;
@@ -472,19 +491,15 @@ describe('gear in fights', () => {
         // The stored fight input carries the final stats (and crit), not the base ones.
         expect(slot?.stats).toEqual(expected.stats);
         expect(slot?.crit).toEqual(expected.crit);
+        // And the modifier sheet of its gear, which the engine reads in the fight.
+        expect(slot?.mods).toEqual(expected.mods);
         // A creature without gear keeps exactly what it always had.
         const other = p1?.input.row.find((s) => s.id === a.creatureIds[1]);
-        const otherRow = rows<{ species: string; level: number; fusion_count: number }>(
-          ctx.sql,
-          'SELECT species, level, fusion_count FROM creatures WHERE id = ?',
-          a.creatureIds[1] as string,
-        )[0] as { species: string; level: number; fusion_count: number };
-        const otherSpecies = content.creatures.find((c) => c.id === otherRow.species);
-        if (otherSpecies === undefined) throw new Error('species');
         expect(other?.stats).toEqual(
           effectiveStats(otherSpecies, otherRow.level, otherRow.fusion_count),
         );
         expect(other?.crit).toEqual(otherSpecies.crit);
+        expect(other?.mods).toBeUndefined();
       },
       { start: W02.friday - 2 * 3_600_000, core: { gearRng: createSeededRng('fold') } },
     );
@@ -499,7 +514,7 @@ describe('gear in fights', () => {
           if (geared) {
             for (const p of players) {
               for (const creatureId of p.creatureIds) {
-                wear(ctx, p.id, creatureId, 'pearl-trinket', 'epic', { level: 5 });
+                wear(ctx, p.id, creatureId, 'trail-cap', 'epic', { level: 5 });
               }
             }
           }
@@ -531,7 +546,7 @@ describe('gear in fights', () => {
       (ctx) => {
         const [a] = openWeek(ctx, 3, 12) as [Seeded];
         const creatureId = a.creatureIds[0] as string;
-        const itemId = wear(ctx, a.id, creatureId, 'pearl-trinket', 'epic', { level: 5 });
+        const itemId = wear(ctx, a.id, creatureId, 'trail-cap', 'epic', { level: 5 });
         forcePool(ctx.sql, BIG);
         ctx.clock.t = W02.afterFinale;
         ctx.core.raid.runDue(HELSINKI);
@@ -563,7 +578,13 @@ describe('gear in fights', () => {
         expect(plain.every((c) => c.power > 0)).toBe(true);
         const weakest = [...plain].sort((x, y) => x.power - y.power)[0];
         if (weakest === undefined) throw new Error('no creatures');
-        wear(ctx, a.id, weakest.id, 'pearl-trinket', 'epic', { level: 5 });
+        wear(ctx, a.id, weakest.id, 'trail-cap', 'epic', {
+          level: 5,
+          lines: [
+            ['attack-local-flat', 3],
+            ['attack-local-pct', 3],
+          ],
+        });
         const geared = loadCreatures(ctx.sql, a.id).find((c) => c.id === weakest.id);
         expect(geared?.power).toBeGreaterThan(weakest.power);
         expect(geared?.stats.atk).toBeGreaterThan(weakest.stats.atk);
@@ -591,7 +612,7 @@ describe('practice fights', () => {
         ctx.clock.t = W02.afterPhase2;
         ctx.core.raid.runDue(HELSINKI);
         forcePool(ctx.sql, BIG, BIG, 1);
-        wear(ctx, a.id, creatureId, 'pearl-trinket', 'epic', { level: 5 });
+        wear(ctx, a.id, creatureId, 'trail-cap', 'epic', { level: 5 });
         const worn = loadCreatures(ctx.sql, a.id).find((c) => c.id === creatureId);
         const grantsBefore = count(ctx.sql, 'gear_grants');
         const itemsBefore = count(ctx.sql, 'gear_items');
@@ -642,7 +663,7 @@ describe('stats freeze when the live finale starts', () => {
         forcePool(ctx.sql, BIG, BIG, 1);
         const [a] = players as [Seeded];
         const creatureId = a.creatureIds[0] as string;
-        const itemId = wear(ctx, a.id, creatureId, 'pearl-trinket', 'epic', { level: 5 });
+        const itemId = wear(ctx, a.id, creatureId, 'trail-cap', 'epic', { level: 5 });
         const worn = loadCreatures(ctx.sql, a.id).find((c) => c.id === creatureId);
 
         // The finale starts: the fight is frozen with the stats of this moment.
@@ -696,7 +717,7 @@ describe('stats freeze when the live finale starts', () => {
         const p1 = storedRuns(ctx.sql).find((r) => r.phase === 'phase1');
         expect(p1).toBeDefined();
         const plainStats = p1?.input.row.find((s) => s.id === creatureId)?.stats;
-        wear(ctx, a.id, creatureId, 'pearl-trinket', 'epic', { level: 5 });
+        wear(ctx, a.id, creatureId, 'trail-cap', 'epic', { level: 5 });
         ctx.clock.t = W02.afterPhase2;
         ctx.core.raid.runDue(HELSINKI);
         const runs = storedRuns(ctx.sql);
@@ -772,7 +793,7 @@ describe('expedition loot', () => {
     gear: unknown[];
     converted: unknown[];
     parts: Partial<Record<PartKind, number>>;
-    blueprints: { baseId: string; rarity: string; duplicate: boolean }[];
+    blueprints: { baseId: string; duplicate: boolean }[];
   };
   const lootOf = (res: { body: Record<string, unknown> }) =>
     (res.body['result'] as { loot: Loot }).loot;
@@ -781,6 +802,13 @@ describe('expedition loot', () => {
     (
       (res.body['result'] as { rankGifts?: { parts: { scrap?: number } }[] }).rankGifts ?? []
     ).reduce((n, g) => n + (g.parts.scrap ?? 0), 0);
+  /** The scrap the rolls of a claim that brought no creature found instead (`findScrap` each). */
+  const findScrapOf = (
+    res: { body: Record<string, unknown> },
+    duration: 'short' | 'medium' | 'long' | 'day',
+  ): number =>
+    ((res.body['result'] as { noCatch?: number }).noCatch ?? 0) *
+    RULES.expeditions.lengths[duration].findScrap;
   /** The `gear_drop` events of one source (the rank gift has its own). */
   const dropEvents = (ctx: { sql: SqlStorage }, source: string) =>
     rows<{ props_json: string }>(
@@ -806,8 +834,10 @@ describe('expedition loot', () => {
           const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
           expect(res.status).toBe(200);
           const loot = lootOf(res);
-          expect(loot.parts.scrap ?? 0).toBe(scrap);
-          expect(scrapOf(ctx, p.id)).toBe(before + scrap + giftScrapOf(res));
+          // The length's scrap, and the small find of every roll that brought no creature.
+          const found = findScrapOf(res, duration);
+          expect(loot.parts.scrap ?? 0).toBe(scrap + found);
+          expect(scrapOf(ctx, p.id)).toBe(before + scrap + found + giftScrapOf(res));
           // The same loot is in the state the client reloads.
           const state = (await p.call('GET', '/api/state')).body as {
             expeditions: { id: string; result: { loot: Loot } | null }[];
@@ -854,31 +884,27 @@ describe('expedition loot', () => {
         const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
         const loot = lootOf(res);
         const gift = giftScrapOf(res);
-        expect(loot.parts).toEqual({ scrap, 'ember-shard': 1, glimmer: 1 });
+        const found = findScrapOf(res, 'long');
+        expect(loot.parts).toEqual({ scrap: scrap + found, 'ember-shard': 1, glimmer: 1 });
         // The draw of 0 also finds a supply: the explorer is rank 1, so a plain one.
-        expect((loot as { supplies?: string[] }).supplies).toEqual(['lure-basic']);
-        expect(loot.blueprints).toEqual([
-          { baseId: 'trail-charm', rarity: 'common', duplicate: false },
-        ]);
-        expect(rows(ctx.sql, 'SELECT base_id FROM blueprints')).toEqual([
-          { base_id: 'trail-charm' },
-        ]);
+        expect((loot as { supplies?: string[] }).supplies).toEqual(['map-scrap-basic']);
+        expect(loot.blueprints).toEqual([{ baseId: 'trail-cap', duplicate: false }]);
+        expect(rows(ctx.sql, 'SELECT base_id FROM blueprints')).toEqual([{ base_id: 'trail-cap' }]);
         expect(
           rows(ctx.sql, 'SELECT kind, amount FROM parts WHERE user_id = ? ORDER BY kind', p.id),
         ).toEqual([
           { kind: 'ember-shard', amount: 1 },
           { kind: 'glimmer', amount: 1 },
-          { kind: 'scrap', amount: scrap + gift },
+          { kind: 'scrap', amount: scrap + found + gift },
         ]);
-        // A blueprint the player knows already turns into scrap.
+        // A blueprint the player knows already adds a well-thumbed mark, not scrap.
         const again = await p.trip(1, 'long', 'tidepools');
         ctx.clock.t = again.endsAt;
         const res2 = await p.call('POST', `/api/expeditions/${again.id}/claim`, {});
         const loot2 = lootOf(res2);
-        expect(loot2.blueprints).toEqual([
-          { baseId: 'trail-charm', rarity: 'common', duplicate: true },
-        ]);
-        expect(loot2.parts.scrap).toBe(scrap + RULES.gear.drops.duplicateBlueprintScrap);
+        expect(loot2.blueprints).toEqual([{ baseId: 'trail-cap', duplicate: true, marks: 1 }]);
+        expect(loot2.parts.scrap).toBe(scrap + findScrapOf(res2, 'long'));
+        expect(rows(ctx.sql, 'SELECT marks FROM blueprints')).toEqual([{ marks: 1 }]);
         expect(count(ctx.sql, 'blueprints')).toBe(1);
         const events = dropEvents(ctx, 'expedition');
         expect(events).toHaveLength(2);
@@ -886,13 +912,13 @@ describe('expedition loot', () => {
           source: 'expedition',
           gear: [],
           converted: 0,
-          scrap,
+          scrap: scrap + found,
           shards: 1,
           glimmer: 1,
-          blueprint: 'trail-charm',
+          blueprint: 'trail-cap',
           blueprintDuplicate: false,
           supplies: 1,
-          parts: { scrap, 'ember-shard': 1, glimmer: 1 },
+          parts: { scrap: scrap + found, 'ember-shard': 1, glimmer: 1 },
         });
         const actor = rows<{ actor_hash: string | null }>(
           ctx.sql,

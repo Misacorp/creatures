@@ -13,7 +13,7 @@ import type { IconRef } from './icon-ref';
 import { rewardPileItems, type PileSource } from './reward-pile';
 import { goalName, kindName, supplyKindOf, supplyName } from './trip-view';
 
-type RevealTone = 'home' | 'recalled' | 'failed';
+export type RevealTone = 'home' | 'recalled' | 'failed';
 
 /** How the trip went: a failed risky goal, a recall, or a trip that came home. */
 export function revealTone(result: Pick<TripResult, 'recalled' | 'failed'>): RevealTone {

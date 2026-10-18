@@ -1,0 +1,194 @@
+/*
+  The Drawer (ui/Drawer.tsx): a bottom sheet over a dimming backdrop. It is `position: fixed` over the
+  screen that owns it, below the glossary popovers (so a tag inside it still opens its popover). The sheet
+  is full width up to 34 rem, at most 88% of the screen high, with a drag handle on top, a heading row with
+  the close button, an optional toolbar, a scrolling body and an optional pinned footer. It slides up in
+  180 ms (not at all with reduced motion); a pull down on the handle moves it with the finger.
+*/
+
+.drawer-layer {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(var(--ink-rgb) / 72%);
+  touch-action: none;
+}
+
+.drawer-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 34rem;
+  max-height: 88%;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  background: var(--dusk);
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--ink),
+    calc(var(--px) * -1) 0 0 0 var(--ink),
+    var(--px) 0 0 0 var(--ink),
+    inset 0 var(--px) 0 0 #3d3570;
+  transform: translateY(var(--drag, 0px));
+}
+
+.drawer-panel:focus {
+  outline: none;
+}
+
+.drawer-panel:not(.dragging) {
+  transition: transform 120ms ease-out;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drawer-panel {
+    animation: drawer-up 180ms ease-out;
+  }
+
+  .drawer-backdrop {
+    animation: drawer-fade 180ms ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-panel:not(.dragging) {
+    transition: none;
+  }
+}
+
+@keyframes drawer-up {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(var(--drag, 0px));
+  }
+}
+
+@keyframes drawer-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.drawer-top {
+  flex: none;
+}
+
+/* The handle is a full-width strip (an easy target for a thumb) with a small grip in it. */
+button.drawer-handle {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 1.75rem;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+button.drawer-handle:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+.drawer-grip {
+  width: 2.5rem;
+  height: 0.25rem;
+  background: var(--haze);
+  opacity: 0.7;
+}
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.5rem 0.25rem 0.75rem;
+}
+
+/* With the heading only spoken, the close button sits in the handle's row, at the top right. */
+.drawer-panel.title-hidden .drawer-head {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0 0.25rem 0 0;
+}
+
+.drawer-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+
+.drawer-meta {
+  flex: none;
+}
+
+button.drawer-close {
+  display: grid;
+  flex: none;
+  margin-left: auto;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--haze);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.drawer-x {
+  width: 1.125rem;
+  height: 1.125rem;
+  fill: currentcolor;
+}
+
+button.drawer-close:hover:not(:disabled) {
+  color: var(--bone);
+}
+
+button.drawer-close:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+.drawer-toolbar {
+  flex: none;
+  padding: 0 0.75rem;
+}
+
+.drawer-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0.25rem 0.75rem 0.75rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.drawer-footer {
+  flex: none;
+  max-height: 50%;
+  padding: 0.5rem 0.75rem 0.75rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--dusk-2);
+  box-shadow: inset 0 2px 0 0 var(--line);
+}

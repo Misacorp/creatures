@@ -4,6 +4,7 @@ import {
   createSeededRng,
   dungeonContent,
   dungeonPayout,
+  itemOf,
   streakBonus,
 } from '@creatures/game';
 import { DEFAULT_MIX } from '../src/archetypes';
@@ -85,19 +86,28 @@ describe('the dungeon in the simulator', () => {
     // Gear folds into the slots.
     const bare = run.team.find((s) => s.speciesId === 'cindle')?.stats?.atk ?? 0;
     const item: SimItem = {
+      ...itemOf('trail-cap', 'common', 2, [{ id: 'attack', tier: 1 }]),
       uid: 1,
-      baseId: 'trail-charm',
-      rarity: 'common',
-      level: 2,
-      rolls: { primary: 800, secondary: [] },
-      enchantId: null,
-      improves: 0,
     };
-    (p.creatures[0] as OwnedCreature).item = item;
+    (p.creatures[0] as OwnedCreature).items = { hat: item };
     const geared = buildRun(p, 3, dayModifiers('s', 1), 'run-seed').team.find(
       (s) => s.speciesId === 'cindle',
     )?.stats?.atk;
     expect(geared).toBeGreaterThan(bare);
+  });
+
+  it('carries the Scarf line "Between-room rest" into the run as the worker does, and nothing without it', () => {
+    const p = player(12);
+    expect(buildRun(p, 3, dayModifiers('s', 1), 'run-seed').rest).toBeUndefined();
+    const scarf: SimItem = {
+      ...itemOf('patch-scarf', 'common', 8, [{ id: 'between-room-rest', tier: 2 }]),
+      uid: 2,
+    };
+    const worn = p.creatures[1] as OwnedCreature;
+    worn.items = { scarf };
+    const run = buildRun(p, 3, dayModifiers('s', 1), 'run-seed');
+    // Tier III of the line is 4% of max HP, keyed by the creature's id; nobody else rests.
+    expect(run.rest).toEqual({ [worn.id]: 400 });
   });
 
   it('does nothing for a player with fewer than three creatures', () => {

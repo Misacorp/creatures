@@ -2,7 +2,7 @@
   "serverNow": 1799733600000,
   "balances": {
     "bait": 100,
-    "essence": 179
+    "essence": 0
   },
   "inventory": {
     "cap": 60,
@@ -11,33 +11,79 @@
   },
   "items": [
     {
-      "id": "87ee5c5b-2e94-4a97-b049-f91d9ba18398",
-      "baseId": "trail-charm",
+      "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
+      "baseId": "trail-cap",
+      "slot": "hat",
+      "tag": "neutral",
       "rarity": "common",
-      "level": 0,
-      "maxLevel": 5,
-      "primary": {
-        "stat": "atk",
-        "bp": 422
+      "festival": false,
+      "itemLevel": 1,
+      "stats": [
+        {
+          "stat": "atk",
+          "value": 2,
+          "base": 2,
+          "text": "Attack 2"
+        },
+        {
+          "stat": "hp",
+          "value": 4,
+          "base": 4,
+          "text": "HP 4"
+        }
+      ],
+      "lines": [
+        {
+          "id": "crit-damage",
+          "name": "Crit damage",
+          "text": "Crit damage +8 pt",
+          "about": "Crits hit harder, in points (the fight caps the total).",
+          "source": "rolled",
+          "tier": 1,
+          "bestTier": 1,
+          "local": false,
+          "active": null
+        }
+      ],
+      "needs": {
+        "level": 1,
+        "role": null
       },
-      "secondaries": [],
-      "enchantId": null,
-      "enchantActive": null,
       "equippedOn": null,
-      "jobId": null,
-      "upgradeCost": {
-        "essence": 20,
-        "scrap": 2
-      },
       "dismantle": {
-        "scrap": 2
+        "scrap": {
+          "min": 2,
+          "max": 3
+        },
+        "shards": {
+          "min": 0,
+          "max": 0,
+          "element": null
+        },
+        "glimmer": {
+          "min": 0,
+          "max": 0
+        },
+        "essence": {
+          "min": 0,
+          "max": 0
+        }
       },
       "source": "welcome",
-      "createdAt": 1799733600000
+      "createdAt": 1799733600000,
+      "madeBy": null,
+      "origin": {
+        "kind": "welcome"
+      }
     }
   ],
+  "slotOpens": {
+    "hat": 1,
+    "scarf": 7,
+    "charm": 13
+  },
   "parts": {
-    "scrap": 8,
+    "scrap": 10,
     "tide-shard": 0,
     "ember-shard": 0,
     "grove-shard": 0,
@@ -46,9 +92,10 @@
   },
   "blueprints": [
     {
-      "baseId": "static-charm",
-      "rarity": "common",
-      "learnedAt": 1799733600000
+      "baseId": "trail-charm",
+      "learnedAt": 1799733600000,
+      "marks": 0,
+      "needsCraftingLevel": 1
     }
   ],
   "jobs": [],
@@ -58,41 +105,41 @@
   },
   "skills": [
     {
-      "creatureId": "10d24d35-e868-4bd9-bd9f-4afca979cbcb",
+      "creatureId": "0006079c-6263-4604-b59e-f1a6a00f42de",
       "xp": 0,
       "level": 1,
-      "nextLevelXp": 80
+      "nextLevelXp": 100
     },
     {
-      "creatureId": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
+      "creatureId": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
       "xp": 0,
       "level": 1,
-      "nextLevelXp": 80
+      "nextLevelXp": 100
     },
     {
-      "creatureId": "fd833d62-33dd-4a90-8c3b-388a26f47176",
+      "creatureId": "32621523-b521-47e9-8f3d-faccb12a7aea",
       "xp": 0,
       "level": 1,
-      "nextLevelXp": 80
+      "nextLevelXp": 100
     }
   ],
   "grants": [
     {
       "gear": [
         {
-          "id": "87ee5c5b-2e94-4a97-b049-f91d9ba18398",
-          "baseId": "trail-charm",
-          "rarity": "common"
+          "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
+          "baseId": "trail-cap",
+          "rarity": "common",
+          "itemLevel": 1
         }
       ],
       "converted": [],
       "parts": {
-        "scrap": 8
+        "scrap": 10
       },
       "blueprints": [
         {
-          "baseId": "static-charm",
-          "rarity": "common",
+          "baseId": "trail-charm",
           "duplicate": false
         }
       ],
@@ -100,5 +147,6 @@
       "source": "welcome",
       "at": 1799733600000
     }
-  ]
+  ],
+  "notice": null
 }

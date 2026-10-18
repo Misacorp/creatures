@@ -48,7 +48,7 @@ function rollRarity(rng: Rng, supplies: SuppliesId): Rarity {
  * 1. First-expedition guarantee: the species is zipmouse.
  * 2. Otherwise roll the rarity from the supply level's odds, then pick a catchable stage-1 species
  *    of that rarity; species of the explorer's element weigh 2 instead of 1.
- * 3. Dupe shield: with a streak of 4 or more, pick only among unowned species of that rarity (if
+ * 3. Dupe shield: with a streak of `RULES.catching.dupeShieldStreak` (3) or more, pick only among unowned species of that rarity (if
  *    there are none, the normal pick applies).
  * 4. Shiny: 1 in 500.
  */

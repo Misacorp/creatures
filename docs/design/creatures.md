@@ -95,7 +95,7 @@ A **quirk** is a cosmetic personality detail that belongs to one creature ("Hums
   - a new catch on an expedition (`applyCatch`),
   - a new Festival creature (`grantFestivalCreature`).
 
-  Fusing a duplicate, converting to Bait, training and **evolving never change the quirk**. The quirk RNG (`quirkRng` in `GuildCoreOptions`) is separate from the catch and raid RNGs, so a quirk never uses up the draws of a catch or a fight.
+  Fusing a duplicate, teaching or releasing one, training and **evolving never change the quirk** (a Kept second creature rolls its own). The quirk RNG (`quirkRng` in `GuildCoreOptions`) is separate from the catch and raid RNGs, so a quirk never uses up the draws of a catch or a fight.
 
 - **Storage:** `creatures.quirk_id` (migration 13). The client gets `quirk` (the id) on the creature view and looks the text up in `lore`. If the id is not in the data (null, or removed), the card shows no Personality line.
 - **Backfill:** migration 13 gives every existing creature a quirk, once, from crypto randomness with the same pick rule. It is stored, so it never changes again.

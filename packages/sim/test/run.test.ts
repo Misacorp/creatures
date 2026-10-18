@@ -23,6 +23,7 @@ describe('simulation run', () => {
       '## Summary',
       '## Bosses',
       '## Raid curve by Boss Rank (journey servers)',
+      '## Gear share of fight-scored power (journey servers)',
       '## Archetype progression',
       '## Long-running servers',
       '## Daily dungeon',
@@ -40,7 +41,7 @@ describe('simulation run', () => {
       targets: unknown[];
     };
     expect(json.settings.seed).toBe('test');
-    expect(json.targets).toHaveLength(66);
+    expect(json.targets).toHaveLength(92);
   });
 
   it('marks metrics it did not measure as not measured', () => {

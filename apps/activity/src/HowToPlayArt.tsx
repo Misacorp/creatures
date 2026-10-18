@@ -14,10 +14,16 @@ import {
   content,
   entryView,
   howToPlay,
+  itemLines,
+  itemOf,
+  itemStats,
+  statText,
+  unlockLadder,
   type GlossarySection,
 } from '@creatures/game';
 import { bossArt, markPalette } from './art';
 import { ItemFrame, ItemSprite } from './GearArt';
+import { ItemCard, type ItemCardItem } from './ItemCard';
 import { partIcon } from './gear-sprites';
 import { GlossaryTag } from './Glossary';
 import { speciesName } from './game';
@@ -40,8 +46,51 @@ import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
 import { PipRow } from './ui/PipRow';
 
-/** One item of each kind (a charm, a band and a trinket), for the Workshop picture. */
-const GEAR_EXAMPLES = ['trail-charm', 'patch-band', 'quick-trinket'] as const;
+/** One item of each slot (a hat, a scarf and a charm), for the Workshop picture. */
+const GEAR_EXAMPLES = ['trail-cap', 'patch-scarf', 'trail-charm'] as const;
+
+/**
+ * The Gear picture's item: a fixed Rare Ember Hat at item level 8 with one line of its own ("this item") and
+ * one that acts in the fight, both at tier II (index 1), the best that level allows. Built from the content by the
+ * same rules as any item (nothing is rolled), so its numbers are the game's.
+ */
+function gearExample(): ItemCardItem {
+  const item = itemOf('forge-hood', 'rare', 8, [
+    { id: 'attack-local-pct', tier: 1 },
+    { id: 'ember-hunter', tier: 1 },
+  ]);
+  return {
+    baseId: item.baseId,
+    slot: item.slot,
+    rarity: item.rarity,
+    itemLevel: item.itemLevel,
+    stats: itemStats(item).map((st) => ({ ...st, text: statText(st.stat, st.value) })),
+    lines: itemLines(item).map((line) => ({ ...line, active: null })),
+  };
+}
+
+/**
+ * What a creature's level brings, in order, for the starter that evolves (its gear slots, ribbons,
+ * finale ability, evolution and talent slots), grouped by level: "Lv 10: Bronze Ribbon, Finale ability". From the
+ * rules, so it moves with them.
+ */
+function growthSteps(): { level: number; names: string[] }[] {
+  const starter = content.creatures.find((c) => c.starter && c.evolvesTo !== undefined);
+  const ladder = unlockLadder(starter?.rarity ?? 'common', starter?.evolvesTo?.level);
+  const steps: { level: number; names: string[] }[] = [];
+  // The ladder leaves out the finale ability when a ribbon shares its level; the picture names it.
+  const ability = { level: RULES.abilities.unlockLevel, name: 'Finale ability' };
+  const withAbility = ladder.some((step) => step.name === 'Ability')
+    ? ladder
+    : [...ladder, ability];
+  for (const step of [...withAbility].sort((a, b) => a.level - b.level)) {
+    const name = step.name === 'Ability' ? ability.name : step.name;
+    const last = steps.at(-1);
+    if (last?.level === step.level) last.names.push(name);
+    else steps.push({ level: step.level, names: [name] });
+  }
+  return steps;
+}
 
 const titleOf = (id: string): string => entryView(id)?.title ?? id;
 
@@ -105,6 +154,14 @@ function CreaturesArt() {
           );
         })}
       </ul>
+      <ol class="growth-art" aria-label="What the levels bring">
+        {growthSteps().map((step) => (
+          <li key={step.level}>
+            <span class="lvl-tag pix">Lv {step.level}</span>
+            <span class="pix">{step.names.join(', ')}</span>
+          </li>
+        ))}
+      </ol>
     </>
   );
 }
@@ -382,6 +439,8 @@ function RanksArt() {
           {titleOf('festival')}
         </Tag>
         <Tag entry="season">{titleOf('season')}</Tag>
+        <Tag entry="boon">{titleOf('boon')}</Tag>
+        <Tag entry="omen">{titleOf('omen')}</Tag>
       </p>
     </div>
   );
@@ -407,6 +466,15 @@ function RewardsArt() {
         <Tag entry="essence">{titleOf('essence')}</Tag>
         <Tag entry="bait">{titleOf('bait')}</Tag>
       </p>
+    </div>
+  );
+}
+
+/** Gear: one real item card (image, level and slot, name, badges, own stats, then its lines with tiers). */
+function GearSectionArt() {
+  return (
+    <div class="gear-art">
+      <ItemCard item={gearExample()} spriteScale={5} />
     </div>
   );
 }
@@ -465,6 +533,8 @@ export function SectionArt({ id }: { id: GlossarySection }) {
       return <RanksArt />;
     case 'rewards':
       return <RewardsArt />;
+    case 'gear':
+      return <GearSectionArt />;
     case 'workshop':
       return <WorkshopArt />;
   }

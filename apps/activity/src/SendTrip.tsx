@@ -12,6 +12,7 @@ import { HaulStrip } from './HaulStrip';
 import { LengthPicker } from './LengthPicker';
 import { clampLength, defaultExplorer, explorerOptions, sendBlocker } from './send-view';
 import { SupplyPicker } from './SupplyPicker';
+import { TreatBox } from './TreatBox';
 import { kitChoice, lengthLabel, supplyName } from './trip-view';
 
 /**
@@ -24,6 +25,7 @@ export function SendTrip({
   creatures,
   slots,
   stock,
+  bait,
   busy,
   view,
   viewFailed,
@@ -35,6 +37,8 @@ export function SendTrip({
   creatures: readonly Creature[];
   slots: Slots;
   stock: Readonly<Record<string, number>>;
+  /** The player's Bait: a treat costs some of it. */
+  bait: number;
   busy: boolean;
   /** The destinations the server listed; null while loading or when it failed. */
   view: DestinationsView | null;
@@ -50,6 +54,8 @@ export function SendTrip({
   const [creatureId, setCreatureId] = useState<string | null>(null);
   const [length, setLength] = useState<ExpeditionLength>('long');
   const [picks, setPicks] = useState<SupplyPick[]>([]);
+  // A treat for this one trip (never kept for the next: it costs Bait each time).
+  const [treat, setTreat] = useState(false);
 
   if (view === null) {
     return viewFailed ? (
@@ -89,6 +95,9 @@ export function SendTrip({
   });
   const choice = kitChoice(picks);
   const names = picks.map((p) => supplyName(p.id));
+  const treatCost = explorer?.creature.treatCost ?? 0;
+  // A treat the Bait no longer covers (the explorer changed, or Bait was spent) is not packed.
+  const packing = treat && explorer !== undefined && bait >= treatCost;
 
   return (
     <section class="send" aria-labelledby="send-title">
@@ -125,13 +134,33 @@ export function SendTrip({
       />
 
       <div class="send-summary">
+        {explorer !== undefined && (
+          <TreatBox
+            cost={treatCost}
+            bait={bait}
+            checked={packing}
+            disabled={busy}
+            who={explorer.name}
+            onChange={setTreat}
+          />
+        )}
         <p class="cost-line" aria-live="polite">
-          <Tag kind="badge" tone="free">
-            Free
-          </Tag>{' '}
-          {picks.length === 0
-            ? 'This trip costs nothing.'
-            : `Taking ${names.join(' and ')} from your stock.`}
+          {packing ? (
+            <>
+              <Tag kind="badge">Treat</Tag>{' '}
+              {`This trip costs ${String(treatCost)} Bait for the treat`}
+              {picks.length === 0 ? '.' : `, and takes ${names.join(' and ')} from your stock.`}
+            </>
+          ) : (
+            <>
+              <Tag kind="badge" tone="free">
+                Free
+              </Tag>{' '}
+              {picks.length === 0
+                ? 'This trip costs nothing.'
+                : `Taking ${names.join(' and ')} from your stock.`}
+            </>
+          )}
         </p>
         {choice !== 'none' && (
           <p class="choice-line">
@@ -155,8 +184,12 @@ export function SendTrip({
               destination: place.id,
               duration,
               supplies: picks,
+              ...(packing ? { treat: true } : {}),
             }).then((started) => {
-              if (started) setPicks([]);
+              if (started) {
+                setPicks([]);
+                setTreat(false);
+              }
             });
           }}
         >

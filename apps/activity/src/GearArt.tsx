@@ -1,11 +1,14 @@
 import { CountBadge, type CountBadgeProps, type CountItem } from './ui/CountBadge';
+import { GameIcon } from './ui/GameIcon';
 import { Tag } from './ui/Tag';
-import { GLOSSARY_IDS, PART_KINDS, type PartKind } from '@creatures/game';
+import { GLOSSARY_IDS, PART_KINDS, gearBase, tagElement, type PartKind } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
 import { itemArt } from './gear-sprites';
-import { partName, partsEntries, rarityName } from './gear-view';
-import type { GearRarity, PartsBundle } from './gear-types';
+import { isFestivalBase, partName, partsEntries, rarityName, slotName } from './gear-view';
+import { glyphOrUnknown } from './glyphs';
+import { capitalize, elementName } from './game';
+import type { GearRarity, GearSlot, PartsBundle } from './gear-types';
 import { Sprite } from './sprites/Sprite';
 
 /** An item's pixel sprite (12x12), tinted by its element. Decorative unless `alt` is given. */
@@ -32,38 +35,132 @@ export function ItemSprite({
   );
 }
 
-/** The marks that tell the rarities apart without colour: one pip to three, and a star for Festival. */
-const RARITY_MARK: Readonly<Record<GearRarity, string>> = {
-  common: '●',
-  rare: '●●',
-  epic: '●●●',
-  festival: '★',
-};
-
-/** The frame around an item sprite: each rarity has its own edge style and its own pips. */
-export function ItemFrame({
-  rarity,
-  children,
-  class: extra,
-}: {
-  rarity: GearRarity;
-  children: ComponentChildren;
-  class?: string;
-}) {
+/**
+ * An item's level, the one way it is shown everywhere: a small pixel "Lv 15" in the bottom-right corner of the
+ * item's image (outlined so it reads on any item colour). The creature's level keeps its own yellow badge, so
+ * the two never look alike. The printed label is hidden from assistive technology: whatever holds the image
+ * says the item level in its own spoken label or after the item's name.
+ */
+export function ItemLevel({ level }: { level: number }) {
   return (
-    <span class={`item-frame rarity-${rarity}${extra === undefined ? '' : ` ${extra}`}`}>
-      {children}
-      <span class="rarity-mark" aria-hidden="true">
-        {RARITY_MARK[rarity]}
-      </span>
+    <span class="item-lv pix" aria-hidden="true">
+      Lv {level}
     </span>
   );
 }
 
-/** The rarity as a tappable tag ("Rare"), with its explanation. */
-export function RarityTag({ rarity }: { rarity: GearRarity }) {
+/**
+ * The two corners of an item's image, the one way they are drawn everywhere an item level shows: the slot's
+ * icon at the top left (`SlotIcon`) and the item level at the bottom right (`ItemLevel`). The slot comes from
+ * the item's base; an unknown base shows only the level. Put it inside the positioned box that holds the
+ * sprite (an `ItemFrame` does this itself, a picker cell or a creature page slot places it by hand).
+ */
+export function ItemCorners({ level, baseId }: { level: number; baseId: string }) {
+  const slot = gearBase(baseId)?.slot;
   return (
-    <Tag entry={GLOSSARY_IDS.gearRarity(rarity)} class={`rarity-tag rarity-${rarity}`}>
+    <>
+      {slot !== undefined && <SlotIcon slot={slot} class="item-slot" />}
+      <ItemLevel level={level} />
+    </>
+  );
+}
+
+/**
+ * The frame around an item sprite: one single border in the rarity colour and, when the level is known, the
+ * item's corners (`ItemCorners`: the slot's icon at the top left, the item level at the bottom right). Rarity is the border colour (and a rarity badge where there is
+ * room), never pips. A Festival piece (it is a base, not a rarity: pass its `baseId`) also gets a
+ * lantern-gold dashed outline.
+ */
+export function ItemFrame({
+  rarity,
+  baseId,
+  level,
+  children,
+  class: extra,
+}: {
+  rarity: GearRarity;
+  baseId?: string;
+  /** The item's level; leave out when the item does not exist yet (a blueprint) or the level is not known. */
+  level?: number;
+  children: ComponentChildren;
+  class?: string;
+}) {
+  const festival = baseId !== undefined && isFestivalBase(baseId);
+  return (
+    <span
+      class={`item-frame rarity-${rarity}${festival ? ' festival' : ''}${extra === undefined ? '' : ` ${extra}`}`}
+    >
+      {children}
+      {level !== undefined &&
+        (baseId === undefined ? (
+          <ItemLevel level={level} />
+        ) : (
+          <ItemCorners level={level} baseId={baseId} />
+        ))}
+    </span>
+  );
+}
+
+/** A gear slot's silhouette (a cap, a scarf, a charm). Decoration: the slot is also said in words. */
+export function SlotIcon({ slot, class: extra }: { slot: GearSlot; class?: string }) {
+  return (
+    <Sprite
+      sprite={glyphOrUnknown(`slot-${slot}`)}
+      scale={2}
+      {...(extra === undefined ? {} : { class: extra })}
+    />
+  );
+}
+
+/** The slot as a badge next to the rarity: its icon and name ("Hat"). Tapping it explains the slot. */
+export function SlotTag({ slot, plain = false }: { slot: GearSlot; plain?: boolean }) {
+  return (
+    <Tag {...(plain ? {} : { entry: GLOSSARY_IDS.gearSlot(slot) })} class="item-badge slot-tag pix">
+      <SlotIcon slot={slot} />
+      {slotName(slot)}
+    </Tag>
+  );
+}
+
+/**
+ * An item's tag as a badge: its element (the element's icon and name, "Ember"), its role ("Guard", a role
+ * Charm) or "Explorer" (the Compass). Tapping it says what the tag means on an item (its lines lean that
+ * way, who can wear it), not what an element means for a creature. A neutral base has no badge.
+ */
+export function GearTagBadge({ baseId, plain = false }: { baseId: string; plain?: boolean }) {
+  const tag = gearBase(baseId)?.tag;
+  if (tag === undefined || tag === 'neutral') return null;
+  const element = tagElement(tag);
+  return (
+    <Tag
+      {...(plain ? {} : { entry: GLOSSARY_IDS.gearTag(tag) })}
+      class="item-badge gear-tag-badge pix"
+    >
+      {element !== null && <GameIcon icon={{ kind: 'element', element }} scale={2} />}
+      {element !== null ? elementName(element) : capitalize(tag)}
+    </Tag>
+  );
+}
+
+/** "Festival", for a Festival piece: it explains what makes the piece special (and that it is not stronger). */
+export function FestivalTag() {
+  return (
+    <Tag entry="gear-festival" class="festival-tag">
+      Festival
+    </Tag>
+  );
+}
+
+/**
+ * The rarity as a small badge in the pixel font and the rarity's colour ("Rare"). Tappable (it opens the
+ * rarity's explanation) unless `plain`, which a badge inside a dialog or a button should be.
+ */
+export function RarityTag({ rarity, plain = false }: { rarity: GearRarity; plain?: boolean }) {
+  return (
+    <Tag
+      {...(plain ? {} : { entry: GLOSSARY_IDS.gearRarity(rarity) })}
+      class={`item-badge rarity-tag pix rarity-${rarity}`}
+    >
       {rarityName(rarity)}
     </Tag>
   );

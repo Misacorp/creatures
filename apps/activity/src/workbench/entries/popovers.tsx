@@ -1,4 +1,6 @@
+import { GLOSSARY_SECTIONS } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { HowToPlay } from '../../HowToPlay';
 import { glyphOrUnknown } from '../../glyphs';
 import { Sprite } from '../../sprites/Sprite';
 import { Popover, PopoverBack, PopoverCard, popupProps } from '../../ui/Popover';
@@ -158,4 +160,25 @@ const popoverBack: Entry = {
   ),
 };
 
-export const popoverEntries: readonly Entry[] = [popover, popoverCard, popoverBack];
+const ALL_SECTIONS = 'all (top)';
+
+const howToPlay: Entry = {
+  name: 'HowToPlay',
+  file: 'apps/activity/src/HowToPlay.tsx',
+  group: 'Popovers',
+  description:
+    'The How to play page, the last resort for how things work: its sections in order, each with a small picture built from the game\'s own pieces. "More in How to play" in a popover opens it at that section. Close does nothing here.',
+  controls: { section: { kind: 'select', options: [ALL_SECTIONS, ...GLOSSARY_SECTIONS] } },
+  defaults: { section: ALL_SECTIONS },
+  presets: [
+    { name: 'From the top', props: {} },
+    { name: 'Gear', props: { section: 'gear' } },
+    { name: 'Creatures', props: { section: 'creatures' } },
+  ],
+  render: (p) => {
+    const section = GLOSSARY_SECTIONS.find((s) => s === str(p, 'section')) ?? null;
+    return <HowToPlay section={section} nonce={0} onClose={() => undefined} />;
+  },
+};
+
+export const popoverEntries: readonly Entry[] = [popover, popoverCard, popoverBack, howToPlay];

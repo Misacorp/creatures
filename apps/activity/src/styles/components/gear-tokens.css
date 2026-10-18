@@ -2,24 +2,57 @@
 
 :root {
   --gear: #7fe0d0; /* the gear's own share of a stat */
-  --rarity-common: var(--haze);
-  --rarity-rare: #b48cff;
-  --rarity-epic: var(--gold);
-  --rarity-festival: #ff8ad8;
+
+  /*
+    Rarity colours, defined once and used everywhere a rarity is shown: gear frames (one single border),
+    slots, the picker, item cards, loot, the Workshop. Common is grey, Rare blue, Epic pink. A creature's
+    rarity is shown by the colour of its name instead (`.rarity-name`), which uses the lighter `-text`
+    variants below. Legendary (gold) and Mythic (crimson) are reserved for later; nothing uses them yet.
+  */
+  --rarity-common: #a8a8b8;
+  --rarity-rare: #4da3ff;
+  --rarity-epic: #ff6fbf;
+  /*
+    Text variants, for a creature's name (a rarity word as text). Contrast against the card backgrounds
+    (dusk-2 #2f2857, hover dusk #241e42, pressed #4a4170) and the page ground (night #17132b): every one
+    is at least 4.5:1 on all four, which is WCAG AA for normal text (the names are large pixel text,
+    which only needs 3:1). The Epic one leans purple (orchid) so it is read as purple-pink, not hot pink.
+  */
+  --rarity-common-text: #c2c2d0;
+  --rarity-rare-text: #7ebcff;
+  --rarity-epic-text: #f397ff;
+  --rarity-mythic-text: #ff9db0; /* reserved: crimson itself fails (2.7:1 on dusk-2) */
+  --rarity-legendary: var(--gold);
+  --rarity-mythic: #dc143c;
+  --rarity-festival: #ffc86b; /* lantern gold: a Festival piece's own look */
 }
 
 .rarity-common {
   --rar: var(--rarity-common);
+  --rar-text: var(--rarity-common-text);
 }
 
 .rarity-rare {
   --rar: var(--rarity-rare);
+  --rar-text: var(--rarity-rare-text);
 }
 
 .rarity-epic {
   --rar: var(--rarity-epic);
+  --rar-text: var(--rarity-epic-text);
 }
 
-.rarity-festival {
-  --rar: var(--rarity-festival);
+.rarity-legendary {
+  --rar: var(--rarity-legendary);
+  --rar-text: var(--rarity-legendary);
+}
+
+.rarity-mythic {
+  --rar: var(--rarity-mythic);
+  --rar-text: var(--rarity-mythic-text);
+}
+
+/* A creature's name in its rarity's text colour (the rarity is also spoken: a visually hidden word). */
+.rarity-name {
+  color: var(--rar-text, var(--bone));
 }

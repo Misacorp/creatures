@@ -22,7 +22,13 @@ import {
   essenceForStage,
   jackpotEssenceFor,
   luckAtRank,
+  mergeMods,
+  raidExperience,
   rollJackpot,
+  weatherBossAttacks,
+  weatherLuck,
+  weatherSheet,
+  xpWeather,
   type BossDef,
   type Rng,
 } from '@creatures/game';
@@ -44,6 +50,7 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import type { Analytics } from './analytics';
+import { awardExperience } from './creature-exp';
 import { bumpStat } from './expedition-store';
 import { grantFestivalGear, grantRaidFinale, grantRaidPhase, type GrantDeps } from './gear-grants';
 import { credit, type LedgerStorage } from './ledger';
@@ -55,6 +62,7 @@ import { queuePhasePost } from './raid-posts';
 import type { RaidPhase } from './raid-schedule';
 import { partyPlacements, raidTeam, rowLength, type TeamCreature } from './raid-teams';
 import { recordServerFirst } from './server-firsts';
+import { stageWeather } from './weather';
 
 export interface ResolveDeps {
   storage: LedgerStorage;
@@ -63,6 +71,8 @@ export interface ResolveDeps {
   rng: Rng;
   /** Live randomness for the quirk of a Festival creature. Defaults to crypto. */
   quirkRng?: Rng;
+  /** Live randomness for the talent of a Festival creature. Defaults to crypto. */
+  talentRng?: Rng;
   /** Live randomness for gear drops (a cleared phase, a won finale, a Festival piece). Defaults to crypto. */
   gearRng?: Rng;
   /** The analytics event log. Optional: without it nothing is logged. */
@@ -150,8 +160,8 @@ export function bossFor(bossId: string, rank: number): BossDef {
 export const aliasFor = (index: number): string => `m${index + 1}`;
 
 /**
- * A creature's slot for a fight. The slot carries the final stats (level, fusion and the worn item,
- * capped) and the final crit bonus, so the stored fight input is self-contained: a replay never looks
+ * A creature's slot for a fight. The slot carries the final stats (level, fusion and the worn items),
+ * the final crit bonus and the modifier sheet of its gear, so the stored fight input is self-contained: a replay never looks
  * at gear again, and changing or dismantling the item later cannot change an old fight.
  */
 export function slotFor(creature: TeamCreature, alias: string): FightSlot {
@@ -166,6 +176,7 @@ export function slotFor(creature: TeamCreature, alias: string): FightSlot {
     ...slot,
     stats: creature.stats,
     ...(creature.crit === undefined ? {} : { crit: creature.crit }),
+    ...(creature.mods === undefined ? {} : { mods: creature.mods }),
   };
 }
 
@@ -338,7 +349,13 @@ export function buildPhaseInput(
   if (memberIds.length < RULES.combat.guestsBelowPlayers) {
     placed = fillWithGuests(placed, resolveGuests(), avgLevel);
   }
-  const row = compactRow(placed);
+  // The weather of the day the stage is scheduled in (Boon and Omen): for every creature in the row, guests
+  // included, as numbers on its sheet. The stored input keeps them, so a replay never reads the weather.
+  const day = stageWeather(sql, week.weekId, phase);
+  const row = compactRow(placed).map((slot): FightSlot => {
+    const mods = mergeMods(slot.mods, weatherSheet(day, slot));
+    return mods === undefined ? slot : { ...slot, mods };
+  });
 
   // --- The boss: scaled once at phase 1, then carried ---
   const partyRow = sql
@@ -380,7 +397,9 @@ export function buildPhaseInput(
     boss,
     bossAtk,
     // How often the boss makes its plain attack at this rank; absent (one) keeps old inputs as they were.
-    ...(bossAttacksAtRank(rank) > 1 ? { bossAttacks: bossAttacksAtRank(rank) } : {}),
+    ...(weatherBossAttacks(day, bossAttacksAtRank(rank)) > 1
+      ? { bossAttacks: weatherBossAttacks(day, bossAttacksAtRank(rank)) }
+      : {}),
     phase,
     bossHpPool: { max: hpMax, current: hpCurrent },
     adaptation,
@@ -391,7 +410,7 @@ export function buildPhaseInput(
       memberChoices(aliases[i] as string, abilityId, teams[i] as TeamCreature[], rowIds),
     ),
     // Crits and the rest of the luck rules, stored with the input so a replay is exact.
-    luck: { ...luckAtRank(RULES.combat.luck, rank) },
+    luck: { ...weatherLuck(day, luckAtRank(RULES.combat.luck, rank)) },
     // The combat rules, the phase floor and the finale's enrage, stored the same way.
     rules: liveFightRules(),
     ...(floor > 0 ? { bossHpFloor: Math.min(floor, hpCurrent) } : {}),
@@ -531,6 +550,17 @@ export function settleParty(
     }
   }
 
+  // --- Creature experience: every creature that fought (guests excluded), by the stage; a cleared one pays
+  // half as much again. No treats: the raid pays everyone the same. This runs once per stage, with the
+  // result row. ---
+  const day = stageWeather(sql, week.weekId, phase);
+  const stageExperience = raidExperience(phase, result.cleared, xpWeather(day));
+  for (const slot of input.row) {
+    const userId = slot.ownerId === null ? undefined : userOf.get(slot.ownerId);
+    if (userId === undefined) continue;
+    awardExperience(sql, deps.analytics, userId, slot.id, stageExperience, 'raid', false);
+  }
+
   // --- Gear: scrap for a cleared phase, one gear roll for a won finale (members only) ---
   if (result.cleared) {
     const gearDeps: GrantDeps = {
@@ -540,8 +570,9 @@ export function settleParty(
       analytics: deps.analytics,
     };
     for (const userId of memberIds) {
-      if (phase === 'finale') grantRaidFinale(gearDeps, userId, week.weekId, payout.rank);
-      else grantRaidPhase(gearDeps, userId, week.weekId, phase);
+      if (phase === 'finale') {
+        grantRaidFinale(gearDeps, userId, week.weekId, payout.rank, input.boss.id);
+      } else grantRaidPhase(gearDeps, userId, week.weekId, phase);
     }
   }
 
@@ -554,6 +585,7 @@ export function settleParty(
     const progression = readWeekProgression(sql, week.weekId);
     if (progression?.festival === true && progression.festivalSpecies !== null) {
       const quirkRng = deps.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+      const talentRng = deps.talentRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
       const festivalSpecies = content.creatures.find((c) => c.id === progression.festivalSpecies);
       const gearDeps: GrantDeps = {
         storage,
@@ -564,11 +596,18 @@ export function settleParty(
       for (const userId of memberIds) {
         // The Festival piece, in the tint of the Festival creature, next to the creature itself.
         if (festivalSpecies !== undefined) {
-          grantFestivalGear(gearDeps, userId, week.weekId, festivalSpecies.element);
+          grantFestivalGear(
+            gearDeps,
+            userId,
+            week.weekId,
+            festivalSpecies.element,
+            payout.rank,
+            input.boss.id,
+          );
         }
         grantFestivalCreature(
           storage,
-          quirkRng,
+          { quirk: quirkRng, talent: talentRng },
           week.weekId,
           userId,
           progression.festivalSpecies,
@@ -614,6 +653,9 @@ export function settleParty(
     now,
   );
   logPhaseResult(deps.analytics, sql, week.weekId, phase, input, result, summary);
+  if (day !== null) {
+    deps.analytics?.record({ kind: 'weather_use', where: 'raid', boon: day.boon, omen: day.omen });
+  }
   // The profile counts the reactions every member has seen in raids.
   for (const userId of memberIds) bumpStat(sql, userId, 'reactions_seen', result.reactions.total);
   // The ladder moves once the finale has resolved for every party (the last one to settle does it),
@@ -641,6 +683,7 @@ export function settleParty(
     input,
     result,
     summary,
+    weather: day,
   });
 }
 

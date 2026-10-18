@@ -1,10 +1,10 @@
 /**
- * Pixel art of gear: a 12x12 sprite for each kind of item (charm, band, trinket), recoloured by the
- * item's element (neutral items are grey), and 8x8 icons for the parts. The same data format and
+ * Pixel art of gear: a 12x12 sprite for each slot (hat, scarf, charm), recoloured by the item's
+ * element (neutral, explorer and role pieces are grey), and 8x8 icons for the parts. The same data format and
  * palette approach as the creature sprites and glyphs (draw them with `<Sprite>`). Every kind has
  * its own shape and every part its own silhouette, so colour is never the only cue. Pure data.
  */
-import { gearBase, type GearKind, type PartKind } from '@creatures/game';
+import { baseElement, gearBase, type GearSlot, type PartKind } from '@creatures/game';
 import type { SpriteDef } from './sprites/sprite-data';
 
 export const ITEM_SIZE = { width: 12, height: 12 } as const;
@@ -45,49 +45,49 @@ const charm: SpriteDef = {
   ],
 };
 
-/** A ring-shaped band with a gem on top. */
-const band: SpriteDef = {
+/** A cap with a brim and a bobble. */
+const hat: SpriteDef = {
   mirror: true,
   palette: { k: INK, ...NEUTRAL },
   rows: [
+    '......',
     '....kk',
-    '...khh',
-    '..kkhh',
-    '.kkkkk',
-    'kttu..',
-    'kt....',
-    'kt....',
-    'kt....',
-    'ktu...',
-    '.ktuuu',
+    '...kth',
+    '..ktth',
+    '.kthht',
+    'kttttt',
+    'kttttt',
+    'kuuuuu',
+    'kkkkkk',
+    '.kuuuu',
     '..kkkk',
     '......',
   ],
 };
 
-/** A small star with two legs. */
-const trinket: SpriteDef = {
+/** A wound scarf with a tail hanging down. */
+const scarf: SpriteDef = {
   mirror: true,
   palette: { k: INK, ...NEUTRAL },
   rows: [
-    '.....k',
-    '....kt',
-    '....kt',
-    'kkkktt',
-    'kttthh',
-    '.kttth',
-    '..ktth',
-    '..kttt',
-    '.kttkk',
-    '.ktk..',
-    '.kk...',
+    '......',
+    '.kkkkk',
+    'kttttt',
+    'kthhhh',
+    'kuuuuu',
+    '.kkkkk',
+    '...kth',
+    '...ktt',
+    '...kth',
+    '...ktu',
+    '...kkk',
     '......',
   ],
 };
 
-export const BUNDLED_ITEM_SPRITES: Readonly<Record<GearKind, SpriteDef>> = { charm, band, trinket };
+export const BUNDLED_ITEM_SPRITES: Readonly<Record<GearSlot, SpriteDef>> = { hat, scarf, charm };
 
-export const GEAR_KIND_IDS = ['charm', 'band', 'trinket'] as const satisfies readonly GearKind[];
+export const GEAR_SLOT_IDS = ['hat', 'scarf', 'charm'] as const satisfies readonly GearSlot[];
 
 /** The palette swap that gives an item its element's colours; undefined for neutral (the base palette). */
 export function tintPalette(tint: string | null): Readonly<Record<string, string>> | undefined {
@@ -95,7 +95,7 @@ export function tintPalette(tint: string | null): Readonly<Record<string, string
 }
 
 /** A plain grey silhouette for an item whose base is not in the content (so a screen never breaks). */
-const FALLBACK_ITEM: SpriteDef = trinket;
+const FALLBACK_ITEM: SpriteDef = charm;
 
 /** The sprite of an item base and the palette that tints it. */
 export function itemArt(baseId: string): {
@@ -104,7 +104,7 @@ export function itemArt(baseId: string): {
 } {
   const base = gearBase(baseId);
   if (base === undefined) return { sprite: FALLBACK_ITEM, palette: undefined };
-  return { sprite: BUNDLED_ITEM_SPRITES[base.kind], palette: tintPalette(base.tint) };
+  return { sprite: BUNDLED_ITEM_SPRITES[base.slot], palette: tintPalette(baseElement(base)) };
 }
 
 // --- Parts (8x8) ---

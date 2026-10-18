@@ -1,7 +1,6 @@
 import {
   EXPEDITION_LENGTHS,
   RULES,
-  applyCatchToCollection,
   chance,
   closedReasons,
   content,
@@ -24,7 +23,6 @@ import {
   lengthOpen,
   lengthRules,
   milestoneBonuses,
-  expeditionConvertBait,
   partsOfSpec,
   rankSum,
   rollBlueprint,
@@ -38,11 +36,15 @@ import {
   seasonOf,
   slotsFor,
   supplyDef,
+  tripExperience,
   tripMs,
   tripRolls,
+  tripWeather,
   tripXp,
+  weatherTimeMs,
   weeklySpecial,
   allSpecies,
+  NO_TRIP_WEATHER,
   type DestinationDef,
   type ExpeditionLength,
   type FamiliarityRecord,
@@ -51,10 +53,14 @@ import {
   type Rarity,
   type Rng,
   type SupplyDef,
+  type TripWeather,
   type TwistEffect,
+  type WeatherDay,
 } from '@creatures/game';
-import { CATCHABLE, speciesOf, type OwnedCreature } from './data';
+import { CATCHABLE, foldedCreature, speciesOf, type OwnedCreature } from './data';
 import { creditParts, grantItem, learnBlueprint, onJob, type GearContext } from './gear';
+import { collect } from './talents';
+import { giveExperience, packTreat, ribbonShardsWanted } from './training';
 import type { PendingExpedition, SimPlayer } from './state';
 
 /**
@@ -99,8 +105,12 @@ export interface TripContext {
   catches: Rng;
   /** Offers, push-on results and the journal. */
   trip: Rng;
+  /** The talents of every creature that arrives (a new species's first, a duplicate's). */
+  talents: Rng;
   /** Parts, supplies and gear: absent in a sim without gear (trips then only bring catches). */
   gear?: GearContext;
+  /** The weather of the day: a trip is sent under it and keeps what it did. Absent or null: none. */
+  weather?: WeatherDay | null;
 }
 
 // --- Ranks, slots and what is open ---
@@ -234,6 +244,8 @@ function placeScore(
       (s.festival ? 2 : 1);
   }
   if (dest.id === twistDestination) score += 0.8;
+  // A creature near a ribbon gate needs shards of its element: the place of that element has them.
+  if (dest.element !== null && ribbonShardsWanted(player).has(dest.element)) score += 1.5;
   // A creature that has started on a place keeps at it until the deeper area opens (3 trips there).
   if (stars === 0 && tripsThere > 0 && dest.deep.species.length > 0)
     score += TRIP_POLICY.finishFamiliarity;
@@ -252,7 +264,7 @@ function placeScore(
 export function chooseDestination(
   player: SimPlayer,
   creature: OwnedCreature,
-  ctx: Pick<TripContext, 'hour' | 'weekIndex' | 'trip'>,
+  ctx: Pick<TripContext, 'hour' | 'weekIndex' | 'trip' | 'weather'>,
 ): DestinationDef {
   const rank = rankOfCreature(player, creature.id);
   const special = weeklySpecial(ctx.weekIndex).destination;
@@ -264,6 +276,8 @@ export function chooseDestination(
       rank,
       localHour: localHour(ctx.hour),
       festivalWeek: festivalWeek(ctx.weekIndex),
+      nightOpen: tripWeather(ctx.weather ?? null, { destination: dest.id, length: 'short' })
+        .reefOpen,
     });
     if (closed.length > 0) continue;
     const fam = famOf(player, creature.id, dest.id);
@@ -297,12 +311,24 @@ export function supplyGain(
   const offer = (def.offerBp / 10_000) * 12;
   switch (def.kind) {
     case 'lure': {
-      const perRoll =
-        (def.rareUpBp * (w.roll.rare - w.roll.common) +
-          def.epicUpBp * (w.roll.epic - w.roll.common)) /
+      // A lure adds to the chance a roll brings a creature, and to the chance that creature is a species
+      // the player lacks. What a roll with a creature is worth: its rarity and, when new, the species.
+      const fresh =
+        (odds.common * discovery('common') +
+          odds.rare * discovery('rare') +
+          odds.epic * discovery('epic')) /
         10_000;
-      const found = (def.rareUpBp * discovery('rare') + def.epicUpBp * discovery('epic')) / 10_000;
-      return l.rolls * (perRoll + found * TRIP_POLICY.newSpeciesWorth) + offer;
+      const anyNew = (['common', 'rare', 'epic'] as const).some((r) => discovery(r) > 0) ? 1 : 0;
+      const more = Math.min(1, (l.catchBp + def.catchBp) / 10_000);
+      const creature = rollWorth(odds) + fresh * TRIP_POLICY.newSpeciesWorth;
+      const kept = def.catchBp / 10_000;
+      // Extra creatures, and the extra new species the lure's draw finds among all of them.
+      const extraCreatures = l.rolls * kept * creature;
+      const extraNew =
+        l.rolls * more * (def.newBp / 10_000) * (anyNew - fresh) * TRIP_POLICY.newSpeciesWorth;
+      // A roll that brings nothing still brings a small find of scrap, so a creature costs that.
+      const lostFind = l.rolls * kept * l.findScrap * w.scrap;
+      return extraCreatures + extraNew - lostFind + offer;
     }
     case 'map-scrap': {
       const extra = Math.max(1, Math.floor((l.rolls * def.rollsBp) / 10_000));
@@ -384,20 +410,42 @@ export function sendTrips(
     const dest = chooseDestination(player, creature, ctx);
     const length = chooseLength(player, rank, ctx.hour);
     const stars = familiarityStars(dest, famOf(player, creature.id, dest.id));
+    // A treat for the explorer (Bait, paid now): the policy and the Bait decide.
+    const treat = packTreat(player, creature, {
+      kind: 'trip',
+      hours: lengthRules(length).ms / HOUR_MS,
+    });
     const picked = chooseKit(player, { length, dest, stars });
     for (const id of picked) player.supplies[id] = (player.supplies[id] ?? 0) - 1;
     player.stats.supplies_used += picked.length;
+    player.stats.lures_used += picked.filter((id) => supplyDef(id)?.kind === 'lure').length;
     const twist = special.destination === dest.id ? special.twist : null;
     const kit = kitOf(picked);
+    // The day's weather, as the worker stores it with the trip when it is sent.
+    const fx = tripWeather(ctx.weather ?? null, { destination: dest.id, length });
+    const changes = (Object.keys(NO_TRIP_WEATHER) as (keyof TripWeather)[]).some(
+      (k) => fx[k] !== NO_TRIP_WEATHER[k],
+    );
     player.expeditions.push({
       explorerId: creature.id,
       length,
       destination: dest.id,
+      ...(treat ? { treat: true } : {}),
       kit: picked,
-      rolls: tripRolls(length, kit, twist === null ? null : twist.effect),
+      rolls: tripRolls(length, kit, twist === null ? null : twist.effect) + fx.extraRolls,
       twist: twist === null ? null : twist.id,
       startHour: ctx.hour,
-      endsAtHour: ctx.hour + tripMs(length, rank) / HOUR_MS,
+      // Quick feet lines on the explorer's gear and the day's weather change the time (fixed when it is sent).
+      endsAtHour:
+        ctx.hour +
+        weatherTimeMs(
+          Math.floor(
+            (tripMs(length, rank) * (10_000 - foldedCreature(creature).rules.quickFeetBp)) / 10_000,
+          ),
+          fx.timeBp,
+        ) /
+          HOUR_MS,
+      ...(changes ? { weather: fx } : {}),
     });
   }
 }
@@ -490,10 +538,14 @@ function payTrip(
   const twist = twistEffect(trip.twist);
   const bonuses = milestoneBonuses({ ...player.stats });
   const rank = rankOfCreature(player, explorer.id);
+  // Lines on the explorer's gear (Trail XP, Lucky find, Keen nose, Packer), as the worker reads them.
+  const gearRules = foldedCreature(explorer).rules;
+  // What the day did to this trip when it was sent: the claim reads this, never the weather.
+  const wx = trip.weather ?? NO_TRIP_WEATHER;
   const famBefore = famOf(player, explorer.id, dest.id);
   const starsBefore = familiarityStars(dest, famBefore);
 
-  const { results, dupeStreak } = rollTripCatches(
+  const { results, dupeStreak, empty, pity, forced } = rollTripCatches(
     ctx.catches,
     trip.rolls + (reward?.catchRolls ?? 0),
     {
@@ -503,37 +555,28 @@ function payTrip(
       explorer: { element: species.element, role: species.role },
       kit,
       stars: starsBefore,
-      milestoneRarityBp: bonuses.rarityBp,
+      milestoneRarityBp: bonuses.rarityBp + gearRules.luckyFindBp + wx.rarityBp,
       twist,
       ownedLines: ownedLines(player),
       dupeStreak: player.dupeStreak,
       firstExpedition: !player.firstExpeditionDone,
+      pity: player.catchPity,
     },
   );
   player.dupeStreak = dupeStreak;
+  player.catchPity = pity;
+  for (const f of forced) {
+    if (f.pity === 'new') player.stats.pity_new += 1;
+    else player.stats.pity_creature += 1;
+  }
   player.firstExpeditionDone = true;
-  player.stats.catch_rolls += results.length;
+  player.stats.catch_rolls += results.length + empty;
+  player.stats.empty_rolls += empty;
   for (const caught of results) {
-    const existing = player.creatures.find((c) => c.line === caught.species.line);
-    const outcome = applyCatchToCollection(
-      existing === undefined ? undefined : { fusionCount: existing.fusionCount, shiny: false },
-      caught,
-    );
-    if (outcome.kind === 'new') {
-      player.creatures.push({
-        id: `${player.id}/${caught.species.line}`,
-        line: caught.species.line,
-        speciesId: caught.species.id,
-        level: 1,
-        fusionCount: 0,
-      });
+    // A new species becomes a creature with its first talent; a duplicate is answered with Recommended
+    // (Teach, Fuse or Release), straight away. Nothing turns into Bait any more.
+    if (collect(player, caught.species, ctx.talents, ctx.gear !== undefined) === 'new') {
       player.stats.species_found += 1;
-    } else if (outcome.kind === 'fused') {
-      if (existing !== undefined) existing.fusionCount = outcome.newFusionCount;
-    } else {
-      const bait = expeditionConvertBait(outcome.bait);
-      player.bait += bait;
-      player.week.baitConverted += bait;
     }
     if (caught.shiny) player.stats.shinies_found += 1;
   }
@@ -551,6 +594,13 @@ function payTrip(
         milestonePartsBp: bonuses.partsBp,
         twist,
         rank,
+        gearPartsBp: gearRules.keenNoseBp,
+        gearSupplyBp: gearRules.packerBp,
+        gearGlimmerBp: gearRules.glimmerFindBp,
+        weatherPartsBp: wx.partsBp,
+        weatherShardsBp: wx.shardsBp,
+        weatherSupplyBp: wx.supplyBp,
+        emptyRolls: empty,
       },
       { completed: true, caught: results.length, rolls: trip.rolls },
     );
@@ -561,14 +611,34 @@ function payTrip(
       addParts(player, partsOfSpec(reward.parts), ctx);
       if (reward.supply === true) addSupply(player, foundSupplyId(ctx.gear.rng, rank));
       if (reward.blueprint === true) learnBlueprint(player, rollBlueprint(ctx.gear.rng));
-      if (reward.gear !== undefined) grantItem(player, rollGearDrop(ctx.gear.rng, reward.gear));
+      if (reward.gear !== undefined) {
+        const place = {
+          element: dest.element ?? null,
+          crossroads: dest.id === RULES.gear.compassPlace,
+        };
+        grantItem(player, rollGearDrop(ctx.gear.rng, reward.gear, place, rank));
+      }
     }
   }
 
   // Explorer XP, familiarity and the journal.
-  const xpBp = bonuses.xpBp + (twist?.kind === 'xp' ? twist.bp : 0) + (reward?.xpBp ?? 0);
+  const xpBp =
+    bonuses.xpBp +
+    (twist?.kind === 'xp' ? twist.bp : 0) +
+    (reward?.xpBp ?? 0) +
+    gearRules.trailXpBp;
   player.explorerXp[explorer.id] =
     (player.explorerXp[explorer.id] ?? 0) + tripXp(trip.length, xpBp);
+  // Creature experience: a finished trip pays its explorer by the length, doubled by a treat.
+  giveExperience(
+    player,
+    explorer,
+    tripExperience(trip.length, trip.treat === true, {
+      bp: wx.xpBp,
+      treatMultiplier: wx.treatMultiplier,
+    }),
+    'trip',
+  );
   // The one-time gift of every rank this trip reached (Bait, and parts and supplies with the gear sim).
   for (const { gift } of rankGiftsBetween(rank, rankOfCreature(player, explorer.id))) {
     player.bait += gift.bait;
@@ -588,7 +658,7 @@ function payTrip(
     found: [...found],
     shiny: famBefore.shiny || results.some((c) => c.shiny),
   };
-  rollPages(player, dest, trip, twist, reward?.journal === true, ctx);
+  rollPages(player, dest, trip, twist, reward?.journal === true, ctx, wx.journalBp);
 
   player.stats.trips_finished += 1;
   recordSlotDays(player, ctx.day);
@@ -613,10 +683,11 @@ function rollPages(
   twist: TwistEffect | null,
   sure: boolean,
   ctx: TripContext,
+  weatherBp: number,
 ): void {
   const entries = expeditionContent.journal.entries;
   const found = new Set(player.journal);
-  const attempts = [chance(ctx.trip, journalChanceBp(trip.length, twist), 10_000)];
+  const attempts = [chance(ctx.trip, journalChanceBp(trip.length, twist, weatherBp), 10_000)];
   if (sure) attempts.push(true);
   for (const wanted of attempts) {
     if (!wanted) continue;

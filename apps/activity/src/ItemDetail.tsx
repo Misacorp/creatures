@@ -1,63 +1,17 @@
-import { GLOSSARY_IDS, gearBase } from '@creatures/game';
+import { gearBase } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { creatureName } from './game';
 import type { GearActions } from './gear-actions';
-import { CostList, ItemFrame, ItemSprite, RarityTag } from './GearArt';
 import type { GearItem, GearState } from './gear-types';
-import {
-  enchantName,
-  enchantStatus,
-  formatBonus,
-  gearName,
-  statEntry,
-  statLabel,
-  upgradeStatus,
-} from './gear-view';
-import { GlossaryTag } from './Glossary';
-import {
-  DismantleConfirm,
-  EnchantPanel,
-  ImprovePanel,
-  improveBlocker,
-  type JobDetail,
-} from './ItemPanels';
-import { ElementChip } from './sprites/ElementChip';
+import { detailLines, gearName, needsText, wearReason } from './gear-view';
+import { ItemCard } from './ItemCard';
+import { DismantlePanel } from './ItemPanels';
+import { Accordion } from './ui/Accordion';
 
-type Panel = 'improve' | 'enchant' | 'dismantle' | 'equip' | null;
+type Panel = 'dismantle' | 'equip' | null;
 
-/** The stats of an item: the main one, the extra ones and the enchant, each explained by a tag. */
-function Stats({ item }: { item: GearItem }) {
-  const status = enchantStatus(item);
-  return (
-    <ul class="stat-list" aria-label="Stats">
-      <li>
-        <GlossaryTag entry={statEntry(item.primary.stat)}>
-          {statLabel(item.primary.stat)}
-        </GlossaryTag>{' '}
-        <strong class="gear-bonus">{formatBonus(item.primary.stat, item.primary.bp)}</strong>{' '}
-        <span class="muted">main stat</span>
-      </li>
-      {item.secondaries.map((s, i) => (
-        <li key={i}>
-          <GlossaryTag entry={statEntry(s.stat)}>{statLabel(s.stat)}</GlossaryTag>{' '}
-          <strong class="gear-bonus">{formatBonus(s.stat, s.bp)}</strong>{' '}
-          <span class="muted">extra stat</span>
-        </li>
-      ))}
-      {item.enchantId !== null && (
-        <li>
-          <GlossaryTag entry={GLOSSARY_IDS.enchant(item.enchantId)}>
-            Enchant: {enchantName(item.enchantId)}
-          </GlossaryTag>
-          {status !== null && <span class="muted"> {status}</span>}
-        </li>
-      )}
-    </ul>
-  );
-}
-
-/** Equip on a creature (a list to pick from) or take it off. */
+/** Equip on a creature (a list to pick from, with the reason when one cannot wear it) or take it off. */
 function EquipPanel({
   item,
   creatures,
@@ -71,44 +25,66 @@ function EquipPanel({
   onEquip: (creatureId: string) => void;
   onCancel: () => void;
 }) {
-  const options = creatures.filter((c) => c.id !== item.equippedOn);
-  const [picked, setPicked] = useState(options[0]?.id ?? '');
-  const target = options.find((c) => c.id === picked) ?? options[0];
+  const options = creatures
+    .filter((c) => c.id !== item.equippedOn)
+    .map((c) => ({ creature: c, blocked: wearReason(item, c) }));
+  const usable = options.filter((o) => o.blocked === null);
+  const [picked, setPicked] = useState(usable[0]?.creature.id ?? '');
+  const target = usable.find((o) => o.creature.id === picked)?.creature ?? usable[0]?.creature;
   const selectId = `equip-${item.id}`;
-  if (target === undefined) return <p class="muted">No other creature to give it to.</p>;
+  const slotWorn = target?.gear.find((g) => g.slot === item.slot);
   return (
     <section class="equip-panel" aria-label="Equip">
-      <label for={selectId}>Equip on</label>
-      <select
-        id={selectId}
-        value={target.id}
-        onChange={(event) => {
-          setPicked(event.currentTarget.value);
-        }}
-      >
-        {options.map((c) => (
-          <option key={c.id} value={c.id}>
-            {creatureName(c)} (level {c.level})
-            {c.gear === null ? '' : `, wears ${gearName(c.gear.baseId)}`}
-          </option>
-        ))}
-      </select>
-      {target.gear !== null && (
-        <p class="muted">
-          {creatureName(target)} gives up {gearName(target.gear.baseId)}. It goes back in the bag.
-        </p>
+      {target === undefined ? (
+        <p class="muted">No creature can wear this.</p>
+      ) : (
+        <>
+          <label for={selectId}>Equip on</label>
+          <select
+            id={selectId}
+            value={target.id}
+            onChange={(event) => {
+              setPicked(event.currentTarget.value);
+            }}
+          >
+            {usable.map(({ creature: c }) => (
+              <option key={c.id} value={c.id}>
+                {creatureName(c)} (level {c.level})
+                {c.gear.some((g) => g.slot === item.slot)
+                  ? `, wears ${gearName(c.gear.find((g) => g.slot === item.slot)?.baseId ?? '')}`
+                  : ''}
+              </option>
+            ))}
+          </select>
+          {slotWorn !== undefined && <p class="muted">Replaces {gearName(slotWorn.baseId)}.</p>}
+        </>
+      )}
+      {options.some((o) => o.blocked !== null) && (
+        <Accordion title="Who cannot wear it" variant="compact" class="blocked-note">
+          <ul>
+            {options
+              .filter((o) => o.blocked !== null)
+              .map((o) => (
+                <li key={o.creature.id}>
+                  {creatureName(o.creature)}: {o.blocked}
+                </li>
+              ))}
+          </ul>
+        </Accordion>
       )}
       <p class="actions">
-        <button
-          type="button"
-          class="primary"
-          disabled={busy}
-          onClick={() => {
-            onEquip(target.id);
-          }}
-        >
-          Equip on {creatureName(target)}
-        </button>
+        {target !== undefined && (
+          <button
+            type="button"
+            class="primary"
+            disabled={busy}
+            onClick={() => {
+              onEquip(target.id);
+            }}
+          >
+            Equip on {creatureName(target)}
+          </button>
+        )}
         <button type="button" onClick={onCancel}>
           Cancel
         </button>
@@ -118,8 +94,9 @@ function EquipPanel({
 }
 
 /**
- * One item of the bag: its stats, who wears it and every action (Upgrade, Equip or Take off,
- * Improve, Enchant, Dismantle). A button that cannot be used says why in words under it.
+ * One item of the bag: its card (image with its level, name, rarity, base stats, modifiers with their tiers), who wears it and what you
+ * can do with it (Equip or Take off, Dismantle). Where it came from and who made it sit one tap away
+ * under "Details".
  */
 export function ItemDetail({
   item,
@@ -134,7 +111,7 @@ export function ItemDetail({
   creatures: readonly Creature[];
   busy: boolean;
   actions: GearActions;
-  /** The item no longer exists (dismantled): the screen drops the selection. */
+  /** The item no longer exists (it went into a dismantle job): the screen drops the selection. */
   onGone: () => void;
 }) {
   const [panel, setPanel] = useState<Panel>(null);
@@ -147,66 +124,31 @@ export function ItemDetail({
 
   const base = gearBase(item.baseId);
   const wearer = creatures.find((c) => c.id === item.equippedOn);
-  const upgrade = upgradeStatus(item, gear);
-  const improve = improveBlocker(item);
-  const inJob = item.jobId !== null;
 
   return (
-    <section class="item-detail card-item" aria-labelledby={`item-${item.id}-name`}>
-      <div class="item-head">
-        <ItemFrame rarity={item.rarity} class="big">
-          <ItemSprite baseId={item.baseId} scale={6} />
-        </ItemFrame>
-        <div class="item-title">
-          <h3 id={`item-${item.id}-name`} tabIndex={-1} ref={heading}>
-            {gearName(item.baseId)} <span class="lvl">+{item.level}</span>
-          </h3>
-          <p class="tags">
-            <RarityTag rarity={item.rarity} />
-            {base?.tint !== null && base?.tint !== undefined && <ElementChip element={base.tint} />}
-          </p>
-          {base !== undefined && <p class="muted flavor">{base.flavor}</p>}
-        </div>
-      </div>
-      <Stats item={item} />
+    <section class="item-detail" aria-labelledby={`item-${item.id}-name`}>
+      <ItemCard
+        item={item}
+        heading
+        nameId={`item-${item.id}-name`}
+        nameRef={heading}
+        spriteScale={6}
+      />
       <p>
-        {wearer === undefined ? (
-          'Not worn by anyone.'
-        ) : (
+        {wearer !== undefined && (
           <>
-            Worn by <strong>{creatureName(wearer)}</strong>.
+            Worn by <strong>{creatureName(wearer)}</strong>.{' '}
           </>
         )}
-        {inJob && <span class="muted"> It is in a Workshop job.</span>}
+        <span class="muted">Needs {needsText(item).toLowerCase()}.</span>
       </p>
 
       <div class="item-actions">
-        <div class="action-row">
-          <button
-            type="button"
-            class="primary"
-            disabled={busy || !upgrade.enabled}
-            onClick={() => {
-              void actions.upgrade(item.id);
-            }}
-          >
-            {item.upgradeCost === null ? 'Top level' : `Upgrade to +${String(item.level + 1)}`}
-          </button>
-          {item.upgradeCost !== null && (
-            <CostList
-              cost={{ scrap: item.upgradeCost.scrap }}
-              have={gear.parts}
-              essence={item.upgradeCost.essence}
-              essenceHave={gear.balances.essence}
-            />
-          )}
-        </div>
-        {upgrade.reason !== null && <p class="reason">{upgrade.reason}</p>}
-
         <p class="actions">
           {item.equippedOn === null ? (
             <button
               type="button"
+              class="primary"
               disabled={busy}
               aria-expanded={panel === 'equip'}
               onClick={() => {
@@ -216,28 +158,39 @@ export function ItemDetail({
               Equip
             </button>
           ) : (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                void actions.equip(item.id, null);
-              }}
-            >
-              Take off
-            </button>
+            <>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  void actions.equip(item.id, null);
+                }}
+              >
+                Take off
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                aria-expanded={panel === 'equip'}
+                onClick={() => {
+                  setPanel(panel === 'equip' ? null : 'equip');
+                }}
+              >
+                Give to another
+              </button>
+            </>
           )}
-          {item.equippedOn !== null && (
-            <button
-              type="button"
-              disabled={busy}
-              aria-expanded={panel === 'equip'}
-              onClick={() => {
-                setPanel(panel === 'equip' ? null : 'equip');
-              }}
-            >
-              Give to another
-            </button>
-          )}
+          <button
+            type="button"
+            class="danger"
+            disabled={busy}
+            aria-expanded={panel === 'dismantle'}
+            onClick={() => {
+              setPanel('dismantle');
+            }}
+          >
+            Dismantle
+          </button>
         </p>
         {panel === 'equip' && (
           <EquipPanel
@@ -254,70 +207,21 @@ export function ItemDetail({
             }}
           />
         )}
-
-        <p class="actions">
-          <button
-            type="button"
-            disabled={busy || improve !== null || inJob}
-            aria-expanded={panel === 'improve'}
-            onClick={() => {
-              setPanel(panel === 'improve' ? null : 'improve');
-            }}
-          >
-            Improve
-          </button>
-          <GlossaryTag entry={GLOSSARY_IDS.job('improve')} look="help" />
-          <button
-            type="button"
-            disabled={busy || inJob}
-            aria-expanded={panel === 'enchant'}
-            onClick={() => {
-              setPanel(panel === 'enchant' ? null : 'enchant');
-            }}
-          >
-            Enchant
-          </button>
-          <GlossaryTag entry={GLOSSARY_IDS.job('enchant')} look="help" />
-        </p>
-        {improve !== null && <p class="reason">{improve}</p>}
-        {inJob && <p class="reason">This item is in a Workshop job. Claim the job first.</p>}
-        {(panel === 'improve' || panel === 'enchant') && (
-          <JobPanel
-            panel={panel}
-            item={item}
+        {panel === 'dismantle' && (
+          <DismantlePanel
+            items={[item]}
+            wearers={wearer === undefined ? [] : [wearer]}
             gear={gear}
             creatures={creatures}
             busy={busy}
-            actions={actions}
-            onClose={() => {
-              setPanel(null);
-            }}
-          />
-        )}
-
-        <p class="actions">
-          <button
-            type="button"
-            class="danger"
-            disabled={busy || inJob}
-            aria-expanded={panel === 'dismantle'}
-            onClick={() => {
-              setPanel('dismantle');
-            }}
-          >
-            Dismantle
-          </button>
-        </p>
-        {panel === 'dismantle' && (
-          <DismantleConfirm
-            item={item}
-            wearer={wearer}
-            busy={busy}
-            onConfirm={() => {
-              void actions.dismantle(item.id).then((result) => {
-                if (result !== undefined) onGone();
-                else setPanel(null);
-              });
+            loadPreview={actions.previewDismantle}
+            onConfirm={(creatureId) => {
+              void actions
+                .startJob({ kind: 'dismantle', creatureId, itemIds: [item.id] })
+                .then((result) => {
+                  if (result !== undefined) onGone();
+                  else setPanel(null);
+                });
             }}
             onCancel={() => {
               setPanel(null);
@@ -325,62 +229,17 @@ export function ItemDetail({
           />
         )}
       </div>
+
+      <Accordion title="Details" variant="compact" class="item-details">
+        {base !== undefined && <p class="muted flavor">{base.flavor}</p>}
+        <ul class="detail-list">
+          {detailLines(item).map((line) => (
+            <li key={line} class="muted">
+              {line}
+            </li>
+          ))}
+        </ul>
+      </Accordion>
     </section>
   );
-}
-
-/** The Improve or Enchant starter of an item. */
-function JobPanel({
-  panel,
-  item,
-  gear,
-  creatures,
-  busy,
-  actions,
-  onClose,
-}: {
-  panel: 'improve' | 'enchant';
-  item: GearItem;
-  gear: GearState;
-  creatures: readonly Creature[];
-  busy: boolean;
-  actions: GearActions;
-  onClose: () => void;
-}) {
-  const start = async (creatureId: string, detail: JobDetail) => {
-    const started = await actions.startJob(toRequest(item.id, creatureId, detail));
-    if (started !== undefined) onClose();
-    return started !== undefined;
-  };
-  return panel === 'improve' ? (
-    <ImprovePanel
-      item={item}
-      gear={gear}
-      creatures={creatures}
-      busy={busy}
-      onCancel={onClose}
-      onStart={start}
-    />
-  ) : (
-    <EnchantPanel
-      item={item}
-      gear={gear}
-      creatures={creatures}
-      busy={busy}
-      onCancel={onClose}
-      onStart={start}
-    />
-  );
-}
-
-/** The job request for an item: an improve names the extra stat, an enchant names the enchant. */
-function toRequest(gearId: string, creatureId: string, detail: JobDetail) {
-  return 'secondaryIndex' in detail
-    ? ({
-        kind: 'improve',
-        creatureId,
-        gearId,
-        secondaryIndex: detail.secondaryIndex,
-      } as const)
-    : ({ kind: 'enchant', creatureId, gearId, enchantId: detail.enchantId } as const);
 }

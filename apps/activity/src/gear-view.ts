@@ -1,50 +1,65 @@
 /**
  * What the gear screens say, worked out in plain functions so it can be tested without a browser:
- * names and stat text, what an upgrade costs and why it may be disabled, job progress, who can take
- * a job, which grants belong to a finale, and the lists of a loot reveal. Names, kinds and enchants
- * come from the shared content, costs and durations from the shared rules (never copied here), and
- * every amount that is owned or paid comes from the server's view.
+ * names and line text, the wear rule and why an item cannot go on a creature, job progress, who can
+ * take a job, which grants belong to a finale, and the lists of a loot reveal. Names and kinds come
+ * from the shared content, costs, durations and the wear rule from the shared rules (never copied
+ * here), and every amount that is owned or paid, and every number in a line, comes from the server's
+ * view.
  */
 import {
   GLOSSARY_IDS,
   PART_KINDS,
+  baseElement,
+  content,
+  RULES,
   craftCost,
+  craftItemLevel,
+  dismantleHours,
+  entryView,
   expeditionContent,
+  gearBase,
+  jobDuration,
+  jobHours,
   partsOfSpec,
   supplyDef,
   supplyJobMs,
-  enchantDef,
-  entryView,
-  gearBase,
-  gearContent,
-  enchantCost,
-  jobDuration,
-  jobHours,
-  type EnchantCondition,
-  type GearJobKind,
+  wearBlock,
 } from '@creatures/game';
 import type { Creature } from './api';
-import { capitalize, creatureName, elementName } from './game';
+import { capitalize, creatureName, getSpecies } from './game';
 import { percent } from './progress-math';
-import { supplyName } from './trip-view';
+import { destinationName, supplyName } from './trip-view';
 import type {
+  ConversionNotice,
+  CraftOdds,
+  DismantleRange,
   GearItem,
-  JobResult,
+  GearLine,
   GearRarity,
+  GearSlot,
   GearState,
-  GearStat,
   GrantLoot,
   GrantRecord,
+  ItemOrigin,
   Job,
   JobKind,
+  JobResult,
   PartKind,
   PartsBundle,
+  ReachId,
+  Range,
+  WornGear,
 } from './gear-types';
 
-// --- Names and numbers ---
+// --- Names ---
 
 /** Rarities from the plainest to the rarest. */
-export const RARITY_ORDER: readonly GearRarity[] = ['common', 'rare', 'epic', 'festival'];
+export const RARITY_ORDER: readonly GearRarity[] = ['common', 'rare', 'epic'];
+
+/** True for a Festival piece (a base with a unique line, a narrow roll pool and a look of its own). */
+export function isFestivalBase(baseId: string): boolean {
+  return gearBase(baseId)?.festival === true;
+}
 
 export function rarityName(rarity: GearRarity): string {
   return capitalize(rarity);
@@ -54,68 +69,90 @@ export function gearName(baseId: string): string {
   return gearBase(baseId)?.name ?? baseId;
 }
 
+/** "Hat", "Scarf", "Charm". */
+export function slotName(slot: GearSlot): string {
+  return capitalize(slot);
+}
+
+/** The element an item's base is tied to, or null (neutral, explorer and role pieces). */
+export function itemElement(baseId: string): string | null {
+  const base = gearBase(baseId);
+  return base === undefined ? null : baseElement(base);
+}
+
+/** "Kelp Cap, item level 4", for spoken labels. */
+export function itemLabel(baseId: string, itemLevel: number): string {
+  return `${gearName(baseId)}, item level ${String(itemLevel)}`;
+}
+
 /**
- * The worn item as a creature card and the living room's popover draw it. `primary` is the main stat
- * now; missing while the owner's gear view has not loaded (the line then shows no bonus).
+ * The worn item as a creature card and the living room's popover draw it: what it is and, when the
+ * lines are known (the owner's gear view, or the room's own list), their text.
  */
 export interface WornItem {
   baseId: string;
+  slot: GearSlot;
   rarity: GearRarity;
-  level: number;
-  enchantId: string | null;
-  primary?: { stat: GearStat; bp: number };
+  itemLevel: number;
+  /** The text of the item's lines ("Attack +6%"); absent while the owner's gear view has not loaded. */
+  lines?: readonly string[];
 }
 
-/** The item a creature wears (`Creature.gear`), with its main stat taken from the gear view's items. */
-export function wornItemOf(
-  worn: NonNullable<Creature['gear']>,
-  items: readonly GearItem[] | undefined,
-): WornItem {
-  const primary = items?.find((i) => i.id === worn.id)?.primary;
+/** An item a creature wears (`Creature.gear`), with its lines taken from the gear view's items. */
+export function wornItemOf(worn: WornGear, items: readonly GearItem[] | undefined): WornItem {
+  const lines = items?.find((i) => i.id === worn.id)?.lines.map((l) => l.text);
   return {
     baseId: worn.baseId,
+    slot: worn.slot,
     rarity: worn.rarity,
-    level: worn.level,
-    enchantId: worn.enchantId,
-    ...(primary === undefined ? {} : { primary }),
+    itemLevel: worn.itemLevel,
+    ...(lines === undefined ? {} : { lines }),
   };
 }
 
-/** "Wave Band +2". */
-export function itemLabel(baseId: string, level: number): string {
-  return `${gearName(baseId)} +${String(level)}`;
+/** The worn items of a creature in slot order (hat, scarf, charm). */
+export function wornInOrder<T extends { slot: GearSlot }>(worn: readonly T[]): T[] {
+  const order: readonly GearSlot[] = ['hat', 'scarf', 'charm'];
+  return [...worn].sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot));
 }
 
-const STAT_LABELS: Readonly<Record<GearStat, string>> = {
-  atk: 'ATK',
-  hp: 'HP',
-  spd: 'SPD',
-  critChance: 'Crit chance',
-  critDamage: 'Crit damage',
-};
+// --- Lines ---
 
-export function statLabel(stat: GearStat): string {
-  return STAT_LABELS[stat];
+/** Tier pips for a line: `filled` of `total`, and how many the item level could ever reach (`reach`). */
+export interface LinePips {
+  filled: number;
+  reach: number;
+  total: number;
 }
 
-/** The glossary entry that explains a gear stat. */
-export function statEntry(stat: GearStat): string {
-  return GLOSSARY_IDS.gearStat(stat);
+const TIERS = 5;
+
+/** The pips of a rolled line; null for a base line or a line without tiers. */
+export function linePips(line: Pick<GearLine, 'tier' | 'bestTier'>): LinePips | null {
+  if (line.tier === null) return null;
+  return {
+    filled: line.tier,
+    reach: Math.max(line.tier, line.bestTier ?? line.tier),
+    total: TIERS,
+  };
 }
 
-/**
- * An amount of a stat for display: Attack, HP and speed are basis points of a percentage ("+5.2%");
- * the crit stats are basis points of crit points ("+2.4 points"). One decimal at most.
- */
-export function formatBonus(stat: GearStat, bp: number): string {
-  const value = String(Math.round(bp / 10) / 10);
-  return stat === 'critChance' || stat === 'critDamage' ? `+${value} points` : `+${value}%`;
+/** "Tier 3 / 5", spoken. */
+export function pipsLabel(pips: LinePips): string {
+  return `Tier ${String(pips.filled)} / ${String(pips.total)}`;
 }
 
-/** "+5.2% ATK" or "+2.4 points Crit chance". */
-export function statText(stat: GearStat, bp: number): string {
-  return `${formatBonus(stat, bp)} ${statLabel(stat)}`;
+/** The glossary entry that explains a line. */
+export function lineEntry(line: Pick<GearLine, 'id'>): string {
+  return GLOSSARY_IDS.gearLine(line.id);
 }
+
+/** True for a line that does nothing for the creature wearing the item. */
+export function lineIdle(line: Pick<GearLine, 'active'>): boolean {
+  return line.active === false;
+}
+
+// --- Parts ---
 
 export function partName(kind: PartKind): string {
   return entryView(GLOSSARY_IDS.part(kind))?.title ?? kind;
@@ -148,81 +185,6 @@ export function missingParts(
     if (short > 0) missing[kind] = short;
   }
   return missing;
-}
-
-/** Who an enchant works for, in words. */
-export function enchantWhen(when: EnchantCondition | undefined): string {
-  if (when === undefined) return 'Works for every creature.';
-  if ('role' in when) return `Only works for a ${capitalize(when.role)}.`;
-  return `Only works for ${elementName(when.element)} creatures.`;
-}
-
-export function enchantName(enchantId: string): string {
-  return enchantDef(enchantId)?.name ?? enchantId;
-}
-
-/** The enchants a player can pick from, with price and who they work for. */
-export function enchantChoices(): {
-  id: string;
-  name: string;
-  effect: string;
-  when: string;
-  cost: PartsBundle;
-}[] {
-  return gearContent.enchants.flatMap((e) => {
-    const cost = enchantCost(e.id);
-    return cost === null
-      ? []
-      : [
-          {
-            id: e.id,
-            name: e.name,
-            effect: entryView(GLOSSARY_IDS.enchant(e.id))?.short ?? statText(e.stat, e.bp),
-            when: enchantWhen(e.when),
-            cost,
-          },
-        ];
-  });
-}
-
-export type EnchantChoice = ReturnType<typeof enchantChoices>[number];
-
-/** What the enchant of an item says about the wearer: working, not working, or nobody wears it. */
-export function enchantStatus(item: Pick<GearItem, 'enchantId' | 'enchantActive'>): string | null {
-  if (item.enchantId === null) return null;
-  if (item.enchantActive === true) return 'Active on its wearer.';
-  if (item.enchantActive === false) return 'Not active: it does not work for this wearer.';
-  return 'It works once a fitting creature wears the item.';
-}
-
-// --- Upgrade ---
-
-interface UpgradeStatus {
-  enabled: boolean;
-  /** Why not, in words; null when the upgrade can be paid. */
-  reason: string | null;
-}
-
-/** Whether an item can be upgraded now. The server decides; this only explains a "no" before the tap. */
-export function upgradeStatus(
-  item: Pick<GearItem, 'upgradeCost' | 'maxLevel'>,
-  gear: Pick<GearState, 'balances' | 'parts'>,
-): UpgradeStatus {
-  const cost = item.upgradeCost;
-  if (cost === null) {
-    return { enabled: false, reason: `This item is at its top level (+${String(item.maxLevel)}).` };
-  }
-  const essence = cost.essence - gear.balances.essence;
-  const scrap = cost.scrap - gear.parts.scrap;
-  if (essence > 0 && scrap > 0) {
-    return {
-      enabled: false,
-      reason: `Needs ${String(essence)} more Essence and ${String(scrap)} more scrap.`,
-    };
-  }
-  if (essence > 0) return { enabled: false, reason: `Needs ${String(essence)} more Essence.` };
-  if (scrap > 0) return { enabled: false, reason: `Needs ${String(scrap)} more scrap.` };
-  return { enabled: true, reason: null };
 }
 
 // --- Creatures, busy states and the picker ---
@@ -297,14 +259,45 @@ export function expeditionBlocked(
   );
 }
 
+// --- The wear rule ---
+
+/**
+ * Why a creature cannot wear an item, in words; null when it can. The rule itself is the game's
+ * (`wearBlock`): a role-locked Charm only goes on its role, a slot opens at a creature level, and an
+ * item's level may not be above the creature's.
+ */
+export function wearReason(
+  item: Pick<GearItem, 'slot' | 'tag' | 'itemLevel'>,
+  creature: Pick<Creature, 'level' | 'species'>,
+): string | null {
+  const species = getSpecies(creature.species);
+  if (species === undefined) return null;
+  const block = wearBlock(item, { level: creature.level, role: species.role });
+  if (block === null) return null;
+  switch (block.reason) {
+    case 'role':
+      return `${capitalize(block.role)}s only.`;
+    case 'slot_locked':
+      return `${slotName(item.slot)}s open at level ${String(block.needs)}.`;
+    case 'item_level':
+      return `Needs creature level ${String(block.needs)}.`;
+  }
+}
+
+/** What an item asks of its wearer, in one short line: "Level 12", "Level 13, Guards only". */
+export function needsText(item: Pick<GearItem, 'needs'>): string {
+  const level = `Level ${String(item.needs.level)}`;
+  return item.needs.role === null ? level : `${level}, ${capitalize(item.needs.role)}s only`;
+}
+
 // --- Items ---
 
-/** The inventory as a grid shows it: rarest first, then the higher level, then by name. */
+/** The inventory as a grid shows it: rarest first, then the higher item level, then by name. */
 export function sortItems(items: readonly GearItem[]): GearItem[] {
   return [...items].sort(
     (a, b) =>
       RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity) ||
-      b.level - a.level ||
+      b.itemLevel - a.itemLevel ||
       gearName(a.baseId).localeCompare(gearName(b.baseId)) ||
       a.id.localeCompare(b.id),
   );
@@ -316,22 +309,143 @@ export function bagText(inventory: GearState['inventory']): string {
   return inventory.reserved > 0 ? `${base} (${String(inventory.reserved)} held for a craft)` : base;
 }
 
-interface EquipChoice {
+export interface EquipChoice {
   item: GearItem;
   /** The name of another creature that wears it now (it would move); null otherwise. */
   wornBy: string | null;
+  /** Why this creature cannot wear it; null when it can. */
+  blocked: string | null;
 }
 
-/** The items a creature can wear: all but the one it wears already, with who has each now. */
+/**
+ * The items of one slot a creature could be given: all but the one it wears already, the ones it can
+ * wear first (best first), then the ones it cannot with the reason, and who has each now.
+ */
 export function equipChoices(
   items: readonly GearItem[],
-  creature: Pick<Creature, 'id'>,
+  creature: Pick<Creature, 'id' | 'level' | 'species'>,
   creatures: readonly Creature[],
+  slot: GearSlot,
 ): EquipChoice[] {
-  return sortItems(items.filter((item) => item.equippedOn !== creature.id)).map((item) => {
+  const choices = sortItems(
+    items.filter((item) => item.slot === slot && item.equippedOn !== creature.id),
+  ).map((item) => {
     const wearer = creatures.find((c) => c.id === item.equippedOn);
-    return { item, wornBy: wearer === undefined ? null : creatureName(wearer) };
+    return {
+      item,
+      wornBy: wearer === undefined ? null : creatureName(wearer),
+      blocked: wearReason(item, creature),
+    };
   });
+  return [
+    ...choices.filter((c) => c.blocked === null),
+    ...choices.filter((c) => c.blocked !== null),
+  ];
+}
+
+// --- Where an item came from (the details row) ---
+
+function bossName(id: string): string {
+  return content.bosses.find((b) => b.id === id)?.name ?? id;
+}
+
+/** "Raid finale: Tidal Colossus, rank 3". Empty when nothing is known. */
+export function originText(origin: ItemOrigin | null, source: string): string {
+  if (origin === null) return SOURCE_TEXT[source] ?? '';
+  switch (origin.kind) {
+    case 'raid':
+      return `Raid finale: ${bossName(origin.boss)}, rank ${String(origin.rank)}`;
+    case 'festival':
+      return `Festival finale: ${bossName(origin.boss)}, rank ${String(origin.rank)}`;
+    case 'dungeon':
+      return `Daily dungeon, depth ${String(origin.depth)}`;
+    case 'trip':
+      return `Expedition to ${destinationName(origin.place)}, explorer rank ${String(origin.rank)}`;
+    case 'craft':
+      return 'Crafted in the Workshop';
+    case 'welcome':
+      return 'Welcome gift';
+    case 'converted':
+      return 'Made from your old gear';
+  }
+}
+
+const SOURCE_TEXT: Readonly<Record<string, string>> = {
+  raid_finale: 'Raid finale',
+  raid_phase: 'Raid',
+  festival: 'Festival finale',
+  expedition: 'Expedition',
+  craft: 'Crafted in the Workshop',
+  welcome: 'Welcome gift',
+  dungeon: 'Daily dungeon',
+  rank_gift: 'Explorer rank gift',
+};
+
+/** "2027-01-12": the day as the server stored it (UTC), for the details row. */
+export function dayText(at: number): string {
+  return new Date(at).toISOString().slice(0, 10);
+}
+
+/** The small print of an item: where it came from, who made it and when. */
+export function detailLines(
+  item: Pick<GearItem, 'origin' | 'source' | 'madeBy' | 'createdAt'>,
+): string[] {
+  const lines: string[] = [];
+  const origin = originText(item.origin, item.source);
+  if (origin !== '') lines.push(origin);
+  if (item.madeBy !== null) lines.push(`Made by ${item.madeBy.name} on ${dayText(item.madeBy.at)}`);
+  else lines.push(`Got it on ${dayText(item.createdAt)}`);
+  return lines;
+}
+
+// --- The conversion card ---
+
+/** The words of the one-time card about the switch to gear v2, one short line each. */
+export function noticeLines(notice: ConversionNotice): string[] {
+  const lines: string[] = [];
+  if (notice.converted > 0) {
+    lines.push(
+      notice.converted === 1
+        ? 'Your worn item became one of the new items.'
+        : `Your ${String(notice.converted)} worn items became new items.`,
+    );
+  }
+  if (notice.refundedItems > 0) {
+    lines.push(
+      notice.refundedItems === 1
+        ? 'One spare item went back as parts.'
+        : `${String(notice.refundedItems)} spare items went back as parts.`,
+    );
+  }
+  if (notice.essence > 0) lines.push(`Your upgrade Essence came back: ${String(notice.essence)}.`);
+  if (partsEntries(notice.parts).length > 0) {
+    lines.push(`You got these parts back: ${partsText(notice.parts)}.`);
+  }
+  if (notice.blueprints > 0) {
+    lines.push(
+      notice.blueprints === 1
+        ? 'Your blueprint now makes one of the new items.'
+        : `Your ${String(notice.blueprints)} blueprints now make the new items.`,
+    );
+  }
+  if (notice.retiredJobs > 0) {
+    lines.push(
+      'An Improve or Enchant job that was still running will finish and give its parts back.',
+    );
+  }
+  return lines;
+}
+
+/** Why a worn item came off in the conversion, in words. */
+export function unequippedReason(note: ConversionNotice['unequipped'][number]): string {
+  switch (note.reason) {
+    case 'item_level':
+      return `its creature needs level ${String(note.needs ?? note.itemLevel)} to wear it`;
+    case 'slot_locked':
+      return `${slotName(note.slot)}s open at creature level ${String(note.needs ?? 0)}`;
+    case 'role':
+      return 'its creature has the wrong role for it';
+  }
 }
 
 // --- Jobs ---
@@ -360,92 +474,165 @@ export function openJobs(jobs: readonly Job[]): Job[] {
   return jobs.filter((j) => j.status !== 'claimed').sort((a, b) => a.endsAt - b.endsAt);
 }
 
-const JOB_VERB: Readonly<Record<JobKind, string>> = {
-  craft: 'Craft',
-  improve: 'Improve',
-  enchant: 'Enchant',
-  supply: 'Craft',
-};
-
-export function jobVerb(kind: JobKind): string {
-  return JOB_VERB[kind];
+export function jobVerb(kind: Job['kind']): string {
+  if (kind === 'dismantle') return 'Dismantle';
+  return kind === 'craft' || kind === 'supply' ? 'Craft' : 'Old job';
 }
 
-/** "Craft Wave Band", "Improve Volt Band", "Enchant Phoenix Trinket: Ember Fury". */
-export function jobTitle(job: Pick<Job, 'kind' | 'input'>, items: readonly GearItem[]): string {
+/**
+ * "Craft Kelp Cap", "Craft Kelp Cap (Reach for Rare)", "Craft Basic Lure", "Dismantle Kelp Cap" or
+ * "Dismantle 3 items". A job from before gear v2 has no name to show.
+ */
+export function jobTitle(job: Pick<Job, 'kind' | 'input'>): string {
   if (job.kind === 'supply') return `Craft ${supplyName(job.input.supplyId ?? 'supply')}`;
   if (job.kind === 'craft') {
-    return `Craft ${gearName(job.input.baseId ?? 'item')}`;
+    const reach =
+      job.input.reach === undefined || job.input.reach === 'none'
+        ? ''
+        : ` (${reachName(job.input.reach)})`;
+    return `Craft ${gearName(job.input.baseId ?? 'item')}${reach}`;
   }
-  const item = items.find((i) => i.id === job.input.gearId);
-  const what = item === undefined ? 'an item' : gearName(item.baseId);
-  if (job.kind === 'improve') return `Improve ${what}`;
-  return job.input.enchantId === undefined
-    ? `Enchant ${what}`
-    : `Enchant ${what}: ${enchantName(job.input.enchantId)}`;
+  if (job.kind === 'dismantle') {
+    const items = job.input.items ?? [];
+    const first = items[0];
+    return items.length === 1 && first !== undefined
+      ? `Dismantle ${gearName(first.baseId)}`
+      : `Dismantle ${String(items.length)} items`;
+  }
+  return 'Old job (its parts come back)';
+}
+
+// --- Reach, odds and ranges (the numbers are the server's: this only writes them) ---
+
+/** "Plain craft", "Reach for Rare", "Reach for Epic". */
+export function reachName(reach: ReachId): string {
+  return reach === 'none' ? 'Plain craft' : `Reach for ${capitalize(reach)}`;
+}
+
+/** Basis points as a percentage: 6000 is "60%", 3640 is "36.4%", 405 is "4.05%". */
+export function oddsPercent(bp: number): string {
+  const whole = Math.trunc(bp / 100);
+  const rest = bp % 100;
+  if (rest === 0) return `${String(whole)}%`;
+  const tail = String(rest).padStart(2, '0').replace(/0$/, '');
+  return `${String(whole)}.${tail}%`;
+}
+
+/** "Common 40% · Rare 60%": the rarities that can come out, with the server's exact odds. */
+export function oddsText(odds: CraftOdds): string {
+  return (['common', 'rare', 'epic'] as const)
+    .filter((r) => odds[r] > 0)
+    .map((r) => `${rarityName(r)} ${oddsPercent(odds[r])}`)
+    .join(' · ');
+}
+
+/** "4 / 10", the well-thumbed marks of a blueprint. */
+export function marksText(marks: number): string {
+  return `${String(marks)} / ${String(RULES.gear.craft.marks.max)}`;
+}
+
+/** "6 to 10": one number when both ends are the same. */
+export function rangeText(range: Range): string {
+  return range.min === range.max
+    ? String(range.min)
+    : `${String(range.min)} to ${String(range.max)}`;
+}
+
+/**
+ * What a dismantle can give, one short phrase each, the empty ones left out: "6 to 10 scrap",
+ * "1 Tide shard", "1 to 2 shards (any kind)", "0 to 1 glimmer", "3 to 8 Essence".
+ */
+export function dismantleLines(range: DismantleRange): string[] {
+  const lines: string[] = [];
+  if (range.scrap.max > 0) lines.push(`${rangeText(range.scrap)} scrap`);
+  if (range.shards.max > 0) {
+    const kind =
+      range.shards.element === null
+        ? range.shards.max === 1
+          ? 'shard (any kind)'
+          : 'shards (any kind)'
+        : `${capitalize(range.shards.element)} ${range.shards.max === 1 ? 'shard' : 'shards'}`;
+    lines.push(`${rangeText(range.shards)} ${kind}`);
+  }
+  if (range.glimmer.max > 0) lines.push(`${rangeText(range.glimmer)} glimmer`);
+  if (range.essence.max > 0) lines.push(`${rangeText(range.essence)} Essence`);
+  return lines;
+}
+
+/** The time a dismantle job of these items takes a creature of this Crafting level (the preview gives the server's). */
+export function dismantleDurationFor(rarity: GearRarity, level: number): number {
+  return jobDuration(level, 0, dismantleHours(rarity));
+}
+
+/**
+ * The items a bulk dismantle picks: unworn pieces of one rarity up to an item level, the lowest levels
+ * first (then the oldest). Commons go in bundles of up to 5 in one job, anything else one at a time, so
+ * this returns what the next job takes, and how many more match.
+ */
+export function bulkPick(
+  items: readonly GearItem[],
+  rarity: GearRarity,
+  maxItemLevel: number,
+): { ids: string[]; matching: number } {
+  const matching = items
+    .filter((i) => i.rarity === rarity && i.equippedOn === null && i.itemLevel <= maxItemLevel)
+    .sort(
+      (a, b) => a.itemLevel - b.itemLevel || a.createdAt - b.createdAt || a.id.localeCompare(b.id),
+    );
+  const take = rarity === 'common' ? RULES.gear.dismantle.bundleMax : 1;
+  return { ids: matching.slice(0, take).map((i) => i.id), matching: matching.length };
 }
 
 /**
  * Whether a job can start, as far as the screen can tell before asking the server: a free workshop
- * slot, a free creature, room in the bag for a craft, the item not in another job and the parts.
+ * slot, a free creature, room in the bag for a craft and the parts.
  */
 export function startBlocker(
-  gear: Pick<GearState, 'slots' | 'inventory' | 'parts'>,
+  gear: Pick<GearState, 'slots' | 'inventory' | 'parts' | 'balances'>,
   creatures: readonly Creature[],
-  job: { kind: JobKind; cost: PartsBundle; item?: Pick<GearItem, 'jobId'> },
+  job: { kind: JobKind; cost: PartsBundle; essence?: number; bait?: number },
 ): string | null {
   if (gear.slots.used >= gear.slots.total) {
-    return `All ${String(gear.slots.total)} workshop slots are busy. Claim a finished job or wait.`;
+    return `All ${String(gear.slots.total)} slots are busy.`;
   }
   if (!creatures.some(isFree)) {
-    return 'No creature is free. Creatures on an expedition or a job cannot start another one.';
-  }
-  if (job.item?.jobId !== undefined && job.item.jobId !== null) {
-    return 'This item is already in a job.';
+    return 'No creature is free.';
   }
   if (job.kind === 'craft' && gear.inventory.used + gear.inventory.reserved >= gear.inventory.cap) {
-    return 'The bag is full. Dismantle an item first to make room.';
+    return 'The bag is full.';
   }
   const missing = missingParts(gear.parts, job.cost);
   const entries = partsEntries(missing);
-  if (entries.length > 0) {
-    return `Needs ${entries.map((e) => `${String(e.amount)} more ${partName(e.kind)}`).join(' and ')}.`;
+  const lackingEssence = Math.max(0, (job.essence ?? 0) - gear.balances.essence);
+  const lacks = [
+    ...entries.map((e) => `${String(e.amount)} more ${partName(e.kind)}`),
+    ...(lackingEssence > 0 ? [`${String(lackingEssence)} more Essence`] : []),
+  ];
+  if (lacks.length > 0) return `Needs ${lacks.join(' and ')}.`;
+  // A lure costs Bait as well as parts.
+  const bait = job.bait ?? 0;
+  if (gear.balances.bait < bait) {
+    return `Needs ${String(bait - gear.balances.bait)} more Bait.`;
   }
   return null;
 }
 
-/**
- * What a gear job of this kind and item rarity takes with a crafter of `level`. A supply craft has its
- * own length (see `supplyCraftViews`), so it is not asked here.
- */
-export function durationFor(kind: GearJobKind, rarity: GearRarity, level: number): number {
-  return jobDuration(kind, rarity, level);
+/** What a craft takes with a crafter of Crafting `level`. A supply craft has its own length (see `supplyDurationFor`). */
+export function durationFor(level: number): number {
+  return jobDuration(level);
 }
 
-/** The nominal hours of a gear job, before the skill. */
-export function nominalHours(kind: GearJobKind, rarity: GearRarity): number {
-  return jobHours(kind, rarity);
+/** The nominal hours of a craft, before the skill. */
+export function nominalHours(): number {
+  return jobHours();
 }
 
-/** What an improve changed, in words: "+2.4 points Crit damage became +2.1 points Crit damage. A little lower." */
-export function improveMessage(result: Extract<JobResult, { kind: 'improve' }>): string {
-  const { from, to } = result;
-  const verdict =
-    to.stat !== from.stat
-      ? 'A different stat now.'
-      : to.bp === from.bp
-        ? 'The same roll again.'
-        : to.bp > from.bp
-          ? 'Better!'
-          : 'A little lower this time.';
-  return `${statText(from.stat, from.bp)} became ${statText(to.stat, to.bp)}. ${verdict}`;
-}
-
-/** The rarity to frame a claimed job's item with: the craft's own, else the item's, else Common. */
-export function jobResultRarity(result: JobResult, items: readonly GearItem[]): GearRarity {
+/** The rarity to frame a claimed job's item with: the craft's own, else Common. */
+export function jobResultRarity(result: JobResult): GearRarity {
   if (result.kind === 'craft') return result.rarity;
+  if (result.kind === 'dismantle') return result.items[0]?.rarity ?? 'common';
   if (result.kind === 'supply') return supplyRarity(result.supplyId);
-  return items.find((i) => i.id === result.gearId)?.rarity ?? 'common';
+  return 'common';
 }
 
 /** The frame a supply is shown in: Common for the basic tier, Rare for good, Epic for great. */
@@ -463,6 +650,8 @@ interface SupplyCraftView {
   tier: string;
   /** The parts one craft costs. */
   cost: PartsBundle;
+  /** The Bait one craft costs (only a lure costs Bait); 0 for the others. */
+  bait: number;
   /** How many supplies one job makes. */
   yieldCount: number;
   /** The Crafting level a creature needs. */
@@ -481,6 +670,7 @@ export function supplyCraftViews(stock: Readonly<Record<string, number>>): Suppl
     kind: def.kind,
     tier: def.tier,
     cost: partsOfSpec(def.blueprint.parts),
+    bait: def.blueprint.bait ?? 0,
     yieldCount: def.blueprint.yield,
     level: def.blueprint.craftingLevel,
     hours: def.blueprint.hours,
@@ -507,7 +697,7 @@ export function supplyLevelBlocker(
   const levels = creatures.map((c) => skillLevelOf(skills, c.id));
   const best = levels.length === 0 ? 1 : Math.max(...levels);
   if (best >= level) return null;
-  return `Needs Crafting level ${String(level)} (your best crafter is level ${String(best)}).`;
+  return `Needs Crafting level ${String(level)}.`;
 }
 
 // --- Blueprints ---
@@ -515,13 +705,24 @@ export function supplyLevelBlocker(
 interface BlueprintView {
   baseId: string;
   name: string;
-  rarity: GearRarity;
-  tint: string | null;
+  slot: GearSlot;
+  element: string | null;
   cost: PartsBundle;
+  /** Well-thumbed marks (finds of it the player already knew), 0 to the most. */
+  marks: number;
+  /** The Crafting level a craft of it asks for (a better base unlocks at a higher item level); 1 for the plain ones. */
+  needsCraftingLevel: number;
 }
 
-/** The blueprints a player knows, plainest first, each with the parts a craft costs. */
-export function blueprintViews(blueprints: GearState['blueprints']): BlueprintView[] {
+/** The blueprints a player knows, by slot and then name, each with the parts a craft costs. */
+export function blueprintViews(
+  blueprints: GearState['blueprints'],
+  skills: GearState['skills'],
+): BlueprintView[] {
+  // The price of a plain craft grows with the item level, which follows the crafter's level: the card shows
+  // the price for the best crafter (the craft panel shows the exact price for the one you pick).
+  const itemLevel = craftItemLevel(Math.max(1, ...skills.map((s) => s.level)));
+  const order: readonly GearSlot[] = ['hat', 'scarf', 'charm'];
   return blueprints
     .flatMap((bp) => {
       const base = gearBase(bp.baseId);
@@ -531,17 +732,15 @@ export function blueprintViews(blueprints: GearState['blueprints']): BlueprintVi
             {
               baseId: bp.baseId,
               name: base.name,
-              rarity: bp.rarity,
-              tint: base.tint,
-              cost: craftCost(bp.baseId),
+              slot: base.slot,
+              element: baseElement(base),
+              cost: craftCost(bp.baseId, itemLevel),
+              marks: bp.marks,
+              needsCraftingLevel: bp.needsCraftingLevel,
             },
           ];
     })
-    .sort(
-      (a, b) =>
-        RARITY_ORDER.indexOf(a.rarity) - RARITY_ORDER.indexOf(b.rarity) ||
-        a.name.localeCompare(b.name),
-    );
+    .sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot) || a.name.localeCompare(b.name));
 }
 
 // --- Grants and loot ---
@@ -557,11 +756,11 @@ export function grantsForWeek(
   };
 }
 
-/** A dropped item's name, with "+N" when it arrived upgraded (a finale drop does; older grants have no level). */
-export function lootItemName(item: { baseId: string; level?: number }): string {
-  return item.level !== undefined && item.level > 0
-    ? itemLabel(item.baseId, item.level)
-    : gearName(item.baseId);
+/** A dropped item's name, with its item level when known ("Kelp Cap, item level 4"). */
+export function lootItemName(item: { baseId: string; itemLevel?: number }): string {
+  return item.itemLevel === undefined
+    ? gearName(item.baseId)
+    : itemLabel(item.baseId, item.itemLevel);
 }
 
 export function lootIsEmpty(loot: GrantLoot): boolean {

@@ -6,6 +6,7 @@
  */
 import { dungeonContent, roomModifier, type Gimmick } from '@creatures/game';
 import { groupSupplies } from './claim-view';
+import { experienceText } from './experience';
 import { partsEntries, partsText } from './gear-view';
 import type { GrantLoot } from './gear-types';
 import type {
@@ -197,11 +198,14 @@ export interface TeamEntry {
   hp: string;
   knockedOut: boolean;
   spoken: string;
+  /** What the run paid this creature in experience ("+180 experience, level 4 to 5"), or null (a run from before experience). */
+  experience: string | null;
 }
 
 /** The team in its fighting order (left to right) with its HP lines. No role or element chips here. */
-export function teamBreakdown(run: Pick<DungeonRunSummary, 'team'>): TeamEntry[] {
+export function teamBreakdown(run: Pick<DungeonRunSummary, 'team' | 'rewards'>): TeamEntry[] {
   return run.team.map((m) => {
+    const paid = run.rewards.experience?.find((e) => e.creatureId === m.id);
     const hp = hpLine(m);
     const knockedOut = m.hpEnd <= 0;
     return {
@@ -214,6 +218,7 @@ export function teamBreakdown(run: Pick<DungeonRunSummary, 'team'>): TeamEntry[]
       hp,
       knockedOut,
       spoken: `${m.name}, level ${String(m.level)}: ${hp}${knockedOut ? ', knocked out' : ''}.`,
+      experience: paid === undefined ? null : experienceText(paid),
     };
   });
 }

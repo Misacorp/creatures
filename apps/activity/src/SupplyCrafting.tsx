@@ -35,7 +35,7 @@ export function SupplyCrafting({
   stock: Readonly<Record<string, number>>;
   busy: boolean;
   /** Starts the craft; resolves true when it started (the picker then closes). */
-  onCraft: (supplyId: string, creatureId: string) => Promise<boolean>;
+  onCraft: (supplyId: string, creatureId: string, treat: boolean) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const views = supplyCraftViews(stock);
@@ -45,13 +45,8 @@ export function SupplyCrafting({
       <h3 id="ws-supplies">
         Supplies <GlossaryTag entry="supplies" look="help" />
       </h3>
-      <p class="muted">
-        Supplies boost one expedition. They cannot be bought: craft the ones you want here from
-        parts, or collect them from the daily dungeon and from trips.
-      </p>
       <p class="supply-stock" aria-live="polite">
         In stock: <strong>{totalInStock}</strong>
-        {totalInStock === 0 && <span class="muted"> (craft some, or run the dungeon)</span>}
       </p>
       <ul class="supply-crafts">
         {views.map((view) => {
@@ -77,14 +72,19 @@ export function SupplyCrafting({
                 </div>
               </div>
               <CostList cost={view.cost} have={gear.parts} />
+              {view.bait > 0 && (
+                <p class={gear.balances.bait >= view.bait ? 'bait-cost' : 'bait-cost short'}>
+                  {view.bait} Bait <span class="muted">(you have {gear.balances.bait})</span>
+                </p>
+              )}
               {blocker !== null && <p class="reason">{blocker}</p>}
               {open === view.id ? (
                 <JobStarter
                   id={`supply-${view.id}`}
                   kind="supply"
                   title={`Craft ${view.name}`}
-                  rarity="common"
                   cost={view.cost}
+                  bait={view.bait}
                   gear={gear}
                   creatures={creatures}
                   busy={busy}
@@ -92,8 +92,8 @@ export function SupplyCrafting({
                   minLevel={view.level}
                   durationAtLevel={(level) => supplyDurationFor(view.id, level)}
                   extraBlocker={blocker}
-                  onStart={(creatureId) => {
-                    void onCraft(view.id, creatureId).then((started) => {
+                  onStart={(creatureId, treat) => {
+                    void onCraft(view.id, creatureId, treat).then((started) => {
                       if (started) setOpen(null);
                     });
                   }}

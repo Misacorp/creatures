@@ -24,6 +24,8 @@ export interface JourneySettings {
   mixName: string;
   /** Draw every player's dials from a range around their profile (`noisyProfile`). */
   noise: boolean;
+  /** Play with the valley's weather (default: on, as shipped); `false` plays the journeys without it. */
+  weather?: boolean;
 }
 
 export function defaultProfiles(): PlayerProfile[] {
@@ -58,6 +60,7 @@ export function runJourneyServer(settings: JourneySettings, k: number): ServerRu
     income: settings.income,
     observer: recorder,
     snapshotWeeks: [],
+    ...(settings.weather === false ? { weather: false } : {}),
   });
   return { economy, journeys: recorder.journeys };
 }

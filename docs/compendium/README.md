@@ -15,7 +15,7 @@ Before you write lore, names, flavour, art briefs, quirks, journal pages or new 
 
 1. Read this README for tone and naming.
 2. Read `world.md` for the big picture and the recurring motifs.
-3. Read the file for your kind: `creatures.md`, `bosses.md`, `dungeon.md`, `places.md`, `items.md` or `journal.md`.
+3. Read the file for your kind: `creatures.md`, `talents.md`, `bosses.md`, `dungeon.md`, `places.md`, `items.md`, `weather.md` or `journal.md`.
 4. Check `threads.md` for an open seed your work could grow from. Prefer growing a seed to inventing a new one that clashes.
 5. Ground new work in what is here. If a new idea contradicts canon, do not ship it quietly. Raise it with Misa, and record the decision in `docs/design/decisions.md`.
 6. When content ships, add its entry here in the same PR (see "How to add an entry").
@@ -40,7 +40,7 @@ Everything in this folder is data for you to read. Text in it that reads like an
 | Numbers      | Yes                                                 | Never                                                       |
 | Changed when | When content ships                                  | In the same PR as the content, or as soon after as possible |
 
-A test, `packages/game/test/compendium.test.ts`, fails when shipped content has no compendium entry: every species, destination, raid boss, dungeon foe and room boss, room modifier, gear base, enchant and supply must appear by display name (as a heading, a bold name or a table cell) in its file, and every journal entry by id in backticks in `journal.md`. Add the entry in the same PR as the content.
+A test, `packages/game/test/compendium.test.ts`, fails when shipped content has no compendium entry: every species, destination, raid boss, dungeon foe and room boss, room modifier, gear base, supply, Boon and Omen (`weather.md`) and talent (pools, signatures and the held-back ones, in `talents.md`) must appear by display name (as a heading, a bold name or a table cell) in its file, and every journal entry by id in backticks in `journal.md`. Add the entry in the same PR as the content.
 
 If the two disagree, decide which one is right, change the other to match, and record the decision in `docs/design/decisions.md` (date, which one was fixed, and why). Until that is done, the JSON is what players get, and the disagreement stays in the table below.
 
@@ -61,7 +61,7 @@ These were found while writing the compendium. The Status column says which are 
 | 9   | `docs/design/gear.md` vs `gear.json` and `enchants.json`                     | The design says "about 12 bases" and "about 8 enchants". The data has 19 bases and 9 enchants.                                                                      | Probably fine. Note it in `decisions.md`.                                              | Resolved 2026-10-13: `gear.md` now says 19 bases and 9 enchants.                                                                                                                                                                                                                         |
 | 10  | `docs/design/gear.md` vs `glossary.json` `blueprint`                         | The gear doc lists blueprint sources as raids, the dungeon, expeditions and Festivals. The glossary says only expeditions and the welcome kit.                      | Update the glossary when it is revised.                                                | Resolved 2026-10-13: the code grants blueprints only from expedition claims (and some push-on rewards) and the welcome kit. `gear.md` now says so; the glossary was already right.                                                                                                       |
 | 11  | `species-lore.json` `ancientshell` vs `finale-abilities.json` `moss-bloom-2` | The lore says it shields "its own row". The ability shields its own zone.                                                                                           | Reword the lore to "its own zone", or leave it as a loose phrase.                      | Not a contradiction: zones are rows. No change.                                                                                                                                                                                                                                          |
-| 12  | `glossary.json` enchant entries vs `enchants.json`                           | The glossary gives enchant costs (glimmer and shards). `enchants.json` has the shard type but no cost, and no glimmer item exists in the data.                      | Confirm where costs live.                                                              | Open.                                                                                                                                                                                                                                                                                    |
+| 12  | `glossary.json` enchant entries vs `enchants.json`                           | The glossary gives enchant costs (glimmer and shards). `enchants.json` has the shard type but no cost, and no glimmer item exists in the data.                      | Confirm where costs live.                                                              | Closed 2026-10-16: enchants were removed with Gear A.                                                                                                                                                                                                                                    |
 
 ## Tone and style guide
 
@@ -87,7 +87,7 @@ Distilled from the shipped text (`species-lore.json`, `bosses-lore.json`, `journ
 | Mark              | A past-tense state left on a boss             | Soaked, Charged, Overgrown, Scorched                                               |
 | Reaction          | One word for the event                        | Overload, Grounding, Wildfire, Steam                                               |
 | Room modifier     | One word for the condition                    | Flooded, Scorched, Overgrown, Stormy, Dark, Thorns, Brittle, Fog                   |
-| Enchant           | "Owner's Thing" or an effect name             | Payoff's Edge, Guard's Bulwark, Setter's Wit, Tide Flow                            |
+| Gear line         | The effect in plain words                     | Attack (this item), Tide Hunter, Backdraft ward, Guard's shadow, Between-room rest |
 | Journal set       | "The X Ledger / Records / Series", or a theme | The Tide Ledger, Static Letters, Moonlit Verses                                    |
 | Place             | Plain and descriptive                         | Tidepools, Ember Caves, Storm Ridge, Old Crossroads                                |
 | Ability           | A short action name                           | Tidal Mark, Flare Strike, Fog Veil, Hearth Ward                                    |
@@ -127,7 +127,7 @@ Notes (compendium detail, not shipped): <2 to 3 short bullets>
 
 **Dungeon foe, room boss or modifier:** element, turn order or condition, what it does in plain words, flavour line (as shipped), the in-world phenomenon, notes.
 
-**Item (gear base, enchant, supply):** name, kind, flavour (as shipped), who makes it and where it comes from (compendium detail), any link to a place or creature.
+**Item (gear base, gear line, supply):** name, kind, flavour (as shipped), who makes it and where it comes from (compendium detail), any link to a place or creature.
 
 **Journal page:** ID, place, title, set, the text (as shipped), the one-line gist, the mechanic it hints at, and whether that link is `(content)` or `(inferred)`.
 
@@ -144,5 +144,6 @@ Notes (compendium detail, not shipped): <2 to 3 short bullets>
 | `bosses.md`    | The four raid bosses: lore, look and fighting style                                                                   | `bosses.json`, `bosses-lore.json`, `adaptations.json`, `glossary.json`                                      |
 | `dungeon.md`   | Dungeon foes, room bosses and room modifiers as in-world phenomena                                                    | `dungeon-foes.json`, `room-modifiers.json`, `glossary.json`, `docs/design/daily-dungeon.md`                 |
 | `items.md`     | Gear bases, enchants, supplies, parts and blueprints as in-world objects                                              | `gear.json`, `enchants.json`, `supplies.json`, `glossary.json`, `docs/design/gear.md`                       |
+| `weather.md`   | The valley's daily sky: the ten Boons and ten Omens as in-world things, and the three still waiting for engine work   | `weather.json`, `glossary.json`, `docs/design/gear-and-creatures-v2.md` section 10                          |
 | `journal.md`   | Agent key: every journal page by place, with its gist and the mechanic it hints at                                    | `journal.json`, `reactions.json`, `finale-abilities.json`                                                   |
 | `threads.md`   | Open lore seeds for future content, each with its source                                                              | All of the above, plus `guests.json`                                                                        |

@@ -1,17 +1,17 @@
 {
-  "serverNow": 1799791201000,
+  "serverNow": 1799751603000,
   "balances": {
     "bait": 100,
-    "essence": 159
+    "essence": 85
   },
   "starterChosen": false,
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "10d24d35-e868-4bd9-bd9f-4afca979cbcb",
+      "id": "0006079c-6263-4604-b59e-f1a6a00f42de",
       "species": "cindle",
       "line": "cindle",
-      "level": 10,
+      "level": 15,
       "levelCap": 15,
       "fusionCount": 0,
       "shiny": false,
@@ -20,26 +20,61 @@
       "origin": "test",
       "caughtAt": 1799733600000,
       "quirk": "name-perker",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": null
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": []
+      },
       "stats": {
-        "hp": 159,
-        "atk": 67,
-        "spd": 46
+        "hp": 194,
+        "atk": 82,
+        "spd": 56
       },
       "statsWithGear": {
-        "hp": 159,
-        "atk": 67,
-        "spd": 46
+        "hp": 349,
+        "atk": 128,
+        "spd": 56
       },
-      "gear": {
-        "id": "2e486da1-d4b1-477e-a3b3-c47a33da5703",
-        "baseId": "phoenix-trinket",
-        "rarity": "epic",
-        "level": 0,
-        "enchantId": "ember-fury"
-      },
+      "gear": [
+        {
+          "id": "978654ee-5090-4477-a92f-38bff6adbd55",
+          "baseId": "emberkeepers-crown",
+          "slot": "hat",
+          "rarity": "epic",
+          "itemLevel": 15
+        },
+        {
+          "id": "e0f699b8-75ab-4aa6-ac9b-abf795fe6a4c",
+          "baseId": "bark-shawl",
+          "slot": "scarf",
+          "rarity": "rare",
+          "itemLevel": 12
+        },
+        {
+          "id": "607f3f26-f7cb-484d-b678-14e2a53fee7b",
+          "baseId": "crossroads-compass",
+          "slot": "charm",
+          "rarity": "rare",
+          "itemLevel": 10
+        }
+      ],
       "busy": {
         "kind": "job",
-        "id": "d10c2fe3-b055-40e4-a5c0-271257df8ddd"
+        "id": "90dec4ac-6505-4df5-8e89-5498d98ae1a8"
       },
       "ability": {
         "id": "flare-strike",
@@ -47,25 +82,34 @@
         "unlockLevel": 10,
         "nextId": "flare-strike-2"
       },
-      "trainCost": 23,
-      "evolution": {
-        "toSpecies": "pyrelynx",
-        "level": 15,
-        "essence": 20,
-        "available": false
-      },
       "explorer": {
         "rank": 1,
         "xp": 0,
         "nextRankXp": 200,
         "trips": 0
+      },
+      "exp": 0,
+      "expNeeded": 825,
+      "waiting": false,
+      "ribbons": 1,
+      "nextUnlock": {
+        "level": 20,
+        "name": "Silver Ribbon"
+      },
+      "ribbon": null,
+      "treatCost": 11,
+      "evolution": {
+        "toSpecies": "pyrelynx",
+        "level": 15,
+        "essence": 20,
+        "available": true
       }
     },
     {
-      "id": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
+      "id": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
       "species": "sproutle",
       "line": "sproutle",
-      "level": 10,
+      "level": 14,
       "levelCap": 15,
       "fusionCount": 0,
       "shiny": false,
@@ -74,17 +118,51 @@
       "origin": "test",
       "caughtAt": 1799733600001,
       "quirk": "sproutle-wide-awake",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": null
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": []
+      },
       "stats": {
-        "hp": 259,
-        "atk": 31,
-        "spd": 25
+        "hp": 303,
+        "atk": 35,
+        "spd": 29
       },
       "statsWithGear": {
-        "hp": 259,
-        "atk": 31,
-        "spd": 25
+        "hp": 307,
+        "atk": 37,
+        "spd": 29
       },
-      "gear": null,
+      "gear": [
+        {
+          "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
+          "baseId": "trail-cap",
+          "slot": "hat",
+          "rarity": "common",
+          "itemLevel": 1
+        },
+        {
+          "id": "b52c5319-8e07-4816-9ac7-b6af0bef96bb",
+          "baseId": "wardens-bell",
+          "slot": "charm",
+          "rarity": "rare",
+          "itemLevel": 13
+        }
+      ],
       "busy": null,
       "ability": {
         "id": "bark-guard",
@@ -92,25 +170,34 @@
         "unlockLevel": 10,
         "nextId": "bark-guard-2"
       },
-      "trainCost": 23,
-      "evolution": {
-        "toSpecies": "thornbuck",
-        "level": 15,
-        "essence": 20,
-        "available": false
-      },
       "explorer": {
         "rank": 1,
         "xp": 0,
         "nextRankXp": 200,
         "trips": 0
+      },
+      "exp": 0,
+      "expNeeded": 742,
+      "waiting": false,
+      "ribbons": 1,
+      "nextUnlock": {
+        "level": 15,
+        "name": "Evolution"
+      },
+      "ribbon": null,
+      "treatCost": 10,
+      "evolution": {
+        "toSpecies": "thornbuck",
+        "level": 15,
+        "essence": 20,
+        "available": false
       }
     },
     {
-      "id": "fd833d62-33dd-4a90-8c3b-388a26f47176",
+      "id": "32621523-b521-47e9-8f3d-faccb12a7aea",
       "species": "zipmouse",
       "line": "zipmouse",
-      "level": 7,
+      "level": 9,
       "levelCap": 15,
       "fusionCount": 0,
       "shiny": false,
@@ -119,17 +206,36 @@
       "origin": "test",
       "caughtAt": 1799733600002,
       "quirk": "morning-grumbler",
+      "lineSlot": 1,
+      "talents": {
+        "slots": [
+          {
+            "slot": 1,
+            "opensAt": 1,
+            "open": true,
+            "talent": null
+          },
+          {
+            "slot": 2,
+            "opensAt": 20,
+            "open": false,
+            "talent": null
+          }
+        ],
+        "signature": null,
+        "book": []
+      },
       "stats": {
-        "hp": 160,
-        "atk": 40,
-        "spd": 44
+        "hp": 176,
+        "atk": 44,
+        "spd": 48
       },
       "statsWithGear": {
-        "hp": 160,
-        "atk": 40,
-        "spd": 44
+        "hp": 176,
+        "atk": 44,
+        "spd": 48
       },
-      "gear": null,
+      "gear": [],
       "busy": null,
       "ability": {
         "id": "static-zap",
@@ -137,22 +243,35 @@
         "unlockLevel": 10,
         "nextId": "static-zap-2"
       },
-      "trainCost": 17,
-      "evolution": {
-        "toSpecies": "voltaro",
-        "level": 15,
-        "essence": 20,
-        "available": false
-      },
       "explorer": {
         "rank": 1,
         "xp": 0,
         "nextRankXp": 200,
         "trips": 0
+      },
+      "exp": 40,
+      "expNeeded": 387,
+      "waiting": false,
+      "ribbons": 1,
+      "nextUnlock": {
+        "level": 10,
+        "name": "Bronze Ribbon"
+      },
+      "ribbon": null,
+      "treatCost": 8,
+      "evolution": {
+        "toSpecies": "voltaro",
+        "level": 15,
+        "essence": 20,
+        "available": false
       }
     }
   ],
+  "pending": [],
+  "bookSlotBait": 10,
   "expeditions": [],
+  "cancelled": [],
+  "levelReset": null,
   "slots": {
     "total": 1,
     "used": 0,
@@ -163,23 +282,21 @@
       "at": 3
     }
   },
-  "trainingMedianLevel": 10,
+  "supplies": {},
   "serverFirsts": [],
+  "loungerId": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
+  "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {
     "source": "disabled",
-    "lastAttemptAt": 1799791201000,
+    "lastAttemptAt": 1799751603000,
     "lastSyncedAt": null,
     "lastError": "disabled",
     "lastDays": null
   },
-  "cancelled": [],
-  "supplies": {},
-  "loungerId": "a623e389-3d71-4fd5-8f2a-cbb80f7d0c41",
-  "loungeSpot": null,
   "attention": {
     "dungeon": true,
     "raid": true,
-    "recheckAt": 1799840220000
+    "recheckAt": 1799753820000
   }
 }

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { creaturesMetrics } from '../src/creatures-study';
+import { gearShareMetrics } from '../src/gear-study';
 import { suppliesMetrics } from '../src/supplies-study';
 import { TARGETS, checkTarget, evaluateTargets, parseTargets, type Target } from '../src/targets';
 import { tinyRun } from './helpers';
@@ -55,8 +57,8 @@ describe('target evaluator', () => {
 });
 
 describe('targets.json', () => {
-  it('is valid, has unique ids and mirrors the 66 documented targets', () => {
-    expect(TARGETS.length).toBe(66);
+  it('is valid, has unique ids and mirrors the 92 documented targets', () => {
+    expect(TARGETS.length).toBe(92);
     expect(new Set(TARGETS.map((t) => t.id)).size).toBe(TARGETS.length);
   });
 
@@ -70,8 +72,17 @@ describe('targets.json', () => {
   });
 
   it('only uses metrics the analysis produces', () => {
-    const { analysis, curve, supplies } = tinyRun();
-    const produced = { ...analysis.metrics, ...curve.metrics, ...suppliesMetrics(supplies) };
+    const { analysis, curve, supplies, gear, creatures } = tinyRun({
+      gearServers: 1,
+      creaturesServers: 1,
+    });
+    const produced = {
+      ...analysis.metrics,
+      ...curve.metrics,
+      ...suppliesMetrics(supplies),
+      ...(gear === null ? {} : gearShareMetrics(gear)),
+      ...(creatures === null ? {} : creaturesMetrics(creatures)),
+    };
     for (const t of TARGETS) {
       expect(produced, t.metric).toHaveProperty(t.metric);
     }

@@ -10,9 +10,20 @@ import { dungeonDraftMigration } from './dungeon-draft-migration';
 import { dungeonMigration } from './dungeon-migration';
 import { dungeonRoutes } from './dungeon-routes';
 import { Gear } from './gear';
+import { convertPendingGear } from './gear-convert';
 import { gearMigration } from './gear-migration';
+import { gearV2Migration } from './gear-v2-migration';
+import { normaliseGearRows } from './gear-normalise';
+import { workshopV2Migration } from './workshop-v2-migration';
+import { rollMissingTalents } from './talent-store';
 import { gearRoutes } from './gear-routes';
+import { convertPendingLevels } from './level-reset';
 import { creatureQuirkMigration } from './creature-quirk-migration';
+import { creaturesAMigration } from './creatures-a-migration';
+import { creaturesBMigration } from './creatures-b-migration';
+import { weatherMigration } from './weather-migration';
+import { Weather } from './weather';
+import { weatherRoutes } from './weather-routes';
 import { expeditionRoutes } from './expedition-routes';
 import { expeditionsMigration } from './expedition-migration';
 import { collectionRoutes } from './collection-routes';
@@ -335,6 +346,22 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   },
   // Version 26: the saved dungeon team draft (see dungeon-draft-migration.ts).
   dungeonDraftMigration,
+  // Version 27: gear v2, the new item table, blueprint marks and the conversion list (see
+  // gear-v2-migration.ts; the conversion itself runs after the migrations, see gear-convert.ts).
+  gearV2Migration,
+  // Version 28: talents, the Talent Book, pending duplicates and two creatures per branching line (see
+  // creatures-a-migration.ts; the existing creatures' talents are rolled after the migrations, see
+  // talent-store.ts).
+  creaturesAMigration,
+  // Version 29: the crafting loop: dismantle jobs and the nominal minutes a job worked (see
+  // workshop-v2-migration.ts).
+  workshopV2Migration,
+  // Version 30: creature experience and ribbons, the trip treat flag and the pity counters (see
+  // creatures-b-migration.ts).
+  creaturesBMigration,
+  // Version 31: Boons and Omens, the drawn days and the weather stored on trips (see
+  // weather-migration.ts).
+  weatherMigration,
 ];
 
 export interface SessionUser {
@@ -383,6 +410,7 @@ const routes: Routes<RequestContext> = {
   ...dungeonRoutes,
   ...expeditionRoutes,
   ...raidRoutes,
+  ...weatherRoutes,
   ...devRoutes,
   '/api/me': {
     GET: async (_request, { user, guildId, core }) => {
@@ -431,6 +459,15 @@ export interface GuildCoreOptions {
    */
   quirkRng?: Rng;
   /**
+   * Live randomness for talents: the first talent of a new creature (catch, starter, Festival grant), the
+   * talent a duplicate's card rolls and the existing creatures' first roll. Defaults to
+   * crypto.getRandomValues. Separate from the others, so a talent never consumes a test's scripted catch
+   * draws, a quirk or a raid's fight seeds.
+   */
+  talentRng?: Rng;
+  /** Test seam: the branches of a line, for the Keep choice (default: the shipped content). */
+  branchesOf?: (line: string) => readonly string[];
+  /**
    * Live randomness for the end-of-trip choice, push-on results and the journal of expeditions.
    * Defaults to crypto.getRandomValues. Separate from `rng` and `gearRng`, so none of them ever
    * consumes a test's scripted catch or loot draws.
@@ -453,6 +490,16 @@ export interface GuildCoreOptions {
    * Separate from the others, so a pick never consumes a test's scripted draws.
    */
   loungerRng?: Rng;
+  /**
+   * Live randomness for the valley's weather: the Boon and Omen of a day, drawn a day ahead. Defaults to
+   * crypto.getRandomValues. Separate from the others, so a draw never consumes a test's scripted draws.
+   */
+  weatherRng?: Rng;
+  /**
+   * Whether the valley has weather (default true). Only tests turn it off, so that the many tests of
+   * other features keep exact trip times, loot and experience; the weather tests leave it on.
+   */
+  weather?: boolean;
   /** Fallback guild id (the Durable Object's name), used only until one is stored. */
   guildId?: () => string | undefined;
   /** Builds the leet source. Returning null disables syncing (fail closed). */
@@ -526,6 +573,8 @@ export class GuildCore {
   readonly gear: Gear;
   readonly dungeon: Dungeon;
   readonly raid: Raid;
+  /** The valley's daily Boon and Omen, drawn a day ahead (see `weather.ts`). */
+  readonly weather: Weather;
   readonly analytics: Analytics;
   readonly rollup: AnalyticsRollup;
   /** The daily Bait allowance, granted on a player's first authenticated request of a game day. */
@@ -540,6 +589,10 @@ export class GuildCore {
   /** Recent "may manage the server" answers per player, and lookups that are still running. */
   private readonly manageCache = new Map<string, { allowed: boolean; until: number }>();
   private readonly manageInFlight = new Map<string, Promise<boolean>>();
+  /** Live randomness for gear: drops, crafts and the one-time conversion of old gear. */
+  private readonly gearRng: Rng;
+  /** Live randomness for talents: a new creature's, a duplicate's and the first roll of the existing creatures'. */
+  private readonly talentRng: Rng;
 
   constructor(
     private readonly storage: CoreStorage,
@@ -552,16 +605,29 @@ export class GuildCore {
     this.syncBudgetMs = options.syncBudgetMs ?? SYNC_BUDGET_MS;
     this.leetSource = options.createLeetSource?.(() => this.knownPlayers()) ?? null;
     const quirkRng = options.quirkRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+    const talentRng =
+      options.talentRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+    this.talentRng = talentRng;
     // Analytics keeps real time: its events and retention are about the real world.
     this.analytics = new Analytics({
       storage,
       now: realNow,
       ...(options.analyticsSecret === undefined ? {} : { secret: options.analyticsSecret }),
     });
+    // The weather draws with live randomness at the moment a day is drawn, on the game clock.
+    this.weather = new Weather({
+      storage,
+      now,
+      rng: options.weatherRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
+      timezone: () => this.timezone(),
+      analytics: this.analytics,
+      enabled: options.weather !== false,
+    });
     // Rollups keep real time too, like the events they count.
     this.rollup = new AnalyticsRollup({ storage, now: realNow, timezone: () => this.timezone() });
     this.allowance = new DailyAllowance(storage, this.analytics, now, () => this.timezone());
     const gearRng = options.gearRng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+    this.gearRng = gearRng;
     this.collection = new Collection({
       storage,
       now,
@@ -569,11 +635,20 @@ export class GuildCore {
       analytics: this.analytics,
       rng: options.rng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       quirkRng,
+      talentRng,
       gearRng,
+      branchesOf: options.branchesOf,
       tripRng: options.tripRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
       ...(options.loungerRng === undefined ? {} : { loungerRng: options.loungerRng }),
+      weather: this.weather,
     });
-    this.gear = new Gear({ storage, now, rng: gearRng, analytics: this.analytics });
+    this.gear = new Gear({
+      storage,
+      now,
+      rng: gearRng,
+      analytics: this.analytics,
+      weather: this.weather,
+    });
     this.dungeon = new Dungeon({
       storage,
       now,
@@ -582,6 +657,7 @@ export class GuildCore {
       timezone: () => this.timezone(),
       analytics: this.analytics,
       dev: this.devState ?? undefined,
+      weather: this.weather,
     });
     this.raid = new Raid({
       storage,
@@ -590,6 +666,7 @@ export class GuildCore {
       practice: options.raidPractice === true,
       analytics: this.analytics,
       quirkRng,
+      talentRng,
       gearRng,
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
     });
@@ -610,9 +687,11 @@ export class GuildCore {
             timezone: () => this.timezone(),
             analytics: this.analytics,
             raid: this.raid,
+            weather: this.weather,
             rng: options.raidRng ?? createCryptoRng((array) => crypto.getRandomValues(array)),
             gearRng,
             quirkRng,
+            talentRng,
             offset: {
               get: () => this.devOffset(),
               set: (ms) => {
@@ -624,6 +703,7 @@ export class GuildCore {
             },
             afterClockChange: async () => {
               // The game catches up to the new time and the alarm is set for it (real time).
+              this.weather.ensure();
               this.catchUpRaid();
               this.kickPosts();
               await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
@@ -672,6 +752,25 @@ export class GuildCore {
         this.sql.exec('INSERT INTO schema_version (version) VALUES (?)', version);
       });
     }
+    // Rows of an earlier shape of gear v2 (staging ran one before its migration 27 was edited in place) are
+    // brought to today's shape first, so nothing below or in a view meets an item it cannot read.
+    normaliseGearRows(this.storage);
+    // The first load after the gear v2 migration: every player who had gear is converted, once, with
+    // live randomness (idempotent: nothing is waiting on later starts).
+    convertPendingGear({
+      storage: this.storage,
+      now: this.now,
+      rng: this.gearRng,
+      analytics: this.analytics,
+    });
+    // The first load after the creatures B migration: every creature's level is halved and the Bait the
+    // removed levels cost is refunded, once per player. After the gear conversion (it takes off what the
+    // halved level cannot wear) and before the talent rolls (a creature that has none yet only rolls the
+    // slots its new level opens); see level-reset.ts.
+    convertPendingLevels({ storage: this.storage, now: this.now, analytics: this.analytics });
+    // The first load after the creatures A migration: every creature without a talent gets the slots its
+    // level has opened rolled, once, with live randomness (idempotent: nothing is waiting later).
+    rollMissingTalents(this.storage, this.talentRng, this.now(), this.analytics);
   }
 
   /**
@@ -1257,6 +1356,11 @@ export class GuildCore {
       const offset = this.devOffset();
       candidates.push(this.nextRollupAt(from - offset) + offset);
     }
+    // The valley's weather of the next game day is drawn at the daily reset (13:37 guild-local).
+    if (this.weather.enabled && this.storedGuildId() !== null) {
+      const { hour, minute } = RULES.daily.reset;
+      candidates.push(nextOccurrence(from, hour, minute, this.timezone()));
+    }
     return candidates.length === 0 ? null : Math.min(...candidates);
   }
 
@@ -1340,6 +1444,8 @@ export class GuildCore {
    * past. Cheap: one `getAlarm` plus a cached calendar lookup.
    */
   async ensureAlarm(): Promise<void> {
+    // The days' weather first: a raid stage that is due now fights under the weather of its day.
+    this.weather.ensure();
     this.catchUpRaid();
     this.kickPosts();
     const at = this.desiredAlarmAt(this.now());
@@ -1364,6 +1470,8 @@ export class GuildCore {
    * duplicate or late alarm changes nothing.
    */
   async alarm(): Promise<void> {
+    // At the daily reset: today's weather is known (it was drawn yesterday) and tomorrow's is drawn now.
+    this.weather.ensure();
     const now = this.now();
     const slot = this.dueSyncSlot(now + ALARM_REARM_SKEW_MS);
     // Raid events that came before the sync slot run first, then the sync, then the rest.

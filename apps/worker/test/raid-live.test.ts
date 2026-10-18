@@ -60,7 +60,8 @@ const ROUNDS = 12;
 const CLOCK_ROUNDS = ROUNDS + RULES.raid.enrage.rounds;
 const BIG = 50_000_000;
 /** Below the ability unlock level: every member brings the basic ability only. */
-const BELOW_UNLOCK = RULES.abilities.unlockLevel - 1;
+// Well below, so the experience of the two raid stages before the finale does not carry a creature to the unlock.
+const BELOW_UNLOCK = RULES.abilities.unlockLevel - 4;
 /** At the unlock level: every creature with an ability brings it. */
 const UNLOCKED = RULES.abilities.unlockLevel;
 

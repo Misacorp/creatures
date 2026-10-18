@@ -48,6 +48,9 @@ function rowsText(rows: readonly string[] | undefined): string {
   return ` (${rows.join(' and ')} ${rows.length === 1 ? 'row' : 'rows'})`;
 }
 
+/** "+12%", "-5%", "+1.5%": basis points as a signed percentage. */
+const signedPct = (bp: number): string => `${bp < 0 ? '-' : '+'}${Math.abs(bp) / 100}%`;
+
 const lookup = (table: Readonly<Record<string, string>> | undefined, id: string): string =>
   table?.[id] ?? id;
 
@@ -104,17 +107,20 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
           : event.matchupBp < 10_000
             ? ' (weak matchup)'
             : ''
-      }; ${event.bossHp} HP left.`;
+      }${event.sheetBp === undefined ? '' : ` (${signedPct(event.sheetBp)} from modifiers)`}; ${event.bossHp} HP left.`;
     case 'mark':
       return event.replaced === null
         ? `${event.creature === null ? player(event.player) : creature(event.creature)} leaves ${names.boss} ${mark(event.element)}.`
         : `${event.creature === null ? player(event.player) : creature(event.creature)} replaces ${mark(event.replaced)} with ${mark(event.element)}.`;
-    case 'reaction':
+    case 'reaction': {
+      const mods =
+        event.sheetBp === undefined ? '' : ` (${signedPct(event.sheetBp)} from modifiers)`;
       return event.reflected
-        ? `${lookup(names.reactions, event.reaction)}! ${names.boss} reflects ${event.bonus} bonus damage onto ${creature(event.payoff)}.`
+        ? `${lookup(names.reactions, event.reaction)}! ${names.boss} reflects ${event.bonus} bonus damage onto ${creature(event.payoff)}${mods}.`
         : `${lookup(names.reactions, event.reaction)}! ${creature(event.payoff)} cashes in the mark${
             event.setupCreature === null ? '' : ` set by ${creature(event.setupCreature)}`
-          } for ${event.bonus} bonus damage.`;
+          } for ${event.bonus} bonus damage${mods}.`;
+    }
     case 'gimmick': {
       const name = lookup(names.gimmicks, event.gimmick);
       if (event.targets === undefined) return `${names.boss} uses ${name}.`;
@@ -139,7 +145,13 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
         event.covered === undefined
           ? ''
           : ` ${creature(event.covered.guard)} covers ${event.covered.prevented} of it.`;
-      const extra = `${cover}${crit}${capped}`;
+      const warded =
+        event.warded === undefined || event.warded === 0
+          ? ''
+          : event.warded > 0
+            ? ` Its modifiers take off ${event.warded}.`
+            : ` Its modifiers add ${-event.warded}.`;
+      const extra = `${cover}${warded}${crit}${capped}`;
       if (event.shielded === true) {
         return `${names.boss} ${what} ${creature(event.target)}, but a Shield Wall stops it.`;
       }

@@ -25,6 +25,7 @@ import {
   abilitiesFor,
   addParts,
   createSeededRng,
+  dungeonExperience,
   dungeonFoe,
   dungeonPayout,
   isLandmark,
@@ -35,11 +36,19 @@ import {
   roomModifier,
   scaledFoe,
   streakBonus,
+  treatCost,
+  dungeonScrapPerRoom,
+  mergeMods,
+  weatherBossAttacks,
+  weatherLuck,
+  weatherSheet,
+  xpWeather,
   type Element,
   type GearRarity,
   type PartsBundle,
   type Rng,
   type Role,
+  type WeatherDay,
 } from '@creatures/game';
 import {
   buildNames,
@@ -58,14 +67,16 @@ import {
 import * as v from 'valibot';
 import type { Analytics } from './analytics';
 import { devKey, type DevFlags } from './dev-state';
-import { keyTaken } from './keyed-action';
+import { awardExperience, type ExperienceView } from './creature-exp';
+import { keyTaken, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
-import type { LedgerStorage } from './ledger';
+import { spend, type LedgerStorage } from './ledger';
 import { drawSeed, slotFor } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
 import { DraftTeamSchema, LastTeamSchema, type RunBody } from './dungeon-schemas';
 import { addDays, gameDay, gameDayEnd } from './time';
+import type { Weather } from './weather';
 
 /** Runs (their events and inputs) are kept this long; the summary and rewards stay. */
 export const RUN_RETENTION_MS = 90 * 86_400_000;
@@ -83,6 +94,8 @@ export interface DungeonDeps {
   analytics?: Analytics | undefined;
   /** The dev tools' force flags (staging only): the day's modifiers can be picked. Absent in production. */
   dev?: DevFlags | undefined;
+  /** The valley's weather: every run is fought under the day's Boon and Omen. Absent: none. */
+  weather?: Weather | undefined;
 }
 
 // --- Views ---
@@ -106,6 +119,11 @@ export interface DungeonRewards {
   converted: { baseId: string; rarity: GearRarity }[];
   /** The supplies the run dropped, one content id each (absent in runs stored before supplies dropped here). */
   supplies?: string[];
+  /**
+   * The creature experience the run paid each creature of the team (a treat doubles it) and what it did
+   * to their levels. Absent in runs stored before training by activity.
+   */
+  experience?: ExperienceView[];
   /** A fully cleared landmark depth: its gear drop was certain. */
   landmark: boolean;
   streak: { day: number; bait: number; essence: number; parts: PartsBundle } | null;
@@ -152,6 +170,8 @@ export interface DungeonRunSummary {
   team: DungeonTeamMember[];
   rooms: DungeonRoomSummary[];
   rewards: DungeonRewards;
+  /** The Boon and Omen the run was fought under (absent: none, and in runs stored before the weather). */
+  weather?: { boon: string; omen: string | null };
 }
 
 export interface DungeonToday {
@@ -277,7 +297,12 @@ const FRESH_PROGRESS: ProgressRow = {
 
 /** The text of a request that decides a run, for telling a retry from a different request under one key. */
 function fingerprintOf(body: RunBody): string {
-  return JSON.stringify({ team: body.team });
+  // The treats are part of what was asked, whatever order they came in. A request without any hashes
+  // like one before treats existed.
+  return JSON.stringify({
+    team: body.team,
+    ...(body.treats.length === 0 ? {} : { treats: [...body.treats].sort() }),
+  });
 }
 
 export class Dungeon {
@@ -648,10 +673,59 @@ export class Dungeon {
     if (!team.every((c): c is TeamCreature => c !== undefined)) {
       throw new GameError(404, 'not_found');
     }
+    // The treats: each names a creature of the team, once. They are paid below, with the run.
+    if (new Set(body.treats).size !== body.treats.length) throw new GameError(400, 'invalid_treat');
+    if (!body.treats.every((id) => body.team.includes(id))) {
+      throw new GameError(400, 'invalid_treat');
+    }
     // `team[i]` is position i, left to right: the row is the order of the request.
     const standing = team;
-    const row: FightSlot[] = standing.map((c) => slotFor(c, PLAYER));
+    // The day's weather is fixed now and goes into the stored input: the sheet of every creature, the
+    // luck and the foes' attacks. A replay never reads the weather.
+    const wday = this.deps.weather?.at(now) ?? null;
+    const row: FightSlot[] = standing.map((c) => {
+      const slot = slotFor(c, PLAYER);
+      const mods = mergeMods(slot.mods, weatherSheet(wday, slot));
+      return mods === undefined ? slot : { ...slot, mods };
+    });
     const abilities = this.abilityChoices(standing);
+
+    // --- The treats cost Bait, paid when the run starts and with it: short Bait takes nothing ---
+    const id = crypto.randomUUID();
+    const treated = new Set(body.treats);
+    const treatBait = standing.reduce(
+      (n, c) => n + (treated.has(c.id) ? treatCost(c.level) : 0),
+      0,
+    );
+    if (treatBait > 0) {
+      settleSpend(
+        spend(
+          this.deps.storage,
+          {
+            userId,
+            currency: 'bait',
+            amount: treatBait,
+            purpose: 'treat',
+            idempotencyKey: `treat:dungeon:${id}`,
+            apply: () => ({ runId: id }),
+          },
+          now,
+        ),
+      );
+      for (const c of standing) {
+        if (!treated.has(c.id)) continue;
+        this.deps.analytics?.record(
+          {
+            kind: 'treat',
+            source: 'dungeon',
+            species: c.species.id,
+            level: c.level,
+            cost: treatCost(c.level),
+          },
+          userId,
+        );
+      }
+    }
 
     // --- The seed is drawn now, and the rooms and the fights follow from it ---
     const seed = drawSeed(this.deps.rng);
@@ -666,12 +740,17 @@ export class Dungeon {
       return { index: plan.index, foe, modifier, hp, atk };
     });
     const enrage = dungeonBossEnrage();
+    // Between-room rest (a Scarf line): the share of max HP a standing creature recovers before each room.
+    const rest: Record<string, number> = {};
+    for (const c of standing) if (c.gearRules.restBp > 0) rest[c.id] = c.gearRules.restBp;
     const input: DungeonRunInput = {
       team: row,
       player: PLAYER,
       rooms,
       abilities,
-      luck: { ...RULES.combat.luck },
+      luck: { ...weatherLuck(wday, RULES.combat.luck) },
+      ...(Object.keys(rest).length === 0 ? {} : { rest }),
+      ...(weatherBossAttacks(wday, 1) > 1 ? { bossAttacks: weatherBossAttacks(wday, 1) } : {}),
       // The combat rules, the boss room's enrage and the depth (a landmark gives the room boss its
       // signature), stored with the input so a replay is exact.
       rules: liveFightRules(),
@@ -705,10 +784,31 @@ export class Dungeon {
     // --- Pay: rooms, loot, and the streak bonus on the first run of a day ---
     const rewards = this.pay(userId, day, attempt, depth, result, rooms, newStreak, {
       firstOfDay: progress.last_day !== day,
+      weather: wday,
     });
+    // --- Creature experience: every creature of the team, by rooms cleared (a treat doubles it) ---
+    const experience: ExperienceView[] = [];
+    for (const c of standing) {
+      const gained = dungeonExperience(
+        result.roomsCleared,
+        result.cleared,
+        treated.has(c.id),
+        xpWeather(wday),
+      );
+      const view = awardExperience(
+        this.sql,
+        this.deps.analytics,
+        userId,
+        c.id,
+        gained,
+        'dungeon',
+        treated.has(c.id),
+      );
+      if (view !== null) experience.push(view);
+    }
+    rewards.experience = experience;
 
     // --- Store ---
-    const id = crypto.randomUUID();
     const summary = this.summarise({
       id,
       day,
@@ -721,6 +821,7 @@ export class Dungeon {
       input,
       result,
       rewards,
+      weather: wday,
     });
     this.sql.exec(
       `INSERT INTO dungeon_runs (id, user_id, day, attempt, idempotency_key, fingerprint, depth, seed,
@@ -774,9 +875,14 @@ export class Dungeon {
     result: DungeonRunResult,
     rooms: readonly DungeonRoomSpec[],
     streak: number,
-    options: { firstOfDay: boolean },
+    options: { firstOfDay: boolean; weather: WeatherDay | null },
   ): DungeonRewards {
-    const payout = dungeonPayout(depth, result.roomsCleared);
+    const base = dungeonPayout(depth, result.roomsCleared);
+    // Market Day: a scrap more for every room cleared.
+    const payout = {
+      ...base,
+      scrap: base.scrap + dungeonScrapPerRoom(options.weather) * result.roomsCleared,
+    };
     const gearDeps: GrantDeps = {
       storage: this.deps.storage,
       now: this.deps.now,
@@ -793,7 +899,7 @@ export class Dungeon {
         const loot = rollDungeonLoot(rng, depth, payout, boss?.foe.element ?? 'tide');
         return {
           parts: addParts({ scrap: payout.scrap, glimmer: payout.glimmer }, loot.parts),
-          gear: loot.gear,
+          gear: loot.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
           supplies: loot.supplies,
         };
       },
@@ -838,6 +944,7 @@ export class Dungeon {
     input: DungeonRunInput;
     result: DungeonRunResult;
     rewards: DungeonRewards;
+    weather: WeatherDay | null;
   }): DungeonRunSummary {
     const { input, result } = args;
     const last = result.rooms.at(-1);
@@ -883,6 +990,9 @@ export class Dungeon {
         };
       }),
       rewards: args.rewards,
+      ...(args.weather === null
+        ? {}
+        : { weather: { boon: args.weather.boon, omen: args.weather.omen } }),
     };
   }
 
@@ -919,6 +1029,17 @@ export class Dungeon {
       },
       userId,
     );
+    if (summary.weather !== undefined) {
+      analytics.record(
+        {
+          kind: 'weather_use',
+          where: 'dungeon',
+          boon: summary.weather.boon,
+          omen: summary.weather.omen,
+        },
+        userId,
+      );
+    }
     const parts = addParts(rewards.parts, rewards.streak?.parts ?? {});
     const shards =
       (parts['tide-shard'] ?? 0) +

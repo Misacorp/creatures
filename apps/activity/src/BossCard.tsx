@@ -19,6 +19,9 @@ import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { PopoverCard, popupProps } from './ui/Popover';
 import { PixelHeading } from './ui/PixelHeading';
+import { SkyLine } from './SkyLine';
+import type { Forecast } from './weather-types';
+import { eventTitle } from './raid-time';
 import { SegmentBar } from './ui/SegmentBar';
 
 /**
@@ -86,13 +89,27 @@ function ReadinessMeter({
   );
 }
 
+/** The next stage of the week (a Phase or the Finale): its time and name, for the sky line. Null before Phase 1 and after the Finale. */
+function nextStage(view: RaidView): { at: number; name: string } | null {
+  const next = view.next;
+  if (next === null || next.event === 'weekStart') return null;
+  return { at: next.at, name: eventTitle(next.event) };
+}
+
 /**
  * The boss card: the art at its full size, and beside it (below it on a phone) the name, Rank and
  * readiness, element, this week's HP (a bar with the numbers on it), and icons for the turn order
  * and tricks. Details live in the popovers. What is not about the boss lives elsewhere: the season
  * in the "This week" section, the player count in the Raid Roster.
  */
-export function BossCard({ view }: { view: RaidView }) {
+export function BossCard({
+  view,
+  forecast = null,
+}: {
+  view: RaidView;
+  /** The valley's sky, for the one line under the win text (absent or null: none). */
+  forecast?: Forecast | null;
+}) {
   const { boss } = view;
   const icons = bossIcons(boss, view.effectiveRank);
   const adaptation = view.party?.adaptation ?? null;
@@ -130,7 +147,7 @@ export function BossCard({ view }: { view: RaidView }) {
               </Tag>
             )}
             {readiness !== null && <ReadinessMeter band={readiness} />}
-            <ElementChip element={boss.element} />
+            <ElementChip element={boss.element} context="boss" />
             {view.festival && (
               <Tag kind="badge" tone="festival" entry="festival">
                 Festival week
@@ -157,6 +174,7 @@ export function BossCard({ view }: { view: RaidView }) {
       {banner !== null && <p class="festival-banner">{banner}</p>}
       {teaser !== null && <p class="muted">{teaser}</p>}
       <p class="boss-pays">{winPaysText(view)}</p>
+      <SkyLine forecast={forecast} stage={nextStage(view)} />
       <p class="counter-move">
         <GlossaryTag entry="adaptation">
           <strong class="pix">Phase 2 counter-move</strong>

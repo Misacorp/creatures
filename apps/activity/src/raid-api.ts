@@ -15,6 +15,8 @@ import {
   isRecord,
   isStr,
 } from './parse-core';
+import { isTalentView } from './talent-parse';
+import type { TalentView } from './talent-types';
 
 export type RaidStatus = 'open' | 'phase1' | 'phase2' | 'finale';
 export type RaidEventId = 'weekStart' | 'phase1' | 'phase2' | 'finale';
@@ -99,10 +101,18 @@ export interface RankChange {
 /** The Festival creature a finale gave the caller. */
 export interface FestivalGrant {
   species: string;
-  outcome: 'new' | 'fused' | 'converted';
-  /** Only for `fused`: the creature's fusion count now. */
+  /**
+   * `new`: now a creature. `duplicate`: a waiting card to answer on the Collection tab. `fused` and
+   * `converted` only appear in grants stored before the duplicate choice.
+   */
+  outcome: 'new' | 'duplicate' | 'fused' | 'converted';
+  /** The talent it rolled (absent in grants stored before talents). */
+  talent?: TalentView;
+  /** Only for `duplicate`: the id of its card. */
+  pendingId?: string;
+  /** Only for the old `fused`: the creature's fusion count now. */
   fusionCount?: number;
-  /** Only for `converted`: the Bait it was worth. */
+  /** Only for the old `converted`: the Bait it was worth. */
   bait?: number;
   firstOnServer: boolean;
 }
@@ -393,8 +403,11 @@ export function isFestivalGrant(value: unknown): value is FestivalGrant {
     isRecord(value) &&
     isStr(value['species']) &&
     (value['outcome'] === 'new' ||
+      value['outcome'] === 'duplicate' ||
       value['outcome'] === 'fused' ||
       value['outcome'] === 'converted') &&
+    (value['talent'] === undefined || isTalentView(value['talent'])) &&
+    (value['pendingId'] === undefined || isStr(value['pendingId'])) &&
     (value['fusionCount'] === undefined || isInt(value['fusionCount'])) &&
     (value['bait'] === undefined || isInt(value['bait'])) &&
     isBool(value['firstOnServer'])

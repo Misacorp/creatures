@@ -155,6 +155,7 @@ function SetupDemo({ p }: { p: Props }) {
     <DungeonSetup
       today={today}
       creatures={creatures}
+      bait={num(p, 'bait')}
       busy={bool(p, 'busy')}
       error={null}
       draft={null}
@@ -176,15 +177,17 @@ const dungeonSetup: Entry = {
     placed: { kind: 'number', min: 1, max: 3 },
     streak: { kind: 'number', min: 0, max: 30 },
     depth: { kind: 'number', min: 1, max: 40 },
+    bait: { kind: 'number', min: 0, max: 100 },
     busy: { kind: 'toggle' },
   },
-  defaults: { owned: 6, placed: 3, streak: 3, depth: 1, busy: false },
+  defaults: { owned: 6, placed: 3, streak: 3, depth: 1, bait: 40, busy: false },
   presets: [
     { name: '3 / 3 placed, streak at day 3', props: {} },
     { name: '2 / 3 placed (Enter is off, with the reason)', props: { placed: 2 } },
     { name: 'No streak yet', props: { streak: 0 } },
     { name: 'Streak at day 7', props: { streak: 7 } },
     { name: 'The run is being sent', props: { busy: true } },
+    { name: 'No Bait for treats', props: { bait: 0 } },
   ],
   render: (p) => (
     <SetupDemo

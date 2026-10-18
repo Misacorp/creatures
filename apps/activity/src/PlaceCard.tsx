@@ -53,7 +53,7 @@ export function PlaceInfo({ card }: { card: DestinationCard }) {
         {card.element === null ? (
           <Tag entry="destination">Mixed place</Tag>
         ) : (
-          <ElementChip element={card.element} />
+          <ElementChip element={card.element} context="place" />
         )}
         {card.minRank > 1 && <Tag entry="explorer-rank">{`Rank ${String(card.minRank)}`}</Tag>}
       </p>

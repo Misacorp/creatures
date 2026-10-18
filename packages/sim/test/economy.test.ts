@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSeededRng, RULES, trainingCost } from '@creatures/game';
+import { createSeededRng, RULES, expToNext } from '@creatures/game';
 import {
   ARCHETYPES,
   DEFAULT_MIX,
@@ -9,8 +9,9 @@ import {
 } from '../src/archetypes';
 import { speciesOf } from '../src/data';
 import { checkIn, runEconomy, type EconomyResult, type PlayerHistory } from '../src/economy';
-import { chooseTrainee } from '../src/policy';
 import { createPlayer } from '../src/state';
+import { PRESETS } from '../src/profiles';
+import { canGrow } from '../src/training';
 import { slotsOfPlayer, type TripContext } from '../src/trips';
 
 function only(archetype: ArchetypeId, others: ArchetypeMix = DEFAULT_MIX): ArchetypeMix {
@@ -43,23 +44,25 @@ describe('archetype policies over 2 weeks', () => {
   });
 
   for (const archetype of ARCHETYPES) {
-    it(`${archetype}: no negative balances, expeditions run, training happens`, () => {
+    it(`${archetype}: no negative balances, expeditions run, creatures level up from what they do`, () => {
       const players = historyOf(result, archetype);
       expect(players.length).toBe(DEFAULT_MIX[archetype]);
       // Two weeks from when the player joined (the newcomer joins in week 4).
       for (const p of players) {
         const weeks = p.weeks.filter((w) => w.week >= p.joinWeek && w.week < p.joinWeek + 2);
         expect(weeks).toHaveLength(2);
-        let spentTraining = 0;
+        let levelUps = 0;
         for (const w of weeks) {
           expect(w.bait).toBeGreaterThanOrEqual(0);
           expect(w.baitEarned).toBeGreaterThan(0);
           expect(w.essence).toBeGreaterThanOrEqual(0);
-          spentTraining += w.baitSpentTraining;
+          // Today's archetypes pack no treats: no Bait goes to levels, which come from the activities.
+          expect(w.baitTreats).toBe(0);
+          levelUps += w.levelUps;
         }
         // Trips are free and supplies cannot be bought: trips run whatever the Bait.
         expect(weeks[1]?.trips ?? 0).toBeGreaterThan(0);
-        expect(spentTraining).toBeGreaterThan(0);
+        expect(levelUps).toBeGreaterThan(0);
         // Expeditions brought new species or fusions beyond the starter.
         expect(weeks[1]?.speciesOwned ?? 0).toBeGreaterThan(1);
         expect(weeks[1]?.maxLevel ?? 0).toBeGreaterThan(1);
@@ -107,15 +110,16 @@ describe('check-in', () => {
     day: Math.floor(hour / 24),
     weekIndex: 0,
     catches: createSeededRng(`${seed}:catches`),
+    talents: createSeededRng(`${seed}:talents`),
     trip: createSeededRng(`${seed}:trip`),
   });
 
-  it('never overspends and accounts for every Bait spent (all of it goes to training)', () => {
+  it('never overspends: Bait buys no levels, and without a treat policy none is spent at a check-in', () => {
     for (const bait of [0, 9, 10, 29, 60, 150, 400, 5000]) {
       const p = player(bait);
-      checkIn(p, 1, tripCtx(9, `ci-${String(bait)}`));
-      expect(p.bait).toBeGreaterThanOrEqual(0);
-      expect(p.week.baitSpentTraining).toBe(bait - p.bait);
+      checkIn(p, tripCtx(9, `ci-${String(bait)}`));
+      expect(p.bait).toBe(bait);
+      expect(p.week.baitTreats).toBe(0);
       expect(p.expeditions.length).toBeLessThanOrEqual(slotsOfPlayer(p));
       const explorers = new Set(p.expeditions.map((e) => e.explorerId));
       expect(explorers.size).toBe(p.expeditions.length);
@@ -124,12 +128,12 @@ describe('check-in', () => {
 
   it('sends a trip into the one slot of a new player, with no Bait too (trips are free)', () => {
     const rich = player(300);
-    checkIn(rich, 1, tripCtx(9, 'rich'));
+    checkIn(rich, tripCtx(9, 'rich'));
     expect(rich.expeditions).toHaveLength(1);
     const broke = player(0);
-    checkIn(broke, 1, tripCtx(9, 'broke'));
+    checkIn(broke, tripCtx(9, 'broke'));
     expect(broke.expeditions).toHaveLength(1);
-    expect(broke.week.trainings).toBe(0);
+    expect(broke.week.levelUps).toBe(0);
   });
 
   it('claims trips, using the first-expedition zipmouse rule and fusing duplicates', () => {
@@ -144,7 +148,7 @@ describe('check-in', () => {
       startHour: 9,
       endsAtHour: 21,
     });
-    checkIn(p, 1, tripCtx(9 + 24, 'claim'));
+    checkIn(p, tripCtx(9 + 24, 'claim'));
     expect(p.firstExpeditionDone).toBe(true);
     expect(p.creatures.some((c) => c.line === 'zipmouse')).toBe(true);
     expect(p.stats.trips_finished).toBe(1);
@@ -158,46 +162,62 @@ describe('check-in', () => {
     c.level = 15;
     c.fusionCount = 3;
     p.essence = 25;
-    checkIn(p, 15, tripCtx(9, 'evolve'));
+    checkIn(p, tripCtx(9, 'evolve'));
     expect(c.speciesId).toBe('tidewing');
     expect(c.fusionCount).toBe(3);
     expect(p.essence).toBe(5);
     expect(p.week.evolutions).toBe(1);
   });
 
-  it('does not evolve without Essence, and then does not train a capped creature', () => {
+  it('does not evolve without Essence, and the capped creature banks its experience until it does', () => {
     const p = player(500);
     const c = p.creatures[0];
     if (c === undefined) throw new Error('no creature');
     c.level = 15;
+    c.ribbons = 1;
+    c.exp = expToNext(15);
     p.essence = 19;
-    checkIn(p, 15, tripCtx(9, 'noevolve'));
+    checkIn(p, tripCtx(9, 'noevolve'));
     expect(c.speciesId).toBe('splashet');
     expect(c.level).toBe(15);
+    expect(canGrow(c)).toBe(false);
+    // With the Essence it evolves at the next check-in and the bank is spent at once.
+    p.essence = 20;
+    checkIn(p, tripCtx(9, 'evolve-later'));
+    expect(c.speciesId).toBe('tidewing');
+    expect(c.level).toBe(16);
+  });
+
+  it('a profile that packs treats pays 3 + half the level in Bait as a long trip starts, and the trip pays double', () => {
+    const profile = { ...PRESETS['min-maxer'], treats: 'long' as const, trainFocus: 3 as const };
+    const p = createPlayer('p01', 'P', 'daily', 1, profile);
+    p.joined = true;
+    p.bait = 100;
+    p.creatures.push({
+      id: 'p01/splashet',
+      line: 'splashet',
+      speciesId: 'splashet',
+      level: 9,
+      fusionCount: 0,
+      exp: 0,
+      ribbons: 0,
+    });
+    p.firstExpeditionDone = true;
+    checkIn(p, tripCtx(9, 'treat'), true, createSeededRng('dice'));
+    const trip = p.expeditions[0];
+    if (trip === undefined) throw new Error('no trip');
+    // A daily check-in plan sends a long trip only when that pays; whatever length it chose, a treat is
+    // paid exactly when the policy wants one for it.
+    const hours = RULES.expeditions.lengths[trip.length].ms / 3_600_000;
+    expect(trip.treat === true).toBe(hours >= 12);
+    expect(p.bait).toBe(trip.treat === true ? 100 - (3 + Math.ceil(9 / 2)) : 100);
+    expect(p.week.baitTreats).toBe(100 - p.bait);
   });
 });
 
 describe('policy pieces', () => {
-  it('pushes the furthest-along creature towards its evolution, else trains the weakest', () => {
-    const mk = (line: string, level: number) => ({
-      id: `p/${line}`,
-      line,
-      speciesId: line,
-      level,
-      fusionCount: 0,
-    });
-    // Coralynx has no evolution; Stormray and Cindle do. Of those, Cindle is further along.
-    const creatures = [mk('coralynx', 6), mk('stormray', 4), mk('cindle', 5), mk('splashet', 1)];
-    expect(chooseTrainee(creatures)?.line).toBe('cindle');
-    // With no evolution to work towards, the weakest of the strongest three goes first.
-    expect(chooseTrainee([mk('coralynx', 10), mk('gaiadrake', 4)])?.line).toBe('gaiadrake');
-    // A creature at its stage-1 cap is skipped.
-    expect(chooseTrainee([mk('cindle', 15), mk('splashet', 3)])?.line).toBe('splashet');
-    expect(chooseTrainee([mk('cindle', 15)])).toBeNull();
-  });
-
-  it('uses the game training costs', () => {
-    expect(trainingCost(1)).toBe(RULES.training.baseCost + RULES.training.perLevel);
+  it('uses the game curve for experience, and the content for the evolution cost', () => {
+    expect(expToNext(1)).toBe(RULES.experience.perLevel + RULES.experience.perLevelSquared);
     expect(RULES.expeditions.lengths.long.rolls).toBeGreaterThanOrEqual(1);
     expect(speciesOf('splashet').evolvesTo?.essence).toBe(20);
   });

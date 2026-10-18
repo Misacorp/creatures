@@ -2,12 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   RULES,
   applyCatchToCollection,
-  canTrain,
+  fuseOnce,
   compareStrength,
   content,
   creaturePower,
   createSeededRng,
-  discountedTrainingCost,
   effectiveStats,
   expeditionCost,
   fusionBonusBp,
@@ -16,7 +15,6 @@ import {
   rollCatches,
   sanitizeNickname,
   strongest,
-  trainingCost,
   type CatchContext,
   type DurationId,
   type Element,
@@ -38,37 +36,6 @@ function baseCtx(overrides: Partial<CatchContext> = {}): CatchContext {
 }
 
 const catchableLines = content.creatures.filter((c) => c.catchable).map((c) => c.line);
-
-describe('training', () => {
-  it('costs baseCost + perLevel x level', () => {
-    const { baseCost, perLevel } = RULES.training;
-    for (const level of [1, 14, 29]) {
-      expect(trainingCost(level)).toBe(baseCost + perLevel * level);
-    }
-  });
-
-  it('rejects bad levels', () => {
-    expect(() => trainingCost(0)).toThrow(RangeError);
-    expect(() => trainingCost(1.5)).toThrow(RangeError);
-  });
-
-  it('halves (rounded up) only when more than the discount gap below the median', () => {
-    const gap = RULES.training.discountLevelsBelowMedian;
-    const half = (level: number): number => Math.ceil(trainingCost(level) / 2);
-    expect(discountedTrainingCost(4, 4 + gap + 1)).toBe(half(4)); // gap + 1 below: discount
-    expect(discountedTrainingCost(3, 3 + gap + 1)).toBe(half(3));
-    expect(discountedTrainingCost(5, 5 + gap)).toBe(trainingCost(5)); // exactly gap below: none
-    expect(discountedTrainingCost(5, 5 + gap + 0.5)).toBe(half(5)); // fractional median
-    expect(discountedTrainingCost(20, 10)).toBe(trainingCost(20)); // above the median
-  });
-
-  it('canTrain checks the cap and the away flag', () => {
-    expect(canTrain({ level: 1, levelCap: 15, away: false })).toBe(true);
-    expect(canTrain({ level: 14, levelCap: 15, away: false })).toBe(true);
-    expect(canTrain({ level: 15, levelCap: 15, away: false })).toBe(false);
-    expect(canTrain({ level: 5, levelCap: 15, away: true })).toBe(false);
-  });
-});
 
 describe('expedition config', () => {
   it('has the documented durations, rolls and costs', () => {
@@ -189,13 +156,14 @@ describe('rollCatch', () => {
       return picked;
     }
 
-    it('does not trigger at a streak of 3', () => {
-      const picked = commonsAt(3, 2000);
+    it('does not trigger one below the shield streak', () => {
+      const picked = commonsAt(RULES.catching.dupeShieldStreak - 1, 2000);
       expect(picked.some((id) => id !== 'zipmouse')).toBe(true);
     });
 
-    it('triggers at a streak of exactly 4 and above', () => {
-      for (const streak of [4, 5, 20]) {
+    it('triggers at the shield streak and above', () => {
+      const at = RULES.catching.dupeShieldStreak;
+      for (const streak of [at, at + 1, at + 16]) {
         const picked = commonsAt(streak, 2000);
         expect(picked.length).toBeGreaterThan(1000);
         expect(picked.every((id) => id === 'zipmouse')).toBe(true);
@@ -360,35 +328,33 @@ describe('fusion', () => {
     });
   });
 
-  it('fuses duplicates up to 5 times, then converts to Bait', () => {
-    let entry = { fusionCount: 0, shiny: false };
-    for (let n = 1; n <= 5; n++) {
-      const out = applyCatchToCollection(entry, { species: { rarity: 'rare' }, shiny: false });
-      expect(out).toEqual({ kind: 'fused', newFusionCount: n, becameShiny: false });
-      entry = { ...entry, fusionCount: n };
+  it('turns a catch of a line the player owns into a duplicate, never into a fusion or Bait', () => {
+    const rare = { species: { rarity: 'rare' as const }, shiny: false };
+    expect(applyCatchToCollection(undefined, rare)).toEqual({ kind: 'new' });
+    for (let n = 0; n <= 5; n++) {
+      expect(applyCatchToCollection({ fusionCount: n, shiny: false }, rare)).toEqual({
+        kind: 'duplicate',
+        becameShiny: false,
+      });
     }
-    expect(applyCatchToCollection(entry, { species: { rarity: 'common' }, shiny: false })).toEqual({
-      kind: 'converted',
-      bait: 5,
-      becameShiny: false,
-    });
-    expect(
-      applyCatchToCollection(entry, { species: { rarity: 'rare' }, shiny: false }),
-    ).toMatchObject({
-      bait: 15,
-    });
-    expect(
-      applyCatchToCollection(entry, { species: { rarity: 'epic' }, shiny: false }),
-    ).toMatchObject({
-      bait: 40,
-    });
+  });
+
+  it('steps a fusion one at a time up to 5, then offers none', () => {
+    let count = 0;
+    for (let n = 1; n <= 5; n++) {
+      const next = fuseOnce(count);
+      expect(next).toBe(n);
+      count = next as number;
+    }
+    expect(fuseOnce(5)).toBeNull();
+    expect(() => fuseOnce(-1)).toThrow(RangeError);
+    expect(() => fuseOnce(1.5)).toThrow(RangeError);
   });
 
   it('makes the creature shiny from a shiny duplicate, only once', () => {
     const plain = { fusionCount: 2, shiny: false };
     expect(applyCatchToCollection(plain, { species: { rarity: 'epic' }, shiny: true })).toEqual({
-      kind: 'fused',
-      newFusionCount: 3,
+      kind: 'duplicate',
       becameShiny: true,
     });
     const shiny = { fusionCount: 2, shiny: true };
@@ -399,8 +365,7 @@ describe('fusion', () => {
     });
     const maxed = { fusionCount: 5, shiny: false };
     expect(applyCatchToCollection(maxed, { species: { rarity: 'epic' }, shiny: true })).toEqual({
-      kind: 'converted',
-      bait: 40,
+      kind: 'duplicate',
       becameShiny: true,
     });
   });

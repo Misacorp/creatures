@@ -11,11 +11,12 @@ import {
   startDungeonRun,
 } from './dungeon-api';
 import { initialScreen, msUntilReset, RESET_GRACE_MS } from './dungeon-flow';
-import { completeTeam, type Slots } from './dungeon-team';
+import { buildRunRequest, completeTeam, type Slots } from './dungeon-team';
 import { dungeonErrorText, isStaleDungeonError } from './dungeon-text';
 import type { DungeonReplay, DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { clockOffset } from './game';
 import { useActionRunner } from './use-action-runner';
+import type { Forecast } from './weather-types';
 
 type View =
   | { kind: 'loading' }
@@ -33,6 +34,8 @@ type View =
  */
 export function Dungeon({
   creatures,
+  forecast,
+  bait,
   draft,
   onDraftChange,
   onRunStarted,
@@ -40,6 +43,10 @@ export function Dungeon({
   onRunFinished,
 }: {
   creatures: readonly Creature[];
+  /** The valley's sky for today and tomorrow, for the one line on the pre-run card (null: none loaded). */
+  forecast: Forecast | null;
+  /** The player's Bait: a treat for a creature of the team costs some of it. */
+  bait: number;
   /** The setup row of this session, kept by the game across tab switches (null: none). */
   draft: Slots | null;
   /** The setup row changed. */
@@ -139,12 +146,18 @@ export function Dungeon({
     );
   }
 
-  async function enter(slots: Slots): Promise<void> {
+  async function enter(slots: Slots, treats: ReadonlySet<string>): Promise<void> {
     const team = completeTeam(slots);
     if (today === null || team === null) return;
-    // One key per distinct run: a retry of the same picks reuses it, other picks get their own.
-    await runner.runKeyed(ActionIds.dungeonRun(team), async (key) => {
-      const answer = await startDungeonRun({ team, idempotencyKey: key });
+    const request = buildRunRequest(slots, '', treats);
+    const picked = request?.treats ?? [];
+    // One key per distinct run: a retry of the same picks (and treats) reuses it, other picks get their own.
+    await runner.runKeyed(ActionIds.dungeonRun(team, picked), async (key) => {
+      const answer = await startDungeonRun({
+        team,
+        ...(picked.length === 0 ? {} : { treats: picked }),
+        idempotencyKey: key,
+      });
       onRunStarted();
       if (unmounted.current) return;
       accept(answer.today, 'keep');
@@ -199,14 +212,16 @@ export function Dungeon({
       {view.kind === 'setup' && (
         <DungeonSetup
           today={today}
+          forecast={forecast}
           creatures={creatures}
+          bait={bait}
           busy={busy}
           error={error}
           draft={draft}
           onDraftChange={onDraftChange}
           saveDraft={(team) => saveDungeonTeam({ team })}
-          onEnter={(slots) => {
-            void enter(slots);
+          onEnter={(slots, treats) => {
+            void enter(slots, treats);
           }}
           onSeeLast={() => {
             if (today.last !== null) setView({ kind: 'results', run: today.last });

@@ -90,18 +90,18 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
     );
     io.out('');
     io.out(
-      'Worn items on the team at the last week (rarity mix, level, enchanted, power, bag, blueprints, parts):',
+      'Worn items on the team at the last week (rarity mix, item level, power, bag, blueprints, parts):',
     );
     for (const r of wornItems(on)) {
       const p = (x: number): string => `${(x * 100).toFixed(0)}%`;
       io.out(
-        `  ${r.archetype.padEnd(8)} common ${p(r.rarity.common)} rare ${p(r.rarity.rare)} epic ${p(r.rarity.epic)} festival ${p(r.rarity.festival)} | level ${r.level.toFixed(1)} | enchanted ${p(r.enchanted)} | power +${r.power.toFixed(1)} | bag ${r.bag.toFixed(1)} | blueprints ${r.blueprints.toFixed(1)} | scrap ${r.scrap.toFixed(0)} shards ${r.shards.toFixed(0)} glimmer ${r.glimmer.toFixed(1)}`,
+        `  ${r.archetype.padEnd(8)} common ${p(r.rarity.common)} rare ${p(r.rarity.rare)} epic ${p(r.rarity.epic)} festival ${p(r.festival)} | level ${r.level.toFixed(1)} | power +${r.power.toFixed(1)} | bag ${r.bag.toFixed(1)} | blueprints ${r.blueprints.toFixed(1)} | scrap ${r.scrap.toFixed(0)} shards ${r.shards.toFixed(0)} glimmer ${r.glimmer.toFixed(1)}`,
       );
     }
     for (const a of ARCHETYPES) {
       io.out('');
       io.out(
-        `${ARCHETYPE_CONFIG[a].label}: week | gear power | share | team power (today) | upgrade levels | crafted | skill | Essence held (today) | Essence spent on gear | scrap`,
+        `${ARCHETYPE_CONFIG[a].label}: week | gear power | share | team power (today) | item levels | crafted | skill | Essence held (today) | scrap`,
       );
       for (let week = 1; week <= weeks; week++) {
         const w = weekly(on, a, week);
@@ -121,11 +121,9 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
             1,
           )} | ${avg((r) => r.crafted).toFixed(1)} | ${avg((r) => r.skillLevel).toFixed(1)} | ${avg(
             (r) => r.essence,
-          ).toFixed(
+          ).toFixed(0)} (${avgOff((r) => r.essence).toFixed(0)}) | ${avg((r) => r.scrap).toFixed(
             0,
-          )} (${avgOff((r) => r.essence).toFixed(0)}) | ${avg((r) => r.essenceSpentGear).toFixed(0)} | ${avg(
-            (r) => r.scrap,
-          ).toFixed(0)}`,
+          )}`,
         );
       }
     }

@@ -17,15 +17,16 @@ import {
   skillLevel,
   createCryptoRng,
   isRoomSpotId,
-  type GearStat,
+  itemLines,
   type Rng,
 } from '@creatures/game';
 import {
   openJobsByCreature,
-  primaryOf,
   rowToItem,
+  viewOrSkip,
   wornGearView,
   wornOnCreatures,
+  wornRows,
   type WornGear,
 } from './gear-store';
 import type { LedgerStorage } from './ledger';
@@ -35,11 +36,11 @@ import { GameError, atomically, type Outcome } from './outcome';
 export const ROOM_MAX_USERS = 25;
 
 /**
- * The worn item as the room shows it: the state view's `Creature.gear` plus the main stat it gives now
- * (the same rule as the owner's gear view), so a guild-mate's popover can say "+8.5% ATK" without the
+ * A worn item as the room shows it: the state view's `Creature.gear` plus the text of its lines (the
+ * same text as the owner's gear view), so a guild-mate's popover can say "Attack +6%" without the
  * owner's gear list.
  */
-export type RoomGear = WornGear & { primary: { stat: GearStat; bp: number } };
+export type RoomGear = WornGear & { lines: string[] };
 
 /** One creature of a resident, as the room and its popover show it. */
 export interface RoomCreature {
@@ -52,8 +53,8 @@ export interface RoomCreature {
   quirk: string | null;
   craftingLevel: number;
   explorerRank: number;
-  /** The item it wears, or null. */
-  gear: RoomGear | null;
+  /** The items it wears, one per slot. */
+  gear: RoomGear[];
 }
 
 export interface Resident {
@@ -276,7 +277,6 @@ export class Lounge {
     const worn = wornOnCreatures(this.sql, ids);
     return new Map(
       rows.map((row) => {
-        const wearing = worn.get(row.id);
         return [
           row.id,
           {
@@ -289,10 +289,13 @@ export class Lounge {
               row.quirk_id !== null && quirkText(row.quirk_id) !== undefined ? row.quirk_id : null,
             craftingLevel: skillLevel(crafting.get(row.id) ?? 0),
             explorerRank: explorerRank(explorer.get(row.id) ?? 0),
-            gear:
-              wearing === undefined
-                ? null
-                : { ...wornGearView(wearing), primary: primaryOf(rowToItem(wearing)) },
+            // An item the content cannot read is left out of the room, not the whole room.
+            gear: wornRows(worn.get(row.id)).flatMap((item) =>
+              viewOrSkip('worn item', () => ({
+                ...wornGearView(item),
+                lines: itemLines(rowToItem(item)).map((l) => l.text),
+              })),
+            ),
           },
         ] as const;
       }),

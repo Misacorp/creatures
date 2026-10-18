@@ -7,14 +7,15 @@ import type { Tab } from '../tabs';
 import type { Field, Option, ToolSpec } from './forms';
 import {
   BASE_OPTIONS,
+  BOON_OPTIONS,
   BOSS_OPTIONS,
   DESTINATION_OPTIONS,
-  ENCHANT_OPTIONS,
   GATE_OPTIONS,
   GOAL_OPTIONS,
   JOURNAL_OPTIONS,
   LIMITS,
   MODIFIER_OPTIONS,
+  OMEN_OPTIONS,
   OUTCOME_OPTIONS,
   PART_FIELDS,
   PHASE_OPTIONS,
@@ -160,8 +161,7 @@ const WORKSHOP_SPECS: readonly ToolSpec[] = [
     fields: [
       pick('baseId', 'Base', BASE_OPTIONS),
       pick('rarity', 'Rarity', RARITY_OPTIONS),
-      int('level', 'Level', 0, LIMITS.maxGearLevel, true),
-      pick('enchantId', 'Enchant', ENCHANT_OPTIONS, true),
+      int('itemLevel', 'Item level', 1, LIMITS.maxItemLevel, true),
     ],
   },
 ];
@@ -232,6 +232,24 @@ const DUNGEON_SPECS: readonly ToolSpec[] = [
   },
 ];
 
+/** Sets the valley's Boon and Omen of today or tomorrow, to look at each and to test what it does. */
+const WEATHER_SPECS: readonly ToolSpec[] = (['today', 'tomorrow'] as const).map(
+  (day): ToolSpec => ({
+    tool: 'set-weather',
+    label: `Set ${day}'s sky`,
+    fields: [pick('boon', 'Boon', BOON_OPTIONS), pick('omen', 'Omen', OMEN_OPTIONS)],
+    build: (values) => ({
+      day,
+      boon: values['boon'] ?? '',
+      omen: values['omen'] === 'none' || values['omen'] === undefined ? null : values['omen'],
+    }),
+    hint:
+      day === 'today'
+        ? 'Trips, jobs and runs started now keep it; the calendar shows it.'
+        : 'Shown on the calendar as tomorrow; it counts from the next daily reset.',
+  }),
+);
+
 const RAID_SPECS: readonly ToolSpec[] = [
   { tool: 'raid-phase', label: 'Jump the week to', fields: [pick('to', 'Phase', PHASE_OPTIONS)] },
   { tool: 'raid-resolve', label: 'Resolve now', fields: [pick('phase', 'Phase', RESOLVE_OPTIONS)] },
@@ -281,6 +299,7 @@ export const SECTIONS: readonly SectionDef[] = [
   { id: 'expeditions', title: 'Expeditions', tab: 'expeditions', specs: EXPEDITIONS_SPECS },
   { id: 'dungeon', title: 'Dungeon', tab: 'dungeon', specs: DUNGEON_SPECS },
   { id: 'raid', title: 'Raid', tab: 'raid', specs: RAID_SPECS },
+  { id: 'weather', title: 'Weather', tab: null, specs: WEATHER_SPECS },
   { id: 'analytics', title: 'Analytics', tab: null, specs: ANALYTICS_SPECS },
 ];
 

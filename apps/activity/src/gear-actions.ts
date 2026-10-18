@@ -9,7 +9,7 @@ import type { ActionRunner } from './action-runner';
 import type { GameState } from './api';
 import * as api from './gear-api';
 import type { GearAction } from './gear-api';
-import type { GearState, JobResult } from './gear-types';
+import type { EquipBestResult, GearState, JobResult } from './gear-types';
 
 /** What `Game` gives the actions: how to run a guarded action, and where the answer goes. */
 export interface GearDeps {
@@ -22,7 +22,13 @@ export interface GearDeps {
   /** The server calls, replaceable in tests. */
   server?: Pick<
     typeof api,
-    'equipGear' | 'upgradeGear' | 'dismantleGear' | 'startJob' | 'claimJob'
+    | 'equipGear'
+    | 'equipBestGear'
+    | 'dismissGearNotice'
+    | 'startJob'
+    | 'claimJob'
+    | 'previewCraft'
+    | 'previewDismantle'
   >;
 }
 
@@ -41,23 +47,23 @@ export function createGearActions(deps: GearDeps) {
     /** Wear an item (or take it off with `null`). */
     equip: (gearId: string, creatureId: string | null) =>
       applied(deps.run(() => server.equipGear(gearId, creatureId))),
-    /** Costs Essence and scrap, so a refusal for money says Essence. */
-    upgrade: (gearId: string) =>
-      applied(
-        deps.runKeyed(ActionIds.upgrade(gearId), (key) => server.upgradeGear(gearId, key), {
-          currency: 'Essence',
-        }),
-      ),
-    dismantle: (gearId: string) =>
-      applied(
-        deps.runKeyed(ActionIds.dismantle(gearId), (key) => server.dismantleGear(gearId, key)),
-      ),
+    /** The best item for every slot of these creatures (one or a team); the server picks. */
+    equipBest: (creatureIds: readonly string[]): Promise<EquipBestResult | undefined> =>
+      applied(deps.run(() => server.equipBestGear(creatureIds))),
+    /** Closes the one-time card about the switch to gear v2. */
+    dismissNotice: () => applied(deps.run(() => server.dismissGearNotice())),
     startJob: (request: JobStart) =>
       applied(
         deps.runKeyed(ActionIds.job(request), (key) =>
           server.startJob({ ...request, idempotencyKey: key }),
         ),
       ),
+    /** The exact odds, costs and times of a craft with a creature (changes nothing; the screen shows them as they are). */
+    previewCraft: (creatureId: string, blueprintId: string) =>
+      server.previewCraft(creatureId, blueprintId),
+    /** The refund range, time and blueprint chance of taking these items apart with a creature. */
+    previewDismantle: (creatureId: string, itemIds: readonly string[]) =>
+      server.previewDismantle(creatureId, itemIds),
     claimJob: (jobId: string): Promise<JobResult | undefined> =>
       applied(deps.runKeyed(ActionIds.claimJob(jobId), (key) => server.claimJob(jobId, key))),
   };

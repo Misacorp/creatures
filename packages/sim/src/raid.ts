@@ -9,7 +9,11 @@ import {
   jackpotChanceBp,
   jackpotEssenceFor,
   luckAtRank,
+  mergeMods,
   rollJackpot,
+  weatherBossAttacks,
+  weatherLuck,
+  weatherSheet,
   type BossDef,
   createSeededRng,
   type Element,
@@ -39,6 +43,7 @@ import { arrangeRow, arrangeRowPartial, type Setup } from './formations';
 import { sweepRank } from './sweep-rank';
 import { neutralSupport, studyRules, type RoleStudy } from './role-study';
 import {
+  activeTalentsOf,
   byPowerDesc,
   foldedCreature,
   pickTeam,
@@ -47,6 +52,7 @@ import {
   type OwnedCreature,
 } from './data';
 import type { SimPlayer } from './state';
+import type { RaidWeather } from './weather';
 
 export const STAGES: readonly RaidStage[] = ['phase1', 'phase2', 'finale'];
 
@@ -124,6 +130,8 @@ export interface RaidWeek {
   neutralSupports: boolean;
   /** The combat rules of every fight of the week: the live rules, less any study override. */
   rules: FightRules;
+  /** The weather each stage fights under (the day's Boon and Omen); a stage left out, or null, has none. */
+  weather: RaidWeather;
 }
 
 /**
@@ -258,18 +266,29 @@ function emptyTotals(): PlayerTotals {
 export function slotFor(player: SimPlayer, creatureId: string): FightSlot {
   const c = player.creatures.find((x) => x.id === creatureId);
   if (c === undefined) throw new Error(`player ${player.id} lost creature ${creatureId}`);
+  return slotOfCreature(c, player.id);
+}
+
+/** The fight slot of an owned creature: its stats with the worn items folded in, and its sheet. */
+export function slotOfCreature(c: OwnedCreature, ownerId: string): FightSlot {
   const slot = makeSlot(speciesOf(c.speciesId), {
     id: c.id,
-    ownerId: player.id,
+    ownerId,
     level: c.level,
     fusionCount: c.fusionCount,
   });
-  if (c.item === undefined || c.item === null) return slot;
-  // Gear folds into the stats and the crit bonus, as the worker's `slotFor` does (apps/worker/src/raid-resolve.ts).
+  if (c.items === undefined && activeTalentsOf(c).length === 0) {
+    if (c.mods !== undefined) slot.mods = c.mods;
+    return slot;
+  }
+  // Gear and talents fold into the stats, the crit bonus and the modifier sheet, as the worker's `slotFor` does
+  // (apps/worker/src/raid-resolve.ts): both come from the one pure fold in `@creatures/game`.
   const folded = foldedCreature(c);
   const withGear: FightSlot = { ...slot, stats: folded.stats };
   if (folded.crit === undefined) delete withGear.crit;
   else withGear.crit = folded.crit;
+  const mods = c.mods ?? folded.mods;
+  if (mods !== undefined) withGear.mods = mods;
   return withGear;
 }
 
@@ -322,6 +341,12 @@ export function openRaidWeek(
     arranged?: readonly { setup: Setup; playerIds: ReadonlySet<string> }[];
     /** Study: every player brings a Guard and a Support when they own one (`pickRoleTeam`). */
     bringRoles?: boolean;
+    /**
+     * The weather of the three stages: a fixed set, or a function of the server's rank and whether the week is a
+     * Festival (for the raid sweep and the weather study, which only know the rank once the week is opened).
+     * Absent: no weather.
+     */
+    weather?: RaidWeather | ((rank: number, festival: boolean) => RaidWeather);
   } = {},
 ): RaidWeek {
   if (players.length === 0) throw new RangeError('a raid needs at least one player');
@@ -413,6 +438,13 @@ export function openRaidWeek(
     neutralGuards: options.neutralGuards === true,
     neutralSupports: options.neutralSupports === true,
     rules: studyRules(options.supportFx === undefined ? {} : { supportFx: options.supportFx }),
+    weather:
+      typeof options.weather === 'function'
+        ? options.weather(
+            (options.reward ?? { rank, festival: false }).rank,
+            (options.reward ?? { rank, festival: false }).festival,
+          )
+        : (options.weather ?? {}),
   };
 }
 
@@ -426,17 +458,24 @@ export function fightFor(
   stage: RaidStage,
 ): { fight: FightInput; creatureAbilities: AbilityChoice[] } {
   const byId = new Map(week.players.map((p) => [p.id, p]));
+  // The day's weather goes on every creature's sheet (guests too), as the worker's `buildPhaseInput` puts it.
+  const day = week.weather[stage] ?? null;
   const row = week.row.map((s) => {
     const owner = s.ownerId === null ? undefined : byId.get(s.ownerId);
     const slot = owner === undefined ? s : slotFor(owner, s.id);
-    if (week.neutralGuards && slot.role === 'guard') return neutralGuard(slot);
-    if (week.neutralSupports && slot.role === 'support') return neutralSupport(slot);
-    return slot;
+    const played =
+      week.neutralGuards && slot.role === 'guard'
+        ? neutralGuard(slot)
+        : week.neutralSupports && slot.role === 'support'
+          ? neutralSupport(slot)
+          : slot;
+    const mods = mergeMods(played.mods, weatherSheet(day, played));
+    return mods === undefined ? played : { ...played, mods };
   });
   const creatureAbilities = stage === 'finale' ? creatureAbilityChoices(week, row) : [];
   const floor = phaseFloorHp(week.pool.max, stage);
   const enrage = raidEnrage(stage);
-  const bossAttacks = bossAttacksAtRank(week.rank);
+  const bossAttacks = weatherBossAttacks(day, bossAttacksAtRank(week.rank));
   const fight: FightInput = {
     boss: week.boss,
     bossAtk: week.bossAtk,
@@ -458,7 +497,7 @@ export function fightFor(
     ...(bossAttacks > 1 ? { bossAttacks } : {}),
     ...(week.luck === undefined || !week.luckStages.includes(stage)
       ? {}
-      : { luck: luckAtRank(week.luck, week.rank) }),
+      : { luck: weatherLuck(day, luckAtRank(week.luck, week.rank)) }),
     rules: week.rules,
     // As live play builds it: a phase's floor (a boss that reaches it retreats), the finale's enrage.
     ...(floor > 0 ? { bossHpFloor: floor } : {}),

@@ -176,25 +176,32 @@ describe('the study', () => {
   it('calibrates boss Attack so that more knockouts need a harder boss', () => {
     const cases = buildCases({ ...TINY, maxCases: 0, counts: [7] });
     const luck = parseLuck('critChanceBp=500').luck;
-    // The shipped Attack knocks out fewer than 5 of the 21 creatures on average, and with armored
-    // Guards taking the reflects even a much harder boss rarely passes 9: the targets sit between.
-    const low = calibrateKnockouts(cases, luck, 5, TINY);
-    const high = calibrateKnockouts(cases, luck, 8, TINY);
+    // The tiny run's teams are low level (levels come from experience now, Creatures B), so the shipped
+    // Attack already knocks out several of the 21 creatures: the targets sit above that, and a harder
+    // boss is needed for the higher one.
+    const low = calibrateKnockouts(cases, luck, 10, TINY);
+    const high = calibrateKnockouts(cases, luck, 14, TINY);
     expect(high).toBeGreaterThan(low);
     expect(low).toBeGreaterThanOrEqual(10_000);
   });
 
   it('reports knockouts and guard values for lethality with luck, and keeps the shipped row all or nothing', () => {
-    const result = runLuckStudy(TINY, [parseLuck('critChanceBp=500,bossAtkBp=40000')], {
-      retune: true,
-    });
+    const result = runLuckStudy(TINY, [parseLuck('critChanceBp=500,bossAtkBp=40000')]);
     const [off, hard] = result.rows;
     expect(off?.bossAtkBp).toBe(10_000);
     expect(hard?.bossAtkBp).toBe(40_000);
     const knocked = (r: typeof off) =>
       r?.groups.find((g) => g.week === null && g.boss === null)?.knockouts ?? 0;
     expect(knocked(hard)).toBeGreaterThan(knocked(off));
-    // The retune keeps the mean damage: boss HP follows the damage shift of the group.
+  });
+
+  it('retunes the boss HP to the damage shift of the group, and leaves the shipped row alone', () => {
+    // With the retune the boss HP follows the damage a harder boss costs, so the knockouts need not
+    // rise (a boss that falls sooner has less time to knock anybody out): only the scale is checked.
+    const result = runLuckStudy(TINY, [parseLuck('critChanceBp=500,bossAtkBp=40000')], {
+      retune: true,
+    });
+    const [off, hard] = result.rows;
     for (const g of hard?.groups.filter((x) => x.week === null && x.boss === null) ?? []) {
       expect(hard?.hpScaleBp[g.group]).toBe(Math.round(g.damageShift * 10_000));
     }

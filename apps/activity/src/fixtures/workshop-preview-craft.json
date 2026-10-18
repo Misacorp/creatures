@@ -1,0 +1,68 @@
+{
+  "result": {
+    "kind": "craft",
+    "blueprintId": "kelp-cap",
+    "creatureId": "0006079c-6263-4604-b59e-f1a6a00f42de",
+    "craftingLevel": 1,
+    "itemLevel": 2,
+    "needsCraftingLevel": 1,
+    "locked": false,
+    "marks": 0,
+    "marksMax": 10,
+    "stepUpBp": 0,
+    "options": [
+      {
+        "reach": "none",
+        "unlocked": true,
+        "minLevel": 1,
+        "parts": {
+          "scrap": 6,
+          "tide-shard": 1
+        },
+        "essence": 0,
+        "durationMs": 10800000,
+        "xp": 36,
+        "oddsBp": {
+          "common": 10000,
+          "rare": 0,
+          "epic": 0
+        }
+      },
+      {
+        "reach": "rare",
+        "unlocked": false,
+        "minLevel": 3,
+        "parts": {
+          "scrap": 6,
+          "tide-shard": 1
+        },
+        "essence": 25,
+        "durationMs": 21600000,
+        "xp": 72,
+        "oddsBp": {
+          "common": 4000,
+          "rare": 6000,
+          "epic": 0
+        }
+      },
+      {
+        "reach": "epic",
+        "unlocked": false,
+        "minLevel": 6,
+        "parts": {
+          "scrap": 6,
+          "tide-shard": 1,
+          "glimmer": 1
+        },
+        "essence": 70,
+        "durationMs": 36000000,
+        "xp": 120,
+        "oddsBp": {
+          "common": 1500,
+          "rare": 5500,
+          "epic": 3000
+        }
+      }
+    ]
+  }
+}

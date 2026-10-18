@@ -31,6 +31,8 @@ Misa watches production by playing. Agents also need data to understand **how pe
    - the end-of-trip choice: offered, chosen and its result (goal id, risk, exact odds, worked / failed / declined);
    - journal finds, explorer rank-ups, familiarity stars and slot unlocks (ids and numbers only);
    - train, evolve and fuse;
+   - talents (2026-10-16, Creatures A): a talent rolled (species, talent id, golden, and whether it was the one-time roll for an existing creature), a duplicate settled (Teach, Fuse, Release or Keep, whether the server chose, species, rarity, talent, golden) and a talent slotted from the book (slot);
+   - lure crafts (the Workshop job start carries the Bait it cost);
    - roster opt-out;
    - team and placement changes;
    - ability pick and auto fire toggles;
@@ -103,6 +105,7 @@ Misa's goal: "understand where players are spending their resources", then "extr
      - Expeditions: destination, length and supply mix; push-on offered, chosen and failed; journal finds; explorer rank distribution; slots.
      - Dungeon: runs, clears by depth, depth distribution, retries, streaks.
      - Gear: drops by source and rarity; equip, upgrade and dismantle.
+     - Collection: the one-time `level_reset` (once per converted player: creatures, levels removed, Bait refunded, items unequipped, talents booked; counts only, 2026-10-17). The refunded Bait is the ledger source `level_reset`.
    - **Raid:**
      - clear rates by rank;
      - finale attendance;

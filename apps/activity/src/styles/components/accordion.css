@@ -1,0 +1,269 @@
+/*
+  The Accordion (ui/Accordion.tsx): the one expand and collapse of the game. A raised header button with
+  a chevron, the title and an optional note on the right; the body hangs under it inside the same ink
+  edge. Closed it reads as "tap to open" (chevron pointing right, raised edge, hover and pressed
+  states); open the header is lit (a brighter background and a gold chevron turned down) and the body
+  is attached to it. There is no line under the open header and none at the top of the body: dividers
+  belong between the items inside (`li + li`), never above the first.
+  Three looks: the section (default), compact (inside a card) and nested (inside another accordion,
+  lighter). Built for 390 px: the header is the full width and at least 2.5 rem tall.
+*/
+
+.acc-group {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.acc {
+  background: var(--dusk);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+}
+
+.acc + .acc {
+  margin-top: 0.75rem;
+}
+
+.acc-group > .acc + .acc {
+  margin-top: 0;
+}
+
+.acc-heading {
+  margin: 0;
+  font: inherit;
+}
+
+/* The header: beats the global button rules (min-height, shadow, pressed shift) on purpose. */
+.acc-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.75rem 0.35rem 0.25rem;
+  background: var(--dusk-2);
+  color: var(--bone);
+  font-size: 1.125rem;
+  text-align: left;
+  box-shadow:
+    inset 0 var(--px) 0 0 #3d3570,
+    inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+}
+
+.acc-head:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+
+.acc-head:active:not(:disabled) {
+  background: var(--night);
+  transform: none;
+  box-shadow: inset 0 var(--px) 0 0 var(--ink);
+}
+
+.acc-head:focus-visible {
+  outline: var(--px) solid var(--bone);
+  outline-offset: calc(var(--px) * -2);
+}
+
+.acc-chev-box {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--haze);
+}
+
+.acc-head:hover .acc-chev-box {
+  color: var(--bone);
+}
+
+.acc-chev {
+  display: block;
+  width: calc(var(--px) * 7);
+  height: calc(var(--px) * 4);
+  fill: currentcolor;
+  /* Closed: pointing right. Open: pointing down. */
+  transform: rotate(-90deg);
+}
+
+.acc-head.open .acc-chev {
+  transform: none;
+}
+
+.acc-icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.acc-title {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+  line-height: 1.1;
+}
+
+.acc-meta {
+  flex: none;
+  padding: 0.125rem 0.5rem;
+  background: var(--ink);
+  color: var(--haze);
+  font-size: 1rem;
+  line-height: 1.1;
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+.acc-meta.gold {
+  color: var(--gold);
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+/* Open: the header is lit (a brighter background, a gold chevron turned down); no underline. */
+.acc-head.open {
+  background: var(--mine);
+  box-shadow: inset 0 var(--px) 0 0 #4a4190;
+}
+
+.acc-head.open .acc-chev-box {
+  color: var(--gold);
+}
+
+.acc-body {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+.acc-body[hidden] {
+  display: none;
+}
+
+.acc-clip {
+  min-height: 0;
+}
+
+.acc-content {
+  padding: 0.625rem 0.75rem 0.75rem;
+}
+
+.acc-content > :first-child {
+  margin-top: 0;
+}
+
+.acc-content > :last-child {
+  margin-bottom: 0;
+}
+
+/* Compact: inside a card. Flatter, a quiet line edge, a slightly smaller title. */
+.acc.compact {
+  background: transparent;
+  box-shadow: 0 0 0 2px var(--line);
+}
+
+.acc-head.compact {
+  min-height: 2.5rem;
+  font-size: 1rem;
+  box-shadow: none;
+}
+
+.acc-head.compact:active:not(:disabled) {
+  box-shadow: none;
+}
+
+.acc-head.compact .acc-chev-box {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.acc.compact .acc-content {
+  padding: 0.5rem 0.625rem 0.625rem;
+}
+
+/* Nested: one level inside another accordion; lighter than both. */
+.acc.nested {
+  background: transparent;
+  box-shadow: 0 0 0 2px var(--line);
+}
+
+.acc.nested + .acc.nested {
+  margin-top: 0.5rem;
+}
+
+.acc-head.nested {
+  min-height: 2.5rem;
+  padding-left: 0.125rem;
+  background: transparent;
+  color: var(--haze);
+  font-size: 1rem;
+  box-shadow: none;
+}
+
+.acc-head.nested:active:not(:disabled) {
+  background: var(--dusk-2);
+  box-shadow: none;
+}
+
+.acc-head.nested.open {
+  background: var(--dusk-2);
+  color: var(--bone);
+  box-shadow: none;
+}
+
+.acc-head.nested .acc-chev-box {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.acc.nested .acc-chev {
+  width: calc(var(--px) * 5);
+  height: calc(var(--px) * 3);
+}
+
+.acc.nested .acc-meta {
+  background: transparent;
+}
+
+.acc.nested .acc-content {
+  padding: 0.375rem 0.5rem 0.5rem;
+}
+
+/* A short height and fade; under prefers-reduced-motion nothing moves and a closed body is gone at once. */
+@media (prefers-reduced-motion: no-preference) {
+  .acc-chev {
+    transition: transform 120ms ease-out;
+  }
+
+  .acc-body[data-phase] > .acc-clip {
+    overflow: hidden;
+  }
+
+  .acc-body[data-phase='opening'] {
+    animation: acc-open 150ms ease-out;
+  }
+
+  .acc-body[data-phase='closing'] {
+    animation: acc-close 120ms ease-in forwards;
+  }
+}
+
+@keyframes acc-open {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+
+  to {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+}
+
+@keyframes acc-close {
+  from {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  to {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+}

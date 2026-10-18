@@ -1150,7 +1150,7 @@ export function Stage({
         </div>
         <div class="stage-foe-line">
           <p class="stage-foe-name pix">{boss.name}</p>
-          {foe.element !== 'unknown' && <ElementChip element={foe.element} />}
+          {foe.element !== 'unknown' && <ElementChip element={foe.element} context="boss" />}
         </div>
         <SegmentBar
           size="boss"

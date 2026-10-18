@@ -1,0 +1,40 @@
+[
+  {
+    "route": "POST /api/catches/:id/choose",
+    "status": 409,
+    "body": { "error": "teach_not_offered" }
+  },
+  {
+    "route": "POST /api/catches/:id/choose",
+    "status": 409,
+    "body": { "error": "keep_not_offered" }
+  },
+  { "route": "POST /api/catches/:id/choose", "status": 404, "body": { "error": "not_found" } },
+  { "route": "POST /api/catches/:id/choose", "status": 404, "body": { "error": "not_found" } },
+  { "route": "POST /api/catches/:id/choose", "status": 400, "body": { "error": "invalid_body" } },
+  {
+    "route": "POST /api/creatures/:id/talents/slot",
+    "status": 409,
+    "body": { "error": "already_slotted" }
+  },
+  {
+    "route": "POST /api/creatures/:id/talents/slot",
+    "status": 409,
+    "body": { "error": "slot_closed", "reason": "needs_level_20" }
+  },
+  {
+    "route": "POST /api/creatures/:id/talents/slot",
+    "status": 404,
+    "body": { "error": "not_in_book" }
+  },
+  {
+    "route": "POST /api/creatures/:id/talents/slot",
+    "status": 400,
+    "body": { "error": "invalid_body" }
+  },
+  {
+    "route": "POST /api/creatures/:id/talents/slot",
+    "status": 409,
+    "body": { "error": "insufficient_funds" }
+  }
+]

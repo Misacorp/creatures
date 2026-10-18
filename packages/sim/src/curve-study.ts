@@ -43,6 +43,8 @@ export interface CurveSettings {
   /** The mixes to play: names of `SERVER_MIXES`, or a custom one. */
   mixes: readonly { id: string; mix: ProfileMix }[];
   profiles?: readonly PlayerProfile[];
+  /** Play with the valley's weather (default: on, as shipped); `false` is the study without it (`weather-study.ts`). */
+  weather?: boolean;
 }
 
 /** One raid week of one server, flattened for counting. */
@@ -157,7 +159,7 @@ export function mixProfiles(
 
 /** Plays `servers` servers of one mix and groups their raid weeks. */
 export function runCurveMix(
-  settings: Pick<CurveSettings, 'seed' | 'weeks' | 'servers' | 'income' | 'profiles'>,
+  settings: Pick<CurveSettings, 'seed' | 'weeks' | 'servers' | 'income' | 'profiles' | 'weather'>,
   id: string,
   mix: ProfileMix,
 ): CurveMixResult {
@@ -172,6 +174,7 @@ export function runCurveMix(
       roster: roster.map((profile) => ({ profile })),
       income: settings.income,
       snapshotWeeks: [],
+      ...(settings.weather === false ? { weather: false } : {}),
     });
     raids.push(...flattenRaids(sim));
     const last = sim.raids[sim.raids.length - 1];

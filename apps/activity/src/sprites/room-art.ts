@@ -128,6 +128,13 @@ export function roomScene(phase: RoomPhase): RoomScene {
   };
 }
 
+/**
+ * Where the wall calendar hangs (top-left of its 12x13 page, in room pixels): on the bare wall between the
+ * hanging lamp and the fireplace, just below the title band, clear of the chairs and every creature's
+ * spot (a test checks it). It is a button over the room, not part of the canvases, so it can pop out.
+ */
+export const CALENDAR_SPOT = { x: 153, y: 15, width: 12, height: 13 } as const;
+
 /** The 16 places a creature can sit, spread across the five bays. */
 export const ROOM_SPOTS: readonly RoomSpot[] = [
   // Bay 1: window

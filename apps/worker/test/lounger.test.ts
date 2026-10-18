@@ -1,7 +1,7 @@
-import { ROOM_SPOT_IDS, RULES, createSeededRng, rollGear, type Rng } from '@creatures/game';
+import { ROOM_SPOT_IDS, RULES, createSeededRng, type Rng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { createHandler } from '../src/index';
-import { insertItem } from '../src/gear-store';
+import { giveItem } from './gear-helpers';
 import {
   GUILD_ID,
   ORIGIN,
@@ -142,11 +142,11 @@ interface RoomBody {
       gear: {
         id: string;
         baseId: string;
+        slot: string;
         rarity: string;
-        level: number;
-        enchantId: string | null;
-        primary: { stat: string; bp: number };
-      } | null;
+        itemLevel: number;
+        lines: string[];
+      }[];
     } | null;
     spot: { id: string; at: number } | null;
   }[];
@@ -722,7 +722,7 @@ describe('POST /api/room', () => {
           shiny: false,
           craftingLevel: 1,
           explorerRank: 1,
-          gear: null,
+          gear: [],
         });
         expect(typeof ra.creature?.species).toBe('string');
         expect(typeof ra.creature?.level).toBe('number');
@@ -732,7 +732,7 @@ describe('POST /api/room', () => {
     );
   });
 
-  it('shows the worn item in the shape of the state view, and null when nothing is worn', async () => {
+  it('shows the worn items in the shape of the state view with their line texts, and none when nothing is worn', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -744,60 +744,56 @@ describe('POST /api/room', () => {
           creatureId: string | null,
           baseId: string,
           level: number,
-          enchantId: string | null,
+          lines: [string, number][],
         ): string => {
-          const id = insertItem(
-            ctx.sql,
-            userId,
-            { baseId, rarity: 'rare', rolls: rollGear(createSeededRng(baseId), baseId, 'rare') },
-            'test',
-            T0,
-          );
-          ctx.sql.exec(
-            'UPDATE gear_items SET equipped_on = ?, level = ?, enchant_id = ? WHERE id = ?',
-            creatureId,
-            level,
-            enchantId,
-            id,
-          );
+          const id = giveItem(ctx.sql, userId, baseId, { rarity: 'rare', level, lines, now: T0 });
+          ctx.sql.exec('UPDATE gear_items SET equipped_on = ? WHERE id = ?', creatureId, id);
           return id;
         };
-        const worn = wear(b.id, b.creatureIds[0] as string, 'bark-band', 3, 'steady-hand');
+        const hat = wear(b.id, b.creatureIds[0] as string, 'acorn-cap', 3, [
+          ['attack-local-pct', 0],
+          ['attack-local-flat', 0],
+        ]);
+        const scarf = wear(b.id, b.creatureIds[0] as string, 'patch-scarf', 3, [
+          ['hp-local-pct', 0],
+        ]);
         // An unworn item of Bob's, and an item on his other creature, must not show up.
-        wear(b.id, null, 'pearl-trinket', 0, null);
-        wear(b.id, b.creatureIds[1] as string, 'trail-charm', 0, null);
+        wear(b.id, null, 'kelp-cap', 1, [['attack-local-pct', 0]]);
+        wear(b.id, b.creatureIds[1] as string, 'trail-cap', 1, [['attack-local-pct', 0]]);
         const res = await room(a, [a.id, b.id, c.id]);
         const [ra, rb, rc] = res.body.residents as [
           RoomBody['residents'][number],
           RoomBody['residents'][number],
           RoomBody['residents'][number],
         ];
-        expect(ra.creature?.gear).toBeNull();
-        expect(rc.creature?.gear).toBeNull();
-        const owned = (await b.call('GET', '/api/gear')).body as {
-          items: { id: string; primary: { stat: string; bp: number } }[];
-        };
-        const primary = owned.items.find((i) => i.id === worn)?.primary;
-        expect(primary?.bp).toBeGreaterThan(0);
-        expect(rb.creature?.gear).toEqual({
-          id: worn,
-          baseId: 'bark-band',
-          rarity: 'rare',
-          level: 3,
-          enchantId: 'steady-hand',
-          primary,
-        });
-        // The owner's own state view shows the same item (without the primary stat).
+        expect(ra.creature?.gear).toEqual([]);
+        expect(rc.creature?.gear).toEqual([]);
+        expect(rb.creature?.gear).toEqual([
+          {
+            id: hat,
+            baseId: 'acorn-cap',
+            slot: 'hat',
+            rarity: 'rare',
+            itemLevel: 3,
+            lines: ['+20% Attack (this item)', '+2 Attack (this item)'],
+          },
+          {
+            id: scarf,
+            baseId: 'patch-scarf',
+            slot: 'scarf',
+            rarity: 'rare',
+            itemLevel: 3,
+            lines: ['+20% HP (this item)'],
+          },
+        ]);
+        // The owner's own state view shows the same items (without the line texts).
         const state = (await b.call('GET', '/api/state')).body as {
           creatures: { id: string; gear: unknown }[];
         };
-        expect(state.creatures.find((x) => x.id === b.creatureIds[0])?.gear).toEqual({
-          id: worn,
-          baseId: 'bark-band',
-          rarity: 'rare',
-          level: 3,
-          enchantId: 'steady-hand',
-        });
+        expect(state.creatures.find((x) => x.id === b.creatureIds[0])?.gear).toEqual([
+          { id: hat, baseId: 'acorn-cap', slot: 'hat', rarity: 'rare', itemLevel: 3 },
+          { id: scarf, baseId: 'patch-scarf', slot: 'scarf', rarity: 'rare', itemLevel: 3 },
+        ]);
       },
       { loungerRng: scriptedRng([0, 0, 0]) },
     );

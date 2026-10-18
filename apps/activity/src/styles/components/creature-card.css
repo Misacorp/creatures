@@ -27,15 +27,21 @@
   margin: 0;
 }
 
-/* The level as a pixel tag. */
+/* The level as a pixel tag (a tappable tag resets its font, so the pixel font is set again here; no "?" is drawn). */
 .lvl-tag {
+  display: inline-flex;
   flex: none;
+  align-items: center;
+  height: 1.5rem;
   padding: 0 0.5rem;
   background: var(--gold);
   box-shadow: 0 0 0 var(--px) var(--ink);
   color: var(--ink);
-  font-size: 0.8125rem;
+  font-family: var(--display);
+  font-size: 1rem;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: 0.02em;
 }
 
 .creature-card .portrait {
@@ -91,4 +97,13 @@ button.lounge-button {
   50% {
     opacity: 0.3;
   }
+}
+
+/* The experience line under the bar and the ribbon button (Creatures B). */
+.exp-line {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.ribbon-help {
+  margin-left: 0.5rem;
 }

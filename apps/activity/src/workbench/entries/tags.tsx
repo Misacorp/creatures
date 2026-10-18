@@ -149,19 +149,29 @@ const elementChip: Entry = {
   file: 'apps/activity/src/sprites/ElementChip.tsx',
   group: 'Tags & chips',
   description:
-    "A creature's element as a coloured chip with its icon, plus its role as a second chip; each opens its glossary entry. It appears on creature cards and popovers.",
+    "An element as a coloured chip with its icon, plus a creature's role as a second chip; each opens its glossary entry. The context says whose element it is, and so what a tap explains: a creature's (cards, popovers), a boss's (boss card, stage, foe popover), a place's (expedition places) or an item's (blueprints).",
   controls: {
     element: { kind: 'select', options: ELEMENT_IDS },
+    context: { kind: 'select', options: ['creature', 'boss', 'place', 'gear'] },
     role: { kind: 'select', options: [NONE, ...ROLE_IDS] },
     as: { kind: 'select', options: ['tag', 'button'] },
   },
-  defaults: { element: 'tide', role: 'setter', as: 'tag' },
-  presets: ELEMENT_IDS.map((element) => ({ name: element, props: { element } })),
+  defaults: { element: 'tide', context: 'creature', role: 'setter', as: 'tag' },
+  presets: [
+    ...ELEMENT_IDS.map((element) => ({ name: element, props: { element } })),
+    { name: 'Ember boss', props: { element: 'ember', context: 'boss', role: NONE } },
+    { name: 'Ember place', props: { element: 'ember', context: 'place', role: NONE } },
+    { name: 'Ember gear', props: { element: 'ember', context: 'gear', role: NONE } },
+  ],
   render: (p) => {
     const role = str(p, 'role');
+    const context = str(p, 'context');
     return (
       <ElementChip
         element={str(p, 'element')}
+        context={
+          context === 'boss' || context === 'place' || context === 'gear' ? context : 'creature'
+        }
         {...(role === NONE ? {} : { role })}
         as={str(p, 'as') === 'button' ? 'button' : 'tag'}
       />
@@ -220,7 +230,7 @@ const rarityTag: Entry = {
   file: 'apps/activity/src/GearArt.tsx',
   group: 'Tags & chips',
   description:
-    'The rarity of a gear item (Common, Rare, Epic or Festival) as a tag with its own colour; it is on item cards and in loot lists.',
+    'The rarity of a gear item (Common, Rare or Epic) as a tag with its own colour; it is on item cards and in loot lists. A Festival piece also carries its own Festival tag.',
   controls: { rarity: { kind: 'select', options: RARITIES } },
   defaults: { rarity: 'rare' },
   presets: RARITIES.map((rarity) => ({ name: rarity, props: { rarity } })),

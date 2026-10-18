@@ -71,21 +71,37 @@ describe('what the chosen supplies add to the haul', () => {
   it('counts the catch rolls a map scrap adds, and marks the row as raised', () => {
     const plain = row(expectedHaul('long', 'tide', []), 'catch');
     const mapped = row(expectedHaul('long', 'tide', ['map-scrap-basic']), 'catch');
-    expect(plain.detail).toBe('1 catch roll');
-    expect(mapped.detail).toBe('2 catch rolls');
-    expect(mapped.level).toBeGreaterThan(plain.level);
+    expect(plain.detail).toMatch(/^1 catch roll, each (rarely|sometimes|often|very often) brings/);
+    expect(mapped.detail).toMatch(/^2 catch rolls, each /);
+    expect(mapped.level).toBeGreaterThanOrEqual(plain.level);
     expect(plain.boosted).toBe(false);
     expect(mapped.boosted).toBe(true);
   });
 
-  it('makes rarer finds likelier with a lure, the better tier more so', () => {
-    const none = row(expectedHaul('short', 'tide', []), 'rarity');
-    const basic = row(expectedHaul('short', 'tide', ['lure-basic']), 'rarity');
-    const great = row(expectedHaul('short', 'tide', ['lure-great']), 'rarity');
-    expect(basic.level).toBeGreaterThan(none.level);
-    expect(great.level).toBeGreaterThanOrEqual(basic.level);
+  it('says in words how often a roll brings a creature, and a lure raises it', () => {
+    const none = row(expectedHaul('short', 'tide', []), 'catch');
+    const great = row(expectedHaul('short', 'tide', ['lure-great']), 'catch');
+    expect(none.detail).toContain('each rarely brings a creature');
+    expect(great.detail).not.toContain('each rarely');
+    expect(great.level).toBeGreaterThanOrEqual(none.level);
     expect(great.boosted).toBe(true);
     expect(none.boosted).toBe(false);
+  });
+
+  it('adds a "New faces" row only when a lure is carried, the better tier more so', () => {
+    expect(expectedHaul('short', 'tide', []).some((r) => r.key === 'fresh')).toBe(false);
+    const basic = row(expectedHaul('short', 'tide', ['lure-basic']), 'fresh');
+    const great = row(expectedHaul('short', 'tide', ['lure-great']), 'fresh');
+    expect(basic.level).toBeGreaterThan(0);
+    expect(great.level).toBeGreaterThan(basic.level);
+    expect(great.boosted).toBe(true);
+  });
+
+  it('leaves the rare-find row to the length (a lure does not make rarer creatures)', () => {
+    const none = row(expectedHaul('short', 'tide', []), 'rarity');
+    const great = row(expectedHaul('short', 'tide', ['lure-great']), 'rarity');
+    expect(great.level).toBe(none.level);
+    expect(great.boosted).toBe(false);
   });
 
   it('raises the parts and the supply find with a satchel', () => {

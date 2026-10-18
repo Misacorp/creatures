@@ -36,16 +36,75 @@ export const RULES = {
    * calendar date on which it starts, so 12:00 on the 14th still belongs to the 13th's game day.
    */
   daily: { reset: { hour: 13, minute: 37 } },
-  training: {
+  /**
+   * Boons and Omens (docs/design/gear-and-creatures-v2.md section 10): at every daily reset the valley
+   * gets one Boon and, from Boss Rank 3, one Omen, drawn a day ahead. `tiers` give their strength by the
+   * server's Boss Rank (the last row whose `fromRank` is reached): `boonBp` and `omenBp` are the multiplier
+   * on every number of the day's Boon and Omen in basis points (10000 is x1; `omenBp` 0 means no Omen). A
+   * wild Omen (rank `wildFromRank` and up, at most one a raid week, never in a Festival week, drawn a day
+   * ahead) replaces the day's Omen with chance `wildChanceBp`. Days older than `keepDays` are forgotten.
+   * Starting values; the sim reports what they do to the raid (docs/balance/log.md B-017).
+   */
+  weather: {
+    /** How strong the day's Boon and Omen are, by the server's Boss Rank: the row with the highest `fromRank` reached counts. */
+    tiers: [
+      { fromRank: 1, boonBp: 10_000, omenBp: 0 },
+      { fromRank: 3, boonBp: 10_000, omenBp: 10_000 },
+      { fromRank: 6, boonBp: 12_500, omenBp: 15_000 },
+      { fromRank: 10, boonBp: 15_000, omenBp: 20_000 },
+      { fromRank: 14, boonBp: 15_000, omenBp: 25_000 },
+    ],
+    /** The Boss Rank from which a wild Omen can replace the day's Omen. */
+    wildFromRank: 10,
+    /** The chance that a day a wild Omen may be drawn for draws one (basis points). */
+    wildChanceBp: 2_000,
+    /** Days of drawn weather the server keeps; older days are forgotten. */
+    keepDays: 30,
+  },
+  /**
+   * Creature experience (docs/design/gear-and-creatures-v2.md section 9, "Creatures B"): levels come from
+   * what a creature does, never from Bait. Experience from level L to L + 1 is `perLevel x L +
+   * perLevelSquared x L x L` (27 at level 1, 450 at 10, 1,300 at 20; about 28,000 from 1 to 30). Starting
+   * values, tuned with the journey sim to the starting pace of the design (docs/balance/log.md B-016): the
+   * design's first numbers were 10 / 30 / 60 / 120 for a trip, 20 and 20 for the dungeon, 50 / 50 / 100 for
+   * the raid and 4 an hour for a job; the pace needs about twice as much from trips and jobs, three times
+   * from the dungeon and four times from the raid. There is no catch-up bonus (2026-10-16).
+   */
+  experience: {
+    perLevel: 25,
+    perLevelSquared: 2,
+    /** No levels past this (the Gold Ribbon is the reward for reaching it). */
+    maxLevel: 30,
+    /** Experience per creature for a finished trip, by length (a recall or a failed trip pays none). */
+    trip: { short: 20, medium: 60, long: 120, day: 240 },
+    /** The daily dungeon: per room cleared, and on top of that for clearing the whole run. Depth adds nothing. */
+    dungeon: { perRoom: 60, fullClear: 60 },
+    /** Raid stages, per creature in the fight: the stage's experience, times `clearedBp` when it was cleared. */
+    raid: { phase1: 200, phase2: 200, finale: 400, clearedBp: 15_000 },
+    /** A Workshop job: experience per hour of its nominal work time. */
+    workshopPerHour: 8,
     /**
-     * Cost to go from level L to L+1 is baseCost + perLevel * L. Tuned by the balance simulator
-     * (docs/balance/report-2026-10-11.md): a casual player can take a first creature to its
-     * evolution level within four weeks.
+     * Treats (a per-creature checkbox when an activity starts): the activity's experience for that
+     * creature is multiplied by `multiplier`, and the treat costs `baitBase + ceil(level / 2)` Bait, paid
+     * when the activity starts. Raids take no treats.
      */
-    baseCost: 3,
-    perLevel: 2,
-    /** Half price while level < serverMedianLevel - discountLevelsBelowMedian. */
-    discountLevelsBelowMedian: 5,
+    treat: { multiplier: 2, baitBase: 3 },
+    /**
+     * The ribbons that gate a creature: it stops at `level` until the ribbon is earned. Materials only:
+     * scrap, shards of the creature's element, glimmer, and finished trips (the creature's own). Gold
+     * is the reward for reaching `maxLevel` and costs nothing.
+     */
+    ribbons: [
+      { id: 'bronze', level: 10, scrap: 6, shards: 2, glimmer: 0, trips: 0 },
+      { id: 'silver', level: 20, scrap: 15, shards: 5, glimmer: 1, trips: 5 },
+    ] as readonly {
+      id: 'bronze' | 'silver';
+      level: number;
+      scrap: number;
+      shards: number;
+      glimmer: number;
+      trips: number;
+    }[],
   },
   expedition: {
     durations: {
@@ -65,16 +124,48 @@ export const RULES = {
     /** Species weight multiplier when the species has the explorer's element. */
     explorerAffinityWeight: 2,
     /** After this many duplicates in a row the next catch avoids owned species if possible. */
-    dupeShieldStreak: 4,
+    dupeShieldStreak: 3,
     /** The first claim of a player's first expedition starts with this line. */
     firstExpeditionLine: 'zipmouse',
+    /**
+     * New-species pity (2026-10-17): the server counts a player's catch rolls. After `newAfter` rolls
+     * without a new species, the next roll brings a creature, and it is a species the player lacks (when
+     * the place has one). Whatever the species, the `creatureEvery`-th roll in a row without any
+     * creature brings one. Counters are stored per player and move with the trip claim.
+     */
+    pity: { newAfter: 60, creatureEvery: 10 },
   },
   fusion: {
     /** Cumulative stat bonus in basis points after N fusions (index = N). */
     cumulativeBonusBp: [0, 600, 1100, 1500, 1800, 2000],
     maxFusions: 5,
-    /** Bait granted for a duplicate once the creature has reached maxFusions. */
-    convertBait: { common: 5, rare: 15, epic: 40 } satisfies Record<Rarity, number>,
+  },
+  /**
+   * Talents and the duplicate choice (docs/design/gear-and-creatures-v2.md section 8, "Creatures A").
+   * Starting values; the sim reports where they land. A talent's own size is content
+   * (`data/talents.json`); what a catch rolls and what a duplicate may become is here.
+   */
+  talents: {
+    /** One catch in `denominator` rolls its talent golden: `numerator / denominator`. */
+    golden: { numerator: 1, denominator: 20 },
+    /** A golden talent is worth this much of a normal one (1.5x), rounded down to a whole percent or point. */
+    goldenBp: 15_000,
+    /** The creature level at which talent slots 1, 2 and 3 open (the unlock ladder, spec 9.3a). */
+    slotLevels: [1, 20, 25] as readonly number[],
+    /** How many slots a species of each rarity has: commons two, rares and epics three. */
+    slotsByRarity: { common: 2, rare: 3, epic: 3 } satisfies Record<Rarity, number>,
+    /** Slotting a talent from a creature's Talent Book costs this much Bait and is instant. */
+    bookSlotBait: 10,
+    /** A player holds at most this many pending duplicates; one more settles the oldest with Recommended. */
+    maxPending: 10,
+    /** At most this many creatures of one line (a Kept duplicate is the second), and only for a branching line. */
+    maxPerLine: 2,
+    /** What releasing a duplicate pays, by rarity: parts, never Bait (a shard is of the creature's element). */
+    release: {
+      common: { scrap: 3, shard: 0, glimmer: 0 },
+      rare: { scrap: 6, shard: 1, glimmer: 0 },
+      epic: { scrap: 12, shard: 2, glimmer: 1 },
+    } satisfies Record<Rarity, { scrap: number; shard: number; glimmer: number }>,
   },
   /**
    * Bait income (docs/design/player-journey-sim.md, decisions 2026-10-15): `dailyAllowance` for
@@ -417,80 +508,136 @@ export const RULES = {
     unlockLevel: 10,
   },
   /**
-   * Gear and crafting v1 (docs/design/gear.md). Starting values, to be tuned by the simulator. All
-   * amounts are integers: percentages and crit points are basis points. Gear never reaches the engine:
-   * `applyGear` folds it into a creature's stats and crit bonus before the fight, with the caps below
-   * (and the engine's own crit caps still apply on top).
+   * Gear and crafting v2 (docs/design/gear-and-creatures-v2.md, "Gear A"). Starting values, tuned
+   * by the simulator at the end of the revamp. All amounts are integers: percentages and points are
+   * basis points. Gear never reaches the engine as items: `wornEffects` folds a creature's items into
+   * its stats, crit bonus and modifier sheet (`SlotMods`) before the fight. Which lines exist, what
+   * they are worth and how heavy they are in each slot is content (`gear-lines.json`); how items roll
+   * is here.
    */
   gear: {
-    /** Upgrade levels: +0 to +5. */
-    maxLevel: 5,
     /** Items one player can own (items in the bag plus crafts still in the workshop). */
     inventoryCap: 60,
     /** Jobs one player can run at the same time. */
     workshopSlots: 2,
-    /** Per rarity: the multiplier (basis points) on the primary roll, and how many secondaries it has. */
-    rarity: {
-      common: { primaryBp: 10_000, secondaries: 0 },
-      rare: { primaryBp: 12_500, secondaries: 1 },
-      epic: { primaryBp: 15_000, secondaries: 2 },
-      // Festival gear has epic power and a look of its own.
-      festival: { primaryBp: 15_000, secondaries: 2 },
-    },
-    /** Roll ranges (inclusive, basis points) per stat: the primary stat of an item and its secondaries. */
-    rolls: {
-      primary: {
-        atk: { min: 520, max: 880 },
-        hp: { min: 760, max: 1_260 },
-        spd: { min: 300, max: 600 },
-        critChance: { min: 150, max: 300 },
-        critDamage: { min: 700, max: 1_300 },
-      },
-      secondary: {
-        atk: { min: 200, max: 500 },
-        hp: { min: 300, max: 700 },
-        spd: { min: 150, max: 300 },
-        critChance: { min: 75, max: 150 },
-        critDamage: { min: 300, max: 600 },
-      },
-    },
-    /** What each upgrade level adds to the primary stat (basis points). */
-    upgradeStepBp: { atk: 250, hp: 260, spd: 70, critChance: 35, critDamage: 200 },
+    /** Item levels run from 1 to this; an item's level is fixed when it drops or is crafted. */
+    maxItemLevel: 20,
     /**
-     * Total bonus caps per creature (basis points): Attack +20%, HP +25%, speed +10%, crit chance
-     * +5 points and crit damage +25 points. The engine's crit caps (`combat.luck`) still apply.
+     * The creature level at which each slot opens (the unlock ladder, v2 spec 9.3a). An item also
+     * needs a wearer whose level is at least the item's level.
      */
-    caps: { atk: 2_000, hp: 2_500, spd: 1_000, critChance: 500, critDamage: 2_500 },
+    slotUnlockLevel: { hat: 1, scarf: 7, charm: 13 },
     /**
-     * Upgrade price from level L to L+1 (index L): Essence and scrap, times the rarity's multiplier
-     * (basis points). Upgrades never fail.
+     * Lines an item rolls by rarity (its base stat or base line is extra; a Festival piece is only a
+     * different base, so it rolls the same number, from its narrow pool, and has its unique line on top).
      */
-    upgrade: {
-      essence: [20, 30, 45, 65, 90],
-      scrap: [2, 3, 5, 8, 12],
-      multiplierBp: { common: 10_000, rare: 15_000, epic: 20_000, festival: 20_000 },
-      /** Share of the scrap spent on upgrades that dismantling returns (basis points). */
-      refundBp: 5_000,
+    rolledLines: { common: 1, rare: 2, epic: 3 },
+    /** The item level that unlocks tiers I to V (also the bands of the base line's value). */
+    tierFromItemLevel: [1, 5, 10, 15, 20],
+    /**
+     * How a tier is rolled: counting down from the best tier the item level allows, these weights
+     * (the best tier first); tiers further down than the list cannot roll. Item level 20: V 15%, IV
+     * 30%, III 30%, II 25%.
+     */
+    tierWeights: [15, 30, 30, 25],
+    /**
+     * Tag weights, as a multiple of a line's weight (10000 = 1x): an element tag multiplies its own
+     * element's four lines, a role-locked Charm its role's lines, and the Crossroads Compass the
+     * utility lines up and every combat line down.
+     */
+    tagWeightBp: { own: 30_000, compassUtility: 30_000, compassCombat: 3_000 },
+    /** The place whose push-on finds are Crossroads Compasses (explorer pieces). */
+    compassPlace: 'old-crossroads',
+    /** The slot of a dropped piece: weights (even by default). */
+    dropSlotWeights: { hat: 1, scarf: 1, charm: 1 },
+    /** A dropped Charm of the finale is role-locked with this chance (1 in 20). */
+    roleCharmBp: 500,
+    /** Item level of each source (the table of spec 2.4). `rank` is the Boss Rank, 0 above is the base. */
+    itemLevel: {
+      welcome: 1,
+      /** Raid finale reward slot: `base + Boss Rank`. */
+      finale: { base: 3 },
+      /** Daily dungeon: `base + floor(depth / depthPerLevel)`, plus `landmarkBonus` at a landmark. */
+      dungeon: { base: 1, depthPerLevel: 2, landmarkBonus: 3 },
+      /** Expedition finds: this times the finder's explorer rank. */
+      expeditionPerRank: 2,
+      /** Crafting: this times the crafter's Crafting level. */
+      craftPerLevel: 2,
+      /**
+       * The conversion of old gear: the higher of `base + Boss Rank` and the best dungeon depth's
+       * drop level, at most `max`. Its lines roll at tier II or better.
+       */
+      convert: { base: 3, max: 12, minTier: 1 },
     },
-    /** What dismantling returns, by rarity (a shard is of the item's tint; neutral items give none). */
-    dismantle: {
-      scrap: { common: 2, rare: 5, epic: 10, festival: 10 },
-      shard: { common: 0, rare: 1, epic: 2, festival: 2 },
-      glimmer: { common: 0, rare: 0, epic: 1, festival: 1 },
-    },
-    /** What crafting from a blueprint costs, by the blueprint's rarity (a shard is of the base's tint). */
+    /**
+     * Crafting (spec section 3). A plain craft costs `scrap` and `shard` of the base's element (every
+     * other base takes `plainScrap` and no shard), makes a Common and takes `hours`. The scrap grows by 1
+     * for every `scrapPerItemLevels` item levels the craft makes (a level 10 crafter makes item level 20:
+     * +5), so the price follows the item and a dismantle, which gives back a fraction of it, can never
+     * pay for a craft (Misa: a dismantle returns "a fraction of its costs"). Reach pays more
+     * for better odds: Essence, shards (of the base's element; the other bases pay them from the
+     * player's biggest piles), glimmer, a longer job and a Crafting level to ask for it. `oddsBp` is the
+     * rarity drawn before the one-step-up chance (whole percents, so the shown odds are exact).
+     */
     craft: {
-      common: { scrap: 9, shard: 0, glimmer: 0 },
-      rare: { scrap: 18, shard: 1, glimmer: 0 },
-      epic: { scrap: 32, shard: 2, glimmer: 1 },
-      festival: { scrap: 32, shard: 2, glimmer: 2 },
+      scrap: 6,
+      shard: 1,
+      plainScrap: 8,
+      hours: 3,
+      scrapPerItemLevels: 4,
+      reach: {
+        rare: {
+          minLevel: 3,
+          essence: 25,
+          shard: 0,
+          glimmer: 0,
+          hours: 6,
+          oddsBp: { common: 4_000, rare: 6_000, epic: 0 },
+        },
+        epic: {
+          minLevel: 6,
+          essence: 70,
+          shard: 0,
+          glimmer: 1,
+          hours: 10,
+          oddsBp: { common: 1_500, rare: 5_500, epic: 3_000 },
+        },
+      },
+      /** Well-thumbed blueprint marks: at most `max`, each adding `upBp` to the one-step-up chance. */
+      marks: { max: 10, upBp: 100 },
     },
-    /** Improve (re-roll one secondary) costs scrap by the item's rarity. */
-    improve: { scrap: { rare: 6, epic: 12, festival: 12 } },
-    /** Enchanting costs glimmer and shards (of the enchant's element). */
-    enchant: { glimmer: 1, shard: 3 },
-    /** Job durations in hours before the crafting skill; the craft time follows the blueprint. */
-    jobHours: { craft: { common: 4, rare: 8, epic: 12, festival: 12 }, improve: 2, enchant: 6 },
+    /**
+     * Dismantling is a Workshop job (spec section 3). The refund of each item is rolled at the claim
+     * inside its rarity's range and does not depend on who works. The scrap range is a share of what
+     * crafting that base at that item level costs in scrap (`craftScrapCost`), never more than half of
+     * it, for crafted and dropped items alike. Commons go in bundles of up to `bundleMax` in one job. A shard is
+     * of the item's element; neutral, explorer and role pieces give a random one.
+     */
+    dismantle: {
+      bundleMax: 5,
+      /** Nominal minutes of a job by the rarity of what is taken apart (a bundle of Commons: one job). */
+      minutes: { common: 15, rare: 60, epic: 120 },
+      /** Inclusive ranges per item: `[min, max]`. */
+      ranges: {
+        common: { shard: [0, 0], glimmer: [0, 0], essence: [0, 0] },
+        rare: { shard: [1, 1], glimmer: [0, 0], essence: [3, 8] },
+        epic: { shard: [1, 2], glimmer: [0, 1], essence: [10, 25] },
+      },
+      /**
+       * The scrap range as a share of the item's craft scrap cost, in basis points: `[min, max]`, rounded
+       * down and at least 1. No rarity reaches 5000 (half), so a craft and a dismantle never pay for each other.
+       */
+      scrapShareBp: {
+        common: [2_500, 4_000],
+        rare: [3_500, 4_500],
+        epic: [4_000, 5_000],
+      },
+      /** The chance (basis points) to learn the item's blueprint (or add a mark): base plus per Crafting level. */
+      learnBp: 600,
+      learnBpPerLevel: 100,
+      /** The least Crafting XP a dismantle job gives (the rest follows `skill.xpPerHour`). */
+      minXp: 6,
+    },
     skill: {
       /** Total XP to reach each level (index 0 is level 1). XP per job is its nominal hours x `xpPerHour`. */
       xpForLevel: [0, 100, 250, 450, 700, 1_000, 1_600, 2_500, 3_800, 5_500],
@@ -506,15 +653,13 @@ export const RULES = {
        *
        * The reward slot (Misa, 2026-10-15): every participant of a won finale gets exactly one reward,
        * a gear piece or, with chance `blueprintBp`, a blueprint they do not know yet (gear when they
-       * know them all). Either way its rarity follows the odds above. Gear arrives pre-upgraded: one
-       * level for every `ranksPerUpgrade` Boss Ranks above rank 1, up to `maxLevel`.
+       * know them all). The piece's item level follows the Boss Rank (`itemLevel.finale`).
        */
       finale: {
         baseBp: { rare: 2_200, epic: 300 },
         perRankBp: { rare: 250, epic: 150 },
         maxBp: { rare: 5_000, epic: 2_500 },
         blueprintBp: 2_500,
-        ranksPerUpgrade: 2,
       },
       /** Scrap for every participant of a cleared phase 1 or 2. */
       phaseScrap: { phase1: 3, phase2: 4 },
@@ -528,12 +673,33 @@ export const RULES = {
         /** Chance of a blueprint. */
         blueprintBp: { short: 200, medium: 800, long: 1_500 },
       },
-      /** Rarity odds (basis points) of a dropped blueprint; the base is picked evenly among that rarity. */
-      blueprintOddsBp: { common: 6_000, rare: 3_500, epic: 500 },
       /** A blueprint the player already knows turns into this much scrap. */
       duplicateBlueprintScrap: 5,
-      /** The welcome kit: one common item, one common blueprint and this much scrap. */
+      /** The welcome kit: one common Hat (item level 1), one blueprint and this much scrap. */
       welcomeScrap: 10,
+    },
+    /**
+     * The old gear's prices, for the one-time conversion only (upgrades, Improve and enchants are
+     * gone): what an upgrade from level L cost (index L), by rarity multiplier, and an enchant.
+     * Converted players get these back as materials.
+     */
+    legacy: {
+      upgrade: {
+        essence: [20, 30, 45, 65, 90],
+        scrap: [2, 3, 5, 8, 12],
+        multiplierBp: { common: 10_000, rare: 15_000, epic: 20_000, festival: 20_000 },
+      },
+      enchant: { glimmer: 1, shard: 3 },
+      /** The nominal hours of the two removed jobs (an Improve or Enchant still running pays the XP of these). */
+      jobHours: { improve: 2, enchant: 6 },
+      /** The nominal hours of a craft by its blueprint's rarity before v2 (a craft running at the switch pays the XP of these). */
+      craftHours: { common: 4, rare: 8, epic: 12, festival: 12 },
+      /** What dismantling an old item returned (the rules before v2), by rarity. */
+      dismantle: {
+        scrap: { common: 2, rare: 5, epic: 10, festival: 10 },
+        shard: { common: 0, rare: 1, epic: 2, festival: 2 },
+        glimmer: { common: 0, rare: 0, epic: 1, festival: 1 },
+      },
     },
   },
   /**
@@ -648,7 +814,10 @@ export const RULES = {
    */
   expeditions: {
     /**
-     * Per trip length: the time, the catch rolls and what a finished trip brings. Rewards grow faster
+     * Per trip length: the time, the catch rolls and what a finished trip brings. A roll brings a
+     * creature only with chance `catchBp` (2026-10-16: trips brought far too many creatures and
+     * duplicates); a roll that brings none brings a small find, `findScrap` scrap. A lure raises the
+     * chance and the odds of a species the player lacks. Rewards grow faster
      * than the hours (the 12 hour trip pays more than three 4 hour ones would): a short trip is the
      * worst way to progress. `loot` are chances in basis points (a value above 10000 is a sure one plus
      * a chance of another); `scrap` is a flat amount; a recalled trip pays only its share of the scrap.
@@ -657,6 +826,8 @@ export const RULES = {
       short: {
         ms: 2 * HOUR_MS,
         rolls: 1,
+        catchBp: 300,
+        findScrap: 1,
         rarityUpBp: 0,
         xp: 4,
         minRank: 1,
@@ -666,6 +837,8 @@ export const RULES = {
       medium: {
         ms: 6 * HOUR_MS,
         rolls: 1,
+        catchBp: 600,
+        findScrap: 1,
         rarityUpBp: 150,
         xp: 110,
         minRank: 1,
@@ -675,6 +848,8 @@ export const RULES = {
       long: {
         ms: 12 * HOUR_MS,
         rolls: 1,
+        catchBp: 1800,
+        findScrap: 2,
         rarityUpBp: 300,
         xp: 300,
         minRank: 1,
@@ -684,6 +859,8 @@ export const RULES = {
       day: {
         ms: 24 * HOUR_MS,
         rolls: 2,
+        catchBp: 1800,
+        findScrap: 2,
         rarityUpBp: 600,
         xp: 700,
         minRank: 5,
@@ -715,9 +892,9 @@ export const RULES = {
         { bait: 4, scrap: 2, glimmer: 0, supplies: [] },
         { bait: 5, scrap: 2, glimmer: 0, supplies: [] },
         { bait: 6, scrap: 3, glimmer: 1, supplies: [] },
-        { bait: 50, scrap: 5, glimmer: 2, supplies: ['lantern-good', 'lure-good'] },
+        { bait: 50, scrap: 5, glimmer: 2, supplies: ['lantern-good', 'satchel-good'] },
         { bait: 75, scrap: 8, glimmer: 3, supplies: ['map-scrap-good', 'satchel-good'] },
-        { bait: 100, scrap: 10, glimmer: 4, supplies: ['lure-great'] },
+        { bait: 100, scrap: 10, glimmer: 4, supplies: ['lantern-great'] },
         { bait: 150, scrap: 15, glimmer: 6, supplies: ['map-scrap-great', 'satchel-great'] },
       ],
     },
@@ -742,12 +919,6 @@ export const RULES = {
      * numbers (about a month, four months and a year of a daily player's trips).
      */
     slots: { secondAfterTrips: 3, thresholds: [26, 72, 103] },
-    /**
-     * A duplicate caught on an expedition after the creature's 5 fusions turns into Bait at this share
-     * (basis points) of the usual `fusion.convertBait`: trips are free now, so what they convert must
-     * not pay for itself (a v1 trip cost about as much Bait as it converted).
-     */
-    convertBp: 6_000,
     /**
      * The end-of-trip choice. A trip offers one with probability `baseOfferBp` plus `perRankBp` for
      * each explorer rank above 1, joined with its supplies' own chances (the best tier is a sure

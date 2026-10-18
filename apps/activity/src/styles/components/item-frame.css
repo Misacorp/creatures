@@ -1,4 +1,8 @@
-/* The frame of an item: every rarity has its own edge, and the pips say the rarity without colour. */
+/*
+  The frame of an item: one single border in the rarity colour (like the creature page's slots and picker).
+  The item's level is the small pixel "Lv 15" in the bottom-right corner (`.item-lv`), the same everywhere.
+  There are no rarity pips: rarity is the border colour and, where there is room, a rarity badge.
+*/
 .item-frame {
   position: relative;
   display: inline-grid;
@@ -6,24 +10,12 @@
   margin: 6px;
   padding: 3px;
   background: var(--ink);
-  box-shadow: 0 0 0 2px var(--rar, var(--haze));
+  box-shadow: 0 0 0 var(--px) var(--rar, var(--haze));
 }
 
-.item-frame.rarity-rare {
-  box-shadow:
-    0 0 0 2px var(--rar),
-    0 0 0 4px var(--ink),
-    0 0 0 6px var(--rar);
-}
-
-.item-frame.rarity-epic {
-  box-shadow:
-    0 0 0 3px var(--rar),
-    0 0 0 5px var(--ink);
-}
-
-.item-frame.rarity-festival {
-  outline: 2px dashed var(--rar);
+/* A Festival piece keeps its rarity's edge and adds a lantern-gold dashed outline of its own. */
+.item-frame.festival {
+  outline: 2px dashed var(--rarity-festival);
   outline-offset: 2px;
 }
 
@@ -31,17 +23,41 @@
   position: relative;
 }
 
-.rarity-mark {
+/*
+  The item level in the image's corner ("Lv 15", pixel font, outlined so it reads on any item colour). Alone in a
+  slot or picker cell it is 1rem; inside a frame it is a little smaller (`--lv-size`), and 1rem again in the big frame
+  of an item card. It never takes taps (the image's own button does).
+*/
+.item-lv {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  padding: 1px 2px;
-  background: var(--ink);
-  color: var(--rar, var(--haze));
-  font-family: var(--display);
-  font-size: 0.5rem;
+  right: 0.3125rem;
+  bottom: 0.1875rem;
+  color: var(--bone);
+  font-size: var(--lv-size, 1rem);
   line-height: 1;
-  letter-spacing: 0;
+  text-shadow: var(--ink-outline-thin);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.item-frame {
+  --lv-size: 0.875rem;
+}
+
+.item-frame .item-lv {
+  right: 2px;
+  bottom: 1px;
+}
+
+.item-frame .item-slot,
+.item-frame canvas.sprite.item-slot {
+  top: 2px;
+  left: 2px;
+}
+
+.item-frame.big,
+.job-reveal .item-frame {
+  --lv-size: 1rem;
 }
 
 .item-frame.empty {
@@ -62,8 +78,38 @@
   margin: 8px;
 }
 
+/* The badges under an item's name: slot, rarity, element. One look; only the rarity's has a colour. */
+.item-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.375rem;
+  color: var(--bone);
+  font-family: var(--display);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
 .rarity-tag {
-  color: var(--rar);
+  color: var(--rar-text, var(--rar));
+}
+
+/*
+  An item's slot as a small icon in the top-left corner of its image (`ItemCorners`), opposite the "Lv 15"; like
+  it, outlined in ink, inset a little in a slot or picker cell and tight in a frame.
+*/
+.item-slot,
+canvas.sprite.item-slot {
+  position: absolute;
+  top: 0.3125rem;
+  left: 0.3125rem;
+  filter: drop-shadow(1px 0 0 var(--ink)) drop-shadow(-1px 0 0 var(--ink))
+    drop-shadow(0 1px 0 var(--ink)) drop-shadow(0 -1px 0 var(--ink));
+  pointer-events: none;
+}
+
+.festival-tag {
+  color: var(--rarity-festival);
 }
 
 .gear-bonus {

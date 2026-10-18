@@ -3,32 +3,35 @@ import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
 import collectionState from '../../activity/src/fixtures/collection-state.json';
 import expeditionClaimLoot from '../../activity/src/fixtures/expedition-claim-loot.json';
-import gearDismantle from '../../activity/src/fixtures/gear-dismantle.json';
 import gearEquip from '../../activity/src/fixtures/gear-equip.json';
+import gearEquipBest from '../../activity/src/fixtures/gear-equip-best.json';
+import gearNotice from '../../activity/src/fixtures/gear-notice.json';
+import gearNoticeDismissed from '../../activity/src/fixtures/gear-notice-dismissed.json';
 import gearErrors from '../../activity/src/fixtures/gear-errors.json';
 import gearReady from '../../activity/src/fixtures/gear-ready.json';
 import gearRequests from '../../activity/src/fixtures/gear-request-bodies.json';
 import gearRunning from '../../activity/src/fixtures/gear-running.json';
 import gearState from '../../activity/src/fixtures/gear-state.json';
 import gearUnequip from '../../activity/src/fixtures/gear-unequip.json';
-import gearUpgrade from '../../activity/src/fixtures/gear-upgrade.json';
 import gearWelcome from '../../activity/src/fixtures/gear-welcome.json';
 import claimCraft from '../../activity/src/fixtures/workshop-claim-craft.json';
-import claimEnchant from '../../activity/src/fixtures/workshop-claim-enchant.json';
-import claimImprove from '../../activity/src/fixtures/workshop-claim-improve.json';
+import claimRetired from '../../activity/src/fixtures/workshop-claim-retired.json';
+import claimDismantle from '../../activity/src/fixtures/workshop-claim-dismantle.json';
+import previewCraft from '../../activity/src/fixtures/workshop-preview-craft.json';
+import previewDismantle from '../../activity/src/fixtures/workshop-preview-dismantle.json';
 import startCraft from '../../activity/src/fixtures/workshop-start-craft.json';
-import startEnchant from '../../activity/src/fixtures/workshop-start-enchant.json';
-import startImprove from '../../activity/src/fixtures/workshop-start-improve.json';
+import startDismantle from '../../activity/src/fixtures/workshop-start-dismantle.json';
 import {
   ClaimJobBodySchema,
-  DismantleBodySchema,
+  DismissNoticeBodySchema,
+  EquipBestBodySchema,
   EquipBodySchema,
+  PreviewBodySchema,
   StartJobBodySchema,
-  UpgradeBodySchema,
 } from '../src/gear-schemas';
 import { runCore } from './helpers';
-import { runExpeditionScenario, runGearScenario } from './gear-scenario';
-import { nextGuild } from './raid-helpers';
+import { runConversionScenario, runExpeditionScenario, runGearScenario } from './gear-scenario';
+import { nextGuild, scriptedThenSeeded } from './raid-helpers';
 
 /**
  * The contract with the client for gear, the workshop and expedition loot. The files in
@@ -75,18 +78,29 @@ describe('the gear fixtures match what the server sends', () => {
     sameShape(r['gear-final'], gearState);
     sameShape(r['gear-equip'], gearEquip);
     sameShape(r['gear-unequip'], gearUnequip);
-    sameShape(r['gear-upgrade'], gearUpgrade);
-    sameShape(r['gear-dismantle'], gearDismantle);
+    sameShape(r['gear-equip-best'], gearEquipBest);
     sameShape(r['job-start-craft'], startCraft);
-    sameShape(r['job-start-improve'], startImprove);
-    sameShape(r['job-start-enchant'], startEnchant);
     sameShape(r['job-claim-craft'], claimCraft);
-    sameShape(r['job-claim-improve'], claimImprove);
-    sameShape(r['job-claim-enchant'], claimEnchant);
+    sameShape(r['job-claim-retired'], claimRetired);
+    sameShape(r['job-start-dismantle'], startDismantle);
+    sameShape(r['job-claim-dismantle'], claimDismantle);
+    sameShape(r['preview-craft'], previewCraft);
+    sameShape(r['preview-dismantle'], previewDismantle);
     // The collection view of the same game: the creature cards carry the gear and the busy state.
     sameShape(r['collection-state'], collectionState);
     // And the errors are the real ones, code for code.
     expect(captured.errors, UPDATE).toEqual(gearErrors);
+  });
+
+  it('has the one-time conversion notice and its dismissal', async () => {
+    const captured = await runCore(nextGuild(), (ctx) => runConversionScenario(ctx), {
+      gearRng: createSeededRng('fixture-gear'),
+    });
+    sameShape(captured.responses['gear-notice'], gearNotice);
+    sameShape(captured.responses['gear-notice-dismissed'], gearNoticeDismissed);
+    // The notice says what happened to the old gear, and is gone once dismissed.
+    expect(gearNotice.notice).not.toBeNull();
+    expect(gearNoticeDismissed.gear.notice).toBeNull();
   });
 
   it('has the expedition claim with its loot', async () => {
@@ -95,7 +109,8 @@ describe('the gear fixtures match what the server sends', () => {
     let i = 0;
     const rest = createSeededRng('fixture-exp');
     const captured = await runCore(nextGuild(), (ctx) => runExpeditionScenario(ctx), {
-      rng: createSeededRng('fixture-catch'),
+      // A catch that is certain (a new creature), so the claim shows a catch next to the loot.
+      rng: scriptedThenSeeded([0, 0, 0, 1], 'fixture-catch'),
       tripRng: createSeededRng('fixture-trip'),
       gearRng: { nextU32: () => script[i++] ?? rest.nextU32() },
     });
@@ -111,16 +126,35 @@ describe('the gear fixtures match what the server sends', () => {
     expect(new Set(gearState.jobs.map((j) => j.status))).toEqual(new Set(['running', 'claimed']));
     expect(new Set(gearReady.jobs.map((j) => j.status))).toContain('ready');
     expect(Object.keys(gearState.parts)).toHaveLength(6);
-    expect(gearState.items.some((i) => i.enchantId !== null)).toBe(true);
     expect(gearState.items.some((i) => i.equippedOn !== null)).toBe(true);
+    expect(gearState.items.some((i) => i.madeBy !== null)).toBe(true);
     expect(gearState.skills.some((s) => s.xp > 0)).toBe(true);
-    // The three kinds of job result.
+    // Every slot and a Festival piece are on show, with their stats and tier pips; a local line says so.
+    expect(new Set(gearState.items.map((i) => i.slot))).toEqual(new Set(['hat', 'scarf', 'charm']));
+    expect(gearReady.items.some((i) => i.festival)).toBe(true);
+    expect(gearState.items.some((i) => i.stats.length >= 3)).toBe(true);
+    expect(gearState.items.every((i) => (i.slot === 'charm') === (i.stats.length === 0))).toBe(
+      true,
+    );
+    expect(gearState.items.some((i) => i.lines.some((l) => l.local))).toBe(true);
+    // A better base asks for a Crafting level.
+    expect(gearState.blueprints.some((b) => b.needsCraftingLevel > 1)).toBe(true);
+    expect(gearState.items.some((i) => i.lines.some((l) => l.tier !== null))).toBe(true);
+    // The job results the client has to draw.
     expect(claimCraft.result.kind).toBe('craft');
-    expect(claimImprove.result.kind).toBe('improve');
-    expect(claimEnchant.result.kind).toBe('enchant');
-    // The collection card shows the worn item and the busy job.
+    expect(claimRetired.result.kind).toBe('retired');
+    expect(claimDismantle.result.kind).toBe('dismantle');
+    // The previews carry every way to craft, each with exact odds that add up, and the refund as a range.
+    expect(previewCraft.result.options.map((o) => o.reach)).toEqual(['none', 'rare', 'epic']);
+    for (const o of previewCraft.result.options) {
+      expect(o.oddsBp.common + o.oddsBp.rare + o.oddsBp.epic).toBe(10_000);
+    }
+    expect(previewDismantle.result.range.scrap.max).toBeGreaterThan(0);
+    // Equip best moved things.
+    expect(gearEquipBest.result.changes.length).toBeGreaterThan(0);
+    // The collection card shows the worn items and the busy job.
     const creatures = collectionState.creatures;
-    expect(creatures.some((c) => c.gear !== null)).toBe(true);
+    expect(creatures.some((c) => c.gear.length > 0)).toBe(true);
     expect(creatures.some((c) => c.busy?.kind === 'job')).toBe(true);
     // The expedition loot has a blueprint and every kind of extra.
     expect(expeditionClaimLoot.result.loot.blueprints).toHaveLength(1);
@@ -130,19 +164,23 @@ describe('the gear fixtures match what the server sends', () => {
     // Errors the client has to write text for.
     const codes = new Set(gearErrors.map((e) => e.body.error));
     for (const code of [
-      'insufficient_funds',
       'insufficient_parts',
       'creature_on_job',
       'creature_away',
       'workshop_full',
       'inventory_full',
-      'item_busy',
       'not_ready',
       'key_conflict',
-      'max_level',
-      'same_enchant',
       'blueprint_unknown',
-      'nothing_to_improve',
+      'item_level_too_high',
+      'slot_locked',
+      'wrong_role',
+      'gear_upgrade_removed',
+      'dismantle_is_a_job',
+      'invalid_bundle',
+      'skill_too_low',
+      'base_locked',
+      'job_kind_removed',
       'invalid_body',
       'not_found',
     ]) {
@@ -156,12 +194,14 @@ describe('the request bodies the client sends', () => {
   const schemaOf: Record<string, v.GenericSchema> = {
     equip: EquipBodySchema,
     unequip: EquipBodySchema,
-    upgrade: UpgradeBodySchema,
-    dismantle: DismantleBodySchema,
+    'equip-best': EquipBestBodySchema,
     'job-craft': StartJobBodySchema,
-    'job-improve': StartJobBodySchema,
-    'job-enchant': StartJobBodySchema,
+    'job-craft-reach': StartJobBodySchema,
+    'job-dismantle': StartJobBodySchema,
+    'preview-craft': PreviewBodySchema,
+    'preview-dismantle': PreviewBodySchema,
     'job-claim': ClaimJobBodySchema,
+    'notice-dismiss': DismissNoticeBodySchema,
   };
 
   it('pass the strict schemas, and no extra key gets through', () => {
@@ -184,11 +224,13 @@ describe('the request bodies the client sends', () => {
     const templates: Record<string, RegExp> = {
       equip: /^\/api\/gear\/ID\/equip$/,
       unequip: /^\/api\/gear\/ID\/equip$/,
-      upgrade: /^\/api\/gear\/ID\/upgrade$/,
-      dismantle: /^\/api\/gear\/ID\/dismantle$/,
+      'equip-best': /^\/api\/gear\/equip-best$/,
       'job-craft': /^\/api\/workshop\/jobs$/,
-      'job-improve': /^\/api\/workshop\/jobs$/,
-      'job-enchant': /^\/api\/workshop\/jobs$/,
+      'job-craft-reach': /^\/api\/workshop\/jobs$/,
+      'job-dismantle': /^\/api\/workshop\/jobs$/,
+      'preview-craft': /^\/api\/workshop\/preview$/,
+      'preview-dismantle': /^\/api\/workshop\/preview$/,
+      'notice-dismiss': /^\/api\/gear\/conversion\/dismiss$/,
       'job-claim': /^\/api\/workshop\/jobs\/ID\/claim$/,
       'expedition-claim': /^\/api\/expeditions\/ID\/claim$/,
     };

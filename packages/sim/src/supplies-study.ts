@@ -62,6 +62,8 @@ export interface StudySettings {
   seeds: number;
   servers: number;
   weeks: number;
+  /** Play with the valley's weather (default: on, as shipped). */
+  weather?: boolean;
 }
 
 /** The numeric fields of a day record. */
@@ -128,6 +130,7 @@ export function runSuppliesStudy(
       mix: DEFAULT_JOURNEY_MIX,
       mixName: 'default',
       noise: false,
+      ...(study.weather === false ? { weather: false } : {}),
     };
     for (let k = 0; k < study.servers; k++)
       journeys.push(...runJourneyServer(settings, k).journeys);
