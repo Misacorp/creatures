@@ -1,4 +1,10 @@
-import { RULES, createCryptoRng, leetBonusForDay, type Rng } from '@creatures/game';
+import {
+  RULES,
+  createCryptoRng,
+  leetBonusForDay,
+  leetPointsForDay,
+  type Rng,
+} from '@creatures/game';
 import * as v from 'valibot';
 import { DailyAllowance } from './allowance';
 import { Analytics } from './analytics';
@@ -28,7 +34,6 @@ import { weatherRoutes } from './weather-routes';
 import { expeditionRoutes } from './expedition-routes';
 import { expeditionsMigration } from './expedition-migration';
 import { collectionRoutes } from './collection-routes';
-import { leetPointsForDay } from './economy';
 import { DevState } from './dev-state';
 import { DevTools, devRoutes, isDevPath } from './dev-tools';
 import { DiscordError, type GuildApi } from './discord';

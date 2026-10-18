@@ -1,8 +1,7 @@
 import { env, exports } from 'cloudflare:workers';
 import { runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { dailyAllowance, leetBonusForDay } from '@creatures/game';
-import { leetPointsForDay } from '../src/economy';
+import { dailyAllowance, leetBonusForDay, leetPointsForDay } from '@creatures/game';
 import { SYNC_BUDGET_MS, type GuildCoreOptions } from '../src/guild-core';
 import {
   DEFAULT_TIMEOUT_MS,

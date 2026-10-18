@@ -41,7 +41,21 @@ export default defineConfig(
     },
   },
   {
-    files: ['**/*.{js,mjs,cjs,ts,tsx}'],
+    // Node scripts written in TypeScript (run with `node --experimental-strip-types`). They sit
+    // outside every tsconfig project, so they get the recommended rules without type information.
+    files: ['**/*.mts'],
+    extends: [tseslint.configs.recommended],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        Buffer: 'readonly',
+        URL: 'readonly',
+      },
+    },
+  },
+  {
+    files: ['**/*.{js,mjs,cjs,ts,tsx,mts}'],
     rules: {
       'no-restricted-properties': [
         'error',

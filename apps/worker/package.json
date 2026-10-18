@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "build": "wrangler deploy --dry-run --outdir dist",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "wrangler types --strict-vars=false --check && tsc --noEmit -p tsconfig.json",
     "test": "vitest run && node --test 'scripts/*.test.mjs'",
     "cf-typegen": "wrangler types --strict-vars=false"
   },

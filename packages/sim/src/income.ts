@@ -1,5 +1,4 @@
-import { dailyAllowance, leetBonusForDay } from '@creatures/game';
-import { baitForDay } from '../../../apps/worker/src/economy';
+import { baitForDay, dailyAllowance, leetBonusForDay } from '@creatures/game';
 
 /**
  * The Bait income models the sims can play (docs/design/player-journey-sim.md, "Income models").
