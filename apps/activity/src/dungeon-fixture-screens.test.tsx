@@ -739,7 +739,7 @@ describe('the Undercroft, with the real answers', () => {
     expect(byName(root, 'button', 'Descend')).toHaveLength(1);
     expect(byName(root, 'button', 'Head Home')).toHaveLength(1);
 
-    // Descend: the captured act, then the level above the boss, labelled, with its entrance next.
+    // Descend: the captured act, then the level below the boss, labelled, with its entrance next.
     page?.click(button(root, 'Descend'));
     await settle();
     expect(sentAct(2).body).toEqual(body('dungeon-act-descend'));

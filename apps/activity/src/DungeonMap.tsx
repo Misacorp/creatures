@@ -28,7 +28,7 @@ interface Props {
   /** The day's map. */
   map: DungeonMapView;
   /**
-   * The Undercroft levels drawn so far, in order (`state.undercroft.maps`): stacked above the floor boss in a
+   * The Undercroft levels drawn so far, in order (`state.undercroft.maps`): stacked below the floor boss in a
    * darker palette, each under a band with its label. Absent or empty: the day's map alone.
    */
   undercroft?: readonly DungeonMapView[] | undefined;
@@ -56,8 +56,8 @@ const PERCENT = (n: number, of: number): string =>
   `${String(Math.round((n / of) * 10_000) / 100)}%`;
 
 /**
- * The day's map: a vertical picture with the floor boss at the top and the entrance floor at the bottom. Once
- * the run has gone down, the Undercroft levels it drew stand above the boss (the map grows upward), each in a
+ * The day's map: a vertical picture with the entrance at the top and the floor boss at the bottom. Once
+ * the run has gone down, the Undercroft levels it drew stand below the boss (the map grows downward), each in a
  * darker band with its label, its floor boss with a pale crown (and a crack mark on a cracked floor); the floor
  * boss (from the depth that opens the Undercroft) and a cracked-floor boss wear a down-arrow badge; a run in
  * the Undercroft is lit across the levels by the server's own list of rooms it may go to.
@@ -132,8 +132,8 @@ export function DungeonMap({
         role="group"
         aria-label={
           deeper
-            ? "Dungeon map. The entrance is at the bottom, the floor boss above it, then the Undercroft's floors going up."
-            : 'Dungeon map. The entrance is at the bottom, the floor boss at the top.'
+            ? "Dungeon map. The entrance is at the top, the floor boss below it, then the Undercroft's floors going down."
+            : 'Dungeon map. The entrance is at the top, the floor boss at the bottom.'
         }
         ref={cssVars({ '--dm-ratio': `${String(layout.width)} / ${String(layout.height)}` })}
       >
@@ -155,13 +155,7 @@ export function DungeonMap({
           {layout.bands.map((band) => (
             <g key={`${band.kind}-${String(band.level)}`}>
               <rect class="dmap-uband" x="0" y={band.y} width={layout.width} height={band.height} />
-              <line
-                class="dmap-useam"
-                x1="0"
-                x2={layout.width}
-                y1={band.y + band.height}
-                y2={band.y + band.height}
-              />
+              <line class="dmap-useam" x1="0" x2={layout.width} y1={band.y} y2={band.y} />
             </g>
           ))}
           {edges.map(({ edge, status }) => (
@@ -211,6 +205,7 @@ export function DungeonMap({
               <li
                 key={node.id}
                 class="dmap-slot"
+                data-node={node.id}
                 ref={cssVars({
                   '--x': PERCENT(at.x, layout.width),
                   '--y': PERCENT(at.y, layout.height),
