@@ -10,6 +10,7 @@ export * from './power';
 export * from './abilities';
 export * from './progression';
 export * from './gear';
+export * from './gear-position';
 export * from './talents';
 export * from './duplicates';
 export * from './dungeon';

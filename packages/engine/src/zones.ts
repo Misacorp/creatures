@@ -69,3 +69,21 @@ export function nearestLivingZone(
   }
   return best;
 }
+
+/**
+ * How a row of `length` slots is cut into the rows the position lines read (`placeRow` of @creatures/game):
+ * `zones` (the raid) makes each zone one row, so a creature's neighbours stop at its zone's edge, as on the
+ * board; `line` (the dungeon and the simulator's reference fights, `FightInput.guardReach: 'adjacent'`) is one
+ * row of every slot. In both, each slot has the zone `zoneOfIndex` gives it (a row of three: one slot each).
+ */
+export function rowLayout(
+  length: number,
+  mode: 'zones' | 'line',
+): { rows: number[][]; zones: Zone[] } {
+  const zones = Array.from({ length }, (_, i) => zoneOfIndex(i, length));
+  const rows =
+    mode === 'line'
+      ? [Array.from({ length }, (_, i) => i)]
+      : ZONES.map((z) => zoneIndices(z, length)).filter((r) => r.length > 0);
+  return { rows, zones };
+}

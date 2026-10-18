@@ -7,7 +7,7 @@
         "shiny": false,
         "firstOnServer": true,
         "outcome": "duplicate",
-        "pendingId": "88b5fb48-5d54-4dfb-ac94-8db1d57b3f8f",
+        "pendingId": "2e702e9d-1571-4945-bb73-74a781b6a89a",
         "talent": {
           "id": "proud-ember",
           "name": "Proud Ember",
@@ -41,7 +41,7 @@
       "rankBefore": 1
     },
     "experience": {
-      "creatureId": "ed95713c-88e0-4006-938e-6dc69231a313",
+      "creatureId": "d84dbb26-6d71-42c3-87a0-46f7b484b9fd",
       "gained": 120,
       "treat": false,
       "levelBefore": 8,
@@ -77,7 +77,7 @@
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "ed95713c-88e0-4006-938e-6dc69231a313",
+        "id": "d84dbb26-6d71-42c3-87a0-46f7b484b9fd",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -150,7 +150,7 @@
         }
       },
       {
-        "id": "8cfcd319-48d3-4dd8-8a68-7104868d5066",
+        "id": "ff106e2c-4333-4daf-902b-b9c3a329763e",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
@@ -223,7 +223,7 @@
         }
       },
       {
-        "id": "7ffe32a3-7d52-4427-a313-c005e3ff94f8",
+        "id": "844bf5f8-b27d-476b-9cc5-076022f6d877",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -298,7 +298,7 @@
     ],
     "pending": [
       {
-        "id": "88b5fb48-5d54-4dfb-ac94-8db1d57b3f8f",
+        "id": "2e702e9d-1571-4945-bb73-74a781b6a89a",
         "species": "cindle",
         "line": "cindle",
         "shiny": false,
@@ -313,8 +313,8 @@
           "idle": false
         },
         "offered": {
-          "teach": ["ed95713c-88e0-4006-938e-6dc69231a313"],
-          "fuse": ["ed95713c-88e0-4006-938e-6dc69231a313"],
+          "teach": ["d84dbb26-6d71-42c3-87a0-46f7b484b9fd"],
+          "fuse": ["d84dbb26-6d71-42c3-87a0-46f7b484b9fd"],
           "release": true,
           "keep": false
         },
@@ -323,15 +323,15 @@
         },
         "recommended": {
           "choice": "teach",
-          "creatureId": "ed95713c-88e0-4006-938e-6dc69231a313"
+          "creatureId": "d84dbb26-6d71-42c3-87a0-46f7b484b9fd"
         }
       }
     ],
     "bookSlotBait": 10,
     "expeditions": [
       {
-        "id": "2bb53cde-b18a-49de-aca8-9a3bcba3fcb3",
-        "creatureId": "ed95713c-88e0-4006-938e-6dc69231a313",
+        "id": "4ad8a755-bb30-4efb-abb5-59ee0e7b4da5",
+        "creatureId": "d84dbb26-6d71-42c3-87a0-46f7b484b9fd",
         "duration": "long",
         "supplies": "basic",
         "kit": [],
@@ -353,7 +353,7 @@
               "shiny": false,
               "firstOnServer": true,
               "outcome": "duplicate",
-              "pendingId": "88b5fb48-5d54-4dfb-ac94-8db1d57b3f8f",
+              "pendingId": "2e702e9d-1571-4945-bb73-74a781b6a89a",
               "talent": {
                 "id": "proud-ember",
                 "name": "Proud Ember",
@@ -387,7 +387,7 @@
             "rankBefore": 1
           },
           "experience": {
-            "creatureId": "ed95713c-88e0-4006-938e-6dc69231a313",
+            "creatureId": "d84dbb26-6d71-42c3-87a0-46f7b484b9fd",
             "gained": 120,
             "treat": false,
             "levelBefore": 8,
@@ -441,7 +441,7 @@
         "holders": ["Player 2"]
       }
     ],
-    "loungerId": "8cfcd319-48d3-4dd8-8a68-7104868d5066",
+    "loungerId": "844bf5f8-b27d-476b-9cc5-076022f6d877",
     "loungeSpot": null
   }
 }

@@ -11,7 +11,7 @@
   },
   "items": [
     {
-      "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
+      "id": "a8fa765c-8bef-44b9-a6fa-944fbeafaf3c",
       "baseId": "trail-cap",
       "slot": "hat",
       "tag": "neutral",
@@ -105,19 +105,19 @@
   },
   "skills": [
     {
-      "creatureId": "0006079c-6263-4604-b59e-f1a6a00f42de",
+      "creatureId": "411efcee-6183-4d1c-bc3b-f567a34dff7f",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
+      "creatureId": "50096d2d-76c7-4d8f-b235-ebf2c7d8ce07",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "32621523-b521-47e9-8f3d-faccb12a7aea",
+      "creatureId": "1b9e5899-c8b2-4c38-9f26-41a084f0f6c5",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
@@ -127,7 +127,7 @@
     {
       "gear": [
         {
-          "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
+          "id": "a8fa765c-8bef-44b9-a6fa-944fbeafaf3c",
           "baseId": "trail-cap",
           "rarity": "common",
           "itemLevel": 1

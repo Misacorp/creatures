@@ -2,13 +2,13 @@
   "serverNow": 1799751603000,
   "balances": {
     "bait": 100,
-    "essence": 85
+    "essence": 75
   },
   "starterChosen": false,
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "0006079c-6263-4604-b59e-f1a6a00f42de",
+      "id": "411efcee-6183-4d1c-bc3b-f567a34dff7f",
       "species": "cindle",
       "line": "cindle",
       "level": 15,
@@ -51,21 +51,21 @@
       },
       "gear": [
         {
-          "id": "978654ee-5090-4477-a92f-38bff6adbd55",
+          "id": "86afbf03-c352-4bcc-9163-cbcb6b726b9e",
           "baseId": "emberkeepers-crown",
           "slot": "hat",
           "rarity": "epic",
           "itemLevel": 15
         },
         {
-          "id": "e0f699b8-75ab-4aa6-ac9b-abf795fe6a4c",
+          "id": "2385ffc4-12dc-4e4e-926e-cde4bf0d9b14",
           "baseId": "bark-shawl",
           "slot": "scarf",
           "rarity": "rare",
           "itemLevel": 12
         },
         {
-          "id": "607f3f26-f7cb-484d-b678-14e2a53fee7b",
+          "id": "9a35a045-ef99-434c-bd43-4a0202ee9f64",
           "baseId": "crossroads-compass",
           "slot": "charm",
           "rarity": "rare",
@@ -74,7 +74,7 @@
       ],
       "busy": {
         "kind": "job",
-        "id": "90dec4ac-6505-4df5-8e89-5498d98ae1a8"
+        "id": "5e3c0882-d7d8-4e4c-bcf7-d07b2c8de0da"
       },
       "ability": {
         "id": "flare-strike",
@@ -106,7 +106,7 @@
       }
     },
     {
-      "id": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
+      "id": "50096d2d-76c7-4d8f-b235-ebf2c7d8ce07",
       "species": "sproutle",
       "line": "sproutle",
       "level": 14,
@@ -149,14 +149,14 @@
       },
       "gear": [
         {
-          "id": "c63062c5-a791-46a5-999d-e944563ea7fa",
+          "id": "a8fa765c-8bef-44b9-a6fa-944fbeafaf3c",
           "baseId": "trail-cap",
           "slot": "hat",
           "rarity": "common",
           "itemLevel": 1
         },
         {
-          "id": "b52c5319-8e07-4816-9ac7-b6af0bef96bb",
+          "id": "2bd32bc7-9ef9-4af1-8769-8ee60cb65ef4",
           "baseId": "wardens-bell",
           "slot": "charm",
           "rarity": "rare",
@@ -194,7 +194,7 @@
       }
     },
     {
-      "id": "32621523-b521-47e9-8f3d-faccb12a7aea",
+      "id": "1b9e5899-c8b2-4c38-9f26-41a084f0f6c5",
       "species": "zipmouse",
       "line": "zipmouse",
       "level": 9,
@@ -249,7 +249,7 @@
         "nextRankXp": 200,
         "trips": 0
       },
-      "exp": 40,
+      "exp": 26,
       "expNeeded": 387,
       "waiting": false,
       "ribbons": 1,
@@ -284,7 +284,7 @@
   },
   "supplies": {},
   "serverFirsts": [],
-  "loungerId": "10340a4c-b8e8-436f-8be3-3ce9e03f3481",
+  "loungerId": "1b9e5899-c8b2-4c38-9f26-41a084f0f6c5",
   "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {

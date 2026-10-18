@@ -31,6 +31,15 @@ export interface ResolvedMods {
   mendBp: number;
   lingerRounds: number;
   ignoreSilence: boolean;
+  shelterBp: number;
+  unreflected: boolean;
+  critWindowBp: number;
+  healOnReactionBp: number;
+  chainMark: boolean;
+  coverReach: boolean;
+  boostReach: boolean;
+  sealMark: boolean;
+  firstReactionCrit: boolean;
 }
 
 const ROLE_IDS: readonly Role[] = ['setter', 'payoff', 'guard', 'support'];
@@ -69,6 +78,15 @@ const EMPTY: ResolvedMods = Object.freeze({
   mendBp: 0,
   lingerRounds: 0,
   ignoreSilence: false,
+  shelterBp: 0,
+  unreflected: false,
+  critWindowBp: 0,
+  healOnReactionBp: 0,
+  chainMark: false,
+  coverReach: false,
+  boostReach: false,
+  sealMark: false,
+  firstReactionCrit: false,
 });
 
 /** The sheet of a creature without one. */
@@ -130,10 +148,12 @@ export function resolveMods(
   const m = mods as Record<string, unknown>;
   const n = (name: string, range: readonly [number, number] = BONUS): number =>
     num(id, name, m[name], range);
-  const ignore = m['ignoreSilence'];
-  if (ignore !== undefined && ignore !== 0 && ignore !== 1) {
-    bad(id, 'ignoreSilence must be 0 or 1');
-  }
+  const flag = (name: string): boolean => {
+    const value = m[name];
+    if (value !== undefined && value !== 0 && value !== 1) bad(id, `${name} must be 0 or 1`);
+    return value === 1;
+  };
+  const ignore = flag('ignoreSilence');
   return {
     vsElementBp: table(id, 'vsElementBp', m['vsElementBp'], ELEMENTS, BONUS),
     markedFoeBp: n('markedFoeBp'),
@@ -159,7 +179,16 @@ export function resolveMods(
     boostBp: n('boostBp'),
     mendBp: n('mendBp'),
     lingerRounds: n('lingerRounds', [0, 3]),
-    ignoreSilence: ignore === 1,
+    ignoreSilence: ignore,
+    shelterBp: n('shelterBp'),
+    unreflected: flag('unreflected'),
+    critWindowBp: n('critWindowBp'),
+    healOnReactionBp: n('healOnReactionBp', SHARE),
+    chainMark: flag('chainMark'),
+    coverReach: flag('coverReach'),
+    boostReach: flag('boostReach'),
+    sealMark: flag('sealMark'),
+    firstReactionCrit: flag('firstReactionCrit'),
   };
 }
 

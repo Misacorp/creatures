@@ -474,6 +474,127 @@
     "worth": 4000
   },
   {
+    "id": "shoulder-to-shoulder",
+    "name": "Shoulder to shoulder",
+    "about": "More Attack for each neighbour of its own element (at most 2).",
+    "group": "position",
+    "effect": { "kind": "position", "rule": "sameElementBeside" },
+    "unit": "pct",
+    "values": [120, 200, 300, 400, 500],
+    "minRarity": "common",
+    "weights": { "hat": 30, "scarf": 10, "charm": 20 },
+    "worth": 1500
+  },
+  {
+    "id": "odd-one-out",
+    "name": "Odd one out",
+    "about": "More Attack when no neighbour shares its element.",
+    "group": "position",
+    "effect": { "kind": "position", "rule": "oddOneOut" },
+    "unit": "pct",
+    "values": [250, 400, 600, 800, 1000],
+    "minRarity": "common",
+    "weights": { "hat": 30, "scarf": 10, "charm": 20 },
+    "worth": 2000
+  },
+  {
+    "id": "edge-walker",
+    "name": "Edge-walker",
+    "about": "More Attack at either end of its row.",
+    "group": "position",
+    "effect": { "kind": "position", "rule": "edge" },
+    "unit": "pct",
+    "values": [250, 400, 600, 800, 1000],
+    "minRarity": "common",
+    "weights": { "hat": 30, "scarf": 10, "charm": 20 },
+    "worth": 1800
+  },
+  {
+    "id": "heart-of-the-row",
+    "name": "Heart of the row",
+    "about": "More HP in the middle of its row.",
+    "group": "position",
+    "effect": { "kind": "position", "rule": "heart" },
+    "unit": "pct",
+    "values": [300, 500, 700, 900, 1200],
+    "minRarity": "common",
+    "weights": { "hat": 10, "scarf": 35, "charm": 15 },
+    "worth": 1000
+  },
+  {
+    "id": "front-liner",
+    "name": "Front-liner",
+    "about": "Takes less damage from every hit while in the Front row.",
+    "group": "position",
+    "effect": { "kind": "position", "rule": "front" },
+    "unit": "pct",
+    "reduction": true,
+    "values": [250, 400, 600, 800, 1000],
+    "minRarity": "common",
+    "weights": { "hat": 0, "scarf": 30, "charm": 10 },
+    "worth": 1000
+  },
+  {
+    "id": "back-row-patience",
+    "name": "Back-row patience",
+    "about": "More crit chance while in the Back row.",
+    "group": "position",
+    "effect": { "kind": "position", "rule": "back" },
+    "unit": "pt",
+    "values": [100, 150, 250, 300, 400],
+    "minRarity": "common",
+    "weights": { "hat": 30, "scarf": 0, "charm": 15 },
+    "worth": 1500
+  },
+  {
+    "id": "lantern-bearer",
+    "name": "Lantern bearer",
+    "about": "The creatures beside it have more HP.",
+    "group": "position",
+    "effect": { "kind": "position", "rule": "lantern" },
+    "unit": "pct",
+    "values": [150, 250, 350, 450, 600],
+    "minRarity": "common",
+    "weights": { "hat": 0, "scarf": 15, "charm": 30 },
+    "worth": 1000
+  },
+  {
+    "id": "four-winds",
+    "name": "Four winds",
+    "about": "Its reaction bonus grows when its row holds four elements.",
+    "group": "position",
+    "effect": { "kind": "position", "rule": "fourElements" },
+    "unit": "pct",
+    "values": [250, 400, 600, 800, 1000],
+    "minRarity": "common",
+    "weights": { "hat": 10, "scarf": 0, "charm": 30 },
+    "worth": 500
+  },
+  {
+    "id": "sheltered",
+    "name": "Sheltered",
+    "about": "A Guard's cover on it is stronger.",
+    "group": "position",
+    "effect": { "kind": "position", "rule": "sheltered" },
+    "unit": "pt",
+    "values": [100, 200, 300, 450, 600],
+    "minRarity": "common",
+    "weights": { "hat": 0, "scarf": 25, "charm": 15 },
+    "worth": 800
+  },
+  {
+    "id": "beside-the-mark-maker",
+    "name": "Beside the mark-maker",
+    "about": "More damage while a living Setter stands beside it.",
+    "group": "position",
+    "effect": { "kind": "besideRole", "role": "setter" },
+    "unit": "pct",
+    "values": [250, 400, 600, 800, 1000],
+    "minRarity": "common",
+    "weights": { "hat": 30, "scarf": 5, "charm": 25 },
+    "worth": 1500
+  },
+  {
     "id": "trail-xp",
     "name": "Trail XP",
     "about": "The wearer earns more explorer XP from trips.",
@@ -596,5 +717,18 @@
     "weights": { "hat": 0, "scarf": 0, "charm": 0 },
     "fixedOnly": true,
     "worth": 300
+  },
+  {
+    "id": "lantern-light",
+    "name": "Lantern light",
+    "about": "A Festival cap's glow: the wearer earns more explorer XP from trips.",
+    "group": "festival",
+    "effect": { "kind": "rule", "rule": "trailXp" },
+    "unit": "pct",
+    "values": [300, 300, 500, 500, 800],
+    "minRarity": "common",
+    "weights": { "hat": 0, "scarf": 0, "charm": 0 },
+    "fixedOnly": true,
+    "worth": 200
   }
 ]

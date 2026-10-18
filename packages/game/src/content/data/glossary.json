@@ -853,7 +853,7 @@
     "short": "An element, neutral, explorer or a role.",
     "lines": [
       "An element tag makes that element's lines three times as likely to roll.",
-      "A role Charm can only be worn by that role."
+      "A role Charm or role set piece can only be worn by that role."
     ],
     "section": "gear"
   },
@@ -1061,6 +1061,29 @@
     "lines": [
       "Can also roll Lingering and Unbothered at item level 15 or more.",
       "Dismantling Epic gear can give glimmer."
+    ],
+    "section": "gear"
+  },
+  {
+    "id": "gear-set",
+    "title": "Gear set",
+    "short": "A Hat, a Scarf and a Charm that work together on one creature.",
+    "lines": [
+      "Two pieces of a set worn by one creature give a bonus. All three give a stronger one.",
+      "A set's pieces share a tag. Role sets can only be worn by that role.",
+      "Set pieces unlock at item level 12, drop and craft like other gear and roll lines like it.",
+      "Stats are no higher than a fine Hat or Scarf: the bonus is the reward."
+    ],
+    "section": "gear"
+  },
+  {
+    "id": "gear-position",
+    "title": "Position line",
+    "short": "A line that depends on where the creature stands.",
+    "lines": [
+      "It looks at the neighbours, the row or the end the creature stands at. Move the creature to switch it on.",
+      "An item has at most one special line, and position lines are special.",
+      "The row is Front, Middle or Back in the raid, and the whole line in the dungeon."
     ],
     "section": "gear"
   },

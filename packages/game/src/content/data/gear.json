@@ -364,6 +364,7 @@
     "slot": "scarf",
     "tag": "ember",
     "festival": true,
+    "set": "lantern-night",
     "stats": [
       { "stat": "hp", "value": 12 },
       { "stat": "atk", "value": 1 }
@@ -458,9 +459,365 @@
     "slot": "charm",
     "tag": "tide",
     "festival": true,
+    "set": "lantern-night",
     "implicit": { "line": "tide-attunement", "values": [200, 300, 400, 500, 600] },
     "fixed": { "line": "lantern-luck", "values": [50, 50, 100, 100, 150] },
     "pool": ["tide-attunement", "tide-reaction", "tide-hunter", "tide-ward", "well-fed"],
     "flavor": "A paper lantern charm, lit once a season at the Festival of the tide."
+  },
+  {
+    "id": "tidepool-cowl",
+    "name": "Tidepool Cowl",
+    "slot": "hat",
+    "tag": "tide",
+    "set": "tidepool-finery",
+    "stats": [
+      { "stat": "atk", "value": 24 },
+      { "stat": "hp", "value": 48 },
+      { "stat": "critChance", "value": 200 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A hood of wet kelp that never drips on the one who wears it."
+  },
+  {
+    "id": "tidepool-stole",
+    "name": "Tidepool Stole",
+    "slot": "scarf",
+    "tag": "tide",
+    "set": "tidepool-finery",
+    "stats": [
+      { "stat": "hp", "value": 150 },
+      { "stat": "atk", "value": 12 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A stole of sea silk that ripples even when the air is still."
+  },
+  {
+    "id": "tidepool-locket",
+    "name": "Tidepool Locket",
+    "slot": "charm",
+    "tag": "tide",
+    "set": "tidepool-finery",
+    "minItemLevel": 12,
+    "implicit": { "line": "tide-attunement", "values": [200, 300, 400, 500, 600] },
+    "flavor": "A locket with a drop of the tide inside, ticking in and out."
+  },
+  {
+    "id": "forge-warm-bonnet",
+    "name": "Forge-Warm Bonnet",
+    "slot": "hat",
+    "tag": "ember",
+    "set": "forge-warm-kit",
+    "stats": [
+      { "stat": "atk", "value": 28 },
+      { "stat": "hp", "value": 38 },
+      { "stat": "critDamage", "value": 2000 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A bonnet stitched by the forge-folk, still warm from the last pour."
+  },
+  {
+    "id": "forge-warm-sash",
+    "name": "Forge-Warm Sash",
+    "slot": "scarf",
+    "tag": "ember",
+    "set": "forge-warm-kit",
+    "stats": [
+      { "stat": "hp", "value": 150 },
+      { "stat": "atk", "value": 12 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A sash that keeps the heat of the day and lends it back at dusk."
+  },
+  {
+    "id": "forge-warm-token",
+    "name": "Forge-Warm Token",
+    "slot": "charm",
+    "tag": "ember",
+    "set": "forge-warm-kit",
+    "minItemLevel": 12,
+    "implicit": { "line": "ember-attunement", "values": [200, 300, 400, 500, 600] },
+    "flavor": "A cinder token that glows when the rest of the kit is close."
+  },
+  {
+    "id": "hollow-weave-cap",
+    "name": "Hollow Weave Cap",
+    "slot": "hat",
+    "tag": "grove",
+    "set": "hollow-weave",
+    "stats": [
+      { "stat": "atk", "value": 19 },
+      { "stat": "hp", "value": 67 },
+      { "stat": "critChance", "value": 200 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "Woven in the Hollow from reeds that lean toward whoever wears it."
+  },
+  {
+    "id": "hollow-weave-shawl",
+    "name": "Hollow Weave Shawl",
+    "slot": "scarf",
+    "tag": "grove",
+    "set": "hollow-weave",
+    "stats": [
+      { "stat": "hp", "value": 180 },
+      { "stat": "atk", "value": 6 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A shawl of bark thread and moss, soft as a nest."
+  },
+  {
+    "id": "hollow-weave-knot",
+    "name": "Hollow Weave Knot",
+    "slot": "charm",
+    "tag": "grove",
+    "set": "hollow-weave",
+    "minItemLevel": 12,
+    "implicit": { "line": "grove-attunement", "values": [200, 300, 400, 500, 600] },
+    "flavor": "A knot of green cord that tightens a little in the rain."
+  },
+  {
+    "id": "ridge-copper-cap",
+    "name": "Ridge Copper Cap",
+    "slot": "hat",
+    "tag": "spark",
+    "set": "ridge-copper",
+    "stats": [
+      { "stat": "atk", "value": 24 },
+      { "stat": "hp", "value": 38 },
+      { "stat": "critChance", "value": 300 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A cap lined with copper from the Ridge. It hums when a storm is near."
+  },
+  {
+    "id": "ridge-copper-scarf",
+    "name": "Ridge Copper Scarf",
+    "slot": "scarf",
+    "tag": "spark",
+    "set": "ridge-copper",
+    "stats": [
+      { "stat": "hp", "value": 142 },
+      { "stat": "atk", "value": 12 },
+      { "stat": "critChance", "value": 200 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A scarf of copper thread that stands on end before the lightning does."
+  },
+  {
+    "id": "ridge-copper-bead",
+    "name": "Ridge Copper Bead",
+    "slot": "charm",
+    "tag": "spark",
+    "set": "ridge-copper",
+    "minItemLevel": 12,
+    "implicit": { "line": "spark-attunement", "values": [200, 300, 400, 500, 600] },
+    "flavor": "A glass bead with copper inside. It passes one spark to the next."
+  },
+  {
+    "id": "watchmans-cap",
+    "name": "Watchman's Cap",
+    "slot": "hat",
+    "tag": "guard",
+    "set": "wardens-watch",
+    "stats": [
+      { "stat": "atk", "value": 24 },
+      { "stat": "hp", "value": 48 },
+      { "stat": "critChance", "value": 200 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A cap with a short brim, so its wearer can look straight ahead."
+  },
+  {
+    "id": "watchmans-cloak",
+    "name": "Watchman's Cloak",
+    "slot": "scarf",
+    "tag": "guard",
+    "set": "wardens-watch",
+    "stats": [
+      { "stat": "hp", "value": 150 },
+      { "stat": "atk", "value": 12 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A cloak cut wide enough to stand in front of two friends."
+  },
+  {
+    "id": "watchmans-whistle",
+    "name": "Watchman's Whistle",
+    "slot": "charm",
+    "tag": "guard",
+    "set": "wardens-watch",
+    "minItemLevel": 12,
+    "implicit": { "line": "armor", "values": [100, 200, 200, 300, 400] },
+    "flavor": "A whistle blown once at dusk, so the gate knows who stands there."
+  },
+  {
+    "id": "helpers-bonnet",
+    "name": "Helper's Bonnet",
+    "slot": "hat",
+    "tag": "support",
+    "set": "hearth-helpers",
+    "stats": [
+      { "stat": "atk", "value": 24 },
+      { "stat": "hp", "value": 48 },
+      { "stat": "critChance", "value": 200 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A bonnet with a pocket for biscuits and another for the spare biscuits."
+  },
+  {
+    "id": "helpers-kerchief",
+    "name": "Helper's Kerchief",
+    "slot": "scarf",
+    "tag": "support",
+    "set": "hearth-helpers",
+    "stats": [
+      { "stat": "hp", "value": 150 },
+      { "stat": "atk", "value": 12 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A kerchief knotted by someone who always knows who needs a hot drink."
+  },
+  {
+    "id": "helpers-ladle",
+    "name": "Helper's Ladle",
+    "slot": "charm",
+    "tag": "support",
+    "set": "hearth-helpers",
+    "minItemLevel": 12,
+    "implicit": { "line": "boost", "values": [100, 100, 200, 300, 300] },
+    "flavor": "A ladle with a long handle, for reaching a bowl across the table."
+  },
+  {
+    "id": "firstfoot-cap",
+    "name": "Firstfoot Cap",
+    "slot": "hat",
+    "tag": "setter",
+    "set": "first-footprints",
+    "stats": [
+      { "stat": "atk", "value": 24 },
+      { "stat": "hp", "value": 48 },
+      { "stat": "critChance", "value": 200 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A cap worn by whoever is first through the door each morning."
+  },
+  {
+    "id": "firstfoot-scarf",
+    "name": "Firstfoot Scarf",
+    "slot": "scarf",
+    "tag": "setter",
+    "set": "first-footprints",
+    "stats": [
+      { "stat": "hp", "value": 150 },
+      { "stat": "atk", "value": 12 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A scarf that has been the first thing out of the house for years."
+  },
+  {
+    "id": "firstfoot-print",
+    "name": "Firstfoot Print",
+    "slot": "charm",
+    "tag": "setter",
+    "set": "first-footprints",
+    "minItemLevel": 12,
+    "implicit": { "line": "marking-hit", "values": [300, 400, 600, 800, 1000] },
+    "flavor": "A clay print of a very quick paw. It does not like being stepped on."
+  },
+  {
+    "id": "pouncers-cap",
+    "name": "Pouncer's Cap",
+    "slot": "hat",
+    "tag": "payoff",
+    "set": "pounce-set",
+    "stats": [
+      { "stat": "atk", "value": 24 },
+      { "stat": "hp", "value": 48 },
+      { "stat": "critChance", "value": 200 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A cap with a loose brim, quick to flip back when its wearer springs."
+  },
+  {
+    "id": "pouncers-wrap",
+    "name": "Pouncer's Wrap",
+    "slot": "scarf",
+    "tag": "payoff",
+    "set": "pounce-set",
+    "stats": [
+      { "stat": "hp", "value": 150 },
+      { "stat": "atk", "value": 12 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A wrap cut short at the ends, so nothing catches mid-leap."
+  },
+  {
+    "id": "pouncers-tooth",
+    "name": "Pouncer's Tooth",
+    "slot": "charm",
+    "tag": "payoff",
+    "set": "pounce-set",
+    "minItemLevel": 12,
+    "implicit": { "line": "payoffs-pounce", "values": [200, 200, 300, 400, 500] },
+    "flavor": "A milk tooth on a cord. It has waited a long time for the right moment."
+  },
+  {
+    "id": "wanderers-hat",
+    "name": "Wanderer's Hat",
+    "slot": "hat",
+    "tag": "explorer",
+    "set": "crossroads-wanderer",
+    "stats": [
+      { "stat": "atk", "value": 24 },
+      { "stat": "hp", "value": 48 },
+      { "stat": "critChance", "value": 200 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A wide hat with a map folded in the band, for rain or for roads."
+  },
+  {
+    "id": "wanderers-scarf",
+    "name": "Wanderer's Scarf",
+    "slot": "scarf",
+    "tag": "explorer",
+    "set": "crossroads-wanderer",
+    "stats": [
+      { "stat": "hp", "value": 150 },
+      { "stat": "atk", "value": 12 }
+    ],
+    "minItemLevel": 12,
+    "flavor": "A long scarf with one end in every season."
+  },
+  {
+    "id": "wanderers-coin",
+    "name": "Wanderer's Coin",
+    "slot": "charm",
+    "tag": "explorer",
+    "set": "crossroads-wanderer",
+    "minItemLevel": 12,
+    "implicit": { "line": "trail-xp", "values": [300, 400, 500, 600, 800] },
+    "flavor": "A coin from the Old Crossroads. Heads is the road ahead, tails another."
+  },
+  {
+    "id": "festival-lantern-cap",
+    "name": "Festival Lantern Cap",
+    "slot": "hat",
+    "tag": "grove",
+    "festival": true,
+    "set": "lantern-night",
+    "stats": [
+      { "stat": "atk", "value": 1 },
+      { "stat": "hp", "value": 5 }
+    ],
+    "fixed": { "line": "lantern-light", "values": [300, 300, 500, 500, 800] },
+    "pool": [
+      "attack-local-pct",
+      "hp-local-flat",
+      "grove-attunement",
+      "grove-hunter",
+      "grove-reaction"
+    ],
+    "flavor": "A paper cap with a candle-glow inside, made for the longest night of the Festival."
   }
 ]

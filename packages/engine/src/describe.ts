@@ -102,24 +102,32 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
           ? creature(event.creature)
           : `${creature(event.creature)}'s ${lookup(names.abilities, event.ability)}`
       } hits ${names.boss} for ${event.damage}${event.crit === true ? ' (Critical!)' : ''}${
+        event.setCrit === true ? ' (its gear set makes it a crit)' : ''
+      }${event.warm === true ? ' (its gear set adds crit damage)' : ''}${
         event.matchupBp > 10_000
           ? ' (strong matchup)'
           : event.matchupBp < 10_000
             ? ' (weak matchup)'
             : ''
       }${event.sheetBp === undefined ? '' : ` (${signedPct(event.sheetBp)} from modifiers)`}; ${event.bossHp} HP left.`;
-    case 'mark':
+    case 'mark': {
+      const sealed =
+        event.sealed === true ? ' Its gear set seals the mark: no hit can replace it.' : '';
       return event.replaced === null
-        ? `${event.creature === null ? player(event.player) : creature(event.creature)} leaves ${names.boss} ${mark(event.element)}.`
-        : `${event.creature === null ? player(event.player) : creature(event.creature)} replaces ${mark(event.replaced)} with ${mark(event.element)}.`;
+        ? `${event.creature === null ? player(event.player) : creature(event.creature)} leaves ${names.boss} ${mark(event.element)}.${sealed}`
+        : `${event.creature === null ? player(event.player) : creature(event.creature)} replaces ${mark(event.replaced)} with ${mark(event.element)}.${sealed}`;
+    }
     case 'reaction': {
       const mods =
         event.sheetBp === undefined ? '' : ` (${signedPct(event.sheetBp)} from modifiers)`;
+      const sets = `${event.proof === true ? ` Its gear set turns ${names.boss}'s reflection aside.` : ''}${
+        event.chain === true ? ' Its gear set keeps the mark standing, so a chain can follow.' : ''
+      }`;
       return event.reflected
         ? `${lookup(names.reactions, event.reaction)}! ${names.boss} reflects ${event.bonus} bonus damage onto ${creature(event.payoff)}${mods}.`
         : `${lookup(names.reactions, event.reaction)}! ${creature(event.payoff)} cashes in the mark${
             event.setupCreature === null ? '' : ` set by ${creature(event.setupCreature)}`
-          } for ${event.bonus} bonus damage${mods}.`;
+          } for ${event.bonus} bonus damage${mods}.${sets}`;
     }
     case 'gimmick': {
       const name = lookup(names.gimmicks, event.gimmick);
@@ -173,7 +181,10 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
     case 'round_end':
       return `End of round ${event.round}: ${names.boss} has ${event.bossHp} HP.`;
     case 'heal':
-      return `${creature(event.supporter)} mends ${creature(event.target)} (+${event.amount} HP).`;
+      // A creature that heals itself (the Hollow Weave set) recovers; a Support mends a neighbour.
+      return event.supporter === event.target
+        ? `${creature(event.target)} recovers ${event.amount} HP from its gear set.`
+        : `${creature(event.supporter)} mends ${creature(event.target)} (+${event.amount} HP).`;
     case 'cleanse':
       return `${creature(event.supporter)} clears ${creature(event.target)}'s silence.`;
     case 'charge':

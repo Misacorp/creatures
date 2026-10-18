@@ -5,7 +5,7 @@ import { GLOSSARY_IDS, PART_KINDS, gearBase, tagElement, type PartKind } from '@
 import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
 import { itemArt } from './gear-sprites';
-import { isFestivalBase, partName, partsEntries, rarityName, slotName } from './gear-view';
+import { isFestivalBase, itemSet, partName, partsEntries, rarityName, slotName } from './gear-view';
 import { glyphOrUnknown } from './glyphs';
 import { capitalize, elementName } from './game';
 import type { GearRarity, GearSlot, PartsBundle } from './gear-types';
@@ -138,6 +138,20 @@ export function GearTagBadge({ baseId, plain = false }: { baseId: string; plain?
     >
       {element !== null && <GameIcon icon={{ kind: 'element', element }} scale={2} />}
       {element !== null ? elementName(element) : capitalize(tag)}
+    </Tag>
+  );
+}
+
+/**
+ * A gear set piece's set as a badge ("Tidepool Finery"). Tapping it explains the set: what two and three pieces
+ * give. A base in no set has none.
+ */
+export function SetTag({ baseId, plain = false }: { baseId: string; plain?: boolean }) {
+  const set = itemSet(baseId);
+  if (set === undefined) return null;
+  return (
+    <Tag {...(plain ? {} : { entry: GLOSSARY_IDS.gearSet(set.id) })} class="item-badge set-tag pix">
+      {set.name}
     </Tag>
   );
 }

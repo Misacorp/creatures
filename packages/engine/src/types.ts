@@ -116,6 +116,26 @@ export interface SlotMods {
   lingerRounds?: number;
   /** 1: silence does nothing to it. */
   ignoreSilence?: 0 | 1;
+
+  // --- Gear sets and position lines (2026-10-18). Absent means exactly what it was before. ---
+  /** Cover a Guard's cover on this creature gains (the position line Sheltered), added to the Guard's. */
+  shelterBp?: number;
+  /** 1: its first reaction each fight cannot be reflected by the boss's trap (Tidepool Finery). */
+  unreflected?: 0 | 1;
+  /** After it sets off a reaction, its crits deal this much more crit damage until the end of the next round (Forge-Warm Kit). */
+  critWindowBp?: number;
+  /** It heals this share of its max HP (0 to 10000) whenever it sets off a reaction (Hollow Weave). */
+  healOnReactionBp?: number;
+  /** 1: after it sets off a reaction the boss keeps the creature's own mark, so a chain can follow (Ridge Copper). */
+  chainMark?: 0 | 1;
+  /** 1: a Guard's cover also reaches the creature one slot further out in its row (Warden's Watch). */
+  coverReach?: 0 | 1;
+  /** 1: a Support's boost also lands on the creature two slots away (Hearth Helpers). */
+  boostReach?: 0 | 1;
+  /** 1: the first mark it leaves each fight cannot be replaced by another creature's hit (First Footprints). */
+  sealMark?: 0 | 1;
+  /** 1: its first reaction each fight is a critical hit (Pounce Set; crits must be on). */
+  firstReactionCrit?: 0 | 1;
 }
 
 export interface AbilityChoice {
@@ -306,6 +326,10 @@ export type FightEvent =
       critBp?: number;
       /** The creature's sheet added this much to the hit's damage bonus (basis points); absent if none. */
       sheetBp?: number;
+      /** Set when a gear set made this hit a crit (`firstReactionCrit`). */
+      setCrit?: true;
+      /** Set when a gear set's crit window added crit damage to this crit (`critWindowBp`). */
+      warm?: true;
     }
   | {
       t: 'mark';
@@ -315,6 +339,8 @@ export type FightEvent =
       player: string | null;
       element: Element;
       replaced: Element | null;
+      /** Set when a gear set sealed the mark: another creature's hit cannot replace it (`sealMark`). */
+      sealed?: true;
     }
   | {
       t: 'reaction';
@@ -328,6 +354,10 @@ export type FightEvent =
       reflected: boolean;
       /** The sheets' share of the reaction: per-reaction and owner's mark bonus plus the pounce, in basis points; absent if none. */
       sheetBp?: number;
+      /** Set when a gear set turned the boss's reflection aside (`unreflected`). */
+      proof?: true;
+      /** Set when a gear set left the creature's own mark standing after the reaction (`chainMark`). */
+      chain?: true;
     }
   | {
       t: 'gimmick';

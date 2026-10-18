@@ -226,3 +226,13 @@ button.ip-act {
 .book-short {
   margin: 0.375rem 0 0;
 }
+
+/* --- The set bonuses of a creature's worn gear: one compact line under the gear slots. --- */
+
+.cp-sets {
+  margin: 0.5rem 0 0;
+  color: var(--gear);
+  font-size: 1.125rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}

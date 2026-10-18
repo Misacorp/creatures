@@ -1,8 +1,16 @@
 import type { ComponentChildren, Ref } from 'preact';
 import { statRows } from './creature-page/picker-view';
-import { FestivalTag, GearTagBadge, ItemFrame, ItemSprite, RarityTag, SlotTag } from './GearArt';
+import {
+  FestivalTag,
+  GearTagBadge,
+  ItemFrame,
+  ItemSprite,
+  RarityTag,
+  SetTag,
+  SlotTag,
+} from './GearArt';
 import type { GearItem } from './gear-types';
-import { gearName, isFestivalBase } from './gear-view';
+import { gearName, isFestivalBase, itemSet, setBonusRows, setCountText } from './gear-view';
 import { ItemLines } from './ItemLines';
 
 /** What the card needs of an item: the part of a `GearItem` that is drawn. */
@@ -28,6 +36,7 @@ export function ItemCard({
   spriteScale = 5,
   aside,
   note,
+  wornInSet = 0,
   class: extra,
 }: {
   item: ItemCardItem;
@@ -42,10 +51,13 @@ export function ItemCard({
   spriteScale?: number;
   aside?: ComponentChildren;
   note?: ComponentChildren;
+  /** How many pieces of the item's set its wearer has (with this one on, if it is not worn yet); 0 when nobody wears it. */
+  wornInSet?: number;
   class?: string;
 }) {
   const rows = statRows(item.stats);
   const name = gearName(item.baseId);
+  const set = itemSet(item.baseId);
   const nameClass = `idc-name rarity-name rarity-${item.rarity}`;
   return (
     <div class={`idc pix${extra === undefined ? '' : ` ${extra}`}`}>
@@ -74,6 +86,7 @@ export function ItemCard({
             <SlotTag slot={item.slot} plain={plainRarity} />
             <RarityTag rarity={item.rarity} plain={plainRarity} />
             <GearTagBadge baseId={item.baseId} plain={plainRarity} />
+            <SetTag baseId={item.baseId} plain={plainRarity} />
             {isFestivalBase(item.baseId) && <FestivalTag />}
           </p>
           {note}
@@ -105,6 +118,24 @@ export function ItemCard({
           <hr class="idc-divider" />
           <ItemLines lines={item.lines} />
         </>
+      )}
+      {set !== undefined && (
+        <section class="idc-set" aria-label={`${set.name} set`}>
+          <p class="idc-set-head">
+            <span class="idc-set-name">{set.name}</span>{' '}
+            <span class="idc-set-count" aria-label={`${String(wornInSet)} pieces worn`}>
+              {setCountText(wornInSet)}
+            </span>
+          </p>
+          <ul class="idc-set-list">
+            {setBonusRows(set, wornInSet).map((row) => (
+              <li key={row.pieces} class={row.active ? 'on' : 'off'}>
+                <span class="idc-set-pieces">{row.pieces} pieces</span> {row.text}
+                {row.active && <span class="visually-hidden"> (active)</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   );

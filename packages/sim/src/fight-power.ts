@@ -11,6 +11,7 @@ import {
   autoPlace,
   compactRow,
   liveFightRules,
+  placeSlots,
   raidEnrage,
   scaleBoss,
   simulateFight,
@@ -19,7 +20,7 @@ import {
   type FightSlot,
 } from '@creatures/engine';
 import { DEFAULT_SERVER_SIZE } from './archetypes';
-import { activeTalentsOf, pickTeam, wornOf, type OwnedCreature } from './data';
+import { activeTalentsOf, foldKitsOf, pickTeam, wornOf, type OwnedCreature } from './data';
 import { slotOfCreature } from './raid';
 
 /**
@@ -78,9 +79,11 @@ const PLAYER = 'fight-power';
  */
 export function referenceRow(team: readonly OwnedCreature[]): FightSlot[] {
   const slots = team.map((c) => slotOfCreature(c, PLAYER));
-  return compactRow(
+  const row = compactRow(
     autoPlace(new Array<FightSlot | null>(slots.length).fill(null), new Map([[PLAYER, slots]])),
   );
+  // One line of three (as in the dungeon): the position lines of the gear see the neighbours and the ends.
+  return placeSlots(row, foldKitsOf(team), 'line');
 }
 
 /** The finale's fight input against `bossId` at `rank` for a row (the boss's pool cannot run out). */

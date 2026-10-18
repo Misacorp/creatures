@@ -106,8 +106,8 @@
         "Each creature wears a Hat, a Scarf from level 7 and a Charm from level 13, each up to its own level.",
         "Hats and Scarves carry Attack and HP of their own. A Charm carries a fixed line instead.",
         "A Common has 1 line, a Rare 2 and an Epic 3. Lines marked (this item) grow the item's own stats.",
-        "The pips show how strong a line rolled. The item's level sets the best it can be. Nothing re-rolls.",
-        "An Ember piece rolls Ember lines more often, and so on. Look for the pieces that fit your creature."
+        "The pips show how strong a line rolled; the item's level sets the best. An Ember piece rolls Ember lines more often.",
+        "Some lines depend on where the creature stands. Pieces of one set give a bonus when worn together."
       ]
     },
     {

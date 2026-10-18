@@ -376,9 +376,29 @@ export function craftOdds(
   return { common, rare, epic: epic + (10_000 - common - rare - epic) };
 }
 
-/** True if a base can be made from a blueprint: not a Festival piece and not role-locked. */
-export function craftable(base: Pick<GearBase, 'festival' | 'tag'>): boolean {
-  return base.festival !== true && tagRole(base.tag) === null;
+/**
+ * True if a base can be made from a blueprint: not a Festival piece, and not a role-locked Charm. The pieces of
+ * a role's gear set are role-locked too but craftable: they are the way to collect that set (the drop is the
+ * finale's rare role lock), and they have a blueprint like any base.
+ */
+export function craftable(base: Pick<GearBase, 'festival' | 'tag' | 'set'>): boolean {
+  return base.festival !== true && (tagRole(base.tag) === null || base.set !== undefined);
+}
+
+/**
+ * One blueprint among `bases`: a gear set piece with `RULES.gear.setBlueprintBp` chance when there are
+ * both kinds to choose from, an ordinary base otherwise, evenly within the kind. Undefined for none.
+ */
+export function pickBlueprintBase(rng: Rng, bases: readonly GearBase[]): GearBase | undefined {
+  const sets = bases.filter((b) => b.set !== undefined);
+  const plain = bases.filter((b) => b.set === undefined);
+  // The plain draw is the likely one (a low roll), so a script of zeroes still gets an ordinary base.
+  const wantSet =
+    sets.length > 0 && plain.length > 0
+      ? !chance(rng, 10_000 - RULES.gear.setBlueprintBp, 10_000)
+      : null;
+  const pool = wantSet === null ? bases : wantSet ? sets : plain;
+  return pool[int(rng, Math.max(1, pool.length))];
 }
 
 /**
@@ -578,7 +598,7 @@ export function rollFinaleReward(
 ): FinaleReward {
   if (chance(rng, RULES.gear.drops.finale.blueprintBp, 10_000)) {
     const unowned = blueprintBases().filter((b) => !owned.has(b.id));
-    const base = unowned[int(rng, Math.max(1, unowned.length))];
+    const base = pickBlueprintBase(rng, unowned);
     if (base !== undefined) return { kind: 'blueprint', baseId: base.id };
   }
   return { kind: 'gear', item: rollFinaleItem(rng, rank, element) };
@@ -628,10 +648,9 @@ export function rollDungeonItem(
   return rollItem(rng, { baseId: base.id, rarity, itemLevel });
 }
 
-/** Rolls a blueprint's base evenly among the bases that can be crafted. */
+/** Rolls a blueprint's base among the bases that can be crafted (`pickBlueprintBase`: set pieces are one in five). */
 export function rollBlueprint(rng: Rng): string {
-  const bases = blueprintBases();
-  const base = bases[int(rng, bases.length)];
+  const base = pickBlueprintBase(rng, blueprintBases());
   if (base === undefined) throw new Error('no craftable bases');
   return base.id;
 }
@@ -648,7 +667,12 @@ export function rollExpeditionItem(
 ): GearItem {
   const itemLevel = expeditionItemLevel(explorerRank);
   if (place.crossroads) {
-    const compass = gearContent.bases.find((b) => b.tag === 'explorer');
+    // The explorer's pieces the level unlocks (the Compass, and from item level 12 the Crossroads Wanderer
+    // set), evenly; a single choice draws nothing.
+    const explorer = gearContent.bases
+      .filter((b) => b.tag === 'explorer' && baseMinLevel(b) <= itemLevel)
+      .sort((a, b) => baseMinLevel(a) - baseMinLevel(b));
+    const compass = explorer[explorer.length > 1 ? int(rng, explorer.length) : 0];
     if (compass === undefined) throw new Error('no explorer base');
     return rollItem(rng, { baseId: compass.id, rarity, itemLevel });
   }

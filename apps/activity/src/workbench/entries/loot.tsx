@@ -2,6 +2,7 @@ import {
   baseMinLevel,
   createSeededRng,
   gearBase,
+  gearLine,
   itemLines,
   itemStats,
   rollItem,
@@ -427,13 +428,60 @@ const itemCard: Entry = {
     rarity: { kind: 'select', options: RARITIES },
     itemLevel: { kind: 'number', min: 1, max: 20 },
     seed: { kind: 'text', maxLength: 24 },
+    wornInSet: { kind: 'number', min: 0, max: 3 },
+    lines: { kind: 'text', maxLength: 90 },
   },
-  defaults: { base: 'brine-hood', rarity: 'epic', itemLevel: 15, seed: 'card' },
+  defaults: {
+    base: 'brine-hood',
+    rarity: 'epic',
+    itemLevel: 15,
+    seed: 'card',
+    wornInSet: 0,
+    lines: '',
+  },
   presets: [
     { name: 'A Hat, Epic', props: {} },
     { name: 'A Scarf, Rare', props: { base: 'forge-scarf', rarity: 'rare', itemLevel: 10 } },
     { name: 'A Hat with a crit stat', props: { base: 'storm-cowl', itemLevel: 20 } },
     { name: 'A Charm (no stats)', props: { base: 'cinder-charm', itemLevel: 12 } },
+    {
+      name: 'A set piece, 0 worn',
+      props: { base: 'forge-warm-bonnet', rarity: 'rare', itemLevel: 12, wornInSet: 0 },
+    },
+    {
+      name: 'A set piece, 2 worn (the two-piece bonus is on)',
+      props: { base: 'forge-warm-bonnet', rarity: 'rare', itemLevel: 12, wornInSet: 2 },
+    },
+    {
+      name: 'A set piece, 3 worn (both bonuses on)',
+      props: { base: 'forge-warm-bonnet', rarity: 'rare', itemLevel: 12, wornInSet: 3 },
+    },
+    {
+      name: 'A role set Charm (Guard only)',
+      props: { base: 'watchmans-whistle', rarity: 'epic', itemLevel: 16, wornInSet: 1 },
+    },
+    {
+      name: 'A Festival set piece (Lantern Night)',
+      props: { base: 'festival-lantern-cap', rarity: 'rare', itemLevel: 8, wornInSet: 2 },
+    },
+    {
+      name: 'A Hat with a position line',
+      props: {
+        base: 'trail-cap',
+        rarity: 'rare',
+        itemLevel: 15,
+        lines: 'edge-walker:4,crit-damage:3',
+      },
+    },
+    {
+      name: 'A Scarf with a position line',
+      props: {
+        base: 'woolen-wrap',
+        rarity: 'rare',
+        itemLevel: 15,
+        lines: 'front-liner:5,area-ward:3',
+      },
+    },
     {
       name: 'A Festival piece',
       props: { base: 'festival-hearth-scarf', rarity: 'rare', itemLevel: 8 },
@@ -443,11 +491,22 @@ const itemCard: Entry = {
     const id = str(p, 'base');
     const base = gearBase(id);
     const level = Math.max(num(p, 'itemLevel'), base === undefined ? 1 : baseMinLevel(base));
-    const rolled = rollItem(createSeededRng(str(p, 'seed')), {
+    const seeded = rollItem(createSeededRng(str(p, 'seed')), {
       baseId: id,
       rarity: rarityOf(str(p, 'rarity')),
       itemLevel: level,
     });
+    // `lines` ("edge-walker:4,crit-damage:3": a line id and its tier I to V) replaces the rolled lines, so a
+    // screenshot can show exactly the line it is about.
+    const picked = str(p, 'lines')
+      .split(',')
+      .flatMap((part) => {
+        const [lineId = '', tier = '1'] = part.trim().split(':');
+        return gearLine(lineId) === undefined
+          ? []
+          : [{ id: lineId, tier: Math.max(0, Math.min(4, Number(tier) - 1 || 0)) }];
+      });
+    const rolled = picked.length > 0 ? { ...seeded, lines: picked } : seeded;
     return (
       <section class="item-detail card-item">
         <ItemCard
@@ -464,6 +523,7 @@ const itemCard: Entry = {
             })),
             lines: itemLines(rolled).map((l) => ({ ...l, active: null })),
           }}
+          wornInSet={num(p, 'wornInSet')}
         />
       </section>
     );

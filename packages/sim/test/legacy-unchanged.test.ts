@@ -62,6 +62,12 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * into an empty slot, or in place of a weaker slotted talent (as a player reading the book would). The
  * first player's top-3 power and raids won are what they were before the change (333, 361, 261, 203);
  * Bait earned is the same, and some Bait now goes to slotting.
+ *
+ * Re-pinned again on 2026-10-18 (more gear and modifiers), on purpose: ten position lines and 28 gear set
+ * pieces joined the pool of lines and bases, so every seeded drop and craft is a different item, and a
+ * creature's gear is folded again with its place in the row (`placeSlots`). Bait earned and the runs
+ * without gear are the same; the first player's top-3 power moved (333, 261, 203 to 390, 243, 196) and
+ * raids won in two runs (7 and 5 to 6 and 4). The gear share study (20 servers) moved within about 2.5 points.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

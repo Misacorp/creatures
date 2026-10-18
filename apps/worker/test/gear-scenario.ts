@@ -113,7 +113,7 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   const grantDeps = {
     storage: ctx.storage,
     now: () => ctx.clock.t,
-    rng: createSeededRng('fixture-raid-gear'),
+    rng: createSeededRng('fixture-raid-gear-3'),
   };
   const boss = content.bosses[0]?.id ?? '';
   grantRaidFinale(grantDeps, seeded.id, '2027-W01', 3, boss);

@@ -18,12 +18,15 @@ import {
   entryView,
   expeditionContent,
   gearBase,
+  gearSet,
   jobDuration,
   jobHours,
   partsOfSpec,
+  setCounts,
   supplyDef,
   supplyJobMs,
   wearBlock,
+  type GearSet,
 } from '@creatures/game';
 import type { Creature } from './api';
 import { capitalize, creatureName, getSpecies } from './game';
@@ -114,6 +117,67 @@ export function wornItemOf(worn: WornGear, items: readonly GearItem[] | undefine
 export function wornInOrder<T extends { slot: GearSlot }>(worn: readonly T[]): T[] {
   const order: readonly GearSlot[] = ['hat', 'scarf', 'charm'];
   return [...worn].sort((a, b) => order.indexOf(a.slot) - order.indexOf(b.slot));
+}
+
+// --- Gear sets ---
+
+/** The gear set a base belongs to, or undefined (most bases are in none). */
+export function itemSet(baseId: string): GearSet | undefined {
+  const id = gearBase(baseId)?.set;
+  return id === undefined ? undefined : gearSet(id);
+}
+
+/** The pieces a set has (a Hat, a Scarf and a Charm). */
+export const SET_PIECES = 3;
+
+/** "2 / 3": the pieces of a set worn, counted against the whole set (a spaced slash, never "of"). */
+export function setCountText(count: number): string {
+  return `${String(count)} / ${String(SET_PIECES)}`;
+}
+
+/** One bonus row of a set: how many pieces it asks for, what it gives, and whether the wearer has them. */
+export interface SetBonusRow {
+  pieces: 2 | 3;
+  text: string;
+  active: boolean;
+}
+
+/** The two bonus rows of a set for a wearer who has `count` of its pieces. */
+export function setBonusRows(set: GearSet, count: number): SetBonusRow[] {
+  return [
+    { pieces: 2, text: set.two.text, active: count >= 2 },
+    { pieces: 3, text: set.three.text, active: count >= 3 },
+  ];
+}
+
+/**
+ * How many pieces of an item's set a creature would wear with the item on: the pieces it wears in the other
+ * slots plus the item itself. `worn` is what the creature wears (`Creature.gear`). 0 for an item in no set.
+ */
+export function setPiecesWith(
+  item: Pick<GearItem, 'baseId' | 'slot'>,
+  worn: readonly Pick<GearItem, 'baseId' | 'slot'>[],
+): number {
+  const set = itemSet(item.baseId);
+  if (set === undefined) return 0;
+  const others = worn.filter((w) => w.slot !== item.slot && gearBase(w.baseId)?.set === set.id);
+  return others.length + 1;
+}
+
+/**
+ * The set bonuses a creature has now, as one compact line for its page: each set it wears two or more
+ * pieces of, with the count and the bonus it gives ("Tidepool Finery 2 / 3: Steam bonus +8%"), separated by
+ * dots. Empty when it has none. The server's fold does the real work; this only says what the content says.
+ */
+export function activeSetLine(worn: readonly Pick<GearItem, 'baseId' | 'slot'>[]): string {
+  const parts: string[] = [];
+  for (const [id, count] of setCounts(worn)) {
+    const set = gearSet(id);
+    if (set === undefined || count < 2) continue;
+    const bonus = count >= 3 ? `${set.two.text}. ${set.three.text}` : set.two.text;
+    parts.push(`${set.name} ${setCountText(count)}: ${bonus}`);
+  }
+  return parts.join(' · ');
 }
 
 // --- Lines ---

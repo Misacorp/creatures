@@ -40,6 +40,7 @@ import {
   liveFightRules,
   makeSlot,
   phaseFloorHp,
+  placeSlots,
   raidEnrage,
   resolveGuests,
   scaleBoss,
@@ -352,7 +353,10 @@ export function buildPhaseInput(
   // The weather of the day the stage is scheduled in (Boon and Omen): for every creature in the row, guests
   // included, as numbers on its sheet. The stored input keeps them, so a replay never reads the weather.
   const day = stageWeather(sql, week.weekId, phase);
-  const row = compactRow(placed).map((slot): FightSlot => {
+  // Position lines and set gifts depend on where a creature stands: fold the gear of the row again with
+  // each creature's place (Front, Middle and Back are its rows), before the weather is added.
+  const kits = new Map(teams.flat().map((c) => [c.id, c.kit]));
+  const row = placeSlots(compactRow(placed), kits, 'zones').map((slot): FightSlot => {
     const mods = mergeMods(slot.mods, weatherSheet(day, slot));
     return mods === undefined ? slot : { ...slot, mods };
   });

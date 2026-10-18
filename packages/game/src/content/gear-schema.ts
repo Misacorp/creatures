@@ -7,6 +7,12 @@
  * how heavy they are in each slot is data here; everything about how items roll (tiers, item levels,
  * line counts, tag weights, costs) lives in `RULES.gear`. The engine never reads this: gear is folded
  * into a creature's stats and modifier sheet before a fight (`wornEffects`).
+ *
+ * Gear sets (`data/gear-sets.json`, 2026-10-18): a set is three named pieces (a Hat, a Scarf and a Charm:
+ * bases that name the set in `set`) that share a tag. Bonuses count the pieces one creature wears: two
+ * pieces give plain lines at a fixed value, all three one named effect (`SET_EFFECTS`) the fold turns into a
+ * field of the modifier sheet or a trip rule. Set pieces are ordinary bases otherwise: they unlock at a
+ * higher item level, drop and craft like others and roll lines like any base.
  */
 import * as v from 'valibot';
 import { ElementSchema, ELEMENTS, IdSchema, RoleSchema, type Element, type Role } from './schema';
@@ -103,6 +109,11 @@ export const GearBaseSchema = v.strictObject({
   /** A Festival piece: only a Festival finale drops it, and it carries its `fixed` line. */
   festival: v.optional(v.boolean()),
   /**
+   * The gear set this piece belongs to (`data/gear-sets.json`). A set piece shares the set's tag, so a
+   * role set's Hat and Scarf are role-locked like a role Charm (only that role can wear them).
+   */
+  set: v.optional(IdSchema),
+  /**
    * The fixed base stats of a Hat (Attack and HP, Attack first) or a Scarf (HP and Attack, HP first), and
    * optionally a third (crit chance or crit damage). Charms have none: they are the mechanics slot.
    */
@@ -122,6 +133,24 @@ export const GearBaseSchema = v.strictObject({
   flavor: Flavor,
 });
 export type GearBase = v.InferOutput<typeof GearBaseSchema>;
+
+/**
+ * The position lines that are worked out when the fight input is built, from the creature's row and its
+ * neighbours (`rules/gear-position.ts`); the engine sees only numbers. `besideRole` (Guard's shadow, Beside
+ * the mark-maker) is the one position line the engine reads on the board itself, each hit.
+ */
+export const POSITION_RULES = [
+  'sameElementBeside',
+  'oddOneOut',
+  'edge',
+  'heart',
+  'front',
+  'back',
+  'lantern',
+  'fourElements',
+  'sheltered',
+] as const;
+export type PositionRule = (typeof POSITION_RULES)[number];
 
 /**
  * What a line does. `stat` lines change Attack, HP or the crit numbers before the fight; `attune` is
@@ -169,6 +198,7 @@ export const LineEffectSchema = v.variant('kind', [
     ]),
   }),
   v.strictObject({ kind: v.literal('besideRole'), role: RoleSchema }),
+  v.strictObject({ kind: v.literal('position'), rule: v.picklist(POSITION_RULES) }),
   v.strictObject({
     kind: v.literal('rule'),
     rule: v.picklist([
@@ -205,6 +235,14 @@ export const LINE_GROUPS = [
   'festival',
 ] as const;
 export type LineGroup = (typeof LINE_GROUPS)[number];
+
+/**
+ * The line groups whose lines are "special": an item can have at most one special line (a rolled one;
+ * a base's own fixed line does not count). Position lines are the first such group; chance and trigger
+ * lines (design 6.3 and 6.4) join this list when they are built. Rolling, crafting and any reroll draw
+ * lines through `rollLines`, which enforces it.
+ */
+export const SPECIAL_GROUPS: readonly LineGroup[] = ['position'];
 
 /** A line as written in `data/gear-lines.json`. `perElement` lines expand into one line per element. */
 export const LineSchema = v.strictObject({
@@ -264,6 +302,8 @@ export interface GearLine {
   weights: { hat: number; scarf: number; charm: number };
   /** True for a line of the item itself (`kind: 'local'`): it shows as "(this item)" and changes one of the item's base stats. */
   local: boolean;
+  /** True for a special line (its group is in `SPECIAL_GROUPS`): an item rolls at most one of these. */
+  special: boolean;
   /** True when no item rolls it (talents and fixed lines use it). */
   fixedOnly: boolean;
   roles: readonly Role[];
@@ -287,6 +327,70 @@ export const LegacyPackSchema = v.strictObject({
 });
 export type LegacyPack = v.InferOutput<typeof LegacyPackSchema>;
 
+/**
+ * What a full set (three pieces worn) does beyond its two-piece lines. Each is one small effect the fold
+ * (`wornEffects`) turns into a field of the modifier sheet (`SlotMods`), a trip rule or, for the row
+ * ones, a gift to the creatures standing in the wearer's row (`rules/gear-position.ts`):
+ * - `unreflected`: its first reaction each fight cannot be reflected (the boss's trap).
+ * - `critWindow`: after it sets off a reaction its crits deal `value` more crit damage (basis points) for a round.
+ * - `healOnReaction`: it heals `value` (basis points of max HP) whenever it sets off a reaction.
+ * - `chainMark`: after it sets off a reaction the boss keeps the creature's own mark, so a chain can follow.
+ * - `coverReach`: a Guard's cover reaches the creature one slot further out.
+ * - `boostReach`: a Support's boost also lands on the creature two slots away.
+ * - `sealMark`: the first mark it leaves each fight cannot be replaced.
+ * - `firstReactionCrit`: its first reaction each fight is a critical hit.
+ * - `longTripCatch`: `value` extra catch rolls on 24 hour trips.
+ * - `rowShieldWall`: Guards in the wearer's row have Shield Walls that last 1 more round.
+ */
+export const SET_EFFECTS = [
+  'unreflected',
+  'critWindow',
+  'healOnReaction',
+  'chainMark',
+  'coverReach',
+  'boostReach',
+  'sealMark',
+  'firstReactionCrit',
+  'longTripCatch',
+  'rowShieldWall',
+] as const;
+export type SetEffectId = (typeof SET_EFFECTS)[number];
+
+/** The tag a set's pieces share: the base tags (not neutral) or the Festival. */
+export const SET_TAGS = [...GEAR_TAGS.filter((t) => t !== 'neutral'), 'festival'] as const;
+export type SetTag = (typeof SET_TAGS)[number];
+
+/** A plain line a set gives at a fixed value (basis points, or whole numbers for a flat line). */
+const SetLineSchema = v.strictObject({
+  line: IdSchema,
+  value: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100_000)),
+});
+
+/** A set as written in `data/gear-sets.json`. */
+export const GearSetSchema = v.strictObject({
+  id: IdSchema,
+  name: Name,
+  tag: v.picklist(SET_TAGS),
+  flavor: Flavor,
+  /** Two pieces: plain lines at a fixed value (folded exactly like the same line on an item). */
+  two: v.strictObject({
+    /** The bonus in words, as the card shows it. */
+    text: About,
+    lines: v.pipe(v.array(SetLineSchema), v.minLength(1), v.maxLength(3)),
+  }),
+  /** Three pieces: this on top of the two-piece bonus. */
+  three: v.strictObject({
+    text: About,
+    effect: v.picklist(SET_EFFECTS),
+    /** The effect's number, where it has one (crit damage and healing in basis points, extra rolls). */
+    value: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100_000))),
+    /** The effect only works for a wearer of this element (Steam is cashed by Tide wearers). */
+    wearerElement: v.optional(ElementSchema),
+  }),
+});
+export type GearSet = v.InferOutput<typeof GearSetSchema>;
+export const GearSetsSchema = v.pipe(v.array(GearSetSchema), v.minLength(1), v.maxLength(40));
+
 export const GearBasesSchema = v.pipe(v.array(GearBaseSchema), v.minLength(1), v.maxLength(200));
 export const GearLinesSchema = v.pipe(v.array(LineSchema), v.minLength(1), v.maxLength(200));
 
@@ -294,6 +398,8 @@ export interface GearPack {
   bases: GearBase[];
   /** Every line, per-element ones expanded (`tide-attunement`). */
   lines: GearLine[];
+  /** The gear sets, each with exactly one piece in every slot (`bases[].set`). */
+  sets: GearSet[];
   legacy: LegacyPack;
 }
 
@@ -350,6 +456,7 @@ export function expandLines(
       minRarity: def.minRarity,
       weights: def.weights,
       local: def.effect.kind === 'local',
+      special: SPECIAL_GROUPS.includes(def.group),
       fixedOnly: def.fixedOnly === true,
       roles: def.roles ?? [],
       restricted: def.restricted === true,
@@ -383,6 +490,7 @@ export function loadGear(
   rawLines: unknown,
   rawLegacy: unknown,
   reactions: readonly ReactionRef[],
+  rawSets: unknown,
 ): GearPack {
   const bases = v.safeParse(GearBasesSchema, rawBases);
   if (!bases.success) firstIssue(bases, 'gear bases');
@@ -390,6 +498,8 @@ export function loadGear(
   if (!lineDefs.success) firstIssue(lineDefs, 'gear lines');
   const legacy = v.safeParse(LegacyPackSchema, rawLegacy);
   if (!legacy.success) firstIssue(legacy, 'legacy gear');
+  const setDefs = v.safeParse(GearSetsSchema, rawSets);
+  if (!setDefs.success) firstIssue(setDefs, 'gear sets');
 
   const reactionNames = {} as Record<Element, string>;
   for (const element of ELEMENTS) {
@@ -410,6 +520,11 @@ export function loadGear(
     }
     if (line.single && !line.values.every((x) => x === line.values[0])) {
       fail(`single line "${line.id}" must have one value at every tier`);
+    }
+    // The position group is the special group, and only position effects live in it.
+    const positional = line.effect.kind === 'besideRole' || line.effect.kind === 'position';
+    if (positional !== (line.group === 'position')) {
+      fail(`line "${line.id}": only position effects belong to the position group`);
     }
     if (line.restricted && line.roles.length === 0) {
       fail(`restricted line "${line.id}" needs the roles it works for`);
@@ -433,7 +548,7 @@ export function loadGear(
   for (const base of bases.output) {
     if (baseIds.has(base.id)) fail(`duplicate base id "${base.id}"`);
     baseIds.add(base.id);
-    const key = `${base.slot}:${base.tag}:${base.festival === true ? 'festival' : 'plain'}:${String(base.minItemLevel ?? 1)}`;
+    const key = `${base.slot}:${base.tag}:${base.festival === true ? 'festival' : 'plain'}:${base.set ?? ''}:${String(base.minItemLevel ?? 1)}`;
     if (seenKey.has(key)) {
       fail(`two ${base.slot} bases with the tag ${base.tag} unlock at the same item level`);
     }
@@ -446,7 +561,8 @@ export function loadGear(
     if (base.slot === 'charm') {
       if (base.stats !== undefined) fail(`Charm "${base.id}" cannot have base stats`);
       if (base.implicit === undefined) fail(`Charm "${base.id}" needs its implicit`);
-      if (base.minItemLevel !== undefined && base.minItemLevel > 1) {
+      // A Charm has no better makes, except that a set's Charm unlocks with its set's pieces.
+      if (base.set === undefined && base.minItemLevel !== undefined && base.minItemLevel > 1) {
         fail(`Charm "${base.id}" has no better versions, so it cannot have a minimum item level`);
       }
     } else {
@@ -495,8 +611,8 @@ export function loadGear(
     if (base.festival !== true && base.fixed !== undefined) {
       fail(`base "${base.id}" has a fixed line but is not a Festival piece`);
     }
-    if (tagRole(base.tag) !== null && base.slot !== 'charm') {
-      fail(`only Charms can be role-locked ("${base.id}")`);
+    if (tagRole(base.tag) !== null && base.slot !== 'charm' && base.set === undefined) {
+      fail(`only Charms and set pieces can be role-locked ("${base.id}")`);
     }
   }
   // Every element and the neutral tag have a base in each slot that is there from item level 1 (a
@@ -532,10 +648,48 @@ export function loadGear(
       fail(`no common line rolls in ${slot}`);
     }
   }
+  // Gear sets: every set has exactly one Hat, one Scarf and one Charm, which share its tag.
+  const sets = setDefs.output;
+  const setIds = new Set<string>();
+  const setNames = new Set<string>();
+  for (const set of sets) {
+    if (setIds.has(set.id)) fail(`duplicate set id "${set.id}"`);
+    setIds.add(set.id);
+    if (setNames.has(set.name)) fail(`duplicate set name "${set.name}"`);
+    setNames.add(set.name);
+    const pieces = bases.output.filter((b) => b.set === set.id);
+    for (const slot of GEAR_SLOTS) {
+      const count = pieces.filter((b) => b.slot === slot).length;
+      if (count !== 1) fail(`set "${set.id}" needs exactly one ${slot} (it has ${String(count)})`);
+    }
+    for (const piece of pieces) {
+      if (set.tag === 'festival') {
+        if (piece.festival !== true) fail(`set "${set.id}" pieces must be Festival pieces`);
+      } else {
+        if (piece.festival === true) fail(`set "${set.id}" has a Festival piece`);
+        if (piece.tag !== set.tag) fail(`set piece "${piece.id}" must have the tag ${set.tag}`);
+      }
+    }
+    for (const entry of set.two.lines) {
+      const line = lines.find((l) => l.id === entry.line);
+      if (line === undefined) fail(`set "${set.id}" uses unknown line "${entry.line}"`);
+      if (line.local || line.fixedOnly) {
+        fail(`set "${set.id}" uses "${entry.line}", which a set cannot give`);
+      }
+    }
+    if (set.three.effect === 'longTripCatch' && set.three.value === undefined) {
+      fail(`set "${set.id}": longTripCatch needs a value`);
+    }
+  }
+  for (const base of bases.output) {
+    if (base.set !== undefined && !setIds.has(base.set)) {
+      fail(`base "${base.id}" is in the unknown set "${base.set}"`);
+    }
+  }
   const legacyIds = new Set<string>();
   for (const old of legacy.output.bases) {
     if (legacyIds.has(old.id)) fail(`duplicate legacy base "${old.id}"`);
     legacyIds.add(old.id);
   }
-  return { bases: bases.output, lines, legacy: legacy.output };
+  return { bases: bases.output, lines, sets, legacy: legacy.output };
 }
