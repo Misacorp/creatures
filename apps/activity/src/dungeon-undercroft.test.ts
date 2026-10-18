@@ -71,14 +71,24 @@ describe('the descent card words', () => {
   it("says the level's floors, how much fiercer it is, the breath and the loot, from what the server sent", () => {
     expect(catchBreathText(2000)).toBe('20% HP');
     expect(descendLines(descent)).toEqual([
-      '4 floors, with a keeper on the last. Foes fight 3 depths deeper than yours.',
+      '4 floors, with a keeper on the last. Foes fight 1 depth deeper than yours.',
       'Your creatures catch their breath (20% HP).',
       'Fights there put twice their loot in your pack.',
       'Once down, you can head home only from a camp, if you find one.',
     ]);
     // A deeper level is fiercer again; a different multiplier is said as such.
     expect(descendLines({ ...descent, level: 2, floors: 3 })[0]).toBe(
-      '3 floors, with a keeper on the last. Foes fight 6 depths deeper than yours.',
+      '3 floors, with a keeper on the last. Foes fight 2 depths deeper than yours.',
+    );
+    // One depth is singular; a bigger bonus (the rules' number can change) is plural.
+    expect(descendLines({ ...descent, depthBonus: 1, level: 1 })[0]).toContain(
+      'Foes fight 1 depth deeper than yours.',
+    );
+    expect(descendLines({ ...descent, depthBonus: 3, level: 1 })[0]).toContain(
+      'Foes fight 3 depths deeper than yours.',
+    );
+    expect(descendLines({ ...descent, depthBonus: 1, level: 2 })[0]).toContain(
+      'Foes fight 2 depths deeper than yours.',
     );
     expect(descendLines(descent, 3)[2]).toBe('Fights there put 3 times their loot in your pack.');
     expect(DESCEND_BUTTON).toBe('Descend');

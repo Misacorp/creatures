@@ -374,7 +374,8 @@ export function descendLines(
   lootMultiplier: number = RULES.dungeon.undercroft.lootMultiplier,
 ): string[] {
   const floors = `${String(descent.floors)} floors, with a keeper on the last.`;
-  const fiercer = `Foes fight ${String(descent.depthBonus * descent.level)} depths deeper than yours.`;
+  const deeper = descent.depthBonus * descent.level;
+  const fiercer = `Foes fight ${String(deeper)} ${deeper === 1 ? 'depth' : 'depths'} deeper than yours.`;
   const loot =
     lootMultiplier === 2
       ? 'Fights there put twice their loot in your pack.'

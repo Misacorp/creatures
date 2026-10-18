@@ -129,7 +129,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
   - Its Bait, Essence and scrap go into the pack.
   - Then the player chooses: **head home** with everything, or **descend into the Undercroft**.
   - On the way down, standing creatures catch their breath (`catchBreathBp`, 20% of max HP).
-- **It is harder, and says so.** Undercroft foes are scaled as if the depth were higher (`depthBonus`, +3), and the map, the drawer and the room banner say "Undercroft · foes are fiercer here".
+- **It is harder, and says so.** Undercroft foes are scaled as if the depth were higher (`depthBonus`, +1; it was +3 at first, but the keeper then stood five times in six, so the simulator's tuning lowered it, see `docs/balance/log.md` B-020), and the map, the drawer and the room banner say "Undercroft · foes are fiercer here".
 - **Its length grows with landmarks:**
   - 2 floors, plus 1 for every landmark passed after the first, at most 5 (`baseFloors`, `perLandmark`, `maxFloors`).
   - Then a floor with the **Undercroft keeper**: a room boss at the Undercroft's depth, with its landmark signature.
@@ -151,7 +151,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
   - Heading home is only possible from an Undercroft camp, or before descending.
   - A run left open in the Undercroft closes as a defeat unless it rests at a camp.
 - **A cracked floor (rare).** When an Undercroft map is drawn, 15% of the time (`crackBp`) its keeper's room shows a **cracked floor**. Beating that keeper offers another descent, into a deeper Undercroft:
-  - its foes are fiercer again (+3 more depth);
+  - its foes are fiercer again (`depthBonus` more depth, +1);
   - it has 2 floors and its own keeper and chest;
   - there are at most 3 Undercrofts in a run.
 - **Client.**
@@ -160,7 +160,9 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
   - A carved door's drawer says what stepping through could add (the six kinds). Stepping in shows one line ("a room was added"), never which.
   - The results show how deep the run went ("Undercroft 1 cleared").
 - **Simulator.**
-  - The policy descends when the team is healthy (average HP over 60% after catching breath and nobody knocked out), and takes the camp mark when it can.
+  - The policy descends when the team is healthy (average HP over 60% after catching breath and nobody knocked out).
+  - It draws doors (`{ doors: true }`) and takes one on its route (it costs no fight). The door's room is drawn when stepped through, not chosen.
+  - At Undercroft camps it heads home under the main camp's rule.
   - The targets must still hold, and the experience and gear targets are watched closely.
   - The numbers above are starting values for the tuning.
 
@@ -231,9 +233,9 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
 
 ### The Undercroft on the server
 
-- **Rules** (`RULES.dungeon.undercroft`, `packages/game/src/rules/dungeon-map.ts`, `dungeon-run.ts`): `fromDepth 8`, `catchBreathBp 2000`, `depthBonus 3`, `baseFloors 2`, `perLandmark 1`, `maxFloors 5`, `deeperFloors 2`, `maxMarks 2`, `lootMultiplier 2`, `crackBp 1500`, `maxLevels 3`, `epic {hpBp 16000, atkBp 13000, loot {0, 1, 2}}`, `chest {essence 1, scrap 2, gearBp 4000, rareBonusBp 1500, epicBonusBp 500, itemLevelBonus 2}`, `doorFloors [4, 5]`, `doorBp 3500`, `markOdds`.
+- **Rules** (`RULES.dungeon.undercroft`, `packages/game/src/rules/dungeon-map.ts`, `dungeon-run.ts`): `fromDepth 8`, `catchBreathBp 2000`, `depthBonus 1` (3 at first: the keeper stood five times in six, B-020), `baseFloors 2`, `perLandmark 1`, `maxFloors 5`, `deeperFloors 2`, `maxMarks 2`, `lootMultiplier 2`, `crackBp 1500`, `maxLevels 3`, `epic {hpBp 16000, atkBp 13000, loot {0, 1, 2}}`, `chest {essence 1, scrap 2, gearBp 4000, rareBonusBp 1500, epicBonusBp 500, itemLevelBonus 2}`, `doorFloors [4, 5]`, `doorBp 3500`, `markOdds`.
   - The first Undercroft has `min(maxFloors, baseFloors + perLandmark x (landmarks passed - 1))` floors of two rooms, where the landmarks passed by a run at depth d are `floor((d - 1) / 7)` (depth 8 to 14: 2 floors, 15 to 21: 3, up to 5), plus one floor for each mark, plus the keeper's floor. A deeper level has `deeperFloors` floors plus the keeper, and no marks.
-- **The main map's door** is drawn last in `generateDungeonMap`, only when the caller asks (`{ doors: true }`: the server does, the simulator does not yet, so its maps are the maps it always drew), so a map without a door is the map it was before doors: a fight on floor 4 or 5 becomes a `door` node (no foe, modifier or event). `mapView(map, depth)` shows it as `door` at depth 8 and over, and as a `mystery` node with no event below it.
+- **The main map's door** is drawn last in `generateDungeonMap`, only when the caller asks (`{ doors: true }`: the server and the simulator both do), so a map without a door is the map it was before doors: a fight on floor 4 or 5 becomes a `door` node (no foe, modifier or event). `mapView(map, depth)` shows it as `door` at depth 8 and over, and as a `mystery` node with no event below it.
 - **Undercroft maps** come from `generateUndercroftMap(rng, {level, floors, marks})`: node ids `u<level>f<floor>l<lane>`; floors of two rooms in lanes 0 and 2 that lead straight up their lane (the first floor is all fights, the rest roll like the main map's rooms with caps of 2 elites, 1 cache and 2 mysteries per level, none beside its mate); a floor of one room (lane 1) for each mark (camps last); the keeper alone on the last floor (a room boss, its own foe whatever the depth, with its `signature` on). `crack` is drawn last with `crackBp` (never on level `maxLevels`). `undercroftMapValid` checks it.
 - **Rooms.** Foes there are scaled at `depth + depthBonus x level`. An epic room is a normal foe with `epic` on top (stronger than an elite), shown as `elite: true` with `epic: true`.
 - **The boss clear at depth 8 and over** (main boss, or a keeper with a crack and levels left, and someone standing):

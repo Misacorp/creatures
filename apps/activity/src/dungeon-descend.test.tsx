@@ -72,7 +72,7 @@ describe('DungeonDescend', () => {
     expect(text).toContain('At risk');
     expect(text).toContain('The Undercroft · foes are fiercer here');
     expect(text).toContain(
-      '4 floors, with a keeper on the last. Foes fight 3 depths deeper than yours.',
+      '4 floors, with a keeper on the last. Foes fight 1 depth deeper than yours.',
     );
     expect(text).toContain('Your creatures catch their breath (20% HP).');
     expect(text).toContain('A defeat below keeps only half your pack, rounded up.');
@@ -108,7 +108,7 @@ describe('DungeonDescend', () => {
     expect(text).toContain('Your pack is empty.');
     expect(text).toContain('A deeper Undercroft · foes are fiercer still');
     expect(text).toContain(
-      '3 floors, with a keeper on the last. Foes fight 6 depths deeper than yours.',
+      '3 floors, with a keeper on the last. Foes fight 2 depths deeper than yours.',
     );
     expect(text).toContain('Your pack is empty, so little is at stake.');
   });

@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "548d8491-d61e-4aee-8572-d50d6d2e8d66",
+    "id": "efddfc08-1c6c-47ec-8c7c-99d440509659",
     "day": "2027-01-16",
     "attempt": 1,
     "depth": 14,
@@ -22,7 +22,7 @@
             "name": "Ash Sprite",
             "element": "ember",
             "kind": "foe",
-            "hpMax": 596,
+            "hpMax": 629,
             "elite": false
           },
           "modifier": {
@@ -42,7 +42,7 @@
             "name": "Puddle Imp",
             "element": "tide",
             "kind": "foe",
-            "hpMax": 619,
+            "hpMax": 654,
             "elite": false
           },
           "modifier": {
@@ -62,7 +62,7 @@
             "name": "Bramble Hound",
             "element": "grove",
             "kind": "foe",
-            "hpMax": 643,
+            "hpMax": 680,
             "elite": false
           },
           "modifier": {
@@ -93,7 +93,7 @@
             "name": "Ember Mite",
             "element": "ember",
             "kind": "foe",
-            "hpMax": 548,
+            "hpMax": 579,
             "elite": false
           },
           "modifier": {
@@ -120,7 +120,7 @@
             "name": "Flicker Swarm",
             "element": "spark",
             "kind": "foe",
-            "hpMax": 596,
+            "hpMax": 629,
             "elite": false
           },
           "modifier": {
@@ -140,7 +140,7 @@
             "name": "Static Bat",
             "element": "spark",
             "kind": "foe",
-            "hpMax": 733,
+            "hpMax": 775,
             "elite": true
           },
           "modifier": {
@@ -160,7 +160,7 @@
             "name": "Ash Sprite",
             "element": "ember",
             "kind": "foe",
-            "hpMax": 596,
+            "hpMax": 629,
             "elite": false
           },
           "modifier": {
@@ -198,7 +198,7 @@
             "name": "Moss Lurker",
             "element": "grove",
             "kind": "foe",
-            "hpMax": 572,
+            "hpMax": 604,
             "elite": false
           },
           "modifier": {
@@ -236,7 +236,7 @@
             "name": "Slag Tyrant",
             "element": "ember",
             "kind": "boss",
-            "hpMax": 905,
+            "hpMax": 957,
             "elite": false
           },
           "modifier": {
@@ -312,7 +312,7 @@
         "cleared": true,
         "rounds": 3,
         "foeHpEnd": 0,
-        "foeHpMax": 596,
+        "foeHpMax": 629,
         "loot": {
           "bait": 1,
           "essence": 0,
@@ -340,7 +340,7 @@
         "cleared": true,
         "rounds": 4,
         "foeHpEnd": 0,
-        "foeHpMax": 596,
+        "foeHpMax": 629,
         "loot": {
           "bait": 1,
           "essence": 0,
