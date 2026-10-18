@@ -71,6 +71,33 @@ import { raidRoutes } from './raid-routes';
 import { TokenBucketLimiter } from './ratelimit';
 import { SNOWFLAKE_RE } from './schemas';
 import {
+  LOUNGE_BLOCK_MS,
+  LOUNGE_BOUNDARY_DELAY_MS,
+  LOUNGE_DEBOUNCE_MS,
+  LOUNGE_MAX_FAILURES,
+  LOUNGE_TICK_MS,
+  blockMessages,
+  clearBuriedFlag,
+  clearMessage,
+  deleteInstance,
+  loungeMigration,
+  playerNames,
+  readLounge,
+  recordInstance,
+  renderLounge,
+  type RaidLine,
+  renderedSignature,
+  setFailures,
+  setLastVisit,
+  setNextCheck,
+  storeInstanceUsers,
+  storeMessage,
+  storeSignature,
+  trackedInstances,
+} from './lounge';
+import type { LoungeClient, LoungeResult } from './lounge-discord';
+import { nextRaidBoundary, raidStageAt } from './lounge-raid';
+import {
   SESSION_ABSOLUTE_MS,
   SESSION_IDLE_MS,
   SESSION_TOUCH_INTERVAL_MS,
@@ -367,6 +394,8 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
     // who moved it for a player who was away (see raid-assist.ts). Existing rows are the owners'.
     sql.exec('ALTER TABLE raid_placements ADD COLUMN placed_by TEXT');
   },
+  // Version 33: the lounge message and the Activity instances it tracks (see lounge.ts).
+  loungeMigration,
 ];
 
 export interface SessionUser {
@@ -445,6 +474,8 @@ const routes: Routes<RequestContext> = {
 const ROUTE_KEYS = Object.keys(routes);
 
 export interface GuildCoreOptions {
+  /** The Discord calls of the lounge message. Without it the lounge message is off. */
+  lounge?: LoungeClient;
   /** Live randomness for catches. Defaults to crypto.getRandomValues; tests inject a seeded one. */
   rng?: Rng;
   /**
@@ -586,6 +617,7 @@ export class GuildCore {
   readonly allowance: DailyAllowance;
   private syncInFlight: Promise<LeetSyncResult> | null = null;
   private postsInFlight: Promise<void> | null = null;
+  private loungeInFlight: Promise<void> | null = null;
   /** The last analytics prune left old rows behind: the alarm comes back soon to continue. */
   private pruneBacklog = false;
   private lastSyncAttemptAt: number | null = null;
@@ -757,6 +789,10 @@ export class GuildCore {
         this.sql.exec('INSERT INTO schema_version (version) VALUES (?)', version);
       });
     }
+    // The lounge tables, even where another branch's migration 33 ran first (staging; see lounge.ts).
+    this.storage.transactionSync(() => {
+      loungeMigration(this.sql);
+    });
     // Rows of an earlier shape of gear v2 (staging ran one before its migration 27 was edited in place) are
     // brought to today's shape first, so nothing below or in a view meets an item it cannot read.
     normaliseGearRows(this.storage);
@@ -782,12 +818,14 @@ export class GuildCore {
    * Upserts the player and creates a session. Returns the secret half of the token. `channelId` is
    * the channel Discord says the Activity was launched from: the session remembers it, and unless a
    * server admin pinned the announcement channel it becomes the announcement channel ("the channel
-   * most recently launched from"). Anything that is not a snowflake is ignored.
+   * most recently launched from"). Anything that is not a snowflake is ignored. `instanceId` is the
+   * Activity instance Discord confirmed (only ever pass a verified one): the lounge message tracks it.
    */
   async createSession(
     guildId: string,
     user: SessionUser,
     channelId?: string | null,
+    instanceId?: string | null,
   ): Promise<string> {
     const secret = generateSessionSecret();
     const tokenHash = await hashSecret(secret);
@@ -834,6 +872,14 @@ export class GuildCore {
         MAX_SESSIONS_PER_USER,
       );
     });
+    if (this.options.lounge != null && typeof instanceId === 'string') {
+      // Its own transaction: the lounge message must never stop a login.
+      try {
+        this.storage.transactionSync(() => recordInstance(this.sql, instanceId, user.id, t));
+      } catch (err) {
+        console.error('lounge record failed', err instanceof Error ? err.name : 'unknown');
+      }
+    }
     await this.ensureAlarm();
     return secret;
   }
@@ -1354,6 +1400,15 @@ export class GuildCore {
         candidates.push(postAt > this.now() ? postAt : this.now() + POST_RETRY_MS);
     }
     if (this.pruneBacklog) candidates.push(this.now() + POST_RETRY_MS);
+    if (this.options.lounge != null) {
+      // The lounge keeps real time; like the rollup it is put on the game clock here.
+      const checkAt = readLounge(this.sql).nextCheckAt;
+      if (checkAt !== null) {
+        const offset = this.devOffset();
+        const real = this.realNow();
+        candidates.push((checkAt > real ? checkAt : real + POST_RETRY_MS) + offset);
+      }
+    }
     // The daily analytics rollup, just after the game day turns over.
     // Rollups run on real time (see the constructor), so this candidate is found in real time and then
     // put on the game clock like the others (the offset is 0 unless the staging dev clock moved).
@@ -1443,6 +1498,195 @@ export class GuildCore {
     void this.deliverPosts();
   }
 
+  // --- The lounge message ---
+
+  /**
+   * Looks at the tracked Activity instances and brings the lounge message up to date, when a check
+   * is due. Concurrent calls share one run. Never throws, and never blocks a request.
+   */
+  runLounge(): Promise<void> {
+    if (this.loungeInFlight !== null) return this.loungeInFlight;
+    const run = this.runLoungeCheck().finally(() => {
+      this.loungeInFlight = null;
+    });
+    this.loungeInFlight = run;
+    return run;
+  }
+
+  private async runLoungeCheck(): Promise<void> {
+    const client = this.options.lounge;
+    if (client == null) return;
+    try {
+      const t = this.realNow();
+      const due = readLounge(this.sql).nextCheckAt;
+      if (due === null || due > t) return;
+      // Leased: a run that dies halfway is tried again at the next tick.
+      setNextCheck(this.sql, t + LOUNGE_TICK_MS);
+      const present = await this.refreshInstances(client, t);
+      const retry = await this.syncLounge(client, present, t);
+      const state = readLounge(this.sql);
+      if (retry !== null && state.failures < LOUNGE_MAX_FAILURES) {
+        setNextCheck(this.sql, t + Math.max(retry, LOUNGE_DEBOUNCE_MS));
+      } else if (trackedInstances(this.sql).length === 0) {
+        // A quiet message stays fresh at raid boundaries; with no message there is nothing to keep.
+        const boundary =
+          readLounge(this.sql).messageId === null
+            ? null
+            : this.realAt(nextRaidBoundary(this.now(), this.timezone()) + LOUNGE_BOUNDARY_DELAY_MS);
+        setNextCheck(this.sql, boundary);
+        if (retry !== null) setFailures(this.sql, 0);
+      }
+    } catch (err) {
+      console.error('lounge check failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /** Asks Discord about every tracked instance; returns the players present. */
+  private async refreshInstances(client: LoungeClient, t: number): Promise<string[]> {
+    const present = new Set<string>();
+    const guildId = this.storedGuildId();
+    for (const tracked of trackedInstances(this.sql)) {
+      try {
+        const instance = await client.getInstance(tracked.id);
+        if (instance === null || instance.location.guild_id !== guildId) {
+          deleteInstance(this.sql, tracked.id);
+          continue;
+        }
+        storeInstanceUsers(this.sql, tracked.id, instance.users, t);
+        for (const id of trackedInstanceUsers(this.sql, tracked.id)) present.add(id);
+      } catch (err) {
+        // Discord cannot be asked right now: what is stored for this instance stands.
+        console.error('lounge lookup failed', err instanceof Error ? err.name : 'unknown');
+        for (const id of tracked.users) present.add(id);
+      }
+    }
+    return [...present];
+  }
+
+  /**
+   * Makes the message match `present`. Returns null when nothing needs retrying, or the wait in ms
+   * after a transient failure. At most one message is written per call (plus the delete of a buried
+   * or moved one).
+   */
+  private async syncLounge(
+    client: LoungeClient,
+    present: readonly string[],
+    t: number,
+  ): Promise<number | null> {
+    const before = readLounge(this.sql);
+    if (present.length > 0) {
+      const keep = before.lastVisitUserId !== null && present.includes(before.lastVisitUserId);
+      setLastVisit(
+        this.sql,
+        keep ? before.lastVisitUserId : (present[present.length - 1] ?? null),
+        t,
+      );
+    }
+    const state = readLounge(this.sql);
+    const names = playerNames(this.sql, present);
+    const lastName =
+      state.lastVisitUserId === null
+        ? null
+        : (playerNames(this.sql, [state.lastVisitUserId]).get(state.lastVisitUserId) ?? null);
+    const rendered = renderLounge({
+      names: [...names.values()],
+      unknown: present.length - names.size,
+      lastVisit:
+        state.lastVisitUserId === null || state.lastVisitAt === null
+          ? null
+          : { name: lastName, at: state.lastVisitAt },
+      raid: this.loungeRaidLine(),
+    });
+    const signature = renderedSignature(rendered);
+    const channel = announceChannelId(this.sql);
+    // Nothing to do without a channel, while paused, or before anyone has ever been there.
+    if (channel === null || (state.blockedUntil !== null && state.blockedUntil > t)) return null;
+    if (state.messageId === null && state.lastVisitUserId === null) return null;
+
+    let messageId = state.messageId;
+    // A message posted before the embed (plain text, SUPPRESS_EMBEDS set, its signature not JSON) cannot
+    // be edited into an embed: an edit cannot clear that flag reliably, so it is replaced once.
+    if (messageId !== null && state.content !== null && !state.content.startsWith('[')) {
+      await client.deleteMessage(state.channelId ?? channel, messageId);
+      clearMessage(this.sql);
+      messageId = null;
+    }
+    if (messageId !== null && state.channelId !== channel) {
+      await client.deleteMessage(state.channelId ?? '', messageId);
+      clearMessage(this.sql);
+      messageId = null;
+    }
+    if (messageId !== null && state.checkBuried) {
+      const recent = await client.recentMessageIds(channel);
+      // A failed listing (no permission to read history) leaves the message where it is.
+      if (recent.kind === 'ok' && !recent.value.includes(messageId)) {
+        await client.deleteMessage(channel, messageId);
+        clearMessage(this.sql);
+        messageId = null;
+      }
+    }
+    clearBuriedFlag(this.sql);
+
+    if (messageId !== null) {
+      if (state.content === signature && state.channelId === channel) return null;
+      const body = { ...rendered, iconUrl: await client.appIconUrl() };
+      const edited = await client.editMessage(channel, messageId, body);
+      if (edited.kind === 'ok') {
+        storeSignature(this.sql, signature);
+        return null;
+      }
+      if (edited.kind !== 'not_found') return this.loungeFailure(edited, t);
+      clearMessage(this.sql);
+    }
+    const created = await client.createMessage(channel, {
+      ...rendered,
+      iconUrl: await client.appIconUrl(),
+    });
+    if (created.kind === 'ok') {
+      storeMessage(this.sql, channel, created.value, signature);
+      return null;
+    }
+    return this.loungeFailure(created, t);
+  }
+
+  /**
+   * The raid weekend line for the lounge message, from the game clock; Discord timestamps are real
+   * time. Never throws: any error means no line.
+   */
+  private loungeRaidLine(): RaidLine | null {
+    try {
+      const stage = raidStageAt(this.sql, this.now(), this.timezone());
+      if (stage === null) return null;
+      return stage.stage === 'phase2' || stage.stage === 'finale'
+        ? { ...stage, at: this.realAt(stage.at) }
+        : stage;
+    } catch (err) {
+      console.error('lounge raid line failed', err instanceof Error ? err.name : 'unknown');
+      return null;
+    }
+  }
+
+  /** Records a failed Discord call (kind only in the log); returns the wait before a retry, or null. */
+  private loungeFailure(result: LoungeResult<unknown>, t: number): number | null {
+    if (result.kind === 'ok') return null;
+    const kind = result.kind === 'retry' || result.kind === 'failed' ? result.error : result.kind;
+    console.error('lounge message failed', kind);
+    if (result.kind === 'forbidden' || result.kind === 'not_found') {
+      blockMessages(this.sql, t + LOUNGE_BLOCK_MS);
+      return null;
+    }
+    if (result.kind === 'failed') return null;
+    setFailures(this.sql, readLounge(this.sql).failures + 1);
+    return result.afterMs ?? LOUNGE_TICK_MS;
+  }
+
+  /** Starts a lounge check in the background when one is due; the caller does not wait for it. */
+  private kickLounge(): void {
+    if (this.options.lounge == null) return;
+    const due = readLounge(this.sql).nextCheckAt;
+    if (due !== null && due <= this.realNow()) void this.runLounge();
+  }
+
   /**
    * Arms the alarm for the earliest of the next leet sync and the next raid event, unless an alarm
    * that is not later is already set. Runs due raid events first, so the alarm is never set in the
@@ -1453,6 +1697,7 @@ export class GuildCore {
     this.weather.ensure();
     this.catchUpRaid();
     this.kickPosts();
+    this.kickLounge();
     const at = this.desiredAlarmAt(this.now());
     if (at === null) return;
     const existing = await this.storage.getAlarm();
@@ -1490,6 +1735,7 @@ export class GuildCore {
     }
     this.catchUpRaid();
     await this.deliverPosts();
+    await this.runLounge();
     // Old analytics rows go; a long backlog is worked off over the next alarms.
     this.pruneBacklog = this.analytics.prune();
     this.rollup.runDue();
@@ -1523,4 +1769,9 @@ function logSyncError(err: unknown): void {
   const kind =
     err instanceof LeetSourceError ? err.kind : err instanceof Error ? err.name : 'unknown';
   console.error('leet sync failed', kind);
+}
+
+/** The players stored for a tracked instance. */
+function trackedInstanceUsers(sql: SqlStorage, instanceId: string): string[] {
+  return trackedInstances(sql).find((i) => i.id === instanceId)?.users ?? [];
 }
