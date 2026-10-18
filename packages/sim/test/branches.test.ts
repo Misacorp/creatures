@@ -80,10 +80,17 @@ describe('which form a branching line grows into', () => {
 });
 
 describe('the evolve step of a check-in', () => {
-  it('evolves a ready creature into the picked form, pays the one Essence price, and counts it', () => {
+  it('takes the original form by default, whatever the team', () => {
     const sproutle = owned('sproutle', 15);
     const p = player([owned('mistnewt', 14), owned('splashet', 12), sproutle], 100);
     evolveCreatures(p);
+    expect(speciesOf(sproutle.speciesId).id).toBe('thornbuck');
+  });
+
+  it('evolves a ready creature into the picked form, pays the one Essence price, and counts it', () => {
+    const sproutle = owned('sproutle', 15);
+    const p = player([owned('mistnewt', 14), owned('splashet', 12), sproutle], 100);
+    evolveCreatures(p, pickBranch);
     // The Guard is already on the team, so the Sproutle took the Support form.
     expect(speciesOf(sproutle.speciesId).id).toBe('sunfawn');
     expect(p.essence).toBe(100 - (speciesOf('sproutle').evolvesTo?.essence ?? 0));

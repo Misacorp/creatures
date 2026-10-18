@@ -43,7 +43,7 @@ import {
 } from './gear';
 import { chooseDungeonTeam, dayModifiers, playDungeonDay, type DungeonLogEntry } from './dungeon';
 import type { Setup } from './formations';
-import { pickBranch } from './policy';
+import { firstForm, type BranchPick } from './policy';
 import { collect, fillSlots, newCreature } from './talents';
 import { awardRaidExperience, buyRibbons, focusFirst, giveExperience, packTreat } from './training';
 import { openRaidWeek, playStage, summarizeRaid, type RaidSummary, type RaidWeek } from './raid';
@@ -393,13 +393,17 @@ export function serverMedianTopLevel(players: readonly SimPlayer[]): number {
   return median(tops) ?? 1;
 }
 
-/** Evolves creatures that reached their evolution level while the player has the Essence. */
-export function evolveCreatures(player: SimPlayer): void {
+/**
+ * Evolves creatures that reached their evolution level while the player has the Essence. `pick` chooses
+ * the form of a line that grows two ways; the journey takes the first (original) form, so the sim's
+ * baselines stay put while the dungeon is reworked (decisions.md, "Branch evolutions built").
+ */
+export function evolveCreatures(player: SimPlayer, pick: BranchPick = firstForm): void {
   for (const c of byPowerDesc(player.creatures)) {
     // Both forms of a branching line cost the same (`checkCreatures`), so the readiness is the first one's.
     const evo = speciesOf(c.speciesId).evolvesTo;
     if (evo === undefined || c.level < evo.level || player.essence < evo.essence) continue;
-    const form = pickBranch(player.creatures, c) ?? evo;
+    const form = pick(player.creatures, c) ?? evo;
     player.essence -= form.essence;
     c.speciesId = form.species;
     player.week.evolutions += 1;

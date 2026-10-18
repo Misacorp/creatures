@@ -11,7 +11,8 @@ import { CATCHABLE, pickTeam, speciesOf, type OwnedCreature } from './data';
  * 1. Claim finished expeditions and take an end-of-trip goal that costs no waiting (see `trips.ts`).
  * 2. Claim finished Workshop jobs (see `gear.ts`).
  * 3. Evolve every creature that is at its evolution level when the player has the Essence. A line that
- *    grows two ways takes the form whose role the rest of the team lacks, else the original (`pickBranch`).
+ *    grows two ways takes the original form (`firstForm`); `pickBranch` is the role-aware pick, kept for
+ *    a later study and not used by the journey yet.
  * 4. Buy the ribbon of every creature that waits at level 10 or 20 when the materials are in the purse.
  * 5. Put talents from the Talent Book into open slots (Bait), manage the gear, and send trips into the
  *    free expedition slots (`trips.ts`). Levels come from what creatures do: the trip, the dungeon, the
@@ -34,6 +35,16 @@ export function isPreEvolution(c: OwnedCreature): boolean {
   const evo = speciesOf(c.speciesId).evolvesTo;
   return evo !== undefined && c.level < evo.level;
 }
+
+/** Chooses the form a ready creature grows into (undefined: it cannot evolve). */
+export type BranchPick = (
+  creatures: readonly OwnedCreature[],
+  creature: OwnedCreature,
+) => Evolution | undefined;
+
+/** The first (original) form, whatever the team: what the journey uses today. */
+export const firstForm: BranchPick = (_creatures, creature) =>
+  evolutionsOf(speciesOf(creature.speciesId))[0];
 
 /**
  * The form a creature grows into. A line with one form has only that one. A line that grows two ways
