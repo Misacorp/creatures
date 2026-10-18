@@ -78,7 +78,7 @@
     }
   },
   "thornmother": {
-    "description": "A towering briar queen who mothers every seed and every thorn. Her Bramble Bind snares the creatures at both ends of the line.",
+    "description": "A towering briar queen who mothers every seed and every thorn. Her Bramble Bind snares the creatures at both ends of each row.",
     "appearance": {
       "silhouette": "Tall, stooped tree-woman with a wide crown of branches and long vine arms reaching forward.",
       "size": "huge",

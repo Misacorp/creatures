@@ -8,12 +8,12 @@ Read `README.md` for the tags. Every boss has one element, and the four are the 
 
 ## At a glance
 
-| Boss            | Element | Turn order    | What it does each fight                                                         | Adaptation after Phase 1 |
-| --------------- | ------- | ------------- | ------------------------------------------------------------------------------- | ------------------------ |
-| Tidal Colossus  | Tide    | Left to right | Undertow: a zone attack on the front every few rounds                           | Reaction Resistance      |
-| Cinder Wyrm     | Ember   | By speed      | Backdraft: turns the first reaction of every round back on the team             | Element Resistance       |
-| Thornmother     | Grove   | Right to left | Bramble Bind: silences the creatures at both ends of the row every second round | Reaction Resistance      |
-| Storm Sovereign | Spark   | Left to right | Lightning Rod: strikes the creature with the highest Attack every round         | Element Resistance       |
+| Boss            | Element | Turn order    | What it does each fight                                                          | Adaptation after Phase 1 |
+| --------------- | ------- | ------------- | -------------------------------------------------------------------------------- | ------------------------ |
+| Tidal Colossus  | Tide    | Left to right | Undertow: a zone attack on the front every few rounds                            | Reaction Resistance      |
+| Cinder Wyrm     | Ember   | By speed      | Backdraft: turns the first reaction of every round back on the team              | Element Resistance       |
+| Thornmother     | Grove   | Right to left | Bramble Bind: silences the creatures at both ends of each row every second round | Reaction Resistance      |
+| Storm Sovereign | Spark   | Left to right | Lightning Rod: strikes the creature with the highest Attack every round          | Element Resistance       |
 
 `(content: bosses.json, adaptations.json)`
 
@@ -111,7 +111,7 @@ After Phase 1, the boss adapts to what worked best for the team:
 
 ### Lore
 
-**Shipped** `(content: bosses-lore.json)`: "A towering briar queen who mothers every seed and every thorn. Her Bramble Bind snares the creatures at both ends of the line."
+**Shipped** `(content: bosses-lore.json)`: "A towering briar queen who mothers every seed and every thorn. Her Bramble Bind snares the creatures at both ends of each row."
 
 **Compendium detail, not shipped:**
 
@@ -132,17 +132,17 @@ After Phase 1, the boss adapts to what worked best for the team:
 ### Fighting style
 
 - **Turn order:** right to left, so the creature on the right acts first. `(content)`
-- **Bramble Bind:** every second round, the creatures at both ends of the row skip their next turn. A silenced Support gives no boost. The stage warns you one round ahead. `(content: bosses.json, glossary.json "gimmick-silence-ends")`
+- **Bramble Bind:** every second round, the creatures at both ends of each row skip their next turn. A silenced Support gives no boost. The stage warns you one round ahead. `(content: bosses.json, glossary.json "gimmick-silence-ends")`
 - **Briar Pincer:** every third round, the first and the last creature of every row take a hit. `(content: bosses.json)`
 - **Seed Burst:** every fifth round, announced a round ahead. Three to six random creatures are marked, then each takes a hit. `(content: bosses.json)`
-- **Choking Vines (from rank 4):** every sixth round, the creatures at both ends of the row skip their next two turns. The ends are usually where a team parks its Support and its Guard. `(content: bosses.json)`
+- **Choking Vines (from rank 4):** every sixth round, the creatures at both ends of each row skip their next two turns. The ends are usually where a team parks its Support and its Guard. `(content: bosses.json)`
 - **Thorn Lash (from rank 7):** every seventh round, the strongest creature is struck, and the lash jumps on to the next three strongest. A Guard in the first one's row takes the first blow. A team built around one carry feels it. `(content: bosses.json)`
 - **Adaptation:** Reaction Resistance. `(content)`
 - **Retreat:** "Thornmother draws her vines back into the Hollow. She will return in Phase 2." After Phase 2: "Thornmother sinks her roots back into the Hollow. Face her in the finale on Sunday." `(content: bosses.json retreat)`
 
-"The old queen of thorns binds the creatures at the ends of the line. The ones in the middle are always the ones who get out." `(content: journal.json verdant-both-ends)`
+"The old queen of thorns binds the creatures at the ends of every row. The ones in the middle of a row are always the ones who get out." `(content: journal.json verdant-both-ends)`
 
-**In-world reading** `(inferred)`: silence hits the two ends, and the journal says the middle is where creatures get out. So the creatures you can least afford to lose a turn with belong in the middle, and creatures you can spare can stand at the ends.
+**In-world reading** `(inferred)`: silence hits the two ends of each row, and the journal says the middle of a row is where creatures get out. So the creatures you can least afford to lose a turn with belong in the middle, and creatures you can spare can stand at the ends.
 
 ---
 

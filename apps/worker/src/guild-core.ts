@@ -363,8 +363,14 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   // Version 31: Boons and Omens, the drawn days and the weather stored on trips (see
   // weather-migration.ts).
   weatherMigration,
-  // Version 32: the daily dungeon on a map: run status and state, the day's map and the steps of a run
-  // (see dungeon-path-migration.ts).
+  (sql) => {
+    // Version 32: who put each raid placement on the board. NULL is the owner; otherwise the teammate
+    // who moved it for a player who was away (see raid-assist.ts). Existing rows are the owners'.
+    sql.exec('ALTER TABLE raid_placements ADD COLUMN placed_by TEXT');
+  },
+  // Version 33: the daily dungeon on a map: run status and state, the day's map and the steps of a run
+  // (see dungeon-path-migration.ts). It can find its work done (staging ran it as version 32 before
+  // the raid's `placed_by` took that number) and adds `placed_by` if that skipped it.
   dungeonPathMigration,
 ];
 

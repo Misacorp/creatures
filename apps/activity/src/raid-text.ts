@@ -228,7 +228,7 @@ export function gimmickText(g: Gimmick, wording: Wording = 'zones'): string {
         ? `${when(g)}: hits the ${ROW_PLACE[g.zone]} creature for ${percent(g.power)} of its attack.`
         : `${when(g)}: hits every creature in the ${g.zone} zone for ${percent(g.power)} of its attack.`;
     case 'silence_ends':
-      return `${when(g)}: silences the creatures at both ends of the row for ${String(g.turns)} turn${g.turns === 1 ? '' : 's'}.`;
+      return `${when(g)}: silences the creatures at both ends of ${g.scope === 'rows' && wording !== 'row' ? 'each row' : 'the row'} for ${String(g.turns)} turn${g.turns === 1 ? '' : 's'}.`;
     case 'reflect_first_reaction':
       return `${when(g)}: turns the first reaction of the round back on the creature that set it off.`;
     case 'strike_highest_atk': {
@@ -266,7 +266,9 @@ export function gimmickShort(g: Gimmick, wording: Wording = 'zones'): string {
         ? `Hits the ${ROW_PLACE[g.zone]} creature, ${every}`
         : `Hits the ${g.zone} zone, ${every}`;
     case 'silence_ends':
-      return `Silences the row's ends, ${every}`;
+      return g.scope === 'rows' && !row
+        ? `Silences the ends of each row, ${every}`
+        : `Silences the row's ends, ${every}`;
     case 'reflect_first_reaction':
       return `Reflects a reaction, ${every}`;
     case 'strike_highest_atk':

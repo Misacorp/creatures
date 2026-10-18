@@ -36,6 +36,7 @@ import {
   autoPlace,
   type AbilityChoice,
   compactRow,
+  sparseBoard,
   fillWithGuests,
   liveFightRules,
   makeSlot,
@@ -135,6 +136,18 @@ export function guardRulesOf(
   return rules === undefined
     ? null
     : { guardHpBp: rules.guardHpBp, guardArmorBp: rules.guardArmorBp };
+}
+
+/**
+ * The board positions a stored fight was played with, as a spread for a view: empty for a fight
+ * stored before the input carried them (the client then uses the dense row).
+ */
+export function boardOf(input: FightInput): {
+  board?: { length: number; slots: number[] };
+} {
+  return input.board === undefined
+    ? {}
+    : { board: { length: input.board.length, slots: [...input.board.slots] } };
 }
 
 /** 128 random bits as 32 lowercase hex characters. */
@@ -297,6 +310,84 @@ export interface BuildOptions {
   practice?: boolean;
 }
 
+/** Where a board slot's creature came from: placed by a player (or a teammate), auto-placed, or a guest. */
+export type BoardOrigin = 'placed' | 'auto' | 'guest';
+
+/** One slot of a party's board as the fight will have it. */
+export interface BoardCell {
+  slot: FightSlot | null;
+  /** Null for an empty slot. */
+  origin: BoardOrigin | null;
+  /** For a placed creature: the teammate who placed it for an away owner; null when its owner did. */
+  placedBy: string | null;
+}
+
+/** A party's board as the fight builds it: the one source of truth for the fight and the board view. */
+export interface PartyBoard {
+  aliases: string[];
+  /** Each member's creatures for the week (placed, then topped up), in `memberIds` order. */
+  teams: TeamCreature[][];
+  /** One cell per slot, empty slots and guests included. */
+  cells: BoardCell[];
+  /** The sparse row (empty slots are null): placements, the auto-placed rest, then guests. */
+  row: (FightSlot | null)[];
+}
+
+/**
+ * Builds a party's sparse board: the players' placements (at most three each), the rest of each
+ * player's strongest creatures auto-placed by the default rule, then guests when fewer than three
+ * players take part. `buildPhaseInput` makes the fight from it and the board view draws it, so the
+ * two can never disagree. Reads only.
+ */
+export function buildPartyBoard(
+  sql: SqlStorage,
+  weekId: string,
+  party: number,
+  memberIds: readonly string[],
+): PartyBoard {
+  const aliases = memberIds.map((_, i) => aliasFor(i));
+  const teams = memberIds.map((userId) => raidTeam(sql, weekId, userId));
+  const slotById = new Map<string, FightSlot>();
+  teams.forEach((team, i) => {
+    for (const creature of team) slotById.set(creature.id, slotFor(creature, aliases[i] as string));
+  });
+  const length = rowLength(memberIds.length);
+  const sparse: (FightSlot | null)[] = new Array<FightSlot | null>(length).fill(null);
+  const placedBy: (string | null)[] = new Array<string | null>(length).fill(null);
+  // At most three placements per player, whatever the table holds (a stale row once made a fourth).
+  for (const placement of partyPlacements(sql, weekId, party)) {
+    const slot = slotById.get(placement.creature_id);
+    const owner = memberIds.indexOf(placement.user_id);
+    // Only creatures that are still in their owner's team and fit the row stay placed.
+    if (slot === undefined || owner < 0 || slot.ownerId !== aliases[owner]) continue;
+    if (placement.slot < 0 || placement.slot >= length) continue;
+    sparse[placement.slot] = slot;
+    placedBy[placement.slot] = placement.placed_by;
+  }
+  const placedIds = new Set<string>();
+  for (const s of sparse) if (s !== null) placedIds.add(s.id);
+  const unplaced = new Map<string, FightSlot[]>();
+  teams.forEach((team, i) => {
+    unplaced.set(
+      aliases[i] as string,
+      team.filter((c) => !placedIds.has(c.id)).map((c) => slotById.get(c.id) as FightSlot),
+    );
+  });
+  const withAuto = autoPlace(sparse, unplaced);
+  let row = withAuto;
+  if (memberIds.length < RULES.combat.guestsBelowPlayers) {
+    const levels = teams.flat().map((c) => c.level);
+    const avgLevel = Math.max(1, Math.floor(levels.reduce((a, b) => a + b, 0) / levels.length));
+    row = fillWithGuests(withAuto, resolveGuests(), avgLevel);
+  }
+  const cells = row.map((slot, i): BoardCell => {
+    if (slot === null) return { slot, origin: null, placedBy: null };
+    if (sparse[i] !== null) return { slot, origin: 'placed', placedBy: placedBy[i] ?? null };
+    return { slot, origin: withAuto[i] === null ? 'guest' : 'auto', placedBy: null };
+  });
+  return { aliases, teams, cells, row };
+}
+
 /**
  * Builds the fight input for one party and phase from the creatures' current stats: the row
  * (placements, auto-placement, guests), the boss (scaled at phase 1, then carried) and, for the
@@ -316,42 +407,13 @@ export function buildPhaseInput(
   const boss = bossFor(week.bossId, rank);
 
   // --- Build the row from the creatures' current stats ---
-  const aliases = memberIds.map((_, i) => aliasFor(i));
-  const teams = memberIds.map((userId) => raidTeam(sql, week.weekId, userId));
-  const slotById = new Map<string, FightSlot>();
-  teams.forEach((team, i) => {
-    for (const creature of team) slotById.set(creature.id, slotFor(creature, aliases[i] as string));
-  });
-  const length = rowLength(memberIds.length);
-  const sparse: (FightSlot | null)[] = new Array<FightSlot | null>(length).fill(null);
-  // At most three placements per player, whatever the table holds (a stale row once made a fourth).
-  const placements = partyPlacements(sql, week.weekId, party);
-  for (const placement of placements) {
-    const slot = slotById.get(placement.creature_id);
-    const owner = memberIds.indexOf(placement.user_id);
-    // Only creatures that are still in their owner's team and fit the row stay placed.
-    if (slot === undefined || owner < 0 || slot.ownerId !== aliases[owner]) continue;
-    if (placement.slot < 0 || placement.slot >= length) continue;
-    sparse[placement.slot] = slot;
-  }
-  const placedIds = new Set<string>();
-  for (const s of sparse) if (s !== null) placedIds.add(s.id);
-  const unplaced = new Map<string, FightSlot[]>();
-  teams.forEach((team, i) => {
-    unplaced.set(
-      aliases[i] as string,
-      team.filter((c) => !placedIds.has(c.id)).map((c) => slotById.get(c.id) as FightSlot),
-    );
-  });
-  let placed = autoPlace(sparse, unplaced);
-  const levels = teams.flat().map((c) => c.level);
-  const avgLevel = Math.max(1, Math.floor(levels.reduce((a, b) => a + b, 0) / levels.length));
-  if (memberIds.length < RULES.combat.guestsBelowPlayers) {
-    placed = fillWithGuests(placed, resolveGuests(), avgLevel);
-  }
+  const board = buildPartyBoard(sql, week.weekId, party, memberIds);
+  const { aliases, teams } = board;
+  const placed = board.row;
   // The weather of the day the stage is scheduled in (Boon and Omen): for every creature in the row, guests
   // included, as numbers on its sheet. The stored input keeps them, so a replay never reads the weather.
   const day = stageWeather(sql, week.weekId, phase);
+  const fightBoard = sparseBoard(placed);
   const row = compactRow(placed).map((slot): FightSlot => {
     const mods = mergeMods(slot.mods, weatherSheet(day, slot));
     return mods === undefined ? slot : { ...slot, mods };
@@ -404,6 +466,8 @@ export function buildPhaseInput(
     bossHpPool: { max: hpMax, current: hpCurrent },
     adaptation,
     row,
+    // Each creature's board slot, so the fight's rows, lanes and neighbours are the board's (gaps included).
+    board: fightBoard,
     players: aliases,
     // Each member's basic pick plus the abilities of their (frozen) team's unlocked creatures.
     finaleAbilities: abilityIds.flatMap((abilityId, i) =>

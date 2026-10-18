@@ -175,6 +175,11 @@ export class FakeElement extends FakeNode {
     this.focused += 1;
     this.doc.activeElement = this;
   }
+  /** There is no layout: every box is empty (components that measure keep their default size). */
+  getBoundingClientRect(): { width: number; height: number; left: number; top: number } {
+    return { width: 0, height: 0, left: 0, top: 0 };
+  }
+
   scrollIntoView(): void {
     this.scrolled += 1;
   }

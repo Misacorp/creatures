@@ -1,3 +1,4 @@
+import { dungeonPathMigration } from '../src/dungeon-path-migration';
 import {
   RULES,
   createSeededRng,
@@ -168,9 +169,32 @@ function easyAgain(): void {
   restore = easyFoes();
 }
 
-// --- Migration 32 ---
+// --- Migration 33 ---
 
-describe('migration 32', () => {
+describe('migration 33', () => {
+  it('runs on a staging database that ran it as 32: nothing twice, and the missing placed_by is added', async () => {
+    await runCore(nextGuild(), ({ sql }) => {
+      const columns = (table: string) =>
+        rows<{ name: string }>(sql, `SELECT name FROM pragma_table_info('${table}')`).map(
+          (r) => r.name,
+        );
+      // As staging was: the dungeon's columns and table are there, the raid's placed_by is not.
+      sql.exec('ALTER TABLE raid_placements DROP COLUMN placed_by');
+      expect(columns('raid_placements')).not.toContain('placed_by');
+      expect(() => {
+        dungeonPathMigration(sql);
+      }).not.toThrow();
+      expect(columns('raid_placements')).toContain('placed_by');
+      expect(columns('dungeon_runs')).toEqual(
+        expect.arrayContaining(['status', 'state_json', 'outcome']),
+      );
+      // Running it again changes nothing.
+      expect(() => {
+        dungeonPathMigration(sql);
+      }).not.toThrow();
+    });
+  });
+
   it('adds the run status and state, the day’s map and the steps table, and can be replayed', async () => {
     await runCore(nextGuild(), ({ sql }) => {
       const columns = (table: string) =>
@@ -193,7 +217,7 @@ describe('migration 32', () => {
         'created_at',
       ]);
       expect(
-        rows<{ version: number }>(sql, 'SELECT version FROM schema_version WHERE version = 32'),
+        rows<{ version: number }>(sql, 'SELECT version FROM schema_version WHERE version = 33'),
       ).toHaveLength(1);
       // A run is active or done, and ends cleared, home or lost; a step is stored once per run and key.
       const insert = (status: string, outcome: string | null, id: string) =>
@@ -232,7 +256,7 @@ describe('migration 32', () => {
         undoDungeonPathsMigration(ctx.sql);
         expect(
           rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v,
-        ).toBe(31);
+        ).toBe(32);
         const team = loadCreatures(ctx.sql, p.id).map((c) => slotFor(c, 'p1'));
         const foes = dungeonContent.foes.filter((f) => f.kind === 'foe').slice(0, 2);
         const boss = dungeonContent.foes.find((f) => f.kind === 'boss');

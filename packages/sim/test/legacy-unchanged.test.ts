@@ -63,6 +63,11 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * first player's top-3 power and raids won are what they were before the change (333, 361, 261, 203);
  * Bait earned is the same, and some Bait now goes to slotting.
  *
+ * Re-pinned again on 2026-10-18 (silence by row), on purpose: the raid bosses' silences (Bramble Bind,
+ * Choking Vines) now silence the ends of each row instead of the two ends of the line, so Thornmother
+ * weeks play out differently. Checked by setting both back to the whole line: the old fixture matched.
+ * The fight input carrying the board's row sizes moved nothing here (the sim's rows are full).
+ *
  * Re-pinned again on 2026-10-18 (dungeon paths, B-019), on purpose: the daily dungeon is a walk over the day's
  * map (3 to 6 fights, a camp, a pack that is kept whole at home and by half after a defeat, keepsakes, a boss
  * chest) instead of three rooms played at once, foes are weaker at depth 1 and steeper by depth, experience
@@ -78,7 +83,8 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * The run log gained its Undercroft fields and two targets were added (96). Two foe numbers were tuned with
  * it (`RULES.dungeon.hpCurveBp` 300 to 340, `undercroft.depthBonus` 3 to 1). Bait earned and the pinned
  * runs without the dungeon are the same; the first player's top-3 power in the first pinned run moved
- * from 431 to 327 (a different path through the same levels and ribbons).
+ * from 431 to 327 (a different path through the same levels and ribbons). Re-pinned once more when the
+ * branch took in the raid's silence by row from main.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

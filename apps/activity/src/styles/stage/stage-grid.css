@@ -28,6 +28,15 @@
   width: var(--tile-w);
 }
 
+/* An empty board slot: a quiet dashed cell, one lane wide, so the lanes line up with the placement board. */
+.stage-grid .stage-gap {
+  flex: none;
+  box-sizing: border-box;
+  width: var(--tile-w);
+  height: var(--tile-h);
+  border: 2px dashed var(--line);
+}
+
 /* One line, cut with an ellipsis rather than broken mid-word (the creature's popover has its name). */
 .stage-grid .unit-name {
   display: block;

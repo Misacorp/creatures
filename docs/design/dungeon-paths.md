@@ -168,7 +168,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
 
 ## Server (authoritative)
 
-- **Migration 32:**
+- **Migration 33** (32 went to the raid's `placed_by` on `main`; the migration checks each step, because staging ran it as 32 first):
   - `ALTER TABLE dungeon_runs ADD COLUMN status TEXT NOT NULL DEFAULT 'done'` (`'active' | 'done'`), `ADD COLUMN state_json TEXT` and `ADD COLUMN outcome TEXT` (`'cleared' | 'home' | 'defeat'`, null for old runs).
   - `ALTER TABLE dungeon_days ADD COLUMN map_json TEXT`.
   - `CREATE TABLE dungeon_steps (run_id TEXT NOT NULL, step INTEGER NOT NULL, idempotency_key TEXT NOT NULL, act_json TEXT NOT NULL, node TEXT, seed TEXT, input_json TEXT, result_json TEXT, created_at INTEGER NOT NULL, PRIMARY KEY (run_id, step), UNIQUE (run_id, idempotency_key))`.

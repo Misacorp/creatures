@@ -47,8 +47,8 @@ Status: **draft for M4**. Builds on `m3-combat.md` (engine, loot rules) and the 
   - Each player places only their own creatures.
   - Slots are first come, first served.
   - A player can move their creatures to any empty slot, or swap places among their own creatures.
-  - Unplaced creatures are auto-placed with the engine's `autoPlace` at resolve time.
-  - Swap requests with other players come later (M6).
+  - Unplaced creatures are auto-placed with the engine's `autoPlace` at resolve time. The board shows them in the slots the fight will give them, marked "auto" (one shared builder, `buildPartyBoard`, makes both the fight and the board view).
+  - **Away players:** a member who has not opened the game since the week began (`last_seen_at` before the week's start) is away. Any teammate of the same party may move their joining creatures to free slots and swap one for another creature they own. The first such move pins their team as real placements (recorded in `raid_placements.placed_by`). Creatures the owner placed themselves are never touched, and once the owner opens the game their teammates can no longer change anything of theirs. See `decisions.md`, 2026-10-18.
 - **Stats** are read at the moment each phase resolves, so training during the week counts.
 
 ## Resolving a phase
@@ -101,7 +101,7 @@ At the scheduled time, in one go per party:
   - My team and opt-out state.
   - Results so far and the Phase 2 counter-move.
 - `PUT /api/raid/team` `{ creatureIds: [3] | null }`: `null` means automatic.
-- `PUT /api/raid/placement` `{ creatureId, slot }` / `DELETE` to unplace.
+- `PUT /api/raid/placement` `{ creatureId, slot }` / `DELETE` to unplace. A `creatureId` of an away teammate of the same party is moved by the assist rules (the owner is read from the creature).
 - `PUT /api/raid/opt-out` `{ optOut: boolean }`.
 - `GET /api/raid/replay/{week}/{party}/{phase}`: events, names and the summary.
 - `GET /api/raid/stats/{week}/{party}/{phase}`: the after-action stats of a resolved stage (members of that party only; 404 otherwise).

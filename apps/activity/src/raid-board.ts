@@ -4,11 +4,18 @@
  * (`packages/engine/src/zones.ts`), never worked out again here; this file turns them into rows,
  * lanes, plain words for a place ("Middle, lane 1"), the keyboard map and the scroll positions. `ui/RaidBoard.tsx` draws it, `Placement.tsx` wires it to the game.
  */
-import { ZONES, zoneIndices, type AffectSlot, type TurnOrder, type Zone } from '@creatures/engine';
+import {
+  ZONES,
+  zoneIndices,
+  type AffectSlot,
+  type RowShape,
+  type TurnOrder,
+  type Zone,
+} from '@creatures/engine';
 import { effectiveStats } from '@creatures/game';
 import type { CreatureInfo } from './creature-info';
 import { getSpecies, speciesName } from './game';
-import type { RowSlotView } from './raid-api';
+import type { AwayView, RowSlotView } from './raid-api';
 import { initialOf } from './raid-roster';
 import { ownerColour } from './raid-slots';
 import type { SlotModel } from './ui/SlotButton';
@@ -28,7 +35,7 @@ export interface BoardRow {
 }
 
 /** The rows of a party row of `length` slots, front to back. A zone with no slots has no row. */
-export function boardRows(length: number): BoardRow[] {
+export function boardRows(length: RowShape): BoardRow[] {
   return ZONES.map((zone) => ({ zone, slots: zoneIndices(zone, length) })).filter(
     (row) => row.slots.length > 0,
   );
@@ -40,7 +47,7 @@ export function laneCount(rows: readonly BoardRow[]): number {
 }
 
 /** The row and the lane (from 1) of a slot, or null for a slot number that is not on the board. */
-export function placeOf(slot: number, length: number): { zone: Zone; lane: number } | null {
+export function placeOf(slot: number, length: RowShape): { zone: Zone; lane: number } | null {
   for (const row of boardRows(length)) {
     const column = row.slots.indexOf(slot);
     if (column >= 0) return { zone: row.zone, lane: column + 1 };
@@ -49,7 +56,7 @@ export function placeOf(slot: number, length: number): { zone: Zone; lane: numbe
 }
 
 /** A place in plain words: "Middle, lane 1". Empty for a slot that is not on the board. */
-export function placeText(slot: number, length: number): string {
+export function placeText(slot: number, length: RowShape): string {
   const place = placeOf(slot, length);
   return place === null ? '' : `${ROW_NAMES[place.zone]}, lane ${String(place.lane)}`;
 }
@@ -129,6 +136,58 @@ export function ownLaneSpan(states: readonly LaneState[]): { first: number; last
   return { first, last: states.lastIndexOf('mine') };
 }
 
+/** A creature tile of the board. */
+type Tile = NonNullable<RowSlotView['creature']>;
+
+/**
+ * Whether the carried creature may be dropped on the tile `occupant` (they trade places): yours on
+ * yours, or one of an away teammate's on another of the same teammate's that you may also move. The
+ * server decides again.
+ */
+export function canSwapWith(carried: Tile, occupant: Tile): boolean {
+  return carried.mine
+    ? occupant.mine
+    : occupant.movable && occupant.ownerName === carried.ownerName;
+}
+
+/**
+ * Whether the carried creature takes the place of the creature on `occupant` and sends it to a free
+ * place: true for a creature that joins by itself (an auto tile) that is not one the carried one may
+ * trade with. A placed creature never makes room. The server finds the free place and decides again.
+ */
+export function makesRoom(carried: Tile | undefined, occupant: Tile): boolean {
+  return (
+    occupant.auto && (carried === undefined ? !occupant.mine : !canSwapWith(carried, occupant))
+  );
+}
+
+/** Whether the carried creature (undefined: one from the picker, always yours) may be dropped on `occupant`. */
+export function canDropOn(carried: Tile | undefined, occupant: Tile): boolean {
+  if (occupant.auto) return true;
+  return carried === undefined ? occupant.mine : canSwapWith(carried, occupant);
+}
+
+/** Whether a tile can be picked up and dragged: yours, or one of an away teammate's you may move. */
+export const isDraggable = (tile: Tile): boolean => tile.mine || tile.movable;
+
+/**
+ * The lines about away teammates under the board: who is away (their creatures can be moved by the
+ * party), and which creatures a teammate moved for them. Plain text; names are the players' own.
+ */
+export function awayNotes(
+  away: readonly AwayView[],
+  row: readonly RowSlotView[],
+): { away: string[]; moved: string[] } {
+  return {
+    away: away.map((a) => `${a.ownerName} is away — teammates can move these.`),
+    moved: row.flatMap((s) =>
+      s.creature?.movedBy === undefined
+        ? []
+        : [`${s.creature.name} (${s.creature.ownerName}) moved by ${s.creature.movedBy}.`],
+    ),
+  };
+}
+
 /** What the creature popover shows for a creature on the board, with its owner's full name. */
 export function boardCreatureInfo(c: NonNullable<RowSlotView['creature']>): CreatureInfo | null {
   const species = getSpecies(c.species);
@@ -159,15 +218,24 @@ export function boardSlot(
     return { ...base, ariaLabel: label, occupant: null };
   }
   const owner = c.mine ? 'you' : c.ownerName;
+  const notes = [
+    ...(c.auto ? ['joins automatically'] : []),
+    ...(c.movedBy === undefined ? [] : [`moved by ${c.movedBy}`]),
+    ...(c.movable && editable ? ['away, you can move it'] : []),
+  ];
   return {
     ...base,
-    ariaLabel: `${where}, ${speciesName(c.species)} level ${String(c.level)}, ${owner}`,
+    ariaLabel: [
+      `${where}, ${speciesName(c.species)} level ${String(c.level)}, ${owner}`,
+      ...notes,
+    ].join(', '),
     occupant: {
       species: c.species,
       name: speciesName(c.species),
       level: c.level,
-      ownId: editable && c.mine && c.creatureId !== undefined ? c.creatureId : null,
+      ownId: editable && isDraggable(c) && c.creatureId !== undefined ? c.creatureId : null,
       mine: c.mine,
+      auto: c.auto,
       element: getSpecies(c.species)?.element ?? 'unknown',
       owner: { colour: ownerColour(c.ownerName, rosterNames), initial: initialOf(c.ownerName) },
     },
@@ -258,6 +326,10 @@ export function boardCues(args: {
       known.set(s.creature.creatureId ?? `other:${String(s.slot)}`, s.creature);
   }
   for (const c of args.tray) known.set(c.creatureId, c);
+  const carriedTile =
+    args.carried === null
+      ? undefined
+      : (row.find((s) => s.creature?.creatureId === args.carried)?.creature ?? undefined);
   const scene = sceneOf({
     keys: boardKeys(row, length),
     carried: args.carried,
@@ -265,7 +337,9 @@ export function boardCues(args: {
     inspected: args.inspected ?? null,
     canDrop: (slot) => {
       const there = bySlot.get(slot)?.creature ?? null;
-      return there === null || there.mine;
+      if (there === null) return true;
+      // A creature from the tray is yours; a carried tile trades with the right owner's tiles only.
+      return canDropOn(carriedTile, there);
     },
   });
   const affectRow = boardAffectRow(scene.keys, known);

@@ -168,8 +168,12 @@ describe('describeGimmick', () => {
     const base = { id: 'g', name: 'G' };
     const cases: [Gimmick, string][] = [
       [
-        { ...base, op: 'silence_ends', turns: 2, trigger: { every: 4 } },
+        { ...base, op: 'silence_ends', scope: 'row', turns: 2, trigger: { every: 4 } },
         'silences the creatures at both ends of the row for 2 turns, every 4 rounds',
+      ],
+      [
+        { ...base, op: 'silence_ends', scope: 'rows', turns: 1, trigger: { every: 2 } },
+        'silences the creatures at both ends of each row for 1 turn, every 2 rounds',
       ],
       [
         { ...base, op: 'hit_zone', zone: 'back', power: 5000, trigger: { eachRound: true } },

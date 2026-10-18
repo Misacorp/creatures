@@ -1,7 +1,13 @@
 import { GLOSSARY_IDS, content, type Gimmick } from '@creatures/game';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { Fragment, type ComponentChildren, type Ref, type RefObject } from 'preact';
-import type { EventNames, FightEvent, Zone } from '@creatures/engine';
+import {
+  laneOfIndex,
+  type EventNames,
+  type FightBoard,
+  type FightEvent,
+  type Zone,
+} from '@creatures/engine';
 import { bossArt, elementClass, markPalette } from './art';
 import { cssVars } from './css-vars';
 import { foeButtonLabel, foeInfoOf, foeElement, type FoeInfo } from './foe-info';
@@ -12,7 +18,7 @@ import { abilityControls, abilityName, abilityTitle } from './live';
 import { scrollToLanes } from './lane-scroll';
 import type { LiveAbility, LiveFight } from './live-api';
 import type { FightGuardRules, RaidPhaseId, ReplayRowEntry } from './raid-api';
-import { boardRows, laneStates, ownLaneSpan, placeOf } from './raid-board';
+import { boardRows, laneStates, ownLaneSpan } from './raid-board';
 import { stateAt } from './replay';
 import { enrageLine, retreatLine } from './raid-text';
 import {
@@ -22,6 +28,7 @@ import {
   creatureHpAt,
   enragedAt,
   estimatedMaxHp,
+  creatureAtSlot,
   groupByZone,
   ordinal,
   pendingChargesAt,
@@ -409,6 +416,8 @@ interface StageProps {
   row: readonly ReplayRowEntry[];
   /** The Guard numbers of the rules the fight was played with; absent: the content's old Guard. */
   rules?: FightGuardRules;
+  /** Where the row stands on the board (the fight's own); absent: the dense row. */
+  board?: FightBoard;
   /** The lobby's preview: no round yet, so the head says to get ready instead of "Round 1". */
   lobby?: boolean;
   /** The creatures that are the player's own: they are outlined and marked "you". */
@@ -716,6 +725,7 @@ export function Stage({
   rounds,
   row,
   rules,
+  board,
   lobby,
   mineIds,
   names,
@@ -760,7 +770,7 @@ export function Stage({
   const cues =
     anim === null
       ? []
-      : cuesForEvents(events, anim.from, Math.min(anim.to, index), rowIds, boss.id);
+      : cuesForEvents(events, anim.from, Math.min(anim.to, index), rowIds, boss.id, board);
   const creatureHpNow =
     creatureHp === undefined ? {} : creatureHpAt(events, index, creatureHp.start);
   // A crowded action (more than eight creatures hit) shows only its big numbers, judged by each
@@ -824,6 +834,7 @@ export function Stage({
     names,
     wording,
     addedGimmicks,
+    board,
   );
 
   // The abilities that have been played so far, by key and by creature.
@@ -883,11 +894,15 @@ export function Stage({
   };
 
   const parity = anim === null ? 0 : anim.seq % 2;
-  // The raid's rows are the board's rows (the engine's zones, slot k of each row in lane k).
-  const rows = boardRows(row.length);
-  const groups = single
-    ? groupByZone(row)
-    : rows.map(({ zone, slots }) => ({ zone, items: slots.flatMap((i) => row[i] ?? []) }));
+  // The raid's rows are the board's rows, cell for cell: a creature stands in its own board slot and
+  // an empty board slot is an empty cell (null), so a lane is the same column as on the placement board.
+  const rows = boardRows(board?.length ?? row.length);
+  const groups: { zone: Zone; items: (ReplayRowEntry | null)[] }[] = single
+    ? groupByZone(row, board)
+    : rows.map(({ zone, slots }) => ({
+        zone,
+        items: slots.map((slot) => creatureAtSlot(row, board, slot) ?? null),
+      }));
   const lanes = rows.reduce((most, r) => Math.max(most, r.slots.length), 0);
 
   // Keep the creature that acts in view (the raid's grid scrolls sideways); before the fight starts
@@ -901,7 +916,7 @@ export function Stage({
     if (!started) {
       const own = ownLaneSpan(
         laneStates(rows, (slot) => {
-          const c = row[slot];
+          const c = creatureAtSlot(row, board, slot);
           return c === undefined ? null : mineIds.has(c.id) ? 'mine' : 'other';
         }),
       );
@@ -910,15 +925,14 @@ export function Stage({
       return;
     }
     if (state.actor === null || Date.now() - handScrolledAt.current < HAND_SCROLL_HOLD_MS) return;
-    const place = placeOf(
-      row.findIndex((c) => c.id === state.actor),
-      row.length,
-    );
-    if (place !== null)
-      scrollToLanes(scrollerRef.current, place.lane - 1, place.lane - 1, {
+    const at = row.findIndex((c) => c.id === state.actor);
+    if (at >= 0) {
+      const lane = laneOfIndex(at, board ?? row.length);
+      scrollToLanes(scrollerRef.current, lane, lane, {
         smooth: !reduced,
         follow: true,
       });
+    }
   }, [single, started, state.actor, row.length]);
   const markName = state.mark === null ? null : nameOf(names.marks, state.mark);
   const markId = content.reactions.find((r) => r.markElement === state.mark)?.markId;
@@ -960,7 +974,9 @@ export function Stage({
           </span>
         )}
         <ul class="zone-units">
-          {items.map((c) => {
+          {items.map((c, cell) => {
+            if (c === null)
+              return <li key={`gap-${String(cell)}`} class="stage-gap" aria-hidden="true" />;
             const mine = mineIds.has(c.id);
             const ko = state.knockedOut.includes(c.id);
             const classes = ['stage-unit'];
@@ -1383,6 +1399,7 @@ export function LiveStage(
     props.rounds,
     reduced,
     hold === true,
+    props.board,
   );
   return <Stage {...rest} index={view.index} anim={view.anim} fx={view.fx} intro={view.intro} />;
 }

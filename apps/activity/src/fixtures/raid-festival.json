@@ -209,7 +209,8 @@
     "bossHp": null,
     "adaptation": null,
     "results": [],
-    "readiness": "long_shot"
+    "readiness": "long_shot",
+    "away": []
   },
   "channel": {
     "pinned": false,
