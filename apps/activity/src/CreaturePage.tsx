@@ -8,7 +8,7 @@ import { PageHeader } from './creature-page/PageHeader';
 import { GearSlots, TalentSlots } from './creature-page/PageSlots';
 import { TalentBookDrawer } from './creature-page/TalentBookDrawer';
 import type { GearItem, GearSlot, GearState } from './gear-types';
-import { gearShare } from './gear-view';
+import { busyReason, gearShare } from './gear-view';
 import { RibbonLine } from './CreatureProgress';
 import { scrollAndFocus, scrollToTop } from './scroll-to';
 import {
@@ -295,13 +295,16 @@ export function CreaturePage({
                   <button
                     type="button"
                     class="primary"
-                    disabled={busy}
+                    disabled={busy || busyReason(creature) !== null}
                     onClick={() => {
                       actions.onEvolve(creature);
                     }}
                   >
                     {readyEvolve.label}
                   </button>
+                  {busyReason(creature) !== null && (
+                    <small class="muted"> {busyReason(creature)}</small>
+                  )}
                 </p>
               )}
               {waitingCatch !== undefined && (

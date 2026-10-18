@@ -238,6 +238,15 @@ describe('the one gold button', () => {
     expect(actions.onEvolve).toHaveBeenCalledTimes(1);
   });
 
+  it('shows the evolve button disabled with the busy wording while the creature is away', () => {
+    const { card, actions, page: p } = draw({ ...kind('evolve ready'), away: true });
+    const gold = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
+    expect(gold.hasAttribute('disabled')).toBe(true);
+    expect(visibleText(gold)).toContain('Away on an expedition');
+    p.click(gold);
+    expect(actions.onEvolve).not.toHaveBeenCalled();
+  });
+
   it('takes the player to a waiting catch, and counts the other things that wait', () => {
     const creature = { ...kind('ribbon ready'), ribbon: null, waiting: false };
     const { card, onAnswerCatch, page: p } = draw(creature, { pending: true });

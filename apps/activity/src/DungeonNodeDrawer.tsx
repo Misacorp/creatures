@@ -170,7 +170,7 @@ function LootRow({ pack }: { pack: DungeonPack }) {
   return (
     <div class="dnd-loot">
       <span>{LOOT_LABEL}:</span>
-      <ul class="dnd-loot-items plain-list" aria-label={LOOT_LABEL}>
+      <ul class="dnd-loot-items" aria-label={LOOT_LABEL}>
         {packBadges(pack).map(({ key, ...badge }) => (
           <li key={key}>
             <CountBadge {...badge} />
@@ -195,21 +195,20 @@ function KeepsakeLine({ keepsake }: { keepsake: DungeonKeepsakeView }) {
 
 /**
  * What happened in a room the run has been through: its history entries in order. A boss that fell has
- * its fight, then its chest (and what the chest paid replaces the fight's own loot line), then the descent.
+ * its fight (with its own loot), then its chest (only what the chest added), then the descent.
  */
 function Outcomes({ entries }: { entries: readonly DungeonStepLog[] }) {
-  const chest = entries.some((e) => e.result === 'chest');
   return (
     <>
       {entries.map((entry, i) => (
-        <Outcome key={i} entry={entry} chest={chest} />
+        <Outcome key={i} entry={entry} />
       ))}
     </>
   );
 }
 
 /** What happened in a room the run has been through, from one history entry. */
-function Outcome({ entry, chest }: { entry: DungeonStepLog; chest: boolean }) {
+function Outcome({ entry }: { entry: DungeonStepLog }) {
   if (entry.result === 'pending') {
     return (
       <p class="dnd-line dnd-pending">
@@ -258,8 +257,8 @@ function Outcome({ entry, chest }: { entry: DungeonStepLog; chest: boolean }) {
       </div>
     );
   }
-  // A fight whose boss chest follows says its loot there, so the pack is not counted twice.
-  const loot = chest && entry.result === 'fight' ? null : lootOf(entry);
+  // A chest entry only holds what the chest added, so a fight always shows its own loot.
+  const loot = lootOf(entry);
   return (
     <div class="dnd-outcome">
       {entry.result === 'fight' && <p class="dnd-line">{roundsLine(entry)}</p>}
@@ -273,7 +272,6 @@ function Outcome({ entry, chest }: { entry: DungeonStepLog; chest: boolean }) {
       {loot !== null ? (
         <LootRow pack={loot} />
       ) : (
-        !chest &&
         (entry.result === 'cache' || entry.result === 'fight') && (
           <p class="muted dnd-line">{NO_LOOT_LINE}</p>
         )

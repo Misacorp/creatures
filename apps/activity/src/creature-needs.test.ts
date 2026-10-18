@@ -36,6 +36,23 @@ describe('what a creature needs', () => {
     expect(creatureNeeds(notYet, plainState)).toEqual([]);
   });
 
+  it('shows an evolve that is blocked while the creature is away or on a job, with the busy wording', () => {
+    const ready = sampleCreature('evolve ready');
+    expect(creatureNeeds({ ...ready, away: true }, plainState)).toEqual([
+      {
+        kind: 'evolve',
+        label: 'Evolve into Pyrelynx',
+        detail: 'Away on an expedition',
+        blocked: 'Away on an expedition',
+      },
+    ]);
+    const onJob = { ...ready, busy: { kind: 'job' as const, id: 'job-1' } };
+    expect(creatureNeeds(onJob, plainState)[0]).toMatchObject({
+      detail: 'On a job in the Workshop',
+      blocked: 'On a job in the Workshop',
+    });
+  });
+
   it('needs to answer a waiting catch it can take, and only that one', () => {
     const pending = SAMPLE_STATE.pending[0];
     if (pending === undefined) throw new Error('the fixture has a waiting catch');

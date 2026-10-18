@@ -38,6 +38,7 @@ import {
   debitParts,
   equippedByCreature,
   getParts,
+  openJobOf,
   openJobsByCreature,
   rowToItem,
   wornGearView,
@@ -631,7 +632,8 @@ export class Collection {
    * off (the new form may be another role), and the result says how many items did. The first evolution
    * into a species on the server records "first on server" (kind `evolve`, keyed by the stage-2 species).
    * A retry with the same key returns the stored result and charges nothing; the same key for another
-   * form is a `key_conflict`.
+   * form is a `key_conflict`. A creature that is away on an expedition (`creature_away`) or has an open
+   * Workshop job (`creature_on_job`) cannot evolve yet; nothing is charged.
    */
   evolve(
     userId: string,
@@ -652,6 +654,10 @@ export class Collection {
           requested === undefined ? first : branches.find((b) => b.species === requested);
         if (chosen === undefined) throw new GameError(409, 'not_a_branch');
         if (creature.level < chosen.level) throw new GameError(409, 'level_too_low');
+        // A trip's and a job's perks are read at claim from the creature as it then is, and what it wears
+        // is frozen while it is busy: a new form (another role) would change both. Evolve once it is home.
+        if (creature.away_expedition_id !== null) throw new GameError(409, 'creature_away');
+        if (openJobOf(this.sql, creature.id) !== null) throw new GameError(409, 'creature_on_job');
         amount = chosen.essence;
         target = chosen.species;
       } else {

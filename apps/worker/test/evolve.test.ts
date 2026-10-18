@@ -174,6 +174,49 @@ describe('POST /api/creatures/:id/evolve', () => {
     });
   });
 
+  it('refuses a creature that is away or on a Workshop job, charges nothing, and still answers a retry of a done evolve', async () => {
+    await runRaid(async (ctx) => {
+      const { p, secret, splashet, stormray } = await setup(ctx);
+      giveEssence(ctx, p.id, 100);
+      const ledgerBefore = count(ctx.sql, 'ledger');
+
+      ctx.sql.exec("UPDATE creatures SET away_expedition_id = 'trip' WHERE id = ?", splashet);
+      const away = await evolve(ctx, secret, splashet);
+      expect(away).toMatchObject({ status: 409, body: { error: 'creature_away' } });
+
+      ctx.sql.exec(
+        `INSERT INTO workshop_jobs (id, user_id, creature_id, kind, input_json, started_at, ends_at)
+         VALUES ('00000000-0000-4000-8000-000000000001', ?, ?, 'craft', '{}', 0, 1)`,
+        p.id,
+        stormray,
+      );
+      const job = await evolve(ctx, secret, stormray);
+      expect(job).toMatchObject({ status: 409, body: { error: 'creature_on_job' } });
+
+      expect(ctx.core.balances(p.id).essence).toBe(100);
+      expect(count(ctx.sql, 'ledger')).toBe(ledgerBefore);
+      expect(
+        rows<{ id: string; species: string }>(
+          ctx.sql,
+          'SELECT id, species FROM creatures WHERE id IN (?, ?) ORDER BY species',
+          splashet,
+          stormray,
+        ).map((r) => r.species),
+      ).toEqual(['splashet', 'stormray']);
+
+      // Once it is home (and the job is claimed) it evolves; a retry of that is not re-checked.
+      ctx.sql.exec('UPDATE creatures SET away_expedition_id = NULL WHERE id = ?', splashet);
+      const key = newKey();
+      const done = await evolve(ctx, secret, splashet, key);
+      expect(done.status).toBe(200);
+      ctx.sql.exec("UPDATE creatures SET away_expedition_id = 'trip' WHERE id = ?", splashet);
+      const retry = await evolve(ctx, secret, splashet, key);
+      expect(retry.status).toBe(200);
+      expect(retry.body.species).toBe(done.body.species);
+      expect(ctx.core.balances(p.id).essence).toBe(80);
+    });
+  });
+
   it('records first on server only for the first evolution of a line', async () => {
     await runRaid(async (ctx) => {
       const a = await setup(ctx);

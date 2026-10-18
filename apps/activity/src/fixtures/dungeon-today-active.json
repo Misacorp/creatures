@@ -7,26 +7,6 @@
   "landmark": false,
   "landmarkBoss": null,
   "streak": 0,
-  "modifiers": [
-    {
-      "room": 0,
-      "id": "flooded",
-      "name": "Flooded",
-      "description": "Tide creatures hit 20% harder."
-    },
-    {
-      "room": 1,
-      "id": "stormy",
-      "name": "Stormy",
-      "description": "Spark creatures hit 20% harder."
-    },
-    {
-      "room": 2,
-      "id": "brittle",
-      "name": "Brittle",
-      "description": "The foe has 20% less HP but hits 25% harder."
-    }
-  ],
   "attemptsToday": 1,
   "attemptsAllowed": 2,
   "canRun": false,

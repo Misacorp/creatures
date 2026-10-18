@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
-import { vi } from 'vitest';
+import { expect, vi } from 'vitest';
 import { FEEDBACK_INBOX_NAME } from '../src/feedback-inbox';
 import { createHandler } from '../src/index';
 import { ORIGIN } from './helpers';
@@ -212,6 +212,22 @@ export function pngBytes(size: number): Uint8Array {
   bytes.set(PNG_HEAD);
   for (let i = PNG_HEAD.length; i < size; i++) bytes[i] = (i * 31) % 251;
   return bytes;
+}
+
+/**
+ * Asserts two byte arrays are the same. Vitest's `toEqual` takes ~20 s on a few MiB of bytes; a plain
+ * loop takes milliseconds and names the first byte that differs.
+ */
+export function expectSameBytes(actual: Uint8Array | undefined, expected: Uint8Array): void {
+  if (actual === undefined) throw new Error('expected bytes, got undefined');
+  expect(actual.length).toBe(expected.length);
+  for (let i = 0; i < expected.length; i++) {
+    if (actual[i] !== expected[i]) {
+      throw new Error(
+        `bytes differ at index ${String(i)}: ${String(actual[i])} !== ${String(expected[i])}`,
+      );
+    }
+  }
 }
 
 export function attachment(

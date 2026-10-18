@@ -248,7 +248,7 @@ describe('what happened in the rooms of the Undercroft', () => {
     expect(descendLine({ result: 'home', level: 1 })).toBe('You headed home with the whole pack.');
   });
 
-  it('keeps all the entries of a boss that fell, in order, and counts a chest as loot', () => {
+  it('keeps all the entries of a boss that fell, in order, and a chest only holds what it adds', () => {
     const keeper = parseDungeonAct(actKeeper).state;
     expect(stepsAt(keeper.history, 'f6l1').map((e) => e.result)).toEqual([
       'fight',
@@ -258,7 +258,10 @@ describe('what happened in the rooms of the Undercroft', () => {
     expect(stepsAt(keeper.history, 'u1f3l1').map((e) => e.result)).toEqual(['fight', 'chest']);
     expect(stepsAt(undefined, 'f6l1')).toEqual([]);
     const chest = stepsAt(keeper.history, 'u1f3l1')[1];
-    expect(chest && lootOf(chest)).toEqual({ bait: 0, essence: 1, scrap: 2 });
+    // A chest entry is only what the chest adds: a keeper's chest adds no loot, its own is on the fight.
+    expect(chest && lootOf(chest)).toBeNull();
+    const fight = stepsAt(keeper.history, 'u1f3l1')[0];
+    expect(fight && lootOf(fight)).toEqual({ bait: 0, essence: 1, scrap: 2 });
     const door = (keeper.history ?? []).find((e) => e.result === 'door');
     expect(door && lootOf(door)).toBeNull();
   });

@@ -11,6 +11,7 @@ import {
   attachment,
   clearInbox,
   clock,
+  expectSameBytes,
   fakeFetch,
   inbox,
   interact,
@@ -577,7 +578,7 @@ describe('screenshots', () => {
     );
     expect(shot.headers.get('X-Content-Type-Options')).toBe('nosniff');
     expect(shot.headers.get('Cache-Control')).toBe('no-store');
-    expect(new Uint8Array(await shot.arrayBuffer())).toEqual(png);
+    expectSameBytes(new Uint8Array(await shot.arrayBuffer()), png);
   });
 
   it('stores JPEG and WebP by their first bytes, whatever Discord called them', async () => {

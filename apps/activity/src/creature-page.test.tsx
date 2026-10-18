@@ -323,6 +323,23 @@ describe('the creature page: the buttons for what is ready', () => {
   });
 });
 
+describe('the creature page: evolving a busy creature', () => {
+  it('disables the evolve button and says why while the creature is on a job', () => {
+    const {
+      root,
+      page: p,
+      actions,
+    } = draw('evolve ready', {
+      change: (c) => ({ ...c, busy: { kind: 'job', id: 'job-1' } }),
+    });
+    const button = first(byName(root, 'button', /^Evolve into Pyrelynx/));
+    expect(button.hasAttribute('disabled')).toBe(true);
+    expect(visibleText(root)).toContain('On a job in the Workshop');
+    p.click(button);
+    expect(actions.onEvolve).not.toHaveBeenCalled();
+  });
+});
+
 describe('the creature page: gear slots', () => {
   it('shows locked slots as a padlock over the name with the level under it', () => {
     const { root } = draw('level 2');

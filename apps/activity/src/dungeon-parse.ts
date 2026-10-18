@@ -440,11 +440,6 @@ function isToday(value: unknown): boolean {
     isBool(value['landmark']) &&
     isLandmarkBoss(value['landmarkBoss']) &&
     isCount(value['streak']) &&
-    isArrayOf(
-      value['modifiers'],
-      (m): m is DungeonToday['modifiers'][number] =>
-        isModifierText(m) && isRecord(m) && isCount(m['room']),
-    ) &&
     isCount(value['attemptsToday']) &&
     isCount(value['attemptsAllowed']) &&
     isBool(value['canRun']) &&

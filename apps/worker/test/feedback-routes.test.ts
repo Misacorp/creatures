@@ -23,6 +23,7 @@ import {
   workerEnv,
   attachment,
   ATTACHMENT_ID,
+  expectSameBytes,
   jsonBody,
   type Keys,
 } from './feedback-helpers';
@@ -344,7 +345,7 @@ describe('report and screenshot', () => {
     expect(await inbox().storeShot(id, 'image/png', bytes)).toBe(true);
     const shot = await inbox().shot(id);
     expect(shot?.type).toBe('image/png');
-    expect(shot?.bytes).toEqual(bytes);
+    expectSameBytes(shot?.bytes, bytes);
   });
 });
 

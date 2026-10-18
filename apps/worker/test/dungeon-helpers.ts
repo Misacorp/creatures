@@ -21,6 +21,20 @@ let keyCounter = 0;
 /** A valid client idempotency key, unique per call. */
 export const newKey = (): string => `dungeon-${String(++keyCounter).padStart(8, '0')}-test`;
 
+/**
+ * The modifier ids of the rooms the dev tool `dungeon-modifiers` picks: the first two entrance rooms
+ * (left to right) and the floor boss, read from the map's nodes.
+ */
+export function pickedRoomModifierIds(map: DungeonMapView): string[] {
+  const entrance = map.nodes
+    .filter((n) => n.floor === 0)
+    .sort((a, b) => a.lane - b.lane)
+    .slice(0, 2);
+  return [...entrance, ...map.nodes.filter((n) => n.kind === 'boss')].map(
+    (n) => n.modifier?.id as string,
+  );
+}
+
 export interface RunBodyInput {
   /** The row, left to right. */
   team: string[];
