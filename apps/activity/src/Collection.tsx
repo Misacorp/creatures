@@ -22,7 +22,10 @@ import { hasBranches } from './evolve-view';
 import type { CatchChoiceActions } from './find-view';
 import { PENDING_CATCHES_ID, PendingCatches } from './PendingCatches';
 import type { GearState } from './gear-types';
+import { creatureName } from './game';
 import { pageScrollY, scrollAndFocus, scrollPageTo } from './scroll-to';
+import { flipOver, type FlipProps, type FlipStep } from './ui/flip-logic';
+import { FlipLive } from './ui/Flipper';
 
 interface Props extends CardActions {
   state: GameState;
@@ -42,6 +45,10 @@ const FOUND_MS = 4000;
 interface OpenPage {
   id: string;
   focus: PageFocus;
+  /** The way a flip came (1: from the next one, -1: from the previous one); null when the page was opened from the list. */
+  enter: FlipStep | null;
+  /** After a flip with an arrow button, that button gets the focus back on the new page. */
+  focusButton: FlipStep | null;
 }
 
 /**
@@ -74,6 +81,8 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
   const listScroll = useRef(0);
   const returnTo = useRef<string | null>(null);
   const wasOpen = useRef(false);
+  // The page was flipped to other creatures: the list then scrolls to the one the page ended on.
+  const flipped = useRef(false);
   // A creature that is gone (released, say) cannot have a page: show the list.
   const opened =
     page === null ? undefined : state.creatures.find((creature) => creature.id === page.id);
@@ -90,9 +99,16 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
     }
     if (!wasOpen.current) return;
     wasOpen.current = false;
-    scrollPageTo(listScroll.current);
     const id = returnTo.current;
     const card = id === null ? null : document.getElementById(cardDomId(id));
+    if (flipped.current && card !== null) {
+      // The page moved on to other creatures: show the card it ended on, not where the list was.
+      flipped.current = false;
+      scrollAndFocus(card, 'auto');
+      return;
+    }
+    flipped.current = false;
+    scrollPageTo(listScroll.current);
     card?.focus({ preventScroll: true });
   }, [pageOpen]);
 
@@ -112,7 +128,8 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
   function open(creature: Creature, focus: PageFocus): void {
     listScroll.current = pageScrollY();
     returnTo.current = creature.id;
-    setPage({ id: creature.id, focus });
+    flipped.current = false;
+    setPage({ id: creature.id, focus, enter: null, focusButton: null });
   }
 
   function back(): void {
@@ -132,6 +149,33 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
   // A short roster has no finder, so no chip (kept from an earlier visit) may hide a card.
   const showFinder = state.creatures.length >= FINDER_MIN_CREATURES;
   const shown = showFinder ? applyFilters(state.creatures, filters, needy) : state.creatures;
+
+  // The page flips through the creatures in the order of the list it came from (the chips and search
+  // as they are now); a creature those hide, which can happen when the game changes under an open page,
+  // flips through the whole roster instead.
+  const order =
+    opened !== undefined && shown.some((c) => c.id === opened.id) ? shown : state.creatures;
+  const at = opened === undefined ? -1 : order.findIndex((c) => c.id === opened.id);
+  const pageFlip: FlipProps | undefined =
+    page === null
+      ? undefined
+      : flipOver({
+          list: order,
+          at,
+          noun: 'creature',
+          nameOf: creatureName,
+          extra: { enter: page.enter, focusButton: page.focusButton },
+          pick: (target, step, via) => {
+            returnTo.current = target.id;
+            flipped.current = true;
+            setPage({
+              id: target.id,
+              focus: null,
+              enter: step,
+              focusButton: via === 'button' ? step : null,
+            });
+          },
+        });
 
   function changeFilters(next: Filters): void {
     setFilters(next);
@@ -156,6 +200,7 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
           busy={busy}
           actions={cardActions}
           focus={page.focus}
+          flip={pageFlip}
           onBack={back}
           onAnswerCatch={() => {
             back();
@@ -166,6 +211,7 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
           }}
         />
       )}
+      {pageFlip !== undefined && <FlipLive flip={pageFlip} />}
       {evolving !== undefined && (
         <EvolveDrawer
           open

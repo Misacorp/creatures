@@ -4,7 +4,7 @@ import { Blueprints } from './Blueprints';
 import type { GearActions } from './gear-actions';
 import { PartsRow } from './GearArt';
 import type { GearState, JobResult } from './gear-types';
-import { bagText, jobResultRarity, noticeLines, unequippedReason } from './gear-view';
+import { bagText, jobResultRarity, noticeLines, sortItems, unequippedReason } from './gear-view';
 import { GlossaryTag } from './Glossary';
 import { InventoryGrid } from './InventoryGrid';
 import { gearName } from './gear-view';
@@ -14,6 +14,8 @@ import { JobSlots } from './JobSlots';
 import { SupplyCrafting } from './SupplyCrafting';
 import { Accordion } from './ui/Accordion';
 import { Drawer } from './ui/Drawer';
+import { flipOver } from './ui/flip-logic';
+import { FlipArea } from './ui/Flipper';
 
 /**
  * The Workshop tab: your parts, the job slots (with timers and claims), the bag of gear (an item's
@@ -31,6 +33,7 @@ export function Workshop({
   onRetry,
   onClaimed,
   onDismissReveal,
+  initialSelectedId,
 }: {
   state: GameState;
   gear: GearState | null;
@@ -44,8 +47,12 @@ export function Workshop({
   onRetry: () => void;
   onClaimed: (result: JobResult) => void;
   onDismissReveal: () => void;
+  /** The item whose drawer is up when the tab opens (the workbench shows one; the game starts with none). */
+  initialSelectedId?: string;
 }) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialSelectedId ?? null);
+  // The drawer was flipped to another item: the new card does not take the focus from the arrows.
+  const [flipped, setFlipped] = useState(false);
   if (gear === null) {
     return failed ? (
       <section class="ws-section">
@@ -61,6 +68,18 @@ export function Workshop({
     );
   }
   const selected = gear.items.find((i) => i.id === selectedId) ?? null;
+  // The drawer flips through the bag's items in the grid's order.
+  const ordered = sortItems(gear.items);
+  const flip = flipOver({
+    list: ordered,
+    at: ordered.findIndex((i) => i.id === selected?.id),
+    noun: 'item',
+    nameOf: (item) => gearName(item.baseId),
+    pick: (item) => {
+      setSelectedId(item.id);
+      setFlipped(true);
+    },
+  });
   return (
     <div class="workshop">
       {gear.notice !== null && (
@@ -144,6 +163,7 @@ export function Workshop({
             creatures={state.creatures}
             selectedId={selected?.id ?? null}
             onSelect={(id) => {
+              setFlipped(false);
               setSelectedId(id === selectedId ? null : id);
             }}
           />
@@ -153,22 +173,26 @@ export function Workshop({
           title={selected === null ? 'Item' : gearName(selected.baseId)}
           titleHidden
           class="item-drawer"
+          flip={flip}
           onClose={() => {
             setSelectedId(null);
           }}
         >
           {selected !== null && (
-            <ItemDetail
-              key={selected.id}
-              item={selected}
-              gear={gear}
-              creatures={state.creatures}
-              busy={busy}
-              actions={actions}
-              onGone={() => {
-                setSelectedId(null);
-              }}
-            />
+            <FlipArea flip={flip}>
+              <ItemDetail
+                key={selected.id}
+                item={selected}
+                gear={gear}
+                creatures={state.creatures}
+                busy={busy}
+                actions={actions}
+                focusName={!flipped}
+                onGone={() => {
+                  setSelectedId(null);
+                }}
+              />
+            </FlipArea>
           )}
         </Drawer>
       </section>

@@ -5,6 +5,7 @@ import { creatureCardEntries } from './entries/creature-card';
 import { creaturePageEntries } from './entries/creature-page';
 import { creatureEntries } from './entries/creatures';
 import { evolveEntries } from './entries/evolve';
+import { flipperEntries } from './entries/flipper';
 import { headingEntries } from './entries/headings';
 import { iconEntries } from './entries/icons';
 import { lootEntries } from './entries/loot';
@@ -40,6 +41,7 @@ export const ENTRIES: readonly Entry[] = [
   ...creatureCardEntries,
   ...creaturePageEntries,
   ...evolveEntries,
+  ...flipperEntries,
   ...talentEntries,
   tripResult,
   ...stageEntries,

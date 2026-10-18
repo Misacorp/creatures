@@ -1,0 +1,161 @@
+/*
+  Flipping between things (ui/Flipper.tsx): the previous and next arrows with the position ("3 / 12") and
+  the swipe area. The same on the creature page (top row, between Back and Lounge) and in the item drawers
+  (the heading row; the small look fits the drag handle's row). The area takes vertical scrolling and a
+  pinch zoom itself and leaves the sideways move to the swipe. The content follows the finger (the
+  `--flip-x` custom property, set from code), settles back with a short ease, and the thing that appears
+  slides in over 160 ms from the side it was flipped to; with reduced motion none of the easing or sliding
+  happens (the content still follows the finger while it is held). Comes after the Drawer and creature
+  page rules on purpose.
+*/
+
+.flip-nav {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+button.flip-btn {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  min-height: 2.75rem;
+  padding: 0;
+}
+
+.flip-arrow {
+  width: 0.5rem;
+  height: 0.875rem;
+  fill: currentcolor;
+}
+
+/* The first or last thing: the arrow dims and does nothing, but stays a button so the focus stays put. */
+button.flip-btn[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+button.flip-btn[aria-disabled='true']:hover {
+  filter: none;
+}
+
+button.flip-btn[aria-disabled='true']:active {
+  transform: none;
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+}
+
+.flip-count {
+  min-width: 3.25rem;
+  color: var(--haze);
+  font-size: 1rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* In the Drawer's heading row: no taller than the drag handle's strip. */
+.flip-nav-small {
+  gap: 0.25rem;
+}
+
+.flip-nav-small button.flip-btn {
+  width: 2.25rem;
+  min-height: 1.75rem;
+}
+
+.flip-nav-small .flip-count {
+  min-width: 3rem;
+}
+
+/*
+  The top row of the creature page: Back and Lounge keep their row (Back at the left, Lounge at the right);
+  the arrows take a thin row of their own under them, centred (a 390 px screen has no room for three
+  controls in one row).
+*/
+.cp-top {
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+}
+
+.cp-top .flip-nav {
+  flex: 1 0 100%;
+  order: 3;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.cp-top button.flip-btn {
+  width: 3rem;
+  min-height: 2.25rem;
+}
+
+/* With the heading only spoken, the arrows sit at the left of the handle's row and the close button at the right. */
+.drawer-panel.title-hidden .drawer-head {
+  left: 0;
+  pointer-events: none;
+}
+
+.drawer-panel.title-hidden .drawer-head .flip-nav,
+.drawer-panel.title-hidden .drawer-head .drawer-close {
+  pointer-events: auto;
+}
+
+.drawer-panel.title-hidden .drawer-head .flip-nav {
+  margin-left: 0.5rem;
+}
+
+/* The arrows hang a little below the handle's row: the body starts under them. */
+.drawer-panel.title-hidden.has-flip .drawer-body {
+  padding-top: 0.75rem;
+}
+
+/* --- The swipe area --- */
+
+.flip-area {
+  overflow-x: clip;
+  touch-action: pan-y pinch-zoom;
+}
+
+.flip-slide.flipping {
+  transform: translateX(var(--flip-x, 0px));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .flip-slide:not(.flipping) {
+    transition: transform 120ms ease-out;
+  }
+
+  .flip-slide[data-enter='next'] {
+    animation: flip-in-next 160ms ease-out;
+  }
+
+  .flip-slide[data-enter='prev'] {
+    animation: flip-in-prev 160ms ease-out;
+  }
+}
+
+@keyframes flip-in-next {
+  from {
+    opacity: 0;
+    transform: translateX(1.75rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes flip-in-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-1.75rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
