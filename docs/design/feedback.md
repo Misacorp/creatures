@@ -60,11 +60,11 @@ All four ops routes answer a plain 404 for an unset token, a wrong token or a wr
 - The modal (`custom_id` `feedback`, title "Send feedback") has three Label components (type 18): a String Select (type 3, `custom_id` `kind`), a Text Input (type 4, paragraph style 2, `custom_id` `text`, 10 to 1500 characters) and a File Upload (type 19, `custom_id` `shot`, `min_values` 0, `max_values` 1, `required: false`, `file_types` `[".png", ".jpg", ".jpeg", ".webp"]`).
 - In the MODAL_SUBMIT, `data.components[]` are Labels with a `component`: the select has `values`, the text input `value`, the file upload `values` (attachment ids), each a key of `data.resolved.attachments` (`url`, `content_type`, `size`, `filename`). The user is `member.user.id`, the server `guild_id`.
 - A screenshot larger than 8 MiB (players may upload more, depending on their Discord plan) is not copied; the reply says so.
-- To check on staging: the Activity's Launch command still works once the Interactions Endpoint URL is set (its handler is Discord's own), and the modal works on desktop, web and mobile.
+- To check on staging: the Activity's Launch command still works once the Interactions Endpoint URL is set, and the modal works on desktop, web and mobile. Since 2026-10-18 Launch also comes to this endpoint (the app handler, see `lounge-message.md`).
 
 ## The slash command
 
-`/feedback` is a global command, usable only in servers. The deploy job registers it after each deploy (`POST /applications/{id}/commands`, which replaces a command of the same name, so the Activity's entry point command is untouched). A failure there is a warning, not a failed deploy. Misa sets the Interactions Endpoint URL once per app in the Discord developer portal.
+`/feedback` is a global command, usable only in servers. The deploy job registers it after each deploy (`POST /applications/{id}/commands`, which replaces a command of the same name, so the Activity's entry point command is untouched; the same step then sets the entry point's handler, see `lounge-message.md`). A failure there is a warning, not a failed deploy. Misa sets the Interactions Endpoint URL once per app in the Discord developer portal.
 
 ## The GitHub issue
 

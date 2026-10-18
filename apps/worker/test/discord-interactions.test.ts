@@ -262,6 +262,37 @@ describe('the /feedback command', () => {
   });
 });
 
+describe('launching the Activity', () => {
+  const send = (body: unknown) =>
+    interact(makeHandler(), { keys, body }, reportsEnv(keys), makeCtx().ctx);
+
+  it('answers the entry point command with LAUNCH_ACTIVITY, in a server or a DM', async () => {
+    for (const body of [
+      { type: 2, guild_id: nextFeedbackGuild(), data: { name: 'whatever', type: 4 } },
+      { type: 2, data: { name: 'anything', type: 4 } },
+      { type: 2, data: { name: 'launch' } },
+    ]) {
+      const res = await send(body);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ type: 12 });
+    }
+  });
+
+  it('answers the lounge button with LAUNCH_ACTIVITY and any other button privately', async () => {
+    const press = (custom_id: string) => ({ type: 3, data: { custom_id, component_type: 2 } });
+    expect(await (await send(press('lounge:play'))).json()).toEqual({ type: 12 });
+    expect(await (await send(press('lounge:other'))).json()).toEqual({
+      type: 4,
+      data: {
+        content: "That command isn't available here.",
+        flags: 64,
+        allowed_mentions: { parse: [] },
+      },
+    });
+    expect((await send({ type: 3, data: {} })).status).toBe(400);
+  });
+});
+
 describe('sending feedback', () => {
   it('stores a report and answers privately, without any mention', async () => {
     const handler = makeHandler();

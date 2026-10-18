@@ -1702,6 +1702,14 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 
 **Client.** The drop is no longer refused. While a creature is carried over another player's auto tile the page says "<creature> makes room." (text only), and the drop announcement says the same. Auto tiles are muted so they read as suggestions: the dashed outline and "auto" tag stay, the sprite is faded and half desaturated, and the text uses the quiet text colour (about 6.5:1 on the tile, above AA); hover, focus and a drag over the tile bring the full look back so it never looks disabled. The workbench's "Others join by themselves" toggle shows the same look.
 
+## 2026-10-18: The lounge message replaces Discord's launch card
+
+**Problem.** Discord's default Launch command posts a "Game invitation" card on every launch, which later reads "Game ended. Start a new one?". In an active server the channel filled with these cards and people got notified each time someone started playing.
+
+**Decision.** Launch uses the app handler and is answered with LAUNCH_ACTIVITY, which posts nothing. The game keeps one message per server in the announcement channel, edited in place, showing who is playing, with a Play/Join button that launches the same way (design in `docs/design/lounge-message.md`). Presence comes from Discord's activity instance API, already used at login, polled once a minute while a session is tracked: no client heartbeat and nothing a client could fake. A buried message is reposted silently when a new session starts; Misa chose silent reposting over pinning, and the raid post channel over the last launch channel.
+
+**Why.** It keeps joining one click away (the lounge) without a new message per launch. Edits never notify, and a repost is `@silent`. The deploy job switches the handler only while the Interactions Endpoint URL is ours, and going back is one constant.
+
 ## 2026-10-18: Branch evolutions built: Sunfawn and Ohmouse, Keep is live
 
 Step 7 of `gear-and-creatures-v2.md` (section 8.4). Sproutle grows into Thornbuck or Sunfawn, Zipmouse into Voltaro or Ohmouse; the choice is permanent; a Kept duplicate (a second creature of the line) can grow the other way. Technical decisions by the lead and implementer; Misa kept the names Sunfawn and Ohmouse (2026-10-18).

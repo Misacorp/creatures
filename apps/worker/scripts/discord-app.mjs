@@ -8,7 +8,9 @@
 //   node apps/worker/scripts/discord-app.mjs register <production|staging>
 //     Creates or updates the global `/feedback` command (`POST /applications/{id}/commands` replaces
 //     a command of the same name and leaves the Activity's entry point command alone). Skipped when
-//     Discord already has the same definition.
+//     Discord already has the same definition. Then sets the handler of the Activity's entry point
+//     command (Launch) to ENTRY_POINT_HANDLER, but only while the Interactions Endpoint URL is this
+//     game's, since the app handler sends Launch there (the lounge message, docs/design/lounge-message.md).
 //
 // Every failure is a warning and exit code 0: the game is already deployed, and the feedback
 // command must never fail a deploy. The bot token is only sent to discord.com and never printed.
@@ -17,6 +19,13 @@ import { appendFileSync, readFileSync } from 'node:fs';
 const API = 'https://discord.com/api/v10';
 const HOSTS = { production: 'creatures.misacorp.dev', staging: 'creatures-staging.misacorp.dev' };
 const TIMEOUT_MS = 15_000;
+/**
+ * 1 (APP_HANDLER): Discord sends Launch to our interactions endpoint, which launches the Activity
+ * without a channel message. 2 (DISCORD_LAUNCH_ACTIVITY) is Discord's default, which posts a "Game
+ * invitation" card on every launch. To go back, set 2 here and deploy.
+ */
+const ENTRY_POINT_HANDLER = 1;
+const PRIMARY_ENTRY_POINT = 4;
 
 const [mode, target] = process.argv.slice(2);
 const token = process.env.DISCORD_BOT_TOKEN ?? '';
@@ -96,6 +105,33 @@ async function register() {
   console.log(`/${command.name} registered (HTTP ${res.status}).`);
 }
 
+/** Sets the entry point command's handler. Skipped while Launch would reach another endpoint. */
+async function setEntryPointHandler() {
+  const app = await currentApp();
+  const expected = `https://${HOSTS[target]}/api/discord/interactions`;
+  if (ENTRY_POINT_HANDLER === 1 && app.interactions_endpoint_url !== expected) {
+    warn(`Launch keeps Discord's handler: the Interactions Endpoint URL is not ${expected}.`);
+    return;
+  }
+  const listed = await discord(`/applications/${app.id}/commands`);
+  if (!listed.ok) throw new Error(`listing commands answered HTTP ${listed.status}`);
+  const entry = (await listed.json()).find((c) => c?.type === PRIMARY_ENTRY_POINT);
+  if (entry === undefined || typeof entry.id !== 'string' || !/^\d{15,22}$/.test(entry.id)) {
+    warn('the Activity has no entry point command; is Activities enabled?');
+    return;
+  }
+  if (entry.handler === ENTRY_POINT_HANDLER) {
+    console.log(`Launch already uses handler ${ENTRY_POINT_HANDLER}.`);
+    return;
+  }
+  const res = await discord(`/applications/${app.id}/commands/${entry.id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ handler: ENTRY_POINT_HANDLER }),
+  });
+  if (!res.ok) throw new Error(`setting the Launch handler answered HTTP ${res.status}`);
+  console.log(`Launch now uses handler ${ENTRY_POINT_HANDLER}.`);
+}
+
 if (!Object.hasOwn(HOSTS, target ?? '') || (mode !== 'public-key' && mode !== 'register')) {
   console.log('::error::usage: discord-app.mjs <public-key|register> <production|staging>');
   process.exit(1);
@@ -110,4 +146,12 @@ try {
 } catch (err) {
   // Only our own messages and error names: a response body could carry anything.
   warn(err instanceof Error && err.message !== '' ? err.message : 'failed');
+}
+// Separate from /feedback, so a failure of one never skips the other.
+if (mode === 'register') {
+  try {
+    await setEntryPointHandler();
+  } catch (err) {
+    warn(err instanceof Error && err.message !== '' ? err.message : 'failed');
+  }
 }

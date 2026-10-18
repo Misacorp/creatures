@@ -506,7 +506,7 @@ describe('migration 32 (placed_by)', () => {
       undoPlacedByMigration(ctx.sql);
       expect(columns()).not.toContain('placed_by');
       expect(ctx.sql.exec('SELECT MAX(version) AS v FROM schema_version').one()['v']).toBe(
-        LATEST_SCHEMA_VERSION - 1,
+        LATEST_SCHEMA_VERSION - 2,
       );
       ctx.core.migrate();
       expect(columns()).toContain('placed_by');
