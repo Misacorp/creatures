@@ -769,7 +769,7 @@ Values are at x1. Engine: **Mutator** (the engine's existing hooks: fight start,
 | Long Shadows                | Supports' boost −4 pt; healing −25%                                         | —                                                  | Input, Sheet                    |
 | Restless Wind               | Guards' cover −10 pt                                                        | —                                                  | Input                           |
 | Cold Snap                   | —                                                                           | Creature experience −20%; Workshop jobs 15% slower | Rules                           |
-| Bramble Season              | The first reaction each round is reflected at 30% (rank 6+)                 | —                                                  | Engine: a reflect share (small) |
+| Bramble Season              | The first reaction each round is reflected at 12% (rank 6+)                 | —                                                  | Engine: a reflect share (small) |
 | Muddy Roads                 | —                                                                           | Trips 15% longer; supply finds −30%                | Rules                           |
 | Stormfront (wild, rank 10+) | The boss makes one more plain attack each round                             | —                                                  | Input (`bossAttacks`)           |
 

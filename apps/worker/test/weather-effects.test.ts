@@ -670,7 +670,7 @@ describe('the dungeon under the weather', () => {
     expect(haze.hazeLeft).toBe(true);
     expect(haze).not.toHaveProperty('rainHealBp');
     const bramble = await runUnder('market-day', 'bramble-season');
-    expect(bramble.brambleBp).toBe(3_000);
+    expect(bramble.brambleBp).toBe(1_200);
     const plain = await runUnder('market-day', null);
     for (const key of ['rainHealBp', 'hazeLeft', 'brambleBp'])
       expect(plain).not.toHaveProperty(key);
@@ -815,7 +815,7 @@ describe('the raid stage under the weather', () => {
         const ids = one.input.row.map((s) => s.id);
         expect(one.input.skipFirstTurn).toEqual(firstOfEachRow(one.input.row));
         for (const id of one.input.skipFirstTurn ?? []) expect(ids).toContain(id);
-        expect(two.input.brambleBp).toBe(3_000);
+        expect(two.input.brambleBp).toBe(1_200);
         expect(two.input.rainHealBp).toBeUndefined();
         expect(two.input.skipFirstTurn).toBeUndefined();
       },

@@ -374,7 +374,7 @@
     "effects": [
       {
         "op": "bramble",
-        "bp": 3000,
+        "bp": 1200,
         "text": "The first reaction each round sends {n}% of its bonus damage back at the creature that set it off."
       }
     ]

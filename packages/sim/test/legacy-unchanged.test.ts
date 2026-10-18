@@ -71,7 +71,8 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * other days (a different Boon or Omen on the same day: another trip time, creature experience, fight). The
  * three new effects are in the days too (a round heal, a skipped first turn, a reflect share). Nothing else
  * moved: the same players check in, the same dice are thrown, and Bait earned is the same in every run. The
- * first player's top-3 power is now 312, 314, 198 and 232, and raids won 7, 4, 4 and 5.
+ * first player's top-3 power is now 312, 314, 198 and 232, and raids won 7, 4, 4 and 5. Bramble Season's
+ * share was then cut from 30% to 12% (decisions.md): only run-tiny's hash moved.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

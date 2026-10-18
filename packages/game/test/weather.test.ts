@@ -474,10 +474,10 @@ describe('Kind Rain, Morning Haze and Bramble Season', () => {
       haze: true,
       brambleBp: 0,
     });
-    expect(weatherSky(day('market-day', 'bramble-season')).brambleBp).toBe(3_000);
-    // Omens scale faster: x1.5 at Boss Rank 6 is 45%, x2.5 at 14 is 75%.
-    expect(weatherSky(day('market-day', 'bramble-season', 12_500, 15_000)).brambleBp).toBe(4_500);
-    expect(weatherSky(day('market-day', 'bramble-season', 15_000, 25_000)).brambleBp).toBe(7_500);
+    expect(weatherSky(day('market-day', 'bramble-season')).brambleBp).toBe(1_200);
+    // Omens scale faster: x1.5 at Boss Rank 6 is 18%, x2.5 at 14 is 30%.
+    expect(weatherSky(day('market-day', 'bramble-season', 12_500, 15_000)).brambleBp).toBe(1_800);
+    expect(weatherSky(day('market-day', 'bramble-season', 15_000, 25_000)).brambleBp).toBe(3_000);
   });
 
   it('Kind Rain touches only the sky and the two places for trips; Haze only time', () => {
@@ -749,7 +749,7 @@ describe('words', () => {
       trips: ['Trips take 10% longer.'],
     });
     expect(weatherLines('bramble-season', 15_000).fight).toEqual([
-      'The first reaction each round sends 45% of its bonus damage back at the creature that set it off.',
+      'The first reaction each round sends 18% of its bonus damage back at the creature that set it off.',
     ]);
   });
 
