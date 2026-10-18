@@ -3,8 +3,8 @@
  * dungeon content. Randomness is injected (`Rng`): the server passes seeded streams of a run's seed
  * for the rooms, and its live crypto source for loot. Nothing here touches the engine.
  */
-import { dungeonContent, dungeonFoe, roomModifier } from '../content/dungeon';
-import type { DungeonFoeDef, DungeonFoeKind } from '../content/dungeon-schema';
+import { dungeonContent } from '../content/dungeon';
+import type { DungeonFoeDef } from '../content/dungeon-schema';
 import { content } from '../content';
 import type { Element, ReactionDef, Role } from '../content/schema';
 import { chance, int, pickWeighted, type Rng } from '../rng';
@@ -170,34 +170,6 @@ export function scaledFoe(
 
 // --- Rooms and modifiers ---
 
-/** One room of a run: what fills it and the modifier it rolled. */
-export interface RoomPlan {
-  index: number;
-  kind: DungeonFoeKind;
-  foeId: string;
-  modifierId: string;
-}
-
-function shuffled<T>(rng: Rng, items: readonly T[]): T[] {
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = int(rng, i + 1);
-    [out[i], out[j]] = [out[j] as T, out[i] as T];
-  }
-  return out;
-}
-
-/**
- * The modifiers of a guild-local day, one for each room, all different. They come from their own
- * seed (never the run's), so the day's modifiers can be shown before anyone enters.
- */
-export function rollDayModifiers(rng: Rng): string[] {
-  return shuffled(
-    rng,
-    dungeonContent.modifiers.map((m) => m.id),
-  ).slice(0, RULES.dungeon.rooms);
-}
-
 /**
  * The floor boss of a landmark depth, or null when `depth` is not a landmark. The k-th landmark
  * (k = depth / `landmarkEvery`, from 1) takes the floor bosses in content order and goes round again:
@@ -210,47 +182,9 @@ export function landmarkBossId(depth: number): string | null {
   return bosses[(k - 1) % bosses.length]?.id ?? null;
 }
 
-/**
- * The rooms of a run: normal foes (all different) for every room but the last, then a floor boss,
- * each with the day's modifier for that room. Draws from the run's seeded stream in a fixed order.
- * At a landmark `depth` the boss room's foe is fixed (`landmarkBossId`) instead of drawn; the draw is
- * still made and dropped, so the stream is consumed exactly as on any other day.
- */
-export function rollRooms(rng: Rng, modifierIds: readonly string[], depth: number): RoomPlan[] {
-  const rooms = RULES.dungeon.rooms;
-  if (modifierIds.length < rooms) throw new RangeError('not enough modifiers for the rooms');
-  const normal = shuffled(
-    rng,
-    dungeonContent.foes.filter((f) => f.kind === 'foe'),
-  );
-  const bosses = dungeonContent.foes.filter((f) => f.kind === 'boss');
-  const drawn = bosses[int(rng, bosses.length)];
-  const fixedId = landmarkBossId(depth);
-  const boss = fixedId === null ? drawn : bosses.find((b) => b.id === fixedId);
-  if (boss === undefined) throw new Error('no floor boss in the content');
-  const plans: RoomPlan[] = [];
-  for (let index = 0; index < rooms; index++) {
-    const last = index === rooms - 1;
-    const foe = last ? boss : normal[index];
-    if (foe === undefined) throw new Error('not enough dungeon foes');
-    plans.push({
-      index,
-      kind: foe.kind,
-      foeId: foe.id,
-      modifierId: modifierIds[index] as string,
-    });
-  }
-  return plans;
-}
-
-/** Checks a room plan against the content (ids exist), for stored or client-sent plans. */
-export function roomPlanValid(plan: RoomPlan): boolean {
-  return dungeonFoe(plan.foeId) !== undefined && roomModifier(plan.modifierId) !== undefined;
-}
-
 // --- Rewards ---
 
-/** The amounts a run pays that need no dice. Parts are scrap and glimmer; the shard and gear are rolled. */
+/** The parts of a run's payout that `rollDungeonLoot` reads: what was cleared decides which dice roll. */
 export interface DungeonPayout {
   bait: number;
   essence: number;
@@ -264,43 +198,6 @@ export interface DungeonPayout {
   fullClear: boolean;
   /** The boss room was cleared (it may drop a shard). */
   bossCleared: boolean;
-}
-
-/**
- * What a run pays for the rooms it cleared: each cleared room's Bait, Essence and scrap, then for a
- * full clear its Essence, and for a full clear of a landmark depth the landmark's extra.
- */
-export function dungeonPayout(depth: number, roomsCleared: number): DungeonPayout {
-  const rooms = RULES.dungeon.rooms;
-  const cleared = Math.max(0, Math.min(rooms, Math.floor(roomsCleared)));
-  const out: DungeonPayout = {
-    bait: 0,
-    essence: 0,
-    scrap: 0,
-    glimmer: 0,
-    supplies: 0,
-    landmark: false,
-    fullClear: cleared === rooms,
-    bossCleared: cleared === rooms,
-  };
-  for (let i = 0; i < cleared; i++) {
-    const room = RULES.dungeon.perRoom[i];
-    if (room === undefined) continue;
-    out.bait += room.bait;
-    out.essence += room.essence;
-    out.scrap += room.scrap;
-    out.supplies += room.supply;
-  }
-  if (out.fullClear) {
-    out.essence += RULES.dungeon.fullClear.essence;
-    if (isLandmark(depth)) {
-      out.landmark = true;
-      out.essence += RULES.dungeon.landmark.essence;
-      out.scrap += RULES.dungeon.landmark.scrap;
-      out.glimmer += RULES.dungeon.landmark.glimmer;
-    }
-  }
-  return out;
 }
 
 /** The position (1-based) of a streak in its cycle: day 1 to `cycleDays`, then round again. */

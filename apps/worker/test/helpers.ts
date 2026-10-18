@@ -241,12 +241,6 @@ export const GEAR_TABLES = [
 ] as const;
 
 /**
- * The schema version of a fresh database. Tests that check it use this constant, so a new migration
- * changes one number here (and adds an undo step below), not a dozen tests.
- */
-export const LATEST_SCHEMA_VERSION = 34;
-
-/**
  * Puts a database back to before migration 34 (the dungeon on a map): the steps table goes, and runs and
  * days lose the columns it added (a run that was open is dropped: a database from before had none).
  */

@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import { dungeonPathMigration } from '../src/dungeon-path-migration';
 import {
   RULES,
@@ -38,12 +39,7 @@ import {
   type DungeonPlayer,
   type Policy,
 } from './dungeon-helpers';
-import {
-  LATEST_SCHEMA_VERSION,
-  runCore,
-  undoDungeonPathsMigration,
-  type CoreContext,
-} from './helpers';
+import { runCore, undoDungeonPathsMigration, type CoreContext } from './helpers';
 import { count, nextGuild, rows } from './raid-helpers';
 
 const HOUR = 3_600_000;
@@ -326,7 +322,7 @@ describe('migration 34', () => {
         ctx.core.migrate();
         expect(
           rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v,
-        ).toBe(LATEST_SCHEMA_VERSION);
+        ).toBe(SCHEMA_VERSION);
         // The old row is a finished run with no state and no outcome.
         expect(runRow(ctx, summary.id)).toMatchObject({ status: 'done', outcome: null });
         expect(runRow(ctx, summary.id)?.state_json).toBeNull();

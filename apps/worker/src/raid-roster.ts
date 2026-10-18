@@ -6,8 +6,7 @@
  */
 import { RULES } from '@creatures/game';
 import { autoTeam, loadCreatures, rowLength, teamPower } from './raid-teams';
-
-const DAY_MS = 86_400_000;
+import { DAY_MS } from './time';
 
 /**
  * Players who may be on the roster now, sorted by user id so the order never depends on storage:

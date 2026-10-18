@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import { RULES, basicAbilities, content, placementRank, raidWeekPlan } from '@creatures/game';
 import { scaleBoss } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
@@ -5,7 +6,7 @@ import { RAID_DIFFICULTY_VERSION } from '../src/raid-difficulty';
 import { readLadder } from '../src/raid-ladder';
 import { redeclareWeek } from '../src/raid-redeclare';
 import { addWeeks, weekIndex } from '../src/raid-schedule';
-import { LATEST_SCHEMA_VERSION, undoDifficultyMigration, type CoreContext } from './helpers';
+import { undoDifficultyMigration, type CoreContext } from './helpers';
 import {
   DAY,
   HELSINKI,
@@ -402,7 +403,7 @@ describe('migration 24', () => {
       ctx.core.migrate();
       expect(
         ctx.sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-      ).toBe(LATEST_SCHEMA_VERSION);
+      ).toBe(SCHEMA_VERSION);
       expect(weekState(ctx).difficulty_version).toBe(0);
       // Migrating again changes nothing.
       ctx.core.migrate();

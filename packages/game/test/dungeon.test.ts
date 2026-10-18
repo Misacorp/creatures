@@ -6,20 +6,15 @@ import {
   dungeonContent,
   dungeonFoe,
   dungeonGearOddsBp,
-  dungeonPayout,
   dungeonRowOrder,
   dungeonSupplyOddsBp,
   depthFactorBp,
-  int,
   isLandmark,
   landmarkBossId,
   loadDungeon,
   roomModifier,
-  roomPlanValid,
-  rollDayModifiers,
   rollDungeonLoot,
   rollDungeonSupply,
-  rollRooms,
   rowReactions,
   rowScore,
   scaledFoe,
@@ -354,108 +349,18 @@ describe('depth scaling', () => {
   });
 });
 
-describe('the day and its rooms', () => {
-  it('rolls as many different modifiers as there are rooms, the same for the same seed', () => {
-    const a = rollDayModifiers(createSeededRng('day-1'));
-    expect(a).toHaveLength(rooms);
-    expect(new Set(a).size).toBe(rooms);
-    for (const id of a) expect(roomModifier(id)).toBeDefined();
-    expect(rollDayModifiers(createSeededRng('day-1'))).toEqual(a);
-    const seen = new Set<string>();
-    for (let i = 0; i < 40; i++) {
-      for (const id of rollDayModifiers(createSeededRng(`day-${String(i)}`))) seen.add(id);
-    }
-    expect(seen.size).toBe(dungeonContent.modifiers.length);
-  });
-
-  it('fills the rooms with different normal foes and then a floor boss, with the day modifiers', () => {
-    const modifiers = rollDayModifiers(createSeededRng('mods'));
-    for (let i = 0; i < 30; i++) {
-      const plan = rollRooms(createSeededRng(`run-${String(i)}`), modifiers, 1);
-      expect(plan).toHaveLength(rooms);
-      expect(plan.map((p) => p.index)).toEqual([0, 1, 2]);
-      expect(plan.map((p) => p.kind)).toEqual(['foe', 'foe', 'boss']);
-      expect(new Set(plan.map((p) => p.foeId)).size).toBe(rooms);
-      expect(plan.map((p) => p.modifierId)).toEqual(modifiers);
-      for (const room of plan) expect(roomPlanValid(room)).toBe(true);
-    }
-    expect(rollRooms(createSeededRng('same'), modifiers, 3)).toEqual(
-      rollRooms(createSeededRng('same'), modifiers, 3),
-    );
-    const foeSets = new Set<string>();
-    for (let i = 0; i < 30; i++) {
-      foeSets.add(
-        rollRooms(createSeededRng(`vary-${String(i)}`), modifiers, 1)
-          .map((p) => p.foeId)
-          .join(','),
-      );
-    }
-    expect(foeSets.size).toBeGreaterThan(5);
-  });
-
-  it('keeps the draw of every non-landmark day exactly as it was', () => {
-    // The rooms as `rollRooms` drew them before landmarks: shuffle the normal foes, then one boss die.
-    const legacy = (seed: string, modifiers: readonly string[]): string[] => {
-      const rng = createSeededRng(seed);
-      const normal = dungeonContent.foes.filter((f) => f.kind === 'foe');
-      for (let i = normal.length - 1; i > 0; i--) {
-        const j = int(rng, i + 1);
-        [normal[i], normal[j]] = [normal[j]!, normal[i]!];
-      }
-      const bosses = dungeonContent.foes.filter((f) => f.kind === 'boss');
-      const boss = bosses[int(rng, bosses.length)]!;
-      return [normal[0]!.id, normal[1]!.id, boss.id].slice(0, modifiers.length);
-    };
-    const modifiers = rollDayModifiers(createSeededRng('mods'));
-    for (let i = 0; i < 40; i++) {
-      const seed = `legacy-${String(i)}`;
-      for (const depth of [1, 2, 6, 8, 13, 15]) {
-        expect(isLandmark(depth)).toBe(false);
-        expect(rollRooms(createSeededRng(seed), modifiers, depth).map((p) => p.foeId)).toEqual(
-          legacy(seed, modifiers),
-        );
-      }
-    }
-  });
-
-  it('fixes the floor boss of a landmark depth, in content order and round again', () => {
+describe('the floor boss of a landmark', () => {
+  it('is fixed by the depth, in content order and round again', () => {
     const bosses = dungeonContent.foes.filter((f) => f.kind === 'boss').map((f) => f.id);
     const every = RULES.dungeon.landmarkEvery;
-    const modifiers = rollDayModifiers(createSeededRng('mods'));
     expect(landmarkBossId(every)).toBe(bosses[0]);
     expect(landmarkBossId(2 * every)).toBe(bosses[1]);
     expect(landmarkBossId((bosses.length + 1) * every)).toBe(bosses[0]);
     expect(landmarkBossId(every + 1)).toBeNull();
     expect(landmarkBossId(0)).toBeNull();
     for (let k = 1; k <= bosses.length * 2 + 1; k++) {
-      const expected = bosses[(k - 1) % bosses.length];
-      expect(landmarkBossId(k * every)).toBe(expected);
-      // Whatever the seed, the landmark's boss room is that boss; the other rooms are still drawn.
-      for (let i = 0; i < 10; i++) {
-        const plan = rollRooms(
-          createSeededRng(`lm-${String(k)}-${String(i)}`),
-          modifiers,
-          k * every,
-        );
-        expect(plan[rooms - 1]?.foeId).toBe(expected);
-        expect(plan.map((p) => p.kind)).toEqual(['foe', 'foe', 'boss']);
-        expect(plan.map((p) => p.foeId).slice(0, 2)).toEqual(
-          rollRooms(createSeededRng(`lm-${String(k)}-${String(i)}`), modifiers, 1)
-            .map((p) => p.foeId)
-            .slice(0, 2),
-        );
-      }
+      expect(landmarkBossId(k * every)).toBe(bosses[(k - 1) % bosses.length]);
     }
-  });
-
-  it('needs a modifier for every room, and notices a plan with an unknown id', () => {
-    expect(() => rollRooms(createSeededRng('x'), ['flooded'], 1)).toThrow(RangeError);
-    expect(roomPlanValid({ index: 0, kind: 'foe', foeId: 'nobody', modifierId: 'flooded' })).toBe(
-      false,
-    );
-    expect(roomPlanValid({ index: 0, kind: 'foe', foeId: 'puddle-imp', modifierId: 'no' })).toBe(
-      false,
-    );
   });
 });
 
@@ -464,45 +369,6 @@ describe('rewards', () => {
 
   it('has a reward for every room', () => {
     expect(per).toHaveLength(rooms);
-  });
-
-  it('pays for each room that was cleared and nothing for the others', () => {
-    expect(dungeonPayout(1, 0)).toMatchObject({ bait: 0, essence: 0, scrap: 0, glimmer: 0 });
-    const one = dungeonPayout(1, 1);
-    expect(one).toMatchObject({
-      bait: per[0]?.bait,
-      essence: per[0]?.essence,
-      scrap: per[0]?.scrap,
-    });
-    expect(one.fullClear).toBe(false);
-    const two = dungeonPayout(1, 2);
-    expect(two.bait).toBe((per[0]?.bait ?? 0) + (per[1]?.bait ?? 0));
-    expect(two.bossCleared).toBe(false);
-  });
-
-  it('adds the full clear, and the landmark extra only for a full clear of a landmark', () => {
-    const sum = (key: 'bait' | 'essence' | 'scrap'): number => per.reduce((n, r) => n + r[key], 0);
-    const full = dungeonPayout(1, rooms);
-    expect(full.fullClear).toBe(true);
-    expect(full.bossCleared).toBe(true);
-    expect(full.landmark).toBe(false);
-    expect(full.bait).toBe(sum('bait'));
-    expect(full.essence).toBe(sum('essence') + RULES.dungeon.fullClear.essence);
-    expect(full.scrap).toBe(sum('scrap'));
-    const landmark = dungeonPayout(7, rooms);
-    expect(landmark.landmark).toBe(true);
-    expect(landmark.essence).toBe(full.essence + RULES.dungeon.landmark.essence);
-    expect(landmark.scrap).toBe(full.scrap + RULES.dungeon.landmark.scrap);
-    expect(landmark.glimmer).toBe(RULES.dungeon.landmark.glimmer);
-    // A lost landmark pays only its rooms.
-    expect(dungeonPayout(7, rooms - 1).landmark).toBe(false);
-    expect(dungeonPayout(7, rooms - 1).glimmer).toBe(0);
-    // More rooms than exist, or fractions, are clamped.
-    expect(dungeonPayout(1, 99)).toEqual(full);
-    expect(dungeonPayout(1, 1.9)).toEqual(one());
-    function one() {
-      return dungeonPayout(1, 1);
-    }
   });
 
   it('pays streak bonuses on the 3rd and 7th day of a 7-day cycle, and counts again after that', () => {
@@ -584,22 +450,7 @@ describe('rewards', () => {
 });
 
 describe('supplies from the dungeon', () => {
-  const per = RULES.dungeon.perRoom;
   const tiers = RULES.dungeon.supplyTiers;
-
-  it('pays the supplies of the rooms that were cleared, and none for a room that was not', () => {
-    expect(dungeonPayout(1, 0).supplies).toBe(0);
-    let expected = 0;
-    for (let cleared = 1; cleared <= rooms; cleared++) {
-      expected += per[cleared - 1]?.supply ?? 0;
-      expect(dungeonPayout(1, cleared).supplies, `${String(cleared)} rooms`).toBe(expected);
-    }
-    // A landmark pays its extra, never an extra supply.
-    expect(dungeonPayout(7, rooms).supplies).toBe(dungeonPayout(1, rooms).supplies);
-    // The shipped rule (B-011): the first room pays the supply, so a lost run that got past it keeps it.
-    expect(dungeonPayout(5, 1).supplies).toBe(1);
-    expect(dungeonPayout(5, 0).supplies).toBe(0);
-  });
 
   it('has tier odds that are basic only above the open depths, grow with depth, stop at their caps and add up to 100%', () => {
     let previousGood = 0;

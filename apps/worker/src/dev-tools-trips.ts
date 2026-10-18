@@ -35,7 +35,7 @@ import type {
 } from './dev-schemas';
 import { addPage, explorersByCreature, foundPages, statsOf } from './expedition-store';
 import { writeExplorer } from './dev-tools-goods';
-import { getBalance, type Currency } from './ledger';
+import { debit, getBalance, type Currency } from './ledger';
 import { drawSeed } from './raid-resolve';
 import { addDays, gameDay } from './time';
 
@@ -383,21 +383,17 @@ function takeBackDay(ctx: ToolCtx, day: string): void {
     const remove = Math.min(Math.max(0, row.total - handled), balance);
     ctx.state.set(key, String(row.total));
     if (remove <= 0) continue;
-    ctx.sql.exec(
-      `INSERT INTO ledger (user_id, currency, amount, source, idempotency_key, meta, created_at)
-       VALUES (?, ?, ?, 'dev', ?, ?, ?)`,
-      ctx.userId,
-      row.currency,
-      -remove,
-      `dev:${crypto.randomUUID()}`,
-      JSON.stringify({ tool: 'dungeon-reset', day }),
+    debit(
+      ctx.storage,
+      {
+        userId: ctx.userId,
+        currency: row.currency,
+        amount: remove,
+        source: 'dev',
+        idempotencyKey: `dev:${crypto.randomUUID()}`,
+        meta: { tool: 'dungeon-reset', day },
+      },
       ctx.now,
-    );
-    ctx.sql.exec(
-      'UPDATE balances SET amount = amount - ? WHERE user_id = ? AND currency = ?',
-      remove,
-      ctx.userId,
-      row.currency,
     );
   }
   ctx.sql.exec('DELETE FROM gear_grants WHERE user_id = ? AND key LIKE ?', ctx.userId, prefix);

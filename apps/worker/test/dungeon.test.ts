@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import {
   PART_KINDS,
   RULES,
@@ -31,7 +32,6 @@ import {
   type DungeonPlayer,
 } from './dungeon-helpers';
 import {
-  LATEST_SCHEMA_VERSION,
   T0,
   runCore,
   undoExpeditionsMigration,
@@ -224,7 +224,7 @@ describe('migration 18', () => {
       ).toBe(16);
       ctx.core.migrate();
       ctx.core.migrate();
-      expect(count(ctx.sql, 'schema_version')).toBe(LATEST_SCHEMA_VERSION);
+      expect(count(ctx.sql, 'schema_version')).toBe(SCHEMA_VERSION);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       expect(count(ctx.sql, 'dungeon_runs')).toBe(0);
       expect((await p.today()).depth).toBe(1);
@@ -242,7 +242,7 @@ describe('migration 18', () => {
         ).map((r) => r.version);
       expect(Math.max(...versions())).toBe(16);
       ctx.core.migrate();
-      expect(versions()).toEqual(Array.from({ length: LATEST_SCHEMA_VERSION }, (_, i) => i + 1));
+      expect(versions()).toEqual(Array.from({ length: SCHEMA_VERSION }, (_, i) => i + 1));
 
       // Staging already ran the daily dungeon's migration 18; only 19 is left to apply.
       ctx.sql.exec(
@@ -252,7 +252,7 @@ describe('migration 18', () => {
       undoExpeditionsMigration(ctx.sql);
       expect(versions().at(-1)).toBe(18);
       ctx.core.migrate();
-      expect(versions().at(-1)).toBe(LATEST_SCHEMA_VERSION);
+      expect(versions().at(-1)).toBe(SCHEMA_VERSION);
       expect(count(ctx.sql, 'dungeon_progress', "user_id = 'staging-player'")).toBe(1);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       expect((await p.today()).depth).toBe(1);

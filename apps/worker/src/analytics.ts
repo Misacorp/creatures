@@ -49,6 +49,9 @@ import {
 } from '@creatures/game';
 import { DEV_ACTION_TOOLS, type DevActionTool } from './dev-schemas';
 import type { PostFailureKind } from './discord-posts';
+import { BASE_IDS, DESTINATION_IDS, GOAL_IDS, SPECIES_IDS, SUPPLY_IDS } from './content-ids';
+import type { DungeonOutcome } from './dungeon-types';
+import { derivedHmacKey, hmacHex } from './keys';
 
 /** Raw events and the rows that support them are kept this long. */
 export const RETENTION_MS = 90 * 86_400_000;
@@ -80,8 +83,7 @@ export type PushOnOutcome = 'worked' | 'failed' | 'declined';
 const PUSH_ON_OUTCOMES = ['worked', 'failed', 'declined'] as const;
 export type FestivalResult = CatchResult;
 
-/** How a map run of the daily dungeon ended, and what the camp offers. */
-export type DungeonOutcome = 'cleared' | 'home' | 'defeat';
+/** How a map run of the daily dungeon ended (`DungeonOutcome`), and what the camp offers. */
 const DUNGEON_OUTCOMES = ['cleared', 'home', 'defeat'] as const;
 export type CampChoice = 'rest' | 'swap' | 'keepsake';
 const CAMP_CHOICES = ['rest', 'swap', 'keepsake'] as const;
@@ -528,15 +530,13 @@ export type AnalyticsEvent =
       tool: DevActionTool;
     };
 
-export type AnalyticsKind = AnalyticsEvent['kind'];
-
 // --- Sanitizers: every value is re-checked on write ---
 
 const UNKNOWN = 'unknown';
-const SPECIES_IDS: ReadonlySet<string> = new Set(content.creatures.map((c) => c.id));
+const SPECIES_SET: ReadonlySet<string> = new Set(SPECIES_IDS);
 const BOSS_IDS: ReadonlySet<string> = new Set(content.bosses.map((b) => b.id));
 const ABILITY_IDS: ReadonlySet<string> = new Set(content.finaleAbilities.map((a) => a.id));
-const GEAR_BASE_IDS: ReadonlySet<string> = new Set(gearContent.bases.map((b) => b.id));
+const GEAR_BASE_IDS: ReadonlySet<string> = new Set(BASE_IDS);
 const GEAR_LINE_IDS: ReadonlySet<string> = new Set(gearContent.lines.map((l) => l.id));
 const TALENT_IDS: ReadonlySet<string> = new Set(talentContent.byId.keys());
 const MODIFIER_IDS: ReadonlySet<string> = new Set(dungeonContent.modifiers.map((m) => m.id));
@@ -544,11 +544,9 @@ const KEEPSAKE_IDS: ReadonlySet<string> = new Set(dungeonKeepsakes.map((k) => k.
 const DUNGEON_EVENT_IDS: ReadonlySet<string> = new Set(dungeonEvents.map((e) => e.id));
 const WEATHER_IDS: ReadonlySet<string> = new Set(weatherContent.map((d) => d.id));
 const ROLE_IDS = ['setter', 'payoff', 'support', 'guard'] as const;
-const DESTINATION_IDS: ReadonlySet<string> = new Set(
-  expeditionContent.destinations.map((d) => d.id),
-);
-const SUPPLY_IDS: ReadonlySet<string> = new Set(expeditionContent.supplies.map((s) => s.id));
-const GOAL_IDS: ReadonlySet<string> = new Set(expeditionContent.goals.map((g) => g.id));
+const DESTINATION_SET: ReadonlySet<string> = new Set(DESTINATION_IDS);
+const SUPPLY_SET: ReadonlySet<string> = new Set(SUPPLY_IDS);
+const GOAL_SET: ReadonlySet<string> = new Set(GOAL_IDS);
 const JOURNAL_IDS: ReadonlySet<string> = new Set(
   expeditionContent.journal.entries.map((e) => e.id),
 );
@@ -556,7 +554,7 @@ const JOURNAL_SET_IDS: ReadonlySet<string> = new Set(
   expeditionContent.journal.sets.map((s) => s.id),
 );
 /** A gear base or a supply (a supply craft is a workshop job too). */
-const JOB_BASE_IDS: ReadonlySet<string> = new Set([...GEAR_BASE_IDS, ...SUPPLY_IDS]);
+const JOB_BASE_IDS: ReadonlySet<string> = new Set([...GEAR_BASE_IDS, ...SUPPLY_SET]);
 const POST_ERRORS: ReadonlySet<string> = new Set<PostFailureKind>([
   'rate_limited',
   'server_error',
@@ -570,7 +568,7 @@ const POST_ERRORS: ReadonlySet<string> = new Set<PostFailureKind>([
 
 const fromSet = (set: ReadonlySet<string>, value: string): string =>
   set.has(value) ? value : UNKNOWN;
-const species = (value: string): string => fromSet(SPECIES_IDS, value);
+const species = (value: string): string => fromSet(SPECIES_SET, value);
 const oneOf = <T extends string>(options: readonly T[], value: string, fallback: T): T =>
   (options as readonly string[]).includes(value) ? (value as T) : fallback;
 const int = (value: number, max = 1_000_000_000): number =>
@@ -606,10 +604,10 @@ const withParts = (bundle: PartsBundle | undefined): { parts?: Record<string, nu
 };
 
 const gearBase = (value: string): string => fromSet(GEAR_BASE_IDS, value);
-const destination = (value: string): string => fromSet(DESTINATION_IDS, value);
+const destination = (value: string): string => fromSet(DESTINATION_SET, value);
 const length = (value: string): ExpeditionLength => oneOf(EXPEDITION_LENGTHS, value, 'short');
 const supplyIds = (list: readonly string[]): string[] =>
-  list.slice(0, RULES.expeditions.maxSupplies).map((id) => fromSet(SUPPLY_IDS, id));
+  list.slice(0, RULES.expeditions.maxSupplies).map((id) => fromSet(SUPPLY_SET, id));
 const risk = (value: string): GoalRisk => oneOf(GOAL_RISKS, value, 'safe');
 const outcome = (value: string): PushOnOutcome => oneOf(PUSH_ON_OUTCOMES, value, 'declined');
 const gearRarity = (value: string): GearRarity => oneOf(GEAR_RARITIES, value, 'common');
@@ -657,11 +655,11 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
         rank: int(event.rank, 99),
         goals: event.goals
           .slice(0, RULES.expeditions.pushOn.maxGoals)
-          .map((id) => fromSet(GOAL_IDS, id)),
+          .map((id) => fromSet(GOAL_SET, id)),
       };
     case 'push_on_choose':
       return {
-        goal: fromSet(GOAL_IDS, event.goal),
+        goal: fromSet(GOAL_SET, event.goal),
         risk: risk(event.risk),
         destination: destination(event.destination),
         duration: length(event.duration),
@@ -669,7 +667,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       };
     case 'push_on_result':
       return {
-        goal: fromSet(GOAL_IDS, event.goal),
+        goal: fromSet(GOAL_SET, event.goal),
         risk: risk(event.risk),
         outcome: outcome(event.outcome),
         destination: destination(event.destination),
@@ -1013,44 +1011,15 @@ export function serializeProps(event: AnalyticsEvent): string {
 
 // --- The actor hash ---
 
-const encoder = new TextEncoder();
-
-// The derived key for the most recent secret, per isolate (like the session key). A failure is not cached.
-let cachedKey: { secret: string; key: Promise<CryptoKey> } | null = null;
-
-function actorKey(secret: string): Promise<CryptoKey> {
-  if (cachedKey?.secret === secret) return cachedKey.key;
-  const key = (async () => {
-    const material = await crypto.subtle.importKey('raw', encoder.encode(secret), 'HKDF', false, [
-      'deriveKey',
-    ]);
-    return crypto.subtle.deriveKey(
-      {
-        name: 'HKDF',
-        hash: 'SHA-256',
-        salt: encoder.encode('leet-creatures/analytics'),
-        info: encoder.encode('analytics-actor-v1'),
-      },
-      material,
-      { name: 'HMAC', hash: 'SHA-256', length: 256 },
-      false,
-      ['sign'],
-    );
-  })();
-  const entry = { secret, key };
-  cachedKey = entry;
-  key.catch(() => {
-    if (cachedKey === entry) cachedKey = null;
-  });
-  return key;
-}
+const actorKey = derivedHmacKey({
+  salt: 'leet-creatures/analytics',
+  info: 'analytics-actor-v1',
+  usages: ['sign'],
+});
 
 /** 32 lowercase hex characters (128 bits) of HMAC-SHA256(user id), keyed from `secret`. */
 export async function actorHash(secret: string, userId: string): Promise<string> {
-  const mac = await crypto.subtle.sign('HMAC', await actorKey(secret), encoder.encode(userId));
-  return Array.from(new Uint8Array(mac).subarray(0, 16), (b) =>
-    b.toString(16).padStart(2, '0'),
-  ).join('');
+  return hmacHex(await actorKey(secret), userId, 16);
 }
 
 // --- The writer ---

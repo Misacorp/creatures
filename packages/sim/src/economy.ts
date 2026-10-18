@@ -56,7 +56,7 @@ import {
   slotsOfPlayer,
   type TripContext,
 } from './trips';
-import { median, shuffle } from './util';
+import { shuffle } from './util';
 import { Sky } from './weather';
 
 const DAYS = 7;
@@ -383,14 +383,6 @@ function planDays(
     login: Array.from({ length: DAYS }, (_, d) => login.has(d)),
     leet: Array.from({ length: DAYS }, (_, d) => leet.has(d)),
   };
-}
-
-/** Median over joined players of their highest creature level (the server's median top level). */
-export function serverMedianTopLevel(players: readonly SimPlayer[]): number {
-  const tops = players
-    .filter((p) => p.joined && p.creatures.length > 0)
-    .map((p) => Math.max(...p.creatures.map((c) => c.level)));
-  return median(tops) ?? 1;
 }
 
 /**

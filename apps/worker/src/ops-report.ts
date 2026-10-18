@@ -18,6 +18,7 @@ import { buildPeriod, parseOpsQuery, type GuildRows } from './ops-aggregate';
 import { renderMarkdown } from './ops-render';
 import { DIRECTORY_NAME } from './guild-directory';
 import { API_HEADERS, errorResponse, json, notFound } from './http';
+import { derivedHmacKey, hmacHex, toHex } from './keys';
 import type { TokenBucketLimiter } from './ratelimit';
 
 export const OPS_REPORT_PATH = '/api/ops/report';
@@ -52,35 +53,12 @@ export function bearerToken(request: Request): string | null {
 
 // --- Guild aliases ---
 
-let cachedAliasKey: { secret: string; key: Promise<CryptoKey> } | null = null;
-
 /** The alias HMAC key: HKDF from the Discord client secret, with its own salt and info label. */
-function aliasKey(secret: string): Promise<CryptoKey> {
-  if (cachedAliasKey?.secret === secret) return cachedAliasKey.key;
-  const key = (async () => {
-    const material = await crypto.subtle.importKey('raw', encoder.encode(secret), 'HKDF', false, [
-      'deriveKey',
-    ]);
-    return crypto.subtle.deriveKey(
-      {
-        name: 'HKDF',
-        hash: 'SHA-256',
-        salt: encoder.encode('leet-creatures/analytics'),
-        info: encoder.encode('analytics-guild-alias-v1'),
-      },
-      material,
-      { name: 'HMAC', hash: 'SHA-256', length: 256 },
-      false,
-      ['sign'],
-    );
-  })();
-  const entry = { secret, key };
-  cachedAliasKey = entry;
-  key.catch(() => {
-    if (cachedAliasKey === entry) cachedAliasKey = null;
-  });
-  return key;
-}
+const aliasKey = derivedHmacKey({
+  salt: 'leet-creatures/analytics',
+  info: 'analytics-guild-alias-v1',
+  usages: ['sign'],
+});
 
 /**
  * Stable short aliases for guild ids: `g-` plus the first 6 hex characters of an HMAC of the id
@@ -93,12 +71,7 @@ export async function guildAliases(
   guildIds: readonly string[],
 ): Promise<Map<string, string>> {
   const key = await aliasKey(secret);
-  const full = await Promise.all(
-    guildIds.map(async (id) => {
-      const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(id)));
-      return [id, Array.from(mac, (b) => b.toString(16).padStart(2, '0')).join('')] as const;
-    }),
-  );
+  const full = await Promise.all(guildIds.map(async (id) => [id, await hmacHex(key, id)] as const));
   const aliases = new Map<string, string>();
   for (let length = MIN_ALIAS_HEX; length <= MAX_ALIAS_HEX; length += 2) {
     const counts = new Map<string, number>();
@@ -126,7 +99,7 @@ export interface OpsDeps {
 export async function limiterKey(request: Request): Promise<string> {
   const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
   const digest = await sha256(`ops-limit:${ip}`);
-  return Array.from(digest.subarray(0, 8), (b) => b.toString(16).padStart(2, '0')).join('');
+  return toHex(digest.subarray(0, 8));
 }
 
 async function fanOut<T, R>(items: readonly T[], run: (item: T) => Promise<R>): Promise<R[]> {

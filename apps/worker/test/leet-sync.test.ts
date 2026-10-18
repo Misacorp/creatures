@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import { env, exports } from 'cloudflare:workers';
 import { runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -25,7 +26,6 @@ import {
   runCore,
   tokenFor,
   undoRaidMigration,
-  LATEST_SCHEMA_VERSION,
 } from './helpers';
 
 const MINUTE = 60_000;
@@ -1132,7 +1132,7 @@ describe('leet sync status', () => {
         ]);
         expect(
           sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-        ).toBe(LATEST_SCHEMA_VERSION);
+        ).toBe(SCHEMA_VERSION);
         expect(syncState(sql)[0]?.cursor).toBe('kept');
         expect(core.leetSyncStatus()).toMatchObject({
           lastAttemptAt: null,

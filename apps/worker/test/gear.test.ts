@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import {
   PART_KINDS,
   RULES,
@@ -26,7 +27,6 @@ import {
   undoCreaturesAMigration,
   undoGearMigration,
   type CoreContext,
-  LATEST_SCHEMA_VERSION,
 } from './helpers';
 import { count, nextGuild, rows, seedPlayer, type SeedOptions } from './raid-helpers';
 
@@ -246,9 +246,9 @@ describe('migration 27', () => {
         expect(names).toContain(t);
       }
       expect(rows<{ v: number }>(sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v).toBe(
-        LATEST_SCHEMA_VERSION,
+        SCHEMA_VERSION,
       );
-      expect(LATEST_SCHEMA_VERSION).toBeGreaterThanOrEqual(27);
+      expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(27);
       const item = (
         id: string,
         creature: string | null,
@@ -326,7 +326,7 @@ describe('migration 27', () => {
       );
       ctx.core.migrate();
       expect(rows<{ v: number }>(sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v).toBe(
-        LATEST_SCHEMA_VERSION,
+        SCHEMA_VERSION,
       );
       expect(count(sql, 'creatures')).toBe(3);
       // The conversion ran right after the migration: the old item is a new one, same id. The old row
@@ -343,7 +343,7 @@ describe('migration 27', () => {
         { slot: 'hat' },
       ]);
       ctx.core.migrate();
-      expect(count(sql, 'schema_version')).toBe(LATEST_SCHEMA_VERSION);
+      expect(count(sql, 'schema_version')).toBe(SCHEMA_VERSION);
       expect(count(sql, 'gear_items')).toBe(1);
     });
   });

@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import {
   RULES,
   applyGear,
@@ -17,12 +18,7 @@ import { wearerOf } from '../src/gear-store';
 import { gearRulesOf } from '../src/gear-worn';
 import { loadCreatures } from '../src/raid-teams';
 import { activeTalentsOf, bookOf, holdTalent, rollMissingTalents } from '../src/talent-store';
-import {
-  LATEST_SCHEMA_VERSION,
-  runCore,
-  undoCreaturesAMigration,
-  type CoreContext,
-} from './helpers';
+import { runCore, undoCreaturesAMigration, type CoreContext } from './helpers';
 import {
   HELSINKI,
   W02,
@@ -188,7 +184,7 @@ describe('rollMissingTalents (existing creatures, once, on the first load after 
         ctx.core.migrate();
         expect(
           rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v,
-        ).toBe(LATEST_SCHEMA_VERSION);
+        ).toBe(SCHEMA_VERSION);
         // Same creatures, same ids and order, all in slot 1 of their line; each has its first talent.
         expect(
           rows<{ id: string }>(ctx.sql, 'SELECT id FROM creatures ORDER BY rowid').map((r) => r.id),
@@ -218,7 +214,7 @@ describe('rollMissingTalents (existing creatures, once, on the first load after 
         expect(rows(ctx.sql, 'SELECT * FROM creature_talents ORDER BY creature_id')).toEqual(
           before,
         );
-        expect(count(ctx.sql, 'schema_version')).toBe(LATEST_SCHEMA_VERSION);
+        expect(count(ctx.sql, 'schema_version')).toBe(SCHEMA_VERSION);
         return Promise.resolve();
       },
       { talentRng: createSeededRng('migration-talents') },

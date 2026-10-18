@@ -57,7 +57,7 @@ import {
   type TwistEffect,
   type WeatherDay,
 } from '@creatures/game';
-import { CATCHABLE, foldedCreature, speciesOf, type OwnedCreature } from './data';
+import { foldedCreature, speciesOf, type OwnedCreature } from './data';
 import { creditParts, grantItem, learnBlueprint, onJob, type GearContext } from './gear';
 import { collect } from './talents';
 import { giveExperience, packTreat, ribbonShardsWanted } from './training';
@@ -704,10 +704,4 @@ function rollPages(
       player.stats.journal_sets += 1;
     }
   }
-}
-
-/** Every catchable species the player does not own is worth sending a trip for (used by the reports). */
-export function unownedCatchable(player: SimPlayer): number {
-  const owned = ownedLines(player);
-  return CATCHABLE.filter((s) => !owned.has(s.line)).length;
 }
