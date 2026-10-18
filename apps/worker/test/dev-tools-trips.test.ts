@@ -3,7 +3,13 @@
    each body would only repeat the server's view types. */
 import { RULES, dungeonContent, expeditionContent } from '@creatures/game';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { deadlyFoes, easyFoes, playFrom, playThrough } from './dungeon-helpers';
+import {
+  deadlyFoes,
+  easyFoes,
+  pickedRoomModifierIds,
+  playFrom,
+  playThrough,
+} from './dungeon-helpers';
 import { ON, newKey, player, type Dev, type Json } from './dev-helpers';
 import { runCore } from './helpers';
 import { count, nextGuild, rows } from './raid-helpers';
@@ -231,7 +237,9 @@ describe('dungeon tools', () => {
     }
   };
   const start = (p: Dev) => p.call('POST', '/api/dungeon/start', team(p));
-  const modifierIds = (day: { modifiers: { id: string }[] }) => day.modifiers.map((m) => m.id);
+  /** The modifiers the picks land on: the first two entrance rooms and the floor boss, read off the map. */
+  const modifierIds = (day: { map: Parameters<typeof pickedRoomModifierIds>[0] }) =>
+    pickedRoomModifierIds(day.map);
 
   it('sets the depth, jumps to the next landmark and sets the streak', async () => {
     await runCore(
@@ -267,9 +275,12 @@ describe('dungeon tools', () => {
         await p.tool('dungeon-modifiers', { ids });
         expect(modifierIds(await today(p))).toEqual(ids);
         expect((await p.call('GET', '/api/dev/state')).body.flags.dungeonModifiers).toEqual(ids);
-        // A re-roll hands the day back to its (new) seed, and says what it rolled.
-        const rolled = await p.tool('dungeon-seed');
-        expect(modifierIds(await today(p))).toEqual(rolled.modifiers);
+        // A re-roll hands the day back to its (new) seed: the picks are gone from the new map.
+        const picked = (await today(p)).map;
+        expect(await p.tool('dungeon-seed')).toMatchObject({ day: expect.any(String) });
+        const redrawn = await today(p);
+        expect(redrawn.map).not.toEqual(picked);
+        expect(modifierIds(redrawn)).toHaveLength(RULES.dungeon.rooms);
         await p.tool('dungeon-modifiers', { ids });
         await p.tool('dungeon-modifiers', { clear: true });
         expect((await p.call('GET', '/api/dev/state')).body.flags.dungeonModifiers).toBeNull();
@@ -452,7 +463,7 @@ describe('dungeon tools', () => {
         const first = await today(p);
         const open = (await start(p)).body.state;
         expect(open.map).toEqual(first.map);
-        const rolled = await p.tool('dungeon-seed');
+        await p.tool('dungeon-seed');
         const stored = rows<{ map_json: string | null }>(
           ctx.sql,
           'SELECT map_json FROM dungeon_days',
@@ -461,7 +472,6 @@ describe('dungeon tools', () => {
         expect(stored[0]?.map_json).toBeNull(); // cleared: drawn again on the next look
         const next = await today(p);
         expect(next.map).not.toEqual(first.map);
-        expect(next.modifiers.map((m: { id: string }) => m.id)).toEqual(rolled.modifiers);
         expect(next.active.map).toEqual(first.map); // the open run keeps its own copy
         expect(
           rows<{ map_json: string | null }>(ctx.sql, 'SELECT map_json FROM dungeon_days')[0]

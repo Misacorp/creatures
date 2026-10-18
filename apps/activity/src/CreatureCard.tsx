@@ -165,7 +165,7 @@ export function CreatureCard({
           <button
             type="button"
             class="primary wide"
-            disabled={busy}
+            disabled={busy || first.blocked !== undefined}
             onClick={() => {
               act(first);
             }}

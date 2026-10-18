@@ -95,7 +95,7 @@ export function DungeonDescend({
                 }}
               />
               {counts.length > 0 && (
-                <ul class="descend-counts plain-list" aria-label="Supplies and parts banked">
+                <ul class="descend-counts" aria-label="Supplies and parts banked">
                   {counts.map(({ key, ...badge }) => (
                     <li key={key}>
                       <CountBadge {...badge} />

@@ -728,7 +728,7 @@ describe('the dungeon responses the server sends', () => {
       dungeonTodayLandmark,
       dungeonTodayNeed,
     ].map(parseDungeonToday);
-    for (const state of states) expect(state.modifiers).toHaveLength(3);
+    for (const state of states) expect(state).not.toHaveProperty('modifiers');
     expect(states[0]?.canRun).toBe(true);
     expect(states[1]?.last?.cleared).toBe(false);
     expect(states[2]?.blocked).toBe('already_run');
@@ -950,7 +950,6 @@ describe('the dungeon responses the server sends', () => {
   it('refuses a payload that is not the shape the server sends', () => {
     expect(() => parseDungeonToday({ ...dungeonToday, depth: 'deep' })).toThrow('dungeon state');
     expect(() => parseDungeonToday({ ...dungeonToday, blocked: 'because' })).toThrow();
-    expect(() => parseDungeonToday({ ...dungeonToday, modifiers: [{ id: 'x' }] })).toThrow();
     expect(() => parseDungeonToday({ ...dungeonToday, lastTeam: [1, 2, 3] })).toThrow();
     expect(() => parseDungeonToday({ ...dungeonToday, lastTeam: undefined })).toThrow();
     expect(() => parseDungeonStart({ state: {}, today: dungeonToday })).toThrow('dungeon run');

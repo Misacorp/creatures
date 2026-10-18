@@ -16,16 +16,6 @@ import type { GearRarity, PartsBundle } from './gear-types';
 
 export type Element = 'tide' | 'ember' | 'grove' | 'spark';
 export type Role = 'setter' | 'payoff' | 'support' | 'guard';
-/** A room modifier of the day. Shown before the run: the same for everyone on the server. */
-export interface DungeonModifier {
-  /** The room (0-based) it applies to; the last room is the floor boss. */
-  room: number;
-  id: string;
-  name: string;
-  /** One plain line ("Tide creatures hit 20% harder."). Render it as text. */
-  description: string;
-}
-
 /** `GET /api/dungeon/today`. */
 export interface DungeonToday {
   serverNow: number;
@@ -41,7 +31,6 @@ export interface DungeonToday {
   landmark: boolean;
   /** Days in a row with a run, as of now: 0 if yesterday was missed and nothing has run today. */
   streak: number;
-  modifiers: DungeonModifier[];
   attemptsToday: number;
   /** 2 on the first day a player ever runs (a lost first run may be tried once more), otherwise 1. */
   attemptsAllowed: number;
@@ -277,7 +266,7 @@ export type DungeonStepLog =
   | { node: string; kind: 'mystery'; result: 'pending'; event: string }
   /** A carved door was walked through. `added`: it added a room to the Undercroft (false past the limit). Which room is not said. */
   | { node: string; kind: 'door'; result: 'door'; added: boolean }
-  /** A boss chest opened: the main boss's (level 0) or an Undercroft keeper's. `loot` went into the pack, `gear` is banked. */
+  /** A boss chest opened: the main boss's (level 0) or an Undercroft keeper's. `loot` is only what the chest itself added to the pack (the boss's own loot is on its fight entry; a keeper's chest adds none), `gear` is banked. */
   | {
       node: string;
       kind: 'boss';

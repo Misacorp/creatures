@@ -261,7 +261,7 @@ describe('migration 18', () => {
 });
 
 describe('GET /api/dungeon/today', () => {
-  it('shows the day, the depth, the streak and three modifiers, and no seed', async () => {
+  it('shows the day, the depth, the streak and the modifiers on the map, and no seed', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -282,12 +282,14 @@ describe('GET /api/dungeon/today', () => {
           blocked: null,
           last: null,
         });
-        expect(today.modifiers).toHaveLength(RULES.dungeon.rooms);
-        expect(today.modifiers.map((m) => m.room)).toEqual([0, 1, 2]);
-        for (const m of today.modifiers) {
-          const content = dungeonContent.modifiers.find((c) => c.id === m.id);
-          expect(m.name).toBe(content?.name);
-          expect(m.description).toBe(content?.description);
+        // The rooms' modifiers are on the map's nodes (there is no separate list), named from the content.
+        expect(today).not.toHaveProperty('modifiers');
+        const modified = today.map.nodes.filter((n) => n.modifier !== undefined);
+        expect(modified.length).toBeGreaterThan(0);
+        for (const n of modified) {
+          const content = dungeonContent.modifiers.find((c) => c.id === n.modifier?.id);
+          expect(n.modifier?.name).toBe(content?.name);
+          expect(n.modifier?.description).toBe(content?.description);
         }
         // The day ends at the next local reset: 2027-01-15 13:37 in Helsinki (UTC+2).
         expect(today.resetsAt).toBe(Date.parse('2027-01-15T11:37:00Z'));
@@ -302,17 +304,17 @@ describe('GET /api/dungeon/today', () => {
     );
   });
 
-  it('shows everyone on the server the same modifiers all day, and a new draw on a new day', async () => {
+  it('shows everyone on the server the same map and modifiers all day, and a new draw on a new day', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const a = await dungeonPlayer(ctx, 1);
         const b = await dungeonPlayer(ctx, 2);
         ctx.clock.t = AFTER_RESET;
-        const first = (await a.today()).modifiers;
+        const first = (await a.today()).map;
         ctx.clock.t += 5 * HOUR; // 19:00 local, the same game day
-        expect((await b.today()).modifiers).toEqual(first);
-        expect((await a.today()).modifiers).toEqual(first);
+        expect((await b.today()).map).toEqual(first);
+        expect((await a.today()).map).toEqual(first);
         expect(count(ctx.sql, 'dungeon_days')).toBe(1);
         ctx.clock.t += DAY;
         await a.today();

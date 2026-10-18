@@ -4,6 +4,7 @@ import { shinyPalette } from './art';
 import { evolveButtonLabel, evolveForms, type EvolveForm } from './evolve-view';
 import { GlossaryTag } from './Glossary';
 import { creatureName } from './game';
+import { busyReason } from './gear-view';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -95,7 +96,9 @@ export function EvolveDrawer({
   const forms = evolveForms(creature);
   const chosen = forms.find((f) => f.species === picked);
   const evolution = creature.evolution;
-  const ready = evolution?.available === true;
+  // The server refuses a creature that is away or on a job: the button says why it cannot yet.
+  const away = busyReason(creature);
+  const ready = evolution?.available === true && away === null;
   const essence = evolution?.essence ?? 0;
   return (
     <Drawer
@@ -113,6 +116,7 @@ export function EvolveDrawer({
             </GlossaryTag>
             .
           </p>
+          {away !== null && <p class="evolve-permanent muted">{away}</p>}
           <button
             type="button"
             class="primary"

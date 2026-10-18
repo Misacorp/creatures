@@ -837,14 +837,6 @@ describe('the tab', () => {
     expect(byName(root, 'button', 'Enter the dungeon')).toHaveLength(1);
   });
 
-  it('falls back to the three-room strip when the server sends no map', async () => {
-    api.fetchDungeonToday.mockResolvedValue(sampleToday({ canRun: true, map: null }));
-    const { root } = drawTab();
-    await settle();
-    expect(byClass(root, 'dungeon-preview')).toHaveLength(0);
-    expect(byClass(root, 'room-strip')).toHaveLength(1);
-  });
-
   it('enters with the team, then shows the run it opened', async () => {
     const open = sampleState();
     api.fetchDungeonToday.mockResolvedValue(sampleToday({ canRun: true }));

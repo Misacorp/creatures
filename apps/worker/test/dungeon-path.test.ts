@@ -22,6 +22,7 @@ import {
 } from '@creatures/engine';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { giveItem } from './gear-helpers';
+import { ACT_ANSWER_RETENTION_MS } from '../src/dungeon';
 import type { RunState } from '../src/dungeon-state';
 import type { DungeonRunState, DungeonStepLog } from '../src/dungeon-types';
 import { drawSeed, slotFor } from '../src/raid-resolve';
@@ -135,15 +136,6 @@ const fightSteps = (ctx: CoreContext, runId: string) =>
   );
 
 const mapOf = (state: DungeonRunState): DungeonMapView => state.map;
-/** The three modifiers old clients read: the first two entrance rooms (left to right) and the floor boss. */
-const legacyIds = (map: DungeonMapView): string[] =>
-  [
-    ...map.nodes
-      .filter((n) => n.floor === 0)
-      .sort((a, b) => a.lane - b.lane)
-      .slice(0, 2),
-    ...map.nodes.filter((n) => n.kind === 'boss'),
-  ].map((n) => n.modifier?.id as string);
 /** Starts a run for `p` and returns its state. */
 async function begin(p: DungeonPlayer, overrides: Parameters<DungeonPlayer['start']>[0] = {}) {
   const res = await p.start(overrides);
@@ -387,10 +379,9 @@ describe('the day’s map in GET /api/dungeon/today', () => {
             doors: true,
           }),
         );
-        // The seed is never sent, and the old clients' modifiers come from the map.
+        // The seed is never sent, and today carries no separate modifier list: the map's rooms do.
         expect(JSON.stringify(first)).not.toContain(day[0]?.modifier_seed ?? 'x');
-        expect(first.modifiers.map((m) => m.id)).toEqual(legacyIds(first.map));
-        expect(first.modifiers).toHaveLength(RULES.dungeon.rooms);
+        expect(first).not.toHaveProperty('modifiers');
         // A new day is a new map.
         ctx.clock.t += DAY;
         expect(rows(ctx.sql, 'SELECT day FROM dungeon_days')).toHaveLength(1);
@@ -891,6 +882,60 @@ describe('retrying an act', () => {
         expect(used.body).toEqual({ error: 'key_conflict' });
       },
       { dungeonRng: rng, gearRng: createSeededRng('act-retry-gear') },
+    );
+  });
+
+  it("empties the run view in a step's stored answer after a short window: a late retry is stale, another request under the key still a conflict", async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        ctx.clock.t = AFTER_RESET;
+        const state = await begin(p);
+        const key = newKey();
+        const move = { type: 'move', node: state.reachable[0] as string } as const;
+        const first = await p.act(state, move, key);
+        expect(first.status).toBe(200);
+        const stateOf = () =>
+          rows<{ s: string | null }>(
+            ctx.sql,
+            "SELECT json_type(act_json, '$.state') AS s FROM dungeon_steps WHERE idempotency_key = ?",
+            key,
+          )[0]?.s;
+        expect(stateOf()).toBe('object');
+        // Within the window the prune keeps the answer, and a retry still gets it.
+        ctx.clock.t += ACT_ANSWER_RETENTION_MS - 60_000;
+        ctx.core.dungeon.prune();
+        expect(stateOf()).toBe('object');
+        const within = await p.act(state, move, key);
+        expect(within.status).toBe(200);
+        expect(within.body).toEqual(first.body);
+        // Past it the state is gone, the act stays.
+        ctx.clock.t += 3 * DAY;
+        ctx.core.dungeon.prune();
+        expect(stateOf()).toBeNull();
+        expect(
+          rows<{ a: string | null }>(
+            ctx.sql,
+            "SELECT json_extract(act_json, '$.act.node') AS a FROM dungeon_steps WHERE idempotency_key = ?",
+            key,
+          )[0]?.a,
+        ).toBe(move.node);
+        const late = await p.act(state, move, key);
+        expect({ status: late.status, error: late.body.error }).toEqual({
+          status: 409,
+          error: 'stale_step',
+        });
+        const other = state.reachable[1];
+        if (other !== undefined) {
+          const clash = await p.act(state, { type: 'move', node: other }, key);
+          expect({ status: clash.status, error: clash.body.error }).toEqual({
+            status: 409,
+            error: 'key_conflict',
+          });
+        }
+      },
+      opts(),
     );
   });
 

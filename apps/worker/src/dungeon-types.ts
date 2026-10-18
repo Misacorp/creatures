@@ -138,7 +138,7 @@ export type DungeonStepLog =
       kind: 'boss';
       result: 'chest';
       level: number;
-      /** What the chest itself added to the pack (the main chest: the full clear's and a landmark's extras; a keeper's: its Essence and scrap). */
+      /** What the chest itself added to the pack (the main chest: the full clear's and a landmark's extras; a keeper's chest: nothing, its Essence and scrap are on its fight entry). The boss's own loot is always on its fight entry. */
       loot: DungeonPack;
       gear: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
     }

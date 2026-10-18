@@ -150,7 +150,7 @@ describe('the dungeon fixtures match what the server sends', () => {
       true,
     );
     expect(todayMap.map.nodes.find((n) => n.floor === RULES.dungeon.campFloor)?.kind).toBe('camp');
-    expect(todayMap.modifiers).toHaveLength(RULES.dungeon.rooms);
+    expect(todayMap).not.toHaveProperty('modifiers');
     // The start: an open run before floor 0, and today shows the same run as open.
     expect(dungeonStart.state).toMatchObject({
       status: 'active',
@@ -346,9 +346,9 @@ describe('the dungeon fixtures match what the server sends', () => {
   });
 
   it('shows what each fixture of the older three-room runs is meant to show', () => {
-    // A fresh day: three modifiers, depth 1, a run is possible and nothing has run yet.
+    // A fresh day: depth 1, a run is possible and nothing has run yet.
     expect(today).toMatchObject({ depth: 1, canRun: true, blocked: null, last: null });
-    expect(today.modifiers).toHaveLength(3);
+    expect(today).not.toHaveProperty('modifiers');
     // After a run: the day is used up, the run is in `last`, the depth went up.
     expect(todayDone).toMatchObject({ canRun: false, blocked: 'already_run', attemptsToday: 1 });
     expect(todayDone.last?.id).toBe(runCleared.run.id);

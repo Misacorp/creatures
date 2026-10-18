@@ -1,8 +1,6 @@
 /**
- * The pre-run screen of the daily dungeon as pure data: the three room panels (room 1, room 2 and
- * the boss) with the day's modifier on each, and the landmark depths for the `ProgressTrack`. The
- * foes of a room are not known until the run (the server rolls them from the run's seed), so a panel
- * before the run shows a "?" and only what is public: the room's place and its modifier.
+ * The pre-run screen of the daily dungeon as pure data: the icon of a room modifier and the landmark
+ * depths for the `ProgressTrack`. The day's rooms themselves are the map's nodes.
  */
 import {
   RULES,
@@ -13,7 +11,6 @@ import {
   type Role,
 } from '@creatures/game';
 import type { TrackStep, TrackUnlock } from './progress-track';
-import type { DungeonModifier } from './dungeon-types';
 import type { IconRef } from './icon-ref';
 
 /** The picture of a role on a modifier that boosts it: the glyph the role's job looks like. */
@@ -47,41 +44,6 @@ export function modifierIcon(id: string): IconRef {
     }
   }
   return { kind: 'glyph', id: 'unknown' };
-}
-
-/** One panel of the pre-run strip. */
-interface RoomPanel {
-  room: number;
-  /** "Room 1", "Room 2" and "Boss". */
-  title: string;
-  modifier: { id: string; name: string; description: string; icon: IconRef } | null;
-  /** What a screen reader says for the panel: the room and its modifier, never the foe. */
-  spoken: string;
-}
-
-/**
- * The panels of the day, one per room in order: the title and the modifier. The last room is the boss.
- * Always `rooms` panels, even when the server sent fewer modifiers (the panel then has none).
- */
-export function roomPanels(
-  modifiers: readonly DungeonModifier[],
-  rooms: number = RULES.dungeon.rooms,
-): RoomPanel[] {
-  return Array.from({ length: rooms }, (_, room) => {
-    const title = room === rooms - 1 ? 'Boss' : `Room ${String(room + 1)}`;
-    const m = modifiers.find((x) => x.room === room);
-    const modifier =
-      m === undefined
-        ? null
-        : { id: m.id, name: m.name, description: m.description, icon: modifierIcon(m.id) };
-    return {
-      room,
-      title,
-      modifier,
-      spoken:
-        modifier === null ? `${title}.` : `${title}: ${modifier.name}. ${modifier.description}`,
-    };
-  });
 }
 
 /** What a landmark gives. Words, not numbers (the amounts are the server's). */

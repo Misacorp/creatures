@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { Creature } from './api';
 import { Collection } from './Collection';
 import { EvolveDrawer } from './EvolveDrawer';
 import { SAMPLE_GEAR, SAMPLE_STATE, sampleCreature } from './creature-card-sample';
@@ -123,6 +124,29 @@ describe('the evolve screen', () => {
     expect(confirm(notReady.root).hasAttribute('disabled')).toBe(true);
     notReady.page.click(confirm(notReady.root));
     expect(notReady.onEvolve).not.toHaveBeenCalled();
+  });
+
+  it('cannot be confirmed while the creature is away or on a job, and says why', () => {
+    const away: Creature = { ...creature, away: true };
+    page = createPage();
+    const onEvolve = vi.fn();
+    page.draw(
+      <EvolveDrawer open creature={away} busy={false} onEvolve={onEvolve} onClose={vi.fn()} />,
+    );
+    page.click(forms(page.root)[1] as FakeElement);
+    expect(confirm(page.root).hasAttribute('disabled')).toBe(true);
+    expect(visibleText(page.root)).toContain('Away on an expedition');
+    page.click(confirm(page.root));
+    expect(onEvolve).not.toHaveBeenCalled();
+    page.unmount();
+    const onJob: Creature = { ...creature, busy: { kind: 'job', id: 'job-1' } };
+    page = createPage();
+    page.draw(
+      <EvolveDrawer open creature={onJob} busy={false} onEvolve={onEvolve} onClose={vi.fn()} />,
+    );
+    page.click(forms(page.root)[1] as FakeElement);
+    expect(confirm(page.root).hasAttribute('disabled')).toBe(true);
+    expect(visibleText(page.root)).toContain('On a job in the Workshop');
   });
 
   it('closes by its close button', () => {

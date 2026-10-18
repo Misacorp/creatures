@@ -18,6 +18,7 @@ import {
   dungeonEvent,
   dungeonKeepsakes,
   dungeonScrapPerRoom,
+  emptyPack,
   generateUndercroftMap,
   int,
   isLandmark,
@@ -303,7 +304,10 @@ function openMainChest(env: PathEnv, st: RunState, node: MapNodeLike, depth: num
 
 type MapNodeLike = NonNullable<ReturnType<typeof mapNode>>;
 
-/** An Undercroft keeper is beaten: its chest's gear is paid now (key `u<level>`); its Essence and scrap are already in the pack. */
+/**
+ * An Undercroft keeper is beaten: its chest's gear is paid now (key `u<level>`); its Essence and scrap are
+ * already in the pack and on its fight entry, so the chest entry adds no loot.
+ */
 function openKeeperChest(env: PathEnv, st: RunState, node: MapNodeLike, depth: number): void {
   const level = st.level;
   const element = nodeFoe(node, depth, level)?.element ?? 'tide';
@@ -320,7 +324,7 @@ function openKeeperChest(env: PathEnv, st: RunState, node: MapNodeLike, depth: n
     kind: 'boss',
     result: 'chest',
     level,
-    loot: nodeLoot('boss', level),
+    loot: emptyPack(),
     gear: view.gear.map(({ baseId, rarity, itemLevel }) => ({
       baseId,
       rarity,

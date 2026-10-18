@@ -618,8 +618,8 @@
         "level": 1,
         "loot": {
           "bait": 0,
-          "essence": 1,
-          "scrap": 2
+          "essence": 0,
+          "scrap": 0
         },
         "gear": []
       }
@@ -1939,8 +1939,8 @@
           "level": 1,
           "loot": {
             "bait": 0,
-            "essence": 1,
-            "scrap": 2
+            "essence": 0,
+            "scrap": 0
           },
           "gear": []
         }
@@ -2076,26 +2076,6 @@
     "landmark": false,
     "landmarkBoss": null,
     "streak": 1,
-    "modifiers": [
-      {
-        "room": 0,
-        "id": "dark",
-        "name": "Dark",
-        "description": "Your creatures crit 5 points more often."
-      },
-      {
-        "room": 1,
-        "id": "brittle",
-        "name": "Brittle",
-        "description": "The foe has 20% less HP but hits 25% harder."
-      },
-      {
-        "room": 2,
-        "id": "stormy",
-        "name": "Stormy",
-        "description": "Spark creatures hit 20% harder."
-      }
-    ],
     "attemptsToday": 1,
     "attemptsAllowed": 1,
     "canRun": false,
@@ -2804,8 +2784,8 @@
             "level": 1,
             "loot": {
               "bait": 0,
-              "essence": 1,
-              "scrap": 2
+              "essence": 0,
+              "scrap": 0
             },
             "gear": []
           }

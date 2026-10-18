@@ -21,7 +21,8 @@ import {
 describe('the dungeon types', () => {
   it('read today, a run and a replay from real server output', () => {
     const t = today as unknown as DungeonToday;
-    expect(t.modifiers.map((m) => m.room)).toEqual([0, 1, 2]);
+    // The rooms and their modifiers are the map's nodes: there is no separate list.
+    expect(t).not.toHaveProperty('modifiers');
     expect(t.blocked).toBeNull();
     const cleared = runCleared as unknown as DungeonRunResponse;
     // The team is one row, in fighting order, with no zones.

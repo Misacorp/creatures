@@ -1,50 +1,17 @@
 import { RULES, dungeonContent, isLandmark } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import todayFixture from './fixtures/dungeon-today.json';
 import { glyph } from './glyphs';
 import {
   LANDMARK_UNLOCKS,
   depthTrack,
   modifierIcon,
-  roomPanels,
   stepUnlocks,
   undercroftFloorsAt,
   undercroftUnlocks,
 } from './dungeon-rooms';
-import type { DungeonToday } from './dungeon-types';
 import type { IconRef } from './icon-ref';
 import { trackNodes } from './progress-track';
 import { elementIcon } from './sprites/element-icons';
-
-const today = todayFixture as unknown as DungeonToday;
-
-describe('the room panels of the pre-run screen', () => {
-  it('has a panel for room 1, room 2 and the boss, in that order, with the day modifier on each', () => {
-    const panels = roomPanels(today.modifiers);
-    expect(panels.map((p) => p.title)).toEqual(['Room 1', 'Room 2', 'Boss']);
-    expect(panels.map((p) => p.modifier?.id)).toEqual(today.modifiers.map((m) => m.id));
-    for (const panel of panels) {
-      expect(panel.modifier?.name.length).toBeGreaterThan(0);
-      // The spoken text is the room and its modifier, and never a foe (none is known yet).
-      expect(panel.spoken).toContain(panel.title);
-      expect(panel.spoken).toContain(panel.modifier?.name ?? '?');
-    }
-  });
-
-  it('matches the modifiers to their room, whatever the order the server listed them in', () => {
-    const shuffled = [...today.modifiers].reverse();
-    expect(roomPanels(shuffled).map((p) => p.modifier?.id)).toEqual(
-      today.modifiers.map((m) => m.id),
-    );
-  });
-
-  it('always has all three panels, with none for a modifier the server did not send', () => {
-    const panels = roomPanels([]);
-    expect(panels).toHaveLength(3);
-    expect(panels.every((p) => p.modifier === null)).toBe(true);
-    expect(panels[2]?.spoken).toBe('Boss.');
-  });
-});
 
 describe('the icons of the room modifiers', () => {
   const sprite = (icon: IconRef): unknown =>
@@ -80,17 +47,6 @@ describe('the icons of the room modifiers', () => {
   it('draws the retired Fog of an old run as the plain diamond, without failing', () => {
     expect(dungeonContent.modifiers.some((m) => m.id === 'fog')).toBe(false);
     expect(modifierIcon('fog')).toEqual({ kind: 'glyph', id: 'unknown' });
-    // Its stored name and text still make a panel (the server sent them with the run).
-    const panels = roomPanels([
-      {
-        room: 0,
-        id: 'fog',
-        name: 'Fog',
-        description: 'Nobody can see: everyone acts in row order.',
-      },
-    ]);
-    expect(panels[0]?.modifier?.name).toBe('Fog');
-    expect(panels[0]?.spoken).toContain('Fog');
   });
 });
 
