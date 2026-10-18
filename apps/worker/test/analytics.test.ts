@@ -10,11 +10,14 @@ import {
   craftLevelNeeded,
   createSeededRng,
   dungeonContent,
+  dungeonEvents,
+  dungeonKeepsakes,
   expeditionContent,
   gearContent,
   talentContent,
   type Rng,
 } from '@creatures/game';
+import { easyFoes, followRoute, playThrough, routeThrough } from './dungeon-helpers';
 import { describe, expect, it } from 'vitest';
 import { env } from 'cloudflare:workers';
 import {
@@ -286,6 +289,106 @@ describe('the event writer', () => {
       gear: 0,
     });
     expect((run as { modifiers: unknown }).modifiers).toEqual(['unknown', 'echoing', 'dark']);
+  });
+
+  it('rebuilds the map run fields of dungeon_run, and the event and camp events, from content ids and numbers only', () => {
+    const keepsake = dungeonKeepsakes[0]?.id as string;
+    const event = dungeonEvents[0]?.id as string;
+    const run = propsOf({
+      kind: 'dungeon_run',
+      depth: 3,
+      attempt: 1,
+      roomsCleared: 4,
+      cleared: false,
+      landmark: false,
+      modifiers: [],
+      team: [],
+      gear: 0,
+      outcome: 'home',
+      path: ['fight', 'mystery', 'Zorblax', 'camp', ...Array.from({ length: 9 }, () => 'boss')],
+      keepsakes: [
+        keepsake,
+        'a keepsake a player named',
+        ...Array.from({ length: 20 }, () => keepsake),
+      ],
+      campChoice: 'swap',
+      elites: 99,
+      packFound: -4,
+      packKept: 1_000_000,
+    });
+    expect(run).toMatchObject({
+      outcome: 'home',
+      campChoice: 'swap',
+      elites: 9,
+      packFound: 0,
+      packKept: 999,
+    });
+    const props = run as { path: string[]; keepsakes: string[] };
+    expect(props.path).toHaveLength(8);
+    expect(props.path.slice(0, 4)).toEqual(['fight', 'mystery', 'fight', 'camp']); // an unknown kind is a fight
+    expect(props.keepsakes).toHaveLength(12);
+    expect(props.keepsakes.slice(0, 2)).toEqual([keepsake, 'unknown']);
+    // Absent fields stay absent, and a value that is not an outcome or a choice falls back.
+    expect(
+      propsOf({
+        kind: 'dungeon_run',
+        depth: 1,
+        attempt: 1,
+        roomsCleared: 0,
+        cleared: false,
+        landmark: false,
+        modifiers: [],
+        team: [],
+        gear: 0,
+      }),
+    ).not.toHaveProperty('outcome');
+    expect(
+      propsOf({
+        kind: 'dungeon_run',
+        depth: 1,
+        attempt: 1,
+        roomsCleared: 0,
+        cleared: false,
+        landmark: false,
+        modifiers: [],
+        team: [],
+        gear: 0,
+        outcome: 'won' as never,
+        campChoice: 'dance' as never,
+      }),
+    ).toMatchObject({ outcome: 'defeat', campChoice: 'none' });
+    expect(propsOf({ kind: 'dungeon_event', event, option: 1, won: false })).toEqual({
+      event,
+      option: 1,
+      won: false,
+    });
+    expect(propsOf({ kind: 'dungeon_event', event: 'Misa was here', option: 7 })).toEqual({
+      event: 'unknown',
+      option: 1,
+    });
+    expect(propsOf({ kind: 'dungeon_camp', choice: 'keepsake' })).toEqual({ choice: 'keepsake' });
+    expect(propsOf({ kind: 'dungeon_camp', choice: 'nap' as never })).toEqual({ choice: 'rest' });
+    // The fullest dungeon_run fits the cap.
+    const fullest = serializeProps({
+      kind: 'dungeon_run',
+      depth: 9_999,
+      attempt: 2,
+      roomsCleared: 6,
+      cleared: true,
+      landmark: true,
+      modifiers: Array.from({ length: 6 }, () => 'overgrown'),
+      team: Array.from({ length: 3 }, () => ({ species: 'hearthshell', role: 'support' as const })),
+      gear: 3,
+      outcome: 'cleared',
+      path: Array.from({ length: 8 }, () => 'mystery'),
+      keepsakes: Array.from({ length: 12 }, () => dungeonKeepsakes.at(-1)?.id as string),
+      campChoice: 'keepsake',
+      elites: 2,
+      packFound: 40,
+      packKept: 40,
+    });
+    expect(fullest.length).toBeLessThanOrEqual(MAX_PROPS_CHARS);
+    expect(fullest).not.toContain('truncated');
   });
 
   it('rebuilds the dungeon events from content ids and numbers only', () => {
@@ -1341,6 +1444,20 @@ function vocabulary(): Set<string> {
     ...content.bosses.map((b) => b.id),
     ...content.finaleAbilities.map((a) => a.id),
     ...dungeonContent.modifiers.map((m) => m.id),
+    // The map runs: keepsakes, events, the node kinds of a path, how a run ended and the camp's choice.
+    ...dungeonKeepsakes.map((k) => k.id),
+    ...dungeonEvents.map((e) => e.id),
+    'mystery',
+    'cache',
+    'camp',
+    'elite',
+    'boss',
+    'cleared',
+    'home',
+    'defeat',
+    'rest',
+    'swap',
+    'keepsake',
     'setter',
     'payoff',
     'support',
@@ -1511,10 +1628,26 @@ describe('privacy', () => {
           'Quibbly',
           diver.creatureIds[0],
         );
-        const dived = await call(ctx, diverSecret, 'POST', '/api/dungeon/run', {
-          team: diver.creatureIds,
-          idempotencyKey: newKey(),
-        });
+        // The run is played through the map, by way of a mystery room and the camp (foes made easy so
+        // that it gets that far): every event it logs is checked below.
+        const backToNormal = easyFoes();
+        let route: string[] | undefined;
+        const dived = await playThrough(
+          (method, path, body) => call(ctx, diverSecret, method, path, body),
+          { team: diver.creatureIds, idempotencyKey: newKey() },
+          {
+            pick: (state) => {
+              route ??= routeThrough(state.map, (n) => n.kind === 'mystery');
+              return followRoute(route ?? [])(state);
+            },
+            camp: (state) => ({
+              type: 'camp',
+              choice: 'keepsake',
+              keepsake: state.pending?.kind === 'camp' ? (state.pending.offers[0]?.id ?? '') : '',
+            }),
+          },
+        );
+        backToNormal();
         expect(dived.status).toBe(200);
         // Sessions idle out after an hour: sign in again after the jumps.
         a.secret = await ctx.core.createSession(ctx.guildId, USER, '555555555555555555');
@@ -1566,6 +1699,8 @@ describe('privacy', () => {
           'job_start',
           'job_claim',
           'dungeon_run',
+          'dungeon_event',
+          'dungeon_camp',
           'dungeon_reward',
         ]) {
           expect(seen.has(kind), kind).toBe(true);

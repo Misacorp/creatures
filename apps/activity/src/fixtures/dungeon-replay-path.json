@@ -1,0 +1,890 @@
+{
+  "summary": {
+    "id": "0db4bb58-f973-4405-8067-9fabcb7fdb8d",
+    "day": "2027-01-12",
+    "attempt": 1,
+    "depth": 1,
+    "newDepth": 2,
+    "cleared": true,
+    "roomsCleared": 4,
+    "landmark": false,
+    "streak": 1,
+    "createdAt": 1799755200000,
+    "team": [
+      {
+        "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+        "name": "Splashet",
+        "speciesId": "splashet",
+        "element": "tide",
+        "role": "setter",
+        "level": 12,
+        "hpMax": 200,
+        "hpEnd": 200
+      },
+      {
+        "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "name": "Sproutle",
+        "speciesId": "sproutle",
+        "element": "grove",
+        "role": "guard",
+        "level": 12,
+        "hpMax": 281,
+        "hpEnd": 281
+      },
+      {
+        "id": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
+        "name": "Zipmouse",
+        "speciesId": "zipmouse",
+        "element": "spark",
+        "role": "setter",
+        "level": 12,
+        "hpMax": 200,
+        "hpEnd": 200
+      }
+    ],
+    "rooms": [
+      {
+        "index": 0,
+        "kind": "foe",
+        "foe": {
+          "id": "static-bat",
+          "name": "Static Bat",
+          "element": "spark",
+          "hpMax": 44
+        },
+        "modifier": {
+          "id": "flooded",
+          "name": "Flooded",
+          "description": "Tide creatures hit 20% harder."
+        },
+        "played": true,
+        "cleared": true,
+        "rounds": 1,
+        "foeHpEnd": 0
+      },
+      {
+        "index": 1,
+        "kind": "foe",
+        "foe": {
+          "id": "flicker-swarm",
+          "name": "Flicker Swarm",
+          "element": "spark",
+          "hpMax": 50
+        },
+        "modifier": {
+          "id": "echoing",
+          "name": "Echoing",
+          "description": "Guards and supports hit 50% harder."
+        },
+        "played": true,
+        "cleared": true,
+        "rounds": 1,
+        "foeHpEnd": 0
+      },
+      {
+        "index": 2,
+        "kind": "foe",
+        "foe": {
+          "id": "drift-wisp",
+          "name": "Drift Wisp",
+          "element": "tide",
+          "hpMax": 48
+        },
+        "modifier": {
+          "id": "dark",
+          "name": "Dark",
+          "description": "Your creatures crit 5 points more often."
+        },
+        "played": true,
+        "cleared": true,
+        "rounds": 1,
+        "foeHpEnd": 0
+      },
+      {
+        "index": 3,
+        "kind": "boss",
+        "foe": {
+          "id": "coil-baron",
+          "name": "Coil Baron",
+          "element": "spark",
+          "hpMax": 62
+        },
+        "modifier": {
+          "id": "brittle",
+          "name": "Brittle",
+          "description": "The foe has 20% less HP but hits 25% harder."
+        },
+        "played": true,
+        "cleared": true,
+        "rounds": 1,
+        "foeHpEnd": 0
+      }
+    ],
+    "rewards": {
+      "bait": 4,
+      "essence": 1,
+      "parts": {
+        "scrap": 2,
+        "spark-shard": 1
+      },
+      "gear": [],
+      "converted": [],
+      "supplies": ["satchel-basic"],
+      "landmark": false,
+      "streak": null,
+      "experience": [
+        {
+          "creatureId": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+          "gained": 200,
+          "treat": false,
+          "levelBefore": 12,
+          "level": 12,
+          "exp": 200,
+          "needed": 588,
+          "waiting": false,
+          "gold": false
+        },
+        {
+          "creatureId": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "gained": 200,
+          "treat": false,
+          "levelBefore": 12,
+          "level": 12,
+          "exp": 200,
+          "needed": 588,
+          "waiting": false,
+          "gold": false
+        },
+        {
+          "creatureId": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
+          "gained": 35,
+          "treat": false,
+          "levelBefore": 12,
+          "level": 12,
+          "exp": 35,
+          "needed": 588,
+          "waiting": false,
+          "gold": false
+        },
+        {
+          "creatureId": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
+          "gained": 165,
+          "treat": false,
+          "levelBefore": 12,
+          "level": 12,
+          "exp": 165,
+          "needed": 588,
+          "waiting": false,
+          "gold": false
+        }
+      ]
+    },
+    "outcome": "cleared",
+    "path": ["fight", "mystery", "mystery", "camp", "fight", "fight", "boss"],
+    "pack": {
+      "found": {
+        "bait": 4,
+        "essence": 1,
+        "scrap": 2
+      },
+      "kept": {
+        "bait": 4,
+        "essence": 1,
+        "scrap": 2
+      }
+    },
+    "keepsakes": []
+  },
+  "row": [
+    {
+      "position": 0,
+      "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+      "name": "Sproutle",
+      "species": "sproutle",
+      "element": "grove",
+      "role": "guard",
+      "level": 12
+    },
+    {
+      "position": 1,
+      "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+      "name": "Splashet",
+      "species": "splashet",
+      "element": "tide",
+      "role": "setter",
+      "level": 12
+    },
+    {
+      "position": 2,
+      "id": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
+      "name": "Cindle",
+      "species": "cindle",
+      "element": "ember",
+      "role": "payoff",
+      "level": 12
+    }
+  ],
+  "rooms": [
+    {
+      "index": 0,
+      "kind": "foe",
+      "node": "f0l0",
+      "row": [
+        {
+          "position": 0,
+          "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+          "name": "Sproutle",
+          "species": "sproutle",
+          "element": "grove",
+          "role": "guard",
+          "level": 12
+        },
+        {
+          "position": 1,
+          "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "name": "Splashet",
+          "species": "splashet",
+          "element": "tide",
+          "role": "setter",
+          "level": 12
+        },
+        {
+          "position": 2,
+          "id": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
+          "name": "Cindle",
+          "species": "cindle",
+          "element": "ember",
+          "role": "payoff",
+          "level": 12
+        }
+      ],
+      "foe": {
+        "id": "static-bat",
+        "name": "Static Bat",
+        "element": "spark",
+        "hpMax": 44
+      },
+      "modifier": {
+        "id": "flooded",
+        "name": "Flooded",
+        "description": "Tide creatures hit 20% harder."
+      },
+      "cleared": true,
+      "rounds": 1,
+      "hpStart": {
+        "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
+        "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
+        "ae8c7c8f-b190-470f-b09e-4ae48d278eb9": 173
+      },
+      "hpMax": {
+        "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
+        "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
+        "ae8c7c8f-b190-470f-b09e-4ae48d278eb9": 173
+      },
+      "events": [
+        {
+          "t": "round_start",
+          "round": 1,
+          "bossHp": 44,
+          "mark": null
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+          "damage": 44,
+          "matchupBp": 15000,
+          "bonusBp": 0,
+          "mark": null,
+          "bossHp": 0
+        },
+        {
+          "t": "mark",
+          "round": 1,
+          "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+          "player": "p1",
+          "element": "grove",
+          "replaced": null
+        },
+        {
+          "t": "round_end",
+          "round": 1,
+          "bossHp": 0
+        }
+      ],
+      "names": {
+        "boss": "Static Bat",
+        "creatures": {
+          "64ab0da2-cff5-47ec-8346-04317bb6b745": "Sproutle",
+          "5b8aea90-83c9-4de6-b9f4-2cd49763020f": "Splashet",
+          "ae8c7c8f-b190-470f-b09e-4ae48d278eb9": "Cindle"
+        },
+        "players": {
+          "p1": "Player 1"
+        },
+        "reactions": {
+          "overload": "Overload",
+          "grounding": "Grounding",
+          "wildfire": "Wildfire",
+          "steam": "Steam"
+        },
+        "gimmicks": {
+          "zap-dive": "Zap Dive"
+        },
+        "abilities": {
+          "rally": "Rally",
+          "shield-wall": "Shield Wall",
+          "re-mark": "Re-mark",
+          "purge": "Purge",
+          "tidal-mark": "Tidal Mark",
+          "tidal-mark-2": "Riptide Mark",
+          "flare-strike": "Flare Strike",
+          "flare-strike-2": "Inferno Strike",
+          "bark-guard": "Bark Guard",
+          "bark-guard-2": "Ironbark Guard",
+          "static-zap": "Static Zap",
+          "static-zap-2": "Storm Zap",
+          "fog-veil": "Fog Veil",
+          "fog-veil-2": "Dense Fog",
+          "warm-glow": "Warm Glow",
+          "warm-glow-2": "Magma Glow",
+          "thunder-strike": "Thunder Strike",
+          "thunder-strike-2": "Tempest Strike",
+          "moss-bloom": "Mossy Bloom",
+          "moss-bloom-2": "Ancient Bloom",
+          "coral-lance": "Coral Lance",
+          "solar-brand": "Solar Brand",
+          "verdant-roar": "Verdant Roar",
+          "aurora-surge": "Aurora Surge",
+          "lantern-glow": "Lantern Glow",
+          "hearth-ward": "Hearth Ward"
+        },
+        "marks": {
+          "tide": "Soaked",
+          "spark": "Charged",
+          "grove": "Overgrown",
+          "ember": "Scorched"
+        },
+        "elements": {
+          "tide": "Tide",
+          "ember": "Ember",
+          "grove": "Grove",
+          "spark": "Spark"
+        },
+        "adaptations": {
+          "resist-top-reaction": "Reaction Resistance",
+          "resist-top-element": "Element Resistance"
+        }
+      }
+    },
+    {
+      "index": 1,
+      "kind": "foe",
+      "node": "f4l0",
+      "row": [
+        {
+          "position": 0,
+          "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "name": "Splashet",
+          "species": "splashet",
+          "element": "tide",
+          "role": "setter",
+          "level": 12
+        },
+        {
+          "position": 1,
+          "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+          "name": "Sproutle",
+          "species": "sproutle",
+          "element": "grove",
+          "role": "guard",
+          "level": 12
+        },
+        {
+          "position": 2,
+          "id": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
+          "name": "Zipmouse",
+          "species": "zipmouse",
+          "element": "spark",
+          "role": "setter",
+          "level": 12
+        }
+      ],
+      "foe": {
+        "id": "flicker-swarm",
+        "name": "Flicker Swarm",
+        "element": "spark",
+        "hpMax": 50
+      },
+      "modifier": {
+        "id": "echoing",
+        "name": "Echoing",
+        "description": "Guards and supports hit 50% harder."
+      },
+      "cleared": true,
+      "rounds": 1,
+      "hpStart": {
+        "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
+        "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
+        "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c": 200
+      },
+      "hpMax": {
+        "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
+        "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
+        "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c": 200
+      },
+      "events": [
+        {
+          "t": "round_start",
+          "round": 1,
+          "bossHp": 50,
+          "mark": null
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "5b8aea90-83c9-4de6-b9f4-2cd49763020f"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "damage": 37,
+          "matchupBp": 7500,
+          "bonusBp": 0,
+          "mark": null,
+          "bossHp": 13
+        },
+        {
+          "t": "mark",
+          "round": 1,
+          "creature": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "player": "p1",
+          "element": "tide",
+          "replaced": null
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+          "damage": 13,
+          "matchupBp": 15000,
+          "bonusBp": 0,
+          "mark": "tide",
+          "bossHp": 0
+        },
+        {
+          "t": "round_end",
+          "round": 1,
+          "bossHp": 0
+        }
+      ],
+      "names": {
+        "boss": "Flicker Swarm",
+        "creatures": {
+          "5b8aea90-83c9-4de6-b9f4-2cd49763020f": "Splashet",
+          "64ab0da2-cff5-47ec-8346-04317bb6b745": "Sproutle",
+          "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c": "Zipmouse"
+        },
+        "players": {
+          "p1": "Player 1"
+        },
+        "reactions": {
+          "overload": "Overload",
+          "grounding": "Grounding",
+          "wildfire": "Wildfire",
+          "steam": "Steam"
+        },
+        "gimmicks": {
+          "buzz-cloud": "Buzz Cloud"
+        },
+        "abilities": {
+          "rally": "Rally",
+          "shield-wall": "Shield Wall",
+          "re-mark": "Re-mark",
+          "purge": "Purge",
+          "tidal-mark": "Tidal Mark",
+          "tidal-mark-2": "Riptide Mark",
+          "flare-strike": "Flare Strike",
+          "flare-strike-2": "Inferno Strike",
+          "bark-guard": "Bark Guard",
+          "bark-guard-2": "Ironbark Guard",
+          "static-zap": "Static Zap",
+          "static-zap-2": "Storm Zap",
+          "fog-veil": "Fog Veil",
+          "fog-veil-2": "Dense Fog",
+          "warm-glow": "Warm Glow",
+          "warm-glow-2": "Magma Glow",
+          "thunder-strike": "Thunder Strike",
+          "thunder-strike-2": "Tempest Strike",
+          "moss-bloom": "Mossy Bloom",
+          "moss-bloom-2": "Ancient Bloom",
+          "coral-lance": "Coral Lance",
+          "solar-brand": "Solar Brand",
+          "verdant-roar": "Verdant Roar",
+          "aurora-surge": "Aurora Surge",
+          "lantern-glow": "Lantern Glow",
+          "hearth-ward": "Hearth Ward"
+        },
+        "marks": {
+          "tide": "Soaked",
+          "spark": "Charged",
+          "grove": "Overgrown",
+          "ember": "Scorched"
+        },
+        "elements": {
+          "tide": "Tide",
+          "ember": "Ember",
+          "grove": "Grove",
+          "spark": "Spark"
+        },
+        "adaptations": {
+          "resist-top-reaction": "Reaction Resistance",
+          "resist-top-element": "Element Resistance"
+        }
+      }
+    },
+    {
+      "index": 2,
+      "kind": "foe",
+      "node": "f5l0",
+      "row": [
+        {
+          "position": 0,
+          "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "name": "Splashet",
+          "species": "splashet",
+          "element": "tide",
+          "role": "setter",
+          "level": 12
+        },
+        {
+          "position": 1,
+          "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+          "name": "Sproutle",
+          "species": "sproutle",
+          "element": "grove",
+          "role": "guard",
+          "level": 12
+        },
+        {
+          "position": 2,
+          "id": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
+          "name": "Zipmouse",
+          "species": "zipmouse",
+          "element": "spark",
+          "role": "setter",
+          "level": 12
+        }
+      ],
+      "foe": {
+        "id": "drift-wisp",
+        "name": "Drift Wisp",
+        "element": "tide",
+        "hpMax": 48
+      },
+      "modifier": {
+        "id": "dark",
+        "name": "Dark",
+        "description": "Your creatures crit 5 points more often."
+      },
+      "cleared": true,
+      "rounds": 1,
+      "hpStart": {
+        "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
+        "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
+        "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c": 200
+      },
+      "hpMax": {
+        "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
+        "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
+        "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c": 200
+      },
+      "events": [
+        {
+          "t": "round_start",
+          "round": 1,
+          "bossHp": 48,
+          "mark": null
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "5b8aea90-83c9-4de6-b9f4-2cd49763020f"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "damage": 48,
+          "matchupBp": 10000,
+          "bonusBp": 0,
+          "mark": null,
+          "bossHp": 0
+        },
+        {
+          "t": "mark",
+          "round": 1,
+          "creature": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "player": "p1",
+          "element": "tide",
+          "replaced": null
+        },
+        {
+          "t": "round_end",
+          "round": 1,
+          "bossHp": 0
+        }
+      ],
+      "names": {
+        "boss": "Drift Wisp",
+        "creatures": {
+          "5b8aea90-83c9-4de6-b9f4-2cd49763020f": "Splashet",
+          "64ab0da2-cff5-47ec-8346-04317bb6b745": "Sproutle",
+          "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c": "Zipmouse"
+        },
+        "players": {
+          "p1": "Player 1"
+        },
+        "reactions": {
+          "overload": "Overload",
+          "grounding": "Grounding",
+          "wildfire": "Wildfire",
+          "steam": "Steam"
+        },
+        "gimmicks": {
+          "sea-mist": "Sea Mist"
+        },
+        "abilities": {
+          "rally": "Rally",
+          "shield-wall": "Shield Wall",
+          "re-mark": "Re-mark",
+          "purge": "Purge",
+          "tidal-mark": "Tidal Mark",
+          "tidal-mark-2": "Riptide Mark",
+          "flare-strike": "Flare Strike",
+          "flare-strike-2": "Inferno Strike",
+          "bark-guard": "Bark Guard",
+          "bark-guard-2": "Ironbark Guard",
+          "static-zap": "Static Zap",
+          "static-zap-2": "Storm Zap",
+          "fog-veil": "Fog Veil",
+          "fog-veil-2": "Dense Fog",
+          "warm-glow": "Warm Glow",
+          "warm-glow-2": "Magma Glow",
+          "thunder-strike": "Thunder Strike",
+          "thunder-strike-2": "Tempest Strike",
+          "moss-bloom": "Mossy Bloom",
+          "moss-bloom-2": "Ancient Bloom",
+          "coral-lance": "Coral Lance",
+          "solar-brand": "Solar Brand",
+          "verdant-roar": "Verdant Roar",
+          "aurora-surge": "Aurora Surge",
+          "lantern-glow": "Lantern Glow",
+          "hearth-ward": "Hearth Ward"
+        },
+        "marks": {
+          "tide": "Soaked",
+          "spark": "Charged",
+          "grove": "Overgrown",
+          "ember": "Scorched"
+        },
+        "elements": {
+          "tide": "Tide",
+          "ember": "Ember",
+          "grove": "Grove",
+          "spark": "Spark"
+        },
+        "adaptations": {
+          "resist-top-reaction": "Reaction Resistance",
+          "resist-top-element": "Element Resistance"
+        }
+      }
+    },
+    {
+      "index": 3,
+      "kind": "boss",
+      "node": "f6l1",
+      "row": [
+        {
+          "position": 0,
+          "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "name": "Splashet",
+          "species": "splashet",
+          "element": "tide",
+          "role": "setter",
+          "level": 12
+        },
+        {
+          "position": 1,
+          "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+          "name": "Sproutle",
+          "species": "sproutle",
+          "element": "grove",
+          "role": "guard",
+          "level": 12
+        },
+        {
+          "position": 2,
+          "id": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
+          "name": "Zipmouse",
+          "species": "zipmouse",
+          "element": "spark",
+          "role": "setter",
+          "level": 12
+        }
+      ],
+      "foe": {
+        "id": "coil-baron",
+        "name": "Coil Baron",
+        "element": "spark",
+        "hpMax": 62
+      },
+      "modifier": {
+        "id": "brittle",
+        "name": "Brittle",
+        "description": "The foe has 20% less HP but hits 25% harder."
+      },
+      "cleared": true,
+      "rounds": 1,
+      "hpStart": {
+        "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
+        "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
+        "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c": 200
+      },
+      "hpMax": {
+        "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
+        "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
+        "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c": 200
+      },
+      "events": [
+        {
+          "t": "round_start",
+          "round": 1,
+          "bossHp": 62,
+          "mark": null
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "5b8aea90-83c9-4de6-b9f4-2cd49763020f"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "damage": 56,
+          "matchupBp": 7500,
+          "bonusBp": 5000,
+          "mark": null,
+          "bossHp": 6,
+          "luckBp": 5000,
+          "crit": true,
+          "critBp": 5000
+        },
+        {
+          "t": "mark",
+          "round": 1,
+          "creature": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "player": "p1",
+          "element": "tide",
+          "replaced": null
+        },
+        {
+          "t": "turn",
+          "round": 1,
+          "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745"
+        },
+        {
+          "t": "hit",
+          "round": 1,
+          "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+          "damage": 6,
+          "matchupBp": 15000,
+          "bonusBp": 0,
+          "mark": "tide",
+          "bossHp": 0
+        },
+        {
+          "t": "round_end",
+          "round": 1,
+          "bossHp": 0
+        }
+      ],
+      "names": {
+        "boss": "Coil Baron",
+        "creatures": {
+          "5b8aea90-83c9-4de6-b9f4-2cd49763020f": "Splashet",
+          "64ab0da2-cff5-47ec-8346-04317bb6b745": "Sproutle",
+          "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c": "Zipmouse"
+        },
+        "players": {
+          "p1": "Player 1"
+        },
+        "reactions": {
+          "overload": "Overload",
+          "grounding": "Grounding",
+          "wildfire": "Wildfire",
+          "steam": "Steam"
+        },
+        "gimmicks": {
+          "arc-lash": "Arc Lash"
+        },
+        "abilities": {
+          "rally": "Rally",
+          "shield-wall": "Shield Wall",
+          "re-mark": "Re-mark",
+          "purge": "Purge",
+          "tidal-mark": "Tidal Mark",
+          "tidal-mark-2": "Riptide Mark",
+          "flare-strike": "Flare Strike",
+          "flare-strike-2": "Inferno Strike",
+          "bark-guard": "Bark Guard",
+          "bark-guard-2": "Ironbark Guard",
+          "static-zap": "Static Zap",
+          "static-zap-2": "Storm Zap",
+          "fog-veil": "Fog Veil",
+          "fog-veil-2": "Dense Fog",
+          "warm-glow": "Warm Glow",
+          "warm-glow-2": "Magma Glow",
+          "thunder-strike": "Thunder Strike",
+          "thunder-strike-2": "Tempest Strike",
+          "moss-bloom": "Mossy Bloom",
+          "moss-bloom-2": "Ancient Bloom",
+          "coral-lance": "Coral Lance",
+          "solar-brand": "Solar Brand",
+          "verdant-roar": "Verdant Roar",
+          "aurora-surge": "Aurora Surge",
+          "lantern-glow": "Lantern Glow",
+          "hearth-ward": "Hearth Ward"
+        },
+        "marks": {
+          "tide": "Soaked",
+          "spark": "Charged",
+          "grove": "Overgrown",
+          "ember": "Scorched"
+        },
+        "elements": {
+          "tide": "Tide",
+          "ember": "Ember",
+          "grove": "Grove",
+          "spark": "Spark"
+        },
+        "adaptations": {
+          "resist-top-reaction": "Reaction Resistance",
+          "resist-top-element": "Element Resistance"
+        }
+      }
+    }
+  ]
+}

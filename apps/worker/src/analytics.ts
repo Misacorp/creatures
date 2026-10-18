@@ -32,6 +32,8 @@ import {
   RULES,
   content,
   dungeonContent,
+  dungeonEvents,
+  dungeonKeepsakes,
   expeditionContent,
   gearContent,
   talentContent,
@@ -77,6 +79,13 @@ const CATCH_RESULTS = ['new', 'duplicate', 'fused', 'converted'] as const;
 export type PushOnOutcome = 'worked' | 'failed' | 'declined';
 const PUSH_ON_OUTCOMES = ['worked', 'failed', 'declined'] as const;
 export type FestivalResult = CatchResult;
+
+/** How a map run of the daily dungeon ended, and what the camp offers. */
+export type DungeonOutcome = 'cleared' | 'home' | 'defeat';
+const DUNGEON_OUTCOMES = ['cleared', 'home', 'defeat'] as const;
+export type CampChoice = 'rest' | 'swap' | 'keepsake';
+const CAMP_CHOICES = ['rest', 'swap', 'keepsake'] as const;
+const NODE_KIND_IDS = ['fight', 'elite', 'mystery', 'cache', 'camp', 'boss'] as const;
 
 /** Where a gear grant came from. */
 export const GEAR_SOURCES = [
@@ -420,6 +429,31 @@ export type AnalyticsEvent =
       team: readonly { species: string; role: Role }[];
       /** How many of the three creatures wore gear. */
       gear: number;
+      /**
+       * The map runs (docs/design/dungeon-paths.md); absent on events written before them. How it ended,
+       * the node kinds of the path taken in order, the keepsake ids held at the end, the camp's choice
+       * ('none' when the run never took one), the elites cleared, and the pack's totals (all kinds
+       * added together) when it ended and what came home of it.
+       */
+      outcome?: DungeonOutcome;
+      path?: readonly string[];
+      keepsakes?: readonly string[];
+      campChoice?: CampChoice | 'none';
+      elites?: number;
+      packFound?: number;
+      packKept?: number;
+    }
+  | {
+      /** A mystery room's option was picked: the event's content id, the option (0 or 1), and a gamble's result if it had one. */
+      kind: 'dungeon_event';
+      event: string;
+      option: number;
+      won?: boolean;
+    }
+  | {
+      /** The camp's choice. */
+      kind: 'dungeon_camp';
+      choice: CampChoice;
     }
   | {
       /** What a dungeon run paid. Amounts and content ids only. */
@@ -484,6 +518,8 @@ const GEAR_BASE_IDS: ReadonlySet<string> = new Set(gearContent.bases.map((b) => 
 const GEAR_LINE_IDS: ReadonlySet<string> = new Set(gearContent.lines.map((l) => l.id));
 const TALENT_IDS: ReadonlySet<string> = new Set(talentContent.byId.keys());
 const MODIFIER_IDS: ReadonlySet<string> = new Set(dungeonContent.modifiers.map((m) => m.id));
+const KEEPSAKE_IDS: ReadonlySet<string> = new Set(dungeonKeepsakes.map((k) => k.id));
+const DUNGEON_EVENT_IDS: ReadonlySet<string> = new Set(dungeonEvents.map((e) => e.id));
 const WEATHER_IDS: ReadonlySet<string> = new Set(weatherContent.map((d) => d.id));
 const ROLE_IDS = ['setter', 'payoff', 'support', 'guard'] as const;
 const DESTINATION_IDS: ReadonlySet<string> = new Set(
@@ -872,7 +908,30 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
           .slice(0, 3)
           .map((t) => ({ species: species(t.species), role: oneOf(ROLE_IDS, t.role, 'setter') })),
         gear: int(event.gear, 9),
+        ...(event.outcome === undefined
+          ? {}
+          : { outcome: oneOf(DUNGEON_OUTCOMES, event.outcome, 'defeat') }),
+        ...(event.path === undefined
+          ? {}
+          : { path: event.path.slice(0, 8).map((k) => oneOf(NODE_KIND_IDS, k, 'fight')) }),
+        ...(event.keepsakes === undefined
+          ? {}
+          : { keepsakes: event.keepsakes.slice(0, 12).map((k) => fromSet(KEEPSAKE_IDS, k)) }),
+        ...(event.campChoice === undefined
+          ? {}
+          : { campChoice: oneOf([...CAMP_CHOICES, 'none'] as const, event.campChoice, 'none') }),
+        ...(event.elites === undefined ? {} : { elites: int(event.elites, 9) }),
+        ...(event.packFound === undefined ? {} : { packFound: int(event.packFound, 999) }),
+        ...(event.packKept === undefined ? {} : { packKept: int(event.packKept, 999) }),
       };
+    case 'dungeon_event':
+      return {
+        event: fromSet(DUNGEON_EVENT_IDS, event.event),
+        option: int(event.option, 1),
+        ...(event.won === undefined ? {} : { won: bool(event.won) }),
+      };
+    case 'dungeon_camp':
+      return { choice: oneOf(CAMP_CHOICES, event.choice, 'rest') };
     case 'dungeon_reward':
       return {
         depth: int(event.depth, 9_999),

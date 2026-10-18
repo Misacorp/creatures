@@ -1278,7 +1278,8 @@
     "lines": [
       "Fights, elites, chests and mystery rooms put Bait, Essence and scrap in your pack.",
       "Head home or beat the boss and you keep all of it. A defeat keeps half, rounded up.",
-      "Experience and the run's supply are safe. They never go in the pack."
+      "Experience and the run's supply are safe. They never go in the pack.",
+      "A run left open when the day ends counts as a defeat, unless it is resting at the camp."
     ],
     "section": "dungeon"
   },

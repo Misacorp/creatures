@@ -2,7 +2,8 @@
    These tests read parts of many different response bodies (`Json.body` is `any` on purpose): typing
    each body would only repeat the server's view types. */
 import { RULES, dungeonContent, expeditionContent } from '@creatures/game';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { deadlyFoes, easyFoes, playThrough } from './dungeon-helpers';
 import { ON, newKey, player, type Dev, type Json } from './dev-helpers';
 import { runCore } from './helpers';
 import { count, nextGuild, rows } from './raid-helpers';
@@ -208,9 +209,28 @@ describe('expedition tools', () => {
 });
 
 describe('dungeon tools', () => {
+  // The foes are made easy: these tests look at what the tools do to a run, not at whether a team wins.
+  let restoreFoes: () => void = () => undefined;
+  beforeEach(() => {
+    restoreFoes = easyFoes();
+  });
+  afterEach(() => {
+    restoreFoes();
+  });
   const today = async (p: Dev) => (await p.call('GET', '/api/dungeon/today')).body;
-  const run = (p: Dev) =>
-    p.call('POST', '/api/dungeon/run', { team: p.creatureIds, idempotencyKey: newKey() });
+  const team = (p: Dev) => ({ team: p.creatureIds, idempotencyKey: newKey() });
+  /** Starts a run and plays it out (the answer is the last act's, with the summary as `run`). */
+  const run = (p: Dev) => playThrough(p.call, team(p)) as Promise<Json>;
+  /** A run that is lost in its first fight: two requests, so a test with many runs stays inside the request allowance. */
+  const lost = async (p: Dev) => {
+    const back = deadlyFoes();
+    try {
+      return await run(p);
+    } finally {
+      back();
+    }
+  };
+  const start = (p: Dev) => p.call('POST', '/api/dungeon/start', team(p));
   const modifierIds = (day: { modifiers: { id: string }[] }) => day.modifiers.map((m) => m.id);
 
   it('sets the depth, jumps to the next landmark and sets the streak', async () => {
@@ -341,15 +361,15 @@ describe('dungeon tools', () => {
         expect(await p.tool('dungeon-reset')).toMatchObject({ removed: 0 });
 
         // Run again, then open the first-day retry: a second run is possible.
-        expect((await run(p)).status).toBe(200);
-        expect((await today(p)).canRun).toBe(false);
+        expect((await lost(p)).status).toBe(200);
+        // The first day offers a retry after a loss already; the tool opens it for any run.
         await p.tool('dungeon-retry');
         expect(await today(p)).toMatchObject({
           canRun: true,
           attemptsAllowed: 2,
           attemptsToday: 1,
         });
-        expect((await run(p)).status).toBe(200);
+        expect((await lost(p)).status).toBe(200);
         expect((await today(p)).attemptsToday).toBe(2);
       },
       ON,
@@ -380,6 +400,77 @@ describe('dungeon tools', () => {
         await p.tool('set-balances', { bait: 40, essence: 40 });
         await p.tool('dungeon-reset');
         expect((await p.call('GET', '/api/me')).body.balances).toEqual({ bait: 40, essence: 40 });
+      },
+      ON,
+    );
+  });
+
+  it('redraws the day’s map with the seed, while a run that is open keeps the map it started with', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 30 });
+        const first = await today(p);
+        const open = (await start(p)).body.state;
+        expect(open.map).toEqual(first.map);
+        const rolled = await p.tool('dungeon-seed');
+        const stored = rows<{ map_json: string | null }>(
+          ctx.sql,
+          'SELECT map_json FROM dungeon_days',
+        );
+        expect(stored).toHaveLength(1);
+        expect(stored[0]?.map_json).toBeNull(); // cleared: drawn again on the next look
+        const next = await today(p);
+        expect(next.map).not.toEqual(first.map);
+        expect(next.modifiers.map((m: { id: string }) => m.id)).toEqual(rolled.modifiers);
+        expect(next.active.map).toEqual(first.map); // the open run keeps its own copy
+        expect(
+          rows<{ map_json: string | null }>(ctx.sql, 'SELECT map_json FROM dungeon_days')[0]
+            ?.map_json,
+        ).not.toBeNull();
+      },
+      ON,
+    );
+  });
+
+  it('resets a run that is still open with its steps, and leaves the progress alone', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 30 });
+        const open = (await start(p)).body.state;
+        const move = await p.call('POST', '/api/dungeon/act', {
+          runId: open.id,
+          step: 0,
+          idempotencyKey: newKey(),
+          act: { type: 'move', node: open.reachable[0] },
+        });
+        expect(move.status).toBe(200);
+        expect(count(ctx.sql, 'dungeon_steps')).toBe(1);
+        expect((await today(p)).canRun).toBe(false);
+        expect(await p.tool('dungeon-reset')).toMatchObject({ removed: 1 });
+        expect(count(ctx.sql, 'dungeon_runs')).toBe(0);
+        expect(count(ctx.sql, 'dungeon_steps')).toBe(0);
+        expect(count(ctx.sql, 'dungeon_progress')).toBe(0);
+        expect(await today(p)).toMatchObject({ canRun: true, attemptsToday: 0, active: null });
+        expect((await run(p)).status).toBe(200);
+      },
+      ON,
+    );
+  });
+
+  it('opens the first-day retry for a run that went home or cleared, too', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 30 });
+        expect((await run(p)).status).toBe(200); // a clear
+        expect((await today(p)).canRun).toBe(false);
+        await p.tool('dungeon-retry');
+        expect((await today(p)).canRun).toBe(true);
+        expect(
+          rows<{ outcome: string | null }>(ctx.sql, 'SELECT outcome FROM dungeon_runs')[0]?.outcome,
+        ).toBe('defeat');
       },
       ON,
     );

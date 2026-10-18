@@ -244,13 +244,36 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 31;
+export const LATEST_SCHEMA_VERSION = 32;
+
+/**
+ * Puts a database back to before migration 32 (the dungeon on a map): the steps table goes, and runs and
+ * days lose the columns it added (a run that was open is dropped: a database from before had none).
+ */
+export function undoDungeonPathsMigration(sql: SqlStorage): void {
+  // A test may already have dropped a table (the version 3 test does): only what is there goes.
+  const has = (table: string, column: string): boolean =>
+    sql.exec(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = '${column}'`).toArray()
+      .length > 0;
+  sql.exec('DROP TABLE IF EXISTS dungeon_steps');
+  sql.exec('DROP INDEX IF EXISTS dungeon_runs_active');
+  if (has('dungeon_runs', 'status')) {
+    sql.exec("DELETE FROM dungeon_runs WHERE status = 'active'");
+    sql.exec('ALTER TABLE dungeon_runs DROP COLUMN status');
+  }
+  if (has('dungeon_runs', 'state_json'))
+    sql.exec('ALTER TABLE dungeon_runs DROP COLUMN state_json');
+  if (has('dungeon_runs', 'outcome')) sql.exec('ALTER TABLE dungeon_runs DROP COLUMN outcome');
+  if (has('dungeon_days', 'map_json')) sql.exec('ALTER TABLE dungeon_days DROP COLUMN map_json');
+  sql.exec('DELETE FROM schema_version WHERE version = 32');
+}
 
 /**
  * Puts a database back to before migration 31 (Boons and Omens): the weather table goes and trips lose
  * the weather stored with them.
  */
 export function undoWeatherMigration(sql: SqlStorage): void {
+  undoDungeonPathsMigration(sql);
   sql.exec('DROP TABLE IF EXISTS weather_days');
   // A test may already have dropped a table (the version 3 test does): only what is there goes.
   const present = sql
@@ -472,7 +495,12 @@ export function undoRollupMigration(sql: SqlStorage): void {
 }
 
 /** Tables created by migration 18 (the daily dungeon). */
-export const DUNGEON_TABLES = ['dungeon_runs', 'dungeon_progress', 'dungeon_days'] as const;
+export const DUNGEON_TABLES = [
+  'dungeon_runs',
+  'dungeon_progress',
+  'dungeon_days',
+  'dungeon_steps',
+] as const;
 
 /** Puts a database back to before migration 18 (the daily dungeon). */
 export function undoDungeonMigration(sql: SqlStorage): void {
