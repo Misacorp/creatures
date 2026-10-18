@@ -35,7 +35,11 @@ export interface CardActions {
   onEquip: (gearId: string, creatureId: string | null) => Promise<boolean>;
   /** Earns the ribbon the creature waits for (materials only). */
   onRibbon: (creature: Creature) => void;
-  onEvolve: (creature: Creature) => void;
+  /**
+   * Evolves the creature. `species` is the form chosen on the evolve screen; none means the line has one form
+   * and the screen is skipped (the screen that owns the cards decides which).
+   */
+  onEvolve: (creature: Creature, species?: string) => void;
   onRename: (creature: Creature, nickname: string | null) => void;
   /** Makes this creature the one that lounges in the living room. */
   onLounge: (creature: Creature) => void;

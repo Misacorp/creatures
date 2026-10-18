@@ -17,6 +17,8 @@ import { needyIds } from './creature-needs';
 import { CreatureCard } from './CreatureCard';
 import { CreatureFinder } from './CreatureFinder';
 import { CreaturePage, type CardActions } from './CreaturePage';
+import { EvolveDrawer } from './EvolveDrawer';
+import { hasBranches } from './evolve-view';
 import type { CatchChoiceActions } from './find-view';
 import { PENDING_CATCHES_ID, PendingCatches } from './PendingCatches';
 import type { GearState } from './gear-types';
@@ -66,6 +68,8 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
   // The creature the finder chose, and a counter so choosing the same one twice scrolls twice.
   const [found, setFound] = useState<{ id: string; n: number } | null>(null);
   const [page, setPage] = useState<OpenPage | null>(null);
+  // The creature whose evolve screen is up (a line that grows two ways asks which form first).
+  const [evolvingId, setEvolvingId] = useState<string | null>(null);
   // How far the list was scrolled when the page opened, and the card to give the focus back to.
   const listScroll = useRef(0);
   const returnTo = useRef<string | null>(null);
@@ -74,6 +78,10 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
   const opened =
     page === null ? undefined : state.creatures.find((creature) => creature.id === page.id);
   const pageOpen = page !== null && opened !== undefined;
+  const evolving =
+    evolvingId === null
+      ? undefined
+      : state.creatures.find((creature) => creature.id === evolvingId);
 
   useLayoutEffect(() => {
     if (pageOpen) {
@@ -111,6 +119,15 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
     setPage(null);
   }
 
+  // A line with one form evolves at once; a line with two opens the screen that asks which.
+  const cardActions: CardActions = {
+    ...actions,
+    onEvolve: (creature) => {
+      if (hasBranches(creature)) setEvolvingId(creature.id);
+      else actions.onEvolve(creature);
+    },
+  };
+
   const needy = needyIds(state.creatures, state);
   // A short roster has no finder, so no chip (kept from an earlier visit) may hide a card.
   const showFinder = state.creatures.length >= FINDER_MIN_CREATURES;
@@ -137,7 +154,7 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
           state={state}
           gear={gear}
           busy={busy}
-          actions={actions}
+          actions={cardActions}
           focus={page.focus}
           onBack={back}
           onAnswerCatch={() => {
@@ -146,6 +163,20 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
             setTimeout(() => {
               scrollAndFocus(document.getElementById(PENDING_CATCHES_ID));
             }, 0);
+          }}
+        />
+      )}
+      {evolving !== undefined && (
+        <EvolveDrawer
+          open
+          creature={evolving}
+          busy={busy}
+          onClose={() => {
+            setEvolvingId(null);
+          }}
+          onEvolve={(creature, species) => {
+            setEvolvingId(null);
+            actions.onEvolve(creature, species);
           }}
         />
       )}
@@ -175,7 +206,7 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
               gear={gear}
               busy={busy}
               found={found?.id === creature.id}
-              actions={actions}
+              actions={cardActions}
               onAnswerCatch={() => {
                 scrollAndFocus(document.getElementById(PENDING_CATCHES_ID));
               }}

@@ -110,7 +110,7 @@ Live finales and practice fights poll every 2 s and at round boundaries. A push 
   - a sprite in the chibi style;
   - an ability;
   - a sim pass.
-- **Support species per element (Misa, 2026-10-14):** Grove has no Support and Tide's only one (Lanternfin) is Festival-only. Add a common Grove Support line first (it carries Mend, the heal), then a common Tide one. New species may be harder to find, for example only in later expedition areas. Misa plans new elements later too, so keep the element list data-driven.
+- **Support species per element (Misa, 2026-10-14):** Grove has no Support and Tide's only one (Lanternfin) is Festival-only. Add a common Grove Support line first (it carries Mend, the heal), then a common Tide one. _(Grove now has one: Sunfawn, a branch of Sproutle, 2026-10-18; Tide still needs one.)_ New species may be harder to find, for example only in later expedition areas. Misa plans new elements later too, so keep the element list data-driven.
 - **Support reach shapes** (after attack patterns): left N, right N, both sides N or the whole row, growing with level or fusion. See `design/attack-patterns.md`, section 7.
 - **More Festival creatures,** rotating by season.
 - **Seasonal mutators** (the engine has mutator hooks) for Festival weeks.

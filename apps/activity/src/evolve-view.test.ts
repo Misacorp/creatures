@@ -1,0 +1,120 @@
+import { describe, expect, it } from 'vitest';
+import { effectiveStats, content } from '@creatures/game';
+import { sampleCreature } from './creature-card-sample';
+import { evolutionText, creatureAbilityText } from './game';
+import { abilityDef } from './live';
+import { evolveButtonLabel, evolveForms, evolveTargets, hasBranches } from './evolve-view';
+import { creatureNeeds } from './creature-needs';
+import { SAMPLE_STATE } from './creature-card-sample';
+
+const branching = sampleCreature('evolve choice');
+const single = sampleCreature('evolve ready');
+
+describe('the forms of an evolution', () => {
+  it('knows a line that grows two ways from one that grows one way', () => {
+    expect(hasBranches(branching)).toBe(true);
+    expect(hasBranches(single)).toBe(false);
+    expect(hasBranches({})).toBe(false);
+    expect(evolveTargets(branching)).toEqual(['thornbuck', 'sunfawn']);
+    expect(evolveTargets(single)).toEqual(['pyrelynx']);
+    expect(evolveTargets({})).toEqual([]);
+  });
+
+  it('shows Thornbuck and Sunfawn: role, element, ability and the numbers at its level', () => {
+    const [thornbuck, sunfawn] = evolveForms(branching);
+    expect(thornbuck).toMatchObject({
+      species: 'thornbuck',
+      name: 'Thornbuck',
+      element: 'grove',
+      role: 'guard',
+      ability: { name: 'Ironbark Guard' },
+    });
+    expect(sunfawn).toMatchObject({
+      species: 'sunfawn',
+      name: 'Sunfawn',
+      element: 'grove',
+      role: 'support',
+      ability: { name: 'Sunny Patch' },
+    });
+    const species = content.creatures.find((c) => c.id === 'sunfawn');
+    expect(sunfawn?.stats).toEqual(effectiveStats(species ?? content.creatures[0]!, 15, 0));
+    // The words are the content's, so the numbers in them are the real ones.
+    expect(sunfawn?.ability?.text).toBe(abilityDef('sunny-patch')?.description);
+    expect(sunfawn?.ability?.text).toContain('6%');
+  });
+
+  it('shows Voltaro and Ohmouse for Zipmouse, with the fusions in the numbers', () => {
+    const zipmouse = {
+      level: 15,
+      fusionCount: 2,
+      evolution: {
+        toSpecies: 'voltaro',
+        level: 15,
+        essence: 20,
+        available: true,
+        alt: { toSpecies: 'ohmouse' },
+      },
+    };
+    const [voltaro, ohmouse] = evolveForms(zipmouse);
+    expect(voltaro).toMatchObject({ role: 'setter', element: 'spark' });
+    expect(ohmouse).toMatchObject({
+      role: 'guard',
+      element: 'spark',
+      ability: { name: 'Static Wall' },
+    });
+    const fused = content.creatures.find((c) => c.id === 'ohmouse');
+    expect(ohmouse?.stats).toEqual(effectiveStats(fused ?? content.creatures[0]!, 15, 2));
+    // A guard's HP is the biggest of the two, its speed the smallest.
+    expect(ohmouse?.stats.hp).toBeGreaterThan(voltaro?.stats.hp ?? 0);
+    expect(ohmouse?.stats.spd).toBeLessThan(voltaro?.stats.spd ?? 0);
+  });
+
+  it('leaves out a form the content does not know', () => {
+    const odd = {
+      ...branching,
+      evolution: { ...branching.evolution!, alt: { toSpecies: 'nobody' } },
+    };
+    expect(evolveForms(odd).map((f) => f.species)).toEqual(['thornbuck']);
+  });
+
+  it('labels the button with the form, and asks to pick first', () => {
+    const [thornbuck] = evolveForms(branching);
+    expect(evolveButtonLabel(thornbuck)).toBe('Evolve into Thornbuck');
+    expect(evolveButtonLabel(undefined)).toBe('Pick a form');
+  });
+});
+
+describe('the words around a line that grows two ways', () => {
+  it('asks to choose on the buttons, and names both forms when it is not ready', () => {
+    const evolution = branching.evolution!;
+    expect(evolutionText(15, evolution, 50)).toEqual({
+      available: true,
+      label: 'Choose an evolution (20 Essence)',
+    });
+    expect(evolutionText(10, { ...evolution, available: false }, 50).label).toBe(
+      'Evolve into Thornbuck or Sunfawn: needs level 15',
+    );
+    // A line with one form keeps its words.
+    expect(evolutionText(15, single.evolution!, 50).label).toBe(
+      'Evolve into Pyrelynx (20 Essence)',
+    );
+  });
+
+  it('says "Choose an evolution" in the needs of the card', () => {
+    const [need] = creatureNeeds(branching, SAMPLE_STATE);
+    expect(need).toMatchObject({
+      kind: 'evolve',
+      label: 'Choose an evolution',
+      detail: '20 Essence',
+    });
+    const [one] = creatureNeeds(single, SAMPLE_STATE);
+    expect(one?.label).toBe('Evolve into Pyrelynx');
+  });
+
+  it('teases both forms instead of one ability', () => {
+    const text = creatureAbilityText(branching, (id) => abilityDef(id));
+    expect(text?.teaser).toBe('Evolves into: Thornbuck or Sunfawn');
+    const old = creatureAbilityText(single, (id) => abilityDef(id));
+    expect(old?.teaser).toBe('Evolves into: Pyrelynx (Inferno Strike)');
+  });
+});

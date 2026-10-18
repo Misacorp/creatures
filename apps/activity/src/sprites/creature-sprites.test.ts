@@ -172,7 +172,9 @@ describe('every content sprite', () => {
   it('keeps a stage 2 form at least as big as its stage 1 form (by bounding box)', () => {
     for (const c of content.creatures) {
       if (c.stage !== 2) continue;
-      const from = content.creatures.find((s) => s.evolvesTo?.species === c.id);
+      const from = content.creatures.find(
+        (s) => s.evolvesTo?.species === c.id || s.altEvolvesTo?.species === c.id,
+      );
       const a = from === undefined ? undefined : creatureSprite(from.id);
       const b = creatureSprite(c.id);
       if (from === undefined || a === undefined || b === undefined) continue;

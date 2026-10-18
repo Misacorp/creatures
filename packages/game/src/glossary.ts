@@ -123,6 +123,7 @@ export const FIXED_GLOSSARY_IDS = [
   'golden-talent',
   'talent-book',
   'duplicate-choice',
+  'evolution',
   'rarity',
   'shiny',
   'away',

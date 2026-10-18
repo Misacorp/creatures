@@ -7,6 +7,7 @@ import {
   loadContent,
   upgradeProblem,
   dungeonContent,
+  expeditionContent,
   PATTERN_OPS,
   bossAtRank,
   type ContentPack,
@@ -52,7 +53,7 @@ function creature(pack: ContentPack, id: string) {
 describe('shipped content', () => {
   it('loads', () => {
     expect(() => loadContent(clone())).not.toThrow();
-    expect(content.creatures).toHaveLength(22);
+    expect(content.creatures).toHaveLength(24);
   });
 
   it('has 12 catchable species and 3 common starters of different elements', () => {
@@ -226,8 +227,17 @@ describe('loadContent rejects invalid content', () => {
   });
 
   it('stage-2 species that nothing evolves into', () => {
+    expect(() =>
+      loadContent(
+        mutate((p) => {
+          delete creature(p, 'zipmouse').evolvesTo;
+          delete creature(p, 'zipmouse').altEvolvesTo;
+        }),
+      ),
+    ).toThrow(/exactly one/);
+    // A second branch needs a first.
     expect(() => loadContent(mutate((p) => delete creature(p, 'zipmouse').evolvesTo))).toThrow(
-      /exactly one/,
+      /second branch but no first/,
     );
   });
 
@@ -512,16 +522,16 @@ describe('creature abilities', () => {
     return a;
   };
 
-  it('gives all 22 species an ability: 8 lines with two strengths and 6 single species', () => {
+  it('gives all 24 species an ability: 8 lines with two strengths, 2 branch forms and 6 single species', () => {
     for (const c of content.creatures) {
       expect(c.ability, c.id).toBeDefined();
       expect(ability(c.ability?.id ?? '').kind).toBe('creature');
     }
-    expect(content.finaleAbilities.filter((a) => a.kind === 'creature')).toHaveLength(22);
+    expect(content.finaleAbilities.filter((a) => a.kind === 'creature')).toHaveLength(24);
     expect(content.finaleAbilities.filter((a) => a.kind === 'basic')).toHaveLength(4);
     // Every ability belongs to exactly one species.
     const ids = content.creatures.map((c) => c.ability?.id);
-    expect(new Set(ids).size).toBe(22);
+    expect(new Set(ids).size).toBe(24);
   });
 
   it('has a stage-2 ability that is stronger than stage 1 in every line', () => {
@@ -532,6 +542,38 @@ describe('creature abilities', () => {
       expect(upgradeProblem(a1, a2), `${c.id} -> ${target.id}`).toBeNull();
       expect(upgradeProblem(a2, a1), `${target.id} -> ${c.id}`).not.toBeNull();
     }
+  });
+
+  it('never lets a branch form be found: not catchable, no starter, in no place or deep list', () => {
+    for (const id of ['sunfawn', 'ohmouse']) {
+      expect(creature(content, id)).toMatchObject({ stage: 2, catchable: false, starter: false });
+      for (const place of expeditionContent.destinations) {
+        expect(place.species, `${place.id} lists ${id}`).not.toContain(id);
+        expect(place.deep.species, `${place.id} deep lists ${id}`).not.toContain(id);
+      }
+    }
+  });
+
+  it('gives the branch forms the abilities of the design (Sunny Patch, Static Wall)', () => {
+    expect(ability('sunny-patch').effects).toEqual([
+      { op: 'rally', damageBp: 600, rounds: 2 },
+      { op: 'shield_wall', zone: 'own', reduceBp: 3_000, rounds: 1 },
+    ]);
+    expect(ability('static-wall').effects).toEqual([
+      { op: 'shield_wall', zone: 'own', reduceBp: 6_000, rounds: 2 },
+      { op: 're_mark', element: 'own' },
+    ]);
+    // Both are a different role from the first form: a Support (healer) and a Guard.
+    expect(creature(content, 'sunfawn')).toMatchObject({
+      role: 'support',
+      element: 'grove',
+      ability: { id: 'sunny-patch' },
+    });
+    expect(creature(content, 'ohmouse')).toMatchObject({
+      role: 'guard',
+      element: 'spark',
+      ability: { id: 'static-wall' },
+    });
   });
 
   it('keeps the basic abilities weak (docs/design/creature-abilities.md)', () => {

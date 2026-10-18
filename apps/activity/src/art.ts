@@ -61,8 +61,28 @@ const SHINY_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>>
   },
   sproutle: { b: '#b0a34a', h: '#e2a26a', s: '#5b6b2f', p: '#f4cfd4' },
   thornbuck: { b: '#b0a34a', h: '#e2a26a', s: '#5b6b2f', p: '#f4cfd4', t: '#6b2e4a' },
+  // Sunfawn: the Sproutle shiny's golden-olive coat, with sky-blue blossoms.
+  sunfawn: {
+    b: '#b0a34a',
+    h: '#e2a26a',
+    s: '#5b6b2f',
+    p: '#f4cfd4',
+    f: '#8fd8f2',
+    m: '#4a9bc4',
+    y: '#fff3a0',
+  },
   zipmouse: { b: '#f22bc0', h: '#ffa0e3', s: '#c214a1', p: '#ffcff4', v: '#5bd694', t: '#f22bc0' },
   voltaro: {
+    b: '#f22bc0',
+    h: '#ffa0e3',
+    s: '#c214a1',
+    p: '#ffcff4',
+    v: '#5bd694',
+    t: '#f22bc0',
+    a: '#ffa0e3',
+  },
+  // Ohmouse: the Zipmouse shiny's magenta, with a green glint in the ears.
+  ohmouse: {
     b: '#f22bc0',
     h: '#ffa0e3',
     s: '#c214a1',

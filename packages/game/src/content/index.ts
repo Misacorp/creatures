@@ -24,7 +24,7 @@ import {
   type SupplyDef,
 } from './expedition-schema';
 import { gearContent } from './gear';
-import type { CreatureSpecies } from './schema';
+import type { CreatureSpecies, Evolution } from './schema';
 import { loadLore, pickQuirkFrom } from './lore';
 import { loadContent } from './load';
 import { loadTalents, type TalentDef, type TalentPack } from './talent-schema';
@@ -166,4 +166,15 @@ export function lineBranches(
   return [first.evolvesTo?.species, first.altEvolvesTo?.species].filter(
     (id): id is string => id !== undefined,
   );
+}
+
+/**
+ * The evolutions a species offers, the first branch first: none for a final form, one for a line that
+ * evolves one way, two for a branching line. The choice between two is permanent (docs/design/
+ * gear-and-creatures-v2.md section 8.4); both cost the same (`checkCreatures` enforces it).
+ */
+export function evolutionsOf(
+  species: Pick<CreatureSpecies, 'evolvesTo' | 'altEvolvesTo'>,
+): Evolution[] {
+  return [species.evolvesTo, species.altEvolvesTo].filter((e): e is Evolution => e !== undefined);
 }

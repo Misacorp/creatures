@@ -64,7 +64,7 @@
           "level": 4,
           "role": null
         },
-        "equippedOn": "d11e533d-b101-46b6-aab2-c4f8f2c2a4e9",
+        "equippedOn": "16fcc0b1-6695-443d-9086-4d62f8ee729c",
         "dismantle": {
           "scrap": {
             "min": 2,
@@ -152,7 +152,7 @@
           "level": 7,
           "role": null
         },
-        "equippedOn": "abaaa122-7d8c-489f-9c72-ea601c2cb57b",
+        "equippedOn": "ca3dddad-d17f-4bca-ab91-b6cbecd85746",
         "dismantle": {
           "scrap": {
             "min": 2,
@@ -278,19 +278,19 @@
     },
     "skills": [
       {
-        "creatureId": "d11e533d-b101-46b6-aab2-c4f8f2c2a4e9",
+        "creatureId": "16fcc0b1-6695-443d-9086-4d62f8ee729c",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "abaaa122-7d8c-489f-9c72-ea601c2cb57b",
+        "creatureId": "ca3dddad-d17f-4bca-ab91-b6cbecd85746",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "39d87dd2-c64a-4442-8bfc-579e1034c375",
+        "creatureId": "ad774dda-7eec-47f3-b34a-fde4ef8c111f",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
@@ -319,7 +319,7 @@
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "d11e533d-b101-46b6-aab2-c4f8f2c2a4e9",
+        "id": "16fcc0b1-6695-443d-9086-4d62f8ee729c",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -400,7 +400,7 @@
         }
       },
       {
-        "id": "abaaa122-7d8c-489f-9c72-ea601c2cb57b",
+        "id": "ca3dddad-d17f-4bca-ab91-b6cbecd85746",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -477,11 +477,14 @@
           "toSpecies": "thornbuck",
           "level": 15,
           "essence": 20,
-          "available": false
+          "available": false,
+          "alt": {
+            "toSpecies": "sunfawn"
+          }
         }
       },
       {
-        "id": "39d87dd2-c64a-4442-8bfc-579e1034c375",
+        "id": "ad774dda-7eec-47f3-b34a-fde4ef8c111f",
         "species": "zipmouse",
         "line": "zipmouse",
         "level": 8,
@@ -550,7 +553,10 @@
           "toSpecies": "voltaro",
           "level": 15,
           "essence": 20,
-          "available": false
+          "available": false,
+          "alt": {
+            "toSpecies": "ohmouse"
+          }
         }
       }
     ],
@@ -571,7 +577,7 @@
     },
     "supplies": {},
     "serverFirsts": [],
-    "loungerId": "39d87dd2-c64a-4442-8bfc-579e1034c375",
+    "loungerId": "16fcc0b1-6695-443d-9086-4d62f8ee729c",
     "loungeSpot": null
   }
 }

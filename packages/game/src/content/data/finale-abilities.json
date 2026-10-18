@@ -160,6 +160,26 @@
     "defaultAtZoneHit": true
   },
   {
+    "id": "sunny-patch",
+    "name": "Sunny Patch",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "rally",
+        "damageBp": 600,
+        "rounds": 2
+      },
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 3000,
+        "rounds": 1
+      }
+    ],
+    "defaultRound": 5,
+    "description": "All creatures hit 6% harder for 2 rounds; its zone takes 30% less damage this round."
+  },
+  {
     "id": "static-zap",
     "name": "Static Zap",
     "kind": "creature",
@@ -192,6 +212,26 @@
     ],
     "defaultRound": 4,
     "description": "Hits the boss at once for 190% of its Attack; leaves the boss Charged."
+  },
+  {
+    "id": "static-wall",
+    "name": "Static Wall",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 6000,
+        "rounds": 2
+      },
+      {
+        "op": "re_mark",
+        "element": "own"
+      }
+    ],
+    "defaultRound": 3,
+    "defaultAtZoneHit": true,
+    "description": "Its zone takes 60% less damage for 2 rounds; leaves the boss Charged."
   },
   {
     "id": "fog-veil",

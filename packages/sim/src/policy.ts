@@ -1,5 +1,5 @@
-import { RULES } from '@creatures/game';
-import { CATCHABLE, speciesOf, type OwnedCreature } from './data';
+import { RULES, evolutionsOf, type Evolution } from '@creatures/game';
+import { CATCHABLE, pickTeam, speciesOf, type OwnedCreature } from './data';
 
 /*
  * The spending policy of a simulated player. Today's archetypes all follow it as it is written here
@@ -10,7 +10,8 @@ import { CATCHABLE, speciesOf, type OwnedCreature } from './data';
  * At each check-in, in this order:
  * 1. Claim finished expeditions and take an end-of-trip goal that costs no waiting (see `trips.ts`).
  * 2. Claim finished Workshop jobs (see `gear.ts`).
- * 3. Evolve every creature that is at its evolution level when the player has the Essence.
+ * 3. Evolve every creature that is at its evolution level when the player has the Essence. A line that
+ *    grows two ways takes the form whose role the rest of the team lacks, else the original (`pickBranch`).
  * 4. Buy the ribbon of every creature that waits at level 10 or 20 when the materials are in the purse.
  * 5. Put talents from the Talent Book into open slots (Bait), manage the gear, and send trips into the
  *    free expedition slots (`trips.ts`). Levels come from what creatures do: the trip, the dungeon, the
@@ -32,4 +33,26 @@ export function collectionComplete(creatures: readonly OwnedCreature[]): boolean
 export function isPreEvolution(c: OwnedCreature): boolean {
   const evo = speciesOf(c.speciesId).evolvesTo;
   return evo !== undefined && c.level < evo.level;
+}
+
+/**
+ * The form a creature grows into. A line with one form has only that one. A line that grows two ways
+ * (Sproutle: Thornbuck, a Guard, or Sunfawn, a Support; Zipmouse: Voltaro, a Setter, or Ohmouse, a Guard)
+ * takes the form whose role the rest of the team does not have yet, else the first form (the original
+ * evolution). The rest of the team is the three strongest creatures without this one. It is deliberately
+ * the simple choice an engaged player makes without a spreadsheet: "my team has no healer, so the healer".
+ * Keep is not simulated (one creature per line), so every player grows each line one way.
+ */
+export function pickBranch(
+  creatures: readonly OwnedCreature[],
+  creature: OwnedCreature,
+): Evolution | undefined {
+  const branches = evolutionsOf(speciesOf(creature.speciesId));
+  if (branches.length < 2) return branches[0];
+  const roles = new Set(
+    pickTeam(creatures)
+      .filter((c) => c.id !== creature.id)
+      .map((c) => speciesOf(c.speciesId).role),
+  );
+  return branches.find((b) => !roles.has(speciesOf(b.species).role)) ?? branches[0];
 }
