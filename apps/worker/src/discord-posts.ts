@@ -11,10 +11,10 @@ import * as v from 'valibot';
 import type { Analytics, AnalyticsEvent } from './analytics';
 import { SNOWFLAKE_RE } from './schemas';
 
-const API_BASE = 'https://discord.com/api/v10';
-const TIMEOUT_MS = 5000;
+export const API_BASE = 'https://discord.com/api/v10';
+export const TIMEOUT_MS = 5000;
 /** SUPPRESS_EMBEDS: link previews are never wanted in these messages. */
-const FLAG_SUPPRESS_EMBEDS = 4;
+export const FLAG_SUPPRESS_EMBEDS = 4;
 /** Attempts before a post is given up on (the first try counts). */
 export const MAX_POST_ATTEMPTS = 5;
 /** Wait after the 1st, 2nd, 3rd and 4th failed attempt: 1 min, 5 min, 30 min, 2 h. */
@@ -55,7 +55,7 @@ function retryAfterMs(seconds: number | null): number | null {
   return Math.min(Math.max(Math.ceil(seconds * 1000), MIN_RETRY_AFTER_MS), MAX_RETRY_AFTER_MS);
 }
 
-async function readRetryAfter(res: Response): Promise<number | null> {
+export async function readRetryAfter(res: Response): Promise<number | null> {
   try {
     const body = v.safeParse(RateLimitBodySchema, await res.json());
     if (body.success) return retryAfterMs(body.output.retry_after);
@@ -66,7 +66,7 @@ async function readRetryAfter(res: Response): Promise<number | null> {
   return header !== null && /^\d{1,6}(\.\d+)?$/.test(header) ? retryAfterMs(Number(header)) : null;
 }
 
-async function discard(res: Response): Promise<void> {
+export async function discard(res: Response): Promise<void> {
   try {
     await res.body?.cancel();
   } catch {

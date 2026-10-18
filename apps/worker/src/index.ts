@@ -94,11 +94,12 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
         handleAuthSession(request, {
           discord: deps.createDiscord(env),
           limiter: authLimiter,
-          createSession: (guildId, user, channelId) =>
+          createSession: (guildId, user, channelId, instanceId) =>
             env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(guildId)).createSession(
               guildId,
               user,
               channelId,
+              instanceId,
             ),
           formatToken: async (guildId, secret) =>
             formatSessionToken(await getSessionKey(env.DISCORD_CLIENT_SECRET), guildId, secret),

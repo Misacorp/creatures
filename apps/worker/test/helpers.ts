@@ -244,10 +244,18 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 32;
+export const LATEST_SCHEMA_VERSION = 33;
+
+/** Puts a database back to before migration 33 (the lounge message). */
+export function undoLoungeMessageMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS lounge_instances');
+  sql.exec('DROP TABLE IF EXISTS lounge_message');
+  sql.exec('DELETE FROM schema_version WHERE version = 33');
+}
 
 /** Puts a database back to before migration 32 (who placed each raid creature). */
 export function undoPlacedByMigration(sql: SqlStorage): void {
+  undoLoungeMessageMigration(sql);
   const present = sql
     .exec("SELECT 1 FROM pragma_table_info('raid_placements') WHERE name = 'placed_by'")
     .toArray();

@@ -1,6 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { createGuildApi } from './discord';
 import { createPostSender } from './discord-posts';
+import { createLoungeClient } from './lounge-discord';
 import type { DailyRow } from './analytics-rollup';
 import { GuildCore, type SessionUser } from './guild-core';
 import { DIRECTORY_NAME } from './guild-directory';
@@ -31,6 +32,12 @@ export class GuildWorld extends DurableObject<Env> {
         botToken: env.DISCORD_BOT_TOKEN,
         fetch: (input, init) => fetch(input, init),
       }),
+      lounge: createLoungeClient({
+        botToken: env.DISCORD_BOT_TOKEN,
+        clientId: env.DISCORD_CLIENT_ID,
+        clientSecret: env.DISCORD_CLIENT_SECRET,
+        fetch: (input, init) => fetch(input, init),
+      }),
       createLeetSource: (knownPlayers) =>
         createLeetSourceFromEnv(env, {
           now: Date.now,
@@ -49,8 +56,9 @@ export class GuildWorld extends DurableObject<Env> {
     guildId: string,
     user: SessionUser,
     channelId: string | null,
+    instanceId: string | null = null,
   ): Promise<string> {
-    const secret = await this.core.createSession(guildId, user, channelId);
+    const secret = await this.core.createSession(guildId, user, channelId, instanceId);
     this.noteInDirectory(guildId);
     return secret;
   }
