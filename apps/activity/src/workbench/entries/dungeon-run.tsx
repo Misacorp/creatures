@@ -20,6 +20,7 @@ import {
   sampleStateCamp,
   sampleSummary,
   sampleToday,
+  omitKey,
 } from '../../dungeon-path-samples';
 import type { DungeonRunState, DungeonRunSummary } from '../../dungeon-types';
 import { bool, num, str } from '../props';
@@ -216,14 +217,22 @@ function ResultsDemo({ p }: { p: Props }) {
     outcome === 'an older run (no outcome)'
       ? (() => {
           const old: Record<string, unknown> = { ...base };
-          for (const key of ['outcome', 'path', 'pack', 'keepsakes']) delete old[key];
+          for (const key of ['outcome', 'path', 'pack', 'keepsakes', 'route']) delete old[key];
           return old as unknown as typeof base;
         })()
       : base;
+  const shown =
+    bool(p, 'route') || run.route === undefined
+      ? run
+      : (() => {
+          return omitKey(run, 'route');
+        })();
+  const view = str(p, 'view');
   return (
     <DungeonResults
-      run={run}
-      today={sampleToday({ canRun: false, last: run })}
+      run={shown}
+      initialView={view === 'map' ? 'map' : 'fights'}
+      today={sampleToday({ canRun: false, last: shown })}
       offset={0}
       canRetry={bool(p, 'canRetry')}
       busy={false}
@@ -239,13 +248,15 @@ const dungeonResults: Entry = {
   file: 'apps/activity/src/DungeonResults.tsx',
   group: 'Loot & reveals',
   description:
-    'The end of a dungeon run. A path run says how it ended in its headline (cleared with the new depth, home safe with the whole pack, or defeated with half of it), shows the pack it found and kept, the keepsakes it held, the fights it played and the team; an older three-room run keeps its old headline. Rewards, experience, the streak and "Watch again" are the same for both.',
+    'The end of a dungeon run. A path run says how it ended in its headline (cleared with the new depth, home safe with the whole pack, or defeated with half of it), the pack on one line (what was lost after a defeat is struck through), the keepsakes it held as chips, the route as the fights it played or as the map (a Fights / Map switch; a tap on a room tells what happened there) and the team; an older three-room run keeps its old headline. Rewards, experience, the streak and "Watch again" are the same for both.',
   controls: {
     outcome: { kind: 'select', options: OUTCOMES },
     canRetry: { kind: 'toggle' },
     capture: { kind: 'toggle' },
+    route: { kind: 'toggle' },
+    view: { kind: 'select', options: ['fights', 'map'] },
   },
-  defaults: { outcome: 'cleared', canRetry: false, capture: false },
+  defaults: { outcome: 'cleared', canRetry: false, capture: false, route: true, view: 'fights' },
   presets: [
     { name: 'Cleared', props: {} },
     { name: 'Home safe', props: { outcome: 'home' } },
@@ -256,9 +267,17 @@ const dungeonResults: Entry = {
       name: 'Defeated, as the server sent it',
       props: { outcome: 'defeat', capture: true, canRetry: true },
     },
+    { name: 'Cleared, the route as a map', props: { view: 'map' } },
+    { name: 'Defeated, the route as a map', props: { outcome: 'defeat', view: 'map' } },
+    { name: 'A run with no route (no Fights / Map switch)', props: { route: false } },
     { name: 'An older three-room run', props: { outcome: 'an older run (no outcome)' } },
   ],
-  render: (p) => <ResultsDemo key={`${str(p, 'outcome')}-${String(bool(p, 'capture'))}`} p={p} />,
+  render: (p) => (
+    <ResultsDemo
+      key={`${str(p, 'outcome')}-${String(bool(p, 'capture'))}-${String(bool(p, 'route'))}-${str(p, 'view')}`}
+      p={p}
+    />
+  ),
 };
 
 const SCENES = {

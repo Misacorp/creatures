@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sampleRoster } from './creature-card-sample';
 import type { Creature } from './api';
 import { Dungeon } from './Dungeon';
+import { DungeonResults } from './DungeonResults';
 import actCampPending from './fixtures/dungeon-act-camp-pending.json';
 import actCamp from './fixtures/dungeon-act-camp.json';
 import actCleared from './fixtures/dungeon-act-cleared.json';
@@ -464,7 +465,10 @@ describe('the end of a run, with the real answers', () => {
     expect(text).toContain(
       `Cleared! Depth ${String(summary?.depth)} to ${String(summary?.newDepth)}`,
     );
-    expect(text).toContain('Kept: 4 Bait · 1 Essence · 2 Scrap');
+    expect(text).toMatch(/Pack\s*:\s*all kept/);
+    expect(byName(root, 'span', 'Bait: 4')).toHaveLength(1);
+    expect(byName(root, 'span', 'Essence: 1')).toHaveLength(1);
+    expect(byName(root, 'span', 'Scrap: 2')).toHaveLength(1);
     expect(byClass(root, 'path')).toHaveLength(1);
     expect(finished).toHaveBeenCalledTimes(1);
   });
@@ -488,7 +492,9 @@ describe('the end of a run, with the real answers', () => {
     expect(byClass(root, 'dungeon-playback')).toHaveLength(0);
     const text = visibleText(root);
     expect(text).toContain('Home safe with your whole pack');
-    expect(text).toContain('Found: 2 Bait · 1 Scrap · Kept: 2 Bait · 1 Scrap');
+    expect(text).toMatch(/Pack\s*:\s*all kept/);
+    expect(byName(root, 'span', 'Bait: 2')).toHaveLength(1);
+    expect(byName(root, 'span', 'Scrap: 1')).toHaveLength(1);
     expect(text).toContain('Still at depth');
     expect(finished).toHaveBeenCalledTimes(1);
   });
@@ -554,5 +560,109 @@ describe('watching a path run again, with the real replay', () => {
     expect(seen.start).toBe(true);
     expect(seen.swapped).toBe(true);
     expect(seen.both).toBe(false);
+  });
+});
+
+describe('the route and what happened in each room, with the real answers', () => {
+  const dialogOf = (root: FakeElement): FakeElement => byRole(root, 'dialog')[0] as FakeElement;
+
+  it('results: a Fights and Map switch, the walked rooms visited, and each room tells its story', () => {
+    const summary = parseDungeonAct(actCleared).summary;
+    if (summary?.route === undefined) throw new Error('the capture has a route');
+    const { route } = summary;
+    page = createPage();
+    page.draw(
+      <DungeonResults
+        run={summary}
+        today={parseDungeonAct(actCleared).today ?? parseDungeonToday(todayMap)}
+        offset={0}
+        canRetry={false}
+        busy={false}
+        error={null}
+        onWatch={noop}
+        onRetry={noop}
+      />,
+    );
+    const { root } = page;
+    expect(byClass(root, 'room-strip')).toHaveLength(1);
+    page.click(button(root, 'Map'));
+    const visited = byClass(root, 'dmap-node').filter((n) =>
+      (n.getAttribute('class') ?? '').includes('s-visited'),
+    );
+    expect(visited).toHaveLength(route.path.length);
+    expect(byName(root, 'button', /^Go/)).toHaveLength(0);
+
+    // A fight: the foe's HP at the end, Cleared, the loot it put in the pack and the supply.
+    const fight = route.history[0];
+    const fightNode = route.map.nodes.find((n) => n.id === fight?.node);
+    if (fight?.result !== 'fight' || fightNode === undefined) throw new Error('a fight first');
+    page.click(button(root, new RegExp(`^${escapeRe(nodeLabel(fightNode))}\\.`)));
+    let text = visibleText(dialogOf(root));
+    expect(text).toContain(`HP 0 / ${String(fight.foeHpMax)}`);
+    expect(text).toContain('Cleared');
+    expect(text).toContain(`Won in ${String(fight.rounds)} round`);
+    expect(text).toContain("Earned the run's supply.");
+    page.click(button(root, 'Close'));
+
+    // The camp: the server's own line of what was done.
+    const camp = route.history.find((e) => e.result === 'camp');
+    page.click(button(root, /^Camp\./));
+    text = visibleText(dialogOf(root));
+    expect(text).toContain(camp?.result === 'camp' ? camp.detail : 'no camp in the capture');
+    page.click(button(root, 'Close'));
+
+    // A mystery room: the option picked and what came of it.
+    const event = route.history.find((e) => e.result === 'event');
+    page.click(button(root, /^Mystery room\. Visited/));
+    text = visibleText(dialogOf(root));
+    expect(text).toContain(event?.result === 'event' ? event.outcome : 'no event in the capture');
+    expect(text).toContain(`You picked: ${event?.result === 'event' ? event.option : ''}`);
+  });
+
+  it('results: a lost fight says Defeat and the HP the foe had left', () => {
+    const summary = parseDungeonAct(actDefeat).summary;
+    const lost = summary?.route?.history[0];
+    if (summary?.route === undefined || lost?.result !== 'fight') throw new Error('a lost fight');
+    page = createPage();
+    page.draw(
+      <DungeonResults
+        run={summary}
+        today={parseDungeonToday(todayMap)}
+        offset={0}
+        canRetry={false}
+        busy={false}
+        error={null}
+        onWatch={noop}
+        onRetry={noop}
+      />,
+    );
+    page.click(button(page.root, 'Map'));
+    page.click(button(page.root, /^Fight: /));
+    const text = visibleText(dialogOf(page.root));
+    expect(text).toContain('Defeat');
+    expect(text).toContain(`HP ${String(lost.foeHpEnd)} / ${String(lost.foeHpMax)}`);
+    expect(text).toContain(`Your team fell after ${String(lost.rounds)} round`);
+  });
+
+  it('the run map: a visited fight shows its outcome, and a room off the path is out of reach', async () => {
+    const answer = parseDungeonAct(actFight);
+    api.fetchDungeonToday.mockResolvedValue({
+      ...parseDungeonToday(todayActive),
+      active: answer.state,
+    });
+    const { root } = drawTab();
+    await settle();
+    const first = answer.state.history?.[0];
+    if (first?.result !== 'fight') throw new Error('a fight first');
+    page?.click(room(answer.state, first.node, root));
+    const text = visibleText(dialogOf(root));
+    expect(text).toContain(`HP 0 / ${String(first.foeHpMax)}`);
+    expect(text).toContain('Cleared');
+    page?.click(button(root, 'Close'));
+    const stranded = answer.state.map.nodes.find((n) => n.floor === 0 && n.id !== first.node);
+    if (stranded === undefined) throw new Error('another entrance room');
+    expect(room(answer.state, stranded.id, root).getAttribute('class')).toContain('s-unreachable');
+    page?.click(room(answer.state, stranded.id, root));
+    expect(visibleText(dialogOf(root))).toContain("You can't reach this room any more.");
   });
 });

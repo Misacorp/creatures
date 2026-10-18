@@ -6,10 +6,12 @@ import { Dungeon } from './Dungeon';
 import { DungeonCamp } from './DungeonCamp';
 import { DungeonEvent } from './DungeonEvent';
 import { DungeonPlayback } from './DungeonPlayback';
-import { roomInput } from './dungeon-playback';
+import { ROOM_CARD_MS, arenaOutOfView, fightScroll, roomInput } from './dungeon-playback';
 import { DungeonResults } from './DungeonResults';
 import { DungeonRun } from './DungeonRun';
-import { DungeonRunStrip } from './DungeonRunStrip';
+import { DungeonRunStrip, KEEPSAKE_ONLY_LINE } from './DungeonRunStrip';
+import { PopoverHost } from './PopoverHost';
+import { glossaryEntry } from '@creatures/game';
 import {
   SAMPLE_EVENT,
   SAMPLE_KEEPSAKES,
@@ -21,6 +23,7 @@ import {
   sampleStateMid,
   sampleSummary,
   sampleToday,
+  omitKey,
 } from './dungeon-path-samples';
 import type { DungeonAct, DungeonRunState } from './dungeon-types';
 import { byClass, byName, createPage, FakeElement, find, visibleText, type Page } from './test-dom';
@@ -135,12 +138,26 @@ describe('the strip of an open run', () => {
     expect(find(root, (e) => e.localName === 'img')).toHaveLength(0);
   });
 
-  it('opens a keepsake sheet with its text when its chip is tapped', () => {
+  it('opens a keepsake sheet with its text when its chip is tapped, and says it lasts only this run', () => {
     const { root, document } = draw(<DungeonRunStrip state={sampleStateMid()} />);
     page?.click(button(root, /Lantern Moth/));
     const sheet = find(document.body, (e) => e.getAttribute('role') === 'dialog')[0];
     expect(sheet).toBeDefined();
     expect(visibleText(sheet as FakeElement)).toContain('Your creatures crit 5 points more often.');
+    expect(visibleText(sheet as FakeElement)).toContain(KEEPSAKE_ONLY_LINE);
+  });
+
+  it('labels the keepsakes with a "?" that explains they last only for the run', () => {
+    const { root } = draw(
+      <PopoverHost onOpenHowTo={noop}>
+        <DungeonRunStrip state={sampleStateMid()} />
+      </PopoverHost>,
+    );
+    const row = byClass(root, 'run-keepsakes-row')[0] as FakeElement;
+    expect(visibleText(row)).toContain('Keepsakes');
+    expect(byName(row, 'button', 'What is Keepsake?')).toHaveLength(1);
+    expect(glossaryEntry('keepsake')?.lines.join(' ')).toMatch(/When the run ends it is gone/);
+    expect(glossaryEntry('keepsake')?.lines.join(' ')).toMatch(/do not keep it/);
   });
 });
 
@@ -388,32 +405,121 @@ describe('the results of a path run', () => {
     return page.root;
   }
 
-  it('says how a cleared run ended, the pack found and kept, and the keepsakes held', () => {
+  it('says how a cleared run ended: the pack on one line (all kept) and the keepsakes as chips', () => {
     const root = results(sampleSummary('cleared'));
     const text = visibleText(root);
     expect(text).toContain('Cleared! Depth 3 to 4');
-    expect(text).toContain(
-      'Found: 3 Bait · 1 Essence · 2 Scrap · Kept: 3 Bait · 1 Essence · 2 Scrap',
-    );
-    expect(text).toContain('Lantern Moth: Your creatures crit 5 points more often.');
+    // One line, not Found and Kept, with the kinds as icons and numbers.
+    expect(text).toMatch(/Pack\s*:\s*all kept/);
+    expect(text).not.toContain('Found:');
+    expect(text).not.toContain('Kept:');
+    expect(byName(root, 'span', 'Bait: 3')).toHaveLength(1);
+    expect(byName(root, 'span', 'Essence: 1')).toHaveLength(1);
+    expect(byName(root, 'span', 'Scrap: 2')).toHaveLength(1);
+    expect(find(root, (e) => e.localName === 's')).toHaveLength(0);
+    // The keepsake is a chip, not a sentence: its text is in the tap.
+    expect(byName(root, 'button', /^Lantern Moth: Your creatures crit/)).toHaveLength(1);
+    expect(text).not.toContain('Your creatures crit 5 points more often.');
     expect(byClass(root, 'room-panel')).toHaveLength(3);
     expect(byClass(root, 'path')).toHaveLength(1);
   });
 
-  it('says home safe and defeated in their own words', () => {
-    expect(visibleText(results(sampleSummary('home')))).toContain('Home safe with your whole pack');
-    const defeated = visibleText(results(sampleSummary('defeat')));
+  it('does not repeat the headline in a badge, and has no pack line for an empty pack', () => {
+    const root = results(sampleSummary('cleared'));
+    expect(byClass(root, 'badge')).toHaveLength(0);
+    const empty = results(
+      sampleSummary('defeat', {
+        pack: {
+          found: { bait: 0, essence: 0, scrap: 0 },
+          kept: { bait: 0, essence: 0, scrap: 0 },
+        },
+      }),
+    );
+    expect(visibleText(empty)).not.toContain('Pack');
+  });
+
+  it('says home safe and defeated in their own words, striking through what was lost', () => {
+    const home = visibleText(results(sampleSummary('home')));
+    expect(home).toContain('Home safe with your whole pack');
+    expect(home).toMatch(/Pack\s*:\s*all kept/);
+    const root = results(sampleSummary('defeat'));
+    const defeated = visibleText(root);
     expect(defeated).toContain('Defeated: half your pack made it home');
-    expect(defeated).toContain('Found: 3 Bait · 3 Scrap · Kept: 2 Bait · 2 Scrap');
+    expect(defeated).toMatch(/Pack\s*:\s*half kept/);
     expect(defeated).toContain('Still at depth 3. Beat the room boss to go deeper.');
+    // What was found is struck and dim before what came home; spoken as found and kept.
+    expect(find(root, (e) => e.localName === 's').map((e) => visibleText(e))).toEqual(['3', '3']);
+    expect(byName(root, 'span', 'Bait: found 3, kept 2')).toHaveLength(1);
+    expect(byName(root, 'span', 'Scrap: found 3, kept 2')).toHaveLength(1);
+  });
+
+  it('has a Fights and Map switch for a run with a route, and shows the fights first', () => {
+    const root = results(sampleSummary('cleared'));
+    const fights = button(root, 'Fights');
+    const map = button(root, 'Map');
+    expect(fights.getAttribute('aria-pressed')).toBe('true');
+    expect(map.getAttribute('aria-pressed')).toBe('false');
+    expect(byClass(root, 'room-strip')).toHaveLength(1);
+    expect(byClass(root, 'dmap')).toHaveLength(0);
+  });
+
+  it('swaps to the map of the route: the walked rooms visited, no Go, and back to the fights', () => {
+    const run = sampleSummary('cleared');
+    const root = results(run);
+    page?.click(button(root, 'Map'));
+    expect(button(root, 'Map').getAttribute('aria-pressed')).toBe('true');
+    expect(byClass(root, 'room-strip')).toHaveLength(0);
+    const nodes = byClass(root, 'dmap-node');
+    expect(nodes).toHaveLength(run.route?.map.nodes.length ?? -1);
+    const visited = nodes.filter((n) => (n.getAttribute('class') ?? '').includes('s-visited'));
+    expect(visited).toHaveLength(run.route?.path.length ?? -1);
+    expect(nodes.some((n) => (n.getAttribute('class') ?? '').includes('s-unreachable'))).toBe(
+      false,
+    );
+    expect(nodes.some((n) => (n.getAttribute('class') ?? '').includes('s-reachable'))).toBe(false);
+    expect(byName(root, 'button', /^Go/)).toHaveLength(0);
+    page?.click(button(root, 'Fights'));
+    expect(byClass(root, 'room-strip')).toHaveLength(1);
+    expect(byClass(root, 'dmap')).toHaveLength(0);
+  });
+
+  it('opens what happened in a room when it is tapped on the results map', () => {
+    const root = results(sampleSummary('defeat'));
+    page?.click(button(root, 'Map'));
+    page?.click(button(root, /^Fierce Flicker Swarm/));
+    const dialog = find(root, (e) => e.getAttribute('role') === 'dialog')[0] as FakeElement;
+    const text = visibleText(dialog);
+    expect(text).toContain('Defeat');
+    expect(text).toContain('HP 128 / 428');
+    expect(text).toContain('Your team fell after 6 rounds.');
+    expect(byName(dialog, 'button', /^Go/)).toHaveLength(0);
+  });
+
+  it('says a room the run did not go to was not visited', () => {
+    const root = results(sampleSummary('home'));
+    page?.click(button(root, 'Map'));
+    page?.click(button(root, /^Fight: Puddle Imp/));
+    const dialog = find(root, (e) => e.getAttribute('role') === 'dialog')[0] as FakeElement;
+    expect(visibleText(dialog)).toContain('Your run did not go here.');
+  });
+
+  it('has no switch and no map for a run that came without a route', () => {
+    const bare = omitKey(sampleSummary('cleared'), 'route');
+    const root = results(bare);
+    expect(byName(root, 'button', 'Map')).toHaveLength(0);
+    expect(byClass(root, 'route-toggle')).toHaveLength(0);
+    expect(byClass(root, 'room-strip')).toHaveLength(1);
+    expect(visibleText(root)).toContain('Fights');
   });
 
   it('keeps the old headline and no pack lines for a run from before the map', () => {
     const old = { ...sampleSummary('cleared') } as Record<string, unknown>;
-    for (const key of ['outcome', 'path', 'pack', 'keepsakes']) delete old[key];
+    for (const key of ['outcome', 'path', 'pack', 'keepsakes', 'route']) delete old[key];
     const root = results(old as unknown as ReturnType<typeof sampleSummary>);
     expect(visibleText(root)).toContain('Dungeon cleared!');
-    expect(visibleText(root)).not.toContain('Found:');
+    expect(visibleText(root)).not.toContain('Pack');
+    expect(byName(root, 'button', 'Map')).toHaveLength(0);
+    expect(byClass(root, 'badge')).toHaveLength(1);
     expect(byClass(root, 'path')).toHaveLength(0);
   });
 });
@@ -773,5 +879,72 @@ describe('the banner of an elite fight', () => {
     expect(text).not.toContain('Elite');
     expect(text).not.toContain('Fierce');
     expect(text).toContain('Bramble Hound');
+  });
+});
+
+describe('the arena comes into view when a fight starts', () => {
+  const input = (): ReturnType<typeof roomInput> =>
+    roomInput(sampleState().team, sampleRoom(), false, 7);
+
+  async function advance(ms: number): Promise<void> {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ms);
+    });
+  }
+
+  it('scrolls to the arena (not the page top) once the new screen has laid out', async () => {
+    vi.useFakeTimers();
+    const { root } = draw(<DungeonPlayback input={input()} onDone={noop} />);
+    const arena = byClass(root, 'dungeon-arena')[0] as FakeElement;
+    expect(byClass(arena, 'room-banner')).toHaveLength(1);
+    expect(arena.scrolled).toBe(0);
+    await advance(20);
+    expect(arena.scrolled).toBe(1);
+    expect(byClass(root, 'dungeon-playback')[0]?.scrolled).toBe(0);
+  });
+
+  it('does not scroll again when the banner ends and the arena is still in view', async () => {
+    vi.useFakeTimers();
+    Reflect.set(FakeElement.prototype, 'getBoundingClientRect', () => ({ top: 10, bottom: 420 }));
+    const { root } = draw(<DungeonPlayback input={input()} onDone={noop} />);
+    const arena = byClass(root, 'dungeon-arena')[0] as FakeElement;
+    await advance(ROOM_CARD_MS + 100);
+    expect(byClass(arena, 'room-banner')).toHaveLength(0);
+    expect(arena.scrolled).toBe(1);
+  });
+
+  it('brings the arena back when the fight begins and the page has moved away from it', async () => {
+    vi.useFakeTimers();
+    Reflect.set(FakeElement.prototype, 'getBoundingClientRect', () => ({ top: -120, bottom: 290 }));
+    const { root } = draw(<DungeonPlayback input={input()} onDone={noop} />);
+    const arena = byClass(root, 'dungeon-arena')[0] as FakeElement;
+    await advance(ROOM_CARD_MS + 100);
+    expect(arena.scrolled).toBe(2);
+  });
+
+  it('scrolls to the arena in a replay of several rooms (Watch again) too', async () => {
+    vi.useFakeTimers();
+    const rooms = [sampleRoom(), sampleRoom({ index: 1, node: 'f1l2' })];
+    const { root } = draw(
+      <DungeonPlayback
+        input={{ ...roomInput(sampleState().team, rooms[0] as never, false, 7), rooms }}
+        onDone={noop}
+      />,
+    );
+    await advance(20);
+    expect((byClass(root, 'dungeon-arena')[0] as FakeElement).scrolled).toBe(1);
+  });
+});
+
+describe('the arena scroll helper', () => {
+  it('is out of view when the arena is cut off at the top or the bottom', () => {
+    expect(arenaOutOfView({ top: 8, bottom: 420 }, 700)).toBe(false);
+    expect(arenaOutOfView({ top: -1, bottom: 420 }, 700)).toBe(true);
+    expect(arenaOutOfView({ top: 300, bottom: 710 }, 700)).toBe(true);
+  });
+
+  it('glides to the arena, or jumps for a player who asks for less motion', () => {
+    expect(fightScroll(false)).toEqual({ behavior: 'smooth', block: 'start' });
+    expect(fightScroll(true)).toEqual({ behavior: 'auto', block: 'start' });
   });
 });

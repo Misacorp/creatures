@@ -46,7 +46,21 @@
   color: var(--haze);
 }
 
-/* Keepsakes: chips you can tap. */
+/* Keepsakes: a label with its "?", then chips you can tap. */
+.run-keepsakes-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
+.run-keepsakes-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--haze);
+}
+
 .run-keepsakes {
   display: flex;
   flex-wrap: wrap;
@@ -188,14 +202,6 @@ button.camp-home-button {
 }
 
 /* The end report of a path run. */
-.dungeon-pack-line {
-  margin: 0.25rem 0 0.5rem;
-}
-
-.dungeon-keepsake-list {
-  text-align: left;
-}
-
 /* Up to six rooms: the strip wraps, and the step arrows are left off the end of a line. */
 .room-strip.path .room-panel:nth-child(3n)::after {
   display: none;
@@ -212,8 +218,4 @@ button.camp-home-button {
   background: var(--bad);
   color: var(--ink);
   font-size: 0.875rem;
-}
-
-.pack-line-part {
-  display: block;
 }

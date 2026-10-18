@@ -7,8 +7,10 @@
 import type {
   DungeonMapNode,
   DungeonMapView,
+  DungeonPack,
   DungeonRunState,
   DungeonRunCreature,
+  DungeonStepLog,
   Element,
 } from './dungeon-types';
 
@@ -178,6 +180,9 @@ export const SAMPLE_STAGES = [
   'after-elite',
   'past-camp',
   'finished',
+  'defeated',
+  'detour-mystery',
+  'detour-cache',
 ] as const;
 export type SampleStage = (typeof SAMPLE_STAGES)[number];
 
@@ -206,6 +211,9 @@ function state(
     roomsCleared: 0,
     supply: false,
     lastEvent: null,
+    history: sampleHistory(SAMPLE_MAP, path, {
+      pendingLast: extra.pending !== undefined && extra.pending !== null,
+    }),
     ...extra,
   };
 }
@@ -252,6 +260,24 @@ export function sampleState(stage: SampleStage): DungeonRunState | null {
         roomsCleared: 3,
         pack: { bait: 3, essence: 0, scrap: 0 },
       });
+    case 'defeated':
+      return state(['f0l1', 'f1l2', 'f2l1'], [], {
+        status: 'done',
+        outcome: 'defeat',
+        roomsCleared: 2,
+        pack: { bait: 2, essence: 0, scrap: 0 },
+        history: sampleHistory(SAMPLE_MAP, ['f0l1', 'f1l2', 'f2l1'], { lostLast: true }),
+      });
+    case 'detour-mystery':
+      return state(['f0l1', 'f1l1', 'f2l1', 'f3l1'], ['f4l0', 'f4l1'], {
+        roomsCleared: 3,
+        pack: { bait: 2, essence: 0, scrap: 1 },
+      });
+    case 'detour-cache':
+      return state(['f0l1', 'f1l2', 'f2l2', 'f3l1'], ['f4l0', 'f4l1'], {
+        roomsCleared: 3,
+        pack: { bait: 2, essence: 0, scrap: 1 },
+      });
     case 'finished':
       return state(['f0l1', 'f1l2', 'f2l1', 'f3l1', 'f4l1', 'f5l1', 'f6l1'], [], {
         status: 'done',
@@ -260,4 +286,95 @@ export function sampleState(stage: SampleStage): DungeonRunState | null {
         pack: { bait: 6, essence: 1, scrap: 2 },
       });
   }
+}
+
+/**
+ * A plausible history for a path on a map: what each room visited did, in order (`DungeonStepLog`). Fights
+ * are cleared (the last one is lost with `lostLast`), the first one earns the supply, an elite gives a
+ * keepsake, a mystery room was a small pick, a cache gave loot, the camp rested; with `pendingLast` the
+ * last room (a mystery room or the camp) is still waiting. Fixture data only.
+ */
+export function sampleHistory(
+  map: DungeonMapView,
+  path: readonly string[],
+  opts: { lostLast?: boolean; pendingLast?: boolean } = {},
+): DungeonStepLog[] {
+  const none: DungeonPack = { bait: 0, essence: 0, scrap: 0 };
+  const keepsake = {
+    id: 'lantern-moth',
+    name: 'Lantern Moth',
+    description: 'Your creatures crit 5 points more often.',
+  };
+  const log: DungeonStepLog[] = [];
+  path.forEach((id, i) => {
+    const node = map.nodes.find((n) => n.id === id);
+    if (node === undefined) return;
+    const last = i === path.length - 1;
+    switch (node.kind) {
+      case 'fight':
+      case 'elite':
+      case 'boss': {
+        const cleared = !(opts.lostLast === true && last);
+        const hpMax = node.foe?.hpMax ?? 300;
+        log.push({
+          node: id,
+          kind: node.kind,
+          result: 'fight',
+          cleared,
+          rounds: 4 + i,
+          foeHpEnd: cleared ? 0 : Math.round(hpMax * 0.3),
+          foeHpMax: hpMax,
+          loot: cleared
+            ? {
+                bait: node.kind === 'boss' ? 0 : 1,
+                essence: 0,
+                scrap: node.kind === 'elite' ? 1 : 0,
+              }
+            : none,
+          ...(cleared && node.kind === 'elite' ? { keepsake } : {}),
+          ...(cleared && log.every((e) => e.result !== 'fight' || !e.cleared)
+            ? { supply: true }
+            : {}),
+        });
+        break;
+      }
+      case 'mystery':
+        log.push(
+          opts.pendingLast === true && last
+            ? { node: id, kind: 'mystery', result: 'pending', event: node.event?.id ?? 'unknown' }
+            : {
+                node: id,
+                kind: 'mystery',
+                result: 'event',
+                event: node.event?.id ?? 'unknown',
+                option: 'Take one coin',
+                outcome: 'You gain 1 scrap.',
+                loot: { bait: 0, essence: 0, scrap: 1 },
+              },
+        );
+        break;
+      case 'cache':
+        log.push({
+          node: id,
+          kind: 'cache',
+          result: 'cache',
+          loot: { bait: 1, essence: 0, scrap: 1 },
+        });
+        break;
+      case 'camp':
+        log.push(
+          opts.pendingLast === true && last
+            ? { node: id, kind: 'camp', result: 'pending' }
+            : {
+                node: id,
+                kind: 'camp',
+                result: 'camp',
+                choice: 'rest',
+                detail: 'Rested: standing creatures recovered 40% HP.',
+              },
+        );
+        break;
+    }
+  });
+  return log;
 }

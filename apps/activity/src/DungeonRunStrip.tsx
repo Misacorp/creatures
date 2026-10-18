@@ -9,6 +9,7 @@ import type {
   DungeonRunCreature,
   DungeonRunState,
 } from './dungeon-types';
+import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { SmallCreature } from './SmallCreature';
 import { Sprite } from './sprites/Sprite';
@@ -110,12 +111,21 @@ export function RunPack({ pack }: { pack: DungeonPack }) {
   );
 }
 
-/** The keepsakes the run holds, as chips: a tap opens a sheet with what each one does. */
+/** What the sheet of a keepsake adds under its text: it was for this run only. */
+export const KEEPSAKE_ONLY_LINE = 'Only for this run. It is gone when the run ends.';
+
+/**
+ * The keepsakes the run holds: a "Keepsakes" label with a "?" that explains they last only for the
+ * run, then one chip each; a tap opens a sheet with what that one does. Nothing when there are none.
+ */
 export function RunKeepsakes({ keepsakes }: { keepsakes: readonly DungeonKeepsakeView[] }) {
   const [shown, setShown] = useState<DungeonKeepsakeView | null>(null);
   if (keepsakes.length === 0) return null;
   return (
-    <>
+    <div class="run-keepsakes-row">
+      <span class="run-keepsakes-label">
+        Keepsakes <GlossaryTag entry="keepsake" look="help" />
+      </span>
       <ul class="run-keepsakes" aria-label="Keepsakes">
         {keepsakes.map((k) => (
           <li key={k.id}>
@@ -141,9 +151,9 @@ export function RunKeepsakes({ keepsakes }: { keepsakes: readonly DungeonKeepsak
         }}
       >
         <p>{shown?.description}</p>
-        <p class="muted">A keepsake lasts until the run ends.</p>
+        <p class="muted">{KEEPSAKE_ONLY_LINE}</p>
       </Drawer>
-    </>
+    </div>
   );
 }
 

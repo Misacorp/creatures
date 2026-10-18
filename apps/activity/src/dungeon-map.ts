@@ -15,8 +15,19 @@ import type {
   DungeonMapView,
   DungeonNodeKind,
   DungeonRunState,
+  DungeonStepLog,
   Element,
 } from './dungeon-types';
+
+/**
+ * What the map needs of a run: where it stands, what it has walked and where it may go. An open run
+ * (`DungeonRunState`) is one; so is the route of a finished run, which the results screen draws with
+ * `status: 'done'` and no room it stands in.
+ */
+export type MapRun = Pick<DungeonRunState, 'status' | 'at' | 'path' | 'reachable' | 'landmark'> & {
+  /** What each room visited did (absent from an older server). */
+  history?: readonly DungeonStepLog[] | undefined;
+};
 
 /** The width of the map's coordinate space, in units (one pixel on the narrowest phone). */
 export const MAP_WIDTH = 320;
@@ -132,37 +143,76 @@ function round(n: number): number {
 
 /**
  * How a room looks. `visited`: the run has been there. `current`: the run stands there. `reachable`: the
- * run may go there now. `locked`: it is out of reach (or the run is over). `preview`: there is no run
- * (the map before the player enters).
+ * run may go there now. `locked`: it is not next (or the run is over), but the run may still get there
+ * later. `unreachable`: no path from where the run stands leads there any more. `preview`: there is no
+ * run (the map before the player enters).
  */
-export type NodeStatus = 'visited' | 'current' | 'reachable' | 'locked' | 'preview';
+export type NodeStatus = 'visited' | 'current' | 'reachable' | 'locked' | 'unreachable' | 'preview';
 
+/**
+ * Every room the run can still get to by following the paths forward from where it stands, near or far
+ * (not the room it stands in). Before the entrance (`at` null) that is the whole map. A room that is
+ * not in it, and not visited, is out of reach for good. A room the map does not have, or one with no
+ * way on, gives an empty set.
+ */
+export function reachableAhead(map: Pick<DungeonMapView, 'nodes'>, at: string | null): Set<string> {
+  const byId = new Map(map.nodes.map((n) => [n.id, n]));
+  const ahead = new Set<string>();
+  const queue: string[] =
+    at === null
+      ? map.nodes.filter((n) => n.floor === 0).map((n) => n.id)
+      : [...(byId.get(at)?.next ?? [])];
+  while (queue.length > 0) {
+    const id = queue.pop() as string;
+    if (ahead.has(id) || id === at) continue;
+    ahead.add(id);
+    for (const next of byId.get(id)?.next ?? []) queue.push(next);
+  }
+  return ahead;
+}
+
+/**
+ * True when an open run can no longer get to this room: it is not visited, not the room the run stands
+ * in and not in `ahead` (`reachableAhead`). A run that is over, or no run, has none out of reach.
+ */
+function outOfReach(id: string, state: MapRun | null, ahead: ReadonlySet<string> | null): boolean {
+  if (state === null || ahead === null || state.status !== 'active') return false;
+  return state.at !== id && !state.path.includes(id) && !ahead.has(id);
+}
+
+/**
+ * `ahead` (from `reachableAhead`) lets an open run tell a room it may still reach later (`locked`) from
+ * one it never can (`unreachable`). Without it every room off the next step is `locked`.
+ */
 export function nodeStatus(
   node: Pick<DungeonMapNode, 'id'>,
-  state: DungeonRunState | null,
+  state: MapRun | null,
+  ahead: ReadonlySet<string> | null = null,
 ): NodeStatus {
   if (state === null) return 'preview';
   if (state.at === node.id) return 'current';
   if (state.path.includes(node.id)) return 'visited';
   if (state.reachable.includes(node.id)) return 'reachable';
-  return 'locked';
+  return outOfReach(node.id, state, ahead) ? 'unreachable' : 'locked';
 }
 
 /**
  * How a path looks. `taken`: the run walked it (gold). `reachable`: it leads from where the run stands to a
- * room it may go to (bright). `preview`: there is no run. `dim`: any other.
+ * room it may go to (bright). `preview`: there is no run. `unreachable`: it starts or ends in a room the
+ * run can no longer get to. `dim`: any other.
  */
-export type EdgeStatus = 'taken' | 'reachable' | 'preview' | 'dim';
+export type EdgeStatus = 'taken' | 'reachable' | 'preview' | 'dim' | 'unreachable';
 
 /** The rooms of the run in order, ending in the room it stands in even when `path` does not list it. */
-function walked(state: DungeonRunState): string[] {
+function walked(state: MapRun): string[] {
   const { path, at } = state;
   return at !== null && path[path.length - 1] !== at ? [...path, at] : path;
 }
 
 export function edgeStatus(
   edge: Pick<LaidEdge, 'from' | 'to'>,
-  state: DungeonRunState | null,
+  state: MapRun | null,
+  ahead: ReadonlySet<string> | null = null,
 ): EdgeStatus {
   if (state === null) return 'preview';
   const path = walked(state);
@@ -170,11 +220,19 @@ export function edgeStatus(
     if (path[i] === edge.from && path[i + 1] === edge.to) return 'taken';
   }
   if (state.at === edge.from && state.reachable.includes(edge.to)) return 'reachable';
+  if (outOfReach(edge.from, state, ahead) || outOfReach(edge.to, state, ahead))
+    return 'unreachable';
   return 'dim';
 }
 
 /** The drawing order of paths: dim ones first, gold ones last, so a lit path is never covered. */
-export const EDGE_ORDER: readonly EdgeStatus[] = ['preview', 'dim', 'reachable', 'taken'];
+export const EDGE_ORDER: readonly EdgeStatus[] = [
+  'preview',
+  'unreachable',
+  'dim',
+  'reachable',
+  'taken',
+];
 
 // --- Words ---
 
@@ -228,6 +286,7 @@ const STATUS_WORDS: Readonly<Record<NodeStatus, string>> = {
   current: 'You are here',
   reachable: 'You can go here',
   locked: 'Not on your path',
+  unreachable: 'Out of reach',
   preview: '',
 };
 
@@ -262,6 +321,9 @@ export const CAMP_LINE =
   'Rest, swap a creature or take a keepsake, then push on or head home with your pack.';
 export const NO_TRICK_LINE = 'No tricks. It just attacks.';
 export const LOCKED_LINE = 'Not on your path.';
+export const UNREACHABLE_LINE = "You can't reach this room any more.";
+/** A room a finished run did not go to (the results map). */
+export const NOT_VISITED_LINE = 'Your run did not go here.';
 
 /**
  * The lines of a drawer body that are plain words: what a mystery room, a cache and the camp are. Fights,
@@ -286,7 +348,7 @@ export function hpLine(hpMax: number): string {
 }
 
 /** True when the run may go to this room right now, and the caller can act on it. */
-export function canGo(node: Pick<DungeonMapNode, 'id'>, state: DungeonRunState | null): boolean {
+export function canGo(node: Pick<DungeonMapNode, 'id'>, state: MapRun | null): boolean {
   return state !== null && state.status === 'active' && state.reachable.includes(node.id);
 }
 

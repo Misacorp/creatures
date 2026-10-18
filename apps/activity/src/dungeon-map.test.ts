@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  EDGE_ORDER,
   MAP_WIDTH,
   MIN_NODE,
   CACHE_LINE,
@@ -18,6 +19,7 @@ import {
   nodeLines,
   nodeStatus,
   nodeTitle,
+  reachableAhead,
 } from './dungeon-map';
 import { SAMPLE_MAP, SAMPLE_STAGES, sampleState } from './dungeon-map-sample';
 import type { DungeonMapNode } from './dungeon-types';
@@ -185,6 +187,100 @@ describe('nodeStatus', () => {
     expect(nodeStatus(node('f5l1'), s)).toBe('visited');
     expect(nodeStatus(node('f5l0'), s)).toBe('locked');
     expect(SAMPLE_MAP.nodes.some((n) => nodeStatus(n, s) === 'reachable')).toBe(false);
+  });
+});
+
+describe('reachableAhead', () => {
+  const sorted = (set: Set<string>): string[] => [...set].sort();
+
+  it('is every room of the map before the run has left the entrance', () => {
+    expect(sorted(reachableAhead(SAMPLE_MAP, null))).toEqual(
+      SAMPLE_MAP.nodes.map((n) => n.id).sort(),
+    );
+  });
+
+  it('follows the paths forward from the room the run stands in, near and far', () => {
+    expect(sorted(reachableAhead(SAMPLE_MAP, 'f1l2'))).toEqual(
+      ['f2l1', 'f2l2', 'f3l1', 'f4l0', 'f4l1', 'f5l0', 'f5l1', 'f5l2', 'f6l1'].sort(),
+    );
+  });
+
+  it('leaves out the room the run stands in, the rooms behind it and the rooms on other paths', () => {
+    const ahead = reachableAhead(SAMPLE_MAP, 'f2l1');
+    expect(ahead.has('f2l1')).toBe(false);
+    for (const behind of ['f0l1', 'f1l2', 'f1l1']) expect(ahead.has(behind)).toBe(false);
+    for (const aside of ['f2l0', 'f2l2']) expect(ahead.has(aside)).toBe(false);
+    expect(ahead.has('f3l1')).toBe(true);
+  });
+
+  it('is only the boss one floor below it, and nothing at the boss', () => {
+    expect([...reachableAhead(SAMPLE_MAP, 'f5l1')]).toEqual(['f6l1']);
+    expect(reachableAhead(SAMPLE_MAP, 'f6l1').size).toBe(0);
+  });
+
+  it('is empty for a room the map does not have, and never loops on a broken map', () => {
+    expect(reachableAhead(SAMPLE_MAP, 'nowhere').size).toBe(0);
+    const loop = {
+      nodes: [
+        { id: 'a', floor: 0, lane: 0, kind: 'fight' as const, next: ['b'] },
+        { id: 'b', floor: 1, lane: 0, kind: 'fight' as const, next: ['a'] },
+      ],
+    };
+    expect([...reachableAhead(loop, 'a')]).toEqual(['b']);
+  });
+});
+
+describe('rooms out of reach', () => {
+  it('greys the rooms of an open run that no path leads to any more, and keeps the later ones dim', () => {
+    const s = state('midway');
+    const ahead = reachableAhead(SAMPLE_MAP, s.at);
+    // From the second floor's right lane the left lane of that floor is gone, and so are the entrances not taken.
+    expect(nodeStatus(node('f2l0'), s, ahead)).toBe('unreachable');
+    expect(nodeStatus(node('f0l0'), s, ahead)).toBe('unreachable');
+    expect(nodeStatus(node('f1l1'), s, ahead)).toBe('unreachable');
+    // Still ahead, only not next.
+    expect(nodeStatus(node('f3l1'), s, ahead)).toBe('locked');
+    expect(nodeStatus(node('f6l1'), s, ahead)).toBe('locked');
+    // Where the run is, has been and may go now keep their looks.
+    expect(nodeStatus(node('f1l2'), s, ahead)).toBe('current');
+    expect(nodeStatus(node('f0l1'), s, ahead)).toBe('visited');
+    expect(nodeStatus(node('f2l1'), s, ahead)).toBe('reachable');
+  });
+
+  it('keeps everything ahead dim while the camp waits, and nothing is out of reach at the entrance', () => {
+    const camp = state('camp');
+    const ahead = reachableAhead(SAMPLE_MAP, camp.at);
+    expect(nodeStatus(node('f4l0'), camp, ahead)).toBe('locked');
+    expect(nodeStatus(node('f2l0'), camp, ahead)).toBe('unreachable');
+    const start = state('entrance');
+    for (const n of SAMPLE_MAP.nodes) {
+      expect(nodeStatus(n, start, reachableAhead(SAMPLE_MAP, null))).not.toBe('unreachable');
+    }
+  });
+
+  it('never greys a finished run, the preview, or a call that has no `ahead`', () => {
+    const done = state('finished');
+    for (const n of SAMPLE_MAP.nodes) {
+      expect(nodeStatus(n, done, reachableAhead(SAMPLE_MAP, done.at))).not.toBe('unreachable');
+    }
+    expect(nodeStatus(node('f2l0'), state('midway'))).toBe('locked');
+    expect(nodeStatus(node('f2l0'), null, new Set())).toBe('preview');
+  });
+
+  it('greys the paths to and from a room out of reach, but not the walked ones', () => {
+    const s = state('midway');
+    const ahead = reachableAhead(SAMPLE_MAP, s.at);
+    expect(edgeStatus({ from: 'f1l0', to: 'f2l0' }, s, ahead)).toBe('unreachable');
+    expect(edgeStatus({ from: 'f0l1', to: 'f1l1' }, s, ahead)).toBe('unreachable');
+    expect(edgeStatus({ from: 'f1l1', to: 'f2l1' }, s, ahead)).toBe('unreachable');
+    expect(edgeStatus({ from: 'f2l1', to: 'f3l1' }, s, ahead)).toBe('dim');
+    expect(edgeStatus({ from: 'f1l2', to: 'f2l1' }, s, ahead)).toBe('reachable');
+    expect(edgeStatus({ from: 'f0l1', to: 'f1l2' }, s, ahead)).toBe('taken');
+  });
+
+  it('says so in the label, and draws the greyed paths first so a lit path is never covered', () => {
+    expect(nodeAriaLabel(node('f2l0'), 'unreachable')).toContain('Out of reach');
+    expect(EDGE_ORDER.indexOf('unreachable')).toBeLessThan(EDGE_ORDER.indexOf('dim'));
   });
 });
 

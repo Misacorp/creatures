@@ -27,7 +27,9 @@ import {
   sampleStateMid,
   sampleSummary,
   sampleToday,
+  omitKey,
 } from './dungeon-path-samples';
+import { sampleHistory } from './dungeon-map-sample';
 import type { DungeonRunState } from './dungeon-types';
 
 const withoutDraft: Record<string, unknown> = { ...today };
@@ -240,6 +242,108 @@ describe('the state of a run', () => {
     expect(() => hurt({ treat: 'no' })).toThrow();
     expect(() => hurt({ element: 'void' })).toThrow();
     expect(() => hurt({ role: 'boss' })).toThrow();
+  });
+});
+
+describe('the history of a run and the route of a summary', () => {
+  const start = (state: unknown) => parseDungeonStart({ state, today: sampleToday() });
+  const map = sampleMap();
+  const walked = ['f0l1', 'f1l1', 'f2l1', 'f3l1'];
+  const history = sampleHistory(map, walked);
+  const historyIn = (entries: unknown) => start({ ...sampleStateMid(), history: entries }).state;
+  const routeIn = (route: unknown) =>
+    parseDungeonAct({
+      state: sampleState(),
+      summary: { ...sampleSummary('home'), route },
+      today: sampleToday(),
+    }).summary;
+
+  it('are optional: an older server sends neither', () => {
+    expect(start(sampleStateMid()).state.history).toBeUndefined();
+    const bare = omitKey(sampleSummary('home'), 'route');
+    expect(
+      parseDungeonAct({ state: sampleState(), summary: bare, today: sampleToday() }).summary?.route,
+    ).toBeUndefined();
+    expect(historyIn([]).history).toEqual([]);
+  });
+
+  it('read a fight, a mystery room, a cache and the camp, each with what it gave', () => {
+    const log = historyIn(history).history ?? [];
+    expect(log.map((e) => e.result)).toEqual(['fight', 'event', 'fight', 'camp']);
+    const elite = log[2];
+    expect(elite?.result === 'fight' ? elite.keepsake?.id : null).toBe('lantern-moth');
+    const first = log[0];
+    expect(first?.result === 'fight' ? first.supply : null).toBe(true);
+    const cache = sampleHistory(map, [...walked, 'f4l1']);
+    expect(historyIn(cache).history?.[4]).toMatchObject({ kind: 'cache', result: 'cache' });
+  });
+
+  it('read the rooms still waiting, and a lost fight', () => {
+    const pending = sampleHistory(map, ['f0l1', 'f1l1'], { pendingLast: true });
+    expect(historyIn(pending).history?.[1]).toMatchObject({ kind: 'mystery', result: 'pending' });
+    const camp = sampleHistory(map, walked, { pendingLast: true });
+    expect(historyIn(camp).history?.[3]).toEqual({ node: 'f3l1', kind: 'camp', result: 'pending' });
+    const lost = sampleHistory(map, ['f0l1', 'f1l1', 'f2l1'], { lostLast: true });
+    expect(historyIn(lost).history?.[2]).toMatchObject({ cleared: false, foeHpEnd: 128 });
+  });
+
+  it('refuse an entry that is not one of the shapes', () => {
+    const fight = history[0] as Record<string, unknown>;
+    const mystery = history[1] as Record<string, unknown>;
+    const camp = history[3] as Record<string, unknown>;
+    const bad: unknown[] = [
+      'f0l1',
+      [{ ...fight, result: 'won' }],
+      [{ ...fight, node: 3 }],
+      [{ ...fight, kind: 'mystery' }],
+      [{ ...fight, cleared: 'yes' }],
+      [{ ...fight, rounds: -1 }],
+      [{ ...fight, foeHpEnd: 1.5 }],
+      [{ ...fight, foeHpMax: undefined }],
+      [{ ...fight, loot: { bait: 1 } }],
+      [{ ...fight, loot: { bait: -1, essence: 0, scrap: 0 } }],
+      [{ ...fight, keepsake: { id: 'a' } }],
+      [{ ...fight, supply: 'yes' }],
+      [{ node: 'f2l2', kind: 'cache', result: 'cache' }],
+      [{ node: 'f2l2', kind: 'fight', result: 'cache', loot: { bait: 1, essence: 0, scrap: 0 } }],
+      [{ ...mystery, option: 4 }],
+      [{ ...mystery, outcome: undefined }],
+      [{ ...mystery, event: undefined }],
+      [{ ...camp, choice: 'fly' }],
+      [{ ...camp, detail: 3 }],
+      [{ node: 'f1l1', kind: 'mystery', result: 'pending' }],
+      [{ node: 'f1l1', kind: 'fight', result: 'pending' }],
+    ];
+    for (const entries of bad) {
+      expect(() => historyIn(entries), JSON.stringify(entries)).toThrow();
+    }
+  });
+
+  it('read the route of a summary: its map, the rooms walked and what each did', () => {
+    const route = { map, path: walked, history };
+    const read = routeIn(route)?.route;
+    expect(read?.path).toEqual(walked);
+    expect(read?.map.nodes).toHaveLength(map.nodes.length);
+    expect(read?.history).toHaveLength(4);
+    expect(routeIn({ map, path: [], history: [] })?.route?.history).toEqual([]);
+  });
+
+  it('refuse a route that is not whole', () => {
+    expect(() => routeIn({ map, path: walked })).toThrow();
+    expect(() => routeIn({ map, history })).toThrow();
+    expect(() => routeIn({ path: walked, history })).toThrow();
+    expect(() => routeIn({ map: { floors: 7 }, path: walked, history })).toThrow();
+    expect(() => routeIn({ map, path: [1], history })).toThrow();
+    expect(() => routeIn({ map, path: walked, history: [{ node: 'f0l1' }] })).toThrow();
+    expect(() => routeIn('route')).toThrow();
+  });
+
+  it('are read inside the open run of today too', () => {
+    const active = { ...sampleStateMid(), history };
+    expect(parseDungeonToday({ ...sampleToday(), active }).active?.history).toHaveLength(4);
+    expect(() =>
+      parseDungeonToday({ ...sampleToday(), active: { ...active, history: [{ node: 1 }] } }),
+    ).toThrow();
   });
 });
 

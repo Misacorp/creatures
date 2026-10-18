@@ -26,6 +26,7 @@ import type {
   DungeonRunState,
   DungeonRunSummary,
   DungeonStartResponse,
+  DungeonStepLog,
   DungeonTeamMember,
   DungeonTeamResponse,
   DungeonToday,
@@ -166,6 +167,53 @@ function isPending(value: unknown): value is DungeonPending {
   );
 }
 
+/** An optional keepsake: absent, or a whole one. */
+const isOptionalKeepsake = (value: unknown): boolean => value === undefined || isKeepsake(value);
+
+/** What a room of the path did (`DungeonStepLog`): one entry per room visited, each of a known shape. */
+function isStepLog(value: unknown): value is DungeonStepLog {
+  if (!isRecord(value) || !isStr(value['node'])) return false;
+  const kind = value['kind'];
+  switch (value['result']) {
+    case 'fight':
+      return (
+        (kind === 'fight' || kind === 'elite' || kind === 'boss') &&
+        isBool(value['cleared']) &&
+        isCount(value['rounds']) &&
+        isCount(value['foeHpEnd']) &&
+        isCount(value['foeHpMax']) &&
+        isPack(value['loot']) &&
+        isOptionalKeepsake(value['keepsake']) &&
+        (value['supply'] === undefined || isBool(value['supply']))
+      );
+    case 'cache':
+      return kind === 'cache' && isPack(value['loot']);
+    case 'event':
+      return (
+        kind === 'mystery' &&
+        isStr(value['event']) &&
+        isStr(value['option']) &&
+        isStr(value['outcome']) &&
+        isPack(value['loot']) &&
+        isOptionalKeepsake(value['keepsake'])
+      );
+    case 'camp':
+      return (
+        kind === 'camp' &&
+        (value['choice'] === 'rest' ||
+          value['choice'] === 'swap' ||
+          value['choice'] === 'keepsake' ||
+          value['choice'] === 'home') &&
+        isStr(value['detail']) &&
+        isOptionalKeepsake(value['keepsake'])
+      );
+    case 'pending':
+      return kind === 'camp' || (kind === 'mystery' && isStr(value['event']));
+    default:
+      return false;
+  }
+}
+
 function isMapNode(value: unknown): value is DungeonMapNode {
   if (!isRecord(value)) return false;
   const foe = value['foe'];
@@ -232,7 +280,8 @@ function isRunState(value: unknown): value is DungeonRunState {
     isCount(value['roomsCleared']) &&
     isBool(value['supply']) &&
     (last === null ||
-      (isRecord(last) && isStr(last['name']) && isStr(last['option']) && isStr(last['outcome'])))
+      (isRecord(last) && isStr(last['name']) && isStr(last['option']) && isStr(last['outcome']))) &&
+    (value['history'] === undefined || isArrayOf(value['history'], isStepLog))
   );
 }
 
@@ -240,6 +289,16 @@ function isRunState(value: unknown): value is DungeonRunState {
 function isWeather(value: unknown): boolean {
   return (
     isRecord(value) && isStr(value['boon']) && (value['omen'] === null || isStr(value['omen']))
+  );
+}
+
+/** The route of a finished run: its map, the rooms walked and what each did. */
+function isRoute(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isMapView(value['map']) &&
+    isArrayOf(value['path'], isStr) &&
+    isArrayOf(value['history'], isStepLog)
   );
 }
 
@@ -266,7 +325,8 @@ function isRunSummary(value: unknown): value is DungeonRunSummary {
       (isRecord(value['pack']) &&
         isPack(value['pack']['found']) &&
         isPack(value['pack']['kept']))) &&
-    (value['keepsakes'] === undefined || isArrayOf(value['keepsakes'], isKeepsake))
+    (value['keepsakes'] === undefined || isArrayOf(value['keepsakes'], isKeepsake)) &&
+    (value['route'] === undefined || isRoute(value['route']))
   );
 }
 

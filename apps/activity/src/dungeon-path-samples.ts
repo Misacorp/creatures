@@ -7,6 +7,7 @@
  * foe twice on a floor; at least three elements), with real content ids. The fight inside `sampleRoom`
  * is the real one of `fixtures/dungeon-replay.json`, so its events are valid for the stage.
  */
+import { sampleHistory } from './dungeon-map-sample';
 import replayFixture from './fixtures/dungeon-replay.json';
 import todayFixture from './fixtures/dungeon-today.json';
 import type {
@@ -315,8 +316,25 @@ export function sampleSummary(
       ? { found: { bait: 3, essence: 0, scrap: 3 }, kept: { bait: 2, essence: 0, scrap: 2 } }
       : { found: { bait: 3, essence: 1, scrap: 2 }, kept: { bait: 3, essence: 1, scrap: 2 } },
     keepsakes: [SAMPLE_KEEPSAKES[1] as DungeonKeepsakeView],
+    route: sampleRoute(outcome),
     ...over,
   };
+}
+
+/** The rooms each outcome walked on `sampleMap()`: a defeat ends in the elite, home at the camp, a clear at the boss. */
+const ROUTES = {
+  cleared: ['f0l1', 'f1l1', 'f2l1', 'f3l1', 'f4l0', 'f5l0', 'f6l1'],
+  home: ['f0l1', 'f1l1', 'f2l1', 'f3l1'],
+  defeat: ['f0l1', 'f1l1', 'f2l1'],
+} as const;
+
+/** The route of a finished sample run: its map, the rooms walked and what each did. */
+export function sampleRoute(
+  outcome: 'cleared' | 'home' | 'defeat',
+): NonNullable<DungeonRunSummary['route']> {
+  const map = sampleMap();
+  const path = [...ROUTES[outcome]];
+  return { map, path, history: sampleHistory(map, path, { lostLast: outcome === 'defeat' }) };
 }
 
 /** Today with the map and, when asked, an open run. */
@@ -327,4 +345,9 @@ export function sampleToday(over: Partial<DungeonToday> = {}): DungeonToday {
     active: null,
     ...over,
   };
+}
+
+/** A copy of an object without one key (for an answer from an older server that lacks a field). */
+export function omitKey<T extends object, K extends keyof T>(value: T, key: K): Omit<T, K> {
+  return Object.fromEntries(Object.entries(value).filter(([k]) => k !== key)) as Omit<T, K>;
 }

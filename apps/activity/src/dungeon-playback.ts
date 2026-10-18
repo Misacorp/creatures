@@ -440,9 +440,23 @@ export function runSentence(run: DungeonRunSummary): string {
 }
 
 /**
- * How the page scrolls to the fight when a run starts: smoothly, or at once for a player who asks
- * for less motion. The fight's top edge goes to the top of the viewport.
+ * How the page scrolls to the fight arena when a fight starts (a move that played one, or "Watch
+ * again"): smoothly, or at once for a player who asks for less motion. The arena's top edge goes to
+ * the top of the viewport. (After a fight ends the run's own screen scrolls to the strip with the
+ * party instead: `arriveScroll`.)
  */
 export function fightScroll(reducedMotion: boolean): ScrollIntoViewOptions {
   return { behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' };
+}
+
+/**
+ * True when the arena is not wholly on screen, so the page should bring it into view again at the
+ * moment the fight starts (the page may have been scrolled, or moved under the banner). `rect` is the
+ * arena's box relative to the viewport.
+ */
+export function arenaOutOfView(
+  rect: { top: number; bottom: number },
+  viewportHeight: number,
+): boolean {
+  return rect.top < 0 || rect.bottom > viewportHeight;
 }

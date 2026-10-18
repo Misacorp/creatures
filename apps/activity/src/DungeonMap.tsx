@@ -10,17 +10,22 @@ import {
   nodeElement,
   nodeGlyph,
   nodeStatus,
+  reachableAhead,
   type LaidNode,
+  type MapRun,
 } from './dungeon-map';
-import type { DungeonMapView, DungeonRunState } from './dungeon-types';
+import type { DungeonMapView } from './dungeon-types';
 import { DungeonNodeDrawer } from './DungeonNodeDrawer';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
 
 interface Props {
   map: DungeonMapView;
-  /** The run on this map, or null for the preview before the player enters (no room is lit, none can be gone to). */
-  state: DungeonRunState | null;
+  /**
+   * The run on this map, or null for the preview before the player enters (no room is lit, none can be gone
+   * to). A finished run's route is a run too (`routeRun`): its rooms are visited or not, with no Go.
+   */
+  state: MapRun | null;
   /** The player chose Go on a room the run can reach. Without it the map only shows (the preview). */
   onGo?: ((nodeId: string) => void) | undefined;
   /** An act is on its way: Go waits. */
@@ -40,9 +45,11 @@ const PERCENT = (n: number, of: number): string =>
  * every room is a real round button on top of it (so it takes the focus and has a label), with the icon
  * of its kind (crossed blades, a horned skull, a "?", a chest, a campfire, a crown), tinted by the foe's
  * element. Rooms the run can reach glow (a still ring with reduced motion), the room it stands in is
- * outlined, visited rooms are filled and the rest are dimmed. The camp's row and the boss are drawn a
+ * outlined, visited rooms are filled and the rest are dimmed; in an open run a room no path leads to any
+ * more is greyed out, with its paths. The camp's row and the boss are drawn a
  * little bigger. The picture scales to the width of its box (no sideways scroll at 320 px). Tapping any
- * room opens its drawer, which has Go when the run can go there.
+ * room opens its drawer, which has Go when the run can go there and, for a room the run has been through,
+ * what happened there.
  */
 export function DungeonMap({ map, state, onGo, busy = false, landmark, initialOpen }: Props) {
   const layout = useMemo(() => mapLayout(map), [map]);
@@ -52,8 +59,15 @@ export function DungeonMap({ map, state, onGo, busy = false, landmark, initialOp
   const nodes = [...map.nodes].sort((a, b) => a.floor - b.floor || a.lane - b.lane);
   const placed = new Map<string, LaidNode>(layout.nodes.map((n) => [n.id, n]));
   const camp = layout.nodes.find((n) => n.kind === 'camp');
+  // Which rooms an open run can still get to; a finished run or the preview has no room out of reach.
+  const ahead = useMemo(
+    () => (state !== null && state.status === 'active' ? reachableAhead(map, state.at) : null),
+    [map, state?.status, state?.at],
+  );
   const edges = EDGE_ORDER.flatMap((status) =>
-    layout.edges.filter((e) => edgeStatus(e, state) === status).map((e) => ({ edge: e, status })),
+    layout.edges
+      .filter((e) => edgeStatus(e, state, ahead) === status)
+      .map((e) => ({ edge: e, status })),
   );
 
   return (
@@ -91,7 +105,7 @@ export function DungeonMap({ map, state, onGo, busy = false, landmark, initialOp
           {nodes.map((node) => {
             const at = placed.get(node.id);
             if (at === undefined) return null;
-            const status = nodeStatus(node, state);
+            const status = nodeStatus(node, state, ahead);
             const element = nodeElement(node);
             const classes = [
               'dmap-node',
@@ -140,6 +154,7 @@ export function DungeonMap({ map, state, onGo, busy = false, landmark, initialOp
       <DungeonNodeDrawer
         node={opened}
         state={state}
+        ahead={ahead}
         {...(landmark === undefined ? {} : { landmark })}
         {...(onGo === undefined ? {} : { onGo })}
         busy={busy}

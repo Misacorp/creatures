@@ -6,6 +6,7 @@
 import type { Creature } from './api';
 import type { DungeonAct, DungeonPack, DungeonRunCreature } from './dungeon-types';
 import { creatureName, getSpecies } from './game';
+import type { IconRef } from './icon-ref';
 import type { CountItem } from './ui/CountBadge';
 import type { PickerOption } from './roster-picker';
 
@@ -40,6 +41,50 @@ export function packItems(pack: DungeonPack): CountItem[] {
     });
   }
   return items;
+}
+
+/** The pack as icons with numbers only (no names), without the empty kinds: for a line that must stay short. */
+export function packBadges(pack: DungeonPack): CountItem[] {
+  return packKinds(pack, pack).map(({ key, icon, label, found }) => ({
+    key,
+    icon,
+    amount: found,
+    label,
+  }));
+}
+
+/** One kind of the pack with what was found and what came home. */
+export interface PackKind {
+  key: 'bait' | 'essence' | 'scrap';
+  icon: IconRef;
+  label: string;
+  found: number;
+  kept: number;
+}
+
+const PACK_ICON: Readonly<Record<PackKind['key'], { icon: IconRef; label: string }>> = {
+  bait: { icon: { kind: 'glyph', id: 'bait' }, label: 'Bait' },
+  essence: { icon: { kind: 'glyph', id: 'gem' }, label: 'Essence' },
+  scrap: { icon: { kind: 'part', part: 'scrap' }, label: 'Scrap' },
+};
+
+/** The kinds the pack held (what was found), with what of each was kept. Empty when nothing was found. */
+export function packKinds(found: DungeonPack, kept: DungeonPack): PackKind[] {
+  return (['bait', 'essence', 'scrap'] as const)
+    .filter((key) => found[key] > 0)
+    .map((key) => ({ key, ...PACK_ICON[key], found: found[key], kept: kept[key] }));
+}
+
+/** True when part of the pack did not come home (a defeat). */
+export function packLost(found: DungeonPack, kept: DungeonPack): boolean {
+  return kept.bait < found.bait || kept.essence < found.essence || kept.scrap < found.scrap;
+}
+
+/** What a screen reader hears for a kind: "Scrap: 3" when all came home, "Scrap: found 3, kept 2" when not. */
+export function packKindLabel(kind: Pick<PackKind, 'label' | 'found' | 'kept'>): string {
+  return kind.kept === kind.found
+    ? `${kind.label}: ${String(kind.kept)}`
+    : `${kind.label}: found ${String(kind.found)}, kept ${String(kind.kept)}`;
 }
 
 /** How a creature's tile reads: knocked out, hurt (under a third of its HP) or fine. */

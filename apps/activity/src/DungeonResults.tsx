@@ -1,4 +1,5 @@
-import { LandmarkChip, Tag } from './ui/Tag';
+import { useState } from 'preact/hooks';
+import { LandmarkChip } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
 import { LootList } from './GearLoot';
 import { glyphOrUnknown } from './glyphs';
@@ -6,6 +7,8 @@ import { partCountItems } from './GearArt';
 import type { CountItem } from './ui/CountBadge';
 import { OutcomeBadge, RevealLater, RevealShell, useRevealSequence } from './ui/RevealShell';
 import { RewardSummary } from './ui/RewardSummary';
+import { GameIcon } from './ui/GameIcon';
+import { ToggleButton } from './ui/ToggleButton';
 import {
   droppedSupplies,
   noRewards,
@@ -19,9 +22,13 @@ import {
   type TeamEntry,
 } from './dungeon-playback';
 import { bossArt } from './art';
-import { depthChangeText, packText, resultHeadline } from './dungeon-text';
+import { depthChangeText, resultHeadline } from './dungeon-text';
+import { packKindLabel, packKinds, packLost } from './dungeon-run';
+import { routeRun } from './dungeon-history';
+import { DungeonMap } from './DungeonMap';
+import { RunKeepsakes } from './DungeonRunStrip';
 import { DungeonNext } from './DungeonNext';
-import type { DungeonRunSummary, DungeonToday } from './dungeon-types';
+import type { DungeonPack, DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { creatureInfoOf } from './creature-info';
 import { SmallCreature } from './SmallCreature';
 import { supplyKindOf } from './trip-view';
@@ -43,6 +50,8 @@ interface Props {
   error: string | null;
   onWatch: () => void;
   onRetry: () => void;
+  /** Which view of the route opens first (the workbench shows the map so). Default: the fights. */
+  initialView?: 'fights' | 'map' | undefined;
 }
 
 /**
@@ -62,6 +71,7 @@ export function DungeonResults({
   error,
   onWatch,
   onRetry,
+  initialView,
 }: Props) {
   const { rewards } = run;
   const empty = noRewards(rewards);
@@ -103,7 +113,7 @@ export function DungeonResults({
     <RevealShell
       id="dungeon-result-heading"
       title={resultHeadline(run)}
-      badge={<ResultBadge run={run} />}
+      badge={run.outcome === undefined ? <OutcomeBadge cleared={run.cleared} /> : undefined}
       class="dungeon-result"
       footer={
         <p class="button-row dungeon-result-buttons">
@@ -153,32 +163,10 @@ export function DungeonResults({
         </RewardSummary>
       )}
 
-      {run.pack !== undefined && (
-        <>
-          <h4>Your pack</h4>
-          <p class="dungeon-pack-line">
-            <GlossaryTag entry="dungeon-pack">
-              <span class="pack-line-part">Found: {packText(run.pack.found)}</span>
-              <span class="visually-hidden"> · </span>
-              <span class="pack-line-part">Kept: {packText(run.pack.kept)}</span>
-            </GlossaryTag>
-          </p>
-        </>
-      )}
-      {run.keepsakes !== undefined && run.keepsakes.length > 0 && (
-        <>
-          <h4>Keepsakes</h4>
-          <ul class="plain-list dungeon-keepsake-list">
-            {run.keepsakes.map((k) => (
-              <li key={k.id}>
-                <strong>{k.name}</strong>: {k.description}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      {run.pack !== undefined && <PackLine found={run.pack.found} kept={run.pack.kept} />}
+      {run.keepsakes !== undefined && <RunKeepsakes keepsakes={run.keepsakes} />}
 
-      <RoomStrip rooms={roomStrip(run)} path={run.outcome !== undefined} />
+      <RouteSection run={run} initialView={initialView ?? 'fights'} />
       <TeamBreakdown team={teamBreakdown(run)} />
       <DungeonNext today={today} offset={offset} />
 
@@ -191,14 +179,93 @@ export function DungeonResults({
   );
 }
 
-/** How the run ended as a badge: a path run says Cleared, Home or Defeated; an old run Cleared or Not cleared. */
-function ResultBadge({ run }: { run: DungeonRunSummary }) {
-  if (run.outcome === undefined) return <OutcomeBadge cleared={run.cleared} />;
-  const words = { cleared: 'Cleared', home: 'Home', defeat: 'Defeated' } as const;
+/**
+ * The pack on one line: "Pack: all kept" and the kinds as icons with numbers. After a defeat it says
+ * "half kept" and each kind that lost something shows what was found struck through and dim, then what
+ * came home. Nothing when the pack was empty (the headline says so).
+ */
+function PackLine({ found, kept }: { found: DungeonPack; kept: DungeonPack }) {
+  const kinds = packKinds(found, kept);
+  if (kinds.length === 0) return null;
+  const lost = packLost(found, kept);
   return (
-    <Tag kind="badge" tone={run.outcome === 'defeat' ? 'bad' : 'good'}>
-      {words[run.outcome]}
-    </Tag>
+    <div class="dungeon-pack-line">
+      <span>
+        <GlossaryTag entry="dungeon-pack">Pack</GlossaryTag>:
+      </span>
+      <span class="pack-verdict">{lost ? 'half kept' : 'all kept'}</span>
+      <ul class="pack-kinds plain-list" aria-label={lost ? 'Pack, half kept' : 'Pack, all kept'}>
+        {kinds.map((kind) => (
+          <li key={kind.key}>
+            <span class="part-count" role="img" aria-label={packKindLabel(kind)}>
+              <GameIcon icon={kind.icon} scale={2} />
+              {kind.kept !== kind.found && (
+                <s class="part-amount pix pack-was" aria-hidden="true">
+                  {kind.found}
+                </s>
+              )}
+              <span class="part-amount pix" aria-hidden="true">
+                {kind.kept}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+type RouteView = 'fights' | 'map';
+
+/**
+ * How the run went, as one of two views the player swaps between: the fights it played as a strip of
+ * panels, or the map with the route it walked (the path in gold, the rest dimmed; a tap on a room
+ * says what happened there). A run with no route (an older one) has only the strip, with no toggle.
+ */
+function RouteSection({ run, initialView }: { run: DungeonRunSummary; initialView: RouteView }) {
+  const [view, setView] = useState<RouteView>(initialView);
+  const route = routeRun(run);
+  const path = run.outcome !== undefined;
+  const strip = <RoomStrip rooms={roomStrip(run)} path={path} />;
+  if (route === null) {
+    return (
+      <>
+        <h4>{path ? 'Fights' : 'Rooms'}</h4>
+        {strip}
+      </>
+    );
+  }
+  return (
+    <>
+      <div class="route-head">
+        <h4>Route</h4>
+        <div class="route-toggle" role="group" aria-label="Show the route as">
+          <ToggleButton
+            pressed={view === 'fights'}
+            onToggle={() => {
+              setView('fights');
+            }}
+          >
+            Fights
+          </ToggleButton>
+          <ToggleButton
+            pressed={view === 'map'}
+            onToggle={() => {
+              setView('map');
+            }}
+          >
+            Map
+          </ToggleButton>
+        </div>
+      </div>
+      {view === 'fights' ? (
+        strip
+      ) : (
+        <div class="dungeon-result-map">
+          <DungeonMap map={route.map} state={route.run} landmark={run.landmark} />
+        </div>
+      )}
+    </>
   );
 }
 
@@ -212,7 +279,6 @@ function ResultBadge({ run }: { run: DungeonRunSummary }) {
 function RoomStrip({ rooms, path }: { rooms: readonly StripRoom[]; path: boolean }) {
   return (
     <>
-      <h4>{path ? 'Fights' : 'Rooms'}</h4>
       <ol class={path ? 'room-strip path' : 'room-strip'} aria-label="Rooms, first to last">
         {rooms.map((room) => {
           const art = bossArt(room.foeId);

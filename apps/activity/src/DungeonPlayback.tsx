@@ -7,6 +7,7 @@ import { glyphOrUnknown } from './glyphs';
 import {
   ROOM_CARD_MS,
   ROOM_END_MS,
+  arenaOutOfView,
   atSpeed,
   fightScroll,
   mineIds,
@@ -54,7 +55,8 @@ interface Props {
  * rest on the result, then the next room. The room's place ("Room 1 / 3", "Floor 3 / 7" on a path)
  * is at the top left of the stage's head and the round at the top right. Pause, 2x and Skip are
  * hidden unless `showControls` is set. The fight is already decided and stored; this only shows it,
- * so leaving at any time loses nothing.
+ * so leaving at any time loses nothing. Each room's arena is brought into view when the room opens
+ * and again when its fight begins (see `RoomFight`).
  */
 export function DungeonPlayback({ input, onDone, showControls = false }: Props) {
   const [room, setRoom] = useState(0);
@@ -66,14 +68,6 @@ export function DungeonPlayback({ input, onDone, showControls = false }: Props) 
     () => (current === undefined ? [] : roomStageRow(input, current)),
     [input, current],
   );
-  const fightRef = useRef<HTMLElement>(null);
-  const reduced = usePrefersReducedMotion();
-
-  // The pre-run screen is taller than the screen: when the fight starts, bring it into view.
-  useEffect(() => {
-    fightRef.current?.scrollIntoView(fightScroll(reduced));
-  }, []);
-
   if (current === undefined) {
     // A run with no room played cannot be shown: go straight to the results.
     return (
@@ -98,7 +92,7 @@ export function DungeonPlayback({ input, onDone, showControls = false }: Props) 
   };
 
   return (
-    <section ref={fightRef} class="raid-section dungeon-playback" aria-label="Dungeon playback">
+    <section class="raid-section dungeon-playback" aria-label="Dungeon playback">
       {showControls && (
         <PlaybackControls
           label="Playback controls"
@@ -218,6 +212,8 @@ function RoomFight({
   // The banner shows for a moment with the room standing behind it, then the fight starts. While
   // paused it waits.
   const [banner, setBanner] = useState(true);
+  const arena = useRef<HTMLDivElement>(null);
+  const reduced = usePrefersReducedMotion();
   const pb = usePlayback({
     events: room.events,
     rowIds,
@@ -241,6 +237,27 @@ function RoomFight({
       clearTimeout(timer);
     };
   }, [banner, speed, paused]);
+
+  // The run's own screen (the map, or the results) is taller than the screen and was scrolled: when a
+  // room opens, bring its arena to the top once the page has laid out the new screen.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      arena.current?.scrollIntoView(fightScroll(reduced));
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  // When the banner goes and the fight starts, the arena must be in view: if the page was scrolled
+  // away (or moved) meanwhile, bring it back.
+  useEffect(() => {
+    if (banner) return;
+    const el = arena.current;
+    if (el !== null && arenaOutOfView(el.getBoundingClientRect(), window.innerHeight)) {
+      el.scrollIntoView(fightScroll(reduced));
+    }
+  }, [banner]);
 
   // Pausing stops the beats where they are; playing again continues from the same step.
   useEffect(() => {
@@ -266,38 +283,40 @@ function RoomFight({
   const view = roomIntroView(room, total, landmark);
   return (
     <>
-      <Stage
-        boss={roomBoss(room)}
-        hpMax={room.foe.hpMax}
-        hpStart={room.foe.hpMax}
-        rounds={maxRounds}
-        row={row}
-        mineIds={none}
-        names={room.names}
-        events={room.events}
-        index={pb.index}
-        anim={pb.anim}
-        fx={pb.fx}
-        intro={pb.intro}
-        creatureHp={{ start: room.hpStart, max: room.hpMax }}
-        layout="row"
-        place={roomPlaceLine(room, total)}
-        modifiers={[room.modifier]}
-        addedGimmicks={modifierGimmicks(room, landmark)}
-        overlay={
-          banner ? (
-            <RoomBanner
-              // A new banner when playback resumes, so the outline starts again together with the wait.
-              key={paused ? 'paused' : 'playing'}
-              room={room}
-              total={total}
-              landmark={landmark}
-              ms={atSpeed(ROOM_CARD_MS, speed)}
-              paused={paused}
-            />
-          ) : null
-        }
-      />
+      <div ref={arena} class="dungeon-arena">
+        <Stage
+          boss={roomBoss(room)}
+          hpMax={room.foe.hpMax}
+          hpStart={room.foe.hpMax}
+          rounds={maxRounds}
+          row={row}
+          mineIds={none}
+          names={room.names}
+          events={room.events}
+          index={pb.index}
+          anim={pb.anim}
+          fx={pb.fx}
+          intro={pb.intro}
+          creatureHp={{ start: room.hpStart, max: room.hpMax }}
+          layout="row"
+          place={roomPlaceLine(room, total)}
+          modifiers={[room.modifier]}
+          addedGimmicks={modifierGimmicks(room, landmark)}
+          overlay={
+            banner ? (
+              <RoomBanner
+                // A new banner when playback resumes, so the outline starts again together with the wait.
+                key={paused ? 'paused' : 'playing'}
+                room={room}
+                total={total}
+                landmark={landmark}
+                ms={atSpeed(ROOM_CARD_MS, speed)}
+                paused={paused}
+              />
+            ) : null
+          }
+        />
+      </div>
       <LiveRegion>{banner ? view.spoken : ''}</LiveRegion>
       <p class="muted dungeon-room-result" role="status">
         {finished ? roomResultLine(room) : ''}

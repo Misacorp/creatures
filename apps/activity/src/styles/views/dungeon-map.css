@@ -50,6 +50,13 @@
   opacity: 0.7;
 }
 
+.dmap-edge.unreachable {
+  stroke: var(--line);
+  stroke-width: 2;
+  stroke-dasharray: 2 8;
+  opacity: 0.3;
+}
+
 .dmap-edge.reachable {
   stroke: var(--bone);
   stroke-width: 4;
@@ -135,6 +142,15 @@ button.dmap-node.s-locked {
   filter: saturate(0.5) brightness(0.65);
 }
 
+/*
+  Out of reach for good: no path from where the run stands leads here. Greyer and darker than a room that is
+  only not next (colour gone, much dimmer), still not see-through, and still tappable for what is there.
+*/
+button.dmap-node.s-unreachable {
+  --nr: var(--line);
+  filter: grayscale(1) brightness(0.45);
+}
+
 /* Been there: filled in gold. */
 button.dmap-node.s-visited {
   --nr: var(--gold);
@@ -196,6 +212,7 @@ button.dmap-node.s-reachable {
 .dnd-foe,
 .dnd-plain {
   display: grid;
+  text-align: left;
   gap: 0.625rem;
 }
 
@@ -267,4 +284,36 @@ button.dnd-go {
 .dnd-blocked {
   margin: 0;
   text-align: center;
+}
+
+/* What happened in a room the run has been through: result, loot and what it gave. */
+.dnd-outcome {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.dnd-outcome p {
+  margin: 0;
+}
+
+.dnd-loot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
+.dnd-loot-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+}
+
+.dnd-keepsake {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
 }

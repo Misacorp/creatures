@@ -199,3 +199,8 @@
 .dungeon-enter p {
   margin: 0.25rem 0;
 }
+
+/* The fight's arena: the page scrolls here when a fight starts, a little short of the screen's edge. */
+.dungeon-arena {
+  scroll-margin-top: 0.5rem;
+}
