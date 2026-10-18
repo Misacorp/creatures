@@ -288,3 +288,22 @@ describe('the detail panel scrolls inside itself', () => {
     }
   });
 });
+
+describe('closing the details with a second tap', () => {
+  it('closes the details when the item shown is tapped again, and opens them on the next tap', () => {
+    const p = draw('compare: plain gear', 'hat', KELP);
+    expect(byClass(p.root, 'ip-detail')).toHaveLength(1);
+    const pressed = first(
+      byClass(p.root, 'ip-cell').filter((c) => c.getAttribute('aria-pressed') === 'true'),
+    );
+    p.click(pressed);
+    expect(byClass(p.root, 'ip-detail')).toHaveLength(0);
+    expect(
+      byClass(p.root, 'ip-cell').filter((c) => c.getAttribute('aria-pressed') === 'true'),
+    ).toHaveLength(0);
+    // No item shown: no arrows either.
+    expect(byClass(p.root, 'flip-nav')).toHaveLength(0);
+    p.click(pressed);
+    expect(byClass(p.root, 'ip-detail')).toHaveLength(1);
+  });
+});

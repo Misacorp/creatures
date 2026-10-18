@@ -196,22 +196,28 @@ export function ItemPickerDrawer({
     })),
   ];
   const [picked, setPicked] = useState<string | null>(initialPicked ?? null);
-  const selected =
+  // A second tap on the item shown closes its details, so the grid has the whole drawer; any tap opens them.
+  const [detailOpen, setDetailOpen] = useState(true);
+  const shown =
     cells.find((c) => c.item.id === picked) ??
     cells.find((c) => c.worn) ??
     cells.find((c) => c.item.id === firstPick(choices)) ??
     cells[0];
+  const selected = detailOpen ? shown : undefined;
   // The detail flips through this slot's grid, in the grid's order; the arrows and the count then say
   // where the picked item is (so the "in the bag" count gives way to them).
-  const flip = flipOver({
-    list: cells,
-    at: cells.findIndex((c) => c.item.id === selected?.item.id),
-    noun: 'item',
-    nameOf: (cell) => itemLabel(cell.item.baseId, cell.item.itemLevel),
-    pick: (cell) => {
-      setPicked(cell.item.id);
-    },
-  });
+  const flip =
+    selected === undefined
+      ? undefined
+      : flipOver({
+          list: cells,
+          at: cells.findIndex((c) => c.item.id === selected?.item.id),
+          noun: 'item',
+          nameOf: (cell) => itemLabel(cell.item.baseId, cell.item.itemLevel),
+          pick: (cell) => {
+            setPicked(cell.item.id);
+          },
+        });
   return (
     <Drawer
       open={open}
@@ -257,7 +263,12 @@ export function ItemPickerDrawer({
               cell={cell}
               selected={cell.item.id === selected?.item.id}
               onSelect={() => {
+                if (cell.item.id === selected?.item.id) {
+                  setDetailOpen(false);
+                  return;
+                }
                 setPicked(cell.item.id);
+                setDetailOpen(true);
               }}
             />
           ))}
