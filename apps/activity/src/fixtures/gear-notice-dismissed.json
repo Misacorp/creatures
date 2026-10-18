@@ -15,7 +15,7 @@
     },
     "items": [
       {
-        "id": "00000000-0000-4000-8000-000000000001",
+        "id": "00000000-0000-4000-8500-000000000017",
         "baseId": "coal-warm-cap",
         "slot": "hat",
         "tag": "ember",
@@ -64,7 +64,7 @@
           "level": 4,
           "role": null
         },
-        "equippedOn": "0fc09c1d-9287-43ee-9dee-e09d7b38046b",
+        "equippedOn": "00000000-0000-4000-8500-000000000018",
         "dismantle": {
           "scrap": {
             "min": 2,
@@ -92,7 +92,7 @@
         }
       },
       {
-        "id": "00000000-0000-4000-8000-000000000002",
+        "id": "00000000-0000-4000-8500-000000000019",
         "baseId": "ember-muffler",
         "slot": "scarf",
         "tag": "ember",
@@ -152,7 +152,7 @@
           "level": 7,
           "role": null
         },
-        "equippedOn": "cafc501d-ce14-4aed-8dbd-4cb0a7ca8a2c",
+        "equippedOn": "00000000-0000-4000-8500-000000000020",
         "dismantle": {
           "scrap": {
             "min": 2,
@@ -180,7 +180,7 @@
         }
       },
       {
-        "id": "00000000-0000-4000-8000-000000000003",
+        "id": "00000000-0000-4000-8500-000000000021",
         "baseId": "static-charm",
         "slot": "charm",
         "tag": "spark",
@@ -278,19 +278,19 @@
     },
     "skills": [
       {
-        "creatureId": "0fc09c1d-9287-43ee-9dee-e09d7b38046b",
+        "creatureId": "00000000-0000-4000-8500-000000000018",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "cafc501d-ce14-4aed-8dbd-4cb0a7ca8a2c",
+        "creatureId": "00000000-0000-4000-8500-000000000020",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "194afaf0-5712-440f-aa87-b819e4ac2257",
+        "creatureId": "00000000-0000-4000-8500-000000000022",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
@@ -319,7 +319,7 @@
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "0fc09c1d-9287-43ee-9dee-e09d7b38046b",
+        "id": "00000000-0000-4000-8500-000000000018",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -362,7 +362,7 @@
         },
         "gear": [
           {
-            "id": "00000000-0000-4000-8000-000000000001",
+            "id": "00000000-0000-4000-8500-000000000017",
             "baseId": "coal-warm-cap",
             "slot": "hat",
             "rarity": "rare",
@@ -403,7 +403,7 @@
         }
       },
       {
-        "id": "cafc501d-ce14-4aed-8dbd-4cb0a7ca8a2c",
+        "id": "00000000-0000-4000-8500-000000000020",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -446,7 +446,7 @@
         },
         "gear": [
           {
-            "id": "00000000-0000-4000-8000-000000000002",
+            "id": "00000000-0000-4000-8500-000000000019",
             "baseId": "ember-muffler",
             "slot": "scarf",
             "rarity": "epic",
@@ -487,7 +487,7 @@
         }
       },
       {
-        "id": "194afaf0-5712-440f-aa87-b819e4ac2257",
+        "id": "00000000-0000-4000-8500-000000000022",
         "species": "zipmouse",
         "line": "zipmouse",
         "level": 8,
@@ -580,7 +580,7 @@
     },
     "supplies": {},
     "serverFirsts": [],
-    "loungerId": "cafc501d-ce14-4aed-8dbd-4cb0a7ca8a2c",
+    "loungerId": "00000000-0000-4000-8500-000000000020",
     "loungeSpot": null
   }
 }

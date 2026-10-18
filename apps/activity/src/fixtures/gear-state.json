@@ -11,7 +11,7 @@
   },
   "items": [
     {
-      "id": "94cfe2f5-d1a0-4010-ac43-1a9cf7863cba",
+      "id": "00000000-0000-4000-8500-000000000001",
       "baseId": "trail-cap",
       "slot": "hat",
       "tag": "neutral",
@@ -49,7 +49,7 @@
         "level": 1,
         "role": null
       },
-      "equippedOn": "511935df-47e5-4791-b3d1-47f05259f00a",
+      "equippedOn": "00000000-0000-4000-8500-000000000003",
       "dismantle": {
         "scrap": {
           "min": 2,
@@ -77,7 +77,7 @@
       }
     },
     {
-      "id": "a26cc2cd-87aa-469a-89a1-445484db8f1b",
+      "id": "00000000-0000-4000-8500-000000000005",
       "baseId": "tidepool-charm",
       "slot": "charm",
       "tag": "tide",
@@ -143,7 +143,7 @@
       }
     },
     {
-      "id": "5a902296-2b12-48b0-bbc2-135b114f2752",
+      "id": "00000000-0000-4000-8500-000000000007",
       "baseId": "emberkeepers-crown",
       "slot": "hat",
       "tag": "ember",
@@ -209,7 +209,7 @@
         "level": 15,
         "role": null
       },
-      "equippedOn": "df73a9db-70ea-4afd-b654-868ba10a6ac4",
+      "equippedOn": "00000000-0000-4000-8500-000000000002",
       "dismantle": {
         "scrap": {
           "min": 3,
@@ -235,7 +235,7 @@
       "origin": null
     },
     {
-      "id": "5cdfcff0-b4f2-486d-875a-0a64d64a5969",
+      "id": "00000000-0000-4000-8500-000000000008",
       "baseId": "bark-shawl",
       "slot": "scarf",
       "tag": "grove",
@@ -284,7 +284,7 @@
         "level": 12,
         "role": null
       },
-      "equippedOn": "df73a9db-70ea-4afd-b654-868ba10a6ac4",
+      "equippedOn": "00000000-0000-4000-8500-000000000002",
       "dismantle": {
         "scrap": {
           "min": 3,
@@ -310,7 +310,7 @@
       "origin": null
     },
     {
-      "id": "e4f4677e-304e-4e03-807d-c32c247655a8",
+      "id": "00000000-0000-4000-8500-000000000009",
       "baseId": "wardens-bell",
       "slot": "charm",
       "tag": "guard",
@@ -357,7 +357,7 @@
         "level": 13,
         "role": "guard"
       },
-      "equippedOn": "511935df-47e5-4791-b3d1-47f05259f00a",
+      "equippedOn": "00000000-0000-4000-8500-000000000003",
       "dismantle": {
         "scrap": {
           "min": 3,
@@ -383,7 +383,7 @@
       "origin": null
     },
     {
-      "id": "609e966b-a387-4ebd-842b-001fccebb5fd",
+      "id": "00000000-0000-4000-8500-000000000010",
       "baseId": "crossroads-compass",
       "slot": "charm",
       "tag": "explorer",
@@ -430,7 +430,7 @@
         "level": 13,
         "role": null
       },
-      "equippedOn": "df73a9db-70ea-4afd-b654-868ba10a6ac4",
+      "equippedOn": "00000000-0000-4000-8500-000000000002",
       "dismantle": {
         "scrap": {
           "min": 3,
@@ -456,7 +456,7 @@
       "origin": null
     },
     {
-      "id": "31978653-fabd-4be7-8d48-f4474f97ecd0",
+      "id": "00000000-0000-4000-8500-000000000011",
       "baseId": "thundercap",
       "slot": "hat",
       "tag": "spark",
@@ -531,7 +531,7 @@
       "origin": null
     },
     {
-      "id": "9ca08af2-d7b8-4324-a856-023786b928be",
+      "id": "00000000-0000-4000-8500-000000000014",
       "baseId": "kelp-cap",
       "slot": "hat",
       "tag": "tide",
@@ -635,8 +635,8 @@
   ],
   "jobs": [
     {
-      "id": "c39d6dc1-835d-4020-9e2d-9b2fa4728f3d",
-      "creatureId": "df73a9db-70ea-4afd-b654-868ba10a6ac4",
+      "id": "00000000-0000-4000-8500-000000000015",
+      "creatureId": "00000000-0000-4000-8500-000000000002",
       "kind": "craft",
       "input": {
         "baseId": "kelp-cap",
@@ -655,8 +655,8 @@
       "result": null
     },
     {
-      "id": "493e4284-b3fa-4cc3-82aa-8d12c3106c7f",
-      "creatureId": "ffe187a8-7dd7-4180-ac50-b290e8528405",
+      "id": "00000000-0000-4000-8500-000000000016",
+      "creatureId": "00000000-0000-4000-8500-000000000004",
       "kind": "dismantle",
       "input": {
         "items": [
@@ -690,7 +690,7 @@
         "learned": [],
         "marked": [],
         "experience": {
-          "creatureId": "ffe187a8-7dd7-4180-ac50-b290e8528405",
+          "creatureId": "00000000-0000-4000-8500-000000000004",
           "gained": 2,
           "treat": false,
           "levelBefore": 9,
@@ -707,8 +707,8 @@
       }
     },
     {
-      "id": "ef333ddc-e280-4dc2-a6f9-a5c93814b951",
-      "creatureId": "ffe187a8-7dd7-4180-ac50-b290e8528405",
+      "id": "00000000-0000-4000-8500-000000000012",
+      "creatureId": "00000000-0000-4000-8500-000000000004",
       "kind": "craft",
       "input": {
         "baseId": "kelp-cap"
@@ -725,14 +725,14 @@
       "claimedAt": 1799744402000,
       "result": {
         "kind": "craft",
-        "gearId": "9ca08af2-d7b8-4324-a856-023786b928be",
+        "gearId": "00000000-0000-4000-8500-000000000014",
         "baseId": "kelp-cap",
         "rarity": "common",
         "itemLevel": 2,
         "reach": "none",
         "upgraded": false,
         "experience": {
-          "creatureId": "ffe187a8-7dd7-4180-ac50-b290e8528405",
+          "creatureId": "00000000-0000-4000-8500-000000000004",
           "gained": 24,
           "treat": false,
           "levelBefore": 9,
@@ -749,8 +749,8 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-0000000000aa",
-      "creatureId": "511935df-47e5-4791-b3d1-47f05259f00a",
+      "id": "00000000-0000-4000-8500-000000000013",
+      "creatureId": "00000000-0000-4000-8500-000000000003",
       "kind": "improve",
       "input": {},
       "cost": {
@@ -781,19 +781,19 @@
   },
   "skills": [
     {
-      "creatureId": "df73a9db-70ea-4afd-b654-868ba10a6ac4",
+      "creatureId": "00000000-0000-4000-8500-000000000002",
       "xp": 250,
       "level": 3,
       "nextLevelXp": 450
     },
     {
-      "creatureId": "511935df-47e5-4791-b3d1-47f05259f00a",
+      "creatureId": "00000000-0000-4000-8500-000000000003",
       "xp": 24,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "ffe187a8-7dd7-4180-ac50-b290e8528405",
+      "creatureId": "00000000-0000-4000-8500-000000000004",
       "xp": 42,
       "level": 1,
       "nextLevelXp": 100
@@ -803,7 +803,7 @@
     {
       "gear": [
         {
-          "id": "6e34208f-f810-4723-a674-66942f5de565",
+          "id": "00000000-0000-4000-8500-000000000006",
           "baseId": "festival-hearth-scarf",
           "rarity": "common",
           "itemLevel": 6
@@ -819,7 +819,7 @@
     {
       "gear": [
         {
-          "id": "a26cc2cd-87aa-469a-89a1-445484db8f1b",
+          "id": "00000000-0000-4000-8500-000000000005",
           "baseId": "tidepool-charm",
           "rarity": "common",
           "itemLevel": 6
@@ -835,7 +835,7 @@
     {
       "gear": [
         {
-          "id": "94cfe2f5-d1a0-4010-ac43-1a9cf7863cba",
+          "id": "00000000-0000-4000-8500-000000000001",
           "baseId": "trail-cap",
           "rarity": "common",
           "itemLevel": 1

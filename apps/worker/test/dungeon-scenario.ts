@@ -1,6 +1,6 @@
 /**
- * One scripted play-through of the daily dungeon on the map, through the real routes. The capture test
- * (`dungeon-capture.test.ts`) writes its responses out as the fixtures in
+ * One scripted play-through of the daily dungeon on the map, through the real routes.
+ * `pnpm fixtures:capture` (see `fixture-sets.ts`) writes its responses out as the fixtures in
  * `apps/activity/src/fixtures` (`dungeon-*.json`), and `dungeon-fixtures.test.ts` checks that the
  * server still sends the shapes those files have, so the client can build against them. Nothing here
  * is hand-written output: every response comes from the server.
@@ -10,8 +10,9 @@
  * the seeded rngs of `dungeonScenarioOptions`.
  *
  * The older fixtures (`dungeon-run-*.json`, `dungeon-today*.json` from before the map, the old
- * replay) were captured from the all-at-once run that no longer exists; they stay, as the shapes of the
- * runs stored before the map, and are not captured again.
+ * replay, `dungeon-legacy-errors.json`, `dungeon-legacy-request-bodies.json`) were captured from the
+ * all-at-once run that no longer exists; they stay, as the shapes of the runs stored before the map,
+ * and are not captured again.
  */
 import { RULES, createSeededRng } from '@creatures/game';
 import {
@@ -25,19 +26,11 @@ import {
   type Json,
 } from './dungeon-helpers';
 import type { DungeonRunState } from '../src/dungeon-types';
+import { createRecorder, type Captured } from './fixture-contract';
 import type { CoreContext } from './helpers';
 
 /** Tuesday of week 2027-W02, 14:00 in Helsinki: after the 13:37 daily reset, so the game day is the 12th. */
 export const DUNGEON_SCENARIO_START = Date.parse('2027-01-12T12:00:00Z');
-
-export interface DungeonCaptured {
-  /** Named responses: bodies of successful calls. */
-  responses: Record<string, unknown>;
-  /** Real error bodies: `{ route, status, body }`. */
-  errors: { route: string; status: number; body: unknown }[];
-  /** Request bodies the client sends, `{ path, method, body }`, with real ids. */
-  requests: Record<string, { path: string; method: string; body: unknown }>;
-}
 
 /** The rngs the scenario's guild must be built with, so the output is the same every time. */
 export const dungeonScenarioOptions = () => ({
@@ -50,33 +43,22 @@ type Act = Parameters<DungeonPlayer['act']>[1];
 /** The foes of the script's wins: weak enough that the team of level 12 beats any room of the map. */
 const FOES: [hpBp: number, atkBp: number] = [2_000, 1_000];
 
-export async function runDungeonScenario(ctx: CoreContext): Promise<DungeonCaptured> {
+export async function runDungeonScenario(ctx: CoreContext): Promise<Captured> {
   ctx.clock.t = DUNGEON_SCENARIO_START;
-  const out: DungeonCaptured = { responses: {}, errors: [], requests: {} };
-  const tidy = (method: string, path: string): string =>
-    `${method} ${path.replace(/[0-9a-f-]{36}/g, ':id')}`;
+  const out: Captured = { responses: {}, errors: [], requests: {} };
+  const recorderOf = (p: DungeonPlayer) =>
+    createRecorder(p.call, { captured: out, failedRecord: 'collect', everyRequest: true });
 
   /** Calls, remembers the request, and stores the response (or the error) under `name`. */
-  const record = async (
+  const record = (
     p: DungeonPlayer,
     name: string,
     method: string,
     path: string,
     body?: unknown,
-  ): Promise<Json> => {
-    const res = await p.call(method, path, body);
-    if (res.status === 200) {
-      out.responses[name] = res.body;
-      out.requests[name] = { path, method, body: body ?? null };
-    } else {
-      out.errors.push({ route: tidy(method, path), status: res.status, body: res.body });
-    }
-    return res;
-  };
+  ): Promise<Json> => recorderOf(p).record(name, method, path, body);
   const refuse = async (p: DungeonPlayer, method: string, path: string, body?: unknown) => {
-    const res = await p.call(method, path, body);
-    if (res.status === 200) throw new Error(`${method} ${path} was meant to fail`);
-    out.errors.push({ route: tidy(method, path), status: res.status, body: res.body });
+    await recorderOf(p).refuse(method, path, body);
   };
   const actBody = (state: DungeonRunState, act: Act, key = newKey()) => ({
     runId: state.id,

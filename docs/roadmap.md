@@ -84,7 +84,7 @@ Small items noticed during M6. Each is a one-line fix or a short task.
    - The bosses are still in the detailed style; decide whether to give them a chibi pass.
    - Stormray and Tempestray read slightly off-style.
 9. **Effect description in the ability popover.** It was removed to keep the popover small; consider one muted line.
-10. **Contract fixtures were partly script-edited** (PR #8). Partly done: five capture tests (`apps/worker/test/*-capture.test.ts`) are skipped and print `FIXTURE-` lines to split by hand. Left: a `pnpm fixtures:capture` script that unskips them with an env var and writes the files, so the fixtures never drift.
+10. ~~**Contract fixtures were partly script-edited** (PR #8). Left: a `pnpm fixtures:capture` script.~~ Done (2026-10-18/19): `pnpm fixtures:capture` re-captures the five scenario sets (branches, creatures, dungeon, expeditions, gear) with stable ids; see `design/testing.md`. The raid fixtures (`live-*`, `action-*`, `practice-*`, `raid-*`, `errors.json`, `request-bodies.json`) have no scenario yet: a `raid-scenario.ts` in `apps/worker/test/fixture-sets.ts` would cover them (phase 2).
 11. **Others' abilities summary** under the stage could become small icons on other players' creatures. Today it is a collapsed list.
 
 ## Upkeep

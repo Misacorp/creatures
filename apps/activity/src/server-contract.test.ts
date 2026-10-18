@@ -47,13 +47,16 @@ import dungeonActEventPending from './fixtures/dungeon-act-event-pending.json';
 import dungeonActEvent from './fixtures/dungeon-act-event.json';
 import dungeonActFight from './fixtures/dungeon-act-fight.json';
 import dungeonActHome from './fixtures/dungeon-act-home.json';
-import dungeonErrors from './fixtures/dungeon-errors.json';
+import dungeonMapErrors from './fixtures/dungeon-errors.json';
+import legacyDungeonErrors from './fixtures/dungeon-legacy-errors.json';
+import legacyDungeonRequestBodies from './fixtures/dungeon-legacy-request-bodies.json';
 import dungeonReplayPath from './fixtures/dungeon-replay-path.json';
 import dungeonStart from './fixtures/dungeon-start.json';
 import dungeonTodayActive from './fixtures/dungeon-today-active.json';
 import dungeonTodayMap from './fixtures/dungeon-today-map.json';
 import dungeonReplay from './fixtures/dungeon-replay.json';
 import dungeonRequestBodies from './fixtures/dungeon-request-bodies.json';
+
 import dungeonRunCleared from './fixtures/dungeon-run-cleared.json';
 import dungeonRunLandmark from './fixtures/dungeon-run-landmark.json';
 import dungeonRunLost from './fixtures/dungeon-run-lost.json';
@@ -126,6 +129,10 @@ import { errorText } from './game';
 import { autoFireTarget, buildAction } from './live';
 import { sendLiveAction, startPractice } from './live-api';
 import { fetchStats, markRevealSeen, setRaidAbility, setRaidAutofire } from './raid-api';
+
+/** The older run route's error rows come first, then the map's: the codes of both are in the fixtures. */
+const dungeonErrors: { route: string; status: number; body: { error: string; reason?: string } }[] =
+  [...legacyDungeonErrors, ...dungeonMapErrors];
 
 /**
  * The client against the Worker's strict schemas (`apps/worker/src/raid-schemas.ts`). The bodies in
@@ -668,8 +675,10 @@ describe('the dungeon requests the client sends', () => {
   });
 
   it('every body has a key of the form the Worker wants, and is retried with the same one', () => {
-    for (const key of Object.keys(dungeonRequestBodies) as (keyof typeof dungeonRequestBodies)[]) {
-      const { body, method } = dungeonRequestBodies[key];
+    for (const { body, method } of [
+      ...Object.values(legacyDungeonRequestBodies),
+      ...Object.values(dungeonRequestBodies),
+    ]) {
       // Only runs are spends with a key; the team draft (PUT) has none, and a GET has no body.
       if (body === null || method !== 'POST') continue;
       expect((body as { idempotencyKey: string }).idempotencyKey).toMatch(/^[A-Za-z0-9_-]{8,64}$/);
@@ -678,7 +687,7 @@ describe('the dungeon requests the client sends', () => {
 
   it('saves the team draft with the PUT body of the fixture, which has no key, and reads the answer', async () => {
     apiFetch.mockResolvedValue(dungeonTeamDraft);
-    const { path, method, body } = dungeonRequestBodies['dungeon-team-draft'];
+    const { path, method, body } = legacyDungeonRequestBodies['dungeon-team-draft'];
     const done = await saveDungeonTeam(
       body as { team: [string | null, string | null, string | null] },
     );
@@ -703,7 +712,7 @@ describe('the dungeon requests the client sends', () => {
 
     apiFetch.mockClear();
     apiFetch.mockResolvedValue(dungeonReplay);
-    const { path } = dungeonRequestBodies['dungeon-replay'];
+    const { path } = legacyDungeonRequestBodies['dungeon-replay'];
     await fetchDungeonReplay(path.split('/')[4] as string);
     expect(apiFetch).toHaveBeenCalledWith(path);
   });

@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "08aa93dc-401e-49b8-bd26-b7f12f9142d2",
+    "id": "00000000-0000-4000-8300-000000000004",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -292,7 +292,7 @@
     "pending": null,
     "team": [
       {
-        "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "id": "00000000-0000-4000-8300-000000000001",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -303,7 +303,7 @@
         "treat": false
       },
       {
-        "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+        "id": "00000000-0000-4000-8300-000000000002",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -314,7 +314,7 @@
         "treat": false
       },
       {
-        "id": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
+        "id": "00000000-0000-4000-8300-000000000003",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
@@ -359,7 +359,7 @@
     "row": [
       {
         "position": 0,
-        "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "id": "00000000-0000-4000-8300-000000000001",
         "name": "Sproutle",
         "species": "sproutle",
         "element": "grove",
@@ -368,7 +368,7 @@
       },
       {
         "position": 1,
-        "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+        "id": "00000000-0000-4000-8300-000000000002",
         "name": "Splashet",
         "species": "splashet",
         "element": "tide",
@@ -377,7 +377,7 @@
       },
       {
         "position": 2,
-        "id": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
+        "id": "00000000-0000-4000-8300-000000000003",
         "name": "Cindle",
         "species": "cindle",
         "element": "ember",
@@ -399,14 +399,14 @@
     "cleared": true,
     "rounds": 1,
     "hpStart": {
-      "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
-      "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
-      "ae8c7c8f-b190-470f-b09e-4ae48d278eb9": 173
+      "00000000-0000-4000-8300-000000000001": 281,
+      "00000000-0000-4000-8300-000000000002": 200,
+      "00000000-0000-4000-8300-000000000003": 173
     },
     "hpMax": {
-      "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
-      "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
-      "ae8c7c8f-b190-470f-b09e-4ae48d278eb9": 173
+      "00000000-0000-4000-8300-000000000001": 281,
+      "00000000-0000-4000-8300-000000000002": 200,
+      "00000000-0000-4000-8300-000000000003": 173
     },
     "events": [
       {
@@ -418,12 +418,12 @@
       {
         "t": "turn",
         "round": 1,
-        "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745"
+        "creature": "00000000-0000-4000-8300-000000000001"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "creature": "00000000-0000-4000-8300-000000000001",
         "damage": 44,
         "matchupBp": 15000,
         "bonusBp": 0,
@@ -433,7 +433,7 @@
       {
         "t": "mark",
         "round": 1,
-        "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "creature": "00000000-0000-4000-8300-000000000001",
         "player": "p1",
         "element": "grove",
         "replaced": null
@@ -447,9 +447,9 @@
     "names": {
       "boss": "Static Bat",
       "creatures": {
-        "64ab0da2-cff5-47ec-8346-04317bb6b745": "Sproutle",
-        "5b8aea90-83c9-4de6-b9f4-2cd49763020f": "Splashet",
-        "ae8c7c8f-b190-470f-b09e-4ae48d278eb9": "Cindle"
+        "00000000-0000-4000-8300-000000000001": "Sproutle",
+        "00000000-0000-4000-8300-000000000002": "Splashet",
+        "00000000-0000-4000-8300-000000000003": "Cindle"
       },
       "players": {
         "p1": "Player 1"

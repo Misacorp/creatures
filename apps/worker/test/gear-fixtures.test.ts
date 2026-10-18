@@ -1,4 +1,3 @@
-import { createSeededRng } from '@creatures/game';
 import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
 import collectionState from '../../activity/src/fixtures/collection-state.json';
@@ -29,47 +28,24 @@ import {
   PreviewBodySchema,
   StartJobBodySchema,
 } from '../src/gear-schemas';
-import { runCore } from './helpers';
-import { runConversionScenario, runExpeditionScenario, runGearScenario } from './gear-scenario';
-import { nextGuild, scriptedThenSeeded } from './raid-helpers';
+import { expectSameShape } from './fixture-contract';
+import { fixtureSet } from './fixture-sets';
 
 /**
  * The contract with the client for gear, the workshop and expedition loot. The files in
- * `apps/activity/src/fixtures` were captured from real server output (`gear-scenario.ts` plays the
- * same game through the real routes). These tests run that scenario again and compare the SHAPE of
+ * `apps/activity/src/fixtures` were captured from real server output (`pnpm fixtures:capture` plays
+ * `gear-scenario.ts` through the real routes, see `fixture-sets.ts`). These tests run that scenario again and compare the SHAPE of
  * every response (keys and types, not values: ids and tuned numbers may differ), so a change in what
  * the server sends fails here and points at the fixtures and the client parsers.
  */
 const UPDATE =
-  'the server shape changed: re-capture apps/activity/src/fixtures with test/gear-scenario.ts and update the client parsers';
+  'the server shape changed: run `pnpm fixtures:capture`, review the diff of apps/activity/src/fixtures and update the client parsers';
 
-/** Keys and value types, recursively; arrays are the set of their elements' shapes. */
-function shape(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    const shapes = new Set(value.map((x) => JSON.stringify(shape(x))));
-    return [...shapes].sort().map((s) => JSON.parse(s) as unknown);
-  }
-  if (value === null) return 'null';
-  if (typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([a], [b]) => (a < b ? -1 : 1))
-        .map(([k, x]) => [k, shape(x)]),
-    );
-  }
-  return typeof value;
-}
-
-/** Shape with the keys of free-form maps (parts by kind) folded in: parts keys are content, not shape. */
-const sameShape = (live: unknown, fixture: unknown): void => {
-  expect(shape(live), UPDATE).toEqual(shape(fixture));
-};
+const sameShape = (live: unknown, fixture: unknown): void => expectSameShape(live, fixture, UPDATE);
 
 describe('the gear fixtures match what the server sends', () => {
   it('has the same responses for the whole scenario', async () => {
-    const captured = await runCore(nextGuild(), (ctx) => runGearScenario(ctx), {
-      gearRng: createSeededRng('fixture-gear'),
-    });
+    const captured = await fixtureSet('gear').run();
     const r = captured.responses;
     // The first load, before any item is given, carries the welcome kit.
     sameShape(r['gear-welcome'], gearWelcome);
@@ -88,36 +64,18 @@ describe('the gear fixtures match what the server sends', () => {
     sameShape(r['preview-dismantle'], previewDismantle);
     // The collection view of the same game: the creature cards carry the gear and the busy state.
     sameShape(r['collection-state'], collectionState);
+    // The one-time conversion notice and its dismissal, and the expedition claim with its loot.
+    sameShape(r['gear-notice'], gearNotice);
+    sameShape(r['gear-notice-dismissed'], gearNoticeDismissed);
+    sameShape(r['expedition-claim-loot'], expeditionClaimLoot);
     // And the errors are the real ones, code for code.
     expect(captured.errors, UPDATE).toEqual(gearErrors);
   });
 
-  it('has the one-time conversion notice and its dismissal', async () => {
-    const captured = await runCore(nextGuild(), (ctx) => runConversionScenario(ctx), {
-      gearRng: createSeededRng('fixture-gear'),
-    });
-    sameShape(captured.responses['gear-notice'], gearNotice);
-    sameShape(captured.responses['gear-notice-dismissed'], gearNoticeDismissed);
-    // The notice says what happened to the old gear, and is gone once dismissed.
+  it('shows what each fixture is meant to show', () => {
+    // The conversion notice says what happened to the old gear, and is gone once dismissed.
     expect(gearNotice.notice).not.toBeNull();
     expect(gearNoticeDismissed.gear.notice).toBeNull();
-  });
-
-  it('has the expedition claim with its loot', async () => {
-    // Shard, glimmer, blueprint (and its rarity and base), then a found supply (and its kind).
-    const script = [0, 0, 0, 0, 0, 0, 0];
-    let i = 0;
-    const rest = createSeededRng('fixture-exp');
-    const captured = await runCore(nextGuild(), (ctx) => runExpeditionScenario(ctx), {
-      // A catch that is certain (a new creature), so the claim shows a catch next to the loot.
-      rng: scriptedThenSeeded([0, 0, 0, 1], 'fixture-catch'),
-      tripRng: createSeededRng('fixture-trip'),
-      gearRng: { nextU32: () => script[i++] ?? rest.nextU32() },
-    });
-    sameShape(captured.responses['expedition-claim-loot'], expeditionClaimLoot);
-  });
-
-  it('shows what each fixture is meant to show', () => {
     // Welcome kit: one common item, one blueprint, the welcome scrap.
     expect(gearWelcome.items).toHaveLength(1);
     expect(gearWelcome.blueprints).toHaveLength(1);

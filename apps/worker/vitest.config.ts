@@ -17,6 +17,7 @@ export default defineConfig({
     // can pass the 5 s default, so allow more time, as the engine and game packages do.
     testTimeout: 30_000,
     // scripts/*.test.mjs are node:test files (plain Node scripts), run by `node --test`.
-    exclude: [...configDefaults.exclude, 'scripts/**'],
+    // test/capture/** is the fixture capture (`pnpm fixtures:capture`, vitest.capture.config.ts).
+    exclude: [...configDefaults.exclude, 'scripts/**', 'test/capture/**'],
   },
 });

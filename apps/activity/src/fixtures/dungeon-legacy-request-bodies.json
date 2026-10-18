@@ -1,0 +1,74 @@
+{
+  "dungeon-team-draft": {
+    "path": "/api/dungeon/team",
+    "method": "PUT",
+    "body": {
+      "team": ["35c1e080-6872-4c5a-9465-b57a268bcaf1", null, "5e10cf2c-811c-46f0-a11b-2deec8d0d426"]
+    }
+  },
+  "dungeon-run-cleared": {
+    "path": "/api/dungeon/run",
+    "method": "POST",
+    "body": {
+      "team": [
+        "1a65a6c1-b06b-4604-b05e-9a65fe515fc8",
+        "35c1e080-6872-4c5a-9465-b57a268bcaf1",
+        "5e10cf2c-811c-46f0-a11b-2deec8d0d426"
+      ],
+      "idempotencyKey": "dungeon-00000001-test"
+    }
+  },
+  "dungeon-replay": {
+    "path": "/api/dungeon/run/1f314f41-78ed-44ce-bc57-17edb65c49ac",
+    "method": "GET",
+    "body": null
+  },
+  "dungeon-run-retry": {
+    "path": "/api/dungeon/run",
+    "method": "POST",
+    "body": {
+      "team": [
+        "1a65a6c1-b06b-4604-b05e-9a65fe515fc8",
+        "35c1e080-6872-4c5a-9465-b57a268bcaf1",
+        "5e10cf2c-811c-46f0-a11b-2deec8d0d426"
+      ],
+      "idempotencyKey": "dungeon-00000001-test"
+    }
+  },
+  "dungeon-run-landmark": {
+    "path": "/api/dungeon/run",
+    "method": "POST",
+    "body": {
+      "team": [
+        "f804f00a-886f-4169-97cf-53ba4ef264ed",
+        "e4468ea2-ee8f-46d8-b655-d5941a5a078c",
+        "70ad409b-c756-43da-beca-2aedb6d69275"
+      ],
+      "idempotencyKey": "dungeon-00000009-test"
+    }
+  },
+  "dungeon-run-lost": {
+    "path": "/api/dungeon/run",
+    "method": "POST",
+    "body": {
+      "team": [
+        "1c39991d-1e30-4123-83f3-29b7c2e35fee",
+        "0feb423e-c8f4-4409-825b-fce8dce5a801",
+        "a41a1fa7-a454-4944-b877-6f9e6f940d39"
+      ],
+      "idempotencyKey": "dungeon-00000010-test"
+    }
+  },
+  "dungeon-run-retry-attempt": {
+    "path": "/api/dungeon/run",
+    "method": "POST",
+    "body": {
+      "team": [
+        "1c39991d-1e30-4123-83f3-29b7c2e35fee",
+        "0feb423e-c8f4-4409-825b-fce8dce5a801",
+        "a41a1fa7-a454-4944-b877-6f9e6f940d39"
+      ],
+      "idempotencyKey": "dungeon-00000011-test"
+    }
+  }
+}

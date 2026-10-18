@@ -9,49 +9,24 @@ import requests from '../../activity/src/fixtures/branches-request-bodies.json';
 import stateAfter from '../../activity/src/fixtures/branches-state-after.json';
 import state from '../../activity/src/fixtures/branches-state.json';
 import { CatchChoiceBodySchema, EvolveBodySchema } from '../src/collection-schemas';
-import { branchesScenarioOptions, runBranchesScenario } from './branches-scenario';
-import { runCore } from './helpers';
-import { nextGuild } from './raid-helpers';
+import { expectSameShape } from './fixture-contract';
+import { fixtureSet } from './fixture-sets';
 
 /**
  * The contract with the client for branch evolutions and Keep. The files `branches-*` in
- * `apps/activity/src/fixtures` were captured from real server output (`branches-scenario.ts` plays the
- * game through the real routes). These tests run that scenario again and compare the SHAPE of every
+ * `apps/activity/src/fixtures` were captured from real server output (`pnpm fixtures:capture` plays
+ * `branches-scenario.ts` through the real routes, see `fixture-sets.ts`). These tests run that scenario again and compare the SHAPE of every
  * response (keys and types, not values), so a change in what the server sends fails here and points at the
  * fixtures and the client parsers.
  */
 const UPDATE =
-  'the server shape changed: re-capture apps/activity/src/fixtures with test/branches-capture.test.ts and update the client parsers';
+  'the server shape changed: run `pnpm fixtures:capture`, review the diff of apps/activity/src/fixtures and update the client parsers';
 
-/** Keys and value types, recursively; arrays are the set of their elements' shapes. */
-function shape(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    const shapes = new Set(value.map((x) => JSON.stringify(shape(x))));
-    return [...shapes].sort().map((s) => JSON.parse(s) as unknown);
-  }
-  if (value === null) return 'null';
-  if (typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([a], [b]) => (a < b ? -1 : 1))
-        .map(([k, x]) => [k, shape(x)]),
-    );
-  }
-  return typeof value;
-}
-
-const sameShape = (live: unknown, fixture: unknown): void => {
-  expect(shape(live), UPDATE).toEqual(shape(fixture));
-};
+const sameShape = (live: unknown, fixture: unknown): void => expectSameShape(live, fixture, UPDATE);
 
 describe('the branches fixtures match what the server sends', () => {
   it('has the same responses for the whole scenario', async () => {
-    const options = branchesScenarioOptions();
-    const captured = await runCore(
-      nextGuild(),
-      (ctx) => runBranchesScenario(ctx, options.talentRng),
-      options,
-    );
+    const captured = await fixtureSet('branches').run();
     const r = captured.responses;
     sameShape(r['branches-state'], state);
     sameShape(r['branches-claim'], claim);
