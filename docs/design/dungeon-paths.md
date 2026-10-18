@@ -109,7 +109,7 @@ Or the player **heads home**: the run ends there and keeps the whole pack.
   - **Defeat:** the run keeps **half the pack**, each amount rounded **up** (1 Bait stays 1, 3 scrap becomes 2).
     - Rounding up is generous on purpose: an early defeat in a small run costs almost nothing, and the loss grows with how much the player risked.
     - Depth is unchanged.
-  - **Left open** (the day ended with the run still open, for example the player closed the app): closed as **home** the next time the server looks at that player's dungeon, or at the guild alarm. It pays the pack and the experience earned.
+  - **Left open** (the day ended with the run still open, for example the player closed the app): closed the next time the server looks at that player's dungeon, or at the guild alarm. A run resting at the camp with its choice pending closes as **home** (the player could have headed home there); anywhere else it closes as a **defeat** (half the pack). Otherwise quitting the app would be a free safe exit at every step and the camp's choice would mean nothing. Experience and the supply earned are paid either way.
 - **Loot per room** (`RULES.dungeon.loot`), tuned by the sim so that a typical full clear pays about what today's does:
   - fight: Bait 1;
   - elite: Bait 1, scrap 1, and a keepsake;
