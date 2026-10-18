@@ -130,7 +130,14 @@ function sampleOf(kind: SampleKind): Creature {
         expNeeded: 825,
         waiting: true,
         nextUnlock: { level: 20, name: 'Talent slot 2' },
-        evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: true },
+        // Every evolving line has two forms: the button asks which (Cindle: Pyrelynx or Wickat).
+        evolution: {
+          toSpecies: 'pyrelynx',
+          level: 15,
+          essence: 20,
+          available: true,
+          alt: { toSpecies: 'wickat' },
+        },
       };
     case 'evolve choice':
       // A Sproutle: its line grows two ways (Thornbuck or Sunfawn), so the button asks which.
@@ -248,7 +255,13 @@ export function sampleRoster(count: number): Creature[] {
         exp: 825,
         expNeeded: 825,
         waiting: true,
-        evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: true },
+        evolution: {
+          toSpecies: 'pyrelynx',
+          level: 15,
+          essence: 20,
+          available: true,
+          alt: { toSpecies: 'wickat' },
+        },
       };
     }
     return creature;

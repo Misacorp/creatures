@@ -18,6 +18,7 @@ import startFixture from '../../fixtures/dungeon-start.json';
 import { parseDungeonAct, parseDungeonStart } from '../../dungeon-parse';
 import {
   sampleRunCreatures,
+  sampleCampCreatures,
   sampleStateCamp,
   EMPTY_PACK,
   sampleSummary,
@@ -179,7 +180,7 @@ const dungeonEvent: Entry = {
 function CampDemo({ p }: { p: Props }) {
   const base = sampleStateCamp();
   const step = str(p, 'step');
-  const owned = sampleRoster(num(p, 'owned'));
+  const owned = sampleCampCreatures(num(p, 'owned'));
   const offers = dungeonKeepsakes
     .slice(0, 2)
     .map((k) => ({ id: k.id, name: k.name, description: k.description }));
@@ -271,7 +272,7 @@ const dungeonDescend: Entry = {
   file: 'apps/activity/src/DungeonDescend.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The descent card, after the floor boss (or an Undercroft floor boss on a cracked floor) has fallen. It says the new depth is unlocked, asks if the player dares delve deeper, what the boss chest already banked (gear as item rows, supplies and parts as icons with numbers), what stays at risk (the pack) side by side, what the Undercroft below is like (its rooms, the depth its foes are from, the breath the creatures catch, the double loot, and that the only way home is a camp) and two choices side by side: Descend, or Head Home. Made from the captured answer; the buttons go nowhere here.',
+    'The descent card, after the floor boss (or an Undercroft floor boss on a cracked floor) has fallen. It says the new depth is unlocked, asks if the player dares delve deeper, what the boss chest already banked (gear as item rows, supplies and parts as icons with numbers), what stays at risk (the pack) side by side, what the Undercroft below is like (its rooms, the depth its foes are from, the breath the creatures catch, the double loot, and that the only way home is a camp) and two choices side by side: Descend, or Head home with your pack. Made from the captured answer; the buttons go nowhere here.',
   controls: {
     card: {
       kind: 'select',

@@ -16,6 +16,7 @@ import {
   dismantleDurationFor,
   dismantleCountItems,
   durationCountItem,
+  nominalDurationCountItem,
   qualityText,
   rangeBadge,
   durationFor,
@@ -121,19 +122,19 @@ describe('lines and their tiers', () => {
 
 describe('creatures, busy states and the picker', () => {
   it('reads busy and away from the collection', () => {
-    expect(busyReason(cindle)).toBe('On a job in the Workshop');
+    expect(busyReason(cindle)).toBe('On a job');
     expect(busyReason(sproutle)).toBeNull();
     expect(busyReason({ busy: { kind: 'expedition', id: 'e' }, away: true })).toBe(
-      'Away on an expedition',
+      'Away on a trip',
     );
-    expect(busyReason({ busy: null, away: true })).toBe('Away on an expedition');
+    expect(busyReason({ busy: null, away: true })).toBe('Away on a trip');
   });
 
   it('lists free creatures first, best crafter first, and marks the busy one', () => {
     const options = pickerOptions(game.creatures, gear.skills, durationFor);
     expect(options.map((o) => o.creature.id)).toEqual([sproutle.id, zipmouse.id, cindle.id]);
     expect(options[0]?.durationMs).toBe(jobDuration(1));
-    expect(options[2]?.busy).toBe('On a job in the Workshop');
+    expect(options[2]?.busy).toBe('On a job');
     expect(defaultPick(options)).toBe(sproutle.id);
     // A higher Crafting level makes the job shorter.
     expect(durationFor(3)).toBeLessThan(durationFor(1));
@@ -777,6 +778,15 @@ describe("writing the odds, the marks and the refund ranges (the numbers are the
       icon: { kind: 'glyph', id: 'clock' },
       label: 'Takes',
       amount: '51 min',
+    });
+  });
+
+  it('writes the time before the skill as the same badge, spoken as "about"', () => {
+    expect(nominalDurationCountItem(3 * 3_600_000)).toEqual({
+      key: 'duration',
+      icon: { kind: 'glyph', id: 'clock' },
+      label: 'Takes about',
+      amount: '3 h',
     });
   });
 

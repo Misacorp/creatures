@@ -19,6 +19,7 @@ import {
   sampleActFight,
   sampleRoom,
   sampleState,
+  sampleCampCreatures,
   sampleStateCamp,
   sampleStateEvent,
   sampleStateMid,
@@ -400,12 +401,22 @@ describe('the camp', () => {
     expect(visibleText(root)).toContain('You have no other creatures to bring in.');
   });
 
+  it('says nobody is left to swap in when the player owns only the row (the workbench preset)', () => {
+    const root = drawCamp(noop, { creatures: sampleCampCreatures(3) });
+    expect(button(root, /^Swap a creature/).hasAttribute('disabled')).toBe(true);
+    expect(visibleText(root)).toContain('You have no other creatures to bring in.');
+  });
+
   it('asks once more before heading home, then ends the run and keeps the pack', () => {
     const acts: DungeonAct[] = [];
     const root = drawCamp((a) => acts.push(a));
     page?.click(button(root, 'Head home with your pack'));
     expect(acts).toEqual([]);
-    expect(visibleText(root)).toContain('You keep your whole pack: 2 Bait · 1 Scrap.');
+    expect(visibleText(root)).toContain('You keep your whole pack:');
+    // The pack is badges, not a sentence.
+    const kept = byName(root, 'ul', 'Your pack')[0];
+    expect(byName(kept as FakeElement, 'span', 'Bait: 2')).toHaveLength(1);
+    expect(byName(kept as FakeElement, 'span', 'Scrap: 1')).toHaveLength(1);
     page?.click(button(root, 'Not yet'));
     expect(visibleText(button(root, 'Head home with your pack'))).toBe('Head home with your pack');
     page?.click(button(root, 'Head home with your pack'));

@@ -232,7 +232,7 @@ describe('the one gold button', () => {
   it('evolves when evolution is ready', () => {
     const { card, actions, page: p } = draw(kind('evolve ready'));
     const gold = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
-    expect(visibleText(gold)).toContain('Evolve into Pyrelynx');
+    expect(visibleText(gold)).toContain('Choose an evolution');
     expect(visibleText(gold)).toContain('20 Essence');
     p.click(gold);
     expect(actions.onEvolve).toHaveBeenCalledTimes(1);
@@ -242,7 +242,7 @@ describe('the one gold button', () => {
     const { card, actions, page: p } = draw({ ...kind('evolve ready'), away: true });
     const gold = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
     expect(gold.hasAttribute('disabled')).toBe(true);
-    expect(visibleText(gold)).toContain('Away on an expedition');
+    expect(visibleText(gold)).toContain('Away on a trip');
     p.click(gold);
     expect(actions.onEvolve).not.toHaveBeenCalled();
   });

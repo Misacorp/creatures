@@ -477,7 +477,7 @@ const STATUS_WORDS: Readonly<Record<NodeStatus, string>> = {
   visited: 'Visited',
   current: 'You are here',
   reachable: 'You can go here',
-  locked: 'Not on your path',
+  locked: 'Further ahead',
   unreachable: 'Out of reach',
   preview: '',
 };
@@ -542,17 +542,16 @@ export const CAMP_LINE =
   'Rest, swap a creature or take a keepsake, then push on or head home with your pack.';
 /** A carved door: what stepping through could add (the six kinds), never which. */
 export const DOOR_LINE =
-  'A carved door. Step through to add one room to the first Undercroft floor: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.';
+  'Step through to add one room to the first Undercroft floor: a fight, an elite fight, a mystery room, a cache, a camp or an epic fight. You find out which when you descend.';
 /** A floor boss on a cracked floor. */
 export const CRACK_LINE = 'A cracked floor: beat the floor boss to go down another floor.';
 /** The day's floor boss, when beating it will let the player descend. */
 export const DESCEND_LINE = 'Beat it to descend into the Undercroft.';
-/** The line of every room of the Undercroft that says it is harder. */
-export const FIERCER_LINE = 'The Undercroft.';
 /** A room that looked like a mystery and held nothing (a carved door below depth 8). */
 export const QUIET_LINE = 'Nothing stirred here. It was a quiet room.';
 export const NO_TRICK_LINE = 'No tricks. It just attacks.';
-export const LOCKED_LINE = 'Not on your path.';
+/** A room the run has not reached yet but every path can lead to. */
+export const LOCKED_LINE = 'Further ahead.';
 export const UNREACHABLE_LINE = "You can't reach this room any more.";
 /** A room a finished run did not go to (the results map). */
 export const NOT_VISITED_LINE = 'Your run did not go here.';

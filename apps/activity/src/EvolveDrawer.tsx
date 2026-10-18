@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { shinyPalette } from './art';
+import { essenceCount } from './count-items';
 import { evolveButtonLabel, evolveForms, type EvolveForm } from './evolve-view';
 import { GlossaryTag } from './Glossary';
 import { creatureName } from './game';
@@ -8,6 +9,7 @@ import { busyReason } from './gear-view';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { CountBadge } from './ui/CountBadge';
 import { Drawer } from './ui/Drawer';
 
 /** One form to pick: its picture, name, element and role, its ability and the numbers it would have. */
@@ -109,12 +111,15 @@ export function EvolveDrawer({
       {...(returnFocusTo === undefined ? {} : { returnFocusTo })}
       footer={
         <div class="evolve-confirm">
-          <p class="evolve-permanent">
-            {String(essence)} Essence. This choice is{' '}
-            <GlossaryTag entry="evolution" look="text">
-              permanent
-            </GlossaryTag>
-            .
+          <p class="evolve-permanent evolve-cost">
+            <CountBadge {...essenceCount(essence, { entry: true })} />
+            <span>
+              This choice is{' '}
+              <GlossaryTag entry="evolution" look="text">
+                permanent
+              </GlossaryTag>
+              .
+            </span>
           </p>
           {away !== null && <p class="evolve-permanent muted">{away}</p>}
           <button

@@ -375,10 +375,18 @@
 }
 
 .bait-cost {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
   margin: 0.25rem 0;
   color: var(--gold);
 }
 
 .bait-cost.short {
   color: var(--bad);
+}
+
+.bait-cost.short .part-count {
+  box-shadow: inset 0 calc(var(--px) * -1) 0 0 var(--bad);
 }

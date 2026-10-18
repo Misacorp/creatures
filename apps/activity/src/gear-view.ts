@@ -249,10 +249,17 @@ export function missingParts(
 
 // --- Creatures, busy states and the picker ---
 
-/** Why a creature cannot take a job or an expedition now; null when it is free. */
+/** The short reason of a creature that is on a Workshop job, and of one that is away on a trip. */
+export const ON_A_JOB_REASON = 'On a job';
+export const ON_A_TRIP_REASON = 'Away on a trip';
+
+/**
+ * Why a creature is busy, in as few words as fit ("On a job", "Away on a trip"); null when it is free. The one
+ * wording of every pick list, button note and refusal that names it.
+ */
 export function busyReason(creature: Pick<Creature, 'busy' | 'away'>): string | null {
-  if (creature.busy?.kind === 'job') return 'On a job in the Workshop';
-  if (creature.busy?.kind === 'expedition' || creature.away) return 'Away on an expedition';
+  if (creature.busy?.kind === 'job') return ON_A_JOB_REASON;
+  if (creature.busy?.kind === 'expedition' || creature.away) return ON_A_TRIP_REASON;
   return null;
 }
 
@@ -657,6 +664,14 @@ export function durationCountItem(durationMs: number): CountItem {
     label: 'Takes',
     amount: formatDuration(durationMs),
   };
+}
+
+/**
+ * A job's time before the skill's speed-up, as the same clock badge ("Takes about: 3 h" spoken): what a
+ * blueprint or a supply says before anyone is picked.
+ */
+export function nominalDurationCountItem(durationMs: number): CountItem {
+  return { ...durationCountItem(durationMs), label: 'Takes about' };
 }
 
 /** The time a dismantle job of these items takes a creature of this Crafting level (the preview gives the server's). */

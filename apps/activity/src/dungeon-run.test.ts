@@ -21,7 +21,7 @@ import {
   tileLabel,
   tileState,
 } from './dungeon-run';
-import { sampleRunCreatures } from './dungeon-path-samples';
+import { sampleCampCreatures, sampleRunCreatures, sampleStateCamp } from './dungeon-path-samples';
 import { sampleRoster } from './creature-card-sample';
 
 describe('the pack as count badges', () => {
@@ -178,6 +178,18 @@ describe('the HP under a creature at the camp', () => {
   });
 });
 
+describe('the sample creatures of the camp page', () => {
+  const inRow = sampleStateCamp().team.map((c) => c.id);
+
+  it('hold the row itself, so three creatures leave nobody to swap in and six leave three', () => {
+    const three = sampleCampCreatures(3);
+    expect(three.map((c) => c.id)).toEqual(inRow);
+    expect(canSwapIn(three, inRow)).toBe(false);
+    expect(swapOptions(sampleCampCreatures(6), inRow)).toHaveLength(3);
+    expect(canSwapIn(sampleCampCreatures(6), inRow)).toBe(true);
+  });
+});
+
 describe('who can be brought in', () => {
   const owned: Creature[] = sampleRoster(5);
   const inRow = owned.slice(0, 3).map((c) => c.id);
@@ -199,6 +211,8 @@ describe('who can be brought in', () => {
     const away = owned.map((c, i) => (i === 3 ? { ...c, away: true, level: 99 } : c));
     const options = swapOptions(away, inRow);
     expect(options.at(-1)?.disabled).toBe(AWAY_REASON);
+    // The same words as everywhere else a busy creature is named.
+    expect(AWAY_REASON).toBe('Away on a trip');
     expect(options.slice(0, -1).every((o) => o.disabled === null)).toBe(true);
   });
 

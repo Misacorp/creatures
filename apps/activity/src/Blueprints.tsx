@@ -4,8 +4,15 @@ import { CraftStarter } from './CraftStarter';
 import { CostList, ItemFrame, ItemSprite } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { CraftPreview, GearState, ReachId } from './gear-types';
-import { blueprintViews, marksText, nominalHours, slotName } from './gear-view';
+import {
+  blueprintViews,
+  marksText,
+  nominalDurationCountItem,
+  nominalHours,
+  slotName,
+} from './gear-view';
 import { ElementChip } from './sprites/ElementChip';
+import { CountBadge } from './ui/CountBadge';
 
 /**
  * The blueprints a player has learned, each with its quality, the parts a plain craft costs
@@ -53,10 +60,12 @@ export function Blueprints({
                   {bp.needsCraftingLevel > 1 && (
                     <p class="muted">Needs Crafting level {bp.needsCraftingLevel}</p>
                   )}
-                  <p class="muted">
-                    Takes about {nominalHours()} h ·{' '}
-                    <GlossaryTag entry="blueprint-quality">Quality</GlossaryTag>{' '}
-                    {marksText(bp.marks)}
+                  <p class="bp-meta muted">
+                    <CountBadge {...nominalDurationCountItem(nominalHours() * 3_600_000)} />
+                    <span>
+                      <GlossaryTag entry="blueprint-quality">Quality</GlossaryTag>{' '}
+                      {marksText(bp.marks)}
+                    </span>
                   </p>
                 </div>
               </div>

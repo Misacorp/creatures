@@ -98,6 +98,14 @@ button.evolve-form:active:not(:disabled) {
   text-align: center;
 }
 
+.evolve-cost {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.5rem;
+}
+
 .evolve-confirm button.primary {
   width: 100%;
   min-height: 2.75rem;
