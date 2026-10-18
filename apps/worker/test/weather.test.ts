@@ -381,8 +381,8 @@ describe('the forecast', () => {
             id: 'fair-winds',
             name: 'Fair Winds',
             // Boss Rank 7: Boons x1.25, Omens x1.5.
-            fight: ["Every creature's first hit deals 12.5% more."],
-            trips: ['Trips take 12.5% less time.'],
+            fight: ["Every creature's first hit deals 12% more."],
+            trips: ['Trips take 12% less time.'],
           },
           omen: {
             id: 'heavy-rain',

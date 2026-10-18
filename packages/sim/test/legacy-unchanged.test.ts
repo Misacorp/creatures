@@ -82,6 +82,8 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  *
  * With the new weathers and the new gear together (the branch merge, 2026-10-18) the first player's top-3
  * power is 375, 314, 248 and 209, and raids won 7, 4, 5 and 5; Bait earned is the same as before.
+ * Weather numbers then became readable (whole percent from 10 up, halves below, `scaleStrength`): the
+ * hashes moved, the headlines did not.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

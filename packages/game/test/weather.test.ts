@@ -25,6 +25,7 @@ import {
   weatherLines,
   weatherLuck,
   weatherSheet,
+  scaleStrength,
   weatherSky,
   weatherStrength,
   workshopExperience,
@@ -340,7 +341,7 @@ describe('fights: the sheet, luck and boss attacks', () => {
 
   it('Fair Winds: the first hit, at the day strength', () => {
     expect(weatherSheet(day('fair-winds'), setter)).toEqual({ firstHitBp: 1_000 });
-    expect(weatherSheet(day('fair-winds', null, 12_500), setter)).toEqual({ firstHitBp: 1_250 });
+    expect(weatherSheet(day('fair-winds', null, 12_500), setter)).toEqual({ firstHitBp: 1_200 });
     expect(weatherSheet(day('fair-winds', null, 15_000), setter)).toEqual({ firstHitBp: 1_500 });
   });
 
@@ -370,7 +371,7 @@ describe('fights: the sheet, luck and boss attacks', () => {
   it('Lantern Light adds a round and never scales it; Quiet Night pierces the adaptation', () => {
     expect(weatherSheet(day('lantern-light', null, 15_000), setter)).toEqual({ lingerRounds: 1 });
     expect(weatherSheet(day('quiet-night'), setter)).toEqual({ pierceBp: 2_500 });
-    expect(weatherSheet(day('quiet-night', null, 15_000), setter)).toEqual({ pierceBp: 3_750 });
+    expect(weatherSheet(day('quiet-night', null, 15_000), setter)).toEqual({ pierceBp: 3_700 });
   });
 
   it('Heavy Rain makes everyone take more area damage; Restless Wind loosens Guards only', () => {
@@ -489,7 +490,7 @@ describe('Kind Rain, Morning Haze and Bramble Season', () => {
     expect(tripWeather(rain, trip('tidepools')).partsBp).toBe(2_500);
     expect(tripWeather(rain, trip('verdant-hollow')).partsBp).toBe(2_500);
     expect(tripWeather(rain, trip('ember-caves')).partsBp).toBe(0);
-    expect(tripWeather(day('kind-rain', null, 15_000), trip('tidepools')).partsBp).toBe(3_750);
+    expect(tripWeather(day('kind-rain', null, 15_000), trip('tidepools')).partsBp).toBe(3_700);
     const haze = day('market-day', 'morning-haze');
     expect(tripWeather(haze, trip('tidepools')).timeBp).toBe(1_000);
     expect(
@@ -696,7 +697,7 @@ describe('experience and the Workshop', () => {
     expect(workshopMods(market, 'dismantle', 30)).toEqual({});
     // Strength raises the step-up (rank 6 to 9: x1.25), never the number of boosted actions.
     expect(workshopMods(day('market-day', null, 12_500), 'craft', 0)).toEqual({
-      stepUpBonusBp: 625,
+      stepUpBonusBp: 600,
     });
     expect(workshopMods(day('market-day', null, 15_000), 'craft', 1)).toEqual({});
     expect(workshopMods(day('fair-winds'), 'craft', 0)).toEqual({});
@@ -755,5 +756,15 @@ describe('words', () => {
 
   it('writes nothing for a missing or an unknown one', () => {
     expect(weatherLines('nope', 10_000)).toEqual({ fight: [], trips: [] });
+  });
+});
+
+describe('scaled numbers a player can read', () => {
+  it('rounds towards zero to whole percent from 10 up and to halves below', () => {
+    expect(scaleStrength(2_500, 12_500)).toBe(3_100);
+    expect(scaleStrength(300, 12_500)).toBe(350);
+    expect(scaleStrength(200, 12_500)).toBe(250);
+    expect(scaleStrength(-1_000, 15_000)).toBe(-1_500);
+    expect(scaleStrength(-500, 12_500)).toBe(-600);
   });
 });

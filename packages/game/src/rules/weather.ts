@@ -138,9 +138,15 @@ export function activeEffects(day: WeatherDay | null): ActiveEffect[] {
   return out;
 }
 
-/** `value` times `strengthBp` over 10000, towards zero (so a penalty and a bonus scale alike). */
+/**
+ * `value` times `strengthBp` over 10000, towards zero (so a penalty and a bonus scale alike), then
+ * towards zero to a number a player can read: whole percent or points from 10 up, halves below (31.25%
+ * is 31%, 3.75 pt is 3.5 pt). The text and the rules use this same number.
+ */
 export function scaleStrength(value: number, strengthBp: number): number {
-  return Math.trunc((value * strengthBp) / BP);
+  const raw = Math.trunc((value * strengthBp) / BP);
+  const step = Math.abs(raw) >= 1_000 ? 100 : 50;
+  return Math.trunc(raw / step) * step;
 }
 
 // --- Fights: the sheet, luck and boss attacks ---
