@@ -60,6 +60,7 @@ describe('the Undercroft rules', () => {
     expect(u).toMatchObject({
       fromDepth: 8,
       catchBreathBp: 2_000,
+      reviveBp: 1_000,
       depthBonus: 1,
       baseFloors: 2,
       perLandmark: 1,
@@ -131,9 +132,20 @@ describe('the Undercroft rules', () => {
     expect(Math.abs(rate - u.chest.gearBp)).toBeLessThan(500);
   });
 
-  it('heals standing creatures a share of max HP on the way down and leaves the fallen down', () => {
+  it('heals standing creatures a share of max HP on the way down and gets the fallen back up', () => {
     const out = catchBreath({ a: 10, b: 0, c: 95 }, { a: 100, b: 100, c: 100 });
-    expect(out).toEqual({ a: 10 + 20, b: 0, c: 100 });
+    expect(out).toEqual({ a: 10 + 20, b: 100 * (u.reviveBp / 10_000), c: 100 });
+    expect(out['b']).toBe(10);
+    // The standing creature's heal is its own rule, not the revive's.
+    expect(out['a']).toBe(10 + (100 * u.catchBreathBp) / 10_000);
+  });
+
+  it('revives a fallen creature with at least 1 HP, never above its max, and returns a new record', () => {
+    const hp = { a: 0, b: -3, c: 0 };
+    const out = catchBreath(hp, { a: 7, b: 2000, c: 1 });
+    expect(out).toEqual({ a: 1, b: 200, c: 1 });
+    expect(hp).toEqual({ a: 0, b: -3, c: 0 });
+    expect(catchBreath({}, {})).toEqual({});
   });
 
   it('draws marks at the rules odds', () => {

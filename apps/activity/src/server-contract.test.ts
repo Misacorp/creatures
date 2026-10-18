@@ -869,7 +869,13 @@ describe('the dungeon responses the server sends', () => {
     expect(pending.summary).toBeUndefined();
     if (pending.state.pending?.kind !== 'descend') throw new Error('the descent card is pending');
     const card = pending.state.pending;
-    expect(card).toMatchObject({ level: 1, floors: 4, depthBonus: 1, catchBreathBp: 2000 });
+    expect(card).toMatchObject({
+      level: 1,
+      floors: 4,
+      depthBonus: 1,
+      catchBreathBp: 2000,
+      reviveBp: 1000,
+    });
     expect(card.newDepth).toBe(pending.state.depth + 1);
     expect(card.banked.gear.length).toBeGreaterThan(0);
     expect(card.banked.supplies.length).toBeGreaterThan(0);

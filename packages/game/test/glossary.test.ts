@@ -733,7 +733,8 @@ describe('the glossary covers the daily dungeon', () => {
   it('explains the Undercroft with the numbers the rules have', () => {
     const u = RULES.dungeon.undercroft;
     expect(text('undercroft')).toContain(`depth ${String(u.fromDepth)}`);
-    expect(text('undercroft')).toContain(`${String(u.catchBreathBp / 100)}% of max HP`);
+    expect(text('undercroft')).toContain(`heals ${String(u.catchBreathBp / 100)}% of max HP`);
+    expect(text('undercroft')).toContain(`the fallen get up at ${String(u.reviveBp / 100)}%`);
     expect(text('undercroft')).toContain('twice their loot');
     expect(u.lootMultiplier).toBe(2);
     expect(text('undercroft')).toContain('Your pack stays at risk');

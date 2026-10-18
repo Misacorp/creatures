@@ -547,7 +547,8 @@
         "kind": "descend",
         "result": "descend",
         "level": 1,
-        "healed": 140
+        "healed": 140,
+        "revived": 0
       },
       {
         "node": "u1f0l0",
@@ -1853,7 +1854,8 @@
           "kind": "descend",
           "result": "descend",
           "level": 1,
-          "healed": 140
+          "healed": 140,
+          "revived": 0
         },
         {
           "node": "u1f0l0",
@@ -2711,7 +2713,8 @@
             "kind": "descend",
             "result": "descend",
             "level": 1,
-            "healed": 140
+            "healed": 140,
+            "revived": 0
           },
           {
             "node": "u1f0l0",

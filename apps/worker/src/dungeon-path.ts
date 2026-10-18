@@ -602,7 +602,8 @@ export function applyHome(st: RunState): ActOutcome {
 /**
  * Goes down into the Undercroft level the run is offered. The level's map is drawn now with live
  * randomness (it is the player's own), stored with the run, and the row catches its breath on the way
- * (`catchBreathBp` of max HP, standing creatures only). The run then stands before the new map's floor 0.
+ * (`catchBreathBp` of max HP for standing creatures; a fallen one gets back up at `reviveBp`, and the
+ * entry says how many). The run then stands before the new map's floor 0.
  */
 export function applyDescend(env: PathEnv, st: RunState, depth: number): ActOutcome {
   if (st.pending?.kind !== 'descend') throw invalidAct('there is no way down waiting');
@@ -618,10 +619,13 @@ export function applyDescend(env: PathEnv, st: RunState, depth: number): ActOutc
   const before = currentHp(st);
   const after = catchBreath(before, st.hpMax);
   const healed = Object.keys(after).reduce((n, id) => n + (after[id] ?? 0) - (before[id] ?? 0), 0);
+  const revived = Object.keys(before).filter(
+    (id) => (before[id] ?? 0) <= 0 && (after[id] ?? 0) > 0,
+  ).length;
   st.hp = after;
   st.under.push(map);
   st.level = level;
-  settleStep(st, { node: st.at ?? '', kind: 'descend', result: 'descend', level, healed });
+  settleStep(st, { node: st.at ?? '', kind: 'descend', result: 'descend', level, healed, revived });
   st.pending = null;
   st.at = null;
   env.analytics?.record({ kind: 'dungeon_descend', level }, env.userId);

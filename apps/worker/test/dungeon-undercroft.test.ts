@@ -242,6 +242,7 @@ describe('the descent after the room boss', () => {
           level: 1,
           depthBonus: u.depthBonus,
           catchBreathBp: u.catchBreathBp,
+          reviveBp: u.reviveBp,
           newDepth: LANDMARK + 1,
         });
         // 2 floors for the first landmark passed, plus one per landmark after it, plus the keeper.
@@ -404,6 +405,7 @@ describe('going down', () => {
           result: 'descend',
           level: 1,
           healed,
+          revived: 0,
         });
         expect(down.history.filter((h) => h.kind === 'descend')).toHaveLength(1);
         expect(stored(ctx, state.id).under).toHaveLength(1);
@@ -417,7 +419,7 @@ describe('going down', () => {
     );
   });
 
-  it('leaves the fallen down on the way', async () => {
+  it('gets the fallen back up on the way, at the revive share of max HP, and says how many', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -428,8 +430,19 @@ describe('going down', () => {
           st.hp = { [ids[0] as string]: 0, [ids[1] as string]: 5, [ids[2] as string]: 5 };
         });
         const down = await descend(p, state);
-        expect(down.team.find((t) => t.id === ids[0])?.hp).toBe(0);
-        expect((down.team.find((t) => t.id === ids[1])?.hp ?? 0) > 5).toBe(true);
+        const first = down.team.find((t) => t.id === ids[0]);
+        expect(first?.hp).toBe(
+          Math.max(1, Math.floor(((first?.hpMax ?? 0) * u.reviveBp) / 10_000)),
+        );
+        // A standing creature still heals its own share, not the revive's.
+        const second = down.team.find((t) => t.id === ids[1]);
+        expect(second?.hp).toBe(
+          Math.min(
+            second?.hpMax ?? 0,
+            5 + Math.floor(((second?.hpMax ?? 0) * u.catchBreathBp) / 10_000),
+          ),
+        );
+        expect(down.history.at(-1)).toMatchObject({ result: 'descend', revived: 1 });
       },
       opts(),
     );

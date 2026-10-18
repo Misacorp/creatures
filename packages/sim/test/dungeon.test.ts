@@ -825,13 +825,14 @@ describe('the descent', () => {
   const plan = (floors: number, camp = false) => ({ floors, camp });
   const rng = createSeededRng('descend');
 
-  it('goes down when healthy after catching its breath: over 60% HP and nobody down', () => {
+  it('goes down when healthy after catching its breath: over 50% HP (the fallen are back up)', () => {
     expect(wantsDescend(at(0.9), plan(3), 'good', rng)).toBe(true);
-    expect(wantsDescend(at(0.61), plan(3), 'good', rng)).toBe(true);
+    expect(wantsDescend(at(0.51), plan(3), 'good', rng)).toBe(true);
+    expect(wantsDescend(at(0.4), plan(3), 'good', rng)).toBe(false);
     expect(wantsDescend(at(POLICY.descendHp), plan(3), 'good', rng)).toBe(false);
     expect(wantsDescend(at(0.95, 1), plan(3), 'good', rng)).toBe(false);
     expect(wantsDescend(at(0.95, 1), plan(3), 'reasonable', rng)).toBe(false);
-    expect(POLICY.descendHp).toBe(0.6);
+    expect(POLICY.descendHp).toBe(0.5);
   });
 
   it('has the best player want more health for a long level with no camp, and a random one flip a coin', () => {
@@ -842,7 +843,7 @@ describe('the descent', () => {
     // A camp among the rooms (a door added one) makes it worth the risk again.
     expect(wantsDescend(at(0.7), plan(POLICY.longFloors, true), 'best', rng)).toBe(true);
     expect(wantsDescend(at(0.7), plan(POLICY.longFloors - 1), 'best', rng)).toBe(true);
-    // Never when somebody is down, whatever the level.
+    // Never when somebody is still down (a revive leaves nobody down, so this is a guard), whatever the level.
     expect(wantsDescend(at(0.99, 1), plan(2), 'best', rng)).toBe(false);
     // Random players: either answer comes up whatever their health, and the same stream gives the same ones.
     const picks = (seed: string) => {

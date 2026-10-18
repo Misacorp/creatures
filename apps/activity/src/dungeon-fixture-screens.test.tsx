@@ -731,7 +731,9 @@ describe('the Undercroft, with the real answers', () => {
     expect(byName(root, 'span', 'Essence: 3')).toHaveLength(2);
     expect(card).toContain('The Undercroft · foes are fiercer here');
     expect(card).toContain('4 floors, with a keeper on the last.');
-    expect(card).toContain('Your creatures catch their breath (20% HP).');
+    expect(card).toContain(
+      'Your creatures catch their breath (20% HP), and fallen ones get back up (10% HP).',
+    );
     expect(card).toContain('Depth 15 · The room boss is down');
     expect(byName(root, 'button', 'Descend')).toHaveLength(1);
     expect(byName(root, 'button', 'Head home with everything')).toHaveLength(1);

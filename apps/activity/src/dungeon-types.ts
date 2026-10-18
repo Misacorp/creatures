@@ -174,7 +174,8 @@ export type DungeonPending =
        * The room boss (or an Undercroft keeper with a cracked floor) is down: head home with the pack
        * (`{type:'home'}`) or go down (`{type:'descend'}`). `level` is the level it opens (1, or 2 and 3
        * after a cracked floor), `floors` its floors with the keeper's, `depthBonus` how many depths
-       * harder its foes are, `catchBreathBp` the HP the standing creatures recover on the way, `newDepth`
+       * harder its foes are, `catchBreathBp` the HP the standing creatures recover on the way and `reviveBp`
+       * the HP a fallen creature gets back up with, `newDepth`
        * the player's depth now (locked in) and `banked` what the chest already paid.
        */
       kind: 'descend';
@@ -182,6 +183,7 @@ export type DungeonPending =
       floors: number;
       depthBonus: number;
       catchBreathBp: number;
+      reviveBp: number;
       newDepth: number;
       banked: DungeonBanked;
     };
@@ -286,8 +288,18 @@ export type DungeonStepLog =
     }
   /** The descent card is waiting at a boss that fell (`level` is the level it opens). */
   | { node: string; kind: 'descend'; result: 'pending'; level: number }
-  /** The run went down; `healed` is the HP the row recovered on the way, all creatures together. */
-  | { node: string; kind: 'descend'; result: 'descend'; level: number; healed: number }
+  /**
+   * The run went down; `healed` is the HP the row recovered on the way, all creatures together, and
+   * `revived` how many fallen ones got back up (absent on a run stored before they could).
+   */
+  | {
+      node: string;
+      kind: 'descend';
+      result: 'descend';
+      level: number;
+      healed: number;
+      revived?: number;
+    }
   /** The run headed home from the descent card. */
   | { node: string; kind: 'descend'; result: 'home'; level: number };
 

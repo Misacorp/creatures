@@ -202,6 +202,7 @@ function isPending(value: unknown): value is DungeonPending {
         isCount(value['floors']) &&
         isCount(value['depthBonus']) &&
         isCount(value['catchBreathBp']) &&
+        isCount(value['reviveBp']) &&
         isCount(value['newDepth']) &&
         isBanked(value['banked'])
       );
@@ -266,7 +267,12 @@ function isStepLog(value: unknown): value is DungeonStepLog {
         isArrayOf(value['gear'], isGearPiece)
       );
     case 'descend':
-      return kind === 'descend' && isCount(value['level']) && isCount(value['healed']);
+      return (
+        kind === 'descend' &&
+        isCount(value['level']) &&
+        isCount(value['healed']) &&
+        (value['revived'] === undefined || isCount(value['revived']))
+      );
     case 'home':
       return kind === 'descend' && isCount(value['level']);
     default:

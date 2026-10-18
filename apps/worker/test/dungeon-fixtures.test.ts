@@ -282,6 +282,7 @@ describe('the dungeon fixtures match what the server sends', () => {
       level: 1,
       depthBonus: RULES.dungeon.undercroft.depthBonus,
       catchBreathBp: RULES.dungeon.undercroft.catchBreathBp,
+      reviveBp: RULES.dungeon.undercroft.reviveBp,
     });
     expect(card?.kind === 'descend' ? card.floors : 0).toBe(2 + actDoor.state.undercroft.marks + 1);
     expect(card?.kind === 'descend' ? card.banked.gear.length : 0).toBeGreaterThan(0);
@@ -310,6 +311,7 @@ describe('the dungeon fixtures match what the server sends', () => {
       kind: 'descend',
       result: 'descend',
       level: 1,
+      revived: 0,
     });
     expect(actKeeper.state).toMatchObject({ status: 'done', outcome: 'cleared', level: 1 });
     expect(actKeeper.summary).toMatchObject({

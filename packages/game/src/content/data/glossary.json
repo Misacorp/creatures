@@ -1325,7 +1325,7 @@
     "title": "Undercroft",
     "short": "A deeper level below the room boss. Optional, and harder.",
     "lines": [
-      "Beat the boss at depth 8 or more and you may descend. Your creatures catch their breath (20% of max HP).",
+      "Beat the boss at depth 8 or more and you may descend. Everyone heals 20% of max HP, and the fallen get up at 10%.",
       "Its foes are fiercer, fights put twice their loot in your pack, and a keeper waits at the bottom with a better chest.",
       "Your pack stays at risk all the way down. You can head home only before descending, or at an Undercroft camp.",
       "More landmarks passed means more floors, up to five."

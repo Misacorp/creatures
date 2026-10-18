@@ -338,10 +338,10 @@ export const POLICY = {
   wary: { homeDown: 1, homeHp: 0.75 },
   /**
    * The descent card (docs/design/dungeon-paths.md, "The Undercroft"): go down when, after catching its
-   * breath, the row's average HP is over this with nobody down. `best` looks at the length of the
+   * breath (a fallen creature is back up at `reviveBp`), the row's average HP is over this. `best` looks at the length of the
    * level too: with `longFloors` floors or more and no camp among them it wants `longHp` instead.
    */
-  descendHp: 0.6,
+  descendHp: 0.5,
   longFloors: 4,
   longHp: 0.75,
 } as const;
@@ -501,8 +501,8 @@ export function wantsHome(after: RunView, wary: boolean): boolean {
 
 /**
  * What the policy does at the descent card, with the row as it will be after catching its breath
- * (`after`): the Undercroft is entered only when the row is healthy (average HP over `POLICY.descendHp`,
- * nobody down). `plan` is the level it would open: its floors and whether a camp is among them (a carved
+ * (`after`; a fallen creature is already back up at `reviveBp`, so nobody is down): the Undercroft is
+ * entered only when the row's average HP is over `POLICY.descendHp`. `plan` is the level it would open: its floors and whether a camp is among them (a carved
  * door can add one); `best` wants a healthier row for a long level with no camp. `random` players go
  * down or home with equal chance, whatever their health.
  */

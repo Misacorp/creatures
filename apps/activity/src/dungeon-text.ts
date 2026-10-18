@@ -364,13 +364,18 @@ export function catchBreathText(catchBreathBp: number): string {
   return `${percentText(catchBreathBp)} HP`;
 }
 
+/** "10% HP": the HP a fallen creature gets back up with on the way down. */
+export function reviveText(reviveBp: number): string {
+  return `${percentText(reviveBp)} HP`;
+}
+
 /**
  * What the Undercroft below holds, one plain line each, from the descent the server sent and the rules:
  * its floors and how much fiercer its foes are, the breath the row catches, the loot there and the way
  * home. The numbers are the server's (the loot multiplier is the rules').
  */
 export function descendLines(
-  descent: Pick<Descent, 'level' | 'floors' | 'depthBonus' | 'catchBreathBp'>,
+  descent: Pick<Descent, 'level' | 'floors' | 'depthBonus' | 'catchBreathBp' | 'reviveBp'>,
   lootMultiplier: number = RULES.dungeon.undercroft.lootMultiplier,
 ): string[] {
   const floors = `${String(descent.floors)} floors, with a keeper on the last.`;
@@ -382,7 +387,7 @@ export function descendLines(
       : `Fights there put ${String(lootMultiplier)} times their loot in your pack.`;
   return [
     `${floors} ${fiercer}`,
-    `Your creatures catch their breath (${catchBreathText(descent.catchBreathBp)}).`,
+    `Your creatures catch their breath (${catchBreathText(descent.catchBreathBp)}), and fallen ones get back up (${reviveText(descent.reviveBp)}).`,
     loot,
     'Once down, you can head home only from a camp, if you find one.',
   ];

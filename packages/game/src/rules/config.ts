@@ -872,17 +872,20 @@ export const RULES = {
      * 10000) when the player steps through, at most `maxMarks` a run; the player is told only what it could be. A level's keeper
      * has a cracked floor with chance `crackBp`, which opens another level (a deeper one has
      * `deeperFloors` floors), at most `maxLevels` in a run. Fights there put `lootMultiplier` times their
-     * loot in the pack; standing creatures recover `catchBreathBp` of max HP on the way down. Tuned by the
-     * simulator (docs/balance/log.md B-020). `depthBonus` was 3: the keeper (a room boss with its
+     * loot in the pack; standing creatures recover `catchBreathBp` of max HP on the way down and a
+     * knocked-out one gets back up at `reviveBp` (B-021: with 1000 about twice as many rows go down, 54% of the
+     * offers, and a descent clears its first keeper 22% of the time, 35% before; 500 is the same, 52% and 22%, so the
+     * size hardly matters). Tuned by the simulator (docs/balance/log.md B-020). `depthBonus` was 3: the keeper (a room boss with its
      * signature, met after two fights and no rest by a row that has just beaten the boss) was beaten 32% of
      * the time and a descent cleared its first keeper 17% of the time, so five of six went home with half a
      * pack. At 1 the keeper is beaten about 48% of the time and a descent clears 33%; at 0, 45%. The
-     * rest are the design's numbers (the descent rate, 23 to 27% of the offers, is decided by a creature
-     * being knocked out on the way, not by these).
+     * rest are the design's numbers (before B-021 the descent rate, 23 to 27% of the offers, was decided by a
+     * creature being knocked out on the way, not by these).
      */
     undercroft: {
       fromDepth: 8,
       catchBreathBp: 2_000,
+      reviveBp: 1_000,
       depthBonus: 1,
       baseFloors: 2,
       perLandmark: 1,

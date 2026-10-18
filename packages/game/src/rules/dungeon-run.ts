@@ -346,12 +346,23 @@ export function campRest(
   return recover(hp, hpMax, RULES.dungeon.camp.restBp);
 }
 
-/** The team's HP after the way down into the Undercroft: standing creatures recover `catchBreathBp` of max HP (a fallen one stays down). A new record. */
+/**
+ * The team's HP after the way down into the Undercroft: standing creatures recover `catchBreathBp` of max
+ * HP, never above max, and a knocked-out one gets back up at `reviveBp` of its max HP (at least 1 HP). A
+ * new record.
+ */
 export function catchBreath(
   hp: Readonly<Record<string, number>>,
   hpMax: Readonly<Record<string, number>>,
 ): Record<string, number> {
-  return recover(hp, hpMax, RULES.dungeon.undercroft.catchBreathBp);
+  const u = RULES.dungeon.undercroft;
+  const out = recover(hp, hpMax, u.catchBreathBp);
+  for (const [id, now] of Object.entries(hp)) {
+    if (now > 0) continue;
+    const max = hpMax[id] ?? 0;
+    out[id] = Math.min(Math.max(1, max), Math.max(1, share(max, u.reviveBp)));
+  }
+  return out;
 }
 
 /** True when a keepsake id is a real one (for a stored run's list). */

@@ -128,7 +128,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
   - The chest's gear and supply are banked at once.
   - Its Bait, Essence and scrap go into the pack.
   - Then the player chooses: **head home** with everything, or **descend into the Undercroft**.
-  - On the way down, standing creatures catch their breath (`catchBreathBp`, 20% of max HP).
+  - On the way down, standing creatures catch their breath (`catchBreathBp`, 20% of max HP) and knocked-out creatures get back up at `reviveBp` (10% of max HP, at least 1 HP). The history entry says how many got up (`revived`). Misa's call, 2026-10-18 (B-021): try it, unless it makes going deeper too easy. It does not: more rows go down, and fewer of them clear the first keeper.
 - **It is harder, and says so.** Undercroft foes are scaled as if the depth were higher (`depthBonus`, +1; it was +3 at first, but the keeper then stood five times in six, so the simulator's tuning lowered it, see `docs/balance/log.md` B-020), and the map, the drawer and the room banner say "Undercroft · foes are fiercer here".
 - **Its length grows with landmarks:**
   - 2 floors, plus 1 for every landmark passed after the first, at most 5 (`baseFloors`, `perLandmark`, `maxFloors`).
@@ -146,6 +146,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
   - Every fight there pays experience as usual.
   - The keeper's **Undercroft chest** is better: Essence 1, scrap 2, and a 40% gear chance with better rare and epic odds and +2 item level.
   - There is no extra depth: depth moves only by the main boss.
+- **No guaranteed camp below** (Misa, 2026-10-18). A camp in the Undercroft comes only from a carved door (about 5% of descents), so a descent is close to all-in. The layout and its odds are kept as design space for future gear lines, after the gear branch in progress merges.
 - **Risk.** The pack, now holding the boss chest's currencies, stays at risk all the way down:
   - A defeat keeps half of it, rounded up.
   - Heading home is only possible from an Undercroft camp, or before descending.
@@ -160,7 +161,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
   - A carved door's drawer says what stepping through could add (the six kinds). Stepping in shows one line ("a room was added"), never which.
   - The results show how deep the run went ("Undercroft 1 cleared").
 - **Simulator.**
-  - The policy descends when the team is healthy (average HP over 60% after catching breath and nobody knocked out).
+  - The policy descends when the team is healthy enough after catching its breath (average HP over 50%; the fallen are already back up).
   - It draws doors (`{ doors: true }`) and takes one on its route (it costs no fight). The door's room is drawn when stepped through, not chosen.
   - At Undercroft camps it heads home under the main camp's rule.
   - The targets must still hold, and the experience and gear targets are watched closely.
@@ -233,7 +234,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
 
 ### The Undercroft on the server
 
-- **Rules** (`RULES.dungeon.undercroft`, `packages/game/src/rules/dungeon-map.ts`, `dungeon-run.ts`): `fromDepth 8`, `catchBreathBp 2000`, `depthBonus 1` (3 at first: the keeper stood five times in six, B-020), `baseFloors 2`, `perLandmark 1`, `maxFloors 5`, `deeperFloors 2`, `maxMarks 2`, `lootMultiplier 2`, `crackBp 1500`, `maxLevels 3`, `epic {hpBp 16000, atkBp 13000, loot {0, 1, 2}}`, `chest {essence 1, scrap 2, gearBp 4000, rareBonusBp 1500, epicBonusBp 500, itemLevelBonus 2}`, `doorFloors [4, 5]`, `doorBp 3500`, `markOdds`.
+- **Rules** (`RULES.dungeon.undercroft`, `packages/game/src/rules/dungeon-map.ts`, `dungeon-run.ts`): `fromDepth 8`, `catchBreathBp 2000`, `reviveBp 1000`, `depthBonus 1` (3 at first: the keeper stood five times in six, B-020), `baseFloors 2`, `perLandmark 1`, `maxFloors 5`, `deeperFloors 2`, `maxMarks 2`, `lootMultiplier 2`, `crackBp 1500`, `maxLevels 3`, `epic {hpBp 16000, atkBp 13000, loot {0, 1, 2}}`, `chest {essence 1, scrap 2, gearBp 4000, rareBonusBp 1500, epicBonusBp 500, itemLevelBonus 2}`, `doorFloors [4, 5]`, `doorBp 3500`, `markOdds`.
   - The first Undercroft has `min(maxFloors, baseFloors + perLandmark x (landmarks passed - 1))` floors of two rooms, where the landmarks passed by a run at depth d are `floor((d - 1) / 7)` (depth 8 to 14: 2 floors, 15 to 21: 3, up to 5), plus one floor for each mark, plus the keeper's floor. A deeper level has `deeperFloors` floors plus the keeper, and no marks.
 - **The main map's door** is drawn last in `generateDungeonMap`, only when the caller asks (`{ doors: true }`: the server and the simulator both do), so a map without a door is the map it was before doors: a fight on floor 4 or 5 becomes a `door` node (no foe, modifier or event). `mapView(map, depth)` shows it as `door` at depth 8 and over, and as a `mystery` node with no event below it.
 - **Undercroft maps** come from `generateUndercroftMap(rng, {level, floors, marks})`: node ids `u<level>f<floor>l<lane>`; floors of two rooms in lanes 0 and 2 that lead straight up their lane (the first floor is all fights, the rest roll like the main map's rooms with caps of 2 elites, 1 cache and 2 mysteries per level, none beside its mate); a floor of one room (lane 1) for each mark (camps last); the keeper alone on the last floor (a room boss, its own foe whatever the depth, with its `signature` on). `crack` is drawn last with `crackBp` (never on level `maxLevels`). `undercroftMapValid` checks it.
@@ -241,7 +242,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
 - **The boss clear at depth 8 and over** (main boss, or a keeper with a crack and levels left, and someone standing):
   - Main boss: `cleared`, depth + 1 is written to `dungeon_progress` at once (`MAX`, never lowered, so a later defeat or a left-open close cannot undo it), and the chest opens: its gear, shard, landmark glimmer and supply are paid now under the grant key `dungeon:<day>:<attempt>:chest`; its Essence and scrap (the boss's, the full clear's, a landmark's) go into the pack.
   - Keeper: its gear (`rollUndercroftChest`) is paid under `dungeon:<day>:<attempt>:u<level>`; its Essence and scrap are already in the pack (the keeper's room pays them).
-  - Then `pending = {kind:'descend', level}` waits. `{type:'descend'}` draws the level with live randomness, heals standing creatures `catchBreathBp` and stands the run before the new map's floor 0. `{type:'home'}` ends the run as `cleared` and keeps the whole pack.
+  - Then `pending = {kind:'descend', level}` waits. `{type:'descend'}` draws the level with live randomness, heals standing creatures `catchBreathBp`, gets knocked-out ones back up at `reviveBp` (the log entry's `revived` counts them) and stands the run before the new map's floor 0. `{type:'home'}` ends the run as `cleared` and keeps the whole pack.
   - A keeper without a crack (or the deepest level, or nobody standing) ends the run as `cleared`. A main boss below depth 8 ends it as before (the chest is paid with the run).
 - **The end of such a run** pays the pack through the ledger under the usual keys `dungeon:<day>:<attempt>:bait|essence`, scrap and anything else through the grant `dungeon:<day>:<attempt>`; what the chests paid on the way is added to the summary's rewards and not paid again. Experience: the full-clear bonus is for the row that beat the main boss, whatever happens below.
 - **Outcomes.** `outcome` stays `cleared | home | defeat`. A run that beat the main boss ends `cleared` when it heads home or is closed at a safe point, and `defeat` when it is lost below (half the pack, rounded up; its summary still has `cleared: true`, and the depth stays). `deepest` counts the Undercroft levels cleared (keepers beaten).
@@ -329,6 +330,7 @@ interface DungeonRunState {
         floors: number; // its floors, the keeper's included
         depthBonus: number; // foes are this many depths harder per level
         catchBreathBp: number; // HP the standing creatures recover on the way down
+        reviveBp: number; // HP a knocked-out creature gets back up with on the way down
         newDepth: number; // the player's depth now (locked in)
         banked: {
           gear: { baseId: string; rarity: string; itemLevel?: number }[];
@@ -349,7 +351,7 @@ interface DungeonRunState {
 //   { node, kind: 'door', result: 'door', added: boolean }                    // which room it added is NOT said
 //   { node, kind: 'boss', result: 'chest', level, loot, gear: {baseId, rarity, itemLevel?}[] } // level 0: the main boss's
 //   { node, kind: 'descend', result: 'pending' | 'home', level }
-//   { node, kind: 'descend', result: 'descend', level, healed }
+//   { node, kind: 'descend', result: 'descend', level, healed, revived? }
 //   fight entries may be of kind 'epic'
 // The summary gains `deepest: number` (levels cleared) and `route.undercroft?: DungeonMapView[]`.
 ```

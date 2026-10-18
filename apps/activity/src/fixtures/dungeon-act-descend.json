@@ -529,7 +529,8 @@
         "kind": "descend",
         "result": "descend",
         "level": 1,
-        "healed": 140
+        "healed": 140,
+        "revived": 0
       }
     ]
   }

@@ -294,6 +294,7 @@ function pendingView(st: RunState, depth: number): DungeonPendingView {
       floors: descentFloors(st, depth, pending.level),
       depthBonus: RULES.dungeon.undercroft.depthBonus,
       catchBreathBp: RULES.dungeon.undercroft.catchBreathBp,
+      reviveBp: RULES.dungeon.undercroft.reviveBp,
       newDepth: depth + 1,
       banked: bankedView(st.banked),
     };

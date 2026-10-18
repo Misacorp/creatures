@@ -85,6 +85,12 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * runs without the dungeon are the same; the first player's top-3 power in the first pinned run moved
  * from 431 to 327 (a different path through the same levels and ribbons). Re-pinned once more when the
  * branch took in the raid's silence by row from main.
+ *
+ * Re-pinned again on 2026-10-18 (a fallen creature gets back up on the way down, B-021), on purpose: a
+ * knocked-out creature recovers `RULES.dungeon.undercroft.reviveBp` of its max HP when the row goes down
+ * into the Undercroft, so the policy (over 50% HP after catching its breath) sends about twice as many
+ * rows down. Bait earned and the runs without a descent are the same; the first player's top-3 power in
+ * the first pinned run moved from 343 to 380 and its raids won from 6 to 7, and 257 to 250 in the second.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

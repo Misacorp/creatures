@@ -30,6 +30,7 @@ import {
   DESCEND_BUTTON,
   DESCEND_HOME_BUTTON,
   catchBreathText,
+  reviveText,
   depthChangeText,
   descendIntro,
   descendLines,
@@ -70,9 +71,10 @@ describe('the descent card words', () => {
 
   it("says the level's floors, how much fiercer it is, the breath and the loot, from what the server sent", () => {
     expect(catchBreathText(2000)).toBe('20% HP');
+    expect(reviveText(1000)).toBe('10% HP');
     expect(descendLines(descent)).toEqual([
       '4 floors, with a keeper on the last. Foes fight 1 depth deeper than yours.',
-      'Your creatures catch their breath (20% HP).',
+      'Your creatures catch their breath (20% HP), and fallen ones get back up (10% HP).',
       'Fights there put twice their loot in your pack.',
       'Once down, you can head home only from a camp, if you find one.',
     ]);
@@ -117,6 +119,7 @@ describe('the run strip and the stage place in the Undercroft', () => {
           floors: 3,
           depthBonus: 3,
           catchBreathBp: 2000,
+          reviveBp: 1000,
           banked: { gear: [], supplies: [], parts: {} },
         },
       }),
@@ -228,6 +231,15 @@ describe('what happened in the rooms of the Undercroft', () => {
     expect(descendLine({ result: 'pending', level: 1 })).toBe(PENDING_DESCEND_LINE);
     expect(descendLine({ result: 'descend', level: 1, healed: 140 })).toBe(
       'You went down into Undercroft 1. Your creatures caught their breath (140 HP between them).',
+    );
+    expect(descendLine({ result: 'descend', level: 1, healed: 140, revived: 0 })).toBe(
+      'You went down into Undercroft 1. Your creatures caught their breath (140 HP between them).',
+    );
+    expect(descendLine({ result: 'descend', level: 1, healed: 140, revived: 1 })).toBe(
+      'You went down into Undercroft 1. Your creatures caught their breath (140 HP between them). 1 fallen creature got back up.',
+    );
+    expect(descendLine({ result: 'descend', level: 1, healed: 140, revived: 2 })).toBe(
+      'You went down into Undercroft 1. Your creatures caught their breath (140 HP between them). 2 fallen creatures got back up.',
     );
     expect(descendLine({ result: 'home', level: 1 })).toBe('You headed home with the whole pack.');
   });

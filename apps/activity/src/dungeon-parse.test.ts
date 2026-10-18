@@ -600,8 +600,14 @@ describe('the Undercroft in the dungeon answers', () => {
 
   it('reads the descent card and refuses a broken one', () => {
     const state = parseDungeonAct(actDescendPending).state;
-    expect(state.pending?.kind).toBe('descend');
+    expect(state.pending).toMatchObject({ kind: 'descend', reviveBp: 1000 });
     const card = pendingAnswer.state['pending'] as Record<string, unknown>;
+    expect(() =>
+      parseDungeonAct(withState(pendingAnswer, { pending: omitKey(card, 'reviveBp') })),
+    ).toThrow();
+    expect(() =>
+      parseDungeonAct(withState(pendingAnswer, { pending: { ...card, reviveBp: 'ten' } })),
+    ).toThrow();
     expect(() =>
       parseDungeonAct(withState(pendingAnswer, { pending: { ...card, floors: 'four' } })),
     ).toThrow();
@@ -651,7 +657,12 @@ describe('the Undercroft in the dungeon answers', () => {
     }
     // The way down and the way home.
     const downHistory = parseDungeonAct(actDescend).state.history ?? [];
-    expect(downHistory.at(-1)).toMatchObject({ kind: 'descend', result: 'descend', healed: 140 });
+    expect(downHistory.at(-1)).toMatchObject({
+      kind: 'descend',
+      result: 'descend',
+      healed: 140,
+      revived: 0,
+    });
     const home = raw.map((e) => (e['kind'] === 'descend' ? { ...e, result: 'home' } : e));
     expect(
       parseDungeonAct(withState(pendingAnswer, { history: home })).state.history?.at(-1),
@@ -663,6 +674,21 @@ describe('the Undercroft in the dungeon answers', () => {
       e['result'] === 'descend' ? { ...e, healed: 'a lot' } : e,
     );
     expect(() => parseDungeonAct(withState(down, { history: noHeal }))).toThrow();
+    // How many got back up is optional (a run stored before they could has none), but a count when there.
+    const withRevived = (revived: unknown) =>
+      (down.state['history'] as Record<string, unknown>[]).map((e) => {
+        if (e['result'] !== 'descend') return e;
+        if (revived === undefined) return omitKey(e, 'revived');
+        return { ...e, revived };
+      });
+    const old = parseDungeonAct(withState(down, { history: withRevived(undefined) }));
+    expect(old.state.history?.at(-1)).not.toHaveProperty('revived');
+    expect(
+      parseDungeonAct(withState(down, { history: withRevived(2) })).state.history?.at(-1),
+    ).toMatchObject({ revived: 2 });
+    for (const bad of ['two', -1, 1.5, null]) {
+      expect(() => parseDungeonAct(withState(down, { history: withRevived(bad) }))).toThrow();
+    }
   });
 
   it('reads an epic fight in a log, a room summary and a replay room', () => {

@@ -74,7 +74,9 @@ describe('DungeonDescend', () => {
     expect(text).toContain(
       '4 floors, with a keeper on the last. Foes fight 1 depth deeper than yours.',
     );
-    expect(text).toContain('Your creatures catch their breath (20% HP).');
+    expect(text).toContain(
+      'Your creatures catch their breath (20% HP), and fallen ones get back up (10% HP).',
+    );
     expect(text).toContain('A defeat below keeps only half your pack, rounded up.');
     expect(byClass(p.root, 'dungeon-descend')).toHaveLength(1);
   });

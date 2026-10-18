@@ -261,6 +261,7 @@
       "floors": 4,
       "depthBonus": 1,
       "catchBreathBp": 2000,
+      "reviveBp": 1000,
       "newDepth": 15,
       "banked": {
         "gear": [

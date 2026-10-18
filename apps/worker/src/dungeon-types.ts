@@ -62,13 +62,15 @@ export type DungeonPendingView =
        * The room boss (or an Undercroft keeper with a cracked floor) is down: head home with the pack, or
        * descend. What is known of the level below: its number, its floors (the keeper's included), that
        * its foes are fiercer (`depthBonus` more depth per level), the breath the team catches on the way
-       * (`catchBreathBp` of max HP) and what the chest banked. The pack stays at risk all the way down.
+       * (`catchBreathBp` of max HP, and `reviveBp` for a fallen one that gets back up) and what the chest banked. The pack stays at risk all the way down.
        */
       kind: 'descend';
       level: number;
       floors: number;
       depthBonus: number;
       catchBreathBp: number;
+      /** The share of max HP a fallen creature gets back up with. */
+      reviveBp: number;
       /** The depth the player is at now (locked in when the main boss fell). */
       newDepth: number;
       banked: DungeonBankedView;
@@ -148,6 +150,8 @@ export type DungeonStepLog =
       level: number;
       /** HP the row recovered on the way down, all creatures together. */
       healed: number;
+      /** How many fallen creatures got back up on the way down (absent on a run stored before they could). */
+      revived?: number;
     }
   | { node: string; kind: 'descend'; result: 'home'; level: number };
 
