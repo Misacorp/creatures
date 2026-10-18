@@ -48,17 +48,17 @@ describe('action names', () => {
   });
 
   it('names the answers of the duplicate choice and the Talent Book', () => {
-    expect(ActionIds.catchChoice('p1', { choice: 'release' })).toBe('catch:p1:release::');
+    expect(ActionIds.catchChoice('p1', { choice: 'release' })).toBe('catch:p1:release:');
     expect(ActionIds.catchChoice('p1', { choice: 'fuse', creatureId: 'c1' })).toBe(
-      'catch:p1:fuse:c1:',
+      'catch:p1:fuse:c1',
     );
-    expect(ActionIds.catchChoice('p1', { choice: 'teach', creatureId: 'c1', slot: 2 })).toBe(
-      'catch:p1:teach:c1:2',
+    expect(ActionIds.catchChoice('p1', { choice: 'teach', creatureId: 'c1' })).toBe(
+      'catch:p1:teach:c1',
     );
-    // The same card answered another way, or into another slot, is another action (another key).
-    const teach = (slot: number) =>
-      ActionIds.catchChoice('p1', { choice: 'teach', creatureId: 'c1', slot });
-    expect(teach(1)).not.toBe(teach(2));
+    // The same card answered another way, or for another creature, is another action (another key).
+    expect(ActionIds.catchChoice('p1', { choice: 'teach', creatureId: 'c2' })).not.toBe(
+      ActionIds.catchChoice('p1', { choice: 'teach', creatureId: 'c1' }),
+    );
     expect(ActionIds.catchChoice('p1', { choice: 'recommended' })).not.toBe(
       ActionIds.catchChoice('p1', { choice: 'release' }),
     );

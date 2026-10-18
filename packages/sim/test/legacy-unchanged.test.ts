@@ -57,12 +57,18 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * and the same dice are thrown; what moved is what the days do (a trip's time, creature experience, the
  * fights). Weather off (`weather: false`) plays the economy as it was.
  *
+ * Re-pinned again on 2026-10-17 (Teach goes to the Talent Book), on purpose: a talent taught from a
+ * duplicate no longer takes a slot, it waits in the creature's book, and the sim player slots it for Bait:
+ * into an empty slot, or in place of a weaker slotted talent (as a player reading the book would). The
+ * first player's top-3 power and raids won are what they were before the change (333, 361, 261, 203);
+ * Bait earned is the same, and some Bait now goes to slotting.
+ *
  * Re-pinned again on 2026-10-18 (dungeon paths, B-019), on purpose: the daily dungeon is a walk over the day's
  * map (3 to 6 fights, a camp, a pack that is kept whole at home and by half after a defeat, keepsakes, a boss
  * chest) instead of three rooms played at once, foes are weaker at depth 1 and steeper by depth, experience
- * is paid per fight cleared (35, not 60), and the run log gained its outcome, pack and fights. The two pinned
- * runs without a dungeon (`five-nogear`, `fifteen-nodungeon`) are unchanged; the hashes of the three that play it
- * moved (first player's top-3 power 333 to 437 and 261 to 248, and the target count 92 to 94).
+ * is paid per fight cleared (35, not 60), and the run log gained its outcome, pack and fights. Re-pinned
+ * once more when the branch took in the Teach change above, so every hash moved (the first player's top-3
+ * power in the first pinned run is 431).
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

@@ -70,7 +70,7 @@ function draw(
       state={{ ...SAMPLE_STATE, creatures, pending }}
       gear={SAMPLE_GEAR}
       busy={false}
-      catchActions={{ choose: noop, chooseAll: noop }}
+      catchActions={{ chooseMany: () => Promise.resolve(true) }}
       {...(options.viewerId === undefined ? {} : { viewerId: options.viewerId })}
       {...actions}
     />,

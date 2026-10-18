@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { ClaimResult, GameState } from './api';
-import type { CatchChoiceActions } from './DuplicateCard';
+import type { CatchChoiceActions } from './find-view';
 import { ExplorerProfile } from './ExplorerProfile';
 import { fetchDestinations, fetchProfile, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
@@ -10,7 +10,8 @@ import { Journal } from './Journal';
 import { RunningTrip } from './RunningTrip';
 import { SendTrip } from './SendTrip';
 import { SlotsStrip } from './SlotsStrip';
-import { TripReveal } from './TripReveal';
+import { TripResult } from './TripResult';
+import { tripResultView } from './trip-result-view';
 import { ToggleButton } from './ui/ToggleButton';
 import { needsOfferRefresh } from './trip-view';
 import { useLoaded } from './use-loaded';
@@ -114,16 +115,25 @@ export function Expeditions({
   return (
     <>
       {reveal !== null && (
-        <TripReveal
-          result={reveal.result}
-          trip={reveal.trip}
-          creature={revealCreature}
-          pending={state.pending}
-          creatures={state.creatures}
+        <TripResult
+          view={tripResultView({
+            result: reveal.result,
+            trip: reveal.trip,
+            creature: revealCreature,
+            pending: state.pending,
+            creatures: state.creatures,
+            settled,
+          })}
           busy={busy}
-          catchActions={catchActions}
-          settled={settled}
-          onDismiss={onDismissReveal}
+          onClaim={(picks) => {
+            if (picks.length === 0) {
+              onDismissReveal();
+              return;
+            }
+            void catchActions.chooseMany(picks).then((all) => {
+              if (all) onDismissReveal();
+            });
+          }}
         />
       )}
       <SlotsStrip slots={state.slots} />

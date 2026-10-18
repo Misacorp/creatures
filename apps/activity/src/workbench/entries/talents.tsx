@@ -1,6 +1,8 @@
 import { talentContent, talentDef, talentText } from '@creatures/game';
 import { parseGameState } from '../../api';
-import { DuplicateCard } from '../../DuplicateCard';
+import { FindCard } from '../../FindCard';
+import { firstPick, pendingFind } from '../../find-view';
+import { useState } from 'preact/hooks';
 import { LurePicker } from '../../LurePicker';
 import { PendingCatches } from '../../PendingCatches';
 import { TalentChip } from '../../TalentChip';
@@ -17,10 +19,7 @@ const WAITING = parseGameState(creaturesState);
 const TALENT_IDS: readonly string[] = [...talentContent.byId.keys()];
 const CHOICES: readonly DuplicateChoice[] = ['teach', 'fuse', 'release', 'keep'];
 
-const noActions = {
-  choose: () => undefined,
-  chooseAll: () => undefined,
-};
+const noActions = { chooseMany: () => Promise.resolve(true) };
 
 function viewOf(id: string, golden: boolean, idle: boolean): TalentView {
   const def = talentDef(id) ?? talentDef('playful');
@@ -67,19 +66,19 @@ function cardWith(p: Parameters<Entry['render']>[0]): PendingCatch {
     offered: { ...base.offered, keep: bool(p, 'keep') },
     recommended:
       recommended === 'teach' && target !== undefined
-        ? { choice: 'teach', creatureId: target, slot: 1 }
+        ? { choice: 'teach', creatureId: target }
         : recommended === 'fuse' && target !== undefined
           ? { choice: 'fuse', creatureId: target }
           : { choice: recommended },
   };
 }
 
-const duplicateCard: Entry = {
-  name: 'DuplicateCard',
-  file: 'apps/activity/src/DuplicateCard.tsx',
+const findCard: Entry = {
+  name: 'FindCard',
+  file: 'apps/activity/src/FindCard.tsx',
   group: 'Creatures & game pieces',
   description:
-    'A duplicate waiting for an answer, on the Collection tab and in the claim reveal: the creature and the talent it rolled (golden: shimmering gold title and number), and the Teach, Fuse, Release and Keep buttons with the recommended one marked. Keep only shows for a line with a second branch.',
+    'A creature a trip found, in the trip result and the waiting catches: picture, name in its rarity colour, element and role, badges, the talent under a "Discovered talent" heading (green New when no creature of its line has it), and for a duplicate its choice as radio rows (Recommended picked first, a choice that cannot be made greyed with the reason, a fusion as five stars with the gained one pulsing).',
   controls: {
     recommended: { kind: 'select', options: CHOICES },
     golden: { kind: 'toggle' },
@@ -95,24 +94,30 @@ const duplicateCard: Entry = {
     { name: 'Release is best', props: { recommended: 'release' } },
     { name: 'A second branch to keep', props: { keep: true, recommended: 'keep' } },
   ],
-  render: (p) => (
+  render: (p) => <FindCardDemo p={p} />,
+};
+
+function FindCardDemo({ p }: { p: Parameters<Entry['render']>[0] }) {
+  const find = pendingFind(cardWith(p), WAITING.creatures);
+  const [picked, setPicked] = useState<string | null>(null);
+  return (
     <ul class="dup-list">
-      <DuplicateCard
-        card={cardWith(p)}
-        creatures={WAITING.creatures}
-        busy={bool(p, 'busy')}
-        actions={noActions}
+      <FindCard
+        find={find}
+        picked={picked ?? firstPick(find.choice?.options ?? [])}
+        disabled={bool(p, 'busy')}
+        onPick={setPicked}
       />
     </ul>
-  ),
-};
+  );
+}
 
 const pendingCatches: Entry = {
   name: 'PendingCatches',
   file: 'apps/activity/src/PendingCatches.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The duplicates waiting for an answer, at the top of the Collection tab: one card each and a button that applies Recommended to all of them. Nothing shows when none wait.',
+    'The duplicates waiting for an answer, at the top of the Collection tab: the same cards as the trip result, each with its choice as radio rows (Recommended picked first), and one full-width Confirm for all of them. Nothing shows when none wait.',
   controls: { cards: { kind: 'number', min: 0, max: 4 }, busy: { kind: 'toggle' } },
   defaults: { cards: 3, busy: false },
   presets: [
@@ -169,9 +174,4 @@ const lurePicker: Entry = {
   ),
 };
 
-export const talentEntries: readonly Entry[] = [
-  talentChip,
-  duplicateCard,
-  pendingCatches,
-  lurePicker,
-];
+export const talentEntries: readonly Entry[] = [talentChip, findCard, pendingCatches, lurePicker];

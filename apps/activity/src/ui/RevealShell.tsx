@@ -129,10 +129,13 @@ export function RevealShell({
   busy = false,
   onDismiss,
   footer,
+  hero,
   children,
 }: {
   /** The heading's id; the card is named by it. */
   id: string;
+  /** A picture above the heading (the trip result's place banner). Decoration. */
+  hero?: ComponentChildren;
   title: ComponentChildren;
   badge?: ComponentChildren;
   /** Where it is used (extra look for one place). */
@@ -157,6 +160,7 @@ export function RevealShell({
       {...(arrive ? { tabIndex: -1 } : {})}
       aria-labelledby={id}
     >
+      {hero}
       <h3 id={id}>
         {title}
         {badge !== undefined && <> {badge}</>}

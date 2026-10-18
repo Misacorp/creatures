@@ -1,4 +1,4 @@
-import { GLOSSARY_IDS } from '@creatures/game';
+import { GLOSSARY_IDS, RULES } from '@creatures/game';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
@@ -16,6 +16,38 @@ export function Stars({ stars, label }: { stars: number; label?: string }) {
           <Sprite sprite={glyphOrUnknown(i < stars ? 'star' : 'star-empty')} scale={2} />
         </span>
       ))}
+    </span>
+  );
+}
+
+/** The colour of the star a fusion would add: a fresh green, so it reads apart from the gold ones. */
+const GAIN_STAR = { g: '#6fdc8c' };
+
+/**
+ * A creature's fusions as five stars: gold for each it has, hollow for the rest. With `gain`, the next
+ * star is the one this choice adds: green, and it pulses while the player allows motion. The count is
+ * said in words for assistive technology.
+ */
+export function FusionStars({ count, gain = false }: { count: number; gain?: boolean }) {
+  const max = RULES.fusion.maxFusions;
+  const spoken = gain
+    ? `Fusion ${String(count)} to ${String(count + 1)} / ${String(max)}`
+    : `Fusion ${String(count)} / ${String(max)}`;
+  return (
+    <span class="stars-row fusion-stars" role="img" aria-label={spoken}>
+      {Array.from({ length: max }, (_, i) => {
+        const on = i < count;
+        const next = gain && i === count;
+        return (
+          <span key={i} class={on ? 'star on' : next ? 'star gain' : 'star'} aria-hidden="true">
+            <Sprite
+              sprite={glyphOrUnknown(on || next ? 'star' : 'star-empty')}
+              scale={2}
+              {...(next ? { palette: GAIN_STAR } : {})}
+            />
+          </span>
+        );
+      })}
     </span>
   );
 }

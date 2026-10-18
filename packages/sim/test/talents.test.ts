@@ -5,15 +5,19 @@ import {
   createSeededRng,
   releaseParts,
   slotsOpen,
+  foldTalent,
   talentDef,
   talentPool,
+  talentScore,
   type Rng,
 } from '@creatures/game';
 import {
   activeTalentsOf,
   creaturePower,
+  creatureStats,
   foldedCreature,
   speciesOf,
+  wearerOfCreature,
   withoutTalents,
   type OwnedCreature,
 } from '../src/data';
@@ -176,22 +180,35 @@ describe('filling the open slots from the Talent Book', () => {
     return { p, c };
   };
 
-  it('puts the best talent the book holds into an open empty slot, for the Bait the rules say', () => {
+  /** How much a talent of the book is worth to its creature, as `fillSlots` scores it. */
+  const scoreIn = (c: OwnedCreature, entry: { talentId: string; golden: boolean }): number => {
+    const def = talentDef(entry.talentId);
+    if (def === undefined) throw new Error(`no talent ${entry.talentId}`);
+    return talentScore(foldTalent(def, entry.golden), {
+      ...wearerOfCreature(c),
+      stats: creatureStats(c),
+    });
+  };
+
+  it('fills an open empty slot and swaps a weaker slotted talent, for the Bait the rules say each', () => {
     const { p, c } = withBook();
+    const book = c.talents?.book ?? [];
+    const ranked = [...book].sort((a, b) => scoreIn(c, b) - scoreIn(c, a));
     p.bait = 100;
     fillSlots(p, p.creatures);
-    const slot2 = c.talents?.book.find((b) => b.slot === 2);
-    expect(slot2).toBeDefined();
-    expect(slot2?.talentId).not.toBe('playful');
-    expect(p.bait).toBe(100 - RULES.talents.bookSlotBait);
-    expect(p.week.baitSlots).toBe(RULES.talents.bookSlotBait);
-    expect(p.stats.talent_slots).toBe(1);
-    // Nothing is open and empty any more: a second call changes nothing.
+    // The two slots hold the two best talents of the book; the rest wait in it. Each move cost Bait.
+    const slotted = book.filter((b) => b.slot !== null).map((b) => b.talentId);
+    expect(new Set(slotted)).toEqual(new Set(ranked.slice(0, 2).map((b) => b.talentId)));
+    const changes = p.stats.talent_slots;
+    expect(changes).toBeGreaterThanOrEqual(1);
+    expect(p.bait).toBe(100 - changes * RULES.talents.bookSlotBait);
+    expect(p.week.baitSlots).toBe(changes * RULES.talents.bookSlotBait);
+    // Nothing better waits any more: a second call changes nothing.
     fillSlots(p, p.creatures);
-    expect(p.bait).toBe(100 - RULES.talents.bookSlotBait);
+    expect(p.bait).toBe(100 - changes * RULES.talents.bookSlotBait);
   });
 
-  it('does nothing without the Bait, and leaves a slot that has a talent alone', () => {
+  it('does nothing without the Bait, and keeps a slotted talent the book has nothing better than', () => {
     const { p, c } = withBook();
     p.bait = RULES.talents.bookSlotBait - 1;
     fillSlots(p, p.creatures);
@@ -199,10 +216,20 @@ describe('filling the open slots from the Talent Book', () => {
     expect(p.bait).toBe(RULES.talents.bookSlotBait - 1);
     const q = player();
     const d = newCreature(q, species('splashet'), scripted([4, 5]));
-    holdTalent(d, { talentId: 'bigger-splash', golden: false }, null);
+    const held = d.talents?.book.find((b) => b.slot === 1);
+    if (held === undefined) throw new Error('a new creature has its talent in slot 1');
+    // The weakest other talent of its line waits in the book: worse than the slotted one, so it stays.
+    const weaker = talentPool('splashet')
+      .map((t) => ({ talentId: t.id, golden: false }))
+      .filter((t) => t.talentId !== held.talentId)
+      .sort((a, b) => scoreIn(d, a) - scoreIn(d, b))[0];
+    if (weaker === undefined || scoreIn(d, weaker) >= scoreIn(d, held)) {
+      throw new Error('the Splashet pool needs a talent weaker than the rolled one');
+    }
+    holdTalent(d, weaker, null);
     q.bait = 100;
     fillSlots(q, [d]);
-    // A level 1 creature has one slot and it is full.
+    expect(d.talents?.book.find((b) => b.slot === 1)?.talentId).toBe(held.talentId);
     expect(q.bait).toBe(100);
   });
 });

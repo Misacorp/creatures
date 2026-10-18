@@ -724,8 +724,8 @@
     "title": "Talent Book",
     "short": "Every talent a creature has held.",
     "lines": [
-      "A talent a new one replaces goes into the book, so nothing is lost.",
-      "Slot a talent from the book again for 10 Bait, at once."
+      "A taught talent goes into the book, and a talent a new one replaces stays in it.",
+      "Slot a talent from the book for 10 Bait, at once."
     ],
     "section": "creatures"
   },
@@ -734,7 +734,7 @@
     "title": "Duplicate",
     "short": "A catch of a creature you own is a choice.",
     "lines": [
-      "Teach: its talent goes into a slot of your creature. Fuse: one more fusion, up to 5.",
+      "Teach: its talent goes into your creature's Talent Book. Fuse: one more fusion, up to 5.",
       "Release: parts, never Bait.",
       "The card marks Recommended. Up to 10 wait, then the oldest takes the Recommended choice."
     ],
