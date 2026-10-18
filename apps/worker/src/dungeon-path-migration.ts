@@ -1,5 +1,7 @@
+import { loungeMigration } from './lounge';
+
 /**
- * Migration 33: the daily dungeon on a map (see `dungeon.ts` and `docs/design/dungeon-paths.md`). A run
+ * Migration 34: the daily dungeon on a map (see `dungeon.ts` and `docs/design/dungeon-paths.md`). A run
  * is now played step by step, so it has a status and a stored state while it is open, and the day's map
  * is stored next to the day's seed. Never edit a released migration. Times are UTC epoch milliseconds
  * and every amount is an integer.
@@ -7,9 +9,10 @@
  * Old runs stay as they are: `status` defaults to `done`, they have no `state_json` and no `outcome`,
  * and they keep their summary and their three-room replay (`input_json`, `result_json`).
  *
- * It may find its work already done: the staging databases ran it as version 32 before the raid's
- * `placed_by` column took that number on `main`, so those databases skipped `placed_by`. Every step
- * checks first, and the missing `placed_by` is added here.
+ * It may find its work already done: the staging databases ran it as version 32 and then as 33, before
+ * the raid's `placed_by` (32) and the lounge message (33) took those numbers on `main`, so those
+ * databases may have skipped either. Every step checks first, and the missing column and tables are
+ * added here (the lounge's own migration is safe to run twice).
  */
 export function dungeonPathMigration(sql: SqlStorage): void {
   const has = (table: string, column: string): boolean =>
@@ -61,8 +64,9 @@ export function dungeonPathMigration(sql: SqlStorage): void {
   )`);
   sql.exec('CREATE INDEX IF NOT EXISTS dungeon_steps_at ON dungeon_steps(created_at)');
 
-  // Migration 32 on a staging database that ran this one as 32 first (see above).
+  // Migrations 32 and 33 on a staging database that ran this one under their numbers first (see above).
   if (!has('raid_placements', 'placed_by')) {
     sql.exec('ALTER TABLE raid_placements ADD COLUMN placed_by TEXT');
   }
+  loungeMigration(sql);
 }

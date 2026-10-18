@@ -244,10 +244,10 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 33;
+export const LATEST_SCHEMA_VERSION = 34;
 
 /**
- * Puts a database back to before migration 33 (the dungeon on a map): the steps table goes, and runs and
+ * Puts a database back to before migration 34 (the dungeon on a map): the steps table goes, and runs and
  * days lose the columns it added (a run that was open is dropped: a database from before had none).
  */
 export function undoDungeonPathsMigration(sql: SqlStorage): void {
@@ -265,11 +265,20 @@ export function undoDungeonPathsMigration(sql: SqlStorage): void {
     sql.exec('ALTER TABLE dungeon_runs DROP COLUMN state_json');
   if (has('dungeon_runs', 'outcome')) sql.exec('ALTER TABLE dungeon_runs DROP COLUMN outcome');
   if (has('dungeon_days', 'map_json')) sql.exec('ALTER TABLE dungeon_days DROP COLUMN map_json');
+  sql.exec('DELETE FROM schema_version WHERE version = 34');
+}
+
+/** Puts a database back to before migration 33 (the lounge message). */
+export function undoLoungeMessageMigration(sql: SqlStorage): void {
+  undoDungeonPathsMigration(sql);
+  sql.exec('DROP TABLE IF EXISTS lounge_instances');
+  sql.exec('DROP TABLE IF EXISTS lounge_message');
   sql.exec('DELETE FROM schema_version WHERE version = 33');
 }
 
 /** Puts a database back to before migration 32 (who placed each raid creature). */
 export function undoPlacedByMigration(sql: SqlStorage): void {
+  undoLoungeMessageMigration(sql);
   const present = sql
     .exec("SELECT 1 FROM pragma_table_info('raid_placements') WHERE name = 'placed_by'")
     .toArray();
@@ -282,7 +291,6 @@ export function undoPlacedByMigration(sql: SqlStorage): void {
  * the weather stored with them.
  */
 export function undoWeatherMigration(sql: SqlStorage): void {
-  undoDungeonPathsMigration(sql);
   undoPlacedByMigration(sql);
   sql.exec('DROP TABLE IF EXISTS weather_days');
   // A test may already have dropped a table (the version 3 test does): only what is there goes.

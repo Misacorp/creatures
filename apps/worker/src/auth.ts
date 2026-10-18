@@ -13,8 +13,14 @@ export interface AuthDeps {
   /**
    * Asks the guild's Durable Object to upsert the player and create a session; returns the secret.
    * `channelId` is the channel the Activity was launched from, as Discord reports it (or null).
+   * `instanceId` is the Activity instance, passed only after Discord confirmed it exists.
    */
-  createSession(guildId: string, user: SessionUser, channelId: string | null): Promise<string>;
+  createSession(
+    guildId: string,
+    user: SessionUser,
+    channelId: string | null,
+    instanceId: string,
+  ): Promise<string>;
   /** Signs the secret into the final `s1.<guildId>.<secret>.<mac>` token. */
   formatToken(guildId: string, secret: string): Promise<string>;
   /** Coarse per-instance limiter (best effort, per isolate). */
@@ -64,6 +70,7 @@ export async function handleAuthSession(request: Request, deps: AuthDeps): Promi
       guildId,
       user,
       typeof channelId === 'string' && SNOWFLAKE_RE.test(channelId) ? channelId : null,
+      instanceId,
     );
     // The access token is passed straight back for the SDK's authenticate(); never stored or logged.
     return json({
