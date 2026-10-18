@@ -21,11 +21,15 @@ function TierPips({ line }: { line: GearLine }) {
   );
 }
 
-/** A change of a number, after it: "+2%" in green or "−2%" in red, spoken in words (the sign is never only colour). */
+/**
+ * A change of a number, after it, in its own look so it is never read as part of the number: "(▲2%)" in green
+ * when better, "(▼2%)" in red when worse. The arrow and the brackets carry the meaning with the colour, and a
+ * spoken copy says the sign in words ("plus 2%, better").
+ */
 export function DeltaMark({ mark }: { mark: Mark }) {
   return (
     <span class={mark.good ? 'cmp-delta good' : 'cmp-delta bad'}>
-      <span aria-hidden="true">{mark.text}</span>
+      <span aria-hidden="true">{`(${mark.good ? '\u25B2' : '\u25BC'}${mark.text.slice(1)})`}</span>
       <span class="visually-hidden"> {mark.spoken}</span>
     </span>
   );

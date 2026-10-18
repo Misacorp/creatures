@@ -90,7 +90,7 @@ describe('the inline compare on the picker card', () => {
       // The sign is in the words that show (a real minus) and a spoken copy says it again in words.
       expect(
         visibleText(first(find(mark, (e) => e.getAttribute('aria-hidden') === 'true'))),
-      ).toMatch(new RegExp(`^${MINUS}\\d+$`));
+      ).toMatch(/^\(\u25BC\d+\)$/);
       expect(visibleText(first(byClass(mark, 'visually-hidden')))).toMatch(/minus \d+, worse/);
     }
     const gone = byClass(stats, 'cmp-gone');
@@ -206,5 +206,41 @@ describe('the Compare switch', () => {
     expect(sw(p)?.getAttribute('aria-checked')).toBe('true');
     p.click(sw(p) as FakeElement);
     expect(sw(p)?.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('puts Equip back in the corner of the card, with no row of its own, when the switch is off', () => {
+    stored.set(COMPARE_KEY, '0');
+    const p = draw('level 15', 'hat', KELP);
+    expect(byClass(detail(p), 'ip-equip')).toHaveLength(0);
+    const aside = first(byClass(detail(p), 'idc-aside'));
+    expect(byName(aside, 'button', 'Equip')).toHaveLength(1);
+  });
+
+  it('puts Equip in the row beside the changes while it is on', () => {
+    const p = draw('level 15', 'hat', KELP);
+    expect(byClass(detail(p), 'idc-aside')).toHaveLength(0);
+    expect(byName(first(byClass(detail(p), 'ip-equip')), 'button', 'Equip')).toHaveLength(1);
+  });
+});
+
+describe('the delta marks', () => {
+  it('are written as an arrow in brackets, apart from the number and the card own bonus', () => {
+    const better = draw('compare: plain gear', 'hat', WORN_CROWN);
+    const stats = first(byClass(detail(better), 'idc-stats'));
+    const texts = byClass(stats, 'cmp-delta').map((m) =>
+      visibleText(first(find(m, (e) => e.getAttribute('aria-hidden') === 'true'))),
+    );
+    expect(texts.length).toBeGreaterThan(1);
+    expect(texts.every((t) => /^\(\u25B2\d+(\.\d+)?( pt)?\)$/.test(t))).toBe(true);
+    // The card's own local bonus ("+16") is still its own element, with no brackets.
+    expect(byClass(stats, 'idc-stat-bonus').every((b) => !visibleText(b).includes('('))).toBe(true);
+  });
+
+  it('say the sign in words for a screen reader', () => {
+    const p = draw('compare: plain gear', 'hat', WORN_CROWN);
+    const spoken = byClass(first(byClass(detail(p), 'idc-stats')), 'cmp-delta').map((m) =>
+      visibleText(first(byClass(m, 'visually-hidden'))),
+    );
+    expect(spoken.every((t) => /^plus [\d.]+( pt)?, better$/.test(t))).toBe(true);
   });
 });

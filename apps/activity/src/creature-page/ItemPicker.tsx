@@ -147,13 +147,25 @@ function DetailPanel({
             </button>
           ) : blocked !== null ? (
             <span class="ip-reason">{blocked}</span>
+          ) : compare === null ? (
+            // Nothing to say about the swap (the switch is off, or the numbers are missing): Equip is where it always was.
+            <button
+              type="button"
+              class="ip-act primary"
+              disabled={busy}
+              onClick={() => {
+                onEquip(item);
+              }}
+            >
+              Equip
+            </button>
           ) : undefined
         }
       />
-      {wearable && (
+      {wearable && compare !== null && (
         <div class="ip-equip">
           <div class="ip-equip-change">
-            {compare !== null && <CompareBlock compare={compare} />}
+            <CompareBlock compare={compare} />
           </div>
           <button
             type="button"

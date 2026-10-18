@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { byClass, createPage, visibleText, type FakeElement, type Page } from '../test-dom';
+import { byClass, byName, createPage, visibleText, type FakeElement, type Page } from '../test-dom';
 import { creaturePageEntries } from './entries/creature-page';
 
 /**
@@ -40,7 +40,7 @@ function selected(id: string): { name: string; worn: boolean; equip: boolean } {
   return {
     name: visibleText(byClass(page.root, 'idc-name')[0] as FakeElement),
     worn: (cell.getAttribute('class') ?? '').split(' ').includes('worn'),
-    equip: byClass(page.root, 'ip-equip').length === 1,
+    equip: byName(page.root, 'button', 'Equip').length === 1,
   };
 }
 
@@ -134,7 +134,14 @@ describe('the compare presets: inline', () => {
   it('K6 has the switch off and the plain card', () => {
     const p = drawn('K6');
     expect(switchOf(p)?.getAttribute('aria-checked')).toBe('false');
-    expect(marks('K6')).toBe(0);
-    expect(byClass(page?.root as FakeElement, 'ip-compare')).toHaveLength(0);
+    expect(
+      byClass(p.root, 'cmp-delta').length +
+        byClass(p.root, 'cmp-new').length +
+        byClass(p.root, 'cmp-gone').length,
+    ).toBe(0);
+    expect(byClass(p.root, 'ip-compare')).toHaveLength(0);
+    // No row of its own: Equip is in the card's corner, as before the compare.
+    expect(byClass(p.root, 'ip-equip')).toHaveLength(0);
+    expect(byName(first(byClass(p.root, 'idc-aside')), 'button', 'Equip')).toHaveLength(1);
   });
 });
