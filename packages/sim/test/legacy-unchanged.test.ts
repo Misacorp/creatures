@@ -56,6 +56,13 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * the trips and the Workshop jobs of the day. The draws touch no other stream, so the same players check in
  * and the same dice are thrown; what moved is what the days do (a trip's time, creature experience, the
  * fights). Weather off (`weather: false`) plays the economy as it was.
+ *
+ * Re-pinned again on 2026-10-18 (dungeon paths, B-019), on purpose: the daily dungeon is a walk over the day's
+ * map (3 to 6 fights, a camp, a pack that is kept whole at home and by half after a defeat, keepsakes, a boss
+ * chest) instead of three rooms played at once, foes are weaker at depth 1 and steeper by depth, experience
+ * is paid per fight cleared (35, not 60), and the run log gained its outcome, pack and fights. The two pinned
+ * runs without a dungeon (`five-nogear`, `fifteen-nodungeon`) are unchanged; the hashes of the three that play it
+ * moved (first player's top-3 power 333 to 437 and 261 to 248, and the target count 92 to 94).
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

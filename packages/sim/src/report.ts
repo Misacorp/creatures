@@ -6,6 +6,7 @@ import { gearShareMarkdown } from './gear-study';
 import { suppliesMarkdown } from './supplies-study';
 import { creaturesMarkdown } from './creatures-study';
 import { WIN_RATE_MAX_DEPTH } from './dungeon-analysis';
+import { POLICY } from './dungeon';
 import { ROLE_STUDY_HP_BP, ROLE_STUDY_RUNS_FACTOR } from './roles';
 import { SETUP_RANK_OFFSETS } from './setup-study';
 import { TRIP_POLICY } from './trips';
@@ -141,7 +142,49 @@ function dungeonSection(a: Analysis): string {
   const d = a.dungeon;
   const parts: string[] = [];
   parts.push(
-    `Every player with 3 creatures runs the dungeon once on each day they check in (casuals on their leet days), with their 3 strongest creatures. Depth ${String(1)} to ${String(WIN_RATE_MAX_DEPTH)} are listed; a run is cleared when all ${String(RULES.dungeon.rooms)} rooms are.`,
+    `Every player with 3 creatures walks the day's map once on each day they check in (casuals on their leet days), with their 3 strongest creatures: ${String(RULES.dungeon.floors)} floors with the camp on floor ${String(RULES.dungeon.campFloor)} (floors count from 0; every path meets there) and the room boss last. A run is cleared when the boss is beaten, ends at home when the player heads home from the camp, and in a defeat when a fight is lost. Depth ${String(1)} to ${String(WIN_RATE_MAX_DEPTH)} are listed; only a clear moves the depth.`,
+  );
+  parts.push('### How runs end');
+  parts.push(
+    table(
+      [
+        'Archetype',
+        'Runs',
+        'Cleared',
+        'Home',
+        'Defeat',
+        'Fights / run',
+        'Elites / run',
+        'Keepsakes / run',
+        'Pack found',
+        'Pack kept',
+        'Reached the camp',
+      ],
+      ARCHETYPES.map((id) => {
+        const r = d.runShape[id];
+        return [
+          ARCHETYPE_CONFIG[id].label,
+          String(r.runs),
+          pct(r.cleared, 0),
+          pct(r.home, 0),
+          pct(r.defeat, 0),
+          num(r.fights, 2),
+          num(r.elites, 2),
+          num(r.keepsakes, 2),
+          num(r.packFound, 2),
+          num(r.packKept, 2),
+          pct(r.reachedCamp, 0),
+        ];
+      }),
+    ),
+  );
+  parts.push(
+    `Fights count a lost one; the pack is Bait, Essence and scrap added up (the supply, experience and the boss chest are not in it). Of the runs that reached the camp: ${ARCHETYPES.map(
+      (id) => {
+        const c = d.runShape[id].camp;
+        return `${ARCHETYPE_CONFIG[id].label} rest ${pct(c.rest, 0)}, swap ${pct(c.swap, 0)}, keepsake ${pct(c.keepsake, 0)}, home ${pct(c.home, 0)}`;
+      },
+    ).join('; ')}.`,
   );
   parts.push('### Clear rate by depth');
   const shown = Array.from({ length: WIN_RATE_MAX_DEPTH }, (_, k) => k + 1);
@@ -195,6 +238,9 @@ function dungeonSection(a: Analysis): string {
         ];
       }),
     ),
+  );
+  parts.push(
+    `A daily player's runs from week 2 end at home ${pct(d.dailyHomeRate)} of the time and take ${num(d.meanFights, 2)} fights.`,
   );
   parts.push(
     `Dungeon Essence is ${pct(d.dailyEssenceShare)} of a daily player's Essence income. Gear's share of a daily player's raid-team power at week 8 is ${pct(d.gearShareWeek8.with)} with the dungeon and ${pct(d.gearShareWeek8.without)} without it (the same sims and seeds).`,
@@ -608,7 +654,7 @@ const POLICY_TEXT = `
 - **Team power** = sum over the top 3 creatures of \`atk + hp / 10\`, using \`effectiveStats\` (fusion and the worn gear included, like the worker's \`power\`).
 - **Gear drops** follow the worker: the welcome kit when a player joins (a Common Trail Cap at item level 1, a blueprint and scrap), phase scrap for every participant of a cleared Phase 1 or 2, one reward per participant of a won finale at the server's rank (a gear piece of the boss's element at item level 3 + Boss Rank, or a blueprint they do not know yet; and the Festival piece in a Festival week), the dungeon's gear chance, and the loot of every claimed expedition (scrap, a shard, a glimmer, a blueprint; a blueprint the player knows is a well-thumbed mark, scrap at the most marks) and of a push-on gear find. All rolls use the game's pure functions (\`rollFinaleReward\`, \`rollFestivalItem\`, \`rollDungeonItem\`, \`expeditionLoot\`, \`rollExpeditionItem\`, \`rollWelcomeKit\`, \`rollCraft\`) with a seeded stream of their own.
 - **Gear policy**, at every check-in after the claims: claim finished jobs; Equip best (the game's \`planEquipBest\` over the 3 strongest creatures by power without gear, the bag and what they wear, under the wear rule: a Hat from creature level 1, a Scarf from 7, a Charm from 13, an item level at most the creature's level, a role-locked Charm only on its role); keep the 3 best unworn items as spares; then start jobs in the free workshop slots on creatures that are not exploring (the one with the most Crafting XP first): the first job crafts (a supply when fewer than 4 are in stock, a first craft before any supply, else the blueprint whose plain item adds the most to a team creature, aimed with the biggest Reach the creature's level, the parts and the Essence above 40 allow), the second takes apart the extras (a bundle of up to 5 Commons once 3 wait, or an Epic, Festival or Rare piece alone) as a dismantle job, which pays its refund range, Essence and a blueprint chance when it is claimed. Items fold into the fight slots with \`applyGear\` (stats, crit, the modifier sheet, and the trip and Workshop lines the sim also reads: Quick feet, Trail XP, Lucky find, Keen nose, Packer, Busy paws, Apprentice). A creature on a job does not explore (one busy state) but still fights.
-- **Daily dungeon** (\`docs/design/daily-dungeon.md\`): every player with at least 3 creatures runs it once on each day they check in (casuals on their leet days); on the first day they ever ran, a lost run may be tried once more. The team is the 3 strongest creatures by power (gear included), stood in one row by the game's rule for it (\`dungeonRowOrder\`: the order that sets off the most reactions left to right, ties by setters and supports left, a Guard in the middle, payoffs right); there is no basic ability, and every unlocked creature ability fires at its default round. The day's three room modifiers are shared by the whole server and come from a seed of the day, the foes from the run's seed, and a full clear moves the depth up by 1. Rewards follow the worker: Bait, Essence and scrap for each cleared room, a shard from the boss room, a gear chance on a full clear (certain at a landmark depth), and the streak bonus on the first run of a day, through \`dungeonPayout\`, \`rollDungeonLoot\` and \`streakBonus\`.
+- **Daily dungeon** (\`docs/design/dungeon-paths.md\`): every player with at least 3 creatures walks the day's map once on each day they check in (casuals on their leet days); on the first day they ever ran, a run lost to a defeat may be tried once more (a run that headed home or cleared may not). The map (\`generateDungeonMap\`, from a seed of the day) is the same for the whole server; the team is the 3 strongest creatures by power (gear included), stood in one row by the game's rule for it (\`dungeonRowOrder\`); there is no basic ability, and every unlocked creature ability fires at its default round. Each fight is one \`simulateDungeonRoom\` with the HP carried and the keepsakes folded in. The walk is a small policy: prefer the foe the row's elements beat; take an elite only above ${String(POLICY.eliteHp * 100)}% average HP with nobody down; prefer a mystery room or a cache below ${String(POLICY.safeRoomHp * 100)}%; take an event's costly or gamble option only above ${String(POLICY.riskyEventHp * 100)}% (a plain heal below ${String(POLICY.healEventHp * 100)}%); at the camp swap in the strongest unused creature for a fallen one, else rest below ${String(POLICY.restHp * 100)}%, else take the first keepsake, then head home when ${String(POLICY.homeDown)} creatures are down or average HP is under ${String(POLICY.homeHp * 100)}%. \`random\` players choose everything at random and \`best\` players look one floor ahead and take the better keepsake. A run is paid as the worker pays it: the pack (all of it at home or on a clear, half rounded up after a defeat), on a clear the boss chest (Essence, scrap, the shard chance, the gear chance, certain at a landmark), the run's supply once a fight is cleared (safe), experience per creature by the fights it stood in the row for plus the full clear bonus, and the streak bonus on the first run of a day, through \`nodeLoot\`, \`keptOnDefeat\`, \`rollDungeonLoot\`, \`dungeonExperience\` and \`streakBonus\`.
 - **Time** for jobs: check-ins at 09:00 and 20:00 (casuals at 09:00 on their leet days); a job is claimed at the first check-in after \`jobDuration\` (the crafter's skill included) has passed.
 - **Typical group:** a raid week with 5 to 10 signed-up players, on rosters from the end of week 4 or 8.
 `.trim();

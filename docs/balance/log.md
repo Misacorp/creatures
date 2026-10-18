@@ -868,3 +868,62 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   - Look at the week 2 share of drop-ins and regulars in live data: the welcome Hat's size is the lever (a first make of 1 Attack would read oddly on a card).
   - The item level of finale drops by Boss Rank and the crafting rate decide the spread between committed players and regulars, not the stat formulas.
   - A fourth make at item level 15 (and a Hat or Scarf for each element with its own third stat) would give the late game more to chase; it is a data change.
+
+### B-019: Dungeon paths: a map, a camp and a pack need new foe numbers (open)
+
+- **Opened:** 2026-10-18, build step of `docs/design/dungeon-paths.md` (Misa's ask of 2026-10-17: "a Slay the Spire style gameplay loop").
+- **Finding.** The daily dungeon is no longer three rooms played at once. A run walks the day's map (7 floors, the camp on floor 3, the boss on floor 6): 3 to 6 fights, a mystery room or two, sometimes a cache, one or two elites, a camp where the player rests, swaps a fallen creature, takes a keepsake or heads home, and a pack of Bait, Essence and scrap that is kept whole at home or on a clear and by half (rounded up) after a defeat. With the foe numbers of the three-room model (`baseHpBp` 11750, `hpStepBp` 3000), a run of 4 to 5 fights is much harder to clear: the first week cleared depth 1 about 81% of the time (the target is 80%) and a median daily player gained 1.1 depths a week.
+- **Hypothesis.** More fights per run make a clear harder, so the foe's HP must come down at depth 1 and rise faster by depth to keep the ladder as steep as before; the loot per room must be trimmed so that a full clear pays about what three rooms did (Bait 3, Essence 1, scrap 2, a supply, a 60% shard, a 15% gear drop); experience per fight must come down so a daily player's dungeon experience stays about 2900 a week.
+- **Method.** `packages/sim/src/dungeon.ts` plays a map day with a policy, using the game's own pure rules (`generateDungeonMap` from a seed of the day, so every player of a server walks the same map; `roomSpecForNode`, `nodeLoot`, `keptOnDefeat`, `resolveEvent`, `campOffers`, `campRest`, `addFightsCleared`, `dungeonExperience`, `rollDungeonLoot`) and the engine's `simulateDungeonRoom` for each fight (HP carried, keepsakes folded in, rest from gear; the seed of a fight comes from the run's seed, one stream per fight). The policy (`POLICY` in `dungeon.ts`, all in the report's methodology):
+  - Route: the foe the row's elements beat; an elite only above 70% average HP with nobody down; a mystery room or cache below 50%. `random` players pick at random and `best` players add half the best room one floor ahead.
+  - Events: the costly or gamble option only above 60% average HP, a plain heal below 70%, otherwise the free option.
+  - Camp: swap in the strongest unused creature for a fallen one, else rest below 60%, else the first keepsake (`best` takes the better by a simple score); then head home when 2 creatures are down or the average HP is under 35%.
+  - Payout as the worker's `pay`: the kept pack, on a clear the boss chest (the boss's Essence and scrap, the full clear's Essence, the shard and gear dice, the landmark's extras), the run's supply once a fight is cleared, Market Day's scrap per fight cleared, the streak bonus on the first run of a day; experience per creature by the fights it stood in the row for, plus the full clear to the row that beat the boss; the free first-day retry only after a defeat.
+  - Tuning used `pnpm sim:quick` and a dungeon-only study (8 to 40 economy sims of the default server, 12 weeks) for the knobs, then `pnpm sim` (full, seed `leet`) twice (two settings of the foe numbers). Dungeon numbers move by a few points between seeds (about 50 to 170 first-week runs): read differences of under 4 points as noise.
+- **Options (sim, dungeon-only study, 16 to 40 sims).**
+  - Heading home. The spec's rule alone (2 down or under 35% after the camp choice) sends a daily player home on 0% of runs: they reach the camp healthy and lose after it. A plain "under 60% (or 75%) after the choice" rule gives 7% or 32% but also sends first-week players home on depth 1 (first-week clear 70%). So the policy has one memory rule, `DungeonState.lostAt`: after a defeat at a depth the next run is **wary** (home with any creature down or under 75% after the camp choice; the same-day retry is not). That gives 18 to 20% of runs at home and leaves the first week alone.
+  - Foe HP. At `hpStepBp` 3000 and the spec's home rule (4 sims): `baseHpBp` 11750 gives first-week 81% and growth 1.1; 8000 gives 86% and 1.4; 6000 gives 94% and 1.8. It is a cliff more than a slope (the foe must fall inside its rounds): 12000 with Attack 7500 gives 71%, and Attack alone does little (9000 with Attack 7500: +3 points). The elite's boost does not matter for the first week (no boost at all: 87% against 86%).
+  - A steeper step keeps the ladder: `baseHpBp` 6500 with `hpStepBp` 4500 holds the first week at about 91% and growth at 1.7 to 1.8 a week (7500 and 4000: 88 to 89%, 1.7).
+- **Action (starting values, `RULES`).**
+  - `dungeon.baseHpBp` 11750 → **6500**.
+  - `dungeon.hpStepBp` 3000 → **4500**.
+  - `experience.dungeon.perRoom` 60 → **35** (per fight cleared; `fullClear` stays 60). A daily player's dungeon experience: 2917 → 2980 a week.
+  - `dungeon.loot.elite.bait` 1 → **0** (an elite pays scrap 1 and a keepsake). A plain fight pays Bait 1 and a cache Bait 1 and scrap 1 as the design says (a pinned glossary test holds the cache); so a full clear pays Bait 3.8 instead of 3.
+  - Not changed: `elite` (14000 / 12000), `camp.restBp` 4000, `defeatKeepBp` 5000, the map kind odds, `fullClear`, `bossShardBp`, `gearOdds`, `baseAtkBp`, `loot.boss` and `loot.fight`.
+  - Also: new targets `dungeon-home-rate` (10 to 45%) and `dungeon-run-fights` (3 to 5.5), the metrics `dungeon.dailyHomeRate` and `dungeon.meanFights`, the report's "How runs end" table, and the `lostAt` field of `DungeonState`. The legacy digest was re-pinned (`legacy-unchanged.test.ts`).
+- **Outcome (sim): the dungeon targets** (`pnpm sim` full, seed `leet`, 94 targets). Before: the three-room model, quick sim (the full run of B-017 had first-week 77.4%). After: full.
+
+  | Target                                 | Before (quick, 3 rooms) | After (full)     |
+  | -------------------------------------- | ----------------------- | ---------------- |
+  | `dungeon-first-week-clear` (>= 80%)    | 88.9%                   | 89.4%            |
+  | `dungeon-depth-growth` (1 to 2 a week) | 1.17                    | 1.83             |
+  | `dungeon-essence-share` (<= 40%)       | 3.3%                    | 4.1%             |
+  | `dungeon-gear-share-week8` (<= 20%)    | 23.6%                   | **22.8% (fail)** |
+  | `dungeon-home-rate` (10 to 45%)        | n/a                     | 19.3%            |
+  | `dungeon-run-fights` (3 to 5.5)        | 3 (fixed)               | 4.13             |
+
+  The first full run (7500 and 4000) gave first-week 83.8%, growth 1.67 and the same others; it was moved to 6500 and 4500 for a wider margin on the first week (the 40-sim study put the two settings 2 to 3 points apart).
+
+- **Outcome (sim): how a run ends and what it pays.** Daily player, all runs (full): cleared 28%, home 19%, defeat 53%; 4.17 fights, 0.46 elites and 1.09 keepsakes a run; the pack found is 4.2 (Bait, Essence and scrap added up) and 3.35 of it is kept; 89% of runs reach the camp, where the choices are rest 3%, swap 24%, keepsake 53% and home 21%. Casuals clear 61% and go home 9%. Players stop at the same wall as before (depth 14, the first landmark, clears 11 to 12% of runs). A full clear pays Bait 3.8, Essence 1.06, scrap 2.3, a supply, a 60% shard and a 15% gear drop (today's: 3, 1, 2, a supply, 60%, 15%). A run that heads home pays Bait 2.5 and scrap 0.5 after 2.4 fights; a defeat keeps Bait 1.8 and scrap 0.7 of 3.2 and 0.9.
+
+  Per daily player and week (6 sims of seed `leet`, 12 weeks), three rooms → map:
+
+  | Measure            | Before | After |
+  | ------------------ | ------ | ----- |
+  | Runs               | 6.84   | 6.82  |
+  | Dungeon experience | 2917   | 2982  |
+  | Bait               | 14.2   | 17.2  |
+  | Essence            | 3.03   | 3.54  |
+  | Scrap              | 11.9   | 12.0  |
+  | Gear items         | 0.43   | 0.40  |
+
+  Bait is the one that is not close (+21%): a fight pays Bait 1 and a path has 4 of them, against 3 rooms; it is about 5% of a player's weekly Bait, so it is left.
+
+- **Outcome (sim): the other targets** (`pnpm sim` full, seed `leet`): 94 targets, 65 pass and 29 fail (B-018: 92 targets, 65 pass and 27 fail). The raid is easier again (phase 1 68.9% → 74.2%, finale typical 69.9% → 76.5%, finale 15 players 66.5% → 70.5%, `raid-ko-share` 29.4% → 26.3% and now passes) and `curve-r6up-default` is 72.7% (62.0% before; range 45 to 65%): the raid retune after the revamps is where all of these belong. The gear share targets, `gear-newcomer-catchup` (55.0%), the expedition slots and `creatures-talent-share-min-maxer` (-2.1%; 9.9% in the first full run) move by a few points whenever any number changes, because every journey server plays the dungeon: 5 targets differ between the two full runs of this entry (four gear and talent shares, and `curve-default-phase1`), none of them from a dungeon rule. The dungeon does not look like the cause of anything that moved on purpose; read the raid numbers against this entry's date.
+- **What did not pass, and why.** `dungeon-gear-share-week8` (22.8%, limit 20%) was failing before (23.6% in the quick run, 21.7% in B-018's full run) and is not a loot number: with no gear drops, shards or scrap from the dungeon it is still 21.6%; with no dungeon experience it is 24.4% (experience lowers the share); with **no supply** from the dungeon it is 18.5%. The supply of the first fight cleared (`RULES.dungeon.perRoom[0].supply`, tiers by depth did not matter) feeds the trips, which feed the Workshop. That is a design question (a supply on some runs only, or a basic one only), not a tuning one; the shipped design keeps one supply per run, as B-011 decided.
+- **Expected.** Live: most runs of a regular player end at the camp or just after it (a share of home runs near a fifth), a clear takes 4 to 6 fights, and players keep reaching a depth wall around depth 14. Watch the share of runs that head home, the share of defeats in a player's first run, and `dungeon_camp` choices.
+- **Follow-ups.**
+  - Worker parity: the sim's supply count reads `RULES.dungeon.perRoom[0].supply` (the worker pays a constant 1: both are 1) and the sim pays Market Day's scrap per fight cleared (the worker's `pay` does not appear to yet). Experience, the pack, the chest, the supply and the retry rule are as the worker's.
+  - Gear share at week 8 and the raid retune (see above).
+  - Keepsake and event balance (the sim picks the first keepsake, or the best by a flat score, and the free or costly option by health): a study of what each is worth would show if one is always right.
+  - The wary rule is a stand-in for what players will do near their wall; replace it with live data (`dungeon_camp` by depth and by the previous run's outcome).
