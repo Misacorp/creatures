@@ -5,6 +5,7 @@
  */
 import type { Creature } from './api';
 import { BAIT_ICON, ESSENCE_ICON } from './count-items';
+import { ON_A_TRIP_REASON } from './gear-view';
 import type { DungeonAct, DungeonPack, DungeonRunCreature } from './dungeon-types';
 import { creatureName, getSpecies } from './game';
 import type { IconRef } from './icon-ref';
@@ -210,7 +211,7 @@ export function swapAct(order: readonly string[], out: string, incoming: string)
 // --- The camp: the swap picker ---
 
 /** Why a creature cannot be brought in. */
-export const AWAY_REASON = 'Away on an expedition';
+export const AWAY_REASON = ON_A_TRIP_REASON;
 
 /**
  * The options of the picker for who comes in: every creature the player owns that is not in the row,

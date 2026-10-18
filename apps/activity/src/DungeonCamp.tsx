@@ -5,6 +5,7 @@ import {
   campCreatureOf,
   canSwapIn,
   keepsakeAct,
+  packBadges,
   orderAfterSwap,
   restAct,
   rowIds,
@@ -20,7 +21,6 @@ import {
   NO_SWAP_LINE,
   campChoiceLines,
   isPackEmpty,
-  packText,
   runHpText,
 } from './dungeon-text';
 import type {
@@ -32,6 +32,7 @@ import type {
 import { creatureName, getSpecies } from './game';
 import { IN_TEAM_NOTE } from './roster-picker';
 import { ChoiceButton, ChoiceList } from './ui/ChoiceList';
+import { CountBadgeList } from './ui/CountBadge';
 import { RevealShell } from './ui/RevealShell';
 import { RosterPicker } from './ui/RosterPicker';
 
@@ -170,11 +171,18 @@ export function DungeonCamp({
           <div class="camp-home">
             {confirmHome ? (
               <div class="confirm" role="group" aria-label="Head home">
-                <p>
-                  {isPackEmpty(pack)
-                    ? 'Head home now? Your pack is empty, but your experience is safe.'
-                    : `Head home now? You keep your whole pack: ${packText(pack)}.`}
-                </p>
+                {isPackEmpty(pack) ? (
+                  <p>Head home now? Your pack is empty, but your experience is safe.</p>
+                ) : (
+                  <>
+                    <p>Head home now? You keep your whole pack:</p>
+                    <CountBadgeList
+                      items={packBadges(pack)}
+                      label="Your pack"
+                      class="run-pack-items"
+                    />
+                  </>
+                )}
                 <p class="button-row">
                   <button
                     type="button"

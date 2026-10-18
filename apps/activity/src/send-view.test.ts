@@ -55,10 +55,7 @@ describe('who can go', () => {
     const away: Creature = { ...cindle, away: true, busy: { kind: 'expedition', id: 'x' } };
     const onJob: Creature = { ...splashet, busy: { kind: 'job', id: 'j' } };
     const options = explorerOptions([away, onJob], place('tidepools'), view);
-    expect(options.map((o) => o.blocked)).toEqual([
-      'Away on an expedition',
-      'On a job in the Workshop',
-    ]);
+    expect(options.map((o) => o.blocked)).toEqual(['Away on a trip', 'On a job']);
   });
 
   it('shows the stars of each creature at the chosen place', () => {
@@ -150,7 +147,7 @@ describe('why a trip cannot be sent', () => {
     expect(sendBlocker({ ...base, explorer: undefined })).toBe('No creature to send.');
     expect(sendBlocker({ ...base, place: undefined })).toBe('Pick a place first.');
     const away = explorerOptions([{ ...cindle, away: true }], place('tidepools'), view)[0];
-    expect(sendBlocker({ ...base, explorer: away })).toContain('Away on an expedition');
+    expect(sendBlocker({ ...base, explorer: away })).toContain('Away on a trip');
     expect(sendBlocker({ ...base, place: place('festival-grounds') })).toContain('Festival');
     const lowRank = { ...(explorer as NonNullable<typeof explorer>), rank: 1 };
     expect(sendBlocker({ ...base, explorer: lowRank, length: 'day' })).toBe(

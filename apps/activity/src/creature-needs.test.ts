@@ -26,7 +26,7 @@ describe('what a creature needs', () => {
 
   it('needs to evolve when the server says it can', () => {
     expect(creatureNeeds(sampleCreature('evolve ready'), plainState)).toEqual([
-      { kind: 'evolve', label: 'Evolve into Pyrelynx', detail: '20 Essence' },
+      { kind: 'evolve', label: 'Choose an evolution', detail: '20 Essence' },
     ]);
     const locked = sampleCreature('evolve ready');
     const notYet = {
@@ -41,15 +41,15 @@ describe('what a creature needs', () => {
     expect(creatureNeeds({ ...ready, away: true }, plainState)).toEqual([
       {
         kind: 'evolve',
-        label: 'Evolve into Pyrelynx',
-        detail: 'Away on an expedition',
-        blocked: 'Away on an expedition',
+        label: 'Choose an evolution',
+        detail: 'Away on a trip',
+        blocked: 'Away on a trip',
       },
     ]);
     const onJob = { ...ready, busy: { kind: 'job' as const, id: 'job-1' } };
     expect(creatureNeeds(onJob, plainState)[0]).toMatchObject({
-      detail: 'On a job in the Workshop',
-      blocked: 'On a job in the Workshop',
+      detail: 'On a job',
+      blocked: 'On a job',
     });
   });
 

@@ -377,7 +377,7 @@ describe('labels', () => {
     );
     expect(nodeAriaLabel(node('f0l1'), 'visited')).toContain('Visited');
     expect(nodeAriaLabel(node('f1l2'), 'current')).toContain('You are here');
-    expect(nodeAriaLabel(node('f2l0'), 'locked')).toContain('Not on your path');
+    expect(nodeAriaLabel(node('f2l0'), 'locked')).toContain('Further ahead');
     expect(nodeAriaLabel(node('f2l0'), 'preview')).toBe('Fierce Moss Lurker (elite). Show details');
   });
 
@@ -551,7 +551,7 @@ describe('the Undercroft on the map', () => {
     expect(nodeTitle(doorNode)).toBe('Carved door');
     expect(nodeLines(doorNode)).toEqual([DOOR_LINE]);
     expect(DOOR_LINE).toBe(
-      'A carved door. Step through to add one room to the first Undercroft floor: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.',
+      'Step through to add one room to the first Undercroft floor: a fight, an elite fight, a mystery room, a cache, a camp or an epic fight. You find out which when you descend.',
     );
     expect(nodeGlossaryEntry('door')).toBe('carved-door');
     expect(nodeGlossaryEntry('epic')).toBe('epic-fight');
@@ -570,7 +570,7 @@ describe('the Undercroft on the map', () => {
       expect(glyph(id), id).toBeDefined();
     }
     expect(nodeAriaLabel(keeperNode, 'locked', { crack: true })).toBe(
-      'Undercroft floor boss: Slag Tyrant. Cracked floor. Not on your path. Show details',
+      'Undercroft floor boss: Slag Tyrant. Cracked floor. Further ahead. Show details',
     );
     expect(nodeAriaLabel(keeperNode, 'preview')).toBe(
       'Undercroft floor boss: Slag Tyrant. Show details',

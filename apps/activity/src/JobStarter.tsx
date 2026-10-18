@@ -1,6 +1,7 @@
 import { GLOSSARY_IDS } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
+import { BaitCost } from './BaitCost';
 import { CreaturePicker } from './CreaturePicker';
 import { CostList } from './GearArt';
 import { GlossaryTag } from './Glossary';
@@ -76,11 +77,7 @@ export function JobStarter(props: JobStarterProps) {
       </h4>
       <p class="label">Cost</p>
       <CostList cost={cost} have={gear.parts} />
-      {bait > 0 && (
-        <p class={gear.balances.bait >= bait ? 'bait-cost' : 'bait-cost short'}>
-          {bait} Bait <span class="muted">(you have {gear.balances.bait})</span>
-        </p>
-      )}
+      {bait > 0 && <BaitCost cost={bait} have={gear.balances.bait} />}
       <CreaturePicker
         name={`${props.id}-who`}
         options={options}

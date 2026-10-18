@@ -9,6 +9,7 @@ import { wearBlock } from '@creatures/game';
 import type { Creature } from './api';
 import { capitalize, creatureName, getSpecies } from './game';
 import type { GearItem } from './gear-types';
+import { ON_A_JOB_REASON, busyReason } from './gear-view';
 import type { PickerOption } from './roster-picker';
 
 /** The id of the "Take off" option (no creature has it). */
@@ -16,13 +17,6 @@ export const TAKE_OFF_ID = 'take-off';
 
 /** What the picker says for the creature that wears the item now (picking it changes nothing). */
 export const WEARS_IT_NOTE = 'Wears it now';
-
-/** Why a creature is frozen (away or on a job), in as few words as fit; null when it is free. */
-function frozenReason(creature: Pick<Creature, 'busy' | 'away'>): string | null {
-  if (creature.busy?.kind === 'job') return 'On a job';
-  if (creature.busy?.kind === 'expedition' || creature.away) return 'Away on a trip';
-  return null;
-}
 
 /**
  * Why a creature cannot take the item, in as few words as fit ("Needs level 7", "Guards only", "Away on a
@@ -33,7 +27,7 @@ export function equipReason(
   item: Pick<GearItem, 'slot' | 'tag' | 'itemLevel'>,
   creature: Pick<Creature, 'level' | 'species' | 'busy' | 'away'>,
 ): string | null {
-  const frozen = frozenReason(creature);
+  const frozen = busyReason(creature);
   if (frozen !== null) return frozen;
   const species = getSpecies(creature.species);
   if (species === undefined) return null;
@@ -71,11 +65,11 @@ export function equipOptions(
   creatures: readonly Creature[],
 ): PickerOption[] {
   const wearer = creatures.find((c) => c.id === item.equippedOn);
-  const wearerFrozen = wearer === undefined ? null : frozenReason(wearer);
+  const wearerFrozen = wearer === undefined ? null : busyReason(wearer);
   const stuck =
     wearer === undefined || wearerFrozen === null
       ? null
-      : `${creatureName(wearer)} is ${wearerFrozen === 'On a job' ? 'on a job' : 'away on a trip'}`;
+      : `${creatureName(wearer)} is ${wearerFrozen === ON_A_JOB_REASON ? 'on a job' : 'away on a trip'}`;
   const byLevel = (a: PickerOption, b: PickerOption): number =>
     b.level - a.level || a.name.localeCompare(b.name) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   const others = creatures

@@ -4,12 +4,10 @@ import { GlossaryTag } from './Glossary';
 import { partCountItems, supplyCounts } from './count-items';
 import { GearRows } from './ItemRow';
 import {
-  DESCEND_BANKED_HELP,
   DESCEND_BUTTON,
   DESCEND_EMPTY_PACK_HELP,
   DESCEND_HOME_BUTTON,
   DESCEND_HOME_LINE,
-  DESCEND_RISK_HELP,
   DESCEND_RISK_LINE,
   DESCEND_UNDER_HEADING,
   descendIntro,
@@ -71,7 +69,6 @@ export function DungeonDescend({
       <div class="descend-ledger">
         <section class="descend-part" aria-label="Banked now">
           <h4>Banked now</h4>
-          <p class="muted">{DESCEND_BANKED_HELP}</p>
           {nothingBanked(descent.banked) ? (
             <p class="muted">Nothing new this time.</p>
           ) : (
@@ -99,10 +96,7 @@ export function DungeonDescend({
           {items.length === 0 ? (
             <p class="muted">{DESCEND_EMPTY_PACK_HELP}</p>
           ) : (
-            <>
-              <p class="muted">{DESCEND_RISK_HELP}</p>
-              <CountBadgeList items={items} label={packLine(pack)} class="run-pack-items" />
-            </>
+            <CountBadgeList items={items} label={packLine(pack)} class="run-pack-items" />
           )}
         </section>
       </div>

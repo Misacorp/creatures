@@ -4,7 +4,6 @@ import { bossArt, elementClass } from './art';
 import {
   CRACK_LINE,
   DESCEND_LINE,
-  FIERCER_LINE,
   LOCKED_LINE,
   NOT_VISITED_LINE,
   NO_TRICK_LINE,
@@ -42,6 +41,7 @@ import {
 } from './dungeon-history';
 import { packBadges } from './dungeon-run';
 import { GearRows } from './ItemRow';
+import { essenceCount, partBadge } from './count-items';
 import { modifierIcon } from './dungeon-rooms';
 import { roomTrick } from './dungeon-playback';
 import type {
@@ -55,7 +55,7 @@ import { glyphOrUnknown } from './glyphs';
 import { gimmickGlyphKey, gimmickShort } from './raid-text';
 import { Sprite } from './sprites/Sprite';
 import { ElementChip } from './sprites/ElementChip';
-import { CountBadgeList } from './ui/CountBadge';
+import { CountBadgeList, type CountItem } from './ui/CountBadge';
 import { Drawer } from './ui/Drawer';
 import { Tag } from './ui/Tag';
 
@@ -109,9 +109,13 @@ export function DungeonNodeDrawer({
   const entry = entries[0];
   const visited = status === 'visited' || status === 'current';
   const why = whyNot(status, state);
-  // The "?" for what the room is stands right after the title (the foe rooms carry their own tags).
-  const help =
-    node.foe !== undefined && node.kind !== 'mystery' ? null : nodeGlossaryEntry(node.kind);
+  // The "?" for what the room is stands right after the title (the foe rooms carry their own tags; the
+  // Undercroft's floor boss is named for the place, so its "?" explains the place).
+  const help = isKeeper(node)
+    ? 'undercroft'
+    : node.foe !== undefined && node.kind !== 'mystery'
+      ? null
+      : nodeGlossaryEntry(node.kind);
   const footer = go ? (
     <button
       type="button"
@@ -165,12 +169,36 @@ function whyNot(status: NodeStatus, state: MapRun | null): string | null {
   return state.status === 'active' ? LOCKED_LINE : NOT_VISITED_LINE;
 }
 
+/** The lead of the row that says what an epic fight pays, and what a floor boss's chest holds. */
+const WIN_LABEL = 'Win';
+const CHEST_LABEL = 'Chest';
+
 /** The loot a room put in the pack, as icons with numbers. */
 function LootRow({ pack }: { pack: DungeonPack }) {
   return (
     <div class="dnd-loot">
       <span>{LOOT_LABEL}:</span>
       <CountBadgeList items={packBadges(pack)} label={LOOT_LABEL} class="dnd-loot-items" />
+    </div>
+  );
+}
+
+/** What a room that is still ahead pays, as icons with numbers ("Win:" or "Chest:"), with its extra items after them. */
+function PrizeRow({
+  label,
+  items,
+  children,
+}: {
+  label: string;
+  items: readonly CountItem[];
+  children?: ComponentChildren;
+}) {
+  return (
+    <div class="dnd-loot">
+      <span>{label}:</span>
+      <CountBadgeList items={items} label={label} class="dnd-loot-items">
+        {children}
+      </CountBadgeList>
     </div>
   );
 }
@@ -342,9 +370,9 @@ function FoeBody({
         <div class="dnd-who">
           <p class="dnd-name pix">{foeDisplayName(node)}</p>
           <p class="dnd-tags">
-            {deeper && (
+            {deeper && !keeper && (
               <Tag kind="badge" entry="undercroft">
-                {keeper ? 'Floor boss' : 'Undercroft'}
+                Undercroft
               </Tag>
             )}
             {elite && (
@@ -369,7 +397,6 @@ function FoeBody({
           </p>
         </div>
       </div>
-      {deeper && <p class="dnd-line dnd-fiercer">{FIERCER_LINE}</p>}
       {elite && entry === undefined && (
         <p class="dnd-line">
           A fiercer fight. Win it to earn a{' '}
@@ -380,20 +407,39 @@ function FoeBody({
         </p>
       )}
       {epic && entry === undefined && (
-        <p class="dnd-line">
-          One fierce foe at boss strength. Win it to earn {epicLoot.essence} Essence,{' '}
-          {epicLoot.scrap} scrap and a{' '}
-          <GlossaryTag entry="keepsake" look="text">
-            keepsake
-          </GlossaryTag>
-          .
-        </p>
+        <>
+          <p class="dnd-line">One fierce foe at boss strength.</p>
+          <PrizeRow
+            label={WIN_LABEL}
+            items={[
+              essenceCount(epicLoot.essence, { entry: true }),
+              { key: 'scrap', ...partBadge('scrap', epicLoot.scrap) },
+            ]}
+          >
+            <li>
+              <Tag kind="chip" entry="keepsake" icon={{ kind: 'glyph', id: 'sparkle' }}>
+                Keepsake
+              </Tag>
+            </li>
+          </PrizeRow>
+        </>
       )}
       {keeper && entry === undefined && (
-        <p class="dnd-line">
-          Beat the floor boss to open the Undercroft chest: {chest.essence} Essence, {chest.scrap}{' '}
-          scrap and a {Math.round(chest.gearBp / 100)}% chance of a gear piece.
-        </p>
+        <PrizeRow
+          label={CHEST_LABEL}
+          items={[
+            essenceCount(chest.essence, { entry: true }),
+            { key: 'scrap', ...partBadge('scrap', chest.scrap) },
+            {
+              key: 'gear',
+              icon: { kind: 'glyph', id: 'slot-hat' },
+              amount: `${String(Math.round(chest.gearBp / 100))}%`,
+              spokenAmount: `${String(Math.round(chest.gearBp / 100))} percent chance`,
+              label: 'Gear piece',
+              entry: 'gear',
+            },
+          ]}
+        />
       )}
       {keeper && crack && <p class="dnd-line dnd-crack">{CRACK_LINE}</p>}
       {descent && !keeper && entry === undefined && (
