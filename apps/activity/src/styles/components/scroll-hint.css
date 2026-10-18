@@ -1,0 +1,40 @@
+/*
+  The scroll hint box (ui/ScrollHint.tsx): a box that scrolls with no scrollbar. The wrapper holds the scrolling
+  body and, over its bottom edge, a soft fade that shows while there is more content below (the whole hint under
+  reduced motion). The body's height limit comes from the class the owner gives it.
+*/
+.scroll-hint {
+  position: relative;
+}
+
+.scroll-hint-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.scroll-hint-body::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-hint-fade {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1.25rem;
+  background: linear-gradient(to bottom, transparent, var(--scroll-hint-bg, var(--dusk)));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease-out;
+}
+
+.scroll-hint.more .scroll-hint-fade {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hint-fade {
+    transition: none;
+  }
+}

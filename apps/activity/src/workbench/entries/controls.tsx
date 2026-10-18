@@ -5,6 +5,7 @@ import { ALERT_TEXT, NO_ALERTS, type TabAlerts } from '../../tab-alerts';
 import { TABS, type Tab } from '../../tabs';
 import { LiveRegion } from '../../ui/LiveRegion';
 import { PlaybackControls } from '../../ui/PlaybackControls';
+import { ScrollHint } from '../../ui/ScrollHint';
 import { ToggleButton } from '../../ui/ToggleButton';
 import type { Speed } from '../../replay';
 import { bool, num, str } from '../props';
@@ -205,10 +206,68 @@ const tabBar: Entry = {
   render: (p) => <TabBarDemo p={p} />,
 };
 
+function ScrollHintDemo({ p }: { p: Props }) {
+  // Each press of "New content" is a new content key: the box goes back to the top and the hint starts again.
+  const [version, setVersion] = useState(0);
+  const lines = num(p, 'lines');
+  return (
+    <div class="wb-scroll-hint">
+      <ScrollHint
+        class="wb-scroll-hint-box"
+        contentKey={`${String(version)}:${String(lines)}`}
+        label="Sample content"
+        focusable
+        delayMs={num(p, 'delayMs')}
+        speed={num(p, 'speed')}
+        reducedMotion={bool(p, 'reducedMotion')}
+      >
+        <ul class="wb-scroll-hint-list">
+          {Array.from({ length: lines }, (_, i) => (
+            <li key={i}>
+              Sample line {i + 1} / {lines}
+            </li>
+          ))}
+        </ul>
+      </ScrollHint>
+      <button
+        type="button"
+        onClick={() => {
+          setVersion((v) => v + 1);
+        }}
+      >
+        New content
+      </button>
+    </div>
+  );
+}
+
+const scrollHint: Entry = {
+  name: 'ScrollHint',
+  file: 'apps/activity/src/ui/ScrollHint.tsx',
+  group: 'Controls',
+  description:
+    'A box that scrolls with no scrollbar and shows it does: after a rest (2.5 s) the content moves down very slowly to the bottom, any touch, wheel, key or focus stops it for good, and a soft fade shows while there is more below. Under reduced motion only the fade shows. It is used by the item picker\'s detail panel; "New content" starts it again from the top.',
+  controls: {
+    lines: { kind: 'number', min: 2, max: 60 },
+    delayMs: { kind: 'number', min: 0, max: 10000, step: 100 },
+    speed: { kind: 'number', min: 1, max: 200 },
+    reducedMotion: { kind: 'toggle' },
+  },
+  defaults: { lines: 24, delayMs: 2500, speed: 12, reducedMotion: false },
+  presets: [
+    { name: 'Long content (the hint runs)', props: { lines: 24 } },
+    { name: 'Fits (nothing happens)', props: { lines: 4 } },
+    { name: 'Reduced motion (fade only)', props: { lines: 24, reducedMotion: true } },
+    { name: 'Quick and fast', props: { lines: 40, delayMs: 500, speed: 60 } },
+  ],
+  render: (p) => <ScrollHintDemo p={p} />,
+};
+
 export const controlEntries: readonly Entry[] = [
   toggleButton,
   playbackControls,
   liveRegion,
   currencyPile,
   tabBar,
+  scrollHint,
 ];

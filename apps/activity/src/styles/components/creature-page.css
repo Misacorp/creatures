@@ -198,16 +198,24 @@ button.ip-cell.selected {
   (the flip area only takes a sideways swipe, `touch-action: pan-y`). The 100vh line is the fallback for
   browsers without dynamic viewport units.
 */
+.ip-detail {
+  --scroll-hint-bg: var(--dusk-2);
+}
+
 .ip-detail-scroll {
   max-height: 40vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 @supports (height: 1dvh) {
   .ip-detail-scroll {
     max-height: 40dvh;
   }
+}
+
+/* The footer of the picker's drawer holds the whole panel (no scroll of its own), so the actions never scroll away. */
+.picker-drawer .drawer-footer {
+  max-height: none;
+  overflow-y: visible;
 }
 
 .ip-detail-scroll:focus-visible {

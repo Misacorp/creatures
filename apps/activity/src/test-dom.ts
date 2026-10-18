@@ -304,6 +304,8 @@ export interface Page {
   /** Types into a text field: sets its value and fires `input`. */
   type(el: FakeElement, text: string): void;
   key(el: FakeElement, key: string): FakeEvent;
+  /** Any other event by name (`wheel`, `touchstart`, `focusin`, `scroll`), with effects flushed. */
+  event(el: FakeElement, type: string): FakeEvent;
   /** A pointer event (`pointerdown`, `pointermove`, `pointerup`, `pointercancel`) with its position and kind. */
   pointer(
     el: FakeElement,
@@ -383,6 +385,9 @@ export function createPage(): Page {
     },
     key(el, key) {
       return fire(el, { type: 'keydown', key });
+    },
+    event(el, type) {
+      return fire(el, { type });
     },
     pointer(el, type, init) {
       return fire(el, {

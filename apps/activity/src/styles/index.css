@@ -60,6 +60,7 @@
 @import './views/inventory.css';
 @import './views/item-detail.css';
 @import './components/picker.css';
+@import './components/scroll-hint.css';
 @import './views/jobs.css';
 @import './views/gear-slot.css';
 @import './components/loot.css';

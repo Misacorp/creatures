@@ -7,6 +7,7 @@ import { ItemCard } from '../ItemCard';
 import { Drawer } from '../ui/Drawer';
 import { flipOver } from '../ui/flip-logic';
 import { FlipArea } from '../ui/Flipper';
+import { ScrollHint } from '../ui/ScrollHint';
 import { diffItems } from './compare-diff';
 import { loadCompareOn, saveCompareOn } from './compare-pref';
 import { CompareSwitch } from './CompareSwitch';
@@ -112,8 +113,13 @@ function DetailPanel({
   const comparing = comparable && compareOn;
   return (
     <section class="ip-detail" aria-label="Selected item">
-      {/* The card scrolls inside its own box (a long Epic with its lost lines is tall); the actions below stay put. */}
-      <div class="ip-detail-scroll" role="group" aria-label="Item details" tabIndex={0}>
+      {/* The card scrolls inside its own box (a long Epic with its lost lines is tall) and hints that it does; the actions below stay put. */}
+      <ScrollHint
+        class="ip-detail-scroll"
+        contentKey={`${item.id}:${String(comparing)}`}
+        label="Item details"
+        focusable
+      >
         <ItemCard
           item={item}
           plainRarity
@@ -122,7 +128,7 @@ function DetailPanel({
           {...(comparing ? { diff: diffItems(item, wornItem) } : {})}
           {...(wornBy === null ? {} : { note: <p class="ip-on">On {wornBy}</p> })}
         />
-      </div>
+      </ScrollHint>
       <div class="ip-actions">
         {comparable && <CompareSwitch on={compareOn} onChange={onCompareChange} />}
         {worn ? (

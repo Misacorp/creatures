@@ -270,7 +270,10 @@ describe('the detail panel scrolls inside itself', () => {
     expect(find(scroll, (e) => e.getAttribute('role') === 'switch')).toHaveLength(0);
     const row = first(byClass(panel, 'ip-actions'));
     expect(row.parentNode).toBe(panel);
-    expect(scroll.parentNode).toBe(panel);
+    // The scroll box sits in the hint's wrapper (which draws the fade), which sits in the panel.
+    expect(scroll.getAttribute('class')).toContain('scroll-hint-body');
+    expect(scroll.parentNode?.getAttribute('class')).toContain('scroll-hint');
+    expect(scroll.parentNode?.parentNode).toBe(panel);
     // Keyboard users can reach it to scroll.
     expect(scroll.getAttribute('tabindex')).toBe('0');
   });
