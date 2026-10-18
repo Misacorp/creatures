@@ -165,12 +165,19 @@ export interface Job {
   result: JobResult | null;
 }
 
+/** A piece of loot: the base and rarity of an item, and its item level (absent on grants stored before gear v2). */
+export interface LootPiece {
+  baseId: string;
+  rarity: GearRarity;
+  itemLevel?: number;
+}
+
 /** What a grant (a raid phase, a finale, a Festival, an expedition claim, the welcome kit) gave. */
 export interface GrantLoot {
   /** Items now in the inventory. `itemLevel` is absent on grants stored before gear v2. */
-  gear: { id: string; baseId: string; rarity: GearRarity; itemLevel?: number }[];
+  gear: (LootPiece & { id: string })[];
   /** Items that did not fit in a full inventory and became parts (already counted in `parts`). */
-  converted: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
+  converted: LootPiece[];
   parts: PartsBundle;
   /** `marks` is the blueprint's marks (its quality) after a repeat find added one. */
   blueprints: { baseId: string; duplicate: boolean; marks?: number }[];

@@ -2,7 +2,7 @@ import type { ItemLine } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { GearItem } from '../gear-types';
 import { sampleItem } from './bag-sample';
-import { diffEmpty, diffItems, statDelta } from './compare-diff';
+import { diffItems, lineKey, statDelta } from './compare-diff';
 
 /**
  * The inline compare of the picker's item card (the selected item against the worn one): stat rows, lines
@@ -23,7 +23,7 @@ describe('diffItems: lines on both items', () => {
       hat([{ id: 'crit-chance', tier: 3 }]),
       hat([{ id: 'crit-chance', tier: 1 }]),
     );
-    const change = diff.lines.get('crit-chance');
+    const change = diff.lines.get('crit-chance:rolled');
     expect(change).toMatchObject({ kind: 'changed', mark: { text: '+2 pt', good: true } });
     expect(change?.kind === 'changed' ? change.mark.spoken : '').toBe('plus 2 pt, better');
     expect(diff.goneLines).toEqual([]);
@@ -34,7 +34,7 @@ describe('diffItems: lines on both items', () => {
       hat([{ id: 'first-pounce', tier: 0 }]),
       hat([{ id: 'first-pounce', tier: 2 }]),
     );
-    expect(diff.lines.get('first-pounce')).toMatchObject({
+    expect(diff.lines.get('first-pounce:rolled')).toMatchObject({
       kind: 'changed',
       mark: { text: `${MINUS}12%`, good: false },
     });
@@ -55,7 +55,7 @@ describe('diffItems: lines on both items', () => {
       hat([{ id: 'aimed-ward', tier: 2 }]),
       hat([{ id: 'aimed-ward', tier: 0 }]),
     );
-    expect(diff.lines.get('aimed-ward')).toMatchObject({
+    expect(diff.lines.get('aimed-ward:rolled')).toMatchObject({
       kind: 'changed',
       mark: { text: `${MINUS}4%`, good: true, spoken: 'minus 4%, better' },
     });
@@ -63,7 +63,7 @@ describe('diffItems: lines on both items', () => {
       hat([{ id: 'aimed-ward', tier: 0 }]),
       hat([{ id: 'aimed-ward', tier: 2 }]),
     );
-    expect(weaker.lines.get('aimed-ward')).toMatchObject({
+    expect(weaker.lines.get('aimed-ward:rolled')).toMatchObject({
       mark: { text: '+4%', good: false },
     });
   });
@@ -78,8 +78,8 @@ describe('diffItems: new and lost lines', () => {
       ]),
       hat([{ id: 'first-pounce', tier: 1 }]),
     );
-    expect(diff.lines.get('crit-chance')).toEqual({ kind: 'new' });
-    expect(diff.lines.has('first-pounce')).toBe(false);
+    expect(diff.lines.get('crit-chance:rolled')).toEqual({ kind: 'new' });
+    expect(diff.lines.has('first-pounce:rolled')).toBe(false);
     expect(diff.goneLines).toEqual([]);
   });
 
@@ -91,7 +91,7 @@ describe('diffItems: new and lost lines', () => {
     const diff = diffItems(hat([{ id: 'first-pounce', tier: 1 }]), worn);
     const lost = worn.lines.find((l) => l.id === 'crit-chance');
     expect(lost?.text).toBeDefined();
-    expect(diff.goneLines).toEqual([{ id: 'crit-chance', text: lost?.text }]);
+    expect(diff.goneLines).toEqual([{ id: 'crit-chance', source: 'rolled', text: lost?.text }]);
   });
 
   it('counts lines with a parameter as different lines: Ember Hunter against Tide Hunter', () => {
@@ -99,7 +99,7 @@ describe('diffItems: new and lost lines', () => {
       hat([{ id: 'ember-hunter', tier: 1 }]),
       hat([{ id: 'tide-hunter', tier: 1 }]),
     );
-    expect(diff.lines.get('ember-hunter')).toEqual({ kind: 'new' });
+    expect(diff.lines.get('ember-hunter:rolled')).toEqual({ kind: 'new' });
     expect(diff.goneLines.map((l) => l.id)).toEqual(['tide-hunter']);
   });
 
@@ -108,8 +108,45 @@ describe('diffItems: new and lost lines', () => {
       hat([{ id: 'ember-hunter', tier: 3 }]),
       hat([{ id: 'ember-hunter', tier: 1 }]),
     );
-    expect(diff.lines.get('ember-hunter')).toMatchObject({ kind: 'changed' });
+    expect(diff.lines.get('ember-hunter:rolled')).toMatchObject({ kind: 'changed' });
     expect(diff.goneLines).toEqual([]);
+  });
+});
+
+describe('diffItems: a line the base has and the item rolled too', () => {
+  // A Crossroads Compass has Trail XP built in, and Trail XP can also be rolled on it.
+  const compass = (rolled: readonly ItemLine[]): GearItem =>
+    sampleItem('c', 'crossroads-compass', 'rare', 10, rolled);
+
+  it('keeps the base line and the rolled line apart: only the rolled one is new', () => {
+    const next = compass([{ id: 'trail-xp', tier: 1 }]);
+    const worn = compass([]);
+    expect(next.lines.filter((l) => l.id === 'trail-xp').map((l) => l.source)).toEqual([
+      'base',
+      'rolled',
+    ]);
+    const diff = diffItems(next, worn);
+    expect(diff.lines.get(lineKey({ id: 'trail-xp', source: 'rolled' }))).toEqual({ kind: 'new' });
+    expect(diff.lines.has(lineKey({ id: 'trail-xp', source: 'base' }))).toBe(false);
+    expect(diff.goneLines).toEqual([]);
+  });
+
+  it('lists the lost rolled line once, and the base line is not lost', () => {
+    const diff = diffItems(compass([]), compass([{ id: 'trail-xp', tier: 1 }]));
+    expect(diff.lines.size).toBe(0);
+    expect(diff.goneLines.map((l) => `${l.id}:${l.source}`)).toEqual(['trail-xp:rolled']);
+  });
+
+  it('marks the number of each line against its own twin', () => {
+    const diff = diffItems(
+      compass([{ id: 'trail-xp', tier: 3 }]),
+      compass([{ id: 'trail-xp', tier: 1 }]),
+    );
+    expect(diff.lines.has(lineKey({ id: 'trail-xp', source: 'base' }))).toBe(false);
+    expect(diff.lines.get(lineKey({ id: 'trail-xp', source: 'rolled' }))).toMatchObject({
+      kind: 'changed',
+      mark: { good: true },
+    });
   });
 });
 
@@ -147,10 +184,6 @@ describe('diffItems: base stats', () => {
     ]);
     expect(diff.stats.get('hp')).toMatchObject({ good: false });
     expect(diff.stats.get('hp')?.text.startsWith(MINUS)).toBe(true);
-  });
-
-  it('says nothing for equal stats', () => {
-    expect(diffEmpty(diffItems(kelp, kelp))).toBe(true);
   });
 });
 

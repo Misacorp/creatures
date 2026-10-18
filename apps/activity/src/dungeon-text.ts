@@ -262,11 +262,6 @@ export function undercroftName(level: number): string {
   return `Undercroft ${String(level)}`;
 }
 
-/** "1 Undercroft floor cleared" or "2 Undercroft floors cleared": how many Undercroft floors a run cleared. */
-export function undercroftClearedText(floors: number): string {
-  return `${String(floors)} Undercroft ${floors === 1 ? 'floor' : 'floors'} cleared`;
-}
-
 /** "Room 3 / 7": how far along the path a room is, counted from 1 (`floor` is the 0-based row of the map). */
 export function floorLine(floor: number, floors: number): string {
   return `Room ${String(floor + 1)} / ${String(floors)}`;

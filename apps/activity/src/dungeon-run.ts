@@ -4,6 +4,7 @@
  * Nothing here touches the DOM or the network; the server checks every act again.
  */
 import type { Creature } from './api';
+import { BAIT_ICON, ESSENCE_ICON } from './count-items';
 import type { DungeonAct, DungeonPack, DungeonRunCreature } from './dungeon-types';
 import { creatureName, getSpecies } from './game';
 import type { IconRef } from './icon-ref';
@@ -13,35 +14,13 @@ import type { SlotHp } from './ui/SlotButton';
 
 /** The pack as count badges (icon, number, name), without the empty kinds. */
 export function packItems(pack: DungeonPack): CountItem[] {
-  const items: CountItem[] = [];
-  if (pack.bait > 0) {
-    items.push({
-      key: 'bait',
-      icon: { kind: 'glyph', id: 'bait' },
-      amount: pack.bait,
-      label: 'Bait',
-      name: 'Bait',
-    });
-  }
-  if (pack.essence > 0) {
-    items.push({
-      key: 'essence',
-      icon: { kind: 'glyph', id: 'gem' },
-      amount: pack.essence,
-      label: 'Essence',
-      name: 'Essence',
-    });
-  }
-  if (pack.scrap > 0) {
-    items.push({
-      key: 'scrap',
-      icon: { kind: 'part', part: 'scrap' },
-      amount: pack.scrap,
-      label: 'Scrap',
-      name: 'Scrap',
-    });
-  }
-  return items;
+  return packKinds(pack, pack).map(({ key, icon, label, found }) => ({
+    key,
+    icon,
+    amount: found,
+    label,
+    name: label,
+  }));
 }
 
 /** The pack as icons with numbers only (no names), without the empty kinds: for a line that must stay short. */
@@ -64,8 +43,8 @@ export interface PackKind {
 }
 
 const PACK_ICON: Readonly<Record<PackKind['key'], { icon: IconRef; label: string }>> = {
-  bait: { icon: { kind: 'glyph', id: 'bait' }, label: 'Bait' },
-  essence: { icon: { kind: 'glyph', id: 'gem' }, label: 'Essence' },
+  bait: { icon: BAIT_ICON, label: 'Bait' },
+  essence: { icon: ESSENCE_ICON, label: 'Essence' },
   scrap: { icon: { kind: 'part', part: 'scrap' }, label: 'Scrap' },
 };
 

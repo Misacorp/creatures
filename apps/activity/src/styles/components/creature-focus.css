@@ -134,7 +134,7 @@ button.cc-open:focus-visible {
 .cc-name h3 {
   min-width: 0;
   margin: 0;
-  font-size: 1.5rem;
+  font-size: var(--fs-title);
   line-height: 1.05;
   overflow-wrap: anywhere;
 }
@@ -386,12 +386,6 @@ button.cp-back {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.0625rem 0;
-}
-
-.cp-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
 }
 
 .creature-page .rename {

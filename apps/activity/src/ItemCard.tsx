@@ -1,15 +1,7 @@
 import type { ComponentChildren, Ref } from 'preact';
 import type { CardDiff } from './creature-page/compare-diff';
 import { statRows } from './creature-page/picker-view';
-import {
-  FestivalTag,
-  GearTagBadge,
-  ItemFrame,
-  ItemSprite,
-  RarityTag,
-  SetTag,
-  SlotTag,
-} from './GearArt';
+import { FestivalTag, GearTagBadge, ItemThumb, RarityTag, SetTag, SlotTag } from './GearArt';
 import type { GearItem } from './gear-types';
 import { gearName, isFestivalBase, itemSet, setBonusRows, setCountText } from './gear-view';
 import { DeltaMark, ItemLines } from './ItemLines';
@@ -66,9 +58,7 @@ export function ItemCard({
   return (
     <div class={`idc pix-panel${extra === undefined ? '' : ` ${extra}`}`}>
       <div class="idc-head">
-        <ItemFrame rarity={item.rarity} baseId={item.baseId} level={item.itemLevel} class="big">
-          <ItemSprite baseId={item.baseId} scale={spriteScale} />
-        </ItemFrame>
+        <ItemThumb item={item} scale={spriteScale} class="big" />
         <div class="idc-info">
           {heading ? (
             <h3

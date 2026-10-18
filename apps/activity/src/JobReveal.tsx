@@ -2,7 +2,8 @@ import { GLOSSARY_IDS } from '@creatures/game';
 import type { Creature } from './api';
 import { creatureName } from './game';
 import { glyphOrUnknown } from './glyphs';
-import { ItemFrame, ItemSprite, PartsList, RarityTag, partCountItems } from './GearArt';
+import { essenceCount, partCountItems } from './count-items';
+import { ItemFrame, ItemSprite, ItemThumb, PartsList, RarityTag } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { GearItem, JobResult } from './gear-types';
 import {
@@ -18,7 +19,7 @@ import { ItemLines } from './ItemLines';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { supplyKindOf, supplyName } from './trip-view';
-import { CountBadge, type CountItem } from './ui/CountBadge';
+import { CountBadgeList, type CountItem } from './ui/CountBadge';
 import { RevealLater, RevealShell, RevealStage, useRevealSequence } from './ui/RevealShell';
 import { Tag } from './ui/Tag';
 import { XpGain, XpList } from './ui/XpGain';
@@ -28,17 +29,7 @@ import { craftingGain, experienceGain } from './xp-gain';
 function gaveItems(result: Extract<JobResult, { kind: 'dismantle' }>): CountItem[] {
   return [
     ...partCountItems(result.parts),
-    ...(result.essence > 0
-      ? [
-          {
-            key: 'essence',
-            icon: { kind: 'glyph', id: 'gem' } as const,
-            amount: result.essence,
-            label: 'Essence',
-            entry: 'essence',
-          },
-        ]
-      : []),
+    ...(result.essence > 0 ? [essenceCount(result.essence, { entry: true })] : []),
   ];
 }
 
@@ -65,9 +56,7 @@ function DismantleRow({ result }: { result: Extract<JobResult, { kind: 'dismantl
       <ul class="jr-items" aria-label="Taken apart">
         {result.items.map((item, index) => (
           <li key={`${item.baseId}-${String(index)}`}>
-            <ItemFrame rarity={item.rarity} baseId={item.baseId} level={item.itemLevel}>
-              <ItemSprite baseId={item.baseId} scale={4} />
-            </ItemFrame>
+            <ItemThumb item={item} scale={4} />
           </li>
         ))}
       </ul>
@@ -76,13 +65,7 @@ function DismantleRow({ result }: { result: Extract<JobResult, { kind: 'dismantl
       {gave.length === 0 ? (
         <p class="muted">Nothing</p>
       ) : (
-        <ul class="gives jr-gives" aria-label="Became">
-          {gave.map(({ key, ...badge }) => (
-            <li key={key}>
-              <CountBadge {...badge} />
-            </li>
-          ))}
-        </ul>
+        <CountBadgeList items={gave} label="Became" class="gives jr-gives" />
       )}
     </div>
   );

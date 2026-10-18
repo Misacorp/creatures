@@ -168,7 +168,7 @@ describe('a mystery room', () => {
     const text = visibleText(root);
     expect(text).toContain('Sleeping Beetle');
     expect(text).toContain('A round beetle snores on a small pile of coins.');
-    expect(byClass(root, 'event-option')).toHaveLength(2);
+    expect(byClass(root, 'choice')).toHaveLength(2);
     expect(visibleText(button(root, /Take one coin/))).toBe('Take one coin You gain 1 scrap.');
     expect(visibleText(button(root, /Take the pile/))).toBe(
       'Take the pile 50%: 3 scrap. 50%: every creature loses 20% HP.',
@@ -190,7 +190,7 @@ describe('a mystery room', () => {
     page?.click(button(root, /Take one coin/));
     expect(picked).toEqual([1, 0]);
     page?.draw(<DungeonEvent event={SAMPLE_EVENT} busy={true} onPick={noop} />);
-    expect(byClass(root, 'event-option').every((b) => b.hasAttribute('disabled'))).toBe(true);
+    expect(byClass(root, 'choice').every((b) => b.hasAttribute('disabled'))).toBe(true);
   });
 });
 
@@ -226,7 +226,7 @@ describe('the camp', () => {
     expect(visibleText(button(root, 'Head home with your pack'))).toBe('Head home with your pack');
     expect(text).toContain('Drag or tap two creatures to swap places.');
     // Three choices in the list; the home button is outside it.
-    expect(byClass(root, 'camp-choice')).toHaveLength(3);
+    expect(byClass(root, 'choice')).toHaveLength(3);
     expect(byClass(root, 'camp-home')[0]?.textContent).toContain('Head home with your pack');
   });
 

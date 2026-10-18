@@ -79,12 +79,6 @@ export function slotName(slot: GearSlot): string {
   return capitalize(slot);
 }
 
-/** The element an item's base is tied to, or null (neutral, explorer and role pieces). */
-export function itemElement(baseId: string): string | null {
-  const base = gearBase(baseId);
-  return base === undefined ? null : baseElement(base);
-}
-
 /** "Kelp Cap, item level 4", for spoken labels. */
 export function itemLabel(baseId: string, itemLevel: number): string {
   return `${gearName(baseId)}, item level ${String(itemLevel)}`;
@@ -348,12 +342,6 @@ export function wearReason(
     case 'item_level':
       return `Needs creature level ${String(block.needs)}.`;
   }
-}
-
-/** What an item asks of its wearer, in one short line: "Level 12", "Level 13, Guards only". */
-export function needsText(item: Pick<GearItem, 'needs'>): string {
-  const level = `Level ${String(item.needs.level)}`;
-  return item.needs.role === null ? level : `${level}, ${capitalize(item.needs.role)}s only`;
 }
 
 // --- Items ---
@@ -674,25 +662,6 @@ export function durationCountItem(durationMs: number): CountItem {
 /** The time a dismantle job of these items takes a creature of this Crafting level (the preview gives the server's). */
 export function dismantleDurationFor(rarity: GearRarity, level: number): number {
   return jobDuration(level, 0, dismantleHours(rarity));
-}
-
-/**
- * The items a bulk dismantle picks: unworn pieces of one rarity up to an item level, the lowest levels
- * first (then the oldest). Commons go in bundles of up to 5 in one job, anything else one at a time, so
- * this returns what the next job takes, and how many more match.
- */
-export function bulkPick(
-  items: readonly GearItem[],
-  rarity: GearRarity,
-  maxItemLevel: number,
-): { ids: string[]; matching: number } {
-  const matching = items
-    .filter((i) => i.rarity === rarity && i.equippedOn === null && i.itemLevel <= maxItemLevel)
-    .sort(
-      (a, b) => a.itemLevel - b.itemLevel || a.createdAt - b.createdAt || a.id.localeCompare(b.id),
-    );
-  const take = rarity === 'common' ? RULES.gear.dismantle.bundleMax : 1;
-  return { ids: matching.slice(0, take).map((i) => i.id), matching: matching.length };
 }
 
 /**

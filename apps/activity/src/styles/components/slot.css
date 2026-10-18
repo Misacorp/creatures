@@ -5,14 +5,6 @@
   colour alone. Built for 390 px: two or three equal columns.
 */
 
-.slot-row {
-  display: grid;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .slot-row.cols-1 {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -69,8 +61,8 @@ button.slot.talent {
   background: var(--dusk-2);
   box-shadow:
     0 0 0 var(--px) var(--ink),
-    inset 0 var(--px) 0 0 #3d3570,
-    inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+    inset 0 var(--px) 0 0 var(--bevel-hi),
+    inset 0 calc(var(--px) * -1) 0 0 var(--bevel-lo);
   color: var(--bone);
 }
 

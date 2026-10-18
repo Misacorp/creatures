@@ -4,9 +4,9 @@
  * change on either side fails a test. Every parser throws a plain `Error` for an answer it does not
  * understand; nothing here repairs or guesses.
  */
-import { GEAR_RARITIES } from '@creatures/game';
+import { ELEMENTS, RoleSchema } from '@creatures/game';
 import { isExperienceView } from './experience';
-import { isPartsBundle } from './gear-parse';
+import { isConvertedLoot, isGearLoot, isPartsBundle } from './gear-parse';
 import { isEvent, isEventNames } from './raid-api';
 import { isArrayOf, isBool, isCount, isInt, isRecord, isStr } from './parse-core';
 import type {
@@ -32,10 +32,9 @@ import type {
   DungeonToday,
 } from './dungeon-types';
 
-const ELEMENTS: readonly unknown[] = ['tide', 'ember', 'grove', 'spark'];
-const ROLES: readonly unknown[] = ['setter', 'payoff', 'support', 'guard'];
-const isElement = (value: unknown): boolean => ELEMENTS.includes(value);
-const isRole = (value: unknown): boolean => ROLES.includes(value);
+const isElement = (value: unknown): boolean => (ELEMENTS as readonly unknown[]).includes(value);
+const isRole = (value: unknown): boolean =>
+  (RoleSchema.options as readonly unknown[]).includes(value);
 const NODE_KINDS: readonly unknown[] = [
   'fight',
   'elite',
@@ -47,7 +46,6 @@ const NODE_KINDS: readonly unknown[] = [
   'epic',
 ];
 const isNodeKind = (value: unknown): value is DungeonNodeKind => NODE_KINDS.includes(value);
-const isRarity = (value: unknown): boolean => (GEAR_RARITIES as readonly unknown[]).includes(value);
 
 /** A record of whole numbers by creature id. */
 const isHpMap = (value: unknown): value is Record<string, number> =>
@@ -106,23 +104,8 @@ function isRewards(value: unknown): value is DungeonRewards {
     isCount(value['bait']) &&
     isCount(value['essence']) &&
     isPartsBundle(value['parts']) &&
-    isArrayOf(
-      value['gear'],
-      (g): g is DungeonRewards['gear'][number] =>
-        isRecord(g) &&
-        isStr(g['id']) &&
-        isStr(g['baseId']) &&
-        isRarity(g['rarity']) &&
-        (g['itemLevel'] === undefined || isCount(g['itemLevel'])),
-    ) &&
-    isArrayOf(
-      value['converted'],
-      (c): c is DungeonRewards['converted'][number] =>
-        isRecord(c) &&
-        isStr(c['baseId']) &&
-        isRarity(c['rarity']) &&
-        (c['itemLevel'] === undefined || isCount(c['itemLevel'])),
-    ) &&
+    isArrayOf(value['gear'], isGearLoot) &&
+    isArrayOf(value['converted'], isConvertedLoot) &&
     (value['supplies'] === undefined || isArrayOf(value['supplies'], isStr)) &&
     (value['experience'] === undefined || isArrayOf(value['experience'], isExperienceView)) &&
     isBool(value['landmark']) &&
@@ -168,21 +151,11 @@ function isEventView(value: unknown): value is DungeonEventView {
   );
 }
 
-/** A gear piece of a chest: its base id, rarity and, when it has one, item level. */
-function isGearPiece(value: unknown): value is { baseId: string; rarity: string } {
-  return (
-    isRecord(value) &&
-    isStr(value['baseId']) &&
-    isRarity(value['rarity']) &&
-    (value['itemLevel'] === undefined || isCount(value['itemLevel']))
-  );
-}
-
 /** What the boss chest banked, as the descent card shows it. */
 function isBanked(value: unknown): boolean {
   return (
     isRecord(value) &&
-    isArrayOf(value['gear'], isGearPiece) &&
+    isArrayOf(value['gear'], isConvertedLoot) &&
     isArrayOf(value['supplies'], isStr) &&
     isPartsBundle(value['parts'])
   );
@@ -264,7 +237,7 @@ function isStepLog(value: unknown): value is DungeonStepLog {
         kind === 'boss' &&
         isCount(value['level']) &&
         isPack(value['loot']) &&
-        isArrayOf(value['gear'], isGearPiece)
+        isArrayOf(value['gear'], isConvertedLoot)
       );
     case 'descend':
       return (

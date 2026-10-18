@@ -1,0 +1,34 @@
+/*
+  Shared utility classes: small layout pieces that several views use, so none of them lives in a view's file.
+  Imported where `views/raid.css` used to start (see `styles/index.css`), so the cascade order is unchanged.
+*/
+
+/* An indented bullet list (the replay's rounds, the live finale's abilities). Not "plain": it keeps its bullets. */
+.bullet-list {
+  margin: 0.25rem 0;
+  padding-left: 1.25rem;
+}
+
+/* A list laid out as a column of rows: no bullets, no indent. Use it on a `<ul>` or `<ol>` of rows. */
+.stack-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A wrapping row of buttons. */
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* An in-page confirmation of something destructive (a dismantle, heading home): a red-ringed panel. */
+.confirm {
+  margin: 0.5rem 0;
+  padding: 0.625rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 var(--px) var(--bad);
+}

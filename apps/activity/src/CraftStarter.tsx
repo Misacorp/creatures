@@ -7,7 +7,6 @@ import { GlossaryTag } from './Glossary';
 import { TreatBox } from './TreatBox';
 import type { CraftOption, CraftPreview, GearState, ReachId } from './gear-types';
 import {
-  defaultPick,
   durationFor,
   qualityText,
   oddsPercent,
@@ -18,9 +17,8 @@ import {
 } from './gear-view';
 import { formatDuration } from './time-format';
 import { Accordion } from './ui/Accordion';
-
-type PreviewState =
-  { status: 'loading' } | { status: 'failed' } | { status: 'ready'; preview: CraftPreview };
+import { PreviewStatus } from './ui/PreviewStatus';
+import { useJobPreview, usePickedCreature } from './use-job-preview';
 
 /**
  * The panel that starts a craft: who does it, then the ways to start it (a plain craft, Reach for Rare,
@@ -53,37 +51,22 @@ export function CraftStarter({
   onCancel: () => void;
 }) {
   const options = pickerOptions(creatures, gear.skills, durationFor);
-  const [picked, setPicked] = useState<string | null>(null);
-  const valid = options.find((o) => o.creature.id === picked && o.busy === null);
-  const creatureId = valid === undefined ? defaultPick(options) : picked;
+  const [creatureId, setPicked] = usePickedCreature(options);
   const [reach, setReach] = useState<ReachId>('none');
   const [treat, setTreat] = useState(false);
-  const [state, setState] = useState<PreviewState>({ status: 'loading' });
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus();
   }, []);
 
   // The numbers follow the creature (its Crafting level) and what the player holds.
-  useEffect(() => {
-    if (creatureId === null) return;
-    let current = true;
-    loadPreview(creatureId, baseId).then(
-      (preview) => {
-        if (current) setState({ status: 'ready', preview });
-      },
-      () => {
-        if (current) setState({ status: 'failed' });
-      },
-    );
-    return () => {
-      current = false;
-    };
-  }, [creatureId, baseId, gear.serverNow]);
+  const { status, preview } = useJobPreview(creatureId, (who) => loadPreview(who, baseId), [
+    baseId,
+    gear.serverNow,
+  ]);
 
   const crafter = options.find((o) => o.creature.id === creatureId)?.creature;
   const packing = treat && crafter !== undefined && gear.balances.bait >= crafter.treatCost;
-  const preview = state.status === 'ready' ? state.preview : null;
   const chosen: CraftOption | undefined =
     preview?.options.find((o) => o.reach === reach && o.unlocked) ??
     preview?.options.find((o) => o.reach === 'none');
@@ -119,10 +102,7 @@ export function CraftStarter({
         name={`${id}-who`}
         options={options}
         value={creatureId}
-        onChange={(next) => {
-          setPicked(next);
-          setState({ status: 'loading' });
-        }}
+        onChange={setPicked}
       />
       {crafter !== undefined && (
         <TreatBox
@@ -134,16 +114,7 @@ export function CraftStarter({
           onChange={setTreat}
         />
       )}
-      {state.status === 'loading' && creatureId !== null && (
-        <p class="muted" role="status">
-          Loading the odds...
-        </p>
-      )}
-      {state.status === 'failed' && (
-        <p class="error" role="alert">
-          Could not load the odds. Pick again to retry.
-        </p>
-      )}
+      <PreviewStatus status={status} what="the odds" />
       {preview !== null && (
         <fieldset class="picker reach-options">
           <legend>

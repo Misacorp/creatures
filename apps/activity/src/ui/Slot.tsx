@@ -121,7 +121,7 @@ export function Slot({
 export function SlotRow({ label, slots }: { label: string; slots: readonly ComponentChildren[] }) {
   const columns = slots.length >= 1 && slots.length <= 3 ? slots.length : 2;
   return (
-    <ul class={`slot-row cols-${String(columns)}`} aria-label={label}>
+    <ul class={`stack-list slot-row cols-${String(columns)}`} aria-label={label}>
       {slots.map((slot, index) => (
         <li key={index}>{slot}</li>
       ))}

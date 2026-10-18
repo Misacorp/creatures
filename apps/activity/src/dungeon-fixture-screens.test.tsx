@@ -309,7 +309,7 @@ describe('a mystery room, with the real answers', () => {
     const event = pending.pending.event;
     expect(visibleText(root)).toContain(event.name);
     expect(visibleText(root)).toContain(event.text);
-    expect(byClass(root, 'event-option')).toHaveLength(2);
+    expect(byClass(root, 'choice')).toHaveLength(2);
     for (const option of event.options) expect(visibleText(root)).toContain(option.description);
     // Picking the second option sends the captured pick and shows what it did.
     page?.click(button(root, new RegExp(`^${escapeRe(event.options[1]?.label ?? '')}`)));

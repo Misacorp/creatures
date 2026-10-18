@@ -1,9 +1,9 @@
 import { useState } from 'preact/hooks';
 import { LandmarkChip } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
-import { LootList } from './GearLoot';
+import { LootList } from './LootList';
 import { glyphOrUnknown } from './glyphs';
-import { partCountItems } from './GearArt';
+import { baitCount, essenceCount, partCountItems, supplyCounts } from './count-items';
 import type { CountItem } from './ui/CountBadge';
 import { RevealLater, RevealShell, useRevealSequence } from './ui/RevealShell';
 import { RewardSummary } from './ui/RewardSummary';
@@ -26,14 +26,11 @@ import { resultSummary, resultTitle, resultTone } from './dungeon-text';
 import { roomLog, type RoomLogRow } from './dungeon-route-rooms';
 import { routeRun } from './dungeon-history';
 import { DungeonMap } from './DungeonMap';
-import { RunKeepsakes } from './DungeonRunStrip';
+import { RunKeepsakes, TeamFace } from './DungeonRunStrip';
 import { DungeonNext } from './DungeonNext';
 import type { DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { creatureInfoOf } from './creature-info';
-import { SmallCreature } from './SmallCreature';
-import { supplyKindOf } from './trip-view';
 import { Sprite } from './sprites/Sprite';
-import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { XpBar } from './XpBar';
 
 /** A room panel's picture is 64 px (a foe) or 72 px (a floor boss), so three fit a 390 px phone. */
@@ -79,35 +76,12 @@ export function DungeonResults({
   const loot = rewardLoot(rewards);
   const bonus = streakLoot(rewards);
   const counts: CountItem[] = [
-    ...(rewards.bait > 0
-      ? [
-          {
-            key: 'bait',
-            icon: { kind: 'glyph', id: 'bait' } as const,
-            amount: rewards.bait,
-            label: 'Bait',
-            entry: 'bait',
-          },
-        ]
-      : []),
+    ...(rewards.bait > 0 ? [baitCount(rewards.bait, { entry: true })] : []),
     ...(rewards.essence > 0
-      ? [
-          {
-            key: 'essence',
-            icon: { kind: 'glyph', id: 'gem' } as const,
-            amount: done ? rewards.essence : frame.count,
-            label: 'Essence',
-            entry: 'essence',
-          },
-        ]
+      ? [essenceCount(done ? rewards.essence : frame.count, { entry: true })]
       : []),
     ...partCountItems(rewards.parts),
-    ...droppedSupplies(rewards).map((s) => ({
-      key: s.id,
-      icon: { kind: 'supply', id: supplyKindOf(s.id) ?? 'unknown' } as const,
-      amount: s.amount,
-      name: s.name,
-    })),
+    ...supplyCounts(droppedSupplies(rewards)),
   ];
   return (
     <RevealShell
@@ -353,22 +327,14 @@ function TeamBreakdown({ team }: { team: readonly TeamEntry[] }) {
       <ul class="team-row" aria-label="Your team after the run, left to right">
         {team.map((m) => (
           <li key={m.id} class={m.knockedOut ? 'team-member ko' : 'team-member'}>
-            <SmallCreature
+            <TeamFace
               id={m.id}
               info={creatureInfoOf({ ...m, species: m.speciesId })}
-              class="tm-face"
+              speciesId={m.speciesId}
+              name={m.name}
+              ko={m.knockedOut}
               label={`${m.spoken} Shows its role and element.`}
-            >
-              <span class="tm-art">
-                <Sprite sprite={creatureSpriteOrFallback(m.speciesId)} scale={4} />
-                {m.knockedOut && (
-                  <span class="ko-mark">
-                    <Sprite sprite={glyphOrUnknown('skull')} scale={2} />
-                  </span>
-                )}
-              </span>
-              <span class="tm-name pix">{m.name}</span>
-            </SmallCreature>
+            />
             <span class="tm-hp pix">{m.hp}</span>
             <span class="tm-level">
               <span class="lvl-tag pix">Lv {m.exp?.level ?? m.level}</span>

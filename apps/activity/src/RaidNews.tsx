@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useRef, useState } from 'preact/hooks';
 import { errorText } from './game';
 import {
   fetchRaidChannel,
@@ -7,29 +7,20 @@ import {
   type RaidChannelAction,
   type RaidChannelState,
 } from './raid-channel';
+import { useLoaded } from './use-loaded';
 
 /**
  * Lets a server admin choose the channel the bot posts raid news to. Asks the server once when the
  * Raid tab opens; stays out of the way (renders nothing) for everyone else and when the check fails.
  */
 export function RaidNews() {
-  const [state, setState] = useState<RaidChannelState | null>(null);
+  const loaded = useLoaded(fetchRaidChannel, []);
+  // What the admin's own change answered replaces what the first read said.
+  const [changed, setChanged] = useState<RaidChannelState | null>(null);
+  const state = changed ?? loaded.value;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchRaidChannel().then(
-      (answer) => {
-        if (!cancelled) setState(answer);
-      },
-      () => undefined,
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const card = state === null ? null : raidNewsCard(state);
   if (card === null) return null;
@@ -43,7 +34,7 @@ export function RaidNews() {
       (answer) => {
         inFlight.current = false;
         setBusy(false);
-        setState(answer);
+        setChanged(answer);
       },
       (err: unknown) => {
         inFlight.current = false;

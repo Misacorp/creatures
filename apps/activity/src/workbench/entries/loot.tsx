@@ -8,17 +8,11 @@ import {
   rollItem,
   statText,
 } from '@creatures/game';
-import {
-  CostList,
-  ItemFrame,
-  ItemSprite,
-  PartCount,
-  PartsRow,
-  partCountItems,
-} from '../../GearArt';
-import { LootList } from '../../GearLoot';
+import { CostList, ItemFrame, ItemSprite, PartCount, PartsRow } from '../../GearArt';
+import { LootList } from '../../LootList';
 import { ItemCard } from '../../ItemCard';
 import { pileLabel } from '../../claim-view';
+import { partCountItems } from '../../count-items';
 import type { GearRarity, GrantLoot, PartKind, PartsBundle } from '../../gear-types';
 import type { RevealFrame } from '../../reveal-anim';
 import type { PileSource } from '../../reward-pile';
@@ -147,7 +141,7 @@ const rewardSummary: Entry = {
 
 const lootList: Entry = {
   name: 'LootList',
-  file: 'apps/activity/src/GearLoot.tsx',
+  file: 'apps/activity/src/LootList.tsx',
   group: 'Loot & reveals',
   description:
     'What a grant gave, with pictures: each gear item as a compact row (image with its level in the corner and rarity border, name, rarity badge; no stats), items that did not fit the bag, new blueprints and parts. It is on the expedition claim, the dungeon results and the finale reveal.',

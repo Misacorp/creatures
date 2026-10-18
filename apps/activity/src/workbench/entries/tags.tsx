@@ -3,7 +3,8 @@ import { ChoiceMark, Stars } from '../../ExpeditionIcons';
 import { GlossaryTag } from '../../Glossary';
 import { RarityTag } from '../../GearArt';
 import { ElementChip, RoleChip } from '../../sprites/ElementChip';
-import { CountBadge } from '../../ui/CountBadge';
+import { baitCount, essenceCount, partCountItems, supplyCounts } from '../../count-items';
+import { CountBadge, CountBadgeList } from '../../ui/CountBadge';
 import { OutcomeBadge } from '../../ui/RevealShell';
 import { LandmarkChip, Tag } from '../../ui/Tag';
 import type { GearRarity } from '../../gear-types';
@@ -141,6 +142,46 @@ const countBadge: Entry = {
         {...(name === '' ? {} : { name })}
       />
     );
+  },
+};
+
+const countBadgeList: Entry = {
+  name: 'CountBadgeList',
+  file: 'apps/activity/src/ui/CountBadge.tsx',
+  group: 'Tags & chips',
+  description:
+    'A list of count badges, one per kind earned or spent, named for screen readers: the rewards of a run, a trip or a dismantle, and the pack of the dungeon. The empty kinds are left out by whoever builds the list.',
+  controls: {
+    bait: { kind: 'number', min: 0, max: 999 },
+    essence: { kind: 'number', min: 0, max: 999 },
+    scrap: { kind: 'number', min: 0, max: 999 },
+    supplies: { kind: 'number', min: 0, max: 9 },
+    names: { kind: 'toggle' },
+  },
+  defaults: { bait: 3, essence: 12, scrap: 4, supplies: 0, names: false },
+  presets: [
+    { name: 'Bait, Essence and Scrap', props: {} },
+    { name: 'With names (the dungeon pack)', props: { names: true } },
+    { name: 'And two supplies', props: { supplies: 2 } },
+    { name: 'Nothing earned', props: { bait: 0, essence: 0, scrap: 0 } },
+  ],
+  render: (p) => {
+    const named = bool(p, 'names');
+    const supplies = num(p, 'supplies');
+    const items = [
+      ...(num(p, 'bait') > 0 ? [baitCount(num(p, 'bait'), { entry: !named, name: named })] : []),
+      ...(num(p, 'essence') > 0
+        ? [essenceCount(num(p, 'essence'), { entry: !named, name: named })]
+        : []),
+      ...partCountItems(num(p, 'scrap') > 0 ? { scrap: num(p, 'scrap') } : {}),
+      ...supplyCounts(
+        [
+          { id: 'lure-basic', name: 'Basic Lure', amount: 1 },
+          { id: 'satchel-good', name: 'Sturdy Satchel', amount: 1 },
+        ].slice(0, supplies),
+      ),
+    ];
+    return <CountBadgeList items={items} label="Rewards" class="reward-badges" />;
   },
 };
 
@@ -287,6 +328,7 @@ export const tagEntries: readonly Entry[] = [
   tag,
   landmarkChip,
   countBadge,
+  countBadgeList,
   elementChip,
   roleChip,
   glossaryTag,

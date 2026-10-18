@@ -8,6 +8,7 @@ import { keyMoments, mineInRow, personalRecap, type Speed } from './replay';
 import { INTRO_REPLAY_MS } from './stage-fx';
 import { LogToggle, Stage } from './Stage';
 import { PlaybackControls } from './ui/PlaybackControls';
+import { useLoaded } from './use-loaded';
 import { usePlayback } from './use-playback';
 
 export function Replay({
@@ -28,23 +29,9 @@ export function Replay({
    */
   showControls?: boolean;
 }) {
-  const [data, setData] = useState<ReplayView | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchReplay(weekId, party, phase).then(
-      (next) => {
-        if (!cancelled) setData(next);
-      },
-      (err: unknown) => {
-        if (!cancelled) setError(errorText(err));
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [weekId, party, phase]);
+  const loaded = useLoaded(() => fetchReplay(weekId, party, phase), [weekId, party, phase]);
+  const data = loaded.value;
+  const error = loaded.failed ? errorText(loaded.error) : null;
 
   return (
     <section class="raid-section" aria-labelledby="replay-heading">
@@ -158,7 +145,7 @@ function Player({ data, showControls }: { data: ReplayView; showControls: boolea
       {moments.length === 0 ? (
         <p class="muted">Nothing stood out.</p>
       ) : (
-        <ol class="plain-list">
+        <ol class="bullet-list">
           {moments.map((m, i) => (
             <li key={i}>
               <strong>{m.title}</strong> (round {m.round}): {m.text}
@@ -169,7 +156,7 @@ function Player({ data, showControls }: { data: ReplayView; showControls: boolea
 
       <h4>Your recap</h4>
       {recap.creatures.length > 0 && (
-        <ul class="plain-list">
+        <ul class="bullet-list">
           {recap.creatures.map((c) => (
             <li key={c.id}>
               <strong>{c.name}</strong>: {c.damage} damage, {c.setupCredit} setup credit, {c.setups}{' '}

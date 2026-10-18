@@ -12,7 +12,7 @@
  */
 import type { FightEvent } from '@creatures/engine';
 import type { ExperienceView } from './experience';
-import type { GearRarity, PartsBundle } from './gear-types';
+import type { LootPiece, PartsBundle } from './gear-types';
 
 export type Element = 'tide' | 'ember' | 'grove' | 'spark';
 export type Role = 'setter' | 'payoff' | 'support' | 'guard';
@@ -159,7 +159,7 @@ export interface DungeonEventView {
 
 /** What the boss chest already gave (the descent card shows it): gear and supplies are in the player's stock, shards and glimmer in their parts. */
 export interface DungeonBanked {
-  gear: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
+  gear: LootPiece[];
   /** Supply content ids, one each. */
   supplies: string[];
   parts: PartsBundle;
@@ -284,7 +284,7 @@ export type DungeonStepLog =
       result: 'chest';
       level: number;
       loot: DungeonPack;
-      gear: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
+      gear: LootPiece[];
     }
   /** The descent card is waiting at a boss that fell (`level` is the level it opens). */
   | { node: string; kind: 'descend'; result: 'pending'; level: number }
@@ -371,9 +371,9 @@ export interface DungeonRewards {
   /** All the parts the run's grant paid, including those of items that did not fit the bag. */
   parts: PartsBundle;
   /** Gear items now in the inventory. */
-  gear: { id: string; baseId: string; rarity: GearRarity; itemLevel?: number }[];
+  gear: (LootPiece & { id: string })[];
   /** Items that did not fit the bag and became parts (already counted in `parts`). */
-  converted: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
+  converted: LootPiece[];
   /**
    * The supplies the run dropped, one content id each (a Lure, a Map scrap...). They are in the stock
    * now. Absent in runs from before the dungeon dropped supplies (read as none).

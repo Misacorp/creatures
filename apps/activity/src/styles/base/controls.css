@@ -14,11 +14,11 @@ input[type='text'] {
 button {
   font-family: var(--display);
   font-variant-ligatures: none;
-  font-size: 1rem;
+  font-size: var(--fs-row);
   cursor: pointer;
   box-shadow:
     0 0 0 var(--px) var(--ink),
-    inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+    inset 0 calc(var(--px) * -1) 0 0 var(--bevel-lo);
   transition: transform 60ms steps(1);
 }
 

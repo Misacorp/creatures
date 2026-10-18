@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import type { Creature } from './api';
 import { CreaturePicker } from './CreaturePicker';
 import { creatureName } from './game';
-import { ItemFrame, ItemSprite } from './GearArt';
+import { ItemThumb } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { DismantlePreview, GearItem, GearState } from './gear-types';
 import {
-  defaultPick,
   dismantleCountItems,
   dismantleDurationFor,
   durationCountItem,
@@ -14,10 +13,9 @@ import {
   oddsPercent,
   pickerOptions,
 } from './gear-view';
-import { CountBadge } from './ui/CountBadge';
-
-type PreviewState =
-  { status: 'loading' } | { status: 'failed' } | { status: 'ready'; preview: DismantlePreview };
+import { CountBadge, CountBadgeList } from './ui/CountBadge';
+import { PreviewStatus } from './ui/PreviewStatus';
+import { useJobPreview, usePickedCreature } from './use-job-preview';
 
 /**
  * The in-page confirmation of a dismantle job (never `window.confirm`): which creature does it, what the
@@ -54,10 +52,7 @@ export function DismantlePanel({
   const options = pickerOptions(creatures, gear.skills, (level) =>
     dismantleDurationFor(rarity, level),
   );
-  const [picked, setPicked] = useState<string | null>(null);
-  const valid = options.find((o) => o.creature.id === picked && o.busy === null);
-  const creatureId = valid === undefined ? defaultPick(options) : picked;
-  const [state, setState] = useState<PreviewState>({ status: 'loading' });
+  const [creatureId, setPicked] = usePickedCreature(options);
   const keep = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -67,27 +62,17 @@ export function DismantlePanel({
     panel.current?.scrollIntoView?.({ block: 'start' });
   }, []);
   const key = items.map((i) => i.id).join(',');
-  useEffect(() => {
-    if (creatureId === null) return;
-    let current = true;
-    loadPreview(
-      creatureId,
-      items.map((i) => i.id),
-    ).then(
-      (preview) => {
-        if (current) setState({ status: 'ready', preview });
-      },
-      () => {
-        if (current) setState({ status: 'failed' });
-      },
-    );
-    return () => {
-      current = false;
-    };
-  }, [creatureId, key]);
+  const { status, preview } = useJobPreview(
+    creatureId,
+    (who) =>
+      loadPreview(
+        who,
+        items.map((i) => i.id),
+      ),
+    [key],
+  );
 
   if (first === undefined) return null;
-  const preview = state.status === 'ready' ? state.preview : null;
   const title =
     items.length === 1
       ? `Dismantle ${gearName(first.baseId)}?`
@@ -109,9 +94,7 @@ export function DismantlePanel({
       <ul class="dismantle-items" aria-label="Items to take apart">
         {items.map((item) => (
           <li key={item.id}>
-            <ItemFrame rarity={item.rarity} baseId={item.baseId} level={item.itemLevel}>
-              <ItemSprite baseId={item.baseId} scale={4} />
-            </ItemFrame>
+            <ItemThumb item={item} scale={4} />
           </li>
         ))}
       </ul>
@@ -119,33 +102,16 @@ export function DismantlePanel({
         name={`dismantle-${first.id}-who`}
         options={options}
         value={creatureId}
-        onChange={(next) => {
-          setPicked(next);
-          setState({ status: 'loading' });
-        }}
+        onChange={setPicked}
       />
-      {state.status === 'loading' && !noCreature && (
-        <p class="muted" role="status">
-          Loading...
-        </p>
-      )}
-      {state.status === 'failed' && (
-        <p class="error" role="alert">
-          Could not load the refund. Pick again to retry.
-        </p>
-      )}
+      <PreviewStatus status={status} what="the refund" loading="Loading..." />
       {preview !== null && (
         <>
-          <ul class="gives" aria-label="Gives">
-            {dismantleCountItems(preview.range).map(({ key, ...badge }) => (
-              <li key={key}>
-                <CountBadge {...badge} />
-              </li>
-            ))}
+          <CountBadgeList items={dismantleCountItems(preview.range)} label="Gives" class="gives">
             <li class="gives-time">
               <CountBadge {...durationCountItem(preview.durationMs)} />
             </li>
-          </ul>
+          </CountBadgeList>
           {preview.learnBp !== null && (
             <p class="muted">
               {oddsPercent(preview.learnBp)} per piece to learn its blueprint or{' '}

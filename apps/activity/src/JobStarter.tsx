@@ -7,7 +7,8 @@ import { GlossaryTag } from './Glossary';
 import { TreatBox } from './TreatBox';
 import type { GearState, JobKind, PartsBundle } from './gear-types';
 import { creatureName } from './game';
-import { defaultPick, durationFor, pickerOptions, startBlocker } from './gear-view';
+import { durationFor, pickerOptions, startBlocker } from './gear-view';
+import { usePickedCreature } from './use-job-preview';
 
 interface JobStarterProps {
   /** Unique on the page: names the radio group and the heading. */
@@ -47,10 +48,8 @@ export function JobStarter(props: JobStarterProps) {
       ? { ...o, busy: `Needs Crafting level ${String(props.minLevel)}` }
       : o,
   );
-  const [picked, setPicked] = useState<string | null>(null);
   // The pick follows the list: a creature that became busy is no longer picked.
-  const valid = options.find((o) => o.creature.id === picked && o.busy === null);
-  const value = valid === undefined ? defaultPick(options) : picked;
+  const [value, setPicked] = usePickedCreature(options);
   const [treat, setTreat] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {

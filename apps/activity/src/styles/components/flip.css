@@ -45,7 +45,7 @@ button.flip-btn[aria-disabled='true']:active {
   transform: none;
   box-shadow:
     0 0 0 var(--px) var(--ink),
-    inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+    inset 0 calc(var(--px) * -1) 0 0 var(--bevel-lo);
 }
 
 .flip-count {

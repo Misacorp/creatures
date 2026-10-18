@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'preact/hooks';
 import {
   abilityLine,
   abilitySummary,
@@ -16,11 +15,11 @@ import {
   thresholdText,
   whoText,
 } from './after-action';
-import { errorText } from './game';
 import { fetchStats, type AfterActionStats, type RaidPhaseId } from './raid-api';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Accordion } from './ui/Accordion';
+import { useLoaded } from './use-loaded';
 
 /** Longer lists show this many lines and keep the rest behind "Show all". */
 const VISIBLE_LINES = 6;
@@ -41,30 +40,19 @@ export function AfterAction({
   /** Shows a "Watch replay" button when given. */
   onReplay?: () => void;
 }) {
-  const [stats, setStats] = useState<AfterActionStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setStats(null);
-    setError(null);
-    fetchStats(week, party, phase).then(
-      (next) => {
-        if (!cancelled) setStats(next);
-      },
-      (err: unknown) => {
-        if (!cancelled) setError(errorText(err));
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [week, party, phase]);
+  // A new stage starts empty: another stage's numbers never show while this one loads.
+  const loaded = useLoaded(
+    () => fetchStats(week, party, phase),
+    [week, party, phase],
+    undefined,
+    true,
+  );
+  const stats = loaded.value;
 
   return (
     <div class="after-action">
-      {stats === null && error === null && <p class="muted">Loading the fight stats...</p>}
-      {error !== null && <p class="muted">The fight stats are not available right now.</p>}
+      {stats === null && !loaded.failed && <p class="muted">Loading the fight stats...</p>}
+      {loaded.failed && <p class="muted">The fight stats are not available right now.</p>}
       {stats !== null && <AfterActionCard stats={stats} />}
       {onReplay !== undefined && (
         <p>
@@ -82,14 +70,14 @@ function Lines({ lines }: { lines: readonly string[] }) {
   const { shown, rest } = splitVisible(lines, VISIBLE_LINES);
   return (
     <>
-      <ul class="plain-list">
+      <ul class="bullet-list">
         {shown.map((line, index) => (
           <li key={index}>{line}</li>
         ))}
       </ul>
       {rest.length > 0 && (
         <Accordion title={`Show all ${String(lines.length)}`} variant="compact">
-          <ul class="plain-list">
+          <ul class="bullet-list">
             {rest.map((line, index) => (
               <li key={index}>{line}</li>
             ))}
@@ -116,7 +104,7 @@ function AfterActionCard({ stats }: { stats: AfterActionStats }) {
       <p>{outcomeLine(stats)}</p>
 
       <h5>Damage by player</h5>
-      <ul class="bar-list">
+      <ul class="stack-list">
         {stats.players.map((p, index) => (
           <li key={index} class={p.you ? 'bar-row you' : 'bar-row'}>
             <span class="bar-name">{whoText(p.displayName, p.you)}</span>
@@ -132,7 +120,7 @@ function AfterActionCard({ stats }: { stats: AfterActionStats }) {
       </ul>
 
       <h5>Top creatures</h5>
-      <ul class="bar-list">
+      <ul class="stack-list">
         {stats.creatures.map((c) => (
           <li key={c.rank} class={c.you ? 'bar-row you' : 'bar-row'}>
             <span class="bar-name">

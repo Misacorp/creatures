@@ -1,4 +1,5 @@
 import type { DungeonEventView } from './dungeon-types';
+import { ChoiceButton, ChoiceList } from './ui/ChoiceList';
 import { RevealShell } from './ui/RevealShell';
 
 /**
@@ -26,22 +27,19 @@ export function DungeonEvent({
       footer={<></>}
     >
       <p class="event-scene">{event.text}</p>
-      <ul class="event-options" aria-label="What will you do?">
+      <ChoiceList label="What will you do?">
         {event.options.map((option, index) => (
-          <li key={option.label}>
-            <button
-              type="button"
-              class="event-option"
-              disabled={busy}
-              onClick={() => {
-                onPick(index === 0 ? 0 : 1);
-              }}
-            >
-              <strong class="pix">{option.label}</strong> <span>{option.description}</span>
-            </button>
-          </li>
+          <ChoiceButton
+            key={option.label}
+            label={option.label}
+            line={option.description}
+            disabled={busy}
+            onClick={() => {
+              onPick(index === 0 ? 0 : 1);
+            }}
+          />
         ))}
-      </ul>
+      </ChoiceList>
     </RevealShell>
   );
 }

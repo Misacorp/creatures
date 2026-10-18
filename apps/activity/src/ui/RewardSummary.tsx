@@ -2,7 +2,7 @@ import type { ComponentChildren } from 'preact';
 import { pileLabel } from '../claim-view';
 import type { PileSource } from '../reward-pile';
 import { RewardPile } from '../RewardPile';
-import { CountBadge, type CountItem } from './CountBadge';
+import { CountBadgeList, type CountItem } from './CountBadge';
 
 /**
  * The rewards of a screen: the pile of icons (one per kind earned) with its count badges beside it,
@@ -30,13 +30,7 @@ export function RewardSummary({
     <>
       <div class={pile ? 'reward-row' : 'reward-row no-pile'}>
         {pile && <RewardPile source={source} label={pileLabel(source, prefix)} />}
-        <ul class="reward-badges" aria-label={countsLabel}>
-          {counts.map(({ key, ...badge }) => (
-            <li key={key}>
-              <CountBadge {...badge} />
-            </li>
-          ))}
-        </ul>
+        <CountBadgeList items={counts} label={countsLabel} class="reward-badges" />
       </div>
       {children}
     </>

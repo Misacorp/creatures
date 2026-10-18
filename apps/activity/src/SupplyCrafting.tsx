@@ -48,7 +48,7 @@ export function SupplyCrafting({
       <p class="supply-stock" aria-live="polite">
         In stock: <strong>{totalInStock}</strong>
       </p>
-      <ul class="supply-crafts">
+      <ul class="stack-list">
         {views.map((view) => {
           const blocker = supplyLevelBlocker(view.level, gear.skills, creatures);
           const def = supplyDef(view.id);

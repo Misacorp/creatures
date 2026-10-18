@@ -5,6 +5,7 @@
  * Nothing here touches the DOM.
  */
 import { PART_KINDS, supplyDef } from '@creatures/game';
+import { BAIT_ICON, ESSENCE_ICON } from './count-items';
 import type { PartsBundle } from './gear-types';
 import type { IconRef } from './icon-ref';
 
@@ -50,7 +51,7 @@ export function rewardPileItems(source: PileSource): PileItem[] {
     const kind = supplyDef(id)?.kind;
     if (kind !== undefined) add({ key: `supply-${kind}`, icon: { kind: 'glyph', id: kind } });
   }
-  if ((source.essence ?? 0) > 0) add({ key: 'essence', icon: { kind: 'glyph', id: 'gem' } });
-  if ((source.bait ?? 0) > 0) add({ key: 'bait', icon: { kind: 'glyph', id: 'bait' } });
+  if ((source.essence ?? 0) > 0) add({ key: 'essence', icon: ESSENCE_ICON });
+  if ((source.bait ?? 0) > 0) add({ key: 'bait', icon: BAIT_ICON });
   return items;
 }

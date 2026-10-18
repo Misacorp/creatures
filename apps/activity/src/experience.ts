@@ -138,17 +138,6 @@ export function ribbonBlocker(ribbon: RibbonView): string | null {
   return 'Short of parts.';
 }
 
-/** "+120 experience, level 4 to 5" for one award; a treat, a gate and a Gold Ribbon say so. */
-export function experienceText(view: ExperienceView): string {
-  const parts = [`+${String(view.gained)} experience${view.treat ? ' (treat)' : ''}`];
-  if (view.level > view.levelBefore) {
-    parts.push(`level ${String(view.levelBefore)} to ${String(view.level)}`);
-  }
-  if (view.gold) parts.push('Gold Ribbon');
-  else if (view.waiting) parts.push('waiting at this level');
-  return parts.join(', ');
-}
-
 /** "25%" or "2.5%": basis points as a percentage, without the sign. */
 function pctText(bp: number): string {
   return `${String(Math.abs(bp) / 100)}%`;
