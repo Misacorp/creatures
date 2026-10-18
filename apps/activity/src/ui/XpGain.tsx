@@ -46,7 +46,7 @@ export function XpGain({
   bar?: XpGainBar | undefined;
 }) {
   return (
-    <div class="xp-gain">
+    <div class={bar?.tone === 'craft' ? 'xp-gain xp-gain-craft' : 'xp-gain'}>
       <dt class="pix">{label}</dt>
       <dd class={levels === undefined ? undefined : 'xp-levels'}>
         {levels !== undefined && (

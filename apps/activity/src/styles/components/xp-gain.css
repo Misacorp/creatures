@@ -59,3 +59,8 @@
 .xp-craft {
   --xp-fill: var(--xp-craft);
 }
+
+/* Crafting's level tags take its own colour too: gold always means a creature's experience. */
+.xp-gain-craft .lvl-tag {
+  background: var(--xp-craft);
+}
