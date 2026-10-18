@@ -7,6 +7,7 @@ import {
   loadContent,
   upgradeProblem,
   dungeonContent,
+  expeditionContent,
   PATTERN_OPS,
   bossAtRank,
   type ContentPack,
@@ -540,6 +541,16 @@ describe('creature abilities', () => {
       const a2 = ability(target.ability?.id ?? '');
       expect(upgradeProblem(a1, a2), `${c.id} -> ${target.id}`).toBeNull();
       expect(upgradeProblem(a2, a1), `${target.id} -> ${c.id}`).not.toBeNull();
+    }
+  });
+
+  it('never lets a branch form be found: not catchable, no starter, in no place or deep list', () => {
+    for (const id of ['sunfawn', 'ohmouse']) {
+      expect(creature(content, id)).toMatchObject({ stage: 2, catchable: false, starter: false });
+      for (const place of expeditionContent.destinations) {
+        expect(place.species, `${place.id} lists ${id}`).not.toContain(id);
+        expect(place.deep.species, `${place.id} deep lists ${id}`).not.toContain(id);
+      }
     }
   });
 

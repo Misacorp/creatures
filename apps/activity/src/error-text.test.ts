@@ -101,7 +101,7 @@ describe('error messages', () => {
   });
 
   it('pins every code of the table', () => {
-    expect(Object.keys(GAME_MESSAGES)).toHaveLength(67);
+    expect(Object.keys(GAME_MESSAGES)).toHaveLength(68);
   });
 
   it('says the same words for every dungeon code', () => {

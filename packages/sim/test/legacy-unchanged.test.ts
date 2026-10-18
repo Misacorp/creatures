@@ -62,6 +62,14 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * into an empty slot, or in place of a weaker slotted talent (as a player reading the book would). The
  * first player's top-3 power and raids won are what they were before the change (333, 361, 261, 203);
  * Bait earned is the same, and some Bait now goes to slotting.
+ *
+ * Re-pinned again on 2026-10-18 (branch evolutions: Sunfawn and Ohmouse), on purpose: a simulated player
+ * whose line grows two ways takes the form whose role the rest of the team lacks (`pickBranch`), so a
+ * Sproutle on a team that already has a Guard becomes a Sunfawn (a Support with less HP and more Speed)
+ * instead of a Thornbuck. Adding the species changes nothing by itself (with the first form always
+ * taken, all five digests were as before). Bait earned is the same. The first player's top-3 power and
+ * raids won moved: 333 to 378 and 7 to 6 raids (default-8w), 361 to 349 and 5 to 4 (five-nogear), 261 to
+ * 197 and 5 to 4 (behaviour), 203 to 200 (fifteen-nodungeon). Nothing was tuned: the scalars are as they were.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(
