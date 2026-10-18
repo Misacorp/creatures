@@ -1,10 +1,21 @@
 # Dungeon paths: a daily map with camps and a pack
 
-Status: **building**, 2026-10-18. It replaces the fixed three-room run of `daily-dungeon.md`. Everything there that is not changed here still holds: one run a day (the game day from 13:37), the row of three acting left to right, foes, room bosses and room modifiers, depth and landmarks, the streak, treats, weather, the first-day retry, the saved team. Misa asked for it on 2026-10-17 ("a Slay the Spire style gameplay loop, where players can push on and make intermittent choices on where to go"). His earlier notes are in `player-agency.md`, section 1. The research is summarised at the end.
+Status: **building**, 2026-10-18. It replaces the fixed three-room run of `daily-dungeon.md`. Everything there that is not changed here still holds: one run a day (the game day from 13:37), the row of three acting left to right, foes, floor bosses and room modifiers, depth and landmarks, the streak, treats, weather, the first-day retry, the saved team. Misa asked for it on 2026-10-17 ("a Slay the Spire style gameplay loop, where players can push on and make intermittent choices on where to go"). His earlier notes are in `player-agency.md`, section 1. The research is summarised at the end.
+
+## Terminology
+
+Player text and code use these words differently. Player text:
+
+- A **room** is one encounter on a map: a fight, elite, mystery room, cache, camp, door, epic fight or boss.
+- A **floor** is the whole set of rooms at one depth. The day's map is one floor; each Undercroft level is another floor below it ("Undercroft floor 1"). Going down is "going down a floor".
+- Each floor ends in its own **floor boss**. The Undercroft's floor boss was called the "keeper" in this doc and in the code; players never see that word.
+- Progress along a path counts rooms: "Room 3 / 7", "Undercroft floor 1 · Room 2 / 4", "Room 7 / 7, floor boss".
+
+In code and below, the old words stay (they are in stored run state and the API): `floor` is a row (step) of a map, `floors` the number of steps of a map, and `level` an Undercroft floor (1 to 3; 0 is the day's map). `keeper` (`isKeeper`, `openKeeperChest`, the `uc-keeper` workbench stage, `fixtures/dungeon-act-keeper.json`) is the Undercroft floor boss. Where this doc says "floor" in a node id or a rules key, it means the row.
 
 ## The loop in one paragraph
 
-Every day the server draws one **map** for the whole server: seven floors from an entrance to a room boss, with two or three rooms on most floors and paths between them. Everyone on the server sees the same map ("same map, different dice"). A player picks a team of three as today and enters. At each step they tap one of the rooms the path allows. A **fight** plays out at once on the server and the client shows it as today. An **elite** is a fiercer fight that also gives a **keepsake** (a buff for the rest of the run). A **mystery** room is a small event with a choice. A **cache** is free loot. Halfway, every path meets at the **camp**: rest, swap a creature, or take a keepsake, and then **push on or head home**. Loot found on the way goes into the **pack**. Heading home keeps the whole pack. A defeat keeps half of it. Beating the room boss keeps everything, opens the boss chest and goes one depth deeper.
+Every day the server draws one **map** for the whole server: the day's map is one floor, with seven rows of rooms from an entrance to a floor boss, two or three rooms in most rows and paths between them. Everyone on the server sees the same map ("same map, different dice"). A player picks a team of three as today and enters. At each step they tap one of the rooms the path allows. A **fight** plays out at once on the server and the client shows it as today. An **elite** is a fiercer fight that also gives a **keepsake** (a buff for the rest of the run). A **mystery** room is a small event with a choice. A **cache** is free loot. Halfway, every path meets at the **camp**: rest, swap a creature, or take a keepsake, and then **push on or head home**. Loot found on the way goes into the **pack**. Heading home keeps the whole pack. A defeat keeps half of it. Beating the floor boss keeps everything, opens the boss chest and goes one depth deeper.
 
 ## Why this shape
 
@@ -19,7 +30,7 @@ Every day the server draws one **map** for the whole server: seven floors from a
 
 - **Floors 0 to 6, lanes 0 to 2.** A node id is `f<floor>l<lane>`, for example `f2l1`.
   - Floor 3 is the **camp**, a single node in lane 1.
-  - Floor 6 is the **room boss**, a single node in lane 1.
+  - Floor 6 is the **floor boss**, a single node in lane 1.
   - Floors 0, 1, 2, 4 and 5 have **2 or 3 nodes** each. Each floor has a 35% chance of 2 nodes. When a floor has only 2, the lane left out is 0 or 2.
 - **Edges** go from a node to nodes on the next floor whose lane differs by at most 1.
   - Every node on floor 0–1 and 4–5 has 1 or 2 exits.
@@ -41,7 +52,7 @@ Every day the server draws one **map** for the whole server: seven floors from a
     - The same foe is not used twice on one floor.
     - All of a map's fights together use at least 3 different elements.
   - A `mystery` holds an event id (no event twice on a map).
-  - The `boss` holds a room boss id and a modifier id. At a landmark depth the player's run uses the landmark boss instead (`landmarkBossId`), as today, and the player's view of the map shows it.
+  - The `boss` holds a floor boss id and a modifier id. At a landmark depth the player's run uses the landmark boss instead (`landmarkBossId`), as today, and the player's view of the map shows it.
   - `camp` and `cache` hold nothing.
 - **The same for everyone on the server.** The map is drawn from the day's seed (`dungeon_days.modifier_seed`, drawn with crypto on the day's first look), stream `<seed>:map`. Showing it before the run is safe: it decides only what is where, never a fight's dice. Every fight's seed is a fresh crypto draw at the moment the player steps into the room, as today. The map is stored in `dungeon_days.map_json` once it is drawn, and copied into each run at its start, so a content change during the day never changes a running map.
 
@@ -49,7 +60,7 @@ Every day the server draws one **map** for the whole server: seven floors from a
 
 - **Fight:** a normal foe at the player's depth (`scaledFoe`) with the room's modifier, folded as today (`buildRoomInput`).
 - **Elite:** a normal foe at the player's depth with `RULES.dungeon.elite` on top (HP +40%, Attack +20%), shown as "Fierce <foe name>". It plays the foe's normal rounds. A clear gives its pack loot and a random keepsake, drawn with live randomness at the moment of the clear.
-- **Room boss:** as today: 8 rounds, the enrage, and the signature move at a landmark.
+- **Floor boss:** as today: 8 rounds, the enrage, and the signature move at a landmark.
 - **Between-room rest** (the gear line, Sunny Nap and Hearth warmth) heals as each fight starts, except the run's first fight. Rooms that are not fights do not trigger it.
 - **A lost fight ends the run** (the foe survives its rounds or every creature is knocked out). That is a **defeat**.
 - **Knocked-out creatures stay out** until the camp (Swap) brings a fresh one in.
@@ -119,47 +130,47 @@ Or the player **heads home**: the run ends there and keeps the whole pack.
   - Market Day: +1 scrap for each fight cleared, as today.
 - **The streak, the first-day retry and treats** are unchanged. Any finished run, home included, counts for the streak. The first-day retry opens only after a **defeat** in the player's first run.
 
-## The Undercroft (a deeper, optional level)
+## The Undercroft (deeper, optional floors)
 
 Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean more experience and loot), but by the player's choice, so the daily run never gets too long for anyone who does not want it. The deeper area must say it is harder, and a rare roll can open yet another one. The expeditions already say "deeper area", so this is the **Undercroft**.
 
 - **Unlocked** after the first landmark, from depth 8 (`RULES.dungeon.undercroft.fromDepth`).
-- **The descent.** When the room boss falls, the run is cleared: depth +1 is locked in, and the boss chest opens.
+- **The descent.** When the floor boss falls, the run is cleared: depth +1 is locked in, and the boss chest opens.
   - The chest's gear and supply are banked at once.
   - Its Bait, Essence and scrap go into the pack.
   - Then the player chooses: **head home** with everything, or **descend into the Undercroft**.
-  - On the way down, standing creatures catch their breath (`catchBreathBp`, 20% of max HP) and knocked-out creatures get back up at `reviveBp` (10% of max HP, at least 1 HP). The history entry says how many got up (`revived`). Misa's call, 2026-10-18 (B-021): try it, unless it makes going deeper too easy. It does not: more rows go down, and fewer of them clear the first keeper.
-- **It is harder, and says so.** Undercroft foes are scaled as if the depth were higher (`depthBonus`, +1; it was +3 at first, but the keeper then stood five times in six, so the simulator's tuning lowered it, see `docs/balance/log.md` B-020), and the map, the drawer and the room banner say "Undercroft · foes are fiercer here".
+  - On the way down, standing creatures catch their breath (`catchBreathBp`, 20% of max HP) and knocked-out creatures get back up at `reviveBp` (10% of max HP, at least 1 HP). The history entry says how many got up (`revived`). Misa's call, 2026-10-18 (B-021): try it, unless it makes going deeper too easy. It does not: more rows go down, and fewer of them clear the first floor boss.
+- **It is harder, and says so.** Undercroft foes are scaled as if the depth were higher (`depthBonus`, +1; it was +3 at first, but the floor boss then stood five times in six, so the simulator's tuning lowered it, see `docs/balance/log.md` B-020), and the map, the drawer and the room banner say "Undercroft floor 1 · foes are fiercer here" ("fiercer still" on a deeper floor).
 - **Its length grows with landmarks:**
-  - 2 floors, plus 1 for every landmark passed after the first, at most 5 (`baseFloors`, `perLandmark`, `maxFloors`).
-  - Then a floor with the **Undercroft keeper**: a room boss at the Undercroft's depth, with its landmark signature.
-  - Each floor has 2 rooms.
+  - 2 steps along the path (rows in code), plus 1 for every landmark passed after the first, at most 5 (`baseFloors`, `perLandmark`, `maxFloors`). The player counts them as rooms: "Room 2 / 4".
+  - Then the **Undercroft floor boss** (`keeper` in code): a floor boss at the Undercroft's depth, with its landmark signature.
+  - Each of those steps has 2 rooms side by side. A carved door's room gets a step of its own.
   - Its map is drawn with live randomness when the player descends (it is the player's own, not the server's), and it is stored with the run.
 - **Carved doors add a room.** From depth 8, the main map may hold one **carved door** on floor 4 or 5, at most one per map (`doorBp`, 35% of maps). It is a room with no fight, and the player does not choose anything there.
-  - Stepping through resolves at once, like a cache. It adds ONE room to the Undercroft, of a kind drawn with live randomness at that moment: a fight, a fierce foe (elite), a mystery, a cache, a camp or an epic fight, never a boss (`markOdds`: fight 30, elite 15, mystery 15, cache 10, camp 15, epic 15).
-  - The player is told only what it could be ("A carved door. Stepping through adds a room to the Undercroft: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight."), and the history says only that a room was added. Which kind shows when the Undercroft is drawn on descent.
-  - The added room is a floor of its own with one room, before the keeper (camps last: a rest before the keeper). A run holds at most `maxMarks` (2); past it the door adds nothing and says so. Only the first Undercroft takes marks; a deeper one has its own two floors.
+  - Stepping through resolves at once, like a cache. It adds ONE room to the first Undercroft floor, of a kind drawn with live randomness at that moment: a fight, a fierce foe (elite), a mystery, a cache, a camp or an epic fight, never a boss (`markOdds`: fight 30, elite 15, mystery 15, cache 10, camp 15, epic 15).
+  - The player is told only what it could be ("A carved door. Step through to add one room to the first Undercroft floor: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight."), and the history says only that a room was added. Which kind shows when the Undercroft is drawn on descent.
+  - The added room is a row of its own with one room, before the floor boss (camps last: a rest before the floor boss). A run holds at most `maxMarks` (2); past it the door adds nothing and says so. Only the first Undercroft takes marks; a deeper floor has its own two rooms.
   - The room only counts if the player descends. Below depth 8 a door is a quiet room: its view is a mystery room named "Quiet room" (no scene), and nothing happens in it.
   - The room kinds of an added room: **an epic fight** (one fierce foe at boss strength, paying Essence 1, scrap 2 and a keepsake), **a camp** (rest, swap or a keepsake, and the only place in the Undercroft to head home), or any other kind, which plays as on the main map (fights, elites and caches there pay double).
 - **Loot.**
   - Undercroft fights put twice their usual loot into the pack.
   - Every fight there pays experience as usual.
-  - The keeper's **Undercroft chest** is better: Essence 1, scrap 2, and a 40% gear chance with better rare and epic odds and +2 item level.
+  - The Undercroft floor boss's **Undercroft chest** is better: Essence 1, scrap 2, and a 40% gear chance with better rare and epic odds and +2 item level.
   - There is no extra depth: depth moves only by the main boss.
 - **No guaranteed camp below** (Misa, 2026-10-18). A camp in the Undercroft comes only from a carved door (about 5% of descents), so a descent is close to all-in. The layout and its odds are kept as design space for future gear lines, after the gear branch in progress merges.
 - **Risk.** The pack, now holding the boss chest's currencies, stays at risk all the way down:
   - A defeat keeps half of it, rounded up.
   - Heading home is only possible from an Undercroft camp, or before descending.
   - A run left open in the Undercroft closes as a defeat unless it rests at a camp.
-- **A cracked floor (rare).** When an Undercroft map is drawn, 15% of the time (`crackBp`) its keeper's room shows a **cracked floor**. Beating that keeper offers another descent, into a deeper Undercroft:
+- **A cracked floor (rare).** When an Undercroft map is drawn, 15% of the time (`crackBp`) its floor boss's room shows a **cracked floor**. Beating that floor boss offers another descent, down to another Undercroft floor:
   - its foes are fiercer again (`depthBonus` more depth, +1);
-  - it has 2 floors and its own keeper and chest;
-  - there are at most 3 Undercrofts in a run.
+  - it has 2 rooms and its own floor boss and chest;
+  - there are at most 3 Undercroft floors in a run.
 - **Client.**
   - After the boss, a descent card: what is banked, what stays at risk, "foes are fiercer", and two buttons.
-  - The Undercroft map continues above the main map's boss, in a darker palette with a band labelled "Undercroft · harder".
+  - The Undercroft map continues above the main map's boss, in a darker palette with a band labelled "Undercroft floor 1 · foes are fiercer here".
   - A carved door's drawer says what stepping through could add (the six kinds). Stepping in shows one line ("a room was added"), never which.
-  - The results show how deep the run went ("Undercroft 1 cleared").
+  - The results show how deep the run went ("1 Undercroft floor cleared").
 - **Simulator.**
   - The policy descends when the team is healthy enough after catching its breath (average HP over 50%; the fallen are already back up).
   - It draws doors (`{ doors: true }`) and takes one on its route (it costs no fight). The door's room is drawn when stepped through, not chosen.
@@ -237,7 +248,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
 - **Rules** (`RULES.dungeon.undercroft`, `packages/game/src/rules/dungeon-map.ts`, `dungeon-run.ts`): `fromDepth 8`, `catchBreathBp 2000`, `reviveBp 1000`, `depthBonus 1` (3 at first: the keeper stood five times in six, B-020), `baseFloors 2`, `perLandmark 1`, `maxFloors 5`, `deeperFloors 2`, `maxMarks 2`, `lootMultiplier 2`, `crackBp 1500`, `maxLevels 3`, `epic {hpBp 16000, atkBp 13000, loot {0, 1, 2}}`, `chest {essence 1, scrap 2, gearBp 4000, rareBonusBp 1500, epicBonusBp 500, itemLevelBonus 2}`, `doorFloors [4, 5]`, `doorBp 3500`, `markOdds`.
   - The first Undercroft has `min(maxFloors, baseFloors + perLandmark x (landmarks passed - 1))` floors of two rooms, where the landmarks passed by a run at depth d are `floor((d - 1) / 7)` (depth 8 to 14: 2 floors, 15 to 21: 3, up to 5), plus one floor for each mark, plus the keeper's floor. A deeper level has `deeperFloors` floors plus the keeper, and no marks.
 - **The main map's door** is drawn last in `generateDungeonMap`, only when the caller asks (`{ doors: true }`: the server and the simulator both do), so a map without a door is the map it was before doors: a fight on floor 4 or 5 becomes a `door` node (no foe, modifier or event). `mapView(map, depth)` shows it as `door` at depth 8 and over, and as a `mystery` node with no event below it.
-- **Undercroft maps** come from `generateUndercroftMap(rng, {level, floors, marks})`: node ids `u<level>f<floor>l<lane>`; floors of two rooms in lanes 0 and 2 that lead straight up their lane (the first floor is all fights, the rest roll like the main map's rooms with caps of 2 elites, 1 cache and 2 mysteries per level, none beside its mate); a floor of one room (lane 1) for each mark (camps last); the keeper alone on the last floor (a room boss, its own foe whatever the depth, with its `signature` on). `crack` is drawn last with `crackBp` (never on level `maxLevels`). `undercroftMapValid` checks it.
+- **Undercroft maps** come from `generateUndercroftMap(rng, {level, floors, marks})`: node ids `u<level>f<floor>l<lane>`; rows of two rooms in lanes 0 and 2 that lead straight up their lane (the first floor is all fights, the rest roll like the main map's rooms with caps of 2 elites, 1 cache and 2 mysteries per level, none beside its mate); a floor of one room (lane 1) for each mark (camps last); the keeper alone on the last floor (a floor boss, its own foe whatever the depth, with its `signature` on). `crack` is drawn last with `crackBp` (never on level `maxLevels`). `undercroftMapValid` checks it.
 - **Rooms.** Foes there are scaled at `depth + depthBonus x level`. An epic room is a normal foe with `epic` on top (stronger than an elite), shown as `elite: true` with `epic: true`.
 - **The boss clear at depth 8 and over** (main boss, or a keeper with a crack and levels left, and someone standing):
   - Main boss: `cleared`, depth + 1 is written to `dungeon_progress` at once (`MAX`, never lowered, so a later defeat or a left-open close cannot undo it), and the chest opens: its gear, shard, landmark glimmer and supply are paid now under the grant key `dungeon:<day>:<attempt>:chest`; its Essence and scrap (the boss's, the full clear's, a landmark's) go into the pack.

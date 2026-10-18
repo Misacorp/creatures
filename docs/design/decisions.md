@@ -1740,3 +1740,16 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 **Why.** Misa's call: try the catch-a-breath revive unless it makes going deeper too easy. The full sim says it does not (B-021): 53.6% of the offers go down (26.6% before), but a descent clears its first keeper 21.6% of the time (34.4% before), runs average 4.25 fights, and 500 gives the same numbers as 1000. So the revive makes the choice open to more players without making the Undercroft easier; most of the new descents are lost below, for half the pack. Kept at 1000. Setting `reviveBp` to 0 does not remove the revive (a creature still gets up at 1 HP); removing it is a code change.
 
 **No guaranteed camp in the Undercroft** (Misa, same day): a camp below stays rare (only from a carved door, about 5% of descents), so a descent is close to all-in. Editing the layout and its odds is left to future gear lines, once the gear branch in progress has merged.
+
+## 2026-10-18: Dungeon terminology: room vs floor
+
+**Decision.** Misa fixed the words the dungeon uses in player text and docs:
+
+- A **room** is one encounter on a map: a fight, elite, mystery room, cache, camp, door, epic fight or boss.
+- A **floor** is the whole set of rooms at one depth. The day's map is one floor; each Undercroft level is another floor below it ("Undercroft floor 1"). Going down is "going down a floor".
+- Each floor ends in its own **floor boss**. "Room boss" becomes "floor boss" everywhere (glossary, Essence and shard entries, the map, the stage header, How to play), and the Undercroft "keeper" becomes the Undercroft floor boss: the word "keeper" is gone from player text.
+- Rows of the map are no longer called floors in player text. Progress counts rooms: "Floor 3 / 7" became "Room 3 / 7"; the stage header reads "Room 7 / 7, floor boss"; "Undercroft 1 · Floor 2 / 4" became "Undercroft floor 1 · Room 2 / 4"; "Undercroft 2 cleared" became "2 Undercroft floors cleared" ("1 Undercroft floor cleared"); "The keeper is down" became "The floor boss is down"; the descent card says "N rooms with a floor boss at the end". "Cracked floor" keeps its name. The depth track says "Undercroft +1 room" where a landmark lengthens the first Undercroft floor.
+- The Undercroft band label from the server is now "Undercroft floor 1 · foes are fiercer here" ("Undercroft floor 2 · foes are fiercer still" below a cracked floor; it was "Undercroft · ..." and "Undercroft II · ..."). It is built when the map is shown, never stored.
+- The glossary entry `room-boss` is now `floor-boss` (nothing stored or sent to the server refers to a glossary id).
+
+**Internal names stay.** In code, API fields and stored run JSON, `floor` is still a row (step) of a map, `floors` the steps of a map, `level` an Undercroft floor (1 to 3, 0 is the day's map), `campFloor` and node ids (`f2l1`, `u1f0l0`) are unchanged, and `keeper` stays in function, file and workbench stage names (`isKeeper`, `openKeeperChest`, `dungeon-act-keeper.json`). Renaming them would change stored runs and the API for no player-visible gain. `docs/design/dungeon-paths.md` has a "Terminology" section that says so. Older dated entries above keep the old words.

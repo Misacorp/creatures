@@ -145,7 +145,7 @@ interface DungeonRoom {
 /**
  * The rooms of a dungeon run for the How to play picture, from the rules and the content: the
  * normal rooms hold foes of different elements (the first of each element in the content), and the
- * last holds the first room boss.
+ * last holds the first floor boss.
  */
 export function dungeonRooms(
   rooms: number = RULES.dungeon.rooms,

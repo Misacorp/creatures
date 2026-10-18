@@ -102,6 +102,8 @@ describe('the Undercroft rules', () => {
     expect(undercroftDepth(8, 2)).toBe(8 + 2 * u.depthBonus);
     expect(undercroftLabel(1)).toContain('Undercroft');
     expect(undercroftLabel(1)).toContain('fiercer');
+    expect(undercroftLabel(1)).toBe('Undercroft floor 1 · foes are fiercer here');
+    expect(undercroftLabel(2)).toBe('Undercroft floor 2 · foes are fiercer still');
     expect(undercroftLabel(2)).not.toBe(undercroftLabel(1));
   });
 
@@ -361,7 +363,7 @@ describe('undercroftMapValid refuses a map that breaks a rule', () => {
     expect(undercroftMapValid(deepest)).toBe(false);
     expect(mutate((m) => delete m.crack)).toBe(false);
   });
-  it('refuses a room boss that is not a boss, a foe twice on a floor and a door', () => {
+  it('refuses a floor boss that is not a boss, a foe twice on a floor and a door', () => {
     expect(
       mutate((m) => {
         (m.nodes.find((n) => n.kind === 'boss') as MapNode).foeId = dungeonContent.foes.find(
@@ -443,7 +445,7 @@ describe('rooms of an Undercroft map', () => {
     expect(u.epic.atkBp).toBeGreaterThan(RULES.dungeon.elite.atkBp);
   });
 
-  it('plays the keeper as its own room boss with its signature, even at a landmark depth', () => {
+  it('plays the keeper as its own floor boss with its signature, even at a landmark depth', () => {
     const keeper = node('boss');
     const room = roomSpecForNode(map, keeper.id, 8, 5);
     expect(room.foe.id).toBe(keeper.foeId);

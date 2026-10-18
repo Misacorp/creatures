@@ -1,7 +1,7 @@
 /**
  * Daily dungeon content (`data/dungeon-foes.json`, `data/room-modifiers.json`): schemas and load-time
  * checks. A foe is a small boss: it reuses the boss pieces (element, gimmicks, crit bonus) and adds a
- * round count and a kind (a normal foe, or a room boss that closes a run). It has no turn order: every
+ * round count and a kind (a normal foe, or a floor boss that closes a run). It has no turn order: every
  * dungeon fight goes left to right, then the foe (`RULES.dungeon.turnOrder`), so content cannot
  * change it. A room modifier is a handful of plain number changes applied to the room's fight input
  * before it runs (team stats, foe stats, crit, a gimmick), so the engine needs no special cases for
@@ -38,8 +38,8 @@ export const DungeonFoeSchema = v.strictObject({
   baseAtk: PositiveInt,
   gimmicks: v.pipe(v.array(GimmickSchema), v.maxLength(3)),
   /**
-   * A room boss's landmark signature: a `charge` gimmick it gains only at landmark depths (every
-   * `RULES.dungeon.landmarkEvery`-th), announced a round ahead. Room bosses only.
+   * A floor boss's landmark signature: a `charge` gimmick it gains only at landmark depths (every
+   * `RULES.dungeon.landmarkEvery`-th), announced a round ahead. Floor bosses only.
    */
   signature: v.optional(GimmickSchema),
   /** Rounds in the room's fight (the fight also ends when the foe falls or the team is knocked out). */
@@ -161,11 +161,11 @@ export function loadDungeon(rawFoes: unknown, rawModifiers: unknown, rooms: numb
     });
     if (new Set(keys).size !== keys.length) fail(`modifier "${m.id}" repeats an effect`);
   }
-  // A run needs `rooms - 1` different normal foes and one room boss.
+  // A run needs `rooms - 1` different normal foes and one floor boss.
   if (pack.foes.filter((f) => f.kind === 'foe').length < rooms - 1) {
     fail(`needs at least ${String(rooms - 1)} normal foes`);
   }
-  if (!pack.foes.some((f) => f.kind === 'boss')) fail('needs at least one room boss');
+  if (!pack.foes.some((f) => f.kind === 'boss')) fail('needs at least one floor boss');
   if (pack.modifiers.length < rooms) fail(`needs at least ${String(rooms)} room modifiers`);
   return pack;
 }

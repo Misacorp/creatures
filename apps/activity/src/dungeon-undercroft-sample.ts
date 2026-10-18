@@ -58,7 +58,7 @@ function secondLevel(first: DungeonMapView): DungeonMapView {
   return {
     floors: 3,
     level: 2,
-    label: 'Undercroft II · foes are fiercer still',
+    label: 'Undercroft floor 2 · foes are fiercer still',
     nodes: [
       ...entrance.map((n) => ({ ...n, id: id(n), next: ['u2f1l1'] })),
       { ...middle, id: 'u2f1l1', floor: 1, lane: 1, next: ['u2f2l1'] },

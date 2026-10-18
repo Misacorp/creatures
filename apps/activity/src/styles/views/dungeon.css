@@ -118,7 +118,7 @@
   gap: 0.25rem;
 }
 
-/* At a landmark depth: the flag and the line that names the room boss (and the move it winds up). */
+/* At a landmark depth: the flag and the line that names the floor boss (and the move it winds up). */
 .landmark-note {
   display: flex;
   align-items: flex-start;

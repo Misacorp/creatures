@@ -418,7 +418,7 @@ function isRunSummary(value: unknown): value is DungeonRunSummary {
 const isDraftTeam = (value: unknown): value is (string | null)[] =>
   isArrayOf(value, (item): item is string | null => item === null || isStr(item));
 
-/** The announced landmark boss: absent or null, or the depth and the room boss's content id. */
+/** The announced landmark boss: absent or null, or the depth and the floor boss's content id. */
 function isLandmarkBoss(value: unknown): boolean {
   return (
     value === undefined ||

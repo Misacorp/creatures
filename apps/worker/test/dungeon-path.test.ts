@@ -134,7 +134,7 @@ const fightSteps = (ctx: CoreContext, runId: string) =>
   );
 
 const mapOf = (state: DungeonRunState): DungeonMapView => state.map;
-/** The three modifiers old clients read: the first two entrance rooms (left to right) and the room boss. */
+/** The three modifiers old clients read: the first two entrance rooms (left to right) and the floor boss. */
 const legacyIds = (map: DungeonMapView): string[] =>
   [
     ...map.nodes
@@ -1555,7 +1555,7 @@ describe('heading home', () => {
 
 // --- A clear ---
 
-describe('clearing the room boss', () => {
+describe('clearing the floor boss', () => {
   it('pays the chest, goes one depth deeper, counts the streak and pays each creature its own fights', async () => {
     await runCore(
       nextGuild(),

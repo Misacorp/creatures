@@ -48,7 +48,7 @@ export interface DungeonRoomSpecData {
   keepsakes?: KeepsakeDef[];
   /** An epic fight of the Undercroft (also `elite`, for the display: "Fierce"). The boost is already in `hp` and `atk`. */
   epic?: boolean;
-  /** The Undercroft keeper: the room boss has its landmark signature whatever the depth. Absent: the depth decides. */
+  /** The Undercroft keeper: the floor boss has its landmark signature whatever the depth. Absent: the depth decides. */
   signature?: boolean;
 }
 
@@ -63,7 +63,7 @@ function boosted(value: number, bp: number): number {
  */
 export function nodeFoe(node: MapNode, depth: number, level = 0): DungeonFoeDef | undefined {
   if (node.foeId === undefined) return undefined;
-  // The Undercroft's keeper is its own room boss, whatever the depth.
+  // The Undercroft's keeper is its own floor boss, whatever the depth.
   if (node.kind === 'boss' && level === 0) {
     const landmark = landmarkBossId(depth);
     if (landmark !== null) return dungeonFoe(landmark);
@@ -75,7 +75,7 @@ export function nodeFoe(node: MapNode, depth: number, level = 0): DungeonFoeDef 
  * The room of a fight, an elite, an epic fight or the boss, at `depth`, as room number `index` of the
  * run. The foe is scaled to the depth (`scaledFoe`); an elite has `RULES.dungeon.elite` on top and an
  * epic fight `RULES.dungeon.undercroft.epic`. On an Undercroft map (`map.level`) the foes are scaled at
- * `undercroftDepth(depth, level)` and the keeper (the boss node) is its own room boss with its
+ * `undercroftDepth(depth, level)` and the keeper (the boss node) is its own floor boss with its
  * signature. Foe and modifier are embedded in full. Throws for a node that is not a room with a foe, or
  * one the content does not know.
  */
@@ -414,20 +414,17 @@ export interface DungeonMapView {
   nodes: DungeonMapNode[];
   /** An Undercroft level only (absent on the main map): its level, from 1. */
   level?: number;
-  /** An Undercroft level only: the band's label ("Undercroft · foes are fiercer here"). */
+  /** An Undercroft level only: the band's label ("Undercroft floor 1 · foes are fiercer here"). */
   label?: string;
-  /** An Undercroft level only: the keeper's floor is cracked, so beating it opens a deeper level. */
+  /** An Undercroft level only: its floor boss stands on a cracked floor, so beating it opens another floor below. */
   crack?: boolean;
 }
 
 /** The label of an Undercroft level's map: the first says foes are fiercer, a deeper one fiercer still. */
 export function undercroftLabel(level: number): string {
-  return level <= 1
-    ? 'Undercroft · foes are fiercer here'
-    : `Undercroft ${romanNumeral(level)} · foes are fiercer still`;
+  const floor = `Undercroft floor ${String(Math.max(1, level))}`;
+  return level <= 1 ? `${floor} · foes are fiercer here` : `${floor} · foes are fiercer still`;
 }
-
-const romanNumeral = (n: number): string => ['', 'I', 'II', 'III', 'IV', 'V'][n] ?? String(n);
 
 /** What a carved door is called on the map of a player the Undercroft is not open to. It is not an event: stepping in does nothing. */
 export const QUIET_ROOM = { id: 'quiet-room', name: 'Quiet room' } as const;

@@ -1,6 +1,6 @@
 /*
   The dungeon map (DungeonMap.tsx) and the sheet a room opens (DungeonNodeDrawer.tsx). The Undercroft's levels
-  stand above the room boss in a darker band (blacker ground, pale violet rings, a violet label). The board has the
+  stand above the floor boss in a darker band (blacker ground, pale violet rings, a violet label). The board has the
   aspect ratio of the map's coordinate space (320 units wide, see dungeon-map.ts), so everything inside it
   is placed in percent and scales with the width of the screen: no sideways scroll, and at 320 px a room is
   at least 44 px across. The SVG draws the paths; the rooms are round buttons on top of it.

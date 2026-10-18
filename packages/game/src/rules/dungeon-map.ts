@@ -1,12 +1,12 @@
 /**
- * The daily dungeon's map (docs/design/dungeon-paths.md): seven floors from an entrance to a room boss,
+ * The daily dungeon's map (docs/design/dungeon-paths.md): seven floors from an entrance to a floor boss,
  * two or three rooms on most floors, a camp in the middle where every path meets. Pure data and pure
  * functions: the map is drawn from an injected `Rng` (the server passes a seeded stream of the day's
  * seed, so everyone on a server sees the same map), and `dungeonMapValid` checks every rule so a
  * stored map that does not hold up is refused instead of played.
  *
  * A node id is `f<floor>l<lane>` (`f2l1`). Floors 0 to 6, lanes 0 to 2. Floor `campFloor` is the camp,
- * a single node in lane 1; the last floor is the room boss, a single node in lane 1.
+ * a single node in lane 1; the last floor is the floor boss, a single node in lane 1.
  */
 import * as v from 'valibot';
 import { dungeonContent, dungeonEvents } from '../content/dungeon';
@@ -27,7 +27,7 @@ export const NODE_KINDS = [
 ] as const;
 export type NodeKind = (typeof NODE_KINDS)[number];
 
-/** The lane the camp and the room boss stand in. */
+/** The lane the camp and the floor boss stand in. */
 const MIDDLE_LANE = 1;
 const LANES = 3;
 
@@ -38,7 +38,7 @@ export interface MapNode {
   kind: NodeKind;
   /** The nodes on the next floor this one leads to. */
   next: string[];
-  /** The normal foe of a fight or an elite, or the room boss of the boss node. */
+  /** The normal foe of a fight or an elite, or the floor boss of the boss node. */
   foeId?: string;
   /** The room modifier of a fight, an elite or the boss. */
   modifierId?: string;
@@ -567,7 +567,7 @@ function drawUndercroftMap(rng: Rng, spec: UndercroftSpec, pack: MapContent): Du
   }
 
   // What fills them: a different normal foe for each room of a floor, a modifier each, the keeper (a
-  // room boss) and an event for each mystery room.
+  // floor boss) and an event for each mystery room.
   const normal = pack.foes.filter((f) => f.kind === 'foe');
   const bosses = pack.foes.filter((f) => f.kind === 'boss');
   const modifier = (): string =>
@@ -604,7 +604,7 @@ function drawUndercroftMap(rng: Rng, spec: UndercroftSpec, pack: MapContent): Du
  * Draws one Undercroft level from `rng` (the worker's live source: it is the player's own, drawn when
  * they descend). Floors of two rooms (fight, elite, mystery or cache, like the main map, never a camp),
  * then a floor of one room for each mark (any kind but a boss; camps last), then the keeper's floor: a
- * single room boss. The same stream always gives the same map. Throws if the content cannot fill it.
+ * single floor boss. The same stream always gives the same map. Throws if the content cannot fill it.
  */
 export function generateUndercroftMap(
   rng: Rng,

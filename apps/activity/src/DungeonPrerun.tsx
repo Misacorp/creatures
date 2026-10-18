@@ -21,7 +21,7 @@ import { StreakTrack } from './ui/StreakTrack';
  * for everyone on the server; tap a room to see what is there, nothing can be gone to yet; no caption
  * under it). An
  * older server sends no map: the three rooms then show as a comic strip of "?" panels with the day's
- * modifier icons. Then, at a landmark depth, the line that names the room boss, and the depth
+ * modifier icons. Then, at a landmark depth, the line that names the floor boss, and the depth
  * progress to the next landmark. `children` carry on inside the same card (the team and the Enter
  * button). The map shows only what the server already shows to everyone; no fight's dice are in it.
  */

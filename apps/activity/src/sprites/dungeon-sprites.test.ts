@@ -65,7 +65,7 @@ const ELEMENT_HUES: Readonly<Record<string, readonly [number, number]>> = {
 };
 
 describe('daily-dungeon sprites', () => {
-  it('has 8 foes and 4 room bosses in the content, each with a sprite', () => {
+  it('has 8 foes and 4 floor bosses in the content, each with a sprite', () => {
     expect(foes).toHaveLength(8);
     expect(roomBosses).toHaveLength(4);
     for (const { id, kind, def } of entries) expect(def, `${kind} ${id}`).toBeDefined();
@@ -80,7 +80,7 @@ describe('daily-dungeon sprites', () => {
       expect(bossIds.has(id), id).toBe(true);
   });
 
-  it('draws foes at creature size and room bosses at boss size, with no unused palette keys', () => {
+  it('draws foes at creature size and floor bosses at boss size, with no unused palette keys', () => {
     for (const { id, kind, def } of entries) {
       if (def === undefined) continue;
       expect(() => parseSprite(def, kind === 'boss' ? BOSS_SIZE : CREATURE_SIZE), id).not.toThrow();
@@ -158,7 +158,7 @@ describe('daily-dungeon sprites', () => {
     }
   });
 
-  it('draws room bosses with more pixels than any foe', () => {
+  it('draws floor bosses with more pixels than any foe', () => {
     const count = (def: SpriteDef | undefined): number =>
       def === undefined ? 0 : parseSprite(def).cells.length;
     const biggestFoe = Math.max(...foes.map((f) => count(dungeonFoeSprite(f.id))));
@@ -175,7 +175,7 @@ describe('daily-dungeon sprites', () => {
 });
 
 describe('the stage art for a dungeon room', () => {
-  it('uses the foe or room boss sprite for every dungeon foe, never the silhouette', () => {
+  it('uses the foe or floor boss sprite for every dungeon foe, never the silhouette', () => {
     for (const f of dungeonContent.foes) {
       const art = bossArt(f.id);
       expect(art.sprite, f.id).not.toBe(FALLBACK_SILHOUETTE);

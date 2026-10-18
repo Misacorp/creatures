@@ -80,7 +80,7 @@ const stageHead: Entry = {
     { name: 'No place', props: { place: '' } },
     {
       name: 'Long place',
-      props: { place: 'Room 3 / 3, room boss of the deep', round: 'Round 12 / 12' },
+      props: { place: 'Room 3 / 3, floor boss of the deep', round: 'Round 12 / 12' },
     },
   ],
   render: (p) => (

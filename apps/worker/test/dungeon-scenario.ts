@@ -147,7 +147,7 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<DungeonCaptu
     out: cindle,
     in: zipmouse,
   });
-  // Play on to the room boss; the move into it is the clear.
+  // Play on to the floor boss; the move into it is the clear.
   const boss = state.map.nodes.find((n) => n.kind === 'boss')?.id as string;
   state = await walk(hero, state, [], (s) => s.reachable.includes(boss));
   state = await step(hero, 'dungeon-act-cleared', state, { type: 'move', node: boss });

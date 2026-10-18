@@ -59,7 +59,7 @@ export type DungeonPendingView =
   | { kind: 'camp'; offers: DungeonKeepsakeView[]; restBp: number }
   | {
       /**
-       * The room boss (or an Undercroft keeper with a cracked floor) is down: head home with the pack, or
+       * The floor boss (or an Undercroft keeper with a cracked floor) is down: head home with the pack, or
        * descend. What is known of the level below: its number, its floors (the keeper's included), that
        * its foes are fiercer (`depthBonus` more depth per level), the breath the team catches on the way
        * (`catchBreathBp` of max HP, and `reviveBp` for a fallen one that gets back up) and what the chest banked. The pack stays at risk all the way down.

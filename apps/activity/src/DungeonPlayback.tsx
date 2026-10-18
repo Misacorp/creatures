@@ -51,9 +51,9 @@ interface Props {
  * Plays stored rooms one after the other on the fight stage, at the live finale's pace: every room
  * of a finished run ("Watch again"), or the single fight an open run just played. The stage is the
  * same size throughout: a room opens with a banner drawn OVER the stage ("Room 2", or "Fight" with
- * the floor on a path, and the foe and the room's twist; an elite is "Fierce" and tagged), then the
+ * its place on a path, and the foe and the room's twist; an elite is "Fierce" and tagged), then the
  * room's fight plays under it (the engine's beats, the telegraphs, the lingering numbers), a short
- * rest on the result, then the next room. The room's place ("Room 1 / 3", "Floor 3 / 7" on a path)
+ * rest on the result, then the next room. The room's place ("Room 1 / 3", "Room 3 / 7" on a path)
  * is at the top left of the stage's head and the round at the top right. Pause, 2x and Skip are
  * hidden unless `showControls` is set. The fight is already decided and stored; this only shows it,
  * so leaving at any time loses nothing. Each room's arena is brought into view when the room opens
@@ -123,7 +123,7 @@ export function DungeonPlayback({ input, onDone, showControls = false }: Props) 
 
 /**
  * The banner over the stage when a room opens: the room number in big pixel letters (or "Fight" and
- * the floor on a path, with an Elite tag for a fierce foe), the foe's sprite and name, its element,
+ * its place on a path, with an Elite tag for a fierce foe), the foe's sprite and name, its element,
  * and the room's twist. It is drawn inside the stage's own box, so the
  * stage does not change size, and it lets taps through (the intro cannot be skipped). A screen reader
  * gets one status sentence. `ms` is how long it stays: a yellow outline round the stage drains over

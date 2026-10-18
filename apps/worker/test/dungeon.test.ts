@@ -490,7 +490,7 @@ describe('a played-out run', () => {
           streak: 1,
           landmark: false,
         });
-        // The fights it played: the last one is the room boss, and all were cleared.
+        // The fights it played: the last one is the floor boss, and all were cleared.
         expect(run.rooms.at(-1)?.kind).toBe('boss');
         expect(run.rooms.every((r) => r.played && r.cleared && r.foeHpEnd === 0)).toBe(true);
         expect(run.roomsCleared).toBe(run.rooms.length);
@@ -1435,7 +1435,7 @@ describe('streaks and landmarks', () => {
     );
   });
 
-  it('names the fixed room boss of a landmark depth in today, in content order, and fights it', async () => {
+  it('names the fixed floor boss of a landmark depth in today, in content order, and fights it', async () => {
     const bosses = dungeonContent.foes.filter((f) => f.kind === 'boss').map((f) => f.id);
     await runCore(
       nextGuild(),

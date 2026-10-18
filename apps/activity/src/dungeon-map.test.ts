@@ -361,12 +361,12 @@ describe('labels', () => {
     expect(nodeLabel(node('f1l1'))).toBe('Mystery room');
     expect(nodeLabel(node('f2l2'))).toBe('Cache');
     expect(nodeLabel(node('f3l1'))).toBe('Camp');
-    expect(nodeLabel(node('f6l1'))).toBe('Room boss: Coil Baron');
+    expect(nodeLabel(node('f6l1'))).toBe('Floor boss: Coil Baron');
   });
 
   it('does not break on a fight with no foe', () => {
     expect(nodeLabel({ id: 'f0l0', floor: 0, lane: 0, kind: 'fight', next: [] })).toBe('Fight');
-    expect(nodeLabel({ id: 'f6l1', floor: 6, lane: 1, kind: 'boss', next: [] })).toBe('Room boss');
+    expect(nodeLabel({ id: 'f6l1', floor: 6, lane: 1, kind: 'boss', next: [] })).toBe('Floor boss');
   });
 
   it('tells a screen reader where the run stands with each room', () => {
@@ -389,7 +389,7 @@ describe('labels', () => {
             mystery: 'Mystery room',
             cache: 'Cache',
             camp: 'Camp',
-            boss: 'Room boss',
+            boss: 'Floor boss',
             door: 'Carved door',
             epic: 'Epic fight',
           })[n.kind],
@@ -452,13 +452,13 @@ describe('the Undercroft on the map', () => {
     expect(stacked.bands).toEqual([]);
   });
 
-  it('stacks a level above the room boss, with a seam for its label and a darker band', () => {
+  it('stacks a level above the floor boss, with a seam for its label and a darker band', () => {
     const main = mapLayout(down.map);
     const level = mapLayout(first);
     const layout = stackLayout(down.map, [first]);
     expect(layout.height).toBe(main.height + level.height + LEVEL_SEAM);
     const at = (id: string) => layout.nodes.find((n) => n.id === id);
-    // The level is above the whole day's map: its entrance floor is higher than the room boss.
+    // The level is above the whole day's map: its entrance floor is higher than the floor boss.
     const boss = at('f6l1');
     const entrance = at('u1f0l0');
     const keeper = at('u1f3l1');
@@ -509,8 +509,8 @@ describe('the Undercroft on the map', () => {
 
   it('names a level by the server label, or plainly when it sent none', () => {
     expect(levelLabel(first)).toBe(first.label);
-    expect(levelLabel({ level: 2 })).toBe('Undercroft 2');
-    expect(levelLabel({})).toBe('Undercroft 1');
+    expect(levelLabel({ level: 2 })).toBe('Undercroft floor 2');
+    expect(levelLabel({})).toBe('Undercroft floor 1');
   });
 
   it('lights the rooms of the level the run is in, and greys the levels it left', () => {
@@ -546,7 +546,7 @@ describe('the Undercroft on the map', () => {
     expect(nodeTitle(doorNode)).toBe('Carved door');
     expect(nodeLines(doorNode)).toEqual([DOOR_LINE]);
     expect(DOOR_LINE).toBe(
-      'A carved door. Step through to add one room to the Undercroft: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.',
+      'A carved door. Step through to add one room to the first Undercroft floor: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.',
     );
     expect(nodeGlossaryEntry('door')).toBe('carved-door');
     expect(nodeGlossaryEntry('epic')).toBe('epic-fight');
@@ -556,8 +556,8 @@ describe('the Undercroft on the map', () => {
     expect(nodeElement(doorNode)).toBeNull();
     expect(isKeeper(keeperNode)).toBe(true);
     expect(isKeeper(node('f6l1'))).toBe(false);
-    expect(nodeLabel(keeperNode)).toBe('Undercroft keeper: Slag Tyrant');
-    expect(nodeTitle(keeperNode)).toBe('Undercroft keeper');
+    expect(nodeLabel(keeperNode)).toBe('Undercroft floor boss: Slag Tyrant');
+    expect(nodeTitle(keeperNode)).toBe('Undercroft floor boss');
     expect(nodeGlyphOf(keeperNode)).toBe('map-keeper');
     expect(nodeGlyphOf(node('f6l1'))).toBe('map-boss');
     expect(nodeGlyphOf(doorNode)).toBe('map-door');
@@ -565,10 +565,10 @@ describe('the Undercroft on the map', () => {
       expect(glyph(id), id).toBeDefined();
     }
     expect(nodeAriaLabel(keeperNode, 'locked', { crack: true })).toBe(
-      'Undercroft keeper: Slag Tyrant. Cracked floor. Not on your path. Show details',
+      'Undercroft floor boss: Slag Tyrant. Cracked floor. Not on your path. Show details',
     );
     expect(nodeAriaLabel(keeperNode, 'preview')).toBe(
-      'Undercroft keeper: Slag Tyrant. Show details',
+      'Undercroft floor boss: Slag Tyrant. Show details',
     );
     const laid = mapLayout(down.map);
     expect(laid.nodes.find((n) => n.kind === 'door')?.size).toBe(MIN_NODE);
@@ -626,7 +626,7 @@ describe('the way down badge', () => {
   const run = undercroftState('cracked');
   const maps = [run.map, ...(run.undercroft?.maps ?? [])];
 
-  it('is on the room boss from the depth that opens the Undercroft, and not below it', () => {
+  it('is on the floor boss from the depth that opens the Undercroft, and not below it', () => {
     const from = RULES.dungeon.undercroft.fromDepth;
     expect([...descentRooms([SAMPLE_MAP], from)]).toEqual(['f6l1']);
     expect([...descentRooms([SAMPLE_MAP], from + 20)]).toEqual(['f6l1']);
@@ -652,7 +652,7 @@ describe('the way down badge', () => {
     const stacked = [deeper.map, ...(deeper.undercroft?.maps ?? [])];
     expect(stacked.length).toBeGreaterThan(2);
     const rooms = descentRooms(stacked, 14);
-    // The room boss and the first keeper have been passed; the last level's keeper is the way on.
+    // The floor boss and the first keeper have been passed; the last level's keeper is the way on.
     expect(rooms.has('f6l1')).toBe(false);
     expect(rooms.has('u1f3l1')).toBe(false);
     const entered = undercroftState('entrance');
@@ -661,7 +661,7 @@ describe('the way down badge', () => {
     );
   });
 
-  it('has its own glyph, and a line for the room boss drawer', () => {
+  it('has its own glyph, and a line for the floor boss drawer', () => {
     expect(glyph('map-descend')).toBeDefined();
     expect(DESCEND_LINE).toBe('Beat it to descend into the Undercroft.');
   });
@@ -669,7 +669,7 @@ describe('the way down badge', () => {
   it('is spoken on the room, unless the cracked floor already says it', () => {
     const boss = node('f6l1');
     expect(nodeAriaLabel(boss, 'preview', { descent: true })).toBe(
-      'Room boss: Coil Baron. The way down. Show details',
+      'Floor boss: Coil Baron. The way down. Show details',
     );
   });
 });

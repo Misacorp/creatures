@@ -862,7 +862,7 @@ describe('the dungeon responses the server sends', () => {
     expect(door.state.undercroft).toEqual({ maps: [], marks: 1 });
     expect(door.state.level).toBe(0);
 
-    // The room boss falls: its fight plays, the descent card waits, nothing can be moved to.
+    // The floor boss falls: its fight plays, the descent card waits, nothing can be moved to.
     const pending = parseDungeonAct(dungeonActDescendPending);
     expect(pending.room?.kind).toBe('boss');
     expect(pending.state.reachable).toEqual([]);

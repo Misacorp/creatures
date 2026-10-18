@@ -453,7 +453,7 @@ export function dungeonRetry(ctx: ToolCtx) {
 /**
  * Picks the day's room modifiers (for everybody in the guild), or hands them back to the day's seed. A
  * pick is laid over the day's map when it is read, never stored: the first two entrance rooms and the
- * room boss take it (the three entries old clients read); the other rooms keep what the seed drew.
+ * floor boss take it (the three entries old clients read); the other rooms keep what the seed drew.
  */
 export function dungeonModifiers(ctx: ToolCtx, body: Body<typeof DungeonModifiersBodySchema>) {
   const day = todayOf(ctx);

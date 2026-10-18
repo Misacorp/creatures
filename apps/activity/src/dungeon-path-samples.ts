@@ -2,7 +2,7 @@
  * Hand-written samples of the dungeon-path answers (`docs/design/dungeon-paths.md`), for tests and
  * the workbench. They are NOT captured from the server: the Worker's captured fixtures replace them
  * in the contract test once the server ships. The map follows the spec's rules (7 floors; the camp on
- * floor 3 and the room boss on floor 6, both in lane 1; edges to a lane at most one away, never
+ * floor 3 and the floor boss on floor 6, both in lane 1; edges to a lane at most one away, never
  * crossing; every node reachable; an elite on floors 2, 4 or 5; one cache; one to three mysteries; no
  * foe twice on a floor; at least three elements), with real content ids. The fight inside `sampleRoom`
  * is the real one of `fixtures/dungeon-replay.json`, so its events are valid for the stage.

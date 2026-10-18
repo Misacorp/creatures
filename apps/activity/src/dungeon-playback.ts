@@ -150,7 +150,7 @@ export function mineIds(row: readonly { id: string }[]): Set<string> {
 /**
  * The gimmicks a room gives its foe beyond the foe's own: the one its modifier adds (Thorns'
  * reflect), read from the content by the modifier's id (a modifier the content no longer has, an old
- * run's Fog, adds none), and, in the boss room of a landmark run, the room boss's signature move.
+ * run's Fog, adds none), and, in the boss room of a landmark run, the floor boss's signature move.
  */
 export function modifierGimmicks(
   room: Pick<DungeonReplayRoom, 'modifier'> & Partial<Pick<DungeonReplayRoom, 'kind' | 'foe'>>,
@@ -166,8 +166,8 @@ export function modifierGimmicks(
 }
 
 /**
- * The trick the room banner names: the room boss's signature move at a landmark, otherwise the
- * foe's last trick (for a room boss the pattern it gained, for a foe its only one). Null for a foe
+ * The trick the room banner names: the floor boss's signature move at a landmark, otherwise the
+ * foe's last trick (for a floor boss the pattern it gained, for a foe its only one). Null for a foe
  * with none (the gentle ones) or one the content does not know.
  */
 export function roomTrick(
@@ -249,7 +249,7 @@ export interface StripRoom {
   foeName: string;
   state: RoomState;
   banner: string;
-  /** "Room 1", or "Room boss" for the last ("Fight 1" and "Elite" on a path run; "Undercroft", "Epic" and "Keeper" below). */
+  /** "Room 1", or "Floor boss" for the last ("Fight 1" and "Elite" on a path run; "Undercroft floor 1" and "Epic" below). */
   title: string;
   elite: boolean;
   modifierName: string;
@@ -275,22 +275,19 @@ export function roomStrip(
     const elite = room.elite === true;
     const epic = room.epic === true;
     const level = levels[place] ?? 0;
-    const keeper = room.kind === 'boss' && level > 0;
-    const title = keeper
-      ? 'Keeper'
-      : epic
-        ? 'Epic'
-        : room.kind === 'boss'
-          ? 'Room boss'
-          : level > 0
-            ? elite
-              ? 'Undercroft elite'
-              : undercroftName(level)
-            : elite
-              ? 'Elite'
-              : run.outcome === undefined
-                ? `Room ${String(room.index + 1)}`
-                : `Fight ${String(place + 1)}`;
+    const title = epic
+      ? 'Epic'
+      : room.kind === 'boss'
+        ? 'Floor boss'
+        : level > 0
+          ? elite
+            ? 'Undercroft elite'
+            : undercroftName(level)
+          : elite
+            ? 'Elite'
+            : run.outcome === undefined
+              ? `Room ${String(room.index + 1)}`
+              : `Fight ${String(place + 1)}`;
     const name = fierceName(room.foe.name, elite);
     const foeHp =
       state === 'defeat' ? `${String(room.foeHpEnd)} / ${String(room.foe.hpMax)} HP left` : null;
@@ -372,9 +369,9 @@ export function teamBreakdown(run: Pick<DungeonRunSummary, 'team' | 'rewards'>):
 
 /** What the banner over the stage says when a room opens. Names and descriptions are plain text. */
 interface RoomIntroView {
-  /** "ROOM 2" in big letters, "ROOM BOSS" for the last room, "FIGHT" for a room of a path ("KEEPER" and "EPIC" below). */
+  /** "ROOM 2" in big letters, "FLOOR BOSS" for the last room, "FIGHT" for a room of a path ("EPIC FIGHT" below). */
   heading: string;
-  /** "2 / 3" (the room's place in an old run), "Floor 3 / 7" (a room of a path) or "Undercroft 1 · Floor 2 / 4". */
+  /** "2 / 3" (the room's place in an old run), "Room 3 / 7" (a room of a path) or "Undercroft floor 1 · Room 2 / 4". */
   place: string;
   boss: boolean;
   /** A fiercer foe of a path: the banner adds an Elite tag (an epic fight has its own, `epic`). */
@@ -408,7 +405,6 @@ export function roomIntroView(
   const epic = room.epic === true;
   const elite = room.elite === true && !epic;
   const level = room.node === undefined ? 0 : nodeLevel(room.node);
-  const keeper = boss && level > 0;
   const gimmick = roomTrick(room, landmark);
   const trick =
     gimmick === null
@@ -425,15 +421,13 @@ export function roomIntroView(
       : level > 0
         ? `${undercroftName(level)} · ${floorLine(floor, total)}`
         : floorLine(floor, total);
-  const heading = keeper
-    ? 'KEEPER'
-    : boss
-      ? 'ROOM BOSS'
-      : epic
-        ? 'EPIC FIGHT'
-        : floor !== null
-          ? 'FIGHT'
-          : `ROOM ${String(room.index + 1)}`;
+  const heading = boss
+    ? 'FLOOR BOSS'
+    : epic
+      ? 'EPIC FIGHT'
+      : floor !== null
+        ? 'FIGHT'
+        : `ROOM ${String(room.index + 1)}`;
   const foeName = fierceName(room.foe.name, elite || epic);
   const where = floor === null ? `Room ${place}` : place;
   return {
@@ -449,7 +443,7 @@ export function roomIntroView(
     modifierName: room.modifier.name,
     modifierDescription: room.modifier.description,
     trick,
-    spoken: `${where}${keeper ? ', Undercroft keeper' : boss ? ', room boss' : ''}${elite ? ', elite' : ''}${epic ? ', epic fight' : ''}: ${foeName}. ${trick === null ? '' : `${trick.name}: ${trick.line}. `}${room.modifier.name}: ${room.modifier.description}`,
+    spoken: `${where}${boss ? ', floor boss' : ''}${elite ? ', elite' : ''}${epic ? ', epic fight' : ''}: ${foeName}. ${trick === null ? '' : `${trick.name}: ${trick.line}. `}${room.modifier.name}: ${room.modifier.description}`,
   };
 }
 

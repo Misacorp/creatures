@@ -665,7 +665,7 @@ describe('the glossary covers the daily dungeon', () => {
     'epic-fight',
     'depth',
     'room-modifiers',
-    'room-boss',
+    'floor-boss',
     'landmark',
     'streak',
   ];
@@ -744,8 +744,8 @@ describe('the glossary covers the daily dungeon', () => {
     expect(text('carved-door')).toContain(
       'a fight, a fierce foe, a mystery, a cache, a camp or an epic fight',
     );
-    expect(text('cracked-floor')).toContain(`at most ${String(u.maxLevels)} Undercrofts`);
-    expect(text('cracked-floor')).toContain(`${String(u.deeperFloors)} floors`);
+    expect(text('cracked-floor')).toContain(`at most ${String(u.maxLevels)} Undercroft floors`);
+    expect(text('cracked-floor')).toContain(`${String(u.deeperFloors)} rooms`);
     expect(text('epic-fight')).toContain(`${String(u.epic.loot.essence)} Essence`);
     expect(text('epic-fight')).toContain(`${String(u.epic.loot.scrap)} scrap`);
     expect(text('dungeon')).toContain(`From depth ${String(u.fromDepth)}, the Undercroft`);
@@ -781,11 +781,11 @@ describe('the glossary covers the daily dungeon', () => {
 
   it('says what the map, the camp and the pack do, with the numbers the rules have', () => {
     const d = RULES.dungeon;
-    // The map: seven floors, the camp halfway, one map for the whole server, played room by room.
+    // The map: one floor seven rooms deep, the camp halfway, one map for the whole server, played room by room.
     expect(d.floors).toBe(7);
     expect(d.campFloor).toBe(3);
     expect(d.campFloor).toBe((d.floors - 1) / 2);
-    expect(text('dungeon-map')).toContain('Seven floors');
+    expect(text('dungeon-map')).toContain('seven rooms deep');
     expect(text('dungeon-map')).toContain('camp halfway');
     expect(text('dungeon-map')).toContain('same for everyone on the server');
     expect(text('dungeon')).toContain('map one room at a time');
@@ -820,6 +820,9 @@ describe('the glossary covers the daily dungeon', () => {
     expect(all).not.toContain('Three rooms');
     expect(all).not.toContain('three rooms');
     expect(all).not.toContain('played out at once');
+    // Misa, 2026-10-18: the last room of a floor is its floor boss; "room boss" and "keeper" are gone.
+    expect(all).not.toMatch(/room boss|keeper/i);
+    expect(text('floor-boss')).toContain('Every floor ends in one');
     // The one-run-a-day rules and the retry.
     expect(text('dungeon')).toContain('One run per day');
     expect(text('dungeon')).toContain('retried once');

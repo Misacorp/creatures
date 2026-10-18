@@ -77,7 +77,7 @@ export const RULES = {
     maxLevel: 30,
     /** Experience per creature for a finished trip, by length (a recall or a failed trip pays none). */
     trip: { short: 20, medium: 60, long: 120, day: 240 },
-    /** The daily dungeon: per fight cleared (a run is 3 to 6 fights), and on top of that for beating the room boss. Depth adds nothing. */
+    /** The daily dungeon: per fight cleared (a run is 3 to 6 fights), and on top of that for beating the floor boss. Depth adds nothing. */
     dungeon: { perRoom: 35, fullClear: 60 },
     /** Raid stages, per creature in the fight: the stage's experience, times `clearedBp` when it was cleared. */
     raid: { phase1: 200, phase2: 200, finale: 400, clearedBp: 15_000 },
@@ -708,7 +708,7 @@ export const RULES = {
    * tuned by the simulator. All amounts are integers (percentages in basis points).
    */
   dungeon: {
-    /** Rooms in a run: normal foes first, then a room boss. */
+    /** Rooms in a run: normal foes first, then a floor boss. */
     rooms: 3,
     /** Creatures in the team: one row of three, left to right. */
     teamSize: 3,
@@ -746,7 +746,7 @@ export const RULES = {
     baseHpBp: 6_500,
     baseAtkBp: 10_000,
     /**
-     * Every this many depths is a landmark: a better chest, and a fixed room boss (in content order,
+     * Every this many depths is a landmark: a better chest, and a fixed floor boss (in content order,
      * round again) that also gains its charged `signature` move.
      */
     landmarkEvery: 7,
@@ -762,7 +762,7 @@ export const RULES = {
      */
     enrage: { enabled: true, rounds: 2, powerBp: 3_000 },
     /**
-     * Paid for each room cleared, by room index (the last is the room boss). `supply` is the number
+     * Paid for each room cleared, by room index (the last is the floor boss). `supply` is the number
      * of expedition supplies the room drops (its tier and kind are rolled: `supplyTiers`). Only the
      * first room drops one, with a scrap beside it: a run that clears its first room always takes a
      * supply home, even if it is lost later, so the promise holds at the depth wall where full clears
@@ -782,7 +782,7 @@ export const RULES = {
       good: { fromDepth: 4, baseBp: 1_500, perDepthBp: 400, maxBp: 5_000 },
       great: { fromDepth: 12, baseBp: 500, perDepthBp: 200, maxBp: 2_500 },
     },
-    /** Chance (basis points) of one shard of the room boss's element when the boss room is cleared. */
+    /** Chance (basis points) of one shard of the floor boss's element when the boss room is cleared. */
     bossShardBp: 6_000,
     /** Extra for clearing every room: Essence, and a chance (basis points) at a gear drop. */
     fullClear: { essence: 0, gearBp: 1_500 },
@@ -813,7 +813,7 @@ export const RULES = {
     /**
      * The map redesign (docs/design/dungeon-paths.md). The keys above stay for stored three-room
      * runs; a map run uses the keys below. A run is `floors` floors from an entrance (floor 0) to a
-     * room boss (the last floor), with the camp on `campFloor`.
+     * floor boss (the last floor), with the camp on `campFloor`.
      */
     floors: 7,
     /** The camp: every path meets on this floor, in the middle lane. */
@@ -863,10 +863,10 @@ export const RULES = {
      */
     defeatKeepBp: 5_000,
     /**
-     * The Undercroft (docs/design/dungeon-paths.md): a deeper, optional level below the room boss, from
+     * The Undercroft (docs/design/dungeon-paths.md): a deeper, optional level below the floor boss, from
      * depth `fromDepth` (the first landmark has been passed). Its foes are scaled as if the depth were
      * `depthBonus` higher for every level. It has `baseFloors` floors of two rooms, plus `perLandmark`
-     * for every landmark passed after the first, at most `maxFloors`, then the keeper (a room boss with
+     * for every landmark passed after the first, at most `maxFloors`, then the keeper (a floor boss with
      * its landmark signature). A carved door on the main map (`doorBp` of maps, on one of `doorFloors`)
      * adds one floor of one room of a random kind but a boss (`markOdds`, basis points that add up to
      * 10000) when the player steps through, at most `maxMarks` a run; the player is told only what it could be. A level's keeper
@@ -875,7 +875,7 @@ export const RULES = {
      * loot in the pack; standing creatures recover `catchBreathBp` of max HP on the way down and a
      * knocked-out one gets back up at `reviveBp` (B-021: with 1000 about twice as many rows go down, 54% of the
      * offers, and a descent clears its first keeper 22% of the time, 35% before; 500 is the same, 52% and 22%, so the
-     * size hardly matters). Tuned by the simulator (docs/balance/log.md B-020). `depthBonus` was 3: the keeper (a room boss with its
+     * size hardly matters). Tuned by the simulator (docs/balance/log.md B-020). `depthBonus` was 3: the keeper (a floor boss with its
      * signature, met after two fights and no rest by a row that has just beaten the boss) was beaten 32% of
      * the time and a descent cleared its first keeper 17% of the time, so five of six went home with half a
      * pack. At 1 the keeper is beaten about 48% of the time and a descent clears 33%; at 0, 45%. The

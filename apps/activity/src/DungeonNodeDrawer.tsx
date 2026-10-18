@@ -73,7 +73,7 @@ interface Props {
   landmark?: boolean | undefined;
   /** The room is an Undercroft keeper on a cracked floor (the level's own flag, which the room does not carry). */
   crack?: boolean | undefined;
-  /** Beating this room opens the way down into the Undercroft (the room boss at a depth that opens it). */
+  /** Beating this room opens the way down into the Undercroft (the floor boss at a depth that opens it). */
   descent?: boolean | undefined;
   onClose: () => void;
   /** The map button that was tapped, so the focus goes back to it. */
@@ -81,7 +81,7 @@ interface Props {
 }
 
 /**
- * The sheet a tap on a room opens: what is there. A fight, an elite or the room boss shows the foe's
+ * The sheet a tap on a room opens: what is there. A fight, an elite or the floor boss shows the foe's
  * picture, name, element, trick, the room's twist and HP; a mystery room, a cache and the camp say what
  * they are in a line or two. When the run can go to the room the footer has a primary Go button, which
  * closes the sheet and calls `onGo`; a room off the path says so, and one the run can never get to any more
@@ -359,7 +359,7 @@ function FoeBody({
           <p class="dnd-tags">
             {deeper && (
               <Tag kind="badge" entry="undercroft">
-                {keeper ? 'Keeper' : 'Undercroft'}
+                {keeper ? 'Floor boss' : 'Undercroft'}
               </Tag>
             )}
             {elite && (
@@ -406,8 +406,8 @@ function FoeBody({
       )}
       {keeper && entry === undefined && (
         <p class="dnd-line">
-          Beat the keeper to open the Undercroft chest: {chest.essence} Essence, {chest.scrap} scrap
-          and a {Math.round(chest.gearBp / 100)}% chance of a gear piece.
+          Beat the floor boss to open the Undercroft chest: {chest.essence} Essence, {chest.scrap}{' '}
+          scrap and a {Math.round(chest.gearBp / 100)}% chance of a gear piece.
         </p>
       )}
       {keeper && crack && <p class="dnd-line dnd-crack">{CRACK_LINE}</p>}

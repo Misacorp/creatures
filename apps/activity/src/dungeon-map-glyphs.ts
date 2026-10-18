@@ -1,7 +1,7 @@
 /**
  * 8x8 icons for the rooms of the dungeon map, in the glyph format (draw them with `<Sprite>`): crossed
  * blades (a fight), a horned skull (an elite), a "?" (a mystery room), a chest (a cache), a campfire (the
- * camp) and a crown (the room boss). The Undercroft adds a carved door, a skull with golden horns (an epic
+ * camp) and a crown (the floor boss). The Undercroft adds a carved door, a skull with golden horns (an epic
  * fight), a pale violet crown (the keeper) and a crack. Every icon has its own shape, so a room's kind never
  * depends on colour alone. Pure data; `glyphs.ts` adds them to the bundled glyphs.
  */

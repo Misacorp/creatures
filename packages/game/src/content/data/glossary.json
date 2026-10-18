@@ -1110,7 +1110,7 @@
     "title": "Tide Shard",
     "short": "A shard of Tide. It pays for Tide crafts.",
     "lines": [
-      "Found on expeditions with a Tide explorer, from Tide room bosses and by dismantling Tide gear."
+      "Found on expeditions with a Tide explorer, from Tide floor bosses and by dismantling Tide gear."
     ],
     "visual": {
       "kind": "element",
@@ -1123,7 +1123,7 @@
     "title": "Ember Shard",
     "short": "A shard of Ember. It pays for Ember crafts.",
     "lines": [
-      "Found on expeditions with an Ember explorer, from Ember room bosses and by dismantling Ember gear."
+      "Found on expeditions with an Ember explorer, from Ember floor bosses and by dismantling Ember gear."
     ],
     "visual": {
       "kind": "element",
@@ -1136,7 +1136,7 @@
     "title": "Grove Shard",
     "short": "A shard of Grove. It pays for Grove crafts.",
     "lines": [
-      "Found on expeditions with a Grove explorer, from Grove room bosses and by dismantling Grove gear."
+      "Found on expeditions with a Grove explorer, from Grove floor bosses and by dismantling Grove gear."
     ],
     "visual": {
       "kind": "element",
@@ -1149,7 +1149,7 @@
     "title": "Spark Shard",
     "short": "A shard of Spark. It pays for Spark crafts.",
     "lines": [
-      "Found on expeditions with a Spark explorer, from Spark room bosses and by dismantling Spark gear."
+      "Found on expeditions with a Spark explorer, from Spark floor bosses and by dismantling Spark gear."
     ],
     "visual": {
       "kind": "element",
@@ -1252,7 +1252,7 @@
   {
     "id": "dungeon-map",
     "title": "Dungeon map",
-    "short": "Seven floors of rooms, from the door up to the boss.",
+    "short": "One floor, seven rooms deep, from the door up to the floor boss.",
     "lines": [
       "Tap a room you can reach to see what is there, then go in. You only move up.",
       "Fights, elites, mystery rooms and chests are on it. Every path meets at the camp halfway.",
@@ -1323,12 +1323,12 @@
   {
     "id": "undercroft",
     "title": "Undercroft",
-    "short": "A deeper level below the room boss. Optional, and harder.",
+    "short": "Floors below the floor boss. Optional, and harder.",
     "lines": [
       "Beat the boss at depth 8 or more and you may descend. Everyone heals 20% of max HP, and the fallen get up at 10%.",
-      "Its foes are fiercer, fights put twice their loot in your pack, and a keeper waits at the bottom with a better chest.",
+      "Its foes are fiercer, fights put twice their loot in your pack, and each floor ends in a floor boss with a better chest.",
       "Your pack stays at risk all the way down. You can head home only before descending, or at an Undercroft camp.",
-      "More landmarks passed means more floors, up to five."
+      "More landmarks passed means more rooms on the first Undercroft floor, up to five."
     ],
     "section": "dungeon"
   },
@@ -1338,19 +1338,20 @@
     "short": "A door in the wall. Stepping through adds a room below.",
     "lines": [
       "From depth 8 a map may hold one. It has no fight.",
-      "Stepping through adds one room to the Undercroft: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight.",
-      "You find out which only when you descend. It costs nothing, and it only counts if you go down."
+      "Stepping through adds one room to the first Undercroft floor.",
+      "It is a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.",
+      "It costs nothing, and it only counts if you go down."
     ],
     "section": "dungeon"
   },
   {
     "id": "cracked-floor",
     "title": "Cracked floor",
-    "short": "The keeper's floor is cracked. Another descent waits.",
+    "short": "The floor boss stands on a cracked floor. Another floor waits below.",
     "lines": [
-      "Now and then an Undercroft keeper stands on a cracked floor.",
-      "Beat it and you may go deeper still: foes are fiercer again, with 2 floors and a new keeper and chest.",
-      "A run goes down at most 3 Undercrofts."
+      "Now and then an Undercroft floor boss stands on a cracked floor.",
+      "Beat it and you may go down another floor: foes are fiercer again, with 2 rooms and a new floor boss and chest.",
+      "A run goes down at most 3 Undercroft floors."
     ],
     "section": "dungeon"
   },
@@ -1369,7 +1370,7 @@
     "title": "Dungeon depth",
     "short": "How deep you are. Foes get tougher with every depth.",
     "lines": [
-      "Beating the room boss adds 1. Losing or heading home leaves it as it is.",
+      "Beating the floor boss adds 1. Losing or heading home leaves it as it is.",
       "Every 7th depth is a landmark."
     ],
     "section": "dungeon"
@@ -1379,20 +1380,20 @@
     "title": "Room modifiers",
     "short": "Each room has a twist, shown before you enter.",
     "lines": [
-      "Fights and the boss each have a twist, shown on the map before you enter. They are the same for everyone on the server.",
+      "Fights and the floor boss each have a twist, shown on the map before you enter. Everyone on the server gets the same.",
       "Some boost one element or one role, some change the foe, and some change your crits.",
       "They only last for their room. Pick your route and your team around them."
     ],
     "section": "dungeon"
   },
   {
-    "id": "room-boss",
-    "title": "Room boss",
-    "short": "The foe of the last room. Tougher than the others.",
+    "id": "floor-boss",
+    "title": "Floor boss",
+    "short": "The foe of a floor's last room. Tougher than the others.",
     "lines": [
       "It has more HP and hits harder than the foes before it.",
       "Each boss has its own trick, and some are the same ones raid bosses use.",
-      "It waits at the top of the map. Beating it clears the dungeon for the day."
+      "Every floor ends in one. The one at the top of the day's map clears the dungeon for the day."
     ],
     "section": "dungeon"
   },
@@ -1402,7 +1403,7 @@
     "short": "Every 7th depth. Beating its boss drops gear for sure.",
     "lines": [
       "Landmark depths are 7, 14, 21 and so on.",
-      "Beat the room boss on one to get a gear drop for certain, with better odds of rare and epic gear.",
+      "Beat the floor boss on one to get a gear drop for certain, with better odds of rare and epic gear.",
       "It also pays extra Essence, scrap and a glimmer."
     ],
     "section": "dungeon"

@@ -22,6 +22,8 @@ import {
   dungeonErrorText,
   fierceName,
   floorLine,
+  undercroftClearedText,
+  undercroftName,
   isPackEmpty,
   isRetryOffer,
   isStaleDungeonError,
@@ -190,8 +192,8 @@ describe('the headline of a path run', () => {
 
   it('says what the depth did, and what takes the run deeper', () => {
     expect(depthChangeText(cleared)).toBe('Depth 3 to 4');
-    expect(depthChangeText(home)).toBe('Still at depth 3. Beat the room boss to go deeper.');
-    expect(depthChangeText(defeat)).toContain('Beat the room boss');
+    expect(depthChangeText(home)).toBe('Still at depth 3. Beat the floor boss to go deeper.');
+    expect(depthChangeText(defeat)).toContain('Beat the floor boss');
     const old = (runLost as unknown as DungeonRunResponse).run;
     expect(depthChangeText(old)).toContain('Clear all three rooms');
   });
@@ -237,13 +239,19 @@ describe('where the run is', () => {
     expect(nodeFloor('f2l1; drop')).toBeNull();
   });
 
-  it('counts floors from 1', () => {
-    expect(floorLine(2, 7)).toBe('Floor 3 / 7');
-    expect(floorLine(6, 7)).toBe('Floor 7 / 7');
+  it('names Undercroft floors and how many a run cleared, singular for one', () => {
+    expect(undercroftName(1)).toBe('Undercroft floor 1');
+    expect(undercroftClearedText(1)).toBe('1 Undercroft floor cleared');
+    expect(undercroftClearedText(2)).toBe('2 Undercroft floors cleared');
   });
 
-  it('reads the place of a fight by its floor on a path and by its room in an old run', () => {
-    expect(roomPlaceLine({ index: 2, node: 'f2l1' }, 7)).toBe('Floor 3 / 7');
+  it('counts the rooms along a path from 1', () => {
+    expect(floorLine(2, 7)).toBe('Room 3 / 7');
+    expect(floorLine(6, 7)).toBe('Room 7 / 7');
+  });
+
+  it('reads the place of a fight by its room along a path and by its room in an old run', () => {
+    expect(roomPlaceLine({ index: 2, node: 'f2l1' }, 7)).toBe('Room 3 / 7');
     expect(roomPlaceLine({ index: 1 }, 3)).toBe('Room 2 / 3');
     expect(roomPlaceLine({ index: 1, node: 'weird' }, 3)).toBe('Room 2 / 3');
   });
@@ -251,7 +259,7 @@ describe('where the run is', () => {
   it('says the status of the run on the strip', () => {
     const state = sampleState();
     expect(runStatusLine(state)).toBe('Depth 3 · At the entrance');
-    expect(runStatusLine({ ...state, at: 'f1l2' })).toBe('Depth 3 · Floor 2 / 7');
+    expect(runStatusLine({ ...state, at: 'f1l2' })).toBe('Depth 3 · Room 2 / 7');
     expect(runStatusLine({ ...state, at: 'f3l1' })).toBe('Depth 3 · At the camp');
   });
 

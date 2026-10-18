@@ -18,7 +18,7 @@ export type Element = 'tide' | 'ember' | 'grove' | 'spark';
 export type Role = 'setter' | 'payoff' | 'support' | 'guard';
 /** A room modifier of the day. Shown before the run: the same for everyone on the server. */
 export interface DungeonModifier {
-  /** The room (0-based) it applies to; the last room is the room boss. */
+  /** The room (0-based) it applies to; the last room is the floor boss. */
   room: number;
   id: string;
   name: string;
@@ -62,7 +62,7 @@ export interface DungeonToday {
    */
   draftTeam: (string | null)[] | null;
   /**
-   * Set when the next run is a landmark: the depth and the room boss's content id, announced before
+   * Set when the next run is a landmark: the depth and the floor boss's content id, announced before
    * the run. Null otherwise; an older server leaves it out (read as null).
    */
   landmarkBoss: { depth: number; foeId: string } | null;
@@ -86,7 +86,7 @@ export type DungeonNodeKind =
  */
 export interface DungeonMapNode {
   id: string;
-  /** 0 (the entrance) to `floors - 1` (the room boss). */
+  /** 0 (the entrance) to `floors - 1` (the floor boss). */
   floor: number;
   /** 0 (left) to 2 (right). */
   lane: number;
@@ -109,12 +109,12 @@ export interface DungeonMapNode {
 }
 
 export interface DungeonMapView {
-  /** 7 on the day's map (floor 3 is the camp, the last floor the room boss); an Undercroft level has its own count, the keeper's floor included. */
+  /** 7 on the day's map (floor 3 is the camp, the last floor the floor boss); an Undercroft level has its own count, the keeper's floor included. */
   floors: number;
   nodes: DungeonMapNode[];
   /** An Undercroft level only: 1 to 3 (absent on the day's map). */
   level?: number;
-  /** An Undercroft level only: its name on the map ("Undercroft · foes are fiercer here"). Server text, drawn as text. */
+  /** An Undercroft level only: its name on the map ("Undercroft floor 1 · foes are fiercer here"). Server text, drawn as text. */
   label?: string;
   /** An Undercroft level only: the keeper's floor is cracked (present only when true). Beating it opens a deeper level. */
   crack?: boolean;
@@ -171,7 +171,7 @@ export type DungeonPending =
   | { kind: 'camp'; offers: DungeonKeepsakeView[]; restBp: number }
   | {
       /**
-       * The room boss (or an Undercroft keeper with a cracked floor) is down: head home with the pack
+       * The floor boss (or an Undercroft keeper with a cracked floor) is down: head home with the pack
        * (`{type:'home'}`) or go down (`{type:'descend'}`). `level` is the level it opens (1, or 2 and 3
        * after a cracked floor), `floors` its floors with the keeper's, `depthBonus` how many depths
        * harder its foes are, `catchBreathBp` the HP the standing creatures recover on the way and `reviveBp`
@@ -426,9 +426,9 @@ export interface DungeonRunSummary {
   /** 1, or 2 for the retry of a first day. */
   attempt: number;
   depth: number;
-  /** The depth after this run: one deeper after the room boss fell (also when the run was then lost in the Undercroft), otherwise the same. */
+  /** The depth after this run: one deeper after the floor boss fell (also when the run was then lost in the Undercroft), otherwise the same. */
   newDepth: number;
-  /** The room boss was beaten (all rooms for an old three-room run). It stays true when the run was lost below. */
+  /** The floor boss was beaten (all rooms for an old three-room run). It stays true when the run was lost below. */
   cleared: boolean;
   /** Undercroft levels cleared (keepers beaten): 0 for a run that never went down. Absent in older runs (read as 0). */
   deepest?: number;

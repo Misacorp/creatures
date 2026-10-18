@@ -81,7 +81,7 @@ export const GLOSSARY_IDS = {
   gearLine: (id: string): string => `gear-line-${id}`,
   /** What a base's tag means on an item: an element (`ember`: its lines lean Ember), a role or `explorer`. */
   gearTag: (tag: string): string => `gear-tag-${tag}`,
-  /** What an element means on a boss or a room boss (`ember`: who hits it hardest). */
+  /** What an element means on a boss or a floor boss (`ember`: who hits it hardest). */
   bossElement: (element: string): string => `boss-element-${element}`,
   /** What an element means on an expedition place (`ember`: who lives there, what is found). */
   placeElement: (element: string): string => `place-element-${element}`,
@@ -155,7 +155,7 @@ export const FIXED_GLOSSARY_IDS = [
   'epic-fight',
   'depth',
   'room-modifiers',
-  'room-boss',
+  'floor-boss',
   'landmark',
   'streak',
   'explorer-rank',

@@ -66,7 +66,7 @@ const depthProgress: Entry = {
   file: 'apps/activity/src/DepthProgress.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The depth track of the daily dungeon, on the pre-run card and in the end report: the depth the player is at, the next landmark and a pip for each depth between. Each step says what it unlocks, from the rules: a landmark gives a gear drop and bonus Essence, beating the first landmark opens the Undercroft ("Undercroft opens" at depth 8) and each later one adds a floor ("Undercroft +1 floor") up to the most the rules allow. A depth where nothing changes says "Nothing new".',
+    'The depth track of the daily dungeon, on the pre-run card and in the end report: the depth the player is at, the next landmark and a pip for each depth between. Each step says what it unlocks, from the rules: a landmark gives a gear drop and bonus Essence, beating the first landmark opens the Undercroft ("Undercroft opens" at depth 8) and each later one adds a room ("Undercroft +1 room") up to the most the rules allow. A depth where nothing changes says "Nothing new".',
   controls: { depth: { kind: 'number', min: 1, max: 60 } },
   defaults: { depth: 3 },
   presets: [
@@ -75,9 +75,9 @@ const depthProgress: Entry = {
     { name: 'Depth 8: the Undercroft opens', props: { depth: 8 } },
     { name: 'Depth 10: nothing new', props: { depth: 10 } },
     { name: 'Depth 14: the second landmark', props: { depth: 14 } },
-    { name: 'Depth 15: a floor more', props: { depth: 15 } },
-    { name: 'Depth 33: near the most floors', props: { depth: 33 } },
-    { name: 'Depth 36: no more floors to add', props: { depth: 36 } },
+    { name: 'Depth 15: a room more', props: { depth: 15 } },
+    { name: 'Depth 33: near the most rooms', props: { depth: 33 } },
+    { name: 'Depth 36: no more rooms to add', props: { depth: 36 } },
   ],
   render: (p) => <DepthDemo p={p} />,
 };
@@ -87,7 +87,7 @@ const dungeonMap: Entry = {
   file: 'apps/activity/src/DungeonMap.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The daily dungeon map (the Undercroft stages are the captured runs: the levels it drew stand above the boss in a darker band with their labels, with a pale crown for the keeper, a crack on a cracked floor, a carved door and the epic fight). Seven floors drawn from the entrance at the bottom to the room boss at the top, three lanes wide, with a round button for every room (crossed blades, a horned skull, a "?", a chest, a campfire, a crown; foes tinted by their element). Rooms the run can reach glow, the one it stands in is outlined, visited ones are filled and the path taken is gold; rooms no path leads to any more are greyed out, with their paths. A room the run has been through opens its outcome (the foe HP and loot of a fight, the pick in a mystery room, the choice at the camp). Tapping a room opens a drawer with what is there, and Go when the run can go to it (DungeonNodeDrawer). A green triangle under each entrance room shows where a run starts (before the first move). From depth 8 the room boss wears a small down-arrow badge (beating it lets the player descend), and so does a cracked keeper; the red cross marks the room where a run was lost. Shown on the pre-run card (no run), during a run and on the results.',
+    'The daily dungeon map (the Undercroft stages are the captured runs: the floors it drew stand above the floor boss in a darker band with their labels, with a pale crown for its floor boss, a crack on a cracked floor, a carved door and the epic fight). One floor of seven rows of rooms drawn from the entrance at the bottom to the floor boss at the top, three lanes wide, with a round button for every room (crossed blades, a horned skull, a "?", a chest, a campfire, a crown; foes tinted by their element). Rooms the run can reach glow, the one it stands in is outlined, visited ones are filled and the path taken is gold; rooms no path leads to any more are greyed out, with their paths. A room the run has been through opens its outcome (the foe HP and loot of a fight, the pick in a mystery room, the choice at the camp). Tapping a room opens a drawer with what is there, and Go when the run can go to it (DungeonNodeDrawer). A green triangle under each entrance room shows where a run starts (before the first move). From depth 8 the floor boss wears a small down-arrow badge (beating it lets the player descend), and so does a floor boss on a cracked floor; the red cross marks the room where a run was lost. Shown on the pre-run card (no run), during a run and on the results.',
   controls: {
     stage: { kind: 'select', options: STAGE_LABELS },
     open: { kind: 'select', options: NODE_IDS },
@@ -126,7 +126,7 @@ const dungeonMap: Entry = {
     { name: 'Drawer: a reachable fight', props: { stage: 'midway', open: 'f2l1' } },
     { name: 'Drawer: an elite', props: { stage: 'after-elite', open: 'f2l0' } },
     { name: 'Drawer: a mystery room', props: { stage: 'entrance', open: 'f1l1' } },
-    { name: 'Drawer: the room boss', props: { stage: 'past-camp', open: 'f6l1', landmark: true } },
+    { name: 'Drawer: the floor boss', props: { stage: 'past-camp', open: 'f6l1', landmark: true } },
     { name: 'Drawer: the camp', props: { stage: 'midway', open: 'f3l1' } },
     {
       name: 'Drawer: a fight the run won (HP 0, Cleared, loot, supply)',
@@ -155,19 +155,19 @@ const dungeonMap: Entry = {
       props: { stage: 'uc-locked', depth: 14 },
     },
     {
-      name: 'The way down: a down arrow on the room boss from depth 8 (preview)',
+      name: 'The way down: a down arrow on the floor boss from depth 8 (preview)',
       props: { stage: 'preview', withGo: false, depth: 8 },
     },
     {
-      name: 'No arrow on the room boss below depth 8 (preview)',
+      name: 'No arrow on the floor boss below depth 8 (preview)',
       props: { stage: 'preview', withGo: false, depth: 7 },
     },
     {
-      name: 'Drawer: the room boss at depth 8 (beat it to descend)',
+      name: 'Drawer: the floor boss at depth 8 (beat it to descend)',
       props: { stage: 'preview', withGo: false, depth: 8, open: 'f6l1' },
     },
     {
-      name: 'Drawer: the room boss below depth 8 (no descent line)',
+      name: 'Drawer: the floor boss below depth 8 (no descent line)',
       props: { stage: 'preview', withGo: false, depth: 7, open: 'f6l1' },
     },
     { name: 'Undercroft: a carved door ahead', props: { stage: 'uc-door-ahead' } },
@@ -187,23 +187,23 @@ const dungeonMap: Entry = {
     { name: 'Undercroft: midway', props: { stage: 'uc-midway' } },
     { name: 'Undercroft: an epic fight ahead', props: { stage: 'uc-epic' } },
     { name: 'Drawer: an epic fight', props: { stage: 'uc-epic', open: 'u1f2l1' } },
-    { name: 'Undercroft: the keeper is next', props: { stage: 'uc-keeper' } },
-    { name: 'Drawer: the keeper', props: { stage: 'uc-keeper', open: 'u1f3l1' } },
+    { name: 'Undercroft: the floor boss is next', props: { stage: 'uc-keeper' } },
+    { name: 'Drawer: the Undercroft floor boss', props: { stage: 'uc-keeper', open: 'u1f3l1' } },
     {
-      name: 'Undercroft: a cracked floor under the keeper (crack and down-arrow badges)',
+      name: 'Undercroft: a cracked floor under the floor boss (crack and down-arrow badges)',
       props: { stage: 'uc-cracked', depth: 14 },
     },
     {
-      name: 'Drawer: a cracked keeper',
+      name: 'Drawer: a floor boss on a cracked floor',
       props: { stage: 'uc-cracked', open: 'u1f3l1' },
     },
     {
-      name: 'Undercroft: a second level below a cracked floor',
+      name: 'Undercroft: a second floor below a cracked floor',
       props: { stage: 'uc-cracked-deeper' },
     },
     { name: 'Undercroft: the route of a cleared run', props: { stage: 'uc-done', withGo: false } },
     {
-      name: 'Drawer: the room boss that opened the way down',
+      name: 'Drawer: the floor boss that opened the way down',
       props: { stage: 'uc-done', open: 'f6l1', withGo: false },
     },
   ],

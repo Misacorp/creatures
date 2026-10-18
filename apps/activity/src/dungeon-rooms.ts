@@ -90,14 +90,14 @@ export const LANDMARK_UNLOCKS: readonly TrackUnlock[] = [
   { icon: 'gem', text: 'Bonus Essence' },
 ];
 
-/** The floors a run's first Undercroft has before its keeper at `depth` (0 while the Undercroft is shut), from the rules. */
+/** The rooms (rows of its map) a run's first Undercroft floor has before its floor boss at `depth` (0 while the Undercroft is shut), from the rules. */
 export function undercroftFloorsAt(depth: number): number {
   return undercroftOpen(depth) ? undercroftBaseFloors(depth, 1) : 0;
 }
 
 /**
  * What the Undercroft gives from reaching `depth` on: "Undercroft opens" at the depth that opens it
- * (`RULES.dungeon.undercroft.fromDepth`), then "Undercroft +1 floor" at each depth that adds floors (one per
+ * (`RULES.dungeon.undercroft.fromDepth`), then "Undercroft +1 room" at each depth that adds rooms to its first floor (one per
  * landmark passed, up to `maxFloors`). None at any other depth. Derived from the rules, never listed.
  */
 export function undercroftUnlocks(depth: number): TrackUnlock[] {
@@ -109,7 +109,7 @@ export function undercroftUnlocks(depth: number): TrackUnlock[] {
     ? [
         {
           icon: 'map-descend',
-          text: `Undercroft +${String(more)} ${more === 1 ? 'floor' : 'floors'}`,
+          text: `Undercroft +${String(more)} ${more === 1 ? 'room' : 'rooms'}`,
         },
       ]
     : [];

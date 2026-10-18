@@ -51,7 +51,7 @@ describe('DungeonMap', () => {
     }
     const paths = byClass(p.root, 'dmap-edge');
     expect(paths).toHaveLength(SAMPLE_MAP.nodes.reduce((n, r) => n + r.next.length, 0));
-    expect(byName(p.root, 'button', /^Room boss: Coil Baron/)).toHaveLength(1);
+    expect(byName(p.root, 'button', /^Floor boss: Coil Baron/)).toHaveLength(1);
   });
 
   it('marks the rooms by where the run stands', () => {
@@ -315,8 +315,8 @@ describe('DungeonMap with the Undercroft', () => {
     const nodes = byClass(p.root, 'dmap-node');
     const deep = nodes.filter((n) => /\bu\b/.test(n.getAttribute('class') ?? ''));
     expect(deep).toHaveLength(run.undercroft?.maps[0]?.nodes.length ?? -1);
-    // The keeper is a crown of its own, not the room boss's.
-    const keeper = first(byName(p.root, 'button', /^Undercroft keeper: Slag Tyrant/));
+    // The keeper is a crown of its own, not the floor boss's.
+    const keeper = first(byName(p.root, 'button', /^Undercroft floor boss: Slag Tyrant/));
     expect(keeper.getAttribute('class')).toContain('k-boss');
     expect(keeper.getAttribute('class')).not.toContain('cracked');
     expect(byClass(keeper, 'dmap-crack')).toHaveLength(0);
@@ -324,7 +324,7 @@ describe('DungeonMap with the Undercroft', () => {
     const reachable = nodes.filter((n) => (n.getAttribute('class') ?? '').includes('s-reachable'));
     expect(reachable).toHaveLength(2);
     expect(
-      first(byName(p.root, 'button', /^Room boss: Slag Tyrant/)).getAttribute('class'),
+      first(byName(p.root, 'button', /^Floor boss: Slag Tyrant/)).getAttribute('class'),
     ).toContain('s-visited');
     // A path of the level is drawn in its own colours.
     expect(
@@ -334,13 +334,15 @@ describe('DungeonMap with the Undercroft', () => {
 
   it('marks a keeper on a cracked floor on the map and in its label and drawer', () => {
     const p = drawStage('cracked');
-    const keeper = first(byName(p.root, 'button', /^Undercroft keeper: Slag Tyrant/));
+    const keeper = first(byName(p.root, 'button', /^Undercroft floor boss: Slag Tyrant/));
     expect(keeper.getAttribute('class')).toContain('cracked');
     expect(byClass(keeper, 'dmap-crack')).toHaveLength(1);
     expect(keeper.getAttribute('aria-label')).toContain('Cracked floor');
     p.click(keeper);
-    expect(dialogText(p)).toContain('A cracked floor: beat the keeper to go deeper still.');
-    expect(dialogText(p)).toContain('Keeper');
+    expect(dialogText(p)).toContain(
+      'A cracked floor: beat the floor boss to go down another floor.',
+    );
+    expect(dialogText(p)).toContain('Floor boss');
     expect(dialogText(p)).toContain('The Undercroft · foes are fiercer here');
     expect(dialogText(p)).toContain(
       'Undercroft chest: 1 Essence, 2 scrap and a 40% chance of a gear piece.',
@@ -357,9 +359,9 @@ describe('DungeonMap with the Undercroft', () => {
     const p = drawStage('cracked-deeper');
     expect(byClass(p.root, 'dmap-label')).toHaveLength(2);
     const labels = byClass(p.root, 'dmap-label').map((l) => visibleText(l));
-    expect(labels[0]).toContain('Undercroft II');
+    expect(labels[0]).toContain('Undercroft floor 2');
     expect(labels[1]).toContain('Undercroft');
-    expect(labels[1]).toContain("The keeper's floor is cracked.");
+    expect(labels[1]).toContain('The floor boss stands on a cracked floor.');
     const lit = byClass(p.root, 'dmap-node').filter((n) =>
       (n.getAttribute('class') ?? '').includes('s-reachable'),
     );
@@ -371,14 +373,14 @@ describe('DungeonMap with the Undercroft', () => {
     const text = dialogText(p);
     expect(text).toContain('Carved door');
     expect(text).toContain(
-      'A carved door. Step through to add one room to the Undercroft: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.',
+      'A carved door. Step through to add one room to the first Undercroft floor: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.',
     );
     expect(byName(first(byRole(p.root, 'dialog')), 'button', /^Go to Carved door/)).toHaveLength(1);
   });
 
   it('says what a door did once walked through', () => {
     const walked = drawStage('door-walked', { initialOpen: 'f5l1' });
-    expect(dialogText(walked)).toContain('Added a room to the Undercroft.');
+    expect(dialogText(walked)).toContain('Added a room to the first Undercroft floor.');
     expect(dialogText(walked)).not.toContain('Step through');
   });
 
@@ -441,12 +443,12 @@ describe('DungeonMap with the Undercroft', () => {
     expect(text).toContain('The boss chest opened.');
     expect(text).toContain('Banked at once');
     expect(text).toContain('Cinder Charm');
-    expect(text).toContain('You went down into Undercroft 1.');
+    expect(text).toContain('You went down into Undercroft floor 1.');
     // The chest's loot is not counted twice: the fight itself added nothing to the pack.
     expect(text).not.toContain('Nothing went into the pack.');
   });
 
-  it("tells the story of a keeper that fell: the fight and the keeper's chest", () => {
+  it("tells the story of a floor boss that fell: the fight and the floor boss's chest", () => {
     const done = undercroftState('done');
     page = draw(
       <DungeonMap
@@ -456,7 +458,7 @@ describe('DungeonMap with the Undercroft', () => {
         initialOpen="u1f3l1"
       />,
     );
-    expect(dialogText(page)).toContain("The keeper's chest opened.");
+    expect(dialogText(page)).toContain("The floor boss's chest opened.");
   });
 });
 
@@ -489,9 +491,9 @@ describe('DungeonMap start markers', () => {
 });
 
 describe('DungeonMap way-down badge', () => {
-  it('puts a down arrow on the room boss from depth 8 and says so in its drawer', () => {
+  it('puts a down arrow on the floor boss from depth 8 and says so in its drawer', () => {
     const p = draw(<DungeonMap map={SAMPLE_MAP} state={null} depth={8} />);
-    const boss = first(byName(p.root, 'button', /^Room boss/));
+    const boss = first(byName(p.root, 'button', /^Floor boss/));
     expect(byClass(boss, 'dmap-descend')).toHaveLength(1);
     expect(byClass(p.root, 'dmap-descend')).toHaveLength(1);
     p.click(boss);
@@ -522,11 +524,11 @@ describe('DungeonMap way-down badge', () => {
         initialOpen="u1f3l1"
       />,
     );
-    const keeper = first(byName(p.root, 'button', /^Undercroft keeper/));
+    const keeper = first(byName(p.root, 'button', /^Undercroft floor boss/));
     expect(byClass(keeper, 'dmap-descend')).toHaveLength(1);
     expect(byClass(keeper, 'dmap-crack')).toHaveLength(1);
     expect(visibleText(first(byRole(p.root, 'dialog')))).toContain(
-      'A cracked floor: beat the keeper to go deeper still.',
+      'A cracked floor: beat the floor boss to go down another floor.',
     );
     page?.unmount();
     const plain = undercroftState('keeper');
@@ -538,7 +540,7 @@ describe('DungeonMap way-down badge', () => {
         depth={plain.depth}
       />,
     );
-    const plainKeeper = first(byName(q.root, 'button', /^Undercroft keeper/));
+    const plainKeeper = first(byName(q.root, 'button', /^Undercroft floor boss/));
     expect(byClass(plainKeeper, 'dmap-descend')).toHaveLength(0);
   });
 });

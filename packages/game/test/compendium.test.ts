@@ -17,7 +17,7 @@ import {
  * Sync check between shipped content and the dev-only compendium (`docs/compendium/`).
  *
  * Matching rule, one per kind:
- * - Species, destinations, raid bosses, dungeon foes and room bosses, room modifiers, keepsakes and
+ * - Species, destinations, raid bosses, dungeon foes and floor bosses, room modifiers, keepsakes and
  *   mystery-room events, gear bases,
  *   supplies, talents (the pools, the signatures and the held-back ones) and Boons and Omens (the
  *   planned ones too): the content's display
@@ -67,7 +67,7 @@ describe('compendium is in sync with shipped content', () => {
     expect(missingNames('bosses.md', content.bosses)).toEqual([]);
   });
 
-  it('has every dungeon foe and room boss in dungeon.md', () => {
+  it('has every dungeon foe and floor boss in dungeon.md', () => {
     expect(missingNames('dungeon.md', dungeonContent.foes)).toEqual([]);
   });
 

@@ -462,7 +462,7 @@ describe('the team stands in one row, left to right', () => {
   });
 });
 
-describe('every shipped foe, room boss and room modifier makes sense on one row of three', () => {
+describe('every shipped foe, floor boss and room modifier makes sense on one row of three', () => {
   const tough = (): FightSlot[] =>
     ['left', 'mid', 'right'].map((id, i) => ({
       ...slot(id, { hp: 1_000_000, atk: 1 + i, role: 'setter' }),
@@ -608,7 +608,7 @@ describe('the boss room: enrage and the landmark signature', () => {
     );
   });
 
-  it('gives the room boss its signature at landmark depths only, after its own moves', () => {
+  it('gives the floor boss its signature at landmark depths only, after its own moves', () => {
     const every = RULES.dungeon.landmarkEvery;
     const boss = room(2, bossFoe(), 100, 1);
     const ids = (depth: number | undefined, b = boss) =>
@@ -648,7 +648,7 @@ describe('the boss room: enrage and the landmark signature', () => {
     expect(buildRoomInput(oneRoom(foe()), normal, null).boss.gimmicks).toEqual([]);
   });
 
-  it('gives the signature to a room boss only: a normal foe never gains one', () => {
+  it('gives the signature to a floor boss only: a normal foe never gains one', () => {
     const normal = room(0, foe({ signature }), 100, 1);
     expect(
       buildRoomInput({ ...oneRoom(foe()), depth: RULES.dungeon.landmarkEvery }, normal, null).boss
@@ -672,7 +672,7 @@ describe('the boss room: enrage and the landmark signature', () => {
     );
   });
 
-  it('every shipped room boss has a signature, and announces it at the landmark depth', () => {
+  it('every shipped floor boss has a signature, and announces it at the landmark depth', () => {
     for (const f of dungeonContent.foes.filter((x) => x.kind === 'boss')) {
       expect(f.signature, f.id).toBeDefined();
       const result = simulateDungeon(

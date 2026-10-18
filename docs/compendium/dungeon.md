@@ -1,17 +1,17 @@
-# The daily dungeon: foes, room bosses, modifiers, the map, keepsakes and mystery rooms
+# The daily dungeon: foes, floor bosses, modifiers, the map, keepsakes and mystery rooms
 
-Status: 2026-10-18. Covers the foes, the room bosses and the room modifiers of the daily dungeon, and the map redesign (the map, the camp, the pack, keepsakes, mystery rooms and the Undercroft), as in-world things.
+Status: 2026-10-18. Covers the foes, the floor bosses and the room modifiers of the daily dungeon, and the map redesign (the map, the camp, the pack, keepsakes, mystery rooms and the Undercroft), as in-world things.
 
 Read `README.md` for the tags. The dungeon has no look brief in the shipped data, so every visual line here is `(compendium detail, not shipped)`.
 
-**Source of truth:** `dungeon-foes.json` (foes and room bosses: element, gimmicks and flavour line), `room-modifiers.json` (the modifiers' rules), `dungeon-keepsakes.json` (keepsakes), `dungeon-events.json` (mystery rooms), `glossary.json` (how they are explained to players), `docs/design/daily-dungeon.md` (the dungeon's first shape) and `docs/design/dungeon-paths.md` (the map, which replaces its three fixed rooms). The numbers stay in the data.
+**Source of truth:** `dungeon-foes.json` (foes and floor bosses: element, gimmicks and flavour line), `room-modifiers.json` (the modifiers' rules), `dungeon-keepsakes.json` (keepsakes), `dungeon-events.json` (mystery rooms), `glossary.json` (how they are explained to players), `docs/design/daily-dungeon.md` (the dungeon's first shape) and `docs/design/dungeon-paths.md` (the map, which replaces its three fixed rooms). The numbers stay in the data.
 
 ## The dungeon as a place
 
 - A **sealed, layered place** that each explorer enters alone, once a day, with a team of three in one row. `(content: glossary.json "dungeon", "dungeon-row"; design: daily-dungeon.md)`
-- A **map of rooms**, drawn once a day, from the door up to a room boss, with a camp halfway. Creatures keep their HP from room to room, and knocked-out creatures stay out until the camp. `(content: glossary.json "dungeon", "dungeon-map")`
+- A **map of rooms**, drawn once a day, from the door up to a floor boss, with a camp halfway. A **room** is one encounter on the map; a **floor** is the whole set of rooms at one depth, so the day's map is one floor. Creatures keep their HP from room to room, and knocked-out creatures stay out until the camp. `(content: glossary.json "dungeon", "dungeon-map")`
 - The **day's map is the same for everyone on the server.** Each fight room and the boss has a modifier. `(content: glossary.json "room-modifiers"; design: dungeon-paths.md)`
-- Depth: each full clear takes you one level deeper. Every seventh depth is a **landmark**. `(content: glossary.json "depth", "landmark")`
+- Depth: each full clear takes you one depth deeper. Every seventh depth is a **landmark**. `(content: glossary.json "depth", "landmark")`
 - **A supply from the dungeon:** a run that clears its first room carries one supply home, a lure, a map scrap, a lantern or a satchel. The first depths give plain ones; the deeper the run, the better the odds of a good or a great one. `(content: glossary.json "dungeon", "supplies")`
 
 **Compendium detail, not shipped** (place feel):
@@ -20,7 +20,7 @@ Read `README.md` for the tags. The dungeon has no look brief in the shipped data
 - _Climate:_ there is no sky. Each room has its own condition (see the modifiers below), so the dungeon's climate changes from room to room and day to day.
 - _Banner brief (for art):_ a stone stair going down into the dark, with a small lantern on the first step and the four element colours faintly on the walls, one wall per element. Palette: deep slate `#2b2d3a`, lantern gold `#f2b84b`, moss `#4f8a3c`, tide `#2a9d9a`, spark `#f6e05e`. Never draw a creature in the banner.
 - _Sensory:_ drip of water, the hum of sparks, warm stone, the smell of wet moss.
-- _Layout:_ the dungeon is a tall stair, not a corridor: floors stacked one on another, with passages that fork and meet. The first three floors climb to a camp, the next two climb on to the boss's hall. See "The map, the camp and the pack" below.
+- _Layout:_ the dungeon is a tall stair, not a corridor: landings stacked one on another, with passages that fork and meet. The first three landings climb to a camp, the next two climb on to the floor boss's hall. See "The map, the camp and the pack" below.
 
 ---
 
@@ -80,16 +80,16 @@ Foes have no turn order of their own: in the dungeon **your creatures always act
 
 ---
 
-## Room bosses
+## Floor bosses
 
-Four room bosses, one per element. Each is the last room's foe, has more HP and hits harder than the foes before it, and has its own trick. At a landmark depth it also gains a signature move, announced a round ahead. `(content: dungeon-foes.json, glossary.json "room-boss")`
+Four floor bosses, one per element. Each is the last room's foe on its floor, has more HP and hits harder than the foes before it, and has its own trick. At a landmark depth it also gains a signature move, announced a round ahead. `(content: dungeon-foes.json, glossary.json "floor-boss")`
 
-Each room boss is a smaller echo of a raid boss `(inferred)`. The raid bosses are in `bosses.md`.
+Each floor boss is a smaller echo of a raid boss `(inferred)`. The raid bosses are in `bosses.md`.
 
 ### Drowned Warden (Tide; Flood Gate, every third round, opens the gates on every row)
 
 - Shipped flavour `(content)`: "Guards a sunken door nobody has opened. It opens its own gates for you instead."
-- Compendium detail: a warden of the flooded corridor. It opens the gates for the team, which reads as a helpful boss. This is the dungeon's one "friendly" room boss `(inferred)`, which fits its opening gates.
+- Compendium detail: a warden of the flooded corridor. It opens the gates for the team, which reads as a helpful boss. This is the dungeon's one "friendly" floor boss `(inferred)`, which fits its opening gates.
 - Echo: the Tidal Colossus's Undertow and Great Wave `(inferred)`.
 - Landmark signature, **Sluice Surge** (every fourth round, marked a round ahead): the gates open on every row at once, harder than the usual Flood Gate. `(content: dungeon-foes.json)`
 
@@ -151,22 +151,22 @@ New with the map redesign. Read `docs/design/dungeon-paths.md` for the rules; th
 ### The map
 
 - The dungeon **rearranges itself overnight**. Each day its halls are laid out afresh, and everyone on the server climbs the same halls, with their own luck. `(design: dungeon-paths.md "The same for everyone on the server")`
-- Rooms sit on floors, with two or three on most floors and passages between them that fork and meet. A passage only goes up, and never crosses another. `(design)`
+- The day's map is one floor. Its rooms sit in rows, with two or three in most rows and passages between them that fork and meet. A passage only goes up, and never crosses another. `(design)`
 - A player picks which room to step into next, from the ones the passage allows. The map is shown whole before the run, the way a traveller can see a mountain before climbing it. `(design)`
 - _Look:_ a stack of lantern-lit landings joined by short stairs, drawn as dots and lines on a dark slate. Each kind of room has its own mark: crossed blades, a horned skull, a question mark, a chest, a campfire, a crown. `(design)` for the marks; the mood is `(compendium detail, not shipped)`.
 
 ### Room kinds
 
-| Kind        | In-world thing `(compendium detail, not shipped)`                                                                               |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **Fight**   | A normal dungeon foe in a room with a condition. As before. `(design)`                                                          |
-| **Elite**   | The same kind of foe, bigger and in a mood: a "Fierce" Puddle Imp, a "Fierce" Static Bat. It guards a keepsake. `(design)`      |
-| **Mystery** | A room with a small scene and two ways to answer it. See "Mystery rooms" below. `(design)`                                      |
-| **Cache**   | A basket, a chest or a sack that somebody left in a quiet room. Nothing guards it. The dungeon is generous that way. `(design)` |
-| **Camp**    | See below. `(design)`                                                                                                           |
-| **Boss**    | The room boss, at the top. At a landmark depth it is the landmark boss, as before. `(design)`                                   |
-| **Door**    | A carved door, from depth 8. No fight: stepping through adds a room to the Undercroft. See "The Undercroft" below. `(design)`   |
-| **Epic**    | The Undercroft's one-foe room at boss strength. See "The Undercroft" below. `(design)`                                          |
+| Kind        | In-world thing `(compendium detail, not shipped)`                                                                                         |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Fight**   | A normal dungeon foe in a room with a condition. As before. `(design)`                                                                    |
+| **Elite**   | The same kind of foe, bigger and in a mood: a "Fierce" Puddle Imp, a "Fierce" Static Bat. It guards a keepsake. `(design)`                |
+| **Mystery** | A room with a small scene and two ways to answer it. See "Mystery rooms" below. `(design)`                                                |
+| **Cache**   | A basket, a chest or a sack that somebody left in a quiet room. Nothing guards it. The dungeon is generous that way. `(design)`           |
+| **Camp**    | See below. `(design)`                                                                                                                     |
+| **Boss**    | The floor boss, at the top. At a landmark depth it is the landmark boss, as before. `(design)`                                            |
+| **Door**    | A carved door, from depth 8. No fight: stepping through adds a room to the first Undercroft floor. See "The Undercroft" below. `(design)` |
+| **Epic**    | The Undercroft's one-foe room at boss strength. See "The Undercroft" below. `(design)`                                                    |
 
 An elite is not a new creature. It is a foe "having a day": the same name with "Fierce" before it, never scary, only larger and louder `(inferred)`.
 
@@ -185,22 +185,22 @@ An elite is not a new creature. It is a foe "having a day": the same name with "
 
 ### The Undercroft
 
-A deeper, optional level below the room boss, for explorers who have passed the first landmark (depth 8 and on). New 2026-10-18. Read `docs/design/dungeon-paths.md` ("The Undercroft") for the rules; this section is the feel. `(content: glossary.json "undercroft", "carved-door", "cracked-floor", "epic-fight"; design)`
+A set of optional floors below the day's floor boss, for explorers who have passed the first landmark (depth 8 and on). New 2026-10-18. Read `docs/design/dungeon-paths.md` ("The Undercroft") for the rules; this section is the feel. `(content: glossary.json "undercroft", "carved-door", "cracked-floor", "epic-fight"; design)`
 
-- **What it is.** The room boss's hall has a stair at the back, and the stair goes down. Nobody built the Undercroft; the dungeon simply has more of itself underneath, older and a little grumpier. `(compendium detail, not shipped)`
-- **It is harder, and it says so.** The banner reads "Undercroft · foes are fiercer here". The foes are the same creatures as upstairs, only more awake `(inferred)`. A deeper level (below a cracked floor) says "fiercer still".
+- **What it is.** The floor boss's hall has a stair at the back, and the stair goes down. Nobody built the Undercroft; the dungeon simply has more of itself underneath, older and a little grumpier. `(compendium detail, not shipped)`
+- **It is harder, and it says so.** The banner reads "Undercroft floor 1 · foes are fiercer here". The foes are the same creatures as upstairs, only more awake `(inferred)`. A floor further down (below a cracked floor) says "fiercer still".
 - **Catching breath.** On the way down the team stops on the stair for a moment, and a little of their strength comes back. A creature that was knocked out gets back up, wobbly, with a tenth of its strength: it only needed a sit on the stair. The stair is the one place in the dungeon where nobody is ever hurried `(compendium detail, not shipped)`.
 - **The pack at risk.** Everything the team is carrying comes down with them. The satchel strap still holds, but only half of it, if the team is carried home `(design, in-world reading is compendium detail)`.
-- **Floors.** Floors of two rooms, side by side, with no way to cross from one to the other until a room that is on its own. More landmarks passed means a longer stair `(design)`.
-- **The keeper.** The Undercroft's keeper is a room boss, the same kind that guards the hall above, with the same charged move it has at a landmark. It is not "the real boss". It is the one who was left in charge `(inferred)`. Its chest is better than the hall's.
+- **Rooms.** Each Undercroft floor is rooms in pairs, side by side, with no way to cross from one to the other until a room that is on its own. More landmarks passed means a longer first floor `(design)`.
+- **The floor boss.** Each Undercroft floor ends in its own floor boss, the same kind that guards the hall above, with the same charged move it has at a landmark. It is not "the real boss". It is the one who was left in charge `(inferred)`. Its chest is better than the hall's.
 
-**Carved door.** A door with no handle, carved with a pattern that nobody can read twice the same way. It stands in the upper halls only (depth 8 and on), and it is never guarded. Stepping through it fights nothing. It asks the Undercroft for one more room, and the Undercroft decides which: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight, never a boss. The player is told only that list, and finds out on the stair `(design; the door's patterns are compendium detail, not shipped)`.
+**Carved door.** A door with no handle, carved with a pattern that nobody can read twice the same way. It stands in the upper halls only (depth 8 and on), and it is never guarded. Stepping through it fights nothing. It asks the first Undercroft floor for one more room, and the Undercroft decides which: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight, never a boss. The player is told only that list, and finds out on the stair `(design; the door's patterns are compendium detail, not shipped)`.
 
 **Epic fight.** A single room with one foe in a very large mood: the same kind of foe as in a normal room, at boss strength. Shown as "Fierce <name>". It leaves an Essence, two scrap and a keepsake `(design)`.
 
 **Camp (Undercroft).** The same small fire as upstairs, set on a landing of the stair. The only place down there where the team can go home `(design)`.
 
-**Cracked floor.** Now and then the keeper's hall has a crack across its floor, with cold air coming up through it. It means there is a further level down, with more of the same and a new keeper `(design)`. A run goes down at most three levels, which is as deep as the stair goes `(compendium detail, not shipped)`.
+**Cracked floor.** Now and then an Undercroft floor boss's hall has a crack across its floor, with cold air coming up through it. It means there is another floor down, with more of the same and a new floor boss `(design)`. A run goes down at most three Undercroft floors, which is as deep as the stair goes `(compendium detail, not shipped)`.
 
 ---
 

@@ -37,7 +37,7 @@ import { supplyKindOf } from './trip-view';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 
-/** A room panel's picture is 64 px (a foe) or 72 px (a room boss), so three fit a 390 px phone. */
+/** A room panel's picture is 64 px (a foe) or 72 px (a floor boss), so three fit a 390 px phone. */
 const PANEL_SCALE = { foe: 4, boss: 3 } as const;
 
 interface Props {

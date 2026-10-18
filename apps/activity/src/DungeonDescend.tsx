@@ -46,7 +46,7 @@ export function nothingBanked(banked: Descent['banked']): boolean {
 }
 
 /**
- * The descent card, after the room boss (or an Undercroft keeper with a cracked floor) has fallen: what
+ * The descent card, after the floor boss (or an Undercroft floor boss on a cracked floor) has fallen: what
  * is banked now (safe), what stays at risk (the pack), what the Undercroft below is like, and two choices:
  * Descend, or head home with everything. It looks like the camp's card. Names and numbers are the
  * server's; picking is an act the screen above sends.

@@ -211,7 +211,7 @@ describe('the pre-run card with the real map', () => {
     // One button per room, each named for what it is.
     const labels = byClass(root, 'dmap-node').map((n) => n.getAttribute('aria-label') ?? '');
     expect(labels).toHaveLength(nodes.length);
-    expect(labels.some((l) => l.startsWith('Room boss:'))).toBe(true);
+    expect(labels.some((l) => l.startsWith('Floor boss:'))).toBe(true);
     expect(labels.some((l) => l.startsWith('Camp.'))).toBe(true);
     // The foe names come from the server's map, in each room's label.
     const boss = nodes.find((n) => n.kind === 'boss');
@@ -282,7 +282,7 @@ describe('a move into a fight, with the real answer', () => {
     expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
     expect(visibleText(root)).toContain('In your pack:');
     expect(answer.state.at).toBe('f0l0');
-    expect(visibleText(root)).toContain('Floor 1 / 7');
+    expect(visibleText(root)).toContain('Room 1 / 7');
   });
 });
 
@@ -528,7 +528,7 @@ describe('the end of a run, with the real answers', () => {
     await playOut(root);
     const text = visibleText(root);
     expect(text).toContain('Defeated: your pack was empty');
-    expect(text).toContain('Beat the room boss to go deeper.');
+    expect(text).toContain('Beat the floor boss to go deeper.');
     expect(finished).toHaveBeenCalledTimes(1);
   });
 });
@@ -705,7 +705,9 @@ describe('the Undercroft, with the real answers', () => {
 
     // The carved door says what it could add; walking through says only that a room was added.
     page?.click(room(ahead, 'f5l1', root));
-    expect(visibleText(dialogOf(root))).toContain('Step through to add one room to the Undercroft');
+    expect(visibleText(dialogOf(root))).toContain(
+      'Step through to add one room to the first Undercroft floor',
+    );
     page?.click(button(root, /^Go/));
     await settle();
     expect(sentAct(0).body).toEqual(body('dungeon-act-door'));
@@ -713,10 +715,10 @@ describe('the Undercroft, with the real answers', () => {
     expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
     const walked = parseDungeonAct(actDoor).state;
     page?.click(room(walked, 'f5l1', root));
-    expect(visibleText(dialogOf(root))).toContain('Added a room to the Undercroft.');
+    expect(visibleText(dialogOf(root))).toContain('Added a room to the first Undercroft floor.');
     page?.click(button(root, 'Close'));
 
-    // The room boss: its fight plays, then the descent card takes the place of the map.
+    // The floor boss: its fight plays, then the descent card takes the place of the map.
     await goTo(walked, 'f6l1', root);
     expect(sentAct(1).body).toEqual(body('dungeon-act-descend-pending'));
     expect(byClass(root, 'dungeon-playback')).toHaveLength(1);
@@ -729,11 +731,11 @@ describe('the Undercroft, with the real answers', () => {
     expect(card).toContain('Cinder Charm');
     expect(card).toContain('Still at risk');
     expect(byName(root, 'span', 'Essence: 3')).toHaveLength(2);
-    expect(card).toContain('4 rooms with a boss in the end. Foes are from depth level 15.');
+    expect(card).toContain('4 rooms with a floor boss at the end. Foes are from depth level 15.');
     expect(card).toContain(
       'Your creatures catch their breath and heal 20% HP. Downed creatures revive to 10% HP.',
     );
-    expect(card).toContain('Depth 15 · The room boss is down');
+    expect(card).toContain('Depth 15 · The floor boss is down');
     expect(byName(root, 'button', 'Descend')).toHaveLength(1);
     expect(byName(root, 'button', 'Head Home')).toHaveLength(1);
 
@@ -744,8 +746,8 @@ describe('the Undercroft, with the real answers', () => {
     expect(byClass(root, 'dungeon-descend')).toHaveLength(0);
     expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
     const text = visibleText(root);
-    expect(text).toContain('Undercroft 1 · At the entrance');
-    expect(text).toContain('Undercroft · foes are fiercer here');
+    expect(text).toContain('Undercroft floor 1 · At the entrance');
+    expect(text).toContain('Undercroft floor 1 · foes are fiercer here');
     const down = parseDungeonAct(actDescend).state;
     const nodes = byClass(root, 'dmap-node');
     expect(nodes).toHaveLength(
@@ -775,11 +777,11 @@ describe('the Undercroft, with the real answers', () => {
     expect(visibleText(root)).toContain('Home safe with your whole pack');
   });
 
-  it('the keeper: the fight plays, then "Cleared! ... Undercroft 1 cleared" with the levels on the route map', async () => {
+  it('the keeper: the fight plays, then "Cleared! ... 1 Undercroft floor cleared" with the levels on the route map', async () => {
     const keeper = parseDungeonAct(actKeeper);
     const open = undercroftState('keeper');
     const root = await openRunAt(open, [keeper]);
-    expect(visibleText(root)).toContain('Undercroft 1 · Floor 3 / 4');
+    expect(visibleText(root)).toContain('Undercroft floor 1 · Room 3 / 4');
     await goTo(open, 'u1f3l1', root);
     expect(sentAct().body).toEqual({
       runId: bodyOf('dungeon-act-keeper').runId,
@@ -788,14 +790,14 @@ describe('the Undercroft, with the real answers', () => {
     });
     expect(byClass(root, 'dungeon-playback')).toHaveLength(1);
     // The banner names the level and its floors, and the keeper as the keeper.
-    expect(visibleText(root)).toContain('Undercroft 1 · Floor 4 / 4');
+    expect(visibleText(root)).toContain('Undercroft floor 1 · Room 4 / 4');
     await playOut(root);
     const text = visibleText(root);
-    expect(text).toContain('Cleared! Depth 14 to 15 · Undercroft 1 cleared');
+    expect(text).toContain('Cleared! Depth 14 to 15 · 1 Undercroft floor cleared');
     expect(text).toMatch(/Pack\s*:\s*all kept/);
     // The fights of the Undercroft are on the strip, the keeper last.
     expect(byClass(root, 'room-panel')).toHaveLength(7);
-    expect(visibleText(byClass(root, 'room-panel')[6] as FakeElement)).toContain('Keeper');
+    expect(visibleText(byClass(root, 'room-panel')[6] as FakeElement)).toContain('Floor boss');
     // The route map has the level above the day's map, with every room the run walked visited.
     page?.click(button(root, 'Map'));
     expect(byClass(root, 'dmap-node')).toHaveLength(
@@ -805,10 +807,10 @@ describe('the Undercroft, with the real answers', () => {
       (n.getAttribute('class') ?? '').includes('s-visited'),
     );
     expect(visited).toHaveLength(keeper.state.path.length);
-    // The keeper's chest says what it paid.
-    page?.click(button(root, /^Undercroft keeper: Slag Tyrant\./));
+    // The floor boss's chest says what it paid.
+    page?.click(button(root, /^Undercroft floor boss: Slag Tyrant\./));
     const drawer = visibleText(dialogOf(root));
-    expect(drawer).toContain("The keeper's chest opened.");
+    expect(drawer).toContain("The floor boss's chest opened.");
     expect(drawer).toContain('Cleared');
   });
 });

@@ -137,7 +137,7 @@ describe('generateDungeonMap', () => {
     }
   });
 
-  it('fills the rooms: real foes, none twice on a floor, three elements, events once, a room boss', () => {
+  it('fills the rooms: real foes, none twice on a floor, three elements, events once, a floor boss', () => {
     for (const map of maps) {
       const elements = new Set<string>();
       const events = new Set<string>();

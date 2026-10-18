@@ -95,7 +95,7 @@ describe('the icons of the room modifiers', () => {
 });
 
 const opens = [{ icon: 'map-descend', text: 'Undercroft opens' }];
-const plus1 = [{ icon: 'map-descend', text: 'Undercroft +1 floor' }];
+const plus1 = [{ icon: 'map-descend', text: 'Undercroft +1 room' }];
 const texts = (depth: number): string[] => stepUnlocks(depth).map((u) => u.text);
 
 describe('the landmark depth track', () => {
@@ -124,7 +124,7 @@ describe('the landmark depth track', () => {
     expect(track.steps[track.current]?.unlocks).toEqual([]);
   });
 
-  it('shows the Undercroft opening at the depth from the rules, then a floor more per landmark', () => {
+  it('shows the Undercroft opening at the depth from the rules, then a room more per landmark', () => {
     const from = RULES.dungeon.undercroft.fromDepth;
     expect(from).toBe(8);
     expect(undercroftUnlocks(from - 1)).toEqual([]);
@@ -137,19 +137,19 @@ describe('the landmark depth track', () => {
     expect(undercroftUnlocks(16)).toEqual([]);
   });
 
-  it('stops adding floors at the most the rules allow', () => {
+  it('stops adding rooms at the most the rules allow', () => {
     const u = RULES.dungeon.undercroft;
     expect(undercroftFloorsAt(7)).toBe(0);
     expect(undercroftFloorsAt(8)).toBe(u.baseFloors);
     expect(undercroftFloorsAt(15)).toBe(u.baseFloors + u.perLandmark);
     expect(undercroftFloorsAt(1000)).toBe(u.maxFloors);
-    // The depth where the cap is reached is the last that adds a floor.
+    // The depth where the cap is reached is the last that adds a room.
     let last = 0;
     for (let d = 8; d < 200; d++) if (undercroftUnlocks(d).length > 0) last = d;
     expect(undercroftFloorsAt(last)).toBe(u.maxFloors);
     expect(undercroftUnlocks(last + 7)).toEqual([]);
-    // The landmark just before it (depth 35) beats into the last floor; the next one adds none.
-    expect(texts(last - 1).join()).toContain('Undercroft +1 floor');
+    // The landmark just before it (depth 35) beats into the last room; the next one adds none.
+    expect(texts(last - 1).join()).toContain('Undercroft +1 room');
     expect(texts(last + 6).join()).not.toContain('Undercroft');
   });
 
@@ -158,14 +158,14 @@ describe('the landmark depth track', () => {
       (depthTrack(depth).steps[index]?.unlocks ?? []).map((u) => u.text);
     // Depth 7: the landmark itself, whose boss opens the Undercroft; the next landmark is 14.
     expect(at(7, 0)).toEqual(['Gear drop', 'Bonus Essence', 'Undercroft opens']);
-    expect(at(7, 1)).toEqual(['Gear drop', 'Bonus Essence', 'Undercroft +1 floor']);
+    expect(at(7, 1)).toEqual(['Gear drop', 'Bonus Essence', 'Undercroft +1 room']);
     // Depth 8: it just opened.
     expect(at(8, 0)).toEqual(['Undercroft opens']);
-    expect(at(8, 1)).toEqual(['Gear drop', 'Bonus Essence', 'Undercroft +1 floor']);
+    expect(at(8, 1)).toEqual(['Gear drop', 'Bonus Essence', 'Undercroft +1 room']);
     // Depth 14 and 15.
-    expect(at(14, 0)).toEqual(['Gear drop', 'Bonus Essence', 'Undercroft +1 floor']);
-    expect(at(15, 0)).toEqual(['Undercroft +1 floor']);
-    expect(at(15, 1)).toEqual(['Gear drop', 'Bonus Essence', 'Undercroft +1 floor']);
+    expect(at(14, 0)).toEqual(['Gear drop', 'Bonus Essence', 'Undercroft +1 room']);
+    expect(at(15, 0)).toEqual(['Undercroft +1 room']);
+    expect(at(15, 1)).toEqual(['Gear drop', 'Bonus Essence', 'Undercroft +1 room']);
     // Below the Undercroft, the first landmark shows no Undercroft.
     expect(at(3, 1)).toEqual(['Gear drop', 'Bonus Essence', 'Undercroft opens']);
   });

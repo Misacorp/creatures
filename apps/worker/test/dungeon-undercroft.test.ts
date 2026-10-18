@@ -202,7 +202,7 @@ const summaryOf = (ctx: CoreContext, runId: string) =>
     path: string[];
   };
 
-describe('the descent after the room boss', () => {
+describe('the descent after the floor boss', () => {
   it('ends the run cleared as before below depth 8 (the Undercroft is closed)', async () => {
     await runCore(
       nextGuild(),
@@ -380,7 +380,10 @@ describe('going down', () => {
         const down = res.body.state;
         expect(down).toMatchObject({ level: 1, status: 'active', pending: null, at: null });
         const map = levelMap(down);
-        expect(map).toMatchObject({ level: 1, label: 'Undercroft · foes are fiercer here' });
+        expect(map).toMatchObject({
+          level: 1,
+          label: 'Undercroft floor 1 · foes are fiercer here',
+        });
         expect(map.nodes.every((n) => /^u1f\d+l\d$/.test(n.id))).toBe(true);
         expect(down.undercroft?.maps).toHaveLength(1);
         // Reachable across levels: the new map's floor 0, and nothing of the main map.
@@ -834,7 +837,7 @@ describe('the keeper and its chest', () => {
         const level2 = await descend(p, second);
         expect(level2).toMatchObject({ level: 2 });
         expect(levelMap(level2)).toMatchObject({ level: 2, floors: u.deeperFloors + 1 });
-        expect(levelMap(level2).label).toContain('Undercroft II');
+        expect(levelMap(level2).label).toContain('Undercroft floor 2');
         expect(level2.undercroft?.maps).toHaveLength(2);
         expect(level2.reachable.every((id) => id.startsWith('u2'))).toBe(true);
         setCrack(ctx, state.id, 2, true);

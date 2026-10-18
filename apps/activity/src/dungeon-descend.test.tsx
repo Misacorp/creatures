@@ -82,7 +82,7 @@ describe('DungeonDescend', () => {
     expect(text).not.toContain('In your pack:');
     expect(text).toContain('The Undercroft');
     expect(text).not.toContain('foes are fiercer');
-    expect(text).toContain('4 rooms with a boss in the end. Foes are from depth level 15.');
+    expect(text).toContain('4 rooms with a floor boss at the end. Foes are from depth level 15.');
     expect(text).toContain(
       'Your creatures catch their breath and heal 20% HP. Downed creatures revive to 10% HP.',
     );
@@ -119,9 +119,9 @@ describe('DungeonDescend', () => {
     });
     const text = visibleText(p.root);
     expect(text).toContain('The floor cracks open');
-    expect(text).toContain('An even deeper Undercroft waits. Do you dare delve deeper?');
+    expect(text).toContain('Another floor waits below. Do you dare delve deeper?');
     expect(text).toContain('Nothing new this time.');
     expect(text).toContain('Your pack is empty, so there is nothing to lose.');
-    expect(text).toContain('3 rooms with a boss in the end. Foes are from depth level 16.');
+    expect(text).toContain('3 rooms with a floor boss at the end. Foes are from depth level 16.');
   });
 });

@@ -26,7 +26,7 @@ No real-time backend is needed.
 - **The pre-run choice** replaces live input, since there is none: the order of the row. (The basic ability pick and the fire rounds were removed in UX pass 1: unlocked creature abilities fire at their default round.)
 
 - **Dungeon:**
-  - A short chain of **3 rooms**, generated from the seed: two encounters, then a room boss.
+  - A short chain of **3 rooms**, generated from the seed: two encounters, then a floor boss.
   - Each room is a small fight against content-defined dungeon foes (new content type, schema-validated), with an element, gimmicks and an HP pool (no turn order: see above).
   - **Creature HP carries over between rooms**, and knocked-out creatures stay out, so order and guards matter.
   - Each room also rolls a **room modifier** from content, shown before the run: for example "Flooded: Tide +20%", "Echoing: Guards and supports +50%", "Dark: crits +5%", "Thorns: the foe turns the first reaction of each round back on your team". There are 8, three are rolled per day, all different.

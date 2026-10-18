@@ -92,7 +92,7 @@ describe('the strip of an open run', () => {
   it('shows where the run is, the row with its HP, the keepsakes and the pack at risk', () => {
     const { root } = draw(<DungeonRunStrip state={sampleStateMid()} />);
     const text = visibleText(root);
-    expect(text).toContain('Depth 3 · Floor 2 / 7');
+    expect(text).toContain('Depth 3 · Room 2 / 7');
     // The row, left to right, with HP in words; the third creature is knocked out.
     expect(byClass(root, 'run-tile')).toHaveLength(3);
     expect(text).toContain('Sproutle');
@@ -447,7 +447,7 @@ describe('the results of a path run', () => {
     const defeated = visibleText(root);
     expect(defeated).toContain('Defeated: half your pack made it home');
     expect(defeated).toMatch(/Pack\s*:\s*half kept/);
-    expect(defeated).toContain('Still at depth 3. Beat the room boss to go deeper.');
+    expect(defeated).toContain('Still at depth 3. Beat the floor boss to go deeper.');
     // What was found is struck and dim before what came home; spoken as found and kept.
     expect(find(root, (e) => e.localName === 's').map((e) => visibleText(e))).toEqual(['3', '3']);
     expect(byName(root, 'span', 'Bait: found 3, kept 2')).toHaveLength(1);
@@ -900,10 +900,10 @@ describe('the banner of an elite fight', () => {
     expect(banner).toBeDefined();
     const text = visibleText(banner as FakeElement);
     expect(text).toContain('FIGHT');
-    expect(text).toContain('Floor 3 / 7');
+    expect(text).toContain('Room 3 / 7');
     expect(text).toContain('Elite');
     expect(text).toContain('Fierce Bramble Hound');
-    expect(visibleText(root)).toContain('Floor 3 / 7');
+    expect(visibleText(root)).toContain('Room 3 / 7');
   });
 
   it('is a plain fight banner for an ordinary room', () => {
@@ -1006,7 +1006,7 @@ describe('the pre-run card', () => {
     expect(text).not.toContain('beat the boss to descend');
   });
 
-  it('puts the way-down badge on the room boss from depth 8, and not before', () => {
+  it('puts the way-down badge on the floor boss from depth 8, and not before', () => {
     expect(byClass(prerun(sampleToday({ depth: 8 })), 'dmap-descend')).toHaveLength(1);
     page?.unmount();
     page = null;

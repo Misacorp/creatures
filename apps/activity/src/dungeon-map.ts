@@ -5,7 +5,7 @@
  * Text is plain; names come from the server and are rendered as text only.
  *
  * The picture is a vertical map in a fixed coordinate space (`MAP_WIDTH` wide, like an SVG viewBox) that
- * the stylesheet scales to the width of the screen: the room boss at the top, the entrance floor at the
+ * the stylesheet scales to the width of the screen: the floor boss at the top, the entrance floor at the
  * bottom, three lanes across. At 320 px (the narrowest phone) one unit is one pixel, so every room
  * button of `MIN_NODE` units is at least 44 px there, and bigger on wider screens.
  */
@@ -164,13 +164,13 @@ export interface StackLayout extends MapLayout {
   bands: LaidBand[];
 }
 
-/** The label of an Undercroft level: the server's own, or a plain one when it sent none. */
+/** The label of an Undercroft floor: the server's own, or a plain one when it sent none. */
 export function levelLabel(map: Pick<DungeonMapView, 'level' | 'label'>): string {
-  return map.label ?? `Undercroft ${String(map.level ?? 1)}`;
+  return map.label ?? `Undercroft floor ${String(map.level ?? 1)}`;
 }
 
 /**
- * The day's map with the Undercroft levels drawn so far stacked above its room boss (the map grows
+ * The day's map with the Undercroft levels drawn so far stacked above its floor boss (the map grows
  * upward): each level is laid out like the day's map (its own entrance floor at the bottom, its keeper
  * at the top), the highest level on top, with a seam between two levels that holds the label of the one
  * above. Without a level it is the day's map exactly as `mapLayout` draws it. A level's `level` number does not matter: the order of the
@@ -257,7 +257,7 @@ export function startMarkers(layout: Pick<MapLayout, 'nodes'>, level: number): S
 // --- Where the way down is ---
 
 /**
- * The rooms that carry the descent badge: the room boss when the player's depth opens the Undercroft
+ * The rooms that carry the descent badge: the floor boss when the player's depth opens the Undercroft
  * (`undercroftOpen`; no depth given: none), and every Undercroft keeper whose floor is cracked (beating it
  * offers another way down), while the way down has not been taken (no level below it is drawn yet).
  * `levels[0]` is the day's map.
@@ -413,7 +413,7 @@ export function foeDisplayName(node: Pick<DungeonMapNode, 'foe'>): string {
   return foe.elite && !foe.name.startsWith('Fierce ') ? `Fierce ${foe.name}` : foe.name;
 }
 
-/** The element that tints a room (fights, elites and the room boss), or null. */
+/** The element that tints a room (fights, elites and the floor boss), or null. */
 export function nodeElement(node: Pick<DungeonMapNode, 'kind' | 'foe'>): Element | null {
   return node.kind === 'fight' ||
     node.kind === 'elite' ||
@@ -428,7 +428,7 @@ export function nodeGlyph(kind: DungeonNodeKind): string {
   return `map-${kind}`;
 }
 
-/** True for the keeper of an Undercroft level: a room boss on an Undercroft map. */
+/** True for the keeper of an Undercroft level: a floor boss on an Undercroft map. */
 export function isKeeper(node: Pick<DungeonMapNode, 'id' | 'kind'>): boolean {
   return node.kind === 'boss' && nodeLevel(node.id) > 0;
 }
@@ -440,7 +440,7 @@ export function nodeGlyphOf(node: Pick<DungeonMapNode, 'id' | 'kind'>): string {
 
 /**
  * A short label for a room: "Fight: Puddle Imp, Tide", "Fierce Moss Lurker (elite)", "Mystery room",
- * "Cache", "Camp", "Room boss: Coil Baron". It names what the room is, not whether the run can go there
+ * "Cache", "Camp", "Floor boss: Coil Baron". It names what the room is, not whether the run can go there
  * (`nodeAriaLabel` adds that).
  */
 export function nodeLabel(node: DungeonMapNode): string {
@@ -459,8 +459,9 @@ export function nodeLabel(node: DungeonMapNode): string {
     case 'camp':
       return 'Camp';
     case 'boss':
-      if (isKeeper(node)) return name === '' ? 'Undercroft keeper' : `Undercroft keeper: ${name}`;
-      return name === '' ? 'Room boss' : `Room boss: ${name}`;
+      if (isKeeper(node))
+        return name === '' ? 'Undercroft floor boss' : `Undercroft floor boss: ${name}`;
+      return name === '' ? 'Floor boss' : `Floor boss: ${name}`;
     case 'door':
       return 'Carved door';
     case 'epic':
@@ -478,7 +479,7 @@ const STATUS_WORDS: Readonly<Record<NodeStatus, string>> = {
   preview: '',
 };
 
-/** The words for a keeper whose floor is cracked. */
+/** The words for a floor boss on a cracked floor. */
 export const CRACKED_WORD = 'Cracked floor';
 
 /** The words for the room where the run was lost. */
@@ -487,7 +488,7 @@ export const LOST_WORD = 'You were defeated here';
 export const DESCENT_WORD = 'The way down';
 
 interface AriaExtras {
-  /** The keeper's floor is cracked. */
+  /** The Undercroft floor boss stands on a cracked floor. */
   crack?: boolean;
   /** The room's fall opens the way down into the Undercroft. */
   descent?: boolean;
@@ -524,7 +525,7 @@ export function nodeTitle(node: Pick<DungeonMapNode, 'id' | 'kind'>): string {
     case 'camp':
       return 'Camp';
     case 'boss':
-      return isKeeper(node) ? 'Undercroft keeper' : 'Room boss';
+      return isKeeper(node) ? 'Undercroft floor boss' : 'Floor boss';
     case 'door':
       return 'Carved door';
     case 'epic':
@@ -538,10 +539,10 @@ export const CAMP_LINE =
   'Rest, swap a creature or take a keepsake, then push on or head home with your pack.';
 /** A carved door: what stepping through could add (the six kinds), never which. */
 export const DOOR_LINE =
-  'A carved door. Step through to add one room to the Undercroft: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.';
-/** A keeper whose floor is cracked. */
-export const CRACK_LINE = 'A cracked floor: beat the keeper to go deeper still.';
-/** The room boss, when beating it will let the player descend. */
+  'A carved door. Step through to add one room to the first Undercroft floor: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.';
+/** A floor boss on a cracked floor. */
+export const CRACK_LINE = 'A cracked floor: beat the floor boss to go down another floor.';
+/** The day's floor boss, when beating it will let the player descend. */
 export const DESCEND_LINE = 'Beat it to descend into the Undercroft.';
 /** The line of every room of the Undercroft that says it is harder. */
 export const FIERCER_LINE = 'The Undercroft · foes are fiercer here.';

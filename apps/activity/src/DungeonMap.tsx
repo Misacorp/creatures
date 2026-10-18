@@ -28,13 +28,13 @@ interface Props {
   /** The day's map. */
   map: DungeonMapView;
   /**
-   * The Undercroft levels drawn so far, in order (`state.undercroft.maps`): stacked above the room boss in a
+   * The Undercroft levels drawn so far, in order (`state.undercroft.maps`): stacked above the floor boss in a
    * darker palette, each under a band with its label. Absent or empty: the day's map alone.
    */
   undercroft?: readonly DungeonMapView[] | undefined;
   /**
-   * The player's depth. From the depth that opens the Undercroft the room boss wears a small down-arrow badge
-   * (beating it lets the player descend). Absent: no badge on the room boss.
+   * The player's depth. From the depth that opens the Undercroft the floor boss wears a small down-arrow badge
+   * (beating it lets the player descend). Absent: no badge on the floor boss.
    */
   depth?: number | undefined;
   /**
@@ -56,10 +56,10 @@ const PERCENT = (n: number, of: number): string =>
   `${String(Math.round((n / of) * 10_000) / 100)}%`;
 
 /**
- * The day's map: a vertical picture with the room boss at the top and the entrance floor at the bottom. Once
+ * The day's map: a vertical picture with the floor boss at the top and the entrance floor at the bottom. Once
  * the run has gone down, the Undercroft levels it drew stand above the boss (the map grows upward), each in a
- * darker band with its label, a keeper with a pale crown (and a crack mark on a cracked floor); the room
- * boss (from the depth that opens the Undercroft) and a cracked keeper wear a down-arrow badge; a run in
+ * darker band with its label, its floor boss with a pale crown (and a crack mark on a cracked floor); the floor
+ * boss (from the depth that opens the Undercroft) and a cracked-floor boss wear a down-arrow badge; a run in
  * the Undercroft is lit across the levels by the server's own list of rooms it may go to.
  * One SVG layer draws the paths (gold where the run walked, bright where it may go next, dim elsewhere);
  * every room is a real round button on top of it (so it takes the focus and has a label), with the icon
@@ -83,7 +83,7 @@ export function DungeonMap({
 }: Props) {
   const levels = useMemo(() => [map, ...(undercroft ?? [])], [map, undercroft]);
   const layout = useMemo(() => stackLayout(map, undercroft ?? []), [map, undercroft]);
-  // The way down: the room boss at a depth that opens the Undercroft, and every cracked keeper.
+  // The way down: the floor boss at a depth that opens the Undercroft, and every cracked-floor boss.
   const descent = useMemo(() => descentRooms(levels, depth), [levels, depth]);
   // Before the first move (the preview, or a run at an entrance) a green triangle under each entrance room.
   const entrance = startLevel(state);
@@ -100,7 +100,7 @@ export function DungeonMap({
   );
   const placed = new Map<string, LaidNode>(layout.nodes.map((n) => [n.id, n]));
   const camp = layout.nodes.find((n) => n.kind === 'camp' && n.level === 0);
-  // The keepers whose floor is cracked.
+  // The floor bosses on a cracked floor.
   const cracked = useMemo(
     () =>
       new Set(
@@ -132,8 +132,8 @@ export function DungeonMap({
         role="group"
         aria-label={
           deeper
-            ? "Dungeon map. The entrance is at the bottom, the room boss above it, then the Undercroft's levels going up."
-            : 'Dungeon map. The entrance is at the bottom, the room boss at the top.'
+            ? "Dungeon map. The entrance is at the bottom, the floor boss above it, then the Undercroft's floors going up."
+            : 'Dungeon map. The entrance is at the bottom, the floor boss at the top.'
         }
         ref={cssVars({ '--dm-ratio': `${String(layout.width)} / ${String(layout.height)}` })}
       >
@@ -182,7 +182,9 @@ export function DungeonMap({
             ref={cssVars({ '--y': PERCENT(band.labelY, layout.height) })}
           >
             {band.label}
-            {band.crack && <span class="visually-hidden">. The keeper's floor is cracked.</span>}
+            {band.crack && (
+              <span class="visually-hidden">. The floor boss stands on a cracked floor.</span>
+            )}
           </p>
         ))}
         <ol class="dmap-nodes">

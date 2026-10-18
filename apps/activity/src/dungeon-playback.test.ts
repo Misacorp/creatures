@@ -251,7 +251,7 @@ describe('the room strip of the end report', () => {
   it('has one panel per room, in order, with the foe, the modifier and the state', () => {
     const strip = roomStrip(cleared);
     expect(strip.map((r) => r.index)).toEqual([0, 1, 2]);
-    expect(strip.map((r) => r.title)).toEqual(['Room 1', 'Room 2', 'Room boss']);
+    expect(strip.map((r) => r.title)).toEqual(['Room 1', 'Room 2', 'Floor boss']);
     expect(strip.map((r) => r.kind)).toEqual(['foe', 'foe', 'boss']);
     expect(strip.map((r) => r.foeId)).toEqual(cleared.rooms.map((r) => r.foe.id));
     expect(strip.every((r) => r.state === 'cleared' && r.banner === 'CLEARED')).toBe(true);
@@ -391,12 +391,12 @@ describe('the banner over the stage when a room opens', () => {
     });
   });
 
-  it('calls the last room the room boss, and says it all in one sentence', () => {
+  it('calls the last room the floor boss, and says it all in one sentence', () => {
     const view = roomIntroView(room(2, 'boss'), 3);
-    expect(view.heading).toBe('ROOM BOSS');
+    expect(view.heading).toBe('FLOOR BOSS');
     expect(view.boss).toBe(true);
     expect(view.spoken).toBe(
-      'Room 3 / 3, room boss: Puddle Imp. Flooded: Tide creatures hit 20% harder.',
+      'Room 3 / 3, floor boss: Puddle Imp. Flooded: Tide creatures hit 20% harder.',
     );
   });
 
@@ -601,7 +601,7 @@ describe('the fights of a path', () => {
     const fight = roomIntroView(room, 7);
     expect(fight).toMatchObject({
       heading: 'FIGHT',
-      place: 'Floor 1 / 7',
+      place: 'Room 1 / 7',
       elite: false,
       boss: false,
       foeName: 'Bramble Hound',
@@ -609,18 +609,18 @@ describe('the fights of a path', () => {
     const elite = roomIntroView({ ...room, node: 'f2l1', elite: true }, 7);
     expect(elite).toMatchObject({
       heading: 'FIGHT',
-      place: 'Floor 3 / 7',
+      place: 'Room 3 / 7',
       elite: true,
       foeName: 'Fierce Bramble Hound',
     });
-    expect(elite.spoken).toContain('Floor 3 / 7, elite: Fierce Bramble Hound.');
+    expect(elite.spoken).toContain('Room 3 / 7, elite: Fierce Bramble Hound.');
   });
 
   it('names the boss room of a path by its floor', () => {
     const boss = roomIntroView({ ...room, kind: 'boss', node: 'f6l1' }, 7);
-    expect(boss.heading).toBe('ROOM BOSS');
-    expect(boss.place).toBe('Floor 7 / 7');
-    expect(boss.spoken).toContain('Floor 7 / 7, room boss');
+    expect(boss.heading).toBe('FLOOR BOSS');
+    expect(boss.place).toBe('Room 7 / 7');
+    expect(boss.spoken).toContain('Room 7 / 7, floor boss');
   });
 
   it('puts "Fierce" on the stage boss and in the result line of an elite, once', () => {
@@ -654,7 +654,7 @@ describe('the end report of a path run', () => {
     expect(home[1]?.elite).toBe(true);
     expect(home[0]?.elite).toBe(false);
     const cleared = roomStrip(sampleSummary('cleared'));
-    expect(cleared.map((r) => r.title)).toEqual(['Fight 1', 'Elite', 'Room boss']);
+    expect(cleared.map((r) => r.title)).toEqual(['Fight 1', 'Elite', 'Floor boss']);
   });
 
   it('leaves the rooms never reached out, and marks the lost one', () => {

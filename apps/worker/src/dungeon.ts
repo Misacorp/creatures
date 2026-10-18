@@ -217,7 +217,7 @@ export interface DungeonRunSummary {
   depth: number;
   /** The depth the player is at after this run (one deeper after a clear). */
   newDepth: number;
-  /** The room boss was beaten. */
+  /** The floor boss was beaten. */
   cleared: boolean;
   /** Fights cleared. */
   roomsCleared: number;
@@ -264,12 +264,12 @@ export interface DungeonToday {
   landmark: boolean;
   /**
    * Set when the next run is a landmark (`landmark` is true): the depth and the content id of the
-   * room boss it will fight, which is fixed at landmark depths. Null on any other depth.
+   * floor boss it will fight, which is fixed at landmark depths. Null on any other depth.
    */
   landmarkBoss: { depth: number; foeId: string } | null;
   /** Days in a row, as of now: 0 when yesterday was missed and nothing has run today. */
   streak: number;
-  /** For old clients: the modifiers of the first two entrance rooms and of the room boss. The new client reads `map`. */
+  /** For old clients: the modifiers of the first two entrance rooms and of the floor boss. The new client reads `map`. */
   modifiers: DungeonModifierView[];
   attemptsToday: number;
   attemptsAllowed: number;
@@ -460,7 +460,7 @@ function canonicalAct(act: object): string {
 
 /**
  * The three modifiers old clients know (`DungeonToday.modifiers`): the first two entrance rooms (left
- * to right) and the room boss. Derived from the map, so there is one source of truth.
+ * to right) and the floor boss. Derived from the map, so there is one source of truth.
  */
 export function legacyModifierIds(map: DungeonMap): string[] {
   const entrance = map.nodes
@@ -606,7 +606,7 @@ export class Dungeon {
    * the same seed; runs that already started keep their own copy.
    *
    * Dev tools only: picked modifiers (`dungeon-modifiers`) are laid over the map when it is read (the
-   * first two entrance rooms and the room boss, see `legacyModifierIds`); they are not stored.
+   * first two entrance rooms and the floor boss, see `legacyModifierIds`); they are not stored.
    */
   private mapFor(day: string): DungeonMap {
     const stored = this.sql
@@ -1099,7 +1099,7 @@ export class Dungeon {
       luck: { ...weatherLuck(wday, RULES.combat.luck) },
       ...(Object.keys(rest).length === 0 ? {} : { rest }),
       ...(weatherBossAttacks(wday, 1) > 1 ? { bossAttacks: weatherBossAttacks(wday, 1) } : {}),
-      // The combat rules, the boss room's enrage and the depth (a landmark gives the room boss its
+      // The combat rules, the boss room's enrage and the depth (a landmark gives the floor boss its
       // signature), stored with the input so a replay is exact.
       rules: liveFightRules(),
       depth,
@@ -1850,7 +1850,7 @@ export class Dungeon {
 
 /**
  * Dev tools only: the picked modifiers laid over a copy of the map: the first two entrance rooms (left
- * to right, the third gets the first again) and the room boss, so `legacyModifierIds` reads them back.
+ * to right, the third gets the first again) and the floor boss, so `legacyModifierIds` reads them back.
  */
 function withForcedModifiers(map: DungeonMap, ids: readonly string[]): DungeonMap {
   const entrance = map.nodes.filter((n) => n.floor === 0).sort((a, b) => a.lane - b.lane);

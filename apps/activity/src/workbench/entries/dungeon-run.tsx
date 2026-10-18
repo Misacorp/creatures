@@ -38,7 +38,7 @@ const OUTCOMES = [
   'cleared',
   'home',
   'defeat',
-  'cleared an Undercroft level',
+  'cleared an Undercroft floor',
   'lost in the Undercroft',
   'an older run (no outcome)',
   'no rewards (lost in the first room)',
@@ -229,7 +229,7 @@ function DescendDemo({ p }: { p: Props }) {
   const variant = str(p, 'card');
   if (base.pending?.kind !== 'descend') return <p class="muted">The capture has a descent.</p>;
   const descent =
-    variant === 'a cracked floor (level 2)'
+    variant === 'a cracked floor (Undercroft floor 2)'
       ? { ...base.pending, level: 2, floors: 3, banked: { gear: [], supplies: [], parts: {} } }
       : variant === 'nothing banked'
         ? { ...base.pending, banked: { gear: [], supplies: [], parts: {} } }
@@ -251,19 +251,26 @@ const dungeonDescend: Entry = {
   file: 'apps/activity/src/DungeonDescend.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The descent card, after the room boss (or a keeper on a cracked floor) has fallen. It says the new depth is unlocked, asks if the player dares delve deeper, what the boss chest already banked (gear as item rows, supplies and parts as icons with numbers), what stays at risk (the pack) side by side, what the Undercroft below is like (its rooms, the depth its foes are from, the breath the creatures catch, the double loot, and that the only way home is a camp) and two choices side by side: Descend, or Head Home. Made from the captured answer; the buttons go nowhere here.',
+    'The descent card, after the floor boss (or an Undercroft floor boss on a cracked floor) has fallen. It says the new depth is unlocked, asks if the player dares delve deeper, what the boss chest already banked (gear as item rows, supplies and parts as icons with numbers), what stays at risk (the pack) side by side, what the Undercroft below is like (its rooms, the depth its foes are from, the breath the creatures catch, the double loot, and that the only way home is a camp) and two choices side by side: Descend, or Head Home. Made from the captured answer; the buttons go nowhere here.',
   controls: {
     card: {
       kind: 'select',
-      options: ['the room boss fell (level 1)', 'a cracked floor (level 2)', 'nothing banked'],
+      options: [
+        'the floor boss fell (Undercroft floor 1)',
+        'a cracked floor (Undercroft floor 2)',
+        'nothing banked',
+      ],
     },
     emptyPack: { kind: 'toggle' },
     busy: { kind: 'toggle' },
   },
-  defaults: { card: 'the room boss fell (level 1)', emptyPack: false, busy: false },
+  defaults: { card: 'the floor boss fell (Undercroft floor 1)', emptyPack: false, busy: false },
   presets: [
-    { name: 'The room boss fell', props: {} },
-    { name: 'A cracked floor: a deeper Undercroft', props: { card: 'a cracked floor (level 2)' } },
+    { name: 'The floor boss fell', props: {} },
+    {
+      name: 'A cracked floor: another floor below',
+      props: { card: 'a cracked floor (Undercroft floor 2)' },
+    },
     { name: 'Nothing banked, an empty pack', props: { card: 'nothing banked', emptyPack: true } },
     { name: 'A step is on its way', props: { busy: true } },
   ],
@@ -279,7 +286,7 @@ function ResultsDemo({ p }: { p: Props }) {
       ? outcome
       : 'cleared';
   const sample =
-    outcome === 'cleared an Undercroft level'
+    outcome === 'cleared an Undercroft floor'
       ? undercroftSummary()
       : outcome === 'lost in the Undercroft'
         ? undercroftLostSummary()
@@ -359,12 +366,12 @@ const dungeonResults: Entry = {
     },
     { name: 'Cleared, the route as a map', props: { view: 'map' } },
     {
-      name: 'Cleared an Undercroft level (as the server sent it)',
-      props: { outcome: 'cleared an Undercroft level' },
+      name: 'Cleared an Undercroft floor (as the server sent it)',
+      props: { outcome: 'cleared an Undercroft floor' },
     },
     {
-      name: 'Cleared an Undercroft level, the route as a map',
-      props: { outcome: 'cleared an Undercroft level', view: 'map' },
+      name: 'Cleared an Undercroft floor, the route as a map',
+      props: { outcome: 'cleared an Undercroft floor', view: 'map' },
     },
     {
       name: 'Lost in the Undercroft (half the pack)',
@@ -416,12 +423,12 @@ const SCENES = {
           : null,
     };
   },
-  'before the boss (the down-arrow badge on the room boss)': () => undercroftState('locked'),
+  'before the boss (the down-arrow badge on the floor boss)': () => undercroftState('locked'),
   'a carved door ahead': () => undercroftState('door-ahead'),
   'in the Undercroft: the entrance': () => undercroftState('entrance'),
   'in the Undercroft: midway': () => undercroftState('midway'),
-  'in the Undercroft: a cracked keeper next': () => undercroftState('cracked'),
-  'a second level (below a cracked floor)': () => undercroftState('cracked-deeper'),
+  'in the Undercroft: a floor boss on a cracked floor next': () => undercroftState('cracked'),
+  'a second floor (below a cracked floor)': () => undercroftState('cracked-deeper'),
   'the boss is next': () => {
     const done = parseDungeonAct(actCleared).state;
     return {
@@ -482,7 +489,7 @@ const dungeonRun: Entry = {
     },
     {
       name: 'Before the boss: the quiet band above it',
-      props: { scene: 'before the boss (the down-arrow badge on the room boss)' },
+      props: { scene: 'before the boss (the down-arrow badge on the floor boss)' },
     },
     { name: 'A carved door ahead', props: { scene: 'a carved door ahead' } },
     {
@@ -491,10 +498,10 @@ const dungeonRun: Entry = {
     },
     { name: 'In the Undercroft: midway', props: { scene: 'in the Undercroft: midway' } },
     {
-      name: 'A cracked keeper next',
-      props: { scene: 'in the Undercroft: a cracked keeper next' },
+      name: 'A floor boss on a cracked floor next',
+      props: { scene: 'in the Undercroft: a floor boss on a cracked floor next' },
     },
-    { name: 'A second level', props: { scene: 'a second level (below a cracked floor)' } },
+    { name: 'A second floor', props: { scene: 'a second floor (below a cracked floor)' } },
     { name: 'An act is on its way', props: { busy: true } },
     { name: 'With an error line', props: { error: true } },
   ],
