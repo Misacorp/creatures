@@ -101,7 +101,7 @@ Content: `packages/game/src/content/data/dungeon-keepsakes.json`.
 
 ## The camp (checkpoint)
 
-When the run reaches the camp, the player picks **one** of these. They may also reorder the row for free.
+When the run reaches the camp, the player picks **one** of these. They may also reorder the row for free: the row sits on the same board as the dungeon entry (drag a creature onto another, or tap two), with each creature's current HP under it. The order goes along with the choice in the same act; there is no separate reorder step.
 
 - **Rest:** standing creatures recover `RULES.dungeon.camp.restBp` (40%) of max HP.
 - **Swap:** one creature in the row (knocked out or not) goes home. One of the player's other creatures, not already in the row, takes its place at full HP. Its stats and gear are loaded at that moment and frozen for the rest of the run.
@@ -202,7 +202,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
     - The node id may be an Undercroft node (`u1f0l0`).
   - `{type:'event', option: 0|1}`: resolves the pending event.
   - `{type:'camp', choice:'rest'|'swap'|'keepsake', order?: [id,id,id], out?, in?, keepsake?}`: resolves the pending camp.
-    - `order` is a permutation of the row, applied before the choice.
+    - `order` is a permutation of the row **as the choice leaves it**, applied after the choice and free (no HP, gear or other change). For Rest and Keepsake that is the row as it stands. For Swap it is the row after the swap: it holds `in` and not `out`, so the creature that comes in can stand in any place in the same act. Anything else (an unknown or repeated id, the creature that left, the wrong length) is `invalid_act`/`invalid_body` and changes nothing. Downed creatures may stand anywhere and stay down. A retry with the same key returns the stored answer.
     - `swap` needs `out` (in the row) and `in` (the player's own creature, not in the row).
     - `keepsake` must be one of the two offers.
   - `{type:'home'}`: only while a camp or the descent card is pending. Ends the run: `home` before the main boss was beaten, `cleared` after it.
@@ -389,8 +389,7 @@ Reuse what exists: the pre-run card, the team board, `DungeonPlayback`, `Drawer`
   - Fight: Go plays `DungeonPlayback` with just that room (the `room` from the act response), with the same banner and pacing, then returns to the map. Leaving mid-fight is fine: the state is already stored.
   - Mystery: a card with the scene and two buttons with their exact outcomes. Then the outcome line appears on the map screen.
   - Camp: a camp card.
-    - The three choices as buttons. Keepsake opens the two offers. Swap opens the `RosterPicker` for the creature to bring in, then asks which to send home.
-    - The row board to reorder.
+    - The row board to reorder (the entry's `RaidBoard` in its single large row, with the HP under each creature, moving with it), above the three choices as buttons. Keepsake opens the two offers. Swap opens the `RosterPicker` for the creature to bring in, asks which to send home, then shows the row as the swap leaves it (the new creature in the place of the one that left, at full HP) to arrange before "Swap and push on". The strip above the card hides its own row at the camp, so the row is not shown twice.
     - A clear secondary-danger choice: **"Head home with your pack"**, plus a line: "Push on and you risk half your pack."
   - When the run ends: today's results screen with these changes:
     - The headline says the outcome: "Cleared! Depth 8 →9", "Home safe with your pack", "Defeated: half your pack made it home".

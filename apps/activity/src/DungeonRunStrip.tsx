@@ -183,7 +183,8 @@ export function DungeonRunStrip({ state }: { state: DungeonRunState }) {
           </>
         )}
       </p>
-      <RunRow team={state.team} />
+      {/* At the camp the card has the row itself (to rearrange, with the same HP under each). */}
+      {state.pending?.kind !== 'camp' && <RunRow team={state.team} />}
       <RunKeepsakes keepsakes={state.keepsakes} />
       <RunPack pack={state.pack} />
       {event !== null && (

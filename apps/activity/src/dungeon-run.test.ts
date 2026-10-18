@@ -5,7 +5,6 @@ import {
   asOrder,
   canSwapIn,
   keepsakeAct,
-  moveInOrder,
   packBadges,
   packItems,
   packKindLabel,
@@ -15,6 +14,11 @@ import {
   rowIds,
   sameOrder,
   swapAct,
+  swapPlaces,
+  tapToSwap,
+  orderAfterSwap,
+  campHp,
+  campSlotLabel,
   swapOptions,
   tileLabel,
   tileState,
@@ -101,18 +105,30 @@ describe('a creature tile', () => {
 });
 
 describe('the row order at the camp', () => {
-  it('moves a creature one place and stops at the ends', () => {
-    expect(moveInOrder(['a', 'b', 'c'], 'b', -1)).toEqual(['b', 'a', 'c']);
-    expect(moveInOrder(['a', 'b', 'c'], 'b', 1)).toEqual(['a', 'c', 'b']);
-    expect(moveInOrder(['a', 'b', 'c'], 'a', -1)).toEqual(['a', 'b', 'c']);
-    expect(moveInOrder(['a', 'b', 'c'], 'c', 1)).toEqual(['a', 'b', 'c']);
-    expect(moveInOrder(['a', 'b', 'c'], 'z', 1)).toEqual(['a', 'b', 'c']);
+  it('swaps two creatures of the row and leaves anything else alone', () => {
+    expect(swapPlaces(['a', 'b', 'c'], 'a', 'c')).toEqual(['c', 'b', 'a']);
+    expect(swapPlaces(['a', 'b', 'c'], 'b', 'a')).toEqual(['b', 'a', 'c']);
+    expect(swapPlaces(['a', 'b', 'c'], 'a', 'a')).toEqual(['a', 'b', 'c']);
+    expect(swapPlaces(['a', 'b', 'c'], 'a', 'z')).toEqual(['a', 'b', 'c']);
   });
 
   it('never changes the order it was given', () => {
     const order = ['a', 'b', 'c'];
-    moveInOrder(order, 'a', 1);
+    swapPlaces(order, 'a', 'b');
+    tapToSwap(order, 'a', 'b');
     expect(order).toEqual(['a', 'b', 'c']);
+  });
+
+  it('a tap picks a creature up, puts it down, or swaps it with the one picked up', () => {
+    const order = ['a', 'b', 'c'];
+    expect(tapToSwap(order, null, 'b')).toEqual({ order, selected: 'b' });
+    expect(tapToSwap(order, 'b', 'b')).toEqual({ order, selected: null });
+    expect(tapToSwap(order, 'a', 'c')).toEqual({ order: ['c', 'b', 'a'], selected: null });
+  });
+
+  it('puts the creature that comes in where the one that leaves stood', () => {
+    expect(orderAfterSwap(['a', 'b', 'c'], 'b', 'd')).toEqual(['a', 'd', 'c']);
+    expect(orderAfterSwap(['a', 'b', 'c'], 'z', 'd')).toEqual(['a', 'b', 'c']);
   });
 
   it('compares orders and reads the ids of a row', () => {
@@ -140,17 +156,39 @@ describe('the camp acts', () => {
       keepsake: 'chalk-mark',
       order: ['b', 'a', 'c'],
     });
-    expect(swapAct(order, 'c', 'd')).toEqual({
+    // A swap's order is the row after it: it holds the creature that comes in, not the one that leaves.
+    expect(swapAct(['b', 'a', 'd'], 'c', 'd')).toEqual({
       type: 'camp',
       choice: 'swap',
       out: 'c',
       in: 'd',
-      order: ['b', 'a', 'c'],
+      order: ['b', 'a', 'd'],
     });
   });
 
   it('leave the order out rather than send one that is not a row of three', () => {
     expect(restAct(['a'])).toEqual({ type: 'camp', choice: 'rest' });
+  });
+});
+
+describe('the HP under a creature at the camp', () => {
+  it('says the HP in words, red when low or down, and full for a new arrival', () => {
+    expect(campHp({ now: 140, max: 203 })).toMatchObject({ state: 'ok', text: '140 / 203 HP' });
+    expect(campHp({ now: 60, max: 203 })).toMatchObject({ state: 'low', text: '60 / 203 HP' });
+    expect(campHp({ now: 0, max: 215 })).toEqual({ ratio: 0, state: 'ko', text: '0 / 215 HP' });
+    expect(campHp(null)).toEqual({ ratio: 1, state: 'ok', text: 'Full HP' });
+    expect(campHp({ now: 5, max: 0 }).ratio).toBe(0);
+  });
+
+  it('names the place, the HP and whether it is picked up for a screen reader', () => {
+    const c = { id: 'a', name: 'Sproutle', species: 'sproutle', level: 12, element: 'bloom' };
+    expect(campSlotLabel({ ...c, hp: { now: 240, max: 281 } }, 0, false)).toBe(
+      'Left: Sproutle, level 12, 240 / 281 HP.',
+    );
+    expect(campSlotLabel({ ...c, hp: { now: 0, max: 281 } }, 1, false)).toContain('knocked out');
+    expect(campSlotLabel({ ...c, hp: null }, 2, true)).toBe(
+      'Right: Sproutle, level 12, full HP. Picked up. Tap another creature to swap places.',
+    );
   });
 });
 

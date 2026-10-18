@@ -9,6 +9,7 @@ import { creatureName, getSpecies } from './game';
 import type { IconRef } from './icon-ref';
 import type { CountItem } from './ui/CountBadge';
 import type { PickerOption } from './roster-picker';
+import type { SlotHp } from './ui/SlotButton';
 
 /** The pack as count badges (icon, number, name), without the empty kinds. */
 export function packItems(pack: DungeonPack): CountItem[] {
@@ -103,20 +104,89 @@ export function tileLabel(creature: DungeonRunCreature): string {
 
 // --- The camp: the row's order ---
 
+/** A creature of the camp's row, as its tile needs it. `hp` is null for one that has just come in (full HP, not known to the screen yet). */
+export interface CampRowCreature {
+  id: string;
+  name: string;
+  species: string;
+  level: number;
+  element: string;
+  hp: { now: number; max: number } | null;
+}
+
+/** The creature of an open run's row as the camp's tile reads it. */
+export function campCreatureOf(creature: DungeonRunCreature): CampRowCreature {
+  return {
+    id: creature.id,
+    name: creature.name,
+    species: creature.speciesId,
+    level: creature.level,
+    element: creature.element,
+    hp: { now: creature.hp, max: creature.hpMax },
+  };
+}
+
+/** The HP line of a tile: "140 / 203 HP", red under a third and when down ("0 / 215 HP"); "Full HP" for a new arrival. */
+export function campHp(hp: CampRowCreature['hp']): SlotHp {
+  if (hp === null) return { ratio: 1, state: 'ok', text: 'Full HP' };
+  const state = tileState({ hp: hp.now, hpMax: hp.max });
+  return {
+    ratio: hp.max > 0 ? Math.min(1, Math.max(0, hp.now / hp.max)) : 0,
+    state,
+    text: `${String(Math.max(0, hp.now))} / ${String(hp.max)} HP`,
+  };
+}
+
+/** What a screen reader says for a tile of the camp's row: "Left: Sproutle, level 12, 240 / 281 HP." */
+export function campSlotLabel(creature: CampRowCreature, index: number, picked: boolean): string {
+  const place = ['Left', 'Middle', 'Right'][index] ?? `Place ${String(index + 1)}`;
+  const health =
+    creature.hp === null
+      ? 'full HP'
+      : creature.hp.now <= 0
+        ? `knocked out, 0 / ${String(creature.hp.max)} HP`
+        : `${String(creature.hp.now)} / ${String(creature.hp.max)} HP`;
+  const base = `${place}: ${creature.name}, level ${String(creature.level)}, ${health}.`;
+  return picked ? `${base} Picked up. Tap another creature to swap places.` : base;
+}
+
 /** The ids of the row, left to right. */
 export function rowIds(team: readonly { id: string }[]): string[] {
   return team.map((c) => c.id);
 }
 
-/** The order with `id` moved one place to the left (-1) or the right (1); the same order at an end. */
-export function moveInOrder(order: readonly string[], id: string, step: -1 | 1): string[] {
-  const from = order.indexOf(id);
-  const to = from + step;
-  if (from < 0 || to < 0 || to >= order.length) return [...order];
+/** The order with `a` and `b` standing in each other's place; the same order when either is not in it. */
+export function swapPlaces(order: readonly string[], a: string, b: string): string[] {
+  const from = order.indexOf(a);
+  const to = order.indexOf(b);
   const next = [...order];
-  next[from] = order[to] as string;
-  next[to] = id;
+  if (from < 0 || to < 0 || from === to) return next;
+  next[from] = b;
+  next[to] = a;
   return next;
+}
+
+/**
+ * What a tap on a creature of the row does (the camp's tap-to-swap). With nobody picked up it picks
+ * that creature up; tapping the picked-up one puts it down again; tapping another swaps the two and
+ * puts both down.
+ */
+export function tapToSwap(
+  order: readonly string[],
+  selected: string | null,
+  tapped: string,
+): { order: string[]; selected: string | null } {
+  if (selected === null) return { order: [...order], selected: tapped };
+  if (selected === tapped) return { order: [...order], selected: null };
+  return { order: swapPlaces(order, selected, tapped), selected: null };
+}
+
+/**
+ * The row once `incoming` has taken the place of `out`, in the same order: this is the row a Swap
+ * leaves, and the one its `order` is a permutation of (the server applies the order after the swap).
+ */
+export function orderAfterSwap(order: readonly string[], out: string, incoming: string): string[] {
+  return order.map((id) => (id === out ? incoming : id));
 }
 
 /** Whether two orders are the same. */
@@ -134,7 +204,10 @@ export function asOrder(order: readonly string[]): [string, string, string] | un
 
 type CampAct = Extract<DungeonAct, { type: 'camp' }>;
 
-/** The camp act for Rest, with the row's order (always sent: the server takes a permutation of the row). */
+/**
+ * The camp act for Rest, with the row's order (always sent: the server takes a permutation of the row,
+ * which for Rest and a keepsake is the row as it stands).
+ */
 export function restAct(order: readonly string[]): CampAct {
   const sent = asOrder(order);
   return { type: 'camp', choice: 'rest', ...(sent === undefined ? {} : { order: sent }) };
@@ -151,7 +224,11 @@ export function keepsakeAct(order: readonly string[], keepsake: string): CampAct
   };
 }
 
-/** The camp act for a swap: `out` leaves the row, `incoming` (one of the player's own) takes its place. */
+/**
+ * The camp act for a swap: `out` leaves the row, `incoming` (one of the player's own) comes in. The
+ * `order` is the row AFTER the swap (it holds `incoming`, not `out`), so the new creature can be
+ * stood anywhere in the same act.
+ */
 export function swapAct(order: readonly string[], out: string, incoming: string): CampAct {
   const sent = asOrder(order);
   return {

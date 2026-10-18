@@ -49,7 +49,10 @@ export const ActSchema = v.variant('type', [
   v.strictObject({
     type: v.literal('camp'),
     choice: v.picklist(['rest', 'swap', 'keepsake']),
-    /** The row reordered first: a permutation of the row's creature ids. */
+    /**
+     * The row in the order the player wants it, left to right: a permutation of the creature ids the row
+     * holds once the choice is done (after a swap: the creature that comes in, not the one that leaves).
+     */
     order: v.optional(v.pipe(v.array(IdSchema), v.length(RULES.dungeon.teamSize))),
     /** Swap: the creature of the row that goes home, and the player's own creature that comes in. */
     out: v.optional(IdSchema),

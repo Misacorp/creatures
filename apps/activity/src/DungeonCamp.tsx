@@ -1,14 +1,16 @@
 import { useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
-import { RunTile } from './DungeonRunStrip';
+import { CampRow } from './CampRow';
 import {
+  campCreatureOf,
   canSwapIn,
   keepsakeAct,
-  moveInOrder,
+  orderAfterSwap,
   restAct,
   rowIds,
   swapAct,
   swapOptions,
+  type CampRowCreature,
 } from './dungeon-run';
 import {
   CAMP_HOME_BUTTON,
@@ -27,13 +29,12 @@ import type {
   DungeonPack,
   DungeonRunCreature,
 } from './dungeon-types';
-import { creatureName } from './game';
+import { creatureName, getSpecies } from './game';
 import { IN_TEAM_NOTE } from './roster-picker';
-import { LiveRegion } from './ui/LiveRegion';
 import { RevealShell } from './ui/RevealShell';
 import { RosterPicker } from './ui/RosterPicker';
 
-type Step = 'menu' | 'keepsake' | 'out';
+type Step = 'menu' | 'keepsake' | 'out' | 'arrange';
 
 interface Props {
   /** The row now, left to right. */
@@ -46,18 +47,25 @@ interface Props {
   busy: boolean;
   /** The player chose: the act to send (a camp choice with the row's order, or heading home). */
   onAct: (act: DungeonAct) => void;
-  /** Open at this step (the workbench shows each one); `initialIncoming` is who is coming in for the `out` step. */
+  /**
+   * Open at this step (the workbench shows each one); `initialIncoming` is who is coming in for the
+   * `out` and `arrange` steps, and `initialOut` who goes home for `arrange`.
+   */
   initialStep?: Step;
   initialIncoming?: string;
+  initialOut?: string;
 }
 
 /**
  * The camp, halfway up the map. Pick one thing: Rest (standing creatures recover part of their HP),
  * take a keepsake (one of two), or Swap (a creature from the collection comes in at full HP, and
- * one of the row goes home; the knocked-out one is easy to see). The row can be reordered for free
- * with the Left and Right buttons, and the order goes along with the choice. Apart from the three,
- * the player may head home and keep the whole pack; that asks once more before it ends the run. The
- * server checks every act again: this only builds them.
+ * one of the row goes home; the knocked-out one is easy to see). The row sits above the choices on
+ * the same board as the dungeon entry, each creature with its HP under it, and can be rearranged
+ * for free (drag, or tap two); the order goes along with the choice. A Swap has one more step after
+ * "who goes home": the row as it will stand, with the new creature in the place of the one that left,
+ * which can be rearranged before the swap is confirmed, so the recruit can stand anywhere. Apart
+ * from the three, the player may head home and keep the whole pack; that asks once more before it
+ * ends the run. The server checks every act again: this only builds them.
  */
 export function DungeonCamp({
   team,
@@ -68,13 +76,21 @@ export function DungeonCamp({
   onAct,
   initialStep,
   initialIncoming,
+  initialOut,
 }: Props) {
   const [order, setOrder] = useState(() => rowIds(team));
   const [step, setStep] = useState<Step>(initialStep ?? 'menu');
   const [incoming, setIncoming] = useState<string | null>(initialIncoming ?? null);
   const [picking, setPicking] = useState(false);
   const [confirmHome, setConfirmHome] = useState(false);
-  const [announcement, setAnnouncement] = useState('');
+  /** The creature that goes home, once picked (the swap's second step). */
+  const [outId, setOutId] = useState<string | null>(initialOut ?? null);
+  /** The row as a swap leaves it (the new creature in the place of the one that went home), as the player arranges it. */
+  const [arranged, setArranged] = useState<string[]>(() =>
+    initialOut !== undefined && initialIncoming !== undefined
+      ? orderAfterSwap(rowIds(team), initialOut, initialIncoming)
+      : [],
+  );
   const swapButton = useRef<HTMLButtonElement>(null);
 
   const ordered = order.flatMap((id) => {
@@ -85,47 +101,30 @@ export function DungeonCamp({
   const swappable = canSwapIn(creatures, order);
   const comesIn = creatures.find((c) => c.id === incoming);
 
-  function move(creature: DungeonRunCreature, by: -1 | 1): void {
-    const next = moveInOrder(order, creature.id, by);
-    setOrder(next);
-    setAnnouncement(
-      `${creature.name} moved ${by === -1 ? 'left' : 'right'}, now place ${String(next.indexOf(creature.id) + 1)}.`,
-    );
-  }
+  /** A creature of the run's row for the camp's board. */
+  const rowCreature = (id: string): CampRowCreature[] => {
+    const found = team.find((c) => c.id === id);
+    if (found !== undefined) return [campCreatureOf(found)];
+    // The one that comes in: fresh, at full HP.
+    const fresh = creatures.find((c) => c.id === id);
+    if (fresh === undefined) return [];
+    return [
+      {
+        id: fresh.id,
+        name: creatureName(fresh),
+        species: fresh.species,
+        level: fresh.level,
+        element: getSpecies(fresh.species)?.element ?? 'unknown',
+        hp: null,
+      },
+    ];
+  };
 
   const row = (
-    <ul class="team-row run-row" aria-label="Your team, left to right. You can change the order.">
-      {ordered.map((creature, index) => (
-        <RunTile key={creature.id} creature={creature}>
-          {step === 'menu' && (
-            <span class="run-move">
-              <button
-                type="button"
-                class="run-move-button"
-                disabled={busy || index === 0}
-                aria-label={`Move ${creature.name} left`}
-                onClick={() => {
-                  move(creature, -1);
-                }}
-              >
-                Left
-              </button>
-              <button
-                type="button"
-                class="run-move-button"
-                disabled={busy || index === ordered.length - 1}
-                aria-label={`Move ${creature.name} right`}
-                onClick={() => {
-                  move(creature, 1);
-                }}
-              >
-                Right
-              </button>
-            </span>
-          )}
-        </RunTile>
-      ))}
-    </ul>
+    ids: readonly string[],
+    onChange: (order: string[]) => void,
+  ): ReturnType<typeof CampRow> => (
+    <CampRow creatures={ids.flatMap(rowCreature)} disabled={busy} onChange={onChange} />
   );
 
   return (
@@ -139,7 +138,7 @@ export function DungeonCamp({
       {step === 'menu' && (
         <>
           <p class="muted">{CAMP_INTRO}</p>
-          {row}
+          {row(order, setOrder)}
           <ul class="camp-choices" aria-label="Pick one">
             <li>
               <button
@@ -269,7 +268,7 @@ export function DungeonCamp({
           <h4>Who goes home?</h4>
           <p class="muted">
             {comesIn === undefined ? 'A fresh creature' : creatureName(comesIn)} comes in at full
-            HP. Pick the creature that leaves the row.
+            HP. Pick the creature that leaves the row. You can arrange the new row next.
           </p>
           <ul class="camp-choices" aria-label="Pick who goes home">
             {ordered.map((creature) => (
@@ -279,7 +278,10 @@ export function DungeonCamp({
                   class={`camp-choice camp-out${creature.hp <= 0 ? ' ko' : ''}`}
                   disabled={busy || incoming === null}
                   onClick={() => {
-                    if (incoming !== null) onAct(swapAct(order, creature.id, incoming));
+                    if (incoming === null) return;
+                    setOutId(creature.id);
+                    setArranged(orderAfterSwap(order, creature.id, incoming));
+                    setStep('arrange');
                   }}
                 >
                   <strong class="pix">{creature.name}</strong>{' '}
@@ -303,7 +305,39 @@ export function DungeonCamp({
         </>
       )}
 
-      <LiveRegion>{announcement}</LiveRegion>
+      {step === 'arrange' && (
+        <>
+          <h4>Arrange your row</h4>
+          <p class="muted">
+            {comesIn === undefined ? 'The new creature' : creatureName(comesIn)} takes the place of{' '}
+            {team.find((c) => c.id === outId)?.name ?? 'the creature that leaves'} and starts at
+            full HP. Stand everyone where you want them, then confirm.
+          </p>
+          {row(arranged, setArranged)}
+          <p class="button-row camp-arrange-actions">
+            <button
+              type="button"
+              class="camp-confirm"
+              disabled={busy || incoming === null || outId === null}
+              onClick={() => {
+                if (incoming !== null && outId !== null) onAct(swapAct(arranged, outId, incoming));
+              }}
+            >
+              Swap and push on
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setStep('out');
+              }}
+            >
+              Back
+            </button>
+          </p>
+        </>
+      )}
+
       {picking && (
         <RosterPicker
           title="Choose who comes in"

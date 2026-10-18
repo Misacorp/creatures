@@ -412,8 +412,16 @@ describe('the camp, with the real answers', () => {
     await settle();
     const fixture = bodyOf('dungeon-act-camp').act;
     if (fixture.type !== 'camp') throw new Error('camp act');
-    // The player moves the first creature right (the order of the capture), then swaps.
-    page?.click(button(root, `Move ${campState.team[0]?.name ?? ''} right`));
+    // The player swaps the first two creatures by taps (the order of the capture), then swaps.
+    const tile = (name: string): FakeElement => {
+      const found = byClass(root, 'party-slot').find((e) =>
+        (e.getAttribute('aria-label') ?? '').includes(`: ${name},`),
+      );
+      if (found === undefined) throw new Error(`no tile for ${name}`);
+      return found;
+    };
+    page?.click(tile(campState.team[0]?.name ?? ''));
+    page?.click(tile(campState.team[1]?.name ?? ''));
     page?.click(button(root, /^Swap a creature/));
     await settle();
     // Who comes in: Zipmouse, the one creature outside the row.
@@ -423,6 +431,11 @@ describe('the camp, with the real answers', () => {
     await settle();
     expect(visibleText(root)).toContain('Who goes home?');
     page?.click(button(root, /^Cindle/));
+    await settle();
+    // The new row is arranged before anything is sent: the recruit stands where Cindle stood, last.
+    expect(visibleText(root)).toContain('Arrange your row');
+    expect(api.dungeonAct).not.toHaveBeenCalled();
+    page?.click(button(root, 'Swap and push on'));
     await settle();
     expect(sentAct().body['act']).toEqual(fixture);
     expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);

@@ -139,11 +139,11 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<DungeonCaptu
     node: toCamp.at(-1) as string,
   });
   out.responses['dungeon-today-active'] = (await hero.call('GET', '/api/dungeon/today')).body;
-  // Swap the third creature for the fourth, and stand in a new order.
+  // Swap the third creature for the fourth, and stand in a new order: the order is the row after the swap.
   state = await step(hero, 'dungeon-act-camp', state, {
     type: 'camp',
     choice: 'swap',
-    order: [splashet, sproutle, cindle],
+    order: [splashet, sproutle, zipmouse],
     out: cindle,
     in: zipmouse,
   });
