@@ -21,7 +21,7 @@ export const FALLBACK_BOSS_SCALE = 6;
 
 /**
  * The sprite to draw for whatever the stage shows as its boss, and the scale to draw it at: a raid
- * boss, a daily-dungeon room boss (both 24x24), or a dungeon foe (16x16, drawn bigger); a bigger
+ * boss, a daily-dungeon floor boss (both 24x24), or a dungeon foe (16x16, drawn bigger); a bigger
  * silhouette while an id has no art yet.
  */
 export function bossArt(bossId: string): { sprite: SpriteDef; scale: number } {

@@ -41,7 +41,7 @@ describe('simulation run', () => {
       targets: unknown[];
     };
     expect(json.settings.seed).toBe('test');
-    expect(json.targets).toHaveLength(92);
+    expect(json.targets).toHaveLength(96);
   });
 
   it('marks metrics it did not measure as not measured', () => {

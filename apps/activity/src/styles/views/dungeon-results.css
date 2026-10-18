@@ -1,4 +1,69 @@
-/* The results: the rooms as a strip of panels, then the team in one row. */
+/*
+  The results: the title, the rewards as badges, the route (the map, or every room as a strip of panels),
+  the team in one row with each creature's experience and the keepsakes as chips.
+*/
+.result-title.good {
+  color: var(--good);
+}
+
+.result-title.bad {
+  color: var(--bad);
+}
+
+.result-summary {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.run-keepsakes-row {
+  margin: 0.5rem 0;
+}
+
+/* A room that is not a fight: its glyph stays in colour (the foes are greyed once cleared). */
+.room-panel.cleared.other canvas.sprite,
+.room-panel.defeat.other canvas.sprite {
+  filter: none;
+}
+
+/* The stamp of a room that is not a fight sits low, so the room's picture stays readable above it. */
+.room-panel.other .rp-banner {
+  top: auto;
+  bottom: 0.25rem;
+  transform: rotate(-8deg);
+}
+
+.rp-note {
+  font-size: 0.75rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+/* The route: its title on the left, the Map / Rooms switch on the right. */
+.route-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.route-head h4 {
+  margin: 0;
+}
+
+.route-toggle {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.route-toggle button.toggle {
+  min-width: 4.5rem;
+}
+
+.dungeon-result-map {
+  margin: 0.25rem 0 0.75rem;
+}
+
 .room-strip,
 .team-row {
   display: grid;
@@ -61,6 +126,7 @@
 .rp-hp {
   font-size: 0.6875rem;
   line-height: 1.15;
+  overflow-wrap: anywhere;
 }
 
 /* The word across the picture, tilted like a stamp. It is a label, not an animation. */
@@ -159,9 +225,54 @@
   color: var(--bad);
 }
 
-/* What the run paid a creature in experience, under its HP line. */
+/* The level, with a green "+1" when the run levelled the creature up. */
+.tm-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.lvl-up {
+  color: var(--good);
+  font-size: 1.25rem;
+}
+
+/* The experience bar, a little smaller so it fits a third of the row. */
+.tm-xp {
+  align-self: stretch;
+  margin: 0.125rem 0;
+}
+
+.tm-xp .xpbar {
+  height: 1rem;
+}
+
+/* What the run paid a creature in experience, what multiplied it and where it waits, under its bar. */
 .tm-exp {
   font-size: 0.8125rem;
   line-height: 1.15;
   text-align: center;
+}
+
+.tm-note {
+  color: var(--gold);
+}
+
+/* A run that paid nothing: a small sad creature and two short lines. */
+.no-rewards {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.no-rewards-art {
+  flex: none;
+  line-height: 0;
+}
+
+.no-rewards-text {
+  display: grid;
+  gap: 0.125rem;
+  margin: 0;
 }

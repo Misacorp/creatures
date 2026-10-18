@@ -499,6 +499,34 @@ export function grantDungeonRun(
 }
 
 /**
+ * A boss chest of a map run that is paid while the run goes on (the main boss's before the Undercroft,
+ * an Undercroft keeper's): parts, gear and supplies through the grant, nothing through the ledger (its
+ * Essence and scrap go into the run's pack, and come home with it). `tag` is `chest` or `u<level>`; key
+ * `dungeon:<day>:<attempt>:<tag>`, so a retry pays nothing twice.
+ */
+export function grantDungeonChest(
+  deps: GrantDeps,
+  userId: string,
+  day: string,
+  attempt: number,
+  tag: string,
+  draw: (rng: Rng) => { parts: PartsBundle; gear: Draft['gear']; supplies?: string[] },
+): GrantView {
+  return payOnce(deps, userId, `dungeon:${day}:${String(attempt)}:${tag}`, {
+    source: 'dungeon',
+    draw: () => {
+      const drawn = draw(deps.rng);
+      return {
+        gear: drawn.gear,
+        parts: addParts({}, drawn.parts),
+        blueprints: [],
+        ...(drawn.supplies === undefined ? {} : { supplies: drawn.supplies }),
+      };
+    },
+  });
+}
+
+/**
  * The streak bonus of a day, paid once per day: parts through the grant, Bait and Essence through the
  * credits. Key `dungeon:<day>:streak` (credits `...:bait`, `...:essence`).
  */

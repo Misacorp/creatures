@@ -101,6 +101,35 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * Merged with the board-rows change (2026-10-18): the sim builds dense rows (no `board`), so the position lines, set
  * reach and Morning Haze play as before; only the raid bosses' silence by row (above) moved the numbers. The first
  * player's top-3 power is now 341, 314, 246 and 207, and raids won 6, 4, 5 and 4; Bait earned is the same.
+ * Re-pinned again on 2026-10-18 (dungeon paths, B-019), on purpose: the daily dungeon is a walk over the day's
+ * map (3 to 6 fights, a camp, a pack that is kept whole at home and by half after a defeat, keepsakes, a boss
+ * chest) instead of three rooms played at once, foes are weaker at depth 1 and steeper by depth, experience
+ * is paid per fight cleared (35, not 60), and the run log gained its outcome, pack and fights. Re-pinned
+ * once more when the branch took in the Teach change above, so every hash moved (the first player's top-3
+ * power in the first pinned run is 431).
+ *
+ * Re-pinned again on 2026-10-18 (the Undercroft, B-020), on purpose: the sim draws the day's map with carved
+ * doors (a free room on about a third of the maps, which the policy takes when its route passes it), a run
+ * that beats the boss at depth 8 or over banks the chest, locks depth + 1 and may go down into the
+ * Undercroft (rooms with twice the loot, epic fights, camps, a keeper and its chest), Market Day's scrap
+ * is in the pack (halved after a defeat) and the full clear bonus goes to the row that beat the main boss.
+ * The run log gained its Undercroft fields and two targets were added (96). Two foe numbers were tuned with
+ * it (`RULES.dungeon.hpCurveBp` 300 to 340, `undercroft.depthBonus` 3 to 1). Bait earned and the pinned
+ * runs without the dungeon are the same; the first player's top-3 power in the first pinned run moved
+ * from 431 to 327 (a different path through the same levels and ribbons). Re-pinned once more when the
+ * branch took in the raid's silence by row from main.
+ *
+ * Re-pinned again on 2026-10-18 (a fallen creature gets back up on the way down, B-021), on purpose: a
+ * knocked-out creature recovers `RULES.dungeon.undercroft.reviveBp` of its max HP when the row goes down
+ * into the Undercroft, so the policy (over 50% HP after catching its breath) sends about twice as many
+ * rows down. Bait earned and the runs without a descent are the same; the first player's top-3 power in
+ * the first pinned run moved from 343 to 380 and its raids won from 6 to 7, and 257 to 250 in the second.
+ *
+ * Re-pinned again on 2026-10-18 when part 2 (branch evolutions, the last three weathers, position lines,
+ * gear sets, chance and trigger lines) met the dungeon paths, on purpose: the walk over the day's map now
+ * plays Kind Rain, Morning Haze and Bramble Season and folds the gear with each creature's place in the
+ * row, and the drops roll from part 2's larger pool of lines and bases. Bait earned and raids won are the
+ * same in every run; the first player's top-3 power is now 276, 314, 252 and 207.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

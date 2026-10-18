@@ -3,7 +3,7 @@ import { useMemo, useState } from 'preact/hooks';
 import { DungeonSetup } from '../../DungeonSetup';
 import { DungeonTeam } from '../../DungeonTeam';
 import stateFixture from '../../fixtures/collection-state.json';
-import todayFixture from '../../fixtures/dungeon-today.json';
+import todayFixture from '../../fixtures/dungeon-today-map.json';
 import { parseGameState, type Creature } from '../../api';
 import { parseDungeonToday } from '../../dungeon-parse';
 import { isComplete, type Slots } from '../../dungeon-team';
@@ -150,6 +150,8 @@ function SetupDemo({ p }: { p: Props }) {
     streak: num(p, 'streak'),
     depth: num(p, 'depth'),
     lastTeam: creatures.slice(0, num(p, 'placed')).map((c) => c.id),
+    // Without the map the card falls back to the old three-room strip.
+    ...(bool(p, 'map') ? {} : { map: null }),
   });
   return (
     <DungeonSetup
@@ -171,7 +173,7 @@ const dungeonSetup: Entry = {
   file: 'apps/activity/src/DungeonSetup.tsx',
   group: 'Slots',
   description:
-    'The whole pre-run dungeon card: the big Daily Dungeon title with its question mark and the streak (under the title on a phone), the three rooms, the depth track, then the team board centred, the count right under the tiles, the order line and the Enter button, all in one card. The team starts as the last team.',
+    "The whole pre-run dungeon card: the big Daily Dungeon title with its question mark and the streak (under the title on a phone), today's map as a preview (the one a real server sent; tap a room to see what is there), the depth track, then the team board centred, the count right under the tiles, the order line and the Enter button, all in one card. The team starts as the last team.",
   controls: {
     owned: { kind: 'number', min: 3, max: 8 },
     placed: { kind: 'number', min: 1, max: 3 },
@@ -179,8 +181,9 @@ const dungeonSetup: Entry = {
     depth: { kind: 'number', min: 1, max: 40 },
     bait: { kind: 'number', min: 0, max: 100 },
     busy: { kind: 'toggle' },
+    map: { kind: 'toggle' },
   },
-  defaults: { owned: 6, placed: 3, streak: 3, depth: 1, bait: 40, busy: false },
+  defaults: { owned: 6, placed: 3, streak: 3, depth: 1, bait: 40, busy: false, map: true },
   presets: [
     { name: '3 / 3 placed, streak at day 3', props: {} },
     { name: '2 / 3 placed (Enter is off, with the reason)', props: { placed: 2 } },
@@ -188,10 +191,11 @@ const dungeonSetup: Entry = {
     { name: 'Streak at day 7', props: { streak: 7 } },
     { name: 'The run is being sent', props: { busy: true } },
     { name: 'No Bait for treats', props: { bait: 0 } },
+    { name: 'A server with no map (the old three-room strip)', props: { map: false } },
   ],
   render: (p) => (
     <SetupDemo
-      key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}`}
+      key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}-${String(bool(p, 'map'))}`}
       p={p}
     />
   ),

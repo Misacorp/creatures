@@ -21,6 +21,9 @@ export function XpBar({
   text,
   startCap,
   endCap,
+  gained,
+  quiet,
+  class: extra,
   kind = 'experience',
 }: {
   value: number;
@@ -29,11 +32,21 @@ export function XpBar({
   text?: string | undefined;
   startCap?: string | undefined;
   endCap?: string | undefined;
+  /** The last part of `value` that was just earned: drawn in a brighter colour than the fill before it. */
+  gained?: number | undefined;
+  /** Draw no words over the bar (a narrow place: the words are still spoken). */
+  quiet?: boolean | undefined;
+  /** Where it is used (a smaller bar in a narrow place). */
+  class?: string | undefined;
   kind?: XpKind | undefined;
 }) {
-  const view = xpBarView(value, max, text);
+  const view = xpBarView(value, max, text, gained);
   return (
-    <div class={`xpbar-row xp-kind-${kind}`}>
+    <div
+      class={
+        extra === undefined ? `xpbar-row xp-kind-${kind}` : `xpbar-row xp-kind-${kind} ${extra}`
+      }
+    >
       {startCap !== undefined && <span class="xpbar-cap start pix">{startCap}</span>}
       <div
         class="xpbar"
@@ -43,15 +56,23 @@ export function XpBar({
         aria-valuemax={view.max}
         aria-valuenow={view.now}
         aria-valuetext={view.text}
-        ref={cssVars({ '--fill': view.pct })}
+        ref={cssVars({ '--fill': view.pct, '--from': view.fromPct })}
       >
-        <span class={view.filled ? 'xpbar-fill filled' : 'xpbar-fill'} />
-        <span class="xpbar-text pix" aria-hidden="true">
-          {view.text}
-        </span>
-        <span class="xpbar-text on-fill pix" aria-hidden="true">
-          {view.text}
-        </span>
+        <span
+          class={['xpbar-fill', view.filled ? 'filled' : '', view.hasGain ? 'has-gain' : '']
+            .filter((c) => c !== '')
+            .join(' ')}
+        />
+        {quiet !== true && (
+          <>
+            <span class="xpbar-text pix" aria-hidden="true">
+              {view.text}
+            </span>
+            <span class="xpbar-text on-fill pix" aria-hidden="true">
+              {view.text}
+            </span>
+          </>
+        )}
       </div>
       {endCap !== undefined && <span class="xpbar-cap end pix">{endCap}</span>}
     </div>

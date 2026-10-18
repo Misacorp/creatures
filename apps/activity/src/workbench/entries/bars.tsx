@@ -183,6 +183,7 @@ const xpBar: Entry = {
     text: { kind: 'text' },
     startCap: { kind: 'text', maxLength: 12 },
     endCap: { kind: 'text', maxLength: 12 },
+    gained: { kind: 'number', min: 0, max: 1000 },
     kind: { kind: 'select', options: XP_KINDS },
   },
   defaults: {
@@ -191,6 +192,7 @@ const xpBar: Entry = {
     text: '',
     startCap: 'Rank 2',
     endCap: 'Rank 3',
+    gained: 0,
     kind: 'explorer',
   },
   presets: [
@@ -200,11 +202,13 @@ const xpBar: Entry = {
     { name: 'Top rank', props: { value: 200, text: 'Top rank', endCap: '' } },
     { name: 'Experience (gold)', props: { kind: 'experience', startCap: 'Lv 6', endCap: 'Lv 7' } },
     { name: 'Crafting (leather)', props: { kind: 'crafting', startCap: 'Lv 2', endCap: 'Lv 3' } },
+    { name: 'Just gained 50', props: { value: 120, gained: 50 } },
   ],
   render: (p) => (
     <XpBar
       value={num(p, 'value')}
       max={num(p, 'max')}
+      gained={num(p, 'gained')}
       label="Explorer XP"
       kind={xpKind(str(p, 'kind'))}
       text={str(p, 'text') === '' ? undefined : str(p, 'text')}

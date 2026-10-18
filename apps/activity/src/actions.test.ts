@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ActionIds, isStaleError } from './actions';
 import { ApiError } from './api';
+import type { DungeonAct } from './dungeon-types';
 
 describe('action names', () => {
   it('pins the name of every keyed action', () => {
@@ -10,7 +11,7 @@ describe('action names', () => {
     // The other form is another action, so it never reuses the key of a request for this one.
     expect(ActionIds.evolve('c1', 'thornbuck')).not.toBe(ActionIds.evolve('c1', 'sunfawn'));
     expect(ActionIds.claimJob('j1')).toBe('claim-job:j1');
-    expect(ActionIds.dungeonRun(['a', 'b', 'c'])).toBe('dungeon-run:["a","b","c"]');
+    expect(ActionIds.dungeonStart(['a', 'b', 'c'])).toBe('dungeon-start:["a","b","c"]');
     expect(
       ActionIds.send({
         creatureId: 'c1',
@@ -40,11 +41,11 @@ describe('action names', () => {
     const supply = { kind: 'supply' as const, creatureId: 'c1', supplyId: 'lure-basic' };
     expect(ActionIds.job({ ...supply, treat: true })).not.toBe(ActionIds.job(supply));
     // A run is named by its team and by who got a treat, whatever order the treats came in.
-    expect(ActionIds.dungeonRun(['a', 'b', 'c'], ['b', 'a'])).toBe(
-      ActionIds.dungeonRun(['a', 'b', 'c'], ['a', 'b']),
+    expect(ActionIds.dungeonStart(['a', 'b', 'c'], ['b', 'a'])).toBe(
+      ActionIds.dungeonStart(['a', 'b', 'c'], ['a', 'b']),
     );
-    expect(ActionIds.dungeonRun(['a', 'b', 'c'], ['a'])).not.toBe(
-      ActionIds.dungeonRun(['a', 'b', 'c']),
+    expect(ActionIds.dungeonStart(['a', 'b', 'c'], ['a'])).not.toBe(
+      ActionIds.dungeonStart(['a', 'b', 'c']),
     );
   });
 
@@ -128,8 +129,46 @@ describe('action names', () => {
   });
 
   it('names a run by the order of its team', () => {
-    expect(ActionIds.dungeonRun(['a', 'b', 'c'])).toBe(ActionIds.dungeonRun(['a', 'b', 'c']));
-    expect(ActionIds.dungeonRun(['a', 'b', 'c'])).not.toBe(ActionIds.dungeonRun(['c', 'b', 'a']));
+    expect(ActionIds.dungeonStart(['a', 'b', 'c'])).toBe(ActionIds.dungeonStart(['a', 'b', 'c']));
+    expect(ActionIds.dungeonStart(['a', 'b', 'c'])).not.toBe(
+      ActionIds.dungeonStart(['c', 'b', 'a']),
+    );
+  });
+
+  it('names a dungeon act by its run, its step and what it does', () => {
+    const at = (step: number, act: Parameters<typeof ActionIds.dungeonAct>[2]) =>
+      ActionIds.dungeonAct('run1', step, act);
+    expect(at(2, { type: 'move', node: 'f1l0' })).toBe('dungeon-act:run1:2:move:f1l0');
+    expect(at(3, { type: 'event', option: 1 })).toBe('dungeon-act:run1:3:event:1');
+    expect(at(4, { type: 'home' })).toBe('dungeon-act:run1:4:home');
+    expect(at(4, { type: 'descend' })).toBe('dungeon-act:run1:4:descend');
+    // The same act at the same step is the same action (a retry keeps its key)...
+    expect(at(2, { type: 'move', node: 'f1l0' })).toBe(at(2, { type: 'move', node: 'f1l0' }));
+    // ...and anything else is another one.
+    const camp: Extract<DungeonAct, { type: 'camp' }> = {
+      type: 'camp',
+      choice: 'swap',
+      out: 'a',
+      in: 'd',
+      order: ['a', 'b', 'c'],
+    };
+    const names = [
+      at(2, { type: 'move', node: 'f1l0' }),
+      at(2, { type: 'move', node: 'f1l1' }),
+      at(3, { type: 'move', node: 'f1l0' }),
+      ActionIds.dungeonAct('run2', 2, { type: 'move', node: 'f1l0' }),
+      at(2, { type: 'event', option: 0 }),
+      at(2, { type: 'event', option: 1 }),
+      at(2, { type: 'home' }),
+      at(2, { type: 'descend' }),
+      at(2, { type: 'camp', choice: 'rest' }),
+      at(2, { type: 'camp', choice: 'keepsake', keepsake: 'k1' }),
+      at(2, { type: 'camp', choice: 'keepsake', keepsake: 'k2' }),
+      at(2, camp),
+      at(2, { ...camp, in: 'e' }),
+      at(2, { ...camp, order: ['b', 'a', 'c'] }),
+    ];
+    expect(new Set(names).size).toBe(names.length);
   });
 
   it('never gives two kinds of intent the same name, even for the same id', () => {

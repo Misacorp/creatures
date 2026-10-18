@@ -1,6 +1,6 @@
 # Raid bosses
 
-Status: 2026-10-15. Covers the four raid bosses: lore, look and fighting style. The daily dungeon's room bosses are in `dungeon.md`.
+Status: 2026-10-15. Covers the four raid bosses: lore, look and fighting style. The daily dungeon's floor bosses are in `dungeon.md`.
 
 Read `README.md` for the tags. Every boss has one element, and the four are the wheel's four forces: Tide, Ember, Grove and Spark.
 
@@ -156,7 +156,7 @@ After Phase 1, the boss adapts to what worked best for the team:
 
 - He is the king of the Storm Ridge's weather. The journal's "The lightning rod" page is set there: "The king of the clouds always picks out the strongest creature on the ridge and strikes it first. The weakest walk home unharmed." `(content: journal.json storm-lightning-rod)`
 - The Tempestray's wingbeats "stir up whole lightning storms", and the Sovereign is the "king of thunderclouds" `(content: creatures.json, bosses-lore.json)`. Treat them as kin, not the same creature `(inferred)`.
-- The Coil Baron, a room boss in the dungeon, is "a bad-tempered tangle of copper and lightning" `(content: dungeon-foes.json)`. It is a smaller cousin of the Sovereign `(inferred)`.
+- The Coil Baron, a floor boss in the dungeon, is "a bad-tempered tangle of copper and lightning" `(content: dungeon-foes.json)`. It is a smaller cousin of the Sovereign `(inferred)`.
 
 ### Look (content)
 
@@ -184,6 +184,6 @@ After Phase 1, the boss adapts to what worked best for the team:
 
 ## Raid bosses as a set
 
-- **Shape of the set** `(inferred)`: each boss keeps one of the four old ways a fight can change: a zone attack (Undertow), a reflected reaction (Backdraft), a silence (Bramble Bind), and a targeted strike (Lightning Rod). The new moves add sweeps across rows, shells on random creatures, splashes, lanes, row ends and moves announced a round ahead. The room bosses in `dungeon.md` reuse these ideas on a smaller scale.
+- **Shape of the set** `(inferred)`: each boss keeps one of the four old ways a fight can change: a zone attack (Undertow), a reflected reaction (Backdraft), a silence (Bramble Bind), and a targeted strike (Lightning Rod). The new moves add sweeps across rows, shells on random creatures, splashes, lanes, row ends and moves announced a round ahead. The floor bosses in `dungeon.md` reuse these ideas on a smaller scale.
 - **Weekly return** `(content: glossary.json "boss-rank", "season", "festival")`: a boss returns each raid week at a Rank. A win raises the Rank by one. A loss keeps it. A Festival week fights three Ranks lower, and pays half again as much Essence.
 - **Memory** `(content: journal.json any-boss-adapts)`: bosses remember. Use that in any story about them returning.

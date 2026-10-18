@@ -18,7 +18,7 @@ import {
   type Element,
   type Role,
 } from '@creatures/game';
-import type { DungeonRunRequest } from './dungeon-types';
+import type { DungeonStartRequest } from './dungeon-types';
 import type { PickerCreature } from './roster-picker';
 import {
   CANCEL_ANNOUNCEMENT,
@@ -294,18 +294,18 @@ export function slotStatuses(
 // --- The request ---
 
 /** The three creatures of a complete team in slot order, or null. This is what decides the run. */
-export function completeTeam(slots: Slots): DungeonRunRequest['team'] | null {
+export function completeTeam(slots: Slots): DungeonStartRequest['team'] | null {
   if (!isComplete(slots)) return null;
   const [a, b, c] = slots as readonly [string, string, string];
   return [a, b, c];
 }
 
-/** The body of `POST /api/dungeon/run`, or null when the team is not complete. The key is the caller's. */
+/** The body of `POST /api/dungeon/start`, or null when the team is not complete. The key is the caller's. */
 export function buildRunRequest(
   slots: Slots,
   idempotencyKey: string,
   treats: ReadonlySet<string> = new Set(),
-): DungeonRunRequest | null {
+): DungeonStartRequest | null {
   const team = completeTeam(slots);
   if (team === null) return null;
   // Only creatures of the team can have a treat; they go in the order they stand.

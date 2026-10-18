@@ -126,7 +126,7 @@ describe('the replay and stats the server sends', () => {
 });
 
 describe('the landmark on the pre-run card', () => {
-  it('names the room boss and the move it winds up', () => {
+  it('names the floor boss and the move it winds up', () => {
     expect(landmarkLine({ depth: 14, foeId: 'slag-tyrant' })).toBe(
       'Depth 14, a landmark: the Slag Tyrant waits. It winds up Slag Spill a round ahead.',
     );
@@ -136,12 +136,12 @@ describe('the landmark on the pre-run card', () => {
   });
 
   it('leaves out the second sentence for a boss with no signature, and copes with an unknown boss', () => {
-    // A foe without a signature (the content has them on every room boss, so use a plain foe).
+    // A foe without a signature (the content has them on every floor boss, so use a plain foe).
     expect(landmarkLine({ depth: 7, foeId: 'puddle-imp' })).toBe(
       'Depth 7, a landmark: the Puddle Imp waits.',
     );
     expect(landmarkLine({ depth: 7, foeId: 'nobody' })).toBe(
-      'Depth 7, a landmark: a room boss waits.',
+      'Depth 7, a landmark: a floor boss waits.',
     );
   });
 

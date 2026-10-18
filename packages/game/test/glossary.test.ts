@@ -7,6 +7,8 @@ import {
   PART_KINDS,
   GLOSSARY_SECTIONS,
   dungeonContent,
+  dungeonEvents,
+  dungeonKeepsakes,
   RULES,
   abilityView,
   content,
@@ -17,6 +19,7 @@ import {
   howToPlay,
   loadGlossary,
   loadHowToPlay,
+  keptOnDefeat,
   requiredGlossaryIds,
   expToNext,
   treatCost,
@@ -662,16 +665,33 @@ describe('the glossary covers the daily dungeon', () => {
   const fixed = [
     'dungeon',
     'dungeon-row',
+    'dungeon-map',
+    'dungeon-camp',
+    'dungeon-pack',
+    'keepsake',
+    'elite',
+    'mystery-room',
+    'cache',
+    'undercroft',
+    'carved-door',
+    'cracked-floor',
+    'epic-fight',
     'depth',
     'room-modifiers',
-    'room-boss',
+    'floor-boss',
     'landmark',
     'streak',
   ];
 
-  it('has an entry for every room modifier and every dungeon term', () => {
+  it('has an entry for every room modifier, keepsake, event and every dungeon term', () => {
     for (const m of dungeonContent.modifiers) {
       expect(glossaryEntry(GLOSSARY_IDS.modifier(m.id)), m.id).toBeDefined();
+    }
+    for (const k of dungeonKeepsakes) {
+      expect(glossaryEntry(GLOSSARY_IDS.keepsake(k.id)), k.id).toBeDefined();
+    }
+    for (const e of dungeonEvents) {
+      expect(glossaryEntry(GLOSSARY_IDS.event(e.id)), e.id).toBeDefined();
     }
     for (const id of fixed) expect(glossaryEntry(id), id).toBeDefined();
     expect(glossaryGaps(glossary, content)).toEqual([]);
@@ -682,7 +702,16 @@ describe('the glossary covers the daily dungeon', () => {
     for (const id of [
       'modifier-flooded',
       'modifier-echoing',
+      'keepsake-wayfarer-charm',
+      'event-glowing-pool',
       'dungeon',
+      'dungeon-map',
+      'dungeon-camp',
+      'dungeon-pack',
+      'keepsake',
+      'elite',
+      'mystery-room',
+      'cache',
       'depth',
       'landmark',
       'streak',
@@ -714,6 +743,27 @@ describe('the glossary covers the daily dungeon', () => {
     }
   });
 
+  it('explains the Undercroft with the numbers the rules have', () => {
+    const u = RULES.dungeon.undercroft;
+    expect(text('undercroft')).toContain(`depth ${String(u.fromDepth)}`);
+    expect(text('undercroft')).toContain(`heals ${String(u.catchBreathBp / 100)}% of max HP`);
+    expect(text('undercroft')).toContain(`the fallen get up at ${String(u.reviveBp / 100)}%`);
+    expect(text('undercroft')).toContain('twice their loot');
+    expect(u.lootMultiplier).toBe(2);
+    expect(text('undercroft')).toContain('Your pack stays at risk');
+    expect(text('undercroft')).toContain('up to five');
+    expect(u.maxFloors).toBe(5);
+    expect(text('carved-door')).toContain(`depth ${String(u.fromDepth)}`);
+    expect(text('carved-door')).toContain(
+      'a fight, a fierce foe, a mystery, a cache, a camp or an epic fight',
+    );
+    expect(text('cracked-floor')).toContain(`at most ${String(u.maxLevels)} Undercroft floors`);
+    expect(text('cracked-floor')).toContain(`${String(u.deeperFloors)} rooms`);
+    expect(text('epic-fight')).toContain(`${String(u.epic.loot.essence)} Essence`);
+    expect(text('epic-fight')).toContain(`${String(u.epic.loot.scrap)} scrap`);
+    expect(text('dungeon')).toContain(`From depth ${String(u.fromDepth)}, the Undercroft`);
+  });
+
   it('says the dungeon order is yours, left to right, then the foe, and never a foe or modifier choice', () => {
     expect(RULES.dungeon.turnOrder).toBe('left_to_right');
     const row = text('dungeon-row');
@@ -739,15 +789,101 @@ describe('the glossary covers the daily dungeon', () => {
     expect(d.streak.bonuses.map((b) => b.day)).toEqual([3, 7]);
     expect(d.streak.cycleDays).toBe(7);
     expect(text('streak')).toContain('3rd and 7th day of every 7');
-    expect(d.rooms).toBe(3);
-    expect(text('dungeon')).toContain('Three rooms');
     expect(d.teamSize).toBe(3);
+  });
+
+  it('says what the map, the camp and the pack do, with the numbers the rules have', () => {
+    const d = RULES.dungeon;
+    // The map: one floor seven rooms deep, the camp halfway, one map for the whole server, played room by room.
+    expect(d.floors).toBe(7);
+    expect(d.campFloor).toBe(3);
+    expect(d.campFloor).toBe((d.floors - 1) / 2);
+    expect(text('dungeon-map')).toContain('seven rooms deep');
+    expect(text('dungeon-map')).toContain('camp halfway');
+    expect(text('dungeon-map')).toContain('same for everyone on the server');
+    expect(text('dungeon')).toContain('map one room at a time');
+    expect(text('dungeon')).toContain('same for the whole server');
+    expect(text('dungeon')).toContain('HP carries over');
+    expect(text('dungeon')).toContain('A camp sits halfway');
+    // The camp: Rest heals the rules' share, two keepsakes are on offer, the row can be reordered.
+    expect(text('dungeon-camp')).toContain(`Rest (${percent(d.camp.restBp)} of max HP back)`);
+    expect(d.camp.offers).toBe(2);
+    expect(text('dungeon-camp')).toContain('one of two keepsakes');
+    expect(text('dungeon-camp')).toContain('reorder your row for free');
+    expect(text('dungeon-camp')).toContain('head home and keep your whole pack');
+    // Home keeps it all; a defeat keeps half of each amount, rounded up (and the rules do round up).
+    expect(d.defeatKeepBp).toBe(5_000);
+    expect(keptOnDefeat({ bait: 1, essence: 1, scrap: 3 })).toEqual({
+      bait: 1,
+      essence: 1,
+      scrap: 2,
+    });
+    for (const id of ['dungeon', 'dungeon-pack']) {
+      expect(text(id), id).toContain('A defeat keeps half');
+      expect(text(id), id).toContain('rounded up');
+    }
+    expect(text('dungeon')).toContain('Home keeps your whole pack');
+    expect(text('dungeon-pack')).toContain('Head home or beat the boss and you keep all of it');
+    // Experience and the supply are always safe.
+    expect(text('dungeon')).toContain('Experience and the supply are always safe');
+    expect(text('dungeon-pack')).toContain('Experience and the run');
+    expect(text('dungeon-pack')).toContain('never go in the pack');
+    // The old three-room text is gone.
+    const all = glossary.map((e) => JSON.stringify(e)).join('\n') + JSON.stringify(howToPlay);
+    expect(all).not.toContain('Three rooms');
+    expect(all).not.toContain('three rooms');
+    expect(all).not.toContain('played out at once');
+    // Misa, 2026-10-18: the last room of a floor is its floor boss; "room boss" and "keeper" are gone.
+    expect(all).not.toMatch(/room boss|keeper/i);
+    expect(text('floor-boss')).toContain('Every floor ends in one');
+    // The one-run-a-day rules and the retry.
+    expect(text('dungeon')).toContain('One run per day');
+    expect(text('dungeon')).toContain('retried once');
+  });
+
+  it('gives the elite and the cache the numbers the rules have', () => {
+    const d = RULES.dungeon;
+    expect(text('elite')).toContain(`${percent(d.elite.hpBp - 10_000)} more HP`);
+    expect(text('elite')).toContain(`hits ${percent(d.elite.atkBp - 10_000)} harder`);
+    expect(d.loot.cache).toEqual({ bait: 1, essence: 0, scrap: 1 });
+    expect(text('cache')).toContain('1 Bait and 1 scrap');
+    expect(text('keepsake')).toContain('cannot hold the same one twice');
+    expect(text('mystery-room')).toContain('odds are always written out');
+  });
+
+  it('writes each keepsake and event entry from its content, so the words stay true', () => {
+    for (const k of dungeonKeepsakes) {
+      const e = entry(GLOSSARY_IDS.keepsake(k.id));
+      expect(e.title).toBe(k.name);
+      expect(e.short).toBe(k.description);
+      expect(e.lines).toEqual([]);
+      const first = k.effects[0];
+      if (k.effects.length === 1 && first?.op === 'team_stat' && first.element !== undefined) {
+        expect(e.visual).toEqual({ kind: 'element', id: first.element });
+      }
+    }
+    for (const event of dungeonEvents) {
+      const e = entry(GLOSSARY_IDS.event(event.id));
+      expect(e.title).toBe(event.name);
+      expect(e.lines).toEqual(event.options.map((o) => `${o.label}: ${o.description}`));
+    }
   });
 
   it('sends the dungeon entries to the Daily dungeon section of the page', () => {
     const ids = new Set(howToPlay.sections.map((s) => s.id));
-    const entries = glossary.filter((g) => g.id.startsWith('modifier-') || fixed.includes(g.id));
-    expect(entries.length).toBe(fixed.length + dungeonContent.modifiers.length);
+    const entries = glossary.filter(
+      (g) =>
+        g.id.startsWith('modifier-') ||
+        g.id.startsWith('keepsake-') ||
+        g.id.startsWith('event-') ||
+        fixed.includes(g.id),
+    );
+    expect(entries.length).toBe(
+      fixed.length +
+        dungeonContent.modifiers.length +
+        dungeonKeepsakes.length +
+        dungeonEvents.length,
+    );
     for (const e of entries) {
       expect(ids.has(e.section), e.id).toBe(true);
       expect(e.section, e.id).toBe('dungeon');
@@ -758,6 +894,7 @@ describe('the glossary covers the daily dungeon', () => {
     const section = howToPlay.sections.find((s) => s.id === 'dungeon');
     expect(section?.title).toBe('Daily dungeon');
     expect(section?.lines.length).toBeGreaterThanOrEqual(3);
+    // The design caps the page at 5 lines.
     expect(section?.lines.length).toBeLessThanOrEqual(5);
     const words = (section?.lines ?? []).join(' ');
     const d = RULES.dungeon;
@@ -769,10 +906,16 @@ describe('the glossary covers the daily dungeon', () => {
     expect(JSON.stringify(entry('dungeon'))).toContain(`resets at ${reset}`);
     expect(words).toContain('team of three');
     expect(d.teamSize).toBe(3);
-    expect(words).toContain('three rooms: two foes, then a room boss');
-    expect(d.rooms).toBe(3);
+    expect(words).toContain('Walk a map room by room');
+    expect(d.floors).toBe(7);
+    expect(words).toContain('A camp sits halfway');
     expect(words).toContain('HP carries over');
+    expect(words).toContain('rest, swap a creature or take a keepsake, then push on or head home');
+    expect(words).toContain('Home keeps your pack');
+    expect(d.defeatKeepBp).toBe(5_000);
+    expect(words).toContain('A defeat keeps half, rounded up');
     expect(words).toContain('one depth deeper');
+    expect(words).not.toContain('three rooms');
     expect(words).toContain(`${String(d.landmarkEvery)}th depth is a landmark`);
     expect(words).toContain('gear for sure');
     expect(d.streak.bonuses.map((b) => b.day)).toEqual([3, 7]);

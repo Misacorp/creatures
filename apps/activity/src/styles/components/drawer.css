@@ -143,6 +143,18 @@ button.drawer-handle:active:not(:disabled) {
   line-height: 1.1;
 }
 
+/* The heading with a "?" help tag right after it: the tag stays next to the words, not at the far edge. */
+.drawer-heading {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+}
+
+.drawer-heading .drawer-title {
+  flex: 0 1 auto;
+}
+
 .drawer-meta {
   flex: none;
 }

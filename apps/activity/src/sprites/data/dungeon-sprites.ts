@@ -2,7 +2,7 @@
  * Pixel sprites (16x16) for the eight daily-dungeon foes (`dungeon-foes.json`), in the same chibi
  * style as the species sprites: ink outline, one highlight, one shade, and the foe's element colours
  * (the same hues as the creatures of that element). Each foe is drawn from its name and flavour text;
- * the four room bosses are in `dungeon-boss-sprites.ts`.
+ * the four floor bosses are in `dungeon-boss-sprites.ts`.
  * Palette keys: `k` ink, `e` eye highlight, `b` base, `h` highlight, `s` shade; the other letters are
  * feature colours of that foe. Rows marked `mirror` store the left half only.
  */

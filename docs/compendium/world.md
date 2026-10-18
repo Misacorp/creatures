@@ -97,7 +97,7 @@ Nothing in the content says any element is good. Every element is strong against
 - **Thornmother** is tied to the Verdant Hollow. The journal calls her "the old queen of thorns", and the Hollow's pages are about waiting and listening trees. `(inferred from journal verdant-both-ends)`
 - **Storm Sovereign** is tied to Storm Ridge. The journal's "king of the clouds" page is set there. `(content: journal.json storm-lightning-rod)` The Sovereign is the Ridge's king; Tempestray's "storms" are his weather. `(inferred)`
 - **Tidal Colossus** and **Cinder Wyrm** are not placed by the content. Tidal Colossus "rises from the deep" `(content: bosses-lore.json)`, so it sleeps under the Tidepools or the Moonlit Reef `(inferred)`. Cinder Wyrm is "black stone and living magma", which fits the Ember Caves `(inferred)`.
-- The **room bosses** of the daily dungeon are smaller echoes of the raid bosses. Slag Tyrant is "king of a cooled forge" and Bramble Matron is "the old hedge that all the little hedges follow". `(content: dungeon-foes.json)` They are lesser cousins of the raid bosses `(inferred)`. See `dungeon.md` and `bosses.md`.
+- The **floor bosses** of the daily dungeon are smaller echoes of the raid bosses. Slag Tyrant is "king of a cooled forge" and Bramble Matron is "the old hedge that all the little hedges follow". `(content: dungeon-foes.json)` They are lesser cousins of the raid bosses `(inferred)`. See `dungeon.md` and `bosses.md`.
 
 ## 4. Recurring motifs
 

@@ -10,17 +10,26 @@ import {
   type Rng,
 } from '@creatures/game';
 import {
-  dungeonBossEnrage,
-  liveFightRules,
-  simulateDungeon,
+  dungeonBossEnrage as bossEnrage,
+  liveFightRules as liveRules,
+  simulateDungeonRoom,
+  type DungeonRoomResult,
   type DungeonRunInput,
-  type DungeonRunResult,
 } from '@creatures/engine';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { grantDungeonRun } from '../src/gear-grants';
 import { giveItem } from './gear-helpers';
 import { drawSeed } from '../src/raid-resolve';
-import { dungeonPlayer, newKey, type DungeonPlayer } from './dungeon-helpers';
+import type { RunState } from '../src/dungeon-state';
+import {
+  deadlyFoes,
+  dungeonPlayer,
+  easyFoes,
+  newKey,
+  scaleFoes,
+  withDeadlyFoes,
+  type DungeonPlayer,
+} from './dungeon-helpers';
 import {
   LATEST_SCHEMA_VERSION,
   T0,
@@ -38,6 +47,19 @@ const DAY = 24 * HOUR;
  * 15th. `T0` (10:00 local) is before the reset and so still the game day of the 14th.
  */
 const AFTER_RESET = Date.parse('2027-01-15T12:00:00Z');
+
+/**
+ * The foes are made easy for every test of this file (see `scaleFoes`): the tuned numbers move with the
+ * simulator, so a test that needs a clear says so here and a test that needs a loss asks for deadly foes.
+ * What a player can do on the map is tested in `dungeon-path.test.ts`.
+ */
+let restore: () => void = () => undefined;
+beforeEach(() => {
+  restore = easyFoes();
+});
+afterEach(() => {
+  restore();
+});
 
 const opts = (seed = 'dungeon-tests') => ({
   dungeonRng: createSeededRng(seed),
@@ -116,15 +138,38 @@ type StoredRun = {
   seed: string;
   cleared: number;
   rooms_cleared: number;
+  status: string;
+  outcome: string | null;
   input_json: string | null;
   result_json: string | null;
+  state_json: string | null;
   summary_json: string;
 };
 const storedRuns = (ctx: CoreContext, userId?: string): StoredRun[] =>
   rows<StoredRun>(
     ctx.sql,
-    `SELECT id, day, attempt, depth, seed, cleared, rooms_cleared, input_json, result_json, summary_json
+    `SELECT id, day, attempt, depth, seed, cleared, rooms_cleared, status, outcome, input_json,
+       result_json, state_json, summary_json
      FROM dungeon_runs ${userId === undefined ? '' : `WHERE user_id = '${userId}'`} ORDER BY rowid`,
+  );
+
+/** The stored state of a map run (the base fight input, the map copy, the pack...). */
+const stateOf = (run: StoredRun | undefined): RunState =>
+  JSON.parse(run?.state_json ?? '{}') as RunState;
+
+type StoredStep = {
+  step: number;
+  node: string | null;
+  seed: string | null;
+  input_json: string | null;
+  result_json: string | null;
+};
+/** The steps of a run that played a fight, in order. */
+const fightSteps = (ctx: CoreContext, runId: string): StoredStep[] =>
+  rows<StoredStep>(
+    ctx.sql,
+    'SELECT step, node, seed, input_json, result_json FROM dungeon_steps WHERE run_id = ? AND node IS NOT NULL ORDER BY step',
+    runId,
   );
 
 /** A team strong enough to clear the early depths. */
@@ -239,7 +284,6 @@ describe('GET /api/dungeon/today', () => {
         });
         expect(today.modifiers).toHaveLength(RULES.dungeon.rooms);
         expect(today.modifiers.map((m) => m.room)).toEqual([0, 1, 2]);
-        expect(new Set(today.modifiers.map((m) => m.id)).size).toBe(RULES.dungeon.rooms);
         for (const m of today.modifiers) {
           const content = dungeonContent.modifiers.find((c) => c.id === m.id);
           expect(m.name).toBe(content?.name);
@@ -426,8 +470,8 @@ describe('the last team in GET /api/dungeon/today', () => {
   });
 });
 
-describe('POST /api/dungeon/run', () => {
-  it('plays a run, stores it and pays it in one go', async () => {
+describe('a played-out run', () => {
+  it('plays a run, stores it and pays it when it ends', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -441,35 +485,50 @@ describe('POST /api/dungeon/run', () => {
           attempt: 1,
           depth: 1,
           cleared: true,
-          roomsCleared: 3,
+          outcome: 'cleared',
           newDepth: 2,
           streak: 1,
           landmark: false,
         });
-        expect(run.rooms.map((r) => r.kind)).toEqual(['foe', 'foe', 'boss']);
+        // The fights it played: the last one is the floor boss, and all were cleared.
+        expect(run.rooms.at(-1)?.kind).toBe('boss');
         expect(run.rooms.every((r) => r.played && r.cleared && r.foeHpEnd === 0)).toBe(true);
+        expect(run.roomsCleared).toBe(run.rooms.length);
         // The row is the team in the order of the request: left to right.
         expect(run.team.map((t) => t.id)).toEqual(p.creatureIds);
-        // The modifiers shown before the run are the rooms' modifiers.
         const today = await p.today();
-        expect(run.rooms.map((r) => r.modifier.id)).toEqual(today.modifiers.map((m) => m.id));
         expect(today.last?.id).toBe(run.id);
         expect(res.body.today.last?.id).toBe(run.id);
         expect(res.body.today.depth).toBe(2);
+        expect(today.active).toBeNull();
 
-        // Paid: Bait, Essence and scrap for all three rooms, through the ledger and the parts table.
-        const per = RULES.dungeon.perRoom;
-        const bait = per.reduce((n, r) => n + r.bait, 0);
-        const essence = per.reduce((n, r) => n + r.essence, 0) + RULES.dungeon.fullClear.essence;
-        expect(run.rewards).toMatchObject({ bait, essence, landmark: false, streak: null });
-        const ledger = dungeonLedger(ctx, p.id);
-        expect(ledger).toEqual([
-          { currency: 'bait', amount: bait, idempotency_key: 'dungeon:2027-01-15:1:bait' },
-          { currency: 'essence', amount: essence, idempotency_key: 'dungeon:2027-01-15:1:essence' },
-        ]);
-        expect(partsOf(ctx, p.id).scrap).toBeGreaterThanOrEqual(
-          per.reduce((n, r) => n + r.scrap, 0),
-        );
+        // Paid: the pack, the boss chest and the full clear, through the ledger and the parts table.
+        const kept = run.pack?.kept ?? { bait: 0, essence: 0, scrap: 0 };
+        expect(run.pack?.kept).toEqual(run.pack?.found); // a clear keeps the whole pack
+        const essence = kept.essence + RULES.dungeon.fullClear.essence;
+        expect(run.rewards).toMatchObject({
+          bait: kept.bait,
+          essence,
+          landmark: false,
+          streak: null,
+        });
+        const expected: { currency: string; amount: number; idempotency_key: string }[] = [];
+        if (kept.bait > 0) {
+          expected.push({
+            currency: 'bait',
+            amount: kept.bait,
+            idempotency_key: 'dungeon:2027-01-15:1:bait',
+          });
+        }
+        if (essence > 0) {
+          expected.push({
+            currency: 'essence',
+            amount: essence,
+            idempotency_key: 'dungeon:2027-01-15:1:essence',
+          });
+        }
+        expect(dungeonLedger(ctx, p.id)).toEqual(expected);
+        expect(partsOf(ctx, p.id).scrap).toBeGreaterThanOrEqual(kept.scrap);
         expect(progressOf(ctx, p.id)).toMatchObject({
           depth: 2,
           streak: 1,
@@ -477,7 +536,9 @@ describe('POST /api/dungeon/run', () => {
           runs: 1,
           clears: 1,
         });
-        expect(storedRuns(ctx, p.id)).toHaveLength(1);
+        const stored = storedRuns(ctx, p.id);
+        expect(stored).toHaveLength(1);
+        expect(stored[0]).toMatchObject({ status: 'done', outcome: 'cleared', cleared: 1 });
       },
       opts(),
     );
@@ -494,13 +555,13 @@ describe('POST /api/dungeon/run', () => {
         expect(res.status).toBe(200);
         expect(res.body.run.team.map((t) => t.id)).toEqual([c, a, b]);
         const stored = storedRuns(ctx, p.id)[0] as StoredRun;
-        const input = JSON.parse(stored.input_json as string) as DungeonRunInput;
+        const input = stateOf(stored).input;
         // The fight's row is the team, position i = team[i], and nothing else was stored about it.
         expect(input.team.map((s) => s.id)).toEqual([c, a, b]);
         expect(Object.keys(input)).not.toContain('formation');
         // The combat rules, the boss room's enrage and the depth are stored for an exact replay.
-        expect(input.rules).toEqual(liveFightRules());
-        expect(input.enrage).toEqual(dungeonBossEnrage());
+        expect(input.rules).toEqual(liveRules());
+        expect(input.enrage).toEqual(bossEnrage());
         expect(input.depth).toBe(stored.depth);
         const replay = await p.replay(res.body.run.id);
         expect(replay.body.row.map((r) => [r.position, r.id])).toEqual([
@@ -517,47 +578,21 @@ describe('POST /api/dungeon/run', () => {
     );
   });
 
-  it('keeps the depth after a lost run, and pays only the rooms that were cleared', async () => {
+  it('keeps the depth after a lost run, and pays nothing when no fight was cleared', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
-        const p = await dungeonPlayer(ctx, 1, { level: 1 });
-        setProgress(ctx, p.id, { depth: 45 });
-        const res = await p.run();
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const res = await withDeadlyFoes(() => p.run());
         expect(res.status).toBe(200);
         const run = res.body.run;
         expect(run.cleared).toBe(false);
-        expect(run.roomsCleared).toBe(0);
-        expect(run.newDepth).toBe(45);
-        expect(run.rooms.filter((r) => r.played)).toHaveLength(1); // the run ends in the room it loses
-        expect(run.rooms.slice(1).every((r) => !r.played && !r.cleared)).toBe(true);
+        expect(run).toMatchObject({ outcome: 'defeat', roomsCleared: 0, newDepth: 1 });
+        expect(run.rooms).toHaveLength(1); // the run ends in the fight it loses
+        expect(run.rooms[0]).toMatchObject({ played: true, cleared: false });
         expect(run.rewards).toMatchObject({ bait: 0, essence: 0, gear: [] });
         expect(dungeonLedger(ctx, p.id)).toEqual([]);
-        expect(progressOf(ctx, p.id)).toMatchObject({ depth: 45, runs: 1, clears: 0, streak: 1 });
-      },
-      opts(),
-    );
-  });
-
-  it('pays only the rooms cleared when a run is lost in the second room', async () => {
-    // Search depths until a player loses in room 2 (the numbers are fixed by the seed, so this is repeatable).
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        let found = false;
-        for (let depth = 2; depth < 40 && !found; depth++) {
-          const p = await dungeonPlayer(ctx, depth + 10, { level: 12 });
-          setProgress(ctx, p.id, { depth });
-          const run = (await p.run()).body.run;
-          if (run.roomsCleared !== 1) continue;
-          found = true;
-          const first = RULES.dungeon.perRoom[0];
-          expect(run.rewards.bait).toBe(first?.bait);
-          expect(run.rewards.essence).toBe(first?.essence);
-          expect(run.cleared).toBe(false);
-          expect(run.rooms.map((r) => r.played)).toEqual([true, true, false]);
-        }
-        expect(found).toBe(true);
+        expect(progressOf(ctx, p.id)).toMatchObject({ depth: 1, runs: 1, clears: 0, streak: 1 });
       },
       opts(),
     );
@@ -572,11 +607,11 @@ describe('POST /api/dungeon/run', () => {
         const before = () => [count(ctx.sql, 'dungeon_runs'), count(ctx.sql, 'ledger')];
         const start = before();
         const refuse = async (
-          overrides: Parameters<DungeonPlayer['run']>[0],
+          overrides: Parameters<DungeonPlayer['start']>[0],
           status: number,
           error: string,
         ) => {
-          const res = await p.run(overrides);
+          const res = await p.start(overrides);
           expect({ status: res.status, error: res.body.error }).toEqual({ status, error });
           expect(before()).toEqual(start);
         };
@@ -590,7 +625,7 @@ describe('POST /api/dungeon/run', () => {
         await refuse({ team: [a, a, b] }, 400, 'duplicate_creature');
         // The old zone formation is gone: any body that still has one is not the strict shape.
         for (const formation of [['front', 'middle', 'back'], ['front', 'front', 'back'], []]) {
-          const old = await p.call('POST', '/api/dungeon/run', { ...p.body(), formation });
+          const old = await p.call('POST', '/api/dungeon/start', { ...p.body(), formation });
           expect({ status: old.status, error: old.body['error'] }).toEqual({
             status: 400,
             error: 'invalid_body',
@@ -609,7 +644,7 @@ describe('POST /api/dungeon/run', () => {
           { creatures: [{ creatureId: a, fireAtRound: 2 }] },
           {},
         ]) {
-          const old = await p.call('POST', '/api/dungeon/run', { ...p.body(), abilities });
+          const old = await p.call('POST', '/api/dungeon/start', { ...p.body(), abilities });
           expect({ status: old.status, error: old.body['error'] }).toEqual({
             status: 400,
             error: 'invalid_body',
@@ -624,14 +659,17 @@ describe('POST /api/dungeon/run', () => {
           { seed: 'abc' },
           { stats: { atk: 9999 } },
           { depth: 50 },
+          { map: { floors: 1, nodes: [] } },
         ]) {
-          const res = await p.call('POST', '/api/dungeon/run', { ...p.body(), ...extra });
+          const res = await p.call('POST', '/api/dungeon/start', { ...p.body(), ...extra });
           expect(res.status).toBe(400);
           expect(res.body).toEqual({ error: 'invalid_body' });
         }
         expect(before()).toEqual(start);
-        // And what is allowed still works afterwards, with nothing used up.
-        expect((await p.run()).status).toBe(200);
+        // And what is allowed still works afterwards, with nothing used up (another player: this one
+        // has spent its request allowance on all the refusals).
+        expect(count(ctx.sql, 'dungeon_runs')).toBe(0);
+        expect((await other.run()).status).toBe(200);
       },
       opts(),
     );
@@ -690,49 +728,44 @@ describe('POST /api/dungeon/run', () => {
 });
 
 describe('idempotency', () => {
-  it('returns the stored run for a retry with the same key, and charges and draws nothing', async () => {
+  it('returns the same run for a start retried with the same key, and charges and draws nothing', async () => {
     const rng = counting('retry');
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         const body = p.body();
-        const first = await p.call('POST', '/api/dungeon/run', body);
+        const first = await p.call('POST', '/api/dungeon/start', body);
         expect(first.status).toBe(200);
         const drawn = rng.drawn();
-        const ledger = dungeonLedger(ctx, p.id);
-        const parts = partsOf(ctx, p.id);
         const eventCount = count(ctx.sql, 'analytics_events');
         for (let i = 0; i < 3; i++) {
-          const again = await p.call('POST', '/api/dungeon/run', body);
+          const again = await p.call('POST', '/api/dungeon/start', body);
           expect(again.status).toBe(200);
-          expect((again.body['run'] as { id: string }).id).toBe(
-            (first.body['run'] as { id: string }).id,
+          expect((again.body['state'] as { id: string }).id).toBe(
+            (first.body['state'] as { id: string }).id,
           );
-          expect(again.body['run']).toEqual(first.body['run']);
         }
         expect(rng.drawn()).toBe(drawn);
         expect(storedRuns(ctx, p.id)).toHaveLength(1);
-        expect(dungeonLedger(ctx, p.id)).toEqual(ledger);
-        expect(partsOf(ctx, p.id)).toEqual(parts);
-        expect(count(ctx.sql, 'analytics_events')).toBe(eventCount); // a replay logs nothing
+        expect(count(ctx.sql, 'analytics_events')).toBe(eventCount);
       },
       { dungeonRng: rng, gearRng: createSeededRng('retry-gear') },
     );
   });
 
-  it('returns the stored run on a retry the next day, too (the key is the player’s, not the day’s)', async () => {
+  it('returns the stored run on a start retried the next day, too (the key is the player’s, not the day’s)', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         const body = p.body();
-        const first = await p.call('POST', '/api/dungeon/run', body);
+        const first = await p.call('POST', '/api/dungeon/start', body);
         ctx.clock.t += DAY;
-        const again = await p.call('POST', '/api/dungeon/run', body);
+        const again = await p.call('POST', '/api/dungeon/start', body);
         expect(again.status).toBe(200);
-        expect((again.body['run'] as { id: string }).id).toBe(
-          (first.body['run'] as { id: string }).id,
+        expect((again.body['state'] as { id: string }).id).toBe(
+          (first.body['state'] as { id: string }).id,
         );
         expect(storedRuns(ctx, p.id)).toHaveLength(1);
       },
@@ -746,9 +779,9 @@ describe('idempotency', () => {
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         const body = p.body();
-        expect((await p.call('POST', '/api/dungeon/run', body)).status).toBe(200);
+        expect((await p.call('POST', '/api/dungeon/start', body)).status).toBe(200);
         const [a, b, c] = p.creatureIds as [string, string, string];
-        const changed = await p.call('POST', '/api/dungeon/run', {
+        const changed = await p.call('POST', '/api/dungeon/start', {
           ...body,
           team: [b, a, c],
         });
@@ -774,7 +807,7 @@ describe('idempotency', () => {
           apply: () => ({ ok: true }),
         });
         expect(spent.status).toBe('ok');
-        const reused = await q.run({ idempotencyKey: key });
+        const reused = await q.start({ idempotencyKey: key });
         expect(reused.status).toBe(409);
         expect(reused.body).toEqual({ error: 'key_conflict' });
         expect(storedRuns(ctx, q.id)).toHaveLength(0);
@@ -783,7 +816,7 @@ describe('idempotency', () => {
     );
   });
 
-  it('stores one run and pays once when two requests race', async () => {
+  it('stores one run and pays once when three players-in-one race to run', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -793,17 +826,20 @@ describe('idempotency', () => {
         const statuses = results.map((r) => r.status).sort();
         expect(statuses).toEqual([200, 409, 409]);
         expect(
-          results.filter((r) => r.status === 409).every((r) => r.body.error === 'already_run'),
+          results
+            .filter((r) => r.status === 409)
+            .every((r) => r.body.error === 'run_active' || r.body.error === 'already_run'),
         ).toBe(true);
         expect(storedRuns(ctx, p.id)).toHaveLength(1);
-        expect(dungeonLedger(ctx, p.id)).toHaveLength(2); // Bait and Essence, once
         expect(progressOf(ctx, p.id)).toMatchObject({ runs: 1, clears: 1, depth: 2 });
+        // Bait and Essence were paid once (at most two ledger rows, one per currency).
+        expect(dungeonLedger(ctx, p.id).length).toBeLessThanOrEqual(2);
       },
       opts(),
     );
   });
 
-  it('stores one run when the same request is sent twice at once', async () => {
+  it('stores one run when the same start is sent twice at once', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -811,15 +847,14 @@ describe('idempotency', () => {
         setProgress(ctx, p.id, {});
         const body = p.body();
         const results = await Promise.all([
-          p.call('POST', '/api/dungeon/run', body),
-          p.call('POST', '/api/dungeon/run', body),
+          p.call('POST', '/api/dungeon/start', body),
+          p.call('POST', '/api/dungeon/start', body),
         ]);
         expect(results.map((r) => r.status)).toEqual([200, 200]);
-        expect((results[0]?.body['run'] as { id: string }).id).toBe(
-          (results[1]?.body['run'] as { id: string }).id,
+        expect((results[0]?.body['state'] as { id: string }).id).toBe(
+          (results[1]?.body['state'] as { id: string }).id,
         );
         expect(storedRuns(ctx, p.id)).toHaveLength(1);
-        expect(dungeonLedger(ctx, p.id)).toHaveLength(2);
       },
       opts(),
     );
@@ -840,7 +875,9 @@ describe('idempotency', () => {
         const ledger = dungeonLedger(ctx, p.id);
         const keys = ledger.map((l) => l.idempotency_key).sort();
         const bonus = RULES.dungeon.streak.bonuses.find((b) => b.day === 3);
-        const expected = ['dungeon:2027-01-15:1:bait', 'dungeon:2027-01-15:1:essence'];
+        const expected: string[] = [];
+        if (run.rewards.bait > 0) expected.push('dungeon:2027-01-15:1:bait');
+        if (run.rewards.essence > 0) expected.push('dungeon:2027-01-15:1:essence');
         if ((bonus?.bait ?? 0) > 0) expected.push('dungeon:2027-01-15:streak:bait');
         if ((bonus?.essence ?? 0) > 0) expected.push('dungeon:2027-01-15:streak:essence');
         expect(keys).toEqual(expected.sort());
@@ -892,8 +929,16 @@ const stockOf = (ctx: CoreContext, userId: string): Record<string, number> =>
 const stockTotal = (ctx: CoreContext, userId: string): number =>
   Object.values(stockOf(ctx, userId)).reduce((n, x) => n + x, 0);
 
+/** A policy that wins the first fight and loses the next one: deadly foes from then on. */
+const winFirstThenLose = {
+  pick: (state: { roomsCleared: number; reachable: string[] }) => {
+    if (state.roomsCleared >= 1) deadlyFoes();
+    return state.reachable[0] as string;
+  },
+};
+
 describe('the supply a run drops', () => {
-  it('puts one supply in the stock for a run that clears the first room, and shows it in the rewards', async () => {
+  it('puts one supply in the stock for a run that clears the first fight, and shows it in the rewards', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -901,14 +946,12 @@ describe('the supply a run drops', () => {
         ctx.clock.t = AFTER_RESET;
         const res = await p.run();
         const run = res.body.run;
-        const dropped = RULES.dungeon.perRoom.reduce((n, r) => n + r.supply, 0);
-        expect(dropped).toBeGreaterThan(0);
-        expect(run.rewards.supplies).toHaveLength(dropped);
+        expect(run.rewards.supplies).toHaveLength(1);
         // Depth 1 drops the basic tier of a kind of the content.
         for (const id of run.rewards.supplies ?? []) expect(supplyDef(id)?.tier).toBe('basic');
         // They are in the stock, and the state the client reloads shows them.
         const stock = stockOf(ctx, p.id);
-        expect(stockTotal(ctx, p.id)).toBe(dropped);
+        expect(stockTotal(ctx, p.id)).toBe(1);
         for (const id of run.rewards.supplies ?? []) expect(stock[id]).toBeGreaterThan(0);
         const state = (await p.call('GET', '/api/state')).body as {
           supplies: Record<string, number>;
@@ -924,63 +967,80 @@ describe('the supply a run drops', () => {
         expect(stored.supplies).toEqual(run.rewards.supplies);
         // Analytics: the drop is a source of supplies, and the reward event counts it.
         const drop = events(ctx, 'gear_drop').find((e) => e['source'] === 'dungeon');
-        expect(drop?.['supplies']).toBe(dropped);
-        expect(events(ctx, 'dungeon_reward')[0]?.['supplies']).toBe(dropped);
+        expect(drop?.['supplies']).toBe(1);
+        expect(events(ctx, 'dungeon_reward')[0]?.['supplies']).toBe(1);
       },
       opts(),
     );
   });
 
-  it('drops nothing for a run lost in the first room, and keeps the first room drop of a run lost later', async () => {
+  it('drops nothing for a run lost in the first fight, and keeps the supply of a run lost later', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
-        const lost = await dungeonPlayer(ctx, 1, { level: 1 });
-        setProgress(ctx, lost.id, { depth: 45 });
-        const none = (await lost.run()).body.run;
+        const lost = await dungeonPlayer(ctx, 1, STRONG);
+        const none = (await withDeadlyFoes(() => lost.run())).body.run;
         expect(none.roomsCleared).toBe(0);
         expect(none.rewards.supplies ?? []).toEqual([]);
         expect(stockOf(ctx, lost.id)).toEqual({});
-        // A run lost in the second room still got past the first one (searched: the dice are fixed).
-        let found = false;
-        let n = 1;
-        for (let depth = 2; depth < 60 && !found; depth++) {
-          for (const level of [8, 10, 12, 15, 20]) {
-            const p = await dungeonPlayer(ctx, ++n, { level });
-            setProgress(ctx, p.id, { depth });
-            const run = (await p.run()).body.run;
-            if (run.roomsCleared !== 1) continue;
-            found = true;
-            expect(run.cleared).toBe(false);
-            const first = RULES.dungeon.perRoom[0]?.supply ?? 0;
-            expect(run.rewards.supplies).toHaveLength(first);
-            expect(stockTotal(ctx, p.id)).toBe(first);
-            break;
-          }
+        // A run lost in the second fight still got past the first one: its supply is safe.
+        const later = await dungeonPlayer(ctx, 2, STRONG);
+        let run;
+        try {
+          run = (await later.run({}, winFirstThenLose)).body.run;
+        } finally {
+          restore();
+          restore = easyFoes();
         }
-        expect(found).toBe(true);
+        expect(run.outcome).toBe('defeat');
+        expect(run.roomsCleared).toBe(1);
+        expect(run.rewards.supplies).toHaveLength(1);
+        expect(stockTotal(ctx, later.id)).toBe(1);
       },
       opts(),
     );
   });
 
-  it('draws the supply with the live gear rng once, and a retry or a second grant draws and grants nothing', async () => {
+  it('draws the supply with the live gear rng once, and a retried act or a second grant draws and grants nothing', async () => {
     const gear = counting('supply-gear');
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         ctx.clock.t = AFTER_RESET;
-        const body = p.body();
-        const first = await p.call('POST', '/api/dungeon/run', body);
-        expect(first.status).toBe(200);
-        const firstRun = first.body['run'] as { rewards: { supplies: string[] } };
+        // Play by hand, keeping the key of the act that ends the run.
+        let state = (await p.start()).body.state;
+        let last: { key: string; step: number; act: unknown } | undefined;
+        let ended;
+        while (state.status === 'active') {
+          const a =
+            state.pending?.kind === 'event'
+              ? ({ type: 'event', option: 0 } as const)
+              : state.pending?.kind === 'camp'
+                ? ({ type: 'camp', choice: 'rest' } as const)
+                : ({ type: 'move', node: state.reachable[0] as string } as const);
+          const key = newKey();
+          const res = await p.act(state, a, key);
+          expect(res.status).toBe(200);
+          last = { key, step: state.step, act: a };
+          state = res.body.state;
+          ended = res.body.summary ?? ended;
+        }
+        const firstSummary = ended;
+        expect(firstSummary).toBeDefined();
         const drawn = gear.drawn();
         expect(drawn).toBeGreaterThan(0);
         const stock = stockOf(ctx, p.id);
+        // The last act again, with its key: the same answer, and nothing is drawn or granted.
         for (let i = 0; i < 3; i++) {
-          const again = await p.call('POST', '/api/dungeon/run', body);
-          expect(again.body['run']).toEqual(first.body['run']);
+          const again = await p.call('POST', '/api/dungeon/act', {
+            runId: state.id,
+            step: last?.step,
+            idempotencyKey: last?.key,
+            act: last?.act,
+          });
+          expect(again.status).toBe(200);
+          expect(again.body['summary']).toEqual(firstSummary);
         }
         // The grant itself, asked for again with the run's key: nothing is drawn, nothing is added.
         const again = grantDungeonRun(
@@ -990,13 +1050,13 @@ describe('the supply a run drops', () => {
           1,
           () => ({ parts: {}, gear: [], supplies: ['lantern-great'] }),
         );
-        expect(again.supplies).toEqual(firstRun.rewards.supplies);
+        expect(again.supplies).toEqual(firstSummary?.rewards.supplies);
         expect(gear.drawn()).toBe(drawn);
         expect(stockOf(ctx, p.id)).toEqual(stock);
         // A new day is a new key and a new supply.
         ctx.clock.t = AFTER_RESET + DAY;
         expect((await p.run()).status).toBe(200);
-        expect(stockTotal(ctx, p.id)).toBe(2 * (RULES.dungeon.perRoom[0]?.supply ?? 0));
+        expect(stockTotal(ctx, p.id)).toBe(2);
       },
       { dungeonRng: createSeededRng('supply-run'), gearRng: gear },
     );
@@ -1012,11 +1072,14 @@ describe('the supply a run drops', () => {
         for (let i = 0; i < 60; i++) {
           const p = await dungeonPlayer(ctx, i + 1, STRONG);
           setProgress(ctx, p.id, { depth: tiers.great.fromDepth + 2 });
-          const run = (await p.run()).body.run;
-          for (const id of run.rewards.supplies ?? []) {
+          // Win the first fight and lose the next: the supply is safe, and the run is short.
+          const run = (await p.run({}, winFirstThenLose)).body.run;
+          for (const id of run?.rewards.supplies ?? []) {
             const tier = supplyDef(id)?.tier;
             if (tier !== undefined) seen[tier] += 1;
           }
+          restore();
+          restore = easyFoes();
         }
         expect(seen.basic + seen.good + seen.great).toBeGreaterThanOrEqual(30);
         expect(seen.basic).toBeGreaterThan(0);
@@ -1226,16 +1289,11 @@ describe('the free retry of the first day', () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
-        const p = await dungeonPlayer(ctx, 1, { level: 1 });
-        // Make the first run a loss: the depth is far beyond a level 1 team (the row has no first day yet).
-        ctx.sql.exec(
-          'INSERT INTO dungeon_progress (user_id, depth, first_day) VALUES (?, 45, NULL)',
-          p.id,
-        );
+        const p = await dungeonPlayer(ctx, 1, STRONG);
         let today = await p.today();
         expect(today.attemptsAllowed).toBe(2);
-        const first = await p.run();
-        expect(first.body.run).toMatchObject({ attempt: 1, cleared: false });
+        const first = await withDeadlyFoes(() => p.run());
+        expect(first.body.run).toMatchObject({ attempt: 1, cleared: false, outcome: 'defeat' });
         today = await p.today();
         expect(today).toMatchObject({ canRun: true, attemptsToday: 1, attemptsAllowed: 2 });
         const second = await p.run();
@@ -1251,7 +1309,7 @@ describe('the free retry of the first day', () => {
         // The next day there is one run, and a loss gets no retry.
         ctx.clock.t += DAY;
         expect((await p.today()).attemptsAllowed).toBe(1);
-        expect((await p.run()).body.run.attempt).toBe(1);
+        expect((await withDeadlyFoes(() => p.run())).body.run.attempt).toBe(1);
         expect((await p.run()).body).toEqual({ error: 'already_run' });
       },
       opts(),
@@ -1269,9 +1327,9 @@ describe('the free retry of the first day', () => {
         expect((await p.run()).body).toEqual({ error: 'already_run' });
 
         // A player whose first day was long ago: a loss does not give a retry.
-        const old = await dungeonPlayer(ctx, 2, { level: 1 });
-        setProgress(ctx, old.id, { depth: 45, first_day: '2027-01-01' });
-        expect((await old.run()).body.run.cleared).toBe(false);
+        const old = await dungeonPlayer(ctx, 2, STRONG);
+        setProgress(ctx, old.id, { first_day: '2027-01-01' });
+        expect((await withDeadlyFoes(() => old.run())).body.run.cleared).toBe(false);
         expect((await old.run()).body).toEqual({ error: 'already_run' });
       },
       opts(),
@@ -1282,19 +1340,13 @@ describe('the free retry of the first day', () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
-        const p = await dungeonPlayer(ctx, 1, { level: 1 });
-        // Depth 1 is cleared by almost anyone, so lose the first attempt by taking a very high depth,
-        // then bring the depth back down for the retry.
-        ctx.sql.exec(
-          'INSERT INTO dungeon_progress (user_id, depth, first_day) VALUES (?, 45, NULL)',
-          p.id,
-        );
+        const p = await dungeonPlayer(ctx, 1, STRONG);
         ctx.clock.t = AFTER_RESET;
-        expect((await p.run()).body.run.cleared).toBe(false);
-        ctx.sql.exec('UPDATE dungeon_progress SET depth = 1 WHERE user_id = ?', p.id);
+        expect((await withDeadlyFoes(() => p.run())).body.run.cleared).toBe(false);
         const retry = await p.run();
         expect(retry.body.run.attempt).toBe(2);
         const keys = dungeonLedger(ctx, p.id).map((l) => l.idempotency_key);
+        expect(keys.length).toBeGreaterThan(0);
         for (const k of keys) expect(k).toMatch(/^dungeon:2027-01-15:2:/);
         expect(new Set(keys).size).toBe(keys.length);
       },
@@ -1383,7 +1435,7 @@ describe('streaks and landmarks', () => {
     );
   });
 
-  it('names the fixed room boss of a landmark depth in today, in content order, and fights it', async () => {
+  it('names the fixed floor boss of a landmark depth in today, in content order, and fights it', async () => {
     const bosses = dungeonContent.foes.filter((f) => f.kind === 'boss').map((f) => f.id);
     await runCore(
       nextGuild(),
@@ -1404,21 +1456,17 @@ describe('streaks and landmarks', () => {
           setProgress(ctx, p.id, { depth });
           expect((await p.today()).landmarkBoss).toBeNull();
         }
-        // The run at the landmark fights that boss in the boss room, whatever the seed drew.
+        // The run at the landmark fights that boss in the boss room, whatever the map holds.
         setProgress(ctx, p.id, { depth: 2 * every });
         const run = (await p.run()).body.run;
         expect(run.depth).toBe(2 * every);
-        expect(run.rooms.map((r) => r.kind)).toEqual(['foe', 'foe', 'boss']);
-        expect(run.rooms[2]?.foe.id).toBe(bosses[1]);
-        const stored = rows<{ input_json: string }>(
-          ctx.sql,
-          'SELECT input_json FROM dungeon_runs WHERE id = ?',
-          run.id,
-        )[0];
-        const input = JSON.parse(stored?.input_json ?? '{}') as {
-          rooms: { foe: { id: string } }[];
+        expect(run.rooms.at(-1)?.kind).toBe('boss');
+        expect(run.rooms.at(-1)?.foe.id).toBe(bosses[1]);
+        const last = fightSteps(ctx, run.id).at(-1);
+        const input = JSON.parse(last?.input_json ?? '{}') as {
+          input: { rooms: { foe: { id: string } }[] };
         };
-        expect(input.rooms[2]?.foe.id).toBe(bosses[1]);
+        expect(input.input.rooms[0]?.foe.id).toBe(bosses[1]);
       },
       opts(),
     );
@@ -1443,30 +1491,37 @@ describe('streaks and landmarks', () => {
   });
 });
 
-describe('the seed', () => {
-  it('is drawn from the live rng at the moment of the run, in the same transaction as the result', async () => {
+describe('the seeds', () => {
+  it('are drawn from the live rng at the moment a fight starts, in the same transaction as its result', async () => {
     const rng = counting('the-seed');
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
-        await p.today(); // the day's modifier seed: 4 draws
+        await p.today(); // the day's seed: 4 draws
         const before = rng.drawn();
         expect(before).toBe(4);
-        await p.run();
-        // The run seed is the next 4 draws: 128 bits, as hex, fresh from the stream.
+        const started = await p.start();
+        const state = started.body.state;
+        // Starting draws nothing: the run has no seed of its own, and nothing is rolled yet.
+        expect(rng.drawn()).toBe(before);
+        expect(storedRuns(ctx, p.id)[0]?.seed).toBe('');
+        const move = await p.act(state, { type: 'move', node: state.reachable[0] as string });
+        expect(move.status).toBe(200);
+        // The fight's seed is the next 4 draws: 128 bits, as hex, fresh from the stream.
         const replica = createSeededRng('the-seed');
         for (let i = 0; i < before; i++) replica.nextU32();
         const expected = drawSeed(replica);
-        expect(storedRuns(ctx, p.id)[0]?.seed).toBe(expected);
         expect(expected).toMatch(/^[0-9a-f]{32}$/);
+        const step = fightSteps(ctx, state.id)[0];
+        expect(step?.seed).toBe(expected);
         expect(rng.drawn()).toBe(8);
       },
       { dungeonRng: rng, gearRng: createSeededRng('the-seed-gear') },
     );
   });
 
-  it('is not derivable from anything a client sees before the run, and is never sent', async () => {
+  it('are not derivable from anything a client sees before or during the run, and are never sent', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -1485,44 +1540,28 @@ describe('the seed', () => {
         ).map((r) => r.modifier_seed);
         const ra = await a.run();
         const rb = await b.run();
-        const seeds = storedRuns(ctx).map((r) => r.seed);
-        expect(seeds).toHaveLength(2);
-        // Two players on the same day get different seeds, and neither is the day's modifier seed.
-        expect(new Set([...seeds, ...daySeeds]).size).toBe(3);
+        const seeds = rows<{ seed: string }>(
+          ctx.sql,
+          'SELECT seed FROM dungeon_steps WHERE seed IS NOT NULL',
+        ).map((r) => r.seed);
+        expect(seeds.length).toBeGreaterThan(1);
+        // Every fight of every run has its own seed, and none is the day's seed.
+        expect(new Set([...seeds, ...daySeeds]).size).toBe(seeds.length + daySeeds.length);
+        const everything = [
+          ...ra.body.steps.map((s) => JSON.stringify(s.body)),
+          ...rb.body.steps.map((s) => JSON.stringify(s.body)),
+          JSON.stringify((await a.replay(ra.body.run.id)).body),
+          JSON.stringify(await a.today()),
+        ];
         for (const seed of seeds) {
           expect(seen).not.toContain(seed);
-          // Not after the run either: no response carries a seed.
-          for (const body of [
-            JSON.stringify(ra.body),
-            JSON.stringify(rb.body),
-            JSON.stringify((await a.replay(ra.body.run.id)).body),
-            JSON.stringify(await a.today()),
-          ]) {
-            expect(body).not.toContain(seed);
-            expect(body).not.toContain('seed');
-          }
+          for (const body of everything) expect(body).not.toContain(seed);
         }
-        for (const seed of daySeeds) expect(seen).not.toContain(`"${seed}"`);
-        // The modifiers shown before are the day's, which come from the other seed only.
-        expect(ra.body.run.rooms.map((r) => r.modifier.id)).toEqual(
-          (await a.today()).modifiers.map((m) => m.id),
-        );
-      },
-      opts(),
-    );
-  });
-
-  it('gives different foes to different runs at the same depth', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const lineups = new Set<string>();
-        for (let n = 1; n <= 8; n++) {
-          const p = await dungeonPlayer(ctx, n, STRONG);
-          const run = (await p.run()).body.run;
-          lineups.add(run.rooms.map((r) => r.foe.id).join(','));
+        for (const body of everything) expect(body).not.toContain('seed');
+        for (const seed of daySeeds) {
+          expect(seen).not.toContain(`"${seed}"`);
+          for (const body of everything) expect(body).not.toContain(seed);
         }
-        expect(lineups.size).toBeGreaterThan(3);
       },
       opts(),
     );
@@ -1530,31 +1569,36 @@ describe('the seed', () => {
 });
 
 describe('GET /api/dungeon/run/:id', () => {
-  it('replays exactly: the stored run simulates to the same events', async () => {
+  it('replays exactly: every stored fight simulates to the same events', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         const run = (await p.run()).body.run;
-        const stored = storedRuns(ctx, p.id)[0] as StoredRun;
-        const input = JSON.parse(stored.input_json as string) as DungeonRunInput;
-        const result = JSON.parse(stored.result_json as string) as DungeonRunResult;
-        // Re-simulating the stored input from the stored seed gives the stored result, bit for bit.
-        expect(simulateDungeon(input, stored.seed)).toEqual(result);
+        const steps = fightSteps(ctx, run.id);
+        expect(steps.length).toBe(run.rooms.length);
+        const results: DungeonRoomResult[] = [];
+        for (const step of steps) {
+          const { input, hpIn } = JSON.parse(step.input_json as string) as {
+            input: DungeonRunInput;
+            hpIn: Record<string, number> | null;
+          };
+          const result = JSON.parse(step.result_json as string) as DungeonRoomResult;
+          // Re-simulating the stored input from the stored seed gives the stored result, bit for bit.
+          const spec = input.rooms[0] as DungeonRunInput['rooms'][number];
+          expect(simulateDungeonRoom(input, spec, hpIn, step.seed as string)).toEqual(result);
+          results.push(result);
+        }
         const replay = await p.replay(run.id);
         expect(replay.status).toBe(200);
         expect(replay.body.summary).toEqual(run);
-        expect(replay.body.rooms.map((r) => r.events)).toEqual(
-          result.rooms.map((r) => r.result.events),
-        );
-        expect(replay.body.rooms.map((r) => r.cleared)).toEqual(result.rooms.map((r) => r.cleared));
-        expect(replay.body.rooms.map((r) => r.hpStart)).toEqual(result.rooms.map((r) => r.hpStart));
-        // HP carries between rooms.
-        for (let i = 1; i < result.rooms.length; i++) {
-          expect(result.rooms[i]?.hpStart).toEqual(result.rooms[i - 1]?.result.hpEnd);
-        }
+        expect(replay.body.rooms.map((r) => r.events)).toEqual(results.map((r) => r.result.events));
+        expect(replay.body.rooms.map((r) => r.cleared)).toEqual(results.map((r) => r.cleared));
+        expect(replay.body.rooms.map((r) => r.hpStart)).toEqual(results.map((r) => r.hpStart));
+        expect(replay.body.rooms.map((r) => r.node)).toEqual(steps.map((s) => s.node));
         expect(replay.body.row.map((r) => r.position)).toEqual([0, 1, 2]);
         expect(replay.body.row.map((r) => r.id)).toEqual(p.creatureIds);
+        expect(replay.body.rooms.every((r) => r.row?.length === 3)).toBe(true);
         expect(JSON.stringify(replay.body)).not.toContain('formation');
         // Names for describeEvent come with it.
         expect(replay.body.rooms[0]?.names.boss).toBe(replay.body.rooms[0]?.foe.name);
@@ -1590,11 +1634,15 @@ describe('GET /api/dungeon/run/:id', () => {
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         const run = (await p.run()).body.run;
+        expect(fightSteps(ctx, run.id).every((s) => s.input_json !== null)).toBe(true);
         ctx.clock.t += 91 * DAY;
         ctx.core.dungeon.prune();
+        for (const step of fightSteps(ctx, run.id)) {
+          expect(step.input_json).toBeNull();
+          expect(step.result_json).toBeNull();
+          expect(step.seed).not.toBeNull(); // only the input and the result go
+        }
         const stored = storedRuns(ctx, p.id)[0];
-        expect(stored?.input_json).toBeNull();
-        expect(stored?.result_json).toBeNull();
         expect(JSON.parse(stored?.summary_json ?? '{}')).toEqual(run);
         expect((await p.replay(run.id)).status).toBe(404);
         expect(count(ctx.sql, 'dungeon_days')).toBe(0);
@@ -1639,8 +1687,7 @@ describe('gear in the dungeon', () => {
         const first = state.creatures.find((c) => c.id === geared.creatureIds[0]);
         expect(first?.statsWithGear.atk).toBeGreaterThan(first?.stats.atk ?? 0);
         const run = (await geared.run()).body.run;
-        const stored = storedRuns(ctx, geared.id)[0] as StoredRun;
-        const input = JSON.parse(stored.input_json as string) as DungeonRunInput;
+        const input = stateOf(storedRuns(ctx, geared.id)[0]).input;
         const slot = input.team.find((s) => s.id === geared.creatureIds[0]);
         expect(slot?.stats?.atk).toBe(first?.statsWithGear.atk);
         expect(run.cleared).toBeDefined();
@@ -1657,10 +1704,9 @@ describe('gear in the dungeon', () => {
         const item = give(ctx, p.id, 'trail-cap', 'later');
         await p.call('POST', `/api/gear/${item}/equip`, { creatureId: p.creatureIds[0] });
         const run = (await p.run()).body.run;
-        const stored = storedRuns(ctx, p.id)[0] as StoredRun;
         const replay = (await p.replay(run.id)).body;
-        const input = stored.input_json;
-        const result = stored.result_json;
+        const before = fightSteps(ctx, run.id);
+        const stateBefore = storedRuns(ctx, p.id)[0]?.state_json;
         // Take it off, put another on, then dismantle it.
         await p.call('POST', `/api/gear/${item}/equip`, { creatureId: null });
         const other = give(ctx, p.id, 'kelp-cap', 'other');
@@ -1675,14 +1721,24 @@ describe('gear in the dungeon', () => {
             })
           ).status,
         ).toBe(200);
-        // The stored run, its replay and the summary are exactly what they were.
-        const after = storedRuns(ctx, p.id)[0] as StoredRun;
-        expect(after.input_json).toBe(input);
-        expect(after.result_json).toBe(result);
+        // The stored fights, the state, the replay and the summary are exactly what they were.
+        expect(fightSteps(ctx, run.id)).toEqual(before);
+        expect(storedRuns(ctx, p.id)[0]?.state_json).toBe(stateBefore);
         expect((await p.replay(run.id)).body).toEqual(replay);
-        expect(
-          simulateDungeon(JSON.parse(after.input_json as string) as DungeonRunInput, after.seed),
-        ).toEqual(JSON.parse(result as string));
+        for (const step of fightSteps(ctx, run.id)) {
+          const { input, hpIn } = JSON.parse(step.input_json as string) as {
+            input: DungeonRunInput;
+            hpIn: Record<string, number> | null;
+          };
+          expect(
+            simulateDungeonRoom(
+              input,
+              input.rooms[0] as DungeonRunInput['rooms'][number],
+              hpIn,
+              step.seed as string,
+            ),
+          ).toEqual(JSON.parse(step.result_json as string));
+        }
       },
       opts(),
     );
@@ -1716,8 +1772,8 @@ describe('the modifier sheet and the rest of gear in the dungeon', () => {
         });
         await p.call('POST', `/api/gear/${hat}/equip`, { creatureId: a });
         await p.call('POST', `/api/gear/${scarf}/equip`, { creatureId: b });
-        await p.run();
-        const input = JSON.parse(storedRuns(ctx, p.id)[0]?.input_json ?? '{}') as DungeonRunInput;
+        await p.start();
+        const input = stateOf(storedRuns(ctx, p.id)[0]).input;
         const slotA = input.team.find((x) => x.id === a);
         const slotB = input.team.find((x) => x.id === b);
         expect(slotA?.mods).toEqual({ besideRoleBp: { guard: 700 }, firstHitBp: 1_400 });
@@ -1737,8 +1793,8 @@ describe('the modifier sheet and the rest of gear in the dungeon', () => {
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
-        await p.run();
-        const input = JSON.parse(storedRuns(ctx, p.id)[0]?.input_json ?? '{}') as DungeonRunInput;
+        await p.start();
+        const input = stateOf(storedRuns(ctx, p.id)[0]).input;
         expect('rest' in input).toBe(false);
         expect(input.team.every((x) => x.mods === undefined)).toBe(true);
       },
@@ -1754,17 +1810,17 @@ describe('abilities', () => {
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
         const [a, b, c] = p.creatureIds as [string, string, string];
-        // A deep run, so that the rooms last long enough for the default rounds to come.
-        setProgress(ctx, p.id, { depth: 30 });
-        const res = await p.run();
-        expect(res.status).toBe(200);
-        const input = JSON.parse(storedRuns(ctx, p.id)[0]?.input_json ?? '{}') as DungeonRunInput;
+        // A long fight against a weak attacker, so that the rounds the abilities wait for come.
+        restore();
+        restore = scaleFoes(60_000, 300);
+        const started = (await p.start()).body.state;
+        const input = stateOf(storedRuns(ctx, p.id)[0]).input;
         // All three of the level 30 creatures have an unlocked ability, and none has a chosen round.
         expect(input.abilities.map((x) => x.creatureId)).toEqual([a, b, c]);
         expect(input.abilities.every((x) => x.fireAtRound === undefined)).toBe(true);
         expect(input.abilities.some((x) => x.key === 'p1:basic')).toBe(false);
-        const replay = (await p.replay(res.body.run.id)).body;
-        const fired = replay.rooms.flatMap((room) => room.events.filter((e) => e.t === 'ability'));
+        const move = await p.act(started, { type: 'move', node: started.reachable[0] as string });
+        const fired = (move.body.room?.events ?? []).filter((e) => e.t === 'ability');
         expect(fired.length).toBeGreaterThan(0);
       },
       opts(),
@@ -1776,9 +1832,9 @@ describe('abilities', () => {
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, { level: 5 });
-        const ok = await p.run();
+        const ok = await p.start();
         expect(ok.status).toBe(200);
-        const input = JSON.parse(storedRuns(ctx, p.id)[0]?.input_json ?? '{}') as DungeonRunInput;
+        const input = stateOf(storedRuns(ctx, p.id)[0]).input;
         expect(input.abilities).toEqual([]);
       },
       opts(),
@@ -1792,34 +1848,38 @@ describe('analytics', () => {
       nextGuild(),
       async (ctx) => {
         const p = await dungeonPlayer(ctx, 1, STRONG);
-        const body = p.body();
-        const res = await p.call('POST', '/api/dungeon/run', body);
+        const res = await p.run();
         expect(res.status).toBe(200);
+        const run = res.body.run;
         const runs = events(ctx, 'dungeon_run');
         expect(runs).toHaveLength(1);
-        expect(runs[0]).toEqual({
+        expect(runs[0]).toMatchObject({
           depth: 1,
           attempt: 1,
-          roomsCleared: 3,
+          roomsCleared: run.roomsCleared,
           cleared: true,
           landmark: false,
-          modifiers: (res.body['run'] as { rooms: { modifier: { id: string } }[] }).rooms.map(
-            (r) => r.modifier.id,
-          ),
+          modifiers: run.rooms.map((r) => r.modifier.id),
           team: [
             { species: 'tidewing', role: 'setter' },
             { species: 'pyrelynx', role: 'payoff' },
             { species: 'thornbuck', role: 'guard' },
           ],
           gear: 0,
+          outcome: 'cleared',
+          path: run.path,
+          keepsakes: (run.keepsakes ?? []).map((k) => k.id),
         });
+        const found = run.pack?.found ?? { bait: 0, essence: 0, scrap: 0 };
+        expect(runs[0]?.['packFound']).toBe(found.bait + found.essence + found.scrap);
+        expect(runs[0]?.['packKept']).toBe(found.bait + found.essence + found.scrap);
         const rewards = events(ctx, 'dungeon_reward');
         expect(rewards).toHaveLength(1);
         expect(rewards[0]).toMatchObject({
           depth: 1,
           landmark: false,
           streakBonusDay: 0,
-          bait: RULES.dungeon.perRoom.reduce((n, r) => n + r.bait, 0),
+          bait: run.rewards.bait,
         });
         // The run's actor is the hashed player, never the id.
         const actor = rows<{ actor_hash: string | null }>(
@@ -1827,8 +1887,7 @@ describe('analytics', () => {
           "SELECT actor_hash FROM analytics_events WHERE kind = 'dungeon_run'",
         )[0]?.actor_hash;
         expect(actor).toMatch(/^[0-9a-f]{32}$/);
-        // A retry logs nothing more; a refused run logs nothing.
-        await p.call('POST', '/api/dungeon/run', body);
+        // A refused run logs nothing.
         await p.run();
         expect(events(ctx, 'dungeon_run')).toHaveLength(1);
         expect(events(ctx, 'dungeon_reward')).toHaveLength(1);

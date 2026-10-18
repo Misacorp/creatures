@@ -31,14 +31,17 @@
 /* Each kind of XP has its colour (tokens.css); `XpGain` sets the same class so its level tags match. */
 .xp-kind-experience {
   --xp-fill: var(--xp-experience);
+  --xp-fill-shade: var(--xp-experience-shade);
 }
 
 .xp-kind-explorer {
   --xp-fill: var(--xp-explorer);
+  --xp-fill-shade: var(--xp-explorer-shade);
 }
 
 .xp-kind-crafting {
   --xp-fill: var(--xp-crafting);
+  --xp-fill-shade: var(--xp-crafting-shade);
 }
 
 /* The fill sits inside an inner margin, so it shows at both ends of the bar. */
@@ -53,6 +56,15 @@
 
 .xpbar-fill.filled {
   min-width: var(--px);
+}
+
+/* A bar that just gained: the old part in the kind's darker shade, the part gained in its bright colour. */
+.xpbar-fill.has-gain {
+  background: linear-gradient(
+    to right,
+    var(--xp-fill-shade, var(--gold-shade)) calc(var(--from, 100) * 1%),
+    var(--xp-fill, var(--gold)) calc(var(--from, 100) * 1%)
+  );
 }
 
 /*

@@ -70,11 +70,11 @@
       "id": "dungeon",
       "title": "Daily dungeon",
       "lines": [
-        "One run a day, with a team of three of your own in one row. The day resets at 13:37 server time.",
-        "A run is three rooms: two foes, then a room boss. HP carries over. Your row acts left to right, then the foe.",
-        "Clear all three to go one depth deeper. A lost run keeps your depth. A first-ever loss can be retried once.",
-        "Every 7th depth is a landmark. Clearing it drops gear for sure.",
-        "Runs on days in a row build a streak. The 3rd and 7th day of every 7 pay a bonus."
+        "One run a day, with a team of three. The day resets at 13:37 server time. A lost first run can be retried once.",
+        "Walk a map room by room: fights, elites, mystery rooms and chests. HP carries over. A camp sits halfway.",
+        "At the camp, rest, swap a creature or take a keepsake, then push on or head home.",
+        "Home keeps your pack. A defeat keeps half, rounded up. Beat the boss to go one depth deeper.",
+        "Every 7th depth is a landmark: gear for sure. Daily streaks pay a bonus on the 3rd and 7th day of every 7."
       ]
     },
     {

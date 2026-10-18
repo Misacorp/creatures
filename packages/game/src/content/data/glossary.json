@@ -1165,7 +1165,7 @@
     "title": "Tide Shard",
     "short": "A shard of Tide. It pays for Tide crafts.",
     "lines": [
-      "Found on expeditions with a Tide explorer, from Tide room bosses and by dismantling Tide gear."
+      "Found on expeditions with a Tide explorer, from Tide floor bosses and by dismantling Tide gear."
     ],
     "visual": {
       "kind": "element",
@@ -1178,7 +1178,7 @@
     "title": "Ember Shard",
     "short": "A shard of Ember. It pays for Ember crafts.",
     "lines": [
-      "Found on expeditions with an Ember explorer, from Ember room bosses and by dismantling Ember gear."
+      "Found on expeditions with an Ember explorer, from Ember floor bosses and by dismantling Ember gear."
     ],
     "visual": {
       "kind": "element",
@@ -1191,7 +1191,7 @@
     "title": "Grove Shard",
     "short": "A shard of Grove. It pays for Grove crafts.",
     "lines": [
-      "Found on expeditions with a Grove explorer, from Grove room bosses and by dismantling Grove gear."
+      "Found on expeditions with a Grove explorer, from Grove floor bosses and by dismantling Grove gear."
     ],
     "visual": {
       "kind": "element",
@@ -1204,7 +1204,7 @@
     "title": "Spark Shard",
     "short": "A shard of Spark. It pays for Spark crafts.",
     "lines": [
-      "Found on expeditions with a Spark explorer, from Spark room bosses and by dismantling Spark gear."
+      "Found on expeditions with a Spark explorer, from Spark floor bosses and by dismantling Spark gear."
     ],
     "visual": {
       "kind": "element",
@@ -1279,12 +1279,12 @@
   {
     "id": "dungeon",
     "title": "Daily dungeon",
-    "short": "One run a day with a team of three of your own.",
+    "short": "One run a day through a map of rooms, with a team of three.",
     "lines": [
-      "Pick three creatures and the order they stand in, in one row. Then enter: the whole run is played out at once.",
-      "Three rooms: two foes, then a room boss. HP carries over. Clear all three to go one depth deeper; a lost run keeps it.",
-      "Clear the first room and you bring home a supply, guaranteed. Deeper runs drop better ones.",
-      "One run per day. The day resets at 13:37 in the server's time zone. A lost first run can be retried once."
+      "Pick three creatures and their order, then walk a map one room at a time. A camp sits halfway.",
+      "The map is the same for the whole server. HP carries over. At the camp, push on or head home.",
+      "Home keeps your whole pack. A defeat keeps half of it, rounded up. Experience and the supply are always safe.",
+      "One run per day. The day resets at 13:37. A lost first run can be retried once. From depth 8, the Undercroft waits."
     ],
     "section": "dungeon"
   },
@@ -1305,11 +1305,127 @@
     "section": "dungeon"
   },
   {
+    "id": "dungeon-map",
+    "title": "Dungeon map",
+    "short": "One floor, seven rooms deep, from the door up to the floor boss.",
+    "lines": [
+      "Tap a room you can reach to see what is there, then go in. You only move up.",
+      "Fights, elites, mystery rooms and chests are on it. Every path meets at the camp halfway.",
+      "The map is drawn once a day and is the same for everyone on the server."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "dungeon-camp",
+    "title": "Camp",
+    "short": "Halfway up, every path meets here.",
+    "lines": [
+      "Pick one: Rest (40% of max HP back), Swap a creature, or take one of two keepsakes.",
+      "You can also reorder your row for free.",
+      "Or head home and keep your whole pack."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "dungeon-pack",
+    "title": "Pack",
+    "short": "The loot you carry out of the dungeon.",
+    "lines": [
+      "Fights, elites, chests and mystery rooms put Bait, Essence and scrap in your pack.",
+      "Head home or beat the boss and you keep all of it. A defeat keeps half, rounded up.",
+      "Experience and the run's supply are safe. They never go in the pack.",
+      "A run left open when the day ends counts as a defeat, unless it is resting at the camp."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "keepsake",
+    "title": "Keepsake",
+    "short": "A gift that helps for the rest of this run only.",
+    "lines": [
+      "A keepsake helps in every fight after you get it. When the run ends it is gone: you do not keep it for the next run.",
+      "Elites, the camp and some mystery rooms give one. You cannot hold the same one twice."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "elite",
+    "title": "Elite",
+    "short": "A fiercer fight that gives a keepsake.",
+    "lines": [
+      "An elite has 40% more HP and hits 20% harder than the same foe in a normal room.",
+      "Beat it for its loot and a keepsake. You can walk around it."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "mystery-room",
+    "title": "Mystery room",
+    "short": "A small scene with two choices.",
+    "lines": [
+      "You see what is there only when you step in. Each choice says exactly what it does.",
+      "Some choices are a gamble. The odds are always written out."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "cache",
+    "title": "Cache",
+    "short": "A free chest. Nothing guards it.",
+    "lines": ["A cache puts 1 Bait and 1 scrap in your pack."],
+    "section": "dungeon"
+  },
+  {
+    "id": "undercroft",
+    "title": "Undercroft",
+    "short": "Floors below the floor boss. Optional, and harder.",
+    "lines": [
+      "Beat the boss at depth 8 or more and you may descend. Everyone heals 20% of max HP, and the fallen get up at 10%.",
+      "Its foes are fiercer, fights put twice their loot in your pack, and each floor ends in a floor boss with a better chest.",
+      "Your pack stays at risk all the way down. You can head home only before descending, or at an Undercroft camp.",
+      "More landmarks passed means more rooms on the first Undercroft floor, up to five."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "carved-door",
+    "title": "Carved door",
+    "short": "A door in the wall. Stepping through adds a room below.",
+    "lines": [
+      "From depth 8 a map may hold one. It has no fight.",
+      "Stepping through adds one room to the first Undercroft floor.",
+      "It is a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.",
+      "It costs nothing, and it only counts if you go down."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "cracked-floor",
+    "title": "Cracked floor",
+    "short": "The floor boss stands on a cracked floor. Another floor waits below.",
+    "lines": [
+      "Now and then an Undercroft floor boss stands on a cracked floor.",
+      "Beat it and you may go down another floor: foes are fiercer again, with 2 rooms and a new floor boss and chest.",
+      "A run goes down at most 3 Undercroft floors."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "epic-fight",
+    "title": "Epic fight",
+    "short": "One mighty foe, at boss strength.",
+    "lines": [
+      "Found in the Undercroft, where a carved door can add one.",
+      "Beat it for 1 Essence, 2 scrap and a keepsake."
+    ],
+    "section": "dungeon"
+  },
+  {
     "id": "depth",
     "title": "Dungeon depth",
     "short": "How deep you are. Foes get tougher with every depth.",
     "lines": [
-      "Clearing all rooms adds 1. Losing leaves it as it is.",
+      "Beating the floor boss adds 1. Losing or heading home leaves it as it is.",
       "Every 7th depth is a landmark."
     ],
     "section": "dungeon"
@@ -1319,30 +1435,30 @@
     "title": "Room modifiers",
     "short": "Each room has a twist, shown before you enter.",
     "lines": [
-      "The day's three modifiers are the same for everyone on the server.",
+      "Fights and the floor boss each have a twist, shown on the map before you enter. Everyone on the server gets the same.",
       "Some boost one element or one role, some change the foe, and some change your crits.",
-      "They only last for their room. Pick your team around them."
+      "They only last for their room. Pick your route and your team around them."
     ],
     "section": "dungeon"
   },
   {
-    "id": "room-boss",
-    "title": "Room boss",
-    "short": "The foe of the last room. Tougher than the others.",
+    "id": "floor-boss",
+    "title": "Floor boss",
+    "short": "The foe of a floor's last room. Tougher than the others.",
     "lines": [
       "It has more HP and hits harder than the foes before it.",
       "Each boss has its own trick, and some are the same ones raid bosses use.",
-      "Beating it clears the dungeon for the day."
+      "Every floor ends in one. The one at the top of the day's map clears the dungeon for the day."
     ],
     "section": "dungeon"
   },
   {
     "id": "landmark",
     "title": "Landmark",
-    "short": "Every 7th depth. A full clear drops gear for sure.",
+    "short": "Every 7th depth. Beating its boss drops gear for sure.",
     "lines": [
       "Landmark depths are 7, 14, 21 and so on.",
-      "Clear all rooms on one to get a gear drop for certain, with better odds of rare and epic gear.",
+      "Beat the floor boss on one to get a gear drop for certain, with better odds of rare and epic gear.",
       "It also pays extra Essence, scrap and a glimmer."
     ],
     "section": "dungeon"
@@ -1428,6 +1544,152 @@
     "title": "Echoing",
     "short": "Guards and supports hit 50% harder.",
     "lines": [],
+    "section": "dungeon"
+  },
+  {
+    "id": "keepsake-wayfarer-charm",
+    "title": "Wayfarer's Charm",
+    "short": "Every creature gets 12% more Attack and 12% more HP.",
+    "lines": [],
+    "section": "dungeon"
+  },
+  {
+    "id": "keepsake-lantern-moth",
+    "title": "Lantern Moth",
+    "short": "Your creatures crit 5 points more often.",
+    "lines": [],
+    "section": "dungeon"
+  },
+  {
+    "id": "keepsake-tide-pearl",
+    "title": "Tide Pearl",
+    "short": "Tide creatures hit 25% harder.",
+    "lines": [],
+    "section": "dungeon",
+    "visual": {
+      "kind": "element",
+      "id": "tide"
+    }
+  },
+  {
+    "id": "keepsake-warm-ember",
+    "title": "Warm Ember",
+    "short": "Ember creatures hit 25% harder.",
+    "lines": [],
+    "section": "dungeon",
+    "visual": {
+      "kind": "element",
+      "id": "ember"
+    }
+  },
+  {
+    "id": "keepsake-clover-sprig",
+    "title": "Clover Sprig",
+    "short": "Grove creatures hit 25% harder.",
+    "lines": [],
+    "section": "dungeon",
+    "visual": {
+      "kind": "element",
+      "id": "grove"
+    }
+  },
+  {
+    "id": "keepsake-static-feather",
+    "title": "Static Feather",
+    "short": "Spark creatures hit 25% harder.",
+    "lines": [],
+    "section": "dungeon",
+    "visual": {
+      "kind": "element",
+      "id": "spark"
+    }
+  },
+  {
+    "id": "keepsake-lullaby-bell",
+    "title": "Lullaby Bell",
+    "short": "Foes hit 10% softer.",
+    "lines": [],
+    "section": "dungeon"
+  },
+  {
+    "id": "keepsake-chalk-mark",
+    "title": "Chalk Mark",
+    "short": "Foes have 10% less HP.",
+    "lines": [],
+    "section": "dungeon"
+  },
+  {
+    "id": "event-glowing-pool",
+    "title": "Glowing Pool",
+    "short": "Two choices: Drink or Fill a flask.",
+    "lines": ["Drink: Every creature heals 25% of its max HP.", "Fill a flask: You gain 1 Bait."],
+    "section": "dungeon"
+  },
+  {
+    "id": "event-loose-stones",
+    "title": "Loose Stones",
+    "short": "Two choices: Dig or Walk on.",
+    "lines": ["Dig: 60%: 2 scrap. 40%: every creature loses 15% HP.", "Walk on: You gain 1 Bait."],
+    "section": "dungeon"
+  },
+  {
+    "id": "event-sleeping-beetle",
+    "title": "Sleeping Beetle",
+    "short": "Two choices: Take one coin or Take the pile.",
+    "lines": [
+      "Take one coin: You gain 1 scrap.",
+      "Take the pile: 50%: 3 scrap. 50%: every creature loses 20% HP."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "event-old-shrine",
+    "title": "Old Shrine",
+    "short": "Two choices: Make an offering or Bow and walk on.",
+    "lines": [
+      "Make an offering: Every creature loses 15% HP. You gain a keepsake.",
+      "Bow and walk on: Nothing happens."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "event-lost-satchel",
+    "title": "Lost Satchel",
+    "short": "Two choices: Peek inside or Shake it out.",
+    "lines": [
+      "Peek inside: You gain 1 Bait.",
+      "Shake it out: 50%: 2 Bait and 1 scrap. 50%: nothing."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "event-echoing-well",
+    "title": "Echoing Well",
+    "short": "Two choices: Call down or Drop in a coin.",
+    "lines": [
+      "Call down: Every creature heals 20% of its max HP.",
+      "Drop in a coin: 30%: a keepsake. 70%: nothing."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "event-mossy-bridge",
+    "title": "Mossy Bridge",
+    "short": "Two choices: Cross slowly or Run across.",
+    "lines": [
+      "Cross slowly: You gain 1 Bait.",
+      "Run across: 60%: 1 Essence. 40%: every creature loses 20% HP."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "event-mushroom-ring",
+    "title": "Mushroom Ring",
+    "short": "Two choices: Pick a few or Dance in the ring.",
+    "lines": [
+      "Pick a few: You gain 1 scrap.",
+      "Dance in the ring: 50%: every creature heals 30% HP. 50%: every creature loses 10% HP."
+    ],
     "section": "dungeon"
   },
   {

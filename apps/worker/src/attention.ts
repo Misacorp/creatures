@@ -33,7 +33,8 @@ export function attentionOf(
   const dungeon = parts.dungeon.attention(userId);
   const raid = parts.raid.needsPlacement(userId, tz);
   return {
-    dungeon: dungeon.canRun,
+    // An open run is a reason to come back, so the pip stays on for it (as it does for a run to start).
+    dungeon: dungeon.canRun || dungeon.active,
     raid: raid.needed,
     recheckAt: soonestAfter(now, [dungeon.resetsAt, raid.nextAt]),
   };

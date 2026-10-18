@@ -498,7 +498,7 @@ describe('raid content', () => {
     }
   });
 
-  it('gives landmark signatures to room bosses only, as a charge', () => {
+  it('gives landmark signatures to floor bosses only, as a charge', () => {
     for (const f of dungeonContent.foes) {
       if (f.signature === undefined) continue;
       expect(f.kind, f.id).toBe('boss');

@@ -14,13 +14,15 @@ import {
   expeditionContent,
   goalDef,
   goalOddsBp,
+  generateDungeonMap,
   isLandmark,
-  rollDayModifiers,
   slotsFor,
   type ExpeditionLength,
 } from '@creatures/game';
 import type * as v from 'valibot';
 import { DevError, type ToolCtx } from './dev-context';
+import { legacyModifierIds } from './dungeon';
+import { parseState } from './dungeon-state';
 import { devKey } from './dev-state';
 import type {
   DungeonDepthBodySchema,
@@ -275,7 +277,12 @@ export function dungeonDepth(ctx: ToolCtx, body: Body<typeof DungeonDepthBodySch
 /**
  * Forgets the caller's runs of today's game day, so they can run again: the day's payouts are taken
  * back as far as the balances allow (never below zero), the streak and the depth go back to what
- * they were before the run, and the first-day mark goes if this was the only run ever.
+ * they were before the run, and the first-day mark goes if this was the only run ever. A run that is
+ * still open is deleted too, with its steps (it was not counted in the progress, and its pack was not
+ * paid); a treat it was paid with stays spent. An open run that has beaten the main boss at depth 8 or
+ * more (`banked` in its state) is different: its chest was paid and its depth +1 locked in when the boss
+ * fell, so it is taken back like a finished run (the chest's grants are deleted, the depth goes back),
+ * though it never counted as a run or a clear.
  *
  * The ledger stays append-only: the credits are not deleted. Instead one negative `dev` entry per
  * currency is appended for the amount actually removed (the day's credits, less those an earlier
@@ -285,16 +292,79 @@ export function dungeonDepth(ctx: ToolCtx, body: Body<typeof DungeonDepthBodySch
  */
 export function dungeonReset(ctx: ToolCtx) {
   const day = todayOf(ctx);
-  const runs = ctx.sql
-    .exec<{ depth: number; cleared: number }>(
-      'SELECT depth, cleared FROM dungeon_runs WHERE user_id = ? AND day = ? ORDER BY attempt',
+  // Today's runs, and any on a later day: those exist only when the dev clock was moved forward, run
+  // and then moved back, and they would leave the day looking spent (a last day ahead of today).
+  const all = ctx.sql
+    .exec<{
+      id: string;
+      day: string;
+      depth: number;
+      cleared: number;
+      status: string;
+      state_json: string | null;
+    }>(
+      'SELECT id, day, depth, cleared, status, state_json FROM dungeon_runs WHERE user_id = ? AND day >= ? ORDER BY day, attempt',
       ctx.userId,
       day,
     )
     .toArray();
-  if (runs.length === 0) return { removed: 0, day };
-  ctx.sql.exec('DELETE FROM dungeon_runs WHERE user_id = ? AND day = ?', ctx.userId, day);
+  if (all.length === 0) return { removed: 0, day };
+  // Only the runs that ended were counted in the progress and paid ...
+  const runs = all.filter((r) => r.status === 'done');
+  // ... and an open run that banked its main chest paid its gear grants and locked the depth in.
+  const banked = all.filter(
+    (r) => r.status === 'active' && parseState(r.state_json)?.banked != null,
+  );
+  const touched = all.filter((r) => runs.includes(r) || banked.includes(r));
+  for (const run of all) ctx.sql.exec('DELETE FROM dungeon_steps WHERE run_id = ?', run.id);
+  ctx.sql.exec('DELETE FROM dungeon_runs WHERE user_id = ? AND day >= ?', ctx.userId, day);
+  if (touched.length === 0) return { removed: all.length, day };
 
+  for (const runDay of new Set(touched.map((r) => r.day))) takeBackDay(ctx, runDay);
+
+  if (runs.length === 0) {
+    // Only the depth lock to undo: the run was never counted.
+    const first = touched[0];
+    ctx.sql.exec(
+      'UPDATE dungeon_progress SET depth = ? WHERE user_id = ?',
+      Math.min(progressOf(ctx).depth, first?.depth ?? progressOf(ctx).depth),
+      ctx.userId,
+    );
+    return { removed: all.length, day };
+  }
+
+  const progress = progressOf(ctx);
+  const left = Math.max(0, progress.runs - runs.length);
+  const clears = Math.max(0, progress.clears - runs.filter((r) => r.cleared === 1).length);
+  const firstRun = runs[0];
+  const lastRunDay =
+    ctx.sql
+      .exec<{ day: string | null }>(
+        "SELECT MAX(day) AS day FROM dungeon_runs WHERE user_id = ? AND status = 'done'",
+        ctx.userId,
+      )
+      .one().day ?? null;
+  ctx.sql.exec(
+    `UPDATE dungeon_progress SET runs = ?, clears = ?, depth = ?, streak = ?, last_day = ?, first_day = ?
+     WHERE user_id = ?`,
+    left,
+    clears,
+    Math.min(progress.depth, touched[0]?.depth ?? firstRun?.depth ?? progress.depth),
+    progress.last_day !== null && progress.last_day >= day
+      ? Math.max(0, progress.streak - 1)
+      : progress.streak,
+    lastRunDay,
+    left === 0 ? null : progress.first_day,
+    ctx.userId,
+  );
+  return { removed: all.length, day };
+}
+
+/**
+ * Takes back what a game day's dungeon runs paid, as far as the balances allow (see `dungeonReset`), and
+ * deletes that day's gear grants so they can be granted again.
+ */
+function takeBackDay(ctx: ToolCtx, day: string): void {
   const prefix = `dungeon:${day}:%`;
   const paid = ctx.sql
     .exec<{ currency: Currency; total: number }>(
@@ -331,30 +401,6 @@ export function dungeonReset(ctx: ToolCtx) {
     );
   }
   ctx.sql.exec('DELETE FROM gear_grants WHERE user_id = ? AND key LIKE ?', ctx.userId, prefix);
-
-  const progress = progressOf(ctx);
-  const left = Math.max(0, progress.runs - runs.length);
-  const clears = Math.max(0, progress.clears - runs.filter((r) => r.cleared === 1).length);
-  const firstRun = runs[0];
-  const lastRunDay =
-    ctx.sql
-      .exec<{ day: string | null }>(
-        'SELECT MAX(day) AS day FROM dungeon_runs WHERE user_id = ?',
-        ctx.userId,
-      )
-      .one().day ?? null;
-  ctx.sql.exec(
-    `UPDATE dungeon_progress SET runs = ?, clears = ?, depth = ?, streak = ?, last_day = ?, first_day = ?
-     WHERE user_id = ?`,
-    left,
-    clears,
-    Math.min(progress.depth, firstRun?.depth ?? progress.depth),
-    progress.last_day === day ? Math.max(0, progress.streak - 1) : progress.streak,
-    lastRunDay,
-    left === 0 ? null : progress.first_day,
-    ctx.userId,
-  );
-  return { removed: runs.length, day };
 }
 
 /**
@@ -392,9 +438,11 @@ export function dungeonRetry(ctx: ToolCtx) {
     ctx.userId,
     day,
   );
+  // A run that went home or cleared becomes a defeat: only a defeat opens the retry.
   const reopened = ctx.sql
     .exec(
-      'UPDATE dungeon_runs SET cleared = 0 WHERE user_id = ? AND day = ? AND attempt = 1 RETURNING id',
+      `UPDATE dungeon_runs SET cleared = 0, outcome = CASE WHEN outcome IS NULL THEN NULL ELSE 'defeat' END
+       WHERE user_id = ? AND day = ? AND attempt = 1 AND status = 'done' RETURNING id`,
       ctx.userId,
       day,
     )
@@ -402,7 +450,11 @@ export function dungeonRetry(ctx: ToolCtx) {
   return { day, reopened: reopened > 0 };
 }
 
-/** Picks the day's three room modifiers (for everybody in the guild), or hands them back to the day's seed. */
+/**
+ * Picks the day's room modifiers (for everybody in the guild), or hands them back to the day's seed. A
+ * pick is laid over the day's map when it is read, never stored: the first two entrance rooms and the
+ * floor boss take it (the three entries old clients read); the other rooms keep what the seed drew.
+ */
 export function dungeonModifiers(ctx: ToolCtx, body: Body<typeof DungeonModifiersBodySchema>) {
   const day = todayOf(ctx);
   if ('clear' in body) ctx.state.delete(devKey.modifiers(day));
@@ -410,17 +462,22 @@ export function dungeonModifiers(ctx: ToolCtx, body: Body<typeof DungeonModifier
   return { day, forced: 'ids' in body ? body.ids : null };
 }
 
-/** Draws a new seed for today's room modifiers (live randomness) and drops any picked modifiers. */
+/**
+ * Draws a new seed for today (live randomness), which redraws today's map (`map_json` is cleared: it is
+ * drawn again from the new seed on the next look) and drops any picked modifiers. Runs that are open
+ * keep the map they started with. Answers the modifiers old clients read from the new map.
+ */
 export function dungeonSeed(ctx: ToolCtx) {
   const day = todayOf(ctx);
   const seed = drawSeed(ctx.rng);
   ctx.sql.exec(
-    `INSERT INTO dungeon_days (day, modifier_seed, created_at) VALUES (?, ?, ?)
-     ON CONFLICT(day) DO UPDATE SET modifier_seed = excluded.modifier_seed`,
+    `INSERT INTO dungeon_days (day, modifier_seed, created_at, map_json) VALUES (?, ?, ?, NULL)
+     ON CONFLICT(day) DO UPDATE SET modifier_seed = excluded.modifier_seed, map_json = NULL`,
     day,
     seed,
     ctx.now,
   );
   ctx.state.delete(devKey.modifiers(day));
-  return { day, modifiers: rollDayModifiers(createSeededRng(`${seed}:modifiers`)) };
+  const map = generateDungeonMap(createSeededRng(`${seed}:map`), undefined, { doors: true });
+  return { day, modifiers: legacyModifierIds(map) };
 }

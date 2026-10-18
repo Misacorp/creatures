@@ -1502,7 +1502,7 @@ describe('drops', () => {
     expect(draws).toBeGreaterThan(0);
   });
 
-  it('a dungeon piece has the room boss element and a level by depth, landmark bonus included', () => {
+  it('a dungeon piece has the floor boss element and a level by depth, landmark bonus included', () => {
     const rng = createSeededRng('dungeon');
     const plain = rollDungeonItem(rng, 'rare', 18, false, 'grove');
     expect(plain.itemLevel).toBe(10);

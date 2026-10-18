@@ -19,3 +19,5 @@ export * from './lounger';
 export * from './room';
 export * from './income';
 export * from './weather';
+export * from './dungeon-map';
+export * from './dungeon-run';

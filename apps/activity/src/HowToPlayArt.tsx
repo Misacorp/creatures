@@ -374,7 +374,7 @@ function ExpeditionsArt() {
 }
 
 /**
- * The daily dungeon: the three rooms in a row (two foes, then a room boss) with HP carrying on
+ * The daily dungeon: the three rooms in a row (two foes, then a floor boss) with HP carrying on
  * between them, the depth step, a landmark and the streak pips with their two bonus days.
  */
 function DungeonArt() {
@@ -392,7 +392,7 @@ function DungeonArt() {
             )}
             <li>
               <Sprite sprite={bossArt(room.id).sprite} scale={room.boss ? 2 : 3} />
-              <span class="pix">{room.boss ? 'Room boss' : `Room ${String(i + 1)}`}</span>
+              <span class="pix">{room.boss ? 'Floor boss' : `Room ${String(i + 1)}`}</span>
               <span class="muted">{room.name}</span>
             </li>
           </Fragment>

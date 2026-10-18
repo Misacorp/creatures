@@ -38,14 +38,14 @@ const foes = (): Record<string, unknown>[] => clone(foesJson);
 const mods = (): Record<string, unknown>[] => clone(modifiersJson);
 
 describe('the dungeon content', () => {
-  it('has about 8 normal foes, 4 room bosses and 8 modifiers, and loads', () => {
+  it('has about 8 normal foes, 4 floor bosses and 8 modifiers, and loads', () => {
     expect(dungeonContent.foes.filter((f) => f.kind === 'foe')).toHaveLength(8);
     expect(dungeonContent.foes.filter((f) => f.kind === 'boss')).toHaveLength(4);
     expect(dungeonContent.modifiers).toHaveLength(8);
     expect(() => loadDungeon(foes(), mods(), rooms)).not.toThrow();
   });
 
-  it('gives every element a foe and a room boss, and shows what each one does', () => {
+  it('gives every element a foe and a floor boss, and shows what each one does', () => {
     for (const element of content.elements) {
       expect(
         dungeonContent.foes.some((f) => f.kind === 'foe' && f.element === element.id),
@@ -245,7 +245,7 @@ describe('the dungeon content', () => {
           ),
       ],
       [
-        'no room boss',
+        'no floor boss',
         () =>
           loadDungeon(
             foes().filter((f) => f['kind'] !== 'boss'),
@@ -368,7 +368,7 @@ describe('the day and its rooms', () => {
     expect(seen.size).toBe(dungeonContent.modifiers.length);
   });
 
-  it('fills the rooms with different normal foes and then a room boss, with the day modifiers', () => {
+  it('fills the rooms with different normal foes and then a floor boss, with the day modifiers', () => {
     const modifiers = rollDayModifiers(createSeededRng('mods'));
     for (let i = 0; i < 30; i++) {
       const plan = rollRooms(createSeededRng(`run-${String(i)}`), modifiers, 1);
@@ -418,7 +418,7 @@ describe('the day and its rooms', () => {
     }
   });
 
-  it('fixes the room boss of a landmark depth, in content order and round again', () => {
+  it('fixes the floor boss of a landmark depth, in content order and round again', () => {
     const bosses = dungeonContent.foes.filter((f) => f.kind === 'boss').map((f) => f.id);
     const every = RULES.dungeon.landmarkEvery;
     const modifiers = rollDayModifiers(createSeededRng('mods'));

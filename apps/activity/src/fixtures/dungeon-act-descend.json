@@ -1,0 +1,537 @@
+{
+  "state": {
+    "id": "29cfc427-77f3-4b93-b626-c81b945cae79",
+    "day": "2027-01-16",
+    "attempt": 1,
+    "depth": 14,
+    "landmark": true,
+    "status": "active",
+    "outcome": null,
+    "step": 11,
+    "map": {
+      "floors": 7,
+      "nodes": [
+        {
+          "id": "f0l0",
+          "floor": 0,
+          "lane": 0,
+          "kind": "fight",
+          "next": ["f1l0", "f1l1"],
+          "foe": {
+            "id": "ash-sprite",
+            "name": "Ash Sprite",
+            "element": "ember",
+            "kind": "foe",
+            "hpMax": 629,
+            "elite": false
+          },
+          "modifier": {
+            "id": "dark",
+            "name": "Dark",
+            "description": "Your creatures crit 5 points more often."
+          }
+        },
+        {
+          "id": "f0l1",
+          "floor": 0,
+          "lane": 1,
+          "kind": "fight",
+          "next": ["f1l2"],
+          "foe": {
+            "id": "puddle-imp",
+            "name": "Puddle Imp",
+            "element": "tide",
+            "kind": "foe",
+            "hpMax": 654,
+            "elite": false
+          },
+          "modifier": {
+            "id": "brittle",
+            "name": "Brittle",
+            "description": "The foe has 20% less HP but hits 25% harder."
+          }
+        },
+        {
+          "id": "f0l2",
+          "floor": 0,
+          "lane": 2,
+          "kind": "fight",
+          "next": ["f1l2"],
+          "foe": {
+            "id": "bramble-hound",
+            "name": "Bramble Hound",
+            "element": "grove",
+            "kind": "foe",
+            "hpMax": 680,
+            "elite": false
+          },
+          "modifier": {
+            "id": "brittle",
+            "name": "Brittle",
+            "description": "The foe has 20% less HP but hits 25% harder."
+          }
+        },
+        {
+          "id": "f1l0",
+          "floor": 1,
+          "lane": 0,
+          "kind": "mystery",
+          "next": ["f2l0"],
+          "event": {
+            "id": "glowing-pool",
+            "name": "Glowing Pool"
+          }
+        },
+        {
+          "id": "f1l1",
+          "floor": 1,
+          "lane": 1,
+          "kind": "fight",
+          "next": ["f2l0"],
+          "foe": {
+            "id": "ember-mite",
+            "name": "Ember Mite",
+            "element": "ember",
+            "kind": "foe",
+            "hpMax": 579,
+            "elite": false
+          },
+          "modifier": {
+            "id": "overgrown",
+            "name": "Overgrown",
+            "description": "Grove creatures hit 20% harder."
+          }
+        },
+        {
+          "id": "f1l2",
+          "floor": 1,
+          "lane": 2,
+          "kind": "cache",
+          "next": ["f2l1", "f2l2"]
+        },
+        {
+          "id": "f2l0",
+          "floor": 2,
+          "lane": 0,
+          "kind": "fight",
+          "next": ["f3l1"],
+          "foe": {
+            "id": "flicker-swarm",
+            "name": "Flicker Swarm",
+            "element": "spark",
+            "kind": "foe",
+            "hpMax": 629,
+            "elite": false
+          },
+          "modifier": {
+            "id": "overgrown",
+            "name": "Overgrown",
+            "description": "Grove creatures hit 20% harder."
+          }
+        },
+        {
+          "id": "f2l1",
+          "floor": 2,
+          "lane": 1,
+          "kind": "elite",
+          "next": ["f3l1"],
+          "foe": {
+            "id": "static-bat",
+            "name": "Static Bat",
+            "element": "spark",
+            "kind": "foe",
+            "hpMax": 775,
+            "elite": true
+          },
+          "modifier": {
+            "id": "dark",
+            "name": "Dark",
+            "description": "Your creatures crit 5 points more often."
+          }
+        },
+        {
+          "id": "f2l2",
+          "floor": 2,
+          "lane": 2,
+          "kind": "fight",
+          "next": ["f3l1"],
+          "foe": {
+            "id": "ash-sprite",
+            "name": "Ash Sprite",
+            "element": "ember",
+            "kind": "foe",
+            "hpMax": 629,
+            "elite": false
+          },
+          "modifier": {
+            "id": "flooded",
+            "name": "Flooded",
+            "description": "Tide creatures hit 20% harder."
+          }
+        },
+        {
+          "id": "f3l1",
+          "floor": 3,
+          "lane": 1,
+          "kind": "camp",
+          "next": ["f4l1", "f4l2"]
+        },
+        {
+          "id": "f4l1",
+          "floor": 4,
+          "lane": 1,
+          "kind": "mystery",
+          "next": ["f5l1"],
+          "event": {
+            "id": "loose-stones",
+            "name": "Loose Stones"
+          }
+        },
+        {
+          "id": "f4l2",
+          "floor": 4,
+          "lane": 2,
+          "kind": "fight",
+          "next": ["f5l2"],
+          "foe": {
+            "id": "moss-lurker",
+            "name": "Moss Lurker",
+            "element": "grove",
+            "kind": "foe",
+            "hpMax": 604,
+            "elite": false
+          },
+          "modifier": {
+            "id": "echoing",
+            "name": "Echoing",
+            "description": "Guards and supports hit 50% harder."
+          }
+        },
+        {
+          "id": "f5l1",
+          "floor": 5,
+          "lane": 1,
+          "kind": "door",
+          "next": ["f6l1"]
+        },
+        {
+          "id": "f5l2",
+          "floor": 5,
+          "lane": 2,
+          "kind": "mystery",
+          "next": ["f6l1"],
+          "event": {
+            "id": "old-shrine",
+            "name": "Old Shrine"
+          }
+        },
+        {
+          "id": "f6l1",
+          "floor": 6,
+          "lane": 1,
+          "kind": "boss",
+          "next": [],
+          "foe": {
+            "id": "slag-tyrant",
+            "name": "Slag Tyrant",
+            "element": "ember",
+            "kind": "boss",
+            "hpMax": 957,
+            "elite": false
+          },
+          "modifier": {
+            "id": "stormy",
+            "name": "Stormy",
+            "description": "Spark creatures hit 20% harder."
+          }
+        }
+      ]
+    },
+    "level": 1,
+    "undercroft": {
+      "maps": [
+        {
+          "floors": 4,
+          "nodes": [
+            {
+              "id": "u1f0l0",
+              "floor": 0,
+              "lane": 0,
+              "kind": "fight",
+              "next": ["u1f1l0"],
+              "foe": {
+                "id": "ember-mite",
+                "name": "Ember Mite",
+                "element": "ember",
+                "kind": "foe",
+                "hpMax": 642,
+                "elite": false
+              },
+              "modifier": {
+                "id": "thorns",
+                "name": "Thorns",
+                "description": "The foe turns the first reaction of each round back on your team."
+              }
+            },
+            {
+              "id": "u1f0l2",
+              "floor": 0,
+              "lane": 2,
+              "kind": "fight",
+              "next": ["u1f1l2"],
+              "foe": {
+                "id": "puddle-imp",
+                "name": "Puddle Imp",
+                "element": "tide",
+                "kind": "foe",
+                "hpMax": 726,
+                "elite": false
+              },
+              "modifier": {
+                "id": "scorched",
+                "name": "Scorched",
+                "description": "Ember creatures hit 20% harder."
+              }
+            },
+            {
+              "id": "u1f1l0",
+              "floor": 1,
+              "lane": 0,
+              "kind": "fight",
+              "next": ["u1f2l1"],
+              "foe": {
+                "id": "ember-mite",
+                "name": "Ember Mite",
+                "element": "ember",
+                "kind": "foe",
+                "hpMax": 642,
+                "elite": false
+              },
+              "modifier": {
+                "id": "echoing",
+                "name": "Echoing",
+                "description": "Guards and supports hit 50% harder."
+              }
+            },
+            {
+              "id": "u1f1l2",
+              "floor": 1,
+              "lane": 2,
+              "kind": "mystery",
+              "next": ["u1f2l1"],
+              "event": {
+                "id": "mushroom-ring",
+                "name": "Mushroom Ring"
+              }
+            },
+            {
+              "id": "u1f2l1",
+              "floor": 2,
+              "lane": 1,
+              "kind": "elite",
+              "next": ["u1f3l1"],
+              "foe": {
+                "id": "ember-mite",
+                "name": "Ember Mite",
+                "element": "ember",
+                "kind": "foe",
+                "hpMax": 898,
+                "elite": true
+              },
+              "modifier": {
+                "id": "echoing",
+                "name": "Echoing",
+                "description": "Guards and supports hit 50% harder."
+              }
+            },
+            {
+              "id": "u1f3l1",
+              "floor": 3,
+              "lane": 1,
+              "kind": "boss",
+              "next": [],
+              "foe": {
+                "id": "slag-tyrant",
+                "name": "Slag Tyrant",
+                "element": "ember",
+                "kind": "boss",
+                "hpMax": 1061,
+                "elite": false
+              },
+              "modifier": {
+                "id": "dark",
+                "name": "Dark",
+                "description": "Your creatures crit 5 points more often."
+              }
+            }
+          ],
+          "level": 1,
+          "label": "Undercroft 1"
+        }
+      ],
+      "marks": 1
+    },
+    "at": null,
+    "path": ["f0l0", "f1l0", "f2l0", "f3l1", "f4l1", "f5l1", "f6l1"],
+    "reachable": ["u1f0l0", "u1f0l2"],
+    "pending": null,
+    "team": [
+      {
+        "id": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "name": "Sproutle",
+        "speciesId": "sproutle",
+        "element": "grove",
+        "role": "guard",
+        "level": 15,
+        "hp": 312,
+        "hpMax": 314,
+        "treat": false
+      },
+      {
+        "id": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62",
+        "name": "Splashet",
+        "speciesId": "splashet",
+        "element": "tide",
+        "role": "setter",
+        "level": 15,
+        "hp": 224,
+        "hpMax": 224,
+        "treat": false
+      },
+      {
+        "id": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c",
+        "name": "Cindle",
+        "speciesId": "cindle",
+        "element": "ember",
+        "role": "payoff",
+        "level": 15,
+        "hp": 189,
+        "hpMax": 194,
+        "treat": false
+      }
+    ],
+    "keepsakes": [],
+    "pack": {
+      "bait": 2,
+      "essence": 3,
+      "scrap": 3
+    },
+    "roomsCleared": 3,
+    "supply": true,
+    "lastEvent": {
+      "name": "Loose Stones",
+      "option": "Dig",
+      "outcome": "No luck. Every creature loses 15% of its max HP."
+    },
+    "history": [
+      {
+        "node": "f0l0",
+        "kind": "fight",
+        "result": "fight",
+        "cleared": true,
+        "rounds": 3,
+        "foeHpEnd": 0,
+        "foeHpMax": 629,
+        "loot": {
+          "bait": 1,
+          "essence": 0,
+          "scrap": 0
+        },
+        "supply": true
+      },
+      {
+        "node": "f1l0",
+        "kind": "mystery",
+        "result": "event",
+        "event": "Glowing Pool",
+        "option": "Drink",
+        "outcome": "Every creature heals 25% of its max HP.",
+        "loot": {
+          "bait": 0,
+          "essence": 0,
+          "scrap": 0
+        }
+      },
+      {
+        "node": "f2l0",
+        "kind": "fight",
+        "result": "fight",
+        "cleared": true,
+        "rounds": 4,
+        "foeHpEnd": 0,
+        "foeHpMax": 629,
+        "loot": {
+          "bait": 1,
+          "essence": 0,
+          "scrap": 0
+        }
+      },
+      {
+        "node": "f3l1",
+        "kind": "camp",
+        "result": "camp",
+        "choice": "rest",
+        "detail": "Rested: standing creatures recovered 40% HP."
+      },
+      {
+        "node": "f4l1",
+        "kind": "mystery",
+        "result": "event",
+        "event": "Loose Stones",
+        "option": "Dig",
+        "outcome": "No luck. Every creature loses 15% of its max HP.",
+        "loot": {
+          "bait": 0,
+          "essence": 0,
+          "scrap": 0
+        }
+      },
+      {
+        "node": "f5l1",
+        "kind": "door",
+        "result": "door",
+        "added": true
+      },
+      {
+        "node": "f6l1",
+        "kind": "boss",
+        "result": "fight",
+        "cleared": true,
+        "rounds": 5,
+        "foeHpEnd": 0,
+        "foeHpMax": 957,
+        "loot": {
+          "bait": 0,
+          "essence": 1,
+          "scrap": 1
+        }
+      },
+      {
+        "node": "f6l1",
+        "kind": "boss",
+        "result": "chest",
+        "level": 0,
+        "loot": {
+          "bait": 0,
+          "essence": 2,
+          "scrap": 2
+        },
+        "gear": [
+          {
+            "baseId": "cinder-charm",
+            "rarity": "epic",
+            "itemLevel": 11
+          }
+        ]
+      },
+      {
+        "node": "f6l1",
+        "kind": "descend",
+        "result": "descend",
+        "level": 1,
+        "healed": 140,
+        "revived": 0
+      }
+    ]
+  }
+}

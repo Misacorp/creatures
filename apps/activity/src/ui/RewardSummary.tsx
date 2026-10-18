@@ -13,6 +13,7 @@ export function RewardSummary({
   prefix,
   countsLabel,
   counts,
+  pile = true,
   children,
 }: {
   source: PileSource;
@@ -21,12 +22,14 @@ export function RewardSummary({
   /** What the list of count badges is called for assistive technology. */
   countsLabel: string;
   counts: readonly CountItem[];
+  /** False leaves the picture of the pile out, so only the count badges show (the dungeon results). */
+  pile?: boolean;
   children?: ComponentChildren;
 }) {
   return (
     <>
-      <div class="reward-row">
-        <RewardPile source={source} label={pileLabel(source, prefix)} />
+      <div class={pile ? 'reward-row' : 'reward-row no-pile'}>
+        {pile && <RewardPile source={source} label={pileLabel(source, prefix)} />}
         <ul class="reward-badges" aria-label={countsLabel}>
           {counts.map(({ key, ...badge }) => (
             <li key={key}>

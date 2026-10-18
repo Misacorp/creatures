@@ -3,6 +3,7 @@
  * gimmicks, turn orders, the mark on the boss, shields, sparkles and the loot reveal's orb and
  * gem. Every glyph has its own shape, so the meaning never depends on colour alone. Pure data.
  */
+import { DUNGEON_MAP_GLYPHS } from './dungeon-map-glyphs';
 import { EXPEDITION_GLYPHS } from './expedition-glyphs';
 import type { SpriteDef } from './sprites/sprite-data';
 
@@ -558,6 +559,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   'slot-scarf': slotScarf,
   'slot-charm': slotCharm,
   ...EXPEDITION_GLYPHS,
+  ...DUNGEON_MAP_GLYPHS,
 };
 
 /** A glyph by id, or undefined. */

@@ -121,7 +121,7 @@ describe('the raid week and the rest of the pictures', () => {
 });
 
 describe('the dungeon picture', () => {
-  it("shows the rules' rooms: foes of different elements, then a room boss", () => {
+  it("shows the rules' rooms: foes of different elements, then a floor boss", () => {
     const rooms = dungeonRooms();
     expect(rooms).toHaveLength(RULES.dungeon.rooms);
     expect(rooms.map((r) => r.boss)).toEqual([false, false, true]);

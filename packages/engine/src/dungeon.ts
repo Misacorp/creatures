@@ -24,10 +24,9 @@ import {
   isLandmark,
   type BossDef,
   type ContentPack,
-  type DungeonFoeDef,
+  type DungeonRoomSpecData,
   type LuckConfig,
   type RoomEffect,
-  type RoomModifierDef,
   type Stats,
 } from '@creatures/game';
 import { simulateFight, type FightOptions } from './fight';
@@ -40,15 +39,15 @@ import type {
   FightSlot,
 } from './types';
 
-/** One room of a run, with its foe and modifier stored in full so a replay never reads content again. */
-export interface DungeonRoomSpec {
-  index: number;
-  foe: DungeonFoeDef;
-  modifier: RoomModifierDef;
-  /** The foe's HP and Attack at the run's depth, before the modifier. */
-  hp: number;
-  atk: number;
-}
+/**
+ * One room of a run, with its foe and modifier stored in full so a replay never reads content again.
+ * The type is defined by the rules package (`DungeonRoomSpecData`, which builds rooms from the map):
+ * `index`, `foe`, `modifier`, the foe's `hp` and `atk` at the run's depth, and two optional fields of
+ * the map runs. `elite` is for display only (the boost is already in `hp` and `atk`). `keepsakes` are
+ * the run's keepsakes when the room is fought, folded in exactly like the modifier's effects, after
+ * them. Absent on a stored older room, which replays exactly as it was fought.
+ */
+export type DungeonRoomSpec = DungeonRoomSpecData;
 
 /** Everything a run needs besides its seed. Plain JSON, so it can be stored and replayed. */
 export interface DungeonRunInput {
@@ -148,8 +147,18 @@ function matches(effect: Extract<RoomEffect, { op: 'team_stat' }>, slot: FightSl
 }
 
 /**
- * The fight input of one room. `hp` is the team's HP carried from the room before (absent for the
- * first room: everyone starts at full HP). The modifier's effects are applied in order.
+ * The effects a room folds into its fight, in order: the room modifier's, then each keepsake's (the
+ * order they were won in). A keepsake is a modifier the player carries, so it folds the same way.
+ */
+function roomEffects(room: DungeonRoomSpec): RoomEffect[] {
+  return [...room.modifier.effects, ...(room.keepsakes ?? []).flatMap((k) => k.effects)];
+}
+
+/**
+ * The fight input of one room. `hp` is the team's HP carried from the room before (null for the
+ * first room: everyone starts at full HP and there is no between-room rest). A creature of the row
+ * with no entry in `hp` (one swapped in at the camp) starts at full HP too, and is not rested: it has
+ * nothing to recover. The modifier's effects are applied in order, then the keepsakes'.
  */
 export function buildRoomInput(
   run: DungeonRunInput,
@@ -157,7 +166,7 @@ export function buildRoomInput(
   hp: Readonly<Record<string, number>> | null,
   pack: ContentPack = content,
 ): FightInput {
-  const effects = room.modifier.effects;
+  const effects = roomEffects(room);
   const row: FightSlot[] = run.team.map((slot) => {
     let stats = { ...statsOf(slot, pack) };
     for (const e of effects) {
@@ -184,8 +193,8 @@ export function buildRoomInput(
   if (
     bossRoom &&
     signature !== undefined &&
-    run.depth !== undefined &&
-    isLandmark(run.depth) &&
+    // At a landmark depth, or in the Undercroft keeper's room (`room.signature`, whatever the depth).
+    (room.signature === true || (run.depth !== undefined && isLandmark(run.depth))) &&
     !gimmicks.some((g) => g.id === signature.id)
   ) {
     gimmicks.push(signature);
@@ -253,6 +262,52 @@ export function buildRoomInput(
 }
 
 /**
+ * Each creature's max HP in a room, as its fight computes it: the stats with the modifier's and the
+ * keepsakes' team HP changes folded in, plus the Guard bonus (`rules.guardHpBp` of the run, else the
+ * rules' own). The server uses it to heal or hurt by a share of max HP outside a fight (a camp's
+ * Rest, an event), and the numbers equal the fight's `hpMax`.
+ */
+export function rowMaxHp(
+  run: DungeonRunInput,
+  room: DungeonRoomSpec,
+  pack: ContentPack = content,
+): Record<string, number> {
+  const guardBp = run.rules === undefined ? RULES.combat.guardHpBp : run.rules.guardHpBp;
+  const out: Record<string, number> = {};
+  for (const slot of buildRoomInput(run, room, null, pack).row) {
+    const hp = (slot.stats as Stats).hp;
+    out[slot.id] = slot.role === 'guard' ? Math.floor((hp * (10_000 + guardBp)) / 10_000) : hp;
+  }
+  return out;
+}
+
+/**
+ * Plays ONE room of a run, for a run that is played room by room (the map): `hp` is the team's HP
+ * carried in (null for the run's first fight: full HP and no between-room rest). It is seeded from
+ * `roomSeed(seed, room.index)`, so a room of a chained `simulateDungeon` and the same room played alone
+ * from the same carried HP are the same fight. A creature in `run.team` with no entry in `hp` starts
+ * at full HP; entries for creatures not in the row are ignored.
+ */
+export function simulateDungeonRoom(
+  run: DungeonRunInput,
+  room: DungeonRoomSpec,
+  hp: Readonly<Record<string, number>> | null,
+  seed: string,
+  options: FightOptions = {},
+): DungeonRoomResult {
+  const pack = options.pack ?? content;
+  const input = buildRoomInput(run, room, hp, pack);
+  const result = simulateFight(input, createSeededRng(roomSeed(seed, room.index)), options);
+  return {
+    index: room.index,
+    hpStart: result.hpStart,
+    hpMax: result.hpMax,
+    cleared: result.bossHpEnd === 0,
+    result,
+  };
+}
+
+/**
  * Plays a run: the rooms in order, each against its foe, with the team's HP carried from room to
  * room and knocked-out creatures staying out. A room is cleared when its foe falls; the run stops at
  * the first room that is not cleared, or when nobody is left standing. Deterministic for a given
@@ -263,24 +318,15 @@ export function simulateDungeon(
   seed: string,
   options: FightOptions = {},
 ): DungeonRunResult {
-  const pack = options.pack ?? content;
   const rooms: DungeonRoomResult[] = [];
   let hp: Record<string, number> | null = null;
   let roomsCleared = 0;
   for (const room of run.rooms) {
     if (hp !== null && !Object.values(hp).some((h) => h > 0)) break;
-    const input = buildRoomInput(run, room, hp, pack);
-    const result = simulateFight(input, createSeededRng(roomSeed(seed, room.index)), options);
-    const cleared = result.bossHpEnd === 0;
-    rooms.push({
-      index: room.index,
-      hpStart: result.hpStart,
-      hpMax: result.hpMax,
-      cleared,
-      result,
-    });
-    hp = result.hpEnd;
-    if (!cleared) break;
+    const played = simulateDungeonRoom(run, room, hp, seed, options);
+    rooms.push(played);
+    hp = played.result.hpEnd;
+    if (!played.cleared) break;
     roomsCleared += 1;
   }
   return {

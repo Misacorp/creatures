@@ -1,6 +1,6 @@
 import { failure, pathId } from './collection-routes';
 import type { Dungeon } from './dungeon';
-import { DraftBodySchema, RunBodySchema } from './dungeon-schemas';
+import { ActBodySchema, DraftBodySchema, StartBodySchema } from './dungeon-schemas';
 import { errorResponse, json, parseBody, type Routes } from './http';
 
 /** What these routes need from the request context (GuildCore's context satisfies it). */
@@ -13,8 +13,10 @@ export interface DungeonRouteContext {
 
 /**
  * The daily dungeon's routes. The caller is always the session's user: no route takes a user id,
- * a seed, stats or anything else the server decides. A run answers `{ run, today }`; the client
- * refreshes the collection and gear views itself (balances, items and parts changed).
+ * a seed, stats, HP, loot or anything else the server decides. `start` answers `{ state, today }`
+ * and each `act` answers `{ state, room?, summary?, today? }` (the last two when the run ended); the
+ * client refreshes the collection and gear views itself when it ends (balances, items and parts
+ * changed).
  */
 export const dungeonRoutes: Routes<DungeonRouteContext> = {
   '/api/dungeon/today': {
@@ -28,14 +30,27 @@ export const dungeonRoutes: Routes<DungeonRouteContext> = {
       return json({ draftTeam: ctx.core.dungeon.saveDraft(ctx.user.id, body.team) });
     },
   },
-  '/api/dungeon/run': {
+  '/api/dungeon/start': {
     POST: async (request, ctx) => {
-      const body = await parseBody(request, RunBodySchema);
+      const body = await parseBody(request, StartBodySchema);
       if (body === undefined) return errorResponse('invalid_body', 400);
-      const outcome = ctx.core.dungeon.run(ctx.user.id, body);
+      const outcome = ctx.core.dungeon.start(ctx.user.id, body);
       if (!outcome.ok) return failure(outcome);
       return json(outcome.value);
     },
+  },
+  '/api/dungeon/act': {
+    POST: async (request, ctx) => {
+      const body = await parseBody(request, ActBodySchema);
+      if (body === undefined) return errorResponse('invalid_body', 400);
+      const outcome = ctx.core.dungeon.act(ctx.user.id, body);
+      if (!outcome.ok) return failure(outcome);
+      return json(outcome.value);
+    },
+  },
+  // The all-at-once run is gone: an Activity that still sends it is out of date and must reload.
+  '/api/dungeon/run': {
+    POST: () => errorResponse('gone', 410),
   },
   '/api/dungeon/run/:id': {
     GET: (_request, ctx) => {

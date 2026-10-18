@@ -1,6 +1,6 @@
 /**
  * Sprite lookups for creatures (16x16) and bosses (24x24), for the daily dungeon's foes (16x16)
- * and room bosses (24x24), and for the banners of expedition destinations (64x24). The pixel data lives in `data/`; every
+ * and floor bosses (24x24), and for the banners of expedition destinations (64x24). The pixel data lives in `data/`; every
  * species and boss has a sprite, drawn from its visual brief (`docs/design/creatures.md`). Symmetric
  * sprites store only their left half and set `mirror`. An id without a sprite (for example a species
  * added to the content before its art) falls back to `FALLBACK_SILHOUETTE`. Guests use the sprite of
@@ -68,7 +68,7 @@ export function dungeonFoeSprite(foeId: string): SpriteDef | undefined {
   return Object.hasOwn(DUNGEON_FOE_SPRITES, foeId) ? DUNGEON_FOE_SPRITES[foeId] : undefined;
 }
 
-/** The sprite for a daily-dungeon room boss id (24x24), or undefined when none has been drawn. */
+/** The sprite for a daily-dungeon floor boss id (24x24), or undefined when none has been drawn. */
 export function dungeonBossSprite(bossId: string): SpriteDef | undefined {
   return Object.hasOwn(DUNGEON_BOSS_SPRITES, bossId) ? DUNGEON_BOSS_SPRITES[bossId] : undefined;
 }

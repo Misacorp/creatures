@@ -196,6 +196,16 @@ describe('the raid board with empty slots', () => {
   });
 });
 
+/** The base fight input of a player's open map run (its stored state's row, gear and weather folded in). */
+function runInput(ctx: CoreContext, userId: string): DungeonRunInput {
+  const stored = rows<{ state_json: string }>(
+    ctx.sql,
+    'SELECT state_json FROM dungeon_runs WHERE user_id = ?',
+    userId,
+  )[0];
+  return (JSON.parse(stored?.state_json ?? '{}') as { input: DungeonRunInput }).input;
+}
+
 describe('the dungeon line', () => {
   it('folds position lines along the row in the order of the request, left to right', async () => {
     await runCore(
@@ -210,12 +220,7 @@ describe('the dungeon line', () => {
         ctx.clock.t = AFTER_RESET;
         const first = await p.run({ team: [a, b, c] });
         expect(first.status).toBe(200);
-        const stored = rows<{ input_json: string }>(
-          ctx.sql,
-          'SELECT input_json FROM dungeon_runs WHERE user_id = ?',
-          p.id,
-        )[0];
-        const input = JSON.parse(stored?.input_json ?? '{}') as DungeonRunInput;
+        const input = runInput(ctx, p.id);
         const at = (id: string) => input.team.find((s) => s.id === id);
         // `a` at the left end: Edge-walker works. `b` in the middle: Heart of the row works. `c` at the right end: it does not.
         expect(at(a)?.stats?.atk).toBeGreaterThan(bare.get(a)?.stats.atk ?? Infinity);
@@ -237,12 +242,7 @@ describe('the dungeon line', () => {
         ctx.clock.t = AFTER_RESET;
         // `a` in the middle: Edge-walker does nothing.
         expect((await p.run({ team: [b, a, c] })).status).toBe(200);
-        const stored = rows<{ input_json: string }>(
-          ctx.sql,
-          'SELECT input_json FROM dungeon_runs WHERE user_id = ?',
-          p.id,
-        )[0];
-        const input = JSON.parse(stored?.input_json ?? '{}') as DungeonRunInput;
+        const input = runInput(ctx, p.id);
         expect(input.team.find((s) => s.id === a)?.stats?.atk).toBe(bare.get(a)?.stats.atk);
       },
       { dungeonRng: createSeededRng('d-swap'), gearRng: createSeededRng('d-swap:gear') },

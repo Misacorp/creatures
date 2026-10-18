@@ -503,10 +503,11 @@ describe('migration 32 (placed_by)', () => {
         ).map((r) => r.name);
       expect(columns()).toContain('placed_by');
       ctx.core.raid.place(me.id, HELSINKI, me.creatureIds[0] as string, 4);
+      // It undoes the newer migrations first (33, the lounge; 34, the dungeon on a map).
       undoPlacedByMigration(ctx.sql);
       expect(columns()).not.toContain('placed_by');
       expect(ctx.sql.exec('SELECT MAX(version) AS v FROM schema_version').one()['v']).toBe(
-        LATEST_SCHEMA_VERSION - 2,
+        LATEST_SCHEMA_VERSION - 3,
       );
       ctx.core.migrate();
       expect(columns()).toContain('placed_by');

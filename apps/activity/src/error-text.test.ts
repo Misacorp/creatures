@@ -95,7 +95,13 @@ const DUNGEON_MESSAGES: Readonly<Record<string, string>> = {
   not_found:
     'One of those creatures, or that run, could not be found. The screen was out of date, so it was refreshed.',
   already_run: "You already used today's run. A new one opens when the day resets.",
-  key_conflict: 'That run clashed with an earlier one. Check your picks and try again.',
+  key_conflict: 'That clashed with an earlier request. Check your picks and try again.',
+  invalid_treat: 'A treat can only go to a creature in the team, once.',
+  insufficient_funds: 'Not enough Bait for those treats.',
+  run_active: 'Your run is still open. Carry on from the map.',
+  stale_step: 'Your run moved on in another window. The map was refreshed.',
+  invalid_act: "That can't be done right now. The map was refreshed.",
+  gone: 'The game was updated. Close and reopen the Activity to play the new dungeon.',
 };
 
 describe('error messages', () => {
@@ -115,7 +121,7 @@ describe('error messages', () => {
   });
 
   it('falls back to the game text for a code the dungeon table does not have', () => {
-    expect(dungeonErrorText(new ApiError(409, 'insufficient_funds'))).toBe('Not enough Bait.');
+    expect(dungeonErrorText(new ApiError(409, 'slot_taken'))).toBe(GAME_MESSAGES['slot_taken']);
     expect(dungeonErrorText(new ApiError(429, 'rate_limited'))).toBe(GAME_MESSAGES['rate_limited']);
   });
 

@@ -11,7 +11,7 @@ import {
   type WeatherDay,
 } from '@creatures/game';
 import { DEFAULT_MIX } from '../src/archetypes';
-import { buildRun, dayModifiers, playDungeonDay } from '../src/dungeon';
+import { buildRunInput, dayMap, playDungeonDay } from '../src/dungeon';
 import { runEconomy } from '../src/economy';
 import { GEAR_POLICY, claimJobs, startJobs, type GearContext } from '../src/gear';
 import { fightFor, openRaidWeek } from '../src/raid';
@@ -314,8 +314,7 @@ describe('the dungeon under the sky', () => {
     }
     return p;
   }
-  const build = (weather: WeatherDay | null) =>
-    buildRun(runner(), 3, dayModifiers('wx', 0), 'wx-dungeon', {}, undefined, weather);
+  const build = (weather: WeatherDay | null) => buildRunInput(runner(), 3, {}, undefined, weather);
 
   it('puts the day on the run: the sheet, the luck and the foes attacks', () => {
     const plain = build(null);
@@ -330,13 +329,13 @@ describe('the dungeon under the sky', () => {
     }
   });
 
-  it('pays Market Day scrap for every room cleared', () => {
+  it('pays Market Day scrap for every fight cleared', () => {
     const scrap = (weather: WeatherDay | null): { scrap: number; rooms: number } => {
       const p = runner();
       const log = playDungeonDay(
         p,
         0,
-        dayModifiers('wx', 0),
+        dayMap('wx', 0),
         'wx-pay',
         createSeededRng('wx-loot'),
         {},

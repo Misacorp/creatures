@@ -652,15 +652,16 @@ export function rollConvertedRarity(rng: Rng, rank: number, old: LegacyRarity): 
   return old === 'festival' ? rollFinaleRarity(rng, rank) : old;
 }
 
-/** A dungeon piece: the room boss's element as its tag, item level by depth, then its lines. */
+/** A dungeon piece: the floor boss's element as its tag, item level by depth (plus `itemLevelBonus`, the Undercroft chest's), then its lines. */
 export function rollDungeonItem(
   rng: Rng,
   rarity: DropRarity,
   depth: number,
   landmark: boolean,
   element: Element,
+  itemLevelBonus = 0,
 ): GearItem {
-  const itemLevel = dungeonItemLevel(depth, landmark);
+  const itemLevel = dungeonItemLevel(depth, landmark) + itemLevelBonus;
   const base = dropBase(rng, element, itemLevel);
   return rollItem(rng, { baseId: base.id, rarity, itemLevel });
 }

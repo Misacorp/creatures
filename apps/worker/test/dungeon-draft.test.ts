@@ -255,13 +255,13 @@ describe('draftTeam in GET /api/dungeon/today', () => {
         const [a, b, c] = p.creatureIds as [string, string, string];
         ctx.clock.t = AFTER_RESET;
         const body = p.body({ team: [a, b, c] });
-        expect((await p.call('POST', '/api/dungeon/run', body)).status).toBe(200);
+        expect((await p.call('POST', '/api/dungeon/start', body)).status).toBe(200);
         await p.call('PUT', PATH, { team: [c, b, a] });
         // A second run the same day is refused: the draft stays.
         expect((await p.run()).status).toBe(409);
         expect((await p.today()).draftTeam).toEqual([c, b, a]);
         // The retry of the stored run returns it and leaves the draft alone.
-        expect((await p.call('POST', '/api/dungeon/run', body)).status).toBe(200);
+        expect((await p.call('POST', '/api/dungeon/start', body)).status).toBe(200);
         expect((await p.today()).draftTeam).toEqual([c, b, a]);
       },
       opts(),

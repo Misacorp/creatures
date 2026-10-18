@@ -16,6 +16,10 @@
   --xp-experience: var(--gold);
   --xp-explorer: #e7a6d6;
   --xp-crafting: #c08552;
+  /* Each one's darker shade: the part of a bar that was there before what was just gained. */
+  --xp-experience-shade: var(--gold-shade);
+  --xp-explorer-shade: #b479a5;
+  --xp-crafting-shade: #8c5c35;
   --tide: #4f8fe6;
   --ember: #ef6a3a;
   --grove: #5cbf5a;
