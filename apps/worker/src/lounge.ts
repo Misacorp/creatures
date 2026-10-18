@@ -117,7 +117,7 @@ function scheduleCheck(sql: SqlStorage, at: number): void {
 /**
  * Notes that `userId` started a session in the verified instance: tracks the instance (adding the
  * user), makes them the last visitor and schedules a check. A new instance also asks for the "buried"
- * test. False (nothing stored) if the id has an odd shape.
+ * test and lifts a 403 pause. False (nothing stored) if the id has an odd shape.
  */
 export function recordInstance(
   sql: SqlStorage,
@@ -146,7 +146,10 @@ export function recordInstance(
        )`,
       MAX_TRACKED_INSTANCES,
     );
-    sql.exec('UPDATE lounge_message SET check_buried = 1 WHERE id = 1');
+    // A new session also lifts a pause after a 403, so a permission fixed meanwhile works at once.
+    sql.exec(
+      'UPDATE lounge_message SET check_buried = 1, blocked_until = NULL, failures = 0 WHERE id = 1',
+    );
   } else {
     const users = parseUsers(existing.user_ids);
     if (!users.includes(userId)) {

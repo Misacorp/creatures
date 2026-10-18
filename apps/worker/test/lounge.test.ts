@@ -469,6 +469,27 @@ describe('the lounge message: the core', () => {
     });
   });
 
+  it('a new session lifts the 403 pause, so a fixed permission works at once', async () => {
+    await withLounge(async (ctx, fake) => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      fake.next.create = { kind: 'forbidden' };
+      await start(ctx, fake);
+      await tick(ctx, 16 * SECOND);
+      expect(readLounge(ctx.sql).blockedUntil).not.toBeNull();
+      fake.instances.set('i-second', [OTHER_USER_ID]);
+      await ctx.core.createSession(
+        ctx.guildId,
+        { id: OTHER_USER_ID, displayName: 'Ana' },
+        CHANNEL,
+        'i-second',
+      );
+      await tick(ctx, 16 * SECOND);
+      expect(fake.log).toHaveLength(2);
+      expect(readLounge(ctx.sql).messageId).not.toBeNull();
+      error.mockRestore();
+    });
+  });
+
   it('retries after a transient failure at the next tick', async () => {
     await withLounge(async (ctx, fake) => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);

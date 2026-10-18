@@ -27,7 +27,7 @@ One message per server in the announcement channel (where raid posts go), edited
 - Buried: when a new session starts, the server reads the channel's last 10 messages (needs Read Message History). If the lounge message is not among them, it is deleted and posted again, silently. If the list cannot be read, the message is edited where it is.
 - The announcement channel moved: the old message is deleted and a new one is posted in the new channel.
 - Deleted by someone: the next edit gets 404 and the message is posted again.
-- No permission (403): message work pauses for 30 minutes. Other failures retry with Discord's wait or 60 s, up to 5 in a row.
+- No permission (403): message work pauses for 30 minutes, or until a new session starts (so a permission fixed meanwhile works at the next launch). Other failures retry with Discord's wait or 60 s, up to 5 in a row.
 
 ## Cost
 
