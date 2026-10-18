@@ -76,19 +76,6 @@ button.flip-btn[aria-disabled='true']:active {
   margin-bottom: 0.75rem;
 }
 
-/*
-  A drawer whose heading is only spoken (the Workshop item) shows no X: the arrow row is its top, and a
-  tap outside, the handle or Escape closes it. The close button stays for the keyboard and screen readers
-  and shows when it has the focus.
-*/
-.drawer-panel.title-hidden .drawer-close:not(:focus-visible) {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 
 /* --- The swipe area --- */
 
