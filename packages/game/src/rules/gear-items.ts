@@ -16,7 +16,9 @@
 import { content } from '../content';
 import { eligibleBases, gearBase, gearContent, gearLine, gearSet } from '../content/gear';
 import {
+  CHANCE_FIELDS,
   GEAR_SLOTS,
+  TRIGGER_FIELDS,
   tagElement,
   tagRole,
   type BaseStatKind,
@@ -131,6 +133,20 @@ export function fixedValue(values: readonly number[], itemLevel: number): number
   return values[tierCap(itemLevel)] as number;
 }
 
+/** Chance lines are this many basis points (2 points) higher on an Epic or a Festival piece. */
+export const CHANCE_BONUS_BP = 200;
+
+/**
+ * What a rolled line adds to its tier value on this item: chance lines (6.3) get +2 points on an Epic or a
+ * Festival piece, every other line nothing. The item's own rarity and base decide, so a stored item needs
+ * no change.
+ */
+export function lineBonus(line: GearLine, item: Pick<GearItem, 'rarity'>, base: GearBase): number {
+  return line.group === 'chance' && (item.rarity === 'epic' || base.festival === true)
+    ? CHANCE_BONUS_BP
+    : 0;
+}
+
 const RARITY_RANK: Record<GearRarity, number> = { common: 0, rare: 1, epic: 2 };
 const LINE_RANK = { common: 0, rare: 1, epic: 2 } as const;
 
@@ -222,7 +238,7 @@ export function linePool(
 /**
  * Rolls an item's lines: as many as the rarity has, drawn by weight from the pool without taking
  * the same line twice, each with its own tier. Draws in a fixed order (the line, then its tier). An item
- * holds at most one special line (position now; chance and trigger lines join later, `SPECIAL_GROUPS`):
+ * holds at most one special line (a position, chance or trigger line, `SPECIAL_GROUPS`):
  * once one is drawn, the others leave the pool, so the next draw is among the ordinary lines. Every way
  * an item gets lines (a drop, a craft, a Reach, the conversion) rolls through here.
  */
@@ -295,6 +311,8 @@ export function formatLineValue(line: GearLine, value: number): string {
       return `${sign}${formatBp(value)} pt`;
     case 'flat':
       return `${sign}${String(value)}`;
+    case 'chance':
+      return `${formatBp(value)}%`;
     case 'once':
       return '';
   }
@@ -361,7 +379,7 @@ export function itemLines(item: GearItem): ResolvedLine[] {
   for (const rolled of item.lines) {
     const line = gearLine(rolled.id);
     if (line === undefined) throw new Error(`item has unknown line "${rolled.id}"`);
-    const value = lineValue(line, rolled.tier);
+    const value = lineValue(line, rolled.tier) + lineBonus(line, item, base);
     out.push({
       id: line.id,
       name: line.name,
@@ -518,6 +536,26 @@ export interface GearMods {
   boostReach?: 0 | 1;
   sealMark?: 0 | 1;
   firstReactionCrit?: 0 | 1;
+  /** Chance lines (a chance in basis points) and trigger lines: see `CHANCE_FIELDS`, `TRIGGER_FIELDS` and `SlotMods` in the engine. */
+  secondWindBp?: number;
+  echoBp?: number;
+  sidestepBp?: number;
+  steadyPawsBp?: number;
+  warmHeartBp?: number;
+  quickRemarkBp?: number;
+  spillOverBp?: number;
+  paybackBp?: number;
+  kindlingBp?: number;
+  openingMark?: 0 | 1;
+  rallyCryBp?: number;
+  emberTailBp?: number;
+  stormWarningBp?: number;
+  stubborn?: 0 | 1;
+  lastStandBp?: number;
+  overflowBp?: number;
+  secondBreathBp?: number;
+  patientBp?: number;
+  sharedWarmthBp?: number;
 }
 
 /** What gear does outside the fight, for the wearer (basis points; a time reduction is a positive number). */
@@ -542,6 +580,10 @@ export interface GearRules {
   glimmerFindBp: number;
   /** Extra catch rolls on its 24 hour trips (the Crossroads Wanderer set). */
   dayTripRolls: number;
+  /** Tinker's luck: the chance (basis points) that a dismantle job it runs refunds an item's full craft cost. */
+  tinkersLuckBp: number;
+  /** Second look: the chance (basis points) that a duplicate its trip brings rolls its talent twice. */
+  secondLookBp: number;
 }
 
 export const NO_GEAR_RULES: GearRules = Object.freeze({
@@ -555,6 +597,8 @@ export const NO_GEAR_RULES: GearRules = Object.freeze({
   restBp: 0,
   glimmerFindBp: 0,
   dayTripRolls: 0,
+  tinkersLuckBp: 0,
+  secondLookBp: 0,
 });
 
 const RULE_FIELD = {
@@ -565,6 +609,8 @@ const RULE_FIELD = {
   packer: 'packerBp',
   busyPaws: 'busyPawsBp',
   apprentice: 'apprenticeBp',
+  tinkersLuck: 'tinkersLuckBp',
+  secondLook: 'secondLookBp',
 } as const satisfies Record<string, keyof GearRules>;
 
 /**
@@ -640,7 +686,9 @@ type SheetNumeric =
   | 'armorBp'
   | 'coverBp'
   | 'boostBp'
-  | 'mendBp';
+  | 'mendBp'
+  | (typeof CHANCE_FIELDS)[number]
+  | Exclude<(typeof TRIGGER_FIELDS)[number], 'openingMark' | 'stubborn'>;
 
 function addTo<K extends string>(
   table: Partial<Record<K, number>> | undefined,
@@ -830,6 +878,8 @@ export function wornEffects(
           sheet.lingerRounds = Math.min(3, (sheet.lingerRounds ?? 0) + value);
         } else if (effect.field === 'ignoreSilence') {
           sheet.ignoreSilence = 1;
+        } else if (effect.field === 'openingMark' || effect.field === 'stubborn') {
+          sheet[effect.field] = 1;
         } else {
           addSheet(effect.field, value);
         }
@@ -918,6 +968,18 @@ export function wornEffects(
     const value = sheet[field];
     if (value !== undefined) sheet[field] = Math.min(10_000, value);
   }
+  // A chance never passes 100% (two items can carry the same line), nor a cut 100%.
+  for (const field of [
+    ...CHANCE_FIELDS,
+    'stormWarningBp',
+    'lastStandBp',
+    'secondBreathBp',
+  ] as const) {
+    const value = sheet[field];
+    if (value !== undefined) sheet[field] = Math.min(10_000, value);
+  }
+  out.rules.tinkersLuckBp = Math.min(10_000, out.rules.tinkersLuckBp);
+  out.rules.secondLookBp = Math.min(10_000, out.rules.secondLookBp);
   out.rules.quickFeetBp = Math.min(5_000, out.rules.quickFeetBp);
   out.rules.busyPawsBp = Math.min(5_000, out.rules.busyPawsBp);
   return out;

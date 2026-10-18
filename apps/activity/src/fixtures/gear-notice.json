@@ -34,10 +34,10 @@
       ],
       "lines": [
         {
-          "id": "grove-hunter",
-          "name": "Grove Hunter",
-          "text": "Grove Hunter +7%",
-          "about": "More damage to bosses and foes that Grove is strong against.",
+          "id": "heart-of-the-row",
+          "name": "Heart of the row",
+          "text": "Heart of the row +5%",
+          "about": "More HP in the middle of its row.",
           "source": "rolled",
           "tier": 2,
           "bestTier": 1,
@@ -45,22 +45,22 @@
           "active": true
         },
         {
-          "id": "odd-one-out",
-          "name": "Odd one out",
-          "text": "Odd one out +4%",
-          "about": "More Attack when no neighbour shares its element.",
+          "id": "tide-attunement",
+          "name": "Tide Attunement",
+          "text": "Tide Attunement +5%",
+          "about": "Raises Attack, but only for a Tide creature.",
           "source": "rolled",
           "tier": 2,
           "bestTier": 1,
           "local": false,
-          "active": true
+          "active": false
         }
       ],
       "needs": {
         "level": 4,
         "role": null
       },
-      "equippedOn": "bf9b1c6c-7c5a-4fb9-b30e-c767e2357efe",
+      "equippedOn": "0fc09c1d-9287-43ee-9dee-e09d7b38046b",
       "dismantle": {
         "scrap": {
           "min": 2,
@@ -111,10 +111,10 @@
       ],
       "lines": [
         {
-          "id": "heart-of-the-row",
-          "name": "Heart of the row",
-          "text": "Heart of the row +5%",
-          "about": "More HP in the middle of its row.",
+          "id": "all-damage-taken",
+          "name": "All damage taken",
+          "text": "All damage taken −3%",
+          "about": "Every hit on the wearer does less damage.",
           "source": "rolled",
           "tier": 2,
           "bestTier": 1,
@@ -122,10 +122,10 @@
           "active": true
         },
         {
-          "id": "aimed-ward",
-          "name": "Aimed ward",
-          "text": "Aimed ward −5%",
-          "about": "Aimed hits do less damage to the wearer.",
+          "id": "ember-ward",
+          "name": "Ember Ward",
+          "text": "Ember Ward −7%",
+          "about": "Less damage from the foes that beat Ember.",
           "source": "rolled",
           "tier": 2,
           "bestTier": 1,
@@ -148,7 +148,7 @@
         "level": 7,
         "role": null
       },
-      "equippedOn": "0b7b66fc-fd1b-4a2a-b9a1-7c49b4195390",
+      "equippedOn": "cafc501d-ce14-4aed-8dbd-4cb0a7ca8a2c",
       "dismantle": {
         "scrap": {
           "min": 2,
@@ -274,19 +274,19 @@
   },
   "skills": [
     {
-      "creatureId": "bf9b1c6c-7c5a-4fb9-b30e-c767e2357efe",
+      "creatureId": "0fc09c1d-9287-43ee-9dee-e09d7b38046b",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "0b7b66fc-fd1b-4a2a-b9a1-7c49b4195390",
+      "creatureId": "cafc501d-ce14-4aed-8dbd-4cb0a7ca8a2c",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "31673b47-3af9-48e9-a6b1-18690c8ae5c5",
+      "creatureId": "194afaf0-5712-440f-aa87-b819e4ac2257",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100

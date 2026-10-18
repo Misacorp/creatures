@@ -1089,12 +1089,32 @@
     "section": "gear"
   },
   {
+    "id": "gear-chance",
+    "title": "Chance line",
+    "short": "A line that works some of the time, by the percentage it shows.",
+    "lines": [
+      "Chance lines roll Rare or better. Epics and Festival pieces have 2 points more.",
+      "Each creature rolls its own dice every round, so a chance is never a promise."
+    ],
+    "section": "gear"
+  },
+  {
+    "id": "gear-trigger",
+    "title": "Trigger line",
+    "short": "A line that waits for a moment in the fight, then fires and says so in the log.",
+    "lines": [
+      "Taking a hit for a friend, a crit, a silence or a knock-out beside it can set one off.",
+      "An item has at most one special line. Position, chance and trigger lines are special."
+    ],
+    "section": "gear"
+  },
+  {
     "id": "gear-position",
     "title": "Position line",
     "short": "A line that depends on where the creature stands.",
     "lines": [
       "It looks at the neighbours, the row or the end the creature stands at. Move the creature to switch it on.",
-      "An item has at most one special line, and position lines are special.",
+      "An item has at most one special line. Position, chance and trigger lines are special.",
       "The row is Front, Middle or Back in the raid, and the whole line in the dungeon."
     ],
     "section": "gear"

@@ -2,7 +2,14 @@
  * Display helpers for the collection UI. Names, elements and odds come from the shared game
  * content; every number that matters (costs, levels, catches) comes from the server.
  */
-import { RULES, content, lore, quirkText, type CreatureSpecies } from '@creatures/game';
+import {
+  GLOSSARY_IDS,
+  RULES,
+  content,
+  lore,
+  quirkText,
+  type CreatureSpecies,
+} from '@creatures/game';
 import { ApiError, type CatchResult, type Creature, type ServerFirst } from './api';
 
 const SPECIES = new Map<string, CreatureSpecies>(content.creatures.map((c) => [c.id, c]));
@@ -152,6 +159,10 @@ export function catchBadgeTags(entry: CatchResult): { text: string; entry: strin
   }
   if (entry.shiny) badges.push({ text: 'Shiny!', entry: 'shiny' });
   if (entry.firstOnServer) badges.push({ text: 'First on server!', entry: 'first-on-server' });
+  // Second look: the explorer's gear rolled this duplicate's talent twice and kept the better.
+  if (entry.secondLook === true) {
+    badges.push({ text: 'Second look', entry: GLOSSARY_IDS.gearLine('second-look') });
+  }
   return badges;
 }
 

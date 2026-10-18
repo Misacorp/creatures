@@ -137,6 +137,8 @@ export type JobResult =
       essence: number;
       learned: string[];
       marked: { baseId: string; marks: number }[];
+      /** How many items Tinker's luck refunded in full (absent when none). */
+      tinkered?: number;
     } & JobCommon)
   /** A crafted supply for expeditions: `amount` of `supplyId` went into the stock. */
   | ({ kind: 'supply'; supplyId: string; amount: number } & JobCommon)

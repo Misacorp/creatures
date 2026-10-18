@@ -22,6 +22,8 @@ export const PATTERN_SCENARIOS = [
   'Kind Rain (a heal for everyone)',
   'Morning Haze (first turns lost)',
   'Bramble Season (a reaction thrown back)',
+  'Stubborn (stays up at 1 HP)',
+  'Chance and trigger lines (Echo, Sidestep, Payback)',
   'Cover pips (Guard beside)',
   'Armor pip (a Guard takes less)',
   'Crowded sweep (15 creatures)',
@@ -242,6 +244,48 @@ export function patternFight(scenario: PatternScenario): PatternFight {
           bramble: { bp: 3_000, amount: 30 },
         },
         { t: 'boss_hit', round: 3, source: 'reflect', target: 'c1', damage: 30 },
+      ]);
+    case 'Stubborn (stays up at 1 HP)': {
+      // c1 would be knocked out by the hit (it shows its full damage), but its Stubborn line keeps it at 1 HP.
+      const max =
+        estimatedMaxHp(row[1] as ReplayRowEntry, {
+          guardHpBp: RULES.combat.guard.hpBp,
+          guardArmorBp: RULES.combat.guard.armorBp,
+        }) ?? 100;
+      return done(colossus, [
+        start(3),
+        {
+          t: 'boss_hit',
+          round: 3,
+          source: 'attack',
+          target: 'c1',
+          damage: max + 40,
+          stubborn: true,
+        },
+        { t: 'proc', round: 3, creature: 'c1', kind: 'stubborn' },
+      ]);
+    }
+    case 'Chance and trigger lines (Echo, Sidestep, Payback)':
+      return done(colossus, [
+        start(4),
+        { t: 'proc', round: 4, creature: 'c1', kind: 'warm_heart', target: 'c2', amount: 1_000 },
+        { t: 'turn', round: 4, creature: 'c2' },
+        {
+          t: 'hit',
+          round: 4,
+          creature: 'c2',
+          damage: 120,
+          matchupBp: 10_000,
+          bonusBp: 1_000,
+          mark: null,
+          bossHp: 880,
+        },
+        { t: 'proc', round: 4, creature: 'c2', kind: 'echo', amount: 36, bossHp: 844 },
+        gimmick(4, 'undertow', 'hit_zone', { targets: ['c0', 'c1'] }),
+        hit(4, 'c0', 0, { sidestep: true }),
+        hit(4, 'c1', 70),
+        { t: 'boss_hit', round: 4, source: 'attack', target: 'c0', damage: 55, from: 'c3' },
+        { t: 'proc', round: 4, creature: 'c0', kind: 'payback', amount: 3_000 },
       ]);
     case 'Cover pips (Guard beside)':
       return done(colossus, [

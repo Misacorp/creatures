@@ -87,7 +87,7 @@ describe('the position lines content', () => {
       expect(line?.group, id).toBe('position');
       expect(line?.special, id).toBe(true);
     }
-    expect(SPECIAL_GROUPS).toEqual(['position']);
+    expect(SPECIAL_GROUPS).toEqual(['position', 'chance', 'trigger']);
     const v = (id: string) => (gearLine(id)?.values ?? [])[4];
     expect(v('shoulder-to-shoulder')).toBe(500);
     expect(v('odd-one-out')).toBe(1_000);
@@ -99,13 +99,16 @@ describe('the position lines content', () => {
     expect(v('four-winds')).toBe(1_000);
     expect(v('sheltered')).toBe(600);
     expect(v('beside-the-mark-maker')).toBe(1_000);
-    // No other line is special.
+    // The special lines are the position lines and (since 2026-10-18) the chance and trigger lines.
     expect(
       gearContent.lines
-        .filter((l) => l.special)
+        .filter((l) => l.special && l.group === 'position')
         .map((l) => l.id)
         .sort(),
     ).toEqual([...POSITION_IDS, 'guards-shadow'].sort());
+    for (const l of gearContent.lines.filter((x) => x.special)) {
+      expect(['position', 'chance', 'trigger']).toContain(l.group);
+    }
   });
 
   it('rolls in the slots the design leans them to, and every tier grows', () => {

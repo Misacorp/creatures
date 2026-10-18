@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { stateAt } from '../replay';
+import { RULES } from '@creatures/game';
 import {
+  creatureHpAt,
+  estimatedMaxHp,
   crowdedHits,
   cuesForEvents,
   enragedAt,
@@ -9,7 +13,18 @@ import {
   strikeRows,
   strikesOf,
 } from '../stage';
-import { PATTERN_SCENARIOS, patternFight, patternRow } from './pattern-fight';
+import { PATTERN_SCENARIOS, patternFight, patternRow, type PatternFight } from './pattern-fight';
+
+/** The creatures' HP when a hand-made fight starts: what the stage estimates their maximum is. */
+function stubbornStart(fight: PatternFight): [string, number][] {
+  return fight.row.map((r) => [
+    r.id,
+    estimatedMaxHp(r, {
+      guardHpBp: RULES.combat.guard.hpBp,
+      guardArmorBp: RULES.combat.guard.armorBp,
+    }) ?? 100,
+  ]);
+}
 
 /** The strike's action of a scenario, by its name. */
 const EXPECTED: Readonly<Record<string, string>> = {
@@ -94,6 +109,25 @@ describe('the hand-made boss moves of the workbench', () => {
       expect(f.boss.retreat, name).toBeDefined();
     }
     expect(patternFight('Retreat, Phase 2').phase).toBe('phase2');
+  });
+
+  it('shows the lines of gear: a Stubborn creature keeps 1 HP, and Echo, Sidestep and Payback have words and numbers', () => {
+    const stubborn = patternFight('Stubborn (stays up at 1 HP)');
+    const start = Object.fromEntries(stubbornStart(stubborn));
+    expect(creatureHpAt(stubborn.events, stubborn.events.length, start)['c1']).toBe(1);
+    const lines = patternFight('Chance and trigger lines (Echo, Sidestep, Payback)');
+    const floats = cuesForEvents(
+      lines.events,
+      0,
+      lines.events.length,
+      lines.row.map((r) => r.id),
+      lines.boss.id,
+    )
+      .filter((c) => c.kind === 'float')
+      .map((c) => c.text);
+    expect(floats).toEqual(expect.arrayContaining(['+10%', '36', 'SIDESTEP', 'Payback']));
+    // Echo moved the boss's HP: the step after the whole log has it.
+    expect(stateAt(lines.events, lines.events.length, 1_000).bossHp).toBe(844);
   });
 
   it('has a sweep of 15 creatures that counts as crowded', () => {

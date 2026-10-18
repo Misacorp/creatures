@@ -483,8 +483,43 @@ const itemCard: Entry = {
       },
     },
     {
+      name: 'A Hat with a chance line (Echo, Epic: +2 pt)',
+      props: {
+        base: 'trail-cap',
+        rarity: 'epic',
+        itemLevel: 15,
+        lines: 'echo:4,crit-damage:3,attack-local-pct:2',
+      },
+    },
+    {
+      name: 'A Charm with a trigger line (Payback)',
+      props: { base: 'cinder-charm', rarity: 'rare', itemLevel: 15, lines: 'payback:4,hp:3' },
+    },
+    {
+      name: 'A Scarf with a once-a-fight trigger line (Stubborn)',
+      props: {
+        base: 'woolen-wrap',
+        rarity: 'epic',
+        itemLevel: 15,
+        lines: 'stubborn:1,area-ward:3,hp-local-pct:2',
+      },
+    },
+    {
+      name: "A Charm for the Workshop (Tinker's luck)",
+      props: { base: 'trail-charm', rarity: 'rare', itemLevel: 12, lines: 'tinkers-luck:3' },
+    },
+    {
       name: 'A Festival piece',
       props: { base: 'festival-hearth-scarf', rarity: 'rare', itemLevel: 8 },
+    },
+    {
+      name: 'A Festival piece with a chance line (Second wind, +2 pt)',
+      props: {
+        base: 'festival-hearth-scarf',
+        rarity: 'rare',
+        itemLevel: 8,
+        lines: 'second-wind:2,area-ward:2',
+      },
     },
   ],
   render: (p) => {

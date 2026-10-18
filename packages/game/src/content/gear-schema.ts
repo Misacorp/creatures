@@ -153,6 +153,37 @@ export const POSITION_RULES = [
 export type PositionRule = (typeof POSITION_RULES)[number];
 
 /**
+ * The sheet fields of the chance lines (a chance in basis points, rolled on the creature's luck dice in the
+ * fight) and of the trigger lines (a bonus, boost, cut or heal that a named moment sets off; the flags
+ * `openingMark` and `stubborn` have no number). Both are special lines (`SPECIAL_GROUPS`).
+ */
+export const CHANCE_FIELDS = [
+  'secondWindBp',
+  'echoBp',
+  'sidestepBp',
+  'steadyPawsBp',
+  'warmHeartBp',
+  'quickRemarkBp',
+  'spillOverBp',
+] as const;
+export const TRIGGER_FIELDS = [
+  'paybackBp',
+  'kindlingBp',
+  'openingMark',
+  'rallyCryBp',
+  'emberTailBp',
+  'stormWarningBp',
+  'stubborn',
+  'lastStandBp',
+  'overflowBp',
+  'secondBreathBp',
+  'patientBp',
+  'sharedWarmthBp',
+] as const;
+/** The chance lines that act outside the fight (the server rolls them with its live randomness). */
+export const CHANCE_RULES = ['tinkersLuck', 'secondLook'] as const;
+
+/**
  * What a line does. `stat` lines change Attack, HP or the crit numbers before the fight; `attune` is
  * Attack for a wearer of the line's element; `hunter`, `ward` and `reaction` are the element lines
  * (resolved to the boss's element or the reaction id); `sheet` fills a field of the fight's modifier
@@ -195,6 +226,8 @@ export const LineEffectSchema = v.variant('kind', [
       'mendBp',
       'lingerRounds',
       'ignoreSilence',
+      ...CHANCE_FIELDS,
+      ...TRIGGER_FIELDS,
     ]),
   }),
   v.strictObject({ kind: v.literal('besideRole'), role: RoleSchema }),
@@ -209,6 +242,7 @@ export const LineEffectSchema = v.variant('kind', [
       'packer',
       'busyPaws',
       'apprentice',
+      ...CHANCE_RULES,
     ]),
   }),
   v.strictObject({ kind: v.literal('rest') }),
@@ -220,7 +254,7 @@ export const LineEffectSchema = v.variant('kind', [
 ]);
 export type LineEffect = v.InferOutput<typeof LineEffectSchema>;
 
-export const LINE_UNITS = ['pct', 'pt', 'flat', 'once'] as const;
+export const LINE_UNITS = ['pct', 'pt', 'flat', 'once', 'chance'] as const;
 export const LineUnitSchema = v.picklist(LINE_UNITS);
 export type LineUnit = v.InferOutput<typeof LineUnitSchema>;
 
@@ -231,6 +265,8 @@ export const LINE_GROUPS = [
   'role',
   'mark',
   'position',
+  'chance',
+  'trigger',
   'utility',
   'festival',
 ] as const;
@@ -238,11 +274,11 @@ export type LineGroup = (typeof LINE_GROUPS)[number];
 
 /**
  * The line groups whose lines are "special": an item can have at most one special line (a rolled one;
- * a base's own fixed line does not count). Position lines are the first such group; chance and trigger
- * lines (design 6.3 and 6.4) join this list when they are built. Rolling, crafting and any reroll draw
- * lines through `rollLines`, which enforces it.
+ * a base's own fixed line does not count). Position lines were the first such group; chance and trigger
+ * lines (design 6.3 and 6.4) joined it on 2026-10-18. Rolling, crafting and any reroll draw lines through
+ * `rollLines`, which enforces it.
  */
-export const SPECIAL_GROUPS: readonly LineGroup[] = ['position'];
+export const SPECIAL_GROUPS: readonly LineGroup[] = ['position', 'chance', 'trigger'];
 
 /** A line as written in `data/gear-lines.json`. `perElement` lines expand into one line per element. */
 export const LineSchema = v.strictObject({
@@ -521,10 +557,28 @@ export function loadGear(
     if (line.single && !line.values.every((x) => x === line.values[0])) {
       fail(`single line "${line.id}" must have one value at every tier`);
     }
-    // The position group is the special group, and only position effects live in it.
+    // The position, chance and trigger groups are the special groups, and only their own effects live in them.
     const positional = line.effect.kind === 'besideRole' || line.effect.kind === 'position';
     if (positional !== (line.group === 'position')) {
       fail(`line "${line.id}": only position effects belong to the position group`);
+    }
+    const effect = line.effect;
+    const chancy =
+      (effect.kind === 'sheet' && (CHANCE_FIELDS as readonly string[]).includes(effect.field)) ||
+      (effect.kind === 'rule' && (CHANCE_RULES as readonly string[]).includes(effect.rule));
+    if (chancy !== (line.group === 'chance')) {
+      fail(`line "${line.id}": only chance effects belong to the chance group`);
+    }
+    if (chancy && line.unit !== 'chance')
+      fail(`chance line "${line.id}" must have the unit chance`);
+    if (!chancy && line.unit === 'chance') fail(`line "${line.id}" is not a chance line`);
+    const triggered =
+      effect.kind === 'sheet' && (TRIGGER_FIELDS as readonly string[]).includes(effect.field);
+    if (triggered !== (line.group === 'trigger')) {
+      fail(`line "${line.id}": only trigger effects belong to the trigger group`);
+    }
+    if (chancy && line.values.some((x) => x > 10_000)) {
+      fail(`chance line "${line.id}" is above 100%`);
     }
     if (line.restricted && line.roles.length === 0) {
       fail(`restricted line "${line.id}" needs the roles it works for`);

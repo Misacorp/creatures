@@ -6,7 +6,7 @@ import expeditionLoot from './fixtures/expedition-claim-loot.json';
 import gearNotice from './fixtures/gear-notice.json';
 import gearState from './fixtures/gear-state.json';
 import gearWelcome from './fixtures/gear-welcome.json';
-import { parseGearState } from './gear-parse';
+import { parseGearState, parseJobResult } from './gear-parse';
 import {
   bagText,
   blueprintViews,
@@ -412,6 +412,35 @@ describe('jobs', () => {
     expect(jobResultRarity({ kind: 'supply', supplyId: 'lure-basic', amount: 1, ...common })).toBe(
       'common',
     );
+  });
+});
+
+describe("a dismantle that Tinker's luck refunded", () => {
+  const result = {
+    kind: 'dismantle',
+    items: [{ baseId: 'kelp-cap', rarity: 'rare', itemLevel: 8 }],
+    parts: { scrap: 9 },
+    essence: 4,
+    learned: [],
+    marked: [],
+    tinkered: 1,
+    xp: 8,
+    skillXp: 40,
+    skillLevel: 1,
+    leveledUp: false,
+  };
+
+  it('is a result the client accepts, with or without the count', () => {
+    expect(parseJobResult(result)).toMatchObject({ tinkered: 1 });
+    const without: Record<string, unknown> = { ...result };
+    delete without['tinkered'];
+    expect(parseJobResult(without)).not.toHaveProperty('tinkered');
+  });
+
+  it('refuses a count that is not a whole number', () => {
+    expect(() => parseJobResult({ ...result, tinkered: -1 })).toThrow('job result');
+    expect(() => parseJobResult({ ...result, tinkered: 1.5 })).toThrow('job result');
+    expect(() => parseJobResult({ ...result, tinkered: 'one' })).toThrow('job result');
   });
 });
 

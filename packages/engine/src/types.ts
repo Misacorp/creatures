@@ -16,6 +16,32 @@ export type { Zone, TurnOrder };
 
 export type PhaseId = 'phase1' | 'phase2' | 'finale';
 
+/**
+ * The chance lines and trigger lines that write a `proc` event when they fire. Second wind and Second
+ * breath write a `heal` event with a `cause` instead, and Sidestep a `boss_hit` that carries `sidestep`.
+ */
+export const PROC_KINDS = [
+  // Chance lines.
+  'echo',
+  'steady_paws',
+  'warm_heart',
+  'quick_remark',
+  'spill_over',
+  // Trigger lines.
+  'payback',
+  'kindling',
+  'opening_mark',
+  'rally_cry',
+  'ember_tail',
+  'storm_warning',
+  'stubborn',
+  'last_stand',
+  'overflow',
+  'patient',
+  'shared_warmth',
+] as const;
+export type ProcKind = (typeof PROC_KINDS)[number];
+
 /** One creature standing in the row. Plain JSON, so fight inputs can be stored and replayed. */
 export interface FightSlot {
   /** Unique within the fight (a creature id, or a guest id). */
@@ -136,6 +162,50 @@ export interface SlotMods {
   sealMark?: 0 | 1;
   /** 1: its first reaction each fight is a critical hit (Pounce Set; crits must be on). */
   firstReactionCrit?: 0 | 1;
+
+  // --- Chance lines (2026-10-18, `combat-rules.md` 11). Each is a chance in basis points (0 to 10000), rolled
+  // on the creature's own luck dice (`LUCK_DICE`), drawn only when some creature of the fight has one. ---
+  /** Each round start: heal `CHANCE_FX.secondWindHealBp` of max HP. */
+  secondWindBp?: number;
+  /** Its turn hit lands again for `CHANCE_FX.echoBp` of its plain damage. */
+  echoBp?: number;
+  /** An area hit that would reach it deals nothing. */
+  sidestepBp?: number;
+  /** A silence that lands on it is shrugged off. */
+  steadyPawsBp?: number;
+  /** Round start: a creature beside it gets a `CHANCE_FX.warmHeartBp` boost on its next hit. */
+  warmHeartBp?: number;
+  /** Its hit replaces a mark of another element, like a Setter's. */
+  quickRemarkBp?: number;
+  /** A reaction it sets off leaves its own mark behind. */
+  spillOverBp?: number;
+
+  // --- Trigger lines (2026-10-18, `combat-rules.md` 12). Each names a moment, writes a `proc` log line when
+  // it fires, and carries its own number (a bonus or a cut in basis points, tiered by the line). ---
+  /** It takes a hit for a neighbour: its next turn hit deals this much more. */
+  paybackBp?: number;
+  /** Round 1 starts: the creatures beside it start with a boost of this size on their first hit. */
+  kindlingBp?: number;
+  /** 1: round 1 starts and the boss has no mark: it leaves its own. */
+  openingMark?: 0 | 1;
+  /** A creature beside it is knocked out: its hits deal this much more for the rest of the fight (per fallen neighbour). */
+  rallyCryBp?: number;
+  /** It crits: its next turn hit deals this much more. */
+  emberTailBp?: number;
+  /** A charge is announced with it marked: it takes this much less from the landing. */
+  stormWarningBp?: number;
+  /** 1: the first hit that would knock it out leaves it at 1 HP (once a fight). */
+  stubborn?: 0 | 1;
+  /** It falls to a quarter of its HP: it takes this much less for the rest of the fight. */
+  lastStandBp?: number;
+  /** It sets off a reaction: the next creature to act gets a boost of this size. */
+  overflowBp?: number;
+  /** The first enrage round starts: it heals this share of its max HP. */
+  secondBreathBp?: number;
+  /** It is silenced: its next turn hit deals this much more. */
+  patientBp?: number;
+  /** A Support heals it: that Support's next boost is this much bigger. */
+  sharedWarmthBp?: number;
 }
 
 export interface AbilityChoice {
@@ -279,7 +349,15 @@ export type FightEvent =
     }
   | { t: 'support_buff'; round: number; supporter: string; target: string; bp: number }
   /** A Support's Mend at round start: the HP actually restored (never above what was missing). */
-  | { t: 'heal'; round: number; supporter: string; target: string; amount: number }
+  | {
+      t: 'heal';
+      round: number;
+      supporter: string;
+      target: string;
+      amount: number;
+      /** Set when a gear line healed the creature (it is then both `supporter` and `target`). */
+      cause?: 'second_wind' | 'second_breath';
+    }
   /** A Tide Support's Mend cleared a neighbour's silence. */
   | { t: 'cleanse'; round: number; supporter: string; target: string }
   /**
@@ -431,8 +509,27 @@ export type FightEvent =
       capped?: true;
       /** The taker's sheet reductions took this much off the hit (negative: its sheet made the hit bigger). */
       warded?: number;
+      /** Set when the taker's Sidestep made it take nothing from an area hit (the damage is 0). */
+      sidestep?: true;
+      /** Set when the taker's Stubborn left it at 1 HP instead of knocking it out (the damage is still the full hit). */
+      stubborn?: true;
     }
   | { t: 'knockout'; round: number; creature: string }
+  /**
+   * A chance line or a trigger line fired (`PROC_KINDS`). `creature` is the creature whose line it is;
+   * `target` the other creature it names (a boost's receiver, the fallen creature of Rally cry, the
+   * Support of Shared warmth); `amount` the number the line's words name (basis points of a bonus,
+   * boost or cut; the damage of an Echo); `bossHp` is set when the event changed the boss's HP (Echo).
+   */
+  | {
+      t: 'proc';
+      round: number;
+      creature: string;
+      kind: ProcKind;
+      target?: string;
+      amount?: number;
+      bossHp?: number;
+    }
   | { t: 'silence'; round: number; creature: string; turns: number }
   | { t: 'round_end'; round: number; bossHp: number };
 
