@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   byClass,
   byName,
+  nameOf,
   createPage,
   find,
   visibleText,
@@ -216,7 +217,9 @@ describe('the bottom row of the detail panel', () => {
     // Nothing of the old box beside Equip, and no Equip in the corner of the card.
     expect(byClass(detail(p), 'ip-equip')).toHaveLength(0);
     expect(byClass(detail(p), 'ip-compare')).toHaveLength(0);
-    expect(byClass(detail(p), 'idc-aside')).toHaveLength(0);
+    // The card's top right holds only the close button of the details (never Equip).
+    const aside = first(byClass(detail(p), 'idc-aside'));
+    expect((aside.childNodes as FakeElement[]).map((k) => nameOf(k))).toEqual(['Close details']);
   });
 
   it('keeps Equip in the same place with the switch off', () => {

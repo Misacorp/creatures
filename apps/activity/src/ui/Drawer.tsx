@@ -37,6 +37,30 @@ export interface DrawerProps {
   class?: string | undefined;
 }
 
+/**
+ * The pixel X (seven squares by seven) of a close button: the drawer's own close button (shown to the keyboard
+ * only, no drawer shows an X) and the close button of a detail panel inside a drawer (the item picker's).
+ */
+export function CloseGlyph() {
+  return (
+    <svg class="drawer-x" viewBox="0 0 7 7" aria-hidden="true" shape-rendering="crispEdges">
+      <rect x="0" y="0" width="1" height="1" />
+      <rect x="1" y="1" width="1" height="1" />
+      <rect x="2" y="2" width="1" height="1" />
+      <rect x="3" y="3" width="1" height="1" />
+      <rect x="4" y="4" width="1" height="1" />
+      <rect x="5" y="5" width="1" height="1" />
+      <rect x="6" y="6" width="1" height="1" />
+      <rect x="6" y="0" width="1" height="1" />
+      <rect x="5" y="1" width="1" height="1" />
+      <rect x="4" y="2" width="1" height="1" />
+      <rect x="2" y="4" width="1" height="1" />
+      <rect x="1" y="5" width="1" height="1" />
+      <rect x="0" y="6" width="1" height="1" />
+    </svg>
+  );
+}
+
 /** True when `node` is `ancestor` or sits inside it (plain `parentNode` steps, so the fake DOM works too). */
 function isInside(ancestor: unknown, node: unknown): boolean {
   for (let current = node; current !== null && current !== undefined;) {
@@ -199,26 +223,7 @@ function DrawerSheet({
             </h2>
             {meta !== undefined && <span class="drawer-meta muted">{meta}</span>}
             <button type="button" class="drawer-close" aria-label="Close" onClick={onClose}>
-              <svg
-                class="drawer-x"
-                viewBox="0 0 7 7"
-                aria-hidden="true"
-                shape-rendering="crispEdges"
-              >
-                <rect x="0" y="0" width="1" height="1" />
-                <rect x="1" y="1" width="1" height="1" />
-                <rect x="2" y="2" width="1" height="1" />
-                <rect x="3" y="3" width="1" height="1" />
-                <rect x="4" y="4" width="1" height="1" />
-                <rect x="5" y="5" width="1" height="1" />
-                <rect x="6" y="6" width="1" height="1" />
-                <rect x="6" y="0" width="1" height="1" />
-                <rect x="5" y="1" width="1" height="1" />
-                <rect x="4" y="2" width="1" height="1" />
-                <rect x="2" y="4" width="1" height="1" />
-                <rect x="1" y="5" width="1" height="1" />
-                <rect x="0" y="6" width="1" height="1" />
-              </svg>
+              <CloseGlyph />
             </button>
           </div>
         </div>

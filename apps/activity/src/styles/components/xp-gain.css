@@ -1,0 +1,61 @@
+/*
+  The XP gain list (ui/XpGain.tsx): what an activity paid, the same wherever it is shown (the trip result, a
+  claimed Workshop job). Two columns, a label and then what changed (a level change, the gain in green, small
+  tags and a note); each bar takes the full width under its line. The Crafting bar has its own colour, so it
+  is never taken for the creature's experience (gold).
+*/
+.xp-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.625rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+}
+
+/* A gain is a group of the list; its label and lines take part in the list's own grid. */
+.xp-gain {
+  display: contents;
+}
+
+.xp-list dt {
+  color: var(--haze);
+  font-size: var(--fs-small);
+  text-align: left;
+}
+
+.xp-list dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.xp-list .xp-bar-row {
+  display: block;
+  grid-column: 1 / -1;
+  margin-top: -0.25rem;
+}
+
+.xp-plus {
+  color: var(--good, var(--gold));
+}
+
+/* The level row fits one phone line: smaller level badges than a card's. */
+.xp-levels .lvl-tag {
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  font-size: var(--fs-small);
+}
+
+.xp-levels {
+  gap: 0.25rem;
+}
+
+.xp-craft {
+  --xp-fill: var(--xp-craft);
+}

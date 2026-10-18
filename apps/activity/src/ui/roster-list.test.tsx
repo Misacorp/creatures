@@ -99,6 +99,36 @@ describe('the shared creature list', () => {
     expect(onPick).toHaveBeenLastCalledWith('b');
   });
 
+  it('puts the note and the reason at the right of the row with reasonSide, not under the name', () => {
+    page = createPage();
+    page.draw(
+      <RosterList
+        options={OPTIONS}
+        placedNote="Wears it now"
+        showEffects={false}
+        reasonSide
+        onPick={() => undefined}
+      />,
+    );
+    const options = byRole(page.root, 'option');
+    const stuck = first(options);
+    const side = first(byClass(stuck, 'ro-side'));
+    expect(visibleText(side)).toBe('On a job');
+    // A direct child of the row, after the text column: the row's own alignment centres it.
+    expect((stuck.childNodes as FakeElement[]).at(-1)).toBe(side);
+    expect(byClass(first(byClass(stuck, 'ro-text')), 'ro-reason')).toHaveLength(0);
+    const wearer = options[2] as FakeElement;
+    expect(visibleText(first(byClass(wearer, 'ro-side')))).toBe('Wears it now');
+    // Nothing to say, nothing drawn.
+    expect(byClass(options[1] as FakeElement, 'ro-side')).toHaveLength(0);
+  });
+
+  it('keeps them under the name by default (the raid and dungeon sheet)', () => {
+    const p = drawList();
+    expect(byClass(p.root, 'ro-side')).toHaveLength(0);
+    expect(byClass(first(byRole(p.root, 'option')), 'ro-reason')).toHaveLength(1);
+  });
+
   it('can be drawn flat, for a drawer body that scrolls instead of the list', () => {
     const p = drawList(vi.fn(), 'flat');
     expect(first(byRole(p.root, 'listbox')).getAttribute('class')).toBe('roster-list flat');

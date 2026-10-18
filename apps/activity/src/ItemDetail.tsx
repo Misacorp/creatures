@@ -116,6 +116,7 @@ function EquipView({
         options={equipOptions(item, creatures)}
         placedNote={WEARS_IT_NOTE}
         showEffects={false}
+        reasonSide
         onPick={onPick}
         class="flat"
       />
@@ -126,8 +127,9 @@ function EquipView({
 /**
  * One item of the bag: its card (image with its level, name, rarity, base stats, modifiers with their tiers),
  * then the "Equip on" row (who wears it, or "Choose a creature": it opens the creature list as a view of this
- * same drawer, which equips right away and offers "Take off" first for a worn item), Dismantle, and where it came from and who made it one tap away
- * under "Details". The font is set once on the section (`.pix-panel`); only the Details text is body text.
+ * same drawer, which equips right away and offers "Take off" first for a worn item), where it came from and who
+ * made it one tap away under "Details", and last, centred and apart, Dismantle (a destructive action sits last
+ * in its view). The font is set once on the section (`.pix-panel`); only the Details text is body text.
  */
 export function ItemDetail({
   item,
@@ -226,6 +228,17 @@ export function ItemDetail({
         }}
       />
 
+      <Accordion title="Details" variant="compact" class="item-details prose">
+        {base !== undefined && <p class="muted flavor">{base.flavor}</p>}
+        <ul class="detail-list">
+          {detailLines(item).map((line) => (
+            <li key={line} class="muted">
+              {line}
+            </li>
+          ))}
+        </ul>
+      </Accordion>
+
       <div class="item-actions">
         <p class="actions">
           <button
@@ -262,17 +275,6 @@ export function ItemDetail({
           />
         )}
       </div>
-
-      <Accordion title="Details" variant="compact" class="item-details prose">
-        {base !== undefined && <p class="muted flavor">{base.flavor}</p>}
-        <ul class="detail-list">
-          {detailLines(item).map((line) => (
-            <li key={line} class="muted">
-              {line}
-            </li>
-          ))}
-        </ul>
-      </Accordion>
     </section>
   );
 }

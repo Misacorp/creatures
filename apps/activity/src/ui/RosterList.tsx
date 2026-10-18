@@ -13,6 +13,11 @@ export interface RosterListProps {
   onPick: (creatureId: string) => void;
   /** Names the listbox for assistive technology. */
   label?: string;
+  /**
+   * Put each option's note ("Wears it now") or reason ("Needs level 12", "On a job") at the right of its row,
+   * right-aligned and centred vertically, instead of under its name. A narrow row wraps it in its own column.
+   */
+  reasonSide?: boolean;
   /** Extra classes of the list (`flat`: no gutter, for a list that sits in a scrolling drawer body). */
   class?: string;
 }
@@ -27,7 +32,7 @@ function firstEnabled(options: readonly PickerOption[]): number {
  * The list of creature options of the creature picker, as a listbox: each option shows the sprite, name,
  * level, a small "Recommended" tag on the three strongest, element and role, what it would do in the slot (when
  * `showEffects`: a line led by a bold "In this slot:"), and either `placedNote` ("On the board · moves here")
- * or why it cannot be picked. Options that cannot be picked stay in the list, so the reason can be read. Up,
+ * or why it cannot be picked. Options that cannot be picked stay in the list, so the reason can be read (under the name, or with `reasonSide` at the right of the row). Up,
  * Down, Home and End move through the list, Enter or Space (or a tap) picks. The focus goes to the first
  * option that can be picked when the list is drawn. It is the part the sheet of `RosterPicker` (opened from a
  * page) and the "Equip on" view of the Workshop item drawer (a drill-in view inside the drawer) share.
@@ -105,9 +110,19 @@ export function RosterList(props: RosterListProps) {
                 <strong>{EFFECT_PREFIX}</strong> {o.effect}
               </span>
             )}
-            {o.onBoard && <span class="ro-note">{props.placedNote}</span>}
-            {o.disabled !== null && <span class="ro-note ro-reason">{o.disabled}</span>}
+            {props.reasonSide !== true && o.onBoard && (
+              <span class="ro-note">{props.placedNote}</span>
+            )}
+            {props.reasonSide !== true && o.disabled !== null && (
+              <span class="ro-note ro-reason">{o.disabled}</span>
+            )}
           </span>
+          {props.reasonSide === true && o.disabled !== null && (
+            <span class="ro-note ro-reason ro-side">{o.disabled}</span>
+          )}
+          {props.reasonSide === true && o.disabled === null && o.onBoard && (
+            <span class="ro-note ro-side">{props.placedNote}</span>
+          )}
         </li>
       ))}
     </ul>

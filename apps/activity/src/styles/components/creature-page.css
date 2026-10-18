@@ -179,6 +179,32 @@ button.lounge-button {
   outline-offset: calc(var(--px) * -1);
 }
 
+/*
+  The close button of the detail panel, at the right end of the item name's row (not a drawer's X: no drawer
+  shows one). The glyph is the drawer's own pixel X; the button's box is a thumb's size.
+*/
+button.ip-close {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  margin: calc(var(--px) * -1) 0 0 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--haze);
+}
+
+button.ip-close:hover:not(:disabled) {
+  color: var(--bone);
+}
+
+button.ip-close:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
 .ip-on {
   margin: 0.25rem 0 0;
   color: var(--haze);

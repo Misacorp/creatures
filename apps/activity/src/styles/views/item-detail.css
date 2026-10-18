@@ -268,8 +268,24 @@ button.danger {
   display: flex;
 }
 
+/*
+  A destructive action sits last in its view, centred, apart from the rest: the item drawer's Dismantle. The
+  panel it opens (the confirmation) takes the full width under it.
+*/
+.item-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1rem;
+}
+
 .item-actions .actions {
+  justify-content: center;
   padding-inline: var(--px);
+}
+
+.item-actions .confirm {
+  align-self: stretch;
 }
 
 /*

@@ -8,6 +8,7 @@ import { evolveEntries } from './entries/evolve';
 import { flipperEntries } from './entries/flipper';
 import { headingEntries } from './entries/headings';
 import { iconEntries } from './entries/icons';
+import { jobRevealEntries } from './entries/job-reveal';
 import { lootEntries } from './entries/loot';
 import { popoverEntries } from './entries/popovers';
 import { raidBoardEntries } from './entries/raid-board';
@@ -33,6 +34,7 @@ export const ENTRIES: readonly Entry[] = [
   ...slotDrawerEntries,
   ...raidBoardEntries,
   ...lootEntries,
+  ...jobRevealEntries,
   ...headingEntries,
   ...iconEntries,
   ...controlEntries,

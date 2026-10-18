@@ -246,6 +246,7 @@ function DrawerDemo({ p }: { p: Props }) {
 const drawer: Entry = {
   name: 'Drawer',
   file: 'apps/activity/src/ui/Drawer.tsx',
+  covers: ['CloseGlyph'],
   group: 'Popovers',
   description:
     'A bottom drawer: a sheet that slides up over a backdrop that dims the app. It closes by a tap on the backdrop, a tap or pull down on the drag handle, Escape or the close button; the focus moves in, Tab stays inside, and closing gives the focus back to the slot that opened it. The heading, an optional toolbar and footer stay put while the body scrolls. It holds the item picker and the Talent Book.',

@@ -163,3 +163,14 @@
 .ro-reason {
   color: var(--haze);
 }
+
+/*
+  A note or reason at the right of its row (`reasonSide`, the Equip on list): right-aligned and centred vertically
+  by the row's own alignment, in a column of its own that wraps when the row is narrow.
+*/
+.ro-side {
+  flex: 0 1 38%;
+  min-width: 0;
+  margin-left: auto;
+  text-align: right;
+}

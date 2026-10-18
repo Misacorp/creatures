@@ -8,8 +8,8 @@ import { isFestivalBase } from './gear-view';
  * Workshop bag). A square button, the item's art filling it, its rarity as the single edge, the slot icon at
  * the top left and the item level at the bottom right, and a small gold flag at the top right ("Worn").
  * `selected` lights it from inside with a light edge (the item shown, or shown last); `blocked` dims an item
- * that cannot be worn. A selected tile scrolls itself into view, so a flip or a closed detail never leaves
- * the player lost in a long grid.
+ * that cannot be worn. A selected tile scrolls itself into view (when it is selected and again when its details
+ * close), so a closed detail never leaves the player lost in a long grid.
  */
 export function ItemTile({
   item,
@@ -37,7 +37,7 @@ export function ItemTile({
     if (selected && typeof button.current?.scrollIntoView === 'function') {
       button.current.scrollIntoView({ block: 'nearest' });
     }
-  }, [selected]);
+  }, [selected, pressed]);
   const classes = ['item-tile', `rarity-${item.rarity}`];
   if (selected) classes.push('selected');
   if (blocked) classes.push('blocked');

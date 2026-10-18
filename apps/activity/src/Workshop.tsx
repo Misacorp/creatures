@@ -124,6 +124,7 @@ export function Workshop({
           result={reveal}
           items={gear.items}
           rarity={jobResultRarity(reveal)}
+          creatures={state.creatures}
           onDismiss={onDismissReveal}
         />
       )}

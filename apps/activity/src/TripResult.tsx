@@ -14,7 +14,7 @@ import { CountBadge } from './ui/CountBadge';
 import { GameIcon } from './ui/GameIcon';
 import { RevealShell } from './ui/RevealShell';
 import { Tag } from './ui/Tag';
-import { XpBar } from './XpBar';
+import { XpGain, XpList } from './ui/XpGain';
 
 /** The sentence at the top: who went where for how long, and how it went (the names in the pixel font). */
 function Headline({ view }: { view: TripResultView }) {
@@ -166,53 +166,47 @@ export function TripResult({
       )}
 
       {(view.xp !== null || view.growth !== null || view.stars !== null) && (
-        <dl class="tr-progress">
+        <XpList>
           {view.xp !== null && (
-            <>
-              <dt class="pix">
-                <GlossaryTag entry="explorer-rank">Explorer</GlossaryTag>
-              </dt>
-              <dd>
-                <span class="pix">Rank {view.xp.rank}</span>
-                {view.xp.rankedUp && (
-                  <Tag kind="badge" tone="good">
-                    Rank up!
-                  </Tag>
-                )}
-                <span class="tr-gain pix">+{view.xp.gained} XP</span>
-              </dd>
-              <dd class="tr-bar">
-                <XpBar
-                  value={view.xp.value}
-                  max={view.xp.max}
-                  label={`${view.explorer?.name ?? 'The explorer'}'s explorer XP`}
-                  {...(view.xp.text === undefined ? {} : { text: view.xp.text })}
-                />
-              </dd>
-            </>
+            <XpGain
+              label={<GlossaryTag entry="explorer-rank">Explorer</GlossaryTag>}
+              head={
+                <>
+                  <span class="pix">Rank {view.xp.rank}</span>
+                  {view.xp.rankedUp && (
+                    <Tag kind="badge" tone="good">
+                      Rank up!
+                    </Tag>
+                  )}
+                </>
+              }
+              gain={`+${String(view.xp.gained)} XP`}
+              bar={{
+                value: view.xp.value,
+                max: view.xp.max,
+                label: `${view.explorer?.name ?? 'The explorer'}'s explorer XP`,
+                text: view.xp.text,
+              }}
+            />
           )}
           {view.growth !== null && (
-            <>
-              <dt class="pix">
-                <GlossaryTag entry="experience">Level</GlossaryTag>
-              </dt>
-              <dd class="tr-level">
-                <span class="lvl-tag pix">Lv {view.growth.from}</span>
-                {view.growth.to > view.growth.from && (
-                  <>
-                    <Sprite sprite={glyphOrUnknown('left_to_right')} scale={2} />
-                    <span class="lvl-tag pix">Lv {view.growth.to}</span>
-                  </>
-                )}
-                <span class="tr-gain pix">+{view.growth.gained}</span>
-                {view.growth.treat && (
+            <XpGain
+              label={<GlossaryTag entry="experience">Level</GlossaryTag>}
+              levels={{ from: view.growth.from, to: view.growth.to }}
+              gain={`+${String(view.growth.gained)}`}
+              tags={
+                view.growth.treat ? (
                   <Tag kind="badge" entry="treat">
                     Treat
                   </Tag>
-                )}
-                {view.growth.note !== null && <span class="muted">{view.growth.note}</span>}
-              </dd>
-            </>
+                ) : undefined
+              }
+              note={
+                view.growth.note === null ? undefined : (
+                  <span class="muted">{view.growth.note}</span>
+                )
+              }
+            />
           )}
           {view.stars !== null && (
             <>
@@ -231,7 +225,7 @@ export function TripResult({
               </dd>
             </>
           )}
-        </dl>
+        </XpList>
       )}
 
       {view.slot !== null && (

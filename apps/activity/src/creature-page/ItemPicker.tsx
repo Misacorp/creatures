@@ -1,10 +1,10 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from '../api';
 import type { GearItem, GearSlot } from '../gear-types';
 import { itemLabel, rarityName, setPiecesWith, slotName } from '../gear-view';
 import { ItemCard } from '../ItemCard';
 import { ItemTile } from '../ItemTile';
-import { Drawer } from '../ui/Drawer';
+import { CloseGlyph, Drawer } from '../ui/Drawer';
 import { ScrollHint } from '../ui/ScrollHint';
 import { Switch } from '../ui/Switch';
 import { diffItems } from './compare-diff';
@@ -54,6 +54,7 @@ function DetailPanel({
   busy,
   onEquip,
   onTakeOff,
+  onClose,
 }: {
   cell: Cell;
   creature: Creature;
@@ -64,6 +65,8 @@ function DetailPanel({
   busy: boolean;
   onEquip: (item: GearItem) => void;
   onTakeOff: (item: GearItem) => void;
+  /** Close the details (the item stays marked in the grid): the same as a second tap on its tile. */
+  onClose: () => void;
 }) {
   const { item, worn, wornBy, blocked } = cell;
   // Nothing to compare when the slot is empty or the item is the worn one: no switch then.
@@ -82,6 +85,11 @@ function DetailPanel({
           item={item}
           plainRarity
           spriteScale={4}
+          aside={
+            <button type="button" class="ip-close" aria-label="Close details" onClick={onClose}>
+              <CloseGlyph />
+            </button>
+          }
           wornInSet={setPiecesWith(item, creature.gear)}
           {...(comparing ? { diff: diffItems(item, wornItem) } : {})}
           {...(wornBy === null ? {} : { note: <p class="ip-on">On {wornBy}</p> })}
@@ -160,6 +168,14 @@ export function ItemPickerDrawer({
   const [detailOpen, setDetailOpen] = useState(initialPicked !== undefined);
   const shown = cells.find((c) => c.item.id === picked);
   const selected = detailOpen ? shown : undefined;
+  // The details closed (the X, or a second tap): the focus goes to the item that stays marked in the grid.
+  const grid = useRef<HTMLUListElement>(null);
+  const wasOpen = useRef(detailOpen);
+  useEffect(() => {
+    if (wasOpen.current && !detailOpen)
+      grid.current?.querySelector<HTMLElement>('.selected')?.focus();
+    wasOpen.current = detailOpen;
+  }, [detailOpen]);
   return (
     <Drawer
       open={open}
@@ -184,6 +200,9 @@ export function ItemPickerDrawer({
             busy={busy}
             onEquip={onEquip}
             onTakeOff={onTakeOff}
+            onClose={() => {
+              setDetailOpen(false);
+            }}
           />
         )
       }
@@ -193,7 +212,7 @@ export function ItemPickerDrawer({
       ) : cells.length === 0 ? (
         <p class="muted ip-none">No {slotName(slot).toLowerCase()}s.</p>
       ) : (
-        <ul class="item-grid" aria-label={`${slotName(slot)}s`}>
+        <ul ref={grid} class="item-grid" aria-label={`${slotName(slot)}s`}>
           {cells.map((cell) => (
             <ItemTile
               key={cell.item.id}

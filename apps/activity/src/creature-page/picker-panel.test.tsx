@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { pageScene } from './sample';
-import { byClass, byName, createPage, visibleText, type FakeElement, type Page } from '../test-dom';
+import {
+  byClass,
+  byName,
+  byRole,
+  createPage,
+  visibleText,
+  type FakeElement,
+  type Page,
+} from '../test-dom';
 import { ItemPickerDrawer } from './ItemPicker';
 
 /**
@@ -70,5 +78,32 @@ describe('the item picker drawer', () => {
   it('keeps its scroll box padded so the item frame border at the edge is not clipped', () => {
     const p = draw('bag-hat-02');
     expect(byClass(first(byClass(p.root, 'ip-detail')), 'ip-detail-scroll')).toHaveLength(1);
+  });
+
+  it("has a close button for the details at the card's top right, named for screen readers", () => {
+    const p = draw('bag-hat-02');
+    const aside = first(byClass(first(byClass(p.root, 'ip-detail')), 'idc-aside'));
+    const close = first(byName(aside, 'button', 'Close details'));
+    expect(close.getAttribute('class')).toBe('ip-close');
+    // It is the pixel X of the drawer's own glyph.
+    expect(byClass(close, 'drawer-x')).toHaveLength(1);
+    // The drawer itself still shows no X (its close button is for the keyboard).
+    expect(byName(p.root, 'button', 'Close')).toHaveLength(1);
+  });
+
+  it('closes only the details: the tile stays marked, the drawer stays, and the focus goes to the tile', () => {
+    const p = draw('bag-hat-02');
+    const tile = first(
+      byClass(p.root, 'item-tile').filter((t) => t.getAttribute('aria-pressed') === 'true'),
+    );
+    p.click(first(byName(p.root, 'button', 'Close details')));
+    expect(byClass(p.root, 'ip-detail')).toHaveLength(0);
+    expect(byRole(p.root, 'dialog')).toHaveLength(1);
+    expect(tile.getAttribute('aria-pressed')).toBe('false');
+    expect(tile.getAttribute('class')).toContain('selected');
+    expect(tile.focused).toBeGreaterThan(0);
+    // A tap on any tile opens the details again.
+    p.click(tile);
+    expect(byClass(p.root, 'ip-detail')).toHaveLength(1);
   });
 });

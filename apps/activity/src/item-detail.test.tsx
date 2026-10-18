@@ -87,13 +87,18 @@ const optionOf = (p: Page, name: string): FakeElement =>
   first(options(p).filter((o) => visibleText(o).startsWith(name)));
 
 describe('the item drawer content', () => {
-  it('has the card, then the Equip on row, then Dismantle, then Details', () => {
+  it('has the card, then the Equip on row, then Details, then Dismantle last', () => {
     const p = draw(hat(), actionsOf());
     const text = visibleText(p.root);
     expect(text.indexOf('Trail Cap')).toBeGreaterThanOrEqual(0);
     expect(text.indexOf('Equip on')).toBeGreaterThan(text.indexOf('Trail Cap'));
-    expect(text.indexOf('Dismantle')).toBeGreaterThan(text.indexOf('Equip on'));
-    expect(text.indexOf('Details')).toBeGreaterThan(text.indexOf('Dismantle'));
+    expect(text.indexOf('Details')).toBeGreaterThan(text.indexOf('Equip on'));
+    expect(text.indexOf('Dismantle')).toBeGreaterThan(text.indexOf('Details'));
+    // Dismantle is the last block of the section, in a row of its own (centred apart by the stylesheet).
+    const section = first(byClass(p.root, 'item-detail'));
+    const last = section.childNodes[section.childNodes.length - 1] as FakeElement;
+    expect(last.getAttribute('class')).toBe('item-actions');
+    expect(byName(last, 'button', 'Dismantle')).toHaveLength(1);
   });
 
   it('has no "Needs level" line, and none of the old Equip, Take off or Give to another buttons', () => {

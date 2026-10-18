@@ -84,6 +84,8 @@
 @import './views/expeditions/supply-crafting.css';
 @import './components/progress-track.css';
 @import './components/xp-bar.css';
+@import './components/xp-gain.css';
+@import './views/job-reveal.css';
 @import './views/raid-timeline.css';
 @import './views/raid-boss-card.css';
 @import './views/raid-placement.css';
