@@ -1949,3 +1949,7 @@ Misa's next notes on PR #35.
 ## 2026-10-18: "Level up!" is the shared XP line's job
 
 Misa asked why the job result showed a level change and "Waiting at this level" for the creature but a green "Level up!" only for Crafting. `ui/XpGain` now adds the green "Level up!" itself whenever the level went up, for every kind of XP (creature experience, Crafting, the trip result's level), so no caller adds its own. "Waiting at this level" stays as its own tag: a creature waits only at a ribbon level (10, 20) or its evolution level, so it can level up and then wait in the same claim (9 to 10, then the Bronze Ribbon). The workbench preset now shows that real case (9 to 10) instead of 5 to 6 with waiting.
+
+## 2026-10-18: UX patterns written down
+
+Misa asked that the lessons from the part 2 play-tests be kept so future work starts from them. `docs/design/ux-patterns.md` holds the standing UX rules (one drawer at a time, no X on drawers, equal edges, badges over prose, the pixel font per panel and the type scale, pick lists with reasons, keeping the player anchored, a destructive action last) and the table of shared components to use. `CLAUDE.md` points UI work to it. New patterns are added there in a line or two, with the reasoning here.
