@@ -20,4 +20,4 @@ pnpm --filter @creatures/worker dev     # Worker + built Activity on http://loca
 
 To try it inside Discord locally, run `cloudflared tunnel --url http://localhost:8787` and point the **dev** Discord app's `/` URL mapping at the tunnel host. Remember to set it back to `creatures-staging.misacorp.dev` afterwards.
 
-Deploys happen only in CI: pushing a branch deploys staging, merging to `main` deploys production.
+Deploys happen only in CI: merging to `main` deploys production; staging is deployed by hand (GitHub, Actions, deploy, "Run workflow" on a branch). Pushing a branch deploys nothing.

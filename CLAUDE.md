@@ -52,7 +52,7 @@ Full details and sources: `docs/security.md`.
 ## Architecture (summary; details in `docs/design/decisions.md`)
 
 - **One Cloudflare Worker** serves the Activity frontend (static assets) and the API (`/api/*`). Discord's proxy fronts it at `<client_id>.discordsays.com`; the frontend uses relative URLs.
-- **Durable Objects** (SQLite-backed), one per Discord server (guild), hold that server's game state and serialise all writes. The live Sunday finale uses WebSockets on the same object.
+- **Durable Objects** (SQLite-backed), one per Discord server (guild), hold that server's game state and serialise all writes. The live Sunday finale polls the same object every 2 s (WebSocket push is planned, roadmap item 8).
 - **Scheduling** uses Durable Object alarms computed in the guild's timezone (default `Europe/Helsinki`; DST-safe, tested); each guild object re-arms its alarm on every authenticated request. Schedules are configuration, not hard-coded.
 - **Content is data:** creatures, bosses, gimmicks, reactions, loot tables and gear are schema-validated data files. Add content without engine changes.
 - **One combat engine package** is shared by live raids and the balance simulator. It is pure (no I/O) and takes an injected RNG.
@@ -63,7 +63,7 @@ Full details and sources: `docs/security.md`.
 
 - `apps/activity`: Vite + Preact frontend (the Activity UI).
 - `apps/worker`: Cloudflare Worker (API, Durable Objects, schedules) plus `wrangler.jsonc`.
-- `packages/*`: shared code (combat engine, content schemas and data) as it's added.
+- `packages/*`: shared code: `game` (rules, content schemas and data), `engine` (combat), `sim` (balance simulator).
 - `docs/`: design, research, security.
 
 ## Commands
