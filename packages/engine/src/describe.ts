@@ -166,7 +166,14 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
           : event.warded > 0
             ? ` Its modifiers take off ${event.warded}.`
             : ` Its modifiers add ${-event.warded}.`;
-      const extra = `${cover}${warded}${crit}${capped}`;
+      const stubborn =
+        event.stubborn === true
+          ? ` Stubborn: ${creature(event.target)} refuses to fall and stays at 1 HP.`
+          : '';
+      const extra = `${cover}${warded}${crit}${capped}${stubborn}`;
+      if (event.sidestep === true) {
+        return `${creature(event.target)} sidesteps ${event.splash === true ? 'the splash' : `${names.boss}'s hit`} and takes nothing.`;
+      }
       if (event.shielded === true) {
         return `${names.boss} ${what} ${creature(event.target)}, but a Shield Wall stops it.`;
       }
@@ -188,6 +195,12 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
     case 'round_end':
       return `End of round ${event.round}: ${names.boss} has ${event.bossHp} HP.`;
     case 'heal':
+      if (event.cause === 'second_wind') {
+        return `${creature(event.target)} catches a second wind and recovers ${event.amount} HP.`;
+      }
+      if (event.cause === 'second_breath') {
+        return `${creature(event.target)} takes a second breath and recovers ${event.amount} HP.`;
+      }
       // A creature that heals itself (the Hollow Weave set) recovers; a Support mends a neighbour.
       return event.supporter === event.target
         ? `${creature(event.target)} recovers ${event.amount} HP from its gear set.`
@@ -197,6 +210,47 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
         event.heals.map((h) => `${creature(h.creature)} (+${h.amount} HP)`),
         6,
       )}.`;
+    case 'proc': {
+      const who = creature(event.creature);
+      const other = event.target === undefined ? '' : creature(event.target);
+      const pct = event.amount === undefined ? '' : `${event.amount / 100}%`;
+      switch (event.kind) {
+        case 'echo':
+          return `Echo! ${who}'s hit lands again for ${event.amount ?? 0}; ${names.boss} has ${event.bossHp ?? 0} HP left.`;
+        case 'steady_paws':
+          return `Steady paws: ${who} shrugs off the silence.`;
+        case 'warm_heart':
+          return `Warm heart: ${who} gives ${other} a ${pct} boost on its next hit.`;
+        case 'quick_remark':
+          return `Quick re-mark: ${who} swaps the mark as a Setter would.`;
+        case 'spill_over':
+          return `Spill-over: ${who}'s reaction leaves its own mark behind.`;
+        case 'payback':
+          return `Payback: ${who} took the hit for a neighbour, so its next hit deals ${pct} more.`;
+        case 'kindling':
+          return `Kindling: ${who} starts ${other} with a ${pct} boost on its first hit.`;
+        case 'opening_mark':
+          return `Opening mark: ${who} marks ${names.boss} before the first blow.`;
+        case 'rally_cry':
+          return `Rally cry: ${other} has fallen, so ${who}'s hits deal ${pct} more from now on.`;
+        case 'ember_tail':
+          return `Ember tail: ${who}'s crit makes its next hit deal ${pct} more.`;
+        case 'storm_warning':
+          return `Storm warning: ${who} sees the charge coming and will take ${pct} less from it.`;
+        case 'stubborn':
+          return `Stubborn: ${who} stays on its feet at 1 HP.`;
+        case 'last_stand':
+          return `Last stand: ${who} is down to a quarter of its HP and takes ${pct} less from now on.`;
+        case 'overflow':
+          return `Overflow: ${who}'s reaction gives ${other} a ${pct} boost on its next hit.`;
+        case 'patient':
+          return `Patient: ${who} bides its time, so its next hit deals ${pct} more.`;
+        case 'shared_warmth':
+          return `Shared warmth: ${other}'s next boost is ${pct} bigger for healing ${who}.`;
+        default:
+          return '';
+      }
+    }
     case 'cleanse':
       return `${creature(event.supporter)} clears ${creature(event.target)}'s silence.`;
     case 'charge':

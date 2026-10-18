@@ -24,7 +24,7 @@ import {
 } from '@creatures/game';
 import { firingIndex, gimmickDue, sweepRow } from './gimmick-schedule';
 import { matchupBp } from './matchup';
-import { cutBp, resolveMods, type ResolvedMods } from './mods';
+import { CHANCE_FX, LUCK_DICE, cutBp, hasChance, resolveMods, type ResolvedMods } from './mods';
 import { sanitizeBp, type CreatureView, type Mutator, type MutatorHooks } from './mutators';
 import {
   DEFAULT_DECAY_BP,
@@ -77,8 +77,11 @@ interface Creature {
   alive: boolean;
   /** Turns still to be skipped. */
   silenced: number;
-  /** Support buffs waiting for this creature's next hit. */
-  buffs: { from: number; bp: number }[];
+  /**
+   * Support buffs waiting for this creature's next hit. `tag` marks a boost a gear line gave (Kindling,
+   * Warm heart, Overflow): it is kept apart from the Support's own, which a Support replaces each round.
+   */
+  buffs: { from: number; bp: number; tag?: 'kindling' | 'warm' | 'overflow' }[];
   /** This creature's crit chance and extra crit damage (basis points); 0 when crits are off. */
   critChanceBp: number;
   critBp: number;
@@ -92,6 +95,21 @@ interface Creature {
   critWindowUntil: number;
   /** The first mark it leaves has been sealed already (`mods.sealMark`). */
   sealed: boolean;
+  /** Trigger lines: the bonus its next turn hit gets (Payback, Ember tail, Patient), each waiting for that hit. */
+  paybackReady: number;
+  emberTailReady: number;
+  patientReady: number;
+  /** Rally cry: the bonus its hits have for the rest of the fight (one share per fallen neighbour). */
+  rallyCry: number;
+  /** Stubborn has been used this fight. */
+  stubbornUsed: boolean;
+  /** Last stand: it has fired, and the cut it gives from then on. */
+  lastStandDone: boolean;
+  lastStandCut: number;
+  /** Storm warning: the round of the charge it is marked for, and the cut that landing gets (0: none). */
+  stormRound: number;
+  /** Shared warmth, on a Support: the extra its next boost carries. */
+  nextBoostBp: number;
 }
 
 interface Mark {
@@ -315,6 +333,16 @@ export function simulateFight(
    * Guard unless one of the Guards fell in between).
    */
   let guardDice: number[] = [];
+  /**
+   * With a chance line anywhere in the fight (`hasChance`): `LUCK_DICE` dice per creature per round,
+   * uniform in [0, 10000), drawn after every other die of the round and only then, so a fight without a
+   * chance line draws what it always did. Die 0 is Second wind's, 1 Echo's, 2 Steady paws', 3 Warm
+   * heart's, 4 Quick re-mark's, 5 Spill-over's and 6 to 9 Sidestep's (the 1st to 4th area hit on the
+   * creature that round, the 4th for any after). A chance of 1000 fires when its die is under 1000.
+   */
+  let luckDice: number[][] = [];
+  /** Area hits each creature has met this round, for Sidestep's dice. */
+  let areaSeen: number[] = [];
   /** The running Surge (+) or Slump (-) in basis points of team damage, and its last round. */
   let swingNow = 0;
   let swingUntil = 0;
@@ -356,8 +384,22 @@ export function simulateFight(
       cashes: 0,
       critWindowUntil: 0,
       sealed: false,
+      paybackReady: 0,
+      emberTailReady: 0,
+      patientReady: 0,
+      rallyCry: 0,
+      stubbornUsed: false,
+      lastStandDone: false,
+      lastStandCut: 0,
+      stormRound: 0,
+      nextBoostBp: 0,
     };
   });
+
+  const luckOn = creatures.some((c) => hasChance(c.mods));
+  /** True when `bp` is above 0 and creature `c`'s die number `k` of this round is under it. */
+  const rolls = (c: Creature, k: number, bp: number): boolean =>
+    bp > 0 && (luckDice[c.idx]?.[k] ?? 10_000) < bp;
 
   const hpStartById = Object.fromEntries(creatures.map((c) => [c.id, c.hp]));
   const perPlayer: Record<string, PlayerTotals> = {};
@@ -446,6 +488,8 @@ export function simulateFight(
 
   // ---- turn order ----
   const order = turnOrder(creatures, input.turnOrderOverride ?? boss.turnOrder);
+  /** Where in `order` the creature acting now stands (-1 before the first turn of a round), for Overflow. */
+  let orderPos = -1;
 
   // ---- finale abilities ----
   const zoneHit = firstZoneHit(boss, rounds);
@@ -615,6 +659,23 @@ export function simulateFight(
       const guard = guardFor(target);
       if (guard !== undefined) victim = guard;
     }
+    // Sidestep: a chance to take nothing from an area hit (before any wall, armor or cover).
+    if (mode === 'area' && victim.mods.sidestepBp > 0) {
+      const k = Math.min(areaSeen[victim.idx] ?? 0, 3);
+      areaSeen[victim.idx] = (areaSeen[victim.idx] ?? 0) + 1;
+      if (rolls(victim, 6 + k, victim.mods.sidestepBp)) {
+        events.push({
+          t: 'boss_hit',
+          round: currentRound,
+          source,
+          target: victim.id,
+          damage: 0,
+          sidestep: true,
+          ...(splash ? { splash: true as const } : {}),
+        });
+        return victim;
+      }
+    }
     // 2. Shield Walls on the zone multiply: two 50% walls leave 25% of the damage. With `rules` the
     // wall that counts is the one on the zone of the creature that TAKES the hit (after a Guard
     // stepped in); without `rules` it is the zone the hit was aimed at (stored fights replay so).
@@ -637,6 +698,7 @@ export function simulateFight(
         ...(walled !== target ? { from: target.id } : {}),
         ...(splash ? { splash: true as const } : {}),
       });
+      if (walled !== target) paybackFor(walled);
       return walled;
     }
     const reducedBp = 10_000 - remainingBp;
@@ -654,7 +716,12 @@ export function simulateFight(
       let out = cutBp(x, m.wardBp[boss.element] ?? 0);
       if (charged) out = cutBp(out, m.chargedBp);
       out = cutBp(out, mode === 'area' ? m.areaBp : mode === 'aimed' ? m.aimedBp : m.reflectedBp);
-      return cutBp(out, m.takenBp);
+      out = cutBp(out, m.takenBp);
+      // The trigger lines that cut a hit: Last stand (once it fired) and Storm warning (the landing it was marked for).
+      out = cutBp(out, victim.lastStandCut);
+      return charged && victim.stormRound === currentRound
+        ? cutBp(out, victim.mods.stormWarningBp)
+        : out;
     };
     let warded: number;
     if (rules !== undefined) {
@@ -701,7 +768,18 @@ export function simulateFight(
       warded = amount - afterSheet;
       amount = afterSheet;
     }
-    const taken = Math.min(amount, victim.hp);
+    // Stubborn: the first hit that would knock it out leaves it at 1 HP (the hit still shows its full damage).
+    let taken = Math.min(amount, victim.hp);
+    const stubborn =
+      victim.mods.stubborn &&
+      !victim.stubbornUsed &&
+      victim.hp > 0 &&
+      amount > 0 &&
+      taken >= victim.hp;
+    if (stubborn) {
+      victim.stubbornUsed = true;
+      taken = victim.hp - 1;
+    }
     victim.hp -= taken;
     (perCreature[victim.id] as CreatureTotals).damageTaken += taken;
     // Guard credit: all of the damage a Guard takes in place of a neighbour, and `guardOwnCreditBp`
@@ -724,14 +802,61 @@ export function simulateFight(
       ...(armored > 0 ? { armored } : {}),
       ...(capped ? { capped: true as const } : {}),
       ...(warded === 0 ? {} : { warded }),
+      ...(stubborn ? { stubborn: true as const } : {}),
     });
+    if (stubborn)
+      events.push({ t: 'proc', round: currentRound, creature: victim.id, kind: 'stubborn' });
     if (victim.hp === 0 && victim.alive) {
       victim.alive = false;
       (perCreature[victim.id] as CreatureTotals).knockedOutRound = currentRound;
       events.push({ t: 'knockout', round: currentRound, creature: victim.id });
       runHook('onKnockout', () => ({ ...baseContext(), creature: view(victim) }));
+      // Rally cry: each living neighbour of the fallen creature hits harder from now on.
+      for (const i of besides(victim.idx)) {
+        const next = creatures[i] as Creature;
+        if (!next.alive || next.mods.rallyCryBp === 0) continue;
+        next.rallyCry += next.mods.rallyCryBp;
+        events.push({
+          t: 'proc',
+          round: currentRound,
+          creature: next.id,
+          kind: 'rally_cry',
+          target: victim.id,
+          amount: next.mods.rallyCryBp,
+        });
+      }
+    } else if (
+      victim.alive &&
+      victim.mods.lastStandBp > 0 &&
+      !victim.lastStandDone &&
+      victim.hp * 4 <= victim.maxHp
+    ) {
+      // Last stand: a hit leaves it at a quarter of its HP or less.
+      victim.lastStandDone = true;
+      victim.lastStandCut = victim.mods.lastStandBp;
+      events.push({
+        t: 'proc',
+        round: currentRound,
+        creature: victim.id,
+        kind: 'last_stand',
+        amount: victim.mods.lastStandBp,
+      });
     }
+    if (victim !== target) paybackFor(victim);
     return victim;
+  }
+
+  /** Payback: a creature that took a hit for a neighbour (and stands) gets a bonus on its next turn hit. */
+  function paybackFor(c: Creature): void {
+    if (!c.alive || c.mods.paybackBp === 0) return;
+    c.paybackReady = c.mods.paybackBp;
+    events.push({
+      t: 'proc',
+      round: currentRound,
+      creature: c.id,
+      kind: 'payback',
+      amount: c.mods.paybackBp,
+    });
   }
 
   // ---- a creature hits the boss ----
@@ -804,9 +929,16 @@ export function simulateFight(
     // The creature's sheet on its hit (`SlotMods`), added to the one combined bonus.
     let sheetBp = m.vsElementBp[boss.element] ?? 0;
     if (markBefore !== null && reaction === undefined) sheetBp += m.markedFoeBp;
-    // A setter's hit of another element replaces the mark, unless it is sealed (`sealMark`).
+    // A setter's hit of another element replaces the mark, unless it is sealed (`sealMark`). A creature
+    // with Quick re-mark does it too when its die says so (any role: the die is only read where it matters).
+    const replacing =
+      reaction === undefined &&
+      markBefore !== null &&
+      markBefore.element !== c.element &&
+      markBefore.sealed !== true;
+    const quick = replacing && c.role !== 'setter' && rolls(c, 4, m.quickRemarkBp);
     const replaces =
-      c.role === 'setter' &&
+      (c.role === 'setter' || quick) &&
       markBefore !== null &&
       markBefore.element !== c.element &&
       markBefore.sealed !== true;
@@ -818,7 +950,14 @@ export function simulateFight(
     } else {
       if (c.turnHits === 0) sheetBp += m.firstHitBp;
       c.turnHits += 1;
+      // The trigger lines that wait for the next turn hit are spent on it (an ability's strike keeps them).
+      sheetBp += c.paybackReady + c.emberTailReady + c.patientReady;
+      c.paybackReady = 0;
+      c.emberTailReady = 0;
+      c.patientReady = 0;
     }
+    // Rally cry: every hit of the creature, for the rest of the fight.
+    sheetBp += c.rallyCry;
     const roleBonuses = Object.entries(m.besideRoleBp);
     if (roleBonuses.length > 0) {
       const near = besides(c.idx)
@@ -994,6 +1133,18 @@ export function simulateFight(
       ...(warm ? { warm: true as const } : {}),
     });
 
+    // Ember tail: a crit gives its next turn hit a bonus.
+    if (crit && m.emberTailBp > 0) {
+      c.emberTailReady = m.emberTailBp;
+      events.push({
+        t: 'proc',
+        round: currentRound,
+        creature: c.id,
+        kind: 'ember_tail',
+        amount: m.emberTailBp,
+      });
+    }
+
     if (reaction !== undefined && markBefore !== null) {
       reactionsByType[reaction.id] = (reactionsByType[reaction.id] ?? 0) + 1;
       reactionTotal += 1;
@@ -1043,6 +1194,34 @@ export function simulateFight(
             element: c.element,
             replaced: null,
           });
+        } else if (m.spillOverBp > 0 && rolls(c, 5, m.spillOverBp)) {
+          // Spill-over: the boss keeps the creature's own mark (what Ridge Copper does every time).
+          mark = { element: c.element, creature: c, player: c.ownerId };
+          events.push({
+            t: 'mark',
+            round: currentRound,
+            creature: c.id,
+            player: c.ownerId,
+            element: c.element,
+            replaced: null,
+          });
+          events.push({ t: 'proc', round: currentRound, creature: c.id, kind: 'spill_over' });
+        }
+        // Overflow: the next creature to act gets a boost.
+        if (m.overflowBp > 0) {
+          const next = nextToAct();
+          if (next !== undefined) {
+            next.buffs = next.buffs.filter((b) => !(b.from === c.idx && b.tag === 'overflow'));
+            next.buffs.push({ from: c.idx, bp: m.overflowBp, tag: 'overflow' });
+            events.push({
+              t: 'proc',
+              round: currentRound,
+              creature: c.id,
+              kind: 'overflow',
+              target: next.id,
+              amount: m.overflowBp,
+            });
+          }
         }
       }
       c.cashes += 1;
@@ -1082,12 +1261,53 @@ export function simulateFight(
         replaced: markBefore.element,
         ...(seal ? { sealed: true as const } : {}),
       });
+      if (quick) {
+        events.push({ t: 'proc', round: currentRound, creature: c.id, kind: 'quick_remark' });
+      }
     }
 
     if (reaches) {
       retreated = true;
       events.push({ t: 'retreat', round: currentRound, bossHp });
     }
+
+    // Echo: a turn hit lands again for a share of its plain damage (no mark, no reaction, no crit),
+    // counted down to the floor like any hit on the boss.
+    if (strike === undefined && m.echoBp > 0 && bossHp > 0 && !retreated && rolls(c, 1, m.echoBp)) {
+      const again = Math.floor(((hit.damage - hit.bonus) * CHANCE_FX.echoBp) / 10_000);
+      const room2 = Math.max(0, bossHp - bossFloor);
+      const landed = Math.min(again, room2);
+      if (landed > 0) {
+        bossHp -= landed;
+        damageByElement[c.element] += landed;
+        credit(c, null, 'damage', landed);
+        events.push({
+          t: 'proc',
+          round: currentRound,
+          creature: c.id,
+          kind: 'echo',
+          amount: landed,
+          bossHp,
+        });
+        if (bossFloor > 0 && again >= room2) {
+          retreated = true;
+          events.push({ t: 'retreat', round: currentRound, bossHp });
+        }
+      }
+    }
+  }
+
+  /**
+   * The next creature that will act this round (a living one after the current place in the turn order),
+   * for Overflow; none when the creature was the last to act. An ability's strike at round start has not
+   * reached the order yet, so the next to act is the first living creature.
+   */
+  function nextToAct(): Creature | undefined {
+    for (let j = orderPos + 1; j < order.length; j++) {
+      const next = creatures[order[j] as number] as Creature;
+      if (next.alive) return next;
+    }
+    return undefined;
   }
 
   // ---- finale ability effects ----
@@ -1285,6 +1505,19 @@ export function simulateFight(
         marks: plan.targets.map((i) => (creatures[i] as Creature).id),
         ...(plan.rows === undefined ? {} : { rows: plan.rows }),
       });
+      // Storm warning: a marked creature takes less from the landing.
+      for (const i of plan.targets) {
+        const c = creatures[i] as Creature;
+        if (c.mods.stormWarningBp === 0 || !c.alive) continue;
+        c.stormRound = landing;
+        events.push({
+          t: 'proc',
+          round: currentRound,
+          creature: c.id,
+          kind: 'storm_warning',
+          amount: c.mods.stormWarningBp,
+        });
+      }
     }
   }
 
@@ -1332,8 +1565,24 @@ export function simulateFight(
         for (const c of first === last ? [first] : [first, last]) {
           // Unbothered: the silence still picks it (the ends), and does nothing to it.
           if (c.mods.ignoreSilence) continue;
+          // Steady paws: a chance to shrug it off (the creature's die 2 of this round).
+          if (rolls(c, 2, c.mods.steadyPawsBp)) {
+            events.push({ t: 'proc', round: currentRound, creature: c.id, kind: 'steady_paws' });
+            continue;
+          }
           c.silenced = Math.max(c.silenced, g.turns);
           events.push({ t: 'silence', round: currentRound, creature: c.id, turns: g.turns });
+          // Patient: the silence gives its next turn hit a bonus.
+          if (c.mods.patientBp > 0) {
+            c.patientReady = c.mods.patientBp;
+            events.push({
+              t: 'proc',
+              round: currentRound,
+              creature: c.id,
+              kind: 'patient',
+              amount: c.mods.patientBp,
+            });
+          }
         }
         break;
       }
@@ -1426,6 +1675,101 @@ export function simulateFight(
       heals.push({ creature: c.id, amount });
     }
     if (heals.length > 0) events.push({ t: 'sky_heal', round: currentRound, heals });
+  }
+
+  /**
+   * The creature's heal from a gear line (Second wind, Second breath): `bp` of its max HP, changed by its
+   * own `healReceivedBp` like a Mend, never above what is missing. One `heal` event with the creature at
+   * both ends and the line as `cause`; nothing is written when nothing was missing.
+   */
+  function selfHeal(c: Creature, bp: number, cause: 'second_wind' | 'second_breath'): void {
+    const healed = Math.floor((c.maxHp * bp) / 10_000);
+    const received =
+      c.mods.healReceivedBp === 0
+        ? healed
+        : Math.floor((healed * Math.max(0, 10_000 + c.mods.healReceivedBp)) / 10_000);
+    const amount = Math.min(received, Math.max(0, c.maxHp - c.hp));
+    if (amount <= 0) return;
+    c.hp += amount;
+    events.push({
+      t: 'heal',
+      round: currentRound,
+      supporter: c.id,
+      target: c.id,
+      amount,
+      cause,
+    });
+  }
+
+  /**
+   * The gear lines that act at the start of a round, in this order: Opening mark and Kindling (round 1
+   * only), Warm heart, Second wind, Second breath (the first enrage round only). Each creature acts in slot
+   * order, only while it stands.
+   */
+  function gearRoundStart(round: number, enraging: boolean): void {
+    if (round === 1) {
+      for (const c of creatures) {
+        if (!c.alive || !c.mods.openingMark || mark !== null) continue;
+        mark = { element: c.element, creature: c, player: c.ownerId };
+        events.push({
+          t: 'mark',
+          round,
+          creature: c.id,
+          player: c.ownerId,
+          element: c.element,
+          replaced: null,
+        });
+        events.push({ t: 'proc', round, creature: c.id, kind: 'opening_mark' });
+      }
+      for (const c of creatures) {
+        if (!c.alive || c.mods.kindlingBp === 0) continue;
+        for (const i of besides(c.idx)) {
+          const next = creatures[i] as Creature;
+          if (!next.alive) continue;
+          next.buffs = next.buffs.filter((b) => !(b.from === c.idx && b.tag === 'kindling'));
+          next.buffs.push({ from: c.idx, bp: c.mods.kindlingBp, tag: 'kindling' });
+          events.push({
+            t: 'proc',
+            round,
+            creature: c.id,
+            kind: 'kindling',
+            target: next.id,
+            amount: c.mods.kindlingBp,
+          });
+        }
+      }
+    }
+    for (const c of creatures) {
+      if (!c.alive || !rolls(c, 3, c.mods.warmHeartBp)) continue;
+      // The neighbour that hits hardest gets the boost (ties to the lower slot).
+      let best: Creature | undefined;
+      for (const i of besides(c.idx)) {
+        const next = creatures[i] as Creature;
+        if (next.alive && (best === undefined || next.atk > best.atk)) best = next;
+      }
+      if (best === undefined) continue;
+      best.buffs = best.buffs.filter((b) => !(b.from === c.idx && b.tag === 'warm'));
+      best.buffs.push({ from: c.idx, bp: CHANCE_FX.warmHeartBp, tag: 'warm' });
+      events.push({
+        t: 'proc',
+        round,
+        creature: c.id,
+        kind: 'warm_heart',
+        target: best.id,
+        amount: CHANCE_FX.warmHeartBp,
+      });
+    }
+    for (const c of creatures) {
+      if (c.alive && rolls(c, 0, c.mods.secondWindBp)) {
+        selfHeal(c, CHANCE_FX.secondWindHealBp, 'second_wind');
+      }
+    }
+    if (enraging && round === rounds + 1) {
+      for (const c of creatures) {
+        if (c.alive && c.mods.secondBreathBp > 0)
+          selfHeal(c, c.mods.secondBreathBp, 'second_breath');
+      }
+    }
   }
 
   /**
@@ -1558,6 +1902,12 @@ export function simulateFight(
         creatures.map(() => int(rng, 10_000)),
       );
     }
+    if (luckOn) {
+      // The very last dice of all, and only when a creature of the fight has a chance line.
+      luckDice = creatures.map(() => Array.from({ length: LUCK_DICE }, () => int(rng, 10_000)));
+      areaSeen = creatures.map(() => 0);
+    }
+    orderPos = -1;
 
     // Gimmicks rest in enrage rounds: no charge is announced and the reflect trap is not armed.
     if (!enraging) announceCharges();
@@ -1576,7 +1926,10 @@ export function simulateFight(
       if (s.role !== 'support' || !s.alive || s.silenced > 0) continue;
       const fx = rules?.supportFx[s.element];
       // The Support's own sheet adds to the boost and the mend (`boostBp`, `mendBp`).
-      const buffBp = (fx?.buffBp ?? RULES.combat.supportBuffBp) + s.mods.boostBp;
+      // Shared warmth: a heal from this Support on a creature that has the line made this boost bigger (once).
+      const warmth = s.nextBoostBp;
+      s.nextBoostBp = 0;
+      const buffBp = (fx?.buffBp ?? RULES.combat.supportBuffBp) + s.mods.boostBp + warmth;
       const mendBp = (fx?.healBp ?? 0) + s.mods.mendBp;
       // A Support with a longer reach (`boostReach`) also boosts the creature two slots away: the boost only.
       const near = besides(s.idx);
@@ -1584,7 +1937,7 @@ export function simulateFight(
       for (const i of [...near, ...far]) {
         const t = creatures[i] as Creature;
         if (!t.alive) continue;
-        t.buffs = t.buffs.filter((b) => b.from !== s.idx);
+        t.buffs = t.buffs.filter((b) => b.from !== s.idx || b.tag !== undefined);
         t.buffs.push({ from: s.idx, bp: Math.max(-10_000, buffBp) });
         events.push({
           t: 'support_buff',
@@ -1613,6 +1966,17 @@ export function simulateFight(
               target: t.id,
               amount,
             });
+            if (t.mods.sharedWarmthBp > 0) {
+              s.nextBoostBp = Math.max(s.nextBoostBp, t.mods.sharedWarmthBp);
+              events.push({
+                t: 'proc',
+                round,
+                creature: t.id,
+                kind: 'shared_warmth',
+                target: s.id,
+                amount: t.mods.sharedWarmthBp,
+              });
+            }
           }
         }
         if (fx?.cleanse === true && t.silenced > 0) {
@@ -1625,14 +1989,18 @@ export function simulateFight(
     // Kind Rain: every living creature heals a share of its max HP, after the Supports' Mend.
     if (rainHealBp > 0) rainHeals();
 
+    // The gear lines of the round's start (chance and trigger lines), after the Supports and the sky.
+    gearRoundStart(round, enraging);
+
     // Finale abilities are fixed to the base rounds: one set for a round past them never fires.
     for (const a of enraging ? [] : (abilitiesByRound.get(round) ?? [])) {
       if (bossHp === 0 || retreated) break;
       fireAbility(a);
     }
 
-    for (const idx of order) {
+    for (const [pos, idx] of order.entries()) {
       if (bossHp === 0 || retreated) break;
+      orderPos = pos;
       const c = creatures[idx] as Creature;
       if (!c.alive) continue;
       // Morning Haze: the turn owed is the first one the creature reaches; a silence on that turn

@@ -1090,6 +1090,8 @@ describe('folding worn items', () => {
       restBp: 700,
       glimmerFindBp: 0,
       dayTripRolls: 0,
+      tinkersLuckBp: 0,
+      secondLookBp: 0,
     });
     expect(Object.keys(fx.mods)).toEqual([]);
   });
@@ -1471,7 +1473,8 @@ describe('drops', () => {
         expect(lines.filter((l) => l.source === 'fixed')).toHaveLength(1);
       }
       expect(seen.size).toBeGreaterThan(1);
-      expect(seen.size).toBeLessThanOrEqual(5);
+      // The pool has five ordinary lines and one chance line (Second wind, Warm heart or Echo).
+      expect(seen.size).toBeLessThanOrEqual(6);
     }
     // The unique line is not in anyone's roll pool.
     for (const slot of GEAR_SLOTS) {

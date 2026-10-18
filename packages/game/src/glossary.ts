@@ -169,6 +169,8 @@ export const FIXED_GLOSSARY_IDS = [
   'gear-festival',
   'gear-set',
   'gear-position',
+  'gear-chance',
+  'gear-trigger',
   'workshop',
   'blueprint',
   'dungeon',

@@ -1,3 +1,4 @@
+import { GLOSSARY_IDS } from '@creatures/game';
 import { experienceText } from './experience';
 import { glyphOrUnknown } from './glyphs';
 import { ItemFrame, ItemSprite, PartsList, RarityTag } from './GearArt';
@@ -55,6 +56,17 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
             </strong>
           </p>
           <PartsList parts={result.parts} />
+          {result.tinkered !== undefined && result.tinkered > 0 && (
+            <p class="good-note">
+              <GlossaryTag entry={GLOSSARY_IDS.gearLine('tinkers-luck')}>
+                {"Tinker's luck"}
+              </GlossaryTag>
+              :{' '}
+              {result.tinkered === 1
+                ? 'the full craft cost came back.'
+                : `${String(result.tinkered)} items gave back their full craft cost.`}
+            </p>
+          )}
           {result.learned.map((baseId) => (
             <p key={baseId} class="good-note">
               Learned the {gearName(baseId)} blueprint.

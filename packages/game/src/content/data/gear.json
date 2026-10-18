@@ -370,7 +370,7 @@
       { "stat": "atk", "value": 1 }
     ],
     "fixed": { "line": "hearth-warmth", "values": [200, 200, 300, 300, 400] },
-    "pool": ["hp-local-pct", "hp-local-flat", "area-ward", "ember-ward", "well-fed"],
+    "pool": ["hp-local-pct", "hp-local-flat", "area-ward", "ember-ward", "well-fed", "second-wind"],
     "flavor": "A warm scarf given to everyone who stood by the Festival hearth."
   },
   {
@@ -462,7 +462,14 @@
     "set": "lantern-night",
     "implicit": { "line": "tide-attunement", "values": [200, 300, 400, 500, 600] },
     "fixed": { "line": "lantern-luck", "values": [50, 50, 100, 100, 150] },
-    "pool": ["tide-attunement", "tide-reaction", "tide-hunter", "tide-ward", "well-fed"],
+    "pool": [
+      "tide-attunement",
+      "tide-reaction",
+      "tide-hunter",
+      "tide-ward",
+      "well-fed",
+      "warm-heart"
+    ],
     "flavor": "A paper lantern charm, lit once a season at the Festival of the tide."
   },
   {
@@ -816,7 +823,8 @@
       "hp-local-flat",
       "grove-attunement",
       "grove-hunter",
-      "grove-reaction"
+      "grove-reaction",
+      "echo"
     ],
     "flavor": "A paper cap with a candle-glow inside, made for the longest night of the Festival."
   }

@@ -89,6 +89,7 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 4. If the boss has a reflect move due this round, it arms (5.4). Not in enrage rounds.
 5. Supports act (4.5): each living, non-silenced Support in slot order boosts, heals and cleanses the creatures beside it.
    5a. **Kind Rain** (`FightInput.rainHealBp`, 10.9), if the day has it: every living creature heals that share of its max HP. One `sky_heal` event names who was healed.
+   5b. **Gear lines of the round start** (11 and 12), each creature in slot order and only while it stands: in round 1 Opening mark, then Kindling; then Warm heart, Second wind; in the first enrage round Second breath.
 6. Finale abilities set for this round fire, in the order they were stored (section 8). Not in enrage rounds. If the boss has fallen or retreated, they do not fire.
 
 **2.4 Creature turns.** Creatures act one at a time in the boss's turn order.
@@ -97,7 +98,7 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 
 2.4.2 A knocked-out creature is skipped. A silenced creature skips its turn and its silence counts down by one (6.4). Every other creature hits the boss (2.4.3). **Morning Haze** (`FightInput.skipFirstTurn`, 10.9): a creature named there also skips the first turn it reaches alive (a `skip` event with reason `haze`); if that turn was silenced anyway, the silence is the lost turn and the haze is spent on it, so it never costs two.
 
-2.4.3 A creature's hit on the boss deals its Attack, times the element matchup (`RULES.combat.strongBp` 150% against the element it beats, `weakBp` 75% against the element that beats it, otherwise 100%), times one combined bonus (Support boost, Rally, crit, mutators; they add together, then multiply once), minus the boss's resist if it has adapted. Then marks and reactions (section 5).
+2.4.3 A creature's hit on the boss deals its Attack, times the element matchup (`RULES.combat.strongBp` 150% against the element it beats, `weakBp` 75% against the element that beats it, otherwise 100%), times one combined bonus (Support boost, Rally, crit, mutators; they add together, then multiply once), minus the boss's resist if it has adapted. Then marks and reactions (section 5). After the hit (12) an Echo can land it again.
 
 2.4.4 If the boss's pool reaches 0, or reaches its phase floor (section 7), the creatures after it do not act and the boss does not take its turn.
 
@@ -140,11 +141,11 @@ The fight is checked after every creature turn: a hit that kills or retreats the
 
 **3.2 The order.** A hit changes in exactly this order, each step working on what the one before left. Nothing is skipped or reordered.
 
-1. **Who takes it:** the Guard step-in, or the Guard roll (4.2). The rest of the steps belong to the taker.
+1. **Who takes it:** the Guard step-in, or the Guard roll (4.2). The rest of the steps belong to the taker. **Sidestep** (11) comes right after this step: an area hit that a Sidestep roll turns aside deals nothing and the steps below are skipped.
 2. **Shield Wall** on the taker's row (3.3).
 3. **Armor**, if the taker is a Guard (4.1).
 4. **Cover**, if it is an area hit and the taker is beside a living Guard (4.3).
-5. **The taker's modifier sheet** (10.5), if it has one: the ward against the boss's element, then charged moves, then the hit's shape (area, aimed or reflected), then every hit. Always after armor and cover.
+5. **The taker's modifier sheet** (10.5), if it has one: the ward against the boss's element, then charged moves, then the hit's shape (area, aimed or reflected), then every hit, then (trigger lines, 12) Last stand once it has fired, and Storm warning on the landing it was marked for. Always after armor and cover.
 6. **The single-hit cap**: off (`RULES.combat.maxHitBp` 0). If it were above 0, no aimed or area hit would deal more than that share of the taker's maximum HP (never less than 1). It never limits a reflected hit.
 7. **HP**: the damage is taken, the taker loses that much HP, but never more than it has left (1.13).
 
@@ -386,10 +387,11 @@ _Example._ A Shield Wall of `rounds` 1 fired in round 4 covers round 4 only. To 
 - **Barrage targets** (6.8) and **random slam victims** (6.9.1).
 - The **lance lane**, if `random` (6.10).
 - The **Guard roll** among several Guards (4.2.3).
+- The **chance lines** of gear (section 11), on each creature's own luck dice.
 
 Off today (`RULES.combat.luck`): damage spread (`spreadBp` 0), Fortune streaks (`surgeChanceBp`, `slumpChanceBp` 0), and a random plain-attack target (`bossRandomTargetBp` 0). Nothing else is random: every other target, order and tie follows a rule above.
 
-**9.2 Dice, not rolls on demand.** Randomness is dice drawn at round start (2.3 step 2), never later. A creature has a crit die per round for its turn and a second for an ability's strike. The boss has a crit die per slot per round for its plain attack and another for its moves. Pattern dice (40 a round) feed barrages, random slams and lanes. One Guard die per slot feeds the roll. When the boss makes more than one plain attack (2.5.2), the crit dice of the second and third attack (one per slot each) are drawn after all of these, and only then, so a fight with one attack a round draws exactly what it always did and a second attack never moves another die. Each kind of die is drawn every round whenever its feature is on (crits, patterns, the Guard roll), whether or not a rule uses it, so what one rule does never changes another's dice.
+**9.2 Dice, not rolls on demand.** Randomness is dice drawn at round start (2.3 step 2), never later. A creature has a crit die per round for its turn and a second for an ability's strike. The boss has a crit die per slot per round for its plain attack and another for its moves. Pattern dice (40 a round) feed barrages, random slams and lanes. One Guard die per slot feeds the roll. When the boss makes more than one plain attack (2.5.2), the crit dice of the second and third attack (one per slot each) are drawn after all of these, and only then, so a fight with one attack a round draws exactly what it always did and a second attack never moves another die. Each kind of die is drawn every round whenever its feature is on (crits, patterns, the Guard roll), whether or not a rule uses it, so what one rule does never changes another's dice. **The luck dice of the chance lines** (11) are the very last dice of the round, after all of these, and are drawn only when some creature of the fight carries a chance line: a fight without one draws exactly what it always did.
 
 **9.3 Where they come from.** The server draws a fresh seed from `crypto.getRandomValues` at the moment the fight is resolved (a raid stage, a dungeon run). Nobody, including the client, can know it before then. Dice come from that seed. The seed, the fight's input and its rules (`rules`, `luck`, floor, enrage) are stored, so a fight replays exactly, and a later retune never changes an old fight. Tests and the balance simulator use seeded dice.
 
@@ -402,7 +404,7 @@ Added 2026-10-16 (step 1 of `gear-and-creatures-v2.md`, section 14). Gear, talen
 - **Absent means none.** A slot without `mods`, or with `mods: {}`, or with every number 0, plays exactly as before: the same dice, the same events, the same totals. Every stored fight and the replay fixture stay as they were. The log events carry the new optional fields (`sheetBp`, `warded`) only when a sheet changed something.
 - **Plain integers.** Basis points unless the field says otherwise (a "pt" on gear is 100 basis points). A negative bonus is a penalty; a negative reduction makes the creature take more (Boons and Omens can use both). Fields are checked on entry and a bad sheet throws: unknown fields, fractions, numbers outside the field's range (bonuses from -100000 to 100000, reductions from -100000 to 10000, `pierceBp` 0 to 10000, `lingerRounds` 0 to 3, `ignoreSilence` 0 or 1) and unknown element, role or reaction keys.
 - **Conditions are resolved before the fight.** "If the wearer is Tide" or "for this week's boss" is decided by whoever builds the sheet. The engine sees numbers, except where the answer depends on the fight itself: the boss's element (`vsElementBp` and `wardBp` are keyed by element, so one sheet serves a dungeon's three rooms) and who stands beside the creature (10.4).
-- **One step each.** Every field is read at exactly one step below. No field changes a die or the number of dice drawn.
+- **One step each.** Every field is read at exactly one step below. No field changes a die or the number of dice drawn, except that a chance line (section 11) makes the fight draw luck dice (after every other die, so only when some creature has one).
 
 **10.2 The creature's hit (2.4.3).** These add to the hit's one combined bonus, together with the Support boost, Rally, crit and mutators (they add, then multiply once). The `hit` event's `bonusBp` includes them and `sheetBp` is their share.
 
@@ -467,3 +469,47 @@ The order matters only through rounding, and it is fixed. _Example._ A hit of 11
 | `brambleBp`     | Bramble Season. The share of the first reaction's bonus each round that goes back at the creature that set it off (5.4.5).                                                                                                                                                              |
 
 The log: `sky_heal` (`heals`: creature and HP really healed, in row order, not written when nobody needed healing), `skip` with `reason: 'haze'`, and on a `reaction` the optional `bramble` (`bp`, `amount` sent back; the event's `bonus` is what the boss took) followed by a `boss_hit` with source `reflect`.
+
+## 11. Chance lines (2026-10-18)
+
+Gear lines that work some of the time (`gear-and-creatures-v2.md` 6.3). Each is a field of the sheet (`SlotMods`) that holds the **chance in basis points** (0 to 10000; the line's tier gives 4 / 6 / 8 / 10 / 12%, 2 points more on an Epic or a Festival piece). Absent or 0 means the creature has no such line, and a fight where no creature has any draws exactly what it always drew.
+
+**11.1 The luck dice.** When some creature of the fight has a chance line (`hasChance`), every round draws `LUCK_DICE` (10) dice for **every** creature, uniform in [0, 10000), after every other die of the round (9.2), whether or not a rule uses them. A chance of C fires when its die is below C. The dice are numbered by what they decide, so one line never moves another's: 0 Second wind, 1 Echo, 2 Steady paws, 3 Warm heart, 4 Quick re-mark, 5 Spill-over, and 6 to 9 Sidestep (the creature's 1st to 4th area hit that round; later ones use the 4th). The same seed and input always give the same fight, and the dice come from the fight's injected RNG as all others do.
+
+**11.2 The lines.** What a line does when it fires is fixed by its design (`CHANCE_FX`, not tiered): a different size is a new line.
+
+| Line          | Field           | Moment and effect                                                                                                                                                                                                                                          |
+| ------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Second wind   | `secondWindBp`  | Round start (2.3 step 5b): the creature heals 5% of its max HP, changed by its own `healReceivedBp`, never above what is missing. A `heal` event with `cause: second_wind` (nothing is written when no HP was missing).                                    |
+| Echo          | `echoBp`        | After a **turn** hit (not an ability's strike), if the boss still stands: the hit lands again for 30% of its **plain** damage (no reaction bonus, no mark, no crit), counted down to the phase floor like any hit. A `proc` event `echo` with `bossHp`.    |
+| Sidestep      | `sidestepBp`    | An **area** hit that would reach the creature (as the taker) deals nothing; before Shield Wall, armor and cover. A `boss_hit` with `damage: 0` and `sidestep`. Aimed and reflected hits are never sidestepped.                                             |
+| Steady paws   | `steadyPawsBp`  | A silence that the boss's move would put on the creature is shrugged off (die 2 of that round): no `silence` event, a `proc` event `steady_paws`. Checked after Unbothered (`ignoreSilence`).                                                              |
+| Warm heart    | `warmHeartBp`   | Round start: a living creature beside it (the one with the most Attack, ties to the lower slot) gets a 10% boost on its next hit (a boost that stays apart from a Support's own). `proc` `warm_heart`.                                                     |
+| Quick re-mark | `quickRemarkBp` | A hit by a creature that is not a Setter, on a boss whose mark is of another element and is not sealed, replaces the mark as a Setter's hit would (5.2). Also counts as a marking hit for `markingHitBp`. `proc` `quick_remark` after the `mark` event.    |
+| Spill-over    | `spillOverBp`   | A reaction the creature sets off (not a reflected one) leaves the creature's own mark standing afterwards, like Ridge Copper's `chainMark` (which already does it every time: with both, Spill-over does nothing). `mark` event, then `proc` `spill_over`. |
+
+Two chance lines work outside the fight and are rolled by the server with its live randomness (`crypto.getRandomValues`), when the result is claimed:
+
+- **Tinker's luck** (`GearRules.tinkersLuckBp`): each item of a dismantle job the wearer runs has the chance to refund its **full craft cost**: the plain craft's parts for the base and item level (`craftCost`: scrap by item level, plus one shard of the base's element, no Reach). The refund of each kind of part is lifted to that cost if the ranges gave less; glimmer and Essence stay as rolled. One extra die for each item, after that item's other draws, only when the worker has the line. The result says how many items it refunded (`tinkered`).
+- **Second look** (`GearRules.secondLookBp`): a **duplicate** the explorer's trip brings rolls its talent twice (one more die for the chance, then a second roll) and keeps the better. "Better" is the talent's worth to the creature of that line the player has (`talentScore`, the same stand-in Equip best and Recommended use); a tie keeps the first roll. The catch says so (`secondLook`).
+
+## 12. Trigger lines (2026-10-18)
+
+Gear lines that wait for a defined moment (`gear-and-creatures-v2.md` 6.4). Each is a field of the sheet with its own number (a bonus, boost, cut or heal in basis points, tiered by the line) or a flag. None draws a die. Each **writes a `proc` event when it fires** (`describeEvent` has a sentence for every kind). "Next hit" means the creature's next **turn** hit (an ability's strike neither gets nor spends it, like `firstHitBp`); the bonus is added to the hit's one combined bonus and shows in `sheetBp`.
+
+| Line          | Field            | Moment                                                                                                                            | Effect                                                                                                                     |
+| ------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Payback       | `paybackBp`      | A Guard step-in (4.2, also for a reflected hit): the creature that takes a hit meant for a neighbour, while it stands afterwards. | Its next turn hit deals this much more (does not stack: a new one replaces it).                                            |
+| Kindling      | `kindlingBp`     | Round 1 starts (each room of a dungeon is a fresh round 1).                                                                       | Each living creature beside it gets a boost of this size on its first hit, apart from a Support's boost.                   |
+| Opening mark  | `openingMark`    | Round 1 starts and the boss has no mark (the first creature in slot order that has the line).                                     | It leaves its own mark (a `mark` event) before the first creature acts.                                                    |
+| Rally cry     | `rallyCryBp`     | A creature beside it is knocked out (any cause, in the raid inside its row).                                                      | All its hits (turns and strikes) deal this much more for the rest of the fight; stacks once for each neighbour that falls. |
+| Ember tail    | `emberTailBp`    | It crits (a turn hit or a strike; crits must be on).                                                                              | Its next turn hit deals this much more (replaces an earlier one).                                                          |
+| Storm warning | `stormWarningBp` | A charge is announced (2.3 step 3) with it among the marks.                                                                       | It takes this much less from that landing (every hit of it, splash included), at the sheet step of 3.2.                    |
+| Stubborn      | `stubborn`       | A hit would knock it out, once a fight (the hit may be a reflected one: Bramble Season, Backdraft).                               | It stays at 1 HP. The `boss_hit` still shows the full damage and carries `stubborn`; HP lost is what it really lost.       |
+| Last stand    | `lastStandBp`    | A hit leaves it standing at a quarter of its max HP or less, once a fight (also when it started the fight below a quarter).       | It takes this much less from every hit from then on.                                                                       |
+| Overflow      | `overflowBp`     | It sets off a reaction (not a reflected one).                                                                                     | The next living creature in the round's turn order gets a boost of this size on its next hit (none if it acts last).       |
+| Second breath | `secondBreathBp` | The first enrage round starts (2.3 step 5b).                                                                                      | It heals this share of its max HP (as Second wind: `healReceivedBp`, never above what is missing). `heal` `second_breath`. |
+| Patient       | `patientBp`      | A silence lands on it (not one it shrugged off or ignored).                                                                       | Its next turn hit deals this much more, spent on the first hit it makes after the lost turn.                               |
+| Shared warmth | `sharedWarmthBp` | A Support's Mend heals it (really restores HP).                                                                                   | That Support's next boost, to everyone it boosts, is this much bigger (it waits until the Support next boosts).            |
+
+**12.1 Order and interplay.** The boosts the lines give are in the same list as a Support's (`buffs`), spent on the creature's next hit together with it and counted in `bonusBp`; they are credited as support credit to the creature whose line gave them, and a Support's own boost from the same creature never replaces one of them. Stubborn works in the taker step (3.2 step 7) and Last stand is checked after it; so a Stubborn creature at a quarter of its HP after the hit can fire both. Round-start lines act after the Supports and Kind Rain and before finale abilities, so a finale Re-mark can still replace an Opening mark.

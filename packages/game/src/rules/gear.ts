@@ -174,6 +174,8 @@ export interface WorkshopMods {
 export interface DismantleRoll {
   parts: PartsBundle;
   essence: number;
+  /** How many items Tinker's luck refunded in full; absent when none did. */
+  tinkered?: number;
 }
 
 function between(rng: Rng, lo: number, hi: number, top = false): number {
@@ -189,23 +191,38 @@ export function rollDismantle(
   rng: Rng,
   items: readonly DismantleItem[],
   mods: WorkshopMods = {},
+  tinkersLuckBp = 0,
 ): DismantleRoll {
   const top = mods.dismantleTopOfRange === true;
   const parts: PartsBundle = {};
   let essence = 0;
+  let tinkered = 0;
   for (const item of items) {
     const r = itemRange(item);
     const element = tagElement(itemBase(item).tag);
-    addPart(parts, 'scrap', between(rng, r.scrap[0], r.scrap[1], top));
+    const own: PartsBundle = {};
+    addPart(own, 'scrap', between(rng, r.scrap[0], r.scrap[1], top));
     const shards = between(rng, r.shard[0], r.shard[1], top);
     for (let i = 0; i < shards; i++) {
       const kind = element ?? (ELEMENTS[int(rng, ELEMENTS.length)] as Element);
-      addPart(parts, shardOf(kind), 1);
+      addPart(own, shardOf(kind), 1);
     }
-    addPart(parts, 'glimmer', between(rng, r.glimmer[0], r.glimmer[1], top));
+    addPart(own, 'glimmer', between(rng, r.glimmer[0], r.glimmer[1], top));
     essence += between(rng, r.essence[0], r.essence[1], top);
+    // Tinker's luck: one more die for the item, drawn after its other draws and only when the worker has the
+    // line, so without it every draw is what it was. A hit lifts the item's scrap and shards to its full
+    // craft cost (the plain craft's `craftCost`; never below what the ranges rolled).
+    if (tinkersLuckBp > 0 && chance(rng, Math.min(10_000, tinkersLuckBp), 10_000)) {
+      tinkered += 1;
+      const cost = craftCost(item.baseId, item.itemLevel ?? 1);
+      for (const kind of PART_KINDS) {
+        const missing = (cost[kind] ?? 0) - (own[kind] ?? 0);
+        if (missing > 0) addPart(own, kind, missing);
+      }
+    }
+    for (const kind of PART_KINDS) addPart(parts, kind, own[kind] ?? 0);
   }
-  return { parts, essence };
+  return { parts, essence, ...(tinkered > 0 ? { tinkered } : {}) };
 }
 
 /** Why a set of items cannot go in one dismantle job, or null: Commons bundle up to 5, anything else goes alone. */

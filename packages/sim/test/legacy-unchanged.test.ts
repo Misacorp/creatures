@@ -82,6 +82,14 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  *
  * With the new weathers and the new gear together (the branch merge, 2026-10-18) the first player's top-3
  * power is 375, 314, 248 and 209, and raids won 7, 4, 5 and 5; Bait earned is the same as before.
+ *
+ * Re-pinned again on 2026-10-18 (chance lines and trigger lines), on purpose: nine chance lines and twelve
+ * trigger lines (Rare and up) joined the pool of lines, and each of the three Festival pieces has a chance line
+ * in its narrow pool, so every seeded drop and craft that rolls a line from a Rare or an Epic is a different item.
+ * The sim's fights play the combat lines as the server does (their luck dice come from the fight's seeded RNG
+ * and are drawn only when a creature wears a chance line); Tinker's luck and Second look are not played, since
+ * the sim's Workshop and trips do not read them. The run without gear is the same; Bait earned and raids won
+ * are the same in every run; the first player's top-3 power moved a little (375, 248 and 209 to 370, 246 and 205).
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

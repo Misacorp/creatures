@@ -186,6 +186,7 @@ function isJobResult(value: unknown): value is JobResult {
         isPartsBundle(value['parts']) &&
         isCount(value['essence']) &&
         isArrayOf(value['learned'], isStr) &&
+        (value['tinkered'] === undefined || isCount(value['tinkered'])) &&
         isArrayOf(
           value['marked'],
           (m): m is { baseId: string; marks: number } =>

@@ -19,6 +19,7 @@
 import {
   RULES,
   applyCatchToCollection,
+  effectiveStats,
   content,
   destinationDef,
   expeditionContent,
@@ -144,6 +145,8 @@ export interface CatchView {
   firstOnServer: boolean;
   /** The catch came from the destination's deeper area (absent when it did not). */
   deep?: true;
+  /** The explorer's Second look rolled this duplicate's talent twice and kept the better (absent when it did not). */
+  secondLook?: true;
 }
 
 export interface PushOnResultView {
@@ -1132,7 +1135,7 @@ export class Expeditions {
     });
     const settled: ChoiceResult[] = [];
     const catches = rolled.results.map((caught) => {
-      const made = this.applyCatch(userId, expedition.id, caught, now);
+      const made = this.applyCatch(userId, expedition.id, caught, now, gearRules.secondLookBp);
       if (made.settled !== null) settled.push(made.settled);
       return made.view;
     });
@@ -1499,6 +1502,8 @@ export class Expeditions {
     expeditionId: string,
     caught: TripCatch,
     now: number,
+    /** The explorer's Second look chance (basis points; 0 when it has none). */
+    secondLookBp: number,
   ): { view: CatchView; settled: ChoiceResult | null } {
     const species = caught.species;
     const owned = this.sql
@@ -1553,10 +1558,26 @@ export class Expeditions {
         if (outcome.becameShiny) {
           this.sql.exec('UPDATE creatures SET shiny = 1 WHERE id = ?', existing.id);
         }
+        // "The better" is judged for the creature of the line the player has (the first, if they Kept two).
+        const stats = effectiveStats(
+          speciesOf(existing.species),
+          existing.level,
+          existing.fusion_count,
+        );
         const pending = this.deps.choices.addPending(
           userId,
           { species: species.id, shiny: caught.shiny },
           { kind: 'expedition', id: expeditionId },
+          secondLookBp > 0
+            ? {
+                bp: secondLookBp,
+                wearer: {
+                  role: speciesOf(existing.species).role,
+                  element: speciesOf(existing.species).element,
+                  stats,
+                },
+              }
+            : undefined,
         );
         const talent = talentViewOf(pending.talent, wearer);
         return {
@@ -1565,6 +1586,7 @@ export class Expeditions {
             outcome: 'duplicate',
             pendingId: pending.id,
             ...(talent === null ? {} : { talent }),
+            ...(pending.looked ? { secondLook: true as const } : {}),
           },
           settled: pending.settled,
         };

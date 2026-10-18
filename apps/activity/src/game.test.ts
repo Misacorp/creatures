@@ -98,6 +98,17 @@ describe('display helpers', () => {
     ]);
   });
 
+  it("shows a Second look duplicate with a badge that opens the line's glossary entry", () => {
+    const base = { species: 'zipmouse', shiny: false, firstOnServer: false };
+    expect(catchBadgeTags({ ...base, outcome: 'duplicate', secondLook: true })).toEqual([
+      { text: 'Duplicate', entry: 'duplicate-choice' },
+      { text: 'Second look', entry: 'gear-line-second-look' },
+    ]);
+    expect(catchBadgeTags({ ...base, outcome: 'duplicate' }).map((b) => b.text)).toEqual([
+      'Duplicate',
+    ]);
+  });
+
   it("finds first-on-server records by species or by the line's first stage", () => {
     const mine = { kind: 'catch' as const, species: 'splashet', at: 1, mine: true, holders: ['A'] };
     expect(isFirstOnServer(creature, [mine])).toBe(true);

@@ -71,6 +71,7 @@ function isCatch(value: unknown): value is TripCatch {
     (value['talent'] === undefined || isTalentView(value['talent'])) &&
     (value['pendingId'] === undefined || isStr(value['pendingId'])) &&
     (value['deep'] === undefined || value['deep'] === true) &&
+    (value['secondLook'] === undefined || value['secondLook'] === true) &&
     (value['fusionCount'] === undefined || isCount(value['fusionCount'])) &&
     (value['bait'] === undefined || isCount(value['bait'])) &&
     isBool(value['firstOnServer'])

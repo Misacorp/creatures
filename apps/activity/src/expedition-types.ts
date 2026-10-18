@@ -123,6 +123,8 @@ export interface TripCatch {
   pendingId?: string;
   /** The catch came from the destination's deeper area. */
   deep?: true;
+  /** The explorer's Second look rolled this duplicate's talent twice and kept the better one. */
+  secondLook?: true;
   /** For the old `fused`: the creature's fusions after. */
   fusionCount?: number;
   /** For the old `converted`: the Bait it became. */
