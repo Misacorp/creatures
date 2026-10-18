@@ -1,6 +1,8 @@
 import {
   RULES,
+  allSpecies,
   content,
+  expeditionContent,
   createSeededRng,
   lore,
   pickQuirk,
@@ -1054,7 +1056,9 @@ describe('Festival species', () => {
       expect(species.catchable).toBe(false);
       expect(species.starter).toBe(false);
     }
-    // Every roll brings a creature, so 100 long trips are 100 catches (the shipped chance is small).
+    // The exhaustive "Festival species live only at the Festival Grounds" check is a pure rule
+    // (packages/game/test/expeditions.test.ts); here one real trip per everyday place proves the worker
+    // catches from that place's pool. Every roll brings a creature (the shipped chance is small).
     const restore = certainCatches(['long']);
     try {
       await runCore(
@@ -1068,7 +1072,8 @@ describe('Festival species', () => {
             p.starterId,
             RULES.expeditions.rank.xpForRank[1] ?? 0,
           );
-          const seen = new Set<string>();
+          // The first expedition is a guaranteed zipmouse from no place's pool: leave it out.
+          skipFirstExpedition(ctx.sql, USER_ID);
           const places = [
             'tidepools',
             'ember-caves',
@@ -1076,19 +1081,23 @@ describe('Festival species', () => {
             'storm-ridge',
             'old-crossroads',
           ];
-          for (let i = 0; i < 100; i++) {
-            const exp = expeditionOf(
-              await send(p, p.starterId, 'long', [], newKey(), places[i % places.length]),
-            );
+          for (const place of places) {
+            const dest = expeditionContent.destinations.find((d) => d.id === place);
+            if (dest === undefined) throw new Error(`no destination ${place}`);
+            const exp = expeditionOf(await send(p, p.starterId, 'long', [], newKey(), place));
             ctx.clock.t = exp.endsAt;
             const res = await claim(p, exp.id);
             expect(res.status).toBe(200);
-            for (const c of resultOf(res).catches) seen.add(c.species);
+            const caught = resultOf(res).catches;
+            expect(caught.length, place).toBeGreaterThan(0);
+            for (const c of caught) {
+              expect(allSpecies(dest), place).toContain(c.species);
+              expect(
+                festival.some((f) => f.id === c.species),
+                `${place} caught a Festival species`,
+              ).toBe(false);
+            }
           }
-          // Plenty of the catchable species showed up, and no Festival species did. (A Festival
-          // species comes from a won Festival finale, or from the Festival Grounds in a Festival week.)
-          expect(seen.size).toBeGreaterThan(6);
-          for (const species of festival) expect(seen.has(species.id)).toBe(false);
         },
         seeded(),
       );

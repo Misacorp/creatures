@@ -9,6 +9,7 @@ import {
   MAX_SUPPLY_BLURB,
   SUPPLY_KINDS,
   SUPPLY_TIERS,
+  allSpecies,
   closedReasons,
   partsBonusBp,
   content,
@@ -206,6 +207,37 @@ describe('the shipped expedition content', () => {
     // Every place has a deeper area with something in it.
     for (const d of pack.destinations) {
       expect(d.deep.species.length > 0 || d.deep.rarityUpBp > 0, d.id).toBe(true);
+    }
+  });
+
+  it('only ever catches species that live at the destination, and Festival species only at the Festival Grounds', () => {
+    const festival = new Set(content.creatures.filter((c) => c.festival === true).map((c) => c.id));
+    expect(festival.size).toBeGreaterThan(0);
+    for (const d of pack.destinations) {
+      const here = new Set(allSpecies(d));
+      for (const stars of [0, 3]) {
+        const rng = createSeededRng(`pool-${d.id}-${stars}`);
+        const seen = new Set<string>();
+        for (let i = 0; i < 300; i++) {
+          // Every other roll is the pity's "new species" roll (the owned lines are empty either way).
+          const roll = rollSure(
+            rng,
+            ctx({
+              destination: d,
+              length: 'long',
+              stars,
+              pity: { sinceNew: i % 2 === 0 ? RULES.catching.pity.newAfter : 0, sinceCreature: 0 },
+            }),
+          );
+          seen.add(roll.result.species.id);
+        }
+        for (const id of seen) {
+          expect(here.has(id), `${d.id} (${stars} stars) caught ${id}`).toBe(true);
+          if (d.id !== 'festival-grounds') {
+            expect(festival.has(id), `${d.id} caught Festival species ${id}`).toBe(false);
+          }
+        }
+      }
     }
   });
 

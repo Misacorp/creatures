@@ -1064,31 +1064,42 @@ describe('the supply a run drops', () => {
     );
   });
 
-  it('drops better tiers deeper: basic only before the first open depth, some good and great ones far down', async () => {
+  it('drops better tiers deeper: the run passes the depth, so one fixed roll is basic at depth 1 and good or great far down', async () => {
     const tiers = RULES.dungeon.supplyTiers;
-    expect(dungeonSupplyOddsBp(tiers.good.fromDepth - 1).good).toBe(0);
+    // The odds per depth and the tier rolls are pure rules, proven in packages/game/test/dungeon.test.ts
+    // (`dungeonSupplyOddsBp`, `rollDungeonSupply`). Here only the wiring is checked: the depth the worker
+    // hands to the roll. The gear rng is fixed so the tier roll (out of 10,000) is known: the top roll is
+    // the great tier where it is open, and a roll equal to the basic odds is the good tier.
+    const deep = tiers.great.fromDepth + 2;
+    const odds = dungeonSupplyOddsBp(deep);
+    expect(odds.good).toBeGreaterThan(0);
+    expect(odds.great).toBeGreaterThan(0);
+    expect(dungeonSupplyOddsBp(1).great).toBe(0);
+    // `int` keeps a draw only below the largest multiple of 10,000 in 2^32 (4,294,960,000): these are kept.
+    const BASE = 4_294_950_000;
+    let roll = 0;
+    const fixed: Rng = { nextU32: () => BASE + roll };
+    const tierOf = async (ctx: CoreContext, n: number, depth: number, at: number) => {
+      const p = await dungeonPlayer(ctx, n, STRONG);
+      setProgress(ctx, p.id, { depth });
+      roll = at;
+      // Win the first fight and lose the next: the supply is safe, and the run is short.
+      const run = (await p.run({}, winFirstThenLose)).body.run;
+      restore();
+      restore = easyFoes();
+      const supplies = run?.rewards.supplies ?? [];
+      expect(supplies).toHaveLength(1);
+      return supplyDef(supplies[0] as string)?.tier;
+    };
     await runCore(
       nextGuild(),
       async (ctx) => {
-        const seen = { basic: 0, good: 0, great: 0 };
-        for (let i = 0; i < 60; i++) {
-          const p = await dungeonPlayer(ctx, i + 1, STRONG);
-          setProgress(ctx, p.id, { depth: tiers.great.fromDepth + 2 });
-          // Win the first fight and lose the next: the supply is safe, and the run is short.
-          const run = (await p.run({}, winFirstThenLose)).body.run;
-          for (const id of run?.rewards.supplies ?? []) {
-            const tier = supplyDef(id)?.tier;
-            if (tier !== undefined) seen[tier] += 1;
-          }
-          restore();
-          restore = easyFoes();
-        }
-        expect(seen.basic + seen.good + seen.great).toBeGreaterThanOrEqual(30);
-        expect(seen.basic).toBeGreaterThan(0);
-        expect(seen.good).toBeGreaterThan(0);
-        expect(seen.great).toBeGreaterThan(0);
+        expect(await tierOf(ctx, 1, deep, 9_999)).toBe('great');
+        expect(await tierOf(ctx, 2, deep, odds.basic)).toBe('good');
+        // The same top roll at depth 1, where only the basic tier is open.
+        expect(await tierOf(ctx, 3, 1, 9_999)).toBe('basic');
       },
-      opts('tiers'),
+      { dungeonRng: createSeededRng('tiers'), gearRng: fixed },
     );
   });
 
