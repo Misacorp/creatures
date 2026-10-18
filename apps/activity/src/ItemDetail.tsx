@@ -4,7 +4,7 @@ import type { Creature } from './api';
 import { creatureName } from './game';
 import type { GearActions } from './gear-actions';
 import type { GearItem, GearState } from './gear-types';
-import { detailLines, gearName, needsText, wearReason } from './gear-view';
+import { detailLines, gearName, needsText, setPiecesWith, wearReason } from './gear-view';
 import { ItemCard } from './ItemCard';
 import { DismantlePanel } from './ItemPanels';
 import { Accordion } from './ui/Accordion';
@@ -133,6 +133,7 @@ export function ItemDetail({
         nameId={`item-${item.id}-name`}
         nameRef={heading}
         spriteScale={6}
+        wornInSet={wearer === undefined ? 0 : setPiecesWith(item, wearer.gear)}
       />
       <p>
         {wearer !== undefined && (

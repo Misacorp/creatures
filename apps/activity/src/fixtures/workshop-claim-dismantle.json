@@ -4,31 +4,29 @@
     "items": [
       {
         "baseId": "festival-hearth-scarf",
-        "rarity": "epic",
+        "rarity": "common",
         "itemLevel": 6
       }
     ],
     "parts": {
-      "scrap": 3,
-      "ember-shard": 1,
-      "glimmer": 1
+      "scrap": 2
     },
-    "essence": 10,
+    "essence": 0,
     "learned": [],
     "marked": [],
     "experience": {
-      "creatureId": "8b67f283-fdbc-4f81-985b-3673a45b070e",
-      "gained": 16,
+      "creatureId": "ffe187a8-7dd7-4180-ac50-b290e8528405",
+      "gained": 2,
       "treat": false,
       "levelBefore": 9,
       "level": 9,
-      "exp": 40,
+      "exp": 26,
       "needed": 387,
       "waiting": false,
       "gold": false
     },
-    "xp": 24,
-    "skillXp": 60,
+    "xp": 6,
+    "skillXp": 42,
     "skillLevel": 1,
     "leveledUp": false
   },
@@ -36,7 +34,7 @@
     "serverNow": 1799751603000,
     "balances": {
       "bait": 100,
-      "essence": 10
+      "essence": 0
     },
     "inventory": {
       "cap": 60,
@@ -45,7 +43,7 @@
     },
     "items": [
       {
-        "id": "dbc2331d-a433-407b-8903-fd9943a95b43",
+        "id": "94cfe2f5-d1a0-4010-ac43-1a9cf7863cba",
         "baseId": "trail-cap",
         "slot": "hat",
         "tag": "neutral",
@@ -83,7 +81,7 @@
           "level": 1,
           "role": null
         },
-        "equippedOn": "eb17882a-2601-4293-ac20-638b5645459c",
+        "equippedOn": "511935df-47e5-4791-b3d1-47f05259f00a",
         "dismantle": {
           "scrap": {
             "min": 2,
@@ -111,7 +109,7 @@
         }
       },
       {
-        "id": "e82610e8-82f6-466b-8665-dc692ab28a85",
+        "id": "a26cc2cd-87aa-469a-89a1-445484db8f1b",
         "baseId": "tidepool-charm",
         "slot": "charm",
         "tag": "tide",
@@ -132,10 +130,10 @@
             "active": null
           },
           {
-            "id": "cover",
-            "name": "Cover",
-            "text": "Cover +3 pt",
-            "about": "A Guard's cover for its neighbours grows by these points.",
+            "id": "mend",
+            "name": "Mend",
+            "text": "Mend +1%",
+            "about": "A Support's neighbours heal this share of max HP at round start.",
             "source": "rolled",
             "tier": 1,
             "bestTier": 2,
@@ -177,7 +175,7 @@
         }
       },
       {
-        "id": "9bdcbf3d-b734-4536-bc61-67a9ee2fb0a7",
+        "id": "5a902296-2b12-48b0-bbc2-135b114f2752",
         "baseId": "emberkeepers-crown",
         "slot": "hat",
         "tag": "ember",
@@ -243,7 +241,7 @@
           "level": 15,
           "role": null
         },
-        "equippedOn": "ee2fba1c-126e-41fb-89a8-1391732baa7f",
+        "equippedOn": "df73a9db-70ea-4afd-b654-868ba10a6ac4",
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -269,7 +267,7 @@
         "origin": null
       },
       {
-        "id": "6d8d7046-3352-4150-a147-5f576f6004b5",
+        "id": "5cdfcff0-b4f2-486d-875a-0a64d64a5969",
         "baseId": "bark-shawl",
         "slot": "scarf",
         "tag": "grove",
@@ -318,7 +316,7 @@
           "level": 12,
           "role": null
         },
-        "equippedOn": "ee2fba1c-126e-41fb-89a8-1391732baa7f",
+        "equippedOn": "df73a9db-70ea-4afd-b654-868ba10a6ac4",
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -344,7 +342,7 @@
         "origin": null
       },
       {
-        "id": "1f804d8e-ace9-4124-a6d4-2b8d6b8504b7",
+        "id": "e4f4677e-304e-4e03-807d-c32c247655a8",
         "baseId": "wardens-bell",
         "slot": "charm",
         "tag": "guard",
@@ -391,7 +389,7 @@
           "level": 13,
           "role": "guard"
         },
-        "equippedOn": "eb17882a-2601-4293-ac20-638b5645459c",
+        "equippedOn": "511935df-47e5-4791-b3d1-47f05259f00a",
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -417,7 +415,7 @@
         "origin": null
       },
       {
-        "id": "0aa4a71d-afdb-4602-8da9-e30f836c3edd",
+        "id": "609e966b-a387-4ebd-842b-001fccebb5fd",
         "baseId": "crossroads-compass",
         "slot": "charm",
         "tag": "explorer",
@@ -464,7 +462,7 @@
           "level": 13,
           "role": null
         },
-        "equippedOn": "ee2fba1c-126e-41fb-89a8-1391732baa7f",
+        "equippedOn": "df73a9db-70ea-4afd-b654-868ba10a6ac4",
         "dismantle": {
           "scrap": {
             "min": 3,
@@ -490,7 +488,7 @@
         "origin": null
       },
       {
-        "id": "4ba8a5cf-338e-484d-9e36-acb82357cecc",
+        "id": "31978653-fabd-4be7-8d48-f4474f97ecd0",
         "baseId": "thundercap",
         "slot": "hat",
         "tag": "spark",
@@ -565,7 +563,7 @@
         "origin": null
       },
       {
-        "id": "6d4d06d2-d943-4065-98a9-b72e59eeb854",
+        "id": "9ca08af2-d7b8-4324-a856-023786b928be",
         "baseId": "kelp-cap",
         "slot": "hat",
         "tag": "tide",
@@ -588,14 +586,14 @@
         ],
         "lines": [
           {
-            "id": "hp-local-pct",
-            "name": "HP",
-            "text": "+20% HP (this item)",
-            "about": "Raises this item's own HP by a share (not the creature's).",
+            "id": "crit-chance",
+            "name": "Crit chance",
+            "text": "Crit chance +1 pt",
+            "about": "More chance to crit, in points (the fight caps the total).",
             "source": "rolled",
             "tier": 1,
             "bestTier": 1,
-            "local": true,
+            "local": false,
             "active": null
           }
         ],
@@ -640,12 +638,12 @@
       "charm": 13
     },
     "parts": {
-      "scrap": 73,
+      "scrap": 72,
       "tide-shard": 3,
-      "ember-shard": 5,
+      "ember-shard": 4,
       "grove-shard": 0,
       "spark-shard": 4,
-      "glimmer": 4
+      "glimmer": 3
     },
     "blueprints": [
       {
@@ -669,14 +667,14 @@
     ],
     "jobs": [
       {
-        "id": "62420ca7-c4d4-4422-acbc-d999b73be84f",
-        "creatureId": "8b67f283-fdbc-4f81-985b-3673a45b070e",
+        "id": "493e4284-b3fa-4cc3-82aa-8d12c3106c7f",
+        "creatureId": "ffe187a8-7dd7-4180-ac50-b290e8528405",
         "kind": "dismantle",
         "input": {
           "items": [
             {
               "baseId": "festival-hearth-scarf",
-              "rarity": "epic",
+              "rarity": "common",
               "itemLevel": 6
             }
           ]
@@ -685,7 +683,7 @@
         "bait": 0,
         "treat": false,
         "startedAt": 1799744402000,
-        "endsAt": 1799751602000,
+        "endsAt": 1799745302000,
         "status": "claimed",
         "claimedAt": 1799751603000,
         "result": {
@@ -693,38 +691,36 @@
           "items": [
             {
               "baseId": "festival-hearth-scarf",
-              "rarity": "epic",
+              "rarity": "common",
               "itemLevel": 6
             }
           ],
           "parts": {
-            "scrap": 3,
-            "ember-shard": 1,
-            "glimmer": 1
+            "scrap": 2
           },
-          "essence": 10,
+          "essence": 0,
           "learned": [],
           "marked": [],
           "experience": {
-            "creatureId": "8b67f283-fdbc-4f81-985b-3673a45b070e",
-            "gained": 16,
+            "creatureId": "ffe187a8-7dd7-4180-ac50-b290e8528405",
+            "gained": 2,
             "treat": false,
             "levelBefore": 9,
             "level": 9,
-            "exp": 40,
+            "exp": 26,
             "needed": 387,
             "waiting": false,
             "gold": false
           },
-          "xp": 24,
-          "skillXp": 60,
+          "xp": 6,
+          "skillXp": 42,
           "skillLevel": 1,
           "leveledUp": false
         }
       },
       {
-        "id": "b1dab3af-8b4f-40c5-8eee-1106954d02fe",
-        "creatureId": "8b67f283-fdbc-4f81-985b-3673a45b070e",
+        "id": "ef333ddc-e280-4dc2-a6f9-a5c93814b951",
+        "creatureId": "ffe187a8-7dd7-4180-ac50-b290e8528405",
         "kind": "craft",
         "input": {
           "baseId": "kelp-cap"
@@ -741,14 +737,14 @@
         "claimedAt": 1799744402000,
         "result": {
           "kind": "craft",
-          "gearId": "6d4d06d2-d943-4065-98a9-b72e59eeb854",
+          "gearId": "9ca08af2-d7b8-4324-a856-023786b928be",
           "baseId": "kelp-cap",
           "rarity": "common",
           "itemLevel": 2,
           "reach": "none",
           "upgraded": false,
           "experience": {
-            "creatureId": "8b67f283-fdbc-4f81-985b-3673a45b070e",
+            "creatureId": "ffe187a8-7dd7-4180-ac50-b290e8528405",
             "gained": 24,
             "treat": false,
             "levelBefore": 9,
@@ -766,7 +762,7 @@
       },
       {
         "id": "00000000-0000-4000-8000-0000000000aa",
-        "creatureId": "eb17882a-2601-4293-ac20-638b5645459c",
+        "creatureId": "511935df-47e5-4791-b3d1-47f05259f00a",
         "kind": "improve",
         "input": {},
         "cost": {
@@ -797,20 +793,20 @@
     },
     "skills": [
       {
-        "creatureId": "ee2fba1c-126e-41fb-89a8-1391732baa7f",
+        "creatureId": "df73a9db-70ea-4afd-b654-868ba10a6ac4",
         "xp": 0,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "eb17882a-2601-4293-ac20-638b5645459c",
+        "creatureId": "511935df-47e5-4791-b3d1-47f05259f00a",
         "xp": 24,
         "level": 1,
         "nextLevelXp": 100
       },
       {
-        "creatureId": "8b67f283-fdbc-4f81-985b-3673a45b070e",
-        "xp": 60,
+        "creatureId": "ffe187a8-7dd7-4180-ac50-b290e8528405",
+        "xp": 42,
         "level": 1,
         "nextLevelXp": 100
       }
@@ -819,9 +815,9 @@
       {
         "gear": [
           {
-            "id": "e42b975f-0d5b-4277-9e68-ba66812f9d65",
+            "id": "6e34208f-f810-4723-a674-66942f5de565",
             "baseId": "festival-hearth-scarf",
-            "rarity": "epic",
+            "rarity": "common",
             "itemLevel": 6
           }
         ],
@@ -835,7 +831,7 @@
       {
         "gear": [
           {
-            "id": "e82610e8-82f6-466b-8665-dc692ab28a85",
+            "id": "a26cc2cd-87aa-469a-89a1-445484db8f1b",
             "baseId": "tidepool-charm",
             "rarity": "common",
             "itemLevel": 6
@@ -851,7 +847,7 @@
       {
         "gear": [
           {
-            "id": "dbc2331d-a433-407b-8903-fd9943a95b43",
+            "id": "94cfe2f5-d1a0-4010-ac43-1a9cf7863cba",
             "baseId": "trail-cap",
             "rarity": "common",
             "itemLevel": 1
@@ -878,13 +874,13 @@
     "serverNow": 1799751603000,
     "balances": {
       "bait": 100,
-      "essence": 10
+      "essence": 0
     },
     "starterChosen": false,
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "ee2fba1c-126e-41fb-89a8-1391732baa7f",
+        "id": "df73a9db-70ea-4afd-b654-868ba10a6ac4",
         "species": "cindle",
         "line": "cindle",
         "level": 15,
@@ -927,21 +923,21 @@
         },
         "gear": [
           {
-            "id": "9bdcbf3d-b734-4536-bc61-67a9ee2fb0a7",
+            "id": "5a902296-2b12-48b0-bbc2-135b114f2752",
             "baseId": "emberkeepers-crown",
             "slot": "hat",
             "rarity": "epic",
             "itemLevel": 15
           },
           {
-            "id": "6d8d7046-3352-4150-a147-5f576f6004b5",
+            "id": "5cdfcff0-b4f2-486d-875a-0a64d64a5969",
             "baseId": "bark-shawl",
             "slot": "scarf",
             "rarity": "rare",
             "itemLevel": 12
           },
           {
-            "id": "0aa4a71d-afdb-4602-8da9-e30f836c3edd",
+            "id": "609e966b-a387-4ebd-842b-001fccebb5fd",
             "baseId": "crossroads-compass",
             "slot": "charm",
             "rarity": "rare",
@@ -979,7 +975,7 @@
         }
       },
       {
-        "id": "eb17882a-2601-4293-ac20-638b5645459c",
+        "id": "511935df-47e5-4791-b3d1-47f05259f00a",
         "species": "sproutle",
         "line": "sproutle",
         "level": 14,
@@ -1022,14 +1018,14 @@
         },
         "gear": [
           {
-            "id": "dbc2331d-a433-407b-8903-fd9943a95b43",
+            "id": "94cfe2f5-d1a0-4010-ac43-1a9cf7863cba",
             "baseId": "trail-cap",
             "slot": "hat",
             "rarity": "common",
             "itemLevel": 1
           },
           {
-            "id": "1f804d8e-ace9-4124-a6d4-2b8d6b8504b7",
+            "id": "e4f4677e-304e-4e03-807d-c32c247655a8",
             "baseId": "wardens-bell",
             "slot": "charm",
             "rarity": "rare",
@@ -1070,7 +1066,7 @@
         }
       },
       {
-        "id": "8b67f283-fdbc-4f81-985b-3673a45b070e",
+        "id": "ffe187a8-7dd7-4180-ac50-b290e8528405",
         "species": "zipmouse",
         "line": "zipmouse",
         "level": 9,
@@ -1125,7 +1121,7 @@
           "nextRankXp": 200,
           "trips": 0
         },
-        "exp": 40,
+        "exp": 26,
         "expNeeded": 387,
         "waiting": false,
         "ribbons": 1,
@@ -1163,7 +1159,7 @@
     },
     "supplies": {},
     "serverFirsts": [],
-    "loungerId": "ee2fba1c-126e-41fb-89a8-1391732baa7f",
+    "loungerId": "df73a9db-70ea-4afd-b654-868ba10a6ac4",
     "loungeSpot": null
   }
 }

@@ -1145,7 +1145,8 @@ describe('trip loot', () => {
     expect(loot.parts.glimmer).toBe(1);
     expect(loot.blueprint).not.toBeNull();
     expect(loot.supplies).toEqual(['map-scrap-basic']);
-    expect(rng.drawn()).toBe(6);
+    // Five chances, then the blueprint (a set piece or an ordinary base, then which one).
+    expect(rng.drawn()).toBe(7);
   });
 
   it('brings more for a Guard, a satchel, stars, milestones and a twist', () => {

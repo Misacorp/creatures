@@ -74,7 +74,7 @@ describe('the dungeon in the simulator', () => {
       expect(plain).not.toHaveProperty(key);
     expect(build(day('kind-rain', null)).rainHealBp).toBe(250);
     expect(build(day('market-day', 'morning-haze')).hazeLeft).toBe(true);
-    expect(build(day('market-day', 'bramble-season')).brambleBp).toBe(4_500);
+    expect(build(day('market-day', 'bramble-season')).brambleBp).toBe(1_800);
   });
 
   it('builds the run like the worker: a row of three, the rooms, the abilities and the gear folded in', () => {

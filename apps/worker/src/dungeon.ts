@@ -56,6 +56,7 @@ import {
   buildRoomInput,
   dungeonBossEnrage,
   liveFightRules,
+  placeSlots,
   simulateDungeon,
   skyRunFields,
   type AbilityChoice,
@@ -685,8 +686,13 @@ export class Dungeon {
     // The day's weather is fixed now and goes into the stored input: the sheet of every creature, the
     // luck and the foes' attacks. A replay never reads the weather.
     const wday = this.deps.weather?.at(now) ?? null;
-    const row: FightSlot[] = standing.map((c) => {
-      const slot = slotFor(c, PLAYER);
+    // One row, left to right: the position lines of the gear see the neighbours and the ends of that line.
+    const kits = new Map(standing.map((c) => [c.id, c.kit]));
+    const row: FightSlot[] = placeSlots(
+      standing.map((c) => slotFor(c, PLAYER)),
+      kits,
+      'line',
+    ).map((slot) => {
       const mods = mergeMods(slot.mods, weatherSheet(wday, slot));
       return mods === undefined ? slot : { ...slot, mods };
     });

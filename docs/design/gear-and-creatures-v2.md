@@ -349,6 +349,13 @@ Positions are fixed once a fight starts, so most of these can be folded when the
 
 _Promoted to the first gear release:_ **Guard's shadow** (5.8), the adjacency version of "Lane anchor" and "Beside the mark-maker". It reads the board in the engine (`besideRoleBp`), so it is not a fold.
 
+**Built 2026-10-18 (more gear and modifiers; `decisions.md`, same date).** Ten of these ship as lines: the nine fold lines (Shoulder to shoulder, Odd one out, Edge-walker, Heart of the row, Front-liner, Back-row patience, Lantern bearer, Four winds, Sheltered) and Beside the mark-maker, which uses `besideRoleBp: { setter }` like Guard's shadow (so it adds to every hit while a living Setter stands beside, not only to marked-foe hits). Warm burrow and Lane anchor wait for the engine work of the chance and trigger lines. Values at tier V are the table's; lower tiers scale like Guard's shadow.
+
+- **Where it is folded.** `placeRow` (`packages/game/src/rules/gear-position.ts`) folds a creature's gear again with a `Placement` (index and length of its row, its zone, the elements beside it and in its row, the HP its neighbours' Lantern bearers give it) when the fight input is built; the engine only sees `FightSlot.stats`, `crit` and `mods`. "Its row" is a **zone** in the raid (the neighbours stop at the zone's edge, as on the board), and the **whole line** in the dungeon and in the simulator's reference fights, where each of the three zones is one slot (so Front-liner is the left slot there, Back-row patience the right one, and Four winds never fires: it needs four elements in a row). A creature whose numbers cannot change is not touched, so a row without position gear is exactly what it was.
+- **Sheltered** adds to the cover a Guard gives the creature (`SlotMods.shelterBp`, read at the cover step; no Guard beside it, no cover to add to).
+- **At most one special line per item.** A line group is "special" when it is in `SPECIAL_GROUPS` (position now; chance and trigger lines join it): `rollLines` takes the other special lines out of the pool once one is drawn, and every way an item gets lines goes through it (a drop, a craft, a Reach, the conversion, the dev tools). Nothing rerolls, so there is no other path.
+- **Equip best** counts a position line at its content `worth`, which is the line's worth if it works times the share of places where it does (Equip best cannot see the row).
+
 ### 6.2 Set bonuses
 
 A set is three named pieces (Hat, Scarf, Charm) sharing a tag. Bonuses count pieces worn by one creature.
@@ -366,6 +373,8 @@ A set is three named pieces (Hat, Scarf, Charm) sharing a tag. Bonuses count pie
 | Crossroads Wanderer | Explorer | Trips −4% time                                                      | One extra catch roll on 24 hour trips                      |
 | Lantern Night       | Festival | Attack and HP +3%                                                   | Shield Walls on its row last 1 more round                  |
 | Maker's Mark        | Any      | Three pieces made by the same creature: every line +5% of its value | (one bonus only)                                           |
+
+**Built 2026-10-18** (all but Maker's Mark, which needs who made each piece in the fold; it stays a later idea). Each set is three **bases** in `gear.json` (`set` names the set, `gear-sets.json` has the bonuses). Set pieces have the base stats of the fine (item level 10) Hat or Scarf of their tag and the Charm line of the plain Charm of their tag: the bonus is the reward, there is no stat creep. They unlock at **item level 12** (the Lantern Night pieces are Festival pieces, there from item level 1), drop as ordinary bases of their slot and tag from item level 12 (a third of an element's drops then), roll lines like any base, and are crafted from blueprints (Crafting level 6). The role sets' Hats and Scarves are role-locked like the role Charms. Two pieces fold through the sheet and stat fold like any line (`wornEffects`); the three-piece effects are `SlotMods` fields (`unreflected`, `critWindowBp`, `healOnReactionBp`, `chainMark`, `coverReach`, `boostReach`, `sealMark`, `firstReactionCrit`), one trip rule (`dayTripRolls`) and a gift of the row (Lantern Night: the Guards in the wearer's row have Shield Walls that last one more round). Every effect that names a reaction works for a wearer of the element that sets it off (Steam is cashed by Tide wearers). `decisions.md`, 2026-10-18, has the reading of each.
 
 ### 6.3 Chance lines
 

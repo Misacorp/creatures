@@ -34,21 +34,21 @@
       ],
       "lines": [
         {
-          "id": "grove-attunement",
-          "name": "Grove Attunement",
-          "text": "Grove Attunement +5%",
-          "about": "Raises Attack, but only for a Grove creature.",
+          "id": "grove-hunter",
+          "name": "Grove Hunter",
+          "text": "Grove Hunter +7%",
+          "about": "More damage to bosses and foes that Grove is strong against.",
           "source": "rolled",
           "tier": 2,
           "bestTier": 1,
           "local": false,
-          "active": false
+          "active": true
         },
         {
-          "id": "ember-hunter",
-          "name": "Ember Hunter",
-          "text": "Ember Hunter +7%",
-          "about": "More damage to bosses and foes that Ember is strong against.",
+          "id": "odd-one-out",
+          "name": "Odd one out",
+          "text": "Odd one out +4%",
+          "about": "More Attack when no neighbour shares its element.",
           "source": "rolled",
           "tier": 2,
           "bestTier": 1,
@@ -60,7 +60,7 @@
         "level": 4,
         "role": null
       },
-      "equippedOn": "16fcc0b1-6695-443d-9086-4d62f8ee729c",
+      "equippedOn": "bf9b1c6c-7c5a-4fb9-b30e-c767e2357efe",
       "dismantle": {
         "scrap": {
           "min": 2,
@@ -104,17 +104,17 @@
         },
         {
           "stat": "atk",
-          "value": 5,
+          "value": 1,
           "base": 1,
-          "text": "Attack 5"
+          "text": "Attack 1"
         }
       ],
       "lines": [
         {
-          "id": "ember-ward",
-          "name": "Ember Ward",
-          "text": "Ember Ward −7%",
-          "about": "Less damage from the foes that beat Ember.",
+          "id": "heart-of-the-row",
+          "name": "Heart of the row",
+          "text": "Heart of the row +5%",
+          "about": "More HP in the middle of its row.",
           "source": "rolled",
           "tier": 2,
           "bestTier": 1,
@@ -133,14 +133,14 @@
           "active": true
         },
         {
-          "id": "attack-local-flat",
-          "name": "Attack",
-          "text": "+4 Attack (this item)",
-          "about": "Adds Attack to this item before its percentages (not the creature's).",
+          "id": "armor",
+          "name": "Armor",
+          "text": "Armor +3 pt",
+          "about": "A Guard's armor grows by these points. No effect on other roles.",
           "source": "rolled",
           "tier": 2,
           "bestTier": 1,
-          "local": true,
+          "local": false,
           "active": true
         }
       ],
@@ -148,7 +148,7 @@
         "level": 7,
         "role": null
       },
-      "equippedOn": "ca3dddad-d17f-4bca-ab91-b6cbecd85746",
+      "equippedOn": "0b7b66fc-fd1b-4a2a-b9a1-7c49b4195390",
       "dismantle": {
         "scrap": {
           "min": 2,
@@ -197,10 +197,10 @@
           "active": null
         },
         {
-          "id": "spark-attunement",
-          "name": "Spark Attunement",
-          "text": "Spark Attunement +5%",
-          "about": "Raises Attack, but only for a Spark creature.",
+          "id": "boost",
+          "name": "Boost",
+          "text": "Boost +3 pt",
+          "about": "A Support's boost to the creatures beside it grows by these points.",
           "source": "rolled",
           "tier": 2,
           "bestTier": 1,
@@ -274,19 +274,19 @@
   },
   "skills": [
     {
-      "creatureId": "16fcc0b1-6695-443d-9086-4d62f8ee729c",
+      "creatureId": "bf9b1c6c-7c5a-4fb9-b30e-c767e2357efe",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "ca3dddad-d17f-4bca-ab91-b6cbecd85746",
+      "creatureId": "0b7b66fc-fd1b-4a2a-b9a1-7c49b4195390",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100
     },
     {
-      "creatureId": "ad774dda-7eec-47f3-b34a-fde4ef8c111f",
+      "creatureId": "31673b47-3af9-48e9-a6b1-18690c8ae5c5",
       "xp": 0,
       "level": 1,
       "nextLevelXp": 100

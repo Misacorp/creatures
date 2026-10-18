@@ -14,19 +14,28 @@
  * reactions, wards, roles, utility).
  */
 import { content } from '../content';
-import { baseFor, eligibleBases, gearBase, gearContent, gearLine } from '../content/gear';
+import { eligibleBases, gearBase, gearContent, gearLine, gearSet } from '../content/gear';
 import {
   GEAR_SLOTS,
   tagElement,
   tagRole,
   type BaseStatKind,
+  type PositionRule,
   type GearBase,
   type GearLine,
   type GearRarity,
+  type GearSet,
   type GearSlot,
   type GearTag,
 } from '../content/gear-schema';
-import { ELEMENTS, type CritBonus, type Element, type Role, type Stats } from '../content/schema';
+import {
+  ELEMENTS,
+  type CritBonus,
+  type Element,
+  type Role,
+  type Stats,
+  type Zone,
+} from '../content/schema';
 import type { TalentEffect } from '../content/talent-schema';
 import { int, pickWeighted, type Rng } from '../rng';
 import { RULES } from './config';
@@ -53,10 +62,31 @@ export interface GearItem {
   lines: readonly ItemLine[];
 }
 
-/** How a creature looks to the gear rules. */
+/**
+ * Where a creature stands, for the position lines (`rules/gear-position.ts` builds it from the row a fight is
+ * built with). Everything is already counted: the fold only reads numbers and flags.
+ */
+export interface Placement {
+  /** 0-based place in its row, and how many creatures the row holds. */
+  index: number;
+  length: number;
+  /** Its zone in the raid (Front, Middle, Back); the dungeon's single row of three has one slot in each. */
+  zone: Zone;
+  /** The elements of the creatures directly left and right of it in its row (guests count). */
+  beside: readonly Element[];
+  /** The elements of every creature in its row, itself included. */
+  rowElements: readonly Element[];
+  /** HP the Lantern bearers beside it give it, added up (basis points). */
+  lanternHpBp: number;
+  /** Rounds more that a Guard's Shield Wall lasts in this row (Lantern Night; 0 or 1). */
+  rowShieldWall: number;
+}
+
+/** How a creature looks to the gear rules. `placement` is absent where nobody knows the row (a card, "Equip best"). */
 export interface Wearer {
   role: Role;
   element: Element;
+  placement?: Placement | undefined;
 }
 
 export function clampItemLevel(level: number): number {
@@ -191,7 +221,10 @@ export function linePool(
 
 /**
  * Rolls an item's lines: as many as the rarity has, drawn by weight from the pool without taking
- * the same line twice, each with its own tier. Draws in a fixed order (the line, then its tier).
+ * the same line twice, each with its own tier. Draws in a fixed order (the line, then its tier). An item
+ * holds at most one special line (position now; chance and trigger lines join later, `SPECIAL_GROUPS`):
+ * once one is drawn, the others leave the pool, so the next draw is among the ordinary lines. Every way
+ * an item gets lines (a drop, a craft, a Reach, the conversion) rolls through here.
  */
 export function rollLines(
   rng: Rng,
@@ -206,12 +239,22 @@ export function rollLines(
     if (pool.length === 0) break;
     const picked = pickWeighted(rng, pool);
     pool.splice(pool.indexOf(picked), 1);
+    if (picked.line.special) {
+      for (let j = pool.length - 1; j >= 0; j--) {
+        if ((pool[j] as PoolLine).line.special) pool.splice(j, 1);
+      }
+    }
     out.push({
       id: picked.line.id,
       tier: picked.line.single ? 0 : rollTier(rng, itemLevel, minTier),
     });
   }
   return out;
+}
+
+/** The special lines among an item's rolled lines (an item holds at most one; see `rollLines`). */
+export function specialLinesOf(lines: readonly ItemLine[]): ItemLine[] {
+  return lines.filter((l) => gearLine(l.id)?.special === true);
 }
 
 /** Rolls a whole item of a base. Throws RangeError for an unknown base. Any base can be of any rarity. */
@@ -464,6 +507,17 @@ export interface GearMods {
   mendBp?: number;
   lingerRounds?: number;
   ignoreSilence?: 0 | 1;
+  /** Cover a Guard's cover on it gains (the position line Sheltered). */
+  shelterBp?: number;
+  /** Gear sets, three pieces: see `SET_EFFECTS` in the content schema and `SlotMods` in the engine. */
+  unreflected?: 0 | 1;
+  critWindowBp?: number;
+  healOnReactionBp?: number;
+  chainMark?: 0 | 1;
+  coverReach?: 0 | 1;
+  boostReach?: 0 | 1;
+  sealMark?: 0 | 1;
+  firstReactionCrit?: 0 | 1;
 }
 
 /** What gear does outside the fight, for the wearer (basis points; a time reduction is a positive number). */
@@ -486,6 +540,8 @@ export interface GearRules {
   restBp: number;
   /** The chance of a glimmer on its trips, more (a share of the chance; a talent, not a gear line). */
   glimmerFindBp: number;
+  /** Extra catch rolls on its 24 hour trips (the Crossroads Wanderer set). */
+  dayTripRolls: number;
 }
 
 export const NO_GEAR_RULES: GearRules = Object.freeze({
@@ -498,6 +554,7 @@ export const NO_GEAR_RULES: GearRules = Object.freeze({
   apprenticeBp: 0,
   restBp: 0,
   glimmerFindBp: 0,
+  dayTripRolls: 0,
 });
 
 const RULE_FIELD = {
@@ -602,6 +659,84 @@ function lineApplies(line: GearLine, wearer: Wearer): boolean {
   return true;
 }
 
+// --- Gear sets ---
+
+/** The pieces of each set among these items, one per slot at most: set id to count (2 and 3 are the bonuses). */
+export function setCounts(
+  items: readonly Pick<GearItem, 'baseId' | 'slot'>[],
+): Map<string, number> {
+  const slots = new Map<string, Set<GearSlot>>();
+  for (const item of items) {
+    const id = gearBase(item.baseId)?.set;
+    if (id === undefined) continue;
+    const held = slots.get(id) ?? new Set<GearSlot>();
+    held.add(item.slot);
+    slots.set(id, held);
+  }
+  return new Map([...slots].map(([id, held]) => [id, held.size]));
+}
+
+/**
+ * The bonuses of the sets a creature wears: two pieces give the set's plain lines (folded like the same line
+ * on an item, but never reported as idle), three also its one named effect. Conditions (the wearer's
+ * element) are resolved here, so the engine sees numbers and flags only.
+ */
+function foldSets(
+  items: readonly GearItem[],
+  wearer: Wearer,
+  out: WornEffects,
+  apply: (line: GearLine, value: number, talentId: string | null, record: boolean) => void,
+): void {
+  for (const [id, count] of setCounts(items)) {
+    const set = gearSet(id);
+    if (set === undefined || count < 2) continue;
+    for (const entry of set.two.lines) {
+      const line = gearLine(entry.line);
+      if (line !== undefined) apply(line, entry.value, null, false);
+    }
+    if (count >= 3) setEffect(set.three, wearer, out);
+  }
+}
+
+/** One three-piece effect into the sheet (or the trip rules), for a wearer it works for. */
+function setEffect(three: GearSet['three'], wearer: Wearer, out: WornEffects): void {
+  if (three.wearerElement !== undefined && three.wearerElement !== wearer.element) return;
+  const sheet = out.mods;
+  const value = three.value ?? 0;
+  switch (three.effect) {
+    case 'unreflected':
+      sheet.unreflected = 1;
+      break;
+    case 'critWindow':
+      sheet.critWindowBp = (sheet.critWindowBp ?? 0) + value;
+      break;
+    case 'healOnReaction':
+      sheet.healOnReactionBp = (sheet.healOnReactionBp ?? 0) + value;
+      break;
+    case 'chainMark':
+      sheet.chainMark = 1;
+      break;
+    case 'coverReach':
+      if (wearer.role === 'guard') sheet.coverReach = 1;
+      break;
+    case 'boostReach':
+      if (wearer.role === 'support') sheet.boostReach = 1;
+      break;
+    case 'sealMark':
+      sheet.sealMark = 1;
+      break;
+    case 'firstReactionCrit':
+      sheet.firstReactionCrit = 1;
+      break;
+    case 'longTripCatch':
+      out.rules.dayTripRolls += value;
+      break;
+    case 'rowShieldWall':
+      // A gift to the row: the row's builder counts the wearers (`Placement.rowShieldWall`).
+      break;
+  }
+}
+
 /**
  * Everything a creature's worn items give, summed. Lines that do nothing for the wearer (a Guard's
  * armor on a Support, an Attunement of another element) are listed in `idle` and add nothing. The
@@ -638,8 +773,16 @@ export function wornEffects(
   const addSheet = (field: SheetNumeric, value: number): void => {
     sheet[field] = (sheet[field] ?? 0) + value;
   };
-  const apply = (line: GearLine, value: number, talentId: string | null = null): void => {
+  const place = wearer.placement;
+  const apply = (
+    line: GearLine,
+    value: number,
+    talentId: string | null = null,
+    /** A line a set gives is not an item's line: when it does nothing for the wearer, nothing is recorded as idle. */
+    record = true,
+  ): void => {
     if (!lineApplies(line, wearer)) {
+      if (!record) return;
       if (talentId === null) out.idle.push(line.id);
       else out.idleTalents.push(talentId);
       return;
@@ -678,6 +821,10 @@ export function wornEffects(
       case 'besideRole':
         sheet.besideRoleBp = addTo(sheet.besideRoleBp, effect.role, value);
         break;
+      case 'position':
+        // Where it stands decides: without a placement (a card, "Equip best") the line adds nothing.
+        if (place !== undefined) positionLine(effect.rule, value, place);
+        break;
       case 'sheet':
         if (effect.field === 'lingerRounds') {
           sheet.lingerRounds = Math.min(3, (sheet.lingerRounds ?? 0) + value);
@@ -695,6 +842,40 @@ export function wornEffects(
         break;
     }
   };
+  /** One position line's effect for a creature standing at `at`. All of these are folded here: the engine sees numbers. */
+  const positionLine = (rule: PositionRule, value: number, at: Placement): void => {
+    switch (rule) {
+      case 'sameElementBeside':
+        out.atkBp += value * Math.min(2, at.beside.filter((e) => e === wearer.element).length);
+        break;
+      case 'oddOneOut':
+        if (!at.beside.includes(wearer.element)) out.atkBp += value;
+        break;
+      case 'edge':
+        if (at.index === 0 || at.index === at.length - 1) out.atkBp += value;
+        break;
+      case 'heart':
+        if (at.index > 0 && at.index < at.length - 1) out.hpBp += value;
+        break;
+      case 'front':
+        if (at.zone === 'front') addSheet('takenBp', value);
+        break;
+      case 'back':
+        if (at.zone === 'back') out.critChanceBp += value;
+        break;
+      case 'lantern':
+        // Its gift goes to the creatures beside it (`Placement.lanternHpBp` of theirs), not to the bearer.
+        break;
+      case 'fourElements':
+        if (new Set(at.rowElements).size >= 4) {
+          sheet.reactionBp = addTo(sheet.reactionBp, reactionOf(wearer.element), value);
+        }
+        break;
+      case 'sheltered':
+        sheet.shelterBp = (sheet.shelterBp ?? 0) + value;
+        break;
+    }
+  };
   for (const item of items) {
     for (const own of itemStats(item)) {
       if (own.stat === 'atk') out.atkItem += own.value;
@@ -705,6 +886,14 @@ export function wornEffects(
     for (const resolved of itemLines(item)) {
       const line = gearLine(resolved.id);
       if (line !== undefined) apply(line, resolved.value);
+    }
+  }
+  foldSets(items, wearer, out, apply);
+  if (place !== undefined) {
+    // What the creatures beside it give it (Lantern bearer) and what its row gives (Lantern Night).
+    out.hpBp += place.lanternHpBp;
+    if (wearer.role === 'guard' && place.rowShieldWall > 0) {
+      sheet.lingerRounds = Math.min(3, (sheet.lingerRounds ?? 0) + place.rowShieldWall);
     }
   }
   for (const talent of talents) {
@@ -755,7 +944,10 @@ export function applyGear(
   items: readonly GearItem[],
   talents: readonly FoldTalent[] = [],
 ): { stats: Stats; crit: CritBonus | undefined; mods: GearMods | undefined; rules: GearRules } {
-  if (items.length === 0 && talents.length === 0) {
+  // A creature that wears nothing can still gain from the row (Lantern bearer, Lantern Night).
+  const gifts = wearer.placement;
+  const given = gifts !== undefined && (gifts.lanternHpBp > 0 || gifts.rowShieldWall > 0);
+  if (items.length === 0 && talents.length === 0 && !given) {
     return { stats, crit, mods: undefined, rules: NO_GEAR_RULES };
   }
   const fx = wornEffects(wearer, items, talents);
@@ -1003,7 +1195,11 @@ export function convertedItemLevel(rank: number, bestDepth: number): number {
  * A drop's base: the slot by `dropSlotWeights`, then the base of that slot and tag (`element`; null
  * is neutral). A Charm is role-locked with `roleCharmBp` when `roleCharm` is on, for a role drawn
  * evenly. Then the base among those of that slot and tag the item level unlocks (`minItemLevel`), evenly.
- * Draws the slot, then (for a Charm, when allowed) the role chance, then the base.
+ * A gear set's piece of that slot and tag is one of them once its level (12) is reached. The role lock
+ * (finale only, `roleCharm`) also covers the Hats and Scarves of the role sets from that level: a role's
+ * Charm, Hat or Scarf is drawn evenly among those of that role the level unlocks.
+ * Draws the slot, then (for a Charm, or a Hat or Scarf that a role set unlocks, when allowed) the role
+ * chance, then the base (a draw only when there is a choice).
  */
 export function dropBase(
   rng: Rng,
@@ -1016,18 +1212,23 @@ export function dropBase(
     rng,
     GEAR_SLOTS.map((s) => ({ slot: s, weight: weights[s] })),
   ).slot;
-  if (slot === 'charm' && options.roleCharm === true) {
+  const level = clampItemLevel(itemLevel);
+  const roles: Role[] = ['setter', 'payoff', 'support', 'guard'];
+  if (
+    options.roleCharm === true &&
+    (slot === 'charm' || roles.some((r) => eligibleBases(slot, r, level, false, true).length > 0))
+  ) {
     const lock = int(rng, 10_000) < RULES.gear.roleCharmBp;
     if (lock) {
-      const roles: Role[] = ['setter', 'payoff', 'support', 'guard'];
       const role = roles[int(rng, roles.length)] as Role;
-      const base = baseFor('charm', role);
+      const ofRole = eligibleBases(slot, role, level, false, true);
+      const base = ofRole[ofRole.length > 1 ? int(rng, ofRole.length) : 0];
       if (base !== undefined) return base;
     }
   }
   // Any base of the slot and tag that the item level unlocks, evenly (Path of Exile style: a high
   // level drop can still be a plain base, and the plain base's lines can still be great).
-  const eligible = eligibleBases(slot, element ?? 'neutral', clampItemLevel(itemLevel));
+  const eligible = eligibleBases(slot, element ?? 'neutral', level, false, true);
   const base = eligible[int(rng, Math.max(1, eligible.length))];
   if (base === undefined) throw new Error(`no ${slot} for ${element ?? 'neutral'}`);
   return base;

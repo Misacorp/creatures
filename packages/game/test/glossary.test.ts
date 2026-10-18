@@ -583,9 +583,12 @@ describe('the glossary covers gear and crafting', () => {
       `II from ${String(tiers[1])}, III from ${String(tiers[2])}, IV from ${String(tiers[3])}, V at ${String(tiers[4])}`,
     );
     // The levels the better bases unlock at are the content's own.
-    const unlocks = [...new Set(gearContent.bases.map((b) => b.minItemLevel ?? 1))].filter(
-      (n) => n > 1,
-    );
+    // (Gear set pieces unlock higher, at 12; the entry names the better makes of the plain bases.)
+    const unlocks = [
+      ...new Set(
+        gearContent.bases.filter((b) => b.set === undefined).map((b) => b.minItemLevel ?? 1),
+      ),
+    ].filter((n) => n > 1);
     expect(unlocks).toEqual([5, 10]);
     expect(text('gear-item-level')).toContain(
       `item level ${String(unlocks[0])} and ${String(unlocks[1])}`,

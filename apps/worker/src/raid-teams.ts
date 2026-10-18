@@ -6,14 +6,16 @@ import {
   RULES,
   creaturePower,
   strongest,
+  effectiveStats,
   type CreatureSpecies,
   type CritBonus,
+  type FoldKit,
   type GearMods,
   type GearRules,
   type Stats,
 } from '@creatures/game';
 import { speciesOf } from './collection';
-import { equippedByCreature, type WornBySlot } from './gear-store';
+import { equippedByCreature, wearerOf, type WornBySlot } from './gear-store';
 import { foldCreature } from './gear-worn';
 import { booksByCreature, foldTalentsOf } from './talent-store';
 import type { HeldTalent } from '@creatures/game';
@@ -44,6 +46,11 @@ export interface TeamCreature {
   gearRules: GearRules;
   /** `creaturePower` of `stats` (fusion and gear included). */
   power: number;
+  /**
+   * What its gear fold needs, to run it again once its place in the row is known (the position lines and
+   * gear sets of the row, `placeSlots`): the stats before gear, its crit bonus, who it is, what it wears.
+   */
+  kit: FoldKit;
 }
 
 type CreatureDbRow = {
@@ -62,7 +69,8 @@ function toTeamCreature(
   book: readonly HeldTalent[] | undefined,
 ): TeamCreature {
   const species = speciesOf(row.species);
-  const folded = foldCreature(row, worn, foldTalentsOf(row, book));
+  const talents = foldTalentsOf(row, book);
+  const folded = foldCreature(row, worn, talents);
   return {
     id: row.id,
     userId: row.user_id,
@@ -76,6 +84,13 @@ function toTeamCreature(
     ...(folded.mods === undefined ? {} : { mods: folded.mods }),
     gearRules: folded.rules,
     power: creaturePower(folded.stats),
+    kit: {
+      stats: effectiveStats(species, row.level, row.fusion_count),
+      crit: species.crit,
+      wearer: wearerOf(species),
+      items: folded.items,
+      talents,
+    },
   };
 }
 

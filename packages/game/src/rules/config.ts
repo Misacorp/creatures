@@ -552,6 +552,12 @@ export const RULES = {
     dropSlotWeights: { hat: 1, scarf: 1, charm: 1 },
     /** A dropped Charm of the finale is role-locked with this chance (1 in 20). */
     roleCharmBp: 500,
+    /**
+     * A blueprint roll (a finale's reward slot, a trip's find) picks a gear set piece with this chance (20%)
+     * and an ordinary base otherwise, so the 27 set pieces (item level 12 and up) do not crowd out the
+     * bases a new player needs. Set pieces drop as ordinary bases of their slot and tag from item level 12.
+     */
+    setBlueprintBp: 2_000,
     /** Item level of each source (the table of spec 2.4). `rank` is the Boss Rank, 0 above is the base. */
     itemLevel: {
       welcome: 1,

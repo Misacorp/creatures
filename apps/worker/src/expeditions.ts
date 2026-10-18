@@ -843,10 +843,15 @@ export class Expeditions {
     }
 
     const special = week.destination === dest.id ? week.twistId : null;
-    const rolls = tripRolls(input.duration, kit, twistOf(special)) + fx.extraRolls;
-    // Quick feet lines on the explorer's gear and the day's weather change the time (fixed when it is sent).
+    // What the explorer's gear does on a trip is fixed now: Quick feet changes the time (with the day's
+    // weather), and the Crossroads Wanderer set adds a catch roll to a 24 hour trip.
+    const gear = gearRulesOf(this.sql, creature);
+    const rolls =
+      tripRolls(input.duration, kit, twistOf(special)) +
+      fx.extraRolls +
+      (input.duration === 'day' ? gear.dayTripRolls : 0);
     const ms = weatherTimeMs(
-      minusBp(tripMs(input.duration, explorer.rank), gearRulesOf(this.sql, creature).quickFeetBp),
+      minusBp(tripMs(input.duration, explorer.rank), gear.quickFeetBp),
       fx.timeBp,
     );
     const weatherJson =

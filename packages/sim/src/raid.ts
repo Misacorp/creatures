@@ -27,6 +27,7 @@ import {
   fillWithGuests,
   makeSlot,
   phaseFloorHp,
+  placeSlots,
   raidEnrage,
   resolveGuests,
   scaleBoss,
@@ -47,6 +48,7 @@ import { neutralSupport, studyRules, type RoleStudy } from './role-study';
 import {
   activeTalentsOf,
   byPowerDesc,
+  foldKitsOf,
   foldedCreature,
   pickTeam,
   speciesOf,
@@ -462,15 +464,25 @@ export function fightFor(
   const byId = new Map(week.players.map((p) => [p.id, p]));
   // The day's weather goes on every creature's sheet (guests too), as the worker's `buildPhaseInput` puts it.
   const day = week.weather[stage] ?? null;
-  const row = week.row.map((s) => {
+  const slots = week.row.map((s) => {
     const owner = s.ownerId === null ? undefined : byId.get(s.ownerId);
     const slot = owner === undefined ? s : slotFor(owner, s.id);
-    const played =
-      week.neutralGuards && slot.role === 'guard'
-        ? neutralGuard(slot)
-        : week.neutralSupports && slot.role === 'support'
-          ? neutralSupport(slot)
-          : slot;
+    return week.neutralGuards && slot.role === 'guard'
+      ? neutralGuard(slot)
+      : week.neutralSupports && slot.role === 'support'
+        ? neutralSupport(slot)
+        : slot;
+  });
+  // The position lines and gear sets of the row: each creature's gear is folded again with where it stands
+  // (its zone is its row), as the worker's `buildPhaseInput` does, before the weather.
+  const kits = foldKitsOf(
+    week.row.flatMap((s) => {
+      const owner = s.ownerId === null ? undefined : byId.get(s.ownerId);
+      const creature = owner?.creatures.find((c) => c.id === s.id);
+      return creature === undefined ? [] : [creature];
+    }),
+  );
+  const row = placeSlots(slots, kits, 'zones').map((played) => {
     const mods = mergeMods(played.mods, weatherSheet(day, played));
     return mods === undefined ? played : { ...played, mods };
   });

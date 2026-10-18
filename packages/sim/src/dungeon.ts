@@ -24,6 +24,7 @@ import {
 } from '@creatures/game';
 import {
   dungeonBossEnrage,
+  placeSlots,
   simulateDungeon,
   skyRunFields,
   type AbilityChoice,
@@ -34,6 +35,7 @@ import {
 import {
   byPowerDesc,
   creaturePower,
+  foldKitsOf,
   foldedCreature,
   pickTeam,
   TEAM_SIZE,
@@ -140,13 +142,15 @@ export function buildRun(
   // One row, left to right: the game's rule for a good order (`dungeonRowOrder`: the most reactions, then roles), strongest first.
   const slots = team.map((c): FightSlot => {
     const slot = { ...slotFor(player, c.id), ownerId: DUNGEON_PLAYER };
-    const played =
-      study.neutralSupports === true && slot.role === 'support' ? neutralSupport(slot) : slot;
-    // The day's weather goes on every creature's sheet, as the worker's run builder puts it.
-    const mods = mergeMods(played.mods, weatherSheet(weather, played));
-    return mods === undefined ? played : { ...played, mods };
+    return study.neutralSupports === true && slot.role === 'support' ? neutralSupport(slot) : slot;
   });
-  const row = chosen?.ordered === false ? slots : dungeonRowOrder(slots);
+  const ordered = chosen?.ordered === false ? slots : dungeonRowOrder(slots);
+  // One row, left to right: the position lines of the gear see the neighbours and the ends of that line.
+  const row = placeSlots(ordered, foldKitsOf(team), 'line').map((slot): FightSlot => {
+    // The day's weather goes on every creature's sheet, as the worker's run builder puts it.
+    const mods = mergeMods(slot.mods, weatherSheet(weather, slot));
+    return mods === undefined ? slot : { ...slot, mods };
+  });
   const plans = rollRooms(createSeededRng(`${seed}:rooms`), modifiers, depth);
   const rooms: DungeonRoomSpec[] = plans.map((plan) => {
     const foe = dungeonFoe(plan.foeId);

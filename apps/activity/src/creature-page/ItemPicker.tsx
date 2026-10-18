@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import type { Creature } from '../api';
 import { ItemCorners, ItemSprite } from '../GearArt';
 import type { GearItem, GearSlot } from '../gear-types';
-import { itemLabel, rarityName, slotName } from '../gear-view';
+import { itemLabel, rarityName, setPiecesWith, slotName } from '../gear-view';
 import { ItemCard } from '../ItemCard';
 import { Drawer } from '../ui/Drawer';
 import { compactReason, firstPick, pickerChoices } from './picker-view';
@@ -71,11 +71,13 @@ function ItemCell({
  */
 function DetailPanel({
   cell,
+  creature,
   busy,
   onEquip,
   onTakeOff,
 }: {
   cell: Cell;
+  creature: Creature;
   busy: boolean;
   onEquip: (item: GearItem) => void;
   onTakeOff: (item: GearItem) => void;
@@ -87,6 +89,7 @@ function DetailPanel({
         item={item}
         plainRarity
         spriteScale={4}
+        wornInSet={setPiecesWith(item, creature.gear)}
         {...(wornBy === null ? {} : { note: <p class="ip-on">On {wornBy}</p> })}
         aside={
           worn ? (
@@ -168,7 +171,13 @@ export function ItemPickerDrawer({
       class="picker-drawer"
       footer={
         selected === undefined ? undefined : (
-          <DetailPanel cell={selected} busy={busy} onEquip={onEquip} onTakeOff={onTakeOff} />
+          <DetailPanel
+            cell={selected}
+            creature={creature}
+            busy={busy}
+            onEquip={onEquip}
+            onTakeOff={onTakeOff}
+          />
         )
       }
     >

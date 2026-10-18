@@ -1,9 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { RULES, content, createSeededRng, jackpotEssenceFor, type BossDef } from '@creatures/game';
+import {
+  RULES,
+  content,
+  createSeededRng,
+  itemOf,
+  jackpotEssenceFor,
+  type BossDef,
+} from '@creatures/game';
 import { phaseFloorHp, raidEnrage } from '@creatures/engine';
 import { DEFAULT_MIX } from '../src/archetypes';
 import { runEconomy } from '../src/economy';
-import { fightFor, openRaidWeek, playStage, playWholeWeek, summarizeRaid } from '../src/raid';
+import {
+  fightFor,
+  openRaidWeek,
+  playStage,
+  playWholeWeek,
+  slotFor,
+  summarizeRaid,
+} from '../src/raid';
 import { runSweep } from '../src/sweep';
 import { clonePlayer, type SimPlayer } from '../src/state';
 
@@ -55,7 +69,7 @@ describe('raid week', () => {
       w.row.map((s) => s.id).filter((_, i) => [0, 5, 10].includes(i)),
     );
     const two = fightFor(w, 'phase2').fight;
-    expect(two.brambleBp).toBe(3_000);
+    expect(two.brambleBp).toBe(1_200);
     expect(two.rainHealBp).toBeUndefined();
     expect(two.skipFirstTurn).toBeUndefined();
     const plain = fightFor(w, 'finale').fight;
@@ -89,6 +103,36 @@ describe('raid week', () => {
       expect(paid).toBeGreaterThanOrEqual(flat);
     }
     for (const p of players) expect(p.raids).toBe((raidsBefore.get(p.id) ?? 0) + 1);
+  });
+
+  it('folds position lines by the zone each creature stands in (a row of 15 is three rows of five)', () => {
+    const players = roster.slice(0, 5).map(clonePlayer);
+    const w = openRaidWeek(boss, players);
+    const owned = (index: number) => {
+      const slot = w.row[index];
+      const owner = players.find((p) => p.id === slot?.ownerId);
+      const creature = owner?.creatures.find((c) => c.id === slot?.id);
+      if (owner === undefined || creature === undefined || slot === undefined) {
+        throw new Error('no such creature');
+      }
+      return { owner, creature, slot };
+    };
+    // Slot 0 is the end of the Front row, slot 7 is inside the Middle row.
+    const edge = owned(0);
+    const inside = owned(7);
+    for (const c of [edge.creature, inside.creature]) {
+      c.items = {
+        hat: { uid: 9_001, ...itemOf('trail-cap', 'epic', 20, [{ id: 'edge-walker', tier: 4 }]) },
+      };
+    }
+    const row = fightFor(w, 'finale').fight.row;
+    const own = (c: typeof edge) => slotFor(c.owner, c.slot.id).stats?.atk ?? 0;
+    // Edge-walker adds a tenth of the creature's Attack at the end of a row, and nothing inside it.
+    expect(row[0]?.stats?.atk).toBeGreaterThan(own(edge));
+    expect(row[7]?.stats?.atk).toBe(own(inside));
+    // A creature with no position gear is exactly what `slotFor` gives.
+    const other = owned(3);
+    expect(row[3]?.stats).toEqual(slotFor(other.owner, other.slot.id).stats);
   });
 
   it('is deterministic for the same seeds', () => {

@@ -2,7 +2,7 @@ import { GEAR_SLOTS, RULES } from '@creatures/game';
 import type { Creature } from '../api';
 import { ItemCorners, ItemSprite } from '../GearArt';
 import type { GearSlot, GearState } from '../gear-types';
-import { itemLabel, rarityName, slotName } from '../gear-view';
+import { activeSetLine, itemLabel, rarityName, slotName } from '../gear-view';
 import type { TalentView } from '../talent-types';
 import { talentTextParts } from '../talent-view';
 import { Slot, SlotRow } from '../ui/Slot';
@@ -11,7 +11,8 @@ import { Slot, SlotRow } from '../ui/Slot';
  * A creature's three gear slots, side by side across the full width. Filled: the item's sprite, large and
  * on its own, inside the slot's one border in the rarity colour, with its corners (`ItemCorners`: the slot icon, and the item level "Lv 2", the same
  * label as on every item image) in the corner (the words are in the spoken label). Open and empty: the slot's name. Not open yet: muted, a
- * padlock over the slot's name and the level it opens at. Tapping an open one asks for its picker.
+ * padlock over the slot's name and the level it opens at. Tapping an open one asks for its picker. Under the
+ * slots, one compact line says which gear set bonuses the worn pieces give (nothing when there are none).
  */
 export function GearSlots({
   creature,
@@ -27,53 +28,61 @@ export function GearSlots({
   onOpen: (slot: GearSlot, button: HTMLButtonElement) => void;
 }) {
   const opens = gear?.slotOpens ?? RULES.gear.slotUnlockLevel;
+  const setLine = activeSetLine(creature.gear);
   return (
-    <SlotRow
-      label="Gear"
-      slots={GEAR_SLOTS.map((slot) => {
-        const worn = creature.gear.find((g) => g.slot === slot);
-        const name = slotName(slot);
-        if (creature.level < opens[slot]) {
-          return (
+    <>
+      <SlotRow
+        label="Gear"
+        slots={GEAR_SLOTS.map((slot) => {
+          const worn = creature.gear.find((g) => g.slot === slot);
+          const name = slotName(slot);
+          if (creature.level < opens[slot]) {
+            return (
+              <Slot
+                key={slot}
+                kind="gear"
+                state="locked"
+                name={name}
+                opensAt={opens[slot]}
+                label={`${name}: opens at level ${String(opens[slot])}`}
+              />
+            );
+          }
+          const open = (event: MouseEvent): void => {
+            onOpen(slot, event.currentTarget as HTMLButtonElement);
+          };
+          return worn === undefined ? (
             <Slot
               key={slot}
               kind="gear"
-              state="locked"
+              state="empty"
               name={name}
-              opensAt={opens[slot]}
-              label={`${name}: opens at level ${String(opens[slot])}`}
+              label={`${name}: empty. Choose one`}
+              expanded={openSlot === slot}
+              onClick={open}
             />
+          ) : (
+            <Slot
+              key={slot}
+              kind="gear"
+              state="filled"
+              rarity={worn.rarity}
+              label={`${name}: ${itemLabel(worn.baseId, worn.itemLevel)}, ${rarityName(worn.rarity)}. Change`}
+              expanded={openSlot === slot}
+              onClick={open}
+            >
+              <ItemSprite baseId={worn.baseId} scale={6} />
+              <ItemCorners level={worn.itemLevel} baseId={worn.baseId} />
+            </Slot>
           );
-        }
-        const open = (event: MouseEvent): void => {
-          onOpen(slot, event.currentTarget as HTMLButtonElement);
-        };
-        return worn === undefined ? (
-          <Slot
-            key={slot}
-            kind="gear"
-            state="empty"
-            name={name}
-            label={`${name}: empty. Choose one`}
-            expanded={openSlot === slot}
-            onClick={open}
-          />
-        ) : (
-          <Slot
-            key={slot}
-            kind="gear"
-            state="filled"
-            rarity={worn.rarity}
-            label={`${name}: ${itemLabel(worn.baseId, worn.itemLevel)}, ${rarityName(worn.rarity)}. Change`}
-            expanded={openSlot === slot}
-            onClick={open}
-          >
-            <ItemSprite baseId={worn.baseId} scale={6} />
-            <ItemCorners level={worn.itemLevel} baseId={worn.baseId} />
-          </Slot>
-        );
-      })}
-    />
+        })}
+      />
+      {setLine !== '' && (
+        <p class="cp-sets pix" aria-label="Set bonuses">
+          {setLine}
+        </p>
+      )}
+    </>
   );
 }
 

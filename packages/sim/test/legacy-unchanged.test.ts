@@ -73,6 +73,15 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * moved: the same players check in, the same dice are thrown, and Bait earned is the same in every run. The
  * first player's top-3 power is now 312, 314, 198 and 232, and raids won 7, 4, 4 and 5. Bramble Season's
  * share was then cut from 30% to 12% (decisions.md): only run-tiny's hash moved.
+ *
+ * Re-pinned again on 2026-10-18 (more gear and modifiers), on purpose: ten position lines and 28 gear set
+ * pieces joined the pool of lines and bases, so every seeded drop and craft is a different item, and a
+ * creature's gear is folded again with its place in the row (`placeSlots`). Bait earned and the runs
+ * without gear are the same; the first player's top-3 power moved (333, 261, 203 to 390, 243, 196) and
+ * raids won in two runs (7 and 5 to 6 and 4). The gear share study (20 servers) moved within about 2.5 points.
+ *
+ * With the new weathers and the new gear together (the branch merge, 2026-10-18) the first player's top-3
+ * power is 375, 314, 248 and 209, and raids won 7, 4, 5 and 5; Bait earned is the same as before.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

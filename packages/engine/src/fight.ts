@@ -86,12 +86,20 @@ interface Creature {
   mods: ResolvedMods;
   /** Turn hits made so far (an ability's strike is not one), for the first hit's bonus. */
   turnHits: number;
+  /** Reactions this creature has set off, for the gear sets that act on the first one. */
+  cashes: number;
+  /** Its crits get `mods.critWindowBp` more crit damage through this round (0: no window). */
+  critWindowUntil: number;
+  /** The first mark it leaves has been sealed already (`mods.sealMark`). */
+  sealed: boolean;
 }
 
 interface Mark {
   element: Element;
   creature: Creature | null;
   player: string | null;
+  /** Another creature's hit cannot replace it (`SlotMods.sealMark`). */
+  sealed?: boolean;
 }
 
 type CreditKind = 'damage' | 'setupCredit' | 'supportCredit' | 'guardCredit';
@@ -345,6 +353,9 @@ export function simulateFight(
       critBp: crit.damageBp,
       mods: resolveMods(s.id, s.mods, reactionIds),
       turnHits: 0,
+      cashes: 0,
+      critWindowUntil: 0,
+      sealed: false,
     };
   });
 
@@ -494,6 +505,15 @@ export function simulateFight(
    */
   const besides = (idx: number): number[] =>
     guardReach === 'adjacent' ? neighbours(idx, n) : zoneNeighbours(idx, n);
+  /**
+   * The slots two places away from `idx` in its row (a gear set's longer reach: a Guard's cover, a Support's
+   * boost): the raid's row is a zone, so the slot must be in the same zone; the dungeon's line has no zones.
+   */
+  const further = (idx: number): number[] =>
+    [idx - 2, idx + 2].filter(
+      (i) =>
+        i >= 0 && i < n && (guardReach === 'adjacent' || zoneOfIndex(i, n) === zoneOfIndex(idx, n)),
+    );
   function guardFor(target: Creature): Creature | undefined {
     const candidates =
       guardReach === 'adjacent'
@@ -529,6 +549,11 @@ export function simulateFight(
     for (const i of besides(victim.idx)) {
       const c = creatures[i] as Creature;
       if (c.alive && c.role === 'guard') return c;
+    }
+    // A Guard with a longer reach (`coverReach`) also covers the creature one slot further out.
+    for (const i of further(victim.idx)) {
+      const c = creatures[i] as Creature;
+      if (c.alive && c.role === 'guard' && c.mods.coverReach) return c;
     }
     return undefined;
   }
@@ -647,7 +672,10 @@ export function simulateFight(
           ? coverGuardFor(victim)
           : undefined;
       if (guard !== undefined) {
-        const coverBp = Math.max(0, Math.min(10_000, rules.coverBp + guard.mods.coverBp));
+        const coverBp = Math.max(
+          0,
+          Math.min(10_000, rules.coverBp + guard.mods.coverBp + victim.mods.shelterBp),
+        );
         after = amount - Math.floor((amount * coverBp) / 10_000);
       }
       // 5. The taker's sheet, on what armor or cover left.
@@ -737,8 +765,11 @@ export function simulateFight(
       const candidate = reactionByMark.get(markBefore.element);
       if (candidate !== undefined && candidate.triggerElement === c.element) reaction = candidate;
     }
-    const reflected = reaction !== undefined && c.alive && reflectArmed && !reflectUsed;
-    if (reflected) reflectUsed = true;
+    const trapped = reaction !== undefined && c.alive && reflectArmed && !reflectUsed;
+    if (trapped) reflectUsed = true;
+    // A gear set turns the trap aside for the creature's first reaction of the fight (`unreflected`).
+    const proof = trapped && m.unreflected && c.cashes === 0;
+    const reflected = trapped && !proof;
     // Bramble Season: the first reaction each round (by a creature still standing) sends a share of
     // its bonus back. A reaction Backdraft already reflected in full uses the round's first up.
     const brambling = reaction !== undefined && c.alive && brambleBp > 0 && !brambleUsed;
@@ -748,15 +779,24 @@ export function simulateFight(
     const dice = (strike === undefined ? turnDice : strikeDice)[c.idx];
     let luckBp = swingNow;
     let crit = false;
+    let setCrit = false;
+    let warm = false;
     if (dice !== undefined) {
       // A hit that sets off a reaction crits more often with keen reactions (under the crit cap).
       const critChanceBp =
         reaction !== undefined && m.keenReactionBp !== 0
           ? Math.max(0, Math.min(luck.critMaxChanceBp ?? 10_000, c.critChanceBp + m.keenReactionBp))
           : c.critChanceBp;
-      if (critOn && dice.crit < critChanceBp) {
+      // A gear set makes the first reaction a crit (`firstReactionCrit`); crits must be on.
+      setCrit = critOn && reaction !== undefined && m.firstReactionCrit && c.cashes === 0;
+      if (critOn && (dice.crit < critChanceBp || setCrit)) {
         crit = true;
         luckBp += c.critBp;
+        // After a reaction, a gear set's crit window adds crit damage until the end of the next round.
+        if (m.critWindowBp !== 0 && c.critWindowUntil >= currentRound) {
+          warm = true;
+          luckBp += m.critWindowBp;
+        }
       }
       luckBp += dice.spread;
     }
@@ -764,10 +804,13 @@ export function simulateFight(
     // The creature's sheet on its hit (`SlotMods`), added to the one combined bonus.
     let sheetBp = m.vsElementBp[boss.element] ?? 0;
     if (markBefore !== null && reaction === undefined) sheetBp += m.markedFoeBp;
-    if (
-      reaction === undefined &&
-      (markBefore === null || (c.role === 'setter' && markBefore.element !== c.element))
-    ) {
+    // A setter's hit of another element replaces the mark, unless it is sealed (`sealMark`).
+    const replaces =
+      c.role === 'setter' &&
+      markBefore !== null &&
+      markBefore.element !== c.element &&
+      markBefore.sealed !== true;
+    if (reaction === undefined && (markBefore === null || replaces)) {
       sheetBp += m.markingHitBp;
     }
     if (strike !== undefined) {
@@ -945,8 +988,10 @@ export function simulateFight(
       bossHp,
       ...(strike === undefined ? {} : { ability: strike.ability, key: strike.key }),
       ...(luckBp === 0 ? {} : { luckBp }),
-      ...(crit ? { crit: true as const, critBp: c.critBp } : {}),
+      ...(crit ? { crit: true as const, critBp: c.critBp + (warm ? m.critWindowBp : 0) } : {}),
       ...(sheetBp === 0 ? {} : { sheetBp }),
+      ...(setCrit && crit ? { setCrit: true as const } : {}),
+      ...(warm ? { warm: true as const } : {}),
     });
 
     if (reaction !== undefined && markBefore !== null) {
@@ -963,12 +1008,53 @@ export function simulateFight(
         reflected,
         ...(brambled ? { bramble: { bp: brambleBp, amount: hit.reflect } } : {}),
         ...(reactionSheetBp + m.pounceBp === 0 ? {} : { sheetBp: reactionSheetBp + m.pounceBp }),
+        ...(proof ? { proof: true as const } : {}),
+        ...(m.chainMark && !reflected ? { chain: true as const } : {}),
       });
       mark = null;
       if (reflected) hurt(c, hit.reflect, 'reflect', 'reflect');
       else if (brambled && hit.reflect > 0) hurt(c, hit.reflect, 'reflect', 'reflect');
+      if (!reflected) {
+        // The gear sets that act on a reaction that was really cashed.
+        if (m.critWindowBp !== 0) c.critWindowUntil = currentRound + 1;
+        if (m.healOnReactionBp > 0 && c.alive) {
+          const amount = Math.min(
+            Math.floor((c.maxHp * m.healOnReactionBp) / 10_000),
+            Math.max(0, c.maxHp - c.hp),
+          );
+          if (amount > 0) {
+            c.hp += amount;
+            events.push({
+              t: 'heal',
+              round: currentRound,
+              supporter: c.id,
+              target: c.id,
+              amount,
+            });
+          }
+        }
+        if (m.chainMark) {
+          mark = { element: c.element, creature: c, player: c.ownerId };
+          events.push({
+            t: 'mark',
+            round: currentRound,
+            creature: c.id,
+            player: c.ownerId,
+            element: c.element,
+            replaced: null,
+          });
+        }
+      }
+      c.cashes += 1;
     } else if (markBefore === null) {
-      mark = { element: c.element, creature: c, player: c.ownerId };
+      const seal = m.sealMark && !c.sealed;
+      if (seal) c.sealed = true;
+      mark = {
+        element: c.element,
+        creature: c,
+        player: c.ownerId,
+        ...(seal ? { sealed: true } : {}),
+      };
       events.push({
         t: 'mark',
         round: currentRound,
@@ -976,9 +1062,17 @@ export function simulateFight(
         player: c.ownerId,
         element: c.element,
         replaced: null,
+        ...(seal ? { sealed: true as const } : {}),
       });
-    } else if (c.role === 'setter' && markBefore.element !== c.element) {
-      mark = { element: c.element, creature: c, player: c.ownerId };
+    } else if (replaces) {
+      const seal = m.sealMark && !c.sealed;
+      if (seal) c.sealed = true;
+      mark = {
+        element: c.element,
+        creature: c,
+        player: c.ownerId,
+        ...(seal ? { sealed: true } : {}),
+      };
       events.push({
         t: 'mark',
         round: currentRound,
@@ -986,6 +1080,7 @@ export function simulateFight(
         player: c.ownerId,
         element: c.element,
         replaced: markBefore.element,
+        ...(seal ? { sealed: true as const } : {}),
       });
     }
 
@@ -1483,7 +1578,10 @@ export function simulateFight(
       // The Support's own sheet adds to the boost and the mend (`boostBp`, `mendBp`).
       const buffBp = (fx?.buffBp ?? RULES.combat.supportBuffBp) + s.mods.boostBp;
       const mendBp = (fx?.healBp ?? 0) + s.mods.mendBp;
-      for (const i of besides(s.idx)) {
+      // A Support with a longer reach (`boostReach`) also boosts the creature two slots away: the boost only.
+      const near = besides(s.idx);
+      const far = s.mods.boostReach ? further(s.idx) : [];
+      for (const i of [...near, ...far]) {
         const t = creatures[i] as Creature;
         if (!t.alive) continue;
         t.buffs = t.buffs.filter((b) => b.from !== s.idx);
@@ -1495,6 +1593,7 @@ export function simulateFight(
           target: t.id,
           bp: Math.max(-10_000, buffBp),
         });
+        if (far.includes(i)) continue;
         if (mendBp > 0) {
           // What the neighbour receives: its own sheet can make a heal bigger or smaller.
           const healed = Math.floor((t.maxHp * mendBp) / 10_000);

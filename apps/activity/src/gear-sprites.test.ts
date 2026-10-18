@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest';
 import {
   BUNDLED_ITEM_SPRITES,
   BUNDLED_PART_ICONS,
+  BUNDLED_SET_SPRITES,
   GEAR_SLOT_IDS,
   ITEM_SIZE,
   PART_SIZE,
   itemArt,
   partIcon,
+  setTintPalette,
   tintPalette,
 } from './gear-sprites';
 import { glyph } from './glyphs';
@@ -34,8 +36,8 @@ describe('item sprites', () => {
     expect(new Set(shapes).size).toBe(GEAR_SLOT_IDS.length);
   });
 
-  it('draws every base of the content, tinted by its element and grey when it has none', () => {
-    for (const base of gearContent.bases) {
+  it('draws every plain base of the content, tinted by its element and grey when it has none', () => {
+    for (const base of gearContent.bases.filter((b) => b.set === undefined)) {
       const art = itemArt(base.id);
       expect(art.sprite, base.id).toBe(BUNDLED_ITEM_SPRITES[base.slot]);
       const element = baseElement(base);
@@ -46,6 +48,42 @@ describe('item sprites', () => {
         expect(art.palette, base.id).toBeDefined();
       }
     }
+  });
+
+  it('draws a gear set piece with its own trimmed sprite, tinted by its set tag', () => {
+    for (const slot of GEAR_SLOT_IDS) {
+      const def = BUNDLED_SET_SPRITES[slot];
+      expect(() => {
+        validateSprite(def, ITEM_SIZE);
+      }, slot).not.toThrow();
+      // A set piece is never the plain sprite of its slot, so a set is known at a glance.
+      expect(shape(expandRows(def)), slot).not.toBe(shape(expandRows(BUNDLED_ITEM_SPRITES[slot])));
+      // It has gold trim that no tint changes.
+      expect(def.palette['g'], slot).toBeDefined();
+    }
+    const shapes = GEAR_SLOT_IDS.map((slot) => shape(expandRows(BUNDLED_SET_SPRITES[slot])));
+    expect(new Set(shapes).size).toBe(GEAR_SLOT_IDS.length);
+    for (const set of gearContent.sets) {
+      for (const base of gearContent.bases.filter((b) => b.set === set.id)) {
+        const art = itemArt(base.id);
+        expect(art.sprite, base.id).toBe(BUNDLED_SET_SPRITES[base.slot]);
+        expect(art.palette, base.id).toBe(setTintPalette(set.tag));
+        expect(art.palette, base.id).toBeDefined();
+      }
+    }
+  });
+
+  it('gives every gear set its own colour: no two sets share one, and none is plain grey', () => {
+    const colours = gearContent.sets.map((set) => setTintPalette(set.tag)?.['t']);
+    expect(colours.every((c) => c !== undefined)).toBe(true);
+    expect(new Set(colours).size).toBe(gearContent.sets.length);
+    for (const set of gearContent.sets) {
+      const swapped = swapPalette(BUNDLED_SET_SPRITES.hat, setTintPalette(set.tag) ?? {});
+      expect(() => {
+        validateSprite(swapped, ITEM_SIZE);
+      }, set.id).not.toThrow();
+    }
+    expect(setTintPalette('neutral')).toBeUndefined();
   });
 
   it('tints produce valid sprites that differ from each other and from neutral', () => {

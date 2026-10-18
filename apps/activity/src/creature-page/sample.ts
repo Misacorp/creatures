@@ -34,7 +34,9 @@ export type SceneKind =
   | 'ribbon ready'
   | 'ribbon waiting'
   | 'nickname'
-  | 'evolve ready';
+  | 'evolve ready'
+  | 'set: two pieces'
+  | 'set: three pieces';
 
 export const SCENE_KINDS: readonly SceneKind[] = [
   'level 2',
@@ -50,6 +52,8 @@ export const SCENE_KINDS: readonly SceneKind[] = [
   'ribbon waiting',
   'nickname',
   'evolve ready',
+  'set: two pieces',
+  'set: three pieces',
 ];
 
 export function sceneKindOf(value: string): SceneKind {
@@ -177,6 +181,23 @@ function shapeOf(kind: SceneKind): Shape {
         talents: talentsOf(twoSlots(PLAIN, false)),
         exp: 825,
         expNeeded: 825,
+      };
+    case 'set: two pieces':
+      // The Forge-Warm Bonnet and Sash (the last row of the Hat and Scarf tables): two of the Kit's three.
+      return {
+        level: 20,
+        worn: { hat: 19, scarf: 16 },
+        talents: talentsOf(twoSlots(GOLDEN, true)),
+        exp: 100,
+        expNeeded: 1000,
+      };
+    case 'set: three pieces':
+      return {
+        level: 20,
+        worn: { hat: 19, scarf: 16, charm: 13 },
+        talents: talentsOf(twoSlots(GOLDEN, true)),
+        exp: 100,
+        expNeeded: 1000,
       };
     case 'rarities':
       // A common Hat, a rare Scarf and an epic Charm: one of each, side by side.

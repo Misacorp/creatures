@@ -7,6 +7,7 @@ import {
   effectiveStats,
   type CreatureSpecies,
   type CritBonus,
+  type FoldKit,
   type FoldTalent,
   type GearItem,
   type GearMods,
@@ -140,6 +141,33 @@ export function foldedCreature(c: OwnedCreature): {
     wornOf(c),
     activeTalentsOf(c),
   );
+}
+
+/**
+ * What a creature's gear fold needs to run again once its place in a row is known (the position lines and gear
+ * sets of the row, `placeSlots` of the engine), as the worker's `TeamCreature.kit`. A creature with a modifier
+ * sheet given to it (`mods`: a study or test override) has none, so that sheet stays what the fight uses.
+ */
+export function foldKitOf(c: OwnedCreature): FoldKit | undefined {
+  if (c.mods !== undefined) return undefined;
+  const species = speciesOf(c.speciesId);
+  return {
+    stats: creatureStats(c),
+    crit: species.crit,
+    wearer: wearerOfCreature(c),
+    items: wornOf(c),
+    talents: activeTalentsOf(c),
+  };
+}
+
+/** The kits of creatures by fight slot id (`OwnedCreature.id`), without the ones that have none. */
+export function foldKitsOf(creatures: readonly OwnedCreature[]): Map<string, FoldKit> {
+  const out = new Map<string, FoldKit>();
+  for (const c of creatures) {
+    const kit = foldKitOf(c);
+    if (kit !== undefined) out.set(c.id, kit);
+  }
+  return out;
 }
 
 /** True when something is folded into the creature's numbers: worn items or active talents. */

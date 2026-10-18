@@ -34,6 +34,8 @@ const HATS: readonly Spec[] = [
   ['tidecallers-crown', 'epic', 17],
   ['greenwardens-crown', 'epic', 18],
   ['storm-cowl', 'epic', 20],
+  // A piece of the Forge-Warm Kit (a gear set), for the set scenes.
+  ['forge-warm-bonnet', 'rare', 12],
 ];
 
 const SCARVES: readonly Spec[] = [
@@ -53,6 +55,7 @@ const SCARVES: readonly Spec[] = [
   ['emberkeepers-mantle', 'epic', 18],
   ['tidewardens-mantle', 'epic', 19],
   ['stormcallers-mantle', 'epic', 22],
+  ['forge-warm-sash', 'rare', 12],
 ];
 
 const CHARMS: readonly Spec[] = [
@@ -69,6 +72,7 @@ const CHARMS: readonly Spec[] = [
   ['festival-lantern-charm', 'rare', 15],
   ['cinder-charm', 'epic', 18],
   ['pounce-charm', 'epic', 20],
+  ['forge-warm-token', 'rare', 12],
 ];
 
 const TABLES: Readonly<Record<GearSlot, readonly Spec[]>> = {

@@ -122,6 +122,7 @@ export function idSections(): IdSection[] {
     { title: 'Room modifiers', items: dungeonContent.modifiers },
     { title: 'Gear bases', items: gearContent.bases },
     { title: 'Gear lines', items: gearContent.lines },
+    { title: 'Gear sets', items: gearContent.sets },
     { title: 'Talents', items: [...talentContent.byId.values()] },
     { title: 'Supplies', items: expeditionContent.supplies },
     { title: 'Destinations', items: expeditionContent.destinations },
