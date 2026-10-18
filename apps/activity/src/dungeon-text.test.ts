@@ -10,7 +10,7 @@ import { ApiError } from './api';
 import { EMPTY_PACK, omitKey, sampleState, sampleSummary } from './dungeon-path-samples';
 import {
   CAMP_HOME_BUTTON,
-  CAMP_HOME_LINE,
+  CAMP_ARRANGE_LINE,
   CAMP_INTRO,
   CAMP_TITLE,
   DUNGEON_ERROR_TEXT,
@@ -329,14 +329,15 @@ describe('the camp words', () => {
 
   it('says each choice with its exact effect', () => {
     const lines = campChoiceLines(4000);
-    expect(lines.rest.line).toBe('Standing creatures recover 40% HP.');
+    expect(lines.rest.line).toBe('Standing creatures heal 40% HP.');
     expect(lines.keepsake.label).toBe('Take a keepsake');
     expect(lines.swap.line).toContain('full HP');
   });
 
-  it('names the way home and what it risks, plainly', () => {
+  it('names the way home, and says in one line that the row can be reordered', () => {
     expect(CAMP_HOME_BUTTON).toBe('Head home with your pack');
-    expect(CAMP_HOME_LINE).toBe('Push on and a defeat keeps only half your pack.');
+    expect(CAMP_INTRO).toContain('swap places');
+    expect(CAMP_ARRANGE_LINE).toContain('swap places');
   });
 
   it('keeps every line short and free of markup', () => {
@@ -344,7 +345,7 @@ describe('the camp words', () => {
       CAMP_TITLE,
       CAMP_INTRO,
       CAMP_HOME_BUTTON,
-      CAMP_HOME_LINE,
+      CAMP_ARRANGE_LINE,
       NO_SWAP_LINE,
       ...Object.values(campChoiceLines(4000)).flatMap((c) => [c.label, c.line]),
     ];

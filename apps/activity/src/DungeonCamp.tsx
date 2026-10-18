@@ -14,7 +14,7 @@ import {
 } from './dungeon-run';
 import {
   CAMP_HOME_BUTTON,
-  CAMP_HOME_LINE,
+  CAMP_ARRANGE_LINE,
   CAMP_INTRO,
   CAMP_TITLE,
   NO_SWAP_LINE,
@@ -222,7 +222,6 @@ export function DungeonCamp({
                 >
                   {CAMP_HOME_BUTTON}
                 </button>
-                <p class="muted">{CAMP_HOME_LINE}</p>
               </>
             )}
           </div>
@@ -232,7 +231,6 @@ export function DungeonCamp({
       {step === 'keepsake' && (
         <>
           <h4>Take a keepsake</h4>
-          <p class="muted">Choose one of two. It lasts until the run ends.</p>
           <ul class="camp-choices" aria-label="Keepsakes on offer">
             {camp.offers.map((offer) => (
               <li key={offer.id}>
@@ -268,7 +266,7 @@ export function DungeonCamp({
           <h4>Who goes home?</h4>
           <p class="muted">
             {comesIn === undefined ? 'A fresh creature' : creatureName(comesIn)} comes in at full
-            HP. Pick the creature that leaves the row. You can arrange the new row next.
+            HP.
           </p>
           <ul class="camp-choices" aria-label="Pick who goes home">
             {ordered.map((creature) => (
@@ -308,11 +306,7 @@ export function DungeonCamp({
       {step === 'arrange' && (
         <>
           <h4>Arrange your row</h4>
-          <p class="muted">
-            {comesIn === undefined ? 'The new creature' : creatureName(comesIn)} takes the place of{' '}
-            {team.find((c) => c.id === outId)?.name ?? 'the creature that leaves'} and starts at
-            full HP. Stand everyone where you want them, then confirm.
-          </p>
+          <p class="muted">{CAMP_ARRANGE_LINE}</p>
           {row(arranged, setArranged)}
           <p class="button-row camp-arrange-actions">
             <button

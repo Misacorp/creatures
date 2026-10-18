@@ -220,11 +220,11 @@ describe('the camp', () => {
     const root = drawCamp(noop);
     const text = visibleText(root);
     expect(text).toContain('The camp');
-    expect(text).toContain('Standing creatures recover 40% HP.');
+    expect(text).toContain('Standing creatures heal 40% HP.');
     expect(text).toContain('Take a keepsake');
     expect(text).toContain('Swap a creature');
     expect(visibleText(button(root, 'Head home with your pack'))).toBe('Head home with your pack');
-    expect(text).toContain('Push on and a defeat keeps only half your pack.');
+    expect(text).toContain('Drag or tap two creatures to swap places.');
     // Three choices in the list; the home button is outside it.
     expect(byClass(root, 'camp-choice')).toHaveLength(3);
     expect(byClass(root, 'camp-home')[0]?.textContent).toContain('Head home with your pack');
@@ -297,7 +297,7 @@ describe('the camp', () => {
     expect(visibleText(root)).toContain('Every creature gets 12% more Attack and 12% more HP.');
     expect(visibleText(root)).toContain('Foes have 10% less HP.');
     page?.click(button(root, 'Back'));
-    expect(visibleText(root)).toContain('Standing creatures recover');
+    expect(visibleText(root)).toContain('Standing creatures heal');
     page?.click(button(root, /^Take a keepsake/));
     page?.click(button(root, /Chalk Mark/));
     expect(acts).toEqual([
@@ -407,7 +407,7 @@ describe('the camp', () => {
     expect(acts).toEqual([]);
     expect(visibleText(root)).toContain('You keep your whole pack: 2 Bait · 1 Scrap.');
     page?.click(button(root, 'Not yet'));
-    expect(visibleText(root)).toContain('Push on and a defeat keeps only half your pack.');
+    expect(visibleText(button(root, 'Head home with your pack'))).toBe('Head home with your pack');
     page?.click(button(root, 'Head home with your pack'));
     page?.click(button(root, 'Yes, head home'));
     expect(acts).toEqual([{ type: 'home' }]);

@@ -355,7 +355,7 @@ describe('the camp, with the real answers', () => {
     expect(byClass(root, 'dungeon-camp')).toHaveLength(1);
     expect(byClass(root, 'dungeon-run-map')).toHaveLength(0);
     const text = visibleText(root);
-    expect(text).toContain('Standing creatures recover 40% HP.');
+    expect(text).toContain('Standing creatures heal 40% HP.');
     expect(text).toContain('Head home with your pack');
     expect(byName(root, 'span', 'Bait: 2')).toHaveLength(1);
     expect(byName(root, 'span', 'Scrap: 1')).toHaveLength(1);

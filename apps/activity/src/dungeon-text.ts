@@ -322,9 +322,11 @@ export function percentText(bp: number): string {
 }
 
 export const CAMP_TITLE = 'The camp';
-export const CAMP_INTRO = 'Pick one. You can also change the order for free.';
+/** The camp's one line of help: pick a choice, and the row can be reordered. */
+export const CAMP_INTRO = 'Pick one. Drag or tap two creatures to swap places.';
+/** The arrange step's one line, after a swap. */
+export const CAMP_ARRANGE_LINE = 'Drag or tap two creatures to swap places, then confirm.';
 export const CAMP_HOME_BUTTON = 'Head home with your pack';
-export const CAMP_HOME_LINE = 'Push on and a defeat keeps only half your pack.';
 
 /** The three choices of the camp, each with its exact effect (the rest's number is the server's). */
 export function campChoiceLines(restBp: number): {
@@ -333,11 +335,11 @@ export function campChoiceLines(restBp: number): {
   swap: { label: string; line: string };
 } {
   return {
-    rest: { label: 'Rest', line: `Standing creatures recover ${percentText(restBp)} HP.` },
-    keepsake: { label: 'Take a keepsake', line: 'Choose one of two. It lasts the whole run.' },
+    rest: { label: 'Rest', line: `Standing creatures heal ${percentText(restBp)} HP.` },
+    keepsake: { label: 'Take a keepsake', line: 'One of two, for this run.' },
     swap: {
       label: 'Swap a creature',
-      line: 'Bring in a fresh creature at full HP. One goes home.',
+      line: 'A fresh creature comes in at full HP.',
     },
   };
 }

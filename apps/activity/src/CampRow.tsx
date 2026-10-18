@@ -15,10 +15,6 @@ import { useDragDrop } from './use-drag-drop';
 /** The one row of the board: the row's three places, left to right. */
 const ROW: BoardRow = { zone: 'front', slots: ROW_PLACES.map((_, index) => index) };
 
-/** What the line under the row says: how the order is changed. */
-export const CAMP_ROW_HINT =
-  'Drag a creature onto another to swap places, or tap one and then another. Downed creatures can stand anywhere.';
-
 interface Props {
   /** The row now, left to right, each with its HP (null HP: a creature that has just come in, at full HP). */
   creatures: readonly CampRowCreature[];
@@ -160,7 +156,6 @@ export function CampRow({ creatures, disabled, onChange }: Props) {
           {hint}
         </p>
       )}
-      <p class="muted camp-row-hint">{CAMP_ROW_HINT}</p>
       <LiveRegion>{announcement}</LiveRegion>
       <DragGhost
         ghostRef={dragDrop.ghostRef}

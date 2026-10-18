@@ -160,15 +160,9 @@ button.run-keepsake {
   color: var(--bad);
 }
 
-/* The camp's row (the entry's board, with an HP line in each tile) and the line about changing its order. */
+/* The camp's row (the entry's board, with an HP line in each tile). */
 .camp-row {
   margin: 0.25rem 0 0.5rem;
-}
-
-.camp-row-hint {
-  margin: 0;
-  font-size: 0.875rem;
-  text-align: center;
 }
 
 /* The swap's last step: confirm beside Back. */
