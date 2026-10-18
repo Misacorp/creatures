@@ -24,6 +24,12 @@ function compareText(id: string): string {
 }
 
 /** What the picker has selected after drawing a preset on top of whatever the page showed before. */
+function first(list: FakeElement[]): FakeElement {
+  const [el] = list;
+  if (el === undefined) throw new Error('not found');
+  return el;
+}
+
 function selected(id: string): { name: string; worn: boolean; equip: boolean } {
   const entry = creaturePageEntries[0];
   if (entry === undefined) throw new Error('no entry');
@@ -40,7 +46,7 @@ function selected(id: string): { name: string; worn: boolean; equip: boolean } {
 
 describe('the compare presets', () => {
   it('select the item they name, which is never the worn one, also when drawn one after another', () => {
-    const names = ['K1', 'K2', 'K3', 'K4', 'K5'].map((id) => {
+    const names = ['K1', 'K2', 'K3', 'K4', 'K5', 'K6'].map((id) => {
       const picked = selected(id);
       expect(picked.worn, id).toBe(false);
       expect(picked.equip, id).toBe(true);
@@ -52,6 +58,7 @@ describe('the compare presets', () => {
       'Forge-Warm Token, item level 12',
       'Felt Hat, item level 6',
       'Cinder Charm, item level 14',
+      'Kelp Cap, item level 2',
     ]);
   });
 
@@ -82,5 +89,52 @@ describe('the compare presets', () => {
 
   it('K5 gains a Charm into an empty slot', () => {
     expect(compareText('K5')).toMatch(/\+\d+/);
+  });
+});
+
+/** The picker drawn for a preset, fresh. */
+function drawn(id: string): Page {
+  const entry = creaturePageEntries[0];
+  if (entry === undefined) throw new Error('no entry');
+  page?.unmount();
+  page = createPage();
+  page.draw(entry.render({ ...entry.defaults, scene: id }));
+  return page;
+}
+
+describe('the compare presets: inline', () => {
+  const marks = (id: string): number =>
+    byClass(drawn(id).root, 'cmp-delta').length +
+    byClass(page?.root as FakeElement, 'cmp-new').length +
+    byClass(page?.root as FakeElement, 'cmp-gone').length;
+  const switchOf = (p: Page): FakeElement | undefined => byClass(p.root, 'ip-switch')[0];
+
+  it('K1 to K4 show the inline changes with the switch on', () => {
+    for (const id of ['K1', 'K2', 'K3', 'K4']) {
+      expect(marks(id), id).toBeGreaterThan(0);
+      expect(switchOf(page as Page)?.getAttribute('aria-checked'), id).toBe('true');
+    }
+  });
+
+  it('K3 shows the Charm lines against the worn Charm and the set line beside Equip', () => {
+    const p = drawn('K3');
+    expect(byClass(p.root, 'cmp-new').length).toBeGreaterThan(0);
+    expect(visibleText(first(byClass(p.root, 'ip-equip')))).toContain(
+      'Forge-Warm Kit 3 / 3: both bonuses',
+    );
+  });
+
+  it('K5, an empty slot, has no switch and no inline changes', () => {
+    const p = drawn('K5');
+    expect(switchOf(p)).toBeUndefined();
+    expect(byClass(p.root, 'cmp-delta')).toHaveLength(0);
+    expect(byClass(p.root, 'ip-compare')).toHaveLength(1);
+  });
+
+  it('K6 has the switch off and the plain card', () => {
+    const p = drawn('K6');
+    expect(switchOf(p)?.getAttribute('aria-checked')).toBe('false');
+    expect(marks('K6')).toBe(0);
+    expect(byClass(page?.root as FakeElement, 'ip-compare')).toHaveLength(0);
   });
 });

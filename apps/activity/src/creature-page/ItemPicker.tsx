@@ -8,6 +8,9 @@ import { Drawer } from '../ui/Drawer';
 import { flipOver } from '../ui/flip-logic';
 import { FlipArea } from '../ui/Flipper';
 import { CompareBlock } from './CompareBlock';
+import { diffItems } from './compare-diff';
+import { loadCompareOn, saveCompareOn } from './compare-pref';
+import { CompareSwitch } from './CompareSwitch';
 import { compareItem } from './compare-view';
 import { compactReason, firstPick, pickerChoices } from './picker-view';
 
@@ -28,6 +31,8 @@ export interface ItemPickerProps {
   returnFocusTo?: HTMLElement | null;
   /** The item the picker starts on (the workbench shows a swap); the worn item, else the best pick, when absent. */
   initialPicked?: string;
+  /** The compare switch's starting state (the workbench shows it off); the viewer's stored setting, else on, when absent. */
+  initialCompare?: boolean;
 }
 
 /** One entry of the grid: an item, whether the creature wears it, who else does and why it cannot be worn. */
@@ -87,6 +92,9 @@ function DetailPanel({
   cell,
   creature,
   bag,
+  wornItem,
+  compareOn,
+  onCompareChange,
   busy,
   onEquip,
   onTakeOff,
@@ -95,20 +103,35 @@ function DetailPanel({
   creature: Creature;
   /** The gear view's items (the worn ones are looked up in it for the compare block). */
   bag: readonly GearItem[];
+  /** The item worn in this slot, to compare with; undefined when the slot is empty. */
+  wornItem: GearItem | undefined;
+  compareOn: boolean;
+  onCompareChange: (on: boolean) => void;
   busy: boolean;
   onEquip: (item: GearItem) => void;
   onTakeOff: (item: GearItem) => void;
 }) {
   const { item, worn, wornBy, blocked } = cell;
   const wearable = !worn && blocked === null;
-  const compare = wearable ? compareItem(creature, item, bag) : null;
+  // Nothing to compare when the slot is empty or the item is the worn one: no switch then.
+  const comparable = !worn && wornItem !== undefined;
+  const comparing = comparable && compareOn;
+  // What Equip changes for the creature follows the switch; with an empty slot there is no switch and it shows.
+  const compare =
+    wearable && (comparing || wornItem === undefined) ? compareItem(creature, item, bag) : null;
   return (
     <section class="ip-detail" aria-label="Selected item">
+      {comparable && (
+        <div class="ip-compare-switch">
+          <CompareSwitch on={compareOn} onChange={onCompareChange} />
+        </div>
+      )}
       <ItemCard
         item={item}
         plainRarity
         spriteScale={4}
         wornInSet={setPiecesWith(item, creature.gear)}
+        {...(comparing ? { diff: diffItems(item, wornItem) } : {})}
         {...(wornBy === null ? {} : { note: <p class="ip-on">On {wornBy}</p> })}
         aside={
           worn ? (
@@ -166,7 +189,10 @@ export function ItemPickerDrawer({
   onTakeOff,
   returnFocusTo,
   initialPicked,
+  initialCompare,
 }: ItemPickerProps) {
+  // The switch is remembered per viewer; it is read when the picker opens and written when it is flipped.
+  const [compareOn, setCompareOn] = useState<boolean>(() => initialCompare ?? loadCompareOn());
   const choices = items === null ? [] : pickerChoices(items, creature, creatures, slot);
   const wornId = creature.gear.find((g) => g.slot === slot)?.id;
   const worn = items?.find((i) => i.id === wornId);
@@ -216,6 +242,12 @@ export function ItemPickerDrawer({
               cell={selected}
               creature={creature}
               bag={items ?? []}
+              wornItem={worn}
+              compareOn={compareOn}
+              onCompareChange={(on) => {
+                setCompareOn(on);
+                saveCompareOn(on);
+              }}
               busy={busy}
               onEquip={onEquip}
               onTakeOff={onTakeOff}

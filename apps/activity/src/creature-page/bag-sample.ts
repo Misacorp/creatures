@@ -7,11 +7,12 @@
 import {
   gearBase,
   gearLine,
+  itemLines,
   itemOf,
   itemStats,
-  lineText,
-  lineValue,
   statText,
+  tierCap,
+  type ItemLine,
 } from '@creatures/game';
 import type { WornGear } from '../gear-types';
 import type { GearItem, GearLine, GearRarity, GearSlot, GearStat, GearTag } from '../gear-types';
@@ -89,82 +90,61 @@ const TABLES: Readonly<Record<GearSlot, readonly Spec[]>> = {
   charm: CHARMS,
 };
 
-const RARITY_FACTOR: Readonly<Record<GearRarity, number>> = { common: 1, rare: 1.5, epic: 2.2 };
-
-/** The words of each line, by the base's tag; `{n}` is a number worked out from the item level. */
+/** The lines each tag's items roll in the sample (real line ids, so the card, the compare and the server agree). */
 const LINE_POOL: Readonly<Record<string, readonly string[]>> = {
-  ember: ['Wildfire bonus +{n}%', 'First pounce +{n}%'],
-  tide: ['Tide Attunement +{n}%', 'Aimed ward −{n}%'],
-  grove: ['Aimed ward −{n}%', 'Thorn guard +{n}%'],
-  spark: ['Overload bonus +{n}%', 'Crit chance +{n} pt'],
-  neutral: ['Crit damage +{n} pt', 'Trail XP +{n}%'],
-  explorer: ['Trail XP +{n}%', 'Quick feet −{n}%', 'Lucky find +{n} pt'],
-  guard: ['Armor +{n} pt', 'Cover +{n} pt'],
-  support: ['Heal +{n}%', 'Cover +{n} pt'],
-  setter: ['Mark +{n}%', 'Armor +{n} pt'],
-  payoff: ['Pounce +{n}%', 'Crit damage +{n} pt'],
+  ember: ['ember-reaction', 'first-pounce', 'ember-hunter'],
+  tide: ['tide-attunement', 'aimed-ward', 'tide-hunter'],
+  grove: ['aimed-ward', 'hp', 'grove-reaction'],
+  spark: ['spark-reaction', 'crit-chance', 'spark-attunement'],
+  neutral: ['crit-damage', 'trail-xp', 'attack'],
+  explorer: ['trail-xp', 'quick-feet', 'lucky-find'],
+  guard: ['armor', 'cover', 'all-damage-taken'],
+  support: ['mend', 'cover', 'boost'],
+  setter: ['marking-hit', 'armor', 'owners-mark'],
+  payoff: ['payoffs-pounce', 'crit-damage', 'first-pounce'],
 };
-
-function lineOf(baseId: string, index: number, text: string, local: boolean): GearLine {
-  return {
-    id: `${baseId}-line-${String(index)}`,
-    name: text,
-    text,
-    about: 'What this line does, in one sentence.',
-    source: index === 0 ? 'base' : 'rolled',
-    tier: local ? null : 2,
-    bestTier: local ? null : 4,
-    local,
-    active: true,
-  };
-}
 
 /** The item's local Attack line (real content: "+60% Attack (this item)" at tier III), on an epic Hat or Scarf. */
 const LOCAL_LINE = { id: 'attack-local-pct', tier: 2 } as const;
 
-/** One bag item from a table row: stats by slot and rarity, lines by tag and rarity. */
-function build(
-  slot: GearSlot,
-  index: number,
-  spec: Spec,
-  creatureId: string,
-  worn: boolean,
+/** The tier (0 to 4) of a rolled line by rarity; the first line is the better one. */
+const RARITY_TIER: Readonly<Record<GearRarity, number>> = { common: 1, rare: 2, epic: 3 };
+
+/**
+ * An item as the server's gear view lists it, from the game's own rules: the stats (`itemStats`) and every line
+ * with its text, tier and best tier (`itemLines`) for the rolled lines given. Worn by nobody. Fixture data only.
+ */
+export function sampleItem(
+  id: string,
+  baseId: string,
+  rarity: GearRarity,
+  itemLevel: number,
+  rolled: readonly ItemLine[],
 ): GearItem {
-  const [baseId, rarity, itemLevel, wornBy] = spec;
   const base = gearBase(baseId);
   const tag: GearTag = base?.tag ?? 'neutral';
-  const factor = RARITY_FACTOR[rarity];
-  // An epic Hat or Scarf has a real local Attack line; its stats are the game's own (`itemStats`), so the
-  // card, the compare block and the server agree. The other lines are text only (they have no effect here).
-  const local = rarity === 'epic' && slot !== 'charm';
-  const stats: GearStat[] = itemStats(
-    itemOf(baseId, rarity, itemLevel, local ? [LOCAL_LINE] : []),
-  ).map((s) => ({ stat: s.stat, value: s.value, base: s.base, text: statText(s.stat, s.value) }));
-  const pool = LINE_POOL[tag] ?? LINE_POOL['neutral'] ?? [];
-  const count = rarity === 'common' ? 1 : rarity === 'rare' ? 2 : 3;
-  const texts = pool
-    .slice(0, Math.min(count, pool.length))
-    .map((t) => t.replace('{n}', String(2 + Math.floor((itemLevel * factor) / 3))));
-  const lines = texts.map((text, i) => lineOf(baseId, i, text, false));
-  const localDef = gearLine(LOCAL_LINE.id);
-  if (local && localDef !== undefined) {
-    lines.push({
-      id: LOCAL_LINE.id,
-      name: localDef.name,
-      text: lineText(localDef, lineValue(localDef, LOCAL_LINE.tier)),
-      about: localDef.about,
-      source: 'rolled',
-      tier: LOCAL_LINE.tier + 1,
-      bestTier: 5,
-      local: true,
-      active: true,
-    });
-  }
-  const equippedOn = worn ? creatureId : (wornBy ?? null);
+  const rules = itemOf(baseId, rarity, itemLevel, rolled);
+  const stats: GearStat[] = itemStats(rules).map((s) => ({
+    stat: s.stat,
+    value: s.value,
+    base: s.base,
+    text: statText(s.stat, s.value),
+  }));
+  const lines: GearLine[] = itemLines(rules).map((l) => ({
+    id: l.id,
+    name: l.name,
+    text: l.text,
+    about: l.about,
+    source: l.source,
+    tier: l.tier,
+    bestTier: l.bestTier,
+    local: l.local,
+    active: true,
+  }));
   return {
-    id: `bag-${slot}-${String(index + 1).padStart(2, '0')}`,
+    id,
     baseId,
-    slot,
+    slot: rules.slot,
     tag,
     rarity,
     festival: base?.festival === true,
@@ -172,10 +152,10 @@ function build(
     stats,
     lines,
     needs: {
-      level: itemLevel,
+      level: Math.max(itemLevel, 1),
       role: ['guard', 'support', 'setter', 'payoff'].includes(tag) ? tag : null,
     },
-    equippedOn,
+    equippedOn: null,
     dismantle: {
       scrap: { min: 1, max: 3 },
       shards: { min: 0, max: 1, element: null },
@@ -186,6 +166,39 @@ function build(
     createdAt: 0,
     madeBy: null,
     origin: null,
+  };
+}
+
+/** One bag item from a table row: stats and lines are the game's own (`itemStats`, `itemLines`). */
+function build(
+  slot: GearSlot,
+  index: number,
+  spec: Spec,
+  creatureId: string,
+  worn: boolean,
+): GearItem {
+  const [baseId, rarity, itemLevel, wornBy] = spec;
+  const base = gearBase(baseId);
+  const tag: GearTag = base?.tag ?? 'neutral';
+  const local = rarity === 'epic' && slot !== 'charm';
+  const pool = LINE_POOL[tag] ?? LINE_POOL['neutral'] ?? [];
+  const count = rarity === 'common' ? 1 : rarity === 'rare' ? 2 : 3;
+  const rolled = pool
+    .filter((id) => gearLine(id) !== undefined)
+    .slice(0, count)
+    .map((id, i) => ({
+      id,
+      tier: Math.min(tierCap(itemLevel), Math.max(0, RARITY_TIER[rarity] - Math.min(i, 1))),
+    }));
+  return {
+    ...sampleItem(
+      `bag-${slot}-${String(index + 1).padStart(2, '0')}`,
+      baseId,
+      rarity,
+      itemLevel,
+      local ? [...rolled, LOCAL_LINE] : rolled,
+    ),
+    equippedOn: worn ? creatureId : (wornBy ?? null),
   };
 }
 

@@ -286,3 +286,84 @@ button.ip-act {
   margin: 0;
   color: var(--haze);
 }
+
+/* The Compare switch above the item card: a small pixel switch, the knob at the right and lit when on. */
+.ip-compare-switch {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 0.25rem;
+}
+
+button.ip-switch {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.25rem;
+  background: none;
+  box-shadow: none;
+  color: var(--haze);
+  font-size: 1.125rem;
+}
+
+button.ip-switch:active:not(:disabled) {
+  box-shadow: none;
+}
+
+button.ip-switch.on {
+  color: var(--bone);
+}
+
+.ip-switch-track {
+  display: inline-flex;
+  align-items: center;
+  width: 2.25rem;
+  height: 1.25rem;
+  padding: 0.1875rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+}
+
+button.ip-switch.on .ip-switch-track {
+  justify-content: flex-end;
+  box-shadow: inset 0 0 0 var(--px) var(--good);
+}
+
+.ip-switch-knob {
+  width: 0.75rem;
+  height: 0.75rem;
+  background: var(--haze);
+}
+
+button.ip-switch.on .ip-switch-knob {
+  background: var(--good);
+}
+
+/*
+  The inline compare on the item card: a difference after a number, a new line marked with a plus, a lost
+  line listed at the end with a minus and struck through. The signs and words carry the meaning; green and
+  red only help.
+*/
+.cmp-delta {
+  white-space: nowrap;
+}
+
+.cmp-delta.good,
+.cmp-new,
+.cmp-new .cmp-marker {
+  color: var(--good);
+}
+
+.cmp-delta.bad,
+.cmp-gone {
+  color: var(--bad);
+}
+
+.cmp-marker {
+  font-weight: 700;
+}
+
+.cmp-gone .line-text {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}

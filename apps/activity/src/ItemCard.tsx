@@ -1,4 +1,5 @@
 import type { ComponentChildren, Ref } from 'preact';
+import type { CardDiff } from './creature-page/compare-diff';
 import { statRows } from './creature-page/picker-view';
 import {
   FestivalTag,
@@ -11,7 +12,7 @@ import {
 } from './GearArt';
 import type { GearItem } from './gear-types';
 import { gearName, isFestivalBase, itemSet, setBonusRows, setCountText } from './gear-view';
-import { ItemLines } from './ItemLines';
+import { DeltaMark, ItemLines } from './ItemLines';
 
 /** What the card needs of an item: the part of a `GearItem` that is drawn. */
 export type ItemCardItem = Pick<
@@ -37,6 +38,7 @@ export function ItemCard({
   aside,
   note,
   wornInSet = 0,
+  diff,
   class: extra,
 }: {
   item: ItemCardItem;
@@ -53,6 +55,8 @@ export function ItemCard({
   note?: ComponentChildren;
   /** How many pieces of the item's set its wearer has (with this one on, if it is not worn yet); 0 when nobody wears it. */
   wornInSet?: number;
+  /** The picker's compare: this item against the one worn in its slot, shown inline (stat rows and lines). */
+  diff?: CardDiff;
   class?: string;
 }) {
   const rows = statRows(item.stats);
@@ -90,7 +94,7 @@ export function ItemCard({
             {isFestivalBase(item.baseId) && <FestivalTag />}
           </p>
           {note}
-          {rows.length > 0 && (
+          {(rows.length > 0 || (diff?.goneStats.length ?? 0) > 0) && (
             <ul class="idc-stats" aria-label="Base stats">
               {rows.map((row) => (
                 <li key={row.stat}>
@@ -106,6 +110,21 @@ export function ItemCard({
                       </span>
                     </>
                   )}
+                  {(() => {
+                    const mark = diff?.stats.get(row.stat);
+                    return mark === undefined ? null : (
+                      <>
+                        {' '}
+                        <DeltaMark mark={mark} />
+                      </>
+                    );
+                  })()}
+                </li>
+              ))}
+              {diff?.goneStats.map((gone) => (
+                <li key={`gone-${gone.stat}`} class="cmp-gone">
+                  <span aria-hidden="true">{gone.text}</span>
+                  <span class="visually-hidden">{gone.spoken}</span>
                 </li>
               ))}
             </ul>
@@ -113,10 +132,10 @@ export function ItemCard({
         </div>
         {aside !== undefined && <div class="idc-aside">{aside}</div>}
       </div>
-      {item.lines.length > 0 && (
+      {(item.lines.length > 0 || (diff?.goneLines.length ?? 0) > 0) && (
         <>
           <hr class="idc-divider" />
-          <ItemLines lines={item.lines} />
+          <ItemLines lines={item.lines} {...(diff === undefined ? {} : { diff })} />
         </>
       )}
       {set !== undefined && (

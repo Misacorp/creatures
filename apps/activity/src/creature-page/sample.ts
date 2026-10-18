@@ -37,6 +37,7 @@ export type SceneKind =
   | 'evolve ready'
   | 'set: two pieces'
   | 'set: three pieces'
+  | 'set: two pieces and a charm'
   | 'compare: plain gear';
 
 export const SCENE_KINDS: readonly SceneKind[] = [
@@ -55,6 +56,7 @@ export const SCENE_KINDS: readonly SceneKind[] = [
   'evolve ready',
   'set: two pieces',
   'set: three pieces',
+  'set: two pieces and a charm',
   'compare: plain gear',
 ];
 
@@ -189,6 +191,15 @@ function shapeOf(kind: SceneKind): Shape {
       return {
         level: 20,
         worn: { hat: 19, scarf: 16 },
+        talents: talentsOf(twoSlots(GOLDEN, true)),
+        exp: 100,
+        expNeeded: 1000,
+      };
+    case 'set: two pieces and a charm':
+      // Two pieces of the Forge-Warm Kit and a Crossroads Compass in the Charm slot: the Kit's Charm would complete it.
+      return {
+        level: 20,
+        worn: { hat: 19, scarf: 16, charm: 0 },
         talents: talentsOf(twoSlots(GOLDEN, true)),
         exp: 100,
         expNeeded: 1000,

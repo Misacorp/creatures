@@ -48,6 +48,8 @@ interface SceneDef {
     | 'compare';
   /** `item`: the bag item the card shows (its slot and index in the sample bag). `compare`: the id of the item the picker starts on. */
   pick?: string;
+  /** `compare`: the Compare switch starts off (default on). */
+  compareOff?: boolean;
   open?: PageOpen;
   /** The gear view has not loaded yet. */
   loading?: boolean;
@@ -120,7 +122,7 @@ const SCENE_LIST: readonly SceneDef[] = [
   {
     id: 'K3',
     label: 'K3 · Compare: completes a set (Charm, two of three worn)',
-    kind: 'set: two pieces',
+    kind: 'set: two pieces and a charm',
     show: 'compare',
     open: { kind: 'gear', slot: 'charm' },
     pick: 'bag-charm-14',
@@ -140,6 +142,15 @@ const SCENE_LIST: readonly SceneDef[] = [
     show: 'compare',
     open: { kind: 'gear', slot: 'charm' },
     pick: 'bag-charm-02',
+  },
+  {
+    id: 'K6',
+    label: 'K6 · Compare switched off (the plain card)',
+    kind: 'level 15',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'hat' },
+    pick: 'bag-hat-14',
+    compareOff: true,
   },
   { id: 'T1', label: 'T1 · Talent slots', kind: 'talents: golden and locked', show: 'talents' },
   {
@@ -344,6 +355,7 @@ function CompareScene({ def }: { def: SceneDef }) {
         items={gear.items}
         onEquip={() => undefined}
         onTakeOff={() => undefined}
+        initialCompare={def.compareOff !== true}
         {...(def.pick === undefined ? {} : { initialPicked: def.pick })}
       />
     </div>
@@ -548,7 +560,7 @@ const creaturePage: Entry = {
   file: 'apps/activity/src/CreaturePage.tsx',
   group: 'Creatures & game pieces',
   description:
-    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait, the name in its rarity colour, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats, the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About and Rename. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours, W = the Workshop's item detail, L = a compact loot list, B = the Workshop bag, K = the picker's compare block above Equip (what the swap changes: stats, sets). The scenes are live: equip, take off and use a talent.",
+    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait, the name in its rarity colour, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats, the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About and Rename. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours, W = the Workshop's item detail, L = a compact loot list, B = the Workshop bag, K = the picker's compare (inline changes on the card, the Compare switch, what the swap does to the creature). The scenes are live: equip, take off and use a talent.",
   controls: {
     scene: { kind: 'select', options: SCENE_IDS },
     banner: { kind: 'toggle' },
