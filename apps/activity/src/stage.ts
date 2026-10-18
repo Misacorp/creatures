@@ -261,7 +261,7 @@ const abilityEffects = (abilityId: string) =>
 const dungeonGimmicks = [
   ...dungeonContent.foes.flatMap((f) => [
     ...f.gimmicks,
-    // A room boss's landmark signature (a charge): it only comes up at landmark depths.
+    // A floor boss's landmark signature (a charge): it only comes up at landmark depths.
     ...(f.signature === undefined ? [] : [f.signature]),
   ]),
   ...dungeonContent.modifiers.flatMap((m) =>

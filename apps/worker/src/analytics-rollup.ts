@@ -337,6 +337,19 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
       tally.add('dungeon.rooms_cleared_sum', {}, num(p, 'roomsCleared'));
       tally.add('dungeon.gear_worn', { worn: num(p, 'gear') });
       for (const m of list(p, 'modifiers')) tally.add('dungeon.modifier', { modifier: m });
+      // The map runs (docs/design/dungeon-paths.md): how they ended, what the camp gave, what came home.
+      if (typeof p['outcome'] === 'string')
+        tally.add('dungeon.outcome', { outcome: str(p, 'outcome') });
+      if (typeof p['campChoice'] === 'string') {
+        tally.add('dungeon.camp_choice', { choice: str(p, 'campChoice') });
+      }
+      tally.add('dungeon.elites_sum', {}, num(p, 'elites'));
+      tally.add('dungeon.pack_found_sum', {}, num(p, 'packFound'));
+      tally.add('dungeon.pack_kept_sum', {}, num(p, 'packKept'));
+      // The Undercroft: how many levels a run cleared, and what its carved door added.
+      if (typeof p['deepest'] === 'number')
+        tally.add('dungeon.deepest', { levels: num(p, 'deepest') });
+      for (const m of list(p, 'marks')) tally.add('dungeon.mark', { mark: m });
       for (const t of list(p, 'team')) {
         const member = record(t);
         tally.add('dungeon.team_species', { species: str(member, 'species') });
@@ -344,6 +357,15 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
       }
       break;
     }
+    case 'dungeon_event':
+      tally.add('dungeon.event', { event: str(p, 'event'), option: num(p, 'option') });
+      break;
+    case 'dungeon_camp':
+      tally.add('dungeon.camp', { choice: str(p, 'choice') });
+      break;
+    case 'dungeon_descend':
+      tally.add('dungeon.descend', { level: num(p, 'level') });
+      break;
     case 'dungeon_reward':
       if (num(p, 'streakBonusDay') > 0) {
         tally.add('dungeon.streak_bonus', { day: num(p, 'streakBonusDay') });

@@ -401,7 +401,7 @@
   },
   {
     "id": "dungeon-first-week-clear",
-    "description": "Daily dungeon: depth 1 is cleared (all rooms) in a player's first 7 days, share of those runs",
+    "description": "Daily dungeon: depth 1 is cleared (the room boss beaten) in a player's first 7 days, share of those runs",
     "metric": "dungeon.firstWeekDepth1ClearRate",
     "comparator": "min",
     "value": 0.8,
@@ -430,6 +430,38 @@
     "comparator": "max",
     "value": 0.2,
     "unit": "percent"
+  },
+  {
+    "id": "dungeon-home-rate",
+    "description": "Daily dungeon: share of a daily player's runs, from their second week, that head home from the camp with the pack (the camp choice is real)",
+    "metric": "dungeon.dailyHomeRate",
+    "comparator": "range",
+    "value": [0.1, 0.45],
+    "unit": "percent"
+  },
+  {
+    "id": "dungeon-run-fights",
+    "description": "Daily dungeon: fights played per run (a lost one included), a daily player's runs from their second week (a run is short: 3 to 5.5 fights)",
+    "metric": "dungeon.meanFights",
+    "comparator": "range",
+    "value": [3, 5.5],
+    "unit": "number"
+  },
+  {
+    "id": "dungeon-descent-rate",
+    "description": "Daily dungeon: share of a daily player's runs that beat the room boss at depth 8 or over (the Undercroft is offered) and go down into it (a real choice: not 20% below, not 80% above)",
+    "metric": "dungeon.undercroftDescentRate",
+    "comparator": "range",
+    "value": [0.2, 0.8],
+    "unit": "percent"
+  },
+  {
+    "id": "dungeon-eligible-run-fights",
+    "description": "Daily dungeon: fights played per run (the Undercroft's included, a lost one too) by a daily player at depth 8 or over, when the Undercroft is open to them (runs must not get too long: at most 7)",
+    "metric": "dungeon.eligibleMeanFights",
+    "comparator": "max",
+    "value": 7,
+    "unit": "number"
   },
   {
     "id": "exp-slot-2",

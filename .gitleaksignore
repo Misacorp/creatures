@@ -1,3 +1,10 @@
 # False positives of the CI secret scan, by fingerprint (commit:file:rule:line). Only test fixtures belong here.
 # A test idempotency key ('pending-claim-1'), not a secret.
 b4dc19abbc593312ad3398266e6b152d4f45c79d:apps/worker/test/gear-convert.test.ts:generic-api-key:599
+# Test idempotency keys ('key-12345678') in the dungeon client tests, not secrets.
+e243e8f2dfd5a8aeecbc46bb396a9111f11bf4eb:apps/activity/src/dungeon-parse.test.ts:generic-api-key:374
+e243e8f2dfd5a8aeecbc46bb396a9111f11bf4eb:apps/activity/src/dungeon-parse.test.ts:generic-api-key:379
+e243e8f2dfd5a8aeecbc46bb396a9111f11bf4eb:apps/activity/src/dungeon-parse.test.ts:generic-api-key:388
+e243e8f2dfd5a8aeecbc46bb396a9111f11bf4eb:apps/activity/src/dungeon-parse.test.ts:generic-api-key:397
+e243e8f2dfd5a8aeecbc46bb396a9111f11bf4eb:apps/activity/src/dungeon-parse.test.ts:generic-api-key:406
+e243e8f2dfd5a8aeecbc46bb396a9111f11bf4eb:apps/activity/src/dungeon-parse.test.ts:generic-api-key:409

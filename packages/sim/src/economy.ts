@@ -41,7 +41,7 @@ import {
   wornItemLevels,
   startJobs,
 } from './gear';
-import { chooseDungeonTeam, dayModifiers, playDungeonDay, type DungeonLogEntry } from './dungeon';
+import { chooseDungeonTeam, dayMap, playDungeonDay, type DungeonLogEntry } from './dungeon';
 import type { Setup } from './formations';
 import { collect, fillSlots, newCreature } from './talents';
 import { awardRaidExperience, buyRibbons, focusFirst, giveExperience, packTreat } from './training';
@@ -713,38 +713,40 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
           }
           // The daily dungeon: everybody who checked in runs it once, at their first check-in of the day.
           if (dungeonOn) {
-            const modifiers = dayModifiers(seed, globalDay);
+            const map = dayMap(seed, globalDay);
             for (const p of present) {
               if (dungeonDone.has(p.id)) continue;
               dungeonDone.add(p.id);
               if (!takesPart(dungeonPercent)) continue;
               const team = chooseDungeonTeam(p, p.profile.dungeon, rng.profile);
               // A treat for each of the three (Bait paid as the run starts), then the run, then the
-              // experience: per room cleared and for a full clear, doubled for a treated creature.
+              // experience: per fight cleared by each creature that stood in the row for it, and for a
+              // full clear to the row that beat the boss, doubled for a treated creature (one swapped in
+              // at the camp has no treat).
               const treated = new Set(
                 team.creatures.filter((c) => packTreat(p, c, { kind: 'dungeon' })).map((c) => c.id),
               );
               const runs = playDungeonDay(
                 p,
                 globalDay,
-                modifiers,
+                map,
                 `${seed}:dungeon:${p.id}:${String(globalDay)}`,
                 rng.dungeon,
                 {},
                 team,
                 weather,
+                p.profile.dungeon,
               );
               for (const run of runs) {
-                for (const c of team.creatures) {
+                for (const [id, fights] of Object.entries(run.fightsBy)) {
+                  const c = p.creatures.find((x) => x.id === id);
+                  if (c === undefined) continue;
+                  // The full clear bonus is for the row that beat the main boss, whatever happens below it.
+                  const beatBoss = run.fullClearRow.includes(id);
                   giveExperience(
                     p,
                     c,
-                    dungeonExperience(
-                      run.roomsCleared,
-                      run.cleared,
-                      treated.has(c.id),
-                      xpWeather(weather),
-                    ),
+                    dungeonExperience(fights, beatBoss, treated.has(id), xpWeather(weather)),
                     'dungeon',
                   );
                 }

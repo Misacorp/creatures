@@ -97,8 +97,13 @@ export function RaidBoard(props: RaidBoardProps) {
   const dragging = props.drag.drag?.creatureId ?? null;
   if (props.single !== undefined) {
     const large = props.size === 'large';
+    // Tiles that carry an HP line (the camp's row) are wider and taller, so the words fit.
+    const withHp = (rows[0]?.slots ?? []).some((s) => s.occupant?.hp !== undefined);
+    const classes = ['raid-board', 'single'];
+    if (large) classes.push('large');
+    if (large && withHp) classes.push('with-hp');
     return (
-      <div class={large ? 'raid-board single large' : 'raid-board single'}>
+      <div class={classes.join(' ')}>
         <div
           ref={stripRef}
           class={dragging === null ? 'party-strip' : 'party-strip dragging'}

@@ -77,8 +77,8 @@ export const RULES = {
     maxLevel: 30,
     /** Experience per creature for a finished trip, by length (a recall or a failed trip pays none). */
     trip: { short: 20, medium: 60, long: 120, day: 240 },
-    /** The daily dungeon: per room cleared, and on top of that for clearing the whole run. Depth adds nothing. */
-    dungeon: { perRoom: 60, fullClear: 60 },
+    /** The daily dungeon: per fight cleared (a run is 3 to 6 fights), and on top of that for beating the floor boss. Depth adds nothing. */
+    dungeon: { perRoom: 35, fullClear: 60 },
     /** Raid stages, per creature in the fight: the stage's experience, times `clearedBp` when it was cleared. */
     raid: { phase1: 200, phase2: 200, finale: 400, clearedBp: 15_000 },
     /** A Workshop job: experience per hour of its nominal work time. */
@@ -708,7 +708,7 @@ export const RULES = {
    * tuned by the simulator. All amounts are integers (percentages in basis points).
    */
   dungeon: {
-    /** Rooms in a run: normal foes first, then a room boss. */
+    /** Rooms in a run: normal foes first, then a floor boss. */
     rooms: 3,
     /** Creatures in the team: one row of three, left to right. */
     teamSize: 3,
@@ -725,8 +725,8 @@ export const RULES = {
      * are gentle and the later ones steepen. Depths past `maxScaledDepth` fight at that depth's
      * strength, which keeps every number small and safe.
      */
-    hpStepBp: 3_000,
-    hpCurveBp: 300,
+    hpStepBp: 4_500,
+    hpCurveBp: 340,
     atkStepBp: 2_000,
     atkCurveBp: 150,
     maxScaledDepth: 60,
@@ -735,12 +735,18 @@ export const RULES = {
      * 10000 is the content's own numbers). One knob for the whole dungeon, so the foes keep the
      * relative strengths their content gives them. 11750 is the old 12500 times 0.94: the attack
      * patterns made foes a few points harder to beat, and 6% less foe HP puts the clear rates back
-     * (docs/design/attack-patterns.md 4.6, docs/balance/log.md B-007).
+     * (docs/design/attack-patterns.md 4.6, docs/balance/log.md B-007). The map runs (B-019) play 4 to 5
+     * fights a run instead of 3 and a first-day team has to win all of them, so the foe's HP at depth 1
+     * comes down to 6500 and `hpStepBp` rises to 4500 to keep the ladder as steep as before (a first
+     * week clears depth 1 about 90% of the time, a median daily player gains about 1.7 depths a week).
+     * The carved door (B-020) is a free room on 35% of the maps, which lifts that by about 0.1 (a median of
+     * 1.9 to 2.0, the target's limit): `hpCurveBp` rises from 300 to 340 (the later depths, not the first:
+     * the second depth stays under 1.5 times the first) and brings it back to about 1.8.
      */
-    baseHpBp: 11_750,
+    baseHpBp: 6_500,
     baseAtkBp: 10_000,
     /**
-     * Every this many depths is a landmark: a better chest, and a fixed room boss (in content order,
+     * Every this many depths is a landmark: a better chest, and a fixed floor boss (in content order,
      * round again) that also gains its charged `signature` move.
      */
     landmarkEvery: 7,
@@ -756,7 +762,7 @@ export const RULES = {
      */
     enrage: { enabled: true, rounds: 2, powerBp: 3_000 },
     /**
-     * Paid for each room cleared, by room index (the last is the room boss). `supply` is the number
+     * Paid for each room cleared, by room index (the last is the floor boss). `supply` is the number
      * of expedition supplies the room drops (its tier and kind are rolled: `supplyTiers`). Only the
      * first room drops one, with a scrap beside it: a run that clears its first room always takes a
      * supply home, even if it is lost later, so the promise holds at the depth wall where full clears
@@ -776,7 +782,7 @@ export const RULES = {
       good: { fromDepth: 4, baseBp: 1_500, perDepthBp: 400, maxBp: 5_000 },
       great: { fromDepth: 12, baseBp: 500, perDepthBp: 200, maxBp: 2_500 },
     },
-    /** Chance (basis points) of one shard of the room boss's element when the boss room is cleared. */
+    /** Chance (basis points) of one shard of the floor boss's element when the boss room is cleared. */
     bossShardBp: 6_000,
     /** Extra for clearing every room: Essence, and a chance (basis points) at a gear drop. */
     fullClear: { essence: 0, gearBp: 1_500 },
@@ -803,6 +809,119 @@ export const RULES = {
         { day: 3, bait: 0, essence: 0, scrap: 1, glimmer: 0 },
         { day: 7, bait: 0, essence: 1, scrap: 1, glimmer: 0 },
       ],
+    },
+    /**
+     * The map redesign (docs/design/dungeon-paths.md). The keys above stay for stored three-room
+     * runs; a map run uses the keys below. A run is `floors` floors from an entrance (floor 0) to a
+     * floor boss (the last floor), with the camp on `campFloor`.
+     */
+    floors: 7,
+    /** The camp: every path meets on this floor, in the middle lane. */
+    campFloor: 3,
+    /**
+     * How a day's map is drawn (`generateDungeonMap`). Floors other than the camp and the boss have
+     * three nodes, or two with chance `twoNodeFloorBp`. Floor 0 is all fights; the other floors roll
+     * each node by `kinds` (weights, which add up to 10000). The rest are caps and floors that keep
+     * every map worth playing: some risk (an elite), some surprise (a mystery), a few different
+     * elements to fight, and no more than one free chest.
+     */
+    map: {
+      twoNodeFloorBp: 3_500,
+      kinds: { fight: 5_500, mystery: 2_500, cache: 1_000, elite: 1_000 },
+      /** Elites can only stand on these floors, one per floor at most. */
+      eliteFloors: [2, 4, 5],
+      maxElites: 2,
+      minElites: 1,
+      maxCaches: 1,
+      minMysteries: 1,
+      maxMysteries: 3,
+      /** The fights of one map (elites too) use at least this many different elements. */
+      minElements: 3,
+    },
+    /**
+     * An elite is a normal foe at the player's depth with this on top (basis points of its numbers:
+     * 14000 is 140%, so +40% HP and +20% Attack).
+     */
+    elite: { hpBp: 14_000, atkBp: 12_000 },
+    /** The camp: Rest heals standing creatures this share of max HP; a camp offers this many keepsakes. */
+    camp: { restBp: 4_000, offers: 2 },
+    /**
+     * What each kind of room puts in the run's pack when it is cleared (the pack is at risk; the
+     * run's supply never goes in it). Mystery rooms pay by the option picked. `boss` is the boss
+     * chest's Essence and scrap; its shard and gear chances are the keys above. Starting values: the
+     * simulator tunes them so a full clear pays about what a three-room run did.
+     */
+    loot: {
+      fight: { bait: 1, essence: 0, scrap: 0 },
+      elite: { bait: 0, essence: 0, scrap: 1 },
+      cache: { bait: 1, essence: 0, scrap: 1 },
+      boss: { bait: 0, essence: 1, scrap: 1 },
+    },
+    /**
+     * A defeat keeps this share of the pack, each amount rounded up (1 Bait stays 1, 3 scrap becomes
+     * 2): generous on purpose, so an early defeat costs almost nothing and a late one costs more.
+     */
+    defeatKeepBp: 5_000,
+    /**
+     * The Undercroft (docs/design/dungeon-paths.md): a deeper, optional level below the floor boss, from
+     * depth `fromDepth` (the first landmark has been passed). Its foes are scaled as if the depth were
+     * `depthBonus` higher for every level. It has `baseFloors` floors of two rooms, plus `perLandmark`
+     * for every landmark passed after the first, at most `maxFloors`, then the keeper (a floor boss with
+     * its landmark signature). A carved door on the main map (`doorBp` of maps, on one of `doorFloors`)
+     * adds one floor of one room of a random kind but a boss (`markOdds`, basis points that add up to
+     * 10000) when the player steps through, at most `maxMarks` a run; the player is told only what it could be. A level's keeper
+     * has a cracked floor with chance `crackBp`, which opens another level (a deeper one has
+     * `deeperFloors` floors), at most `maxLevels` in a run. Fights there put `lootMultiplier` times their
+     * loot in the pack; standing creatures recover `catchBreathBp` of max HP on the way down and a
+     * knocked-out one gets back up at `reviveBp` (B-021: with 1000 about twice as many rows go down, 54% of the
+     * offers, and a descent clears its first keeper 22% of the time, 35% before; 500 is the same, 52% and 22%, so the
+     * size hardly matters). Tuned by the simulator (docs/balance/log.md B-020). `depthBonus` was 3: the keeper (a floor boss with its
+     * signature, met after two fights and no rest by a row that has just beaten the boss) was beaten 32% of
+     * the time and a descent cleared its first keeper 17% of the time, so five of six went home with half a
+     * pack. At 1 the keeper is beaten about 48% of the time and a descent clears 33%; at 0, 45%. The
+     * rest are the design's numbers (before B-021 the descent rate, 23 to 27% of the offers, was decided by a
+     * creature being knocked out on the way, not by these).
+     */
+    undercroft: {
+      fromDepth: 8,
+      catchBreathBp: 2_000,
+      reviveBp: 1_000,
+      depthBonus: 1,
+      baseFloors: 2,
+      perLandmark: 1,
+      maxFloors: 5,
+      deeperFloors: 2,
+      maxMarks: 2,
+      lootMultiplier: 2,
+      crackBp: 1_500,
+      maxLevels: 3,
+      /** A level's map: the same weights as the main map's rooms (`map.kinds`), with these caps per level. */
+      map: { maxElites: 2, maxCaches: 1, maxMysteries: 2 },
+      /** The epic fight: one normal foe at boss strength (basis points of its depth-scaled numbers) and what it pays into the pack. */
+      epic: { hpBp: 16_000, atkBp: 13_000, loot: { bait: 0, essence: 1, scrap: 2 } },
+      /**
+       * The keeper's chest: Essence and scrap into the pack, a `gearBp` chance of a piece with
+       * `rareBonusBp` and `epicBonusBp` added to the dungeon's gear odds and `itemLevelBonus` item levels more.
+       */
+      chest: {
+        essence: 1,
+        scrap: 2,
+        gearBp: 4_000,
+        rareBonusBp: 1_500,
+        epicBonusBp: 500,
+        itemLevelBonus: 2,
+      },
+      /** The carved door: on the main map, floors it can stand on, chance a map has one, and what stepping through adds. */
+      doorFloors: [4, 5],
+      doorBp: 3_500,
+      markOdds: {
+        fight: 3_000,
+        elite: 1_500,
+        mystery: 1_500,
+        cache: 1_000,
+        camp: 1_500,
+        epic: 1_500,
+      },
     },
   },
   /**

@@ -92,14 +92,18 @@ The old stat-power share (`gearShare`, the power the worn items add to the top 3
 
 Measured on the default server's sims (10 players, 12 weeks). Every player with 3 creatures runs the dungeon on each day they check in; the raid, long-run, fairness, collection and gear targets above are measured with the dungeon in the game, so they still hold with it (the dungeon's Bait, Essence, parts and gear feed the same economy).
 
-| Target                                                                                                                        | Value |
-| ----------------------------------------------------------------------------------------------------------------------------- | ----- |
-| Depth 1 cleared (all rooms) in a player's first 7 days, share of those runs, all archetypes                                   | ≥ 80% |
-| Depth a median daily player gains per week, from the end of week 2 to the end of week 8 (the opening week is left out)        | 1–2   |
-| Dungeon Essence as a share of a daily player's whole Essence income (raids, jackpots and dungeon)                             | ≤ 40% |
-| Gear's share of a daily player's raid-team power at week 8 with the dungeon's gear and parts in the game (no dungeon: report) | ≤ 20% |
+| Target                                                                                                                                                   | Value  |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Depth 1 cleared (the room boss beaten) in a player's first 7 days, share of those runs, all archetypes                                                   | ≥ 80%  |
+| Depth a median daily player gains per week, from the end of week 2 to the end of week 8 (the opening week is left out)                                   | 1–2    |
+| Dungeon Essence as a share of a daily player's whole Essence income (raids, jackpots and dungeon)                                                        | ≤ 40%  |
+| Gear's share of a daily player's raid-team power at week 8 with the dungeon's gear and parts in the game (no dungeon: report)                            | ≤ 20%  |
+| Share of a daily player's runs, from their second week, that end at home (heading home from the camp with the pack), so the camp choice is real          | 10–45% |
+| Fights played per run (a lost one included), a daily player's runs from their second week (a run is short)                                               | 3–5.5  |
+| Share of a daily player's runs that beat the room boss at depth 8 or over (the Undercroft is offered) and go down into it (a real choice)                | 20–80% |
+| Fights played per run (the Undercroft's included) by a daily player at depth 8 or over, when the Undercroft is open to them (runs must not get too long) | ≤ 7    |
 
-The report also lists the clear rate per depth for casual, daily and top players, the depth after N weeks per archetype and the reward flow per player and week (`## Daily dungeon`).
+The report also lists how runs end (cleared, home, defeat), fights, elites, keepsakes and the pack per run, how the Undercroft is played (offered, descents, clear rate, levels, fights, carved doors), the clear rate per depth for casual, daily and top players, the depth after N weeks per archetype and the reward flow per player and week (`## Daily dungeon`). A run is a walk over the day's map (`docs/design/dungeon-paths.md`) and, from depth 8, may go down into the Undercroft after the room boss; a run that heads home is not a clear, and a run that beat the room boss and was lost below it is a defeat (half the pack) that still moved the depth.
 
 ## Expeditions v2
 

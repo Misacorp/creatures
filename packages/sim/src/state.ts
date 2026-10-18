@@ -206,10 +206,15 @@ export interface DungeonState {
   firstDay: number | null;
   runs: number;
   clears: number;
+  /**
+   * The depth the player's last run was lost (a defeat) at, or null after any other run: a player plays the
+   * next run at that depth warily (they head home from the camp sooner). The sim's memory of the depth wall.
+   */
+  lostAt: number | null;
 }
 
 export function emptyDungeonState(): DungeonState {
-  return { depth: 1, streak: 0, lastDay: null, firstDay: null, runs: 0, clears: 0 };
+  return { depth: 1, streak: 0, lastDay: null, firstDay: null, runs: 0, clears: 0, lostAt: null };
 }
 
 /** A workshop job that has been started and not yet claimed. */

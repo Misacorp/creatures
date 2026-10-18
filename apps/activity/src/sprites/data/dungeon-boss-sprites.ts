@@ -1,5 +1,5 @@
 /**
- * Pixel sprites (24x24) for the four daily-dungeon room bosses, drawn in the style of the raid bosses
+ * Pixel sprites (24x24) for the four daily-dungeon floor bosses, drawn in the style of the raid bosses
  * (`boss-sprites.ts`): front-facing, a one-pixel ink outline that touches no canvas edge, and the
  * element's colours. All four are symmetric, so only the left half of each row is stored (`mirror`).
  * The eight small foes are in `dungeon-sprites.ts`.

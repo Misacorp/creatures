@@ -42,6 +42,15 @@
   min-width: var(--px);
 }
 
+/* A bar that just gained: the old part in the darker gold, the part gained in the bright one. */
+.xpbar-fill.has-gain {
+  background: linear-gradient(
+    to right,
+    var(--gold-shade) calc(var(--from, 100) * 1%),
+    var(--gold) calc(var(--from, 100) * 1%)
+  );
+}
+
 /*
   The words are drawn twice: bone over the dark trough, and ink over the gold fill (the second copy
   is clipped to the fill). Each part of a letter has the contrast of its own background.

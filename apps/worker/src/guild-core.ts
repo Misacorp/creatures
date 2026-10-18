@@ -8,6 +8,7 @@ import { Collection } from './collection';
 import { Dungeon } from './dungeon';
 import { dungeonDraftMigration } from './dungeon-draft-migration';
 import { dungeonMigration } from './dungeon-migration';
+import { dungeonPathMigration } from './dungeon-path-migration';
 import { dungeonRoutes } from './dungeon-routes';
 import { Gear } from './gear';
 import { convertPendingGear } from './gear-convert';
@@ -396,6 +397,11 @@ const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   },
   // Version 33: the lounge message and the Activity instances it tracks (see lounge.ts).
   loungeMigration,
+  // Version 34: the daily dungeon on a map: run status and state, the day's map and the steps of a run
+  // (see dungeon-path-migration.ts). Staging ran it first as 32 and then as 33, before the raid's
+  // `placed_by` and the lounge took those numbers, so it checks every step and also makes sure those two
+  // migrations' tables and column exist.
+  dungeonPathMigration,
 ];
 
 export interface SessionUser {
@@ -1740,6 +1746,7 @@ export class GuildCore {
     this.pruneBacklog = this.analytics.prune();
     this.rollup.runDue();
     this.gear.prune();
+    this.dungeon.closeStale();
     this.dungeon.prune();
     await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
   }

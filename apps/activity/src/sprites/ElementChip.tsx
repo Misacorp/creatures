@@ -17,7 +17,7 @@ export function RoleChip({ role }: { role: string }) {
 
 /**
  * Whose element it is, which decides what tapping it explains: a creature's (who it beats), a boss's or a
- * room boss's (who hits it hardest), an expedition place's (who lives there, what is found) or an item's (its
+ * floor boss's (who hits it hardest), an expedition place's (who lives there, what is found) or an item's (its
  * lines lean that way).
  */
 export type ElementContext = 'creature' | 'boss' | 'place' | 'gear';

@@ -1,0 +1,512 @@
+{
+  "state": {
+    "id": "d1471785-82a0-48c7-a671-1750bcd75b47",
+    "day": "2027-01-12",
+    "attempt": 1,
+    "depth": 1,
+    "landmark": false,
+    "status": "active",
+    "outcome": null,
+    "step": 1,
+    "map": {
+      "floors": 7,
+      "nodes": [
+        {
+          "id": "f0l0",
+          "floor": 0,
+          "lane": 0,
+          "kind": "fight",
+          "next": ["f1l0"],
+          "foe": {
+            "id": "static-bat",
+            "name": "Static Bat",
+            "element": "spark",
+            "kind": "foe",
+            "hpMax": 44,
+            "elite": false
+          },
+          "modifier": {
+            "id": "flooded",
+            "name": "Flooded",
+            "description": "Tide creatures hit 20% harder."
+          }
+        },
+        {
+          "id": "f0l1",
+          "floor": 0,
+          "lane": 1,
+          "kind": "fight",
+          "next": ["f1l0", "f1l1"],
+          "foe": {
+            "id": "ash-sprite",
+            "name": "Ash Sprite",
+            "element": "ember",
+            "kind": "foe",
+            "hpMax": 50,
+            "elite": false
+          },
+          "modifier": {
+            "id": "stormy",
+            "name": "Stormy",
+            "description": "Spark creatures hit 20% harder."
+          }
+        },
+        {
+          "id": "f0l2",
+          "floor": 0,
+          "lane": 2,
+          "kind": "fight",
+          "next": ["f1l1"],
+          "foe": {
+            "id": "drift-wisp",
+            "name": "Drift Wisp",
+            "element": "tide",
+            "kind": "foe",
+            "hpMax": 48,
+            "elite": false
+          },
+          "modifier": {
+            "id": "flooded",
+            "name": "Flooded",
+            "description": "Tide creatures hit 20% harder."
+          }
+        },
+        {
+          "id": "f1l0",
+          "floor": 1,
+          "lane": 0,
+          "kind": "mystery",
+          "next": ["f2l0", "f2l1"],
+          "event": {
+            "id": "lost-satchel",
+            "name": "Lost Satchel"
+          }
+        },
+        {
+          "id": "f1l1",
+          "floor": 1,
+          "lane": 1,
+          "kind": "fight",
+          "next": ["f2l2"],
+          "foe": {
+            "id": "moss-lurker",
+            "name": "Moss Lurker",
+            "element": "grove",
+            "kind": "foe",
+            "hpMax": 48,
+            "elite": false
+          },
+          "modifier": {
+            "id": "scorched",
+            "name": "Scorched",
+            "description": "Ember creatures hit 20% harder."
+          }
+        },
+        {
+          "id": "f2l0",
+          "floor": 2,
+          "lane": 0,
+          "kind": "mystery",
+          "next": ["f3l1"],
+          "event": {
+            "id": "sleeping-beetle",
+            "name": "Sleeping Beetle"
+          }
+        },
+        {
+          "id": "f2l1",
+          "floor": 2,
+          "lane": 1,
+          "kind": "fight",
+          "next": ["f3l1"],
+          "foe": {
+            "id": "drift-wisp",
+            "name": "Drift Wisp",
+            "element": "tide",
+            "kind": "foe",
+            "hpMax": 48,
+            "elite": false
+          },
+          "modifier": {
+            "id": "brittle",
+            "name": "Brittle",
+            "description": "The foe has 20% less HP but hits 25% harder."
+          }
+        },
+        {
+          "id": "f2l2",
+          "floor": 2,
+          "lane": 2,
+          "kind": "elite",
+          "next": ["f3l1"],
+          "foe": {
+            "id": "puddle-imp",
+            "name": "Puddle Imp",
+            "element": "tide",
+            "kind": "foe",
+            "hpMax": 72,
+            "elite": true
+          },
+          "modifier": {
+            "id": "stormy",
+            "name": "Stormy",
+            "description": "Spark creatures hit 20% harder."
+          }
+        },
+        {
+          "id": "f3l1",
+          "floor": 3,
+          "lane": 1,
+          "kind": "camp",
+          "next": ["f4l0", "f4l1", "f4l2"]
+        },
+        {
+          "id": "f4l0",
+          "floor": 4,
+          "lane": 0,
+          "kind": "fight",
+          "next": ["f5l0", "f5l1"],
+          "foe": {
+            "id": "flicker-swarm",
+            "name": "Flicker Swarm",
+            "element": "spark",
+            "kind": "foe",
+            "hpMax": 50,
+            "elite": false
+          },
+          "modifier": {
+            "id": "echoing",
+            "name": "Echoing",
+            "description": "Guards and supports hit 50% harder."
+          }
+        },
+        {
+          "id": "f4l1",
+          "floor": 4,
+          "lane": 1,
+          "kind": "fight",
+          "next": ["f5l1"],
+          "foe": {
+            "id": "drift-wisp",
+            "name": "Drift Wisp",
+            "element": "tide",
+            "kind": "foe",
+            "hpMax": 48,
+            "elite": false
+          },
+          "modifier": {
+            "id": "thorns",
+            "name": "Thorns",
+            "description": "The foe turns the first reaction of each round back on your team."
+          }
+        },
+        {
+          "id": "f4l2",
+          "floor": 4,
+          "lane": 2,
+          "kind": "mystery",
+          "next": ["f5l1", "f5l2"],
+          "event": {
+            "id": "quiet-room",
+            "name": "Quiet room"
+          }
+        },
+        {
+          "id": "f5l0",
+          "floor": 5,
+          "lane": 0,
+          "kind": "fight",
+          "next": ["f6l1"],
+          "foe": {
+            "id": "drift-wisp",
+            "name": "Drift Wisp",
+            "element": "tide",
+            "kind": "foe",
+            "hpMax": 48,
+            "elite": false
+          },
+          "modifier": {
+            "id": "dark",
+            "name": "Dark",
+            "description": "Your creatures crit 5 points more often."
+          }
+        },
+        {
+          "id": "f5l1",
+          "floor": 5,
+          "lane": 1,
+          "kind": "fight",
+          "next": ["f6l1"],
+          "foe": {
+            "id": "static-bat",
+            "name": "Static Bat",
+            "element": "spark",
+            "kind": "foe",
+            "hpMax": 44,
+            "elite": false
+          },
+          "modifier": {
+            "id": "dark",
+            "name": "Dark",
+            "description": "Your creatures crit 5 points more often."
+          }
+        },
+        {
+          "id": "f5l2",
+          "floor": 5,
+          "lane": 2,
+          "kind": "mystery",
+          "next": ["f6l1"],
+          "event": {
+            "id": "loose-stones",
+            "name": "Loose Stones"
+          }
+        },
+        {
+          "id": "f6l1",
+          "floor": 6,
+          "lane": 1,
+          "kind": "boss",
+          "next": [],
+          "foe": {
+            "id": "coil-baron",
+            "name": "Coil Baron",
+            "element": "spark",
+            "kind": "boss",
+            "hpMax": 78,
+            "elite": false
+          },
+          "modifier": {
+            "id": "brittle",
+            "name": "Brittle",
+            "description": "The foe has 20% less HP but hits 25% harder."
+          }
+        }
+      ]
+    },
+    "level": 0,
+    "undercroft": null,
+    "at": "f0l0",
+    "path": ["f0l0"],
+    "reachable": ["f1l0"],
+    "pending": null,
+    "team": [
+      {
+        "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "name": "Sproutle",
+        "speciesId": "sproutle",
+        "element": "grove",
+        "role": "guard",
+        "level": 12,
+        "hp": 281,
+        "hpMax": 281,
+        "treat": false
+      },
+      {
+        "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+        "name": "Splashet",
+        "speciesId": "splashet",
+        "element": "tide",
+        "role": "setter",
+        "level": 12,
+        "hp": 200,
+        "hpMax": 200,
+        "treat": false
+      },
+      {
+        "id": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
+        "name": "Cindle",
+        "speciesId": "cindle",
+        "element": "ember",
+        "role": "payoff",
+        "level": 12,
+        "hp": 173,
+        "hpMax": 173,
+        "treat": false
+      }
+    ],
+    "keepsakes": [],
+    "pack": {
+      "bait": 1,
+      "essence": 0,
+      "scrap": 0
+    },
+    "roomsCleared": 1,
+    "supply": true,
+    "lastEvent": null,
+    "history": [
+      {
+        "node": "f0l0",
+        "kind": "fight",
+        "result": "fight",
+        "cleared": true,
+        "rounds": 1,
+        "foeHpEnd": 0,
+        "foeHpMax": 44,
+        "loot": {
+          "bait": 1,
+          "essence": 0,
+          "scrap": 0
+        },
+        "supply": true
+      }
+    ]
+  },
+  "room": {
+    "index": 0,
+    "kind": "foe",
+    "node": "f0l0",
+    "row": [
+      {
+        "position": 0,
+        "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "name": "Sproutle",
+        "species": "sproutle",
+        "element": "grove",
+        "role": "guard",
+        "level": 12
+      },
+      {
+        "position": 1,
+        "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+        "name": "Splashet",
+        "species": "splashet",
+        "element": "tide",
+        "role": "setter",
+        "level": 12
+      },
+      {
+        "position": 2,
+        "id": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
+        "name": "Cindle",
+        "species": "cindle",
+        "element": "ember",
+        "role": "payoff",
+        "level": 12
+      }
+    ],
+    "foe": {
+      "id": "static-bat",
+      "name": "Static Bat",
+      "element": "spark",
+      "hpMax": 44
+    },
+    "modifier": {
+      "id": "flooded",
+      "name": "Flooded",
+      "description": "Tide creatures hit 20% harder."
+    },
+    "cleared": true,
+    "rounds": 1,
+    "hpStart": {
+      "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
+      "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
+      "ae8c7c8f-b190-470f-b09e-4ae48d278eb9": 173
+    },
+    "hpMax": {
+      "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
+      "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
+      "ae8c7c8f-b190-470f-b09e-4ae48d278eb9": 173
+    },
+    "events": [
+      {
+        "t": "round_start",
+        "round": 1,
+        "bossHp": 44,
+        "mark": null
+      },
+      {
+        "t": "turn",
+        "round": 1,
+        "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745"
+      },
+      {
+        "t": "hit",
+        "round": 1,
+        "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "damage": 44,
+        "matchupBp": 15000,
+        "bonusBp": 0,
+        "mark": null,
+        "bossHp": 0
+      },
+      {
+        "t": "mark",
+        "round": 1,
+        "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "player": "p1",
+        "element": "grove",
+        "replaced": null
+      },
+      {
+        "t": "round_end",
+        "round": 1,
+        "bossHp": 0
+      }
+    ],
+    "names": {
+      "boss": "Static Bat",
+      "creatures": {
+        "64ab0da2-cff5-47ec-8346-04317bb6b745": "Sproutle",
+        "5b8aea90-83c9-4de6-b9f4-2cd49763020f": "Splashet",
+        "ae8c7c8f-b190-470f-b09e-4ae48d278eb9": "Cindle"
+      },
+      "players": {
+        "p1": "Player 1"
+      },
+      "reactions": {
+        "overload": "Overload",
+        "grounding": "Grounding",
+        "wildfire": "Wildfire",
+        "steam": "Steam"
+      },
+      "gimmicks": {
+        "zap-dive": "Zap Dive"
+      },
+      "abilities": {
+        "rally": "Rally",
+        "shield-wall": "Shield Wall",
+        "re-mark": "Re-mark",
+        "purge": "Purge",
+        "tidal-mark": "Tidal Mark",
+        "tidal-mark-2": "Riptide Mark",
+        "flare-strike": "Flare Strike",
+        "flare-strike-2": "Inferno Strike",
+        "bark-guard": "Bark Guard",
+        "bark-guard-2": "Ironbark Guard",
+        "static-zap": "Static Zap",
+        "static-zap-2": "Storm Zap",
+        "fog-veil": "Fog Veil",
+        "fog-veil-2": "Dense Fog",
+        "warm-glow": "Warm Glow",
+        "warm-glow-2": "Magma Glow",
+        "thunder-strike": "Thunder Strike",
+        "thunder-strike-2": "Tempest Strike",
+        "moss-bloom": "Mossy Bloom",
+        "moss-bloom-2": "Ancient Bloom",
+        "coral-lance": "Coral Lance",
+        "solar-brand": "Solar Brand",
+        "verdant-roar": "Verdant Roar",
+        "aurora-surge": "Aurora Surge",
+        "lantern-glow": "Lantern Glow",
+        "hearth-ward": "Hearth Ward"
+      },
+      "marks": {
+        "tide": "Soaked",
+        "spark": "Charged",
+        "grove": "Overgrown",
+        "ember": "Scorched"
+      },
+      "elements": {
+        "tide": "Tide",
+        "ember": "Ember",
+        "grove": "Grove",
+        "spark": "Spark"
+      },
+      "adaptations": {
+        "resist-top-reaction": "Reaction Resistance",
+        "resist-top-element": "Element Resistance"
+      }
+    }
+  }
+}

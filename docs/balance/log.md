@@ -868,3 +868,150 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   - Look at the week 2 share of drop-ins and regulars in live data: the welcome Hat's size is the lever (a first make of 1 Attack would read oddly on a card).
   - The item level of finale drops by Boss Rank and the crafting rate decide the spread between committed players and regulars, not the stat formulas.
   - A fourth make at item level 15 (and a Hat or Scarf for each element with its own third stat) would give the late game more to chase; it is a data change.
+
+### B-019: Dungeon paths: a map, a camp and a pack need new foe numbers (open)
+
+- **Opened:** 2026-10-18, build step of `docs/design/dungeon-paths.md` (Misa's ask of 2026-10-17: "a Slay the Spire style gameplay loop").
+- **Finding.** The daily dungeon is no longer three rooms played at once. A run walks the day's map (7 floors, the camp on floor 3, the boss on floor 6): 3 to 6 fights, a mystery room or two, sometimes a cache, one or two elites, a camp where the player rests, swaps a fallen creature, takes a keepsake or heads home, and a pack of Bait, Essence and scrap that is kept whole at home or on a clear and by half (rounded up) after a defeat. With the foe numbers of the three-room model (`baseHpBp` 11750, `hpStepBp` 3000), a run of 4 to 5 fights is much harder to clear: the first week cleared depth 1 about 81% of the time (the target is 80%) and a median daily player gained 1.1 depths a week.
+- **Hypothesis.** More fights per run make a clear harder, so the foe's HP must come down at depth 1 and rise faster by depth to keep the ladder as steep as before; the loot per room must be trimmed so that a full clear pays about what three rooms did (Bait 3, Essence 1, scrap 2, a supply, a 60% shard, a 15% gear drop); experience per fight must come down so a daily player's dungeon experience stays about 2900 a week.
+- **Method.** `packages/sim/src/dungeon.ts` plays a map day with a policy, using the game's own pure rules (`generateDungeonMap` from a seed of the day, so every player of a server walks the same map; `roomSpecForNode`, `nodeLoot`, `keptOnDefeat`, `resolveEvent`, `campOffers`, `campRest`, `addFightsCleared`, `dungeonExperience`, `rollDungeonLoot`) and the engine's `simulateDungeonRoom` for each fight (HP carried, keepsakes folded in, rest from gear; the seed of a fight comes from the run's seed, one stream per fight). The policy (`POLICY` in `dungeon.ts`, all in the report's methodology):
+  - Route: the foe the row's elements beat; an elite only above 70% average HP with nobody down; a mystery room or cache below 50%. `random` players pick at random and `best` players add half the best room one floor ahead.
+  - Events: the costly or gamble option only above 60% average HP, a plain heal below 70%, otherwise the free option.
+  - Camp: swap in the strongest unused creature for a fallen one, else rest below 60%, else the first keepsake (`best` takes the better by a simple score); then head home when 2 creatures are down or the average HP is under 35%.
+  - Payout as the worker's `pay`: the kept pack, on a clear the boss chest (the boss's Essence and scrap, the full clear's Essence, the shard and gear dice, the landmark's extras), the run's supply once a fight is cleared, Market Day's scrap per fight cleared, the streak bonus on the first run of a day; experience per creature by the fights it stood in the row for, plus the full clear to the row that beat the boss; the free first-day retry only after a defeat.
+  - Tuning used `pnpm sim:quick` and a dungeon-only study (8 to 40 economy sims of the default server, 12 weeks) for the knobs, then `pnpm sim` (full, seed `leet`) twice (two settings of the foe numbers). Dungeon numbers move by a few points between seeds (about 50 to 170 first-week runs): read differences of under 4 points as noise.
+- **Options (sim, dungeon-only study, 16 to 40 sims).**
+  - Heading home. The spec's rule alone (2 down or under 35% after the camp choice) sends a daily player home on 0% of runs: they reach the camp healthy and lose after it. A plain "under 60% (or 75%) after the choice" rule gives 7% or 32% but also sends first-week players home on depth 1 (first-week clear 70%). So the policy has one memory rule, `DungeonState.lostAt`: after a defeat at a depth the next run is **wary** (home with any creature down or under 75% after the camp choice; the same-day retry is not). That gives 18 to 20% of runs at home and leaves the first week alone.
+  - Foe HP. At `hpStepBp` 3000 and the spec's home rule (4 sims): `baseHpBp` 11750 gives first-week 81% and growth 1.1; 8000 gives 86% and 1.4; 6000 gives 94% and 1.8. It is a cliff more than a slope (the foe must fall inside its rounds): 12000 with Attack 7500 gives 71%, and Attack alone does little (9000 with Attack 7500: +3 points). The elite's boost does not matter for the first week (no boost at all: 87% against 86%).
+  - A steeper step keeps the ladder: `baseHpBp` 6500 with `hpStepBp` 4500 holds the first week at about 91% and growth at 1.7 to 1.8 a week (7500 and 4000: 88 to 89%, 1.7).
+- **Action (starting values, `RULES`).**
+  - `dungeon.baseHpBp` 11750 → **6500**.
+  - `dungeon.hpStepBp` 3000 → **4500**.
+  - `experience.dungeon.perRoom` 60 → **35** (per fight cleared; `fullClear` stays 60). A daily player's dungeon experience: 2917 → 2980 a week.
+  - `dungeon.loot.elite.bait` 1 → **0** (an elite pays scrap 1 and a keepsake). A plain fight pays Bait 1 and a cache Bait 1 and scrap 1 as the design says (a pinned glossary test holds the cache); so a full clear pays Bait 3.8 instead of 3.
+  - Not changed: `elite` (14000 / 12000), `camp.restBp` 4000, `defeatKeepBp` 5000, the map kind odds, `fullClear`, `bossShardBp`, `gearOdds`, `baseAtkBp`, `loot.boss` and `loot.fight`.
+  - Also: new targets `dungeon-home-rate` (10 to 45%) and `dungeon-run-fights` (3 to 5.5), the metrics `dungeon.dailyHomeRate` and `dungeon.meanFights`, the report's "How runs end" table, and the `lostAt` field of `DungeonState`. The legacy digest was re-pinned (`legacy-unchanged.test.ts`).
+- **Outcome (sim): the dungeon targets** (`pnpm sim` full, seed `leet`, 94 targets). Before: the three-room model, quick sim (the full run of B-017 had first-week 77.4%). After: full.
+
+  | Target                                 | Before (quick, 3 rooms) | After (full)     |
+  | -------------------------------------- | ----------------------- | ---------------- |
+  | `dungeon-first-week-clear` (>= 80%)    | 88.9%                   | 89.4%            |
+  | `dungeon-depth-growth` (1 to 2 a week) | 1.17                    | 1.83             |
+  | `dungeon-essence-share` (<= 40%)       | 3.3%                    | 4.1%             |
+  | `dungeon-gear-share-week8` (<= 20%)    | 23.6%                   | **22.8% (fail)** |
+  | `dungeon-home-rate` (10 to 45%)        | n/a                     | 19.3%            |
+  | `dungeon-run-fights` (3 to 5.5)        | 3 (fixed)               | 4.13             |
+
+  The first full run (7500 and 4000) gave first-week 83.8%, growth 1.67 and the same others; it was moved to 6500 and 4500 for a wider margin on the first week (the 40-sim study put the two settings 2 to 3 points apart).
+
+- **Outcome (sim): how a run ends and what it pays.** Daily player, all runs (full): cleared 28%, home 19%, defeat 53%; 4.17 fights, 0.46 elites and 1.09 keepsakes a run; the pack found is 4.2 (Bait, Essence and scrap added up) and 3.35 of it is kept; 89% of runs reach the camp, where the choices are rest 3%, swap 24%, keepsake 53% and home 21%. Casuals clear 61% and go home 9%. Players stop at the same wall as before (depth 14, the first landmark, clears 11 to 12% of runs). A full clear pays Bait 3.8, Essence 1.06, scrap 2.3, a supply, a 60% shard and a 15% gear drop (today's: 3, 1, 2, a supply, 60%, 15%). A run that heads home pays Bait 2.5 and scrap 0.5 after 2.4 fights; a defeat keeps Bait 1.8 and scrap 0.7 of 3.2 and 0.9.
+
+  Per daily player and week (6 sims of seed `leet`, 12 weeks), three rooms → map:
+
+  | Measure            | Before | After |
+  | ------------------ | ------ | ----- |
+  | Runs               | 6.84   | 6.82  |
+  | Dungeon experience | 2917   | 2982  |
+  | Bait               | 14.2   | 17.2  |
+  | Essence            | 3.03   | 3.54  |
+  | Scrap              | 11.9   | 12.0  |
+  | Gear items         | 0.43   | 0.40  |
+
+  Bait is the one that is not close (+21%): a fight pays Bait 1 and a path has 4 of them, against 3 rooms; it is about 5% of a player's weekly Bait, so it is left.
+
+- **Outcome (sim): the other targets** (`pnpm sim` full, seed `leet`): 94 targets, 65 pass and 29 fail (B-018: 92 targets, 65 pass and 27 fail). The raid is easier again (phase 1 68.9% → 74.2%, finale typical 69.9% → 76.5%, finale 15 players 66.5% → 70.5%, `raid-ko-share` 29.4% → 26.3% and now passes) and `curve-r6up-default` is 72.7% (62.0% before; range 45 to 65%): the raid retune after the revamps is where all of these belong. The gear share targets, `gear-newcomer-catchup` (55.0%), the expedition slots and `creatures-talent-share-min-maxer` (-2.1%; 9.9% in the first full run) move by a few points whenever any number changes, because every journey server plays the dungeon: 5 targets differ between the two full runs of this entry (four gear and talent shares, and `curve-default-phase1`), none of them from a dungeon rule. The dungeon does not look like the cause of anything that moved on purpose; read the raid numbers against this entry's date.
+- **What did not pass, and why.** `dungeon-gear-share-week8` (22.8%, limit 20%) was failing before (23.6% in the quick run, 21.7% in B-018's full run) and is not a loot number: with no gear drops, shards or scrap from the dungeon it is still 21.6%; with no dungeon experience it is 24.4% (experience lowers the share); with **no supply** from the dungeon it is 18.5%. The supply of the first fight cleared (`RULES.dungeon.perRoom[0].supply`, tiers by depth did not matter) feeds the trips, which feed the Workshop. That is a design question (a supply on some runs only, or a basic one only), not a tuning one; the shipped design keeps one supply per run, as B-011 decided.
+- **Expected.** Live: most runs of a regular player end at the camp or just after it (a share of home runs near a fifth), a clear takes 4 to 6 fights, and players keep reaching a depth wall around depth 14. Watch the share of runs that head home, the share of defeats in a player's first run, and `dungeon_camp` choices.
+- **Follow-ups.**
+  - Worker parity: the sim's supply count reads `RULES.dungeon.perRoom[0].supply` (the worker pays a constant 1: both are 1) and the sim pays Market Day's scrap per fight cleared (the worker's `pay` does not appear to yet). Experience, the pack, the chest, the supply and the retry rule are as the worker's.
+  - Gear share at week 8 and the raid retune (see above).
+  - Keepsake and event balance (the sim picks the first keepsake, or the best by a flat score, and the free or costly option by health): a study of what each is worth would show if one is always right.
+  - The wary rule is a stand-in for what players will do near their wall; replace it with live data (`dungeon_camp` by depth and by the previous run's outcome).
+
+### B-020: The Undercroft in the simulator: doors, a descent and a harder level (open)
+
+- **Opened:** 2026-10-18, build step of "The Undercroft" in `docs/design/dungeon-paths.md` (Misa, 2026-10-18: runs should grow longer as players progress, by the player's choice, and never get too long for anyone who does not want it).
+- **Finding.** The rules and the server play the Undercroft (carved doors, the banked chest, the descent, levels, epic fights, the keeper and its chest, a cracked floor) but the simulator drew maps without doors and ended every run at the boss. So none of it was measured, and Misa's worry (runs getting too long) had no number.
+- **Hypothesis.** Few runs go down: the descent needs a row over 60% HP with nobody knocked out, and a row that has just beaten a boss at its depth wall is worn. So the economy hardly moves, runs stay near 4 fights, and the new rules can be added without retuning anything but the Undercroft's own difficulty.
+- **Method.** `packages/sim/src/dungeon.ts` plays the worker's rules as the worker pays them (`apps/worker/src/dungeon-path.ts` is the reference), with the game's own pure functions (`generateDungeonMap(rng, undefined, { doors: true })`, `drawMark`, `generateUndercroftMap`, `undercroftBaseFloors`, `roomSpecForNode` with levels, `nodeLoot(kind, level)`, `catchBreath`, `rollUndercroftChest`, `keptOnDefeat`):
+  - Doors: the policy steps through a door when its route reaches it (it costs no fight, so no risk; `routeScore` 3.2, above a plain fight). From depth 8 it adds a room of a random kind to the Undercroft (at most 2); below, it is a quiet room.
+  - The boss at depth 8 or over banks the chest (its gear, shard and supply are paid for good; its Essence and scrap go into the pack) and locks depth + 1, so a defeat below keeps the depth. `wantsDescend`: go down when, after catching its breath (+20% HP), the row's average HP is over 60% with nobody down (`random` players flip a coin; `best` wants over 75% for a level of 4 floors or more with no camp).
+  - Below: the same route, event and camp rules; fights, elites and caches pay twice into the pack (Market Day's scrap too); epic fights; camps with the main camp's home rule (the only way home from below); the keeper and its chest (gear by `rollUndercroftChest`); a cracked floor offers the next level under the same rule (3 levels at most). A defeat below keeps half the pack, rounded up.
+  - Pay: Market Day's scrap is now in the pack (as the worker's `packLoot`; B-019's follow-up), so it is halved after a defeat; the boss's Essence and scrap and the landmark's extras are in the pack too (so "pack found" is larger than in B-019: the definition moved, not the pay); the full clear bonus goes to the row that beat the main boss (`fullClearRow`).
+  - Metrics (`dungeon-analysis.ts`, a daily player's runs at depth 8 or over): `dungeon.undercroftDescentRate` (of the runs that beat the main boss, so were offered the way down, the share that went down), `dungeon.undercroftClearRate` (of the descents, the share that beat the first keeper), `dungeon.undercroftMeanLevels`, `dungeon.eligibleMeanFights` (fights per run, the Undercroft's included). New targets `dungeon-descent-rate` (20 to 80%, a real choice) and `dungeon-eligible-run-fights` (at most 7, runs must not get too long); the report has "The Undercroft" under "Daily dungeon".
+  - Studies: `pnpm sim:quick` while building, then dungeon-only studies of the economy sims behind the full run (24 sims of seed `leet`, 12 weeks, same seeds, so they reproduce the full run's dungeon numbers to the digit) with `--set` overrides, and a 12-server gear study (`leet:gear`); then `pnpm sim` twice (the second after the tuning below).
+- **Options (sim, dungeon-only studies, 24 sims of `leet`).**
+  - The keeper is the wall. Of the Undercroft's fights at `depthBonus` 3 (the spec's start): plain fights are won 86%, elites 51%, epic fights 45%, keepers 32%. A descent clears its first keeper 17% of the time, so five in six come home with half a pack.
+
+    | `depthBonus` | Keepers beaten | A descent clears its first keeper | Descent rate | Growth a week (mean) |
+    | ------------ | -------------- | --------------------------------- | ------------ | -------------------- |
+    | 3 (spec)     | 32%            | 17.4%                             | 23.0%        | 1.83 (median)        |
+    | 2            | 40%            | 23.6%                             | 25.1%        | 1.89                 |
+    | 1            | 48%            | 32.8%                             | 23.7%        | 1.91                 |
+    | 0            | 59%            | 45.1%                             | 25.4%        | 1.87                 |
+
+  - The descent rate does not move with the level's difficulty, and not with `catchBreathBp` either (20, 30 and 40%: 24.8, 25.0 and 23.2%): 71% of the offers have a creature knocked out (0 down 28%, 1 down 43%, 2 down 29%), only 1.4% fail on HP alone, and breath does not bring a fallen creature back. So the descent rate (23 to 27%) sits near the 20% floor of its target, and it is decided by who falls in the boss fight.
+  - Doors. A free room on about a third of the maps makes a median daily player climb about 0.1 depths a week faster (12 sims of seed `s2`: 1.83 without doors and descents, 1.92 with), and the median sat at 2.0 on `leet`, the target's limit. `hpCurveBp` 300 to 340 (the later depths; `hpStepBp` cannot rise, the game's own test keeps depth 2 under 1.5 times depth 1) brings the mean to 1.84, 1.76 and 1.75 on three seeds (1.91, 1.89 and 1.78 at 300; 1.72, 1.69 and 1.73 at 370).
+  - The chest's gear. `chest.gearBp` 4000 against 0 (12 journey servers, 30 weeks): a min-maxer's gear share at week 8 is 25.7% against 25.2% (23.1% with no Undercroft and no doors at all), at week 20 32.6% against 30.4%; a daily player gets 0.52 gear items a week against 0.46 (0.50 with no Undercroft). The chest is worth about 0.05 items a week, inside the noise of the gear share (about 2 points on 12 servers), so it stays as designed.
+- **Action (starting values, `RULES`).**
+  - `dungeon.undercroft.depthBonus` 3 → **1**: the keeper is beaten about half the time and a descent clears a third of the time (a gamble; the sim still shows five in six descents lost at 3). 2 would leave the client's text untouched ("2 depths deeper") and clears 24%; the client's "Foes fight N depths deeper" needs "1 depth" for 1.
+  - `dungeon.hpCurveBp` 300 → **340**, to give the doors back the 0.1 depths a week they add.
+  - Not changed: `catchBreathBp`, `chest`, `epic`, `lootMultiplier`, `crackBp`, `markOdds`, `doorBp`, `experience.dungeon`.
+  - Also: the targets and metrics above, the report section, `routeScore` of doors and epic rooms, the legacy digest re-pinned (`legacy-unchanged.test.ts`).
+- **Outcome (sim): the dungeon targets** (`pnpm sim` full, seed `leet`, 96 targets). The middle column is the first full run, with the spec's `depthBonus` 3 and `hpCurveBp` 300.
+
+  | Target                                 | B-019 (full) | Spec numbers (full) | After (full)     |
+  | -------------------------------------- | ------------ | ------------------- | ---------------- |
+  | `dungeon-first-week-clear` (>= 80%)    | 89.4%        | 86.0%               | 88.3%            |
+  | `dungeon-depth-growth` (1 to 2 a week) | 1.83         | 1.83                | 1.83             |
+  | `dungeon-essence-share` (<= 40%)       | 4.1%         | 4.2%                | 4.3%             |
+  | `dungeon-gear-share-week8` (<= 20%)    | 22.8% (fail) | 24.0% (fail)        | **22.4% (fail)** |
+  | `dungeon-home-rate` (10 to 45%)        | 19.3%        | 20.6%               | 19.1%            |
+  | `dungeon-run-fights` (3 to 5.5)        | 4.13         | 4.10                | 4.11             |
+  | `dungeon-descent-rate` (20 to 80%)     | n/a          | 23.0%               | 26.7%            |
+  | `dungeon-eligible-run-fights` (<= 7)   | n/a          | 4.07                | 4.07             |
+
+- **Outcome (sim): how the Undercroft is played** (a daily player, runs at depth 8 or over, 6,894 runs, full run after tuning). The main boss falls in 22% of them and the descent is offered; 26.6% of those go down (6.0% of all these runs); 34.4% of the descents beat the first keeper (0.36 keepers a descent), 270 of 413 are lost below (half the pack, the depth stays) and 3 head home from an Undercroft camp. A descent plays 2.85 fights below, and the whole run 4.07 fights (3.90 on the main map): the Undercroft adds about 0.17 fights a run to a daily player, far from Misa's worry (7). 15.2% of these runs step through a carved door (0.15 rooms a run). Across all archetypes a run still ends cleared 25%, home 18% and in a defeat 57% (a daily player; B-019: 28%, 19%, 53%: a loss below the boss is a defeat now, with its depth won).
+
+  Per daily player and week (24 sims, 12 weeks), B-019 → now: runs 6.75 → 6.76, Bait 17.1 → 17.1, Essence 3.51 → 3.62, scrap 12.4 → 11.7 (Market Day's scrap is halved after a defeat now), gear items 0.48 → 0.53, dungeon experience about 2,950 a week (2,982 in B-019).
+
+- **Outcome (sim): the other targets** (`pnpm sim` full, seed `leet`): 96 targets, 70 pass, 26 fail (B-019: 94, 65 and 29). Every target that passed in B-019 still passes, and three more do (`gear-share-min-maxer-week20` 31.6%, `gear-share-engaged-week2` 5.4% and `creatures-talent-share-min-maxer` 9.7%: noise at the edge of their ranges, not a rule). The raid moves by a few points as it does with any change to the dungeon (phase 1 74.2% → 70.8%, finale typical 76.5% → 74.4%, finale 15 players 70.5% → 73.9%, `curve-r6up-default` 72.7% → 68.3%, `gear-newcomer-catchup` 55.0% → 58.1%); the first full run (spec numbers) has the same set of failing targets but for `gear-share-drop-in-week8`. All of them are for the raid and dungeon rebalance after the revamps.
+- **What did not pass, and why.** `dungeon-gear-share-week8` (22.4%, limit 20%) was failing before (22.8%) and is not a loot number (B-019): the first full run had 24.0% and the final one 22.4% with the same chest, so the difference is noise; the study above finds the chest worth about 0.05 items a week.
+- **Expected.** Live: about a quarter of the runs that beat the boss at depth 8 or over go down (a fallen creature is what stops the rest), a third of the descents beat their keeper, and a run stays near 4 fights for almost everyone. Watch `dungeon_descend` against the runs that were offered it, `deepest`, the share of defeats below the boss and what a door adds.
+- **Follow-ups.**
+  - The worker's fixtures (`apps/activity/src/fixtures`, checked by `apps/worker/test/dungeon-fixtures.test.ts`) were captured with `depthBonus` 3 and the old foe curve: re-capture them (`test/dungeon-capture.test.ts`) after taking in this change. The client's "Foes fight N depths deeper than yours" (`dungeon-text.ts`) needs "1 depth" for 1.
+  - The descent is blocked by a fallen creature far more than by low HP. If more players should go down, the lever is a rule (for example, catching its breath brings a fallen creature back at 1 HP), not a number: `catchBreathBp` does nothing. Not tried: it is a design change.
+  - The keeper is the wall (beaten about 48% at depth bonus 1). If the Undercroft should be easier than that, an Undercroft keeper's own HP and Attack (`signature` is on) is the lever the rules do not have yet.
+  - Worker parity (found while reading the worker): both pack Market Day's scrap now (B-019's follow-up). The sim applies the camp's choice and then may head home; the worker's home is instead of the choice. The wary rule is still a stand-in for what players do near their wall.
+  - `docs/design/dungeon-paths.md` says the simulator does not draw doors yet and "takes the camp mark when it can": it draws them and steps through when the route reaches one; which room a door adds is drawn at that moment and not chosen.
+
+### B-021: A fallen creature gets back up on the way down (open)
+
+- **Opened:** 2026-10-18, from B-020's follow-up and Misa's call ("Let's try the catch-a-breath mechanic [reviving a knocked-out creature] unless it makes going deeper too easy").
+- **Finding.** In B-020, 71% of the descent offers had a creature knocked out and the policy never goes down with one down, so the descent rate (26.6% of the offers, 5.8% of all runs at depth 8 or over) sat near the 20% floor of its target and `catchBreathBp` did not move it.
+- **Hypothesis.** If a fallen creature gets back up on the way down, more rows go down and the Undercroft is used more. The revived creature is nearly useless in the next fight, so the keeper should stay a real risk; if it makes a descent too easy (the first keeper cleared by much more than the 33% of B-020, or runs getting long) the share is lowered.
+- **Method.** `catchBreath` (`packages/game/src/rules/dungeon-run.ts`) gets a knocked-out creature up at `RULES.dungeon.undercroft.reviveBp` of its max HP (at least 1 HP); standing creatures still recover `catchBreathBp` (20%). The worker's descend does the same and writes `revived` (how many got up) in the `descend` history entry; the pending card carries `reviveBp`. The sim's policy looks at the row after the breath (it already did): average HP over 50% (it was over 60% with nobody down; nobody is down after a revive, so the rule is the HP, and 50% keeps a row with one revived creature in play). Acceptance, set before the run: the descent rate within 20 to 80%, the first keeper cleared by at most about 45% of the descents, every target that passed in B-020 still passing, eligible run fights at most 7.
+- **Options (`pnpm sim` full, seed `leet`, 96 targets).** "HEAD" is the code before this change, re-run on the current main (it has the raid board change, #33, which B-020's run did not).
+
+  |                                                     | B-020      | HEAD (before) | `reviveBp` 1000 | `reviveBp` 500 |
+  | --------------------------------------------------- | ---------- | ------------- | --------------- | -------------- |
+  | Targets passing                                     | 70         | 68            | 68              | 69             |
+  | Descent rate (offered to went down)                 | 26.6%      | 26.1%         | **53.6%**       | 52.5%          |
+  | Descents that clear the first keeper                | 34.4%      | 35.2%         | **21.6%**       | 21.9%          |
+  | Descents of all runs at depth 8 or over             | 6.0%       | 5.8%          | 12.1%           | 11.8%          |
+  | Lost below (half the pack)                          | 270 of 413 | 261 of 401    | 660 of 833      | 642 of 812     |
+  | `dungeon-eligible-run-fights` (<= 7)                | 4.07       | 4.07          | 4.25            | 4.24           |
+  | `dungeon-run-fights` (3 to 5.5)                     | 4.11       | 4.10          | 4.27            | 4.27           |
+  | `dungeon-descent-rate` (20 to 80%)                  | 26.6%      | 26.1%         | 53.6%           | 52.5%          |
+  | `dungeon-depth-growth` (1 to 2 a week)              | 1.83       | 1.83          | 1.83            | 1.83           |
+  | `dungeon-home-rate` (10 to 45%)                     | 19.1%      | 19.1%         | 19.3%           | 19.4%          |
+  | `dungeon-first-week-clear` (>= 80%)                 | 88.3%      | 88.4%         | 86.7%           | 87.2%          |
+  | `dungeon-gear-share-week8` (<= 20%, failing before) | 22.4%      | 22.5%         | 22.4%           | 23.1%          |
+
+- **Action.** `dungeon.undercroft.reviveBp` **1000** (new; 10% of max HP). `POLICY.descendHp` 0.6 → **0.5** (and "nobody down" is moot). Client: the card says "Your creatures catch their breath (20% HP), and fallen ones get back up (10% HP)."; the history line says how many got up; the glossary entry says it. The legacy digest is re-pinned (`legacy-unchanged.test.ts`); the worker's fixtures were re-captured (`revived: 0`, `reviveBp` on the card). Not changed: every other rule.
+- **Outcome (sim): it does not make going deeper too easy.** Twice as many rows go down (53.6% of the offers), but a descent now clears its first keeper 21.6% of the time (35.2% before): the rows that go down are the ones that would have stayed home with a creature down, and a revived creature at 10% HP falls in the first fight. 79% of descents are lost below (a defeat there keeps half the pack and the depth), so the Undercroft is a larger gamble for more players, not an easier one. A run is 4.25 fights on average (4.07), far from 7. The share barely matters: at 500 the numbers are the same inside noise (52.5%, 21.9%), because the descent decision is the policy's HP rule, not the size of the revive. 1000 is kept as the starting value.
+- **Outcome (sim): the other targets.** 96 targets, 68 pass, 28 fail (B-020: 70 and 26; HEAD before this change: 68 and 28). Four targets that passed in B-020 already fail on HEAD without this change, so they moved with the raid board change from main (#33), not with the revive: `raid-boss-spread` (8.3% to 16.3%; 17.6% with the revive, 14.9% at 500: seed noise, as B-007 found), `fair-newcomer-essence` (70.4% to 65.0%), `gear-share-drop-in-week30` (19.2% to 22.2%) and `curve-default-phase1` (75.3% to 72.7%). One target passed on HEAD and fails now only with this change: `gear-share-min-maxer-week20` (31.4% before, 32.4% at 1000 and 32.6% at 500, limit 32.0%): more descents mean more keeper chests (40% a gear piece), about a point of gear share; it is at the edge of its range. Others move by a point or two either way (`gear-share-regular-week20` 16.7% to 19.3% now passes, `curve-r6up-default` 67.7% to 59.1% now passes), the same noise B-020 saw.
+- **Expected.** Live: more players go down (about half of the rows that beat the boss at depth 8 or over), most come home with half a pack, and about one in five clears the first keeper. Watch `dungeon_descend` against the runs that were offered it, `deepest` and the share of defeats below the boss; if players feel the Undercroft punishes them, the levers are the keeper's strength (`depthBonus`) or the pack loss on a defeat, not the revive.
+- **Follow-ups.**
+  - Lowering `reviveBp` to 500 changes nothing the sim can see. If the owner wants the revived creature to matter, it needs a bigger share (the first fight there is at the Undercroft's depth), which then makes the next descent easier; not tried.
+  - `gear-share-min-maxer-week20` is at the edge (32.4% against 32.0%); if live data shows the keeper's chest feeding gear too fast, lower `undercroft.chest.gearBp`.

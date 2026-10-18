@@ -78,7 +78,7 @@ These are the rules as the engine implements them; keep them exact.
   4. The raid week.
   5. The live finale (tap-to-fire, Auto fire, telegraphs).
   6. Expeditions.
-  7. The daily dungeon (one run a day, three rooms, depth, landmarks and the streak).
+  7. The daily dungeon (one run a day, a map of rooms ending in a floor boss, depth, landmarks and the streak).
   8. Ranks and Festivals.
   9. Rewards.
   10. The Workshop (gear, parts, blueprints and jobs).

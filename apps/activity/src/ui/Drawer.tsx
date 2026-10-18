@@ -9,6 +9,8 @@ export interface DrawerProps {
   onClose: () => void;
   /** The heading of the sheet; it also names the dialog for screen readers. Plain text. */
   title: string;
+  /** A small control right after the heading ("?" help tag). Not part of the dialog's name. */
+  titleHelp?: ComponentChildren | undefined;
   /** The heading is only spoken, not shown (the body starts with its own name, an item card). */
   titleHidden?: boolean | undefined;
   /** A short note on the right of the heading ("12 / 20"). Optional. */
@@ -52,6 +54,7 @@ function DrawerSheet({
   onClose,
   title,
   titleHidden = false,
+  titleHelp,
   meta,
   toolbar,
   children,
@@ -169,9 +172,18 @@ function DrawerSheet({
             <span class="drawer-grip" />
           </button>
           <div class="drawer-head">
-            <h2 id={titleId} class={titleHidden ? 'visually-hidden' : 'drawer-title'}>
-              {title}
-            </h2>
+            {titleHelp !== undefined && !titleHidden ? (
+              <div class="drawer-heading">
+                <h2 id={titleId} class="drawer-title">
+                  {title}
+                </h2>
+                {titleHelp}
+              </div>
+            ) : (
+              <h2 id={titleId} class={titleHidden ? 'visually-hidden' : 'drawer-title'}>
+                {title}
+              </h2>
+            )}
             {meta !== undefined && <span class="drawer-meta muted">{meta}</span>}
             <button type="button" class="drawer-close" aria-label="Close" onClick={onClose}>
               <svg

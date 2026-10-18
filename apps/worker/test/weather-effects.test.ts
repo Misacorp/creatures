@@ -16,10 +16,10 @@ import {
   type PartsBundle,
 } from '@creatures/game';
 import type { DungeonRunInput } from '@creatures/engine';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { eventTimes } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
-import { dungeonPlayer } from './dungeon-helpers';
+import { dungeonPlayer, easyFoes } from './dungeon-helpers';
 import {
   apiPlayer,
   giveItem,
@@ -587,18 +587,33 @@ describe('the Workshop under the weather', () => {
 
 // --- The dungeon ---
 
+/** The row a map run holds (the base fight input: slots with the day's sheet, luck, boss attacks) and its summary. */
 interface DungeonRow {
   input_json: string;
   summary_json: string;
 }
 
-const lastRun = (ctx: CoreContext) =>
-  rows<DungeonRow & Record<string, string | number | null>>(
+const lastRun = (ctx: CoreContext): DungeonRow => {
+  const row = rows<{ state_json: string; summary_json: string }>(
     ctx.sql,
-    'SELECT input_json, summary_json FROM dungeon_runs ORDER BY rowid DESC LIMIT 1',
-  )[0] as DungeonRow;
+    'SELECT state_json, summary_json FROM dungeon_runs ORDER BY rowid DESC LIMIT 1',
+  )[0] as { state_json: string; summary_json: string };
+  return {
+    input_json: JSON.stringify((JSON.parse(row.state_json) as { input: unknown }).input),
+    summary_json: row.summary_json,
+  };
+};
 
 describe('the dungeon under the weather', () => {
+  // The foes are made easy: what these tests look at is the day, not whether a team wins.
+  let restoreFoes: () => void = () => undefined;
+  beforeEach(() => {
+    restoreFoes = easyFoes();
+  });
+  afterEach(() => {
+    restoreFoes();
+  });
+
   it('fights with the day on every creature, the luck and the foes, stores it in the input and names it in the summary', async () => {
     await runCore(
       nextGuild(),
@@ -693,6 +708,69 @@ describe('the dungeon under the weather', () => {
         });
         expect(gained).toEqual([want, want, want]);
         expect(want).toBeGreaterThan(dungeonExperience(run.roomsCleared, run.cleared, false));
+      },
+      { weather: true },
+    );
+  });
+
+  it("says what changed each creature's dungeon experience: the treat and the day, by name", async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        ctx.clock.t = AFTERNOON;
+        const p = await dungeonPlayer(ctx, 1);
+        ctx.core.credit({
+          userId: p.id,
+          currency: 'bait',
+          amount: 300,
+          source: 'test',
+          idempotencyKey: 'bait-xp-note',
+        });
+        sky(ctx, 'hearty-breakfast', 'cold-snap');
+        const [a] = p.creatureIds as [string];
+        const res = await p.run({ treats: [a] });
+        const exp = res.body.run.rewards.experience ?? [];
+        const dayEffects = [
+          { name: 'Hearty Breakfast', bp: 2_500 },
+          { name: 'Cold Snap', bp: -2_000 },
+        ];
+        // The treat triples on this day; the others have no treat. Both see the day's two effects.
+        expect(exp.find((e) => e.creatureId === a)).toMatchObject({
+          treat: true,
+          treatTimes: 3,
+          dayEffects,
+        });
+        const others = exp.filter((e) => e.creatureId !== a);
+        expect(others).toHaveLength(2);
+        for (const e of others)
+          expect(e).toMatchObject({ treat: false, treatTimes: null, dayEffects });
+      },
+      { weather: true },
+    );
+  });
+
+  it('a plain day with a treat says it doubled, and names no day', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        ctx.clock.t = AFTERNOON;
+        const p = await dungeonPlayer(ctx, 1);
+        ctx.core.credit({
+          userId: p.id,
+          currency: 'bait',
+          amount: 300,
+          source: 'test',
+          idempotencyKey: 'bait-xp-plain',
+        });
+        sky(ctx, 'quiet-night');
+        const [a] = p.creatureIds as [string];
+        const exp = (await p.run({ treats: [a] })).body.run.rewards.experience ?? [];
+        expect(exp.find((e) => e.creatureId === a)).toMatchObject({
+          treat: true,
+          treatTimes: 2,
+          dayEffects: [],
+        });
+        expect(exp.filter((e) => e.treatTimes === null)).toHaveLength(2);
       },
       { weather: true },
     );

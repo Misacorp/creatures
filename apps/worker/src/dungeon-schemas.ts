@@ -25,6 +25,57 @@ export const RunBodySchema = v.strictObject({
 });
 export type RunBody = v.InferOutput<typeof RunBodySchema>;
 
+/** `POST /api/dungeon/start`: the same body as the old all-at-once run (docs/design/dungeon-paths.md). */
+export const StartBodySchema = RunBodySchema;
+export type StartBody = RunBody;
+
+/** A node of the map: `f<floor>l<lane>`, or `u<level>f<floor>l<lane>` in an Undercroft. Whether it is on this run's map and reachable is the server's check. */
+const NodeIdSchema = v.pipe(v.string(), v.regex(/^(?:u\d)?f\d{1,2}l\d$/));
+/** A content id (a keepsake). Whether it is one of the camp's offers is the server's check. */
+const ContentIdSchema = v.pipe(
+  v.string(),
+  v.maxLength(32),
+  v.regex(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/),
+);
+
+/**
+ * What a player can do next on the map, strict: unknown keys are rejected, so a client can never send
+ * a user id, a seed, HP, loot or anything else the server decides. The server decides whether the act
+ * is allowed now (the room is reachable, something is pending, the swap is possible).
+ */
+export const ActSchema = v.variant('type', [
+  v.strictObject({ type: v.literal('move'), node: NodeIdSchema }),
+  v.strictObject({ type: v.literal('event'), option: v.picklist([0, 1]) }),
+  v.strictObject({
+    type: v.literal('camp'),
+    choice: v.picklist(['rest', 'swap', 'keepsake']),
+    /**
+     * The row in the order the player wants it, left to right: a permutation of the creature ids the row
+     * holds once the choice is done (after a swap: the creature that comes in, not the one that leaves).
+     */
+    order: v.optional(v.pipe(v.array(IdSchema), v.length(RULES.dungeon.teamSize))),
+    /** Swap: the creature of the row that goes home, and the player's own creature that comes in. */
+    out: v.optional(IdSchema),
+    in: v.optional(IdSchema),
+    /** Keepsake: one of the two offers. */
+    keepsake: v.optional(ContentIdSchema),
+  }),
+  /** Heads home from the camp, or from the descent card (the run ends and keeps the whole pack). */
+  v.strictObject({ type: v.literal('home') }),
+  /** Goes down into the Undercroft, when the descent card is waiting. */
+  v.strictObject({ type: v.literal('descend') }),
+]);
+export type Act = v.InferOutput<typeof ActSchema>;
+
+/** The body of `POST /api/dungeon/act`. Strict. The run must be the caller's own; `step` is the run's current step. */
+export const ActBodySchema = v.strictObject({
+  runId: IdSchema,
+  step: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(999)),
+  idempotencyKey: IdempotencyKeySchema,
+  act: ActSchema,
+});
+export type ActBody = v.InferOutput<typeof ActBodySchema>;
+
 /**
  * The part of a stored run summary that gives the team's order: the creature ids, left to right,
  * exactly `teamSize` of them. Other keys of the summary are ignored on purpose (it is our own
