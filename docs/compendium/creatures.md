@@ -1,6 +1,6 @@
 # Creatures
 
-Status: 2026-10-13. Covers all 22 species, grouped into 14 lines, plus the two Festival creatures and the guest roster.
+Status: 2026-10-18. Covers all 24 species, grouped into 14 lines, plus the two Festival creatures and the guest roster.
 
 Read `README.md` for the tags. Every section cites its source. Lines marked `(compendium detail, not shipped)` are new flavour for this file only.
 
@@ -8,28 +8,28 @@ Read `README.md` for the tags. Every section cites its source. Lines marked `(co
 
 ## At a glance
 
-| Line        | Stage 1     | Stage 2      | Element | Role    | Rarity | Where found (catchable stage 1)              |
-| ----------- | ----------- | ------------ | ------- | ------- | ------ | -------------------------------------------- |
-| Splashet    | Splashet    | Tidewing     | Tide    | Setter  | Common | Tidepools, Old Crossroads                    |
-| Cindle      | Cindle      | Pyrelynx     | Ember   | Payoff  | Common | Ember Caves, Old Crossroads                  |
-| Sproutle    | Sproutle    | Thornbuck    | Grove   | Guard   | Common | Verdant Hollow, Old Crossroads               |
-| Zipmouse    | Zipmouse    | Voltaro      | Spark   | Setter  | Common | Storm Ridge, Old Crossroads                  |
-| Mistnewt    | Mistnewt    | Fogwyrm      | Tide    | Guard   | Common | Tidepools, Moonlit Reef                      |
-| Ashmole     | Ashmole     | Magmole      | Ember   | Support | Common | Ember Caves, Festival Grounds                |
-| Stormray    | Stormray    | Tempestray   | Spark   | Payoff  | Rare   | Storm Ridge, Old Crossroads                  |
-| Mossback    | Mossback    | Ancientshell | Grove   | Setter  | Rare   | Ember Caves, Verdant Hollow                  |
-| Coralynx    | Coralynx    | none         | Tide    | Payoff  | Rare   | Tidepools, Moonlit Reef                      |
-| Solmane     | Solmane     | none         | Ember   | Setter  | Epic   | Ember Caves (deep), Festival Grounds         |
-| Gaiadrake   | Gaiadrake   | none         | Grove   | Payoff  | Epic   | Verdant Hollow (deep), Old Crossroads (deep) |
-| Aurorix     | Aurorix     | none         | Spark   | Support | Epic   | Storm Ridge (deep), Moonlit Reef (deep)      |
-| Lanternfin  | Lanternfin  | none         | Tide    | Support | Epic   | Festival only (not catchable)                |
-| Hearthshell | Hearthshell | none         | Ember   | Guard   | Epic   | Festival only (not catchable)                |
+| Line        | Stage 1     | Stage 2              | Element | Role             | Rarity | Where found (catchable stage 1)              |
+| ----------- | ----------- | -------------------- | ------- | ---------------- | ------ | -------------------------------------------- |
+| Splashet    | Splashet    | Tidewing             | Tide    | Setter           | Common | Tidepools, Old Crossroads                    |
+| Cindle      | Cindle      | Pyrelynx             | Ember   | Payoff           | Common | Ember Caves, Old Crossroads                  |
+| Sproutle    | Sproutle    | Thornbuck or Sunfawn | Grove   | Guard or Support | Common | Verdant Hollow, Old Crossroads               |
+| Zipmouse    | Zipmouse    | Voltaro or Ohmouse   | Spark   | Setter or Guard  | Common | Storm Ridge, Old Crossroads                  |
+| Mistnewt    | Mistnewt    | Fogwyrm              | Tide    | Guard            | Common | Tidepools, Moonlit Reef                      |
+| Ashmole     | Ashmole     | Magmole              | Ember   | Support          | Common | Ember Caves, Festival Grounds                |
+| Stormray    | Stormray    | Tempestray           | Spark   | Payoff           | Rare   | Storm Ridge, Old Crossroads                  |
+| Mossback    | Mossback    | Ancientshell         | Grove   | Setter           | Rare   | Ember Caves, Verdant Hollow                  |
+| Coralynx    | Coralynx    | none                 | Tide    | Payoff           | Rare   | Tidepools, Moonlit Reef                      |
+| Solmane     | Solmane     | none                 | Ember   | Setter           | Epic   | Ember Caves (deep), Festival Grounds         |
+| Gaiadrake   | Gaiadrake   | none                 | Grove   | Payoff           | Epic   | Verdant Hollow (deep), Old Crossroads (deep) |
+| Aurorix     | Aurorix     | none                 | Spark   | Support          | Epic   | Storm Ridge (deep), Moonlit Reef (deep)      |
+| Lanternfin  | Lanternfin  | none                 | Tide    | Support          | Epic   | Festival only (not catchable)                |
+| Hearthshell | Hearthshell | none                 | Ember   | Guard            | Epic   | Festival only (not catchable)                |
 
 `(content: creatures.json, destinations.json)`
 
 **Starters:** Splashet, Cindle and Sproutle. `(content: creatures.json, starter)`
 
-**Evolution:** the stage 1 forms of Splashet, Cindle, Sproutle, Zipmouse, Mistnewt and Ashmole evolve at level 15 for 20 Essence. Stormray and Mossback evolve at level 15 for 40 Essence. Every other form stops at level 30. `(content: creatures.json, glossary.json "essence", "level")`
+**Evolution:** Sproutle (Thornbuck or Sunfawn) and Zipmouse (Voltaro or Ohmouse) grow one of two ways, once, for good; a Kept duplicate (a second creature of the line) can grow the other way. The stage 1 forms of Splashet, Cindle, Sproutle, Zipmouse, Mistnewt and Ashmole evolve at level 15 for 20 Essence. Stormray and Mossback evolve at level 15 for 40 Essence. Every other form stops at level 30. `(content: creatures.json, glossary.json "essence", "level")`
 
 **Quirk pools:** each line has a pool of three against-type quirks, keyed by its stage 1 id. Stage 2 forms use their line's pool. A creature's quirk comes from the 40 general quirks about 75% of the time, and from its line's pool about 25% of the time. `(content: quirks.json, design: creatures.md pick rule)`
 
@@ -180,16 +180,16 @@ Shy, sleepy guards that stand close to their friends and take hits for them. `(c
 
 ### Sproutle (stage 1)
 
-|             |                                        |
-| ----------- | -------------------------------------- |
-| Element     | Grove                                  |
-| Role        | Guard                                  |
-| Rarity      | Common                                 |
-| Size        | Small                                  |
-| Starter     | Yes                                    |
-| Evolves     | Thornbuck, at level 15, for 20 Essence |
-| Ability     | Bark Guard                             |
-| Where found | Verdant Hollow; Old Crossroads         |
+|             |                                                   |
+| ----------- | ------------------------------------------------- |
+| Element     | Grove                                             |
+| Role        | Guard                                             |
+| Rarity      | Common                                            |
+| Size        | Small                                             |
+| Starter     | Yes                                               |
+| Evolves     | Thornbuck or Sunfawn, at level 15, for 20 Essence |
+| Ability     | Bark Guard                                        |
+| Where found | Verdant Hollow; Old Crossroads                    |
 
 **Lore** `(content: creatures.json flavor)`: "A shy sprout-eared critter that naps in sunny patches of moss."
 
@@ -238,6 +238,35 @@ Shy, sleepy guards that stand close to their friends and take hits for them. `(c
 
 **Quirk flavour:** the Sproutle line pool.
 
+### Sunfawn (stage 2, second branch of Sproutle)
+
+|           |                                                          |
+| --------- | -------------------------------------------------------- |
+| Element   | Grove                                                    |
+| Role      | Support                                                  |
+| Rarity    | Common                                                   |
+| Size      | Medium                                                   |
+| Catchable | No (evolves from Sproutle, the other way from Thornbuck) |
+| Ability   | Sunny Patch                                              |
+
+**About** `(content)`: "A gentle fawn whose leaf ears have opened into blossoms. It curls up beside tired friends and lends them the sun it has soaked up all day."
+
+**Traits** `(content)`: Curls up beside tired friends. Lends its friends the day's sun. Gentle and soft-spoken. Blooms a little more with every kind word.
+
+**Look** `(content)`:
+
+- Silhouette: slender fawn with long legs, two big blossom-tipped ears and a small white-spotted back.
+- Palette: Sprout Green `#5fb04a`, Leaf Light `#b4e26a`, Deep Moss `#2f6b3a`, Blossom Pink `#f4a6c0`, Petal Cream `#f4eccf`.
+- Features: slender fawn body on four thin legs; two large ears, each opened into a pink blossom at the tip; warm, soft dark eyes with long lashes; cream belly and a pale spotted back; a small yellow glow in the middle of each blossom.
+- Pose: lying curled up in a sunny patch, head resting, blossom ears open to the light.
+- Always: blossoms where the leaf ears were; soft, kind eyes.
+- Never: thorns or antlers; a heavy, armoured body.
+- Changes from stage 1 `(content, fromStage1)`. Keeps: the leaf-green coat, the cream belly and muzzle, the sleepy, gentle eyes, the ears as its most notable feature. Changes: the round bean becomes a slender fawn; leaf ears open into pink blossoms; long legs and a spotted back; blossom pink added.
+
+**Notes** `(compendium detail, not shipped)`: it grows out of Sproutle's "Naps in any sunny patch". The healer a Grove team often lacks (as a Grove Support it heals its neighbours a little each round); the Thornbuck is the wall, the Sunfawn the warmth behind it. Working name (Misa may rename). 16x16 sprite in `species-sprites.ts`.
+
+**Quirk flavour:** the Sproutle line pool.
+
 ---
 
 ## Zipmouse line (Spark)
@@ -246,16 +275,16 @@ Tiny, fast and never still. The line strikes first and leaves Charged for the Gr
 
 ### Zipmouse (stage 1)
 
-|             |                                      |
-| ----------- | ------------------------------------ |
-| Element     | Spark                                |
-| Role        | Setter                               |
-| Rarity      | Common                               |
-| Size        | Tiny                                 |
-| Starter     | No                                   |
-| Evolves     | Voltaro, at level 15, for 20 Essence |
-| Ability     | Static Zap                           |
-| Where found | Storm Ridge; Old Crossroads          |
+|             |                                                 |
+| ----------- | ----------------------------------------------- |
+| Element     | Spark                                           |
+| Role        | Setter                                          |
+| Rarity      | Common                                          |
+| Size        | Tiny                                            |
+| Starter     | No                                              |
+| Evolves     | Voltaro or Ohmouse, at level 15, for 20 Essence |
+| Ability     | Static Zap                                      |
+| Where found | Storm Ridge; Old Crossroads                     |
 
 **Lore** `(content: creatures.json flavor)`: "A tiny mouse that crackles with static and never sits still."
 
@@ -302,6 +331,35 @@ Tiny, fast and never still. The line strikes first and leaves Charged for the Gr
 - Always: the zigzag lightning-bolt tail; oversized round ears.
 - Never: standing still; a rounder, plumper body than Zipmouse.
 - Changes from stage 1 `(content, fromStage1)`. Keeps: huge round ears with violet inner circles, the zigzag tail, the yellow and violet palette, the black bead eyes. Changes: a round blob becomes a lean sprinter; longer legs; a larger bolt tail; a trail of sparks.
+
+**Quirk flavour:** the Zipmouse line pool.
+
+### Ohmouse (stage 2, second branch of Zipmouse)
+
+|           |                                                        |
+| --------- | ------------------------------------------------------ |
+| Element   | Spark                                                  |
+| Role      | Guard                                                  |
+| Rarity    | Common                                                 |
+| Size      | Small                                                  |
+| Catchable | No (evolves from Zipmouse, the other way from Voltaro) |
+| Ability   | Static Wall                                            |
+
+**About** `(content)`: "A round, puffed-up mouse whose giant ears catch stray bolts before they reach its friends. It plants its feet, fizzes, and will not budge."
+
+**Traits** `(content)`: Plants its feet and will not budge. Catches stray bolts in its ears. Fizzes when it is determined. Can freeze like a statue when asked nicely.
+
+**Look** `(content)`:
+
+- Silhouette: wide, puffed-up round mouse with two giant ears, short planted feet and a short zigzag tail.
+- Palette: Spark Yellow `#f2d12b`, Bright Flash `#fff3a0`, Storm Violet `#6b5bd6`, Night Indigo `#2d2a5e`.
+- Features: round, puffed-up body with fur standing out all over; two giant ears wider than the head, with violet inner circles; wide-set short feet planted flat; stubborn black bead eyes under a small frown; tiny sparks fizzing at the ear tips.
+- Pose: planted square on both feet, chest out, ears wide and sparks fizzing at the tips.
+- Always: giant ears that catch bolts; feet planted flat.
+- Never: running or leaning forward; a lean, long-legged body like Voltaro's.
+- Changes from stage 1 `(content, fromStage1)`. Keeps: the huge round ears with violet inner circles, the yellow and violet palette, the black bead eyes, the zigzag tail. Changes: the small round body puffs up rounder; the ears grow larger than the head; the feet widen and plant flat; sparks fizz at the ear tips instead of trailing behind.
+
+**Notes** `(compendium detail, not shipped)`: it grows out of the Zipmouse quirk "Can freeze like a statue for an hour if asked nicely". The Guard that protects a Spark Payoff's row; Voltaro is the Setter that starts the Grounding. A Spark-heavy server wants both, which is what Keep is for. Working name (Misa may rename). 16x16 sprite in `species-sprites.ts`.
 
 **Quirk flavour:** the Zipmouse line pool.
 

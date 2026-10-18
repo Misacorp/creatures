@@ -386,6 +386,12 @@ describe('the glossary text matches the rules', () => {
     expect(text('duplicate-choice')).toContain(`Up to ${String(t.maxPending)} wait`);
     expect(text('duplicate-choice')).toContain(`up to ${String(RULES.fusion.maxFusions)}`);
     expect(text('duplicate-choice')).toContain('never Bait');
+    // Keep is explained, and so is the branch it is for.
+    expect(text('duplicate-choice')).toContain('Keep: it stays as a second creature');
+    expect(text('duplicate-choice')).toContain('two forms');
+    expect(text('evolution')).toContain('permanent');
+    expect(text('evolution')).toContain('Keep a duplicate');
+    expect(content.creatures.filter((c) => c.altEvolvesTo !== undefined)).toHaveLength(2);
     // Bait pays for treats, lures and the book, and nothing turns into Bait.
     expect(text('bait')).toContain('lures');
     expect(text('bait')).not.toContain('turn into Bait');

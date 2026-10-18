@@ -108,6 +108,14 @@ function checkCreatures(pack: ContentPack): void {
     if (c.altEvolvesTo !== undefined && c.altEvolvesTo.species === c.evolvesTo?.species) {
       fail(`"${c.id}" has the same species for both branches`);
     }
+    // One price for the choice: the evolve screen and the server show and charge a single level and cost.
+    if (
+      c.altEvolvesTo !== undefined &&
+      c.evolvesTo !== undefined &&
+      (c.altEvolvesTo.level !== c.evolvesTo.level || c.altEvolvesTo.essence !== c.evolvesTo.essence)
+    ) {
+      fail(`"${c.id}" must have the same level and Essence for both branches`);
+    }
   }
 
   for (const c of pack.creatures) {
@@ -289,9 +297,11 @@ function checkAbilities(pack: ContentPack): void {
     }
   }
 
-  // Evolution lines: both forms have an ability, and the stage-2 one is stronger (each branch).
+  // Evolution lines: both forms have an ability. The first branch's is stronger than the stage-1 one;
+  // the second branch (`altEvolvesTo`) is a different role, so its ability is a sidegrade and only
+  // has to exist (a Support's Sunny Patch is not "more" than a Guard's Bark Guard).
   for (const c of pack.creatures) {
-    for (const evolution of [c.evolvesTo, c.altEvolvesTo]) {
+    for (const [branch, evolution] of [c.evolvesTo, c.altEvolvesTo].entries()) {
       if (evolution === undefined) continue;
       const target = pack.creatures.find((s) => s.id === evolution.species);
       if (target === undefined) continue; // checkCreatures reports this
@@ -300,7 +310,7 @@ function checkAbilities(pack: ContentPack): void {
       if ((a1 === undefined) !== (a2 === undefined)) {
         fail(`"${c.id}" and "${target.id}" must both have an ability or neither`);
       }
-      if (a1 !== undefined && a2 !== undefined) {
+      if (branch === 0 && a1 !== undefined && a2 !== undefined) {
         const problem = upgradeProblem(a1, a2);
         if (problem !== null) fail(`ability "${a2.id}" of "${target.id}" ${problem}`);
       }

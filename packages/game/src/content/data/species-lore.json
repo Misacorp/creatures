@@ -293,6 +293,65 @@
       "Slow to anger and hard to move"
     ]
   },
+  "sunfawn": {
+    "description": "A gentle fawn whose leaf ears have opened into blossoms. It curls up beside tired friends and lends them the sun it has soaked up all day.",
+    "appearance": {
+      "silhouette": "Slender fawn with long legs, two big blossom-tipped ears and a small white-spotted back.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Sprout Green",
+          "hex": "#5fb04a"
+        },
+        {
+          "name": "Leaf Light",
+          "hex": "#b4e26a"
+        },
+        {
+          "name": "Deep Moss",
+          "hex": "#2f6b3a"
+        },
+        {
+          "name": "Blossom Pink",
+          "hex": "#f4a6c0"
+        },
+        {
+          "name": "Petal Cream",
+          "hex": "#f4eccf"
+        }
+      ],
+      "features": [
+        "Slender, gentle fawn body on four thin legs",
+        "Two large ears, each opened into a pink blossom at the tip",
+        "Warm, soft dark eyes with long lashes",
+        "Cream belly and a pale spotted back",
+        "A small yellow glow in the middle of each blossom"
+      ],
+      "pose": "Lying curled up in a sunny patch, head resting, blossom ears open to the light.",
+      "always": ["Blossoms where the leaf ears were", "Soft, kind eyes"],
+      "never": ["Thorns or antlers", "A heavy, armoured body"],
+      "fromStage1": {
+        "keeps": [
+          "Leaf-green coat",
+          "Cream belly and muzzle",
+          "Sleepy, gentle eyes",
+          "Ears as its most notable feature"
+        ],
+        "changes": [
+          "Round bean becomes a slender fawn",
+          "Leaf-shaped ears open into pink blossoms",
+          "Long legs and a spotted back appear",
+          "Blossom pink added to the palette"
+        ]
+      }
+    },
+    "traits": [
+      "Curls up beside tired friends",
+      "Lends its friends the day's sun",
+      "Gentle and soft-spoken",
+      "Blooms a little more with every kind word"
+    ]
+  },
   "zipmouse": {
     "description": "A tiny mouse that crackles with static and never sits still. It zips in first and makes the boss Charged, so your Grove friends can ground it.",
     "appearance": {
@@ -391,6 +450,61 @@
       "Races anything that moves",
       "Always wants a head start",
       "Leaves a trail of sparks"
+    ]
+  },
+  "ohmouse": {
+    "description": "A round, puffed-up mouse whose giant ears catch stray bolts before they reach its friends. It plants its feet, fizzes, and will not budge.",
+    "appearance": {
+      "silhouette": "Wide, puffed-up round mouse with two giant ears, short planted feet and a short zigzag tail.",
+      "size": "small",
+      "palette": [
+        {
+          "name": "Spark Yellow",
+          "hex": "#f2d12b"
+        },
+        {
+          "name": "Bright Flash",
+          "hex": "#fff3a0"
+        },
+        {
+          "name": "Storm Violet",
+          "hex": "#6b5bd6"
+        },
+        {
+          "name": "Night Indigo",
+          "hex": "#2d2a5e"
+        }
+      ],
+      "features": [
+        "Round, puffed-up body with fur standing out all over",
+        "Two giant ears wider than the head, with violet inner circles",
+        "Wide-set short feet planted flat on the ground",
+        "Stubborn black bead eyes under a small frown",
+        "Tiny sparks fizzing at the ear tips"
+      ],
+      "pose": "Planted square on both feet, chest out, ears wide and sparks fizzing at the tips.",
+      "always": ["Giant ears that catch bolts", "Feet planted flat"],
+      "never": ["Running or leaning forward", "A lean, long-legged body like Voltaro's"],
+      "fromStage1": {
+        "keeps": [
+          "Huge round ears with violet inner circles",
+          "Yellow and violet palette",
+          "Black bead eyes",
+          "Zigzag tail"
+        ],
+        "changes": [
+          "Small round body puffs up even rounder",
+          "Ears grow larger than the head",
+          "Feet widen and plant flat",
+          "Sparks fizz at the ear tips instead of trailing behind"
+        ]
+      }
+    },
+    "traits": [
+      "Plants its feet and will not budge",
+      "Catches stray bolts in its ears",
+      "Fizzes when it is determined",
+      "Can freeze like a statue when asked nicely"
     ]
   },
   "mistnewt": {

@@ -81,8 +81,8 @@ function inBand(element: string, hex: string): boolean {
 }
 
 describe('shipped lore', () => {
-  it('has an entry for every one of the 22 species, and nothing else', () => {
-    expect(content.creatures).toHaveLength(22);
+  it('has an entry for every one of the 24 species, and nothing else', () => {
+    expect(content.creatures).toHaveLength(24);
     expect(Object.keys(lore.species).sort()).toEqual(content.creatures.map((c) => c.id).sort());
     expect(Object.keys(lore.species)).toEqual(
       expect.arrayContaining(['lanternfin', 'hearthshell']),
@@ -132,8 +132,13 @@ describe('shipped lore', () => {
     const order = ['tiny', 'small', 'medium', 'large'];
     for (const c of content.creatures.filter((x) => x.evolvesTo !== undefined)) {
       const from = lore.species[c.id]?.appearance.size as string;
-      const to = lore.species[c.evolvesTo?.species ?? '']?.appearance.size as string;
-      expect(order.indexOf(to), c.id).toBeGreaterThan(order.indexOf(from));
+      for (const evolution of [c.evolvesTo, c.altEvolvesTo]) {
+        if (evolution === undefined) continue;
+        const to = lore.species[evolution.species]?.appearance.size as string;
+        expect(order.indexOf(to), `${c.id} -> ${evolution.species}`).toBeGreaterThan(
+          order.indexOf(from),
+        );
+      }
     }
   });
 

@@ -17,9 +17,9 @@
       "lines": [
         "Each creature has an element (Tide, Ember, Grove or Spark) and a role (Setter, Payoff, Guard or Support).",
         "Whatever a creature does earns it experience. A treat (Bait) doubles it for one activity.",
-        "At levels 10 and 20 a creature waits for a ribbon, made from parts. Many evolve at 15 for Essence.",
+        "Ribbons (made from parts) wait at levels 10 and 20. Many evolve at 15 for Essence; a few pick one of two forms.",
         "Every catch rolls a talent. More talent slots open at higher levels, and the Talent Book keeps old ones.",
-        "A duplicate catch is a choice: Teach its talent, Fuse it, or Release it for parts."
+        "A duplicate catch is a choice: Teach its talent, Fuse it, Release it for parts, or sometimes Keep it."
       ]
     },
     {

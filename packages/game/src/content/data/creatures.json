@@ -150,7 +150,12 @@
     "ability": {
       "id": "bark-guard"
     },
-    "flavor": "A shy sprout-eared critter that naps in sunny patches of moss."
+    "flavor": "A shy sprout-eared critter that naps in sunny patches of moss.",
+    "altEvolvesTo": {
+      "species": "sunfawn",
+      "level": 15,
+      "essence": 20
+    }
   },
   {
     "id": "thornbuck",
@@ -177,6 +182,32 @@
       "id": "bark-guard-2"
     },
     "flavor": "A sturdy stag with branching thorned antlers that shelter its herd."
+  },
+  {
+    "id": "sunfawn",
+    "name": "Sunfawn",
+    "line": "sproutle",
+    "stage": 2,
+    "element": "grove",
+    "rarity": "common",
+    "role": "support",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 179,
+      "atk": 34,
+      "spd": 39
+    },
+    "growth": {
+      "hp": 12,
+      "atk": 2,
+      "spd": 3
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "sunny-patch"
+    },
+    "flavor": "A gentle fawn whose leaf ears have opened into blossoms."
   },
   {
     "id": "zipmouse",
@@ -207,7 +238,12 @@
     "ability": {
       "id": "static-zap"
     },
-    "flavor": "A tiny mouse that crackles with static and never sits still."
+    "flavor": "A tiny mouse that crackles with static and never sits still.",
+    "altEvolvesTo": {
+      "species": "ohmouse",
+      "level": 15,
+      "essence": 20
+    }
   },
   {
     "id": "voltaro",
@@ -234,6 +270,32 @@
       "id": "static-zap-2"
     },
     "flavor": "A fast and fearless runner that leaves a trail of bright sparks."
+  },
+  {
+    "id": "ohmouse",
+    "name": "Ohmouse",
+    "line": "zipmouse",
+    "stage": 2,
+    "element": "spark",
+    "rarity": "common",
+    "role": "guard",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 224,
+      "atk": 34,
+      "spd": 22
+    },
+    "growth": {
+      "hp": 15,
+      "atk": 2,
+      "spd": 2
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "static-wall"
+    },
+    "flavor": "A round, puffed-up mouse whose giant ears catch stray bolts."
   },
   {
     "id": "mistnewt",
