@@ -52,23 +52,21 @@ function staticFlip(position: number, count: number): FlipProps {
 function Arrows({ p }: { p: Props }) {
   const count = num(p, 'count');
   const at = num(p, 'position');
-  const rows: { label: string; flip: FlipProps; size: 'normal' | 'small' }[] = [
+  const rows: { label: string; flip: FlipProps }[] = [
     {
       label: 'In the middle, as on the creature page',
       flip: staticFlip(at, count),
-      size: 'normal',
     },
-    { label: 'First: the previous arrow is dimmed', flip: staticFlip(1, count), size: 'normal' },
-    { label: 'Last: the next arrow is dimmed', flip: staticFlip(count, count), size: 'normal' },
-    { label: 'The small look, as in an item drawer', flip: staticFlip(at, count), size: 'small' },
-    { label: 'Two things only', flip: staticFlip(1, 2), size: 'normal' },
+    { label: 'First: the previous arrow is dimmed', flip: staticFlip(1, count) },
+    { label: 'Last: the next arrow is dimmed', flip: staticFlip(count, count) },
+    { label: 'Two things only', flip: staticFlip(1, 2) },
   ];
   return (
     <div class="wb-flip-rows">
       {rows.map((row) => (
         <section key={row.label} class="wb-flip-row">
           <h3 class="muted small">{row.label}</h3>
-          <FlipNav flip={row.flip} size={row.size} />
+          <FlipNav flip={row.flip} />
         </section>
       ))}
     </div>

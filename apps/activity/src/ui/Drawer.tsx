@@ -198,7 +198,6 @@ function DrawerSheet({
               {title}
             </h2>
             {meta !== undefined && <span class="drawer-meta muted">{meta}</span>}
-            {flip !== undefined && <FlipNav flip={flip} size="small" />}
             <button type="button" class="drawer-close" aria-label="Close" onClick={onClose}>
               <svg
                 class="drawer-x"
@@ -223,6 +222,11 @@ function DrawerSheet({
             </button>
           </div>
         </div>
+        {flip !== undefined && (
+          <div class="drawer-flip">
+            <FlipNav flip={flip} />
+          </div>
+        )}
         {toolbar !== undefined && <div class="drawer-toolbar">{toolbar}</div>}
         <div class="drawer-body">{children}</div>
         {footer !== undefined && <div class="drawer-footer">{footer}</div>}

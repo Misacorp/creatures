@@ -37,9 +37,9 @@ function Arrow({ step }: { step: FlipStep }) {
  * same on the creature page and in the item drawers. The buttons name where they lead ("Previous
  * creature: Cindle") and, at the first or last thing, say so by `aria-disabled` rather than `disabled`,
  * so a keyboard user who flipped to the end keeps the focus where it was. Draws nothing for fewer than
- * two things. `size="small"` is the compact look that fits the Drawer's handle row.
+ * two things. One look everywhere: a full-width row, previous at the left, next at the right.
  */
-export function FlipNav({ flip, size = 'normal' }: { flip: FlipProps; size?: 'normal' | 'small' }) {
+export function FlipNav({ flip }: { flip: FlipProps }) {
   const prev = useRef<HTMLButtonElement>(null);
   const next = useRef<HTMLButtonElement>(null);
   // Drawn anew after a flip by a button: that button takes the focus back.
@@ -66,11 +66,7 @@ export function FlipNav({ flip, size = 'normal' }: { flip: FlipProps; size?: 'no
     );
   };
   return (
-    <div
-      class={`flip-nav${size === 'small' ? ' flip-nav-small' : ''}`}
-      role="group"
-      aria-label={`Flip between ${flip.noun}s`}
-    >
+    <div class="flip-nav" role="group" aria-label={`Flip between ${flip.noun}s`}>
       {button(-1, prev)}
       <span class="flip-count pix">
         {flip.index + 1} / {flip.count}

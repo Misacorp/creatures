@@ -195,7 +195,7 @@ describe('FlipNav', () => {
     expect(page.document.activeElement).toBe(first(byName(page.root, 'button', /^Next item/)));
   });
 
-  it('has a small look for the drawer heading', () => {
+  it('sits in a drawer as a full-width row under the heading, not in the heading', () => {
     page = createPage();
     const flip = flipOver({
       list: NAMES,
@@ -205,8 +205,15 @@ describe('FlipNav', () => {
       pick: () => undefined,
     });
     if (flip === undefined) throw new Error('no flip');
-    page.draw(<FlipNav flip={flip} size="small" />);
-    expect(byClass(page.root, 'flip-nav-small')).toHaveLength(1);
+    page.draw(
+      <Drawer open title="Hat" flip={flip} onClose={() => undefined}>
+        <p>Body</p>
+      </Drawer>,
+    );
+    const row = byClass(page.root, 'drawer-flip');
+    expect(row).toHaveLength(1);
+    expect(byClass(first(row), 'flip-nav')).toHaveLength(1);
+    expect(byClass(first(byClass(page.root, 'drawer-head')), 'flip-nav')).toHaveLength(0);
   });
 });
 
@@ -433,15 +440,15 @@ describe('Drawer with flip', () => {
     return { page, seen, panel: first(byRole(page.root, 'dialog')) };
   }
 
-  it('puts the arrows with the position in the heading row, next to the close button', () => {
+  it('puts the arrows with the position in their own row under the heading', () => {
     const { panel } = drawSheet();
-    const head = first(byClass(panel, 'drawer-head'));
-    expect(byClass(head, 'flip-nav')).toHaveLength(1);
-    expect(byName(head, 'button', 'Close')).toHaveLength(1);
-    expect(visibleText(first(byClass(head, 'flip-count')))).toBe('2 / 5');
+    const row = first(byClass(panel, 'drawer-flip'));
+    expect(byClass(row, 'flip-nav')).toHaveLength(1);
+    expect(visibleText(first(byClass(row, 'flip-count')))).toBe('2 / 5');
+    expect(byName(first(byClass(panel, 'drawer-head')), 'button', 'Close')).toHaveLength(1);
   });
 
-  it('flips with the arrows of the heading', () => {
+  it('flips with the arrows', () => {
     const { page: p, panel, seen } = drawSheet();
     p.click(first(byName(panel, 'button', /^Next item/)));
     expect(visibleText(first(byClass(panel, 'sheet-name')))).toBe('Cindle');

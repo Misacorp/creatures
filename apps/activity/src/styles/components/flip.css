@@ -10,17 +10,18 @@
 */
 
 .flip-nav {
-  display: inline-flex;
-  flex: none;
+  display: flex;
+  flex: 1 0 100%;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 button.flip-btn {
   display: grid;
   place-items: center;
-  width: 2.5rem;
-  min-height: 2.75rem;
+  width: 3rem;
+  min-height: 2.25rem;
   padding: 0;
 }
 
@@ -48,67 +49,29 @@ button.flip-btn[aria-disabled='true']:active {
 }
 
 .flip-count {
-  min-width: 3.25rem;
   color: var(--haze);
   font-size: 1rem;
   text-align: center;
   white-space: nowrap;
 }
 
-/* In the Drawer's heading row: no taller than the drag handle's strip. */
-.flip-nav-small {
-  gap: 0.25rem;
-}
-
-.flip-nav-small button.flip-btn {
-  width: 2.25rem;
-  min-height: 1.75rem;
-}
-
-.flip-nav-small .flip-count {
-  min-width: 3rem;
-}
-
 /*
-  The top row of the creature page: Back and Lounge keep their row (Back at the left, Lounge at the right);
-  the arrows take a thin row of their own under them, centred (a 390 px screen has no room for three
-  controls in one row).
+  One look everywhere (Misa, 2026-10-18): a full-width row, previous at the left, the position in the
+  middle, next at the right. On the creature page it is the row under Back and Lounge; in a drawer it is
+  the row under the heading.
 */
 .cp-top {
   flex-wrap: wrap;
-  row-gap: 0.25rem;
+  row-gap: 0.5rem;
 }
 
 .cp-top .flip-nav {
-  flex: 1 0 100%;
   order: 3;
-  justify-content: center;
-  gap: 0.75rem;
 }
 
-.cp-top button.flip-btn {
-  width: 3rem;
-  min-height: 2.25rem;
-}
-
-/* With the heading only spoken, the arrows sit at the left of the handle's row and the close button at the right. */
-.drawer-panel.title-hidden .drawer-head {
-  left: 0;
-  pointer-events: none;
-}
-
-.drawer-panel.title-hidden .drawer-head .flip-nav,
-.drawer-panel.title-hidden .drawer-head .drawer-close {
-  pointer-events: auto;
-}
-
-.drawer-panel.title-hidden .drawer-head .flip-nav {
-  margin-left: 0.5rem;
-}
-
-/* The arrows hang a little below the handle's row: the body starts under them. */
-.drawer-panel.title-hidden.has-flip .drawer-body {
-  padding-top: 0.75rem;
+.drawer-flip {
+  display: flex;
+  padding: 0 0.75rem 0.5rem;
 }
 
 /* --- The swipe area --- */
