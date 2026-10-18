@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DungeonMap } from './DungeonMap';
 import { SAMPLE_MAP, sampleHistory, sampleState } from './dungeon-map-sample';
-import { lockedBandShown } from './dungeon-flow';
 import { omitKey } from './dungeon-path-samples';
 import { undercroftState, type UndercroftStage } from './dungeon-undercroft-sample';
 import type { DungeonRunState } from './dungeon-types';
@@ -278,16 +277,13 @@ describe('DungeonMap: what happened in a room the run has been through', () => {
 });
 
 describe('DungeonMap with the Undercroft', () => {
-  const drawStage = (
-    stage: UndercroftStage,
-    props: { initialOpen?: string; locked?: boolean } = {},
-  ) => {
+  const drawStage = (stage: UndercroftStage, props: { initialOpen?: string } = {}) => {
     const run = undercroftState(stage);
     return draw(
       <DungeonMap
         map={run.map}
         undercroft={run.undercroft?.maps}
-        lockedBand={props.locked ?? lockedBandShown(run)}
+        depth={run.depth}
         state={run}
         onGo={() => undefined}
         {...(props.initialOpen === undefined ? {} : { initialOpen: props.initialOpen })}
@@ -302,12 +298,11 @@ describe('DungeonMap with the Undercroft', () => {
     expect(byClass(p.root, 'dmap-uband')).toHaveLength(0);
   });
 
-  it('shows the quiet locked band above the boss, and no extra room, before the run goes down', () => {
+  it('has no band or text above the boss before the run goes down, and no extra room', () => {
     const p = drawStage('locked');
-    expect(visibleText(first(byClass(p.root, 'dmap-label')))).toBe(
-      'The Undercroft · beat the boss to descend',
-    );
-    expect(byClass(p.root, 'dmap-uband')).toHaveLength(1);
+    expect(byClass(p.root, 'dmap-label')).toHaveLength(0);
+    expect(byClass(p.root, 'dmap-uband')).toHaveLength(0);
+    expect(visibleText(p.root)).not.toContain('beat the boss to descend');
     expect(byClass(p.root, 'dmap-node')).toHaveLength(undercroftState('locked').map.nodes.length);
   });
 
@@ -462,5 +457,109 @@ describe('DungeonMap with the Undercroft', () => {
       />,
     );
     expect(dialogText(page)).toContain("The keeper's chest opened.");
+  });
+});
+
+describe('DungeonMap start markers', () => {
+  it('draws a green triangle under each entrance room in the preview, aria-hidden inside the picture', () => {
+    const p = draw(<DungeonMap map={SAMPLE_MAP} state={null} />);
+    const marks = byClass(p.root, 'dmap-start');
+    expect(marks).toHaveLength(SAMPLE_MAP.nodes.filter((n) => n.floor === 0).length);
+    const svg = first(byClass(p.root, 'dmap-svg'));
+    expect(svg.getAttribute('aria-hidden')).toBe('true');
+    expect(byClass(svg, 'dmap-start')).toHaveLength(marks.length);
+  });
+
+  it('keeps them until the first move, then takes them away', () => {
+    const entrance = draw(<DungeonMap map={SAMPLE_MAP} state={stageRun('entrance')} />);
+    expect(byClass(entrance.root, 'dmap-start')).toHaveLength(3);
+    page?.unmount();
+    const midway = draw(<DungeonMap map={SAMPLE_MAP} state={stageRun('midway')} />);
+    expect(byClass(midway.root, 'dmap-start')).toHaveLength(0);
+    page?.unmount();
+    const done = draw(<DungeonMap map={SAMPLE_MAP} state={stageRun('defeated')} />);
+    expect(byClass(done.root, 'dmap-start')).toHaveLength(0);
+  });
+
+  it('marks the entrance of an Undercroft level the run has just gone down into', () => {
+    const run = undercroftState('entrance');
+    const p = draw(<DungeonMap map={run.map} undercroft={run.undercroft?.maps} state={run} />);
+    expect(byClass(p.root, 'dmap-start').length).toBeGreaterThan(0);
+  });
+});
+
+describe('DungeonMap way-down badge', () => {
+  it('puts a down arrow on the room boss from depth 8 and says so in its drawer', () => {
+    const p = draw(<DungeonMap map={SAMPLE_MAP} state={null} depth={8} />);
+    const boss = first(byName(p.root, 'button', /^Room boss/));
+    expect(byClass(boss, 'dmap-descend')).toHaveLength(1);
+    expect(byClass(p.root, 'dmap-descend')).toHaveLength(1);
+    p.click(boss);
+    expect(visibleText(first(byRole(p.root, 'dialog')))).toContain(
+      'Beat it to descend into the Undercroft.',
+    );
+  });
+
+  it('has none below depth 8, or when no depth is given', () => {
+    const below = draw(<DungeonMap map={SAMPLE_MAP} state={null} depth={7} />);
+    expect(byClass(below.root, 'dmap-descend')).toHaveLength(0);
+    page?.unmount();
+    const none = draw(<DungeonMap map={SAMPLE_MAP} state={null} />);
+    expect(byClass(none.root, 'dmap-descend')).toHaveLength(0);
+    page?.unmount();
+    const opened = draw(<DungeonMap map={SAMPLE_MAP} state={null} depth={7} initialOpen="f6l1" />);
+    expect(visibleText(first(byRole(opened.root, 'dialog')))).not.toContain('descend');
+  });
+
+  it('is on a cracked keeper, which keeps its cracked-floor line, and not on a plain one', () => {
+    const cracked = undercroftState('cracked');
+    const p = draw(
+      <DungeonMap
+        map={cracked.map}
+        undercroft={cracked.undercroft?.maps}
+        state={cracked}
+        depth={cracked.depth}
+        initialOpen="u1f3l1"
+      />,
+    );
+    const keeper = first(byName(p.root, 'button', /^Undercroft keeper/));
+    expect(byClass(keeper, 'dmap-descend')).toHaveLength(1);
+    expect(byClass(keeper, 'dmap-crack')).toHaveLength(1);
+    expect(visibleText(first(byRole(p.root, 'dialog')))).toContain(
+      'A cracked floor: beat the keeper to go deeper still.',
+    );
+    page?.unmount();
+    const plain = undercroftState('keeper');
+    const q = draw(
+      <DungeonMap
+        map={plain.map}
+        undercroft={plain.undercroft?.maps}
+        state={plain}
+        depth={plain.depth}
+      />,
+    );
+    const plainKeeper = first(byName(q.root, 'button', /^Undercroft keeper/));
+    expect(byClass(plainKeeper, 'dmap-descend')).toHaveLength(0);
+  });
+});
+
+describe('DungeonMap lost room', () => {
+  it('shows a red cross on the room where the run was lost, and ticks on the cleared ones', () => {
+    const p = draw(<DungeonMap map={SAMPLE_MAP} state={stageRun('defeated')} />);
+    expect(byClass(p.root, 'dmap-lost')).toHaveLength(1);
+    // The run stands on the lost room (its last), so only the two before it are ticked.
+    expect(byClass(p.root, 'dmap-check')).toHaveLength(2);
+    const lost = byClass(p.root, 'dmap-node').filter((n) => byClass(n, 'dmap-lost').length > 0);
+    expect(lost).toHaveLength(1);
+    expect(lost[0]?.getAttribute('class')).toContain('lost');
+    expect(lost[0]?.getAttribute('aria-label')).toContain('You were defeated here');
+    expect(byClass(first(lost), 'dmap-check')).toHaveLength(0);
+  });
+
+  it('has no cross on a run that was not lost', () => {
+    const p = draw(<DungeonMap map={SAMPLE_MAP} state={stageRun('finished')} />);
+    expect(byClass(p.root, 'dmap-lost')).toHaveLength(0);
+    // Every room but the one the run stands on (the boss) is ticked.
+    expect(byClass(p.root, 'dmap-check')).toHaveLength(6);
   });
 });

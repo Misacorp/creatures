@@ -1,9 +1,9 @@
+import { RULES } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
   EDGE_ORDER,
   LEVEL_SEAM,
-  LOCKED_BAND,
-  LOCKED_BAND_LABEL,
+  DESCEND_LINE,
   MAP_WIDTH,
   MIN_NODE,
   CACHE_LINE,
@@ -17,6 +17,10 @@ import {
   hpLine,
   isKeeper,
   levelLabel,
+  descentRooms,
+  lostAt,
+  startLevel,
+  startMarkers,
   mapLayout,
   nodeAriaLabel,
   nodeElement,
@@ -497,23 +501,10 @@ describe('the Undercroft on the map', () => {
     expect(layout.bands[0]?.labelY).toBeLessThan(y('u1f3l1'));
   });
 
-  it('adds a quiet locked band above the boss only before any level is drawn', () => {
-    const locked = stackLayout(SAMPLE_MAP, [], { locked: true });
-    expect(locked.height).toBe(mapLayout(SAMPLE_MAP).height + LOCKED_BAND);
-    expect(locked.bands).toEqual([
-      expect.objectContaining({
-        kind: 'locked',
-        y: 0,
-        height: LOCKED_BAND,
-        label: LOCKED_BAND_LABEL,
-      }),
-    ]);
-    const boss = locked.nodes.find((n) => n.id === 'f6l1');
-    expect((boss?.y ?? 0) - 31).toBeGreaterThan(LOCKED_BAND);
-    // With a level drawn there is no locked band.
-    expect(stackLayout(down.map, [first], { locked: true }).bands.map((b) => b.kind)).toEqual([
-      'undercroft',
-    ]);
+  it('has no band above the boss before any level is drawn, only the levels that are', () => {
+    expect(stackLayout(SAMPLE_MAP, []).bands).toEqual([]);
+    expect(stackLayout(SAMPLE_MAP, []).height).toBe(mapLayout(SAMPLE_MAP).height);
+    expect(stackLayout(down.map, [first]).bands.map((b) => b.kind)).toEqual(['undercroft']);
   });
 
   it('names a level by the server label, or plainly when it sent none', () => {
@@ -573,7 +564,7 @@ describe('the Undercroft on the map', () => {
     for (const id of ['map-door', 'map-epic', 'map-keeper', 'map-crack']) {
       expect(glyph(id), id).toBeDefined();
     }
-    expect(nodeAriaLabel(keeperNode, 'locked', true)).toBe(
+    expect(nodeAriaLabel(keeperNode, 'locked', { crack: true })).toBe(
       'Undercroft keeper: Slag Tyrant. Cracked floor. Not on your path. Show details',
     );
     expect(nodeAriaLabel(keeperNode, 'preview')).toBe(
@@ -581,5 +572,122 @@ describe('the Undercroft on the map', () => {
     );
     const laid = mapLayout(down.map);
     expect(laid.nodes.find((n) => n.kind === 'door')?.size).toBe(MIN_NODE);
+  });
+});
+
+describe('the start markers', () => {
+  const laid = mapLayout(SAMPLE_MAP);
+
+  it('has one under every entrance room, pointing up into it, and none elsewhere', () => {
+    const marks = startMarkers(laid, 0);
+    expect(marks.map((m) => m.id)).toEqual(
+      SAMPLE_MAP.nodes.filter((n) => n.floor === 0).map((n) => n.id),
+    );
+    for (const mark of marks) {
+      const room = laid.nodes.find((n) => n.id === mark.id);
+      const [apex, left, right] = mark.points.split(' ').map((p) => p.split(',').map(Number));
+      if (room === undefined || apex === undefined || left === undefined || right === undefined) {
+        throw new Error('a triangle has three corners');
+      }
+      // The apex is below the room's edge and centred under it; the base is wider and lower.
+      expect(apex[0]).toBeCloseTo(room.x);
+      expect(apex[1]).toBeGreaterThan(room.y + room.size / 2);
+      expect(left[1]).toBeGreaterThan(apex[1] ?? 0);
+      expect(right[1]).toBe(left[1]);
+      expect(right[0]).toBeGreaterThan(left[0] ?? 0);
+      // It stays on the picture.
+      expect(left[1]).toBeLessThan(laid.height);
+      expect(left[0]).toBeGreaterThan(0);
+      expect(right[0]).toBeLessThan(laid.width);
+    }
+    expect(startMarkers(laid, 1)).toEqual([]);
+  });
+
+  it('is shown before the first move only: the preview, or an open run that has not moved yet', () => {
+    expect(startLevel(null)).toBe(0);
+    expect(startLevel(state('entrance'))).toBe(0);
+    expect(startLevel(state('midway'))).toBeNull();
+    // A finished run's route never moves from nowhere: no markers on the results map.
+    expect(startLevel({ ...state('entrance'), status: 'done' })).toBeNull();
+    // After going down, the Undercroft's own entrance has them.
+    expect(startLevel({ ...state('entrance'), level: 1 })).toBe(1);
+  });
+
+  it('marks the entrance of the Undercroft level a run is about to start', () => {
+    const run = undercroftState('entrance');
+    const layout = stackLayout(run.map, run.undercroft?.maps ?? []);
+    const marks = startMarkers(layout, 1);
+    expect(marks.length).toBeGreaterThan(0);
+    expect(marks.every((m) => m.id.startsWith('u1f0'))).toBe(true);
+  });
+});
+
+describe('the way down badge', () => {
+  const run = undercroftState('cracked');
+  const maps = [run.map, ...(run.undercroft?.maps ?? [])];
+
+  it('is on the room boss from the depth that opens the Undercroft, and not below it', () => {
+    const from = RULES.dungeon.undercroft.fromDepth;
+    expect([...descentRooms([SAMPLE_MAP], from)]).toEqual(['f6l1']);
+    expect([...descentRooms([SAMPLE_MAP], from + 20)]).toEqual(['f6l1']);
+    expect(descentRooms([SAMPLE_MAP], from - 1).size).toBe(0);
+    expect(descentRooms([SAMPLE_MAP], undefined).size).toBe(0);
+  });
+
+  it('is on a keeper only when its floor is cracked', () => {
+    const rooms = descentRooms(maps, 14);
+    const cracked = maps.flatMap((m, i) =>
+      i > 0 && m.crack === true ? m.nodes.filter((n) => n.kind === 'boss').map((n) => n.id) : [],
+    );
+    expect(cracked.length).toBeGreaterThan(0);
+    for (const id of cracked) expect(rooms.has(id)).toBe(true);
+    const plain = maps.flatMap((m, i) =>
+      i > 0 && m.crack !== true ? m.nodes.filter((n) => n.kind === 'boss').map((n) => n.id) : [],
+    );
+    for (const id of plain) expect(rooms.has(id)).toBe(false);
+  });
+
+  it('goes once the way down has been taken (the next level is drawn)', () => {
+    const deeper = undercroftState('cracked-deeper');
+    const stacked = [deeper.map, ...(deeper.undercroft?.maps ?? [])];
+    expect(stacked.length).toBeGreaterThan(2);
+    const rooms = descentRooms(stacked, 14);
+    // The room boss and the first keeper have been passed; the last level's keeper is the way on.
+    expect(rooms.has('f6l1')).toBe(false);
+    expect(rooms.has('u1f3l1')).toBe(false);
+    const entered = undercroftState('entrance');
+    expect(descentRooms([entered.map, ...(entered.undercroft?.maps ?? [])], 14).has('f6l1')).toBe(
+      false,
+    );
+  });
+
+  it('has its own glyph, and a line for the room boss drawer', () => {
+    expect(glyph('map-descend')).toBeDefined();
+    expect(DESCEND_LINE).toBe('Beat it to descend into the Undercroft.');
+  });
+
+  it('is spoken on the room, unless the cracked floor already says it', () => {
+    const boss = node('f6l1');
+    expect(nodeAriaLabel(boss, 'preview', { descent: true })).toBe(
+      'Room boss: Coil Baron. The way down. Show details',
+    );
+  });
+});
+
+describe('the room where the run was lost', () => {
+  it('is the room of a fight that was not cleared, and no other', () => {
+    const lost = state('defeated');
+    expect(lostAt(lost.history, 'f2l1')).toBe(true);
+    expect(lostAt(lost.history, 'f1l2')).toBe(false);
+    expect(lostAt(lost.history, 'f0l1')).toBe(false);
+    expect(lostAt(undefined, 'f2l1')).toBe(false);
+    expect(lostAt(state('finished').history, 'f6l1')).toBe(false);
+  });
+
+  it('is said in place of "Visited"', () => {
+    expect(nodeAriaLabel(node('f2l1'), 'visited', { lost: true })).toContain(
+      'You were defeated here',
+    );
+    expect(nodeAriaLabel(node('f2l1'), 'visited', { lost: true })).not.toContain('Visited');
   });
 });

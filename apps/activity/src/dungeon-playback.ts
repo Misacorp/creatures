@@ -478,6 +478,10 @@ export function streakLoot(rewards: DungeonRewards): GrantLoot | null {
   return { gear: [], converted: [], parts: bonus.parts, blueprints: [] };
 }
 
+/** What the results say when a run paid nothing, and the hint under it. */
+export const NO_REWARDS_LINE = 'No rewards this time.';
+export const NO_REWARDS_HINT = 'Beat at least one room next time.';
+
 /** True when the run paid nothing at all (a run lost in the first room). */
 export function noRewards(rewards: DungeonRewards): boolean {
   return (

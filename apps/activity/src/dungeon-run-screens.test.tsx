@@ -6,6 +6,7 @@ import { Dungeon } from './Dungeon';
 import { DungeonCamp } from './DungeonCamp';
 import { DungeonEvent } from './DungeonEvent';
 import { DungeonPlayback } from './DungeonPlayback';
+import { DungeonPrerun } from './DungeonPrerun';
 import { ROOM_CARD_MS, arenaOutOfView, fightScroll, roomInput } from './dungeon-playback';
 import { DungeonResults } from './DungeonResults';
 import { DungeonRun } from './DungeonRun';
@@ -495,6 +496,43 @@ describe('the results of a path run', () => {
     expect(byName(dialog, 'button', /^Go/)).toHaveLength(0);
   });
 
+  it('marks the room where the run was lost with a red cross, and ticks the cleared ones', () => {
+    const run = sampleSummary('defeat');
+    const root = results(run);
+    page?.click(button(root, 'Map'));
+    expect(byClass(root, 'dmap-lost')).toHaveLength(1);
+    expect(byClass(root, 'dmap-check')).toHaveLength((run.route?.path.length ?? 0) - 1);
+    const lost = byClass(root, 'dmap-node').filter((n) => byClass(n, 'dmap-lost').length > 0);
+    expect(lost).toHaveLength(1);
+    expect(lost[0]?.getAttribute('aria-label')).toMatch(/^Fierce Flicker Swarm/);
+  });
+
+  it('says no rewards kindly, with a small sad picture and a hint', () => {
+    const none = {
+      bait: 0,
+      essence: 0,
+      parts: {},
+      gear: [],
+      supplies: [],
+      converted: [],
+      streak: null,
+    };
+    const base = sampleSummary('defeat');
+    const root = results({ ...base, rewards: { ...base.rewards, ...none } });
+    const text = visibleText(root);
+    expect(text).toContain('No rewards this time.');
+    expect(text).toContain('Beat at least one room next time.');
+    expect(text).not.toContain('Nothing this time');
+    expect(byClass(root, 'no-rewards')).toHaveLength(1);
+    expect(byClass(root, 'no-rewards-art')[0]?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('has no empty-rewards note when the run paid something', () => {
+    const root = results(sampleSummary('cleared'));
+    expect(byClass(root, 'no-rewards')).toHaveLength(0);
+    expect(visibleText(root)).not.toContain('No rewards this time.');
+  });
+
   it('says a room the run did not go to was not visited', () => {
     const root = results(sampleSummary('home'));
     page?.click(button(root, 'Map'));
@@ -946,5 +984,32 @@ describe('the arena scroll helper', () => {
   it('glides to the arena, or jumps for a player who asks for less motion', () => {
     expect(fightScroll(false)).toEqual({ behavior: 'smooth', block: 'start' });
     expect(fightScroll(true)).toEqual({ behavior: 'auto', block: 'start' });
+  });
+});
+
+describe('the pre-run card', () => {
+  function prerun(today: ReturnType<typeof sampleToday>): FakeElement {
+    page ??= createPage();
+    page.draw(<DungeonPrerun today={today} />);
+    return page.root;
+  }
+
+  it('shows the map with start markers and no caption or supply line under it', () => {
+    const root = prerun(sampleToday());
+    expect(byClass(root, 'dungeon-preview')).toHaveLength(1);
+    expect(byClass(root, 'dmap-start').length).toBeGreaterThan(0);
+    const text = visibleText(root);
+    expect(text).not.toContain("Today's map, the same for everyone");
+    expect(text).not.toContain('Tap a room to see what is there');
+    expect(text).not.toContain('take home a supply');
+    expect(byClass(root, 'supply-promise')).toHaveLength(0);
+    expect(text).not.toContain('beat the boss to descend');
+  });
+
+  it('puts the way-down badge on the room boss from depth 8, and not before', () => {
+    expect(byClass(prerun(sampleToday({ depth: 8 })), 'dmap-descend')).toHaveLength(1);
+    page?.unmount();
+    page = null;
+    expect(byClass(prerun(sampleToday({ depth: 7 })), 'dmap-descend')).toHaveLength(0);
   });
 });

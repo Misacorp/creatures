@@ -694,8 +694,9 @@ describe('the Undercroft, with the real answers', () => {
       pending,
       parseDungeonAct(actDescend),
     ]);
-    // Before the boss the Undercroft waits above it, quietly.
-    expect(visibleText(root)).toContain('The Undercroft · beat the boss to descend');
+    // Before the boss there is no band or text above it: the boss wears a down-arrow badge instead.
+    expect(visibleText(root)).not.toContain('beat the boss to descend');
+    expect(byClass(root, 'dmap-descend')).toHaveLength(1);
     const body = (key: keyof Bodies) => ({
       runId: bodyOf(key).runId,
       step: bodyOf(key).step,

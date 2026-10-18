@@ -18,6 +18,8 @@ import {
   mineIds,
   modifierGimmicks,
   nextRoom,
+  NO_REWARDS_HINT,
+  NO_REWARDS_LINE,
   noRewards,
   rewardLoot,
   roomBoss,
@@ -195,6 +197,12 @@ describe('the results', () => {
     expect(noRewards(lost.rewards)).toBe(true);
     expect(noRewards(cleared.rewards)).toBe(false);
     expect(noRewards(landmark.rewards)).toBe(false);
+  });
+
+  it('says it kindly and short when a run paid nothing', () => {
+    expect(NO_REWARDS_LINE).toBe('No rewards this time.');
+    expect(NO_REWARDS_HINT).toBe('Beat at least one room next time.');
+    expect(`${NO_REWARDS_LINE} ${NO_REWARDS_HINT}`).not.toMatch(/[<>{}]/);
   });
 
   it('counts a run that paid only a supply as a run that paid something', () => {

@@ -4,7 +4,14 @@
  * foes of a room are not known until the run (the server rolls them from the run's seed), so a panel
  * before the run shows a "?" and only what is public: the room's place and its modifier.
  */
-import { RULES, isLandmark, roomModifier, type Role } from '@creatures/game';
+import {
+  RULES,
+  isLandmark,
+  roomModifier,
+  undercroftBaseFloors,
+  undercroftOpen,
+  type Role,
+} from '@creatures/game';
 import type { TrackStep, TrackUnlock } from './progress-track';
 import type { DungeonModifier } from './dungeon-types';
 import type { IconRef } from './icon-ref';
@@ -83,6 +90,48 @@ export const LANDMARK_UNLOCKS: readonly TrackUnlock[] = [
   { icon: 'gem', text: 'Bonus Essence' },
 ];
 
+/** The floors a run's first Undercroft has before its keeper at `depth` (0 while the Undercroft is shut), from the rules. */
+export function undercroftFloorsAt(depth: number): number {
+  return undercroftOpen(depth) ? undercroftBaseFloors(depth, 1) : 0;
+}
+
+/**
+ * What the Undercroft gives from reaching `depth` on: "Undercroft opens" at the depth that opens it
+ * (`RULES.dungeon.undercroft.fromDepth`), then "Undercroft +1 floor" at each depth that adds floors (one per
+ * landmark passed, up to `maxFloors`). None at any other depth. Derived from the rules, never listed.
+ */
+export function undercroftUnlocks(depth: number): TrackUnlock[] {
+  const d = Math.max(1, Math.floor(depth));
+  if (!undercroftOpen(d)) return [];
+  if (!undercroftOpen(d - 1)) return [{ icon: 'map-descend', text: 'Undercroft opens' }];
+  const more = undercroftFloorsAt(d) - undercroftFloorsAt(d - 1);
+  return more > 0
+    ? [
+        {
+          icon: 'map-descend',
+          text: `Undercroft +${String(more)} ${more === 1 ? 'floor' : 'floors'}`,
+        },
+      ]
+    : [];
+}
+
+/**
+ * Everything a step of the track unlocks: the landmark's rewards at a landmark depth, and what the
+ * Undercroft gives (reaching the depth, and, at a landmark, beating its boss: the depth after it). Empty
+ * only when nothing changes at that depth.
+ */
+export function stepUnlocks(depth: number): TrackUnlock[] {
+  const d = Math.max(1, Math.floor(depth));
+  const landmark = isLandmark(d);
+  const unlocks = [
+    ...(landmark ? LANDMARK_UNLOCKS : []),
+    ...undercroftUnlocks(d),
+    ...(landmark ? undercroftUnlocks(d + 1) : []),
+  ];
+  const seen = new Set<string>();
+  return unlocks.filter((u) => !seen.has(u.text) && seen.add(u.text));
+}
+
 interface DepthTrack {
   /** The depth the player is at, then the next landmark. */
   steps: TrackStep[];
@@ -94,16 +143,16 @@ interface DepthTrack {
 
 /**
  * The way from the depth the player is at to the next landmark, as a `ProgressTrack`: two labelled
- * steps and, between them, the number of depths to draw as small pips. The player's own step carries
- * the landmark rewards only when the depth is a landmark itself. The ladder has no end, so there is
+ * steps and, between them, the number of depths to draw as small pips. A step carries what its depth
+ * unlocks (`stepUnlocks`): the landmark rewards at a landmark, and the Undercroft opening or growing. The ladder has no end, so there is
  * always a next landmark.
  */
 export function depthTrack(depth: number, every: number = RULES.dungeon.landmarkEvery): DepthTrack {
   const d = Math.max(1, Math.floor(depth));
   const after = (Math.floor(d / every) + 1) * every;
   const steps: TrackStep[] = [
-    { id: d, label: `Depth ${String(d)}`, unlocks: isLandmark(d) ? LANDMARK_UNLOCKS : [] },
-    { id: after, label: `Depth ${String(after)}`, unlocks: LANDMARK_UNLOCKS },
+    { id: d, label: `Depth ${String(d)}`, unlocks: stepUnlocks(d) },
+    { id: after, label: `Depth ${String(after)}`, unlocks: stepUnlocks(after) },
   ];
   return { steps, current: 0, between: after - d - 1 };
 }

@@ -3,6 +3,7 @@ import type { ComponentChildren } from 'preact';
 import { bossArt, elementClass } from './art';
 import {
   CRACK_LINE,
+  DESCEND_LINE,
   FIERCER_LINE,
   LOCKED_LINE,
   NOT_VISITED_LINE,
@@ -72,6 +73,8 @@ interface Props {
   landmark?: boolean | undefined;
   /** The room is an Undercroft keeper on a cracked floor (the level's own flag, which the room does not carry). */
   crack?: boolean | undefined;
+  /** Beating this room opens the way down into the Undercroft (the room boss at a depth that opens it). */
+  descent?: boolean | undefined;
   onClose: () => void;
   /** The map button that was tapped, so the focus goes back to it. */
   returnFocusTo?: HTMLElement | null | undefined;
@@ -94,6 +97,7 @@ export function DungeonNodeDrawer({
   busy = false,
   landmark,
   crack = false,
+  descent = false,
   onClose,
   returnFocusTo,
 }: Props) {
@@ -135,6 +139,7 @@ export function DungeonNodeDrawer({
           node={node}
           landmark={state?.landmark ?? landmark ?? false}
           crack={crack}
+          descent={descent}
           entry={entry?.result === 'fight' ? entry : undefined}
         >
           <Outcomes entries={entries} />
@@ -318,6 +323,7 @@ function FoeBody({
   node,
   landmark,
   crack,
+  descent,
   entry,
   children,
 }: {
@@ -325,6 +331,8 @@ function FoeBody({
   landmark: boolean;
   /** The keeper's floor is cracked. */
   crack: boolean;
+  /** Beating the room opens the way down. */
+  descent: boolean;
   /** How the run's fight here ended: the HP line and a Cleared or Defeat tag follow it. */
   entry: Extract<DungeonStepLog, { result: 'fight' }> | undefined;
   children?: ComponentChildren;
@@ -403,6 +411,9 @@ function FoeBody({
         </p>
       )}
       {keeper && crack && <p class="dnd-line dnd-crack">{CRACK_LINE}</p>}
+      {descent && !keeper && entry === undefined && (
+        <p class="dnd-line dnd-descend">{DESCEND_LINE}</p>
+      )}
       {children}
       <p class="dnd-trick">
         {trick === null ? (

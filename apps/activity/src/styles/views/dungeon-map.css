@@ -33,13 +33,9 @@
   pointer-events: none;
 }
 
-/* An Undercroft level: a darker band with its seam (and label) at the bottom; the locked one above the boss is the same, quieter. */
+/* An Undercroft level: a darker band with its seam (and label) at the bottom. */
 .dmap-uband {
   fill: var(--uc-ground);
-}
-
-.dmap-uband.lockedband {
-  fill: rgb(11 8 24 / 70%);
 }
 
 .dmap-useam {
@@ -65,9 +61,12 @@
   pointer-events: none;
 }
 
-.dmap-label.lockedband {
-  color: var(--haze);
-  font-size: 0.9375rem;
+/* Where a run starts: a small green triangle under each entrance room, pointing up into it. */
+.dmap-start {
+  fill: var(--good);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
 }
 
 /* The camp's row: a faint gold band across the map. */
@@ -226,7 +225,7 @@ button.dmap-node.cracked {
 
 .dmap-crack {
   position: absolute;
-  right: -0.375rem;
+  left: -0.375rem;
   bottom: -0.375rem;
   padding: 2px;
   border-radius: 50%;
@@ -269,6 +268,34 @@ button.dmap-node.s-visited {
 }
 
 .dmap-check {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  padding: 2px;
+  border-radius: 50%;
+  background: var(--ink);
+  line-height: 0;
+}
+
+/* The way down: a small down arrow on the lower right of a boss whose fall lets the player descend. */
+.dmap-descend {
+  position: absolute;
+  right: -0.375rem;
+  bottom: -0.375rem;
+  padding: 3px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 1px var(--uc-ring);
+  line-height: 0;
+}
+
+/* Lost here: a red cross on the room (in place of the tick) and a red ring. */
+button.dmap-node.s-visited.lost {
+  --nr: var(--bad);
+  background: color-mix(in srgb, var(--bad) 35%, var(--ink));
+}
+
+.dmap-lost {
   position: absolute;
   top: -0.25rem;
   right: -0.25rem;

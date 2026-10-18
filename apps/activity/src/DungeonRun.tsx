@@ -5,7 +5,7 @@ import { DungeonDescend } from './DungeonDescend';
 import { DungeonEvent } from './DungeonEvent';
 import { DungeonMap } from './DungeonMap';
 import { DungeonRunStrip } from './DungeonRunStrip';
-import { lockedBandShown, runScreenOf } from './dungeon-flow';
+import { runScreenOf } from './dungeon-flow';
 import type { DungeonAct, DungeonRunState } from './dungeon-types';
 import { usePrefersReducedMotion } from './hooks';
 import { arriveScroll, shouldScrollToCard } from './reveal-arrive';
@@ -85,7 +85,7 @@ export function DungeonRun({
           <DungeonMap
             map={state.map}
             undercroft={state.undercroft?.maps}
-            lockedBand={lockedBandShown(state)}
+            depth={state.depth}
             state={state}
             busy={busy}
             landmark={state.landmark}

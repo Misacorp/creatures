@@ -16,7 +16,7 @@ import {
   routeRun,
   stepsAt,
 } from './dungeon-history';
-import { lockedBandShown, runScreenOf, screenAfterAct, screenAfterFight } from './dungeon-flow';
+import { runScreenOf, screenAfterAct, screenAfterFight } from './dungeon-flow';
 import {
   PATH_FLOORS,
   placeTotal,
@@ -305,14 +305,5 @@ describe('which screen a pending descent leads to', () => {
     expect(
       screenAfterAct({ ...answer, ...(boss.room === undefined ? {} : { room: boss.room }) }),
     ).toBe('fight');
-  });
-
-  it('shows the locked band from the depth that opens the Undercroft, until a level is drawn', () => {
-    expect(lockedBandShown({ depth: 8 })).toBe(true);
-    expect(lockedBandShown({ depth: 7 })).toBe(false);
-    expect(lockedBandShown({ depth: 14, undercroft: null })).toBe(true);
-    expect(lockedBandShown({ depth: 14, undercroft: { maps: [], marks: 1 } })).toBe(true);
-    expect(lockedBandShown(undercroftState('entrance'))).toBe(false);
-    expect(lockedBandShown({ depth: 3 }, 3)).toBe(true);
   });
 });

@@ -11,7 +11,6 @@
  *   the answer of the move, never from today);
  * - `results`: the summary of the day's run when it is over.
  */
-import { RULES } from '@creatures/game';
 import type {
   DungeonActResponse,
   DungeonRunState,
@@ -86,15 +85,3 @@ export function msUntilReset(
 
 /** How long after the reset to ask again: a moment, so the server's day has really turned. */
 export const RESET_GRACE_MS = 1_500;
-
-/**
- * Whether the map shows its quiet "the Undercroft waits" band above the room boss: the player's depth
- * opens the Undercroft (`RULES.dungeon.undercroft.fromDepth`) and the run has not gone down yet (no level
- * is drawn). A run that already went down shows its levels instead.
- */
-export function lockedBandShown(
-  state: Pick<DungeonRunState, 'depth'> & Partial<Pick<DungeonRunState, 'undercroft'>>,
-  fromDepth: number = RULES.dungeon.undercroft.fromDepth,
-): boolean {
-  return state.depth >= fromDepth && (state.undercroft?.maps.length ?? 0) === 0;
-}

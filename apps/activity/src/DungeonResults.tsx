@@ -11,6 +11,8 @@ import { GameIcon } from './ui/GameIcon';
 import { ToggleButton } from './ui/ToggleButton';
 import {
   droppedSupplies,
+  NO_REWARDS_HINT,
+  NO_REWARDS_LINE,
   noRewards,
   rewardLoot,
   roomStrip,
@@ -141,9 +143,15 @@ export function DungeonResults({
 
       <h4>Rewards</h4>
       {empty ? (
-        <p class="muted">
-          Nothing this time. Clear a room to earn Bait, Essence, parts and a supply.
-        </p>
+        <div class="no-rewards">
+          <span class="no-rewards-art" aria-hidden="true">
+            <Sprite sprite={glyphOrUnknown('sad-face')} scale={6} />
+          </span>
+          <p class="no-rewards-text">
+            <strong>{NO_REWARDS_LINE}</strong>
+            <span class="muted">{NO_REWARDS_HINT}</span>
+          </p>
+        </div>
       ) : (
         <RewardSummary
           source={rewards}
@@ -267,6 +275,7 @@ function RouteSection({ run, initialView }: { run: DungeonRunSummary; initialVie
             undercroft={route.undercroft}
             state={route.run}
             landmark={run.landmark}
+            depth={run.depth}
           />
         </div>
       )}

@@ -162,6 +162,51 @@ const mapCrack: SpriteDef = {
   ],
 };
 
+/** A pale arrow going down through a line of floor: the way down into the Undercroft (a badge on the boss that opens it). */
+const mapDescend: SpriteDef = {
+  palette: { p: '#e4dbff', d: '#9d8ce6' },
+  rows: [
+    'dddddddd',
+    '........',
+    '..pppp..',
+    '..pppp..',
+    'pppppppp',
+    '.pppppp.',
+    '..pppp..',
+    '...pp...',
+  ],
+};
+
+/** A red cross: the room where the run was lost (a badge in place of the visited tick). */
+const mapLost: SpriteDef = {
+  palette: { r: BAD },
+  rows: [
+    'rr....rr',
+    'rrr..rrr',
+    '.rrrrrr.',
+    '..rrrr..',
+    '..rrrr..',
+    '.rrrrrr.',
+    'rrr..rrr',
+    'rr....rr',
+  ],
+};
+
+/** A small round creature with a downturned mouth and a tear: no rewards this time. */
+const sadFace: SpriteDef = {
+  palette: { s: '#a69fc8', d: '#7d77a3', k: '#0d0a1a', t: '#6fc3ff' },
+  rows: [
+    '..dddd..',
+    '.ssssss.',
+    'sskssksd',
+    'sskssksd',
+    'ssssstss',
+    'ssskksss',
+    '.sksskd.',
+    '..dddd..',
+  ],
+};
+
 export const DUNGEON_MAP_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   'map-fight': mapFight,
   'map-elite': mapElite,
@@ -173,4 +218,7 @@ export const DUNGEON_MAP_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   'map-epic': mapEpic,
   'map-keeper': mapKeeper,
   'map-crack': mapCrack,
+  'map-descend': mapDescend,
+  'map-lost': mapLost,
+  'sad-face': sadFace,
 };

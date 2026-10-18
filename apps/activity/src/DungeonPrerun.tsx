@@ -3,9 +3,8 @@ import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
 import { DepthProgress } from './DepthProgress';
 import { DungeonMap } from './DungeonMap';
-import { lockedBandShown } from './dungeon-flow';
 import { roomPanels } from './dungeon-rooms';
-import { landmarkLine, streakLabel, streakPips, supplyPromiseLine } from './dungeon-text';
+import { landmarkLine, streakLabel, streakPips } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
@@ -19,7 +18,8 @@ import { StreakTrack } from './ui/StreakTrack';
  * The daily dungeon card, down to the depth track: a header with the big "Daily Dungeon" title and
  * its "?" at the left and the streak (a row of days with a gift on the reward days; tap it for what
  * a streak is) at the right, or under the title on a phone, then today's map in preview (the same
- * for everyone on the server; tap a room to see what is there, nothing can be gone to yet). An
+ * for everyone on the server; tap a room to see what is there, nothing can be gone to yet; no caption
+ * under it). An
  * older server sends no map: the three rooms then show as a comic strip of "?" panels with the day's
  * modifier icons. Then, at a landmark depth, the line that names the room boss, and the depth
  * progress to the next landmark. `children` carry on inside the same card (the team and the Enter
@@ -35,7 +35,6 @@ export function DungeonPrerun({
   forecast?: Forecast | null;
   children?: ComponentChildren;
 }) {
-  const promise = supplyPromiseLine(today.depth);
   return (
     <section class="raid-section dungeon-card" aria-labelledby="dungeon-heading">
       <div class="dungeon-head">
@@ -58,15 +57,7 @@ export function DungeonPrerun({
       <SkyLine forecast={forecast} />
       {today.map != null ? (
         <div class="dungeon-preview">
-          <DungeonMap
-            map={today.map}
-            state={null}
-            landmark={today.landmark}
-            lockedBand={lockedBandShown({ depth: today.depth })}
-          />
-          <p class="muted">
-            Today's map, the same for everyone on the server. Tap a room to see what is there.
-          </p>
+          <DungeonMap map={today.map} state={null} landmark={today.landmark} depth={today.depth} />
         </div>
       ) : (
         <RoomStripPreview modifiers={today.modifiers} />
@@ -75,16 +66,6 @@ export function DungeonPrerun({
         <p class="landmark-note">
           <Sprite sprite={glyphOrUnknown('flag')} scale={2} />
           <span>{landmarkLine(today.landmarkBoss)}</span>
-        </p>
-      )}
-      {promise !== null && (
-        <p class="supply-promise">
-          <Sprite sprite={glyphOrUnknown('satchel')} scale={2} />
-          <span>
-            <GlossaryTag entry="supplies" look="text">
-              {promise}
-            </GlossaryTag>
-          </span>
         </p>
       )}
       <DepthProgress depth={today.depth} />

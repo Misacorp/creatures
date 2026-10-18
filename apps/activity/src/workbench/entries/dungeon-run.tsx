@@ -19,6 +19,7 @@ import { parseDungeonAct, parseDungeonStart } from '../../dungeon-parse';
 import {
   sampleRunCreatures,
   sampleStateCamp,
+  EMPTY_PACK,
   sampleSummary,
   sampleToday,
   omitKey,
@@ -40,6 +41,7 @@ const OUTCOMES = [
   'cleared an Undercroft level',
   'lost in the Undercroft',
   'an older run (no outcome)',
+  'no rewards (lost in the first room)',
 ] as const;
 
 /** The summary of a run's end as a real server answered it (`fixtures/dungeon-act-*.json`). */
@@ -269,8 +271,13 @@ const dungeonDescend: Entry = {
 
 function ResultsDemo({ p }: { p: Props }) {
   const outcome = str(p, 'outcome');
-  const kind = outcome === 'home' || outcome === 'defeat' ? outcome : 'cleared';
-  const base =
+  const noRewards = outcome === 'no rewards (lost in the first room)';
+  const kind = noRewards
+    ? 'defeat'
+    : outcome === 'home' || outcome === 'defeat'
+      ? outcome
+      : 'cleared';
+  const sample =
     outcome === 'cleared an Undercroft level'
       ? undercroftSummary()
       : outcome === 'lost in the Undercroft'
@@ -278,6 +285,23 @@ function ResultsDemo({ p }: { p: Props }) {
         : bool(p, 'capture')
           ? captured(kind)
           : sampleSummary(kind);
+  // A run lost in its first room paid nothing and kept an empty pack.
+  const base: typeof sample = noRewards
+    ? {
+        ...sample,
+        rewards: {
+          ...sample.rewards,
+          bait: 0,
+          essence: 0,
+          parts: {},
+          gear: [],
+          supplies: [],
+          converted: [],
+          streak: null,
+        },
+        pack: { found: EMPTY_PACK, kept: EMPTY_PACK },
+      }
+    : sample;
   const run: typeof base =
     outcome === 'an older run (no outcome)'
       ? (() => {
@@ -313,7 +337,7 @@ const dungeonResults: Entry = {
   file: 'apps/activity/src/DungeonResults.tsx',
   group: 'Loot & reveals',
   description:
-    'The end of a dungeon run. A path run says how it ended in its headline (cleared with the new depth, home safe with the whole pack, or defeated with half of it), the pack on one line (what was lost after a defeat is struck through), the keepsakes it held as chips, the route as the fights it played or as the map (a Fights / Map switch; a tap on a room tells what happened there) and the team; an older three-room run keeps its old headline. Rewards, experience, the streak and "Watch again" are the same for both.',
+    'The end of a dungeon run. A path run says how it ended in its headline (cleared with the new depth, home safe with the whole pack, or defeated with half of it), the pack on one line (what was lost after a defeat is struck through), the keepsakes it held as chips, the route as the fights it played or as the map (a Fights / Map switch; a tap on a room tells what happened there) and the team; an older three-room run keeps its old headline. Rewards, experience, the streak and "Watch again" are the same for both. A run that paid nothing says "No rewards this time." with a small sad creature and a hint. The Fights / Map switch keeps a gap between its two buttons.',
   controls: {
     outcome: { kind: 'select', options: OUTCOMES },
     canRetry: { kind: 'toggle' },
@@ -349,7 +373,14 @@ const dungeonResults: Entry = {
       name: 'Lost in the Undercroft, the route as a map',
       props: { outcome: 'lost in the Undercroft', view: 'map' },
     },
-    { name: 'Defeated, the route as a map', props: { outcome: 'defeat', view: 'map' } },
+    {
+      name: 'Defeated, the route as a map (a red cross on the lost room)',
+      props: { outcome: 'defeat', view: 'map' },
+    },
+    {
+      name: 'No rewards: a small sad creature and a hint',
+      props: { outcome: 'no rewards (lost in the first room)', canRetry: true },
+    },
     { name: 'A run with no route (no Fights / Map switch)', props: { route: false } },
     { name: 'An older three-room run', props: { outcome: 'an older run (no outcome)' } },
   ],
@@ -384,7 +415,7 @@ const SCENES = {
           : null,
     };
   },
-  'before the boss, the Undercroft waits (quiet band)': () => undercroftState('locked'),
+  'before the boss (the down-arrow badge on the room boss)': () => undercroftState('locked'),
   'a carved door ahead': () => undercroftState('door-ahead'),
   'in the Undercroft: the entrance': () => undercroftState('entrance'),
   'in the Undercroft: midway': () => undercroftState('midway'),
@@ -450,7 +481,7 @@ const dungeonRun: Entry = {
     },
     {
       name: 'Before the boss: the quiet band above it',
-      props: { scene: 'before the boss, the Undercroft waits (quiet band)' },
+      props: { scene: 'before the boss (the down-arrow badge on the room boss)' },
     },
     { name: 'A carved door ahead', props: { scene: 'a carved door ahead' } },
     {

@@ -3,15 +3,19 @@ import { elementClass } from './art';
 import { cssVars } from './css-vars';
 import {
   EDGE_ORDER,
+  descentRooms,
   edgePath,
   edgeStatus,
   nodeAriaLabel,
   nodeElement,
   nodeGlyphOf,
+  lostAt,
   nodeLevel,
   nodeStatus,
   reachableAheadAcross,
   stackLayout,
+  startLevel,
+  startMarkers,
   type LaidNode,
   type MapRun,
 } from './dungeon-map';
@@ -28,8 +32,11 @@ interface Props {
    * darker palette, each under a band with its label. Absent or empty: the day's map alone.
    */
   undercroft?: readonly DungeonMapView[] | undefined;
-  /** A quiet band above the boss that says the Undercroft is there to descend into (open to the player, no level drawn yet). */
-  lockedBand?: boolean | undefined;
+  /**
+   * The player's depth. From the depth that opens the Undercroft the room boss wears a small down-arrow badge
+   * (beating it lets the player descend). Absent: no badge on the room boss.
+   */
+  depth?: number | undefined;
   /**
    * The run on this map, or null for the preview before the player enters (no room is lit, none can be gone
    * to). A finished run's route is a run too (`routeRun`): its rooms are visited or not, with no Go.
@@ -51,7 +58,8 @@ const PERCENT = (n: number, of: number): string =>
 /**
  * The day's map: a vertical picture with the room boss at the top and the entrance floor at the bottom. Once
  * the run has gone down, the Undercroft levels it drew stand above the boss (the map grows upward), each in a
- * darker band with its label, a keeper with a pale crown (and a crack mark on a cracked floor); a run in
+ * darker band with its label, a keeper with a pale crown (and a crack mark on a cracked floor); the room
+ * boss (from the depth that opens the Undercroft) and a cracked keeper wear a down-arrow badge; a run in
  * the Undercroft is lit across the levels by the server's own list of rooms it may go to.
  * One SVG layer draws the paths (gold where the run walked, bright where it may go next, dim elsewhere);
  * every room is a real round button on top of it (so it takes the focus and has a label), with the icon
@@ -66,7 +74,7 @@ const PERCENT = (n: number, of: number): string =>
 export function DungeonMap({
   map,
   undercroft,
-  lockedBand = false,
+  depth,
   state,
   onGo,
   busy = false,
@@ -74,9 +82,14 @@ export function DungeonMap({
   initialOpen,
 }: Props) {
   const levels = useMemo(() => [map, ...(undercroft ?? [])], [map, undercroft]);
-  const layout = useMemo(
-    () => stackLayout(map, undercroft ?? [], { locked: lockedBand }),
-    [map, undercroft, lockedBand],
+  const layout = useMemo(() => stackLayout(map, undercroft ?? []), [map, undercroft]);
+  // The way down: the room boss at a depth that opens the Undercroft, and every cracked keeper.
+  const descent = useMemo(() => descentRooms(levels, depth), [levels, depth]);
+  // Before the first move (the preview, or a run at an entrance) a green triangle under each entrance room.
+  const entrance = startLevel(state);
+  const starts = useMemo(
+    () => (entrance === null ? [] : startMarkers(layout, entrance)),
+    [layout, entrance],
   );
   const [openId, setOpenId] = useState<string | null>(initialOpen ?? null);
   const [opener, setOpener] = useState<HTMLElement | null>(null);
@@ -141,13 +154,7 @@ export function DungeonMap({
           )}
           {layout.bands.map((band) => (
             <g key={`${band.kind}-${String(band.level)}`}>
-              <rect
-                class={band.kind === 'locked' ? 'dmap-uband lockedband' : 'dmap-uband'}
-                x="0"
-                y={band.y}
-                width={layout.width}
-                height={band.height}
-              />
+              <rect class="dmap-uband" x="0" y={band.y} width={layout.width} height={band.height} />
               <line
                 class="dmap-useam"
                 x1="0"
@@ -164,11 +171,14 @@ export function DungeonMap({
               d={edgePath(edge)}
             />
           ))}
+          {starts.map((marker) => (
+            <polygon key={marker.id} class="dmap-start" points={marker.points} />
+          ))}
         </svg>
         {layout.bands.map((band) => (
           <p
             key={`${band.kind}-${String(band.level)}`}
-            class={band.kind === 'locked' ? 'dmap-label pix lockedband' : 'dmap-label pix'}
+            class="dmap-label pix"
             ref={cssVars({ '--y': PERCENT(band.labelY, layout.height) })}
           >
             {band.label}
@@ -182,12 +192,15 @@ export function DungeonMap({
             const status = nodeStatus(node, state, ahead);
             const element = nodeElement(node);
             const crack = cracked.has(node.id);
+            const down = descent.has(node.id);
+            const lost = lostAt(state?.history, node.id);
             const classes = [
               'dmap-node',
               `k-${node.kind}`,
               `s-${status}`,
               nodeLevel(node.id) > 0 ? 'u' : '',
               crack ? 'cracked' : '',
+              lost ? 'lost' : '',
               element === null ? '' : elementClass(element),
             ]
               .filter(Boolean)
@@ -205,7 +218,7 @@ export function DungeonMap({
                 <button
                   type="button"
                   class={classes}
-                  aria-label={nodeAriaLabel(node, status, crack)}
+                  aria-label={nodeAriaLabel(node, status, { crack, descent: down, lost })}
                   aria-haspopup="dialog"
                   {...(status === 'current' ? { 'aria-current': 'step' as const } : {})}
                   onClick={(event) => {
@@ -222,10 +235,21 @@ export function DungeonMap({
                       <Sprite sprite={glyphOrUnknown('map-crack')} scale={2} />
                     </span>
                   )}
-                  {status === 'visited' && (
-                    <span class="dmap-check" aria-hidden="true">
-                      <Sprite sprite={glyphOrUnknown('check')} scale={2} />
+                  {down && (
+                    <span class="dmap-descend" aria-hidden="true">
+                      <Sprite sprite={glyphOrUnknown('map-descend')} scale={2} />
                     </span>
+                  )}
+                  {lost ? (
+                    <span class="dmap-lost" aria-hidden="true">
+                      <Sprite sprite={glyphOrUnknown('map-lost')} scale={2} />
+                    </span>
+                  ) : (
+                    status === 'visited' && (
+                      <span class="dmap-check" aria-hidden="true">
+                        <Sprite sprite={glyphOrUnknown('check')} scale={2} />
+                      </span>
+                    )
                   )}
                 </button>
               </li>
@@ -238,6 +262,7 @@ export function DungeonMap({
         state={state}
         ahead={ahead}
         crack={opened !== null && cracked.has(opened.id)}
+        descent={opened !== null && descent.has(opened.id)}
         {...(landmark === undefined ? {} : { landmark })}
         {...(onGo === undefined ? {} : { onGo })}
         busy={busy}

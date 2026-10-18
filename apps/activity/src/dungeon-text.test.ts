@@ -1,4 +1,3 @@
-import { RULES } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import errors from './fixtures/dungeon-errors.json';
 import runCleared from './fixtures/dungeon-run-cleared.json';
@@ -37,7 +36,6 @@ import {
   runHpText,
   runStatusLine,
   streakLabel,
-  supplyPromiseLine,
   streakLine,
   streakPips,
 } from './dungeon-text';
@@ -170,29 +168,6 @@ describe('the results words', () => {
   it('words the room line the way the design says', () => {
     expect(roomLine(0, 3)).toBe('Room 1 / 3');
     expect(roomLine(2, 3)).toBe('Room 3 / 3');
-  });
-});
-
-describe('the supply promise on the pre-run card', () => {
-  const goodFrom = RULES.dungeon.supplyTiers.good.fromDepth;
-
-  it('promises a supply for the first room and says where better ones start, from the rules', () => {
-    // The shipped rule: the first room drops the supply (B-011).
-    expect(RULES.dungeon.perRoom.map((r) => r.supply)).toEqual([1, 0, 0]);
-    const line = supplyPromiseLine(1);
-    expect(line).toContain('first room');
-    expect(line).toContain('guaranteed');
-    expect(line).toContain(`depth ${String(goodFrom)}`);
-  });
-
-  it('says the better ones come with depth once the good tier is open', () => {
-    expect(supplyPromiseLine(goodFrom)).toContain('The deeper you go');
-    expect(supplyPromiseLine(goodFrom)).not.toContain(`depth ${String(goodFrom)}`);
-    expect(supplyPromiseLine(goodFrom - 1)).toContain(`depth ${String(goodFrom)}`);
-  });
-
-  it('is plain text with no markup, whatever the depth', () => {
-    for (const depth of [1, 7, 50]) expect(supplyPromiseLine(depth)).not.toMatch(/[<>{}]/);
   });
 });
 
