@@ -1174,7 +1174,7 @@ export function simulateFight(
         if (m.critWindowBp !== 0) c.critWindowUntil = currentRound + 1;
         if (m.healOnReactionBp > 0 && c.alive) {
           const amount = Math.min(
-            Math.floor((c.maxHp * m.healOnReactionBp) / 10_000),
+            receivedHeal(c, Math.floor((c.maxHp * m.healOnReactionBp) / 10_000)),
             Math.max(0, c.maxHp - c.hp),
           );
           if (amount > 0) {
@@ -1609,8 +1609,9 @@ export function simulateFight(
         break;
       }
       case 'reflect_first_reaction':
-        events.push(base);
-        break; // armed at round start
+        // Armed at round start, where the one `gimmick` event for the trap is written. Nothing
+        // happens on the boss's turn, so nothing is announced again (it used to be, twice a round).
+        break;
       case 'sweep':
       case 'barrage':
       case 'slam':
@@ -1667,6 +1668,17 @@ export function simulateFight(
   }
 
   /**
+   * A heal `healed` strong, changed by the creature's own `healReceivedBp` (Well-fed, Long Shadows): the
+   * one scaling every heal from a source other than a Support's Mend shares (Kind Rain, Second wind,
+   * Second breath, Hollow Weave). Rounded down; the caller still caps it at what is missing.
+   */
+  function receivedHeal(c: Creature, healed: number): number {
+    return c.mods.healReceivedBp === 0
+      ? healed
+      : Math.floor((healed * Math.max(0, 10_000 + c.mods.healReceivedBp)) / 10_000);
+  }
+
+  /**
    * Kind Rain (`FightInput.rainHealBp`): each living creature heals that share of its max HP, rounded
    * down, changed by its own `healReceivedBp` like a Mend, and never above what it is missing. One
    * `sky_heal` event names who was really healed; nothing is written when nobody was.
@@ -1675,11 +1687,7 @@ export function simulateFight(
     const heals: { creature: string; amount: number }[] = [];
     for (const c of creatures) {
       if (!c.alive) continue;
-      const healed = Math.floor((c.maxHp * rainHealBp) / 10_000);
-      const received =
-        c.mods.healReceivedBp === 0
-          ? healed
-          : Math.floor((healed * Math.max(0, 10_000 + c.mods.healReceivedBp)) / 10_000);
+      const received = receivedHeal(c, Math.floor((c.maxHp * rainHealBp) / 10_000));
       const amount = Math.min(received, Math.max(0, c.maxHp - c.hp));
       if (amount <= 0) continue;
       c.hp += amount;
@@ -1694,11 +1702,7 @@ export function simulateFight(
    * both ends and the line as `cause`; nothing is written when nothing was missing.
    */
   function selfHeal(c: Creature, bp: number, cause: 'second_wind' | 'second_breath'): void {
-    const healed = Math.floor((c.maxHp * bp) / 10_000);
-    const received =
-      c.mods.healReceivedBp === 0
-        ? healed
-        : Math.floor((healed * Math.max(0, 10_000 + c.mods.healReceivedBp)) / 10_000);
+    const received = receivedHeal(c, Math.floor((c.maxHp * bp) / 10_000));
     const amount = Math.min(received, Math.max(0, c.maxHp - c.hp));
     if (amount <= 0) return;
     c.hp += amount;

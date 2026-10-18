@@ -127,7 +127,7 @@ Added 2026-10-18 (more gear and modifiers). A **set** is three named pieces, a H
 | First Footprints    | Setter   | Marking hit +8%         | Its first mark each fight cannot be replaced.                   | "Whoever leaves the first mark is the one the others follow."                         |
 | Pounce Set          | Payoff   | Payoff's pounce +5%     | Its first reaction each fight crits.                            | "For the creature that waits for the mark, and then does not wait at all."            |
 | Crossroads Wanderer | Explorer | Trips take 4% less time | One extra catch roll on 24 hour trips.                          | "Worn by those who take the fifth road at the Old Crossroads."                        |
-| Lantern Night       | Festival | Attack and HP +3%       | Shield Walls on its row last 1 more round.                      | "The Festival pieces together: hearth, lantern and cap, lit once a season."           |
+| Lantern Night       | Festival | Attack and HP +3%       | Guards in its row: their abilities last 1 more round.           | "The Festival pieces together: hearth, lantern and cap, lit once a season."           |
 
 **Compendium detail, not shipped** (who makes them):
 

@@ -80,7 +80,7 @@ export interface Placement {
   rowElements: readonly Element[];
   /** HP the Lantern bearers beside it give it, added up (basis points). */
   lanternHpBp: number;
-  /** Rounds more that a Guard's Shield Wall lasts in this row (Lantern Night; 0 or 1). */
+  /** Rounds more that a Guard's own ability (Rally, Shield Wall, Purge) lasts in this row (Lantern Night; 0 or 1). */
   rowShieldWall: number;
 }
 

@@ -436,7 +436,8 @@ export function strikesOf(
       });
     } else if (e.t === 'gimmick') {
       if (e.op === 'reflect_first_reaction') {
-        // The engine announces the trap twice a round (when it is armed and at the boss's turn): show it once.
+        // The engine now announces the trap once, when it is armed. Fights stored before that
+        // change still carry a second announcement on the boss's turn, so show each round's once.
         const first = events.findIndex(
           (x) => x.t === 'gimmick' && x.round === e.round && x.op === e.op,
         );

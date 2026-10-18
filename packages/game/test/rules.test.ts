@@ -99,11 +99,12 @@ describe('rollCatch', () => {
 
   it('only returns catchable stage-1 species', () => {
     const rng = createSeededRng('catchable');
+    const bad: string[] = [];
     for (let i = 0; i < 2000; i++) {
       const { species } = rollCatch(rng, baseCtx({ supplies: 'great' })).result;
-      expect(species.catchable).toBe(true);
-      expect(species.stage).toBe(1);
+      if (!species.catchable || species.stage !== 1) bad.push(species.id);
     }
+    expect(bad).toEqual([]);
   });
 
   it('makes species of the explorer element twice as likely within a rarity', () => {
@@ -174,12 +175,15 @@ describe('rollCatch', () => {
       const rng = createSeededRng('shield-all-owned');
       const ownedAll = new Set(catchableLines);
       const seen = new Set<string>();
+      const wrong: unknown[] = [];
       for (let i = 0; i < 500; i++) {
         const roll = rollCatch(rng, baseCtx({ ownedLines: ownedAll, dupeStreak: 9 }));
-        expect(roll.result.duplicate).toBe(true);
-        expect(roll.dupeStreak).toBe(10);
+        if (!roll.result.duplicate || roll.dupeStreak !== 10) {
+          wrong.push([roll.result.duplicate, roll.dupeStreak]);
+        }
         seen.add(roll.result.species.id);
       }
+      expect(wrong).toEqual([]);
       expect(seen.size).toBeGreaterThan(3);
     });
 
@@ -197,12 +201,12 @@ describe('rollCatch', () => {
   describe('first-expedition guarantee', () => {
     it('always returns zipmouse as a new species and resets the streak', () => {
       const rng = createSeededRng('guarantee');
+      const rolls: unknown[] = [];
       for (let i = 0; i < 200; i++) {
         const roll = rollCatch(rng, baseCtx({ zipmouseGuarantee: true, dupeStreak: 3 }));
-        expect(roll.result.species.id).toBe('zipmouse');
-        expect(roll.result.duplicate).toBe(false);
-        expect(roll.dupeStreak).toBe(0);
+        rolls.push([roll.result.species.id, roll.result.duplicate, roll.dupeStreak]);
       }
+      expect(rolls).toEqual(Array.from({ length: 200 }, () => ['zipmouse', false, 0]));
     });
 
     it('applies to the first roll of the first claim only', () => {
@@ -300,7 +304,8 @@ describe('rollCatch', () => {
       }
       // Expected 2000, sd about 45: allow 6 sd.
       expect(Math.abs(shinies - draws / 500)).toBeLessThan(270);
-    });
+      // A million real rolls: about 1 s idle, 3 s on a loaded box, so this one test gets more time.
+    }, 20_000);
 
     it('is decided exactly at the boundary with a scripted rng', () => {
       // Guaranteed zipmouse consumes no draws before the shiny draw.

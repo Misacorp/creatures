@@ -45,12 +45,13 @@ describe('createSeededRng', () => {
 
   it('returns unsigned 32-bit integers', () => {
     const rng = createSeededRng('range');
+    // Collect the offenders and assert once: `expect` per draw is what made these loops slow.
+    const bad: number[] = [];
     for (let i = 0; i < 1000; i++) {
       const x = rng.nextU32();
-      expect(Number.isInteger(x)).toBe(true);
-      expect(x).toBeGreaterThanOrEqual(0);
-      expect(x).toBeLessThan(2 ** 32);
+      if (!Number.isInteger(x) || x < 0 || x >= 2 ** 32) bad.push(x);
     }
+    expect(bad).toEqual([]);
   });
 });
 
@@ -94,12 +95,14 @@ describe('int', () => {
     const rng = createSeededRng(`uniform-${n}`);
     const draws = 100_000;
     const counts = new Array<number>(n).fill(0);
+    // Collect the draws outside [0, n) and assert once: `expect` per draw made this test slow.
+    const outOfRange: number[] = [];
     for (let i = 0; i < draws; i++) {
       const x = int(rng, n);
-      expect(x).toBeGreaterThanOrEqual(0);
-      expect(x).toBeLessThan(n);
-      counts[x] = (counts[x] ?? 0) + 1;
+      if (x < 0 || x >= n) outOfRange.push(x);
+      else counts[x] = (counts[x] ?? 0) + 1;
     }
+    expect(outOfRange).toEqual([]);
     const expected = draws / n;
     const chiSquare = counts.reduce((sum, c) => sum + (c - expected) ** 2 / expected, 0);
     const df = n - 1;

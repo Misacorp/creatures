@@ -11,6 +11,13 @@ import { TEST_PACK, slot } from './helpers';
  * `rules` and a boss without pattern ops must reproduce its fight exactly, for ever: this is what
  * keeps stored fights replaying. If this fails, an engine change moved old behaviour or old dice.
  *
+ * Re-pins (an intended engine change moves results; say which fights moved and why):
+ * - 2026-10-18, E3: Backdraft is announced once per armed round (the duplicate `gimmick` event on
+ *   the boss's turn is gone). The 120 fights against the pinned Cinder Wyrm (the only boss with
+ *   the trap) changed their event lists only; the other 360 are untouched. Outcome, rounds, HP,
+ *   credit and every other event are identical (checked by hashing each result with its events
+ *   removed, and the events without the trap's announcements, before and after the change).
+ *
  * The bosses' gimmicks, the creature stats, the luck and the abilities are pinned in this file, so
  * a content retune never touches the fixture.
  */

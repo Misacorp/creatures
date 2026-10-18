@@ -164,7 +164,7 @@
       {
         "op": "linger",
         "rounds": 1,
-        "text": "Shield Walls and other lasting abilities last 1 more round."
+        "text": "Creature abilities last 1 more round (Rally, Shield Wall, Purge). Basic abilities do not."
       },
       {
         "op": "tripJournal",

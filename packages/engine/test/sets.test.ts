@@ -124,6 +124,17 @@ describe('healOnReactionBp: it heals when it sets off a reaction', () => {
     expect(big[0]?.amount).toBe(1_000);
   });
 
+  it('is changed by healing received, like every other heal (Well-fed, Long Shadows)', () => {
+    // 3% of 10000 is 300; the wearer's healReceivedBp scales it, rounded down.
+    expect(heals({ healOnReactionBp: 300, healReceivedBp: 3_500 })[0]?.amount).toBe(405);
+    expect(heals({ healOnReactionBp: 300, healReceivedBp: -2_500 })[0]?.amount).toBe(225);
+    expect(heals({ healOnReactionBp: 300, healReceivedBp: -10_000 })).toHaveLength(0);
+    // Still never above what is missing, scaled or not.
+    expect(heals({ healOnReactionBp: 9_000, healReceivedBp: 3_500 })[0]?.amount).toBe(1_000);
+    // No sheet entry: unchanged.
+    expect(heals({ healOnReactionBp: 300, healReceivedBp: 0 })[0]?.amount).toBe(300);
+  });
+
   it('says so in the log', () => {
     const heal = heals({ healOnReactionBp: 300 })[0];
     const names = { boss: 'Boss', creatures: { b: 'Bee', a: 'Ay' } };

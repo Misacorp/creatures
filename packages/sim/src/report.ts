@@ -11,7 +11,7 @@ import { ROLE_STUDY_HP_BP, ROLE_STUDY_RUNS_FACTOR } from './roles';
 import { SETUP_RANK_OFFSETS } from './setup-study';
 import { TRIP_POLICY } from './trips';
 import { LONG_RUN_WEEKS, LOSS_STREAK_LIMIT } from './ladder';
-import { PITY_WEEKS, bossName, describeMix, type RunOutput } from './run';
+import { bossName, horizonsOf, describeMix, type RunOutput } from './run';
 import { TARGETS, describeRequirement, formatValue, type TargetResult } from './targets';
 import { round } from './util';
 
@@ -678,10 +678,13 @@ export function buildReportMarkdown(out: RunOutput): string {
         ['Weeks per economy sim', String(s.weeks)],
         ['Raid weeks per player count and boss', String(s.runsPerCell)],
         ['Economy sims per player count', String(s.economySims)],
-        ['20-week economy sims for jackpot and pity', `${s.pitySims} (${PITY_WEEKS} weeks each)`],
+        [
+          '20-week economy sims for jackpot and pity',
+          `${s.pitySims} (${horizonsOf(s).pityWeeks} weeks each)`,
+        ],
         [
           'Long-run server sims (5, 10 and 15 players)',
-          `${s.longRunSims} each (${LONG_RUN_WEEKS} weeks each)`,
+          `${s.longRunSims} each (${horizonsOf(s).longRunWeeks} weeks each)`,
         ],
         ['Player counts in the sweep', s.counts.join(', ')],
         ['Default server', `${DEFAULT_SERVER_SIZE} players (${describeMix()})`],
