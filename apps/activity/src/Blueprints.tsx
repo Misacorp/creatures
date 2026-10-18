@@ -37,7 +37,7 @@ export function Blueprints({
       {views.length === 0 ? (
         <p class="empty muted">No blueprints yet.</p>
       ) : (
-        <ul class="blueprints">
+        <ul class="stack-list">
           {views.map((bp) => (
             <li key={bp.baseId} class="blueprint card-item">
               <div class="bp-row">

@@ -7,7 +7,7 @@ import { slotName, wornInOrder, type WornItem } from './gear-view';
  */
 export function WornItemLines({ worn }: { worn: readonly WornItem[] }) {
   return (
-    <ul class="worn-items" aria-label="Worn gear">
+    <ul class="stack-list" aria-label="Worn gear">
       {wornInOrder(worn).map((item) => (
         <ItemRow
           key={item.slot}

@@ -10,7 +10,7 @@ import { RaidTimeline } from '../../RaidTimeline';
 import { AppHead } from '../../AppHead';
 import { LivingRoom, sceneOf } from '../../LivingRoom';
 import { SmallCreature } from '../../SmallCreature';
-import { WornItemLines } from '../../WornItemLine';
+import { WornItemLines } from '../../WornItemLines';
 import type { ReadinessBand, RaidView } from '../../raid-api';
 import { READINESS_BANDS } from '../../raid-api';
 import { turnChips } from '../../replay';
@@ -277,7 +277,7 @@ const turnStrip: Entry = {
 
 const wornItemLines: Entry = {
   name: 'WornItemLines',
-  file: 'apps/activity/src/WornItemLine.tsx',
+  file: 'apps/activity/src/WornItemLines.tsx',
   group: 'Creatures & game pieces',
   description:
     "What a creature wears in a living room creature's popover: one compact row per item with its picture (rarity border, item level in the corner), its name, a rarity badge and the slot. No stats. The Creatures screen shows the same items as three slots instead.",

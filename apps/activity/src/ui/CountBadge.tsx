@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from '../Glossary';
 import type { IconRef } from '../icon-ref';
 import { GameIcon } from './GameIcon';
@@ -50,5 +51,32 @@ export function CountBadge({ icon, amount, spokenAmount, label, entry, name }: C
     <span class="part-count" role="img" aria-label={spoken}>
       {body}
     </span>
+  );
+}
+
+/**
+ * A list of count badges: a `<ul>` with one `<li>` per item, named for assistive technology. `children` are
+ * further `<li>` rows after the badges (a job's time beside what it gives).
+ */
+export function CountBadgeList({
+  items,
+  label,
+  class: cls,
+  children,
+}: {
+  items: readonly CountItem[];
+  label: string;
+  class?: string;
+  children?: ComponentChildren;
+}) {
+  return (
+    <ul {...(cls === undefined ? {} : { class: cls })} aria-label={label}>
+      {items.map(({ key, ...badge }) => (
+        <li key={key}>
+          <CountBadge {...badge} />
+        </li>
+      ))}
+      {children}
+    </ul>
   );
 }

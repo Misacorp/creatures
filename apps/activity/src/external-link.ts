@@ -13,11 +13,6 @@ export function setExternalLinkOpener(next: Opener | null): void {
   opener = next;
 }
 
-/** True when the link opens through Discord (the app is inside it). */
-export function hasExternalLinkOpener(): boolean {
-  return opener !== null;
-}
-
 /** Opens `url` (https only) through Discord, or in a new browser tab. Resolves false if it could not. */
 export async function openExternalLink(url: string): Promise<boolean> {
   if (!url.startsWith('https://')) return false;

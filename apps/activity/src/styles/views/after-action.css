@@ -25,14 +25,6 @@
   font-size: 0.9375rem;
 }
 
-.bar-list {
-  display: grid;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .bar-row {
   display: flex;
   flex-direction: column;

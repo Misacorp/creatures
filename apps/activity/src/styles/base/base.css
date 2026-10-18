@@ -85,7 +85,7 @@ p {
 .muted,
 .small {
   color: var(--haze);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 .error {
@@ -94,7 +94,7 @@ p {
 
 .locked {
   color: var(--haze);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
   font-style: italic;
 }
 

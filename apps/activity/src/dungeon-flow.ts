@@ -18,10 +18,6 @@ import type {
   DungeonToday,
 } from './dungeon-types';
 
-/** The screens the Dungeon tab moves between (`loading` is before today arrived). */
-export type DungeonScreen =
-  'loading' | 'setup' | 'run' | 'fight' | 'event' | 'camp' | 'descend' | 'results';
-
 /** The screen of an open run: what is pending comes first, else the map. */
 export function runScreenOf(
   state: Pick<DungeonRunState, 'pending'>,

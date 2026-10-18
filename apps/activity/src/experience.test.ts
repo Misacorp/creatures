@@ -5,7 +5,6 @@ import { experienceLabel, experienceLine } from './CreatureProgress';
 import {
   experienceBar,
   experienceBoostLine,
-  experienceText,
   isExperienceView,
   isRibbonView,
   ribbonBlocker,
@@ -99,20 +98,6 @@ describe('the ribbon words', () => {
     expect(ribbonBlocker(bronze)).toBe('Short of parts.');
     expect(ribbonBlocker(silver)).toBe('Needs 3 more trips.');
     expect(ribbonBlocker({ ...silver, tripsDone: 4 })).toBe('Needs 1 more trip.');
-  });
-});
-
-describe('the experience sentence', () => {
-  it('says the gain, and a level-up, a treat, a gate and a Gold Ribbon when they happen', () => {
-    expect(experienceText(view)).toBe('+120 experience');
-    expect(experienceText({ ...view, treat: true })).toBe('+120 experience (treat)');
-    expect(experienceText({ ...view, level: 5 })).toBe('+120 experience, level 4 to 5');
-    expect(experienceText({ ...view, waiting: true })).toBe(
-      '+120 experience, waiting at this level',
-    );
-    expect(experienceText({ ...view, level: 30, levelBefore: 29, gold: true })).toBe(
-      '+120 experience, level 29 to 30, Gold Ribbon',
-    );
   });
 });
 

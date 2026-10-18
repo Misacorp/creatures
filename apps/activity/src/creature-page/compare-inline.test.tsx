@@ -118,7 +118,7 @@ describe('the inline compare on the picker card', () => {
     expect(visibleText(first(byClass(gone[0] as FakeElement, 'cmp-marker')))).toBe(MINUS);
     expect(visibleText(first(byClass(gone[0] as FakeElement, 'visually-hidden')))).toBe('Lost:');
     // The tier pips of the lines the item keeps stay as they were.
-    expect(byClass(lines, 'pips').length).toBeGreaterThan(0);
+    expect(byClass(lines, 'tier-pips').length).toBeGreaterThan(0);
   });
 
   it('shows a green delta for a better item, in the line stat rows too', () => {

@@ -186,7 +186,7 @@ button.calendar-button:active canvas.calendar-page {
   margin: 0.125rem 0 0;
   padding-left: 1.125rem;
   list-style: square;
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 .sky-lines li {
@@ -195,13 +195,13 @@ button.calendar-button:active canvas.calendar-page {
 
 .sky-none {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 .sky-wild {
   margin: 0.5rem 0 0;
   color: var(--bad);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
   font-weight: 700;
 }
 
@@ -212,7 +212,7 @@ button.calendar-button:active canvas.calendar-page {
   align-items: center;
   gap: 0.5rem;
   margin: 0.5rem 0 0;
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
   line-height: 1.3;
 }
 

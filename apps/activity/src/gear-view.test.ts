@@ -10,7 +10,6 @@ import { parseGearState, parseJobResult } from './gear-parse';
 import {
   bagText,
   blueprintViews,
-  bulkPick,
   busyReason,
   defaultPick,
   detailLines,
@@ -38,7 +37,6 @@ import {
   lootItemName,
   marksText,
   missingParts,
-  needsText,
   noticeLines,
   oddsPercent,
   oddsText,
@@ -58,7 +56,7 @@ import {
   wornInOrder,
   wornItemOf,
 } from './gear-view';
-import type { GearItem, GrantLoot } from './gear-types';
+import type { GrantLoot } from './gear-types';
 
 /** Keeps what the parser logs for an entry it leaves out out of the test output, and returns it. */
 function silenceErrors(): { messages: string[]; restore: () => void } {
@@ -189,11 +187,6 @@ describe('the wear rule', () => {
     expect(wearReason(item('charm', 5), zipmouse)).toBe('Charms open at level 13.');
     // A Guard's Bell on a Payoff (Cindle).
     expect(wearReason(item('charm', 6, 'guard'), cindle)).toBe('Guards only.');
-  });
-
-  it('says what an item asks of its wearer', () => {
-    expect(needsText({ needs: { level: 12, role: null } })).toBe('Level 12');
-    expect(needsText({ needs: { level: 13, role: 'guard' } })).toBe('Level 13, Guards only');
   });
 });
 
@@ -792,47 +785,6 @@ describe("writing the odds, the marks and the refund ranges (the numbers are the
     expect(dismantleDurationFor('rare', 1)).toBe(60 * 60_000);
     expect(dismantleDurationFor('epic', 1)).toBe(2 * 60 * 60_000);
     expect(dismantleDurationFor('epic', 5)).toBeLessThan(dismantleDurationFor('epic', 1));
-  });
-});
-
-describe('dismantle several: picking by rarity and item level', () => {
-  const make = (
-    id: string,
-    rarity: GearItem['rarity'],
-    itemLevel: number,
-    on: string | null = null,
-  ) =>
-    ({
-      ...gear.items[0],
-      id,
-      rarity,
-      itemLevel,
-      equippedOn: on,
-      createdAt: 0,
-    }) as GearItem;
-  const bag = [
-    make('c9', 'common', 9),
-    make('c2', 'common', 2),
-    make('c3', 'common', 3),
-    make('c4', 'common', 4),
-    make('c5', 'common', 5),
-    make('c6', 'common', 6),
-    make('c1', 'common', 1, 'worn-by-someone'),
-    make('r3', 'rare', 3),
-    make('r1', 'rare', 1),
-  ];
-
-  it('takes the lowest levels first, at most one bundle of 5 Commons, and counts the rest', () => {
-    const picked = bulkPick(bag, 'common', 20);
-    expect(picked.ids).toEqual(['c2', 'c3', 'c4', 'c5', 'c6']);
-    expect(picked.matching).toBe(6);
-    expect(bulkPick(bag, 'common', 4)).toEqual({ ids: ['c2', 'c3', 'c4'], matching: 3 });
-  });
-
-  it('never picks a worn item, and takes anything above Common one at a time', () => {
-    expect(bulkPick(bag, 'common', 1)).toEqual({ ids: [], matching: 0 });
-    expect(bulkPick(bag, 'rare', 20)).toEqual({ ids: ['r1'], matching: 2 });
-    expect(bulkPick(bag, 'epic', 20)).toEqual({ ids: [], matching: 0 });
   });
 });
 

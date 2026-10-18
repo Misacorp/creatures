@@ -3,8 +3,10 @@ import { CurrencyPile } from '../../CurrencyPile';
 import { TabBar } from '../../TabBar';
 import { ALERT_TEXT, NO_ALERTS, type TabAlerts } from '../../tab-alerts';
 import { TABS, type Tab } from '../../tabs';
+import { ChoiceButton, ChoiceList } from '../../ui/ChoiceList';
 import { LiveRegion } from '../../ui/LiveRegion';
 import { PlaybackControls } from '../../ui/PlaybackControls';
+import { PreviewStatus } from '../../ui/PreviewStatus';
 import { ScrollHint } from '../../ui/ScrollHint';
 import { Switch } from '../../ui/Switch';
 import { ToggleButton } from '../../ui/ToggleButton';
@@ -306,7 +308,90 @@ const scrollHint: Entry = {
   render: (p) => <ScrollHintDemo p={p} />,
 };
 
+const choiceList: Entry = {
+  name: 'ChoiceList',
+  file: 'apps/activity/src/ui/ChoiceList.tsx',
+  group: 'Controls',
+  description:
+    "A short list of big choice buttons that each say what they do: the two options of a mystery room, the dungeon camp's moves and keepsakes, and the creatures to send home. Each has its name in the pixel font and one line under it.",
+  controls: {
+    choices: { kind: 'select', options: ['A mystery room', 'The camp', 'Who goes home'] },
+    disabled: { kind: 'toggle' },
+  },
+  defaults: { choices: 'A mystery room', disabled: false },
+  presets: [
+    { name: 'A mystery room', props: {} },
+    { name: 'The camp', props: { choices: 'The camp' } },
+    { name: 'Who goes home (one knocked out)', props: { choices: 'Who goes home' } },
+    { name: 'While an act is running', props: { disabled: true } },
+  ],
+  covers: ['ChoiceButton'],
+  render: (p) => {
+    const disabled = bool(p, 'disabled');
+    const rows: readonly { label: string; line: string; class?: string }[] =
+      str(p, 'choices') === 'The camp'
+        ? [
+            { label: 'Rest', line: 'Everyone heals a little, then the run goes on.' },
+            { label: 'Take a keepsake', line: 'Pick one for this run only.' },
+            { label: 'Swap a creature', line: 'Someone fresh comes in at full HP.' },
+          ]
+        : str(p, 'choices') === 'Who goes home'
+          ? [
+              { label: 'Sproutle', line: 'Level 12 · 240 / 281 HP', class: 'camp-out' },
+              { label: 'Cindle', line: 'Level 11 · 0 / 190 HP', class: 'camp-out ko' },
+            ]
+          : [
+              { label: 'Drink from the spring', line: 'Heal everyone by 30%.' },
+              { label: 'Leave it alone', line: 'Nothing happens.' },
+            ];
+    return (
+      <ChoiceList label="Pick one">
+        {rows.map((row) => (
+          <ChoiceButton
+            key={row.label}
+            label={row.label}
+            line={row.line}
+            disabled={disabled}
+            onClick={() => undefined}
+            {...(row.class === undefined ? {} : { class: row.class })}
+          />
+        ))}
+      </ChoiceList>
+    );
+  },
+};
+
+const previewStatus: Entry = {
+  name: 'PreviewStatus',
+  file: 'apps/activity/src/ui/PreviewStatus.tsx',
+  group: 'Controls',
+  description:
+    'The quiet line a Workshop starter shows while the server works out the odds or the refund for the picked creature: "Loading..." and, when it failed, an error that says to pick again. Nothing shows once the preview is here.',
+  controls: {
+    status: { kind: 'select', options: ['loading', 'failed', 'ready', 'idle'] },
+    what: { kind: 'text', maxLength: 30 },
+  },
+  defaults: { status: 'loading', what: 'the odds' },
+  presets: [
+    { name: 'Loading the odds', props: {} },
+    { name: 'Failed', props: { status: 'failed' } },
+    { name: 'The refund of a dismantle', props: { what: 'the refund' } },
+    { name: 'Ready (nothing shows)', props: { status: 'ready' } },
+  ],
+  render: (p) => {
+    const status = str(p, 'status');
+    return (
+      <PreviewStatus
+        status={status === 'failed' || status === 'ready' || status === 'idle' ? status : 'loading'}
+        what={str(p, 'what')}
+      />
+    );
+  },
+};
+
 export const controlEntries: readonly Entry[] = [
+  choiceList,
+  previewStatus,
   toggleButton,
   switchEntry,
   playbackControls,

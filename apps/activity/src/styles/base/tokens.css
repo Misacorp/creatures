@@ -43,10 +43,18 @@
   --fs-heading: 1.25rem; /* a card's name (the item card), a sheet's title */
   --fs-row: 1rem; /* a row: a stat, a modifier line, a picker option, a button in a panel */
   --fs-small: 0.875rem; /* a note under a row, a badge, a reason */
+  --bevel-hi: #3d3570; /* the pixel bevel: the lit top edge of a raised panel or button */
+  --bevel-lo: #1a1533; /* and the shadowed bottom edge */
+  /* The Undercroft's palette: darker than the page, with a pale violet instead of the day's gold and haze. */
+  --uc-ground: #0b0818;
+  --uc-node: #1b1535;
+  --uc-ring: #9d8ce6;
+  --uc-line: #5a4d96;
+  --uc-label: #b7a9f5; /* a heading on the Undercroft's ground */
   --frame:
     0 calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
     calc(var(--px) * -1) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),
-    inset 0 var(--px) 0 0 #3d3570, inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+    inset 0 var(--px) 0 0 var(--bevel-hi), inset 0 calc(var(--px) * -1) 0 0 var(--bevel-lo);
   --ring: 0 0 0 var(--px) var(--ink), 0 0 0 calc(var(--px) * 2) var(--gold);
   --attention: #ff7a45; /* the pip that says something waits for you: warm, and readable on gold */
   --gold-shade: #c8952b; /* the dark edge under a gold button */

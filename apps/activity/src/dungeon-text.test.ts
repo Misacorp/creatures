@@ -21,7 +21,6 @@ import {
   dungeonErrorText,
   fierceName,
   floorLine,
-  undercroftClearedText,
   undercroftName,
   isPackEmpty,
   isRetryOffer,
@@ -275,10 +274,8 @@ describe('where the run is', () => {
     expect(nodeFloor('f2l1; drop')).toBeNull();
   });
 
-  it('names Undercroft floors and how many a run cleared, singular for one', () => {
+  it('names Undercroft floors', () => {
     expect(undercroftName(1)).toBe('Undercroft 1');
-    expect(undercroftClearedText(1)).toBe('1 Undercroft floor cleared');
-    expect(undercroftClearedText(2)).toBe('2 Undercroft floors cleared');
   });
 
   it('counts the rooms along a path from 1', () => {

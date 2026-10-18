@@ -1,8 +1,8 @@
 import { useMemo } from 'preact/hooks';
 import { groupSupplies } from './claim-view';
 import { GlossaryTag } from './Glossary';
-import { partCountItems } from './GearArt';
-import { LootList } from './GearLoot';
+import { partCountItems, supplyCounts } from './count-items';
+import { GearRows } from './ItemRow';
 import {
   DESCEND_BANKED_HELP,
   DESCEND_BUTTON,
@@ -19,8 +19,7 @@ import {
 } from './dungeon-text';
 import { packItems } from './dungeon-run';
 import type { DungeonAct, DungeonPack, DungeonPending } from './dungeon-types';
-import { supplyKindOf } from './trip-view';
-import { CountBadge, type CountItem } from './ui/CountBadge';
+import { CountBadgeList, type CountItem } from './ui/CountBadge';
 import { GameIcon } from './ui/GameIcon';
 import { RevealShell } from './ui/RevealShell';
 
@@ -28,15 +27,7 @@ type Descent = Extract<NonNullable<DungeonPending>, { kind: 'descend' }>;
 
 /** What the boss chest banked, as count badges: its supplies and its parts (shards, glimmer). The gear shows as item rows. */
 export function bankedCounts(banked: Descent['banked']): CountItem[] {
-  return [
-    ...groupSupplies(banked.supplies).map((s) => ({
-      key: `supply-${s.id}`,
-      icon: { kind: 'supply', id: supplyKindOf(s.id) ?? 'unknown' } as const,
-      amount: s.amount,
-      name: s.name,
-    })),
-    ...partCountItems(banked.parts),
-  ];
+  return [...supplyCounts(groupSupplies(banked.supplies)), ...partCountItems(banked.parts)];
 }
 
 /** True when the chest banked nothing at all. */
@@ -85,23 +76,17 @@ export function DungeonDescend({
             <p class="muted">Nothing new this time.</p>
           ) : (
             <>
-              <LootList
-                label="Banked by the chest"
-                loot={{
-                  gear: descent.banked.gear.map((g, i) => ({ id: `banked-${String(i)}`, ...g })),
-                  converted: [],
-                  parts: {},
-                  blueprints: [],
-                }}
-              />
+              {descent.banked.gear.length > 0 && (
+                <div class="loot" role="group" aria-label="Banked by the chest">
+                  <GearRows pieces={descent.banked.gear} label="Items" />
+                </div>
+              )}
               {counts.length > 0 && (
-                <ul class="descend-counts" aria-label="Supplies and parts banked">
-                  {counts.map(({ key, ...badge }) => (
-                    <li key={key}>
-                      <CountBadge {...badge} />
-                    </li>
-                  ))}
-                </ul>
+                <CountBadgeList
+                  items={counts}
+                  label="Supplies and parts banked"
+                  class="descend-counts"
+                />
               )}
             </>
           )}
@@ -116,13 +101,7 @@ export function DungeonDescend({
           ) : (
             <>
               <p class="muted">{DESCEND_RISK_HELP}</p>
-              <ul class="run-pack-items" aria-label={packLine(pack)}>
-                {items.map(({ key, ...badge }) => (
-                  <li key={key}>
-                    <CountBadge {...badge} />
-                  </li>
-                ))}
-              </ul>
+              <CountBadgeList items={items} label={packLine(pack)} class="run-pack-items" />
             </>
           )}
         </section>

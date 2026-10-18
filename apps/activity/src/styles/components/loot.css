@@ -30,7 +30,7 @@
 }
 
 .item-row-name {
-  font-size: 1.25rem;
+  font-size: var(--fs-heading);
   line-height: 1.1;
   overflow-wrap: anywhere;
 }

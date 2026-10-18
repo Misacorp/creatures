@@ -7,7 +7,7 @@ import type { GearActions } from './gear-actions';
 import type { GearItem, GearState } from './gear-types';
 import { detailLines, setPiecesWith } from './gear-view';
 import { ItemCard } from './ItemCard';
-import { DismantlePanel } from './ItemPanels';
+import { DismantlePanel } from './DismantlePanel';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Accordion } from './ui/Accordion';

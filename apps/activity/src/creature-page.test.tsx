@@ -541,7 +541,7 @@ describe('the creature page: the item detail panel', () => {
     expect(rows[2]).toMatch(/^Crit damage \d+ pt$/);
     // The modifiers keep their values and tier pips.
     expect(visibleText(card)).toContain('(this item)');
-    expect(byClass(card, 'pips').length).toBeGreaterThan(0);
+    expect(byClass(card, 'tier-pips').length).toBeGreaterThan(0);
     // The bonus is a distinct element, so a stat with none shows the base alone.
     expect(byClass(card, 'idc-stat-bonus')).toHaveLength(1);
   });

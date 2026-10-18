@@ -33,6 +33,7 @@ export default defineConfig(({ command, mode }) => {
       // A few property-style tests loop over many instants and zones. They take about 1 s alone, but
       // on a busy CI runner (all packages test in parallel) they can pass the 5 s default.
       testTimeout: 30_000,
+      css: { include: [/\.css\?raw$/] },
     },
   };
 });

@@ -17,6 +17,7 @@
 @import './components/glossary-tag.css';
 @import './components/tabs.css';
 @import './components/cards.css';
+@import './base/utilities.css';
 @import './views/raid.css';
 @import './views/replay.css';
 @import './components/turn-strip.css';

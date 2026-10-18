@@ -106,7 +106,7 @@ export function AbilityPicker({
             Each team creature at the unlock level adds one more ability to the finale. Each fires
             once.
           </p>
-          <ul class="plain-list creature-abilities">
+          <ul class="bullet-list creature-abilities">
             {creatureRows.map((row) => (
               <li key={row.creatureId} class={row.unlocked ? 'live-ability you' : 'live-ability'}>
                 <GlossaryTag ability={row.abilityId}>

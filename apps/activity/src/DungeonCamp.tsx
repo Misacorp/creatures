@@ -31,6 +31,7 @@ import type {
 } from './dungeon-types';
 import { creatureName, getSpecies } from './game';
 import { IN_TEAM_NOTE } from './roster-picker';
+import { ChoiceButton, ChoiceList } from './ui/ChoiceList';
 import { RevealShell } from './ui/RevealShell';
 import { RosterPicker } from './ui/RosterPicker';
 
@@ -139,47 +140,33 @@ export function DungeonCamp({
         <>
           <p class="muted">{CAMP_INTRO}</p>
           {row(order, setOrder)}
-          <ul class="camp-choices" aria-label="Pick one">
-            <li>
-              <button
-                type="button"
-                class="camp-choice"
-                disabled={busy}
-                onClick={() => {
-                  onAct(restAct(order));
-                }}
-              >
-                <strong class="pix">{lines.rest.label}</strong> <span>{lines.rest.line}</span>
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                class="camp-choice"
-                disabled={busy || camp.offers.length === 0}
-                onClick={() => {
-                  setStep('keepsake');
-                }}
-              >
-                <strong class="pix">{lines.keepsake.label}</strong>{' '}
-                <span>{lines.keepsake.line}</span>
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                ref={swapButton}
-                class="camp-choice"
-                disabled={busy || !swappable}
-                onClick={() => {
-                  setPicking(true);
-                }}
-              >
-                <strong class="pix">{lines.swap.label}</strong>{' '}
-                <span>{swappable ? lines.swap.line : NO_SWAP_LINE}</span>
-              </button>
-            </li>
-          </ul>
+          <ChoiceList label="Pick one">
+            <ChoiceButton
+              label={lines.rest.label}
+              line={lines.rest.line}
+              disabled={busy}
+              onClick={() => {
+                onAct(restAct(order));
+              }}
+            />
+            <ChoiceButton
+              label={lines.keepsake.label}
+              line={lines.keepsake.line}
+              disabled={busy || camp.offers.length === 0}
+              onClick={() => {
+                setStep('keepsake');
+              }}
+            />
+            <ChoiceButton
+              buttonRef={swapButton}
+              label={lines.swap.label}
+              line={swappable ? lines.swap.line : NO_SWAP_LINE}
+              disabled={busy || !swappable}
+              onClick={() => {
+                setPicking(true);
+              }}
+            />
+          </ChoiceList>
           <div class="camp-home">
             {confirmHome ? (
               <div class="confirm" role="group" aria-label="Head home">
@@ -231,22 +218,19 @@ export function DungeonCamp({
       {step === 'keepsake' && (
         <>
           <h4>Take a keepsake</h4>
-          <ul class="camp-choices" aria-label="Keepsakes on offer">
+          <ChoiceList label="Keepsakes on offer">
             {camp.offers.map((offer) => (
-              <li key={offer.id}>
-                <button
-                  type="button"
-                  class="camp-choice"
-                  disabled={busy}
-                  onClick={() => {
-                    onAct(keepsakeAct(order, offer.id));
-                  }}
-                >
-                  <strong class="pix">{offer.name}</strong> <span>{offer.description}</span>
-                </button>
-              </li>
+              <ChoiceButton
+                key={offer.id}
+                label={offer.name}
+                line={offer.description}
+                disabled={busy}
+                onClick={() => {
+                  onAct(keepsakeAct(order, offer.id));
+                }}
+              />
             ))}
-          </ul>
+          </ChoiceList>
           <p>
             <button
               type="button"
@@ -268,26 +252,23 @@ export function DungeonCamp({
             {comesIn === undefined ? 'A fresh creature' : creatureName(comesIn)} comes in at full
             HP.
           </p>
-          <ul class="camp-choices" aria-label="Pick who goes home">
+          <ChoiceList label="Pick who goes home">
             {ordered.map((creature) => (
-              <li key={creature.id}>
-                <button
-                  type="button"
-                  class={`camp-choice camp-out${creature.hp <= 0 ? ' ko' : ''}`}
-                  disabled={busy || incoming === null}
-                  onClick={() => {
-                    if (incoming === null) return;
-                    setOutId(creature.id);
-                    setArranged(orderAfterSwap(order, creature.id, incoming));
-                    setStep('arrange');
-                  }}
-                >
-                  <strong class="pix">{creature.name}</strong>{' '}
-                  <span>{`Level ${String(creature.level)} · ${runHpText(creature)}`}</span>
-                </button>
-              </li>
+              <ChoiceButton
+                key={creature.id}
+                class={`camp-out${creature.hp <= 0 ? ' ko' : ''}`}
+                label={creature.name}
+                line={`Level ${String(creature.level)} · ${runHpText(creature)}`}
+                disabled={busy || incoming === null}
+                onClick={() => {
+                  if (incoming === null) return;
+                  setOutId(creature.id);
+                  setArranged(orderAfterSwap(order, creature.id, incoming));
+                  setStep('arrange');
+                }}
+              />
             ))}
-          </ul>
+          </ChoiceList>
           <p>
             <button
               type="button"

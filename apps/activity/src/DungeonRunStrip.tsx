@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
-import { creatureInfoOf } from './creature-info';
+import { creatureInfoOf, type CreatureInfo } from './creature-info';
 import { packItems, tileLabel, tileState } from './dungeon-run';
 import { lastEventText, packLine, runHpText, runStatusLine } from './dungeon-text';
 import type {
@@ -15,9 +15,44 @@ import { SmallCreature } from './SmallCreature';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Bar } from './ui/Bar';
-import { CountBadge } from './ui/CountBadge';
+import { CountBadgeList } from './ui/CountBadge';
 import { Drawer } from './ui/Drawer';
 import { LandmarkChip, Tag } from './ui/Tag';
+
+/**
+ * A creature's face in a team row: its sprite (a skull over it when it is knocked out) and its name, in a
+ * button that opens the creature popover with its role and element. Names are the player's own: text.
+ */
+export function TeamFace({
+  id,
+  info,
+  speciesId,
+  name,
+  ko,
+  label,
+}: {
+  id: string;
+  info: CreatureInfo;
+  speciesId: string;
+  name: string;
+  ko: boolean;
+  /** What assistive technology says; keep the creature's name in it. */
+  label: string;
+}) {
+  return (
+    <SmallCreature id={id} info={info} class="tm-face" label={label}>
+      <span class="tm-art">
+        <Sprite sprite={creatureSpriteOrFallback(speciesId)} scale={4} />
+        {ko && (
+          <span class="ko-mark">
+            <Sprite sprite={glyphOrUnknown('skull')} scale={2} />
+          </span>
+        )}
+      </span>
+      <span class="tm-name pix">{name}</span>
+    </SmallCreature>
+  );
+}
 
 /**
  * One creature of the open run's row: its sprite (tap for its role and element), its name, an HP bar
@@ -35,7 +70,7 @@ export function RunTile({
   const state = tileState(creature);
   return (
     <li class={`team-member run-tile ${state}`}>
-      <SmallCreature
+      <TeamFace
         id={creature.id}
         info={creatureInfoOf({
           name: creature.name,
@@ -44,19 +79,11 @@ export function RunTile({
           element: creature.element,
           role: creature.role,
         })}
-        class="tm-face"
+        speciesId={creature.speciesId}
+        name={creature.name}
+        ko={state === 'ko'}
         label={`${tileLabel(creature)} Shows its role and element.`}
-      >
-        <span class="tm-art">
-          <Sprite sprite={creatureSpriteOrFallback(creature.speciesId)} scale={4} />
-          {state === 'ko' && (
-            <span class="ko-mark">
-              <Sprite sprite={glyphOrUnknown('skull')} scale={2} />
-            </span>
-          )}
-        </span>
-        <span class="tm-name pix">{creature.name}</span>
-      </SmallCreature>
+      />
       <Bar
         value={creature.hp}
         max={Math.max(1, creature.hpMax)}
@@ -97,13 +124,7 @@ export function RunPack({ pack }: { pack: DungeonPack }) {
   return (
     <div class="run-pack">
       <span class="run-pack-label">In your pack:</span>
-      <ul class="run-pack-items" aria-label={packLine(pack)}>
-        {items.map(({ key, ...badge }) => (
-          <li key={key}>
-            <CountBadge {...badge} />
-          </li>
-        ))}
-      </ul>
+      <CountBadgeList items={items} label={packLine(pack)} class="run-pack-items" />
       <Tag kind="badge" tone="bad" entry="dungeon-pack">
         At risk
       </Tag>

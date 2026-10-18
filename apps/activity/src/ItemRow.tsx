@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
-import { FestivalTag, ItemFrame, ItemSprite, RarityTag } from './GearArt';
-import type { GearRarity } from './gear-types';
+import { FestivalTag, ItemThumb, RarityTag } from './GearArt';
+import type { GearRarity, LootPiece } from './gear-types';
 import { gearName, isFestivalBase } from './gear-view';
 
 /**
@@ -27,14 +27,11 @@ export function ItemRow({
 }) {
   return (
     <li class="item-row">
-      <ItemFrame
-        rarity={rarity}
-        baseId={baseId}
-        {...(level === undefined ? {} : { level })}
+      <ItemThumb
+        item={{ baseId, rarity, itemLevel: level }}
+        scale={scale}
         {...(motion ? { class: 'pop-in' } : {})}
-      >
-        <ItemSprite baseId={baseId} scale={scale} />
-      </ItemFrame>
+      />
       <span class="item-row-text">
         <span class={`item-row-name pix rarity-name rarity-${rarity}`}>
           {gearName(baseId)}
@@ -47,5 +44,25 @@ export function ItemRow({
         </span>
       </span>
     </li>
+  );
+}
+
+/**
+ * A list of gear pieces as compact rows (`ItemRow`, the image popping in when motion is allowed), named for
+ * assistive technology. A piece that has an `id` is keyed by it; one without (a chest's gear) by its place.
+ */
+export function GearRows({
+  pieces,
+  label,
+}: {
+  pieces: readonly (LootPiece & { id?: string })[];
+  label: string;
+}) {
+  return (
+    <ul class="loot-items" aria-label={label}>
+      {pieces.map((g, i) => (
+        <ItemRow key={g.id ?? i} baseId={g.baseId} rarity={g.rarity} level={g.itemLevel} motion />
+      ))}
+    </ul>
   );
 }

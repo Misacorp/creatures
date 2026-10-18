@@ -1,9 +1,14 @@
-import { useEffect, useState } from 'preact/hooks';
 import { fetchGear } from './gear-api';
 import { grantsForWeek, lootIsEmpty } from './gear-view';
 import type { GrantRecord } from './gear-types';
 import { LootList } from './GearLoot';
 import { RevealLater } from './ui/RevealShell';
+import { useLoaded } from './use-loaded';
+
+const NO_GRANTS: { finale: GrantRecord | null; festival: GrantRecord | null } = {
+  finale: null,
+  festival: null,
+};
 
 /**
  * What a finale gave this player for one raid week: the reward slot for clearing it (a gear piece,
@@ -13,22 +18,8 @@ import { RevealLater } from './ui/RevealShell';
  * (`done`) and shows nothing at all when there is no grant or the gear view cannot be loaded.
  */
 export function FinaleGearLoot({ week, done }: { week: string; done: boolean }) {
-  const [found, setFound] = useState<{ finale: GrantRecord | null; festival: GrantRecord | null }>({
-    finale: null,
-    festival: null,
-  });
-  useEffect(() => {
-    let cancelled = false;
-    fetchGear().then(
-      (gear) => {
-        if (!cancelled) setFound(grantsForWeek(gear.grants, week));
-      },
-      () => undefined,
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, [week]);
+  const loaded = useLoaded(async () => grantsForWeek((await fetchGear()).grants, week), [week]);
+  const found = loaded.value ?? NO_GRANTS;
 
   const grants = [
     { grant: found.finale, label: 'Your finale reward' },

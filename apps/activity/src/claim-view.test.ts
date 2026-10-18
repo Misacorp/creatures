@@ -7,10 +7,8 @@ import {
   journalPages,
   nothingInLoot,
   pileLabel,
-  pileSourceOf,
   pushOnLine,
   rankGiftViews,
-  revealTitle,
   revealTone,
   slotLine,
   starsView,
@@ -28,13 +26,10 @@ const recalled = parseClaimResponse(claimRecall).result;
 const loot = parseClaimResponse(claimLoot).result;
 
 describe('how a claimed trip went', () => {
-  it('is home, recalled or failed, with its own title', () => {
+  it('is home, recalled or failed', () => {
     expect(revealTone(worked)).toBe('home');
     expect(revealTone(recalled)).toBe('recalled');
     expect(revealTone(failed)).toBe('failed');
-    expect(revealTitle('failed')).toBe('The trip failed');
-    expect(revealTitle('recalled')).toBe('Called home early');
-    expect(revealTitle('home')).toBe('Back from the trip');
   });
 
   it('says a failed risky goal failed, without the odds it had, and brings nothing', () => {
@@ -93,7 +88,8 @@ describe('the gift of a new rank', () => {
 
 describe('what the trip brought home', () => {
   it('builds the pile from gear, parts and found supplies, one icon for each kind', () => {
-    const source = pileSourceOf(loot);
+    const found = loot.loot as NonNullable<typeof loot.loot>;
+    const source = { gear: found.gear, parts: found.parts, supplies: found.supplies ?? [] };
     expect(source.supplies).toEqual(['map-scrap-basic']);
     expect(rewardPileItems(source).map((i) => i.key)).toEqual([
       'scrap',
@@ -110,7 +106,6 @@ describe('what the trip brought home', () => {
   it('is empty for a recall and for a trip without loot', () => {
     expect(nothingInLoot(recalled)).toBe(true);
     expect(nothingInLoot(loot)).toBe(false);
-    expect(pileSourceOf({})).toEqual({});
   });
 
   it('counts the supplies found, by kind of supply', () => {

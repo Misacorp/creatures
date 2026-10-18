@@ -1,4 +1,4 @@
-import type { CardDiff, Mark } from './creature-page/compare-diff';
+import { lineKey, type CardDiff, type Mark } from './creature-page/compare-diff';
 import { GlossaryTag } from './Glossary';
 import type { GearLine } from './gear-types';
 import { lineEntry, lineIdle, linePips, pipsLabel } from './gear-view';
@@ -11,7 +11,7 @@ function TierPips({ line }: { line: GearLine }) {
   const pips = linePips(line);
   if (pips === null) return null;
   return (
-    <span class="pips" role="img" aria-label={pipsLabel(pips)}>
+    <span class="tier-pips" role="img" aria-label={pipsLabel(pips)}>
       {Array.from({ length: pips.total }, (_, i) => (
         <span key={i} class={i < pips.filled ? 'pip on' : i < pips.reach ? 'pip off' : 'pip lock'}>
           {i < pips.filled ? '●' : '○'}
@@ -50,7 +50,7 @@ export function ItemLines({
   return (
     <ul class="line-list" aria-label="Lines">
       {lines.map((line) => {
-        const change = diff?.lines.get(line.id);
+        const change = diff?.lines.get(lineKey(line));
         const cls = `${lineIdle(line) ? 'line idle' : 'line'}${change?.kind === 'new' ? ' cmp-new' : ''}`;
         return (
           <li key={`${line.id}-${line.source}`} class={cls}>
@@ -72,7 +72,7 @@ export function ItemLines({
         );
       })}
       {diff?.goneLines.map((line) => (
-        <li key={`gone-${line.id}`} class="line cmp-gone">
+        <li key={`gone-${line.id}-${line.source}`} class="line cmp-gone">
           <span class="cmp-marker" aria-hidden="true">
             {'−'}
           </span>
