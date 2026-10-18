@@ -7,9 +7,13 @@ import {
   escapeMarkdown,
   formatBossReveal,
   formatPhasePost,
+  hpBar,
+  PLAY_BUTTON_ID,
   safeName,
   truncateMessage,
   type PhasePost,
+  type PostEmbed,
+  type PostMessage,
   type RankPost,
   type RevealPost,
 } from '../src/discord-format';
@@ -120,26 +124,6 @@ describe('truncateMessage', () => {
     const out = truncateMessage(`${'a'.repeat(1985)} <t:1700000000:F> (<t:1700000000:R>)`);
     expect(out).not.toMatch(/<t:[^>]*$/);
     expect(out.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
-  });
-
-  it('is applied to every message type', () => {
-    const long = 'x'.repeat(40);
-    const reveal = formatBossReveal({
-      ...REVEAL,
-      gimmicks: Array.from({ length: 200 }, () => ({ name: long, text: long })),
-    });
-    expect(reveal.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
-    const phase = formatPhasePost({
-      ...PHASE,
-      finale: {
-        firsts: Array.from({ length: 5 }, () => ({
-          label: 'L'.repeat(40),
-          names: Array.from({ length: 200 }, () => '*'.repeat(32)),
-        })),
-      },
-    });
-    expect(phase.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
-    expect(phase.endsWith('\u2026')).toBe(true);
   });
 });
 
@@ -268,7 +252,9 @@ describe('describeGimmick', () => {
 });
 
 const REVEAL: RevealPost = {
+  bossId: 'tidal-colossus',
   bossName: 'Tidal Colossus',
+  elementId: 'tide',
   elementName: 'Tide',
   gimmicks: [{ name: 'Undertow', text: 'hits the front zone every 3 rounds' }],
   turnOrder: 'left_to_right',
@@ -283,55 +269,105 @@ const REVEAL: RevealPost = {
   festivalCreature: null,
 };
 
+/** The one embed of a post, after checking the post has the play button. */
+function embedOf(message: PostMessage): PostEmbed {
+  expect(message.components).toEqual([
+    {
+      type: 1,
+      components: [{ type: 2, style: 1, label: 'Play Leet Creatures', custom_id: PLAY_BUTTON_ID }],
+    },
+  ]);
+  expect(message.embeds).toHaveLength(1);
+  return message.embeds[0] as PostEmbed;
+}
+
+/** Every piece of text a reader sees in a post. */
+const textOf = (message: PostMessage): string =>
+  JSON.stringify(message.embeds.map((e) => [e.author, e.title, e.description, e.fields, e.footer]));
+
 describe('formatBossReveal', () => {
   it('matches the Monday post', () => {
-    expect(formatBossReveal(REVEAL)).toBe(
-      [
-        '**A new raid week begins: Tidal Colossus**',
-        'Element: Tide. Creatures act from left to right.',
-        'Boss Rank 4.',
-        'Undertow: hits the front zone every 3 rounds.',
-        'Phase 1: <t:1800013020:F> (<t:1800013020:R>)',
-        'Phase 2: <t:1800099420:F> (<t:1800099420:R>)',
-        'Finale: <t:1800208800:F> (<t:1800208800:R>)',
-        '7 players are in this week.',
-      ].join('\n'),
-    );
+    expect(embedOf(formatBossReveal(REVEAL))).toEqual({
+      author: { name: 'New raid week · Rank 4' },
+      title: 'Tidal Colossus',
+      description: '🌊 Tide · creatures act left to right',
+      color: 0x3fa7d6,
+      thumbnail: { url: '/discord/bosses/tidal-colossus.png' },
+      fields: [
+        { name: 'Moves', value: '**Undertow**: hits the front zone every 3 rounds', inline: false },
+        { name: 'Phase 1', value: '<t:1800013020:f>\n<t:1800013020:R>', inline: true },
+        { name: 'Phase 2', value: '<t:1800099420:f>\n<t:1800099420:R>', inline: true },
+        { name: 'Finale', value: '<t:1800208800:f>\n<t:1800208800:R>', inline: true },
+      ],
+      footer: { text: '7 players in' },
+    });
   });
 
   it('says nothing about the rank when the week has none, and announces a Festival', () => {
-    const none = formatBossReveal({ ...REVEAL, rank: null });
-    expect(none).not.toContain('Rank');
-    const festival = formatBossReveal({ ...REVEAL, rank: 7, festivalCreature: 'Lanternfin' });
-    expect(festival).toContain('Boss Rank 7.');
-    expect(festival).toContain('Festival week: Lanternfin for every winner, bonus Essence.');
+    expect(embedOf(formatBossReveal({ ...REVEAL, rank: null })).author).toEqual({
+      name: 'New raid week',
+    });
+    const festival = embedOf(
+      formatBossReveal({ ...REVEAL, rank: 7, festivalCreature: 'Lanternfin' }),
+    );
+    expect(festival.author?.name).toBe('New raid week · Rank 7');
+    expect(festival.description).toContain(
+      '🎉 Festival week: Lanternfin for every winner, and bonus Essence.',
+    );
     // The creature name is escaped like every other name.
-    const nasty = formatBossReveal({ ...REVEAL, festivalCreature: '@everyone *x*' });
+    const nasty = textOf(formatBossReveal({ ...REVEAL, festivalCreature: '@everyone *x*' }));
     expect(nasty).not.toMatch(/@(?!\u200B)/);
-    expect(nasty).toContain('\\*x\\*');
-    expect(formatBossReveal({ ...REVEAL, rank: 7 })).not.toContain('Festival');
+    expect(nasty).toContain('\\\\*x\\\\*');
+    expect(textOf(formatBossReveal({ ...REVEAL, rank: 7 }))).not.toContain('Festival');
   });
 
-  it('handles one player, several parties and other turn orders', () => {
-    const one = formatBossReveal({ ...REVEAL, players: 1, turnOrder: 'speed', gimmicks: [] });
-    expect(one).toContain('Creatures act fastest first.');
-    expect(one).toContain('1 player is in this week.');
-    const many = formatBossReveal({
-      ...REVEAL,
-      players: 31,
-      parties: 3,
-      turnOrder: 'right_to_left',
-    });
-    expect(many).toContain('31 players are in this week, in 3 parties.');
-    expect(many).toContain('Creatures act from right to left.');
+  it('handles one player, several parties, other turn orders and no moves', () => {
+    const one = embedOf(
+      formatBossReveal({ ...REVEAL, players: 1, turnOrder: 'speed', gimmicks: [] }),
+    );
+    expect(one.description).toBe('🌊 Tide · creatures act fastest first');
+    expect(one.footer).toEqual({ text: '1 player in' });
+    expect(one.fields.map((f) => f.name)).toEqual(['Phase 1', 'Phase 2', 'Finale']);
+    const many = embedOf(
+      formatBossReveal({ ...REVEAL, players: 31, parties: 3, turnOrder: 'right_to_left' }),
+    );
+    expect(many.footer).toEqual({ text: '31 players in · 3 parties' });
+    expect(many.description).toContain('creatures act right to left');
+  });
+
+  it('takes the colour of the element, and a plain one for an unknown element', () => {
+    const ember = embedOf(
+      formatBossReveal({ ...REVEAL, elementId: 'ember', elementName: 'Ember' }),
+    );
+    expect(ember.color).toBe(0xe8743b);
+    expect(ember.description?.startsWith('🔥 Ember')).toBe(true);
+    const odd = embedOf(formatBossReveal({ ...REVEAL, elementId: 'void', elementName: 'Void' }));
+    expect(odd.color).toBe(0x6b3fa0);
+    expect(odd.description?.startsWith('Void')).toBe(true);
+  });
+
+  it('keeps within the embed limits however many moves there are', () => {
+    const long = 'x'.repeat(40);
+    const embed = embedOf(
+      formatBossReveal({
+        ...REVEAL,
+        gimmicks: Array.from({ length: 200 }, () => ({ name: long, text: long })),
+      }),
+    );
+    expect(embed.fields[0]?.value.length).toBeLessThanOrEqual(1024);
+    expect(embed.fields[0]?.value.endsWith('…')).toBe(true);
   });
 });
 
+const NEXT = Date.parse('2027-01-16T11:37:00Z');
+
 const PHASE: PhasePost = {
   phase: 'phase1',
+  bossId: 'tidal-colossus',
   bossName: 'Tidal Colossus',
   party: null,
   cleared: true,
+  retreated: true,
   hpLeftPercent: 78,
   top: [
     { name: 'Alice', contribution: 1234 },
@@ -341,35 +377,61 @@ const PHASE: PhasePost = {
   ],
   reaction: { name: 'Steam', count: 4 },
   keyMoment: { kind: 'hit', round: 3, creature: 'Flamy', owner: 'Alice', damage: 320 },
-  essenceFlat: 10,
   counterMove: 'Tidal Colossus now resists Steam by 50% (the reaction used most).',
+  next: NEXT,
 };
 
+const FINALE: PhasePost = {
+  ...PHASE,
+  phase: 'finale',
+  retreated: false,
+  hpLeftPercent: 0,
+  counterMove: null,
+  next: Date.parse('2027-01-18T11:37:00Z'),
+  finale: { firsts: [] },
+};
+
+describe('hpBar', () => {
+  it('fills a cell for every tenth, never empty while the boss lives nor full once hurt', () => {
+    expect(hpBar(62)).toBe('▰▰▰▰▰▰▱▱▱▱ 62% HP left');
+    expect(hpBar(0)).toBe('▱▱▱▱▱▱▱▱▱▱ 0% HP left');
+    expect(hpBar(1)).toBe('▰▱▱▱▱▱▱▱▱▱ 1% HP left');
+    expect(hpBar(99)).toBe('▰▰▰▰▰▰▰▰▰▱ 99% HP left');
+    expect(hpBar(100)).toBe('▰▰▰▰▰▰▰▰▰▰ 100% HP left');
+  });
+});
+
 describe('formatPhasePost', () => {
-  it('matches the Friday post, with the counter-move', () => {
-    expect(formatPhasePost(PHASE)).toBe(
-      [
-        '**Phase 1: Tidal Colossus**',
-        'Cleared. The boss has 78% HP left.',
-        'Top contributors: Alice (1234 contribution), Bob (800 contribution), Carol (55 contribution).',
-        'Most used reaction: Steam (4 times).',
-        'Key moment: in round 3, Flamy (Alice) hit for 320 damage.',
-        'Essence: every player earned 10, plus a bonus share by contribution.',
-        "The boss's counter-move for Phase 2: Tidal Colossus now resists Steam by 50% \\(the reaction used most\\).",
-      ].join('\n'),
-    );
+  it('matches the Friday post: the boss retreats, the next fight and the counter-move', () => {
+    expect(embedOf(formatPhasePost(PHASE))).toEqual({
+      author: { name: 'Raid · Phase 1' },
+      title: '✅ Tidal Colossus retreats',
+      description: '▰▰▰▰▰▰▰▰▱▱ 78% HP left',
+      color: 0x57a85a,
+      thumbnail: { url: '/discord/bosses/tidal-colossus.png' },
+      fields: [
+        { name: 'Top fighters', value: '🥇 Alice\n🥈 Bob\n🥉 Carol', inline: true },
+        { name: 'Big hit', value: 'Flamy (Alice)\n320 damage', inline: true },
+        { name: 'Next fight', value: 'Phase 2\n<t:1800099420:R>', inline: true },
+        {
+          name: '⚠️ Counter-move for Phase 2',
+          value: 'Tidal Colossus now resists Steam by 50% \\(the reaction used most\\).',
+          inline: false,
+        },
+      ],
+    });
   });
 
-  it('matches the Saturday post: not cleared, a reaction as the key moment, a party label', () => {
-    expect(
+  it('matches the Saturday post: not cleared, a combo as the big moment, a party label', () => {
+    const embed = embedOf(
       formatPhasePost({
         ...PHASE,
         phase: 'phase2',
         party: 2,
         cleared: false,
+        retreated: false,
         hpLeftPercent: 91,
         top: [{ name: 'Alice', contribution: 5 }],
-        reaction: { name: 'Overload', count: 1 },
         keyMoment: {
           kind: 'reaction',
           round: 6,
@@ -378,224 +440,179 @@ describe('formatPhasePost', () => {
           reaction: 'Overload',
           bonus: 540,
         },
-        essenceFlat: null,
         counterMove: null,
       }),
-    ).toBe(
-      [
-        '**Phase 2: Tidal Colossus (party 2)**',
-        'Not cleared. The boss has 91% HP left.',
-        'Top contributors: Alice (5 contribution).',
-        'Most used reaction: Overload (1 time).',
-        'Key moment: in round 6, Zap set off Overload for 540 bonus damage.',
-      ].join('\n'),
     );
+    expect(embed.author).toEqual({ name: 'Raid · Phase 2 · Party 2' });
+    expect(embed.title).toBe('❌ Tidal Colossus holds firm');
+    expect(embed.description).toBe('▰▰▰▰▰▰▰▰▰▱ 91% HP left');
+    expect(embed.color).toBe(0xc0504d);
+    expect(embed.fields).toEqual([
+      { name: 'Top fighters', value: '🥇 Alice', inline: true },
+      { name: 'Big combo', value: 'Overload by Zap\n+540 bonus damage', inline: true },
+      { name: 'Next fight', value: 'Finale\n<t:1800099420:R>', inline: true },
+    ]);
   });
 
-  it('says so when no reaction happened and there is no key moment', () => {
-    const text = formatPhasePost({ ...PHASE, reaction: null, keyMoment: null, top: [] });
-    expect(text).toContain('No reactions were triggered.');
-    expect(text).not.toContain('Key moment');
-    expect(text).not.toContain('Top contributors');
+  it('leaves out the columns it has nothing for', () => {
+    const embed = embedOf(formatPhasePost({ ...PHASE, keyMoment: null, top: [] }));
+    expect(embed.fields.map((f) => f.name)).toEqual(['Next fight', '⚠️ Counter-move for Phase 2']);
+    // A phase never lists the top reaction, Essence or the weather.
+    expect(textOf(formatPhasePost(PHASE))).not.toMatch(/Steam ×|Essence|Sky/);
   });
 
-  it('matches the Sunday post: first-on-server records, and no jackpot line', () => {
+  it('reads a cleared phase without the retreat flag (older results) as cleared', () => {
+    const embed = embedOf(formatPhasePost({ ...PHASE, retreated: false }));
+    expect(embed.title).toBe('✅ Phase 1 cleared');
+    expect(embed.description).toBe('▰▰▰▰▰▰▰▰▱▱ 78% HP left');
+  });
+
+  it('matches the Sunday post: the win, the rank, the next boss and the new creatures', () => {
     expect(
-      formatPhasePost({
-        ...PHASE,
-        phase: 'finale',
-        hpLeftPercent: 0,
-        essenceFlat: 25,
-        counterMove: null,
-        finale: {
-          firsts: [{ label: 'Aurorix evolved', names: ['Carol'] }],
-        },
-      }),
-    ).toBe(
-      [
-        '**Finale: Tidal Colossus**',
-        'Cleared. The boss is defeated.',
-        'Top contributors: Alice (1234 contribution), Bob (800 contribution), Carol (55 contribution).',
-        'Most used reaction: Steam (4 times).',
-        'Key moment: in round 3, Flamy (Alice) hit for 320 damage.',
-        'Essence: every player earned 25, plus a bonus share by contribution.',
-        'First on the server this week:',
-        'Aurorix evolved: Carol',
-      ].join('\n'),
-    );
+      embedOf(
+        formatPhasePost({
+          ...FINALE,
+          finale: {
+            firsts: [
+              { species: 'Ashmole', kind: 'catch' },
+              { species: 'Aurorix', kind: 'evolve' },
+            ],
+            rank: { before: 1, after: 2, festival: false, parties: 1, partiesWon: 1 },
+          },
+        }),
+      ),
+    ).toEqual({
+      author: { name: 'Raid finale' },
+      title: '🏆 Tidal Colossus is defeated!',
+      description: 'The server climbs to **Rank 2**.\nNext boss <t:1800272220:R>.',
+      color: 0xf2b33d,
+      thumbnail: { url: '/discord/bosses/tidal-colossus.png' },
+      fields: [
+        { name: 'Top fighters', value: '🥇 Alice\n🥈 Bob\n🥉 Carol', inline: true },
+        { name: 'Big hit', value: 'Flamy (Alice)\n320 damage', inline: true },
+        { name: 'Top reaction', value: 'Steam ×4', inline: true },
+        { name: '🆕 New on the server', value: 'Ashmole, Aurorix (evolved)', inline: false },
+      ],
+    });
   });
 
-  it('says a phase the boss retreated from, with the boss name escaped', () => {
-    const post = formatPhasePost({
-      ...PHASE,
-      phase: 'phase1',
-      bossName: '*Tidal* @everyone',
-      retreated: true,
-      hpLeftPercent: 70,
-    });
-    const lines = post.split('\n');
-    expect(lines[0]).toBe(`**Phase 1: \\*Tidal\\* @${ZWSP}everyone**`);
-    expect(lines[1]).toBe(`Phase 1 cleared: \\*Tidal\\* @${ZWSP}everyone retreated.`);
-    expect(lines[2]).toBe('The boss has 70% HP left.');
-    expect(post).not.toContain('Cleared. The boss has');
-    const second = formatPhasePost({
-      ...PHASE,
-      phase: 'phase2',
-      retreated: true,
-      hpLeftPercent: 15,
-    });
-    expect(second).toContain('Phase 2 cleared: Tidal Colossus retreated.');
-    expect(second).toContain('The boss has 15% HP left.');
-    // A result without the flag (older posts, a miss) reads as before.
-    expect(formatPhasePost({ ...PHASE, retreated: false })).toContain(
-      'Cleared. The boss has 78% HP left.',
+  it('shows a lost finale with the HP bar, and the enrage either way', () => {
+    const lost = embedOf(
+      formatPhasePost({ ...FINALE, cleared: false, hpLeftPercent: 12, enraged: true }),
     );
-    expect(formatPhasePost({ ...PHASE, cleared: false, retreated: true })).toContain(
-      'Not cleared. The boss has 78% HP left.',
+    expect(lost.title).toBe('💢 Tidal Colossus survives');
+    expect(lost.color).toBe(0xc0504d);
+    expect(lost.description).toBe(
+      '▰▱▱▱▱▱▱▱▱▱ 12% HP left\nIt flew into a rage when time ran out.\nNext boss <t:1800272220:R>.',
     );
+    const won = embedOf(formatPhasePost({ ...FINALE, enraged: true }));
+    expect(won.description).toBe(
+      'It flew into a rage, but the party held on.\nNext boss <t:1800272220:R>.',
+    );
+    // A phase never says it.
+    expect(textOf(formatPhasePost({ ...PHASE, enraged: true }))).not.toContain('rage');
   });
 
-  it('mentions the enrage in a finale that went into it, won or lost', () => {
-    const base = { ...PHASE, phase: 'finale' as const, counterMove: null, enraged: true };
-    const won = formatPhasePost({ ...base, hpLeftPercent: 0, finale: { firsts: [] } });
-    expect(won).toContain('Cleared, but only after Tidal Colossus flew into a rage.');
-    expect(won).not.toContain('Not cleared');
-    const lost = formatPhasePost({
-      ...base,
-      cleared: false,
-      hpLeftPercent: 12,
-      essenceFlat: null,
-      finale: { firsts: [] },
-    });
-    expect(lost).toContain(
-      'Not cleared. Tidal Colossus flew into a rage when time ran out. The boss has 12% HP left.',
-    );
-    // Without it the lines are the old ones, and a phase never says it.
-    expect(
-      formatPhasePost({ ...base, enraged: false, hpLeftPercent: 0, finale: { firsts: [] } }),
-    ).toContain('Cleared. The boss is defeated.');
-    expect(formatPhasePost({ ...PHASE, enraged: true })).not.toContain('rage');
+  it('never mentions a jackpot, Essence or the weather, after a win or a loss', () => {
+    for (const post of [FINALE, { ...FINALE, cleared: false }]) {
+      const text = textOf(formatPhasePost(post)).toLowerCase();
+      expect(text).not.toContain('jackpot');
+      expect(text).not.toContain('essence');
+      expect(text).not.toContain('sky');
+    }
   });
 
-  it('never mentions a jackpot, after a win or a loss', () => {
-    const won = formatPhasePost({ ...PHASE, phase: 'finale', finale: { firsts: [] } });
-    expect(won.toLowerCase()).not.toContain('jackpot');
-    const lost = formatPhasePost({
-      ...PHASE,
-      phase: 'finale',
-      cleared: false,
-      essenceFlat: null,
-      finale: { firsts: [] },
-    });
-    expect(lost.toLowerCase()).not.toContain('jackpot');
-    expect(lost).toContain('Not cleared.');
-  });
-
-  const FINALE = { ...PHASE, phase: 'finale' as const, hpLeftPercent: 0, counterMove: null };
-
-  it('says where the server\u2019s rank went', () => {
+  it('says where the server’s rank went', () => {
     const rank = (after: number, extra: Partial<RankPost> = {}) =>
+      embedOf(
+        formatPhasePost({
+          ...FINALE,
+          finale: {
+            firsts: [],
+            rank: { before: 4, after, festival: false, parties: 1, partiesWon: 1, ...extra },
+          },
+        }),
+      ).description ?? '';
+    expect(rank(5)).toContain('The server climbs to **Rank 5**.');
+    expect(rank(4)).toContain('The server stays at **Rank 4**.');
+    expect(rank(3, { festival: true })).toContain(
+      'The Festival is over. The server eases to **Rank 3**.',
+    );
+    // With several parties the post says how many won.
+    expect(rank(5, { parties: 3, partiesWon: 2 })).toContain(
+      '2 / 3 parties won. The server climbs to **Rank 5**.',
+    );
+    // Until every party has finished there is nothing to say.
+    expect(
+      embedOf(formatPhasePost({ ...FINALE, finale: { firsts: [], rank: null } })).description,
+    ).not.toContain('Rank');
+  });
+
+  it('names the Festival creature and who got it, with every name escaped', () => {
+    const text = textOf(
       formatPhasePost({
         ...FINALE,
         finale: {
           firsts: [],
-          rank: { before: 4, after, festival: false, parties: 1, partiesWon: 1, ...extra },
+          festival: { creature: 'Lanternfin', winners: ['Alice', '@everyone <@1> **b**'] },
         },
-      });
-    expect(rank(5)).toContain('The server climbs to Rank 5.');
-    expect(rank(4)).toContain('Rank 4 stays.');
-    expect(rank(3, { festival: true })).toContain(
-      'The Festival is over. The server eases to Rank 3.',
+      }),
     );
-    // With several parties the post says how many won.
-    expect(rank(5, { parties: 3, partiesWon: 2 })).toContain(
-      '2 / 3 parties won. The server climbs to Rank 5.',
-    );
-    // Until every party has finished there is nothing to say.
-    expect(formatPhasePost({ ...FINALE, finale: { firsts: [], rank: null } })).not.toContain(
-      'Rank',
-    );
-  });
-
-  it('lists the Festival creature and who got it, with every name escaped', () => {
-    const text = formatPhasePost({
-      ...FINALE,
-      finale: {
-        firsts: [],
-        festival: { creature: 'Lanternfin', winners: ['Alice', '@everyone <@1> **b**'] },
-      },
-    });
-    expect(text).toContain('Festival creature: Lanternfin for Alice, ');
+    expect(text).toContain('🎉 Lanternfin joins Alice, ');
     expect(text).not.toMatch(/@(?!\u200B)/);
     expect(text).not.toContain('**b**');
     // Nobody got it (a lost Festival): no line.
     expect(
-      formatPhasePost({
-        ...FINALE,
-        finale: { firsts: [], festival: { creature: 'Lanternfin', winners: [] } },
-      }),
-    ).not.toContain('Festival');
+      textOf(
+        formatPhasePost({
+          ...FINALE,
+          finale: { firsts: [], festival: { creature: 'Lanternfin', winners: [] } },
+        }),
+      ),
+    ).not.toContain('Lanternfin');
   });
 
-  it('puts the rank and the Festival lines before the records, so a long post keeps them', () => {
-    const firsts = Array.from({ length: 5 }, (_, i) => ({
-      label: 'L'.repeat(30) + String(i),
-      names: Array.from({ length: 15 }, () => 'N'.repeat(32)),
+  it('names at most six new creatures', () => {
+    const firsts = Array.from({ length: 8 }, (_, i) => ({
+      species: `Critter${String(i)}`,
+      kind: 'catch' as const,
     }));
-    const text = formatPhasePost({
+    const field = embedOf(formatPhasePost({ ...FINALE, finale: { firsts } })).fields.at(-1);
+    expect(field?.value).toBe(
+      'Critter0, Critter1, Critter2, Critter3, Critter4, Critter5 and 2 more',
+    );
+  });
+
+  it('escapes every player-provided name and keeps within the embed limits', () => {
+    const nasty = '@everyone <@123> **bold** [x](https://evil.test)';
+    const message = formatPhasePost({
       ...FINALE,
+      top: Array.from({ length: 3 }, () => ({ name: nasty, contribution: 1 })),
+      keyMoment: { kind: 'hit', round: 1, creature: nasty, owner: nasty, damage: 2 },
       finale: {
-        firsts,
-        rank: { before: 4, after: 5, festival: false, parties: 1, partiesWon: 1 },
-        festival: { creature: 'Lanternfin', winners: ['Alice'] },
+        firsts: [],
+        festival: { creature: 'Lanternfin', winners: Array.from({ length: 500 }, () => nasty) },
       },
     });
-    expect(text.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
-    expect(text).toContain('The server climbs to Rank 5.');
-    expect(text).toContain('Festival creature: Lanternfin for Alice.');
-  });
-
-  it('lists at most five records', () => {
-    const firsts = Array.from({ length: 7 }, (_, i) => ({
-      label: `Record ${String(i)}`,
-      names: ['Alice'],
-    }));
-    const text = formatPhasePost({
-      ...PHASE,
-      phase: 'finale',
-      finale: { firsts },
-    });
-    expect(text).toContain('Record 4: Alice');
-    expect(text).not.toContain('Record 5');
-    expect(text).toContain('and 2 more.');
-  });
-
-  it('escapes every player-provided name', () => {
-    const nasty = '@everyone <@123> **bold** [x](https://evil.test)';
-    const text = formatPhasePost({
-      ...PHASE,
-      phase: 'finale',
-      top: [{ name: nasty, contribution: 1 }],
-      keyMoment: { kind: 'hit', round: 1, creature: nasty, owner: nasty, damage: 2 },
-      finale: { firsts: [{ label: 'Splashet caught', names: [nasty] }] },
-    });
+    const text = textOf(message);
     // No mention can resolve: every @ is followed by a zero-width space.
     expect(text).not.toMatch(/@(?!\u200B)/);
     expect(text).not.toContain('**bold**');
     expect(text).not.toContain('](https://');
     expect(text).not.toContain('<@123>');
-    expect(text.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
+    const embed = embedOf(message);
+    expect(embed.description?.length).toBeLessThanOrEqual(4096);
+    for (const f of embed.fields) expect(f.value.length).toBeLessThanOrEqual(1024);
   });
 
   it('escapes the boss, reaction and counter-move text too', () => {
-    const text = formatPhasePost({
-      ...PHASE,
-      bossName: 'Boss_*',
-      reaction: { name: 'Re_action', count: 2 },
-      counterMove: 'It *adapts*.',
-    });
-    expect(text).toContain('Boss\\_\\*');
-    expect(text).toContain('Re\\_action');
-    expect(text).toContain('It \\*adapts\\*.');
+    const text = textOf(
+      formatPhasePost({ ...PHASE, bossName: 'Boss_*', counterMove: 'It *adapts*.' }),
+    );
+    expect(text).toContain('Boss\\\\_\\\\*');
+    expect(text).toContain('It \\\\*adapts\\\\*.');
+    expect(
+      textOf(formatPhasePost({ ...FINALE, reaction: { name: 'Re_action', count: 2 } })),
+    ).toContain('Re\\\\_action ×2');
   });
 });

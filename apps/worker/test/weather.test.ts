@@ -1,13 +1,11 @@
 import { RULES, createSeededRng, seasonOf, weatherDef, type Rng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import forecastFixture from '../../activity/src/fixtures/weather-forecast.json';
-import { formatBossReveal, formatPhasePost } from '../src/discord-format';
 import { addWeeks, eventTimes, weekIdFor, weekIndex } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
 import { readWeatherDay, type ForecastView } from '../src/weather';
 import {
   LATEST_SCHEMA_VERSION,
-  T0,
   USER_ID,
   runCore,
   undoWeatherMigration,
@@ -546,49 +544,5 @@ describe('analytics', () => {
       },
       { weather: true },
     );
-  });
-});
-
-describe('the Discord posts', () => {
-  const reveal = {
-    bossName: 'Tidal Colossus',
-    elementName: 'Tide',
-    gimmicks: [],
-    turnOrder: 'left_to_right',
-    schedule: { phase1: T0, phase2: T0, finale: T0 },
-    players: 3,
-    parties: 1,
-    rank: 5,
-    festivalCreature: null,
-  } as const;
-  const phase = {
-    phase: 'phase1',
-    bossName: 'Tidal Colossus',
-    party: null,
-    cleared: true,
-    hpLeftPercent: 40,
-    top: [],
-    reaction: null,
-    keyMoment: null,
-    essenceFlat: null,
-    counterMove: null,
-  } as const;
-
-  it('mention the day in one short line, escaped, and nothing when there is no weather', () => {
-    expect(formatBossReveal({ ...reveal, sky: ['Fair Winds', 'Heavy Rain'] })).toContain(
-      "Today's sky: Fair Winds and Heavy Rain.",
-    );
-    expect(formatBossReveal({ ...reveal, sky: ['Fair Winds'] })).toContain(
-      "Today's sky: Fair Winds.",
-    );
-    expect(formatBossReveal({ ...reveal, sky: [] })).not.toContain('sky');
-    expect(formatBossReveal(reveal)).not.toContain('sky');
-    expect(formatPhasePost({ ...phase, sky: ['Market Day', 'Cold Snap'] })).toContain(
-      'Sky: Market Day and Cold Snap.',
-    );
-    expect(formatPhasePost(phase)).not.toContain('Sky');
-    // Whatever a name holds is made inert like any other text in a post.
-    const nasty = formatPhasePost({ ...phase, sky: ['@everyone **x**'] });
-    expect(nasty).toContain('@​everyone \\*\\*x\\*\\*');
   });
 });

@@ -6,7 +6,7 @@
  * calls are in `lounge-discord.ts`; the check that ties them together is in `guild-core.ts`. Display
  * names are escaped before they are put in the text. Logs carry error kinds only.
  */
-import { safeName } from './discord-format';
+import { PLAY_BUTTON_ID, safeName } from './discord-format';
 
 /** What an Activity instance id may look like (Discord's look like `i-123...-gc-...`). */
 const INSTANCE_ID_RE = /^[A-Za-z0-9_.:-]{1,128}$/;
@@ -25,7 +25,7 @@ export const LOUNGE_MAX_FAILURES = 5;
 /** Names shown before "and N more". */
 export const MAX_LOUNGE_NAMES = 8;
 /** The button's custom id, answered by the interactions endpoint. */
-export const LOUNGE_BUTTON_ID = 'lounge:play';
+export const LOUNGE_BUTTON_ID = PLAY_BUTTON_ID;
 
 const SNOWFLAKE = /^\d{17,20}$/;
 const MAX_USERS_PER_INSTANCE = 100;

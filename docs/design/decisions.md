@@ -1709,3 +1709,13 @@ Misa's changes after polish v5, with the lead's decision on item levels.
 **Decision.** Launch uses the app handler and is answered with LAUNCH_ACTIVITY, which posts nothing. The game keeps one message per server in the announcement channel, edited in place, showing who is playing, with a Play/Join button that launches the same way (design in `docs/design/lounge-message.md`). Presence comes from Discord's activity instance API, already used at login, polled once a minute while a session is tracked: no client heartbeat and nothing a client could fake. A buried message is reposted silently when a new session starts; Misa chose silent reposting over pinning, and the raid post channel over the last launch channel.
 
 **Why.** It keeps joining one click away (the lounge) without a new message per launch. Edits never notify, and a repost is `@silent`. The deploy job switches the handler only while the Interactions Endpoint URL is ours, and going back is one constant.
+
+## 2026-10-18: Raid posts are embeds that sum up the raid
+
+**Problem.** The raid posts were plain text lists of everything we knew (contribution numbers, Essence, the sky, every first with its catcher), so the news got lost.
+
+**Decision.** Each post is one embed: a headline (the boss retreats, holds firm, is defeated or survives), an HP bar when the boss still stands, up to three columns (top three fighters by medal, the big hit or combo, and the next fight or the top reaction), the boss's portrait as the thumbnail and a "Play Leet Creatures" button that launches the game like the lounge's button (same custom id). The finale adds the rank line, when the next boss comes and the creatures new to the server. Removed: Essence amounts, contribution numbers, the weather (Misa: useful, but not raid news) and catcher names. The reveal keeps the moves and puts the three fight times in columns.
+
+**How.** The formatters return a message (embeds and the button); the queue stores it as JSON in the same `content` column, so no migration is needed, and older rows (plain text) still go out as text. The sender makes the portrait path absolute for the environment (`publicOrigin`: the production or staging site, none locally) and sends embeds without the SUPPRESS_EMBEDS flag. Portraits are drawn from the boss sprites by `apps/activity/scripts/boss-portraits.mts` and committed under `apps/activity/public/discord/bosses/`; a test checks every boss has one. Discord does not render timestamps in footers, so times sit in fields and the description.
+
+**Why.** Misa wants the Discord posts to be a pleasure to read: the status at a glance and a few highlights, with the details in the game.

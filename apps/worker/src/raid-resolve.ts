@@ -747,7 +747,6 @@ export function settleParty(
     input,
     result,
     summary,
-    weather: day,
   });
 }
 

@@ -1,7 +1,7 @@
-import { RULES, content, scaleEssence } from '@creatures/game';
+import { content } from '@creatures/game';
 import type { FightEvent } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
-import { MAX_MESSAGE_CHARS } from '../src/discord-format';
+import type { PostEmbed, PostMessage } from '../src/discord-format';
 import { findKeyMoment, mostUsedReaction } from '../src/raid-posts';
 import { eventTimes } from '../src/raid-schedule';
 import type { CoreContext } from './helpers';
@@ -22,16 +22,25 @@ const CHANNEL = '555555555555555555';
 const ZWSP = '\u200B';
 const NASTY = '@everyone <@123> **bold**';
 
-/** The flat Essence a cleared stage pays in the (only) week: the base amount scaled by its rank. */
-function flatPaid(ctx: Pick<CoreContext, 'sql'>, stage: 'phase1' | 'phase2' | 'finale'): number {
-  const week = rows<{ rank: number; festival: number }>(
-    ctx.sql,
-    'SELECT rank, festival FROM raid_weeks',
-  )[0] as { rank: number; festival: number };
-  return scaleEssence(RULES.raid.essence.flat[stage], {
-    rank: week.rank,
-    festival: week.festival === 1,
-  });
+/** The embed of a stored post (each raid post is one embed and the play button). */
+function embedOf(stored: string | undefined): PostEmbed {
+  const message = JSON.parse(stored ?? '{}') as PostMessage;
+  expect(message.components[0]?.components[0]?.label).toBe('Play Leet Creatures');
+  return message.embeds[0] as PostEmbed;
+}
+
+/** Every line a reader sees in a stored post, field names and values included. */
+function textOf(stored: string | undefined): string {
+  const e = embedOf(stored);
+  return [
+    e.author?.name,
+    e.title,
+    e.description,
+    ...e.fields.flatMap((f) => [f.name, f.value]),
+    e.footer?.text,
+  ]
+    .filter((line) => line !== undefined)
+    .join('\n');
 }
 
 const posts = (ctx: Pick<CoreContext, 'sql'>) =>
@@ -84,19 +93,21 @@ describe('the Monday boss reveal', () => {
         const boss = content.bosses.find((b) => b.id === week?.boss_id);
         const times = eventTimes(W02.id, HELSINKI);
         const text = reveal?.content ?? '';
-        expect(text.startsWith(`**A new raid week begins: ${boss?.name}**`)).toBe(true);
-        expect(text).toContain(
-          `Phase 1: <t:${String(times.phase1 / 1000)}:F> (<t:${String(times.phase1 / 1000)}:R>)`,
-        );
-        expect(text).toContain(`Phase 2: <t:${String(times.phase2 / 1000)}:F>`);
-        expect(text).toContain(`Finale: <t:${String(times.finale / 1000)}:F>`);
-        expect(text).toContain('4 players are in this week.');
+        const embed = embedOf(text);
+        expect(embed.title).toBe(boss?.name);
+        expect(embed.thumbnail).toEqual({ url: `/discord/bosses/${boss?.id ?? ''}.png` });
+        const at = (ms: number) => `<t:${String(ms / 1000)}:f>\n<t:${String(ms / 1000)}:R>`;
+        expect(embed.fields.slice(-3)).toEqual([
+          { name: 'Phase 1', value: at(times.phase1), inline: true },
+          { name: 'Phase 2', value: at(times.phase2), inline: true },
+          { name: 'Finale', value: at(times.finale), inline: true },
+        ]);
+        expect(embed.footer).toEqual({ text: '4 players in' });
         // The server's rank, as stored for the week; a normal week says nothing about a Festival.
         const rank = rows<{ rank: number }>(ctx.sql, 'SELECT rank FROM raid_weeks')[0]?.rank;
         expect(rank).toBeGreaterThanOrEqual(1);
-        expect(text).toContain(`Boss Rank ${String(rank)}.`);
-        expect(text).not.toContain('Festival');
-        expect(text.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
+        expect(embed.author).toEqual({ name: `New raid week · Rank ${String(rank)}` });
+        expect(textOf(text)).not.toContain('Festival');
         // Running the event again queues nothing new.
         ctx.sql.exec("DELETE FROM raid_events WHERE event = 'weekStart'");
         ctx.core.raid.runEvent(
@@ -126,7 +137,7 @@ describe('the Monday boss reveal', () => {
             { weekId: W02.id, event: 'weekStart', at: times.weekStart },
             HELSINKI,
           );
-          return posts(ctx)[0]?.content ?? '';
+          return textOf(posts(ctx)[0]?.content);
         };
         const gated = boss.gimmicks.filter((g) => g.fromRank !== undefined);
         expect(gated.map((g) => g.fromRank)).toEqual([4, 7]);
@@ -134,7 +145,7 @@ describe('the Monday boss reveal', () => {
         if (four === undefined || seven === undefined) throw new Error('gated moves');
         const base = boss.gimmicks.find((g) => g.fromRank === undefined);
         const atRank1 = revealAt(1);
-        expect(atRank1).toContain(`${base?.name ?? ''}: `);
+        expect(atRank1).toContain(`**${base?.name ?? ''}**: `);
         expect(atRank1).not.toContain(four.name);
         expect(atRank1).not.toContain(seven.name);
         const atRank4 = revealAt(4);
@@ -143,7 +154,6 @@ describe('the Monday boss reveal', () => {
         const atRank7 = revealAt(7);
         expect(atRank7).toContain(four.name);
         expect(atRank7).toContain(seven.name);
-        expect(atRank7.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
       },
       { start: W02.monday },
     );
@@ -178,7 +188,9 @@ describe('the Monday boss reveal', () => {
     await runRaid(
       async (ctx) => {
         await openWeek(ctx, 16);
-        expect(posts(ctx)[0]?.content).toContain('16 players are in this week, in 2 parties.');
+        expect(embedOf(posts(ctx)[0]?.content).footer).toEqual({
+          text: '16 players in · 2 parties',
+        });
       },
       { start: W02.monday },
     );
@@ -207,7 +219,8 @@ describe('phase posts', () => {
           'raid:2027-W02:weekStart:all',
           'raid:2027-W02:phase1:1',
         ]);
-        const text = all[1]?.content ?? '';
+        const text = textOf(all[1]?.content);
+        const embed = embedOf(all[1]?.content);
         const run = rows<{ summary: string }>(ctx.sql, 'SELECT summary FROM raid_results')[0];
         const summary = JSON.parse(run?.summary ?? '{}') as {
           cleared: boolean;
@@ -216,26 +229,28 @@ describe('phase posts', () => {
         expect(summary.cleared).toBe(true);
         // A stage's boss does not fall: at its HP floor it retreats, and the post says so.
         expect(summary.retreated).toBe(true);
-        const boss = text.split('\n')[0];
-        expect(boss).toMatch(/^\*\*Phase 1: [^*]+\*\*$/);
-        expect(text).toMatch(/Phase 1 cleared: [^\n]+ retreated\.\nThe boss has \d+% HP left\./);
-        expect(text).toContain('Top contributors:');
-        expect(text).toContain(
-          `Essence: every player earned ${String(flatPaid(ctx, 'phase1'))}, plus a bonus share by contribution.`,
+        expect(embed.author).toEqual({ name: 'Raid · Phase 1' });
+        expect(embed.title).toMatch(/^✅ .+ retreats$/);
+        expect(embed.description).toMatch(/^[▰▱]{10} \d+% HP left$/);
+        expect(embed.fields.map((f) => f.name).slice(0, 1)).toEqual(['Top fighters']);
+        // The next fight is Phase 2, a day later.
+        const times = eventTimes(W02.id, HELSINKI);
+        expect(embed.fields.find((f) => f.name === 'Next fight')?.value).toBe(
+          `Phase 2\n<t:${String(times.phase2 / 1000)}:R>`,
         );
+        expect(text).not.toContain('Essence');
         // Phase 1 posts the boss's counter-move.
         const counter = rows<{ adaptation_description: string }>(
           ctx.sql,
           'SELECT adaptation_description FROM raid_parties',
         )[0]?.adaptation_description;
         expect(counter).toBeDefined();
-        expect(text).toContain("The boss's counter-move for Phase 2:");
+        expect(embed.fields.at(-1)?.name).toBe('⚠️ Counter-move for Phase 2');
         // Player text is inert wherever it appears.
         expect(text).not.toMatch(/@(?!\u200B)/);
         expect(text).not.toContain('<@123>');
         expect(text).not.toContain('**bold**');
         expect(text).not.toContain('[y](z)');
-        expect(text.length).toBeLessThanOrEqual(MAX_MESSAGE_CHARS);
       },
       { start: W02.monday },
     );
@@ -256,10 +271,8 @@ describe('phase posts', () => {
         forcePool(ctx.sql, 20_000);
         ctx.clock.t = W02.afterPhase1;
         ctx.core.raid.runDue(HELSINKI);
-        const text = posts(ctx)[1]?.content ?? '';
-        expect(text).toMatch(
-          /Key moment: in round \d+, .+ (hit for \d+ damage|set off .+ for \d+ bonus damage)\./,
-        );
+        const text = textOf(posts(ctx)[1]?.content);
+        expect(text).toMatch(/Big hit\n.+\n\d+ damage|Big combo\n.+ by .+\n\+\d+ bonus damage/);
         // Wherever the nickname appears, its underscore is escaped.
         if (text.includes('Nick')) expect(text).not.toMatch(/Nick_Name/);
       },
@@ -279,8 +292,8 @@ describe('phase posts', () => {
           'raid:2027-W02:phase1:1',
           'raid:2027-W02:phase1:2',
         ]);
-        expect(phase[0]?.content.split('\n')[0]).toContain('(party 1)');
-        expect(phase[1]?.content.split('\n')[0]).toContain('(party 2)');
+        expect(embedOf(phase[0]?.content).author).toEqual({ name: 'Raid · Phase 1 · Party 1' });
+        expect(embedOf(phase[1]?.content).author).toEqual({ name: 'Raid · Phase 1 · Party 2' });
       },
       { start: W02.monday },
     );
@@ -393,28 +406,36 @@ describe('the finale post', () => {
         ctx.core.raid.runDue(HELSINKI);
 
         const finale = posts(ctx).find((p) => p.key === 'raid:2027-W02:finale:1');
-        const text = finale?.content ?? '';
+        const text = textOf(finale?.content);
+        const embed = embedOf(finale?.content);
         const run = rows<{ summary: string }>(
           ctx.sql,
           "SELECT summary FROM raid_results WHERE phase = 'finale'",
         )[0];
         expect((JSON.parse(run?.summary ?? '{}') as { cleared: boolean }).cleared).toBe(true);
-        expect(text.startsWith(`**Finale: `)).toBe(true);
-        expect(text).toContain(`Essence: every player earned ${String(flatPaid(ctx, 'finale'))}`);
+        expect(embed.author).toEqual({ name: 'Raid finale' });
+        expect(embed.title).toMatch(/^🏆 .+ is defeated!$/);
+        expect(text).not.toContain('Essence');
+        // The next boss comes on the next Monday.
+        const next = eventTimes('2027-W03', HELSINKI).weekStart;
+        expect(embed.description).toContain(`Next boss <t:${String(next / 1000)}:R>.`);
         // One party that won: the post says where the server goes.
         const rank = rows<{ rank: number; rank_after: number }>(
           ctx.sql,
           'SELECT rank, rank_after FROM raid_weeks',
         )[0] as { rank: number; rank_after: number };
         expect(rank.rank_after).toBe(rank.rank + 1);
-        expect(text).toContain(`The server climbs to Rank ${String(rank.rank_after)}.`);
+        expect(text).toContain(`The server climbs to **Rank ${String(rank.rank_after)}**.`);
         // The jackpot is rolled and recorded behind the scenes; the post never says so.
         expect(
           rows(ctx.sql, "SELECT user_id FROM server_firsts WHERE kind = 'jackpot'"),
         ).toHaveLength(2);
         expect(text.toLowerCase()).not.toContain('jackpot');
-        expect(text).toContain('First on the server this week:');
-        expect(text).toContain('Splashet caught: Player 3');
+        expect(embed.fields.at(-1)).toEqual({
+          name: '🆕 New on the server',
+          value: 'Splashet',
+          inline: false,
+        });
         expect(text).not.toContain('Cindle');
         expect(text).not.toContain('Phase 2');
         expect(rows(ctx.sql, 'SELECT key FROM discord_posts ORDER BY id')).toEqual([
@@ -447,19 +468,21 @@ describe('a Festival week', () => {
           (c) => c.festival === true && c.id === 'hearthshell',
         );
         expect(creature).toBeDefined();
-        const monday = posts(ctx)[0]?.content ?? '';
+        const monday = textOf(posts(ctx)[0]?.content);
         const rank = rows<{ rank: number }>(ctx.sql, 'SELECT rank FROM raid_weeks')[0]?.rank;
-        expect(monday).toContain(`Boss Rank ${String(rank)}.`);
-        expect(monday).toContain('Festival week: Hearthshell for every winner, bonus Essence.');
+        expect(monday).toContain(`New raid week · Rank ${String(rank)}`);
+        expect(monday).toContain(
+          '🎉 Festival week: Hearthshell for every winner, and bonus Essence.',
+        );
 
         forcePool(ctx.sql, 3_000);
         ctx.clock.t = FESTIVAL.afterFinale;
         ctx.core.raid.runDue(HELSINKI);
         const finale = posts(ctx).find((p) => p.key === `raid:${FESTIVAL.id}:finale:1`);
-        const text = finale?.content ?? '';
-        expect(text.startsWith('**Finale: ')).toBe(true);
+        const text = textOf(finale?.content);
+        expect(embedOf(finale?.content).author).toEqual({ name: 'Raid finale' });
         // Every member of the winning party got it; names are escaped.
-        expect(text).toContain('Festival creature: Hearthshell for ');
+        expect(text).toContain('🎉 Hearthshell joins ');
         expect(text).toContain('\\_Ace\\_ @\u200Beveryone');
         expect(text).not.toMatch(/@(?!\u200B)/);
         expect(text).toContain('Player 2');
@@ -472,13 +495,11 @@ describe('a Festival week', () => {
         expect(week.rank_after).toBe(Math.max(1, week.rank - 1));
         expect(text).toContain(
           week.rank_after < week.rank
-            ? `The Festival is over. The server eases to Rank ${String(week.rank_after)}.`
-            : `Rank ${String(week.rank_after)} stays.`,
+            ? `The Festival is over. The server eases to **Rank ${String(week.rank_after)}**.`
+            : `The server stays at **Rank ${String(week.rank_after)}**.`,
         );
-        // Bonus Essence is what the post says every player earned.
-        expect(text).toContain(`Essence: every player earned ${String(flatPaid(ctx, 'finale'))}`);
-        // The first Festival win on the server is one of the records.
-        expect(text).toContain('Hearthshell won in a Festival: ');
+        // The Festival creature has its own line, not a "new on the server" entry.
+        expect(text).not.toContain('New on the server\nHearthshell');
         expect(players).toHaveLength(3);
       },
       { start: FESTIVAL.monday },
@@ -599,7 +620,7 @@ describe('the zero-width space after @', () => {
         forcePool(ctx.sql, 20_000);
         ctx.clock.t = W02.afterPhase1;
         ctx.core.raid.runDue(HELSINKI);
-        const text = posts(ctx)[1]?.content ?? '';
+        const text = textOf(posts(ctx)[1]?.content);
         expect(text).toContain(`@${ZWSP}everyone`);
         expect(text).not.toContain('@everyone');
       },

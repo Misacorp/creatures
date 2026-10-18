@@ -4,6 +4,8 @@ import {
   POST_BACKOFF_MS,
   createPostSender,
   enqueuePost,
+  postBody,
+  publicOrigin,
   type PostSender,
   type SendOutcome,
 } from '../src/discord-posts';
@@ -94,6 +96,84 @@ describe('createPostSender: the request', () => {
     expect(await send('123/../../users', 'x')).toEqual({ kind: 'failed', error: 'rejected' });
     expect(await send('', 'x')).toEqual({ kind: 'failed', error: 'rejected' });
     expect(captured).toHaveLength(0);
+  });
+});
+
+describe('postBody: a stored raid post', () => {
+  const stored = JSON.stringify({
+    embeds: [
+      {
+        title: 'Thornmother',
+        color: 1,
+        fields: [],
+        thumbnail: { url: '/discord/bosses/thornmother.png' },
+      },
+    ],
+    components: [
+      {
+        type: 1,
+        components: [{ type: 2, style: 1, label: 'Play Leet Creatures', custom_id: 'lounge:play' }],
+      },
+    ],
+  });
+
+  it('sends the embed with the portrait on the game\u2019s site, the button, and no mentions', () => {
+    expect(postBody(stored, 'https://creatures.misacorp.dev')).toEqual({
+      embeds: [
+        {
+          title: 'Thornmother',
+          color: 1,
+          fields: [],
+          thumbnail: { url: 'https://creatures.misacorp.dev/discord/bosses/thornmother.png' },
+        },
+      ],
+      components: [
+        {
+          type: 1,
+          components: [
+            { type: 2, style: 1, label: 'Play Leet Creatures', custom_id: 'lounge:play' },
+          ],
+        },
+      ],
+      allowed_mentions: { parse: [] },
+    });
+  });
+
+  it('leaves the portrait out without a site, and never suppresses the embed', () => {
+    const body = postBody(stored, null);
+    expect(body['embeds']).toEqual([{ title: 'Thornmother', color: 1, fields: [] }]);
+    expect(body).not.toHaveProperty('flags');
+  });
+
+  it('sends anything else as plain text, as before (posts queued before the embeds)', () => {
+    for (const text of ['**Finale: Thornmother**', '{not json', '{"embeds":"x"}']) {
+      expect(postBody(text, 'https://creatures.misacorp.dev')).toEqual({
+        content: text,
+        allowed_mentions: { parse: [] },
+        flags: 4,
+      });
+    }
+  });
+
+  it('knows the site of each deployed environment', () => {
+    expect(publicOrigin('production')).toBe('https://creatures.misacorp.dev');
+    expect(publicOrigin('staging')).toBe('https://creatures-staging.misacorp.dev');
+    expect(publicOrigin('development')).toBeNull();
+    expect(publicOrigin(undefined)).toBeNull();
+  });
+
+  it('is what the sender posts', async () => {
+    const send = createPostSender({
+      botToken: TOKEN,
+      origin: 'https://creatures-staging.misacorp.dev',
+      fetch: (_input, init) => {
+        expect(JSON.parse(init?.body as string)).toEqual(
+          postBody(stored, 'https://creatures-staging.misacorp.dev'),
+        );
+        return Promise.resolve(new Response('{}', { status: 200 }));
+      },
+    });
+    expect(await send(CHANNEL, stored)).toEqual({ kind: 'sent' });
   });
 });
 

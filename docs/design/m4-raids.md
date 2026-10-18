@@ -79,16 +79,15 @@ At the scheduled time, in one go per party:
 ## Discord posts
 
 - **Channel:** the guild's announcement channel is the channel the Activity was most recently launched from. It comes from Discord's verified instance location, never from the client. An admin override comes later.
-- **Posts:**
-  - Monday boss reveal;
-  - Friday and Saturday phase summaries: cleared or not, the top contributors, the best reaction and a key moment;
-  - Saturday counter-move;
-  - Sunday finale result and loot highlights;
-  - shiny, jackpot and first-on-server announcements, batched into the phase posts.
+- **Posts** are one embed each, with the boss's portrait in the corner and a "Play Leet Creatures" button (2026-10-18 entry in `decisions.md`). They sum up; the details live in the raid view.
+  - Monday boss reveal: the boss, its element and turn order, its moves, the three fight times in columns, and how many players are in.
+  - Friday and Saturday: the boss retreats or holds firm, with an HP bar; the top three fighters, the big hit and the next fight in columns; after Phase 1, the counter-move.
+  - Sunday finale: defeated or survived, the server's rank, when the next boss comes, the top three fighters, the big hit and the top reaction, and the creatures first caught or evolved on the server this week.
+  - Never in a post: Essence amounts, the day's weather, contribution numbers, the jackpot.
 - **Safety:**
   - All player-provided text (display names, nicknames) is markdown-escaped.
   - Every post sends `allowed_mentions: { parse: [] }`.
-  - Posts stay under 2,000 characters.
+  - Posts stay within Discord's embed limits.
 - **Failures:** posting runs after the phase is committed and retries on failure. A failed post never blocks the raid.
 - The bot needs **Send Messages** in that channel (already in the install settings).
 

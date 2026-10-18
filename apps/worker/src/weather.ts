@@ -69,7 +69,7 @@ export function readWeatherDay(sql: SqlStorage, day: string): WeatherDay | null 
  * The guild's timezone as the guild object reads it: the stored one, or the default for a guild that is not
  * bound yet or whose stored name is not a real zone (`GuildCore.timezone`).
  */
-function storedTimezone(sql: SqlStorage): string {
+export function storedTimezone(sql: SqlStorage): string {
   const stored = sql
     .exec<{ timezone: string }>('SELECT timezone FROM guild_meta WHERE id = 1')
     .toArray()[0]?.timezone;

@@ -5,7 +5,8 @@
  * `escapeMarkdown` before it is put into a message, so markdown, mentions, channel links, custom
  * emoji and timestamps typed by a player stay inert text. The sender also always sends
  * `allowed_mentions: { parse: [] }`, so nothing can ping; the escaping keeps the text clean as well.
- * Messages never exceed Discord's 2,000 character limit (`truncateMessage`).
+ * Text never exceeds Discord's limits (`truncateMessage`): 2,000 characters for a plain message, and
+ * the embed limits for the raid posts, which are embeds with the boss's portrait and a play button.
  */
 import type { Gimmick, TurnOrder } from '@creatures/game';
 
@@ -142,14 +143,112 @@ export function describeGimmick(gimmick: Gimmick): string {
   }
 }
 
-const TURN_ORDER_WORDS: Record<TurnOrder, string> = {
-  left_to_right: 'Creatures act from left to right.',
-  right_to_left: 'Creatures act from right to left.',
-  speed: 'Creatures act fastest first.',
+// --- Raid posts: one embed each, the boss's portrait in the corner, and a button to play ---
+
+/** The custom id of the button that launches the game (the lounge message and the raid posts). */
+export const PLAY_BUTTON_ID = 'lounge:play';
+/** The label of the raid posts' button. */
+export const PLAY_BUTTON_LABEL = 'Play Leet Creatures';
+
+// Discord's embed limits (characters).
+const EMBED_TITLE_MAX = 256;
+const EMBED_TEXT_MAX = 4096;
+const FIELD_NAME_MAX = 256;
+const FIELD_VALUE_MAX = 1024;
+const FOOTER_MAX = 2048;
+
+export interface EmbedField {
+  name: string;
+  value: string;
+  inline: boolean;
+}
+
+export interface PostEmbed {
+  /** The small line above the title ("Raid finale · Party 2"). */
+  author?: { name: string };
+  title: string;
+  description?: string;
+  color: number;
+  /**
+   * The boss's portrait. A path on the game's own site (`/discord/bosses/<id>.png`): the sender makes
+   * it absolute for the environment it runs in, or leaves the thumbnail out when it has no site.
+   */
+  thumbnail?: { url: string };
+  fields: EmbedField[];
+  footer?: { text: string };
+}
+
+export interface PostButtonRow {
+  type: 1;
+  components: { type: 2; style: 1; label: string; custom_id: string }[];
+}
+
+/** A queued post's message: embeds and the play button. Stored as JSON (`discord-posts.ts`). */
+export interface PostMessage {
+  embeds: PostEmbed[];
+  components: PostButtonRow[];
+}
+
+/** The site path of a boss's portrait (drawn by `apps/activity/scripts/boss-portraits.mts`). */
+export function bossPortraitPath(bossId: string): string {
+  return `/discord/bosses/${encodeURIComponent(bossId)}.png`;
+}
+
+/** Embed colours: a won finale, a cleared phase, a lost stage, and each element for the reveal. */
+export const POST_COLOURS = {
+  won: 0xf2b33d,
+  cleared: 0x57a85a,
+  lost: 0xc0504d,
+  element: { tide: 0x3fa7d6, ember: 0xe8743b, grove: 0x5fae4e, spark: 0xf2c94c } as Record<
+    string,
+    number
+  >,
+  plain: 0x6b3fa0,
+} as const;
+
+const ELEMENT_EMOJI: Record<string, string> = { tide: '🌊', ember: '🔥', grove: '🌿', spark: '⚡' };
+
+const cut = (text: string, max: number): string => truncateMessage(text, max);
+
+function playRow(): PostButtonRow {
+  return {
+    type: 1,
+    components: [{ type: 2, style: 1, label: PLAY_BUTTON_LABEL, custom_id: PLAY_BUTTON_ID }],
+  };
+}
+
+function field(name: string, value: string, inline = true): EmbedField {
+  return { name: cut(name, FIELD_NAME_MAX), value: cut(value, FIELD_VALUE_MAX), inline };
+}
+
+function message(embed: PostEmbed): PostMessage {
+  const limited: PostEmbed = {
+    ...embed,
+    title: cut(embed.title, EMBED_TITLE_MAX),
+    ...(embed.description === undefined
+      ? {}
+      : { description: cut(embed.description, EMBED_TEXT_MAX) }),
+    ...(embed.footer === undefined ? {} : { footer: { text: cut(embed.footer.text, FOOTER_MAX) } }),
+    ...(embed.author === undefined ? {} : { author: { name: cut(embed.author.name, 256) } }),
+  };
+  return { embeds: [limited], components: [playRow()] };
+}
+
+/** A Discord timestamp: the short date and time ("23 October 2026 13:37"). */
+const shortTime = (epochMs: number): string => `<t:${String(Math.floor(epochMs / 1000))}:f>`;
+/** A Discord timestamp: the relative time ("in 3 days"). */
+const relativeTime = (epochMs: number): string => `<t:${String(Math.floor(epochMs / 1000))}:R>`;
+
+const TURN_ORDER_SHORT: Record<TurnOrder, string> = {
+  left_to_right: 'creatures act left to right',
+  right_to_left: 'creatures act right to left',
+  speed: 'creatures act fastest first',
 };
 
 export interface RevealPost {
+  bossId: string;
   bossName: string;
+  elementId: string;
   elementName: string;
   gimmicks: readonly { name: string; text: string }[];
   turnOrder: TurnOrder;
@@ -161,42 +260,52 @@ export interface RevealPost {
   rank: number | null;
   /** Set in a Festival week: the name of the Festival creature every winner gets. */
   festivalCreature: string | null;
-  /** The names of today's Boon and Omen (our own content), or none: said in one short line. */
-  sky?: readonly string[];
-}
-
-/** One short line about the day's weather ("Today's sky: Fair Winds and Heavy Rain."), or none. */
-function skyLine(sky: readonly string[] | undefined, lead: string): string | null {
-  if (sky === undefined || sky.length === 0) return null;
-  return `${lead}: ${sky.map(escapeMarkdown).join(' and ')}.`;
 }
 
 /** Monday: the week's boss. */
-export function formatBossReveal(post: RevealPost): string {
+export function formatBossReveal(post: RevealPost): PostMessage {
+  const emoji = ELEMENT_EMOJI[post.elementId];
   const lines = [
-    `**A new raid week begins: ${escapeMarkdown(post.bossName)}**`,
-    `Element: ${escapeMarkdown(post.elementName)}. ${TURN_ORDER_WORDS[post.turnOrder]}`,
+    `${emoji === undefined ? '' : `${emoji} `}${escapeMarkdown(post.elementName)} · ${TURN_ORDER_SHORT[post.turnOrder]}`,
   ];
-  if (post.rank !== null) lines.push(`Boss Rank ${String(post.rank)}.`);
-  const sky = skyLine(post.sky, "Today's sky");
-  if (sky !== null) lines.push(sky);
   if (post.festivalCreature !== null) {
     lines.push(
-      `Festival week: ${escapeMarkdown(post.festivalCreature)} for every winner, bonus Essence.`,
+      `🎉 Festival week: ${escapeMarkdown(post.festivalCreature)} for every winner, and bonus Essence.`,
     );
   }
-  for (const g of post.gimmicks) {
-    lines.push(`${escapeMarkdown(g.name)}: ${escapeMarkdown(g.text)}.`);
+  const fields: EmbedField[] = [];
+  if (post.gimmicks.length > 0) {
+    fields.push(
+      field(
+        'Moves',
+        post.gimmicks
+          .map((g) => `**${escapeMarkdown(g.name)}**: ${escapeMarkdown(g.text)}`)
+          .join('\n'),
+        false,
+      ),
+    );
   }
-  lines.push(
-    `Phase 1: ${discordTime(post.schedule.phase1)}`,
-    `Phase 2: ${discordTime(post.schedule.phase2)}`,
-    `Finale: ${discordTime(post.schedule.finale)}`,
-    `${String(post.players)} ${plural(post.players, 'player is', 'players are')} in this week${
-      post.parties > 1 ? `, in ${String(post.parties)} parties` : ''
-    }.`,
-  );
-  return truncateMessage(lines.join('\n'));
+  for (const [name, at] of [
+    ['Phase 1', post.schedule.phase1],
+    ['Phase 2', post.schedule.phase2],
+    ['Finale', post.schedule.finale],
+  ] as const) {
+    fields.push(field(name, `${shortTime(at)}\n${relativeTime(at)}`));
+  }
+  const players = `${String(post.players)} ${plural(post.players, 'player', 'players')} in`;
+  return message({
+    author: {
+      name: `New raid week${post.rank === null ? '' : ` · Rank ${String(post.rank)}`}`,
+    },
+    title: escapeMarkdown(post.bossName),
+    description: lines.join('\n'),
+    color: POST_COLOURS.element[post.elementId] ?? POST_COLOURS.plain,
+    thumbnail: { url: bossPortraitPath(post.bossId) },
+    fields,
+    footer: {
+      text: post.parties > 1 ? `${players} · ${String(post.parties)} parties` : players,
+    },
+  });
 }
 
 export type KeyMoment =
@@ -220,8 +329,15 @@ export interface RankPost {
   partiesWon: number;
 }
 
+/** A creature that was first on the server this week. */
+export interface FirstPost {
+  species: string;
+  kind: 'catch' | 'evolve';
+}
+
 export interface PhasePost {
   phase: 'phase1' | 'phase2' | 'finale';
+  bossId: string;
   bossName: string;
   /** The party number when the week has more than one party, otherwise null. */
   party: number | null;
@@ -236,15 +352,14 @@ export interface PhasePost {
   top: readonly { name: string; contribution: number }[];
   reaction: { name: string; count: number } | null;
   keyMoment: KeyMoment | null;
-  /** The flat Essence every player got, or null when the stage was not cleared. */
-  essenceFlat: number | null;
   /** Phase 1 only: the boss's counter-move for phase 2, in plain words. */
   counterMove: string | null;
-  /** The names of the day's Boon and Omen the stage was fought under (our own content), or none. */
-  sky?: readonly string[];
+  /** When the next fight starts: Phase 2 after Phase 1, the Finale after Phase 2, the next boss after it. */
+  next: number;
   /** Finale only. */
   finale?: {
-    firsts: readonly { label: string; names: readonly string[] }[];
+    /** Creatures first caught or evolved on the server this week by this party, in order. */
+    firsts: readonly FirstPost[];
     /** Where the server's rank went; null until the ladder has moved (not every party has finished). */
     rank?: RankPost | null;
     /** Festival week only: the creature and the members of this party who got it. */
@@ -256,91 +371,133 @@ export interface PhasePost {
 function rankLine(rank: RankPost): string {
   const lead =
     rank.parties > 1 ? `${String(rank.partiesWon)} / ${String(rank.parties)} parties won. ` : '';
-  if (rank.after > rank.before) return `${lead}The server climbs to Rank ${String(rank.after)}.`;
-  if (rank.after < rank.before) {
-    return `${lead}${rank.festival ? 'The Festival is over. ' : ''}The server eases to Rank ${String(rank.after)}.`;
+  if (rank.after > rank.before) {
+    return `${lead}The server climbs to **Rank ${String(rank.after)}**.`;
   }
-  return `${lead}Rank ${String(rank.after)} stays.`;
+  if (rank.after < rank.before) {
+    return `${lead}${rank.festival ? 'The Festival is over. ' : ''}The server eases to **Rank ${String(rank.after)}**.`;
+  }
+  return `${lead}The server stays at **Rank ${String(rank.after)}**.`;
 }
 
 const PHASE_TITLES = { phase1: 'Phase 1', phase2: 'Phase 2', finale: 'Finale' } as const;
-/** How many first-on-server records one message lists. */
-const MAX_FIRSTS_LISTED = 5;
+const NEXT_FIGHT = { phase1: 'Phase 2', phase2: 'Finale' } as const;
+/** How many first-on-server creatures one post names. */
+const MAX_FIRSTS_LISTED = 6;
+/** Cells of the HP bar. */
+const HP_BAR_CELLS = 10;
+const MEDALS = ['🥇', '🥈', '🥉'] as const;
+
+/** "▰▰▰▰▰▰▱▱▱▱ 62% HP left": a bar never looks empty while the boss has HP, nor full when hurt. */
+export function hpBar(percent: number): string {
+  const p = Math.min(100, Math.max(0, Math.round(percent)));
+  let filled = Math.round((p * HP_BAR_CELLS) / 100);
+  if (p > 0) filled = Math.max(1, filled);
+  if (p < 100) filled = Math.min(HP_BAR_CELLS - 1, filled);
+  return `${'▰'.repeat(filled)}${'▱'.repeat(HP_BAR_CELLS - filled)} ${String(p)}% HP left`;
+}
 
 function ownedBy(creature: string, owner: string | null): string {
   return owner === null ? safeName(creature) : `${safeName(creature)} (${safeName(owner)})`;
 }
 
-function keyMomentLine(moment: KeyMoment): string {
+function keyMomentField(moment: KeyMoment): EmbedField {
   return moment.kind === 'hit'
-    ? `Key moment: in round ${String(moment.round)}, ${ownedBy(moment.creature, moment.owner)} hit for ${String(moment.damage)} damage.`
-    : `Key moment: in round ${String(moment.round)}, ${ownedBy(moment.creature, moment.owner)} set off ${escapeMarkdown(moment.reaction)} for ${String(moment.bonus)} bonus damage.`;
+    ? field('Big hit', `${ownedBy(moment.creature, moment.owner)}\n${String(moment.damage)} damage`)
+    : field(
+        'Big combo',
+        `${escapeMarkdown(moment.reaction)} by ${ownedBy(moment.creature, moment.owner)}\n+${String(moment.bonus)} bonus damage`,
+      );
+}
+
+/** The headline and its colour. */
+function outcome(post: PhasePost): { title: string; lines: string[]; color: number } {
+  const boss = escapeMarkdown(post.bossName);
+  const bar = hpBar(post.hpLeftPercent);
+  if (post.phase === 'finale') {
+    if (post.cleared) {
+      return {
+        title: `🏆 ${boss} is defeated!`,
+        lines: post.enraged === true ? [`It flew into a rage, but the party held on.`] : [],
+        color: POST_COLOURS.won,
+      };
+    }
+    return {
+      title: `💢 ${boss} survives`,
+      lines: [bar, ...(post.enraged === true ? ['It flew into a rage when time ran out.'] : [])],
+      color: POST_COLOURS.lost,
+    };
+  }
+  if (post.cleared) {
+    return {
+      title:
+        post.retreated === true ? `✅ ${boss} retreats` : `✅ ${PHASE_TITLES[post.phase]} cleared`,
+      lines: [bar],
+      color: POST_COLOURS.cleared,
+    };
+  }
+  return { title: `❌ ${boss} holds firm`, lines: [bar], color: POST_COLOURS.lost };
+}
+
+function firstsValue(firsts: readonly FirstPost[]): string {
+  const names = firsts
+    .slice(0, MAX_FIRSTS_LISTED)
+    .map((f) => `${escapeMarkdown(f.species)}${f.kind === 'evolve' ? ' (evolved)' : ''}`);
+  const more = firsts.length - MAX_FIRSTS_LISTED;
+  return more > 0 ? `${names.join(', ')} and ${String(more)} more` : names.join(', ');
 }
 
 /** Friday, Saturday and Sunday: one party's result. */
-export function formatPhasePost(post: PhasePost): string {
-  const party = post.party === null ? '' : ` (party ${String(post.party)})`;
-  const lines = [`**${PHASE_TITLES[post.phase]}: ${escapeMarkdown(post.bossName)}${party}**`];
-  const boss = escapeMarkdown(post.bossName);
-  if (post.cleared && post.retreated === true && post.phase !== 'finale') {
-    lines.push(
-      `${PHASE_TITLES[post.phase]} cleared: ${boss} retreated.`,
-      `The boss has ${String(post.hpLeftPercent)}% HP left.`,
-    );
-  } else if (post.enraged === true && post.phase === 'finale') {
-    lines.push(
-      post.cleared
-        ? `Cleared, but only after ${boss} flew into a rage. The boss is defeated.`
-        : `Not cleared. ${boss} flew into a rage when time ran out. The boss has ${String(post.hpLeftPercent)}% HP left.`,
-    );
-  } else if (post.cleared && post.hpLeftPercent === 0) {
-    lines.push('Cleared. The boss is defeated.');
-  } else {
-    lines.push(
-      `${post.cleared ? 'Cleared' : 'Not cleared'}. The boss has ${String(post.hpLeftPercent)}% HP left.`,
-    );
-  }
+export function formatPhasePost(post: PhasePost): PostMessage {
+  const head = outcome(post);
+  const lines = [...head.lines];
+  const fields: EmbedField[] = [];
   if (post.top.length > 0) {
-    lines.push(
-      `Top contributors: ${post.top
-        .slice(0, 3)
-        .map((c) => `${safeName(c.name)} (${String(c.contribution)} contribution)`)
-        .join(', ')}.`,
+    fields.push(
+      field(
+        'Top fighters',
+        post.top
+          .slice(0, MEDALS.length)
+          .map((c, i) => `${MEDALS[i] ?? ''} ${safeName(c.name)}`)
+          .join('\n'),
+      ),
     );
   }
-  lines.push(
-    post.reaction === null
-      ? 'No reactions were triggered.'
-      : `Most used reaction: ${escapeMarkdown(post.reaction.name)} (${String(post.reaction.count)} ${plural(post.reaction.count, 'time', 'times')}).`,
-  );
-  if (post.keyMoment !== null) lines.push(keyMomentLine(post.keyMoment));
-  if (post.essenceFlat !== null) {
-    lines.push(
-      `Essence: every player earned ${String(post.essenceFlat)}, plus a bonus share by contribution.`,
-    );
-  }
-  if (post.counterMove !== null) {
-    lines.push(`The boss's counter-move for Phase 2: ${escapeMarkdown(post.counterMove)}`);
-  }
-  const sky = skyLine(post.sky, 'Sky');
-  if (sky !== null) lines.push(sky);
-  if (post.finale !== undefined) {
-    const { firsts } = post.finale;
-    if (post.finale.festival != null && post.finale.festival.winners.length > 0) {
-      lines.push(
-        `Festival creature: ${escapeMarkdown(post.finale.festival.creature)} for ${post.finale.festival.winners.map((n) => safeName(n)).join(', ')}.`,
+  if (post.keyMoment !== null) fields.push(keyMomentField(post.keyMoment));
+  if (post.phase === 'finale') {
+    if (post.reaction !== null) {
+      fields.push(
+        field(
+          'Top reaction',
+          `${escapeMarkdown(post.reaction.name)} ×${String(post.reaction.count)}`,
+        ),
       );
     }
-    if (post.finale.rank != null) lines.push(rankLine(post.finale.rank));
-    if (firsts.length > 0) {
-      lines.push('First on the server this week:');
-      for (const f of firsts.slice(0, MAX_FIRSTS_LISTED)) {
-        lines.push(`${escapeMarkdown(f.label)}: ${f.names.map((n) => safeName(n)).join(', ')}`);
-      }
-      if (firsts.length > MAX_FIRSTS_LISTED) {
-        lines.push(`and ${String(firsts.length - MAX_FIRSTS_LISTED)} more.`);
-      }
+    const festival = post.finale?.festival;
+    if (festival != null && festival.winners.length > 0) {
+      lines.push(
+        `🎉 ${escapeMarkdown(festival.creature)} joins ${festival.winners.map((n) => safeName(n)).join(', ')}.`,
+      );
+    }
+    if (post.finale?.rank != null) lines.push(rankLine(post.finale.rank));
+    lines.push(`Next boss ${relativeTime(post.next)}.`);
+    const firsts = post.finale?.firsts ?? [];
+    if (firsts.length > 0) fields.push(field('🆕 New on the server', firstsValue(firsts), false));
+  } else {
+    fields.push(field('Next fight', `${NEXT_FIGHT[post.phase]}\n${relativeTime(post.next)}`));
+    if (post.counterMove !== null) {
+      fields.push(field('⚠️ Counter-move for Phase 2', escapeMarkdown(post.counterMove), false));
     }
   }
-  return truncateMessage(lines.join('\n'));
+  const party = post.party === null ? '' : ` · Party ${String(post.party)}`;
+  return message({
+    author: {
+      name: `${post.phase === 'finale' ? 'Raid finale' : `Raid · ${PHASE_TITLES[post.phase]}`}${party}`,
+    },
+    title: head.title,
+    ...(lines.length > 0 ? { description: lines.join('\n') } : {}),
+    color: head.color,
+    thumbnail: { url: bossPortraitPath(post.bossId) },
+    fields,
+  });
 }
