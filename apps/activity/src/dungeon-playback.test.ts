@@ -29,7 +29,6 @@ import {
   roomStageRow,
   roomState,
   roomStrip,
-  runSentence,
   stageRow,
   teamBreakdown,
   streakBonusText,
@@ -187,12 +186,6 @@ describe('the results', () => {
     );
   });
 
-  it('writes one sentence for the whole run', () => {
-    expect(runSentence(cleared)).toBe('Cleared at depth 1: 3 / 3 rooms cleared.');
-    expect(runSentence(lost)).toContain('Not cleared at depth');
-    expect(runSentence(lost)).toContain('0 / 3 rooms cleared');
-  });
-
   it('sees a run that paid nothing, and one that paid in full', () => {
     expect(noRewards(lost.rewards)).toBe(true);
     expect(noRewards(cleared.rewards)).toBe(false);
@@ -263,10 +256,10 @@ describe('the room strip of the end report', () => {
     expect(roomStrip(shuffled).map((r) => r.index)).toEqual([0, 1, 2]);
   });
 
-  it('says DEFEAT for the room that was lost, with the foe HP left, and LOCKED for those after it', () => {
+  it('says DEFEATED for the room that was lost, with the foe HP left, and LOCKED for those after it', () => {
     const strip = roomStrip(lost);
     expect(strip.map((r) => r.state)).toEqual(['defeat', 'locked', 'locked']);
-    expect(strip.map((r) => r.banner)).toEqual(['DEFEAT', 'LOCKED', 'LOCKED']);
+    expect(strip.map((r) => r.banner)).toEqual(['DEFEATED', 'LOCKED', 'LOCKED']);
     const first = lost.rooms[0];
     expect(strip[0]?.foeHp).toBe(
       `${String(first?.foeHpEnd)} / ${String(first?.foe.hpMax)} HP left`,
@@ -345,16 +338,26 @@ describe('the team breakdown of the end report', () => {
       team: [member],
       rewards: { ...cleared.rewards, experience: [paid] },
     })[0];
-    expect(withExp?.experience).toBe('+180 experience (treat), level 4 to 5');
+    expect(withExp?.exp).toMatchObject({
+      level: 5,
+      levelsGained: 1,
+      value: 20,
+      max: 175,
+      text: '20 / 175 XP',
+      gained: 20,
+      gainedLine: '+180 experience',
+      boostLine: 'Treat gave 2x experience',
+      note: null,
+    });
     // Another creature's award is not this one's.
     const other = teamBreakdown({
       team: [member],
       rewards: { ...cleared.rewards, experience: [{ ...paid, creatureId: 'someone-else' }] },
     })[0];
-    expect(other?.experience).toBeNull();
+    expect(other?.exp).toBeNull();
     const old = { ...cleared.rewards };
     delete old.experience;
-    expect(teamBreakdown({ team: [member], rewards: old })[0]?.experience).toBeNull();
+    expect(teamBreakdown({ team: [member], rewards: old })[0]?.exp).toBeNull();
   });
 
   it('carries what the small-creature popover needs, and no more than the creature', () => {
@@ -654,16 +657,16 @@ describe('the end report of a path run', () => {
     expect(home[1]?.elite).toBe(true);
     expect(home[0]?.elite).toBe(false);
     const cleared = roomStrip(sampleSummary('cleared'));
-    expect(cleared.map((r) => r.title)).toEqual(['Fight 1', 'Elite', 'Floor boss']);
+    expect(cleared.map((r) => r.title)).toEqual(['Fight 1', 'Elite', 'Fight 3', 'Floor boss']);
   });
 
   it('leaves the rooms never reached out, and marks the lost one', () => {
     const base = sampleSummary('cleared');
     const withUnplayed = {
       ...base,
-      rooms: base.rooms.map((r, i) => (i === 2 ? { ...r, played: false, cleared: false } : r)),
+      rooms: base.rooms.map((r, i) => (i === 3 ? { ...r, played: false, cleared: false } : r)),
     };
-    expect(roomStrip(withUnplayed)).toHaveLength(2);
+    expect(roomStrip(withUnplayed)).toHaveLength(3);
     const lost = roomStrip(sampleSummary('defeat'));
     expect(lost.map((r) => r.state)).toEqual(['cleared', 'defeat']);
     expect(lost[1]?.foeHp).toBe(
@@ -674,16 +677,5 @@ describe('the end report of a path run', () => {
 
   it('still shows all three rooms of an old run, the unreached ones locked', () => {
     expect(roomStrip(lost)).toHaveLength(3);
-  });
-
-  it('says the run in one sentence by its outcome', () => {
-    expect(runSentence(sampleSummary('home'))).toBe(
-      'Home safe with your whole pack. 2 / 2 fights cleared at depth 3.',
-    );
-    expect(runSentence(sampleSummary('defeat'))).toBe(
-      'Defeated: half your pack made it home. 1 / 2 fights cleared at depth 3.',
-    );
-    expect(runSentence(sampleSummary('cleared'))).toContain('Cleared! Depth 3 to 4.');
-    expect(runSentence(cleared)).toContain('Cleared at depth');
   });
 });

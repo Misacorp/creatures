@@ -432,6 +432,25 @@ describe('the new fields of a summary and of a replayed room', () => {
     expect(old.rooms[0]?.elite).toBeUndefined();
   });
 
+  it("read what changed each creature's experience, and refuse a broken factor or day effect", () => {
+    const base = sampleSummary('home');
+    const first = base.rewards.experience?.[0];
+    if (first === undefined) throw new Error('the sample pays experience');
+    const paid = (change: Record<string, unknown>) =>
+      summaryIn({ rewards: { ...base.rewards, experience: [{ ...first, ...change }] } });
+    expect(
+      paid({ treat: true, treatTimes: 3, dayEffects: [{ name: 'Hearty Breakfast', bp: 2500 }] })
+        ?.rewards.experience?.[0],
+    ).toMatchObject({
+      treatTimes: 3,
+      dayEffects: [{ name: 'Hearty Breakfast', bp: 2500 }],
+    });
+    // A run stored before the server said it has neither, and still reads.
+    expect(paid({})?.rewards.experience?.[0]?.dayEffects).toBeUndefined();
+    expect(() => paid({ treatTimes: 'x' })).toThrow();
+    expect(() => paid({ dayEffects: [{ name: 1, bp: 1 }] })).toThrow();
+  });
+
   it('read the weather a run was fought under, and refuse a broken one', () => {
     expect(summaryIn({})?.weather).toBeUndefined();
     expect(summaryIn({ weather: { boon: 'sunny-nap', omen: null } })?.weather).toEqual({

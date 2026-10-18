@@ -29,6 +29,7 @@
  */
 import {
   RULES,
+  activeEffects,
   addParts,
   createSeededRng,
   dungeonExperience,
@@ -42,10 +43,12 @@ import {
   nodeFoe,
   rollDungeonLoot,
   roomModifier,
+  scaleStrength,
   streakBonus,
   treatCost,
   undercroftOpen,
   weatherBossAttacks,
+  weatherDef,
   weatherLuck,
   xpWeather,
   type DungeonMap,
@@ -55,6 +58,7 @@ import {
   type PartsBundle,
   type Rng,
   type Role,
+  type WeatherDay,
 } from '@creatures/game';
 import {
   buildNames,
@@ -160,6 +164,17 @@ export interface DungeonModifierView {
   description: string;
 }
 
+/**
+ * What a run paid one creature in experience, with what changed the plain amount: the results say it under
+ * the creature's bar ("Treat gave 2x experience"). Both fields are absent in runs stored before they were added.
+ */
+export interface DungeonExperienceView extends ExperienceView {
+  /** What the treat multiplied the experience by (2, or 3 on a day that changes it), or null when no treat was packed for this creature. */
+  treatTimes: number | null;
+  /** The day's Boons and Omens that changed creature experience: their names and the change in basis points (negative: less). */
+  dayEffects: { name: string; bp: number }[];
+}
+
 /** What a run paid. The streak bonus is listed apart from what the rooms paid. */
 export interface DungeonRewards {
   bait: number;
@@ -175,7 +190,7 @@ export interface DungeonRewards {
    * The creature experience the run paid each creature that stood in the row (a treat doubles it) and
    * what it did to their levels. Absent in runs stored before training by activity.
    */
-  experience?: ExperienceView[];
+  experience?: DungeonExperienceView[];
   /** A fully cleared landmark depth: its gear drop was certain. */
   landmark: boolean;
   streak: { day: number; bait: number; essence: number; parts: PartsBundle } | null;
@@ -450,6 +465,20 @@ function fingerprintOf(body: RunBody): string {
   return JSON.stringify({
     team: body.team,
     ...(body.treats.length === 0 ? {} : { treats: [...body.treats].sort() }),
+  });
+}
+
+/**
+ * The Boons and Omens of the day that changed creature experience, by name, with the change in basis
+ * points as it was applied (scaled by the day's strength; negative: less). One that changes only the
+ * treat's multiplier shows no entry. Names come from the content.
+ */
+function xpDayEffects(day: WeatherDay | null): { name: string; bp: number }[] {
+  return activeEffects(day).flatMap((a) => {
+    if (a.effect.op !== 'xp') return [];
+    const bp = scaleStrength(a.effect.bp, a.strengthBp);
+    const name = weatherDef(a.id)?.name;
+    return bp === 0 || name === undefined ? [] : [{ name, bp }];
   });
 }
 
@@ -1487,7 +1516,9 @@ export class Dungeon {
 
     // --- Creature experience, from the fights each creature stood in the row for (a treat doubles it) ---
     const inRow = new Set(st.input.team.map((slot) => slot.id));
-    const experience: ExperienceView[] = [];
+    const experience: DungeonExperienceView[] = [];
+    const dayEffects = xpDayEffects(st.weather);
+    const treatTimes = xpWeather(st.weather).treatMultiplier ?? RULES.experience.treat.multiplier;
     for (const id of st.everyone) {
       const treat = st.treats.includes(id);
       const gained = dungeonExperience(
@@ -1506,7 +1537,9 @@ export class Dungeon {
         'dungeon',
         treat,
       );
-      if (view !== null) experience.push(view);
+      if (view !== null) {
+        experience.push({ ...view, treatTimes: treat ? treatTimes : null, dayEffects });
+      }
     }
     rewards.experience = experience;
 

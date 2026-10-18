@@ -750,7 +750,9 @@
           "exp": 200,
           "needed": 588,
           "waiting": false,
-          "gold": false
+          "gold": false,
+          "treatTimes": null,
+          "dayEffects": []
         },
         {
           "creatureId": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
@@ -761,7 +763,9 @@
           "exp": 200,
           "needed": 588,
           "waiting": false,
-          "gold": false
+          "gold": false,
+          "treatTimes": null,
+          "dayEffects": []
         },
         {
           "creatureId": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
@@ -772,7 +776,9 @@
           "exp": 35,
           "needed": 588,
           "waiting": false,
-          "gold": false
+          "gold": false,
+          "treatTimes": null,
+          "dayEffects": []
         },
         {
           "creatureId": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
@@ -783,7 +789,9 @@
           "exp": 165,
           "needed": 588,
           "waiting": false,
-          "gold": false
+          "gold": false,
+          "treatTimes": null,
+          "dayEffects": []
         }
       ]
     },
@@ -1351,7 +1359,9 @@
             "exp": 200,
             "needed": 588,
             "waiting": false,
-            "gold": false
+            "gold": false,
+            "treatTimes": null,
+            "dayEffects": []
           },
           {
             "creatureId": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
@@ -1362,7 +1372,9 @@
             "exp": 200,
             "needed": 588,
             "waiting": false,
-            "gold": false
+            "gold": false,
+            "treatTimes": null,
+            "dayEffects": []
           },
           {
             "creatureId": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
@@ -1373,7 +1385,9 @@
             "exp": 35,
             "needed": 588,
             "waiting": false,
-            "gold": false
+            "gold": false,
+            "treatTimes": null,
+            "dayEffects": []
           },
           {
             "creatureId": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
@@ -1384,7 +1398,9 @@
             "exp": 165,
             "needed": 588,
             "waiting": false,
-            "gold": false
+            "gold": false,
+            "treatTimes": null,
+            "dayEffects": []
           }
         ]
       },

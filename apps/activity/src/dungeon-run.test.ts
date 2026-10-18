@@ -7,9 +7,7 @@ import {
   keepsakeAct,
   packBadges,
   packItems,
-  packKindLabel,
   packKinds,
-  packLost,
   restAct,
   rowIds,
   sameOrder,
@@ -72,18 +70,6 @@ describe('the pack as one line of icons', () => {
     expect(packKinds({ bait: 0, essence: 0, scrap: 0 }, { bait: 0, essence: 0, scrap: 0 })).toEqual(
       [],
     );
-  });
-
-  it('knows when part of the pack did not come home', () => {
-    expect(packLost(found, found)).toBe(false);
-    expect(packLost(found, { bait: 2, essence: 0, scrap: 3 })).toBe(true);
-    expect(packLost(found, { bait: 3, essence: 0, scrap: 0 })).toBe(true);
-  });
-
-  it('says a kind to a screen reader: the amount, or found and kept when they differ', () => {
-    const [bait, scrap] = packKinds(found, { bait: 3, essence: 0, scrap: 2 });
-    expect(packKindLabel(bait as NonNullable<typeof bait>)).toBe('Bait: 3');
-    expect(packKindLabel(scrap as NonNullable<typeof scrap>)).toBe('Scrap: found 3, kept 2');
   });
 });
 

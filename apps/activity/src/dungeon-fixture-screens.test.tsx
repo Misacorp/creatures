@@ -482,14 +482,17 @@ describe('the end of a run, with the real answers', () => {
     await playOut(root);
     const text = visibleText(root);
     const summary = answer.summary;
+    expect(text).toContain('Cleared!');
     expect(text).toContain(
-      `Cleared! Depth ${String(summary?.depth)} to ${String(summary?.newDepth)}`,
+      `You defeated the floor boss and advanced to depth ${String(summary?.newDepth)}. You brought your whole pack home.`,
     );
-    expect(text).toMatch(/Pack\s*:\s*all kept/);
-    expect(byName(root, 'span', 'Bait: 4')).toHaveLength(1);
-    expect(byName(root, 'span', 'Essence: 1')).toHaveLength(1);
-    expect(byName(root, 'span', 'Scrap: 2')).toHaveLength(1);
-    expect(byClass(root, 'path')).toHaveLength(1);
+    expect(text).not.toContain('Pack:');
+    // The rewards are badges only, with what the run paid.
+    expect(byClass(root, 'reward-pile')).toHaveLength(0);
+    const badges = visibleText(byClass(root, 'reward-badges')[0] as FakeElement);
+    expect(badges).toContain(String(summary?.rewards.bait));
+    expect(badges).toContain(String(summary?.rewards.parts.scrap));
+    expect(byClass(root, 'dmap')).toHaveLength(1);
     expect(finished).toHaveBeenCalledTimes(1);
   });
 
@@ -511,11 +514,11 @@ describe('the end of a run, with the real answers', () => {
     });
     expect(byClass(root, 'dungeon-playback')).toHaveLength(0);
     const text = visibleText(root);
-    expect(text).toContain('Home safe with your whole pack');
-    expect(text).toMatch(/Pack\s*:\s*all kept/);
-    expect(byName(root, 'span', 'Bait: 2')).toHaveLength(1);
-    expect(byName(root, 'span', 'Scrap: 1')).toHaveLength(1);
-    expect(text).toContain('Still at depth');
+    expect(text).toContain('Home safe');
+    expect(text).toContain('You headed home from the camp with your whole pack. You stay at depth');
+    expect(text).not.toContain('Pack:');
+    const badges = visibleText(byClass(root, 'reward-badges')[0] as FakeElement);
+    expect(badges).toContain(String(answer.summary?.rewards.bait));
     expect(finished).toHaveBeenCalledTimes(1);
   });
 
@@ -540,8 +543,9 @@ describe('the end of a run, with the real answers', () => {
     expect(byClass(root, 'dungeon-playback')).toHaveLength(1);
     await playOut(root);
     const text = visibleText(root);
-    expect(text).toContain('Defeated: your pack was empty');
-    expect(text).toContain('Beat the floor boss to go deeper.');
+    expect(text).toContain('Defeated');
+    expect(text).toMatch(/You were defeated in room 1 \/ 7 with an empty pack\./);
+    expect(text).toContain('No rewards this time.');
     expect(finished).toHaveBeenCalledTimes(1);
   });
 });
@@ -586,7 +590,7 @@ describe('watching a path run again, with the real replay', () => {
 describe('the route and what happened in each room, with the real answers', () => {
   const dialogOf = (root: FakeElement): FakeElement => byRole(root, 'dialog')[0] as FakeElement;
 
-  it('results: a Fights and Map switch, the walked rooms visited, and each room tells its story', () => {
+  it('results: a Map and Rooms switch (the map first), the walked rooms visited, and each room tells its story', () => {
     const summary = parseDungeonAct(actCleared).summary;
     if (summary?.route === undefined) throw new Error('the capture has a route');
     const { route } = summary;
@@ -604,8 +608,8 @@ describe('the route and what happened in each room, with the real answers', () =
       />,
     );
     const { root } = page;
-    expect(byClass(root, 'room-strip')).toHaveLength(1);
-    page.click(button(root, 'Map'));
+    // The map opens first; the Rooms view is one tap away.
+    expect(byClass(root, 'room-strip')).toHaveLength(0);
     const visited = byClass(root, 'dmap-node').filter((n) =>
       (n.getAttribute('class') ?? '').includes('s-visited'),
     );
@@ -637,6 +641,19 @@ describe('the route and what happened in each room, with the real answers', () =
     text = visibleText(dialogOf(root));
     expect(text).toContain(event?.result === 'event' ? event.outcome : 'no event in the capture');
     expect(text).toContain(`You picked: ${event?.result === 'event' ? event.option : ''}`);
+    page.click(button(root, 'Close'));
+
+    // The Rooms view lists every room the run went through, in order, each Cleared.
+    page.click(button(root, 'Rooms'));
+    const panels = byClass(root, 'room-panel');
+    expect(panels).toHaveLength(route.path.length);
+    const rooms = visibleText(byClass(root, 'room-strip')[0] as FakeElement);
+    expect(rooms).toContain('CLEARED');
+    expect(rooms).not.toContain('DEFEATED');
+    expect(rooms).toContain('Camp');
+    expect(rooms).toContain('Swapped a creature');
+    expect(rooms).toContain(event?.result === 'event' ? event.outcome : 'no event in the capture');
+    expect(byClass(root, 'dmap-node')).toHaveLength(0);
   });
 
   it('results: a lost fight says Defeat and the HP the foe had left', () => {
@@ -656,7 +673,6 @@ describe('the route and what happened in each room, with the real answers', () =
         onRetry={noop}
       />,
     );
-    page.click(button(page.root, 'Map'));
     page.click(button(page.root, /^Fight: /));
     const text = visibleText(dialogOf(page.root));
     expect(text).toContain('Defeat');
@@ -787,7 +803,8 @@ describe('the Undercroft, with the real answers', () => {
     await settle();
     expect(sentAct().body['act']).toEqual({ type: 'home' });
     expect(sentAct().body['runId']).toBe(pending.id);
-    expect(visibleText(root)).toContain('Home safe with your whole pack');
+    expect(visibleText(root)).toContain('Home safe');
+    expect(visibleText(root)).toContain('You headed home from the camp with your whole pack.');
   });
 
   it('the keeper: the fight plays, then "Cleared! ... 1 Undercroft floor cleared" with the levels on the route map', async () => {
@@ -806,13 +823,11 @@ describe('the Undercroft, with the real answers', () => {
     expect(visibleText(root)).toContain('Undercroft 1 · Room 4 / 4');
     await playOut(root);
     const text = visibleText(root);
-    expect(text).toContain('Cleared! Depth 14 to 15 · 1 Undercroft floor cleared');
-    expect(text).toMatch(/Pack\s*:\s*all kept/);
-    // The fights of the Undercroft are on the strip, the keeper last.
-    expect(byClass(root, 'room-panel')).toHaveLength(7);
-    expect(visibleText(byClass(root, 'room-panel')[6] as FakeElement)).toContain('Floor boss');
-    // The route map has the level above the day's map, with every room the run walked visited.
-    page?.click(button(root, 'Map'));
+    expect(text).toContain('Cleared!');
+    expect(text).toContain(
+      'You defeated the floor boss and advanced to depth 15 and cleared 1 Undercroft floor. You brought your whole pack home.',
+    );
+    // The route map (it opens first) has the level above the day's map, with every room the run walked visited.
     expect(byClass(root, 'dmap-node')).toHaveLength(
       keeper.state.map.nodes.length + (keeper.state.undercroft?.maps[0]?.nodes.length ?? 0),
     );
@@ -825,5 +840,12 @@ describe('the Undercroft, with the real answers', () => {
     const drawer = visibleText(dialogOf(root));
     expect(drawer).toContain("The floor boss's chest opened.");
     expect(drawer).toContain('Cleared');
+    page?.click(button(root, 'Close'));
+    // The Rooms view lists every room of both floors in order, the keeper last.
+    page?.click(button(root, 'Rooms'));
+    const panels = byClass(root, 'room-panel');
+    expect(panels).toHaveLength(keeper.state.path.length);
+    expect(visibleText(panels[panels.length - 1] as FakeElement)).toContain('Floor boss');
+    expect(visibleText(panels[panels.length - 1] as FakeElement)).toContain('Undercroft 1');
   });
 });

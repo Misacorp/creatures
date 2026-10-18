@@ -1436,7 +1436,9 @@
           "exp": 305,
           "needed": 825,
           "waiting": false,
-          "gold": false
+          "gold": false,
+          "treatTimes": null,
+          "dayEffects": []
         },
         {
           "creatureId": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
@@ -1447,7 +1449,9 @@
           "exp": 825,
           "needed": 825,
           "waiting": true,
-          "gold": false
+          "gold": false,
+          "treatTimes": null,
+          "dayEffects": []
         },
         {
           "creatureId": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
@@ -1458,7 +1462,9 @@
           "exp": 825,
           "needed": 825,
           "waiting": true,
-          "gold": false
+          "gold": false,
+          "treatTimes": null,
+          "dayEffects": []
         }
       ]
     },
@@ -2295,7 +2301,9 @@
             "exp": 305,
             "needed": 825,
             "waiting": false,
-            "gold": false
+            "gold": false,
+            "treatTimes": null,
+            "dayEffects": []
           },
           {
             "creatureId": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
@@ -2306,7 +2314,9 @@
             "exp": 825,
             "needed": 825,
             "waiting": true,
-            "gold": false
+            "gold": false,
+            "treatTimes": null,
+            "dayEffects": []
           },
           {
             "creatureId": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
@@ -2317,7 +2327,9 @@
             "exp": 825,
             "needed": 825,
             "waiting": true,
-            "gold": false
+            "gold": false,
+            "treatTimes": null,
+            "dayEffects": []
           }
         ]
       },
