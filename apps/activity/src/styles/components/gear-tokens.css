@@ -2,7 +2,6 @@
 
 :root {
   --gear: #7fe0d0; /* the gear's own share of a stat */
-  --xp-craft: #5fd0c0; /* the fill of the Crafting skill's XP bar: not the gold of a creature's experience */
 
   /*
     Rarity colours, defined once and used everywhere a rarity is shown: gear frames (one single border),

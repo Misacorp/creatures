@@ -7,6 +7,15 @@
   --bone: #f4eedc; /* text */
   --haze: #a69fc8; /* muted text */
   --gold: #ffd25a; /* accent: Bait, crits, highlights */
+  /*
+    The three kinds of XP, each its own colour on its bar and level tags (`XpBar` and `XpGain` take a
+    `kind`), so one is never read as another: a creature's experience is gold, a creature's explorer XP is
+    orchid (a pastel pink with a lilac tint, softer than Epic's hot pink and far from the red of a
+    warning), and the Crafting skill is leather brown.
+  */
+  --xp-experience: var(--gold);
+  --xp-explorer: #e7a6d6;
+  --xp-crafting: #c08552;
   --tide: #4f8fe6;
   --ember: #ef6a3a;
   --grove: #5cbf5a;

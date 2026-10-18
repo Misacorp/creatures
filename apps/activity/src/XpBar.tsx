@@ -1,6 +1,9 @@
 import { cssVars } from './css-vars';
 import { xpBarView } from './xp-bar';
 
+/** Which XP a bar shows; each has its own colour (`--xp-<kind>` in tokens.css). */
+export type XpKind = 'experience' | 'explorer' | 'crafting';
+
 /**
  * A thick XP bar with its words ("0 / 200 XP") drawn over the fill. The words carry an ink
  * outline, so they read on the gold fill and on the dark trough alike, and the fill sits inside an
@@ -9,7 +12,7 @@ import { xpBarView } from './xp-bar';
  * animates unless the player prefers reduced motion.
  *
  * `value` of `max` is the XP into this rank. `text` replaces the default words (for example
- * "Top rank"). `label` names the bar for screen readers.
+ * "Top rank"). `label` names the bar for screen readers. `kind` picks its colour (experience, gold, by default).
  */
 export function XpBar({
   value,
@@ -18,6 +21,7 @@ export function XpBar({
   text,
   startCap,
   endCap,
+  kind = 'experience',
 }: {
   value: number;
   max: number;
@@ -25,10 +29,11 @@ export function XpBar({
   text?: string | undefined;
   startCap?: string | undefined;
   endCap?: string | undefined;
+  kind?: XpKind | undefined;
 }) {
   const view = xpBarView(value, max, text);
   return (
-    <div class="xpbar-row">
+    <div class={`xpbar-row xp-kind-${kind}`}>
       {startCap !== undefined && <span class="xpbar-cap start pix">{startCap}</span>}
       <div
         class="xpbar"

@@ -1,13 +1,13 @@
 /*
   The XP gain list (ui/XpGain.tsx): what an activity paid, the same wherever it is shown (the trip result, a
-  claimed Workshop job). Two columns, a label and then what changed (a level change, the gain in green, small
-  tags and a note); each bar takes the full width under its line. The Crafting bar has its own colour, so it
+  claimed Workshop job). One column: the label on its own line, then what changed on one row (a level change,
+  the gain in green, small tags and a note), then the bar across the full width. The Crafting bar has its own colour, so it
   is never taken for the creature's experience (gold).
 */
 .xp-list {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.5rem 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.375rem;
   align-items: center;
   margin: 0;
   padding: 0.625rem;
@@ -26,6 +26,12 @@
   text-align: left;
 }
 
+/* A little air above every label but the first, so each gain reads as its own group. */
+.xp-list > * + * > dt:first-child,
+.xp-list > dd + dt {
+  margin-top: 0.375rem;
+}
+
 .xp-list dd {
   display: flex;
   flex-wrap: wrap;
@@ -38,7 +44,6 @@
 .xp-list .xp-bar-row {
   display: block;
   grid-column: 1 / -1;
-  margin-top: -0.25rem;
 }
 
 .xp-plus {
@@ -56,11 +61,7 @@
   gap: 0.25rem;
 }
 
-.xp-craft {
-  --xp-fill: var(--xp-craft);
-}
-
-/* Crafting's level tags take its own colour too: gold always means a creature's experience. */
-.xp-gain-craft .lvl-tag {
-  background: var(--xp-craft);
+/* The level tags take the colour of their kind of XP (gold, orchid, leather), like the bar under them. */
+.xp-gain .lvl-tag {
+  background: var(--xp-fill);
 }

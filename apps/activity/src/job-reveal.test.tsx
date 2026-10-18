@@ -151,8 +151,12 @@ describe('a claimed dismantle', () => {
       '140 / 222 XP',
       '40 / 150 XP',
     ]);
-    const rows = byClass(list, 'xp-bar-row');
-    expect(rows.map((r) => r.getAttribute('class'))).toEqual(['xp-bar-row', 'xp-bar-row xp-craft']);
+    // Each bar takes its kind's colour: experience gold, Crafting leather.
+    const rows = byClass(list, 'xpbar-row');
+    expect(rows.map((r) => r.getAttribute('class'))).toEqual([
+      'xpbar-row xp-kind-experience',
+      'xpbar-row xp-kind-crafting',
+    ]);
   });
 
   it('writes a level change only when there is one, and the tags that apply', () => {

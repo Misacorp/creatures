@@ -186,6 +186,7 @@ export function TripResult({
                 max: view.xp.max,
                 label: `${view.explorer?.name ?? 'The explorer'}'s explorer XP`,
                 text: view.xp.text,
+                kind: 'explorer',
               }}
             />
           )}

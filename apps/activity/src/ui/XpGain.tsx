@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { glyphOrUnknown } from '../glyphs';
 import { Sprite } from '../sprites/Sprite';
-import { XpBar } from '../XpBar';
+import { XpBar, type XpKind } from '../XpBar';
 import { Tag } from './Tag';
 
 /** The bar of one gain: the `XpBar` values. */
@@ -14,8 +14,8 @@ export interface XpGainBar {
   text?: string | undefined;
   startCap?: string | undefined;
   endCap?: string | undefined;
-  /** `craft`: the Crafting skill's own colour, so it is never read as the creature's experience (gold). */
-  tone?: 'craft' | undefined;
+  /** Which XP it is, for its colour (experience, gold, by default), so one kind is never read as another. */
+  kind?: XpKind | undefined;
 }
 
 /**
@@ -46,7 +46,7 @@ export function XpGain({
   bar?: XpGainBar | undefined;
 }) {
   return (
-    <div class={bar?.tone === 'craft' ? 'xp-gain xp-gain-craft' : 'xp-gain'}>
+    <div class={`xp-gain xp-kind-${bar?.kind ?? 'experience'}`}>
       <dt class="pix">{label}</dt>
       <dd class={levels === undefined ? undefined : 'xp-levels'}>
         {levels !== undefined && (
@@ -71,7 +71,7 @@ export function XpGain({
         {note}
       </dd>
       {bar !== undefined && (
-        <dd class={bar.tone === 'craft' ? 'xp-bar-row xp-craft' : 'xp-bar-row'}>
+        <dd class="xp-bar-row">
           <XpBar
             value={bar.value}
             max={bar.max}
@@ -79,6 +79,7 @@ export function XpGain({
             {...(bar.text === undefined ? {} : { text: bar.text })}
             {...(bar.startCap === undefined ? {} : { startCap: bar.startCap })}
             {...(bar.endCap === undefined ? {} : { endCap: bar.endCap })}
+            {...(bar.kind === undefined ? {} : { kind: bar.kind })}
           />
         </dd>
       )}

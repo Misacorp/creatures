@@ -63,14 +63,14 @@ export function craftingGain(
   const label = `${name}'s Crafting XP`;
   const bar: XpGainBar =
     next === null
-      ? { value: 1, max: 1, text: 'Top level', startCap, label, tone: 'craft' }
+      ? { value: 1, max: 1, text: 'Top level', startCap, label, kind: 'crafting' }
       : {
           value: Math.max(0, result.skillXp - start),
           max: Math.max(1, next - start),
           startCap,
           endCap: `Lv ${String(level + 1)}`,
           label,
-          tone: 'craft',
+          kind: 'crafting',
         };
   return {
     levels: { from, to: level },

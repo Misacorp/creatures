@@ -61,7 +61,7 @@ describe('the Crafting XP on its bar', () => {
       startCap: 'Lv 2',
       endCap: 'Lv 3',
       label: "Cindle's Crafting XP",
-      tone: 'craft',
+      kind: 'crafting',
     });
   });
 
@@ -82,6 +82,6 @@ describe('the Crafting XP on its bar', () => {
       { xp: 12, skillXp: (table[top - 1] ?? 0) + 50, skillLevel: top, leveledUp: false },
       'Cindle',
     );
-    expect(gain.bar).toMatchObject({ value: 1, max: 1, text: 'Top level', tone: 'craft' });
+    expect(gain.bar).toMatchObject({ value: 1, max: 1, text: 'Top level', kind: 'crafting' });
   });
 });
