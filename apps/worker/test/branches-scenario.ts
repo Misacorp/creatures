@@ -8,15 +8,10 @@
  */
 import { createSeededRng, type Rng } from '@creatures/game';
 import { rollMissingTalents } from '../src/talent-store';
-import type { Captured } from './gear-scenario';
+import { createRecorder, type Captured, type Json } from './fixture-contract';
 import { SCENARIO_START } from './gear-scenario';
 import type { CoreContext } from './helpers';
 import { scriptedThenSeeded, seedPlayer } from './raid-helpers';
-
-interface Json {
-  status: number;
-  body: Record<string, unknown>;
-}
 
 let keyCounter = 0;
 const newKey = (): string => `branches-fixture-${String(++keyCounter).padStart(8, '0')}-key`;
@@ -35,7 +30,6 @@ export function branchesScenarioOptions() {
 
 export async function runBranchesScenario(ctx: CoreContext, talentRng: Rng): Promise<Captured> {
   ctx.clock.t = SCENARIO_START;
-  const out: Captured = { responses: {}, errors: [], requests: {} };
   const seeded = seedPlayer(ctx, 5, { level: 15, species: ['cindle', 'sproutle'] });
   const [explorer, sproutle] = seeded.creatureIds as [string, string];
   const user = { id: seeded.id, displayName: seeded.name };
@@ -62,24 +56,7 @@ export async function runBranchesScenario(ctx: CoreContext, talentRng: Rng): Pro
     const res = await ctx.request(secret, path, method, body);
     return { status: res.status, body: await res.json<Record<string, unknown>>() };
   };
-  const record = async (name: string, method: string, path: string, body?: unknown) => {
-    const res = await call(method, path, body);
-    if (res.status !== 200)
-      throw new Error(`${method} ${path} failed: ${JSON.stringify(res.body)}`);
-    out.responses[name] = res.body;
-    if (body !== undefined) out.requests[name] = { path, method, body };
-    return res;
-  };
-  const fail = async (method: string, path: string, body: unknown) => {
-    const res = await call(method, path, body);
-    if (res.status === 200) throw new Error(`${method} ${path} was meant to fail`);
-    out.errors.push({
-      route: `${method} ${path.replace(/[0-9a-f-]{36}/g, ':id')}`,
-      status: res.status,
-      body: res.body,
-    });
-    return res;
-  };
+  const { record, refuse, captured: out } = createRecorder(call);
 
   // The Sproutle is at its evolution level, and its line grows two ways.
   out.responses['branches-state'] = (await call('GET', '/api/state')).body;
@@ -111,12 +88,12 @@ export async function runBranchesScenario(ctx: CoreContext, talentRng: Rng): Pro
   });
   const second = (kept.body['result'] as { creatureId: string }).creatureId;
   // The Kept one is not high enough yet; a form it cannot grow into is refused.
-  await fail('POST', `/api/creatures/${second}/evolve`, {
+  await refuse('POST', `/api/creatures/${second}/evolve`, {
     species: 'thornbuck',
     idempotencyKey: newKey(),
   }); // level 1
   ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', second);
-  await fail('POST', `/api/creatures/${second}/evolve`, {
+  await refuse('POST', `/api/creatures/${second}/evolve`, {
     species: 'voltaro',
     idempotencyKey: newKey(),
   }); // not a form of this line
@@ -131,7 +108,7 @@ export async function runBranchesScenario(ctx: CoreContext, talentRng: Rng): Pro
     idempotencyKey: newKey(),
   });
   // The choice is permanent.
-  await fail('POST', `/api/creatures/${sproutle}/evolve`, {
+  await refuse('POST', `/api/creatures/${sproutle}/evolve`, {
     species: 'thornbuck',
     idempotencyKey: newKey(),
   });

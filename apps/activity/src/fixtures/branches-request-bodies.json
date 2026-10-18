@@ -1,11 +1,11 @@
 {
   "branches-claim": {
-    "path": "/api/expeditions/866c9ada-e453-44b3-8bf9-2bcc1f24e68d/claim",
+    "path": "/api/expeditions/00000000-0000-4000-8100-000000000005/claim",
     "method": "POST",
     "body": {}
   },
   "branches-keep": {
-    "path": "/api/catches/fd8eac85-ba2e-4580-b790-dfd6a5b5f4cb/choose",
+    "path": "/api/catches/00000000-0000-4000-8100-000000000004/choose",
     "method": "POST",
     "body": {
       "choice": "keep",
@@ -13,7 +13,7 @@
     }
   },
   "branches-evolve": {
-    "path": "/api/creatures/7fc78e49-d335-4502-a9b3-c92cfd53ca10/evolve",
+    "path": "/api/creatures/00000000-0000-4000-8100-000000000002/evolve",
     "method": "POST",
     "body": {
       "species": "sunfawn",
@@ -21,7 +21,7 @@
     }
   },
   "branches-evolve-other": {
-    "path": "/api/creatures/1377c8a9-b179-462d-883c-30b6dfcac719/evolve",
+    "path": "/api/creatures/00000000-0000-4000-8100-000000000006/evolve",
     "method": "POST",
     "body": {
       "species": "thornbuck",

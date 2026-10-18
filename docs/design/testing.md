@@ -19,7 +19,19 @@ in the worker.
    per test, under 15 s per file. Each new file costs about 3 s of runtime start-up, so add to an existing file
    when the topic fits.
 3. **Contract fixtures** (worker `*-fixtures.test.ts`; activity `server-contract` tests). The worker proves its real responses match the fixtures; the client proves it parses
-   every fixture. This is how the two sides stay in sync without end-to-end browser tests.
+   every fixture. This is how the two sides stay in sync without end-to-end browser tests. The fixtures are
+   captured from the real server, never edited by hand: `pnpm fixtures:capture` plays the five scenario sets
+   (branches, creatures, dungeon, expeditions, gear; one list, `apps/worker/test/fixture-sets.ts`, which also owns
+   each set's seeded rngs) and writes the files of `apps/activity/src/fixtures` whole. Every UUID gets a stable id
+   (`00000000-0000-4000-8<set>00-<counter>`, in order of first appearance), so a re-capture changes only what the
+   server really changed and the client tests can name ids. `--set <name>` captures one set; `--check` writes
+   nothing and exits 1 if a file would change (right after a capture it must exit 0). After a capture, review the
+   diff and say in the PR what moved and why. The five `*-fixtures.test.ts` files play the same sets and compare
+   shapes (`test/fixture-contract.ts`: `expectSameShape`, `createRecorder`). Not covered yet (phase 2): the raid
+   and live fixtures (`live-*`, `action-*`, `practice-*`, `raid-*`, `errors.json`, `request-bodies.json`) have no
+   scenario and are guarded by key lists in `raid-live.test.ts`; the older all-at-once dungeon fixtures
+   (`dungeon-run-*`, `dungeon-today*` without the map, `dungeon-replay`, `dungeon-team-draft`,
+   `dungeon-legacy-*`) are kept as the shapes of stored runs and are never captured.
 4. **Client** (`apps/activity`, vitest + Preact). Pure view helpers and parsers first; component tests for
    interaction and accessibility rules; the in-memory build test that keeps dev tools out of production.
    Budget: under 2 s per file.

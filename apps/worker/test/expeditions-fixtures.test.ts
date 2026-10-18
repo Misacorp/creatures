@@ -17,48 +17,24 @@ import claimSupply from '../../activity/src/fixtures/workshop-claim-supply.json'
 import startSupply from '../../activity/src/fixtures/workshop-start-supply.json';
 import { PushOnBodySchema, StartExpeditionBodySchema } from '../src/collection-schemas';
 import { StartJobBodySchema } from '../src/gear-schemas';
-import { runCore } from './helpers';
-import { runTripsScenario, tripsScenarioOptions } from './expeditions-scenario';
-import { nextGuild } from './raid-helpers';
+import { expectSameShape } from './fixture-contract';
+import { fixtureSet } from './fixture-sets';
 
 /**
  * The contract with the client for expeditions v2. The files in `apps/activity/src/fixtures` were
- * captured from real server output (`expeditions-scenario.ts` plays the game through the real routes;
- * `expeditions-capture.test.ts` prints them). These tests run the scenario again and compare the SHAPE of
+ * captured from real server output (`pnpm fixtures:capture` plays
+ * `expeditions-scenario.ts` through the real routes, see `fixture-sets.ts`). These tests run the scenario again and compare the SHAPE of
  * every response (keys and types, not values), so a change in what the server sends fails here and points
  * at the fixtures and the client types in `apps/activity/src/expedition-types.ts`.
  */
 const UPDATE =
-  'the server shape changed: re-capture apps/activity/src/fixtures with test/expeditions-scenario.ts and update expedition-types.ts';
+  'the server shape changed: run `pnpm fixtures:capture`, review the diff of apps/activity/src/fixtures and update expedition-types.ts';
 
-function shape(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    const shapes = new Set(value.map((x) => JSON.stringify(shape(x))));
-    return [...shapes].sort().map((s) => JSON.parse(s) as unknown);
-  }
-  if (value === null) return 'null';
-  if (typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([a], [b]) => (a < b ? -1 : 1))
-        .map(([k, x]) => [k, shape(x)]),
-    );
-  }
-  return typeof value;
-}
-
-const sameShape = (live: unknown, fixture: unknown): void => {
-  expect(shape(live), UPDATE).toEqual(shape(fixture));
-};
-
-async function capture() {
-  const { draw, options } = tripsScenarioOptions();
-  return runCore(nextGuild(), (ctx) => runTripsScenario(ctx, draw), options);
-}
+const sameShape = (live: unknown, fixture: unknown): void => expectSameShape(live, fixture, UPDATE);
 
 describe('the expedition fixtures match what the server sends', () => {
   it('has the same responses and the same errors for the whole scenario', async () => {
-    const captured = await capture();
+    const captured = await fixtureSet('expeditions').run();
     const r = captured.responses;
     sameShape(r['expedition-send'], send);
     sameShape(r['expedition-send-2'], send2);

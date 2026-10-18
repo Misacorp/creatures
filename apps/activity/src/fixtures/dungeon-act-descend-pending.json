@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "29cfc427-77f3-4b93-b626-c81b945cae79",
+    "id": "00000000-0000-4000-8300-000000000018",
     "day": "2027-01-16",
     "attempt": 1,
     "depth": 14,
@@ -279,7 +279,7 @@
     },
     "team": [
       {
-        "id": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "id": "00000000-0000-4000-8300-000000000019",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -290,7 +290,7 @@
         "treat": false
       },
       {
-        "id": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62",
+        "id": "00000000-0000-4000-8300-000000000020",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -301,7 +301,7 @@
         "treat": false
       },
       {
-        "id": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c",
+        "id": "00000000-0000-4000-8300-000000000021",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
@@ -441,7 +441,7 @@
     "row": [
       {
         "position": 0,
-        "id": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "id": "00000000-0000-4000-8300-000000000019",
         "name": "Sproutle",
         "species": "sproutle",
         "element": "grove",
@@ -450,7 +450,7 @@
       },
       {
         "position": 1,
-        "id": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62",
+        "id": "00000000-0000-4000-8300-000000000020",
         "name": "Splashet",
         "species": "splashet",
         "element": "tide",
@@ -459,7 +459,7 @@
       },
       {
         "position": 2,
-        "id": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c",
+        "id": "00000000-0000-4000-8300-000000000021",
         "name": "Cindle",
         "species": "cindle",
         "element": "ember",
@@ -481,14 +481,14 @@
     "cleared": true,
     "rounds": 5,
     "hpStart": {
-      "1072f45d-48ed-4ece-8b76-eff72c85496e": 267,
-      "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62": 191,
-      "9df36853-0ad3-4b7b-9e45-1a28c1e6776c": 165
+      "00000000-0000-4000-8300-000000000019": 267,
+      "00000000-0000-4000-8300-000000000020": 191,
+      "00000000-0000-4000-8300-000000000021": 165
     },
     "hpMax": {
-      "1072f45d-48ed-4ece-8b76-eff72c85496e": 314,
-      "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62": 224,
-      "9df36853-0ad3-4b7b-9e45-1a28c1e6776c": 194
+      "00000000-0000-4000-8300-000000000019": 314,
+      "00000000-0000-4000-8300-000000000020": 224,
+      "00000000-0000-4000-8300-000000000021": 194
     },
     "events": [
       {
@@ -506,12 +506,12 @@
       {
         "t": "turn",
         "round": 1,
-        "creature": "1072f45d-48ed-4ece-8b76-eff72c85496e"
+        "creature": "00000000-0000-4000-8300-000000000019"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "creature": "00000000-0000-4000-8300-000000000019",
         "damage": 27,
         "matchupBp": 7500,
         "bonusBp": 0,
@@ -521,7 +521,7 @@
       {
         "t": "mark",
         "round": 1,
-        "creature": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "creature": "00000000-0000-4000-8300-000000000019",
         "player": "p1",
         "element": "grove",
         "replaced": null
@@ -529,12 +529,12 @@
       {
         "t": "turn",
         "round": 1,
-        "creature": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62"
+        "creature": "00000000-0000-4000-8300-000000000020"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "damage": 84,
         "matchupBp": 15000,
         "bonusBp": 0,
@@ -544,7 +544,7 @@
       {
         "t": "mark",
         "round": 1,
-        "creature": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "player": "p1",
         "element": "tide",
         "replaced": "grove"
@@ -552,12 +552,12 @@
       {
         "t": "turn",
         "round": 1,
-        "creature": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c"
+        "creature": "00000000-0000-4000-8300-000000000021"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c",
+        "creature": "00000000-0000-4000-8300-000000000021",
         "damage": 82,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -565,16 +565,10 @@
         "bossHp": 764
       },
       {
-        "t": "gimmick",
-        "round": 1,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
-      },
-      {
         "t": "boss_hit",
         "round": 1,
         "source": "attack",
-        "target": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "target": "00000000-0000-4000-8300-000000000019",
         "damage": 5,
         "armored": 1
       },
@@ -598,12 +592,12 @@
       {
         "t": "turn",
         "round": 2,
-        "creature": "1072f45d-48ed-4ece-8b76-eff72c85496e"
+        "creature": "00000000-0000-4000-8300-000000000019"
       },
       {
         "t": "hit",
         "round": 2,
-        "creature": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "creature": "00000000-0000-4000-8300-000000000019",
         "damage": 27,
         "matchupBp": 7500,
         "bonusBp": 0,
@@ -613,12 +607,12 @@
       {
         "t": "turn",
         "round": 2,
-        "creature": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62"
+        "creature": "00000000-0000-4000-8300-000000000020"
       },
       {
         "t": "hit",
         "round": 2,
-        "creature": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "damage": 84,
         "matchupBp": 15000,
         "bonusBp": 0,
@@ -628,12 +622,12 @@
       {
         "t": "turn",
         "round": 2,
-        "creature": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c"
+        "creature": "00000000-0000-4000-8300-000000000021"
       },
       {
         "t": "hit",
         "round": 2,
-        "creature": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c",
+        "creature": "00000000-0000-4000-8300-000000000021",
         "damage": 82,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -641,16 +635,10 @@
         "bossHp": 571
       },
       {
-        "t": "gimmick",
-        "round": 2,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
-      },
-      {
         "t": "boss_hit",
         "round": 2,
         "source": "attack",
-        "target": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "target": "00000000-0000-4000-8300-000000000019",
         "damage": 5,
         "armored": 1
       },
@@ -671,7 +659,7 @@
         "landing": 4,
         "gimmick": "slag-spill",
         "op": "slam",
-        "marks": ["9df36853-0ad3-4b7b-9e45-1a28c1e6776c"]
+        "marks": ["00000000-0000-4000-8300-000000000021"]
       },
       {
         "t": "gimmick",
@@ -685,7 +673,7 @@
         "player": "p1",
         "ability": "bark-guard",
         "key": "p1:c0",
-        "creature": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "creature": "00000000-0000-4000-8300-000000000019",
         "zone": "front",
         "byDefault": true
       },
@@ -695,14 +683,14 @@
         "player": "p1",
         "ability": "tidal-mark",
         "key": "p1:c1",
-        "creature": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "element": "tide",
         "byDefault": true
       },
       {
         "t": "mark",
         "round": 3,
-        "creature": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "player": "p1",
         "element": "tide",
         "replaced": "tide"
@@ -710,12 +698,12 @@
       {
         "t": "turn",
         "round": 3,
-        "creature": "1072f45d-48ed-4ece-8b76-eff72c85496e"
+        "creature": "00000000-0000-4000-8300-000000000019"
       },
       {
         "t": "hit",
         "round": 3,
-        "creature": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "creature": "00000000-0000-4000-8300-000000000019",
         "damage": 30,
         "matchupBp": 7500,
         "bonusBp": 1300,
@@ -725,12 +713,12 @@
       {
         "t": "turn",
         "round": 3,
-        "creature": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62"
+        "creature": "00000000-0000-4000-8300-000000000020"
       },
       {
         "t": "hit",
         "round": 3,
-        "creature": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "damage": 136,
         "matchupBp": 15000,
         "bonusBp": 6300,
@@ -743,12 +731,12 @@
       {
         "t": "turn",
         "round": 3,
-        "creature": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c"
+        "creature": "00000000-0000-4000-8300-000000000021"
       },
       {
         "t": "hit",
         "round": 3,
-        "creature": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c",
+        "creature": "00000000-0000-4000-8300-000000000021",
         "damage": 92,
         "matchupBp": 10000,
         "bonusBp": 1300,
@@ -758,21 +746,15 @@
       {
         "t": "gimmick",
         "round": 3,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
-      },
-      {
-        "t": "gimmick",
-        "round": 3,
         "gimmick": "anvil-fall",
         "op": "slam",
-        "targets": ["1072f45d-48ed-4ece-8b76-eff72c85496e"]
+        "targets": ["00000000-0000-4000-8300-000000000019"]
       },
       {
         "t": "boss_hit",
         "round": 3,
         "source": "gimmick",
-        "target": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "target": "00000000-0000-4000-8300-000000000019",
         "damage": 3,
         "reducedBp": 6000
       },
@@ -780,11 +762,11 @@
         "t": "boss_hit",
         "round": 3,
         "source": "gimmick",
-        "target": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62",
+        "target": "00000000-0000-4000-8300-000000000020",
         "damage": 2,
         "splash": true,
         "covered": {
-          "guard": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+          "guard": "00000000-0000-4000-8300-000000000019",
           "prevented": 1
         }
       },
@@ -792,7 +774,7 @@
         "t": "boss_hit",
         "round": 3,
         "source": "attack",
-        "target": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "target": "00000000-0000-4000-8300-000000000019",
         "damage": 2,
         "reducedBp": 6000
       },
@@ -816,12 +798,12 @@
       {
         "t": "turn",
         "round": 4,
-        "creature": "1072f45d-48ed-4ece-8b76-eff72c85496e"
+        "creature": "00000000-0000-4000-8300-000000000019"
       },
       {
         "t": "hit",
         "round": 4,
-        "creature": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "creature": "00000000-0000-4000-8300-000000000019",
         "damage": 27,
         "matchupBp": 7500,
         "bonusBp": 0,
@@ -831,12 +813,12 @@
       {
         "t": "turn",
         "round": 4,
-        "creature": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62"
+        "creature": "00000000-0000-4000-8300-000000000020"
       },
       {
         "t": "hit",
         "round": 4,
-        "creature": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "damage": 84,
         "matchupBp": 15000,
         "bonusBp": 0,
@@ -846,12 +828,12 @@
       {
         "t": "turn",
         "round": 4,
-        "creature": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c"
+        "creature": "00000000-0000-4000-8300-000000000021"
       },
       {
         "t": "hit",
         "round": 4,
-        "creature": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c",
+        "creature": "00000000-0000-4000-8300-000000000021",
         "damage": 82,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -861,32 +843,26 @@
       {
         "t": "gimmick",
         "round": 4,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
-      },
-      {
-        "t": "gimmick",
-        "round": 4,
         "gimmick": "slag-spill",
         "op": "charge",
-        "targets": ["9df36853-0ad3-4b7b-9e45-1a28c1e6776c"]
+        "targets": ["00000000-0000-4000-8300-000000000021"]
       },
       {
         "t": "boss_hit",
         "round": 4,
         "source": "gimmick",
-        "target": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c",
+        "target": "00000000-0000-4000-8300-000000000021",
         "damage": 14
       },
       {
         "t": "boss_hit",
         "round": 4,
         "source": "gimmick",
-        "target": "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62",
+        "target": "00000000-0000-4000-8300-000000000020",
         "damage": 5,
         "splash": true,
         "covered": {
-          "guard": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+          "guard": "00000000-0000-4000-8300-000000000019",
           "prevented": 2
         }
       },
@@ -894,7 +870,7 @@
         "t": "boss_hit",
         "round": 4,
         "source": "attack",
-        "target": "1072f45d-48ed-4ece-8b76-eff72c85496e",
+        "target": "00000000-0000-4000-8300-000000000019",
         "damage": 2,
         "reducedBp": 6000
       },
@@ -921,13 +897,13 @@
         "player": "p1",
         "ability": "flare-strike",
         "key": "p1:c2",
-        "creature": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c",
+        "creature": "00000000-0000-4000-8300-000000000021",
         "byDefault": true
       },
       {
         "t": "hit",
         "round": 5,
-        "creature": "9df36853-0ad3-4b7b-9e45-1a28c1e6776c",
+        "creature": "00000000-0000-4000-8300-000000000021",
         "damage": 120,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -945,9 +921,9 @@
     "names": {
       "boss": "Slag Tyrant",
       "creatures": {
-        "1072f45d-48ed-4ece-8b76-eff72c85496e": "Sproutle",
-        "4cd4419c-6e68-4e8d-9ed0-a343ce7a9f62": "Splashet",
-        "9df36853-0ad3-4b7b-9e45-1a28c1e6776c": "Cindle"
+        "00000000-0000-4000-8300-000000000019": "Sproutle",
+        "00000000-0000-4000-8300-000000000020": "Splashet",
+        "00000000-0000-4000-8300-000000000021": "Cindle"
       },
       "players": {
         "p1": "Player 8"

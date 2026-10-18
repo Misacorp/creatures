@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "08aa93dc-401e-49b8-bd26-b7f12f9142d2",
+    "id": "00000000-0000-4000-8300-000000000004",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -307,7 +307,7 @@
     },
     "team": [
       {
-        "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "id": "00000000-0000-4000-8300-000000000001",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -318,7 +318,7 @@
         "treat": false
       },
       {
-        "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+        "id": "00000000-0000-4000-8300-000000000002",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -329,7 +329,7 @@
         "treat": false
       },
       {
-        "id": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
+        "id": "00000000-0000-4000-8300-000000000003",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",

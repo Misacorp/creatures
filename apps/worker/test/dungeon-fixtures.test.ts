@@ -1,4 +1,4 @@
-import { PART_KINDS, RULES } from '@creatures/game';
+import { RULES } from '@creatures/game';
 import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
 import actCamp from '../../activity/src/fixtures/dungeon-act-camp.json';
@@ -14,6 +14,8 @@ import actEventPending from '../../activity/src/fixtures/dungeon-act-event-pendi
 import actFight from '../../activity/src/fixtures/dungeon-act-fight.json';
 import actHome from '../../activity/src/fixtures/dungeon-act-home.json';
 import dungeonErrors from '../../activity/src/fixtures/dungeon-errors.json';
+import legacyErrors from '../../activity/src/fixtures/dungeon-legacy-errors.json';
+import legacyRequests from '../../activity/src/fixtures/dungeon-legacy-request-bodies.json';
 import dungeonReplay from '../../activity/src/fixtures/dungeon-replay.json';
 import replayPath from '../../activity/src/fixtures/dungeon-replay-path.json';
 import dungeonRequests from '../../activity/src/fixtures/dungeon-request-bodies.json';
@@ -38,9 +40,8 @@ import {
   RunBodySchema,
   StartBodySchema,
 } from '../src/dungeon-schemas';
-import { dungeonScenarioOptions, runDungeonScenario } from './dungeon-scenario';
-import { runCore } from './helpers';
-import { nextGuild } from './raid-helpers';
+import { expectSameShape } from './fixture-contract';
+import { fixtureSet } from './fixture-sets';
 
 /**
  * The contract with the client for the daily dungeon. The files in `apps/activity/src/fixtures` were
@@ -50,47 +51,14 @@ import { nextGuild } from './raid-helpers';
  * here and points at the fixtures and the client types (`apps/activity/src/dungeon-types.ts`).
  */
 const UPDATE =
-  'the server shape changed: re-capture apps/activity/src/fixtures with test/dungeon-scenario.ts (see dungeon-capture.test.ts) and update apps/activity/src/dungeon-types.ts';
-
-const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
-const PART_KIND_SET: ReadonlySet<string> = new Set(PART_KINDS);
-
-/**
- * Keys and value types, recursively; arrays are the set of their elements' shapes. A map keyed by
- * ids (the creatures' HP by creature id) or by part kinds (what a grant paid) is one entry whatever
- * the keys are: those keys are data, not shape.
- */
-function shape(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    const shapes = new Set(value.map((x) => JSON.stringify(shape(x))));
-    return [...shapes].sort().map((s) => JSON.parse(s) as unknown);
-  }
-  if (value === null) return 'null';
-  if (typeof value === 'object') {
-    const entries = Object.entries(value);
-    const keys = entries.map(([k]) => k);
-    if (
-      keys.length > 0 &&
-      (keys.every((k) => UUID.test(k)) || keys.every((k) => PART_KIND_SET.has(k)))
-    ) {
-      const shapes = new Set(entries.map(([, x]) => JSON.stringify(shape(x))));
-      return { '*': [...shapes].sort().map((s) => JSON.parse(s) as unknown) };
-    }
-    return Object.fromEntries(
-      entries.sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, x]) => [k, shape(x)]),
-    );
-  }
-  return typeof value;
-}
+  'the server shape changed: run `pnpm fixtures:capture`, review the diff of apps/activity/src/fixtures and update apps/activity/src/dungeon-types.ts';
 
 const codes0 = (errors: readonly { body: { error: string } }[]): string[] =>
   errors.map((e) => e.body.error);
 
-const sameShape = (live: unknown, fixture: unknown): void => {
-  expect(shape(live), UPDATE).toEqual(shape(fixture));
-};
+const sameShape = (live: unknown, fixture: unknown): void => expectSameShape(live, fixture, UPDATE);
 
-/** What the map scenario captured (the all-at-once run's fixtures that came before it stay as the shapes of old runs). */
+/** What the map scenario captures (the all-at-once run's fixtures that came before it stay as the shapes of old runs). */
 const NEW_RESPONSES = {
   'dungeon-today-map': todayMap,
   'dungeon-today-active': todayActive,
@@ -112,23 +80,16 @@ const NEW_RESPONSES = {
 
 describe('the dungeon fixtures match what the server sends', () => {
   it('has the same responses for the whole map scenario', async () => {
-    const captured = await runCore(nextGuild(), (ctx) => runDungeonScenario(ctx), {
-      ...dungeonScenarioOptions(),
-    });
+    const captured = await fixtureSet('dungeon').run();
     expect(Object.keys(captured.responses).sort()).toEqual(Object.keys(NEW_RESPONSES).sort());
     for (const [name, fixture] of Object.entries(NEW_RESPONSES)) {
       sameShape(captured.responses[name], fixture);
     }
-    // And the errors are the real ones, code for code (the rows of the older run route come first and stay).
-    expect(dungeonErrors.slice(-captured.errors.length), UPDATE).toEqual(captured.errors);
+    // And the errors are the real ones, code for code (the older run route's rows are in dungeon-legacy-errors.json).
+    expect(dungeonErrors, UPDATE).toEqual(captured.errors);
     // The request bodies are what the scenario sent (ids differ from run to run).
-    const sent = Object.fromEntries(
-      Object.keys(captured.requests).map((k) => [
-        k,
-        (dungeonRequests as Record<string, unknown>)[k],
-      ]),
-    );
-    sameShape(captured.requests, sent);
+    sameShape(captured.requests, dungeonRequests);
+    expect(Object.keys(captured.requests).sort()).toEqual(Object.keys(dungeonRequests).sort());
     expect(Object.keys(captured.requests).sort()).toEqual(
       Object.keys(NEW_RESPONSES)
         .filter((k) => k !== 'dungeon-today-map' && k !== 'dungeon-today-active')
@@ -323,8 +284,10 @@ describe('the dungeon fixtures match what the server sends', () => {
     expect(actKeeper.summary.route?.undercroft).toHaveLength(1);
     expect(actKeeper.summary.rewards.gear.length).toBeGreaterThan(0);
     expect(actKeeper.room?.node?.startsWith('u1')).toBe(true);
-    // The run's own four creatures keep their ids across the fixtures.
-    expect(actKeeper.state.team.map((t) => t.id)).toEqual(dungeonStart.state.team.map((t) => t.id));
+    // A run's own creatures keep their ids across the fixtures of that run (the Undercroft diver's here).
+    expect(actKeeper.state.team.map((t) => t.id).sort()).toEqual(
+      actDoor.state.team.map((t) => t.id).sort(),
+    );
     // The errors the client has to write text for.
     const codes = new Set(codes0(dungeonErrors));
     for (const code of [
@@ -398,15 +361,25 @@ describe('the dungeon fixtures match what the server sends', () => {
     }
     // The team is one row and its order is the formation: no zones anywhere in a run.
     expect(runCleared.run.team.map((t) => t.id)).toEqual(dungeonReplay.row.map((r) => r.id));
-    for (const fixture of [runCleared, runLandmark, runLost, dungeonReplay, dungeonRequests]) {
+    for (const fixture of [
+      runCleared,
+      runLandmark,
+      runLost,
+      dungeonReplay,
+      dungeonRequests,
+      legacyRequests,
+    ]) {
       expect(JSON.stringify(fixture)).not.toContain('formation');
     }
-    expect(codes0(dungeonErrors)).not.toContain('invalid_formation');
-    expect(codes0(dungeonErrors)).not.toContain('invalid_abilities');
+    for (const errors of [dungeonErrors, legacyErrors]) {
+      expect(codes0(errors)).not.toContain('invalid_formation');
+      expect(codes0(errors)).not.toContain('invalid_abilities');
+    }
     // The request has no ability choice any more.
     expect(JSON.stringify(dungeonRequests)).not.toContain('abilities');
+    expect(JSON.stringify(legacyRequests)).not.toContain('abilities');
     // Errors the client has to write text for.
-    const codes = new Set(codes0(dungeonErrors));
+    const codes = new Set([...codes0(legacyErrors), ...codes0(dungeonErrors)]);
     for (const code of [
       'already_run',
       'key_conflict',
@@ -421,7 +394,11 @@ describe('the dungeon fixtures match what the server sends', () => {
 });
 
 describe('the request bodies the client sends', () => {
-  const bodies = dungeonRequests as Record<string, { path: string; method: string; body: unknown }>;
+  // The older run route's bodies (dungeon-legacy-request-bodies.json) and the map's (dungeon-request-bodies.json).
+  const bodies: Record<string, { path: string; method: string; body: unknown }> = {
+    ...legacyRequests,
+    ...dungeonRequests,
+  };
 
   it('pass the strict schema, and no extra key gets through', () => {
     for (const name of ['dungeon-run-cleared', 'dungeon-run-landmark', 'dungeon-run-lost']) {

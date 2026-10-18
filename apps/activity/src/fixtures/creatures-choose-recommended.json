@@ -1,14 +1,14 @@
 {
   "result": {
     "auto": false,
-    "pendingId": "628627b9-a014-4282-a44e-348238c5260b",
+    "pendingId": "00000000-0000-4000-8200-000000000008",
     "species": "splashet",
     "talent": {
       "talentId": "splashes-first",
       "golden": false
     },
     "choice": "fuse",
-    "creatureId": "2258fec5-80ad-4eb2-9112-77e785eb19b4",
+    "creatureId": "00000000-0000-4000-8200-000000000003",
     "fusionCount": 2
   },
   "state": {
@@ -21,7 +21,7 @@
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "21380e7a-f0fc-42bd-a609-51825d758d9e",
+        "id": "00000000-0000-4000-8200-000000000002",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -114,7 +114,7 @@
         }
       },
       {
-        "id": "2258fec5-80ad-4eb2-9112-77e785eb19b4",
+        "id": "00000000-0000-4000-8200-000000000003",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
@@ -216,7 +216,7 @@
         }
       },
       {
-        "id": "6aeefe15-2257-416f-83dc-20624dfb9486",
+        "id": "00000000-0000-4000-8200-000000000004",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -313,8 +313,8 @@
     "bookSlotBait": 10,
     "expeditions": [
       {
-        "id": "5725948b-aadb-4467-9382-be7c3a60d697",
-        "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
+        "id": "00000000-0000-4000-8200-000000000009",
+        "creatureId": "00000000-0000-4000-8200-000000000002",
         "duration": "short",
         "supplies": "basic",
         "kit": [],
@@ -336,7 +336,7 @@
               "shiny": false,
               "firstOnServer": false,
               "outcome": "duplicate",
-              "pendingId": "628627b9-a014-4282-a44e-348238c5260b",
+              "pendingId": "00000000-0000-4000-8200-000000000008",
               "talent": {
                 "id": "splashes-first",
                 "name": "Splashes First",
@@ -360,7 +360,7 @@
             "rankBefore": 1
           },
           "experience": {
-            "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
+            "creatureId": "00000000-0000-4000-8200-000000000002",
             "gained": 20,
             "treat": false,
             "levelBefore": 8,
@@ -380,8 +380,8 @@
         "pushOn": null
       },
       {
-        "id": "dba401db-7874-4284-91cd-144ccf22c20f",
-        "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
+        "id": "00000000-0000-4000-8200-000000000010",
+        "creatureId": "00000000-0000-4000-8200-000000000002",
         "duration": "short",
         "supplies": "basic",
         "kit": [],
@@ -403,7 +403,7 @@
               "shiny": false,
               "firstOnServer": false,
               "outcome": "duplicate",
-              "pendingId": "bfc19e44-d840-417a-afd0-643dff8f126f",
+              "pendingId": "00000000-0000-4000-8200-000000000007",
               "talent": {
                 "id": "puddle-hopper",
                 "name": "Puddle Hopper",
@@ -427,7 +427,7 @@
             "rankBefore": 1
           },
           "experience": {
-            "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
+            "creatureId": "00000000-0000-4000-8200-000000000002",
             "gained": 20,
             "treat": false,
             "levelBefore": 8,
@@ -450,8 +450,8 @@
         "pushOn": null
       },
       {
-        "id": "dc083d7d-e42e-4762-bc44-da226dffa64c",
-        "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
+        "id": "00000000-0000-4000-8200-000000000011",
+        "creatureId": "00000000-0000-4000-8200-000000000002",
         "duration": "short",
         "supplies": "basic",
         "kit": [],
@@ -473,7 +473,7 @@
               "shiny": false,
               "firstOnServer": false,
               "outcome": "duplicate",
-              "pendingId": "cb7072d6-7991-495d-91f9-c178543a7e43",
+              "pendingId": "00000000-0000-4000-8200-000000000006",
               "talent": {
                 "id": "bigger-splash",
                 "name": "Bigger Splash",
@@ -497,7 +497,7 @@
             "rankBefore": 1
           },
           "experience": {
-            "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
+            "creatureId": "00000000-0000-4000-8200-000000000002",
             "gained": 20,
             "treat": false,
             "levelBefore": 8,
@@ -517,8 +517,8 @@
         "pushOn": null
       },
       {
-        "id": "8e10774b-ed94-441a-a9c6-95af46619b8d",
-        "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
+        "id": "00000000-0000-4000-8200-000000000005",
+        "creatureId": "00000000-0000-4000-8200-000000000002",
         "duration": "short",
         "supplies": "basic",
         "kit": [],
@@ -540,7 +540,7 @@
               "shiny": false,
               "firstOnServer": true,
               "outcome": "duplicate",
-              "pendingId": "19330cfb-4ec6-4a7a-a150-8c697c321473",
+              "pendingId": "00000000-0000-4000-8200-000000000001",
               "talent": {
                 "id": "wet-footprints",
                 "name": "Wet Footprints",
@@ -564,7 +564,7 @@
             "rankBefore": 1
           },
           "experience": {
-            "creatureId": "21380e7a-f0fc-42bd-a609-51825d758d9e",
+            "creatureId": "00000000-0000-4000-8200-000000000002",
             "gained": 20,
             "treat": false,
             "levelBefore": 8,
@@ -606,7 +606,7 @@
         "holders": ["Player 4"]
       }
     ],
-    "loungerId": "6aeefe15-2257-416f-83dc-20624dfb9486",
+    "loungerId": "00000000-0000-4000-8200-000000000004",
     "loungeSpot": null
   }
 }

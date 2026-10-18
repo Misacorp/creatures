@@ -1,6 +1,6 @@
 /**
- * One scripted play-through of gear and the workshop through the real routes. The capture test
- * (`gear-capture.test.ts`) writes its responses out as the fixtures in `apps/activity/src/fixtures`,
+ * One scripted play-through of gear and the workshop through the real routes. `pnpm fixtures:capture`
+ * (see `fixture-sets.ts`) writes its responses out as the fixtures in `apps/activity/src/fixtures`,
  * and `gear-fixtures.test.ts` checks that the server still sends the shapes those files have, so the
  * client can build against them. Nothing here is hand-written output: every response comes from the
  * server.
@@ -9,6 +9,7 @@ import { content, createSeededRng, type PartsBundle } from '@creatures/game';
 import { convertPendingGear } from '../src/gear-convert';
 import { grantFestivalGear, grantRaidFinale } from '../src/gear-grants';
 import { creditParts } from '../src/gear-store';
+import { createRecorder, type Captured, type Json } from './fixture-contract';
 import { giveItem } from './gear-helpers';
 import type { CoreContext } from './helpers';
 import { seedPlayer } from './raid-helpers';
@@ -17,26 +18,11 @@ import { seedPlayer } from './raid-helpers';
 export const SCENARIO_START = Date.parse('2027-01-12T06:00:00Z');
 const HOUR = 3_600_000;
 
-export interface Captured {
-  /** Named responses: bodies of successful calls. */
-  responses: Record<string, unknown>;
-  /** Real error bodies: `{ route, status, body }`. */
-  errors: { route: string; status: number; body: unknown }[];
-  /** Request bodies the client sends, `{ path, method, body }`, with real ids. */
-  requests: Record<string, { path: string; method: string; body: unknown }>;
-}
-
-interface Json {
-  status: number;
-  body: Record<string, unknown>;
-}
-
 let keyCounter = 0;
 const newKey = (): string => `fixture-${String(++keyCounter).padStart(8, '0')}-key`;
 
 export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   ctx.clock.t = SCENARIO_START;
-  const out: Captured = { responses: {}, errors: [], requests: {} };
   const seeded = seedPlayer(ctx, 1, {
     level: 20,
     species: ['cindle', 'sproutle', 'zipmouse'],
@@ -56,31 +42,7 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     const res = await ctx.request(secret, path, method, body);
     return { status: res.status, body: await res.json<Record<string, unknown>>() };
   };
-  /** Calls, remembers the request, and stores the response (or the error) under `name`. */
-  const record = async (name: string, method: string, path: string, body?: unknown) => {
-    const res = await call(method, path, body);
-    if (res.status === 200) {
-      out.responses[name] = res.body;
-      if (body !== undefined) out.requests[name] = { path, method, body };
-    } else {
-      out.errors.push({
-        route: `${method} ${path.replace(/[0-9a-f-]{36}/g, ':id')}`,
-        status: res.status,
-        body: res.body,
-      });
-    }
-    return res;
-  };
-  const fail = async (method: string, path: string, body: unknown) => {
-    const res = await call(method, path, body);
-    if (res.status === 200) throw new Error(`${method} ${path} was meant to fail`);
-    out.errors.push({
-      route: `${method} ${path.replace(/[0-9a-f-]{36}/g, ':id')}`,
-      status: res.status,
-      body: res.body,
-    });
-    return res;
-  };
+  const { record, refuse, captured: out } = createRecorder(call, { failedRecord: 'collect' });
   const give = (
     baseId: string,
     rarity: 'common' | 'rare' | 'epic',
@@ -165,11 +127,11 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   });
 
   // The wear rules, as the real errors (before anyone is busy: a busy creature's gear is frozen).
-  await fail('POST', `/api/gear/${high}/equip`, { creatureId: zipmouse }); // item level above the creature
-  await fail('POST', `/api/gear/${compass}/equip`, { creatureId: zipmouse }); // the Charm slot opens at 13
-  await fail('POST', `/api/gear/${bell}/equip`, { creatureId: cindle }); // a Guard's bell on a Payoff
+  await refuse('POST', `/api/gear/${high}/equip`, { creatureId: zipmouse }); // item level above the creature
+  await refuse('POST', `/api/gear/${compass}/equip`, { creatureId: zipmouse }); // the Charm slot opens at 13
+  await refuse('POST', `/api/gear/${bell}/equip`, { creatureId: cindle }); // a Guard's bell on a Payoff
 
-  await fail('POST', '/api/workshop/jobs', {
+  await refuse('POST', '/api/workshop/jobs', {
     kind: 'craft',
     creatureId: zipmouse,
     blueprintId: 'brine-hood',
@@ -197,19 +159,19 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   out.responses['gear-running'] = (await call('GET', '/api/gear')).body;
 
   // Busy creatures and a full workshop, as the real errors.
-  await fail('POST', '/api/workshop/jobs', {
+  await refuse('POST', '/api/workshop/jobs', {
     kind: 'craft',
     creatureId: zipmouse,
     blueprintId: 'kelp-cap',
     idempotencyKey: newKey(),
   }); // the creature is on a job
-  await fail('POST', '/api/workshop/jobs', {
+  await refuse('POST', '/api/workshop/jobs', {
     kind: 'craft',
     creatureId: cindle,
     blueprintId: 'kelp-cap',
     idempotencyKey: newKey(),
   }); // both slots are in use
-  await fail('POST', '/api/expeditions', {
+  await refuse('POST', '/api/expeditions', {
     creatureId: zipmouse,
     destination: 'tidepools',
     duration: 'short',
@@ -217,7 +179,7 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     idempotencyKey: newKey(),
   });
   const craftJob = (craft.body['result'] as { jobId: string }).jobId;
-  await fail('POST', `/api/workshop/jobs/${craftJob}/claim`, { idempotencyKey: newKey() });
+  await refuse('POST', `/api/workshop/jobs/${craftJob}/claim`, { idempotencyKey: newKey() });
 
   // The time passes: the old Improve job (2 h) is ready first, the craft (3 h) a little later.
   ctx.clock.t += 2 * HOUR + 1000;
@@ -289,7 +251,7 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   out.responses['collection-state'] = (await call('GET', '/api/state')).body;
 
   // More errors a player can hit, and what gear v2 removed.
-  await fail('POST', '/api/workshop/jobs', {
+  await refuse('POST', '/api/workshop/jobs', {
     kind: 'craft',
     creatureId: zipmouse,
     blueprintId: 'trail-cap',
@@ -302,7 +264,7 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     itemIds: [kit],
     idempotencyKey: reused,
   });
-  await fail('POST', '/api/workshop/jobs', {
+  await refuse('POST', '/api/workshop/jobs', {
     kind: 'dismantle',
     creatureId: zipmouse,
     itemIds: [hat],
@@ -315,20 +277,20 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     `/api/workshop/jobs/${((kitJob.body['result'] ?? {}) as { jobId?: string }).jobId ?? ''}/claim`,
     { idempotencyKey: newKey() },
   );
-  await fail('POST', '/api/workshop/jobs', {
+  await refuse('POST', '/api/workshop/jobs', {
     kind: 'craft',
     creatureId: zipmouse,
     blueprintId: 'kelp-cap',
     reach: 'epic',
     idempotencyKey: newKey(),
   }); // the Crafting level is too low for a Reach for Epic
-  await fail('POST', '/api/workshop/jobs', {
+  await refuse('POST', '/api/workshop/jobs', {
     kind: 'dismantle',
     creatureId: zipmouse,
     itemIds: [hat, bell],
     idempotencyKey: newKey(),
   }); // an Epic and a Rare cannot share a job
-  await fail('POST', `/api/gear/${hat}/dismantle`, { idempotencyKey: newKey() }); // dismantling is a job now
+  await refuse('POST', `/api/gear/${hat}/dismantle`, { idempotencyKey: newKey() }); // dismantling is a job now
   await call('POST', '/api/expeditions', {
     creatureId: sproutle,
     destination: 'tidepools',
@@ -336,14 +298,14 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
     supplies: [],
     idempotencyKey: newKey(),
   });
-  await fail('POST', '/api/workshop/jobs', {
+  await refuse('POST', '/api/workshop/jobs', {
     kind: 'craft',
     creatureId: sproutle,
     blueprintId: 'kelp-cap',
     idempotencyKey: newKey(),
   }); // the creature is away on an expedition
   ctx.sql.exec("UPDATE parts SET amount = 0 WHERE kind = 'scrap'");
-  await fail('POST', '/api/workshop/jobs', {
+  await refuse('POST', '/api/workshop/jobs', {
     kind: 'craft',
     creatureId: zipmouse,
     blueprintId: 'kelp-cap',
@@ -351,23 +313,25 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   }); // not enough parts
   for (let i = 0; i < 60; i++) give('trail-cap', 'common', 1, `fixture-bulk-${String(i)}`);
   parts({ scrap: 30, 'tide-shard': 3 });
-  await fail('POST', '/api/workshop/jobs', {
+  await refuse('POST', '/api/workshop/jobs', {
     kind: 'craft',
     creatureId: zipmouse,
     blueprintId: 'kelp-cap',
     idempotencyKey: newKey(),
   }); // the inventory is full
-  await fail('POST', `/api/gear/${hat}/equip`, { creatureId: 'not-a-uuid' });
-  await fail('POST', '/api/gear/00000000-0000-4000-8000-000000000000/equip', { creatureId: null });
-  await fail('POST', `/api/gear/${hat}/upgrade`, { idempotencyKey: newKey() }); // gone with gear v2
-  await fail('POST', '/api/workshop/jobs', {
+  await refuse('POST', `/api/gear/${hat}/equip`, { creatureId: 'not-a-uuid' });
+  await refuse('POST', '/api/gear/00000000-0000-4000-8000-000000000000/equip', {
+    creatureId: null,
+  });
+  await refuse('POST', `/api/gear/${hat}/upgrade`, { idempotencyKey: newKey() }); // gone with gear v2
+  await refuse('POST', '/api/workshop/jobs', {
     kind: 'enchant',
     creatureId: zipmouse,
     gearId: hat,
     enchantId: 'ember-fury',
     idempotencyKey: newKey(),
   }); // gone with gear v2
-  await fail('POST', '/api/gear/equip-best', { creatureIds: [] });
+  await refuse('POST', '/api/gear/equip-best', { creatureIds: [] });
   return out;
 }
 

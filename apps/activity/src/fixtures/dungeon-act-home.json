@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "d4ce2f44-6cb0-4717-82d6-c85feb3af29a",
+    "id": "00000000-0000-4000-8300-000000000010",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -292,7 +292,7 @@
     "pending": null,
     "team": [
       {
-        "id": "54b97070-e381-47e5-b2f1-f5b631e4553e",
+        "id": "00000000-0000-4000-8300-000000000011",
         "name": "Zipmouse",
         "speciesId": "zipmouse",
         "element": "spark",
@@ -303,7 +303,7 @@
         "treat": false
       },
       {
-        "id": "ea5e40a5-b1d5-45de-aa58-adff71948ca4",
+        "id": "00000000-0000-4000-8300-000000000012",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
@@ -314,7 +314,7 @@
         "treat": false
       },
       {
-        "id": "eb228ed5-9c8c-4f4b-a622-452fbf10097c",
+        "id": "00000000-0000-4000-8300-000000000013",
         "name": "Ashmole",
         "speciesId": "ashmole",
         "element": "ember",
@@ -390,7 +390,7 @@
     ]
   },
   "summary": {
-    "id": "d4ce2f44-6cb0-4717-82d6-c85feb3af29a",
+    "id": "00000000-0000-4000-8300-000000000010",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -403,7 +403,7 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "54b97070-e381-47e5-b2f1-f5b631e4553e",
+        "id": "00000000-0000-4000-8300-000000000011",
         "name": "Zipmouse",
         "speciesId": "zipmouse",
         "element": "spark",
@@ -413,7 +413,7 @@
         "hpEnd": 200
       },
       {
-        "id": "ea5e40a5-b1d5-45de-aa58-adff71948ca4",
+        "id": "00000000-0000-4000-8300-000000000012",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
@@ -423,7 +423,7 @@
         "hpEnd": 281
       },
       {
-        "id": "eb228ed5-9c8c-4f4b-a622-452fbf10097c",
+        "id": "00000000-0000-4000-8300-000000000013",
         "name": "Ashmole",
         "speciesId": "ashmole",
         "element": "ember",
@@ -467,7 +467,7 @@
       "streak": null,
       "experience": [
         {
-          "creatureId": "54b97070-e381-47e5-b2f1-f5b631e4553e",
+          "creatureId": "00000000-0000-4000-8300-000000000011",
           "gained": 35,
           "treat": false,
           "levelBefore": 12,
@@ -480,7 +480,7 @@
           "dayEffects": []
         },
         {
-          "creatureId": "ea5e40a5-b1d5-45de-aa58-adff71948ca4",
+          "creatureId": "00000000-0000-4000-8300-000000000012",
           "gained": 35,
           "treat": false,
           "levelBefore": 12,
@@ -493,7 +493,7 @@
           "dayEffects": []
         },
         {
-          "creatureId": "eb228ed5-9c8c-4f4b-a622-452fbf10097c",
+          "creatureId": "00000000-0000-4000-8300-000000000013",
           "gained": 35,
           "treat": false,
           "levelBefore": 12,
@@ -866,7 +866,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "d4ce2f44-6cb0-4717-82d6-c85feb3af29a",
+      "id": "00000000-0000-4000-8300-000000000010",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 1,
@@ -879,7 +879,7 @@
       "createdAt": 1799755200000,
       "team": [
         {
-          "id": "54b97070-e381-47e5-b2f1-f5b631e4553e",
+          "id": "00000000-0000-4000-8300-000000000011",
           "name": "Zipmouse",
           "speciesId": "zipmouse",
           "element": "spark",
@@ -889,7 +889,7 @@
           "hpEnd": 200
         },
         {
-          "id": "ea5e40a5-b1d5-45de-aa58-adff71948ca4",
+          "id": "00000000-0000-4000-8300-000000000012",
           "name": "Mistnewt",
           "speciesId": "mistnewt",
           "element": "tide",
@@ -899,7 +899,7 @@
           "hpEnd": 281
         },
         {
-          "id": "eb228ed5-9c8c-4f4b-a622-452fbf10097c",
+          "id": "00000000-0000-4000-8300-000000000013",
           "name": "Ashmole",
           "speciesId": "ashmole",
           "element": "ember",
@@ -943,7 +943,7 @@
         "streak": null,
         "experience": [
           {
-            "creatureId": "54b97070-e381-47e5-b2f1-f5b631e4553e",
+            "creatureId": "00000000-0000-4000-8300-000000000011",
             "gained": 35,
             "treat": false,
             "levelBefore": 12,
@@ -956,7 +956,7 @@
             "dayEffects": []
           },
           {
-            "creatureId": "ea5e40a5-b1d5-45de-aa58-adff71948ca4",
+            "creatureId": "00000000-0000-4000-8300-000000000012",
             "gained": 35,
             "treat": false,
             "levelBefore": 12,
@@ -969,7 +969,7 @@
             "dayEffects": []
           },
           {
-            "creatureId": "eb228ed5-9c8c-4f4b-a622-452fbf10097c",
+            "creatureId": "00000000-0000-4000-8300-000000000013",
             "gained": 35,
             "treat": false,
             "levelBefore": 12,
@@ -1329,9 +1329,9 @@
       }
     },
     "lastTeam": [
-      "54b97070-e381-47e5-b2f1-f5b631e4553e",
-      "ea5e40a5-b1d5-45de-aa58-adff71948ca4",
-      "eb228ed5-9c8c-4f4b-a622-452fbf10097c"
+      "00000000-0000-4000-8300-000000000011",
+      "00000000-0000-4000-8300-000000000012",
+      "00000000-0000-4000-8300-000000000013"
     ],
     "draftTeam": null,
     "map": {

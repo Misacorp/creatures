@@ -96,14 +96,17 @@ const bodyOf = (key: keyof Bodies) =>
     act: DungeonAct;
   };
 
-/** The player's creatures: the fixtures' own ids and species, so the screens find them by id. */
+/**
+ * The player's creatures: the hero's of the captured run (the ids `pnpm fixtures:capture` gives the dungeon set,
+ * in order of first appearance) and their species, so the screens find them by id.
+ */
 function roster(): Creature[] {
   const all = sampleRoster(30);
   const wanted: [string, string][] = [
-    ['64ab0da2-cff5-47ec-8346-04317bb6b745', 'sproutle'],
-    ['5b8aea90-83c9-4de6-b9f4-2cd49763020f', 'splashet'],
-    ['ae8c7c8f-b190-470f-b09e-4ae48d278eb9', 'cindle'],
-    ['53072e75-7ff5-4f3a-91bc-7a61fe6ae84c', 'zipmouse'],
+    ['00000000-0000-4000-8300-000000000001', 'sproutle'],
+    ['00000000-0000-4000-8300-000000000002', 'splashet'],
+    ['00000000-0000-4000-8300-000000000003', 'cindle'],
+    ['00000000-0000-4000-8300-000000000009', 'zipmouse'],
   ];
   const picked = wanted.map(([id, species]) => {
     const found = all.find((c) => c.species === species);
