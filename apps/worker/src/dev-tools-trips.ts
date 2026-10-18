@@ -22,6 +22,7 @@ import {
 import type * as v from 'valibot';
 import { DevError, type ToolCtx } from './dev-context';
 import { legacyModifierIds } from './dungeon';
+import { parseState } from './dungeon-state';
 import { devKey } from './dev-state';
 import type {
   DungeonDepthBodySchema,
@@ -277,8 +278,11 @@ export function dungeonDepth(ctx: ToolCtx, body: Body<typeof DungeonDepthBodySch
  * Forgets the caller's runs of today's game day, so they can run again: the day's payouts are taken
  * back as far as the balances allow (never below zero), the streak and the depth go back to what
  * they were before the run, and the first-day mark goes if this was the only run ever. A run that is
- * still open is deleted too, with its steps (nothing was paid for it yet, and it never touched the
- * progress); a treat it was paid with stays spent.
+ * still open is deleted too, with its steps (it was not counted in the progress, and its pack was not
+ * paid); a treat it was paid with stays spent. An open run that has beaten the main boss at depth 8 or
+ * more (`banked` in its state) is different: its chest was paid and its depth +1 locked in when the boss
+ * fell, so it is taken back like a finished run (the chest's grants are deleted, the depth goes back),
+ * though it never counted as a run or a clear.
  *
  * The ledger stays append-only: the credits are not deleted. Instead one negative `dev` entry per
  * currency is appended for the amount actually removed (the day's credits, less those an earlier
@@ -291,20 +295,43 @@ export function dungeonReset(ctx: ToolCtx) {
   // Today's runs, and any on a later day: those exist only when the dev clock was moved forward, run
   // and then moved back, and they would leave the day looking spent (a last day ahead of today).
   const all = ctx.sql
-    .exec<{ id: string; day: string; depth: number; cleared: number; status: string }>(
-      'SELECT id, day, depth, cleared, status FROM dungeon_runs WHERE user_id = ? AND day >= ? ORDER BY day, attempt',
+    .exec<{
+      id: string;
+      day: string;
+      depth: number;
+      cleared: number;
+      status: string;
+      state_json: string | null;
+    }>(
+      'SELECT id, day, depth, cleared, status, state_json FROM dungeon_runs WHERE user_id = ? AND day >= ? ORDER BY day, attempt',
       ctx.userId,
       day,
     )
     .toArray();
   if (all.length === 0) return { removed: 0, day };
-  // Only the runs that ended were counted in the progress and paid.
+  // Only the runs that ended were counted in the progress and paid ...
   const runs = all.filter((r) => r.status === 'done');
+  // ... and an open run that banked its main chest paid its gear grants and locked the depth in.
+  const banked = all.filter(
+    (r) => r.status === 'active' && parseState(r.state_json)?.banked != null,
+  );
+  const touched = all.filter((r) => runs.includes(r) || banked.includes(r));
   for (const run of all) ctx.sql.exec('DELETE FROM dungeon_steps WHERE run_id = ?', run.id);
   ctx.sql.exec('DELETE FROM dungeon_runs WHERE user_id = ? AND day >= ?', ctx.userId, day);
-  if (runs.length === 0) return { removed: all.length, day };
+  if (touched.length === 0) return { removed: all.length, day };
 
-  for (const runDay of new Set(runs.map((r) => r.day))) takeBackDay(ctx, runDay);
+  for (const runDay of new Set(touched.map((r) => r.day))) takeBackDay(ctx, runDay);
+
+  if (runs.length === 0) {
+    // Only the depth lock to undo: the run was never counted.
+    const first = touched[0];
+    ctx.sql.exec(
+      'UPDATE dungeon_progress SET depth = ? WHERE user_id = ?',
+      Math.min(progressOf(ctx).depth, first?.depth ?? progressOf(ctx).depth),
+      ctx.userId,
+    );
+    return { removed: all.length, day };
+  }
 
   const progress = progressOf(ctx);
   const left = Math.max(0, progress.runs - runs.length);
@@ -322,7 +349,7 @@ export function dungeonReset(ctx: ToolCtx) {
      WHERE user_id = ?`,
     left,
     clears,
-    Math.min(progress.depth, firstRun?.depth ?? progress.depth),
+    Math.min(progress.depth, touched[0]?.depth ?? firstRun?.depth ?? progress.depth),
     progress.last_day !== null && progress.last_day >= day
       ? Math.max(0, progress.streak - 1)
       : progress.streak,

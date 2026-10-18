@@ -44,6 +44,7 @@ import {
   roomModifier,
   streakBonus,
   treatCost,
+  undercroftOpen,
   weatherBossAttacks,
   weatherLuck,
   xpWeather,
@@ -791,6 +792,9 @@ export class Dungeon {
     const last = runs.filter((r) => r.status === 'done').at(-1);
     const open = runs.find((r) => r.status === 'active');
     const map = this.mapFor(day);
+    // While a run is open, the depth shown is the run's own: a boss cleared at depth 8 or more has locked
+    // depth + 1 into the progress already, but the run (its map, its landmark boss) is still at depth d.
+    const depth = open?.depth ?? progress.depth;
     // A last day later than `day` (timezone moved west) keeps the streak, it does not break it.
     const alive =
       progress.last_day !== null &&
@@ -800,9 +804,9 @@ export class Dungeon {
       day,
       timezone: tz,
       resetsAt: gameDayEnd(day, tz, RULES.daily.reset),
-      depth: progress.depth,
-      landmark: isLandmark(progress.depth),
-      landmarkBoss: this.landmarkBoss(progress.depth),
+      depth,
+      landmark: isLandmark(depth),
+      landmarkBoss: this.landmarkBoss(depth),
       streak: alive ? progress.streak : 0,
       modifiers: this.modifierViews(legacyModifierIds(map)),
       attemptsToday: runs.length,
@@ -812,7 +816,7 @@ export class Dungeon {
       last: last === undefined ? null : (JSON.parse(last.summary_json) as DungeonRunSummary),
       lastTeam: this.lastTeam(userId),
       draftTeam: this.draftTeam(userId),
-      map: mapView(map, progress.depth),
+      map: mapView(map, depth),
       active: open === undefined ? null : this.stateOf(open),
     };
   }
@@ -1710,7 +1714,11 @@ export class Dungeon {
       rewards: args.rewards,
       ...(st.weather === null ? {} : { weather: { boon: st.weather.boon, omen: st.weather.omen } }),
       ...(outcome === null ? {} : { outcome }),
-      path: st.path.map((id) => runNode(st, id)?.kind ?? 'fight'),
+      // A carved door the player's depth does not open is a quiet room, shown as a mystery room everywhere.
+      path: st.path.map((id) => {
+        const kind = runNode(st, id)?.kind ?? 'fight';
+        return kind === 'door' && !undercroftOpen(row.depth) ? 'mystery' : kind;
+      }),
       pack: { found: { ...args.found }, kept: { ...args.kept } },
       keepsakes: keepsakeViews(st.keepsakes),
       ...(outcome === null

@@ -136,7 +136,7 @@ export type DungeonStepLog =
       kind: 'boss';
       result: 'chest';
       level: number;
-      /** What went into the pack. */
+      /** What the chest itself added to the pack (the main chest: the full clear's and a landmark's extras; a keeper's: its Essence and scrap). */
       loot: DungeonPack;
       gear: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
     }

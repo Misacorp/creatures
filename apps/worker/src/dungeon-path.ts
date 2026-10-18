@@ -25,6 +25,7 @@ import {
   mergeMods,
   nodeFoe,
   nodeLoot,
+  QUIET_ROOM,
   reachableNodes,
   resolveEvent,
   rollDungeonLoot,
@@ -219,7 +220,8 @@ function openMainChest(env: PathEnv, st: RunState, node: MapNodeLike, depth: num
     kind: 'boss',
     result: 'chest',
     level: 0,
-    loot: addPack(nodeLoot('boss'), extras),
+    // Only what the chest adds: the boss's own loot is in the fight's entry before this one.
+    loot: extras,
     gear: view.gear.map(({ baseId, rarity, itemLevel }) => ({
       baseId,
       rarity,
@@ -383,8 +385,20 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       st.history.push({ node: nodeId, kind: 'camp', result: 'pending' });
       return {};
     case 'door': {
-      // Below the depth that opens the Undercroft the door is a quiet room (its view says mystery).
-      if (!undercroftOpen(depth)) return {};
+      // Below the depth that opens the Undercroft the door is a quiet room (its view says mystery): it
+      // is logged like a mystery room that was answered, so the path shows it.
+      if (!undercroftOpen(depth)) {
+        st.history.push({
+          node: nodeId,
+          kind: 'mystery',
+          result: 'event',
+          event: QUIET_ROOM.name,
+          option: '',
+          outcome: 'A quiet room. Nothing happens here.',
+          loot: { bait: 0, essence: 0, scrap: 0 },
+        });
+        return {};
+      }
       // Stepping through adds one room, of a kind drawn now and not told: the Undercroft shows it when
       // it is drawn. At the most (`maxMarks`) the door adds nothing, and says so.
       const added = st.marks.length < RULES.dungeon.undercroft.maxMarks;

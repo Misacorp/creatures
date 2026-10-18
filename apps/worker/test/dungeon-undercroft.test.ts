@@ -262,6 +262,16 @@ describe('the descent after the room boss', () => {
         expect(state.pack.scrap).toBeGreaterThanOrEqual(boss.scrap + RULES.dungeon.landmark.scrap);
         const chest = state.history.find((h) => h.kind === 'boss' && h.result === 'chest');
         expect(chest).toMatchObject({ level: 0, gear: [{}] });
+        // The chest entry carries only what the chest adds, not the boss's own loot (the fight's entry has it).
+        expect(chest).toMatchObject({
+          loot: {
+            bait: 0,
+            essence: RULES.dungeon.fullClear.essence + RULES.dungeon.landmark.essence,
+            scrap: RULES.dungeon.landmark.scrap,
+          },
+        });
+        const bossFight = state.history.find((h) => h.kind === 'boss' && h.result === 'fight');
+        expect(bossFight).toMatchObject({ loot: nodeLoot('boss') });
         expect(state.history.at(-1)).toMatchObject({
           kind: 'descend',
           result: 'pending',
@@ -270,6 +280,16 @@ describe('the descent after the room boss', () => {
         // Nothing of the pack is paid yet.
         expect(ledger(ctx, p.id)).toEqual([]);
         expect(runRow(ctx, state.id)?.status).toBe('active');
+        // `today` shows the run's own depth while it is open (the progress holds depth + 1 already) ...
+        const open = await p.today();
+        expect(open).toMatchObject({ depth: LANDMARK, landmark: true, canRun: false });
+        expect(open.landmarkBoss?.depth).toBe(LANDMARK);
+        expect(open.active?.depth).toBe(LANDMARK);
+        expect(open.map).toEqual(open.active?.map);
+        // ... and the depth it won once it is over.
+        const home = await p.act(state, { type: 'home' });
+        expect(home.status).toBe(200);
+        expect(await p.today()).toMatchObject({ depth: LANDMARK + 1, active: null });
       },
       opts(),
     );
@@ -1095,12 +1115,29 @@ describe('the carved door', () => {
         const res = await p.act(there, { type: 'move', node: door });
         expect(res.status).toBe(200);
         expect(res.body.state.pending).toBeNull();
+        // It is logged like a mystery room that was answered, so the path shows it.
         expect(res.body.state.history.some((h) => h.kind === 'door')).toBe(false);
+        expect(res.body.state.history.at(-1)).toEqual({
+          node: door,
+          kind: 'mystery',
+          result: 'event',
+          event: 'Quiet room',
+          option: '',
+          outcome: 'A quiet room. Nothing happens here.',
+          loot: { bait: 0, essence: 0, scrap: 0 },
+        });
         expect(res.body.state.reachable.length).toBeGreaterThan(0);
         expect(stored(ctx, there.id).marks).toEqual([]);
         // The day's map as today shows the same.
         const today = await p.today();
         expect(today.map.nodes.some((n) => n.kind === 'door')).toBe(false);
+        // The run ends: the summary's path says mystery for it, never door.
+        const end = await play(p, res.body.state, {});
+        expect(end.status).toBe('done');
+        const summary = summaryOf(ctx, there.id);
+        expect(summary.path).not.toContain('door');
+        expect(summary.path.filter((k) => k === 'mystery').length).toBeGreaterThan(0);
+        expect(summary.path).toHaveLength(end.path.length);
       },
       opts(),
     );

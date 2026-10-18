@@ -3,7 +3,7 @@
    each body would only repeat the server's view types. */
 import { RULES, dungeonContent, expeditionContent } from '@creatures/game';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { deadlyFoes, easyFoes, playThrough } from './dungeon-helpers';
+import { deadlyFoes, easyFoes, playFrom, playThrough } from './dungeon-helpers';
 import { ON, newKey, player, type Dev, type Json } from './dev-helpers';
 import { runCore } from './helpers';
 import { count, nextGuild, rows } from './raid-helpers';
@@ -400,6 +400,45 @@ describe('dungeon tools', () => {
         await p.tool('set-balances', { bait: 40, essence: 40 });
         await p.tool('dungeon-reset');
         expect((await p.call('GET', '/api/me')).body.balances).toEqual({ bait: 40, essence: 40 });
+      },
+      ON,
+    );
+  });
+
+  it('takes back an open run that banked its main chest: the depth lock and the chest grant go', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1, { level: 30 });
+        const landmark = RULES.dungeon.landmarkEvery * 2;
+        await p.tool('dungeon-depth', { depth: landmark });
+        const res = await playFrom(p.call, (await start(p)).body.state, {
+          stopWhen: (s) => s.pending?.kind === 'descend',
+        });
+        expect(res.body.state?.pending?.kind).toBe('descend');
+        const progress = () =>
+          rows<{ depth: number; runs: number; clears: number }>(
+            ctx.sql,
+            'SELECT depth, runs, clears FROM dungeon_progress WHERE user_id = ?',
+            p.id,
+          )[0];
+        const grants = () =>
+          rows<{ key: string }>(
+            ctx.sql,
+            "SELECT key FROM gear_grants WHERE user_id = ? AND key LIKE 'dungeon:%'",
+            p.id,
+          ).map((g) => g.key);
+        expect(progress()).toMatchObject({ depth: landmark + 1, runs: 0, clears: 0 });
+        expect(grants()).toHaveLength(1);
+        expect(grants()[0]).toMatch(/:chest$/);
+
+        expect(await p.tool('dungeon-reset')).toMatchObject({ removed: 1 });
+        // The lock is undone, the chest's grant can be granted again, the run is gone, today can be run.
+        expect(progress()).toMatchObject({ depth: landmark, runs: 0, clears: 0 });
+        expect(grants()).toEqual([]);
+        expect(count(ctx.sql, 'dungeon_runs')).toBe(0);
+        expect(count(ctx.sql, 'dungeon_steps')).toBe(0);
+        expect(await today(p)).toMatchObject({ canRun: true, attemptsToday: 0, depth: landmark });
       },
       ON,
     );
