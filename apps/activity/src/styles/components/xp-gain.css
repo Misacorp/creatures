@@ -65,3 +65,17 @@
 .xp-gain .lvl-tag {
   background: var(--xp-fill);
 }
+
+/*
+  Explorer XP and Crafting show their gain ("+300 XP") and their "Level up!" / "Rank up!" in their own
+  colour too, so the whole row reads as that kind; a creature's experience keeps the green.
+*/
+.xp-kind-explorer .xp-plus,
+.xp-kind-crafting .xp-plus {
+  color: var(--xp-fill);
+}
+
+.xp-kind-explorer .badge.good,
+.xp-kind-crafting .badge.good {
+  background: var(--xp-fill);
+}

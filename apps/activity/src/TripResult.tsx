@@ -170,17 +170,15 @@ export function TripResult({
           {view.xp !== null && (
             <XpGain
               label={<GlossaryTag entry="explorer-rank">Explorer</GlossaryTag>}
-              head={
-                <>
-                  <span class="pix">Rank {view.xp.rank}</span>
-                  {view.xp.rankedUp && (
-                    <Tag kind="badge" tone="good">
-                      Rank up!
-                    </Tag>
-                  )}
-                </>
-              }
+              head={<span class="pix">Rank {view.xp.rank}</span>}
               gain={`+${String(view.xp.gained)} XP`}
+              tags={
+                view.xp.rankedUp ? (
+                  <Tag kind="badge" tone="good">
+                    Rank up!
+                  </Tag>
+                ) : undefined
+              }
               bar={{
                 value: view.xp.value,
                 max: view.xp.max,
