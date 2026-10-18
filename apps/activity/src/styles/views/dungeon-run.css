@@ -160,18 +160,20 @@ button.run-keepsake {
   color: var(--bad);
 }
 
-/* Left and Right under a creature at the camp. */
-.run-move {
-  display: flex;
-  gap: 0.25rem;
-  justify-content: center;
+/* The camp's row (the entry's board, with an HP line in each tile) and the line about changing its order. */
+.camp-row {
+  margin: 0.25rem 0 0.5rem;
 }
 
-button.run-move-button {
-  min-height: 2.25rem;
-  min-width: 2.75rem;
-  padding: 0.125rem 0.375rem;
+.camp-row-hint {
+  margin: 0;
   font-size: 0.875rem;
+  text-align: center;
+}
+
+/* The swap's last step: confirm beside Back. */
+.camp-arrange-actions {
+  justify-content: center;
 }
 
 /* Heading home sits apart from the three choices, and says what it risks. */

@@ -34,6 +34,7 @@ import {
   newKey,
   routeThrough,
   withDeadlyFoes,
+  type CampAct,
   type DungeonPlayer,
   type Policy,
 } from './dungeon-helpers';
@@ -1311,6 +1312,129 @@ describe('the camp', () => {
         });
         expect(fight.body.room?.row?.map((r) => r.id)).toEqual([c, a, b]);
         expect(fight.body.room?.hpStart).toBeDefined();
+      },
+      opts(),
+    );
+  });
+
+  it('refuses an order when the camp is not waiting, and a retry of a reorder changes nothing', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const state = await begin(p);
+        const ids = state.team.map((t) => t.id) as [string, string, string];
+        // Not at a camp: the row is the entry's and does not change.
+        const early = await p.act(state, {
+          type: 'camp',
+          choice: 'rest',
+          order: [ids[2], ids[0], ids[1]],
+        });
+        expect({ status: early.status, error: early.body.error }).toEqual({
+          status: 400,
+          error: 'invalid_act',
+        });
+        expect(stored(ctx, state.id).input.team.map((s) => s.id)).toEqual(ids);
+
+        const route = routeThrough(mapOf(state), (n) => n.kind === 'camp') as string[];
+        const waiting = await walk(p, state, route, (s) => s.pending?.kind === 'camp');
+        const [a, b, c] = waiting.team.map((t) => t.id) as [string, string, string];
+        const offer = (waiting.pending as { offers: { id: string }[] }).offers[0]?.id as string;
+        const key = newKey();
+        const act: CampAct = {
+          type: 'camp',
+          choice: 'keepsake',
+          keepsake: offer,
+          order: [b, c, a],
+        };
+        const first = await p.act(waiting, act, key);
+        expect(first.status).toBe(200);
+        const steps = count(ctx.sql, 'dungeon_steps');
+        for (let i = 0; i < 2; i++) {
+          const again = await p.act(waiting, act, key);
+          expect(again.body).toEqual(first.body);
+        }
+        expect(count(ctx.sql, 'dungeon_steps')).toBe(steps);
+        expect(first.body.state.team.map((t) => t.id)).toEqual([b, c, a]);
+        // The same key with another order is a conflict, and the row stays as it was first set.
+        const clash = await p.act(waiting, { ...act, order: [a, b, c] }, key);
+        expect(clash.status).toBe(409);
+        expect(stored(ctx, waiting.id).input.team.map((s) => s.id)).toEqual([b, c, a]);
+      },
+      opts(),
+    );
+  });
+
+  it('moves a creature that is down anywhere, and heals nobody: HP follows the creature', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const waiting = await toCamp(p);
+        const [a, b, c] = waiting.team.map((t) => t.id) as [string, string, string];
+        patchState(ctx, waiting.id, (st) => {
+          st.hp = { [a]: 0, [b]: 5, [c]: 7 };
+        });
+        const before = (await p.today()).active as DungeonRunState;
+        const offer = (before.pending as { offers: { id: string }[] }).offers[0]?.id as string;
+        const res = await p.act(before, {
+          type: 'camp',
+          choice: 'keepsake',
+          keepsake: offer,
+          order: [b, c, a],
+        });
+        expect(res.status).toBe(200);
+        expect(res.body.state.team.map((t) => [t.id, t.hp])).toEqual([
+          [b, 5],
+          [c, 7],
+          [a, 0], // the downed one is on the right and still down
+        ]);
+        expect(stored(ctx, waiting.id).input.team.map((s) => s.id)).toEqual([b, c, a]);
+        expect(stored(ctx, waiting.id).hp).toEqual({ [a]: 0, [b]: 5, [c]: 7 });
+      },
+      opts(),
+    );
+  });
+
+  it('puts the creature that comes in anywhere in the row, in the same act as the swap', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, FOUR);
+        const [a, b, c, d] = p.creatureIds as [string, string, string, string];
+        const state = await begin(p, { team: [a, b, c] });
+        const route = routeThrough(mapOf(state), (n) => n.kind === 'camp') as string[];
+        const waiting = await walk(p, state, route, (s) => s.pending?.kind === 'camp');
+        const swap = { type: 'camp', choice: 'swap', out: c, in: d } as const;
+        // The order is the row after the swap: the one that goes home (c) is not in it, the recruit (d) is.
+        for (const order of [
+          [a, b, c], // the old row: c has gone home
+          [a, b, d, c],
+          [d, d, a],
+          [d, a, 'x'],
+          [d, a],
+          [d, a, c],
+        ]) {
+          const res = await p.act(waiting, { ...swap, order });
+          expect([400]).toContain(res.status);
+          expect(stored(ctx, waiting.id).step).toBe(waiting.step);
+          expect(stored(ctx, waiting.id).input.team.map((s) => s.id)).toEqual([a, b, c]);
+        }
+        const res = await p.act(waiting, { ...swap, order: [d, a, b] });
+        expect(res.status).toBe(200);
+        expect(res.body.state.team.map((t) => t.id)).toEqual([d, a, b]);
+        const newcomer = res.body.state.team[0];
+        expect(newcomer?.hp).toBe(newcomer?.hpMax); // the recruit is fresh, wherever it stands
+        const input = stored(ctx, waiting.id).input;
+        expect(input.team.map((s) => s.id)).toEqual([d, a, b]);
+        expect(input.abilities.map((x) => x.creatureId)).toEqual([d, a, b]);
+        expect(input.abilities.map((x) => x.key)).toEqual(['p1:c0', 'p1:c1', 'p1:c2']);
+        // The next fight stands in that order.
+        const fight = await p.act(res.body.state, {
+          type: 'move',
+          node: res.body.state.reachable[0] as string,
+        });
+        expect(fight.body.room?.row?.map((r) => r.id)).toEqual([d, a, b]);
       },
       opts(),
     );

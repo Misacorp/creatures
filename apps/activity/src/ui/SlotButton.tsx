@@ -1,4 +1,6 @@
 import { elementClass } from '../art';
+import { cssVars } from '../css-vars';
+import { percent } from '../progress-math';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import type { DropStatus } from '../slot-outcome';
@@ -13,6 +15,8 @@ export interface SlotModel {
   ariaLabel: string;
   /** Leave the slot number off the tile (the raid board names places by row and lane instead). */
   hideNumber?: boolean;
+  /** The tile is the one picked up by a tap (tap-to-swap): it gets a bright frame. */
+  selected?: boolean;
   occupant: null | {
     species: string;
     /** The name printed in the slot (a species name in the raid, the creature's name in the dungeon). */
@@ -27,7 +31,19 @@ export interface SlotModel {
     owner?: { colour: number; initial: string };
     /** Raid only: the creature's element id; its colour rings the tile. */
     element?: string;
+    /**
+     * Under the level: a small bar and the HP in words ("140 / 203 HP", or "Knocked out" in red), for a
+     * creature with HP to show (the dungeon camp's row). Absent: nothing, as in the raid and the entry.
+     */
+    hp?: SlotHp;
   };
+}
+
+/** The HP line of a tile: `ratio` (0 to 1) fills the bar, `state` colours it, `text` is the words. */
+export interface SlotHp {
+  ratio: number;
+  state: 'ok' | 'low' | 'ko';
+  text: string;
 }
 
 /** The state of a strip of slots, shared by every tile in it (`RaidBoard` draws the tiles). */
@@ -85,12 +101,14 @@ export function SlotButton(props: SlotButtonProps) {
     if (element !== '') classes.push(element);
     if (c.mine) classes.push('mine');
     if (c.auto === true) classes.push('auto');
+    if (c.hp?.state === 'ko') classes.push('hp-ko');
   }
   if (own !== null) classes.push('draggable');
   if (status === 'valid') classes.push('drop-valid');
   if (status === 'invalid') classes.push('drop-invalid');
   if (props.over && status !== null && status !== 'none') classes.push('drop-over');
   if (own !== null && own === props.dragging) classes.push('dragging-source');
+  if (slot.selected === true) classes.push('selected');
   if (props.shaking) classes.push('shake');
   classes.push(...cueClasses(props.cue));
   const badge = props.cue?.reaction;
@@ -151,6 +169,14 @@ export function SlotButton(props: SlotButtonProps) {
           <Sprite sprite={creatureSpriteOrFallback(c.species)} scale={scale} />
           <span class="slot-species">{c.name}</span>
           <span class="slot-meta">Lv {c.level}</span>
+          {c.hp !== undefined && (
+            <span class={`slot-hp ${c.hp.state}`}>
+              <span class="slot-hp-bar" aria-hidden="true">
+                <span ref={cssVars({ '--pct': `${String(percent(c.hp.ratio, 1))}%` })} />
+              </span>
+              <span class="slot-hp-text">{c.hp.text}</span>
+            </span>
+          )}
           {c.auto === true && <span class="slot-auto">auto</span>}
           {c.owner !== undefined && (
             <span class="slot-owner" aria-hidden="true">

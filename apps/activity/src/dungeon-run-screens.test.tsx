@@ -237,28 +237,56 @@ describe('the camp', () => {
     expect(acts).toEqual([{ type: 'camp', choice: 'rest', order: state.team.map((c) => c.id) }]);
   });
 
-  it('sends the new order with the choice after the row was moved', () => {
+  it("shows the row on the entry board, with each creature's HP under it", () => {
+    const root = drawCamp(noop);
+    const tiles = byClass(root, 'party-slot');
+    expect(tiles).toHaveLength(3);
+    const hp = byClass(root, 'slot-hp-text').map((e) => e.textContent);
+    expect(hp).toEqual(state.team.map((t) => `${String(t.hp)} / ${String(t.hpMax)} HP`));
+    // The one that is down says so in red, with its numbers, and is told apart by more than colour.
+    const down = state.team.findIndex((t) => t.hp <= 0);
+    expect(down).toBeGreaterThanOrEqual(0);
+    expect(byClass(root, 'slot-hp')[down]?.getAttribute('class')).toContain('ko');
+    expect(tiles[down]?.getAttribute('aria-label')).toContain('knocked out');
+    // The old Left and Right buttons are gone.
+    expect(byClass(root, 'run-move')).toHaveLength(0);
+  });
+
+  it('sends the new order with the choice after two creatures were swapped by taps', () => {
     const acts: DungeonAct[] = [];
     const root = drawCamp((a) => acts.push(a));
     const [a, b, c] = state.team.map((t) => t.id) as [string, string, string];
-    page?.click(button(root, `Move ${state.team[2]?.name ?? ''} left`));
-    page?.click(button(root, `Move ${state.team[2]?.name ?? ''} left`));
+    const tile = (id: string): FakeElement => {
+      const name = state.team.find((t) => t.id === id)?.name ?? '';
+      const found = byClass(root, 'party-slot').find((e) =>
+        (e.getAttribute('aria-label') ?? '').includes(`: ${name},`),
+      );
+      if (found === undefined) throw new Error(`no tile for ${name}`);
+      return found;
+    };
+    page?.click(tile(c));
+    expect(tile(c).getAttribute('class')).toContain('selected');
+    page?.click(tile(a));
+    // The HP moved with the creature: the row now reads c, b, a.
+    expect(byClass(root, 'slot-hp-text').map((e) => e.textContent)).toEqual(
+      [c, b, a].map((id) => {
+        const t = state.team.find((x) => x.id === id);
+        return `${String(t?.hp)} / ${String(t?.hpMax)} HP`;
+      }),
+    );
     page?.click(button(root, /^Rest/));
-    expect(acts).toEqual([{ type: 'camp', choice: 'rest', order: [c, a, b] }]);
-    expect(b).toBeDefined();
+    expect(acts).toEqual([{ type: 'camp', choice: 'rest', order: [c, b, a] }]);
   });
 
-  it('cannot move the left creature further left, or the right one further right', () => {
-    const root = drawCamp(noop);
-    expect(button(root, `Move ${state.team[0]?.name ?? ''} left`).hasAttribute('disabled')).toBe(
-      true,
-    );
-    expect(button(root, `Move ${state.team[2]?.name ?? ''} right`).hasAttribute('disabled')).toBe(
-      true,
-    );
-    expect(button(root, `Move ${state.team[1]?.name ?? ''} left`).hasAttribute('disabled')).toBe(
-      false,
-    );
+  it('puts a picked-up creature down again when it is tapped twice', () => {
+    const acts: DungeonAct[] = [];
+    const root = drawCamp((a) => acts.push(a));
+    const first = byClass(root, 'party-slot')[0] as FakeElement;
+    page?.click(first);
+    page?.click(first);
+    expect(first.getAttribute('class')).not.toContain('selected');
+    page?.click(button(root, /^Rest/));
+    expect(acts).toEqual([{ type: 'camp', choice: 'rest', order: state.team.map((c) => c.id) }]);
   });
 
   it('opens the two keepsakes, takes one, and can go back', () => {
@@ -304,16 +332,66 @@ describe('the camp', () => {
     expect(
       byClass(root, 'camp-out').filter((b) => b.getAttribute('class')?.includes(' ko')),
     ).toHaveLength(1);
+    // Picking who goes home does not send anything yet: the new row is arranged first.
     page?.click(button(root, /^Cindle/));
+    expect(acts).toEqual([]);
+    expect(visibleText(root)).toContain('Arrange your row');
+  });
+
+  it('arranges the row after the swap, with the new creature in place and at full HP, and sends that order', () => {
+    const acts: DungeonAct[] = [];
+    const incoming = owned[4]?.id ?? '';
+    const out = state.team[2]?.id ?? '';
+    const [a, b] = state.team.map((t) => t.id) as [string, string];
+    const root = draw(
+      <DungeonCamp
+        team={state.team}
+        pack={state.pack}
+        camp={camp}
+        creatures={owned}
+        busy={false}
+        onAct={(x) => acts.push(x)}
+        initialStep="arrange"
+        initialIncoming={incoming}
+        initialOut={out}
+      />,
+    ).root;
+    expect(visibleText(root)).toContain('Arrange your row');
+    const tiles = byClass(root, 'party-slot');
+    expect(tiles).toHaveLength(3);
+    // The new creature stands where the one that left stood, at full HP; the others keep their HP.
+    expect(byClass(root, 'slot-hp-text').map((e) => e.textContent)[2]).toBe('Full HP');
+    expect(byClass(root, 'slot-hp-text').map((e) => e.textContent)[0]).toBe(
+      `${String(state.team[0]?.hp)} / ${String(state.team[0]?.hpMax)} HP`,
+    );
+    // Move the recruit to the left end by taps.
+    page?.click(tiles[2] as FakeElement);
+    page?.click(tiles[0] as FakeElement);
+    expect(byClass(root, 'slot-hp-text').map((e) => e.textContent)[0]).toBe('Full HP');
+    page?.click(button(root, 'Swap and push on'));
     expect(acts).toEqual([
-      {
-        type: 'camp',
-        choice: 'swap',
-        out: state.team[2]?.id,
-        in: incoming,
-        order: state.team.map((c) => c.id),
-      },
+      { type: 'camp', choice: 'swap', out, in: incoming, order: [incoming, b, a] },
     ]);
+  });
+
+  it('goes back from the arranging step to who goes home, and sends nothing', () => {
+    const acts: DungeonAct[] = [];
+    const root = draw(
+      <DungeonCamp
+        team={state.team}
+        pack={state.pack}
+        camp={camp}
+        creatures={owned}
+        busy={false}
+        onAct={(x) => acts.push(x)}
+        initialStep="arrange"
+        initialIncoming={owned[4]?.id ?? ''}
+        initialOut={state.team[2]?.id ?? ''}
+      />,
+    ).root;
+    page?.click(button(root, 'Back'));
+    expect(visibleText(root)).toContain('Who goes home?');
+    expect(acts).toEqual([]);
   });
 
   it('cannot swap when the player has nobody outside the row, and says why', () => {
@@ -353,6 +431,7 @@ describe('the run on screen', () => {
     expect(byClass(root, 'dungeon-run-strip')).toHaveLength(1);
     expect(byClass(root, 'dungeon-event')).toHaveLength(1);
     expect(byClass(root, 'dungeon-run-map')).toHaveLength(0);
+    expect(byClass(root, 'run-row')).toHaveLength(1);
     page?.click(button(root, /Take one coin/));
     expect(acts).toEqual([{ type: 'event', option: 0 }]);
   });
@@ -369,6 +448,9 @@ describe('the run on screen', () => {
     );
     expect(byClass(root, 'dungeon-camp')).toHaveLength(1);
     expect(byClass(root, 'dungeon-run-map')).toHaveLength(0);
+    // The row is the camp card's own (to rearrange): the strip above does not show it a second time.
+    expect(byClass(root, 'run-row')).toHaveLength(0);
+    expect(byClass(root, 'party-slot')).toHaveLength(3);
   });
 
   it('shows the map under the strip when nothing is pending, and an error above it', () => {

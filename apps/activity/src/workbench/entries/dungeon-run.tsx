@@ -182,7 +182,14 @@ function CampDemo({ p }: { p: Props }) {
   const offers = dungeonKeepsakes
     .slice(0, 2)
     .map((k) => ({ id: k.id, name: k.name, description: k.description }));
-  const initialStep = step === 'keepsakes' ? 'keepsake' : step === 'who goes home' ? 'out' : 'menu';
+  const initialStep =
+    step === 'keepsakes'
+      ? 'keepsake'
+      : step === 'who goes home'
+        ? 'out'
+        : step === 'arrange after a swap'
+          ? 'arrange'
+          : 'menu';
   return (
     <DungeonCamp
       // A fresh card when the step changes, so it opens where the page says.
@@ -194,7 +201,12 @@ function CampDemo({ p }: { p: Props }) {
       busy={bool(p, 'busy')}
       onAct={() => undefined}
       initialStep={initialStep}
-      {...(initialStep === 'out' && owned[0] !== undefined ? { initialIncoming: owned[0].id } : {})}
+      {...((initialStep === 'out' || initialStep === 'arrange') && owned[0] !== undefined
+        ? { initialIncoming: owned[0].id }
+        : {})}
+      {...(initialStep === 'arrange' && base.team[2] !== undefined
+        ? { initialOut: base.team[2].id }
+        : {})}
     />
   );
 }
@@ -204,9 +216,12 @@ const dungeonCamp: Entry = {
   file: 'apps/activity/src/DungeonCamp.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The camp halfway up the dungeon map: the row with Left and Right buttons to change its order, three choices that each say what they do (Rest, take a keepsake, Swap a creature), and, set apart, "Head home with your pack" with what pushing on risks. Keepsakes shows the two on offer; "who goes home" is the second step of a swap, with the knocked-out creature plain to see; heading home asks once more.',
+    'The camp halfway up the dungeon map: the row on the same board as the dungeon entry (drag a creature onto another, or tap one and then another, to swap places; the HP stays under its creature, a downed one in red), three choices that each say what they do (Rest, take a keepsake, Swap a creature), and, set apart, "Head home with your pack" with what pushing on risks. Keepsakes shows the two on offer; "who goes home" is the second step of a swap, with the knocked-out creature plain to see; "arrange after a swap" is the third, the row as the swap leaves it (the new creature in the place of the one that left, at full HP) to rearrange before "Swap and push on"; heading home asks once more.',
   controls: {
-    step: { kind: 'select', options: ['choices', 'keepsakes', 'who goes home'] },
+    step: {
+      kind: 'select',
+      options: ['choices', 'keepsakes', 'who goes home', 'arrange after a swap'],
+    },
     owned: { kind: 'number', min: 3, max: 8 },
     bait: { kind: 'number', min: 0, max: 20 },
     scrap: { kind: 'number', min: 0, max: 20 },
@@ -217,6 +232,10 @@ const dungeonCamp: Entry = {
     { name: 'The choices', props: {} },
     { name: 'The two keepsakes', props: { step: 'keepsakes' } },
     { name: 'Who goes home (a swap)', props: { step: 'who goes home' } },
+    {
+      name: 'Arrange the row after a swap (the new creature in place)',
+      props: { step: 'arrange after a swap' },
+    },
     { name: 'Nobody to swap in (only three creatures)', props: { owned: 3 } },
     { name: 'An empty pack', props: { bait: 0, scrap: 0 } },
     { name: 'A step is on its way', props: { busy: true } },

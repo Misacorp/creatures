@@ -467,19 +467,6 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
     throw invalidAct('keepsake is for a keepsake');
   }
 
-  // The row is reordered first, for free.
-  if (act.order !== undefined) {
-    const ids = st.input.team.map((slot) => slot.id);
-    const same =
-      new Set(act.order).size === ids.length && act.order.every((id) => ids.includes(id));
-    if (!same) throw invalidAct('the order is not the row');
-    st.input = {
-      ...st.input,
-      team: act.order.map((id) => st.input.team.find((slot) => slot.id === id) as FightSlot),
-    };
-    st.input.abilities = abilityChoices(st.input.team);
-  }
-
   // What the log says of the choice (creature and keepsake names are plain text for the client to render as text).
   let detail = '';
   let taken: DungeonKeepsakeView | null = null;
@@ -546,6 +533,18 @@ export function applyCamp(env: PathEnv, st: RunState, act: CampAct): ActOutcome 
       if (!st.everyone.includes(coming.id)) st.everyone.push(coming.id);
       break;
     }
+  }
+  // The row is put in the order asked, for free. It is the row as the choice leaves it: after a swap
+  // that includes the creature that came in (and not the one that went home), so a recruit can be
+  // stood anywhere in the same act. Nothing else changes: no HP, no gear, no step of its own.
+  if (act.order !== undefined) {
+    const row = st.input.team;
+    const ids = row.map((slot) => slot.id);
+    const same =
+      new Set(act.order).size === ids.length && act.order.every((id) => ids.includes(id));
+    if (!same) throw invalidAct('the order is not the row');
+    const team = act.order.map((id) => row.find((slot) => slot.id === id) as FightSlot);
+    st.input = { ...st.input, team, abilities: abilityChoices(team) };
   }
   st.campChoice = act.choice;
   settleStep(st, {
