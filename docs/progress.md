@@ -48,6 +48,6 @@ See "Open design questions" in `docs/roadmap.md`.
 
 - Staging's last-week leet credits are simulated; real ones from 2026-10-11 on.
 - `redirect: 'error'` is rejected by workerd; always use `'manual'`.
-- Heavy statistical tests need the 30 s package timeout (engine, game) or 60 s (sim).
+- Test timeouts: engine 30 s, game the default, sim 120 s. A test that needs more is a test to split or move down a layer (`design/testing.md`), not a timeout to raise.
 - Misa's artifacts: setup checklist `https://claude.ai/artifact/Co4LRr4AiLyCPU2juAHFHW` (db-backed tasks); overnight summary `https://claude.ai/artifact/BRuaFKN1Gf7uPaoT1bfjLT` (static page; lead agent republishes it from its scratchpad file `overnight.html`). Keep the overnight page short: only what's done, what's in progress, and questions for Misa.
 - The overnight cleanup of 2026-10-18/19 left its proposals on a decision page with Yes / Later / No per item: `https://claude.ai/artifact/UArBxYixFXiy17xAVJnT3F`. Misa's answers are in its database, collection `decisions` (one document per item id: `verdict`, `note`); read them with the ArtifactData tool before acting on a proposal.
