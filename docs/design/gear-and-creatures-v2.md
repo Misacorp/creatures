@@ -656,13 +656,13 @@ At level 15 an evolving line can grow one of two ways. The evolve screen shows b
 **Sproutle: Thornbuck or Sunfawn.**
 
 - **Thornbuck** (Grove Guard, as today; ability Ironbark Guard). "A sturdy stag with branching, thorned antlers that shelter the whole herd."
-- **Sunfawn** _(working name)_, Grove **Support**, filling the empty Grove Support place. _"A gentle fawn whose leaf ears have opened into blossoms. It curls up beside tired friends and lends them the sun it has soaked up all day."_ Grows out of Sproutle's "Naps in any sunny patch". Ability **Sunny Patch**: Rally 6% for 2 rounds and a 30% Shield Wall on its own row for 1 round. As a Grove Support it heals its neighbours 6% a round.
+- **Sunfawn**, Grove **Support**, filling the empty Grove Support place. _"A gentle fawn whose leaf ears have opened into blossoms. It curls up beside tired friends and lends them the sun it has soaked up all day."_ Grows out of Sproutle's "Naps in any sunny patch". Ability **Sunny Patch**: Rally 6% for 2 rounds and a 30% Shield Wall on its own row for 1 round. As a Grove Support it heals its neighbours 6% a round.
 - **The choice:** a wall for the front of the row, or a healer for its middle. Many servers lack a Grove healer; many players lack a second Guard.
 
 **Zipmouse: Voltaro or Ohmouse.**
 
 - **Voltaro** (Spark Setter, as today; ability Storm Zap). "A fast, fearless runner that leaves a trail of bright sparks."
-- **Ohmouse** _(working name)_, Spark **Guard**, filling the empty Spark Guard place. _"A round, puffed-up mouse whose giant ears catch stray bolts before they reach its friends. It plants its feet, fizzes, and will not budge."_ Grows out of the Zipmouse quirk "Can freeze like a statue for an hour if asked nicely". Ability **Static Wall**: a 60% Shield Wall on its own row for 2 rounds, then it marks the boss Charged.
+- **Ohmouse**, Spark **Guard**, filling the empty Spark Guard place. _"A round, puffed-up mouse whose giant ears catch stray bolts before they reach its friends. It plants its feet, fizzes, and will not budge."_ Grows out of the Zipmouse quirk "Can freeze like a statue for an hour if asked nicely". Ability **Static Wall**: a 60% Shield Wall on its own row for 2 rounds, then it marks the boss Charged.
 - **The choice:** a Setter that starts Grounding for the Grove team, or a Guard that protects a Spark Payoff's row. A Spark-heavy server wants both, which is what Keep is for.
 
 Both new forms need a sprite (16x16), lore, quirks (the line's pool), compendium entries and a glossary entry; their stats follow the role budget the creature step sets (the review's "stats by role and stage").
