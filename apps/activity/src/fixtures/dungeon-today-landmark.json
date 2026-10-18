@@ -5,7 +5,10 @@
   "resetsAt": 1799840220000,
   "depth": 7,
   "landmark": true,
-  "landmarkBoss": { "depth": 7, "foeId": "drowned-warden" },
+  "landmarkBoss": {
+    "depth": 7,
+    "foeId": "drowned-warden"
+  },
   "streak": 2,
   "modifiers": [
     {

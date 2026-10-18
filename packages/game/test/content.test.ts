@@ -7,6 +7,7 @@ import {
   loadContent,
   upgradeProblem,
   dungeonContent,
+  expeditionContent,
   PATTERN_OPS,
   bossAtRank,
   type ContentPack,
@@ -52,7 +53,7 @@ function creature(pack: ContentPack, id: string) {
 describe('shipped content', () => {
   it('loads', () => {
     expect(() => loadContent(clone())).not.toThrow();
-    expect(content.creatures).toHaveLength(22);
+    expect(content.creatures).toHaveLength(30);
   });
 
   it('has 12 catchable species and 3 common starters of different elements', () => {
@@ -226,8 +227,17 @@ describe('loadContent rejects invalid content', () => {
   });
 
   it('stage-2 species that nothing evolves into', () => {
+    expect(() =>
+      loadContent(
+        mutate((p) => {
+          delete creature(p, 'zipmouse').evolvesTo;
+          delete creature(p, 'zipmouse').altEvolvesTo;
+        }),
+      ),
+    ).toThrow(/exactly one/);
+    // A second branch needs a first.
     expect(() => loadContent(mutate((p) => delete creature(p, 'zipmouse').evolvesTo))).toThrow(
-      /exactly one/,
+      /second branch but no first/,
     );
   });
 
@@ -488,7 +498,7 @@ describe('raid content', () => {
     }
   });
 
-  it('gives landmark signatures to room bosses only, as a charge', () => {
+  it('gives landmark signatures to floor bosses only, as a charge', () => {
     for (const f of dungeonContent.foes) {
       if (f.signature === undefined) continue;
       expect(f.kind, f.id).toBe('boss');
@@ -522,16 +532,16 @@ describe('creature abilities', () => {
     return a;
   };
 
-  it('gives all 22 species an ability: 8 lines with two strengths and 6 single species', () => {
+  it('gives all 30 species an ability: 8 lines with two strengths, 8 branch forms and 6 single species', () => {
     for (const c of content.creatures) {
       expect(c.ability, c.id).toBeDefined();
       expect(ability(c.ability?.id ?? '').kind).toBe('creature');
     }
-    expect(content.finaleAbilities.filter((a) => a.kind === 'creature')).toHaveLength(22);
+    expect(content.finaleAbilities.filter((a) => a.kind === 'creature')).toHaveLength(30);
     expect(content.finaleAbilities.filter((a) => a.kind === 'basic')).toHaveLength(4);
     // Every ability belongs to exactly one species.
     const ids = content.creatures.map((c) => c.ability?.id);
-    expect(new Set(ids).size).toBe(22);
+    expect(new Set(ids).size).toBe(30);
   });
 
   it('has a stage-2 ability that is stronger than stage 1 in every line', () => {
@@ -542,6 +552,117 @@ describe('creature abilities', () => {
       expect(upgradeProblem(a1, a2), `${c.id} -> ${target.id}`).toBeNull();
       expect(upgradeProblem(a2, a1), `${target.id} -> ${c.id}`).not.toBeNull();
     }
+  });
+
+  /** Every evolving line has a second form of another role (the Sunfawn and Ohmouse pattern, then the other six). */
+  const BRANCH_FORMS = [
+    ['sproutle', 'sunfawn', 'grove', 'support', 'common', 'sunny-patch'],
+    ['zipmouse', 'ohmouse', 'spark', 'guard', 'common', 'static-wall'],
+    ['splashet', 'geyserpup', 'tide', 'payoff', 'common', 'geyser-burst'],
+    ['cindle', 'wickat', 'ember', 'setter', 'common', 'slow-burn'],
+    ['mistnewt', 'drizzlewt', 'tide', 'support', 'common', 'soft-rain'],
+    ['ashmole', 'kilnmole', 'ember', 'guard', 'common', 'banked-embers'],
+    ['stormray', 'halcyray', 'spark', 'support', 'rare', 'afterglow'],
+    ['mossback', 'bloomback', 'grove', 'payoff', 'rare', 'full-bloom'],
+  ] as const;
+
+  it('never lets a branch form be found: not catchable, no starter, in no place or deep list', () => {
+    for (const [, id] of BRANCH_FORMS) {
+      expect(creature(content, id)).toMatchObject({ stage: 2, catchable: false, starter: false });
+      for (const place of expeditionContent.destinations) {
+        expect(place.species, `${place.id} lists ${id}`).not.toContain(id);
+        expect(place.deep.species, `${place.id} deep lists ${id}`).not.toContain(id);
+      }
+    }
+  });
+
+  it('gives every evolving line a second form of the same element and another role', () => {
+    const evolving = content.creatures.filter((c) => c.evolvesTo !== undefined);
+    expect(evolving.map((c) => c.id).sort()).toEqual(BRANCH_FORMS.map((b) => b[0]).sort());
+    for (const [from, to, element, role, rarity, abilityId] of BRANCH_FORMS) {
+      const parent = creature(content, from);
+      const first = creature(content, parent.evolvesTo?.species ?? '');
+      expect(parent.altEvolvesTo?.species, from).toBe(to);
+      expect(creature(content, to), to).toMatchObject({
+        line: from,
+        element,
+        role,
+        rarity,
+        ability: { id: abilityId },
+      });
+      // The same element and rarity as the first form, and a role the first form does not have.
+      expect(first.element, to).toBe(element);
+      expect(first.rarity, to).toBe(rarity);
+      expect(first.role, to).not.toBe(role);
+      // One price for the choice (the loader checks it too).
+      expect(parent.altEvolvesTo?.level, to).toBe(parent.evolvesTo?.level);
+      expect(parent.altEvolvesTo?.essence, to).toBe(parent.evolvesTo?.essence);
+    }
+  });
+
+  it('gives the branch forms the abilities of the design', () => {
+    const expected: Record<string, unknown[]> = {
+      'sunny-patch': [
+        { op: 'rally', damageBp: 600, rounds: 2 },
+        { op: 'shield_wall', zone: 'own', reduceBp: 3_000, rounds: 1 },
+      ],
+      'static-wall': [
+        { op: 'shield_wall', zone: 'own', reduceBp: 6_000, rounds: 2 },
+        { op: 're_mark', element: 'own' },
+      ],
+      'geyser-burst': [{ op: 'strike', atkBp: 32_000 }],
+      'slow-burn': [
+        { op: 're_mark', element: 'own' },
+        { op: 'rally', damageBp: 600, rounds: 2 },
+      ],
+      'soft-rain': [
+        { op: 'rally', damageBp: 500, rounds: 2 },
+        { op: 'purge', rounds: 2 },
+      ],
+      'banked-embers': [
+        { op: 'shield_wall', zone: 'own', reduceBp: 7_000, rounds: 2 },
+        { op: 'rally', damageBp: 500, rounds: 1 },
+      ],
+      afterglow: [
+        { op: 'rally', damageBp: 800, rounds: 2 },
+        { op: 'shield_wall', zone: 'own', reduceBp: 3_000, rounds: 1 },
+      ],
+      'full-bloom': [{ op: 'strike', atkBp: 30_000 }],
+    };
+    for (const [, , , , , id] of BRANCH_FORMS) {
+      expect(ability(id).effects, id).toEqual(expected[id]);
+    }
+    // Guards fire when the boss first hits a zone, like every other Guard; the rest on their round.
+    expect(ability('static-wall').defaultAtZoneHit).toBe(true);
+    expect(ability('banked-embers').defaultAtZoneHit).toBe(true);
+    expect(ability('afterglow').defaultAtZoneHit).toBeUndefined();
+  });
+
+  it('gives each branch form the stats of the reference form of its role and rarity', () => {
+    // The role budget (decisions.md, 2026-10-18): the same numbers as the form it copies. Rare Support has
+    // no stage 2 yet, so Halcyray is the common Support budget (Magmole) at the rare rate, x1.25.
+    const same: [string, string][] = [
+      ['sunfawn', 'magmole'],
+      ['geyserpup', 'pyrelynx'],
+      ['wickat', 'voltaro'],
+      ['drizzlewt', 'magmole'],
+      ['kilnmole', 'ohmouse'],
+      ['bloomback', 'tempestray'],
+    ];
+    for (const [id, reference] of same) {
+      const a = creature(content, id);
+      const b = creature(content, reference);
+      expect(a.baseStats, id).toEqual(b.baseStats);
+      expect(a.growth, id).toEqual(b.growth);
+      expect(a.levelCap, id).toBe(b.levelCap);
+    }
+    expect(creature(content, 'halcyray')).toMatchObject({
+      baseStats: { hp: 224, atk: 42, spd: 49 },
+      growth: { hp: 15, atk: 2, spd: 4 },
+      levelCap: 30,
+    });
+    // Ohmouse is the common Guard budget: Thornbuck's HP and Speed.
+    expect(creature(content, 'ohmouse').baseStats).toMatchObject({ hp: 224, spd: 22 });
   });
 
   it('keeps the basic abilities weak (docs/design/creature-abilities.md)', () => {

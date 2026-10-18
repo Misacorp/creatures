@@ -1,0 +1,117 @@
+[
+  {
+    "id": "tidepool-finery",
+    "name": "Tidepool Finery",
+    "tag": "tide",
+    "flavor": "Worn to the Tidepool Finery, where everyone arrives a little damp and nobody minds.",
+    "two": { "text": "Steam bonus +8%", "lines": [{ "line": "tide-reaction", "value": 800 }] },
+    "three": {
+      "text": "Its first Steam each fight cannot be reflected.",
+      "effect": "unreflected",
+      "wearerElement": "tide"
+    }
+  },
+  {
+    "id": "forge-warm-kit",
+    "name": "Forge-Warm Kit",
+    "tag": "ember",
+    "flavor": "The kit the forge-folk pack for the long cold walk home.",
+    "two": { "text": "Wildfire bonus +8%", "lines": [{ "line": "ember-reaction", "value": 800 }] },
+    "three": {
+      "text": "Crits after a Wildfire deal +20 pt crit damage for a round.",
+      "effect": "critWindow",
+      "value": 2000,
+      "wearerElement": "ember"
+    }
+  },
+  {
+    "id": "hollow-weave",
+    "name": "Hollow Weave",
+    "tag": "grove",
+    "flavor": "Woven one strand at a time in the Hollow, and it takes all three to hold.",
+    "two": { "text": "HP +8%", "lines": [{ "line": "hp", "value": 800 }] },
+    "three": {
+      "text": "Heals 3% of max HP whenever it cashes Grounding.",
+      "effect": "healOnReaction",
+      "value": 300,
+      "wearerElement": "grove"
+    }
+  },
+  {
+    "id": "ridge-copper",
+    "name": "Ridge Copper",
+    "tag": "spark",
+    "flavor": "Copper from the Ridge, drawn into thread, glass and bead.",
+    "two": { "text": "Crit chance +2 pt", "lines": [{ "line": "crit-chance", "value": 200 }] },
+    "three": {
+      "text": "Overload also leaves Charged afterwards, so a chain can follow.",
+      "effect": "chainMark",
+      "wearerElement": "spark"
+    }
+  },
+  {
+    "id": "wardens-watch",
+    "name": "Warden's Watch",
+    "tag": "guard",
+    "flavor": "The night watch's own kit. It asks a Guard to stand a little wider.",
+    "two": { "text": "Armor +4 pt", "lines": [{ "line": "armor", "value": 400 }] },
+    "three": { "text": "Cover reaches one more slot in its row.", "effect": "coverReach" }
+  },
+  {
+    "id": "hearth-helpers",
+    "name": "Hearth Helpers",
+    "tag": "support",
+    "flavor": "The kit of the one who makes sure everyone is warm, fed and within reach.",
+    "two": { "text": "Boost +3 pt", "lines": [{ "line": "boost", "value": 300 }] },
+    "three": {
+      "text": "Its boost also lands on the creature two slots away.",
+      "effect": "boostReach"
+    }
+  },
+  {
+    "id": "first-footprints",
+    "name": "First Footprints",
+    "tag": "setter",
+    "flavor": "Whoever leaves the first mark is the one the others follow.",
+    "two": { "text": "Marking hit +8%", "lines": [{ "line": "marking-hit", "value": 800 }] },
+    "three": { "text": "Its first mark each fight cannot be replaced.", "effect": "sealMark" }
+  },
+  {
+    "id": "pounce-set",
+    "name": "Pounce Set",
+    "tag": "payoff",
+    "flavor": "For the creature that waits for the mark, and then does not wait at all.",
+    "two": { "text": "Payoff's pounce +5%", "lines": [{ "line": "payoffs-pounce", "value": 500 }] },
+    "three": { "text": "Its first reaction each fight crits.", "effect": "firstReactionCrit" }
+  },
+  {
+    "id": "crossroads-wanderer",
+    "name": "Crossroads Wanderer",
+    "tag": "explorer",
+    "flavor": "Worn by those who take the fifth road at the Old Crossroads.",
+    "two": { "text": "Trips take 4% less time", "lines": [{ "line": "quick-feet", "value": 400 }] },
+    "three": {
+      "text": "One extra catch roll on 24 hour trips.",
+      "effect": "longTripCatch",
+      "value": 1
+    }
+  },
+  {
+    "id": "lantern-night",
+    "name": "Lantern Night",
+    "tag": "festival",
+    "flavor": "The Festival pieces together: hearth, lantern and cap, lit once a season.",
+    "two": {
+      "text": "Attack and HP +3%",
+      "lines": [
+        { "line": "attack", "value": 300 },
+        { "line": "hp", "value": 300 }
+      ]
+    },
+    "three": {
+      "text": "Shield Walls on its row last 1 more round.",
+      "effect": "rowShieldWall",
+      "value": 1
+    }
+  }
+]

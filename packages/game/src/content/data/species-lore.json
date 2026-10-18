@@ -1056,5 +1056,471 @@
       "Slow and steady",
       "Happy to share its warmth"
     ]
+  },
+  "sunfawn": {
+    "description": "A gentle fawn whose leaf ears have opened into blossoms. It curls up beside tired friends and lends them the sun it has soaked up all day.",
+    "appearance": {
+      "silhouette": "Slender fawn with long legs, two big blossom-tipped ears and a small white-spotted back.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Sprout Green",
+          "hex": "#5fb04a"
+        },
+        {
+          "name": "Leaf Light",
+          "hex": "#b4e26a"
+        },
+        {
+          "name": "Deep Moss",
+          "hex": "#2f6b3a"
+        },
+        {
+          "name": "Blossom Pink",
+          "hex": "#f4a6c0"
+        },
+        {
+          "name": "Petal Cream",
+          "hex": "#f4eccf"
+        }
+      ],
+      "features": [
+        "Slender, gentle fawn body on four thin legs",
+        "Two large ears, each opened into a pink blossom at the tip",
+        "Warm, soft dark eyes with long lashes",
+        "Cream belly and a pale spotted back",
+        "A small yellow glow in the middle of each blossom"
+      ],
+      "pose": "Lying curled up in a sunny patch, head resting, blossom ears open to the light.",
+      "always": ["Blossoms where the leaf ears were", "Soft, kind eyes"],
+      "never": ["Thorns or antlers", "A heavy, armoured body"],
+      "fromStage1": {
+        "keeps": [
+          "Leaf-green coat",
+          "Cream belly and muzzle",
+          "Sleepy, gentle eyes",
+          "Ears as its most notable feature"
+        ],
+        "changes": [
+          "Round bean becomes a slender fawn",
+          "Leaf-shaped ears open into pink blossoms",
+          "Long legs and a spotted back appear",
+          "Blossom pink added to the palette"
+        ]
+      }
+    },
+    "traits": [
+      "Curls up beside tired friends",
+      "Lends its friends the day's sun",
+      "Gentle and soft-spoken",
+      "Blooms a little more with every kind word"
+    ]
+  },
+  "ohmouse": {
+    "description": "A round, puffed-up mouse whose giant ears catch stray bolts before they reach its friends. It plants its feet, fizzes, and will not budge.",
+    "appearance": {
+      "silhouette": "Wide, puffed-up round mouse with two giant ears, short planted feet and a short zigzag tail.",
+      "size": "small",
+      "palette": [
+        {
+          "name": "Spark Yellow",
+          "hex": "#f2d12b"
+        },
+        {
+          "name": "Bright Flash",
+          "hex": "#fff3a0"
+        },
+        {
+          "name": "Storm Violet",
+          "hex": "#6b5bd6"
+        },
+        {
+          "name": "Night Indigo",
+          "hex": "#2d2a5e"
+        }
+      ],
+      "features": [
+        "Round, puffed-up body with fur standing out all over",
+        "Two giant ears wider than the head, with violet inner circles",
+        "Wide-set short feet planted flat on the ground",
+        "Stubborn black bead eyes under a small frown",
+        "Tiny sparks fizzing at the ear tips"
+      ],
+      "pose": "Planted square on both feet, chest out, ears wide and sparks fizzing at the tips.",
+      "always": ["Giant ears that catch bolts", "Feet planted flat"],
+      "never": ["Running or leaning forward", "A lean, long-legged body like Voltaro's"],
+      "fromStage1": {
+        "keeps": [
+          "Huge round ears with violet inner circles",
+          "Yellow and violet palette",
+          "Black bead eyes",
+          "Zigzag tail"
+        ],
+        "changes": [
+          "Small round body puffs up even rounder",
+          "Ears grow larger than the head",
+          "Feet widen and plant flat",
+          "Sparks fizz at the ear tips instead of trailing behind"
+        ]
+      }
+    },
+    "traits": [
+      "Plants its feet and will not budge",
+      "Catches stray bolts in its ears",
+      "Fizzes when it is determined",
+      "Can freeze like a statue when asked nicely"
+    ]
+  },
+  "geyserpup": {
+    "description": "A sturdy pup whose droplet tuft has grown into a tall spout. It saves up every splash it ever made and lets them all go at the boss in one great burst.",
+    "appearance": {
+      "silhouette": "Round water-drop pup with a tall spout of water where the tuft was, and a few drops arcing away from the top.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Splash Blue",
+          "hex": "#3fa7d6"
+        },
+        {
+          "name": "Deep Pool",
+          "hex": "#1f5f8b"
+        },
+        {
+          "name": "Foam White",
+          "hex": "#e8fbff"
+        },
+        {
+          "name": "Spray Blue",
+          "hex": "#7fd4f0"
+        },
+        {
+          "name": "Belly Sand",
+          "hex": "#f4e3b8"
+        }
+      ],
+      "features": [
+        "Round, sturdy pup body, wide at the shoulders",
+        "A tall spout of foam and water where the droplet tuft was",
+        "Loose drops of spray arcing away from the top of the spout",
+        "Two large dark eyes with one white highlight each",
+        "Cream belly patch"
+      ],
+      "pose": "Sitting upright with its chest out, the spout at full height and the spray arcing away.",
+      "always": ["The spout where the tuft was", "A round pup body"],
+      "never": [
+        "Wings or wide fins (those are Tidewing's)",
+        "A pointed tuft: the spout is tall and open at the top"
+      ],
+      "fromStage1": {
+        "keeps": [
+          "Round water-drop body and cream belly",
+          "Big dark eyes with white highlights",
+          "Blue and foam palette",
+          "Playful, sturdy pup face"
+        ],
+        "changes": [
+          "The pointed tuft opens into a tall spout",
+          "Loose spray arcs away from the top",
+          "Wider shoulders and a taller body",
+          "Adds a lighter spray blue"
+        ]
+      }
+    },
+    "traits": [
+      "Saves its splashes for one big burst",
+      "Makes its own puddle, so none is a surprise",
+      "Its spout hiccups when it is excited",
+      "Still first to say hello, now with a fountain"
+    ]
+  },
+  "wickat": {
+    "description": "A kitten-sized cat whose ember has settled into a tall, steady flame, like a lit wick. It touches the boss with it first, so the whole team has something warm to follow up.",
+    "appearance": {
+      "silhouette": "Round kitten with two small ears and a tall, steady flame standing on a short dark wick between them.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Cinder Orange",
+          "hex": "#e8582a"
+        },
+        {
+          "name": "Ember Glow",
+          "hex": "#ffb347"
+        },
+        {
+          "name": "Candle Yellow",
+          "hex": "#ffe680"
+        },
+        {
+          "name": "Ash Cream",
+          "hex": "#f6d8b0"
+        },
+        {
+          "name": "Coal Plum",
+          "hex": "#5a2a2e"
+        }
+      ],
+      "features": [
+        "Round head and body, nearly the same width, like Cindle",
+        "Two small ears with dark plum inner tips",
+        "A tall flame in two layers, orange outside and yellow inside, on a short dark wick",
+        "Two tiny sparks floating beside the flame",
+        "Cream muzzle and chest"
+      ],
+      "pose": "Sitting upright and very still, the flame steady and two sparks drifting beside it.",
+      "always": ["The tall flame on its wick", "Round kitten proportions"],
+      "never": ["Tall ear tufts or a lean body like Pyrelynx's", "Flames covering the whole body"],
+      "fromStage1": {
+        "keeps": [
+          "Round kitten body and cream muzzle",
+          "Small pointed ears with plum insides",
+          "Amber eyes",
+          "Orange and cream palette"
+        ],
+        "changes": [
+          "The small ember grows into a tall, steady flame",
+          "The flame stands on a short dark wick",
+          "Two sparks float beside it",
+          "Adds a candle yellow"
+        ]
+      }
+    },
+    "traits": [
+      "Carries its flame as steadily as a candle",
+      "No longer jumps at its own sparks",
+      "Lights the way for slower friends",
+      "Purrs a little louder by candlelight"
+    ]
+  },
+  "drizzlewt": {
+    "description": "A slow, calm newt whose mist has gathered into a small rain cloud. It drizzles on tired friends, and the boss's tricks wash away like footprints in the rain.",
+    "appearance": {
+      "silhouette": "Chunky low newt body with a wide grey-blue rain cloud above its head and a few drops falling beside it.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Mist Teal",
+          "hex": "#6fb8b0"
+        },
+        {
+          "name": "Fog Blue",
+          "hex": "#a9c7d6"
+        },
+        {
+          "name": "Rain Grey",
+          "hex": "#8fa9bf"
+        },
+        {
+          "name": "Foam White",
+          "hex": "#e8fbff"
+        },
+        {
+          "name": "Rain Blue",
+          "hex": "#3fa7d6"
+        }
+      ],
+      "features": [
+        "Wide, low newt body with a short, thick tail",
+        "A wide, fluffy cloud above the head, white on top and grey-blue underneath",
+        "A few drops falling in a row below the cloud",
+        "Small dark eyes set wide apart with a white highlight each",
+        "Pale fog-blue belly"
+      ],
+      "pose": "Plodding forward under its cloud, head low, a soft rain falling around it.",
+      "always": ["The rain cloud above its head", "Drops falling from the cloud"],
+      "never": ["Lightning or dark storm clouds: the rain is gentle", "A long, thin body"],
+      "fromStage1": {
+        "keeps": [
+          "Mist teal body and pale fog-blue belly",
+          "Wide, low newt body",
+          "Small dark eyes set wide apart",
+          "The cloud as its most notable feature"
+        ],
+        "changes": [
+          "The small puff on its back rises into a wide rain cloud",
+          "Drops fall below the cloud",
+          "A grey-blue underside appears",
+          "Rain blue added to the palette"
+        ]
+      }
+    },
+    "traits": [
+      "Drizzles on friends who need cheering up",
+      "Fusses over its cloud and everyone under it",
+      "Loves damp, cool mornings",
+      "Takes its time, and so does the rain"
+    ]
+  },
+  "kilnmole": {
+    "description": "A broad mole in a dome of baked clay, with a small chimney on top that glows like a banked fire. It digs in at the door of the burrow and keeps the heat in for everyone behind it.",
+    "appearance": {
+      "silhouette": "Wide, domed mole with a baked-clay shell, a small chimney on top, a pink snout and short sturdy feet.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Kiln Clay",
+          "hex": "#a8542f"
+        },
+        {
+          "name": "Brick Light",
+          "hex": "#c97a4a"
+        },
+        {
+          "name": "Fired Shade",
+          "hex": "#6b3320"
+        },
+        {
+          "name": "Clay Cream",
+          "hex": "#e6c9a0"
+        },
+        {
+          "name": "Ember Orange",
+          "hex": "#ff8a3d"
+        }
+      ],
+      "features": [
+        "Broad, round body under a domed shell of baked clay bricks",
+        "A small chimney on top with an ember glowing at its mouth",
+        "Pointed pink snout",
+        "Tiny squinting eyes",
+        "Orange ember glints between the bricks"
+      ],
+      "pose": "Planted square at the door of the burrow, shell low, the chimney glowing.",
+      "always": ["The domed clay shell", "The small chimney"],
+      "never": ["Molten claws like Magmole's", "A soft ash coat like Ashmole's"],
+      "fromStage1": {
+        "keeps": [
+          "Pointed pink snout",
+          "Tiny squinting eyes",
+          "Orange ember glints",
+          "Warm brown colouring"
+        ],
+        "changes": [
+          "Soft ash fur becomes a domed shell of baked clay",
+          "A small chimney glows on top",
+          "Bigger, broader body",
+          "Terracotta replaces the ash grey"
+        ]
+      }
+    },
+    "traits": [
+      "Bakes its own shell in the embers",
+      "Digs in at the door of the burrow",
+      "Keeps the heat in for the whole team",
+      "Slow to move, slower to give way"
+    ]
+  },
+  "halcyray": {
+    "description": "A calm ray that glides in just after the storm has passed, trailing a small rainbow. It lends its friends the bright, clear feeling of the sky after thunder.",
+    "appearance": {
+      "silhouette": "Flat diamond-shaped body with soft rounded wings, a small rainbow arc above its head and a ribbon tail.",
+      "size": "large",
+      "palette": [
+        {
+          "name": "Spark Yellow",
+          "hex": "#f2d12b"
+        },
+        {
+          "name": "Bright Flash",
+          "hex": "#fff3a0"
+        },
+        {
+          "name": "Storm Violet",
+          "hex": "#6b5bd6"
+        },
+        {
+          "name": "Cloud Lilac",
+          "hex": "#a79af0"
+        },
+        {
+          "name": "Clear Mint",
+          "hex": "#7af0c4"
+        }
+      ],
+      "features": [
+        "Wide diamond body that is wider than it is tall",
+        "Two rounded wing-fins with a pale yellow edge, held low and level",
+        "Violet back with a lighter yellow belly",
+        "Calm eyes under a small rainbow arc of lilac and mint",
+        "A soft mint ribbon at the tail instead of a bolt"
+      ],
+      "pose": "Gliding slowly with its wings low and level, the little rainbow arching over its head.",
+      "always": ["Diamond silhouette", "A small rainbow above its head"],
+      "never": ["Legs or paws", "A sharp bolt at the tail (that is Stormray's)"],
+      "fromStage1": {
+        "keeps": [
+          "Diamond body",
+          "Violet and yellow palette",
+          "Pale yellow belly",
+          "Wings as its widest part"
+        ],
+        "changes": [
+          "The bolt tail softens into a mint ribbon",
+          "A small rainbow arcs over its head",
+          "Wing tips are rounded, not pointed",
+          "Cloud lilac and clear mint added"
+        ]
+      }
+    },
+    "traits": [
+      "Arrives just as the storm passes",
+      "Leaves a small rainbow in its wake",
+      "Soft-spoken and bright",
+      "Lends its friends the clear sky"
+    ]
+  },
+  "bloomback": {
+    "description": "A patient turtle whose little garden has opened into one enormous flower. It has been saving its bloom since it was small, and when it opens, the boss feels it.",
+    "appearance": {
+      "silhouette": "Dome shell on short legs with one huge pink flower, yellow at its heart, opened across the top.",
+      "size": "large",
+      "palette": [
+        {
+          "name": "Sprout Green",
+          "hex": "#5fb04a"
+        },
+        {
+          "name": "Leaf Light",
+          "hex": "#b4e26a"
+        },
+        {
+          "name": "Deep Moss",
+          "hex": "#2f6b3a"
+        },
+        {
+          "name": "Shell Brown",
+          "hex": "#8b6b43"
+        },
+        {
+          "name": "Petal Pink",
+          "hex": "#f08fa8"
+        }
+      ],
+      "features": [
+        "Round dome shell in mossy green with brown rings showing through",
+        "One huge pink flower with a yellow heart, wider than its head",
+        "Small head with calm dark eyes with a white highlight each",
+        "Short stout legs in lighter olive",
+        "Deeper rose shading between the petals"
+      ],
+      "pose": "Standing still and facing forward, the great flower fully open.",
+      "always": ["The one huge flower", "A mossy dome shell"],
+      "never": ["A whole forest of trees (that is Ancientshell's)", "Spikes or a snapping beak"],
+      "fromStage1": {
+        "keeps": ["Mossy green dome shell", "Pink flower", "Short stout legs", "Calm dark eyes"],
+        "changes": [
+          "The single small flower opens into one huge bloom",
+          "A yellow heart appears in the flower",
+          "The grass tuft is gone",
+          "Slightly larger shell"
+        ]
+      }
+    },
+    "traits": [
+      "Checks its flower twice a day and says it does not",
+      "Opens all at once, never a little at a time",
+      "Stands very still when the bloom is close",
+      "Smells wonderful and pretends not to notice"
+    ]
   }
 }

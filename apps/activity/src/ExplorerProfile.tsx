@@ -108,6 +108,7 @@ export function ExplorerProfile({
                   text={xp.text}
                   startCap={xp.startCap}
                   endCap={xp.endCap}
+                  kind="explorer"
                 />
                 <p class="muted">
                   {row.trips} {row.trips === 1 ? 'trip' : 'trips'}

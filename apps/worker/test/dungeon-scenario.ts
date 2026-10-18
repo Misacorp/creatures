@@ -1,12 +1,30 @@
 /**
- * One scripted play-through of the daily dungeon through the real routes. The capture test
+ * One scripted play-through of the daily dungeon on the map, through the real routes. The capture test
  * (`dungeon-capture.test.ts`) writes its responses out as the fixtures in
  * `apps/activity/src/fixtures` (`dungeon-*.json`), and `dungeon-fixtures.test.ts` checks that the
  * server still sends the shapes those files have, so the client can build against them. Nothing here
  * is hand-written output: every response comes from the server.
+ *
+ * The fights are made easy or deadly (`scaleFoes`) where the script needs a win or a loss, so a retune
+ * of the foes does not change what the script shows. The map, the events and the camp's offers come from
+ * the seeded rngs of `dungeonScenarioOptions`.
+ *
+ * The older fixtures (`dungeon-run-*.json`, `dungeon-today*.json` from before the map, the old
+ * replay) were captured from the all-at-once run that no longer exists; they stay, as the shapes of the
+ * runs stored before the map, and are not captured again.
  */
-import { createSeededRng } from '@creatures/game';
-import { dungeonPlayer, newKey, type DungeonPlayer, type Json } from './dungeon-helpers';
+import { RULES, createSeededRng } from '@creatures/game';
+import {
+  deadlyFoes,
+  dungeonPlayer,
+  followRoute,
+  newKey,
+  routeThrough,
+  scaleFoes,
+  type DungeonPlayer,
+  type Json,
+} from './dungeon-helpers';
+import type { DungeonRunState } from '../src/dungeon-types';
 import type { CoreContext } from './helpers';
 
 /** Tuesday of week 2027-W02, 14:00 in Helsinki: after the 13:37 daily reset, so the game day is the 12th. */
@@ -26,6 +44,11 @@ export const dungeonScenarioOptions = () => ({
   dungeonRng: createSeededRng('fixture-dungeon'),
   gearRng: createSeededRng('fixture-dungeon-gear'),
 });
+
+type Act = Parameters<DungeonPlayer['act']>[1];
+
+/** The foes of the script's wins: weak enough that the team of level 12 beats any room of the map. */
+const FOES: [hpBp: number, atkBp: number] = [2_000, 1_000];
 
 export async function runDungeonScenario(ctx: CoreContext): Promise<DungeonCaptured> {
   ctx.clock.t = DUNGEON_SCENARIO_START;
@@ -55,114 +78,222 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<DungeonCaptu
     if (res.status === 200) throw new Error(`${method} ${path} was meant to fail`);
     out.errors.push({ route: tidy(method, path), status: res.status, body: res.body });
   };
-  const setProgress = (userId: string, fields: Record<string, number | string | null>): void => {
-    ctx.sql.exec(
-      `INSERT INTO dungeon_progress (user_id, depth, streak, last_day, first_day)
-       VALUES (?, ?, ?, ?, ?)`,
-      userId,
-      fields['depth'] ?? 1,
-      fields['streak'] ?? 0,
-      fields['last_day'] ?? null,
-      fields['first_day'] ?? null,
-    );
+  const actBody = (state: DungeonRunState, act: Act, key = newKey()) => ({
+    runId: state.id,
+    step: state.step,
+    idempotencyKey: key,
+    act,
+  });
+  /** An act, recorded under `name`; answers the new state. */
+  const step = async (
+    p: DungeonPlayer,
+    name: string,
+    state: DungeonRunState,
+    act: Act,
+  ): Promise<DungeonRunState> => {
+    const res = await record(p, name, 'POST', '/api/dungeon/act', actBody(state, act));
+    if (res.status !== 200) throw new Error(`${name} failed: ${JSON.stringify(res.body)}`);
+    return (res.body as unknown as { state: DungeonRunState }).state;
   };
+  /** Plays on (not recorded) along `route` until `stop` holds. */
+  const walk = async (
+    p: DungeonPlayer,
+    state: DungeonRunState,
+    route: readonly string[],
+    stop: (s: DungeonRunState) => boolean,
+  ): Promise<DungeonRunState> => {
+    const res = await p.play(state, { pick: followRoute(route), stopWhen: stop });
+    return res.body.state as DungeonRunState;
+  };
+  const routeTo = (state: DungeonRunState, kind: string): string[] =>
+    routeThrough(state.map, (n) => n.kind === kind) as string[];
 
-  // --- A new player's day: today, a run, and today again ---
+  // --- A full run: the map, a fight, a mystery room, the camp with a swap, and a clear ---
+  let restore = scaleFoes(...FOES);
   const hero = await dungeonPlayer(ctx, 1, {
     level: 12,
-    species: ['cindle', 'sproutle', 'splashet'],
+    creatures: 4,
+    species: ['cindle', 'sproutle', 'splashet', 'zipmouse'],
   });
-  const [cindle, sproutle, splashet] = hero.creatureIds as [string, string, string];
-  out.responses['dungeon-today'] = (await hero.call('GET', '/api/dungeon/today')).body;
-  // The row is saved while the player sets it up (the run below spends it).
-  await record(hero, 'dungeon-team-draft', 'PUT', '/api/dungeon/team', {
-    team: [splashet, null, cindle],
+  const [cindle, sproutle, splashet, zipmouse] = hero.creatureIds as [
+    string,
+    string,
+    string,
+    string,
+  ];
+  // The day's map before anyone has entered.
+  out.responses['dungeon-today-map'] = (await hero.call('GET', '/api/dungeon/today')).body;
+  const startBody = hero.body({ team: [sproutle, splashet, cindle] });
+  const started = await record(hero, 'dungeon-start', 'POST', '/api/dungeon/start', startBody);
+  let state = (started.body as unknown as { state: DungeonRunState }).state;
+  // The first fight, played whole: the answer carries the room to show at once.
+  state = await step(hero, 'dungeon-act-fight', state, {
+    type: 'move',
+    node: state.reachable[0] as string,
   });
-  out.responses['dungeon-today-draft'] = (await hero.call('GET', '/api/dungeon/today')).body;
-  const body = hero.body({ team: [sproutle, splashet, cindle] });
-  const ran = await record(hero, 'dungeon-run-cleared', 'POST', '/api/dungeon/run', body);
-  const runId = ((ran.body['run'] ?? {}) as { id?: string }).id ?? '';
-  out.responses['dungeon-today-done'] = (await hero.call('GET', '/api/dungeon/today')).body;
-  await record(hero, 'dungeon-replay', 'GET', `/api/dungeon/run/${runId}`);
-  // A retry with the same key is the stored run.
-  await record(hero, 'dungeon-run-retry', 'POST', '/api/dungeon/run', body);
+  // On to the camp, which every path crosses.
+  const toCamp = routeTo(state, 'camp');
+  state = await walk(hero, state, toCamp, (s) => s.reachable.includes(toCamp.at(-1) as string));
+  state = await step(hero, 'dungeon-act-camp-pending', state, {
+    type: 'move',
+    node: toCamp.at(-1) as string,
+  });
+  out.responses['dungeon-today-active'] = (await hero.call('GET', '/api/dungeon/today')).body;
+  // Swap the third creature for the fourth, and stand in a new order: the order is the row after the swap.
+  state = await step(hero, 'dungeon-act-camp', state, {
+    type: 'camp',
+    choice: 'swap',
+    order: [splashet, sproutle, zipmouse],
+    out: cindle,
+    in: zipmouse,
+  });
+  // Play on to the floor boss; the move into it is the clear.
+  const boss = state.map.nodes.find((n) => n.kind === 'boss')?.id as string;
+  state = await walk(hero, state, [], (s) => s.reachable.includes(boss));
+  state = await step(hero, 'dungeon-act-cleared', state, { type: 'move', node: boss });
+  if (state.outcome !== 'cleared') throw new Error('hero did not clear the map');
+  await record(hero, 'dungeon-replay-path', 'GET', `/api/dungeon/run/${state.id}`);
+
+  // --- A mystery room: opening it waits for an answer, and the answer ---
+  const seer = await dungeonPlayer(ctx, 2, { level: 12 });
+  let seen = (await seer.start()).body.state;
+  const toRoom = routeTo(seen, 'mystery');
+  seen = await walk(seer, seen, toRoom, (s) => s.reachable.includes(toRoom.at(-1) as string));
+  seen = await step(seer, 'dungeon-act-event-pending', seen, {
+    type: 'move',
+    node: toRoom.at(-1) as string,
+  });
+  await step(seer, 'dungeon-act-event', seen, { type: 'event', option: 1 });
+
+  // --- Heading home from the camp ---
+  const homer = await dungeonPlayer(ctx, 3, { level: 12 });
+  let home = (await homer.start()).body.state;
+  const homeRoute = routeTo(home, 'camp');
+  home = await walk(homer, home, homeRoute, (s) => s.pending?.kind === 'camp');
+  await step(homer, 'dungeon-act-home', home, { type: 'home' });
+
+  // --- A defeat: deadly foes end the run in the first fight ---
+  restore();
+  restore = deadlyFoes();
+  const loser = await dungeonPlayer(ctx, 4, { level: 1 });
+  const lost = (await loser.start()).body.state;
+  await step(loser, 'dungeon-act-defeat', lost, {
+    type: 'move',
+    node: lost.reachable[0] as string,
+  });
+  restore();
 
   // --- What a player can hit ---
-  await refuse(hero, 'POST', '/api/dungeon/run', hero.body()); // already run today
-  await refuse(hero, 'PUT', '/api/dungeon/team', { team: [cindle, cindle, null] }); // the same creature twice
-  await refuse(hero, 'POST', '/api/dungeon/run', { ...body, team: [cindle, splashet, sproutle] }); // same key, other team
-  const other = await dungeonPlayer(ctx, 2, { level: 12 });
+  restore = scaleFoes(...FOES);
+  const other = await dungeonPlayer(ctx, 5, { level: 12 });
+  const open = (await other.start()).body.state;
+  const move = { type: 'move', node: open.reachable[0] as string } as const;
+  await refuse(other, 'POST', '/api/dungeon/start', other.body()); // a run is open
+  await refuse(other, 'POST', '/api/dungeon/act', actBody({ ...open, step: 4 }, move)); // stale step
+  await refuse(other, 'POST', '/api/dungeon/act', actBody(open, { type: 'home' })); // not at the camp
   await refuse(
     other,
     'POST',
-    '/api/dungeon/run',
-    other.body({
-      team: [
-        other.creatureIds[0] as string,
-        other.creatureIds[0] as string,
-        other.creatureIds[1] as string,
-      ],
-    }),
+    '/api/dungeon/act',
+    actBody(open, { type: 'move', node: open.map.nodes.find((n) => n.floor === 2)?.id as string }),
+  ); // not reachable
+  const key = newKey();
+  await other.call('POST', '/api/dungeon/act', actBody(open, move, key));
+  await refuse(
+    other,
+    'POST',
+    '/api/dungeon/act',
+    actBody(open, { type: 'move', node: open.reachable[1] ?? open.reachable[0] ?? 'f0l0' }, key),
+  ); // the key of another act
+  await refuse(hero, 'POST', '/api/dungeon/act', actBody(open, move)); // somebody else's run
+  await refuse(other, 'POST', '/api/dungeon/act', { ...actBody(open, move), seed: 'abc' }); // a seed is not for clients
+  await refuse(other, 'POST', '/api/dungeon/run', other.body()); // the old route is gone
+  await refuse(hero, 'POST', '/api/dungeon/start', hero.body()); // already run today
+  await refuse(hero, 'POST', '/api/dungeon/start', {
+    ...startBody,
+    team: [cindle, splashet, sproutle],
+  }); // same key, other team
+  await refuse(hero, 'POST', '/api/dungeon/start', { ...hero.body(), formation: ['front'] }); // an old shape
+  await refuse(hero, 'GET', `/api/dungeon/run/${open.id}`); // somebody else's run
+  const treater = await dungeonPlayer(ctx, 6, { level: 12 });
+  // The same creature twice (checked before whose they are).
+  await refuse(
+    treater,
+    'POST',
+    '/api/dungeon/start',
+    treater.body({ team: [sproutle, sproutle, splashet] }),
   );
-  // The old shape, with a formation of zones: refused, since the order of `team` is the row.
-  await refuse(other, 'POST', '/api/dungeon/run', {
-    ...other.body(),
-    formation: ['front', 'middle', 'back'],
-  });
+  await refuse(treater, 'POST', '/api/dungeon/start', treater.body({ treats: [sproutle] })); // a treat for a creature that is not in the team
   await refuse(
-    other,
+    treater,
     'POST',
-    '/api/dungeon/run',
-    other.body({ team: [cindle, ...other.creatureIds.slice(1, 3)] }),
-  ); // somebody else's creature
-  await refuse(
-    other,
-    'POST',
-    '/api/dungeon/run',
-    other.body({ team: other.creatureIds.slice(0, 2) }),
-  ); // two creatures
-  // The old shape with `abilities` (a basic pick and fire rounds): refused, there is no such choice.
-  await refuse(other, 'POST', '/api/dungeon/run', {
-    ...other.body(),
-    abilities: { basic: { abilityId: 'rally', fireAtRound: null }, creatures: [] },
-  });
-  await refuse(other, 'GET', `/api/dungeon/run/${runId}`); // somebody else's run
-  await refuse(other, 'GET', '/api/dungeon/run/not-a-uuid');
-  await refuse(other, 'POST', '/api/dungeon/run', { ...other.body(), seed: 'abc' }); // a seed is not for clients
-
-  // --- A landmark: depth 7, a day-3 streak and a gear drop ---
-  const champion = await dungeonPlayer(ctx, 3, {
-    level: 30,
-    species: ['tidewing', 'pyrelynx', 'thornbuck'],
-  });
-  setProgress(champion.id, {
-    depth: 7,
-    streak: 2,
-    last_day: '2027-01-11',
-    first_day: '2027-01-01',
-  });
-  out.responses['dungeon-today-landmark'] = (await champion.call('GET', '/api/dungeon/today')).body;
-  await record(champion, 'dungeon-run-landmark', 'POST', '/api/dungeon/run', champion.body());
-
-  // --- A lost run on the first day: the retry is offered ---
-  const loser = await dungeonPlayer(ctx, 4, { level: 1 });
-  setProgress(loser.id, { depth: 45 });
-  await record(loser, 'dungeon-run-lost', 'POST', '/api/dungeon/run', loser.body());
-  out.responses['dungeon-today-retry'] = (await loser.call('GET', '/api/dungeon/today')).body;
-  const second = loser.body({ idempotencyKey: newKey() });
-  await record(loser, 'dungeon-run-retry-attempt', 'POST', '/api/dungeon/run', second);
-  await refuse(loser, 'POST', '/api/dungeon/run', loser.body()); // no third run
+    '/api/dungeon/start',
+    treater.body({ treats: [treater.creatureIds[0] as string] }),
+  ); // a treat nobody can pay for
+  restore();
 
   // --- A player who cannot run yet ---
-  const fresh = await dungeonPlayer(ctx, 5, { creatures: 2 });
-  out.responses['dungeon-today-need-creatures'] = (
-    await fresh.call('GET', '/api/dungeon/today')
-  ).body;
+  const fresh = await dungeonPlayer(ctx, 7, { creatures: 2 });
   await refuse(
     fresh,
     'POST',
-    '/api/dungeon/run',
+    '/api/dungeon/start',
     fresh.body({ team: fresh.creatureIds.slice(0, 2) }),
   );
+
+  // --- The Undercroft: a carved door, the boss, the way down and the keeper ---
+  // (After everything above, so the rngs the earlier fixtures were captured with are used in the same
+  // order. It runs on later game days until a day's map has a carved door.)
+  restore = scaleFoes(...FOES);
+  const diver = await dungeonPlayer(ctx, 8, {
+    level: 20,
+    creatures: 4,
+    species: ['cindle', 'sproutle', 'splashet', 'zipmouse'],
+  });
+  const [dCindle, dSproutle, dSplashet] = diver.creatureIds as [string, string, string, string];
+  ctx.sql.exec(
+    "INSERT INTO dungeon_progress (user_id, depth, first_day) VALUES (?, ?, '2027-01-01')",
+    diver.id,
+    // A landmark depth the Undercroft is open at: the boss chest's gear drop is certain, so it shows.
+    RULES.dungeon.landmarkEvery * 2,
+  );
+  let hasDoor = false;
+  for (let day = 0; day < 40 && !hasDoor; day++) {
+    ctx.clock.t += 24 * 3_600_000;
+    hasDoor = (await diver.today()).map.nodes.some((n) => n.kind === 'door');
+  }
+  if (!hasDoor) throw new Error('no day of the scenario has a carved door');
+  const dived = await diver.start({ team: [dSproutle, dSplashet, dCindle] });
+  let under = dived.body.state;
+  const doorId = under.map.nodes.find((n) => n.kind === 'door')?.id as string;
+  const toDoor = routeThrough(under.map, (n) => n.id === doorId) as string[];
+  under = await walk(diver, under, toDoor, (s) => s.reachable.includes(doorId));
+  // Stepping through the door adds a room to the Undercroft; nothing waits.
+  under = await step(diver, 'dungeon-act-door', under, { type: 'move', node: doorId });
+  const bossId = under.map.nodes.find((n) => n.kind === 'boss')?.id as string;
+  under = await walk(diver, under, [], (s) => s.reachable.includes(bossId));
+  // The boss falls: the run does not end. The chest is banked and the way down is offered.
+  under = await step(diver, 'dungeon-act-descend-pending', under, { type: 'move', node: bossId });
+  if (under.pending?.kind !== 'descend') throw new Error('the boss did not offer the descent');
+  // Down: the level is drawn, the row catches its breath.
+  under = await step(diver, 'dungeon-act-descend', under, { type: 'descend' });
+  // A cracked floor would offer a deeper level instead of ending the run: this fixture shows the end.
+  if (under.undercroft?.maps[0]?.crack === true) {
+    const row = ctx.sql
+      .exec<{ state_json: string }>('SELECT state_json FROM dungeon_runs WHERE id = ?', under.id)
+      .one();
+    const st = JSON.parse(row.state_json) as { under: { crack?: boolean }[] };
+    (st.under[0] as { crack?: boolean }).crack = false;
+    ctx.sql.exec(
+      'UPDATE dungeon_runs SET state_json = ? WHERE id = ?',
+      JSON.stringify(st),
+      under.id,
+    );
+  }
+  const level = (s: DungeonRunState) => s.undercroft?.maps[s.level - 1] ?? s.map;
+  const keeperId = level(under).nodes.find((n) => n.kind === 'boss')?.id as string;
+  under = await walk(diver, under, [], (s) => s.reachable.includes(keeperId));
+  await step(diver, 'dungeon-act-keeper', under, { type: 'move', node: keeperId });
+  restore();
   return out;
 }

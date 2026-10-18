@@ -1,13 +1,13 @@
 import type { Creature } from './api';
 import { creatureName } from './game';
-import { ItemFrame, ItemSprite } from './GearArt';
 import type { GearItem } from './gear-types';
 import { gearName, rarityName, slotName, sortItems } from './gear-view';
+import { ItemTile } from './ItemTile';
 
 /**
- * The bag as a grid of item sprites with rarity frames, the slot's icon in each image's top-left corner and the
- * item level in its bottom-right one. Each cell is a real button
- * (arrow-free, Tab and Enter work); its spoken label has the name, slot, item level, rarity and who wears it.
+ * The bag as the one item grid (`ItemTile`, the same as the item picker): the slot's icon in each tile's top-left
+ * corner (the bag mixes slots), the item level at the bottom right, "Worn" when a creature wears it. Each tile is
+ * a real button (Tab and Enter work); its spoken label has the name, slot, item level, rarity and who wears it.
  */
 export function InventoryGrid({
   items,
@@ -21,7 +21,7 @@ export function InventoryGrid({
   onSelect: (id: string) => void;
 }) {
   return (
-    <ul class="inv-grid" aria-label="Gear in your bag">
+    <ul class="item-grid" aria-label="Gear in your bag">
       {sortItems(items).map((item) => {
         const wearer = creatures.find((c) => c.id === item.equippedOn);
         const label = [
@@ -34,26 +34,16 @@ export function InventoryGrid({
           .filter((part) => part !== null)
           .join(', ');
         return (
-          <li key={item.id}>
-            <button
-              type="button"
-              class={item.id === selectedId ? 'inv-cell selected' : 'inv-cell'}
-              aria-pressed={item.id === selectedId}
-              aria-label={label}
-              onClick={() => {
-                onSelect(item.id);
-              }}
-            >
-              <ItemFrame rarity={item.rarity} baseId={item.baseId} level={item.itemLevel}>
-                <ItemSprite baseId={item.baseId} scale={4} />
-              </ItemFrame>
-              {wearer !== undefined && (
-                <span class="item-flag worn pix" aria-hidden="true">
-                  worn
-                </span>
-              )}
-            </button>
-          </li>
+          <ItemTile
+            key={item.id}
+            item={item}
+            label={label}
+            selected={item.id === selectedId}
+            flag={wearer === undefined ? null : 'Worn'}
+            onSelect={() => {
+              onSelect(item.id);
+            }}
+          />
         );
       })}
     </ul>

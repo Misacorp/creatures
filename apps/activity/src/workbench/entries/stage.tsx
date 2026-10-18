@@ -5,7 +5,7 @@ import { Stage } from '../../Stage';
 import dungeonReplay from '../../fixtures/dungeon-replay.json';
 import liveMid from '../../fixtures/live-mid.json';
 import { parseDungeonReplay } from '../../dungeon-parse';
-import { mineIds, modifierGimmicks, roomBoss, stageRow } from '../../dungeon-playback';
+import { mineIds, modifierGimmicks, replayInput, roomBoss, stageRow } from '../../dungeon-playback';
 import { roomLine } from '../../dungeon-text';
 import { parseLiveSnapshot } from '../../live-api';
 import { finaleProgress } from '../../raid-progress';
@@ -80,7 +80,7 @@ const stageHead: Entry = {
     { name: 'No place', props: { place: '' } },
     {
       name: 'Long place',
-      props: { place: 'Room 3 / 3, room boss of the deep', round: 'Round 12 / 12' },
+      props: { place: 'Room 3 / 3, floor boss of the deep', round: 'Round 12 / 12' },
     },
   ],
   render: (p) => (
@@ -108,7 +108,7 @@ const stage: Entry = {
   file: 'apps/activity/src/Stage.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The fight stage of the raid replay, the live finale and the dungeon, held still at one moment of a fixture fight: the head (with the room\'s modifier tags in the dungeon), the foe\'s name with its element chip after it, its picture (tap it for the foe popover: element, HP, its attack and tricks) and HP bar, the creatures with the order they act in and the one acting now outlined. The raid\'s party is a grid like the placement board (rows front to back, lanes as columns, scrolling sideways); it opens on your own creatures and follows the one acting. "Raid, big party" plays a seeded fight of the party size set below. "Boss moves" holds one hand-made boss move still (a sweep, barrage, slam, lance, pincer, chain, a charge with its amber marks, a Support\'s heal, the Enraged banner or a retreat), at its wind-up or as it lands.',
+    'The fight stage of the raid replay, the live finale and the dungeon, held still at one moment of a fixture fight: the head (with the room\'s modifier tags in the dungeon), the foe\'s name with its element chip after it, its picture (tap it for the foe popover: element, HP, its attack and tricks) and HP bar, the creatures with the order they act in and the one acting now outlined. The raid\'s party is a grid like the placement board (rows front to back, lanes as columns, scrolling sideways); it opens on your own creatures and follows the one acting. "Raid, big party" plays a seeded fight of the party size set below. "Boss moves" holds one hand-made boss move still (a sweep, barrage, slam, lance, pincer, chain, a charge with its amber marks, a Support\'s heal, the Enraged banner, a retreat, or the lines of gear: a Stubborn creature that stays up at 1 HP, and an Echo, a Sidestep and a Payback), at its wind-up or as it lands.',
   controls: {
     fight: {
       kind: 'select',
@@ -278,7 +278,7 @@ const dungeonPlayback: Entry = {
   render: (p) => (
     <DungeonPlayback
       key={String(bool(p, 'showControls'))}
-      replay={REPLAY}
+      input={replayInput(REPLAY)}
       onDone={() => undefined}
       showControls={bool(p, 'showControls')}
     />

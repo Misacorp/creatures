@@ -17,6 +17,9 @@ export const IdSchema = v.pipe(v.string(), v.regex(ID_RE));
 
 const GOAL_IDS = expeditionContent.goals.map((g) => g.id);
 
+/** Every species id: the schema of a field that names one (the server then checks it is a branch). */
+const SPECIES_IDS = content.creatures.map((c) => c.id);
+
 const STARTER_IDS = content.creatures.filter((c) => c.starter).map((c) => c.id);
 
 export const StarterBodySchema = v.strictObject({
@@ -95,7 +98,14 @@ export const TalentSlotBodySchema = v.strictObject({
 /** Earning the ribbon a creature waits for: the creature is in the path, the player is the session's. */
 export const RibbonBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
 
-export const EvolveBodySchema = v.strictObject({ idempotencyKey: IdempotencyKeySchema });
+/**
+ * Evolving a creature: the creature is in the path. `species` names the form it grows into, one of its
+ * branches (the server checks); a client that sends none (an older one) gets the first branch.
+ */
+export const EvolveBodySchema = v.strictObject({
+  species: v.optional(v.picklist(SPECIES_IDS)),
+  idempotencyKey: IdempotencyKeySchema,
+});
 
 /** Length and character rules are applied by `sanitizeNickname`, which reports a reason. */
 export const NicknameBodySchema = v.strictObject({

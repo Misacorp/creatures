@@ -7,6 +7,19 @@
   --bone: #f4eedc; /* text */
   --haze: #a69fc8; /* muted text */
   --gold: #ffd25a; /* accent: Bait, crits, highlights */
+  /*
+    The three kinds of XP, each its own colour on its bar and level tags (`XpBar` and `XpGain` take a
+    `kind`), so one is never read as another: a creature's experience is gold, a creature's explorer XP is
+    orchid (a pastel pink with a lilac tint, softer than Epic's hot pink and far from the red of a
+    warning), and the Crafting skill is leather brown.
+  */
+  --xp-experience: var(--gold);
+  --xp-explorer: #e7a6d6;
+  --xp-crafting: #c08552;
+  /* Each one's darker shade: the part of a bar that was there before what was just gained. */
+  --xp-experience-shade: var(--gold-shade);
+  --xp-explorer-shade: #b479a5;
+  --xp-crafting-shade: #8c5c35;
   --tide: #4f8fe6;
   --ember: #ef6a3a;
   --grove: #5cbf5a;
@@ -18,6 +31,18 @@
   --display: 'Jersey 10', 'Courier New', ui-monospace, monospace;
   --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --px: 3px; /* one "pixel" of UI chrome */
+  /*
+    The type scale (2026-10-18), for the pixel font (Jersey 10, which draws about 28% bigger than its
+    value says: see fonts.css). Use these, not a raw rem, so the same kind of text is the same size everywhere.
+    Body text (Atkinson, 15px) has its own sizes. Where each is used so far: the item card, the item picker's
+    detail panel, the dismantle panel, the Equip on row and the creature picker sheet; the rest of the app still
+    has raw sizes (a follow-up, see decisions.md).
+  */
+  --drawer-pad: 0.75rem; /* the side padding of everything in a drawer: heading, body, footer, rows */
+  --fs-title: 1.5rem; /* a drawer's or page's title; the creature's name */
+  --fs-heading: 1.25rem; /* a card's name (the item card), a sheet's title */
+  --fs-row: 1rem; /* a row: a stat, a modifier line, a picker option, a button in a panel */
+  --fs-small: 0.875rem; /* a note under a row, a badge, a reason */
   --frame:
     0 calc(var(--px) * -1) 0 0 var(--ink), 0 var(--px) 0 0 var(--ink),
     calc(var(--px) * -1) 0 0 0 var(--ink), var(--px) 0 0 0 var(--ink),

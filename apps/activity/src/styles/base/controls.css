@@ -64,3 +64,11 @@ label {
   color: var(--haze);
   font-size: 0.875rem;
 }
+
+/*
+  An element the app moves the focus to (a heading with tabindex -1, so a screen reader starts there) is not
+  a control: it shows no focus box.
+*/
+[tabindex='-1']:focus {
+  outline: none;
+}

@@ -9,7 +9,7 @@ import type { CraftOption, CraftPreview, GearState, ReachId } from './gear-types
 import {
   defaultPick,
   durationFor,
-  marksText,
+  qualityText,
   oddsPercent,
   oddsText,
   pickerOptions,
@@ -26,7 +26,7 @@ type PreviewState =
  * The panel that starts a craft: who does it, then the ways to start it (a plain craft, Reach for Rare,
  * Reach for Epic), each with its exact odds, its cost and its time. Every number is the server's: this
  * screen asks `previewCraft` for the picked creature and writes down what comes back. The item level and
- * the well-thumbed marks are one tap away under "Details".
+ * the blueprint quality is one tap away under "Details".
  */
 export function CraftStarter({
   id,
@@ -193,7 +193,7 @@ export function CraftStarter({
             </p>
             <p class="muted">
               Step-up chance {oddsPercent(preview.stepUpBp)}: 1% per Crafting level above 1 and per
-              well-thumbed mark ({marksText(preview.marks)})
+              point of blueprint quality ({qualityText(preview.marks)})
             </p>
           </Accordion>
         </fieldset>

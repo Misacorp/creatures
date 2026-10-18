@@ -75,6 +75,15 @@ describe('no sheet, no change', () => {
       mendBp: 0,
       lingerRounds: 0,
       ignoreSilence: 0,
+      shelterBp: 0,
+      unreflected: 0,
+      critWindowBp: 0,
+      healOnReactionBp: 0,
+      chainMark: 0,
+      coverReach: 0,
+      boostReach: 0,
+      sealMark: 0,
+      firstReactionCrit: 0,
     };
     for (let i = 0; i < 12; i++) {
       const base = randomInput(

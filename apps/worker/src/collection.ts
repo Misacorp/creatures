@@ -9,6 +9,7 @@ import {
   RULES,
   content,
   effectiveStats,
+  evolutionsOf,
   expToNext,
   nextUnlock,
   quirkText,
@@ -16,6 +17,7 @@ import {
   ribbonParts,
   sanitizeNickname,
   treatCost,
+  wearBlock,
   type PartsBundle,
   type PartKind,
   type Rng,
@@ -37,8 +39,10 @@ import {
   equippedByCreature,
   getParts,
   openJobsByCreature,
+  rowToItem,
   wornGearView,
   wornRows,
+  type GearRow,
   type WornBySlot,
   type WornGear,
 } from './gear-store';
@@ -139,9 +143,16 @@ export interface CreatureView {
   treatCost: number;
   /**
    * The evolution this creature could reach. `available` is true when the evolution level is
-   * reached and the player holds enough Essence right now.
+   * reached and the player holds enough Essence right now. `alt` is the other form of a line that
+   * grows two ways (`toSpecies` is the first); both cost the same, and the choice is permanent.
    */
-  evolution?: { toSpecies: string; level: number; essence: number; available: boolean };
+  evolution?: {
+    toSpecies: string;
+    level: number;
+    essence: number;
+    available: boolean;
+    alt?: { toSpecies: string };
+  };
   /**
    * The creature's finale ability (null for a species without one). `unlocked` once the creature
    * has reached `unlockLevel`. `nextId` is the stronger ability of the evolved form, if the
@@ -379,6 +390,7 @@ export class Collection {
       species.evolvesTo === undefined
         ? undefined
         : speciesOf(species.evolvesTo.species).ability?.id;
+    const alt = species.altEvolvesTo;
     return {
       id: row.id,
       species: species.id,
@@ -428,6 +440,8 @@ export class Collection {
               essence: species.evolvesTo.essence,
               available:
                 row.level >= species.evolvesTo.level && essence >= species.evolvesTo.essence,
+              // A line that grows two ways: the other form (same level and price, `checkCreatures`).
+              ...(alt === undefined ? {} : { alt: { toSpecies: alt.species } }),
             },
           }),
     };
@@ -610,27 +624,36 @@ export class Collection {
   // --- Evolution ---
 
   /**
-   * Evolves a stage-1 creature at its evolution level for Essence. The species switches to the
-   * stage-2 species; level, fusion, shininess, nickname and quirk stay. The first evolution of a line on
-   * the server records "first on server" (kind `evolve`, keyed by the stage-2 species). A retry
-   * with the same key returns the stored result and charges nothing.
+   * Evolves a stage-1 creature at its evolution level for Essence. `requested` names the form it grows
+   * into: one of the species' branches (`evolvesTo`, or `altEvolvesTo` for a branching line); none (an
+   * older client) means the first branch. The choice is permanent. The species switches to the stage-2
+   * species; level, fusion, shininess, nickname and quirk stay. A worn Charm locked to the old role comes
+   * off (the new form may be another role), and the result says how many items did. The first evolution
+   * into a species on the server records "first on server" (kind `evolve`, keyed by the stage-2 species).
+   * A retry with the same key returns the stored result and charges nothing; the same key for another
+   * form is a `key_conflict`.
    */
   evolve(
     userId: string,
     creatureId: string,
     idempotencyKey: string,
-  ): Outcome<{ creatureId: string; species: string; firstOnServer: boolean }> {
+    requested?: string,
+  ): Outcome<{ creatureId: string; species: string; firstOnServer: boolean; unequipped?: number }> {
     return this.atomically(() => {
       const creature = this.ownedCreature(userId, creatureId);
       const prior = lookupSpend(this.sql, userId, idempotencyKey);
       let amount: number;
       let target: string | null = null;
       if (prior === null) {
-        const evolvesTo = speciesOf(creature.species).evolvesTo;
-        if (evolvesTo === undefined) throw new GameError(409, 'not_evolvable');
-        if (creature.level < evolvesTo.level) throw new GameError(409, 'level_too_low');
-        amount = evolvesTo.essence;
-        target = evolvesTo.species;
+        const branches = evolutionsOf(speciesOf(creature.species));
+        const first = branches[0];
+        if (first === undefined) throw new GameError(409, 'not_evolvable');
+        const chosen =
+          requested === undefined ? first : branches.find((b) => b.species === requested);
+        if (chosen === undefined) throw new GameError(409, 'not_a_branch');
+        if (creature.level < chosen.level) throw new GameError(409, 'level_too_low');
+        amount = chosen.essence;
+        target = chosen.species;
       } else {
         // A retry is not re-checked: the creature has already evolved.
         amount = prior.amount;
@@ -647,6 +670,7 @@ export class Collection {
           apply: () => {
             if (target === null) throw new Error('evolution without a target');
             this.sql.exec('UPDATE creatures SET species = ? WHERE id = ?', target, creature.id);
+            const unequipped = this.unequipBlocked(creature.id, creature.level, target);
             // The higher level cap opens the way: what the creature banked while it waited is spent now.
             settleExperience(this.sql, this.deps.analytics, userId, creature.id, 'evolve');
             const firstOnServer = this.recordFirst(
@@ -660,7 +684,7 @@ export class Collection {
               { kind: 'evolve', from: creature.species, to: target, cost: amount },
               userId,
             );
-            return { creatureId: creature.id, species: target, firstOnServer };
+            return { creatureId: creature.id, species: target, firstOnServer, unequipped };
           },
         },
         now,
@@ -668,9 +692,28 @@ export class Collection {
       return settleSpend(
         spent,
         (stored) =>
-          prior?.purpose === 'evolution' && storedString(stored, 'creatureId') === creature.id,
+          prior?.purpose === 'evolution' &&
+          storedString(stored, 'creatureId') === creature.id &&
+          (requested === undefined || storedString(stored, 'species') === requested),
       );
     });
+  }
+
+  /**
+   * Takes off what a creature of this species cannot wear: a Charm locked to the old role when the new
+   * form is another role (Sunfawn is a Support, Ohmouse a Guard). Returns how many items came off.
+   */
+  private unequipBlocked(creatureId: string, level: number, speciesId: string): number {
+    const role = speciesOf(speciesId).role;
+    let off = 0;
+    for (const row of this.sql
+      .exec<GearRow>('SELECT * FROM gear_items WHERE equipped_on = ?', creatureId)
+      .toArray()) {
+      if (wearBlock(rowToItem(row), { level, role }) === null) continue;
+      this.sql.exec('UPDATE gear_items SET equipped_on = NULL WHERE id = ?', row.id);
+      off += 1;
+    }
+    return off;
   }
 
   // --- Nicknames ---

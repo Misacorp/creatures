@@ -6,14 +6,16 @@ import {
   RULES,
   creaturePower,
   strongest,
+  effectiveStats,
   type CreatureSpecies,
   type CritBonus,
+  type FoldKit,
   type GearMods,
   type GearRules,
   type Stats,
 } from '@creatures/game';
 import { speciesOf } from './collection';
-import { equippedByCreature, type WornBySlot } from './gear-store';
+import { equippedByCreature, wearerOf, type WornBySlot } from './gear-store';
 import { foldCreature } from './gear-worn';
 import { booksByCreature, foldTalentsOf } from './talent-store';
 import type { HeldTalent } from '@creatures/game';
@@ -42,8 +44,15 @@ export interface TeamCreature {
   mods?: GearMods;
   /** What its gear does outside the fight (the dungeon's between-room rest reads it). */
   gearRules: GearRules;
+  /** The ids of the gear items folded into `stats`, `crit`, `mods` and `gearRules` (a dungeon run records them). */
+  gearIds: string[];
   /** `creaturePower` of `stats` (fusion and gear included). */
   power: number;
+  /**
+   * What its gear fold needs, to run it again once its place in the row is known (the position lines and
+   * gear sets of the row, `placeSlots`): the stats before gear, its crit bonus, who it is, what it wears.
+   */
+  kit: FoldKit;
 }
 
 type CreatureDbRow = {
@@ -62,7 +71,8 @@ function toTeamCreature(
   book: readonly HeldTalent[] | undefined,
 ): TeamCreature {
   const species = speciesOf(row.species);
-  const folded = foldCreature(row, worn, foldTalentsOf(row, book));
+  const talents = foldTalentsOf(row, book);
+  const folded = foldCreature(row, worn, talents);
   return {
     id: row.id,
     userId: row.user_id,
@@ -75,13 +85,37 @@ function toTeamCreature(
     ...(folded.crit === undefined ? {} : { crit: folded.crit }),
     ...(folded.mods === undefined ? {} : { mods: folded.mods }),
     gearRules: folded.rules,
+    gearIds: Object.values(worn ?? {}).map((item) => item.id),
     power: creaturePower(folded.stats),
+    kit: {
+      stats: effectiveStats(species, row.level, row.fusion_count),
+      crit: species.crit,
+      wearer: wearerOf(species),
+      items: folded.items,
+      talents,
+    },
   };
 }
 
-/** All creatures of a player, oldest first, with their gear and talents folded in. */
-export function loadCreatures(sql: SqlStorage, userId: string): TeamCreature[] {
+/**
+ * All creatures of a player, oldest first, with their gear and talents folded in. `without` leaves
+ * out the worn items with these ids, as if they were not worn: the dungeon loads a creature that joins
+ * a run late without any item the run already carries, so one item is never counted twice.
+ */
+export function loadCreatures(
+  sql: SqlStorage,
+  userId: string,
+  without: ReadonlySet<string> = new Set(),
+): TeamCreature[] {
   const worn = equippedByCreature(sql, userId);
+  if (without.size > 0) {
+    for (const [creatureId, items] of worn) {
+      const kept = Object.fromEntries(
+        Object.entries(items).filter(([, item]) => !without.has(item.id)),
+      ) as WornBySlot;
+      worn.set(creatureId, kept);
+    }
+  }
   const books = booksByCreature(sql, userId);
   return sql
     .exec<CreatureDbRow>(

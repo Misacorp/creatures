@@ -1,0 +1,65 @@
+/*
+  The one item grid (ItemTile.tsx): the creature page's item picker and the Workshop bag. Square tiles, the art
+  filling them, the rarity as the single edge, the slot icon and the item level in the corners, a gold flag at
+  the top right ("Worn"). The tile shown (or shown last) is lit from inside with a light edge inside the rarity
+  edge, the same look as the creature list's last viewed card.
+*/
+.item-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr));
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item-grid > li {
+  display: flex;
+}
+
+button.item-tile {
+  position: relative;
+  display: grid;
+  flex: 1 1 auto;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0.25rem;
+  overflow: hidden;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--rar);
+}
+
+button.item-tile:active:not(:disabled) {
+  box-shadow: inset 0 0 0 var(--px) var(--rar);
+}
+
+button.item-tile.festival {
+  outline: 2px dashed var(--rarity-festival);
+  outline-offset: -6px;
+}
+
+button.item-tile.blocked canvas.sprite {
+  opacity: 0.45;
+}
+
+button.item-tile.blocked {
+  background: rgb(var(--ink-rgb) / 55%);
+}
+
+button.item-tile.selected,
+button.item-tile.selected:active:not(:disabled) {
+  background: #4a4180;
+  box-shadow:
+    inset 0 0 0 var(--px) var(--rar),
+    inset 0 0 0 calc(var(--px) * 2) var(--bone);
+}
+
+.item-tile-flag {
+  position: absolute;
+  top: 0.1875rem;
+  right: 0.3125rem;
+  color: var(--gold);
+  font-size: 0.875rem;
+  line-height: 1;
+  text-shadow: var(--ink-outline-thin);
+}

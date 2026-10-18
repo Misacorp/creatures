@@ -137,6 +137,8 @@ export type JobResult =
       essence: number;
       learned: string[];
       marked: { baseId: string; marks: number }[];
+      /** How many items Tinker's luck refunded in full (absent when none). */
+      tinkered?: number;
     } & JobCommon)
   /** A crafted supply for expeditions: `amount` of `supplyId` went into the stock. */
   | ({ kind: 'supply'; supplyId: string; amount: number } & JobCommon)
@@ -170,7 +172,7 @@ export interface GrantLoot {
   /** Items that did not fit in a full inventory and became parts (already counted in `parts`). */
   converted: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
   parts: PartsBundle;
-  /** `marks` is the blueprint's well-thumbed marks after a repeat find added one. */
+  /** `marks` is the blueprint's marks (its quality) after a repeat find added one. */
   blueprints: { baseId: string; duplicate: boolean; marks?: number }[];
   /** Supply ids an expedition found (absent on every other grant and on trips from before supplies). */
   supplies?: string[];

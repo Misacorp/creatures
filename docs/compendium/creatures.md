@@ -1,6 +1,6 @@
 # Creatures
 
-Status: 2026-10-13. Covers all 22 species, grouped into 14 lines, plus the two Festival creatures and the guest roster.
+Status: 2026-10-18. Covers all 30 species, grouped into 14 lines, plus the two Festival creatures and the guest roster.
 
 Read `README.md` for the tags. Every section cites its source. Lines marked `(compendium detail, not shipped)` are new flavour for this file only.
 
@@ -8,28 +8,28 @@ Read `README.md` for the tags. Every section cites its source. Lines marked `(co
 
 ## At a glance
 
-| Line        | Stage 1     | Stage 2      | Element | Role    | Rarity | Where found (catchable stage 1)              |
-| ----------- | ----------- | ------------ | ------- | ------- | ------ | -------------------------------------------- |
-| Splashet    | Splashet    | Tidewing     | Tide    | Setter  | Common | Tidepools, Old Crossroads                    |
-| Cindle      | Cindle      | Pyrelynx     | Ember   | Payoff  | Common | Ember Caves, Old Crossroads                  |
-| Sproutle    | Sproutle    | Thornbuck    | Grove   | Guard   | Common | Verdant Hollow, Old Crossroads               |
-| Zipmouse    | Zipmouse    | Voltaro      | Spark   | Setter  | Common | Storm Ridge, Old Crossroads                  |
-| Mistnewt    | Mistnewt    | Fogwyrm      | Tide    | Guard   | Common | Tidepools, Moonlit Reef                      |
-| Ashmole     | Ashmole     | Magmole      | Ember   | Support | Common | Ember Caves, Festival Grounds                |
-| Stormray    | Stormray    | Tempestray   | Spark   | Payoff  | Rare   | Storm Ridge, Old Crossroads                  |
-| Mossback    | Mossback    | Ancientshell | Grove   | Setter  | Rare   | Ember Caves, Verdant Hollow                  |
-| Coralynx    | Coralynx    | none         | Tide    | Payoff  | Rare   | Tidepools, Moonlit Reef                      |
-| Solmane     | Solmane     | none         | Ember   | Setter  | Epic   | Ember Caves (deep), Festival Grounds         |
-| Gaiadrake   | Gaiadrake   | none         | Grove   | Payoff  | Epic   | Verdant Hollow (deep), Old Crossroads (deep) |
-| Aurorix     | Aurorix     | none         | Spark   | Support | Epic   | Storm Ridge (deep), Moonlit Reef (deep)      |
-| Lanternfin  | Lanternfin  | none         | Tide    | Support | Epic   | Festival only (not catchable)                |
-| Hearthshell | Hearthshell | none         | Ember   | Guard   | Epic   | Festival only (not catchable)                |
+| Line        | Stage 1     | Stage 2                   | Element | Role              | Rarity | Where found (catchable stage 1)              |
+| ----------- | ----------- | ------------------------- | ------- | ----------------- | ------ | -------------------------------------------- |
+| Splashet    | Splashet    | Tidewing or Geyserpup     | Tide    | Setter or Payoff  | Common | Tidepools, Old Crossroads                    |
+| Cindle      | Cindle      | Pyrelynx or Wickat        | Ember   | Payoff or Setter  | Common | Ember Caves, Old Crossroads                  |
+| Sproutle    | Sproutle    | Thornbuck or Sunfawn      | Grove   | Guard or Support  | Common | Verdant Hollow, Old Crossroads               |
+| Zipmouse    | Zipmouse    | Voltaro or Ohmouse        | Spark   | Setter or Guard   | Common | Storm Ridge, Old Crossroads                  |
+| Mistnewt    | Mistnewt    | Fogwyrm or Drizzlewt      | Tide    | Guard or Support  | Common | Tidepools, Moonlit Reef                      |
+| Ashmole     | Ashmole     | Magmole or Kilnmole       | Ember   | Support or Guard  | Common | Ember Caves, Festival Grounds                |
+| Stormray    | Stormray    | Tempestray or Halcyray    | Spark   | Payoff or Support | Rare   | Storm Ridge, Old Crossroads                  |
+| Mossback    | Mossback    | Ancientshell or Bloomback | Grove   | Setter or Payoff  | Rare   | Ember Caves, Verdant Hollow                  |
+| Coralynx    | Coralynx    | none                      | Tide    | Payoff            | Rare   | Tidepools, Moonlit Reef                      |
+| Solmane     | Solmane     | none                      | Ember   | Setter            | Epic   | Ember Caves (deep), Festival Grounds         |
+| Gaiadrake   | Gaiadrake   | none                      | Grove   | Payoff            | Epic   | Verdant Hollow (deep), Old Crossroads (deep) |
+| Aurorix     | Aurorix     | none                      | Spark   | Support           | Epic   | Storm Ridge (deep), Moonlit Reef (deep)      |
+| Lanternfin  | Lanternfin  | none                      | Tide    | Support           | Epic   | Festival only (not catchable)                |
+| Hearthshell | Hearthshell | none                      | Ember   | Guard             | Epic   | Festival only (not catchable)                |
 
 `(content: creatures.json, destinations.json)`
 
 **Starters:** Splashet, Cindle and Sproutle. `(content: creatures.json, starter)`
 
-**Evolution:** the stage 1 forms of Splashet, Cindle, Sproutle, Zipmouse, Mistnewt and Ashmole evolve at level 15 for 20 Essence. Stormray and Mossback evolve at level 15 for 40 Essence. Every other form stops at level 30. `(content: creatures.json, glossary.json "essence", "level")`
+**Evolution:** every line that evolves grows one of two ways, once, for good: Splashet (Tidewing or Geyserpup), Cindle (Pyrelynx or Wickat), Sproutle (Thornbuck or Sunfawn), Zipmouse (Voltaro or Ohmouse), Mistnewt (Fogwyrm or Drizzlewt), Ashmole (Magmole or Kilnmole), Stormray (Tempestray or Halcyray) and Mossback (Ancientshell or Bloomback). The second form is the same element but another role, so each element has all four roles at stage 2 between the lines. A Kept duplicate (a second creature of the line) can grow the other way. The stage 1 forms of Splashet, Cindle, Sproutle, Zipmouse, Mistnewt and Ashmole evolve at level 15 for 20 Essence. Stormray and Mossback evolve at level 15 for 40 Essence. Both forms of a line cost the same. Every other form stops at level 30. `(content: creatures.json, glossary.json "essence", "level")`
 
 **Quirk pools:** each line has a pool of three against-type quirks, keyed by its stage 1 id. Stage 2 forms use their line's pool. A creature's quirk comes from the 40 general quirks about 75% of the time, and from its line's pool about 25% of the time. `(content: quirks.json, design: creatures.md pick rule)`
 
@@ -104,6 +104,35 @@ Shallows creatures that splash first and think later. The line marks big foes wi
 
 **Notes** `(compendium detail, not shipped)`: the wings are fins, not feathers. A Tidewing in a breeze is the most "showing off" image the game has.
 
+### Geyserpup (stage 2, second branch of Splashet)
+
+|           |                                                         |
+| --------- | ------------------------------------------------------- |
+| Element   | Tide                                                    |
+| Role      | Payoff                                                  |
+| Rarity    | Common                                                  |
+| Size      | Medium                                                  |
+| Catchable | No (evolves from Splashet, the other way from Tidewing) |
+| Ability   | Geyser Burst                                            |
+
+**About** `(content)`: "A sturdy pup whose droplet tuft has grown into a tall spout. It saves up every splash it ever made and lets them all go at the boss in one great burst."
+
+**Traits** `(content)`: Saves its splashes for one big burst. Makes its own puddle, so none is a surprise. Its spout hiccups when it is excited. Still first to say hello, now with a fountain.
+
+**Look** `(content)`:
+
+- Silhouette: round water-drop pup with a tall spout of water where the tuft was, and a few drops arcing away from the top.
+- Palette: Splash Blue `#3fa7d6`, Deep Pool `#1f5f8b`, Foam White `#e8fbff`, Spray Blue `#7fd4f0`, Belly Sand `#f4e3b8`.
+- Features: round, sturdy pup body, wide at the shoulders; a tall spout of foam and water where the droplet tuft was; loose drops of spray arcing away from the top of the spout; two large dark eyes with one white highlight each; cream belly patch.
+- Pose: sitting upright with its chest out, the spout at full height and the spray arcing away.
+- Always: the spout where the tuft was; a round pup body.
+- Never: wings or wide fins (those are Tidewing's); a pointed tuft: the spout is tall and open at the top.
+- Changes from stage 1 `(content, fromStage1)`. Keeps: round water-drop body and cream belly; big dark eyes with white highlights; blue and foam palette; playful, sturdy pup face. Changes: the pointed tuft opens into a tall spout; loose spray arcs away from the top; wider shoulders and a taller body; adds a lighter spray blue.
+
+**Notes** `(compendium detail, not shipped)`: it grows out of the Splashet quirk "Keeps its feet very dry and hates a surprise puddle": a pup that makes its own puddle on purpose, and its pointed droplet tuft finally opens. A common Tide Payoff (before this, the only Tide Payoff was the rare Coralynx): Tidewing is the Setter that marks Soaked, Geyserpup is the one that cashes it in with a single big burst (the same strength as Pyrelynx's strike). The wings stay with Tidewing. Working name (Misa may rename). 16x16 sprite in `species-sprites.ts`.
+
+**Quirk flavour:** the Splashet line pool.
+
 ---
 
 ## Cindle line (Ember)
@@ -172,6 +201,35 @@ Quick, warm hunters that pounce when the moment is right. The line's ember tail 
 
 **Quirk flavour:** the Cindle line pool.
 
+### Wickat (stage 2, second branch of Cindle)
+
+|           |                                                       |
+| --------- | ----------------------------------------------------- |
+| Element   | Ember                                                 |
+| Role      | Setter                                                |
+| Rarity    | Common                                                |
+| Size      | Medium                                                |
+| Catchable | No (evolves from Cindle, the other way from Pyrelynx) |
+| Ability   | Slow Burn                                             |
+
+**About** `(content)`: "A kitten-sized cat whose ember has settled into a tall, steady flame, like a lit wick. It touches the boss with it first, so the whole team has something warm to follow up."
+
+**Traits** `(content)`: Carries its flame as steadily as a candle. No longer jumps at its own sparks. Lights the way for slower friends. Purrs a little louder by candlelight.
+
+**Look** `(content)`:
+
+- Silhouette: round kitten with two small ears and a tall, steady flame standing on a short dark wick between them.
+- Palette: Cinder Orange `#e8582a`, Ember Glow `#ffb347`, Candle Yellow `#ffe680`, Ash Cream `#f6d8b0`, Coal Plum `#5a2a2e`.
+- Features: round head and body, nearly the same width, like Cindle; two small ears with dark plum inner tips; a tall flame in two layers, orange outside and yellow inside, on a short dark wick; two tiny sparks floating beside the flame; cream muzzle and chest.
+- Pose: sitting upright and very still, the flame steady and two sparks drifting beside it.
+- Always: the tall flame on its wick; round kitten proportions.
+- Never: tall ear tufts or a lean body like Pyrelynx's; flames covering the whole body.
+- Changes from stage 1 `(content, fromStage1)`. Keeps: round kitten body and cream muzzle; small pointed ears with plum insides; amber eyes; orange and cream palette. Changes: the small ember grows into a tall, steady flame; the flame stands on a short dark wick; two sparks float beside it; adds a candle yellow.
+
+**Notes** `(compendium detail, not shipped)`: it grows out of the Cindle quirk "Is a little scared of its own sparks": it stopped jumping and now carries its flame like a candle. The Ember Setter: it lights the boss (Scorched) for the team before anyone strikes; Pyrelynx is the Payoff that pounces after it. An Ember team wants both, which is what Keep is for. Round kitten body kept on purpose, so it reads as Cindle grown a different way from Pyrelynx. Working name (Misa may rename). 16x16 sprite in `species-sprites.ts`.
+
+**Quirk flavour:** the Cindle line pool.
+
 ---
 
 ## Sproutle line (Grove)
@@ -180,16 +238,16 @@ Shy, sleepy guards that stand close to their friends and take hits for them. `(c
 
 ### Sproutle (stage 1)
 
-|             |                                        |
-| ----------- | -------------------------------------- |
-| Element     | Grove                                  |
-| Role        | Guard                                  |
-| Rarity      | Common                                 |
-| Size        | Small                                  |
-| Starter     | Yes                                    |
-| Evolves     | Thornbuck, at level 15, for 20 Essence |
-| Ability     | Bark Guard                             |
-| Where found | Verdant Hollow; Old Crossroads         |
+|             |                                                   |
+| ----------- | ------------------------------------------------- |
+| Element     | Grove                                             |
+| Role        | Guard                                             |
+| Rarity      | Common                                            |
+| Size        | Small                                             |
+| Starter     | Yes                                               |
+| Evolves     | Thornbuck or Sunfawn, at level 15, for 20 Essence |
+| Ability     | Bark Guard                                        |
+| Where found | Verdant Hollow; Old Crossroads                    |
 
 **Lore** `(content: creatures.json flavor)`: "A shy sprout-eared critter that naps in sunny patches of moss."
 
@@ -238,6 +296,35 @@ Shy, sleepy guards that stand close to their friends and take hits for them. `(c
 
 **Quirk flavour:** the Sproutle line pool.
 
+### Sunfawn (stage 2, second branch of Sproutle)
+
+|           |                                                          |
+| --------- | -------------------------------------------------------- |
+| Element   | Grove                                                    |
+| Role      | Support                                                  |
+| Rarity    | Common                                                   |
+| Size      | Medium                                                   |
+| Catchable | No (evolves from Sproutle, the other way from Thornbuck) |
+| Ability   | Sunny Patch                                              |
+
+**About** `(content)`: "A gentle fawn whose leaf ears have opened into blossoms. It curls up beside tired friends and lends them the sun it has soaked up all day."
+
+**Traits** `(content)`: Curls up beside tired friends. Lends its friends the day's sun. Gentle and soft-spoken. Blooms a little more with every kind word.
+
+**Look** `(content)`:
+
+- Silhouette: slender fawn with long legs, two big blossom-tipped ears and a small white-spotted back.
+- Palette: Sprout Green `#5fb04a`, Leaf Light `#b4e26a`, Deep Moss `#2f6b3a`, Blossom Pink `#f4a6c0`, Petal Cream `#f4eccf`.
+- Features: slender fawn body on four thin legs; two large ears, each opened into a pink blossom at the tip; warm, soft dark eyes with long lashes; cream belly and a pale spotted back; a small yellow glow in the middle of each blossom.
+- Pose: lying curled up in a sunny patch, head resting, blossom ears open to the light.
+- Always: blossoms where the leaf ears were; soft, kind eyes.
+- Never: thorns or antlers; a heavy, armoured body.
+- Changes from stage 1 `(content, fromStage1)`. Keeps: the leaf-green coat, the cream belly and muzzle, the sleepy, gentle eyes, the ears as its most notable feature. Changes: the round bean becomes a slender fawn; leaf ears open into pink blossoms; long legs and a spotted back; blossom pink added.
+
+**Notes** `(compendium detail, not shipped)`: it grows out of Sproutle's "Naps in any sunny patch". The healer a Grove team often lacks (as a Grove Support it heals its neighbours a little each round); the Thornbuck is the wall, the Sunfawn the warmth behind it. Working name (Misa may rename). 16x16 sprite in `species-sprites.ts`.
+
+**Quirk flavour:** the Sproutle line pool.
+
 ---
 
 ## Zipmouse line (Spark)
@@ -246,16 +333,16 @@ Tiny, fast and never still. The line strikes first and leaves Charged for the Gr
 
 ### Zipmouse (stage 1)
 
-|             |                                      |
-| ----------- | ------------------------------------ |
-| Element     | Spark                                |
-| Role        | Setter                               |
-| Rarity      | Common                               |
-| Size        | Tiny                                 |
-| Starter     | No                                   |
-| Evolves     | Voltaro, at level 15, for 20 Essence |
-| Ability     | Static Zap                           |
-| Where found | Storm Ridge; Old Crossroads          |
+|             |                                                 |
+| ----------- | ----------------------------------------------- |
+| Element     | Spark                                           |
+| Role        | Setter                                          |
+| Rarity      | Common                                          |
+| Size        | Tiny                                            |
+| Starter     | No                                              |
+| Evolves     | Voltaro or Ohmouse, at level 15, for 20 Essence |
+| Ability     | Static Zap                                      |
+| Where found | Storm Ridge; Old Crossroads                     |
 
 **Lore** `(content: creatures.json flavor)`: "A tiny mouse that crackles with static and never sits still."
 
@@ -302,6 +389,35 @@ Tiny, fast and never still. The line strikes first and leaves Charged for the Gr
 - Always: the zigzag lightning-bolt tail; oversized round ears.
 - Never: standing still; a rounder, plumper body than Zipmouse.
 - Changes from stage 1 `(content, fromStage1)`. Keeps: huge round ears with violet inner circles, the zigzag tail, the yellow and violet palette, the black bead eyes. Changes: a round blob becomes a lean sprinter; longer legs; a larger bolt tail; a trail of sparks.
+
+**Quirk flavour:** the Zipmouse line pool.
+
+### Ohmouse (stage 2, second branch of Zipmouse)
+
+|           |                                                        |
+| --------- | ------------------------------------------------------ |
+| Element   | Spark                                                  |
+| Role      | Guard                                                  |
+| Rarity    | Common                                                 |
+| Size      | Small                                                  |
+| Catchable | No (evolves from Zipmouse, the other way from Voltaro) |
+| Ability   | Static Wall                                            |
+
+**About** `(content)`: "A round, puffed-up mouse whose giant ears catch stray bolts before they reach its friends. It plants its feet, fizzes, and will not budge."
+
+**Traits** `(content)`: Plants its feet and will not budge. Catches stray bolts in its ears. Fizzes when it is determined. Can freeze like a statue when asked nicely.
+
+**Look** `(content)`:
+
+- Silhouette: wide, puffed-up round mouse with two giant ears, short planted feet and a short zigzag tail.
+- Palette: Spark Yellow `#f2d12b`, Bright Flash `#fff3a0`, Storm Violet `#6b5bd6`, Night Indigo `#2d2a5e`.
+- Features: round, puffed-up body with fur standing out all over; two giant ears wider than the head, with violet inner circles; wide-set short feet planted flat; stubborn black bead eyes under a small frown; tiny sparks fizzing at the ear tips.
+- Pose: planted square on both feet, chest out, ears wide and sparks fizzing at the tips.
+- Always: giant ears that catch bolts; feet planted flat.
+- Never: running or leaning forward; a lean, long-legged body like Voltaro's.
+- Changes from stage 1 `(content, fromStage1)`. Keeps: the huge round ears with violet inner circles, the yellow and violet palette, the black bead eyes, the zigzag tail. Changes: the small round body puffs up rounder; the ears grow larger than the head; the feet widen and plant flat; sparks fizz at the ear tips instead of trailing behind.
+
+**Notes** `(compendium detail, not shipped)`: it grows out of the Zipmouse quirk "Can freeze like a statue for an hour if asked nicely". The Guard that protects a Spark Payoff's row; Voltaro is the Setter that starts the Grounding. A Spark-heavy server wants both, which is what Keep is for. Working name (Misa may rename). 16x16 sprite in `species-sprites.ts`.
 
 **Quirk flavour:** the Zipmouse line pool.
 
@@ -371,6 +487,35 @@ Slow, calm and cosy. The line tucks friends into fog and switches off the boss's
 
 **Quirk flavour:** the Mistnewt line pool.
 
+### Drizzlewt (stage 2, second branch of Mistnewt)
+
+|           |                                                        |
+| --------- | ------------------------------------------------------ |
+| Element   | Tide                                                   |
+| Role      | Support                                                |
+| Rarity    | Common                                                 |
+| Size      | Medium                                                 |
+| Catchable | No (evolves from Mistnewt, the other way from Fogwyrm) |
+| Ability   | Soft Rain                                              |
+
+**About** `(content)`: "A slow, calm newt whose mist has gathered into a small rain cloud. It drizzles on tired friends, and the boss's tricks wash away like footprints in the rain."
+
+**Traits** `(content)`: Drizzles on friends who need cheering up. Fusses over its cloud and everyone under it. Loves damp, cool mornings. Takes its time, and so does the rain.
+
+**Look** `(content)`:
+
+- Silhouette: chunky low newt body with a wide grey-blue rain cloud above its head and a few drops falling beside it.
+- Palette: Mist Teal `#6fb8b0`, Fog Blue `#a9c7d6`, Rain Grey `#8fa9bf`, Foam White `#e8fbff`, Rain Blue `#3fa7d6`.
+- Features: wide, low newt body with a short, thick tail; a wide, fluffy cloud above the head, white on top and grey-blue underneath; a few drops falling in a row below the cloud; small dark eyes set wide apart with a white highlight each; pale fog-blue belly.
+- Pose: plodding forward under its cloud, head low, a soft rain falling around it.
+- Always: the rain cloud above its head; drops falling from the cloud.
+- Never: lightning or dark storm clouds: the rain is gentle; a long, thin body.
+- Changes from stage 1 `(content, fromStage1)`. Keeps: mist teal body and pale fog-blue belly; wide, low newt body; small dark eyes set wide apart; the cloud as its most notable feature. Changes: the small puff on its back rises into a wide rain cloud; drops fall below the cloud; a grey-blue underside appears; rain blue added to the palette.
+
+**Notes** `(compendium detail, not shipped)`: it grows out of the Mistnewt quirk "Fusses over its own mist cloud more than anyone": the cloud it fusses over has become a rain cloud, and now it fusses over everyone under it. The Tide Support: Tide's only other healer-type is the Festival-only Lanternfin. Fogwyrm is the Guard that hides friends in fog; Drizzlewt is the one that gently cheers them on. The sprite's cloud sits above the head with a clear gap and falling drops, so it reads as rain. Working name (Misa may rename). 16x16 sprite in `species-sprites.ts`.
+
+**Quirk flavour:** the Mistnewt line pool.
+
 ---
 
 ## Ashmole line (Ember)
@@ -433,6 +578,35 @@ Busy diggers who warm the burrow and invite everyone in. They cheer the team on.
 - Always: the glowing claws; cracked rock plating with glowing seams.
 - Never: a round, soft ash coat like Ashmole's; wings or long legs.
 - Changes from stage 1 `(content, fromStage1)`. Keeps: pointed pink snout, shovel paws, tiny squinting eyes, orange ember glow. Changes: soft ash fur becomes cracked rock plates; paws become large molten claws; a bigger, broader body; a darker basalt colour.
+
+**Quirk flavour:** the Ashmole line pool.
+
+### Kilnmole (stage 2, second branch of Ashmole)
+
+|           |                                                       |
+| --------- | ----------------------------------------------------- |
+| Element   | Ember                                                 |
+| Role      | Guard                                                 |
+| Rarity    | Common                                                |
+| Size      | Medium                                                |
+| Catchable | No (evolves from Ashmole, the other way from Magmole) |
+| Ability   | Banked Embers                                         |
+
+**About** `(content)`: "A broad mole in a dome of baked clay, with a small chimney on top that glows like a banked fire. It digs in at the door of the burrow and keeps the heat in for everyone behind it."
+
+**Traits** `(content)`: Bakes its own shell in the embers. Digs in at the door of the burrow. Keeps the heat in for the whole team. Slow to move, slower to give way.
+
+**Look** `(content)`:
+
+- Silhouette: wide, domed mole with a baked-clay shell, a small chimney on top, a pink snout and short sturdy feet.
+- Palette: Kiln Clay `#a8542f`, Brick Light `#c97a4a`, Fired Shade `#6b3320`, Clay Cream `#e6c9a0`, Ember Orange `#ff8a3d`.
+- Features: broad, round body under a domed shell of baked clay bricks; a small chimney on top with an ember glowing at its mouth; pointed pink snout; tiny squinting eyes; orange ember glints between the bricks.
+- Pose: planted square at the door of the burrow, shell low, the chimney glowing.
+- Always: the domed clay shell; the small chimney.
+- Never: molten claws like Magmole's; a soft ash coat like Ashmole's.
+- Changes from stage 1 `(content, fromStage1)`. Keeps: pointed pink snout; tiny squinting eyes; orange ember glints; warm brown colouring. Changes: soft ash fur becomes a domed shell of baked clay; a small chimney glows on top; bigger, broader body; terracotta replaces the ash grey.
+
+**Notes** `(compendium detail, not shipped)`: it grows out of the Ashmole line's burrow lore ("Warms its burrow with glowing ash and invites everyone in") and the quirk "Hates getting its paws dirty": a clean, hard shell of baked clay at last. The Ember Guard the Ember element lacked at stage 2 (Hearthshell is a Festival-only epic). Magmole is the Support that warms the burrow; Kilnmole is the one standing in its doorway. A burrowing, armoured mole, with a small chimney that glows at the top. Working name (Misa may rename). 16x16 sprite in `species-sprites.ts`.
 
 **Quirk flavour:** the Ashmole line pool.
 
@@ -503,6 +677,35 @@ Bold, showy rays that ride the edge of the storm. Rare, with a built-in crit bon
 
 **Quirk flavour:** the Stormray line pool.
 
+### Halcyray (stage 2, second branch of Stormray)
+
+|           |                                                           |
+| --------- | --------------------------------------------------------- |
+| Element   | Spark                                                     |
+| Role      | Support                                                   |
+| Rarity    | Rare                                                      |
+| Size      | Large                                                     |
+| Catchable | No (evolves from Stormray, the other way from Tempestray) |
+| Ability   | Afterglow                                                 |
+
+**About** `(content)`: "A calm ray that glides in just after the storm has passed, trailing a small rainbow. It lends its friends the bright, clear feeling of the sky after thunder."
+
+**Traits** `(content)`: Arrives just as the storm passes. Leaves a small rainbow in its wake. Soft-spoken and bright. Lends its friends the clear sky.
+
+**Look** `(content)`:
+
+- Silhouette: flat diamond-shaped body with soft rounded wings, a small rainbow arc above its head and a ribbon tail.
+- Palette: Spark Yellow `#f2d12b`, Bright Flash `#fff3a0`, Storm Violet `#6b5bd6`, Cloud Lilac `#a79af0`, Clear Mint `#7af0c4`.
+- Features: wide diamond body that is wider than it is tall; two rounded wing-fins with a pale yellow edge, held low and level; violet back with a lighter yellow belly; calm eyes under a small rainbow arc of lilac and mint; a soft mint ribbon at the tail instead of a bolt.
+- Pose: gliding slowly with its wings low and level, the little rainbow arching over its head.
+- Always: diamond silhouette; a small rainbow above its head.
+- Never: legs or paws; a sharp bolt at the tail (that is Stormray's).
+- Changes from stage 1 `(content, fromStage1)`. Keeps: diamond body; violet and yellow palette; pale yellow belly; wings as its widest part. Changes: the bolt tail softens into a mint ribbon; a small rainbow arcs over its head; wing tips are rounded, not pointed; cloud lilac and clear mint added.
+
+**Notes** `(compendium detail, not shipped)`: it grows out of the Stormray quirk "Prefers sunny days and says so often": it now arrives after the storm and brings the sunny day with it (halcyon, a calm and bright time). The Spark Support at the rare tier; Aurorix is the epic one. Tempestray is the Payoff that hits hardest; Halcyray is the gentle one that lends the clear sky. Its small rainbow replaces the bolt. Working name (Misa may rename). 16x16 sprite in `species-sprites.ts`.
+
+**Quirk flavour:** the Stormray line pool.
+
 ---
 
 ## Mossback line (Grove)
@@ -569,6 +772,35 @@ Patient turtles with a garden on the shell. They plant a mark on the boss for th
 **Quirk flavour:** the Mossback line pool.
 
 **Note** `(content, lore wording)`: the description says the Ancientshell shields "its own row". The ability shields its own zone. See `README.md`, contradiction 11.
+
+### Bloomback (stage 2, second branch of Mossback)
+
+|           |                                                             |
+| --------- | ----------------------------------------------------------- |
+| Element   | Grove                                                       |
+| Role      | Payoff                                                      |
+| Rarity    | Rare                                                        |
+| Size      | Large                                                       |
+| Catchable | No (evolves from Mossback, the other way from Ancientshell) |
+| Ability   | Full Bloom                                                  |
+
+**About** `(content)`: "A patient turtle whose little garden has opened into one enormous flower. It has been saving its bloom since it was small, and when it opens, the boss feels it."
+
+**Traits** `(content)`: Checks its flower twice a day and says it does not. Opens all at once, never a little at a time. Stands very still when the bloom is close. Smells wonderful and pretends not to notice.
+
+**Look** `(content)`:
+
+- Silhouette: dome shell on short legs with one huge pink flower, yellow at its heart, opened across the top.
+- Palette: Sprout Green `#5fb04a`, Leaf Light `#b4e26a`, Deep Moss `#2f6b3a`, Shell Brown `#8b6b43`, Petal Pink `#f08fa8`.
+- Features: round dome shell in mossy green with brown rings showing through; one huge pink flower with a yellow heart, wider than its head; small head with calm dark eyes with a white highlight each; short stout legs in lighter olive; deeper rose shading between the petals.
+- Pose: standing still and facing forward, the great flower fully open.
+- Always: the one huge flower; a mossy dome shell.
+- Never: a whole forest of trees (that is Ancientshell's); spikes or a snapping beak.
+- Changes from stage 1 `(content, fromStage1)`. Keeps: mossy green dome shell; pink flower; short stout legs; calm dark eyes. Changes: the single small flower opens into one huge bloom; a yellow heart appears in the flower; the grass tuft is gone; slightly larger shell.
+
+**Notes** `(compendium detail, not shipped)`: it grows out of the Mossback quirk "Pretends to ignore its garden, but checks it twice a day": all that checking paid off in one great flower. The Grove Payoff at the rare tier (Gaiadrake is the epic one). Ancientshell is the Setter that plants a mark and shields its row; Bloomback strikes the boss with the whole bloom. One bloom, not a forest, so it never looks like Ancientshell. Working name (Misa may rename). 16x16 sprite in `species-sprites.ts`.
+
+**Quirk flavour:** the Mossback line pool.
 
 ---
 

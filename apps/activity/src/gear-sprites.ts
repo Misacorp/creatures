@@ -1,10 +1,11 @@
 /**
  * Pixel art of gear: a 12x12 sprite for each slot (hat, scarf, charm), recoloured by the item's
- * element (neutral, explorer and role pieces are grey), and 8x8 icons for the parts. The same data format and
+ * element (neutral, explorer and role pieces are grey), a trimmed 12x12 variant of each for the pieces of a
+ * gear set (gold trim, tinted by the set's tag so a set is known at a glance), and 8x8 icons for the parts. The same data format and
  * palette approach as the creature sprites and glyphs (draw them with `<Sprite>`). Every kind has
  * its own shape and every part its own silhouette, so colour is never the only cue. Pure data.
  */
-import { baseElement, gearBase, type GearSlot, type PartKind } from '@creatures/game';
+import { baseElement, gearBase, gearSet, type GearSlot, type PartKind } from '@creatures/game';
 import type { SpriteDef } from './sprites/sprite-data';
 
 export const ITEM_SIZE = { width: 12, height: 12 } as const;
@@ -87,11 +88,103 @@ const scarf: SpriteDef = {
 
 export const BUNDLED_ITEM_SPRITES: Readonly<Record<GearSlot, SpriteDef>> = { hat, scarf, charm };
 
+// --- Gear set pieces ---
+
+/** The gold of a set piece's trim: it stays the same whatever the set's tag tints. */
+const TRIM = { g: '#f6d56a', w: '#fff6d8' } as const;
+
+/** A set Hat: a pointed cap with a gold band and a star on top. */
+const setHat: SpriteDef = {
+  mirror: true,
+  palette: { k: INK, ...TRIM, ...NEUTRAL },
+  rows: [
+    '.....g',
+    '....gw',
+    '....kk',
+    '...kth',
+    '..ktth',
+    '.kthht',
+    'kttttt',
+    'kggggg',
+    'kuuuuu',
+    'kkkkkk',
+    '.kuuuu',
+    '..kkkk',
+  ],
+};
+
+/** A set Scarf: a wound scarf with a gold stripe, a striped tail and a tassel. */
+const setScarf: SpriteDef = {
+  mirror: true,
+  palette: { k: INK, ...TRIM, ...NEUTRAL },
+  rows: [
+    '......',
+    '.kkkkk',
+    'kttttt',
+    'kggggg',
+    'kuuuuu',
+    '.kkkkk',
+    '...kth',
+    '...kgg',
+    '...ktu',
+    '...kgg',
+    '...kuu',
+    '...gwg',
+  ],
+};
+
+/** A set Charm: a gold-framed diamond on a cord. */
+const setCharm: SpriteDef = {
+  mirror: true,
+  palette: { k: INK, c: '#c9a66b', ...TRIM, ...NEUTRAL },
+  rows: [
+    '....kk',
+    '...kcc',
+    '..kc..',
+    '..kc..',
+    '....kg',
+    '...kgh',
+    '..kgth',
+    '.kgtth',
+    '..kgtu',
+    '...kgu',
+    '....kg',
+    '.....k',
+  ],
+};
+
+/** The sprite of each slot for a gear set piece: a trimmed variant of the plain one, so a set is known at a glance. */
+export const BUNDLED_SET_SPRITES: Readonly<Record<GearSlot, SpriteDef>> = {
+  hat: setHat,
+  scarf: setScarf,
+  charm: setCharm,
+};
+
 export const GEAR_SLOT_IDS = ['hat', 'scarf', 'charm'] as const satisfies readonly GearSlot[];
 
 /** The palette swap that gives an item its element's colours; undefined for neutral (the base palette). */
 export function tintPalette(tint: string | null): Readonly<Record<string, string>> | undefined {
   return tint !== null && Object.hasOwn(TINTS, tint) ? TINTS[tint] : undefined;
+}
+
+/**
+ * The colours of a gear set's tag: the four elements wear their own colours, and each role, the explorers
+ * and the Festival have one more (a set is tinted by its tag, so a role set is as recognisable as an element
+ * set). None is the colour of an element.
+ */
+const SET_TINTS: Readonly<Record<string, Readonly<Record<'t' | 'u' | 'h', string>>>> = {
+  ...TINTS,
+  guard: { t: '#7d8fb5', u: '#4d5c80', h: '#c3d0ea' },
+  support: { t: '#e58cb5', u: '#a8517d', h: '#ffd0e6' },
+  setter: { t: '#a07be6', u: '#6a48b0', h: '#d9c8ff' },
+  payoff: { t: '#3cc1b4', u: '#1f7f76', h: '#a8f0e8' },
+  explorer: { t: '#c8a46a', u: '#8a6a36', h: '#f0dcae' },
+  festival: { t: '#f6b73c', u: '#b0791a', h: '#ffe6a0' },
+};
+
+/** The palette swap of a set's tag, or undefined for a tag with none. */
+export function setTintPalette(tag: string): Readonly<Record<string, string>> | undefined {
+  return Object.hasOwn(SET_TINTS, tag) ? SET_TINTS[tag] : undefined;
 }
 
 /** A plain grey silhouette for an item whose base is not in the content (so a screen never breaks). */
@@ -104,6 +197,14 @@ export function itemArt(baseId: string): {
 } {
   const base = gearBase(baseId);
   if (base === undefined) return { sprite: FALLBACK_ITEM, palette: undefined };
+  // A gear set piece has its own trimmed sprite, tinted by its set's tag (the Festival pieces by the Festival's).
+  if (base.set !== undefined) {
+    const set = gearSet(base.set);
+    return {
+      sprite: BUNDLED_SET_SPRITES[base.slot],
+      palette: setTintPalette(set?.tag ?? base.tag),
+    };
+  }
   return { sprite: BUNDLED_ITEM_SPRITES[base.slot], palette: tintPalette(baseElement(base)) };
 }
 

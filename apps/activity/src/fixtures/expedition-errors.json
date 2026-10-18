@@ -1,43 +1,98 @@
 [
-  { "route": "POST /api/expeditions", "status": 409, "body": { "error": "creature_away" } },
-  { "route": "POST /api/expeditions", "status": 409, "body": { "error": "slots_full" } },
-  { "route": "POST /api/expeditions", "status": 400, "body": { "error": "invalid_body" } },
-  { "route": "POST /api/expeditions/:id/push-on", "status": 409, "body": { "error": "not_ready" } },
   {
-    "route": "POST /api/expeditions/:id/push-on",
+    "route": "POST /api/expeditions",
     "status": 409,
-    "body": { "error": "not_offered" }
-  },
-  {
-    "route": "POST /api/expeditions/:id/push-on",
-    "status": 409,
-    "body": { "error": "already_chosen" }
+    "body": {
+      "error": "creature_away"
+    }
   },
   {
     "route": "POST /api/expeditions",
     "status": 409,
-    "body": { "error": "destination_closed", "reason": "rank" }
-  },
-  {
-    "route": "POST /api/expeditions",
-    "status": 409,
-    "body": { "error": "destination_closed", "reason": "festival" }
-  },
-  {
-    "route": "POST /api/expeditions",
-    "status": 409,
-    "body": { "error": "rank_too_low", "reason": "length" }
-  },
-  {
-    "route": "POST /api/expeditions",
-    "status": 409,
-    "body": { "error": "supply_missing", "reason": "lure-good" }
+    "body": {
+      "error": "slots_full"
+    }
   },
   {
     "route": "POST /api/expeditions",
     "status": 400,
-    "body": { "error": "invalid_supplies", "reason": "same_kind" }
+    "body": {
+      "error": "invalid_body"
+    }
   },
-  { "route": "POST /api/expeditions", "status": 400, "body": { "error": "supplies_not_for_sale" } },
-  { "route": "POST /api/workshop/jobs", "status": 409, "body": { "error": "skill_too_low" } }
+  {
+    "route": "POST /api/expeditions/:id/push-on",
+    "status": 409,
+    "body": {
+      "error": "not_ready"
+    }
+  },
+  {
+    "route": "POST /api/expeditions/:id/push-on",
+    "status": 409,
+    "body": {
+      "error": "not_offered"
+    }
+  },
+  {
+    "route": "POST /api/expeditions/:id/push-on",
+    "status": 409,
+    "body": {
+      "error": "already_chosen"
+    }
+  },
+  {
+    "route": "POST /api/expeditions",
+    "status": 409,
+    "body": {
+      "error": "destination_closed",
+      "reason": "rank"
+    }
+  },
+  {
+    "route": "POST /api/expeditions",
+    "status": 409,
+    "body": {
+      "error": "destination_closed",
+      "reason": "festival"
+    }
+  },
+  {
+    "route": "POST /api/expeditions",
+    "status": 409,
+    "body": {
+      "error": "rank_too_low",
+      "reason": "length"
+    }
+  },
+  {
+    "route": "POST /api/expeditions",
+    "status": 409,
+    "body": {
+      "error": "supply_missing",
+      "reason": "lure-good"
+    }
+  },
+  {
+    "route": "POST /api/expeditions",
+    "status": 400,
+    "body": {
+      "error": "invalid_supplies",
+      "reason": "same_kind"
+    }
+  },
+  {
+    "route": "POST /api/expeditions",
+    "status": 400,
+    "body": {
+      "error": "supplies_not_for_sale"
+    }
+  },
+  {
+    "route": "POST /api/workshop/jobs",
+    "status": 409,
+    "body": {
+      "error": "skill_too_low"
+    }
+  }
 ]

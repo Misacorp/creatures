@@ -34,7 +34,11 @@ export type SceneKind =
   | 'ribbon ready'
   | 'ribbon waiting'
   | 'nickname'
-  | 'evolve ready';
+  | 'evolve ready'
+  | 'set: two pieces'
+  | 'set: three pieces'
+  | 'set: two pieces and a charm'
+  | 'compare: plain gear';
 
 export const SCENE_KINDS: readonly SceneKind[] = [
   'level 2',
@@ -50,6 +54,10 @@ export const SCENE_KINDS: readonly SceneKind[] = [
   'ribbon waiting',
   'nickname',
   'evolve ready',
+  'set: two pieces',
+  'set: three pieces',
+  'set: two pieces and a charm',
+  'compare: plain gear',
 ];
 
 export function sceneKindOf(value: string): SceneKind {
@@ -176,6 +184,41 @@ function shapeOf(kind: SceneKind): Shape {
         worn: { hat: 0, scarf: 0 },
         talents: talentsOf(twoSlots(PLAIN, false)),
         exp: 825,
+        expNeeded: 825,
+      };
+    case 'set: two pieces':
+      // The Forge-Warm Bonnet and Sash (the last row of the Hat and Scarf tables): two of the Kit's three.
+      return {
+        level: 20,
+        worn: { hat: 19, scarf: 16 },
+        talents: talentsOf(twoSlots(GOLDEN, true)),
+        exp: 100,
+        expNeeded: 1000,
+      };
+    case 'set: two pieces and a charm':
+      // Two pieces of the Forge-Warm Kit and a Crossroads Compass in the Charm slot: the Kit's Charm would complete it.
+      return {
+        level: 20,
+        worn: { hat: 19, scarf: 16, charm: 0 },
+        talents: talentsOf(twoSlots(GOLDEN, true)),
+        exp: 100,
+        expNeeded: 1000,
+      };
+    case 'set: three pieces':
+      return {
+        level: 20,
+        worn: { hat: 19, scarf: 16, charm: 13 },
+        talents: talentsOf(twoSlots(GOLDEN, true)),
+        exp: 100,
+        expNeeded: 1000,
+      };
+    case 'compare: plain gear':
+      // A plain Kelp Cap and Patch Scarf and no Charm: anything in the bag is a better item or an empty slot.
+      return {
+        level: 15,
+        worn: { hat: 13, scarf: 11 },
+        talents: talentsOf(twoSlots(GOLDEN, false)),
+        exp: 310,
         expNeeded: 825,
       };
     case 'rarities':

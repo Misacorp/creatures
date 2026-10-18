@@ -30,3 +30,24 @@ canvas.sprite {
   font-family: var(--display);
   font-variant-numeric: tabular-nums;
 }
+
+/*
+  A pixel panel: the pixel font is set ONCE here, on the container of a game panel (the item card and the
+  panels around it, the pickers), and every element inside inherits it, so text added later is in the
+  right font without anyone remembering `.pix`. (The old way, `.pix` on each element, is how Atkinson kept
+  slipping in: a new <p>, <span> or reason line had no class and fell back to the body font.) Controls take
+  the panel's font too. Long reading text opts out with `.prose`. `scripts/font-audit.mjs` checks both.
+*/
+.pix-panel {
+  font-family: var(--display);
+  letter-spacing: 0.02em;
+}
+
+.pix-panel :is(select, input, textarea, button) {
+  font-family: inherit;
+}
+
+.prose {
+  font-family: var(--body);
+  letter-spacing: normal;
+}

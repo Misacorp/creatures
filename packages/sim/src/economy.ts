@@ -41,8 +41,9 @@ import {
   wornItemLevels,
   startJobs,
 } from './gear';
-import { chooseDungeonTeam, dayModifiers, playDungeonDay, type DungeonLogEntry } from './dungeon';
+import { chooseDungeonTeam, dayMap, playDungeonDay, type DungeonLogEntry } from './dungeon';
 import type { Setup } from './formations';
+import { firstForm, type BranchPick } from './policy';
 import { collect, fillSlots, newCreature } from './talents';
 import { awardRaidExperience, buyRibbons, focusFirst, giveExperience, packTreat } from './training';
 import { openRaidWeek, playStage, summarizeRaid, type RaidSummary, type RaidWeek } from './raid';
@@ -392,14 +393,19 @@ export function serverMedianTopLevel(players: readonly SimPlayer[]): number {
   return median(tops) ?? 1;
 }
 
-/** Evolves creatures that reached their evolution level while the player has the Essence. */
-function evolveCreatures(player: SimPlayer): void {
+/**
+ * Evolves creatures that reached their evolution level while the player has the Essence. `pick` chooses
+ * the form of a line that grows two ways; the journey takes the first (original) form, so the sim's
+ * baselines stay put while the dungeon is reworked (decisions.md, "Branch evolutions built").
+ */
+export function evolveCreatures(player: SimPlayer, pick: BranchPick = firstForm): void {
   for (const c of byPowerDesc(player.creatures)) {
-    const species = speciesOf(c.speciesId);
-    const evo = species.evolvesTo;
+    // Both forms of a branching line cost the same (`checkCreatures`), so the readiness is the first one's.
+    const evo = speciesOf(c.speciesId).evolvesTo;
     if (evo === undefined || c.level < evo.level || player.essence < evo.essence) continue;
-    player.essence -= evo.essence;
-    c.speciesId = evo.species;
+    const form = pick(player.creatures, c) ?? evo;
+    player.essence -= form.essence;
+    c.speciesId = form.species;
     player.week.evolutions += 1;
     // The higher level cap opens the way: what the creature banked while it waited is spent now.
     giveExperience(player, c, 0, null);
@@ -713,38 +719,40 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
           }
           // The daily dungeon: everybody who checked in runs it once, at their first check-in of the day.
           if (dungeonOn) {
-            const modifiers = dayModifiers(seed, globalDay);
+            const map = dayMap(seed, globalDay);
             for (const p of present) {
               if (dungeonDone.has(p.id)) continue;
               dungeonDone.add(p.id);
               if (!takesPart(dungeonPercent)) continue;
               const team = chooseDungeonTeam(p, p.profile.dungeon, rng.profile);
               // A treat for each of the three (Bait paid as the run starts), then the run, then the
-              // experience: per room cleared and for a full clear, doubled for a treated creature.
+              // experience: per fight cleared by each creature that stood in the row for it, and for a
+              // full clear to the row that beat the boss, doubled for a treated creature (one swapped in
+              // at the camp has no treat).
               const treated = new Set(
                 team.creatures.filter((c) => packTreat(p, c, { kind: 'dungeon' })).map((c) => c.id),
               );
               const runs = playDungeonDay(
                 p,
                 globalDay,
-                modifiers,
+                map,
                 `${seed}:dungeon:${p.id}:${String(globalDay)}`,
                 rng.dungeon,
                 {},
                 team,
                 weather,
+                p.profile.dungeon,
               );
               for (const run of runs) {
-                for (const c of team.creatures) {
+                for (const [id, fights] of Object.entries(run.fightsBy)) {
+                  const c = p.creatures.find((x) => x.id === id);
+                  if (c === undefined) continue;
+                  // The full clear bonus is for the row that beat the main boss, whatever happens below it.
+                  const beatBoss = run.fullClearRow.includes(id);
                   giveExperience(
                     p,
                     c,
-                    dungeonExperience(
-                      run.roomsCleared,
-                      run.cleared,
-                      treated.has(c.id),
-                      xpWeather(weather),
-                    ),
+                    dungeonExperience(fights, beatBoss, treated.has(id), xpWeather(weather)),
                     'dungeon',
                   );
                 }

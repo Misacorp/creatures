@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Attention } from '../src/attention';
 import type { DungeonToday } from '../src/dungeon';
 import type { RaidView } from '../src/raid-view';
-import { dungeonPlayer, newKey, type DungeonPlayer } from './dungeon-helpers';
+import { dungeonPlayer, newKey, withDeadlyFoes, type DungeonPlayer } from './dungeon-helpers';
 import type { CoreContext } from './helpers';
 import { HELSINKI, HOUR, W02, runRaid } from './raid-helpers';
 
@@ -60,15 +60,20 @@ describe('attention.dungeon', () => {
   it('is true again for the free retry of a lost first run', async () => {
     await runRaid(async (ctx) => {
       const p = await dungeonPlayer(ctx, 1, { level: 1 });
-      ctx.sql.exec(
-        'INSERT INTO dungeon_progress (user_id, depth, first_day) VALUES (?, 45, NULL)',
-        p.id,
-      );
-      expect((await p.run()).body.run.cleared).toBe(false);
+      expect((await withDeadlyFoes(() => p.run())).body.run.cleared).toBe(false);
       expect((await attentionOf(p)).dungeon).toBe(true);
-      expect((await p.run({ idempotencyKey: newKey() })).status).toBe(200);
+      expect((await withDeadlyFoes(() => p.run({ idempotencyKey: newKey() }))).status).toBe(200);
       expect((await attentionOf(p)).dungeon).toBe(false);
       expect((await p.today()).canRun).toBe(false);
+    }, options);
+  });
+
+  it('stays on while a run is open (an open run is a reason to come back), though a run cannot start', async () => {
+    await runRaid(async (ctx) => {
+      const p = await dungeonPlayer(ctx, 1, { level: 30 });
+      expect((await p.start()).status).toBe(200);
+      expect((await p.today()).canRun).toBe(false);
+      expect((await attentionOf(p)).dungeon).toBe(true);
     }, options);
   });
 

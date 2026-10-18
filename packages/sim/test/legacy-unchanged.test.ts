@@ -67,6 +67,69 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * Choking Vines) now silence the ends of each row instead of the two ends of the line, so Thornmother
  * weeks play out differently. Checked by setting both back to the whole line: the old fixture matched.
  * The fight input carrying the board's row sizes moved nothing here (the sim's rows are full).
+ *
+ * Branch evolutions (2026-10-18) leave every digest as it was: the journey takes the original form of a
+ * line that grows two ways (`firstForm`), so the baselines hold while the dungeon is reworked.
+ *
+ * Re-pinned again on 2026-10-18 (Kind Rain, Morning Haze and Bramble Season go live), on purpose: the seeded
+ * weather stream now picks from 10 Boons and 10 Omens instead of 9 and 8, so the days that are drawn are
+ * other days (a different Boon or Omen on the same day: another trip time, creature experience, fight). The
+ * three new effects are in the days too (a round heal, a skipped first turn, a reflect share). Nothing else
+ * moved: the same players check in, the same dice are thrown, and Bait earned is the same in every run. The
+ * first player's top-3 power is now 312, 314, 198 and 232, and raids won 7, 4, 4 and 5. Bramble Season's
+ * share was then cut from 30% to 12% (decisions.md): only run-tiny's hash moved.
+ *
+ * Re-pinned again on 2026-10-18 (more gear and modifiers), on purpose: ten position lines and 28 gear set
+ * pieces joined the pool of lines and bases, so every seeded drop and craft is a different item, and a
+ * creature's gear is folded again with its place in the row (`placeSlots`). Bait earned and the runs
+ * without gear are the same; the first player's top-3 power moved (333, 261, 203 to 390, 243, 196) and
+ * raids won in two runs (7 and 5 to 6 and 4). The gear share study (20 servers) moved within about 2.5 points.
+ *
+ * With the new weathers and the new gear together (the branch merge, 2026-10-18) the first player's top-3
+ * power is 375, 314, 248 and 209, and raids won 7, 4, 5 and 5; Bait earned is the same as before.
+ * Weather numbers then became readable (whole percent from 10 up, halves below, `scaleStrength`): the
+ * hashes moved, the headlines did not.
+ *
+ * Re-pinned again on 2026-10-18 (chance lines and trigger lines), on purpose: nine chance lines and twelve
+ * trigger lines (Rare and up) joined the pool of lines, and each of the three Festival pieces has a chance line
+ * in its narrow pool, so every seeded drop and craft that rolls a line from a Rare or an Epic is a different item.
+ * The sim's fights play the combat lines as the server does (their luck dice come from the fight's seeded RNG
+ * and are drawn only when a creature wears a chance line); Tinker's luck and Second look are not played, since
+ * the sim's Workshop and trips do not read them. The run without gear is the same; Bait earned and raids won
+ * are the same in every run; the first player's top-3 power moved a little (375, 248 and 209 to 370, 246 and 205).
+ *
+ * Merged with the board-rows change (2026-10-18): the sim builds dense rows (no `board`), so the position lines, set
+ * reach and Morning Haze play as before; only the raid bosses' silence by row (above) moved the numbers. The first
+ * player's top-3 power is now 341, 314, 246 and 207, and raids won 6, 4, 5 and 4; Bait earned is the same.
+ * Re-pinned again on 2026-10-18 (dungeon paths, B-019), on purpose: the daily dungeon is a walk over the day's
+ * map (3 to 6 fights, a camp, a pack that is kept whole at home and by half after a defeat, keepsakes, a boss
+ * chest) instead of three rooms played at once, foes are weaker at depth 1 and steeper by depth, experience
+ * is paid per fight cleared (35, not 60), and the run log gained its outcome, pack and fights. Re-pinned
+ * once more when the branch took in the Teach change above, so every hash moved (the first player's top-3
+ * power in the first pinned run is 431).
+ *
+ * Re-pinned again on 2026-10-18 (the Undercroft, B-020), on purpose: the sim draws the day's map with carved
+ * doors (a free room on about a third of the maps, which the policy takes when its route passes it), a run
+ * that beats the boss at depth 8 or over banks the chest, locks depth + 1 and may go down into the
+ * Undercroft (rooms with twice the loot, epic fights, camps, a keeper and its chest), Market Day's scrap
+ * is in the pack (halved after a defeat) and the full clear bonus goes to the row that beat the main boss.
+ * The run log gained its Undercroft fields and two targets were added (96). Two foe numbers were tuned with
+ * it (`RULES.dungeon.hpCurveBp` 300 to 340, `undercroft.depthBonus` 3 to 1). Bait earned and the pinned
+ * runs without the dungeon are the same; the first player's top-3 power in the first pinned run moved
+ * from 431 to 327 (a different path through the same levels and ribbons). Re-pinned once more when the
+ * branch took in the raid's silence by row from main.
+ *
+ * Re-pinned again on 2026-10-18 (a fallen creature gets back up on the way down, B-021), on purpose: a
+ * knocked-out creature recovers `RULES.dungeon.undercroft.reviveBp` of its max HP when the row goes down
+ * into the Undercroft, so the policy (over 50% HP after catching its breath) sends about twice as many
+ * rows down. Bait earned and the runs without a descent are the same; the first player's top-3 power in
+ * the first pinned run moved from 343 to 380 and its raids won from 6 to 7, and 257 to 250 in the second.
+ *
+ * Re-pinned again on 2026-10-18 when part 2 (branch evolutions, the last three weathers, position lines,
+ * gear sets, chance and trigger lines) met the dungeon paths, on purpose: the walk over the day's map now
+ * plays Kind Rain, Morning Haze and Bramble Season and folds the gear with each creature's place in the
+ * row, and the drops roll from part 2's larger pool of lines and bases. Bait earned and raids won are the
+ * same in every run; the first player's top-3 power is now 276, 314, 252 and 207.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

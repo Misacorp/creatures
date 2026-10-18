@@ -15,11 +15,11 @@ import {
   workshopExperience,
   type PartsBundle,
 } from '@creatures/game';
-import type { DungeonRunInput } from '@creatures/engine';
-import { describe, expect, it } from 'vitest';
+import { firstOfEachRow, type DungeonRunInput } from '@creatures/engine';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { eventTimes } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
-import { dungeonPlayer } from './dungeon-helpers';
+import { dungeonPlayer, easyFoes } from './dungeon-helpers';
 import {
   apiPlayer,
   giveItem,
@@ -587,18 +587,33 @@ describe('the Workshop under the weather', () => {
 
 // --- The dungeon ---
 
+/** The row a map run holds (the base fight input: slots with the day's sheet, luck, boss attacks) and its summary. */
 interface DungeonRow {
   input_json: string;
   summary_json: string;
 }
 
-const lastRun = (ctx: CoreContext) =>
-  rows<DungeonRow & Record<string, string | number | null>>(
+const lastRun = (ctx: CoreContext): DungeonRow => {
+  const row = rows<{ state_json: string; summary_json: string }>(
     ctx.sql,
-    'SELECT input_json, summary_json FROM dungeon_runs ORDER BY rowid DESC LIMIT 1',
-  )[0] as DungeonRow;
+    'SELECT state_json, summary_json FROM dungeon_runs ORDER BY rowid DESC LIMIT 1',
+  )[0] as { state_json: string; summary_json: string };
+  return {
+    input_json: JSON.stringify((JSON.parse(row.state_json) as { input: unknown }).input),
+    summary_json: row.summary_json,
+  };
+};
 
 describe('the dungeon under the weather', () => {
+  // The foes are made easy: what these tests look at is the day, not whether a team wins.
+  let restoreFoes: () => void = () => undefined;
+  beforeEach(() => {
+    restoreFoes = easyFoes();
+  });
+  afterEach(() => {
+    restoreFoes();
+  });
+
   it('fights with the day on every creature, the luck and the foes, stores it in the input and names it in the summary', async () => {
     await runCore(
       nextGuild(),
@@ -649,6 +664,33 @@ describe('the dungeon under the weather', () => {
     for (const slot of plain.team) expect(slot.mods).toBeUndefined();
   });
 
+  it('Kind Rain, Morning Haze and Bramble Season go into the stored run input; a plain day stores none of them', async () => {
+    const runUnder = async (boon: string, omen: string | null): Promise<DungeonRunInput> =>
+      runCore(
+        nextGuild(),
+        async (ctx) => {
+          ctx.clock.t = AFTERNOON;
+          const p = await dungeonPlayer(ctx, 1);
+          sky(ctx, boon, omen);
+          expect((await p.run()).status).toBe(200);
+          return JSON.parse(lastRun(ctx).input_json) as DungeonRunInput;
+        },
+        { weather: true },
+      );
+    const rain = await runUnder('kind-rain', null);
+    expect(rain.rainHealBp).toBe(200);
+    expect(rain).not.toHaveProperty('hazeLeft');
+    expect(rain).not.toHaveProperty('brambleBp');
+    const haze = await runUnder('market-day', 'morning-haze');
+    expect(haze.hazeLeft).toBe(true);
+    expect(haze).not.toHaveProperty('rainHealBp');
+    const bramble = await runUnder('market-day', 'bramble-season');
+    expect(bramble.brambleBp).toBe(1_200);
+    const plain = await runUnder('market-day', null);
+    for (const key of ['rainHealBp', 'hazeLeft', 'brambleBp'])
+      expect(plain).not.toHaveProperty(key);
+  });
+
   it('Market Day pays a scrap more for every room cleared, and nothing more otherwise', async () => {
     const scrapUnder = async (boon: string): Promise<{ scrap: number; rooms: number }> =>
       runCore(
@@ -693,6 +735,69 @@ describe('the dungeon under the weather', () => {
         });
         expect(gained).toEqual([want, want, want]);
         expect(want).toBeGreaterThan(dungeonExperience(run.roomsCleared, run.cleared, false));
+      },
+      { weather: true },
+    );
+  });
+
+  it("says what changed each creature's dungeon experience: the treat and the day, by name", async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        ctx.clock.t = AFTERNOON;
+        const p = await dungeonPlayer(ctx, 1);
+        ctx.core.credit({
+          userId: p.id,
+          currency: 'bait',
+          amount: 300,
+          source: 'test',
+          idempotencyKey: 'bait-xp-note',
+        });
+        sky(ctx, 'hearty-breakfast', 'cold-snap');
+        const [a] = p.creatureIds as [string];
+        const res = await p.run({ treats: [a] });
+        const exp = res.body.run.rewards.experience ?? [];
+        const dayEffects = [
+          { name: 'Hearty Breakfast', bp: 2_500 },
+          { name: 'Cold Snap', bp: -2_000 },
+        ];
+        // The treat triples on this day; the others have no treat. Both see the day's two effects.
+        expect(exp.find((e) => e.creatureId === a)).toMatchObject({
+          treat: true,
+          treatTimes: 3,
+          dayEffects,
+        });
+        const others = exp.filter((e) => e.creatureId !== a);
+        expect(others).toHaveLength(2);
+        for (const e of others)
+          expect(e).toMatchObject({ treat: false, treatTimes: null, dayEffects });
+      },
+      { weather: true },
+    );
+  });
+
+  it('a plain day with a treat says it doubled, and names no day', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        ctx.clock.t = AFTERNOON;
+        const p = await dungeonPlayer(ctx, 1);
+        ctx.core.credit({
+          userId: p.id,
+          currency: 'bait',
+          amount: 300,
+          source: 'test',
+          idempotencyKey: 'bait-xp-plain',
+        });
+        sky(ctx, 'quiet-night');
+        const [a] = p.creatureIds as [string];
+        const exp = (await p.run({ treats: [a] })).body.run.rewards.experience ?? [];
+        expect(exp.find((e) => e.creatureId === a)).toMatchObject({
+          treat: true,
+          treatTimes: 2,
+          dayEffects: [],
+        });
+        expect(exp.filter((e) => e.treatTimes === null)).toHaveLength(2);
       },
       { weather: true },
     );
@@ -764,6 +869,75 @@ describe('the raid stage under the weather', () => {
         expect(one?.input.bossAttacks).toBe(2);
         expect(two?.input.bossAttacks).toBeUndefined();
         expect(two?.input.row.every((s) => s.mods === undefined)).toBe(true);
+      },
+      { core: { weather: true } },
+    );
+  });
+
+  it('Kind Rain, Morning Haze and Bramble Season go into the stage input; Haze names the first creature of each row', async () => {
+    await runRaid(
+      (ctx) => {
+        players(ctx, 4);
+        ctx.core.raid.currentWeek(HELSINKI);
+        const times = eventTimes(W02.id, HELSINKI);
+        const day = (at: number): string => gameDay(at, HELSINKI, RULES.daily.reset);
+        ctx.core.weather.force(day(times.phase1), 'kind-rain', 'morning-haze');
+        ctx.core.weather.force(day(times.phase2), 'market-day', 'bramble-season');
+        forcePool(ctx.sql, 20_000);
+        ctx.clock.t = W02.afterPhase2;
+        ctx.core.raid.runDue(HELSINKI);
+        const [one, two] = storedRuns(ctx.sql);
+        if (one === undefined || two === undefined) throw new Error('the stages did not run');
+        expect(one.input.rainHealBp).toBe(200);
+        expect(one.input.brambleBp).toBeUndefined();
+        const ids = one.input.row.map((s) => s.id);
+        expect(one.input.skipFirstTurn).toEqual(firstOfEachRow(one.input.row, one.input.board));
+        for (const id of one.input.skipFirstTurn ?? []) expect(ids).toContain(id);
+        expect(two.input.brambleBp).toBe(1_200);
+        expect(two.input.rainHealBp).toBeUndefined();
+        expect(two.input.skipFirstTurn).toBeUndefined();
+      },
+      { core: { weather: true } },
+    );
+  });
+
+  it('Morning Haze names the first creature standing in each board row, with holes on the board', async () => {
+    await runRaid(
+      (ctx) => {
+        const a = seedPlayer(ctx, 1, { level: 15 });
+        const b = seedPlayer(ctx, 2, { level: 15, creatures: 1 });
+        const c = seedPlayer(ctx, 3, { level: 15 });
+        ctx.core.raid.currentWeek(HELSINKI);
+        // Nine slots (Front 0-2, Middle 3-5, Back 6-8) with seven creatures, all placed: Front is slots
+        // 0-2, the lone creature stands in the Middle at slot 4, Back is slots 6-8 (3 / 1 / 3). Squeezed
+        // into a line of seven the rows would be 2 / 3 / 2 and the haze would name other creatures.
+        const place = (slot: number, userId: string, creatureId: string) =>
+          ctx.sql.exec(
+            'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, ?, ?, ?, ?)',
+            W02.id,
+            1,
+            slot,
+            userId,
+            creatureId,
+          );
+        a.creatureIds.forEach((id, k) => place(k, a.id, id));
+        place(4, b.id, b.creatureIds[0] as string);
+        c.creatureIds.forEach((id, k) => place(6 + k, c.id, id));
+        const times = eventTimes(W02.id, HELSINKI);
+        ctx.core.weather.force(
+          gameDay(times.phase1, HELSINKI, RULES.daily.reset),
+          'kind-rain',
+          'morning-haze',
+        );
+        forcePool(ctx.sql, 20_000);
+        ctx.clock.t = W02.afterPhase2;
+        ctx.core.raid.runDue(HELSINKI);
+        const one = storedRuns(ctx.sql)[0];
+        if (one === undefined) throw new Error('the stage did not run');
+        const { row, board } = one.input;
+        expect(board?.slots).toEqual([0, 1, 2, 4, 6, 7, 8]);
+        expect(one.input.skipFirstTurn).toEqual([row[0]?.id, row[3]?.id, row[4]?.id]);
+        expect(one.input.skipFirstTurn).not.toEqual(firstOfEachRow(row));
       },
       { core: { weather: true } },
     );

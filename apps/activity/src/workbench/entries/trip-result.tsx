@@ -117,6 +117,8 @@ const SCENES: Record<string, TripResultView> = {
       parts: {},
       blueprints: [],
     },
+    // A long trip that took the explorer up a rank.
+    xp: { gained: 600, rank: 4, rankBefore: 3, rankedUp: true, value: 60, max: 1500 },
     stars: { stars: 2, gained: true, trips: 10 },
   },
   'called home early': {

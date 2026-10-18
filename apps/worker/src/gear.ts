@@ -255,6 +255,8 @@ export type JobResult =
       essence: number;
       learned: string[];
       marked: { baseId: string; marks: number }[];
+      /** How many items Tinker's luck refunded in full (absent when none). */
+      tinkered?: number;
     } & JobCommon)
   | ({
       /** A crafted supply for expeditions: `amount` of `supplyId` went into the stock. */
@@ -1415,7 +1417,8 @@ export class Gear {
           const input = parseStoredInput(job.input_json);
           const creature = this.ownedCreature(userId, job.creature_id);
           const before = skillLevel(creatureXp(this.sql, userId, creature.id));
-          const apprenticeBp = gearRulesOf(this.sql, creature).apprenticeBp;
+          const worn = gearRulesOf(this.sql, creature);
+          const apprenticeBp = worn.apprenticeBp;
 
           // Rolled now, at claim time, from the live RNG: nothing was decided when the job started.
           let result: DistributiveOmit<JobResult, keyof JobCommon>;
@@ -1489,7 +1492,13 @@ export class Gear {
               if (items === undefined || first === undefined) {
                 throw new Error('stored dismantle has no items');
               }
-              const rolled = rollDismantle(this.deps.rng, items, input.mods ?? {});
+              // Tinker's luck: the worker's line, as it is worn now, adds a die for each item (none without it).
+              const rolled = rollDismantle(
+                this.deps.rng,
+                items,
+                input.mods ?? {},
+                worn.tinkersLuckBp,
+              );
               creditParts(this.sql, userId, rolled.parts);
               if (rolled.essence > 0) {
                 credit(
@@ -1526,6 +1535,7 @@ export class Gear {
                 essence: rolled.essence,
                 learned,
                 marked,
+                ...(rolled.tinkered === undefined ? {} : { tinkered: rolled.tinkered }),
               };
               analyticsBase = first.baseId;
               analyticsRarity = first.rarity;

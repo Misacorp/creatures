@@ -7,19 +7,22 @@ import { glyphOrUnknown } from './glyphs';
 import {
   ROOM_CARD_MS,
   ROOM_END_MS,
+  arenaOutOfView,
   atSpeed,
   fightScroll,
   mineIds,
   modifierGimmicks,
   nextRoom,
+  placeTotal,
   roomBoss,
   roomIntroView,
   roomResultLine,
-  stageRow,
+  roomStageRow,
+  type PlaybackInput,
 } from './dungeon-playback';
-import { roomLine } from './dungeon-text';
+import { roomPlaceLine } from './dungeon-text';
 import { usePrefersReducedMotion } from './hooks';
-import type { DungeonReplay, DungeonReplayRoom } from './dungeon-types';
+import type { DungeonReplayRoom } from './dungeon-types';
 import { INTRO_REPLAY_MS } from './stage-fx';
 import { roomMaxRounds } from './stage-rounds';
 import type { Speed } from './replay';
@@ -29,10 +32,12 @@ import { elementIcon } from './sprites/element-icons';
 import { LiveRegion } from './ui/LiveRegion';
 import { PixelHeading } from './ui/PixelHeading';
 import { PlaybackControls } from './ui/PlaybackControls';
+import { Tag } from './ui/Tag';
 import { usePlayback } from './use-playback';
 
 interface Props {
-  replay: DungeonReplay;
+  /** The rooms to play (every room of a stored run, or the one fight an open run just played). */
+  input: PlaybackInput;
   /** The playback is over (it ran to the end, or the player skipped it). */
   onDone: () => void;
   /**
@@ -43,28 +48,27 @@ interface Props {
 }
 
 /**
- * Plays a stored run room by room on the fight stage, at the live finale's pace. The stage is the
- * same size for the whole run: a room opens with a banner drawn OVER the stage ("Room 2" with the
- * foe and the room's twist), then the room's fight plays under it (the engine's beats, the
- * telegraphs, the lingering numbers), a short rest on the result, then the next room. The room's
- * place ("Room 1 / 3") is at the top left of the stage's head and the round at the top right.
- * Pause, 2x and Skip are hidden unless `showControls` is set. The run is already decided and
- * stored; this only shows it, so leaving at any time loses nothing.
+ * Plays stored rooms one after the other on the fight stage, at the live finale's pace: every room
+ * of a finished run ("Watch again"), or the single fight an open run just played. The stage is the
+ * same size throughout: a room opens with a banner drawn OVER the stage ("Room 2", or "Fight" with
+ * its place on a path, and the foe and the room's twist; an elite is "Fierce" and tagged), then the
+ * room's fight plays under it (the engine's beats, the telegraphs, the lingering numbers), a short
+ * rest on the result, then the next room. The room's place ("Room 1 / 3", "Room 3 / 7" on a path)
+ * is at the top left of the stage's head and the round at the top right. Pause, 2x and Skip are
+ * hidden unless `showControls` is set. The fight is already decided and stored; this only shows it,
+ * so leaving at any time loses nothing. Each room's arena is brought into view when the room opens
+ * and again when its fight begins (see `RoomFight`).
  */
-export function DungeonPlayback({ replay, onDone, showControls = false }: Props) {
+export function DungeonPlayback({ input, onDone, showControls = false }: Props) {
   const [room, setRoom] = useState(0);
   const [speed, setSpeed] = useState<Speed>(1);
   const [paused, setPaused] = useState(false);
-  const current = replay.rooms[room];
-  const row = useMemo(() => stageRow(replay), [replay]);
-  const fightRef = useRef<HTMLElement>(null);
-  const reduced = usePrefersReducedMotion();
-
-  // The pre-run screen is taller than the screen: when the fight starts, bring it into view.
-  useEffect(() => {
-    fightRef.current?.scrollIntoView(fightScroll(reduced));
-  }, []);
-
+  const current = input.rooms[room];
+  // Each room's own row: a camp swap changes it part-way through a path run.
+  const row = useMemo(
+    () => (current === undefined ? [] : roomStageRow(input, current)),
+    [input, current],
+  );
   if (current === undefined) {
     // A run with no room played cannot be shown: go straight to the results.
     return (
@@ -80,7 +84,7 @@ export function DungeonPlayback({ replay, onDone, showControls = false }: Props)
   }
 
   const finishRoom = (): void => {
-    const next = nextRoom(replay, room);
+    const next = nextRoom(input, room);
     if (next === null) {
       onDone();
       return;
@@ -89,7 +93,7 @@ export function DungeonPlayback({ replay, onDone, showControls = false }: Props)
   };
 
   return (
-    <section ref={fightRef} class="raid-section dungeon-playback" aria-label="Dungeon playback">
+    <section class="raid-section dungeon-playback" aria-label="Dungeon playback">
       {showControls && (
         <PlaybackControls
           label="Playback controls"
@@ -106,8 +110,8 @@ export function DungeonPlayback({ replay, onDone, showControls = false }: Props)
       <RoomFight
         key={room}
         room={current}
-        total={replay.rooms.length}
-        landmark={replay.summary.landmark}
+        total={placeTotal(input, current)}
+        landmark={input.landmark}
         row={row}
         speed={speed}
         paused={paused}
@@ -118,8 +122,9 @@ export function DungeonPlayback({ replay, onDone, showControls = false }: Props)
 }
 
 /**
- * The banner over the stage when a room opens: the room number in big pixel letters, the foe's
- * sprite and name, its element, and the room's twist. It is drawn inside the stage's own box, so the
+ * The banner over the stage when a room opens: the room number in big pixel letters (or "Fight" and
+ * its place on a path, with an Elite tag for a fierce foe), the foe's sprite and name, its element,
+ * and the room's twist. It is drawn inside the stage's own box, so the
  * stage does not change size, and it lets taps through (the intro cannot be skipped). A screen reader
  * gets one status sentence. `ms` is how long it stays: a yellow outline round the stage drains over
  * exactly that time.
@@ -152,7 +157,25 @@ function RoomBanner({
       <PixelHeading tone={view.boss ? 'bad' : 'gold'} outline="ink" size="l" class="rb-heading">
         {view.heading}
       </PixelHeading>
-      <p class="rb-place pix">{view.place}</p>
+      <p class="rb-place pix">
+        {view.place}
+        {view.elite && (
+          <>
+            {' '}
+            <Tag tone="bad" class="rb-elite">
+              Elite
+            </Tag>
+          </>
+        )}
+        {view.epic && (
+          <>
+            {' '}
+            <Tag tone="bad" class="rb-elite">
+              Epic
+            </Tag>
+          </>
+        )}
+      </p>
       <Sprite sprite={art.sprite} scale={art.scale} class="rb-foe" />
       <p class={`rb-name pix ${elementClass(view.element)}`}>
         {icon !== undefined && <Sprite sprite={icon} scale={2} />}
@@ -186,7 +209,7 @@ function RoomFight({
   room: DungeonReplayRoom;
   total: number;
   landmark: boolean;
-  row: ReturnType<typeof stageRow>;
+  row: ReturnType<typeof roomStageRow>;
   speed: Speed;
   paused: boolean;
   onFinished: () => void;
@@ -198,6 +221,8 @@ function RoomFight({
   // The banner shows for a moment with the room standing behind it, then the fight starts. While
   // paused it waits.
   const [banner, setBanner] = useState(true);
+  const arena = useRef<HTMLDivElement>(null);
+  const reduced = usePrefersReducedMotion();
   const pb = usePlayback({
     events: room.events,
     rowIds,
@@ -221,6 +246,27 @@ function RoomFight({
       clearTimeout(timer);
     };
   }, [banner, speed, paused]);
+
+  // The run's own screen (the map, or the results) is taller than the screen and was scrolled: when a
+  // room opens, bring its arena to the top once the page has laid out the new screen.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      arena.current?.scrollIntoView(fightScroll(reduced));
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  // When the banner goes and the fight starts, the arena must be in view: if the page was scrolled
+  // away (or moved) meanwhile, bring it back.
+  useEffect(() => {
+    if (banner) return;
+    const el = arena.current;
+    if (el !== null && arenaOutOfView(el.getBoundingClientRect(), window.innerHeight)) {
+      el.scrollIntoView(fightScroll(reduced));
+    }
+  }, [banner]);
 
   // Pausing stops the beats where they are; playing again continues from the same step.
   useEffect(() => {
@@ -246,38 +292,40 @@ function RoomFight({
   const view = roomIntroView(room, total, landmark);
   return (
     <>
-      <Stage
-        boss={roomBoss(room)}
-        hpMax={room.foe.hpMax}
-        hpStart={room.foe.hpMax}
-        rounds={maxRounds}
-        row={row}
-        mineIds={none}
-        names={room.names}
-        events={room.events}
-        index={pb.index}
-        anim={pb.anim}
-        fx={pb.fx}
-        intro={pb.intro}
-        creatureHp={{ start: room.hpStart, max: room.hpMax }}
-        layout="row"
-        place={roomLine(room.index, total)}
-        modifiers={[room.modifier]}
-        addedGimmicks={modifierGimmicks(room, landmark)}
-        overlay={
-          banner ? (
-            <RoomBanner
-              // A new banner when playback resumes, so the outline starts again together with the wait.
-              key={paused ? 'paused' : 'playing'}
-              room={room}
-              total={total}
-              landmark={landmark}
-              ms={atSpeed(ROOM_CARD_MS, speed)}
-              paused={paused}
-            />
-          ) : null
-        }
-      />
+      <div ref={arena} class="dungeon-arena">
+        <Stage
+          boss={roomBoss(room)}
+          hpMax={room.foe.hpMax}
+          hpStart={room.foe.hpMax}
+          rounds={maxRounds}
+          row={row}
+          mineIds={none}
+          names={room.names}
+          events={room.events}
+          index={pb.index}
+          anim={pb.anim}
+          fx={pb.fx}
+          intro={pb.intro}
+          creatureHp={{ start: room.hpStart, max: room.hpMax }}
+          layout="row"
+          place={roomPlaceLine(room, total)}
+          modifiers={[room.modifier]}
+          addedGimmicks={modifierGimmicks(room, landmark)}
+          overlay={
+            banner ? (
+              <RoomBanner
+                // A new banner when playback resumes, so the outline starts again together with the wait.
+                key={paused ? 'paused' : 'playing'}
+                room={room}
+                total={total}
+                landmark={landmark}
+                ms={atSpeed(ROOM_CARD_MS, speed)}
+                paused={paused}
+              />
+            ) : null
+          }
+        />
+      </div>
       <LiveRegion>{banner ? view.spoken : ''}</LiveRegion>
       <p class="muted dungeon-room-result" role="status">
         {finished ? roomResultLine(room) : ''}

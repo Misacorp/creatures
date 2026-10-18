@@ -17,7 +17,7 @@ Read `README.md` for the tags. Banners, moods, residents, journal pages and the 
 | Old Crossroads   | None (mixed)                          | Explorer rank 2             | Splashet, Cindle, Sproutle, Zipmouse, Stormray               | Gaiadrake             | Yes                    |
 | Moonlit Reef     | Tide                                  | Explorer rank 4, night only | Mistnewt, Coralynx                                           | Aurorix               | Yes                    |
 | Festival Grounds | None                                  | Festival weeks only         | Ashmole, Solmane; Lanternfin and Hearthshell (not catchable) | No deep-only creature | Festival week only     |
-| Daily dungeon    | None (all four elements in its rooms) | One run a day               | Dungeon foes and room bosses (see `dungeon.md`)              | Not applicable        | No                     |
+| Daily dungeon    | None (all four elements in its rooms) | One run a day               | Dungeon foes and floor bosses (see `dungeon.md`)             | Not applicable        | No                     |
 
 `(content: destinations.json, weekly-specials.json, glossary.json "daily-dungeon")`
 
@@ -591,7 +591,7 @@ From `glossary.json`, entry `destination-festival-grounds`:
 
 The daily dungeon is a place, not a destination. It has no banner, no push-on goals and no entry in `destinations.json`. It is one run a day, with a team of three, through three rooms `(content: glossary.json "dungeon"; design: daily-dungeon.md)`.
 
-**Element:** none. Each room has its own element and its own foe. **Access:** once a day. **Residents:** the eight dungeon foes and the four room bosses, all in `dungeon.md`.
+**Element:** none. Each room has its own element and its own foe. **Access:** once a day. **Residents:** the eight dungeon foes and the four floor bosses, all in `dungeon.md`.
 
 ### Mood and climate
 
@@ -608,7 +608,7 @@ There is no banner in the data. This is the proposed brief.
 
 ### Residents
 
-See `dungeon.md`: foes, room bosses and the room modifiers as in-world phenomena.
+See `dungeon.md`: foes, floor bosses and the room modifiers as in-world phenomena.
 
 ### Push-on flavour
 
@@ -623,7 +623,7 @@ None. The journal belongs to expeditions. A dungeon journal could be a new set (
 - A drip of water, and the hum of sparks in one room.
 - Warm stone and the smell of wet moss.
 - A flicker of lantern light on the walls.
-- The quiet before the room boss, and then its heavy step.
+- The quiet before the floor boss, and then its heavy step.
 
 ### Story hooks `(compendium detail, not shipped)`
 
@@ -633,7 +633,7 @@ None. The journal belongs to expeditions. A dungeon journal could be a new set (
 
 ### Former player text (glossary)
 
-None. The dungeon's glossary entries (`dungeon`, `dungeon-row`, `depth`, `room-modifiers`, `room-boss`, `landmark`, `streak` and the modifiers) are not destination entries. They are not moved, and they stay in `glossary.json`.
+None. The dungeon's glossary entries (`dungeon`, `dungeon-row`, `depth`, `room-modifiers`, `floor-boss`, `landmark`, `streak` and the modifiers) are not destination entries. They are not moved, and they stay in `glossary.json`.
 
 ## The living room
 

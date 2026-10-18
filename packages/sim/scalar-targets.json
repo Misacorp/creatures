@@ -12,6 +12,11 @@
   "RULES.raid.teamSize": ["raid-*"],
   "RULES.weather": ["raid-*", "curve-*", "longrun-*"],
   "RULES.experience": ["econ-casual-level-15", "econ-power-ratio", "creatures-*"],
+  "RULES.experience.dungeon": [
+    "dungeon-first-week-clear",
+    "dungeon-depth-growth",
+    "dungeon-run-fights"
+  ],
   "RULES.catching": ["econ-daily-species", "exp-casual-discovery", "creatures-*"],
   "RULES.fusion": ["econ-daily-species", "econ-power-ratio", "creatures-dupes-*"],
   "RULES.progression": ["longrun-*", "raid-finale-typical"],

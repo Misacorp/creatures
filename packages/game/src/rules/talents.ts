@@ -61,6 +61,39 @@ export function rollTalent(
   return { talentId: picked.id, golden: chance(rng, numerator, denominator) };
 }
 
+/**
+ * The talent of a duplicate with Second look (a chance line of the explorer's gear, 6.3): the first roll as
+ * `rollTalent` makes it, then (with chance `secondLookBp` in basis points) a second roll, and the better
+ * of the two stays. "Better" is `talentScore` for the creature that would learn it (the one the player
+ * has of the line), so a talent that does nothing for it loses to one that does; a tie keeps the first
+ * roll. Draws: the first roll's two draws, then one for the chance only when `secondLookBp` is above 0,
+ * then the second roll's two draws when the chance hits, so without the line it is exactly `rollTalent`.
+ * `looked` is whether the second roll happened; `kept` which roll stayed.
+ */
+export function rollTalentSecondLook(
+  rng: Rng,
+  line: string,
+  secondLookBp: number,
+  wearer: TalentWearer,
+): { roll: TalentRoll; looked: boolean; kept: 'first' | 'second'; other: TalentRoll | null } {
+  const first = rollTalent(rng, line);
+  if (secondLookBp <= 0 || !chance(rng, Math.min(10_000, secondLookBp), 10_000)) {
+    return { roll: first, looked: false, kept: 'first', other: null };
+  }
+  const second = rollTalent(rng, line);
+  const score = (r: TalentRoll): number => {
+    const def = talentDef(r.talentId);
+    return def === undefined ? 0 : talentScore(foldTalent(def, r.golden), wearer);
+  };
+  const better = score(second) > score(first);
+  return {
+    roll: better ? second : first,
+    looked: true,
+    kept: better ? 'second' : 'first',
+    other: better ? first : second,
+  };
+}
+
 // --- Size ---
 
 /** The unit a talent's value is in: its line's, or the unit of a talent-only rule. */

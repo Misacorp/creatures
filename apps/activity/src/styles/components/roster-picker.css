@@ -41,12 +41,14 @@
 
 .sheet-title {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: var(--fs-heading);
   line-height: 1.2;
 }
 
 .sheet-close {
   flex: none;
+  /* The button's 3 px ring is outside its box: it ends at the sheet's content edge, like the list below. */
+  margin: var(--px);
   white-space: nowrap;
 }
 
@@ -60,10 +62,16 @@
   gap: 0.25rem;
   min-height: 0;
   margin: 0;
-  padding: 0 0.25rem 0.25rem 0;
+  padding: 0 0 0.25rem;
   overflow-y: auto;
   list-style: none;
   scrollbar-width: thin;
+}
+
+/* In a scrolling drawer body the list does not scroll itself: it is as wide and as tall as its options. */
+.roster-list.flat {
+  overflow: visible;
+  padding: 0;
 }
 
 .roster-option {
@@ -112,13 +120,13 @@
 }
 
 .ro-name {
-  font-size: 1rem;
+  font-size: var(--fs-row);
   line-height: 1.2;
 }
 
 .ro-level {
   color: var(--haze);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
 }
 
 /* A quiet tag, no louder than the level: it says which creatures are recommended and nothing about why. */
@@ -149,9 +157,20 @@
 
 .ro-note {
   color: var(--gold);
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
 }
 
 .ro-reason {
   color: var(--haze);
+}
+
+/*
+  A note or reason at the right of its row (`reasonSide`, the Equip on list): right-aligned and centred vertically
+  by the row's own alignment, in a column of its own that wraps when the row is narrow.
+*/
+.ro-side {
+  flex: 0 1 38%;
+  min-width: 0;
+  margin-left: auto;
+  text-align: right;
 }

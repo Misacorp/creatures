@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import evolveFixture from './fixtures/branches-evolve.json';
+import evolveOtherFixture from './fixtures/branches-evolve-other.json';
+import branchRequests from './fixtures/branches-request-bodies.json';
 import {
   createSession,
+  evolveCreature,
   fetchConfig,
   fetchRoom,
   jsonRequest,
@@ -305,6 +309,68 @@ describe('the lounger and room requests', () => {
     expect(await fetchRoom(['1', '2'])).toEqual([]);
     expect(sent[sent.length - 1]?.path).toBe('/api/room');
     expect(sent[sent.length - 1]?.init.body).toBe('{"userIds":["1","2"]}');
+  });
+});
+
+describe('the evolve request (real server output: fixtures/branches-*)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  async function signIn(): Promise<void> {
+    vi.stubGlobal('fetch', () =>
+      Promise.resolve(
+        Response.json({
+          sessionToken: 't',
+          accessToken: 'a',
+          guildId: 'g',
+          user: { id: '1', displayName: 'Misa' },
+        }),
+      ),
+    );
+    await createSession('code', 'instance');
+  }
+
+  function answer(body: unknown): { path: string; init: RequestInit }[] {
+    const sent: { path: string; init: RequestInit }[] = [];
+    vi.stubGlobal('fetch', (path: string, init: RequestInit) => {
+      sent.push({ path, init });
+      return Promise.resolve(Response.json(body));
+    });
+    return sent;
+  }
+
+  it('POSTs the form and the key to the creature, in the body the server accepted', async () => {
+    await signIn();
+    const sent = answer(evolveFixture);
+    const request = branchRequests['branches-evolve'];
+    const id = request.path.split('/')[3] ?? '';
+    const done = await evolveCreature(id, request.body.species, request.body.idempotencyKey);
+    expect(done.species).toBe('sunfawn');
+    expect(done.unequipped).toBe(0);
+    expect(done.state.creatures.some((c) => c.species === 'sunfawn')).toBe(true);
+    const last = sent[sent.length - 1];
+    expect(last?.path).toBe(request.path);
+    expect(last?.init.method).toBe(request.method);
+    expect(JSON.parse((last?.init.body ?? '') as string)).toEqual(request.body);
+  });
+
+  it('reads the other form, and the count of items that came off (none from an older server)', async () => {
+    await signIn();
+    answer(evolveOtherFixture);
+    expect((await evolveCreature('c', 'thornbuck', 'k')).species).toBe('thornbuck');
+    answer({ ...evolveOtherFixture, unequipped: undefined });
+    expect((await evolveCreature('c', 'thornbuck', 'k')).unequipped).toBe(0);
+    answer({ ...evolveOtherFixture, unequipped: 2 });
+    expect((await evolveCreature('c', 'thornbuck', 'k')).unequipped).toBe(2);
+  });
+
+  it('refuses an answer of the wrong shape', async () => {
+    await signIn();
+    answer({ ...evolveFixture, species: 7 });
+    await expect(evolveCreature('c', 'sunfawn', 'k')).rejects.toThrow();
+    answer({ species: 'sunfawn', state: evolveFixture.state });
+    await expect(evolveCreature('c', 'sunfawn', 'k')).rejects.toThrow();
   });
 });
 

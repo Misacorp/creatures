@@ -362,6 +362,30 @@ describe('cuesForEvents', () => {
     ]);
   });
 
+  it('shows Kind Rain as a green number on every creature it healed, and a Morning Haze skip as a word', () => {
+    const events: FightEvent[] = [
+      roundStart(1),
+      {
+        t: 'sky_heal',
+        round: 1,
+        heals: [
+          { creature: 'a', amount: 12 },
+          { creature: 'b', amount: 3 },
+        ],
+      },
+      { t: 'skip', round: 1, creature: 'c', reason: 'haze' },
+    ];
+    const cues = cuesForEvents(events, 0, 3, ROW);
+    const floats = cues.filter((c) => c.kind === 'float');
+    expect(floats.map((c) => [c.target, c.text, c.tone])).toEqual([
+      ['a', '+12', 'heal'],
+      ['b', '+3', 'heal'],
+      ['c', 'Hazy', 'blocked'],
+    ]);
+    // A hazed creature is not drawn silenced.
+    expect(cues.some((c) => c.kind === 'silenced')).toBe(false);
+  });
+
   it('reads only the events it is asked for, and survives a range past the log', () => {
     const events: FightEvent[] = [roundStart(1), hit(1, 'a', 5), hit(1, 'b', 6)];
     expect(cuesForEvents(events, 2, 99, ROW).filter((c) => c.kind === 'float')).toHaveLength(1);

@@ -138,9 +138,15 @@ export function activeEffects(day: WeatherDay | null): ActiveEffect[] {
   return out;
 }
 
-/** `value` times `strengthBp` over 10000, towards zero (so a penalty and a bonus scale alike). */
+/**
+ * `value` times `strengthBp` over 10000, towards zero (so a penalty and a bonus scale alike), then
+ * towards zero to a number a player can read: whole percent or points from 10 up, halves below (31.25%
+ * is 31%, 3.75 pt is 3.5 pt). The text and the rules use this same number.
+ */
 export function scaleStrength(value: number, strengthBp: number): number {
-  return Math.trunc((value * strengthBp) / BP);
+  const raw = Math.trunc((value * strengthBp) / BP);
+  const step = Math.abs(raw) >= 1_000 ? 100 : 50;
+  return Math.trunc(raw / step) * step;
 }
 
 // --- Fights: the sheet, luck and boss attacks ---
@@ -273,6 +279,29 @@ export function weatherBossAttacks(day: WeatherDay | null, base: number): number
   let extra = 0;
   for (const { effect: e } of activeEffects(day)) if (e.op === 'foeAttacks') extra += e.extra;
   return Math.min(3, base + extra);
+}
+
+/** What the day adds to a fight beyond the sheet, the luck rules and the boss's attacks (all off on a plain day). */
+export interface WeatherSky {
+  /** Kind Rain: the share of max HP every living creature heals at round start, in basis points (0: none). */
+  rainHealBp: number;
+  /** Morning Haze: the first creature of each row (the dungeon's left one) skips its first turn. */
+  haze: boolean;
+  /** Bramble Season: the share of the first reaction's bonus each round that goes back at its setter-off (0: none). */
+  brambleBp: number;
+}
+
+/** The day's Kind Rain, Morning Haze and Bramble Season numbers at the day's strength. */
+export function weatherSky(day: WeatherDay | null): WeatherSky {
+  const out: WeatherSky = { rainHealBp: 0, haze: false, brambleBp: 0 };
+  for (const { effect: e, strengthBp } of activeEffects(day)) {
+    if (e.op === 'roundHeal') out.rainHealBp += scaleStrength(e.bp, strengthBp);
+    if (e.op === 'skipFirstTurn') out.haze = true;
+    if (e.op === 'bramble') out.brambleBp += scaleStrength(e.bp, strengthBp);
+  }
+  out.rainHealBp = Math.min(BP, out.rainHealBp);
+  out.brambleBp = Math.min(BP, out.brambleBp);
+  return out;
 }
 
 /** Scrap added to every room cleared in the dungeon on the day (Market Day). */
@@ -458,6 +487,9 @@ const FIGHT_OPS: ReadonlySet<string> = new Set([
   'foeCrit',
   'foeAttack',
   'foeAttacks',
+  'roundHeal',
+  'skipFirstTurn',
+  'bramble',
   'dungeonScrap',
 ]);
 

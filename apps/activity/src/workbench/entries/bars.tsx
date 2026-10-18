@@ -1,6 +1,6 @@
 import { ProgressTrack } from '../../ProgressTrack';
 import type { TrackStep } from '../../progress-track';
-import { XpBar } from '../../XpBar';
+import { XpBar, type XpKind } from '../../XpBar';
 import { Bar } from '../../ui/Bar';
 import { PipRow } from '../../ui/PipRow';
 import { StreakTrack } from '../../ui/StreakTrack';
@@ -165,31 +165,52 @@ const bossHp: Entry = {
   },
 };
 
+const XP_KINDS = ['explorer', 'experience', 'crafting'] as const;
+
+function xpKind(value: string): XpKind {
+  return XP_KINDS.find((kind) => kind === value) ?? 'explorer';
+}
+
 const xpBar: Entry = {
   name: 'XpBar',
   file: 'apps/activity/src/XpBar.tsx',
   group: 'Bars',
   description:
-    'A thick XP bar with its words ("120 / 200 XP") drawn over the fill; it shows a creature\'s or explorer\'s progress to the next rank, with optional rank caps at both ends.',
+    'A thick XP bar with its words ("120 / 200 XP") drawn over the fill; it shows a creature\'s or explorer\'s progress to the next rank, with optional rank caps at both ends. Each kind of XP has its colour: experience gold, explorer orchid, Crafting leather.',
   controls: {
     value: { kind: 'number', min: 0, max: 1000 },
     max: { kind: 'number', min: 0, max: 1000 },
     text: { kind: 'text' },
     startCap: { kind: 'text', maxLength: 12 },
     endCap: { kind: 'text', maxLength: 12 },
+    gained: { kind: 'number', min: 0, max: 1000 },
+    kind: { kind: 'select', options: XP_KINDS },
   },
-  defaults: { value: 120, max: 200, text: '', startCap: 'Rank 2', endCap: 'Rank 3' },
+  defaults: {
+    value: 120,
+    max: 200,
+    text: '',
+    startCap: 'Rank 2',
+    endCap: 'Rank 3',
+    gained: 0,
+    kind: 'explorer',
+  },
   presets: [
     { name: 'Empty', props: { value: 0 } },
     { name: 'Half', props: { value: 100 } },
     { name: 'Nearly full', props: { value: 199 } },
     { name: 'Top rank', props: { value: 200, text: 'Top rank', endCap: '' } },
+    { name: 'Experience (gold)', props: { kind: 'experience', startCap: 'Lv 6', endCap: 'Lv 7' } },
+    { name: 'Crafting (leather)', props: { kind: 'crafting', startCap: 'Lv 2', endCap: 'Lv 3' } },
+    { name: 'Just gained 50', props: { value: 120, gained: 50 } },
   ],
   render: (p) => (
     <XpBar
       value={num(p, 'value')}
       max={num(p, 'max')}
+      gained={num(p, 'gained')}
       label="Explorer XP"
+      kind={xpKind(str(p, 'kind'))}
       text={str(p, 'text') === '' ? undefined : str(p, 'text')}
       startCap={str(p, 'startCap') === '' ? undefined : str(p, 'startCap')}
       endCap={str(p, 'endCap') === '' ? undefined : str(p, 'endCap')}

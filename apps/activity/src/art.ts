@@ -21,7 +21,7 @@ export const FALLBACK_BOSS_SCALE = 6;
 
 /**
  * The sprite to draw for whatever the stage shows as its boss, and the scale to draw it at: a raid
- * boss, a daily-dungeon room boss (both 24x24), or a dungeon foe (16x16, drawn bigger); a bigger
+ * boss, a daily-dungeon floor boss (both 24x24), or a dungeon foe (16x16, drawn bigger); a bigger
  * silhouette while an id has no art yet.
  */
 export function bossArt(bossId: string): { sprite: SpriteDef; scale: number } {
@@ -61,8 +61,28 @@ const SHINY_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>>
   },
   sproutle: { b: '#b0a34a', h: '#e2a26a', s: '#5b6b2f', p: '#f4cfd4' },
   thornbuck: { b: '#b0a34a', h: '#e2a26a', s: '#5b6b2f', p: '#f4cfd4', t: '#6b2e4a' },
+  // Sunfawn: the Sproutle shiny's golden-olive coat, with sky-blue blossoms.
+  sunfawn: {
+    b: '#b0a34a',
+    h: '#e2a26a',
+    s: '#5b6b2f',
+    p: '#f4cfd4',
+    f: '#8fd8f2',
+    m: '#4a9bc4',
+    y: '#fff3a0',
+  },
   zipmouse: { b: '#f22bc0', h: '#ffa0e3', s: '#c214a1', p: '#ffcff4', v: '#5bd694', t: '#f22bc0' },
   voltaro: {
+    b: '#f22bc0',
+    h: '#ffa0e3',
+    s: '#c214a1',
+    p: '#ffcff4',
+    v: '#5bd694',
+    t: '#f22bc0',
+    a: '#ffa0e3',
+  },
+  // Ohmouse: the Zipmouse shiny's magenta, with a green glint in the ears.
+  ohmouse: {
     b: '#f22bc0',
     h: '#ffa0e3',
     s: '#c214a1',
@@ -106,6 +126,45 @@ const SHINY_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>>
     a: '#2a58ff',
     f: '#5b4dff',
     t: '#2e3b6b',
+  },
+  // The second forms of the six other evolving lines: each keeps its line's shiny hue, so a pair matches.
+  geyserpup: { b: '#c63fd6', h: '#f9e8ff', s: '#8a1f8b', p: '#b8f4ca', f: '#dd7ff0' },
+  wickat: {
+    b: '#2a7be8',
+    h: '#4a83ff',
+    s: '#1f63a8',
+    p: '#b0b7f6',
+    a: '#4756ff',
+    f: '#9180ff',
+    m: '#2a4e5a',
+  },
+  drizzlewt: {
+    b: '#926fb8',
+    h: '#bfa8e0',
+    s: '#693f8f',
+    p: '#d2a9d6',
+    w: '#f9e8ff',
+    f: '#c63fd6',
+    g: '#a98fc0',
+  },
+  kilnmole: {
+    b: '#3a4f8a',
+    h: '#5068b0',
+    s: '#222f5a',
+    p: '#d9d8f4',
+    a: '#3d71ff',
+    y: '#9fb8ff',
+    o: '#a0d7f2',
+  },
+  halcyray: { b: '#f22bc0', h: '#ffa0e3', p: '#ffcff4', v: '#5bd694', c: '#9af0c4', g: '#f22bc0' },
+  bloomback: {
+    b: '#b0a34a',
+    s: '#5b6b2f',
+    p: '#d69e8a',
+    u: '#8b435d',
+    f: '#df8ff0',
+    m: '#a85cb8',
+    y: '#fff3a0',
   },
 };
 

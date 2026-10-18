@@ -1,12 +1,13 @@
-import { content } from '@creatures/game';
+import { content, dismantleRange, type ItemLine } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature } from '../../api';
 import { CreatureCard } from '../../CreatureCard';
 import { CreaturePage, type CardActions, type PageOpen } from '../../CreaturePage';
+import { ItemPickerDrawer } from '../../creature-page/ItemPicker';
 import { sampleCreature } from '../../creature-card-sample';
 import { PageHeader } from '../../creature-page/PageHeader';
 import { GearSlots, TalentSlots } from '../../creature-page/PageSlots';
-import { wornFromBag } from '../../creature-page/bag-sample';
+import { sampleItem, wornFromBag } from '../../creature-page/bag-sample';
 import {
   PAGE_SAMPLE_ID,
   SCENE_KINDS,
@@ -18,9 +19,11 @@ import {
 import type { GearActions } from '../../gear-actions';
 import { ItemFrame, ItemSprite } from '../../GearArt';
 import { LootList } from '../../GearLoot';
-import type { GearItem, GrantLoot } from '../../gear-types';
+import type { DismantlePreview, GearItem, GearState, GrantLoot } from '../../gear-types';
+import { dismantleDurationFor, gearName } from '../../gear-view';
 import { InventoryGrid } from '../../InventoryGrid';
 import { ItemDetail } from '../../ItemDetail';
+import { Drawer } from '../../ui/Drawer';
 import { bool, str } from '../props';
 import type { Entry, Props } from '../types';
 
@@ -43,10 +46,19 @@ interface SceneDef {
     | 'rarities'
     | 'item'
     | 'loot'
-    | 'bag';
-  /** `item`: the bag item the card shows (its base id and level in the sample bag). */
+    | 'bag'
+    | 'compare';
+  /** `item`: the bag item the card shows (its slot and index in the sample bag). `compare`: the id of the item the picker starts on. */
   pick?: string;
+  /** `compare`: the Compare switch starts off (default on). */
+  compareOff?: boolean;
+  /** `compare`: a long Epic against a long worn Epic (many lines, changed, new and lost), to show the card scroll. */
+  long?: boolean;
   open?: PageOpen;
+  /** `item`: what the item drawer shows open: the creature list of "Equip on" (a view of the drawer), or the dismantle panel. */
+  drawer?: 'equip' | 'dismantle';
+  /** `item`: creatures of every state beside the two of the sample (a Guard, a low level, away, on a job). */
+  crowd?: boolean;
   /** The gear view has not loaded yet. */
   loading?: boolean;
   bait?: number;
@@ -79,6 +91,98 @@ const SCENE_LIST: readonly SceneDef[] = [
     show: 'drawer',
     open: { kind: 'gear', slot: 'hat' },
     loading: true,
+  },
+  {
+    id: 'S1',
+    label: 'S1 · Gear slots: two pieces of a gear set (the set line)',
+    kind: 'set: two pieces',
+    show: 'gear',
+  },
+  {
+    id: 'S2',
+    label: 'S2 · Gear slots: all three pieces of a gear set',
+    kind: 'set: three pieces',
+    show: 'gear',
+  },
+  {
+    id: 'S3',
+    label: 'S3 · Item picker: a set piece, two of three worn',
+    kind: 'set: two pieces',
+    show: 'drawer',
+    open: { kind: 'gear', slot: 'hat' },
+  },
+  {
+    id: 'K1',
+    label: 'K1 · Compare: a better item (Hat, plain cap worn)',
+    kind: 'compare: plain gear',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'hat' },
+    pick: 'bag-hat-01',
+  },
+  {
+    id: 'K2',
+    label: 'K2 · Compare: a worse item (Hat, epic crown worn)',
+    kind: 'level 15',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'hat' },
+    pick: 'bag-hat-14',
+  },
+  {
+    id: 'K3',
+    label: 'K3 · Compare: completes a set (Charm, two of three worn)',
+    kind: 'set: two pieces and a charm',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'charm' },
+    pick: 'bag-charm-14',
+  },
+  {
+    id: 'K4',
+    label: 'K4 · Compare: breaks a set (Hat, two of three worn)',
+    kind: 'set: two pieces',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'hat' },
+    pick: 'bag-hat-11',
+  },
+  {
+    id: 'K5',
+    label: 'K5 · Compare: an empty slot (Charm, nothing worn)',
+    kind: 'compare: plain gear',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'charm' },
+    pick: 'bag-charm-02',
+  },
+  {
+    id: 'K6',
+    label: 'K6 · Compare off (the default: the plain card)',
+    kind: 'level 15',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'hat' },
+    pick: 'bag-hat-14',
+    compareOff: true,
+  },
+  {
+    id: 'K7',
+    label: 'K7 · Compare: a long Epic (the card scrolls, the actions stay)',
+    kind: 'level 15',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'hat' },
+    pick: 'bag-hat-02',
+    long: true,
+  },
+  {
+    id: 'K9',
+    label: 'K9 · Item picker on open: nothing selected, the grid has the whole drawer',
+    kind: 'level 15',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'hat' },
+  },
+  {
+    id: 'K8',
+    label: 'K8 · Item picker: an item this creature cannot wear (the reason, in the pixel font)',
+    kind: 'level 15',
+    show: 'compare',
+    open: { kind: 'gear', slot: 'hat' },
+    pick: 'bag-hat-16',
   },
   { id: 'T1', label: 'T1 · Talent slots', kind: 'talents: golden and locked', show: 'talents' },
   {
@@ -138,6 +242,48 @@ const SCENE_LIST: readonly SceneDef[] = [
     kind: 'level 15',
     show: 'item',
     pick: 'charm:1',
+  },
+  {
+    id: 'W3',
+    label: 'W3 · Item detail: a gear set piece nobody wears (0 / 3)',
+    kind: 'level 15',
+    show: 'item',
+    pick: 'hat:19',
+  },
+  {
+    id: 'W4',
+    label: 'W4 · Item drawer: the Equip on list (a Guards-only Charm, every reason)',
+    kind: 'level 15',
+    show: 'item',
+    pick: 'charm:4',
+    drawer: 'equip',
+    crowd: true,
+  },
+  {
+    id: 'W5',
+    label: 'W5 · Item drawer: the Equip on list for a worn item (Take off first)',
+    kind: 'level 15',
+    show: 'item',
+    pick: 'hat:0',
+    drawer: 'equip',
+    crowd: true,
+  },
+  {
+    id: 'W6',
+    label: 'W6 · Item drawer: Dismantle open (yields as badges, the time, quality)',
+    kind: 'level 15',
+    show: 'item',
+    pick: 'hat:2',
+    drawer: 'dismantle',
+    crowd: true,
+  },
+  {
+    id: 'W7',
+    label: 'W7 · Item drawer: Equip on row, closed (nobody wears it)',
+    kind: 'level 15',
+    show: 'item',
+    pick: 'hat:19',
+    crowd: true,
   },
   { id: 'L1', label: 'L1 · Loot list, compact rows', kind: 'level 15', show: 'loot' },
   { id: 'B1', label: 'B1 · Workshop bag', kind: 'level 15', show: 'bag' },
@@ -261,6 +407,77 @@ function LivePage({ def, kind, bait }: { def: SceneDef; kind: SceneKind; bait: n
   );
 }
 
+/**
+ * K7: the worn Hat and the picked one are both Epics with six rolled lines and the local Attack line, with
+ * different lines, so the card has changed, new and lost lines (ten or more rows) and has to scroll.
+ */
+function longEpics(gear: GearState): GearState {
+  const lines = (rolled: readonly ItemLine[], localTier: number): ItemLine[] => [
+    ...rolled,
+    { id: 'attack-local-pct', tier: localTier },
+  ];
+  const worn = lines(
+    [
+      { id: 'ember-hunter', tier: 3 },
+      { id: 'first-pounce', tier: 2 },
+      { id: 'crit-chance', tier: 3 },
+      { id: 'ember-reaction', tier: 2 },
+      { id: 'attack', tier: 1 },
+      { id: 'strike', tier: 2 },
+    ],
+    1,
+  );
+  const next = lines(
+    [
+      { id: 'first-pounce', tier: 4 },
+      { id: 'crit-damage', tier: 2 },
+      { id: 'tide-hunter', tier: 2 },
+      { id: 'ember-reaction', tier: 4 },
+      { id: 'hp', tier: 3 },
+      { id: 'marked-foe', tier: 2 },
+    ],
+    3,
+  );
+  const swap = (id: string, rolled: ItemLine[], equippedOn: string | null): GearItem => ({
+    ...sampleItem(id, 'emberkeepers-crown', 'epic', 15, rolled),
+    equippedOn,
+  });
+  return {
+    ...gear,
+    items: gear.items.map((item) =>
+      item.id === 'bag-hat-01'
+        ? swap(item.id, worn, item.equippedOn)
+        : item.id === 'bag-hat-02'
+          ? swap(item.id, next, null)
+          : item,
+    ),
+  };
+}
+
+/** The item picker with one item picked: the compare block above Equip says what wearing it would change. */
+function CompareScene({ def }: { def: SceneDef }) {
+  const scene = pageScene(def.kind);
+  const { creature, state } = scene;
+  const gear = def.long === true ? longEpics(scene.gear) : scene.gear;
+  const slot = def.open?.kind === 'gear' ? def.open.slot : 'hat';
+  return (
+    <div class="v3-phone">
+      <ItemPickerDrawer
+        open
+        onClose={() => undefined}
+        slot={slot}
+        creature={creature}
+        creatures={state.creatures}
+        items={gear.items}
+        onEquip={() => undefined}
+        onTakeOff={() => undefined}
+        initialCompare={def.compareOff !== true}
+        {...(def.pick === undefined ? {} : { initialPicked: def.pick })}
+      />
+    </div>
+  );
+}
+
 /** An excerpt of the page: the head, and the one block the scene is about, in the page's own card. */
 function Excerpt({ def, bait }: { def: SceneDef; bait: number }) {
   const { creature, state, gear } = pageScene(def.kind, { bait });
@@ -363,24 +580,91 @@ const NO_JOB_ACTIONS: GearActions = {
   claimJob: () => Promise.resolve(undefined),
 };
 
+/** A species of this role (the first in the content), so the picker scenes can show a Guard. */
+function speciesOfRole(role: string): string {
+  return content.creatures.find((c) => c.role === role)?.id ?? 'sproutle';
+}
+
+/**
+ * The creatures of the Equip on picker scenes: the page's two, a Guard who can wear a Guards-only piece, a Guard
+ * of a low level, one away on a trip and one on a job, so the picker shows every reason there is.
+ */
+function crowdOf(creatures: readonly Creature[]): Creature[] {
+  const make = (id: string, over: Partial<Creature>): Creature => ({
+    ...sampleCreature('growing'),
+    id,
+    gear: [],
+    ...over,
+  });
+  return [
+    ...creatures,
+    make('wb-guard', { nickname: 'Bulwark', species: speciesOfRole('guard'), level: 16 }),
+    make('wb-low', { nickname: 'Pip', species: speciesOfRole('guard'), level: 5 }),
+    make('wb-away', {
+      nickname: 'Wanderer',
+      level: 14,
+      away: true,
+      busy: { kind: 'expedition', id: 'wb-trip' },
+    }),
+    make('wb-job', { nickname: 'Tinker', level: 15, busy: { kind: 'job', id: 'wb-job-1' } }),
+  ];
+}
+
+/** The server's answer to "what would dismantling this give", worked out by the game's own rules. */
+function previewOf(item: GearItem, creatureId: string): Promise<DismantlePreview> {
+  const piece = { baseId: item.baseId, rarity: item.rarity, itemLevel: item.itemLevel };
+  return Promise.resolve({
+    kind: 'dismantle',
+    creatureId,
+    items: [{ id: item.id, ...piece }],
+    range: dismantleRange([piece]),
+    durationMs: dismantleDurationFor(item.rarity, 1),
+    xp: 12,
+    learnBp: 700,
+    teachers: 1,
+  });
+}
+
 /** The Workshop's item card for one item of the sample bag ("hat:0" is the first hat of the table). */
 function ItemScene({ def }: { def: SceneDef }) {
-  const { gear, state } = pageScene(def.kind);
+  const scene = pageScene(def.kind);
+  const { gear } = scene;
+  const creatures = def.crowd === true ? crowdOf(scene.state.creatures) : scene.state.creatures;
   const [slot, index] = (def.pick ?? 'hat:0').split(':');
   const item = gear.items.filter((i) => i.slot === slot)[Number(index)];
   if (item === undefined) return null;
-  return (
+  const actions: GearActions = {
+    ...NO_JOB_ACTIONS,
+    previewDismantle: (creatureId) => previewOf(item, creatureId),
+  };
+  const detail = (
+    <ItemDetail
+      item={item}
+      gear={gear}
+      creatures={creatures}
+      busy={false}
+      actions={actions}
+      onGone={() => undefined}
+      initialDismantle={def.drawer === 'dismantle'}
+      initialPicking={def.drawer === 'equip'}
+    />
+  );
+  // The scenes with a crowd show the content in a real drawer (its widths and padding are part of the look).
+  return def.crowd === true ? (
+    <div class="v3-phone">
+      <Drawer
+        open
+        title={gearName(item.baseId)}
+        titleHidden
+        class="item-drawer"
+        onClose={() => undefined}
+      >
+        {detail}
+      </Drawer>
+    </div>
+  ) : (
     <div>
-      <div class="workshop">
-        <ItemDetail
-          item={item}
-          gear={gear}
-          creatures={state.creatures}
-          busy={false}
-          actions={NO_JOB_ACTIONS}
-          onGone={() => undefined}
-        />
-      </div>
+      <div class="workshop">{detail}</div>
     </div>
   );
 }
@@ -443,6 +727,8 @@ function Scene({ p }: { p: Props }) {
         <LootScene />
       ) : def.show === 'bag' ? (
         <BagScene def={{ ...def, kind }} />
+      ) : def.show === 'compare' ? (
+        <CompareScene key={`${def.id}-${kind}`} def={{ ...def, kind }} />
       ) : def.show === 'rarities' ? (
         <Rarities def={{ ...def, kind }} />
       ) : (
@@ -457,7 +743,7 @@ const creaturePage: Entry = {
   file: 'apps/activity/src/CreaturePage.tsx',
   group: 'Creatures & game pieces',
   description:
-    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait, the name in its rarity colour, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats, the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About and Rename. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours, W = the Workshop's item detail, L = a compact loot list, B = the Workshop bag. The scenes are live: equip, take off and use a talent.",
+    "A creature's page, opened from its card in the list's place: back at the top left and Lounge at the top right, one head row (portrait, the name in its rarity colour, element, level, the experience bar), tags (the species name of a nicknamed creature, element and role), the ribbon, evolve and waiting-catch buttons when ready, stats, the finale ability, gear and talents as slots (a tap opens a bottom drawer: the item picker grid with its detail panel, or the Talent Book), About and Rename. Pick a scene: H = header, G = gear slots, P = item picker, T = talent slots and Talent Book, F = the full page, C = cards, R = rarity colours, W = the Workshop's item detail, L = a compact loot list, B = the Workshop bag, K = the picker's compare (inline changes on the card, the Compare switch, what the swap does to the creature). The scenes are live: equip, take off and use a talent.",
   controls: {
     scene: { kind: 'select', options: SCENE_IDS },
     banner: { kind: 'toggle' },

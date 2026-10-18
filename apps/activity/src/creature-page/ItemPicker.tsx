@@ -1,11 +1,15 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature } from '../api';
-import { ItemCorners, ItemSprite } from '../GearArt';
 import type { GearItem, GearSlot } from '../gear-types';
-import { itemLabel, rarityName, slotName } from '../gear-view';
+import { itemLabel, rarityName, setPiecesWith, slotName } from '../gear-view';
 import { ItemCard } from '../ItemCard';
-import { Drawer } from '../ui/Drawer';
-import { compactReason, firstPick, pickerChoices } from './picker-view';
+import { ItemTile } from '../ItemTile';
+import { CloseGlyph, Drawer } from '../ui/Drawer';
+import { ScrollHint } from '../ui/ScrollHint';
+import { Switch } from '../ui/Switch';
+import { diffItems } from './compare-diff';
+import { loadCompareOn, saveCompareOn } from './compare-pref';
+import { compactReason, pickerChoices } from './picker-view';
 
 export interface ItemPickerProps {
   open: boolean;
@@ -22,6 +26,10 @@ export interface ItemPickerProps {
   /** Take the worn item off. */
   onTakeOff: (item: GearItem) => void;
   returnFocusTo?: HTMLElement | null;
+  /** The item the picker starts on (the workbench shows a swap); the worn item, else the best pick, when absent. */
+  initialPicked?: string;
+  /** The compare switch's starting state (the workbench shows it off); the viewer's stored setting, else on, when absent. */
+  initialCompare?: boolean;
 }
 
 /** One entry of the grid: an item, whether the creature wears it, who else does and why it cannot be worn. */
@@ -32,38 +40,6 @@ interface Cell {
   blocked: string | null;
 }
 
-/** One icon of the grid: the sprite on its own, the cell's one border in the rarity colour, the level in the corner. */
-function ItemCell({
-  cell,
-  selected,
-  onSelect,
-}: {
-  cell: Cell;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const { item, worn, blocked } = cell;
-  return (
-    <li>
-      <button
-        type="button"
-        class={`ip-cell rarity-${item.rarity}${selected ? ' selected' : ''}${blocked === null ? '' : ' blocked'}${worn ? ' worn' : ''}`}
-        aria-pressed={selected}
-        aria-label={`${itemLabel(item.baseId, item.itemLevel)}, ${rarityName(item.rarity)}${worn ? ', worn now' : ''}${blocked === null ? '' : `. ${blocked}`}`}
-        onClick={onSelect}
-      >
-        <ItemSprite baseId={item.baseId} scale={5} />
-        {worn && (
-          <span class="ip-cell-worn pix" aria-hidden="true">
-            Worn
-          </span>
-        )}
-        <ItemCorners level={item.itemLevel} baseId={item.baseId} />
-      </button>
-    </li>
-  );
-}
-
 /**
  * The panel pinned at the bottom of the drawer: the selected item as the one item card (image with its level at
  * the top left, name, rarity badge and base stats, a divider, the modifiers), with Equip, Take off or the reason
@@ -71,51 +47,82 @@ function ItemCell({
  */
 function DetailPanel({
   cell,
+  creature,
+  wornItem,
+  compareOn,
+  onCompareChange,
   busy,
   onEquip,
   onTakeOff,
+  onClose,
 }: {
   cell: Cell;
+  creature: Creature;
+  /** The item worn in this slot, to compare with; undefined when the slot is empty. */
+  wornItem: GearItem | undefined;
+  compareOn: boolean;
+  onCompareChange: (on: boolean) => void;
   busy: boolean;
   onEquip: (item: GearItem) => void;
   onTakeOff: (item: GearItem) => void;
+  /** Close the details (the item stays marked in the grid): the same as a second tap on its tile. */
+  onClose: () => void;
 }) {
   const { item, worn, wornBy, blocked } = cell;
+  // Nothing to compare when the slot is empty or the item is the worn one: no switch then.
+  const comparable = !worn && wornItem !== undefined;
+  const comparing = comparable && compareOn;
   return (
-    <section class="ip-detail" aria-label="Selected item">
-      <ItemCard
-        item={item}
-        plainRarity
-        spriteScale={4}
-        {...(wornBy === null ? {} : { note: <p class="ip-on">On {wornBy}</p> })}
-        aside={
-          worn ? (
-            <button
-              type="button"
-              class="ip-act"
-              disabled={busy}
-              onClick={() => {
-                onTakeOff(item);
-              }}
-            >
-              Take off
+    <section class="ip-detail pix-panel" aria-label="Selected item">
+      {/* The card scrolls inside its own box (a long Epic with its lost lines is tall) and hints that it does; the actions below stay put. */}
+      <ScrollHint
+        class="ip-detail-scroll"
+        contentKey={`${item.id}:${String(comparing)}`}
+        label="Item details"
+        focusable
+      >
+        <ItemCard
+          item={item}
+          plainRarity
+          spriteScale={4}
+          aside={
+            <button type="button" class="ip-close" aria-label="Close details" onClick={onClose}>
+              <CloseGlyph />
             </button>
-          ) : blocked !== null ? (
-            <span class="ip-reason">{blocked}</span>
-          ) : (
-            <button
-              type="button"
-              class="ip-act primary"
-              disabled={busy}
-              onClick={() => {
-                onEquip(item);
-              }}
-            >
-              Equip
-            </button>
-          )
-        }
-      />
+          }
+          wornInSet={setPiecesWith(item, creature.gear)}
+          {...(comparing ? { diff: diffItems(item, wornItem) } : {})}
+          {...(wornBy === null ? {} : { note: <p class="ip-on">On {wornBy}</p> })}
+        />
+      </ScrollHint>
+      <div class="ip-actions">
+        {comparable && <Switch on={compareOn} onChange={onCompareChange} label="Compare" />}
+        {worn ? (
+          <button
+            type="button"
+            class="ip-act"
+            disabled={busy}
+            onClick={() => {
+              onTakeOff(item);
+            }}
+          >
+            Take off
+          </button>
+        ) : blocked !== null ? (
+          <span class="ip-reason">{blocked}</span>
+        ) : (
+          <button
+            type="button"
+            class="ip-act primary"
+            disabled={busy}
+            onClick={() => {
+              onEquip(item);
+            }}
+          >
+            Equip
+          </button>
+        )}
+      </div>
     </section>
   );
 }
@@ -123,8 +130,9 @@ function DetailPanel({
 /**
  * The item picker in a Drawer: an icon grid (the worn item first, then the bag's wearable items, then the
  * ones this creature cannot wear, each with its short reason under it) and a detail panel pinned at the
- * bottom for the selected item, with Equip or Take off. While the gear view loads it says "Loading...". The
- * server decides what is accepted; the callbacks only ask.
+ * bottom for the selected item, with Equip or Take off. Tapping an item in the grid is how you move between
+ * items here (no Prev / Next row: the grid is right there). While the gear view loads it says "Loading...".
+ * The server decides what is accepted; the callbacks only ask.
  */
 export function ItemPickerDrawer({
   open,
@@ -137,7 +145,11 @@ export function ItemPickerDrawer({
   onEquip,
   onTakeOff,
   returnFocusTo,
+  initialPicked,
+  initialCompare,
 }: ItemPickerProps) {
+  // The switch is remembered per viewer; it is read when the picker opens and written when it is flipped.
+  const [compareOn, setCompareOn] = useState<boolean>(() => initialCompare ?? loadCompareOn());
   const choices = items === null ? [] : pickerChoices(items, creature, creatures, slot);
   const wornId = creature.gear.find((g) => g.slot === slot)?.id;
   const worn = items?.find((i) => i.id === wornId);
@@ -150,12 +162,20 @@ export function ItemPickerDrawer({
       blocked: compactReason(choice.item, creature),
     })),
   ];
-  const [picked, setPicked] = useState<string | null>(null);
-  const selected =
-    cells.find((c) => c.item.id === picked) ??
-    cells.find((c) => c.worn) ??
-    cells.find((c) => c.item.id === firstPick(choices)) ??
-    cells[0];
+  const [picked, setPicked] = useState<string | null>(initialPicked ?? null);
+  // It opens with nothing selected (the grid has the whole drawer) until an item is tapped; a second tap on
+  // the item shown closes its details again. (The workbench starts on an item with `initialPicked`.)
+  const [detailOpen, setDetailOpen] = useState(initialPicked !== undefined);
+  const shown = cells.find((c) => c.item.id === picked);
+  const selected = detailOpen ? shown : undefined;
+  // The details closed (the X, or a second tap): the focus goes to the item that stays marked in the grid.
+  const grid = useRef<HTMLUListElement>(null);
+  const wasOpen = useRef(detailOpen);
+  useEffect(() => {
+    if (wasOpen.current && !detailOpen)
+      grid.current?.querySelector<HTMLElement>('.selected')?.focus();
+    wasOpen.current = detailOpen;
+  }, [detailOpen]);
   return (
     <Drawer
       open={open}
@@ -168,7 +188,22 @@ export function ItemPickerDrawer({
       class="picker-drawer"
       footer={
         selected === undefined ? undefined : (
-          <DetailPanel cell={selected} busy={busy} onEquip={onEquip} onTakeOff={onTakeOff} />
+          <DetailPanel
+            cell={selected}
+            creature={creature}
+            wornItem={worn}
+            compareOn={compareOn}
+            onCompareChange={(on) => {
+              setCompareOn(on);
+              saveCompareOn(on);
+            }}
+            busy={busy}
+            onEquip={onEquip}
+            onTakeOff={onTakeOff}
+            onClose={() => {
+              setDetailOpen(false);
+            }}
+          />
         )
       }
     >
@@ -177,14 +212,23 @@ export function ItemPickerDrawer({
       ) : cells.length === 0 ? (
         <p class="muted ip-none">No {slotName(slot).toLowerCase()}s.</p>
       ) : (
-        <ul class="ip-grid" aria-label={`${slotName(slot)}s`}>
+        <ul ref={grid} class="item-grid" aria-label={`${slotName(slot)}s`}>
           {cells.map((cell) => (
-            <ItemCell
+            <ItemTile
               key={cell.item.id}
-              cell={cell}
-              selected={cell.item.id === selected?.item.id}
+              item={cell.item}
+              label={`${itemLabel(cell.item.baseId, cell.item.itemLevel)}, ${rarityName(cell.item.rarity)}${cell.worn ? ', worn now' : ''}${cell.blocked === null ? '' : `. ${cell.blocked}`}`}
+              selected={cell.item.id === shown?.item.id}
+              pressed={cell.item.id === selected?.item.id}
+              blocked={cell.blocked !== null}
+              flag={cell.worn ? 'Worn' : null}
               onSelect={() => {
+                if (cell.item.id === selected?.item.id) {
+                  setDetailOpen(false);
+                  return;
+                }
                 setPicked(cell.item.id);
+                setDetailOpen(true);
               }}
             />
           ))}

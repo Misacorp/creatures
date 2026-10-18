@@ -1,0 +1,53 @@
+[
+  {
+    "id": "wayfarer-charm",
+    "name": "Wayfarer's Charm",
+    "description": "Every creature gets 12% more Attack and 12% more HP.",
+    "effects": [
+      { "op": "team_stat", "stat": "atk", "bp": 1200 },
+      { "op": "team_stat", "stat": "hp", "bp": 1200 }
+    ]
+  },
+  {
+    "id": "lantern-moth",
+    "name": "Lantern Moth",
+    "description": "Your creatures crit 5 points more often.",
+    "effects": [{ "op": "team_crit", "chanceBp": 500, "damageBp": 0 }]
+  },
+  {
+    "id": "tide-pearl",
+    "name": "Tide Pearl",
+    "description": "Tide creatures hit 25% harder.",
+    "effects": [{ "op": "team_stat", "stat": "atk", "bp": 2500, "element": "tide" }]
+  },
+  {
+    "id": "warm-ember",
+    "name": "Warm Ember",
+    "description": "Ember creatures hit 25% harder.",
+    "effects": [{ "op": "team_stat", "stat": "atk", "bp": 2500, "element": "ember" }]
+  },
+  {
+    "id": "clover-sprig",
+    "name": "Clover Sprig",
+    "description": "Grove creatures hit 25% harder.",
+    "effects": [{ "op": "team_stat", "stat": "atk", "bp": 2500, "element": "grove" }]
+  },
+  {
+    "id": "static-feather",
+    "name": "Static Feather",
+    "description": "Spark creatures hit 25% harder.",
+    "effects": [{ "op": "team_stat", "stat": "atk", "bp": 2500, "element": "spark" }]
+  },
+  {
+    "id": "lullaby-bell",
+    "name": "Lullaby Bell",
+    "description": "Foes hit 10% softer.",
+    "effects": [{ "op": "foe_stat", "stat": "atk", "bp": -1000 }]
+  },
+  {
+    "id": "chalk-mark",
+    "name": "Chalk Mark",
+    "description": "Foes have 10% less HP.",
+    "effects": [{ "op": "foe_stat", "stat": "hp", "bp": -1000 }]
+  }
+]

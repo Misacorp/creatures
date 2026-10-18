@@ -2,12 +2,14 @@ import {
   RULES,
   content,
   effectiveStats,
+  placeRow,
   type ContentPack,
   type CreatureSpecies,
+  type FoldKit,
   type Role,
 } from '@creatures/game';
 import type { FightSlot } from './types';
-import type { FightBoard } from './zones';
+import { rowLayout, type FightBoard } from './zones';
 
 /** A row under construction: empty slots are null. */
 export type SparseRow = readonly (FightSlot | null)[];
@@ -177,4 +179,37 @@ export function fillWithGuests(
     );
   }
   return placeByRule(extended, added);
+}
+
+/**
+ * Folds the gear of a built row again with where each creature stands (position lines, Lantern bearer and
+ * the Lantern Night set; `placeRow` of @creatures/game), for every creature that has a kit (`kits`, by slot
+ * id: a guest has none). `zones` is the raid's row (neighbours stop at the zone's edge), `line` the
+ * dungeon's single row. A raid row built with a `board` (`sparseBoard` of the sparse row, the same one the
+ * fight input carries) is folded by the board's own rows and neighbours: a creature beside an empty board
+ * slot has no neighbour on that side, exactly as `simulateFight` counts "beside". Without a `board` the
+ * dense row is used. A creature whose numbers cannot change keeps its slot exactly as it was, so a row
+ * without position gear comes back unchanged. The stored fight input carries the result, so the engine and
+ * a replay see plain numbers. Call it once the row's order is final and before the day's weather.
+ */
+export function placeSlots(
+  row: readonly FightSlot[],
+  kits: ReadonlyMap<string, FoldKit>,
+  mode: 'zones' | 'line',
+  board?: FightBoard,
+): FightSlot[] {
+  const placed = placeRow(
+    row.map((slot) => ({ element: slot.element, kit: kits.get(slot.id) })),
+    rowLayout(board ?? row.length, mode),
+  );
+  return row.map((slot, i) => {
+    const folded = placed[i];
+    if (folded === undefined) return slot;
+    const next: FightSlot = { ...slot, stats: folded.stats };
+    if (folded.crit === undefined) delete next.crit;
+    else next.crit = folded.crit;
+    if (folded.mods === undefined) delete next.mods;
+    else next.mods = folded.mods;
+    return next;
+  });
 }

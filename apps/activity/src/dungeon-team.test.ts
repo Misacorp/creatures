@@ -362,8 +362,8 @@ describe('the run request', () => {
     expect(forward?.team).toEqual(['a', 'b', 'c']);
     expect(reversed?.team).toEqual(['c', 'b', 'a']);
     // A different order is a different run, so it gets its own action name, and so its own key.
-    expect(ActionIds.dungeonRun(reversed?.team ?? ['x', 'x', 'x'])).not.toBe(
-      ActionIds.dungeonRun(forward?.team ?? ['x', 'x', 'x']),
+    expect(ActionIds.dungeonStart(reversed?.team ?? ['x', 'x', 'x'])).not.toBe(
+      ActionIds.dungeonStart(forward?.team ?? ['x', 'x', 'x']),
     );
   });
 
@@ -372,8 +372,8 @@ describe('the run request', () => {
     const again = completeTeam(['a', 'b', 'c']);
     const other = completeTeam(['b', 'a', 'c']);
     if (team === null || again === null || other === null) throw new Error('team is complete');
-    expect(ActionIds.dungeonRun(team)).toBe(ActionIds.dungeonRun(again));
-    expect(ActionIds.dungeonRun(team)).not.toBe(ActionIds.dungeonRun(other));
+    expect(ActionIds.dungeonStart(team)).toBe(ActionIds.dungeonStart(again));
+    expect(ActionIds.dungeonStart(team)).not.toBe(ActionIds.dungeonStart(other));
   });
 
   it('has no complete team until all three places are filled with different creatures', () => {

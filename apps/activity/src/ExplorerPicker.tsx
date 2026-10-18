@@ -74,6 +74,7 @@ export function ExplorerPicker({
                   {...(option.xp.text === undefined ? {} : { text: option.xp.text })}
                   startCap={option.xp.startCap}
                   {...(option.xp.endCap === undefined ? {} : { endCap: option.xp.endCap })}
+                  kind="explorer"
                 />
                 <span class="pick-fam">
                   <Tag entry="familiarity">Familiarity</Tag>

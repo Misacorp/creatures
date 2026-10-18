@@ -10,7 +10,9 @@ import { PRESET_IDS } from '../src/profiles';
 import { TARGETS, evaluateTargets } from '../src/targets';
 
 describe('the gear share study', () => {
-  const run = runGearStudy({ seed: 'gear-study-test', servers: 1 });
+  // Three servers, so a profile's share is several players, not one: a lone min-maxer's share swings
+  // with whichever creatures stand in its top three that week.
+  const run = runGearStudy({ seed: 'gear-study-test', servers: 3 });
   const ranges: Record<string, readonly [number, number]> = {};
   for (const t of TARGETS) {
     if (t.metric.startsWith('gear.share.') && typeof t.value !== 'number')

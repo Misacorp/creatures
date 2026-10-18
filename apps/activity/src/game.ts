@@ -2,7 +2,14 @@
  * Display helpers for the collection UI. Names, elements and odds come from the shared game
  * content; every number that matters (costs, levels, catches) comes from the server.
  */
-import { RULES, content, lore, quirkText, type CreatureSpecies } from '@creatures/game';
+import {
+  GLOSSARY_IDS,
+  RULES,
+  content,
+  lore,
+  quirkText,
+  type CreatureSpecies,
+} from '@creatures/game';
 import { ApiError, type CatchResult, type Creature, type ServerFirst } from './api';
 
 const SPECIES = new Map<string, CreatureSpecies>(content.creatures.map((c) => [c.id, c]));
@@ -80,10 +87,14 @@ export function creatureAbilityText(
   let teaser: string | null = null;
   if (ability.nextId !== undefined) {
     const next = abilityById(ability.nextId)?.name ?? ability.nextId;
+    const evolution = creature.evolution;
     teaser =
-      creature.evolution === undefined
+      evolution === undefined
         ? `Evolves into: ${next}`
-        : `Evolves into: ${speciesName(creature.evolution.toSpecies)} (${next})`;
+        : evolution.alt === undefined
+          ? `Evolves into: ${speciesName(evolution.toSpecies)} (${next})`
+          : // Two forms, each with its own ability: the screen that chooses shows them.
+            `Evolves into: ${speciesName(evolution.toSpecies)} or ${speciesName(evolution.alt.toSpecies)}`;
   }
   if (!ability.unlocked) {
     return {
@@ -105,11 +116,17 @@ export function evolutionText(
   evolution: NonNullable<Creature['evolution']>,
   essence: number,
 ): { available: boolean; label: string } {
-  const target = speciesName(evolution.toSpecies);
+  const target =
+    evolution.alt === undefined
+      ? speciesName(evolution.toSpecies)
+      : `${speciesName(evolution.toSpecies)} or ${speciesName(evolution.alt.toSpecies)}`;
   if (evolution.available) {
     return {
       available: true,
-      label: `Evolve into ${target} (${String(evolution.essence)} Essence)`,
+      label:
+        evolution.alt === undefined
+          ? `Evolve into ${target} (${String(evolution.essence)} Essence)`
+          : `Choose an evolution (${String(evolution.essence)} Essence)`,
     };
   }
   const needs: string[] = [];
@@ -142,6 +159,10 @@ export function catchBadgeTags(entry: CatchResult): { text: string; entry: strin
   }
   if (entry.shiny) badges.push({ text: 'Shiny!', entry: 'shiny' });
   if (entry.firstOnServer) badges.push({ text: 'First on server!', entry: 'first-on-server' });
+  // Second look: the explorer's gear rolled this duplicate's talent twice and kept the better.
+  if (entry.secondLook === true) {
+    badges.push({ text: 'Second look', entry: GLOSSARY_IDS.gearLine('second-look') });
+  }
   return badges;
 }
 
@@ -164,6 +185,7 @@ const ERROR_TEXT: Record<string, string> = {
   // Evolution.
   not_evolvable: 'That creature cannot evolve.',
   level_too_low: 'That creature is not high enough level to evolve yet.',
+  not_a_branch: 'That creature cannot grow into that form.',
   // The raid.
   locked: 'The raid is locked. Changes are closed for this week.',
   slot_taken: 'Someone else already has that slot.',

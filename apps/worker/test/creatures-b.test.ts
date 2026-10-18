@@ -12,6 +12,7 @@ import {
   type ExpState,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
+import { playThrough } from './dungeon-helpers';
 import { apiPlayer, giveParts, learnBase, newKey, skipWelcome, type Api } from './gear-helpers';
 import {
   LATEST_SCHEMA_VERSION,
@@ -339,7 +340,12 @@ describe('the daily dungeon pays experience', () => {
     idempotencyKey: newKey(),
     ...extra,
   });
-  const run = (p: Api, payload: unknown) => p.call('POST', '/api/dungeon/run', payload);
+  // A run is played out through the map (start, then acts): its answer is the last act's, with the summary as `run`.
+  const run = (p: Api, payload: unknown) =>
+    playThrough(p.call, payload) as Promise<{
+      status: number;
+      body: Record<string, unknown>;
+    }>;
 
   it('pays every creature of the team per room cleared and for a full clear', async () => {
     await runCore(
@@ -392,14 +398,14 @@ describe('the daily dungeon pays experience', () => {
           [c, plain, false],
         ]);
         expect(events(ctx, 'treat')).toHaveLength(1);
-        // The same request again returns the stored run and charges nothing.
+        // The same start again returns the stored run and charges nothing.
         const baitBefore = baitOf(ctx, p.id);
-        const retry = await run(p, request);
+        const retry = await p.call('POST', '/api/dungeon/start', request);
         expect(retry.status).toBe(200);
         expect(baitOf(ctx, p.id)).toBe(baitBefore);
         expect(count(ctx, 'ledger', "source = 'treat'")).toBe(1);
         // The same key with other treats is another request.
-        const changed = await run(p, { ...request, treats: [a] });
+        const changed = await p.call('POST', '/api/dungeon/start', { ...request, treats: [a] });
         expect(changed.status).toBe(409);
         expect(changed.body).toEqual({ error: 'key_conflict' });
       },

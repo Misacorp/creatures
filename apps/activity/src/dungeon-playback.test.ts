@@ -1,10 +1,12 @@
 import { beatEnds, planRounds, roundPlaybackMs } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
+import actFightFixture from './fixtures/dungeon-act-fight.json';
+import replayPathFixture from './fixtures/dungeon-replay-path.json';
 import replayFixture from './fixtures/dungeon-replay.json';
 import landmarkFixture from './fixtures/dungeon-run-landmark.json';
 import lostFixture from './fixtures/dungeon-run-lost.json';
 import clearedFixture from './fixtures/dungeon-run-cleared.json';
-import { parseDungeonReplay } from './dungeon-parse';
+import { parseDungeonAct, parseDungeonReplay } from './dungeon-parse';
 import {
   ROOM_CARD_MS,
   ROOM_BANNER,
@@ -16,15 +18,17 @@ import {
   mineIds,
   modifierGimmicks,
   nextRoom,
+  NO_REWARDS_HINT,
+  NO_REWARDS_LINE,
   noRewards,
   rewardLoot,
   roomBoss,
   roomOutcome,
   roomIntroView,
   roomResultLine,
+  roomStageRow,
   roomState,
   roomStrip,
-  runSentence,
   stageRow,
   teamBreakdown,
   streakBonusText,
@@ -34,6 +38,13 @@ import type { DungeonRunResponse, DungeonRunSummary } from './dungeon-types';
 import { turnOrderOfRound } from './replay';
 import { buildBeats, creatureHpAt, ordinal, stageStateAt } from './stage';
 import { forecastNextRound } from './telegraph';
+import { rowOfCreatures, roomInput, replayInput, PATH_FLOORS } from './dungeon-playback';
+import {
+  sampleActFight,
+  sampleRoom,
+  sampleRunCreatures,
+  sampleSummary,
+} from './dungeon-path-samples';
 
 const replay = parseDungeonReplay(replayFixture);
 const cleared = (clearedFixture as unknown as DungeonRunResponse).run;
@@ -175,16 +186,16 @@ describe('the results', () => {
     );
   });
 
-  it('writes one sentence for the whole run', () => {
-    expect(runSentence(cleared)).toBe('Cleared at depth 1: 3 / 3 rooms cleared.');
-    expect(runSentence(lost)).toContain('Not cleared at depth');
-    expect(runSentence(lost)).toContain('0 / 3 rooms cleared');
-  });
-
   it('sees a run that paid nothing, and one that paid in full', () => {
     expect(noRewards(lost.rewards)).toBe(true);
     expect(noRewards(cleared.rewards)).toBe(false);
     expect(noRewards(landmark.rewards)).toBe(false);
+  });
+
+  it('says it kindly and short when a run paid nothing', () => {
+    expect(NO_REWARDS_LINE).toBe('No rewards this time.');
+    expect(NO_REWARDS_HINT).toBe('Beat at least one room next time.');
+    expect(`${NO_REWARDS_LINE} ${NO_REWARDS_HINT}`).not.toMatch(/[<>{}]/);
   });
 
   it('counts a run that paid only a supply as a run that paid something', () => {
@@ -233,7 +244,7 @@ describe('the room strip of the end report', () => {
   it('has one panel per room, in order, with the foe, the modifier and the state', () => {
     const strip = roomStrip(cleared);
     expect(strip.map((r) => r.index)).toEqual([0, 1, 2]);
-    expect(strip.map((r) => r.title)).toEqual(['Room 1', 'Room 2', 'Room boss']);
+    expect(strip.map((r) => r.title)).toEqual(['Room 1', 'Room 2', 'Floor boss']);
     expect(strip.map((r) => r.kind)).toEqual(['foe', 'foe', 'boss']);
     expect(strip.map((r) => r.foeId)).toEqual(cleared.rooms.map((r) => r.foe.id));
     expect(strip.every((r) => r.state === 'cleared' && r.banner === 'CLEARED')).toBe(true);
@@ -245,10 +256,10 @@ describe('the room strip of the end report', () => {
     expect(roomStrip(shuffled).map((r) => r.index)).toEqual([0, 1, 2]);
   });
 
-  it('says DEFEAT for the room that was lost, with the foe HP left, and LOCKED for those after it', () => {
+  it('says DEFEATED for the room that was lost, with the foe HP left, and LOCKED for those after it', () => {
     const strip = roomStrip(lost);
     expect(strip.map((r) => r.state)).toEqual(['defeat', 'locked', 'locked']);
-    expect(strip.map((r) => r.banner)).toEqual(['DEFEAT', 'LOCKED', 'LOCKED']);
+    expect(strip.map((r) => r.banner)).toEqual(['DEFEATED', 'LOCKED', 'LOCKED']);
     const first = lost.rooms[0];
     expect(strip[0]?.foeHp).toBe(
       `${String(first?.foeHpEnd)} / ${String(first?.foe.hpMax)} HP left`,
@@ -327,16 +338,26 @@ describe('the team breakdown of the end report', () => {
       team: [member],
       rewards: { ...cleared.rewards, experience: [paid] },
     })[0];
-    expect(withExp?.experience).toBe('+180 experience (treat), level 4 to 5');
+    expect(withExp?.exp).toMatchObject({
+      level: 5,
+      levelsGained: 1,
+      value: 20,
+      max: 175,
+      text: '20 / 175 XP',
+      gained: 20,
+      gainedLine: '+180 experience',
+      boostLine: 'Treat gave 2x experience',
+      note: null,
+    });
     // Another creature's award is not this one's.
     const other = teamBreakdown({
       team: [member],
       rewards: { ...cleared.rewards, experience: [{ ...paid, creatureId: 'someone-else' }] },
     })[0];
-    expect(other?.experience).toBeNull();
+    expect(other?.exp).toBeNull();
     const old = { ...cleared.rewards };
     delete old.experience;
-    expect(teamBreakdown({ team: [member], rewards: old })[0]?.experience).toBeNull();
+    expect(teamBreakdown({ team: [member], rewards: old })[0]?.exp).toBeNull();
   });
 
   it('carries what the small-creature popover needs, and no more than the creature', () => {
@@ -373,12 +394,12 @@ describe('the banner over the stage when a room opens', () => {
     });
   });
 
-  it('calls the last room the room boss, and says it all in one sentence', () => {
+  it('calls the last room the floor boss, and says it all in one sentence', () => {
     const view = roomIntroView(room(2, 'boss'), 3);
-    expect(view.heading).toBe('ROOM BOSS');
+    expect(view.heading).toBe('FLOOR BOSS');
     expect(view.boss).toBe(true);
     expect(view.spoken).toBe(
-      'Room 3 / 3, room boss: Puddle Imp. Flooded: Tide creatures hit 20% harder.',
+      'Room 3 / 3, floor boss: Puddle Imp. Flooded: Tide creatures hit 20% harder.',
     );
   });
 
@@ -498,5 +519,163 @@ describe('the scroll to the fight when a run starts', () => {
 
   it('is instant under prefers-reduced-motion', () => {
     expect(fightScroll(true)).toEqual({ behavior: 'auto', block: 'start' });
+  });
+});
+
+describe('the fights of a path', () => {
+  const room = sampleRoom();
+
+  it('plays the one room an open run just played, in the row of the run', () => {
+    const answer = sampleActFight();
+    const input = roomInput(answer.state.team, room, false, 7);
+    expect(input.rooms).toEqual([room]);
+    expect(input.total).toBe(7);
+    expect(input.landmark).toBe(false);
+    expect(stageRow(input).map((r) => r.name)).toEqual(['Sproutle', 'Splashet', 'Cindle']);
+    expect(stageRow(input).map((r) => r.position)).toEqual([0, 1, 2]);
+    expect(nextRoom(input, 0)).toBeNull();
+  });
+
+  it('plays each room of a path replay in the row that fought it (a camp swap changes the row)', () => {
+    const path = parseDungeonReplay(replayPathFixture);
+    const input = replayInput(path);
+    // The replay's own row is the starting one; the rooms after the camp carry the swapped row.
+    expect(stageRow(input).map((r) => r.name)).toEqual(['Sproutle', 'Splashet', 'Cindle']);
+    const rows = input.rooms.map((r) => roomStageRow(input, r).map((e) => e.name));
+    expect(rows[0]).toEqual(['Sproutle', 'Splashet', 'Cindle']);
+    expect(rows[1]).toEqual(['Splashet', 'Sproutle', 'Zipmouse']);
+    expect(rows[3]).toEqual(['Splashet', 'Sproutle', 'Zipmouse']);
+    const second = input.rooms[1];
+    if (second === undefined) throw new Error('room');
+    expect(roomStageRow(input, second).map((e) => e.position)).toEqual([0, 1, 2]);
+    expect(roomStageRow(input, second).every((e) => e.owner === 'p1')).toBe(true);
+  });
+
+  it('falls back to the replay row for a room with no row of its own', () => {
+    const [first] = replay.rooms;
+    if (first === undefined) throw new Error('room');
+    const input = replayInput(replay);
+    expect(first.row).toBeUndefined();
+    expect(roomStageRow(input, first)).toEqual(stageRow(replay));
+  });
+
+  it("plays the live fight after a move in the answer's room row, else in the state's team", () => {
+    const answer = parseDungeonAct(actFightFixture);
+    if (answer.room === undefined) throw new Error('room');
+    expect(answer.room.row).toBeDefined();
+    const withRow = roomInput(answer.state.team, answer.room, false, 7);
+    expect(withRow.row).toEqual(answer.room.row);
+    // A swapped row in the room wins over the state's team.
+    const swapped = (answer.room.row ?? []).map((r) => ({ ...r, name: `${r.name} II` }));
+    const own = roomInput(answer.state.team, { ...answer.room, row: swapped }, false, 7);
+    expect(roomStageRow(own, own.rooms[0] ?? answer.room).map((r) => r.name)).toEqual(
+      swapped.map((r) => r.name),
+    );
+    // Without a row of its own the room is played in the run's team.
+    const bare = { ...answer.room };
+    delete bare.row;
+    const fallback = roomInput(answer.state.team, bare, false, 7);
+    expect(fallback.row.map((r) => r.id)).toEqual(answer.state.team.map((c) => c.id));
+  });
+
+  it('writes the row of the run the way a replay writes it', () => {
+    const row = rowOfCreatures(sampleRunCreatures());
+    expect(row.map((r) => r.species)).toEqual(['sproutle', 'splashet', 'cindle']);
+    expect(row.map((r) => r.id)).toEqual(sampleRunCreatures().map((c) => c.id));
+    // The same three creatures as the replay fixture's row: the stage reads them the same.
+    expect(row).toEqual(replay.row);
+  });
+
+  it('watches a stored three-room run against its rooms, and a path run against its floors', () => {
+    expect(replayInput(replay)).toMatchObject({ total: 3, landmark: false });
+    expect(replayInput(replay).rooms).toHaveLength(3);
+    const path = {
+      ...replay,
+      rooms: replay.rooms.map((r, i) => ({ ...r, node: `f${String(i)}l0` })),
+    };
+    expect(replayInput(path).total).toBe(PATH_FLOORS);
+    expect(PATH_FLOORS).toBe(7);
+    expect(
+      replayInput({ ...replay, summary: { ...replay.summary, landmark: true } }).landmark,
+    ).toBe(true);
+  });
+
+  it('opens a fight with FIGHT and its floor, an elite with "Fierce" and the Elite flag', () => {
+    const fight = roomIntroView(room, 7);
+    expect(fight).toMatchObject({
+      heading: 'FIGHT',
+      place: 'Room 1 / 7',
+      elite: false,
+      boss: false,
+      foeName: 'Bramble Hound',
+    });
+    const elite = roomIntroView({ ...room, node: 'f2l1', elite: true }, 7);
+    expect(elite).toMatchObject({
+      heading: 'FIGHT',
+      place: 'Room 3 / 7',
+      elite: true,
+      foeName: 'Fierce Bramble Hound',
+    });
+    expect(elite.spoken).toContain('Room 3 / 7, elite: Fierce Bramble Hound.');
+  });
+
+  it('names the boss room of a path by its floor', () => {
+    const boss = roomIntroView({ ...room, kind: 'boss', node: 'f6l1' }, 7);
+    expect(boss.heading).toBe('FLOOR BOSS');
+    expect(boss.place).toBe('Room 7 / 7');
+    expect(boss.spoken).toContain('Room 7 / 7, floor boss');
+  });
+
+  it('puts "Fierce" on the stage boss and in the result line of an elite, once', () => {
+    expect(roomBoss({ ...room, elite: true }).name).toBe('Fierce Bramble Hound');
+    expect(roomBoss(room).name).toBe('Bramble Hound');
+    expect(roomResultLine({ ...room, elite: true })).toBe('Fierce Bramble Hound defeated.');
+    expect(roomResultLine({ ...room, cleared: false, elite: true })).toBe(
+      'Your team could not beat Fierce Bramble Hound.',
+    );
+    const named = { ...room, foe: { ...room.foe, name: 'Fierce Bramble Hound' }, elite: true };
+    expect(roomBoss(named).name).toBe('Fierce Bramble Hound');
+  });
+
+  it('keeps the old banner for a room of a three-room run', () => {
+    expect(
+      roomIntroView(replay.rooms[0] as NonNullable<(typeof replay.rooms)[0]>, 3),
+    ).toMatchObject({
+      heading: 'ROOM 1',
+      place: '1 / 3',
+      elite: false,
+    });
+  });
+});
+
+describe('the end report of a path run', () => {
+  it('shows only the fights that were played, named by their order, an elite as Elite', () => {
+    const home = roomStrip(sampleSummary('home'));
+    expect(home.map((r) => r.title)).toEqual(['Fight 1', 'Elite']);
+    expect(home.map((r) => r.state)).toEqual(['cleared', 'cleared']);
+    expect(home[1]?.foeName).toBe('Fierce Drift Wisp');
+    expect(home[1]?.elite).toBe(true);
+    expect(home[0]?.elite).toBe(false);
+    const cleared = roomStrip(sampleSummary('cleared'));
+    expect(cleared.map((r) => r.title)).toEqual(['Fight 1', 'Elite', 'Fight 3', 'Floor boss']);
+  });
+
+  it('leaves the rooms never reached out, and marks the lost one', () => {
+    const base = sampleSummary('cleared');
+    const withUnplayed = {
+      ...base,
+      rooms: base.rooms.map((r, i) => (i === 3 ? { ...r, played: false, cleared: false } : r)),
+    };
+    expect(roomStrip(withUnplayed)).toHaveLength(3);
+    const lost = roomStrip(sampleSummary('defeat'));
+    expect(lost.map((r) => r.state)).toEqual(['cleared', 'defeat']);
+    expect(lost[1]?.foeHp).toBe(
+      `120 / ${String(sampleSummary('defeat').rooms[1]?.foe.hpMax)} HP left`,
+    );
+    expect(lost[1]?.spoken).toMatch(/defeat\.$/);
+  });
+
+  it('still shows all three rooms of an old run, the unreached ones locked', () => {
+    expect(roomStrip(lost)).toHaveLength(3);
   });
 });

@@ -432,7 +432,10 @@ export function sendTrips(
       destination: dest.id,
       ...(treat ? { treat: true } : {}),
       kit: picked,
-      rolls: tripRolls(length, kit, twist === null ? null : twist.effect) + fx.extraRolls,
+      rolls:
+        tripRolls(length, kit, twist === null ? null : twist.effect) +
+        fx.extraRolls +
+        (length === 'day' ? foldedCreature(creature).rules.dayTripRolls : 0),
       twist: twist === null ? null : twist.id,
       startHour: ctx.hour,
       // Quick feet lines on the explorer's gear and the day's weather change the time (fixed when it is sent).

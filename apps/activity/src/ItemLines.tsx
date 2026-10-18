@@ -1,3 +1,4 @@
+import type { CardDiff, Mark } from './creature-page/compare-diff';
 import { GlossaryTag } from './Glossary';
 import type { GearLine } from './gear-types';
 import { lineEntry, lineIdle, linePips, pipsLabel } from './gear-view';
@@ -21,19 +22,62 @@ function TierPips({ line }: { line: GearLine }) {
 }
 
 /**
+ * A change of a number, after it, in its own look so it is never read as part of the number: "(▲2%)" in green
+ * when better, "(▼2%)" in red when worse. The arrow and the brackets carry the meaning with the colour, and a
+ * spoken copy says the sign in words ("plus 2%, better").
+ */
+export function DeltaMark({ mark }: { mark: Mark }) {
+  return (
+    <span class={mark.good ? 'cmp-delta good' : 'cmp-delta bad'}>
+      <span aria-hidden="true">{`(${mark.good ? '\u25B2' : '\u25BC'}${mark.text.slice(1)})`}</span>
+      <span class="visually-hidden"> {mark.spoken}</span>
+    </span>
+  );
+}
+
+/**
  * The lines of an item: each line's text (the server's, with its number) that explains itself when
  * tapped, and its tier as pips. A line that does nothing for the wearer says so in words.
  */
-export function ItemLines({ lines }: { lines: readonly GearLine[] }) {
+export function ItemLines({
+  lines,
+  diff,
+}: {
+  lines: readonly GearLine[];
+  /** The compare against the worn item: new and changed lines are marked, lost ones listed at the end. */
+  diff?: Pick<CardDiff, 'lines' | 'goneLines'>;
+}) {
   return (
     <ul class="line-list" aria-label="Lines">
-      {lines.map((line) => (
-        <li key={`${line.id}-${line.source}`} class={lineIdle(line) ? 'line idle' : 'line'}>
-          <GlossaryTag entry={line.local ? 'gear-local' : lineEntry(line)} class="line-text">
-            {line.text}
-          </GlossaryTag>
-          <TierPips line={line} />
-          {lineIdle(line) && <span class="muted line-note"> does nothing for this creature</span>}
+      {lines.map((line) => {
+        const change = diff?.lines.get(line.id);
+        const cls = `${lineIdle(line) ? 'line idle' : 'line'}${change?.kind === 'new' ? ' cmp-new' : ''}`;
+        return (
+          <li key={`${line.id}-${line.source}`} class={cls}>
+            {change?.kind === 'new' && (
+              <>
+                <span class="cmp-marker" aria-hidden="true">
+                  +
+                </span>
+                <span class="visually-hidden">New: </span>
+              </>
+            )}
+            <GlossaryTag entry={line.local ? 'gear-local' : lineEntry(line)} class="line-text">
+              {line.text}
+            </GlossaryTag>
+            {change?.kind === 'changed' && <DeltaMark mark={change.mark} />}
+            <TierPips line={line} />
+            {lineIdle(line) && <span class="muted line-note"> does nothing for this creature</span>}
+          </li>
+        );
+      })}
+      {diff?.goneLines.map((line) => (
+        <li key={`gone-${line.id}`} class="line cmp-gone">
+          <span class="cmp-marker" aria-hidden="true">
+            {'−'}
+          </span>
+          <span class="visually-hidden">Lost: </span>
+          <span class="line-text">{line.text}</span>
         </li>
       ))}
     </ul>

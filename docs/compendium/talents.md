@@ -18,7 +18,7 @@ Status: written 2026-10-16 with the Creatures A step. Dev-only canon. No numbers
 
 ## The pools
 
-Each line has a pool of 7 or 8. Branch forms share their line's pool, so a Sproutle's pool mixes Guard and Support talents on purpose: its talents hint which branch it wants.
+Each line has a pool of 7 or 8. Branch forms share their line's pool, so a Sproutle's pool mixes Guard and Support talents on purpose: its talents hint which branch it wants. Every other evolving line also has a second form now (Geyserpup, Wickat, Drizzlewt, Kilnmole, Halcyray, Bloomback), but those pools were written for the first form: a talent that does nothing for the second form's role shows as idle on its card. Adding second-role talents to those pools is an open question for Misa.
 
 ### Splashet line (Tide Setter)
 

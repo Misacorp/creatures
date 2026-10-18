@@ -31,6 +31,67 @@ export interface ResolvedMods {
   mendBp: number;
   lingerRounds: number;
   ignoreSilence: boolean;
+  shelterBp: number;
+  unreflected: boolean;
+  critWindowBp: number;
+  healOnReactionBp: number;
+  chainMark: boolean;
+  coverReach: boolean;
+  boostReach: boolean;
+  sealMark: boolean;
+  firstReactionCrit: boolean;
+  secondWindBp: number;
+  echoBp: number;
+  sidestepBp: number;
+  steadyPawsBp: number;
+  warmHeartBp: number;
+  quickRemarkBp: number;
+  spillOverBp: number;
+  paybackBp: number;
+  kindlingBp: number;
+  openingMark: boolean;
+  rallyCryBp: number;
+  emberTailBp: number;
+  stormWarningBp: number;
+  stubborn: boolean;
+  lastStandBp: number;
+  overflowBp: number;
+  secondBreathBp: number;
+  patientBp: number;
+  sharedWarmthBp: number;
+}
+
+/**
+ * What a chance line does when it fires, fixed by the line's design (`gear-and-creatures-v2.md` 6.3): the
+ * line's own number is the chance, so these are not tiered. They are code, not stored in a fight: a retune
+ * of one would change how a stored fight with that line replays, so a different size is a new line.
+ */
+export const CHANCE_FX = {
+  /** Second wind heals this share of max HP. */
+  secondWindHealBp: 500,
+  /** Echo lands again for this share of the plain hit. */
+  echoBp: 3_000,
+  /** Warm heart's boost on the neighbour's next hit. */
+  warmHeartBp: 1_000,
+} as const;
+
+/** The luck dice a creature gets each round when any creature of the fight has a chance line: one per kind (see `fight.ts`). */
+export const LUCK_DICE = 10;
+
+/** The chance-line fields of a sheet: any above 0 makes the fight draw luck dice. */
+export const CHANCE_KEYS = [
+  'secondWindBp',
+  'echoBp',
+  'sidestepBp',
+  'steadyPawsBp',
+  'warmHeartBp',
+  'quickRemarkBp',
+  'spillOverBp',
+] as const;
+
+/** True if the sheet carries a chance line. */
+export function hasChance(mods: ResolvedMods): boolean {
+  return CHANCE_KEYS.some((k) => mods[k] > 0);
 }
 
 const ROLE_IDS: readonly Role[] = ['setter', 'payoff', 'guard', 'support'];
@@ -69,6 +130,34 @@ const EMPTY: ResolvedMods = Object.freeze({
   mendBp: 0,
   lingerRounds: 0,
   ignoreSilence: false,
+  shelterBp: 0,
+  unreflected: false,
+  critWindowBp: 0,
+  healOnReactionBp: 0,
+  chainMark: false,
+  coverReach: false,
+  boostReach: false,
+  sealMark: false,
+  firstReactionCrit: false,
+  secondWindBp: 0,
+  echoBp: 0,
+  sidestepBp: 0,
+  steadyPawsBp: 0,
+  warmHeartBp: 0,
+  quickRemarkBp: 0,
+  spillOverBp: 0,
+  paybackBp: 0,
+  kindlingBp: 0,
+  openingMark: false,
+  rallyCryBp: 0,
+  emberTailBp: 0,
+  stormWarningBp: 0,
+  stubborn: false,
+  lastStandBp: 0,
+  overflowBp: 0,
+  secondBreathBp: 0,
+  patientBp: 0,
+  sharedWarmthBp: 0,
 });
 
 /** The sheet of a creature without one. */
@@ -130,10 +219,12 @@ export function resolveMods(
   const m = mods as Record<string, unknown>;
   const n = (name: string, range: readonly [number, number] = BONUS): number =>
     num(id, name, m[name], range);
-  const ignore = m['ignoreSilence'];
-  if (ignore !== undefined && ignore !== 0 && ignore !== 1) {
-    bad(id, 'ignoreSilence must be 0 or 1');
-  }
+  const flag = (name: string): boolean => {
+    const value = m[name];
+    if (value !== undefined && value !== 0 && value !== 1) bad(id, `${name} must be 0 or 1`);
+    return value === 1;
+  };
+  const ignore = flag('ignoreSilence');
   return {
     vsElementBp: table(id, 'vsElementBp', m['vsElementBp'], ELEMENTS, BONUS),
     markedFoeBp: n('markedFoeBp'),
@@ -159,7 +250,35 @@ export function resolveMods(
     boostBp: n('boostBp'),
     mendBp: n('mendBp'),
     lingerRounds: n('lingerRounds', [0, 3]),
-    ignoreSilence: ignore === 1,
+    ignoreSilence: ignore,
+    shelterBp: n('shelterBp'),
+    unreflected: flag('unreflected'),
+    critWindowBp: n('critWindowBp'),
+    healOnReactionBp: n('healOnReactionBp', SHARE),
+    chainMark: flag('chainMark'),
+    coverReach: flag('coverReach'),
+    boostReach: flag('boostReach'),
+    sealMark: flag('sealMark'),
+    firstReactionCrit: flag('firstReactionCrit'),
+    secondWindBp: n('secondWindBp', SHARE),
+    echoBp: n('echoBp', SHARE),
+    sidestepBp: n('sidestepBp', SHARE),
+    steadyPawsBp: n('steadyPawsBp', SHARE),
+    warmHeartBp: n('warmHeartBp', SHARE),
+    quickRemarkBp: n('quickRemarkBp', SHARE),
+    spillOverBp: n('spillOverBp', SHARE),
+    paybackBp: n('paybackBp'),
+    kindlingBp: n('kindlingBp'),
+    openingMark: flag('openingMark'),
+    rallyCryBp: n('rallyCryBp'),
+    emberTailBp: n('emberTailBp'),
+    stormWarningBp: n('stormWarningBp', SHARE),
+    stubborn: flag('stubborn'),
+    lastStandBp: n('lastStandBp', SHARE),
+    overflowBp: n('overflowBp'),
+    secondBreathBp: n('secondBreathBp', SHARE),
+    patientBp: n('patientBp'),
+    sharedWarmthBp: n('sharedWarmthBp'),
   };
 }
 

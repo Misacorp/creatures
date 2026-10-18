@@ -1,20 +1,24 @@
 /**
- * The requests of the daily dungeon. A run is created once per request key: the key is made by the
- * caller (`actions.ts`) and sent again unchanged on a retry, so a repeat returns the stored run and
- * can never start a second one. The run is final when the answer arrives; the replay route returns
- * the same events at any later time (for the caller's own runs only).
+ * The requests of the daily dungeon (`docs/design/dungeon-paths.md`). A run is created once per
+ * request key and every step of it (`act`) has its own key: the key is made by the caller
+ * (`actions.ts`) and sent again unchanged on a retry, so a repeat returns the stored answer and can
+ * never start a second run or play a room twice. A fight is final when its answer arrives; the
+ * replay route returns the events of every fight so far at any later time (the caller's own runs only).
  */
 import { apiFetch, jsonRequest } from './api';
 import {
+  parseDungeonAct,
   parseDungeonReplay,
-  parseDungeonRun,
+  parseDungeonStart,
   parseDungeonTeamSaved,
   parseDungeonToday,
 } from './dungeon-parse';
 import type {
+  DungeonActRequest,
+  DungeonActResponse,
   DungeonReplay,
-  DungeonRunRequest,
-  DungeonRunResponse,
+  DungeonStartRequest,
+  DungeonStartResponse,
   DungeonTeamRequest,
   DungeonTeamResponse,
   DungeonToday,
@@ -26,11 +30,21 @@ export async function fetchDungeonToday(): Promise<DungeonToday> {
 }
 
 /**
- * Starts today's run. The answer is the finished run and today's new state; refresh the collection
- * and the gear view afterwards, since balances and parts changed.
+ * Enters the dungeon: opens today's run at step 0 and answers with its state and today's new state
+ * (a run is open now). Balances change only when the run ends, in `dungeonAct`'s answer.
  */
-export async function startDungeonRun(request: DungeonRunRequest): Promise<DungeonRunResponse> {
-  return parseDungeonRun(await apiFetch('/api/dungeon/run', jsonRequest('POST', request)));
+export async function startDungeonRun(request: DungeonStartRequest): Promise<DungeonStartResponse> {
+  return parseDungeonStart(await apiFetch('/api/dungeon/start', jsonRequest('POST', request)));
+}
+
+/**
+ * One step of an open run: a move, an event option, a camp choice or heading home. `request.step`
+ * must be the state's step (a mismatch is `stale_step`). The answer has the new state, the fight
+ * just played (`room`) and, when the run ended, its summary and today; refresh balances and the bag
+ * then.
+ */
+export async function dungeonAct(request: DungeonActRequest): Promise<DungeonActResponse> {
+  return parseDungeonAct(await apiFetch('/api/dungeon/act', jsonRequest('POST', request)));
 }
 
 /** The events of one of the caller's own runs, for "Watch again". */

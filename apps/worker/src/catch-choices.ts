@@ -23,6 +23,7 @@ import {
   recommend,
   releaseParts,
   rollTalent,
+  rollTalentSecondLook,
   slotOpensAt,
   slotsOf,
   type DuplicateChoice,
@@ -33,6 +34,7 @@ import {
   type Recommendation,
   type Rng,
   type TalentRoll,
+  type TalentWearer,
 } from '@creatures/game';
 import type { Analytics } from './analytics';
 import { creditParts } from './gear-store';
@@ -238,11 +240,26 @@ export class CatchChoices {
     userId: string,
     caught: { species: string; shiny: boolean },
     source: { kind: 'expedition' | 'festival'; id: string },
-  ): { id: string; talent: TalentRoll; settled: ChoiceResult | null } {
+    /**
+     * Second look (the explorer's gear): its chance in basis points and the creature of the line that would
+     * learn the talent, for "the better". Absent (or 0): one roll, drawing exactly what it always drew.
+     */
+    secondLook?: { bp: number; wearer: TalentWearer },
+  ): { id: string; talent: TalentRoll; looked: boolean; settled: ChoiceResult | null } {
     const species = speciesOf(caught.species);
     const now = this.deps.now();
     const id = crypto.randomUUID();
-    const talent = rollTalent(this.deps.rngs.talent, species.line);
+    const rolled =
+      secondLook !== undefined && secondLook.bp > 0
+        ? rollTalentSecondLook(
+            this.deps.rngs.talent,
+            species.line,
+            secondLook.bp,
+            secondLook.wearer,
+          )
+        : null;
+    const looked = rolled?.looked === true;
+    const talent = rolled?.roll ?? rollTalent(this.deps.rngs.talent, species.line);
     this.sql.exec(
       `INSERT INTO pending_catches (id, user_id, line, species, shiny, talent_id, golden, source, source_id, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -268,7 +285,7 @@ export class CatchChoices {
       if (oldest !== undefined)
         settled = this.settle(userId, oldest, { choice: 'recommended' }, true);
     }
-    return { id, talent, settled };
+    return { id, talent, looked, settled };
   }
 
   // --- The player answers ---

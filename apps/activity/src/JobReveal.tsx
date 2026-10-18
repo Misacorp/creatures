@@ -1,12 +1,14 @@
-import { experienceText } from './experience';
+import { GLOSSARY_IDS } from '@creatures/game';
+import type { Creature } from './api';
+import { creatureName } from './game';
 import { glyphOrUnknown } from './glyphs';
-import { ItemFrame, ItemSprite, PartsList, RarityTag } from './GearArt';
+import { ItemFrame, ItemSprite, PartsList, RarityTag, partCountItems } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { GearItem, JobResult } from './gear-types';
 import {
   gearName,
   jobVerb,
-  marksText,
+  qualityText,
   partsText,
   rarityName,
   reachName,
@@ -14,8 +16,132 @@ import {
 } from './gear-view';
 import { ItemLines } from './ItemLines';
 import { Sprite } from './sprites/Sprite';
+import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { supplyKindOf, supplyName } from './trip-view';
+import { CountBadge, type CountItem } from './ui/CountBadge';
 import { RevealLater, RevealShell, RevealStage, useRevealSequence } from './ui/RevealShell';
+import { Tag } from './ui/Tag';
+import { XpGain, XpList } from './ui/XpGain';
+import { craftingGain, experienceGain } from './xp-gain';
+
+/** What a dismantle gave, as count badges: the parts, then Essence (the same look as the dismantle panel's). */
+function gaveItems(result: Extract<JobResult, { kind: 'dismantle' }>): CountItem[] {
+  return [
+    ...partCountItems(result.parts),
+    ...(result.essence > 0
+      ? [
+          {
+            key: 'essence',
+            icon: { kind: 'glyph', id: 'gem' } as const,
+            amount: result.essence,
+            label: 'Essence',
+            entry: 'essence',
+          },
+        ]
+      : []),
+  ];
+}
+
+/** A pixel arrow head pointing right, between what went in and what came out. */
+function Chevron() {
+  return (
+    <svg class="jr-chevron" viewBox="0 0 4 7" aria-hidden="true" shape-rendering="crispEdges">
+      <rect x="0" y="0" width="1" height="1" />
+      <rect x="1" y="1" width="1" height="1" />
+      <rect x="2" y="2" width="1" height="1" />
+      <rect x="3" y="3" width="1" height="1" />
+      <rect x="2" y="4" width="1" height="1" />
+      <rect x="1" y="5" width="1" height="1" />
+      <rect x="0" y="6" width="1" height="1" />
+    </svg>
+  );
+}
+
+/** Row 1 of a dismantle: the item or items taken apart, an arrow, and what they became as count badges. */
+function DismantleRow({ result }: { result: Extract<JobResult, { kind: 'dismantle' }> }) {
+  const gave = gaveItems(result);
+  return (
+    <div class="jr-row">
+      <ul class="jr-items" aria-label="Taken apart">
+        {result.items.map((item, index) => (
+          <li key={`${item.baseId}-${String(index)}`}>
+            <ItemFrame rarity={item.rarity} baseId={item.baseId} level={item.itemLevel}>
+              <ItemSprite baseId={item.baseId} scale={4} />
+            </ItemFrame>
+          </li>
+        ))}
+      </ul>
+      <Chevron />
+      <span class="visually-hidden">became</span>
+      {gave.length === 0 ? (
+        <p class="muted">Nothing</p>
+      ) : (
+        <ul class="gives jr-gives" aria-label="Became">
+          {gave.map(({ key, ...badge }) => (
+            <li key={key}>
+              <CountBadge {...badge} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Row 2 of a claimed job: who did it (their sprite and name) with two labelled bars, their experience
+ * (the creature's own gold bar, with the level it reached and a short tag when it waits) and the Crafting
+ * skill's (its own colour). Both are the shared `XpGain`. A job from before the worker was recorded has
+ * the Crafting bar alone.
+ */
+function Worker({ result, creatures }: { result: JobResult; creatures: readonly Creature[] }) {
+  const paid = result.experience;
+  const creature = paid === undefined ? undefined : creatures.find((c) => c.id === paid.creatureId);
+  const name = creature === undefined ? 'The worker' : creatureName(creature);
+  const exp = paid === undefined ? null : experienceGain(paid, name);
+  const crafting = craftingGain(result, name);
+  return (
+    <div class="jr-worker">
+      {creature !== undefined && (
+        <figure class="jr-who">
+          <Sprite sprite={creatureSpriteOrFallback(creature.species)} scale={3} />
+          <figcaption class="pix">{name}</figcaption>
+        </figure>
+      )}
+      <XpList label={`${name}'s progress`}>
+        {exp !== null && (
+          <XpGain
+            label={<GlossaryTag entry="experience">Experience</GlossaryTag>}
+            levels={exp.levels.to > exp.levels.from ? exp.levels : undefined}
+            gain={exp.gain}
+            tags={
+              <>
+                {exp.treat && (
+                  <Tag kind="badge" entry="treat">
+                    Treat
+                  </Tag>
+                )}
+                {exp.gold && (
+                  <Tag kind="badge" tone="good">
+                    Gold Ribbon
+                  </Tag>
+                )}
+                {exp.waiting && <Tag kind="badge">Waiting at this level</Tag>}
+              </>
+            }
+            bar={exp.bar}
+          />
+        )}
+        <XpGain
+          label={<GlossaryTag entry="skill-crafting">Crafting</GlossaryTag>}
+          levels={crafting.levels.to > crafting.levels.from ? crafting.levels : undefined}
+          gain={crafting.gain}
+          bar={crafting.bar}
+        />
+      </XpList>
+    </div>
+  );
+}
 
 /** The words of a claimed job, from its result alone (and the item it made, for its lines). */
 function Outcome({ result, items }: { result: JobResult; items: readonly GearItem[] }) {
@@ -38,23 +164,17 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
     case 'dismantle':
       return (
         <>
-          <p>
-            <strong class="pix">
-              {result.items.length === 1 && result.items[0] !== undefined
-                ? gearName(result.items[0].baseId)
-                : `${String(result.items.length)} items`}
-            </strong>{' '}
-            taken apart.
-          </p>
-          <p>
-            <strong>
-              {[
-                ...(partsText(result.parts) === 'nothing' ? [] : [partsText(result.parts)]),
-                ...(result.essence > 0 ? [`${String(result.essence)} Essence`] : []),
-              ].join(', ') || 'nothing'}
-            </strong>
-          </p>
-          <PartsList parts={result.parts} />
+          {result.tinkered !== undefined && result.tinkered > 0 && (
+            <p class="good-note">
+              <GlossaryTag entry={GLOSSARY_IDS.gearLine('tinkers-luck')}>
+                {"Tinker's luck"}
+              </GlossaryTag>
+              :{' '}
+              {result.tinkered === 1
+                ? 'the full craft cost came back.'
+                : `${String(result.tinkered)} items gave back their full craft cost.`}
+            </p>
+          )}
           {result.learned.map((baseId) => (
             <p key={baseId} class="good-note">
               Learned the {gearName(baseId)} blueprint.
@@ -62,7 +182,7 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
           ))}
           {result.marked.map((m) => (
             <p key={m.baseId} class="good-note">
-              {gearName(m.baseId)} is well-thumbed {marksText(m.marks)}.
+              {gearName(m.baseId)}: {qualityText(m.marks)}.
             </p>
           ))}
         </>
@@ -93,24 +213,29 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
 
 /**
  * A claimed job: the same orb that opens in the finale's loot reveal, then what the job made with
- * the item popping in. The real text is in the page from the start (the animation only delays its
- * look), and a player who prefers reduced motion sees the end state at once.
+ * the item popping in, and who did the work with the experience and the Crafting XP it paid. A dismantle
+ * is a picture instead of the orb: the item, an arrow, and what it became as count badges. The real text is
+ * in the page from the start (the animation only delays its look), and a player who prefers reduced motion
+ * sees the end state at once.
  */
 export function JobReveal({
   result,
   items,
   rarity,
+  creatures,
   onDismiss,
 }: {
   result: JobResult;
   items: readonly GearItem[];
   /** The rarity of the item that was made, for the frame. */
   rarity: GearItem['rarity'];
+  /** The player's creatures: the one that did the work is found by its experience's `creatureId`. */
+  creatures: readonly Creature[];
   onDismiss: () => void;
 }) {
   const { frame, done } = useRevealSequence(0);
   const title = result.kind === 'retired' ? 'Old job over' : `${jobVerb(result.kind)} finished`;
-  const worked = result.experience === undefined ? null : experienceText(result.experience);
+  const dismantled = result.kind === 'dismantle';
   return (
     <RevealShell
       id="job-reveal-heading"
@@ -120,47 +245,35 @@ export function JobReveal({
       arrive
       onDismiss={onDismiss}
     >
-      <RevealStage
-        frame={frame}
-        opened={
-          <ItemFrame
-            rarity={rarity}
-            {...(result.kind === 'craft' ? { baseId: result.baseId, level: result.itemLevel } : {})}
-            {...(result.kind === 'dismantle' && result.items[0] !== undefined
-              ? { level: result.items[0].itemLevel }
-              : {})}
-          >
-            {result.kind === 'supply' ? (
-              <Sprite
-                sprite={glyphOrUnknown(supplyKindOf(result.supplyId) ?? 'unknown')}
-                scale={10}
-              />
-            ) : result.kind === 'craft' ? (
-              <ItemSprite baseId={result.baseId} scale={8} />
-            ) : result.kind === 'dismantle' && result.items[0] !== undefined ? (
-              <ItemSprite baseId={result.items[0].baseId} scale={8} />
-            ) : (
-              <Sprite sprite={glyphOrUnknown('anvil')} scale={8} />
-            )}
-          </ItemFrame>
-        }
-      />
-      <RevealLater done={done}>
+      {result.kind === 'dismantle' ? (
+        <DismantleRow result={result} />
+      ) : (
+        <RevealStage
+          frame={frame}
+          opened={
+            <ItemFrame
+              rarity={rarity}
+              {...(result.kind === 'craft'
+                ? { baseId: result.baseId, level: result.itemLevel }
+                : {})}
+            >
+              {result.kind === 'supply' ? (
+                <Sprite
+                  sprite={glyphOrUnknown(supplyKindOf(result.supplyId) ?? 'unknown')}
+                  scale={10}
+                />
+              ) : result.kind === 'craft' ? (
+                <ItemSprite baseId={result.baseId} scale={8} />
+              ) : (
+                <Sprite sprite={glyphOrUnknown('anvil')} scale={8} />
+              )}
+            </ItemFrame>
+          }
+        />
+      )}
+      <RevealLater done={done || dismantled}>
         <Outcome result={result} items={items} />
-        <p class="muted">
-          +{result.xp} <GlossaryTag entry="skill-crafting">Crafting</GlossaryTag> XP
-          {result.leveledUp && (
-            <>
-              {' '}
-              · <strong>Crafting level {result.skillLevel}!</strong>
-            </>
-          )}
-        </p>
-        {worked !== null && (
-          <p class="muted">
-            <GlossaryTag entry="experience">{`The worker: ${worked}`}</GlossaryTag>
-          </p>
-        )}
+        <Worker result={result} creatures={creatures} />
       </RevealLater>
     </RevealShell>
   );

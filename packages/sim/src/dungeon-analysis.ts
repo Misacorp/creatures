@@ -1,4 +1,6 @@
+import { undercroftOpen } from '@creatures/game';
 import { ARCHETYPES, type ArchetypeId } from './archetypes';
+import type { DungeonLogEntry } from './dungeon';
 import type { EconomyResult, PlayerHistory, WeekRecord } from './economy';
 import { mean, median, sum } from './util';
 
@@ -31,13 +33,70 @@ export interface DungeonFlow {
   items: number;
 }
 
+/** What a path run looks like for an archetype (all its runs): how they end and what a run holds. */
+export interface DungeonRunShape {
+  runs: number;
+  /** Shares of the runs that ended cleared, at home (from the camp) and in a defeat. */
+  cleared: number;
+  home: number;
+  defeat: number;
+  /** Fights played per run (a lost one included), and elites cleared and keepsakes held at the end. */
+  fights: number;
+  elites: number;
+  keepsakes: number;
+  /** Mean total (Bait, Essence and scrap) of the pack at the end (at risk) and of what was kept. */
+  packFound: number;
+  packKept: number;
+  /** Share of the runs that reached the camp, and the camp choices of those that did. */
+  reachedCamp: number;
+  camp: Record<'rest' | 'swap' | 'keepsake' | 'home', number>;
+}
+
+/**
+ * The Undercroft as a daily player plays it: the runs made at a depth that opens it (`eligible`), the ones
+ * that beat the main boss and so were offered the way down (`offered`), what they chose, and how a descent
+ * went. Shares are of the stated group; null when the group is empty.
+ */
+export interface UndercroftShape {
+  eligible: number;
+  offered: number;
+  descended: number;
+  /** Descents that beat at least one keeper. */
+  cleared: number;
+  /** Descents lost below (half the pack, the depth stays) and ended at an Undercroft camp (home). */
+  lost: number;
+  home: number;
+  descentRate: number | null;
+  /** Share of all eligible runs that descended (it includes the runs that never beat the boss). */
+  descentOfEligible: number | null;
+  clearRate: number | null;
+  /** Keepers beaten per descent (more than 1 only through a cracked floor). */
+  meanLevels: number | null;
+  /** Fights played below per descent. */
+  meanUnderFights: number | null;
+  /** Fights per run (the whole run, the Undercroft included) of an eligible run, and of its main map only. */
+  meanFights: number | null;
+  meanMainFights: number | null;
+  /** Share of eligible runs that stepped through a carved door and added a room, and rooms added per such run. */
+  doorRate: number | null;
+  /** Carved doors stepped through that added a room, per eligible run. */
+  marksPerRun: number | null;
+}
+
 export interface DungeonStats {
   /** Clear rate per depth of the casual, daily and top players (all their runs). */
   winRates: Record<(typeof DUNGEON_TABLE_ARCHETYPES)[number], DepthWinRate[]>;
   /** The depth of each archetype after N weeks (the depth the next run fights at). */
   depthAfter: Record<ArchetypeId, DepthAfter[]>;
+  /** How runs end and what they hold, per archetype (all runs). */
+  runShape: Record<ArchetypeId, DungeonRunShape>;
   /** The reward flow per player and week. */
   flow: Record<ArchetypeId, DungeonFlow>;
+  /** A daily player's runs from week 2: the share that ended at home, and the mean fights played. */
+  dailyHomeRate: number | null;
+  meanFights: number | null;
+  /** A daily player's Undercroft (all their runs at depth 8 and over). */
+  undercroft: UndercroftShape;
   /** Dungeon Essence over a daily player's whole Essence income (raids and dungeon). */
   dailyEssenceShare: number | null;
   /** Gear share of a daily player's raid-team power at week 8, with the dungeon and without. */
@@ -55,6 +114,60 @@ function quantile(sorted: readonly number[], q: number): number {
   if (sorted.length === 0) return 0;
   const index = Math.min(sorted.length - 1, Math.max(0, Math.ceil(q * sorted.length) - 1));
   return sorted[index] as number;
+}
+
+const packTotal = (p: { bait: number; essence: number; scrap: number }): number =>
+  p.bait + p.essence + p.scrap;
+
+function runShapeOf(runs: readonly DungeonLogEntry[]): DungeonRunShape {
+  const n = runs.length;
+  const share = (count: number): number => (n === 0 ? 0 : count / n);
+  const avg = (f: (e: DungeonLogEntry) => number): number => mean(runs.map(f)) ?? 0;
+  const camped = runs.filter((e) => e.camp !== null);
+  const choice = (c: 'rest' | 'swap' | 'keepsake' | 'home'): number =>
+    camped.length === 0 ? 0 : camped.filter((e) => e.camp === c).length / camped.length;
+  return {
+    runs: n,
+    cleared: share(runs.filter((e) => e.outcome === 'cleared').length),
+    home: share(runs.filter((e) => e.outcome === 'home').length),
+    defeat: share(runs.filter((e) => e.outcome === 'defeat').length),
+    fights: avg((e) => e.fights),
+    elites: avg((e) => e.elites),
+    keepsakes: avg((e) => e.keepsakes),
+    packFound: avg((e) => packTotal(e.packFound)),
+    packKept: avg((e) => packTotal(e.packKept)),
+    reachedCamp: share(camped.length),
+    camp: {
+      rest: choice('rest'),
+      swap: choice('swap'),
+      keepsake: choice('keepsake'),
+      home: choice('home'),
+    },
+  };
+}
+
+function undercroftOf(runs: readonly DungeonLogEntry[]): UndercroftShape {
+  const eligible = runs.filter((e) => undercroftOpen(e.depth));
+  const offered = eligible.filter((e) => e.under.offered);
+  const down = eligible.filter((e) => e.under.descended);
+  const ratio = (a: number, b: number): number | null => (b === 0 ? null : a / b);
+  return {
+    eligible: eligible.length,
+    offered: offered.length,
+    descended: down.length,
+    cleared: down.filter((e) => e.under.levels >= 1).length,
+    lost: down.filter((e) => e.outcome === 'defeat').length,
+    home: down.filter((e) => e.under.camp === 'home').length,
+    descentRate: ratio(down.length, offered.length),
+    descentOfEligible: ratio(down.length, eligible.length),
+    clearRate: ratio(down.filter((e) => e.under.levels >= 1).length, down.length),
+    meanLevels: mean(down.map((e) => e.under.levels)),
+    meanUnderFights: mean(down.map((e) => e.under.fights)),
+    meanFights: mean(eligible.map((e) => e.fights)),
+    meanMainFights: mean(eligible.map((e) => e.mainFights)),
+    doorRate: ratio(eligible.filter((e) => e.under.marks.length > 0).length, eligible.length),
+    marksPerRun: mean(eligible.map((e) => e.under.marks.length)),
+  };
 }
 
 function gearShareWeek8(sims: readonly EconomyResult[]): number | null {
@@ -76,6 +189,15 @@ function gearShareWeek8(sims: readonly EconomyResult[]): number | null {
  *   time, the share that cleared every room (all archetypes).
  * - `dungeon.dailyDepthGrowthPerWeek`: the median daily player's depth gain per week between the end
  *   of week 2 and the end of week 8 (the opening week, when everybody climbs a depth a day, is left out).
+ * - `dungeon.dailyHomeRate`: of a daily player's runs from their second week on (7 days after joining),
+ *   the share that ended at home, heading home from the camp with the pack (so the camp choice is real).
+ * - `dungeon.meanFights`: fights played per run (a lost one included) over the same runs.
+ * - `dungeon.undercroftDescentRate`: of a daily player's runs that beat the main boss at depth 8 or over
+ *   (the descent was offered), the share that went down into the Undercroft (a real choice: not always).
+ * - `dungeon.undercroftClearRate`: of the descents, the share that beat the first keeper.
+ * - `dungeon.undercroftMeanLevels`: keepers beaten per descent.
+ * - `dungeon.eligibleMeanFights`: fights played per run (the Undercroft's included, a lost one too) over a
+ *   daily player's runs at depth 8 or over: a run must not get too long.
  * - `dungeon.dailyEssenceShare`: dungeon Essence over a daily player's Essence income (raid stages,
  *   jackpots and dungeon), all weeks.
  * - `dungeon.dailyGearShareWeek8`: gear's share of a daily player's raid-team power at week 8, with
@@ -138,6 +260,29 @@ export function dungeonAnalysis(
     .filter((g): g is number => g !== null);
   metrics['dungeon.dailyDepthGrowthPerWeek'] = median(growth);
 
+  // ---- how runs end ----
+  const runShape = {} as DungeonStats['runShape'];
+  for (const archetype of ARCHETYPES) {
+    runShape[archetype] = runShapeOf(playersOf(sims, archetype).flatMap((p) => p.dungeon));
+  }
+  const dailySteady = playersOf(sims, 'daily')
+    .flatMap((p) => p.dungeon)
+    .filter((e) => e.daysSinceJoin >= 7);
+  const dailyHomeRate =
+    dailySteady.length === 0
+      ? null
+      : dailySteady.filter((e) => e.outcome === 'home').length / dailySteady.length;
+  const meanFights = mean(dailySteady.map((e) => e.fights));
+  metrics['dungeon.dailyHomeRate'] = dailyHomeRate;
+  metrics['dungeon.meanFights'] = meanFights;
+
+  // ---- the Undercroft ----
+  const undercroft = undercroftOf(playersOf(sims, 'daily').flatMap((p) => p.dungeon));
+  metrics['dungeon.undercroftDescentRate'] = undercroft.descentRate;
+  metrics['dungeon.undercroftClearRate'] = undercroft.clearRate;
+  metrics['dungeon.undercroftMeanLevels'] = undercroft.meanLevels;
+  metrics['dungeon.eligibleMeanFights'] = undercroft.meanFights;
+
   // ---- the reward flow ----
   const flow = {} as DungeonStats['flow'];
   for (const archetype of ARCHETYPES) {
@@ -168,7 +313,11 @@ export function dungeonAnalysis(
     stats: {
       winRates,
       depthAfter,
+      runShape,
       flow,
+      dailyHomeRate,
+      meanFights,
+      undercroft,
       dailyEssenceShare,
       gearShareWeek8: { with: withGear, without: gearShareWeek8(withoutDungeon) },
     },

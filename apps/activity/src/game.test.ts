@@ -98,6 +98,17 @@ describe('display helpers', () => {
     ]);
   });
 
+  it("shows a Second look duplicate with a badge that opens the line's glossary entry", () => {
+    const base = { species: 'zipmouse', shiny: false, firstOnServer: false };
+    expect(catchBadgeTags({ ...base, outcome: 'duplicate', secondLook: true })).toEqual([
+      { text: 'Duplicate', entry: 'duplicate-choice' },
+      { text: 'Second look', entry: 'gear-line-second-look' },
+    ]);
+    expect(catchBadgeTags({ ...base, outcome: 'duplicate' }).map((b) => b.text)).toEqual([
+      'Duplicate',
+    ]);
+  });
+
   it("finds first-on-server records by species or by the line's first stage", () => {
     const mine = { kind: 'catch' as const, species: 'splashet', at: 1, mine: true, holders: ['A'] };
     expect(isFirstOnServer(creature, [mine])).toBe(true);
@@ -362,6 +373,37 @@ describe('parseGameState with a real server response (fixtures/collection-state.
     // A creature below level 10 has its ability locked.
     const low = state.creatures.find((c) => c.level < 10);
     expect(low?.ability).toMatchObject({ unlocked: false, unlockLevel: 10 });
+  });
+});
+
+describe('parseGameState and a line that grows two ways', () => {
+  it('reads the second form of Sproutle and of Cindle from the real response', () => {
+    const state = parseGameState(collectionState);
+    const sproutle = state.creatures.find((c) => c.species === 'sproutle');
+    expect(sproutle?.evolution).toMatchObject({
+      toSpecies: 'thornbuck',
+      alt: { toSpecies: 'sunfawn' },
+    });
+    // Every evolving line grows two ways now, so a Cindle has its second form too.
+    const cindle = state.creatures.find((c) => c.species === 'cindle');
+    expect(cindle?.evolution).toMatchObject({
+      toSpecies: 'pyrelynx',
+      alt: { toSpecies: 'wickat' },
+    });
+  });
+
+  it('refuses a second form of the wrong shape', () => {
+    const base = collectionState as unknown as { creatures: Record<string, unknown>[] };
+    const sproutle = base.creatures.find((c) => c['species'] === 'sproutle');
+    const evolution = sproutle?.['evolution'] as Record<string, unknown>;
+    for (const alt of [{ toSpecies: 7 }, 'sunfawn', null, {}]) {
+      expect(() =>
+        parseGameState({
+          ...collectionState,
+          creatures: [{ ...sproutle, evolution: { ...evolution, alt } }],
+        }),
+      ).toThrow();
+    }
   });
 });
 

@@ -1,0 +1,51 @@
+/*
+  The Switch (ui/Switch.tsx): a track with a square knob and a label. The track's edge is drawn inside the box
+  (an inset shadow of --px), so the knob's room is the edge plus one more pixel of gap on every side: the knob
+  is the same distance from the edge when it sits at the left (off) and at the right (on), whatever the
+  colours. Track 40 x 24 px, knob 12 px, gap 3 px inside the 3 px edge.
+*/
+button.switch {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.25rem;
+  background: none;
+  box-shadow: none;
+  color: var(--haze);
+  font-size: var(--fs-row);
+}
+
+button.switch:active:not(:disabled) {
+  box-shadow: none;
+}
+
+button.switch.on {
+  color: var(--bone);
+}
+
+.switch-track {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  width: 2.5rem;
+  height: 1.5rem;
+  padding: calc(var(--px) * 2);
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+}
+
+button.switch.on .switch-track {
+  justify-content: flex-end;
+  box-shadow: inset 0 0 0 var(--px) var(--good);
+}
+
+.switch-knob {
+  width: 0.75rem;
+  height: 0.75rem;
+  background: var(--haze);
+}
+
+button.switch.on .switch-knob {
+  background: var(--good);
+}

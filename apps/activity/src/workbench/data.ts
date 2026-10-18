@@ -239,6 +239,8 @@ export const SKY_STATES = [
   'boon and omen',
   'wild omen tomorrow',
   'rank 14 (strong)',
+  'kind rain and morning haze',
+  'bramble season (rank 6)',
 ] as const;
 export type SkyState = (typeof SKY_STATES)[number];
 
@@ -298,6 +300,16 @@ export function sampleForecast(state: string): Forecast | null {
       return {
         today: skyDay(0, ['high-water', 15_000], ['long-shadows', 25_000]),
         tomorrow: skyDay(1, ['bonfire-night', 15_000], ['muddy-roads', 25_000]),
+      };
+    case 'kind rain and morning haze':
+      return {
+        today: skyDay(0, ['kind-rain', 12_500], ['morning-haze', 15_000]),
+        tomorrow: skyDay(1, ['clear-skies', 12_500], ['static-sky', 15_000]),
+      };
+    case 'bramble season (rank 6)':
+      return {
+        today: skyDay(0, ['lantern-light', 12_500], ['bramble-season', 15_000]),
+        tomorrow: skyDay(1, ['kind-rain', 12_500], ['morning-haze', 15_000]),
       };
     default:
       return null;

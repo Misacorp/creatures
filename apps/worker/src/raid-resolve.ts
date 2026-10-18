@@ -28,12 +28,14 @@ import {
   weatherBossAttacks,
   weatherLuck,
   weatherSheet,
+  weatherSky,
   xpWeather,
   type BossDef,
   type Rng,
 } from '@creatures/game';
 import {
   autoPlace,
+  skyFightFields,
   type AbilityChoice,
   compactRow,
   sparseBoard,
@@ -41,6 +43,7 @@ import {
   liveFightRules,
   makeSlot,
   phaseFloorHp,
+  placeSlots,
   raidEnrage,
   resolveGuests,
   scaleBoss,
@@ -413,8 +416,13 @@ export function buildPhaseInput(
   // The weather of the day the stage is scheduled in (Boon and Omen): for every creature in the row, guests
   // included, as numbers on its sheet. The stored input keeps them, so a replay never reads the weather.
   const day = stageWeather(sql, week.weekId, phase);
+  // Each creature's board slot: the fight's rows, lanes and neighbours are the board's (gaps included).
   const fightBoard = sparseBoard(placed);
-  const row = compactRow(placed).map((slot): FightSlot => {
+  // Position lines and set gifts depend on where a creature stands: fold the gear of the row again with
+  // each creature's place (Front, Middle and Back are its rows; an empty board slot breaks "beside", as
+  // in the fight), before the weather is added.
+  const kits = new Map(teams.flat().map((c) => [c.id, c.kit]));
+  const row = placeSlots(compactRow(placed), kits, 'zones', fightBoard).map((slot): FightSlot => {
     const mods = mergeMods(slot.mods, weatherSheet(day, slot));
     return mods === undefined ? slot : { ...slot, mods };
   });
@@ -462,6 +470,8 @@ export function buildPhaseInput(
     ...(weatherBossAttacks(day, bossAttacksAtRank(rank)) > 1
       ? { bossAttacks: weatherBossAttacks(day, bossAttacksAtRank(rank)) }
       : {}),
+    // Kind Rain, Morning Haze and Bramble Season: stored in the input like the rest of the day.
+    ...skyFightFields(weatherSky(day), row, fightBoard),
     phase,
     bossHpPool: { max: hpMax, current: hpCurrent },
     adaptation,

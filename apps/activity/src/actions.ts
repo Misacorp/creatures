@@ -1,4 +1,5 @@
 import { ApiError } from './api';
+import type { DungeonAct } from './dungeon-types';
 import type { SendRequest } from './expedition-api';
 import type { StartJobRequest } from './gear-types';
 import type { ChoiceRequest } from './talent-types';
@@ -66,7 +67,8 @@ export const ActionIds = {
   starter: (species: string): ActionId => `starter:${species}`,
   /** Earning the ribbon a creature waits for: one creature, one ribbon at a time. */
   ribbon: (creatureId: string): ActionId => `ribbon:${creatureId}`,
-  evolve: (creatureId: string): ActionId => `evolve:${creatureId}`,
+  /** One creature grows into one form: the other form is another action (it must not reuse the key). */
+  evolve: (creatureId: string, species: string): ActionId => `evolve:${creatureId}:${species}`,
   /** The same creature, place, length, supplies (in any order) and treat is the same trip. */
   send: (
     request: Pick<SendRequest, 'creatureId' | 'destination' | 'duration' | 'supplies' | 'treat'>,
@@ -98,9 +100,42 @@ export const ActionIds = {
     }
   },
   /** The same three creatures in the same order are the same run; other picks get their own key. */
-  dungeonRun: (team: readonly [string, string, string], treats: readonly string[] = []): ActionId =>
-    `dungeon-run:${JSON.stringify(team)}${treats.length === 0 ? '' : `:treats:${[...treats].sort().join(',')}`}`,
+  dungeonStart: (
+    team: readonly [string, string, string],
+    treats: readonly string[] = [],
+  ): ActionId =>
+    `dungeon-start:${JSON.stringify(team)}${treats.length === 0 ? '' : `:treats:${[...treats].sort().join(',')}`}`,
+  /**
+   * One step of an open run: the run, the step it stands at and the act. The step moves on with every
+   * accepted act, so a key is only ever kept for a retry of the same act at the same step; another act
+   * at that step (another room, the other option) is another action.
+   */
+  dungeonAct: (runId: string, step: number, act: DungeonAct): ActionId =>
+    `dungeon-act:${runId}:${String(step)}:${dungeonActKey(act)}`,
 };
+
+/** What makes one dungeon act different from another, in a string. */
+function dungeonActKey(act: DungeonAct): string {
+  switch (act.type) {
+    case 'move':
+      return `move:${act.node}`;
+    case 'event':
+      return `event:${String(act.option)}`;
+    case 'camp':
+      return [
+        'camp',
+        act.choice,
+        act.order?.join(',') ?? '',
+        act.out ?? '',
+        act.in ?? '',
+        act.keepsake ?? '',
+      ].join(':');
+    case 'home':
+      return 'home';
+    case 'descend':
+      return 'descend';
+  }
+}
 
 /** A treat makes a job another action (the same job without one is not the same request). */
 function treatSuffix(request: { treat?: boolean | undefined }): string {

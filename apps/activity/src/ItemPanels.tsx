@@ -7,23 +7,26 @@ import { GlossaryTag } from './Glossary';
 import type { DismantlePreview, GearItem, GearState } from './gear-types';
 import {
   defaultPick,
+  dismantleCountItems,
   dismantleDurationFor,
-  dismantleLines,
+  durationCountItem,
   gearName,
   oddsPercent,
   pickerOptions,
 } from './gear-view';
-import { formatDuration } from './time-format';
+import { CountBadge } from './ui/CountBadge';
 
 type PreviewState =
   { status: 'loading' } | { status: 'failed' } | { status: 'ready'; preview: DismantlePreview };
 
 /**
  * The in-page confirmation of a dismantle job (never `window.confirm`): which creature does it, what the
- * items can break into (a range, the same for every creature), how long it takes that creature, and the
- * chance to learn a blueprint. The items go into the Workshop when the job starts and the parts come when
- * it is claimed. Focus starts on "Keep it", the safe choice, and Escape keeps the items. Every number is
- * the server's (`previewDismantle`).
+ * items can break into (count badges with their icons, ranges as "3–4", the same for every creature), how
+ * long it takes that creature (a clock badge), and the chance to learn a blueprint or raise its quality. The
+ * items go into the Workshop when the job starts and the parts come when it is claimed. When it opens, its
+ * start (who does the work) is scrolled into view, not the buttons at its end. Focus starts on "Keep it", the
+ * safe choice (without scrolling to it), and Escape keeps the items. Every number is the server's
+ * (`previewDismantle`).
  */
 export function DismantlePanel({
   items,
@@ -56,8 +59,12 @@ export function DismantlePanel({
   const creatureId = valid === undefined ? defaultPick(options) : picked;
   const [state, setState] = useState<PreviewState>({ status: 'loading' });
   const keep = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLElement>(null);
   useEffect(() => {
-    keep.current?.focus();
+    // Focus the safe button without letting the browser scroll to it (it sits at the panel's end), then show
+    // the panel from its start.
+    keep.current?.focus({ preventScroll: true });
+    panel.current?.scrollIntoView?.({ block: 'start' });
   }, []);
   const key = items.map((i) => i.id).join(',');
   useEffect(() => {
@@ -88,14 +95,15 @@ export function DismantlePanel({
   const noCreature = creatureId === null;
   return (
     <section
-      class="confirm"
+      ref={panel}
+      class="confirm pix-panel"
       role="group"
       aria-labelledby={`dismantle-${first.id}-q`}
       onKeyDown={(event) => {
         if (event.key === 'Escape') onCancel();
       }}
     >
-      <h4 id={`dismantle-${first.id}-q`} class="pix">
+      <h4 id={`dismantle-${first.id}-q`}>
         {title} <GlossaryTag entry="job-dismantle" look="help" />
       </h4>
       <ul class="dismantle-items" aria-label="Items to take apart">
@@ -128,14 +136,20 @@ export function DismantlePanel({
       )}
       {preview !== null && (
         <>
-          <p>
-            Gives <strong>{dismantleLines(preview.range).join(', ') || 'nothing'}</strong> in{' '}
-            {formatDuration(preview.durationMs)}.
-          </p>
+          <ul class="gives" aria-label="Gives">
+            {dismantleCountItems(preview.range).map(({ key, ...badge }) => (
+              <li key={key}>
+                <CountBadge {...badge} />
+              </li>
+            ))}
+            <li class="gives-time">
+              <CountBadge {...durationCountItem(preview.durationMs)} />
+            </li>
+          </ul>
           {preview.learnBp !== null && (
             <p class="muted">
-              {oddsPercent(preview.learnBp)} per piece to teach its blueprint or add a well-thumbed
-              mark.
+              {oddsPercent(preview.learnBp)} per piece to learn its blueprint or{' '}
+              <GlossaryTag entry="blueprint-quality">raise its quality</GlossaryTag>.
             </p>
           )}
         </>
