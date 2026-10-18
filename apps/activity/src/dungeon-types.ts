@@ -180,7 +180,56 @@ export interface DungeonRunState {
   supply: boolean;
   /** What the last mystery room did, in plain words, or null. */
   lastEvent: { name: string; option: string; outcome: string } | null;
+  /**
+   * What happened in each room the run has been through, in order (one entry per visited node). Absent
+   * from an older server (read as an empty list).
+   */
+  history?: DungeonStepLog[];
 }
+
+/** What a room on the path gave or took. `loot` is what went into the pack there (zeros when nothing). */
+export type DungeonStepLog =
+  | {
+      node: string;
+      kind: 'fight' | 'elite' | 'boss';
+      result: 'fight';
+      cleared: boolean;
+      rounds: number;
+      /** The foe's HP when the fight ended (0 when cleared) and at most. */
+      foeHpEnd: number;
+      foeHpMax: number;
+      loot: DungeonPack;
+      /** An elite's keepsake. */
+      keepsake?: DungeonKeepsakeView;
+      /** This fight earned the run's supply (the first fight cleared). */
+      supply?: boolean;
+    }
+  | { node: string; kind: 'cache'; result: 'cache'; loot: DungeonPack }
+  | {
+      node: string;
+      kind: 'mystery';
+      result: 'event';
+      event: string;
+      /** The option label picked, and the plain line of what it did. */
+      option: string;
+      outcome: string;
+      loot: DungeonPack;
+      keepsake?: DungeonKeepsakeView;
+    }
+  | {
+      node: string;
+      kind: 'camp';
+      result: 'camp';
+      /** `home` when the run headed home from the camp. */
+      choice: 'rest' | 'swap' | 'keepsake' | 'home';
+      /** The plain line of what was done ("Rested: standing creatures recovered 40% HP."). */
+      detail: string;
+      keepsake?: DungeonKeepsakeView;
+    }
+  /** The run stepped into the camp and its choice is still waiting. */
+  | { node: string; kind: 'camp'; result: 'pending' }
+  /** The run stepped into a mystery room and its choice is still waiting. */
+  | { node: string; kind: 'mystery'; result: 'pending'; event: string };
 
 export type DungeonOutcome = 'cleared' | 'home' | 'defeat';
 
@@ -325,6 +374,11 @@ export interface DungeonRunSummary {
   pack?: { found: DungeonPack; kept: DungeonPack };
   /** The keepsakes the run held at the end. Absent in older runs. */
   keepsakes?: DungeonKeepsakeView[];
+  /**
+   * The map of the run, the nodes visited in order and what each did: the results screen can show the
+   * route. Absent in older runs.
+   */
+  route?: { map: DungeonMapView; path: string[]; history: DungeonStepLog[] };
 }
 
 /**
