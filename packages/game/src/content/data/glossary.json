@@ -1286,10 +1286,10 @@
   {
     "id": "keepsake",
     "title": "Keepsake",
-    "short": "A gift that helps for the rest of the run.",
+    "short": "A gift that helps for the rest of this run only.",
     "lines": [
-      "Elites, the camp and some mystery rooms give one. You cannot hold the same one twice.",
-      "It helps in every fight after you get it, and it is gone when the run ends."
+      "A keepsake helps in every fight after you get it. When the run ends it is gone: you do not keep it for the next run.",
+      "Elites, the camp and some mystery rooms give one. You cannot hold the same one twice."
     ],
     "section": "dungeon"
   },
