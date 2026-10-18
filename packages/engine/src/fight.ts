@@ -172,8 +172,10 @@ export function defaultAbilityRound(
  * it counts as dealt for credit (the boss pool never goes below 0); with `rules` damage counts only
  * up to the HP the boss had left, as at a phase floor.
  *
- * Round order: round start (charge announcements, reflect arming, support buffs, finale abilities),
- * each living and non-silenced creature in turn order, boss gimmicks due this round, the boss's
+ * Round order: round start (charge announcements, reflect arming, support buffs, Kind Rain's heal,
+ * finale abilities), each living and non-silenced creature in turn order (a creature named in
+ * `skipFirstTurn` loses its first one: Morning Haze; the first reaction of a round sends a share of
+ * its bonus back when `brambleBp` is set: Bramble Season), boss gimmicks due this round, the boss's
  * normal attack, round end. The fight ends early when the pool reaches 0, when it reaches the phase
  * floor (`bossHpFloor`: the boss retreats) or when every creature is knocked out.
  *
@@ -204,6 +206,14 @@ export function simulateFight(
   if (!Number.isInteger(bossAttacks) || bossAttacks < 1 || bossAttacks > 3) {
     fail('bossAttacks must be an integer from 1 to 3');
   }
+  const rainHealBp = input.rainHealBp ?? 0;
+  if (!isCount(rainHealBp, 0) || rainHealBp > 10_000) {
+    fail('rainHealBp must be an integer from 0 to 10000');
+  }
+  const brambleBp = input.brambleBp ?? 0;
+  if (!isCount(brambleBp, 0) || brambleBp > 10_000) {
+    fail('brambleBp must be an integer from 0 to 10000');
+  }
   const phaseCfg = RULES.raid.phases.find((p) => p.id === phase);
   if (phaseCfg === undefined) fail(`unknown phase "${phase}"`);
   const rounds = phase === 'finale' ? boss.finaleRounds : phaseCfg.rounds;
@@ -216,6 +226,11 @@ export function simulateFight(
     if (s.ownerId !== null && !players.has(s.ownerId)) {
       fail(`creature "${s.id}" belongs to a player who is not signed up`);
     }
+  }
+  /** Morning Haze: creatures that have not yet skipped the turn they owe (a turn they never reach never counts). */
+  const hazePending = new Set<string>(input.skipFirstTurn ?? []);
+  for (const id of hazePending) {
+    if (!ids.has(id)) fail(`skipFirstTurn names unknown creature "${id}"`);
   }
 
   const reactionByMark = new Map<Element, ReactionDef>();
@@ -699,6 +714,8 @@ export function simulateFight(
   const adaptationOn = (): boolean => rule !== null && currentRound > purgedThrough;
   let reflectArmed = false;
   let reflectUsed = false;
+  /** Bramble Season: this round's first reaction has been seen (a reflected one counts too). */
+  let brambleUsed = false;
 
   /**
    * A creature hits the boss: its turn, or (with `strike`) an ability's strike, which hits for a
@@ -722,6 +739,11 @@ export function simulateFight(
     }
     const reflected = reaction !== undefined && c.alive && reflectArmed && !reflectUsed;
     if (reflected) reflectUsed = true;
+    // Bramble Season: the first reaction each round (by a creature still standing) sends a share of
+    // its bonus back. A reaction Backdraft already reflected in full uses the round's first up.
+    const brambling = reaction !== undefined && c.alive && brambleBp > 0 && !brambleUsed;
+    if (brambling) brambleUsed = true;
+    const brambled = brambling && !reflected;
 
     const dice = (strike === undefined ? turnDice : strikeDice)[c.idx];
     let luckBp = swingNow;
@@ -838,6 +860,10 @@ export function simulateFight(
         ),
       );
       if (reflected) return { damage: plain, bonus: 0, reflect: bonus };
+      if (brambled) {
+        const back = Math.floor((bonus * brambleBp) / 10_000);
+        return { damage: plain + bonus - back, bonus: bonus - back, reflect: back };
+      }
       return { damage: plain + bonus, bonus, reflect: 0 };
     };
 
@@ -935,10 +961,12 @@ export function simulateFight(
         payoff: c.id,
         bonus: reflected ? hit.reflect : hit.bonus,
         reflected,
+        ...(brambled ? { bramble: { bp: brambleBp, amount: hit.reflect } } : {}),
         ...(reactionSheetBp + m.pounceBp === 0 ? {} : { sheetBp: reactionSheetBp + m.pounceBp }),
       });
       mark = null;
       if (reflected) hurt(c, hit.reflect, 'reflect', 'reflect');
+      else if (brambled && hit.reflect > 0) hurt(c, hit.reflect, 'reflect', 'reflect');
     } else if (markBefore === null) {
       mark = { element: c.element, creature: c, player: c.ownerId };
       events.push({
@@ -1284,6 +1312,28 @@ export function simulateFight(
   }
 
   /**
+   * Kind Rain (`FightInput.rainHealBp`): each living creature heals that share of its max HP, rounded
+   * down, changed by its own `healReceivedBp` like a Mend, and never above what it is missing. One
+   * `sky_heal` event names who was really healed; nothing is written when nobody was.
+   */
+  function rainHeals(): void {
+    const heals: { creature: string; amount: number }[] = [];
+    for (const c of creatures) {
+      if (!c.alive) continue;
+      const healed = Math.floor((c.maxHp * rainHealBp) / 10_000);
+      const received =
+        c.mods.healReceivedBp === 0
+          ? healed
+          : Math.floor((healed * Math.max(0, 10_000 + c.mods.healReceivedBp)) / 10_000);
+      const amount = Math.min(received, Math.max(0, c.maxHp - c.hp));
+      if (amount <= 0) continue;
+      c.hp += amount;
+      heals.push({ creature: c.id, amount });
+    }
+    if (heals.length > 0) events.push({ t: 'sky_heal', round: currentRound, heals });
+  }
+
+  /**
    * The boss's plain attack, `bossAttacks` times (1 unless the input says more). Each attack picks
    * its target afterwards from the creatures standing then, so a creature the first one knocked out
    * is not aimed at again, and each has its own crit die.
@@ -1365,6 +1415,7 @@ export function simulateFight(
     roundBonusBp = 0;
     reflectArmed = false;
     reflectUsed = false;
+    brambleUsed = false;
     if (
       rule !== null &&
       purgedThrough > 0 &&
@@ -1472,6 +1523,9 @@ export function simulateFight(
       }
     }
 
+    // Kind Rain: every living creature heals a share of its max HP, after the Supports' Mend.
+    if (rainHealBp > 0) rainHeals();
+
     // Finale abilities are fixed to the base rounds: one set for a round past them never fires.
     for (const a of enraging ? [] : (abilitiesByRound.get(round) ?? [])) {
       if (bossHp === 0 || retreated) break;
@@ -1482,9 +1536,16 @@ export function simulateFight(
       if (bossHp === 0 || retreated) break;
       const c = creatures[idx] as Creature;
       if (!c.alive) continue;
+      // Morning Haze: the turn owed is the first one the creature reaches; a silence on that turn
+      // already costs it, so the haze is spent there and never costs a second turn.
+      const hazed = hazePending.delete(c.id);
       if (c.silenced > 0) {
         c.silenced -= 1;
         events.push({ t: 'skip', round, creature: c.id, reason: 'silenced' });
+        continue;
+      }
+      if (hazed) {
+        events.push({ t: 'skip', round, creature: c.id, reason: 'haze' });
         continue;
       }
       events.push({ t: 'turn', round, creature: c.id });

@@ -825,6 +825,18 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   - Check `dungeon-first-week-clear` on a second seed.
   - Live: the share of days with an Omen at each rank, trips sent on Market Day, and the raid win rate by Omen (`weather_draw` and `weather_use` events).
 
+- **Update, 2026-10-18: Kind Rain, Morning Haze and Bramble Season are live.** The three hooks (`decisions.md`, "The last three weathers are live") add no new number to `RULES`; the effects are the starting values of the design (`weather.json`: Kind Rain 2%, Haze one skipped first turn, Bramble Season 30%, all at the day's strength). Nothing in the raid or the dungeon was tuned. The study (`pnpm sim:weather --servers 40 --rank 4 --curve-servers 0`, seed `weather`, 320 weeks, same seeds as above; the second table at the strength of rank 14) shows what each does alone on all three stages, in points against no weather (49.1% finale and 88.1% of the pool without weather):
+
+  | Weather        | Finale delta (x1) | Pool delta (x1) | Phase 1 (x1) | Finale delta (rank 14) | Pool delta (rank 14) |
+  | -------------- | ----------------- | --------------- | ------------ | ---------------------- | -------------------- |
+  | Kind Rain      | +0.3              | +0.3            | 45.0%        | +0.3                   | +0.5                 |
+  | Morning Haze   | -0.3              | -0.2            | 45.0%        | -0.3                   | -0.2                 |
+  | Bramble Season | **-5.0**          | **-2.3**        | 39.4%        | **-17.8**              | **-7.0**             |
+
+  Kind Rain barely matters in a fight (creatures rarely run low in a won raid, and 2% of max HP a round is small; its worth is the trip half). Morning Haze is weak too: three creatures of a row of up to fifteen lose one turn of ten or twelve, and its real cost is on trips (+10% time). **Bramble Season is by far the strongest raid Omen**: at x1 it costs 5 points of finale wins and 2 of the pool, and at the strength of rank 14 (75% of the first reaction back at the setter, ten rounds a stage) it costs 17.8 points and takes Phase 1 from 45% to 28%. It first appears at rank 6, where the Omen is x1.5 (45%), so the real range is between the two columns. Reactions are most of the damage and the first one each round is usually the best, so the share is bigger than it looks. Not tuned, as asked; if it needs softening the lever is the `bp` of its `bramble` effect in `weather.json` (a lower share, or leave Omens unscaled for it), or a Backdraft ward line on gear (which already counts against it).
+
+- **Digests.** The legacy digest of the sim moved because three more weathers are in the draw (the seeded weather stream picks from 10 Boons and 10 Omens instead of 9 and 8); it was re-pinned on purpose.
+
 ### B-018: Items carry base stats; local and global lines; Festival gear is special, not stronger (open)
 
 - **Opened:** 2026-10-17, from Misa's direction of the same day ("Path of Exile style": base stats on items, local lines "this item", Festival at the normal level and rarity), and the lead's update the same afternoon (fixed base stats per base type, two or more stats, better bases unlocking at higher item levels). Design: `gear-and-creatures-v2.md` section 2.5; decision entry of 2026-10-17. (B-017 was left free for a parallel branch.)

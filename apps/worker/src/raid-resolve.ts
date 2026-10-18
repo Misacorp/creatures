@@ -28,12 +28,14 @@ import {
   weatherBossAttacks,
   weatherLuck,
   weatherSheet,
+  weatherSky,
   xpWeather,
   type BossDef,
   type Rng,
 } from '@creatures/game';
 import {
   autoPlace,
+  skyFightFields,
   type AbilityChoice,
   compactRow,
   fillWithGuests,
@@ -400,6 +402,8 @@ export function buildPhaseInput(
     ...(weatherBossAttacks(day, bossAttacksAtRank(rank)) > 1
       ? { bossAttacks: weatherBossAttacks(day, bossAttacksAtRank(rank)) }
       : {}),
+    // Kind Rain, Morning Haze and Bramble Season: stored in the input like the rest of the day.
+    ...skyFightFields(weatherSky(day), row),
     phase,
     bossHpPool: { max: hpMax, current: hpCurrent },
     adaptation,

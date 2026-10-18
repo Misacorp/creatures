@@ -90,6 +90,18 @@ export interface DungeonRunInput {
    * stored older run replays as it was fought.
    */
   bossAttacks?: number;
+  /**
+   * Kind Rain: the share of max HP every living creature heals at the start of every round, in basis
+   * points (`FightInput.rainHealBp`, in every room). Absent: none.
+   */
+  rainHealBp?: number;
+  /**
+   * Morning Haze: the left creature (`team[0]`) skips its first turn in every room (each room is a
+   * fresh fight; `FightInput.skipFirstTurn`). Absent: nobody does.
+   */
+  hazeLeft?: true;
+  /** Bramble Season: `FightInput.brambleBp`, in every room. Absent: none. */
+  brambleBp?: number;
 }
 
 export interface DungeonRoomResult {
@@ -222,6 +234,11 @@ export function buildRoomInput(
     ...(run.bossAttacks !== undefined && run.bossAttacks > 1
       ? { bossAttacks: run.bossAttacks }
       : {}),
+    ...(run.rainHealBp !== undefined && run.rainHealBp > 0 ? { rainHealBp: run.rainHealBp } : {}),
+    ...(run.hazeLeft === true && run.team[0] !== undefined
+      ? { skipFirstTurn: [run.team[0].id] }
+      : {}),
+    ...(run.brambleBp !== undefined && run.brambleBp > 0 ? { brambleBp: run.brambleBp } : {}),
     phase: 'finale',
     bossHpPool: { max: foeHp, current: foeHp },
     adaptation: null,

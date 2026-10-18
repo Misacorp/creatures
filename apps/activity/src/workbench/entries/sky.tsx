@@ -22,6 +22,8 @@ const forecastCard: Entry = {
     { name: 'A Boon only (no Omens yet, or a Festival)', props: { sky: 'boon only' } },
     { name: 'A wild Omen tomorrow', props: { sky: 'wild omen tomorrow' } },
     { name: 'Rank 14 (the strongest)', props: { sky: 'rank 14 (strong)' } },
+    { name: 'Kind Rain and Morning Haze', props: { sky: 'kind rain and morning haze' } },
+    { name: 'Bramble Season today, Kind Rain tomorrow', props: { sky: 'bramble season (rank 6)' } },
     { name: 'No forecast yet', props: { sky: 'loading' } },
   ],
   render: (p) => (
@@ -45,6 +47,8 @@ const skyLine: Entry = {
   presets: [
     { name: 'Today (a Boon and an Omen)', props: {} },
     { name: 'A Boon only', props: { sky: 'boon only' } },
+    { name: 'Kind Rain and Morning Haze', props: { sky: 'kind rain and morning haze' } },
+    { name: 'Bramble Season', props: { sky: 'bramble season (rank 6)' } },
     { name: 'The next stage is tomorrow', props: { stageTomorrow: true } },
     {
       name: 'A wild Omen tomorrow, for the stage',
@@ -74,6 +78,7 @@ const weatherCalendar: Entry = {
     { name: 'A Boon and an Omen', props: {} },
     { name: 'A Boon only (a sun)', props: { sky: 'boon only' } },
     { name: 'A wild Omen tomorrow', props: { sky: 'wild omen tomorrow' } },
+    { name: 'Kind Rain and Morning Haze', props: { sky: 'kind rain and morning haze' } },
     { name: 'Blank page (no forecast yet)', props: { sky: 'loading' } },
     { name: 'By day', props: { night: false } },
   ],

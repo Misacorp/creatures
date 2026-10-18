@@ -202,6 +202,26 @@ export interface FightInput {
    * are both listed here and passed in `options.mutators` run.
    */
   mutators?: readonly string[];
+  /**
+   * The day's Kind Rain: every living creature heals this share of its max HP (basis points, 1 to
+   * 10000) at the start of every round, after the Supports' Mend, never above its max (and never a
+   * revival). A creature's `healReceivedBp` applies. Absent: no rain, so a stored fight replays as it was.
+   */
+  rainHealBp?: number;
+  /**
+   * The day's Morning Haze: the ids of creatures that skip their first turn of the fight (the first
+   * turn they would act; a silenced first turn already costs the turn, so the haze is spent on it).
+   * Whoever builds the input picks them (`hazeSkips`: the first creature of each row in the raid, the
+   * left one in the dungeon). Absent or empty: nobody, so a stored fight replays as it was.
+   */
+  skipFirstTurn?: readonly string[];
+  /**
+   * The day's Bramble Season: the first reaction set off each round sends this share of its bonus
+   * damage (basis points, 1 to 10000) back at the creature that set it off, and the boss takes the
+   * rest. The returning part is a reflected hit like Backdraft's (`reflectedBp`, Guards, Shield Walls,
+   * armor). Absent: none, so a stored fight replays as it was.
+   */
+  brambleBp?: number;
 }
 
 export interface FightRules {
@@ -243,6 +263,11 @@ export type FightEvent =
   /** A Tide Support's Mend cleared a neighbour's silence. */
   | { t: 'cleanse'; round: number; supporter: string; target: string }
   /**
+   * The day's Kind Rain at round start (`FightInput.rainHealBp`): the creatures it really healed
+   * (never above what was missing), in row order. Not written when nobody needed healing.
+   */
+  | { t: 'sky_heal'; round: number; heals: { creature: string; amount: number }[] }
+  /**
    * A charged pattern was announced at the start of `round` (after the dice, before abilities); it
    * lands in `landing` (= round + 1) on `marks` (creature ids) and, for a sweep, `rows`.
    */
@@ -283,7 +308,7 @@ export type FightEvent =
       status: 'active' | 'purged' | 'restored' | 'suggested';
     }
   | { t: 'turn'; round: number; creature: string }
-  | { t: 'skip'; round: number; creature: string; reason: 'silenced' }
+  | { t: 'skip'; round: number; creature: string; reason: 'silenced' | 'haze' }
   | {
       t: 'hit';
       round: number;
@@ -326,6 +351,12 @@ export type FightEvent =
       /** Bonus damage of the reaction (dealt to the boss, or to the payoff creature if reflected). */
       bonus: number;
       reflected: boolean;
+      /**
+       * Bramble Season took part of this reaction (`FightInput.brambleBp`): the share in basis points
+       * and the bonus damage that went back at the payoff creature instead of the boss (the boss's
+       * `bonus` is what is left). Absent otherwise.
+       */
+      bramble?: { bp: number; amount: number };
       /** The sheets' share of the reaction: per-reaction and owner's mark bonus plus the pounce, in basis points; absent if none. */
       sheetBp?: number;
     }

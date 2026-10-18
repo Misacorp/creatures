@@ -65,6 +65,13 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  *
  * Branch evolutions (2026-10-18) leave every digest as it was: the journey takes the original form of a
  * line that grows two ways (`firstForm`), so the baselines hold while the dungeon is reworked.
+ *
+ * Re-pinned again on 2026-10-18 (Kind Rain, Morning Haze and Bramble Season go live), on purpose: the seeded
+ * weather stream now picks from 10 Boons and 10 Omens instead of 9 and 8, so the days that are drawn are
+ * other days (a different Boon or Omen on the same day: another trip time, creature experience, fight). The
+ * three new effects are in the days too (a round heal, a skipped first turn, a reflect share). Nothing else
+ * moved: the same players check in, the same dice are thrown, and Bait earned is the same in every run. The
+ * first player's top-3 power is now 312, 314, 198 and 232, and raids won 7, 4, 4 and 5.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

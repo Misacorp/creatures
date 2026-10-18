@@ -19,6 +19,9 @@ export const PATTERN_SCENARIOS = [
   'Charge: row marked',
   'Charge: creatures marked',
   'Support heal and cleanse',
+  'Kind Rain (a heal for everyone)',
+  'Morning Haze (first turns lost)',
+  'Bramble Season (a reaction thrown back)',
   'Cover pips (Guard beside)',
   'Armor pip (a Guard takes less)',
   'Crowded sweep (15 creatures)',
@@ -200,6 +203,46 @@ export function patternFight(scenario: PatternScenario): PatternFight {
         ],
         { moveAt: 1 },
       );
+    case 'Kind Rain (a heal for everyone)':
+      return done(wyrm, [
+        start(4),
+        {
+          t: 'sky_heal',
+          round: 4,
+          heals: [
+            { creature: 'c0', amount: 4 },
+            { creature: 'c1', amount: 2 },
+            { creature: 'c3', amount: 2 },
+            { creature: 'c4', amount: 4 },
+          ],
+        },
+        { t: 'turn', round: 4, creature: 'c0' },
+      ]);
+    case 'Morning Haze (first turns lost)':
+      return done(colossus, [
+        start(1),
+        { t: 'skip', round: 1, creature: 'c0', reason: 'haze' },
+        { t: 'turn', round: 1, creature: 'c1' },
+        { t: 'skip', round: 1, creature: 'c3', reason: 'haze' },
+        { t: 'turn', round: 1, creature: 'c4' },
+      ]);
+    case 'Bramble Season (a reaction thrown back)':
+      return done(colossus, [
+        start(3),
+        { t: 'turn', round: 3, creature: 'c1' },
+        {
+          t: 'reaction',
+          round: 3,
+          reaction: 'steam',
+          setupCreature: 'c0',
+          setupPlayer: 'p1',
+          payoff: 'c1',
+          bonus: 70,
+          reflected: false,
+          bramble: { bp: 3_000, amount: 30 },
+        },
+        { t: 'boss_hit', round: 3, source: 'reflect', target: 'c1', damage: 30 },
+      ]);
     case 'Cover pips (Guard beside)':
       return done(colossus, [
         start(3),

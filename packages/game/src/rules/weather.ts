@@ -275,6 +275,29 @@ export function weatherBossAttacks(day: WeatherDay | null, base: number): number
   return Math.min(3, base + extra);
 }
 
+/** What the day adds to a fight beyond the sheet, the luck rules and the boss's attacks (all off on a plain day). */
+export interface WeatherSky {
+  /** Kind Rain: the share of max HP every living creature heals at round start, in basis points (0: none). */
+  rainHealBp: number;
+  /** Morning Haze: the first creature of each row (the dungeon's left one) skips its first turn. */
+  haze: boolean;
+  /** Bramble Season: the share of the first reaction's bonus each round that goes back at its setter-off (0: none). */
+  brambleBp: number;
+}
+
+/** The day's Kind Rain, Morning Haze and Bramble Season numbers at the day's strength. */
+export function weatherSky(day: WeatherDay | null): WeatherSky {
+  const out: WeatherSky = { rainHealBp: 0, haze: false, brambleBp: 0 };
+  for (const { effect: e, strengthBp } of activeEffects(day)) {
+    if (e.op === 'roundHeal') out.rainHealBp += scaleStrength(e.bp, strengthBp);
+    if (e.op === 'skipFirstTurn') out.haze = true;
+    if (e.op === 'bramble') out.brambleBp += scaleStrength(e.bp, strengthBp);
+  }
+  out.rainHealBp = Math.min(BP, out.rainHealBp);
+  out.brambleBp = Math.min(BP, out.brambleBp);
+  return out;
+}
+
 /** Scrap added to every room cleared in the dungeon on the day (Market Day). */
 export function dungeonScrapPerRoom(day: WeatherDay | null): number {
   let scrap = 0;
@@ -458,6 +481,9 @@ const FIGHT_OPS: ReadonlySet<string> = new Set([
   'foeCrit',
   'foeAttack',
   'foeAttacks',
+  'roundHeal',
+  'skipFirstTurn',
+  'bramble',
   'dungeonScrap',
 ]);
 

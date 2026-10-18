@@ -1,6 +1,6 @@
 # The valley's sky: Boons and Omens
 
-Status: 2026-10-17. Covers the daily weather of the valley, as in-world things: ten Boons and ten Omens, three of them written down and waiting for engine work.
+Status: 2026-10-18. Covers the daily weather of the valley, as in-world things: ten Boons and ten Omens, all of them live.
 
 Read `README.md` for the tags.
 
@@ -24,7 +24,7 @@ Read `README.md` for the tags.
 
 ## Boons
 
-Ten Boons. Nine are live and one (Kind Rain) is planned: it is not drawn yet for want of a small piece of engine work (see the end of this file). `(content: weather.json)`
+Ten Boons, all live. `(content: weather.json)`
 
 ### Fair Winds
 
@@ -39,7 +39,7 @@ Ten Boons. Nine are live and one (Kind Rain) is planned: it is not drawn yet for
 ### Kind Rain
 
 - Shipped flavour `(content)`: "A soft rain that mends what it falls on and feeds the tidepools and the hollow."
-- Compendium detail: the rain the Tidepools and Verdant Hollow wait for. Planned, not drawn yet.
+- Compendium detail: the rain the Tidepools and Verdant Hollow wait for. It does not wash anything away, it mends: scraped paws, tired tails, the lot, a little at the start of every round. The explorers who are out in it come home with fuller pockets (the Tidepools and the Hollow only).
 
 ### Clear Skies
 
@@ -80,12 +80,12 @@ Ten Boons. Nine are live and one (Kind Rain) is planned: it is not drawn yet for
 
 ## Omens
 
-Ten Omens. Eight are live (one of them wild: Stormfront, from Boss Rank 10) and two are planned. `(content: weather.json)`
+Ten Omens, all live (one of them wild: Stormfront, from Boss Rank 10). `(content: weather.json)`
 
 ### Morning Haze
 
 - Shipped flavour `(content)`: "A thick haze lies on the valley and everyone starts the day a step behind."
-- Compendium detail: planned, not drawn yet. Fair Winds blows it away, so the two never share a day.
+- Compendium detail: the haze sits lowest on whoever stands at the left end of a row, and that one starts the fight a step behind and loses its first turn. The roads are slow in it too. Fair Winds blows it away, so the two never share a day.
 
 ### Heatwave
 
@@ -120,7 +120,7 @@ Ten Omens. Eight are live (one of them wild: Stormfront, from Boss Rank 10) and 
 ### Bramble Season
 
 - Shipped flavour `(content)`: "Thorns are everywhere. What you start the boss may well throw back."
-- Compendium detail: planned, not drawn yet, and only from Boss Rank 6.
+- Compendium detail: only from Boss Rank 6. The first time a reaction goes off each round, part of it springs back at whoever set it off, as if the whole valley had thorns. A Guard standing close takes it instead, and gear that softens reflected hits softens this too.
 
 ### Muddy Roads
 
@@ -133,15 +133,3 @@ Ten Omens. Eight are live (one of them wild: Stormfront, from Boss Rank 10) and 
 - Compendium detail: the wild one. From Boss Rank 10, at most once a raid week, always shown a day ahead and never in a Festival week. It is the only Omen the boss brings with it.
 
 ---
-
-## Planned: waiting for engine work
-
-Three entries are written down in `weather.json` as `planned` and are never drawn until their engine hook exists. Each says what it will do and what it waits for.
-
-| Id               | What it waits for                                                             |
-| ---------------- | ----------------------------------------------------------------------------- |
-| `kind-rain`      | A heal at round start for every creature (today only a Support's Mend heals)  |
-| `morning-haze`   | A skipped first turn for the first creature of a row (a skip with no silence) |
-| `bramble-season` | A small reflect share on the first reaction each round (rank 6 and up)        |
-
-When the hook exists: change the entry to `live` in `weather.json`, give it its effects, and update this file.
