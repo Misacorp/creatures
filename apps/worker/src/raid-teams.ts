@@ -111,6 +111,9 @@ export type PlacementRow = {
   creature_id: string;
 };
 
+/** A placement with who put it there: null is the owner, otherwise the teammate who moved it for them. */
+export type PartyPlacementRow = PlacementRow & { placed_by: string | null };
+
 /**
  * At most `teamSize` placements per player, chosen deterministically: creatures in `preferred`
  * first, then the earliest placed (`rowid`), then the lowest slot. Pure. No player has more than
@@ -146,11 +149,16 @@ export function capPlacements<T extends PlacementRow>(
  * The placements of one party this week, at most three per player (see `capPlacements`). Only
  * creatures their placing player still owns count.
  */
-export function partyPlacements(sql: SqlStorage, weekId: string, party: number): PlacementRow[] {
+export function partyPlacements(
+  sql: SqlStorage,
+  weekId: string,
+  party: number,
+): PartyPlacementRow[] {
   return capPlacements(
     sql
-      .exec<PlacementRow>(
-        `SELECT p.rowid AS rowid, p.slot AS slot, p.user_id AS user_id, p.creature_id AS creature_id
+      .exec<PartyPlacementRow>(
+        `SELECT p.rowid AS rowid, p.slot AS slot, p.user_id AS user_id, p.creature_id AS creature_id,
+                p.placed_by AS placed_by
          FROM raid_placements p JOIN creatures c ON c.id = p.creature_id AND c.user_id = p.user_id
          WHERE p.week_id = ? AND p.party = ? ORDER BY p.rowid`,
         weekId,

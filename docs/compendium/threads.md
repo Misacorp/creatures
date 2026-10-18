@@ -235,7 +235,7 @@ Read `README.md` for the tags. Every thread names its source. Ideas are `(compen
 
 ### T31. The noise of the boss
 
-- **Seed:** the Thornmother's "Bramble Bind snares the creatures at both ends of the line" `(content: bosses-lore.json)`. The Lightning Rod "always picks out the hardest hitter" `(content)`. Each boss has one clear way of acting, and each is big in its valley `(inferred)`.
+- **Seed:** the Thornmother's "Bramble Bind snares the creatures at both ends of each row" `(content: bosses-lore.json)`. The Lightning Rod "always picks out the hardest hitter" `(content)`. Each boss has one clear way of acting, and each is big in its valley `(inferred)`.
 - **Open:** what do the bosses want? The content says what they do, not why.
 - **Ideas:** the bosses go for the strongest and the loudest, because that is what they were made to keep watch over `(compendium detail, not shipped)`. Keep their motives gentle; they are not villains.
 - **Status:** open.

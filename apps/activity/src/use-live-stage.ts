@@ -1,4 +1,4 @@
-import type { FightEvent } from '@creatures/engine';
+import type { FightEvent, FightBoard } from '@creatures/engine';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { buildBeats, playStart } from './stage';
 import { liveTimeline, staticFx, type FxItem, type IntroView } from './stage-fx';
@@ -47,6 +47,7 @@ export function useLiveStage(
   rounds: number | null,
   reducedMotion: boolean,
   hold = false,
+  board?: FightBoard,
 ): StageView {
   const [pos, setPos] = useState<Position>({ index: events.length, anim: null });
   const [intro, setIntro] = useState<IntroView | null>(null);
@@ -54,8 +55,8 @@ export function useLiveStage(
   const trail = useFxTrail();
   const shown = useRef(events.length);
   const seq = useRef(0);
-  const latest = useRef({ events, rowIds, bossId, rounds, reducedMotion, hold });
-  latest.current = { events, rowIds, bossId, rounds, reducedMotion, hold };
+  const latest = useRef({ events, rowIds, bossId, rounds, reducedMotion, hold, board });
+  latest.current = { events, rowIds, bossId, rounds, reducedMotion, hold, board };
   const length = events.length;
 
   useEffect(() => {
@@ -65,6 +66,7 @@ export function useLiveStage(
       bossId: boss,
       rounds: total,
       reducedMotion: calm,
+      board: rowBoard,
     } = latest.current;
     if (log.length <= shown.current) {
       // Nothing new (or a different, shorter log): show what there is.
@@ -76,7 +78,7 @@ export function useLiveStage(
     }
     if (latest.current.hold) return undefined;
     const start = playStart(log, shown.current);
-    const beats = buildBeats(log, start, ids, boss);
+    const beats = buildBeats(log, start, ids, boss, {}, rowBoard);
     const opening = beats[0];
     const introRound = opening !== undefined && opening.introMs > 0 ? opening.round : null;
     const introMs = opening?.introMs ?? 0;

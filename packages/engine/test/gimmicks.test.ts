@@ -79,10 +79,57 @@ describe('hit_zone (Undertow)', () => {
 });
 
 describe('silence_ends (Bramble Bind)', () => {
+  const bind = (scope: 'rows' | 'row') =>
+    withGimmicks([
+      { id: 'bind', name: 'Bind', trigger: { every: 2 }, op: 'silence_ends', scope, turns: 1 },
+    ]);
+  const silencedIn = (r: ReturnType<typeof run>) =>
+    eventsOf(r, 'silence')
+      .filter((e) => e.round === 2)
+      .map((e) => e.creature);
+
+  it('scope rows silences the ends of each row of the board, not of the line', () => {
+    const row = Array.from({ length: 13 }, (_, i) => slot(`s${String(i)}`, { atk: 1 }));
+    // A board of 15 (rows of 5) with a gap at the end of the middle row and of the back row.
+    const board = { length: 15, slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13] };
+    const withShape = run(row, { boss: bind('rows'), board });
+    expect(silencedIn(withShape)).toEqual(['s0', 's4', 's5', 's8', 's9', 's12']);
+    // Without a shape the rows are the length formula's 4 / 5 / 4.
+    expect(silencedIn(run(row, { boss: bind('rows') }))).toEqual([
+      's0',
+      's3',
+      's4',
+      's8',
+      's9',
+      's12',
+    ]);
+    // The whole line keeps its two ends, whatever the shape.
+    expect(silencedIn(run(row, { boss: bind('row'), board }))).toEqual(['s0', 's12']);
+  });
+
+  it('scope rows silences a row with one creature standing once, and skips an empty row', () => {
+    const row = ['a', 'b', 'c'].map((id) => slot(id, { atk: 1 }));
+    // Front 1, middle 1, back 1: each is the end of its own row, silenced once.
+    expect(
+      silencedIn(run(row, { boss: bind('rows'), board: { length: 3, slots: [0, 1, 2] } })),
+    ).toEqual(['a', 'b', 'c']);
+    // An empty middle row is skipped.
+    expect(
+      silencedIn(run(row, { boss: bind('rows'), board: { length: 9, slots: [0, 1, 6] } })),
+    ).toEqual(['a', 'b', 'c']);
+    // A fallen row end passes the silence to the next one standing in its row.
+    const hurt = [slot('a', { hp: 1 }), slot('b'), slot('c'), slot('d')];
+    expect(
+      silencedIn(
+        run(hurt, { bossAtk: 10, boss: bind('rows'), board: { length: 9, slots: [0, 1, 6, 7] } }),
+      ),
+    ).toEqual(['b', 'c', 'd']);
+  });
+
   it('silences the creatures at both ends of the row for their next turn, every 2nd round', () => {
     const r = run(
       ['a', 'b', 'c', 'd'].map((id) => slot(id, { atk: 1 })),
-      { boss: boss('thornmother') },
+      { boss: { ...bind('row'), turnOrder: 'right_to_left' } },
     );
     expect(eventsOf(r, 'silence').filter((e) => e.round === 2)).toEqual([
       { t: 'silence', round: 2, creature: 'a', turns: 1 },
@@ -103,7 +150,7 @@ describe('silence_ends (Bramble Bind)', () => {
   it('silences a single creature once when the row has one slot and respects multi-turn silence', () => {
     const r = run([slot('solo', { atk: 1 })], {
       boss: withGimmicks([
-        { id: 's', name: 'S', trigger: { every: 5 }, op: 'silence_ends', turns: 2 },
+        { id: 's', name: 'S', trigger: { every: 5 }, op: 'silence_ends', scope: 'row', turns: 2 },
       ]),
     });
     expect(eventsOf(r, 'silence').filter((e) => e.round === 5)).toHaveLength(1);
@@ -115,7 +162,7 @@ describe('silence_ends (Bramble Bind)', () => {
     const r = run([slot('a', { hp: 1 }), slot('b'), slot('c')], {
       bossAtk: 10,
       boss: withGimmicks([
-        { id: 's', name: 'S', trigger: { every: 2 }, op: 'silence_ends', turns: 1 },
+        { id: 's', name: 'S', trigger: { every: 2 }, op: 'silence_ends', scope: 'row', turns: 1 },
       ]),
     });
     expect(eventsOf(r, 'silence').every((e) => e.creature !== 'a')).toBe(true);

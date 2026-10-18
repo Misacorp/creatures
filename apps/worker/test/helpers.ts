@@ -244,13 +244,23 @@ export const GEAR_TABLES = [
  * The schema version of a fresh database. Tests that check it use this constant, so a new migration
  * changes one number here (and adds an undo step below), not a dozen tests.
  */
-export const LATEST_SCHEMA_VERSION = 31;
+export const LATEST_SCHEMA_VERSION = 32;
+
+/** Puts a database back to before migration 32 (who placed each raid creature). */
+export function undoPlacedByMigration(sql: SqlStorage): void {
+  const present = sql
+    .exec("SELECT 1 FROM pragma_table_info('raid_placements') WHERE name = 'placed_by'")
+    .toArray();
+  if (present.length > 0) sql.exec('ALTER TABLE raid_placements DROP COLUMN placed_by');
+  sql.exec('DELETE FROM schema_version WHERE version = 32');
+}
 
 /**
  * Puts a database back to before migration 31 (Boons and Omens): the weather table goes and trips lose
  * the weather stored with them.
  */
 export function undoWeatherMigration(sql: SqlStorage): void {
+  undoPlacedByMigration(sql);
   sql.exec('DROP TABLE IF EXISTS weather_days');
   // A test may already have dropped a table (the version 3 test does): only what is there goes.
   const present = sql

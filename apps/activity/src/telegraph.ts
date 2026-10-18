@@ -4,7 +4,7 @@
  * players, so callers must render it as text only.
  *
  * - A **strike label** says what the boss is doing and whom it hits, for example "Undertow · whole
- *   FRONT row", "Lightning Rod · Cindle" or "Bramble Bind · both ends".
+ *   FRONT row", "Lightning Rod · Cindle" or "Bramble Bind · both ends of each row".
  * - The **forecast** says what the boss will do next round ("Next round: Undertow hits FRONT"),
  *   from the boss's content and the round number alone. A strike on the strongest creature depends
  *   on the creatures' Attack, which the stage does not know, so it is worded generically.
@@ -20,7 +20,9 @@ import {
   type BossWarning,
   type EventNames,
   type PatternTarget,
+  type RowShape,
   type Zone,
+  type FightBoard,
 } from '@creatures/engine';
 import type { BossStrike } from './stage';
 
@@ -193,11 +195,11 @@ export function strikeLabel(
     case 'silence_ends':
       title = gimmickName(names, strike.gimmick, 'Silence');
       area =
-        strike.targets.length >= 2
-          ? 'both ends'
-          : strike.targets[0] === undefined
+        strike.targets.length >= 2 || strike.targets[0] === undefined
+          ? wording === 'row'
             ? 'both ends'
-            : who(strike.targets[0]);
+            : 'both ends of each row'
+          : who(strike.targets[0]);
       break;
     case 'reflect': {
       title = gimmickName(names, strike.gimmick, 'Reflect');
@@ -239,6 +241,8 @@ export const MAX_FORECAST_CLAUSES = 2;
 interface Look {
   wording: Wording;
   row: readonly string[];
+  /** The row's shape: the fight's own board positions, else its length. */
+  shape: RowShape;
   /** The creatures still up, left to right. */
   living: readonly string[];
   up: (id: string | undefined) => id is string;
@@ -254,10 +258,21 @@ function markEnd(look: Look, id: string | undefined): void {
   if (id !== undefined && !look.ends.includes(id)) look.ends.push(id);
 }
 
+/** Marks the first and the last creature still up in every row (a pincer of rows, a silence of rows). */
+function markRowEnds(look: Look): void {
+  for (const z of ZONES) {
+    const inRow = zoneIndices(z, look.shape)
+      .map((i) => look.row[i])
+      .filter(look.up);
+    markEnd(look, inRow[0]);
+    markEnd(look, inRow[inRow.length - 1]);
+  }
+}
+
 /** The zone a zone-aimed pattern really lands on: the aimed one if someone is up in it, else the nearest. */
 function livingZone(look: Look, aimed: Zone): Zone | undefined {
   return nearestLivingZone(aimed, (z) =>
-    zoneIndices(z, look.row.length).some((i) => look.up(look.row[i])),
+    zoneIndices(z, look.shape).some((i) => look.up(look.row[i])),
   );
 }
 
@@ -318,8 +333,8 @@ function patternClause(target: PatternTarget, op: string, name: string, look: Lo
       const at = look.row.indexOf(victim);
       const places = neighbours(at, look.row.length)
         .filter((i) => look.up(look.row[i]))
-        .map((i) => ROW_PLACE_WORDS[zoneOfIndex(i, look.row.length)]);
-      const hits = `${name} hits ${placeWord(zoneOfIndex(at, look.row.length))}`;
+        .map((i) => ROW_PLACE_WORDS[zoneOfIndex(i, look.shape)]);
+      const hits = `${name} hits ${placeWord(zoneOfIndex(at, look.shape))}`;
       return places.length === 0 ? hits : `${hits} and splashes the ${places.join(' and the ')}`;
     }
     case 'lane': {
@@ -341,13 +356,7 @@ function patternClause(target: PatternTarget, op: string, name: string, look: Lo
         return `${name} closes on both ends`;
       }
       // The first and last creature still up in every row.
-      for (const z of ZONES) {
-        const inRow = zoneIndices(z, look.row.length)
-          .map((i) => look.row[i])
-          .filter(look.up);
-        markEnd(look, inRow[0]);
-        markEnd(look, inRow[inRow.length - 1]);
-      }
+      markRowEnds(look);
       return `${name} closes on the ends of every row`;
     }
   }
@@ -357,10 +366,15 @@ function patternClause(target: PatternTarget, op: string, name: string, look: Lo
 function clauseOf(w: BossWarning, name: string, look: Look): string | null {
   const t = w.target;
   switch (t.kind) {
-    case 'ends':
-      markEnd(look, look.living[0]);
-      markEnd(look, look.living[look.living.length - 1]);
-      return `${name} silences both ends`;
+    case 'ends': {
+      if (look.wording === 'row' || t.scope === 'row') {
+        markEnd(look, look.living[0]);
+        markEnd(look, look.living[look.living.length - 1]);
+        return `${name} silences both ends`;
+      }
+      markRowEnds(look);
+      return `${name} silences both ends of each row`;
+    }
     case 'strongest':
       return t.jumps === 0
         ? `${name} strikes your strongest`
@@ -409,7 +423,8 @@ function priority(w: BossWarning): number {
  * the strongest depends on the creatures' Attack, which the stage does not know, so it is worded
  * generically. At most two clauses are said (`MAX_FORECAST_CLAUSES`): a charge first, then patterns,
  * then the older tricks. `addedGimmicks` are what a dungeon room's modifier gives its foe (see
- * `bossOrFoe`).
+ * `bossOrFoe`). `board` is where the fight's creatures stand on the board (absent: the dense row), so a zone is
+ * the row the board shows.
  */
 export function forecastNextRound(
   bossId: string,
@@ -420,6 +435,7 @@ export function forecastNextRound(
   names: Pick<EventNames, 'gimmicks'>,
   wording: Wording = 'zones',
   addedGimmicks: readonly Gimmick[] = [],
+  board?: FightBoard,
 ): Forecast | null {
   if (round < 1 || (rounds !== null && round >= rounds)) return null;
   const boss = bossOrFoe(bossId, addedGimmicks, names.gimmicks);
@@ -429,7 +445,15 @@ export function forecastNextRound(
   // The engine aims at the living: a zone hit falls to the nearest zone with someone standing, and
   // "both ends" are the leftmost and rightmost creatures still up (see `fireGimmick` in the engine).
   const up = (id: string | undefined): id is string => id !== undefined && !knockedOut.includes(id);
-  const look: Look = { wording, row, living: row.filter(up), up, zones: [], ends: [] };
+  const look: Look = {
+    wording,
+    row,
+    shape: board ?? row.length,
+    living: row.filter(up),
+    up,
+    zones: [],
+    ends: [],
+  };
   const ordered = warnings
     .map((w, k) => ({ w, k }))
     .sort((a, b) => priority(a.w) - priority(b.w) || a.k - b.k);

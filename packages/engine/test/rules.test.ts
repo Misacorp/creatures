@@ -182,7 +182,7 @@ describe('Support element effects (rules.supportFx)', () => {
 
     it('a silenced Support gives nothing that round', () => {
       // Round 1 silences both row ends; the Support at the left end is silenced in round 2.
-      const silence = everyRound({ op: 'silence_ends', turns: 1 });
+      const silence = everyRound({ op: 'silence_ends', scope: 'row', turns: 1 });
       const row = rowOf(4, { 0: { role: 'support', element: 'tide', hp: 1000 } });
       row[1] = { ...row[1]!, hp: 500 };
       const r = fightWith(row, [silence], { rules: tideFx, extra: adjacent, rounds: 2 });
@@ -191,7 +191,7 @@ describe('Support element effects (rules.supportFx)', () => {
     });
 
     it('cleanse clears a neighbour silence at round start, so it acts that round', () => {
-      const silence = everyRound({ op: 'silence_ends', turns: 1 });
+      const silence = everyRound({ op: 'silence_ends', scope: 'row', turns: 1 });
       // The ends (s0, s3) are silenced in round 1; the Tide Support at s1 stands beside s0.
       const row = rowOf(4, { 1: { role: 'support', element: 'tide' } });
       const withFx = fightWith(row, [silence], { rules: tideFx, extra: adjacent, rounds: 2 });
@@ -297,7 +297,7 @@ describe('Support element effects (rules.supportFx)', () => {
 
   it('is entirely absent without rules: no heal, no cleanse, shared buff', () => {
     const row = rowOf(4, { 1: { role: 'support', element: 'tide' } });
-    const r = fightWith(row, [everyRound({ op: 'silence_ends', turns: 1 })], {
+    const r = fightWith(row, [everyRound({ op: 'silence_ends', scope: 'row', turns: 1 })], {
       extra: adjacent,
       rounds: 3,
     });

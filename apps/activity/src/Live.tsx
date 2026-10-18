@@ -364,6 +364,7 @@ export function Live({
             rounds={fight.rounds}
             row={fight.row}
             {...(fight.rules === null ? {} : { rules: fight.rules })}
+            {...(fight.board === undefined || fight.board === null ? {} : { board: fight.board })}
             lobby={lobby}
             place={phaseLine('finale')}
             mineIds={mineIds}

@@ -61,6 +61,8 @@ describe('the placement requests', () => {
           name: 'A',
           level: 3,
           mine: true,
+          auto: false,
+          movable: false,
           creatureId: 'a',
         },
       },

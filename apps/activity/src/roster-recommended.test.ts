@@ -38,6 +38,8 @@ function rowOf(at: Record<number, string>): RowSlotView[] {
               name: 'Splashet',
               level: 5,
               mine: true,
+              auto: false,
+              movable: false,
               creatureId: id,
             },
     };

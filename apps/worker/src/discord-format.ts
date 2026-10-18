@@ -123,7 +123,7 @@ export function describeGimmick(gimmick: Gimmick): string {
     case 'hit_zone':
       return `hits the ${gimmick.zone} zone ${when}`;
     case 'silence_ends':
-      return `silences the creatures at both ends of the row for ${String(gimmick.turns)} ${plural(gimmick.turns, 'turn', 'turns')}, ${when}`;
+      return `silences the creatures at ${gimmick.scope === 'rows' ? 'both ends of each row' : 'both ends of the row'} for ${String(gimmick.turns)} ${plural(gimmick.turns, 'turn', 'turns')}, ${when}`;
     case 'reflect_first_reaction':
       return `throws the first reaction back at your team, ${when}`;
     case 'strike_highest_atk': {

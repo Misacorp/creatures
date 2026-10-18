@@ -7,6 +7,7 @@ import {
   type Role,
 } from '@creatures/game';
 import type { FightSlot } from './types';
+import type { FightBoard } from './zones';
 
 /** A row under construction: empty slots are null. */
 export type SparseRow = readonly (FightSlot | null)[];
@@ -59,6 +60,18 @@ export function resolveGuests(pack: ContentPack = content): ResolvedGuest[] {
 /** Removes empty slots, giving the dense row the fight needs. */
 export function compactRow(row: SparseRow): FightSlot[] {
   return row.filter((s): s is FightSlot => s !== null);
+}
+
+/**
+ * The board positions of a sparse row, for `FightInput.board` after `compactRow`: the row's full
+ * length and the slot of each creature, so the dense fight keeps the board's columns and gaps.
+ */
+export function sparseBoard(row: SparseRow): FightBoard {
+  const slots: number[] = [];
+  row.forEach((s, i) => {
+    if (s !== null) slots.push(i);
+  });
+  return { length: row.length, slots };
 }
 
 /**

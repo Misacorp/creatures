@@ -221,6 +221,12 @@ export const GimmickSchema = v.variant('op', [
   v.strictObject({
     ...gimmickBase,
     op: v.literal('silence_ends'),
+    /**
+     * `rows` (the raid): the leftmost and rightmost living creature of EACH row (Front, Middle,
+     * Back); a row with one creature standing silences it once, an empty row is skipped. `row`
+     * (the dungeon): the two ends of the whole line.
+     */
+    scope: v.picklist(['rows', 'row']),
     turns: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(3)),
   }),
   v.strictObject({ ...gimmickBase, op: v.literal('reflect_first_reaction') }),

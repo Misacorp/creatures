@@ -402,7 +402,9 @@ describe('the team stands in one row, left to right', () => {
   });
 
   it('"both ends" silences the left and the right creature, and never the middle one', () => {
-    const events = play(foe({ gimmicks: [gimmick({ op: 'silence_ends', turns: 1 })] }));
+    const events = play(
+      foe({ gimmicks: [gimmick({ op: 'silence_ends', scope: 'row', turns: 1 })] }),
+    );
     const silenced = new Set(events.flatMap((e) => (e.t === 'silence' ? [e.creature] : [])));
     expect(silenced).toEqual(new Set(['left', 'right']));
   });
@@ -530,7 +532,7 @@ describe('every shipped foe, room boss and room modifier makes sense on one row 
 });
 
 function gimmickOf(id: string): DungeonFoeDef['gimmicks'][number] {
-  return { id, name: id, trigger: { eachRound: true }, op: 'silence_ends', turns: 1 };
+  return { id, name: id, trigger: { eachRound: true }, op: 'silence_ends', scope: 'row', turns: 1 };
 }
 
 describe('the boss room: enrage and the landmark signature', () => {
