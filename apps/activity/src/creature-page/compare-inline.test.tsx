@@ -306,4 +306,16 @@ describe('closing the details with a second tap', () => {
     p.click(pressed);
     expect(byClass(p.root, 'ip-detail')).toHaveLength(1);
   });
+
+  it('keeps the item that was shown marked after its details close', () => {
+    const p = draw('compare: plain gear', 'hat', KELP);
+    const pressed = first(
+      byClass(p.root, 'ip-cell').filter((c) => c.getAttribute('aria-pressed') === 'true'),
+    );
+    p.click(pressed);
+    const marked = byClass(p.root, 'ip-cell').filter((c) =>
+      byClass(p.root, 'selected').includes(c),
+    );
+    expect(marked).toEqual([pressed]);
+  });
 });

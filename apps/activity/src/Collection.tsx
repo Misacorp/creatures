@@ -80,6 +80,8 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
   // How far the list was scrolled when the page opened, and the card to give the focus back to.
   const listScroll = useRef(0);
   const returnTo = useRef<string | null>(null);
+  // The creature whose page was open last: its card is marked on the list until another page opens.
+  const [lastViewed, setLastViewed] = useState<string | null>(null);
   const wasOpen = useRef(false);
   // The page was flipped to other creatures: the list then scrolls to the one the page ended on.
   const flipped = useRef(false);
@@ -100,6 +102,7 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
     if (!wasOpen.current) return;
     wasOpen.current = false;
     const id = returnTo.current;
+    setLastViewed(id);
     const card = id === null ? null : document.getElementById(cardDomId(id));
     if (flipped.current && card !== null) {
       // The page moved on to other creatures: show the card it ended on, not where the list was.
@@ -109,6 +112,8 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
     }
     flipped.current = false;
     scrollPageTo(listScroll.current);
+    // The list may have moved meanwhile (a card above it changed size): make sure the card is in view.
+    if (typeof card?.scrollIntoView === 'function') card.scrollIntoView({ block: 'nearest' });
     card?.focus({ preventScroll: true });
   }, [pageOpen]);
 
@@ -252,6 +257,7 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
               gear={gear}
               busy={busy}
               found={found?.id === creature.id}
+              current={lastViewed === creature.id}
               actions={cardActions}
               onAnswerCatch={() => {
                 scrollAndFocus(document.getElementById(PENDING_CATCHES_ID));

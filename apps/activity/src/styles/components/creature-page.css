@@ -168,9 +168,17 @@ button.ip-cell.blocked {
   background: rgb(var(--ink-rgb) / 55%);
 }
 
-/* The selected cell is lit from inside (no second outline). */
-button.ip-cell.selected {
+/*
+  The item shown (or shown last, after its details closed): lit from inside with a light edge inside the
+  rarity edge, so the player always sees which one they were looking at. Same look as the creature list's
+  last viewed card.
+*/
+button.ip-cell.selected,
+button.ip-cell.selected:active:not(:disabled) {
   background: #4a4180;
+  box-shadow:
+    inset 0 0 0 var(--px) var(--rar),
+    inset 0 0 0 calc(var(--px) * 2) var(--bone);
 }
 
 .ip-cell-worn {

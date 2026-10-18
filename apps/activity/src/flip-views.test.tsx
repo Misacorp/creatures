@@ -258,6 +258,17 @@ describe('the creature page flips through the list it came from', () => {
     expect(p.document.activeElement).toBe(card);
   });
 
+  it('marks the card of the creature whose page was open last, and only that one', () => {
+    const p = drawTab();
+    open(p, at(3));
+    p.click(first(byName(pageRoot(p), 'button', /^Next creature/)));
+    p.click(first(byName(pageRoot(p), 'button', '‹ Creatures')));
+    const marked = byClass(p.root, 'creature-card').filter((c) =>
+      byClass(p.root, 'current').includes(c),
+    );
+    expect(marked).toEqual([p.document.getElementById(cardDomId(at(4).id))]);
+  });
+
   it('keeps the arrow keys for an open drawer: they flip its items, not the creature behind', () => {
     const p = drawTab();
     open(p, at(3));

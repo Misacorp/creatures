@@ -81,6 +81,13 @@ button.cc-open:focus-visible {
   line-height: 1;
 }
 
+/* The creature whose page was open last: a light edge, so the player sees where they were. */
+.creature-card.current {
+  box-shadow:
+    inset 0 0 0 var(--px) var(--bone),
+    0 0 0 var(--px) var(--ink);
+}
+
 /* The card the finder chose: a gold edge until the player does something else. */
 .creature-card.found {
   box-shadow:

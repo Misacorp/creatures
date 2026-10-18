@@ -46,26 +46,29 @@ interface Cell {
 function ItemCell({
   cell,
   selected,
+  last = false,
   onSelect,
 }: {
   cell: Cell;
   selected: boolean;
+  /** The item whose details were just closed: still marked, and scrolled into view. */
+  last?: boolean;
   onSelect: () => void;
 }) {
   const { item, worn, blocked } = cell;
   const button = useRef<HTMLButtonElement>(null);
   // A flip can pick an item below the fold of the grid: the picked cell scrolls into view.
   useEffect(() => {
-    if (selected && typeof button.current?.scrollIntoView === 'function') {
+    if ((selected || last) && typeof button.current?.scrollIntoView === 'function') {
       button.current.scrollIntoView({ block: 'nearest' });
     }
-  }, [selected]);
+  }, [selected, last]);
   return (
     <li>
       <button
         ref={button}
         type="button"
-        class={`ip-cell rarity-${item.rarity}${selected ? ' selected' : ''}${blocked === null ? '' : ' blocked'}${worn ? ' worn' : ''}`}
+        class={`ip-cell rarity-${item.rarity}${selected || last ? ' selected' : ''}${blocked === null ? '' : ' blocked'}${worn ? ' worn' : ''}`}
         aria-pressed={selected}
         aria-label={`${itemLabel(item.baseId, item.itemLevel)}, ${rarityName(item.rarity)}${worn ? ', worn now' : ''}${blocked === null ? '' : `. ${blocked}`}`}
         onClick={onSelect}
@@ -262,6 +265,7 @@ export function ItemPickerDrawer({
               key={cell.item.id}
               cell={cell}
               selected={cell.item.id === selected?.item.id}
+              last={selected === undefined && cell.item.id === shown?.item.id}
               onSelect={() => {
                 if (cell.item.id === selected?.item.id) {
                   setDetailOpen(false);
