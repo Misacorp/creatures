@@ -4,7 +4,15 @@
  * too high a level for the creature (shown with the reason), one is worn by another creature. Built by a
  * pure formula from a short table, so every scene shows the same bag. Fixture data only.
  */
-import { gearBase } from '@creatures/game';
+import {
+  gearBase,
+  gearLine,
+  itemOf,
+  itemStats,
+  lineText,
+  lineValue,
+  statText,
+} from '@creatures/game';
 import type { WornGear } from '../gear-types';
 import type { GearItem, GearLine, GearRarity, GearSlot, GearStat, GearTag } from '../gear-types';
 
@@ -111,10 +119,8 @@ function lineOf(baseId: string, index: number, text: string, local: boolean): Ge
   };
 }
 
-/** One stat: its base number and, when a local line raised it, the total (the server's text shows the total). */
-function statOf(stat: 'atk' | 'hp', base: number, value: number = base): GearStat {
-  return { stat, value, base, text: `${stat === 'atk' ? 'Attack' : 'HP'} ${String(value)}` };
-}
+/** The item's local Attack line (real content: "+60% Attack (this item)" at tier III), on an epic Hat or Scarf. */
+const LOCAL_LINE = { id: 'attack-local-pct', tier: 2 } as const;
 
 /** One bag item from a table row: stats by slot and rarity, lines by tag and rarity. */
 function build(
@@ -128,29 +134,32 @@ function build(
   const base = gearBase(baseId);
   const tag: GearTag = base?.tag ?? 'neutral';
   const factor = RARITY_FACTOR[rarity];
-  // An epic's local line ("+55% Attack (this item)") raises its own Attack above the base.
-  const localPct = rarity === 'epic' ? 40 + itemLevel : 0;
-  const hatAttack = Math.round(itemLevel * factor * 1.2) + 1;
-  const stats: GearStat[] =
-    slot === 'charm'
-      ? []
-      : slot === 'hat'
-        ? [
-            statOf('atk', hatAttack, hatAttack + Math.floor((hatAttack * localPct) / 100)),
-            statOf('hp', itemLevel * 2 + 2),
-          ]
-        : [
-            statOf('hp', Math.round(itemLevel * factor * 2.4) + 4),
-            statOf('atk', Math.round(itemLevel * 0.3) + 1),
-          ];
+  // An epic Hat or Scarf has a real local Attack line; its stats are the game's own (`itemStats`), so the
+  // card, the compare block and the server agree. The other lines are text only (they have no effect here).
+  const local = rarity === 'epic' && slot !== 'charm';
+  const stats: GearStat[] = itemStats(
+    itemOf(baseId, rarity, itemLevel, local ? [LOCAL_LINE] : []),
+  ).map((s) => ({ stat: s.stat, value: s.value, base: s.base, text: statText(s.stat, s.value) }));
   const pool = LINE_POOL[tag] ?? LINE_POOL['neutral'] ?? [];
   const count = rarity === 'common' ? 1 : rarity === 'rare' ? 2 : 3;
   const texts = pool
     .slice(0, Math.min(count, pool.length))
     .map((t) => t.replace('{n}', String(2 + Math.floor((itemLevel * factor) / 3))));
-  if (rarity === 'epic' && slot !== 'charm')
-    texts.push(`+${String(40 + itemLevel)}% Attack (this item)`);
-  const lines = texts.map((text, i) => lineOf(baseId, i, text, text.endsWith('(this item)')));
+  const lines = texts.map((text, i) => lineOf(baseId, i, text, false));
+  const localDef = gearLine(LOCAL_LINE.id);
+  if (local && localDef !== undefined) {
+    lines.push({
+      id: LOCAL_LINE.id,
+      name: localDef.name,
+      text: lineText(localDef, lineValue(localDef, LOCAL_LINE.tier)),
+      about: localDef.about,
+      source: 'rolled',
+      tier: LOCAL_LINE.tier + 1,
+      bestTier: 5,
+      local: true,
+      active: true,
+    });
+  }
   const equippedOn = worn ? creatureId : (wornBy ?? null);
   return {
     id: `bag-${slot}-${String(index + 1).padStart(2, '0')}`,
