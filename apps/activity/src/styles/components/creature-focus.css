@@ -172,29 +172,6 @@ button.cc-open:focus-visible {
   margin-right: 0;
 }
 
-/* The page's activity badges (Away, On a job, Lounging) under its name. */
-.cc-sub {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.125rem 0.5rem;
-  align-items: center;
-  margin-top: 0.125rem;
-  font-size: var(--fs-small);
-}
-
-.creature-page .xpbar {
-  height: 1.5rem;
-}
-
-.creature-page .xpbar-text {
-  font-size: var(--fs-row);
-}
-
-/* The level tag of the card's bar: one width from "Lv 1" to "Lv 30", so the bars of a list start together. */
-.creature-card .xp-static > .xp-lv {
-  min-width: 2.75rem;
-}
-
 /* Gear icons on the left, the talents on the right, across the card's full width. */
 .cc-kit {
   display: grid;
@@ -304,29 +281,6 @@ button.cc-talents:active:not(:disabled) {
   outline: 2px dashed var(--line);
   outline-offset: -2px;
   color: var(--haze);
-}
-
-/* The gold button's ink ring is drawn outside it: in by the ring, so its edges meet the sprite's and the bar's. */
-.cc-do {
-  margin-inline: var(--px);
-}
-
-.cc-do button {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.5rem;
-  align-items: baseline;
-  justify-content: center;
-  width: 100%;
-  min-height: 2.75rem;
-  font-size: var(--fs-heading);
-  line-height: 1.1;
-}
-
-/* The cost (or what holds it back) on the same row as the words, when it fits: one row saves height. */
-.cc-do button small {
-  font-family: var(--body);
-  font-size: var(--fs-small);
 }
 
 button.ghost {

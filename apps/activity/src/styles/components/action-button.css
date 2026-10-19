@@ -1,0 +1,42 @@
+/*
+  The big gold action button (ui/ActionButton.tsx): the label in the heading size, an optional detail beside
+  it (or under it when the row is too narrow). It is a flex box that wraps, so the detail drops to a second
+  row only when it has to.
+
+  Why the old one left room below its text: it was `align-items: baseline` in a box with a minimum height.
+  `align-items` only places items inside their flex line, and the line was stuck to the top of the box
+  (`align-content` defaulted to start), so the line sat at the top and all the spare height was under it.
+  `align-content: center` centres the line(s) in the box, with one row or two, with a detail or without.
+  The detail is not drawn at all when it is empty (the component leaves it out), so nothing is reserved.
+*/
+.action-btn {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
+  align-content: center;
+  align-items: baseline;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding-block: 0.25rem;
+  font-size: var(--fs-heading);
+  line-height: 1.1;
+  text-align: center;
+}
+
+/* The cost (or what holds it back) on the same row as the words, when it fits: one row saves height. */
+.action-btn .ab-detail {
+  max-width: 100%;
+  font-family: var(--body);
+  font-size: var(--fs-small);
+}
+
+/* The full width of its place; the ink ring is drawn 3 px outside, so it sits in by the ring. */
+.action-btn.wide {
+  width: calc(100% - var(--px) * 2);
+  margin-inline: var(--px);
+}
+
+/* The main button of a page: taller, and the whole width of the page's column on a computer too. */
+.action-btn.large {
+  min-height: 3.5rem;
+}

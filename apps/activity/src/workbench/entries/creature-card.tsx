@@ -19,6 +19,7 @@ import { creatureName } from '../../game';
 import type { GearActions } from '../../gear-actions';
 import { TabBar } from '../../TabBar';
 import { NO_ALERTS } from '../../tab-alerts';
+import { XP_SIZES, type XpSize } from '../../ui/XpTrack';
 import { Workshop } from '../../Workshop';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
@@ -56,6 +57,10 @@ function RosterScreen() {
   );
 }
 
+function xpSizeOf(value: string): XpSize | undefined {
+  return XP_SIZES.find((s) => s === value);
+}
+
 function CardDemo({ p }: { p: Props }) {
   if (bool(p, 'screen')) return <RosterScreen />;
   const creature = sampleCreature(kindOf(str(p, 'state')));
@@ -83,6 +88,7 @@ function CardDemo({ p }: { p: Props }) {
         actions={actions}
         onAnswerCatch={() => undefined}
         onOpen={() => undefined}
+        xpSize={xpSizeOf(str(p, 'xpSize'))}
       />
     </ul>
   );
@@ -102,6 +108,7 @@ const creatureCard: Entry = {
     found: { kind: 'toggle' },
     busy: { kind: 'toggle' },
     screen: { kind: 'toggle' },
+    xpSize: { kind: 'select', options: ['default', ...XP_SIZES] },
   },
   defaults: {
     state: 'ribbon ready',
@@ -111,6 +118,7 @@ const creatureCard: Entry = {
     found: false,
     busy: false,
     screen: false,
+    xpSize: 'default',
   },
   presets: [
     { name: 'Ribbon ready (the gold button)', props: {} },
@@ -123,6 +131,19 @@ const creatureCard: Entry = {
     { name: 'Nickname, shiny and away', props: { state: 'nickname and badges' } },
     { name: 'Marked by the finder', props: { found: true } },
     { name: 'Lounging', props: { state: 'growing', lounging: true } },
+    {
+      name: 'XP bar look: shrunk (tag shrunk to the bar)',
+      props: { state: 'evolve ready', xpSize: 'shrunk' },
+    },
+    { name: 'XP bar look: snug (narrower tag)', props: { state: 'evolve ready', xpSize: 'snug' } },
+    {
+      name: 'XP bar look: flat (tag drawn like the bar)',
+      props: { state: 'evolve ready', xpSize: 'flat' },
+    },
+    {
+      name: 'XP bar look: grown (bar enlarged to the tag)',
+      props: { state: 'evolve ready', xpSize: 'grown' },
+    },
     {
       name: "Five hard cases (Misa's 360 px screenshot): new, Festival, long nickname, full kit, evolve",
       props: { screen: true },

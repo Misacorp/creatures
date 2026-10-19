@@ -3,6 +3,7 @@ import { CurrencyPile } from '../../CurrencyPile';
 import { TabBar } from '../../TabBar';
 import { ALERT_TEXT, NO_ALERTS, type TabAlerts } from '../../tab-alerts';
 import { TABS, type Tab } from '../../tabs';
+import { ActionButton } from '../../ui/ActionButton';
 import { ChoiceButton, ChoiceList } from '../../ui/ChoiceList';
 import { DrillHead } from '../../ui/DrillHead';
 import { LiveRegion } from '../../ui/LiveRegion';
@@ -428,7 +429,66 @@ const previewStatus: Entry = {
   },
 };
 
+function ActionButtonDemo({ p }: { p: Props }) {
+  const [taps, setTaps] = useState(0);
+  return (
+    <div>
+      <ActionButton
+        label={str(p, 'label')}
+        detail={str(p, 'detail')}
+        disabled={bool(p, 'disabled')}
+        wide={bool(p, 'wide')}
+        large={bool(p, 'large')}
+        onClick={() => {
+          setTaps((n) => n + 1);
+        }}
+      />
+      <p class="muted small" role="status">
+        {taps === 0 ? 'Not tapped yet.' : `Tapped ${String(taps)} time${taps === 1 ? '' : 's'}.`}
+      </p>
+    </div>
+  );
+}
+
+const actionButton: Entry = {
+  name: 'ActionButton',
+  file: 'apps/activity/src/ui/ActionButton.tsx',
+  group: 'Controls',
+  description:
+    "The big gold action button of a creature (the card's gold button and the page's ribbon, evolve and answer-a-catch buttons): the words in the heading size and an optional small detail beside them, or under them when the row is too narrow. The words are centred; with no detail nothing is drawn for it and no room is kept, so the button never has padding under its text. `wide` is the full width of its place, `large` the page's taller size.",
+  controls: {
+    label: { kind: 'text', maxLength: 40 },
+    detail: { kind: 'text', maxLength: 80 },
+    wide: { kind: 'toggle' },
+    large: { kind: 'toggle' },
+    disabled: { kind: 'toggle' },
+  },
+  defaults: { label: 'Evolve', detail: '20 Essence', wide: true, large: false, disabled: false },
+  presets: [
+    { name: 'With a detail (the card)', props: {} },
+    { name: 'No detail (nothing under the words)', props: { detail: '' } },
+    {
+      name: 'Long detail, wraps at 360 px',
+      props: { label: 'Earn Bronze Ribbon', detail: '6 scrap and 2 Ember shards · 1 more' },
+    },
+    {
+      name: 'Very long detail',
+      props: {
+        label: 'Answer waiting catches',
+        detail: '3 waiting: Cindle, Mistnewt and a very long species name',
+      },
+    },
+    { name: 'Disabled, with the reason', props: { detail: 'Away on a trip', disabled: true } },
+    { name: 'Disabled, no detail', props: { detail: '', disabled: true } },
+    { name: 'Large (the page), with a detail', props: { large: true } },
+    { name: 'Large (the page), no detail', props: { large: true, detail: '' } },
+    { name: 'Not wide (as wide as its words)', props: { wide: false } },
+  ],
+  render: (p) => <ActionButtonDemo p={p} />,
+};
+
 export const controlEntries: readonly Entry[] = [
+  actionButton,
   choiceList,
   drillHead,
   previewStatus,
