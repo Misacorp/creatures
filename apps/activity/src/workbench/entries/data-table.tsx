@@ -44,6 +44,13 @@ const ROW_SETS: Readonly<Record<string, readonly DataRow[]>> = {
     { label: 'Cold Snap', value: '0.8x' },
     { label: 'Total', value: '3.15x', total: true },
   ],
+  Scoreboard: [
+    { label: '1  Dee', value: '4,210', extra: '19%' },
+    { label: '2  Bob', value: '3,480', extra: '16%' },
+    { label: '3  You', value: '2,950', extra: '13%', mine: true },
+    { label: '4  Kaisa', value: '2,310', extra: '10%' },
+    { label: 'Raid total', value: '22,000', extra: '100%', total: true },
+  ],
   'Long labels': [
     { label: 'A label long enough to need two lines on a narrow phone', value: '12 / 40' },
     { label: 'Short', value: 'A value that is quite long too' },
@@ -56,7 +63,7 @@ const dataTable: Entry = {
   file: 'apps/activity/src/ui/DataTable.tsx',
   group: 'Creatures & game pieces',
   description:
-    "A table of data in a panel a shade darker than the one around it, with padding and square corners: rows of a label and a value, an optional second value column (the gear's share, \"+204\") and an optional gold total row. The creature page's stats and facts and the experience multiplier's breakdown use it. In a popover the names are in the text colour (bright), in the body font.",
+    "A table of data in a panel a shade darker than the one around it, with padding and square corners: rows of a label and a value, an optional second value column (the gear's share, \"+204\"), an optional gold total row and a marked row for the viewer's own (a scoreboard's \"You\"). The creature page's stats and facts and the experience multiplier's breakdown use it. In a popover the names are in the text colour (bright), in the body font.",
   controls: {
     rows: { kind: 'select', options: SETS },
     where: { kind: 'select', options: ['panel', 'popover'] },
@@ -73,6 +80,7 @@ const dataTable: Entry = {
       name: 'Breakdown in a popover, with a total',
       props: { rows: 'XP breakdown', where: 'popover', tabular: false, bright: true },
     },
+    { name: 'A scoreboard, your row marked', props: { rows: 'Scoreboard' } },
     { name: 'Long labels wrap', props: { rows: 'Long labels', tabular: false } },
   ],
   render: (p) => {

@@ -88,7 +88,7 @@ function Lines({ lines }: { lines: readonly string[] }) {
   );
 }
 
-function AfterActionCard({ stats }: { stats: AfterActionStats }) {
+export function AfterActionCard({ stats }: { stats: AfterActionStats }) {
   const totalDamage = stats.players.reduce((sum, p) => sum + p.damage, 0);
   const playerMax = barMax(stats.players.map((p) => p.damage));
   const creatureMax = barMax(stats.creatures.map((c) => c.damage));

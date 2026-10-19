@@ -12,6 +12,16 @@ export interface DataRow {
   icon?: ComponentChildren;
   /** The closing row: a line above it and gold type ("Total 3.15x"). Put it last. */
   total?: boolean;
+  /** The row is the viewer's own (a scoreboard's "You"): a lighter band behind it and gold type. */
+  mine?: boolean;
+}
+
+/** The classes of one row: `total` for the closing row, `mine` for the viewer's own. */
+function rowClass(row: DataRow): string {
+  const classes = ['data-row'];
+  if (row.total === true) classes.push('total');
+  if (row.mine === true) classes.push('mine');
+  return classes.join(' ');
 }
 
 /**
@@ -48,7 +58,7 @@ export function DataTable({
   return (
     <dl class={classes}>
       {rows.map((row, i) => (
-        <div key={i} class={row.total === true ? 'data-row total' : 'data-row'}>
+        <div key={i} class={rowClass(row)}>
           <dt>
             {row.icon}
             {row.label}

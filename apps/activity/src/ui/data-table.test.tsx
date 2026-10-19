@@ -85,6 +85,17 @@ describe('the DataTable', () => {
     expect(set).toContain('bright');
   });
 
+  it("marks the viewer's own row, and only that one", () => {
+    const table = draw([
+      { label: 'Dee', value: 900 },
+      { label: 'You', value: 700, mine: true },
+      { label: 'Bob', value: 500 },
+    ]);
+    const rows = byClass(table, 'data-row');
+    expect(rows.map((row) => classes(row).includes('mine'))).toEqual([false, true, false]);
+    expect(byClass(table, 'mine')).toHaveLength(1);
+  });
+
   it('shows text only, with no inline style, and an empty list as an empty table', () => {
     const table = draw([{ label: '<b>HP</b>', value: '<i>1</i>' }]);
     expect(visibleText(table)).toContain('<b>HP</b>');

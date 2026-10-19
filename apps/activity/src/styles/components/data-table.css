@@ -63,3 +63,14 @@
 .data-row.total dd {
   color: var(--gold);
 }
+
+/* The viewer's own row (a scoreboard's "You"): a band of the "mine" colour reaching a little past the text, and gold type. */
+.data-row.mine {
+  background: var(--mine);
+  box-shadow: 0 0 0 0.125rem var(--mine);
+}
+
+.data-row.mine dt,
+.data-row.mine dd {
+  color: var(--gold);
+}

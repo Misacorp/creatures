@@ -15,6 +15,7 @@ import { jobRevealEntries } from './entries/job-reveal';
 import { lootEntries } from './entries/loot';
 import { popoverEntries } from './entries/popovers';
 import { raidBoardEntries } from './entries/raid-board';
+import { raidSummaryEntries } from './entries/raid-summary-mock';
 import { skyEntries } from './entries/sky';
 import { slotDrawerEntries } from './entries/slot-drawer';
 import { slotEntries } from './entries/slots';
@@ -36,6 +37,7 @@ export const ENTRIES: readonly Entry[] = [
   ...slotEntries,
   ...slotDrawerEntries,
   ...raidBoardEntries,
+  ...raidSummaryEntries,
   ...lootEntries,
   ...jobRevealEntries,
   ...headingEntries,

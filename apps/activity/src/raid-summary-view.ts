@@ -1,0 +1,349 @@
+/**
+ * What a raid summary screen shows, worked out from the data the server already sends: the
+ * after-action stats of a stage and the stage's rewards. Pure (no DOM, no network). It exists for the
+ * summary mock-ups (`RaidSummaryMock`); a variant that is chosen keeps what it uses. Everything
+ * returned is plain text or plain data (names can be player text: render as text only).
+ *
+ * Nothing here invents a number. A highlight exists only when the stats hold what it says; the ones
+ * that would need new server data are not here (see the "would need" list in decisions.md).
+ */
+import { sharePercent, whoText } from './after-action';
+import { speciesName } from './game';
+import type { GrantLoot } from './gear-types';
+import type { IconRef } from './icon-ref';
+import type {
+  AfterActionStats,
+  FestivalGrant,
+  RankChange,
+  StatsCreature,
+  StatsPlayer,
+} from './raid-api';
+import { phaseName } from './raid-text';
+
+/** Everything a summary is drawn from: the stage's stats and boss, and what it paid the caller. */
+export interface SummaryInput {
+  /** The boss's id and name (from the raid view; the stats do not carry them). */
+  boss: { id: string; name: string };
+  stats: AfterActionStats;
+  rewards: {
+    essence: number;
+    /** The finale's gear grant (a piece, a blueprint, parts); null when there is none. */
+    loot: GrantLoot | null;
+    festivalGrant: FestivalGrant | null;
+    rankChange: RankChange | null;
+    /** The raid week's place in the season, for the season pips; null when not known. */
+    seasonWeek: number | null;
+  };
+}
+
+/** One line of a scoreboard. */
+export interface ScoreRow {
+  /** 1-based place by damage. */
+  rank: number;
+  /** "You" for the caller, the display name for others, "Guest" without one. */
+  name: string;
+  you: boolean;
+  damage: number;
+  contribution: number;
+  /** Whole percent of the raid's damage. */
+  share: number;
+}
+
+/** The players by damage (then contribution), each with a place and a share of the raid's damage. */
+export function scoreboard(stats: Pick<AfterActionStats, 'players'>): ScoreRow[] {
+  const total = stats.players.reduce((sum, p) => sum + p.damage, 0);
+  return [...stats.players]
+    .map((p, order) => ({ p, order }))
+    .sort(
+      (a, b) => b.p.damage - a.p.damage || b.p.contribution - a.p.contribution || a.order - b.order,
+    )
+    .map(({ p }, index) => ({
+      rank: index + 1,
+      name: whoText(p.displayName, p.you),
+      you: p.you,
+      damage: p.damage,
+      contribution: p.contribution,
+      share: sharePercent(p.damage, total),
+    }));
+}
+
+/** The caller's line of the scoreboard and how many played; null when the caller is not in it. */
+export function yourPlace(stats: Pick<AfterActionStats, 'players'>): {
+  row: ScoreRow;
+  of: number;
+} | null {
+  const rows = scoreboard(stats);
+  const row = rows.find((r) => r.you);
+  return row === undefined ? null : { row, of: rows.length };
+}
+
+/** "1st", "2nd", "3rd", "4th", "11th", "21st". */
+export function ordinal(n: number): string {
+  const last = n % 100;
+  if (last >= 11 && last <= 13) return `${String(n)}th`;
+  switch (n % 10) {
+    case 1:
+      return `${String(n)}st`;
+    case 2:
+      return `${String(n)}nd`;
+    case 3:
+      return `${String(n)}rd`;
+    default:
+      return `${String(n)}th`;
+  }
+}
+
+/** A whole number with thousands grouped by a comma: "12,480". Fixed locale, so it reads the same everywhere. */
+export function grouped(n: number): string {
+  return Math.round(n)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+/** The title of the summary card: "Finale result", "Phase 2 result". */
+export function summaryTitle(stats: Pick<AfterActionStats, 'phase'>): string {
+  return `${phaseName(stats.phase)} result`;
+}
+
+// --- Creatures ---
+
+/** A creature's label: its name, with its species when the name is a nickname. */
+export function creatureLabel(c: Pick<StatsCreature, 'name' | 'species'>): string {
+  const kind = speciesName(c.species);
+  return c.name === kind ? c.name : `${c.name} (${kind})`;
+}
+
+/** The caller's creatures the server listed (the top five and the caller's own), best first. */
+export function yourCreatures(stats: Pick<AfterActionStats, 'creatures'>): StatsCreature[] {
+  return stats.creatures.filter((c) => c.you).sort((a, b) => a.rank - b.rank);
+}
+
+/** The best listed creature of a player, by the owner's display name; undefined when none was listed. */
+export function bestCreatureOf(
+  stats: Pick<AfterActionStats, 'creatures'>,
+  owner: string | null,
+  you: boolean,
+): StatsCreature | undefined {
+  return stats.creatures
+    .filter((c) => (you ? c.you : owner !== null && c.owner === owner))
+    .sort((a, b) => a.rank - b.rank)[0];
+}
+
+// --- Highlights ---
+
+/** What a highlight's picture is: a game icon, or a creature's sprite. */
+export type HighlightIcon = { kind: 'icon'; icon: IconRef } | { kind: 'creature'; species: string };
+
+export interface Highlight {
+  id:
+    | 'hardest-hitter'
+    | 'star-creature'
+    | 'backbone'
+    | 'favourite-reaction'
+    | 'quick-hands'
+    | 'nobody-fell'
+    | 'final-push'
+    | 'counter-move';
+  /** The small title of the card ("Hardest hitter"). */
+  label: string;
+  /** Who or what it is about: a name, in bold on the card. */
+  who: string;
+  /** One short line of the fact behind it. */
+  line: string;
+  /** Whether the caller is the one it is about. */
+  you: boolean;
+  icon: HighlightIcon;
+}
+
+const glyph = (id: string): HighlightIcon => ({ kind: 'icon', icon: { kind: 'glyph', id } });
+
+const ability = (a: { creature: string | null; ability: string }): string =>
+  a.creature === null ? a.ability : `${a.creature}'s ${a.ability}`;
+
+/** The player with the most of something, or undefined when nobody has any (ties go to the first listed). */
+function most(
+  players: readonly StatsPlayer[],
+  by: (p: StatsPlayer) => number,
+): StatsPlayer | undefined {
+  let best: StatsPlayer | undefined;
+  for (const p of players) {
+    if (by(p) > 0 && (best === undefined || by(p) > by(best))) best = p;
+  }
+  return best;
+}
+
+/**
+ * Every highlight the stats can back, in the order a card row should prefer them. A caller picks the
+ * first two or three; a small raid has fewer (a highlight about "the rest of the raid" needs a rest).
+ */
+export function highlights(stats: AfterActionStats): Highlight[] {
+  const out: Highlight[] = [];
+  const total = stats.players.reduce((sum, p) => sum + p.damage, 0);
+
+  const hitter = most(stats.players, (p) => p.damage);
+  if (hitter !== undefined) {
+    out.push({
+      id: 'hardest-hitter',
+      label: 'Hardest hitter',
+      who: whoText(hitter.displayName, hitter.you),
+      line: `${grouped(hitter.damage)} damage, ${String(sharePercent(hitter.damage, total))}% of the raid`,
+      you: hitter.you,
+      icon: glyph('blade'),
+    });
+  }
+
+  const star = [...stats.creatures].sort((a, b) => a.rank - b.rank)[0];
+  if (star !== undefined) {
+    out.push({
+      id: 'star-creature',
+      label: 'Star creature',
+      who: creatureLabel(star),
+      line: `${whoText(star.owner, star.you)}: ${grouped(star.damage)} damage`,
+      you: star.you,
+      icon: { kind: 'creature', species: star.species },
+    });
+  }
+
+  // The backbone: the most credit that is not damage (setting up, supporting, guarding).
+  const backbone = most(stats.players, (p) => p.contribution - p.damage);
+  if (backbone !== undefined) {
+    out.push({
+      id: 'backbone',
+      label: 'The backbone',
+      who: whoText(backbone.displayName, backbone.you),
+      line: `${grouped(backbone.contribution - backbone.damage)} from setting up and supporting`,
+      you: backbone.you,
+      icon: glyph('shield'),
+    });
+  }
+
+  const reaction = [...stats.reactions].sort((a, b) => b.count - a.count)[0];
+  if (reaction !== undefined && reaction.count > 0) {
+    out.push({
+      id: 'favourite-reaction',
+      label: 'Favourite reaction',
+      who: reaction.name,
+      line: `Triggered ${String(reaction.count)} times`,
+      you: false,
+      icon: glyph('sparkle'),
+    });
+  }
+
+  // Quick hands: the player who fired the most abilities by hand (at least two).
+  const byHand = new Map<string, { player: string; you: boolean; count: number }>();
+  for (const use of stats.abilities.used) {
+    if (use.byDefault) continue;
+    const key = `${use.you ? '1' : '0'}:${use.player}`;
+    const entry = byHand.get(key) ?? { player: use.player, you: use.you, count: 0 };
+    entry.count += 1;
+    byHand.set(key, entry);
+  }
+  const quick = [...byHand.values()].sort((a, b) => b.count - a.count)[0];
+  if (quick !== undefined && quick.count >= 2) {
+    out.push({
+      id: 'quick-hands',
+      label: 'Quick hands',
+      who: whoText(quick.player, quick.you),
+      line: `${String(quick.count)} abilities fired by hand`,
+      you: quick.you,
+      icon: glyph('hand'),
+    });
+  }
+
+  if (stats.knockouts.length === 0) {
+    out.push({
+      id: 'nobody-fell',
+      label: 'Nobody fell',
+      who: 'Every creature stood',
+      line: `Not one knocked out in ${String(stats.rounds)} rounds`,
+      you: false,
+      icon: glyph('check'),
+    });
+  }
+
+  // Final push: the last ability fired in the round the boss fell (a cleared stage only).
+  if (stats.outcome === 'cleared') {
+    const last = [...stats.abilities.used]
+      .filter((a) => a.round >= stats.rounds)
+      .sort((a, b) => b.round - a.round)[0];
+    if (last !== undefined) {
+      out.push({
+        id: 'final-push',
+        label: 'Final push',
+        who: whoText(last.player, last.you),
+        line: `${ability(last)} in round ${String(last.round)}, the round the boss fell`,
+        you: last.you,
+        icon: glyph('flag'),
+      });
+    }
+  }
+
+  const adapt = stats.adaptation;
+  if (adapt?.purged === true && adapt.purgedRound !== null) {
+    const purge = stats.abilities.used.find(
+      (a) => a.round === adapt.purgedRound && /purge/i.test(a.ability),
+    );
+    out.push({
+      id: 'counter-move',
+      label: 'Counter-move broken',
+      who: purge === undefined ? adapt.name : whoText(purge.player, purge.you),
+      line: `${adapt.name} purged in round ${String(adapt.purgedRound)}`,
+      you: purge?.you ?? false,
+      icon: glyph('mark'),
+    });
+  }
+
+  return out;
+}
+
+/** The first `count` highlights, keeping each kind of fact once and preferring the given ids first. */
+export function pickHighlights(
+  stats: AfterActionStats,
+  count: number,
+  prefer: readonly Highlight['id'][] = [],
+): Highlight[] {
+  const all = highlights(stats);
+  const first = prefer.flatMap((id) => all.filter((h) => h.id === id));
+  const rest = all.filter((h) => !prefer.includes(h.id));
+  return [...first, ...rest].slice(0, count);
+}
+
+// --- The one big moment ---
+
+/** The headline of a hero summary: "Tidal Colossus falls!", "Cinder Wyrm holds.". */
+export function heroHeadline(input: Pick<SummaryInput, 'boss' | 'stats'>): string {
+  const { boss, stats } = input;
+  if (stats.outcome === 'cleared') {
+    return stats.retreated === true && stats.phase !== 'finale'
+      ? `${boss.name} retreats!`
+      : `${boss.name} falls!`;
+  }
+  return stats.enraged === true ? `${boss.name} enrages.` : `${boss.name} holds.`;
+}
+
+/**
+ * The line under the hero headline: when it ended, in plain words. A cleared stage says the round the
+ * boss fell in; a failed one says how it ended and how much boss was left.
+ */
+export function heroLine(stats: AfterActionStats): string {
+  const left = `${grouped(stats.boss.hpEnd)} HP left`;
+  switch (stats.outcome) {
+    case 'cleared':
+      if (stats.retreated === true && stats.phase !== 'finale') {
+        return `It retreated after ${String(stats.rounds)} / ${String(stats.maxRounds)} rounds.`;
+      }
+      return stats.enraged === true
+        ? `Down after ${String(stats.maxRounds)} rounds, even enraged.`
+        : `Down after ${String(stats.rounds)} / ${String(stats.maxRounds)} rounds.`;
+    case 'wiped': {
+      const last = stats.knockouts.reduce((max, k) => Math.max(max, k.round), 0);
+      return last > 0
+        ? `Every creature was knocked out by round ${String(last)}. ${left}.`
+        : `Every creature was knocked out. ${left}.`;
+    }
+    default:
+      return stats.enraged === true
+        ? `Out of time, it enraged. ${left}.`
+        : `Out of rounds. ${left}.`;
+  }
+}
