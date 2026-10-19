@@ -1,20 +1,15 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
-import { TOUCH_HOLD_MS } from './dnd-core';
+import { useEffect, useState } from 'preact/hooks';
 import {
   ROW_PLACES,
   ROW_PLACE_NAMES,
-  orderHint,
   place,
   placedCount,
-  resolveDrop,
   slotIndexOf,
-  slotStatuses,
   unplace,
   type Slots,
 } from './dungeon-team';
 import { ORDER_LINE } from './dungeon-text';
-import { boardKeyTarget, type BoardRow } from './raid-board';
 import { creatureName, getSpecies, speciesName } from './game';
 import { GlossaryTag } from './Glossary';
 import { usePopoverHost } from './PopoverHost';
@@ -26,18 +21,11 @@ import {
   placedLine,
   type PickerCreature,
 } from './roster-picker';
-import { DragGhost } from './ui/DragGhost';
-import { LiveRegion } from './ui/LiveRegion';
 import { PlacedCount } from './ui/PlacedCount';
-import { RaidBoard, type BoardRowModel } from './ui/RaidBoard';
 import { RosterPicker } from './ui/RosterPicker';
 import type { SlotModel } from './ui/SlotButton';
-import { affectSlotOf, cuesFor, effectLine, sceneOf } from './ui/slot-cue';
-import { useSlotKeyboard } from './ui/use-slot-keyboard';
-import { useDragDrop } from './use-drag-drop';
-
-/** The one row of the board: the dungeon's three places, left to right. */
-const ROW: BoardRow = { zone: 'front', slots: ROW_PLACES.map((_, index) => index) };
+import { SingleRowBoard } from './SingleRowBoard';
+import { emptySlotLabel, useSingleRowBoard } from './use-single-row-board';
 
 interface Props {
   /** Everything the player owns: the picker offers these. */
@@ -62,14 +50,9 @@ interface Props {
  */
 export function DungeonTeam(props: Props) {
   const { creatures, slots, disabled } = props;
-  const stripRef = useRef<HTMLDivElement>(null);
   const popovers = usePopoverHost();
-  /** The slot under the mouse or the keyboard focus. */
-  const [hovered, setHovered] = useState<number | null>(null);
   /** The empty slot the picker is open for. */
   const [picking, setPicking] = useState<number | null>(null);
-  const [hint, setHint] = useState<string | null>(null);
-  const [announcement, announce] = useState('');
 
   const byId = new Map(creatures.map((c) => [c.id, c]));
   const nameOf = (id: string): string => {
@@ -83,26 +66,17 @@ export function DungeonTeam(props: Props) {
     if (disabled) setPicking(null);
   }, [disabled]);
 
-  const dragDrop = useDragDrop({
+  // The cues read the creature in focus: carried, whose popover is open, or under the pointer.
+  const inspectedSlot = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot;
+  const board = useSingleRowBoard({
+    slots,
+    byId,
+    nameOf,
     disabled,
-    stripRef,
-    touchHoldMs: TOUCH_HOLD_MS,
-    onDrop: (creatureId, target) => {
-      const { slots: next, outcome } = resolveDrop(slots, creatureId, target, nameOf);
-      announce(outcome.announce);
-      setHint(outcome.hint);
-      if (next !== slots) props.onChange(next);
-      return outcome;
-    },
+    inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
+    onSlots: props.onChange,
   });
-  const { drag, consumeClick } = dragDrop;
-
-  const onKeyDown = useSlotKeyboard({
-    stripRef,
-    keyTarget: (current, key) => boardKeyTarget([ROW], current, key),
-  });
-
-  const dragging = drag?.creatureId ?? null;
+  const { stripRef, dragging } = board;
 
   // A drag starting (after the hold, for a finger) closes any open popover at once, the one of the
   // creature being carried included, so it cannot sit over the board while a creature is moved.
@@ -110,54 +84,13 @@ export function DungeonTeam(props: Props) {
     if (dragging !== null) popovers?.close();
   }, [dragging === null]);
 
-  const statuses = dragging === null ? null : slotStatuses(slots, dragging, nameOf);
-  const dragged = dragging === null ? undefined : byId.get(dragging);
-
-  // The row as the cues read it: each creature's role and element, from the content.
-  const affectRowOf = (keys: readonly (string | null)[]) =>
-    keys.map((id) => {
-      const c = id === null ? undefined : byId.get(id);
-      return c === undefined ? null : affectSlotOf(getSpecies(c.species));
-    });
-  const mode = { row: 'dungeon' } as const;
-
-  // The cues: the creature in focus (carried, whose popover is open, or under the pointer) and the
-  // row as it would stand.
-  const inspectedSlot = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot;
-  const scene = sceneOf({
-    keys: slots,
-    carried: dragging,
-    pointer: drag?.over?.slot ?? hovered,
-    inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
-  });
-  const affectRow = affectRowOf(scene.keys);
-  const cues = cuesFor({ row: affectRow, mode, focus: scene.focus, scope: 'row' });
-  const effectOf = (keys: readonly (string | null)[], focus: number): string | null =>
-    effectLine({
-      row: affectRowOf(keys),
-      mode,
-      focus,
-      nameOf: (slot) => nameOf(keys[slot] ?? ''),
-    });
-  const effect = scene.focus === null ? null : effectOf(scene.keys, scene.focus);
-
-  // Only a full team has an order to judge. The names are the player's own: text only.
-  const team = slots.flatMap((id) => {
-    const c = byId.get(id ?? '');
-    return c === undefined ? [] : [c];
-  });
-  const reactionHint =
-    team.length === slots.length
-      ? orderHint(team.map((c) => ({ name: creatureName(c), species: c.species })))
-      : null;
-
   const model = (index: number): SlotModel => {
     const spot = ROW_PLACE_NAMES[ROW_PLACES[index] ?? 'left'];
     const creature = byId.get(slots[index] ?? '');
     if (creature === undefined) {
       return {
         index,
-        ariaLabel: disabled ? `${spot} slot, empty` : `${spot} slot, empty. Choose a creature.`,
+        ariaLabel: emptySlotLabel(index, disabled ? undefined : 'Choose a creature.'),
         occupant: null,
       };
     }
@@ -174,26 +107,23 @@ export function DungeonTeam(props: Props) {
       },
     };
   };
-  const rows: BoardRowModel[] = [
-    { zone: ROW.zone, name: 'Team', label: null, slots: ROW.slots.map(model) },
-  ];
 
   /**
    * A tap on a tile. An empty one opens the picker; a creature opens its popover with a "Remove from
    * team" button.
    */
   function tapSlot(slot: number, button: HTMLElement): void {
-    if (consumeClick()) return;
+    if (board.dragDrop.consumeClick()) return;
     const id = slots[slot] ?? null;
     const creature = id === null ? undefined : byId.get(id);
     if (id === null || creature === undefined) {
-      setHint(null);
+      board.setHint(null);
       setPicking(slot);
       return;
     }
     const species = getSpecies(creature.species);
     if (species === undefined || popovers === null) return;
-    const line = effectOf(slots, slot);
+    const line = board.effectOf(slots, slot);
     popovers.openCreature(
       `dungeon-slot:${String(slot)}`,
       {
@@ -208,8 +138,8 @@ export function DungeonTeam(props: Props) {
       {
         label: 'Remove from team',
         onAct: () => {
-          setHint(null);
-          announce(`${nameOf(id)} removed from the team.`);
+          board.setHint(null);
+          board.announce(`${nameOf(id)} removed from the team.`);
           props.onChange(unplace(slots, id));
         },
       },
@@ -223,70 +153,50 @@ export function DungeonTeam(props: Props) {
     // team moves here and leaves its old place empty.
     if (slotIndexOf(slots, creatureId) === null && placed >= ROW_PLACES.length) return;
     setPicking(null);
-    setHint(null);
-    announce(`${nameOf(creatureId)} placed in the ${ROW_PLACES[slot] ?? ''} slot.`);
+    board.setHint(null);
+    board.announce(`${nameOf(creatureId)} placed in the ${ROW_PLACES[slot] ?? ''} slot.`);
     props.onChange(place(slots, creatureId, slot));
   }
 
   return (
-    <div class="placement dungeon-team" onKeyDown={onKeyDown}>
-      <RaidBoard
-        single={{ label: 'Your team, left to right' }}
-        size="large"
-        rows={rows}
-        stripRef={stripRef}
-        emptyLabel="Add"
-        disabled={disabled}
-        drag={dragDrop}
-        statuses={statuses}
-        cues={cues.slots}
-        onHoverSlot={setHovered}
-        rail={{ none: cues.none, effect }}
-        onTap={tapSlot}
-      />
-      <PlacedCount placed={placed} />
-      {hint !== null && (
-        <p class="muted" role="status">
-          {hint}
-        </p>
-      )}
+    <SingleRowBoard
+      row={board}
+      class="dungeon-team"
+      label="Your team, left to right"
+      emptyLabel="Add"
+      disabled={disabled}
+      model={model}
+      onTap={tapSlot}
+      underBoard={<PlacedCount placed={placed} />}
+      after={
+        picking !== null && (
+          <RosterPicker
+            title={pickerTitle(`the ${ROW_PLACES[picking] ?? ''} slot`)}
+            status={placedLine(placed)}
+            options={dungeonPickerOptions({
+              creatures,
+              slots,
+              slot: picking,
+              showEffects: SHOW_PICKER_EFFECTS,
+            })}
+            showEffects={SHOW_PICKER_EFFECTS}
+            placedNote={IN_TEAM_NOTE}
+            anchor={() =>
+              stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(picking)}"]`) ??
+              null
+            }
+            onPick={pick}
+            onClose={() => {
+              setPicking(null);
+            }}
+          />
+        )
+      }
+    >
       <p class="muted dungeon-order-line">
         <GlossaryTag entry="dungeon-row">{ORDER_LINE}</GlossaryTag>
       </p>
       {props.children}
-
-      <LiveRegion>{announcement}</LiveRegion>
-      {/* What the order sets off, for a screen reader: the cues are only visual. */}
-      <LiveRegion>{reactionHint}</LiveRegion>
-      <DragGhost
-        ghostRef={dragDrop.ghostRef}
-        creature={
-          dragged === undefined
-            ? undefined
-            : { species: dragged.species, name: creatureName(dragged) }
-        }
-      />
-      {picking !== null && (
-        <RosterPicker
-          title={pickerTitle(`the ${ROW_PLACES[picking] ?? ''} slot`)}
-          status={placedLine(placed)}
-          options={dungeonPickerOptions({
-            creatures,
-            slots,
-            slot: picking,
-            showEffects: SHOW_PICKER_EFFECTS,
-          })}
-          showEffects={SHOW_PICKER_EFFECTS}
-          placedNote={IN_TEAM_NOTE}
-          anchor={() =>
-            stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(picking)}"]`) ?? null
-          }
-          onPick={pick}
-          onClose={() => {
-            setPicking(null);
-          }}
-        />
-      )}
-    </div>
+    </SingleRowBoard>
   );
 }

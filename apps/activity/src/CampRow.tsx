@@ -1,19 +1,9 @@
-import { useRef, useState } from 'preact/hooks';
-import { TOUCH_HOLD_MS } from './dnd-core';
+import { useState } from 'preact/hooks';
 import { campHp, campSlotLabel, tapToSwap, type CampRowCreature } from './dungeon-run';
-import { ROW_PLACES, resolveDrop, slotStatuses, type Slots } from './dungeon-team';
-import { getSpecies } from './game';
-import { boardKeyTarget, type BoardRow } from './raid-board';
-import { DragGhost } from './ui/DragGhost';
-import { LiveRegion } from './ui/LiveRegion';
-import { RaidBoard, type BoardRowModel } from './ui/RaidBoard';
+import type { Slots } from './dungeon-team';
+import { SingleRowBoard } from './SingleRowBoard';
 import type { SlotModel } from './ui/SlotButton';
-import { affectSlotOf, cuesFor, effectLine, sceneOf } from './ui/slot-cue';
-import { useSlotKeyboard } from './ui/use-slot-keyboard';
-import { useDragDrop } from './use-drag-drop';
-
-/** The one row of the board: the row's three places, left to right. */
-const ROW: BoardRow = { zone: 'front', slots: ROW_PLACES.map((_, index) => index) };
+import { emptySlotLabel, useSingleRowBoard } from './use-single-row-board';
 
 interface Props {
   /** The row now, left to right, each with its HP (null HP: a creature that has just come in, at full HP). */
@@ -33,70 +23,33 @@ interface Props {
  * creatures. The server checks the order again when the choice is sent; this only builds it.
  */
 export function CampRow({ creatures, disabled, onChange }: Props) {
-  const stripRef = useRef<HTMLDivElement>(null);
-  /** The slot under the mouse or the keyboard focus. */
-  const [hovered, setHovered] = useState<number | null>(null);
   /** The creature picked up by a tap (waiting for the one to swap with). */
   const [selected, setSelected] = useState<string | null>(null);
-  const [hint, setHint] = useState<string | null>(null);
-  const [announcement, announce] = useState('');
 
   const ids = creatures.map((c) => c.id);
   const slots = [ids[0] ?? null, ids[1] ?? null, ids[2] ?? null] as const satisfies Slots;
   const byId = new Map(creatures.map((c) => [c.id, c]));
   const nameOf = (id: string): string => byId.get(id)?.name ?? 'Creature';
 
-  const dragDrop = useDragDrop({
+  const board = useSingleRowBoard({
+    slots,
+    byId,
+    nameOf,
     disabled,
-    stripRef,
-    touchHoldMs: TOUCH_HOLD_MS,
-    onDrop: (creatureId, target) => {
-      const { slots: next, outcome } = resolveDrop(slots, creatureId, target, nameOf);
-      announce(outcome.announce);
-      setHint(outcome.hint);
+    // The cues read the row as it would stand: the creature carried (or picked up) and where it hovers.
+    carried: selected,
+    onDropped: () => {
       setSelected(null);
-      if (next !== slots) onChange(next.filter((id): id is string => id !== null));
-      return outcome;
+    },
+    onSlots: (next) => {
+      onChange(next.filter((id): id is string => id !== null));
     },
   });
-  const { drag, consumeClick } = dragDrop;
-  const dragging = drag?.creatureId ?? null;
-
-  const onKeyDown = useSlotKeyboard({
-    stripRef,
-    keyTarget: (current, key) => boardKeyTarget([ROW], current, key),
-  });
-
-  const statuses = dragging === null ? null : slotStatuses(slots, dragging, nameOf);
-  const dragged = dragging === null ? undefined : byId.get(dragging);
-
-  // The cues read the row as it would stand: the creature carried (or picked up) and where it hovers.
-  const affectRowOf = (keys: readonly (string | null)[]) =>
-    keys.map((id) => {
-      const c = id === null ? undefined : byId.get(id);
-      return c === undefined ? null : affectSlotOf(getSpecies(c.species));
-    });
-  const mode = { row: 'dungeon' } as const;
-  const scene = sceneOf({
-    keys: slots,
-    carried: dragging ?? selected,
-    pointer: drag?.over?.slot ?? hovered,
-  });
-  const cues = cuesFor({ row: affectRowOf(scene.keys), mode, focus: scene.focus, scope: 'row' });
-  const effect =
-    scene.focus === null
-      ? null
-      : effectLine({
-          row: affectRowOf(scene.keys),
-          mode,
-          focus: scene.focus,
-          nameOf: (slot) => nameOf(scene.keys[slot] ?? ''),
-        });
 
   const model = (index: number): SlotModel => {
     const creature = byId.get(slots[index] ?? '');
     if (creature === undefined) {
-      return { index, ariaLabel: 'Empty slot', occupant: null };
+      return { index, ariaLabel: emptySlotLabel(index), occupant: null };
     }
     return {
       index,
@@ -113,56 +66,34 @@ export function CampRow({ creatures, disabled, onChange }: Props) {
       },
     };
   };
-  const rows: BoardRowModel[] = [
-    { zone: ROW.zone, name: 'Team', label: null, slots: ROW.slots.map(model) },
-  ];
 
   /** A tap on a tile: pick the creature up, put it down, or swap it with the one picked up. */
   function tapSlot(slot: number): void {
-    if (consumeClick()) return;
+    if (board.dragDrop.consumeClick()) return;
     const id = slots[slot] ?? null;
     if (id === null) return;
     const result = tapToSwap(ids, selected, id);
-    setHint(null);
+    board.setHint(null);
     setSelected(result.selected);
     if (result.selected !== null) {
-      announce(`${nameOf(id)} picked up. Tap another creature to swap places.`);
+      board.announce(`${nameOf(id)} picked up. Tap another creature to swap places.`);
     } else if (selected === id) {
-      announce(`${nameOf(id)} put down.`);
+      board.announce(`${nameOf(id)} put down.`);
     } else {
-      announce(`Swapped ${nameOf(selected ?? '')} with ${nameOf(id)}.`);
+      board.announce(`Swapped ${nameOf(selected ?? '')} with ${nameOf(id)}.`);
       onChange(result.order);
     }
   }
 
   return (
-    <div class="placement camp-row" onKeyDown={onKeyDown}>
-      <RaidBoard
-        single={{ label: 'Your team, left to right. You can change the order.' }}
-        size="large"
-        rows={rows}
-        stripRef={stripRef}
-        emptyLabel=""
-        disabled={disabled}
-        drag={dragDrop}
-        statuses={statuses}
-        cues={cues.slots}
-        onHoverSlot={setHovered}
-        rail={{ none: cues.none, effect }}
-        onTap={tapSlot}
-      />
-      {hint !== null && (
-        <p class="muted" role="status">
-          {hint}
-        </p>
-      )}
-      <LiveRegion>{announcement}</LiveRegion>
-      <DragGhost
-        ghostRef={dragDrop.ghostRef}
-        creature={
-          dragged === undefined ? undefined : { species: dragged.species, name: dragged.name }
-        }
-      />
-    </div>
+    <SingleRowBoard
+      row={board}
+      class="camp-row"
+      label="Your team, left to right. You can change the order."
+      emptyLabel=""
+      disabled={disabled}
+      model={model}
+      onTap={tapSlot}
+    />
   );
 }
