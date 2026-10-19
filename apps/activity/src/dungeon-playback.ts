@@ -6,7 +6,8 @@
  */
 import { dungeonContent, roomModifier, type Gimmick } from '@creatures/game';
 import { groupSupplies } from './claim-view';
-import { experienceBar, type ExperienceBarView } from './experience';
+import { experienceDayLine } from './experience';
+import { experienceGain, type ExperienceGain } from './xp-gain';
 import { partsEntries, partsText } from './gear-view';
 import type { GrantLoot } from './gear-types';
 import type {
@@ -342,8 +343,11 @@ export interface TeamEntry {
   hp: string;
   knockedOut: boolean;
   spoken: string;
-  /** The experience bar and lines of what the run paid this creature, or null (a run from before experience). */
-  exp: ExperienceBarView | null;
+  /**
+   * What the run paid this creature as the shared experience row (levels, "+N", the Treat tag, the bar), with the
+   * line naming the day's Boons and Omens that changed it (or null), or null (a run from before experience).
+   */
+  exp: { gain: ExperienceGain; dayLine: string | null } | null;
 }
 
 /** The team in its fighting order (left to right) with its HP lines. No role or element chips here. */
@@ -362,7 +366,10 @@ export function teamBreakdown(run: Pick<DungeonRunSummary, 'team' | 'rewards'>):
       hp,
       knockedOut,
       spoken: `${m.name}, level ${String(m.level)}: ${hp}${knockedOut ? ', knocked out' : ''}.`,
-      exp: paid === undefined ? null : experienceBar(paid),
+      exp:
+        paid === undefined
+          ? null
+          : { gain: experienceGain(paid, m.name), dayLine: experienceDayLine(paid) },
     };
   });
 }

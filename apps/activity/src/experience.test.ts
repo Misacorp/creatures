@@ -3,8 +3,7 @@ import stateFixture from './fixtures/collection-state.json';
 import { parseGameState, type Creature } from './api';
 import { experienceLabel, experienceLine } from './CreatureProgress';
 import {
-  experienceBar,
-  experienceBoostLine,
+  experienceDayLine,
   isExperienceView,
   isRibbonView,
   ribbonBlocker,
@@ -101,76 +100,31 @@ describe('the ribbon words', () => {
   });
 });
 
-describe("what multiplied a dungeon run's experience", () => {
-  it('says the treat and its factor, from what the server sent', () => {
-    expect(experienceBoostLine(view)).toBeNull();
-    expect(experienceBoostLine({ ...view, treat: true, treatTimes: 2 })).toBe(
-      'Treat gave 2x experience',
-    );
-    expect(experienceBoostLine({ ...view, treat: true, treatTimes: 3 })).toBe(
-      'Treat gave 3x experience',
-    );
-    // An older run knew only that a treat was packed: it doubled.
-    expect(experienceBoostLine({ ...view, treat: true })).toBe('Treat gave 2x experience');
+describe("what changed a dungeon run's experience, apart from the treat", () => {
+  it('has no line without a day effect (the treat is a tag on the row, not a line)', () => {
+    expect(experienceDayLine(view)).toBeNull();
+    expect(experienceDayLine({ ...view, treat: true, treatTimes: 3 })).toBeNull();
   });
 
   it('names the Boon or Omen that changed it, up or down', () => {
     const day = [{ name: 'Hearty Breakfast', bp: 2500 }];
-    expect(experienceBoostLine({ ...view, dayEffects: day })).toBe(
+    expect(experienceDayLine({ ...view, dayEffects: day })).toBe(
       'Hearty Breakfast gave +25% experience',
     );
-    expect(experienceBoostLine({ ...view, dayEffects: [{ name: 'Cold Snap', bp: -2000 }] })).toBe(
+    expect(experienceDayLine({ ...view, dayEffects: [{ name: 'Cold Snap', bp: -2000 }] })).toBe(
       'Cold Snap gave -20% experience',
     );
-    expect(experienceBoostLine({ ...view, treat: true, treatTimes: 3, dayEffects: day })).toBe(
-      'Treat gave 3x experience and Hearty Breakfast gave +25%',
-    );
     expect(
-      experienceBoostLine({
+      experienceDayLine({ ...view, dayEffects: [...day, { name: 'Cold Snap', bp: -2000 }] }),
+    ).toBe('Hearty Breakfast gave +25% and Cold Snap gave -20% experience');
+    expect(
+      experienceDayLine({
         ...view,
-        treat: true,
-        treatTimes: 3,
-        dayEffects: [...day, { name: 'Cold Snap', bp: -2000 }],
+        dayEffects: [...day, { name: 'Cold Snap', bp: -2000 }, { name: 'Lucky Day', bp: 500 }],
       }),
-    ).toBe('Treat gave 3x experience, Hearty Breakfast gave +25% and Cold Snap gave -20%');
+    ).toBe('Hearty Breakfast gave +25%, Cold Snap gave -20% and Lucky Day gave +5% experience');
     // A day effect of nothing is not worth a line.
-    expect(
-      experienceBoostLine({ ...view, dayEffects: [{ name: 'Quiet Night', bp: 0 }] }),
-    ).toBeNull();
-  });
-});
-
-describe('the experience bar of a creature after a run', () => {
-  it('shows where it stands in its level, with the part just gained', () => {
-    expect(experienceBar(view)).toEqual({
-      level: 4,
-      levelsGained: 0,
-      value: 30,
-      max: 200,
-      text: '30 / 200 XP',
-      // 120 were gained, but only 30 are in the bar: it was empty at the start.
-      gained: 30,
-      gainedLine: '+120 experience',
-      boostLine: null,
-      note: null,
-    });
-    expect(experienceBar({ ...view, gained: 10 })).toMatchObject({ value: 30, gained: 10 });
-  });
-
-  it('counts the levels gained, and draws all of the new level as gained', () => {
-    const up = experienceBar({ ...view, levelBefore: 3, level: 5, exp: 50, treat: true });
-    expect(up).toMatchObject({ level: 5, levelsGained: 2, gained: 50, value: 50 });
-    expect(up.boostLine).toBe('Treat gave 2x experience');
-  });
-
-  it('says it waits at a level, and a Gold Ribbon; the top level is a full bar', () => {
-    expect(experienceBar({ ...view, waiting: true, exp: 200 }).note).toBe('Waiting at this level');
-    const gold = experienceBar({ ...view, levelBefore: 29, level: 30, needed: null, gold: true });
-    expect(gold).toMatchObject({ note: 'Gold Ribbon!', text: 'Top level', value: 1, max: 1 });
-    expect(experienceBar({ ...view, level: 30, levelBefore: 30, needed: null })).toMatchObject({
-      note: null,
-      gained: 0,
-    });
+    expect(experienceDayLine({ ...view, dayEffects: [{ name: 'Quiet Night', bp: 0 }] })).toBeNull();
   });
 });
 

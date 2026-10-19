@@ -74,7 +74,7 @@
 
 .cost-name {
   color: var(--haze);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
 }
 
 /* Ways to start a craft: a plain craft and the Reaches, each with its exact odds, time and cost. */
@@ -97,7 +97,7 @@ label.pick.reach .pick-text {
 
 .reach-odds {
   color: var(--bone);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 .reach-details {

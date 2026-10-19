@@ -1,7 +1,7 @@
 /* The inside of the stage popovers: the ability, its chips and buttons, the note and the help. */
 .ab-title {
   color: var(--gold);
-  font-size: 0.9375rem;
+  font-size: var(--fs-row);
   line-height: 1.2;
 }
 
@@ -33,7 +33,7 @@
   justify-content: center;
   min-height: 2.5rem;
   padding: 0.125rem 0.25rem;
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
   line-height: 1.1;
 }
 
@@ -43,7 +43,7 @@
 
 .ab-buttons small {
   font-family: var(--display);
-  font-size: 0.6875rem;
+  font-size: var(--fs-small);
 }
 
 /* The Auto fire toggle is not gold like Fire: on is a green bar and the word "on", off is plain. */
@@ -69,7 +69,7 @@ button.ab-auto-toggle:not(.on) small {
 
 .ab-pick-label {
   color: var(--haze);
-  font-size: 0.6875rem;
+  font-size: var(--fs-small);
 }
 
 .ab-chips {
@@ -85,7 +85,7 @@ button.ab-auto-toggle:not(.on) small {
   gap: 0.1875rem;
   min-height: 1.75rem;
   padding: 0 0.25rem;
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   line-height: 1;
 }
 

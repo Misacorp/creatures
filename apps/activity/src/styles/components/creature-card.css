@@ -27,7 +27,7 @@
   box-shadow: 0 0 0 var(--px) var(--ink);
   color: var(--ink);
   font-family: var(--display);
-  font-size: 1rem;
+  font-size: var(--fs-row);
   font-variant-numeric: tabular-nums;
   line-height: 1;
   letter-spacing: 0.02em;
@@ -46,7 +46,7 @@
 button.lounge-button {
   min-height: 2rem;
   padding: 0.125rem 0.625rem;
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 /* A shiny without its own palette: a gold dotted frame and two sparkles. */

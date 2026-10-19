@@ -38,7 +38,7 @@
   padding: 0.2rem;
   border: 2px solid var(--el, var(--line));
   background: var(--dusk);
-  font-size: 0.6875rem;
+  font-size: var(--fs-small);
   line-height: 1.2;
   text-align: center;
 }
@@ -63,7 +63,7 @@
   align-self: flex-start;
   color: var(--haze);
   font-family: var(--display);
-  font-size: 0.6875rem;
+  font-size: var(--fs-small);
 }
 
 .party-slot canvas.sprite {
@@ -73,6 +73,7 @@
 /* Names wrap to two lines at most; anything longer ends in an ellipsis. */
 .slot-species {
   display: -webkit-box;
+  flex-shrink: 0;
   max-width: 100%;
   font-weight: 600;
   line-clamp: 2;
@@ -237,5 +238,5 @@
 
 .drag-ghost-name {
   font-family: var(--display);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
 }

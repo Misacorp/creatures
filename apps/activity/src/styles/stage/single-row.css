@@ -20,7 +20,7 @@
 }
 
 .single-row .unit-name {
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
 }
 
 .single-row .unit-hp {
@@ -44,7 +44,7 @@
 .stage-foe-name {
   margin: 0;
   max-width: 100%;
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
   text-align: center;
   overflow-wrap: anywhere;
 }

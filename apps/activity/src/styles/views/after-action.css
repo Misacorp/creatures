@@ -13,7 +13,7 @@
 
 .after-action-headline {
   margin: 0 0 0.25rem;
-  font-size: 1.25rem;
+  font-size: var(--fs-heading);
 }
 
 .after-action-card.close .after-action-headline {
@@ -22,14 +22,14 @@
 
 .after-action-card h5 {
   margin: 0.75rem 0 0.25rem;
-  font-size: 0.9375rem;
+  font-size: var(--fs-row);
 }
 
 .bar-row {
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 .bar-row.you .bar-name {

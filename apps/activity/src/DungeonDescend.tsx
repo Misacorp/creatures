@@ -61,10 +61,11 @@ export function DungeonDescend({
       id="dungeon-descend-heading"
       title={descendTitle(descent)}
       class="dungeon-descend"
+      pix
       arrive
       footer={<></>}
     >
-      <p class="muted">{descendIntro(descent)}</p>
+      <p class="muted prose">{descendIntro(descent)}</p>
 
       <div class="descend-ledger">
         <section class="descend-part" aria-label="Banked now">
@@ -106,7 +107,7 @@ export function DungeonDescend({
           <GameIcon icon={{ kind: 'glyph', id: 'map-descend' }} scale={2} />
           <span>{DESCEND_UNDER_HEADING}</span>
         </h4>
-        <ul class="descend-lines">
+        <ul class="descend-lines prose">
           {lines.map((line) => (
             <li key={line}>{line}</li>
           ))}
@@ -125,7 +126,7 @@ export function DungeonDescend({
           >
             {DESCEND_BUTTON}
           </button>
-          <p class="muted">{DESCEND_RISK_LINE}</p>
+          <p class="muted prose">{DESCEND_RISK_LINE}</p>
         </div>
         <div class="descend-choice">
           <button
@@ -138,7 +139,7 @@ export function DungeonDescend({
           >
             {DESCEND_HOME_BUTTON}
           </button>
-          <p class="muted">{DESCEND_HOME_LINE}</p>
+          <p class="muted prose">{DESCEND_HOME_LINE}</p>
         </div>
       </div>
     </RevealShell>

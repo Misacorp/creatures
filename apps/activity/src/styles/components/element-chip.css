@@ -7,7 +7,7 @@
   padding: 0.125rem 0.5rem 0.125rem 0.25rem;
   background: var(--ink);
   font-family: var(--display);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
   line-height: 1.25;
 }
 

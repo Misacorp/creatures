@@ -80,7 +80,7 @@
   padding: 0 0.375rem;
   color: var(--bone);
   font-family: var(--display);
-  font-size: 1rem;
+  font-size: var(--fs-row);
   line-height: 1.2;
 }
 

@@ -55,13 +55,13 @@ button.evolve-form:active:not(:disabled) {
   gap: 0.125rem;
   color: var(--haze);
   font-family: var(--body);
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   line-height: 1.25;
 }
 
 .evolve-ability > strong {
   color: var(--bone);
-  font-size: 1rem;
+  font-size: var(--fs-row);
 }
 
 .evolve-stats {
@@ -74,14 +74,14 @@ button.evolve-form:active:not(:disabled) {
 
 .evolve-stats dt {
   color: var(--haze);
-  font-size: 0.6875rem;
+  font-size: var(--fs-small);
 }
 
 .evolve-stats dd {
   margin: 0;
   color: var(--bone);
   font-family: var(--display);
-  font-size: 1.125rem;
+  font-size: var(--fs-row);
   line-height: 1;
 }
 
@@ -109,5 +109,5 @@ button.evolve-form:active:not(:disabled) {
 .evolve-confirm button.primary {
   width: 100%;
   min-height: 2.75rem;
-  font-size: 1.25rem;
+  font-size: var(--fs-heading);
 }

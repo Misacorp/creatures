@@ -1,6 +1,6 @@
 /* The read-only worn-item list in a living room creature's popover (compact item rows, see loot.css). */
 .item-row-slot {
-  font-size: 1rem;
+  font-size: var(--fs-row);
 }
 
 .blocked-note {

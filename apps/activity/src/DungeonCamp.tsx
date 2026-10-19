@@ -33,6 +33,8 @@ import { creatureName, getSpecies } from './game';
 import { IN_TEAM_NOTE } from './roster-picker';
 import { ChoiceButton, ChoiceList } from './ui/ChoiceList';
 import { CountBadgeList } from './ui/CountBadge';
+import { DrillHead } from './ui/DrillHead';
+import { onDrillKey } from './ui/drill-keys';
 import { RevealShell } from './ui/RevealShell';
 import { RosterPicker } from './ui/RosterPicker';
 
@@ -122,6 +124,20 @@ export function DungeonCamp({
     ];
   };
 
+  /** The steps' way back: Back and Escape do the same (not while an act is running). */
+  const toMenu = (): void => {
+    setStep('menu');
+  };
+  /** Back from "who goes home" is back to the menu with nobody picked to come in. */
+  const fromOut = (): void => {
+    setIncoming(null);
+    setStep('menu');
+  };
+  const toOut = (): void => {
+    setStep('out');
+  };
+  const keysFor = (back: () => void) => (busy ? undefined : onDrillKey(back));
+
   const row = (
     ids: readonly string[],
     onChange: (order: string[]) => void,
@@ -134,12 +150,13 @@ export function DungeonCamp({
       id="dungeon-camp-heading"
       title={CAMP_TITLE}
       class="dungeon-camp"
+      pix
       arrive
       footer={<></>}
     >
       {step === 'menu' && (
         <>
-          <p class="muted">{CAMP_INTRO}</p>
+          <p class="muted prose">{CAMP_INTRO}</p>
           {row(order, setOrder)}
           <ChoiceList label="Pick one">
             <ChoiceButton
@@ -224,8 +241,15 @@ export function DungeonCamp({
       )}
 
       {step === 'keepsake' && (
-        <>
-          <h4>Take a keepsake</h4>
+        <div class="camp-step" onKeyDown={keysFor(toMenu)}>
+          <DrillHead
+            title="Take a keepsake"
+            level={4}
+            backLabel="to the camp"
+            focus
+            disabled={busy}
+            onBack={toMenu}
+          />
           <ChoiceList label="Keepsakes on offer">
             {camp.offers.map((offer) => (
               <ChoiceButton
@@ -239,24 +263,20 @@ export function DungeonCamp({
               />
             ))}
           </ChoiceList>
-          <p>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setStep('menu');
-              }}
-            >
-              Back
-            </button>
-          </p>
-        </>
+        </div>
       )}
 
       {step === 'out' && (
-        <>
-          <h4>Who goes home?</h4>
-          <p class="muted">
+        <div class="camp-step" onKeyDown={keysFor(fromOut)}>
+          <DrillHead
+            title="Who goes home?"
+            level={4}
+            backLabel="to the camp"
+            focus
+            disabled={busy}
+            onBack={fromOut}
+          />
+          <p class="muted prose">
             {comesIn === undefined ? 'A fresh creature' : creatureName(comesIn)} comes in at full
             HP.
           </p>
@@ -277,25 +297,20 @@ export function DungeonCamp({
               />
             ))}
           </ChoiceList>
-          <p>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setIncoming(null);
-                setStep('menu');
-              }}
-            >
-              Back
-            </button>
-          </p>
-        </>
+        </div>
       )}
 
       {step === 'arrange' && (
-        <>
-          <h4>Arrange your row</h4>
-          <p class="muted">{CAMP_ARRANGE_LINE}</p>
+        <div class="camp-step" onKeyDown={keysFor(toOut)}>
+          <DrillHead
+            title="Arrange your row"
+            level={4}
+            backLabel="to who goes home"
+            focus
+            disabled={busy}
+            onBack={toOut}
+          />
+          <p class="muted prose">{CAMP_ARRANGE_LINE}</p>
           {row(arranged, setArranged)}
           <p class="button-row camp-arrange-actions">
             <button
@@ -308,17 +323,8 @@ export function DungeonCamp({
             >
               Swap and push on
             </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setStep('out');
-              }}
-            >
-              Back
-            </button>
           </p>
-        </>
+        </div>
       )}
 
       {picking && (

@@ -200,7 +200,7 @@ button.unit-face:focus-visible {
   height: 1.25rem;
   padding: 2px;
   background: var(--ink);
-  font-size: 0.6875rem;
+  font-size: var(--fs-small);
   line-height: 1;
 }
 

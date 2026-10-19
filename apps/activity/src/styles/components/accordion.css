@@ -42,7 +42,7 @@
   padding: 0.35rem 0.75rem 0.35rem 0.25rem;
   background: var(--dusk-2);
   color: var(--bone);
-  font-size: 1.125rem;
+  font-size: var(--fs-row);
   text-align: left;
   box-shadow:
     inset 0 var(--px) 0 0 var(--bevel-hi),
@@ -107,7 +107,7 @@
   padding: 0.125rem 0.5rem;
   background: var(--ink);
   color: var(--haze);
-  font-size: 1rem;
+  font-size: var(--fs-row);
   line-height: 1.1;
   box-shadow: inset 0 0 0 2px var(--line);
 }
@@ -160,7 +160,7 @@
 
 .acc-head.compact {
   min-height: 2.5rem;
-  font-size: 1rem;
+  font-size: var(--fs-row);
   box-shadow: none;
 }
 
@@ -192,7 +192,7 @@
   padding-left: 0.125rem;
   background: transparent;
   color: var(--haze);
-  font-size: 1rem;
+  font-size: var(--fs-row);
   box-shadow: none;
 }
 

@@ -322,13 +322,14 @@ const revealShell: Entry = {
   file: 'apps/activity/src/ui/RevealShell.tsx',
   group: 'Loot & reveals',
   description:
-    'The card every reveal sits in: a heading with an optional badge, the content, and a "Got it" button (or the screen\'s own buttons); it holds the finale loot, claimed jobs and trips.',
+    'The card every reveal sits in: a heading with an optional badge, the content, and a "Got it" button (or the screen\'s own buttons); it holds the finale loot, claimed jobs and trips. With `pix` it is a pixel panel (the dungeon\'s camp, mystery rooms and descent): the pixel font on the whole card, body text for the reading lines.',
   controls: {
     title: { kind: 'text', maxLength: 40 },
     badge: { kind: 'toggle' },
     cleared: { kind: 'toggle' },
     busy: { kind: 'toggle' },
     ownFooter: { kind: 'toggle' },
+    pix: { kind: 'toggle' },
     body: { kind: 'text', maxLength: 120 },
   },
   defaults: {
@@ -337,6 +338,7 @@ const revealShell: Entry = {
     cleared: true,
     busy: false,
     ownFooter: false,
+    pix: false,
     body: 'You earned 40 Essence and a Kelp Cap.',
   },
   presets: [
@@ -348,11 +350,16 @@ const revealShell: Entry = {
     { name: 'No badge', props: { badge: false } },
     { name: 'Own buttons', props: { ownFooter: true } },
     { name: 'Busy', props: { busy: true } },
+    {
+      name: 'A pixel panel (the dungeon cards)',
+      props: { pix: true, ownFooter: true, badge: false, title: 'Camp' },
+    },
   ],
   render: (p) => (
     <RevealShell
       id="wb-reveal"
       title={str(p, 'title')}
+      pix={bool(p, 'pix')}
       {...(bool(p, 'badge') ? { badge: <OutcomeBadge cleared={bool(p, 'cleared')} /> } : {})}
       busy={bool(p, 'busy')}
       onDismiss={() => undefined}
@@ -370,6 +377,7 @@ const revealShell: Entry = {
         : {})}
     >
       <p>{str(p, 'body')}</p>
+      {bool(p, 'pix') && <p class="muted prose">Reading text keeps the body font.</p>}
     </RevealShell>
   ),
 };
