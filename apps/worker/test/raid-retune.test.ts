@@ -2,6 +2,7 @@ import { RULES, content } from '@creatures/game';
 import { liveFightRules, phaseFloorHp, raidEnrage } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { loadLive, scheduleRounds, type LiveRow } from '../src/raid-live';
+import type { PostMessage } from '../src/discord-format';
 import { queuePhasePost } from '../src/raid-posts';
 import { buildPhaseInput, outcomeFlags } from '../src/raid-resolve';
 import { hpNeeded } from '../src/raid-stats';
@@ -268,7 +269,8 @@ describe('the Discord post of a stage', () => {
         ctx.sql,
         "SELECT content FROM discord_posts WHERE key = 'raid:2027-W02:phase1:1'",
       );
-      expect(post?.content).toContain(`Phase 1 cleared: ${run.input.boss.name} retreated.`);
+      const message = JSON.parse(post?.content ?? '{}') as PostMessage;
+      expect(message.embeds[0]?.title).toBe(`✅ ${run.input.boss.name} retreats`);
     });
   });
 });

@@ -991,7 +991,7 @@ describe('the raid stage under the weather', () => {
     );
   });
 
-  it('says the sky in the Monday reveal and in the stage post, in one escaped line', async () => {
+  it('leaves the sky out of the Monday reveal and the stage post (it is not raid news)', async () => {
     await runRaid(
       async (ctx) => {
         const seeded = players(ctx, 4);
@@ -1012,13 +1012,13 @@ describe('the raid stage under the weather', () => {
             ctx.sql,
             'SELECT key, content FROM discord_posts ORDER BY id',
           );
-        expect(posts()[0]?.content).toContain("Today's sky: Bonfire Night and Cold Snap.");
+        expect(posts()[0]?.content).not.toMatch(/sky|Bonfire Night|Cold Snap/i);
         ctx.core.weather.force(phase1Day(), 'market-day', 'long-shadows');
         forcePool(ctx.sql, 20_000);
         ctx.clock.t = W02.afterPhase1;
         ctx.core.raid.runDue(HELSINKI);
         const stage = posts().find((p) => p.key.includes(':phase1:'));
-        expect(stage?.content).toContain('Sky: Market Day and Long Shadows.');
+        expect(stage?.content).not.toMatch(/sky|Market Day|Long Shadows/i);
         expect(count(ctx.sql, 'discord_posts')).toBeGreaterThanOrEqual(2);
       },
       { core: { weather: true } },
