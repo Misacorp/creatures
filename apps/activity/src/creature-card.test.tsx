@@ -294,7 +294,7 @@ describe('the one gold button', () => {
   it('evolves when evolution is ready', () => {
     const { card, actions, page: p } = draw(kind('evolve ready'));
     const gold = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
-    expect(visibleText(gold)).toContain('Choose an evolution');
+    expect(visibleText(gold)).toContain('Evolve');
     expect(visibleText(gold)).toContain('20 Essence');
     p.click(gold);
     expect(actions.onEvolve).toHaveBeenCalledTimes(1);

@@ -26,7 +26,7 @@ describe('what a creature needs', () => {
 
   it('needs to evolve when the server says it can', () => {
     expect(creatureNeeds(sampleCreature('evolve ready'), plainState)).toEqual([
-      { kind: 'evolve', label: 'Choose an evolution', detail: '20 Essence' },
+      { kind: 'evolve', label: 'Evolve', detail: '20 Essence' },
     ]);
     const locked = sampleCreature('evolve ready');
     const notYet = {
@@ -41,7 +41,7 @@ describe('what a creature needs', () => {
     expect(creatureNeeds({ ...ready, away: true }, plainState)).toEqual([
       {
         kind: 'evolve',
-        label: 'Choose an evolution',
+        label: 'Evolve',
         detail: 'Away on a trip',
         blocked: 'Away on a trip',
       },

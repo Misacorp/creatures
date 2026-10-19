@@ -13,13 +13,18 @@
   gap: 0.5rem;
 }
 
-/* The pixel armchair: in the text's colour, with a clear gap before the words (button and badge). */
+/* The pixel armchair: in the text's colour, with a clear gap before the words of the Lounge button. */
 .armchair-icon {
   display: inline-block;
   flex: none;
   margin-right: 0.625rem;
   vertical-align: -0.1875rem;
   fill: currentcolor;
+}
+
+/* In the small "Lounging" badge the gap is a tag's own: the button's would push the word away. */
+.badge .armchair-icon {
+  margin-right: 0.25rem;
 }
 
 button.lounge-button {

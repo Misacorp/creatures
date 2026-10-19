@@ -197,7 +197,7 @@ describe('the Creatures tab and the evolve screen', () => {
     const { page: p, root, onEvolve } = tab([creature]);
     expect(byRole(root, 'dialog')).toHaveLength(0);
     const gold = byClass(root, 'cc-do')[0]?.childNodes[0] as FakeElement;
-    expect(visibleText(gold)).toContain('Choose an evolution');
+    expect(visibleText(gold)).toContain('Evolve');
     p.click(gold);
     // The press only opened the screen: nothing was spent yet.
     expect(onEvolve).not.toHaveBeenCalled();

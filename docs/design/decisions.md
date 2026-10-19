@@ -2143,3 +2143,12 @@ Misa approved variant E of the creature card (the workbench mock of the same day
 - **Tags.** Away and On a job keep their glossary help as before (with the "?"), as on the page; the element, role, species, Festival, Shiny and First on server are plain, as in E (the whole card opens the page, where they have their help). The old icon-only element chip is now the word with its icon.
 - **The name** never wraps: a nickname is at most 20 letters ("Captain Puddlestomps" fits at 360 px at title size), and one too wide ends in "…" (clipped across only, so the letters' tails show). E's step down to heading size past 20 letters is dropped, since no nickname can be longer.
 - **The creature page is unchanged.** Its head is `creature-page/PageHeader`, which shares no markup with the card (only the `.cc-sub` badge line and the `.portrait` box, both kept).
+
+## 2026-10-19: Round 5 touch-ups: the multiplier tag in plain colours, "Evolve", one-row card button, a tighter Lounging badge
+
+Misa, after round 5: "the 2x (or similar) modifier in exp could be the default tag color instead of the varying color it is now. It's a modifier that can appear on any type of exp"; "The lounging tag has a bit too much space between the armchair icon and text. Let's also change the evolution button text to just "Evolve". I guess we can keep the price but let's bring it to the same row (saves vertical space)." He also kept the cherries as the treat icon.
+
+- **The multiplier tag** ("3.15x") is bone on ink like every other small tag, whatever the XP kind (Experience gold, Explorer orchid, Crafting leather). Open, it turns ink on bone, so it still shows its popover is open.
+- **"Evolve".** The card's gold button and the creature page's button say "Evolve" for every line (before: "Evolve into Pyrelynx" or "Choose an evolution"). A line with two forms still opens the evolve screen, which names both. A line with one form still evolves on the tap, and the button no longer names the form.
+- **The card's gold button is one row** when it fits: the words, then the cost or the reason it is off ("Evolve 20 Essence", "Earn Bronze Ribbon 3 Scrap", "Evolve Away on a trip"), wrapping to two rows only on a long one. Its height goes from 3 rem to 2.75 rem (still a full touch target). Every need uses this button, so all of them move to one row.
+- **The armchair** keeps its wide gap in the Lounge button; in the "Lounging" badge (the card and the page) the gap is a tag's own (0.25 rem).

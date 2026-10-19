@@ -234,7 +234,6 @@ button.xp-boost::after {
 
 .xp-boost .tag.xp-times {
   padding: 0.0625rem 0.25rem 0;
-  color: var(--xp-fill);
   line-height: 1.15;
   white-space: nowrap;
 }
@@ -245,7 +244,7 @@ button.xp-boost:focus-visible {
 }
 
 .xp-boost.open .tag.xp-times {
-  background: var(--xp-fill);
+  background: var(--bone);
   color: var(--ink);
 }
 

@@ -123,10 +123,7 @@ export function evolutionText(
   if (evolution.available) {
     return {
       available: true,
-      label:
-        evolution.alt === undefined
-          ? `Evolve into ${target} (${String(evolution.essence)} Essence)`
-          : `Choose an evolution (${String(evolution.essence)} Essence)`,
+      label: `Evolve (${String(evolution.essence)} Essence)`,
     };
   }
   const needs: string[] = [];

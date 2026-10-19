@@ -307,7 +307,7 @@ describe('the creature page: the buttons for what is ready', () => {
 
   it('has a gold evolve button when evolution is ready, and answers a waiting catch', () => {
     const evolve = draw('evolve ready');
-    const button = first(byName(evolve.root, 'button', 'Choose an evolution (20 Essence)'));
+    const button = first(byName(evolve.root, 'button', 'Evolve (20 Essence)'));
     expect(button.getAttribute('class')).toContain('primary');
     evolve.page.click(button);
     expect(evolve.actions.onEvolve).toHaveBeenCalledTimes(1);
@@ -332,7 +332,7 @@ describe('the creature page: evolving a busy creature', () => {
     } = draw('evolve ready', {
       change: (c) => ({ ...c, busy: { kind: 'job', id: 'job-1' } }),
     });
-    const button = first(byName(root, 'button', /^Choose an evolution/));
+    const button = first(byName(root, 'button', /^Evolve \(/));
     expect(button.hasAttribute('disabled')).toBe(true);
     expect(visibleText(root)).toContain('On a job');
     p.click(button);

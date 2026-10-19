@@ -60,7 +60,7 @@ function EvolveDemo({ p }: { p: Props }) {
             setOpen(true);
           }}
         >
-          Choose an evolution
+          Evolve
         </button>
       </div>
       <EvolveDrawer

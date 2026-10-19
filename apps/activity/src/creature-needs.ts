@@ -40,10 +40,8 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
     needs.push({
       ...(blocked === null ? {} : { blocked }),
       kind: 'evolve',
-      label:
-        creature.evolution.alt === undefined
-          ? `Evolve into ${speciesName(creature.evolution.toSpecies)}`
-          : 'Choose an evolution',
+      // Just the verb: the evolve screen names the form (or the two to choose from).
+      label: 'Evolve',
       detail: blocked ?? `${String(creature.evolution.essence)} Essence`,
     });
   }

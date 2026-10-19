@@ -167,6 +167,11 @@ button.cc-open:focus-visible {
   flex: none;
 }
 
+/* The card's badges already space their icon (the flex gap). */
+.cc-tags > .badge .armchair-icon {
+  margin-right: 0;
+}
+
 /* The page's activity badges (Away, On a job, Lounging) under its name. */
 .cc-sub {
   display: flex;
@@ -307,16 +312,19 @@ button.cc-talents:active:not(:disabled) {
 }
 
 .cc-do button {
-  display: block;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.5rem;
+  align-items: baseline;
+  justify-content: center;
   width: 100%;
-  min-height: 3rem;
+  min-height: 2.75rem;
   font-size: var(--fs-heading);
   line-height: 1.1;
 }
 
+/* The cost (or what holds it back) on the same row as the words, when it fits: one row saves height. */
 .cc-do button small {
-  display: block;
-  margin-top: 0.0625rem;
   font-family: var(--body);
   font-size: var(--fs-small);
 }
