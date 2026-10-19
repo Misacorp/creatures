@@ -7,6 +7,8 @@
  * foe twice on a floor; at least three elements), with real content ids. The fight inside `sampleRoom`
  * is the real one of `fixtures/dungeon-replay.json`, so its events are valid for the stage.
  */
+import type { Creature } from './api';
+import { sampleRoster } from './creature-card-sample';
 import { sampleHistory } from './dungeon-map-sample';
 import replayFixture from './fixtures/dungeon-replay.json';
 import todayFixture from './fixtures/dungeon-today.json';
@@ -236,6 +238,21 @@ export function sampleStateEvent(): DungeonRunState {
     reachable: [],
     pending: { kind: 'event', event: SAMPLE_EVENT },
     lastEvent: null,
+  });
+}
+
+/**
+ * The player's creatures at the camp: the camp's own row of three first (the same ids, species and levels,
+ * so the swap picker leaves them out as the game does), then extras up to `count`. With `count` at 3 nobody
+ * is left to swap in.
+ */
+export function sampleCampCreatures(count: number): Creature[] {
+  const team = sampleStateCamp().team;
+  return sampleRoster(count).map((creature, i) => {
+    const member = team[i];
+    return member === undefined
+      ? creature
+      : { ...creature, id: member.id, species: member.speciesId, level: member.level };
   });
 }
 

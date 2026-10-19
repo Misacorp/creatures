@@ -1,6 +1,6 @@
 # Analytics and reports
 
-Status: **plan**, 2026-10-13. Roadmap item 1.
+Status: **shipped** (PR #12), 2026-10-14. Roadmap item 5, with phase 2 (`pnpm analyze`, the report workflow).
 
 ## Goal
 

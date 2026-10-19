@@ -2,7 +2,7 @@
 
 Misa wants to see what one player's progress looks like N weeks into the game, for different play styles: where they wait for meaningful upgrades, what those upgrades are, and what holds them back. The journeys then feed the raid and dungeon balance runs, so tuning reflects real play styles instead of one spending policy.
 
-Status: slices 1 to 4 are built (`packages/sim`, `pnpm sim:journey`); slices 5 and 6 are not. Nothing here changes the game.
+Status: slices 1 to 4 are built (`packages/sim`, `pnpm sim:journey`); slice 5 is in part (`pnpm sim:curve`); slice 6 is not. Nothing here changes the game.
 
 ## What existed before
 
@@ -12,7 +12,7 @@ What it lacked, and what this work adds:
 
 - **Play styles differed only in effort.** The four archetypes (`archetypes.ts`: casual, daily, top earner, newcomer) differed in leet days a week, check-ins a day and raid sign-up; they all spent the same way (`policy.ts`: push one creature to its evolution, then level the top three evenly). Now every habit and decision is a dial of a **profile** (`profiles.ts`), and the archetypes are four profiles with exactly today's behaviour.
 - **Averages, not journeys.** The output was server means per week. Now a recorder (`journey.ts`) logs each player's milestones, power, binding limit, waits and currencies day by day.
-- **One income model.** Bait came only from leets (`apps/worker/src/economy.ts` `baitForDay`). Now income is pluggable (`income.ts`).
+- **One income model.** Bait came only from leets (`packages/game/src/rules/economy.ts` `baitForDay`). Now income is pluggable (`income.ts`).
 
 The power study (B-009 in `docs/balance/log.md`) showed what the journey view must answer: power grows mostly from catches and evolutions until week 6 and only from levels after that; training cost (3 + 2 x level) outgrows flat Bait; Essence, shards and glimmer pile up while scrap runs short.
 
@@ -54,7 +54,7 @@ A server is a mix: default 1 min-maxer, 3 engaged, 3 regular, 2 drop-in; `--serv
 Income is a pluggable rule (`income.ts`, `--income`, `EconomyOptions.income`), so the sims can compare the shipped income with the old one. Both read their numbers from the shipped rules.
 
 - **`allowance`** (the shipped income, and the default of both `pnpm sim` and `pnpm sim:journey`): every player who opens the game that day gets `dailyAllowance()` (25 Bait) and every leeter gets `leetBonusForDay(n)` on top (15 for 1 or 2 leeters, up to 32 at 10 or more; `packages/game/src/rules/income.ts`, `RULES.income`). Login days and leet days are separate in the profiles, so a player who opens the game daily but leets twice a week earns the allowance daily and the bonus twice.
-- **`current`** (the income before the allowance, kept selectable for comparisons): a leet pays `baitForDay(n)` Bait to each of the n players who leeted that day (`apps/worker/src/economy.ts`, 35 to 70 Bait). No income without a leet. The "today is unchanged" test is pinned to this model.
+- **`current`** (the income before the allowance, kept selectable for comparisons): a leet pays `baitForDay(n)` Bait to each of the n players who leeted that day (`packages/game/src/rules/economy.ts`, 35 to 70 Bait). No income without a leet. The "today is unchanged" test is pinned to this model.
 
 The journey runs pair the two models on the same seeds (same servers, same dice streams until the Bait differs).
 

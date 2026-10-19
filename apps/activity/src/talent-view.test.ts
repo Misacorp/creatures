@@ -2,23 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { parseGameState, type Creature } from './api';
 import { autoSettledLines, noCatchLine } from './find-view';
 import stateAfter from './fixtures/creatures-state-after.json';
-import state from './fixtures/creatures-state.json';
 import chooseFuse from './fixtures/creatures-choose-fuse.json';
 import chooseRelease from './fixtures/creatures-choose-release.json';
 import chooseTeach from './fixtures/creatures-choose-teach.json';
-import type { PendingCatch } from './talent-types';
-import {
-  bookActions,
-  bookRows,
-  cardsFor,
-  choiceResultText,
-  slotTitle,
-  talentLine,
-  talentTextParts,
-} from './talent-view';
+import { bookActions, bookRows, choiceResultText, slotTitle, talentTextParts } from './talent-view';
 
-const waiting = parseGameState(state);
-const second = waiting.pending[1] as PendingCatch;
 const after = parseGameState(stateAfter);
 describe('what Recommended says and what happened', () => {
   it('tells each result in a sentence', () => {
@@ -48,12 +36,6 @@ describe('what Recommended says and what happened', () => {
       ),
     ).toBe('Kept Splashet as a second creature.');
   });
-
-  it('picks the cards of one claim out of the waiting ones, oldest first', () => {
-    expect(cardsFor(waiting).map((c) => c.id)).toEqual(waiting.pending.map((c) => c.id));
-    expect(cardsFor(waiting, [second.id]).map((c) => c.id)).toEqual([second.id]);
-    expect(cardsFor(waiting, [])).toEqual([]);
-  });
 });
 
 describe('the talents on a creature card', () => {
@@ -71,13 +53,6 @@ describe('the talents on a creature card', () => {
     expect(actions.some((a) => a.entry === slotted)).toBe(false);
     // Slot 2 is closed: nothing goes there.
     expect(actions.some((a) => a.slot === 2)).toBe(false);
-  });
-
-  it('reads a talent in a line of text, with Golden said in words', () => {
-    const plain = card.talents.book.find((t) => !t.golden);
-    const golden = card.talents.book.find((t) => t.golden);
-    expect(talentLine(plain as never)).toMatch(/^Splashes First: First pounce \+14%$/);
-    expect(talentLine(golden as never)).toBe('Bigger Splash: Marking hit +19% (golden)');
   });
 });
 

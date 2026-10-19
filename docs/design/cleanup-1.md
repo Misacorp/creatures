@@ -1,6 +1,6 @@
 # Cleanup pass 1
 
-Status: **plan**, 2026-10-13. Roadmap item 6/7, after analytics. Misa: "a cleanup pass. I hope it can also include bringing UX components into line with one another: reducing duplicate code, unifying repeating patterns, etc."
+Status: **shipped** (PR #14, except slice 3), by 2026-10-15. Planned 2026-10-13. Roadmap item 6/7, after analytics. Misa: "a cleanup pass. I hope it can also include bringing UX components into line with one another: reducing duplicate code, unifying repeating patterns, etc."
 
 **Goal:** the same thing looks and behaves the same everywhere, there is one component per pattern, there is less code, and nothing visibly changes unless the change is to make it consistent. The behaviour is protected by the existing tests plus screenshot comparisons.
 

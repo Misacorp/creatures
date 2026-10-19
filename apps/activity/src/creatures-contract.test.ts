@@ -5,7 +5,6 @@ import chooseRelease from './fixtures/creatures-choose-release.json';
 import chooseTeach from './fixtures/creatures-choose-teach.json';
 import claim from './fixtures/creatures-claim.json';
 import creaturesErrors from './fixtures/creatures-errors.json';
-import recommendedAll from './fixtures/creatures-recommended-all.json';
 import requestBodies from './fixtures/creatures-request-bodies.json';
 import slot from './fixtures/creatures-slot.json';
 import stateAfter from './fixtures/creatures-state-after.json';
@@ -21,7 +20,7 @@ import { ApiError, parseGameState } from './api';
 import { parseClaimResponse } from './expedition-api';
 import { isTripResult } from './expedition-parse';
 import { errorText } from './game';
-import { chooseAllRecommended, chooseCatch, slotTalent } from './talent-api';
+import { chooseCatch, slotTalent } from './talent-api';
 import {
   isChoiceResult,
   isCreatureTalents,
@@ -210,15 +209,7 @@ describe('the requests the client sends', () => {
     expect(lastRequest().body).toEqual(fuse);
   });
 
-  it('applies Recommended to all, and slots a talent from the book', async () => {
-    apiFetch.mockResolvedValue(recommendedAll);
-    const all = bodyOf('creatures-recommended-all');
-    const done = await chooseAllRecommended(all.body.idempotencyKey);
-    expect(done.results.length).toBeGreaterThan(1);
-    expect(done.results.every((r) => r.auto)).toBe(true);
-    expect(lastRequest()).toEqual({ path: all.path, method: 'POST', body: all.body });
-
-    apiFetch.mockReset();
+  it('slots a talent from the book', async () => {
     apiFetch.mockResolvedValue(slot);
     const put = bodyOf('creatures-slot');
     const slotted = await slotTalent(
@@ -235,8 +226,6 @@ describe('the requests the client sends', () => {
   it('refuses answers of the wrong shape', async () => {
     apiFetch.mockResolvedValue({ result: { choice: 'teach' }, state });
     await expect(chooseCatch('x', { choice: 'release' }, 'k')).rejects.toThrow();
-    apiFetch.mockResolvedValue({ results: 'none', state });
-    await expect(chooseAllRecommended('k')).rejects.toThrow();
     apiFetch.mockResolvedValue({ result: { slot: 1 }, state });
     await expect(slotTalent('c', { talentId: 't', golden: false, slot: 1 }, 'k')).rejects.toThrow();
   });

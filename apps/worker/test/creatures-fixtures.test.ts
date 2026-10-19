@@ -16,49 +16,24 @@ import {
   CatchRecommendedBodySchema,
   TalentSlotBodySchema,
 } from '../src/collection-schemas';
-import { creaturesScenarioOptions, runCreaturesScenario } from './creatures-scenario';
-import { runCore } from './helpers';
-import { nextGuild } from './raid-helpers';
+import { expectSameShape } from './fixture-contract';
+import { fixtureSet } from './fixture-sets';
 
 /**
  * The contract with the client for the duplicate choice and the Talent Book. The files in
- * `apps/activity/src/fixtures` were captured from real server output (`creatures-scenario.ts` plays the
- * game through the real routes). These tests run that scenario again and compare the SHAPE of every
+ * `apps/activity/src/fixtures` were captured from real server output (`pnpm fixtures:capture` plays
+ * `creatures-scenario.ts` through the real routes, see `fixture-sets.ts`). These tests run that scenario again and compare the SHAPE of every
  * response (keys and types, not values), so a change in what the server sends fails here and points at the
  * fixtures and the client parsers (`apps/activity/src/talent-parse.ts`).
  */
 const UPDATE =
-  'the server shape changed: re-capture apps/activity/src/fixtures with test/creatures-capture.test.ts and update the client parsers';
+  'the server shape changed: run `pnpm fixtures:capture`, review the diff of apps/activity/src/fixtures and update the client parsers (apps/activity/src/talent-parse.ts)';
 
-/** Keys and value types, recursively; arrays are the set of their elements' shapes. */
-function shape(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    const shapes = new Set(value.map((x) => JSON.stringify(shape(x))));
-    return [...shapes].sort().map((s) => JSON.parse(s) as unknown);
-  }
-  if (value === null) return 'null';
-  if (typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([a], [b]) => (a < b ? -1 : 1))
-        .map(([k, x]) => [k, shape(x)]),
-    );
-  }
-  return typeof value;
-}
-
-const sameShape = (live: unknown, fixture: unknown): void => {
-  expect(shape(live), UPDATE).toEqual(shape(fixture));
-};
+const sameShape = (live: unknown, fixture: unknown): void => expectSameShape(live, fixture, UPDATE);
 
 describe('the creatures fixtures match what the server sends', () => {
   it('has the same responses for the whole scenario', async () => {
-    const options = creaturesScenarioOptions();
-    const captured = await runCore(
-      nextGuild(),
-      (ctx) => runCreaturesScenario(ctx, options.talentRng),
-      options,
-    );
+    const captured = await fixtureSet('creatures').run();
     const r = captured.responses;
     sameShape(r['creatures-claim'], claim);
     sameShape(r['creatures-state'], state);

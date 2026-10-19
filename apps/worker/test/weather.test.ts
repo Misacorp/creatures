@@ -1,16 +1,11 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import { RULES, createSeededRng, seasonOf, weatherDef, type Rng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import forecastFixture from '../../activity/src/fixtures/weather-forecast.json';
 import { addWeeks, eventTimes, weekIdFor, weekIndex } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
 import { readWeatherDay, type ForecastView } from '../src/weather';
-import {
-  LATEST_SCHEMA_VERSION,
-  USER_ID,
-  runCore,
-  undoWeatherMigration,
-  type CoreContext,
-} from './helpers';
+import { USER_ID, runCore, undoWeatherMigration, type CoreContext } from './helpers';
 import { DAY, HELSINKI, HOUR, MINUTE, count, nextGuild, rows } from './raid-helpers';
 
 const USER = { id: USER_ID, displayName: 'Misa' };
@@ -100,7 +95,7 @@ describe('migration 31 (the weather)', () => {
         expect(columns('weather_days')).toContain('boon_bp');
         expect(columns('expeditions')).toContain('weather_json');
         expect(ctx.sql.exec('SELECT MAX(version) AS v FROM schema_version').one()['v']).toBe(
-          LATEST_SCHEMA_VERSION,
+          SCHEMA_VERSION,
         );
         // The check constraints hold: a wild flag is 0 or 1, a strength is never 0.
         expect(() =>

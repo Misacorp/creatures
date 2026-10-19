@@ -1,6 +1,6 @@
 # Systems review: what each system is for, and the gear and creature revamps
 
-Status: **proposal for Misa's review**, 2026-10-16. Nothing here is built. Asked for in decision 8 of 2026-10-16 ("Misa's direction after the raid retune").
+Status: **answered** by Misa, 2026-10-16; superseded by `gear-and-creatures-v2.md`. Its decisions were built in #27 (supplies), #31 and #35. Asked for in decision 8 of 2026-10-16 ("Misa's direction after the raid retune").
 
 **Misa answered the questions on 2026-10-16** (`decisions.md`, "Misa's answers to the systems review"). Where his answers differ from the proposals below (no rerolls or risk-free upgrades for now, no enchanting, gear share by journey stage, Essence for advanced features rather than training), his answers win.
 

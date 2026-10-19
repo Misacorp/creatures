@@ -6,48 +6,63 @@ import { randomInput, rng } from './helpers';
 const phases = ['phase1', 'phase2', 'finale'] as const;
 const SEEDS = 150;
 
-function checkResult(inp: FightInput, r: FightResult): void {
-  const ints = (o: Record<string, number | string | null>) => {
-    for (const v of Object.values(o)) {
-      if (typeof v === 'number') {
-        expect(Number.isSafeInteger(v)).toBe(true);
-        expect(v).toBeGreaterThanOrEqual(0);
-      }
+/**
+ * Checks one result and returns what is wrong with it, one line per broken property (empty when all
+ * hold). The checks run in hot loops (every event of every fight), so they do not call `expect`
+ * each time: a failing run asserts once, on the list, and the lines say what broke and with what.
+ */
+function checkResult(inp: FightInput, r: FightResult): string[] {
+  const bad: string[] = [];
+  const check = (ok: boolean, what: string, got?: unknown): void => {
+    if (!ok) bad.push(got === undefined ? what : `${what}: got ${JSON.stringify(got)}`);
+  };
+  const isInt = (v: number) => Number.isSafeInteger(v) && v >= 0;
+  const ints = (what: string, o: Record<string, number | string | null>) => {
+    for (const [k, v] of Object.entries(o)) {
+      if (typeof v === 'number') check(isInt(v), `${what}.${k} is a non-negative integer`, v);
     }
   };
   // Boss HP stays within [0, max] and only goes down.
-  expect(r.bossHpEnd).toBeGreaterThanOrEqual(0);
-  expect(r.bossHpEnd).toBeLessThanOrEqual(r.bossHpStart);
-  expect(r.bossHpStart).toBe(inp.bossHpPool.current);
-  expect(r.rounds).toBeGreaterThanOrEqual(1);
+  check(r.bossHpEnd >= 0, 'bossHpEnd >= 0', r.bossHpEnd);
+  check(r.bossHpEnd <= r.bossHpStart, 'bossHpEnd <= bossHpStart', [r.bossHpEnd, r.bossHpStart]);
+  check(r.bossHpStart === inp.bossHpPool.current, 'bossHpStart is the pool', r.bossHpStart);
+  check(r.rounds >= 1, 'at least one round', r.rounds);
   let last = r.bossHpStart;
   for (const e of r.events) {
     if (e.t === 'hit') {
-      expect(e.bossHp).toBeGreaterThanOrEqual(0);
-      expect(e.bossHp).toBeLessThanOrEqual(last);
-      expect(Number.isSafeInteger(e.damage)).toBe(true);
+      check(e.bossHp >= 0, 'hit bossHp >= 0', e.bossHp);
+      check(e.bossHp <= last, 'hit bossHp only goes down', [e.bossHp, last]);
+      check(Number.isSafeInteger(e.damage), 'hit damage is an integer', e.damage);
       last = e.bossHp;
     }
   }
-  expect(last).toBe(r.bossHpEnd);
+  check(last === r.bossHpEnd, 'last hit leaves bossHpEnd', [last, r.bossHpEnd]);
 
   // Totals are integers and contributions add up.
   let damage = 0;
   let setup = 0;
   let support = 0;
   let guard = 0;
-  for (const t of Object.values(r.perPlayer)) {
-    ints(t as unknown as Record<string, number>);
-    expect(t.contribution).toBe(t.damage + t.setupCredit + t.supportCredit + t.guardCredit);
+  for (const [id, t] of Object.entries(r.perPlayer)) {
+    ints(`perPlayer.${id}`, t as unknown as Record<string, number>);
+    check(
+      t.contribution === t.damage + t.setupCredit + t.supportCredit + t.guardCredit,
+      `perPlayer.${id} contribution adds up`,
+      t,
+    );
   }
   for (const [id, t] of Object.entries(r.perCreature)) {
-    ints(t as unknown as Record<string, number>);
-    expect(t.contribution).toBe(t.damage + t.setupCredit + t.supportCredit + t.guardCredit);
+    ints(`perCreature.${id}`, t as unknown as Record<string, number>);
+    check(
+      t.contribution === t.damage + t.setupCredit + t.supportCredit + t.guardCredit,
+      `perCreature.${id} contribution adds up`,
+      t,
+    );
     damage += t.damage;
     setup += t.setupCredit;
     support += t.supportCredit;
     guard += t.guardCredit;
-    expect(id).toBeTruthy();
+    check(Boolean(id), 'creature id is not empty');
   }
   // Damage + setup credit equals the nominal damage of all hits (creature and player level agree
   // except for credits that belong to guests or to finale abilities, which have no creature).
@@ -57,58 +72,88 @@ function checkResult(inp: FightInput, r: FightResult): void {
   // between creatures, never add to it. Healing is the one support credit that is new credit (the
   // HP really restored, like what a Guard absorbs), so it is taken off first.
   const healed = r.events.reduce((sum, e) => (e.t === 'heal' ? sum + e.amount : sum), 0);
-  expect(support).toBeGreaterThanOrEqual(healed);
-  expect(damage + setup + (support - healed) + abilitySetup).toBe(dealt);
+  check(support >= healed, 'support credit covers the healing', [support, healed]);
+  check(
+    damage + setup + (support - healed) + abilitySetup === dealt,
+    'damage + setup + support (less healing) + ability setup = damage dealt',
+    [damage, setup, support, healed, abilitySetup, dealt],
+  );
   // So all contributions together equal the damage dealt plus what guards absorbed and Supports healed.
   const contributions = Object.values(r.perPlayer).reduce((sum, p) => sum + p.contribution, 0);
   const guestContributions = Object.values(r.perCreature)
     .filter((c) => c.ownerId === null)
     .reduce((sum, c) => sum + c.contribution, 0);
-  expect(contributions + guestContributions).toBe(dealt + guard + healed);
-  expect(Object.values(r.damageByElement).reduce((a, b) => a + b, 0)).toBe(dealt);
+  check(
+    contributions + guestContributions === dealt + guard + healed,
+    'contributions = damage dealt + guard + healed',
+    [contributions, guestContributions, dealt, guard, healed],
+  );
+  const byElement = Object.values(r.damageByElement).reduce((a, b) => a + b, 0);
+  check(byElement === dealt, 'damageByElement adds up to the damage dealt', [byElement, dealt]);
   // Player totals never exceed the creature totals that feed them (plus ability setup credit).
   const playerDamage = Object.values(r.perPlayer).reduce((s, p) => s + p.damage, 0);
   const ownedDamage = Object.values(r.perCreature)
     .filter((c) => c.ownerId !== null)
     .reduce((s, c) => s + c.damage, 0);
-  expect(playerDamage).toBe(ownedDamage);
+  check(playerDamage === ownedDamage, 'player damage = owned creature damage', [
+    playerDamage,
+    ownedDamage,
+  ]);
   const taken = Object.values(r.perCreature).reduce((s, c) => s + c.damageTaken, 0);
-  expect(guard).toBeLessThanOrEqual(taken);
-  expect(support).toBeGreaterThanOrEqual(0);
+  check(guard <= taken, 'guard credit <= damage taken', [guard, taken]);
+  check(support >= 0, 'support credit >= 0', support);
 
   // Reaction counts match the events.
   const reactionEvents = r.events.filter((e) => e.t === 'reaction').length;
-  expect(r.reactions.total).toBe(reactionEvents);
-  expect(Object.values(r.reactions.byType).reduce((a, b) => a + b, 0)).toBe(reactionEvents);
+  check(r.reactions.total === reactionEvents, 'reactions.total matches the events', [
+    r.reactions.total,
+    reactionEvents,
+  ]);
+  const byType = Object.values(r.reactions.byType).reduce((a, b) => a + b, 0);
+  check(byType === reactionEvents, 'reactions.byType adds up to the events', [
+    byType,
+    reactionEvents,
+  ]);
 
   // Rounds are in order, and the clear flag agrees with the pool.
   let round = 0;
   for (const e of r.events) {
     if ('round' in e) {
-      expect(e.round).toBeGreaterThanOrEqual(round);
+      check(e.round >= round, 'rounds are in order', [e.t, e.round, round]);
       round = e.round;
     }
   }
   const lossBp = ((inp.bossHpPool.max - r.bossHpEnd) * 10_000) / inp.bossHpPool.max;
   const need = RULES.raid.phases.find((p) => p.id === inp.phase)!.clearAtLossBp;
-  expect(r.cleared).toBe(lossBp >= need);
+  check(r.cleared === lossBp >= need, 'cleared agrees with the pool', [r.cleared, lossBp, need]);
   // Knocked-out creatures never act afterwards (an ability's strike still lands).
   const out = new Map<string, number>();
   for (const e of r.events) if (e.t === 'knockout') out.set(e.creature, e.round);
   const fired = new Set(r.events.flatMap((e) => (e.t === 'ability' ? [e.key] : [])));
   for (const e of r.events) {
-    if (e.t === 'hit' && e.key !== undefined) expect(fired.has(e.key)).toBe(true);
+    if (e.t === 'hit' && e.key !== undefined) {
+      check(fired.has(e.key), 'a keyed hit follows its ability', e.key);
+    }
     if (e.t === 'turn' || (e.t === 'hit' && e.key === undefined)) {
       const ko = out.get(e.creature);
-      if (ko !== undefined) expect(e.round).toBeLessThanOrEqual(ko);
+      if (ko !== undefined) {
+        check(e.round <= ko, 'a knocked-out creature never acts afterwards', [
+          e.creature,
+          e.round,
+          ko,
+        ]);
+      }
     }
   }
-  if (inp.phase === 'phase1') expect(r.adaptationSuggestion).not.toBeNull();
-  else expect(r.adaptationSuggestion).toBeNull();
+  if (inp.phase === 'phase1') {
+    check(r.adaptationSuggestion !== null, 'phase 1 suggests an adaptation');
+  } else check(r.adaptationSuggestion === null, 'only phase 1 suggests an adaptation');
+  return bad;
 }
 
 describe('properties over seeded random fights', () => {
   it('keep integers, consistent totals and sane boss HP; never throw; are deterministic', () => {
+    const problems: string[] = [];
     for (let i = 0; i < SEEDS; i++) {
       const players = 1 + (i % 15);
       const phase = phases[i % 3] as (typeof phases)[number];
@@ -116,13 +161,18 @@ describe('properties over seeded random fights', () => {
       const before = JSON.stringify(inp);
       const first = simulateFight(inp, rng());
       const second = simulateFight(inp, rng());
-      expect(JSON.stringify(inp)).toBe(before);
-      expect(second).toEqual(first);
-      checkResult(inp, first);
+      if (JSON.stringify(inp) !== before) problems.push(`prop-${i}: the input was changed`);
+      // The same fight twice must give the same result (JSON text, so one compare per fight).
+      if (JSON.stringify(second) !== JSON.stringify(first)) {
+        problems.push(`prop-${i}: two runs differ`);
+      }
+      for (const p of checkResult(inp, first)) problems.push(`prop-${i}: ${p}`);
     }
+    expect(problems).toEqual([]);
   });
 
   it('hold with the live combat rules (armor, cover, cap, Guard dice): deterministic, consistent totals', () => {
+    const problems: string[] = [];
     for (let i = 0; i < SEEDS; i++) {
       const phase = phases[i % 3] as (typeof phases)[number];
       const inp: FightInput = {
@@ -131,9 +181,12 @@ describe('properties over seeded random fights', () => {
         luck: RULES.combat.luck,
       };
       const first = simulateFight(inp, rng());
-      expect(simulateFight(inp, rng())).toEqual(first);
-      checkResult(inp, first);
+      if (JSON.stringify(simulateFight(inp, rng())) !== JSON.stringify(first)) {
+        problems.push(`prop-rules-${i}: two runs differ`);
+      }
+      for (const p of checkResult(inp, first)) problems.push(`prop-rules-${i}: ${p}`);
     }
+    expect(problems).toEqual([]);
   });
 
   it('give the same result for a different RNG (the MVP rules draw no randomness)', () => {
@@ -154,14 +207,16 @@ describe('properties over seeded random fights', () => {
   });
 
   it('end early only when the boss falls or the whole row is knocked out', () => {
+    const early: string[] = [];
     for (let i = 0; i < 60; i++) {
       const inp = randomInput(`early-${i}`, 3, 'finale');
       const r = simulateFight(inp, rng());
       const planned = inp.boss.finaleRounds;
       if (r.rounds < planned) {
         const koCount = r.events.filter((e) => e.t === 'knockout').length;
-        expect(r.bossHpEnd === 0 || koCount === inp.row.length).toBe(true);
+        if (!(r.bossHpEnd === 0 || koCount === inp.row.length)) early.push(`early-${i}`);
       }
     }
+    expect(early).toEqual([]);
   });
 });

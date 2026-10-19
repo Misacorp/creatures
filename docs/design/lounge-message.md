@@ -1,5 +1,7 @@
 # The lounge message
 
+Status: **shipped** (PR #34), by 2026-10-18.
+
 One message per server in the announcement channel (where raid posts go), edited in place, that says who is playing, with one button that launches or joins the game. It replaces Discord's "Game invitation" card, which Discord posted on every launch and which filled the channel and notified people (Misa, 2026-10-18).
 
 ## What players see

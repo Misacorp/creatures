@@ -8,7 +8,7 @@
   "starterOptions": ["splashet", "cindle", "sproutle"],
   "creatures": [
     {
-      "id": "69752cb9-9882-4799-82ae-eca2d93b143c",
+      "id": "00000000-0000-4000-8100-000000000001",
       "species": "cindle",
       "line": "cindle",
       "level": 15,
@@ -101,7 +101,7 @@
       }
     },
     {
-      "id": "7fc78e49-d335-4502-a9b3-c92cfd53ca10",
+      "id": "00000000-0000-4000-8100-000000000002",
       "species": "sunfawn",
       "line": "sproutle",
       "level": 15,
@@ -184,7 +184,7 @@
       "treatCost": 11
     },
     {
-      "id": "7880428f-6f89-429f-937e-07a3caa2004e",
+      "id": "00000000-0000-4000-8100-000000000003",
       "species": "mossback",
       "line": "mossback",
       "level": 15,
@@ -283,7 +283,7 @@
       }
     },
     {
-      "id": "1377c8a9-b179-462d-883c-30b6dfcac719",
+      "id": "00000000-0000-4000-8100-000000000006",
       "species": "thornbuck",
       "line": "sproutle",
       "level": 15,
@@ -294,7 +294,7 @@
       "away": false,
       "origin": "expedition",
       "caughtAt": 1799740800000,
-      "quirk": "sproutle-wide-awake",
+      "quirk": "polite-bower",
       "lineSlot": 2,
       "talents": {
         "slots": [
@@ -370,8 +370,8 @@
   "bookSlotBait": 10,
   "expeditions": [
     {
-      "id": "866c9ada-e453-44b3-8bf9-2bcc1f24e68d",
-      "creatureId": "69752cb9-9882-4799-82ae-eca2d93b143c",
+      "id": "00000000-0000-4000-8100-000000000005",
+      "creatureId": "00000000-0000-4000-8100-000000000001",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
@@ -393,7 +393,7 @@
             "shiny": false,
             "firstOnServer": true,
             "outcome": "duplicate",
-            "pendingId": "fd8eac85-ba2e-4580-b790-dfd6a5b5f4cb",
+            "pendingId": "00000000-0000-4000-8100-000000000004",
             "talent": {
               "id": "shares-the-sun",
               "name": "Shares the Sun",
@@ -417,7 +417,7 @@
           "rankBefore": 1
         },
         "experience": {
-          "creatureId": "69752cb9-9882-4799-82ae-eca2d93b143c",
+          "creatureId": "00000000-0000-4000-8100-000000000001",
           "gained": 20,
           "treat": false,
           "levelBefore": 15,
@@ -473,7 +473,7 @@
       "holders": ["Player 5"]
     }
   ],
-  "loungerId": "7880428f-6f89-429f-937e-07a3caa2004e",
+  "loungerId": "00000000-0000-4000-8100-000000000002",
   "loungeSpot": null,
   "timezone": "Europe/Helsinki",
   "leetSync": {

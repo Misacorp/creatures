@@ -14,6 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm -r --if-present test",
+    "fixtures:capture": "pnpm --filter @creatures/worker exec node scripts/capture-fixtures.mjs",
     "sim": "node packages/sim/scripts/run.mjs",
     "sim:quick": "node packages/sim/scripts/run.mjs --quick",
     "scalars": "node packages/sim/scripts/scalars.mjs",

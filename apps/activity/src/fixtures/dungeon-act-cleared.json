@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "08aa93dc-401e-49b8-bd26-b7f12f9142d2",
+    "id": "00000000-0000-4000-8300-000000000004",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -292,7 +292,7 @@
     "pending": null,
     "team": [
       {
-        "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+        "id": "00000000-0000-4000-8300-000000000002",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -303,7 +303,7 @@
         "treat": false
       },
       {
-        "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "id": "00000000-0000-4000-8300-000000000001",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -314,7 +314,7 @@
         "treat": false
       },
       {
-        "id": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
+        "id": "00000000-0000-4000-8300-000000000009",
         "name": "Zipmouse",
         "speciesId": "zipmouse",
         "element": "spark",
@@ -438,7 +438,7 @@
     "row": [
       {
         "position": 0,
-        "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+        "id": "00000000-0000-4000-8300-000000000002",
         "name": "Splashet",
         "species": "splashet",
         "element": "tide",
@@ -447,7 +447,7 @@
       },
       {
         "position": 1,
-        "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "id": "00000000-0000-4000-8300-000000000001",
         "name": "Sproutle",
         "species": "sproutle",
         "element": "grove",
@@ -456,7 +456,7 @@
       },
       {
         "position": 2,
-        "id": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
+        "id": "00000000-0000-4000-8300-000000000009",
         "name": "Zipmouse",
         "species": "zipmouse",
         "element": "spark",
@@ -478,14 +478,14 @@
     "cleared": true,
     "rounds": 1,
     "hpStart": {
-      "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
-      "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
-      "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c": 200
+      "00000000-0000-4000-8300-000000000002": 200,
+      "00000000-0000-4000-8300-000000000001": 281,
+      "00000000-0000-4000-8300-000000000009": 200
     },
     "hpMax": {
-      "5b8aea90-83c9-4de6-b9f4-2cd49763020f": 200,
-      "64ab0da2-cff5-47ec-8346-04317bb6b745": 281,
-      "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c": 200
+      "00000000-0000-4000-8300-000000000002": 200,
+      "00000000-0000-4000-8300-000000000001": 281,
+      "00000000-0000-4000-8300-000000000009": 200
     },
     "events": [
       {
@@ -497,12 +497,12 @@
       {
         "t": "turn",
         "round": 1,
-        "creature": "5b8aea90-83c9-4de6-b9f4-2cd49763020f"
+        "creature": "00000000-0000-4000-8300-000000000002"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+        "creature": "00000000-0000-4000-8300-000000000002",
         "damage": 56,
         "matchupBp": 7500,
         "bonusBp": 5000,
@@ -515,7 +515,7 @@
       {
         "t": "mark",
         "round": 1,
-        "creature": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+        "creature": "00000000-0000-4000-8300-000000000002",
         "player": "p1",
         "element": "tide",
         "replaced": null
@@ -523,12 +523,12 @@
       {
         "t": "turn",
         "round": 1,
-        "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745"
+        "creature": "00000000-0000-4000-8300-000000000001"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "creature": "00000000-0000-4000-8300-000000000001",
         "damage": 6,
         "matchupBp": 15000,
         "bonusBp": 0,
@@ -544,9 +544,9 @@
     "names": {
       "boss": "Coil Baron",
       "creatures": {
-        "5b8aea90-83c9-4de6-b9f4-2cd49763020f": "Splashet",
-        "64ab0da2-cff5-47ec-8346-04317bb6b745": "Sproutle",
-        "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c": "Zipmouse"
+        "00000000-0000-4000-8300-000000000002": "Splashet",
+        "00000000-0000-4000-8300-000000000001": "Sproutle",
+        "00000000-0000-4000-8300-000000000009": "Zipmouse"
       },
       "players": {
         "p1": "Player 1"
@@ -615,7 +615,7 @@
     }
   },
   "summary": {
-    "id": "08aa93dc-401e-49b8-bd26-b7f12f9142d2",
+    "id": "00000000-0000-4000-8300-000000000004",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -628,7 +628,7 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+        "id": "00000000-0000-4000-8300-000000000002",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -638,7 +638,7 @@
         "hpEnd": 200
       },
       {
-        "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "id": "00000000-0000-4000-8300-000000000001",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -648,7 +648,7 @@
         "hpEnd": 281
       },
       {
-        "id": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
+        "id": "00000000-0000-4000-8300-000000000009",
         "name": "Zipmouse",
         "speciesId": "zipmouse",
         "element": "spark",
@@ -750,7 +750,7 @@
       "streak": null,
       "experience": [
         {
-          "creatureId": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+          "creatureId": "00000000-0000-4000-8300-000000000001",
           "gained": 200,
           "treat": false,
           "levelBefore": 12,
@@ -763,7 +763,7 @@
           "dayEffects": []
         },
         {
-          "creatureId": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "creatureId": "00000000-0000-4000-8300-000000000002",
           "gained": 200,
           "treat": false,
           "levelBefore": 12,
@@ -776,7 +776,7 @@
           "dayEffects": []
         },
         {
-          "creatureId": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
+          "creatureId": "00000000-0000-4000-8300-000000000003",
           "gained": 35,
           "treat": false,
           "levelBefore": 12,
@@ -789,7 +789,7 @@
           "dayEffects": []
         },
         {
-          "creatureId": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
+          "creatureId": "00000000-0000-4000-8300-000000000009",
           "gained": 165,
           "treat": false,
           "levelBefore": 12,
@@ -1199,32 +1199,12 @@
     "landmark": false,
     "landmarkBoss": null,
     "streak": 1,
-    "modifiers": [
-      {
-        "room": 0,
-        "id": "flooded",
-        "name": "Flooded",
-        "description": "Tide creatures hit 20% harder."
-      },
-      {
-        "room": 1,
-        "id": "stormy",
-        "name": "Stormy",
-        "description": "Spark creatures hit 20% harder."
-      },
-      {
-        "room": 2,
-        "id": "brittle",
-        "name": "Brittle",
-        "description": "The foe has 20% less HP but hits 25% harder."
-      }
-    ],
     "attemptsToday": 1,
     "attemptsAllowed": 2,
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "08aa93dc-401e-49b8-bd26-b7f12f9142d2",
+      "id": "00000000-0000-4000-8300-000000000004",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 1,
@@ -1237,7 +1217,7 @@
       "createdAt": 1799755200000,
       "team": [
         {
-          "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+          "id": "00000000-0000-4000-8300-000000000002",
           "name": "Splashet",
           "speciesId": "splashet",
           "element": "tide",
@@ -1247,7 +1227,7 @@
           "hpEnd": 200
         },
         {
-          "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+          "id": "00000000-0000-4000-8300-000000000001",
           "name": "Sproutle",
           "speciesId": "sproutle",
           "element": "grove",
@@ -1257,7 +1237,7 @@
           "hpEnd": 281
         },
         {
-          "id": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
+          "id": "00000000-0000-4000-8300-000000000009",
           "name": "Zipmouse",
           "speciesId": "zipmouse",
           "element": "spark",
@@ -1359,7 +1339,7 @@
         "streak": null,
         "experience": [
           {
-            "creatureId": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+            "creatureId": "00000000-0000-4000-8300-000000000001",
             "gained": 200,
             "treat": false,
             "levelBefore": 12,
@@ -1372,7 +1352,7 @@
             "dayEffects": []
           },
           {
-            "creatureId": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+            "creatureId": "00000000-0000-4000-8300-000000000002",
             "gained": 200,
             "treat": false,
             "levelBefore": 12,
@@ -1385,7 +1365,7 @@
             "dayEffects": []
           },
           {
-            "creatureId": "ae8c7c8f-b190-470f-b09e-4ae48d278eb9",
+            "creatureId": "00000000-0000-4000-8300-000000000003",
             "gained": 35,
             "treat": false,
             "levelBefore": 12,
@@ -1398,7 +1378,7 @@
             "dayEffects": []
           },
           {
-            "creatureId": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
+            "creatureId": "00000000-0000-4000-8300-000000000009",
             "gained": 165,
             "treat": false,
             "levelBefore": 12,
@@ -1800,9 +1780,9 @@
       }
     },
     "lastTeam": [
-      "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
-      "64ab0da2-cff5-47ec-8346-04317bb6b745",
-      "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c"
+      "00000000-0000-4000-8300-000000000002",
+      "00000000-0000-4000-8300-000000000001",
+      "00000000-0000-4000-8300-000000000009"
     ],
     "draftTeam": null,
     "map": {

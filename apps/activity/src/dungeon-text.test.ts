@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import errors from './fixtures/dungeon-errors.json';
+import mapErrors from './fixtures/dungeon-errors.json';
+import legacyErrors from './fixtures/dungeon-legacy-errors.json';
 import runCleared from './fixtures/dungeon-run-cleared.json';
 import runLost from './fixtures/dungeon-run-lost.json';
 import todayFixture from './fixtures/dungeon-today.json';
@@ -21,7 +22,6 @@ import {
   dungeonErrorText,
   fierceName,
   floorLine,
-  undercroftClearedText,
   undercroftName,
   isPackEmpty,
   isRetryOffer,
@@ -65,13 +65,13 @@ describe('the dungeon error texts', () => {
   });
 
   it('has a message for every real error body in the server fixtures', () => {
+    const errors = [...legacyErrors, ...mapErrors];
     expect(errors.length).toBeGreaterThan(5);
     for (const { route, status, body } of errors) {
       const text = dungeonErrorText(new ApiError(status, body.error));
       expect(text, `${route} ${body.error}`).not.toMatch(GENERIC);
     }
-    // The captures are of the old route; the path codes (stale_step, invalid_act, run_active, gone,
-    // invalid_treat, insufficient_funds) join them when the worker re-captures.
+    // The captures are of the old run route (dungeon-legacy-errors.json) and of the map's routes.
     const captured = new Set(errors.map((e) => e.body.error));
     for (const code of captured) expect(Object.keys(DUNGEON_ERROR_TEXT)).toContain(code);
   });
@@ -275,10 +275,8 @@ describe('where the run is', () => {
     expect(nodeFloor('f2l1; drop')).toBeNull();
   });
 
-  it('names Undercroft floors and how many a run cleared, singular for one', () => {
+  it('names Undercroft floors', () => {
     expect(undercroftName(1)).toBe('Undercroft 1');
-    expect(undercroftClearedText(1)).toBe('1 Undercroft floor cleared');
-    expect(undercroftClearedText(2)).toBe('2 Undercroft floors cleared');
   });
 
   it('counts the rooms along a path from 1', () => {

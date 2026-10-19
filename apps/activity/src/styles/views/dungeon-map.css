@@ -7,11 +7,6 @@
 */
 
 .dmap {
-  /* The Undercroft's palette: darker than the page, with a pale violet instead of the gold-and-haze of the day's map. */
-  --uc-ground: #0b0818;
-  --uc-node: #1b1535;
-  --uc-ring: #9d8ce6;
-  --uc-line: #5a4d96;
   margin: 0.5rem 0;
 }
 
@@ -447,6 +442,7 @@ button.dnd-go {
   gap: 0.25rem;
   margin: 0;
   padding: 0;
+  list-style: none;
 }
 
 .dnd-keepsake {

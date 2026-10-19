@@ -1,4 +1,5 @@
-import { createCryptoRng, pickQuirk } from '@creatures/game';
+import { pickQuirk } from '@creatures/game';
+import { liveRng } from './rng';
 
 /**
  * Migration 13: every creature gets a cosmetic personality quirk (`quirk_id`, see
@@ -11,7 +12,7 @@ import { createCryptoRng, pickQuirk } from '@creatures/game';
  */
 export function creatureQuirkMigration(sql: SqlStorage): void {
   sql.exec('ALTER TABLE creatures ADD COLUMN quirk_id TEXT');
-  const rng = createCryptoRng((array) => crypto.getRandomValues(array));
+  const rng = liveRng();
   const rows = sql
     .exec<{ id: string; species: string }>(
       'SELECT id, species FROM creatures WHERE quirk_id IS NULL',

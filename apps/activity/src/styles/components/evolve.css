@@ -39,7 +39,7 @@ button.evolve-form:active:not(:disabled) {
 }
 
 .evolve-name {
-  font-size: 1.25rem;
+  font-size: var(--fs-heading);
   line-height: 1.05;
 }
 
@@ -94,8 +94,16 @@ button.evolve-form:active:not(:disabled) {
 .evolve-permanent {
   margin: 0;
   color: var(--haze);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
   text-align: center;
+}
+
+.evolve-cost {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.5rem;
 }
 
 .evolve-confirm button.primary {

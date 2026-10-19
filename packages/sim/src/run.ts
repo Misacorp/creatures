@@ -9,7 +9,7 @@ import {
 } from './archetypes';
 import { namedCurveMixes, runCurveStudy, type CurveResult } from './curve-study';
 import { runEconomy, type EconomyResult } from './economy';
-import { gearShareMetrics, runGearStudy, type GearShareRun } from './gear-study';
+import { GEAR_STUDY_WEEKS, gearShareMetrics, runGearStudy, type GearShareRun } from './gear-study';
 import { runSuppliesStudy, suppliesMetrics, type SuppliesRun } from './supplies-study';
 import { creaturesMetrics, runCreaturesStudy, type CreaturesRun } from './creatures-study';
 import type { IncomeModelId } from './income';
@@ -58,6 +58,37 @@ export interface RunSettings {
    * weather does to the targets. The raid-week what-if studies (roles, setups, rank check) never use weather.
    */
   weather?: boolean;
+  /**
+   * How long the fixed-horizon sims play, for tests that need the whole pipeline but not the long runs.
+   * Each is absent in the shipped settings (`defaultSettings`), which then play the constants below, so
+   * `pnpm sim` and `pnpm sim:quick` are unchanged. A shorter horizon leaves the metrics that read the
+   * later weeks (`null`, "not measured"): use it for tests, never for a balance run.
+   */
+  /** Weeks of the pity sims (default `PITY_WEEKS`). */
+  pityWeeks?: number;
+  /** Weeks of the long-run sims (default `LONG_RUN_WEEKS`). */
+  longRunWeeks?: number;
+  /** Weeks of the slot-opening sims (default `TRIP_LONG_WEEKS`). */
+  tripLongWeeks?: number;
+  /** Weeks of the gear and creatures studies (default `GEAR_STUDY_WEEKS` and `CREATURES_WEEKS`: 30). */
+  studyWeeks?: number;
+}
+
+/** The horizons a run plays: the settings' override, else the shipped constant. */
+export function horizonsOf(settings: RunSettings): {
+  pityWeeks: number;
+  longRunWeeks: number;
+  tripLongWeeks: number;
+  gearWeeks: number;
+  creaturesWeeks: number;
+} {
+  return {
+    pityWeeks: settings.pityWeeks ?? PITY_WEEKS,
+    longRunWeeks: settings.longRunWeeks ?? LONG_RUN_WEEKS,
+    tripLongWeeks: settings.tripLongWeeks ?? TRIP_LONG_WEEKS,
+    gearWeeks: settings.studyWeeks ?? GEAR_STUDY_WEEKS,
+    creaturesWeeks: settings.studyWeeks ?? CREATURES_WEEKS,
+  };
 }
 
 /** The weather option the economies and studies are played with: only an explicit off is passed on. */
@@ -190,6 +221,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
     throw new RangeError('weeks must be an integer from 1 to 104');
   }
   const income = settings.income ?? 'allowance';
+  const horizons = horizonsOf(settings);
   const { snapshots, defaultSims, baselineSims, noDungeonSims } = runEconomies(settings);
 
   const pitySims: EconomyResult[] = [];
@@ -198,7 +230,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
       runEconomy({
         income,
         seed: `${settings.seed}:pity:${k}`,
-        weeks: PITY_WEEKS,
+        weeks: horizons.pityWeeks,
         // The default journey server (min-maxer, engaged, regular and drop-in players), as the curve is tuned for.
         roster: journeyRoster(DEFAULT_SERVER_SIZE).map((profile) => ({ profile })),
         snapshotWeeks: [],
@@ -213,7 +245,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
       runEconomy({
         income,
         seed: `${settings.seed}:long:${g.count}:${k}`,
-        weeks: LONG_RUN_WEEKS,
+        weeks: horizons.longRunWeeks,
         // The default journey server scaled to the group's size, as the curve is tuned for.
         roster: journeyRoster(g.count).map((profile) => ({ profile })),
         snapshotWeeks: [],
@@ -228,7 +260,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
       runEconomy({
         income,
         seed: `${settings.seed}:trips-long:${DEFAULT_SERVER_SIZE}:${k}`,
-        weeks: TRIP_LONG_WEEKS,
+        weeks: horizons.tripLongWeeks,
         mix: DEFAULT_MIX,
         snapshotWeeks: [],
         ...weatherOf(settings),
@@ -280,6 +312,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
       ? runGearStudy({
           seed: `${settings.seed}:gear`,
           servers: settings.gearServers,
+          weeks: horizons.gearWeeks,
           ...weatherOf(settings),
         })
       : null;
@@ -290,7 +323,7 @@ export function runSimulation(settings: RunSettings): RunOutput {
           seed: `${settings.seed}:creatures`,
           seeds: 1,
           servers: settings.creaturesServers,
-          weeks: CREATURES_WEEKS,
+          weeks: horizons.creaturesWeeks,
           ...weatherOf(settings),
         })
       : null;

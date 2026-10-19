@@ -205,11 +205,6 @@ function build(
 /** Which table row of each slot the creature wears (an index into that slot's table), or none. */
 export type WornRows = Readonly<Partial<Record<GearSlot, number>>>;
 
-/** How many rows a slot's table has. */
-export function bagSize(slot: GearSlot): number {
-  return TABLES[slot].length;
-}
-
 /** The whole bag (all three slots), as the server's gear view would list it for the creature `creatureId`. */
 export function allBagItems(creatureId: string, wornRows: WornRows): GearItem[] {
   return (['hat', 'scarf', 'charm'] as const).flatMap((slot) =>

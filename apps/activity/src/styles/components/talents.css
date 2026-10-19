@@ -79,7 +79,7 @@
 
 .talent-about,
 .talent-idle {
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 /* The duplicates that wait for an answer. */
@@ -131,7 +131,7 @@
 }
 
 .find-name strong {
-  font-size: 1.25rem;
+  font-size: var(--fs-heading);
 }
 
 .find-tags {
@@ -228,7 +228,7 @@
 .find-option-label {
   flex: none;
   min-width: 4.5rem;
-  font-size: 1rem;
+  font-size: var(--fs-row);
 }
 
 .find-option-detail {
@@ -239,7 +239,7 @@
   gap: 0.25rem 0.5rem;
   min-width: 0;
   color: var(--haze);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 .find-who {
@@ -262,7 +262,7 @@
 
 /* The star a fusion would add: green, and it pulses while motion is allowed. */
 .fusion-stars .star.gain {
-  filter: drop-shadow(0 0 2px #6fdc8c);
+  filter: drop-shadow(0 0 2px var(--good));
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -375,10 +375,18 @@
 }
 
 .bait-cost {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
   margin: 0.25rem 0;
   color: var(--gold);
 }
 
 .bait-cost.short {
   color: var(--bad);
+}
+
+.bait-cost.short .part-count {
+  box-shadow: inset 0 calc(var(--px) * -1) 0 0 var(--bad);
 }

@@ -1,4 +1,6 @@
 import * as v from 'valibot';
+import { IdSchema } from './collection-schemas';
+import type { Outcome } from './outcome';
 
 export const API_HEADERS = {
   'Content-Type': 'application/json; charset=utf-8',
@@ -24,6 +26,23 @@ export function errorResponse(
   extraHeaders: Record<string, string> = {},
 ): Response {
   return json({ error }, status, extraHeaders);
+}
+
+/** The error answer of a failed game action; a `reason`, when the outcome has one, goes with it. */
+export function failure(outcome: Extract<Outcome<unknown>, { ok: false }>): Response {
+  if (outcome.reason !== undefined) {
+    return json({ error: outcome.error, reason: outcome.reason }, outcome.status);
+  }
+  return errorResponse(outcome.error, outcome.status);
+}
+
+export const invalidBody = (): Response => errorResponse('invalid_body', 400);
+export const invalidId = (): Response => errorResponse('invalid_id', 400);
+
+/** The `:id` path parameter if it is a well-formed id, else undefined (answer `invalidId()`). */
+export function pathId(ctx: { params: Record<string, string> }): string | undefined {
+  const parsed = v.safeParse(IdSchema, ctx.params['id']);
+  return parsed.success ? parsed.output : undefined;
 }
 
 export type Handler<C> = (request: Request, ctx: C) => Response | Promise<Response>;

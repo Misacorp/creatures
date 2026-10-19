@@ -1,29 +1,5 @@
 // Runs the live analysis (src/analyze-cli.ts) without a build step, the same way scalars.mjs does
 // (Vite's SSR loader transforms the TypeScript sources on the fly).
-/* global console */
-import { URL, fileURLToPath } from 'node:url';
-import process from 'node:process';
-import { createServer } from 'vite';
+import { runCli } from './_load.mjs';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
-
-const server = await createServer({
-  root,
-  configFile: false,
-  appType: 'custom',
-  logLevel: 'error',
-  server: { middlewareMode: true, ws: false, watch: null },
-  optimizeDeps: { noDiscovery: true, include: [] },
-});
-
-let code;
-try {
-  const cli = await server.ssrLoadModule('/src/analyze-cli.ts');
-  code = cli.main(process.argv.slice(2));
-} catch (error) {
-  console.error(error instanceof Error ? (error.stack ?? error.message) : String(error));
-  code = 1;
-} finally {
-  await server.close();
-}
-process.exitCode = code;
+await runCli('/src/analyze-cli.ts');

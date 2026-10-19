@@ -1,4 +1,5 @@
-import { CountBadge, type CountBadgeProps, type CountItem } from './ui/CountBadge';
+import { partBadge } from './count-items';
+import { CountBadge } from './ui/CountBadge';
 import { GameIcon } from './ui/GameIcon';
 import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS, PART_KINDS, gearBase, tagElement, type PartKind } from '@creatures/game';
@@ -101,6 +102,32 @@ export function ItemFrame({
   );
 }
 
+/**
+ * The square picture of an item: its sprite in the rarity frame with the item level in the corner. The one
+ * way a piece is drawn small (a row, a grid of items to take apart, a worn slot, the item card's head).
+ * `itemLevel` is left out for a piece stored before items had levels.
+ */
+export function ItemThumb({
+  item,
+  scale,
+  class: extra,
+}: {
+  item: { baseId: string; rarity: GearRarity; itemLevel?: number | undefined };
+  scale: number;
+  class?: string;
+}) {
+  return (
+    <ItemFrame
+      rarity={item.rarity}
+      baseId={item.baseId}
+      {...(item.itemLevel === undefined ? {} : { level: item.itemLevel })}
+      {...(extra === undefined ? {} : { class: extra })}
+    >
+      <ItemSprite baseId={item.baseId} scale={scale} />
+    </ItemFrame>
+  );
+}
+
 /** A gear slot's silhouette (a cap, a scarf, a charm). Decoration: the slot is also said in words. */
 export function SlotIcon({ slot, class: extra }: { slot: GearSlot; class?: string }) {
   return (
@@ -178,21 +205,6 @@ export function RarityTag({ rarity, plain = false }: { rarity: GearRarity; plain
       {rarityName(rarity)}
     </Tag>
   );
-}
-
-/** The count badge of one kind of part, with the part's name spoken. */
-function partBadge(kind: PartKind, amount: number): CountBadgeProps {
-  return {
-    icon: { kind: 'part', part: kind },
-    amount,
-    label: partName(kind),
-    entry: GLOSSARY_IDS.part(kind),
-  };
-}
-
-/** The count badges of a bundle of parts, in the order of the part kinds, without the empty ones. */
-export function partCountItems(parts: PartsBundle): CountItem[] {
-  return partsEntries(parts).map(({ kind, amount }) => ({ key: kind, ...partBadge(kind, amount) }));
 }
 
 /** A part icon with its number. The name is spoken; the icon never carries the meaning alone. */

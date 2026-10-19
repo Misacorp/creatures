@@ -102,16 +102,5 @@ label.pick.reach .pick-text {
 
 .reach-details {
   margin-top: 0.5rem;
-  font-size: 0.875rem;
-}
-
-/* Dismantle several: two selects side by side, wrapping on a narrow screen. */
-.bulk-dismantle .row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1rem;
-}
-
-.bulk-dismantle select {
-  min-height: 2.75rem;
+  font-size: var(--fs-small);
 }

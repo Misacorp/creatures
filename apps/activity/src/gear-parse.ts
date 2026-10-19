@@ -245,14 +245,14 @@ const isBlueprintLoot = (value: unknown): value is GrantLoot['blueprints'][numbe
 /** The item level a dropped item arrived with: absent on grants from before gear v2. */
 const isLootLevel = (value: unknown): boolean => value === undefined || isCount(value);
 
-const isGearLoot = (value: unknown): value is GrantLoot['gear'][number] =>
+export const isGearLoot = (value: unknown): value is GrantLoot['gear'][number] =>
   isRecord(value) &&
   isStr(value['id']) &&
   isStr(value['baseId']) &&
   isRarity(value['rarity']) &&
   isLootLevel(value['itemLevel']);
 
-const isConvertedLoot = (value: unknown): value is GrantLoot['converted'][number] =>
+export const isConvertedLoot = (value: unknown): value is GrantLoot['converted'][number] =>
   isRecord(value) &&
   isStr(value['baseId']) &&
   isRarity(value['rarity']) &&

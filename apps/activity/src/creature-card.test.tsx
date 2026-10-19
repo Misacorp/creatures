@@ -232,10 +232,19 @@ describe('the one gold button', () => {
   it('evolves when evolution is ready', () => {
     const { card, actions, page: p } = draw(kind('evolve ready'));
     const gold = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
-    expect(visibleText(gold)).toContain('Evolve into Pyrelynx');
+    expect(visibleText(gold)).toContain('Choose an evolution');
     expect(visibleText(gold)).toContain('20 Essence');
     p.click(gold);
     expect(actions.onEvolve).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the evolve button disabled with the busy wording while the creature is away', () => {
+    const { card, actions, page: p } = draw({ ...kind('evolve ready'), away: true });
+    const gold = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
+    expect(gold.hasAttribute('disabled')).toBe(true);
+    expect(visibleText(gold)).toContain('Away on a trip');
+    p.click(gold);
+    expect(actions.onEvolve).not.toHaveBeenCalled();
   });
 
   it('takes the player to a waiting catch, and counts the other things that wait', () => {

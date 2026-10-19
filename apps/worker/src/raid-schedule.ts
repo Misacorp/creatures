@@ -9,7 +9,15 @@
  * starts on, for example `2027-W02`.
  */
 import { RULES } from '@creatures/game';
-import { addDays, zonedDate, zonedTimeToEpoch } from './time';
+import {
+  DAY_MS,
+  addDays,
+  dateToUtcMs,
+  formatDate,
+  isoWeekday,
+  zonedDate,
+  zonedTimeToEpoch,
+} from './time';
 
 export const RAID_EVENTS = ['weekStart', 'phase1', 'phase2', 'finale'] as const;
 export type RaidEvent = (typeof RAID_EVENTS)[number];
@@ -25,28 +33,10 @@ export interface ScheduledEvent {
 }
 
 const WEEK_ID_RE = /^(\d{4})-W(\d{2})$/;
-const DAY_MS = 86_400_000;
-
-function parseDate(date: string): number {
-  const [y, m, d] = date.split('-').map(Number);
-  if (y === undefined || m === undefined || d === undefined) throw new Error('bad date');
-  return Date.UTC(y, m - 1, d);
-}
-
-function formatDate(utcMs: number): string {
-  const d = new Date(utcMs);
-  const pad = (n: number, w: number) => String(n).padStart(w, '0');
-  return `${pad(d.getUTCFullYear(), 4)}-${pad(d.getUTCMonth() + 1, 2)}-${pad(d.getUTCDate(), 2)}`;
-}
-
-/** ISO weekday of a 'YYYY-MM-DD' date: 1 = Monday ... 7 = Sunday. */
-function isoWeekday(date: string): number {
-  return ((new Date(parseDate(date)).getUTCDay() + 6) % 7) + 1;
-}
 
 /** The ISO week label (`YYYY-Www`) of a calendar date. */
 function isoWeekLabel(date: string): string {
-  const ms = parseDate(date);
+  const ms = dateToUtcMs(date);
   // The Thursday of the date's ISO week decides the ISO year.
   const thursday = ms + (4 - isoWeekday(date)) * DAY_MS;
   const year = new Date(thursday).getUTCFullYear();
@@ -66,7 +56,13 @@ function mondayOf(weekId: string): string | null {
   const week1Monday = jan4 - ((new Date(jan4).getUTCDay() + 6) % 7) * DAY_MS;
   const monday = formatDate(week1Monday + (week - 1) * 7 * DAY_MS);
   // Rejects week 53 in a 52-week year and anything else that rolls into another year's label.
-  return isoWeekLabel(monday) === weekId ? monday : null;
+  // A Monday outside years 0000-9999 (for example `9999-W53`) is no real week either, and the strict
+  // date parser refuses it.
+  try {
+    return isoWeekLabel(monday) === weekId ? monday : null;
+  } catch {
+    return null;
+  }
 }
 
 /** True for a real raid week id such as `2027-W02`. */
@@ -112,7 +108,7 @@ export function addWeeks(weekId: string, weeks: number): string {
  * since the Unix epoch's first Monday. Used to rotate bosses.
  */
 export function weekIndex(weekId: string): number {
-  const days = Math.round(parseDate(mondayOrThrow(weekId)) / DAY_MS);
+  const days = Math.round(dateToUtcMs(mondayOrThrow(weekId)) / DAY_MS);
   // 1970-01-01 is a Thursday, so the first Monday is day 4.
   return Math.floor((days - 4) / 7);
 }

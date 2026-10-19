@@ -48,7 +48,7 @@ import {
   knownBlueprints,
   learnBlueprint,
 } from './gear-store';
-import { credit, getBalance, getBalances, type Currency } from './ledger';
+import { credit, debit, getBalance, getBalances, type Currency } from './ledger';
 import { speciesOf } from './species';
 import { insertCreature } from './talent-store';
 
@@ -71,20 +71,10 @@ export function setBalances(ctx: ToolCtx, body: Body<typeof SetBalancesBodySchem
         ctx.now,
       );
     } else {
-      ctx.sql.exec(
-        `INSERT INTO ledger (user_id, currency, amount, source, idempotency_key, created_at)
-         VALUES (?, ?, ?, 'dev', ?, ?)`,
-        ctx.userId,
-        currency,
-        delta,
-        key,
+      debit(
+        ctx.storage,
+        { userId: ctx.userId, currency, amount: -delta, source: 'dev', idempotencyKey: key },
         ctx.now,
-      );
-      ctx.sql.exec(
-        'UPDATE balances SET amount = amount + ? WHERE user_id = ? AND currency = ?',
-        delta,
-        ctx.userId,
-        currency,
       );
     }
   }

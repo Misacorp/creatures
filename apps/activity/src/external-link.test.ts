@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { hasExternalLinkOpener, openExternalLink, setExternalLinkOpener } from './external-link';
+import { openExternalLink, setExternalLinkOpener } from './external-link';
 
 afterEach(() => {
   setExternalLinkOpener(null);
@@ -9,7 +9,6 @@ describe('opening a link outside the Activity', () => {
   it('goes through the registered opener (the Discord SDK) when there is one', async () => {
     const open = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve());
     setExternalLinkOpener(open);
-    expect(hasExternalLinkOpener()).toBe(true);
     await expect(openExternalLink('https://example.com/x')).resolves.toBe(true);
     expect(open).toHaveBeenCalledWith('https://example.com/x');
   });

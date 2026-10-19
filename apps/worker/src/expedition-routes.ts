@@ -1,7 +1,6 @@
 import type { Collection } from './collection';
-import { failure, pathId } from './collection-routes';
 import { PushOnBodySchema } from './collection-schemas';
-import { errorResponse, json, parseBody, type Routes } from './http';
+import { failure, invalidBody, invalidId, json, parseBody, pathId, type Routes } from './http';
 
 /** What these routes need from the request context (GuildCore's context satisfies it). */
 export interface ExpeditionRouteContext {
@@ -14,9 +13,6 @@ export interface ExpeditionRouteContext {
     timezone(): string;
   };
 }
-
-const invalidBody = (): Response => errorResponse('invalid_body', 400);
-const invalidId = (): Response => errorResponse('invalid_id', 400);
 
 export const expeditionRoutes: Routes<ExpeditionRouteContext> = {
   /** Choose a goal of a finished trip's end-of-trip offer. Ignoring the offer is coming home: claim as usual. */

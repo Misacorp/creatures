@@ -24,7 +24,7 @@ import type {
   DungeonToday,
 } from './dungeon-types';
 
-/** Today's state: the modifiers, the depth, the streak, and whether a run is possible. */
+/** Today's state: the map, the depth, the streak, and whether a run is possible. */
 export async function fetchDungeonToday(): Promise<DungeonToday> {
   return parseDungeonToday(await apiFetch('/api/dungeon/today'));
 }

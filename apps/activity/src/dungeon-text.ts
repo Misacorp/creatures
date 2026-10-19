@@ -262,11 +262,6 @@ export function undercroftName(level: number): string {
   return `Undercroft ${String(level)}`;
 }
 
-/** "1 Undercroft floor cleared" or "2 Undercroft floors cleared": how many Undercroft floors a run cleared. */
-export function undercroftClearedText(floors: number): string {
-  return `${String(floors)} Undercroft ${floors === 1 ? 'floor' : 'floors'} cleared`;
-}
-
 /** "Room 3 / 7": how far along the path a room is, counted from 1 (`floor` is the 0-based row of the map). */
 export function floorLine(floor: number, floors: number): string {
   return `Room ${String(floor + 1)} / ${String(floors)}`;
@@ -375,30 +370,25 @@ export function roomPlaceLine(
 type Descent = Extract<NonNullable<DungeonRunState['pending']>, { kind: 'descend' }>;
 
 export const DESCEND_BUTTON = 'Descend';
-export const DESCEND_HOME_BUTTON = 'Head Home';
+/** The same words as the camp's button: the same choice reads the same on both cards. */
+export const DESCEND_HOME_BUTTON = CAMP_HOME_BUTTON;
 export const DESCEND_TITLE_CRACKED = 'The floor cracks open';
 
-/** "Depth 15 Unlocked" after the day's floor boss; "The floor cracks open" after an Undercroft floor boss (a cracked floor). */
+/** "Depth 15 unlocked" after the day's floor boss; "The floor cracks open" after an Undercroft floor boss (a cracked floor). */
 export function descendTitle(descent: Pick<Descent, 'level' | 'newDepth'>): string {
-  return descent.level <= 1 ? `Depth ${String(descent.newDepth)} Unlocked` : DESCEND_TITLE_CRACKED;
+  return descent.level <= 1 ? `Depth ${String(descent.newDepth)} unlocked` : DESCEND_TITLE_CRACKED;
 }
 
 /** The line under the title: a new depth was won (after the day's floor boss), or the floor has cracked (after an Undercroft floor boss). */
 export function descendIntro(descent: Pick<Descent, 'level' | 'newDepth'>): string {
   return descent.level <= 1
-    ? 'You beat the boss and achieved a new depth. Do you dare delve deeper?'
+    ? 'You beat the floor boss and achieved a new depth. Do you dare delve deeper?'
     : 'Another floor waits below. Do you dare delve deeper?';
 }
 
 /** The title of the Undercroft part of the card. */
 export const DESCEND_UNDER_HEADING = 'The Undercroft';
 
-/** Under "Banked now": what is safe. */
-export const DESCEND_BANKED_HELP =
-  'Experience gained by creatures and the following items are yours, no matter what happens below.';
-/** Under "Still at risk": the pack. */
-export const DESCEND_RISK_HELP =
-  'Your pack contains the following items and you risk losing some of them by delving deeper.';
 /** Under "Still at risk" when the pack is empty. */
 export const DESCEND_EMPTY_PACK_HELP = 'Your pack is empty, so there is nothing to lose.';
 
@@ -427,7 +417,7 @@ export function descendLines(
   const rooms = `${String(descent.floors)} ${descent.floors === 1 ? 'room' : 'rooms'}`;
   const loot = lootMultiplier === 2 ? 'double' : `${String(lootMultiplier)}×`;
   return [
-    `${rooms} with a floor boss at the end. Foes are from depth level ${String(foeDepth)}.`,
+    `${rooms} with a floor boss at the end. Foes are from depth ${String(foeDepth)}.`,
     `Your creatures catch their breath and heal ${catchBreathText(descent.catchBreathBp)}. Downed creatures revive to ${reviveText(descent.reviveBp)}.`,
     `Fights in the Undercroft reward ${loot} loot.`,
     "Once you go down, you fight to the end. If you're lucky, finding a camp may give you a chance to return safely.",

@@ -15,7 +15,6 @@ import {
   pickLounger,
   quirkText,
   skillLevel,
-  createCryptoRng,
   isRoomSpotId,
   itemLines,
   type Rng,
@@ -31,6 +30,7 @@ import {
 } from './gear-store';
 import type { LedgerStorage } from './ledger';
 import { GameError, atomically, type Outcome } from './outcome';
+import { liveRng } from './rng';
 
 /** The most ids one room request may carry. */
 export const ROOM_MAX_USERS = 25;
@@ -111,7 +111,7 @@ export class Lounge {
   private readonly rng: Rng;
 
   constructor(private readonly deps: LoungeDeps) {
-    this.rng = deps.rng ?? createCryptoRng((array) => crypto.getRandomValues(array));
+    this.rng = deps.rng ?? liveRng();
   }
 
   private get sql(): SqlStorage {

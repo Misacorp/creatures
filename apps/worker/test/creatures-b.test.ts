@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import {
   RULES,
   addExperience,
@@ -14,13 +15,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import { playThrough } from './dungeon-helpers';
 import { apiPlayer, giveParts, learnBase, newKey, skipWelcome, type Api } from './gear-helpers';
-import {
-  LATEST_SCHEMA_VERSION,
-  T0,
-  runCore,
-  undoCreaturesBMigration,
-  type CoreContext,
-} from './helpers';
+import { T0, runCore, undoCreaturesBMigration, type CoreContext } from './helpers';
 import {
   HELSINKI,
   W02,
@@ -148,7 +143,7 @@ describe('migration 30', () => {
       ctx.core.migrate();
       expect(
         rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v,
-      ).toBe(LATEST_SCHEMA_VERSION);
+      ).toBe(SCHEMA_VERSION);
       const after = rows<{ id: string; level: number; ribbons: number; exp: number }>(
         ctx.sql,
         'SELECT id, level, ribbons, exp FROM creatures ORDER BY rowid',

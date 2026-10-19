@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "c53a2633-9ac7-45c9-b676-2343cc8957f6",
+    "id": "00000000-0000-4000-8300-000000000014",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -292,7 +292,7 @@
     "pending": null,
     "team": [
       {
-        "id": "69cd8de1-5067-48d6-b94f-cfde183601dd",
+        "id": "00000000-0000-4000-8300-000000000015",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
@@ -303,7 +303,7 @@
         "treat": false
       },
       {
-        "id": "cb91ae58-a5fd-4946-af7f-2978e202607d",
+        "id": "00000000-0000-4000-8300-000000000016",
         "name": "Ashmole",
         "speciesId": "ashmole",
         "element": "ember",
@@ -314,7 +314,7 @@
         "treat": false
       },
       {
-        "id": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+        "id": "00000000-0000-4000-8300-000000000017",
         "name": "Stormray",
         "speciesId": "stormray",
         "element": "spark",
@@ -358,7 +358,7 @@
     "row": [
       {
         "position": 0,
-        "id": "69cd8de1-5067-48d6-b94f-cfde183601dd",
+        "id": "00000000-0000-4000-8300-000000000015",
         "name": "Mistnewt",
         "species": "mistnewt",
         "element": "tide",
@@ -367,7 +367,7 @@
       },
       {
         "position": 1,
-        "id": "cb91ae58-a5fd-4946-af7f-2978e202607d",
+        "id": "00000000-0000-4000-8300-000000000016",
         "name": "Ashmole",
         "species": "ashmole",
         "element": "ember",
@@ -376,7 +376,7 @@
       },
       {
         "position": 2,
-        "id": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+        "id": "00000000-0000-4000-8300-000000000017",
         "name": "Stormray",
         "species": "stormray",
         "element": "spark",
@@ -398,14 +398,14 @@
     "cleared": false,
     "rounds": 3,
     "hpStart": {
-      "69cd8de1-5067-48d6-b94f-cfde183601dd": 160,
-      "cb91ae58-a5fd-4946-af7f-2978e202607d": 128,
-      "23992e64-d0a0-4d99-9197-6b160603bc3e": 120
+      "00000000-0000-4000-8300-000000000015": 160,
+      "00000000-0000-4000-8300-000000000016": 128,
+      "00000000-0000-4000-8300-000000000017": 120
     },
     "hpMax": {
-      "69cd8de1-5067-48d6-b94f-cfde183601dd": 160,
-      "cb91ae58-a5fd-4946-af7f-2978e202607d": 128,
-      "23992e64-d0a0-4d99-9197-6b160603bc3e": 120
+      "00000000-0000-4000-8300-000000000015": 160,
+      "00000000-0000-4000-8300-000000000016": 128,
+      "00000000-0000-4000-8300-000000000017": 120
     },
     "events": [
       {
@@ -417,26 +417,26 @@
       {
         "t": "support_buff",
         "round": 1,
-        "supporter": "cb91ae58-a5fd-4946-af7f-2978e202607d",
-        "target": "69cd8de1-5067-48d6-b94f-cfde183601dd",
+        "supporter": "00000000-0000-4000-8300-000000000016",
+        "target": "00000000-0000-4000-8300-000000000015",
         "bp": 2500
       },
       {
         "t": "support_buff",
         "round": 1,
-        "supporter": "cb91ae58-a5fd-4946-af7f-2978e202607d",
-        "target": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+        "supporter": "00000000-0000-4000-8300-000000000016",
+        "target": "00000000-0000-4000-8300-000000000017",
         "bp": 2500
       },
       {
         "t": "turn",
         "round": 1,
-        "creature": "69cd8de1-5067-48d6-b94f-cfde183601dd"
+        "creature": "00000000-0000-4000-8300-000000000015"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "69cd8de1-5067-48d6-b94f-cfde183601dd",
+        "creature": "00000000-0000-4000-8300-000000000015",
         "damage": 30,
         "matchupBp": 7500,
         "bonusBp": 2500,
@@ -446,7 +446,7 @@
       {
         "t": "mark",
         "round": 1,
-        "creature": "69cd8de1-5067-48d6-b94f-cfde183601dd",
+        "creature": "00000000-0000-4000-8300-000000000015",
         "player": "p1",
         "element": "tide",
         "replaced": null
@@ -454,12 +454,12 @@
       {
         "t": "turn",
         "round": 1,
-        "creature": "cb91ae58-a5fd-4946-af7f-2978e202607d"
+        "creature": "00000000-0000-4000-8300-000000000016"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "cb91ae58-a5fd-4946-af7f-2978e202607d",
+        "creature": "00000000-0000-4000-8300-000000000016",
         "damage": 24,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -469,12 +469,12 @@
       {
         "t": "turn",
         "round": 1,
-        "creature": "23992e64-d0a0-4d99-9197-6b160603bc3e"
+        "creature": "00000000-0000-4000-8300-000000000017"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+        "creature": "00000000-0000-4000-8300-000000000017",
         "damage": 306,
         "matchupBp": 10000,
         "bonusBp": 2500,
@@ -485,9 +485,9 @@
         "t": "reaction",
         "round": 1,
         "reaction": "overload",
-        "setupCreature": "69cd8de1-5067-48d6-b94f-cfde183601dd",
+        "setupCreature": "00000000-0000-4000-8300-000000000015",
         "setupPlayer": "p1",
-        "payoff": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+        "payoff": "00000000-0000-4000-8300-000000000017",
         "bonus": 244,
         "reflected": false
       },
@@ -495,13 +495,13 @@
         "t": "boss_hit",
         "round": 1,
         "source": "attack",
-        "target": "69cd8de1-5067-48d6-b94f-cfde183601dd",
+        "target": "00000000-0000-4000-8300-000000000015",
         "damage": 2475
       },
       {
         "t": "knockout",
         "round": 1,
-        "creature": "69cd8de1-5067-48d6-b94f-cfde183601dd"
+        "creature": "00000000-0000-4000-8300-000000000015"
       },
       {
         "t": "round_end",
@@ -517,19 +517,19 @@
       {
         "t": "support_buff",
         "round": 2,
-        "supporter": "cb91ae58-a5fd-4946-af7f-2978e202607d",
-        "target": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+        "supporter": "00000000-0000-4000-8300-000000000016",
+        "target": "00000000-0000-4000-8300-000000000017",
         "bp": 2500
       },
       {
         "t": "turn",
         "round": 2,
-        "creature": "cb91ae58-a5fd-4946-af7f-2978e202607d"
+        "creature": "00000000-0000-4000-8300-000000000016"
       },
       {
         "t": "hit",
         "round": 2,
-        "creature": "cb91ae58-a5fd-4946-af7f-2978e202607d",
+        "creature": "00000000-0000-4000-8300-000000000016",
         "damage": 24,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -539,7 +539,7 @@
       {
         "t": "mark",
         "round": 2,
-        "creature": "cb91ae58-a5fd-4946-af7f-2978e202607d",
+        "creature": "00000000-0000-4000-8300-000000000016",
         "player": "p1",
         "element": "ember",
         "replaced": null
@@ -547,12 +547,12 @@
       {
         "t": "turn",
         "round": 2,
-        "creature": "23992e64-d0a0-4d99-9197-6b160603bc3e"
+        "creature": "00000000-0000-4000-8300-000000000017"
       },
       {
         "t": "hit",
         "round": 2,
-        "creature": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+        "creature": "00000000-0000-4000-8300-000000000017",
         "damage": 62,
         "matchupBp": 10000,
         "bonusBp": 2500,
@@ -563,13 +563,13 @@
         "t": "boss_hit",
         "round": 2,
         "source": "attack",
-        "target": "cb91ae58-a5fd-4946-af7f-2978e202607d",
+        "target": "00000000-0000-4000-8300-000000000016",
         "damage": 3300
       },
       {
         "t": "knockout",
         "round": 2,
-        "creature": "cb91ae58-a5fd-4946-af7f-2978e202607d"
+        "creature": "00000000-0000-4000-8300-000000000016"
       },
       {
         "t": "round_end",
@@ -585,12 +585,12 @@
       {
         "t": "turn",
         "round": 3,
-        "creature": "23992e64-d0a0-4d99-9197-6b160603bc3e"
+        "creature": "00000000-0000-4000-8300-000000000017"
       },
       {
         "t": "hit",
         "round": 3,
-        "creature": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+        "creature": "00000000-0000-4000-8300-000000000017",
         "damage": 50,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -602,19 +602,19 @@
         "round": 3,
         "gimmick": "zap-dive",
         "op": "strike_highest_atk",
-        "targets": ["23992e64-d0a0-4d99-9197-6b160603bc3e"]
+        "targets": ["00000000-0000-4000-8300-000000000017"]
       },
       {
         "t": "boss_hit",
         "round": 3,
         "source": "gimmick",
-        "target": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+        "target": "00000000-0000-4000-8300-000000000017",
         "damage": 2805
       },
       {
         "t": "knockout",
         "round": 3,
-        "creature": "23992e64-d0a0-4d99-9197-6b160603bc3e"
+        "creature": "00000000-0000-4000-8300-000000000017"
       },
       {
         "t": "round_end",
@@ -625,9 +625,9 @@
     "names": {
       "boss": "Static Bat",
       "creatures": {
-        "69cd8de1-5067-48d6-b94f-cfde183601dd": "Mistnewt",
-        "cb91ae58-a5fd-4946-af7f-2978e202607d": "Ashmole",
-        "23992e64-d0a0-4d99-9197-6b160603bc3e": "Stormray"
+        "00000000-0000-4000-8300-000000000015": "Mistnewt",
+        "00000000-0000-4000-8300-000000000016": "Ashmole",
+        "00000000-0000-4000-8300-000000000017": "Stormray"
       },
       "players": {
         "p1": "Player 4"
@@ -696,7 +696,7 @@
     }
   },
   "summary": {
-    "id": "c53a2633-9ac7-45c9-b676-2343cc8957f6",
+    "id": "00000000-0000-4000-8300-000000000014",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -709,7 +709,7 @@
     "createdAt": 1799755200000,
     "team": [
       {
-        "id": "69cd8de1-5067-48d6-b94f-cfde183601dd",
+        "id": "00000000-0000-4000-8300-000000000015",
         "name": "Mistnewt",
         "speciesId": "mistnewt",
         "element": "tide",
@@ -719,7 +719,7 @@
         "hpEnd": 0
       },
       {
-        "id": "cb91ae58-a5fd-4946-af7f-2978e202607d",
+        "id": "00000000-0000-4000-8300-000000000016",
         "name": "Ashmole",
         "speciesId": "ashmole",
         "element": "ember",
@@ -729,7 +729,7 @@
         "hpEnd": 0
       },
       {
-        "id": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+        "id": "00000000-0000-4000-8300-000000000017",
         "name": "Stormray",
         "speciesId": "stormray",
         "element": "spark",
@@ -771,7 +771,7 @@
       "streak": null,
       "experience": [
         {
-          "creatureId": "69cd8de1-5067-48d6-b94f-cfde183601dd",
+          "creatureId": "00000000-0000-4000-8300-000000000015",
           "gained": 0,
           "treat": false,
           "levelBefore": 1,
@@ -784,7 +784,7 @@
           "dayEffects": []
         },
         {
-          "creatureId": "cb91ae58-a5fd-4946-af7f-2978e202607d",
+          "creatureId": "00000000-0000-4000-8300-000000000016",
           "gained": 0,
           "treat": false,
           "levelBefore": 1,
@@ -797,7 +797,7 @@
           "dayEffects": []
         },
         {
-          "creatureId": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+          "creatureId": "00000000-0000-4000-8300-000000000017",
           "gained": 0,
           "treat": false,
           "levelBefore": 1,
@@ -1131,32 +1131,12 @@
     "landmark": false,
     "landmarkBoss": null,
     "streak": 1,
-    "modifiers": [
-      {
-        "room": 0,
-        "id": "flooded",
-        "name": "Flooded",
-        "description": "Tide creatures hit 20% harder."
-      },
-      {
-        "room": 1,
-        "id": "stormy",
-        "name": "Stormy",
-        "description": "Spark creatures hit 20% harder."
-      },
-      {
-        "room": 2,
-        "id": "brittle",
-        "name": "Brittle",
-        "description": "The foe has 20% less HP but hits 25% harder."
-      }
-    ],
     "attemptsToday": 1,
     "attemptsAllowed": 2,
     "canRun": true,
     "blocked": null,
     "last": {
-      "id": "c53a2633-9ac7-45c9-b676-2343cc8957f6",
+      "id": "00000000-0000-4000-8300-000000000014",
       "day": "2027-01-12",
       "attempt": 1,
       "depth": 1,
@@ -1169,7 +1149,7 @@
       "createdAt": 1799755200000,
       "team": [
         {
-          "id": "69cd8de1-5067-48d6-b94f-cfde183601dd",
+          "id": "00000000-0000-4000-8300-000000000015",
           "name": "Mistnewt",
           "speciesId": "mistnewt",
           "element": "tide",
@@ -1179,7 +1159,7 @@
           "hpEnd": 0
         },
         {
-          "id": "cb91ae58-a5fd-4946-af7f-2978e202607d",
+          "id": "00000000-0000-4000-8300-000000000016",
           "name": "Ashmole",
           "speciesId": "ashmole",
           "element": "ember",
@@ -1189,7 +1169,7 @@
           "hpEnd": 0
         },
         {
-          "id": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+          "id": "00000000-0000-4000-8300-000000000017",
           "name": "Stormray",
           "speciesId": "stormray",
           "element": "spark",
@@ -1231,7 +1211,7 @@
         "streak": null,
         "experience": [
           {
-            "creatureId": "69cd8de1-5067-48d6-b94f-cfde183601dd",
+            "creatureId": "00000000-0000-4000-8300-000000000015",
             "gained": 0,
             "treat": false,
             "levelBefore": 1,
@@ -1244,7 +1224,7 @@
             "dayEffects": []
           },
           {
-            "creatureId": "cb91ae58-a5fd-4946-af7f-2978e202607d",
+            "creatureId": "00000000-0000-4000-8300-000000000016",
             "gained": 0,
             "treat": false,
             "levelBefore": 1,
@@ -1257,7 +1237,7 @@
             "dayEffects": []
           },
           {
-            "creatureId": "23992e64-d0a0-4d99-9197-6b160603bc3e",
+            "creatureId": "00000000-0000-4000-8300-000000000017",
             "gained": 0,
             "treat": false,
             "levelBefore": 1,
@@ -1583,9 +1563,9 @@
       }
     },
     "lastTeam": [
-      "69cd8de1-5067-48d6-b94f-cfde183601dd",
-      "cb91ae58-a5fd-4946-af7f-2978e202607d",
-      "23992e64-d0a0-4d99-9197-6b160603bc3e"
+      "00000000-0000-4000-8300-000000000015",
+      "00000000-0000-4000-8300-000000000016",
+      "00000000-0000-4000-8300-000000000017"
     ],
     "draftTeam": null,
     "map": {

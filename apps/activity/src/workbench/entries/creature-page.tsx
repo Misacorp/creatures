@@ -18,7 +18,7 @@ import {
 } from '../../creature-page/sample';
 import type { GearActions } from '../../gear-actions';
 import { ItemFrame, ItemSprite } from '../../GearArt';
-import { LootList } from '../../GearLoot';
+import { LootList } from '../../LootList';
 import type { DismantlePreview, GearItem, GearState, GrantLoot } from '../../gear-types';
 import { dismantleDurationFor, gearName } from '../../gear-view';
 import { InventoryGrid } from '../../InventoryGrid';

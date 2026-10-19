@@ -2,7 +2,7 @@
 
 > **Superseded 2026-10-16 (Gear A).** Items, upgrades, Improve and enchants as described below were replaced by Hat, Scarf and Charm with item levels, tiered lines and the wear rule: see `gear-and-creatures-v2.md` and the 2026-10-16 entries of `decisions.md`. What stays from this page: parts, blueprints, the Workshop with creature jobs, the Crafting skill, supplies and the dismantle idea. The upgrade ladder, Improve, enchants, the speed and crit stats and the four old rarity rules below no longer apply.
 
-Status: **plan**, 2026-10-13. Roadmap item 2 ("absolutely" — Misa). Slow gear at first is fine.
+Status: **shipped** (v1 in PR #9), by 2026-10-13; superseded 2026-10-16 by `gear-and-creatures-v2.md`. Roadmap item 2 ("absolutely" — Misa). Slow gear at first is fine.
 
 ## Misa's direction (2026-10-13)
 

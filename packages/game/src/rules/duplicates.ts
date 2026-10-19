@@ -13,8 +13,6 @@ import { fuseOnce } from './fusion';
 import { foldTalent, slotsOpen, talentScore, type TalentRoll } from './talents';
 
 export type DuplicateChoice = 'teach' | 'fuse' | 'release' | 'keep';
-export const DUPLICATE_CHOICES: readonly DuplicateChoice[] = ['teach', 'fuse', 'release', 'keep'];
-
 /** A creature of the duplicate's line that the player owns, as the choice sees it. */
 export interface LineCreature {
   id: string;

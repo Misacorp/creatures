@@ -1,10 +1,11 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import { compactRow } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { awayMembers } from '../src/raid-assist';
 import { buildPartyBoard, buildPhaseInput } from '../src/raid-resolve';
 import { partyMembers } from '../src/raid-roster';
 import { eventTimes } from '../src/raid-schedule';
-import { LATEST_SCHEMA_VERSION, undoPlacedByMigration, type CoreContext } from './helpers';
+import { undoPlacedByMigration, type CoreContext } from './helpers';
 import { HELSINKI, HOUR, W02, count, rows, runRaid, seedPlayer, type Seeded } from './raid-helpers';
 
 const WEEK_START = eventTimes(W02.id, HELSINKI).weekStart;
@@ -507,12 +508,12 @@ describe('migration 32 (placed_by)', () => {
       undoPlacedByMigration(ctx.sql);
       expect(columns()).not.toContain('placed_by');
       expect(ctx.sql.exec('SELECT MAX(version) AS v FROM schema_version').one()['v']).toBe(
-        LATEST_SCHEMA_VERSION - 3,
+        SCHEMA_VERSION - 3,
       );
       ctx.core.migrate();
       expect(columns()).toContain('placed_by');
       expect(ctx.sql.exec('SELECT MAX(version) AS v FROM schema_version').one()['v']).toBe(
-        LATEST_SCHEMA_VERSION,
+        SCHEMA_VERSION,
       );
       // The old row is kept, and counts as the owner's.
       expect(placements(ctx)).toEqual([

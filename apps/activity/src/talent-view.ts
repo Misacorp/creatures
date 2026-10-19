@@ -4,10 +4,10 @@
  * is, what a slotting costs); these only arrange its answer for the screen. All of it is text.
  */
 import { talentDef } from '@creatures/game';
-import type { Creature, GameState } from './api';
+import type { Creature } from './api';
 import { creatureName, speciesName } from './game';
 import { partsText } from './gear-view';
-import type { ChoiceResult, PendingCatch, TalentSlotView, TalentView } from './talent-types';
+import type { ChoiceResult, TalentSlotView } from './talent-types';
 
 /** A creature of the state by id. */
 function creatureOf(creatures: readonly Creature[], id: string): Creature | undefined {
@@ -99,11 +99,6 @@ export function bookRows(creature: Creature): BookRow[] {
   );
 }
 
-/** "Quick to Pounce, First pounce +14%": the talent in a row of text (golden is a tag, never only colour). */
-export function talentLine(talent: TalentView): string {
-  return `${talent.name}: ${talent.text}${talent.golden ? ' (golden)' : ''}`;
-}
-
 /** A talent's phrase cut around its number: "First pounce +14%" is "First pounce ", "+14%" and "". */
 export interface TalentTextParts {
   before: string;
@@ -126,12 +121,4 @@ export function talentTextParts(text: string): TalentTextParts {
     value: match[0],
     after: text.slice(at + match[0].length),
   };
-}
-
-/** The waiting cards of a state, or the ones among `ids` (the catches of one claim), oldest first. */
-export function cardsFor(
-  state: Pick<GameState, 'pending'>,
-  ids?: readonly string[],
-): PendingCatch[] {
-  return ids === undefined ? state.pending : state.pending.filter((c) => ids.includes(c.id));
 }

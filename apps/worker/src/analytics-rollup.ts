@@ -32,7 +32,6 @@ const RETENTION_DAYS = 400;
 const EXCLUDED_KINDS: ReadonlySet<string> = new Set(['dev_action']);
 
 export type DimValue = string | number;
-export type Dims = Readonly<Record<string, DimValue>>;
 
 /** One rollup row as stored. `dimsJson` is the canonical (sorted keys) JSON of the dims. */
 export interface DailyRow {

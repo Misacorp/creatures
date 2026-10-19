@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DAY_MS,
   DEFAULT_GUILD_TIMEZONE,
   addDays,
+  dateToUtcMs,
+  formatDate,
   gameDay,
   gameDayEnd,
   isValidTimeZone,
+  isoWeekday,
   nextOccurrence,
   previousOccurrence,
   zonedDate,
@@ -103,6 +107,27 @@ describe('addDays', () => {
     expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
     expect(addDays('2026-10-10', -7)).toBe('2026-10-03');
     expect(addDays('2026-10-10', 0)).toBe('2026-10-10');
+  });
+});
+
+describe('formatDate, dateToUtcMs and isoWeekday', () => {
+  it('round-trips a real date and pads the year', () => {
+    expect(formatDate(dateToUtcMs('2026-10-18'))).toBe('2026-10-18');
+    expect(formatDate(dateToUtcMs('2026-10-18') + DAY_MS)).toBe('2026-10-19');
+    expect(formatDate(Date.UTC(2027, 0, 1))).toBe('2027-01-01');
+  });
+
+  it('gives the ISO weekday, Monday = 1 to Sunday = 7', () => {
+    expect(isoWeekday('2026-10-12')).toBe(1);
+    expect(isoWeekday('2026-10-18')).toBe(7);
+    expect(isoWeekday('2024-02-29')).toBe(4);
+  });
+
+  it('refuses anything that is not a real calendar date', () => {
+    for (const bad of ['2026-02-30', '2026-13-01', '26-10-18', '2026-10-1', '']) {
+      expect(() => dateToUtcMs(bad)).toThrow();
+      expect(() => isoWeekday(bad)).toThrow();
+    }
   });
 });
 

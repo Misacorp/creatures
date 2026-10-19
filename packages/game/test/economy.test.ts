@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ECONOMY, baitForDay, leetPointsForDay } from '../src/economy';
+import { ECONOMY, baitForDay, leetPointsForDay } from '../src/index';
 
 describe('leetPointsForDay', () => {
   it('pays nothing when nobody leeted', () => {

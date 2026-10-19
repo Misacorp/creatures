@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { Creature } from './api';
 import { Collection } from './Collection';
 import { EvolveDrawer } from './EvolveDrawer';
 import { SAMPLE_GEAR, SAMPLE_STATE, sampleCreature } from './creature-card-sample';
@@ -77,13 +78,19 @@ describe('the evolve screen', () => {
       expect(visibleText(form as FakeElement)).toMatch(/Atk\s*\d+/);
       expect(visibleText(form as FakeElement)).toMatch(/Spd\s*\d+/);
     }
-    expect(visibleText(root)).toContain('20 Essence');
+    // The cost is an Essence badge (the number only), not a sentence.
+    expect(
+      byClass(byClass(root, 'evolve-cost')[0] as FakeElement, 'part-count').map(visibleText),
+    ).toEqual(['20']);
   });
 
   it('picks nothing at first, says the choice is permanent, and cannot be confirmed yet', () => {
     const { root, onEvolve } = draw();
     expect(forms(root).every((f) => f.getAttribute('aria-pressed') === 'false')).toBe(true);
-    expect(visibleText(root)).toContain('20 Essence. This choice is permanent.');
+    expect(
+      byClass(byClass(root, 'evolve-cost')[0] as FakeElement, 'part-count').map(visibleText),
+    ).toEqual(['20']);
+    expect(visibleText(root)).toContain('This choice is permanent.');
     const button = confirm(root);
     expect(visibleText(button)).toBe('Pick a form');
     expect(button.hasAttribute('disabled')).toBe(true);
@@ -123,6 +130,29 @@ describe('the evolve screen', () => {
     expect(confirm(notReady.root).hasAttribute('disabled')).toBe(true);
     notReady.page.click(confirm(notReady.root));
     expect(notReady.onEvolve).not.toHaveBeenCalled();
+  });
+
+  it('cannot be confirmed while the creature is away or on a job, and says why', () => {
+    const away: Creature = { ...creature, away: true };
+    page = createPage();
+    const onEvolve = vi.fn();
+    page.draw(
+      <EvolveDrawer open creature={away} busy={false} onEvolve={onEvolve} onClose={vi.fn()} />,
+    );
+    page.click(forms(page.root)[1] as FakeElement);
+    expect(confirm(page.root).hasAttribute('disabled')).toBe(true);
+    expect(visibleText(page.root)).toContain('Away on a trip');
+    page.click(confirm(page.root));
+    expect(onEvolve).not.toHaveBeenCalled();
+    page.unmount();
+    const onJob: Creature = { ...creature, busy: { kind: 'job', id: 'job-1' } };
+    page = createPage();
+    page.draw(
+      <EvolveDrawer open creature={onJob} busy={false} onEvolve={onEvolve} onClose={vi.fn()} />,
+    );
+    page.click(forms(page.root)[1] as FakeElement);
+    expect(confirm(page.root).hasAttribute('disabled')).toBe(true);
+    expect(visibleText(page.root)).toContain('On a job');
   });
 
   it('closes by its close button', () => {
@@ -181,7 +211,10 @@ describe('the Creatures tab and the evolve screen', () => {
   });
 
   it('evolves a line with one form at once, without the screen', () => {
-    const single = sampleCreature('evolve ready');
+    const ready = sampleCreature('evolve ready');
+    const evolution = { ...ready.evolution! };
+    delete evolution.alt;
+    const single: Creature = { ...ready, evolution };
     const { page: p, root, onEvolve } = tab([single]);
     p.click(byClass(root, 'cc-do')[0]?.childNodes[0] as FakeElement);
     expect(byRole(root, 'dialog')).toHaveLength(0);

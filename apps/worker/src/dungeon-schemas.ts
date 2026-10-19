@@ -104,4 +104,3 @@ export const DraftTeamSchema = v.pipe(
 
 /** The body of `PUT /api/dungeon/team`. Strict: unknown keys are rejected. The player is the session's. */
 export const DraftBodySchema = v.strictObject({ team: DraftTeamSchema });
-export type DraftBody = v.InferOutput<typeof DraftBodySchema>;

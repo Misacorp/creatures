@@ -17,14 +17,6 @@
   margin: 0.5rem 0 0.25rem;
 }
 
-.blueprints {
-  display: grid;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .bp-row {
   display: flex;
   align-items: center;
@@ -33,6 +25,14 @@
 
 .bp-name {
   margin: 0;
+}
+
+.bp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  margin: 0.125rem 0;
 }
 
 .bp-text .tags {

@@ -32,9 +32,14 @@ export interface GearShareRun {
   profiles: GearShareProfile[];
 }
 
+/** Weeks the study plays: the last week it reports. */
+export const GEAR_STUDY_WEEKS = Math.max(...GEAR_SHARE_WEEKS);
+
 export interface GearStudySettings {
   seed: string;
   servers: number;
+  /** Weeks to play (default `GEAR_STUDY_WEEKS`); fewer leave the later weeks "not measured". For tests. */
+  weeks?: number;
   /** Play with the valley's weather (default: on, as shipped). */
   weather?: boolean;
 }
@@ -55,7 +60,7 @@ export function runGearStudy(
   study: GearStudySettings,
   profiles: readonly PlayerProfile[] = defaultProfiles(),
 ): GearShareRun {
-  const weeks = Math.max(...GEAR_SHARE_WEEKS);
+  const weeks = study.weeks ?? GEAR_STUDY_WEEKS;
   const settings: JourneySettings = {
     seed: study.seed,
     weeks,

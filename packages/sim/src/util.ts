@@ -38,30 +38,12 @@ export function round(value: number, digits = 4): number {
   return Math.round(value * f) / f;
 }
 
-export function roundOrNull(value: number | null, digits = 4): number | null {
-  return value === null ? null : round(value, digits);
-}
-
 /** Fisher-Yates shuffle with the injected RNG; returns a new array. */
 export function shuffle<T>(rng: Rng, items: readonly T[]): T[] {
   const out = [...items];
   for (let i = out.length - 1; i > 0; i--) {
     const j = int(rng, i + 1);
     [out[i], out[j]] = [out[j] as T, out[i] as T];
-  }
-  return out;
-}
-
-export function groupBy<T, K extends string | number>(
-  items: readonly T[],
-  key: (item: T) => K,
-): Map<K, T[]> {
-  const out = new Map<K, T[]>();
-  for (const item of items) {
-    const k = key(item);
-    const list = out.get(k);
-    if (list === undefined) out.set(k, [item]);
-    else list.push(item);
   }
   return out;
 }

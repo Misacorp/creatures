@@ -62,10 +62,10 @@ const descent = (() => {
 
 describe('the descent card words', () => {
   it('titles the card by what fell', () => {
-    expect(descendTitle(descent)).toBe('Depth 15 Unlocked');
+    expect(descendTitle(descent)).toBe('Depth 15 unlocked');
     expect(descendTitle({ level: 2, newDepth: 15 })).toBe('The floor cracks open');
     expect(descendIntro(descent)).toBe(
-      'You beat the boss and achieved a new depth. Do you dare delve deeper?',
+      'You beat the floor boss and achieved a new depth. Do you dare delve deeper?',
     );
     expect(descendIntro({ level: 2, newDepth: 15 })).toBe(
       'Another floor waits below. Do you dare delve deeper?',
@@ -76,25 +76,25 @@ describe('the descent card words', () => {
   it("says the level's rooms, the foes' depth, the breath and the loot, from what the server sent", () => {
     expect(catchBreathText(2000)).toBe('20% HP');
     expect(reviveText(1000)).toBe('10% HP');
-    // The sample run fights at depth 14; one level of depthBonus 1 puts the foes at depth level 15.
+    // The sample run fights at depth 14; one level of depthBonus 1 puts the foes at depth 15.
     expect(descendLines(descent, 14)).toEqual([
-      '4 rooms with a floor boss at the end. Foes are from depth level 15.',
+      '4 rooms with a floor boss at the end. Foes are from depth 15.',
       'Your creatures catch their breath and heal 20% HP. Downed creatures revive to 10% HP.',
       'Fights in the Undercroft reward double loot.',
       "Once you go down, you fight to the end. If you're lucky, finding a camp may give you a chance to return safely.",
     ]);
     // A deeper level is fiercer again: depth plus the bonus for each level, as the server scales it.
     expect(descendLines({ ...descent, level: 2, floors: 3 }, 14)[0]).toBe(
-      '3 rooms with a floor boss at the end. Foes are from depth level 16.',
+      '3 rooms with a floor boss at the end. Foes are from depth 16.',
     );
     expect(descendLines({ ...descent, depthBonus: 3, level: 2 }, 10)[0]).toContain(
-      'Foes are from depth level 16.',
+      'Foes are from depth 16.',
     );
     expect(descendLines({ ...descent, floors: 1 }, 14)[0]).toContain('1 room with a floor boss');
     // A different multiplier is said as such.
     expect(descendLines(descent, 14, 3)[2]).toBe('Fights in the Undercroft reward 3× loot.');
     expect(DESCEND_BUTTON).toBe('Descend');
-    expect(DESCEND_HOME_BUTTON).toBe('Head Home');
+    expect(DESCEND_HOME_BUTTON).toBe('Head home with your pack');
     expect(DESCEND_RISK_LINE).toBe('Keep half of your pack if you are defeated.');
     expect(DESCEND_HOME_LINE).toBe('Keep your full pack.');
   });
@@ -248,7 +248,7 @@ describe('what happened in the rooms of the Undercroft', () => {
     expect(descendLine({ result: 'home', level: 1 })).toBe('You headed home with the whole pack.');
   });
 
-  it('keeps all the entries of a boss that fell, in order, and counts a chest as loot', () => {
+  it('keeps all the entries of a boss that fell, in order, and a chest only holds what it adds', () => {
     const keeper = parseDungeonAct(actKeeper).state;
     expect(stepsAt(keeper.history, 'f6l1').map((e) => e.result)).toEqual([
       'fight',
@@ -258,7 +258,10 @@ describe('what happened in the rooms of the Undercroft', () => {
     expect(stepsAt(keeper.history, 'u1f3l1').map((e) => e.result)).toEqual(['fight', 'chest']);
     expect(stepsAt(undefined, 'f6l1')).toEqual([]);
     const chest = stepsAt(keeper.history, 'u1f3l1')[1];
-    expect(chest && lootOf(chest)).toEqual({ bait: 0, essence: 1, scrap: 2 });
+    // A chest entry is only what the chest adds: a keeper's chest adds no loot, its own is on the fight.
+    expect(chest && lootOf(chest)).toBeNull();
+    const fight = stepsAt(keeper.history, 'u1f3l1')[0];
+    expect(fight && lootOf(fight)).toEqual({ bait: 0, essence: 1, scrap: 2 });
     const door = (keeper.history ?? []).find((e) => e.result === 'door');
     expect(door && lootOf(door)).toBeNull();
   });

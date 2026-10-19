@@ -1,5 +1,7 @@
 import { useRef } from 'preact/hooks';
+import { baitCount } from './count-items';
 import { GlossaryTag } from './Glossary';
+import { CountBadge } from './ui/CountBadge';
 
 let boxCounter = 0;
 
@@ -39,13 +41,15 @@ export function TreatBox({
         <input
           id={id}
           type="checkbox"
+          aria-label={`Pack a treat${who === undefined ? '' : ` for ${who}`} (${String(cost)} Bait)`}
           checked={checked}
           disabled={disabled || (short && !checked)}
           onChange={(event) => {
             onChange(event.currentTarget.checked);
           }}
         />{' '}
-        Pack a treat{who === undefined ? '' : ` for ${who}`} ({String(cost)} Bait)
+        <span>Pack a treat{who === undefined ? '' : ` for ${who}`}</span>{' '}
+        <CountBadge {...baitCount(cost)} />
       </label>
       <GlossaryTag entry="treat" look="help" class="treat-help" />
       {short && !checked && <span class="muted"> Not enough Bait.</span>}

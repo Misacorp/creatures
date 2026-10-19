@@ -1,7 +1,6 @@
 export * from './config';
 export * from './experience';
 export * from './expedition';
-export * from './catching';
 export * from './fusion';
 export * from './stats';
 export * from './nickname';
@@ -21,3 +20,4 @@ export * from './income';
 export * from './weather';
 export * from './dungeon-map';
 export * from './dungeon-run';
+export * from './economy';

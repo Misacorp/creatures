@@ -10,11 +10,12 @@ updates:
       default-days: 7
       semver-major-days: 14
     groups:
-      dev-dependencies:
-        dependency-type: development
-        update-types: [minor, patch]
-      runtime-dependencies:
-        dependency-type: production
+      # Vitest and the Workers test plugin must move together (the plugin pins its vitest range).
+      vitest:
+        patterns: ['vitest', '@vitest/*', '@cloudflare/vitest-plugin']
+      # With pnpm catalogs Dependabot cannot tell dev from runtime packages, so one group for the rest.
+      npm-minor-patch:
+        patterns: ['*']
         update-types: [minor, patch]
 
   - package-ecosystem: github-actions

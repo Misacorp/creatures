@@ -16,10 +16,10 @@ import {
 import type { Trip } from './expedition-types';
 import { autoSettledLines, noCatchLine, tripFinds, type Find } from './find-view';
 import { creatureName } from './game';
-import { partCountItems } from './GearArt';
+import { partCountItems, supplyCounts } from './count-items';
 import type { GrantLoot } from './gear-types';
 import type { PendingCatch } from './talent-types';
-import { destinationName, explorerXp, lengthHours, supplyKindOf } from './trip-view';
+import { destinationName, explorerXp, lengthHours } from './trip-view';
 import type { CountItem } from './ui/CountBadge';
 import type { IconRef } from './icon-ref';
 
@@ -99,15 +99,7 @@ export function tripResultView(input: {
     counts:
       loot === undefined || nothingInLoot(result)
         ? []
-        : [
-            ...partCountItems(loot.parts),
-            ...foundSupplies(result).map((s) => ({
-              key: s.id,
-              icon: { kind: 'supply', id: supplyKindOf(s.id) ?? 'unknown' } as const,
-              amount: s.amount,
-              name: s.name,
-            })),
-          ],
+        : [...partCountItems(loot.parts), ...supplyCounts(foundSupplies(result))],
     loot: loot === undefined || nothingInLoot(result) ? null : loot,
     xp:
       xp === null || bar === null

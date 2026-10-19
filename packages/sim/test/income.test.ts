@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RULES, dailyAllowance, leetBonusForDay } from '@creatures/game';
-import { baitForDay } from '../../../apps/worker/src/economy';
+import { RULES, baitForDay, dailyAllowance, leetBonusForDay } from '@creatures/game';
 import { runEconomy } from '../src/economy';
 import { dayIncome, parseIncomeModel, playerIncome } from '../src/income';
 import { PRESETS, type PlayerProfile } from '../src/profiles';

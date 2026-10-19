@@ -440,7 +440,7 @@ function LiveDetails({ fight }: { fight: LiveRunning }) {
     <>
       {others.length > 0 && (
         <Accordion title={othersSummary(others)} variant="compact" class="others">
-          <ul class="plain-list">
+          <ul class="bullet-list">
             {others.map((usage) => (
               <li key={usage.alias} class="live-ability">
                 <strong>{playerName(usage.alias)}</strong>:{' '}

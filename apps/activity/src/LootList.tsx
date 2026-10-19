@@ -1,7 +1,7 @@
 import { Tag } from './ui/Tag';
 import { GlossaryTag } from './Glossary';
 import { PartCount } from './GearArt';
-import { ItemRow } from './ItemRow';
+import { GearRows } from './ItemRow';
 import { gearName, lootIsEmpty, lootItemName, partsEntries, qualityText } from './gear-view';
 import type { GrantLoot } from './gear-types';
 
@@ -25,13 +25,7 @@ export function LootList({
   const parts = partsEntries(loot.parts);
   return (
     <div class="loot" role="group" aria-label={label}>
-      {loot.gear.length > 0 && (
-        <ul class="loot-items" aria-label="Items">
-          {loot.gear.map((g) => (
-            <ItemRow key={g.id} baseId={g.baseId} rarity={g.rarity} level={g.itemLevel} motion />
-          ))}
-        </ul>
-      )}
+      {loot.gear.length > 0 && <GearRows pieces={loot.gear} label="Items" />}
       {loot.converted.length > 0 && (
         <ul class="loot-notes">
           {loot.converted.map((c, i) => (

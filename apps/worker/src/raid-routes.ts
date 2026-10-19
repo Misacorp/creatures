@@ -1,8 +1,10 @@
 import * as v from 'valibot';
-import type { Outcome } from './collection';
 import { DiscordError } from './discord';
 import {
   errorResponse,
+  failure,
+  invalidBody,
+  invalidId,
   json,
   MAX_ACTION_BODY_BYTES,
   parseBody,
@@ -53,8 +55,6 @@ async function hasNoPayload(request: Request): Promise<boolean> {
   return parsed !== undefined && v.safeParse(v.strictObject({}), parsed).success;
 }
 
-const invalidBody = (): Response => errorResponse('invalid_body', 400);
-
 /**
  * Whether the caller may manage the server, asked of Discord (or the 60 s cache). A Discord failure
  * becomes the 503 answer. Only the error kind is logged.
@@ -79,10 +79,6 @@ function channelAnswer(
   canManage: boolean,
 ): Response {
   return json({ pinned: core.channelPinned(), here: core.isPinnedTo(channelId), canManage });
-}
-
-function failure(outcome: Extract<Outcome<unknown>, { ok: false }>): Response {
-  return errorResponse(outcome.error, outcome.status);
 }
 
 export const raidRoutes: Routes<RaidRouteContext> = {
@@ -214,7 +210,7 @@ export const raidRoutes: Routes<RaidRouteContext> = {
         party: params['party'],
         phase: params['phase'],
       });
-      if (!parsed.success) return errorResponse('invalid_id', 400);
+      if (!parsed.success) return invalidId();
       const { week, party, phase } = parsed.output;
       // Members of that fight only; a missing fight and someone else's fight look the same.
       const stats = core.raid.stats(user.id, week, party, phase);
@@ -229,7 +225,7 @@ export const raidRoutes: Routes<RaidRouteContext> = {
         party: params['party'],
         phase: params['phase'],
       });
-      if (!parsed.success) return errorResponse('invalid_id', 400);
+      if (!parsed.success) return invalidId();
       const { week, party, phase } = parsed.output;
       const replay = core.raid.replay(user.id, week, party, phase);
       if (replay === null) return errorResponse('not_found', 404);

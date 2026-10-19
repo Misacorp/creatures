@@ -133,6 +133,54 @@ export function credit(
   });
 }
 
+export type DebitInput = Omit<CreditInput, 'meta'> & { meta?: unknown };
+
+/**
+ * Takes an amount off a balance once per (user, idempotency key): the mirror of `credit`, for
+ * callers that already decided the amount (the dev tools). The caller clamps the amount to the
+ * balance; a debit that would make the balance negative throws. Players never reach this: their
+ * spends go through `spend`.
+ */
+export function debit(
+  storage: LedgerStorage,
+  input: DebitInput,
+  now: number,
+): { applied: boolean } {
+  assertPositiveInt(input.amount);
+  assertCurrency(input.currency);
+  assertSource(input.source);
+  if (!CREDIT_KEY_RE.test(input.idempotencyKey)) throw new Error('invalid idempotency key');
+  const meta = input.meta === undefined ? null : JSON.stringify(input.meta);
+  if (meta !== null && meta.length > MAX_META_CHARS) throw new Error('ledger meta too large');
+
+  return storage.transactionSync(() => {
+    const balance = getBalance(storage.sql, input.userId, input.currency);
+    if (input.amount > balance) throw new Error('debit exceeds balance');
+    const inserted = storage.sql
+      .exec(
+        `INSERT INTO ledger (user_id, currency, amount, source, idempotency_key, meta, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(user_id, idempotency_key) DO NOTHING RETURNING id`,
+        input.userId,
+        input.currency,
+        -input.amount,
+        input.source,
+        input.idempotencyKey,
+        meta,
+        now,
+      )
+      .toArray();
+    if (inserted.length === 0) return { applied: false };
+    storage.sql.exec(
+      'UPDATE balances SET amount = amount - ? WHERE user_id = ? AND currency = ?',
+      input.amount,
+      input.userId,
+      input.currency,
+    );
+    return { applied: true };
+  });
+}
+
 /** A previous spend under an idempotency key, as stored by `spend`. */
 export interface PriorSpend {
   currency: Currency;

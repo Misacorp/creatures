@@ -96,14 +96,17 @@ const bodyOf = (key: keyof Bodies) =>
     act: DungeonAct;
   };
 
-/** The player's creatures: the fixtures' own ids and species, so the screens find them by id. */
+/**
+ * The player's creatures: the hero's of the captured run (the ids `pnpm fixtures:capture` gives the dungeon set,
+ * in order of first appearance) and their species, so the screens find them by id.
+ */
 function roster(): Creature[] {
   const all = sampleRoster(30);
   const wanted: [string, string][] = [
-    ['64ab0da2-cff5-47ec-8346-04317bb6b745', 'sproutle'],
-    ['5b8aea90-83c9-4de6-b9f4-2cd49763020f', 'splashet'],
-    ['ae8c7c8f-b190-470f-b09e-4ae48d278eb9', 'cindle'],
-    ['53072e75-7ff5-4f3a-91bc-7a61fe6ae84c', 'zipmouse'],
+    ['00000000-0000-4000-8300-000000000001', 'sproutle'],
+    ['00000000-0000-4000-8300-000000000002', 'splashet'],
+    ['00000000-0000-4000-8300-000000000003', 'cindle'],
+    ['00000000-0000-4000-8300-000000000009', 'zipmouse'],
   ];
   const picked = wanted.map(([id, species]) => {
     const found = all.find((c) => c.species === species);
@@ -309,7 +312,7 @@ describe('a mystery room, with the real answers', () => {
     const event = pending.pending.event;
     expect(visibleText(root)).toContain(event.name);
     expect(visibleText(root)).toContain(event.text);
-    expect(byClass(root, 'event-option')).toHaveLength(2);
+    expect(byClass(root, 'choice')).toHaveLength(2);
     for (const option of event.options) expect(visibleText(root)).toContain(option.description);
     // Picking the second option sends the captured pick and shows what it did.
     page?.click(button(root, new RegExp(`^${escapeRe(event.options[1]?.label ?? '')}`)));
@@ -755,18 +758,18 @@ describe('the Undercroft, with the real answers', () => {
     expect(byClass(root, 'dungeon-descend')).toHaveLength(1);
     expect(byClass(root, 'dungeon-run-map')).toHaveLength(0);
     const card = visibleText(root);
-    expect(card).toContain('Depth 15 Unlocked');
+    expect(card).toContain('Depth 15 unlocked');
     expect(card).toContain('Banked now');
     expect(card).toContain('Cinder Charm');
     expect(card).toContain('Still at risk');
     expect(byName(root, 'span', 'Essence: 3')).toHaveLength(2);
-    expect(card).toContain('4 rooms with a floor boss at the end. Foes are from depth level 15.');
+    expect(card).toContain('4 rooms with a floor boss at the end. Foes are from depth 15.');
     expect(card).toContain(
       'Your creatures catch their breath and heal 20% HP. Downed creatures revive to 10% HP.',
     );
     expect(card).toContain('Depth 15 · The floor boss is down');
     expect(byName(root, 'button', 'Descend')).toHaveLength(1);
-    expect(byName(root, 'button', 'Head Home')).toHaveLength(1);
+    expect(byName(root, 'button', 'Head home with your pack')).toHaveLength(1);
 
     // Descend: the captured act, then the level below the boss, labelled, with its entrance next.
     page?.click(button(root, 'Descend'));
@@ -799,7 +802,7 @@ describe('the Undercroft, with the real answers', () => {
     const home = parseDungeonAct(actHome);
     const root = await openRunAt(pending, [home]);
     expect(byClass(root, 'dungeon-descend')).toHaveLength(1);
-    page?.click(button(root, 'Head Home'));
+    page?.click(button(root, 'Head home with your pack'));
     await settle();
     expect(sentAct().body['act']).toEqual({ type: 'home' });
     expect(sentAct().body['runId']).toBe(pending.id);

@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "08aa93dc-401e-49b8-bd26-b7f12f9142d2",
+    "id": "00000000-0000-4000-8300-000000000004",
     "day": "2027-01-12",
     "attempt": 1,
     "depth": 1,
@@ -292,7 +292,7 @@
     "pending": null,
     "team": [
       {
-        "id": "5b8aea90-83c9-4de6-b9f4-2cd49763020f",
+        "id": "00000000-0000-4000-8300-000000000002",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -303,7 +303,7 @@
         "treat": false
       },
       {
-        "id": "64ab0da2-cff5-47ec-8346-04317bb6b745",
+        "id": "00000000-0000-4000-8300-000000000001",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -314,7 +314,7 @@
         "treat": false
       },
       {
-        "id": "53072e75-7ff5-4f3a-91bc-7a61fe6ae84c",
+        "id": "00000000-0000-4000-8300-000000000009",
         "name": "Zipmouse",
         "speciesId": "zipmouse",
         "element": "spark",

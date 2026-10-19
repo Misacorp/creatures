@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import { ROOM_SPOT_IDS, RULES, createSeededRng, type Rng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { createHandler } from '../src/index';
@@ -11,7 +12,6 @@ import {
   runCore,
   undoLoungerMigration,
   undoLoungeSpotMigration,
-  LATEST_SCHEMA_VERSION,
   type CoreContext,
 } from './helpers';
 import { count, nextGuild, rows, seedPlayer, type Seeded } from './raid-helpers';
@@ -983,7 +983,7 @@ describe('migration 23', () => {
       expect(columns()).toHaveLength(2);
       expect(
         ctx.sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-      ).toBe(LATEST_SCHEMA_VERSION);
+      ).toBe(SCHEMA_VERSION);
       expect(storedSpot(ctx, a.id)).toEqual({ lounge_spot: null, lounge_spot_at: null });
     });
   });
@@ -1007,7 +1007,7 @@ describe('migration 21', () => {
       ctx.core.migrate();
       expect(
         ctx.sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-      ).toBe(LATEST_SCHEMA_VERSION);
+      ).toBe(SCHEMA_VERSION);
       expect(storedLounger(ctx, a.id)).toBeNull();
       expect(count(ctx.sql, 'players', 'lounger_id IS NOT NULL')).toBe(0);
     });

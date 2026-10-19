@@ -1,6 +1,6 @@
 # UX pass 1 (Misa's review, 2026-10-13)
 
-Status: **in progress**. Misa reviewed production after PR #10 and asked for a UX pass before he advertises the new features. This file is the spec: his feedback, plus the lead's decisions where he left the call to us. Principles that run through it: show, don't tell; one thing per place; discovery is part of the fun (no chance percentages on screen); progressive disclosure over walls of text.
+Status: **shipped** (PR #11), by 2026-10-13. Misa reviewed production after PR #10 and asked for a UX pass before he advertises the new features. This file is the spec: his feedback, plus the lead's decisions where he left the call to us. Principles that run through it: show, don't tell; one thing per place; discovery is part of the fun (no chance percentages on screen); progressive disclosure over walls of text.
 
 ## Shared components (build first)
 

@@ -409,8 +409,6 @@ export function weatherTimeMs(ms: number, timeBp: number): number {
 /** What the day does to creature experience: basis points on top, and the treat's multiplier when it changes. */
 export type XpWeather = ExpWeather;
 
-export const NO_XP_WEATHER: XpWeather = Object.freeze({ bp: 0, treatMultiplier: null });
-
 /** The day's effect on creature experience (for the dungeon, a raid stage and a job: a trip stores its own). */
 export function xpWeather(day: WeatherDay | null): XpWeather {
   const out = { bp: 0, treatMultiplier: null as number | null };
@@ -429,12 +427,6 @@ export interface JobWeather {
   xpBp: number;
   treatMultiplier: number | null;
 }
-
-export const NO_JOB_WEATHER: JobWeather = Object.freeze({
-  timeBp: 0,
-  xpBp: 0,
-  treatMultiplier: null,
-});
 
 export function jobWeather(day: WeatherDay | null): JobWeather {
   let timeBp = 0;

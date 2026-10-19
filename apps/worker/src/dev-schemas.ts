@@ -4,16 +4,10 @@
  * picklists of the shipped content, and every number has a range. Nothing here takes a user id: the
  * tools always act on the session's player and guild.
  */
-import {
-  RULES,
-  content,
-  dungeonContent,
-  expeditionContent,
-  gearContent,
-  weatherContent,
-} from '@creatures/game';
+import { RULES, content, dungeonContent, expeditionContent, weatherContent } from '@creatures/game';
 import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
+import { BASE_IDS, DESTINATION_IDS, GOAL_IDS, SPECIES_IDS, SUPPLY_IDS } from './content-ids';
 
 /** The most one clock call may move the clock: 30 days. */
 export const MAX_ADVANCE_MS = 30 * 86_400_000;
@@ -60,17 +54,11 @@ export type DevActionTool = (typeof DEV_ACTION_TOOLS)[number];
 
 /** Read-only tools (GET). Not logged. */
 export const DEV_READ_TOOLS = ['state', 'events'] as const;
-export type DevReadTool = (typeof DEV_READ_TOOLS)[number];
 
 const int = (min: number, max: number) =>
   v.pipe(v.number(), v.integer(), v.minValue(min), v.maxValue(max));
 
-const SPECIES_IDS = content.creatures.map((c) => c.id) as [string, ...string[]];
-const SUPPLY_IDS = expeditionContent.supplies.map((s) => s.id) as [string, ...string[]];
-const DESTINATION_IDS = expeditionContent.destinations.map((d) => d.id) as [string, ...string[]];
-const GOAL_IDS = expeditionContent.goals.map((g) => g.id) as [string, ...string[]];
 const JOURNAL_IDS = expeditionContent.journal.entries.map((e) => e.id) as [string, ...string[]];
-const BASE_IDS = gearContent.bases.map((b) => b.id) as [string, ...string[]];
 const BOSS_IDS = content.bosses.map((b) => b.id) as [string, ...string[]];
 const MODIFIER_IDS = dungeonContent.modifiers.map((m) => m.id) as [string, ...string[]];
 const liveWeather = (kind: 'boon' | 'omen') =>

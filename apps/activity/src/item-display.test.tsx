@@ -2,11 +2,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { allBagItems } from './creature-page/bag-sample';
 import { PAGE_SAMPLE_ID } from './creature-page/sample';
 import type { GrantLoot } from './gear-types';
-import { LootList } from './GearLoot';
+import { LootList } from './LootList';
 import { InventoryGrid } from './InventoryGrid';
 import { ItemCard } from './ItemCard';
 import { byClass, createPage, find, visibleText, type FakeElement, type Page } from './test-dom';
-import { WornItemLines } from './WornItemLine';
+import { WornItemLines } from './WornItemLines';
 
 let page: Page | null = null;
 
@@ -82,7 +82,7 @@ describe('the item card', () => {
     ]);
     expect(byClass(page.root, 'idc-divider')).toHaveLength(1);
     expect(first(byClass(page.root, 'idc-divider')).localName).toBe('hr');
-    expect(byClass(page.root, 'pips').length).toBeGreaterThan(0);
+    expect(byClass(page.root, 'tier-pips').length).toBeGreaterThan(0);
   });
 
   it('shows a Charm as name, badge, divider and modifiers, with no stat rows', () => {

@@ -9,19 +9,16 @@
 import {
   MAX_EXPLORER_RANK,
   RULES,
-  createSeededRng,
   explorerRank,
   expeditionContent,
   goalDef,
   goalOddsBp,
-  generateDungeonMap,
   isLandmark,
   slotsFor,
   type ExpeditionLength,
 } from '@creatures/game';
 import type * as v from 'valibot';
 import { DevError, type ToolCtx } from './dev-context';
-import { legacyModifierIds } from './dungeon';
 import { parseState } from './dungeon-state';
 import { devKey } from './dev-state';
 import type {
@@ -35,7 +32,7 @@ import type {
 } from './dev-schemas';
 import { addPage, explorersByCreature, foundPages, statsOf } from './expedition-store';
 import { writeExplorer } from './dev-tools-goods';
-import { getBalance, type Currency } from './ledger';
+import { debit, getBalance, type Currency } from './ledger';
 import { drawSeed } from './raid-resolve';
 import { addDays, gameDay } from './time';
 
@@ -383,21 +380,17 @@ function takeBackDay(ctx: ToolCtx, day: string): void {
     const remove = Math.min(Math.max(0, row.total - handled), balance);
     ctx.state.set(key, String(row.total));
     if (remove <= 0) continue;
-    ctx.sql.exec(
-      `INSERT INTO ledger (user_id, currency, amount, source, idempotency_key, meta, created_at)
-       VALUES (?, ?, ?, 'dev', ?, ?, ?)`,
-      ctx.userId,
-      row.currency,
-      -remove,
-      `dev:${crypto.randomUUID()}`,
-      JSON.stringify({ tool: 'dungeon-reset', day }),
+    debit(
+      ctx.storage,
+      {
+        userId: ctx.userId,
+        currency: row.currency,
+        amount: remove,
+        source: 'dev',
+        idempotencyKey: `dev:${crypto.randomUUID()}`,
+        meta: { tool: 'dungeon-reset', day },
+      },
       ctx.now,
-    );
-    ctx.sql.exec(
-      'UPDATE balances SET amount = amount - ? WHERE user_id = ? AND currency = ?',
-      remove,
-      ctx.userId,
-      row.currency,
     );
   }
   ctx.sql.exec('DELETE FROM gear_grants WHERE user_id = ? AND key LIKE ?', ctx.userId, prefix);
@@ -453,7 +446,7 @@ export function dungeonRetry(ctx: ToolCtx) {
 /**
  * Picks the day's room modifiers (for everybody in the guild), or hands them back to the day's seed. A
  * pick is laid over the day's map when it is read, never stored: the first two entrance rooms and the
- * floor boss take it (the three entries old clients read); the other rooms keep what the seed drew.
+ * floor boss take it (written onto those map nodes); the other rooms keep what the seed drew.
  */
 export function dungeonModifiers(ctx: ToolCtx, body: Body<typeof DungeonModifiersBodySchema>) {
   const day = todayOf(ctx);
@@ -465,7 +458,7 @@ export function dungeonModifiers(ctx: ToolCtx, body: Body<typeof DungeonModifier
 /**
  * Draws a new seed for today (live randomness), which redraws today's map (`map_json` is cleared: it is
  * drawn again from the new seed on the next look) and drops any picked modifiers. Runs that are open
- * keep the map they started with. Answers the modifiers old clients read from the new map.
+ * keep the map they started with.
  */
 export function dungeonSeed(ctx: ToolCtx) {
   const day = todayOf(ctx);
@@ -478,6 +471,5 @@ export function dungeonSeed(ctx: ToolCtx) {
     ctx.now,
   );
   ctx.state.delete(devKey.modifiers(day));
-  const map = generateDungeonMap(createSeededRng(`${seed}:map`), undefined, { doors: true });
-  return { day, modifiers: legacyModifierIds(map) };
+  return { day };
 }

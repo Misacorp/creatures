@@ -5,7 +5,7 @@
  */
 import type { Creature, GameState } from '../api';
 import { SAMPLE_GEAR, SAMPLE_STATE, sampleCreature, talentView } from '../creature-card-sample';
-import type { GearSlot, GearState } from '../gear-types';
+import type { GearState } from '../gear-types';
 import type { CreatureTalents, TalentSlotView } from '../talent-types';
 import { OTHER_WEARER, allBagItems, wornFromBag, type WornRows } from './bag-sample';
 
@@ -300,6 +300,3 @@ export function pageScene(kind: SceneKind, options: { bait?: number } = {}): Pag
   const gear: GearState = { ...SAMPLE_GEAR, items };
   return { creature, state, gear };
 }
-
-/** The slot the picker scenes open (Hat has the longest bag, and unwearable items to show the reasons). */
-export const PICKER_SLOTS: readonly GearSlot[] = ['hat', 'scarf', 'charm'];

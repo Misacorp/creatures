@@ -64,25 +64,24 @@ describe('DungeonDescend', () => {
   it('says the new depth, what is banked, what is at risk and what lies below', () => {
     const { page: p } = draw();
     const text = visibleText(p.root);
-    expect(text).toContain('Depth 15 Unlocked');
-    expect(text).toContain('You beat the boss and achieved a new depth. Do you dare delve deeper?');
-    expect(text).toContain('Banked now');
+    expect(text).toContain('Depth 15 unlocked');
     expect(text).toContain(
-      'Experience gained by creatures and the following items are yours, no matter what happens below.',
+      'You beat the floor boss and achieved a new depth. Do you dare delve deeper?',
     );
+    expect(text).toContain('Banked now');
+    // The headings say it: no help paragraph under them.
+    expect(text).not.toContain('are yours, no matter what happens below');
     expect(text).toContain('Cinder Charm');
     expect(text).toContain('Sturdy Satchel');
     expect(byName(p.root, 'span', 'Bait: 2')).toHaveLength(1);
     expect(byName(p.root, 'span', 'Essence: 3')).toHaveLength(1);
     expect(byName(p.root, 'span', 'Scrap: 3')).toHaveLength(1);
     expect(text).toContain('Still at risk');
-    expect(text).toContain(
-      'Your pack contains the following items and you risk losing some of them by delving deeper.',
-    );
+    expect(text).not.toContain('you risk losing some of them');
     expect(text).not.toContain('In your pack:');
     expect(text).toContain('The Undercroft');
     expect(text).not.toContain('foes are fiercer');
-    expect(text).toContain('4 rooms with a floor boss at the end. Foes are from depth level 15.');
+    expect(text).toContain('4 rooms with a floor boss at the end. Foes are from depth 15.');
     expect(text).toContain(
       'Your creatures catch their breath and heal 20% HP. Downed creatures revive to 10% HP.',
     );
@@ -98,13 +97,13 @@ describe('DungeonDescend', () => {
   it('Descend and heading home are the two acts', () => {
     const { page: p, acts } = draw();
     p.click(byName(p.root, 'button', 'Descend')[0] as FakeElement);
-    p.click(byName(p.root, 'button', 'Head Home')[0] as FakeElement);
+    p.click(byName(p.root, 'button', 'Head home with your pack')[0] as FakeElement);
     expect(acts).toEqual([{ type: 'descend' }, { type: 'home' }]);
   });
 
   it('waits while an act is on its way', () => {
     const { page: p, acts } = draw({ busy: true });
-    for (const name of ['Descend', 'Head Home']) {
+    for (const name of ['Descend', 'Head home with your pack']) {
       const b = byName(p.root, 'button', name)[0] as FakeElement;
       expect(b.getAttribute('disabled')).not.toBeNull();
       p.click(b);
@@ -122,6 +121,6 @@ describe('DungeonDescend', () => {
     expect(text).toContain('Another floor waits below. Do you dare delve deeper?');
     expect(text).toContain('Nothing new this time.');
     expect(text).toContain('Your pack is empty, so there is nothing to lose.');
-    expect(text).toContain('3 rooms with a floor boss at the end. Foes are from depth level 16.');
+    expect(text).toContain('3 rooms with a floor boss at the end. Foes are from depth 16.');
   });
 });

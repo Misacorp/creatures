@@ -19,6 +19,7 @@ import {
   sampleActFight,
   sampleRoom,
   sampleState,
+  sampleCampCreatures,
   sampleStateCamp,
   sampleStateEvent,
   sampleStateMid,
@@ -168,7 +169,7 @@ describe('a mystery room', () => {
     const text = visibleText(root);
     expect(text).toContain('Sleeping Beetle');
     expect(text).toContain('A round beetle snores on a small pile of coins.');
-    expect(byClass(root, 'event-option')).toHaveLength(2);
+    expect(byClass(root, 'choice')).toHaveLength(2);
     expect(visibleText(button(root, /Take one coin/))).toBe('Take one coin You gain 1 scrap.');
     expect(visibleText(button(root, /Take the pile/))).toBe(
       'Take the pile 50%: 3 scrap. 50%: every creature loses 20% HP.',
@@ -190,7 +191,7 @@ describe('a mystery room', () => {
     page?.click(button(root, /Take one coin/));
     expect(picked).toEqual([1, 0]);
     page?.draw(<DungeonEvent event={SAMPLE_EVENT} busy={true} onPick={noop} />);
-    expect(byClass(root, 'event-option').every((b) => b.hasAttribute('disabled'))).toBe(true);
+    expect(byClass(root, 'choice').every((b) => b.hasAttribute('disabled'))).toBe(true);
   });
 });
 
@@ -226,7 +227,7 @@ describe('the camp', () => {
     expect(visibleText(button(root, 'Head home with your pack'))).toBe('Head home with your pack');
     expect(text).toContain('Drag or tap two creatures to swap places.');
     // Three choices in the list; the home button is outside it.
-    expect(byClass(root, 'camp-choice')).toHaveLength(3);
+    expect(byClass(root, 'choice')).toHaveLength(3);
     expect(byClass(root, 'camp-home')[0]?.textContent).toContain('Head home with your pack');
   });
 
@@ -400,12 +401,22 @@ describe('the camp', () => {
     expect(visibleText(root)).toContain('You have no other creatures to bring in.');
   });
 
+  it('says nobody is left to swap in when the player owns only the row (the workbench preset)', () => {
+    const root = drawCamp(noop, { creatures: sampleCampCreatures(3) });
+    expect(button(root, /^Swap a creature/).hasAttribute('disabled')).toBe(true);
+    expect(visibleText(root)).toContain('You have no other creatures to bring in.');
+  });
+
   it('asks once more before heading home, then ends the run and keeps the pack', () => {
     const acts: DungeonAct[] = [];
     const root = drawCamp((a) => acts.push(a));
     page?.click(button(root, 'Head home with your pack'));
     expect(acts).toEqual([]);
-    expect(visibleText(root)).toContain('You keep your whole pack: 2 Bait · 1 Scrap.');
+    expect(visibleText(root)).toContain('You keep your whole pack:');
+    // The pack is badges, not a sentence.
+    const kept = byName(root, 'ul', 'Your pack')[0];
+    expect(byName(kept as FakeElement, 'span', 'Bait: 2')).toHaveLength(1);
+    expect(byName(kept as FakeElement, 'span', 'Scrap: 1')).toHaveLength(1);
     page?.click(button(root, 'Not yet'));
     expect(visibleText(button(root, 'Head home with your pack'))).toBe('Head home with your pack');
     page?.click(button(root, 'Head home with your pack'));
@@ -835,14 +846,6 @@ describe('the tab', () => {
     // The three-room strip is only for a server that sends no map.
     expect(byClass(root, 'room-strip')).toHaveLength(0);
     expect(byName(root, 'button', 'Enter the dungeon')).toHaveLength(1);
-  });
-
-  it('falls back to the three-room strip when the server sends no map', async () => {
-    api.fetchDungeonToday.mockResolvedValue(sampleToday({ canRun: true, map: null }));
-    const { root } = drawTab();
-    await settle();
-    expect(byClass(root, 'dungeon-preview')).toHaveLength(0);
-    expect(byClass(root, 'room-strip')).toHaveLength(1);
   });
 
   it('enters with the team, then shows the run it opened', async () => {

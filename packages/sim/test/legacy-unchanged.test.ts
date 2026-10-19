@@ -130,6 +130,12 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * plays Kind Rain, Morning Haze and Bramble Season and folds the gear with each creature's place in the
  * row, and the drops roll from part 2's larger pool of lines and bases. Bait earned and raids won are the
  * same in every run; the first player's top-3 power is now 276, 314, 252 and 207.
+ *
+ * Re-pinned again on 2026-10-18 (faster tiny test run), on purpose: `TINY` now plays the pity, long-run and
+ * slot-opening sims and the studies for 6 weeks (`pityWeeks`, `longRunWeeks`, `tripLongWeeks`, `studyWeeks`
+ * of `RunSettings`), where it played 20, 30 and 60. Only `run-tiny` moved (its metrics read those weeks);
+ * every economy digest is the same, and the shipped settings carry no override, so `pnpm sim` is unchanged
+ * (`run.test.ts` checks that `defaultSettings` still resolves to 20, 30, 60 and 30 weeks).
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

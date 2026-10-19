@@ -13,7 +13,7 @@ import { CreatureHead } from './CreatureHead';
 import { creatureName } from './game';
 import type { GearState } from './gear-types';
 import { gearName, itemLabel, slotName } from './gear-view';
-import { ItemFrame, ItemSprite } from './GearArt';
+import { ItemThumb } from './GearArt';
 
 /**
  * One creature, small: sprite, name, element, level, the XP bar, the three gear
@@ -123,9 +123,7 @@ export function CreatureCard({
                   }}
                 >
                   {worn !== undefined ? (
-                    <ItemFrame rarity={worn.rarity} baseId={worn.baseId} level={worn.itemLevel}>
-                      <ItemSprite baseId={worn.baseId} scale={3} />
-                    </ItemFrame>
+                    <ItemThumb item={worn} scale={3} />
                   ) : (
                     <span class="cc-slot-empty pix" aria-hidden="true">
                       {locked ? `Lv ${String(opens[slot])}` : '+'}
@@ -165,7 +163,7 @@ export function CreatureCard({
           <button
             type="button"
             class="primary wide"
-            disabled={busy}
+            disabled={busy || first.blocked !== undefined}
             onClick={() => {
               act(first);
             }}

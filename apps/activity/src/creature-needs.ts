@@ -6,6 +6,7 @@
 import type { Creature, GameState } from './api';
 import { ribbonCostText, ribbonName } from './experience';
 import { speciesName } from './game';
+import { busyReason } from './gear-view';
 import { bookActions } from './talent-view';
 
 export type NeedKind = 'ribbon' | 'evolve' | 'duplicate' | 'talent';
@@ -16,6 +17,8 @@ export interface Need {
   label: string;
   /** The small line under the label (the cost, or where to answer). */
   detail: string;
+  /** Why the button cannot be used now (the creature is away or on a job); the card shows it disabled. */
+  blocked?: string;
 }
 
 /** The part of the game state the needs depend on. */
@@ -32,13 +35,16 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
     });
   }
   if (creature.evolution?.available === true) {
+    // The server refuses to evolve a creature that is away or on a job: say so instead of asking.
+    const blocked = busyReason(creature);
     needs.push({
+      ...(blocked === null ? {} : { blocked }),
       kind: 'evolve',
       label:
         creature.evolution.alt === undefined
           ? `Evolve into ${speciesName(creature.evolution.toSpecies)}`
           : 'Choose an evolution',
-      detail: `${String(creature.evolution.essence)} Essence`,
+      detail: blocked ?? `${String(creature.evolution.essence)} Essence`,
     });
   }
   const waiting = state.pending.filter(

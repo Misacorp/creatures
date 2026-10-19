@@ -40,7 +40,7 @@
 
 .push-line {
   margin: 0 0 0.5rem;
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 /* The end-of-trip choice. */
@@ -132,7 +132,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 .goal-rewards li {
@@ -149,7 +149,7 @@
   padding: 0.25rem 0.375rem;
   background: var(--dusk);
   box-shadow: inset 2px 0 0 var(--bad);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 .goal-failure canvas.sprite {

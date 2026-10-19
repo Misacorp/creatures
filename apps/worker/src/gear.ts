@@ -213,14 +213,6 @@ export interface EquipBestResult {
   skipped: { creatureId: string; reason: 'away' | 'job' }[];
 }
 
-export interface EquippedSummary {
-  id: string;
-  baseId: string;
-  slot: GearSlot;
-  rarity: GearRarity;
-  itemLevel: number;
-}
-
 export interface JobCommon {
   /**
    * Creature experience the job paid its worker (4 an hour of nominal work, doubled by a treat) and what it
@@ -401,10 +393,6 @@ export interface DismantlePreview {
   /** How many of the items can teach a blueprint (or add a mark). */
   teachers: number;
 }
-
-export type PreviewInput =
-  | { kind: 'craft'; creatureId: string; blueprintId: string }
-  | { kind: 'dismantle'; creatureId: string; itemIds: string[] };
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
 

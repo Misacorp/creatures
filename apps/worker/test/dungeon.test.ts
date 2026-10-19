@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import {
   PART_KINDS,
   RULES,
@@ -31,7 +32,6 @@ import {
   type DungeonPlayer,
 } from './dungeon-helpers';
 import {
-  LATEST_SCHEMA_VERSION,
   T0,
   runCore,
   undoExpeditionsMigration,
@@ -224,7 +224,7 @@ describe('migration 18', () => {
       ).toBe(16);
       ctx.core.migrate();
       ctx.core.migrate();
-      expect(count(ctx.sql, 'schema_version')).toBe(LATEST_SCHEMA_VERSION);
+      expect(count(ctx.sql, 'schema_version')).toBe(SCHEMA_VERSION);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       expect(count(ctx.sql, 'dungeon_runs')).toBe(0);
       expect((await p.today()).depth).toBe(1);
@@ -242,7 +242,7 @@ describe('migration 18', () => {
         ).map((r) => r.version);
       expect(Math.max(...versions())).toBe(16);
       ctx.core.migrate();
-      expect(versions()).toEqual(Array.from({ length: LATEST_SCHEMA_VERSION }, (_, i) => i + 1));
+      expect(versions()).toEqual(Array.from({ length: SCHEMA_VERSION }, (_, i) => i + 1));
 
       // Staging already ran the daily dungeon's migration 18; only 19 is left to apply.
       ctx.sql.exec(
@@ -252,7 +252,7 @@ describe('migration 18', () => {
       undoExpeditionsMigration(ctx.sql);
       expect(versions().at(-1)).toBe(18);
       ctx.core.migrate();
-      expect(versions().at(-1)).toBe(LATEST_SCHEMA_VERSION);
+      expect(versions().at(-1)).toBe(SCHEMA_VERSION);
       expect(count(ctx.sql, 'dungeon_progress', "user_id = 'staging-player'")).toBe(1);
       expect(count(ctx.sql, 'creatures')).toBe(3);
       expect((await p.today()).depth).toBe(1);
@@ -261,7 +261,7 @@ describe('migration 18', () => {
 });
 
 describe('GET /api/dungeon/today', () => {
-  it('shows the day, the depth, the streak and three modifiers, and no seed', async () => {
+  it('shows the day, the depth, the streak and the modifiers on the map, and no seed', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -282,12 +282,14 @@ describe('GET /api/dungeon/today', () => {
           blocked: null,
           last: null,
         });
-        expect(today.modifiers).toHaveLength(RULES.dungeon.rooms);
-        expect(today.modifiers.map((m) => m.room)).toEqual([0, 1, 2]);
-        for (const m of today.modifiers) {
-          const content = dungeonContent.modifiers.find((c) => c.id === m.id);
-          expect(m.name).toBe(content?.name);
-          expect(m.description).toBe(content?.description);
+        // The rooms' modifiers are on the map's nodes (there is no separate list), named from the content.
+        expect(today).not.toHaveProperty('modifiers');
+        const modified = today.map.nodes.filter((n) => n.modifier !== undefined);
+        expect(modified.length).toBeGreaterThan(0);
+        for (const n of modified) {
+          const content = dungeonContent.modifiers.find((c) => c.id === n.modifier?.id);
+          expect(n.modifier?.name).toBe(content?.name);
+          expect(n.modifier?.description).toBe(content?.description);
         }
         // The day ends at the next local reset: 2027-01-15 13:37 in Helsinki (UTC+2).
         expect(today.resetsAt).toBe(Date.parse('2027-01-15T11:37:00Z'));
@@ -302,17 +304,17 @@ describe('GET /api/dungeon/today', () => {
     );
   });
 
-  it('shows everyone on the server the same modifiers all day, and a new draw on a new day', async () => {
+  it('shows everyone on the server the same map and modifiers all day, and a new draw on a new day', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const a = await dungeonPlayer(ctx, 1);
         const b = await dungeonPlayer(ctx, 2);
         ctx.clock.t = AFTER_RESET;
-        const first = (await a.today()).modifiers;
+        const first = (await a.today()).map;
         ctx.clock.t += 5 * HOUR; // 19:00 local, the same game day
-        expect((await b.today()).modifiers).toEqual(first);
-        expect((await a.today()).modifiers).toEqual(first);
+        expect((await b.today()).map).toEqual(first);
+        expect((await a.today()).map).toEqual(first);
         expect(count(ctx.sql, 'dungeon_days')).toBe(1);
         ctx.clock.t += DAY;
         await a.today();
@@ -1062,31 +1064,42 @@ describe('the supply a run drops', () => {
     );
   });
 
-  it('drops better tiers deeper: basic only before the first open depth, some good and great ones far down', async () => {
+  it('drops better tiers deeper: the run passes the depth, so one fixed roll is basic at depth 1 and good or great far down', async () => {
     const tiers = RULES.dungeon.supplyTiers;
-    expect(dungeonSupplyOddsBp(tiers.good.fromDepth - 1).good).toBe(0);
+    // The odds per depth and the tier rolls are pure rules, proven in packages/game/test/dungeon.test.ts
+    // (`dungeonSupplyOddsBp`, `rollDungeonSupply`). Here only the wiring is checked: the depth the worker
+    // hands to the roll. The gear rng is fixed so the tier roll (out of 10,000) is known: the top roll is
+    // the great tier where it is open, and a roll equal to the basic odds is the good tier.
+    const deep = tiers.great.fromDepth + 2;
+    const odds = dungeonSupplyOddsBp(deep);
+    expect(odds.good).toBeGreaterThan(0);
+    expect(odds.great).toBeGreaterThan(0);
+    expect(dungeonSupplyOddsBp(1).great).toBe(0);
+    // `int` keeps a draw only below the largest multiple of 10,000 in 2^32 (4,294,960,000): these are kept.
+    const BASE = 4_294_950_000;
+    let roll = 0;
+    const fixed: Rng = { nextU32: () => BASE + roll };
+    const tierOf = async (ctx: CoreContext, n: number, depth: number, at: number) => {
+      const p = await dungeonPlayer(ctx, n, STRONG);
+      setProgress(ctx, p.id, { depth });
+      roll = at;
+      // Win the first fight and lose the next: the supply is safe, and the run is short.
+      const run = (await p.run({}, winFirstThenLose)).body.run;
+      restore();
+      restore = easyFoes();
+      const supplies = run?.rewards.supplies ?? [];
+      expect(supplies).toHaveLength(1);
+      return supplyDef(supplies[0] as string)?.tier;
+    };
     await runCore(
       nextGuild(),
       async (ctx) => {
-        const seen = { basic: 0, good: 0, great: 0 };
-        for (let i = 0; i < 60; i++) {
-          const p = await dungeonPlayer(ctx, i + 1, STRONG);
-          setProgress(ctx, p.id, { depth: tiers.great.fromDepth + 2 });
-          // Win the first fight and lose the next: the supply is safe, and the run is short.
-          const run = (await p.run({}, winFirstThenLose)).body.run;
-          for (const id of run?.rewards.supplies ?? []) {
-            const tier = supplyDef(id)?.tier;
-            if (tier !== undefined) seen[tier] += 1;
-          }
-          restore();
-          restore = easyFoes();
-        }
-        expect(seen.basic + seen.good + seen.great).toBeGreaterThanOrEqual(30);
-        expect(seen.basic).toBeGreaterThan(0);
-        expect(seen.good).toBeGreaterThan(0);
-        expect(seen.great).toBeGreaterThan(0);
+        expect(await tierOf(ctx, 1, deep, 9_999)).toBe('great');
+        expect(await tierOf(ctx, 2, deep, odds.basic)).toBe('good');
+        // The same top roll at depth 1, where only the basic tier is open.
+        expect(await tierOf(ctx, 3, 1, 9_999)).toBe('basic');
       },
-      opts('tiers'),
+      { dungeonRng: createSeededRng('tiers'), gearRng: fixed },
     );
   });
 

@@ -26,7 +26,7 @@ label.pick {
   background: var(--dusk-2);
   box-shadow: inset 0 0 0 var(--px) var(--ink);
   color: var(--bone);
-  font-size: 1rem;
+  font-size: var(--fs-row);
   cursor: pointer;
 }
 
@@ -59,4 +59,12 @@ label.pick input[type='radio'] {
 .pick-meta {
   color: var(--haze);
   font-size: 0.8125rem;
+}
+
+/* The right of a row: how long the job takes, or why the creature cannot do it (as in the roster list). */
+.pick-side {
+  flex: 0 1 38%;
+  min-width: 0;
+  margin-left: auto;
+  text-align: right;
 }

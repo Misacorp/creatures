@@ -1,6 +1,6 @@
 # M4 design: the weekly raid
 
-Status: **draft for M4**. Builds on `m3-combat.md` (engine, loot rules) and the decisions log. All times are in the **guild's timezone** (default Europe/Helsinki) and come from a per-guild schedule config.
+Status: **shipped** in #5 and #7 (M4). Later changes live in `decisions.md` and the newer docs named there. Builds on `m3-combat.md` (engine, loot rules) and the decisions log. All times are in the **guild's timezone** (default Europe/Helsinki) and come from a per-guild schedule config.
 
 ## The week
 

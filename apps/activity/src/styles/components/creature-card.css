@@ -16,17 +16,6 @@
   --el: var(--spark);
 }
 
-.name-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.name-row h3 {
-  margin: 0;
-}
-
 /* The level as a pixel tag (a tappable tag resets its font, so the pixel font is set again here; no "?" is drawn). */
 .lvl-tag {
   display: inline-flex;

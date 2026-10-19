@@ -53,8 +53,6 @@ export type Affect =
       partner: 'marker' | 'payoff';
     };
 
-export type AffectKind = Affect['kind'];
-
 /** Slots directly beside `index` for the Support's buff, as `simulateFight` counts them. */
 function besides(index: number, length: number, mode: AffectMode): number[] {
   return mode.row === 'dungeon' ? neighbours(index, length) : zoneNeighbours(index, length);

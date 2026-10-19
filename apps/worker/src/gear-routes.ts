@@ -1,5 +1,4 @@
 import type { Collection } from './collection';
-import { failure, pathId } from './collection-routes';
 import type { Gear } from './gear';
 import {
   ClaimJobBodySchema,
@@ -10,7 +9,17 @@ import {
   RemovedJobKindSchema,
   StartJobBodySchema,
 } from './gear-schemas';
-import { errorResponse, json, parseBody, type Handler, type Routes } from './http';
+import {
+  errorResponse,
+  failure,
+  invalidBody,
+  invalidId,
+  json,
+  parseBody,
+  pathId,
+  type Handler,
+  type Routes,
+} from './http';
 
 /** What these routes need from the request context (GuildCore's context satisfies it). */
 export interface GearRouteContext {
@@ -19,9 +28,6 @@ export interface GearRouteContext {
   params: Record<string, string>;
   core: { gear: Gear; collection: Collection };
 }
-
-const invalidBody = (): Response => errorResponse('invalid_body', 400);
-const invalidId = (): Response => errorResponse('invalid_id', 400);
 
 /** The two views every action answers with: the gear screen and the collection (creature cards). */
 function views(ctx: GearRouteContext): { gear: unknown; state: unknown } {

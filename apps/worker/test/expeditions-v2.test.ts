@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import {
   RULES,
   createSeededRng,
@@ -18,7 +19,6 @@ import { giveItem } from './gear-helpers';
 import { weekIdFor, weekIndex } from '../src/raid-schedule';
 import { zonedHour } from '../src/time';
 import {
-  LATEST_SCHEMA_VERSION,
   OTHER_USER_ID,
   T0,
   USER_ID,
@@ -1243,7 +1243,7 @@ describe('migration 19 and the slot wipe', () => {
       ctx.core.migrate();
       expect(
         rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v,
-      ).toBe(LATEST_SCHEMA_VERSION);
+      ).toBe(SCHEMA_VERSION);
       const status = (id: string) =>
         rows<{ status: string; destination_id: string; cancel_reason: string | null }>(
           ctx.sql,

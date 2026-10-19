@@ -773,6 +773,19 @@ describe('the keeper and its chest', () => {
           expect(keeperLoot).toEqual({ bait: 0, essence: u.chest.essence, scrap: u.chest.scrap });
           const history = end.history.filter((h) => h.kind === 'boss' && h.result === 'chest');
           expect(history.map((h) => (h.result === 'chest' ? h.level : -1))).toEqual([0, 1]);
+          // A chest entry is only what the chest adds: the keeper's chest adds no loot (its Essence and
+          // scrap are on its fight entry), so the history's loot sums to the pack exactly.
+          const keeperChest = history.find((h) => h.result === 'chest' && h.level === 1);
+          expect(keeperChest).toMatchObject({ loot: { bait: 0, essence: 0, scrap: 0 } });
+          const sum = { bait: 0, essence: 0, scrap: 0 };
+          for (const h of end.history) {
+            if ('loot' in h) {
+              sum.bait += h.loot.bait;
+              sum.essence += h.loot.essence;
+              sum.scrap += h.loot.scrap;
+            }
+          }
+          expect(sum).toEqual(end.pack);
           expect(summary.pack.kept).toEqual(summary.pack.found);
           expect(summary.pack.found.essence).toBeGreaterThanOrEqual(
             RULES.dungeon.loot.boss.essence + RULES.dungeon.fullClear.essence + u.chest.essence,

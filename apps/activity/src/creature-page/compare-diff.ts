@@ -8,7 +8,7 @@
  * server's. Pure; the card only draws it. A mark always has a sign and a spoken text: colour is never alone.
  */
 import { formatBp, gearLine, itemLines, type ResolvedLine } from '@creatures/game';
-import type { GearItem, GearStat } from '../gear-types';
+import type { GearItem, GearLine, GearStat } from '../gear-types';
 import { rulesItemOf } from './compare-view';
 
 const MINUS = '−';
@@ -34,6 +34,7 @@ export type LineDiff = { kind: 'new' } | { kind: 'changed'; mark: Mark };
 /** A line only the worn item has: the text it has now. */
 export interface GoneLine {
   id: string;
+  source: GearLine['source'];
   text: string;
 }
 
@@ -41,7 +42,7 @@ export interface CardDiff {
   /** Base stat rows that differ, by stat. */
   stats: ReadonlyMap<GearStat['stat'], Mark>;
   goneStats: GoneStat[];
-  /** The selected item's lines that are new or changed, by line id. */
+  /** The selected item's lines that are new or changed, by `lineKey` (id and source). */
   lines: ReadonlyMap<string, LineDiff>;
   goneLines: GoneLine[];
 }
@@ -88,18 +89,26 @@ function markOf(text: string, good: boolean): Mark {
   return { good, text, spoken: `${sign} ${rest}, ${good ? 'better' : 'worse'}` };
 }
 
-/** The resolved lines of an item by id, or an empty map when the rules cannot read it. */
+/**
+ * A line's key in a diff: its id and where it came from. An item's base line and a rolled line can share an
+ * id (a Compass has Trail XP built in and can roll it too), and those are two lines.
+ */
+export function lineKey(line: Pick<GearLine, 'id' | 'source'>): string {
+  return `${line.id}:${line.source}`;
+}
+
+/** The resolved lines of an item by `lineKey`, or an empty map when the rules cannot read it. */
 function resolved(item: GearItem): Map<string, ResolvedLine> {
   const rules = rulesItemOf(item);
   const map = new Map<string, ResolvedLine>();
   if (rules === null) return map;
-  for (const line of itemLines(rules)) map.set(line.id, line);
+  for (const line of itemLines(rules)) map.set(lineKey(line), line);
   return map;
 }
 
 /**
  * The inline diff of `next` against `worn` (the item in the same slot). Stats are matched by kind, lines by
- * id; equal numbers say nothing.
+ * id and source; equal numbers say nothing.
  */
 export function diffItems(next: GearItem, worn: GearItem): CardDiff {
   const stats = new Map<GearStat['stat'], Mark>();
@@ -126,13 +135,14 @@ export function diffItems(next: GearItem, worn: GearItem): CardDiff {
   const theirs = resolved(worn);
   const lines = new Map<string, LineDiff>();
   for (const line of next.lines) {
-    if (!worn.lines.some((w) => w.id === line.id)) {
-      lines.set(line.id, { kind: 'new' });
+    const key = lineKey(line);
+    if (!worn.lines.some((w) => lineKey(w) === key)) {
+      lines.set(key, { kind: 'new' });
       continue;
     }
     // On both items: the numbers come from the rules (a line they cannot read is not compared).
-    const before = theirs.get(line.id);
-    const now = mine.get(line.id);
+    const before = theirs.get(key);
+    const now = mine.get(key);
     if (before === undefined || now === undefined) continue;
     const delta = now.value - before.value;
     if (delta === 0 || now.unit === 'once') continue;
@@ -140,20 +150,10 @@ export function diffItems(next: GearItem, worn: GearItem): CardDiff {
     // A ward reads "Area ward −9%": a bigger reduction is a bigger number, shown as a bigger minus, and better.
     const up = reduction ? delta < 0 : delta > 0;
     const text = `${up ? '+' : MINUS}${lineAmount(now.unit, delta)}`;
-    lines.set(line.id, { kind: 'changed', mark: markOf(text, delta > 0) });
+    lines.set(key, { kind: 'changed', mark: markOf(text, delta > 0) });
   }
   const goneLines = worn.lines
-    .filter((l) => !next.lines.some((n) => n.id === l.id))
-    .map((l) => ({ id: l.id, text: l.text }));
+    .filter((l) => !next.lines.some((n) => lineKey(n) === lineKey(l)))
+    .map((l) => ({ id: l.id, source: l.source, text: l.text }));
   return { stats, goneStats, lines, goneLines };
-}
-
-/** True when the diff has nothing to show (the two items are alike). */
-export function diffEmpty(diff: CardDiff): boolean {
-  return (
-    diff.stats.size === 0 &&
-    diff.goneStats.length === 0 &&
-    diff.lines.size === 0 &&
-    diff.goneLines.length === 0
-  );
 }

@@ -1,7 +1,7 @@
 {
   "expedition": {
-    "id": "878b7a42-2172-42b0-b6f4-dccc492e9c8f",
-    "creatureId": "d70cab00-df2d-4d6f-b994-2276a319ce79",
+    "id": "00000000-0000-4000-8400-000000000005",
+    "creatureId": "00000000-0000-4000-8400-000000000002",
     "duration": "long",
     "supplies": "great",
     "kit": ["lure-great"],
@@ -29,7 +29,7 @@
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "d70cab00-df2d-4d6f-b994-2276a319ce79",
+        "id": "00000000-0000-4000-8400-000000000002",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
@@ -73,7 +73,7 @@
         "gear": [],
         "busy": {
           "kind": "expedition",
-          "id": "878b7a42-2172-42b0-b6f4-dccc492e9c8f"
+          "id": "00000000-0000-4000-8400-000000000005"
         },
         "ability": {
           "id": "flare-strike",
@@ -108,7 +108,7 @@
         }
       },
       {
-        "id": "13b89575-ff4d-4650-a54d-387923d82794",
+        "id": "00000000-0000-4000-8400-000000000003",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
@@ -184,7 +184,7 @@
         }
       },
       {
-        "id": "8e2d0cea-f5af-4f30-9e23-919ba7314552",
+        "id": "00000000-0000-4000-8400-000000000004",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
@@ -264,8 +264,8 @@
     "bookSlotBait": 10,
     "expeditions": [
       {
-        "id": "878b7a42-2172-42b0-b6f4-dccc492e9c8f",
-        "creatureId": "d70cab00-df2d-4d6f-b994-2276a319ce79",
+        "id": "00000000-0000-4000-8400-000000000005",
+        "creatureId": "00000000-0000-4000-8400-000000000002",
         "duration": "long",
         "supplies": "great",
         "kit": ["lure-great"],
@@ -284,8 +284,8 @@
         "pushOn": null
       },
       {
-        "id": "51b8151a-ef46-433f-92cf-c2465e8ca615",
-        "creatureId": "d70cab00-df2d-4d6f-b994-2276a319ce79",
+        "id": "00000000-0000-4000-8400-000000000001",
+        "creatureId": "00000000-0000-4000-8400-000000000002",
         "duration": "long",
         "supplies": "great",
         "kit": ["lure-great", "map-scrap-basic"],
@@ -335,7 +335,7 @@
       "lure-great": 1
     },
     "serverFirsts": [],
-    "loungerId": "13b89575-ff4d-4650-a54d-387923d82794",
+    "loungerId": "00000000-0000-4000-8400-000000000003",
     "loungeSpot": null
   }
 }

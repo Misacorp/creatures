@@ -3,14 +3,7 @@ import { TreatBox } from './TreatBox';
 import type { Creature } from './api';
 import { DungeonPrerun } from './DungeonPrerun';
 import { DungeonTeam } from './DungeonTeam';
-import {
-  isComplete,
-  placedCount,
-  pruneSlots,
-  sameSlots,
-  setupTeam,
-  type Slots,
-} from './dungeon-team';
+import { isComplete, pruneSlots, sameSlots, setupTeam, type Slots } from './dungeon-team';
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { GlossaryTag } from './Glossary';
@@ -177,8 +170,7 @@ export function DungeonSetup({
             </p>
             {!complete && (
               <p id="dungeon-enter-note" class="muted">
-                Place 3 creatures to enter ({String(placedCount(slots))} / 3 placed). Tap an empty
-                slot to choose one.
+                Place 3 creatures to enter.
               </p>
             )}
           </div>

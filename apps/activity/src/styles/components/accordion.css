@@ -45,8 +45,8 @@
   font-size: 1.125rem;
   text-align: left;
   box-shadow:
-    inset 0 var(--px) 0 0 #3d3570,
-    inset 0 calc(var(--px) * -1) 0 0 #1a1533;
+    inset 0 var(--px) 0 0 var(--bevel-hi),
+    inset 0 calc(var(--px) * -1) 0 0 var(--bevel-lo);
 }
 
 .acc-head:hover:not(:disabled) {

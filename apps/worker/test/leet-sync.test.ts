@@ -1,8 +1,8 @@
+import { SCHEMA_VERSION } from '../src/migrations';
 import { env, exports } from 'cloudflare:workers';
 import { runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { dailyAllowance, leetBonusForDay } from '@creatures/game';
-import { leetPointsForDay } from '../src/economy';
+import { dailyAllowance, leetBonusForDay, leetPointsForDay } from '@creatures/game';
 import { SYNC_BUDGET_MS, type GuildCoreOptions } from '../src/guild-core';
 import {
   DEFAULT_TIMEOUT_MS,
@@ -25,7 +25,6 @@ import {
   runCore,
   tokenFor,
   undoRaidMigration,
-  LATEST_SCHEMA_VERSION,
 } from './helpers';
 
 const MINUTE = 60_000;
@@ -1132,7 +1131,7 @@ describe('leet sync status', () => {
         ]);
         expect(
           sql.exec<{ v: number }>('SELECT MAX(version) AS v FROM schema_version').one().v,
-        ).toBe(LATEST_SCHEMA_VERSION);
+        ).toBe(SCHEMA_VERSION);
         expect(syncState(sql)[0]?.cursor).toBe('kept');
         expect(core.leetSyncStatus()).toMatchObject({
           lastAttemptAt: null,

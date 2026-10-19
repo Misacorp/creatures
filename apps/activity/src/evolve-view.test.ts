@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { effectiveStats, content } from '@creatures/game';
+import type { Creature } from './api';
 import { sampleCreature } from './creature-card-sample';
 import { evolutionText, creatureAbilityText } from './game';
 import { abilityDef } from './live';
@@ -8,7 +9,14 @@ import { creatureNeeds } from './creature-needs';
 import { SAMPLE_STATE } from './creature-card-sample';
 
 const branching = sampleCreature('evolve choice');
-const single = sampleCreature('evolve ready');
+/** A line that grows one way: the sample's evolution without its second form (the game has none left, the code still handles it). */
+function oneForm(creature: Creature): Creature {
+  const evolution = { ...creature.evolution! };
+  delete evolution.alt;
+  return { ...creature, evolution };
+}
+
+const single = oneForm(sampleCreature('evolve ready'));
 
 describe('the forms of an evolution', () => {
   it('knows a line that grows two ways from one that grows one way', () => {

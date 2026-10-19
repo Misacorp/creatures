@@ -3,7 +3,7 @@ import { Banner } from './Banner';
 import { Stars } from './ExpeditionIcons';
 import { FindCard } from './FindCard';
 import { firstPick, type CatchPick } from './find-view';
-import { LootList } from './GearLoot';
+import { LootList } from './LootList';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';

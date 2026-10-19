@@ -92,13 +92,13 @@ describe('DungeonMap', () => {
     const preview = draw(<DungeonMap map={SAMPLE_MAP} state={null} />);
     preview.click(first(byName(preview.root, 'button', /^Fight: Puddle Imp/)));
     expect(byName(preview.root, 'button', /^Go/)).toHaveLength(0);
-    expect(visibleText(preview.root)).not.toContain('Not on your path.');
+    expect(visibleText(preview.root)).not.toContain('Further ahead.');
     preview.unmount();
 
     const p = draw(<DungeonMap map={SAMPLE_MAP} state={sampleState('midway')} onGo={vi.fn()} />);
     p.click(first(byName(p.root, 'button', /^Camp/)));
     expect(byName(p.root, 'button', /^Go/)).toHaveLength(0);
-    expect(visibleText(first(byRole(p.root, 'dialog')))).toContain('Not on your path.');
+    expect(visibleText(first(byRole(p.root, 'dialog')))).toContain('Further ahead.');
     expect(visibleText(first(byRole(p.root, 'dialog')))).not.toContain("can't reach");
   });
 
@@ -369,17 +369,20 @@ describe('DungeonMap with the Undercroft', () => {
     expect(dialogText(p)).toContain(
       'A cracked floor: beat the floor boss to go down another floor.',
     );
-    expect(dialogText(p)).toContain('Floor boss');
-    expect(dialogText(p)).toContain('The Undercroft');
-    expect(dialogText(p)).toContain(
-      'Undercroft chest: 1 Essence, 2 scrap and a 40% chance of a gear piece.',
-    );
+    // The title says it is the Undercroft's floor boss once: no "Floor boss" tag, no "The Undercroft." line.
+    const dialog = first(byRole(p.root, 'dialog'));
+    expect(dialogText(p)).toContain('Undercroft floor boss');
+    expect(dialogText(p)).not.toContain('The Undercroft.');
+    expect(byClass(dialog, 'dnd-tags')[0]?.textContent ?? '').not.toContain('Floor boss');
+    // The chest is badges, not a sentence.
+    expect(dialogText(p)).toContain('Chest:');
+    expect(byClass(dialog, 'part-count').map(visibleText)).toEqual(['1', '2', '40%']);
   });
 
   it('an uncracked keeper has no cracked-floor line', () => {
     const plain = drawStage('keeper', { initialOpen: 'u1f3l1' });
     expect(dialogText(plain)).not.toContain('cracked floor');
-    expect(dialogText(plain)).toContain('Undercroft chest');
+    expect(dialogText(plain)).toContain('Chest:');
   });
 
   it('stacks a second level below the first, whose floor boss stands on a cracked floor', () => {
@@ -400,7 +403,7 @@ describe('DungeonMap with the Undercroft', () => {
     const text = dialogText(p);
     expect(text).toContain('Carved door');
     expect(text).toContain(
-      'A carved door. Step through to add one room to the first Undercroft floor: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight. You find out which when you descend.',
+      'Step through to add one room to the first Undercroft floor: a fight, an elite fight, a mystery room, a cache, a camp or an epic fight. You find out which when you descend.',
     );
     expect(byName(first(byRole(p.root, 'dialog')), 'button', /^Go to Carved door/)).toHaveLength(1);
   });
@@ -454,10 +457,14 @@ describe('DungeonMap with the Undercroft', () => {
     expect(text).toContain('Fierce Ember Mite');
     expect(text).toContain('Epic');
     expect(text).not.toContain('Elite');
-    expect(text).toContain(
-      'One fierce foe at boss strength. Win it to earn 1 Essence, 2 scrap and a keepsake.',
-    );
-    expect(text).toContain('The Undercroft');
+    expect(text).toContain('One fierce foe at boss strength.');
+    expect(text).toContain('Win:');
+    const dialog = first(byRole(p.root, 'dialog'));
+    expect(byClass(dialog, 'part-count').map(visibleText)).toEqual(['1', '2']);
+    expect(text).toContain('Keepsake');
+    // The Undercroft tag says where it is; there is no second line saying it.
+    expect(text).toContain('Undercroft');
+    expect(text).not.toContain('The Undercroft.');
   });
 
   it('tells the story of a boss that fell and went down: the fight, the chest and the way down', () => {
@@ -471,8 +478,25 @@ describe('DungeonMap with the Undercroft', () => {
     expect(text).toContain('Banked at once');
     expect(text).toContain('Cinder Charm');
     expect(text).toContain('You went down into Undercroft 1.');
-    // The chest's loot is not counted twice: the fight itself added nothing to the pack.
+    // The chest entry only holds what the chest added, and the fight shows its own loot.
     expect(text).not.toContain('Nothing went into the pack.');
+  });
+
+  it("shows the main boss's own loot on its fight and the chest's extras on its chest", () => {
+    const run = undercroftState('entrance');
+    const p = draw(
+      <DungeonMap map={run.map} undercroft={run.undercroft?.maps} state={run} initialOpen="f6l1" />,
+    );
+    const rows = byClass(first(byRole(p.root, 'dialog')), 'dnd-loot').map(visibleText);
+    // The fight added 1 Essence and 1 scrap, the chest 2 and 2 more: two rows, none hidden.
+    expect(rows).toHaveLength(2);
+    // (A row's text is its amounts: Essence then scrap.)
+    expect(rows[0]).toBe('Into your pack:11');
+    expect(rows[1]).toBe('Into your pack:22');
+    // The loot list is not the replay's indented bullet list (`plain-list`): no bullet over the label.
+    const lists = byClass(first(byRole(p.root, 'dialog')), 'dnd-loot-items');
+    expect(lists).toHaveLength(2);
+    for (const list of lists) expect(list.getAttribute('class')).not.toContain('plain-list');
   });
 
   it("tells the story of a floor boss that fell: the fight and the floor boss's chest", () => {

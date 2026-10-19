@@ -218,6 +218,31 @@ describe('reflect_first_reaction (Backdraft)', () => {
       expect(first).toMatchObject({ reflected: true });
     }
   });
+
+  it('announces the trap once per armed round, when it is armed (not again on the boss turn)', () => {
+    const trap = (trigger: { eachRound: true } | { every: number }) =>
+      run(row(), {
+        boss: {
+          ...withGimmicks([
+            { id: 'backdraft', name: 'Backdraft', trigger, op: 'reflect_first_reaction' },
+          ]),
+          element: 'tide',
+        },
+      });
+    const each = trap({ eachRound: true });
+    expect(eventsOf(each, 'gimmick')).toHaveLength(each.rounds);
+    for (let round = 1; round <= each.rounds; round++) {
+      const events = inRound(each, round);
+      const announced = events.filter((e) => e.t === 'gimmick');
+      expect(announced).toHaveLength(1);
+      // Written at round start, before any creature acts.
+      expect(events.findIndex((e) => e.t === 'gimmick')).toBeLessThan(
+        events.findIndex((e) => e.t === 'turn'),
+      );
+    }
+    const third = trap({ every: 3 });
+    expect(eventsOf(third, 'gimmick').map((e) => e.round)).toEqual([3, 6, 9]);
+  });
 });
 
 describe('strike_highest_atk (Lightning Rod)', () => {

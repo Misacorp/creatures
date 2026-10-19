@@ -4,7 +4,6 @@ import { bossArt, elementClass } from './art';
 import {
   CRACK_LINE,
   DESCEND_LINE,
-  FIERCER_LINE,
   LOCKED_LINE,
   NOT_VISITED_LINE,
   NO_TRICK_LINE,
@@ -41,7 +40,8 @@ import {
   stepsAt,
 } from './dungeon-history';
 import { packBadges } from './dungeon-run';
-import { LootList } from './GearLoot';
+import { GearRows } from './ItemRow';
+import { essenceCount, partBadge } from './count-items';
 import { modifierIcon } from './dungeon-rooms';
 import { roomTrick } from './dungeon-playback';
 import type {
@@ -55,7 +55,7 @@ import { glyphOrUnknown } from './glyphs';
 import { gimmickGlyphKey, gimmickShort } from './raid-text';
 import { Sprite } from './sprites/Sprite';
 import { ElementChip } from './sprites/ElementChip';
-import { CountBadge } from './ui/CountBadge';
+import { CountBadgeList, type CountItem } from './ui/CountBadge';
 import { Drawer } from './ui/Drawer';
 import { Tag } from './ui/Tag';
 
@@ -109,9 +109,13 @@ export function DungeonNodeDrawer({
   const entry = entries[0];
   const visited = status === 'visited' || status === 'current';
   const why = whyNot(status, state);
-  // The "?" for what the room is stands right after the title (the foe rooms carry their own tags).
-  const help =
-    node.foe !== undefined && node.kind !== 'mystery' ? null : nodeGlossaryEntry(node.kind);
+  // The "?" for what the room is stands right after the title (the foe rooms carry their own tags; the
+  // Undercroft's floor boss is named for the place, so its "?" explains the place).
+  const help = isKeeper(node)
+    ? 'undercroft'
+    : node.foe !== undefined && node.kind !== 'mystery'
+      ? null
+      : nodeGlossaryEntry(node.kind);
   const footer = go ? (
     <button
       type="button"
@@ -165,18 +169,36 @@ function whyNot(status: NodeStatus, state: MapRun | null): string | null {
   return state.status === 'active' ? LOCKED_LINE : NOT_VISITED_LINE;
 }
 
+/** The lead of the row that says what an epic fight pays, and what a floor boss's chest holds. */
+const WIN_LABEL = 'Win';
+const CHEST_LABEL = 'Chest';
+
 /** The loot a room put in the pack, as icons with numbers. */
 function LootRow({ pack }: { pack: DungeonPack }) {
   return (
     <div class="dnd-loot">
       <span>{LOOT_LABEL}:</span>
-      <ul class="dnd-loot-items plain-list" aria-label={LOOT_LABEL}>
-        {packBadges(pack).map(({ key, ...badge }) => (
-          <li key={key}>
-            <CountBadge {...badge} />
-          </li>
-        ))}
-      </ul>
+      <CountBadgeList items={packBadges(pack)} label={LOOT_LABEL} class="dnd-loot-items" />
+    </div>
+  );
+}
+
+/** What a room that is still ahead pays, as icons with numbers ("Win:" or "Chest:"), with its extra items after them. */
+function PrizeRow({
+  label,
+  items,
+  children,
+}: {
+  label: string;
+  items: readonly CountItem[];
+  children?: ComponentChildren;
+}) {
+  return (
+    <div class="dnd-loot">
+      <span>{label}:</span>
+      <CountBadgeList items={items} label={label} class="dnd-loot-items">
+        {children}
+      </CountBadgeList>
     </div>
   );
 }
@@ -195,21 +217,20 @@ function KeepsakeLine({ keepsake }: { keepsake: DungeonKeepsakeView }) {
 
 /**
  * What happened in a room the run has been through: its history entries in order. A boss that fell has
- * its fight, then its chest (and what the chest paid replaces the fight's own loot line), then the descent.
+ * its fight (with its own loot), then its chest (only what the chest added), then the descent.
  */
 function Outcomes({ entries }: { entries: readonly DungeonStepLog[] }) {
-  const chest = entries.some((e) => e.result === 'chest');
   return (
     <>
       {entries.map((entry, i) => (
-        <Outcome key={i} entry={entry} chest={chest} />
+        <Outcome key={i} entry={entry} />
       ))}
     </>
   );
 }
 
 /** What happened in a room the run has been through, from one history entry. */
-function Outcome({ entry, chest }: { entry: DungeonStepLog; chest: boolean }) {
+function Outcome({ entry }: { entry: DungeonStepLog }) {
   if (entry.result === 'pending') {
     return (
       <p class="dnd-line dnd-pending">
@@ -244,22 +265,16 @@ function Outcome({ entry, chest }: { entry: DungeonStepLog; chest: boolean }) {
         {entry.gear.length > 0 && (
           <div class="dnd-gear">
             <span>{CHEST_GEAR_LABEL}:</span>
-            <LootList
-              label={CHEST_GEAR_LABEL}
-              loot={{
-                gear: entry.gear.map((g, i) => ({ id: `chest-${String(i)}`, ...g })),
-                converted: [],
-                parts: {},
-                blueprints: [],
-              }}
-            />
+            <div class="loot" role="group" aria-label={CHEST_GEAR_LABEL}>
+              <GearRows pieces={entry.gear} label="Items" />
+            </div>
           </div>
         )}
       </div>
     );
   }
-  // A fight whose boss chest follows says its loot there, so the pack is not counted twice.
-  const loot = chest && entry.result === 'fight' ? null : lootOf(entry);
+  // A chest entry only holds what the chest added, so a fight always shows its own loot.
+  const loot = lootOf(entry);
   return (
     <div class="dnd-outcome">
       {entry.result === 'fight' && <p class="dnd-line">{roundsLine(entry)}</p>}
@@ -273,7 +288,6 @@ function Outcome({ entry, chest }: { entry: DungeonStepLog; chest: boolean }) {
       {loot !== null ? (
         <LootRow pack={loot} />
       ) : (
-        !chest &&
         (entry.result === 'cache' || entry.result === 'fight') && (
           <p class="muted dnd-line">{NO_LOOT_LINE}</p>
         )
@@ -356,9 +370,9 @@ function FoeBody({
         <div class="dnd-who">
           <p class="dnd-name pix">{foeDisplayName(node)}</p>
           <p class="dnd-tags">
-            {deeper && (
+            {deeper && !keeper && (
               <Tag kind="badge" entry="undercroft">
-                {keeper ? 'Floor boss' : 'Undercroft'}
+                Undercroft
               </Tag>
             )}
             {elite && (
@@ -383,7 +397,6 @@ function FoeBody({
           </p>
         </div>
       </div>
-      {deeper && <p class="dnd-line dnd-fiercer">{FIERCER_LINE}</p>}
       {elite && entry === undefined && (
         <p class="dnd-line">
           A fiercer fight. Win it to earn a{' '}
@@ -394,20 +407,39 @@ function FoeBody({
         </p>
       )}
       {epic && entry === undefined && (
-        <p class="dnd-line">
-          One fierce foe at boss strength. Win it to earn {epicLoot.essence} Essence,{' '}
-          {epicLoot.scrap} scrap and a{' '}
-          <GlossaryTag entry="keepsake" look="text">
-            keepsake
-          </GlossaryTag>
-          .
-        </p>
+        <>
+          <p class="dnd-line">One fierce foe at boss strength.</p>
+          <PrizeRow
+            label={WIN_LABEL}
+            items={[
+              essenceCount(epicLoot.essence, { entry: true }),
+              { key: 'scrap', ...partBadge('scrap', epicLoot.scrap) },
+            ]}
+          >
+            <li>
+              <Tag kind="chip" entry="keepsake" icon={{ kind: 'glyph', id: 'sparkle' }}>
+                Keepsake
+              </Tag>
+            </li>
+          </PrizeRow>
+        </>
       )}
       {keeper && entry === undefined && (
-        <p class="dnd-line">
-          Beat the floor boss to open the Undercroft chest: {chest.essence} Essence, {chest.scrap}{' '}
-          scrap and a {Math.round(chest.gearBp / 100)}% chance of a gear piece.
-        </p>
+        <PrizeRow
+          label={CHEST_LABEL}
+          items={[
+            essenceCount(chest.essence, { entry: true }),
+            { key: 'scrap', ...partBadge('scrap', chest.scrap) },
+            {
+              key: 'gear',
+              icon: { kind: 'glyph', id: 'slot-hat' },
+              amount: `${String(Math.round(chest.gearBp / 100))}%`,
+              spokenAmount: `${String(Math.round(chest.gearBp / 100))} percent chance`,
+              label: 'Gear piece',
+              entry: 'gear',
+            },
+          ]}
+        />
       )}
       {keeper && crack && <p class="dnd-line dnd-crack">{CRACK_LINE}</p>}
       {descent && !keeper && entry === undefined && (

@@ -141,6 +141,12 @@ export type {
 
 /** Runs (their events and inputs) are kept this long; the summary and rewards stay. */
 export const RUN_RETENTION_MS = 90 * 86_400_000;
+/**
+ * A step's stored answer (the whole run view it left) only serves a retry of the same request, which
+ * comes within minutes. After this long the state in it is emptied (the act and `ended` stay, so a late
+ * retry is still a `stale_step`, or a `key_conflict` when it is another request).
+ */
+export const ACT_ANSWER_RETENTION_MS = 2 * 86_400_000;
 export interface DungeonDeps {
   storage: LedgerStorage;
   now: () => number;
@@ -158,14 +164,6 @@ export interface DungeonDeps {
 }
 
 // --- Views ---
-
-export interface DungeonModifierView {
-  /** The room (0-based) the modifier belongs to. */
-  room: number;
-  id: string;
-  name: string;
-  description: string;
-}
 
 /**
  * What a run paid one creature in experience, with what changed the plain amount: the results say it under
@@ -287,8 +285,6 @@ export interface DungeonToday {
   landmarkBoss: { depth: number; foeId: string } | null;
   /** Days in a row, as of now: 0 when yesterday was missed and nothing has run today. */
   streak: number;
-  /** For old clients: the modifiers of the first two entrance rooms and of the floor boss. The new client reads `map`. */
-  modifiers: DungeonModifierView[];
   attemptsToday: number;
   attemptsAllowed: number;
   /** False while a run is open (`active`). */
@@ -438,8 +434,8 @@ interface StoredFight {
 /** What `act_json` keeps: the act (for telling a retry from another request), the state it left (without the map) and whether it ended the run. */
 interface StoredAct {
   act: unknown;
-  /** `history` is missing in answers stored before the room log. */
-  state: Omit<DungeonRunState, 'map' | 'history'> & { history?: DungeonStepLog[] };
+  /** Emptied (missing) once the answer is past `ACT_ANSWER_RETENTION_MS`. `history` is missing in answers stored before the room log. */
+  state?: Omit<DungeonRunState, 'map' | 'history'> & { history?: DungeonStepLog[] };
   ended: boolean;
 }
 
@@ -488,21 +484,6 @@ function xpDayEffects(day: WeatherDay | null): { name: string; bp: number }[] {
 /** The same text for the same act, whatever order a client wrote its keys in. */
 function canonicalAct(act: object): string {
   return JSON.stringify(act, Object.keys(act).sort());
-}
-
-/**
- * The three modifiers old clients know (`DungeonToday.modifiers`): the first two entrance rooms (left
- * to right) and the floor boss. Derived from the map, so there is one source of truth.
- */
-export function legacyModifierIds(map: DungeonMap): string[] {
-  const entrance = map.nodes
-    .filter((n) => n.floor === 0)
-    .sort((a, b) => a.lane - b.lane)
-    .slice(0, 2);
-  const boss = map.nodes.find((n) => n.kind === 'boss');
-  return [...entrance, ...(boss === undefined ? [] : [boss])].flatMap((n) =>
-    n.modifierId === undefined ? [] : [n.modifierId],
-  );
 }
 
 const emptyRewards = (): DungeonRewards => ({
@@ -638,7 +619,7 @@ export class Dungeon {
    * the same seed; runs that already started keep their own copy.
    *
    * Dev tools only: picked modifiers (`dungeon-modifiers`) are laid over the map when it is read (the
-   * first two entrance rooms and the floor boss, see `legacyModifierIds`); they are not stored.
+   * first two entrance rooms and the floor boss, see `withForcedModifiers`); they are not stored.
    */
   private mapFor(day: string): DungeonMap {
     const stored = this.sql
@@ -699,14 +680,6 @@ export class Dungeon {
   private landmarkBoss(depth: number): DungeonToday['landmarkBoss'] {
     const foeId = landmarkBossId(depth);
     return foeId === null ? null : { depth, foeId };
-  }
-
-  private modifierViews(ids: readonly string[]): DungeonModifierView[] {
-    return ids.map((id, room) => {
-      const m = roomModifier(id);
-      if (m === undefined) throw new Error('stored modifier is not in the content');
-      return { room, id: m.id, name: m.name, description: m.description };
-    });
   }
 
   /**
@@ -840,7 +813,6 @@ export class Dungeon {
       landmark: isLandmark(depth),
       landmarkBoss: this.landmarkBoss(depth),
       streak: alive ? progress.streak : 0,
-      modifiers: this.modifierViews(legacyModifierIds(map)),
       attemptsToday: runs.length,
       attemptsAllowed: allowed,
       canRun,
@@ -1262,7 +1234,9 @@ export class Dungeon {
       ) {
         throw new GameError(409, 'key_conflict');
       }
-      return this.storedAnswer(userId, row, stored, first, day, tz, now);
+      // The answer's state was emptied after its short window: the same request is now just late.
+      if (first.state === undefined) throw new GameError(409, 'stale_step');
+      return this.storedAnswer(userId, row, stored, { ...first, state: first.state }, day, tz, now);
     }
     // The key is the player's: another kind of action may not reuse it (the start of a run included).
     if (
@@ -1357,7 +1331,7 @@ export class Dungeon {
       'UPDATE dungeon_steps SET act_json = ? WHERE run_id = ? AND step = ?',
       JSON.stringify({
         act,
-        state: lite as StoredAct['state'],
+        state: lite as NonNullable<StoredAct['state']>,
         ended: outcome.end !== undefined,
       } satisfies StoredAct),
       row.id,
@@ -1384,7 +1358,7 @@ export class Dungeon {
     userId: string,
     row: RunRow,
     step: StepRow,
-    first: StoredAct,
+    first: StoredAct & { state: NonNullable<StoredAct['state']> },
     day: string,
     tz: string,
     now: number,
@@ -1880,6 +1854,11 @@ export class Dungeon {
       'UPDATE dungeon_steps SET input_json = NULL, result_json = NULL WHERE created_at < ? AND (input_json IS NOT NULL OR result_json IS NOT NULL)',
       cutoff,
     );
+    // After a short window the big run view inside a step's stored answer goes (its act stays).
+    this.sql.exec(
+      "UPDATE dungeon_steps SET act_json = json_remove(act_json, '$.state') WHERE created_at < ? AND json_type(act_json, '$.state') IS NOT NULL",
+      this.deps.now() - ACT_ANSWER_RETENTION_MS,
+    );
     // Past retention the stored answer of a step and the state of a run that ended go too: the summary
     // and rewards say all that is shown of it. A retry of such a step is `stale_step`.
     this.sql.exec(
@@ -1897,7 +1876,7 @@ export class Dungeon {
 
 /**
  * Dev tools only: the picked modifiers laid over a copy of the map: the first two entrance rooms (left
- * to right, the third gets the first again) and the floor boss, so `legacyModifierIds` reads them back.
+ * to right, the third gets the first again) and the floor boss.
  */
 function withForcedModifiers(map: DungeonMap, ids: readonly string[]): DungeonMap {
   const entrance = map.nodes.filter((n) => n.floor === 0).sort((a, b) => a.lane - b.lane);

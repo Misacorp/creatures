@@ -68,12 +68,6 @@
   outline-offset: 0;
 }
 
-.slot-plus {
-  color: var(--haze);
-  font-size: 1.25rem;
-  line-height: 1;
-}
-
 .item-frame.big {
   margin: 8px;
 }
@@ -110,12 +104,6 @@ canvas.sprite.item-slot {
 
 .festival-tag {
   color: var(--rarity-festival);
-}
-
-.gear-bonus {
-  color: var(--gear);
-  font-family: var(--display);
-  font-weight: 400;
 }
 
 .gear-share {

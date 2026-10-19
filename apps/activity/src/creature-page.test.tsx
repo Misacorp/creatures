@@ -307,7 +307,7 @@ describe('the creature page: the buttons for what is ready', () => {
 
   it('has a gold evolve button when evolution is ready, and answers a waiting catch', () => {
     const evolve = draw('evolve ready');
-    const button = first(byName(evolve.root, 'button', 'Evolve into Pyrelynx (20 Essence)'));
+    const button = first(byName(evolve.root, 'button', 'Choose an evolution (20 Essence)'));
     expect(button.getAttribute('class')).toContain('primary');
     evolve.page.click(button);
     expect(evolve.actions.onEvolve).toHaveBeenCalledTimes(1);
@@ -320,6 +320,23 @@ describe('the creature page: the buttons for what is ready', () => {
 
     const none = draw('level 15');
     expect(byName(none.root, 'button', /Answer/)).toHaveLength(0);
+  });
+});
+
+describe('the creature page: evolving a busy creature', () => {
+  it('disables the evolve button and says why while the creature is on a job', () => {
+    const {
+      root,
+      page: p,
+      actions,
+    } = draw('evolve ready', {
+      change: (c) => ({ ...c, busy: { kind: 'job', id: 'job-1' } }),
+    });
+    const button = first(byName(root, 'button', /^Choose an evolution/));
+    expect(button.hasAttribute('disabled')).toBe(true);
+    expect(visibleText(root)).toContain('On a job');
+    p.click(button);
+    expect(actions.onEvolve).not.toHaveBeenCalled();
   });
 });
 
@@ -524,7 +541,7 @@ describe('the creature page: the item detail panel', () => {
     expect(rows[2]).toMatch(/^Crit damage \d+ pt$/);
     // The modifiers keep their values and tier pips.
     expect(visibleText(card)).toContain('(this item)');
-    expect(byClass(card, 'pips').length).toBeGreaterThan(0);
+    expect(byClass(card, 'tier-pips').length).toBeGreaterThan(0);
     // The bonus is a distinct element, so a stat with none shows the base alone.
     expect(byClass(card, 'idc-stat-bonus')).toHaveLength(1);
   });

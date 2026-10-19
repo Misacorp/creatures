@@ -8,17 +8,12 @@
  */
 import { RULES, createSeededRng, type Rng } from '@creatures/game';
 import { creditParts } from '../src/gear-store';
-import type { Captured } from './gear-scenario';
+import { createRecorder, type Captured, type Json } from './fixture-contract';
 import { SCENARIO_START } from './gear-scenario';
 import type { CoreContext } from './helpers';
 import { scriptedThenSeeded, seedPlayer } from './raid-helpers';
 
 const HOUR = 3_600_000;
-
-interface Json {
-  status: number;
-  body: Record<string, unknown>;
-}
 
 let keyCounter = 0;
 const newKey = (): string => `trips-fixture-${String(++keyCounter).padStart(8, '0')}-key`;
@@ -43,7 +38,6 @@ export function tripsScenarioOptions() {
 
 export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): Promise<Captured> {
   ctx.clock.t = SCENARIO_START;
-  const out: Captured = { responses: {}, errors: [], requests: {} };
   const seeded = seedPlayer(ctx, 3, { level: 8, species: ['cindle', 'splashet', 'sproutle'] });
   const [explorer, second] = seeded.creatureIds as [string, string, string];
   const user = { id: seeded.id, displayName: seeded.name };
@@ -87,24 +81,7 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
     const res = await ctx.request(secret, path, method, body);
     return { status: res.status, body: await res.json<Record<string, unknown>>() };
   };
-  const record = async (name: string, method: string, path: string, body?: unknown) => {
-    const res = await call(method, path, body);
-    if (res.status !== 200)
-      throw new Error(`${method} ${path} failed: ${JSON.stringify(res.body)}`);
-    out.responses[name] = res.body;
-    if (body !== undefined) out.requests[name] = { path, method, body };
-    return res;
-  };
-  const fail = async (method: string, path: string, body: unknown) => {
-    const res = await call(method, path, body);
-    if (res.status === 200) throw new Error(`${method} ${path} was meant to fail`);
-    out.errors.push({
-      route: `${method} ${path.replace(/[0-9a-f-]{36}/g, ':id')}`,
-      status: res.status,
-      body: res.body,
-    });
-    return res;
-  };
+  const { record, refuse, captured: out } = createRecorder(call);
   const sendBody = (creatureId: string, extra: Record<string, unknown> = {}) => ({
     creatureId,
     destination: 'tidepools',
@@ -130,10 +107,10 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
   );
   const tripId = idOf(sent);
   // The errors a player can hit when sending.
-  await fail('POST', '/api/expeditions', sendBody(explorer)); // the creature is away
-  await fail('POST', '/api/expeditions', sendBody(second)); // the one slot is in use
-  await fail('POST', '/api/expeditions', { ...sendBody(second), extra: 1 }); // an unknown key
-  await fail('POST', `/api/expeditions/${tripId}/push-on`, { goalId: 'forage' }); // not ready yet
+  await refuse('POST', '/api/expeditions', sendBody(explorer)); // the creature is away
+  await refuse('POST', '/api/expeditions', sendBody(second)); // the one slot is in use
+  await refuse('POST', '/api/expeditions', { ...sendBody(second), extra: 1 }); // an unknown key
+  await refuse('POST', `/api/expeditions/${tripId}/push-on`, { goalId: 'forage' }); // not ready yet
 
   // The trip ends: the state carries the offer.
   ctx.clock.t = endOf(sent);
@@ -148,13 +125,13 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
   const risky = goals.find((g) => g.risk === 'risky');
   const safe = goals.find((g) => g.risk === 'safe');
   if (risky === undefined || safe === undefined) throw new Error('the scenario needs both goals');
-  await fail('POST', `/api/expeditions/${tripId}/push-on`, { goalId: 'ancient-vault' }); // not offered
+  await refuse('POST', `/api/expeditions/${tripId}/push-on`, { goalId: 'ancient-vault' }); // not offered
 
   // A risky goal that fails: the whole trip brings nothing home.
   const chosen = await record('expedition-push-on', 'POST', `/api/expeditions/${tripId}/push-on`, {
     goalId: risky.id,
   });
-  await fail('POST', `/api/expeditions/${tripId}/push-on`, { goalId: safe.id }); // already chosen
+  await refuse('POST', `/api/expeditions/${tripId}/push-on`, { goalId: safe.id }); // already chosen
   ctx.clock.t = (chosen.body['expedition'] as { pushOn: { endsAt: number } }).pushOn.endsAt + 1;
   draw.v = 9_999;
   const failedPath = `/api/expeditions/${tripId}/claim`;
@@ -163,15 +140,15 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
   draw.v = 0;
 
   // With the slot free again: the other ways a send can be refused.
-  await fail('POST', '/api/expeditions', sendBody(second, { destination: 'old-crossroads' })); // needs rank 2
-  await fail('POST', '/api/expeditions', sendBody(second, { destination: 'festival-grounds' })); // not Festival week
-  await fail('POST', '/api/expeditions', sendBody(second, { duration: 'day' })); // needs a higher rank
-  await fail(
+  await refuse('POST', '/api/expeditions', sendBody(second, { destination: 'old-crossroads' })); // needs rank 2
+  await refuse('POST', '/api/expeditions', sendBody(second, { destination: 'festival-grounds' })); // not Festival week
+  await refuse('POST', '/api/expeditions', sendBody(second, { duration: 'day' })); // needs a higher rank
+  await refuse(
     'POST',
     '/api/expeditions',
     sendBody(second, { supplies: [{ id: 'lure-good', source: 'owned' }] }),
   ); // none in stock
-  await fail(
+  await refuse(
     'POST',
     '/api/expeditions',
     sendBody(second, {
@@ -182,7 +159,7 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
     }),
   ); // two of a kind
   // An old client asking to buy a supply is refused with its own error.
-  await fail(
+  await refuse(
     'POST',
     '/api/expeditions',
     sendBody(second, { supplies: [{ id: 'lure-basic', source: 'buy' }] }),
@@ -233,7 +210,7 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
   await record('workshop-claim-supply', 'POST', `/api/workshop/jobs/${jobId}/claim`, {
     idempotencyKey: newKey(),
   });
-  await fail('POST', '/api/workshop/jobs', {
+  await refuse('POST', '/api/workshop/jobs', {
     kind: 'supply',
     creatureId: explorer,
     supplyId: 'lure-great',

@@ -4,18 +4,13 @@
  * collection, which is where the waiting cards and the creatures' talents are.
  */
 import { apiFetch, jsonRequest, parseGameState, type GameState } from './api';
-import { isArrayOf, isRecord } from './parse-core';
+import { isRecord } from './parse-core';
 import { isChoiceResult, isSlotResult } from './talent-parse';
 import type { ChoiceRequest, ChoiceResult, SlotResult } from './talent-types';
 
 /** What an answer gives back: what happened, and the collection as it is now. */
 export interface ChoiceAnswer {
   result: ChoiceResult;
-  state: GameState;
-}
-
-export interface AllAnswer {
-  results: ChoiceResult[];
   state: GameState;
 }
 
@@ -38,15 +33,6 @@ export async function chooseCatch(
     throw new Error('the server returned an unexpected catch choice');
   }
   return { result: data['result'], state: parseGameState(data['state']) };
-}
-
-/** Applies Recommended to every waiting duplicate, oldest first. */
-export async function chooseAllRecommended(idempotencyKey: string): Promise<AllAnswer> {
-  const data = await apiFetch('/api/catches/recommended', jsonRequest('POST', { idempotencyKey }));
-  if (!isRecord(data) || !isArrayOf(data['results'], isChoiceResult)) {
-    throw new Error('the server returned an unexpected catch choice');
-  }
-  return { results: data['results'], state: parseGameState(data['state']) };
 }
 
 /** Puts a talent from a creature's Talent Book into one of its open slots (costs Bait). */

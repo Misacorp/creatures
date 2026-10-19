@@ -1,6 +1,6 @@
 # M2 design: starters, expeditions, training, fusion
 
-Status: **draft for M2**, numbers are starting values that the balance simulator (M3) will tune. Rules that Misa decided are in `decisions.md`; this file is the working spec.
+Status: **shipped** in #1 (M2). Later changes live in `decisions.md` and the newer docs named there. The numbers were starting values that the balance simulator (M3) tuned. Rules that Misa decided are in `decisions.md`.
 
 ## Elements
 

@@ -9,7 +9,7 @@ import { speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { compactCount } from './number-format';
 import { MORE_LABEL, resolveTag, tagKey, visualPlan, type TagRef } from './glossary-ui';
-import { WornItemLines } from './WornItemLine';
+import { WornItemLines } from './WornItemLines';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';

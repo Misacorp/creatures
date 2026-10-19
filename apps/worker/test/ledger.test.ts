@@ -2,6 +2,7 @@ import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 import { GuildCore } from '../src/guild-core';
+import { debit } from '../src/ledger';
 import { OTHER_USER_ID, T0, USER_ID, runCore } from './helpers';
 
 const KEY_A = 'a1b2c3d4-0000-4000-8000-000000000001';
@@ -82,6 +83,53 @@ describe('ledger credit', () => {
       expect(() => core.credit({ ...base, currency: 'bait', idempotencyKey: '' })).toThrow();
       expect(() => core.credit({ ...base, currency: 'bait', idempotencyKey: 'a b' })).toThrow();
       expect(() => core.credit({ ...base, currency: 'bait', source: '' })).toThrow();
+    });
+  });
+});
+
+describe('ledger debit', () => {
+  it('takes the amount off once per key and writes a negative ledger row', async () => {
+    await runCore('710000000000000006', ({ core, sql, storage }) => {
+      seed(core, 30);
+      const input = {
+        userId: USER_ID,
+        currency: 'bait',
+        amount: 12,
+        source: 'dev',
+        idempotencyKey: 'dev:1',
+        meta: { tool: 'test' },
+      } as const;
+      expect(debit(storage, input, T0)).toEqual({ applied: true });
+      expect(debit(storage, input, T0)).toEqual({ applied: false });
+      expect(core.balances(USER_ID)).toEqual({ bait: 18, essence: 0 });
+      const rows = sql
+        .exec<{ amount: number; source: string; meta: string }>(
+          "SELECT amount, source, meta FROM ledger WHERE idempotency_key = 'dev:1'",
+        )
+        .toArray();
+      expect(rows).toEqual([{ amount: -12, source: 'dev', meta: '{"tool":"test"}' }]);
+    });
+  });
+
+  it('never takes a balance below zero and rejects bad input', async () => {
+    await runCore('710000000000000007', ({ core, sql, storage }) => {
+      seed(core, 5);
+      const base = {
+        userId: USER_ID,
+        currency: 'bait',
+        amount: 1,
+        source: 'dev',
+        idempotencyKey: 'dev:2',
+      } as const;
+      expect(() => debit(storage, { ...base, amount: 6 }, T0)).toThrow();
+      for (const amount of [0, -1, 1.5, Number.NaN]) {
+        expect(() => debit(storage, { ...base, amount }, T0)).toThrow();
+      }
+      expect(() => debit(storage, { ...base, idempotencyKey: 'a b' }, T0)).toThrow();
+      expect(() => debit(storage, { ...base, source: '' }, T0)).toThrow();
+      expect(() => debit(storage, { ...base, currency: 'gold' as 'bait' }, T0)).toThrow();
+      expect(core.balances(USER_ID).bait).toBe(5);
+      expect(ledgerRows(sql)).toBe(1);
     });
   });
 });

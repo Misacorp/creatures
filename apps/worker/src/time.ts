@@ -33,7 +33,8 @@ export function isValidTimeZone(tz: unknown): tz is string {
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
-const DAY = 24 * 60 * MINUTE;
+/** One day in milliseconds. */
+export const DAY_MS = 24 * 60 * MINUTE;
 
 const formatters = new Map<string, Intl.DateTimeFormat>();
 
@@ -123,11 +124,27 @@ function parseDate(date: string): { year: number; month: number; day: number } {
   return { year, month, day };
 }
 
+/** The 'YYYY-MM-DD' calendar date of a UTC instant (the instant is read as a UTC date). */
+export function formatDate(utcMs: number): string {
+  const d = new Date(utcMs);
+  return `${pad(d.getUTCFullYear(), 4)}-${pad(d.getUTCMonth() + 1, 2)}-${pad(d.getUTCDate(), 2)}`;
+}
+
+/** UTC midnight, in epoch milliseconds, of a real 'YYYY-MM-DD' date (throws for anything else). */
+export function dateToUtcMs(date: string): number {
+  const { year, month, day } = parseDate(date);
+  return Date.UTC(year, month - 1, day);
+}
+
+/** ISO weekday of a real 'YYYY-MM-DD' date: 1 = Monday ... 7 = Sunday. */
+export function isoWeekday(date: string): number {
+  return ((new Date(dateToUtcMs(date)).getUTCDay() + 6) % 7) + 1;
+}
+
 /** Adds (or subtracts) whole calendar days to a 'YYYY-MM-DD' date. Pure calendar arithmetic. */
 export function addDays(date: string, days: number): string {
   const { year, month, day } = parseDate(date);
-  const d = new Date(Date.UTC(year, month - 1, day + days));
-  return `${pad(d.getUTCFullYear(), 4)}-${pad(d.getUTCMonth() + 1, 2)}-${pad(d.getUTCDate(), 2)}`;
+  return formatDate(Date.UTC(year, month - 1, day + days));
 }
 
 /**
@@ -147,8 +164,8 @@ export function zonedTimeToEpoch(date: string, hour: number, minute: number, tz:
   const naive = Date.UTC(year, month - 1, day, hour, minute);
   // Offsets in force a day before and after: DST changes are months apart, so these bracket
   // every offset that could apply at the requested local time.
-  const before = offsetAt(naive - DAY, tz);
-  const after = offsetAt(naive + DAY, tz);
+  const before = offsetAt(naive - DAY_MS, tz);
+  const after = offsetAt(naive + DAY_MS, tz);
   const matches: number[] = [];
   for (const offset of new Set([before, after])) {
     const candidate = naive - offset;

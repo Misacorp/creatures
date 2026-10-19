@@ -8,17 +8,6 @@
   overflow-wrap: anywhere;
 }
 
-.plain-list {
-  margin: 0.25rem 0;
-  padding-left: 1.25rem;
-}
-
-.button-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
 .badge.good {
   background: var(--good);
   color: var(--ink);
@@ -102,7 +91,7 @@ button.toggle.on {
   gap: 0.5rem;
   min-height: 2.5rem;
   color: var(--bone);
-  font-size: 1rem;
+  font-size: var(--fs-row);
 }
 
 .pick input {

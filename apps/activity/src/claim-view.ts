@@ -6,6 +6,7 @@
  */
 import { journalEntry, expeditionContent } from '@creatures/game';
 import type { ClaimResult } from './api';
+import { BAIT_ICON } from './count-items';
 import type { JournalFind, RankGift, TripResult } from './expedition-types';
 import { lootIsEmpty } from './gear-view';
 import { partName, partsEntries } from './gear-view';
@@ -19,17 +20,6 @@ export type RevealTone = 'home' | 'recalled' | 'failed';
 export function revealTone(result: Pick<TripResult, 'recalled' | 'failed'>): RevealTone {
   if (result.failed === true) return 'failed';
   return result.recalled ? 'recalled' : 'home';
-}
-
-export function revealTitle(tone: RevealTone): string {
-  switch (tone) {
-    case 'failed':
-      return 'The trip failed';
-    case 'recalled':
-      return 'Called home early';
-    case 'home':
-      return 'Back from the trip';
-  }
 }
 
 /** The line about a failed risky goal: which one. The odds are not shown. Null when nothing failed. */
@@ -51,17 +41,6 @@ export function pushOnLine(result: Pick<TripResult, 'failed' | 'pushOn'>): strin
     case 'failed':
       return null;
   }
-}
-
-/** What the loot pile is drawn from: the loot's gear, parts and found supplies (one icon per kind). */
-export function pileSourceOf(result: Pick<ClaimResult, 'loot'>): PileSource {
-  const loot = result.loot;
-  if (loot === undefined) return {};
-  return {
-    gear: loot.gear,
-    parts: loot.parts,
-    supplies: loot.supplies ?? [],
-  };
 }
 
 /** True when the trip brought nothing in the loot (no gear, parts, blueprint or supply). */
@@ -187,7 +166,7 @@ export function giftLines(gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'>): 
   if (gift.bait > 0) {
     lines.push({
       key: 'bait',
-      icon: { kind: 'glyph', id: 'bait' },
+      icon: BAIT_ICON,
       text: `${String(gift.bait)} Bait`,
     });
   }

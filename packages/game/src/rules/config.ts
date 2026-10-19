@@ -1131,6 +1131,3 @@ export const NO_LUCK: LuckConfig = {
   swingBp: 0,
   swingRounds: 1,
 };
-
-export const DURATION_IDS = ['short', 'medium', 'long'] as const;
-export const SUPPLIES_IDS = ['basic', 'good', 'great'] as const;

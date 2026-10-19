@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import errors from './fixtures/dungeon-errors.json';
+import mapErrors from './fixtures/dungeon-errors.json';
+import legacyErrors from './fixtures/dungeon-legacy-errors.json';
+import legacyRequests from './fixtures/dungeon-legacy-request-bodies.json';
 import replay from './fixtures/dungeon-replay.json';
-import requests from './fixtures/dungeon-request-bodies.json';
 import runCleared from './fixtures/dungeon-run-cleared.json';
 import runLost from './fixtures/dungeon-run-lost.json';
 import today from './fixtures/dungeon-today.json';
@@ -21,7 +22,8 @@ import {
 describe('the dungeon types', () => {
   it('read today, a run and a replay from real server output', () => {
     const t = today as unknown as DungeonToday;
-    expect(t.modifiers.map((m) => m.room)).toEqual([0, 1, 2]);
+    // The rooms and their modifiers are the map's nodes: there is no separate list.
+    expect(t).not.toHaveProperty('modifiers');
     expect(t.blocked).toBeNull();
     const cleared = runCleared as unknown as DungeonRunResponse;
     // The team is one row, in fighting order, with no zones.
@@ -39,13 +41,13 @@ describe('the dungeon types', () => {
   });
 
   it('has request bodies of the type, and error codes the types know', () => {
-    const body = requests['dungeon-run-cleared'].body as unknown as DungeonStartRequest;
+    const body = legacyRequests['dungeon-run-cleared'].body as unknown as DungeonStartRequest;
     expect(body.team).toHaveLength(3);
     expect(Object.keys(body).sort()).toEqual(['idempotencyKey', 'team']);
     expect(new Set(body.team).size).toBe(3);
     // The ability choices are gone with their error code.
     expect(Object.keys(DUNGEON_ERRORS)).not.toContain('invalid_abilities');
-    for (const e of errors) {
+    for (const e of [...legacyErrors, ...mapErrors]) {
       expect(Object.keys(DUNGEON_ERRORS), e.body.error).toContain(e.body.error);
       expect(DUNGEON_ERRORS[e.body.error as keyof typeof DUNGEON_ERRORS]).toBe(e.status);
     }

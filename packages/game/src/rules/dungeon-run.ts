@@ -7,13 +7,7 @@
  * (`keptOnDefeat`). Randomness is injected: the worker passes its live crypto source for events and
  * camp offers, tests and the simulator pass seeded streams.
  */
-import {
-  dungeonEvent,
-  dungeonFoe,
-  dungeonKeepsake,
-  dungeonKeepsakes,
-  roomModifier,
-} from '../content/dungeon';
+import { dungeonEvent, dungeonFoe, dungeonKeepsakes, roomModifier } from '../content/dungeon';
 import type {
   DungeonEventDef,
   DungeonFoeDef,
@@ -363,11 +357,6 @@ export function catchBreath(
     out[id] = Math.min(Math.max(1, max), Math.max(1, share(max, u.reviveBp)));
   }
   return out;
-}
-
-/** True when a keepsake id is a real one (for a stored run's list). */
-export function keepsakesKnown(ids: readonly string[]): boolean {
-  return ids.every((id) => dungeonKeepsake(id) !== undefined) && new Set(ids).size === ids.length;
 }
 
 // --- Experience ---

@@ -1,3 +1,5 @@
+import { BaitCost } from './BaitCost';
+import { CountBadge } from './ui/CountBadge';
 import { Tag } from './ui/Tag';
 import { supplyDef } from '@creatures/game';
 import { useState } from 'preact/hooks';
@@ -6,12 +8,16 @@ import { supplyEntry } from './ExpeditionIcons';
 import { CostList } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { GearState } from './gear-types';
-import { supplyCraftViews, supplyDurationFor, supplyLevelBlocker } from './gear-view';
+import {
+  nominalDurationCountItem,
+  supplyCraftViews,
+  supplyDurationFor,
+  supplyLevelBlocker,
+} from './gear-view';
 import { capitalize } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { JobStarter } from './JobStarter';
 import { Sprite } from './sprites/Sprite';
-import { formatDuration } from './time-format';
 import { kindName, supplyEffect } from './trip-view';
 
 /**
@@ -48,7 +54,7 @@ export function SupplyCrafting({
       <p class="supply-stock" aria-live="polite">
         In stock: <strong>{totalInStock}</strong>
       </p>
-      <ul class="supply-crafts">
+      <ul class="stack-list">
         {views.map((view) => {
           const blocker = supplyLevelBlocker(view.level, gear.skills, creatures);
           const def = supplyDef(view.id);
@@ -65,18 +71,16 @@ export function SupplyCrafting({
                     <Tag>{capitalize(view.tier)}</Tag>
                   </p>
                   {def !== undefined && <p class="muted">{supplyEffect(def)}</p>}
-                  <p class="muted">
-                    In stock: {view.owned} · makes {view.yieldCount} · about{' '}
-                    {formatDuration(supplyDurationFor(view.id, 1))}
+                  <p class="bp-meta muted">
+                    <span>
+                      In stock: {view.owned} · makes {view.yieldCount}
+                    </span>
+                    <CountBadge {...nominalDurationCountItem(supplyDurationFor(view.id, 1))} />
                   </p>
                 </div>
               </div>
               <CostList cost={view.cost} have={gear.parts} />
-              {view.bait > 0 && (
-                <p class={gear.balances.bait >= view.bait ? 'bait-cost' : 'bait-cost short'}>
-                  {view.bait} Bait <span class="muted">(you have {gear.balances.bait})</span>
-                </p>
-              )}
+              {view.bait > 0 && <BaitCost cost={view.bait} have={gear.balances.bait} />}
               {blocker !== null && <p class="reason">{blocker}</p>}
               {open === view.id ? (
                 <JobStarter
