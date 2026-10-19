@@ -14,7 +14,7 @@ export const XP_SIZES = ['shrunk', 'snug', 'flat', 'grown'] as const;
 export type XpSize = (typeof XP_SIZES)[number];
 
 /** The look every XpTrack has unless a screen asks for another (one place to switch it). */
-export const DEFAULT_XP_SIZE: XpSize = 'shrunk';
+export const DEFAULT_XP_SIZE: XpSize = 'grown';
 
 /**
  * The slim XP bar at rest: the level tag, then the bar with its numbers inside. It is the bar of the
