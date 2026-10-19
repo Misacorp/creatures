@@ -40,12 +40,57 @@ export type SendOutcome =
   /** Will never work (no permission, unknown channel, bad request): give up at once. */
   | { kind: 'failed'; error: PostFailureKind };
 
-/** Sends one message to one channel. Never throws. */
+/**
+ * Sends one queued post to one channel. Never throws. `content` is the stored post: a message as
+ * JSON (`PostMessage`: embeds and the play button), or plain text (posts queued before the embeds).
+ */
 export type PostSender = (channelId: string, content: string) => Promise<SendOutcome>;
 
 export interface PostSenderConfig {
   botToken: string;
+  /**
+   * The game's own site (`https://creatures.misacorp.dev`), which serves the bosses' portraits; null:
+   * none (local dev), so embeds go without a thumbnail.
+   */
+  origin?: string | null;
   fetch?: typeof fetch;
+}
+
+/** The game's site for a deployed environment (`ENVIRONMENT` in wrangler.jsonc), or null. */
+export function publicOrigin(environment: string | undefined): string | null {
+  if (environment === 'production') return 'https://creatures.misacorp.dev';
+  if (environment === 'staging') return 'https://creatures-staging.misacorp.dev';
+  return null;
+}
+
+const StoredMessageSchema = v.object({
+  embeds: v.array(v.looseObject({ thumbnail: v.optional(v.object({ url: v.string() })) })),
+  components: v.array(v.unknown()),
+});
+
+/**
+ * The request body of a stored post. A stored message gets its portrait path made absolute against
+ * `origin` (or dropped without one); anything else is sent as plain text with link previews off.
+ */
+export function postBody(content: string, origin: string | null): Record<string, unknown> {
+  let parsed: unknown = null;
+  if (content.startsWith('{')) {
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      parsed = null;
+    }
+  }
+  const message = v.safeParse(StoredMessageSchema, parsed);
+  if (!message.success) {
+    return { content, allowed_mentions: { parse: [] }, flags: FLAG_SUPPRESS_EMBEDS };
+  }
+  const embeds = message.output.embeds.map(({ thumbnail, ...embed }) =>
+    thumbnail !== undefined && origin !== null && thumbnail.url.startsWith('/')
+      ? { ...embed, thumbnail: { url: `${origin}${thumbnail.url}` } }
+      : embed,
+  );
+  return { embeds, components: message.output.components, allowed_mentions: { parse: [] } };
 }
 
 const RateLimitBodySchema = v.object({ retry_after: v.number() });
@@ -87,11 +132,7 @@ export function createPostSender(config: PostSenderConfig): PostSender {
           Authorization: `Bot ${config.botToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          content,
-          allowed_mentions: { parse: [] },
-          flags: FLAG_SUPPRESS_EMBEDS,
-        }),
+        body: JSON.stringify(postBody(content, config.origin ?? null)),
         // workerd rejects 'error'. A redirect is never expected from the API; it is treated as a failure.
         redirect: 'manual',
         signal: AbortSignal.timeout(TIMEOUT_MS),

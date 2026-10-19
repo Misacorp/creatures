@@ -1,4 +1,5 @@
-// A minimal PNG writer for the art scripts (no dependencies): 8-bit RGB, one filter byte (0) per row.
+// A minimal PNG writer for the art scripts (no dependencies): 8-bit RGB or RGBA, one filter byte (0)
+// per row.
 import { deflateSync } from 'node:zlib';
 
 const CRC = Array.from({ length: 256 }, (_, n) => {
@@ -18,16 +19,23 @@ function chunk(type: string, data: Uint8Array): Buffer {
   return Buffer.concat([len, body, crc]);
 }
 
-export function png(pixels: Uint8Array, width: number, height: number): Buffer {
-  const raw = new Uint8Array(height * (width * 3 + 1));
+/** `pixels` holds `channels` bytes a pixel: 3 (RGB) or 4 (RGBA). */
+export function png(
+  pixels: Uint8Array,
+  width: number,
+  height: number,
+  channels: 3 | 4 = 3,
+): Buffer {
+  const row = width * channels;
+  const raw = new Uint8Array(height * (row + 1));
   for (let y = 0; y < height; y++) {
-    raw.set(pixels.subarray(y * width * 3, (y + 1) * width * 3), y * (width * 3 + 1) + 1);
+    raw.set(pixels.subarray(y * row, (y + 1) * row), y * (row + 1) + 1);
   }
   const header = Buffer.alloc(13);
   header.writeUInt32BE(width, 0);
   header.writeUInt32BE(height, 4);
   header[8] = 8; // bit depth
-  header[9] = 2; // RGB
+  header[9] = channels === 4 ? 6 : 2; // RGBA or RGB
   return Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk('IHDR', header),

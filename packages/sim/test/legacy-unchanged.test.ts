@@ -145,9 +145,10 @@ describe('today is unchanged', () => {
     ),
   ) as Record<string, DigestEntry>;
   let actual: Record<string, DigestEntry> = {};
+  // About a minute alone, but CI runs every package's tests at once: give the digest room.
   beforeAll(() => {
     actual = legacyDigest();
-  }, 120_000);
+  }, 300_000);
 
   for (const id of Object.keys(expected)) {
     it(`${id}: same numbers as before`, () => {

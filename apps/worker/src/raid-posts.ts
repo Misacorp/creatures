@@ -5,28 +5,22 @@
  *
  * A post never blocks the raid: `queue*` catch every error and log its type only.
  */
-import {
-  RULES,
-  bossAtRank,
-  content,
-  scaleEssence,
-  weatherDef,
-  type WeatherDay,
-} from '@creatures/game';
+import { bossAtRank, content } from '@creatures/game';
 import type { FightEvent, FightInput, FightResult } from '@creatures/engine';
 import {
   describeGimmick,
   formatBossReveal,
   formatPhasePost,
+  type FirstPost,
   type KeyMoment,
   type RankPost,
 } from './discord-format';
 import { announceChannelId, enqueuePost } from './discord-posts';
 import { festivalWinners } from './raid-festival';
-import { payoutWeek, rankChangeOf, readWeekProgression } from './raid-ladder';
+import { rankChangeOf, readWeekProgression } from './raid-ladder';
 import type { StoredSummary } from './raid-resolve';
-import { eventTimes, type RaidPhase } from './raid-schedule';
-import { weatherAt } from './weather';
+import { addWeeks, eventTimes, type RaidPhase } from './raid-schedule';
+import { storedTimezone } from './weather';
 
 function playerNames(sql: SqlStorage): Map<string, string> {
   return new Map(
@@ -39,15 +33,6 @@ function playerNames(sql: SqlStorage): Map<string, string> {
 
 const count = (sql: SqlStorage, table: 'raid_party_members' | 'raid_parties', weekId: string) =>
   sql.exec<{ n: number }>(`SELECT COUNT(*) AS n FROM ${table} WHERE week_id = ?`, weekId).one().n;
-
-/** The names of the day's Boon and Omen for a post (our own content, never player text), or none. */
-export function skyNames(day: WeatherDay | null): string[] {
-  if (day === null) return [];
-  return [day.boon, day.omen].flatMap((id) => {
-    const def = id === null ? undefined : weatherDef(id);
-    return def === undefined || def.status !== 'live' ? [] : [def.name];
-  });
-}
 
 /** Monday: the boss reveal. Skipped when no announcement channel is known or nobody is in. */
 export function queueBossReveal(
@@ -70,19 +55,25 @@ export function queueBossReveal(
       progression?.festivalSpecies === null || progression?.festivalSpecies === undefined
         ? undefined
         : content.creatures.find((c) => c.id === progression.festivalSpecies);
-    const text = formatBossReveal({
+    const post = formatBossReveal({
+      bossId: boss.id,
       bossName: boss.name,
+      elementId: boss.element,
       elementName: content.elements.find((e) => e.id === boss.element)?.name ?? boss.element,
       gimmicks: boss.gimmicks.map((g) => ({ name: g.name, text: describeGimmick(g) })),
       turnOrder: boss.turnOrder,
       schedule: { phase1: times.phase1, phase2: times.phase2, finale: times.finale },
+      timeZone: tz,
       players,
       parties: count(sql, 'raid_parties', week.weekId),
       rank: progression?.rank ?? null,
       festivalCreature: progression?.festival === true ? (festivalSpecies?.name ?? null) : null,
-      sky: skyNames(weatherAt(sql, now, tz)),
     });
-    enqueuePost(sql, { key: `raid:${week.weekId}:weekStart:all`, content: text }, now);
+    enqueuePost(
+      sql,
+      { key: `raid:${week.weekId}:weekStart:all`, content: JSON.stringify(post) },
+      now,
+    );
   } catch (err) {
     console.error('queueing the boss reveal failed', err instanceof Error ? err.name : 'unknown');
   }
@@ -141,37 +132,30 @@ export function mostUsedReaction(
 const speciesName = (id: string): string => content.creatures.find((c) => c.id === id)?.name ?? id;
 
 /**
- * "First on server" records made since `since` by members of this party, grouped by record. The
- * jackpot record is kept in storage but never listed: the jackpot is hidden from players.
+ * Creatures first caught or evolved on the server since `since` by members of this party: catches
+ * first, then evolutions, each once. The jackpot record is kept in storage but never listed (the
+ * jackpot is hidden from players); a Festival creature has its own line in the post.
  */
-function firstsOf(
-  sql: SqlStorage,
-  since: number,
-  members: ReadonlySet<string>,
-  names: ReadonlyMap<string, string>,
-): { label: string; names: string[] }[] {
+function firstsOf(sql: SqlStorage, since: number, members: ReadonlySet<string>): FirstPost[] {
   const rows = sql
     .exec<{ kind: string; species: string; user_id: string }>(
-      "SELECT kind, species, user_id FROM server_firsts WHERE at >= ? AND kind != 'jackpot' ORDER BY kind, species, rowid",
+      "SELECT kind, species, user_id FROM server_firsts WHERE at >= ? AND kind IN ('catch', 'evolve') ORDER BY kind, species, rowid",
       since,
     )
     .toArray()
     .filter((r) => members.has(r.user_id));
-  const groups = new Map<string, { label: string; names: string[] }>();
+  const seen = new Set<string>();
+  const firsts: FirstPost[] = [];
   for (const r of rows) {
     const key = `${r.kind}:${r.species}`;
-    let group = groups.get(key);
-    if (group === undefined) {
-      const label =
-        r.kind === 'festival'
-          ? `${speciesName(r.species)} won in a Festival`
-          : `${speciesName(r.species)} ${r.kind === 'evolve' ? 'evolved' : 'caught'}`;
-      group = { label, names: [] };
-      groups.set(key, group);
-    }
-    group.names.push(names.get(r.user_id) ?? 'Unknown');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    firsts.push({
+      species: speciesName(r.species),
+      kind: r.kind === 'evolve' ? 'evolve' : 'catch',
+    });
   }
-  return [...groups.values()];
+  return firsts;
 }
 
 /** The server's rank move for the finale post; null until every party has finished. */
@@ -212,8 +196,6 @@ function festivalPost(
 }
 
 export interface PhasePostSource {
-  /** The weather of the day the stage was fought under; null: none. */
-  weather?: WeatherDay | null;
   weekId: string;
   party: number;
   phase: RaidPhase;
@@ -253,8 +235,10 @@ export function queuePhasePost(sql: SqlStorage, src: PhasePostSource): void {
             .toArray()[0]?.adaptation_description
         : null;
 
-    const text = formatPhasePost({
+    const times = eventTimes(src.weekId, storedTimezone(sql));
+    const post = formatPhasePost({
       phase,
+      bossId: input.boss.id,
       bossName: input.boss.name,
       party: count(sql, 'raid_parties', src.weekId) > 1 ? src.party : null,
       cleared: summary.cleared,
@@ -279,11 +263,13 @@ export function queuePhasePost(sql: SqlStorage, src: PhasePostSource): void {
         },
         reactionName,
       ),
-      essenceFlat: summary.cleared
-        ? scaleEssence(RULES.raid.essence.flat[phase], payoutWeek(sql, src.weekId))
-        : null,
       counterMove: counter ?? null,
-      sky: skyNames(src.weather ?? null),
+      next:
+        phase === 'phase1'
+          ? times.phase2
+          : phase === 'phase2'
+            ? times.finale
+            : eventTimes(addWeeks(src.weekId, 1), storedTimezone(sql)).weekStart,
       ...(phase === 'finale'
         ? {
             finale: {
@@ -291,7 +277,6 @@ export function queuePhasePost(sql: SqlStorage, src: PhasePostSource): void {
                 sql,
                 week?.created_at ?? 0,
                 new Set(summary.members.map((m) => m.userId)),
-                names,
               ),
               rank: ladderPost(sql, src.weekId),
               festival: festivalPost(sql, src.weekId, summary, names),
@@ -301,7 +286,7 @@ export function queuePhasePost(sql: SqlStorage, src: PhasePostSource): void {
     });
     enqueuePost(
       sql,
-      { key: `raid:${src.weekId}:${phase}:${String(src.party)}`, content: text },
+      { key: `raid:${src.weekId}:${phase}:${String(src.party)}`, content: JSON.stringify(post) },
       src.now,
     );
   } catch (err) {
