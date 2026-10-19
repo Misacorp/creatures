@@ -4,6 +4,7 @@
  */
 import { PART_KINDS } from '@creatures/game';
 import { expect } from 'vitest';
+import type { Json } from './kit';
 
 /** What a scenario hands back: the raw material of the fixture files (see `fixture-sets.ts`). */
 export interface Captured {
@@ -16,11 +17,6 @@ export interface Captured {
 }
 
 /** A call's answer: the HTTP status and the parsed body. */
-export interface Json {
-  status: number;
-  body: Record<string, unknown>;
-}
-
 const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const PART_KIND_SET: ReadonlySet<string> = new Set(PART_KINDS);
 

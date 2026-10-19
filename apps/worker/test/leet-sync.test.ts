@@ -26,8 +26,8 @@ import {
   tokenFor,
   undoRaidMigration,
 } from './helpers';
+import { MINUTE, captureConsole } from './kit';
 
-const MINUTE = 60_000;
 const HELSINKI = 'Europe/Helsinki';
 const NEW_YORK = 'America/New_York';
 const USER = { id: USER_ID, displayName: 'Misa' };
@@ -606,14 +606,14 @@ describe('fail closed', () => {
   });
 
   it('skips the sync when the guild id is unknown', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const warn = captureConsole('warn');
     const { source, calls } = scripted(() => ({ days: [], nextCursor: null, hasMore: false }));
     await runCore(
       nextGuild(),
       async ({ core }) => {
         expect(await core.syncLeet()).toEqual({ daysProcessed: 0, creditsApplied: 0 });
         expect(calls).toHaveLength(0);
-        expect(warn).toHaveBeenCalled();
+        expect(warn.calls).not.toHaveLength(0);
       },
       { ...using(source), guildId: () => undefined },
     );
@@ -667,7 +667,7 @@ describe('GET /api/me sync trigger', () => {
 
   it('still answers when the source fails, and backs off for a minute', async () => {
     const guild = nextGuild();
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const error = captureConsole();
     const { source, calls } = scripted(() => {
       throw new LeetSourceError('upstream');
     });
@@ -687,7 +687,7 @@ describe('GET /api/me sync trigger', () => {
         expect((await request(secret)).status).toBe(200);
         expect(calls).toHaveLength(2);
         // Only the error kind is logged, never data.
-        expect(error).toHaveBeenCalledWith('leet sync failed', 'upstream');
+        expect(error.calls).toContainEqual(['leet sync failed', 'upstream']);
       },
       using(source),
     );
@@ -841,7 +841,7 @@ describe('daily alarm', () => {
 
   it('logs failures without data and always re-arms', async () => {
     const guild = nextGuild();
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const error = captureConsole();
     const { source } = scripted(() => {
       throw new Error('leaked secret 12345');
     });
@@ -851,8 +851,8 @@ describe('daily alarm', () => {
         clock.t = Date.parse('2027-01-16T11:40:00Z');
         await core.alarm();
         expect(await storage.getAlarm()).toBe(Date.parse('2027-01-17T11:40:00Z'));
-        expect(error).toHaveBeenCalledWith('leet sync failed', 'Error');
-        expect(JSON.stringify(error.mock.calls)).not.toContain('12345');
+        expect(error.calls).toContainEqual(['leet sync failed', 'Error']);
+        expect(JSON.stringify(error.calls)).not.toContain('12345');
       },
       using(source),
     );
@@ -1017,7 +1017,7 @@ describe('guild timezone', () => {
   });
 
   it('falls back to the default for an invalid stored value, warning without the value', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const warn = captureConsole('warn');
     const guild = nextGuild();
     const { source, calls } = quiet();
     await runCore(
@@ -1030,8 +1030,8 @@ describe('guild timezone', () => {
         await core.ensureAlarm();
         // Default zone: Friday's raid phase 1 (13:37 Helsinki) comes before the 13:40 sync.
         expect(await storage.getAlarm()).toBe(Date.parse('2027-01-15T11:37:00Z'));
-        expect(warn).toHaveBeenCalled();
-        expect(JSON.stringify(warn.mock.calls)).not.toContain('Mars');
+        expect(warn.calls).not.toHaveLength(0);
+        expect(JSON.stringify(warn.calls)).not.toContain('Mars');
       },
       using(source),
     );
@@ -1196,7 +1196,7 @@ describe('leet sync status', () => {
 
   it.each(ALL_KINDS)('stores and returns the error kind %s', async (kind) => {
     const guild = nextGuild();
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    captureConsole();
     const { source } = scripted(() => {
       throw new LeetSourceError(kind);
     });
@@ -1223,7 +1223,7 @@ describe('leet sync status', () => {
 
   it('stores "internal" for any other error', async () => {
     const guild = nextGuild();
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    captureConsole();
     const { source } = scripted(() => {
       throw new Error('secret-looking message https://example.test/?key=abc');
     });
@@ -1242,7 +1242,7 @@ describe('leet sync status', () => {
 
   it('stores "internal" when a credit transaction fails', async () => {
     const guild = nextGuild();
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    captureConsole();
     const { source } = scripted(() => ({
       // A key longer than the ledger allows: the ledger rejects it, rolling the page back.
       days: [{ ...day(guild, '2026-10-02', [USER_ID]), id: 'x'.repeat(200) }],
@@ -1261,7 +1261,7 @@ describe('leet sync status', () => {
 
   it('a later success clears the error and records the days', async () => {
     const guild = nextGuild();
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    captureConsole();
     let fail = true;
     const { source } = scripted(() => {
       if (fail) throw new LeetSourceError('unauthorized');
@@ -1289,7 +1289,7 @@ describe('leet sync status', () => {
 
   it('a failure after earlier pages committed keeps the error visible', async () => {
     const guild = nextGuild();
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    captureConsole();
     const { source } = scripted((_opts, call) => {
       if (call === 2) throw new LeetSourceError('timeout');
       return { days: [day(guild, '2026-10-08', [USER_ID])], nextCursor: 'c1', hasMore: true };
@@ -1378,7 +1378,7 @@ describe('leet sync status', () => {
 
   it('shows a failed first sync through /api/me', async () => {
     const guild = nextGuild();
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    captureConsole();
     const { source } = scripted(() => {
       throw new LeetSourceError('unauthorized');
     });

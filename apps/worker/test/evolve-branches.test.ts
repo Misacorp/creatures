@@ -2,15 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { giveItem } from './gear-helpers';
 import type { CoreContext } from './helpers';
 import { count, rows, runRaid, seedPlayer } from './raid-helpers';
+import { newKey, give, setCreature } from './kit';
 
 /**
  * Branch evolutions (docs/design/gear-and-creatures-v2.md section 8.4): every evolving line grows into one
  * of two forms (Sproutle: Thornbuck or Sunfawn; Zipmouse: Voltaro or Ohmouse; and the six other lines). The request names the form; the server checks it is one of
  * the creature's branches, the level and the Essence; the choice is permanent and idempotent per key.
  */
-
-let keyCounter = 0;
-const newKey = () => `branch-${String(++keyCounter).padStart(8, '0')}-key`;
 
 interface EvolveBody {
   error?: string;
@@ -44,15 +42,6 @@ async function evolve(
   return { status: res.status, body: await res.json<EvolveBody>() };
 }
 
-const giveEssence = (ctx: CoreContext, userId: string, amount: number) =>
-  ctx.core.credit({
-    userId,
-    currency: 'essence',
-    amount,
-    source: 'raid',
-    idempotencyKey: 'seed:essence',
-  });
-
 /** One player with a Sproutle, a Zipmouse and a second Sproutle (a Kept duplicate), 200 Essence. */
 async function branching(ctx: CoreContext, level = 15) {
   const p = seedPlayer(ctx, 1, { creatures: 2, level, species: ['sproutle', 'zipmouse'] });
@@ -67,7 +56,7 @@ async function branching(ctx: CoreContext, level = 15) {
   );
   p.creatureIds.push(second);
   const secret = await ctx.core.createSession(ctx.guildId, { id: p.id, displayName: p.name });
-  giveEssence(ctx, p.id, 200);
+  give(ctx, p.id, { essence: 200 });
   return {
     p,
     secret,
@@ -192,7 +181,7 @@ describe('branch evolutions (Sproutle and Zipmouse)', () => {
         status: 409,
         body: { error: 'level_too_low' },
       });
-      ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', sproutle);
+      setCreature(ctx, sproutle, { level: 15 });
       ctx.sql.exec("DELETE FROM balances WHERE user_id = ? AND currency = 'essence'", p.id);
       expect(await evolve(ctx, secret, sproutle, newKey(), 'sunfawn')).toMatchObject({
         status: 409,
@@ -308,7 +297,7 @@ const LINES = [
 async function oneOf(ctx: CoreContext, line: string) {
   const p = seedPlayer(ctx, 1, { creatures: 1, level: 15, species: [line] });
   const secret = await ctx.core.createSession(ctx.guildId, { id: p.id, displayName: p.name });
-  giveEssence(ctx, p.id, 200);
+  give(ctx, p.id, { essence: 200 });
   return { p, secret, creature: p.creatureIds[0] as string };
 }
 

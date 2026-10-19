@@ -15,6 +15,7 @@ import {
   type CoreContext,
 } from './helpers';
 import { count, nextGuild, rows, seedPlayer, type Seeded } from './raid-helpers';
+import { type Json, setCreature } from './kit';
 
 /** Returns the scripted values in order, then fails loudly: tests must account for every draw. */
 function scriptedRng(values: number[]): Rng & { drawn: () => number } {
@@ -27,11 +28,6 @@ function scriptedRng(values: number[]): Rng & { drawn: () => number } {
     },
     drawn: () => i,
   };
-}
-
-interface Json {
-  status: number;
-  body: Record<string, unknown>;
 }
 
 interface Session {
@@ -668,10 +664,7 @@ describe('POST /api/room', () => {
         const b = await member(ctx, 2, { name: 'Bob' });
         // Bob's lounger has a nickname and is shiny; crafting and explorer XP are stored per creature.
         const bobCreature = b.creatureIds[0] as string;
-        ctx.sql.exec(
-          "UPDATE creatures SET nickname = 'Puddle', shiny = 1 WHERE id = ?",
-          bobCreature,
-        );
+        setCreature(ctx, bobCreature, { nickname: 'Puddle', shiny: 1 });
         const craftXp = RULES.gear.skill.xpForLevel[2] as number;
         const exploreXp = RULES.expeditions.rank.xpForRank[1] as number;
         ctx.sql.exec(

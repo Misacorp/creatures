@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { convertPendingGear, type ConversionNotice } from '../src/gear-convert';
 import { runCore, type CoreContext } from './helpers';
 import { count, nextGuild, rows, seedPlayer, type SeedOptions } from './raid-helpers';
+import { setCreature, captureConsole } from './kit';
 
 /**
  * The one-time conversion of the first gear model to gear v2 (docs/design/gear-and-creatures-v2.md
@@ -213,8 +214,8 @@ describe('converting the first gear model', () => {
       ctx.sql.exec('UPDATE raid_ladder SET rank = 9 WHERE id = 1');
       const p = player(ctx, 1, { level: 5, species: ['cindle', 'sproutle', 'splashet'] });
       const [a, b, c] = p.creatureIds as [string, string, string];
-      ctx.sql.exec('UPDATE creatures SET level = 12 WHERE id = ?', c);
-      ctx.sql.exec('UPDATE creatures SET level = 8 WHERE id = ?', b);
+      setCreature(ctx, c, { level: 12 });
+      setCreature(ctx, b, { level: 8 });
       legacy(
         ctx,
         p.id,
@@ -616,6 +617,7 @@ describe('converting the first gear model', () => {
   });
 
   it('leaves a player pending when their conversion fails, converts the others, and answers 503 for them', async () => {
+    const log = captureConsole();
     await runCore(nextGuild(), async (ctx) => {
       const species = ['cindle', 'sproutle', 'splashet'];
       const bad = player(ctx, 1, { level: 20, species });
@@ -663,6 +665,10 @@ describe('converting the first gear model', () => {
       // Starting again tries the pending player once more (and fails again without throwing).
       ctx.core.migrate();
       expect(count(ctx.sql, 'gear_conversion', 'converted_at IS NULL')).toBe(1);
+      // One log per failed attempt (the first start and the retry), by kind only.
+      expect(log.calls).toEqual(
+        Array(2).fill(['gear conversion failed, player left pending', 'Error']),
+      );
     });
   });
 

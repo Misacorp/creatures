@@ -14,6 +14,7 @@ import {
   storedRuns,
   type Seeded,
 } from './raid-helpers';
+import { setCreature } from './kit';
 
 const SUNDAY = W02.afterFinale;
 type Ctx = CoreContext;
@@ -267,7 +268,7 @@ describe('placement', () => {
         expect(ctx.core.raid.place(p.id, HELSINKI, id, i).ok).toBe(true);
       }
       // The placed splashet drops out of the strongest three (any level or gear change does this) ...
-      ctx.sql.exec('UPDATE creatures SET level = 1 WHERE id = ?', splashet);
+      setCreature(ctx, splashet, { level: 1 });
       // ... and the sproutle is now in the strongest three, so the old "must be in the team" rule let it in.
       const fourth = ctx.core.raid.place(p.id, HELSINKI, sproutle, 5);
       expect(fourth).toEqual({ ok: false, status: 409, error: 'board_full' });

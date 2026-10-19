@@ -17,6 +17,7 @@ import {
   seedPlayer,
   type Seeded,
 } from './raid-helpers';
+import { captureConsole } from './kit';
 
 const CHANNEL = '555555555555555555';
 const ZWSP = '\u200B';
@@ -328,6 +329,7 @@ describe('phase posts', () => {
   });
 
   it('commits the post with the result: a failing resolve queues nothing', async () => {
+    const log = captureConsole();
     await runRaid(
       async (ctx) => {
         await openWeek(ctx, 3);
@@ -337,12 +339,15 @@ describe('phase posts', () => {
         ctx.core.raid.runDue(HELSINKI);
         expect(count(ctx.sql, 'raid_results')).toBe(0);
         expect(posts(ctx).map((p) => p.key)).toEqual(['raid:2027-W02:weekStart:all']);
+        // The failed resolve is logged by kind only (not the unknown boss id).
+        expect(log.calls).toEqual([['raid event failed', 'Error']]);
       },
       { start: W02.monday },
     );
   });
 
   it('never lets a post problem block the raid', async () => {
+    const log = captureConsole();
     await runRaid(
       async (ctx) => {
         await openWeek(ctx, 3);
@@ -356,6 +361,7 @@ describe('phase posts', () => {
         ctx.core.raid.runDue(HELSINKI);
         expect(count(ctx.sql, 'raid_results')).toBe(1);
         expect(count(ctx.sql, 'raid_events', "event = 'phase1' AND week_id = '2027-W02'")).toBe(1);
+        expect(log.calls).toEqual([['queueing a phase post failed', 'Error']]);
       },
       { start: W02.monday },
     );

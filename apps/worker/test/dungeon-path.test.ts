@@ -33,7 +33,6 @@ import {
   dungeonPlayer,
   easyFoes,
   followRoute,
-  newKey,
   routeThrough,
   withDeadlyFoes,
   type CampAct,
@@ -42,9 +41,8 @@ import {
 } from './dungeon-helpers';
 import { runCore, undoDungeonPathsMigration, type CoreContext } from './helpers';
 import { count, nextGuild, rows } from './raid-helpers';
+import { DAY, HOUR, newKey, give, setCreature } from './kit';
 
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 /** 14:00 in Helsinki on 2027-01-15, after the daily reset: the game day is the 15th. */
 const AFTER_RESET = Date.parse('2027-01-15T12:00:00Z');
 
@@ -531,13 +529,7 @@ describe('POST /api/dungeon/start', () => {
         expect(broke.status).toBe(409);
         expect(broke.body).toEqual({ error: 'insufficient_funds' });
         expect(storedCount(ctx, p.id)).toBe(0);
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'bait',
-          amount: 500,
-          source: 'test',
-          idempotencyKey: 'bait-for-treats',
-        });
+        give(ctx, p.id, { bait: 500 });
         // A treat for a creature outside the team, or twice, is refused.
         expect((await p.start({ treats: ['00000000-0000-4000-8000-000000000000'] })).body).toEqual({
           error: 'invalid_treat',
@@ -857,13 +849,7 @@ describe('retrying an act', () => {
         });
         // A key the player used for something else is a conflict too.
         const spendKey = newKey();
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'bait',
-          amount: 20,
-          source: 'test',
-          idempotencyKey: 'bait-act-key',
-        });
+        give(ctx, p.id, { bait: 20 });
         expect(
           ctx.core.spend({
             userId: p.id,
@@ -1513,14 +1499,8 @@ describe('the camp', () => {
         const p = await dungeonPlayer(ctx, 1, FOUR);
         const stranger = await dungeonPlayer(ctx, 2, STRONG);
         const [a, b, c, d] = p.creatureIds as [string, string, string, string];
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'bait',
-          amount: 200,
-          source: 'test',
-          idempotencyKey: 'bait-swap',
-        });
-        ctx.sql.exec('UPDATE creatures SET level = 20 WHERE id = ?', d); // room to grow
+        give(ctx, p.id, { bait: 200 });
+        setCreature(ctx, d, { level: 20 }); // room to grow
         const state = await begin(p, { team: [a, b, c], treats: [c] });
         expect(state.team.find((t) => t.id === c)?.treat).toBe(true);
         const route = routeThrough(mapOf(state), (n) => n.kind === 'camp') as string[];
@@ -1753,13 +1733,7 @@ describe('clearing the floor boss', () => {
         const p = await dungeonPlayer(ctx, 1, FOUR);
         const [a, b, c, d] = p.creatureIds as [string, string, string, string];
         ctx.clock.t = AFTER_RESET;
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'bait',
-          amount: 300,
-          source: 'test',
-          idempotencyKey: 'bait-clear',
-        });
+        give(ctx, p.id, { bait: 300 });
         const state = await begin(p, { team: [a, b, c], treats: [b] });
         // Swap the third creature for the fourth at the camp, then play the rest of the map.
         const done = await p.play(state, {
@@ -2443,8 +2417,8 @@ describe('the room history', () => {
         // Swap, with the names of both creatures in the line (a nickname is plain text).
         const p3 = await dungeonPlayer(ctx, 3, FOUR);
         const [a, b, c, d] = p3.creatureIds as [string, string, string, string];
-        ctx.sql.exec('UPDATE creatures SET nickname = ? WHERE id = ?', 'Cindle <b>&', c);
-        ctx.sql.exec('UPDATE creatures SET nickname = ? WHERE id = ?', 'Zipmouse', d);
+        setCreature(ctx, c, { nickname: 'Cindle <b>&' });
+        setCreature(ctx, d, { nickname: 'Zipmouse' });
         const s3 = await begin(p3, { team: [a, b, c] });
         const route = routeThrough(mapOf(s3), (n) => n.kind === 'camp') as string[];
         const w3 = await walk(p3, s3, route, (s) => s.pending?.kind === 'camp');

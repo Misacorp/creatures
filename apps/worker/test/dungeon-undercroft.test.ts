@@ -19,15 +19,14 @@ import {
   deadlyFoes,
   dungeonPlayer,
   easyFoes,
-  newKey,
   routeThrough,
   type DungeonPlayer,
   type Policy,
 } from './dungeon-helpers';
 import { runCore, type CoreContext } from './helpers';
 import { nextGuild, rows } from './raid-helpers';
+import { DAY, newKey } from './kit';
 
-const DAY = 24 * 3_600_000;
 /** 14:00 in Helsinki on 2027-01-15, after the daily reset: the game day is the 15th. */
 const AFTER_RESET = Date.parse('2027-01-15T12:00:00Z');
 const GAME_DAY = '2027-01-15';

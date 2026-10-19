@@ -3,19 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { bookOf, holdTalent } from '../src/talent-store';
 import { runCore, type CoreContext } from './helpers';
 import { count, nextGuild, rows, scriptedThenSeeded, seedPlayer } from './raid-helpers';
+import { give, newKey, type Json, sessionCaller, setCreature } from './kit';
 
 /**
  * The duplicate choice and the Talent Book (src/catch-choices.ts), through the real routes: Teach, Fuse,
  * Release, Keep, Recommended, "apply Recommended to all", the full queue, retries and the errors.
  */
-
-let keyCounter = 0;
-const newKey = (): string => `choices-${String(++keyCounter).padStart(8, '0')}-test`;
-
-interface Json {
-  status: number;
-  body: Record<string, unknown>;
-}
 
 interface Card {
   id: string;
@@ -46,16 +39,7 @@ async function player(
 ): Promise<Api> {
   const seeded = seedPlayer(ctx, n, { level, species, creatures: species.length, ...extra });
   const user = { id: seeded.id, displayName: seeded.name };
-  let secret = await ctx.core.createSession(ctx.guildId, user);
-  let signedAt = ctx.clock.t;
-  const call = async (method: string, path: string, body?: unknown): Promise<Json> => {
-    if (ctx.clock.t - signedAt >= 30 * 60_000) {
-      secret = await ctx.core.createSession(ctx.guildId, user);
-      signedAt = ctx.clock.t;
-    }
-    const res = await ctx.request(secret, path, method, body);
-    return { status: res.status, body: await res.json<Record<string, unknown>>() };
-  };
+  const { call } = await sessionCaller(ctx, user);
   // Every creature starts with one talent in slot 1, as a real creature does.
   for (const id of seeded.creatureIds) {
     const row = rows<{ line: string }>(ctx.sql, 'SELECT line FROM creatures WHERE id = ?', id)[0];
@@ -75,7 +59,7 @@ async function player(
         ctx.core.collection.choices.addPending(
           seeded.id,
           { species: speciesId, shiny },
-          { kind: 'expedition', id: `trip-${String(keyCounter)}` },
+          { kind: 'expedition', id: newKey('trip') },
         ),
       );
       return { id: added.id, talentId: added.talent.talentId, golden: added.talent.golden };
@@ -101,16 +85,6 @@ const parts = (ctx: CoreContext, userId: string): Record<string, number> =>
       userId,
     ).map((r) => [r.kind, r.amount]),
   );
-
-const give = (ctx: CoreContext, userId: string, amount: number): void => {
-  ctx.core.credit({
-    userId,
-    currency: 'bait',
-    amount,
-    source: 'test',
-    idempotencyKey: `choices-bait:${userId}:${String(++keyCounter)}`,
-  });
-};
 
 const fusionOf = (ctx: CoreContext, id: string): number =>
   rows<{ fusion_count: number }>(ctx.sql, 'SELECT fusion_count FROM creatures WHERE id = ?', id)[0]
@@ -207,7 +181,7 @@ describe('Teach', () => {
       async (ctx) => {
         const p = await player(ctx, 1, ['splashet']);
         const [splashet] = p.creatureIds as [string];
-        give(ctx, p.id, RULES.talents.bookSlotBait);
+        give(ctx, p.id, { bait: RULES.talents.bookSlotBait });
         const card = p.addCard('splashet');
         await choose(p, card.id, { choice: 'teach', creatureId: splashet });
         const slotted = await p.call('POST', `/api/creatures/${splashet}/talents/slot`, {
@@ -390,7 +364,7 @@ describe('Fuse', () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await player(ctx, 1, ['splashet']);
       const [splashet] = p.creatureIds as [string];
-      ctx.sql.exec('UPDATE creatures SET fusion_count = 5 WHERE id = ?', splashet);
+      setCreature(ctx, splashet, { fusion_count: 5 });
       expect(fuseOnce(5)).toBeNull();
       const card = p.addCard('splashet');
       const [view] = await p.pending();
@@ -412,7 +386,7 @@ describe('Release', () => {
   it('pays parts by rarity and element, and never Bait', async () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await player(ctx, 1, ['splashet']);
-      give(ctx, p.id, 50);
+      give(ctx, p.id, { bait: 50 });
       const card = p.addCard('splashet');
       const res = await choose(p, card.id, { choice: 'release' });
       expect(res.status).toBe(200);
@@ -751,7 +725,7 @@ describe('the Talent Book: slotting a talent for Bait', () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await player(ctx, 1, ['splashet']);
       const [splashet] = p.creatureIds as [string];
-      give(ctx, p.id, 40);
+      give(ctx, p.id, { bait: 40 });
       heldGolden(ctx, splashet);
       const res = await slot(p, splashet, { talentId: 'wet-footprints', golden: true, slot: 1 });
       expect(res.status).toBe(200);
@@ -775,7 +749,7 @@ describe('the Talent Book: slotting a talent for Bait', () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await player(ctx, 1, ['splashet']);
       const [splashet] = p.creatureIds as [string];
-      give(ctx, p.id, 40);
+      give(ctx, p.id, { bait: 40 });
       heldGolden(ctx, splashet);
       holdTalent(
         ctx.sql,
@@ -807,7 +781,7 @@ describe('the Talent Book: slotting a talent for Bait', () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await player(ctx, 1, ['splashet']);
       const [splashet] = p.creatureIds as [string];
-      give(ctx, p.id, RULES.talents.bookSlotBait - 1);
+      give(ctx, p.id, { bait: RULES.talents.bookSlotBait - 1 });
       heldGolden(ctx, splashet);
       const res = await slot(p, splashet, { talentId: 'wet-footprints', golden: true, slot: 1 });
       expect(res.status).toBe(409);
@@ -821,7 +795,7 @@ describe('the Talent Book: slotting a talent for Bait', () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await player(ctx, 1, ['splashet']);
       const [splashet] = p.creatureIds as [string];
-      give(ctx, p.id, 100);
+      give(ctx, p.id, { bait: 100 });
       heldGolden(ctx, splashet);
       const never = await slot(p, splashet, { talentId: 'puddle-hopper', golden: false, slot: 1 });
       const quality = await slot(p, splashet, {
@@ -844,7 +818,7 @@ describe('the Talent Book: slotting a talent for Bait', () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await player(ctx, 1, ['tidewing']);
       const [splashet] = p.creatureIds as [string];
-      give(ctx, p.id, 100);
+      give(ctx, p.id, { bait: 100 });
       heldGolden(ctx, splashet);
       const closed = await slot(p, splashet, { talentId: 'wet-footprints', golden: true, slot: 2 });
       expect(closed.status).toBe(409);
@@ -854,7 +828,7 @@ describe('the Talent Book: slotting a talent for Bait', () => {
       expect(
         (await slot(p, splashet, { talentId: 'wet-footprints', golden: true, slot: 4 })).status,
       ).toBe(400);
-      ctx.sql.exec('UPDATE creatures SET level = 20 WHERE id = ?', splashet);
+      setCreature(ctx, splashet, { level: 20 });
       const open = await slot(p, splashet, { talentId: 'wet-footprints', golden: true, slot: 2 });
       expect(open.status).toBe(200);
       expect(bait(ctx, p.id)).toBe(90);
@@ -865,7 +839,7 @@ describe('the Talent Book: slotting a talent for Bait', () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await player(ctx, 1, ['tidewing'], 20);
       const [splashet] = p.creatureIds as [string];
-      give(ctx, p.id, 100);
+      give(ctx, p.id, { bait: 100 });
       const res = await slot(p, splashet, { talentId: 'playful', golden: false, slot: 2 });
       expect(res.status).toBe(200);
       const book = bookOf(ctx.sql, splashet);
@@ -879,7 +853,7 @@ describe('the Talent Book: slotting a talent for Bait', () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await player(ctx, 1, ['splashet']);
       const q = await player(ctx, 2, ['splashet']);
-      give(ctx, p.id, 100);
+      give(ctx, p.id, { bait: 100 });
       const theirs = await slot(p, q.creatureIds[0] as string, {
         talentId: 'playful',
         golden: false,
@@ -930,7 +904,7 @@ describe('analytics of the duplicate choice and the Talent Book', () => {
       async (ctx) => {
         const p = await player(ctx, 1, ['splashet']);
         const [splashet] = p.creatureIds as [string];
-        give(ctx, p.id, 30);
+        give(ctx, p.id, { bait: 30 });
         const a = p.addCard('splashet');
         const key = newKey();
         await choose(p, a.id, { choice: 'teach', creatureId: splashet }, key);

@@ -23,6 +23,7 @@ import {
   seedPlayer,
   storedRuns,
 } from './raid-helpers';
+import { setCreature } from './kit';
 
 const SATURDAY = Date.parse('2027-01-16T12:00:00Z');
 const SUNDAY = W02.afterFinale;
@@ -221,7 +222,7 @@ describe('the row', () => {
       ctx.core.raid.currentWeek(HELSINKI);
       ctx.core.raid.syncRoster(W02.id);
       // The automatic team is the three strongest, and an away creature is not excluded.
-      ctx.sql.exec("UPDATE creatures SET away_expedition_id = 'trip' WHERE id = ?", strongB);
+      setCreature(ctx, strongB, { away_expedition_id: 'trip' });
       const auto = ctx.core.raid.view(mage.id, HELSINKI).you.team;
       expect(auto?.mode).toBe('auto');
       expect(auto?.creatures.map((c) => c.creatureId)).toContain(strongB);

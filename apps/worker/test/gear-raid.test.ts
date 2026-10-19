@@ -24,7 +24,6 @@ import { runCore, type CoreContext } from './helpers';
 import {
   DAY,
   HELSINKI,
-  MINUTE,
   W02,
   count,
   forcePool,
@@ -37,6 +36,7 @@ import {
   weekPayout,
   type Seeded,
 } from './raid-helpers';
+import { give, sessionCaller } from './kit';
 
 let tripCounter = 0;
 const FINALE = eventTimes(W02.id, HELSINKI).finale;
@@ -757,29 +757,8 @@ describe('expedition loot', () => {
       'INSERT INTO player_progress (user_id, expeditions_claimed) VALUES (?, 1) ON CONFLICT(user_id) DO UPDATE SET expeditions_claimed = 1',
       seeded.id,
     );
-    ctx.core.credit({
-      userId: seeded.id,
-      currency: 'bait',
-      amount: 500,
-      source: 'test',
-      idempotencyKey: `bait:${seeded.id}`,
-    });
-    let secret = await ctx.core.createSession(ctx.guildId, {
-      id: seeded.id,
-      displayName: seeded.name,
-    });
-    let at = ctx.clock.t;
-    const call = async (method: string, path: string, body?: unknown) => {
-      if (ctx.clock.t - at >= 30 * MINUTE) {
-        secret = await ctx.core.createSession(ctx.guildId, {
-          id: seeded.id,
-          displayName: seeded.name,
-        });
-        at = ctx.clock.t;
-      }
-      const res = await ctx.request(secret, path, method, body);
-      return { status: res.status, body: await res.json<Record<string, unknown>>() };
-    };
+    give(ctx, seeded.id, { bait: 500 });
+    const { call } = await sessionCaller(ctx, { id: seeded.id, displayName: seeded.name });
     const trip = async (
       index: number,
       duration: 'short' | 'medium' | 'long',

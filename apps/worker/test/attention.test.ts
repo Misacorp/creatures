@@ -3,9 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Attention } from '../src/attention';
 import type { DungeonToday } from '../src/dungeon';
 import type { RaidView } from '../src/raid-view';
-import { dungeonPlayer, newKey, withDeadlyFoes, type DungeonPlayer } from './dungeon-helpers';
+import { dungeonPlayer, withDeadlyFoes, type DungeonPlayer } from './dungeon-helpers';
 import type { CoreContext } from './helpers';
 import { HELSINKI, HOUR, W02, runRaid } from './raid-helpers';
+import { newKey, captureConsole } from './kit';
 
 /** `attention` on GET /api/state: the notification pips of the Activity. */
 const options = {
@@ -215,17 +216,17 @@ describe('where attention appears', () => {
       const spy = vi.spyOn(ctx.core, 'attention').mockImplementation(() => {
         throw new Error('boom: private detail');
       });
-      const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const log = captureConsole();
       try {
         const state = await stateOf(p);
         expect(state['attention']).toBeNull();
         expect(state).toHaveProperty('creatures');
         // Only the error kind is logged.
-        expect(log).toHaveBeenCalledWith('attention failed', 'Error');
-        expect(JSON.stringify(log.mock.calls)).not.toContain('private detail');
+        expect(log.calls).toContainEqual(['attention failed', 'Error']);
+        expect(JSON.stringify(log.calls)).not.toContain('private detail');
       } finally {
         spy.mockRestore();
-        log.mockRestore();
+        log.restore();
       }
     }, options);
   });

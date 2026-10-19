@@ -18,6 +18,7 @@ import {
   type CoreContext,
 } from './helpers';
 import { HELSINKI, nextGuild, rows } from './raid-helpers';
+import { captureConsole } from './kit';
 
 const TOKEN = 'ops-test-token-3f9a1c7e5b2d4a60';
 const DAY = '2027-01-14';
@@ -445,6 +446,7 @@ describe('GET /api/ops/report: privacy', () => {
 // Last on purpose: the guild it damages stays in the directory for the rest of the file.
 describe('GET /api/ops/report: a guild that fails', () => {
   it('skips a guild whose rollup cannot be read and says so', async () => {
+    const log = captureConsole();
     await seed();
     const broken = nextGuild();
     await directory().note(broken, DAY);
@@ -457,5 +459,8 @@ describe('GET /api/ops/report: a guild that fails', () => {
     expect(body.guilds.reporting).toBe(body.guilds.known - 1);
     const md = await (await call(`${RANGE}&format=md`, { handler: createHandler() })).text();
     expect(md).toContain('did not answer');
+    // One log per request, by kind only (never the guild id or the message).
+    expect(log.calls).toEqual(Array(2).fill(['ops report: a guild did not answer', 'Error']));
+    expect(log.text()).not.toContain(broken);
   });
 });

@@ -26,7 +26,6 @@ import {
   deadlyFoes,
   dungeonPlayer,
   easyFoes,
-  newKey,
   scaleFoes,
   withDeadlyFoes,
   type DungeonPlayer,
@@ -39,9 +38,8 @@ import {
   type CoreContext,
 } from './helpers';
 import { count, nextGuild, rows } from './raid-helpers';
+import { DAY, HOUR, newKey, give } from './kit';
 
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 /**
  * 14:00 in Helsinki on 2027-01-15, 23 minutes after the daily reset (13:37), so the game day is the
  * 15th. `T0` (10:00 local) is before the reset and so still the game day of the 14th.
@@ -791,13 +789,7 @@ describe('idempotency', () => {
         expect(changed.body).toEqual({ error: 'key_conflict' });
 
         const q = await dungeonPlayer(ctx, 2, { level: 8 });
-        ctx.core.credit({
-          userId: q.id,
-          currency: 'bait',
-          amount: 50,
-          source: 'test',
-          idempotencyKey: 'bait-for-spend',
-        });
+        give(ctx, q.id, { bait: 50 });
         const key = newKey();
         // The same key used by a Bait spend (a Talent Book slotting, a treat, a ledger debit of any kind).
         const spent = ctx.core.spend({

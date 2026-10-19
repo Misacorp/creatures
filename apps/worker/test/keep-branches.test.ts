@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { holdTalent } from '../src/talent-store';
 import { runCore, type CoreContext } from './helpers';
 import { count, nextGuild, rows, scriptedThenSeeded, seedPlayer } from './raid-helpers';
+import { newKey, type Json, sessionCaller, give, setCreature } from './kit';
 
 /**
  * Keep, live for every evolving line (docs/design/gear-and-creatures-v2.md section 8.2 and 8.4): a
@@ -9,14 +10,6 @@ import { count, nextGuild, rows, scriptedThenSeeded, seedPlayer } from './raid-h
  * own and fewer than two creatures; a Kept duplicate is a second creature of the line, which can grow into
  * the other form. Everything goes through the real routes and the shipped content (no injected branches).
  */
-
-let keyCounter = 0;
-const newKey = (): string => `keep-${String(++keyCounter).padStart(8, '0')}-test`;
-
-interface Json {
-  status: number;
-  body: Record<string, unknown>;
-}
 
 interface Card {
   id: string;
@@ -38,30 +31,14 @@ interface Api {
 async function player(ctx: CoreContext, species: string[], level = 15): Promise<Api> {
   const seeded = seedPlayer(ctx, 1, { level, species, creatures: species.length });
   const user = { id: seeded.id, displayName: seeded.name };
-  let secret = await ctx.core.createSession(ctx.guildId, user);
-  let signedAt = ctx.clock.t;
-  const call = async (method: string, path: string, body?: unknown): Promise<Json> => {
-    // The clock jumps with a trip: sign in again when the session is old.
-    if (ctx.clock.t - signedAt >= 30 * 60_000) {
-      secret = await ctx.core.createSession(ctx.guildId, user);
-      signedAt = ctx.clock.t;
-    }
-    const res = await ctx.request(secret, path, method, body);
-    return { status: res.status, body: await res.json<Record<string, unknown>>() };
-  };
+  const { call } = await sessionCaller(ctx, user);
   // Every creature starts with a talent in slot 1, as a real one does.
   for (const id of seeded.creatureIds) {
     const row = rows<{ line: string }>(ctx.sql, 'SELECT line FROM creatures WHERE id = ?', id)[0];
     const talentId = row?.line === 'sproutle' ? 'stands-close' : 'quick-to-spark';
     holdTalent(ctx.sql, id, { talentId, golden: false }, 1, ctx.clock.t);
   }
-  ctx.core.credit({
-    userId: seeded.id,
-    currency: 'essence',
-    amount: 500,
-    source: 'raid',
-    idempotencyKey: 'keep-essence',
-  });
+  give(ctx, seeded.id, { essence: 500 });
   return {
     id: seeded.id,
     creatureIds: seeded.creatureIds,
@@ -74,7 +51,7 @@ async function player(ctx: CoreContext, species: string[], level = 15): Promise<
         ctx.core.collection.choices.addPending(
           seeded.id,
           { species: speciesId, shiny },
-          { kind: 'expedition', id: `trip-${String(keyCounter)}` },
+          { kind: 'expedition', id: newKey('trip') },
         ),
       );
       return { id: added.id, talentId: added.talent.talentId };
@@ -152,7 +129,7 @@ describe('Keep for a branching line, through a real trip', () => {
 
         // The first grows into Thornbuck; the Kept one, once it is level 15, into Sunfawn.
         expect((await p.evolve(sproutle, 'thornbuck')).status).toBe(200);
-        ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', made);
+        setCreature(ctx, made, { level: 15 });
         const sun = await p.evolve(made, 'sunfawn');
         expect(sun.status).toBe(200);
         expect(sun.body['species']).toBe('sunfawn');
@@ -209,7 +186,7 @@ describe('Keep: when it is offered', () => {
         expect(speciesOfLine(ctx, 'sproutle')).toEqual(['thornbuck', 'sproutle']);
         // The Kept Sproutle evolves the other way once it is level 15.
         const made = (kept.body['result'] as { creatureId: string }).creatureId;
-        ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', made);
+        setCreature(ctx, made, { level: 15 });
         expect((await p.evolve(made, 'sunfawn')).body['species']).toBe('sunfawn');
         expect(speciesOfLine(ctx, 'sproutle')).toEqual(['thornbuck', 'sunfawn']);
       },
@@ -227,7 +204,7 @@ describe('Keep: when it is offered', () => {
         ctx.sql,
         "SELECT id FROM creatures WHERE line = 'zipmouse' AND line_slot = 2",
       )[0]?.id as string;
-      ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', second);
+      setCreature(ctx, second, { level: 15 });
       expect((await p.evolve(zip, 'voltaro')).status).toBe(200);
       expect((await p.evolve(second, 'ohmouse')).status).toBe(200);
       expect(speciesOfLine(ctx, 'zipmouse')).toEqual(['voltaro', 'ohmouse']);
@@ -304,7 +281,7 @@ describe('Keep for every evolving line', () => {
         const kept = await p.keep(card.id);
         expect(kept.status).toBe(200);
         const made = (kept.body['result'] as { creatureId: string }).creatureId;
-        ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', made);
+        setCreature(ctx, made, { level: 15 });
         const grown = await p.evolve(made, second);
         expect(grown.status).toBe(200);
         expect(grown.body['species']).toBe(second);

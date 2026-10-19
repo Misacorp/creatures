@@ -8,15 +8,11 @@
  */
 import { RULES, createSeededRng, type Rng } from '@creatures/game';
 import { creditParts } from '../src/gear-store';
-import { createRecorder, type Captured, type Json } from './fixture-contract';
+import { createRecorder, type Captured } from './fixture-contract';
 import { SCENARIO_START } from './gear-scenario';
 import type { CoreContext } from './helpers';
 import { scriptedThenSeeded, seedPlayer } from './raid-helpers';
-
-const HOUR = 3_600_000;
-
-let keyCounter = 0;
-const newKey = (): string => `trips-fixture-${String(++keyCounter).padStart(8, '0')}-key`;
+import { HOUR, newKey, type Json, sessionCaller, give } from './kit';
 
 /**
  * The randomness the scenario needs: catches are seeded (the first roll is a sure catch of the first
@@ -45,13 +41,7 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
     'INSERT INTO player_progress (user_id, expeditions_claimed) VALUES (?, 1)',
     seeded.id,
   );
-  ctx.core.credit({
-    userId: seeded.id,
-    currency: 'bait',
-    amount: 300,
-    source: 'test',
-    idempotencyKey: 'trips-fixture-bait',
-  });
+  give(ctx, seeded.id, { bait: 300 });
   // Rank 3 for the explorer (a risky goal can come up), 100 XP short of rank 4 (the trip that works
   // raises the rank and brings its gift), two finished trips so far (the next opens a slot).
   ctx.sql.exec(
@@ -71,23 +61,14 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
     seeded.id,
   );
 
-  let secret = await ctx.core.createSession(ctx.guildId, user);
-  let signedAt = ctx.clock.t;
-  const call = async (method: string, path: string, body?: unknown): Promise<Json> => {
-    if (ctx.clock.t - signedAt >= 30 * 60_000) {
-      secret = await ctx.core.createSession(ctx.guildId, user);
-      signedAt = ctx.clock.t;
-    }
-    const res = await ctx.request(secret, path, method, body);
-    return { status: res.status, body: await res.json<Record<string, unknown>>() };
-  };
+  const { call } = await sessionCaller(ctx, user);
   const { record, refuse, captured: out } = createRecorder(call);
   const sendBody = (creatureId: string, extra: Record<string, unknown> = {}) => ({
     creatureId,
     destination: 'tidepools',
     duration: 'long',
     supplies: [],
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('trips-fixture'),
     ...extra,
   });
   const idOf = (res: Json): string => (res.body['expedition'] as { id: string }).id;
@@ -203,18 +184,18 @@ export async function runTripsScenario(ctx: CoreContext, draw: { v: number }): P
     kind: 'supply',
     creatureId: explorer,
     supplyId: 'lure-basic',
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('trips-fixture'),
   });
   const jobId = (started.body['result'] as { jobId: string }).jobId;
   ctx.clock.t += 8 * HOUR;
   await record('workshop-claim-supply', 'POST', `/api/workshop/jobs/${jobId}/claim`, {
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('trips-fixture'),
   });
   await refuse('POST', '/api/workshop/jobs', {
     kind: 'supply',
     creatureId: explorer,
     supplyId: 'lure-great',
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('trips-fixture'),
   }); // the Crafting level is too low
   return out;
 }

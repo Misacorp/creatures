@@ -19,15 +19,14 @@ import {
   deadlyFoes,
   dungeonPlayer,
   followRoute,
-  newKey,
   routeThrough,
   scaleFoes,
   type DungeonPlayer,
-  type Json,
 } from './dungeon-helpers';
 import type { DungeonRunState } from '../src/dungeon-types';
 import { createRecorder, type Captured } from './fixture-contract';
 import type { CoreContext } from './helpers';
+import { newKey, type Json } from './kit';
 
 /** Tuesday of week 2027-W02, 14:00 in Helsinki: after the 13:37 daily reset, so the game day is the 12th. */
 export const DUNGEON_SCENARIO_START = Date.parse('2027-01-12T12:00:00Z');
@@ -60,7 +59,7 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<Captured> {
   const refuse = async (p: DungeonPlayer, method: string, path: string, body?: unknown) => {
     await recorderOf(p).refuse(method, path, body);
   };
-  const actBody = (state: DungeonRunState, act: Act, key = newKey()) => ({
+  const actBody = (state: DungeonRunState, act: Act, key = newKey('dungeon', 'test')) => ({
     runId: state.id,
     step: state.step,
     idempotencyKey: key,
@@ -179,7 +178,7 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<Captured> {
     '/api/dungeon/act',
     actBody(open, { type: 'move', node: open.map.nodes.find((n) => n.floor === 2)?.id as string }),
   ); // not reachable
-  const key = newKey();
+  const key = newKey('dungeon', 'test');
   await other.call('POST', '/api/dungeon/act', actBody(open, move, key));
   await refuse(
     other,

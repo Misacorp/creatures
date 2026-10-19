@@ -7,6 +7,7 @@ import {
 } from '@creatures/game';
 import { creditParts, insertItem } from '../src/gear-store';
 import type { CoreContext } from './helpers';
+import { sessionCaller, type Json } from './kit';
 import { rows, seedPlayer, type SeedOptions } from './raid-helpers';
 
 export interface GiveOptions {
@@ -48,15 +49,6 @@ export function giveItem(
   return insertItem(sql, userId, item, { source: o.source ?? 'test', now: o.now ?? 0 });
 }
 
-let keyCounter = 0;
-/** A valid client idempotency key, unique per call. */
-export const newKey = (): string => `gb-${String(++keyCounter).padStart(8, '0')}-test`;
-
-export interface Json {
-  status: number;
-  body: Record<string, unknown>;
-}
-
 export interface Api {
   id: string;
   creatureIds: string[];
@@ -70,17 +62,7 @@ export async function apiPlayer(
   options: SeedOptions = {},
 ): Promise<Api> {
   const seeded = seedPlayer(ctx, n, { level: 5, ...options });
-  const user = { id: seeded.id, displayName: seeded.name };
-  let secret = await ctx.core.createSession(ctx.guildId, user);
-  let loggedInAt = ctx.clock.t;
-  const call = async (method: string, path: string, body?: unknown): Promise<Json> => {
-    if (ctx.clock.t - loggedInAt >= 30 * 60_000) {
-      secret = await ctx.core.createSession(ctx.guildId, user);
-      loggedInAt = ctx.clock.t;
-    }
-    const res = await ctx.request(secret, path, method, body);
-    return { status: res.status, body: await res.json<Record<string, unknown>>() };
-  };
+  const { call } = await sessionCaller(ctx, { id: seeded.id, displayName: seeded.name });
   return { id: seeded.id, creatureIds: seeded.creatureIds, call };
 }
 
@@ -132,14 +114,4 @@ export function essenceOf(ctx: CoreContext, userId: string): number {
       userId,
     )[0]?.amount ?? 0
   );
-}
-
-export function giveEssence(ctx: CoreContext, userId: string, amount: number): void {
-  ctx.core.credit({
-    userId,
-    currency: 'essence',
-    amount,
-    source: 'test',
-    idempotencyKey: `test-essence-${String(++keyCounter)}`,
-  });
 }

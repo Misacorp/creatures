@@ -11,6 +11,7 @@ import {
 import { eventTimes, weekIdFor, weekIndex } from '../src/raid-schedule';
 import { T0, USER_ID } from './helpers';
 import { DAY, HELSINKI, HOUR, MINUTE, W02, count, rows, runRaid, seedPlayer } from './raid-helpers';
+import { captureConsole } from './kit';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -518,7 +519,7 @@ describe('one alarm for every schedule', () => {
   });
 
   it('retries a failing event in a minute instead of looping, and logs only the error type', async () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const error = captureConsole();
     await runRaid((ctx) => {
       const a = seedPlayer(ctx, 1);
       ctx.core.raid.view(a.id, HELSINKI);
@@ -527,8 +528,8 @@ describe('one alarm for every schedule', () => {
       ctx.clock.t = W02.afterPhase1;
       expect(ctx.core.raid.runDue(HELSINKI)).toBe(0);
       expect(count(ctx.sql, 'raid_results')).toBe(0);
-      expect(error).toHaveBeenCalledWith('raid event failed', 'Error');
-      expect(JSON.stringify(error.mock.calls)).not.toContain('secret-text');
+      expect(error.calls).toContainEqual(['raid event failed', 'Error']);
+      expect(JSON.stringify(error.calls)).not.toContain('secret-text');
     });
   });
 });

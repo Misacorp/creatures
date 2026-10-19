@@ -8,18 +8,10 @@ import type {
 } from '../src/dungeon';
 import type { DungeonRunState } from '../src/dungeon-types';
 import type { CoreContext } from './helpers';
+import { newKey, sessionCaller, type Json } from './kit';
 import { seedPlayer, type SeedOptions } from './raid-helpers';
 
-export interface Json<T = Record<string, unknown>> {
-  status: number;
-  body: T;
-}
-
 type Call = (method: string, path: string, body?: unknown) => Promise<Json>;
-
-let keyCounter = 0;
-/** A valid client idempotency key, unique per call. */
-export const newKey = (): string => `dungeon-${String(++keyCounter).padStart(8, '0')}-test`;
 
 /**
  * The modifier ids of the rooms the dev tool `dungeon-modifiers` picks: the first two entrance rooms
@@ -83,7 +75,12 @@ export interface RunResult {
   error?: string;
 }
 
-const act = (call: Call, state: DungeonRunState, a: Act, key = newKey()): Promise<Json> =>
+const act = (
+  call: Call,
+  state: DungeonRunState,
+  a: Act,
+  key = newKey('dungeon', 'test'),
+): Promise<Json> =>
   call('POST', '/api/dungeon/act', {
     runId: state.id,
     step: state.step,
@@ -172,21 +169,10 @@ export async function dungeonPlayer(
   options: SeedOptions = {},
 ): Promise<DungeonPlayer> {
   const seeded = seedPlayer(ctx, n, { level: 8, creatures: 3, ...options });
-  const user = { id: seeded.id, displayName: seeded.name };
-  let secret = await ctx.core.createSession(ctx.guildId, user);
-  let loggedInAt = ctx.clock.t;
-  const call = async (method: string, path: string, body?: unknown): Promise<Json> => {
-    // Tests jump the clock by hours; sessions idle out, so sign in again as needed.
-    if (ctx.clock.t - loggedInAt >= 30 * 60_000 || ctx.clock.t < loggedInAt) {
-      secret = await ctx.core.createSession(ctx.guildId, user);
-      loggedInAt = ctx.clock.t;
-    }
-    const res = await ctx.request(secret, path, method, body);
-    return { status: res.status, body: await res.json<Record<string, unknown>>() };
-  };
+  const { call } = await sessionCaller(ctx, { id: seeded.id, displayName: seeded.name });
   const body = (overrides: Partial<RunBodyInput> = {}): RunBodyInput => ({
     team: seeded.creatureIds.slice(0, 3),
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('dungeon', 'test'),
     ...overrides,
   });
   return {
@@ -202,7 +188,7 @@ export async function dungeonPlayer(
       (await call('POST', '/api/dungeon/act', {
         runId: state.id,
         step: step ?? state.step,
-        idempotencyKey: key ?? newKey(),
+        idempotencyKey: key ?? newKey('dungeon', 'test'),
         act: a,
       })) as unknown as ActJson,
     play: (state, policy = {}) => playFrom(call, state, policy),

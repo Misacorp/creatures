@@ -14,7 +14,7 @@ import {
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { playThrough } from './dungeon-helpers';
-import { apiPlayer, giveParts, learnBase, newKey, skipWelcome, type Api } from './gear-helpers';
+import { apiPlayer, giveParts, learnBase, skipWelcome, type Api } from './gear-helpers';
 import { T0, runCore, undoCreaturesBMigration, type CoreContext } from './helpers';
 import {
   HELSINKI,
@@ -27,8 +27,7 @@ import {
   seedPlayer,
   storedRuns,
 } from './raid-helpers';
-
-const HOUR = 3_600_000;
+import { HOUR, newKey, give, setCreature } from './kit';
 
 const options = () => ({
   rng: createSeededRng('creatures-b'),
@@ -58,16 +57,6 @@ const baitOf = (ctx: CoreContext, userId: string): number =>
     "SELECT amount FROM balances WHERE user_id = ? AND currency = 'bait'",
     userId,
   )[0]?.amount ?? 0;
-
-const giveBait = (ctx: CoreContext, userId: string, amount: number): void => {
-  ctx.core.credit({
-    userId,
-    currency: 'bait',
-    amount,
-    source: 'test',
-    idempotencyKey: `seed:${userId}:${String(amount)}`,
-  });
-};
 
 const events = (ctx: CoreContext, kind: string): Record<string, unknown>[] =>
   rows<{ props_json: string }>(
@@ -119,20 +108,13 @@ describe('migration 30', () => {
       const p = seedPlayer(ctx, 1, { creatures: levels.length, level: 1 });
       p.creatureIds.forEach((id, i) => {
         // The old rules had no ribbons: every creature has 0 until the migration gives them out.
-        ctx.sql.exec(
-          'UPDATE creatures SET level = ?, ribbons = 0 WHERE id = ?',
-          levels[i] ?? 1,
-          id,
-        );
+        setCreature(ctx, id, { level: levels[i] ?? 1, ribbons: 0 });
       });
-      ctx.sql.exec(
-        "UPDATE creatures SET fusion_count = 3, nickname = 'Keeper' WHERE id = ?",
-        p.creatureIds[2],
-      );
+      setCreature(ctx, p.creatureIds[2] as string, { fusion_count: 3, nickname: 'Keeper' });
       undoCreaturesBMigration(ctx.sql);
       // Levels as the players had them, on a database from before the migration.
       p.creatureIds.forEach((id, i) => {
-        ctx.sql.exec('UPDATE creatures SET level = ? WHERE id = ?', levels[i] ?? 1, id);
+        setCreature(ctx, id, { level: levels[i] ?? 1 });
       });
       expect(
         rows<{ name: string }>(ctx.sql, "SELECT name FROM pragma_table_info('creatures')").map(
@@ -259,7 +241,7 @@ describe('treats on trips', () => {
       async (ctx) => {
         const p = await apiPlayer(ctx, 1, { level: 9, creatures: 1 });
         const [id] = p.creatureIds as [string];
-        giveBait(ctx, p.id, 50);
+        give(ctx, p.id, { bait: 50 });
         const key = newKey();
         const sent = await send(p, id, { treat: true }, 'short', key);
         expect(sent.status).toBe(200);
@@ -300,7 +282,7 @@ describe('treats on trips', () => {
       async (ctx) => {
         const p = await apiPlayer(ctx, 1, { level: 9, creatures: 1 });
         const [id] = p.creatureIds as [string];
-        giveBait(ctx, p.id, treatCost(9) - 1);
+        give(ctx, p.id, { bait: treatCost(9) - 1 });
         const refused = await send(p, id, { treat: true });
         expect(refused.status).toBe(409);
         expect(refused.body).toEqual({ error: 'insufficient_funds' });
@@ -377,7 +359,7 @@ describe('the daily dungeon pays experience', () => {
       nextGuild(),
       async (ctx) => {
         const p = await apiPlayer(ctx, 1, { level: 8, creatures: 3 });
-        giveBait(ctx, p.id, 100);
+        give(ctx, p.id, { bait: 100 });
         const [a, b, c] = p.creatureIds as [string, string, string];
         const request = body([a, b, c], { treats: [b] });
         const res = await run(p, request);
@@ -414,7 +396,7 @@ describe('the daily dungeon pays experience', () => {
       async (ctx) => {
         const p = await apiPlayer(ctx, 1, { level: 8, creatures: 4 });
         const team = p.creatureIds.slice(0, 3);
-        giveBait(ctx, p.id, treatCost(8));
+        give(ctx, p.id, { bait: treatCost(8) });
         const outside = await run(p, body(team, { treats: [p.creatureIds[3]] }));
         expect(outside.status).toBe(400);
         expect(outside.body).toEqual({ error: 'invalid_treat' });
@@ -533,7 +515,7 @@ describe('experience from Workshop jobs', () => {
           'grove-shard': 5,
           'spark-shard': 5,
         });
-        giveBait(ctx, p.id, 20);
+        give(ctx, p.id, { bait: 20 });
         const [plain, treated] = p.creatureIds as [string, string];
 
         const first = await startCraft(p, plain);
@@ -640,7 +622,7 @@ describe('ribbons', () => {
       async (ctx) => {
         const p = await apiPlayer(ctx, 1, { level: 10, creatures: 1, species: ['cindle'] });
         const [id] = p.creatureIds as [string];
-        ctx.sql.exec('UPDATE creatures SET exp = ? WHERE id = ?', expToNext(10), id);
+        setCreature(ctx, id, { exp: expToNext(10) });
         const view = await stateOf(p, id);
         expect(view).toMatchObject({
           level: 10,
@@ -662,7 +644,7 @@ describe('ribbons', () => {
         giveParts(ctx, p.id, { scrap: 6, 'ember-shard': 2 });
         expect((await stateOf(p, id))?.ribbon?.ready).toBe(true);
         // A creature below the gate shows no ribbon.
-        ctx.sql.exec('UPDATE creatures SET level = 9, exp = 0 WHERE id = ?', id);
+        setCreature(ctx, id, { level: 9, exp: 0 });
         expect((await stateOf(p, id))?.ribbon).toBeNull();
       },
       options(),
@@ -676,7 +658,7 @@ describe('ribbons', () => {
         const p = await apiPlayer(ctx, 1, { level: 10, creatures: 1, species: ['cindle'] });
         const [id] = p.creatureIds as [string];
         // The creature stopped at 10 with the next level's experience banked, and a little more would have been lost.
-        ctx.sql.exec('UPDATE creatures SET exp = ? WHERE id = ?', expToNext(10), id);
+        setCreature(ctx, id, { exp: expToNext(10) });
         giveParts(ctx, p.id, { scrap: 10, 'ember-shard': 3, 'tide-shard': 1 });
         const key = newKey();
         const res = await earn(p, id, key);
@@ -736,7 +718,7 @@ describe('ribbons', () => {
       async (ctx) => {
         const p = await apiPlayer(ctx, 1, { level: 20, creatures: 1, species: ['thornbuck'] });
         const [id] = p.creatureIds as [string];
-        ctx.sql.exec('UPDATE creatures SET ribbons = 1 WHERE id = ?', id);
+        setCreature(ctx, id, { ribbons: 1 });
         giveParts(ctx, p.id, { scrap: 15, 'grove-shard': 5, glimmer: 1 });
         const view = await stateOf(p, id);
         expect(view?.ribbon).toMatchObject({
@@ -770,8 +752,8 @@ describe('ribbons', () => {
       async (ctx) => {
         const p = await apiPlayer(ctx, 1, { level: 29, creatures: 1, species: ['pyrelynx'] });
         const [id] = p.creatureIds as [string];
-        ctx.sql.exec('UPDATE creatures SET ribbons = 2 WHERE id = ?', id);
-        ctx.sql.exec('UPDATE creatures SET exp = ? WHERE id = ?', expToNext(29) - 1, id);
+        setCreature(ctx, id, { ribbons: 2 });
+        setCreature(ctx, id, { exp: expToNext(29) - 1 });
         const sent = await send(p, id, {}, 'short');
         const short = sent.body['expedition'] as { id: string; endsAt: number };
         ctx.clock.t = short.endsAt;
@@ -815,8 +797,8 @@ describe('evolution spends what a waiting creature banked', () => {
         const p = await apiPlayer(ctx, 1, { level: 15, creatures: 1, species: ['cindle'] });
         const [id] = p.creatureIds as [string];
         // It stopped at 15 holding the whole next level's experience.
-        ctx.sql.exec('UPDATE creatures SET exp = ? WHERE id = ?', expToNext(15), id);
-        giveEssenceTo(ctx, p.id, 40);
+        setCreature(ctx, id, { exp: expToNext(15) });
+        give(ctx, p.id, { essence: 40 });
         const res = await p.call('POST', `/api/creatures/${id}/evolve`, {
           idempotencyKey: newKey(),
         });
@@ -828,23 +810,13 @@ describe('evolution spends what a waiting creature banked', () => {
   });
 });
 
-function giveEssenceTo(ctx: CoreContext, userId: string, amount: number): void {
-  ctx.core.credit({
-    userId,
-    currency: 'essence',
-    amount,
-    source: 'test',
-    idempotencyKey: `essence:${userId}`,
-  });
-}
-
 describe('the old training route', () => {
   it('answers that training is by activity, and takes nothing', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await apiPlayer(ctx, 1, { level: 3, creatures: 1 });
-        giveBait(ctx, p.id, 100);
+        give(ctx, p.id, { bait: 100 });
         const res = await p.call('POST', `/api/creatures/${p.creatureIds[0] as string}/train`, {
           idempotencyKey: newKey(),
         });

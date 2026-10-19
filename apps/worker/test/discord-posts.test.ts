@@ -11,6 +11,7 @@ import {
 } from '../src/discord-posts';
 import { USER_ID, runCore, type CoreContext } from './helpers';
 import { MINUTE, nextGuild, rows } from './raid-helpers';
+import { captureConsole } from './kit';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -434,7 +435,7 @@ describe('delivery', () => {
   });
 
   it('retries a 500 with backoff 1 min, 5 min, 30 min, 2 h and then marks it failed', async () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const error = captureConsole();
     const { send, calls } = scripted(() => fiveHundred);
     await withQueue(send, async (ctx) => {
       enqueuePost(ctx.sql, { key: 'a', content: 'secret text' }, ctx.clock.t);
@@ -462,15 +463,15 @@ describe('delivery', () => {
       await ctx.core.deliverPosts();
       expect(calls).toHaveLength(MAX_POST_ATTEMPTS);
       // Only error kinds are logged: no token, channel id or text.
-      expect(error).toHaveBeenCalledWith('discord post failed', 'server_error');
-      const logged = JSON.stringify(error.mock.calls);
+      expect(error.calls).toContainEqual(['discord post failed', 'server_error']);
+      const logged = JSON.stringify(error.calls);
       expect(logged).not.toContain(CHANNEL);
       expect(logged).not.toContain('secret text');
     });
   });
 
   it('succeeds after a retry', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    captureConsole();
     const { send, calls } = scripted([fiveHundred, SENT]);
     await withQueue(send, async (ctx) => {
       enqueuePost(ctx.sql, { key: 'a', content: 'x' }, ctx.clock.t);
@@ -483,7 +484,7 @@ describe('delivery', () => {
   });
 
   it('waits as long as Discord asks on 429, and holds back the rest of the run', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    captureConsole();
     const { send, calls } = scripted([{ kind: 'retry', error: 'rate_limited', afterMs: 12_500 }]);
     await withQueue(send, async (ctx) => {
       enqueuePost(ctx.sql, { key: 'a', content: 'first' }, ctx.clock.t);
@@ -505,7 +506,7 @@ describe('delivery', () => {
   });
 
   it('marks a post failed at once on 403 (no permission) and on 404 (unknown channel)', async () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const error = captureConsole();
     const { send, calls } = scripted([
       { kind: 'failed', error: 'forbidden' },
       { kind: 'failed', error: 'not_found' },
@@ -522,13 +523,13 @@ describe('delivery', () => {
       ctx.clock.t += 3 * 60 * MINUTE;
       await ctx.core.deliverPosts();
       expect(calls).toHaveLength(2);
-      expect(error).toHaveBeenCalledWith('discord post failed', 'forbidden');
-      expect(error).toHaveBeenCalledWith('discord post failed', 'not_found');
+      expect(error.calls).toContainEqual(['discord post failed', 'forbidden']);
+      expect(error.calls).toContainEqual(['discord post failed', 'not_found']);
     });
   });
 
   it('treats a sender that throws as a retryable failure', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    captureConsole();
     const { send } = scripted([new Error('boom with secret details')]);
     await withQueue(send, async (ctx) => {
       enqueuePost(ctx.sql, { key: 'a', content: 'x' }, ctx.clock.t);
@@ -557,7 +558,7 @@ describe('delivery', () => {
   });
 
   it('never fails the alarm or the request when posting breaks', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    captureConsole();
     await withQueue(
       () => {
         throw new Error('sync throw');
@@ -584,7 +585,7 @@ describe('the alarm and pending posts', () => {
   });
 
   it('is set to the backoff time after a failed attempt', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    captureConsole();
     const { send } = scripted(() => fiveHundred);
     await withQueue(send, async (ctx) => {
       enqueuePost(ctx.sql, { key: 'a', content: 'x' }, ctx.clock.t);
