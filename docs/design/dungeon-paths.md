@@ -354,7 +354,7 @@ interface DungeonRunState {
   pack: DungeonPack; // at risk
   roomsCleared: number;
   supply: boolean; // the safe supply is earned
-  lastEvent: { name: string; option: string; outcome: string } | null; // the plain line of what the last event did
+  lastEvent: { name: string; option: string; outcome: string } | null; // the plain line of what the last event did, until the next move (a move clears it)
   history: DungeonStepLog[]; // one entry per visited room, see dungeon-types.ts
 }
 

@@ -7,7 +7,7 @@ import {
   dismantleYield,
   effectiveStats,
   finaleItemLevel,
-  festivalBaseFor,
+  festivalBases,
   rollFinaleReward,
   type GearRarity,
   type PartKind,
@@ -335,8 +335,6 @@ describe('the Festival piece', () => {
           'SELECT week_id, festival, festival_species FROM raid_weeks',
         )[0];
         expect(row?.festival).toBe(1);
-        const species = content.creatures.find((c) => c.id === row?.festival_species);
-        const piece = festivalBaseFor(species?.element ?? 'tide');
         ctx.clock.t = week.afterPhase2;
         ctx.core.raid.runDue(HELSINKI);
         ctx.sql.exec('UPDATE raid_parties SET hp_current = 1');
@@ -357,8 +355,9 @@ describe('the Festival piece', () => {
             slot.gear.length === 1 ? ['festival', 'raid_finale'] : ['festival'],
           );
           const festive = items.find((i) => i.source === 'festival');
-          // Special, not stronger: a normal rarity, the lines of that rarity, the finale's item level.
-          expect(festive).toMatchObject({ base_id: piece.id });
+          // A Festival base (which one is drawn; the element of the week's creature plays no part), special,
+          // not stronger: a normal rarity, the lines of that rarity, the finale's item level.
+          expect(festivalBases().map((b) => b.id)).toContain(festive?.base_id);
           expect(['common', 'rare', 'epic']).toContain(festive?.rarity);
           expect(JSON.parse(festive?.lines_json ?? '[]')).toHaveLength(
             RULES.gear.rolledLines[festive?.rarity as 'common' | 'rare' | 'epic'],
