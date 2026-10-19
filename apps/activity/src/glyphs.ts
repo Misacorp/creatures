@@ -14,6 +14,8 @@ const BONE = '#f4eedc';
 const GOLD = '#ffd25a';
 const HAZE = '#a69fc8';
 const BAD = '#ff5f6d';
+const MUD = '#b8864a';
+const MUD_DARK = '#6b4a2e';
 
 // --- Boss gimmicks (one per gimmick op in the content schema, plus the chain's bolt) ---
 
@@ -605,6 +607,38 @@ const slotCharm: SpriteDef = {
   ],
 };
 
+// --- Status effects and room modifiers ---
+
+/** A down arrow sinking into mud: the Mired status (slower and weaker). */
+const mired: SpriteDef = {
+  palette: { r: BAD, o: MUD, d: MUD_DARK },
+  rows: [
+    '..rrrr..',
+    '..rrrr..',
+    'rrrrrrrr',
+    '.rrrrrr.',
+    '..rrrr..',
+    '...rr...',
+    'oodooodo',
+    'dddddddd',
+  ],
+};
+
+/** A puddle of mud with two drops falling in: the Mud room modifier (the team's Speed is down). */
+const mud: SpriteDef = {
+  palette: { o: MUD, d: MUD_DARK, h: '#e0b878' },
+  rows: [
+    '..o..o..',
+    '..d..d..',
+    '........',
+    '..oooo..',
+    '.oohooo.',
+    'oooooood',
+    'odooodoo',
+    '.dddddd.',
+  ],
+};
+
 export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   hit_zone: hitZone,
   silence_ends: silenceEnds,
@@ -641,6 +675,8 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   bait,
   flag,
   gift,
+  mired,
+  mud,
   'slot-hat': slotHat,
   'slot-scarf': slotScarf,
   'slot-charm': slotCharm,
