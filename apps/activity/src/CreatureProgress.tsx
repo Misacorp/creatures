@@ -1,6 +1,7 @@
 import type { Creature } from './api';
 import { ribbonBlocker, ribbonCostText, ribbonName } from './experience';
 import { GlossaryTag } from './Glossary';
+import { ActionButton } from './ui/ActionButton';
 import { Bar } from './ui/Bar';
 
 /** The words of the experience bar for screen readers. */
@@ -63,38 +64,41 @@ export function CreatureProgress({
 }
 
 /**
- * The ribbon a creature waits for at level 10 or 20: the button with its cost in materials, a help tag
- * and what is missing. Nothing when the creature is not at a gate. The button only works when the
- * server says the ribbon is ready.
+ * The ribbon a creature waits for at level 10 or 20: the big gold button ("Earn Bronze Ribbon", the cost in
+ * materials beside it, as on the card's button), then a note with a help tag and what is missing. Nothing
+ * when the creature is not at a gate. The button only works when the server says the ribbon is ready.
  */
 export function RibbonLine({
   creature,
   busy,
   onRibbon,
+  large = false,
 }: {
   creature: Creature;
   busy: boolean;
   onRibbon: (creature: Creature) => void;
+  /** The page's main-button size. */
+  large?: boolean;
 }) {
   const ribbon = creature.ribbon;
   if (ribbon === null) return null;
   const missing = ribbonBlocker(ribbon);
   return (
     <div class="ribbon-line">
-      <p>
-        <button
-          type="button"
-          class="primary"
-          disabled={busy || !ribbon.ready}
-          onClick={() => {
-            onRibbon(creature);
-          }}
-        >
-          {`${ribbonName(ribbon.id)} (${ribbonCostText(ribbon)})`}
-        </button>
+      <ActionButton
+        wide
+        large={large}
+        label={`Earn ${ribbonName(ribbon.id)}`}
+        detail={ribbonCostText(ribbon)}
+        disabled={busy || !ribbon.ready}
+        onClick={() => {
+          onRibbon(creature);
+        }}
+      />
+      <p class="muted ribbon-note">
+        {missing !== null && <>{missing} </>}
         <GlossaryTag entry="ribbon" look="help" class="ribbon-help" />
       </p>
-      {missing !== null && <p class="muted">{missing}</p>}
     </div>
   );
 }

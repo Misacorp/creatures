@@ -1,26 +1,16 @@
 import type { Creature, GameState } from '../api';
-import { shinyPalette } from '../art';
-import { activityBadges, portraitAlt, xpWords } from '../creature-card-view';
+import { xpWords } from '../creature-card-view';
+import { CreatureHead } from '../CreatureHead';
 import { experienceLabel } from '../CreatureProgress';
-import { creatureName, elementName, getSpecies } from '../game';
-import { GlossaryTag } from '../Glossary';
-import { glyphOrUnknown } from '../glyphs';
-import { Sprite } from '../sprites/Sprite';
-import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
-import { ArmchairIcon } from '../ui/ArmchairIcon';
-import { GameIcon } from '../ui/GameIcon';
-import { Tag } from '../ui/Tag';
-import { XpBar } from '../XpBar';
+import { XpTrack } from '../ui/XpTrack';
 
 /**
- * The creature page's head (v3): the portrait, then one row that holds the name, the element icon and the
- * level, all centred on the same line, then the experience bar. A name that is too long for the row wraps
- * to a second line (two at most, then it is cut with an ellipsis; the whole name is in the Rename field and
- * read out in full by screen readers) and the icon and the level stay centred against the whole name. The
- * name is in the creature's rarity colour (a visually hidden word says the rarity aloud; the portrait has no
- * border). The level
- * badge is a hidden interaction: a tap still opens its explanation, with no "?" drawn. There is no
- * "Next: ..." line, and the species name of a nicknamed creature is a tag on the page, not here.
+ * The creature page's head: the card's own top (`CreatureHead`: the portrait at the top left, the name, the
+ * tags in words under it, in the card's order) and then the card's experience row (`XpTrack`: the level tag
+ * at the left, the bar with its numbers inside), so a player who taps a card lands on a page that starts the
+ * same way. The page differs only where it must: the name is the page's heading (it may wrap to two lines;
+ * a hidden word says the rarity aloud), the tags open their glossary entries, and the level tag opens the
+ * level's explanation (no "?" drawn). There is no "Next: ..." line.
  */
 export function PageHeader({
   creature,
@@ -28,76 +18,21 @@ export function PageHeader({
   nameId,
 }: {
   creature: Creature;
-  state: Pick<GameState, 'loungerId'>;
+  state: Pick<GameState, 'loungerId' | 'serverFirsts'>;
   nameId: string;
 }) {
-  const species = getSpecies(creature.species);
-  const badges = activityBadges(creature, state);
-  const shinyColours = creature.shiny ? shinyPalette(creature.species) : undefined;
-  const sparkleFrame = creature.shiny && shinyColours === undefined;
-  const sparkle = glyphOrUnknown('sparkle');
-  const name = creatureName(creature);
   return (
-    <div class="v3-head">
-      <div class={`portrait${sparkleFrame ? ' sparkle-frame' : ''}`}>
-        <Sprite
-          sprite={creatureSpriteOrFallback(creature.species)}
-          scale={4}
-          bob
-          alt={portraitAlt(name, creature.shiny)}
-          {...(shinyColours === undefined ? {} : { palette: shinyColours })}
-        />
-        {sparkleFrame && (
-          <>
-            <Sprite sprite={sparkle} scale={2} class="sparkle one" />
-            <Sprite sprite={sparkle} scale={2} class="sparkle two" />
-          </>
-        )}
-      </div>
-      <div class="v3-id">
-        <div class="v3-name-row">
-          <h2
-            id={nameId}
-            class={`v3-name${species === undefined ? '' : ` rarity-name rarity-${species.rarity}`}`}
-          >
-            <span class="v3-name-text">{name}</span>
-            {species !== undefined && <span class="visually-hidden">, {species.rarity}</span>}
-          </h2>
-          {species !== undefined && (
-            <span
-              class={`chip v3-element t-${species.element}`}
-              role="img"
-              aria-label={elementName(species.element)}
-            >
-              <GameIcon icon={{ kind: 'element', element: species.element }} scale={2} />
-            </span>
-          )}
-          <GlossaryTag entry="level" look="chip" bare class="lvl-tag v3-level pix">
-            Lv {creature.level}
-          </GlossaryTag>
-        </div>
-        {badges.length > 0 && (
-          <p class="cc-sub">
-            {badges.map((badge) => (
-              <Tag
-                key={badge.text}
-                kind="badge"
-                tone={badge.tone}
-                {...(badge.entry === null ? {} : { entry: badge.entry })}
-              >
-                {badge.icon === 'armchair' && <ArmchairIcon />}
-                {badge.text}
-              </Tag>
-            ))}
-          </p>
-        )}
-        <XpBar
-          value={creature.expNeeded === null ? 1 : creature.exp}
-          max={creature.expNeeded ?? 1}
-          label={experienceLabel(creature)}
-          text={xpWords(creature)}
-        />
-      </div>
+    <div class="cp-head">
+      <CreatureHead creature={creature} state={state} nameId={nameId} />
+      <XpTrack
+        level={creature.level}
+        value={creature.exp}
+        max={creature.expNeeded ?? 1}
+        top={creature.expNeeded === null}
+        label={experienceLabel(creature)}
+        text={xpWords(creature)}
+        levelEntry="level"
+      />
     </div>
   );
 }

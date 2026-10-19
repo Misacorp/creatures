@@ -16,7 +16,8 @@ import { creatureName } from './game';
 import type { GearState } from './gear-types';
 import { gearName, itemLabel, slotName } from './gear-view';
 import { ItemThumb } from './GearArt';
-import { XpTrack } from './ui/XpTrack';
+import { ActionButton } from './ui/ActionButton';
+import { XpTrack, type XpSize } from './ui/XpTrack';
 
 /**
  * One creature, small (Misa's variant E, decisions.md 2026-10-19): the sprite at the top left with the name
@@ -38,6 +39,7 @@ export function CreatureCard({
   actions,
   onAnswerCatch,
   onOpen,
+  xpSize,
 }: {
   creature: Creature;
   state: GameState;
@@ -52,6 +54,8 @@ export function CreatureCard({
   onAnswerCatch: () => void;
   /** Opens this creature's page, on a part of it or (null) at the top. */
   onOpen: (focus: PageFocus) => void;
+  /** A look of the experience bar to compare (the workbench); the game uses the default. */
+  xpSize?: XpSize | undefined;
 }) {
   const domId = cardDomId(creature.id);
   const nameId = `${domId}-name`;
@@ -108,6 +112,7 @@ export function CreatureCard({
         label={experienceLabel(creature)}
         text={xpWords(creature)}
         levelEntry="level"
+        size={xpSize}
       />
       <div class="cc-kit">
         <ul class="cc-gear" aria-label="Gear">
@@ -173,20 +178,17 @@ export function CreatureCard({
       </div>
       {first !== undefined && (
         <div class="cc-do">
-          <button
-            type="button"
-            class="primary wide"
+          <ActionButton
+            wide
+            label={first.label}
+            detail={[first.detail, needs.length > 1 ? `${String(needs.length - 1)} more` : '']
+              .filter((part) => part !== '')
+              .join(' · ')}
             disabled={busy || first.blocked !== undefined}
             onClick={() => {
               act(first);
             }}
-          >
-            {first.label}
-            <small>
-              {first.detail}
-              {needs.length > 1 ? ` · ${String(needs.length - 1)} more` : ''}
-            </small>
-          </button>
+          />
         </div>
       )}
     </li>
