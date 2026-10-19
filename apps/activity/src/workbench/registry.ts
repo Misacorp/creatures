@@ -6,6 +6,7 @@ import { creaturePageEntries } from './entries/creature-page';
 import { creatureEntries } from './entries/creatures';
 import { evolveEntries } from './entries/evolve';
 import { flipperEntries } from './entries/flipper';
+import { dataTableEntries } from './entries/data-table';
 import { dungeonMapEntries } from './entries/dungeon-map';
 import { dungeonRunEntries } from './entries/dungeon-run';
 import { headingEntries } from './entries/headings';
@@ -44,6 +45,7 @@ export const ENTRIES: readonly Entry[] = [
   ...creatureEntries,
   ...creatureCardEntries,
   ...creaturePageEntries,
+  ...dataTableEntries,
   ...evolveEntries,
   ...flipperEntries,
   ...talentEntries,
