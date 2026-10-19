@@ -1,48 +1,36 @@
-# Speed and dodge: Serpentine turn order and a stat that matters
+# Speed, dodge, status effects and Mire
 
-Status: **design, 2026-10-19, not built.** From a brainstorm with Misa. Numbers marked _start_ are first guesses that the balance simulator tunes before anything ships.
+Status: **design, 2026-10-19, building.** From a brainstorm with Misa (2026-10-19). One shippable PR. Numbers marked _start_ are first guesses; the balance simulator tunes them before the PR is done. Misa's calls are marked **(Misa)**.
 
 ## Why
 
-Speed only did one thing: on a boss with `speed` turn order (only Cinder Wyrm), it sorted the creatures, highest first. On the other three raid weeks, in the dungeon and everywhere else it did nothing. Gear lines and talents (Zoomies) that raise Speed were wasted three weeks out of four. Misa: turn order by Speed is not fun to plan around, because players cannot see it on the board.
+Speed only did one thing: on a boss with `speed` turn order (only Cinder Wyrm) it sorted the creatures. Everywhere else it did nothing, and gear and the Zoomies talent that raise it were wasted three weeks in four. Misa: an order by Speed is not fun to plan around, because the board does not show it. And the game is ready for a fifth element, built so more can follow.
 
-The change has two parts:
+The work, in five parts:
 
 1. **Serpentine turn order** replaces speed order. Cinder Wyrm gets it.
-2. **Speed becomes the base of a dodge chance** for creatures and foes. Gear, talents, room modifiers and boss moves can change it.
+2. **Dodge:** Speed becomes the base of a dodge chance, for creatures and foes.
+3. **Status effects:** debuffs (and the base for buffs), measured in turns, with stacks.
+4. **The element chart:** element matchups become a table of attacker → defender pairs, so the wheel can grow.
+5. **Mire,** the fifth element: two creature lines, a raid boss, dungeon foes, a trip place, gear, a mark, two reactions and the first debuff, Mired.
 
 ## 1. Serpentine turn order
 
-The creatures act row by row, front row first, and each row runs the opposite way to the one before it. Every round, each row flips.
+The creatures act row by row, front row first, and each row runs the opposite way to the one before it. Every round, each row flips **(Misa)**.
 
 | Round   | Front         | Middle        | Back          |
 | ------- | ------------- | ------------- | ------------- |
 | 1, 3, … | left to right | right to left | left to right |
 | 2, 4, … | right to left | left to right | right to left |
 
-_Example (3 per row, slots numbered on the board, left to right)._ Round 1: 1, 2, 3, 6, 5, 4, 7, 8, 9. Round 2: 3, 2, 1, 4, 5, 6, 9, 8, 7.
+_Example (3 per row, board slots 1 to 9)._ Round 1: 1, 2, 3, 6, 5, 4, 7, 8, 9. Round 2: 3, 2, 1, 4, 5, 6, 9, 8, 7.
 
-Rules:
-
-- **Rows** are the board's rows (`combat-rules.md` 1.4). Rows of different lengths (3 / 4 / 3) work the same way.
-- **Gaps and knocked-out creatures** are skipped, as in every turn order. The order is read from board positions, so an empty slot does not shift anyone.
-- **Enrage rounds** keep flipping (round 13 runs like round 1).
-- **The dungeon** stays left to right (`RULES.dungeon.turnOrder`). Each creature is its own row there, so Serpentine would be the same thing anyway.
-- **What it means for play:** a Setter just left of a Payoff sets up the hit on odd rounds; on even rounds the Payoff goes first and spends whatever mark is left. Players can see it coming and place for it.
-
-What changes:
-
-- **Engine:** turn order becomes a function of the round (today it is fixed at the start of the fight: `turnOrder` in `fight.ts`, `combat-rules.md` 2.4.1). Overflow's "next creature in the round's turn order" reads the round's order.
-- **Content:** `TurnOrderSchema` gains `serpentine`; Cinder Wyrm moves from `speed` to `serpentine`.
-- **Old fights:** the engine keeps `speed` order so stored fights replay exactly. No content may use it any more (a content test checks).
-- **Player-facing text:**
-  - a glossary entry "Serpentine";
-  - a new turn-order glyph and caption on the boss card (`boss-icons.ts`, `glyphs.ts`);
-  - the Discord reveal's turn-order text (`TURN_ORDER_SHORT` in `discord-format.ts`): "creatures snake through the rows".
-- **UI:**
-  - the stage and replay ordinals already come from each round's events (`turnOrderOfRound`), so they follow the flips;
-  - the placement board's preview (`affects.ts`, `raid-board.ts`) shows round 1's order and says the rows flip each round.
-- **Balance:** Cinder Wyrm is re-checked in the simulator.
+- Rows are the board's rows (`combat-rules.md` 1.4); uneven rows (3 / 4 / 3) work the same. Gaps and knocked-out creatures are skipped; order comes from board positions.
+- Enrage rounds keep flipping (round 13 runs like round 1).
+- The dungeon stays left to right (`RULES.dungeon.turnOrder`).
+- Turn order becomes a function of the round. Overflow ("next creature in the round's turn order") reads that round's order.
+- `TurnOrderSchema` gains `serpentine`; Cinder Wyrm moves to it. The engine keeps `speed` so stored fights replay; a content test forbids it in content.
+- Text: glossary entry, a turn-order glyph and caption on the boss card, the Discord reveal's short text ("creatures snake through the rows"), the board preview shows round 1's order and says rows flip each round.
 
 ## 2. Dodge
 
@@ -50,138 +38,184 @@ What changes:
 
 Every creature and every foe has a **dodge chance**. A dodged hit deals nothing.
 
-- **From Speed:** dodge = Speed × `dodgePerSpeedBp`. _Start: 10 bp per point_, so 100 Speed is 10%. There is no separate flat base: Speed is the base.
-- **Hard cap:** 50% (`dodgeMaxBp`, _start 5000_). Nothing goes above it.
-- **The chance is the creature's own.** It does not depend on the attacker's Speed, so the number on the creature page is the number in the fight.
+- dodge = Speed × `dodgePerSpeedBp` (_start 10 bp a point_: 100 Speed is 10%), plus flat dodge from lines, capped at `dodgeMaxBp` (**50%**, hard).
+- It is the fighter's own number, not relative to the attacker, so what the creature page shows is what the fight uses.
+- Targets **(Misa)**: about **10–15% without trying**, about **30% with moderate investment**, near 50% only with the right species, real investment and perhaps a golden talent. Today's level-30 Speeds give Guards about 5–8%, most creatures about 12%, Ancientshell 17%.
 
-What that gives with today's species (Speed at level 30, before fusion):
+### 2.2 Which hits can be dodged
 
-| Creature                                | Speed | Dodge |
-| --------------------------------------- | ----- | ----- |
-| Hearthshell (Guard, slowest)            | 51    | 5%    |
-| A typical Guard (Thornbuck, Fogwyrm, …) | 80    | 8%    |
-| A typical Setter, Payoff or Support     | 120   | 12%   |
-| Ancientshell (fastest)                  | 172   | 17%   |
-| Level 1 starters                        | 16–40 | 2–4%  |
+| Hit                                                                         | Dodge                                               |
+| --------------------------------------------------------------------------- | --------------------------------------------------- |
+| Plain attack, a strike's first hit, a slam's main hit                       | Full chance                                         |
+| Area hits: row attack, sweep, barrage shell, lance, pincer, a slam's splash | Half chance, plus Sidestep's points in full         |
+| Chain jumps                                                                 | Each jump rolls; a dodge does not stop the chain    |
+| A charge landing                                                            | Full chance                                         |
+| **Enrage hit**                                                              | **Full chance (Misa: lucky dodge streaks are fun)** |
+| A hit a reaction reflects back                                              | Never                                               |
+| A hit a Guard steps in to take                                              | Never (the Guard chose to take it)                  |
 
-So a creature hovers around 10–15% without trying (Misa's target), more as it levels.
+Order in the hit: the target is picked, a Guard steps in or not, then the taker rolls dodge, before Shield Wall, armor, cover and crit. A dodged hit is a `boss_hit` with `damage: 0` and `dodged: true`. Nothing that waits for a hit taken fires on it (Payback, Last stand, Stubborn, Rally cry, the Mire Guard's Mired).
 
-### 2.2 Investment targets (Misa)
+If dodge streaks make the finale drag, the lever is enrage escalation (the boss's enrage damage grows each enrage round), not a rule change.
 
-| Investment                                                             | Dodge     |
-| ---------------------------------------------------------------------- | --------- |
-| None                                                                   | 10–15%    |
-| Moderate (a Speed line or two, a dodge line)                           | about 30% |
-| Heavy: the right fast species, several lines, a golden Zoomies, fusion | near 50%  |
+### 2.3 Foes dodge too
 
-The cap should be hard to reach: the right creature, real investment and perhaps a golden talent roll.
+- Every boss and dungeon foe gets `baseSpd`; foes sit low (_start 2–5% dodge_). A raid boss's Speed may grow with Boss Rank (a curve column).
+- A dodged creature hit: no damage, no crit, no Echo, no reaction, no credit.
+- **Marks (Misa):** a **Setter's** hit always leaves its mark, even when dodged (setup never misses). Any other dodged hit leaves no mark (Quick re-mark included). A Payoff's dodged hit leaves the existing mark standing.
 
-### 2.3 Sources
+### 2.4 Sources
 
-None of these exist yet except Zoomies (`talents.json`, `+12%` Speed, golden `+18%`). Speed from gear is today "a share; only a talent gives it" (`gear-items.ts`).
+- **Fleet** (new gear line): Speed +% (a share). Stat line, tiered. _Start 5 / 8 / 11 / 14 / 17%._
+- **Light-footed** (new gear line): dodge, flat points. Special line, Rare and up. _Start 2 / 3 / 4 / 5 / 6._
+- **Sidestep** folds into dodge: "+X points of dodge against area hits". Its old dice stay for replays only.
+- **Zoomies:** "Dodges more often" (it still raises Speed).
+- **Mud** room modifier (team Speed down) and room modifiers on `spd` already exist in the schema.
 
-- **New gear line "Fleet":** Speed, more (a share). A stat line, tiered like the others. _Start: 5 / 8 / 11 / 14 / 17%._
-- **New gear line "Light-footed":** dodge, flat. A special line, Rare and up, like the chance lines. _Start: 2 / 3 / 4 / 5 / 6 points._
-- **Sidestep folds into dodge:** today it is a separate roll that stops area hits (`combat-rules.md` 11.2). It becomes "+X points of dodge against area hits", so there is one dodge roll, not two.
-- **Zoomies:** "Acts earlier when the boss goes by speed" becomes "Dodges more often", and it grows Speed as now.
-- **Room modifiers:** the dungeon schema already allows `team_stat` on `spd`. New rooms can use it (2.8).
+### 2.5 On-dodge lines (trigger lines, `combat-rules.md` 12)
 
-### 2.4 Which hits can be dodged
+| Line       | Effect when it dodges                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| Riposte    | Strikes back at once for a share of its Attack (_start 30%_); no mark, no crit, no reaction |
+| Momentum   | Its next turn hit deals this much more (replaces an earlier one)                            |
+| Slipstream | The creature beside it with the most Attack gets a boost on its next hit                    |
 
-| Hit                                                                         | Dodge                                            | Why                                                                         |
-| --------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------- |
-| Plain attack, a strike's first hit, a slam's main hit                       | Full chance                                      | The classic dodge                                                           |
-| Area hits: row attack, sweep, barrage shell, lance, pincer, a slam's splash | Half chance (Sidestep's points added in full)    | Harder to get clear of a wave                                               |
-| Chain jumps                                                                 | Each jump rolls; a dodge does not stop the chain | Chains keep working as today                                                |
-| A charge landing (announced a round ahead)                                  | Full chance                                      | You saw it coming. Storm warning still cuts the damage if it lands          |
-| **Enrage hit**                                                              | **Full chance**                                  | Misa: a creature that keeps dodging on a lucky streak is an exciting moment |
-| A hit a reaction reflects back                                              | No                                               | It is the creature's own hit coming back (as Sidestep today)                |
-| A hit a Guard steps in to take                                              | No                                               | The Guard chose to take it                                                  |
+## 3. Status effects
 
-The Guard rule keeps two kinds of tank: Guards who take hits on purpose, and dodgers who avoid them. Without it a dodging Guard would soak every aimed hit for its row and take only half of them.
+The general system for debuffs now and buffs later. Silence can move into it later; it already counts down the same way.
 
-**Order in the hit (`combat-rules.md` 3):** the target is picked, a Guard steps in (or not), then the taker rolls dodge, before Shield Wall, armor, cover and crit. A dodged hit is logged as a `boss_hit` with `damage: 0` and `dodge`. Nothing that waits for a hit taken fires on it (Payback, Last stand, Stubborn, Rally cry).
+### 3.1 The model
 
-### 2.5 Foes dodge too
+A **status effect** sits on one fighter (a creature, a boss or a foe). Each is defined in content (`status-effects.json`, schema-validated):
 
-Every boss and dungeon foe gets a Speed (`baseSpd`) and dodges by the same rule.
+- `id`, `name`, `kind` (`debuff` now; `buff` is in the schema from day one),
+- `maxStacks`, `turns` (the base duration),
+- `perStack`: plain numbers on the modifier sheet (for Mired: Speed −%, damage dealt −%).
 
-- **Speeds start low**, so foes dodge rarely: _start 2–5%_. A raid boss's Speed may grow with Boss Rank (`RULES.raid.curve`, a new column), like its HP and Attack.
-- **A dodged creature hit** deals nothing: no damage, no crit, no Echo, no reaction.
-- **Marks (Misa's rule):** a **Setter's** hit always leaves its mark, even when dodged. Any other creature's dodged hit leaves no mark (Quick re-mark included). A Payoff's dodged hit leaves the mark standing, since no reaction went off. This gives Setters a clear identity: the setup never misses.
-- **Credit:** a dodged hit earns nothing; the mark a dodged Setter leaves is credited as setup as usual.
+On a fighter, an effect has **stacks** and **turns left**.
 
-### 2.6 Things that fire on a dodge
+### 3.2 Turns
 
-New trigger lines (`combat-rules.md` 12), each writing a `proc` event:
+A **turn** is one fighter's action. **A status effect counts down on its target's own turns (Misa agreed):** at the end of each of the target's turns, turns left goes down by 1; at 0 the effect ends. The boss takes one turn a round, so "3 turns" on a boss is 3 rounds in a raid of any size and in the dungeon. A creature's skipped turn (silence, haze) still counts as its turn. A knocked-out creature's effects end.
 
-| Line       | Moment          | Effect                                                                                         |
-| ---------- | --------------- | ---------------------------------------------------------------------------------------------- |
-| Riposte    | It dodges a hit | It strikes back at once for a share of its Attack (_start 30%_); no mark, no crit, no reaction |
-| Momentum   | It dodges a hit | Its next turn hit deals this much more (replaces an earlier one, like Ember tail)              |
-| Slipstream | It dodges a hit | The creature beside it with the most Attack gets a boost on its next hit                       |
+### 3.3 Applying, stacks and refresh
 
-Foes can get on-dodge moves later as boss gimmicks (a boss that counters when it dodges).
+- **Application power** says how many stacks an application adds, in basis points **(Misa)**: 100% adds one stack, 200% two, 140% one plus a 40% chance of a second. A gear line "+40% chance to apply an extra stack" is +40% power. Below 100% it is a chance of one stack.
+- The extra-stack chance rolls on dice drawn at round start (`combat-rules.md` 9.2), behind the effect's own dice so other dice never move.
+- Stacks add up to `maxStacks`. **Every application refreshes the timer to full, even at the cap (Misa).**
+- **When the timer runs out, all stacks fall off together.**
+- Duration modifiers (+N turns) and power modifiers (+%) come from gear, talents and sources.
 
-### 2.7 Counters to dodge
+### 3.4 Purge and cleanse
 
-Players need tools before any foe dodges a lot, and so do bosses against a team of dodgers.
+- **Purge** is a new kind of boss move (`op: purge`, any trigger): it removes every debuff from the boss. Content can give it to any boss or foe.
+- A Support's **cleanse** (today it clears silence on neighbours) also removes debuffs from its neighbours.
 
-**Against dodgy foes** (good design space for Supports):
+### 3.5 Brakes, so a boss is not pinned at the cap forever
 
-- A Support boost that also makes the boosted creature's next hit **sure** (it cannot be dodged).
-- An aura that lowers the foe's dodge while a Support stands.
-- A mark that slows the foe (it dodges less while marked).
-- A future element built around slowing and freezing (Misa: "ice element incoming?").
+1. Most sources apply **below 100% power**, so duration matters between lucky rolls.
+2. A low cap with modest stacks: Mired at 5 × 3% is at most −15%.
+3. Only some things apply debuffs: a creature's plain hit leaves its mark, not a debuff.
+4. **Flare** (5.4) burns the stacks away for damage, and purge moves clear them.
+5. Later, if needed: boss debuff resistance by Boss Rank.
 
-**Against dodgy teams** (boss gimmicks):
+### 3.6 Lines and talents for effects
 
-- **Sure-hit moves** that cannot be dodged.
-- A move that **lowers Speed** (Thornmother's vines tangle creatures up).
+- **Lingering** (gear): debuffs you apply last +N turns.
+- **Heavy hand** (gear): +% application power for debuffs you apply.
+- **Clean coat** (gear): debuffs on the wearer are weaker (−% per-stack effect); a Support version for its neighbours.
+- Talents use the same numbers (a Mire Guard talent that resists debuffs; Support talents that extend them).
 
-These make a Speed team strong on some weeks and weak on others, which suits a weekly raid.
+### 3.7 Showing it
 
-### 2.8 Later, not in the first build
+Effects show as icons beside the boss (and over creatures on the stage), with stacks as "×5" and turns left. The fight log has a sentence for applied, stacked, refreshed, expired, purged and cleansed.
 
-- **The cricket boss (Misa):** a tiny boss with low HP and very high Speed and dodge. It only works once players have the counters in 2.7; otherwise it drags out the round count.
-- **Dungeon rooms:** "Fog" (more dodge for everyone), "Mud" (less Speed for the team).
-- **Enrage escalation:** if dodge streaks make enrage last too long, the boss's damage grows each enrage round, so a hit that lands lands hard.
-- **A Speed-focused species or role**, once the stat is worth building around.
+## 4. The element chart
 
-## 3. Randomness
+Matchups become a list of attacker → defender pairs with a multiplier. A pair not listed is 100%. It still only changes a creature's hit on a boss or foe; foe hits on creatures ignore elements (they may use the chart later).
 
-- **Dodge dice:** each round draws dodge dice at round start like every other die (`combat-rules.md` 9.2):
-  - one per creature for each hit it can take that round, numbered by hit (as Sidestep's dice 6 to 9 are today);
-  - one per creature turn and strike for the foe's dodge.
-- **Old fights:** the dice are drawn only when dodge is on in the fight's stored rules (`luck.dodge`, absent = off), so a stored fight replays exactly and a fight without dodge draws what it always drew. The legacy digest test (`packages/sim/test/legacy-unchanged.test.ts`) must stay unchanged.
-- **Sidestep's dice** (6 to 9) are retired once Sidestep is part of dodge; old fights that used them still replay with them.
+| Attacker → defender                                      | Damage |
+| -------------------------------------------------------- | ------ |
+| Tide → Ember, Ember → Grove, Grove → Spark, Spark → Tide | 150%   |
+| Ember → Tide, Grove → Ember, Spark → Grove, Tide → Spark | 75%    |
+| **Mire → Ember** (damp smothers the fire)                | 150%   |
+| **Ember → Mire** (swamp gas goes up)                     | 150%   |
+| **Tide → Mire** (it is already wet)                      | 75%    |
+| Grove, Spark ↔ Mire; Mire → Tide                         | 100%   |
 
-## 4. Showing it
+- **Reactions:** a mark is set off by any element that deals 150% to the marking element. A mark can have more than one trigger (Scorched: Tide and Mire).
+- **Hunter and Ward lines** read the chart: "X Hunter: damage against foes X deals 150% to" (Mire Hunter: Ember foes), "X Ward: damage from foes that deal 150% to X" (Mire Ward: Ember; Ember Ward: Tide and Mire).
+- Help text: "the wheel" becomes the **element chart**, a small grid in the glossary and how-to-play. Each element's line reads "Mire: strong against Ember · weak to Ember · resists Tide". The journal's wheel page gets a new line in lore.
+- Ember ↔ Mire is the first pair that sets off each other's marks, so either can go first: robust on Serpentine weeks. The simulator watches it.
 
-- **Creature page:** a "Dodge 14%" row under Speed, with the Speed it comes from (`CreaturePage.tsx`).
-- **Boss card and foe card:** the foe's dodge.
-- **Stage and replay:** "Dodged!" over the creature or boss, and the turn's sentence in the log (`describeEvent`).
-- **Glossary:** "Dodge", "Serpentine"; Speed's entry says what it does now.
-- **Gear and talent text:** Fleet, Light-footed, Riposte, Momentum, Slipstream, the new Sidestep and Zoomies.
-- **Choosing teams:** the auto team, Equip best and the simulator score creatures by power (`talentScore` and friends). That score must count dodge, or they will ignore Speed builds.
+## 5. Mire
 
-## 5. Balance
+**Identity: Mire is patience. It sticks, it holds, it keeps.** Peat brown, ochre, tar black with an oily rainbow sheen. Slow, sturdy creatures (the lowest Speed in the game, so little dodge, and high HP). The bog keeps old things: its trip place turns up old finds.
 
-- 50% dodge doubles a creature's real HP (1 / (1 − 0.5)). Boss Attack and move power are re-tuned so the targets in `balance-targets.md` still hold with typical dodge (about 12%) in the teams.
-- Foe dodge cuts the team's damage by about the same share. Boss HP comes down to match.
-- The simulator runs before and after, with seeded dice; the result goes in `docs/balance/log.md`.
-- Enrage dodge is watched for long finales (2.8, enrage escalation).
+### 5.1 Mark and the Mired debuff
 
-## 6. Build order
+- **Mark:** **Muddied** (Mire's element mark, left like every mark).
+- **Mired** (status effect, debuff): per stack Speed −3% and damage dealt −3% (_start_), cap 5, 3 turns (_start_).
 
-One PR, one commit per slice:
+### 5.2 Reactions
 
-1. **Serpentine:** engine order per round, content, Cinder Wyrm, glyph, glossary, boss card, Discord text, board preview. Tests for the order with gaps, uneven rows and enrage.
-2. **Dodge in the engine:** the rules and dice behind a stored flag (off by default), the hit table in 2.4, the Setter mark rule, events. Tests, and the legacy digest unchanged.
-3. **Foe Speed in content:** `baseSpd` for every boss and foe, and a Boss Rank column.
-4. **Sources:** Fleet, Light-footed, Sidestep folded in, Zoomies text, power score.
-5. **On-dodge lines:** Riposte, Momentum, Slipstream.
-6. **Showing it:** creature page, boss card, stage, log, glossary.
-7. **Balance pass** in the simulator, then dodge turned on.
+| Reaction    | Mark set off     | By    | Extra                                                                                          |
+| ----------- | ---------------- | ----- | ---------------------------------------------------------------------------------------------- |
+| **Smother** | Scorched (Ember) | Mire  | Normal reaction bonus, and applies Mired (_start 100% power_)                                  |
+| **Flare**   | Muddied (Mire)   | Ember | Normal reaction bonus, then **burns off all Mired stacks** for +20% (_start_) damage per stack |
 
-Counters (2.7) and the later ideas (2.8) are a follow-up.
+Flare gives a real choice: keep the stacks (boss slower and weaker) or burn them for one big hit.
+
+### 5.3 Creatures (Misa: a Guard and a Support for now)
+
+Two lines, each a base form that evolves at level 15, like the existing lines. Names below are working names; the compendium pass may refine them.
+
+- **Guard line: Mudlump → Bogwarden.** The steadfast tank: very high HP, the lowest Speed. Signature: when it takes a hit (not dodged), it applies Mired to the attacker (_start 60% power_). A talent in its pool resists debuffs.
+- **Support line: Squelch → Croakmire.** The debuffer: its round-start action, besides its usual Support work, applies Mired to the boss (_start 60% power_); its talents and gear lean to debuff duration and power.
+
+Setter and Payoff Mire lines come later **(Misa)**.
+
+### 5.4 Raid boss: Old Bogback
+
+A huge, half-sunk ancient toad. Element Mire. Its moves put **Mired on creatures** (whole rows), which cuts their Speed and so their dodge, so debuff resistance and Clean coat are worth chasing on its week. It may also purge itself now and then. Needs lore, a sprite, a Discord portrait, retreat lines, a loot table and an adaptation like the other bosses. Spark is neutral against it; Ember teams shine (150%), Tide teams struggle (75%).
+
+### 5.5 Dungeon
+
+- Two or three Mire foes (for example a bog toad, a tar leech, a fen lurker room boss), with low Speed.
+- **Mud** room modifier: the team's Speed down (_start −30%_).
+
+### 5.6 Trip place: Sunken Fen
+
+A Mire destination where the bog keeps old things: better odds of old finds (gear, journal pages, the Ancient vault push-on). Banner, catch table (the two Mire lines), journal pages, compendium entry.
+
+### 5.7 Gear
+
+- Mire shards; one or two Mire-tagged bases.
+- The four element lines for Mire (Attunement, Hunter, Reaction, Ward), from the per-element line set.
+- Mire bases favour staying power and debuff lines (Last stand, Stubborn, Second wind, Lingering, Heavy hand).
+
+### 5.8 Everywhere elements are listed
+
+Every list, switch and palette that names the four elements gets Mire: the auto placer, the simulator and analytics, the element icons and colours, Discord emoji and colours, the glossary and how-to-play, collection goals, guests, weather or specials that pick an element, loot tables keyed by element.
+
+## 6. Randomness and replays
+
+- Dodge dice and effect dice are drawn at round start like every other die, numbered by purpose, and only when the feature is on in the fight's stored rules. A fight without them draws what it always drew.
+- Stored fights keep their rules and boss, so a stored fight replays exactly. The legacy digest test is re-pinned once on purpose, with the reason in `decisions.md`, if Serpentine or dodge changes its numbers.
+
+## 7. Balance
+
+- 50% dodge doubles real HP. Boss damage is re-tuned so the targets in `balance-targets.md` still hold with typical dodge in the teams; foe dodge and Mired move boss HP the other way.
+- The simulator runs before and after with seeded dice; results go in `docs/balance/log.md`.
+- Watch: Cinder Wyrm on Serpentine, Ember + Mire pairs, enrage length with dodge, Old Bogback's clear rates by element.
+
+## 8. Build order (one PR, one commit per slice)
+
+1. Serpentine.
+2. The element chart (pairs, multi-trigger reactions), no Mire yet; nothing changes for players.
+3. Status effects in the engine (model, turns, power, refresh, purge, cleanse, events), with a test effect.
+4. Dodge in the engine (rules, dice, hit table, the Setter mark rule, events).
+5. Mire content: element, chart pairs, mark, Mired, Smother, Flare, creatures, boss, foes, Mud, Sunken Fen, shards, bases; foe Speeds for every foe.
+6. Lines and talents: Fleet, Light-footed, Sidestep, Riposte, Momentum, Slipstream, Lingering, Heavy hand, Clean coat; the power score counts dodge.
+7. The game UI: sprites and portraits, Mire colours and icon, status icons, dodge on the stage and creature page, the element chart in help, the boss card.
+8. Balance pass, then everything on by default; docs (`combat-rules.md`, compendium, how-to-play).
