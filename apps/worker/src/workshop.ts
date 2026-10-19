@@ -31,8 +31,14 @@ import {
   supplyJobMs,
   supplyJobXp,
   treatCost,
+  dayParts,
+  dayXpEffects,
+  gearPart,
   jobWeather,
+  legacyDayParts,
+  treatPart,
   weatherTimeMs,
+  xpBoost,
   workshopExperience,
   workshopMods,
   PART_KINDS,
@@ -149,7 +155,7 @@ export class Workshop {
     const day = this.deps.weather?.at() ?? null;
     if (day === null) return null;
     const fx = jobWeather(day);
-    return { boon: day.boon, omen: day.omen, ...fx };
+    return { boon: day.boon, omen: day.omen, ...fx, xpEffects: dayXpEffects(day) };
   }
 
   /** A job's time under the day's weather (the screens show this one and the job is started with it). */
@@ -736,6 +742,19 @@ export class Workshop {
               ? undefined
               : { bp: input.weather.xpBp, treatMultiplier: input.weather.treatMultiplier },
           );
+          // What changed it, for the result's breakdown: the same stored numbers as the amount.
+          const w = input.weather;
+          const days =
+            w === undefined
+              ? []
+              : w.xpEffects === undefined
+                ? legacyDayParts(w)
+                : dayParts(w.xpEffects);
+          const expBoost = xpBoost(
+            treat
+              ? [treatPart(w?.treatMultiplier ?? RULES.experience.treat.multiplier), ...days]
+              : days,
+          );
           const experience =
             gainedExp > 0
               ? awardExperience(
@@ -746,12 +765,15 @@ export class Workshop {
                   gainedExp,
                   'job',
                   treat,
+                  expBoost,
                 )
               : null;
+          const craftBoost = xpBoost([gearPart('apprentice', apprenticeBp)]);
           const full = {
             ...result,
             ...(experience === null ? {} : { experience }),
             xp,
+            ...(craftBoost === null ? {} : { xpBoost: craftBoost }),
             skillXp,
             skillLevel: after,
             leveledUp: after > before,

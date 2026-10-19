@@ -72,10 +72,9 @@ function DismantleRow({ result }: { result: Extract<JobResult, { kind: 'dismantl
 }
 
 /**
- * Row 2 of a claimed job: who did it (their sprite and name) with two labelled bars, their experience
- * (the creature's own gold bar, with the level it reached and a short tag when it waits) and the Crafting
- * skill's (its own colour). Both are the shared `XpGain`. A job from before the worker was recorded has
- * the Crafting bar alone.
+ * Row 2 of a claimed job: who did it (their sprite and name) with two rows of the shared `XpGain`, their
+ * experience (gold) and the Crafting skill's (its own colour), each counting up to where it is now. A job
+ * from before the worker was recorded has the Crafting row alone.
  */
 function Worker({ result, creatures }: { result: JobResult; creatures: readonly Creature[] }) {
   const paid = result.experience;
@@ -94,10 +93,9 @@ function Worker({ result, creatures }: { result: JobResult; creatures: readonly 
       <XpList label={`${name}'s progress`}>
         {exp !== null && <ExperienceGainRow gain={exp} />}
         <XpGain
+          change={crafting}
+          what="Crafting XP"
           label={<GlossaryTag entry="skill-crafting">Crafting</GlossaryTag>}
-          levels={crafting.levels.to > crafting.levels.from ? crafting.levels : undefined}
-          gain={crafting.gain}
-          bar={crafting.bar}
         />
       </XpList>
     </div>

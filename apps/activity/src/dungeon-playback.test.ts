@@ -338,24 +338,29 @@ describe('the team breakdown of the end report', () => {
       team: [member],
       rewards: { ...cleared.rewards, experience: [paid] },
     })[0];
-    expect(withExp?.exp?.gain).toMatchObject({
-      levels: { from: 4, to: 5 },
-      gain: '+180',
-      treat: true,
+    expect(withExp?.exp).toMatchObject({
+      kind: 'experience',
+      from: 4,
+      to: 5,
+      gained: 180,
       gold: false,
       waiting: false,
-      bar: { value: 20, max: 175, startCap: 'Lv 5', endCap: 'Lv 6' },
     });
-    expect(withExp?.exp?.dayLine).toBeNull();
-    // The day's Boons and Omens that changed it are a line of their own.
+    expect(withExp?.exp?.legs.at(-1)).toEqual({ level: 5, max: 175, from: 0, to: 20 });
+    // A run stored before the breakdown: the treat of its flag, at the usual doubling.
+    expect(withExp?.exp?.boost?.parts).toEqual([{ source: 'treat', name: 'Treat', times: 2 }]);
+    // The day's Boons and Omens of a run's older fields go into the same breakdown, never a line.
     const day = teamBreakdown({
       team: [member],
       rewards: {
         ...cleared.rewards,
-        experience: [{ ...paid, dayEffects: [{ name: 'Cold Snap', bp: -2000 }] }],
+        experience: [{ ...paid, treat: false, dayEffects: [{ name: 'Cold Snap', bp: -2000 }] }],
       },
     })[0];
-    expect(day?.exp?.dayLine).toBe('Cold Snap gave -20% experience');
+    expect(day?.exp?.boost).toEqual({
+      parts: [{ source: 'day', name: 'Cold Snap', bp: -2000 }],
+      totalBp: 8000,
+    });
     // Another creature's award is not this one's.
     const other = teamBreakdown({
       team: [member],

@@ -21,3 +21,4 @@ export * from './weather';
 export * from './dungeon-map';
 export * from './dungeon-run';
 export * from './economy';
+export * from './xp-boost';

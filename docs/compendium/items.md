@@ -173,7 +173,13 @@ Crafting a supply is a Workshop job. Basic supplies need the lowest Crafting lev
 
 **Lures are the one supply made from Bait** (and a little scrap), since 2026-10-16: Bait's two jobs are treats, which grow creatures, and lures, which find them. A trip no longer always brings a creature; a lure raises the chance that it does, and the chance that the creature is a species the player does not have yet, the better tiers more. Lures are crafted only: trips and the dungeon do not drop them, and rank gifts give the lure tiers of old supplies as map scraps and satchels instead. `(content: supplies.json, glossary.json "supply-lure"; design: gear-and-creatures-v2.md 9.5)`
 
-## Parts
+## Treats
+
+A treat is a little Bait spent on one creature when an activity starts (a trip, the dungeon team, a Workshop job); that activity gives it double experience, and triple on a Hearty Breakfast day. Raids take no treats. `(content: glossary.json "treat")`
+
+**The treat icon** (shipped 2026-10-19): a watermelon slice, flat side up, red flesh with dark seeds and a pale and a green rind round the curve (`treat` in `apps/activity/src/glyphs.ts`). It sits next to an experience gain when a treat was packed, and it never carries a number: the gain's multiplier is a separate chip. Tapping either shows what changed the gain. `(content: glossary.json "treat"; design: decisions.md 2026-10-19)`
+
+**Compendium detail, not shipped** (in-world): the valley's cooks cut melon for creatures before a long day, and a creature that has had its slice works with a will. Nobody agrees whether it is the melon or the being thought of that does it.
 
 Parts are the raw material. They pay for crafts. `(content: glossary.json "part-*")`
 

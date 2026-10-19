@@ -45,6 +45,9 @@ import {
   treatCost,
   weeklySpecial,
   closedReasons,
+  dayParts,
+  dayXpEffects,
+  legacyDayParts,
   type AccountStat,
   type PushOnGoalDef,
   type ExpeditionLength,
@@ -52,6 +55,7 @@ import {
   type SupplyDef,
   type SuppliesId,
   type TripWeather,
+  type XpBoostPart,
 } from '@creatures/game';
 import * as v from 'valibot';
 import type { Analytics, PushOnOutcome } from './analytics';
@@ -203,6 +207,10 @@ const StoredTripWeatherSchema = v.strictObject({
   reefOpen: v.boolean(),
   xpBp: v.number(),
   treatMultiplier: v.nullable(v.number()),
+  /** Each Boon's and Omen's change to creature experience (absent on trips sent before 2026-10-19). */
+  xpEffects: v.optional(
+    v.pipe(v.array(v.strictObject({ id: v.string(), bp: v.number() })), v.maxLength(4)),
+  ),
 });
 
 /** True when a day's effect changes nothing about a trip. */
@@ -223,6 +231,7 @@ export class Expeditions {
       },
       deps,
       tripWeatherOf: (row) => this.tripWeatherOf(row),
+      tripDayXpOf: (row) => this.tripDayXpOf(row),
       kitIds: (row) => this.kitIds(row),
       explorerView: (userId, creatureId) => this.explorerView(userId, creatureId),
       rankSumOf: (userId) => this.rankSumOf(userId),
@@ -255,6 +264,22 @@ export class Expeditions {
       };
     } catch {
       return NO_TRIP_WEATHER;
+    }
+  }
+
+  /**
+   * The Boons and Omens that changed the creature experience of a trip, by name, from what was stored when it
+   * was sent (the same numbers its claim pays with). Nothing for a trip with no weather stored.
+   */
+  private tripDayXpOf(row: ExpeditionRow): XpBoostPart[] {
+    if (row.weather_json === null) return [];
+    try {
+      const parsed = v.safeParse(StoredTripWeatherSchema, JSON.parse(row.weather_json));
+      if (!parsed.success) return [];
+      const o = parsed.output;
+      return o.xpEffects === undefined ? legacyDayParts(o) : dayParts(o.xpEffects);
+    } catch {
+      return [];
     }
   }
 
@@ -690,7 +715,7 @@ export class Expeditions {
     const weatherJson =
       day === null || noTripWeather(fx)
         ? null
-        : JSON.stringify({ boon: day.boon, omen: day.omen, ...fx });
+        : JSON.stringify({ boon: day.boon, omen: day.omen, ...fx, xpEffects: dayXpEffects(day) });
 
     for (const pick of input.supplies) {
       if (!takeSupply(this.sql, userId, pick.id)) {

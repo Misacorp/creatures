@@ -75,7 +75,7 @@ const grew = (levelBefore: number, level: number, treat: boolean) =>
   );
 
 describe('the experience row of a trip', () => {
-  it('is the same row as a Workshop job: "Experience", the level change, +N, a Treat tag and the bar', () => {
+  it('is the same row as a Workshop job: "Experience", the level change, +N, the multiplier and the bar', () => {
     page = createPage();
     page.draw(
       <TripResult
@@ -84,17 +84,19 @@ describe('the experience row of a trip', () => {
         onClaim={() => undefined}
       />,
     );
-    const text = visibleText(first(page.root, 'dl'));
+    const list = first(page.root, byClass(page.root, 'xp-list'));
+    const text = visibleText(list);
     expect(text).toContain('Experience');
-    expect(text).not.toContain('Level +');
-    expect(text).toMatch(/Lv 8.*Lv 9/);
+    expect(text).toContain('Lv 8 → 9');
     expect(text).toContain('+240');
     expect(text).toContain('Level up!');
-    expect(text).toContain('Treat');
-    // The bar the trip result lacked: where the explorer stands in the new level.
+    // The treat is the melon and the ×2 chip, never the word.
+    expect(text).not.toContain('Treat');
+    expect(byClass(list, 'xp-treat')).toHaveLength(1);
+    expect(visibleText(first(list, byClass(list, 'xp-times')))).toBe('×2');
     const bar = find(page.root, (e) => e.getAttribute('role') === 'progressbar')[0];
     expect(bar?.getAttribute('aria-label')).toBe("Sproutle's experience");
-    expect(bar?.getAttribute('aria-valuetext')).toBe('40 / 300 XP');
+    expect(bar?.getAttribute('aria-valuetext')).toBe('40 / 300, +240');
   });
 
   it('shows no level change or Level up! when the level stayed, only the bar and the gain', () => {
@@ -106,10 +108,11 @@ describe('the experience row of a trip', () => {
         onClaim={() => undefined}
       />,
     );
-    const text = visibleText(first(page.root, 'dl'));
+    const list = first(page.root, byClass(page.root, 'xp-list'));
+    const text = visibleText(list);
     expect(text).toContain('+240');
     expect(text).not.toContain('Level up!');
-    expect(text).not.toContain('Treat');
+    expect(byClass(list, 'xp-boost')).toHaveLength(0);
     expect(find(page.root, (e) => e.getAttribute('role') === 'progressbar')).toHaveLength(1);
   });
 });

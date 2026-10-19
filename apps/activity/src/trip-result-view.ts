@@ -22,7 +22,8 @@ import type { PendingCatch } from './talent-types';
 import { destinationName, explorerXp, lengthHours } from './trip-view';
 import type { CountItem } from './ui/CountBadge';
 import type { IconRef } from './icon-ref';
-import { experienceGain, type ExperienceGain } from './xp-gain';
+import { experienceGain, explorerGain } from './xp-gain';
+import type { XpChange } from './xp-change';
 
 /** Everything the trip result shows, worked out from the server's claim result and the fresh state. */
 export interface TripResultView {
@@ -42,17 +43,10 @@ export interface TripResultView {
   autoSettled: string[];
   counts: CountItem[];
   loot: GrantLoot | null;
-  xp: {
-    gained: number;
-    rank: number;
-    rankedUp: boolean;
-    rankBefore: number;
-    value: number;
-    max: number;
-    text?: string;
-  } | null;
-  /** The explorer's creature experience as the shared row (`ExperienceGainRow`): levels, "+N", tags and the bar. */
-  growth: ExperienceGain | null;
+  /** The explorer XP the trip paid, as the shared row (`ui/XpGain`). */
+  xp: XpChange | null;
+  /** The explorer's creature experience as the shared row (`ExperienceGainRow`). */
+  growth: XpChange | null;
   stars: { stars: number; gained: boolean; trips: number } | null;
   slot: string | null;
   gifts: { rank: number; title: string; lines: { key: string; icon: IconRef; text: string }[] }[];
@@ -79,6 +73,7 @@ export function tripResultView(input: {
   const stars = starsView(result);
   const loot = result.loot;
   const exp = result.experience;
+  const name = creature === undefined ? 'The explorer' : creatureName(creature);
   return {
     tone: revealTone(result),
     explorer:
@@ -106,19 +101,16 @@ export function tripResultView(input: {
     xp:
       xp === null || bar === null
         ? null
-        : {
+        : explorerGain({
             gained: xp.gained,
             rank: xp.rank,
             rankBefore: xp.rankBefore,
-            rankedUp: xp.rankedUp,
             value: bar.value,
-            max: bar.max,
-            ...(bar.text === undefined ? {} : { text: bar.text }),
-          },
-    growth:
-      exp === undefined
-        ? null
-        : experienceGain(exp, creature === undefined ? 'The explorer' : creatureName(creature)),
+            max: bar.text === undefined ? bar.max : null,
+            boost: xp.boost,
+            name,
+          }),
+    growth: exp === undefined ? null : experienceGain(exp, name),
     stars: stars === null ? null : { stars: stars.stars, gained: stars.gained, trips: stars.trips },
     slot: slotLine(result),
     gifts: rankGiftViews(result),

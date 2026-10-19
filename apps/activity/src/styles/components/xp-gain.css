@@ -1,81 +1,323 @@
 /*
-  The XP gain list (ui/XpGain.tsx): what an activity paid, the same wherever it is shown (the trip result, a
-  claimed Workshop job). One column: the label on its own line, then what changed on one row (a level change,
-  the gain in green, small tags and a note), then the bar across the full width. The Crafting bar has its own colour, so it
-  is never taken for the creature's experience (gold).
+  The XP gain list (ui/XpGain.tsx, decisions.md 2026-10-19 "Count-up"): what an activity paid, one look
+  everywhere (a claimed Workshop job, a trip result, the dungeon team). Each row: the label, the level change
+  and "Level up!"; then the level tag, a slim bar with its numbers, the "+N" and the multiplier (a chip and
+  the melon slice). The bar fills from the old value to the new one in pixel steps. Each kind of XP has its
+  colour (`--xp-fill` and `--xp-fill-shade`, set by `.xp-kind-*` in xp-bar.css).
 */
 .xp-list {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.375rem;
-  align-items: center;
   margin: 0;
-  padding: 0.625rem;
+  padding: 0.5rem 0.625rem;
   background: var(--dusk-2);
   box-shadow: inset 0 0 0 var(--px) var(--line);
-}
-
-/* A gain is a group of the list; its label and lines take part in the list's own grid. */
-.xp-gain {
-  display: contents;
-}
-
-.xp-list dt {
-  color: var(--haze);
-  font-size: var(--fs-small);
   text-align: left;
 }
 
-/* A little air above every label but the first, so each gain reads as its own group. */
-.xp-list > * + * > dt:first-child,
-.xp-list > dd + dt {
-  margin-top: 0.375rem;
+.xp-list ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.xp-list dd {
+.xp-caption {
+  margin: 0 0 0.375rem;
+  color: var(--haze);
+  font-size: var(--fs-small);
+  line-height: 1.1;
+}
+
+/* The "+N" and "Level up!": green for a creature's experience, the kind's own colour for the others. */
+.xp-row {
+  --xp-plus: var(--xp-fill);
+
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  font-size: var(--fs-small);
+  line-height: 1.1;
+}
+
+.xp-row.xp-kind-experience {
+  --xp-plus: var(--good);
+}
+
+.xp-head,
+.xp-extra {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.125rem 0.375rem;
   min-width: 0;
-  margin: 0;
 }
 
-.xp-list .xp-bar-row {
-  display: block;
-  grid-column: 1 / -1;
+.xp-label {
+  color: var(--haze);
 }
 
-.xp-plus {
-  color: var(--good, var(--gold));
+.xp-up {
+  color: var(--bone);
+  white-space: nowrap;
 }
 
-/* The level row fits one phone line: smaller level badges than a card's. */
-.xp-levels .lvl-tag {
-  height: 1.25rem;
-  padding: 0 0.375rem;
-  font-size: var(--fs-small);
+.xp-who {
+  flex: none;
 }
 
-.xp-levels {
+.xp-row .xp-tag.badge {
+  padding: 0 0.25rem;
+  line-height: 1.15;
+}
+
+.xp-row .xp-tag.up {
+  background: var(--xp-plus);
+  color: var(--ink);
+}
+
+.xp-extra .stars-row {
+  line-height: 0;
+}
+
+.xp-extra-value {
+  margin-left: auto;
+}
+
+.xp-track {
+  display: flex;
   gap: 0.25rem;
-}
-
-/* The level tags take the colour of their kind of XP (gold, orchid, leather), like the bar under them. */
-.xp-gain .lvl-tag {
-  background: var(--xp-fill);
+  align-items: center;
+  min-width: 0;
 }
 
 /*
-  Explorer XP and Crafting show their gain ("+300 XP") and their "Level up!" / "Rank up!" in their own
-  colour too, so the whole row reads as that kind; a creature's experience keeps the green.
+  Where the browser has subgrid, every row's level tag, bar, "+N" and multiplier share four columns, so
+  the bars of a list start and end together whatever each row's multiplier is.
 */
-.xp-kind-explorer .xp-plus,
-.xp-kind-crafting .xp-plus {
-  color: var(--xp-fill);
+@supports (grid-template-columns: subgrid) {
+  .xp-list ul {
+    grid-template-columns: auto minmax(4.5rem, 1fr) auto auto;
+    column-gap: 0.25rem;
+  }
+
+  .xp-row {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+  }
+
+  .xp-head,
+  .xp-extra {
+    grid-column: 1 / -1;
+  }
+
+  .xp-track {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+  }
+
+  .xp-track > .xp-lv {
+    justify-self: start;
+  }
+
+  .xp-track > .xp-bar {
+    min-width: 0;
+  }
 }
 
-.xp-kind-explorer .badge.good,
-.xp-kind-crafting .badge.good {
+/* The level tag: the kind's colour, like the bar. */
+.xp-lv {
+  flex: none;
+  padding: 0.125rem 0.25rem 0;
   background: var(--xp-fill);
+  box-shadow: 0 0 0 2px var(--ink);
+  color: var(--ink);
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.xp-bar {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 4.5rem;
+  height: 1.25rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+.xp-old,
+.xp-new {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+}
+
+.xp-old {
+  left: 3px;
+  width: calc((100% - 6px) * var(--from, 0) / 100);
+  background: var(--xp-fill-shade);
+}
+
+.xp-new {
+  left: calc(3px + (100% - 6px) * var(--from, 0) / 100);
+  width: calc((100% - 6px) * (var(--to, 0) - var(--from, 0)) / 100);
+  background: var(--xp-fill);
+  box-shadow: inset 0 2px 0 0 rgb(255 255 255 / 45%);
+}
+
+/*
+  The numbers inside: one colour (bone) with an ink outline, so every letter reads the same over the dark
+  trough, the shaded old part and the bright fill, wherever the fill's edge is.
+*/
+.xp-text {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding-top: 0.0625rem;
+  color: var(--bone);
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  /* A one-pixel ink edge on all eight sides: thin enough to keep the pixel letters open. */
+  text-shadow:
+    1px 0 var(--ink),
+    -1px 0 var(--ink),
+    0 1px var(--ink),
+    0 -1px var(--ink),
+    1px 1px var(--ink),
+    -1px -1px var(--ink),
+    1px -1px var(--ink),
+    -1px 1px var(--ink);
+}
+
+.xp-plus {
+  flex: none;
+  min-width: 1.5rem;
+  margin-left: 0.125rem;
+  color: var(--xp-plus);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/*
+  The multiplier: the "×2" chip in the kind's colour and the melon slice, one small button next to the
+  gain. It looks like what it is (a tappable chip), not like a tag of words.
+*/
+.xp-boost,
+button.xp-boost,
+button.xp-boost:active:not(:disabled) {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  gap: 0.1875rem;
+  align-items: center;
+  min-height: 1.25rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--fs-small);
+  cursor: pointer;
+}
+
+/* A bigger place to tap than the chip itself, without moving anything. */
+button.xp-boost::after {
+  position: absolute;
+  inset: -0.5rem -0.25rem;
+  content: '';
+}
+
+.xp-times {
+  padding: 0.125rem 0.1875rem 0;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--xp-fill);
+  color: var(--xp-fill);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+button.xp-boost:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.xp-boost.open .xp-times {
+  background: var(--xp-fill);
+  color: var(--ink);
+}
+
+/* The breakdown in the popover: each part and its value, then the total, on lines of their own. */
+.xp-boost-lines {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.25rem 0 0;
+}
+
+.xp-boost-line {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.xp-boost-line dt,
+.xp-boost-line dd {
+  margin: 0;
+}
+
+.xp-boost-line dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.xp-boost-line.total {
+  padding-top: 0.25rem;
+  box-shadow: inset 0 2px 0 0 var(--line);
+  color: var(--gold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .xp-bar.flash .xp-old,
+  .xp-bar.flash .xp-new {
+    background: var(--bone);
+  }
+
+  .xp-lv.stepped {
+    animation: xp-pop 300ms steps(3) both;
+  }
+
+  .xp-row .xp-tag.up {
+    visibility: hidden;
+  }
+
+  .xp-row .xp-tag.up.shown {
+    visibility: visible;
+    animation: xp-pop 300ms steps(3) both;
+  }
+
+  .xp-plus {
+    opacity: 0.5;
+  }
+
+  .xp-plus.done {
+    opacity: 1;
+    animation: xp-pop 240ms steps(3) both;
+  }
+}
+
+@keyframes xp-pop {
+  0% {
+    transform: scale(0.6);
+  }
+
+  60% {
+    transform: scale(1.25);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }

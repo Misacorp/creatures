@@ -150,7 +150,9 @@ describe('the dungeon fixtures match what the server sends', () => {
     expect(actCamp.state.team.map((t) => t.id)).not.toEqual(
       actCampPending.state.team.map((t) => t.id),
     );
-    expect(actCamp.state.team.every((t) => t.hp > 0 && !t.treat)).toBe(true);
+    expect(actCamp.state.team.every((t) => t.hp > 0)).toBe(true);
+    // One creature of the row has the run's treat (Sproutle; its experience names it in the clear's boost).
+    expect(actCamp.state.team.filter((t) => t.treat)).toHaveLength(1);
     // The ends: home keeps the pack, a defeat keeps half of it, a clear goes one depth deeper.
     expect(actHome.state).toMatchObject({ status: 'done', outcome: 'home', reachable: [] });
     expect(actHome.summary).toMatchObject({ outcome: 'home', newDepth: 1, cleared: false });
@@ -162,6 +164,12 @@ describe('the dungeon fixtures match what the server sends', () => {
     expect(actCleared.state).toMatchObject({ status: 'done', outcome: 'cleared' });
     expect(actCleared.summary).toMatchObject({ outcome: 'cleared', cleared: true, newDepth: 2 });
     expect(actCleared.summary.rooms.at(-1)?.kind).toBe('boss');
+    // The treated creature's experience: doubled, and the breakdown says so (the older fields too, for one release).
+    expect(actCleared.summary.rewards.experience?.[0]).toMatchObject({
+      treat: true,
+      treatTimes: 2,
+      boost: { parts: [{ source: 'treat', name: 'Treat', times: 2 }], totalBp: 20_000 },
+    });
     expect(actCleared.today.depth).toBe(2);
     expect(actCleared.summary.rewards.experience?.length).toBeGreaterThan(3); // the creature swapped out is paid too
     // The replay of a path run: every fight, with the node, the row that fought it and the starting row on top.

@@ -7,18 +7,19 @@
  */
 import {
   RULES,
-  activeEffects,
   addParts,
+  dayParts,
+  dayXpEffects,
   dungeonExperience,
   isLandmark,
   keptOnDefeat,
   mapView,
   nodeFoe,
   rollDungeonLoot,
-  scaleStrength,
   streakBonus,
+  treatPart,
   undercroftOpen,
-  weatherDef,
+  xpBoost,
   xpWeather,
   type WeatherDay,
 } from '@creatures/game';
@@ -47,15 +48,13 @@ import {
 /**
  * The Boons and Omens of the day that changed creature experience, by name, with the change in basis
  * points as it was applied (scaled by the day's strength; negative: less). One that changes only the
- * treat's multiplier shows no entry. Names come from the content.
+ * treat's multiplier shows no entry. Names come from the content. (The older field of the run's
+ * experience; `boost` says the same with the treat.)
  */
 function xpDayEffects(day: WeatherDay | null): { name: string; bp: number }[] {
-  return activeEffects(day).flatMap((a) => {
-    if (a.effect.op !== 'xp') return [];
-    const bp = scaleStrength(a.effect.bp, a.strengthBp);
-    const name = weatherDef(a.id)?.name;
-    return bp === 0 || name === undefined ? [] : [{ name, bp }];
-  });
+  return dayParts(dayXpEffects(day)).flatMap((p) =>
+    p.source === 'day' ? [{ name: p.name, bp: p.bp }] : [],
+  );
 }
 
 const totalOf = (pack: DungeonPack): number => pack.bait + pack.essence + pack.scrap;
@@ -124,6 +123,7 @@ export function finishRun(
   const inRow = new Set(st.input.team.map((slot) => slot.id));
   const experience: DungeonExperienceView[] = [];
   const dayEffects = xpDayEffects(st.weather);
+  const days = dayParts(dayXpEffects(st.weather));
   const treatTimes = xpWeather(st.weather).treatMultiplier ?? RULES.experience.treat.multiplier;
   for (const id of st.everyone) {
     const treat = st.treats.includes(id);
@@ -142,6 +142,7 @@ export function finishRun(
       gained,
       'dungeon',
       treat,
+      xpBoost(treat ? [treatPart(treatTimes), ...days] : days),
     );
     if (view !== null) {
       experience.push({ ...view, treatTimes: treat ? treatTimes : null, dayEffects });

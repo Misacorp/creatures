@@ -14,8 +14,7 @@ import { Callout } from './ui/Callout';
 import { CountBadge } from './ui/CountBadge';
 import { GameIcon } from './ui/GameIcon';
 import { RevealShell } from './ui/RevealShell';
-import { Tag } from './ui/Tag';
-import { XpGain, XpList } from './ui/XpGain';
+import { XpExtraRow, XpGain, XpList } from './ui/XpGain';
 
 /** The sentence at the top: who went where for how long, and how it went (the names in the pixel font). */
 function Headline({ view }: { view: TripResultView }) {
@@ -167,45 +166,26 @@ export function TripResult({
       )}
 
       {(view.xp !== null || view.growth !== null || view.stars !== null) && (
-        <XpList>
+        <XpList label={`${view.explorer?.name ?? 'The explorer'}'s progress`}>
           {view.xp !== null && (
             <XpGain
+              change={view.xp}
+              what="Explorer XP"
               label={<GlossaryTag entry="explorer-rank">Explorer</GlossaryTag>}
-              head={<span class="pix">Rank {view.xp.rank}</span>}
-              gain={`+${String(view.xp.gained)} XP`}
-              tags={
-                view.xp.rankedUp ? (
-                  <Tag kind="badge" tone="good">
-                    Rank up!
-                  </Tag>
-                ) : undefined
-              }
-              bar={{
-                value: view.xp.value,
-                max: view.xp.max,
-                label: `${view.explorer?.name ?? 'The explorer'}'s explorer XP`,
-                text: view.xp.text,
-                kind: 'explorer',
-              }}
             />
           )}
           {view.growth !== null && <ExperienceGainRow gain={view.growth} />}
           {view.stars !== null && (
-            <>
-              <dt class="pix">
-                <GlossaryTag entry="familiarity">Familiarity</GlossaryTag>
-              </dt>
-              <dd>
-                <Stars stars={view.stars.stars} />
-                {view.stars.gained ? (
-                  <strong class="good-note">New star!</strong>
-                ) : (
-                  <span class="muted">
-                    {view.stars.trips} {view.stars.trips === 1 ? 'trip' : 'trips'}
-                  </span>
-                )}
-              </dd>
-            </>
+            <XpExtraRow label={<GlossaryTag entry="familiarity">Familiarity</GlossaryTag>}>
+              <Stars stars={view.stars.stars} />
+              {view.stars.gained ? (
+                <strong class="good-note xp-extra-value">New star!</strong>
+              ) : (
+                <span class="xp-extra-value">
+                  {view.stars.trips} {view.stars.trips === 1 ? 'trip' : 'trips'}
+                </span>
+              )}
+            </XpExtraRow>
           )}
         </XpList>
       )}

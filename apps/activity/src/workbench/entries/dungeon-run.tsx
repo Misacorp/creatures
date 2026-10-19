@@ -1,4 +1,4 @@
-import { dungeonEvents, dungeonKeepsakes } from '@creatures/game';
+import { dungeonEvents, dungeonKeepsakes, expToNext } from '@creatures/game';
 import { DungeonCamp } from '../../DungeonCamp';
 import { DungeonDescend } from '../../DungeonDescend';
 import { DungeonEvent } from '../../DungeonEvent';
@@ -34,6 +34,7 @@ import type { ExperienceView } from '../../experience';
 import type { DungeonRunState, DungeonRunSummary } from '../../dungeon-types';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
+import { experienceBoostOf } from './xp-boosts';
 
 const EVENT_IDS = dungeonEvents.map((e) => e.id);
 const OUTCOMES = [
@@ -305,104 +306,51 @@ const EXPERIENCE_MODES = [
   'as the server sent it',
 ] as const;
 
-/** What the run paid the team, made up for the workbench: one case of each thing the team section can show. */
+/**
+ * What the run paid the team, made up for the workbench: one case of each thing the team section can show,
+ * with the game's level sizes and multipliers the server really sends.
+ */
 function experienceFor(
   team: DungeonRunSummary['team'],
   mode: string,
 ): ExperienceView[] | undefined {
-  const base = { treat: false, treatTimes: null, dayEffects: [], gold: false, waiting: false };
+  const base = { treat: false, gold: false, waiting: false };
   const at = (i: number): string => team[i]?.id ?? `missing-${String(i)}`;
+  const paid = (
+    i: number,
+    p: { gained: number; from: number; to: number; exp: number; boost?: string },
+  ): ExperienceView => {
+    const boost = p.boost === undefined ? null : experienceBoostOf(p.boost);
+    return {
+      ...base,
+      creatureId: at(i),
+      gained: p.gained,
+      treat: boost?.parts.some((x) => x.source === 'treat') === true,
+      levelBefore: p.from,
+      level: p.to,
+      exp: p.exp,
+      needed: p.to >= 30 ? null : expToNext(p.to),
+      ...(boost === null ? {} : { boost }),
+    };
+  };
   switch (mode) {
     case 'a level up with a treat':
       return [
-        {
-          ...base,
-          creatureId: at(0),
-          gained: 260,
-          treat: true,
-          treatTimes: 2,
-          levelBefore: 7,
-          level: 8,
-          exp: 90,
-          needed: 330,
-        },
-        {
-          ...base,
-          creatureId: at(1),
-          gained: 130,
-          levelBefore: 7,
-          level: 7,
-          exp: 190,
-          needed: 330,
-        },
-        { ...base, creatureId: at(2), gained: 130, levelBefore: 3, level: 3, exp: 60, needed: 140 },
+        paid(0, { gained: 260, from: 7, to: 8, exp: 90, boost: 'treat ×2' }),
+        paid(1, { gained: 130, from: 7, to: 7, exp: 190 }),
+        paid(2, { gained: 40, from: 3, to: 3, exp: 60 }),
       ];
     case 'Hearty Breakfast and a treat':
       return [
-        {
-          ...base,
-          creatureId: at(0),
-          gained: 810,
-          treat: true,
-          treatTimes: 3,
-          dayEffects: [{ name: 'Hearty Breakfast', bp: 2500 }],
-          levelBefore: 7,
-          level: 9,
-          exp: 120,
-          needed: 350,
-        },
-        {
-          ...base,
-          creatureId: at(1),
-          gained: 160,
-          dayEffects: [{ name: 'Hearty Breakfast', bp: 2500 }],
-          levelBefore: 7,
-          level: 7,
-          exp: 200,
-          needed: 330,
-        },
-        {
-          ...base,
-          creatureId: at(2),
-          gained: 100,
-          dayEffects: [{ name: 'Cold Snap', bp: -2000 }],
-          levelBefore: 3,
-          level: 3,
-          exp: 10,
-          needed: 140,
-        },
+        paid(0, { gained: 487, from: 7, to: 8, exp: 270, boost: 'treat on Hearty Breakfast (×3)' }),
+        paid(1, { gained: 162, from: 7, to: 7, exp: 200, boost: 'Hearty Breakfast, no treat' }),
+        paid(2, { gained: 104, from: 3, to: 4, exp: 10, boost: 'Hearty Breakfast, no treat' }),
       ];
     case 'waiting and top level':
       return [
-        {
-          ...base,
-          creatureId: at(0),
-          gained: 200,
-          levelBefore: 10,
-          level: 10,
-          exp: 380,
-          needed: 380,
-          waiting: true,
-        },
-        {
-          ...base,
-          creatureId: at(1),
-          gained: 200,
-          levelBefore: 29,
-          level: 30,
-          exp: 0,
-          needed: null,
-          gold: true,
-        },
-        {
-          ...base,
-          creatureId: at(2),
-          gained: 90,
-          levelBefore: 30,
-          level: 30,
-          exp: 0,
-          needed: null,
-        },
+        { ...paid(0, { gained: 200, from: 10, to: 10, exp: expToNext(10) }), waiting: true },
+        { ...paid(1, { gained: 200, from: 29, to: 30, exp: 0 }), gold: true },
+        paid(2, { gained: 90, from: 30, to: 30, exp: 0 }),
       ];
     default:
       return undefined;

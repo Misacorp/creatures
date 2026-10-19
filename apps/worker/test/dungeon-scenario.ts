@@ -26,7 +26,7 @@ import {
 import type { DungeonRunState } from '../src/dungeon-types';
 import { createRecorder, type Captured } from './fixture-contract';
 import type { CoreContext } from './helpers';
-import { newKey, type Json } from './kit';
+import { give, newKey, type Json } from './kit';
 
 /** Tuesday of week 2027-W02, 14:00 in Helsinki: after the 13:37 daily reset, so the game day is the 12th. */
 export const DUNGEON_SCENARIO_START = Date.parse('2027-01-12T12:00:00Z');
@@ -104,7 +104,9 @@ export async function runDungeonScenario(ctx: CoreContext): Promise<Captured> {
   ];
   // The day's map before anyone has entered.
   out.responses['dungeon-today-map'] = (await hero.call('GET', '/api/dungeon/today')).body;
-  const startBody = hero.body({ team: [sproutle, splashet, cindle] });
+  // Sproutle has a treat packed, so the run's experience carries its breakdown (`boost`).
+  give(ctx, hero.id, { bait: 20 });
+  const startBody = hero.body({ team: [sproutle, splashet, cindle], treats: [sproutle] });
   const started = await record(hero, 'dungeon-start', 'POST', '/api/dungeon/start', startBody);
   let state = (started.body as unknown as { state: DungeonRunState }).state;
   // The first fight, played whole: the answer carries the room to show at once.

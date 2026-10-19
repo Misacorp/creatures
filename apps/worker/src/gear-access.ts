@@ -12,6 +12,7 @@ import {
   itemStats,
   statText,
   wornEffects,
+  type DayXpEffect,
   type GearRarity,
   type PartsBundle,
   type ReachId,
@@ -227,6 +228,8 @@ export interface StoredJobWeather {
   timeBp: number;
   xpBp: number;
   treatMultiplier: number | null;
+  /** Each Boon's and Omen's change to creature experience (absent on jobs started before 2026-10-19). */
+  xpEffects?: DayXpEffect[];
 }
 
 /**
