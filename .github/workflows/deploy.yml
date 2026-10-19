@@ -64,9 +64,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Test (production only; PR CI already covers staging)
-        if: env.TARGET_ENV == 'production'
-        run: pnpm test
+      # No test step: main's ruleset requires the `ci` check and branches up to date before merging
+      # (Misa, 2026-10-19), so the merged tree is exactly the tree PR CI tested (docs/design/testing.md).
 
       - run: pnpm build
 
