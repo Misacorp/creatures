@@ -46,7 +46,19 @@ Each line has a pool of 7 or 8. Branch forms share their line's pool, so a Sprou
 | Pounces When Perfect  | It saves its best pounce for a perfect moment.           |
 | Fiercely Loyal        | Hits harder while a Guard stands beside it.              |
 
-### Sproutle line (Grove Guard, or Support after the second branch)
+#### Mudlump and Squelch lines (Mire, design, not shipped)
+
+Status: 2026-10-19. A design draft for the Mire content slice (`docs/design/speed-and-dodge.md` sections 3.6 and 5.3; the full text is in `docs/design/mire-content-drafts.md`). The Mudlump pool mixes a Guard and Support talents on purpose, like the Sproutle pool: its talents hint which branch it wants. Mudlump and Bogwarden are the Guard line; the Squelch line has a pool of its own (keyed `squelch`) that leans to debuff duration and power. The three below are the ones the design asks for. A full pool needs seven or eight, so the rest are for the content slice to write in the same style. `(design, compendium detail, not shipped)`
+
+| Talent           | What it is about                                                   |
+| ---------------- | ------------------------------------------------------------------ |
+| Mud Off Its Back | Mud and muck slide off it. Debuffs on it are weaker.               |
+| Sticks Around    | What it sticks to stays stuck. The debuffs it applies last longer. |
+| Low Croak        | A low, heavy croak. The debuffs it applies stack more often.       |
+
+The first is a Guard talent that resists debuffs (the line Clean coat); the other two are Support talents that make debuffs last longer (Lingering) and stack more often (Heavy hand). `(design)`
+
+## Sproutle line (Grove Guard, or Support after the second branch)
 
 | Talent                | What it is about                                       |
 | --------------------- | ------------------------------------------------------ |

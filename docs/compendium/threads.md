@@ -240,6 +240,20 @@ Read `README.md` for the tags. Every thread names its source. Ideas are `(compen
 - **Ideas:** the bosses go for the strongest and the loudest, because that is what they were made to keep watch over `(compendium detail, not shipped)`. Keep their motives gentle; they are not villains.
 - **Status:** open.
 
+### T32. The things the bog keeps
+
+- **Seed:** "The bog keeps old things: its trip place turns up old finds." `(design: speed-and-dodge.md section 5.6)`. The Ancient vault is "a door older than any road" `(content: push-on-goals.json ancient-vault)`, and the Sunken Fen banner (draft) has a half-sunk stone arch with a lantern under it.
+- **Open:** what has the fen swallowed, and who put it there? Is the half-sunk arch the vault's door, seen from the other side? Does the same bog hold the sunken door of the Drowned Warden (T10)?
+- **Ideas:** the fen is where the world keeps what it does not want to forget (see motif 14, "Keeping", in `world.md`). Old Bogback sits on top of it all. A page in the Peat Notes set could say what the first find was `(compendium detail, not shipped)`.
+- **Status:** open (seeded 2026-10-19, design not shipped).
+
+### T33. The wheel's missing spokes
+
+- **Seed:** "The wheel was never the whole world." `(compendium detail, not shipped; draft page any-the-chart)`. The element chart can grow `(design: speed-and-dodge.md section 4)`.
+- **Open:** if there is a fifth element, are there more? What does an explorer need to find to find a sixth? Is the loop itself, as the old journal says, "never once stopped", or did it only look that way from inside?
+- **Ideas:** a future element could sit between two old ones the way Mire sits between Tide and Ember. Keep the Mire rule (an element can be strong against one element and weak to another) as the pattern. Do not answer this yet; it is a good thread to leave open `(compendium detail, not shipped)`.
+- **Status:** open (seeded 2026-10-19).
+
 ---
 
 ## Answered
