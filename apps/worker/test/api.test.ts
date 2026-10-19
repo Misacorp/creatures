@@ -34,6 +34,8 @@ describe('GET /api/config', () => {
       version: 'dev',
       branch: 'dev',
       leetSource: 'mock',
+      // The flag is on in the local config (and staging); production has it off (lounge-live.test.ts).
+      loungeLive: true,
     });
     expectApiHeaders(res);
   });

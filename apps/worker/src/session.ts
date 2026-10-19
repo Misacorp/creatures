@@ -69,7 +69,7 @@ export async function formatSessionToken(
   return `s1.${guildId}.${secret}.${base64Url(new Uint8Array(mac))}`;
 }
 
-function base64UrlDecode(value: string): Uint8Array<ArrayBuffer> | null {
+export function base64UrlDecode(value: string): Uint8Array<ArrayBuffer> | null {
   try {
     const padded = value.replaceAll('-', '+').replaceAll('_', '/');
     const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
