@@ -31,7 +31,8 @@ import { DungeonNext } from './DungeonNext';
 import type { DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { creatureInfoOf } from './creature-info';
 import { Sprite } from './sprites/Sprite';
-import { XpBar } from './XpBar';
+import { ExperienceGainRow } from './ExperienceGainRow';
+import { XpList } from './ui/XpGain';
 
 /** A room panel's picture is 64 px (a foe) or 72 px (a floor boss), so three fit a 390 px phone. */
 const PANEL_SCALE = { foe: 4, boss: 3 } as const;
@@ -219,9 +220,10 @@ function RouteSection({ run, initialView }: { run: DungeonRunSummary; initialVie
 
 /**
  * Every room the run went through, as panels left to right in the order it went: a fight shows its foe,
- * any other room (camp, mystery room, cache, door) its picture and a short line of what happened. A room
- * passed through has a green CLEARED banner; the room the run fell in shows DEFEATED in red. The states are
- * classes (`cleared`, `defeat`) that the stylesheet turns into colours; the words say the same.
+ * any other room (camp, mystery room, cache, door) its picture and a short line of what happened. A fight won
+ * has a green CLEARED stamp and the fight the run fell in shows DEFEATED in red; a room that is not a fight
+ * has no stamp (nothing was cleared there). The states are classes (`cleared`, `defeat`) that the stylesheet
+ * turns into colours; the words say the same.
  */
 function RoomLog({ rows }: { rows: readonly RoomLogRow[] }) {
   return (
@@ -233,7 +235,8 @@ function RoomLog({ rows }: { rows: readonly RoomLogRow[] }) {
           aria-label={row.spoken}
         >
           <span class="rp-title pix" aria-hidden="true">
-            {row.title}
+            <span>{row.where}</span>
+            <span class="rp-what">{row.what}</span>
           </span>
           <span class="rp-art" aria-hidden="true">
             <Sprite
@@ -242,7 +245,7 @@ function RoomLog({ rows }: { rows: readonly RoomLogRow[] }) {
               }
               scale={row.foe === null ? 6 : PANEL_SCALE[row.foe.boss ? 'boss' : 'foe']}
             />
-            <span class="rp-banner pix">{row.banner}</span>
+            {row.banner !== null && <span class="rp-banner pix">{row.banner}</span>}
           </span>
           <span class="rp-name" aria-hidden="true">
             {row.name}
@@ -315,12 +318,15 @@ function RoomStrip({ rooms, path }: { rooms: readonly StripRoom[]; path: boolean
 
 /**
  * The team in its fighting order, one row, left to right: each sprite with the HP it ended with under it
- * ("340 / 391 HP"; a knocked-out creature is grey with a skull and "0 / 391 HP" in red). Under the HP is
- * the creature's level (with a green "+1" when the run levelled it up) and its experience bar, the part
- * the run added drawn brighter, then one line of what the run paid and one of what multiplied it ("Treat
- * gave 2x experience"). Tapping a sprite opens the small-creature popover with its role and element.
+ * ("340 / 391 HP"; a knocked-out creature is grey with a skull and "0 / 391 HP" in red). Under the row,
+ * one list with each creature's experience as the same row every result screen shows (`ExperienceGainRow`:
+ * the level change and a green "Level up!" when the run levelled it, the "+N", a "Treat" tag, the bar, and a
+ * line naming the day's Boons and Omens that changed it); a third of a phone is too narrow for it under
+ * each sprite. Tapping a sprite opens the small-creature popover with its role and element.
  */
 function TeamBreakdown({ team }: { team: readonly TeamEntry[] }) {
+  /** The members the run paid experience (each with its row under the team). */
+  const paid = team.flatMap((m) => (m.exp === null ? [] : [{ ...m, exp: m.exp }]));
   return (
     <>
       <h4>Your team</h4>
@@ -336,33 +342,26 @@ function TeamBreakdown({ team }: { team: readonly TeamEntry[] }) {
               label={`${m.spoken} Shows its role and element.`}
             />
             <span class="tm-hp pix">{m.hp}</span>
-            <span class="tm-level">
-              <span class="lvl-tag pix">Lv {m.exp?.level ?? m.level}</span>
-              {m.exp !== null && m.exp.levelsGained > 0 && (
-                <span class="lvl-up pix" aria-label={`Up ${String(m.exp.levelsGained)}`}>
-                  +{m.exp.levelsGained}
-                </span>
-              )}
-            </span>
-            {m.exp !== null && (
-              <>
-                <XpBar
-                  class="tm-xp"
-                  value={m.exp.value}
-                  max={m.exp.max}
-                  text={m.exp.text}
-                  quiet
-                  gained={m.exp.gained}
-                  label={`${m.name}: experience`}
-                />
-                <span class="tm-exp muted">{m.exp.gainedLine}</span>
-                {m.exp.boostLine !== null && <span class="tm-exp muted">{m.exp.boostLine}</span>}
-                {m.exp.note !== null && <span class="tm-exp tm-note">{m.exp.note}</span>}
-              </>
+            {m.exp === null && (
+              <span class="tm-level">
+                <span class="lvl-tag pix">Lv {m.level}</span>
+              </span>
             )}
           </li>
         ))}
       </ul>
+      {paid.length > 0 && (
+        <XpList label="Experience after the run" class="team-xp">
+          {paid.map((m) => (
+            <ExperienceGainRow
+              key={m.id}
+              who={m.name}
+              gain={m.exp.gain}
+              note={m.exp.dayLine === null ? undefined : <span class="muted">{m.exp.dayLine}</span>}
+            />
+          ))}
+        </XpList>
+      )}
     </>
   );
 }

@@ -144,58 +144,16 @@ function pctText(bp: number): string {
 }
 
 /**
- * The one short line under a creature's experience bar saying what changed the amount, from the source and
- * the factor the server sent: "Treat gave 2x experience", "Treat gave 3x experience and Hearty Breakfast gave
- * +25%", "Cold Snap gave -20% experience". Null when nothing did (or the run is from before the server said).
+ * The one short line under a creature's experience row saying which day effects changed the amount, from the
+ * factors the server sent: "Cold Snap gave -20% experience", "Hearty Breakfast gave +25% and Cold Snap gave
+ * -20% experience". The treat is not in it (it is a "Treat" tag on the row). Null when no Boon or Omen did
+ * (or the run is from before the server said).
  */
-export function experienceBoostLine(view: ExperienceView): string | null {
-  const parts: string[] = [];
-  if (view.treat) parts.push(`Treat gave ${String(view.treatTimes ?? 2)}x experience`);
-  for (const d of view.dayEffects ?? []) {
-    if (d.bp !== 0) parts.push(`${d.name} gave ${d.bp > 0 ? '+' : '-'}${pctText(d.bp)}`);
-  }
+export function experienceDayLine(view: ExperienceView): string | null {
+  const parts = (view.dayEffects ?? [])
+    .filter((d) => d.bp !== 0)
+    .map((d) => `${d.name} gave ${d.bp > 0 ? '+' : '-'}${pctText(d.bp)}`);
   if (parts.length === 0) return null;
-  if (!view.treat) parts[parts.length - 1] += ' experience';
   const last = parts.pop() ?? '';
-  return parts.length === 0 ? last : `${parts.join(', ')} and ${last}`;
-}
-
-/** One creature's experience bar on the results, from what the run paid it. */
-export interface ExperienceBarView {
-  /** The level it has now, and how many levels this run added ("+1" shows in green). */
-  level: number;
-  levelsGained: number;
-  /** The bar: experience into the level, what the level needs, the words over it and the part this run added. */
-  value: number;
-  max: number;
-  text: string;
-  gained: number;
-  /** "+130 experience". */
-  gainedLine: string;
-  /** What multiplied it ("Treat gave 2x experience"), or null. */
-  boostLine: string | null;
-  /** "Waiting at this level" while a ribbon or an evolution is needed, "Gold Ribbon!" at the top; otherwise null. */
-  note: string | null;
-}
-
-/**
- * The bar for a creature after a run: where it stands in its level now, with the part this run added drawn
- * apart. A level reached in this run fills the new level's bar from the start; the top level shows a full
- * bar ("Top level"). The server decides every number.
- */
-export function experienceBar(view: ExperienceView): ExperienceBarView {
-  const levelsGained = Math.max(0, view.level - view.levelBefore);
-  const top = view.needed === null;
-  const max = view.needed ?? 1;
-  return {
-    level: view.level,
-    levelsGained,
-    value: top ? 1 : view.exp,
-    max,
-    text: top ? 'Top level' : `${String(view.exp)} / ${String(max)} XP`,
-    gained: top ? 0 : levelsGained > 0 ? view.exp : Math.min(view.gained, view.exp),
-    gainedLine: `+${String(view.gained)} experience`,
-    boostLine: experienceBoostLine(view),
-    note: view.gold ? 'Gold Ribbon!' : view.waiting ? 'Waiting at this level' : null,
-  };
+  return `${parts.length === 0 ? last : `${parts.join(', ')} and ${last}`} experience`;
 }

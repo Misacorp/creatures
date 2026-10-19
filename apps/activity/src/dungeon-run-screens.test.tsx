@@ -176,6 +176,13 @@ describe('a mystery room', () => {
     );
   });
 
+  it('is a pixel panel with its scene as body text, and no `.pix` on single elements', () => {
+    const { root } = draw(<DungeonEvent event={SAMPLE_EVENT} busy={false} onPick={noop} />);
+    expect(byClass(root, 'reveal-card')[0]?.getAttribute('class')).toContain('pix-panel');
+    expect(byClass(root, 'event-scene')[0]?.getAttribute('class')).toContain('prose');
+    expect(byClass(root, 'pix')).toHaveLength(0);
+  });
+
   it('picks option 0 or 1 and waits while an act is on its way', () => {
     const picked: (0 | 1)[] = [];
     const { root } = draw(
@@ -297,7 +304,7 @@ describe('the camp', () => {
     expect(visibleText(root)).toContain("Wayfarer's Charm");
     expect(visibleText(root)).toContain('Every creature gets 12% more Attack and 12% more HP.');
     expect(visibleText(root)).toContain('Foes have 10% less HP.');
-    page?.click(button(root, 'Back'));
+    page?.click(button(root, /^‹ Back/));
     expect(visibleText(root)).toContain('Standing creatures heal');
     page?.click(button(root, /^Take a keepsake/));
     page?.click(button(root, /Chalk Mark/));
@@ -390,9 +397,88 @@ describe('the camp', () => {
         initialOut={state.team[2]?.id ?? ''}
       />,
     ).root;
-    page?.click(button(root, 'Back'));
+    page?.click(button(root, /^‹ Back/));
     expect(visibleText(root)).toContain('Who goes home?');
     expect(acts).toEqual([]);
+  });
+
+  it('puts "‹ Back" at the top of each step, before its choices, and has no Back at the bottom', () => {
+    const steps = [
+      ['keepsake', 'Take a keepsake', 'to the camp'],
+      ['out', 'Who goes home?', 'to the camp'],
+      ['arrange', 'Arrange your row', 'to who goes home'],
+    ] as const;
+    for (const [step, title, to] of steps) {
+      const root = draw(
+        <DungeonCamp
+          team={state.team}
+          pack={state.pack}
+          camp={camp}
+          creatures={owned}
+          busy={false}
+          onAct={noop}
+          initialStep={step}
+          initialIncoming={owned[4]?.id ?? ''}
+          initialOut={state.team[2]?.id ?? ''}
+        />,
+      ).root;
+      const head = byClass(root, 'drill-head')[0] as FakeElement;
+      expect(head, step).toBeDefined();
+      expect(visibleText(head), step).toContain('‹ Back');
+      expect(visibleText(head), step).toContain(title);
+      expect(byName(head, 'button', `‹ Back ${to}`), step).toHaveLength(1);
+      // The head is the first thing in the step and the only Back there is.
+      const buttons = byName(root, 'button', /Back/);
+      expect(buttons, step).toHaveLength(1);
+      expect(byClass(root, 'camp-step')[0]?.childNodes[0], step).toBe(head);
+      // The step opens with the focus on Back, so Escape has something to hear it.
+      expect((byName(head, 'button', /Back/)[0] as FakeElement).focused, step).toBeGreaterThan(0);
+    }
+  });
+
+  it('goes back one step on Escape, like Back, and not while an act is running', () => {
+    const acts: DungeonAct[] = [];
+    const root = draw(
+      <DungeonCamp
+        team={state.team}
+        pack={state.pack}
+        camp={camp}
+        creatures={owned}
+        busy={false}
+        onAct={(x) => acts.push(x)}
+        initialStep="arrange"
+        initialIncoming={owned[4]?.id ?? ''}
+        initialOut={state.team[2]?.id ?? ''}
+      />,
+    ).root;
+    page?.key(byClass(root, 'camp-step')[0] as FakeElement, 'Escape');
+    expect(visibleText(root)).toContain('Who goes home?');
+    page?.key(byClass(root, 'camp-step')[0] as FakeElement, 'Escape');
+    expect(visibleText(root)).toContain('Standing creatures heal');
+    expect(acts).toEqual([]);
+    const busy = draw(
+      <DungeonCamp
+        team={state.team}
+        pack={state.pack}
+        camp={camp}
+        creatures={owned}
+        busy={true}
+        onAct={noop}
+        initialStep="keepsake"
+      />,
+    ).root;
+    page?.key(byClass(busy, 'camp-step')[0] as FakeElement, 'Escape');
+    expect(visibleText(busy)).toContain('Take a keepsake');
+    expect(byName(busy, 'button', /^‹ Back/)[0]?.hasAttribute('disabled')).toBe(true);
+  });
+
+  it('is a pixel panel: the font is set once on the card, and its reading text keeps the body font', () => {
+    const root = drawCamp(noop);
+    const card = byClass(root, 'reveal-card')[0] as FakeElement;
+    expect(card.getAttribute('class')).toContain('pix-panel');
+    // No `.pix` on single elements any more (the choice names inherit the panel's font).
+    expect(byClass(root, 'pix')).toHaveLength(0);
+    expect(byClass(card, 'prose').length).toBeGreaterThan(0);
   });
 
   it('cannot swap when the player has nobody outside the row, and says why', () => {
@@ -646,7 +732,7 @@ describe('the results of a path run', () => {
     expect(byClass(root, 'dmap')).toHaveLength(1);
   });
 
-  it('lists every room of a cleared run in order, not only the fights, each Cleared', () => {
+  it('lists every room of a cleared run in order, not only the fights; only the fights are Cleared', () => {
     const run = sampleSummary('cleared');
     const root = results(run);
     page?.click(button(root, 'Rooms'));
@@ -655,15 +741,16 @@ describe('the results of a path run', () => {
     expect(panels).toHaveLength(run.route?.path.length ?? -1);
     expect(panels.map((p) => p.getAttribute('aria-label'))).toEqual([
       expect.stringMatching(/^Room 1: .*Cleared\.$/),
-      expect.stringMatching(/^Room 2: Glowing Pool\. You gain 1 scrap\. Cleared\.$/),
+      'Room 2: Glowing Pool. You gain 1 scrap.',
       expect.stringMatching(/^Room 3 · Elite: Fierce .*Cleared\.$/),
-      'Room 4: Camp. Rested. Cleared.',
-      'Room 5: Cache. 1 Bait · 1 Scrap. Cleared.',
+      'Room 4: Camp. Rested.',
+      'Room 5: Cache. 1 Bait · 1 Scrap.',
       expect.stringMatching(/^Room 6: .*Cleared\.$/),
       expect.stringMatching(/^Room 7 · Floor boss: Drowned Warden, Thorns\. Cleared\.$/),
     ]);
     const text = visibleText(byClass(root, 'room-strip')[0] as FakeElement);
-    expect(text.match(/CLEARED/g)).toHaveLength(7);
+    // A stamp on the four fights only: a mystery room, the camp and a cache have none.
+    expect(text.match(/CLEARED/g)).toHaveLength(4);
     expect(text).not.toContain('DEFEATED');
     // A line of what happened in the rooms that are not fights, as text.
     expect(text).toContain('Rested');
@@ -684,49 +771,85 @@ describe('the results of a path run', () => {
     expect(visibleText(panels[2] as FakeElement)).toContain('DEFEATED');
     expect(visibleText(panels[2] as FakeElement)).toContain('HP left');
     expect(panels[2]?.getAttribute('aria-label')).toMatch(/Defeated\.$/);
-    expect(panels[1]?.getAttribute('aria-label')).toMatch(/Cleared\.$/);
+    expect(panels[0]?.getAttribute('aria-label')).toMatch(/Cleared\.$/);
   });
 
-  it('lists the rooms of a run that headed home from the camp, the camp last and Cleared', () => {
+  it('lists the rooms of a run that headed home from the camp, the camp last and not stamped', () => {
     const root = results(sampleSummary('home'));
     page?.click(button(root, 'Rooms'));
     const panels = byClass(root, 'room-panel');
     expect(panels).toHaveLength(4);
-    expect(panels[3]?.getAttribute('aria-label')).toBe('Room 4: Camp. Rested. Cleared.');
+    expect(panels[3]?.getAttribute('aria-label')).toBe('Room 4: Camp. Rested.');
+    expect(byClass(panels[3] as FakeElement, 'rp-banner')).toHaveLength(0);
   });
 
-  /** What a creature's experience bar says to a screen reader (its words are not drawn over the narrow bar). */
+  /** What an experience bar says to a screen reader. */
   const barOf = (member: FakeElement): string | null =>
     find(member, (e) => e.getAttribute('role') === 'progressbar')[0]?.getAttribute(
       'aria-valuetext',
     ) ?? null;
 
-  it('shows each creature with its level, an experience bar and what the run paid it', () => {
+  it('shows each creature with the shared experience row: levels, +N, a Treat tag and the bar', () => {
     const run = withExperience(sampleSummary('cleared'));
     const root = results(run);
     const members = byClass(root, 'team-member');
     expect(members).toHaveLength(3);
-    // A level up with a treat: Lv 8, a green +1, the bar at 90 / 330, +260 and the factor.
-    const first = visibleText(members[0] as FakeElement);
-    expect(first).toContain('Lv 8');
-    expect(first).toContain('+1');
-    expect(barOf(members[0] as FakeElement)).toBe('90 / 330 XP');
-    expect(first).toContain('+260 experience');
-    expect(first).toContain('Treat gave 2x experience');
-    expect(byClass(members[0] as FakeElement, 'lvl-up')).toHaveLength(1);
-    expect(byName(members[0] as FakeElement, 'div', 'Sproutle: experience')).toHaveLength(1);
-    // No level up, no treat: the bar and the plain gain, and no factor line.
-    const second = visibleText(members[1] as FakeElement);
-    expect(second).toContain('Lv 7');
-    expect(barOf(members[1] as FakeElement)).toBe('190 / 330 XP');
-    expect(second).toContain('+130 experience');
-    expect(byClass(members[1] as FakeElement, 'lvl-up')).toHaveLength(0);
+    // One list under the team's row, a row for each creature in the same order, each with its bar.
+    const list = byClass(root, 'team-xp')[0] as FakeElement;
+    expect(list.localName).toBe('dl');
+    const rows = byClass(list, 'xp-gain');
+    expect(rows).toHaveLength(3);
+    // A level up with a treat: "Experience", Lv 7 to Lv 8, +260, Level up!, a Treat tag and the bar at 90 / 330.
+    const first = visibleText(rows[0] as FakeElement);
+    expect(first).toContain('Sproutle · Experience');
+    expect(first).toMatch(/Lv 7.*Lv 8/);
+    expect(first).toContain('+260');
+    expect(first).toContain('Level up!');
+    expect(first).toContain('Treat');
+    expect(barOf(rows[0] as FakeElement)).toBe('90 / 330 XP');
+    expect(byName(rows[0] as FakeElement, 'div', "Sproutle's experience")).toHaveLength(1);
+    // The old prose is gone (the tag says it).
+    expect(first).not.toContain('Treat gave');
+    expect(first).not.toContain('+260 experience');
+    // No level up, no treat: the plain gain and the bar; no Level up! and no Treat tag.
+    const second = visibleText(rows[1] as FakeElement);
+    expect(barOf(rows[1] as FakeElement)).toBe('190 / 330 XP');
+    expect(second).toContain('+130');
+    expect(second).not.toContain('Level up!');
     expect(second).not.toContain('Treat');
     // A creature waiting at its level says so, shortly.
-    expect(visibleText(members[2] as FakeElement)).toContain('Waiting at this level');
+    expect(visibleText(rows[2] as FakeElement)).toContain('Waiting at this level');
+    // A creature with its row shows no separate level under its HP.
+    expect(byClass(members[0] as FakeElement, 'tm-level')).toHaveLength(0);
     // The old sentence is gone.
     expect(visibleText(root)).not.toContain('(treat)');
     expect(visibleText(root)).not.toContain('level 7 to 8');
+  });
+
+  it('names the Boon or Omen that changed the experience in one small line under its row', () => {
+    const run = withExperience(sampleSummary('cleared'));
+    const [paid] = run.rewards.experience ?? [];
+    if (paid === undefined) throw new Error('the sample pays experience');
+    const root = results({
+      ...run,
+      rewards: {
+        ...run.rewards,
+        experience: [{ ...paid, dayEffects: [{ name: 'Cold Snap', bp: -2000 }] }],
+      },
+    });
+    const rows = byClass(byClass(root, 'team-xp')[0] as FakeElement, 'xp-gain');
+    expect(rows).toHaveLength(1);
+    expect(visibleText(rows[0] as FakeElement)).toContain('Cold Snap gave -20% experience');
+  });
+
+  it('shows a creature the run paid nothing only its level, with no row', () => {
+    const base = sampleSummary('cleared');
+    const rewards = { ...base.rewards };
+    delete rewards.experience;
+    const root = results({ ...base, rewards });
+    expect(byClass(root, 'team-xp')).toHaveLength(0);
+    const members = byClass(root, 'team-member');
+    expect(members.every((m) => byClass(m, 'tm-level').length === 1)).toBe(true);
   });
 
   it('keeps the HP line, red for a creature that is down', () => {
@@ -781,6 +904,14 @@ describe('the results of a path run', () => {
     expect(text).not.toContain('Nothing this time');
     expect(byClass(root, 'no-rewards')).toHaveLength(1);
     expect(byClass(root, 'no-rewards-art')[0]?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('says when the day resets and in how long, without naming the timezone', () => {
+    const root = results(sampleSummary('cleared'));
+    const next = byClass(root, 'dungeon-next')[0] as FakeElement;
+    const line = byName(next, 'p', /^Resets at /)[0] as FakeElement;
+    expect(visibleText(line)).toMatch(/^Resets at [A-Z][a-z]{2} \d{1,2}:\d{2}, in \d/);
+    expect(visibleText(next)).not.toContain('Europe/');
   });
 
   it('has no empty-rewards note when the run paid something', () => {

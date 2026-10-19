@@ -6,6 +6,7 @@ import type { PendingCatch } from './talent-types';
 import { FakeElement, byClass, byName, createPage, find, visibleText, type Page } from './test-dom';
 import { TripResult } from './TripResult';
 import type { TripResultView } from './trip-result-view';
+import { experienceGain } from './xp-gain';
 
 let page: Page | null = null;
 
@@ -55,6 +56,63 @@ const view: TripResultView = {
 function radios(root: FakeElement): FakeElement[] {
   return find(root, (e) => e.localName === 'input' && e.getAttribute('type') === 'radio');
 }
+
+/** The explorer's experience as the server's answer gives it. */
+const grew = (levelBefore: number, level: number, treat: boolean) =>
+  experienceGain(
+    {
+      creatureId: 'e',
+      gained: 240,
+      treat,
+      levelBefore,
+      level,
+      exp: 40,
+      needed: 300,
+      waiting: false,
+      gold: false,
+    },
+    'Sproutle',
+  );
+
+describe('the experience row of a trip', () => {
+  it('is the same row as a Workshop job: "Experience", the level change, +N, a Treat tag and the bar', () => {
+    page = createPage();
+    page.draw(
+      <TripResult
+        view={{ ...view, growth: grew(8, 9, true) }}
+        busy={false}
+        onClaim={() => undefined}
+      />,
+    );
+    const text = visibleText(first(page.root, 'dl'));
+    expect(text).toContain('Experience');
+    expect(text).not.toContain('Level +');
+    expect(text).toMatch(/Lv 8.*Lv 9/);
+    expect(text).toContain('+240');
+    expect(text).toContain('Level up!');
+    expect(text).toContain('Treat');
+    // The bar the trip result lacked: where the explorer stands in the new level.
+    const bar = find(page.root, (e) => e.getAttribute('role') === 'progressbar')[0];
+    expect(bar?.getAttribute('aria-label')).toBe("Sproutle's experience");
+    expect(bar?.getAttribute('aria-valuetext')).toBe('40 / 300 XP');
+  });
+
+  it('shows no level change or Level up! when the level stayed, only the bar and the gain', () => {
+    page = createPage();
+    page.draw(
+      <TripResult
+        view={{ ...view, growth: grew(9, 9, false) }}
+        busy={false}
+        onClaim={() => undefined}
+      />,
+    );
+    const text = visibleText(first(page.root, 'dl'));
+    expect(text).toContain('+240');
+    expect(text).not.toContain('Level up!');
+    expect(text).not.toContain('Treat');
+    expect(find(page.root, (e) => e.getAttribute('role') === 'progressbar')).toHaveLength(1);
+  });
+});
 
 describe('the trip result', () => {
   it('says who went where for how long, with each duplicate as radio rows', () => {

@@ -48,7 +48,7 @@
   margin: 0;
   padding: 0 0.5rem;
   color: var(--uc-ring);
-  font-size: 1rem;
+  font-size: var(--fs-row);
   line-height: 1.1;
   text-align: center;
   text-wrap: balance;
@@ -378,7 +378,7 @@ button.dmap-node.s-reachable {
 }
 
 .dnd-name {
-  font-size: 1.5rem;
+  font-size: var(--fs-title);
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
@@ -392,7 +392,7 @@ button.dmap-node.s-reachable {
 
 .dnd-hp {
   color: var(--haze);
-  font-size: 1.125rem;
+  font-size: var(--fs-row);
 }
 
 .dnd-trick,
@@ -405,13 +405,13 @@ button.dmap-node.s-reachable {
 
 .dnd-event {
   color: var(--gold);
-  font-size: 1.25rem;
+  font-size: var(--fs-heading);
 }
 
 button.dnd-go {
   width: 100%;
   min-height: 3rem;
-  font-size: 1.25rem;
+  font-size: var(--fs-heading);
 }
 
 .dnd-blocked {

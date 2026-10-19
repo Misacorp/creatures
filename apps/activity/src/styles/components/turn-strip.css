@@ -16,7 +16,7 @@
   flex: none;
   padding: 0.25rem 0.6rem;
   border: 1px solid var(--line);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
 }
 
 .turn-chip.current {

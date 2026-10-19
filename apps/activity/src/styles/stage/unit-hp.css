@@ -27,6 +27,6 @@
   min-height: 0.75rem;
   margin-top: 0.125rem;
   color: var(--gold);
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   line-height: 1;
 }

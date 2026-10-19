@@ -64,7 +64,7 @@ button.gtag:active:not(:disabled) {
   background: var(--ink);
   color: var(--gold);
   font-family: var(--display);
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   text-decoration: none;
   vertical-align: middle;
 }

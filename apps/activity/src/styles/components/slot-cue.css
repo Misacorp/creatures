@@ -48,7 +48,7 @@
   background: var(--cue);
   color: var(--ink);
   font-family: var(--display);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
   line-height: 1.125rem;
   pointer-events: none;
   text-align: center;
@@ -94,7 +94,7 @@
   min-height: 2.25rem;
   margin: 0.25rem 0;
   color: var(--haze);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
   line-height: 1.3;
 }
 

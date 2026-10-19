@@ -11,6 +11,7 @@ import { DismantlePanel } from './DismantlePanel';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Accordion } from './ui/Accordion';
+import { DrillHead } from './ui/DrillHead';
 import { RosterList } from './ui/RosterList';
 
 /**
@@ -84,11 +85,6 @@ function EquipView({
   onPick: (id: string) => void;
   onBack: () => void;
 }) {
-  const head = useRef<HTMLDivElement>(null);
-  // The view starts at its top, whatever the item view had been scrolled to.
-  useEffect(() => {
-    head.current?.scrollIntoView?.({ block: 'start' });
-  }, []);
   return (
     <section
       class="item-detail equip-view pix-panel"
@@ -105,13 +101,8 @@ function EquipView({
         }
       }}
     >
-      <div ref={head} class="drill-head">
-        <button type="button" class="ghost cp-back drill-back" onClick={onBack}>
-          <span aria-hidden="true">‹</span> Back
-          <span class="visually-hidden"> to the item</span>
-        </button>
-        <h3 class="drill-title">Equip on</h3>
-      </div>
+      {/* The view starts at its top, whatever the item view had been scrolled to. */}
+      <DrillHead title="Equip on" backLabel="to the item" scroll onBack={onBack} />
       <RosterList
         options={equipOptions(item, creatures)}
         placedNote={WEARS_IT_NOTE}

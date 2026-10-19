@@ -848,7 +848,10 @@ describe('the Undercroft, with the real answers', () => {
     page?.click(button(root, 'Rooms'));
     const panels = byClass(root, 'room-panel');
     expect(panels).toHaveLength(keeper.state.path.length);
-    expect(visibleText(panels[panels.length - 1] as FakeElement)).toContain('Floor boss');
+    // Below, the header is "Undercroft 1" over "Room 4 · Boss" (short, so it never wraps); a screen reader hears it whole.
+    const last = panels[panels.length - 1] as FakeElement;
+    expect(visibleText(last)).toContain('Room 4 · Boss');
+    expect(last.getAttribute('aria-label')).toContain('Floor boss');
     expect(visibleText(panels[panels.length - 1] as FakeElement)).toContain('Undercroft 1');
   });
 });

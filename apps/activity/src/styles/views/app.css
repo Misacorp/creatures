@@ -24,7 +24,7 @@
   background: var(--ink);
   box-shadow: 0 0 0 2px var(--plum);
   color: var(--bone);
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   letter-spacing: 0.08em;
   line-height: 1;
   text-shadow: none;

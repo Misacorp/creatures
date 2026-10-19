@@ -117,13 +117,16 @@ function useArrive(ref: { current: HTMLElement | null }, enabled: boolean): void
 
 /**
  * The card every reveal sits in: a heading (with an optional badge after it), the content, and a
- * footer that is a "Got it" button unless the screen brings its own buttons.
+ * footer that is a "Got it" button unless the screen brings its own buttons. `pix` makes it a pixel panel
+ * (`.pix-panel`: the pixel font is set once on the card and everything inside inherits it, as on the item
+ * and Workshop panels); long reading text inside opts out with `.prose`.
  */
 export function RevealShell({
   id,
   title,
   badge,
   class: extra,
+  pix = false,
   status = false,
   arrive = false,
   busy = false,
@@ -140,6 +143,8 @@ export function RevealShell({
   badge?: ComponentChildren;
   /** Where it is used (extra look for one place). */
   class?: string;
+  /** True for a pixel panel: the pixel font on the whole card, `.prose` on its reading text. */
+  pix?: boolean;
   /** True when the card is announced as a status as it appears. */
   status?: boolean;
   /** True when the card appears after the player's own action (a claim): the page brings it into view and focuses it. */
@@ -155,7 +160,7 @@ export function RevealShell({
   return (
     <section
       ref={card}
-      class={extra === undefined ? 'reveal-card' : `reveal-card ${extra}`}
+      class={['reveal-card', pix ? 'pix-panel' : '', extra].filter(Boolean).join(' ')}
       {...(status ? { role: 'status' } : {})}
       {...(arrive ? { tabIndex: -1 } : {})}
       aria-labelledby={id}

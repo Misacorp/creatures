@@ -10,7 +10,7 @@
 
 .reveal-essence {
   color: var(--gold);
-  font-size: 1.25rem;
+  font-size: var(--fs-heading);
   font-weight: 700;
 }
 
@@ -21,7 +21,7 @@
 
 .reveal-count {
   font-family: var(--display);
-  font-size: 1.5rem;
+  font-size: var(--fs-title);
   font-variant-numeric: tabular-nums;
 }
 

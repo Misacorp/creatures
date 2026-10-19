@@ -4,6 +4,7 @@ import { TabBar } from '../../TabBar';
 import { ALERT_TEXT, NO_ALERTS, type TabAlerts } from '../../tab-alerts';
 import { TABS, type Tab } from '../../tabs';
 import { ChoiceButton, ChoiceList } from '../../ui/ChoiceList';
+import { DrillHead } from '../../ui/DrillHead';
 import { LiveRegion } from '../../ui/LiveRegion';
 import { PlaybackControls } from '../../ui/PlaybackControls';
 import { PreviewStatus } from '../../ui/PreviewStatus';
@@ -344,21 +345,59 @@ const choiceList: Entry = {
               { label: 'Drink from the spring', line: 'Heal everyone by 30%.' },
               { label: 'Leave it alone', line: 'Nothing happens.' },
             ];
+    // The real lists sit in a pixel panel (the camp, the mystery room), which gives the names their font.
     return (
-      <ChoiceList label="Pick one">
-        {rows.map((row) => (
-          <ChoiceButton
-            key={row.label}
-            label={row.label}
-            line={row.line}
-            disabled={disabled}
-            onClick={() => undefined}
-            {...(row.class === undefined ? {} : { class: row.class })}
-          />
-        ))}
-      </ChoiceList>
+      <div class="pix-panel">
+        <ChoiceList label="Pick one">
+          {rows.map((row) => (
+            <ChoiceButton
+              key={row.label}
+              label={row.label}
+              line={row.line}
+              disabled={disabled}
+              onClick={() => undefined}
+              {...(row.class === undefined ? {} : { class: row.class })}
+            />
+          ))}
+        </ChoiceList>
+      </div>
     );
   },
+};
+
+const drillHead: Entry = {
+  name: 'DrillHead',
+  file: 'apps/activity/src/ui/DrillHead.tsx',
+  group: 'Controls',
+  description:
+    "The top of a drill-in view, a choice that opens inside the same drawer or card: \"‹ Back\" at the top left, then the view's title. The item drawer's Equip on view and the dungeon camp's three steps use it; Escape goes back too (the view around it listens for it).",
+  controls: {
+    title: { kind: 'text', maxLength: 40 },
+    backLabel: { kind: 'text', maxLength: 40 },
+    level: { kind: 'select', options: ['3', '4'] },
+    disabled: { kind: 'toggle' },
+  },
+  defaults: { title: 'Equip on', backLabel: 'to the item', level: '3', disabled: false },
+  presets: [
+    { name: 'In a drawer (Equip on)', props: {} },
+    {
+      name: 'Under a card heading (a camp step)',
+      props: { title: 'Who goes home?', backLabel: 'to the camp', level: '4' },
+    },
+    { name: 'While an act is running', props: { disabled: true } },
+  ],
+  render: (p) => (
+    <div class="pix-panel">
+      <DrillHead
+        title={str(p, 'title')}
+        backLabel={str(p, 'backLabel')}
+        level={str(p, 'level') === '4' ? 4 : 3}
+        disabled={bool(p, 'disabled')}
+        onBack={() => undefined}
+      />
+      <p class="muted prose">The view's own content sits under the head.</p>
+    </div>
+  ),
 };
 
 const previewStatus: Entry = {
@@ -391,6 +430,7 @@ const previewStatus: Entry = {
 
 export const controlEntries: readonly Entry[] = [
   choiceList,
+  drillHead,
   previewStatus,
   toggleButton,
   switchEntry,

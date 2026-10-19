@@ -18,8 +18,41 @@ describe('the rooms of a run, in order', () => {
       ['fight', 'Room 6', expect.any(String), null],
       ['boss', 'Room 7 · Floor boss', 'Drowned Warden', null],
     ]);
-    expect(rows.every((r) => r.state === 'cleared' && r.banner === 'CLEARED')).toBe(true);
+    expect(rows.every((r) => r.state === 'cleared')).toBe(true);
+    // Only the fights are stamped: a mystery room, the camp and a cache cleared nothing.
+    expect(rows.map((r) => r.banner)).toEqual([
+      'CLEARED',
+      null,
+      'CLEARED',
+      null,
+      null,
+      'CLEARED',
+      'CLEARED',
+    ]);
     expect(rows.map((r) => r.node)).toEqual(sampleSummary('cleared').route?.path);
+  });
+
+  it('writes each header as two short lines, so it never wraps to three at 390 px', () => {
+    const day = rowsOf(sampleSummary('cleared'));
+    expect(day.map((r) => [r.where, r.what])).toEqual([
+      ['Room 1', null],
+      ['Room 2', null],
+      ['Room 3', 'Elite'],
+      ['Room 4', null],
+      ['Room 5', null],
+      ['Room 6', null],
+      ['Room 7', 'Floor boss'],
+    ]);
+    // Below, the Undercroft floor is the first line and the room number (with the kind as one word) the second.
+    const below = rowsOf(undercroftSummary()).filter((r) => r.level > 0);
+    expect(below.length).toBeGreaterThan(0);
+    for (const r of below) expect(r.where).toBe('Undercroft 1');
+    expect(below[below.length - 1]?.what).toMatch(/^Room \d · Boss$/);
+    // Short enough for a third of a phone: no line is longer than "Undercroft 1" or "Room 6 · Elite".
+    for (const r of [...day, ...below]) {
+      expect(r.where.length).toBeLessThanOrEqual(12);
+      expect((r.what ?? '').length).toBeLessThanOrEqual(14);
+    }
   });
 
   it('gives a fight its foe and a room that is not a fight its glyph', () => {
@@ -83,7 +116,15 @@ describe('the rooms of a run, in order', () => {
       e.kind === 'camp' ? { node: e.node, kind: 'camp', result: 'pending' } : e,
     );
     const rows = rowsOf({ ...run, route: { ...route, history } });
-    expect(rows[3]).toMatchObject({ kind: 'camp', state: 'cleared', note: null, name: 'Camp' });
+    // Nothing was told and nothing was cleared: no stamp, a plain "Visited".
+    expect(rows[3]).toMatchObject({
+      kind: 'camp',
+      state: 'cleared',
+      banner: null,
+      note: 'Visited',
+      name: 'Camp',
+    });
+    expect(rows[3]?.spoken).toBe('Room 4: Camp. Visited.');
   });
 
   it('says what a carved door did in a few words', () => {

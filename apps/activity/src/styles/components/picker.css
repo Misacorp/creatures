@@ -13,7 +13,7 @@ fieldset.picker {
   gap: 0.375rem;
   padding: 0;
   color: var(--haze);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 label.pick {
@@ -53,18 +53,19 @@ label.pick input[type='radio'] {
 }
 
 .pick-name {
-  font-size: 0.9375rem;
+  font-size: var(--fs-row);
 }
 
 .pick-meta {
   color: var(--haze);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
 }
 
 /* The right of a row: how long the job takes, or why the creature cannot do it (as in the roster list). */
 .pick-side {
-  flex: 0 1 38%;
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 38%;
   margin-left: auto;
   text-align: right;
 }

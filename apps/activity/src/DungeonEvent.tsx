@@ -23,10 +23,11 @@ export function DungeonEvent({
       id="dungeon-event-heading"
       title={event.name}
       class="dungeon-event"
+      pix
       arrive
       footer={<></>}
     >
-      <p class="event-scene">{event.text}</p>
+      <p class="event-scene prose">{event.text}</p>
       <ChoiceList label="What will you do?">
         {event.options.map((option, index) => (
           <ChoiceButton

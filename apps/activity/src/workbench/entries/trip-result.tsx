@@ -5,6 +5,7 @@ import { pendingFind, type Find } from '../../find-view';
 import type { PendingCatch, TalentView } from '../../talent-types';
 import { TripResult } from '../../TripResult';
 import type { TripResultView } from '../../trip-result-view';
+import { experienceGain, type ExperienceGain } from '../../xp-gain';
 import { bool, str } from '../props';
 import type { Entry } from '../types';
 
@@ -65,6 +66,31 @@ const scrap = (amount: number) => ({
   entry: 'part-scrap',
 });
 
+/** The explorer's creature experience as the server's answer would give it (a Sproutle). */
+function growth(p: {
+  gained: number;
+  treat: boolean;
+  from: number;
+  to: number;
+  exp: number;
+  needed: number;
+}): ExperienceGain {
+  return experienceGain(
+    {
+      creatureId: 'sproutle',
+      gained: p.gained,
+      treat: p.treat,
+      levelBefore: p.from,
+      level: p.to,
+      exp: p.exp,
+      needed: p.needed,
+      waiting: false,
+      gold: false,
+    },
+    'Sproutle',
+  );
+}
+
 const BASE: TripResultView = {
   tone: 'home',
   explorer: { id: 'sproutle', species: 'sproutle', shiny: false, name: 'Sproutle' },
@@ -81,7 +107,7 @@ const BASE: TripResultView = {
   ],
   loot: null,
   xp: { gained: 300, rank: 3, rankBefore: 3, rankedUp: false, value: 412, max: 1200 },
-  growth: { gained: 240, treat: true, from: 8, to: 9, note: null },
+  growth: growth({ gained: 240, treat: true, from: 8, to: 9, exp: 40, needed: 300 }),
   stars: { stars: 1, gained: false, trips: 5 },
   slot: null,
   gifts: [],
@@ -104,7 +130,7 @@ const SCENES: Record<string, TripResultView> = {
   'a duplicate': {
     ...BASE,
     finds: [KNOWN_FIND],
-    growth: { gained: 240, treat: true, from: 9, to: 9, note: null },
+    growth: growth({ gained: 240, treat: true, from: 9, to: 9, exp: 190, needed: 300 }),
     stars: { stars: 1, gained: false, trips: 6 },
   },
   'three finds': {

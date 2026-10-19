@@ -24,15 +24,8 @@
   filter: none;
 }
 
-/* The stamp of a room that is not a fight sits low, so the room's picture stays readable above it. */
-.room-panel.other .rp-banner {
-  top: auto;
-  bottom: 0.25rem;
-  transform: rotate(-8deg);
-}
-
 .rp-note {
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
@@ -102,9 +95,14 @@
   transform: translateY(-50%);
 }
 
+/* The header is two short lines (where, then what), always two lines tall, so the pictures of a row line up. */
 .rp-title {
+  display: flex;
+  flex-direction: column;
+  min-height: 2.3em;
   color: var(--haze);
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
+  line-height: 1.15;
 }
 
 .rp-art {
@@ -117,30 +115,34 @@
 }
 
 .rp-name {
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
 
 .rp-mod,
 .rp-hp {
-  font-size: 0.6875rem;
+  font-size: var(--fs-small);
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
 
-/* The word across the picture, tilted like a stamp. It is a label, not an animation. */
+/*
+  The word across a fight's picture, tilted like a stamp. It is a label, not an animation. It is as wide as the
+  picture's panel, but never wider than 7rem, so on a computer screen it stays a stamp and not a long bar.
+*/
 .rp-banner {
   position: absolute;
   top: 50%;
-  left: -2px;
-  right: -2px;
+  left: 50%;
+  width: min(calc(100% + 4px), 7rem);
   padding: 0.125rem 0;
   background: var(--ink);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
   letter-spacing: 0.04em;
   line-height: 1.2;
-  transform: translateY(-50%) rotate(-8deg);
+  text-align: center;
+  transform: translate(-50%, -50%) rotate(-8deg);
 }
 
 .room-panel.cleared canvas.sprite {
@@ -172,7 +174,7 @@
 
 .room-panel.locked .rp-banner {
   color: var(--haze);
-  font-size: 0.6875rem;
+  font-size: var(--fs-small);
 }
 
 .team-member {
@@ -207,14 +209,14 @@
 
 .tm-name {
   max-width: 100%;
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
 
 .tm-hp {
   color: var(--bone);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
 }
 
 .team-member.ko canvas.sprite {
@@ -225,37 +227,16 @@
   color: var(--bad);
 }
 
-/* The level, with a green "+1" when the run levelled the creature up. */
+/* A creature the run paid no experience (an older run): just its level, under its HP. */
 .tm-level {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
 }
 
-.lvl-up {
-  color: var(--good);
-  font-size: 1.25rem;
-}
-
-/* The experience bar, a little smaller so it fits a third of the row. */
-.tm-xp {
-  align-self: stretch;
-  margin: 0.125rem 0;
-}
-
-.tm-xp .xpbar {
-  height: 1rem;
-}
-
-/* What the run paid a creature in experience, what multiplied it and where it waits, under its bar. */
-.tm-exp {
-  font-size: 0.8125rem;
-  line-height: 1.15;
-  text-align: center;
-}
-
-.tm-note {
-  color: var(--gold);
+/* The experience of the whole team, one row each, under the team's row. */
+.team-xp {
+  margin: 0 0 0.75rem;
 }
 
 /* A run that paid nothing: a small sad creature and two short lines. */

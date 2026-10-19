@@ -1,7 +1,8 @@
 /**
  * The Rooms view of the results: every room a run went through, in the order it went (fights, elites, the
- * floor boss, mystery rooms, caches, camps, doors and the Undercroft's rooms), each as one panel with a
- * "Cleared" or "Defeated" banner and, for a room that is not a fight, a short line of what happened there.
+ * floor boss, mystery rooms, caches, camps, doors and the Undercroft's rooms), each as one panel. A fight has
+ * a "Cleared" or "Defeated" banner; a room that is not a fight has none (nothing was cleared there), only a
+ * short line of what happened ("Rested", "Visited").
  * Built from the run's route: its log (`DungeonStepLog`, the same one the map's drawer for a visited room
  * reads), its maps (for the names) and the fights of the summary (for the foes). Pure functions; names and
  * lines come from the server and are rendered as text only.
@@ -29,9 +30,17 @@ export interface RoomLogRow {
   /** The Undercroft floor the room was on (0: the day's map). */
   level: number;
   state: RoomLogState;
-  banner: string;
-  /** "Room 4", "Room 4 · Elite", "Undercroft 1 · Room 2 · Epic". */
+  /** The stamp across a fight's picture ("CLEARED", "DEFEATED"); null for a room that is not a fight. */
+  banner: string | null;
+  /** The whole name, for a screen reader and tests: "Room 4", "Room 4 · Elite", "Undercroft 1 · Room 2 · Epic". */
   title: string;
+  /**
+   * The panel's header as two short lines that never wrap at 390 px: `where` ("Room 4", or "Undercroft 1" below)
+   * and `what` under it (the kind of fight on the day's floor: "Elite", "Epic", "Floor boss"; the room number
+   * in the Undercroft, with the kind as one word: "Room 4 · Boss"), or null.
+   */
+  where: string;
+  what: string | null;
   elite: boolean;
   epic: boolean;
   /** A fight: the foe's content id (for its sprite), whether it is a floor boss, its HP left when it won, and its room's twist. Null for any other room. */
@@ -40,7 +49,7 @@ export interface RoomLogRow {
   glyph: string | null;
   /** The foe's name ("Fierce ..." for an elite), or what the room is ("Camp", "Cache"; a mystery room says its own name). */
   name: string;
-  /** What happened in a room that is not a fight ("Rested", "2 Bait · 1 Scrap"), or null. */
+  /** What happened in a room that is not a fight ("Rested", "2 Bait · 1 Scrap", "Visited" when nothing is to be said), or null for a fight. */
   note: string | null;
   /** The panel in sentences for a screen reader. */
   spoken: string;
@@ -62,6 +71,28 @@ const KIND_SUFFIX: Readonly<Partial<Record<DungeonNodeKind, string>>> = {
   epic: 'Epic',
   boss: 'Floor boss',
 };
+
+/** The kind of fight as one word, for the header line that also carries a room number. */
+const KIND_SHORT: Readonly<Partial<Record<DungeonNodeKind, string>>> = {
+  elite: 'Elite',
+  epic: 'Epic',
+  boss: 'Boss',
+};
+
+/** The two lines of a panel's header (see `RoomLogRow.where` and `what`). */
+function headerOf(node: string, kind: DungeonNodeKind): { where: string; what: string | null } {
+  const floor = nodeFloor(node);
+  const level = nodeLevel(node);
+  const place = floor === null ? 'Room' : `Room ${String(floor + 1)}`;
+  if (level > 0) {
+    const short = KIND_SHORT[kind];
+    return {
+      where: undercroftName(level),
+      what: short === undefined ? place : `${place} · ${short}`,
+    };
+  }
+  return { where: place, what: KIND_SUFFIX[kind] ?? null };
+}
 
 type CampLog = Extract<DungeonStepLog, { result: 'camp' }>;
 
@@ -165,6 +196,7 @@ export function roomLog(
         state,
         banner: ROOM_BANNER[state],
         title,
+        ...headerOf(id, kind),
         elite: fight.elite,
         epic: fight.epic,
         foe: {
@@ -181,22 +213,25 @@ export function roomLog(
       continue;
     }
     const entry = entries.find((e) => e.result !== 'pending') ?? entries[0];
-    const { name, note } = plainRoom(kind, node, entry);
+    const { name, note: told } = plainRoom(kind, node, entry);
+    // Nothing was cleared here, so no stamp: a plain "Visited" when the room has nothing else to say.
+    const note = told ?? 'Visited';
     const title = titleOf(id, kind);
     rows.push({
       node: id,
       kind,
       level,
       state: 'cleared',
-      banner: ROOM_BANNER.cleared,
+      banner: null,
       title,
+      ...headerOf(id, kind),
       elite: false,
       epic: false,
       foe: null,
       glyph: `map-${kind}`,
       name,
       note,
-      spoken: `${title}: ${name}.${note === null ? '' : ` ${sentence(note)}`} Cleared.`,
+      spoken: `${title}: ${name}. ${sentence(note)}`,
     });
   }
   return rows;

@@ -50,7 +50,7 @@
 
 /* Words over the segments (the `xpbar-text` base), outlined in ink so they read on red and on dark. */
 .hpbar-text {
-  font-size: 1rem;
+  font-size: var(--fs-row);
   text-shadow:
     var(--px) 0 var(--ink),
     calc(var(--px) * -1) 0 var(--ink),

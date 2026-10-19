@@ -13,8 +13,9 @@ export function ChoiceList({ label, children }: { label: string; children: Compo
 }
 
 /**
- * One choice: its name in the pixel font and, under it, a line saying exactly what it does. `class` adds a
- * state to the button (the camp's knocked-out creature). The words are content or the player's own: text.
+ * One choice: its name and, under it, a line saying exactly what it does. The list sits in a pixel panel (the
+ * card's `.pix-panel` gives the name its font); the line is reading text (`.prose`). `class` adds a state to
+ * the button (the camp's knocked-out creature). The words are content or the player's own: text.
  */
 export function ChoiceButton({
   label,
@@ -41,7 +42,7 @@ export function ChoiceButton({
         disabled={disabled}
         onClick={onClick}
       >
-        <strong class="pix">{label}</strong> <span>{line}</span>
+        <strong>{label}</strong> <span class="prose">{line}</span>
       </button>
     </li>
   );

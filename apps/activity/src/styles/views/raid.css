@@ -37,7 +37,7 @@ button.toggle.on {
   flex-direction: column;
   padding: 0.4rem 0.5rem;
   border: 1px solid var(--line);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 .schedule-step.done {

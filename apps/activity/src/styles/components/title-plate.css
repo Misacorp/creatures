@@ -15,7 +15,7 @@
 
 .plate-name {
   min-width: 0;
-  font-size: 1.25rem;
+  font-size: var(--fs-heading);
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
@@ -23,6 +23,6 @@
 .plate-count {
   flex: none;
   color: var(--haze);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
   font-variant-numeric: tabular-nums;
 }
