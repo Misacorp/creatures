@@ -34,6 +34,16 @@ export type DungeonSkill = (typeof DUNGEON_SKILLS)[number];
 export const RAID_ROWS = ['auto', 'greedy', 'protected'] as const;
 export type RaidRow = (typeof RAID_ROWS)[number];
 
+/**
+ * How a player picks the form of a line that grows two ways:
+ * - `first`: always the original form (`firstForm`);
+ * - `role`: the form whose role the rest of the team lacks (`pickBranch`);
+ * - `mixed`: half the players of a server pick by role and half take the first form, each player's
+ *   half drawn from the run's seed and the player's id (`usesRoleBranch`), so a seed gives the same players.
+ */
+export const BRANCH_STYLES = ['first', 'role', 'mixed'] as const;
+export type BranchStyle = (typeof BRANCH_STYLES)[number];
+
 const percent = v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(100));
 
 export const ProfileSchema = v.strictObject({
@@ -67,6 +77,8 @@ export const ProfileSchema = v.strictObject({
   raidRow: v.picklist(RAID_ROWS),
   /** Percent of check-ins at which the player upgrades gear and starts workshop jobs. */
   craftPercent: percent,
+  /** How the player picks the second form of an evolving line. Absent in a profile written before: `mixed`. */
+  branch: v.optional(v.picklist(BRANCH_STYLES), 'mixed'),
 });
 export type PlayerProfile = v.InferOutput<typeof ProfileSchema>;
 
@@ -131,6 +143,7 @@ export const LEGACY_PROFILES: Readonly<Record<ArchetypeId, PlayerProfile>> = Obj
       signUpNeedsLogin: false,
       raidRow: 'auto',
       craftPercent: 100,
+      branch: 'mixed',
     };
     return [id, profile];
   }),
@@ -169,6 +182,7 @@ export const PRESETS: Readonly<Record<PresetId, PlayerProfile>> = {
     signUpNeedsLogin: true,
     raidRow: 'protected',
     craftPercent: 100,
+    branch: 'mixed',
   },
   engaged: {
     id: 'engaged',
@@ -187,6 +201,7 @@ export const PRESETS: Readonly<Record<PresetId, PlayerProfile>> = {
     signUpNeedsLogin: true,
     raidRow: 'auto',
     craftPercent: 40,
+    branch: 'mixed',
   },
   regular: {
     id: 'regular',
@@ -205,6 +220,7 @@ export const PRESETS: Readonly<Record<PresetId, PlayerProfile>> = {
     signUpNeedsLogin: true,
     raidRow: 'auto',
     craftPercent: 10,
+    branch: 'mixed',
   },
   'drop-in': {
     id: 'drop-in',
@@ -223,6 +239,7 @@ export const PRESETS: Readonly<Record<PresetId, PlayerProfile>> = {
     signUpNeedsLogin: true,
     raidRow: 'auto',
     craftPercent: 0,
+    branch: 'mixed',
   },
 };
 

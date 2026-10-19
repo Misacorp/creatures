@@ -297,6 +297,8 @@ export interface SimPlayer {
   archetype: ArchetypeId;
   /** The dials this player plays by (`profiles.ts`). */
   profile: PlayerProfile;
+  /** Whether this player picks the form of a two-way line by role (`usesRoleBranch`), else the first form. */
+  roleBranch: boolean;
   joinWeek: number;
   joined: boolean;
   bait: number;
@@ -346,12 +348,14 @@ export function createPlayer(
   archetype: ArchetypeId,
   joinWeek: number,
   profile: PlayerProfile = LEGACY_PROFILES[archetype],
+  roleBranch = false,
 ): SimPlayer {
   return {
     id,
     label,
     archetype,
     profile,
+    roleBranch,
     joinWeek,
     joined: false,
     bait: 0,
