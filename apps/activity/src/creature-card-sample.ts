@@ -286,13 +286,12 @@ function slotOf(slot: number, opensAt: number, open: boolean, talentId: string |
 }
 
 /**
- * The cards of Misa's phone screenshot (2026-10-19) and the hard cases around them, for the card's
- * type-size variants: a new Mistnewt (one talent, a slot at 20), a Festival Lanternfin that is lounging
+ * The cards of Misa's phone screenshot (2026-10-19), the card's hard cases: a new Mistnewt (one talent, a slot at 20), a Festival Lanternfin that is lounging
  * (signature talent and one more, slots at 20 and 25), a 20-letter nickname at level 8 (the charm slot
  * still says "Lv 13"), a level 27 Hearthshell with every gear and talent slot filled (one golden), and
  * a Cindle ready to evolve (the gold button).
  */
-export function variantRoster(): Creature[] {
+export function hardCaseRoster(): Creature[] {
   const template = base();
   const gear = template.gear;
   const mistnewt: Creature = {

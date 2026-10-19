@@ -7,6 +7,7 @@ import { StreakTrack } from '../../ui/StreakTrack';
 import { streakLabel, streakPips } from '../../dungeon-text';
 import { BossHp, SegmentBar } from '../../ui/SegmentBar';
 import { TimerBar } from '../../ui/TimerBar';
+import { XpTrack } from '../../ui/XpTrack';
 import { GLYPH_IDS } from '../data';
 import { bool, num, str } from '../props';
 import type { Entry } from '../types';
@@ -218,6 +219,46 @@ const xpBar: Entry = {
   ),
 };
 
+const xpTrack: Entry = {
+  name: 'XpTrack',
+  file: 'apps/activity/src/ui/XpTrack.tsx',
+  group: 'Bars',
+  description:
+    'The slim XP bar at rest: the level tag, then the bar with its numbers inside (the bar of the "Count-up" XP row once it has counted). The creature card shows it across its width.',
+  controls: {
+    level: { kind: 'number', min: 1, max: 30 },
+    value: { kind: 'number', min: 0, max: 3000 },
+    max: { kind: 'number', min: 1, max: 3000 },
+    top: { kind: 'toggle' },
+    kind: { kind: 'select', options: XP_KINDS },
+  },
+  defaults: { level: 8, value: 96, max: 328, top: false, kind: 'experience' },
+  presets: [
+    { name: 'Level 1, empty', props: { level: 1, value: 0, max: 27 } },
+    { name: 'A third', props: {} },
+    { name: 'Long numbers', props: { level: 27, value: 1250, max: 2400 } },
+    { name: 'Full, waiting', props: { level: 15, value: 825, max: 825 } },
+    { name: 'Top level', props: { level: 30, top: true } },
+    { name: 'Explorer (orchid)', props: { kind: 'explorer', level: 3, value: 120, max: 400 } },
+  ],
+  render: (p) => {
+    const top = bool(p, 'top');
+    const kind = xpKind(str(p, 'kind'));
+    return (
+      <XpTrack
+        level={num(p, 'level')}
+        value={num(p, 'value')}
+        max={num(p, 'max')}
+        top={top}
+        kind={kind}
+        unit={kind === 'explorer' ? 'Rank' : 'Lv'}
+        label="Experience"
+        {...(top ? { text: 'Top level' } : {})}
+      />
+    );
+  },
+};
+
 const pipRow: Entry = {
   name: 'PipRow',
   file: 'apps/activity/src/ui/PipRow.tsx',
@@ -336,6 +377,7 @@ export const barEntries: readonly Entry[] = [
   segmentBar,
   bossHp,
   xpBar,
+  xpTrack,
   pipRow,
   progressTrack,
   streakTrack,

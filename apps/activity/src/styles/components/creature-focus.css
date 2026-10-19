@@ -1,8 +1,9 @@
 /*
-  The focused creature card of the Creatures tab (Misa's "Option B") and the creature page it opens. The
-  card is small on purpose: sprite, name, element, level, the XP bar with what comes next, the three gear
-  slots as icons, the talents as chips, and one gold button only when something is ready. About 250 px
-  tall at 390 px wide. Everything else is on the page.
+  The focused creature card of the Creatures tab and the creature page it opens. The card is Misa's
+  variant E (decisions.md 2026-10-19): the sprite at the top left, the name on one line beside it and the
+  tags in words under it; the slim experience bar across the card (`ui/XpTrack`); the three gear slots on
+  the left and the talents on the right, one to a row; and one gold button only when something is ready.
+  Everything else is on the page.
 
   The whole card is one tap target (the card handles the click; the name is a real button for the
   keyboard and screen readers). The card's own buttons keep their own actions.
@@ -74,13 +75,6 @@ button.cc-open:focus-visible {
   cursor: pointer;
 }
 
-/* The small arrow at the right edge. */
-.cc-chev {
-  color: var(--haze);
-  font-size: var(--fs-title);
-  line-height: 1;
-}
-
 /* The creature whose page was open last: a light edge, so the player sees where they were. */
 .creature-card.current {
   box-shadow:
@@ -103,7 +97,7 @@ button.cc-open:focus-visible {
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr);
   gap: 0.625rem;
-  align-items: center;
+  align-items: start;
 }
 
 .creature-card.focused .portrait,
@@ -116,39 +110,64 @@ button.cc-open:focus-visible {
   box-shadow: none;
 }
 
-.cc-head:has(> .cc-chev) {
-  grid-template-columns: 56px minmax(0, 1fr) auto;
-}
-
 .cc-id {
+  display: grid;
+  gap: 0.375rem;
   min-width: 0;
+  padding-top: 0.125rem;
 }
 
+/*
+  The name on one line, always (a nickname is at most 20 letters, which fits at 360 px); a name too wide for
+  the line ends in "…", and the whole name is the button's tooltip and read out in full.
+*/
 .cc-name {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.cc-name h3 {
   min-width: 0;
   margin: 0;
   font-size: var(--fs-title);
-  line-height: 1.05;
-  overflow-wrap: anywhere;
+  line-height: 1.1;
 }
 
-.cc-name .lvl-tag {
-  margin-left: auto;
+/* Clipped across only (`clip`, not `hidden`), so the letters' tails below the line still show. */
+.cc-name button.cc-open {
+  display: block;
+  max-width: 100%;
+  overflow-x: clip;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
 }
 
-/* The element as a small icon-only chip (its name is the label); the sheet has the full chips. */
-.cc-element {
+/* The tags in words under the name: one height for chips and badges, so the row reads as one strip. */
+.cc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.cc-tags > .chip,
+.cc-tags > .tag,
+.cc-tags > .badge {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  font-size: var(--fs-small);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cc-tags > .chip {
+  padding-left: 0.1875rem;
+}
+
+.cc-tags > .badge svg {
   flex: none;
-  padding: 0.125rem 0.3125rem;
 }
 
+/* The page's activity badges (Away, On a job, Lounging) under its name. */
 .cc-sub {
   display: flex;
   flex-wrap: wrap;
@@ -158,21 +177,20 @@ button.cc-open:focus-visible {
   font-size: var(--fs-small);
 }
 
-.cc-id .xpbar-row {
-  margin: 0.3125rem 0 0;
-}
-
-.creature-card.focused .xpbar,
 .creature-page .xpbar {
   height: 1.5rem;
 }
 
-.creature-card.focused .xpbar-text,
 .creature-page .xpbar-text {
   font-size: var(--fs-row);
 }
 
-/* Gear icons on the left, talent chips on the right. */
+/* The level tag of the card's bar: one width from "Lv 1" to "Lv 30", so the bars of a list start together. */
+.creature-card .xp-static > .xp-lv {
+  min-width: 2.75rem;
+}
+
+/* Gear icons on the left, the talents on the right, across the card's full width. */
 .cc-kit {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -180,10 +198,15 @@ button.cc-open:focus-visible {
   align-items: center;
 }
 
+/*
+  A worn item's rarity ring is drawn 3 px outside its frame, which sits 2 px inside its button: the row moves
+  in by 1 px so the ring lines up with the sprite. The gap leaves 4 px between the squares, so dashed edges
+  never meet.
+*/
 .cc-gear {
   display: flex;
-  gap: 0.125rem;
-  margin: 0;
+  gap: 0.375rem;
+  margin: 0 0 0 1px;
   padding: 0;
   list-style: none;
 }
@@ -212,37 +235,43 @@ button.cc-slot .item-frame {
   margin: 0.125rem;
 }
 
+/* An empty or closed slot is the same 48 px square as a worn item with its ring, and holds "Lv 13". */
 .cc-slot-empty {
   display: grid;
   place-items: center;
-  min-width: 2.25rem;
-  min-height: 2.25rem;
+  min-width: 3rem;
+  min-height: 3rem;
+  margin: -1px;
+  padding: 0 0.25rem;
   outline: 2px dashed var(--haze);
   outline-offset: -2px;
   color: var(--haze);
-  font-size: var(--fs-row);
+  font-size: var(--fs-small);
   line-height: 1;
   white-space: nowrap;
 }
 
 button.cc-slot.locked .cc-slot-empty {
   outline-color: var(--line);
-  font-size: var(--fs-row);
 }
 
 button.cc-slot:disabled {
   opacity: 0.8;
 }
 
-/* The talents: one tap area that opens the sheet on them. */
+/*
+  The talents: one tap area that opens the page on them. Each talent, each empty slot and the closed slots'
+  levels ("20 · 25") is on a row of its own, at the right edge (Misa: always new rows, even for short ones).
+*/
 button.cc-talents {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.25rem;
-  align-items: center;
-  justify-content: flex-end;
+  align-items: flex-end;
+  justify-content: center;
   min-width: 0;
   min-height: 2.75rem;
+  margin-right: -0.125rem;
   padding: 0.125rem;
   background: none;
   box-shadow: none;
@@ -254,13 +283,13 @@ button.cc-talents:active:not(:disabled) {
 
 .cc-chip {
   max-width: 100%;
-  padding: 0.0625rem 0.375rem;
+  padding: 0.125rem 0.375rem;
   background: var(--dusk);
   box-shadow: inset 0 0 0 2px var(--line);
   color: var(--bone);
-  font-size: var(--fs-row);
-  line-height: 1.2;
-  overflow-wrap: anywhere;
+  font-size: var(--fs-small);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .cc-chip.empty,
@@ -270,6 +299,11 @@ button.cc-talents:active:not(:disabled) {
   outline: 2px dashed var(--line);
   outline-offset: -2px;
   color: var(--haze);
+}
+
+/* The gold button's ink ring is drawn outside it: in by the ring, so its edges meet the sprite's and the bar's. */
+.cc-do {
+  margin-inline: var(--px);
 }
 
 .cc-do button {
