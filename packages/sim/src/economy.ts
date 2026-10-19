@@ -802,14 +802,7 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
             awardRaidExperience(raid, stage);
             if (gearOn && plan !== null && raid.stages[stage]?.cleared === true) {
               if (stage === 'finale') {
-                const festival = plan.festival ? festivalCreatureFor(weekIndex) : null;
-                grantFinaleLoot(
-                  raid.players,
-                  plan.rank,
-                  boss.element,
-                  festival === null ? null : festival.element,
-                  rng.gear,
-                );
+                grantFinaleLoot(raid.players, plan.rank, boss.element, plan.festival, rng.gear);
               } else {
                 grantPhaseScrap(raid.players, stage);
               }

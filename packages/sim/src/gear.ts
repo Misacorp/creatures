@@ -232,20 +232,23 @@ export function grantPhaseScrap(players: readonly SimPlayer[], stage: RaidStage)
 /**
  * A won finale: the reward slot of every participant at the server's rank, as the worker grants it
  * (`rollFinaleReward`): one gear piece of the boss's element or a blueprint the player does not know
- * yet. And the Festival piece in a Festival week.
+ * yet. And a Festival piece in a Festival week.
  */
 export function grantFinaleLoot(
   players: readonly SimPlayer[],
   rank: number,
   bossElement: Element,
-  festivalElement: Element | null,
+  festival: boolean,
   rng: Rng,
 ): void {
   for (const p of players) {
     const reward = rollFinaleReward(rng, rank, bossElement, new Set(p.gear.blueprints));
     if (reward.kind === 'blueprint') learnBlueprint(p, reward.baseId);
     else grantItem(p, reward.item);
-    if (festivalElement !== null) grantItem(p, rollFestivalItem(rng, festivalElement, rank));
+    // A Festival piece the player lacks (any one when they have them all), as the worker grants it.
+    if (festival) {
+      grantItem(p, rollFestivalItem(rng, new Set(allItems(p).map((i) => i.baseId)), rank));
+    }
   }
 }
 

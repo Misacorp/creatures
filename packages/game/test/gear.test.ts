@@ -66,6 +66,8 @@ import {
   rollDungeonItem,
   rollExpeditionItem,
   rollFestivalItem,
+  festivalBaseFor,
+  festivalBases,
   rollFinaleItem,
   rollFinaleReward,
   rollItem,
@@ -1425,25 +1427,60 @@ describe('drops', () => {
 
   it('a Festival piece is special, not stronger: the finale item level (3 + rank) and the finale rarity odds', () => {
     const rng = createSeededRng('fest');
-    const lantern = rollFestivalItem(rng, 'tide', 8);
-    expect(lantern.baseId).toBe('festival-lantern-charm');
+    const none: ReadonlySet<string> = new Set();
+    const lantern = rollFestivalItem(rng, none, 8);
+    expect(gearBase(lantern.baseId)?.festival).toBe(true);
     expect(lantern.itemLevel).toBe(finaleItemLevel(8));
     expect(lantern.itemLevel).toBe(11);
     expect(['common', 'rare', 'epic']).toContain(lantern.rarity);
-    expect(rollFestivalItem(rng, 'ember', 1).baseId).toBe('festival-hearth-scarf');
-    // An element with no Festival piece of its own still gets one.
-    expect(gearBase(rollFestivalItem(rng, 'grove', 1).baseId)?.festival).toBe(true);
     // Never a higher level than the same rank's finale piece, at any rank.
     for (let rank = 1; rank <= 40; rank++) {
-      expect(rollFestivalItem(rng, 'tide', rank).itemLevel).toBe(finaleItemLevel(rank));
+      expect(rollFestivalItem(rng, none, rank).itemLevel).toBe(finaleItemLevel(rank));
     }
+  });
+
+  it('every Festival base can drop, the Lantern Cap included (it once could not: only the creature element picked)', () => {
+    const all = festivalBases().map((b) => b.id);
+    expect(all).toContain('festival-lantern-cap');
+    expect(new Set(all)).toEqual(
+      new Set(gearContent.bases.filter((b) => b.festival === true).map((b) => b.id)),
+    );
+    const rng = createSeededRng('fest-reach');
+    const seen = new Set<string>();
+    for (let i = 0; i < 300; i++) seen.add(rollFestivalItem(rng, new Set(), 1 + (i % 17)).baseId);
+    expect(seen).toEqual(new Set(all));
+    // The same once the player owns every piece.
+    const seenAll = new Set<string>();
+    for (let i = 0; i < 300; i++) seenAll.add(rollFestivalItem(rng, new Set(all), 5).baseId);
+    expect(seenAll).toEqual(new Set(all));
+  });
+
+  it('a Festival win gives a piece the player lacks: with two of three owned, always the third', () => {
+    const all = festivalBases().map((b) => b.id);
+    const rng = createSeededRng('fest-missing');
+    for (const missing of all) {
+      const owned = new Set(all.filter((id) => id !== missing));
+      for (let i = 0; i < 40; i++) {
+        expect(rollFestivalItem(rng, owned, 1 + (i % 17)).baseId).toBe(missing);
+      }
+    }
+    // Ids that are not Festival bases (a plain Hat) change nothing about it.
+    const owned = new Set(['trail-cap', ...all.slice(1)]);
+    expect(rollFestivalItem(rng, owned, 3).baseId).toBe(all[0]);
+    // With none owned, each of them is drawn (evenly: none is missing from 600 draws, none dominates).
+    const counts = new Map<string, number>();
+    for (let i = 0; i < 600; i++) {
+      const id = rollFestivalItem(rng, new Set(), 3).baseId;
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    for (const id of all) expect(counts.get(id) ?? 0).toBeGreaterThan(600 / all.length / 2);
   });
 
   it('a Festival piece rolls its rarity at the finale odds: no floor, a Common at low ranks', () => {
     const rng = createSeededRng('fest-rarity');
     const at = (rank: number): Record<GearRarity, number> => {
       const out: Record<GearRarity, number> = { common: 0, rare: 0, epic: 0 };
-      for (let i = 0; i < 20_000; i++) out[rollFestivalItem(rng, 'ember', rank).rarity] += 1;
+      for (let i = 0; i < 20_000; i++) out[rollFestivalItem(rng, new Set(), rank).rarity] += 1;
       return out;
     };
     const odds = finaleDropOddsBp(1);
@@ -1452,17 +1489,24 @@ describe('drops', () => {
     expect(low.epic / 20_000).toBeCloseTo(odds.epic / 10_000, 1);
     expect(low.common).toBeGreaterThan(low.rare);
     // The same odds as the finale's own rarity draw.
+    // (the base is drawn first, one draw; the rarity follows)
     const a = createSeededRng('same-draw');
     const b = createSeededRng('same-draw');
-    expect(rollFestivalItem(a, 'tide', 6).rarity).toBe(rollFinaleRarity(b, 6));
+    festivalBaseFor(b, new Set());
+    expect(rollFestivalItem(a, new Set(), 6).rarity).toBe(rollFinaleRarity(b, 6));
   });
 
   it('a Festival piece rolls only from its narrow pool and always carries its unique line', () => {
     const rng = createSeededRng('fest-pool');
-    for (const element of ['tide', 'ember'] as const) {
+    for (const festive of festivalBases()) {
       const seen = new Set<string>();
       for (let i = 0; i < 400; i++) {
-        const piece = rollFestivalItem(rng, element, 1 + (i % 17));
+        const piece = rollFestivalItem(
+          rng,
+          new Set(festivalBases().flatMap((b) => (b.id === festive.id ? [] : [b.id]))),
+          1 + (i % 17),
+        );
+        expect(piece.baseId).toBe(festive.id);
         const base = gearBase(piece.baseId);
         for (const l of piece.lines) {
           expect(base?.pool).toContain(l.id);

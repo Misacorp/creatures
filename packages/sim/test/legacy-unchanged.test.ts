@@ -136,6 +136,14 @@ import { legacyDigest, type DigestEntry } from './legacy-digest';
  * of `RunSettings`), where it played 20, 30 and 60. Only `run-tiny` moved (its metrics read those weeks);
  * every economy digest is the same, and the shipped settings carry no override, so `pnpm sim` is unchanged
  * (`run.test.ts` checks that `defaultSettings` still resolves to 20, 30, 60 and 30 weeks).
+ *
+ * Re-pinned again on 2026-10-19 (the Lantern Cap can drop), on purpose: a won Festival finale gives a
+ * Lantern Night piece the player does not own yet (any one once they own all three) instead of the piece
+ * matching the Festival creature's element, so the Festival piece is drawn first (one more draw on the
+ * gear stream) and is now sometimes a Hat or a Scarf, which carry stats, where the Lantern Charm carries
+ * none. Bait earned and raids won are the same; the first player's top-3 power moved from 276 to 354 and
+ * from 252 to 328 in the two pinned runs that reach a Festival week with gear, and from 207 to 204 in the
+ * third. `five-nogear` plays no gear and did not move.
  */
 describe('today is unchanged', () => {
   const expected = JSON.parse(

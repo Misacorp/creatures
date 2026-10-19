@@ -5,6 +5,8 @@
  * still sends what the captured fixtures have. Types only. No seed is ever part of any of them.
  */
 import type { DungeonMapView, Element, GearRarity, PartsBundle, Role } from '@creatures/game';
+import type { EventNames, FightEvent } from '@creatures/engine';
+import type { ExperienceView } from './creature-exp';
 
 export type { DungeonMapView };
 
@@ -194,4 +196,216 @@ export interface DungeonRunState {
   lastEvent: { name: string; option: string; outcome: string } | null;
   /** What happened in each room the run has been through, in order. Empty for a run stored before the log. */
   history: DungeonStepLog[];
+}
+
+/**
+ * What a run paid one creature in experience, with what changed the plain amount: the results say it under
+ * the creature's bar ("Treat gave 2x experience"). Both fields are absent in runs stored before they were added.
+ */
+export interface DungeonExperienceView extends ExperienceView {
+  /** What the treat multiplied the experience by (2, or 3 on a day that changes it), or null when no treat was packed for this creature. */
+  treatTimes: number | null;
+  /** The day's Boons and Omens that changed creature experience: their names and the change in basis points (negative: less). */
+  dayEffects: { name: string; bp: number }[];
+}
+
+/** What a run paid. The streak bonus is listed apart from what the rooms paid. */
+export interface DungeonRewards {
+  bait: number;
+  essence: number;
+  /** All the parts the run's grant paid, including those of items that did not fit the bag. */
+  parts: PartsBundle;
+  gear: { id: string; baseId: string; rarity: GearRarity }[];
+  /** Items that did not fit the bag and became parts (already counted in `parts`). */
+  converted: { baseId: string; rarity: GearRarity }[];
+  /** The supplies the run dropped, one content id each (absent in runs stored before supplies dropped here). */
+  supplies?: string[];
+  /**
+   * The creature experience the run paid each creature that stood in the row (a treat doubles it) and
+   * what it did to their levels. Absent in runs stored before training by activity.
+   */
+  experience?: DungeonExperienceView[];
+  /** A fully cleared landmark depth: its gear drop was certain. */
+  landmark: boolean;
+  streak: { day: number; bait: number; essence: number; parts: PartsBundle } | null;
+}
+
+export interface DungeonRoomSummary {
+  index: number;
+  kind: 'foe' | 'boss';
+  /** A fiercer foe (map runs only; absent otherwise). An epic fight is one too. */
+  elite?: boolean;
+  /** An Undercroft epic fight (also `elite`, so it shows as "Fierce"). */
+  epic?: boolean;
+  foe: { id: string; name: string; element: Element; hpMax: number };
+  modifier: { id: string; name: string; description: string };
+  /** False for the rooms after the one that was lost (three-room runs only: a map run lists the fights it played). */
+  played: boolean;
+  cleared: boolean;
+  rounds: number;
+  /** The foe's HP when the room ended (0 when it was cleared). */
+  foeHpEnd: number;
+}
+
+export interface DungeonTeamMember {
+  id: string;
+  name: string;
+  speciesId: string;
+  element: Element;
+  role: Role;
+  level: number;
+  hpMax: number;
+  /** HP when the run ended; 0 for a creature that was knocked out. */
+  hpEnd: number;
+}
+
+export interface DungeonRunSummary {
+  id: string;
+  day: string;
+  attempt: number;
+  depth: number;
+  /** The depth the player is at after this run (one deeper after a clear). */
+  newDepth: number;
+  /** The floor boss was beaten. */
+  cleared: boolean;
+  /** Fights cleared. */
+  roomsCleared: number;
+  landmark: boolean;
+  /** Days in a row after this run. */
+  streak: number;
+  createdAt: number;
+  /** The row at the end, left to right. */
+  team: DungeonTeamMember[];
+  /** The fights played (a three-room run: all three rooms, played or not). */
+  rooms: DungeonRoomSummary[];
+  rewards: DungeonRewards;
+  /** The Boon and Omen the run was fought under (absent: none, and in runs stored before the weather). */
+  weather?: { boon: string; omen: string | null };
+  /**
+   * Undercroft levels the run cleared (keepers beaten): 0 for a run that never went down. Absent in
+   * summaries stored before the Undercroft.
+   */
+  deepest?: number;
+  /** Map runs only: how it ended (absent while it is open), the node kinds of the path, the pack and the keepsakes. */
+  outcome?: DungeonOutcome;
+  path?: string[];
+  pack?: { found: DungeonPack; kept: DungeonPack };
+  keepsakes?: DungeonKeepsakeView[];
+  /** Map runs that ended: the run's map at its depth, the rooms visited in order and what each did. Absent in older summaries. */
+  route?: {
+    map: DungeonMapView;
+    path: string[];
+    history: DungeonStepLog[];
+    /** The Undercroft levels the run went down into, in order (absent when it never did). */
+    undercroft?: DungeonMapView[];
+  };
+}
+
+export interface DungeonToday {
+  serverNow: number;
+  /** The guild-local calendar day ('YYYY-MM-DD'). */
+  day: string;
+  timezone: string;
+  /** When the game day ends (the next 13:37 local reset), in epoch ms. */
+  resetsAt: number;
+  /** The depth the next run fights at. */
+  depth: number;
+  landmark: boolean;
+  /**
+   * Set when the next run is a landmark (`landmark` is true): the depth and the content id of the
+   * floor boss it will fight, which is fixed at landmark depths. Null on any other depth.
+   */
+  landmarkBoss: { depth: number; foeId: string } | null;
+  /** Days in a row, as of now: 0 when yesterday was missed and nothing has run today. */
+  streak: number;
+  attemptsToday: number;
+  attemptsAllowed: number;
+  /** False while a run is open (`active`). */
+  canRun: boolean;
+  /** Why a run is not possible now, or null. */
+  blocked: 'already_run' | 'need_creatures' | null;
+  /** The newest finished run of today, or null. */
+  last: DungeonRunSummary | null;
+  /**
+   * The creature ids of the player's most recent run on any day, in the order they stood in the
+   * row (left to right), or null before their first run. Only the caller's own run is ever read.
+   */
+  lastTeam: string[] | null;
+  /**
+   * The row the player saved while setting up (`PUT /api/dungeon/team`), left to right, `teamSize`
+   * entries: each a creature id, or null for an empty slot (and for a creature the player no longer
+   * owns). Null when there is no draft; an explicitly empty draft is all nulls, not null. A run
+   * clears it. Only the caller's own draft is ever read.
+   */
+  draftTeam: (string | null)[] | null;
+  /** Today's map, the same for everyone on the server, with foe HP at this player's depth. */
+  map: DungeonMapView;
+  /** The player's run that is still open today, or null. */
+  active: DungeonRunState | null;
+}
+
+/** The light read behind the Activity's notification pip (`Dungeon.attention`). */
+export interface DungeonAttention {
+  /** Exactly `DungeonToday.canRun`. */
+  canRun: boolean;
+  /** A run is open today: an open run is a reason to come back, so the pip stays on for it. */
+  active: boolean;
+  /** When the game day ends: the answer can change then on its own. */
+  resetsAt: number;
+}
+
+export interface DungeonStartResponse {
+  state: DungeonRunState;
+  today: DungeonToday;
+}
+
+export interface DungeonActResponse {
+  state: DungeonRunState;
+  /** The fight the move just played: the client plays it at once. */
+  room?: DungeonReplayRoom;
+  /** Only when the run ended: the summary (with rewards) and the fresh day. */
+  summary?: DungeonRunSummary;
+  today?: DungeonToday;
+}
+
+export interface DungeonReplayRoom {
+  index: number;
+  kind: 'foe' | 'boss';
+  /** A fiercer foe (map runs only; absent otherwise). An epic fight is one too. */
+  elite?: boolean;
+  /** An Undercroft epic fight (also `elite`, so it shows as "Fierce"). */
+  epic?: boolean;
+  /** The map node of the fight (map runs only). */
+  node?: string;
+  /** The run's keepsakes in that fight (map runs only; absent when it held none). */
+  keepsakes?: DungeonKeepsakeView[];
+  /** The row that fought this room (map runs only: a camp swap or reorder changes it; absent: `DungeonReplayView.row`). */
+  row?: ReplayRowEntry[];
+  foe: { id: string; name: string; element: Element; hpMax: number };
+  modifier: { id: string; name: string; description: string };
+  cleared: boolean;
+  rounds: number;
+  /** Every creature's HP when the room started, and at most, by creature id. */
+  hpStart: Record<string, number>;
+  hpMax: Record<string, number>;
+  events: FightEvent[];
+  /** For `describeEvent`. */
+  names: EventNames;
+}
+
+export interface ReplayRowEntry {
+  position: number;
+  id: string;
+  name: string;
+  species: string;
+  element: Element;
+  role: Role;
+  level: number;
+}
+
+export interface DungeonReplayView {
+  summary: DungeonRunSummary;
+  /** The fighting row, left to right (`position` 0 is the left creature). A map run: the starting row (see `DungeonReplayRoom.row`). */
+  row: ReplayRowEntry[];
+  rooms: DungeonReplayRoom[];
 }

@@ -17,10 +17,6 @@
  * push-on result and the journal `tripRng`; each is drawn at the moment it is needed, never earlier.
  */
 import {
-  RULES,
-  applyCatchToCollection,
-  effectiveStats,
-  content,
   destinationDef,
   expeditionContent,
   explorerRank,
@@ -28,279 +24,103 @@ import {
   isNightHour,
   ACCOUNT_STATS,
   familiarityStars,
-  foundSupplyId,
   goalDef,
   goalOddsBp,
-  journalEntry,
-  journalChanceBp,
   kitOf,
   kitProblem,
   lengthOpen,
-  lengthRules,
   milestoneBonuses,
   milestoneProgress,
   nextRankXp,
   nextSlot,
-  partsOfSpec,
-  rankGiftsBetween,
   rankSum,
   pushWorks,
-  recallCatches,
-  rollGearDrop,
-  rollJournal,
   rollOffer,
-  rollTripCatches,
-  rollTripLoot,
-  rollBlueprint,
   slotsFor,
   tripMs,
-  tripExperience,
   tripRolls,
   tripWeather,
-  tripXp,
   weatherTimeMs,
   NO_TRIP_WEATHER,
   treatCost,
   weeklySpecial,
   closedReasons,
-  chance,
-  allSpecies,
   type AccountStat,
-  type ClosedReason,
-  type DestinationDef,
   type PushOnGoalDef,
-  type TripCatch,
   type ExpeditionLength,
-  type FamiliarityRecord,
-  type PartsBundle,
   type Rng,
   type SupplyDef,
   type SuppliesId,
   type TripWeather,
-  type TwistEffect,
 } from '@creatures/game';
 import * as v from 'valibot';
-import type { Analytics, CatchProps, PushOnOutcome } from './analytics';
+import type { Analytics, PushOnOutcome } from './analytics';
 import {
-  addExplorerTrip,
-  addPage,
   addSupply,
   bumpStat,
   explorerOf,
   explorersByCreature,
-  familiarityOf,
   familiarityRows,
-  foundPages,
   journalPages,
   offerOf,
-  saveFamiliarity,
   saveOffer,
   statsOf,
   supplyStock,
   takeSupply,
-  visitPlace,
 } from './expedition-store';
-import { grantRankGift, grantTripLoot, type DraftItem, type GrantView } from './gear-grants';
 import { gearRulesOf, minusBp } from './gear-worn';
 import { openJobOf } from './gear-store';
 import { devKey, type DevFlags } from './dev-state';
 import { spend, type LedgerStorage } from './ledger';
-import { awardExperience, type ExperienceView } from './creature-exp';
 import { runKeyed, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
-import type { CatchChoices, ChoiceResult } from './catch-choices';
+import type { CatchChoices } from './catch-choices';
 import { weekIdFor, weekIndex } from './raid-schedule';
 import type { Weather } from './weather';
-import { recordServerFirst } from './server-firsts';
-import { speciesOf } from './species';
-import { insertCreature } from './talent-store';
-import { talentViewOf, type TalentView } from './talent-view';
 import { zonedHour } from './time';
+import {
+  HOUR_MS,
+  twistOf,
+  failTrip,
+  payTrip,
+  vanishedGoal,
+  type ClaimEnv,
+} from './expedition-claim';
+import type {
+  DestinationsView,
+  ExpeditionResult,
+  ExpeditionView,
+  ExplorerView,
+  OfferGoalView,
+  ProfileView,
+  SendInput,
+  SlotsView,
+  TripsState,
+} from './expedition-types';
 
-const HOUR_MS = 3_600_000;
+export type {
+  CancelledView,
+  CatchView,
+  DestinationsView,
+  ExpeditionResult,
+  ExpeditionView,
+  ExplorerView,
+  JournalFindView,
+  OfferGoalView,
+  ProfileView,
+  PushOnResultView,
+  RankGiftView,
+  SendInput,
+  SlotsView,
+  TripsState,
+} from './expedition-types';
+
 /** Finished expeditions shown in the state besides the active ones. */
 const RECENT_CLAIMED = 5;
 /** Cancelled trips shown (the slot wipe), newest first. */
 const RECENT_CANCELLED = 3;
 
-// --- Views ---
-
-export interface CatchView {
-  species: string;
-  shiny: boolean;
-  /**
-   * `new`: a species the player lacked, now a creature. `duplicate`: it waits as a pending card (see
-   * `pendingId`) for Teach, Fuse, Release or Keep. `fused` and `converted` only appear in results stored
-   * before the duplicate choice (a duplicate then fused by itself, or turned into Bait).
-   */
-  outcome: 'new' | 'duplicate' | 'fused' | 'converted';
-  /** The talent the catch rolled (absent in results stored before talents). */
-  talent?: TalentView;
-  /** Only for outcome 'duplicate': the id of the pending card. */
-  pendingId?: string;
-  /** Only for the old outcome 'fused': the creature's fusion count after this catch. */
-  fusionCount?: number;
-  /** Only for the old outcome 'converted': the Bait granted. */
-  bait?: number;
-  firstOnServer: boolean;
-  /** The catch came from the destination's deeper area (absent when it did not). */
-  deep?: true;
-  /** The explorer's Second look rolled this duplicate's talent twice and kept the better (absent when it did not). */
-  secondLook?: true;
-}
-
-export interface PushOnResultView {
-  goalId: string;
-  risk: 'safe' | 'risky';
-  /** The exact chance (basis points) the player was shown. */
-  oddsBp: number;
-  outcome: PushOnOutcome;
-}
-
-export interface JournalFindView {
-  entryId: string;
-  /** The set the page belongs to, if any, and whether this page completed it. */
-  set: string | null;
-  setComplete: boolean;
-}
-
-export interface ExpeditionResult {
-  /** True if the player recalled before the expedition ended. */
-  recalled: boolean;
-  catches: CatchView[];
-  /**
-   * Parts, supplies, gear and maybe a blueprint the trip brought back (a recall brings back the share
-   * of the scrap that was caught). Absent in results stored before gear existed, and when the trip failed.
-   */
-  loot?: GrantView;
-  /** Catch rolls that brought no creature this time (each brought a small find of scrap instead). */
-  noCatch?: number;
-  /** Pending duplicates the server settled with Recommended because the queue was full (oldest first). */
-  autoSettled?: ChoiceResult[];
-  /** True when a risky push-on goal failed: the whole trip brought nothing back. */
-  failed?: boolean;
-  /** What became of the push-on choice, if the trip had one. */
-  pushOn?: PushOnResultView;
-  /** Explorer XP gained, and the explorer's totals and rank after the trip. */
-  xp?: { gained: number; total: number; rank: number; rankBefore: number };
-  /**
-   * Creature experience the trip paid its explorer (doubled by a treat), and what it did to the level.
-   * Absent for a recall, a failed trip and results stored before training by activity.
-   */
-  experience?: ExperienceView;
-  /** The explorer's stars at the destination after the trip. */
-  familiarity?: { stars: number; starsBefore: number; trips: number };
-  /** Journal pages found (usually none or one). */
-  journal?: JournalFindView[];
-  /** Set when the trip unlocked another expedition slot. */
-  slotUnlocked?: { total: number };
-  /** The one-time gifts of the ranks this trip reached (lowest first); absent when the rank did not rise. */
-  rankGifts?: RankGiftView[];
-}
-
-export interface RankGiftView {
-  rank: number;
-  bait: number;
-  /** Scrap and glimmer. */
-  parts: PartsBundle;
-  /** Supplies, one content id each. */
-  supplies: string[];
-}
-
-export interface OfferGoalView {
-  id: string;
-  risk: 'safe' | 'risky';
-  extraHours: number;
-  /** The exact chance (basis points) that it works out after this trip. */
-  oddsBp: number;
-}
-
-export interface ExpeditionView {
-  id: string;
-  creatureId: string;
-  /** The trip length: `short` (2 h), `medium` (6 h), `long` (12 h) or `day` (24 h). */
-  duration: ExpeditionLength;
-  /** The best tier of the supplies carried (`basic` when none): kept for the first client. See `kit`. */
-  supplies: SuppliesId;
-  /** The supplies carried (content ids). */
-  kit: string[];
-  /** The destination (content id). A trip from before expeditions v2 counts as `old-crossroads`. */
-  destination: string;
-  /** The weekly twist that applied, if the trip went to the special destination that week. */
-  twist: string | null;
-  rolls: number;
-  /** Bait paid for supplies (always 0 now: supplies cannot be bought). */
-  cost: number;
-  /** True when a treat was packed for this trip: it doubles the explorer's creature experience. */
-  treat: boolean;
-  startedAt: number;
-  endsAt: number;
-  /** When the trip can be claimed in full: the end of the push-on once one is chosen, else `endsAt`. */
-  readyAt: number;
-  status: 'active' | 'claimed';
-  claimedAt: number | null;
-  result: ExpeditionResult | null;
-  /** The goals on offer (a finished trip that was offered a choice and has not chosen), else null. */
-  offer: { goals: OfferGoalView[] } | null;
-  /** The chosen push-on goal, while it runs. */
-  pushOn: { goalId: string; startedAt: number; endsAt: number; oddsBp: number } | null;
-}
-
-export interface CancelledView {
-  id: string;
-  creatureId: string;
-  destination: string;
-  duration: ExpeditionLength;
-  startedAt: number;
-  /** Why it was cancelled: `slot_wipe` when expeditions v2 started everybody over with one slot. */
-  reason: string;
-}
-
-export interface ExplorerView {
-  rank: number;
-  xp: number;
-  /** Total XP of the next rank, or null at the top. */
-  nextRankXp: number | null;
-  trips: number;
-}
-
-export interface SlotsView {
-  total: number;
-  used: number;
-  /** The sum of the ranks above 1 of all the player's creatures. */
-  rankSum: number;
-  /** Trips the player has finished (the second slot opens after 3). */
-  tripsFinished: number;
-  /**
-   * What opens the next slot: `trips` (finish this many trips) or `rank_sum` (reach this rank sum), or
-   * null when every slot is open.
-   */
-  next: { kind: 'trips' | 'rank_sum'; at: number } | null;
-}
-
-export interface TripsState {
-  expeditions: ExpeditionView[];
-  cancelled: CancelledView[];
-  slots: SlotsView;
-  /** Supplies in stock: supply id to amount. */
-  supplies: Record<string, number>;
-}
-
-export interface SendInput {
-  creatureId: string;
-  destination: string;
-  duration: ExpeditionLength;
-  /**
-   * The supplies to carry, all from stock (`owned`). `buy` is still a valid shape on the wire so an old
-   * client gets a clear refusal (`supplies_not_for_sale`) instead of a schema error.
-   */
-  supplies: readonly { id: string; source: 'buy' | 'owned' }[];
-  /** Pack a treat for the explorer: Bait, paid when the trip starts. Absent: no treat. */
-  treat?: boolean;
-  idempotencyKey: string;
-}
-
-type ExpeditionRow = {
+export type ExpeditionRow = {
   id: string;
   user_id: string;
   creature_id: string;
@@ -325,7 +145,7 @@ type ExpeditionRow = {
   weather_json: string | null;
 };
 
-type CreatureLite = {
+export type CreatureLite = {
   id: string;
   species: string;
   line: string;
@@ -369,11 +189,6 @@ function bestTier(kit: readonly SupplyDef[]): SuppliesId {
   return TIER_ORDER[best] as SuppliesId;
 }
 
-function twistOf(id: string | null): TwistEffect | null {
-  if (id === null) return null;
-  return expeditionContent.specials.twists.find((t) => t.id === id)?.effect ?? null;
-}
-
 /** What the day did to a trip, as stored when it was sent: the numbers, and the ids for the log. */
 const StoredTripWeatherSchema = v.strictObject({
   boon: v.string(),
@@ -398,7 +213,22 @@ function noTripWeather(fx: TripWeather): boolean {
 }
 
 export class Expeditions {
-  constructor(private readonly deps: ExpeditionsDeps) {}
+  /** What the claim pipeline (`expedition-claim.ts`) reads of this class. */
+  private readonly env: ClaimEnv;
+
+  constructor(private readonly deps: ExpeditionsDeps) {
+    this.env = {
+      get sql() {
+        return deps.storage.sql;
+      },
+      deps,
+      tripWeatherOf: (row) => this.tripWeatherOf(row),
+      kitIds: (row) => this.kitIds(row),
+      explorerView: (userId, creatureId) => this.explorerView(userId, creatureId),
+      rankSumOf: (userId) => this.rankSumOf(userId),
+      devPushOutcome: (userId) => this.devPushOutcome(userId),
+    };
+  }
 
   /**
    * What the weather of the day a trip was sent did to it. A trip from before the weather, or one sent
@@ -964,7 +794,7 @@ export class Expeditions {
         // The odds stored when the goal was chosen decide the roll, never the current content; a goal
         // that has since left the content still resolves, from what was stored.
         const goal =
-          goalDef(expedition.push_goal) ?? this.vanishedGoal(expedition.push_goal, expedition);
+          goalDef(expedition.push_goal) ?? vanishedGoal(expedition.push_goal, expedition);
         const oddsBp = expedition.push_odds_bp ?? goalOddsBp(goal, expedition.duration) ?? 0;
         const pushDone = expedition.push_ends_at !== null && now >= expedition.push_ends_at;
         const works = (): boolean =>
@@ -977,8 +807,8 @@ export class Expeditions {
 
       const result =
         push?.outcome === 'failed'
-          ? this.failTrip(userId, expedition, dest, push.goal)
-          : this.payTrip(userId, expedition, explorer, dest, now, finished, push);
+          ? failTrip(this.env, userId, expedition, dest, push.goal)
+          : payTrip(this.env, userId, expedition, explorer, dest, now, finished, push);
       this.sql.exec(
         `UPDATE expeditions SET status = 'claimed', claimed_at = ?, result = ?
          WHERE id = ? AND status = 'active'`,
@@ -993,605 +823,6 @@ export class Expeditions {
       );
       return result;
     });
-  }
-
-  /**
-   * A stand-in for a push-on goal that is no longer in the content. Only the stored odds survive, so
-   * the stand-in is risky when they are below certain and adds no reward when it works.
-   */
-  private vanishedGoal(id: string, expedition: ExpeditionRow): PushOnGoalDef {
-    const oddsBp = expedition.push_odds_bp ?? 0;
-    return {
-      id,
-      name: id,
-      flavor: '',
-      risk: oddsBp >= 10_000 ? 'safe' : 'risky',
-      minRank: 1,
-      extraHours: 1,
-      lengths: {},
-      reward: {},
-    };
-  }
-
-  private pushView(
-    expedition: ExpeditionRow,
-    goal: PushOnGoalDef,
-    outcome: PushOnOutcome,
-  ): PushOnResultView {
-    return {
-      goalId: goal.id,
-      risk: goal.risk,
-      oddsBp: expedition.push_odds_bp ?? goalOddsBp(goal, expedition.duration) ?? 0,
-      outcome,
-    };
-  }
-
-  /** A risky goal that failed: nothing comes back, and the creature learns nothing. */
-  private failTrip(
-    userId: string,
-    expedition: ExpeditionRow,
-    dest: DestinationDef,
-    goal: PushOnGoalDef,
-  ): ExpeditionResult {
-    const pushOn = this.pushView(expedition, goal, 'failed');
-    bumpStat(this.sql, userId, 'trips_failed', 1);
-    const analytics = this.deps.analytics;
-    analytics?.record(
-      {
-        kind: 'push_on_result',
-        goal: goal.id,
-        risk: goal.risk,
-        outcome: 'failed',
-        destination: dest.id,
-        duration: expedition.duration,
-        oddsBp: pushOn.oddsBp,
-      },
-      userId,
-    );
-    analytics?.record(
-      {
-        kind: 'expedition_claim',
-        duration: expedition.duration,
-        destination: dest.id,
-        supplies: this.kitIds(expedition),
-        waitedMin: this.waitedMin(expedition, this.deps.now()),
-        catches: [],
-        pushOn: 'failed',
-        xp: 0,
-        stars: 0,
-      },
-      userId,
-    );
-    return { recalled: false, catches: [], failed: true, pushOn };
-  }
-
-  private waitedMin(expedition: ExpeditionRow, now: number): number {
-    const readyAt = expedition.push_ends_at ?? expedition.ends_at;
-    return Math.max(0, Math.floor((now - readyAt) / 60_000));
-  }
-
-  /** The catches, loot and progress of a trip that comes home. */
-  private payTrip(
-    userId: string,
-    expedition: ExpeditionRow,
-    explorer: CreatureLite,
-    dest: DestinationDef,
-    now: number,
-    finished: boolean,
-    push: { goal: PushOnGoalDef; outcome: PushOnOutcome } | null,
-  ): ExpeditionResult {
-    const species = speciesOf(explorer.species);
-    const kit = kitOf(this.kitIds(expedition));
-    const twist = twistOf(expedition.special_id);
-    // What the day did to this trip when it was sent: the claim reads this, never the weather.
-    const wx = this.tripWeatherOf(expedition);
-    const worked = push?.outcome === 'worked' ? push.goal : null;
-    const extraRolls = worked?.reward.catchRolls ?? 0;
-    const totalRolls = expedition.rolls + extraRolls;
-    const count = finished
-      ? totalRolls
-      : recallCatches(expedition.rolls, expedition.started_at, expedition.ends_at, now);
-
-    const stats = statsOf(this.sql, userId);
-    const milestones = milestoneBonuses(stats);
-    // What the explorer's gear does on trips (Lucky find, Keen nose, Packer, Trail XP), as it is worn now.
-    const gearRules = gearRulesOf(this.sql, explorer);
-    const explorerBefore = this.explorerView(userId, explorer.id);
-    const famBefore = familiarityOf(this.sql, userId, explorer.id, dest.id);
-    const starsBefore = familiarityStars(dest, famBefore);
-    const progress = this.sql
-      .exec<{
-        expeditions_claimed: number;
-        dupe_streak: number;
-        pity_new: number;
-        pity_creature: number;
-      }>(
-        'SELECT expeditions_claimed, dupe_streak, pity_new, pity_creature FROM player_progress WHERE user_id = ?',
-        userId,
-      )
-      .toArray()[0] ?? { expeditions_claimed: 0, dupe_streak: 0, pity_new: 0, pity_creature: 0 };
-    const owned = new Set(
-      this.sql
-        .exec<{ line: string }>('SELECT line FROM creatures WHERE user_id = ?', userId)
-        .toArray()
-        .map((r) => r.line),
-    );
-
-    // Rolled now, at claim time, from the live RNG: nothing is decided earlier.
-    const rolled = rollTripCatches(this.deps.rng, count, {
-      content,
-      destination: dest,
-      length: expedition.duration,
-      explorer: { element: species.element, role: species.role },
-      kit,
-      stars: starsBefore,
-      milestoneRarityBp: milestones.rarityBp + gearRules.luckyFindBp + wx.rarityBp,
-      twist,
-      ownedLines: owned,
-      dupeStreak: progress.dupe_streak,
-      firstExpedition: progress.expeditions_claimed === 0,
-      // The pity: the counters move with this claim and are stored below, in the same transaction.
-      pity: { sinceNew: progress.pity_new, sinceCreature: progress.pity_creature },
-    });
-    const settled: ChoiceResult[] = [];
-    const catches = rolled.results.map((caught) => {
-      const made = this.applyCatch(userId, expedition.id, caught, now, gearRules.secondLookBp);
-      if (made.settled !== null) settled.push(made.settled);
-      return made.view;
-    });
-
-    // A claim that brought nothing back (an early recall) must not use up the first-expedition
-    // guarantee, so it is not counted (a trip whose rolls all came up empty did bring a roll).
-    this.sql.exec(
-      `INSERT INTO player_progress
-         (user_id, expeditions_claimed, dupe_streak, pity_new, pity_creature) VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(user_id) DO UPDATE SET
-         expeditions_claimed = expeditions_claimed + excluded.expeditions_claimed,
-         dupe_streak = excluded.dupe_streak,
-         pity_new = excluded.pity_new,
-         pity_creature = excluded.pity_creature`,
-      userId,
-      count > 0 ? 1 : 0,
-      rolled.dupeStreak,
-      rolled.pity.sinceNew,
-      rolled.pity.sinceCreature,
-    );
-    // What the pity forced is logged by kind (no counters, no player data beyond the species).
-    for (const forced of rolled.forced) {
-      this.deps.analytics?.record(
-        { kind: 'catch_pity', pity: forced.pity, species: forced.species },
-        userId,
-      );
-    }
-
-    // Parts, supplies, gear and maybe a blueprint, from their own live RNG (the catches used `rng`).
-    const rank = explorerBefore.rank;
-    const loot = grantTripLoot(
-      {
-        storage: this.deps.storage,
-        now: this.deps.now,
-        rng: this.deps.gearRng,
-        analytics: this.deps.analytics,
-      },
-      userId,
-      expedition.id,
-      (rng) => {
-        const drawn = rollTripLoot(
-          rng,
-          {
-            length: expedition.duration,
-            shardElement: dest.element ?? species.element,
-            role: species.role,
-            kit,
-            stars: starsBefore,
-            milestonePartsBp: milestones.partsBp,
-            twist,
-            rank,
-            gearPartsBp: gearRules.keenNoseBp,
-            gearSupplyBp: gearRules.packerBp,
-            gearGlimmerBp: gearRules.glimmerFindBp,
-            weatherPartsBp: wx.partsBp,
-            weatherShardsBp: wx.shardsBp,
-            weatherSupplyBp: wx.supplyBp,
-            emptyRolls: rolled.empty,
-          },
-          { completed: finished, caught: count, rolls: expedition.rolls },
-        );
-        const parts: PartsBundle = { ...drawn.parts };
-        const blueprints = drawn.blueprint === null ? [] : [drawn.blueprint];
-        const supplies = [...drawn.supplies];
-        const gear: DraftItem[] = [];
-        if (worked !== null) {
-          for (const [kind, amount] of Object.entries(partsOfSpec(worked.reward.parts)) as [
-            keyof PartsBundle,
-            number,
-          ][]) {
-            parts[kind] = (parts[kind] ?? 0) + amount;
-          }
-          if (worked.reward.supply === true) supplies.push(foundSupplyId(rng, rank));
-          if (worked.reward.blueprint === true) blueprints.push(rollBlueprint(rng));
-          if (worked.reward.gear !== undefined) {
-            // The place's element is the tag, the Old Crossroads gives explorer pieces, and the item
-            // level is twice the finder's explorer rank.
-            const item = rollGearDrop(
-              rng,
-              worked.reward.gear,
-              { element: dest.element ?? null, crossroads: dest.id === RULES.gear.compassPlace },
-              rank,
-            );
-            gear.push({ item, origin: { kind: 'trip', place: dest.id, rank } });
-          }
-        }
-        return { parts, blueprints, supplies, gear };
-      },
-    );
-
-    const result: ExpeditionResult = { recalled: !finished, catches, loot };
-    if (rolled.empty > 0) result.noCatch = rolled.empty;
-    if (settled.length > 0) result.autoSettled = settled;
-    if (push !== null) result.pushOn = this.pushView(expedition, push.goal, push.outcome);
-
-    // A recall brings what was caught and nothing more: no XP, no stars, no journal, no stats.
-    if (finished) {
-      this.finishProgress(userId, expedition, explorer, dest, now, {
-        result,
-        catches: rolled.results,
-        views: catches,
-        explorerBefore,
-        famBefore,
-        starsBefore,
-        worked,
-        milestoneXpBp: milestones.xpBp,
-        twist,
-        stats,
-      });
-    }
-    this.logClaim(userId, expedition, result, now, dest);
-    if (push !== null) {
-      this.deps.analytics?.record(
-        {
-          kind: 'push_on_result',
-          goal: push.goal.id,
-          risk: push.goal.risk,
-          outcome: push.outcome,
-          destination: dest.id,
-          duration: expedition.duration,
-          oddsBp: result.pushOn?.oddsBp ?? 0,
-        },
-        userId,
-      );
-      if (push.outcome === 'worked') bumpStat(this.sql, userId, 'pushons_won', 1);
-    }
-    return result;
-  }
-
-  /** XP, familiarity, journal and stats of a trip that finished (not a recall, not a failure). */
-  private finishProgress(
-    userId: string,
-    expedition: ExpeditionRow,
-    explorer: CreatureLite,
-    dest: DestinationDef,
-    now: number,
-    p: {
-      result: ExpeditionResult;
-      catches: readonly TripCatch[];
-      views: readonly CatchView[];
-      explorerBefore: ExplorerView;
-      famBefore: FamiliarityRecord;
-      starsBefore: number;
-      worked: PushOnGoalDef | null;
-      milestoneXpBp: number;
-      twist: TwistEffect | null;
-      stats: Partial<Record<AccountStat, number>>;
-    },
-  ): void {
-    const analytics = this.deps.analytics;
-
-    // Explorer XP and rank (and the slot it may unlock).
-    const sumBefore = this.rankSumOf(userId);
-    const tripsBefore = p.stats.trips_finished ?? 0;
-    const bonusBp =
-      p.milestoneXpBp +
-      (p.twist?.kind === 'xp' ? p.twist.bp : 0) +
-      (p.worked?.reward.xpBp ?? 0) +
-      gearRulesOf(this.sql, explorer).trailXpBp;
-    const gained = tripXp(expedition.duration, bonusBp);
-    const after = addExplorerTrip(this.sql, userId, explorer.id, gained);
-    const rankAfter = explorerRank(after.xp);
-    p.result.xp = {
-      gained,
-      total: after.xp,
-      rank: rankAfter,
-      rankBefore: p.explorerBefore.rank,
-    };
-    // Creature experience (training by activity): the explorer earns the trip's by its length, doubled
-    // by the treat packed when it was sent. A recall and a failed trip never get here.
-    const wx = this.tripWeatherOf(expedition);
-    const experience = awardExperience(
-      this.sql,
-      analytics,
-      userId,
-      explorer.id,
-      tripExperience(expedition.duration, expedition.treat === 1, {
-        bp: wx.xpBp,
-        treatMultiplier: wx.treatMultiplier,
-      }),
-      'trip',
-      expedition.treat === 1,
-    );
-    if (experience !== null) p.result.experience = experience;
-    if (rankAfter > p.explorerBefore.rank) {
-      analytics?.record(
-        { kind: 'explorer_rank', species: explorer.species, rank: rankAfter },
-        userId,
-      );
-      // One-time gifts for every rank reached, inside the claim's transaction. Each is keyed by
-      // (creature, rank), so a rank can never pay twice.
-      const gifts: RankGiftView[] = [];
-      for (const { rank, gift } of rankGiftsBetween(p.explorerBefore.rank, rankAfter)) {
-        const granted = grantRankGift(
-          {
-            storage: this.deps.storage,
-            now: this.deps.now,
-            rng: this.deps.gearRng,
-            analytics: this.deps.analytics,
-          },
-          userId,
-          explorer.id,
-          rank,
-          gift,
-        );
-        if (granted.fresh) {
-          gifts.push({
-            rank,
-            bait: gift.bait,
-            parts: { ...gift.parts },
-            supplies: [...gift.supplies],
-          });
-        }
-      }
-      if (gifts.length > 0) p.result.rankGifts = gifts;
-    }
-    // This trip counts as finished and may raise the rank: a slot may open.
-    const sumAfter = sumBefore + (rankAfter - p.explorerBefore.rank);
-    const slotsAfter = slotsFor(sumAfter, tripsBefore + 1);
-    if (slotsAfter > slotsFor(sumBefore, tripsBefore)) {
-      p.result.slotUnlocked = { total: slotsAfter };
-      analytics?.record({ kind: 'slot_unlock', slots: slotsAfter, rankSum: sumAfter }, userId);
-    }
-
-    // Familiarity: the trip, the species caught here, a shiny.
-    const found = new Set(p.famBefore.found);
-    const here = new Set(allSpecies(dest));
-    for (const c of p.catches) if (here.has(c.species.id)) found.add(c.species.id);
-    const record: FamiliarityRecord = {
-      trips: p.famBefore.trips + 1,
-      found: [...found],
-      shiny: p.famBefore.shiny || p.catches.some((c) => c.shiny),
-    };
-    saveFamiliarity(this.sql, userId, explorer.id, dest.id, record);
-    const stars = familiarityStars(dest, record);
-    p.result.familiarity = { stars, starsBefore: p.starsBefore, trips: record.trips };
-    if (stars > p.starsBefore) {
-      analytics?.record({ kind: 'familiarity_star', destination: dest.id, stars }, userId);
-    }
-
-    // The journal: a chance per trip, and a sure page from a goal that gives one.
-    const pages = this.rollPages(
-      userId,
-      expedition,
-      dest,
-      now,
-      p.twist,
-      p.worked?.reward.journal === true,
-    );
-    if (pages.length > 0) p.result.journal = pages;
-
-    // Account stats.
-    bumpStat(this.sql, userId, 'trips_finished', 1);
-    bumpStat(
-      this.sql,
-      userId,
-      'trip_hours',
-      Math.round(lengthRules(expedition.duration).ms / HOUR_MS),
-    );
-    if (visitPlace(this.sql, userId, dest.id, now)) bumpStat(this.sql, userId, 'places_visited', 1);
-    bumpStat(this.sql, userId, 'species_found', p.views.filter((c) => c.outcome === 'new').length);
-    bumpStat(this.sql, userId, 'shinies_found', p.catches.filter((c) => c.shiny).length);
-  }
-
-  /** Journal pages for a finished trip. Never repeats a page, and stops when none are left. */
-  private rollPages(
-    userId: string,
-    expedition: ExpeditionRow,
-    dest: DestinationDef,
-    now: number,
-    twist: TwistEffect | null,
-    sure: boolean,
-  ): JournalFindView[] {
-    const entries = expeditionContent.journal.entries;
-    const found = foundPages(this.sql, userId);
-    const finds: JournalFindView[] = [];
-    const attempts: boolean[] = [
-      chance(
-        this.deps.tripRng,
-        journalChanceBp(expedition.duration, twist, this.tripWeatherOf(expedition).journalBp),
-        10_000,
-      ),
-    ];
-    if (sure) attempts.push(true);
-    for (const wanted of attempts) {
-      if (!wanted) continue;
-      const entryId = rollJournal(this.deps.tripRng, entries, dest.id, found);
-      if (entryId === null) continue;
-      if (!addPage(this.sql, userId, entryId, now, expedition.id)) continue;
-      found.add(entryId);
-      bumpStat(this.sql, userId, 'journal_pages', 1);
-      const entry = journalEntry(entryId);
-      const setId = entry?.set ?? null;
-      let setComplete = false;
-      if (setId !== null) {
-        const members = entries.filter((e) => e.set === setId);
-        setComplete = members.every((e) => found.has(e.id));
-        if (setComplete) bumpStat(this.sql, userId, 'journal_sets', 1);
-      }
-      finds.push({ entryId, set: setId, setComplete });
-      this.deps.analytics?.record(
-        {
-          kind: 'journal_find',
-          entry: entryId,
-          place: entry?.place ?? 'any',
-          set: setId,
-          setComplete,
-        },
-        userId,
-      );
-    }
-    return finds;
-  }
-
-  /** One `expedition_claim` or `expedition_recall` event per claim that actually paid out. */
-  private logClaim(
-    userId: string,
-    expedition: ExpeditionRow,
-    result: ExpeditionResult,
-    now: number,
-    dest: DestinationDef,
-  ): void {
-    const analytics = this.deps.analytics;
-    if (analytics === undefined) return;
-    const catches: CatchProps[] = result.catches.map((c) => ({
-      species: c.species,
-      rarity: speciesOf(c.species).rarity,
-      shiny: c.shiny,
-      result: c.outcome,
-      ...(c.talent === undefined ? {} : { talent: c.talent.id, golden: c.talent.golden }),
-    }));
-    const base = {
-      duration: expedition.duration,
-      destination: dest.id,
-      supplies: this.kitIds(expedition),
-      catches,
-    };
-    if (result.recalled) {
-      const length = Math.max(1, expedition.ends_at - expedition.started_at);
-      const elapsedPct = Math.floor(((now - expedition.started_at) * 100) / length);
-      analytics.record({ kind: 'expedition_recall', ...base, elapsedPct }, userId);
-    } else {
-      analytics.record(
-        {
-          kind: 'expedition_claim',
-          ...base,
-          waitedMin: this.waitedMin(expedition, now),
-          pushOn: result.pushOn?.outcome ?? 'none',
-          xp: result.xp?.gained ?? 0,
-          stars: result.familiarity?.stars ?? 0,
-        },
-        userId,
-      );
-    }
-  }
-
-  /**
-   * Turns one catch into a creature (a species the player lacks) or a pending duplicate card. Either way
-   * the catch has rolled its talent now, from live randomness: a new creature's goes in its first slot, a
-   * duplicate's waits on the card. A shiny duplicate makes the creature the player owns shiny at once.
-   */
-  private applyCatch(
-    userId: string,
-    expeditionId: string,
-    caught: TripCatch,
-    now: number,
-    /** The explorer's Second look chance (basis points; 0 when it has none). */
-    secondLookBp: number,
-  ): { view: CatchView; settled: ChoiceResult | null } {
-    const species = caught.species;
-    const owned = this.sql
-      .exec<CreatureLite>(
-        `SELECT id, species, line, level, fusion_count, shiny, away_expedition_id FROM creatures
-         WHERE user_id = ? AND line = ? ORDER BY line_slot`,
-        userId,
-        species.line,
-      )
-      .toArray();
-    const existing = owned[0];
-    const outcome = applyCatchToCollection(
-      existing === undefined
-        ? undefined
-        : { fusionCount: existing.fusion_count, shiny: owned.some((c) => c.shiny === 1) },
-      caught,
-    );
-    const firstOnServer = recordServerFirst(
-      this.sql,
-      'catch',
-      species.id,
-      userId,
-      expeditionId,
-      now,
-    );
-    const wearer = { role: species.role, element: species.element };
-    const base = {
-      species: species.id,
-      shiny: caught.shiny,
-      firstOnServer,
-      ...(caught.deep ? { deep: true as const } : {}),
-    };
-
-    switch (outcome.kind) {
-      case 'new': {
-        // Drawn now from live randomness, after the catch itself is decided: the quirk (cosmetic) and
-        // the talent.
-        const made = insertCreature(
-          this.sql,
-          { quirk: this.deps.quirkRng, talent: this.deps.talentRng },
-          { userId, species: species.id, origin: 'expedition', shiny: caught.shiny, now },
-          this.deps.analytics,
-        );
-        const talent = talentViewOf(made.talent, wearer);
-        return {
-          view: { ...base, outcome: 'new', ...(talent === null ? {} : { talent }) },
-          settled: null,
-        };
-      }
-      case 'duplicate': {
-        if (existing === undefined) throw new Error('a duplicate without a creature');
-        if (outcome.becameShiny) {
-          this.sql.exec('UPDATE creatures SET shiny = 1 WHERE id = ?', existing.id);
-        }
-        // "The better" is judged for the creature of the line the player has (the first, if they Kept two).
-        const stats = effectiveStats(
-          speciesOf(existing.species),
-          existing.level,
-          existing.fusion_count,
-        );
-        const pending = this.deps.choices.addPending(
-          userId,
-          { species: species.id, shiny: caught.shiny },
-          { kind: 'expedition', id: expeditionId },
-          secondLookBp > 0
-            ? {
-                bp: secondLookBp,
-                wearer: {
-                  role: speciesOf(existing.species).role,
-                  element: speciesOf(existing.species).element,
-                  stats,
-                },
-              }
-            : undefined,
-        );
-        const talent = talentViewOf(pending.talent, wearer);
-        return {
-          view: {
-            ...base,
-            outcome: 'duplicate',
-            pendingId: pending.id,
-            ...(talent === null ? {} : { talent }),
-            ...(pending.looked ? { secondLook: true as const } : {}),
-          },
-          settled: pending.settled,
-        };
-      }
-    }
   }
 
   // --- The profile and the destinations ---
@@ -1700,53 +931,6 @@ export class Expeditions {
   addCraftedSupplies(userId: string, supplyId: string, amount: number): void {
     addSupply(this.sql, userId, supplyId, amount);
   }
-}
-
-export interface ProfileView {
-  stats: Record<AccountStat, number>;
-  milestones: {
-    id: string;
-    stat: AccountStat;
-    at: number;
-    value: number;
-    reached: boolean;
-    bonus: { kind: string; bp: number };
-  }[];
-  /** The permanent bonuses the reached milestones give, in basis points. */
-  bonuses: { rarityBp: number; partsBp: number; offerBp: number; xpBp: number };
-  journal: {
-    found: { entryId: string; foundAt: number }[];
-    total: number;
-    sets: { id: string; found: number; total: number }[];
-  };
-  explorers: ({ creatureId: string } & ExplorerView)[];
-  slots: SlotsView;
-}
-
-export interface DestinationsView {
-  serverNow: number;
-  special: { destination: string; twist: string; description: string; festival: boolean };
-  /** True in a Festival raid week: the Festival Grounds are open. */
-  festivalWeek: boolean;
-  /** True at night by the guild's local time: night-only places are open. */
-  night: boolean;
-  destinations: {
-    id: string;
-    minRank: number;
-    nightOnly: boolean;
-    festivalOnly: boolean;
-    /** Why it is closed to everybody right now (`night`, `festival`); rank is per creature. */
-    closed: ClosedReason[];
-  }[];
-  familiarity: {
-    creatureId: string;
-    destination: string;
-    trips: number;
-    found: string[];
-    shiny: boolean;
-    stars: number;
-    deepChanceBp: number;
-  }[];
 }
 
 /** The weekly special at an instant, by the guild's raid week. */

@@ -184,9 +184,9 @@
         "stats": [
           {
             "stat": "hp",
-            "value": 12,
+            "value": 24,
             "base": 12,
-            "text": "HP 12"
+            "text": "HP 24"
           },
           {
             "stat": "atk",
@@ -208,14 +208,14 @@
             "active": true
           },
           {
-            "id": "ember-ward",
-            "name": "Ember Ward",
-            "text": "Ember Ward −4%",
-            "about": "Less damage from the foes that beat Ember.",
+            "id": "hp-local-flat",
+            "name": "HP",
+            "text": "+12 HP (this item)",
+            "about": "Adds HP to this item before its percentages (not the creature's).",
             "source": "rolled",
             "tier": 1,
             "bestTier": 2,
-            "local": false,
+            "local": true,
             "active": true
           }
         ],
@@ -903,7 +903,7 @@
           "spd": 29
         },
         "statsWithGear": {
-          "hp": 319,
+          "hp": 331,
           "atk": 38,
           "spd": 29
         },

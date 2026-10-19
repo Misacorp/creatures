@@ -374,6 +374,8 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
   if (node === undefined) throw invalidAct('that room is not on the map');
   st.at = nodeId;
   st.path.push(nodeId);
+  // The line of the last mystery room is shown right after the pick; the next move clears it.
+  st.lastEvent = null;
 
   switch (node.kind) {
     case 'fight':

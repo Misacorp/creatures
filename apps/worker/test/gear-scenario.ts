@@ -79,7 +79,7 @@ export async function runGearScenario(ctx: CoreContext): Promise<Captured> {
   };
   const boss = content.bosses[0]?.id ?? '';
   grantRaidFinale(grantDeps, seeded.id, '2027-W01', 3, boss);
-  grantFestivalGear(grantDeps, seeded.id, '2027-W01', 'ember', 3, boss);
+  grantFestivalGear(grantDeps, seeded.id, '2027-W01', 3, boss);
   // The great one (an Ember Hat), a Scarf for the Guard, a Guard's bell and a Compass.
   const hat = give('emberkeepers-crown', 'epic', 15, 'fixture-hat', [
     ['ember-reaction', 3],

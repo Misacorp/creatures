@@ -29,63 +29,34 @@
  */
 import {
   RULES,
-  activeEffects,
-  addParts,
   createSeededRng,
-  dungeonExperience,
   emptyPack,
   generateDungeonMap,
   dungeonMapValid,
   isLandmark,
-  keptOnDefeat,
   landmarkBossId,
   mapView,
-  nodeFoe,
-  rollDungeonLoot,
   roomModifier,
-  scaleStrength,
-  streakBonus,
   treatCost,
-  undercroftOpen,
   weatherBossAttacks,
-  weatherDef,
   weatherLuck,
   weatherSky,
-  xpWeather,
   type DungeonMap,
-  type DungeonMapView,
-  type Element,
-  type GearRarity,
-  type PartsBundle,
-  type Rng,
-  type Role,
-  type WeatherDay,
 } from '@creatures/game';
 import {
-  buildNames,
-  buildRoomInput,
   dungeonBossEnrage,
   liveFightRules,
   skyRunFields,
   type DungeonRoomResult,
   type DungeonRunInput,
-  type EventNames,
-  type FightEvent,
   type FightSlot,
 } from '@creatures/engine';
 import * as v from 'valibot';
-import type { Analytics } from './analytics';
-import { devKey, type DevFlags } from './dev-state';
-import { awardExperience, type ExperienceView } from './creature-exp';
+import { devKey } from './dev-state';
 import { keyTaken, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
-import {
-  grantDungeonChest,
-  grantDungeonRun,
-  grantDungeonStreak,
-  type GrantDeps,
-} from './gear-grants';
-import { spend, type LedgerStorage } from './ledger';
+import { grantDungeonChest } from './gear-grants';
+import { spend } from './ledger';
 import { drawSeed } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
 import {
@@ -96,7 +67,6 @@ import {
   type StartBody,
 } from './dungeon-schemas';
 import {
-  SUPPLIES_PER_RUN,
   applyCamp,
   applyDescend,
   applyEvent,
@@ -112,31 +82,53 @@ import {
 import {
   PLAYER,
   abilityChoices,
-  currentHp,
-  keepsakeViews,
   maxHpOfRow,
   parseState,
-  runNode,
   runView,
   type RunMeta,
   type RunState,
 } from './dungeon-state';
 import type {
-  DungeonKeepsakeView,
-  DungeonOutcome,
-  DungeonPack,
+  DungeonAttention,
+  DungeonReplayRoom,
+  DungeonReplayView,
   DungeonRunState,
-  DungeonStepLog,
+  DungeonRunSummary,
+  DungeonToday,
+  DungeonStartResponse,
+  DungeonActResponse,
 } from './dungeon-types';
+import { gearDepsOf, finishRun, lockDepth } from './dungeon-finish';
+import { replayRoom, playerName, replayRun } from './dungeon-replay';
+import {
+  progressOf,
+  type DungeonDeps,
+  type ProgressRow,
+  type RunRow,
+  type StepRow,
+  type StoredAct,
+  type StoredFight,
+} from './dungeon-rows';
 import { addDays, gameDay, gameDayEnd } from './time';
-import type { Weather } from './weather';
 
 export type {
+  DungeonActResponse,
+  DungeonAttention,
+  DungeonExperienceView,
   DungeonKeepsakeView,
   DungeonOutcome,
   DungeonPack,
+  DungeonReplayRoom,
+  DungeonReplayView,
+  DungeonRewards,
+  DungeonRoomSummary,
   DungeonRunState,
+  DungeonRunSummary,
+  DungeonStartResponse,
   DungeonStepLog,
+  DungeonTeamMember,
+  DungeonToday,
+  ReplayRowEntry,
 } from './dungeon-types';
 
 /** Runs (their events and inputs) are kept this long; the summary and rewards stay. */
@@ -147,315 +139,7 @@ export const RUN_RETENTION_MS = 90 * 86_400_000;
  * retry is still a `stale_step`, or a `key_conflict` when it is another request).
  */
 export const ACT_ANSWER_RETENTION_MS = 2 * 86_400_000;
-export interface DungeonDeps {
-  storage: LedgerStorage;
-  now: () => number;
-  /** Live randomness for the day's seed and every die of a run (fight seeds, events, camp offers). Crypto in production. */
-  rng: Rng;
-  /** Live randomness for the gear and shard rolls. Crypto in production. */
-  gearRng: Rng;
-  /** The guild's timezone (an IANA name). Read once per request and passed down. */
-  timezone: () => string;
-  analytics?: Analytics | undefined;
-  /** The dev tools' force flags (staging only): the day's modifiers can be picked. Absent in production. */
-  dev?: DevFlags | undefined;
-  /** The valley's weather: every run is fought under the day's Boon and Omen. Absent: none. */
-  weather?: Weather | undefined;
-}
-
-// --- Views ---
-
-/**
- * What a run paid one creature in experience, with what changed the plain amount: the results say it under
- * the creature's bar ("Treat gave 2x experience"). Both fields are absent in runs stored before they were added.
- */
-export interface DungeonExperienceView extends ExperienceView {
-  /** What the treat multiplied the experience by (2, or 3 on a day that changes it), or null when no treat was packed for this creature. */
-  treatTimes: number | null;
-  /** The day's Boons and Omens that changed creature experience: their names and the change in basis points (negative: less). */
-  dayEffects: { name: string; bp: number }[];
-}
-
-/** What a run paid. The streak bonus is listed apart from what the rooms paid. */
-export interface DungeonRewards {
-  bait: number;
-  essence: number;
-  /** All the parts the run's grant paid, including those of items that did not fit the bag. */
-  parts: PartsBundle;
-  gear: { id: string; baseId: string; rarity: GearRarity }[];
-  /** Items that did not fit the bag and became parts (already counted in `parts`). */
-  converted: { baseId: string; rarity: GearRarity }[];
-  /** The supplies the run dropped, one content id each (absent in runs stored before supplies dropped here). */
-  supplies?: string[];
-  /**
-   * The creature experience the run paid each creature that stood in the row (a treat doubles it) and
-   * what it did to their levels. Absent in runs stored before training by activity.
-   */
-  experience?: DungeonExperienceView[];
-  /** A fully cleared landmark depth: its gear drop was certain. */
-  landmark: boolean;
-  streak: { day: number; bait: number; essence: number; parts: PartsBundle } | null;
-}
-
-export interface DungeonRoomSummary {
-  index: number;
-  kind: 'foe' | 'boss';
-  /** A fiercer foe (map runs only; absent otherwise). An epic fight is one too. */
-  elite?: boolean;
-  /** An Undercroft epic fight (also `elite`, so it shows as "Fierce"). */
-  epic?: boolean;
-  foe: { id: string; name: string; element: Element; hpMax: number };
-  modifier: { id: string; name: string; description: string };
-  /** False for the rooms after the one that was lost (three-room runs only: a map run lists the fights it played). */
-  played: boolean;
-  cleared: boolean;
-  rounds: number;
-  /** The foe's HP when the room ended (0 when it was cleared). */
-  foeHpEnd: number;
-}
-
-export interface DungeonTeamMember {
-  id: string;
-  name: string;
-  speciesId: string;
-  element: Element;
-  role: Role;
-  level: number;
-  hpMax: number;
-  /** HP when the run ended; 0 for a creature that was knocked out. */
-  hpEnd: number;
-}
-
-export interface DungeonRunSummary {
-  id: string;
-  day: string;
-  attempt: number;
-  depth: number;
-  /** The depth the player is at after this run (one deeper after a clear). */
-  newDepth: number;
-  /** The floor boss was beaten. */
-  cleared: boolean;
-  /** Fights cleared. */
-  roomsCleared: number;
-  landmark: boolean;
-  /** Days in a row after this run. */
-  streak: number;
-  createdAt: number;
-  /** The row at the end, left to right. */
-  team: DungeonTeamMember[];
-  /** The fights played (a three-room run: all three rooms, played or not). */
-  rooms: DungeonRoomSummary[];
-  rewards: DungeonRewards;
-  /** The Boon and Omen the run was fought under (absent: none, and in runs stored before the weather). */
-  weather?: { boon: string; omen: string | null };
-  /**
-   * Undercroft levels the run cleared (keepers beaten): 0 for a run that never went down. Absent in
-   * summaries stored before the Undercroft.
-   */
-  deepest?: number;
-  /** Map runs only: how it ended (absent while it is open), the node kinds of the path, the pack and the keepsakes. */
-  outcome?: DungeonOutcome;
-  path?: string[];
-  pack?: { found: DungeonPack; kept: DungeonPack };
-  keepsakes?: DungeonKeepsakeView[];
-  /** Map runs that ended: the run's map at its depth, the rooms visited in order and what each did. Absent in older summaries. */
-  route?: {
-    map: DungeonMapView;
-    path: string[];
-    history: DungeonStepLog[];
-    /** The Undercroft levels the run went down into, in order (absent when it never did). */
-    undercroft?: DungeonMapView[];
-  };
-}
-
-export interface DungeonToday {
-  serverNow: number;
-  /** The guild-local calendar day ('YYYY-MM-DD'). */
-  day: string;
-  timezone: string;
-  /** When the game day ends (the next 13:37 local reset), in epoch ms. */
-  resetsAt: number;
-  /** The depth the next run fights at. */
-  depth: number;
-  landmark: boolean;
-  /**
-   * Set when the next run is a landmark (`landmark` is true): the depth and the content id of the
-   * floor boss it will fight, which is fixed at landmark depths. Null on any other depth.
-   */
-  landmarkBoss: { depth: number; foeId: string } | null;
-  /** Days in a row, as of now: 0 when yesterday was missed and nothing has run today. */
-  streak: number;
-  attemptsToday: number;
-  attemptsAllowed: number;
-  /** False while a run is open (`active`). */
-  canRun: boolean;
-  /** Why a run is not possible now, or null. */
-  blocked: 'already_run' | 'need_creatures' | null;
-  /** The newest finished run of today, or null. */
-  last: DungeonRunSummary | null;
-  /**
-   * The creature ids of the player's most recent run on any day, in the order they stood in the
-   * row (left to right), or null before their first run. Only the caller's own run is ever read.
-   */
-  lastTeam: string[] | null;
-  /**
-   * The row the player saved while setting up (`PUT /api/dungeon/team`), left to right, `teamSize`
-   * entries: each a creature id, or null for an empty slot (and for a creature the player no longer
-   * owns). Null when there is no draft; an explicitly empty draft is all nulls, not null. A run
-   * clears it. Only the caller's own draft is ever read.
-   */
-  draftTeam: (string | null)[] | null;
-  /** Today's map, the same for everyone on the server, with foe HP at this player's depth. */
-  map: DungeonMapView;
-  /** The player's run that is still open today, or null. */
-  active: DungeonRunState | null;
-}
-
-/** The light read behind the Activity's notification pip (`Dungeon.attention`). */
-export interface DungeonAttention {
-  /** Exactly `DungeonToday.canRun`. */
-  canRun: boolean;
-  /** A run is open today: an open run is a reason to come back, so the pip stays on for it. */
-  active: boolean;
-  /** When the game day ends: the answer can change then on its own. */
-  resetsAt: number;
-}
-
-export interface DungeonStartResponse {
-  state: DungeonRunState;
-  today: DungeonToday;
-}
-
-export interface DungeonActResponse {
-  state: DungeonRunState;
-  /** The fight the move just played: the client plays it at once. */
-  room?: DungeonReplayRoom;
-  /** Only when the run ended: the summary (with rewards) and the fresh day. */
-  summary?: DungeonRunSummary;
-  today?: DungeonToday;
-}
-
-export interface DungeonReplayRoom {
-  index: number;
-  kind: 'foe' | 'boss';
-  /** A fiercer foe (map runs only; absent otherwise). An epic fight is one too. */
-  elite?: boolean;
-  /** An Undercroft epic fight (also `elite`, so it shows as "Fierce"). */
-  epic?: boolean;
-  /** The map node of the fight (map runs only). */
-  node?: string;
-  /** The run's keepsakes in that fight (map runs only; absent when it held none). */
-  keepsakes?: DungeonKeepsakeView[];
-  /** The row that fought this room (map runs only: a camp swap or reorder changes it; absent: `DungeonReplayView.row`). */
-  row?: ReplayRowEntry[];
-  foe: { id: string; name: string; element: Element; hpMax: number };
-  modifier: { id: string; name: string; description: string };
-  cleared: boolean;
-  rounds: number;
-  /** Every creature's HP when the room started, and at most, by creature id. */
-  hpStart: Record<string, number>;
-  hpMax: Record<string, number>;
-  events: FightEvent[];
-  /** For `describeEvent`. */
-  names: EventNames;
-}
-
-export interface ReplayRowEntry {
-  position: number;
-  id: string;
-  name: string;
-  species: string;
-  element: Element;
-  role: Role;
-  level: number;
-}
-
-/** A row of slots as the replay shows it, left to right. */
-const rowOf = (
-  team: readonly Pick<FightSlot, 'id' | 'name' | 'speciesId' | 'element' | 'role' | 'level'>[],
-): ReplayRowEntry[] =>
-  team.map((s, position) => ({
-    position,
-    id: s.id,
-    name: s.name,
-    species: s.speciesId,
-    element: s.element,
-    role: s.role,
-    level: s.level,
-  }));
-
-export interface DungeonReplayView {
-  summary: DungeonRunSummary;
-  /** The fighting row, left to right (`position` 0 is the left creature). A map run: the starting row (see `DungeonReplayRoom.row`). */
-  row: ReplayRowEntry[];
-  rooms: DungeonReplayRoom[];
-}
-
-// --- Storage ---
-
-type RunRow = {
-  id: string;
-  user_id: string;
-  day: string;
-  attempt: number;
-  idempotency_key: string;
-  fingerprint: string;
-  depth: number;
-  seed: string;
-  cleared: number;
-  rooms_cleared: number;
-  input_json: string | null;
-  result_json: string | null;
-  summary_json: string;
-  rewards_json: string;
-  created_at: number;
-  status: 'active' | 'done';
-  state_json: string | null;
-  outcome: DungeonOutcome | null;
-};
-
-type StepRow = {
-  run_id: string;
-  step: number;
-  idempotency_key: string;
-  act_json: string;
-  node: string | null;
-  seed: string | null;
-  input_json: string | null;
-  result_json: string | null;
-};
-
-/** What a fight's step stores in `input_json`: the run's input with the room, and the HP the row came in with. */
-interface StoredFight {
-  input: DungeonRunInput;
-  hpIn: Record<string, number> | null;
-}
-
-/** What `act_json` keeps: the act (for telling a retry from another request), the state it left (without the map) and whether it ended the run. */
-interface StoredAct {
-  act: unknown;
-  /** Emptied (missing) once the answer is past `ACT_ANSWER_RETENTION_MS`. `history` is missing in answers stored before the room log. */
-  state?: Omit<DungeonRunState, 'map' | 'history'> & { history?: DungeonStepLog[] };
-  ended: boolean;
-}
-
-type ProgressRow = {
-  depth: number;
-  streak: number;
-  last_day: string | null;
-  first_day: string | null;
-  runs: number;
-  clears: number;
-};
-
-const FRESH_PROGRESS: ProgressRow = {
-  depth: 1,
-  streak: 0,
-  last_day: null,
-  first_day: null,
-  runs: 0,
-  clears: 0,
-};
+export type { DungeonDeps } from './dungeon-rows';
 
 /** The text of a request that decides a run, for telling a retry from a different request under one key. */
 function fingerprintOf(body: RunBody): string {
@@ -467,37 +151,10 @@ function fingerprintOf(body: RunBody): string {
   });
 }
 
-/**
- * The Boons and Omens of the day that changed creature experience, by name, with the change in basis
- * points as it was applied (scaled by the day's strength; negative: less). One that changes only the
- * treat's multiplier shows no entry. Names come from the content.
- */
-function xpDayEffects(day: WeatherDay | null): { name: string; bp: number }[] {
-  return activeEffects(day).flatMap((a) => {
-    if (a.effect.op !== 'xp') return [];
-    const bp = scaleStrength(a.effect.bp, a.strengthBp);
-    const name = weatherDef(a.id)?.name;
-    return bp === 0 || name === undefined ? [] : [{ name, bp }];
-  });
-}
-
 /** The same text for the same act, whatever order a client wrote its keys in. */
 function canonicalAct(act: object): string {
   return JSON.stringify(act, Object.keys(act).sort());
 }
-
-const emptyRewards = (): DungeonRewards => ({
-  bait: 0,
-  essence: 0,
-  parts: {},
-  gear: [],
-  converted: [],
-  supplies: [],
-  landmark: false,
-  streak: null,
-});
-
-const totalOf = (pack: DungeonPack): number => pack.bait + pack.essence + pack.scrap;
 
 /** The run waits where heading home is possible: a camp with its choice pending, or the descent card. */
 const safePoint = (st: RunState): boolean =>
@@ -508,17 +165,6 @@ export class Dungeon {
 
   private get sql(): SqlStorage {
     return this.deps.storage.sql;
-  }
-
-  private progress(userId: string): ProgressRow {
-    return (
-      this.sql
-        .exec<ProgressRow>(
-          'SELECT depth, streak, last_day, first_day, runs, clears FROM dungeon_progress WHERE user_id = ?',
-          userId,
-        )
-        .toArray()[0] ?? { ...FRESH_PROGRESS }
-    );
   }
 
   /**
@@ -738,7 +384,7 @@ export class Dungeon {
     needCreatures: boolean;
     canRun: boolean;
   } {
-    const progress = this.progress(userId);
+    const progress = progressOf(this.sql, userId);
     const runs = this.runsOn(userId, day);
     const { allowed, canRun: ruleAllows } = this.allowance(progress, day, runs);
     const creatures = this.sql
@@ -827,73 +473,6 @@ export class Dungeon {
 
   // --- Replays ---
 
-  private playerName(userId: string): string {
-    return (
-      this.sql
-        .exec<{ display_name: string }>(
-          'SELECT display_name FROM players WHERE user_id = ?',
-          userId,
-        )
-        .toArray()[0]?.display_name ?? 'You'
-    );
-  }
-
-  /**
-   * One fight in the replay shape. `buildRoomInput` of the stored input and the HP the row came in with
-   * gives the foe's HP after its modifier and the names, exactly as the fight was built. The foe keeps
-   * its plain name (the client adds "Fierce" for an elite). A map run's room carries the row that
-   * fought it (`row`: the row changes at the camp).
-   */
-  private replayRoom(
-    name: string,
-    node: string | null,
-    stored: StoredFight,
-    result: DungeonRoomResult,
-  ): DungeonReplayRoom {
-    const { input, hpIn } = stored;
-    const spec = input.rooms[0];
-    if (spec === undefined) throw new Error('a stored fight has no room');
-    const elite = spec.elite === true;
-    const fight = buildRoomInput(input, spec, hpIn);
-    const names = buildNames(fight, { [PLAYER]: name });
-    return {
-      index: result.index,
-      kind: spec.foe.kind,
-      ...(elite ? { elite: true } : {}),
-      ...(spec.epic === true ? { epic: true } : {}),
-      ...(node === null ? {} : { node, row: rowOf(input.team) }),
-      ...(spec.keepsakes === undefined || spec.keepsakes.length === 0
-        ? {}
-        : { keepsakes: keepsakeViews(spec.keepsakes.map((k) => k.id)) }),
-      foe: {
-        id: spec.foe.id,
-        name: spec.foe.name,
-        element: spec.foe.element,
-        hpMax: fight.bossHpPool.max,
-      },
-      modifier: {
-        id: spec.modifier.id,
-        name: spec.modifier.name,
-        description: spec.modifier.description,
-      },
-      cleared: result.cleared,
-      rounds: result.result.rounds,
-      hpStart: result.hpStart,
-      hpMax: result.hpMax,
-      events: result.result.events,
-      names,
-    };
-  }
-
-  private fightRows(runId: string): StepRow[] {
-    return this.sql
-      .exec<StepRow>(
-        'SELECT * FROM dungeon_steps WHERE run_id = ? AND node IS NOT NULL ORDER BY step',
-        runId,
-      )
-      .toArray();
-  }
-
   /**
    * The full replay of one of the caller's runs, or null (unknown, someone else's, or past retention).
    * A map run replays every fight played so far, in order, and works while the run is open; an old
@@ -910,65 +489,8 @@ export class Dungeon {
         .toArray()[0];
       // The same answer for "does not exist" and "belongs to someone else".
       if (row === undefined) return null;
-      const name = this.playerName(userId);
-      if (row.state_json !== null) return this.pathReplay(row, name);
-      if (row.input_json === null || row.result_json === null) return null;
-      const input = JSON.parse(row.input_json) as DungeonRunInput;
-      const result = JSON.parse(row.result_json) as { rooms: DungeonRoomResult[] };
-      const rooms = result.rooms.map((r) => {
-        const spec = input.rooms[r.index];
-        if (spec === undefined) throw new Error('a stored run has no such room');
-        return this.replayRoom(
-          name,
-          null,
-          { input: { ...input, rooms: [spec] }, hpIn: r.index === 0 ? null : r.hpStart },
-          r,
-        );
-      });
-      return {
-        summary: JSON.parse(row.summary_json) as DungeonRunSummary,
-        row: rowOf(input.team),
-        rooms,
-      };
+      return replayRun(this.deps, row, userId);
     });
-  }
-
-  private pathReplay(row: RunRow, name: string): DungeonReplayView | null {
-    const st = parseState(row.state_json);
-    if (st === null) return null;
-    const steps = this.fightRows(row.id);
-    const rooms: DungeonReplayRoom[] = [];
-    for (const step of steps) {
-      if (step.input_json === null || step.result_json === null) continue;
-      rooms.push(
-        this.replayRoom(
-          name,
-          step.node,
-          JSON.parse(step.input_json) as StoredFight,
-          JSON.parse(step.result_json) as DungeonRoomResult,
-        ),
-      );
-    }
-    // Past the retention period the events are gone: the same answer as for a run that is not there.
-    if (steps.length > 0 && rooms.length === 0) return null;
-    const summary =
-      row.status === 'done'
-        ? (JSON.parse(row.summary_json) as DungeonRunSummary)
-        : this.summarise({
-            row,
-            st,
-            outcome: null,
-            newDepth: row.depth,
-            streak: this.progress(row.user_id).streak,
-            rewards: emptyRewards(),
-            found: st.pack,
-            kept: st.pack,
-          });
-    return {
-      summary,
-      row: rowOf(st.start),
-      rooms,
-    };
   }
 
   // --- Start ---
@@ -1013,7 +535,7 @@ export class Dungeon {
     }
 
     // --- One run a day (an open run is it), and the retry of a first day ---
-    const progress = this.progress(userId);
+    const progress = progressOf(this.sql, userId);
     const runs = this.runsOn(userId, day);
     if (runs.some((r) => r.status === 'active')) throw new GameError(409, 'run_active');
     // A run of an earlier day that could not be closed (see `closeOpenRuns`) still has to be: until
@@ -1265,8 +787,8 @@ export class Dungeon {
       rng: this.deps.rng,
       analytics: this.deps.analytics,
       bank: (tag, draw) =>
-        grantDungeonChest(this.gearDeps(), userId, row.day, row.attempt, tag, draw),
-      lockDepth: (depth) => this.lockDepth(userId, depth),
+        grantDungeonChest(gearDepsOf(this.deps), userId, row.day, row.attempt, tag, draw),
+      lockDepth: (depth) => lockDepth(this.deps, userId, depth),
     };
     const act = body.act;
     let outcome: ActOutcome;
@@ -1314,7 +836,7 @@ export class Dungeon {
     // --- An ended run is paid in this same transaction ---
     let summary: DungeonRunSummary | undefined;
     if (outcome.end !== undefined) {
-      summary = this.finish(userId, row, work, outcome.end).summary;
+      summary = finishRun(this.deps, userId, row, work, outcome.end).summary;
     }
     const state = runView(
       {
@@ -1345,8 +867,8 @@ export class Dungeon {
   }
 
   private playedRoom(userId: string, fight: PlayedFight): DungeonReplayRoom {
-    return this.replayRoom(
-      this.playerName(userId),
+    return replayRoom(
+      playerName(this.sql, userId),
       fight.node,
       { input: fight.input, hpIn: fight.hpIn },
       fight.result,
@@ -1373,8 +895,8 @@ export class Dungeon {
     };
     const room =
       step.node !== null && step.input_json !== null && step.result_json !== null
-        ? this.replayRoom(
-            this.playerName(userId),
+        ? replayRoom(
+            playerName(this.sql, userId),
             step.node,
             JSON.parse(step.input_json) as StoredFight,
             JSON.parse(step.result_json) as DungeonRoomResult,
@@ -1419,7 +941,7 @@ export class Dungeon {
         // Its own savepoint: a run that cannot be closed leaves nothing half paid, and never stops the
         // player from looking at today or starting a run (it is of an earlier day).
         this.deps.storage.transactionSync(() =>
-          this.finish(userId, row, st, safePoint(st) ? homeOutcome(st) : 'defeat'),
+          finishRun(this.deps, userId, row, st, safePoint(st) ? homeOutcome(st) : 'defeat'),
         );
       } catch (err) {
         // Only the error's name: a message could carry data. The next look tries again.
@@ -1449,394 +971,6 @@ export class Dungeon {
         // Only the error's name: a message could carry data. The next alarm tries again.
         console.error('dungeon close failed', err instanceof Error ? err.name : 'unknown');
       }
-    }
-  }
-
-  /**
-   * Ends a run, paying everything in the caller's transaction: the progress (depth only after a clear),
-   * the kept pack with the boss chest and the supply, the streak bonus of the day's first finished run,
-   * creature experience, the summary and rewards, and the analytics. Idempotent per (player, day,
-   * attempt) through the ledger and grant keys.
-   */
-  private finish(
-    userId: string,
-    row: RunRow,
-    st: RunState,
-    outcome: DungeonOutcome,
-  ): { summary: DungeonRunSummary; rewards: DungeonRewards } {
-    // The main boss was beaten: the run is cleared even when the Undercroft below it was lost.
-    const cleared = outcome === 'cleared' || st.bossCleared;
-    const { day, depth } = row;
-
-    // --- Progress: counted when the run ends. A run that went home or was lost counts for the streak too. ---
-    const progress = this.progress(userId);
-    // Progress only moves forward. A run that closes late (an earlier day's, after a later day's run
-    // finished) must not roll the depth, the streak or the last day back: it leaves them alone.
-    const forward = progress.last_day === null || day > progress.last_day;
-    const newStreak =
-      progress.last_day === day || !forward
-        ? progress.streak
-        : progress.last_day === addDays(day, -1)
-          ? progress.streak + 1
-          : 1;
-    const newDepth = Math.max(progress.depth, cleared ? depth + 1 : depth);
-    this.sql.exec(
-      `INSERT INTO dungeon_progress (user_id, depth, streak, last_day, first_day, runs, clears)
-       VALUES (?, ?, ?, ?, ?, 1, ?)
-       ON CONFLICT(user_id) DO UPDATE SET
-         depth = MAX(depth, excluded.depth),
-         streak = CASE WHEN last_day IS NULL OR excluded.last_day > last_day THEN excluded.streak ELSE streak END,
-         last_day = CASE WHEN last_day IS NULL OR excluded.last_day > last_day THEN excluded.last_day ELSE last_day END,
-         first_day = COALESCE(first_day, excluded.first_day),
-         runs = runs + 1, clears = clears + excluded.clears`,
-      userId,
-      newDepth,
-      newStreak,
-      day,
-      progress.first_day ?? day,
-      cleared ? 1 : 0,
-    );
-
-    // --- Pay: the kept pack, the chest and the supply, and the streak bonus on the first run of a day ---
-    const found = { ...st.pack };
-    const kept = outcome === 'defeat' ? keptOnDefeat(found) : { ...found };
-    const rewards = this.pay(userId, row, st, outcome, kept, newStreak, progress.last_day !== day);
-
-    // --- Creature experience, from the fights each creature stood in the row for (a treat doubles it) ---
-    const inRow = new Set(st.input.team.map((slot) => slot.id));
-    const experience: DungeonExperienceView[] = [];
-    const dayEffects = xpDayEffects(st.weather);
-    const treatTimes = xpWeather(st.weather).treatMultiplier ?? RULES.experience.treat.multiplier;
-    for (const id of st.everyone) {
-      const treat = st.treats.includes(id);
-      const gained = dungeonExperience(
-        st.tally[id] ?? 0,
-        // The full-clear bonus is for the row that beat the boss (a state stored before the Undercroft: the row at the end).
-        st.fullClear !== undefined ? st.fullClear.includes(id) : cleared && inRow.has(id),
-        treat,
-        xpWeather(st.weather),
-      );
-      const view = awardExperience(
-        this.sql,
-        this.deps.analytics,
-        userId,
-        id,
-        gained,
-        'dungeon',
-        treat,
-      );
-      if (view !== null) {
-        experience.push({ ...view, treatTimes: treat ? treatTimes : null, dayEffects });
-      }
-    }
-    rewards.experience = experience;
-
-    // --- Store ---
-    const summary = this.summarise({
-      row,
-      st,
-      outcome,
-      newDepth,
-      streak: newStreak,
-      rewards,
-      found,
-      kept,
-    });
-    this.sql.exec(
-      `UPDATE dungeon_runs SET status = 'done', outcome = ?, cleared = ?, rooms_cleared = ?,
-         summary_json = ?, rewards_json = ? WHERE id = ?`,
-      outcome,
-      cleared ? 1 : 0,
-      st.roomsCleared,
-      JSON.stringify(summary),
-      JSON.stringify(rewards),
-      row.id,
-    );
-    this.log(userId, summary, st, rewards, outcome, found, kept);
-    return { summary, rewards };
-  }
-
-  /** Pays a run and returns what it paid. Call inside the run's transaction. */
-  private pay(
-    userId: string,
-    row: RunRow,
-    st: RunState,
-    outcome: DungeonOutcome,
-    kept: DungeonPack,
-    streak: number,
-    firstOfDay: boolean,
-  ): DungeonRewards {
-    const { day, attempt, depth } = row;
-    const cleared = outcome === 'cleared' || st.bossCleared;
-    const landmark = cleared && isLandmark(depth);
-    // A run that went down (or was offered the way down) opened the main boss's chest at that moment:
-    // its gear, shard and supply are paid (`banked`) and its extras are in the pack, so nothing of the
-    // chest is rolled or added again here.
-    const chestPaid = st.banked !== null;
-    // The boss chest of a clear: its Essence and scrap came into the pack with the boss's loot (and
-    // are kept whole); on top come the full clear's Essence and the landmark's extras. The shard and
-    // gear dice are rolled below, with the live gear rng.
-    const bait = kept.bait;
-    const essence =
-      kept.essence +
-      (cleared && !chestPaid ? RULES.dungeon.fullClear.essence : 0) +
-      (landmark && !chestPaid ? RULES.dungeon.landmark.essence : 0);
-    const scrap = kept.scrap + (landmark && !chestPaid ? RULES.dungeon.landmark.scrap : 0);
-    const glimmer = landmark && !chestPaid ? RULES.dungeon.landmark.glimmer : 0;
-    const bossNode = st.map.nodes.find((n) => n.kind === 'boss');
-    const bossElement =
-      (bossNode === undefined ? undefined : nodeFoe(bossNode, depth))?.element ?? 'tide';
-    const gearDeps = this.gearDeps();
-    const grant = grantDungeonRun(
-      gearDeps,
-      userId,
-      day,
-      attempt,
-      (rng) => {
-        if (chestPaid) return { parts: addParts({ scrap, glimmer }, {}), gear: [], supplies: [] };
-        const loot = rollDungeonLoot(
-          rng,
-          depth,
-          {
-            landmark,
-            fullClear: cleared,
-            bossCleared: cleared,
-            supplies: st.supply ? SUPPLIES_PER_RUN : 0,
-          },
-          bossElement,
-        );
-        return {
-          parts: addParts({ scrap, glimmer }, loot.parts),
-          gear: loot.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
-          supplies: loot.supplies,
-        };
-      },
-      { bait, essence, meta: { day, depth, attempt } },
-    );
-    let streakPaid: DungeonRewards['streak'] = null;
-    const bonus = firstOfDay ? streakBonus(streak) : null;
-    if (bonus !== null) {
-      const parts = grantDungeonStreak(
-        gearDeps,
-        userId,
-        day,
-        {
-          scrap: bonus.scrap,
-          glimmer: bonus.glimmer,
-        },
-        { bait: bonus.bait, essence: bonus.essence, meta: { day, streak: bonus.day } },
-      ).parts;
-      streakPaid = { day: bonus.day, bait: bonus.bait, essence: bonus.essence, parts };
-    }
-    // What the boss chests paid on the way (see `chestPaid`) is part of what the run paid.
-    const banked = st.banked;
-    return {
-      bait,
-      essence,
-      parts: addParts(banked?.parts ?? {}, grant.parts),
-      gear: [...(banked?.gear ?? []), ...grant.gear],
-      converted: [...(banked?.converted ?? []), ...grant.converted],
-      supplies: [...(banked?.supplies ?? []), ...(grant.supplies ?? [])],
-      landmark,
-      streak: streakPaid,
-    };
-  }
-
-  /** The deps of the gear grants: the live gear rng, and the same storage and clock. */
-  private gearDeps(): GrantDeps {
-    return {
-      storage: this.deps.storage,
-      now: this.deps.now,
-      rng: this.deps.gearRng,
-      analytics: this.deps.analytics,
-    };
-  }
-
-  /**
-   * Locks the player's depth in at `depth` the moment the main boss falls: it never goes down again, so
-   * a defeat in the Undercroft or a run left open cannot undo it. Creates the progress row if there is
-   * none yet (the run's end fills in the streak and the counts).
-   */
-  private lockDepth(userId: string, depth: number): void {
-    this.sql.exec(
-      `INSERT INTO dungeon_progress (user_id, depth) VALUES (?, ?)
-       ON CONFLICT(user_id) DO UPDATE SET depth = MAX(depth, excluded.depth)`,
-      userId,
-      depth,
-    );
-  }
-
-  /** The summary of a run: the fights it played, the row at the end, what it paid and how it ended (null while it is open). */
-  private summarise(args: {
-    row: RunRow;
-    st: RunState;
-    outcome: DungeonOutcome | null;
-    newDepth: number;
-    streak: number;
-    rewards: DungeonRewards;
-    found: DungeonPack;
-    kept: DungeonPack;
-  }): DungeonRunSummary {
-    const { row, st, outcome } = args;
-    const hp = currentHp(st);
-    const rooms: DungeonRoomSummary[] = [];
-    for (const step of this.fightRows(row.id)) {
-      if (step.input_json === null || step.result_json === null) continue;
-      const { input } = JSON.parse(step.input_json) as StoredFight;
-      const result = JSON.parse(step.result_json) as DungeonRoomResult;
-      const spec = input.rooms[0];
-      if (spec === undefined) continue;
-      const elite = spec.elite === true;
-      rooms.push({
-        index: spec.index,
-        kind: spec.foe.kind,
-        ...(elite ? { elite: true } : {}),
-        ...(spec.epic === true ? { epic: true } : {}),
-        foe: {
-          id: spec.foe.id,
-          name: spec.foe.name,
-          element: spec.foe.element,
-          hpMax: result.result.bossHpStart,
-        },
-        modifier: {
-          id: spec.modifier.id,
-          name: spec.modifier.name,
-          description: spec.modifier.description,
-        },
-        played: true,
-        cleared: result.cleared,
-        rounds: result.result.rounds,
-        foeHpEnd: result.result.bossHpEnd,
-      });
-    }
-    return {
-      id: row.id,
-      day: row.day,
-      attempt: row.attempt,
-      depth: row.depth,
-      newDepth: args.newDepth,
-      cleared: outcome === 'cleared' || st.bossCleared,
-      deepest: st.deepest,
-      roomsCleared: st.roomsCleared,
-      landmark: isLandmark(row.depth),
-      streak: args.streak,
-      createdAt: row.created_at,
-      team: st.input.team.map((slot) => ({
-        id: slot.id,
-        name: slot.name,
-        speciesId: slot.speciesId,
-        element: slot.element,
-        role: slot.role,
-        level: slot.level,
-        hpMax: st.hpMax[slot.id] ?? 0,
-        hpEnd: hp[slot.id] ?? 0,
-      })),
-      rooms,
-      rewards: args.rewards,
-      ...(st.weather === null ? {} : { weather: { boon: st.weather.boon, omen: st.weather.omen } }),
-      ...(outcome === null ? {} : { outcome }),
-      // A carved door the player's depth does not open is a quiet room, shown as a mystery room everywhere.
-      path: st.path.map((id) => {
-        const kind = runNode(st, id)?.kind ?? 'fight';
-        return kind === 'door' && !undercroftOpen(row.depth) ? 'mystery' : kind;
-      }),
-      pack: { found: { ...args.found }, kept: { ...args.kept } },
-      keepsakes: keepsakeViews(st.keepsakes),
-      ...(outcome === null
-        ? {}
-        : {
-            route: {
-              map: mapView(st.map, row.depth),
-              path: [...st.path],
-              history: structuredClone(st.history),
-              ...(st.under.length === 0
-                ? {}
-                : { undercroft: st.under.map((m) => mapView(m, row.depth)) }),
-            },
-          }),
-    };
-  }
-
-  /** The analytics events of a run: who went and how it ended, and what it paid. */
-  private log(
-    userId: string,
-    summary: DungeonRunSummary,
-    st: RunState,
-    rewards: DungeonRewards,
-    outcome: DungeonOutcome,
-    found: DungeonPack,
-    kept: DungeonPack,
-  ): void {
-    const analytics = this.deps.analytics;
-    if (analytics === undefined) return;
-    analytics.record(
-      {
-        kind: 'dungeon_run',
-        depth: summary.depth,
-        attempt: summary.attempt,
-        roomsCleared: summary.roomsCleared,
-        cleared: summary.cleared,
-        landmark: summary.landmark,
-        modifiers: summary.rooms.map((r) => r.modifier.id),
-        team: st.input.team.map((s) => ({ species: s.speciesId, role: s.role })),
-        gear: st.gearWorn,
-        outcome,
-        path: summary.path ?? [],
-        keepsakes: st.keepsakes,
-        campChoice: st.campChoice ?? 'none',
-        elites: st.elites,
-        packFound: totalOf(found),
-        packKept: totalOf(kept),
-        deepest: st.deepest,
-        marks: st.marks,
-      },
-      userId,
-    );
-    if (summary.weather !== undefined) {
-      analytics.record(
-        {
-          kind: 'weather_use',
-          where: 'dungeon',
-          boon: summary.weather.boon,
-          omen: summary.weather.omen,
-        },
-        userId,
-      );
-    }
-    const parts = addParts(rewards.parts, rewards.streak?.parts ?? {});
-    const shards =
-      (parts['tide-shard'] ?? 0) +
-      (parts['ember-shard'] ?? 0) +
-      (parts['grove-shard'] ?? 0) +
-      (parts['spark-shard'] ?? 0);
-    const bait = rewards.bait + (rewards.streak?.bait ?? 0);
-    const essence = rewards.essence + (rewards.streak?.essence ?? 0);
-    if (
-      bait +
-        essence +
-        (parts.scrap ?? 0) +
-        shards +
-        (parts.glimmer ?? 0) +
-        rewards.gear.length +
-        (rewards.supplies?.length ?? 0) >
-      0
-    ) {
-      analytics.record(
-        {
-          kind: 'dungeon_reward',
-          depth: summary.depth,
-          bait,
-          essence,
-          scrap: parts.scrap ?? 0,
-          shards,
-          glimmer: parts.glimmer ?? 0,
-          gear: rewards.gear.length + rewards.converted.length,
-          supplies: rewards.supplies?.length ?? 0,
-          landmark: rewards.landmark,
-          streakBonusDay: rewards.streak?.day ?? 0,
-        },
-        userId,
-      );
     }
   }
 

@@ -1154,6 +1154,31 @@ describe('a mystery room', () => {
     );
   });
 
+  it('keeps its line (lastEvent) only until the next move: the run strip shows it right after the pick', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const state = await begin(p);
+        const route = routeThrough(mapOf(state), (m) => m.kind === 'mystery') as string[];
+        const waiting = await walk(p, state, route, (s) => s.pending?.kind === 'event');
+        const answered = (await p.act(waiting, { type: 'event', option: 0 })).body.state;
+        expect(answered.lastEvent).not.toBeNull();
+        // A reload still shows it: nothing but a move takes it away.
+        expect((await p.today()).active?.lastEvent).toEqual(answered.lastEvent);
+        const onward = answered.reachable[0];
+        expect(onward).toBeDefined();
+        const moved = await p.act(answered, { type: 'move', node: onward as string });
+        expect(moved.status).toBe(200);
+        expect(moved.body.state.lastEvent).toBeNull();
+        // The step log keeps what the room did.
+        expect(moved.body.state.history.some((h) => h.result === 'event')).toBe(true);
+        expect((await p.today()).active?.lastEvent ?? null).toBeNull();
+      },
+      opts(),
+    );
+  });
+
   it('rolls a gamble with live randomness: some win and some lose, and the odds are the content’s', async () => {
     await runCore(
       nextGuild(),

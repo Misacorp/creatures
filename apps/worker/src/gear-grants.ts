@@ -36,6 +36,7 @@ import {
   insertItem,
   knownBlueprints,
   learnBlueprint,
+  ownedBaseIds,
   partsTotal,
   viewOrSkip,
   type ItemOrigin,
@@ -295,19 +296,22 @@ function bossElement(bossId: string): Element {
   return boss.element;
 }
 
-/** The Festival piece for a player of a party that won a Festival finale. Key `festival:<week>`. */
+/**
+ * The Festival piece for a player of a party that won a Festival finale. Key `festival:<week>`. A
+ * Lantern Night piece the player does not own yet (in the bag or worn), at random; once they own all
+ * of them, any one (the Festival creature's element plays no part).
+ */
 export function grantFestivalGear(
   deps: GrantDeps,
   userId: string,
   weekId: string,
-  element: Element,
   rank: number,
   bossId: string,
 ): GrantView {
   return grantOnce(deps, userId, `festival:${weekId}`, 'festival', () => ({
     gear: [
       {
-        item: rollFestivalItem(deps.rng, element, rank),
+        item: rollFestivalItem(deps.rng, ownedBaseIds(deps.storage.sql, userId), rank),
         origin: { kind: 'festival', boss: bossId, rank },
       },
     ],

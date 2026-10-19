@@ -144,6 +144,8 @@ Hats favour the local Attack lines and Scarves the local HP lines, and both can 
 
 **The card** shows the item's final stats big ("Attack 35", then "HP 12"), then its lines, with local lines marked "(this item)". "Equip best" counts an item's stats exactly.
 
+**Which Festival piece (2026-10-19).** A won Festival finale gives each member one Festival base they do not own yet (in the bag or worn), drawn evenly; once they own every one, any one of them. The element of the week's Festival creature plays no part. Before this the piece matched that element, so the Lantern Cap (Grove, no Grove Festival creature) could never drop and the Lantern Night set could not be completed.
+
 **Festival gear is special, not stronger.** A Festival piece drops at the **normal item level** of its source (the finale's `3 + Boss Rank`) and with the **normal rarity odds** (`finaleDropOddsBp`, no floor): a Common one at low ranks. It is a base, not a rarity: it rolls the 1, 2 or 3 lines of its rarity from a **narrow pool** of five lines (the Hearth Scarf: the local HP lines, Area ward, Ember Ward, Well-fed; the Lantern Charm: the Tide Attunement, Reaction, Hunter and Ward lines and Well-fed), its base stats are those of a plain first-make piece of the same slot and tag, and it carries **one fixed unique Festival line**, a small effect and not raw power: Hearth warmth (the dungeon rest between rooms, +2 to +4%) on the scarf and Lantern luck (a little more chance of a rarer catch on trips, +0.5 to +1.5 points) on the charm. Its look is its own: a lantern-gold dashed outline and a star on the frame of its rarity, and a Festival tag. Old Festival items convert into Festival bases at the converted item level with a rarity drawn from the finale's odds.
 
 ## 3. The crafting loop
