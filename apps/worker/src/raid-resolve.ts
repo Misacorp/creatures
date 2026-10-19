@@ -29,7 +29,7 @@ import {
   weatherLuck,
   weatherSheet,
   weatherSky,
-  xpWeather,
+  dayCreatureXpParts,
   type BossDef,
   type Rng,
 } from '@creatures/game';
@@ -628,7 +628,7 @@ export function settleParty(
   // half as much again. No treats: the raid pays everyone the same. This runs once per stage, with the
   // result row. ---
   const day = stageWeather(sql, week.weekId, phase);
-  const stageExperience = raidExperience(phase, result.cleared, xpWeather(day));
+  const stageExperience = raidExperience(phase, result.cleared, dayCreatureXpParts(false, day));
   for (const slot of input.row) {
     const userId = slot.ownerId === null ? undefined : userOf.get(slot.ownerId);
     if (userId === undefined) continue;

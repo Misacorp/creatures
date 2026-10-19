@@ -44,7 +44,12 @@ import {
   weatherTimeMs,
   weeklySpecial,
   allSpecies,
+  creatureXpParts,
+  dayParts,
+  dayXpEffects,
+  gearPart,
   NO_TRIP_WEATHER,
+  type XpBoostPart,
   type DestinationDef,
   type ExpeditionLength,
   type FamiliarityRecord,
@@ -448,7 +453,7 @@ export function sendTrips(
           fx.timeBp,
         ) /
           HOUR_MS,
-      ...(changes ? { weather: fx } : {}),
+      ...(changes ? { weather: fx, xpEffects: dayXpEffects(ctx.weather ?? null) } : {}),
     });
   }
 }
@@ -625,21 +630,23 @@ function payTrip(
   }
 
   // Explorer XP, familiarity and the journal.
-  const xpBp =
-    bonuses.xpBp +
-    (twist?.kind === 'xp' ? twist.bp : 0) +
-    (reward?.xpBp ?? 0) +
-    gearRules.trailXpBp;
+  // The same shares the worker names (milestones, twist, goal, gear); they multiply.
+  const xpParts: XpBoostPart[] = [
+    { source: 'trip', name: 'Milestones', bp: bonuses.xpBp },
+    { source: 'trip', name: 'Twist', bp: twist?.kind === 'xp' ? twist.bp : 0 },
+    { source: 'trip', name: 'Push on', bp: reward?.xpBp ?? 0 },
+    gearPart('trail-xp', gearRules.trailXpBp),
+  ];
   player.explorerXp[explorer.id] =
-    (player.explorerXp[explorer.id] ?? 0) + tripXp(trip.length, xpBp);
+    (player.explorerXp[explorer.id] ?? 0) + tripXp(trip.length, xpParts);
   // Creature experience: a finished trip pays its explorer by the length, doubled by a treat.
   giveExperience(
     player,
     explorer,
-    tripExperience(trip.length, trip.treat === true, {
-      bp: wx.xpBp,
-      treatMultiplier: wx.treatMultiplier,
-    }),
+    tripExperience(
+      trip.length,
+      creatureXpParts(trip.treat === true, wx.treatMultiplier, dayParts(trip.xpEffects ?? [])),
+    ),
     'trip',
   );
   // The one-time gift of every rank this trip reached (Bait, and parts and supplies with the gear sim).

@@ -103,7 +103,7 @@ const jobReveal: Entry = {
   file: 'apps/activity/src/JobReveal.tsx',
   group: 'Loot & reveals',
   description:
-    'The card of a claimed Workshop job. A dismantle is a picture: the item (or items) taken apart, an arrow, and what it became as count badges (scrap, shards, glimmer, Essence); then who did the work, with their experience and the Crafting XP as the shared XP rows (the bar counts up; the "3.15x" multiplier chip opens the breakdown). A craft shows its orb and item, then the same worker rows.',
+    'The card of a claimed Workshop job. A dismantle is a picture: the item (or items) taken apart, an arrow, and what it became as count badges (scrap, shards, glimmer, Essence); then who did the work, with their experience and the Crafting XP as the shared XP rows (the bar counts up; the "3x" multiplier chip opens the breakdown). A craft shows its orb and item, then the same worker rows.',
   controls: {
     kind: { kind: 'select', options: KINDS },
     gained: { kind: 'number', min: 1, max: 999 },
@@ -224,7 +224,7 @@ const xpGain: Entry = {
   file: 'apps/activity/src/ui/XpGain.tsx',
   group: 'Bars',
   description:
-    'One "XP gained" row, the same wherever the app shows what an activity paid (a Workshop job, a trip, the dungeon team): the label, the level change and Level up!, then the level tag, a slim bar that counts up from the old value to the new one (a level crossed fills, flashes and starts again), the "+N", and the multiplier: a "3.15x" chip, the kind\'s colour on ink, when the total is not 1x; it opens the breakdown (each source as its multiplier, the treat\'s line with the treat icon, then the total). Never a sentence about what changed the gain. Reduced motion shows the end at once. "Treat icons" shows the four treat icon designs in the breakdown, to pick one.',
+    'One "XP gained" row, the same wherever the app shows what an activity paid (a Workshop job, a trip, the dungeon team): the label, the level change and Level up!, then the level tag, a slim bar that counts up from the old value to the new one (a level crossed fills, flashes and starts again), the "+N", and the multiplier: a "3x" chip, the kind\'s colour on ink, when the total is not 1x; it opens the breakdown (each source as its multiplier, the treat\'s line with the treat icon, then the total). Never a sentence about what changed the gain. Reduced motion shows the end at once. "Treat icons" shows the four treat icon designs in the breakdown, to pick one.',
   covers: ['XpList', 'XpExtraRow', 'XpBoostBreakdown'],
   controls: {
     gained: { kind: 'number', min: 1, max: 999 },

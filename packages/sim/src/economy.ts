@@ -10,7 +10,7 @@ import {
   nextRankXp,
   placementRank,
   raidWeekPlan,
-  xpWeather,
+  dayCreatureXpParts,
   type BossDef,
   type Element,
   type LuckConfig,
@@ -752,7 +752,11 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
                   giveExperience(
                     p,
                     c,
-                    dungeonExperience(fights, beatBoss, treated.has(id), xpWeather(weather)),
+                    dungeonExperience(
+                      fights,
+                      beatBoss,
+                      dayCreatureXpParts(treated.has(id), weather),
+                    ),
                     'dungeon',
                   );
                 }

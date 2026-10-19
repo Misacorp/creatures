@@ -20,7 +20,7 @@ import { XpGain, XpList } from './XpGain';
 /**
  * The shared "XP gained" row (decisions.md 2026-10-19, "Count-up"): the bar counts up from the old value to
  * the new one, a level crossed fills the old bar and starts the new one, reduced motion shows the end at once,
- * and the multiplier is one "3.15x" chip (no treat icon beside it) that opens the breakdown, where the treat's
+ * and the multiplier is one "3x" chip (no treat icon beside it) that opens the breakdown, where the treat's
  * line starts with the treat icon. Never a sentence about it.
  */
 
@@ -52,7 +52,7 @@ const SEVERAL: XpBoost = {
     { source: 'day', name: 'Hearty Breakfast', bp: 2500 },
     { source: 'day', name: 'Cold Snap', bp: -2000 },
   ],
-  totalBp: 31_500,
+  totalBp: 30_000,
 };
 
 /** Zipmouse's dismantle: +16 at level 7 (174 / 273), or +60 over level 7 into level 8 (37 / 328). */
@@ -291,10 +291,10 @@ describe('the multiplier', () => {
       'Treat 3x',
       'Hearty Breakfast 1.25x',
       'Cold Snap 0.8x',
-      'Total 3.15x',
+      'Total 3x',
     ]);
     // The chip says the total the same way.
-    expect(visibleText(first(byClass(p.root, 'xp-times')))).toBe('3.15x');
+    expect(visibleText(first(byClass(p.root, 'xp-times')))).toBe('3x');
     expect(dialog.getAttribute('aria-label')).toBe('What changed the experience');
     // The treat icon is the prefix of the Treat line only: not before the title, not on another line.
     const lines = byClass(dialog, 'xp-boost-line');

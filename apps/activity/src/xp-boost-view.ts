@@ -1,6 +1,6 @@
 /**
  * The multiplier of an XP gain as the shared row shows it (decisions.md, 2026-10-19, and its follow-up): a
- * "3.15x" chip next to the "+N" when the total is not 1x, which opens the breakdown (each source as its
+ * "3.75x" chip next to the "+N" when the total is not 1x, which opens the breakdown (each source as its
  * multiplier, then the total, all in the same "1.25x" form). Pure. The server sends the parts and the total
  * with every gain (`XpBoost`); this only words them. A result from before it did is read from what it had
  * then.

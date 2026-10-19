@@ -31,12 +31,13 @@ import {
   supplyJobMs,
   supplyJobXp,
   treatCost,
+  applyXpBoost,
+  creatureXpParts,
   dayParts,
   dayXpEffects,
   gearPart,
   jobWeather,
   legacyDayParts,
-  treatPart,
   weatherTimeMs,
   xpBoost,
   workshopExperience,
@@ -72,7 +73,7 @@ import {
   type JobRow,
 } from './gear-store';
 import { fixFestivalRarity } from './gear-normalise';
-import { gearRulesOf, minusBp, plusBp } from './gear-worn';
+import { gearRulesOf, minusBp } from './gear-worn';
 import { credit, spend } from './ledger';
 import type {
   CraftOption,
@@ -728,21 +729,16 @@ export class Workshop {
             }
           }
 
-          // XP follows the job's nominal length (the skill shortens the time, not the experience).
-          const xp = plusBp(xpBase, apprenticeBp);
+          // XP follows the job's nominal length (the skill shortens the time, not the experience). The
+          // Apprentice share is one part: the amount and the breakdown come from the same one.
+          const craftParts = [gearPart('apprentice', apprenticeBp)];
+          const xp = applyXpBoost(xpBase, craftParts);
           const skillXp = addCreatureXp(this.sql, userId, creature.id, xp);
           const after = skillLevel(skillXp);
           // Creature experience (training by activity): 4 an hour of nominal work, doubled by a treat.
           const treat = input.treat === true;
-          // The day the job started under (Hearty Breakfast, Cold Snap) is what it stored, never today's.
-          const gainedExp = workshopExperience(
-            workMinutes,
-            treat,
-            input.weather === undefined
-              ? undefined
-              : { bp: input.weather.xpBp, treatMultiplier: input.weather.treatMultiplier },
-          );
-          // What changed it, for the result's breakdown: the same stored numbers as the amount.
+          // The day the job started under (Hearty Breakfast, Cold Snap) is what it stored, never today's. One
+          // list of parts gives the amount and the result's breakdown.
           const w = input.weather;
           const days =
             w === undefined
@@ -750,11 +746,9 @@ export class Workshop {
               : w.xpEffects === undefined
                 ? legacyDayParts(w)
                 : dayParts(w.xpEffects);
-          const expBoost = xpBoost(
-            treat
-              ? [treatPart(w?.treatMultiplier ?? RULES.experience.treat.multiplier), ...days]
-              : days,
-          );
+          const expParts = creatureXpParts(treat, w?.treatMultiplier ?? null, days);
+          const gainedExp = workshopExperience(workMinutes, expParts);
+          const expBoost = xpBoost(expParts);
           const experience =
             gainedExp > 0
               ? awardExperience(
@@ -768,7 +762,7 @@ export class Workshop {
                   expBoost,
                 )
               : null;
-          const craftBoost = xpBoost([gearPart('apprentice', apprenticeBp)]);
+          const craftBoost = xpBoost(craftParts);
           const full = {
             ...result,
             ...(experience === null ? {} : { experience }),

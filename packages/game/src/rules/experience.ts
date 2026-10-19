@@ -3,6 +3,7 @@ import type { ExpeditionLength } from '../content/expedition-schema';
 import { RULES } from './config';
 import { shardOf, type PartsBundle } from './gear';
 import type { RaidStage } from './loot';
+import { applyXpBoost, type XpBoostPart } from './xp-boost';
 
 /*
  * Creature experience, treats and ribbons (docs/design/gear-and-creatures-v2.md section 9). Pure
@@ -153,60 +154,42 @@ export function addExperience(state: ExpState, gained: number): ExpGain {
 
 // --- What each activity gives ---
 
-/**
- * The day's effect on experience (a Boon or Omen: `rules/weather.ts`): basis points on top, and the number
- * a treat multiplies by when the day changes it (Hearty Breakfast triples instead of doubling). Absent:
- * none. Applied last, after the treat, and rounded down.
+/*
+ * Every gain below takes its multiplier parts (`xp-boost.ts`: the treat, the day's Boons and Omens; build
+ * them with `creatureXpParts` or `dayCreatureXpParts`) and pays `applyXpBoost(base, parts)`, so the amount
+ * is exactly the base times the Total the breakdown shows. Pass the same array to `xpBoost` for the screen.
  */
-export interface ExpWeather {
-  bp: number;
-  treatMultiplier: number | null;
-}
-
-/** `base` experience, with the treat's multiplier and then the day's effect. Whole numbers only. */
-function withDay(base: number, treat: boolean, weather: ExpWeather | undefined): number {
-  const times = treat ? (weather?.treatMultiplier ?? E.treat.multiplier) : 1;
-  const gained = base * times;
-  return weather === undefined || weather.bp === 0
-    ? gained
-    : Math.max(0, Math.floor((gained * (10_000 + weather.bp)) / 10_000));
-}
 
 /** Experience a finished trip gives its explorer (a recall or a failed trip gives none: do not call). */
-export function tripExperience(
-  length: ExpeditionLength,
-  treat: boolean,
-  weather?: ExpWeather,
-): number {
-  return withDay(E.trip[length], treat, weather);
+export function tripExperience(length: ExpeditionLength, parts: readonly XpBoostPart[]): number {
+  return applyXpBoost(E.trip[length], parts);
 }
 
 /** Experience each creature of the dungeon team gets: per room cleared, and a full clear on top. */
 export function dungeonExperience(
   roomsCleared: number,
   cleared: boolean,
-  treat: boolean,
-  weather?: ExpWeather,
+  parts: readonly XpBoostPart[],
 ): number {
   assertWhole(roomsCleared, 'roomsCleared');
   const base = E.dungeon.perRoom * roomsCleared + (cleared ? E.dungeon.fullClear : 0);
-  return withDay(base, treat, weather);
+  return applyXpBoost(base, parts);
 }
 
 /** Experience each creature that fought a raid stage gets: the stage's, times 1.5 when it was cleared. No treats. */
-export function raidExperience(stage: RaidStage, cleared: boolean, weather?: ExpWeather): number {
+export function raidExperience(
+  stage: RaidStage,
+  cleared: boolean,
+  parts: readonly XpBoostPart[],
+): number {
   const base = E.raid[stage];
-  return withDay(cleared ? Math.floor((base * E.raid.clearedBp) / 10_000) : base, false, weather);
+  return applyXpBoost(cleared ? Math.floor((base * E.raid.clearedBp) / 10_000) : base, parts);
 }
 
 /** Experience a Workshop job gives its worker: `workshopPerHour` per hour of nominal work, rounded down. */
-export function workshopExperience(
-  workMinutes: number,
-  treat: boolean,
-  weather?: ExpWeather,
-): number {
+export function workshopExperience(workMinutes: number, parts: readonly XpBoostPart[]): number {
   assertWhole(workMinutes, 'workMinutes');
-  return withDay(Math.floor((workMinutes * E.workshopPerHour) / 60), treat, weather);
+  return applyXpBoost(Math.floor((workMinutes * E.workshopPerHour) / 60), parts);
 }
 
 /** The Bait a treat costs for a creature of `level`: 3 + half the level, rounded up. */

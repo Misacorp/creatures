@@ -30,16 +30,22 @@ describe('simulation run', () => {
     // piece the player lacks (a Hat or Scarf carries stats where the Charm did not): the long run wins
     // more finales (0.67 to 0.83, final rank 3 to 4), a dungeon run lasts a little longer (4.44 to 4.47
     // fights) and the creature ratio barely moves (1.2754 to 1.2781).
+    // 2026-10-19 (later): every XP multiplier multiplies (the treat, each Boon and Omen, each gear line, each
+    // trip bonus: `xp-boost.ts`) instead of the shares adding up. Explorer XP from a trip's milestones, twist,
+    // goal and gear is now their product (a little more, so ranks and slots come a touch sooner), and a day
+    // with a Boon and an Omen on experience multiplies them. The tiny run has only 4 raid weeks, so one flipped
+    // week moves the raid rates by 0.25 (here two weeks flip, 0.75 to 0.25 for both); the start share, top share, creature ratio
+    // and mean fights move by about 1% each. Experience per hour of a long trip (75.41) is unchanged.
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
-      'raid.typical.phase1ClearRate': 0.75,
-      'raid.typical.finaleWinRate': 0.75,
-      'raid.typical.finaleStartShare': 0.4772,
-      'fair.topShareMedian': 0.2583,
-      'choice.creatureRatioMax': 1.2781,
+      'raid.typical.phase1ClearRate': 0.25,
+      'raid.typical.finaleWinRate': 0.25,
+      'raid.typical.finaleStartShare': 0.4903,
+      'fair.topShareMedian': 0.2551,
+      'choice.creatureRatioMax': 1.2668,
       'econ.casualTopLevelWeek4': 10,
       'exp.rate.long': 75.4138,
-      'dungeon.meanFights': 4.4732,
+      'dungeon.meanFights': 4.4643,
       'dungeon.dailyHomeRate': 0.1339,
       'longrun.typical.finaleWinRate': 0.8333,
       'longrun.typicalFinalRank': 4,

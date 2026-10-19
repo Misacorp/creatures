@@ -1,13 +1,20 @@
 /**
  * What changed one XP gain, as the result screens explain it (decisions.md, 2026-10-19: one look for every
  * XP gain, the multiplier and its breakdown behind a tap): the treat's multiplier, the day's Boons and
- * Omens, gear lines, and a trip's own bonuses (milestones, the week's twist, a push-on goal). Pure. The
- * worker builds one of these next to every gain it pays, from the same numbers it paid with, so the
- * breakdown never disagrees with the gain.
+ * Omens, gear lines, and a trip's own bonuses (milestones, the week's twist, a push-on goal). Pure.
+ *
+ * ONE RULE (decisions.md, 2026-10-19, "every XP multiplier multiplies"): a gain's total multiplier is the
+ * product of all its parts. The treat's multiplier first (times 10000), then each share in order as
+ * `total = floor(total * (10000 + bp) / 10000)`, never below 0. The gain is `floor(base * total / 10000)`
+ * (`applyXpBoost`). The worker and the simulator build the parts array once per gain and pass the SAME
+ * array to the amount (`applyXpBoost`, directly or through `tripExperience`, `tripXp` and the like) and to
+ * the breakdown (`xpBoost`), so the amount a player got is always the base times the Total they see,
+ * rounded down. Nothing else may add shares together or multiply a gain by hand.
  */
 import { gearLine } from '../content/gear';
 import { weatherDef } from '../content/weather';
-import { activeEffects, scaleStrength, type WeatherDay } from './weather';
+import { RULES } from './config';
+import { activeEffects, scaleStrength, xpWeather, type WeatherDay } from './weather';
 
 const BP = 10_000;
 
@@ -23,17 +30,35 @@ export interface XpBoost {
 }
 
 /**
- * The total multiplier of the parts, in basis points: the treat's multiplier times one plus the shares
- * (the order every gain is worked out in: the treat first, then the shares added together). Never negative.
+ * The total multiplier of the parts, in basis points (10000 is x1): the product of the treats' multipliers
+ * (times 10000), then each share in order, `floor(total * max(0, 10000 + bp) / 10000)`. A share of -100%
+ * or less makes it 0; it is never negative, and always a whole number (so the breakdown's Total and the gain
+ * agree to the last digit). Put the treat first, as `creatureXpParts` does: the order only matters for the
+ * rounding.
  */
 export function xpBoostTotalBp(parts: readonly XpBoostPart[]): number {
   let times = 1;
-  let share = 0;
+  for (const part of parts) if (part.source === 'treat') times *= part.times;
+  // `round`, not `floor`: a treat's multiplier is a whole number, but never lose a digit to float noise.
+  let total = Math.round(times * BP);
   for (const part of parts) {
-    if (part.source === 'treat') times *= part.times;
-    else share += part.bp;
+    if (part.source === 'treat') continue;
+    total = Math.floor((total * Math.max(0, BP + part.bp)) / BP);
   }
-  return times * Math.max(0, BP + share);
+  return Math.max(0, total);
+}
+
+/**
+ * `base` after every part: `floor(base * total / 10000)` with the total of `xpBoostTotalBp`. `base` is a whole
+ * number, 0 or more. Safe integers: a base is at most a few thousand and a total at most a few hundred
+ * thousand (a treat of at most 4 and a handful of shares, each at most a few hundred percent: the content
+ * schemas cap them), so the product stays far below 2^53.
+ */
+export function applyXpBoost(base: number, parts: readonly XpBoostPart[]): number {
+  if (!Number.isInteger(base) || base < 0) {
+    throw new RangeError(`base must be a whole number >= 0, got ${String(base)}`);
+  }
+  return Math.floor((base * xpBoostTotalBp(parts)) / BP);
 }
 
 /** The parts that changed something (a share of 0 and a multiplier of 1 are left out), or null when none did. */
@@ -66,12 +91,16 @@ export function dayXpEffects(day: WeatherDay | null): DayXpEffect[] {
   });
 }
 
-/** The day's effects as parts, named from the content (an id that left the content is left out). */
+/**
+ * The day's effects as parts, named from the content. An id that has left the content keeps its change (what
+ * a player is paid never depends on the content still existing) under the name "Weather".
+ */
 export function dayParts(effects: readonly DayXpEffect[]): XpBoostPart[] {
-  return effects.flatMap((e) => {
-    const name = weatherDef(e.id)?.name;
-    return name === undefined || e.bp === 0 ? [] : [{ source: 'day' as const, name, bp: e.bp }];
-  });
+  return effects.flatMap((e) =>
+    e.bp === 0
+      ? []
+      : [{ source: 'day' as const, name: weatherDef(e.id)?.name ?? 'Weather', bp: e.bp }],
+  );
 }
 
 /**
@@ -99,4 +128,22 @@ export function legacyDayParts(stored: {
 /** A gear rule's share as a part, named by the gear line that gives it ("Trail XP", "Apprentice"). */
 export function gearPart(lineId: 'trail-xp' | 'apprentice', bp: number): XpBoostPart {
   return { source: 'gear', name: gearLine(lineId)?.name ?? 'Gear', bp };
+}
+
+/**
+ * The parts of a creature-experience gain: the treat's multiplier when it was packed (`treatTimes`: what the
+ * day changed it to, Hearty Breakfast's triple; null: the usual doubling), then the day's parts. The one
+ * place every activity (trip, dungeon, raid, job, and the simulator) builds them.
+ */
+export function creatureXpParts(
+  treat: boolean,
+  treatTimes: number | null,
+  days: readonly XpBoostPart[],
+): XpBoostPart[] {
+  return treat ? [treatPart(treatTimes ?? RULES.experience.treat.multiplier), ...days] : [...days];
+}
+
+/** `creatureXpParts` for a day known as a whole (a dungeon run, a raid stage, the simulator). */
+export function dayCreatureXpParts(treat: boolean, day: WeatherDay | null): XpBoostPart[] {
+  return creatureXpParts(treat, xpWeather(day).treatMultiplier, dayParts(dayXpEffects(day)));
 }

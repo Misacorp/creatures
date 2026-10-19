@@ -13,10 +13,13 @@ import {
   ribbonParts,
   ribbonsForLevel,
   treatCost,
+  treatPart,
   tripExperience,
   unlockLadder,
   workshopExperience,
+  xpBoostTotalBp,
   type ExpState,
+  type XpBoostPart,
 } from '../src/index';
 
 const base = (over: Partial<ExpState> = {}): ExpState => ({
@@ -149,36 +152,55 @@ describe('ribbons', () => {
 });
 
 describe('what the activities give', () => {
+  const NONE: XpBoostPart[] = [];
+  const TREAT = [treatPart(RULES.experience.treat.multiplier)];
+
   it('pays a finished trip by its length, doubled by a treat', () => {
-    expect(tripExperience('short', false)).toBe(RULES.experience.trip.short);
-    expect(tripExperience('day', false)).toBe(RULES.experience.trip.day);
-    expect(tripExperience('long', true)).toBe(RULES.experience.trip.long * 2);
+    expect(tripExperience('short', NONE)).toBe(RULES.experience.trip.short);
+    expect(tripExperience('day', NONE)).toBe(RULES.experience.trip.day);
+    expect(tripExperience('long', TREAT)).toBe(RULES.experience.trip.long * 2);
   });
 
   it('pays the dungeon per room cleared and for a full clear, with no depth in it', () => {
     const { perRoom, fullClear } = RULES.experience.dungeon;
-    expect(dungeonExperience(0, false, false)).toBe(0);
-    expect(dungeonExperience(2, false, false)).toBe(2 * perRoom);
-    expect(dungeonExperience(3, true, false)).toBe(3 * perRoom + fullClear);
-    expect(dungeonExperience(3, true, true)).toBe(2 * (3 * perRoom + fullClear));
+    expect(dungeonExperience(0, false, NONE)).toBe(0);
+    expect(dungeonExperience(2, false, NONE)).toBe(2 * perRoom);
+    expect(dungeonExperience(3, true, NONE)).toBe(3 * perRoom + fullClear);
+    expect(dungeonExperience(3, true, TREAT)).toBe(2 * (3 * perRoom + fullClear));
   });
 
-  it('pays a raid stage, one and a half times when cleared, and a treat changes nothing there', () => {
+  it('pays a raid stage, one and a half times when cleared', () => {
     const { phase1, phase2, finale } = RULES.experience.raid;
-    expect(raidExperience('phase1', false)).toBe(phase1);
-    expect(raidExperience('phase1', true)).toBe(Math.floor(phase1 * 1.5));
-    expect(raidExperience('phase2', true)).toBe(Math.floor(phase2 * 1.5));
-    expect(raidExperience('finale', true)).toBe(Math.floor(finale * 1.5));
-    expect(raidExperience('finale', false)).toBe(finale);
+    expect(raidExperience('phase1', false, NONE)).toBe(phase1);
+    expect(raidExperience('phase1', true, NONE)).toBe(Math.floor(phase1 * 1.5));
+    expect(raidExperience('phase2', true, NONE)).toBe(Math.floor(phase2 * 1.5));
+    expect(raidExperience('finale', true, NONE)).toBe(Math.floor(finale * 1.5));
+    expect(raidExperience('finale', false, NONE)).toBe(finale);
   });
 
   it('pays a Workshop job its per-hour rate for its nominal work, rounded down', () => {
     const perHour = RULES.experience.workshopPerHour;
-    expect(workshopExperience(0, false)).toBe(0);
-    expect(workshopExperience(60, false)).toBe(perHour);
-    expect(workshopExperience(180, false)).toBe(3 * perHour);
-    expect(workshopExperience(600, true)).toBe(10 * perHour * 2);
-    expect(workshopExperience(1, false)).toBe(Math.floor(perHour / 60));
+    expect(workshopExperience(0, NONE)).toBe(0);
+    expect(workshopExperience(60, NONE)).toBe(perHour);
+    expect(workshopExperience(180, NONE)).toBe(3 * perHour);
+    expect(workshopExperience(600, TREAT)).toBe(10 * perHour * 2);
+    expect(workshopExperience(1, NONE)).toBe(Math.floor(perHour / 60));
+  });
+
+  it('every gain is its base times the Total of its parts, by the one rule of xp-boost.ts', () => {
+    const parts: XpBoostPart[] = [
+      treatPart(2),
+      { source: 'day', name: 'Hearty Breakfast', bp: 2_500 },
+      { source: 'day', name: 'Cold Snap', bp: -2_000 },
+    ];
+    const total = xpBoostTotalBp(parts);
+    expect(total).toBe(20_000);
+    expect(tripExperience('long', parts)).toBe(
+      Math.floor((RULES.experience.trip.long * total) / 10_000),
+    );
+    expect(workshopExperience(360, parts)).toBe(
+      Math.floor((Math.floor((360 * RULES.experience.workshopPerHour) / 60) * total) / 10_000),
+    );
   });
 
   it('prices a treat at 3 + half the level, rounded up', () => {

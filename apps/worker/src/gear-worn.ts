@@ -73,11 +73,6 @@ export function gearRulesOf(
   ).rules;
 }
 
-/** `value` times (10000 + `bp`) over 10000, floored. */
-export function plusBp(value: number, bp: number): number {
-  return Math.floor((value * (10_000 + bp)) / 10_000);
-}
-
 /** `value` times (10000 - `bp`) over 10000, floored (a reduction, at least 1 when `value` is). */
 export function minusBp(value: number, bp: number): number {
   return Math.max(value > 0 ? 1 : 0, Math.floor((value * (10_000 - bp)) / 10_000));

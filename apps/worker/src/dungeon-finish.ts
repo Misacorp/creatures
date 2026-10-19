@@ -17,7 +17,7 @@ import {
   nodeFoe,
   rollDungeonLoot,
   streakBonus,
-  treatPart,
+  creatureXpParts,
   undercroftOpen,
   xpBoost,
   xpWeather,
@@ -124,15 +124,16 @@ export function finishRun(
   const experience: DungeonExperienceView[] = [];
   const dayEffects = xpDayEffects(st.weather);
   const days = dayParts(dayXpEffects(st.weather));
-  const treatTimes = xpWeather(st.weather).treatMultiplier ?? RULES.experience.treat.multiplier;
+  const treatTimes = xpWeather(st.weather).treatMultiplier;
   for (const id of st.everyone) {
     const treat = st.treats.includes(id);
+    // One list of parts gives the amount and the breakdown.
+    const parts = creatureXpParts(treat, treatTimes, days);
     const gained = dungeonExperience(
       st.tally[id] ?? 0,
       // The full-clear bonus is for the row that beat the boss (a state stored before the Undercroft: the row at the end).
       st.fullClear !== undefined ? st.fullClear.includes(id) : cleared && inRow.has(id),
-      treat,
-      xpWeather(st.weather),
+      parts,
     );
     const view = awardExperience(
       deps.storage.sql,
@@ -142,10 +143,14 @@ export function finishRun(
       gained,
       'dungeon',
       treat,
-      xpBoost(treat ? [treatPart(treatTimes), ...days] : days),
+      xpBoost(parts),
     );
     if (view !== null) {
-      experience.push({ ...view, treatTimes: treat ? treatTimes : null, dayEffects });
+      experience.push({
+        ...view,
+        treatTimes: treat ? (treatTimes ?? RULES.experience.treat.multiplier) : null,
+        dayEffects,
+      });
     }
   }
   rewards.experience = experience;
