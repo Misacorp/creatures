@@ -355,7 +355,7 @@ describe('the descent after the floor boss', () => {
         const exp = res.body.summary?.rewards.experience ?? [];
         expect(exp).toHaveLength(3);
         const fights = state.roomsCleared;
-        for (const e of exp) expect(e.gained).toBe(dungeonExperience(fights, true, false));
+        for (const e of exp) expect(e.gained).toBe(dungeonExperience(fights, true, []));
       },
       opts(),
     );

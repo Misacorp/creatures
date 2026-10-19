@@ -40,6 +40,7 @@ import {
 } from './gear';
 import { seasonOf } from './progression';
 import type { GearRarity } from '../content/gear-schema';
+import { applyXpBoost, type XpBoostPart } from './xp-boost';
 
 const BP = 10_000;
 
@@ -784,9 +785,12 @@ export function rollGearDrop(
 
 // --- Explorer XP ---
 
-/** The XP a finished trip gives, with the bonuses (milestones, twist, goal) in basis points on top. */
-export function tripXp(length: ExpeditionLength, bonusBp: number): number {
-  return scaleBp(lengthRules(length).xp, bonusBp);
+/**
+ * The XP a finished trip gives, with the bonuses (milestones, twist, goal, gear) as `trip` and `gear` parts
+ * that multiply (`xp-boost.ts`). Pass the same parts to `xpBoost` for the result's breakdown.
+ */
+export function tripXp(length: ExpeditionLength, parts: readonly XpBoostPart[]): number {
+  return applyXpBoost(lengthRules(length).xp, parts);
 }
 
 // --- The end-of-trip choice ---

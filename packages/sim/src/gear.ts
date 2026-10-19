@@ -35,6 +35,11 @@ import {
   weatherTimeMs,
   workshopExperience,
   workshopMods,
+  applyXpBoost,
+  creatureXpParts,
+  dayParts,
+  dayXpEffects,
+  gearPart,
   type BestCandidate,
   type DismantleItem,
   type Element,
@@ -378,13 +383,20 @@ function claimOne(player: SimPlayer, job: SimJob, ctx: GearContext): void {
     giveExperience(
       player,
       crafter,
-      workshopExperience(workMinutes, job.treat === true, job.xp),
+      workshopExperience(
+        workMinutes,
+        creatureXpParts(
+          job.treat === true,
+          job.xp?.treatMultiplier ?? null,
+          dayParts(job.xp?.effects ?? []),
+        ),
+      ),
       'job',
     );
   }
   player.gear.skillXp[job.creatureId] =
     (player.gear.skillXp[job.creatureId] ?? 0) +
-    Math.floor((xp * (10_000 + apprenticeBp)) / 10_000);
+    applyXpBoost(xp, [gearPart('apprentice', apprenticeBp)]);
 }
 
 /** Claims every job that is done by `ctx.hour`. */
@@ -590,6 +602,7 @@ function startedOn(player: SimPlayer, day: number): GearState['startedToday'] {
 
 /** What a job started now keeps of the day's weather: Market Day's mods (craft and dismantle) and the experience. */
 function storedFx(
+  weather: WeatherDay | null,
   fx: ReturnType<typeof jobWeather>,
   mods: WorkshopMods,
 ): Pick<SimJob, 'mods' | 'xp'> {
@@ -597,7 +610,7 @@ function storedFx(
     ...(Object.keys(mods).length === 0 ? {} : { mods }),
     ...(fx.xpBp === 0 && fx.treatMultiplier === null
       ? {}
-      : { xp: { bp: fx.xpBp, treatMultiplier: fx.treatMultiplier } }),
+      : { xp: { treatMultiplier: fx.treatMultiplier, effects: dayXpEffects(weather) } }),
   };
 }
 
@@ -657,7 +670,7 @@ export function startJobs(
         creatureId: creature.id,
         items: items.map((i) => ({ baseId: i.baseId, rarity: i.rarity, itemLevel: i.itemLevel })),
         ...(treat ? { treat: true } : {}),
-        ...storedFx(fx, mods),
+        ...storedFx(weather, fx, mods),
         endsAtHour:
           ctx.hour +
           weatherTimeMs(jobDuration(level, busyBp, dismantleHours(rarity)), fx.timeBp) / HOUR_MS,
@@ -695,7 +708,7 @@ export function startJobs(
     player.gear.jobs.push({
       ...plan.job,
       ...(treat ? { treat: true } : {}),
-      ...storedFx(fx, mods),
+      ...storedFx(weather, fx, mods),
       creatureId: creature.id,
       endsAtHour: ctx.hour + ms / HOUR_MS,
     });

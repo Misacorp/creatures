@@ -6,6 +6,7 @@ import {
   activeEffects,
   content,
   createSeededRng,
+  dayCreatureXpParts,
   dungeonExperience,
   dungeonScrapPerRoom,
   drawWeather,
@@ -30,6 +31,7 @@ import {
   weatherStrength,
   workshopExperience,
   workshopMods,
+  xpBoostTotalBp,
   xpWeather,
   type DrawContext,
   type WeatherDay,
@@ -634,35 +636,46 @@ describe('trips', () => {
 
 describe('experience and the Workshop', () => {
   it('Hearty Breakfast: +25% and a treat triples; Cold Snap: -20%; a day without weather changes nothing', () => {
+    const long = RULES.experience.trip.long;
     const hearty = xpWeather(day('hearty-breakfast'));
     expect(hearty).toEqual({ bp: 2_500, treatMultiplier: 3 });
-    expect(tripExperience('long', false)).toBe(RULES.experience.trip.long);
-    expect(tripExperience('long', false, hearty)).toBe(
-      Math.floor((RULES.experience.trip.long * 12_500) / 10_000),
+    const heartyDay = day('hearty-breakfast');
+    expect(tripExperience('long', dayCreatureXpParts(false, null))).toBe(long);
+    expect(tripExperience('long', dayCreatureXpParts(false, heartyDay))).toBe(
+      Math.floor((long * 12_500) / 10_000),
     );
-    expect(tripExperience('long', true, hearty)).toBe(
-      Math.floor((RULES.experience.trip.long * 3 * 12_500) / 10_000),
+    expect(tripExperience('long', dayCreatureXpParts(true, heartyDay))).toBe(
+      Math.floor((long * 3 * 12_500) / 10_000),
     );
-    expect(tripExperience('long', true)).toBe(RULES.experience.trip.long * 2);
-    const cold = xpWeather(day('market-day', 'cold-snap'));
-    expect(cold).toEqual({ bp: -2_000, treatMultiplier: null });
-    expect(tripExperience('long', true, cold)).toBe(
-      Math.floor((RULES.experience.trip.long * 2 * 8_000) / 10_000),
+    expect(tripExperience('long', dayCreatureXpParts(true, null))).toBe(long * 2);
+    const coldDay = day('market-day', 'cold-snap');
+    expect(xpWeather(coldDay)).toEqual({ bp: -2_000, treatMultiplier: null });
+    expect(tripExperience('long', dayCreatureXpParts(true, coldDay))).toBe(
+      Math.floor((long * 2 * 8_000) / 10_000),
     );
     expect(xpWeather(null)).toEqual({ bp: 0, treatMultiplier: null });
   });
 
   it('applies to every activity that pays experience', () => {
-    const hearty = xpWeather(day('hearty-breakfast'));
-    expect(dungeonExperience(3, true, false, hearty)).toBeGreaterThan(
-      dungeonExperience(3, true, false),
+    const hearty = day('hearty-breakfast');
+    const plain = dayCreatureXpParts(true, null);
+    const boosted = dayCreatureXpParts(true, hearty);
+    expect(dungeonExperience(3, true, boosted)).toBeGreaterThan(dungeonExperience(3, true, plain));
+    expect(raidExperience('finale', true, dayCreatureXpParts(false, hearty))).toBeGreaterThan(
+      raidExperience('finale', true, []),
     );
-    expect(raidExperience('finale', true, hearty)).toBeGreaterThan(raidExperience('finale', true));
-    expect(workshopExperience(360, true, hearty)).toBeGreaterThan(workshopExperience(360, true));
+    expect(workshopExperience(360, boosted)).toBeGreaterThan(workshopExperience(360, plain));
     // A raid takes no treat, so a treat multiplier never reaches it.
-    expect(raidExperience('phase1', false, { bp: 0, treatMultiplier: 3 })).toBe(
-      raidExperience('phase1', false),
+    expect(raidExperience('phase1', false, dayCreatureXpParts(false, day('fair-winds')))).toBe(
+      raidExperience('phase1', false, []),
     );
+  });
+
+  it('Hearty Breakfast and Cold Snap together multiply: x3 x1.25 x0.8, not x3 x1.05', () => {
+    const both = day('hearty-breakfast', 'cold-snap');
+    const parts = dayCreatureXpParts(true, both);
+    expect(xpBoostTotalBp(parts)).toBe(30_000);
+    expect(tripExperience('long', parts)).toBe(RULES.experience.trip.long * 3);
   });
 
   it('Warm Hearth and Cold Snap: Workshop time, Hearty Breakfast: experience, on a job', () => {

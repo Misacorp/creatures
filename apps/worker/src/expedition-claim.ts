@@ -34,7 +34,7 @@ import {
   chance,
   allSpecies,
   gearPart,
-  treatPart,
+  creatureXpParts,
   xpBoost,
   type AccountStat,
   type DestinationDef,
@@ -394,7 +394,8 @@ function finishProgress(
   // Explorer XP and rank (and the slot it may unlock).
   const sumBefore = env.rankSumOf(userId);
   const tripsBefore = p.stats.trips_finished ?? 0;
-  // Each share on top of the trip's explorer XP, named for the result's breakdown; their sum is what it pays.
+  // Each share on top of the trip's explorer XP, named for the result's breakdown; they multiply, and the same
+  // parts give the amount and the breakdown.
   const twistName =
     expeditionContent.specials.twists.find((t) => t.id === expedition.special_id)?.name ?? 'Twist';
   const shares: XpBoostPart[] = [
@@ -403,8 +404,7 @@ function finishProgress(
     { source: 'trip', name: p.worked?.name ?? 'Push on', bp: p.worked?.reward.xpBp ?? 0 },
     gearPart('trail-xp', gearRulesOf(env.sql, explorer).trailXpBp),
   ];
-  const bonusBp = shares.reduce((sum, part) => sum + (part.source === 'treat' ? 0 : part.bp), 0);
-  const gained = tripXp(expedition.duration, bonusBp);
+  const gained = tripXp(expedition.duration, shares);
   const after = addExplorerTrip(env.sql, userId, explorer.id, gained);
   const rankAfter = explorerRank(after.xp);
   const explorerBoost = xpBoost(shares);
@@ -419,21 +419,16 @@ function finishProgress(
   // by the treat packed when it was sent. A recall and a failed trip never get here.
   const wx = env.tripWeatherOf(expedition);
   const treat = expedition.treat === 1;
-  const days = env.tripDayXpOf(expedition);
+  const expParts = creatureXpParts(treat, wx.treatMultiplier, env.tripDayXpOf(expedition));
   const experience = awardExperience(
     env.sql,
     analytics,
     userId,
     explorer.id,
-    tripExperience(expedition.duration, treat, {
-      bp: wx.xpBp,
-      treatMultiplier: wx.treatMultiplier,
-    }),
+    tripExperience(expedition.duration, expParts),
     'trip',
     treat,
-    xpBoost(
-      treat ? [treatPart(wx.treatMultiplier ?? RULES.experience.treat.multiplier), ...days] : days,
-    ),
+    xpBoost(expParts),
   );
   if (experience !== null) p.result.experience = experience;
   if (rankAfter > p.explorerBefore.rank) {

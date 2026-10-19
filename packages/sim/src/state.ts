@@ -1,6 +1,6 @@
 import type {
   DismantleItem,
-  ExpWeather,
+  DayXpEffect,
   ReachId,
   ExpeditionLength,
   FamiliarityRecord,
@@ -37,6 +37,8 @@ export interface PendingExpedition {
   push?: { goalId: string; endsAtHour: number };
   /** What the day's weather did to the trip when it was sent (absent: nothing); the claim reads this. */
   weather?: TripWeather;
+  /** The day's Boons and Omens that changed creature experience, as applied (kept with `weather`). */
+  xpEffects?: DayXpEffect[];
 }
 
 /** Counters of everything a player did with expeditions, for the reports and the targets. */
@@ -236,7 +238,7 @@ export interface SimJob {
   /** The day's Market Day boost on a craft or a dismantle (`WorkshopMods`), fixed when it started. */
   mods?: WorkshopMods;
   /** What the day's weather did to the job's experience when it started (absent: nothing). */
-  xp?: ExpWeather;
+  xp?: { treatMultiplier: number | null; effects: DayXpEffect[] };
 }
 
 /** Everything gear related a player has. */
@@ -407,6 +409,7 @@ export function clonePlayer(p: SimPlayer): SimPlayer {
       ...(e.offer === undefined ? {} : { offer: [...e.offer] }),
       ...(e.push === undefined ? {} : { push: { ...e.push } }),
       ...(e.weather === undefined ? {} : { weather: { ...e.weather } }),
+      ...(e.xpEffects === undefined ? {} : { xpEffects: e.xpEffects.map((x) => ({ ...x })) }),
     })),
     taste: { ...p.taste },
     explorerXp: { ...p.explorerXp },
@@ -430,7 +433,9 @@ export function clonePlayer(p: SimPlayer): SimPlayer {
         ...j,
         ...(j.items === undefined ? {} : { items: [...j.items] }),
         ...(j.mods === undefined ? {} : { mods: { ...j.mods } }),
-        ...(j.xp === undefined ? {} : { xp: { ...j.xp } }),
+        ...(j.xp === undefined
+          ? {}
+          : { xp: { ...j.xp, effects: j.xp.effects.map((e) => ({ ...e })) } }),
       })),
       skillXp: { ...p.gear.skillXp },
     },

@@ -10,7 +10,7 @@ import {
   ribbonsForLevel,
   shardOf,
   treatCost,
-  xpWeather,
+  dayCreatureXpParts,
   type Element,
   type ExpGain,
   type PartKind,
@@ -89,7 +89,11 @@ export function giveExperience(
 /** Pays a raid stage's experience to every creature of the players that fought it (guests have no owner). */
 export function awardRaidExperience(week: RaidWeek, stage: 'phase1' | 'phase2' | 'finale'): void {
   const cleared = week.stages[stage]?.cleared === true;
-  const gained = raidExperience(stage, cleared, xpWeather(week.weather[stage] ?? null));
+  const gained = raidExperience(
+    stage,
+    cleared,
+    dayCreatureXpParts(false, week.weather[stage] ?? null),
+  );
   const byId = new Map(week.players.map((p) => [p.id, p]));
   for (const slot of week.row) {
     const owner = slot.ownerId === null ? undefined : byId.get(slot.ownerId);

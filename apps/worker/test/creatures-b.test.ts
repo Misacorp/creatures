@@ -10,6 +10,7 @@ import {
   treatCost,
   tripExperience,
   workshopExperience,
+  creatureXpParts,
   type ExpState,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
@@ -168,7 +169,7 @@ describe('experience from trips', () => {
         ctx.clock.t = trip.endsAt;
         const claimed = await claim(p, trip.id);
         expect(claimed.status).toBe(200);
-        const gained = tripExperience('short', false);
+        const gained = tripExperience('short', []);
         const expected = after(5, gained);
         expect(creatureRow(ctx, id)).toMatchObject({ level: expected.level, exp: expected.exp });
         const result = claimed.body['result'] as { experience: Record<string, unknown> };
@@ -223,10 +224,10 @@ describe('experience from trips', () => {
         const claimed = await claim(p, trip.id);
         expect(creatureRow(ctx, id)).toMatchObject({
           level: 10,
-          exp: tripExperience('short', false),
+          exp: tripExperience('short', []),
         });
         expect(claimed.body['result']).toMatchObject({
-          experience: { level: 10, waiting: false, exp: tripExperience('short', false) },
+          experience: { level: 10, waiting: false, exp: tripExperience('short', []) },
         });
       },
       options(),
@@ -266,7 +267,7 @@ describe('treats on trips', () => {
 
         ctx.clock.t = trip.endsAt;
         const claimed = await claim(p, trip.id);
-        const gained = tripExperience('short', true);
+        const gained = tripExperience('short', creatureXpParts(true, null, []));
         expect(gained).toBe(RULES.experience.trip.short * 2);
         const expected = after(9, gained);
         expect(creatureRow(ctx, id)).toMatchObject({ level: expected.level, exp: expected.exp });
@@ -337,7 +338,7 @@ describe('the daily dungeon pays experience', () => {
           cleared: boolean;
           rewards: { experience: { creatureId: string; gained: number; treat: boolean }[] };
         };
-        const gained = dungeonExperience(summary.roomsCleared, summary.cleared, false);
+        const gained = dungeonExperience(summary.roomsCleared, summary.cleared, []);
         expect(summary.rewards.experience.map((e) => e.creatureId)).toEqual(team);
         for (const view of summary.rewards.experience) {
           expect(view).toMatchObject({ gained, treat: false });
@@ -368,7 +369,7 @@ describe('the daily dungeon pays experience', () => {
         const exp = (res.body['run'] as { rewards: { experience: Record<string, unknown>[] } })
           .rewards.experience;
         const summary = res.body['run'] as { roomsCleared: number; cleared: boolean };
-        const plain = dungeonExperience(summary.roomsCleared, summary.cleared, false);
+        const plain = dungeonExperience(summary.roomsCleared, summary.cleared, []);
         expect(exp.map((e) => [e['creatureId'], e['gained'], e['treat']])).toEqual([
           [a, plain, false],
           [b, plain * 2, true],
@@ -446,7 +447,7 @@ describe('experience from raid stages', () => {
       // What every creature that stood in the row earned over the week, by the game's own rule.
       const fought = new Map<string, number>();
       for (const run of runs) {
-        const gained = raidExperience(run.phase, run.result.cleared);
+        const gained = raidExperience(run.phase, run.result.cleared, []);
         for (const slot of run.input.row) {
           if (slot.ownerId === null) continue;
           fought.set(slot.id, (fought.get(slot.id) ?? 0) + gained);
@@ -460,7 +461,7 @@ describe('experience from raid stages', () => {
         let state: ExpState = { level: 5, exp: 0, ribbons: 0, levelCap: 15 };
         for (const run of runs) {
           if (!run.input.row.some((s) => s.id === id)) continue;
-          const g = addExperience(state, raidExperience(run.phase, run.result.cleared));
+          const g = addExperience(state, raidExperience(run.phase, run.result.cleared, []));
           state = { level: g.level, exp: g.exp, ribbons: g.ribbons, levelCap: g.levelCap };
         }
         expect(row, String(total)).toMatchObject({ level: state.level, exp: state.exp });
@@ -542,8 +543,8 @@ describe('experience from Workshop jobs', () => {
           expect(done.status, JSON.stringify(done.body)).toBe(200);
         }
         const minutes = 180; // a plain craft is 3 hours of work
-        const plainGain = workshopExperience(minutes, false);
-        const treatedGain = workshopExperience(minutes, true);
+        const plainGain = workshopExperience(minutes, []);
+        const treatedGain = workshopExperience(minutes, creatureXpParts(true, null, []));
         expect(plainGain).toBe(3 * RULES.experience.workshopPerHour);
         expect(treatedGain).toBe(2 * plainGain);
         expect(creatureRow(ctx, plain)).toMatchObject(after(6, plainGain));

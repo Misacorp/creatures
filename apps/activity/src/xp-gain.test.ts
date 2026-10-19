@@ -1,4 +1,4 @@
-import { RULES, expToNext } from '@creatures/game';
+import { RULES, expToNext, xpBoostTotalBp } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { ExperienceView } from './experience';
 import {
@@ -169,7 +169,7 @@ describe('the multiplier of a gain', () => {
       { source: 'day' as const, name: 'Hearty Breakfast', bp: 2500 },
       { source: 'day' as const, name: 'Cold Snap', bp: -2000 },
     ],
-    totalBp: 31_500,
+    totalBp: 30_000,
   };
 
   it('writes every multiplier as a decimal with an x: up to two decimals, no trailing zeros', () => {
@@ -190,7 +190,7 @@ describe('the multiplier of a gain', () => {
         { name: 'Hearty Breakfast', value: '1.25x', treat: false },
         { name: 'Cold Snap', value: '0.8x', treat: false },
       ],
-      total: '3.15x',
+      total: '3x',
     });
     expect(boostLabel(treat2, 'Experience')).toBe('Experience 2x: Treat 2x. What changed it?');
   });
@@ -228,5 +228,21 @@ describe('the multiplier of a gain', () => {
       ],
       totalBp: 37_500,
     });
+  });
+
+  it("reads an older dungeon result's total by the shared rule: every part multiplies", () => {
+    const old = experienceBoost(
+      view({
+        treat: true,
+        treatTimes: 3,
+        dayEffects: [
+          { name: 'Hearty Breakfast', bp: 2500 },
+          { name: 'Cold Snap', bp: -2000 },
+        ],
+      }),
+    );
+    // 3 x 1.25 x 0.8 = 3x (added, it was 3.15x).
+    expect(old?.totalBp).toBe(30_000);
+    expect(old?.totalBp).toBe(xpBoostTotalBp(old?.parts ?? []));
   });
 });
