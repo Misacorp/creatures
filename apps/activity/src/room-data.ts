@@ -99,6 +99,21 @@ export function shouldPoll(present: readonly string[], selfId: string, hidden: b
 }
 
 /**
+ * Whether the lounge's live socket should be open: the server offers it, the player has a room, the page
+ * is visible and somebody else is here (alone, a push could not matter). Otherwise it is closed and costs
+ * nothing, like the poll.
+ */
+export function shouldOpenSocket(
+  options: { enabled: boolean; offered: boolean; hidden: boolean },
+  present: readonly string[],
+  selfId: string,
+): boolean {
+  return (
+    options.enabled && options.offered && !options.hidden && othersOf(present, selfId).length > 0
+  );
+}
+
+/**
  * How long to wait before the next poll: `ROOM_POLL_MS` after the last full fetch was tried and
  * ended (so a failing request is not retried in a hurry), never negative and never more than one interval.
  */

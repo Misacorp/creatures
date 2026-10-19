@@ -3,13 +3,16 @@
  * the game state (so it updates the moment they train it), and the others from `POST /api/room`
  * through the loader (see `room-loader.ts` for when it asks). Reacts to Discord's participant
  * updates and to the page being hidden or shown; the loader's single slow poll (every 45 s while
- * someone else is here and the page is visible) is its only timer.
+ * someone else is here and the page is visible) is its only timer. With the server's `loungeLive`
+ * flag the room also opens the live socket (`lounge-socket.ts`) while someone else is here and the
+ * page is visible: pushes replace the poll, and any trouble hands the room back to the poll.
  */
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { fetchRoom, type GameState } from './api';
+import { fetchLoungeTicket, fetchRoom, loungeSocketUrl, type GameState } from './api';
 import type { GearItem } from './gear-types';
 import type { ParticipantSource } from './participants';
-import { ownResident, roomResidents, type Resident } from './room-data';
+import { ownResident, roomResidents, shouldOpenSocket, type Resident } from './room-data';
+import { browserSocket, createLoungeSocket } from './lounge-socket';
 import { createRoomLoader, type RoomLoader } from './room-loader';
 
 interface RoomInputs {
@@ -24,6 +27,8 @@ interface RoomInputs {
   craftingLevels: ReadonlyMap<string, number>;
   /** The gear view's items, once loaded: they give your worn item its main stat. */
   gearItems?: readonly GearItem[];
+  /** The server offers the live socket (`/api/config`'s `loungeLive`). Default false. */
+  loungeLive?: boolean;
 }
 
 export interface RoomHandle {
@@ -40,9 +45,11 @@ export function useRoom({
   state,
   craftingLevels,
   gearItems,
+  loungeLive = false,
 }: RoomInputs): RoomHandle {
   const [present, setPresent] = useState<readonly string[]>(() => participants.ids());
   const [known, setKnown] = useState<ReadonlyMap<string, Resident>>(() => new Map());
+  const [hidden, setHidden] = useState(() => typeof document !== 'undefined' && document.hidden);
   const loader = useRef<RoomLoader | null>(null);
 
   useEffect(() => {
@@ -58,6 +65,7 @@ export function useRoom({
     });
     // Hidden pages do not poll; a page shown again refetches at once if its data is over 45 s old.
     const onVisibility = (): void => {
+      setHidden(document.hidden);
       next.setHidden(document.hidden);
     };
     document.addEventListener('visibilitychange', onVisibility);
@@ -68,6 +76,27 @@ export function useRoom({
       loader.current = null;
     };
   }, [enabled, participants, selfId]);
+
+  // The live socket is open only while it can matter: somebody else is here and the page is visible.
+  const wantSocket = shouldOpenSocket({ enabled, offered: loungeLive, hidden }, present, selfId);
+  useEffect(() => {
+    if (!wantSocket) return undefined;
+    const socket = createLoungeSocket({
+      getTicket: fetchLoungeTicket,
+      url: (ticket) => loungeSocketUrl(ticket, window.location),
+      createSocket: browserSocket,
+      onLive: (live) => {
+        loader.current?.setLive(live);
+      },
+      onResident: (resident) => {
+        loader.current?.applyResident(resident);
+      },
+    });
+    socket.start();
+    return () => {
+      socket.stop();
+    };
+  }, [wantSocket, selfId]);
 
   const residents = useMemo(
     () =>

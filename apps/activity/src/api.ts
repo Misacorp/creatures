@@ -32,6 +32,8 @@ export interface AppConfig {
   leetSource: string;
   /** True only on staging, where the server has the dev tools on (the debug panel loads). */
   devTools: boolean;
+  /** True when the server offers the lounge's live socket (`LOUNGE_LIVE`; off in production for now). */
+  loungeLive: boolean;
 }
 
 interface Health {
@@ -194,6 +196,7 @@ export async function fetchConfig(): Promise<AppConfig> {
     branch: typeof data['branch'] === 'string' ? data['branch'] : null,
     leetSource: data['leetSource'],
     devTools: data['devTools'] === true,
+    loungeLive: data['loungeLive'] === true,
   };
 }
 
@@ -801,4 +804,53 @@ export function parseRoom(data: unknown): RoomResident[] {
 /** The loungers of these players (1 to 25 ids); players that are not in this guild are left out. */
 export async function fetchRoom(userIds: readonly string[]): Promise<RoomResident[]> {
   return parseRoom(await apiFetch('/api/room', jsonRequest('POST', { userIds })));
+}
+
+/** A message the lounge's live socket pushes (`docs/design/lounge-live.md`). */
+export type LiveMessage =
+  { type: 'hello'; serverNow: number } | { type: 'resident'; resident: RoomResident };
+
+/** Reads one pushed text frame: null for anything that is not a message of version 1 we know. */
+export function parseLiveMessage(text: string): LiveMessage | null {
+  if (text.length > 64 * 1024) return null;
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (!isRecord(data) || data['v'] !== 1) return null;
+  if (data['type'] === 'hello') {
+    return isInt(data['serverNow']) ? { type: 'hello', serverNow: data['serverNow'] } : null;
+  }
+  if (data['type'] === 'resident') {
+    try {
+      const [resident] = parseRoom({ residents: [data['resident']] });
+      return resident === undefined ? null : { type: 'resident', resident };
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/** Asks for the one-time ticket that opens the live socket (an authenticated request). */
+export async function fetchLoungeTicket(): Promise<string> {
+  const data = await apiFetch('/api/lounge/ticket', { method: 'POST' });
+  if (!isRecord(data) || typeof data['ticket'] !== 'string') {
+    throw new Error('/api/lounge/ticket returned an unexpected shape');
+  }
+  return data['ticket'];
+}
+
+/**
+ * The socket's address: the page's own host, so inside Discord it goes through the proxy like every
+ * other request. The ticket is single-use and lives 30 s, so it may sit in the URL.
+ */
+export function loungeSocketUrl(
+  ticket: string,
+  location: { protocol: string; host: string },
+): string {
+  const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${scheme}//${location.host}/api/lounge/live?ticket=${encodeURIComponent(ticket)}`;
 }

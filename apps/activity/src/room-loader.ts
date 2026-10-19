@@ -4,7 +4,9 @@
  * newcomers after a join (debounced), nothing for a leave, and a full refetch on a tab switch only
  * when the data is over a minute old. While somebody else is here and the page is visible, one
  * `setTimeout` chain refetches everyone every 45 s (so others' moves show up); alone or hidden, no
- * timer waits at all. Failures are ignored quietly (the old data stays). Framework-free;
+ * timer waits at all. Failures are ignored quietly (the old data stays). While the lounge's live socket
+ * delivers (`setLive(true)`, see `lounge-socket.ts`) the poll waits too, and pushed residents arrive
+ * through `applyResident`; when the socket drops the poll takes over again. Framework-free;
  * `use-room.ts` wires it to Preact.
  */
 import type { RoomResident } from './api';
@@ -49,6 +51,13 @@ export interface RoomLoader {
    * over 45 s old, then the poll goes on.
    */
   setHidden(hidden: boolean): void;
+  /**
+   * The live socket started or stopped delivering. Live: the poll stops and everyone is fetched once
+   * (a push missed while connecting is never replayed). Not live: the poll goes on as before.
+   */
+  setLive(live: boolean): void;
+  /** A resident the live socket pushed: replaces what is known, for a player who is present. */
+  applyResident(resident: RoomResident): void;
   /** Stops everything; answers that arrive later are dropped. */
   dispose(): void;
 }
@@ -69,6 +78,8 @@ export function createRoomLoader(deps: RoomLoaderDeps): RoomLoader {
   let pollTimer: unknown = null;
   let hidden = isHidden();
   let disposed = false;
+  /** True while the live socket delivers: the slow poll is not needed. */
+  let live = false;
   /** Ids a request is on its way for, so two triggers never ask twice. */
   const pending = new Set<string>();
 
@@ -98,7 +109,7 @@ export function createRoomLoader(deps: RoomLoaderDeps): RoomLoader {
 
   /** Makes sure exactly one poll is waiting when polling is wanted, and none when it is not. */
   function syncPoll(): void {
-    if (disposed || !shouldPoll(present, deps.selfId, hidden)) {
+    if (disposed || live || !shouldPoll(present, deps.selfId, hidden)) {
       stopPoll();
       return;
     }
@@ -118,7 +129,7 @@ export function createRoomLoader(deps: RoomLoaderDeps): RoomLoader {
   }
 
   async function poll(): Promise<void> {
-    if (disposed || !shouldPoll(present, deps.selfId, hidden)) return;
+    if (disposed || live || !shouldPoll(present, deps.selfId, hidden)) return;
     // A fetch already on its way counts as this poll's.
     if (!fullInFlight) await fetchAll();
     syncPoll();
@@ -171,8 +182,23 @@ export function createRoomLoader(deps: RoomLoaderDeps): RoomLoader {
       }, ROOM_DEBOUNCE_MS);
     },
     refreshIfStale() {
-      if (disposed || fullInFlight || !isStale(lastFullAt, now())) return;
+      // Live data is never stale: the socket pushes every change.
+      if (disposed || live || fullInFlight || !isStale(lastFullAt, now())) return;
       void fetchAll();
+    },
+    setLive(next) {
+      if (disposed || live === next) return;
+      live = next;
+      if (live) {
+        stopPoll();
+        if (!fullInFlight) void fetchAll();
+        return;
+      }
+      syncPoll();
+    },
+    applyResident(resident) {
+      if (disposed || resident.userId === deps.selfId || !present.includes(resident.userId)) return;
+      publish(mergeResidents(known, [resident], present));
     },
     setHidden(next) {
       if (disposed || hidden === next) return;

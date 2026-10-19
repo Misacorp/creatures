@@ -17,6 +17,8 @@ import { Weather } from './weather';
 import { weatherRoutes } from './weather-routes';
 import { expeditionRoutes } from './expedition-routes';
 import { collectionRoutes } from './collection-routes';
+import { LIVE_QUIET_PATHS, type LiveHooks } from './lounge-live';
+import { liveRoutes } from './lounge-live-routes';
 import { DevState } from './dev-state';
 import { DevTools, devRoutes, isDevPath } from './dev-tools';
 import { DiscordError, type GuildApi } from './discord';
@@ -173,6 +175,7 @@ const routes: Routes<RequestContext> = {
   ...expeditionRoutes,
   ...raidRoutes,
   ...weatherRoutes,
+  ...liveRoutes,
   ...devRoutes,
   '/api/me': {
     GET: async (_request, { user, guildId, core }) => {
@@ -295,6 +298,11 @@ export interface GuildCoreOptions {
    * `/api/dev/*` answers 404 and a stored offset is ignored.
    */
   devTools?: boolean;
+  /**
+   * The lounge's live socket (see `lounge-live.ts`): makes tickets and is told when a player changed
+   * something. Without it the ticket route answers 404 and nothing is pushed.
+   */
+  live?: LiveHooks;
 }
 
 export { SYNC_BUDGET_MS } from './leet-sync';
@@ -323,6 +331,8 @@ export class GuildCore {
   /** The dev tools: null unless `DEV_TOOLS` is on. Routes under `/api/dev` use it. */
   readonly dev: DevTools | null;
   readonly collection: Collection;
+  /** The lounge's live socket hooks, or null when there is none (tests, or no flag). */
+  readonly live: LiveHooks | null;
   readonly gear: Gear;
   readonly dungeon: Dungeon;
   readonly raid: Raid;
@@ -433,6 +443,7 @@ export class GuildCore {
       now: realNow,
       maxKeys: RATE_MAX_KEYS,
     });
+    this.live = options.live ?? null;
     this.dev =
       this.devState === null
         ? null
@@ -749,13 +760,27 @@ export class GuildCore {
     if (this.options.dailyAllowance !== false) this.allowance.grant(user.id);
     await this.ensureAlarm();
     const template = matchTemplate(ROUTE_KEYS, pathname);
-    return dispatch(routes, request, template?.template ?? pathname, {
+    const response = await dispatch(routes, request, template?.template ?? pathname, {
       user,
       guildId: token.guildId,
       core: this,
       params: template?.params ?? {},
       channelId: session.channelId,
     });
+    // A change by this player may show in the living room: tell the lounge's live sockets (if any).
+    if (this.live !== null && request.method !== 'GET' && response.ok)
+      this.pushLive(pathname, user.id);
+    return response;
+  }
+
+  /** Never throws: the push is a courtesy, the request already succeeded. */
+  private pushLive(pathname: string, userId: string): void {
+    if (this.live === null || LIVE_QUIET_PATHS.has(pathname)) return;
+    try {
+      this.live.notify(userId);
+    } catch (err) {
+      console.error('lounge push failed', err instanceof Error ? err.name : 'unknown');
+    }
   }
 
   // --- The raid-post channel ---
