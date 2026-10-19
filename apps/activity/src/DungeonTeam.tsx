@@ -46,6 +46,13 @@ interface Props {
   /** True while the run is being sent: the tiles are switched off. */
   disabled: boolean;
   onChange: (slots: Slots) => void;
+  /** The creature whose loadout shows under the board (its tile gets the bright frame). */
+  selectedId?: string | null;
+  /**
+   * A tap on a creature selects it (its loadout shows under the board) instead of opening its popover.
+   * Absent: the popover with "Remove from team".
+   */
+  onSelect?: (creatureId: string | null) => void;
   /** What follows the count inside the same block (the Enter button), centred like the rest. */
   children?: ComponentChildren;
 }
@@ -163,6 +170,7 @@ export function DungeonTeam(props: Props) {
     }
     return {
       index,
+      ...(props.selectedId === creature.id ? { selected: true } : {}),
       ariaLabel: `${spot} slot, ${creatureName(creature)}, ${speciesName(creature.species)} level ${String(creature.level)}`,
       occupant: {
         species: creature.species,
@@ -189,6 +197,10 @@ export function DungeonTeam(props: Props) {
     if (id === null || creature === undefined) {
       setHint(null);
       setPicking(slot);
+      return;
+    }
+    if (props.onSelect !== undefined) {
+      props.onSelect(props.selectedId === id ? null : id);
       return;
     }
     const species = getSpecies(creature.species);

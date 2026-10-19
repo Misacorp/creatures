@@ -90,7 +90,7 @@ export function RenameForm({
 }
 
 /** One stat with gear folded in, and the gear's own share next to it in the gear colour ("ATK 79 +12"). */
-function StatRow({
+export function StatRow({
   label,
   stat,
   creature,

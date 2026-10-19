@@ -19,8 +19,11 @@ export function GearSlots({
   gear,
   openSlot,
   onOpen,
+  compact = false,
 }: {
   creature: Creature;
+  /** Smaller item icons (the dungeon's loadout, three creatures at once). */
+  compact?: boolean;
   /** The gear view; only its slot levels are used (null while it loads: the rules' own levels). */
   gear: Pick<GearState, 'slotOpens'> | null;
   /** The slot whose picker is open now. */
@@ -71,7 +74,7 @@ export function GearSlots({
               expanded={openSlot === slot}
               onClick={open}
             >
-              <ItemSprite baseId={worn.baseId} scale={6} />
+              <ItemSprite baseId={worn.baseId} scale={compact ? 3 : 6} />
               <ItemCorners level={worn.itemLevel} baseId={worn.baseId} />
             </Slot>
           );
