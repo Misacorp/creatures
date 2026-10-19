@@ -140,6 +140,8 @@ export function describeGimmick(gimmick: Gimmick): string {
       return `${patternWords(gimmick)} ${when}`;
     case 'charge':
       return `winds up one round ahead, then ${patternWords(gimmick.then)}, ${when}`;
+    case 'purge':
+      return `shakes off every debuff on itself, ${when}`;
   }
 }
 

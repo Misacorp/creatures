@@ -86,7 +86,7 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 **2.3 Round start.** In this order:
 
 1. The round is announced. If it is an enrage round, enrage is announced.
-2. Dice are drawn (9.2). Nothing later in the round changes them.
+2. Dice are drawn (9.2). Nothing later in the round changes them. (With status effects on, the round's effect dice are the very last of them, 13.3.)
 3. A charge that lands next round is announced and its victims are marked (6.12). Not in enrage rounds.
 4. If the boss has a reflect move due this round, it arms (5.4). Not in enrage rounds.
 5. Supports act (4.5): each living, non-silenced Support in slot order boosts, heals and cleanses the creatures beside it.
@@ -97,6 +97,8 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 **2.4 Creature turns.** Creatures act one at a time in the boss's turn order.
 
 2.4.1 Turn order is set by the boss. A raid boss has one of: `left_to_right`, `right_to_left`, `serpentine` or `speed` (highest Speed first, ties to the lower slot). `speed` stays in the engine so stored fights replay, but no boss in content uses it. `serpentine` goes row by row, Front then Middle then Back; on odd rounds (1, 3, ...) Front and Back run left to right and Middle right to left, on even rounds every row flips. Board slots 1 to 9 with three per row: round 1 acts 1,2,3,6,5,4,7,8,9; round 2 acts 3,2,1,4,5,6,9,8,7. Uneven rows work the same, gaps and knocked-out creatures are skipped, and enrage rounds keep flipping by round number. The order is worked out each round, and Overflow reads that round's order. Today: Tidal Colossus and Storm Sovereign left to right, Thornmother right to left, Cinder Wyrm serpentine. The dungeon is always left to right (`RULES.dungeon.turnOrder`), whatever the foe or the room says.
+
+2.4.1a **The end of a creature's turn.** After a creature's turn, whether it hit the boss or was skipped (2.4.2), the status effects on it count down by one turn (13.4). A knocked-out creature has none left.
 
 2.4.2 A knocked-out creature is skipped. A silenced creature skips its turn and its silence counts down by one (6.4). Every other creature hits the boss (2.4.3). **Morning Haze** (`FightInput.skipFirstTurn`, 10.9): a creature named there also skips the first turn it reaches alive (a `skip` event with reason `haze`); if that turn was silenced anyway, the silence is the lost turn and the haze is spent on it, so it never costs two.
 
@@ -115,6 +117,9 @@ _Example._ The boss has 150 HP left. A creature's plain hit would deal 100 and i
 1. Its moves that are due this round, in the order of its content list. Each move picks its targets just before it lands, from the creatures standing at that moment. (None in an enrage round.)
 2. Its plain attack.
 3. In an enrage round only: the enrage hit (7.2).
+4. The end of the boss turn: the status effects on the boss count down by one turn (13.4). A boss that fell or retreated earlier in the round has no boss turn, so nothing counts down.
+
+A `purge` move (13.6) is one of the moves of step 1, in its place in the content list.
 
 So the plain attack comes **after** the moves, and it picks its target after they have done their damage. This is how the game plays, on purpose: a move can knock out the front creature and the plain attack then goes for the next one standing.
 
@@ -210,7 +215,7 @@ _Example._ In the raid, a Guard at the end of the Front row covers its Front nei
 
 4.5.2 **Boost.** The creature's next hit on the boss deals more: 15% (`RULES.combat.supportBuffBp`), or 25% for an Ember Support (`RULES.combat.supportFx.ember.buffBp`). It waits until the creature hits; a silenced creature keeps it. A second boost from the same Support replaces the first; boosts from different Supports add up. A boost already given stays if the Support is later knocked out.
 
-4.5.3 **Element effects.** Tide: heals 4% of the creature's max HP (`supportFx.tide.healBp`), and clears its silence (`supportFx.tide.cleanse`). Grove: heals 6% (`supportFx.grove.healBp`). Spark: when the creature sets off a reaction, the reaction's bonus damage is 15% larger (`supportFx.spark.reactionBp`; not when the reaction is reflected). Ember: the stronger boost above.
+4.5.3 **Element effects.** Tide: heals 4% of the creature's max HP (`supportFx.tide.healBp`), and clears its silence (`supportFx.tide.cleanse`). Grove: heals 6% (`supportFx.grove.healBp`). Spark: when the creature sets off a reaction, the reaction's bonus damage is 15% larger (`supportFx.spark.reactionBp`; not when the reaction is reflected). Ember: the stronger boost above. A cleansing Support (Tide) also removes every debuff from the creature (13.7).
 
 4.5.4 **Healing never revives and never overheals.** It heals at most what is missing. It skips knocked-out creatures.
 
@@ -395,7 +400,7 @@ _Example._ A Shield Wall of `rounds` 1 fired in round 4 covers round 4 only. To 
 
 Off today (`RULES.combat.luck`): damage spread (`spreadBp` 0), Fortune streaks (`surgeChanceBp`, `slumpChanceBp` 0), and a random plain-attack target (`bossRandomTargetBp` 0). Nothing else is random: every other target, order and tie follows a rule above.
 
-**9.2 Dice, not rolls on demand.** Randomness is dice drawn at round start (2.3 step 2), never later. A creature has a crit die per round for its turn and a second for an ability's strike. The boss has a crit die per slot per round for its plain attack and another for its moves. Pattern dice (40 a round) feed barrages, random slams and lanes. One Guard die per slot feeds the roll. When the boss makes more than one plain attack (2.5.2), the crit dice of the second and third attack (one per slot each) are drawn after all of these, and only then, so a fight with one attack a round draws exactly what it always did and a second attack never moves another die. Each kind of die is drawn every round whenever its feature is on (crits, patterns, the Guard roll), whether or not a rule uses it, so what one rule does never changes another's dice. **The luck dice of the chance lines** (11) are the very last dice of the round, after all of these, and are drawn only when some creature of the fight carries a chance line: a fight without one draws exactly what it always did.
+**9.2 Dice, not rolls on demand.** Randomness is dice drawn at round start (2.3 step 2), never later. A creature has a crit die per round for its turn and a second for an ability's strike. The boss has a crit die per slot per round for its plain attack and another for its moves. Pattern dice (40 a round) feed barrages, random slams and lanes. One Guard die per slot feeds the roll. When the boss makes more than one plain attack (2.5.2), the crit dice of the second and third attack (one per slot each) are drawn after all of these, and only then, so a fight with one attack a round draws exactly what it always did and a second attack never moves another die. Each kind of die is drawn every round whenever its feature is on (crits, patterns, the Guard roll), whether or not a rule uses it, so what one rule does never changes another's dice. **The luck dice of the chance lines** (11) are the very last dice of the round, after all of these, and are drawn only when some creature of the fight carries a chance line: a fight without one draws exactly what it always did. **The effect dice of status effects** (13.3) come after even those, the very last of the round, and are drawn only when the fight's input has `effects`.
 
 **9.3 Where they come from.** The server draws a fresh seed from `crypto.getRandomValues` at the moment the fight is resolved (a raid stage, a dungeon run). Nobody, including the client, can know it before then. Dice come from that seed. The seed, the fight's input and its rules (`rules`, `luck`, floor, enrage) are stored, so a fight replays exactly, and a later retune never changes an old fight. Tests and the balance simulator use seeded dice.
 
@@ -532,3 +537,39 @@ Gear lines that wait for a defined moment (`gear-and-creatures-v2.md` 6.4). Each
 | Shared warmth | `sharedWarmthBp` | A Support's Mend heals it (really restores HP).                                                                                   | That Support's next boost, to everyone it boosts, is this much bigger (it waits until the Support next boosts).            |
 
 **12.1 Order and interplay.** The boosts the lines give are in the same list as a Support's (`buffs`), spent on the creature's next hit together with it and counted in `bonusBp`; they are credited as support credit to the creature whose line gave them, and a Support's own boost from the same creature never replaces one of them. Stubborn works in the taker step (3.2 step 7) and Last stand is checked after it; so a Stubborn creature at a quarter of its HP after the hit can fire both. Round-start lines act after the Supports and Kind Rain and before finale abilities, so a finale Re-mark can still replace an Opening mark.
+
+## 13. Status effects (2026-10-19)
+
+The general system for debuffs now and buffs later (`speed-and-dodge.md` section 3). It is off in a fight unless the fight's input says so, nothing in shipped content applies an effect yet, and a stored fight replays as it was.
+
+**13.1 What an effect is.** A status effect is content (`status-effects.json`, `StatusEffectSchema`): `id`, `name`, `kind` (`debuff` or `buff`), `maxStacks` (1 or more), `turns` (1 or more, the base duration) and `perStack`, a strict object of optional signed numbers in basis points per stack: `spdBp` (Speed; negative is slower) and `damageDealtBp` (the damage the fighter deals; negative is less). Today there is one, **Mired** (debuff, at most 5 stacks, 3 turns, Speed -3% and damage dealt -3% a stack). On a fighter an effect is `{ id, stacks, turnsLeft }`; every creature and the boss (a foe too) carry a list of them, and each effect id is in the list at most once.
+
+**13.2 Applying** (`applyEffect(state, target, effectId, powerBp, source, durationTurns = 0)`). The one call every source uses. Application power is in basis points: `floor(power / 10000)` stacks are certain, plus one more with a chance of `power % 10000` out of 10000. A power under 10000 is a chance of one stack.
+
+- A roll of **0 stacks is a miss and changes nothing**: no event, the timer stays as it was, and on a fighter without the effect it adds nothing.
+- Any roll of **1 or more stacks** adds them, up to `maxStacks`, and **sets the timer back to the full duration**: the effect's `turns` plus the source's `durationTurns` bonus. That includes an application on a fighter already at the cap (it adds 0 stacks and still refreshes). One `effect_apply` event says how many stacks it really added (`stacksAdded`, maybe 0), the stacks and the turns left.
+- A knocked-out creature gets nothing. With effects off in the fight, nothing applies.
+- _Example._ Mired at 2 stacks with 1 turn left is hit by a 140% application and the extra-stack die is 3000 (under 4000): 1 + 1 stacks, so it goes to 4 and back to 3 turns. If the die had been 5000 it would be 3 stacks. A 60% application with a die of 6000 or more changes nothing at all.
+
+**13.3 Dice.** The extra-stack chance rolls on **effect dice**: `FightInput.effects = { dice: N }` (1 to 256) makes every round draw N uniform dice in [0, 10000), at the very end of the round's dice, after the luck dice (9.2). An application takes the next unused die of the round, in order, only if its power has a fractional part (a whole number of stacks takes none); it adds the extra stack when the die is **below** the chance. The pool starts over every round. **If a round's pool runs out, every further chance counts as a miss**: whoever builds the input sizes it generously (a sweep that hits every creature of a big raid applies once per creature). Without `effects` the fight draws no effect die and applies nothing, so every fight stored before this replays exactly. The fight's stored input holds `effects`, so a replay has the same dice.
+
+**13.4 Turns.** An effect counts down on its **target's own turns**: at the end of each of the target's turns `turnsLeft` goes down by 1, and at 0 the effect ends with an `effect_expire` event. **All its stacks fall off together.**
+
+- The boss's turn is its whole boss turn (2.5), once a round. An effect applied to the boss by a creature in round 1 has already seen the boss turn of round 1 by the time it is counted: 3 turns from a creature's hit in round 1 ends at the end of the boss turn of round 3. A boss that fell or retreated earlier in the round has no boss turn.
+- A creature's turn is counted even when it was skipped (silence, Morning Haze), so a silenced creature's debuff wears off all the same.
+- **A knocked-out creature's effects end at once, silently** (no `effect_expire`; the `knockout` event says it). Nothing is counted for a creature that is out.
+- Enrage rounds count down as every other round.
+
+**13.5 What stacks do.** Per-stack numbers are added up over the fighter's effects (stacks times the number, each effect) and folded in where the fighter's numbers are made:
+
+- `damageDealtBp`, for a creature: one more term in the hit's one combined bonus (2.4.3, 10.2), next to Support boost, Rally, crit and the sheet; the `hit` event's `bonusBp` includes it and `effectBp` is its share. A debuff takes damage off the hit (never below 0). It applies to turn hits and ability strikes alike.
+- `damageDealtBp`, for the boss: one more term in the percentage a boss hit's proposed damage is worked out from, next to crits and the mutators' `bossDamageBp` (3.1): every plain attack, move and enrage hit. **A reflected hit (5.4) is not changed**: it is a creature's reaction coming back, not the boss's own damage.
+- `spdBp`: the fighter's Speed is `floor(Speed x (10000 + sum of spdBp x stacks) / 10000)`, never below 0, read through `effectiveSpd(state, fighter)` (`fight-effects.ts`). Nothing in a fight reads Speed yet (the dodge slice will); the boss has no Speed in the engine yet, so its base is 0. The `speed` turn order is not changed (no shipped boss uses it).
+
+**13.6 Purge.** A boss move `op: purge` (any trigger, any boss or foe; the content schema has nothing else on it) removes **every debuff** from the boss, in its place in the boss's move order (2.5 step 1). It writes the `gimmick` event as any move does and, if it removed anything, one `effect_purge` event listing each effect and its stacks. It never removes a buff and never touches the adaptation (8.5 is a different Purge). The forecast has no warning for it (it aims at nobody).
+
+**13.7 Cleanse.** The cleanse of a Support (4.5.3, Tide) also removes every debuff from each neighbour it reaches at round start, after the silence, writing one `effect_cleanse` event per removed effect (the `cleanse` event is still only for silence). It never removes a buff and a Support does not cleanse itself.
+
+**13.8 Sources.** Today only these put an effect on a fighter: a boss move's optional `applies: { effect, powerBp, durationTurns? }` (on hit zone, strike, sweep, barrage, slam, lance, pincer and charge moves; content tests check the effect exists), and a test-only `FightOptions.effectHook`. A move with `applies` puts the effect on **every creature it hits**: the creature that takes each hit (a Guard that stepped in, not the creature it was aimed at) and the takers of a slam's splash, right after the hit, if the taker still stands. A hit a Shield Wall or Sidestep stopped still counts as a hit for now; the dodge slice will decide that dodged hits apply nothing. A charge applies when it lands. Creature-side sources (a Guard hit, a Support at round start, reactions, gear lines) are later slices and call `applyEffect` the same way.
+
+**13.9 Log.** `effect_apply`, `effect_expire`, `effect_purge` and `effect_cleanse`; `describeEvent` has a sentence for each ("Old Bogback is Mired x3 (3 turns).", "Old Bogback is no longer Mired.", "Old Bogback shakes off Mired.", "Support clears Mired from Cindle."). `target` is a creature id, or null for the boss. The game's UI shows them only as log lines for now.

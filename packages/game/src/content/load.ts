@@ -8,6 +8,7 @@ import {
   type ContentPack,
   type CreatureSpecies,
   type Effect,
+  type Gimmick,
   type FinaleAbilityDef,
 } from './schema';
 
@@ -184,7 +185,16 @@ function checkReactions(pack: ContentPack): void {
   }
 }
 
-function checkBoss(boss: BossDef, adaptationIds: ReadonlyMap<string, number>): void {
+/** The status effect a move applies, if any (a rider on a damaging move or a charge). */
+export function appliedEffect(g: Gimmick): string | undefined {
+  return 'applies' in g ? g.applies?.effect : undefined;
+}
+
+function checkBoss(
+  boss: BossDef,
+  adaptationIds: ReadonlyMap<string, number>,
+  effectIds: ReadonlyMap<string, number>,
+): void {
   if (!adaptationIds.has(boss.adaptation)) {
     fail(`boss "${boss.id}" names unknown adaptation "${boss.adaptation}"`);
   }
@@ -196,13 +206,18 @@ function checkBoss(boss: BossDef, adaptationIds: ReadonlyMap<string, number>): v
   for (const g of boss.gimmicks) {
     if (gimmickIds.has(g.id)) fail(`boss "${boss.id}" has duplicate gimmick id "${g.id}"`);
     gimmickIds.add(g.id);
+    const effect = appliedEffect(g);
+    if (effect !== undefined && !effectIds.has(effect)) {
+      fail(`boss "${boss.id}" gimmick "${g.id}" applies unknown status effect "${effect}"`);
+    }
   }
 }
 
 function checkRaidContent(pack: ContentPack): void {
   checkUniqueIds('boss', pack.bosses);
   const adaptationIds = checkUniqueIds('adaptation', pack.adaptations);
-  for (const boss of pack.bosses) checkBoss(boss, adaptationIds);
+  const effectIds = checkUniqueIds('status effect', pack.statusEffects);
+  for (const boss of pack.bosses) checkBoss(boss, adaptationIds, effectIds);
 
   checkUniqueIds('finale ability', pack.finaleAbilities);
 

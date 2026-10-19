@@ -14,12 +14,14 @@ import {
   type Element,
   type FinaleAbilityDef,
   type LuckConfig,
+  type StatusEffectDef,
   type ReactionDef,
   type Rng,
   type Stats,
   type TurnOrder,
   type Zone,
 } from '@creatures/game';
+import { BOSS, applyEffect, tickEffects } from './fight-effects';
 import { announceCharges, enrageStrike, fireGimmick, plainAttacks } from './fight-boss';
 import { gearRoundStart, fireAbility, rainHeals, supportBuffs } from './fight-round';
 import { hitBoss } from './fight-strike';
@@ -51,9 +53,23 @@ import { ZONES, fightRowShape, zoneOfIndex, type FightBoard } from './zones';
 export interface FightOptions {
   /** Mutators registered in code. A mutator runs only if `input.mutators` also lists its id. */
   mutators?: readonly Mutator[];
+  /**
+   * Tests only: called at the start of every round (after the dice are drawn, before the round's
+   * first event), so a test can put a status effect on a fighter. `target` is a creature id, or null
+   * for the boss. Needs `input.effects`, like every application.
+   */
+  effectHook?: (round: number, apply: ApplyEffect) => void;
   /** Content to use instead of the shipped pack (tests). */
   pack?: ContentPack;
 }
+
+/** What the test hook can do: apply an effect to a creature (id) or the boss (null). */
+export type ApplyEffect = (
+  target: string | null,
+  effectId: string,
+  powerBp: number,
+  durationTurns?: number,
+) => void;
 
 function zeroTotals(): PlayerTotals {
   return { damage: 0, setupCredit: 0, supportCredit: 0, guardCredit: 0, contribution: 0 };
@@ -173,6 +189,10 @@ export function simulateFight(
   if (!isCount(lingerAllRounds, 0) || lingerAllRounds > 3) {
     fail('lingerAllRounds must be an integer from 0 to 3');
   }
+  const effects = input.effects;
+  if (effects !== undefined && (!isCount(effects.dice, 1) || effects.dice > 256)) {
+    fail('effects.dice must be an integer from 1 to 256');
+  }
   const phaseCfg = RULES.raid.phases.find((p) => p.id === phase);
   if (phaseCfg === undefined) fail(`unknown phase "${phase}"`);
   const rounds = phase === 'finale' ? boss.finaleRounds : phaseCfg.rounds;
@@ -280,6 +300,7 @@ export function simulateFight(
       lastStandCut: 0,
       stormRound: 0,
       nextBoostBp: 0,
+      effects: [],
     };
   });
 
@@ -381,6 +402,8 @@ export function simulateFight(
     rules,
     patternsOn,
     luckOn,
+    effectsOn: effects !== undefined,
+    effectDefs: new Map<string, StatusEffectDef>(pack.statusEffects.map((e) => [e.id, e])),
     rule,
     adaptationTarget,
     reactionByPair,
@@ -413,6 +436,7 @@ export function simulateFight(
     brambleUsed: false,
     swingNow: 0,
     swingUntil: 0,
+    bossEffects: [],
     turnDice: [],
     strikeDice: [],
     bossAttackDice: [],
@@ -423,6 +447,8 @@ export function simulateFight(
     guardDice: [],
     luckDice: [],
     areaSeen: [],
+    effectDice: [],
+    effectDiceUsed: 0,
   };
 
   // ---- the fight ----
@@ -549,9 +575,20 @@ export function simulateFight(
       );
       state.areaSeen = creatures.map(() => 0);
     }
+    if (effects !== undefined) {
+      // After the luck dice, the very last of the round, and only when effects are on.
+      state.effectDice = Array.from({ length: effects.dice }, () => int(rng, 10_000));
+      state.effectDiceUsed = 0;
+    }
     state.orderPos = -1;
     // Serpentine flips every row each round; the other orders are the same every round.
     if (orderMode === 'serpentine') state.order = roundOrder(round);
+
+    options.effectHook?.(round, (target, effectId, powerBp, durationTurns) => {
+      const who = target === null ? BOSS : creatures.find((c) => c.id === target);
+      if (who === undefined) fail(`effect hook names unknown creature "${target}"`);
+      applyEffect(state, who, effectId, powerBp, null, durationTurns);
+    });
 
     // Gimmicks rest in enrage rounds: no charge is announced and the reflect trap is not armed.
     if (!enraging) announceCharges(state);
@@ -588,14 +625,17 @@ export function simulateFight(
       if (c.silenced > 0) {
         c.silenced -= 1;
         events.push({ t: 'skip', round, creature: c.id, reason: 'silenced' });
+        tickEffects(state, c);
         continue;
       }
       if (hazed) {
         events.push({ t: 'skip', round, creature: c.id, reason: 'haze' });
+        tickEffects(state, c);
         continue;
       }
       events.push({ t: 'turn', round, creature: c.id });
       hitBoss(state, c);
+      tickEffects(state, c);
     }
 
     if (state.bossHp > 0 && !state.retreated) {
@@ -605,6 +645,8 @@ export function simulateFight(
       }
       plainAttacks(state);
       if (enraging) enrageStrike(state);
+      // The boss's turn is over: its effects count down once a round.
+      tickEffects(state, BOSS);
     }
 
     events.push({ t: 'round_end', round, bossHp: state.bossHp });

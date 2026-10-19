@@ -1,6 +1,7 @@
 // The start of a round, besides the dice: Support buffs, Kind Rain, gear lines and finale abilities.
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
 import { ELEMENTS, RULES, type Element, type Zone } from '@creatures/game';
+import { cleanseDebuffs } from './fight-effects';
 import { adaptationOn, hitBoss } from './fight-strike';
 import {
   besides,
@@ -83,6 +84,8 @@ export function supportBuffs(state: FightState, round: number): void {
         t.silenced = 0;
         events.push({ t: 'cleanse', round, supporter: s.id, target: t.id });
       }
+      // A cleanse also removes the neighbour's debuffs (status effects), one event each.
+      if (fx?.cleanse === true) cleanseDebuffs(state, s, t);
     }
   }
 }

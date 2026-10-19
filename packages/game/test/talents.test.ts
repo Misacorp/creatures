@@ -51,6 +51,7 @@ import reactionsJson from '../src/content/data/reactions.json';
 import bossesJson from '../src/content/data/bosses.json';
 import adaptationsJson from '../src/content/data/adaptations.json';
 import finaleAbilitiesJson from '../src/content/data/finale-abilities.json';
+import statusEffectsJson from '../src/content/data/status-effects.json';
 import guestsJson from '../src/content/data/guests.json';
 import talentsJson from '../src/content/data/talents.json';
 
@@ -702,6 +703,7 @@ describe('branches in the content', () => {
       reactions: reactionsJson,
       bosses: bossesJson,
       adaptations: adaptationsJson,
+      statusEffects: statusEffectsJson,
       finaleAbilities: finaleAbilitiesJson,
       guests: guestsJson,
     });

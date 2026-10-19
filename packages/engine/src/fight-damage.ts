@@ -1,6 +1,7 @@
 // Damage to creatures: `hurt` and the guard helpers it uses (docs/design/attack-patterns.md section 1).
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
 import { RULES } from '@creatures/game';
+import { BOSS, clearEffects, effectBpOf } from './fight-effects';
 import {
   baseContext,
   besides,
@@ -123,10 +124,15 @@ export function hurt(
 ): Creature {
   const { boss, shape, bossCrit, bossCritOn, rules, creatures, events, perCreature } = state;
   const crit = die !== undefined && bossCritOn && die < bossCrit.chanceBp;
+  // The boss's own status effects (Mired) change the damage it deals; a reflected hit is a creature's
+  // reaction coming back, not the boss's own damage, so they do not touch it.
+  const effectBp = mode === 'reflect' ? 0 : effectBpOf(state, BOSS, 'damageDealtBp');
   let amount = Math.max(
     0,
     Math.floor(
-      (rawAmount * (10_000 + state.bossDamageBp + (crit ? bossCrit.damageBp : 0))) / 10_000,
+      (rawAmount *
+        Math.max(0, 10_000 + state.bossDamageBp + effectBp + (crit ? bossCrit.damageBp : 0))) /
+        10_000,
     ),
   );
   // 1. Who takes it (an aimed hit: a Guard steps in, see `guardFor`). The pick uses no state of the
@@ -286,6 +292,7 @@ export function hurt(
     events.push({ t: 'proc', round: state.currentRound, creature: victim.id, kind: 'stubborn' });
   if (victim.hp === 0 && victim.alive) {
     victim.alive = false;
+    clearEffects(victim);
     (perCreature[victim.id] as CreatureTotals).knockedOutRound = state.currentRound;
     events.push({ t: 'knockout', round: state.currentRound, creature: victim.id });
     runHook(state, 'onKnockout', () => ({ ...baseContext(state), creature: view(victim) }));

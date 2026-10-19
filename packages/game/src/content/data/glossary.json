@@ -350,6 +350,17 @@
     "section": "raid-week"
   },
   {
+    "id": "gimmick-purge",
+    "title": "Purge",
+    "short": "The boss shakes every debuff off itself.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "purge"
+    },
+    "section": "raid-week"
+  },
+  {
     "id": "gimmick-charge",
     "title": "Charge",
     "short": "Marks victims a round ahead. A fallen mark is spared. Never round 1 or overtime.",

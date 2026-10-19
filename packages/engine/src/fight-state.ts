@@ -5,6 +5,7 @@ import type {
   Element,
   FinaleAbilityDef,
   LuckConfig,
+  StatusEffectDef,
   ReactionDef,
   Rng,
   Role,
@@ -29,6 +30,16 @@ import { neighbours, zoneIndices, zoneNeighbours, zoneTwoAway, type fightRowShap
  * thirty `let`s inside `simulateFight`; every field is the same variable, now named, so the order of the
  * dice draws and of every update stayed exactly as it was.
  */
+
+/** A status effect on a fighter: its stacks and the turns it has left (`combat-rules.md` 13). */
+export interface ActiveEffect {
+  id: string;
+  stacks: number;
+  turnsLeft: number;
+}
+
+/** Whoever can carry effects: a creature, or the boss (a foe too). */
+export type Fighter = Creature | 'boss';
 
 export interface Creature {
   idx: number;
@@ -77,6 +88,8 @@ export interface Creature {
   stormRound: number;
   /** Shared warmth, on a Support: the extra its next boost carries. */
   nextBoostBp: number;
+  /** Status effects it carries (always empty in a fight with effects off). */
+  effects: ActiveEffect[];
 }
 
 export interface Mark {
@@ -135,6 +148,10 @@ export interface FightState {
   readonly patternsOn: boolean;
   /** True when a creature of the fight has a chance line. */
   readonly luckOn: boolean;
+  /** Status effects are on in this fight (`FightInput.effects`): off, nothing applies and no die is drawn. */
+  readonly effectsOn: boolean;
+  /** The status effects of the content pack, by id. */
+  readonly effectDefs: ReadonlyMap<string, StatusEffectDef>;
   readonly rule: AdaptationDef | null;
   readonly adaptationTarget: string;
   /** The reaction of each (mark element, trigger element) pair, by `reactionKey`. */
@@ -183,6 +200,8 @@ export interface FightState {
   /** The running Surge (+) or Slump (-) in basis points of team damage, and its last round. */
   swingNow: number;
   swingUntil: number;
+  /** Status effects on the boss (or foe). */
+  bossEffects: ActiveEffect[];
 
   // ---- this round's dice, drawn at the start of every round (see `fight.ts`) ----
   /** Every creature's turn dice and strike dice: a creature's roll depends on the seed, the round and its slot only. */
@@ -223,6 +242,14 @@ export interface FightState {
   luckDice: number[][];
   /** Area hits each creature has met this round, for Sidestep's dice. */
   areaSeen: number[];
+  /**
+   * With effects on (`FightInput.effects`): `dice` uniform integers in [0, 10000) drawn at the very
+   * end of the round's dice, after the luck dice, and only then, so a fight without effects draws what
+   * it always did. Each application of an effect with a fractional power takes the next one in order
+   * (`effectDiceUsed`, reset every round); when they run out, further chances count as a miss.
+   */
+  effectDice: number[];
+  effectDiceUsed: number;
 }
 
 export function pick(result: unknown, key: string): unknown {

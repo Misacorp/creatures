@@ -10,6 +10,7 @@ import {
   strongOver,
   weakAgainst,
   type Element,
+  appliedEffect,
   basicAbilities,
   content,
   loadContent,
@@ -28,6 +29,7 @@ import reactionsJson from '../src/content/data/reactions.json';
 import bossesJson from '../src/content/data/bosses.json';
 import adaptationsJson from '../src/content/data/adaptations.json';
 import finaleAbilitiesJson from '../src/content/data/finale-abilities.json';
+import statusEffectsJson from '../src/content/data/status-effects.json';
 import guestsJson from '../src/content/data/guests.json';
 
 function deepClone<T>(value: T): T {
@@ -43,6 +45,7 @@ function clone(): ContentPack {
     reactions: reactionsJson,
     bosses: bossesJson,
     adaptations: adaptationsJson,
+    statusEffects: statusEffectsJson,
     finaleAbilities: finaleAbilitiesJson,
     guests: guestsJson,
   }) as ContentPack;
@@ -1193,5 +1196,122 @@ describe('loadContent rejects invalid raid content', () => {
         ),
       ).toThrow(/zone/);
     });
+  });
+});
+
+describe('status effects', () => {
+  const effect = (pack: ContentPack, id: string) => {
+    const e = pack.statusEffects.find((x) => x.id === id);
+    if (!e) throw new Error(`missing ${id}`);
+    return e;
+  };
+  const withMove = (move: Record<string, unknown>) =>
+    mutate((p) => {
+      const boss = p.bosses[0];
+      if (!boss) throw new Error('no boss');
+      (boss.gimmicks as unknown[]).push(move);
+    });
+  const move = { id: 'bog-slap', name: 'Bog Slap', trigger: { every: 3 } };
+
+  it('ships Mired and nothing else, with no source yet', () => {
+    expect(content.statusEffects).toEqual([
+      {
+        id: 'mired',
+        name: 'Mired',
+        kind: 'debuff',
+        maxStacks: 5,
+        turns: 3,
+        perStack: { spdBp: -300, damageDealtBp: -300 },
+      },
+    ]);
+    const uses = (g: Gimmick) => 'applies' in g && g.applies !== undefined;
+    expect(content.bosses.flatMap((b) => b.gimmicks).some(uses)).toBe(false);
+    expect(dungeonContent.foes.flatMap((f) => f.gimmicks).some(uses)).toBe(false);
+  });
+
+  it('only names effects that exist, in boss and dungeon content alike', () => {
+    const ids = new Set(content.statusEffects.map((e) => e.id));
+    const moves = [
+      ...content.bosses.flatMap((b) => b.gimmicks),
+      ...dungeonContent.foes.flatMap((f) => [
+        ...f.gimmicks,
+        ...(f.signature === undefined ? [] : [f.signature]),
+      ]),
+    ];
+    for (const g of moves) expect(ids.has(appliedEffect(g) ?? 'mired')).toBe(true);
+  });
+
+  it('is strict: no unknown keys, a real kind, and positive caps and turns', () => {
+    const bad = (fn: (e: ContentPack['statusEffects'][number]) => void) =>
+      expect(() => loadContent(mutate((p) => fn(effect(p, 'mired'))))).toThrow(/schema/);
+    bad((e) => Object.assign(e, { surprise: 1 }));
+    bad((e) => Object.assign(e.perStack, { hpBp: -100 }));
+    bad((e) => Object.assign(e, { kind: 'neutral' }));
+    bad((e) => (e.maxStacks = 0));
+    bad((e) => (e.turns = 0));
+    bad((e) => (e.perStack.spdBp = 1.5));
+    bad((e) => (e.perStack.damageDealtBp = 20_000));
+  });
+
+  it('accepts a buff with a positive per-stack number', () => {
+    expect(() =>
+      loadContent(
+        mutate((p) => {
+          p.statusEffects.push({
+            id: 'zeal',
+            name: 'Zeal',
+            kind: 'buff',
+            maxStacks: 2,
+            turns: 2,
+            perStack: { damageDealtBp: 500 },
+          });
+        }),
+      ),
+    ).not.toThrow();
+  });
+
+  it('rejects duplicate ids', () => {
+    expect(() =>
+      loadContent(mutate((p) => p.statusEffects.push(deepClone(effect(p, 'mired'))))),
+    ).toThrow(/duplicate status effect/);
+  });
+
+  it('lets a damaging move apply a known effect, and only that', () => {
+    const slap = { ...move, op: 'hit_zone', zone: 'front', power: 5_000 };
+    const ok = { ...slap, applies: { effect: 'mired', powerBp: 14_000, durationTurns: 1 } };
+    expect(() => loadContent(withMove(ok))).not.toThrow();
+    expect(() =>
+      loadContent(withMove({ ...slap, applies: { effect: 'nope', powerBp: 10_000 } })),
+    ).toThrow(/unknown status effect/);
+    expect(() =>
+      loadContent(withMove({ ...slap, applies: { effect: 'mired', powerBp: 0 } })),
+    ).toThrow(/schema/);
+    expect(() =>
+      loadContent(withMove({ ...slap, applies: { effect: 'mired', powerBp: 1, extra: 1 } })),
+    ).toThrow(/schema/);
+    // A move that does no damage has nothing to carry it.
+    expect(() =>
+      loadContent(
+        withMove({
+          ...move,
+          op: 'silence_ends',
+          scope: 'row',
+          turns: 1,
+          applies: { effect: 'mired', powerBp: 10_000 },
+        }),
+      ),
+    ).toThrow(/schema/);
+  });
+
+  it('lets a charge carry the rider and a boss purge', () => {
+    const charge = {
+      ...move,
+      op: 'charge',
+      applies: { effect: 'mired', powerBp: 10_000 },
+      then: { op: 'pincer', scope: 'rows', power: 5_000 },
+    };
+    expect(() => loadContent(withMove(charge))).not.toThrow();
+    expect(() => loadContent(withMove({ ...move, op: 'purge' }))).not.toThrow();
+    expect(() => loadContent(withMove({ ...move, op: 'purge', power: 1 }))).toThrow(/schema/);
   });
 });

@@ -253,6 +253,8 @@ export function gimmickText(g: Gimmick, wording: Wording = 'zones'): string {
       return `${when(g)}: ${patternClause(g, wording)}.`;
     case 'charge':
       return `${when(g)}, announced a round ahead: ${patternClause(g.then, wording)}. Its victims are marked first.`;
+    case 'purge':
+      return `${when(g)}: shakes every debuff off itself.`;
   }
 }
 
@@ -308,6 +310,8 @@ export function gimmickShort(g: Gimmick, wording: Wording = 'zones'): string {
       return row ? `Closes on both ends, ${every}` : `Closes on the ends of each row, ${every}`;
     case 'charge':
       return `Charged ${g.then.op}, announced a round ahead, lands ${every}`;
+    case 'purge':
+      return `Shakes off its debuffs, ${every}`;
   }
 }
 

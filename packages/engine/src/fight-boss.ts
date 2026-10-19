@@ -1,7 +1,8 @@
 // The boss's turn: gimmicks (patterns, charges), its plain attacks and the enrage strike.
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
-import { RULES, type Gimmick, type Zone } from '@creatures/game';
+import { RULES, type AppliesDef, type Gimmick, type Zone } from '@creatures/game';
 import { hurt, pickGuard } from './fight-damage';
+import { applyRider, purgeBoss } from './fight-effects';
 import { besides, livingIn, rolls, type Creature, type FightState } from './fight-state';
 import { firingIndex, gimmickDue } from './gimmick-schedule';
 import {
@@ -66,7 +67,12 @@ function patternContext(
  * With `rules`, a chain's jumps skip the creature that took its first hit (a Guard that stepped in
  * for it): each jump goes to the next strongest creature not yet hit (`plan.chain`).
  */
-function resolvePlan(state: FightState, plan: PatternPlan, charged = false): void {
+function resolvePlan(
+  state: FightState,
+  plan: PatternPlan,
+  charged = false,
+  applies?: AppliesDef,
+): void {
   const { input, rules, creatures } = state;
   const chain = rules === undefined ? undefined : plan.chain;
   let jumps = chain?.rest ?? [];
@@ -91,13 +97,14 @@ function resolvePlan(state: FightState, plan: PatternPlan, charged = false): voi
       false,
       charged,
     );
+    applyRider(state, applies, impact);
     if (chain !== undefined && k === 0) jumps = chain.rest.filter((i) => i !== impact.idx);
     if (plan.splashBp !== undefined && h.kind === 'aimed') {
       const splashRaw = Math.floor((raw * plan.splashBp) / 10_000);
       for (const i of besides(state, impact.idx)) {
         const next = creatures[i] as Creature;
         if (next.alive) {
-          hurt(
+          const taker = hurt(
             state,
             next,
             splashRaw,
@@ -107,6 +114,7 @@ function resolvePlan(state: FightState, plan: PatternPlan, charged = false): voi
             true,
             charged,
           );
+          applyRider(state, applies, taker);
         }
       }
     }
@@ -178,7 +186,7 @@ export function fireGimmick(state: FightState, g: Gimmick, gimmickIndex: number)
         ...(rows === undefined ? {} : { rows }),
       }),
     );
-    resolvePlan(state, pending, true);
+    resolvePlan(state, pending, true, g.applies);
     return;
   }
   switch (g.op) {
@@ -187,8 +195,10 @@ export function fireGimmick(state: FightState, g: Gimmick, gimmickIndex: number)
       const zone = zoneWithLiving(state, g.zone);
       if (zone === undefined) break;
       const amount = Math.floor((input.bossAtk * g.power) / 10_000);
-      for (const c of livingIn(state, zone))
-        hurt(state, c, amount, 'gimmick', 'area', state.bossGimmickDice[c.idx]);
+      for (const c of livingIn(state, zone)) {
+        const taker = hurt(state, c, amount, 'gimmick', 'area', state.bossGimmickDice[c.idx]);
+        applyRider(state, g.applies, taker);
+      }
       break;
     }
     case 'silence_ends': {
@@ -241,7 +251,7 @@ export function fireGimmick(state: FightState, g: Gimmick, gimmickIndex: number)
         decayBp: g.decayBp ?? DEFAULT_DECAY_BP,
       });
       events.push(jumps > 0 ? named(plan) : base);
-      resolvePlan(state, plan);
+      resolvePlan(state, plan, false, g.applies);
       break;
     }
     case 'reflect_first_reaction':
@@ -256,9 +266,14 @@ export function fireGimmick(state: FightState, g: Gimmick, gimmickIndex: number)
       const plan = planPattern(g, patternContext(state, g, gimmickIndex));
       events.push(named(plan));
       if (g.op === 'barrage') state.lastVolley.set(g.id, plan.targets);
-      resolvePlan(state, plan);
+      resolvePlan(state, plan, false, g.applies);
       break;
     }
+    case 'purge':
+      // The boss shakes off its debuffs, in its normal move order.
+      events.push(base);
+      purgeBoss(state);
+      break;
   }
 }
 

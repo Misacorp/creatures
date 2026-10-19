@@ -2,6 +2,7 @@
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
 import { RULES, type ReactionDef } from '@creatures/game';
 import { hurt } from './fight-damage';
+import { effectBpOf } from './fight-effects';
 import {
   baseContext,
   besides,
@@ -229,7 +230,9 @@ export function hitBoss(
   };
 
   const rally = rallyBp(state);
-  const totalBp = supportBp + rally + state.roundBonusBp + hookBp + luckBp + sheetBp;
+  // The creature's status effects (a debuff cuts, a buff adds) join the same combined bonus.
+  const effectBp = effectBpOf(state, c, 'damageDealtBp');
+  const totalBp = supportBp + rally + state.roundBonusBp + hookBp + luckBp + sheetBp + effectBp;
   const full = calc(totalBp);
   // The phase floor: a hit that reaches it counts only down to it, so nothing is overkill (the
   // damage, the reaction bonus, the credit and the element totals). The plain hit is counted
@@ -308,6 +311,7 @@ export function hitBoss(
     ...(luckBp === 0 ? {} : { luckBp }),
     ...(crit ? { crit: true as const, critBp: c.critBp + (warm ? m.critWindowBp : 0) } : {}),
     ...(sheetBp === 0 ? {} : { sheetBp }),
+    ...(effectBp === 0 ? {} : { effectBp }),
     ...(setCrit && crit ? { setCrit: true as const } : {}),
     ...(warm ? { warm: true as const } : {}),
   });

@@ -326,6 +326,13 @@ export interface FightInput {
    * creature's ability is not lengthened twice. Absent: 0, so a stored fight replays as it was.
    */
   lingerAllRounds?: number;
+  /**
+   * Turns status effects on (`combat-rules.md` 13): `dice` is the number of effect dice drawn at the
+   * end of every round's dice (1 to 256), which the extra-stack chances of that round's applications
+   * read in order. Absent: effects are off, nothing applies (a boss move's `applies` does nothing)
+   * and no die is drawn, so a stored fight replays as it was.
+   */
+  effects?: { dice: number };
 }
 
 export interface FightRules {
@@ -447,6 +454,8 @@ export type FightEvent =
       setCrit?: true;
       /** Set when a gear set's crit window added crit damage to this crit (`critWindowBp`). */
       warm?: true;
+      /** The creature's status effects added this much to the damage bonus (negative: a debuff cut it); absent if none. */
+      effectBp?: number;
     }
   | {
       t: 'mark';
@@ -545,6 +554,34 @@ export type FightEvent =
       bossHp?: number;
     }
   | { t: 'silence'; round: number; creature: string; turns: number }
+  /**
+   * A status effect was applied and landed at least one stack. `target` is a creature id, or null for
+   * the boss; `stacksAdded` can be 0 when the target was at the cap (the timer was still refreshed);
+   * `source` is the creature that applied it, absent for the boss's moves.
+   */
+  | {
+      t: 'effect_apply';
+      round: number;
+      target: string | null;
+      effect: string;
+      stacksAdded: number;
+      stacks: number;
+      turnsLeft: number;
+      source?: string;
+    }
+  /** An effect ran out on its target's own turns; all its stacks fell off. */
+  | { t: 'effect_expire'; round: number; target: string | null; effect: string }
+  /** The boss purged its debuffs (written only when something went). */
+  | { t: 'effect_purge'; round: number; removed: { effect: string; stacks: number }[] }
+  /** A Support's cleanse removed one debuff from a neighbour. */
+  | {
+      t: 'effect_cleanse';
+      round: number;
+      supporter: string;
+      target: string;
+      effect: string;
+      stacks: number;
+    }
   | { t: 'round_end'; round: number; bossHp: number };
 
 export interface PlayerTotals {

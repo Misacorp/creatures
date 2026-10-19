@@ -1,0 +1,172 @@
+// Status effects: stacks and turns on a creature or the boss (docs/design/combat-rules.md section 13).
+// Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
+import type { AppliesDef, StatusEffectDef } from '@creatures/game';
+import type { ActiveEffect, Creature, Fighter, FightState } from './fight-state';
+
+/** The boss as a fighter (a foe too): the other kind of `Fighter` is a `Creature`. */
+export const BOSS = 'boss' as const;
+
+/** The id the events use for a fighter: a creature's id, or null for the boss. */
+function fighterId(f: Fighter): string | null {
+  return f === BOSS ? null : f.id;
+}
+
+function listOf(state: FightState, f: Fighter): ActiveEffect[] {
+  return f === BOSS ? state.bossEffects : f.effects;
+}
+
+function defOf(state: FightState, id: string): StatusEffectDef {
+  const def = state.effectDefs.get(id);
+  if (def === undefined) throw new RangeError(`invalid fight input: unknown status effect "${id}"`);
+  return def;
+}
+
+/**
+ * The sum of one per-stack number over the fighter's effects (stacks times the number), in basis
+ * points. 0 for a fighter without effects, so a fight without them is unchanged.
+ */
+export function effectBpOf(
+  state: FightState,
+  f: Fighter,
+  field: 'spdBp' | 'damageDealtBp',
+): number {
+  let sum = 0;
+  for (const e of listOf(state, f)) sum += e.stacks * (defOf(state, e.id).perStack[field] ?? 0);
+  return sum;
+}
+
+/**
+ * The fighter's Speed with its effects folded in: the base Speed times `10000 + sum of spdBp x stacks`
+ * (rounded down, never below 0). A boss or foe has no Speed in the engine yet (the dodge slice gives
+ * it one), so its base is 0. Nothing in a fight reads this yet.
+ */
+export function effectiveSpd(state: FightState, f: Fighter): number {
+  const base = f === BOSS ? 0 : f.spd;
+  const factor = Math.max(0, 10_000 + Math.max(-10_000, effectBpOf(state, f, 'spdBp')));
+  return Math.floor((base * factor) / 10_000);
+}
+
+/** The effect dice of a round ran out: further fractional chances count as a miss. */
+function effectDie(state: FightState): number {
+  const die = state.effectDice[state.effectDiceUsed];
+  state.effectDiceUsed += 1;
+  return die ?? 10_000;
+}
+
+/**
+ * Applies the effect `effectId` to `target` at `powerBp` application power: `floor(power / 10000)`
+ * stacks for sure, plus one more with a chance of `power % 10000` in basis points, rolled on the
+ * round's effect dice (taken in order, one for each application that has a fractional part; a spent
+ * pool counts as a miss). A roll of 0 stacks is a miss and changes nothing. Any roll of 1 or more
+ * stacks adds them (up to the effect's cap, also when it is already full) and sets the timer back to
+ * the full duration (`turns` plus `durationTurns`). `source` is the creature that applied it (null: the
+ * boss or something that is not a creature). Does nothing when the fight has effects off or the
+ * target is knocked out.
+ */
+export function applyEffect(
+  state: FightState,
+  target: Fighter,
+  effectId: string,
+  powerBp: number,
+  source: string | null,
+  durationTurns = 0,
+): void {
+  if (!state.effectsOn) return;
+  if (!Number.isSafeInteger(powerBp) || powerBp < 0) {
+    throw new RangeError('invalid fight input: effect power must be an integer >= 0');
+  }
+  if (!Number.isSafeInteger(durationTurns) || durationTurns < 0) {
+    throw new RangeError('invalid fight input: effect duration bonus must be an integer >= 0');
+  }
+  const def = defOf(state, effectId);
+  if (target !== BOSS && !target.alive) return;
+  const sure = Math.floor(powerBp / 10_000);
+  const chance = powerBp % 10_000;
+  const rolled = sure + (chance > 0 && effectDie(state) < chance ? 1 : 0);
+  if (rolled === 0) return;
+  const list = listOf(state, target);
+  const turnsLeft = def.turns + durationTurns;
+  const have = list.find((e) => e.id === effectId);
+  const before = have?.stacks ?? 0;
+  const stacks = Math.min(def.maxStacks, before + rolled);
+  if (have === undefined) list.push({ id: effectId, stacks, turnsLeft });
+  else {
+    have.stacks = stacks;
+    have.turnsLeft = turnsLeft;
+  }
+  state.events.push({
+    t: 'effect_apply',
+    round: state.currentRound,
+    target: fighterId(target),
+    effect: effectId,
+    stacksAdded: stacks - before,
+    stacks,
+    turnsLeft,
+    ...(source === null ? {} : { source }),
+  });
+}
+
+/** A damaging move's rider: the effect goes on the creature that took the hit, if it still stands. */
+export function applyRider(
+  state: FightState,
+  applies: AppliesDef | undefined,
+  victim: Creature,
+): void {
+  if (applies === undefined) return;
+  applyEffect(state, victim, applies.effect, applies.powerBp, null, applies.durationTurns ?? 0);
+}
+
+/**
+ * The end of one of the fighter's turns: every effect on it has one turn less, and one that reaches
+ * 0 ends (`effect_expire`; all its stacks go together). A creature's turn is its turn even when it was
+ * skipped (silence, haze); the boss's is its whole boss turn.
+ */
+export function tickEffects(state: FightState, f: Fighter): void {
+  const list = listOf(state, f);
+  if (list.length === 0) return;
+  for (const e of [...list]) {
+    e.turnsLeft -= 1;
+    if (e.turnsLeft > 0) continue;
+    list.splice(list.indexOf(e), 1);
+    state.events.push({
+      t: 'effect_expire',
+      round: state.currentRound,
+      target: fighterId(f),
+      effect: e.id,
+    });
+  }
+}
+
+/** A knocked-out creature's effects end at once, with no event (the `knockout` event says it all). */
+export function clearEffects(c: Creature): void {
+  c.effects = [];
+}
+
+/** The boss shakes off every debuff (a `purge` move). One `effect_purge` event, only if any went. */
+export function purgeBoss(state: FightState): void {
+  const removed: { effect: string; stacks: number }[] = [];
+  state.bossEffects = state.bossEffects.filter((e) => {
+    if (defOf(state, e.id).kind !== 'debuff') return true;
+    removed.push({ effect: e.id, stacks: e.stacks });
+    return false;
+  });
+  if (removed.length > 0) {
+    state.events.push({ t: 'effect_purge', round: state.currentRound, removed });
+  }
+}
+
+/** A Support's cleanse: every debuff on the creature goes, one `effect_cleanse` event for each. */
+export function cleanseDebuffs(state: FightState, supporter: Creature, t: Creature): void {
+  t.effects = t.effects.filter((e) => {
+    if (defOf(state, e.id).kind !== 'debuff') return true;
+    state.events.push({
+      t: 'effect_cleanse',
+      round: state.currentRound,
+      supporter: supporter.id,
+      target: t.id,
+      effect: e.id,
+      stacks: e.stacks,
+    });
+    return false;
+  });
+}

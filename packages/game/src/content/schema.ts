@@ -226,6 +226,42 @@ const pincerFields = {
  */
 export const FromRankSchema = v.pipe(v.number(), v.integer(), v.minValue(2), v.maxValue(99));
 
+/**
+ * A status effect (docs/design/combat-rules.md section 13). `perStack` is a strict list of optional
+ * signed numbers, each in basis points per stack: `spdBp` changes the fighter's Speed (negative:
+ * slower), `damageDealtBp` changes the damage it deals (negative: less). A debuff is removed by purge
+ * and cleanse; a buff by neither.
+ */
+const SignedBp = v.pipe(v.number(), v.integer(), v.minValue(-10_000), v.maxValue(10_000));
+export const StatusEffectSchema = v.strictObject({
+  id: IdSchema,
+  name: NameSchema,
+  kind: v.picklist(['debuff', 'buff']),
+  /** The most stacks a fighter can carry. */
+  maxStacks: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(99)),
+  /** The base duration, in the target's own turns. */
+  turns: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(30)),
+  perStack: v.strictObject({
+    spdBp: v.optional(SignedBp),
+    damageDealtBp: v.optional(SignedBp),
+  }),
+});
+export type StatusEffectDef = v.InferOutput<typeof StatusEffectSchema>;
+
+/**
+ * An optional rider on a damaging boss move: every creature the move hits (the creature that takes
+ * the hit, a Guard that stepped in, a splash taker) gets the effect at `powerBp` application power
+ * (10000 = one stack, 20000 = two, 14000 = one plus a 40% chance of a second), for the effect's
+ * duration plus `durationTurns`.
+ */
+export const AppliesSchema = v.strictObject({
+  effect: IdSchema,
+  powerBp: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100_000)),
+  durationTurns: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(10))),
+});
+export type AppliesDef = v.InferOutput<typeof AppliesSchema>;
+const appliesField = { applies: v.optional(AppliesSchema) };
+
 const gimmickBase = {
   id: IdSchema,
   name: NameSchema,
@@ -240,6 +276,7 @@ export const GimmickSchema = v.variant('op', [
     op: v.literal('hit_zone'),
     zone: ZoneSchema,
     power: BasisPoints,
+    ...appliesField,
   }),
   v.strictObject({
     ...gimmickBase,
@@ -264,12 +301,18 @@ export const GimmickSchema = v.variant('op', [
     power: BasisPoints,
     jumps: v.optional(Count0to3),
     decayBp: v.optional(Share),
+    ...appliesField,
   }),
-  v.strictObject({ ...gimmickBase, op: v.literal('sweep'), ...sweepFields }),
-  v.strictObject({ ...gimmickBase, op: v.literal('barrage'), ...barrageFields }),
-  v.strictObject({ ...gimmickBase, op: v.literal('slam'), ...slamFields }),
-  v.strictObject({ ...gimmickBase, op: v.literal('lance'), ...lanceFields }),
-  v.strictObject({ ...gimmickBase, op: v.literal('pincer'), ...pincerFields }),
+  v.strictObject({ ...gimmickBase, op: v.literal('sweep'), ...sweepFields, ...appliesField }),
+  v.strictObject({ ...gimmickBase, op: v.literal('barrage'), ...barrageFields, ...appliesField }),
+  v.strictObject({ ...gimmickBase, op: v.literal('slam'), ...slamFields, ...appliesField }),
+  v.strictObject({ ...gimmickBase, op: v.literal('lance'), ...lanceFields, ...appliesField }),
+  v.strictObject({ ...gimmickBase, op: v.literal('pincer'), ...pincerFields, ...appliesField }),
+  /**
+   * The boss removes every debuff from itself (status effects, `combat-rules.md` 13.6), in its
+   * normal move order. Any trigger. It does not touch buffs or the adaptation.
+   */
+  v.strictObject({ ...gimmickBase, op: v.literal('purge') }),
   /**
    * A pattern announced a round ahead (docs/design/attack-patterns.md 2.7). `trigger` is the round
    * it lands (so it needs `every`, at least 2); at the start of the round before, the engine picks
@@ -278,6 +321,7 @@ export const GimmickSchema = v.variant('op', [
   v.strictObject({
     ...gimmickBase,
     op: v.literal('charge'),
+    ...appliesField,
     then: v.variant('op', [
       v.strictObject({ op: v.literal('sweep'), ...sweepFields }),
       v.strictObject({ op: v.literal('barrage'), ...barrageFields }),
@@ -427,6 +471,7 @@ export const ContentPackSchema = v.strictObject({
   reactions: v.pipe(v.array(ReactionDefSchema), v.maxLength(40)),
   bosses: v.pipe(v.array(BossSchema), v.maxLength(100)),
   adaptations: v.pipe(v.array(AdaptationSchema), v.maxLength(20)),
+  statusEffects: v.pipe(v.array(StatusEffectSchema), v.maxLength(40)),
   finaleAbilities: v.pipe(v.array(FinaleAbilitySchema), v.maxLength(200)),
   guests: v.pipe(v.array(GuestSchema), v.maxLength(20)),
 });

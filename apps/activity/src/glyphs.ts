@@ -161,6 +161,21 @@ const pincer: SpriteDef = {
   rows: ['....', 'r...', 'rr..', 'rrrw', 'rrrw', 'rr..', 'r...', '....'],
 };
 
+/** A droplet with a spark beside it: the boss washes its debuffs off. */
+const purge: SpriteDef = {
+  palette: { w: BONE, g: GOLD },
+  rows: [
+    '...w...g',
+    '..www.gg',
+    '..www..g',
+    '.wwwww..',
+    '.wwwww..',
+    '.wwwww..',
+    '..www...',
+    '........',
+  ],
+};
+
 /** An hourglass: a move that is gathering and lands next round. */
 const charge: SpriteDef = {
   palette: { w: BONE, g: GOLD },
@@ -664,6 +679,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   slam,
   lance,
   pincer,
+  purge,
   charge,
   chain,
   left_to_right: leftToRight,
@@ -730,6 +746,7 @@ export const GIMMICK_GLYPH_OPS = [
   'slam',
   'lance',
   'pincer',
+  'purge',
   'charge',
 ] as const;
 

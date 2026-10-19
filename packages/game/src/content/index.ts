@@ -5,6 +5,7 @@ import elementChart from './data/element-chart.json';
 import reactions from './data/reactions.json';
 import bosses from './data/bosses.json';
 import adaptations from './data/adaptations.json';
+import statusEffects from './data/status-effects.json';
 import finaleAbilities from './data/finale-abilities.json';
 import guests from './data/guests.json';
 import speciesLore from './data/species-lore.json';
@@ -32,7 +33,7 @@ import { loadTalents, type TalentDef, type TalentPack } from './talent-schema';
 
 export * from './schema';
 export * from './element-chart';
-export { loadContent, upgradeProblem, STARTER_COUNT } from './load';
+export { appliedEffect, loadContent, upgradeProblem, STARTER_COUNT } from './load';
 export * from './lore';
 export * from './glossary-schema';
 export * from './gear-schema';
@@ -53,6 +54,7 @@ export const content = loadContent({
   reactions,
   bosses,
   adaptations,
+  statusEffects,
   finaleAbilities,
   guests,
 });
