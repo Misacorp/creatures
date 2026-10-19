@@ -7,6 +7,8 @@ import {
   evolveCreature,
   fetchConfig,
   fetchRoom,
+  loungeSocketUrl,
+  parseLiveMessage,
   jsonRequest,
   parseGameState,
   parseAllowance,
@@ -391,6 +393,55 @@ describe('the public config', () => {
     expect((await fetchConfig()).branch).toBeNull();
     vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, branch: 7 })));
     expect((await fetchConfig()).branch).toBeNull();
+  });
+
+  it('reads the live socket flag: only an explicit true counts', async () => {
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, loungeLive: true })));
+    expect((await fetchConfig()).loungeLive).toBe(true);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json(base)));
+    expect((await fetchConfig()).loungeLive).toBe(false);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, loungeLive: 'on' })));
+    expect((await fetchConfig()).loungeLive).toBe(false);
+  });
+});
+
+describe('the lounge live socket messages', () => {
+  const resident = {
+    userId: '1',
+    name: 'Misa',
+    creature: null,
+    spot: { id: 'couch-middle', at: 5 },
+  };
+
+  it('reads hello and a resident', () => {
+    expect(parseLiveMessage(JSON.stringify({ v: 1, type: 'hello', serverNow: 7 }))).toEqual({
+      type: 'hello',
+      serverNow: 7,
+    });
+    const message = parseLiveMessage(JSON.stringify({ v: 1, type: 'resident', resident }));
+    expect(message).toEqual({ type: 'resident', resident });
+  });
+
+  it.each([
+    'not json',
+    '[]',
+    JSON.stringify({ v: 2, type: 'hello', serverNow: 7 }),
+    JSON.stringify({ v: 1, type: 'hello', serverNow: 'x' }),
+    JSON.stringify({ v: 1, type: 'other' }),
+    JSON.stringify({ v: 1, type: 'resident', resident: { userId: 1 } }),
+    JSON.stringify({ v: 1, type: 'resident' }),
+    `{"v":1,"type":"hello","serverNow":1,"pad":"${'x'.repeat(70_000)}"}`,
+  ])('ignores %#', (text) => {
+    expect(parseLiveMessage(text)).toBeNull();
+  });
+
+  it('builds a relative wss address on the page host, with the ticket escaped', () => {
+    expect(loungeSocketUrl('l1.a b', { protocol: 'https:', host: '1.discordsays.com' })).toBe(
+      'wss://1.discordsays.com/api/lounge/live?ticket=l1.a%20b',
+    );
+    expect(loungeSocketUrl('t', { protocol: 'http:', host: 'localhost:5173' })).toBe(
+      'ws://localhost:5173/api/lounge/live?ticket=t',
+    );
   });
 });
 

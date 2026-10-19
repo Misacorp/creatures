@@ -380,3 +380,80 @@ describe('the slow poll', () => {
     expect(requests).toHaveLength(1);
   });
 });
+
+describe('the live socket', () => {
+  const pushed = (userId: string): RoomResident => ({
+    userId,
+    name: 'Pushed',
+    creature: null,
+    spot: { id: 'couch-middle', at: 9 },
+  });
+
+  it('stops the poll while live, fetches everyone once on going live, and polls again when it drops', async () => {
+    const { loader, requests } = setup();
+    loader.start(['1', '2']);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(requests).toHaveLength(1);
+
+    loader.setLive(true);
+    await vi.advanceTimersByTimeAsync(0);
+    // The catch-up fetch.
+    expect(requests).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(ROOM_POLL_MS * 5);
+    expect(requests).toHaveLength(2);
+
+    loader.setLive(false);
+    await vi.advanceTimersByTimeAsync(ROOM_POLL_MS);
+    expect(requests).toHaveLength(3);
+  });
+
+  it('applies a pushed resident of someone present, and ignores the player and strangers', async () => {
+    const { loader, known } = setup();
+    loader.start(['1', '2']);
+    await vi.advanceTimersByTimeAsync(0);
+    loader.setLive(true);
+    await vi.advanceTimersByTimeAsync(0);
+    loader.applyResident(pushed('2'));
+    loader.applyResident(pushed('1'));
+    loader.applyResident(pushed('9'));
+    expect(known()).toEqual(['2']);
+  });
+
+  it('shows the pushed data itself', async () => {
+    let latest: ReadonlyMap<string, { name: string }> = new Map();
+    const loader = createRoomLoader({
+      selfId: '1',
+      fetch: (ids) => Promise.resolve(answer(ids)),
+      onChange: (k) => {
+        latest = k;
+      },
+    });
+    loader.start(['1', '2']);
+    await vi.advanceTimersByTimeAsync(0);
+    loader.applyResident(pushed('2'));
+    expect(latest.get('2')?.name).toBe('Pushed');
+  });
+
+  it('does not refetch on a tab switch while live', async () => {
+    const { loader, requests, advance } = setup();
+    loader.start(['1', '2']);
+    await vi.advanceTimersByTimeAsync(0);
+    loader.setLive(true);
+    await vi.advanceTimersByTimeAsync(0);
+    advance(ROOM_STALE_MS * 2);
+    loader.refreshIfStale();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(requests).toHaveLength(2);
+  });
+
+  it('still fetches a newcomer after a join while live (presence is not pushed)', async () => {
+    const { loader, requests } = setup();
+    loader.start(['1', '2']);
+    await vi.advanceTimersByTimeAsync(0);
+    loader.setLive(true);
+    await vi.advanceTimersByTimeAsync(0);
+    loader.update(['1', '2', '3']);
+    await vi.advanceTimersByTimeAsync(ROOM_DEBOUNCE_MS);
+    expect(requests.at(-1)).toEqual(['3']);
+  });
+});
