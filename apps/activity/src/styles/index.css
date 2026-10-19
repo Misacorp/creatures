@@ -88,6 +88,7 @@
 @import './components/progress-track.css';
 @import './components/xp-bar.css';
 @import './components/xp-gain.css';
+@import './components/xp-track.css';
 @import './views/job-reveal.css';
 @import './views/raid-timeline.css';
 @import './views/raid-boss-card.css';
