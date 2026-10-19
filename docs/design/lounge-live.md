@@ -78,7 +78,43 @@ Anything that goes wrong lands on the old polling, never on a broken room: no `W
 
 ## Cost and limits
 
-TODO (the lead fills this in from the research: Free plan request and duration limits, the billing of incoming messages and auto-responses, how many requests an evening of five players costs).
+We are on the Workers **Free** plan (Misa, 2026-10-19). Figures are from Cloudflare's Durable Objects pricing and limits pages (pricing page updated 2026-10-18), the Workers pricing and limits pages, and Discord's Activities networking docs, read 2026-10-19. Redo the sums with the formulas below when the assumptions change.
+
+**The Free limits that matter** (account-wide, all reset at 00:00 UTC, 02:00 or 03:00 in Helsinki):
+
+| Limit                   | Free                                                      | What happens when it runs out                                                  |
+| ----------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Worker requests         | 100,000 / day                                             | Error 1027: the whole Activity stops answering until the reset. The worst one. |
+| Durable Object requests | 100,000 / day                                             | Further DO requests fail until the reset.                                      |
+| DO duration             | 13,000 GB-s / day (an object is billed at a fixed 128 MB) | Same.                                                                          |
+| SQLite rows written     | 100,000 / day                                             | Same.                                                                          |
+
+**What the live socket costs** (this design: server to client only, hibernation, the ping answered by the runtime):
+
+- Opening it: one `POST /api/lounge/ticket`, the upgrade, and one full room fetch. That is about 3 Worker requests and 3 DO requests. A socket closes at 12 h, on a deploy and when a phone sleeps, so count about 3 opens a day for a player who never closes the game.
+- Pushes: outgoing messages are free and need no request of their own. A push rides on the HTTP request that made the change, which the game paid for before this too.
+- The heartbeat: a text "ping" every 60 s, only when no other frame arrived, only while the lounge is visible and someone else is in it. The runtime answers it without waking the object, so it costs no duration. **Unknown:** whether such a ping counts as a DO request on Free, and whether Free applies the 1-in-20 rate for incoming messages that billing uses. So we count it both ways.
+- Duration: the object hibernates between requests about 10 s after the last one, and an idle object waiting to hibernate is not billed. The socket adds no awake time beyond the requests the lounge already makes. Without hibernation (`ws.accept()`) one guild's 24/7 socket would cost 11,059 GB-s a day, 85% of the Free allowance, so hibernation is required, not an optimisation.
+- Rows written: none. The socket stores nothing (tickets and the last pushed view are in memory). It never re-arms the alarm.
+
+**What it saves:** today's lounge polls every 45 s while anyone else is there. A player who leaves it open all day makes 86,400 / 45 = 1,920 Worker requests and 1,920 DO requests a day. The socket replaces that poll.
+
+**Worst case: 15 players per guild with the lounge open 24/7** (per guild per day):
+
+|                            | Polling (today)                       | Live socket, ping not counted, or counted at 1 in 20 | Live socket, every ping counted   |
+| -------------------------- | ------------------------------------- | ---------------------------------------------------- | --------------------------------- |
+| Worker requests            | 15 × 1,920 = 28,800                   | 15 × 9 = 135                                         | 135                               |
+| DO requests                | 28,800                                | 135 + 15 × 1,440 / 20 = 1,215                        | 135 + 15 × 1,440 = 21,735         |
+| DO duration                | small (awake per poll)                | about 0                                              | about 0                           |
+| Guilds before a Free limit | 3 (Worker requests, 100,000 / 28,800) | about 80 (DO requests)                               | 4 (DO requests, 100,000 / 21,735) |
+
+**A normal evening: five players for two hours:** polling costs 5 × 7,200 / 45 = 800 Worker requests. The socket costs about 5 × 3 = 15 Worker requests, plus at most 5 × 120 = 600 pings (30 if the 1-in-20 rate applies). Either way that is well under 1% of a day's allowance.
+
+**Formulas.** P is players with the lounge open, T the seconds it is open, R the opens per player (about 3 a day all day, 1 for an evening). Polling: Worker = DO = P × T / 45. Socket: Worker = 3 × P × R; DO = 3 × P × R + pings, where pings ≤ P × T / 60, divided by 20 if the rate applies. The lounge's own changes (moving a creature, joining) are HTTP requests the game made before the socket and still makes. Each costs one Worker request, one DO request and the rows it writes.
+
+**Paid plan ($5 a month, approved in decisions.md "Plan tier").** 10 million Worker requests and 1 million DO requests a month included, 400,000 GB-s a month and 50 million rows written. Even 20 guilds of 15 players with the lounge open all day and every ping counted (about 13 million DO requests a month) would cost about $5 + 12 × $0.15 = $6.80. With hibernation, duration stays a few hundred GB-s a month. Upgrade when the dashboard shows Worker requests or DO requests above about half the daily Free allowance. Note: the dashboard shows raw message counts, not the 1-in-20 billed figure.
+
+**Still to measure on staging:** whether Discord's proxy keeps the `?ticket=` query, its idle timeout, and what a phone does when the app goes to the background. Then look at Cloudflare's dashboard after a day with the flag on, to see how pings count on Free.
 
 ## Extending this to the raid finale
 
