@@ -10,7 +10,7 @@ export function DragGhost({
   ghostRef,
   creature,
 }: {
-  ghostRef: RefObject<HTMLDivElement>;
+  ghostRef: RefObject<HTMLDivElement | null>;
   creature: { species: string; name: string } | undefined;
 }) {
   if (creature === undefined) return null;

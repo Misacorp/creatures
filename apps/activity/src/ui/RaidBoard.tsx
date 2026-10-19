@@ -16,7 +16,7 @@ export interface BoardRowModel {
 
 interface RaidBoardProps extends SlotStripProps {
   /** The strip holding the tiles: the drag, the keyboard and the focus look the slots up in it. */
-  stripRef: RefObject<HTMLDivElement>;
+  stripRef: RefObject<HTMLDivElement | null>;
   /**
    * Front, Middle and Back (those that have slots), each with its slots left to right. With
    * `single` exactly one row.

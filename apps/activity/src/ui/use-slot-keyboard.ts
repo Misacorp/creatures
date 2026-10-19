@@ -2,7 +2,7 @@ import type { RefObject } from 'preact';
 
 interface Args {
   /** The strip holding the `[data-slot]` buttons. */
-  stripRef: RefObject<HTMLElement>;
+  stripRef: RefObject<HTMLElement | null>;
   /**
    * Where a key moves from a slot: left and right in a row, up and down in a lane on the raid board.
    * Null: the key does nothing.

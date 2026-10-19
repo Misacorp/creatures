@@ -68,7 +68,7 @@ export function Game({
   /** Who has the Activity open: the living room shows them. */
   participants: ParticipantSource;
   /** The "?" button of the title row and what it does (the app owns the How to play page). */
-  helpRef: RefObject<HTMLButtonElement>;
+  helpRef: RefObject<HTMLButtonElement | null>;
   onHelp: () => void;
   /** True on staging, where the server has the dev tools on: the debug panel loads (see `dev-gate.ts`). */
   devTools: boolean;
