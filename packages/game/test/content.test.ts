@@ -1315,3 +1315,25 @@ describe('status effects', () => {
     expect(() => loadContent(withMove({ ...move, op: 'purge', power: 1 }))).toThrow(/schema/);
   });
 });
+
+describe('foe Speed and the dodge rules', () => {
+  const boss = (p: ContentPack) => p.bosses[0] as Record<string, unknown>;
+
+  it('lets a boss carry a baseSpd (a whole number from 0), and has none by default', () => {
+    expect(content.bosses.every((b) => b.baseSpd === undefined)).toBe(true);
+    expect(() => loadContent(mutate((p) => (boss(p)['baseSpd'] = 0)))).not.toThrow();
+    expect(() => loadContent(mutate((p) => (boss(p)['baseSpd'] = 40)))).not.toThrow();
+    expect(() => loadContent(mutate((p) => (boss(p)['baseSpd'] = -1)))).toThrow(/schema/);
+    expect(() => loadContent(mutate((p) => (boss(p)['baseSpd'] = 1.5)))).toThrow(/schema/);
+  });
+
+  it('is off, with the first guesses of the design stored', () => {
+    expect(RULES.combat.dodge).toEqual({
+      enabled: false,
+      perSpeedBp: 10,
+      maxBp: 5_000,
+      areaShareBp: 5_000,
+    });
+    expect(RULES.combat.effects).toEqual({ enabled: false, dice: 32 });
+  });
+});

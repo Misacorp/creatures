@@ -10,6 +10,7 @@ import {
 import {
   autoPlace,
   compactRow,
+  liveEffects,
   liveFightRules,
   placeSlots,
   raidEnrage,
@@ -119,6 +120,7 @@ export function referenceFight(
     ...(bossAttacks > 1 ? { bossAttacks } : {}),
     luck: luckAtRank(RULES.combat.luck, rank),
     rules: liveFightRules(),
+    ...liveEffects(),
     ...(enrage === undefined ? {} : { enrage }),
   };
 }

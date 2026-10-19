@@ -40,6 +40,7 @@ import {
   compactRow,
   sparseBoard,
   fillWithGuests,
+  liveEffects,
   liveFightRules,
   makeSlot,
   phaseFloorHp,
@@ -487,6 +488,8 @@ export function buildPhaseInput(
     luck: { ...weatherLuck(day, luckAtRank(RULES.combat.luck, rank)) },
     // The combat rules, the phase floor and the finale's enrage, stored the same way.
     rules: liveFightRules(),
+    // The effect dice, while status effects are switched on (`RULES.combat.effects`).
+    ...liveEffects(),
     ...(floor > 0 ? { bossHpFloor: Math.min(floor, hpCurrent) } : {}),
     ...(enrage === undefined ? {} : { enrage }),
   };

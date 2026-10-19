@@ -18,6 +18,7 @@ const Name = v.pipe(v.string(), v.minLength(1), v.maxLength(32));
 const Flavor = v.pipe(v.string(), v.minLength(1), v.maxLength(120));
 const Description = v.pipe(v.string(), v.minLength(1), v.maxLength(120));
 const PositiveInt = v.pipe(v.number(), v.integer(), v.minValue(1));
+const NonNegativeInt = v.pipe(v.number(), v.integer(), v.minValue(0));
 const SignedBp = v.pipe(v.number(), v.integer(), v.minValue(-5_000), v.maxValue(10_000));
 
 export const DUNGEON_FOE_KINDS = ['foe', 'boss'] as const;
@@ -36,6 +37,8 @@ export const DungeonFoeSchema = v.strictObject({
   /** HP and Attack at depth 1. Depth scales both (`scaledFoe`). */
   baseHp: PositiveInt,
   baseAtk: PositiveInt,
+  /** Optional Speed (0 when absent): the base of the foe's dodge chance. Depth does not scale it. */
+  baseSpd: v.optional(NonNegativeInt),
   gimmicks: v.pipe(v.array(GimmickSchema), v.maxLength(3)),
   /**
    * A floor boss's landmark signature: a `charge` gimmick it gains only at landmark depths (every

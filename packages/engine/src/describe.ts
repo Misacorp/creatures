@@ -105,6 +105,13 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
         ? `${creature(event.creature)} is lost in the Morning Haze and misses its first turn.`
         : `${creature(event.creature)} is silenced and misses its turn.`;
     case 'hit':
+      if (event.dodged === true) {
+        return `${names.boss} dodges${
+          event.ability === undefined
+            ? ` ${creature(event.creature)}'s hit`
+            : ` ${creature(event.creature)}'s ${lookup(names.abilities, event.ability)}`
+        }.`;
+      }
       return `${
         event.ability === undefined
           ? creature(event.creature)
@@ -177,6 +184,11 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
           ? ` Stubborn: ${creature(event.target)} refuses to fall and stays at 1 HP.`
           : '';
       const extra = `${cover}${warded}${crit}${capped}${stubborn}`;
+      if (event.dodged === true) {
+        return event.splash === true
+          ? `${creature(event.target)} dodges the splash.`
+          : `${creature(event.target)} dodges!`;
+      }
       if (event.sidestep === true) {
         return `${creature(event.target)} sidesteps ${event.splash === true ? 'the splash' : `${names.boss}'s hit`} and takes nothing.`;
       }

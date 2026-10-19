@@ -442,9 +442,10 @@ describe('what stacks do to the numbers', () => {
     expect(hit?.damage).toBe(1_140);
   });
 
-  it('folds Speed in with effectiveSpd (nothing reads it in a fight yet)', () => {
+  it('folds Speed in with effectiveSpd (dodge reads it)', () => {
     const state = {
       effectDefs: new Map(PACK.statusEffects.map((e) => [e.id, e])),
+      boss: {},
       bossEffects: [{ id: 'mired', stacks: 5, turnsLeft: 3 }],
     } as unknown as FightState;
     const c = {
@@ -457,8 +458,10 @@ describe('what stacks do to the numbers', () => {
     // -9% and -30%: 100 x 61%.
     expect(effectiveSpd(state, c)).toBe(61);
     expect(effectiveSpd(state, { ...c, effects: [] })).toBe(100);
-    // A boss has no Speed yet.
+    // A boss without a `baseSpd` has no Speed; with one, its effects (Mired, 5 x -3%) fold in.
     expect(effectiveSpd(state, BOSS)).toBe(0);
+    const fast = { ...state, boss: { baseSpd: 200 } } as unknown as FightState;
+    expect(effectiveSpd(fast, BOSS)).toBe(170);
   });
 });
 

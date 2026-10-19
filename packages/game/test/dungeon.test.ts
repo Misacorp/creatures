@@ -653,3 +653,18 @@ describe('the order of a team decides whether reactions happen', () => {
     expect(none.map((c) => c.id)).toEqual(['s', 'g', 'p']);
   });
 });
+
+describe('dungeon foe Speed', () => {
+  it('lets a foe carry a baseSpd (a whole number from 0), and has none by default', () => {
+    expect(dungeonContent.foes.every((f) => f.baseSpd === undefined)).toBe(true);
+    const withSpd = (value: unknown) => {
+      const list = foes();
+      (list[0] as Record<string, unknown>)['baseSpd'] = value;
+      return () => loadDungeon(list, mods(), rooms);
+    };
+    expect(withSpd(0)).not.toThrow();
+    expect(withSpd(25)).not.toThrow();
+    expect(withSpd(-3)).toThrow(/schema/);
+    expect(withSpd(2.5)).toThrow(/schema/);
+  });
+});

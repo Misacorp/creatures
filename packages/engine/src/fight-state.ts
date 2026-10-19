@@ -19,6 +19,7 @@ import type {
   CreatureTotals,
   FightEvent,
   FightInput,
+  DodgeRules,
   FightRules,
   PlayerTotals,
 } from './types';
@@ -152,6 +153,8 @@ export interface FightState {
   readonly effectsOn: boolean;
   /** The status effects of the content pack, by id. */
   readonly effectDefs: ReadonlyMap<string, StatusEffectDef>;
+  /** Dodge numbers of the fight's stored rules (`FightRules.dodge`); undefined: dodge is off. */
+  readonly dodge: DodgeRules | undefined;
   readonly rule: AdaptationDef | null;
   readonly adaptationTarget: string;
   /** The reaction of each (mark element, trigger element) pair, by `reactionKey`. */
@@ -250,6 +253,19 @@ export interface FightState {
    */
   effectDice: number[];
   effectDiceUsed: number;
+  /** The last `hurt` call ended in a dodge (set on every call), so a move's rider can skip it. */
+  lastHitDodged: boolean;
+  /**
+   * With dodge on (`FightRules.dodge`): drawn after the effect dice, in this order, and only then.
+   * `dodgeTakenDice`: `DODGE_TAKEN_DICE` dice per creature, the Nth hit it takes that round uses die N (the
+   * last die for any later one). `dodgeTurnDice` and `dodgeStrikeDice`: one die per creature, the boss's
+   * roll against that creature's turn hit and against its ability strike. All uniform in [0, 10000).
+   * `dodgeSeen` counts the hits each creature has taken this round.
+   */
+  dodgeTakenDice: number[][];
+  dodgeTurnDice: number[];
+  dodgeStrikeDice: number[];
+  dodgeSeen: number[];
 }
 
 export function pick(result: unknown, key: string): unknown {

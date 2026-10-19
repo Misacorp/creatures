@@ -348,6 +348,11 @@ export const BossSchema = v.strictObject({
   element: ElementSchema,
   baseHp: PositiveInt,
   baseAtk: PositiveInt,
+  /**
+   * Optional Speed (0 when absent): the base of the boss's dodge chance (`RULES.combat.dodge`). Not
+   * scaled by Boss Rank: the raid curve does not move it.
+   */
+  baseSpd: v.optional(NonNegativeInt),
   turnOrder: TurnOrderSchema,
   gimmicks: v.pipe(v.array(GimmickSchema), v.maxLength(MAX_BOSS_GIMMICKS)),
   /** Id of the Phase 2 adaptation rule. */

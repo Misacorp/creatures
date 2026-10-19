@@ -354,7 +354,15 @@ const SHEETS: SlotMods[] = [
     ownerMarkBp: 1_000,
     keenReactionBp: 1_500,
   },
-  { shareBp: 2_500, boostBp: 1_200, mendBp: 300, sharedWarmthBp: 1_000 },
+  // dodgeBp and areaDodgeBp do nothing in these fights: their rules carry no dodge.
+  {
+    shareBp: 2_500,
+    boostBp: 1_200,
+    mendBp: 300,
+    sharedWarmthBp: 1_000,
+    dodgeBp: 500,
+    areaDodgeBp: 300,
+  },
   { takenBp: 1_000, areaBp: 1_500, aimedBp: 1_500, reflectedBp: 2_500, chargedBp: 2_000 },
   { wardBp: { tide: 2_000, ember: 1_000, spark: 1_500, grove: 500 }, healReceivedBp: 3_500 },
   { armorBp: 1_000, coverBp: 1_500, shelterBp: 1_000, coverReach: 1, boostReach: 1 },

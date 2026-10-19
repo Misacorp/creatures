@@ -25,6 +25,7 @@ import {
 import {
   autoPlace,
   fillWithGuests,
+  liveEffects,
   makeSlot,
   phaseFloorHp,
   placeSlots,
@@ -514,6 +515,7 @@ export function fightFor(
       ? {}
       : { luck: weatherLuck(day, luckAtRank(week.luck, week.rank)) }),
     rules: week.rules,
+    ...liveEffects(),
     // As live play builds it: a phase's floor (a boss that reaches it retreats), the finale's enrage.
     ...(floor > 0 ? { bossHpFloor: floor } : {}),
     ...(enrage === undefined ? {} : { enrage }),

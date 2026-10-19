@@ -37,11 +37,11 @@ export function effectBpOf(
 
 /**
  * The fighter's Speed with its effects folded in: the base Speed times `10000 + sum of spdBp x stacks`
- * (rounded down, never below 0). A boss or foe has no Speed in the engine yet (the dodge slice gives
- * it one), so its base is 0. Nothing in a fight reads this yet.
+ * (rounded down, never below 0). A boss or foe's base is its content `baseSpd` (0 when absent); a
+ * creature's is its stats' Speed. Dodge reads it (`fight-dodge.ts`).
  */
 export function effectiveSpd(state: FightState, f: Fighter): number {
-  const base = f === BOSS ? 0 : f.spd;
+  const base = f === BOSS ? (state.boss.baseSpd ?? 0) : f.spd;
   const factor = Math.max(0, 10_000 + Math.max(-10_000, effectBpOf(state, f, 'spdBp')));
   return Math.floor((base * factor) / 10_000);
 }
@@ -106,13 +106,15 @@ export function applyEffect(
   });
 }
 
-/** A damaging move's rider: the effect goes on the creature that took the hit, if it still stands. */
+/** A damaging move's rider: the effect goes on the creature that took the hit, if it still stands and did not dodge it. */
 export function applyRider(
   state: FightState,
   applies: AppliesDef | undefined,
   victim: Creature,
 ): void {
   if (applies === undefined) return;
+  // A dodged hit applies nothing (the hit that was just resolved, `hurt` sets the flag every call).
+  if (state.lastHitDodged) return;
   applyEffect(state, victim, applies.effect, applies.powerBp, null, applies.durationTurns ?? 0);
 }
 

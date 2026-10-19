@@ -21,6 +21,7 @@ import {
   type TurnOrder,
   type Zone,
 } from '@creatures/game';
+import { DODGE_RANGE, DODGE_TAKEN_DICE } from './fight-dodge';
 import { BOSS, applyEffect, tickEffects } from './fight-effects';
 import { announceCharges, enrageStrike, fireGimmick, plainAttacks } from './fight-boss';
 import { gearRoundStart, fireAbility, rainHeals, supportBuffs } from './fight-round';
@@ -403,6 +404,7 @@ export function simulateFight(
     patternsOn,
     luckOn,
     effectsOn: effects !== undefined,
+    dodge: rules?.dodge,
     effectDefs: new Map<string, StatusEffectDef>(pack.statusEffects.map((e) => [e.id, e])),
     rule,
     adaptationTarget,
@@ -449,6 +451,11 @@ export function simulateFight(
     areaSeen: [],
     effectDice: [],
     effectDiceUsed: 0,
+    lastHitDodged: false,
+    dodgeTakenDice: [],
+    dodgeTurnDice: [],
+    dodgeStrikeDice: [],
+    dodgeSeen: [],
   };
 
   // ---- the fight ----
@@ -579,6 +586,15 @@ export function simulateFight(
       // After the luck dice, the very last of the round, and only when effects are on.
       state.effectDice = Array.from({ length: effects.dice }, () => int(rng, 10_000));
       state.effectDiceUsed = 0;
+    }
+    if (state.dodge !== undefined) {
+      // After the effect dice, the very last of the round, and only when the fight's rules have dodge.
+      state.dodgeTakenDice = creatures.map(() =>
+        Array.from({ length: DODGE_TAKEN_DICE }, () => int(rng, DODGE_RANGE)),
+      );
+      state.dodgeTurnDice = creatures.map(() => int(rng, DODGE_RANGE));
+      state.dodgeStrikeDice = creatures.map(() => int(rng, DODGE_RANGE));
+      state.dodgeSeen = creatures.map(() => 0);
     }
     state.orderPos = -1;
     // Serpentine flips every row each round; the other orders are the same every round.
@@ -712,6 +728,17 @@ function checkRules(r: FightRules): void {
   ] as const) {
     if (!isCount(value, 0) || value > max)
       fail(`rules.${name} must be an integer from 0 to ${max}`);
+  }
+  if (r.dodge !== undefined) {
+    for (const [name, value] of [
+      ['perSpeedBp', r.dodge.perSpeedBp],
+      ['maxBp', r.dodge.maxBp],
+      ['areaShareBp', r.dodge.areaShareBp],
+    ] as const) {
+      if (!isCount(value, 0) || value > 10_000) {
+        fail(`rules.dodge.${name} must be an integer from 0 to 10000`);
+      }
+    }
   }
 }
 

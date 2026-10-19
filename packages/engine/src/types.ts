@@ -163,6 +163,13 @@ export interface SlotMods {
   /** 1: its first reaction each fight is a critical hit (Pounce Set; crits must be on). */
   firstReactionCrit?: 0 | 1;
 
+  // --- Dodge (`combat-rules.md` 14). Flat points on top of the chance Speed gives; read only in a fight whose
+  // stored rules carry `dodge`. ---
+  /** Flat dodge in basis points (0 to 10000), added to the Speed part for every hit it can dodge (Light-footed). */
+  dodgeBp?: number;
+  /** Flat dodge against area hits only, in basis points (0 to 10000), added in full after the area share (Sidestep, later). */
+  areaDodgeBp?: number;
+
   // --- Chance lines (2026-10-18, `combat-rules.md` 11). Each is a chance in basis points (0 to 10000), rolled
   // on the creature's own luck dice (`LUCK_DICE`), drawn only when some creature of the fight has one. ---
   /** Each round start: heal `CHANCE_FX.secondWindHealBp` of max HP. */
@@ -352,6 +359,21 @@ export interface FightRules {
   guardArmorBp: number;
   /** Support effects by element (`RULES.combat.supportFx`). */
   supportFx: Readonly<Partial<Record<Element, SupportFx>>>;
+  /**
+   * Dodge (`RULES.combat.dodge`, combat-rules.md 14). Absent: dodge is off in this fight (nobody dodges,
+   * no dodge die is drawn), so a stored fight replays as it was.
+   */
+  dodge?: DodgeRules;
+}
+
+/** The numbers of dodge stored with a fight (`RULES.combat.dodge` without its `enabled` switch). */
+export interface DodgeRules {
+  /** Basis points of dodge chance for each point of Speed. */
+  perSpeedBp: number;
+  /** The hard cap on any dodge chance, basis points. */
+  maxBp: number;
+  /** The share of the chance an area hit rolls, basis points. */
+  areaShareBp: number;
 }
 
 export interface EnrageRules {
@@ -456,6 +478,8 @@ export type FightEvent =
       warm?: true;
       /** The creature's status effects added this much to the damage bonus (negative: a debuff cut it); absent if none. */
       effectBp?: number;
+      /** Set when the boss dodged the hit (`damage` is 0, nothing else of the hit happened). */
+      dodged?: true;
     }
   | {
       t: 'mark';
@@ -534,6 +558,8 @@ export type FightEvent =
       warded?: number;
       /** Set when the taker's Sidestep made it take nothing from an area hit (the damage is 0). */
       sidestep?: true;
+      /** Set when the taker's dodge made it take nothing (the damage is 0; no Guard stepped in, no reduction applied). */
+      dodged?: true;
       /** Set when the taker's Stubborn left it at 1 HP instead of knocking it out (the damage is still the full hit). */
       stubborn?: true;
     }

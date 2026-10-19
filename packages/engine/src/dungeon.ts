@@ -103,6 +103,8 @@ export interface DungeonRunInput {
   brambleBp?: number;
   /** Lantern Light: `FightInput.lingerAllRounds`, in every room. Absent: none. */
   lingerAllRounds?: number;
+  /** Status effects: `FightInput.effects` (the effect dice), in every room. Absent: effects are off. */
+  effects?: { dice: number };
 }
 
 export interface DungeonRoomResult {
@@ -238,6 +240,7 @@ export function buildRoomInput(
     lootTable: 'dungeon',
     finaleRounds: room.foe.rounds,
     ...(room.foe.crit === undefined ? {} : { crit: room.foe.crit }),
+    ...(room.foe.baseSpd === undefined ? {} : { baseSpd: room.foe.baseSpd }),
   };
   return {
     boss,
@@ -253,6 +256,7 @@ export function buildRoomInput(
     ...(run.lingerAllRounds !== undefined && run.lingerAllRounds > 0
       ? { lingerAllRounds: run.lingerAllRounds }
       : {}),
+    ...(run.effects === undefined ? {} : { effects: run.effects }),
     phase: 'finale',
     bossHpPool: { max: foeHp, current: foeHp },
     adaptation: null,

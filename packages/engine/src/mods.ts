@@ -59,6 +59,8 @@ export interface ResolvedMods {
   secondBreathBp: number;
   patientBp: number;
   sharedWarmthBp: number;
+  dodgeBp: number;
+  areaDodgeBp: number;
 }
 
 /**
@@ -158,6 +160,8 @@ const EMPTY: ResolvedMods = Object.freeze({
   secondBreathBp: 0,
   patientBp: 0,
   sharedWarmthBp: 0,
+  dodgeBp: 0,
+  areaDodgeBp: 0,
 });
 
 /** The sheet of a creature without one. */
@@ -279,6 +283,8 @@ export function resolveMods(
     secondBreathBp: n('secondBreathBp', SHARE),
     patientBp: n('patientBp'),
     sharedWarmthBp: n('sharedWarmthBp'),
+    dodgeBp: n('dodgeBp', SHARE),
+    areaDodgeBp: n('areaDodgeBp', SHARE),
   };
 }
 

@@ -1,7 +1,8 @@
 // A creature hitting the boss (`hitBoss`): turn hits and ability strikes, reactions, marks, crits, credit.
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
-import { RULES, type ReactionDef } from '@creatures/game';
+import { RULES, type Element, type ReactionDef } from '@creatures/game';
 import { hurt } from './fight-damage';
+import { bossDodges } from './fight-dodge';
 import { effectBpOf } from './fight-effects';
 import {
   baseContext,
@@ -32,6 +33,63 @@ export function adaptationOn(state: FightState): boolean {
   return rule !== null && state.currentRound > state.purgedThrough;
 }
 
+/** The creature leaves its element's mark on the boss (replacing `replaced`, if any), sealing it with a gear set's help. */
+function leaveMark(state: FightState, c: Creature, replaced: Element | null): void {
+  const seal = c.mods.sealMark && !c.sealed;
+  if (seal) c.sealed = true;
+  state.mark = {
+    element: c.element,
+    creature: c,
+    player: c.ownerId,
+    ...(seal ? { sealed: true } : {}),
+  };
+  state.events.push({
+    t: 'mark',
+    round: state.currentRound,
+    creature: c.id,
+    player: c.ownerId,
+    element: c.element,
+    replaced,
+    ...(seal ? { sealed: true as const } : {}),
+  });
+}
+
+/**
+ * The boss dodged a creature's hit (combat-rules.md 14.4): a `hit` event with `damage: 0` and `dodged`,
+ * and nothing else of the hit happens: no damage, crit, reaction, credit, Echo, boost spent or trigger
+ * line. The one thing that still happens is setup (Misa: setup never misses): a Setter's dodged hit leaves
+ * or replaces the mark exactly as its hit would have (5.1, 5.2). Any other role's dodged hit leaves
+ * nothing, and a hit that would have set off a reaction leaves the standing mark where it is.
+ */
+function dodgedHit(
+  state: FightState,
+  c: Creature,
+  strike: { atkBp: number; ability: string; key: string } | undefined,
+): void {
+  const markBefore = state.mark;
+  const reaction =
+    markBefore === null
+      ? undefined
+      : state.reactionByPair.get(reactionKey(markBefore.element, c.element));
+  state.events.push({
+    t: 'hit',
+    round: state.currentRound,
+    creature: c.id,
+    damage: 0,
+    matchupBp: matchupBp(c.element, state.boss.element, state.pack.elementChart),
+    bonusBp: 0,
+    mark: markBefore?.element ?? null,
+    bossHp: state.bossHp,
+    dodged: true,
+    ...(strike === undefined ? {} : { ability: strike.ability, key: strike.key }),
+  });
+  if (c.role !== 'setter' || reaction !== undefined) return;
+  if (markBefore === null) leaveMark(state, c, null);
+  else if (markBefore.element !== c.element && markBefore.sealed !== true) {
+    leaveMark(state, c, markBefore.element);
+  }
+}
+
 /**
  * A creature hits the boss: its turn, or (with `strike`) an ability's strike, which hits for a
  * share of Attack, leaves the creature's support buffs for its next turn and lands even if the
@@ -58,6 +116,11 @@ export function hitBoss(
     reactionsByType,
     damageByElement,
   } = state;
+  // The boss dodges before anything of the hit happens (no boost, bonus or trap is spent on it).
+  if (bossDodges(state, c, strike !== undefined)) {
+    dodgedHit(state, c, strike);
+    return;
+  }
   const matchup = matchupBp(c.element, boss.element, pack.elementChart);
   const atk = strike === undefined ? c.atk : Math.floor((c.atk * strike.atkBp) / 10_000);
   const buffs = strike === undefined ? c.buffs : [];
@@ -409,41 +472,9 @@ export function hitBoss(
     }
     c.cashes += 1;
   } else if (markBefore === null) {
-    const seal = m.sealMark && !c.sealed;
-    if (seal) c.sealed = true;
-    state.mark = {
-      element: c.element,
-      creature: c,
-      player: c.ownerId,
-      ...(seal ? { sealed: true } : {}),
-    };
-    events.push({
-      t: 'mark',
-      round: state.currentRound,
-      creature: c.id,
-      player: c.ownerId,
-      element: c.element,
-      replaced: null,
-      ...(seal ? { sealed: true as const } : {}),
-    });
+    leaveMark(state, c, null);
   } else if (replaces) {
-    const seal = m.sealMark && !c.sealed;
-    if (seal) c.sealed = true;
-    state.mark = {
-      element: c.element,
-      creature: c,
-      player: c.ownerId,
-      ...(seal ? { sealed: true } : {}),
-    };
-    events.push({
-      t: 'mark',
-      round: state.currentRound,
-      creature: c.id,
-      player: c.ownerId,
-      element: c.element,
-      replaced: markBefore.element,
-      ...(seal ? { sealed: true as const } : {}),
-    });
+    leaveMark(state, c, markBefore.element);
     if (quick) {
       events.push({ t: 'proc', round: state.currentRound, creature: c.id, kind: 'quick_remark' });
     }

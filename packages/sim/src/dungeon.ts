@@ -55,6 +55,7 @@ import {
 } from '@creatures/game';
 import {
   dungeonBossEnrage,
+  liveEffects,
   placeSlots,
   rowMaxHp,
   simulateDungeonRoom,
@@ -309,6 +310,7 @@ export function buildRunInput(
     ...skyRunFields(weatherSky(weather)),
     ...(Object.keys(rest).length === 0 ? {} : { rest }),
     rules: studyRules(study),
+    ...liveEffects(),
     depth,
     ...(enrage === undefined ? {} : { enrage }),
   };
