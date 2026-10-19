@@ -1,87 +1,234 @@
-import { RULES } from '@creatures/game';
+import { RULES, expToNext } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { ExperienceView } from './experience';
-import { craftingGain, experienceGain } from './xp-gain';
+import {
+  boostLabel,
+  boostLines,
+  experienceBoost,
+  hasTreat,
+  partValue,
+  showsTimes,
+  timesText,
+} from './xp-boost-view';
+import { legsOf, numbers, pct } from './xp-change';
+import { craftingGain, experienceGain, explorerGain } from './xp-gain';
 
 const view = (over: Partial<ExperienceView> = {}): ExperienceView => ({
   creatureId: 'c',
-  gained: 8,
+  gained: 16,
   treat: false,
-  levelBefore: 6,
-  level: 6,
-  exp: 140,
-  needed: 222,
+  levelBefore: 7,
+  level: 7,
+  exp: 174,
+  needed: expToNext(7),
   waiting: false,
   gold: false,
   ...over,
 });
 
-describe("a worker's experience on the bar", () => {
-  it("puts the server's numbers on the bar from its level to the next", () => {
-    const gain = experienceGain(view(), 'Cindle');
-    expect(gain.gain).toBe('+8');
-    expect(gain.levels).toEqual({ from: 6, to: 6 });
-    expect(gain.bar).toEqual({
-      value: 140,
-      max: 222,
-      startCap: 'Lv 6',
-      endCap: 'Lv 7',
-      label: "Cindle's experience",
+describe('the bars a gain went through', () => {
+  it('is one bar from the old value to the new one inside a level', () => {
+    expect(
+      legsOf({ levelBefore: 7, level: 7, value: 174, max: 273, gained: 16, sizeOf: expToNext }),
+    ).toEqual([{ level: 7, max: 273, from: 158, to: 174 }]);
+  });
+
+  it("fills the old level's bar and starts the new one with the rest", () => {
+    // 60 gained, 37 into level 8: the other 23 filled level 7 from 250 to its top.
+    expect(
+      legsOf({
+        levelBefore: 7,
+        level: 8,
+        value: 37,
+        max: expToNext(8),
+        gained: 60,
+        sizeOf: expToNext,
+      }),
+    ).toEqual([
+      { level: 7, max: expToNext(7), from: expToNext(7) - 23, to: expToNext(7) },
+      { level: 8, max: expToNext(8), from: 0, to: 37 },
+    ]);
+  });
+
+  it('crosses several levels, each a full bar but the first and the last', () => {
+    const legs = legsOf({
+      levelBefore: 3,
+      level: 5,
+      value: 10,
+      max: expToNext(5),
+      gained: expToNext(4) + 30,
+      sizeOf: expToNext,
+    });
+    expect(legs.map((l) => l.level)).toEqual([3, 4, 5]);
+    expect(legs[1]).toEqual({ level: 4, max: expToNext(4), from: 0, to: expToNext(4) });
+    expect(legs[0]).toEqual({
+      level: 3,
+      max: expToNext(3),
+      from: expToNext(3) - 20,
+      to: expToNext(3),
     });
   });
 
-  it('reports a level up, a treat and a Gold Ribbon, and "waiting" only without the Gold Ribbon', () => {
-    const up = experienceGain(view({ levelBefore: 5, treat: true, waiting: true }), 'Cindle');
-    expect(up.levels).toEqual({ from: 5, to: 6 });
-    expect(up.treat).toBe(true);
-    expect(up.waiting).toBe(true);
-    const gold = experienceGain(view({ gold: true, waiting: true }), 'Cindle');
-    expect(gold.gold).toBe(true);
-    expect(gold.waiting).toBe(false);
+  it('never starts a bar below empty when the server says less than the bar shows', () => {
+    expect(
+      legsOf({ levelBefore: 7, level: 7, value: 5, max: 273, gained: 50, sizeOf: expToNext }),
+    ).toEqual([{ level: 7, max: 273, from: 0, to: 5 }]);
   });
 
-  it('is a full bar at the top level', () => {
-    const top = experienceGain(view({ needed: null, level: 30, levelBefore: 30 }), 'Cindle');
-    expect(top.bar).toMatchObject({ value: 1, max: 1, text: 'Top level', startCap: 'Lv 30' });
-    expect(top.bar.endCap).toBeUndefined();
+  it('is a full bar at the top', () => {
+    const top = experienceGain(
+      view({ levelBefore: 30, level: 30, needed: null, exp: 0 }),
+      'Cindle',
+    );
+    expect(top.top).toBe(true);
+    expect(numbers(top)).toBe('Top level');
+    expect(top.legs.at(-1)).toEqual({ level: 30, max: 1, from: 1, to: 1 });
+  });
+
+  it('floors the percent, so a bar is never full before it is', () => {
+    expect(pct(272, 273)).toBe(99.6);
+    expect(pct(0, 0)).toBe(0);
   });
 });
 
-describe('the Crafting XP on its bar', () => {
-  const table = RULES.gear.skill.xpForLevel;
-
-  it('measures the XP from the start of the level to the next, in its own tone', () => {
-    // Level 2 starts at the table's second number; 140 total XP is 40 into it.
-    const gain = craftingGain({ xp: 12, skillXp: 140, skillLevel: 2, leveledUp: false }, 'Cindle');
-    expect(gain.gain).toBe('+12');
-    expect(gain.levels).toEqual({ from: 2, to: 2 });
-    expect(gain.bar).toEqual({
-      value: 140 - (table[1] ?? 0),
-      max: (table[2] ?? 0) - (table[1] ?? 0),
-      startCap: 'Lv 2',
-      endCap: 'Lv 3',
-      label: "Cindle's Crafting XP",
-      kind: 'crafting',
+describe('the three kinds of XP gain', () => {
+  it("puts a creature's experience on its bar, with the flags it has", () => {
+    const gain = experienceGain(view(), 'Cindle');
+    expect(gain).toMatchObject({
+      kind: 'experience',
+      unit: 'Lv',
+      from: 7,
+      to: 7,
+      gained: 16,
+      label: "Cindle's experience",
+      boost: null,
     });
+    expect(numbers(gain)).toBe('174 / 273');
+    const gold = experienceGain(view({ gold: true, waiting: true }), 'Cindle');
+    expect(gold.gold).toBe(true);
+    expect(gold.waiting).toBe(false);
+    expect(experienceGain(view({ waiting: true }), 'Cindle').waiting).toBe(true);
   });
 
-  it('knows the level before a job that levelled the skill up, from the XP before it', () => {
-    const next = table[2] ?? 0;
-    const gain = craftingGain(
-      { xp: 12, skillXp: next + 5, skillLevel: 3, leveledUp: true },
-      'Cindle',
+  it('measures Crafting XP from the start of its level, and knows the level before', () => {
+    const table = RULES.gear.skill.xpForLevel;
+    const gain = craftingGain({ xp: 12, skillXp: (table[1] ?? 0) + 40, skillLevel: 2 }, 'Cindle');
+    expect(gain).toMatchObject({ kind: 'crafting', from: 2, to: 2, gained: 12 });
+    expect(gain.legs).toEqual([
+      { level: 2, max: (table[2] ?? 0) - (table[1] ?? 0), from: 28, to: 40 },
+    ]);
+    const up = craftingGain({ xp: 12, skillXp: (table[2] ?? 0) + 5, skillLevel: 3 }, 'Cindle');
+    expect([up.from, up.to]).toEqual([2, 3]);
+    expect(up.legs.map((l) => [l.from, l.to])).toEqual([
+      [(table[2] ?? 0) - (table[1] ?? 0) - 7, (table[2] ?? 0) - (table[1] ?? 0)],
+      [0, 5],
+    ]);
+    const boost = {
+      parts: [{ source: 'gear' as const, name: 'Apprentice', bp: 2000 }],
+      totalBp: 12_000,
+    };
+    expect(craftingGain({ xp: 12, skillXp: 140, skillLevel: 2, xpBoost: boost }, 'C').boost).toBe(
+      boost,
     );
-    expect(gain.levels).toEqual({ from: 2, to: 3 });
-    expect(gain.leveledUp).toBe(true);
-    expect(gain.bar.value).toBe(5);
-  });
-
-  it('is a full bar at the top level', () => {
     const top = table.length;
-    const gain = craftingGain(
-      { xp: 12, skillXp: (table[top - 1] ?? 0) + 50, skillLevel: top, leveledUp: false },
-      'Cindle',
-    );
-    expect(gain.bar).toMatchObject({ value: 1, max: 1, text: 'Top level', kind: 'crafting' });
+    expect(
+      craftingGain({ xp: 12, skillXp: (table[top - 1] ?? 0) + 50, skillLevel: top }, 'C').top,
+    ).toBe(true);
+  });
+
+  it('counts explorer XP in ranks', () => {
+    const gain = explorerGain({
+      gained: 300,
+      rank: 4,
+      rankBefore: 3,
+      value: 60,
+      max: 1500,
+      name: 'Sproutle',
+    });
+    expect(gain).toMatchObject({ kind: 'explorer', unit: 'Rank', from: 3, to: 4 });
+    expect(gain.legs).toHaveLength(2);
+    expect(
+      numbers(
+        explorerGain({ gained: 1, rank: 10, rankBefore: 10, value: 1, max: null, name: 'S' }),
+      ),
+    ).toBe('Top rank');
+  });
+});
+
+describe('the multiplier of a gain', () => {
+  const treat2 = {
+    parts: [{ source: 'treat' as const, name: 'Treat', times: 2 }],
+    totalBp: 20_000,
+  };
+  const hearty = {
+    parts: [{ source: 'day' as const, name: 'Hearty Breakfast', bp: 2500 }],
+    totalBp: 12_500,
+  };
+  const several = {
+    parts: [
+      { source: 'treat' as const, name: 'Treat', times: 3 },
+      { source: 'day' as const, name: 'Hearty Breakfast', bp: 2500 },
+      { source: 'day' as const, name: 'Cold Snap', bp: -2000 },
+    ],
+    totalBp: 31_500,
+  };
+
+  it('words the total and each part', () => {
+    expect([20_000, 15_000, 12_500, 37_500, 8_000, 31_500, 10_000].map(timesText)).toEqual([
+      '×2',
+      '×1.5',
+      '×1.25',
+      '×3.75',
+      '×0.8',
+      '×3.15',
+      '×1',
+    ]);
+    expect(several.parts.map(partValue)).toEqual(['×3', '+25%', '-20%']);
+    expect(boostLines(several)).toEqual({
+      parts: [
+        { name: 'Treat', value: '×3' },
+        { name: 'Hearty Breakfast', value: '+25%' },
+        { name: 'Cold Snap', value: '-20%' },
+      ],
+      total: '×3.15',
+    });
+    expect(boostLabel(treat2, 'Experience')).toBe('Experience ×2: Treat ×2. What changed it?');
+  });
+
+  it('shows the melon only for a treat, and the chip only when the total is not x1', () => {
+    expect([hasTreat(treat2), showsTimes(treat2)]).toEqual([true, true]);
+    expect([hasTreat(hearty), showsTimes(hearty)]).toEqual([false, true]);
+    expect([hasTreat(null), showsTimes(null)]).toEqual([false, false]);
+    const even = { parts: [{ source: 'day' as const, name: 'X', bp: 0 }], totalBp: 10_000 };
+    expect(showsTimes(even)).toBe(false);
+  });
+
+  it("takes the server's boost, and reads a result from before it from what it had", () => {
+    expect(experienceBoost(view({ boost: several }))).toBe(several);
+    expect(experienceBoost(view())).toBeNull();
+    // A trip's or job's treat from before: the usual doubling.
+    expect(experienceBoost(view({ treat: true }))).toEqual({
+      parts: [{ source: 'treat', name: 'Treat', times: RULES.experience.treat.multiplier }],
+      totalBp: RULES.experience.treat.multiplier * 10_000,
+    });
+    // A dungeon run's older fields.
+    expect(
+      experienceBoost(
+        view({
+          treat: true,
+          treatTimes: 3,
+          dayEffects: [
+            { name: 'Hearty Breakfast', bp: 2500 },
+            { name: 'Quiet', bp: 0 },
+          ],
+        }),
+      ),
+    ).toEqual({
+      parts: [
+        { source: 'treat', name: 'Treat', times: 3 },
+        { source: 'day', name: 'Hearty Breakfast', bp: 2500 },
+      ],
+      totalBp: 37_500,
+    });
   });
 });

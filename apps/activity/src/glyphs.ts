@@ -364,6 +364,26 @@ const anvil: SpriteDef = {
   ],
 };
 
+// --- Creature experience ---
+
+/**
+ * A slice of watermelon, flat side up: a treat was packed for this activity (the XP row's treat icon,
+ * decisions.md 2026-10-19). Red flesh with ink seeds, a pale and a green rind round the curve.
+ */
+const treat: SpriteDef = {
+  palette: { r: '#ef4f63', h: '#ffb3b8', k: INK, w: '#e9f5c8', g: '#4fb05a', d: '#2f7a3c' },
+  rows: [
+    '........',
+    'hrrrrrrh',
+    'wrkrrkrw',
+    'gwrrrrwg',
+    'gwwrkwwg',
+    'dggwwggd',
+    '.dddddd.',
+    '........',
+  ],
+};
+
 // --- Tabs (one colour, key `w`, so a tab can tint it for its selected state) ---
 
 /** A paw print: the Collection tab. */
@@ -548,6 +568,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   warning,
   reticle,
   anvil,
+  treat,
   paw,
   compass,
   blade,

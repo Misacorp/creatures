@@ -9,7 +9,7 @@
  * looked up by id; the server sends ids and numbers only.
  */
 
-import type { ExperienceView } from './experience';
+import type { ExperienceView, XpBoost } from './experience';
 import type { GrantLoot, PartKind } from './gear-types';
 import type { ChoiceResult, TalentView } from './talent-types';
 
@@ -158,7 +158,14 @@ export interface TripResult {
     outcome: 'worked' | 'failed' | 'declined';
   };
   /** Only for a finished trip (not a recall or a failure). */
-  xp?: { gained: number; total: number; rank: number; rankBefore: number };
+  xp?: {
+    gained: number;
+    total: number;
+    rank: number;
+    rankBefore: number;
+    /** What added to it (milestones, the week's twist, a push-on goal, Trail XP); absent when nothing did. */
+    boost?: XpBoost;
+  };
   /** The creature experience the trip paid its explorer (a finished trip only; absent in older results). */
   experience?: ExperienceView;
   familiarity?: { stars: number; starsBefore: number; trips: number };

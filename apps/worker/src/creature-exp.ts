@@ -6,7 +6,7 @@
  * experience is paid together with whatever earned it and exactly once: the callers are the
  * idempotent claim, run and resolve paths.
  */
-import { RULES, addExperience, expToNext, type ExpGain } from '@creatures/game';
+import { RULES, addExperience, expToNext, type ExpGain, type XpBoost } from '@creatures/game';
 import type { Analytics } from './analytics';
 import { speciesOf } from './species';
 
@@ -32,6 +32,11 @@ export interface ExperienceView {
   waiting: boolean;
   /** The Gold Ribbon came with this gain (the creature reached the top level). */
   gold: boolean;
+  /**
+   * What changed the amount (the treat, the day's Boons and Omens) and the total multiplier, for the
+   * result's multiplier chip and its breakdown. Absent when nothing did (and on results from before 2026-10-19).
+   */
+  boost?: XpBoost;
 }
 
 type Row = { level: number; exp: number; ribbons: number; species: string };
@@ -46,7 +51,14 @@ function readRow(sql: SqlStorage, userId: string, creatureId: string): Row | und
     .toArray()[0];
 }
 
-function viewOf(creatureId: string, gained: number, treat: boolean, before: Row, g: ExpGain) {
+function viewOf(
+  creatureId: string,
+  gained: number,
+  treat: boolean,
+  before: Row,
+  g: ExpGain,
+  boost: XpBoost | null,
+) {
   const view: ExperienceView = {
     creatureId,
     gained,
@@ -57,6 +69,7 @@ function viewOf(creatureId: string, gained: number, treat: boolean, before: Row,
     needed: g.level >= RULES.experience.maxLevel ? null : expToNext(g.level),
     waiting: g.waiting,
     gold: g.gold,
+    ...(boost === null ? {} : { boost }),
   };
   return view;
 }
@@ -75,7 +88,8 @@ function store(sql: SqlStorage, creatureId: string, g: ExpGain): void {
  * Pays `gained` experience (a treat already counted) to a creature of the player's. A creature that does
  * not exist or is someone else's gets nothing (a stale id never throws inside a claim). Levels up while
  * the way is open, banks the rest at a ribbon or an evolution (`addExperience`) and logs a `creature_exp`
- * event. Returns what happened, or null when the creature was not found.
+ * event. Returns what happened, or null when the creature was not found. `boost` is what changed the
+ * amount (built from the same numbers the caller paid with), passed through to the view.
  */
 export function awardExperience(
   sql: SqlStorage,
@@ -85,6 +99,7 @@ export function awardExperience(
   gained: number,
   source: ExpSource,
   treat: boolean,
+  boost: XpBoost | null = null,
 ): ExperienceView | null {
   const before = readRow(sql, userId, creatureId);
   if (before === undefined) return null;
@@ -110,7 +125,7 @@ export function awardExperience(
   if (g.gold) {
     analytics?.record({ kind: 'ribbon', species: before.species, ribbon: 'gold' }, userId);
   }
-  return viewOf(creatureId, gained, treat, before, g);
+  return viewOf(creatureId, gained, treat, before, g, boost);
 }
 
 /**

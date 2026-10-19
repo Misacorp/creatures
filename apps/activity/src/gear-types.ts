@@ -7,7 +7,7 @@
  * Every number in the text of a line is the server's own (`lines[].text`); nothing is worked out here.
  */
 import type { GearSlot, GearTag, ReachId } from '@creatures/game';
-import type { ExperienceView } from './experience';
+import type { ExperienceView, XpBoost } from './experience';
 
 export type { GearSlot, GearTag, ReachId };
 
@@ -112,6 +112,8 @@ export interface JobCommon {
   /** Creature experience the job paid its worker (doubled by a treat); absent in older results and for a retired job. */
   experience?: ExperienceView;
   xp: number;
+  /** What added to the Crafting XP (Apprentice) and the total; absent when nothing did and on older results. */
+  xpBoost?: XpBoost;
   skillXp: number;
   skillLevel: number;
   leveledUp: boolean;

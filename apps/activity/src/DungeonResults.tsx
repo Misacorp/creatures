@@ -320,9 +320,8 @@ function RoomStrip({ rooms, path }: { rooms: readonly StripRoom[]; path: boolean
  * The team in its fighting order, one row, left to right: each sprite with the HP it ended with under it
  * ("340 / 391 HP"; a knocked-out creature is grey with a skull and "0 / 391 HP" in red). Under the row,
  * one list with each creature's experience as the same row every result screen shows (`ExperienceGainRow`:
- * the level change and a green "Level up!" when the run levelled it, the "+N", a "Treat" tag, the bar, and a
- * line naming the day's Boons and Omens that changed it); a third of a phone is too narrow for it under
- * each sprite. Tapping a sprite opens the small-creature popover with its role and element.
+ * its name, the level change and "Level up!" when the run levelled it, the bar counting up, the "+N" and the
+ * multiplier with its breakdown); a third of a phone is too narrow for it under each sprite. Tapping a sprite opens the small-creature popover with its role and element.
  */
 function TeamBreakdown({ team }: { team: readonly TeamEntry[] }) {
   /** The members the run paid experience (each with its row under the team). */
@@ -351,13 +350,12 @@ function TeamBreakdown({ team }: { team: readonly TeamEntry[] }) {
         ))}
       </ul>
       {paid.length > 0 && (
-        <XpList label="Experience after the run" class="team-xp">
+        <XpList label="Experience after the run" caption class="team-xp">
           {paid.map((m) => (
             <ExperienceGainRow
               key={m.id}
-              who={m.name}
-              gain={m.exp.gain}
-              note={m.exp.dayLine === null ? undefined : <span class="muted">{m.exp.dayLine}</span>}
+              who={{ name: m.name, species: m.speciesId }}
+              gain={m.exp}
             />
           ))}
         </XpList>

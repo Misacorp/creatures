@@ -6,7 +6,39 @@
  */
 import { PART_KINDS } from '@creatures/game';
 import type { PartKind } from './gear-types';
-import { isInt, isRecord } from './parse-core';
+import { isArrayOf, isCount, isInt, isRecord, isStr } from './parse-core';
+
+/** One thing that changed an XP gain: a treat's multiplier, or a share on top (basis points; negative: less). */
+export type XpBoostPart =
+  | { source: 'treat'; name: string; times: number }
+  | { source: 'day' | 'gear' | 'trip'; name: string; bp: number };
+
+/**
+ * What changed an XP gain, as the server worked it out with the gain (`@creatures/game` `xp-boost.ts`): the
+ * parts in the order they were applied and the total multiplier (10000 is x1). Sent next to every gain
+ * something changed (creature experience, explorer XP, Crafting XP); absent when nothing did.
+ */
+export interface XpBoost {
+  parts: XpBoostPart[];
+  totalBp: number;
+}
+
+const BOOST_SOURCES: ReadonlySet<unknown> = new Set(['day', 'gear', 'trip']);
+
+function isXpBoostPart(value: unknown): value is XpBoostPart {
+  if (!isRecord(value) || !isStr(value['name']) || value['name'].length > 64) return false;
+  if (value['source'] === 'treat') return isCount(value['times']);
+  return BOOST_SOURCES.has(value['source']) && isInt(value['bp']);
+}
+
+export function isXpBoost(value: unknown): value is XpBoost {
+  return (
+    isRecord(value) &&
+    isCount(value['totalBp']) &&
+    isArrayOf(value['parts'], isXpBoostPart) &&
+    value['parts'].length <= 12
+  );
+}
 
 /** What one award did to one creature. */
 export interface ExperienceView {
@@ -24,10 +56,12 @@ export interface ExperienceView {
   waiting: boolean;
   /** The Gold Ribbon came with this gain. */
   gold: boolean;
+  /** What changed the amount (a treat, the day) and the total multiplier; absent when nothing did and on older results. */
+  boost?: XpBoost;
   /**
-   * A dungeon run's award only (absent on a trip's, a job's and older runs): what the treat multiplied the
-   * experience by (null: no treat), and the day's Boons and Omens that changed it, by name, with the change in
-   * basis points (negative: less).
+   * The older form of `boost`, on a dungeon run's award only (absent on a trip's, a job's and older runs):
+   * what the treat multiplied the experience by (null: no treat), and the day's Boons and Omens that changed
+   * it, by name, with the change in basis points (negative: less). Read only for runs stored before `boost`.
    */
   treatTimes?: number | null;
   dayEffects?: DayEffect[];
@@ -57,6 +91,7 @@ function isDayEffect(value: unknown): value is DayEffect {
 export function isExperienceView(value: unknown): value is ExperienceView {
   return (
     isRecord(value) &&
+    (value['boost'] === undefined || isXpBoost(value['boost'])) &&
     (value['treatTimes'] === undefined ||
       value['treatTimes'] === null ||
       isInt(value['treatTimes'])) &&
@@ -136,24 +171,4 @@ export function ribbonBlocker(ribbon: RibbonView): string | null {
     return `Needs ${String(left)} more ${left === 1 ? 'trip' : 'trips'}.`;
   }
   return 'Short of parts.';
-}
-
-/** "25%" or "2.5%": basis points as a percentage, without the sign. */
-function pctText(bp: number): string {
-  return `${String(Math.abs(bp) / 100)}%`;
-}
-
-/**
- * The one short line under a creature's experience row saying which day effects changed the amount, from the
- * factors the server sent: "Cold Snap gave -20% experience", "Hearty Breakfast gave +25% and Cold Snap gave
- * -20% experience". The treat is not in it (it is a "Treat" tag on the row). Null when no Boon or Omen did
- * (or the run is from before the server said).
- */
-export function experienceDayLine(view: ExperienceView): string | null {
-  const parts = (view.dayEffects ?? [])
-    .filter((d) => d.bp !== 0)
-    .map((d) => `${d.name} gave ${d.bp > 0 ? '+' : '-'}${pctText(d.bp)}`);
-  if (parts.length === 0) return null;
-  const last = parts.pop() ?? '';
-  return `${parts.length === 0 ? last : `${parts.join(', ')} and ${last}`} experience`;
 }

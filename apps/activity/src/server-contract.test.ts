@@ -593,14 +593,17 @@ describe('the dungeon requests the client sends', () => {
     const { path, method, body } = dungeonRequestBodies['dungeon-start'];
     expect(sent()).toEqual({ path, method, body });
     expect(path).toBe('/api/dungeon/start');
-    expect(Object.keys(body).sort()).toEqual(['idempotencyKey', 'team']);
+    // The scenario packs a treat for one creature of the team.
+    expect(Object.keys(body).sort()).toEqual(['idempotencyKey', 'team', 'treats']);
   });
 
   it('the screen builds the same start body from the same picks', () => {
     const fixtureBody = bodyOf('dungeon-start');
     const [front, middle, back] = fixtureBody.team;
     const slots: Slots = [front, middle, back];
-    expect(buildRunRequest(slots, fixtureBody.idempotencyKey)).toEqual(fixtureBody);
+    expect(
+      buildRunRequest(slots, fixtureBody.idempotencyKey, new Set(fixtureBody.treats ?? [])),
+    ).toEqual(fixtureBody);
     // The run that was started is the run the next acts name.
     expect(parseDungeonStart(dungeonStart).state.team.map((c) => c.id)).toEqual(fixtureBody.team);
   });
@@ -852,6 +855,13 @@ describe('the dungeon responses the server sends', () => {
     expect(cleared.summary).toMatchObject({ outcome: 'cleared', cleared: true });
     expect(cleared.summary?.newDepth).toBe((cleared.summary?.depth ?? 0) + 1);
     expect(cleared.state).toMatchObject({ status: 'done', outcome: 'cleared' });
+    // The treated creature's experience carries its breakdown; the others have none.
+    const [treated, ...plain] = cleared.summary?.rewards.experience ?? [];
+    expect(treated?.boost).toEqual({
+      parts: [{ source: 'treat', name: 'Treat', times: 2 }],
+      totalBp: 20_000,
+    });
+    expect(plain.every((e) => e.boost === undefined)).toBe(true);
     for (const ended of [home, defeat, cleared]) {
       expect(ended.today?.active).toBeNull();
       expect(ended.today?.last?.id).toBe(ended.summary?.id);

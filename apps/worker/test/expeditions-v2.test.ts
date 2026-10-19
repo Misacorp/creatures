@@ -86,7 +86,7 @@ interface ResultBody {
     supplies?: string[];
   };
   pushOn?: { goalId: string; risk: string; oddsBp: number; outcome: string };
-  xp?: { gained: number; total: number; rank: number; rankBefore: number };
+  xp?: { gained: number; total: number; rank: number; rankBefore: number; boost?: unknown };
   familiarity?: { stars: number; starsBefore: number; trips: number };
   journal?: { entryId: string; set: string | null; setComplete: boolean }[];
   slotUnlocked?: { total: number };
@@ -1670,6 +1670,12 @@ describe('gear on trips', () => {
         expect(second.xp?.gained).toBeGreaterThan(first.xp?.gained ?? 0);
         expect(second.xp?.gained).toBe(tripXp('long', 500 + 1200));
         expect(first.xp?.gained).toBe(tripXp('long', 0));
+        // The result names what added it (the compass's two Trail XP lines, by the line's name); none before.
+        expect(second.xp?.boost).toEqual({
+          parts: [{ source: 'gear', name: 'Trail XP', bp: 1700 }],
+          totalBp: 11_700,
+        });
+        expect(first.xp?.boost).toBeUndefined();
       },
       { tripRng: createSeededRng('trail-xp'), rng: createSeededRng('trail-xp-rng') },
     );

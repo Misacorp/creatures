@@ -311,7 +311,7 @@
         "level": 12,
         "hp": 281,
         "hpMax": 281,
-        "treat": false
+        "treat": true
       },
       {
         "id": "00000000-0000-4000-8300-000000000009",
@@ -747,15 +747,25 @@
       "experience": [
         {
           "creatureId": "00000000-0000-4000-8300-000000000001",
-          "gained": 200,
-          "treat": false,
+          "gained": 400,
+          "treat": true,
           "levelBefore": 12,
           "level": 12,
-          "exp": 200,
+          "exp": 400,
           "needed": 588,
           "waiting": false,
           "gold": false,
-          "treatTimes": null,
+          "boost": {
+            "parts": [
+              {
+                "source": "treat",
+                "name": "Treat",
+                "times": 2
+              }
+            ],
+            "totalBp": 20000
+          },
+          "treatTimes": 2,
           "dayEffects": []
         },
         {
@@ -1336,15 +1346,25 @@
         "experience": [
           {
             "creatureId": "00000000-0000-4000-8300-000000000001",
-            "gained": 200,
-            "treat": false,
+            "gained": 400,
+            "treat": true,
             "levelBefore": 12,
             "level": 12,
-            "exp": 200,
+            "exp": 400,
             "needed": 588,
             "waiting": false,
             "gold": false,
-            "treatTimes": null,
+            "boost": {
+              "parts": [
+                {
+                  "source": "treat",
+                  "name": "Treat",
+                  "times": 2
+                }
+              ],
+              "totalBp": 20000
+            },
+            "treatTimes": 2,
             "dayEffects": []
           },
           {
