@@ -1,7 +1,9 @@
 /**
- * What the evolve screen shows (`EvolveDrawer.tsx`). A line that grows two ways shows both forms side by
- * side; a line with one form skips the screen and evolves at once, as it always did. Pure: the facts come
- * from the shared content (species, abilities, stats) and the server's `evolution` of the creature.
+ * What the evolve screen shows (`EvolveDrawer.tsx`), for every evolve. A line that grows two ways shows both
+ * forms side by side; a line with one form shows that form alone, already picked, with no sentence about it
+ * (the owner's call, 2026-10-19: the same screen every time, so the player sees what they evolve into; show,
+ * don't tell). Pure: the facts come from the shared content (species, abilities, stats) and the server's
+ * `evolution` of the creature.
  */
 import { effectiveStats } from '@creatures/game';
 import type { Creature } from './api';
@@ -18,11 +20,6 @@ export interface EvolveForm {
   ability: { name: string; text: string } | null;
   /** HP, Attack and Speed it would have now (this creature's level and fusions on the new form's numbers). */
   stats: { hp: number; atk: number; spd: number };
-}
-
-/** True when the creature's line grows two ways, so the player must choose. */
-export function hasBranches(creature: Pick<Creature, 'evolution'>): boolean {
-  return creature.evolution?.alt !== undefined;
 }
 
 /** The species a creature can grow into, the first branch first (none: it cannot evolve). */

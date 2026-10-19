@@ -4,7 +4,7 @@ import type { Creature } from './api';
 import { sampleCreature } from './creature-card-sample';
 import { evolutionText, creatureAbilityText } from './game';
 import { abilityDef } from './live';
-import { evolveButtonLabel, evolveForms, evolveTargets, hasBranches } from './evolve-view';
+import { evolveButtonLabel, evolveForms, evolveTargets } from './evolve-view';
 import { creatureNeeds } from './creature-needs';
 import { SAMPLE_STATE } from './creature-card-sample';
 
@@ -19,12 +19,10 @@ function oneForm(creature: Creature): Creature {
 const single = oneForm(sampleCreature('evolve ready'));
 
 describe('the forms of an evolution', () => {
-  it('knows a line that grows two ways from one that grows one way', () => {
-    expect(hasBranches(branching)).toBe(true);
-    expect(hasBranches(single)).toBe(false);
-    expect(hasBranches({})).toBe(false);
+  it('lists the forms of a line that grows two ways and of one that grows one way', () => {
     expect(evolveTargets(branching)).toEqual(['thornbuck', 'sunfawn']);
     expect(evolveTargets(single)).toEqual(['pyrelynx']);
+    expect(evolveForms(single).map((f) => f.species)).toEqual(['pyrelynx']);
     expect(evolveTargets({})).toEqual([]);
   });
 

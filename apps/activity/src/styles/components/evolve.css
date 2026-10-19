@@ -1,7 +1,9 @@
 /*
-  The evolve screen of a line that grows two ways (EvolveDrawer.tsx): two forms side by side in a Drawer,
-  each a button with its picture, name, element and role, ability and numbers; the picked one has a gold
-  frame. Built for 390 px: two equal columns, everything centred and short. Comes after the Drawer rules.
+  The evolve screen (EvolveDrawer.tsx): the forms of a line in a Drawer, each with its picture, name,
+  element and role, ability and numbers; the picked one has a gold frame. A line that grows two ways shows
+  two buttons side by side: two equal columns, everything centred and short. A line with one form shows
+  one card, already picked and not a button, across the full width with the picture at the left (a card
+  half the width of a 360 px phone would leave the rest of the row empty). Comes after the Drawer rules.
 */
 
 .evolve-forms {
@@ -17,6 +19,7 @@
   display: flex;
 }
 
+.evolve-form,
 button.evolve-form {
   display: flex;
   flex: 1 1 auto;
@@ -30,12 +33,56 @@ button.evolve-form {
   text-align: center;
 }
 
+.evolve-form.on,
 button.evolve-form.on {
   box-shadow: inset 0 0 0 var(--px) var(--gold);
 }
 
 button.evolve-form:active:not(:disabled) {
   transform: none;
+}
+
+/* One form: one full-width card, the picture at the left, name, tags, ability and numbers beside it. */
+.evolve-forms.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.evolve-forms.single .evolve-form {
+  display: grid;
+  grid-template-areas:
+    'pic name'
+    'pic tags'
+    'pic ability'
+    'pic stats';
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 0.375rem 0.75rem;
+  align-items: center;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.evolve-forms.single .evolve-form > :first-child {
+  grid-area: pic;
+  justify-self: center;
+}
+
+.evolve-forms.single .evolve-name {
+  grid-area: name;
+}
+
+.evolve-forms.single .evolve-tags {
+  grid-area: tags;
+  justify-content: flex-start;
+}
+
+.evolve-forms.single .evolve-ability {
+  grid-area: ability;
+}
+
+.evolve-forms.single .evolve-stats {
+  grid-area: stats;
+  justify-content: flex-start;
+  margin-top: 0.25rem;
 }
 
 .evolve-name {
