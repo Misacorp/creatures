@@ -2184,4 +2184,4 @@ Misa: "Even with one evolution, let's use the same flow where they get to see th
 
 - **Misa picked "grown"** of the four XpTrack looks ("the best IMO because the text in the bar is properly centered"): the bar is enlarged to the level tag's height (1.5 rem) and its numbers are one step up. `DEFAULT_XP_SIZE` is `grown`; the other looks stay as workbench presets.
 - **The detail of `ui/ActionButton` is centred on the label** (`align-items: center`, was `baseline`). Misa: "the 20 essence text on it isn't vertically aligned with the Evolve text". The pixel label and the body-font detail have different letter heights, so lining up their baselines put the small words low; centred, the ink of "Evolve" and "20 Essence" sits within half a pixel of the same middle.
-- **Pips on the XP bar** (dividers like the HP bars) are only mock-ups for Misa to judge (ten, five, notches); nothing ships until he picks.
+- **No pips on the XP bar.** Dividers like the HP bars were mocked up (ten, five, notches); Misa: "Let's forget about pips". The HP bar keeps segments as its own look.
