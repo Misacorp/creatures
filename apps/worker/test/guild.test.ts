@@ -30,9 +30,8 @@ import {
   undoQuirkMigration,
   undoRaidMigration,
 } from './helpers';
+import { MINUTE, T0 } from './kit';
 
-const MINUTE = 60 * 1000;
-const T0 = 1_800_000_000_000;
 const USER = { id: USER_ID, displayName: 'Misa' };
 
 /** Runs `fn` inside a fresh guild Durable Object with a GuildCore driven by a fake clock. */

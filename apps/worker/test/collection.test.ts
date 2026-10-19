@@ -29,8 +29,7 @@ import {
   type CoreContext,
 } from './helpers';
 import { createHandler } from '../src/index';
-
-const HOUR = 3_600_000;
+import { HOUR, newKey, type Json, sessionCaller, give, setCreature } from './kit';
 
 const USER = { id: USER_ID, displayName: 'Misa' };
 const OTHER = { id: OTHER_USER_ID, displayName: 'Other' };
@@ -38,10 +37,6 @@ const OTHER = { id: OTHER_USER_ID, displayName: 'Other' };
 let guildCounter = 0;
 /** A fresh snowflake-shaped guild id per test, so Durable Object storage never overlaps. */
 const nextGuild = () => String(740000000000000000n + BigInt(++guildCounter));
-
-let keyCounter = 0;
-/** A valid client idempotency key, unique per call. */
-const newKey = () => `key-${String(++keyCounter).padStart(8, '0')}-test`;
 
 /** Returns the scripted values in order, then fails loudly: tests must account for every draw. */
 function scriptedRng(values: number[]): Rng & { drawn: () => number } {
@@ -74,11 +69,6 @@ function countingRng(seed: string): Rng & { drawn: () => number } {
     },
     drawn: () => n,
   };
-}
-
-interface Json {
-  status: number;
-  body: Record<string, unknown>;
 }
 
 interface Player {
@@ -194,26 +184,10 @@ async function join(
   user: { id: string; displayName: string },
   bait = 0,
 ): Promise<Player> {
-  let secret = await ctx.core.createSession(ctx.guildId, user);
-  let loggedInAt = ctx.clock.t;
+  const { call } = await sessionCaller(ctx, user);
   if (bait > 0) {
-    ctx.core.credit({
-      userId: user.id,
-      currency: 'bait',
-      amount: bait,
-      source: 'test',
-      idempotencyKey: `seed:${user.id}`,
-    });
+    give(ctx, user.id, { bait: bait });
   }
-  const call = async (method: string, path: string, body?: unknown): Promise<Json> => {
-    // Tests jump the clock by hours; sessions idle out after an hour, so sign in again as needed.
-    if (ctx.clock.t - loggedInAt >= 30 * 60_000) {
-      secret = await ctx.core.createSession(ctx.guildId, user);
-      loggedInAt = ctx.clock.t;
-    }
-    const res = await ctx.request(secret, path, method, body);
-    return { status: res.status, body: await res.json<Record<string, unknown>>() };
-  };
   return {
     call,
     state: async () => (await call('GET', '/api/state')).body as unknown as StateBody,
@@ -1871,7 +1845,7 @@ describe('creature quirks', () => {
         skipFirstExpedition(ctx.sql, USER_ID);
         const drawnAfterStarter = quirkRng.drawn();
         expect(drawnAfterStarter).toBeGreaterThanOrEqual(2);
-        ctx.sql.exec("UPDATE creatures SET quirk_id = 'hums-quietly' WHERE id = ?", p.starterId);
+        setCreature(ctx, p.starterId, { quirk_id: 'hums-quietly' });
         const exp = expeditionOf(await send(p, p.starterId));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
@@ -1908,12 +1882,9 @@ describe('creature quirks', () => {
   it('shows no quirk for a missing or unknown quirk id, and keeps working', async () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await joinWithStarter(ctx, USER, 0);
-      ctx.sql.exec('UPDATE creatures SET quirk_id = NULL WHERE id = ?', p.starterId);
+      setCreature(ctx, p.starterId, { quirk_id: null });
       expect((await p.state()).creatures[0]?.quirk).toBeNull();
-      ctx.sql.exec(
-        "UPDATE creatures SET quirk_id = 'removed-from-the-data' WHERE id = ?",
-        p.starterId,
-      );
+      setCreature(ctx, p.starterId, { quirk_id: 'removed-from-the-data' });
       expect((await p.state()).creatures[0]?.quirk).toBeNull();
     });
   });

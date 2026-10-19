@@ -3,8 +3,6 @@ import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
 import { reporterHash } from '../src/feedback-reporter';
 import {
-  DAY,
-  MINUTE,
   OPS,
   READ,
   T0,
@@ -27,6 +25,7 @@ import {
   jsonBody,
   type Keys,
 } from './feedback-helpers';
+import { DAY, MINUTE } from './kit';
 
 let keys: Keys;
 beforeAll(async () => {

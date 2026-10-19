@@ -20,15 +20,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { eventTimes } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
 import { dungeonPlayer, easyFoes } from './dungeon-helpers';
-import {
-  apiPlayer,
-  giveItem,
-  giveParts,
-  learnBase,
-  newKey,
-  skipWelcome,
-  type Api,
-} from './gear-helpers';
+import { apiPlayer, giveItem, giveParts, learnBase, skipWelcome, type Api } from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
 import {
   HELSINKI,
@@ -43,6 +35,7 @@ import {
   seedPlayer,
   storedRuns,
 } from './raid-helpers';
+import { newKey, give } from './kit';
 
 /** A Wednesday afternoon in a normal week, a little after the reset: a game day with plenty of it left. */
 const AFTERNOON = Date.parse('2027-01-13T12:00:00Z');
@@ -266,13 +259,7 @@ describe('trips under the weather', () => {
         const p = await apiPlayer(ctx, 1, { level: 8, creatures: 2 });
         twoSlots(ctx, p.id);
         const [a, b] = p.creatureIds as [string, string];
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'bait',
-          amount: 100,
-          source: 'test',
-          idempotencyKey: 'weather-bait',
-        });
+        give(ctx, p.id, { bait: 100 });
         sky(ctx, 'hearty-breakfast');
         const treated = tripOf(await send(p, a, { treat: true }));
         sky(ctx, 'market-day', 'cold-snap');
@@ -767,13 +754,7 @@ describe('the dungeon under the weather', () => {
       async (ctx) => {
         ctx.clock.t = AFTERNOON;
         const p = await dungeonPlayer(ctx, 1);
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'bait',
-          amount: 300,
-          source: 'test',
-          idempotencyKey: 'bait-xp-note',
-        });
+        give(ctx, p.id, { bait: 300 });
         sky(ctx, 'hearty-breakfast', 'cold-snap');
         const [a] = p.creatureIds as [string];
         const res = await p.run({ treats: [a] });
@@ -803,13 +784,7 @@ describe('the dungeon under the weather', () => {
       async (ctx) => {
         ctx.clock.t = AFTERNOON;
         const p = await dungeonPlayer(ctx, 1);
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'bait',
-          amount: 300,
-          source: 'test',
-          idempotencyKey: 'bait-xp-plain',
-        });
+        give(ctx, p.id, { bait: 300 });
         sky(ctx, 'quiet-night');
         const [a] = p.creatureIds as [string];
         const exp = (await p.run({ treats: [a] })).body.run.rewards.experience ?? [];

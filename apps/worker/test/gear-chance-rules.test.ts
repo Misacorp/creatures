@@ -7,10 +7,11 @@ import {
   type Rng,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { apiPlayer as player, giveItem, newKey, skipWelcome, type Api } from './gear-helpers';
+import { apiPlayer as player, giveItem, skipWelcome, type Api } from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
 import { nextGuild, rows, scriptedThenSeeded } from './raid-helpers';
 import { speciesOf } from '../src/species';
+import { newKey } from './kit';
 
 /**
  * The two chance lines that work outside the fight (gear-and-creatures-v2.md 6.3), through the real

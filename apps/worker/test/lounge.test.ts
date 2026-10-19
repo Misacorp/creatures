@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   renderLounge,
   renderedSignature,
@@ -21,6 +21,7 @@ import { USER_ID, OTHER_USER_ID, runCore, type CoreContext } from './helpers';
 import { nextRaidBoundary } from '../src/lounge-raid';
 import { eventTimes } from '../src/raid-schedule';
 import { HELSINKI, HOUR, MINUTE, W02, nextGuild } from './raid-helpers';
+import { captureConsole } from './kit';
 
 const CHANNEL = '555555555555555555';
 const CHANNEL_2 = '555555555555555556';
@@ -409,10 +410,13 @@ describe('the lounge message: the core', () => {
   });
 
   it('never stops a login when the lounge cannot record', async () => {
+    const log = captureConsole();
     await withLounge(async (ctx, fake) => {
       ctx.sql.exec('DROP TABLE lounge_instances');
       await expect(start(ctx, fake)).resolves.toBeUndefined();
       expect(ctx.sql.exec('SELECT 1 FROM sessions').toArray()).toHaveLength(1);
+      // Only the kind of the error is logged.
+      expect(log.calls).toEqual([['lounge record failed', 'Error']]);
     });
   });
 
@@ -466,7 +470,7 @@ describe('the lounge message: the core', () => {
 
   it('keeps the stored state when Discord cannot be asked, and tries again', async () => {
     await withLounge(async (ctx, fake) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const error = captureConsole();
       await start(ctx, fake);
       await tick(ctx, 16 * SECOND);
       fake.lookupFails = true;
@@ -474,8 +478,8 @@ describe('the lounge message: the core', () => {
       expect(fake.log).toHaveLength(1);
       expect(ctx.sql.exec('SELECT 1 FROM lounge_instances').toArray()).toHaveLength(1);
       expect(readLounge(ctx.sql).nextCheckAt).toBe(ctx.clock.t + 60 * SECOND);
-      expect(error.mock.calls.flat().join(' ')).not.toContain(INSTANCE);
-      error.mockRestore();
+      expect(error.calls.flat().join(' ')).not.toContain(INSTANCE);
+      error.restore();
     });
   });
 
@@ -600,24 +604,24 @@ describe('the lounge message: the core', () => {
 
   it('backs off for 30 minutes after a 403 and does not loop', async () => {
     await withLounge(async (ctx, fake) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const error = captureConsole();
       fake.next.create = { kind: 'forbidden' };
       await start(ctx, fake);
       await tick(ctx, 16 * SECOND);
       expect(fake.log).toHaveLength(1);
-      expect(error).toHaveBeenCalledWith('lounge message failed', 'forbidden');
+      expect(error.calls).toContainEqual(['lounge message failed', 'forbidden']);
       await tick(ctx, 60 * SECOND);
       await tick(ctx, 60 * SECOND);
       expect(fake.log).toHaveLength(1);
       await tick(ctx, 30 * 60 * SECOND);
       expect(fake.log).toHaveLength(2);
-      error.mockRestore();
+      error.restore();
     });
   });
 
   it('a new session lifts the 403 pause, so a fixed permission works at once', async () => {
     await withLounge(async (ctx, fake) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const error = captureConsole();
       fake.next.create = { kind: 'forbidden' };
       await start(ctx, fake);
       await tick(ctx, 16 * SECOND);
@@ -632,20 +636,20 @@ describe('the lounge message: the core', () => {
       await tick(ctx, 16 * SECOND);
       expect(fake.log).toHaveLength(2);
       expect(readLounge(ctx.sql).messageId).not.toBeNull();
-      error.mockRestore();
+      error.restore();
     });
   });
 
   it('retries after a transient failure at the next tick', async () => {
     await withLounge(async (ctx, fake) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const error = captureConsole();
       fake.next.create = { kind: 'retry', error: 'server_error', afterMs: null };
       await start(ctx, fake);
       await tick(ctx, 16 * SECOND);
       expect(readLounge(ctx.sql).messageId).toBeNull();
       await tick(ctx, 60 * SECOND);
       expect(readLounge(ctx.sql).messageId).not.toBeNull();
-      error.mockRestore();
+      error.restore();
     });
   });
 
@@ -719,7 +723,7 @@ describe('the lounge message: the raid line', () => {
 
   it('never breaks the lounge when the raid lookup fails', async () => {
     await withLounge(async (ctx, fake) => {
-      const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const error = captureConsole();
       ctx.sql.exec(
         `INSERT INTO raid_results (week_id, party, phase, seed, input, result, summary, created_at)
          VALUES (?, 1, 'finale', 's', '{}', '{}', 'not json', 0)`,
@@ -727,8 +731,8 @@ describe('the lounge message: the raid line', () => {
       );
       await post(ctx, fake, times.finale + HOUR);
       expect(fake.lastBody?.description).toBe('1 in the lounge: Misa');
-      expect(error).toHaveBeenCalledWith('lounge raid line failed', expect.any(String));
-      error.mockRestore();
+      expect(error.calls).toContainEqual(['lounge raid line failed', expect.any(String)]);
+      error.restore();
     });
   });
 

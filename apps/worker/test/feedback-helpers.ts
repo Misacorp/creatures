@@ -9,9 +9,6 @@ export const OPS = 'ops-token-for-feedback-tests-1f2e3d';
 export const READ = 'read-token-for-feedback-tests-9a8b7c';
 /** A fixed "now" (UTC epoch ms), moved by `clock.now`. */
 export const T0 = 1_900_000_000_000;
-export const MINUTE = 60_000;
-export const HOUR = 60 * MINUTE;
-export const DAY = 24 * HOUR;
 
 export const clock = { now: T0 };
 

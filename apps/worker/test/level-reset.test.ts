@@ -13,6 +13,7 @@ import {
 import { getBalance } from '../src/ledger';
 import { runCore, type CoreContext } from './helpers';
 import { count, nextGuild, rows, seedPlayer } from './raid-helpers';
+import { setCreature, captureConsole } from './kit';
 
 /**
  * The one-time level reset at the switch to training by activity (decisions.md, 2026-10-17). A database
@@ -27,12 +28,7 @@ const reset = (ctx: CoreContext): number =>
   convertPendingLevels({ storage: ctx.storage, now: () => ctx.clock.t });
 
 const setLevel = (ctx: CoreContext, id: string, level: number): void => {
-  ctx.sql.exec(
-    'UPDATE creatures SET level = ?, exp = 77, ribbons = ? WHERE id = ?',
-    level,
-    ribbonsForLevel(level),
-    id,
-  );
+  setCreature(ctx, id, { level: level, exp: 77, ribbons: ribbonsForLevel(level) });
 };
 
 const creatureRows = (ctx: CoreContext, userId: string) =>
@@ -152,7 +148,7 @@ describe('the one-time conversion', () => {
     await runCore(nextGuild(), (ctx) => {
       const p = seedPlayer(ctx, 1, { creatures: 1, species: ['tidewing'], fusion: 3 });
       setLevel(ctx, p.creatureIds[0] as string, 20);
-      ctx.sql.exec("UPDATE creatures SET nickname = 'Keeper' WHERE id = ?", p.creatureIds[0]);
+      setCreature(ctx, p.creatureIds[0] as string, { nickname: 'Keeper' });
       const quirk = rows<{ quirk_id: string }>(ctx.sql, 'SELECT quirk_id FROM creatures')[0]
         ?.quirk_id;
       dropList(ctx);
@@ -293,6 +289,7 @@ describe('the one-time conversion', () => {
   });
 
   it('leaves a player pending whole when their conversion fails, converts the others and retries later', async () => {
+    const log = captureConsole();
     await runCore(nextGuild(), (ctx) => {
       const bad = seedPlayer(ctx, 1, { creatures: 1, species: ['tidewing'] });
       const good = seedPlayer(ctx, 2, { creatures: 1, species: ['tidewing'] });
@@ -310,6 +307,7 @@ describe('the one-time conversion', () => {
       expect(count(ctx.sql, 'ledger', `user_id = '${bad.id}' AND source = 'level_reset'`)).toBe(0);
       expect(creatureRows(ctx, good.id)[0]?.level).toBe(10);
       expect(count(ctx.sql, 'level_reset', 'converted_at IS NULL')).toBe(1);
+      expect(log.calls).toEqual([['level reset failed, player left pending', 'Error']]);
       // Fixed: the next start converts them, once.
       ctx.sql.exec('DROP TRIGGER boom');
       expect(reset(ctx)).toBe(1);

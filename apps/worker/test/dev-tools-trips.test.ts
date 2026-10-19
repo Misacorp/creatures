@@ -10,9 +10,10 @@ import {
   playFrom,
   playThrough,
 } from './dungeon-helpers';
-import { ON, newKey, player, type Dev, type Json } from './dev-helpers';
+import { ON, player, type Dev, type Json } from './dev-helpers';
 import { runCore } from './helpers';
 import { count, nextGuild, rows } from './raid-helpers';
+import { newKey } from './kit';
 
 describe('expedition tools', () => {
   const sendTrip = (p: Dev, creatureId: string, destination = 'tidepools') =>

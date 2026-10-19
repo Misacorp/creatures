@@ -14,6 +14,7 @@ import {
   type FakeGuildOptions,
 } from './helpers';
 import { nextGuild } from './raid-helpers';
+import { captureConsole } from './kit';
 
 const CHANNEL_A = '555555555555555551';
 const CHANNEL_B = '555555555555555552';
@@ -353,6 +354,7 @@ describe('the request', () => {
 
 describe('when Discord cannot answer', () => {
   it('answers 503 discord_unavailable and changes nothing', async () => {
+    const log = captureConsole();
     const guild: FakeGuildOptions = { ownerId: USER_ID, failure: new DiscordError('unavailable') };
     await withGuild({ guild }, async (ctx, api, opts) => {
       const secret = await ctx.core.createSession(ctx.guildId, ME, CHANNEL_A);
@@ -370,6 +372,8 @@ describe('when Discord cannot answer', () => {
       delete opts.failure;
       expect((await call(ctx, secret, 'GET')).body.canManage).toBe(true);
       expect(api.calls.length).toBeGreaterThan(0);
+      // Each failed check logged its kind and nothing else (the check that worked logged nothing).
+      expect(log.calls).toEqual(Array(3).fill(['discord permission check failed', 'unavailable']));
     });
   });
 
@@ -388,10 +392,12 @@ describe('when Discord cannot answer', () => {
   });
 
   it('fails closed when no bot token is configured', async () => {
+    const log = captureConsole();
     await withGuild({ noApi: true }, async (ctx) => {
       const secret = await ctx.core.createSession(ctx.guildId, ME, CHANNEL_A);
       expect((await call(ctx, secret, 'GET')).status).toBe(503);
       expect((await call(ctx, secret, 'POST', { action: 'pin' })).status).toBe(503);
+      expect(log.calls).toEqual(Array(2).fill(['discord permission check failed', 'unavailable']));
     });
   });
 

@@ -3,8 +3,9 @@
    each body would only repeat the server's view types. */
 import { RULES, blueprintBases, expeditionContent, gearContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { ON, newKey, player } from './dev-helpers';
+import { ON, player } from './dev-helpers';
 import { runCore } from './helpers';
+import { newKey } from './kit';
 import { count, nextGuild, rows } from './raid-helpers';
 
 describe('goods tools', () => {

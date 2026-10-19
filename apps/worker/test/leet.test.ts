@@ -8,6 +8,7 @@ import {
   type LeetDaysPage,
   type LeetSource,
 } from '../src/leet';
+import { captureConsole } from './kit';
 
 const GUILD = '123456789012345678';
 const TZ = 'Europe/Helsinki';
@@ -528,7 +529,7 @@ describe('createLeetSourceFromEnv', () => {
   });
 
   it('fails closed with a warning and no secrets for anything else', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const warn = captureConsole('warn');
     for (const env of [
       {},
       { LEET_SOURCE: '' },
@@ -545,7 +546,7 @@ describe('createLeetSourceFromEnv', () => {
     ]) {
       expect(createLeetSourceFromEnv(env, deps)).toBeNull();
     }
-    expect(warn).toHaveBeenCalledTimes(8);
-    expect(JSON.stringify(warn.mock.calls)).not.toContain('super-secret-key');
+    expect(warn.calls).toHaveLength(8);
+    expect(JSON.stringify(warn.calls)).not.toContain('super-secret-key');
   });
 });

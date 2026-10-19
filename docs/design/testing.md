@@ -56,6 +56,11 @@ in the worker.
   The simulator's legacy digest was retired for that reason (2026-10-19); its one "did the sim move" alarm is the
   readable headline-numbers test in `packages/sim/test/run.test.ts`, and a change to those numbers is explained in
   the PR.
+- **Use the worker test kit.** `apps/worker/test/kit.ts` holds the helpers every worker test needs: `newKey`,
+  `Json`, the time constants, `sessionCaller` (a session that signs in again as the fake clock moves), `give`
+  (Bait or Essence through the ledger), `setCreature` and `captureConsole`. Do not copy them into a test file. A test
+  that causes a failure on purpose calls `captureConsole()` and asserts on the logged kind, so the run stays quiet
+  and real errors stand out.
 - **Timeouts are budgets.** Default timeouts per layer as above (sim at most 30 s). A test that needs more is a
   test to split or move down, not a timeout to raise.
 - **CI shape.** Parallel jobs: checks (format, lint, typecheck, build), worker tests, sim tests, the rest; one

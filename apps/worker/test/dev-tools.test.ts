@@ -10,9 +10,10 @@ import { RULES } from '@creatures/game';
 import { eventTimes } from '../src/raid-schedule';
 import { nextOccurrence } from '../src/time';
 import wranglerText from '../wrangler.jsonc?raw';
-import { DAY, ON, newKey, player } from './dev-helpers';
+import { ON, player } from './dev-helpers';
 import { ORIGIN, callHandler, runCore } from './helpers';
 import { HELSINKI, HOUR, W02, count, nextGuild, runRaid } from './raid-helpers';
+import { DAY, newKey } from './kit';
 
 /** Config files are JSONC: drop the comment lines, which are the only non-JSON in `wrangler.jsonc`. */
 function parseWrangler(): {
