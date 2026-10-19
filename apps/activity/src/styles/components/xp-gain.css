@@ -203,8 +203,8 @@
 
 /*
   The multiplier: the "3.15x" chip next to the gain, a button that opens the breakdown. The chip is the
-  game's small tag (`ui/Tag`: plain pixel text on ink, no ring), its text in the kind's colour; while its
-  breakdown is open it turns round (the kind's colour, ink text).
+  game's small tag (`ui/Tag`: plain pixel text, bone on ink, no ring), never in the kind's colour: a
+  multiplier can change any kind of XP. While its breakdown is open it turns round (ink on bone).
 */
 .xp-boost,
 button.xp-boost,

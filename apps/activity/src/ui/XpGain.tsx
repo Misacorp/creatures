@@ -83,8 +83,9 @@ export function XpBoostBreakdown({
 }
 
 /**
- * The multiplier of a gain: a "3.15x" chip in the plain tag colours (bone on ink, like the game's other small
- * tags: a multiplier can change any kind of XP, so it never takes the kind's colour), when the total is not 1x. A tap opens the breakdown. Nothing when nothing changed the gain.
+ * The multiplier of a gain: a "3.15x" chip in the plain tag colours (bone on ink, like the game's other
+ * small tags: a multiplier can change any kind of XP, so it never takes the kind's colour), when the total
+ * is not 1x. A tap opens the breakdown. Nothing when nothing changed the gain.
  */
 function BoostButton({ boost, what, id }: { boost: XpBoost | null; what: string; id: string }) {
   const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();
