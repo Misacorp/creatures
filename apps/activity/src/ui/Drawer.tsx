@@ -1,4 +1,4 @@
-import type { ComponentChildren, JSX } from 'preact';
+import type { ComponentChildren, TargetedPointerEvent } from 'preact';
 import { useEffect, useId, useRef } from 'preact/hooks';
 import { dragOutcome, focusablesIn, trapTarget } from './drawer-logic';
 import { handleFlipKey } from './flip-keys';
@@ -149,7 +149,7 @@ function DrawerSheet({
     }
   }
 
-  function press(event: JSX.TargetedPointerEvent<HTMLButtonElement>): void {
+  function press(event: TargetedPointerEvent<HTMLButtonElement>): void {
     drag.current = { y: event.clientY, at: event.timeStamp, id: event.pointerId };
     swallowClick.current = false;
     // The finger keeps steering the sheet even when it leaves the handle.
@@ -159,14 +159,14 @@ function DrawerSheet({
     panel.current?.classList.add('dragging');
   }
 
-  function move(event: JSX.TargetedPointerEvent<HTMLButtonElement>): void {
+  function move(event: TargetedPointerEvent<HTMLButtonElement>): void {
     const start = drag.current;
     if (start === null || start.id !== event.pointerId) return;
     // Only downwards: the sheet follows the finger and never lifts off the bottom edge.
     panel.current?.style.setProperty('--drag', `${String(Math.max(0, event.clientY - start.y))}px`);
   }
 
-  function release(event: JSX.TargetedPointerEvent<HTMLButtonElement>): void {
+  function release(event: TargetedPointerEvent<HTMLButtonElement>): void {
     const start = drag.current;
     if (start === null || start.id !== event.pointerId) return;
     drag.current = null;

@@ -35,6 +35,11 @@ abstract class FakeNode {
     const list = this.parentNode?.childNodes ?? [];
     return list[list.indexOf(this) + 1] ?? null;
   }
+
+  /** Like the DOM's `ChildNode.remove()`, on text nodes too (Preact 11 removes nodes with it). */
+  remove(): void {
+    this.parentNode?.removeChild(this);
+  }
 }
 
 class FakeText extends FakeNode {
@@ -185,9 +190,6 @@ export class FakeElement extends FakeNode {
     if (index >= 0) this.childNodes.splice(index, 1);
     node.parentNode = null;
     return node;
-  }
-  remove(): void {
-    this.parentNode?.removeChild(this);
   }
 
   addEventListener(

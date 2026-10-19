@@ -20,7 +20,7 @@ export function AppHead({
   balances,
   room,
 }: {
-  helpRef: RefObject<HTMLButtonElement>;
+  helpRef: RefObject<HTMLButtonElement | null>;
   onHelp: () => void;
   balances?: Balances;
   room?: Omit<RoomProps, 'children'>;
@@ -73,7 +73,7 @@ export function TitleRow({
   onHelp,
   balances,
 }: {
-  helpRef: RefObject<HTMLButtonElement>;
+  helpRef: RefObject<HTMLButtonElement | null>;
   onHelp: () => void;
   balances?: Balances;
 }) {

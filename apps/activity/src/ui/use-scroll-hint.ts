@@ -45,7 +45,7 @@ function prefersReducedMotion(): boolean {
 
 /** Runs the hint on the element of `ref`; true while there is more content below. */
 export function useScrollHint(
-  ref: RefObject<HTMLElement>,
+  ref: RefObject<HTMLElement | null>,
   contentKey: unknown,
   options: ScrollHintOptions = {},
 ): boolean {

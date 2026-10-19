@@ -51,7 +51,7 @@ export function usePrefersReducedMotion(): boolean {
  * The width of an element in CSS pixels, kept up to date as it resizes. `fallback` is used until the
  * element has been measured (and where there is no layout at all).
  */
-export function useElementWidth(ref: RefObject<HTMLElement>, fallback: number): number {
+export function useElementWidth(ref: RefObject<HTMLElement | null>, fallback: number): number {
   const [width, setWidth] = useState(fallback);
   useLayoutEffect(() => {
     const el = ref.current;

@@ -18,7 +18,7 @@ export const DRAG_THRESHOLD_PX = 6;
 
 interface Options {
   /** The element that scrolls sideways. */
-  viewport: RefObject<HTMLElement>;
+  viewport: RefObject<HTMLElement | null>;
   scrolling: boolean;
   scale: number;
   /** Left edge of the player's spot, in room pixels. Null: start at the left. */
