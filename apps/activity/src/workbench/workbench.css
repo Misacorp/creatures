@@ -211,6 +211,24 @@
   display: none;
 }
 
+/* The treat icon comparison (XpGain): each design in a breakdown at the popover's real width. */
+.wb-treat-compare {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.375rem;
+}
+
+.wb-treat-option {
+  max-width: 17rem;
+  margin: 0;
+}
+
+.wb-treat-option figcaption {
+  margin-bottom: 0.25rem;
+  color: var(--haze);
+  font-size: var(--fs-small);
+}
+
 .wb-countdown-stage {
   position: relative;
   height: 9rem;

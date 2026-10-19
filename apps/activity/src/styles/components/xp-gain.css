@@ -1,8 +1,8 @@
 /*
   The XP gain list (ui/XpGain.tsx, decisions.md 2026-10-19 "Count-up"): what an activity paid, one look
   everywhere (a claimed Workshop job, a trip result, the dungeon team). Each row: the label, the level change
-  and "Level up!"; then the level tag, a slim bar with its numbers, the "+N" and the multiplier (a chip and
-  the melon slice). The bar fills from the old value to the new one in pixel steps. Each kind of XP has its
+  and "Level up!"; then the level tag, a slim bar with its numbers, the "+N" and the multiplier chip
+  ("3.15x"). The bar fills from the old value to the new one in pixel steps. Each kind of XP has its
   colour (`--xp-fill` and `--xp-fill-shade`, set by `.xp-kind-*` in xp-bar.css).
 */
 .xp-list {
@@ -202,8 +202,9 @@
 }
 
 /*
-  The multiplier: the "×2" chip in the kind's colour and the melon slice, one small button next to the
-  gain. It looks like what it is (a tappable chip), not like a tag of words.
+  The multiplier: the "3.15x" chip next to the gain, a button that opens the breakdown. The chip is the
+  game's small tag (`ui/Tag`: plain pixel text on ink, no ring), its text in the kind's colour; while its
+  breakdown is open it turns round (the kind's colour, ink text).
 */
 .xp-boost,
 button.xp-boost,
@@ -211,7 +212,6 @@ button.xp-boost:active:not(:disabled) {
   position: relative;
   display: inline-flex;
   flex: none;
-  gap: 0.1875rem;
   align-items: center;
   min-height: 1.25rem;
   margin: 0;
@@ -232,12 +232,10 @@ button.xp-boost::after {
   content: '';
 }
 
-.xp-times {
-  padding: 0.125rem 0.1875rem 0;
-  background: var(--ink);
-  box-shadow: inset 0 0 0 2px var(--xp-fill);
+.xp-boost .tag.xp-times {
+  padding: 0.0625rem 0.25rem 0;
   color: var(--xp-fill);
-  line-height: 1;
+  line-height: 1.15;
   white-space: nowrap;
 }
 
@@ -246,12 +244,17 @@ button.xp-boost:focus-visible {
   outline-offset: 2px;
 }
 
-.xp-boost.open .xp-times {
+.xp-boost.open .tag.xp-times {
   background: var(--xp-fill);
   color: var(--ink);
 }
 
-/* The breakdown in the popover: each part and its value, then the total, on lines of their own. */
+/*
+  The breakdown in the popover: each part and its multiplier, then the total, on lines of their own. The
+  lines are the popover's body text, like a glossary entry's lines (the body font in bone, at the popover's
+  size; the page's own `dt` rule would make the names haze, and tabular figures would swap the body font's
+  digits for its other set). The treat's line starts with the treat icon. The total, label and value, is gold.
+*/
 .xp-boost-lines {
   display: grid;
   gap: 0.25rem;
@@ -261,21 +264,33 @@ button.xp-boost:focus-visible {
 .xp-boost-line {
   display: flex;
   gap: 0.75rem;
+  align-items: center;
   justify-content: space-between;
 }
 
 .xp-boost-line dt,
 .xp-boost-line dd {
   margin: 0;
+  color: var(--bone);
 }
 
-.xp-boost-line dd {
-  font-variant-numeric: tabular-nums;
+.xp-boost-line dt {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.xp-boost-icon {
+  flex: none;
 }
 
 .xp-boost-line.total {
   padding-top: 0.25rem;
   box-shadow: inset 0 2px 0 0 var(--line);
+}
+
+.xp-boost-line.total dt,
+.xp-boost-line.total dd {
   color: var(--gold);
 }
 
@@ -293,9 +308,10 @@ button.xp-boost:focus-visible {
     visibility: hidden;
   }
 
+  /* "Level up!" jumps up from below its line: three pixel steps up, one step past its place, then back. */
   .xp-row .xp-tag.up.shown {
     visibility: visible;
-    animation: xp-pop 300ms steps(3) both;
+    animation: xp-rise 320ms step-end both;
   }
 
   .xp-plus {
@@ -319,5 +335,31 @@ button.xp-boost:focus-visible {
 
   100% {
     transform: scale(1);
+  }
+}
+
+@keyframes xp-rise {
+  0% {
+    transform: translateY(9px);
+  }
+
+  20% {
+    transform: translateY(6px);
+  }
+
+  40% {
+    transform: translateY(3px);
+  }
+
+  60% {
+    transform: translateY(-3px);
+  }
+
+  80% {
+    transform: translateY(-1px);
+  }
+
+  100% {
+    transform: translateY(0);
   }
 }

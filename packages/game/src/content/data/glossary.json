@@ -646,7 +646,7 @@
       "Tick Pack a treat when you send a creature on a trip, put it in the dungeon team or give it a Workshop job.",
       "That activity gives the creature double experience.",
       "A treat costs 3 + half the creature's level (rounded up) in Bait, paid when the activity starts. Raids take no treats.",
-      "A melon slice by an experience gain means a treat was packed. Tap it to see what changed the gain."
+      "Tap the multiplier by an experience gain (like 2x) to see what changed it. This icon marks the treat's line."
     ],
     "visual": {
       "kind": "glyph",

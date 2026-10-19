@@ -5,10 +5,9 @@ import {
   boostLabel,
   boostLines,
   experienceBoost,
-  hasTreat,
+  multiplierText,
   partValue,
   showsTimes,
-  timesText,
 } from './xp-boost-view';
 import { legsOf, numbers, pct } from './xp-change';
 import { craftingGain, experienceGain, explorerGain } from './xp-gain';
@@ -173,32 +172,31 @@ describe('the multiplier of a gain', () => {
     totalBp: 31_500,
   };
 
-  it('words the total and each part', () => {
-    expect([20_000, 15_000, 12_500, 37_500, 8_000, 31_500, 10_000].map(timesText)).toEqual([
-      '×2',
-      '×1.5',
-      '×1.25',
-      '×3.75',
-      '×0.8',
-      '×3.15',
-      '×1',
-    ]);
-    expect(several.parts.map(partValue)).toEqual(['×3', '+25%', '-20%']);
-    expect(boostLines(several)).toEqual({
-      parts: [
-        { name: 'Treat', value: '×3' },
-        { name: 'Hearty Breakfast', value: '+25%' },
-        { name: 'Cold Snap', value: '-20%' },
-      ],
-      total: '×3.15',
-    });
-    expect(boostLabel(treat2, 'Experience')).toBe('Experience ×2: Treat ×2. What changed it?');
+  it('writes every multiplier as a decimal with an x: up to two decimals, no trailing zeros', () => {
+    expect(
+      [20_000, 15_000, 12_500, 37_500, 8_000, 31_500, 35_100, 10_000, 11_250, 0].map(
+        multiplierText,
+      ),
+    ).toEqual(['2x', '1.5x', '1.25x', '3.75x', '0.8x', '3.15x', '3.51x', '1x', '1.13x', '0x']);
   });
 
-  it('shows the melon only for a treat, and the chip only when the total is not x1', () => {
-    expect([hasTreat(treat2), showsTimes(treat2)]).toEqual([true, true]);
-    expect([hasTreat(hearty), showsTimes(hearty)]).toEqual([false, true]);
-    expect([hasTreat(null), showsTimes(null)]).toEqual([false, false]);
+  it('words each part as its multiplier, a share too, and the total the same way', () => {
+    expect(several.parts.map(partValue)).toEqual(['3x', '1.25x', '0.8x']);
+    expect(partValue({ source: 'gear', name: 'Trail XP', bp: 1700 })).toBe('1.17x');
+    expect(partValue({ source: 'treat', name: 'Treat', times: 1.5 })).toBe('1.5x');
+    expect(boostLines(several)).toEqual({
+      parts: [
+        { name: 'Treat', value: '3x', treat: true },
+        { name: 'Hearty Breakfast', value: '1.25x', treat: false },
+        { name: 'Cold Snap', value: '0.8x', treat: false },
+      ],
+      total: '3.15x',
+    });
+    expect(boostLabel(treat2, 'Experience')).toBe('Experience 2x: Treat 2x. What changed it?');
+  });
+
+  it('shows the chip only when the total is not 1x', () => {
+    expect([showsTimes(treat2), showsTimes(hearty), showsTimes(null)]).toEqual([true, true, false]);
     const even = { parts: [{ source: 'day' as const, name: 'X', bp: 0 }], totalBp: 10_000 };
     expect(showsTimes(even)).toBe(false);
   });

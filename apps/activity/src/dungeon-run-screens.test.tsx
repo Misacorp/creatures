@@ -808,19 +808,18 @@ describe('the results of a path run', () => {
     expect(visibleText(byClass(list, 'xp-caption')[0] as FakeElement)).toBe('Experience');
     const rows = byClass(list, 'xp-row');
     expect(rows).toHaveLength(3);
-    // A level up with a treat: Sproutle, Lv 7 to 8, Level up!, +260, the ×2 chip and the melon, the bar.
+    // A level up with a treat: Sproutle, Lv 7 to 8, Level up!, +260, the 2x chip, the bar.
     const first = visibleText(rows[0] as FakeElement);
     expect(first).toContain('Sproutle');
     expect(first).toContain('Lv 7 → 8');
     expect(first).toContain('+260');
     expect(first).toContain('Level up!');
-    expect(visibleText(byClass(rows[0] as FakeElement, 'xp-times')[0] as FakeElement)).toBe('×2');
-    expect(byClass(rows[0] as FakeElement, 'xp-treat')).toHaveLength(1);
+    expect(visibleText(byClass(rows[0] as FakeElement, 'xp-times')[0] as FakeElement)).toBe('2x');
     expect(barOf(rows[0] as FakeElement)).toBe('90 / 330, +260');
     expect(byRole(rows[0] as FakeElement, 'progressbar')[0]?.getAttribute('aria-label')).toBe(
       "Sproutle's experience",
     );
-    // The old prose is gone, and so is the worded Treat tag (the melon says it).
+    // The old prose is gone, and so is the worded Treat tag (the chip's breakdown says it).
     expect(first).not.toContain('Treat');
     expect(first).not.toContain('+260 experience');
     // No level up, no treat: the plain gain and the bar; no Level up! and no multiplier.
@@ -853,8 +852,8 @@ describe('the results of a path run', () => {
     expect(rows).toHaveLength(1);
     expect(visibleText(rows[0] as FakeElement)).not.toContain('Cold Snap');
     expect(visibleText(rows[0] as FakeElement)).not.toContain('gave');
-    // Treat ×2 and Cold Snap -20%: ×1.6.
-    expect(visibleText(byClass(rows[0] as FakeElement, 'xp-times')[0] as FakeElement)).toBe('×1.6');
+    // Treat 2x and Cold Snap -20%: 1.6x.
+    expect(visibleText(byClass(rows[0] as FakeElement, 'xp-times')[0] as FakeElement)).toBe('1.6x');
   });
 
   it('shows a creature the run paid nothing only its level, with no row', () => {

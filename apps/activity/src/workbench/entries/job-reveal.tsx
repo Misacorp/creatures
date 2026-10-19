@@ -7,7 +7,8 @@ import { JobReveal } from '../../JobReveal';
 import { expToNext } from '@creatures/game';
 import { ExperienceGainRow } from '../../ExperienceGainRow';
 import { GlossaryTag } from '../../Glossary';
-import { XpGain, XpList } from '../../ui/XpGain';
+import { TREAT_ICON, TREAT_ICONS, type TreatIconName } from '../../glyphs';
+import { XpBoostBreakdown, XpGain, XpList } from '../../ui/XpGain';
 import { experienceGain, craftingGain } from '../../xp-gain';
 import { bool, num, str } from '../props';
 import { APPRENTICE, EXPERIENCE_BOOST_NAMES, experienceBoostOf } from './xp-boosts';
@@ -102,7 +103,7 @@ const jobReveal: Entry = {
   file: 'apps/activity/src/JobReveal.tsx',
   group: 'Loot & reveals',
   description:
-    'The card of a claimed Workshop job. A dismantle is a picture: the item (or items) taken apart, an arrow, and what it became as count badges (scrap, shards, glimmer, Essence); then who did the work, with their experience and the Crafting XP as the shared XP rows (the bar counts up; a multiplier chip and the melon slice open the breakdown). A craft shows its orb and item, then the same worker rows.',
+    'The card of a claimed Workshop job. A dismantle is a picture: the item (or items) taken apart, an arrow, and what it became as count badges (scrap, shards, glimmer, Essence); then who did the work, with their experience and the Crafting XP as the shared XP rows (the bar counts up; the "3.15x" multiplier chip opens the breakdown). A craft shows its orb and item, then the same worker rows.',
   controls: {
     kind: { kind: 'select', options: KINDS },
     gained: { kind: 'number', min: 1, max: 999 },
@@ -166,7 +167,36 @@ const jobReveal: Entry = {
   ),
 };
 
+const TREAT_NAMES = Object.keys(TREAT_ICONS) as TreatIconName[];
+
+/**
+ * The four treat icons side by side, each as the prefix of the Treat line in a real breakdown (the
+ * popover's body without its arrow), for Misa to pick one. The shipped one is marked.
+ */
+function TreatIconCompare({ p }: { p: Props }) {
+  const boost =
+    experienceBoostOf(str(p, 'boost')) ??
+    experienceBoostOf('treat, Hearty Breakfast and Cold Snap');
+  if (boost === null) return null;
+  return (
+    <div class="wb-treat-compare">
+      {TREAT_NAMES.map((name) => (
+        <figure key={name} class="wb-treat-option">
+          <figcaption class="pix">
+            {name}
+            {name === TREAT_ICON ? ' (shipped)' : ''}
+          </figcaption>
+          <div class="popover popover-wide wb-static-popover">
+            <XpBoostBreakdown boost={boost} what="Experience" treat={TREAT_ICONS[name]} />
+          </div>
+        </figure>
+      ))}
+    </div>
+  );
+}
+
 function XpGainDemo({ p }: { p: Props }) {
+  if (bool(p, 'treatIcons')) return <TreatIconCompare p={p} />;
   const exp = experienceGain(paid(p), 'Cindle');
   const crafting = craftingGain(
     {
@@ -194,8 +224,8 @@ const xpGain: Entry = {
   file: 'apps/activity/src/ui/XpGain.tsx',
   group: 'Bars',
   description:
-    'One "XP gained" row, the same wherever the app shows what an activity paid (a Workshop job, a trip, the dungeon team): the label, the level change and Level up!, then the level tag, a slim bar that counts up from the old value to the new one (a level crossed fills, flashes and starts again), the "+N", and the multiplier: a "×2" chip in the kind\'s colour when the total is not 1, the melon slice when a treat was packed; either opens the breakdown. Never a sentence about what changed the gain. Reduced motion shows the end at once.',
-  covers: ['XpList', 'XpExtraRow'],
+    'One "XP gained" row, the same wherever the app shows what an activity paid (a Workshop job, a trip, the dungeon team): the label, the level change and Level up!, then the level tag, a slim bar that counts up from the old value to the new one (a level crossed fills, flashes and starts again), the "+N", and the multiplier: a "3.15x" chip, the kind\'s colour on ink, when the total is not 1x; it opens the breakdown (each source as its multiplier, the treat\'s line with the treat icon, then the total). Never a sentence about what changed the gain. Reduced motion shows the end at once. "Treat icons" shows the four treat icon designs in the breakdown, to pick one.',
+  covers: ['XpList', 'XpExtraRow', 'XpBoostBreakdown'],
   controls: {
     gained: { kind: 'number', min: 1, max: 999 },
     craftXp: { kind: 'number', min: 1, max: 999 },
@@ -204,6 +234,7 @@ const xpGain: Entry = {
     waiting: { kind: 'toggle' },
     boost: { kind: 'select', options: EXPERIENCE_BOOST_NAMES },
     apprentice: { kind: 'toggle' },
+    treatIcons: { kind: 'toggle' },
   },
   defaults: {
     gained: 16,
@@ -213,6 +244,7 @@ const xpGain: Entry = {
     waiting: false,
     boost: 'none',
     apprentice: false,
+    treatIcons: false,
   },
   presets: [
     { name: 'Experience and Crafting', props: {} },
@@ -224,6 +256,10 @@ const xpGain: Entry = {
     {
       name: 'Several multipliers',
       props: { boost: 'treat, Hearty Breakfast and Cold Snap', gained: 50, apprentice: true },
+    },
+    {
+      name: 'Treat icons: the four designs in the breakdown',
+      props: { boost: 'treat, Hearty Breakfast and Cold Snap', treatIcons: true },
     },
   ],
   render: (p) => <XpGainDemo key={JSON.stringify(p)} p={p} />,

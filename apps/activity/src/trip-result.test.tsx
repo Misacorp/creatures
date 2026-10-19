@@ -90,10 +90,9 @@ describe('the experience row of a trip', () => {
     expect(text).toContain('Lv 8 → 9');
     expect(text).toContain('+240');
     expect(text).toContain('Level up!');
-    // The treat is the melon and the ×2 chip, never the word.
+    // The treat is in the 2x chip (and its breakdown), never the word.
     expect(text).not.toContain('Treat');
-    expect(byClass(list, 'xp-treat')).toHaveLength(1);
-    expect(visibleText(first(list, byClass(list, 'xp-times')))).toBe('×2');
+    expect(visibleText(first(list, byClass(list, 'xp-times')))).toBe('2x');
     const bar = find(page.root, (e) => e.getAttribute('role') === 'progressbar')[0];
     expect(bar?.getAttribute('aria-label')).toBe("Sproutle's experience");
     expect(bar?.getAttribute('aria-valuetext')).toBe('40 / 300, +240');

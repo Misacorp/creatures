@@ -366,23 +366,88 @@ const anvil: SpriteDef = {
 
 // --- Creature experience ---
 
-/**
- * A slice of watermelon, flat side up: a treat was packed for this activity (the XP row's treat icon,
- * decisions.md 2026-10-19). Red flesh with ink seeds, a pale and a green rind round the curve.
- */
-const treat: SpriteDef = {
-  palette: { r: '#ef4f63', h: '#ffb3b8', k: INK, w: '#e9f5c8', g: '#4fb05a', d: '#2f7a3c' },
+/*
+  The treat icon (decisions.md 2026-10-19, follow-up): the prefix of the "Treat" line in an XP gain's
+  breakdown and the picture of the glossary's Treat entry. Four designs in the game's own colours (the
+  tokens' red, grove, bone, haze, gold, ember and the Crafting leather, with a darker step of one where it
+  needs a shade); `TREAT_ICON` picks the one the game shows as `treat`. The melon slice of the first round
+  is gone (its pinks and greens were not the game's).
+*/
+
+/** A pair of cherries on one stem: the default treat (a fruit, as Misa first asked, in the game's red). */
+const treatCherries: SpriteDef = {
+  palette: { r: BAD, d: '#c23a52', w: BONE, g: '#5cbf5a' },
+  rows: [
+    '.....gg.',
+    '....gg..',
+    '...g.g..',
+    '..g...g.',
+    '.rrr.rrr',
+    'rwrrrwrr',
+    'rrrdrrrd',
+    '.dd..dd.',
+  ],
+};
+
+/** A round cookie with a small bite and dark chips, in the Crafting leather. */
+const treatCookie: SpriteDef = {
+  palette: { l: '#c08552', h: '#e0aa72', d: '#8c5c35', k: INK },
+  rows: [
+    '..lll...',
+    '.hhlld..',
+    'hhklllld',
+    'hlllkldl',
+    'llllllll',
+    'lkllklld',
+    '.llllld.',
+    '..dddd..',
+  ],
+};
+
+/** A bone-shaped biscuit, bone on top and haze underneath. */
+const treatBone: SpriteDef = {
+  palette: { w: BONE, h: HAZE },
   rows: [
     '........',
-    'hrrrrrrh',
-    'wrkrrkrw',
-    'gwrrrrwg',
-    'gwwrkwwg',
-    'dggwwggd',
-    '.dddddd.',
+    'ww....ww',
+    'wwwwwwww',
+    '.wwwwww.',
+    '.wwwwww.',
+    'hhhhhhhh',
+    'hh....hh',
     '........',
   ],
 };
+
+/** A wrapped sweet: an ember candy with a bone shine, its gold wrapper twisted at both ends. */
+const treatCandy: SpriteDef = {
+  palette: { g: GOLD, s: '#c8952b', r: '#ef6a3a', d: '#b8452a', w: BONE },
+  rows: [
+    '........',
+    'g......g',
+    'gg.rr.gg',
+    'gsrwrrsg',
+    'gsrrrrsg',
+    'gg.dd.gg',
+    'g......g',
+    '........',
+  ],
+};
+
+/** The four treat icons by name, for the workbench's comparison; the game shows `TREAT_ICON`. */
+export const TREAT_ICONS = {
+  cherries: treatCherries,
+  cookie: treatCookie,
+  bone: treatBone,
+  candy: treatCandy,
+} as const satisfies Record<string, SpriteDef>;
+
+export type TreatIconName = keyof typeof TREAT_ICONS;
+
+/** The treat icon the game shows (glyph id `treat`). Change this one name to swap it. */
+export const TREAT_ICON: TreatIconName = 'cherries';
+
+const treat: SpriteDef = TREAT_ICONS[TREAT_ICON];
 
 // --- Tabs (one colour, key `w`, so a tab can tint it for its selected state) ---
 

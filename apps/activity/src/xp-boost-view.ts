@@ -1,8 +1,9 @@
 /**
- * The multiplier of an XP gain as the shared row shows it (decisions.md, 2026-10-19): a melon slice when a
- * treat was packed (never with a number on it), a "×2" chip next to the "+N" when the total is not x1, and
- * the breakdown both open. Pure. The server sends the parts and the total with every gain (`XpBoost`);
- * this only words them. A result from before it did is read from what it had then.
+ * The multiplier of an XP gain as the shared row shows it (decisions.md, 2026-10-19, and its follow-up): a
+ * "3.15x" chip next to the "+N" when the total is not 1x, which opens the breakdown (each source as its
+ * multiplier, then the total, all in the same "1.25x" form). Pure. The server sends the parts and the total
+ * with every gain (`XpBoost`); this only words them. A result from before it did is read from what it had
+ * then.
  */
 import { RULES, xpBoostTotalBp } from '@creatures/game';
 import type { ExperienceView, XpBoost, XpBoostPart } from './experience';
@@ -18,41 +19,40 @@ function factor(bp: number): string {
   return `${String(whole)}.${String(rest).padStart(2, '0').replace(/0$/, '')}`;
 }
 
-/** "×2", "×1.5": the total multiplier as the chip says it. */
-export function timesText(totalBp: number): string {
-  return `×${factor(totalBp)}`;
+/** "2x", "1.25x", "0.8x", "3.51x": a multiplier in basis points, as the chip and every breakdown line say it. */
+export function multiplierText(bp: number): string {
+  return `${factor(bp)}x`;
 }
 
-/** "×2" for a treat, "+25%" or "-20%" for a share. */
+/** A part as its multiplier: a treat's "3x", a share's "1.25x" (+25%) or "0.8x" (-20%). */
 export function partValue(part: XpBoostPart): string {
-  if (part.source === 'treat') return `×${String(part.times)}`;
-  const pctText = String(Math.abs(part.bp) / 100);
-  return `${part.bp < 0 ? '-' : '+'}${pctText}%`;
+  if (part.source === 'treat') return multiplierText(Math.round(part.times * BP));
+  return multiplierText(BP + part.bp);
 }
 
-/** A treat was packed for it: the row shows the melon. */
-export const hasTreat = (boost: XpBoost | null): boolean =>
-  boost?.parts.some((p) => p.source === 'treat') === true;
-
-/** The total is not x1: the row shows the chip. */
+/** The total is not 1x: the row shows the chip. */
 export const showsTimes = (boost: XpBoost | null): boolean =>
   boost !== null && boost.totalBp !== BP;
 
-/** What the breakdown lists: each part with its value, then the total. */
+/** What the breakdown lists: each part with its multiplier (the treat's line has the treat icon), then the total. */
 export function boostLines(boost: XpBoost): {
-  parts: { name: string; value: string }[];
+  parts: { name: string; value: string; treat: boolean }[];
   total: string;
 } {
   return {
-    parts: boost.parts.map((p) => ({ name: p.name, value: partValue(p) })),
-    total: timesText(boost.totalBp),
+    parts: boost.parts.map((p) => ({
+      name: p.name,
+      value: partValue(p),
+      treat: p.source === 'treat',
+    })),
+    total: multiplierText(boost.totalBp),
   };
 }
 
-/** What a screen reader hears for the button: "Experience ×2: Treat ×2. What changed it?" */
+/** What a screen reader hears for the button: "Experience 2x: Treat 2x. What changed it?" */
 export function boostLabel(boost: XpBoost, what: string): string {
   const parts = boost.parts.map((p) => `${p.name} ${partValue(p)}`).join(', ');
-  return `${what} ${timesText(boost.totalBp)}: ${parts}. What changed it?`;
+  return `${what} ${multiplierText(boost.totalBp)}: ${parts}. What changed it?`;
 }
 
 /**

@@ -3,12 +3,13 @@ import { useEffect, useState } from 'preact/hooks';
 import { cssVars } from '../css-vars';
 import { GlossaryTag } from '../Glossary';
 import { glyphOrUnknown } from '../glyphs';
+import type { SpriteDef } from '../sprites/sprite-data';
 import { usePrefersReducedMotion } from '../hooks';
 import { usePopoverTrigger } from '../PopoverHost';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import type { XpBoost } from '../experience';
-import { boostLabel, boostLines, hasTreat, showsTimes, timesText } from '../xp-boost-view';
+import { boostLabel, boostLines, multiplierText, showsTimes } from '../xp-boost-view';
 import { countEnd, countStart, countSteps, type CountState } from '../xp-count';
 import { current, leveledUp, numbers, pct, type XpChange } from '../xp-change';
 import { PopoverCard, popupProps } from './Popover';
@@ -45,20 +46,30 @@ function useCount(change: XpChange, reduced: boolean): CountState {
   return state;
 }
 
-/** The breakdown of a multiplier: each part with its value, then the total. */
-function BoostBreakdown({ boost, what }: { boost: XpBoost; what: string }) {
+/**
+ * The breakdown of a multiplier, the body of its popover: the kind as the title, each part with its
+ * multiplier ("Treat 3x", "Hearty Breakfast 1.25x"; the treat's line starts with the treat icon), then the
+ * total. `treat` is another treat icon, for the workbench's comparison of the designs.
+ */
+export function XpBoostBreakdown({
+  boost,
+  what,
+  treat = glyphOrUnknown('treat'),
+}: {
+  boost: XpBoost;
+  what: string;
+  treat?: SpriteDef;
+}) {
   const lines = boostLines(boost);
   return (
-    <PopoverCard
-      {...(hasTreat(boost)
-        ? { visual: <Sprite sprite={glyphOrUnknown('treat')} scale={4} /> }
-        : {})}
-      title={what}
-    >
+    <PopoverCard title={what}>
       <dl class="xp-boost-lines">
         {lines.parts.map((part, i) => (
           <div key={i} class="xp-boost-line">
-            <dt>{part.name}</dt>
+            <dt>
+              {part.treat && <Sprite sprite={treat} scale={2} class="xp-boost-icon" />}
+              {part.name}
+            </dt>
             <dd>{part.value}</dd>
           </div>
         ))}
@@ -72,22 +83,13 @@ function BoostBreakdown({ boost, what }: { boost: XpBoost; what: string }) {
 }
 
 /**
- * The multiplier of a gain: a "×2" chip in the kind's colour when the total is not x1, and the melon slice
- * when a treat was packed (never with a number on it). One button: a tap opens the breakdown. Nothing when
- * nothing changed the gain.
+ * The multiplier of a gain: a "3.15x" chip, plain text in the kind's colour on ink like the game's other
+ * small tags, when the total is not 1x. A tap opens the breakdown. Nothing when nothing changed the gain.
  */
 function BoostButton({ boost, what, id }: { boost: XpBoost | null; what: string; id: string }) {
   const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();
-  if (boost === null) return null;
-  const times = showsTimes(boost);
-  const treat = hasTreat(boost);
-  if (!times && !treat) return null;
-  const face = (
-    <>
-      {times && <span class="xp-times">{timesText(boost.totalBp)}</span>}
-      {treat && <Sprite sprite={glyphOrUnknown('treat')} scale={2} class="xp-treat" />}
-    </>
-  );
+  if (boost === null || !showsTimes(boost)) return null;
+  const face = <Tag class="xp-times">{multiplierText(boost.totalBp)}</Tag>;
   const label = boostLabel(boost, what);
   if (host === null) {
     return (
@@ -107,7 +109,7 @@ function BoostButton({ boost, what, id }: { boost: XpBoost | null; what: string;
         if (ref.current === null) return;
         host.openCustom(`xp-boost:${id}`, ref.current, {
           label: `What changed the ${what === 'Experience' ? 'experience' : what}`,
-          body: <BoostBreakdown boost={boost} what={what} />,
+          body: <XpBoostBreakdown boost={boost} what={what} />,
         });
       }}
     >
@@ -119,10 +121,10 @@ function BoostButton({ boost, what, id }: { boost: XpBoost | null; what: string;
 /**
  * One "XP gained" row, the same wherever the app shows what an activity paid (decisions.md, 2026-10-19,
  * "Count-up"): the label, the level change and "Level up!" when it went up, then the level tag, a slim bar
- * with its numbers, the "+N" and the multiplier (a chip and the melon slice, which open the breakdown). The
- * bar counts up from where it was to where it is now in pixel steps; a level crossed fills the old bar,
- * flashes and fills the new level's bar with the rest, and "Level up!" pops in then. A player who prefers
- * reduced motion sees the end at once. Never a sentence about what changed the gain: that is the breakdown.
+ * with its numbers, the "+N" and the multiplier chip ("3.15x", which opens the breakdown). The bar counts up
+ * from where it was to where it is now in pixel steps; a level crossed fills the old bar, flashes and fills
+ * the new level's bar with the rest, and "Level up!" rises into place then (from below, in pixel steps,
+ * with a small overshoot). A player who prefers reduced motion sees the end at once, "Level up!" in place. Never a sentence about what changed the gain: that is the breakdown.
  * Put it in an `XpList`.
  */
 export function XpGain({

@@ -177,9 +177,9 @@ Crafting a supply is a Workshop job. Basic supplies need the lowest Crafting lev
 
 A treat is a little Bait spent on one creature when an activity starts (a trip, the dungeon team, a Workshop job); that activity gives it double experience, and triple on a Hearty Breakfast day. Raids take no treats. `(content: glossary.json "treat")`
 
-**The treat icon** (shipped 2026-10-19): a watermelon slice, flat side up, red flesh with dark seeds and a pale and a green rind round the curve (`treat` in `apps/activity/src/glyphs.ts`). It sits next to an experience gain when a treat was packed, and it never carries a number: the gain's multiplier is a separate chip. Tapping either shows what changed the gain. `(content: glossary.json "treat"; design: decisions.md 2026-10-19)`
+**The treat icon** (shipped 2026-10-19, redrawn the same day): a pair of cherries on one stem, in the game's red with a grove-green stem and leaf (`treat` in `apps/activity/src/glyphs.ts`, picked by `TREAT_ICON` from four designs: cherries, cookie, bone biscuit, wrapped candy). It is the prefix of the "Treat" line in an experience gain's breakdown (tap the gain's multiplier chip, "2x") and the picture of the glossary's Treat entry; it no longer sits next to the gain. The first design, a watermelon slice, was dropped because its pinks and greens were not the game's. `(content: glossary.json "treat"; design: decisions.md 2026-10-19)`
 
-**Compendium detail, not shipped** (in-world): the valley's cooks cut melon for creatures before a long day, and a creature that has had its slice works with a will. Nobody agrees whether it is the melon or the being thought of that does it.
+**Compendium detail, not shipped** (in-world): the valley's cooks keep a jar of cherries for creatures before a long day, and a creature that has had its pair works with a will. Nobody agrees whether it is the cherries or the being thought of that does it.
 
 Parts are the raw material. They pay for crafts. `(content: glossary.json "part-*")`
 

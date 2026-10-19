@@ -184,9 +184,7 @@ describe('a claimed dismantle', () => {
     );
     const list = first(byClass(up.root, 'xp-list'));
     expect(byClass(list, 'xp-up').map((t) => visibleText(t))).toEqual(['Lv 5 → 6', 'Lv 2 → 3']);
-    expect(byClass(list, 'xp-times').map((t) => visibleText(t))).toEqual(['×2', '×1.2']);
-    // The melon only for the treat, on the experience.
-    expect(byClass(list, 'xp-treat')).toHaveLength(1);
+    expect(byClass(list, 'xp-times').map((t) => visibleText(t))).toEqual(['2x', '1.2x']);
     const text = visibleText(list);
     expect(text).toContain('Waiting');
     expect(text).not.toContain('Treat');
