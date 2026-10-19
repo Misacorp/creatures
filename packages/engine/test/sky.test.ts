@@ -23,7 +23,7 @@ import { rowOf } from './pattern-helpers';
  * (`skipFirstTurn`) and Bramble Season (`brambleBp`). Absent means exactly the old fight.
  */
 
-const PLAIN: WeatherSky = { rainHealBp: 0, haze: false, brambleBp: 0 };
+const PLAIN: WeatherSky = { rainHealBp: 0, haze: false, brambleBp: 0, lingerAllRounds: 0 };
 
 describe('absent fields: a fight without them is exactly the old fight', () => {
   it('empty, zero and absent hooks replay byte for byte, with and without luck and rules', () => {
@@ -44,6 +44,7 @@ describe('absent fields: a fight without them is exactly the old fight', () => {
           { skipFirstTurn: [] },
           { rainHealBp: 0, brambleBp: 0 },
           { rainHealBp: 0, brambleBp: 0, skipFirstTurn: [] },
+          { lingerAllRounds: 0 },
         ] satisfies Partial<FightInput>[]) {
           const out = simulateFight({ ...v, ...extra }, createSeededRng('same'));
           expect(JSON.stringify(out)).toBe(expected);
@@ -59,15 +60,21 @@ describe('absent fields: a fight without them is exactly the old fight', () => {
 
   it("the day's fields appear only when the day has them", () => {
     const row = rowOf(9);
-    expect(skyFightFields({ rainHealBp: 200, haze: true, brambleBp: 3_000 }, row)).toEqual({
+    expect(
+      skyFightFields({ rainHealBp: 200, haze: true, brambleBp: 3_000, lingerAllRounds: 1 }, row),
+    ).toEqual({
       rainHealBp: 200,
       skipFirstTurn: ['s0', 's3', 's6'],
       brambleBp: 3_000,
+      lingerAllRounds: 1,
     });
-    expect(skyRunFields({ rainHealBp: 250, haze: true, brambleBp: 4_500 })).toEqual({
+    expect(
+      skyRunFields({ rainHealBp: 250, haze: true, brambleBp: 4_500, lingerAllRounds: 1 }),
+    ).toEqual({
       rainHealBp: 250,
       hazeLeft: true,
       brambleBp: 4_500,
+      lingerAllRounds: 1,
     });
   });
 
@@ -340,6 +347,12 @@ describe('Morning Haze in the dungeon: the left creature only', () => {
     const built = buildRoomInput(runOf({ rainHealBp: 250, brambleBp: 4_500 }), room, null);
     expect(built.rainHealBp).toBe(250);
     expect(built.brambleBp).toBe(4_500);
+    expect(built).not.toHaveProperty('lingerAllRounds');
+    // Lantern Light reaches every room too.
+    expect(buildRoomInput(runOf({ lingerAllRounds: 1 }), room, null).lingerAllRounds).toBe(1);
+    expect(buildRoomInput(runOf({ lingerAllRounds: 0 }), room, null)).not.toHaveProperty(
+      'lingerAllRounds',
+    );
     expect(buildRoomInput(runOf({ rainHealBp: 0, brambleBp: 0 }), room, null)).not.toHaveProperty(
       'rainHealBp',
     );

@@ -124,10 +124,14 @@ describe('Morning Haze on a board', () => {
     expect(firstOfEachRow(row, board)).toEqual(['s0', 's2', 's3']);
     // Without a board it is the dense row's rows.
     expect(firstOfEachRow(row)).toEqual(['s0', 's1', 's4']);
-    expect(skyFightFields({ rainHealBp: 0, haze: true, brambleBp: 0 }, row, board)).toEqual({
+    expect(
+      skyFightFields({ rainHealBp: 0, haze: true, brambleBp: 0, lingerAllRounds: 0 }, row, board),
+    ).toEqual({
       skipFirstTurn: ['s0', 's2', 's3'],
     });
-    expect(skyFightFields({ rainHealBp: 0, haze: true, brambleBp: 0 }, row)).toEqual({
+    expect(
+      skyFightFields({ rainHealBp: 0, haze: true, brambleBp: 0, lingerAllRounds: 0 }, row),
+    ).toEqual({
       skipFirstTurn: ['s0', 's1', 's4'],
     });
   });

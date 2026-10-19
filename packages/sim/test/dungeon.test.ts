@@ -149,9 +149,13 @@ describe('the run input in the simulator', () => {
     const build = (weather: ReturnType<typeof day> | null) =>
       buildRunInput(p, 3, {}, undefined, weather);
     const plain = build(null);
-    for (const key of ['rainHealBp', 'hazeLeft', 'brambleBp'])
+    for (const key of ['rainHealBp', 'hazeLeft', 'brambleBp', 'lingerAllRounds'])
       expect(plain).not.toHaveProperty(key);
     expect(build(day('kind-rain', null)).rainHealBp).toBe(250);
+    // Lantern Light lengthens every ability once, from the run, not from a creature's sheet.
+    const lantern = build(day('lantern-light', null));
+    expect(lantern.lingerAllRounds).toBe(1);
+    expect(lantern.team.every((s) => s.mods?.lingerRounds === undefined)).toBe(true);
     expect(build(day('market-day', 'morning-haze')).hazeLeft).toBe(true);
     expect(build(day('market-day', 'bramble-season')).brambleBp).toBe(1_800);
   });

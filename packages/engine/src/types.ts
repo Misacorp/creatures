@@ -319,6 +319,13 @@ export interface FightInput {
    * armor). Absent: none, so a stored fight replays as it was.
    */
   brambleBp?: number;
+  /**
+   * The day's Lantern Light: rounds (1 to 3) added to the timed effects of every ability in the fight
+   * (Rally, Shield Wall, timed Purge), basic ones included, on top of the `lingerRounds` of an ability's
+   * own creature. The day's weather is only ever in this field, never also in a creature's sheet, so a
+   * creature's ability is not lengthened twice. Absent: 0, so a stored fight replays as it was.
+   */
+  lingerAllRounds?: number;
 }
 
 export interface FightRules {
