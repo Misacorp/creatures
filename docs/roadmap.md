@@ -57,7 +57,8 @@ The simulator has 96 balance targets. On seed `leet`, about 28 fail. These failu
 2. **Part 2 follow-ups** next (Capes, Warm burrow, Lane anchor, Maker's Mark, talents for the new forms' roles), so they ship with the balance pass: "add these first and THEN do the balance pass. The idea is to ship them all in one go."
 3. **The balance pass** after that: "it's needed for sure".
 4. **Later:** WebSocket push ("the week is only starting and we have plenty of time"), new content ("low priority right now since we're improving core systems"), Preact 11, and Stagger, with Misa's note on the live finale: "Last raid finale received feedback that it was over very quick. I think we could make it run at half the current speed and clearly indicate boss abilities that are charging up, as sort of progress bars beside the boss itself. Right now these are telegraphed as mainly text under the boss, which is hard to read in the middle of a fight."
-5. **Not changing:** an item may roll a line equal to its base (implicit) line; only two rolled lines may never be the same (Misa: "If an item has a static inherent bonus that matches what a modifier can roll, that should be allowed").
+5. **Raid summary redesign** (Misa, 2026-10-19, from a staging test): the after-action report "holds a lot of data" but is "lists and lists of bullet points that are incredibly cursed in their alignment". Wanted: a thought-out version, "a scoreboard or stuff like that, maybe a few highlights". Design round with screenshots first, like the XP bar and the creature card.
+6. **Not changing:** an item may roll a line equal to its base (implicit) line; only two rolled lines may never be the same (Misa: "If an item has a static inherent bonus that matches what a modifier can roll, that should be allowed").
 
 **Batching:** Misa prefers few, large PRs. Each item above is one PR, and small polish rides along with whatever touches the same screens.
 
