@@ -26,7 +26,7 @@ The workbench is a second Vite entry (`apps/activity/workbench.html`, code in `a
 
 ## Not covered
 
-`CreatureCard`, `CreatureFinder` and `Collection` (the Creatures tab with sample creatures, from `creature-card-sample.ts`) are covered since 2026-10-17. Other whole screens and the fight stage (`Stage`, `LiveStage`, `Dungeon`, `Workshop`, `Expeditions` and the like) need a full game state. Also left out: `HaulStrip`, `SlotsStrip`, `InventoryGrid`, `ItemDetail`, `JobSlots`, the pickers and the How to play page. They can be added as entries when feedback asks for them.
+`CreatureCard`, `CreatureFinder` and `Collection` (the Creatures tab with sample creatures, from `creature-card-sample.ts`) are covered since 2026-10-17. `CreatureCard` has a `variant` switch for the card's layout round of 2026-10-19 (`today`, `A`, `E`; workbench only, styles in `styles/components/creature-card-variants.css`, E's markup in `src/workbench/creature-card-e/`) and a `screen` toggle that draws the whole Creatures screen of Misa's phone screenshot with five hard cases (`variantRoster()`). Other whole screens and the fight stage (`Stage`, `LiveStage`, `Dungeon`, `Workshop`, `Expeditions` and the like) need a full game state. Also left out: `HaulStrip`, `SlotsStrip`, `InventoryGrid`, `ItemDetail`, `JobSlots`, the pickers and the How to play page. They can be added as entries when feedback asks for them.
 
 `FlipNav` (with `FlipArea` and `FlipLive`; 2026-10-18) shows how the creature page and the item drawers flip between things: the arrow looks, a swipe pad (with a switch that lets the mouse drag, since a finger is the normal pointer), the real creature page over a sample roster and the Workshop item drawer (the item picker no longer flips; 2026-10-18).
 

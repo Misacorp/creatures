@@ -10,13 +10,18 @@ import {
   SAMPLE_STATE,
   sampleCreature,
   sampleRoster,
+  variantRoster,
   type SampleKind,
 } from '../../creature-card-sample';
 import { NO_FILTERS, applyFilters, type Filters } from '../../creature-find';
 import { needyIds } from '../../creature-needs';
 import { creatureName } from '../../game';
 import type { GearActions } from '../../gear-actions';
+import { TabBar } from '../../TabBar';
+import { NO_ALERTS } from '../../tab-alerts';
 import { Workshop } from '../../Workshop';
+import { CreatureCardE } from '../creature-card-e/CreatureCardE';
+import '../../styles/components/creature-card-variants.css';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
@@ -35,7 +40,69 @@ function kindOf(value: string): SampleKind {
   return SAMPLE_KINDS.find((k) => k === value) ?? 'growing';
 }
 
+/**
+ * The card's layout round (2026-10-19; `creature-card-variants.css`), all on the type scale the game ships:
+ * `today` is the game's card, A today's layout with the sprite at the top left and slots that fit "Lv 13", E
+ * Misa's pick built from A (`workbench/creature-card-e/CreatureCardE.tsx`).
+ */
+const VARIANTS = ['today', 'A', 'E'] as const;
+type Variant = (typeof VARIANTS)[number];
+
+function variantOf(p: Props): Variant {
+  return VARIANTS.find((v) => v === str(p, 'variant')) ?? 'today';
+}
+
+/** The wrapper class that switches a variant on, for the workbench only. */
+function variantClass(variant: Variant): string {
+  return `ccv ccv-${variant.toLowerCase()}`;
+}
+
+/** The Creatures screen of Misa's screenshot: the tab bar, find and filter, and the five cards of the round. */
+function VariantScreen({ variant }: { variant: Variant }) {
+  const roster = variantRoster();
+  const state = { ...SAMPLE_STATE, creatures: roster, pending: [], loungerId: 'v-lanternfin' };
+  return (
+    <div class={variantClass(variant)}>
+      <TabBar current="collection" alerts={NO_ALERTS} onSelect={() => undefined} />
+      {variant === 'E' ? (
+        <>
+          <CreatureFinder
+            creatures={roster}
+            needyCount={needyIds(roster, state).size}
+            filters={NO_FILTERS}
+            shown={roster.length}
+            onFilters={() => undefined}
+            onPick={() => undefined}
+          />
+          <ul class="cards creature-cards">
+            {roster.map((creature) => (
+              <CreatureCardE
+                key={creature.id}
+                creature={creature}
+                state={state}
+                gear={SAMPLE_GEAR}
+                busy={false}
+                onOpen={() => undefined}
+              />
+            ))}
+          </ul>
+        </>
+      ) : (
+        <Collection
+          state={state}
+          gear={SAMPLE_GEAR}
+          busy={false}
+          catchActions={catchActions}
+          {...actions}
+        />
+      )}
+    </div>
+  );
+}
+
 function CardDemo({ p }: { p: Props }) {
+  const variant = variantOf(p);
+  if (bool(p, 'screen')) return <VariantScreen variant={variant} />;
   const creature = sampleCreature(kindOf(str(p, 'state')));
   const waiting = bool(p, 'waitingCatch');
   const state = {
@@ -51,18 +118,30 @@ function CardDemo({ p }: { p: Props }) {
     loungerId: bool(p, 'lounging') ? creature.id : null,
   };
   return (
-    <ul class="cards creature-cards">
-      <CreatureCard
-        creature={creature}
-        state={state}
-        gear={bool(p, 'gearLoaded') ? SAMPLE_GEAR : null}
-        busy={bool(p, 'busy')}
-        found={bool(p, 'found')}
-        actions={actions}
-        onAnswerCatch={() => undefined}
-        onOpen={() => undefined}
-      />
-    </ul>
+    <div class={variantClass(variant)}>
+      <ul class="cards creature-cards">
+        {variant === 'E' ? (
+          <CreatureCardE
+            creature={creature}
+            state={state}
+            gear={bool(p, 'gearLoaded') ? SAMPLE_GEAR : null}
+            busy={bool(p, 'busy')}
+            onOpen={() => undefined}
+          />
+        ) : (
+          <CreatureCard
+            creature={creature}
+            state={state}
+            gear={bool(p, 'gearLoaded') ? SAMPLE_GEAR : null}
+            busy={bool(p, 'busy')}
+            found={bool(p, 'found')}
+            actions={actions}
+            onAnswerCatch={() => undefined}
+            onOpen={() => undefined}
+          />
+        )}
+      </ul>
+    </div>
   );
 }
 
@@ -79,6 +158,8 @@ const creatureCard: Entry = {
     lounging: { kind: 'toggle' },
     found: { kind: 'toggle' },
     busy: { kind: 'toggle' },
+    variant: { kind: 'select', options: VARIANTS },
+    screen: { kind: 'toggle' },
   },
   defaults: {
     state: 'ribbon ready',
@@ -87,6 +168,8 @@ const creatureCard: Entry = {
     lounging: false,
     found: false,
     busy: false,
+    variant: 'today',
+    screen: false,
   },
   presets: [
     { name: 'Ribbon ready (the gold button)', props: {} },
@@ -98,6 +181,15 @@ const creatureCard: Entry = {
     { name: 'Top level', props: { state: 'top level' } },
     { name: 'Nickname, shiny and away', props: { state: 'nickname and badges' } },
     { name: 'Marked by the finder', props: { found: true } },
+    { name: "Layout round: today (Misa's screenshot)", props: { screen: true } },
+    { name: 'Layout round A: sprite at the top left', props: { screen: true, variant: 'A' } },
+    {
+      name: 'Layout round E: tags in words, the bar across the card',
+      props: { screen: true, variant: 'E' },
+    },
+    { name: 'E: ready to evolve', props: { state: 'evolve ready', variant: 'E' } },
+    { name: 'E: nickname, shiny and away', props: { state: 'nickname and badges', variant: 'E' } },
+    { name: 'E: top level', props: { state: 'top level', variant: 'E' } },
   ],
   render: (p) => <CardDemo p={p} />,
 };

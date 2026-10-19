@@ -267,3 +267,105 @@ export function sampleRoster(count: number): Creature[] {
     return creature;
   });
 }
+
+/** A copy of a creature whose line does not evolve. */
+function withoutEvolution(creature: Creature): Creature {
+  const copy = { ...creature };
+  delete copy.evolution;
+  return copy;
+}
+
+/** A talent slot of a sample: open with this talent (or empty), or closed until `opensAt`. */
+function slotOf(slot: number, opensAt: number, open: boolean, talentId: string | null) {
+  return {
+    slot,
+    opensAt,
+    open,
+    talent: talentId === null ? null : talentView(talentId, false),
+  };
+}
+
+/**
+ * The cards of Misa's phone screenshot (2026-10-19) and the hard cases around them, for the card's
+ * type-size variants: a new Mistnewt (one talent, a slot at 20), a Festival Lanternfin that is lounging
+ * (signature talent and one more, slots at 20 and 25), a 20-letter nickname at level 8 (the charm slot
+ * still says "Lv 13"), a level 27 Hearthshell with every gear and talent slot filled (one golden), and
+ * a Cindle ready to evolve (the gold button).
+ */
+export function variantRoster(): Creature[] {
+  const template = base();
+  const gear = template.gear;
+  const mistnewt: Creature = {
+    ...template,
+    id: 'v-mistnewt',
+    species: 'mistnewt',
+    line: 'mistnewt',
+    level: 1,
+    exp: 0,
+    expNeeded: 27,
+    gear: [],
+    nextUnlock: { level: 7, name: 'Scarf' },
+    talents: {
+      signature: null,
+      slots: [slotOf(1, 1, true, 'slow-and-unbothered'), slotOf(2, 20, false, null)],
+      book: [{ ...talentView('slow-and-unbothered', false), slot: 1 }],
+    },
+    evolution: {
+      toSpecies: 'fogwyrm',
+      level: 15,
+      essence: 20,
+      available: false,
+      alt: { toSpecies: 'drizzlewt' },
+    },
+  };
+  const lanternfin: Creature = {
+    ...withoutEvolution(mistnewt),
+    id: 'v-lanternfin',
+    species: 'lanternfin',
+    line: 'lanternfin',
+    levelCap: 30,
+    talents: {
+      signature: talentView('guiding-light', false),
+      slots: [
+        slotOf(1, 1, true, 'festive'),
+        slotOf(2, 20, false, null),
+        slotOf(3, 25, false, null),
+      ],
+      book: [{ ...talentView('festive', false), slot: 1 }],
+    },
+  };
+  const longName: Creature = {
+    ...mistnewt,
+    id: 'v-long',
+    nickname: 'Captain Puddlestomps',
+    level: 8,
+    exp: 96,
+    expNeeded: 328,
+    gear: gear.filter((g) => g.slot !== 'charm'),
+    nextUnlock: { level: 10, name: 'Bronze Ribbon' },
+  };
+  const full: Creature = {
+    ...withoutEvolution(mistnewt),
+    id: 'v-full',
+    species: 'hearthshell',
+    line: 'hearthshell',
+    levelCap: 30,
+    level: 27,
+    exp: 1_250,
+    expNeeded: 2_400,
+    gear,
+    nextUnlock: null,
+    ribbons: 2,
+    talents: {
+      signature: talentView('fire-that-lasts', false),
+      slots: [
+        { slot: 1, opensAt: 1, open: true, talent: talentView('calm-and-warm', true) },
+        slotOf(2, 20, true, 'banked-embers'),
+        slotOf(3, 25, true, 'hosts-friends'),
+      ],
+      book: [],
+    },
+  };
+  const evolve: Creature = { ...sampleCreature('evolve ready'), id: 'v-evolve' };
+  return [mistnewt, lanternfin, longName, full, evolve];
+}

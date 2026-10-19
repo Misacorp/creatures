@@ -19,8 +19,8 @@ const NOT_COUNTED = ['stage/fx.css', 'stage/patterns.css'];
  * The raw `font-size` declarations each file keeps on purpose: the page's base size and the h1; the pixel
  * heading (3 rem and a fluid size); the glossary tag's mark (relative to its word); the living room's emoji and
  * speech labels (sized from the room's band); the How to play illustrations' labels; and the compact labels of
- * the 9-slot boards, the fight stage's unit names and the narrowest phone's tab bar, which have to be smaller
- * than `--fs-small` to fit.
+ * the 9-slot boards and the fight stage's unit names, which have to be smaller than `--fs-small` to fit. (The
+ * narrowest phone's tab bar had one too, until the scale went a rung smaller on 2026-10-19.)
  */
 const ALLOWED: Readonly<Record<string, number>> = {
   'base/base.css': 2,
@@ -30,7 +30,6 @@ const ALLOWED: Readonly<Record<string, number>> = {
   'components/raid-board.css': 3,
   'components/slot-cue.css': 1,
   'components/slot-row.css': 2,
-  'components/tabs.css': 1,
   'stage/units.css': 2,
   'views/how-to-play.css': 6,
   'views/living-room.css': 2,
