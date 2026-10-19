@@ -620,6 +620,95 @@ describe('abilities and silence', () => {
     expect(rallyRounds(0)).toEqual([1]);
   });
 
+  describe("the day's Lantern Light (lingerAllRounds)", () => {
+    const basicWall: AbilityChoice = {
+      playerId: 'p1',
+      abilityId: 'shield-wall',
+      key: 'p1:basic',
+      fireAtRound: 1,
+      params: { zone: 'front' },
+    };
+    const fullWallRounds = (extra: Partial<FightInput>, mods: SlotMods = {}) =>
+      eventsOf(
+        fightWith(rowWith(0, mods), [], {
+          rounds: 4,
+          extra: { finaleAbilities: [basicWall], ...extra },
+        }),
+        'boss_hit',
+      )
+        .filter((e) => e.source === 'attack' && e.target === 's0' && e.shielded === true)
+        .map((e) => e.round);
+
+    it('lengthens a basic Shield Wall, which no creature sheet ever does', () => {
+      expect(fullWallRounds({})).toEqual([1]);
+      expect(fullWallRounds({ lingerAllRounds: 0 })).toEqual([1]);
+      expect(fullWallRounds({ lingerAllRounds: 1 })).toEqual([1, 2]);
+      expect(fullWallRounds({ lingerAllRounds: 2 })).toEqual([1, 2, 3]);
+      // A sheet's own `lingerRounds` still does nothing for it.
+      expect(fullWallRounds({ lingerAllRounds: 1 }, { lingerRounds: 2 })).toEqual([1, 2]);
+    });
+
+    it('lengthens a basic Rally', () => {
+      const rallyRounds = (extra: Partial<FightInput>) =>
+        hitsOf(
+          fightWith(rowWith(0, {}, { 0: { atk: 1_000 } }), [], {
+            rounds: 4,
+            extra: {
+              finaleAbilities: [
+                { playerId: 'p1', abilityId: 'rally', key: 'p1:basic', fireAtRound: 1 },
+              ],
+              ...extra,
+            },
+          }),
+          's0',
+        )
+          .filter((h) => h.bonusBp === 4_000)
+          .map((h) => h.round);
+      expect(rallyRounds({})).toEqual([1]);
+      expect(rallyRounds({ lingerAllRounds: 1 })).toEqual([1, 2]);
+    });
+
+    it("lengthens a creature's ability once: the day's round is not also in its sheet", () => {
+      const reducedRounds = (extra: Partial<FightInput>, mods: SlotMods = {}) =>
+        reduced(
+          fightWith(rowWith(0, mods), [], {
+            rounds: 5,
+            extra: { finaleAbilities: [abilityOf('test-guard')], ...extra },
+          }),
+        );
+      // The wall lasts 2 rounds. One round from the day, or one from the sheet, is one round more...
+      expect(reducedRounds({})).toEqual([1, 2, -3, -4, -5]);
+      expect(reducedRounds({ lingerAllRounds: 1 })).toEqual([1, 2, 3, -4, -5]);
+      expect(reducedRounds({}, { lingerRounds: 1 })).toEqual([1, 2, 3, -4, -5]);
+      // ...and a creature that has both (gear and the day) gets both, never the day twice.
+      expect(reducedRounds({ lingerAllRounds: 1 }, { lingerRounds: 1 })).toEqual([1, 2, 3, 4, -5]);
+    });
+
+    it('lengthens a timed Purge and leaves a Purge to the end alone', () => {
+      const restored = (extra: Partial<FightInput>) => {
+        const r = fightWith(rowWith(0, {}), [], {
+          rounds: 7,
+          extra: {
+            adaptation: { rule: 'resist-top-element', target: 'tide' },
+            finaleAbilities: [abilityOf('test-purge', 'k', 2)],
+            ...extra,
+          },
+        });
+        return eventsOf(r, 'adaptation').find((e) => e.status === 'restored')?.round;
+      };
+      expect(restored({})).toBe(4);
+      expect(restored({ lingerAllRounds: 1 })).toBe(5);
+    });
+
+    it('rejects a number that is not a whole 0 to 3', () => {
+      for (const bad of [-1, 4, 1.5]) {
+        expect(() => fightWith(rowOf(9), [], { extra: { lingerAllRounds: bad } })).toThrow(
+          /lingerAllRounds/,
+        );
+      }
+    });
+  });
+
   it('ignoreSilence lets a creature at the row end keep acting', () => {
     const bind: Gimmick = {
       id: 'bind',
