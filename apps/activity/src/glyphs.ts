@@ -219,6 +219,21 @@ const speed: SpriteDef = {
   ],
 };
 
+/** A zigzag snake: the rows run one way, then the other. */
+const serpentine: SpriteDef = {
+  palette: { g: GOLD },
+  rows: [
+    '.ggggg..',
+    '.g......',
+    '.ggggg..',
+    '......g.',
+    '.ggggg..',
+    '.g......',
+    '.ggggg..',
+    '........',
+  ],
+};
+
 // --- Fight stage ---
 
 /** A ring with a dot in it, the mark on the boss. `m` is the element colour (gold by default). */
@@ -620,6 +635,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   left_to_right: leftToRight,
   right_to_left: rightToLeft,
   speed,
+  serpentine,
   mark,
   shield,
   sparkle,
@@ -686,4 +702,4 @@ export const GIMMICK_GLYPH_OPS = [
  * same op as the plain strike, drawn as a bolt so a boss card tells the two apart.
  */
 export const CHAIN_GLYPH = 'chain';
-export const TURN_ORDER_GLYPHS = ['left_to_right', 'right_to_left', 'speed'] as const;
+export const TURN_ORDER_GLYPHS = ['left_to_right', 'right_to_left', 'speed', 'serpentine'] as const;

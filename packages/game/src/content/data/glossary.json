@@ -415,6 +415,17 @@
     "section": "raid-week"
   },
   {
+    "id": "turn-serpentine",
+    "title": "Serpentine",
+    "short": "Row by row, front first. Every row flips direction each round.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "serpentine"
+    },
+    "section": "raid-week"
+  },
+  {
     "id": "auto-fire",
     "title": "Auto fire",
     "short": "Fires abilities for you.",

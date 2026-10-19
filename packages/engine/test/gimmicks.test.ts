@@ -176,7 +176,9 @@ describe('reflect_first_reaction (Backdraft)', () => {
     slot('s2', { owner: 'c', element: 'tide', role: 'setter', atk: 100 }),
     slot('p2', { owner: 'd', element: 'spark', role: 'payoff', atk: 100 }),
   ];
-  const cinder = () => run(row(), { boss: { ...boss('cinder-wyrm'), element: 'tide' } });
+  // Pinned to the old speed order (all Speeds equal: left to right) so the hand-checked numbers hold.
+  const cinder = () =>
+    run(row(), { boss: { ...boss('cinder-wyrm'), element: 'tide', turnOrder: 'speed' } });
 
   it('reflects the first reaction each round onto the triggering creature and still consumes the mark', () => {
     const r = cinder();
@@ -206,7 +208,7 @@ describe('reflect_first_reaction (Backdraft)', () => {
         slot('s', { element: 'tide', role: 'setter', atk: 100 }),
         slot('p', { element: 'spark', role: 'payoff', atk: 100, hp: 200 }),
       ],
-      { boss: { ...boss('cinder-wyrm'), element: 'tide' } },
+      { boss: { ...boss('cinder-wyrm'), element: 'tide', turnOrder: 'speed' } },
     );
     expect(eventsOf(r, 'knockout')[0]).toMatchObject({ creature: 'p', round: 1 });
   });

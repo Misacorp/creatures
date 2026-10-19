@@ -86,7 +86,7 @@
     "element": "ember",
     "baseHp": 2490,
     "baseAtk": 30,
-    "turnOrder": "speed",
+    "turnOrder": "serpentine",
     "gimmicks": [
       {
         "id": "backdraft",

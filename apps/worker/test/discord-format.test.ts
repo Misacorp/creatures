@@ -335,6 +335,8 @@ describe('formatBossReveal', () => {
     );
     expect(many.footer).toEqual({ text: '31 players in · 3 parties' });
     expect(many.description).toContain('creatures act right to left');
+    const snake = embedOf(formatBossReveal({ ...REVEAL, turnOrder: 'serpentine' }));
+    expect(snake.description).toContain('creatures snake through the rows');
   });
 
   it('names the weekday in the guild\u2019s timezone', () => {

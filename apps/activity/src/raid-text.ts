@@ -12,6 +12,8 @@ export function turnOrderText(turnOrder: string): string {
       return 'Creatures act from right to left.';
     case 'speed':
       return 'Creatures act fastest first (highest Speed).';
+    case 'serpentine':
+      return 'Creatures act row by row, front row first. Each row runs the opposite way to the one before it, and every row flips each round.';
     default:
       return 'Creatures act in a set order.';
   }
@@ -25,6 +27,8 @@ export function turnOrderShort(turnOrder: string): string {
       return 'Right to left';
     case 'speed':
       return 'By Speed';
+    case 'serpentine':
+      return 'Serpentine';
     default:
       return 'Set order';
   }

@@ -314,6 +314,7 @@ describe('the placement cues', () => {
 
   it('reads a turn order, and anything odd as left to right', () => {
     expect(parseTurnOrder('speed')).toBe('speed');
+    expect(parseTurnOrder('serpentine')).toBe('serpentine');
     expect(parseTurnOrder('right_to_left')).toBe('right_to_left');
     expect(parseTurnOrder('sideways')).toBe('left_to_right');
   });

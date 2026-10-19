@@ -346,10 +346,12 @@ describe('raid content', () => {
       ]),
     ).toEqual([
       ['tidal-colossus', 'tide', 'left_to_right', ['hit_zone', 'lance', 'charge']],
-      ['cinder-wyrm', 'ember', 'speed', ['reflect_first_reaction', 'barrage', 'slam']],
+      ['cinder-wyrm', 'ember', 'serpentine', ['reflect_first_reaction', 'barrage', 'slam']],
       ['thornmother', 'grove', 'right_to_left', ['silence_ends', 'pincer', 'charge']],
       ['storm-sovereign', 'spark', 'left_to_right', ['strike_highest_atk', 'slam']],
     ]);
+    // `speed` order stays in the engine so stored fights replay, but no boss uses it any more.
+    expect(content.bosses.filter((b) => b.turnOrder === 'speed')).toEqual([]);
     for (const b of content.bosses) expect(b.finaleRounds).toBe(12);
   });
 

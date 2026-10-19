@@ -11,7 +11,7 @@ Read `README.md` for the tags. Every boss has one element, and the four are the 
 | Boss            | Element | Turn order    | What it does each fight                                                          | Adaptation after Phase 1 |
 | --------------- | ------- | ------------- | -------------------------------------------------------------------------------- | ------------------------ |
 | Tidal Colossus  | Tide    | Left to right | Undertow: a zone attack on the front every few rounds                            | Reaction Resistance      |
-| Cinder Wyrm     | Ember   | By speed      | Backdraft: turns the first reaction of every round back on the team              | Element Resistance       |
+| Cinder Wyrm     | Ember   | Serpentine    | Backdraft: turns the first reaction of every round back on the team              | Element Resistance       |
 | Thornmother     | Grove   | Right to left | Bramble Bind: silences the creatures at both ends of each row every second round | Reaction Resistance      |
 | Storm Sovereign | Spark   | Left to right | Lightning Rod: strikes the creature with the highest Attack every round          | Element Resistance       |
 
@@ -94,7 +94,7 @@ After Phase 1, the boss adapts to what worked best for the team:
 
 ### Fighting style
 
-- **Turn order:** by speed. The fastest creature acts first. Equal speed goes to the lower slot. `(content: glossary.json "turn-speed")`
+- **Turn order:** serpentine. Row by row, front first, and every row flips direction each round. `(content: glossary.json "turn-serpentine")`
 - **Backdraft:** every round, the first reaction is turned back on your team. The boss only takes the normal hit, and the mark is still used up. Later reactions in the same round work as usual. `(content: bosses.json, glossary.json "gimmick-reflect-first-reaction")`
 - **Cinder Fall:** every second round, a shell drops on each of two to six random creatures. How many depends on who is still standing. Cover still applies. `(content: bosses.json)`
 - **Coil Crush:** every fourth round, a heavy hit on the front-most creature, and the creatures beside it take a share. A Guard can take the hit instead. `(content: bosses.json)`

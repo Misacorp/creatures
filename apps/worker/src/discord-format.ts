@@ -249,6 +249,7 @@ const TURN_ORDER_SHORT: Record<TurnOrder, string> = {
   left_to_right: 'creatures act left to right',
   right_to_left: 'creatures act right to left',
   speed: 'creatures act fastest first',
+  serpentine: 'creatures snake through the rows',
 };
 
 export interface RevealPost {

@@ -125,6 +125,39 @@ describe('turn order', () => {
   });
 });
 
+describe('serpentine turn order', () => {
+  /** Creatures at the given board slots (idx = position in the row), on a board of `length` slots. */
+  const at = (length: number, slots: number[], round: number): number[] => {
+    const cs = slots.map((_, idx) => ({ idx, spd: 0 }));
+    const order = turnOrder(cs, 'serpentine', { round, board: { length, slots } });
+    return order.map((i) => slots[i] as number);
+  };
+  const dense = (n: number) => Array.from({ length: n }, (_, i) => i);
+
+  it('3 per row: rows go front, middle, back, and every row flips on even rounds', () => {
+    expect(at(9, dense(9), 1)).toEqual([0, 1, 2, 5, 4, 3, 6, 7, 8]);
+    expect(at(9, dense(9), 2)).toEqual([2, 1, 0, 3, 4, 5, 8, 7, 6]);
+    expect(at(9, dense(9), 3)).toEqual(at(9, dense(9), 1));
+  });
+
+  it('uneven rows (3 / 4 / 3) work the same', () => {
+    expect(at(10, dense(10), 1)).toEqual([0, 1, 2, 6, 5, 4, 3, 7, 8, 9]);
+    expect(at(10, dense(10), 2)).toEqual([2, 1, 0, 3, 4, 5, 6, 9, 8, 7]);
+  });
+
+  it('follows board positions: gaps stay gaps and only placed creatures appear', () => {
+    // Slots 1, 2, 4, 7 and 8 are empty on a board of 9.
+    const slots = [0, 3, 5, 6];
+    expect(at(9, slots, 1)).toEqual([0, 5, 3, 6]);
+    expect(at(9, slots, 2)).toEqual([0, 3, 5, 6]);
+  });
+
+  it('without a board or round it is a dense row on round 1', () => {
+    const cs = dense(9).map((idx) => ({ idx, spd: 0 }));
+    expect(turnOrder(cs, 'serpentine')).toEqual([0, 1, 2, 5, 4, 3, 6, 7, 8]);
+  });
+});
+
 describe('scaleBoss', () => {
   const b = boss('tidal-colossus');
 

@@ -10,6 +10,7 @@ import {
   phaseName,
   retreatLine,
   stageOutcomeNote,
+  turnOrderShort,
   stageOutcomeText,
   turnOrderText,
 } from './raid-text';
@@ -19,6 +20,8 @@ describe('turnOrderText', () => {
     expect(turnOrderText('left_to_right')).toBe('Creatures act from left to right.');
     expect(turnOrderText('right_to_left')).toContain('right to left');
     expect(turnOrderText('speed')).toContain('Speed');
+    expect(turnOrderText('serpentine')).toContain('flips each round');
+    expect(turnOrderShort('serpentine')).toBe('Serpentine');
     expect(turnOrderText('something_new')).toContain('set order');
   });
 });

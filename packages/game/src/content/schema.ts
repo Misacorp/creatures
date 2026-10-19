@@ -103,7 +103,12 @@ const Description = v.pipe(v.string(), v.minLength(1), v.maxLength(200));
 export const ZoneSchema = v.picklist(['front', 'middle', 'back']);
 export type Zone = v.InferOutput<typeof ZoneSchema>;
 
-export const TurnOrderSchema = v.picklist(['left_to_right', 'right_to_left', 'speed']);
+export const TurnOrderSchema = v.picklist([
+  'left_to_right',
+  'right_to_left',
+  'speed',
+  'serpentine',
+]);
 export type TurnOrder = v.InferOutput<typeof TurnOrderSchema>;
 
 /**

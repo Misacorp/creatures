@@ -36,19 +36,26 @@ describe('simulation run', () => {
     // with a Boon and an Omen on experience multiplies them. The tiny run has only 4 raid weeks, so one flipped
     // week moves the raid rates by 0.25 (here two weeks flip, 0.75 to 0.25 for both); the start share, top share, creature ratio
     // and mean fights move by about 1% each. Experience per hour of a long trip (75.41) is unchanged.
+    // 2026-10-19 (Serpentine): Cinder Wyrm now acts row by row instead of by Speed, on purpose, so its
+    // fights play out differently and the dice of everything simulated after them shift. The raid
+    // win rates stay at 0.25, the finale start share goes 0.4903 to 0.5073, the top share 0.2551 to
+    // 0.2958, the creature ratio 1.2668 to 1.0673, a dungeon run 4.4643 to 4.3214 fights (home rate
+    // 0.1339 to 0.1696) and the long run wins every finale (0.8333 to 1, final rank 4 to 5). The tiny
+    // run is only 4 raid weeks and a few runs, so these are noise-sized moves from changed dice, not
+    // a balance change.
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
       'raid.typical.phase1ClearRate': 0.25,
       'raid.typical.finaleWinRate': 0.25,
-      'raid.typical.finaleStartShare': 0.4903,
-      'fair.topShareMedian': 0.2551,
-      'choice.creatureRatioMax': 1.2668,
+      'raid.typical.finaleStartShare': 0.5073,
+      'fair.topShareMedian': 0.2958,
+      'choice.creatureRatioMax': 1.0673,
       'econ.casualTopLevelWeek4': 10,
       'exp.rate.long': 75.4138,
-      'dungeon.meanFights': 4.4643,
-      'dungeon.dailyHomeRate': 0.1339,
-      'longrun.typical.finaleWinRate': 0.8333,
-      'longrun.typicalFinalRank': 4,
+      'dungeon.meanFights': 4.3214,
+      'dungeon.dailyHomeRate': 0.1696,
+      'longrun.typical.finaleWinRate': 1,
+      'longrun.typicalFinalRank': 5,
     };
     for (const [id, expected] of Object.entries(headline)) {
       expect(m[id], id).toBeCloseTo(expected, 3);

@@ -45,7 +45,7 @@ import type {
   FightRules,
   PlayerTotals,
 } from './types';
-import { fightRowShape } from './zones';
+import { ZONES, fightRowShape, zoneOfIndex, type FightBoard } from './zones';
 
 export interface FightOptions {
   /** Mutators registered in code. A mutator runs only if `input.mutators` also lists its id. */
@@ -315,7 +315,10 @@ export function simulateFight(
   }
 
   // ---- turn order ----
-  const order = turnOrder(creatures, input.turnOrderOverride ?? boss.turnOrder);
+  const orderMode = input.turnOrderOverride ?? boss.turnOrder;
+  const roundOrder = (round: number): number[] =>
+    turnOrder(creatures, orderMode, { round, board: shape });
+  const order = roundOrder(1);
 
   // ---- finale abilities ----
   const zoneHit = firstZoneHit(boss, rounds);
@@ -545,6 +548,8 @@ export function simulateFight(
       state.areaSeen = creatures.map(() => 0);
     }
     state.orderPos = -1;
+    // Serpentine flips every row each round; the other orders are the same every round.
+    if (orderMode === 'serpentine') state.order = roundOrder(round);
 
     // Gimmicks rest in enrage rounds: no charge is announced and the reflect trap is not armed.
     if (!enraging) announceCharges(state);
@@ -570,7 +575,7 @@ export function simulateFight(
       fireAbility(state, a);
     }
 
-    for (const [pos, idx] of order.entries()) {
+    for (const [pos, idx] of state.order.entries()) {
       if (state.bossHp === 0 || state.retreated) break;
       state.orderPos = pos;
       const c = creatures[idx] as Creature;
@@ -719,14 +724,36 @@ function statsFor(pack: ContentPack, speciesId: string, level: number, fusionCou
   return effectiveStats(species, level, fusionCount);
 }
 
-/** Indices in the order creatures act. Speed: highest first, ties by position. */
+/**
+ * Indices in the order creatures act. Speed: highest first, ties by position. Serpentine: row by
+ * row (Front, Middle, Back); on odd rounds Front and Back run left to right and Middle right to
+ * left, on even rounds every row flips. Serpentine needs `board` (`board.slots[i]` is the board slot
+ * of `creatures[i]`) and reads `round` (default 1); the other orders ignore both.
+ */
 export function turnOrder(
   creatures: readonly { idx: number; spd: number }[],
   mode: TurnOrder,
+  at?: { round: number; board: FightBoard },
 ): number[] {
   const idxs = creatures.map((c) => c.idx);
   if (mode === 'left_to_right') return idxs;
   if (mode === 'right_to_left') return idxs.reverse();
+  if (mode === 'serpentine') {
+    const round = at?.round ?? 1;
+    const board = at?.board ?? {
+      length: creatures.length,
+      slots: creatures.map((_, i) => i),
+    };
+    const out: number[] = [];
+    for (const [z, zone] of ZONES.entries()) {
+      // Position in `creatures`, left to right (slots rise with position).
+      const inZone = creatures.flatMap((c, i) => (zoneOfIndex(i, board) === zone ? [c.idx] : []));
+      // Front and Back run left to right on odd rounds, Middle right to left; even rounds flip all.
+      const leftToRight = (z === 1) === (round % 2 === 0);
+      out.push(...(leftToRight ? inZone : inZone.reverse()));
+    }
+    return out;
+  }
   const spd = new Map(creatures.map((c) => [c.idx, c.spd]));
   return idxs.sort((a, b) => (spd.get(b) ?? 0) - (spd.get(a) ?? 0) || a - b);
 }

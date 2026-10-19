@@ -143,7 +143,7 @@ export interface FightState {
   readonly zoneHit: { round: number; zone: Zone } | null;
   readonly creatures: Creature[];
   /** Indices in the order creatures act. */
-  readonly order: number[];
+  order: number[];
   readonly active: Mutator[];
 
   // ---- what has happened (filled in as the fight goes) ----
