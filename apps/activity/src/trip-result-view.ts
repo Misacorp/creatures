@@ -22,6 +22,7 @@ import type { PendingCatch } from './talent-types';
 import { destinationName, explorerXp, lengthHours } from './trip-view';
 import type { CountItem } from './ui/CountBadge';
 import type { IconRef } from './icon-ref';
+import { experienceGain, type ExperienceGain } from './xp-gain';
 
 /** Everything the trip result shows, worked out from the server's claim result and the fresh state. */
 export interface TripResultView {
@@ -50,7 +51,8 @@ export interface TripResultView {
     max: number;
     text?: string;
   } | null;
-  growth: { gained: number; treat: boolean; from: number; to: number; note: string | null } | null;
+  /** The explorer's creature experience as the shared row (`ExperienceGainRow`): levels, "+N", tags and the bar. */
+  growth: ExperienceGain | null;
   stars: { stars: number; gained: boolean; trips: number } | null;
   slot: string | null;
   gifts: { rank: number; title: string; lines: { key: string; icon: IconRef; text: string }[] }[];
@@ -116,13 +118,7 @@ export function tripResultView(input: {
     growth:
       exp === undefined
         ? null
-        : {
-            gained: exp.gained,
-            treat: exp.treat,
-            from: exp.levelBefore,
-            to: exp.level,
-            note: exp.gold ? 'Gold Ribbon' : exp.waiting ? 'Waiting at this level' : null,
-          },
+        : experienceGain(exp, creature === undefined ? 'The explorer' : creatureName(creature)),
     stars: stars === null ? null : { stars: stars.stars, gained: stars.gained, trips: stars.trips },
     slot: slotLine(result),
     gifts: rankGiftViews(result),

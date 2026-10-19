@@ -73,9 +73,26 @@ describe('raid week', () => {
     expect(two.rainHealBp).toBeUndefined();
     expect(two.skipFirstTurn).toBeUndefined();
     const plain = fightFor(w, 'finale').fight;
-    for (const key of ['rainHealBp', 'skipFirstTurn', 'brambleBp']) {
+    for (const key of ['rainHealBp', 'skipFirstTurn', 'brambleBp', 'lingerAllRounds']) {
       expect(plain).not.toHaveProperty(key);
     }
+  });
+
+  it("puts the day's Lantern Light in the fight input as a linger for every ability, and in no creature's sheet", () => {
+    const w = openRaidWeek(boss, roster.slice(0, 5));
+    const day = (boon: string) => ({
+      day: '2027-01-15',
+      boon,
+      omen: null,
+      wild: false,
+      boonBp: 10_000,
+      omenBp: 10_000,
+    });
+    w.weather = { phase1: day('lantern-light'), phase2: day('market-day') };
+    const one = fightFor(w, 'phase1').fight;
+    expect(one.lingerAllRounds).toBe(1);
+    expect(one.row.every((s) => s.mods?.lingerRounds === undefined)).toBe(true);
+    expect(fightFor(w, 'phase2').fight).not.toHaveProperty('lingerAllRounds');
   });
 
   it('builds a 3-per-player row for larger groups and picks the 3 strongest creatures', () => {

@@ -14,7 +14,7 @@
 
 .placement .roster-count {
   color: var(--bone);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 /* The green check beside "3 / 3 placed": a shape, so it does not rely on colour alone. */

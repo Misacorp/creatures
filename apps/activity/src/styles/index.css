@@ -100,6 +100,7 @@
 @import './components/accordion.css';
 @import './components/slot.css';
 @import './components/drawer.css';
+@import './components/drill-head.css';
 @import './components/creature-page.css';
 @import './components/item-tile.css';
 @import './components/evolve.css';

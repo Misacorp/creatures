@@ -77,7 +77,7 @@ button.cc-open:focus-visible {
 /* The small arrow at the right edge. */
 .cc-chev {
   color: var(--haze);
-  font-size: 2rem;
+  font-size: var(--fs-title);
   line-height: 1;
 }
 
@@ -155,7 +155,7 @@ button.cc-open:focus-visible {
   gap: 0.125rem 0.5rem;
   align-items: center;
   margin-top: 0.125rem;
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
 }
 
 .cc-id .xpbar-row {
@@ -169,7 +169,7 @@ button.cc-open:focus-visible {
 
 .creature-card.focused .xpbar-text,
 .creature-page .xpbar-text {
-  font-size: 1.125rem;
+  font-size: var(--fs-row);
 }
 
 /* Gear icons on the left, talent chips on the right. */
@@ -220,14 +220,14 @@ button.cc-slot .item-frame {
   outline: 2px dashed var(--haze);
   outline-offset: -2px;
   color: var(--haze);
-  font-size: 1.125rem;
+  font-size: var(--fs-row);
   line-height: 1;
   white-space: nowrap;
 }
 
 button.cc-slot.locked .cc-slot-empty {
   outline-color: var(--line);
-  font-size: 0.9375rem;
+  font-size: var(--fs-row);
 }
 
 button.cc-slot:disabled {
@@ -258,7 +258,7 @@ button.cc-talents:active:not(:disabled) {
   background: var(--dusk);
   box-shadow: inset 0 0 0 2px var(--line);
   color: var(--bone);
-  font-size: 1rem;
+  font-size: var(--fs-row);
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
@@ -276,7 +276,7 @@ button.cc-talents:active:not(:disabled) {
   display: block;
   width: 100%;
   min-height: 3rem;
-  font-size: 1.2rem;
+  font-size: var(--fs-heading);
   line-height: 1.1;
 }
 
@@ -284,7 +284,7 @@ button.cc-talents:active:not(:disabled) {
   display: block;
   margin-top: 0.0625rem;
   font-family: var(--body);
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
 }
 
 button.ghost {
@@ -296,7 +296,7 @@ button.ghost {
 button.ghost.small {
   min-height: 2rem;
   padding: 0.125rem 0.625rem;
-  font-size: 0.9375rem;
+  font-size: var(--fs-row);
 }
 
 /* --- The creature page: it takes the list's place and holds everything that is not on the card. --- */
@@ -319,7 +319,7 @@ button.ghost.small {
 button.cp-back {
   min-height: 2.75rem;
   padding: 0.125rem 0.875rem 0.125rem 0.625rem;
-  font-size: 1.25rem;
+  font-size: var(--fs-heading);
 }
 
 .cp-actions {
@@ -357,7 +357,7 @@ button.cp-back {
 .cp-title {
   margin: 0 0 0.375rem;
   color: var(--haze);
-  font-size: 1.0625rem;
+  font-size: var(--fs-row);
   line-height: 1.1;
 }
 
@@ -370,7 +370,7 @@ button.cp-back {
   grid-template-columns: auto 1fr;
   gap: 0.125rem 0.75rem;
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: var(--fs-row);
 }
 
 .sheet-stats dd {

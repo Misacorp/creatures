@@ -299,11 +299,7 @@
     },
     "roomsCleared": 2,
     "supply": true,
-    "lastEvent": {
-      "name": "Loose Stones",
-      "option": "Dig",
-      "outcome": "No luck. Every creature loses 15% of its max HP."
-    },
+    "lastEvent": null,
     "history": [
       {
         "node": "f0l0",

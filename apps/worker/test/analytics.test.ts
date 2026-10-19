@@ -62,9 +62,8 @@ import {
   storedRuns,
   type Seeded,
 } from './raid-helpers';
+import { DAY, HOUR, captureConsole, give, newKey, setCreature } from './kit';
 
-const HOUR = 3_600_000;
-const DAY = 86_400_000;
 const USER = { id: USER_ID, displayName: 'Misa the Mighty' };
 const OTHER = { id: OTHER_USER_ID, displayName: 'Other Person' };
 const FINALE = eventTimes(W02.id, HELSINKI).finale;
@@ -101,9 +100,6 @@ function events(sql: SqlStorage, kind?: string): EventRow[] {
 }
 
 const kinds = (sql: SqlStorage): string[] => events(sql).map((e) => e.kind);
-
-let keyCounter = 0;
-const newKey = () => `analytics-${String(++keyCounter).padStart(8, '0')}-key`;
 
 /** Returns the scripted values in order, then fails loudly. */
 function scriptedRng(values: number[]): Rng {
@@ -144,13 +140,7 @@ async function joinWithStarter(
   species = 'splashet',
 ): Promise<{ secret: string; starterId: string }> {
   const secret = await ctx.core.createSession(ctx.guildId, user);
-  ctx.core.credit({
-    userId: user.id,
-    currency: 'bait',
-    amount: bait,
-    source: 'test',
-    idempotencyKey: `seed:${user.id}`,
-  });
+  give(ctx, user.id, { bait: bait });
   const res = await call(ctx, secret, 'POST', '/api/starter', {
     species,
     idempotencyKey: newKey(),
@@ -1265,6 +1255,7 @@ describe('Discord post delivery events', () => {
   const CHANNEL = '555555555555555555';
 
   it('logs sent, retry and failed kinds without any post content', async () => {
+    const log = captureConsole();
     const outcomes = [
       { kind: 'sent' as const },
       { kind: 'retry' as const, error: 'server_error' as const, afterMs: null },
@@ -1289,6 +1280,11 @@ describe('Discord post delivery events', () => {
         ]);
         expect(events(ctx.sql, 'post_result').every((e) => e.actor_hash === null)).toBe(true);
         expect(JSON.stringify(events(ctx.sql))).not.toContain('top secret');
+        // The server's own log carries the kind of the failure only, never the post.
+        expect(log.text()).toContain('discord post failed');
+        expect(log.text()).toContain('server_error');
+        expect(log.text()).toContain('forbidden');
+        expect(log.text()).not.toContain('top secret');
       },
       { postSender: send },
     );
@@ -1409,9 +1405,13 @@ describe('transactions', () => {
   });
 
   it('a failing write never breaks the action it describes', async () => {
+    const log = captureConsole();
     await runCore(nextGuild(), ({ core, sql }) => {
       sql.exec('DROP TABLE analytics_events');
       expect(() => core.analytics.record({ kind: 'roster_optout', optOut: true })).not.toThrow();
+      // Only the kind of the error is logged, not its message (which names the table).
+      expect(log.text()).toBe('analytics write failed Error');
+      expect(log.text()).not.toContain('analytics_events');
       return Promise.resolve();
     });
   });
@@ -1658,11 +1658,7 @@ describe('privacy', () => {
           id: diver.id,
           displayName: diver.name,
         });
-        ctx.sql.exec(
-          'UPDATE creatures SET nickname = ? WHERE id = ?',
-          'Quibbly',
-          diver.creatureIds[0],
-        );
+        setCreature(ctx, diver.creatureIds[0] as string, { nickname: 'Quibbly' });
         // The run is played through the map, by way of a mystery room and the camp (foes made easy so
         // that it gets that far): every event it logs is checked below.
         const backToNormal = easyFoes();

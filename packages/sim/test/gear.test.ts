@@ -170,14 +170,14 @@ describe('drops', () => {
     // The reward slot: exactly one gear piece or one new blueprint for each participant.
     const slot = (x: SimPlayer): number => allItems(x).length + x.gear.blueprints.length;
     const slotsBefore = [slot(a), slot(b)];
-    grantFinaleLoot([a, b], 3, 'ember', null, createSeededRng('finale'));
+    grantFinaleLoot([a, b], 3, 'ember', false, createSeededRng('finale'));
     expect(slot(a) - (slotsBefore[0] ?? 0)).toBe(1);
     expect(slot(b) - (slotsBefore[1] ?? 0)).toBe(1);
     // A Festival week adds the Festival piece.
     const isFestival = (i: { baseId: string }): boolean => gearBase(i.baseId)?.festival === true;
     const festivalBefore = allItems(a).filter(isFestival).length;
     const before = slot(a);
-    grantFinaleLoot([a], 3, 'ember', 'tide', createSeededRng('festival'));
+    grantFinaleLoot([a], 3, 'ember', true, createSeededRng('festival'));
     expect(slot(a) - before).toBe(2);
     expect(allItems(a).filter(isFestival).length - festivalBefore).toBe(1);
   });
@@ -191,7 +191,7 @@ describe('drops', () => {
       const p = player(`f${String(k)}`);
       const known = new Set(p.gear.blueprints);
       const bagBefore = p.gear.bag.length;
-      grantFinaleLoot([p], 9, 'grove', null, createSeededRng(`reward:${String(k)}`));
+      grantFinaleLoot([p], 9, 'grove', false, createSeededRng(`reward:${String(k)}`));
       if (p.gear.bag.length > bagBefore) {
         gear++;
         const dropped = p.gear.bag[p.gear.bag.length - 1];

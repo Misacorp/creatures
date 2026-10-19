@@ -3,6 +3,7 @@ import type { Creature } from './api';
 import { creatureName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { essenceCount, partCountItems } from './count-items';
+import { ExperienceGainRow } from './ExperienceGainRow';
 import { ItemFrame, ItemSprite, ItemThumb, PartsList, RarityTag } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { GearItem, JobResult } from './gear-types';
@@ -21,7 +22,6 @@ import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { supplyKindOf, supplyName } from './trip-view';
 import { CountBadgeList, type CountItem } from './ui/CountBadge';
 import { RevealLater, RevealShell, RevealStage, useRevealSequence } from './ui/RevealShell';
-import { Tag } from './ui/Tag';
 import { XpGain, XpList } from './ui/XpGain';
 import { craftingGain, experienceGain } from './xp-gain';
 
@@ -92,29 +92,7 @@ function Worker({ result, creatures }: { result: JobResult; creatures: readonly 
         </figure>
       )}
       <XpList label={`${name}'s progress`}>
-        {exp !== null && (
-          <XpGain
-            label={<GlossaryTag entry="experience">Experience</GlossaryTag>}
-            levels={exp.levels.to > exp.levels.from ? exp.levels : undefined}
-            gain={exp.gain}
-            tags={
-              <>
-                {exp.treat && (
-                  <Tag kind="badge" entry="treat">
-                    Treat
-                  </Tag>
-                )}
-                {exp.gold && (
-                  <Tag kind="badge" tone="good">
-                    Gold Ribbon
-                  </Tag>
-                )}
-                {exp.waiting && <Tag kind="badge">Waiting at this level</Tag>}
-              </>
-            }
-            bar={exp.bar}
-          />
-        )}
+        {exp !== null && <ExperienceGainRow gain={exp} />}
         <XpGain
           label={<GlossaryTag entry="skill-crafting">Crafting</GlossaryTag>}
           levels={crafting.levels.to > crafting.levels.from ? crafting.levels : undefined}

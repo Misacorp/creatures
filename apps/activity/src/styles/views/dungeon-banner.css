@@ -45,7 +45,7 @@
 
 .rb-place {
   color: var(--haze);
-  font-size: 1.125rem;
+  font-size: var(--fs-row);
 }
 
 .rb-name {
@@ -55,13 +55,13 @@
   justify-content: center;
   gap: 0.25rem 0.5rem;
   color: var(--bone);
-  font-size: 1.375rem;
+  font-size: var(--fs-heading);
   line-height: 1.1;
 }
 
 .rb-element {
   color: var(--el, var(--haze));
-  font-size: 1rem;
+  font-size: var(--fs-row);
 }
 
 .rb-twist {
@@ -69,12 +69,12 @@
   flex-direction: column;
   gap: 0.125rem;
   max-width: 20rem;
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 .rb-twist strong {
   color: var(--gold);
-  font-size: 1.0625rem;
+  font-size: var(--fs-row);
   font-weight: 400;
 }
 
@@ -86,11 +86,11 @@
   justify-content: center;
   gap: 0.125rem 0.375rem;
   max-width: 20rem;
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 .rb-trick strong {
   color: var(--bad);
-  font-size: 1.0625rem;
+  font-size: var(--fs-row);
   font-weight: 400;
 }

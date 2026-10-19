@@ -50,7 +50,7 @@ button.flip-btn[aria-disabled='true']:active {
 
 .flip-count {
   color: var(--haze);
-  font-size: 1rem;
+  font-size: var(--fs-row);
   text-align: center;
   white-space: nowrap;
 }

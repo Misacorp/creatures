@@ -84,6 +84,40 @@ const PRESETS = [
     panels: 2,
   },
   { name: 'Raid creature picker sheet', entry: 'RosterPicker', props: {}, panels: 1 },
+  // The dungeon's cards (2026-10-19): the pixel font is set once on the card, reading text is `.prose`.
+  { name: 'Dungeon camp, the choices', entry: 'DungeonCamp', props: {}, panels: 1 },
+  {
+    name: 'Dungeon camp, the keepsakes',
+    entry: 'DungeonCamp',
+    props: { step: 'keepsakes' },
+    panels: 1,
+  },
+  {
+    name: 'Dungeon camp, who goes home',
+    entry: 'DungeonCamp',
+    props: { step: 'who goes home' },
+    panels: 1,
+  },
+  {
+    name: 'Dungeon camp, arrange the row',
+    entry: 'DungeonCamp',
+    props: { step: 'arrange after a swap' },
+    panels: 1,
+  },
+  { name: 'Dungeon mystery room', entry: 'DungeonEvent', props: {}, panels: 1 },
+  { name: 'Dungeon descent, the floor boss fell', entry: 'DungeonDescend', props: {}, panels: 1 },
+  {
+    name: 'Dungeon descent, nothing banked and an empty pack',
+    entry: 'DungeonDescend',
+    props: { card: 'nothing banked', emptyPack: true },
+    panels: 1,
+  },
+  {
+    name: 'Drill head (shared by the item drawer and the camp)',
+    entry: 'DrillHead',
+    props: {},
+    panels: 1,
+  },
 ];
 
 /** Runs in the page: the offenders among the text of every `.pix-panel` and `.prose` part. */

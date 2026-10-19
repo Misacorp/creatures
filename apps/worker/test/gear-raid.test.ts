@@ -7,7 +7,7 @@ import {
   dismantleYield,
   effectiveStats,
   finaleItemLevel,
-  festivalBaseFor,
+  festivalBases,
   rollFinaleReward,
   type GearRarity,
   type PartKind,
@@ -24,7 +24,6 @@ import { runCore, type CoreContext } from './helpers';
 import {
   DAY,
   HELSINKI,
-  MINUTE,
   W02,
   count,
   forcePool,
@@ -37,6 +36,7 @@ import {
   weekPayout,
   type Seeded,
 } from './raid-helpers';
+import { give, sessionCaller } from './kit';
 
 let tripCounter = 0;
 const FINALE = eventTimes(W02.id, HELSINKI).finale;
@@ -335,8 +335,6 @@ describe('the Festival piece', () => {
           'SELECT week_id, festival, festival_species FROM raid_weeks',
         )[0];
         expect(row?.festival).toBe(1);
-        const species = content.creatures.find((c) => c.id === row?.festival_species);
-        const piece = festivalBaseFor(species?.element ?? 'tide');
         ctx.clock.t = week.afterPhase2;
         ctx.core.raid.runDue(HELSINKI);
         ctx.sql.exec('UPDATE raid_parties SET hp_current = 1');
@@ -357,8 +355,9 @@ describe('the Festival piece', () => {
             slot.gear.length === 1 ? ['festival', 'raid_finale'] : ['festival'],
           );
           const festive = items.find((i) => i.source === 'festival');
-          // Special, not stronger: a normal rarity, the lines of that rarity, the finale's item level.
-          expect(festive).toMatchObject({ base_id: piece.id });
+          // A Festival base (which one is drawn; the element of the week's creature plays no part), special,
+          // not stronger: a normal rarity, the lines of that rarity, the finale's item level.
+          expect(festivalBases().map((b) => b.id)).toContain(festive?.base_id);
           expect(['common', 'rare', 'epic']).toContain(festive?.rarity);
           expect(JSON.parse(festive?.lines_json ?? '[]')).toHaveLength(
             RULES.gear.rolledLines[festive?.rarity as 'common' | 'rare' | 'epic'],
@@ -758,29 +757,8 @@ describe('expedition loot', () => {
       'INSERT INTO player_progress (user_id, expeditions_claimed) VALUES (?, 1) ON CONFLICT(user_id) DO UPDATE SET expeditions_claimed = 1',
       seeded.id,
     );
-    ctx.core.credit({
-      userId: seeded.id,
-      currency: 'bait',
-      amount: 500,
-      source: 'test',
-      idempotencyKey: `bait:${seeded.id}`,
-    });
-    let secret = await ctx.core.createSession(ctx.guildId, {
-      id: seeded.id,
-      displayName: seeded.name,
-    });
-    let at = ctx.clock.t;
-    const call = async (method: string, path: string, body?: unknown) => {
-      if (ctx.clock.t - at >= 30 * MINUTE) {
-        secret = await ctx.core.createSession(ctx.guildId, {
-          id: seeded.id,
-          displayName: seeded.name,
-        });
-        at = ctx.clock.t;
-      }
-      const res = await ctx.request(secret, path, method, body);
-      return { status: res.status, body: await res.json<Record<string, unknown>>() };
-    };
+    give(ctx, seeded.id, { bait: 500 });
+    const { call } = await sessionCaller(ctx, { id: seeded.id, displayName: seeded.name });
     const trip = async (
       index: number,
       duration: 'short' | 'medium' | 'long',

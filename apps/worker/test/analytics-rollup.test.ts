@@ -6,6 +6,7 @@ import { MAX_CATCH_UP_DAYS, canonicalDims } from '../src/analytics-rollup';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
 import { OTHER_USER_ID, USER_ID, runCore, type CoreContext } from './helpers';
 import { HELSINKI, count, nextGuild, rows } from './raid-helpers';
+import { HOUR } from './kit';
 
 const ALICE = 'a'.repeat(32);
 const BOB = 'b'.repeat(32);
@@ -14,7 +15,6 @@ const DAY = '2027-01-14';
 /** The instant a game day starts (13:37 in Helsinki). */
 const startOf = (day: string): number =>
   zonedTimeToEpoch(day, RULES.daily.reset.hour, RULES.daily.reset.minute, HELSINKI);
-const HOUR = 3_600_000;
 
 let nextId = 0;
 /** Writes an event the way the log does (same props sanitizer), at a chosen time and actor. */

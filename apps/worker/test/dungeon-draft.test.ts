@@ -1,9 +1,10 @@
 import { SCHEMA_VERSION } from '../src/migrations';
 import { RULES, createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { dungeonPlayer, newKey } from './dungeon-helpers';
+import { dungeonPlayer } from './dungeon-helpers';
 import { runCore, undoDungeonDraftMigration, type CoreContext } from './helpers';
 import { count, nextGuild, rows } from './raid-helpers';
+import { newKey } from './kit';
 
 /** Wednesday 14:00 in Helsinki, after the daily reset. */
 const AFTER_RESET = Date.parse('2027-01-13T12:00:00Z');

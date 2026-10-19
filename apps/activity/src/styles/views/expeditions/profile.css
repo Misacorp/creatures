@@ -17,11 +17,11 @@
 }
 
 .stat dt {
-  font-size: 0.75rem;
+  font-size: var(--fs-small);
 }
 
 .stat dd {
-  font-size: 1.25rem;
+  font-size: var(--fs-heading);
   text-align: left;
 }
 

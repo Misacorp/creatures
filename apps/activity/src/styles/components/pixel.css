@@ -3,7 +3,7 @@
 .label {
   color: var(--haze);
   font-family: var(--display);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }

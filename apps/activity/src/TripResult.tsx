@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { Banner } from './Banner';
 import { Stars } from './ExpeditionIcons';
+import { ExperienceGainRow } from './ExperienceGainRow';
 import { FindCard } from './FindCard';
 import { firstPick, type CatchPick } from './find-view';
 import { LootList } from './LootList';
@@ -188,25 +189,7 @@ export function TripResult({
               }}
             />
           )}
-          {view.growth !== null && (
-            <XpGain
-              label={<GlossaryTag entry="experience">Level</GlossaryTag>}
-              levels={{ from: view.growth.from, to: view.growth.to }}
-              gain={`+${String(view.growth.gained)}`}
-              tags={
-                view.growth.treat ? (
-                  <Tag kind="badge" entry="treat">
-                    Treat
-                  </Tag>
-                ) : undefined
-              }
-              note={
-                view.growth.note === null ? undefined : (
-                  <span class="muted">{view.growth.note}</span>
-                )
-              }
-            />
-          )}
+          {view.growth !== null && <ExperienceGainRow gain={view.growth} />}
           {view.stars !== null && (
             <>
               <dt class="pix">

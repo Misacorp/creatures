@@ -333,11 +333,7 @@
     },
     "roomsCleared": 4,
     "supply": true,
-    "lastEvent": {
-      "name": "Sleeping Beetle",
-      "option": "Take one coin",
-      "outcome": "You find 1 scrap."
-    },
+    "lastEvent": null,
     "history": [
       {
         "node": "f0l0",

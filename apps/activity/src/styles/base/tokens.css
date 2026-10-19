@@ -32,11 +32,10 @@
   --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --px: 3px; /* one "pixel" of UI chrome */
   /*
-    The type scale (2026-10-18), for the pixel font (Jersey 10, which draws about 28% bigger than its
-    value says: see fonts.css). Use these, not a raw rem, so the same kind of text is the same size everywhere.
-    Body text (Atkinson, 15px) has its own sizes. Where each is used so far: the item card, the item picker's
-    detail panel, the dismantle panel, the Equip on row and the creature picker sheet; the rest of the app still
-    has raw sizes (a follow-up, see decisions.md).
+    The type scale (2026-10-18; every text size in the app since 2026-10-19), for the pixel font (Jersey 10,
+    which draws about 28% bigger than its value says: see fonts.css) and the body text alike. Use these, not a
+    raw rem, so the same kind of text is the same size everywhere. The few raw sizes left (display, art and the
+    compact board labels) are listed in `type-scale.test.ts`.
   */
   --drawer-pad: 0.75rem; /* the side padding of everything in a drawer: heading, body, footer, rows */
   --fs-title: 1.5rem; /* a drawer's or page's title; the creature's name */

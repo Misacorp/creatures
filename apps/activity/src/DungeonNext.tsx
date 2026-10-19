@@ -19,8 +19,9 @@ function streakLabel(streak: number): string {
 
 /**
  * The end of the report answers "what is next?": the depth now (after this run) and the way to the
- * next landmark, the streak with its reward days, and the time the day resets (in the guild's
- * timezone) with a countdown. Everything is read from the server's state.
+ * next landmark, the streak with its reward days, and the time the day resets (in the guild's timezone,
+ * which the line does not name: the countdown after it says when) with that countdown. Everything is read
+ * from the server's state.
  */
 export function DungeonNext({ today, offset }: { today: DungeonToday; offset: number }) {
   const serverNow = useServerNow(offset, true);
@@ -37,7 +38,7 @@ export function DungeonNext({ today, offset }: { today: DungeonToday; offset: nu
         <StreakTrack pips={streakPips(today.streak)} label={streakLabel(today.streak)} />
       </div>
       <p class="muted">
-        Resets at {formatZoned(today.resetsAt, today.timezone, 'short')} ({today.timezone}), in{' '}
+        Resets at {formatZoned(today.resetsAt, today.timezone, 'short')}, in{' '}
         {formatCountdown(remaining, 'days')}.
       </p>
     </section>

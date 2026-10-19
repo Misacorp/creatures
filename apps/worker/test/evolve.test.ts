@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { count, rows, runRaid, seedPlayer } from './raid-helpers';
 import type { CoreContext } from './helpers';
-
-let keyCounter = 0;
-const newKey = () => `evolve-${String(++keyCounter).padStart(8, '0')}-key`;
+import { newKey, give, setCreature } from './kit';
 
 interface EvolveBody {
   error?: string;
@@ -23,22 +21,10 @@ async function evolve(ctx: CoreContext, secret: string, creatureId: string, key 
   return { status: res.status, body: await res.json<EvolveBody>() };
 }
 
-const giveEssence = (ctx: CoreContext, userId: string, amount: number, key = 'seed:essence') =>
-  ctx.core.credit({
-    userId,
-    currency: 'essence',
-    amount,
-    source: 'raid',
-    idempotencyKey: key,
-  });
-
 async function setup(ctx: CoreContext, level = 15) {
   const p = seedPlayer(ctx, 1, { creatures: 2, level, species: ['splashet', 'stormray'] });
   const secret = await ctx.core.createSession(ctx.guildId, { id: p.id, displayName: p.name });
-  ctx.sql.exec(
-    "UPDATE creatures SET fusion_count = 2, shiny = 1, nickname = 'Bubbles' WHERE id = ?",
-    p.creatureIds[0],
-  );
+  setCreature(ctx, p.creatureIds[0] as string, { fusion_count: 2, shiny: 1, nickname: 'Bubbles' });
   return { p, secret, splashet: p.creatureIds[0] as string, stormray: p.creatureIds[1] as string };
 }
 
@@ -46,7 +32,7 @@ describe('POST /api/creatures/:id/evolve', () => {
   it('evolves for Essence, keeping level, fusion, shininess and nickname, and records the first', async () => {
     await runRaid(async (ctx) => {
       const { p, secret, splashet } = await setup(ctx);
-      giveEssence(ctx, p.id, 50);
+      give(ctx, p.id, { essence: 50, source: 'raid' });
       const before = ctx.core.collection.state(p.id).creatures.find((c) => c.id === splashet);
       expect(before?.evolution).toMatchObject({
         toSpecies: 'tidewing',
@@ -93,7 +79,7 @@ describe('POST /api/creatures/:id/evolve', () => {
   it('refuses below the evolution level and charges nothing', async () => {
     await runRaid(async (ctx) => {
       const { p, secret, splashet } = await setup(ctx, 14);
-      giveEssence(ctx, p.id, 50);
+      give(ctx, p.id, { essence: 50 });
       const state = ctx.core.collection.state(p.id);
       expect(state.creatures.find((c) => c.id === splashet)?.evolution?.available).toBe(false);
       const res = await evolve(ctx, secret, splashet);
@@ -106,7 +92,7 @@ describe('POST /api/creatures/:id/evolve', () => {
   it('refuses without enough Essence and changes nothing', async () => {
     await runRaid(async (ctx) => {
       const { p, secret, splashet } = await setup(ctx);
-      giveEssence(ctx, p.id, 19);
+      give(ctx, p.id, { essence: 19 });
       expect(
         ctx.core.collection.state(p.id).creatures.find((c) => c.id === splashet)?.evolution
           ?.available,
@@ -123,7 +109,7 @@ describe('POST /api/creatures/:id/evolve', () => {
   it('returns the stored result for a replayed key and charges once', async () => {
     await runRaid(async (ctx) => {
       const { p, secret, splashet } = await setup(ctx);
-      giveEssence(ctx, p.id, 100);
+      give(ctx, p.id, { essence: 100 });
       const key = newKey();
       const first = await evolve(ctx, secret, splashet, key);
       const second = await evolve(ctx, secret, splashet, key);
@@ -143,7 +129,7 @@ describe('POST /api/creatures/:id/evolve', () => {
   it('refuses a creature that already evolved, other players’ creatures and bad input', async () => {
     await runRaid(async (ctx) => {
       const { p, secret, splashet } = await setup(ctx);
-      giveEssence(ctx, p.id, 100);
+      give(ctx, p.id, { essence: 100 });
       expect((await evolve(ctx, secret, splashet)).status).toBe(200);
       expect(await evolve(ctx, secret, splashet)).toMatchObject({
         status: 409,
@@ -177,10 +163,10 @@ describe('POST /api/creatures/:id/evolve', () => {
   it('refuses a creature that is away or on a Workshop job, charges nothing, and still answers a retry of a done evolve', async () => {
     await runRaid(async (ctx) => {
       const { p, secret, splashet, stormray } = await setup(ctx);
-      giveEssence(ctx, p.id, 100);
+      give(ctx, p.id, { essence: 100 });
       const ledgerBefore = count(ctx.sql, 'ledger');
 
-      ctx.sql.exec("UPDATE creatures SET away_expedition_id = 'trip' WHERE id = ?", splashet);
+      setCreature(ctx, splashet, { away_expedition_id: 'trip' });
       const away = await evolve(ctx, secret, splashet);
       expect(away).toMatchObject({ status: 409, body: { error: 'creature_away' } });
 
@@ -205,11 +191,11 @@ describe('POST /api/creatures/:id/evolve', () => {
       ).toEqual(['splashet', 'stormray']);
 
       // Once it is home (and the job is claimed) it evolves; a retry of that is not re-checked.
-      ctx.sql.exec('UPDATE creatures SET away_expedition_id = NULL WHERE id = ?', splashet);
+      setCreature(ctx, splashet, { away_expedition_id: null });
       const key = newKey();
       const done = await evolve(ctx, secret, splashet, key);
       expect(done.status).toBe(200);
-      ctx.sql.exec("UPDATE creatures SET away_expedition_id = 'trip' WHERE id = ?", splashet);
+      setCreature(ctx, splashet, { away_expedition_id: 'trip' });
       const retry = await evolve(ctx, secret, splashet, key);
       expect(retry.status).toBe(200);
       expect(retry.body.species).toBe(done.body.species);
@@ -220,11 +206,11 @@ describe('POST /api/creatures/:id/evolve', () => {
   it('records first on server only for the first evolution of a line', async () => {
     await runRaid(async (ctx) => {
       const a = await setup(ctx);
-      giveEssence(ctx, a.p.id, 100);
+      give(ctx, a.p.id, { essence: 100 });
       expect((await evolve(ctx, a.secret, a.splashet)).body.firstOnServer).toBe(true);
       const b = seedPlayer(ctx, 2, { creatures: 1, level: 15, species: ['splashet'] });
       const sb = await ctx.core.createSession(ctx.guildId, { id: b.id, displayName: b.name });
-      giveEssence(ctx, b.id, 100, 'seed:b');
+      give(ctx, b.id, { essence: 100 });
       const res = await evolve(ctx, sb, b.creatureIds[0] as string);
       expect(res.body.species).toBe('tidewing');
       expect(res.body.firstOnServer).toBe(false); // a different evolve action is a different drop

@@ -26,7 +26,7 @@
   padding: 0.1rem 0.5rem;
   background: var(--ink);
   font-family: var(--display);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
 }
 
 .badge.shiny,
@@ -70,7 +70,7 @@ footer {
 
 dl {
   margin: 0.25rem 0 0;
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 .row {

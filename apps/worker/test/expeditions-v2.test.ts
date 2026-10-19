@@ -27,22 +27,14 @@ import {
   undoExpeditionsMigration,
   type CoreContext,
 } from './helpers';
+import { HOUR, newKey, type Json, sessionCaller, give, setCreature } from './kit';
 
-const HOUR = 3_600_000;
 const HELSINKI = 'Europe/Helsinki';
 const USER = { id: USER_ID, displayName: 'Misa' };
 const OTHER = { id: OTHER_USER_ID, displayName: 'Other' };
 
 let guildCounter = 0;
 const nextGuild = () => String(750000000000000000n + BigInt(++guildCounter));
-let keyCounter = 0;
-const newKey = () => `v2key-${String(++keyCounter).padStart(8, '0')}-test`;
-
-interface Json {
-  status: number;
-  body: Record<string, unknown>;
-}
-
 interface Player {
   id: string;
   call: (method: string, path: string, body?: unknown) => Promise<Json>;
@@ -55,25 +47,10 @@ async function join(
   bait: number,
   species = 'splashet',
 ): Promise<Player> {
-  let secret = await ctx.core.createSession(ctx.guildId, user);
-  let loggedInAt = ctx.clock.t;
+  const { call } = await sessionCaller(ctx, user);
   if (bait > 0) {
-    ctx.core.credit({
-      userId: user.id,
-      currency: 'bait',
-      amount: bait,
-      source: 'test',
-      idempotencyKey: `seed:${user.id}`,
-    });
+    give(ctx, user.id, { bait: bait });
   }
-  const call = async (method: string, path: string, body?: unknown): Promise<Json> => {
-    if (ctx.clock.t - loggedInAt >= 30 * 60_000) {
-      secret = await ctx.core.createSession(ctx.guildId, user);
-      loggedInAt = ctx.clock.t;
-    }
-    const res = await ctx.request(secret, path, method, body);
-    return { status: res.status, body: await res.json<Record<string, unknown>>() };
-  };
   const chosen = await call('POST', '/api/starter', { species, idempotencyKey: newKey() });
   expect(chosen.status).toBe(200);
   const state = (await call('GET', '/api/state')).body as { creatures: { id: string }[] };
@@ -1399,16 +1376,6 @@ describe('supplies from the Workshop', () => {
     });
 
   const baitOf = (ctx: CoreContext): number => ctx.core.balances(USER_ID).bait;
-  let giftCounter = 0;
-  const giveBait = (ctx: CoreContext, amount: number): void => {
-    ctx.core.credit({
-      userId: USER_ID,
-      currency: 'bait',
-      amount,
-      source: 'test',
-      idempotencyKey: `lure-bait:${String(++giftCounter)}`,
-    });
-  };
 
   it('makes a basic supply at Crafting level 1: the parts are paid now and the supply comes when claimed', async () => {
     await runCore(nextGuild(), async (ctx) => {
@@ -1488,12 +1455,12 @@ describe('supplies from the Workshop', () => {
       expect(scrapOf()).toBe(20);
       expect(rows(ctx.sql, 'SELECT * FROM workshop_jobs')).toHaveLength(0);
       // Not enough Bait: the same.
-      giveBait(ctx, bait - 1);
+      give(ctx, USER_ID, { bait: bait - 1 });
       expect((await startSupply(p, 'lure-basic')).status).toBe(409);
       expect(baitOf(ctx)).toBe(bait - 1);
       expect(scrapOf()).toBe(20);
       // Enough: Bait and scrap go, one job is made, and the same key does not pay twice.
-      giveBait(ctx, 1 + 3 * bait);
+      give(ctx, USER_ID, { bait: 1 + 3 * bait });
       const key = newKey();
       const started = await startSupply(p, 'lure-basic', key);
       expect(started.status).toBe(200);
@@ -1539,7 +1506,7 @@ describe('supplies from the Workshop', () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await crafter(ctx, 1);
       creditParts(ctx.sql, USER_ID, { scrap: 20 });
-      giveBait(ctx, 200);
+      give(ctx, USER_ID, { bait: 200 });
       const key = newKey();
       expect((await startSupply(p, 'lure-basic', key)).status).toBe(200);
       const baitAfter = baitOf(ctx);
@@ -1571,7 +1538,7 @@ describe('supplies from the Workshop', () => {
       expect(poor.status).toBe(409);
       expect(poor.body['error']).toBe('insufficient_parts');
       // A lure of a higher tier asks for its Crafting level too, before any Bait is taken.
-      giveBait(ctx, 500);
+      give(ctx, USER_ID, { bait: 500 });
       const great = await startSupply(p, 'lure-great');
       expect(great.status).toBe(409);
       expect(great.body['error']).toBe('skill_too_low');
@@ -1669,7 +1636,7 @@ describe('gear on trips', () => {
       nextGuild(),
       async (ctx) => {
         const p = await join(ctx, USER, 0, 'cindle');
-        ctx.sql.exec('UPDATE creatures SET level = 13 WHERE id = ?', p.starterId);
+        setCreature(ctx, p.starterId, { level: 13 });
         const plain = tripOf(await send(p, p.starterId, 'long'));
         // The same creature again after the first trip is claimed, now wearing a Compass.
         ctx.clock.t = plain.endsAt;
@@ -1691,7 +1658,7 @@ describe('gear on trips', () => {
       nextGuild(),
       async (ctx) => {
         const p = await join(ctx, USER, 0, 'cindle');
-        ctx.sql.exec('UPDATE creatures SET level = 13 WHERE id = ?', p.starterId);
+        setCreature(ctx, p.starterId, { level: 13 });
         const plain = tripOf(await send(p, p.starterId, 'long'));
         ctx.clock.t = plain.endsAt;
         const first = resultOf(await claim(p, plain.id));
@@ -1716,7 +1683,7 @@ describe('gear on trips', () => {
         nextGuild(),
         async (ctx) => {
           const p = await join(ctx, USER, 0, 'cindle');
-          ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', p.starterId);
+          setCreature(ctx, p.starterId, { level: 15 });
           setRank(ctx.sql, USER_ID, p.starterId, 6);
           const scrap = RULES.expeditions.lengths.day.loot.scrap;
           const plain = tripOf(await send(p, p.starterId, 'day'));

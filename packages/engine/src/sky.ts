@@ -1,6 +1,6 @@
 /**
- * The three fight hooks of the day's weather that are not a sheet number (Kind Rain, Morning Haze,
- * Bramble Season): small helpers that turn the day's `WeatherSky` (`weatherSky` in @creatures/game)
+ * The fight hooks of the day's weather that are not a sheet number (Kind Rain, Morning Haze,
+ * Bramble Season, Lantern Light): small helpers that turn the day's `WeatherSky` (`weatherSky` in @creatures/game)
  * into the optional fields of a fight or a dungeon run. Every field is left out on a plain day, so
  * an input built without weather is exactly what it was before these hooks existed.
  */
@@ -31,21 +31,23 @@ export function skyFightFields(
   sky: WeatherSky,
   row: readonly { id: string }[],
   board?: FightBoard,
-): Pick<FightInput, 'rainHealBp' | 'skipFirstTurn' | 'brambleBp'> {
+): Pick<FightInput, 'rainHealBp' | 'skipFirstTurn' | 'brambleBp' | 'lingerAllRounds'> {
   return {
     ...(sky.rainHealBp > 0 ? { rainHealBp: sky.rainHealBp } : {}),
     ...(sky.haze && row.length > 0 ? { skipFirstTurn: firstOfEachRow(row, board) } : {}),
     ...(sky.brambleBp > 0 ? { brambleBp: sky.brambleBp } : {}),
+    ...(sky.lingerAllRounds > 0 ? { lingerAllRounds: sky.lingerAllRounds } : {}),
   };
 }
 
 /** The dungeon run fields of the day's sky (nothing for a plain day). */
 export function skyRunFields(
   sky: WeatherSky,
-): Pick<DungeonRunInput, 'rainHealBp' | 'hazeLeft' | 'brambleBp'> {
+): Pick<DungeonRunInput, 'rainHealBp' | 'hazeLeft' | 'brambleBp' | 'lingerAllRounds'> {
   return {
     ...(sky.rainHealBp > 0 ? { rainHealBp: sky.rainHealBp } : {}),
     ...(sky.haze ? { hazeLeft: true } : {}),
     ...(sky.brambleBp > 0 ? { brambleBp: sky.brambleBp } : {}),
+    ...(sky.lingerAllRounds > 0 ? { lingerAllRounds: sky.lingerAllRounds } : {}),
   };
 }

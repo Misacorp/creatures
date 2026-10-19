@@ -368,8 +368,13 @@ describe('fights: the sheet, luck and boss attacks', () => {
     });
   });
 
-  it('Lantern Light adds a round and never scales it; Quiet Night pierces the adaptation', () => {
-    expect(weatherSheet(day('lantern-light', null, 15_000), setter)).toEqual({ lingerRounds: 1 });
+  it('Lantern Light adds a round to every ability and never scales it, and puts nothing on a sheet; Quiet Night pierces the adaptation', () => {
+    // The round is the day's (`weatherSky`), not a creature's: a creature's own ability would get it twice.
+    expect(weatherSheet(day('lantern-light', null, 15_000), setter)).toBeUndefined();
+    expect(weatherSky(day('lantern-light')).lingerAllRounds).toBe(1);
+    expect(weatherSky(day('lantern-light', null, 15_000)).lingerAllRounds).toBe(1);
+    expect(weatherSky(day('lantern-light', 'heatwave')).lingerAllRounds).toBe(1);
+    expect(weatherSky(day('fair-winds', 'heatwave')).lingerAllRounds).toBe(0);
     expect(weatherSheet(day('quiet-night'), setter)).toEqual({ pierceBp: 2_500 });
     expect(weatherSheet(day('quiet-night', null, 15_000), setter)).toEqual({ pierceBp: 3_700 });
   });
@@ -456,24 +461,21 @@ describe('fights: the sheet, luck and boss attacks', () => {
   });
 });
 
+const PLAIN_SKY = { rainHealBp: 0, haze: false, brambleBp: 0, lingerAllRounds: 0 };
+
 describe('Kind Rain, Morning Haze and Bramble Season', () => {
   it("weatherSky is plain on a plain day and reads the three at the day's strength", () => {
-    expect(weatherSky(null)).toEqual({ rainHealBp: 0, haze: false, brambleBp: 0 });
-    expect(weatherSky(day('fair-winds', 'heatwave'))).toEqual({
-      rainHealBp: 0,
-      haze: false,
-      brambleBp: 0,
-    });
-    expect(weatherSky(day('kind-rain'))).toEqual({ rainHealBp: 200, haze: false, brambleBp: 0 });
+    expect(weatherSky(null)).toEqual(PLAIN_SKY);
+    expect(weatherSky(day('fair-winds', 'heatwave'))).toEqual(PLAIN_SKY);
+    expect(weatherSky(day('kind-rain'))).toEqual({ ...PLAIN_SKY, rainHealBp: 200 });
     // Boons scale by the Boon's strength: x1.25 at Boss Rank 6, x1.5 at 10.
     expect(weatherSky(day('kind-rain', null, 12_500)).rainHealBp).toBe(250);
     expect(weatherSky(day('kind-rain', null, 15_000)).rainHealBp).toBe(300);
     expect(weatherSky(day('market-day', 'morning-haze')).haze).toBe(true);
     // The haze is a count of turns, not a number: it never scales.
     expect(weatherSky(day('market-day', 'morning-haze', 10_000, 25_000))).toEqual({
-      rainHealBp: 0,
+      ...PLAIN_SKY,
       haze: true,
-      brambleBp: 0,
     });
     expect(weatherSky(day('market-day', 'bramble-season')).brambleBp).toBe(1_200);
     // Omens scale faster: x1.5 at Boss Rank 6 is 18%, x2.5 at 14 is 30%.
@@ -515,11 +517,7 @@ describe('Kind Rain, Morning Haze and Bramble Season', () => {
   });
 
   it('a stored day of a new Boon or Omen from before they were live reads as nothing, not an error', () => {
-    expect(weatherSky(day('gone-boon', 'gone-omen'))).toEqual({
-      rainHealBp: 0,
-      haze: false,
-      brambleBp: 0,
-    });
+    expect(weatherSky(day('gone-boon', 'gone-omen'))).toEqual(PLAIN_SKY);
   });
 });
 

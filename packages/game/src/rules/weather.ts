@@ -209,8 +209,8 @@ export interface SheetWearer {
 }
 
 /**
- * What the day adds to one creature's modifier sheet (`FightSlot.mods`): its Boon and Omen's sheet,
- * ability and reaction effects, and the foes' stronger attacks as what the creature takes (an
+ * What the day adds to one creature's modifier sheet (`FightSlot.mods`): its Boon and Omen's sheet
+ * and reaction effects (not the day's linger, which goes to every ability: `weatherSky`), and the foes' stronger attacks as what the creature takes (an
  * `elements` override becomes the part on top of the general rise, so the element's foes hit exactly as
  * hard as the data says). Undefined when the day adds nothing for this creature. The wearer's element
  * is not used today (every sheet effect of the starter list is for everyone or for a role) but is
@@ -235,7 +235,7 @@ export function weatherSheet(day: WeatherDay | null, wearer: SheetWearer): GearM
         }
         break;
       case 'linger':
-        addNumber('lingerRounds', e.rounds);
+        // Not on the sheet: the day's linger goes to every ability through `weatherSky` (`lingerAllRounds`).
         break;
       case 'reaction':
         for (const r of e.reactions) addMap('reactionBp', r, scaleStrength(e.bp, strengthBp));
@@ -289,16 +289,23 @@ export interface WeatherSky {
   haze: boolean;
   /** Bramble Season: the share of the first reaction's bonus each round that goes back at its setter-off (0: none). */
   brambleBp: number;
+  /**
+   * Lantern Light: rounds added to the timed effects of every ability in the fight, basic ones too (0: none).
+   * It lives here and not on a creature's sheet, so a creature's own ability is not lengthened twice.
+   */
+  lingerAllRounds: number;
 }
 
-/** The day's Kind Rain, Morning Haze and Bramble Season numbers at the day's strength. */
+/** The day's Kind Rain, Morning Haze, Bramble Season and Lantern Light numbers at the day's strength. */
 export function weatherSky(day: WeatherDay | null): WeatherSky {
-  const out: WeatherSky = { rainHealBp: 0, haze: false, brambleBp: 0 };
+  const out: WeatherSky = { rainHealBp: 0, haze: false, brambleBp: 0, lingerAllRounds: 0 };
   for (const { effect: e, strengthBp } of activeEffects(day)) {
     if (e.op === 'roundHeal') out.rainHealBp += scaleStrength(e.bp, strengthBp);
     if (e.op === 'skipFirstTurn') out.haze = true;
     if (e.op === 'bramble') out.brambleBp += scaleStrength(e.bp, strengthBp);
+    if (e.op === 'linger') out.lingerAllRounds += e.rounds;
   }
+  out.lingerAllRounds = Math.min(3, out.lingerAllRounds);
   out.rainHealBp = Math.min(BP, out.rainHealBp);
   out.brambleBp = Math.min(BP, out.brambleBp);
   return out;

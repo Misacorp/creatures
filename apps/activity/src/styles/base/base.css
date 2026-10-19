@@ -54,22 +54,22 @@ h1 {
 
 h2 {
   margin: 1rem 0 0.25rem;
-  font-size: 1.375rem;
+  font-size: var(--fs-heading);
 }
 
 h3 {
   margin: 0 0 0.25rem;
-  font-size: 1.125rem;
+  font-size: var(--fs-heading);
 }
 
 h4 {
   margin: 0.75rem 0 0.25rem;
-  font-size: 1rem;
+  font-size: var(--fs-row);
 }
 
 h5 {
   margin: 0.5rem 0 0.25rem;
-  font-size: 0.9375rem;
+  font-size: var(--fs-row);
 }
 
 p {

@@ -20,6 +20,35 @@ describe('simulation run', () => {
     expect(buildReportMarkdown(first)).toBe(buildReportMarkdown(second));
   });
 
+  it('keeps the headline numbers of the shipped income at tiny size', () => {
+    // A "did the sim move" alarm, in readable numbers rather than a hash: seed `test`, TINY settings, the
+    // shipped `allowance` income. Any rule, content or simulator change that touches the economy, the
+    // raid or the dungeon will move some of these. If this fails, work out why the numbers moved, and
+    // say so in the PR description (and in `docs/balance/log.md` for a balance change) before you
+    // update them. They are never updated just to get green.
+    // 2026-10-19: Lantern Light lengthens basic abilities too, and a Festival win gives a Lantern Night
+    // piece the player lacks (a Hat or Scarf carries stats where the Charm did not): the long run wins
+    // more finales (0.67 to 0.83, final rank 3 to 4), a dungeon run lasts a little longer (4.44 to 4.47
+    // fights) and the creature ratio barely moves (1.2754 to 1.2781).
+    const m = sharedTinyRun().analysis.metrics;
+    const headline: Record<string, number> = {
+      'raid.typical.phase1ClearRate': 0.75,
+      'raid.typical.finaleWinRate': 0.75,
+      'raid.typical.finaleStartShare': 0.4772,
+      'fair.topShareMedian': 0.2583,
+      'choice.creatureRatioMax': 1.2781,
+      'econ.casualTopLevelWeek4': 10,
+      'exp.rate.long': 75.4138,
+      'dungeon.meanFights': 4.4732,
+      'dungeon.dailyHomeRate': 0.1339,
+      'longrun.typical.finaleWinRate': 0.8333,
+      'longrun.typicalFinalRank': 4,
+    };
+    for (const [id, expected] of Object.entries(headline)) {
+      expect(m[id], id).toBeCloseTo(expected, 3);
+    }
+  });
+
   it('gives a different report for a different seed', () => {
     expect(buildReportJson(tinyRun({ seed: 'other' }))).not.toBe(buildReportJson(sharedTinyRun()));
   });

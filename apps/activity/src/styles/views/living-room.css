@@ -98,7 +98,7 @@ button.room-note {
   box-shadow: 0 0 0 2px var(--ink);
   color: var(--ink);
   font-family: var(--display);
-  font-size: 0.9375rem;
+  font-size: var(--fs-row);
   line-height: 1.3;
   pointer-events: none;
   transform: translateX(-50%);
@@ -210,7 +210,7 @@ button.room-note {
   background: var(--ink);
   box-shadow: 0 0 0 2px var(--line);
   color: var(--bone);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
   line-height: 1.35;
   opacity: 0.9;
   pointer-events: none;
@@ -303,14 +303,14 @@ button.room-target-pick:focus-visible {
   background: var(--ink);
   box-shadow: inset 0 2px 0 var(--gold);
   color: var(--bone);
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
   line-height: 1.35;
 }
 
 .room-pick button {
   min-height: 1.5rem;
   padding: 0 0.5rem;
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
   line-height: 1.35;
 }
 

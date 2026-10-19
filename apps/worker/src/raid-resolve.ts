@@ -668,16 +668,9 @@ export function settleParty(
         analytics: deps.analytics,
       };
       for (const userId of memberIds) {
-        // The Festival piece, in the tint of the Festival creature, next to the creature itself.
+        // A Festival piece the player lacks (any one once they have them all), next to the creature itself.
         if (festivalSpecies !== undefined) {
-          grantFestivalGear(
-            gearDeps,
-            userId,
-            week.weekId,
-            festivalSpecies.element,
-            payout.rank,
-            input.boss.id,
-          );
+          grantFestivalGear(gearDeps, userId, week.weekId, payout.rank, input.boss.id);
         }
         grantFestivalCreature(
           storage,

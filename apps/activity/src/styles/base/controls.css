@@ -62,7 +62,7 @@ label {
   display: block;
   margin-top: 0.25rem;
   color: var(--haze);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
 
 /*

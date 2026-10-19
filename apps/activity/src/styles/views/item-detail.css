@@ -193,7 +193,7 @@ button.danger {
 }
 
 .line-note {
-  font-size: 0.8125rem;
+  font-size: var(--fs-small);
 }
 
 .tier-pips {
@@ -328,26 +328,4 @@ button.equip-trigger canvas.sprite {
   width: 0.875rem;
   height: 0.5rem;
   fill: currentcolor;
-}
-
-/*
-  The "Equip on" view, a drill-in of the item drawer (never a sheet over it): "‹ Back" at the top left, the
-  title, then the creature list at the drawer's own width (the drawer body scrolls, the list does not).
-*/
-.drill-head {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  margin: 0 0 0.5rem;
-}
-
-.drill-head button.drill-back {
-  flex: none;
-  font-size: var(--fs-row);
-}
-
-.drill-title {
-  margin: 0;
-  font-size: var(--fs-heading);
-  line-height: 1.2;
 }

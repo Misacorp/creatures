@@ -159,6 +159,19 @@ export function ownedItems(sql: SqlStorage, userId: string): GearRow[] {
     .map(withKnownRarity);
 }
 
+/** The base ids of every item the player owns, in the bag or worn (a worn item stays in `gear_items`). */
+export function ownedBaseIds(sql: SqlStorage, userId: string): Set<string> {
+  return new Set(
+    sql
+      .exec<{ base_id: string }>(
+        'SELECT DISTINCT base_id FROM gear_items WHERE user_id = ?',
+        userId,
+      )
+      .toArray()
+      .map((r) => r.base_id),
+  );
+}
+
 export function findItem(sql: SqlStorage, userId: string, id: string): GearRow | undefined {
   const row = sql
     .exec<GearRow>('SELECT * FROM gear_items WHERE id = ? AND user_id = ?', id, userId)

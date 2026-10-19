@@ -50,6 +50,7 @@ import {
   weekPayout,
   type Seeded,
 } from './raid-helpers';
+import { setCreature } from './kit';
 
 type Ctx = CoreContext;
 
@@ -2594,7 +2595,7 @@ describe('creature abilities in the live finale', () => {
     return team?.creatures ?? [];
   };
   const setLevel = (ctx: Ctx, creatureId: string, level: number): void => {
-    ctx.sql.exec('UPDATE creatures SET level = ? WHERE id = ?', level, creatureId);
+    setCreature(ctx, creatureId, { level });
   };
 
   it('brings the basic pick plus one ability per unlocked team creature, keyed by team slot', async () => {

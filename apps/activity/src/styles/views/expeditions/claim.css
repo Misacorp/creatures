@@ -49,13 +49,13 @@
 }
 
 .trip-result > h3 .pix {
-  font-size: 1.25rem;
+  font-size: var(--fs-heading);
 }
 
 .trip-result > h3 {
   margin: 0;
   font-family: inherit;
-  font-size: 1.125rem;
+  font-size: var(--fs-heading);
   font-weight: 400;
   line-height: 1.35;
 }
@@ -130,7 +130,7 @@
 .rank-up {
   color: var(--gold);
   font-family: var(--display);
-  font-size: 1.125rem;
+  font-size: var(--fs-row);
 }
 
 .slot-unlocked {
@@ -139,7 +139,7 @@
 
 .slot-unlocked {
   font-family: var(--display);
-  font-size: 1.0625rem;
+  font-size: var(--fs-row);
 }
 
 @media (prefers-reduced-motion: no-preference) {

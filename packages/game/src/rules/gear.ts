@@ -621,22 +621,35 @@ export function rollFinaleReward(
   return { kind: 'gear', item: rollFinaleItem(rng, rank, element) };
 }
 
-/** The Festival piece for a Festival creature's element: the Festival base of that tag, else the first one. */
-export function festivalBaseFor(element: Element): GearBase {
+/** Every Festival base (the Lantern Night set): the only pieces a Festival win can give. */
+export function festivalBases(): GearBase[] {
   const festival = gearContent.bases.filter((b) => b.festival === true);
-  const base = festival.find((b) => b.tag === element) ?? festival[0];
-  if (base === undefined) throw new Error('no festival gear');
-  return base;
+  if (festival.length === 0) throw new Error('no festival gear');
+  return festival;
 }
 
 /**
- * Rolls the Festival piece for an element. It is special, not stronger (2026-10-17): the rarity comes from
- * the finale's own odds at the Boss Rank (`finaleDropOddsBp`, no floor) and the item level is the finale's
- * (`3 + Boss Rank`). What makes it a Festival piece is its base: the fixed unique line, the narrow roll
- * pool and its look. Draws the rarity, then the lines.
+ * The Festival base a Festival win gives (2026-10-19): one of the Festival pieces the player does not
+ * own yet, drawn evenly; once they own every one, any of them, drawn evenly. `owned` holds the base
+ * ids of everything they own (in the bag or worn). The Festival creature's element plays no part, so
+ * every piece, the Lantern Cap included, can drop. Draws once.
  */
-export function rollFestivalItem(rng: Rng, element: Element, rank: number): GearItem {
-  const base = festivalBaseFor(element);
+export function festivalBaseFor(rng: Rng, owned: ReadonlySet<string>): GearBase {
+  const festival = festivalBases();
+  const missing = festival.filter((b) => !owned.has(b.id));
+  const pool = missing.length > 0 ? missing : festival;
+  return pool[int(rng, pool.length)] as GearBase;
+}
+
+/**
+ * Rolls the Festival piece of a won Festival finale (see `festivalBaseFor` for which base). It is special,
+ * not stronger (2026-10-17): the rarity comes from the finale's own odds at the Boss Rank
+ * (`finaleDropOddsBp`, no floor) and the item level is the finale's (`3 + Boss Rank`). What makes it a
+ * Festival piece is its base: the fixed unique line, the narrow roll pool and its look. Draws the base,
+ * then the rarity, then the lines.
+ */
+export function rollFestivalItem(rng: Rng, owned: ReadonlySet<string>, rank: number): GearItem {
+  const base = festivalBaseFor(rng, owned);
   return rollItem(rng, {
     baseId: base.id,
     rarity: rollFinaleRarity(rng, rank),

@@ -30,6 +30,7 @@ import {
   seedPlayer,
   storedRuns,
 } from './raid-helpers';
+import { setCreature } from './kit';
 
 /** A seeded RNG that counts what it hands out. */
 function counting(seed: string): Rng & { drawn: () => number } {
@@ -337,7 +338,7 @@ describe('talents in the numbers a creature fights and trips with', () => {
       holdTalent(ctx.sql, id, { talentId: 'playful', golden: false }, 1, 1);
       holdTalent(ctx.sql, id, { talentId: 'splashes-first', golden: false }, 2, 1);
       const active = (level: number) => {
-        ctx.sql.exec('UPDATE creatures SET level = ? WHERE id = ?', level, id);
+        setCreature(ctx, id, { level });
         return activeTalentsOf(ctx.sql, { id, species: 'tidewing', level }).length;
       };
       expect(active(19)).toBe(1);

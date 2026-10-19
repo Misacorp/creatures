@@ -8,13 +8,11 @@
  */
 import { createSeededRng, type Rng } from '@creatures/game';
 import { rollMissingTalents } from '../src/talent-store';
-import { createRecorder, type Captured, type Json } from './fixture-contract';
+import { createRecorder, type Captured } from './fixture-contract';
 import { SCENARIO_START } from './gear-scenario';
 import type { CoreContext } from './helpers';
 import { scriptedThenSeeded, seedPlayer } from './raid-helpers';
-
-let keyCounter = 0;
-const newKey = (): string => `branches-fixture-${String(++keyCounter).padStart(8, '0')}-key`;
+import { newKey, sessionCaller, give, setCreature } from './kit';
 
 /** A catch that is certain: the first common species of Verdant Hollow (Sproutle), and not shiny. */
 const SPROUTLE = [0, 0, 0, 1];
@@ -37,25 +35,10 @@ export async function runBranchesScenario(ctx: CoreContext, talentRng: Rng): Pro
     'INSERT INTO player_progress (user_id, expeditions_claimed) VALUES (?, 1)',
     seeded.id,
   );
-  ctx.core.credit({
-    userId: seeded.id,
-    currency: 'essence',
-    amount: 100,
-    source: 'test',
-    idempotencyKey: 'branches-fixture-essence',
-  });
+  give(ctx, seeded.id, { essence: 100 });
   rollMissingTalents(ctx.storage, talentRng, ctx.clock.t);
 
-  let secret = await ctx.core.createSession(ctx.guildId, user);
-  let signedAt = ctx.clock.t;
-  const call = async (method: string, path: string, body?: unknown): Promise<Json> => {
-    if (ctx.clock.t - signedAt >= 30 * 60_000) {
-      secret = await ctx.core.createSession(ctx.guildId, user);
-      signedAt = ctx.clock.t;
-    }
-    const res = await ctx.request(secret, path, method, body);
-    return { status: res.status, body: await res.json<Record<string, unknown>>() };
-  };
+  const { call } = await sessionCaller(ctx, user);
   const { record, refuse, captured: out } = createRecorder(call);
 
   // The Sproutle is at its evolution level, and its line grows two ways.
@@ -67,7 +50,7 @@ export async function runBranchesScenario(ctx: CoreContext, talentRng: Rng): Pro
     destination: 'verdant-hollow',
     duration: 'short',
     supplies: [],
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('branches-fixture'),
   });
   const expedition = sent.body['expedition'] as { id: string; endsAt: number };
   ctx.clock.t = expedition.endsAt;
@@ -84,33 +67,33 @@ export async function runBranchesScenario(ctx: CoreContext, talentRng: Rng): Pro
   // Keep it: a second Sproutle, level 1.
   const kept = await record('branches-keep', 'POST', `/api/catches/${card.id}/choose`, {
     choice: 'keep',
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('branches-fixture'),
   });
   const second = (kept.body['result'] as { creatureId: string }).creatureId;
   // The Kept one is not high enough yet; a form it cannot grow into is refused.
   await refuse('POST', `/api/creatures/${second}/evolve`, {
     species: 'thornbuck',
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('branches-fixture'),
   }); // level 1
-  ctx.sql.exec('UPDATE creatures SET level = 15 WHERE id = ?', second);
+  setCreature(ctx, second, { level: 15 });
   await refuse('POST', `/api/creatures/${second}/evolve`, {
     species: 'voltaro',
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('branches-fixture'),
   }); // not a form of this line
 
   // The evolve screen's two answers: the first Sproutle into Sunfawn, the Kept one into Thornbuck.
   await record('branches-evolve', 'POST', `/api/creatures/${sproutle}/evolve`, {
     species: 'sunfawn',
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('branches-fixture'),
   });
   await record('branches-evolve-other', 'POST', `/api/creatures/${second}/evolve`, {
     species: 'thornbuck',
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('branches-fixture'),
   });
   // The choice is permanent.
   await refuse('POST', `/api/creatures/${sproutle}/evolve`, {
     species: 'thornbuck',
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('branches-fixture'),
   });
   out.responses['branches-state-after'] = (await call('GET', '/api/state')).body;
   return out;

@@ -9,13 +9,11 @@
  */
 import { createSeededRng, type Rng } from '@creatures/game';
 import { rollMissingTalents } from '../src/talent-store';
-import { createRecorder, type Captured, type Json } from './fixture-contract';
+import { createRecorder, type Captured } from './fixture-contract';
 import { SCENARIO_START } from './gear-scenario';
 import type { CoreContext } from './helpers';
 import { scriptedThenSeeded, seedPlayer } from './raid-helpers';
-
-let keyCounter = 0;
-const newKey = (): string => `creatures-fixture-${String(++keyCounter).padStart(8, '0')}-key`;
+import { newKey, type Json, sessionCaller, give } from './kit';
 
 /** A catch that is certain, the first common species of the Tidepools (Splashet), and not shiny. */
 const SPLASHET = [0, 0, 0, 1];
@@ -73,26 +71,11 @@ export async function runCreaturesScenario(ctx: CoreContext, talentRng: Rng): Pr
     'INSERT INTO player_progress (user_id, expeditions_claimed) VALUES (?, 1)',
     seeded.id,
   );
-  ctx.core.credit({
-    userId: seeded.id,
-    currency: 'bait',
-    amount: 100,
-    source: 'test',
-    idempotencyKey: 'creatures-fixture-bait',
-  });
+  give(ctx, seeded.id, { bait: 100 });
   // The creatures of a player from before talents: their open slots are rolled once.
   rollMissingTalents(ctx.storage, talentRng, ctx.clock.t);
 
-  let secret = await ctx.core.createSession(ctx.guildId, user);
-  let signedAt = ctx.clock.t;
-  const call = async (method: string, path: string, body?: unknown): Promise<Json> => {
-    if (ctx.clock.t - signedAt >= 30 * 60_000) {
-      secret = await ctx.core.createSession(ctx.guildId, user);
-      signedAt = ctx.clock.t;
-    }
-    const res = await ctx.request(secret, path, method, body);
-    return { status: res.status, body: await res.json<Record<string, unknown>>() };
-  };
+  const { call } = await sessionCaller(ctx, user);
   const { record, refuse, captured: out } = createRecorder(call);
 
   /** One short trip of the Cindle to the Tidepools, claimed at once: a duplicate Splashet. */
@@ -102,7 +85,7 @@ export async function runCreaturesScenario(ctx: CoreContext, talentRng: Rng): Pr
       destination: 'tidepools',
       duration: 'short',
       supplies: [],
-      idempotencyKey: newKey(),
+      idempotencyKey: newKey('creatures-fixture'),
     });
     const expedition = sent.body['expedition'] as { id: string; endsAt: number };
     ctx.clock.t = expedition.endsAt;
@@ -134,49 +117,49 @@ export async function runCreaturesScenario(ctx: CoreContext, talentRng: Rng): Pr
   await record('creatures-choose-teach', 'POST', `/api/catches/${golden.id}/choose`, {
     choice: 'teach',
     creatureId: splashet,
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   });
   // Fuse one, release one.
   await record('creatures-choose-fuse', 'POST', `/api/catches/${wet.id}/choose`, {
     choice: 'fuse',
     creatureId: splashet,
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   });
   await record('creatures-choose-release', 'POST', `/api/catches/${puddle.id}/choose`, {
     choice: 'release',
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   });
 
   // The errors a player can hit when answering.
   await refuse('POST', `/api/catches/${again.id}/choose`, {
     choice: 'teach',
     creatureId: splashet,
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   }); // the book has that talent already
   await refuse('POST', `/api/catches/${again.id}/choose`, {
     choice: 'keep',
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   }); // no branch to keep it for
   await refuse('POST', `/api/catches/${again.id}/choose`, {
     choice: 'fuse',
     creatureId: explorer,
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   }); // not a creature of that line
   await refuse('POST', `/api/catches/${wet.id}/choose`, {
     choice: 'release',
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   }); // already settled
   await refuse('POST', `/api/catches/${again.id}/choose`, {
     choice: 'fuse',
     creatureId: splashet,
     slot: 1,
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   }); // an unknown key
 
   // The card marked Recommended: a Splashes First the book has, so it is a fusion.
   await record('creatures-choose-recommended', 'POST', `/api/catches/${again.id}/choose`, {
     choice: 'recommended',
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   });
 
   // Two more cards (the dupe shield's streak is reset), and one answer for both.
@@ -185,7 +168,7 @@ export async function runCreaturesScenario(ctx: CoreContext, talentRng: Rng): Pr
   ctx.sql.exec('UPDATE player_progress SET dupe_streak = 0');
   await trip();
   await record('creatures-recommended-all', 'POST', '/api/catches/recommended', {
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   });
 
   // The Talent Book: the taught golden Bigger Splash takes the slot (not recorded), then Splashes First
@@ -194,7 +177,7 @@ export async function runCreaturesScenario(ctx: CoreContext, talentRng: Rng): Pr
     talentId: 'bigger-splash',
     golden: true,
     slot: 1,
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   });
   if (swap.status !== 200)
     throw new Error(`slotting the golden talent failed: ${JSON.stringify(swap.body)}`);
@@ -202,39 +185,39 @@ export async function runCreaturesScenario(ctx: CoreContext, talentRng: Rng): Pr
     talentId: 'splashes-first',
     golden: false,
     slot: 1,
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   });
   out.responses['creatures-state-after'] = (await call('GET', '/api/state')).body;
   await refuse('POST', `/api/creatures/${splashet}/talents/slot`, {
     talentId: 'splashes-first',
     golden: false,
     slot: 1,
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   }); // already in that slot
   await refuse('POST', `/api/creatures/${splashet}/talents/slot`, {
     talentId: 'splashes-first',
     golden: false,
     slot: 2,
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   }); // slot 2 opens at level 20
   await refuse('POST', `/api/creatures/${splashet}/talents/slot`, {
     talentId: 'puddle-hopper',
     golden: false,
     slot: 1,
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   }); // released, never held
   await refuse('POST', `/api/creatures/${splashet}/talents/slot`, {
     talentId: 'splashes-first',
     golden: false,
     slot: 4,
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   }); // not a slot
   ctx.sql.exec("UPDATE balances SET amount = 0 WHERE user_id = ? AND currency = 'bait'", seeded.id);
   await refuse('POST', `/api/creatures/${splashet}/talents/slot`, {
     talentId: 'bigger-splash',
     golden: true,
     slot: 1,
-    idempotencyKey: newKey(),
+    idempotencyKey: newKey('creatures-fixture'),
   }); // no Bait
   return out;
 }

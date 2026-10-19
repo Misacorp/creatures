@@ -101,6 +101,8 @@ export interface DungeonRunInput {
   hazeLeft?: true;
   /** Bramble Season: `FightInput.brambleBp`, in every room. Absent: none. */
   brambleBp?: number;
+  /** Lantern Light: `FightInput.lingerAllRounds`, in every room. Absent: none. */
+  lingerAllRounds?: number;
 }
 
 export interface DungeonRoomResult {
@@ -248,6 +250,9 @@ export function buildRoomInput(
       ? { skipFirstTurn: [run.team[0].id] }
       : {}),
     ...(run.brambleBp !== undefined && run.brambleBp > 0 ? { brambleBp: run.brambleBp } : {}),
+    ...(run.lingerAllRounds !== undefined && run.lingerAllRounds > 0
+      ? { lingerAllRounds: run.lingerAllRounds }
+      : {}),
     phase: 'finale',
     bossHpPool: { max: foeHp, current: foeHp },
     adaptation: null,

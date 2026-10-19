@@ -20,15 +20,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { eventTimes } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
 import { dungeonPlayer, easyFoes } from './dungeon-helpers';
-import {
-  apiPlayer,
-  giveItem,
-  giveParts,
-  learnBase,
-  newKey,
-  skipWelcome,
-  type Api,
-} from './gear-helpers';
+import { apiPlayer, giveItem, giveParts, learnBase, skipWelcome, type Api } from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
 import {
   HELSINKI,
@@ -43,6 +35,7 @@ import {
   seedPlayer,
   storedRuns,
 } from './raid-helpers';
+import { newKey, give } from './kit';
 
 /** A Wednesday afternoon in a normal week, a little after the reset: a game day with plenty of it left. */
 const AFTERNOON = Date.parse('2027-01-13T12:00:00Z');
@@ -266,13 +259,7 @@ describe('trips under the weather', () => {
         const p = await apiPlayer(ctx, 1, { level: 8, creatures: 2 });
         twoSlots(ctx, p.id);
         const [a, b] = p.creatureIds as [string, string];
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'bait',
-          amount: 100,
-          source: 'test',
-          idempotencyKey: 'weather-bait',
-        });
+        give(ctx, p.id, { bait: 100 });
         sky(ctx, 'hearty-breakfast');
         const treated = tripOf(await send(p, a, { treat: true }));
         sky(ctx, 'market-day', 'cold-snap');
@@ -687,8 +674,29 @@ describe('the dungeon under the weather', () => {
     const bramble = await runUnder('market-day', 'bramble-season');
     expect(bramble.brambleBp).toBe(1_200);
     const plain = await runUnder('market-day', null);
-    for (const key of ['rainHealBp', 'hazeLeft', 'brambleBp'])
+    for (const key of ['rainHealBp', 'hazeLeft', 'brambleBp', 'lingerAllRounds'])
       expect(plain).not.toHaveProperty(key);
+  });
+
+  it("Lantern Light goes into the stored run input as the day's linger for every ability, and into no creature's sheet", async () => {
+    const runUnder = async (boon: string, omen: string | null): Promise<DungeonRunInput> =>
+      runCore(
+        nextGuild(),
+        async (ctx) => {
+          ctx.clock.t = AFTERNOON;
+          const p = await dungeonPlayer(ctx, 1);
+          sky(ctx, boon, omen);
+          expect((await p.run()).status).toBe(200);
+          return JSON.parse(lastRun(ctx).input_json) as DungeonRunInput;
+        },
+        { weather: true },
+      );
+    const lantern = await runUnder('lantern-light', null);
+    expect(lantern.lingerAllRounds).toBe(1);
+    // Not also on the sheet: a creature's own ability would be lengthened twice.
+    for (const slot of lantern.team) expect(slot.mods?.lingerRounds).toBeUndefined();
+    const other = await runUnder('kind-rain', null);
+    expect(other).not.toHaveProperty('lingerAllRounds');
   });
 
   it('Market Day pays a scrap more for every room cleared, and nothing more otherwise', async () => {
@@ -746,13 +754,7 @@ describe('the dungeon under the weather', () => {
       async (ctx) => {
         ctx.clock.t = AFTERNOON;
         const p = await dungeonPlayer(ctx, 1);
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'bait',
-          amount: 300,
-          source: 'test',
-          idempotencyKey: 'bait-xp-note',
-        });
+        give(ctx, p.id, { bait: 300 });
         sky(ctx, 'hearty-breakfast', 'cold-snap');
         const [a] = p.creatureIds as [string];
         const res = await p.run({ treats: [a] });
@@ -782,13 +784,7 @@ describe('the dungeon under the weather', () => {
       async (ctx) => {
         ctx.clock.t = AFTERNOON;
         const p = await dungeonPlayer(ctx, 1);
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'bait',
-          amount: 300,
-          source: 'test',
-          idempotencyKey: 'bait-xp-plain',
-        });
+        give(ctx, p.id, { bait: 300 });
         sky(ctx, 'quiet-night');
         const [a] = p.creatureIds as [string];
         const exp = (await p.run({ treats: [a] })).body.run.rewards.experience ?? [];
@@ -896,6 +892,28 @@ describe('the raid stage under the weather', () => {
         expect(two.input.brambleBp).toBe(1_200);
         expect(two.input.rainHealBp).toBeUndefined();
         expect(two.input.skipFirstTurn).toBeUndefined();
+      },
+      { core: { weather: true } },
+    );
+  });
+
+  it("Lantern Light goes into the stage input as the day's linger for every ability, not into the creatures' sheets; the next day has none", async () => {
+    await runRaid(
+      (ctx) => {
+        players(ctx, 4);
+        ctx.core.raid.currentWeek(HELSINKI);
+        const times = eventTimes(W02.id, HELSINKI);
+        const day = (at: number): string => gameDay(at, HELSINKI, RULES.daily.reset);
+        ctx.core.weather.force(day(times.phase1), 'lantern-light', null);
+        ctx.core.weather.force(day(times.phase2), 'market-day', null);
+        forcePool(ctx.sql, 20_000);
+        ctx.clock.t = W02.afterPhase2;
+        ctx.core.raid.runDue(HELSINKI);
+        const [one, two] = storedRuns(ctx.sql);
+        if (one === undefined || two === undefined) throw new Error('the stages did not run');
+        expect(one.input.lingerAllRounds).toBe(1);
+        expect(one.input.row.every((s) => s.mods?.lingerRounds === undefined)).toBe(true);
+        expect(two.input.lingerAllRounds).toBeUndefined();
       },
       { core: { weather: true } },
     );

@@ -15,19 +15,17 @@ import { grantTripLoot } from '../src/gear-grants';
 import {
   apiPlayer as player,
   essenceOf,
-  giveEssence,
   giveItem,
   giveParts,
   learnBase,
-  newKey,
   setCraftingXp,
   skipWelcome,
   type Api,
 } from './gear-helpers';
 import { runCore, undoWorkshopV2Migration, type CoreContext } from './helpers';
 import { count, nextGuild, rows } from './raid-helpers';
+import { HOUR, newKey, give as giveFunds } from './kit';
 
-const HOUR = 3_600_000;
 const MIN = 60_000;
 
 interface JobBody {
@@ -245,7 +243,7 @@ describe('crafting: Reach', () => {
         skipWelcome(ctx, p.id);
         learnBase(ctx, p.id, 'kelp-cap');
         giveParts(ctx, p.id, { scrap: 20, 'tide-shard': 5 });
-        giveEssence(ctx, p.id, 100);
+        giveFunds(ctx, p.id, { essence: 100 });
         const [c1, c2] = p.creatureIds as [string, string];
         const reach = (creatureId: string) =>
           start(p, { kind: 'craft', creatureId, blueprintId: 'kelp-cap', reach: 'rare' });
@@ -285,7 +283,7 @@ describe('crafting: Reach', () => {
         skipWelcome(ctx, p.id);
         learnBase(ctx, p.id, 'kelp-cap');
         giveParts(ctx, p.id, { scrap: 20, 'tide-shard': 5, glimmer: 1 });
-        giveEssence(ctx, p.id, 69);
+        giveFunds(ctx, p.id, { essence: 69 });
         const [c1, c2] = p.creatureIds as [string, string];
         setCraftingXp(ctx, p.id, c1, 700); // level 5
         setCraftingXp(ctx, p.id, c2, 1_000); // level 6
@@ -300,7 +298,7 @@ describe('crafting: Reach', () => {
         expect(essenceOf(ctx, p.id)).toBe(69);
         expect(partsOf(ctx, p.id)).toMatchObject({ scrap: 20, 'tide-shard': 5, glimmer: 1 });
         expect(count(ctx.sql, 'workshop_jobs')).toBe(0);
-        giveEssence(ctx, p.id, 1);
+        giveFunds(ctx, p.id, { essence: 1 });
         const res = await epic(c2);
         expect(res.status).toBe(200);
         expect(essenceOf(ctx, p.id)).toBe(0);
@@ -322,7 +320,7 @@ describe('crafting: Reach', () => {
         skipWelcome(ctx, p.id);
         learnBase(ctx, p.id, 'kelp-cap');
         giveParts(ctx, p.id, { scrap: 5, 'tide-shard': 1 });
-        giveEssence(ctx, p.id, 100);
+        giveFunds(ctx, p.id, { essence: 100 });
         setCraftingXp(ctx, p.id, p.creatureIds[0] as string, 250);
         const res = await start(p, {
           kind: 'craft',
@@ -346,7 +344,7 @@ describe('crafting: Reach', () => {
         skipWelcome(ctx, p.id);
         learnBase(ctx, p.id, 'kelp-cap');
         giveParts(ctx, p.id, { scrap: 20, 'tide-shard': 6 });
-        giveEssence(ctx, p.id, 100);
+        giveFunds(ctx, p.id, { essence: 100 });
         const [c1] = p.creatureIds as [string];
         setCraftingXp(ctx, p.id, c1, 250);
         const body = {
@@ -381,7 +379,7 @@ describe('crafting: Reach', () => {
         skipWelcome(ctx, p.id);
         learnBase(ctx, p.id, 'kelp-cap', 3);
         giveParts(ctx, p.id, { scrap: 20, 'tide-shard': 6 });
-        giveEssence(ctx, p.id, 100);
+        giveFunds(ctx, p.id, { essence: 100 });
         const [c1] = p.creatureIds as [string];
         setCraftingXp(ctx, p.id, c1, 250); // level 3
         const started = await start(p, {
@@ -958,7 +956,7 @@ describe('the day modifiers hook', () => {
         skipWelcome(ctx, p.id);
         learnBase(ctx, p.id, 'kelp-cap');
         giveParts(ctx, p.id, { scrap: 20, 'tide-shard': 5 });
-        giveEssence(ctx, p.id, 100);
+        giveFunds(ctx, p.id, { essence: 100 });
         const [c1] = p.creatureIds as [string];
         setCraftingXp(ctx, p.id, c1, 250);
         const gear = new Gear({

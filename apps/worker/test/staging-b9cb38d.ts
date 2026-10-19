@@ -14,8 +14,7 @@
 import { ribbonsForLevel } from '@creatures/game';
 import { apiPlayer, type Api } from './gear-helpers';
 import type { CoreContext } from './helpers';
-
-const HOUR = 3_600_000;
+import { HOUR } from './kit';
 
 /** `gear_items` exactly as migration 27 made it at b9cb38d. */
 export function oldGearItemsTable(sql: SqlStorage): void {

@@ -12,10 +12,10 @@ import {
 import { normaliseGearRows } from '../src/gear-normalise';
 import { rowToItem, type GearRow } from '../src/gear-store';
 import { getBalance } from '../src/ledger';
-import { newKey } from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
 import { nextGuild, rows } from './raid-helpers';
 import { rewindToB9cb38d, seedStagingPlayer, type Staging } from './staging-b9cb38d';
+import { HOUR, newKey, type Json, captureConsole } from './kit';
 
 /**
  * Staging ran b9cb38d (the first gear v2: Festival a rarity, percentage implicits, the old lines), then
@@ -25,13 +25,6 @@ import { rewindToB9cb38d, seedStagingPlayer, type Staging } from './staging-b9cb
  * (`migrate`, what a Durable Object does on its first start) and read it through the real router, with the
  * client's own parsers deciding whether the answer is acceptable.
  */
-
-const HOUR = 3_600_000;
-
-interface Json {
-  status: number;
-  body: Record<string, unknown>;
-}
 
 /** A database as staging held it, with one player, after the new code's first start. */
 async function stagingStarted(
@@ -342,6 +335,7 @@ describe('rows the normalisation cannot fix never take the Workshop down', () =>
   });
 
   it('leaves out one item, job, blueprint or loot record it cannot read and sends the rest', async () => {
+    const log = captureConsole();
     await runCore(nextGuild(), async (ctx) => {
       const s = await stagingStarted(ctx);
       // Damage written after the start (the normalisation has already run): an unknown base, a job with
@@ -371,6 +365,11 @@ describe('rows the normalisation cannot fix never take the Workshop down', () =>
       // The living room shows what every creature wears; the unreadable item is left out of it.
       const room = await s.player.call('POST', '/api/room', { userIds: [s.player.id] });
       expect(room.status).toBe(200);
+      // Each skipped record is logged by kind only: the unknown base id never appears.
+      expect(log.text()).toContain('gear view: item skipped');
+      expect(log.text()).toContain('gear view: blueprint skipped');
+      expect(log.text()).toContain('worn gear skipped');
+      expect(log.text()).not.toContain('ghost-hat');
     });
   });
 

@@ -5,6 +5,7 @@ import { DIRECTORY_NAME } from '../src/guild-directory';
 import { createHandler } from '../src/index';
 import { GUILD_ID, OTHER_USER_ID, fakeDiscord, getWithToken, postAuth } from './helpers';
 import { nextGuild, rows } from './raid-helpers';
+import { captureConsole } from './kit';
 
 function directory() {
   return env.GUILD_DIRECTORY.get(env.GUILD_DIRECTORY.idFromName(DIRECTORY_NAME));
@@ -123,6 +124,7 @@ describe('the directory and login', () => {
 // Last on purpose: it breaks the directory for the rest of the file.
 describe('a directory that fails', () => {
   it('never delays or fails a login', async () => {
+    const log = captureConsole();
     await runInDurableObject(directory(), (_instance, state) => {
       state.storage.sql.exec('DROP TABLE guild_directory');
     });
@@ -139,5 +141,9 @@ describe('a directory that fails', () => {
     const { sessionToken } = await res.json<{ sessionToken: string }>();
     // The session works, so the failure stayed in the background.
     expect((await getWithToken(handler, '/api/me', sessionToken)).status).toBe(200);
+    // The note runs in the background; its failure is logged by kind only.
+    await vi.waitFor(() => {
+      expect(log.calls).toEqual([['directory note failed', 'Error']]);
+    });
   });
 });

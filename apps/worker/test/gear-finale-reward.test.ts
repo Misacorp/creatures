@@ -6,11 +6,18 @@ import {
   dismantleRange,
   dismantleYield,
   finaleItemLevel,
+  festivalBases,
   rollFinaleReward,
   type DismantleRange,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { grantRaidFinale, normaliseGrant, recentGrants, type GrantDeps } from '../src/gear-grants';
+import {
+  grantFestivalGear,
+  grantRaidFinale,
+  normaliseGrant,
+  recentGrants,
+  type GrantDeps,
+} from '../src/gear-grants';
 import { learnBlueprint } from '../src/gear-store';
 import { giveItem } from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
@@ -274,6 +281,52 @@ describe('the finale reward slot at the server', () => {
         idempotencyKey: 'finale-valid-dismantle',
       });
       expect(out.status).toBe(200);
+    });
+  });
+
+  it('the Festival piece is one the player does not own yet (in the bag or worn), and any one once they own them all', async () => {
+    await runCore(nextGuild(), (ctx) => {
+      const d = deps(ctx, 'festival-missing');
+      const all = festivalBases().map((b) => b.id);
+      expect(all.length).toBeGreaterThanOrEqual(3);
+      const player = seedPlayer(ctx, 1, { level: 10 });
+      const baseOf = (itemId: string): string | undefined =>
+        rows<{ base_id: string }>(ctx.sql, 'SELECT base_id FROM gear_items WHERE id = ?', itemId)[0]
+          ?.base_id;
+      // One piece in the bag, one worn: the grant gives the one that is left, week after week it is not repeated.
+      giveItem(ctx.sql, player.id, all[0] as string);
+      const worn = giveItem(ctx.sql, player.id, all[1] as string);
+      ctx.sql.exec(
+        'UPDATE gear_items SET equipped_on = ? WHERE id = ?',
+        player.creatureIds[0],
+        worn,
+      );
+      const first = grantFestivalGear(d, player.id, '2027-W10', 4, BOSS);
+      expect(first.gear).toHaveLength(1);
+      expect(all.slice(2)).toContain(first.gear[0]?.baseId);
+      expect(baseOf(first.gear[0]?.id as string)).toBe(first.gear[0]?.baseId);
+      // The same week again pays nothing and draws nothing.
+      const drawn = d.drawn();
+      expect(grantFestivalGear(d, player.id, '2027-W10', 4, BOSS).gear).toEqual(first.gear);
+      expect(d.drawn()).toBe(drawn);
+      // They own all of them now: the next Festival week gives any one of them.
+      const seen = new Set<string>();
+      for (let week = 11; week < 40; week++) {
+        const view = grantFestivalGear(d, player.id, `2027-W${String(week)}`, 4, BOSS);
+        expect(view.gear).toHaveLength(1);
+        seen.add(view.gear[0]?.baseId as string);
+      }
+      for (const id of seen) expect(all).toContain(id);
+      expect(seen.size).toBeGreaterThan(1);
+      // A player who owns none gets any piece, each of them over enough weeks.
+      const other = seedPlayer(ctx, 2, { level: 10 });
+      const gotAll = new Set<string>();
+      for (let week = 50; week < 50 + all.length; week++) {
+        const piece = grantFestivalGear(d, other.id, `2027-W${String(week)}`, 4, BOSS).gear[0];
+        gotAll.add(piece?.baseId as string);
+      }
+      // Each win gave a piece it lacked: as many wins as pieces, every piece once.
+      expect(gotAll).toEqual(new Set(all));
     });
   });
 });

@@ -57,7 +57,7 @@
   background: var(--owner, var(--line));
   color: var(--owner-ink, var(--bone));
   font-family: var(--display);
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
   line-height: 1;
 }
 

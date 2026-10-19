@@ -16,6 +16,7 @@ import {
   seedPlayer,
   type Seeded,
 } from './raid-helpers';
+import { captureConsole } from './kit';
 
 const BANDS: readonly ReadinessBand[] = ['long_shot', 'even', 'likely', 'strong'];
 
@@ -270,6 +271,7 @@ describe('the readiness band in the raid view', () => {
   });
 
   it('never breaks the view when the forecast fails', async () => {
+    const log = captureConsole();
     const broken: Rng = {
       nextU32() {
         throw new Error('no randomness');
@@ -279,6 +281,7 @@ describe('the readiness band in the raid view', () => {
       (ctx) => {
         const [a] = open(ctx) as [Seeded, ...Seeded[]];
         expect(bandOf(ctx, a)).toBeNull();
+        expect(log.calls).toEqual([['readiness forecast failed', 'Error']]);
       },
       { start: W02.monday, core: { readinessRng: broken } },
     );

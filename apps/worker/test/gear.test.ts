@@ -29,17 +29,7 @@ import {
   type CoreContext,
 } from './helpers';
 import { count, nextGuild, rows, seedPlayer, type SeedOptions } from './raid-helpers';
-
-const HOUR = 3_600_000;
-
-let keyCounter = 0;
-/** A valid client idempotency key, unique per call. */
-const newKey = () => `gear-${String(++keyCounter).padStart(8, '0')}-test`;
-
-interface Json {
-  status: number;
-  body: Record<string, unknown>;
-}
+import { HOUR, newKey, type Json, sessionCaller, give as giveFunds, setCreature } from './kit';
 
 interface LineBody {
   id: string;
@@ -120,17 +110,7 @@ interface Api {
 async function player(ctx: CoreContext, n: number, options: SeedOptions = {}): Promise<Api> {
   const seeded = seedPlayer(ctx, n, { level: 5, ...options });
   const user = { id: seeded.id, displayName: seeded.name };
-  let secret = await ctx.core.createSession(ctx.guildId, user);
-  let loggedInAt = ctx.clock.t;
-  const call = async (method: string, path: string, body?: unknown): Promise<Json> => {
-    // Tests jump the clock by hours; sessions idle out, so sign in again as needed.
-    if (ctx.clock.t - loggedInAt >= 30 * 60_000) {
-      secret = await ctx.core.createSession(ctx.guildId, user);
-      loggedInAt = ctx.clock.t;
-    }
-    const res = await ctx.request(secret, path, method, body);
-    return { status: res.status, body: await res.json<Record<string, unknown>>() };
-  };
+  const { call } = await sessionCaller(ctx, user);
   return {
     id: seeded.id,
     creatureIds: seeded.creatureIds,
@@ -985,13 +965,7 @@ describe('what gear v2 removed', () => {
         const p = await player(ctx, 1);
         skipWelcome(ctx, p.id);
         const id = give(ctx, p.id, 'trail-cap');
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'essence',
-          amount: 100,
-          source: 'test',
-          idempotencyKey: 'removed-essence',
-        });
+        giveFunds(ctx, p.id, { essence: 100 });
         parts(ctx, p.id, { scrap: 10 });
         const res = await p.call('POST', `/api/gear/${id}/upgrade`, { idempotencyKey: newKey() });
         expect(res).toEqual({ status: 410, body: { error: 'gear_upgrade_removed' } });
@@ -1205,13 +1179,7 @@ describe('workshop jobs: starting', () => {
         skipWelcome(ctx, p.id);
         learn(ctx, p.id, 'trail-cap');
         parts(ctx, p.id, { scrap: 100 });
-        ctx.core.credit({
-          userId: p.id,
-          currency: 'bait',
-          amount: 100,
-          source: 'test',
-          idempotencyKey: 'bait',
-        });
+        giveFunds(ctx, p.id, { bait: 100 });
         const [c1, c2] = p.creatureIds as [string, string];
         const craft = (creatureId: string) =>
           p.call('POST', '/api/workshop/jobs', {
@@ -1386,7 +1354,7 @@ describe('workshop jobs: claiming', () => {
           p.id,
           p.creatureIds[0],
         );
-        ctx.sql.exec('UPDATE creatures SET nickname = ? WHERE id = ?', 'Pebble', p.creatureIds[0]);
+        setCreature(ctx, p.creatureIds[0] as string, { nickname: 'Pebble' });
         const jobId = await startCraft(p);
         expect(rng.drawn()).toBe(0);
 

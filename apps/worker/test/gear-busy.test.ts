@@ -1,10 +1,9 @@
 import { createSeededRng } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { apiPlayer as player, giveItem, giveParts, newKey, skipWelcome } from './gear-helpers';
+import { apiPlayer as player, giveItem, giveParts, skipWelcome } from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
 import { nextGuild, rows } from './raid-helpers';
-
-const HOUR = 3_600_000;
+import { HOUR, newKey } from './kit';
 
 const give = (ctx: CoreContext, userId: string, baseId: string, o = {}): string =>
   giveItem(ctx.sql, userId, baseId, { now: ctx.clock.t, ...o });

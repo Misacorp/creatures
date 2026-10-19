@@ -4,8 +4,6 @@ import command from '../src/feedback-command.json';
 import { FEEDBACK_COMMAND } from '../src/discord-interactions';
 import {
   ATTACHMENT_ID,
-  DAY,
-  MINUTE,
   READ,
   T0,
   attachment,
@@ -30,6 +28,7 @@ import {
   type Keys,
   type Reply,
 } from './feedback-helpers';
+import { DAY, MINUTE, captureConsole } from './kit';
 
 let keys: Keys;
 let otherKeys: Keys;
@@ -722,6 +721,7 @@ describe('screenshots', () => {
   });
 
   it('marks the screenshot failed when the file is not an image (bad first bytes)', async () => {
+    const log = captureConsole();
     const handler = makeHandler(fakeFetch(() => new Response('<html>not an image</html>')));
     await submitReport(handler, keys, { userId: nextUser(), ...copied() }, reportsEnv(keys));
     const [report] = await exportable(handler);
@@ -731,9 +731,11 @@ describe('screenshots', () => {
       env: reportsEnv(keys),
     });
     expect(shot.status).toBe(404);
+    expect(log.calls).toEqual([['feedback screenshot not copied', 'bad_type']]);
   });
 
   it('marks the screenshot failed on an error status, a redirect, a network error or an empty body', async () => {
+    const log = captureConsole();
     const cases: (() => Response | Promise<Response>)[] = [
       () => new Response('nope', { status: 404 }),
       () => new Response('', { status: 302, headers: { Location: 'https://evil.example/x.png' } }),
@@ -748,9 +750,17 @@ describe('screenshots', () => {
       expect(report?.['screenshot']).toBe('failed');
       expect(report?.['text']).toBeTypeOf('string');
     }
+    // The kind of each failure: a redirect counts as a bad status.
+    expect(log.calls).toEqual([
+      ['feedback screenshot not copied', 'status'],
+      ['feedback screenshot not copied', 'status'],
+      ['feedback screenshot not copied', 'fetch'],
+      ['feedback screenshot not copied', 'empty'],
+    ]);
   });
 
   it('stops reading past 8 MiB even when the size Discord gave was small', async () => {
+    const log = captureConsole();
     let pulled = 0;
     const stream = new ReadableStream<Uint8Array>({
       pull(controller) {
@@ -765,21 +775,14 @@ describe('screenshots', () => {
     const [report] = await exportable(handler);
     expect(report?.['screenshot']).toBe('failed');
     expect(pulled).toBeLessThan(15);
+    expect(log.calls).toEqual([['feedback screenshot not copied', 'too_big']]);
   });
 
   it('logs only the kind of failure', async () => {
-    const logged: unknown[][] = [];
-    const original = console.error;
-    console.error = (...args: unknown[]) => {
-      logged.push(args);
-    };
-    try {
-      const handler = makeHandler(fakeFetch(() => new Response('secret-body-text')));
-      await submitReport(handler, keys, { userId: nextUser(), ...copied() }, reportsEnv(keys));
-    } finally {
-      console.error = original;
-    }
-    const text = JSON.stringify(logged);
+    const log = captureConsole();
+    const handler = makeHandler(fakeFetch(() => new Response('secret-body-text')));
+    await submitReport(handler, keys, { userId: nextUser(), ...copied() }, reportsEnv(keys));
+    const text = JSON.stringify(log.calls);
     expect(text).toContain('bad_type');
     expect(text).not.toContain('secret-body-text');
     expect(text).not.toContain('discordapp');

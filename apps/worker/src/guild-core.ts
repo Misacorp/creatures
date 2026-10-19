@@ -1,4 +1,4 @@
-import { RULES, leetBonusForDay, leetPointsForDay, type Rng } from '@creatures/game';
+import { RULES, type Rng } from '@creatures/game';
 import * as v from 'valibot';
 import { DailyAllowance } from './allowance';
 import { Analytics } from './analytics';
@@ -33,12 +33,14 @@ import {
   type PostSender,
 } from './discord-posts';
 import { dispatch, errorResponse, json, matchTemplate, notFound, type Routes } from './http';
+import type { LeetSource } from './leet';
 import {
-  LEET_BACKFILL_DAYS,
-  LeetSourceError,
-  type LeetSource,
-  type LeetSyncErrorKind,
-} from './leet';
+  LeetSync,
+  SYNC_BUDGET_MS,
+  logSyncError,
+  type LeetSyncResult,
+  type LeetSyncStatus,
+} from './leet-sync';
 import {
   credit,
   getBalances,
@@ -91,11 +93,9 @@ import {
 } from './session';
 import {
   DEFAULT_GUILD_TIMEZONE,
-  addDays,
   isValidTimeZone,
   nextOccurrence,
   previousOccurrence,
-  zonedDate,
 } from './time';
 
 /** Per-user session cap: older sessions are dropped so storage stays bounded. */
@@ -108,17 +108,6 @@ const RATE_MAX_KEYS = 1000;
 /** The daily leet sync runs at 13:40 guild-local time, just after the 13:37 leet window closes. */
 const SYNC_HOUR = 13;
 const SYNC_MINUTE = 40;
-/** A sync triggered by /api/me only runs when the last one is older than this. */
-const SYNC_STALE_MS = 15 * 60 * 1000;
-/** After a failed sync, wait this long before /api/me triggers another attempt. */
-const SYNC_RETRY_MS = 60 * 1000;
-/**
- * How long /api/me waits for a sync before answering with stale data. Longer than the HTTP
- * source's 5000 ms timeout, so one slow upstream call (a cold start) can still finish in time.
- */
-export const SYNC_BUDGET_MS = 6000;
-const SYNC_MAX_PAGES = 20;
-const SYNC_PAGE_LIMIT = 31;
 /** Alarms re-arm from slightly in the future so a marginally early wake-up cannot fire twice. */
 const ALARM_REARM_SKEW_MS = 60 * 1000;
 /** The analytics rollup of a finished game day runs this long after the daily reset (13:37 + 3 min = 13:40). */
@@ -308,19 +297,8 @@ export interface GuildCoreOptions {
   devTools?: boolean;
 }
 
-export interface LeetSyncResult {
-  daysProcessed: number;
-  creditsApplied: number;
-}
-
-/** How healthy the leet sync is, as shown to players. Contains no messages, URLs or keys. */
-export interface LeetSyncStatus {
-  source: 'http' | 'mock' | 'disabled';
-  lastAttemptAt: number | null;
-  lastSyncedAt: number | null;
-  lastError: LeetSyncErrorKind | null;
-  lastDays: number | null;
-}
+export { SYNC_BUDGET_MS } from './leet-sync';
+export type { LeetSyncResult, LeetSyncStatus } from './leet-sync';
 
 type CoreStorage = Pick<DurableObjectStorage, 'sql' | 'transactionSync' | 'getAlarm' | 'setAlarm'>;
 
@@ -330,8 +308,8 @@ type CoreStorage = Pick<DurableObjectStorage, 'sql' | 'transactionSync' | 'getAl
  */
 export class GuildCore {
   private readonly limiter: TokenBucketLimiter;
-  private readonly leetSource: LeetSource | null;
-  private readonly syncBudgetMs: number;
+  /** The daily leet sync (`leet-sync.ts`); `syncLeet`, `leetSyncStatus` and `syncIfStale` delegate to it. */
+  private readonly leet: LeetSync;
   /**
    * The game clock: everything in the guild's game logic (calendar, trips, jobs, raids, posts, alarms)
    * reads time through it. It is exactly the real clock unless the dev tools are on, when it is the real
@@ -354,12 +332,10 @@ export class GuildCore {
   readonly rollup: AnalyticsRollup;
   /** The daily Bait allowance, granted on a player's first authenticated request of a game day. */
   readonly allowance: DailyAllowance;
-  private syncInFlight: Promise<LeetSyncResult> | null = null;
   private postsInFlight: Promise<void> | null = null;
   private loungeInFlight: Promise<void> | null = null;
   /** The last analytics prune left old rows behind: the alarm comes back soon to continue. */
   private pruneBacklog = false;
-  private lastSyncAttemptAt: number | null = null;
   /** The guild's timezone, cached per object; cleared whenever it changes. */
   private cachedTimezone: string | null = null;
   /** Recent "may manage the server" answers per player, and lookups that are still running. */
@@ -378,8 +354,14 @@ export class GuildCore {
     this.devState = options.devTools === true ? new DevState(storage.sql) : null;
     const now = this.devState === null ? realNow : () => realNow() + this.devOffset();
     this.now = now;
-    this.syncBudgetMs = options.syncBudgetMs ?? SYNC_BUDGET_MS;
-    this.leetSource = options.createLeetSource?.(() => this.knownPlayers()) ?? null;
+    this.leet = new LeetSync({
+      storage,
+      now,
+      source: options.createLeetSource?.(() => this.knownPlayers()) ?? null,
+      timezone: () => this.timezone(),
+      guildId: () => this.storedGuildId() ?? options.guildId?.(),
+      budgetMs: options.syncBudgetMs ?? SYNC_BUDGET_MS,
+    });
     const quirkRng = options.quirkRng ?? liveRng();
     const talentRng = options.talentRng ?? liveRng();
     this.talentRng = talentRng;
@@ -870,243 +852,21 @@ export class GuildCore {
     );
   }
 
-  // --- Leet sync ---
+  // --- Leet sync (see `leet-sync.ts`) ---
 
-  private getSyncState(timezone: string): {
-    cursor: string | null;
-    sinceDate: string;
-    lastSyncedAt: number | null;
-  } {
-    const since = addDays(zonedDate(this.now(), timezone), -LEET_BACKFILL_DAYS);
-    this.sql.exec(
-      'INSERT OR IGNORE INTO leet_sync (id, cursor, since_date) VALUES (1, NULL, ?)',
-      since,
-    );
-    const row = this.sql
-      .exec<{
-        cursor: string | null;
-        since_date: string;
-        last_synced_at: number | null;
-      }>('SELECT cursor, since_date, last_synced_at FROM leet_sync WHERE id = 1')
-      .one();
-    return { cursor: row.cursor, sinceDate: row.since_date, lastSyncedAt: row.last_synced_at };
-  }
-
-  /**
-   * A cursor only means something to the source that issued it. When the configured source kind
-   * changes (for example from the mock to the real leet bot), forget the cursor and backfill again
-   * from the guild-local date `LEET_BACKFILL_DAYS` ago. Credits are keyed by day id, so days that
-   * were already credited are not paid twice.
-   */
-  private resetSyncIfSourceChanged(kind: 'http' | 'mock', timezone: string): void {
-    this.getSyncState(timezone);
-    const row = this.sql
-      .exec<{ source: string | null }>('SELECT source FROM leet_sync WHERE id = 1')
-      .one();
-    if (row.source === kind) return;
-    const since = addDays(zonedDate(this.now(), timezone), -LEET_BACKFILL_DAYS);
-    this.sql.exec(
-      'UPDATE leet_sync SET source = ?, cursor = NULL, since_date = ? WHERE id = 1',
-      kind,
-      since,
-    );
-  }
-
-  /**
-   * Pulls finalised leet days and credits Bait. Concurrent calls share one run. The await on the
-   * source happens between page transactions, never inside one. Safe to repeat: credits are
-   * keyed by day id.
-   */
+  /** Pulls finalised leet days and credits Bait. Concurrent calls share one run. */
   syncLeet(): Promise<LeetSyncResult> {
-    if (this.syncInFlight !== null) return this.syncInFlight;
-    const run = this.runLeetSync().finally(() => {
-      this.syncInFlight = null;
-    });
-    this.syncInFlight = run;
-    return run;
+    return this.leet.sync();
   }
 
-  private async runLeetSync(): Promise<LeetSyncResult> {
-    const source = this.leetSource;
-    if (source === null) {
-      this.recordSyncOutcome({ error: 'disabled' });
-      return { daysProcessed: 0, creditsApplied: 0 };
-    }
-    const guildId = this.storedGuildId() ?? this.options.guildId?.();
-    if (guildId === undefined) {
-      console.warn('leet sync skipped: guild id unknown');
-      return { daysProcessed: 0, creditsApplied: 0 };
-    }
-    const timezone = this.timezone();
-    this.recordSyncAttempt(timezone);
-    try {
-      const result = await this.pullLeetPages(source, guildId, timezone);
-      this.recordSyncOutcome({ days: result.daysProcessed });
-      return result;
-    } catch (err) {
-      this.recordSyncOutcome({ error: err instanceof LeetSourceError ? err.kind : 'internal' });
-      throw err;
-    }
-  }
-
-  private async pullLeetPages(
-    source: LeetSource,
-    guildId: string,
-    timezone: string,
-  ): Promise<LeetSyncResult> {
-    const result: LeetSyncResult = { daysProcessed: 0, creditsApplied: 0 };
-    this.resetSyncIfSourceChanged(source.kind ?? 'mock', timezone);
-    const state = this.getSyncState(timezone);
-    let cursor = state.cursor;
-
-    for (let page = 0; page < SYNC_MAX_PAGES; page++) {
-      const data = await source.getDays(
-        guildId,
-        cursor === null
-          ? { timezone, since: state.sinceDate, limit: SYNC_PAGE_LIMIT }
-          : { timezone, after: cursor, limit: SYNC_PAGE_LIMIT },
-      );
-      const nextCursor = data.nextCursor ?? cursor;
-      const applied = this.storage.transactionSync(() => {
-        let count = 0;
-        for (const day of data.days) {
-          const n = day.participants.length;
-          const points = leetPointsForDay(n);
-          // The leet bonus replaces the old points-based Bait (the allowance is paid separately).
-          // `n` is the day's final count: the sync only sees finalised days, so nobody is topped up.
-          const bait = leetBonusForDay(n);
-          if (bait === 0) continue;
-          for (const participant of day.participants) {
-            const credited = this.credit({
-              userId: participant.userId,
-              currency: 'bait',
-              amount: bait,
-              source: 'leet',
-              idempotencyKey: `leet:${day.id}`,
-              meta: { date: day.date, participants: n, points, bonus: bait },
-            });
-            if (credited.applied) count++;
-          }
-        }
-        this.sql.exec(
-          'UPDATE leet_sync SET cursor = ?, last_synced_at = ? WHERE id = 1',
-          nextCursor,
-          this.now(),
-        );
-        return count;
-      });
-      result.daysProcessed += data.days.length;
-      result.creditsApplied += applied;
-      const progressed = nextCursor !== cursor;
-      cursor = nextCursor;
-      if (!data.hasMore || !progressed) break;
-    }
-    return result;
-  }
-
-  /** Notes that a sync attempt started. Its own small transaction, apart from the credits. */
-  private recordSyncAttempt(timezone: string): void {
-    this.getSyncState(timezone);
-    this.storage.transactionSync(() => {
-      this.sql.exec('UPDATE leet_sync SET last_attempt_at = ? WHERE id = 1', this.now());
-    });
-  }
-
-  /**
-   * Stores how a sync attempt ended: an error kind (never a message), or success with the number of
-   * days processed. Its own small transaction, apart from the credits.
-   */
-  private recordSyncOutcome(outcome: { days: number } | { error: LeetSyncErrorKind }): void {
-    this.getSyncState(this.timezone());
-    const t = this.now();
-    this.storage.transactionSync(() => {
-      if ('error' in outcome) {
-        this.sql.exec(
-          'UPDATE leet_sync SET last_attempt_at = ?, last_error = ? WHERE id = 1',
-          t,
-          outcome.error,
-        );
-      } else {
-        this.sql.exec(
-          'UPDATE leet_sync SET last_error = NULL, last_days = ?, last_synced_at = ? WHERE id = 1',
-          outcome.days,
-          t,
-        );
-      }
-    });
-  }
-
-  /** The sync's health for the API. Read-only; the source kind comes from the configured source. */
-  private readSyncRow():
-    | {
-        last_attempt_at: number | null;
-        last_synced_at: number | null;
-        last_error: string | null;
-        last_days: number | null;
-      }
-    | undefined {
-    return this.sql
-      .exec<{
-        last_attempt_at: number | null;
-        last_synced_at: number | null;
-        last_error: string | null;
-        last_days: number | null;
-      }>(
-        'SELECT last_attempt_at, last_synced_at, last_error, last_days FROM leet_sync WHERE id = 1',
-      )
-      .toArray()[0];
-  }
-
+  /** The sync's health for the API. Read-only. */
   leetSyncStatus(): LeetSyncStatus {
-    const row = this.readSyncRow();
-    const source = this.leetSource === null ? 'disabled' : (this.leetSource.kind ?? 'mock');
-    return {
-      source,
-      lastAttemptAt: row?.last_attempt_at ?? null,
-      lastSyncedAt: row?.last_synced_at ?? null,
-      lastError: source === 'disabled' ? 'disabled' : toErrorKind(row?.last_error ?? null),
-      lastDays: row?.last_days ?? null,
-    };
+    return this.leet.status();
   }
 
-  /**
-   * Runs a sync from /api/me when the last one is stale, waiting at most the budget. On timeout or
-   * error it returns anyway: stale data is fine. The sync keeps going in the background.
-   */
-  async syncIfStale(): Promise<void> {
-    if (this.leetSource === null) {
-      // Nothing to sync: make the reason visible, writing only when it is not stored yet.
-      if (this.readSyncRow()?.last_error !== 'disabled') {
-        this.recordSyncOutcome({ error: 'disabled' });
-      }
-      return;
-    }
-    const t = this.now();
-    const last = this.getSyncState(this.timezone()).lastSyncedAt;
-    if (last !== null && t - last < SYNC_STALE_MS) return;
-    if (
-      this.syncInFlight === null &&
-      this.lastSyncAttemptAt !== null &&
-      t - this.lastSyncAttemptAt < SYNC_RETRY_MS
-    ) {
-      return;
-    }
-    this.lastSyncAttemptAt = t;
-    const run = this.syncLeet().then(
-      () => undefined,
-      (err: unknown) => {
-        logSyncError(err);
-      },
-    );
-    let timer: number | undefined;
-    const timeout = new Promise<void>((resolve) => {
-      timer = setTimeout(resolve, this.syncBudgetMs);
-    });
-    try {
-      await Promise.race([run, timeout]);
-    } finally {
-      clearTimeout(timer ?? null);
-    }
+  /** Runs a sync from /api/me when the last one is stale, waiting at most the budget. */
+  syncIfStale(): Promise<void> {
+    return this.leet.syncIfStale();
   }
 
   // --- Scheduling ---
@@ -1117,7 +877,7 @@ export class GuildCore {
    */
   private desiredAlarmAt(from: number): number | null {
     const candidates: number[] = [];
-    if (this.leetSource !== null) candidates.push(this.nextSyncAt(from));
+    if (this.leet.enabled) candidates.push(this.nextSyncAt(from));
     const raidAt = this.raid.nextEventAt(this.timezone());
     if (raidAt !== null) {
       // An event that is still due after the catch-up keeps failing: retry it later, not in a loop.
@@ -1446,9 +1206,9 @@ export class GuildCore {
 
   /** The 13:40 slot a sync is due for, or null if the latest slot has already been attempted. */
   private dueSyncSlot(upTo: number): number | null {
-    if (this.leetSource === null) return null;
+    if (!this.leet.enabled) return null;
     const slot = previousOccurrence(upTo, SYNC_HOUR, SYNC_MINUTE, this.timezone());
-    const last = this.readSyncRow()?.last_attempt_at ?? null;
+    const last = this.leet.lastAttemptAt();
     return last === null || last < slot ? slot : null;
   }
 
@@ -1482,32 +1242,6 @@ export class GuildCore {
     this.dungeon.prune();
     await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
   }
-}
-
-const ERROR_KINDS: ReadonlySet<string> = new Set<LeetSyncErrorKind>([
-  'unauthorized',
-  'not_found',
-  'rate_limited',
-  'upstream',
-  'timeout',
-  'network',
-  'invalid_response',
-  'invalid_request',
-  'disabled',
-  'internal',
-]);
-
-/** Only known kinds leave the object, so a stored value can never leak anything else. */
-function toErrorKind(stored: string | null): LeetSyncErrorKind | null {
-  if (stored === null) return null;
-  return ERROR_KINDS.has(stored) ? (stored as LeetSyncErrorKind) : 'internal';
-}
-
-/** Logs only the error kind or type: messages could carry upstream data. */
-function logSyncError(err: unknown): void {
-  const kind =
-    err instanceof LeetSourceError ? err.kind : err instanceof Error ? err.name : 'unknown';
-  console.error('leet sync failed', kind);
 }
 
 /** The players stored for a tracked instance. */
