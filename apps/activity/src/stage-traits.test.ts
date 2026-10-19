@@ -7,17 +7,27 @@ import { describe, expect, it } from 'vitest';
  * wired: the content logic itself is in `foe-info.test.ts`.
  */
 const files = import.meta.glob<string>(
-  ['./Stage.tsx', './DungeonPlayback.tsx', './PopoverHost.tsx', './ui/StageHead.tsx'],
+  [
+    './Stage.tsx',
+    './stage/StageUnit.tsx',
+    './stage/StageFx.tsx',
+    './DungeonPlayback.tsx',
+    './PopoverHost.tsx',
+    './ui/StageHead.tsx',
+  ],
   { query: '?raw', import: 'default', eager: true },
 );
 const stage = files['./Stage.tsx'] ?? '';
+const unit = files['./stage/StageUnit.tsx'] ?? '';
+const fx = files['./stage/StageFx.tsx'] ?? '';
 const playback = files['./DungeonPlayback.tsx'] ?? '';
 const host = files['./PopoverHost.tsx'] ?? '';
 const head = files['./ui/StageHead.tsx'] ?? '';
 
 describe('the traits on the fight stage', () => {
   it('finds the sources', () => {
-    for (const source of [stage, playback, host, head]) expect(source.length).toBeGreaterThan(100);
+    for (const source of [stage, unit, fx, playback, host, head])
+      expect(source.length).toBeGreaterThan(100);
   });
 
   it('shows each modifier in the head as a glossary tag, after the place and before the controls', () => {
@@ -49,14 +59,16 @@ describe('the traits on the fight stage', () => {
 
   it("opens the foe's popover from its picture, through the popover host", () => {
     expect(stage).toContain('<FoeFace info={foe}>');
-    expect(stage).toContain('host.openFoe(');
+    expect(unit).toContain('host.openFoe(');
     expect(host).toContain('openFoe: (key, info, anchor)');
     expect(host).toContain("open?.kind === 'foe'");
   });
 
   it('renders the foe popover as text only', () => {
     expect(host).not.toContain('innerHTML');
-    expect(stage).not.toContain('innerHTML');
-    expect(stage).not.toMatch(/\bstyle=/);
+    for (const source of [stage, unit, fx]) {
+      expect(source).not.toContain('innerHTML');
+      expect(source).not.toMatch(/\bstyle=/);
+    }
   });
 });

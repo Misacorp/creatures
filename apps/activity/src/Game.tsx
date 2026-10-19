@@ -3,16 +3,11 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   chooseStarter,
   dismissLevelReset,
-  evolveCreature,
   fetchState,
-  renameCreature,
-  setLounger,
   setLoungeSpot,
-  earnRibbon,
   type Allowance,
   type Attention,
   type ClaimResult,
-  type EvolveResult,
   type GameState,
   type LeetSyncStatus,
   type LoungeSpot,
@@ -22,49 +17,38 @@ import { ActionIds } from './actions';
 import { allowanceNotice } from './allowance-text';
 import { AppHead } from './AppHead';
 import { Collection } from './Collection';
+import { createCreatureActions } from './creature-actions';
 import type { CatchChoiceActions } from './find-view';
 import { claimExpedition, pushOn, sendExpedition, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
 import { Expeditions } from './Expeditions';
-import { fetchGear } from './gear-api';
 import { createGearActions } from './gear-actions';
-import type { GearState, JobResult } from './gear-types';
+import type { JobResult } from './gear-types';
 import type { ChoiceResult } from './talent-types';
-import { ribbonName } from './experience';
-import { clockOffset, creatureName, errorText, speciesName } from './game';
+import { errorText } from './game';
+import { loaded, type Loaded } from './loaded-state';
 import type { ParticipantSource } from './participants';
 import { settleClaim } from './room-data';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
 import type { Slots } from './dungeon-team';
-import { chooseCatch, slotTalent } from './talent-api';
+import { chooseCatch } from './talent-api';
 import { choiceResultText } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
 import { TabBar } from './TabBar';
-import { RECHECK_RETRY_MS, changeDelay, nextChangeAt, recheckDelay, tabAlerts } from './tab-alerts';
 import type { Tab } from './tabs';
 import { useActionRunner } from './use-action-runner';
+import { useForecast } from './use-forecast';
+import { useGearState } from './use-gear-state';
 import { useRoom } from './use-room';
 import { useRoomPhase } from './use-room-phase';
+import { useTabPips } from './use-tab-pips';
 import { sceneOf } from './LivingRoom';
 import { LevelResetCard } from './LevelResetCard';
 import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
-import { fetchForecast } from './weather-api';
-import type { Forecast } from './weather-types';
-import { forecastRecheckDelay } from './weather-view';
-
-interface Loaded {
-  game: GameState;
-  /** Server clock minus local clock at the moment the state arrived. */
-  offset: number;
-}
-
-function loaded(game: GameState): Loaded {
-  return { game, offset: clockOffset(game.serverNow, Date.now()) };
-}
 
 export function Game({
   initial,
@@ -95,16 +79,21 @@ export function Game({
   allowance: Allowance | null;
 }) {
   const [current, setCurrent] = useState<Loaded>(() => loaded(initial));
+  const { game, offset } = current;
+  // Gear, parts, blueprints and jobs; null until the first load (or when it failed).
+  const {
+    gear,
+    failed: gearFailed,
+    load: loadGear,
+    replace: replaceGear,
+  } = useGearState(game.starterChosen);
+  // The valley's sky for today and tomorrow (Boons and Omens); null until the first load (or when it failed).
+  const { forecast, load: loadForecast } = useForecast(game.starterChosen, offset);
   const [tab, setTab] = useState<Tab>('collection');
   const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
     null,
   );
-  // Gear, parts, blueprints and jobs; null until the first load (or when it failed).
-  const [gear, setGear] = useState<GearState | null>(null);
-  const [gearFailed, setGearFailed] = useState(false);
   const [jobReveal, setJobReveal] = useState<JobResult | null>(null);
-  // The valley's sky for today and tomorrow (Boons and Omens); null until the first load (or when it failed).
-  const [forecast, setForecast] = useState<Forecast | null>(null);
   // What each duplicate answered this session became (a card id to a sentence), so a claim reveal can say
   // what happened to the cards it showed.
   const [settled, setSettled] = useState<Record<string, string>>({});
@@ -128,9 +117,6 @@ export function Game({
       loadGear();
     },
   });
-  // Counts gear views that came from an action, so a slower load that started before one is dropped.
-  const gearVersion = useRef(0);
-  const { game, offset } = current;
   // The guild's timezone comes with GET /api/state only; the answers of actions leave it out, so it is kept.
   const timezone = useRef<string | null>(null);
   if (game.timezone !== null) timezone.current = game.timezone;
@@ -142,8 +128,6 @@ export function Game({
   }, [game.attention]);
   // The setup row of the Dungeon tab, kept while the player is on other tabs (lost on a reload).
   const dungeonDraft = useRef<Slots | null>(null);
-  // Bumped when a trip or job runs out, so the pips are worked out again at that moment.
-  const [pipTick, setPipTick] = useState(0);
 
   // The daily allowance lands once (the server tells the player on one request only): say so on the
   // notice line, which the next action clears.
@@ -202,99 +186,23 @@ export function Game({
     return true;
   }
 
-  /** Loads the gear view (inventory, parts, jobs). The first call also gives the welcome kit, once. */
-  function loadGear(): void {
-    const startedAt = gearVersion.current;
-    fetchGear().then(
-      (next) => {
-        // An action answered while this was on its way: its view is newer.
-        if (gearVersion.current !== startedAt) return;
-        setGear(next);
-        setGearFailed(false);
-      },
-      () => {
-        setGearFailed(true);
-      },
-    );
-  }
-
-  // The gear view loads once the game is on screen, so the collection can offer its items at once.
-  useEffect(() => {
-    if (game.starterChosen) loadGear();
-  }, [game.starterChosen]);
-
-  /** Loads the forecast (a plain read: a failure keeps the one on screen, the next call tries again). */
-  function loadForecast(): void {
-    fetchForecast().then(setForecast, () => undefined);
-  }
-
-  // The forecast loads with the game, and again a moment after the day turns over (the server draws the
-  // next one at the daily reset), so the calendar and the cards never show yesterday's sky.
-  useEffect(() => {
-    if (game.starterChosen) loadForecast();
-  }, [game.starterChosen]);
-  const forecastEnds = forecast?.today?.endsAt ?? null;
-  useEffect(() => {
-    const wait = forecastRecheckDelay(forecast, Date.now() + offset);
-    if (wait === null) return undefined;
-    const timer = setTimeout(loadForecast, wait);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [forecastEnds, offset]);
-
-  // The pips of the Expeditions and Workshop tabs follow the server's clock: one timer, set for the
-  // next trip or job to run out (a long wait is capped), and set again after it fires.
-  const serverNow = Date.now() + offset;
-  const jobs = gear === null ? null : gear.jobs;
-  const alerts = tabAlerts({
+  // The pips of the tab bar and the timers that keep them true.
+  const alerts = useTabPips({
     expeditions: game.expeditions,
-    jobs,
+    jobs: gear === null ? null : gear.jobs,
     attention,
     pending: game.pending.length,
-    serverNow,
+    offset,
+    refresh: refreshState,
   });
-  const changeAt = nextChangeAt({ expeditions: game.expeditions, jobs, serverNow });
-  useEffect(() => {
-    if (changeAt === null) return undefined;
-    const timer = setTimeout(
-      () => {
-        setPipTick((n) => n + 1);
-      },
-      changeDelay(changeAt, Date.now() + offset),
-    );
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [changeAt, offset, pipTick]);
 
-  // When the server said something could change by itself (the daily reset, the next raid event),
-  // ask once a moment after; if an action was running, once more a few seconds later.
-  const recheckAt = attention?.recheckAt ?? null;
-  useEffect(() => {
-    const wait = recheckDelay(recheckAt, Date.now() + offset);
-    if (wait === null) return undefined;
-    let retry: ReturnType<typeof setTimeout> | undefined;
-    const timer = setTimeout(() => {
-      if (refreshState()) return;
-      retry = setTimeout(() => {
-        refreshState();
-      }, RECHECK_RETRY_MS);
-    }, wait);
-    return () => {
-      clearTimeout(timer);
-      if (retry !== undefined) clearTimeout(retry);
-    };
-  }, [recheckAt, offset]);
-
+  const creatureActions = createCreatureActions({ run, runKeyed, setCurrent, setNotice });
   const gearActions = createGearActions({
     run,
     runKeyed,
     apply: (views) => {
-      gearVersion.current += 1;
       setCurrent(loaded(views.state));
-      setGear(views.gear);
-      setGearFailed(false);
+      replaceGear(views.gear);
     },
   });
 
@@ -474,54 +382,8 @@ export function Game({
             onEquip={async (gearId, creatureId) =>
               (await gearActions.equip(gearId, creatureId)) !== undefined
             }
-            onRibbon={(creature) => {
-              void runKeyed(ActionIds.ribbon(creature.id), (key) =>
-                earnRibbon(creature.id, key),
-              ).then((done) => {
-                if (done === undefined) return;
-                setCurrent(loaded(done.state));
-                const level = done.result.experience?.level;
-                setNotice(
-                  `${creatureName(creature)} earned the ${ribbonName(done.result.ribbon)}${level === undefined ? '' : ` and is level ${String(level)}`}!`,
-                );
-              });
-            }}
-            onEvolve={(creature, chosen) => {
-              // A line with one form names no form on the screen: it grows into its only one.
-              const species = chosen ?? creature.evolution?.toSpecies;
-              if (species === undefined) return;
-              void runKeyed(
-                ActionIds.evolve(creature.id, species),
-                (key) => evolveCreature(creature.id, species, key),
-                { currency: 'Essence' },
-              ).then((done: EvolveResult | undefined) => {
-                if (done === undefined) return;
-                setCurrent(loaded(done.state));
-                setNotice(
-                  `${creatureName(creature)} evolved into ${speciesName(done.species)}!${done.firstOnServer ? ' First on server!' : ''}${done.unequipped > 0 ? ' A Charm for its old role went back to the bag.' : ''}`,
-                );
-              });
-            }}
-            onRename={(creature, nickname) => {
-              void run(() => renameCreature(creature.id, nickname)).then(showState);
-            }}
             catchActions={catchActions}
-            onSlotTalent={(creature, talentId, golden, slot) => {
-              void runKeyed(ActionIds.talentSlot(creature.id, talentId, golden, slot), (key) =>
-                slotTalent(creature.id, { talentId, golden, slot }, key),
-              ).then((done) => {
-                if (done === undefined) return;
-                setCurrent(loaded(done.state));
-                setNotice(`Put the talent in slot ${String(done.result.slot)}.`);
-              });
-            }}
-            onLounge={(creature) => {
-              // Not a spend, and a repeat is harmless (the server just says the same thing).
-              void run(() => setLounger(creature.id)).then((loungerId) => {
-                if (loungerId === undefined) return;
-                setCurrent((now) => ({ ...now, game: { ...now.game, loungerId } }));
-              });
-            }}
+            {...creatureActions}
           />
         )}
         {tab === 'expeditions' && (
