@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { TreatBox } from './TreatBox';
 import type { Creature } from './api';
 import { DungeonPrerun } from './DungeonPrerun';
+import { DungeonLoadout, type LoadoutProps } from './DungeonLoadout';
 import { DungeonTeam } from './DungeonTeam';
-import { isComplete, pruneSlots, sameSlots, setupTeam, type Slots } from './dungeon-team';
+import { isComplete, pruneSlots, sameSlots, setupTeam, unplace, type Slots } from './dungeon-team';
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { GlossaryTag } from './Glossary';
@@ -32,6 +33,8 @@ interface Props {
   onEnter: (slots: Slots, treats: ReadonlySet<string>) => void;
   /** Opens the summary of today's earlier run (the first-day retry offer). */
   onSeeLast: () => void;
+  /** The team's gear and talents under the board; absent: none. */
+  loadout?: Omit<LoadoutProps, 'team' | 'creatures' | 'selectedId' | 'onRemove'>;
 }
 
 /**
@@ -58,11 +61,14 @@ export function DungeonSetup({
   saveDraft,
   onEnter,
   onSeeLast,
+  loadout,
 }: Props) {
   const pickable = useMemo(() => creatures.map(toPickerCreature), [creatures]);
   const saver = useDungeonDraft(saveDraft);
   // The creatures that get a treat on this run (not kept for the next one: each run pays for its own).
   const [treats, setTreats] = useState<ReadonlySet<string>>(new Set());
+  /** `tap` loadout: the creature whose tile was tapped. */
+  const [selected, setSelected] = useState<string | null>(null);
   const [slots, setSlots] = useState<Slots>(() =>
     setupTeam({
       memory: draft,
@@ -118,7 +124,25 @@ export function DungeonSetup({
         </section>
       )}
       <DungeonPrerun today={today} forecast={forecast}>
-        <DungeonTeam creatures={pickable} slots={slots} disabled={busy} onChange={change}>
+        <DungeonTeam
+          creatures={pickable}
+          slots={slots}
+          disabled={busy}
+          onChange={change}
+          {...(loadout?.mode === 'tap' ? { selectedId: selected, onSelect: setSelected } : {})}
+        >
+          {loadout !== undefined && (
+            <DungeonLoadout
+              {...loadout}
+              team={slots.flatMap((id) => creatures.filter((c) => c.id === id))}
+              creatures={creatures}
+              selectedId={selected}
+              onRemove={(creature) => {
+                setSelected(null);
+                change(unplace(slots, creature.id));
+              }}
+            />
+          )}
           <div class="dungeon-treats">
             {slots.flatMap((id) => {
               const creature = creatures.find((c) => c.id === id);

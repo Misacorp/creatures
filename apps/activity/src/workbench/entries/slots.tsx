@@ -2,6 +2,10 @@ import { content } from '@creatures/game';
 import { useMemo, useState } from 'preact/hooks';
 import { DungeonSetup } from '../../DungeonSetup';
 import { DungeonTeam } from '../../DungeonTeam';
+import type { LoadoutMode } from '../../DungeonLoadout';
+import { allBagItems, wornFromBag } from '../../creature-page/bag-sample';
+import { pageScene } from '../../creature-page/sample';
+import type { GearState } from '../../gear-types';
 import stateFixture from '../../fixtures/collection-state.json';
 import todayFixture from '../../fixtures/dungeon-today-map.json';
 import { parseGameState, type Creature } from '../../api';
@@ -201,6 +205,110 @@ const dungeonSetup: Entry = {
   ),
 };
 
+/** The demo team's own stats, without and with gear. */
+const STATS_OF = [
+  { hp: 312, atk: 64, spd: 38 },
+  { hp: 228, atk: 49, spd: 35 },
+  { hp: 254, atk: 92, spd: 51 },
+] as const;
+const STATS_WITH_GEAR_OF = [
+  { hp: 371, atk: 70, spd: 38 },
+  { hp: 251, atk: 55, spd: 35 },
+  { hp: 269, atk: 116, spd: 57 },
+] as const;
+
+/**
+ * The pre-run card with the team's gear and talents under the board: three creatures of the creature
+ * page's samples (real gear, talents and stats), one bag between them.
+ */
+function LoadoutDemo({ p }: { p: Props }) {
+  const scene = useMemo(() => {
+    const ids = ['demo-moss', 'demo-sprout', 'demo-cindle'] as const;
+    const kinds = ['set: two pieces', 'talents: golden and locked', 'rarities'] as const;
+    const species = ['mossback', 'sproutle', 'cindle'] as const;
+    // One bag: the first creature's rows, then the rows the other two wear marked as theirs.
+    const rows = [
+      { hat: 19, scarf: 16 },
+      { hat: 4, scarf: 0 },
+      { hat: 13, scarf: 1, charm: 11 },
+    ] as const;
+    let items = allBagItems(ids[0], rows[0]);
+    rows.forEach((worn, i) => {
+      if (i === 0) return;
+      const theirs = allBagItems(ids[i] ?? '', worn).filter((it) => it.equippedOn === ids[i]);
+      items = items.map((it) =>
+        theirs.some((t) => t.id === it.id) ? { ...it, equippedOn: ids[i] ?? null } : it,
+      );
+    });
+    const team: Creature[] = ids.map((id, i) => {
+      const base = pageScene(kinds[i] ?? 'level 15').creature;
+      return {
+        ...base,
+        id,
+        species: species[i] ?? base.species,
+        nickname: null,
+        level: [20, 12, 20][i] ?? base.level,
+        // Stats of their own (a Guard is sturdy, Cindle hits hard), so the cards differ.
+        stats: STATS_OF[i] ?? base.stats,
+        statsWithGear: STATS_WITH_GEAR_OF[i] ?? base.statsWithGear,
+        caughtAt: 1_000 + i,
+        gear: wornFromBag(items, id),
+      };
+    });
+    const extra = parseGameState(stateFixture).creatures.map((c, i) => ({
+      ...c,
+      id: `demo-extra-${String(i)}`,
+    }));
+    const gear: GearState = { ...pageScene('level 15').gear, items };
+    return { creatures: [...team, ...extra], team, gear };
+  }, []);
+  const today = parseDungeonToday({
+    ...todayFixture,
+    streak: 3,
+    depth: 6,
+    lastTeam: scene.team.map((c) => c.id),
+  });
+  const mode: LoadoutMode = str(p, 'mode') === 'tap' ? 'tap' : 'all';
+  return (
+    <DungeonSetup
+      today={today}
+      creatures={scene.creatures}
+      bait={40}
+      busy={false}
+      error={null}
+      draft={null}
+      onDraftChange={() => undefined}
+      onEnter={() => undefined}
+      onSeeLast={() => undefined}
+      loadout={{
+        mode,
+        gear: scene.gear,
+        bait: 40,
+        bookSlotBait: 10,
+        busy: false,
+        onEquip: () => Promise.resolve(false),
+        onSlotTalent: () => undefined,
+        onOpenPage: () => undefined,
+      }}
+    />
+  );
+}
+
+const dungeonLoadout: Entry = {
+  name: 'DungeonLoadout',
+  file: 'apps/activity/src/DungeonLoadout.tsx',
+  group: 'Slots',
+  description:
+    "The team's gear and talents on the dungeon card. All: the three creatures at once in compact cards (side by side on a wide screen). Tap: tap a creature's tile and its gear and talents show under the board at full size, with Creature page and Remove from team. A slot opens the creature page's own drawer (the item picker or the Talent Book).",
+  controls: { mode: { kind: 'select', options: ['all', 'tap'] } },
+  defaults: { mode: 'all' },
+  presets: [
+    { name: 'All three at once', props: { mode: 'all' } },
+    { name: 'On tap', props: { mode: 'tap' } },
+  ],
+  render: (p) => <LoadoutDemo key={str(p, 'mode')} p={p} />,
+};
+
 const dragGhost = demoEntry(
   'DragGhost',
   'The small copy of a creature that follows your finger or pointer while you drag it. Press and drag a creature in the demo to see it.',
@@ -368,6 +476,7 @@ const placedCount: Entry = {
 
 export const slotEntries: readonly Entry[] = [
   dungeonSetup,
+  dungeonLoadout,
   dungeonTeam,
   slotButton,
   placedCount,

@@ -87,7 +87,7 @@ export function RenameForm({
 }
 
 /** One stat with gear folded in, and the gear's own share next to it in the gear colour ("ATK 79 +12"). */
-function statRow(label: string, stat: 'hp' | 'atk' | 'spd', creature: Creature): DataRow {
+export function statRow(label: string, stat: 'hp' | 'atk' | 'spd', creature: Creature): DataRow {
   const share = gearShare(creature).find((s) => s.stat === stat)?.amount ?? 0;
   return {
     label,
