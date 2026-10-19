@@ -8,13 +8,12 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { DevPanelProps } from '../dev-gate';
 import { creatureName } from '../game';
 import {
+  clockRows,
   describeResult,
   errorSentence,
   eventLine,
   fetchDevEvents,
   fetchDevState,
-  formatGameTime,
-  formatOffset,
   runTool,
   type DevStateView,
 } from './dev-api';
@@ -26,6 +25,7 @@ import { CLOCK_SPECS, GOODS_SPECS, RESET_ACCOUNT_SPEC, orderedSections } from '.
 import { ToolForm } from './ToolForm';
 import { WORKBENCH_URL } from './workbench-link';
 import { Accordion } from '../ui/Accordion';
+import { DataTable } from '../ui/DataTable';
 
 /** A string only this module tree contains: the production build test searches the output for it. */
 const DEV_PANEL_MARKER = 'DEV_PANEL_MARKER_7f3a';
@@ -104,23 +104,7 @@ function WorkbenchLink({ onStatus }: { onStatus: (status: Status) => void }): JS
 
 function ClockStatus({ view }: { view: DevStateView | null }): JSX.Element {
   if (view === null) return <p class="dev-hint">Loading the clock...</p>;
-  return (
-    <dl class="dev-clock">
-      <dt>Game time</dt>
-      <dd>{formatGameTime(view.now, view.timezone)}</dd>
-      <dt>Game day</dt>
-      <dd>{view.gameDay}</dd>
-      <dt>Shifted by</dt>
-      <dd>{formatOffset(view.offsetMs)}</dd>
-      <dt>Raid week</dt>
-      <dd>
-        {view.raid === null
-          ? 'none'
-          : `${view.raid.weekId}, ${view.raid.status}, boss ${view.raid.bossId ?? '-'}`}
-        {view.guests > 0 ? `, ${String(view.guests)} simulated players` : ''}
-      </dd>
-    </dl>
-  );
+  return <DataTable class="dev-clock" rows={clockRows(view)} />;
 }
 
 export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): JSX.Element {

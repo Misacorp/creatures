@@ -4,6 +4,7 @@
  */
 import { ApiError, apiFetch, jsonRequest } from '../api';
 import { isRecord } from '../parse-core';
+import type { DataRow } from '../ui/DataTable';
 import type { DevToolId } from './forms';
 
 export type ToolOutcome = { ok: true; result: unknown } | { ok: false; error: string };
@@ -159,4 +160,23 @@ export function formatOffset(ms: number): string {
   const days = Math.floor(minutes / 1440);
   const hours = Math.floor((minutes % 1440) / 60);
   return `+${days > 0 ? `${String(days)}d ` : ''}${String(hours)}h ${String(minutes % 60)}m`;
+}
+
+/**
+ * The dev clock's table. Each fact has a short value of its own, so a long one never squeezes the labels
+ * on a phone (the raid's week, status and boss are three rows, not one line).
+ */
+export function clockRows(view: DevStateView): DataRow[] {
+  const rows: DataRow[] = [
+    { label: 'Game time', value: formatGameTime(view.now, view.timezone) },
+    { label: 'Game day', value: view.gameDay },
+    { label: 'Shifted by', value: formatOffset(view.offsetMs) },
+    { label: 'Raid week', value: view.raid === null ? 'none' : view.raid.weekId },
+  ];
+  if (view.raid !== null) {
+    rows.push({ label: 'Raid status', value: view.raid.status });
+    rows.push({ label: 'Raid boss', value: view.raid.bossId ?? '-' });
+  }
+  if (view.guests > 0) rows.push({ label: 'Simulated players', value: String(view.guests) });
+  return rows;
 }
