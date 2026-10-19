@@ -53,6 +53,9 @@ in the worker.
   stays is a test that the old route answers its 410 (one request).
 - **Golden hashes need a reason.** A pinned digest or fixture may be re-pinned only with a sentence in the PR on
   what moved and why. A digest that is re-pinned on every change is not a guard; replace it with readable assertions.
+  The simulator's legacy digest was retired for that reason (2026-10-19); its one "did the sim move" alarm is the
+  readable headline-numbers test in `packages/sim/test/run.test.ts`, and a change to those numbers is explained in
+  the PR.
 - **Timeouts are budgets.** Default timeouts per layer as above (sim at most 30 s). A test that needs more is a
   test to split or move down, not a timeout to raise.
 - **CI shape.** Parallel jobs: checks (format, lint, typecheck, build), worker tests, sim tests, the rest; one

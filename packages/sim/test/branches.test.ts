@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { speciesOf, type OwnedCreature } from '../src/data';
-import { evolveCreatures } from '../src/economy';
-import { pickBranch } from '../src/policy';
-import { PRESETS } from '../src/profiles';
+import { evolveCreatures, runEconomy } from '../src/economy';
+import { pickBranch, usesRoleBranch } from '../src/policy';
+import { BRANCH_STYLES, LEGACY_PROFILES, PRESETS, parseProfile } from '../src/profiles';
 import { createPlayer, type SimPlayer } from '../src/state';
 
 /**
@@ -120,5 +120,62 @@ describe('the evolve step of a check-in', () => {
     expect(speciesOf(sproutle.speciesId).id).toBe('sunfawn');
     expect(p.essence).toBe(100 - (speciesOf('sproutle').evolvesTo?.essence ?? 0));
     expect(p.week.evolutions).toBe(1);
+  });
+});
+
+describe('the branch style of a player', () => {
+  it('first never picks by role and role always does', () => {
+    for (const id of ['p01', 'p02', 'p03']) {
+      expect(usesRoleBranch('first', 'seed', id)).toBe(false);
+      expect(usesRoleBranch('role', 'seed', id)).toBe(true);
+    }
+  });
+
+  it('mixed is a repeatable coin per seed and player, about half of the players', () => {
+    const ids = Array.from({ length: 200 }, (_, i) => `p${String(i)}`);
+    const draw = (seed: string): boolean[] => ids.map((id) => usesRoleBranch('mixed', seed, id));
+    expect(draw('leet')).toEqual(draw('leet'));
+    expect(draw('leet')).not.toEqual(draw('leet2'));
+    const share = draw('leet').filter(Boolean).length / ids.length;
+    // 200 fair coins: 0.5 give or take 0.035 per standard deviation, so this is a 4 sigma band.
+    expect(share).toBeGreaterThan(0.36);
+    expect(share).toBeLessThan(0.64);
+  });
+
+  it('is part of every profile, mixed unless written otherwise, and is validated', () => {
+    expect(BRANCH_STYLES).toEqual(['first', 'role', 'mixed']);
+    for (const profile of [...Object.values(PRESETS), ...Object.values(LEGACY_PROFILES)]) {
+      expect(profile.branch).toBe('mixed');
+    }
+    const old: Partial<typeof PRESETS.engaged> = { ...PRESETS.engaged };
+    delete old.branch;
+    expect(parseProfile(old).branch).toBe('mixed');
+    expect(parseProfile({ ...old, branch: 'role' }).branch).toBe('role');
+    expect(() => parseProfile({ ...old, branch: 'both' })).toThrow(/Invalid profile/);
+  });
+
+  it('a new player takes the first form unless the economy gave it the role style', () => {
+    expect(createPlayer('p01', 'P', 'daily', 1).roleBranch).toBe(false);
+    const sproutle = owned('sproutle', 15);
+    const p = createPlayer('p01', 'P', 'daily', 1, { ...PRESETS.engaged }, true);
+    p.joined = true;
+    p.essence = 100;
+    p.creatures.push(owned('mistnewt', 14), owned('splashet', 12), sproutle);
+    evolveCreatures(p);
+    expect(speciesOf(sproutle.speciesId).id).toBe('sunfawn');
+  });
+
+  it('the economy hands each roster player its style from the profile and the seed', () => {
+    const result = runEconomy({
+      seed: 'branch-wiring',
+      weeks: 1,
+      snapshotWeeks: [1],
+      roster: [
+        { profile: { ...PRESETS.engaged, branch: 'role' } },
+        { profile: { ...PRESETS.engaged, branch: 'first' } },
+      ],
+    });
+    const players = result.snapshots[0]?.players ?? [];
+    expect(players.map((p) => p.roleBranch)).toEqual([true, false]);
   });
 });

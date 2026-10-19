@@ -20,7 +20,7 @@ import {
 } from '@creatures/game';
 import { ARCHETYPES, ARCHETYPE_CONFIG, type ArchetypeId, type ArchetypeMix } from './archetypes';
 import { dayIncome, playerIncome, type IncomeModelId } from './income';
-import { proxyArchetype, type PlayerProfile } from './profiles';
+import { LEGACY_PROFILES, proxyArchetype, type PlayerProfile } from './profiles';
 import {
   CATCHABLE,
   STARTERS,
@@ -43,7 +43,7 @@ import {
 } from './gear';
 import { chooseDungeonTeam, dayMap, playDungeonDay, type DungeonLogEntry } from './dungeon';
 import type { Setup } from './formations';
-import { firstForm, type BranchPick } from './policy';
+import { firstForm, pickBranch, usesRoleBranch, type BranchPick } from './policy';
 import { collect, fillSlots, newCreature } from './talents';
 import { awardRaidExperience, buyRibbons, focusFirst, giveExperience, packTreat } from './training';
 import { openRaidWeek, playStage, summarizeRaid, type RaidSummary, type RaidWeek } from './raid';
@@ -288,13 +288,15 @@ function createPlayers(options: EconomyOptions): SimPlayer[] {
       const n = players.length + 1;
       const k = (counts.get(entry.profile.id) ?? 0) + 1;
       counts.set(entry.profile.id, k);
+      const id = `p${String(n).padStart(2, '0')}`;
       players.push(
         createPlayer(
-          `p${String(n).padStart(2, '0')}`,
+          id,
           `${entry.profile.label} ${k}`,
           entry.archetype ?? proxyArchetype(entry.profile),
           entry.profile.joinWeek,
           entry.profile,
+          usesRoleBranch(entry.profile.branch, options.seed, id),
         ),
       );
     }
@@ -305,12 +307,15 @@ function createPlayers(options: EconomyOptions): SimPlayer[] {
   for (const archetype of ARCHETYPES) {
     for (let k = 1; k <= mix[archetype]; k++) {
       const n = players.length + 1;
+      const id = `p${String(n).padStart(2, '0')}`;
       players.push(
         createPlayer(
-          `p${String(n).padStart(2, '0')}`,
+          id,
           `${ARCHETYPE_CONFIG[archetype].label} ${k}`,
           archetype,
           ARCHETYPE_CONFIG[archetype].joinWeek,
+          LEGACY_PROFILES[archetype],
+          usesRoleBranch(LEGACY_PROFILES[archetype].branch, options.seed, id),
         ),
       );
     }
@@ -387,10 +392,13 @@ function planDays(
 
 /**
  * Evolves creatures that reached their evolution level while the player has the Essence. `pick` chooses
- * the form of a line that grows two ways; the journey takes the first (original) form, so the sim's
- * baselines stay put while the dungeon is reworked (decisions.md, "Branch evolutions built").
+ * the form of a line that grows two ways; by default the player's own style does (the role-aware pick for
+ * a player who has `roleBranch`, else the first form: `profiles.ts`, `branch`).
  */
-export function evolveCreatures(player: SimPlayer, pick: BranchPick = firstForm): void {
+export function evolveCreatures(
+  player: SimPlayer,
+  pick: BranchPick = player.roleBranch ? pickBranch : firstForm,
+): void {
   for (const c of byPowerDesc(player.creatures)) {
     // Both forms of a branching line cost the same (`checkCreatures`), so the readiness is the first one's.
     const evo = speciesOf(c.speciesId).evolvesTo;
