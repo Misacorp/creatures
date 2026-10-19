@@ -28,7 +28,16 @@ import {
   omitKey,
 } from './dungeon-path-samples';
 import type { DungeonAct, DungeonRunState } from './dungeon-types';
-import { byClass, byName, createPage, FakeElement, find, visibleText, type Page } from './test-dom';
+import {
+  byClass,
+  byName,
+  byRole,
+  createPage,
+  FakeElement,
+  find,
+  visibleText,
+  type Page,
+} from './test-dom';
 
 const api = vi.hoisted(() => ({
   dungeonAct: vi.fn(),
@@ -789,36 +798,38 @@ describe('the results of a path run', () => {
       'aria-valuetext',
     ) ?? null;
 
-  it('shows each creature with the shared experience row: levels, +N, a Treat tag and the bar', () => {
+  it('shows each creature with the shared experience row: its name, levels, +N, the multiplier and the bar', () => {
     const run = withExperience(sampleSummary('cleared'));
     const root = results(run);
     const members = byClass(root, 'team-member');
     expect(members).toHaveLength(3);
-    // One list under the team's row, a row for each creature in the same order, each with its bar.
+    // One list under the team's row, headed "Experience", a row for each creature in the same order.
     const list = byClass(root, 'team-xp')[0] as FakeElement;
-    expect(list.localName).toBe('dl');
-    const rows = byClass(list, 'xp-gain');
+    expect(visibleText(byClass(list, 'xp-caption')[0] as FakeElement)).toBe('Experience');
+    const rows = byClass(list, 'xp-row');
     expect(rows).toHaveLength(3);
-    // A level up with a treat: "Experience", Lv 7 to Lv 8, +260, Level up!, a Treat tag and the bar at 90 / 330.
+    // A level up with a treat: Sproutle, Lv 7 to 8, Level up!, +260, the 2x chip, the bar.
     const first = visibleText(rows[0] as FakeElement);
-    expect(first).toContain('Sproutle · Experience');
-    expect(first).toMatch(/Lv 7.*Lv 8/);
+    expect(first).toContain('Sproutle');
+    expect(first).toContain('Lv 7 → 8');
     expect(first).toContain('+260');
     expect(first).toContain('Level up!');
-    expect(first).toContain('Treat');
-    expect(barOf(rows[0] as FakeElement)).toBe('90 / 330 XP');
-    expect(byName(rows[0] as FakeElement, 'div', "Sproutle's experience")).toHaveLength(1);
-    // The old prose is gone (the tag says it).
-    expect(first).not.toContain('Treat gave');
+    expect(visibleText(byClass(rows[0] as FakeElement, 'xp-times')[0] as FakeElement)).toBe('2x');
+    expect(barOf(rows[0] as FakeElement)).toBe('90 / 330, +260');
+    expect(byRole(rows[0] as FakeElement, 'progressbar')[0]?.getAttribute('aria-label')).toBe(
+      "Sproutle's experience",
+    );
+    // The old prose is gone, and so is the worded Treat tag (the chip's breakdown says it).
+    expect(first).not.toContain('Treat');
     expect(first).not.toContain('+260 experience');
-    // No level up, no treat: the plain gain and the bar; no Level up! and no Treat tag.
+    // No level up, no treat: the plain gain and the bar; no Level up! and no multiplier.
     const second = visibleText(rows[1] as FakeElement);
-    expect(barOf(rows[1] as FakeElement)).toBe('190 / 330 XP');
+    expect(barOf(rows[1] as FakeElement)).toBe('190 / 330, +130');
     expect(second).toContain('+130');
     expect(second).not.toContain('Level up!');
-    expect(second).not.toContain('Treat');
+    expect(byClass(rows[1] as FakeElement, 'xp-boost')).toHaveLength(0);
     // A creature waiting at its level says so, shortly.
-    expect(visibleText(rows[2] as FakeElement)).toContain('Waiting at this level');
+    expect(visibleText(rows[2] as FakeElement)).toContain('Waiting');
     // A creature with its row shows no separate level under its HP.
     expect(byClass(members[0] as FakeElement, 'tm-level')).toHaveLength(0);
     // The old sentence is gone.
@@ -826,7 +837,7 @@ describe('the results of a path run', () => {
     expect(visibleText(root)).not.toContain('level 7 to 8');
   });
 
-  it('names the Boon or Omen that changed the experience in one small line under its row', () => {
+  it("puts the day's Boons and Omens into the multiplier, never a line under the row", () => {
     const run = withExperience(sampleSummary('cleared'));
     const [paid] = run.rewards.experience ?? [];
     if (paid === undefined) throw new Error('the sample pays experience');
@@ -837,9 +848,12 @@ describe('the results of a path run', () => {
         experience: [{ ...paid, dayEffects: [{ name: 'Cold Snap', bp: -2000 }] }],
       },
     });
-    const rows = byClass(byClass(root, 'team-xp')[0] as FakeElement, 'xp-gain');
+    const rows = byClass(byClass(root, 'team-xp')[0] as FakeElement, 'xp-row');
     expect(rows).toHaveLength(1);
-    expect(visibleText(rows[0] as FakeElement)).toContain('Cold Snap gave -20% experience');
+    expect(visibleText(rows[0] as FakeElement)).not.toContain('Cold Snap');
+    expect(visibleText(rows[0] as FakeElement)).not.toContain('gave');
+    // Treat 2x and Cold Snap -20%: 1.6x.
+    expect(visibleText(byClass(rows[0] as FakeElement, 'xp-times')[0] as FakeElement)).toBe('1.6x');
   });
 
   it('shows a creature the run paid nothing only its level, with no row', () => {

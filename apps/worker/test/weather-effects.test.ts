@@ -11,9 +11,11 @@ import {
   dungeonExperience,
   lengthRules,
   raidExperience,
+  treatPart,
   tripExperience,
   workshopExperience,
   type PartsBundle,
+  type XpBoostPart,
 } from '@creatures/game';
 import { firstOfEachRow, type DungeonRunInput } from '@creatures/engine';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -36,6 +38,10 @@ import {
   storedRuns,
 } from './raid-helpers';
 import { newKey, give } from './kit';
+
+/** The day's parts of Hearty Breakfast (+25%; with a treat it triples, so pass `treatPart(3)` first) and Cold Snap (-20%). */
+const HEARTY: XpBoostPart = { source: 'day', name: 'Hearty Breakfast', bp: 2_500 };
+const COLD: XpBoostPart = { source: 'day', name: 'Cold Snap', bp: -2_000 };
 
 /** A Wednesday afternoon in a normal week, a little after the reset: a game day with plenty of it left. */
 const AFTERNOON = Date.parse('2027-01-13T12:00:00Z');
@@ -82,6 +88,9 @@ const claimTrip = (p: Api, id: string) => p.call('POST', `/api/expeditions/${id}
 
 const expGained = (res: { body: Record<string, unknown> }): number | undefined =>
   (res.body['result'] as { experience?: { gained: number } }).experience?.gained;
+
+const expBoost = (res: { body: Record<string, unknown> }): unknown =>
+  (res.body['result'] as { experience?: { boost?: unknown } }).experience?.boost;
 
 interface StoredTrip {
   weather_json: string | null;
@@ -242,10 +251,8 @@ describe('trips under the weather', () => {
         sky(ctx, 'market-day', 'cold-snap');
         const claimed = await claimTrip(p, trip.id);
         expect(claimed.status).toBe(200);
-        expect(expGained(claimed)).toBe(
-          tripExperience('short', false, { bp: 2_500, treatMultiplier: 3 }),
-        );
-        expect(expGained(claimed)).toBeGreaterThan(tripExperience('short', false));
+        expect(expGained(claimed)).toBe(tripExperience('short', [HEARTY]));
+        expect(expGained(claimed)).toBeGreaterThan(tripExperience('short', []));
       },
       { weather: true },
     );
@@ -265,12 +272,22 @@ describe('trips under the weather', () => {
         sky(ctx, 'market-day', 'cold-snap');
         const cold = tripOf(await send(p, b));
         ctx.clock.t = Math.max(treated.endsAt, cold.endsAt) + MINUTE;
-        expect(expGained(await claimTrip(p, treated.id))).toBe(
-          tripExperience('short', true, { bp: 2_500, treatMultiplier: 3 }),
-        );
-        expect(expGained(await claimTrip(p, cold.id))).toBe(
-          tripExperience('short', false, { bp: -2_000, treatMultiplier: null }),
-        );
+        const fromTreated = await claimTrip(p, treated.id);
+        const fromCold = await claimTrip(p, cold.id);
+        expect(expGained(fromTreated)).toBe(tripExperience('short', [treatPart(3), HEARTY]));
+        expect(expGained(fromCold)).toBe(tripExperience('short', [COLD]));
+        // Each result names what changed it, from what the trip stored when it was sent.
+        expect(expBoost(fromTreated)).toEqual({
+          parts: [
+            { source: 'treat', name: 'Treat', times: 3 },
+            { source: 'day', name: 'Hearty Breakfast', bp: 2_500 },
+          ],
+          totalBp: 37_500,
+        });
+        expect(expBoost(fromCold)).toEqual({
+          parts: [{ source: 'day', name: 'Cold Snap', bp: -2_000 }],
+          totalBp: 8_000,
+        });
       },
       { weather: true },
     );
@@ -291,8 +308,8 @@ describe('trips under the weather', () => {
         ctx.sql.exec("UPDATE expeditions SET weather_json = '{not json' WHERE id = ?", second.id);
         ctx.clock.t = Math.max(first.endsAt, second.endsAt) + MINUTE;
         sky(ctx, 'hearty-breakfast');
-        expect(expGained(await claimTrip(p, first.id))).toBe(tripExperience('short', false));
-        expect(expGained(await claimTrip(p, second.id))).toBe(tripExperience('short', false));
+        expect(expGained(await claimTrip(p, first.id))).toBe(tripExperience('short', []));
+        expect(expGained(await claimTrip(p, second.id))).toBe(tripExperience('short', []));
       },
       { weather: true },
     );
@@ -412,12 +429,18 @@ describe('the Workshop under the weather', () => {
         const fromCold = await claimJob(p, cold);
         const gained = (res: { body: Record<string, unknown> }): number =>
           (res.body['result'] as { experience?: { gained: number } }).experience?.gained ?? 0;
-        expect(gained(fromHearty)).toBe(
-          workshopExperience(180, false, { bp: 2_500, treatMultiplier: 3 }),
-        );
-        expect(gained(fromCold)).toBe(
-          workshopExperience(180, false, { bp: -2_000, treatMultiplier: null }),
-        );
+        expect(gained(fromHearty)).toBe(workshopExperience(180, [HEARTY]));
+        expect(gained(fromCold)).toBe(workshopExperience(180, [COLD]));
+        const boost = (res: { body: Record<string, unknown> }): unknown =>
+          (res.body['result'] as { experience?: { boost?: unknown } }).experience?.boost;
+        expect(boost(fromHearty)).toEqual({
+          parts: [{ source: 'day', name: 'Hearty Breakfast', bp: 2_500 }],
+          totalBp: 12_500,
+        });
+        expect(boost(fromCold)).toEqual({
+          parts: [{ source: 'day', name: 'Cold Snap', bp: -2_000 }],
+          totalBp: 8_000,
+        });
       },
       { weather: true },
     );
@@ -737,12 +760,9 @@ describe('the dungeon under the weather', () => {
         const run = res.body.run;
         const gained = run.rewards.experience?.map((e) => e.gained) ?? [];
         expect(gained).toHaveLength(3);
-        const want = dungeonExperience(run.roomsCleared, run.cleared, false, {
-          bp: 2_500,
-          treatMultiplier: 3,
-        });
+        const want = dungeonExperience(run.roomsCleared, run.cleared, [HEARTY]);
         expect(gained).toEqual([want, want, want]);
-        expect(want).toBeGreaterThan(dungeonExperience(run.roomsCleared, run.cleared, false));
+        expect(want).toBeGreaterThan(dungeonExperience(run.roomsCleared, run.cleared, []));
       },
       { weather: true },
     );
@@ -768,6 +788,16 @@ describe('the dungeon under the weather', () => {
           treat: true,
           treatTimes: 3,
           dayEffects,
+          // The same in the one form every result shares: the treat first, then the day; the total.
+          boost: {
+            parts: [
+              { source: 'treat', name: 'Treat', times: 3 },
+              { source: 'day', name: 'Hearty Breakfast', bp: 2_500 },
+              { source: 'day', name: 'Cold Snap', bp: -2_000 },
+            ],
+            // Multiplied: 3 x 1.25 x 0.8 = 3 (added, it was 3 x 1.05 = 3.15).
+            totalBp: 30_000,
+          },
         });
         const others = exp.filter((e) => e.creatureId !== a);
         expect(others).toHaveLength(2);
@@ -794,6 +824,12 @@ describe('the dungeon under the weather', () => {
           dayEffects: [],
         });
         expect(exp.filter((e) => e.treatTimes === null)).toHaveLength(2);
+        expect(exp.find((e) => e.creatureId === a)?.boost).toEqual({
+          parts: [{ source: 'treat', name: 'Treat', times: 2 }],
+          totalBp: 20_000,
+        });
+        // Nothing changed the others' amount: no boost at all.
+        for (const e of exp.filter((x) => x.creatureId !== a)) expect(e.boost).toBeUndefined();
       },
       { weather: true },
     );
@@ -999,10 +1035,7 @@ describe('the raid stage under the weather', () => {
           .map((r) => JSON.parse(r.props_json) as { source: string; gained: number })
           .filter((e) => e.source === 'raid');
         expect(gained.length).toBeGreaterThan(0);
-        const want = raidExperience('phase1', run?.result.cleared === true, {
-          bp: 2_500,
-          treatMultiplier: 3,
-        });
+        const want = raidExperience('phase1', run?.result.cleared === true, [HEARTY]);
         for (const e of gained) expect(e.gained).toBe(want);
       },
       { core: { weather: true } },

@@ -234,8 +234,17 @@ export class FakeElement extends FakeNode {
     return false;
   }
 
-  /** Only the two selectors the app's components use: `[role="x"]` and `.class`; anything else throws. */
+  /**
+   * Only the selectors the app's components use: `[role="x"]`, `.class` and `button:not(:disabled)` (the
+   * popover's first focus); anything else throws.
+   */
   querySelectorAll<T = FakeElement>(selector: string): T[] {
+    if (selector === 'button:not(:disabled)') {
+      return find(
+        this,
+        (el) => el !== this && el.localName === 'button' && !el.hasAttribute('disabled'),
+      ) as T[];
+    }
     const role = /^\[role="([^"]+)"\]$/.exec(selector)?.[1];
     const cls = /^\.([\w-]+)$/.exec(selector)?.[1];
     if (role === undefined && cls === undefined) {

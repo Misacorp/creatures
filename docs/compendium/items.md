@@ -173,7 +173,13 @@ Crafting a supply is a Workshop job. Basic supplies need the lowest Crafting lev
 
 **Lures are the one supply made from Bait** (and a little scrap), since 2026-10-16: Bait's two jobs are treats, which grow creatures, and lures, which find them. A trip no longer always brings a creature; a lure raises the chance that it does, and the chance that the creature is a species the player does not have yet, the better tiers more. Lures are crafted only: trips and the dungeon do not drop them, and rank gifts give the lure tiers of old supplies as map scraps and satchels instead. `(content: supplies.json, glossary.json "supply-lure"; design: gear-and-creatures-v2.md 9.5)`
 
-## Parts
+## Treats
+
+A treat is a little Bait spent on one creature when an activity starts (a trip, the dungeon team, a Workshop job); that activity gives it double experience, and triple on a Hearty Breakfast day. Raids take no treats. `(content: glossary.json "treat")`
+
+**The treat icon** (shipped 2026-10-19, redrawn the same day): a pair of cherries on one stem, in the game's red with a grove-green stem and leaf (`treat` in `apps/activity/src/glyphs.ts`, picked by `TREAT_ICON` from four designs: cherries, cookie, bone biscuit, wrapped candy). It is the prefix of the "Treat" line in an experience gain's breakdown (tap the gain's multiplier chip, "2x") and the picture of the glossary's Treat entry; it no longer sits next to the gain. The first design, a watermelon slice, was dropped because its pinks and greens were not the game's. `(content: glossary.json "treat"; design: decisions.md 2026-10-19)`
+
+**Compendium detail, not shipped** (in-world): the valley's cooks keep a jar of cherries for creatures before a long day, and a creature that has had its pair works with a will. Nobody agrees whether it is the cherries or the being thought of that does it.
 
 Parts are the raw material. They pay for crafts. `(content: glossary.json "part-*")`
 

@@ -197,7 +197,7 @@ describe('the Creatures tab and the evolve screen', () => {
     const { page: p, root, onEvolve } = tab([creature]);
     expect(byRole(root, 'dialog')).toHaveLength(0);
     const gold = byClass(root, 'cc-do')[0]?.childNodes[0] as FakeElement;
-    expect(visibleText(gold)).toContain('Choose an evolution');
+    expect(visibleText(gold)).toContain('Evolve');
     p.click(gold);
     // The press only opened the screen: nothing was spent yet.
     expect(onEvolve).not.toHaveBeenCalled();
@@ -210,15 +210,86 @@ describe('the Creatures tab and the evolve screen', () => {
     expect(byRole(root, 'dialog')).toHaveLength(0);
   });
 
-  it('evolves a line with one form at once, without the screen', () => {
+  it('opens the screen for a line with one form too, with that form picked, and evolves on the one button', () => {
     const ready = sampleCreature('evolve ready');
     const evolution = { ...ready.evolution! };
     delete evolution.alt;
     const single: Creature = { ...ready, evolution };
     const { page: p, root, onEvolve } = tab([single]);
     p.click(byClass(root, 'cc-do')[0]?.childNodes[0] as FakeElement);
-    expect(byRole(root, 'dialog')).toHaveLength(0);
+    // The press only opened the screen: nothing was spent yet, and the one form is already picked.
+    expect(onEvolve).not.toHaveBeenCalled();
+    expect(byRole(root, 'dialog')).toHaveLength(1);
+    expect(visibleText(confirm(root))).toBe('Evolve into Pyrelynx');
+    expect(confirm(root).hasAttribute('disabled')).toBe(false);
+    p.click(confirm(root));
     expect(onEvolve).toHaveBeenCalledTimes(1);
-    expect(onEvolve).toHaveBeenCalledWith(single);
+    expect(onEvolve).toHaveBeenCalledWith(single, 'pyrelynx');
+    expect(byRole(root, 'dialog')).toHaveLength(0);
+  });
+});
+
+describe('the evolve screen of a line with one form', () => {
+  const ready = sampleCreature('evolve ready');
+  const evolution = { ...ready.evolution! };
+  delete evolution.alt;
+  const single: Creature = { ...ready, evolution };
+
+  function drawSingle(subject: Creature = single) {
+    page = createPage();
+    const onEvolve = vi.fn();
+    page.draw(
+      <EvolveDrawer open creature={subject} busy={false} onEvolve={onEvolve} onClose={vi.fn()} />,
+    );
+    return { page, root: page.root, onEvolve };
+  }
+
+  it('shows the one form on one picked card, like a card of two, and says nothing about it', () => {
+    const { root } = drawSingle();
+    const cards = forms(root);
+    expect(cards).toHaveLength(1);
+    const card = cards[0] as FakeElement;
+    expect(visibleText(card)).toContain('Pyrelynx');
+    expect(visibleText(card)).toContain('Payoff');
+    expect(visibleText(card)).toContain('Inferno Strike');
+    expect(visibleText(card)).toMatch(/HP\s*\d+/);
+    expect(visibleText(card)).toMatch(/Atk\s*\d+/);
+    expect(visibleText(card)).toMatch(/Spd\s*\d+/);
+    // Picked already, and not a button: there is nothing to choose.
+    expect(card.getAttribute('class')).toContain('on');
+    expect(card.localName).not.toBe('button');
+    expect(byClass(root, 'evolve-forms')[0]?.getAttribute('class')).toContain('single');
+    // Show, don't tell: no sentence about there being one form.
+    expect(visibleText(root)).not.toMatch(/only|one form|single/i);
+  });
+
+  it('keeps the cost, the permanent line and the one button, which names the form and works at once', () => {
+    const { page: p, root, onEvolve } = drawSingle();
+    expect(
+      byClass(byClass(root, 'evolve-cost')[0] as FakeElement, 'part-count').map(visibleText),
+    ).toEqual(['20']);
+    expect(visibleText(root)).toContain('This choice is permanent.');
+    const button = confirm(root);
+    expect(visibleText(button)).toBe('Evolve into Pyrelynx');
+    expect(button.hasAttribute('disabled')).toBe(false);
+    p.click(button);
+    expect(onEvolve).toHaveBeenCalledTimes(1);
+    expect(onEvolve).toHaveBeenCalledWith(single, 'pyrelynx');
+  });
+
+  it('still waits for the server: not ready, busy, away or on a job keep the button off', () => {
+    const notReady = drawSingle({ ...single, evolution: { ...evolution, available: false } });
+    expect(visibleText(confirm(notReady.root))).toBe('Evolve into Pyrelynx');
+    expect(confirm(notReady.root).hasAttribute('disabled')).toBe(true);
+    notReady.page.click(confirm(notReady.root));
+    expect(notReady.onEvolve).not.toHaveBeenCalled();
+    page?.unmount();
+    const away = drawSingle({ ...single, away: true });
+    expect(confirm(away.root).hasAttribute('disabled')).toBe(true);
+    expect(visibleText(away.root)).toContain('Away on a trip');
+    page?.unmount();
+    page = createPage();
+    page.draw(<EvolveDrawer open creature={single} busy onEvolve={vi.fn()} onClose={vi.fn()} />);
+    expect(confirm(page.root).hasAttribute('disabled')).toBe(true);
   });
 });

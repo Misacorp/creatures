@@ -170,7 +170,7 @@ describe('the creature page: top row and back', () => {
 describe('the creature page: the head and tags', () => {
   it('shows the species name as a tag only when a nickname differs from it', () => {
     const plain = draw('level 15');
-    const tags = first(byClass(plain.root, 'tags'));
+    const tags = first(byClass(plain.root, 'cc-tags'));
     expect(visibleText(tags)).not.toContain('Cindle');
     page?.unmount();
 
@@ -178,19 +178,19 @@ describe('the creature page: the head and tags', () => {
     expect(visibleText(first(find(named.root, (e) => e.localName === 'h2')))).toBe(
       'Sparky, common',
     );
-    expect(visibleText(first(byClass(named.root, 'tags')))).toContain('Cindle');
-    // The name row holds the name, the element and the level, not the species.
-    expect(visibleText(first(byClass(named.root, 'v3-name-row')))).toBe('Sparky, commonLv 15');
+    expect(visibleText(first(byClass(named.root, 'cc-tags')))).toContain('Cindle');
+    // The head holds the name and the tags, not the level (the level is on the bar under it).
+    expect(visibleText(first(byClass(named.root, 'cc-head')))).not.toContain('Lv');
     page?.unmount();
 
     // A nickname equal to the species name (any case) adds no tag.
     const same = draw('level 15', { change: (c) => ({ ...c, nickname: 'cindle' }) });
-    expect(byClass(first(byClass(same.root, 'tags')), 'tag')).toHaveLength(0);
+    expect(byClass(first(byClass(same.root, 'cc-tags')), 'tag')).toHaveLength(0);
   });
 
   it('has no rarity tag and no portrait border; the name is in the rarity colour and the rarity is spoken', () => {
     const { root } = draw('level 15');
-    const tags = visibleText(first(byClass(root, 'tags')));
+    const tags = visibleText(first(byClass(root, 'cc-tags')));
     expect(tags).not.toMatch(/Common|Rare|Epic/);
     const portrait = first(byClass(root, 'portrait'));
     expect(portrait.getAttribute('class')).not.toContain('rarity-');
@@ -213,13 +213,37 @@ describe('the creature page: the head and tags', () => {
     expect(first(byClass(button, 'armchair-icon')).getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('draws the level badge in the pixel font with no "?" mark', () => {
+  it('draws the level tag on the experience row, in the pixel font with no "?" mark, as the card does', () => {
     const { root } = draw('level 15');
-    const badge = first(byClass(root, 'v3-level'));
-    const classes = (badge.getAttribute('class') ?? '').split(' ');
-    expect(classes).toContain('lvl-tag');
+    const [track] = byClass(root, 'xp-static');
+    expect(track).toBeDefined();
+    const [level, bar] = (track as FakeElement).childNodes as FakeElement[];
+    const classes = (level?.getAttribute('class') ?? '').split(' ');
+    expect(classes).toContain('xp-lv');
     expect(classes).toContain('pix');
-    expect(visibleText(badge)).toBe('Lv 15');
+    expect(visibleText(level as FakeElement)).toBe('Lv 15');
+    expect(bar?.getAttribute('role')).toBe('progressbar');
+    expect(bar?.getAttribute('aria-label')).toBe('Experience: 310 / 825 towards level 16');
+    // The page's old thick bar and its own level badge are gone.
+    expect(byClass(root, 'xpbar')).toHaveLength(0);
+    expect(byClass(root, 'v3-level')).toHaveLength(0);
+  });
+
+  it('reads like the card: the portrait, the name, the tags, then the level and bar, then the buttons', () => {
+    const { root } = draw('evolve ready');
+    const head = first(byClass(root, 'cp-head'));
+    const parts = head.childNodes as FakeElement[];
+    expect(parts.map((p) => p.getAttribute('class')?.split(' ')[0])).toEqual([
+      'cc-head',
+      'xp-static',
+    ]);
+    const top = first(byClass(head, 'cc-head'));
+    expect(byClass(top, 'portrait')).toHaveLength(1);
+    expect(byClass(top, 'cc-name')).toHaveLength(1);
+    expect(byClass(top, 'cc-tags')).toHaveLength(1);
+    // The buttons for what is ready follow the head, in the same block.
+    const block = head.parentNode as FakeElement;
+    expect(byClass(block, 'cp-actions')).toHaveLength(1);
   });
 
   it('draws names as text, never as markup', () => {
@@ -291,14 +315,16 @@ describe('the creature page: the buttons for what is ready', () => {
 
     // At the level, short of parts: the cost and what is missing, the button off.
     const short = draw('ribbon waiting');
-    const off = first(byName(short.root, 'button', /Bronze Ribbon \(6 scrap and 2 Ember shards\)/));
+    const off = first(
+      byName(short.root, 'button', 'Earn Bronze Ribbon 6 scrap and 2 Ember shards'),
+    );
     expect(off.hasAttribute('disabled')).toBe(true);
     expect(visibleText(first(byClass(short.root, 'ribbon-line')))).toContain('Short of parts');
     page?.unmount();
 
     // At the level with the parts: a gold button that earns it.
     const ready = draw('ribbon ready');
-    const on = first(byName(ready.root, 'button', /^Bronze Ribbon \(/));
+    const on = first(byName(ready.root, 'button', /^Earn Bronze Ribbon /));
     expect(on.hasAttribute('disabled')).toBe(false);
     expect(on.getAttribute('class')).toContain('primary');
     ready.page.click(on);
@@ -307,14 +333,17 @@ describe('the creature page: the buttons for what is ready', () => {
 
   it('has a gold evolve button when evolution is ready, and answers a waiting catch', () => {
     const evolve = draw('evolve ready');
-    const button = first(byName(evolve.root, 'button', 'Choose an evolution (20 Essence)'));
+    const button = first(byName(evolve.root, 'button', 'Evolve 20 Essence'));
     expect(button.getAttribute('class')).toContain('primary');
+    // The main button of the page: the full width of the page, and the big size.
+    expect(button.getAttribute('class')).toContain('wide');
+    expect(button.getAttribute('class')).toContain('large');
     evolve.page.click(button);
     expect(evolve.actions.onEvolve).toHaveBeenCalledTimes(1);
     page?.unmount();
 
     const waiting = draw('level 15', { pending: true });
-    waiting.page.click(first(byName(waiting.root, 'button', 'Answer a waiting catch')));
+    waiting.page.click(first(byName(waiting.root, 'button', /^Answer a waiting catch/)));
     expect(waiting.onAnswerCatch).toHaveBeenCalledTimes(1);
     page?.unmount();
 
@@ -332,7 +361,7 @@ describe('the creature page: evolving a busy creature', () => {
     } = draw('evolve ready', {
       change: (c) => ({ ...c, busy: { kind: 'job', id: 'job-1' } }),
     });
-    const button = first(byName(root, 'button', /^Choose an evolution/));
+    const button = first(byName(root, 'button', /^Evolve /));
     expect(button.hasAttribute('disabled')).toBe(true);
     expect(visibleText(root)).toContain('On a job');
     p.click(button);

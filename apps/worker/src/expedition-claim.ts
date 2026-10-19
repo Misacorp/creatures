@@ -33,6 +33,9 @@ import {
   tripXp,
   chance,
   allSpecies,
+  gearPart,
+  creatureXpParts,
+  xpBoost,
   type AccountStat,
   type DestinationDef,
   type PushOnGoalDef,
@@ -41,6 +44,7 @@ import {
   type PartsBundle,
   type TripWeather,
   type TwistEffect,
+  type XpBoostPart,
 } from '@creatures/game';
 import type { CatchProps, PushOnOutcome } from './analytics';
 import {
@@ -78,6 +82,8 @@ export interface ClaimEnv {
   readonly sql: SqlStorage;
   readonly deps: ExpeditionsDeps;
   tripWeatherOf(row: ExpeditionRow): TripWeather;
+  /** The day's Boons and Omens that changed the trip's creature experience, by name (for the result's breakdown). */
+  tripDayXpOf(row: ExpeditionRow): XpBoostPart[];
   kitIds(row: ExpeditionRow): string[];
   explorerView(userId: string, creatureId: string): ExplorerView;
   rankSumOf(userId: string): number;
@@ -388,34 +394,41 @@ function finishProgress(
   // Explorer XP and rank (and the slot it may unlock).
   const sumBefore = env.rankSumOf(userId);
   const tripsBefore = p.stats.trips_finished ?? 0;
-  const bonusBp =
-    p.milestoneXpBp +
-    (p.twist?.kind === 'xp' ? p.twist.bp : 0) +
-    (p.worked?.reward.xpBp ?? 0) +
-    gearRulesOf(env.sql, explorer).trailXpBp;
-  const gained = tripXp(expedition.duration, bonusBp);
+  // Each share on top of the trip's explorer XP, named for the result's breakdown; they multiply, and the same
+  // parts give the amount and the breakdown.
+  const twistName =
+    expeditionContent.specials.twists.find((t) => t.id === expedition.special_id)?.name ?? 'Twist';
+  const shares: XpBoostPart[] = [
+    { source: 'trip', name: 'Milestones', bp: p.milestoneXpBp },
+    { source: 'trip', name: twistName, bp: p.twist?.kind === 'xp' ? p.twist.bp : 0 },
+    { source: 'trip', name: p.worked?.name ?? 'Push on', bp: p.worked?.reward.xpBp ?? 0 },
+    gearPart('trail-xp', gearRulesOf(env.sql, explorer).trailXpBp),
+  ];
+  const gained = tripXp(expedition.duration, shares);
   const after = addExplorerTrip(env.sql, userId, explorer.id, gained);
   const rankAfter = explorerRank(after.xp);
+  const explorerBoost = xpBoost(shares);
   p.result.xp = {
     gained,
     total: after.xp,
     rank: rankAfter,
     rankBefore: p.explorerBefore.rank,
+    ...(explorerBoost === null ? {} : { boost: explorerBoost }),
   };
   // Creature experience (training by activity): the explorer earns the trip's by its length, doubled
   // by the treat packed when it was sent. A recall and a failed trip never get here.
   const wx = env.tripWeatherOf(expedition);
+  const treat = expedition.treat === 1;
+  const expParts = creatureXpParts(treat, wx.treatMultiplier, env.tripDayXpOf(expedition));
   const experience = awardExperience(
     env.sql,
     analytics,
     userId,
     explorer.id,
-    tripExperience(expedition.duration, expedition.treat === 1, {
-      bp: wx.xpBp,
-      treatMultiplier: wx.treatMultiplier,
-    }),
+    tripExperience(expedition.duration, expParts),
     'trip',
-    expedition.treat === 1,
+    treat,
+    xpBoost(expParts),
   );
   if (experience !== null) p.result.experience = experience;
   if (rankAfter > p.explorerBefore.rank) {

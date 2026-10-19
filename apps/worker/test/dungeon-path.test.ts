@@ -5,6 +5,7 @@ import {
   createSeededRng,
   dungeonContent,
   dungeonEvent,
+  creatureXpParts,
   dungeonExperience,
   dungeonKeepsakes,
   dungeonMapValid,
@@ -1754,7 +1755,7 @@ describe('clearing the floor boss', () => {
           (run?.rewards.experience ?? []).map((e) => [e.creatureId, e]),
         );
         const exp = (fights: number, cleared: boolean, treat: boolean) =>
-          dungeonExperience(fights, cleared, treat);
+          dungeonExperience(fights, cleared, creatureXpParts(treat, null, []));
         // The full-clear bonus is for the row that beat the boss; the treat doubles a creature's own share.
         expect(gained[a]?.gained).toBe(exp(before + after, true, false));
         expect(gained[b]?.gained).toBe(exp(before + after, true, true));
@@ -1849,7 +1850,7 @@ describe('a run left open', () => {
         expect(summary.rewards.supplies).toHaveLength(1);
         expect(
           summary.rewards.experience.every(
-            (e) => e.gained === dungeonExperience(mid.roomsCleared, false, false),
+            (e) => e.gained === dungeonExperience(mid.roomsCleared, false, []),
           ),
         ).toBe(true);
         expect(growth()).not.toEqual(levelBefore);

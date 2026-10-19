@@ -7,6 +7,7 @@ import { StreakTrack } from '../../ui/StreakTrack';
 import { streakLabel, streakPips } from '../../dungeon-text';
 import { BossHp, SegmentBar } from '../../ui/SegmentBar';
 import { TimerBar } from '../../ui/TimerBar';
+import { XP_SIZES, XpTrack, type XpSize } from '../../ui/XpTrack';
 import { GLYPH_IDS } from '../data';
 import { bool, num, str } from '../props';
 import type { Entry } from '../types';
@@ -218,6 +219,57 @@ const xpBar: Entry = {
   ),
 };
 
+function sizeOf(value: string): XpSize | undefined {
+  return XP_SIZES.find((s) => s === value);
+}
+
+const xpTrack: Entry = {
+  name: 'XpTrack',
+  file: 'apps/activity/src/ui/XpTrack.tsx',
+  group: 'Bars',
+  covers: ['XP_SIZES', 'DEFAULT_XP_SIZE'],
+  description:
+    'The slim XP bar at rest: the level tag, then the bar with its numbers inside (the bar of the "Count-up" XP row once it has counted). The creature card and the creature page show it across their width. The level tag and the bar are locked to one height inside the component. Looks (`size`): shrunk (the tag shrunk to the bar\'s height, ring inside), snug (a narrower tag), flat (the tag drawn like the bar) and grown (the bar enlarged to the tag\'s old height); the default is set by DEFAULT_XP_SIZE.',
+  controls: {
+    level: { kind: 'number', min: 1, max: 30 },
+    value: { kind: 'number', min: 0, max: 3000 },
+    max: { kind: 'number', min: 1, max: 3000 },
+    top: { kind: 'toggle' },
+    kind: { kind: 'select', options: XP_KINDS },
+    size: { kind: 'select', options: ['default', ...XP_SIZES] },
+  },
+  defaults: { level: 8, value: 96, max: 328, top: false, kind: 'experience', size: 'default' },
+  presets: [
+    { name: 'Look: shrunk (tag shrunk to the bar)', props: { size: 'shrunk' } },
+    { name: 'Look: snug (narrower tag)', props: { size: 'snug' } },
+    { name: 'Look: flat (tag drawn like the bar)', props: { size: 'flat' } },
+    { name: 'Look: grown (bar enlarged to the tag)', props: { size: 'grown' } },
+    { name: 'Level 1, empty', props: { level: 1, value: 0, max: 27 } },
+    { name: 'A third', props: {} },
+    { name: 'Long numbers', props: { level: 27, value: 1250, max: 2400 } },
+    { name: 'Full, waiting', props: { level: 15, value: 825, max: 825 } },
+    { name: 'Top level', props: { level: 30, top: true } },
+    { name: 'Explorer (orchid)', props: { kind: 'explorer', level: 3, value: 120, max: 400 } },
+  ],
+  render: (p) => {
+    const top = bool(p, 'top');
+    const kind = xpKind(str(p, 'kind'));
+    return (
+      <XpTrack
+        level={num(p, 'level')}
+        value={num(p, 'value')}
+        max={num(p, 'max')}
+        top={top}
+        kind={kind}
+        unit={kind === 'explorer' ? 'Rank' : 'Lv'}
+        label="Experience"
+        {...(sizeOf(str(p, 'size')) === undefined ? {} : { size: sizeOf(str(p, 'size')) })}
+        {...(top ? { text: 'Top level' } : {})}
+      />
+    );
+  },
+};
+
 const pipRow: Entry = {
   name: 'PipRow',
   file: 'apps/activity/src/ui/PipRow.tsx',
@@ -336,6 +388,7 @@ export const barEntries: readonly Entry[] = [
   segmentBar,
   bossHp,
   xpBar,
+  xpTrack,
   pipRow,
   progressTrack,
   streakTrack,

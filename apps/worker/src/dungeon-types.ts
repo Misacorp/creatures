@@ -199,8 +199,10 @@ export interface DungeonRunState {
 }
 
 /**
- * What a run paid one creature in experience, with what changed the plain amount: the results say it under
- * the creature's bar ("Treat gave 2x experience"). Both fields are absent in runs stored before they were added.
+ * What a run paid one creature in experience, with what changed the plain amount. `boost` (on the
+ * `ExperienceView`, since 2026-10-19) says it all for the multiplier chip; `treatTimes` and `dayEffects` are
+ * the older form, kept for one release for clients that still read them, and the only form in runs stored
+ * between their start and 2026-10-19. Both are absent in runs stored before they were added.
  */
 export interface DungeonExperienceView extends ExperienceView {
   /** What the treat multiplied the experience by (2, or 3 on a day that changes it), or null when no treat was packed for this creature. */

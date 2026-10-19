@@ -5,8 +5,12 @@ import { pendingFind, type Find } from '../../find-view';
 import type { PendingCatch, TalentView } from '../../talent-types';
 import { TripResult } from '../../TripResult';
 import type { TripResultView } from '../../trip-result-view';
-import { experienceGain, type ExperienceGain } from '../../xp-gain';
+import { expToNext } from '@creatures/game';
+import type { XpBoost } from '../../experience';
+import { experienceGain, explorerGain } from '../../xp-gain';
+import { SIZE_OF, type XpChange } from '../../xp-change';
 import { bool, str } from '../props';
+import { EXPERIENCE_BOOST_NAMES, EXPLORER_SEVERAL, experienceBoostOf } from './xp-boosts';
 import type { Entry } from '../types';
 
 /** Real server output (the duplicate-choice scenario): three Splashet duplicates and one Splashet owned. */
@@ -66,29 +70,41 @@ const scrap = (amount: number) => ({
   entry: 'part-scrap',
 });
 
-/** The explorer's creature experience as the server's answer would give it (a Sproutle). */
+/** The explorer's creature experience as the server's answer would give it (a Sproutle; the game's level sizes). */
 function growth(p: {
   gained: number;
-  treat: boolean;
   from: number;
   to: number;
   exp: number;
-  needed: number;
-}): ExperienceGain {
+  boost?: XpBoost | null;
+}): XpChange {
+  const treat = p.boost?.parts.some((x) => x.source === 'treat') === true;
   return experienceGain(
     {
       creatureId: 'sproutle',
       gained: p.gained,
-      treat: p.treat,
+      treat,
       levelBefore: p.from,
       level: p.to,
       exp: p.exp,
-      needed: p.needed,
+      needed: expToNext(p.to),
       waiting: false,
       gold: false,
+      ...(p.boost == null ? {} : { boost: p.boost }),
     },
     'Sproutle',
   );
+}
+
+/** The explorer XP of the trip (the game's rank sizes). */
+function explorer(p: {
+  gained: number;
+  rank: number;
+  rankBefore: number;
+  value: number;
+  boost?: XpBoost;
+}): XpChange {
+  return explorerGain({ ...p, max: SIZE_OF.explorer(p.rank), name: 'Sproutle' });
 }
 
 const BASE: TripResultView = {
@@ -106,8 +122,8 @@ const BASE: TripResultView = {
     { key: 'satchel', icon: { kind: 'supply', id: 'satchel' }, amount: 1, name: 'Small Satchel' },
   ],
   loot: null,
-  xp: { gained: 300, rank: 3, rankBefore: 3, rankedUp: false, value: 412, max: 1200 },
-  growth: growth({ gained: 240, treat: true, from: 8, to: 9, exp: 40, needed: 300 }),
+  xp: explorer({ gained: 300, rank: 3, rankBefore: 3, value: 412 }),
+  growth: growth({ gained: 240, from: 8, to: 9, exp: 40, boost: experienceBoostOf('treat ×2') }),
   stars: { stars: 1, gained: false, trips: 5 },
   slot: null,
   gifts: [],
@@ -130,7 +146,7 @@ const SCENES: Record<string, TripResultView> = {
   'a duplicate': {
     ...BASE,
     finds: [KNOWN_FIND],
-    growth: growth({ gained: 240, treat: true, from: 9, to: 9, exp: 190, needed: 300 }),
+    growth: growth({ gained: 240, from: 9, to: 9, exp: 280, boost: experienceBoostOf('treat ×2') }),
     stars: { stars: 1, gained: false, trips: 6 },
   },
   'three finds': {
@@ -144,7 +160,7 @@ const SCENES: Record<string, TripResultView> = {
       blueprints: [],
     },
     // A long trip that took the explorer up a rank.
-    xp: { gained: 600, rank: 4, rankBefore: 3, rankedUp: true, value: 60, max: 1500 },
+    xp: explorer({ gained: 600, rank: 4, rankBefore: 3, value: 60 }),
     stars: { stars: 2, gained: true, trips: 10 },
   },
   'called home early': {
@@ -167,6 +183,17 @@ const SCENES: Record<string, TripResultView> = {
   },
 };
 
+/** A scene with the experience's multiplier of the control, and the explorer's when asked. */
+function withBoosts(view: TripResultView, boost: string, explorerBoost: boolean): TripResultView {
+  const g = view.growth;
+  const x = view.xp;
+  return {
+    ...view,
+    growth: g === null || boost === 'as the scene' ? g : { ...g, boost: experienceBoostOf(boost) },
+    xp: x === null || !explorerBoost ? x : { ...x, boost: EXPLORER_SEVERAL },
+  };
+}
+
 export const tripResult: Entry = {
   name: 'TripResult',
   file: 'apps/activity/src/TripResult.tsx',
@@ -175,15 +202,29 @@ export const tripResult: Entry = {
     'What a claimed trip brought home, on one card: the place banner with the explorer, one sentence of who went where, the creatures found (a duplicate chooses with radio rows), what came home, one progress block, journal pages and one full-width Claim. The buttons do nothing here.',
   controls: {
     scene: { kind: 'select', options: Object.keys(SCENES) },
+    boost: { kind: 'select', options: ['as the scene', ...EXPERIENCE_BOOST_NAMES] },
+    explorerBoost: { kind: 'toggle' },
     journalOpen: { kind: 'toggle' },
     busy: { kind: 'toggle' },
   },
-  defaults: { scene: 'one new creature', journalOpen: true, busy: false },
-  presets: Object.keys(SCENES).map((scene) => ({ name: scene, props: { scene } })),
+  defaults: {
+    scene: 'one new creature',
+    boost: 'as the scene',
+    explorerBoost: false,
+    journalOpen: true,
+    busy: false,
+  },
+  presets: [
+    ...Object.keys(SCENES).map((scene) => ({ name: scene, props: { scene } })),
+    {
+      name: 'several multipliers (explorer and experience)',
+      props: { boost: 'treat, Hearty Breakfast and Cold Snap', explorerBoost: true },
+    },
+  ],
   render: (p) => (
     <TripResult
-      key={str(p, 'scene')}
-      view={SCENES[str(p, 'scene')] ?? BASE}
+      key={JSON.stringify(p)}
+      view={withBoosts(SCENES[str(p, 'scene')] ?? BASE, str(p, 'boost'), bool(p, 'explorerBoost'))}
       busy={bool(p, 'busy')}
       journalOpen={bool(p, 'journalOpen')}
       onClaim={() => undefined}

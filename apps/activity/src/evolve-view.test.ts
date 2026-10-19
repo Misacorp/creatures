@@ -4,7 +4,7 @@ import type { Creature } from './api';
 import { sampleCreature } from './creature-card-sample';
 import { evolutionText, creatureAbilityText } from './game';
 import { abilityDef } from './live';
-import { evolveButtonLabel, evolveForms, evolveTargets, hasBranches } from './evolve-view';
+import { evolveButtonLabel, evolveForms, evolveTargets } from './evolve-view';
 import { creatureNeeds } from './creature-needs';
 import { SAMPLE_STATE } from './creature-card-sample';
 
@@ -19,12 +19,10 @@ function oneForm(creature: Creature): Creature {
 const single = oneForm(sampleCreature('evolve ready'));
 
 describe('the forms of an evolution', () => {
-  it('knows a line that grows two ways from one that grows one way', () => {
-    expect(hasBranches(branching)).toBe(true);
-    expect(hasBranches(single)).toBe(false);
-    expect(hasBranches({})).toBe(false);
+  it('lists the forms of a line that grows two ways and of one that grows one way', () => {
     expect(evolveTargets(branching)).toEqual(['thornbuck', 'sunfawn']);
     expect(evolveTargets(single)).toEqual(['pyrelynx']);
+    expect(evolveForms(single).map((f) => f.species)).toEqual(['pyrelynx']);
     expect(evolveTargets({})).toEqual([]);
   });
 
@@ -93,30 +91,28 @@ describe('the forms of an evolution', () => {
 });
 
 describe('the words around a line that grows two ways', () => {
-  it('asks to choose on the buttons, and names both forms when it is not ready', () => {
+  it('says just "Evolve" on the buttons, and names both forms when it is not ready', () => {
     const evolution = branching.evolution!;
     expect(evolutionText(15, evolution, 50)).toEqual({
       available: true,
-      label: 'Choose an evolution (20 Essence)',
+      label: 'Evolve (20 Essence)',
     });
     expect(evolutionText(10, { ...evolution, available: false }, 50).label).toBe(
       'Evolve into Thornbuck or Sunfawn: needs level 15',
     );
-    // A line with one form keeps its words.
-    expect(evolutionText(15, single.evolution!, 50).label).toBe(
-      'Evolve into Pyrelynx (20 Essence)',
-    );
+    // A line with one form says the same: the evolve screen names the form.
+    expect(evolutionText(15, single.evolution!, 50).label).toBe('Evolve (20 Essence)');
   });
 
-  it('says "Choose an evolution" in the needs of the card', () => {
+  it('says "Evolve" in the needs of the card, for one form or two', () => {
     const [need] = creatureNeeds(branching, SAMPLE_STATE);
     expect(need).toMatchObject({
       kind: 'evolve',
-      label: 'Choose an evolution',
+      label: 'Evolve',
       detail: '20 Essence',
     });
     const [one] = creatureNeeds(single, SAMPLE_STATE);
-    expect(one?.label).toBe('Evolve into Pyrelynx');
+    expect(one?.label).toBe('Evolve');
   });
 
   it('teases both forms instead of one ability', () => {

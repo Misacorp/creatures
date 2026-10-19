@@ -14,6 +14,7 @@ import type {
   PartsBundle,
   ReachId,
   Role,
+  XpBoost,
 } from '@creatures/game';
 import type { ExperienceView } from './creature-exp';
 import type { ConversionNotice } from './gear-convert';
@@ -90,6 +91,8 @@ export interface JobCommon {
   experience?: ExperienceView;
   /** XP this job gave to the creature's Crafting skill. */
   xp: number;
+  /** What added to the Crafting XP (Apprentice) and the total; absent when nothing did (and on older results). */
+  xpBoost?: XpBoost;
   /** Total Crafting XP and level after it. */
   skillXp: number;
   skillLevel: number;

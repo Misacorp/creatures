@@ -71,6 +71,7 @@ import {
   type ExpeditionLength,
   type Rng,
   type SupplyDef,
+  type XpBoostPart,
   type TripCatchContext,
 } from '../src/index';
 import destinationsJson from '../src/content/data/destinations.json';
@@ -679,9 +680,22 @@ describe('explorer rank, trip length and slots', () => {
   });
 
   it('gives XP that grows with the length, with the bonuses on top', () => {
-    expect(tripXp('short', 0)).toBe(lengthRules('short').xp);
-    expect(tripXp('day', 0)).toBeGreaterThan(tripXp('long', 0));
-    expect(tripXp('long', 5_000)).toBe(Math.floor(lengthRules('long').xp * 1.5));
+    expect(tripXp('short', [])).toBe(lengthRules('short').xp);
+    expect(tripXp('day', [])).toBeGreaterThan(tripXp('long', []));
+    expect(tripXp('long', [{ source: 'trip', name: 'Milestones', bp: 5_000 }])).toBe(
+      Math.floor(lengthRules('long').xp * 1.5),
+    );
+  });
+
+  it('multiplies the bonuses: a milestone of +50% and a gear line of +20% make x1.8, not x1.7', () => {
+    const parts: XpBoostPart[] = [
+      { source: 'trip', name: 'Milestones', bp: 5_000 },
+      { source: 'gear', name: 'Trail XP', bp: 2_000 },
+    ];
+    expect(tripXp('long', parts)).toBe(Math.floor((lengthRules('long').xp * 18_000) / 10_000));
+    expect(tripXp('long', parts)).toBeGreaterThan(
+      Math.floor((lengthRules('long').xp * 17_000) / 10_000),
+    );
   });
 });
 

@@ -13,13 +13,18 @@
   gap: 0.5rem;
 }
 
-/* The pixel armchair: in the text's colour, with a clear gap before the words (button and badge). */
+/* The pixel armchair: in the text's colour, with a clear gap before the words of the Lounge button. */
 .armchair-icon {
   display: inline-block;
   flex: none;
   margin-right: 0.625rem;
   vertical-align: -0.1875rem;
   fill: currentcolor;
+}
+
+/* In the small "Lounging" badge the gap is a tag's own: the button's would push the word away. */
+.badge .armchair-icon {
+  margin-right: 0.25rem;
 }
 
 button.lounge-button {
@@ -34,96 +39,39 @@ button.lounge-button {
   font-size: var(--fs-heading);
 }
 
-/* --- The head: portrait, then name, element icon and level on one centred row, then the bar. --- */
+/*
+  --- The head: the card's own top (`.cc-head`, `.cc-id`, `.cc-name`, `.cc-tags` in creature-focus.css) and the
+  card's experience row (ui/XpTrack), so the page starts the way the card the player tapped did. ---
+*/
 
-.v3-head {
+.cp-head {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
-  gap: 0.625rem;
-  align-items: center;
+  gap: 0.5rem;
 }
 
-.v3-head .portrait {
-  width: 56px;
-  height: 56px;
+.cp-head .cc-head p {
   margin: 0;
-  padding: 0;
-  background: var(--ink);
-  box-shadow: none;
 }
 
-.v3-id {
-  min-width: 0;
-}
-
-.v3-name-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.5rem;
-  min-width: 0;
+/* The head and its buttons are one block; the next block (Stats) starts a little lower than the others. */
+.cp-block:has(> .cp-head) {
+  margin-bottom: 0.75rem;
 }
 
 /*
-  The name grows to fill the row. A name that fits leaves room for the icon and the level on the same
-  line, all centred on it. A name too long for that takes the whole row (it may use two lines) and the
-  icon and the level move to a line of their own under it.
+  The page's name is a heading, not the card's button: it may take two lines (then it is cut with an
+  ellipsis; the whole name is in the Rename field and read out in full by screen readers).
 */
-.v3-name {
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: 100%;
-  margin: 0;
-  font-size: var(--fs-title);
-  line-height: 1.05;
+.cc-name-page {
+  overflow-wrap: anywhere;
 }
 
-/* Two lines at most; the rest is cut with an ellipsis. */
-.v3-name-text {
+.cc-name-page .cc-name-text {
   display: -webkit-box;
   overflow: hidden;
-  overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-}
-
-.v3-element {
-  display: inline-grid;
-  flex: none;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  padding: 0;
-}
-
-/* The level badge: the pixel font like the other badges (a tappable tag resets its font, this sets it back). */
-.v3-level {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  height: 1.5rem;
-  padding: 0 0.5rem;
-  font-family: var(--display);
-  font-size: var(--fs-row);
-  line-height: 1;
-  letter-spacing: 0.02em;
-}
-
-.v3-head .cc-sub {
-  margin: 0.125rem 0 0;
-}
-
-.v3-head .xpbar-row {
-  margin: 0.3125rem 0 0;
-}
-
-.v3-head .xpbar {
-  height: 1.5rem;
-}
-
-.v3-head .xpbar-text {
-  font-size: var(--fs-row);
 }
 
 /* --- The item picker's grid (in the Drawer): one border per cell, in the rarity colour. --- */

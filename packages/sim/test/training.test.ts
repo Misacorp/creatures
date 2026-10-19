@@ -3,6 +3,7 @@ import {
   RULES,
   addExperience,
   content,
+  creatureXpParts,
   createSeededRng,
   expToNext,
   raidExperience,
@@ -331,7 +332,7 @@ describe('what each activity pays, in the sim', () => {
     playStage(week, 'phase1', createSeededRng('fight'), createSeededRng('loot'));
     awardRaidExperience(week, 'phase1');
     const cleared = week.stages['phase1']?.cleared === true;
-    const gained = raidExperience('phase1', cleared);
+    const gained = raidExperience('phase1', cleared, []);
     const fought = new Set(week.row.map((s) => s.id));
     expect(fought.size).toBe(15);
     for (const p of players) {
@@ -361,18 +362,24 @@ describe('what each activity pays, in the sim', () => {
     expect(lost.stages['phase1']?.cleared).toBe(false);
     awardRaidExperience(lost, 'phase1');
     const player = lost.players[0] as SimPlayer;
-    expect(player.stats.exp_raid).toBe(3 * raidExperience('phase1', false));
+    expect(player.stats.exp_raid).toBe(3 * raidExperience('phase1', false, []));
     const won = openRaidWeek(boss, raidPlayers());
     won.pool = { max: 10, current: 10 };
     playStage(won, 'phase1', createSeededRng('won'), createSeededRng('won'));
     expect(won.stages['phase1']?.cleared).toBe(true);
     awardRaidExperience(won, 'phase1');
-    expect((won.players[0] as SimPlayer).stats.exp_raid).toBe(3 * raidExperience('phase1', true));
-    expect(raidExperience('phase1', true)).toBe(Math.floor(RULES.experience.raid.phase1 * 1.5));
+    expect((won.players[0] as SimPlayer).stats.exp_raid).toBe(
+      3 * raidExperience('phase1', true, []),
+    );
+    expect(raidExperience('phase1', true, [])).toBe(Math.floor(RULES.experience.raid.phase1 * 1.5));
   });
 
   it('uses the game’s numbers for trips and jobs', () => {
-    expect(tripExperience('long', true)).toBe(2 * RULES.experience.trip.long);
-    expect(workshopExperience(180, true)).toBe(2 * workshopExperience(180, false));
+    expect(tripExperience('long', creatureXpParts(true, null, []))).toBe(
+      2 * RULES.experience.trip.long,
+    );
+    expect(workshopExperience(180, creatureXpParts(true, null, []))).toBe(
+      2 * workshopExperience(180, []),
+    );
   });
 });

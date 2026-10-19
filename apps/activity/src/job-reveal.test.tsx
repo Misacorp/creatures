@@ -9,7 +9,6 @@ import {
   byName,
   byRole,
   createPage,
-  find,
   visibleText,
   type FakeElement,
   type Page,
@@ -17,7 +16,7 @@ import {
 
 /**
  * The card of a claimed Workshop job (2026-10-18): a dismantle is a picture (the item, an arrow, what it became as
- * count badges), then who did the work with two labelled bars. These tests draw the real `JobReveal`.
+ * count badges), then who did the work with two shared XP rows. These tests draw the real `JobReveal`.
  */
 
 let page: Page | null = null;
@@ -134,12 +133,12 @@ describe('a claimed dismantle', () => {
     expect(visibleText(first(byClass(p.root, 'jr-row')))).toContain('Nothing');
   });
 
-  it('shows who did the work and two labelled bars, the Crafting one in its own colour', () => {
+  it('shows who did the work and two XP rows, the Crafting one in its own colour', () => {
     const p = draw(dismantle());
     const who = first(byClass(p.root, 'jr-who'));
     expect(visibleText(who)).toBe('Cindle');
     const list = first(byClass(p.root, 'xp-list'));
-    const labels = find(list, (e) => e.localName === 'dt').map((e) => visibleText(e));
+    const labels = byClass(list, 'xp-label').map((e) => visibleText(e));
     expect(labels).toEqual(['Experience', 'Crafting']);
     expect(byClass(list, 'xp-plus').map((e) => visibleText(e))).toEqual(['+8', '+12']);
     const bars = byRole(list, 'progressbar');
@@ -148,39 +147,47 @@ describe('a claimed dismantle', () => {
       "Cindle's Crafting XP",
     ]);
     expect(bars.map((b) => b.getAttribute('aria-valuetext'))).toEqual([
-      '140 / 222 XP',
-      '40 / 150 XP',
+      '140 / 222, +8',
+      '40 / 150, +12',
     ]);
-    // Each bar takes its kind's colour: experience gold, Crafting leather.
-    const rows = byClass(list, 'xpbar-row');
+    // Each row takes its kind's colour: experience gold, Crafting leather.
+    const rows = byClass(list, 'xp-row');
     expect(rows.map((r) => r.getAttribute('class'))).toEqual([
-      'xpbar-row xp-kind-experience',
-      'xpbar-row xp-kind-crafting',
+      'xp-row xp-kind-experience',
+      'xp-row xp-kind-crafting',
     ]);
+    // Reduced motion: the end at once, the level each is at in its tag.
+    expect(byClass(list, 'xp-text').map((e) => visibleText(e))).toEqual(['140 / 222', '40 / 150']);
+    expect(byClass(list, 'xp-lv').map((e) => visibleText(e))).toEqual(['Lv 6', 'Lv 2']);
   });
 
-  it('writes a level change only when there is one, and the tags that apply', () => {
+  it('writes a level change only when there is one, and the tags and multiplier that apply', () => {
     const plain = draw(dismantle());
-    expect(byClass(first(byClass(plain.root, 'xp-list')), 'lvl-tag')).toHaveLength(0);
+    expect(byClass(first(byClass(plain.root, 'xp-list')), 'xp-up')).toHaveLength(0);
+    expect(byClass(first(byClass(plain.root, 'xp-list')), 'xp-boost')).toHaveLength(0);
     plain.unmount();
     const up = draw(
       dismantle({
-        experience: paid({ levelBefore: 5, level: 6, exp: 12, waiting: true, treat: true }),
+        experience: paid({
+          levelBefore: 5,
+          level: 6,
+          exp: 12,
+          waiting: true,
+          treat: true,
+          boost: { parts: [{ source: 'treat', name: 'Treat', times: 2 }], totalBp: 20_000 },
+        }),
+        xpBoost: { parts: [{ source: 'gear', name: 'Apprentice', bp: 2000 }], totalBp: 12_000 },
         skillXp: 255,
         skillLevel: 3,
         leveledUp: true,
       }),
     );
     const list = first(byClass(up.root, 'xp-list'));
-    expect(byClass(list, 'lvl-tag').map((t) => visibleText(t))).toEqual([
-      'Lv 5',
-      'Lv 6',
-      'Lv 2',
-      'Lv 3',
-    ]);
+    expect(byClass(list, 'xp-up').map((t) => visibleText(t))).toEqual(['Lv 5 → 6', 'Lv 2 → 3']);
+    expect(byClass(list, 'xp-times').map((t) => visibleText(t))).toEqual(['2x', '1.2x']);
     const text = visibleText(list);
-    expect(text).toContain('Waiting at this level');
-    expect(text).toContain('Treat');
+    expect(text).toContain('Waiting');
+    expect(text).not.toContain('Treat');
     expect(text).toContain('Level up!');
   });
 
@@ -199,9 +206,7 @@ describe('a claimed dismantle', () => {
     const p = draw(old);
     expect(byClass(p.root, 'jr-who')).toHaveLength(0);
     const list = first(byClass(p.root, 'xp-list'));
-    expect(find(list, (e) => e.localName === 'dt').map((e) => visibleText(e))).toEqual([
-      'Crafting',
-    ]);
+    expect(byClass(list, 'xp-label').map((e) => visibleText(e))).toEqual(['Crafting']);
   });
 });
 

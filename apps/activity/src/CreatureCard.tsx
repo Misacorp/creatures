@@ -5,23 +5,29 @@ import {
   clickedButton,
   lockedText,
   talentKit,
+  xpWords,
   type PageFocus,
 } from './creature-card-view';
 import { creatureNeeds, type Need } from './creature-needs';
 import type { CardActions } from './CreaturePage';
 import { CreatureHead } from './CreatureHead';
+import { experienceLabel } from './CreatureProgress';
 import { creatureName } from './game';
 import type { GearState } from './gear-types';
 import { gearName, itemLabel, slotName } from './gear-view';
 import { ItemThumb } from './GearArt';
+import { ActionButton } from './ui/ActionButton';
+import { XpTrack, type XpSize } from './ui/XpTrack';
 
 /**
- * One creature, small: sprite, name, element, level, the XP bar, the three gear
- * slots as icons, the talents as chips and, only when something is ready, one gold button (the ribbon,
- * the evolution, a waiting catch to answer or a talent slot to fill). Tapping anywhere else on the card
- * opens the creature's page (`CreaturePage`): the card handles the click, and the name is a real button for
- * the keyboard and screen readers. The gear icons and the talent chips open the page on
- * their part. About 250 px tall on a phone. The server decides what is ready; the card only shows it.
+ * One creature, small (Misa's variant E, decisions.md 2026-10-19): the sprite at the top left with the name
+ * on one line beside it and the creature's tags in words under the name; then the slim experience bar across
+ * the card (the level tag at its left, the numbers inside); then the three gear slots as icons on the left
+ * and the talents on the right, one to a row; and, only when something is ready, one gold button (the
+ * ribbon, the evolution, a waiting catch to answer or a talent slot to fill). Tapping anywhere else on the
+ * card opens the creature's page (`CreaturePage`): the card handles the click, and the name is a real button
+ * for the keyboard and screen readers. The gear icons and the talents open the page on their part. The
+ * server decides what is ready; the card only shows it.
  */
 export function CreatureCard({
   creature,
@@ -33,6 +39,7 @@ export function CreatureCard({
   actions,
   onAnswerCatch,
   onOpen,
+  xpSize,
 }: {
   creature: Creature;
   state: GameState;
@@ -47,6 +54,8 @@ export function CreatureCard({
   onAnswerCatch: () => void;
   /** Opens this creature's page, on a part of it or (null) at the top. */
   onOpen: (focus: PageFocus) => void;
+  /** A look of the experience bar to compare (the workbench); the game uses the default. */
+  xpSize?: XpSize | undefined;
 }) {
   const domId = cardDomId(creature.id);
   const nameId = `${domId}-name`;
@@ -90,11 +99,20 @@ export function CreatureCard({
       <CreatureHead
         creature={creature}
         state={state}
-        heading="h3"
         nameId={nameId}
         onOpen={() => {
           onOpen(null);
         }}
+      />
+      <XpTrack
+        level={creature.level}
+        value={creature.exp}
+        max={creature.expNeeded ?? 1}
+        top={creature.expNeeded === null}
+        label={experienceLabel(creature)}
+        text={xpWords(creature)}
+        levelEntry="level"
+        size={xpSize}
       />
       <div class="cc-kit">
         <ul class="cc-gear" aria-label="Gear">
@@ -160,20 +178,17 @@ export function CreatureCard({
       </div>
       {first !== undefined && (
         <div class="cc-do">
-          <button
-            type="button"
-            class="primary wide"
+          <ActionButton
+            wide
+            label={first.label}
+            detail={[first.detail, needs.length > 1 ? `${String(needs.length - 1)} more` : '']
+              .filter((part) => part !== '')
+              .join(' · ')}
             disabled={busy || first.blocked !== undefined}
             onClick={() => {
               act(first);
             }}
-          >
-            {first.label}
-            <small>
-              {first.detail}
-              {needs.length > 1 ? ` · ${String(needs.length - 1)} more` : ''}
-            </small>
-          </button>
+          />
         </div>
       )}
     </li>

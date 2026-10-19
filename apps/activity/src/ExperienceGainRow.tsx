@@ -1,57 +1,43 @@
-import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
-import type { ExperienceGain } from './xp-gain';
+import type { XpChange } from './xp-change';
 import { Tag } from './ui/Tag';
 import { XpGain } from './ui/XpGain';
 
 /**
  * A creature's experience as the one "XP gained" row every result screen shows (a Workshop job, a trip, a
- * dungeon run): the label "Experience", its levels (a level change when it went up), the green "+N" and
- * "Level up!", the small tags (Treat, Gold Ribbon, Waiting at this level), an optional note, and the bar.
- * Put it in an `XpList`. `who` names the creature when one list holds several (the dungeon team): the label
- * then reads "Sproutle · Experience".
+ * dungeon run): the shared `XpGain` labelled "Experience", with the small tags only experience has (Gold
+ * Ribbon, Waiting). Put it in an `XpList`. `who` names the creature when one list holds several (the
+ * dungeon team, under the list's "Experience" caption): its small sprite and name are the label then.
  */
 export function ExperienceGainRow({
   gain,
   who,
-  note,
 }: {
-  gain: ExperienceGain;
-  who?: string;
-  note?: ComponentChildren;
+  gain: XpChange;
+  who?: { name: string; species: string };
 }) {
-  const leveledUp = gain.levels.to > gain.levels.from;
-  const experience = <GlossaryTag entry="experience">Experience</GlossaryTag>;
   return (
     <XpGain
+      change={gain}
+      what="Experience"
       label={
-        who === undefined ? (
-          experience
-        ) : (
-          <>
-            {who} · {experience}
-          </>
-        )
+        who === undefined ? <GlossaryTag entry="experience">Experience</GlossaryTag> : who.name
       }
-      levels={leveledUp ? gain.levels : undefined}
-      gain={gain.gain}
+      who={who}
       tags={
         <>
-          {gain.treat && (
-            <Tag kind="badge" entry="treat">
-              Treat
-            </Tag>
-          )}
           {gain.gold && (
-            <Tag kind="badge" tone="good">
+            <Tag kind="badge" tone="good" class="xp-tag">
               Gold Ribbon
             </Tag>
           )}
-          {gain.waiting && <Tag kind="badge">Waiting at this level</Tag>}
+          {gain.waiting && (
+            <Tag kind="badge" class="xp-tag">
+              Waiting
+            </Tag>
+          )}
         </>
       }
-      note={note}
-      bar={gain.bar}
     />
   );
 }

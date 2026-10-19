@@ -5,7 +5,6 @@ import type { Element, Role } from '../content/schema';
 import type { WeatherDef, WeatherEffect } from '../content/weather-schema';
 import { chance, int, type Rng } from '../rng';
 import { RULES, type LuckConfig } from './config';
-import type { ExpWeather } from './experience';
 import type { WorkshopMods } from './gear';
 import type { GearMods } from './gear-items';
 
@@ -414,11 +413,14 @@ export function weatherTimeMs(ms: number, timeBp: number): number {
 // --- Creature experience and the Workshop ---
 
 /** What the day does to creature experience: basis points on top, and the treat's multiplier when it changes. */
-export type XpWeather = ExpWeather;
+export interface XpWeather {
+  bp: number;
+  treatMultiplier: number | null;
+}
 
 /** The day's effect on creature experience (for the dungeon, a raid stage and a job: a trip stores its own). */
 export function xpWeather(day: WeatherDay | null): XpWeather {
-  const out = { bp: 0, treatMultiplier: null as number | null };
+  const out: XpWeather = { bp: 0, treatMultiplier: null };
   for (const { effect: e, strengthBp } of activeEffects(day)) {
     if (e.op !== 'xp') continue;
     out.bp += scaleStrength(e.bp, strengthBp);

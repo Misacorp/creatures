@@ -8,6 +8,7 @@ import { journalEntry, expeditionContent } from '@creatures/game';
 import type { ClaimResult } from './api';
 import { BAIT_ICON } from './count-items';
 import type { JournalFind, RankGift, TripResult } from './expedition-types';
+import type { XpBoost } from './experience';
 import { lootIsEmpty } from './gear-view';
 import { partName, partsEntries } from './gear-view';
 import type { IconRef } from './icon-ref';
@@ -70,6 +71,7 @@ interface XpView {
   total: number;
   rank: number;
   rankBefore: number;
+  boost?: XpBoost;
   /** True when the explorer reached a higher rank on this trip. */
   rankedUp: boolean;
 }

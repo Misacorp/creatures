@@ -1,0 +1,65 @@
+/*
+  The data table (ui/DataTable.tsx): rows of a label and a value (and, in a second column, a smaller extra
+  value such as the gear's share) in a panel darker than the one around it (--night on a dusk panel or a
+  popover), with padding and no rounded corners. The three columns belong to the table, so the values line
+  up from row to row (each row is a subgrid of it). A closing "total" row has a line above it and gold type.
+  The font is whatever the panel around it sets; the size is the row size of the type scale.
+*/
+.data-table {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--night);
+  font-size: var(--fs-row);
+}
+
+.data-table.wide {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.data-table.tabular dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.data-row {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: center;
+}
+
+.data-table dt {
+  display: flex;
+  grid-column: 1;
+  gap: 0.375rem;
+  align-items: center;
+  min-width: 0;
+  color: var(--haze);
+}
+
+.data-table dd {
+  grid-column: 2;
+  margin: 0;
+  color: var(--bone);
+  text-align: right;
+}
+
+.data-table dd.data-extra {
+  grid-column: 3;
+}
+
+.data-table.bright dt {
+  color: var(--bone);
+}
+
+.data-row.total {
+  padding-top: 0.25rem;
+  box-shadow: inset 0 2px 0 0 var(--line);
+}
+
+.data-row.total dt,
+.data-row.total dd {
+  color: var(--gold);
+}

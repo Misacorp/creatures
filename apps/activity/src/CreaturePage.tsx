@@ -8,29 +8,19 @@ import { PageHeader } from './creature-page/PageHeader';
 import { GearSlots, TalentSlots } from './creature-page/PageSlots';
 import { TalentBookDrawer } from './creature-page/TalentBookDrawer';
 import type { GearItem, GearSlot, GearState } from './gear-types';
-import { busyReason, gearShare } from './gear-view';
+import { gearShare } from './gear-view';
 import { RibbonLine } from './CreatureProgress';
 import { scrollAndFocus, scrollToTop } from './scroll-to';
-import {
-  creatureAbilityText,
-  evolutionText,
-  fusionStars,
-  getSpecies,
-  isFestivalSpecies,
-  isFirstOnServer,
-  personalityLine,
-  speciesAbout,
-  speciesName,
-} from './game';
+import { creatureAbilityText, fusionStars, personalityLine, speciesAbout } from './game';
 import { GlossaryTag } from './Glossary';
 import { abilityDef } from './live';
-import { ElementChip } from './sprites/ElementChip';
 import { Accordion } from './ui/Accordion';
+import { ActionButton } from './ui/ActionButton';
 import { ArmchairIcon } from './ui/ArmchairIcon';
+import { DataTable, type DataRow } from './ui/DataTable';
 import { handleFlipKey } from './ui/flip-keys';
 import type { FlipProps } from './ui/flip-logic';
 import { FlipArea, FlipNav } from './ui/Flipper';
-import { Tag } from './ui/Tag';
 
 /** What a creature's buttons do; the screen that owns the cards supplies it (one action at a time). */
 export interface CardActions {
@@ -39,8 +29,8 @@ export interface CardActions {
   /** Earns the ribbon the creature waits for (materials only). */
   onRibbon: (creature: Creature) => void;
   /**
-   * Evolves the creature. `species` is the form chosen on the evolve screen; none means the line has one form
-   * and the screen is skipped (the screen that owns the cards decides which).
+   * Evolves the creature, or opens the evolve screen first (the screen that owns the cards decides: every
+   * evolve goes through it). `species` is the form picked there; none lets the server take the line's form.
    */
   onEvolve: (creature: Creature, species?: string) => void;
   onRename: (creature: Creature, nickname: string | null) => void;
@@ -90,32 +80,21 @@ export function RenameForm({
 }
 
 /** One stat with gear folded in, and the gear's own share next to it in the gear colour ("ATK 79 +12"). */
-function StatRow({
-  label,
-  stat,
-  creature,
-}: {
-  label: string;
-  stat: 'hp' | 'atk' | 'spd';
-  creature: Creature;
-}) {
+function statRow(label: string, stat: 'hp' | 'atk' | 'spd', creature: Creature): DataRow {
   const share = gearShare(creature).find((s) => s.stat === stat)?.amount ?? 0;
-  return (
-    <>
-      <dt>{label}</dt>
-      <dd>
-        {creature.statsWithGear[stat]}
-        {share > 0 && (
-          <>
-            {' '}
+  return {
+    label,
+    value: creature.statsWithGear[stat],
+    ...(share > 0
+      ? {
+          extra: (
             <span class="gear-share" aria-label={`plus ${String(share)} from gear`}>
               +{share}
             </span>
-          </>
-        )}
-      </dd>
-    </>
-  );
+          ),
+        }
+      : {}),
+  };
 }
 
 /** Which drawer is up: an item picker for a gear slot, the Talent Book for a talent slot, or none. */
@@ -179,20 +158,18 @@ export function CreaturePage({
 }) {
   const id = `${cardDomId(creature.id)}-page`;
   const rootRef = useRef<HTMLElement>(null);
-  const species = getSpecies(creature.species);
   const about = speciesAbout(creature.species);
   const personality = personalityLine(creature.quirk);
-  const evolve =
-    creature.evolution === undefined
-      ? null
-      : evolutionText(creature.level, creature.evolution, state.balances.essence);
-  const readyEvolve = evolve !== null && evolve.available ? evolve : null;
   const abilityText = creatureAbilityText(creature, abilityDef);
   const abilityInfo = creature.ability === null ? undefined : abilityDef(creature.ability.id);
   const showAbility = abilityText !== null && abilityText.unlocked && abilityInfo !== undefined;
-  const waitingCatch = creatureNeeds(creature, state).find((n) => n.kind === 'duplicate');
+  // The same needs, in the same words, as the card's gold button (the server decides what is ready).
+  const needs = creatureNeeds(creature, state);
+  const evolveNeed = needs.find((n) => n.kind === 'evolve');
+  const waitingCatch = needs.find((n) => n.kind === 'duplicate');
   // The server sends a ribbon only for a creature that stands at the level that asks for one.
-  const hasActions = creature.ribbon !== null || readyEvolve !== null || waitingCatch !== undefined;
+  const hasActions =
+    creature.ribbon !== null || evolveNeed !== undefined || waitingCatch !== undefined;
   const slotOpens = gear?.slotOpens ?? RULES.gear.slotUnlockLevel;
 
   const start = initialOpen ?? startingDrawer(focus, creature, slotOpens);
@@ -223,11 +200,6 @@ export function CreaturePage({
   async function equip(gearId: string, creatureId: string | null): Promise<void> {
     if (await actions.onEquip(gearId, creatureId)) setGearOpen(null);
   }
-
-  const speciesLabel = speciesName(creature.species);
-  const nickname = creature.nickname?.trim().toLowerCase();
-  const showSpeciesName =
-    nickname !== undefined && nickname !== '' && nickname !== speciesLabel.toLowerCase();
 
   return (
     <section
@@ -268,51 +240,30 @@ export function CreaturePage({
       <FlipArea flip={flip}>
         <div class="cp-block">
           <PageHeader creature={creature} state={state} nameId={`${id}-name`} />
-          <p class="tags">
-            {showSpeciesName && <Tag>{speciesLabel}</Tag>}
-            {species !== undefined && <ElementChip element={species.element} role={species.role} />}
-            {isFestivalSpecies(creature.species) && (
-              <Tag kind="badge" tone="festival" entry="festival">
-                Festival
-              </Tag>
-            )}
-            {creature.shiny && (
-              <Tag kind="badge" tone="shiny" entry="shiny">
-                Shiny
-              </Tag>
-            )}
-            {isFirstOnServer(creature, state.serverFirsts) && (
-              <Tag kind="badge" tone="first" entry="first-on-server">
-                First on server
-              </Tag>
-            )}
-          </p>
           {hasActions && (
             <div class="cp-actions">
-              <RibbonLine creature={creature} busy={busy} onRibbon={actions.onRibbon} />
-              {readyEvolve !== null && (
-                <p>
-                  <button
-                    type="button"
-                    class="primary"
-                    disabled={busy || busyReason(creature) !== null}
-                    onClick={() => {
-                      actions.onEvolve(creature);
-                    }}
-                  >
-                    {readyEvolve.label}
-                  </button>
-                  {busyReason(creature) !== null && (
-                    <small class="muted"> {busyReason(creature)}</small>
-                  )}
-                </p>
+              <RibbonLine creature={creature} busy={busy} onRibbon={actions.onRibbon} large />
+              {evolveNeed !== undefined && (
+                <ActionButton
+                  wide
+                  large
+                  label={evolveNeed.label}
+                  detail={evolveNeed.detail}
+                  disabled={busy || evolveNeed.blocked !== undefined}
+                  onClick={() => {
+                    actions.onEvolve(creature);
+                  }}
+                />
               )}
               {waitingCatch !== undefined && (
-                <p>
-                  <button type="button" class="primary" disabled={busy} onClick={onAnswerCatch}>
-                    {waitingCatch.label}
-                  </button>
-                </p>
+                <ActionButton
+                  wide
+                  large
+                  label={waitingCatch.label}
+                  detail={waitingCatch.detail}
+                  disabled={busy}
+                  onClick={onAnswerCatch}
+                />
               )}
             </div>
           )}
@@ -320,11 +271,14 @@ export function CreaturePage({
 
         <div class="cp-block">
           <h3 class="cp-title">Stats</h3>
-          <dl class="sheet-stats">
-            <StatRow label="HP" stat="hp" creature={creature} />
-            <StatRow label="Attack" stat="atk" creature={creature} />
-            <StatRow label="Speed" stat="spd" creature={creature} />
-          </dl>
+          <DataTable
+            tabular
+            rows={[
+              statRow('HP', 'hp', creature),
+              statRow('Attack', 'atk', creature),
+              statRow('Speed', 'spd', creature),
+            ]}
+          />
         </div>
 
         {showAbility && (
@@ -384,31 +338,27 @@ export function CreaturePage({
             </>
           )}
           {personality !== null && <p class="muted">{personality}</p>}
-          <dl class="sheet-facts">
-            <div class="sheet-fact">
-              <dt>
-                <GlossaryTag entry="fusion">Fusion</GlossaryTag>
-              </dt>
-              <dd>
-                <span class="stars" aria-hidden="true">
-                  {fusionStars(creature.fusionCount)}
-                </span>{' '}
-                {creature.fusionCount} / 5
-              </dd>
-            </div>
-            <div class="sheet-fact">
-              <dt>
-                <GlossaryTag entry="ribbon">Ribbons</GlossaryTag>
-              </dt>
-              <dd>{ribbonsHeldText(creature.ribbons)}</dd>
-            </div>
-            {explorerFacts(creature.explorer).map((fact) => (
-              <div class="sheet-fact" key={fact.label}>
-                <dt>{fact.label}</dt>
-                <dd>{fact.value}</dd>
-              </div>
-            ))}
-          </dl>
+          <DataTable
+            class="sheet-facts"
+            rows={[
+              {
+                label: <GlossaryTag entry="fusion">Fusion</GlossaryTag>,
+                value: (
+                  <>
+                    <span class="stars" aria-hidden="true">
+                      {fusionStars(creature.fusionCount)}
+                    </span>{' '}
+                    {creature.fusionCount} / 5
+                  </>
+                ),
+              },
+              {
+                label: <GlossaryTag entry="ribbon">Ribbons</GlossaryTag>,
+                value: ribbonsHeldText(creature.ribbons),
+              },
+              ...explorerFacts(creature.explorer),
+            ]}
+          />
         </Accordion>
 
         <RenameForm creature={creature} busy={busy} onRename={actions.onRename} />

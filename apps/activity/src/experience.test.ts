@@ -3,8 +3,8 @@ import stateFixture from './fixtures/collection-state.json';
 import { parseGameState, type Creature } from './api';
 import { experienceLabel, experienceLine } from './CreatureProgress';
 import {
-  experienceDayLine,
   isExperienceView,
+  isXpBoost,
   isRibbonView,
   ribbonBlocker,
   ribbonCostText,
@@ -100,31 +100,35 @@ describe('the ribbon words', () => {
   });
 });
 
-describe("what changed a dungeon run's experience, apart from the treat", () => {
-  it('has no line without a day effect (the treat is a tag on the row, not a line)', () => {
-    expect(experienceDayLine(view)).toBeNull();
-    expect(experienceDayLine({ ...view, treat: true, treatTimes: 3 })).toBeNull();
+describe('what changed an experience gain', () => {
+  const boost = {
+    parts: [
+      { source: 'treat', name: 'Treat', times: 3 },
+      { source: 'day', name: 'Hearty Breakfast', bp: 2500 },
+      { source: 'gear', name: 'Trail XP', bp: 1700 },
+      { source: 'trip', name: 'Milestones', bp: 500 },
+    ],
+    totalBp: 37_500,
+  };
+
+  it('reads the breakdown the server sends, and an award without one', () => {
+    expect(isXpBoost(boost)).toBe(true);
+    expect(isExperienceView({ ...view, boost })).toBe(true);
+    expect(isExperienceView(view)).toBe(true);
   });
 
-  it('names the Boon or Omen that changed it, up or down', () => {
-    const day = [{ name: 'Hearty Breakfast', bp: 2500 }];
-    expect(experienceDayLine({ ...view, dayEffects: day })).toBe(
-      'Hearty Breakfast gave +25% experience',
+  it('refuses a breakdown it cannot draw', () => {
+    expect(isXpBoost({ ...boost, totalBp: -1 })).toBe(false);
+    expect(isXpBoost({ ...boost, totalBp: 1.5 })).toBe(false);
+    expect(isXpBoost({ parts: [{ source: 'treat', name: 'Treat', times: 1.5 }], totalBp: 1 })).toBe(
+      false,
     );
-    expect(experienceDayLine({ ...view, dayEffects: [{ name: 'Cold Snap', bp: -2000 }] })).toBe(
-      'Cold Snap gave -20% experience',
+    expect(isXpBoost({ parts: [{ source: 'luck', name: 'X', bp: 1 }], totalBp: 1 })).toBe(false);
+    expect(isXpBoost({ parts: [{ source: 'day', name: 'x'.repeat(65), bp: 1 }], totalBp: 1 })).toBe(
+      false,
     );
-    expect(
-      experienceDayLine({ ...view, dayEffects: [...day, { name: 'Cold Snap', bp: -2000 }] }),
-    ).toBe('Hearty Breakfast gave +25% and Cold Snap gave -20% experience');
-    expect(
-      experienceDayLine({
-        ...view,
-        dayEffects: [...day, { name: 'Cold Snap', bp: -2000 }, { name: 'Lucky Day', bp: 500 }],
-      }),
-    ).toBe('Hearty Breakfast gave +25%, Cold Snap gave -20% and Lucky Day gave +5% experience');
-    // A day effect of nothing is not worth a line.
-    expect(experienceDayLine({ ...view, dayEffects: [{ name: 'Quiet Night', bp: 0 }] })).toBeNull();
+    expect(isXpBoost({ parts: 'Treat', totalBp: 1 })).toBe(false);
+    expect(isExperienceView({ ...view, boost: { parts: [] } })).toBe(false);
   });
 });
 

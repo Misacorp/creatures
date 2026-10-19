@@ -10,6 +10,7 @@ import type {
   ExpeditionLength,
   PartsBundle,
   SuppliesId,
+  XpBoost,
 } from '@creatures/game';
 import type { PushOnOutcome } from './analytics';
 import type { ChoiceResult } from './catch-choices';
@@ -74,7 +75,14 @@ export interface ExpeditionResult {
   /** What became of the push-on choice, if the trip had one. */
   pushOn?: PushOnResultView;
   /** Explorer XP gained, and the explorer's totals and rank after the trip. */
-  xp?: { gained: number; total: number; rank: number; rankBefore: number };
+  xp?: {
+    gained: number;
+    total: number;
+    rank: number;
+    rankBefore: number;
+    /** What added to it (milestones, the week's twist, a push-on goal, Trail XP) and the total; absent when nothing did. */
+    boost?: XpBoost;
+  };
   /**
    * Creature experience the trip paid its explorer (doubled by a treat), and what it did to the level.
    * Absent for a recall, a failed trip and results stored before training by activity.

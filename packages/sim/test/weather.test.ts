@@ -301,7 +301,10 @@ describe('trips and Workshop jobs under the sky', () => {
     expect(fast.endsAtHour - start).toBeLessThan(none.endsAtHour - start);
     expect(slow.endsAtHour - start).toBeGreaterThan(none.endsAtHour - start);
     expect(none.xp).toBeUndefined();
-    expect(slow.xp).toEqual({ bp: -2000, treatMultiplier: null });
+    expect(slow.xp).toEqual({
+      treatMultiplier: null,
+      effects: [{ id: 'cold-snap', bp: -2000 }],
+    });
   });
 });
 

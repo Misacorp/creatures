@@ -10,12 +10,16 @@ import {
   SAMPLE_STATE,
   sampleCreature,
   sampleRoster,
+  hardCaseRoster,
   type SampleKind,
 } from '../../creature-card-sample';
 import { NO_FILTERS, applyFilters, type Filters } from '../../creature-find';
 import { needyIds } from '../../creature-needs';
 import { creatureName } from '../../game';
 import type { GearActions } from '../../gear-actions';
+import { TabBar } from '../../TabBar';
+import { NO_ALERTS } from '../../tab-alerts';
+import { XP_SIZES, type XpSize } from '../../ui/XpTrack';
 import { Workshop } from '../../Workshop';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
@@ -35,7 +39,30 @@ function kindOf(value: string): SampleKind {
   return SAMPLE_KINDS.find((k) => k === value) ?? 'growing';
 }
 
+/** The Creatures screen of Misa's phone screenshot (2026-10-19): the tab bar, find and filter, and five hard cases. */
+function RosterScreen() {
+  const roster = hardCaseRoster();
+  const state = { ...SAMPLE_STATE, creatures: roster, pending: [], loungerId: 'v-lanternfin' };
+  return (
+    <div>
+      <TabBar current="collection" alerts={NO_ALERTS} onSelect={() => undefined} />
+      <Collection
+        state={state}
+        gear={SAMPLE_GEAR}
+        busy={false}
+        catchActions={catchActions}
+        {...actions}
+      />
+    </div>
+  );
+}
+
+function xpSizeOf(value: string): XpSize | undefined {
+  return XP_SIZES.find((s) => s === value);
+}
+
 function CardDemo({ p }: { p: Props }) {
+  if (bool(p, 'screen')) return <RosterScreen />;
   const creature = sampleCreature(kindOf(str(p, 'state')));
   const waiting = bool(p, 'waitingCatch');
   const state = {
@@ -61,6 +88,7 @@ function CardDemo({ p }: { p: Props }) {
         actions={actions}
         onAnswerCatch={() => undefined}
         onOpen={() => undefined}
+        xpSize={xpSizeOf(str(p, 'xpSize'))}
       />
     </ul>
   );
@@ -71,7 +99,7 @@ const creatureCard: Entry = {
   file: 'apps/activity/src/CreatureCard.tsx',
   group: 'Creatures & game pieces',
   description:
-    'One creature on the Creatures tab, small: sprite, name, element, level, the experience bar with what comes next, the three gear slots as icons, the talents as chips and, only when something is ready, one gold button. The whole card opens the creature page (hover and press light it up; the arrow at the right edge says so); the gear icons and the talent chips open the page on their part.',
+    'One creature on the Creatures tab, small (variant E): the sprite at the top left, the name on one line with its tags in words under it (species of a nickname, element, role, Festival, Shiny, First on server, Away, On a job, Lounging), the slim experience bar across the card with the level at its left, the gear slots on the left and the talents on the right (one to a row) and, only when something is ready, one gold button. The whole card opens the creature page (hover and press light it up); the gear icons and the talents open the page on their part.',
   controls: {
     state: { kind: 'select', options: SAMPLE_KINDS },
     waitingCatch: { kind: 'toggle' },
@@ -79,6 +107,8 @@ const creatureCard: Entry = {
     lounging: { kind: 'toggle' },
     found: { kind: 'toggle' },
     busy: { kind: 'toggle' },
+    screen: { kind: 'toggle' },
+    xpSize: { kind: 'select', options: ['default', ...XP_SIZES] },
   },
   defaults: {
     state: 'ribbon ready',
@@ -87,6 +117,8 @@ const creatureCard: Entry = {
     lounging: false,
     found: false,
     busy: false,
+    screen: false,
+    xpSize: 'default',
   },
   presets: [
     { name: 'Ribbon ready (the gold button)', props: {} },
@@ -98,6 +130,24 @@ const creatureCard: Entry = {
     { name: 'Top level', props: { state: 'top level' } },
     { name: 'Nickname, shiny and away', props: { state: 'nickname and badges' } },
     { name: 'Marked by the finder', props: { found: true } },
+    { name: 'Lounging', props: { state: 'growing', lounging: true } },
+    {
+      name: 'XP bar look: shrunk (tag shrunk to the bar)',
+      props: { state: 'evolve ready', xpSize: 'shrunk' },
+    },
+    { name: 'XP bar look: snug (narrower tag)', props: { state: 'evolve ready', xpSize: 'snug' } },
+    {
+      name: 'XP bar look: flat (tag drawn like the bar)',
+      props: { state: 'evolve ready', xpSize: 'flat' },
+    },
+    {
+      name: 'XP bar look: grown (bar enlarged to the tag)',
+      props: { state: 'evolve ready', xpSize: 'grown' },
+    },
+    {
+      name: "Five hard cases (Misa's 360 px screenshot): new, Festival, long nickname, full kit, evolve",
+      props: { screen: true },
+    },
   ],
   render: (p) => <CardDemo p={p} />,
 };

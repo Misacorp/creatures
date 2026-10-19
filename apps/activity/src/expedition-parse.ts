@@ -22,7 +22,7 @@ import type {
   TripCatch,
   TripResult,
 } from './expedition-types';
-import { isExperienceView } from './experience';
+import { isExperienceView, isXpBoost } from './experience';
 import { isGrantLoot, isPartsBundle } from './gear-parse';
 import { isArrayOf, isBool, isCount, isInt, isRecord, isStr } from './parse-core';
 import { isChoiceResult, isTalentView } from './talent-parse';
@@ -128,7 +128,8 @@ export function isTripResult(value: unknown): value is TripResult {
         isCount(xp['gained']) &&
         isCount(xp['total']) &&
         isInt(xp['rank']) &&
-        isInt(xp['rankBefore']))) &&
+        isInt(xp['rankBefore']) &&
+        (xp['boost'] === undefined || isXpBoost(xp['boost'])))) &&
     (familiarity === undefined ||
       (isRecord(familiarity) &&
         isCount(familiarity['stars']) &&

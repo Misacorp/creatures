@@ -1319,8 +1319,11 @@ describe('workshop jobs: starting', () => {
         const res = await p.call('POST', `/api/workshop/jobs/${job.id}/claim`, {
           idempotencyKey: newKey(),
         });
-        // 3 nominal hours is 36 XP, +20% (Apprentice tier III).
-        expect(res.body['result']).toMatchObject({ xp: 43 });
+        // 3 nominal hours is 36 XP, +20% (Apprentice tier III), and the result names what added it.
+        expect(res.body['result']).toMatchObject({
+          xp: 43,
+          xpBoost: { parts: [{ source: 'gear', name: 'Apprentice', bp: 2000 }], totalBp: 12_000 },
+        });
       },
       opts(),
     );

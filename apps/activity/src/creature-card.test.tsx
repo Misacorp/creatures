@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Creature } from './api';
+import type { Creature, GameState } from './api';
 import { CreatureCard } from './CreatureCard';
 import type { CardActions } from './CreaturePage';
 import type { PageFocus } from './creature-card-view';
@@ -14,6 +14,22 @@ import {
   type FakeElement,
   type Page,
 } from './test-dom';
+
+/** The card's stylesheet, read as text: the tests' DOM has no layout, so the one-per-row rule is checked there. */
+const styles = import.meta.glob<string>('./styles/components/creature-focus.css', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+const focusCss = styles['./styles/components/creature-focus.css'] ?? '';
+
+/** The declarations of one rule of a stylesheet (the first block whose selector is exactly `selector`). */
+function rule(css: string, selector: string): string {
+  const at = css.indexOf(`\n${selector} {`);
+  if (at < 0) return '';
+  const open = css.indexOf('{', at);
+  return css.slice(open + 1, css.indexOf('}', open));
+}
 
 let page: Page | null = null;
 
@@ -49,6 +65,7 @@ function draw(
     pending?: boolean;
     bait?: number;
     loungerId?: string | null;
+    serverFirsts?: GameState['serverFirsts'];
     busy?: boolean;
     actions?: Partial<CardActions>;
   } = {},
@@ -72,6 +89,7 @@ function draw(
         : [],
     balances: { ...SAMPLE_STATE.balances, bait: options.bait ?? 100 },
     loungerId: options.loungerId ?? null,
+    serverFirsts: options.serverFirsts ?? [],
   };
   page.draw(
     <ul>
@@ -107,14 +125,32 @@ describe('the small card', () => {
     expect(visibleText(card)).not.toContain('Scarf at 7');
   });
 
-  it('draws the level badge in the pixel font with no "?" (the tap still opens its explanation)', () => {
+  it('has the level tag at the left of the slim bar, across the card, and none at the top right', () => {
     const { card } = draw(kind('growing'));
-    const badge = byClass(card, 'lvl-tag')[0] as FakeElement;
-    const classes = (badge.getAttribute('class') ?? '').split(' ');
-    expect(classes).toContain('pix');
+    const [track] = byClass(card, 'xp-static');
+    expect(track).toBeDefined();
+    // The bar is the card's own row (a child of the card), not inside the name block.
+    expect(track?.parentNode).toBe(card);
+    const [level, bar] = (track as FakeElement).childNodes as FakeElement[];
+    expect(level?.getAttribute('class')).toContain('xp-lv');
+    expect(level?.getAttribute('class')).toContain('pix');
     // No popover host in this test, so the tag is plain text; with one it is a button with `gtag-bare`
-    // (the "?" of a tag is drawn by `.gtag-chip::after`, which `gtag-bare` turns off).
-    expect(visibleText(badge)).toBe('Lv 6');
+    // (no "?" drawn) that opens the level's explanation.
+    expect(visibleText(level as FakeElement)).toBe('Lv 6');
+    expect(bar?.getAttribute('role')).toBe('progressbar');
+    expect(visibleText(bar as FakeElement)).toBe('140 / 222');
+    expect(bar?.getAttribute('aria-label')).toBe('Experience: 140 / 222 towards level 7');
+    // The old corner tag is gone: the name block holds no level.
+    expect(byClass(card, 'lvl-tag')).toHaveLength(0);
+    expect(visibleText(byClass(card, 'cc-head')[0] as FakeElement)).not.toContain('Lv');
+  });
+
+  it('fills the bar at the top level and says so', () => {
+    const { card } = draw(kind('top level'));
+    const bar = find(card, (e) => e.getAttribute('role') === 'progressbar')[0] as FakeElement;
+    expect(visibleText(bar)).toBe('Top level');
+    expect(bar.getAttribute('aria-valuetext')).toBe('Top level');
+    expect(visibleText(byClass(card, 'xp-lv')[0] as FakeElement)).toBe('Lv 30');
   });
 
   it('shows the rarity by the colour of the name, not by a portrait border, and says it aloud', () => {
@@ -135,6 +171,18 @@ describe('the small card', () => {
     const badge = byClass(card, 'badge').find((b) => visibleText(b).includes('Lounging'));
     expect(badge).toBeDefined();
     expect(byClass(badge as FakeElement, 'armchair-icon')).toHaveLength(1);
+  });
+
+  it('puts every talent, each empty slot and the closed slots on a row of their own', () => {
+    const { card } = draw(kind('talent to fill'));
+    const talents = byClass(card, 'cc-talents')[0] as FakeElement;
+    const rows = talents.childNodes as FakeElement[];
+    expect(rows.map((r) => visibleText(r))).toEqual(['Quick to Pounce', 'Empty', '25']);
+    for (const row of rows) expect(row.getAttribute('class')).toContain('cc-chip');
+    // One to a row, even when two are short enough to share one (Misa, 2026-10-19).
+    const css = rule(focusCss, 'button.cc-talents');
+    expect(css).toContain('flex-direction: column');
+    expect(css).not.toContain('flex-wrap: wrap');
   });
 
   it('has the three gear slots as icons and the talents as chips', () => {
@@ -179,14 +227,28 @@ describe('the small card', () => {
     expect(byClass(card, 'cc-do')).toHaveLength(0);
   });
 
-  it('shows what the creature does now (away, on a job, lounging) and a nickname with its species', () => {
+  it('has the tags in words under the name: species of a nickname, element, role, Shiny, what it does now', () => {
     const named = kind('nickname and badges');
     const { card } = draw(named, { loungerId: named.id });
-    const sub = visibleText(byClass(card, 'cc-sub')[0] as FakeElement);
-    expect(sub).toContain('Cindle');
-    expect(sub).toContain('Away');
-    expect(sub).toContain('Lounging');
+    const [tags] = byClass(card, 'cc-tags');
+    // Under the name, in the same block.
+    expect(tags?.parentNode).toBe(byClass(card, 'cc-id')[0]);
+    const words = ((tags as FakeElement).childNodes as FakeElement[]).map((t) => visibleText(t));
+    expect(words).toEqual(['Cindle', 'Ember', 'Payoff', 'Shiny', 'Away', 'Lounging']);
     expect(nameOf(find(card, (e) => e.localName === 'h3')[0] as FakeElement)).toBe('Ember');
+  });
+
+  it('names no species for a creature without a nickname, and tags a Festival creature and a server first', () => {
+    const plain = kind('growing');
+    const words = (c: FakeElement): string[] =>
+      ((byClass(c, 'cc-tags')[0] as FakeElement).childNodes as FakeElement[]).map((t) =>
+        visibleText(t),
+      );
+    expect(words(draw(plain).card)).toEqual(['Ember', 'Payoff']);
+    const festival: Creature = { ...plain, species: 'lanternfin', line: 'lanternfin' };
+    const first = { kind: 'catch' as const, species: 'lanternfin', at: 0, mine: true, holders: [] };
+    const tagged = words(draw(festival, { serverFirsts: [first] }).card);
+    expect(tagged).toEqual(['Tide', 'Support', 'Festival', 'First on server']);
   });
 
   it('marks the card the finder chose', () => {
@@ -232,7 +294,7 @@ describe('the one gold button', () => {
   it('evolves when evolution is ready', () => {
     const { card, actions, page: p } = draw(kind('evolve ready'));
     const gold = byClass(card, 'cc-do')[0]?.childNodes[0] as FakeElement;
-    expect(visibleText(gold)).toContain('Choose an evolution');
+    expect(visibleText(gold)).toContain('Evolve');
     expect(visibleText(gold)).toContain('20 Essence');
     p.click(gold);
     expect(actions.onEvolve).toHaveBeenCalledTimes(1);
@@ -283,7 +345,7 @@ describe('the one gold button', () => {
 });
 
 describe('opening the page', () => {
-  it('has the name as a button that opens the page at the top, and an arrow that says so', () => {
+  it('has the name as a button that opens the page at the top, and no arrow', () => {
     const { card, page: p, onOpen } = draw(kind('growing'));
     const open = find(
       card,
@@ -292,8 +354,8 @@ describe('opening the page', () => {
     expect(open).toBeDefined();
     // The button is the heading's text, so the heading still reads as the name.
     expect(nameOf(find(card, (e) => e.localName === 'h3')[0] as FakeElement)).toBe('Cindle');
-    expect(visibleText(byClass(card, 'cc-chev')[0] as FakeElement)).toBe('\u203a');
-    expect(byClass(card, 'cc-chev')[0]?.getAttribute('aria-hidden')).toBe('true');
+    expect(byClass(card, 'cc-chev')).toHaveLength(0);
+    expect(visibleText(card)).not.toContain('\u203a');
     p.click(open as FakeElement);
     expect(onOpen).toHaveBeenCalledTimes(1);
     expect(onOpen).toHaveBeenCalledWith(null);

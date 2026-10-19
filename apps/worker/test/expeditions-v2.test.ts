@@ -86,7 +86,7 @@ interface ResultBody {
     supplies?: string[];
   };
   pushOn?: { goalId: string; risk: string; oddsBp: number; outcome: string };
-  xp?: { gained: number; total: number; rank: number; rankBefore: number };
+  xp?: { gained: number; total: number; rank: number; rankBefore: number; boost?: unknown };
   familiarity?: { stars: number; starsBefore: number; trips: number };
   journal?: { entryId: string; set: string | null; setComplete: boolean }[];
   slotUnlocked?: { total: number };
@@ -547,8 +547,8 @@ describe('ranks, XP and slots', () => {
         const second = tripOf(await send(p, p.starterId, 'long'));
         ctx.clock.t = second.endsAt;
         const done = resultOf(await claim(p, second.id));
-        expect(done.xp).toMatchObject({ gained: tripXp('long', 0), total: tripXp('long', 0) });
-        expect(explorerRank(tripXp('long', 0))).toBe(done.xp?.rank);
+        expect(done.xp).toMatchObject({ gained: tripXp('long', []), total: tripXp('long', []) });
+        expect(explorerRank(tripXp('long', []))).toBe(done.xp?.rank);
         // Enough XP to the next rank raises it.
         const need = RULES.expeditions.rank.xpForRank[1] ?? 0;
         setRank(ctx.sql, USER_ID, p.starterId, 1);
@@ -1668,8 +1668,22 @@ describe('gear on trips', () => {
         const second = resultOf(await claim(p, better.id));
         // The compass's own base line (+5% at item level 13) and a tier III Trail XP (+12%).
         expect(second.xp?.gained).toBeGreaterThan(first.xp?.gained ?? 0);
-        expect(second.xp?.gained).toBe(tripXp('long', 500 + 1200));
-        expect(first.xp?.gained).toBe(tripXp('long', 0));
+        expect(second.xp?.gained).toBe(
+          tripXp('long', [{ source: 'gear', name: 'Trail XP', bp: 500 + 1200 }]),
+        );
+        expect(first.xp?.gained).toBe(tripXp('long', []));
+        // The result names what added it (the compass's two Trail XP lines, by the line's name); none before.
+        expect(second.xp?.boost).toEqual({
+          parts: [{ source: 'gear', name: 'Trail XP', bp: 1700 }],
+          totalBp: 11_700,
+        });
+        expect(first.xp?.boost).toBeUndefined();
+        // The amount is the base times the Total the breakdown shows, rounded down: one rule, one parts list.
+        expect(second.xp?.gained).toBe(
+          Math.floor(
+            (lengthRules('long').xp * (second.xp?.boost as { totalBp: number }).totalBp) / 10_000,
+          ),
+        );
       },
       { tripRng: createSeededRng('trail-xp'), rng: createSeededRng('trail-xp-rng') },
     );
