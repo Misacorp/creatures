@@ -15,27 +15,44 @@ import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
+import { ElementChip } from './sprites/ElementChip';
 import { ArmchairIcon } from './ui/ArmchairIcon';
 import { Tag } from './ui/Tag';
 
+/** The species name as a tag, only for a creature whose nickname says something else (any case). */
+function showsSpecies(creature: Creature): boolean {
+  const nickname = creature.nickname?.trim().toLowerCase();
+  return (
+    nickname !== undefined &&
+    nickname !== '' &&
+    nickname !== speciesName(creature.species).toLowerCase()
+  );
+}
+
 /**
- * The creature's tags under its name, in words: the species of a nickname, the element (with its icon), the
- * role, then Festival, Shiny, First on server and what it is doing now (Away, On a job, Lounging). Away and
- * On a job open their glossary entry, as on the page; the others are plain (the whole card opens the page).
+ * The creature's tags under its name, in words, in one order on the card and on the page: the species of a
+ * nickname, the element (with its icon), the role, then Festival, Shiny, First on server and what it is doing
+ * now (Away, On a job, Lounging). Away and On a job open their glossary entry on both. The other tags are
+ * plain on the card (the whole card opens the page) and, with `help` (the page), open their own entry.
  */
-function NameTags({
+export function NameTags({
   creature,
   state,
+  help = false,
 }: {
   creature: Creature;
   state: Pick<GameState, 'loungerId' | 'serverFirsts'>;
+  /** The page: element, role, Festival, Shiny and First on server explain themselves when tapped. */
+  help?: boolean;
 }) {
   const species = getSpecies(creature.species);
   const tags: ComponentChildren[] = [];
-  if (creature.nickname !== null) {
+  if (showsSpecies(creature)) {
     tags.push(<Tag key="species">{speciesName(creature.species)}</Tag>);
   }
-  if (species !== undefined) {
+  if (species !== undefined && help) {
+    tags.push(<ElementChip key="element" element={species.element} role={species.role} />);
+  } else if (species !== undefined) {
     const icon =
       elementIcon(species.element) === undefined
         ? undefined
@@ -51,21 +68,21 @@ function NameTags({
   }
   if (isFestivalSpecies(creature.species)) {
     tags.push(
-      <Tag key="festival" kind="badge" tone="festival">
+      <Tag key="festival" kind="badge" tone="festival" {...(help ? { entry: 'festival' } : {})}>
         Festival
       </Tag>,
     );
   }
   if (creature.shiny) {
     tags.push(
-      <Tag key="shiny" kind="badge" tone="shiny">
+      <Tag key="shiny" kind="badge" tone="shiny" {...(help ? { entry: 'shiny' } : {})}>
         Shiny
       </Tag>,
     );
   }
   if (isFirstOnServer(creature, state.serverFirsts)) {
     tags.push(
-      <Tag key="first" kind="badge" tone="first">
+      <Tag key="first" kind="badge" tone="first" {...(help ? { entry: 'first-on-server' } : {})}>
         First on server
       </Tag>,
     );
@@ -87,10 +104,14 @@ function NameTags({
 }
 
 /**
- * The top of the creature card: the portrait at the top left and, beside it, the name on one line (a button
- * that opens the page, for the keyboard and screen readers; an over-long name ends in "…") with the
- * creature's tags in words under it. No level tag and no arrow: the level is on the bar under this block,
- * and the whole card says it can be tapped. The creature page has its own head (`creature-page/PageHeader`).
+ * The top of a creature, one look on the card and on its page (so a player who taps a card lands on a page
+ * that starts the same way): the portrait at the top left and, beside it, the name on one line with the
+ * creature's tags in words under it. The level is on the experience bar under this block, not here.
+ *
+ * On the card (`onOpen` given) the name is a button that opens the page, for the keyboard and screen readers;
+ * an over-long name ends in "…". On the page (no `onOpen`) the name is the page's heading, plain text that may
+ * wrap to two lines, and the tags explain themselves when tapped. Both name the rarity: the card in the
+ * button's label, the page in a hidden word.
  */
 export function CreatureHead({
   creature,
@@ -101,7 +122,8 @@ export function CreatureHead({
   creature: Creature;
   state: Pick<GameState, 'loungerId' | 'serverFirsts'>;
   nameId: string;
-  onOpen: () => void;
+  /** The card's: opens the page. Leave out on the page itself. */
+  onOpen?: (() => void) | undefined;
 }) {
   const species = getSpecies(creature.species);
   const shinyColours = creature.shiny ? shinyPalette(creature.species) : undefined;
@@ -109,6 +131,8 @@ export function CreatureHead({
   const sparkleFrame = creature.shiny && shinyColours === undefined;
   const sparkle = glyphOrUnknown('sparkle');
   const name = creatureName(creature);
+  const nameClass =
+    species === undefined ? 'cc-name' : `cc-name rarity-name rarity-${species.rarity}`;
   return (
     <div class="cc-head">
       <div class={`portrait${sparkleFrame ? ' sparkle-frame' : ''}`}>
@@ -127,21 +151,25 @@ export function CreatureHead({
         )}
       </div>
       <div class="cc-id">
-        <h3
-          id={nameId}
-          class={species === undefined ? 'cc-name' : `cc-name rarity-name rarity-${species.rarity}`}
-        >
-          <button
-            type="button"
-            class="cc-open"
-            title={name}
-            aria-label={`Open ${name}${species === undefined ? '' : `, ${species.rarity}`}`}
-            onClick={onOpen}
-          >
-            {name}
-          </button>
-        </h3>
-        <NameTags creature={creature} state={state} />
+        {onOpen === undefined ? (
+          <h2 id={nameId} class={`${nameClass} cc-name-page`}>
+            <span class="cc-name-text">{name}</span>
+            {species !== undefined && <span class="visually-hidden">, {species.rarity}</span>}
+          </h2>
+        ) : (
+          <h3 id={nameId} class={nameClass}>
+            <button
+              type="button"
+              class="cc-open"
+              title={name}
+              aria-label={`Open ${name}${species === undefined ? '' : `, ${species.rarity}`}`}
+              onClick={onOpen}
+            >
+              {name}
+            </button>
+          </h3>
+        )}
+        <NameTags creature={creature} state={state} help={onOpen === undefined} />
       </div>
     </div>
   );

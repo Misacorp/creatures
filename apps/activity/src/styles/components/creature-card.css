@@ -93,6 +93,12 @@ button.lounge-button {
   margin: 0.25rem 0 0.5rem;
 }
 
+/* The note under the ribbon button: what is missing, then the help tag. */
+.ribbon-note {
+  margin: 0.25rem 0 0;
+  font-size: var(--fs-small);
+}
+
 .ribbon-help {
-  margin-left: 0.5rem;
+  margin-left: 0.25rem;
 }
