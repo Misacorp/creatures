@@ -100,7 +100,9 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 
 2.4.2 A knocked-out creature is skipped. A silenced creature skips its turn and its silence counts down by one (6.4). Every other creature hits the boss (2.4.3). **Morning Haze** (`FightInput.skipFirstTurn`, 10.9): a creature named there also skips the first turn it reaches alive (a `skip` event with reason `haze`); if that turn was silenced anyway, the silence is the lost turn and the haze is spent on it, so it never costs two.
 
-2.4.3 A creature's hit on the boss deals its Attack, times the element matchup (`RULES.combat.strongBp` 150% against the element it beats, `weakBp` 75% against the element that beats it, otherwise 100%), times one combined bonus (Support boost, Rally, crit, mutators; they add together, then multiply once), minus the boss's resist if it has adapted. Then marks and reactions (section 5). After the hit (12) an Echo can land it again.
+2.4.3 A creature's hit on the boss deals its Attack, times the element matchup (read from the **element chart**: today 150% against the element it beats, 75% against the element that beats it, otherwise 100%), times one combined bonus (Support boost, Rally, crit, mutators; they add together, then multiply once), minus the boss's resist if it has adapted. Then marks and reactions (section 5). After the hit (12) an Echo can land it again.
+
+**The element chart** (`element-chart.json`) is a list of attacker-to-defender pairs, each with a multiplier in basis points: today Tide, Ember, Grove and Spark each deal 15000 to the next in the loop and 7500 to the one before. A pair that is not listed is 10000 (neutral). An element can be strong against, or weak to, several others; "strong" means exactly 150% (`CHART_STRONG_BP`). `matchupBp(attacker, defender)` reads the chart; foe hits on creatures ignore it. The chart's numbers are balance knobs (`docs/balance/scalars.md`).
 
 2.4.4 If the boss's pool reaches 0, or reaches its phase floor (section 7), the creatures after it do not act and the boss does not take its turn.
 
@@ -232,7 +234,7 @@ _Example._ A Support in the last slot of Front is beside the slot to its left on
 
 **5.2 Replacing.** If the boss has a mark and a hit does not set off a reaction: a Setter whose element is different replaces the mark. Any other creature changes nothing.
 
-**5.3 Cashing in.** A creature whose element is the reaction's trigger, and that hits a boss carrying that mark, sets off the reaction (`reactions.json`):
+**5.3 Cashing in.** A mark is set off by any element that deals 150% to the marking element on the element chart (2.4.3), so a mark can have more than one trigger. Each (mark, trigger element) pair is its own entry in `reactions.json` with its own id, name and numbers; entries of one mark share its mark id and name. A creature whose element is a trigger of the mark, and that hits a boss carrying it, sets off the reaction for that pair (the engine looks it up by mark element and trigger element). Content tests check that every reaction's trigger deals 150% to its mark and that every 150% pair has a reaction. Today each mark has one trigger:
 
 | Mark (element)    | Set off by | Reaction  |
 | ----------------- | ---------- | --------- |

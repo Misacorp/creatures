@@ -45,6 +45,7 @@ import {
   type Element,
   type EventOptionDef,
   type KeepsakeDef,
+  strongAgainst,
   type GearItem,
   type MapNode,
   type NodeKind,
@@ -353,9 +354,9 @@ export const POLICY = {
   longHp: 0.75,
 } as const;
 
-/** True when `attacker` is strong against `defender` (the elements' wheel, from content). */
+/** True when `attacker` deals 150% to `defender` (the element chart, from content). */
 export function elementBeats(attacker: Element, defender: Element): boolean {
-  return content.elements.find((e) => e.id === attacker)?.strongAgainst === defender;
+  return strongAgainst(content.elementChart, attacker).includes(defender);
 }
 
 /**

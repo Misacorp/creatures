@@ -219,12 +219,12 @@ How to read the tables:
 
 Each line exists once per element (X = Tide, Ember, Grove or Spark), so these four rows are 16 lines. An X-tagged base rolls its own X lines three times as often.
 
-| Line         | Effect                                                                                                    | I   | II  | III  | IV   | V    | Hat | Scarf | Charm | Rarity | Engine | Who wants it                                                                                 |
-| ------------ | --------------------------------------------------------------------------------------------------------- | --- | --- | ---- | ---- | ---- | --- | ----- | ----- | ------ | ------ | -------------------------------------------------------------------------------------------- |
-| X Attunement | Attack +% if the wearer is X                                                                              | +3% | +5% | +8%  | +11% | +14% | 30  | 10    | 40    | C R E  | Ready  | Any X creature: bigger than plain Attack, dead on the others                                 |
-| X Hunter     | Damage against foes of the element X beats +% (Tide Hunter: Ember foes)                                   | +4% | +7% | +10% | +13% | +17% | 40  | —     | 20    | C R E  | Sheet  | Anyone, when this week's boss or today's room is that element: a reason to swap gear by boss |
-| X Reaction   | The bonus of the reaction X sets off +% (Tide: Steam, Ember: Wildfire, Grove: Grounding, Spark: Overload) | +5% | +9% | +13% | +18% | +24% | 20  | —     | 50    | C R E  | Sheet  | The creature that cashes that reaction, Payoffs first                                        |
-| X Ward       | Damage from foes of the element that beats X −% (Tide Ward: Spark foes)                                   | −4% | −7% | −10% | −13% | −17% | —   | 50    | 10    | C R E  | Sheet  | Everyone, against that boss; X creatures most of all, since that boss counters them          |
+| Line         | Effect                                                                                                     | I   | II  | III  | IV   | V    | Hat | Scarf | Charm | Rarity | Engine | Who wants it                                                                                 |
+| ------------ | ---------------------------------------------------------------------------------------------------------- | --- | --- | ---- | ---- | ---- | --- | ----- | ----- | ------ | ------ | -------------------------------------------------------------------------------------------- |
+| X Attunement | Attack +% if the wearer is X                                                                               | +3% | +5% | +8%  | +11% | +14% | 30  | 10    | 40    | C R E  | Ready  | Any X creature: bigger than plain Attack, dead on the others                                 |
+| X Hunter     | Damage against foes of every element X deals 150% to on the element chart +% (Tide Hunter: Ember foes)     | +4% | +7% | +10% | +13% | +17% | 40  | —     | 20    | C R E  | Sheet  | Anyone, when this week's boss or today's room is that element: a reason to swap gear by boss |
+| X Reaction   | The bonus of the reactions X sets off +% (Tide: Steam, Ember: Wildfire, Grove: Grounding, Spark: Overload) | +5% | +9% | +13% | +18% | +24% | 20  | —     | 50    | C R E  | Sheet  | The creature that cashes that reaction, Payoffs first                                        |
+| X Ward       | Damage from foes of every element that deals 150% to X on the element chart −% (Tide Ward: Spark foes)     | −4% | −7% | −10% | −13% | −17% | —   | 50    | 10    | C R E  | Sheet  | Everyone, against that boss; X creatures most of all, since that boss counters them          |
 
 ### 5.3 Role lines
 

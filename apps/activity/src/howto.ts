@@ -30,7 +30,9 @@ export interface LoopStep {
 /**
  * The reactions as a loop of elements, starting at Tide (or the first mark's element): each step
  * goes from an element to the element that cashes its mark in. With the shipped content it is
- * Tide, Spark, Grove, Ember and back to Tide. Stops if the content does not close into a loop.
+ * Tide, Spark, Grove, Ember and back to Tide. A mark with several triggers follows the first reaction
+ * listed for it (the loop is the simple picture; the element chart has the full table). Stops if the
+ * content does not close into a loop.
  */
 export function reactionLoop(reactions: ContentPack['reactions'] = content.reactions): LoopStep[] {
   const start = reactions.some((r) => r.markElement === 'tide')

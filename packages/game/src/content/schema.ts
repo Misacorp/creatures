@@ -91,9 +91,25 @@ export type CreatureSpecies = v.InferOutput<typeof CreatureSpeciesSchema>;
 export const ElementDefSchema = v.strictObject({
   id: ElementSchema,
   name: NameSchema,
-  strongAgainst: ElementSchema,
 });
 export type ElementDef = v.InferOutput<typeof ElementDefSchema>;
+
+/**
+ * One pair of the element chart: a creature of `attacker` element hits a boss or foe of `defender`
+ * element for `bp` basis points of its damage (15000 strong, 7500 weak). A pair not listed deals
+ * 10000. "Strong" means exactly `CHART_STRONG_BP`: marks, Hunter and Ward lines read it that way.
+ */
+export const ElementChartPairSchema = v.strictObject({
+  attacker: ElementSchema,
+  defender: ElementSchema,
+  bp: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100_000)),
+});
+export type ElementChartPair = v.InferOutput<typeof ElementChartPairSchema>;
+export const ElementChartSchema = v.pipe(v.array(ElementChartPairSchema), v.maxLength(100));
+export type ElementChart = v.InferOutput<typeof ElementChartSchema>;
+
+/** The multiplier that counts as "strong" on the element chart (150%). */
+export const CHART_STRONG_BP = 15_000;
 
 // --- Raid content (M3) ---
 
@@ -112,8 +128,10 @@ export const TurnOrderSchema = v.picklist([
 export type TurnOrder = v.InferOutput<typeof TurnOrderSchema>;
 
 /**
- * A mark on the boss and the reaction that consumes it. The mark is identified by its element (the
- * element of the hits that apply it); `triggerElement` is the element that consumes it.
+ * A mark on the boss and one reaction that consumes it. The mark is identified by its element (the
+ * element of the hits that apply it); `triggerElement` is the element that consumes it. A mark can
+ * be set off by several elements: each (mark, trigger) pair is its own entry with its own id and
+ * name, and entries of one mark repeat the same `markId` and `markName`.
  */
 export const ReactionDefSchema = v.strictObject({
   id: IdSchema,
@@ -404,8 +422,9 @@ export type GuestDef = v.InferOutput<typeof GuestSchema>;
 export const ContentPackSchema = v.strictObject({
   version: PositiveInt,
   elements: v.pipe(v.array(ElementDefSchema), v.maxLength(8)),
+  elementChart: ElementChartSchema,
   creatures: v.pipe(v.array(CreatureSpeciesSchema), v.maxLength(1000)),
-  reactions: v.pipe(v.array(ReactionDefSchema), v.maxLength(8)),
+  reactions: v.pipe(v.array(ReactionDefSchema), v.maxLength(40)),
   bosses: v.pipe(v.array(BossSchema), v.maxLength(100)),
   adaptations: v.pipe(v.array(AdaptationSchema), v.maxLength(20)),
   finaleAbilities: v.pipe(v.array(FinaleAbilitySchema), v.maxLength(200)),

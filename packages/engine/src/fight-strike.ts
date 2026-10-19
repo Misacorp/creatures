@@ -9,6 +9,7 @@ import {
   pick,
   receivedHeal,
   rolls,
+  reactionKey,
   runHook,
   view,
   type Creature,
@@ -50,13 +51,13 @@ export function hitBoss(
     rules,
     rule,
     adaptationTarget,
-    reactionByMark,
+    reactionByPair,
     creatures,
     events,
     reactionsByType,
     damageByElement,
   } = state;
-  const matchup = matchupBp(c.element, boss.element, pack.elements);
+  const matchup = matchupBp(c.element, boss.element, pack.elementChart);
   const atk = strike === undefined ? c.atk : Math.floor((c.atk * strike.atkBp) / 10_000);
   const buffs = strike === undefined ? c.buffs : [];
   if (strike === undefined) c.buffs = [];
@@ -65,11 +66,10 @@ export function hitBoss(
 
   const m = c.mods;
 
-  let reaction: ReactionDef | undefined;
-  if (markBefore !== null) {
-    const candidate = reactionByMark.get(markBefore.element);
-    if (candidate !== undefined && candidate.triggerElement === c.element) reaction = candidate;
-  }
+  const reaction: ReactionDef | undefined =
+    markBefore === null
+      ? undefined
+      : reactionByPair.get(reactionKey(markBefore.element, c.element));
   const trapped = reaction !== undefined && c.alive && state.reflectArmed && !state.reflectUsed;
   if (trapped) state.reflectUsed = true;
   // A gear set turns the trap aside for the creature's first reaction of the fight (`unreflected`).

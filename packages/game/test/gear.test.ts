@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  content,
   craftScrapCost,
   ELEMENTS,
   GEAR_SLOTS,
@@ -1028,6 +1029,38 @@ describe('folding worn items', () => {
     expect(fx.mods.reactionBp).toEqual({ wildfire: 2_400 });
     expect(fx.mods.besideRoleBp).toEqual({ guard: 1_700 });
     expect(fx.mods.chargedBp).toBe(2_500);
+  });
+
+  it('folds Hunter, Ward and reaction lines over every element the chart names', () => {
+    // A test-only chart: Tide also deals 150% to Grove, and Ember sets off a second reaction.
+    const chartLength = content.elementChart.length;
+    const reactionsLength = content.reactions.length;
+    const steam = content.reactions.find((r) => r.triggerElement === 'tide');
+    if (steam === undefined) throw new Error('no Steam');
+    try {
+      content.elementChart.push({ attacker: 'tide', defender: 'grove', bp: 15_000 });
+      content.elementChart.push({ attacker: 'ember', defender: 'tide', bp: 15_000 });
+      content.reactions.push({ ...steam, id: 'extra', triggerElement: 'ember' });
+      const fx = wornEffects(payoff, [
+        item('kelp-cap', 'epic', 20, [
+          ['tide-hunter', 4],
+          ['ember-reaction', 4],
+          ['guards-shadow', 4],
+        ]),
+        item('seafoam-scarf', 'epic', 20, [
+          ['tide-ward', 4],
+          ['ember-ward', 0],
+          ['brace', 4],
+        ]),
+      ]);
+      // Hunter: every element Tide deals 150% to. Ward: every element that deals 150% to Tide.
+      expect(fx.mods.vsElementBp).toEqual({ ember: 1_700, grove: 1_700 });
+      expect(fx.mods.wardBp).toEqual({ spark: 1_700, ember: 1_700, tide: 400 });
+      expect(fx.mods.reactionBp).toEqual({ wildfire: 2_400, extra: 2_400 });
+    } finally {
+      content.elementChart.length = chartLength;
+      content.reactions.length = reactionsLength;
+    }
   });
 
   it('sums every plain sheet line across items, and keeps Lingering to 3 rounds and Unbothered a switch', () => {

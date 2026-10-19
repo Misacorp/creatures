@@ -46,6 +46,7 @@ import {
 } from '../src/index';
 import creaturesJson from '../src/content/data/creatures.json';
 import elementsJson from '../src/content/data/elements.json';
+import elementChartJson from '../src/content/data/element-chart.json';
 import reactionsJson from '../src/content/data/reactions.json';
 import bossesJson from '../src/content/data/bosses.json';
 import adaptationsJson from '../src/content/data/adaptations.json';
@@ -696,6 +697,7 @@ describe('branches in the content', () => {
     clone({
       version: 1,
       elements: elementsJson,
+      elementChart: elementChartJson,
       creatures: creaturesJson,
       reactions: reactionsJson,
       bosses: bossesJson,

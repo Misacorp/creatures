@@ -178,9 +178,6 @@ export const RULES = {
     leetBonusByCount: [0, 15, 15, 17, 19, 21, 23, 25, 27, 29, 32] as readonly number[],
   },
   combat: {
-    /** Element matchup multipliers in basis points. */
-    strongBp: 15_000,
-    weakBp: 7_500,
     /** Support: extra damage on each neighbour's next hit. */
     supportBuffBp: 1_500,
     /**

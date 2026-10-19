@@ -63,13 +63,16 @@ export function rowReactions(
   reactions: readonly ReactionDef[] = content.reactions,
   rounds: number = ORDER_ROUNDS,
 ): RowReaction[] {
-  const byMark = new Map(reactions.map((r) => [r.markElement, r]));
   const out: RowReaction[] = [];
   let mark: { element: Element; by: number } | null = null;
   for (let round = 1; round <= rounds; round++) {
     for (const [slot, c] of row.entries()) {
-      const reaction = mark === null ? undefined : byMark.get(mark.element);
-      if (mark !== null && reaction !== undefined && reaction.triggerElement === c.element) {
+      const marked = mark?.element;
+      const reaction =
+        marked === undefined
+          ? undefined
+          : reactions.find((r) => r.markElement === marked && r.triggerElement === c.element);
+      if (mark !== null && reaction !== undefined) {
         out.push({ round, marker: mark.by, payoff: slot, reaction: reaction.id });
         mark = null;
       } else if (mark === null || (c.role === 'setter' && mark.element !== c.element)) {

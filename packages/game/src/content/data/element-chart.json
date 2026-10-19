@@ -1,0 +1,42 @@
+[
+  {
+    "attacker": "tide",
+    "defender": "ember",
+    "bp": 15000
+  },
+  {
+    "attacker": "ember",
+    "defender": "grove",
+    "bp": 15000
+  },
+  {
+    "attacker": "grove",
+    "defender": "spark",
+    "bp": 15000
+  },
+  {
+    "attacker": "spark",
+    "defender": "tide",
+    "bp": 15000
+  },
+  {
+    "attacker": "ember",
+    "defender": "tide",
+    "bp": 7500
+  },
+  {
+    "attacker": "grove",
+    "defender": "ember",
+    "bp": 7500
+  },
+  {
+    "attacker": "spark",
+    "defender": "grove",
+    "bp": 7500
+  },
+  {
+    "attacker": "tide",
+    "defender": "spark",
+    "bp": 7500
+  }
+]

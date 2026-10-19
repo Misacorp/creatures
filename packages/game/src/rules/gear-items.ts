@@ -14,6 +14,7 @@
  * reactions, wards, roles, utility).
  */
 import { content } from '../content';
+import { strongAgainst, strongOver } from '../content/element-chart';
 import { eligibleBases, gearBase, gearContent, gearLine, gearSet } from '../content/gear';
 import {
   CHANCE_FIELDS,
@@ -639,25 +640,11 @@ export interface WornEffects {
   idleTalents: string[];
 }
 
-/** The element that `element` is strong against (Tide beats Ember). */
-function beatenBy(element: Element): Element {
-  const found = content.elements.find((e) => e.id === element);
-  if (found === undefined) throw new Error(`unknown element "${element}"`);
-  return found.strongAgainst;
-}
-
-/** The element that is strong against `element` (Spark beats Tide). */
-function beaterOf(element: Element): Element {
-  const found = content.elements.find((e) => e.strongAgainst === element);
-  if (found === undefined) throw new Error(`nothing beats "${element}"`);
-  return found.id;
-}
-
-/** The id of the reaction an element sets off (Tide: steam). */
-function reactionOf(element: Element): string {
-  const found = content.reactions.find((r) => r.triggerElement === element);
-  if (found === undefined) throw new Error(`no reaction is set off by "${element}"`);
-  return found.id;
+/** The ids of the reactions an element sets off (Tide: steam; Mire later adds a second for Ember). */
+function reactionsOf(element: Element): string[] {
+  const found = content.reactions.filter((r) => r.triggerElement === element);
+  if (found.length === 0) throw new Error(`no reaction is set off by "${element}"`);
+  return found.map((r) => r.id);
 }
 
 type SheetNumeric =
@@ -798,8 +785,8 @@ const CAPPED_SET: ReadonlySet<string> = new Set(CAPPED_AT_WHOLE);
 /**
  * Everything a creature's worn items give, summed. Lines that do nothing for the wearer (a Guard's
  * armor on a Support, an Attunement of another element) are listed in `idle` and add nothing. The
- * sheet's conditions are resolved here: an element Hunter becomes a bonus against the element it beats,
- * an element Ward a reduction against the element that beats it, a reaction line the bonus of that
+ * sheet's conditions are resolved here: an element Hunter becomes a bonus against every element it deals 150% to,
+ * an element Ward a reduction against every element that deals 150% to it, a reaction line the bonus of that
  * reaction, a position line the bonus beside a role. Pure and deterministic; no caps beyond the ones
  * the engine's sheet checks (a reduction stays below 100%, a pierce at most 100%, Lingering at most 3 rounds).
  *
@@ -864,17 +851,23 @@ export function wornEffects(
         // Counted in the item's own stats (`itemStats`), not on the creature.
         break;
       case 'hunter': {
-        const foe = beatenBy(line.element as Element);
-        sheet.vsElementBp = addTo(sheet.vsElementBp, foe, value);
+        // Foes of every element the Hunter's element deals 150% to.
+        for (const foe of strongAgainst(content.elementChart, line.element as Element)) {
+          sheet.vsElementBp = addTo(sheet.vsElementBp, foe, value);
+        }
         break;
       }
       case 'ward': {
-        const foe = beaterOf(line.element as Element);
-        sheet.wardBp = addTo(sheet.wardBp, foe, value);
+        // Foes of every element that deals 150% to the Ward's element.
+        for (const foe of strongOver(content.elementChart, line.element as Element)) {
+          sheet.wardBp = addTo(sheet.wardBp, foe, value);
+        }
         break;
       }
       case 'reaction':
-        sheet.reactionBp = addTo(sheet.reactionBp, reactionOf(line.element as Element), value);
+        for (const id of reactionsOf(line.element as Element)) {
+          sheet.reactionBp = addTo(sheet.reactionBp, id, value);
+        }
         break;
       case 'besideRole':
         sheet.besideRoleBp = addTo(sheet.besideRoleBp, effect.role, value);
@@ -928,7 +921,9 @@ export function wornEffects(
         break;
       case 'fourElements':
         if (new Set(at.rowElements).size >= 4) {
-          sheet.reactionBp = addTo(sheet.reactionBp, reactionOf(wearer.element), value);
+          for (const id of reactionsOf(wearer.element)) {
+            sheet.reactionBp = addTo(sheet.reactionBp, id, value);
+          }
         }
         break;
       case 'sheltered':

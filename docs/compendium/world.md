@@ -44,7 +44,7 @@ The four elements are forces of the world, not just colours. The journal states 
 
 ### The wheel (content)
 
-Each element is **strong against** exactly one other. `(content: elements.json)`
+Each element is **strong against** exactly one other. `(content: element-chart.json)`
 
 | Element | Force        | Strong against | Weak to (beaten by) |
 | ------- | ------------ | -------------- | ------------------- |

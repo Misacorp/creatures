@@ -82,6 +82,11 @@ export function contentCollections(): ContentCollection[] {
       items: content.creatures,
       ignoreKeys: ['stage'],
     },
+    {
+      name: 'elementChart',
+      system: 'content/element-chart.json',
+      items: content.elementChart.map((p) => ({ id: `${p.attacker}-${p.defender}`, bp: p.bp })),
+    },
     { name: 'reactions', system: 'content/reactions.json', items: content.reactions },
     { name: 'bosses', system: 'content/bosses.json', items: content.bosses },
     { name: 'adaptations', system: 'content/adaptations.json', items: content.adaptations },

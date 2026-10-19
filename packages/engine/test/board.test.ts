@@ -94,6 +94,30 @@ describe('zones', () => {
 });
 
 describe('matchups', () => {
+  it('reads the element chart: all 16 pairs equal the old strong, weak and neutral rule', () => {
+    const cycle = ['tide', 'ember', 'grove', 'spark'] as const;
+    for (const a of cycle) {
+      for (const d of cycle) {
+        const beats = cycle[(cycle.indexOf(a) + 1) % 4];
+        const beaten = cycle[(cycle.indexOf(d) + 1) % 4];
+        const old = beats === d ? 15_000 : beaten === a ? 7_500 : 10_000;
+        expect(matchupBp(a, d), `${a} on ${d}`).toBe(old);
+      }
+    }
+  });
+
+  it('takes any chart: an unlisted pair is 100% and several strong pairs can share an attacker', () => {
+    const chart = [
+      { attacker: 'tide' as const, defender: 'ember' as const, bp: 15_000 },
+      { attacker: 'tide' as const, defender: 'grove' as const, bp: 15_000 },
+      { attacker: 'ember' as const, defender: 'tide' as const, bp: 7_500 },
+    ];
+    expect(matchupBp('tide', 'ember', chart)).toBe(15_000);
+    expect(matchupBp('tide', 'grove', chart)).toBe(15_000);
+    expect(matchupBp('ember', 'tide', chart)).toBe(7_500);
+    expect(matchupBp('grove', 'tide', chart)).toBe(10_000);
+  });
+
   it('follows Tide > Ember > Grove > Spark > Tide', () => {
     const cycle = ['tide', 'ember', 'grove', 'spark'] as const;
     for (let i = 0; i < 4; i++) {

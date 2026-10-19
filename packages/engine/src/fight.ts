@@ -27,6 +27,7 @@ import { firingIndex, gimmickDue, sweepRow } from './gimmick-schedule';
 import {
   baseContext,
   pick,
+  reactionKey,
   runHook,
   type Creature,
   type Dice,
@@ -191,8 +192,9 @@ export function simulateFight(
     if (!ids.has(id)) fail(`skipFirstTurn names unknown creature "${id}"`);
   }
 
-  const reactionByMark = new Map<Element, ReactionDef>();
-  for (const r of pack.reactions) reactionByMark.set(r.markElement, r);
+  const reactionByPair = new Map<string, ReactionDef>();
+  for (const r of pack.reactions)
+    reactionByPair.set(reactionKey(r.markElement, r.triggerElement), r);
   const abilityDefs = new Map<string, FinaleAbilityDef>();
   for (const a of pack.finaleAbilities) abilityDefs.set(a.id, a);
 
@@ -381,7 +383,7 @@ export function simulateFight(
     luckOn,
     rule,
     adaptationTarget,
-    reactionByMark,
+    reactionByPair,
     guardReach,
     zoneHit,
     creatures,

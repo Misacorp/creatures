@@ -9,7 +9,11 @@ import {
   dungeonContent,
   dungeonEvents,
   dungeonKeepsakes,
+  CHART_STRONG_BP,
   RULES,
+  chartBp,
+  strongAgainst,
+  weakAgainst,
   abilityView,
   content,
   glossary,
@@ -232,15 +236,19 @@ describe('the glossary text matches the rules', () => {
     const name = (id: string): string => content.elements.find((e) => e.id === id)?.name ?? '?';
     for (const el of content.elements) {
       const e = entry(GLOSSARY_IDS.element(el.id));
-      const weakTo = content.elements.find((o) => o.strongAgainst === el.id);
+      const chart = content.elementChart;
       const reaction = content.reactions.find((r) => r.markElement === el.id);
       expect(e.title).toBe(el.name);
-      expect(e.lines[0]).toContain(name(el.strongAgainst));
-      expect(e.lines[0]).toContain(percent(RULES.combat.strongBp - 10_000));
-      expect(e.lines[1]).toContain(name(weakTo?.id ?? ''));
-      expect(e.lines[1]).toContain(percent(10_000 - RULES.combat.weakBp));
+      for (const id of strongAgainst(chart, el.id)) expect(e.lines[0]).toContain(name(id));
+      expect(e.lines[0]).toContain(percent(CHART_STRONG_BP - 10_000));
+      for (const id of weakAgainst(chart, el.id)) {
+        expect(e.lines[1]).toContain(name(id));
+        expect(e.lines[1]).toContain(percent(10_000 - chartBp(chart, el.id, id)));
+      }
       expect(e.lines[2]).toContain(reaction?.markName);
-      expect(e.lines[2]).toContain(name(reaction?.triggerElement ?? ''));
+      for (const r of content.reactions.filter((x) => x.markElement === el.id)) {
+        expect(e.lines[2]).toContain(name(r.triggerElement));
+      }
     }
   });
 

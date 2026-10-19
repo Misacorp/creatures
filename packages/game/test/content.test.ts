@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CHART_STRONG_BP,
   RULES,
   abilitiesFor,
+  chartBp,
+  joinNames,
+  resists,
+  strongAgainst,
+  strongOver,
+  weakAgainst,
+  type Element,
   basicAbilities,
   content,
   loadContent,
@@ -15,6 +23,7 @@ import {
 } from '../src/index';
 import creaturesJson from '../src/content/data/creatures.json';
 import elementsJson from '../src/content/data/elements.json';
+import elementChartJson from '../src/content/data/element-chart.json';
 import reactionsJson from '../src/content/data/reactions.json';
 import bossesJson from '../src/content/data/bosses.json';
 import adaptationsJson from '../src/content/data/adaptations.json';
@@ -29,6 +38,7 @@ function clone(): ContentPack {
   return deepClone({
     version: 1,
     elements: elementsJson,
+    elementChart: elementChartJson,
     creatures: creaturesJson,
     reactions: reactionsJson,
     bosses: bossesJson,
@@ -279,29 +289,32 @@ describe('loadContent rejects invalid content', () => {
     );
   });
 
-  it('a broken element cycle', () => {
-    const setStrong = (
-      p: ContentPack,
-      id: string,
-      strongAgainst: ContentPack['elements'][number]['strongAgainst'],
-    ) => {
-      const def = p.elements.find((e) => e.id === id);
-      if (!def) throw new Error('missing element');
-      def.strongAgainst = strongAgainst;
-    };
-    // Two 2-cycles instead of one 4-cycle.
+  it('a broken element chart', () => {
+    // A pair against itself, a pair listed twice, and a neutral pair written out.
     expect(() =>
       loadContent(
-        mutate((p) => {
-          setStrong(p, 'tide', 'ember');
-          setStrong(p, 'ember', 'tide');
-          setStrong(p, 'grove', 'spark');
-          setStrong(p, 'spark', 'grove');
-        }),
+        mutate((p) => p.elementChart.push({ attacker: 'tide', defender: 'tide', bp: 15_000 })),
       ),
-    ).toThrow(/single cycle/);
-    // Self-loop.
-    expect(() => loadContent(mutate((p) => setStrong(p, 'tide', 'tide')))).toThrow(/single cycle/);
+    ).toThrow(/with itself/);
+    expect(() =>
+      loadContent(
+        mutate((p) => p.elementChart.push({ attacker: 'tide', defender: 'ember', bp: 9_000 })),
+      ),
+    ).toThrow(/twice/);
+    expect(() =>
+      loadContent(
+        mutate((p) => p.elementChart.push({ attacker: 'tide', defender: 'grove', bp: 10_000 })),
+      ),
+    ).toThrow(/100%/);
+    // A strong pair with no reaction, and a reaction whose trigger is not strong.
+    expect(() =>
+      loadContent(
+        mutate((p) => p.elementChart.push({ attacker: 'tide', defender: 'grove', bp: 15_000 })),
+      ),
+    ).toThrow(/no reaction for mark "grove"/);
+    expect(() =>
+      loadContent(mutate((p) => ((p.elementChart[0] as { bp: number }).bp = 12_000))),
+    ).toThrow(/must be triggered by/);
     // Missing and duplicate elements.
     expect(() => loadContent(mutate((p) => p.elements.pop()))).toThrow(/expected 4 elements/);
     expect(() =>
@@ -316,6 +329,59 @@ describe('loadContent rejects invalid content', () => {
 });
 
 describe('raid content', () => {
+  it('has the element chart of the four-element wheel', () => {
+    const wheel: [string, string][] = [
+      ['tide', 'ember'],
+      ['ember', 'grove'],
+      ['grove', 'spark'],
+      ['spark', 'tide'],
+    ];
+    expect(content.elementChart).toHaveLength(8);
+    for (const [a, d] of wheel) {
+      expect(chartBp(content.elementChart, a as Element, d as Element)).toBe(15_000);
+      expect(chartBp(content.elementChart, d as Element, a as Element)).toBe(7_500);
+    }
+    // The chart's numbers are the ones the rules named before the chart (balance docs use them).
+    expect(CHART_STRONG_BP).toBe(15_000);
+    // Pairs that are not listed deal 100%, itself included.
+    expect(chartBp(content.elementChart, 'tide', 'grove')).toBe(10_000);
+    expect(chartBp(content.elementChart, 'tide', 'tide')).toBe(10_000);
+  });
+
+  it('reads strong and weak elements off the chart, in chart order, any number of them', () => {
+    const chart = [
+      ...content.elementChart,
+      { attacker: 'tide' as const, defender: 'grove' as const, bp: 15_000 },
+      { attacker: 'grove' as const, defender: 'tide' as const, bp: 7_500 },
+    ];
+    expect(strongAgainst(content.elementChart, 'tide')).toEqual(['ember']);
+    expect(strongAgainst(chart, 'tide')).toEqual(['ember', 'grove']);
+    expect(strongOver(content.elementChart, 'ember')).toEqual(['tide']);
+    expect(strongOver(chart, 'grove')).toEqual(['ember', 'tide']);
+    expect(weakAgainst(chart, 'grove')).toEqual(['ember', 'tide']);
+    expect(resists(chart, 'tide')).toEqual(['ember', 'grove']);
+    expect(joinNames([])).toBe('');
+    expect(joinNames(['Tide'])).toBe('Tide');
+    expect(joinNames(['Tide', 'Mire'])).toBe('Tide and Mire');
+    expect(joinNames(['Tide', 'Mire', 'Ember'])).toBe('Tide, Mire and Ember');
+  });
+
+  it('has a reaction for every strong pair, and every reaction trigger is strong against its mark', () => {
+    for (const r of content.reactions) {
+      expect(chartBp(content.elementChart, r.triggerElement, r.markElement), r.id).toBe(
+        CHART_STRONG_BP,
+      );
+    }
+    for (const p of content.elementChart.filter((x) => x.bp === CHART_STRONG_BP)) {
+      expect(
+        content.reactions.filter(
+          (r) => r.markElement === p.defender && r.triggerElement === p.attacker,
+        ),
+        `${p.attacker} on ${p.defender}`,
+      ).toHaveLength(1);
+    }
+  });
+
   it('has the four marks and reactions with the specified triggers', () => {
     const table = Object.fromEntries(
       content.reactions.map((r) => [r.markId, [r.markElement, r.triggerElement, r.name]]),

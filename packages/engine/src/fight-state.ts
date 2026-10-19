@@ -137,7 +137,8 @@ export interface FightState {
   readonly luckOn: boolean;
   readonly rule: AdaptationDef | null;
   readonly adaptationTarget: string;
-  readonly reactionByMark: ReadonlyMap<Element, ReactionDef>;
+  /** The reaction of each (mark element, trigger element) pair, by `reactionKey`. */
+  readonly reactionByPair: ReadonlyMap<string, ReactionDef>;
   readonly guardReach: 'zone' | 'adjacent';
   /** The first zone attack of the boss, where the default Shield Wall goes. */
   readonly zoneHit: { round: number; zone: Zone } | null;
@@ -330,4 +331,9 @@ export function receivedHeal(c: Creature, healed: number): number {
   return c.mods.healReceivedBp === 0
     ? healed
     : Math.floor((healed * Math.max(0, 10_000 + c.mods.healReceivedBp)) / 10_000);
+}
+
+/** The key of a (mark element, trigger element) pair in `reactionByPair`. */
+export function reactionKey(mark: Element, trigger: Element): string {
+  return `${mark}<${trigger}`;
 }

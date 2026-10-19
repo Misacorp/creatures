@@ -229,7 +229,9 @@ function ComboExample() {
   const { setter, payoff, title, lines } = howToPlay.example;
   const setterSpecies = content.creatures.find((c) => c.id === setter);
   const payoffSpecies = content.creatures.find((c) => c.id === payoff);
-  const reaction = content.reactions.find((r) => r.markElement === setterSpecies?.element);
+  const reaction = content.reactions.find(
+    (r) => r.markElement === setterSpecies?.element && r.triggerElement === payoffSpecies?.element,
+  );
   if (setterSpecies === undefined || payoffSpecies === undefined || reaction === undefined) {
     return null;
   }
