@@ -17,6 +17,7 @@ import { abilityDef } from './live';
 import { Accordion } from './ui/Accordion';
 import { ActionButton } from './ui/ActionButton';
 import { ArmchairIcon } from './ui/ArmchairIcon';
+import { DataTable, type DataRow } from './ui/DataTable';
 import { handleFlipKey } from './ui/flip-keys';
 import type { FlipProps } from './ui/flip-logic';
 import { FlipArea, FlipNav } from './ui/Flipper';
@@ -28,8 +29,8 @@ export interface CardActions {
   /** Earns the ribbon the creature waits for (materials only). */
   onRibbon: (creature: Creature) => void;
   /**
-   * Evolves the creature. `species` is the form chosen on the evolve screen; none means the line has one form
-   * and the screen is skipped (the screen that owns the cards decides which).
+   * Evolves the creature, or opens the evolve screen first (the screen that owns the cards decides: every
+   * evolve goes through it). `species` is the form picked there; none lets the server take the line's form.
    */
   onEvolve: (creature: Creature, species?: string) => void;
   onRename: (creature: Creature, nickname: string | null) => void;
@@ -79,32 +80,21 @@ export function RenameForm({
 }
 
 /** One stat with gear folded in, and the gear's own share next to it in the gear colour ("ATK 79 +12"). */
-function StatRow({
-  label,
-  stat,
-  creature,
-}: {
-  label: string;
-  stat: 'hp' | 'atk' | 'spd';
-  creature: Creature;
-}) {
+function statRow(label: string, stat: 'hp' | 'atk' | 'spd', creature: Creature): DataRow {
   const share = gearShare(creature).find((s) => s.stat === stat)?.amount ?? 0;
-  return (
-    <>
-      <dt>{label}</dt>
-      <dd>
-        {creature.statsWithGear[stat]}
-        {share > 0 && (
-          <>
-            {' '}
+  return {
+    label,
+    value: creature.statsWithGear[stat],
+    ...(share > 0
+      ? {
+          extra: (
             <span class="gear-share" aria-label={`plus ${String(share)} from gear`}>
               +{share}
             </span>
-          </>
-        )}
-      </dd>
-    </>
-  );
+          ),
+        }
+      : {}),
+  };
 }
 
 /** Which drawer is up: an item picker for a gear slot, the Talent Book for a talent slot, or none. */
@@ -281,11 +271,14 @@ export function CreaturePage({
 
         <div class="cp-block">
           <h3 class="cp-title">Stats</h3>
-          <dl class="sheet-stats">
-            <StatRow label="HP" stat="hp" creature={creature} />
-            <StatRow label="Attack" stat="atk" creature={creature} />
-            <StatRow label="Speed" stat="spd" creature={creature} />
-          </dl>
+          <DataTable
+            tabular
+            rows={[
+              statRow('HP', 'hp', creature),
+              statRow('Attack', 'atk', creature),
+              statRow('Speed', 'spd', creature),
+            ]}
+          />
         </div>
 
         {showAbility && (
@@ -345,31 +338,27 @@ export function CreaturePage({
             </>
           )}
           {personality !== null && <p class="muted">{personality}</p>}
-          <dl class="sheet-facts">
-            <div class="sheet-fact">
-              <dt>
-                <GlossaryTag entry="fusion">Fusion</GlossaryTag>
-              </dt>
-              <dd>
-                <span class="stars" aria-hidden="true">
-                  {fusionStars(creature.fusionCount)}
-                </span>{' '}
-                {creature.fusionCount} / 5
-              </dd>
-            </div>
-            <div class="sheet-fact">
-              <dt>
-                <GlossaryTag entry="ribbon">Ribbons</GlossaryTag>
-              </dt>
-              <dd>{ribbonsHeldText(creature.ribbons)}</dd>
-            </div>
-            {explorerFacts(creature.explorer).map((fact) => (
-              <div class="sheet-fact" key={fact.label}>
-                <dt>{fact.label}</dt>
-                <dd>{fact.value}</dd>
-              </div>
-            ))}
-          </dl>
+          <DataTable
+            class="sheet-facts"
+            rows={[
+              {
+                label: <GlossaryTag entry="fusion">Fusion</GlossaryTag>,
+                value: (
+                  <>
+                    <span class="stars" aria-hidden="true">
+                      {fusionStars(creature.fusionCount)}
+                    </span>{' '}
+                    {creature.fusionCount} / 5
+                  </>
+                ),
+              },
+              {
+                label: <GlossaryTag entry="ribbon">Ribbons</GlossaryTag>,
+                value: ribbonsHeldText(creature.ribbons),
+              },
+              ...explorerFacts(creature.explorer),
+            ]}
+          />
         </Accordion>
 
         <RenameForm creature={creature} busy={busy} onRename={actions.onRename} />

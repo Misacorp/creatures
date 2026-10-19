@@ -361,27 +361,9 @@ button.cp-back {
   outline: none;
 }
 
-.sheet-stats {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.125rem 0.75rem;
-  margin: 0;
-  font-size: var(--fs-row);
-}
-
-.sheet-stats dd {
-  font-variant-numeric: tabular-nums;
-}
-
-.sheet-facts {
-  margin: 0.5rem 0 0;
-}
-
-.sheet-fact {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.0625rem 0;
+/* The facts under the About text are a data table (ui/DataTable); only the gap above it is the page's. */
+.data-table.sheet-facts {
+  margin-top: 0.5rem;
 }
 
 .creature-page .rename {

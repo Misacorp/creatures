@@ -58,6 +58,7 @@
 @import './components/gear-tokens.css';
 @import './components/item-frame.css';
 @import './components/count-badge.css';
+@import './components/data-table.css';
 @import './views/workshop.css';
 @import './views/item-detail.css';
 @import './components/picker.css';

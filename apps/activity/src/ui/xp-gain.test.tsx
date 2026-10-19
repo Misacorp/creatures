@@ -92,7 +92,7 @@ function draw(view: ExperienceView, host = false): Page {
 
 /** The breakdown's lines, each as "name value". */
 const breakdown = (dialog: FakeElement): string[] =>
-  byClass(dialog, 'xp-boost-line').map((line) =>
+  byClass(dialog, 'data-row').map((line) =>
     find(line, (el) => el.localName === 'dt' || el.localName === 'dd')
       .map(visibleText)
       .join(' '),
@@ -297,7 +297,7 @@ describe('the multiplier', () => {
     expect(visibleText(first(byClass(p.root, 'xp-times')))).toBe('3x');
     expect(dialog.getAttribute('aria-label')).toBe('What changed the experience');
     // The treat icon is the prefix of the Treat line only: not before the title, not on another line.
-    const lines = byClass(dialog, 'xp-boost-line');
+    const lines = byClass(dialog, 'data-row');
     expect(lines.map((line) => byClass(line, 'xp-boost-icon').length)).toEqual([1, 0, 0, 0]);
     expect(byClass(dialog, 'xp-boost-icon')).toHaveLength(1);
     expect(byClass(dialog, 'pop-visual')).toHaveLength(0);

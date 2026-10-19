@@ -14,7 +14,7 @@ vi.mock('./api', async (importOriginal) => ({
 
 import { ApiError, parseGameState } from './api';
 import { parseClaimResponse } from './expedition-api';
-import { evolveForms, hasBranches } from './evolve-view';
+import { evolveForms } from './evolve-view';
 import { errorText } from './game';
 import { chooseCatch } from './talent-api';
 import { pendingFind } from './find-view';
@@ -29,14 +29,14 @@ describe('a creature whose line grows two ways', () => {
     const parsed = parseGameState(state);
     const sproutle = parsed.creatures.find((c) => c.species === 'sproutle');
     expect(sproutle).toBeDefined();
-    expect(hasBranches(sproutle ?? {})).toBe(true);
+    expect(sproutle?.evolution?.alt).toBeDefined();
     expect(evolveForms(sproutle ?? { level: 1, fusionCount: 0 }).map((f) => f.species)).toEqual([
       'thornbuck',
       'sunfawn',
     ]);
     // Every evolving line has two forms now: a Cindle can grow into Pyrelynx or Wickat.
     const cindle = parsed.creatures.find((c) => c.species === 'cindle');
-    expect(hasBranches(cindle ?? {})).toBe(true);
+    expect(cindle?.evolution?.alt).toBeDefined();
     expect(evolveForms(cindle ?? { level: 1, fusionCount: 0 }).map((f) => f.species)).toEqual([
       'pyrelynx',
       'wickat',

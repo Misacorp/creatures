@@ -12,7 +12,46 @@ import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { CountBadge } from './ui/CountBadge';
 import { Drawer } from './ui/Drawer';
 
-/** One form to pick: its picture, name, element and role, its ability and the numbers it would have. */
+/** What is on a form's card: its picture, name, element and role, its ability and the numbers it would have. */
+function FormCard({ form, shiny, bob }: { form: EvolveForm; shiny: boolean; bob: boolean }) {
+  const palette = shiny ? shinyPalette(form.species) : undefined;
+  return (
+    <>
+      <Sprite
+        sprite={creatureSpriteOrFallback(form.species)}
+        scale={4}
+        bob={bob}
+        {...(palette === undefined ? {} : { palette })}
+      />
+      <strong class="pix evolve-name">{form.name}</strong>
+      <span class="evolve-tags">
+        <ElementChip element={form.element} role={form.role} as="plain" />
+      </span>
+      {form.ability !== null && (
+        <span class="evolve-ability">
+          <strong class="pix">{form.ability.name}</strong>
+          <span>{form.ability.text}</span>
+        </span>
+      )}
+      <dl class="evolve-stats">
+        <div>
+          <dt>HP</dt>
+          <dd>{form.stats.hp}</dd>
+        </div>
+        <div>
+          <dt>Atk</dt>
+          <dd>{form.stats.atk}</dd>
+        </div>
+        <div>
+          <dt>Spd</dt>
+          <dd>{form.stats.spd}</dd>
+        </div>
+      </dl>
+    </>
+  );
+}
+
+/** One form to pick: a button holding its card; the picked one has a gold frame. */
 function FormChoice({
   form,
   shiny,
@@ -26,7 +65,6 @@ function FormChoice({
   disabled: boolean;
   onPick: () => void;
 }) {
-  const palette = shiny ? shinyPalette(form.species) : undefined;
   return (
     <li>
       <button
@@ -36,47 +74,19 @@ function FormChoice({
         disabled={disabled}
         onClick={onPick}
       >
-        <Sprite
-          sprite={creatureSpriteOrFallback(form.species)}
-          scale={4}
-          bob={picked}
-          {...(palette === undefined ? {} : { palette })}
-        />
-        <strong class="pix evolve-name">{form.name}</strong>
-        <span class="evolve-tags">
-          <ElementChip element={form.element} role={form.role} as="plain" />
-        </span>
-        {form.ability !== null && (
-          <span class="evolve-ability">
-            <strong class="pix">{form.ability.name}</strong>
-            <span>{form.ability.text}</span>
-          </span>
-        )}
-        <dl class="evolve-stats">
-          <div>
-            <dt>HP</dt>
-            <dd>{form.stats.hp}</dd>
-          </div>
-          <div>
-            <dt>Atk</dt>
-            <dd>{form.stats.atk}</dd>
-          </div>
-          <div>
-            <dt>Spd</dt>
-            <dd>{form.stats.spd}</dd>
-          </div>
-        </dl>
+        <FormCard form={form} shiny={shiny} bob={picked} />
       </button>
     </li>
   );
 }
 
 /**
- * The evolve screen of a line that grows two ways (every evolving line does: Sproutle is Thornbuck or
- * Sunfawn, Mossback is Ancientshell or Bloomback), in a Drawer: both forms side by side, then one button for the form that is picked, with one
- * line that the choice is permanent. Nothing is picked at first: there is no default for a choice that
- * cannot be undone. A line with one form never opens this (it evolves at once). The server checks the
- * form, the level and the Essence; this only asks.
+ * The evolve screen, in a Drawer, for every evolve. A line that grows two ways (every evolving line does:
+ * Sproutle is Thornbuck or Sunfawn, Mossback is Ancientshell or Bloomback) shows both forms side by side,
+ * then one button for the form that is picked, with one line that the choice is permanent. Nothing is
+ * picked at first: there is no default for a choice that cannot be undone. A line with one form shows that
+ * form on one card and has it picked already (there is no choice to make, and no sentence about it: the
+ * card shows it), so the button works at once. The server checks the form, the level and the Essence; this only asks.
  */
 export function EvolveDrawer({
   open,
@@ -96,7 +106,9 @@ export function EvolveDrawer({
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   const forms = evolveForms(creature);
-  const chosen = forms.find((f) => f.species === picked);
+  // With a single form there is nothing to choose, so that form is the one picked.
+  const only = forms.length === 1 ? forms[0] : undefined;
+  const chosen = only ?? forms.find((f) => f.species === picked);
   const evolution = creature.evolution;
   // The server refuses a creature that is away or on a job: the button says why it cannot yet.
   const away = busyReason(creature);
@@ -137,19 +149,27 @@ export function EvolveDrawer({
         </div>
       }
     >
-      <ul class="evolve-forms">
-        {forms.map((form) => (
-          <FormChoice
-            key={form.species}
-            form={form}
-            shiny={creature.shiny}
-            picked={form.species === picked}
-            disabled={busy}
-            onPick={() => {
-              setPicked(form.species);
-            }}
-          />
-        ))}
+      <ul class={only === undefined ? 'evolve-forms' : 'evolve-forms single'}>
+        {only === undefined ? (
+          forms.map((form) => (
+            <FormChoice
+              key={form.species}
+              form={form}
+              shiny={creature.shiny}
+              picked={form.species === picked}
+              disabled={busy}
+              onPick={() => {
+                setPicked(form.species);
+              }}
+            />
+          ))
+        ) : (
+          <li>
+            <div class="evolve-form on">
+              <FormCard form={only} shiny={creature.shiny} bob />
+            </div>
+          </li>
+        )}
       </ul>
     </Drawer>
   );

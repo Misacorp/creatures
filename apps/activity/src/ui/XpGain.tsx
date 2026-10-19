@@ -12,6 +12,7 @@ import type { XpBoost } from '../experience';
 import { boostLabel, boostLines, multiplierText, showsTimes } from '../xp-boost-view';
 import { countEnd, countStart, countSteps, type CountState } from '../xp-count';
 import { current, leveledUp, numbers, pct, type XpChange } from '../xp-change';
+import { DataTable } from './DataTable';
 import { PopoverCard, popupProps } from './Popover';
 import { Tag } from './Tag';
 
@@ -63,21 +64,20 @@ export function XpBoostBreakdown({
   const lines = boostLines(boost);
   return (
     <PopoverCard title={what}>
-      <dl class="xp-boost-lines">
-        {lines.parts.map((part, i) => (
-          <div key={i} class="xp-boost-line">
-            <dt>
-              {part.treat && <Sprite sprite={treat} scale={2} class="xp-boost-icon" />}
-              {part.name}
-            </dt>
-            <dd>{part.value}</dd>
-          </div>
-        ))}
-        <div class="xp-boost-line total">
-          <dt>Total</dt>
-          <dd>{lines.total}</dd>
-        </div>
-      </dl>
+      <DataTable
+        bright
+        class="xp-boost-lines"
+        rows={[
+          ...lines.parts.map((part) => ({
+            label: part.name,
+            value: part.value,
+            ...(part.treat
+              ? { icon: <Sprite sprite={treat} scale={2} class="xp-boost-icon" /> }
+              : {}),
+          })),
+          { label: 'Total', value: lines.total, total: true },
+        ]}
+      />
     </PopoverCard>
   );
 }

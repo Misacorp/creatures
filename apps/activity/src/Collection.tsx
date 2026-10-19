@@ -18,7 +18,6 @@ import { CreatureCard } from './CreatureCard';
 import { CreatureFinder } from './CreatureFinder';
 import { CreaturePage, type CardActions } from './CreaturePage';
 import { EvolveDrawer } from './EvolveDrawer';
-import { hasBranches } from './evolve-view';
 import type { CatchChoiceActions } from './find-view';
 import { PENDING_CATCHES_ID, PendingCatches } from './PendingCatches';
 import type { GearState } from './gear-types';
@@ -75,7 +74,7 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
   // The creature the finder chose, and a counter so choosing the same one twice scrolls twice.
   const [found, setFound] = useState<{ id: string; n: number } | null>(null);
   const [page, setPage] = useState<OpenPage | null>(null);
-  // The creature whose evolve screen is up (a line that grows two ways asks which form first).
+  // The creature whose evolve screen is up (every evolve opens it; a line with two forms asks which).
   const [evolvingId, setEvolvingId] = useState<string | null>(null);
   // How far the list was scrolled when the page opened, and the card to give the focus back to.
   const listScroll = useRef(0);
@@ -141,12 +140,11 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
     setPage(null);
   }
 
-  // A line with one form evolves at once; a line with two opens the screen that asks which.
+  // Every evolve opens the evolve screen: a line with two forms asks which, a line with one shows it.
   const cardActions: CardActions = {
     ...actions,
     onEvolve: (creature) => {
-      if (hasBranches(creature)) setEvolvingId(creature.id);
-      else actions.onEvolve(creature);
+      setEvolvingId(creature.id);
     },
   };
 
