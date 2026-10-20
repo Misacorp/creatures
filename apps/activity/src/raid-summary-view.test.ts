@@ -1,16 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { SUMMARY_CASES } from './workbench/raid-summary-data';
 import {
-  bestCreatureOf,
   grouped,
   heroHeadline,
   heroLine,
   highlights,
-  ordinal,
   pickHighlights,
   scoreboard,
+  summaryBoss,
   summaryTitle,
-  yourCreatures,
   yourPlace,
 } from './raid-summary-view';
 
@@ -57,24 +55,7 @@ describe('the scoreboard', () => {
   });
 });
 
-describe('number and place words', () => {
-  it('writes ordinals, with the teens as "th"', () => {
-    expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111].map(ordinal)).toEqual([
-      '1st',
-      '2nd',
-      '3rd',
-      '4th',
-      '11th',
-      '12th',
-      '13th',
-      '21st',
-      '22nd',
-      '23rd',
-      '101st',
-      '111th',
-    ]);
-  });
-
+describe('number words', () => {
   it('groups thousands with commas', () => {
     expect([0, 999, 1000, 31000, 1234567].map(grouped)).toEqual([
       '0',
@@ -88,17 +69,6 @@ describe('number and place words', () => {
   it('titles the card by the stage', () => {
     expect(summaryTitle(clear11.stats)).toBe('Finale result');
     expect(summaryTitle(phase2.stats)).toBe('Phase 2 result');
-  });
-});
-
-describe('creatures', () => {
-  it('lists the caller creatures best first, and a player best creature', () => {
-    const mine = yourCreatures(clear11.stats);
-    expect(mine).toHaveLength(3);
-    expect(mine.map((c) => c.rank)).toEqual([...mine.map((c) => c.rank)].sort((a, b) => a - b));
-    expect(bestCreatureOf(clear11.stats, null, true)).toBe(mine[0]);
-    expect(bestCreatureOf(clear11.stats, 'Dee', false)?.owner).toBe('Dee');
-    expect(bestCreatureOf(clear11.stats, 'Nobody', false)).toBeUndefined();
   });
 });
 
@@ -168,6 +138,56 @@ describe('the hero lines', () => {
   });
 });
 
+describe('the hero line without a known boss', () => {
+  it('says "The boss" instead of a name', () => {
+    expect(heroHeadline({ boss: null, stats: clear11.stats })).toBe('The boss falls!');
+    expect(heroHeadline({ boss: null, stats: fail11.stats })).toBe('The boss enrages.');
+    expect(heroHeadline({ boss: null, stats: phase2.stats })).toBe('The boss retreats!');
+    expect(heroHeadline({ boss: null, stats: wiped3.stats })).toBe('The boss holds.');
+  });
+});
+
+describe('the summary boss', () => {
+  const view = {
+    weekId: '2026-W43',
+    boss: {
+      id: 'tidal-colossus',
+      name: 'Tidal Colossus',
+      element: 'water',
+      turnOrder: 'left_to_right',
+      gimmicks: [{ id: 'undertow', name: 'Undertow' }],
+      finaleRounds: 12,
+    },
+    effectiveRank: 4,
+  };
+
+  it('is the raid view boss, with its turn order and moves, when the view is of that week', () => {
+    expect(summaryBoss(view, '2026-W43')).toEqual({
+      id: 'tidal-colossus',
+      name: 'Tidal Colossus',
+      turnOrder: 'left_to_right',
+      gimmicks: [{ id: 'undertow', name: 'Undertow' }],
+      effectiveRank: 4,
+    });
+  });
+
+  it('never borrows another week boss moves: the fallback has no turn order and no moves', () => {
+    const other = { id: 'cinder-wyrm', name: 'Cinder Wyrm' };
+    expect(summaryBoss(view, '2026-W42', other)).toEqual({
+      ...other,
+      turnOrder: null,
+      gimmicks: [],
+      effectiveRank: null,
+    });
+    expect(summaryBoss(null, '2026-W43', other)?.turnOrder).toBeNull();
+  });
+
+  it('is null when nothing is known', () => {
+    expect(summaryBoss(view, '2026-W42')).toBeNull();
+    expect(summaryBoss(null, '2026-W43')).toBeNull();
+  });
+});
+
 describe('the samples', () => {
   it('are shaped like what the server sends: damage adds up to what came off the boss', () => {
     for (const { stats } of SUMMARY_CASES.map((c) => c.input)) {
@@ -175,6 +195,11 @@ describe('the samples', () => {
       expect(dealt).toBe(stats.boss.hpStart - stats.boss.hpEnd);
       expect(stats.players.filter((p) => p.you)).toHaveLength(1);
       expect(stats.creatures.filter((c) => c.you).length).toBeGreaterThan(0);
+    }
+    // The bosses and their moves come from the content as it is.
+    for (const { boss } of SUMMARY_CASES.map((c) => c.input)) {
+      expect(boss?.turnOrder).not.toBeNull();
+      expect(boss?.gimmicks.length).toBeGreaterThan(0);
     }
     expect(clear11.stats.players).toHaveLength(11);
     expect(clear3.stats.players).toHaveLength(3);
