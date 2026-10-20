@@ -1,14 +1,16 @@
 import type { ComponentChildren } from 'preact';
-import { FestivalTag, ItemThumb, RarityTag } from '../GearArt';
+import { gearBase } from '@creatures/game';
+import { FestivalTag, ItemThumb, RarityTag, SlotTag } from '../GearArt';
 import type { GearRarity, LootPiece } from '../gear-types';
 import { gearName, isFestivalBase } from '../gear-view';
 import { FindList, FindRow } from './FindRow';
 
 /**
  * A gear piece that was found or gained, as one compact row (`FindRow`): its image with the rarity border
- * and the item level in the corner, its name in the rarity's colour and a small rarity badge (and "Festival"
- * for a Festival piece). No stats: the full details are `ItemCard`. `level` is left out for a grant stored
- * before items had levels. `children` is an extra word or two after the badge. A worn item uses the same row.
+ * and the item level in the corner, its name in the rarity's colour, a small rarity badge, the slot's badge
+ * ("Hat": what the piece is for) and "Festival" for a Festival piece. No stats: the full details are
+ * `ItemCard`. `level` is left out for a grant stored before items had levels. `children` is an extra word or
+ * two after the badges. A creature's worn gear is `GearList` (the same rows, no slot badge: the row is the slot).
  */
 export function FindItem({
   baseId,
@@ -26,6 +28,7 @@ export function FindItem({
   scale?: number;
   children?: ComponentChildren;
 }) {
+  const slot = gearBase(baseId)?.slot;
   return (
     <FindRow
       image={
@@ -45,6 +48,7 @@ export function FindItem({
       tags={
         <>
           <RarityTag rarity={rarity} />
+          {slot !== undefined && <SlotTag slot={slot} />}
           {isFestivalBase(baseId) && <FestivalTag />}
         </>
       }

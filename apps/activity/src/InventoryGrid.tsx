@@ -6,7 +6,7 @@ import { ItemTile } from './ItemTile';
 
 /**
  * The bag as the one item grid (`ItemTile`, the same as the item picker): the slot's icon in each tile's top-left
- * corner (the bag mixes slots), the item level at the bottom right, "Worn" when a creature wears it. Each tile is
+ * corner (the bag mixes slots), the item level at the bottom right, the small picture of the creature that wears it. Each tile is
  * a real button (Tab and Enter work); its spoken label has the name, slot, item level, rarity and who wears it.
  */
 export function InventoryGrid({
@@ -39,7 +39,7 @@ export function InventoryGrid({
             item={item}
             label={label}
             selected={item.id === selectedId}
-            flag={wearer === undefined ? null : 'Worn'}
+            wearer={wearer?.species ?? null}
             onSelect={() => {
               onSelect(item.id);
             }}

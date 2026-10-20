@@ -372,15 +372,18 @@ export function bagText(inventory: GearState['inventory']): string {
 
 export interface EquipChoice {
   item: GearItem;
-  /** The name of another creature that wears it now (it would move); null otherwise. */
+  /** The name of another creature that wears it now; null otherwise. */
   wornBy: string | null;
+  /** That creature's species (its small picture marks the item in the picker); null otherwise. */
+  wornBySpecies: string | null;
   /** Why this creature cannot wear it; null when it can. */
   blocked: string | null;
 }
 
 /**
- * The items of one slot a creature could be given: all but the one it wears already, the ones it can
- * wear first (best first), then the ones it cannot with the reason, and who has each now.
+ * The items of one slot a creature could be given: all but the one it wears already. The free ones it can
+ * wear first (best first), then the ones another creature wears (taken: the picker does not move them),
+ * then the ones it cannot wear with the reason, and who has each now.
  */
 export function equipChoices(
   items: readonly GearItem[],
@@ -395,11 +398,13 @@ export function equipChoices(
     return {
       item,
       wornBy: wearer === undefined ? null : creatureName(wearer),
+      wornBySpecies: wearer === undefined ? null : wearer.species,
       blocked: wearReason(item, creature),
     };
   });
   return [
-    ...choices.filter((c) => c.blocked === null),
+    ...choices.filter((c) => c.blocked === null && c.wornBy === null),
+    ...choices.filter((c) => c.blocked === null && c.wornBy !== null),
     ...choices.filter((c) => c.blocked !== null),
   ];
 }

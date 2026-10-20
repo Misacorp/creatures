@@ -203,6 +203,9 @@ export function Game({
   });
 
   const creatureActions = createCreatureActions({ run, runKeyed, setCurrent, setNotice });
+  /** Wears an item or takes it off (the card's and the dungeon's); true when the server took it. */
+  const equipOn = async (gearId: string, creatureId: string | null): Promise<boolean> =>
+    (await gearActions.equip(gearId, creatureId)) !== undefined;
   const gearActions = createGearActions({
     run,
     runKeyed,
@@ -376,7 +379,7 @@ export function Game({
           refreshState();
           room.refreshIfStale();
           loadForecast();
-          if (id === 'workshop' || id === 'collection') loadGear();
+          if (id === 'workshop' || id === 'collection' || id === 'dungeon') loadGear();
         }}
       />
       <WipeNotice key={devNonce} cancelled={game.cancelled} creatures={game.creatures} />
@@ -406,9 +409,7 @@ export function Game({
             gear={gear}
             busy={busy}
             viewerId={user.id}
-            onEquip={async (gearId, creatureId) =>
-              (await gearActions.equip(gearId, creatureId)) !== undefined
-            }
+            onEquip={equipOn}
             catchActions={catchActions}
             {...creatureActions}
           />
@@ -514,6 +515,15 @@ export function Game({
               // A run pays Bait, Essence, parts and maybe gear: reload the balances and the bag.
               refreshState();
               loadGear();
+            }}
+            configure={{
+              state: game,
+              gear,
+              busy,
+              actions: { ...creatureActions, onEquip: equipOn },
+              onAnswerCatch: () => {
+                setTab('collection');
+              },
             }}
           />
         )}
