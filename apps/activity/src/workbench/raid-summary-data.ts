@@ -2,8 +2,10 @@
  * Sample raid summaries for the workbench: the after-action stats and rewards of a finale on an
  * 11-player server (cleared, and not cleared), on a 3-player server (cleared in a Festival week, and
  * wiped), and of a phase. Built deterministically from a few hand-written tables, in the shape the
- * server sends (`AfterActionStats`), so the mock-ups are fed by data the game really has.
+ * server sends (`AfterActionStats`), so the card is shown with data the game really has. The bosses
+ * and their moves are read from the content as it is (so a change to a boss shows here too).
  */
+import { bossAtRank, content } from '@creatures/game';
 import type { GrantLoot } from '../gear-types';
 import type {
   AfterActionStats,
@@ -15,7 +17,8 @@ import type {
   StatsPlayer,
   StatsReaction,
 } from '../raid-api';
-import type { SummaryInput } from '../raid-summary-view';
+import { finaleProgress } from '../raid-progress';
+import type { SummaryBoss, SummaryInput, SummaryRewards } from '../raid-summary-view';
 
 interface PlayerSeed {
   name: string;
@@ -261,6 +264,31 @@ const FESTIVAL_LOOT: GrantLoot = {
   blueprints: [{ baseId: 'forge-scarf', duplicate: false }],
 };
 
+/** The boss as the raid view lists it at a rank: its turn order and the moves in play (a gated move marked). */
+function bossOf(id: string, rank: number): SummaryBoss {
+  const def = content.bosses.find((b) => b.id === id);
+  if (def === undefined) throw new Error(`no boss ${id}`);
+  return {
+    id: def.id,
+    name: def.name,
+    turnOrder: def.turnOrder,
+    gimmicks: bossAtRank(def, rank).gimmicks.map((g) => ({
+      id: g.id,
+      name: g.name,
+      ...(g.fromRank === undefined ? {} : { fromRank: g.fromRank }),
+    })),
+    effectiveRank: rank,
+  };
+}
+
+/** What a sample stage paid, with the season week the pips should show (the rest is built from it). */
+type SampleRewards = Omit<SummaryRewards, 'progress'> & { seasonWeek: number | null };
+
+interface SampleCase {
+  label: string;
+  input: Omit<SummaryInput, 'rewards'> & { rewards: SampleRewards };
+}
+
 export interface SummaryCase {
   /** The label of the case in the workbench ("Cleared, 11 players"). */
   label: string;
@@ -281,12 +309,20 @@ const ABILITIES = (you: boolean): StatsAbilityUse[] => [
   use('Dee', false, 'Tempest Strike', 'Stormray', 9, false),
 ];
 
+/** The rank each sample week's boss fights at (a Festival week fights lower than the rank on the ladder). */
+const RANK_OF: Readonly<Record<string, number>> = {
+  'tidal-colossus': 4,
+  'cinder-wyrm': 5,
+  thornmother: 6,
+  'storm-sovereign': 3,
+};
+
 /** The sample summaries, in the order the workbench lists them. */
-export const SUMMARY_CASES: readonly SummaryCase[] = [
+const SAMPLES: readonly SampleCase[] = [
   {
     label: 'Finale cleared, 11 players',
     input: {
-      boss: { id: 'tidal-colossus', name: 'Tidal Colossus' },
+      boss: bossOf('tidal-colossus', RANK_OF['tidal-colossus'] ?? 4),
       stats: stats({
         seeds: BIG,
         you: 'Misa',
@@ -325,7 +361,8 @@ export const SUMMARY_CASES: readonly SummaryCase[] = [
       }),
       rewards: {
         essence: 46,
-        loot: FINALE_LOOT,
+        finaleLoot: FINALE_LOOT,
+        festivalLoot: null,
         festivalGrant: null,
         rankChange: { before: 4, after: 5, festival: false, serverWon: true },
         seasonWeek: 3,
@@ -335,7 +372,7 @@ export const SUMMARY_CASES: readonly SummaryCase[] = [
   {
     label: 'Finale not cleared, 11 players',
     input: {
-      boss: { id: 'cinder-wyrm', name: 'Cinder Wyrm' },
+      boss: bossOf('cinder-wyrm', RANK_OF['cinder-wyrm'] ?? 4),
       stats: stats({
         // The caller had a rougher night here: 7th instead of 4th.
         seeds: BIG.map((s) => (s.name === 'Misa' ? { ...s, weight: 6.5 } : s)),
@@ -378,7 +415,8 @@ export const SUMMARY_CASES: readonly SummaryCase[] = [
       }),
       rewards: {
         essence: 14,
-        loot: null,
+        finaleLoot: null,
+        festivalLoot: null,
         festivalGrant: null,
         rankChange: { before: 4, after: 4, festival: false, serverWon: false },
         seasonWeek: 2,
@@ -388,7 +426,7 @@ export const SUMMARY_CASES: readonly SummaryCase[] = [
   {
     label: 'Finale cleared, 3 players (Festival)',
     input: {
-      boss: { id: 'thornmother', name: 'Thornmother' },
+      boss: bossOf('thornmother', RANK_OF['thornmother'] ?? 4),
       stats: stats({
         seeds: SMALL,
         you: 'Misa',
@@ -418,7 +456,8 @@ export const SUMMARY_CASES: readonly SummaryCase[] = [
       }),
       rewards: {
         essence: 52,
-        loot: FESTIVAL_LOOT,
+        finaleLoot: FINALE_LOOT,
+        festivalLoot: FESTIVAL_LOOT,
         festivalGrant: { species: 'lanternfin', outcome: 'new', firstOnServer: true },
         rankChange: { before: 7, after: 6, festival: true, serverWon: true },
         seasonWeek: 5,
@@ -428,7 +467,7 @@ export const SUMMARY_CASES: readonly SummaryCase[] = [
   {
     label: 'Finale wiped, 3 players',
     input: {
-      boss: { id: 'storm-sovereign', name: 'Storm Sovereign' },
+      boss: bossOf('storm-sovereign', RANK_OF['storm-sovereign'] ?? 4),
       stats: stats({
         seeds: [
           SMALL[0] as PlayerSeed,
@@ -473,7 +512,8 @@ export const SUMMARY_CASES: readonly SummaryCase[] = [
       }),
       rewards: {
         essence: 9,
-        loot: null,
+        finaleLoot: null,
+        festivalLoot: null,
         festivalGrant: null,
         rankChange: null,
         seasonWeek: 1,
@@ -483,7 +523,7 @@ export const SUMMARY_CASES: readonly SummaryCase[] = [
   {
     label: 'Phase 2 cleared, 6 players',
     input: {
-      boss: { id: 'tidal-colossus', name: 'Tidal Colossus' },
+      boss: bossOf('tidal-colossus', RANK_OF['tidal-colossus'] ?? 4),
       stats: stats({
         seeds: [BIG[1], BIG[3], BIG[0], BIG[4], BIG[5], BIG[8]] as PlayerSeed[],
         you: 'Misa',
@@ -506,10 +546,37 @@ export const SUMMARY_CASES: readonly SummaryCase[] = [
         knockouts: [],
         adaptation: null,
       }),
-      rewards: { essence: 6, loot: null, festivalGrant: null, rankChange: null, seasonWeek: 3 },
+      rewards: {
+        essence: 6,
+        finaleLoot: null,
+        festivalLoot: null,
+        festivalGrant: null,
+        rankChange: null,
+        seasonWeek: 3,
+      },
     },
   },
 ];
+
+/** The samples as the card takes them: the rank track and season pips worked out the way the Raid tab does. */
+export const SUMMARY_CASES: readonly SummaryCase[] = SAMPLES.map((c) => {
+  const { seasonWeek, ...paid } = c.input.rewards;
+  return {
+    label: c.label,
+    input: {
+      ...c.input,
+      rewards: {
+        ...paid,
+        progress: finaleProgress(
+          { week: 'wb-week', rankChange: paid.rankChange },
+          seasonWeek === null
+            ? null
+            : { weekId: 'wb-week', season: { index: 1, week: seasonWeek } },
+        ),
+      },
+    },
+  };
+});
 
 /** The sample by its label. */
 export function summaryCase(label: string): SummaryCase {

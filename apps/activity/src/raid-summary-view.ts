@@ -1,8 +1,8 @@
 /**
- * What a raid summary screen shows, worked out from the data the server already sends: the
- * after-action stats of a stage and the stage's rewards. Pure (no DOM, no network). It exists for the
- * summary mock-ups (`RaidSummaryMock`); a variant that is chosen keeps what it uses. Everything
- * returned is plain text or plain data (names can be player text: render as text only).
+ * What the raid summary shows (the card after a raid stage and after the Sunday finale), worked out
+ * from the data the server already sends: the after-action stats of a stage, the stage's rewards and
+ * the boss of the raid view. Pure (no DOM, no network). Everything returned is plain text or plain
+ * data (names can be player text: render as text only).
  *
  * Nothing here invents a number. A highlight exists only when the stats hold what it says; the ones
  * that would need new server data are not here (see the "would need" list in decisions.md).
@@ -14,26 +14,66 @@ import type { IconRef } from './icon-ref';
 import type {
   AfterActionStats,
   FestivalGrant,
+  RaidView,
   RankChange,
   StatsCreature,
   StatsPlayer,
 } from './raid-api';
+import type { FinaleProgress } from './raid-progress';
 import { phaseName } from './raid-text';
+
+/**
+ * The boss of a summary, from the raid view (the stats do not carry it). `turnOrder` is null when the
+ * view is not of the week the summary is about (the moves would be another boss's): the summary then
+ * shows no move icons.
+ */
+export interface SummaryBoss {
+  id: string;
+  name: string;
+  turnOrder: string | null;
+  /** The moves in play at the week's rank, as the raid view lists them. */
+  gimmicks: RaidView['boss']['gimmicks'];
+  /** The rank the boss fought at, for the "New at rank" mark; null when not known. */
+  effectiveRank: number | null;
+}
+
+/**
+ * The boss of the raid view as a summary's boss, when the view is of the week the summary is about.
+ * Otherwise the `fallback` (a live fight knows the boss's id and name), with no moves; or null.
+ */
+export function summaryBoss(
+  view: Pick<RaidView, 'weekId' | 'boss' | 'effectiveRank'> | null,
+  week: string,
+  fallback: { id: string; name: string } | null = null,
+): SummaryBoss | null {
+  if (view !== null && view.weekId === week) {
+    const { id, name, turnOrder, gimmicks } = view.boss;
+    return { id, name, turnOrder, gimmicks, effectiveRank: view.effectiveRank };
+  }
+  return fallback === null
+    ? null
+    : { id: fallback.id, name: fallback.name, turnOrder: null, gimmicks: [], effectiveRank: null };
+}
+
+/** What a stage paid the caller, and where the server stands after it. */
+export interface SummaryRewards {
+  essence: number;
+  /** The finale's reward slot (a piece, a blueprint, parts); null when there is none. */
+  finaleLoot: GrantLoot | null;
+  /** A Festival week's piece; null when there is none. */
+  festivalLoot: GrantLoot | null;
+  festivalGrant: FestivalGrant | null;
+  rankChange: RankChange | null;
+  /** What the finale did to the Boss Rank and the season pips; null when nothing is known yet. */
+  progress: FinaleProgress | null;
+}
 
 /** Everything a summary is drawn from: the stage's stats and boss, and what it paid the caller. */
 export interface SummaryInput {
-  /** The boss's id and name (from the raid view; the stats do not carry them). */
-  boss: { id: string; name: string };
+  /** Null when the boss is not known (the raid view is of another week): the summary says "The boss". */
+  boss: SummaryBoss | null;
   stats: AfterActionStats;
-  rewards: {
-    essence: number;
-    /** The finale's gear grant (a piece, a blueprint, parts); null when there is none. */
-    loot: GrantLoot | null;
-    festivalGrant: FestivalGrant | null;
-    rankChange: RankChange | null;
-    /** The raid week's place in the season, for the season pips; null when not known. */
-    seasonWeek: number | null;
-  };
+  rewards: SummaryRewards;
 }
 
 /** One line of a scoreboard. */
@@ -77,22 +117,6 @@ export function yourPlace(stats: Pick<AfterActionStats, 'players'>): {
   return row === undefined ? null : { row, of: rows.length };
 }
 
-/** "1st", "2nd", "3rd", "4th", "11th", "21st". */
-export function ordinal(n: number): string {
-  const last = n % 100;
-  if (last >= 11 && last <= 13) return `${String(n)}th`;
-  switch (n % 10) {
-    case 1:
-      return `${String(n)}st`;
-    case 2:
-      return `${String(n)}nd`;
-    case 3:
-      return `${String(n)}rd`;
-    default:
-      return `${String(n)}th`;
-  }
-}
-
 /** A whole number with thousands grouped by a comma: "12,480". Fixed locale, so it reads the same everywhere. */
 export function grouped(n: number): string {
   return Math.round(n)
@@ -111,22 +135,6 @@ export function summaryTitle(stats: Pick<AfterActionStats, 'phase'>): string {
 export function creatureLabel(c: Pick<StatsCreature, 'name' | 'species'>): string {
   const kind = speciesName(c.species);
   return c.name === kind ? c.name : `${c.name} (${kind})`;
-}
-
-/** The caller's creatures the server listed (the top five and the caller's own), best first. */
-export function yourCreatures(stats: Pick<AfterActionStats, 'creatures'>): StatsCreature[] {
-  return stats.creatures.filter((c) => c.you).sort((a, b) => a.rank - b.rank);
-}
-
-/** The best listed creature of a player, by the owner's display name; undefined when none was listed. */
-export function bestCreatureOf(
-  stats: Pick<AfterActionStats, 'creatures'>,
-  owner: string | null,
-  you: boolean,
-): StatsCreature | undefined {
-  return stats.creatures
-    .filter((c) => (you ? c.you : owner !== null && c.owner === owner))
-    .sort((a, b) => a.rank - b.rank)[0];
 }
 
 // --- Highlights ---
@@ -310,15 +318,16 @@ export function pickHighlights(
 
 // --- The one big moment ---
 
-/** The headline of a hero summary: "Tidal Colossus falls!", "Cinder Wyrm holds.". */
+/** The headline of the summary: "Tidal Colossus falls!", "Cinder Wyrm holds.", and "The boss falls!" when the boss is not known. */
 export function heroHeadline(input: Pick<SummaryInput, 'boss' | 'stats'>): string {
-  const { boss, stats } = input;
+  const { stats } = input;
+  const name = input.boss?.name ?? 'The boss';
   if (stats.outcome === 'cleared') {
     return stats.retreated === true && stats.phase !== 'finale'
-      ? `${boss.name} retreats!`
-      : `${boss.name} falls!`;
+      ? `${name} retreats!`
+      : `${name} falls!`;
   }
-  return stats.enraged === true ? `${boss.name} enrages.` : `${boss.name} holds.`;
+  return stats.enraged === true ? `${name} enrages.` : `${name} holds.`;
 }
 
 /**

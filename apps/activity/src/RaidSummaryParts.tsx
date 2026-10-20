@@ -1,16 +1,18 @@
 /**
- * The pieces the raid summary mock-ups share (`RaidSummaryMock`): the scoreboard as a `DataTable`, a
- * highlight card, the rewards, the folded tables that hold the numbers the old card listed as bullets,
- * and the buttons. Workbench only for now. All text is plain text (names are player text).
+ * The pieces of the raid summary (`RaidSummaryCard`): the scoreboard as a `DataTable` with column
+ * headings, a highlight card, the rewards, the folded tables that hold the numbers the old card listed
+ * as bullets, and the buttons. All text is plain text (names are player text).
  */
 import type { ComponentChildren } from 'preact';
 import { abilitySummary, percentText, whoText } from './after-action';
 import { essenceCount, partCountItems } from './count-items';
 import { FinaleProgress } from './FinaleProgress';
+import { lootIsEmpty } from './gear-view';
+import type { GrantLoot, PartsBundle } from './gear-types';
 import { LootList } from './LootList';
 import type { AfterActionStats } from './raid-api';
-import { festivalGrantText, finaleProgress, rankChangeText } from './raid-progress';
-import { grouped, type Highlight, type ScoreRow, type SummaryInput } from './raid-summary-view';
+import { festivalGrantText, rankChangeText } from './raid-progress';
+import { grouped, type Highlight, type ScoreRow, type SummaryRewards } from './raid-summary-view';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Accordion } from './ui/Accordion';
@@ -37,7 +39,13 @@ export function scoreRow(row: ScoreRow): DataRow {
   };
 }
 
-/** The players as a table of rank and name, damage and share. `total` adds the raid's total at the end. */
+/** The scoreboard's column headings: the last column is just "%". */
+const SCORE_HEADINGS = { label: 'Player', value: 'Damage', extra: '%' } as const;
+
+/**
+ * Every player as a table of place and name, damage and share, with column headings and the caller's
+ * row marked. `total` adds the raid's total at the end.
+ */
 export function ScoreTable({
   rows,
   total = false,
@@ -55,7 +63,7 @@ export function ScoreTable({
       total: true,
     });
   }
-  return <DataTable rows={data} tabular class="rs-tight" />;
+  return <DataTable rows={data} tabular headings={SCORE_HEADINGS} label="Scoreboard" />;
 }
 
 // --- Highlights ---
@@ -103,34 +111,48 @@ export function SectionHead({ children, note }: { children: ComponentChildren; n
 
 // --- Rewards ---
 
-/**
- * What the stage paid the caller: Essence and parts as count badges with the pile, then the gear and
- * blueprints, the Festival creature, and the server's rank with the season pips. Raids pay no
- * experience today, so there is no XP row (the shared `XpGain` has nothing to show).
- */
-export function Rewards({ input }: { input: SummaryInput }) {
-  const { rewards } = input;
-  const parts = rewards.loot?.parts ?? {};
-  const counts = [essenceCount(rewards.essence, { entry: true }), ...partCountItems(parts)];
-  const progress = finaleProgress(
-    { week: 'wb-week', rankChange: rewards.rankChange },
-    rewards.seasonWeek === null
-      ? null
-      : { weekId: 'wb-week', season: { index: 1, week: rewards.seasonWeek } },
+/** The parts of two grants added together (the counts above the gear list cover both). */
+function addParts(a: PartsBundle, b: PartsBundle): PartsBundle {
+  const sum: Record<string, number> = { ...a };
+  for (const [kind, amount] of Object.entries(b)) sum[kind] = (sum[kind] ?? 0) + (amount ?? 0);
+  return sum;
+}
+
+/** One grant's gear, blueprints and notes under a small name ("Finale reward"); nothing when it gave none. */
+function GrantBlock({ loot, label }: { loot: GrantLoot | null; label: string }) {
+  if (loot === null || lootIsEmpty(loot)) return null;
+  // Parts and supplies are in the count badges above, so the list leaves them out.
+  const rest = { ...loot, parts: {}, supplies: [] };
+  if (lootIsEmpty(rest)) return null;
+  return (
+    <section class="rs-grant">
+      <p class="rs-grant-label">{label}</p>
+      <LootList loot={loot} label={label} counted />
+    </section>
   );
+}
+
+/**
+ * What the stage paid the caller: one count badge for Essence and one for each kind of part (no pile
+ * picture), then the gear and blueprints under their names, the Festival creature, and the server's
+ * rank with the season pips. Raids pay no experience today, so there is no XP row (the shared `XpGain`
+ * has nothing to show).
+ */
+export function Rewards({ rewards }: { rewards: SummaryRewards }) {
+  const { finaleLoot, festivalLoot } = rewards;
+  const parts = addParts(finaleLoot?.parts ?? {}, festivalLoot?.parts ?? {});
+  const counts = [essenceCount(rewards.essence, { entry: true }), ...partCountItems(parts)];
   return (
     <>
       <RewardSummary
-        source={{
-          parts,
-          essence: rewards.essence,
-          ...(rewards.loot === null ? {} : { gear: rewards.loot.gear }),
-        }}
+        source={{ parts, essence: rewards.essence }}
         prefix="Rewards"
         countsLabel="Rewards"
         counts={counts}
+        pile={false}
       >
-        {rewards.loot !== null && <LootList loot={rewards.loot} label="Finale reward" counted />}
+        <GrantBlock loot={finaleLoot} label="Finale reward" />
+        <GrantBlock loot={festivalLoot} label="Festival gear" />
       </RewardSummary>
       {rewards.festivalGrant !== null && (
         <div class="rs-festival">
@@ -146,7 +168,7 @@ export function Rewards({ input }: { input: SummaryInput }) {
       {rewards.rankChange !== null && (
         <p class="rs-rank-line">{rankChangeText(rewards.rankChange)}</p>
       )}
-      {progress !== null && <FinaleProgress progress={progress} />}
+      {rewards.progress !== null && <FinaleProgress progress={rewards.progress} />}
     </>
   );
 }
@@ -159,16 +181,10 @@ const plainName = (text: string) => <span class="rs-name">{text}</span>;
 export function MoreNumbers({
   stats,
   open = false,
-  skipCreatures = false,
-  folded = true,
 }: {
   stats: AfterActionStats;
   /** Open all of them (for a review of what is inside). */
   open?: boolean;
-  /** The creatures table is already on the screen (the "Your raid" variant shows them). */
-  skipCreatures?: boolean;
-  /** Fold them all under one "More numbers" header (the default), or list the folded tables directly. */
-  folded?: boolean;
 }) {
   const boss = stats.boss;
   const bossRows: DataRow[] = [
@@ -201,12 +217,12 @@ export function MoreNumbers({
             ? []
             : [{ label: 'Applied again', value: `Round ${String(adapt.restoredRound)}` }]),
         ];
-  const tables = (
-    <div class="rs-more">
-      <Accordion title="The fight" variant="compact" defaultOpen={open}>
-        <DataTable rows={bossRows} tabular />
-      </Accordion>
-      {!skipCreatures && (
+  return (
+    <Accordion title="More numbers" variant="compact" defaultOpen={open}>
+      <div class="rs-more">
+        <Accordion title="The fight" variant="compact" defaultOpen={open}>
+          <DataTable rows={bossRows} tabular />
+        </Accordion>
         <Accordion
           title="Top creatures"
           meta={String(stats.creatures.length)}
@@ -232,97 +248,98 @@ export function MoreNumbers({
           />
           <p class="rs-note">Damage, and the place among all creatures in the fight.</p>
         </Accordion>
-      )}
-      <Accordion
-        title="Reactions"
-        meta={String(stats.reactionsTotal)}
-        variant="compact"
-        defaultOpen={open}
-      >
-        {stats.reactions.length === 0 ? (
-          <p class="rs-note">No reactions triggered.</p>
-        ) : (
-          <DataTable
-            tabular
-            rows={[
-              ...stats.reactions.map((r) => ({
-                label: r.name,
-                value: r.count,
-                extra: r.reflected > 0 ? `${String(r.reflected)} reflected` : '',
-              })),
-              { label: 'In total', value: stats.reactionsTotal, extra: '', total: true },
-            ]}
-          />
-        )}
-      </Accordion>
-      {(stats.phase === 'finale' || stats.abilities.used.length > 0) && (
         <Accordion
-          title="Abilities"
-          meta={String(stats.abilities.used.length)}
+          title="Reactions"
+          meta={String(stats.reactionsTotal)}
           variant="compact"
           defaultOpen={open}
         >
-          <p class="rs-note">{abilitySummary(stats.abilities)}</p>
-          <DataTable
-            rows={stats.abilities.used.map((u) => ({
-              label: plainName(`${whoText(u.player, u.you)}: ${u.ability}`),
-              value: `Round ${String(u.round)}`,
-              extra: u.byDefault ? 'auto' : 'hand',
-              mine: u.you,
-            }))}
-          />
+          {stats.reactions.length === 0 ? (
+            <p class="rs-note">No reactions triggered.</p>
+          ) : (
+            <DataTable
+              tabular
+              rows={[
+                ...stats.reactions.map((r) => ({
+                  label: r.name,
+                  value: r.count,
+                  extra: r.reflected > 0 ? `${String(r.reflected)} reflected` : '',
+                })),
+                { label: 'In total', value: stats.reactionsTotal, extra: '', total: true },
+              ]}
+            />
+          )}
         </Accordion>
-      )}
-      <Accordion
-        title="Knockouts"
-        meta={String(stats.knockouts.length)}
-        variant="compact"
-        defaultOpen={open}
-      >
-        {stats.knockouts.length === 0 ? (
-          <p class="rs-note">No creature was knocked out.</p>
-        ) : (
-          <DataTable
-            rows={stats.knockouts.map((k) => ({
-              label: plainName(`${k.creature} (${whoText(k.owner, k.you)})`),
-              value: `Round ${String(k.round)}`,
-              mine: k.you,
-            }))}
-          />
+        {(stats.phase === 'finale' || stats.abilities.used.length > 0) && (
+          <Accordion
+            title="Abilities"
+            meta={String(stats.abilities.used.length)}
+            variant="compact"
+            defaultOpen={open}
+          >
+            <p class="rs-note">{abilitySummary(stats.abilities)}</p>
+            <DataTable
+              rows={stats.abilities.used.map((u) => ({
+                label: plainName(`${whoText(u.player, u.you)}: ${u.ability}`),
+                value: `Round ${String(u.round)}`,
+                extra: u.byDefault ? 'auto' : 'hand',
+                mine: u.you,
+              }))}
+            />
+          </Accordion>
         )}
-      </Accordion>
-      {adapt !== null && (
-        <Accordion title="Boss counter-move" variant="compact" defaultOpen={open}>
-          <DataTable rows={adaptRows} />
+        <Accordion
+          title="Knockouts"
+          meta={String(stats.knockouts.length)}
+          variant="compact"
+          defaultOpen={open}
+        >
+          {stats.knockouts.length === 0 ? (
+            <p class="rs-note">No creature was knocked out.</p>
+          ) : (
+            <DataTable
+              rows={stats.knockouts.map((k) => ({
+                label: plainName(`${k.creature} (${whoText(k.owner, k.you)})`),
+                value: `Round ${String(k.round)}`,
+                mine: k.you,
+              }))}
+            />
+          )}
         </Accordion>
-      )}
-    </div>
-  );
-  return folded ? (
-    <Accordion title="More numbers" variant="compact" defaultOpen={open}>
-      {tables}
+        {adapt !== null && (
+          <Accordion title="Boss counter-move" variant="compact" defaultOpen={open}>
+            <DataTable rows={adaptRows} />
+          </Accordion>
+        )}
+      </div>
     </Accordion>
-  ) : (
-    tables
   );
 }
 
 // --- Buttons ---
 
-/** "Watch replay" (the card's one gold button) and a quiet "Got it". */
+/**
+ * "Watch replay" (the card's one gold button) and a quiet "Got it". Each shows only when its action is
+ * given: the finale reveal has both, a result card on the Raid tab has no "Got it".
+ */
 export function SummaryActions({
   onReplay,
   onDismiss,
+  busy = false,
 }: {
-  onReplay: () => void;
-  onDismiss: () => void;
+  onReplay?: (() => void) | undefined;
+  onDismiss?: (() => void) | undefined;
+  busy?: boolean;
 }) {
+  if (onReplay === undefined && onDismiss === undefined) return null;
   return (
     <div class="rs-actions">
-      <ActionButton label="Watch replay" wide onClick={onReplay} />
-      <button type="button" onClick={onDismiss}>
-        Got it
-      </button>
+      {onReplay !== undefined && <ActionButton label="Watch replay" wide onClick={onReplay} />}
+      {onDismiss !== undefined && (
+        <button type="button" disabled={busy} onClick={onDismiss}>
+          Got it
+        </button>
+      )}
     </div>
   );
 }

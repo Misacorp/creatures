@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { AbilityChip } from './AbilityChip';
-import { AfterAction } from './AfterAction';
 import { ApiError, type Creature } from './api';
 import { SHOW_COACH_MARK } from './coach';
 import { CoachMark } from './CoachMark';
 import { clockOffset, errorText } from './game';
 import { useActionRunner } from './use-action-runner';
-import { GlossaryTag } from './Glossary';
 import { useServerNow } from './hooks';
 import { finaleWindow } from './live';
 import { startPractice, type LiveSnapshot } from './live-api';
 import { Live } from './Live';
 import { Replay } from './Replay';
 import { RevealCard } from './Reveal';
+import { RaidSummary } from './RaidSummary';
+import { summaryBoss } from './raid-summary-view';
 import {
   fetchRaid,
   markRevealSeen,
@@ -25,8 +25,7 @@ import {
   type RaidView,
 } from './raid-api';
 import type { Intent } from './raid-slots';
-import { festivalGrantText, rankChangeText } from './raid-progress';
-import { phaseName, stageOutcomeNote, stageOutcomeText } from './raid-text';
+import { finaleProgress } from './raid-progress';
 import { BossCard } from './BossCard';
 import { RaidTimeline } from './RaidTimeline';
 import { needsPlacement, type NowTarget } from './raid-now';
@@ -220,6 +219,7 @@ export function Raid({
       <Live
         initial={liveInitial}
         season={{ weekId: view.weekId, season: view.season }}
+        view={view}
         onClose={closeLive}
         onBalanceChange={onBalanceChange}
         onRevealSeen={(week) => {
@@ -269,8 +269,8 @@ export function Raid({
         <RevealCard
           reveal={reveal}
           busy={busy}
-          gearWeek={reveal.week}
           season={{ weekId: view.weekId, season: view.season }}
+          boss={summaryBoss(view, reveal.week)}
           afterAction={{
             week: reveal.week,
             party: reveal.party,
@@ -342,6 +342,7 @@ export function Raid({
                 result={result}
                 week={view.weekId}
                 party={party.party}
+                view={view}
                 onReplay={() => {
                   setReplay({ week: view.weekId, party: party.party, phase: result.phase });
                 }}
@@ -365,35 +366,40 @@ function focusPlacement(): void {
   (slots.find((s) => s.classList.contains('empty')) ?? slots[0])?.focus({ preventScroll: true });
 }
 
+/** One stage of this week in the Results list: the raid summary of the caller's party. */
 function ResultCard({
   result,
   week,
   party,
+  view,
   onReplay,
 }: {
   result: PhaseResultView;
   week: string;
   party: number;
+  view: RaidView;
   onReplay: () => void;
 }) {
   return (
-    <li class="card-item">
-      <h4>
-        {phaseName(result.phase)}{' '}
-        <span class={result.cleared ? 'badge good' : 'badge bad'}>
-          {result.cleared ? 'Cleared' : 'Not cleared'}
-        </span>
-      </h4>
-      {stageOutcomeNote(result) !== null && <p>{stageOutcomeText(result)}</p>}
-      <p>
-        <GlossaryTag entry="essence">Essence</GlossaryTag> you got:{' '}
-        <strong>{result.essence}</strong>
-      </p>
-      {result.festivalGrant !== null && (
-        <p class="reveal-festival">{festivalGrantText(result.festivalGrant)}</p>
-      )}
-      {result.rankChange !== null && <p class="reveal-rank">{rankChangeText(result.rankChange)}</p>}
-      <AfterAction week={week} party={party} phase={result.phase} onReplay={onReplay} />
+    <li class="card-item rs-item">
+      <RaidSummary
+        week={week}
+        party={party}
+        phase={result.phase}
+        cleared={result.cleared}
+        mode="result"
+        boss={summaryBoss(view, week)}
+        paid={{
+          essence: result.essence,
+          festivalGrant: result.festivalGrant,
+          rankChange: result.rankChange,
+          progress: finaleProgress(
+            { week, rankChange: result.rankChange },
+            { weekId: view.weekId, season: view.season },
+          ),
+        }}
+        onReplay={onReplay}
+      />
     </li>
   );
 }
