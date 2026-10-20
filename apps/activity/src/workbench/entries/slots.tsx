@@ -176,7 +176,7 @@ const dungeonSetup: Entry = {
   file: 'apps/activity/src/DungeonSetup.tsx',
   group: 'Slots',
   description:
-    "The whole pre-run dungeon card: the big Daily Dungeon title with its question mark and the streak (under the title on a phone), today's map as a preview (the one a real server sent; tap a room to see what is there), the depth track, then the team board centred, the count right under the tiles, the order line and the Enter button, all in one card. The team starts as the last team.",
+    "The whole pre-run dungeon card: the big Daily Dungeon title with its question mark and the streak (under the title on a phone), today's map as a preview (the one a real server sent; tap a room to see what is there), the depth track, then the team board centred, the count right under the tiles, the order line and the Enter button, all in one card. The team starts as the last team. Configure: the team of three geared samples, ready to configure: tap a creature for its configurator under the board (another tap hides it); its Creature page opens the creature's own page in the card's place (the arrows flip through the team, Back returns).",
   controls: {
     owned: { kind: 'number', min: 3, max: 8 },
     placed: { kind: 'number', min: 1, max: 3 },
@@ -185,8 +185,18 @@ const dungeonSetup: Entry = {
     bait: { kind: 'number', min: 0, max: 100 },
     busy: { kind: 'toggle' },
     map: { kind: 'toggle' },
+    configure: { kind: 'toggle' },
   },
-  defaults: { owned: 6, placed: 3, streak: 3, depth: 1, bait: 40, busy: false, map: true },
+  defaults: {
+    owned: 6,
+    placed: 3,
+    streak: 3,
+    depth: 1,
+    bait: 40,
+    busy: false,
+    map: true,
+    configure: false,
+  },
   presets: [
     { name: '3 / 3 placed, streak at day 3', props: {} },
     { name: '2 / 3 placed (Enter is off, with the reason)', props: { placed: 2 } },
@@ -195,13 +205,20 @@ const dungeonSetup: Entry = {
     { name: 'The run is being sent', props: { busy: true } },
     { name: 'No Bait for treats', props: { bait: 0 } },
     { name: 'A server with no map (the old three-room strip)', props: { map: false } },
+    {
+      name: 'Getting the team ready (tap a creature for its configurator)',
+      props: { configure: true },
+    },
   ],
-  render: (p) => (
-    <SetupDemo
-      key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}-${String(bool(p, 'map'))}`}
-      p={p}
-    />
-  ),
+  render: (p) =>
+    bool(p, 'configure') ? (
+      <ConfigureSetupDemo />
+    ) : (
+      <SetupDemo
+        key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}-${String(bool(p, 'map'))}`}
+        p={p}
+      />
+    ),
 };
 
 const noop = (): undefined => undefined;
@@ -340,18 +357,6 @@ function ConfigureSetupDemo() {
     />
   );
 }
-
-const dungeonConfigure: Entry = {
-  name: 'DungeonSetup · getting the team ready',
-  file: 'apps/activity/src/DungeonSetup.tsx',
-  group: 'Slots',
-  description:
-    "The pre-run card with the team ready to configure. Tap a creature on the board: its configurator shows under the board (experience, stats, gear and talents, then Creature page and Remove from team); tap it again to hide it. Creature page opens the creature's own page in the card's place: the arrows flip through the team, Back returns to the card.",
-  controls: {},
-  defaults: {},
-  presets: [{ name: 'Tap a creature', props: {} }],
-  render: () => <ConfigureSetupDemo />,
-};
 
 const dragGhost = demoEntry(
   'DragGhost',
@@ -520,7 +525,6 @@ const placedCount: Entry = {
 
 export const slotEntries: readonly Entry[] = [
   dungeonSetup,
-  dungeonConfigure,
   creatureConfigurator,
   dungeonTeam,
   slotButton,

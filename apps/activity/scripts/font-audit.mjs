@@ -120,8 +120,8 @@ const PRESETS = [
   },
   {
     name: 'Dungeon team, a creature tapped (its configurator)',
-    entry: 'DungeonSetup · getting the team ready',
-    props: {},
+    entry: 'DungeonSetup',
+    props: { configure: true },
     tap: '.dungeon-team [data-slot="1"]',
     panels: 1,
   },
