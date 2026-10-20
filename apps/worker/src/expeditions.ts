@@ -577,8 +577,8 @@ export class Expeditions {
 
   /**
    * Chooses a push-on goal of a finished trip's offer: the trip goes on for the goal's extra hours,
-   * counted from the moment the trip ended (so a player who opens the app late loses no time: the
-   * push-on is already over and can be claimed at once). Choosing the same goal again returns the same
+   * counted from the moment the player chooses (pushing on carries its price in time: a player who
+   * opens the app late waits the full extra hours from then; the creature stays busy until then). Choosing the same goal again returns the same
    * trip; another goal after one was chosen is refused. The result (a risky goal can fail) is rolled when
    * the trip is claimed after the push-on's end, with live randomness.
    */
@@ -605,8 +605,8 @@ export class Expeditions {
           `UPDATE expeditions SET push_goal = ?, push_started_at = ?, push_ends_at = ?, push_odds_bp = ?
            WHERE id = ? AND status = 'active' AND push_goal IS NULL RETURNING *`,
           goal.id,
-          row.ends_at,
-          row.ends_at + goal.extraHours * HOUR_MS,
+          now,
+          now + goal.extraHours * HOUR_MS,
           oddsBp,
           row.id,
         )

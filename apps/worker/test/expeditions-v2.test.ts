@@ -802,7 +802,7 @@ describe('the end-of-trip choice (push on)', () => {
     });
   });
 
-  it('runs a safe goal: the trip goes on from the end of the trip, and claiming after pays the reward', async () => {
+  it('runs a safe goal: the extra hours start at the choice, and claiming after pays the reward', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -814,8 +814,8 @@ describe('the end-of-trip choice (push on)', () => {
         const chosen = tripOf(await pushOn(p, trip.id, goal.id));
         expect(chosen.pushOn).toEqual({
           goalId: goal.id,
-          startedAt: trip.endsAt,
-          endsAt: trip.endsAt + (def?.extraHours ?? 0) * HOUR,
+          startedAt: ctx.clock.t,
+          endsAt: ctx.clock.t + (def?.extraHours ?? 0) * HOUR,
           oddsBp: goal.oddsBp,
         });
         expect(chosen.readyAt).toBe(chosen.pushOn?.endsAt);
@@ -837,7 +837,7 @@ describe('the end-of-trip choice (push on)', () => {
     );
   });
 
-  it('counts a goal chosen late as already done: no time is lost when the player opens the app late', async () => {
+  it('starts the extra hours at the decision: choosing 5 h late is not claimable until the full extra time has passed', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -845,9 +845,33 @@ describe('the end-of-trip choice (push on)', () => {
         const trip = await endedWithOffer(ctx, p, 1);
         const goal = trip.offer?.goals[0];
         if (goal === undefined) throw new Error('no goal offered');
-        ctx.clock.t = trip.endsAt + 24 * HOUR;
+        const def = expeditionContent.goals.find((g) => g.id === goal.id);
+        const extra = (def?.extraHours ?? 0) * HOUR;
+        ctx.clock.t = trip.endsAt + 5 * HOUR;
+        const chosenAt = ctx.clock.t;
         const chosen = tripOf(await pushOn(p, trip.id, goal.id));
-        expect((chosen.pushOn?.endsAt ?? Infinity) < ctx.clock.t).toBe(true);
+        expect(chosen.pushOn).toMatchObject({ startedAt: chosenAt, endsAt: chosenAt + extra });
+        expect(chosen.readyAt).toBe(chosenAt + extra);
+        // Still pushing on just before the end: the creature stays away and a claim is "coming home".
+        ctx.clock.t = chosenAt + extra - 1;
+        expect((await state(p)).creatures[0]?.away).toBe(true);
+        expect(resultOf(await claim(p, trip.id)).pushOn?.outcome).toBe('declined');
+      },
+      { tripRng: createSeededRng('late'), rng: createSeededRng('late-rng') },
+    );
+  });
+
+  it('pays a goal chosen late once its time from the decision has passed', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0);
+        const trip = await endedWithOffer(ctx, p, 1);
+        const goal = trip.offer?.goals[0];
+        if (goal === undefined) throw new Error('no goal offered');
+        ctx.clock.t = trip.endsAt + 5 * HOUR;
+        const chosen = tripOf(await pushOn(p, trip.id, goal.id));
+        ctx.clock.t = (chosen.pushOn?.endsAt ?? 0) + 1;
         expect(resultOf(await claim(p, trip.id)).pushOn?.outcome).toBe('worked');
       },
       { tripRng: createSeededRng('late'), rng: createSeededRng('late-rng') },

@@ -55,7 +55,7 @@ export async function sendExpedition(
   return { expedition: answer.expedition, state: parseGameState(answer.state) };
 }
 
-/** Chooses one of the goals a finished trip offered; its extra hours count from the end of the trip. */
+/** Chooses one of the goals a finished trip offered; its extra hours count from the choice. */
 export async function pushOn(expeditionId: string, goalId: string): Promise<TripAnswer> {
   const answer = parseTripAnswer(
     await apiFetch(

@@ -46,7 +46,7 @@ Expeditions are about **creatures, not the account**: each creature builds its o
   - risky: "+2 h, a 50% chance the whole trip fails and brings nothing back, otherwise a rare gear piece";
   - safe: "+1 h, one more catch roll".
 - The sim sets each goal's odds so the risky one is a fair gamble.
-- The choice waits until the player opens the app; ignoring it means coming home. Results are rolled on the server with live randomness when the push-on ends.
+- The choice waits until the player opens the app; ignoring it means coming home. The extra hours start when the player chooses, not when the trip ended: pushing on carries its price in time. Results are rolled on the server with live randomness when the push-on ends.
 
 ### Journal
 

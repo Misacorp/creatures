@@ -38,7 +38,7 @@ export interface GoalCard {
   risk: OfferedGoal['risk'];
   /** The risk in words: Safe, Risky or Very risky. */
   riskWord: RiskWord;
-  /** "+2 h": hours added to the trip, counted from its end. */
+  /** "+2 h": hours added to the trip, counted from the choice. */
   extra: string;
   /** What it brings home when it works. */
   rewards: RewardLine[];

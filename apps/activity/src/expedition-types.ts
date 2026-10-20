@@ -72,7 +72,7 @@ export interface Trip {
   result: TripResult | null;
   /** The choice rolled when the trip ended (null: none came up, or the trip has not ended). */
   offer: { goals: OfferedGoal[] } | null;
-  /** The chosen goal; its time counts from the end of the trip. */
+  /** The chosen goal; its time counts from the choice. */
   pushOn: { goalId: string; startedAt: number; endsAt: number; oddsBp: number } | null;
 }
 
