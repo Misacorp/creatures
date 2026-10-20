@@ -177,6 +177,31 @@ button.switch.treat-switch {
   align-self: stretch;
 }
 
+/*
+  The three rows share one ink box, split by a thin line, so the list reads as one thing (Misa, 2026-10-20);
+  each row drops its own box and is a little shorter.
+*/
+.treat-list {
+  margin-bottom: 0.75rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+}
+
+.treat-list .treat-box {
+  margin: 0 var(--px);
+}
+
+.treat-list .treat-box + .treat-box {
+  border-top: 2px solid var(--line);
+}
+
+.treat-list button.switch.treat-switch {
+  min-height: 2.5rem;
+  padding: 0.25rem 0.5rem;
+  background: none;
+  box-shadow: none;
+}
+
 .treats-head {
   display: flex;
   align-items: center;

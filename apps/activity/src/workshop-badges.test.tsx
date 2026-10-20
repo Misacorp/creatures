@@ -3,7 +3,7 @@ import { BaitCost } from './BaitCost';
 import { Blueprints } from './Blueprints';
 import { CreaturePicker } from './CreaturePicker';
 import { SupplyCrafting } from './SupplyCrafting';
-import { SHORT_NOTE_MS, TreatBox } from './TreatBox';
+import { SHORT_NOTE_MS, TreatBox, TreatTimesContext } from './TreatBox';
 import { SAMPLE_GEAR, sampleRoster } from './creature-card-sample';
 import { pickerOptions } from './gear-view';
 import { byClass, byName, createPage, visibleText, type FakeElement, type Page } from './test-dom';
@@ -78,6 +78,21 @@ describe('the treat box', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("shows today's multiplier from the forecast, unless one is given", () => {
+    const root = draw(
+      <TreatTimesContext.Provider value={3}>
+        <TreatBox cost={5} bait={40} checked={false} onChange={vi.fn()} who="Cindle" />
+        <TreatBox cost={5} bait={40} checked={false} onChange={vi.fn()} who="Mossback" times={4} />
+      </TreatTimesContext.Provider>,
+    );
+    expect(byName(root, 'button', 'Pack a treat for Cindle (3x experience, 5 Bait)')).toHaveLength(
+      1,
+    );
+    expect(
+      byName(root, 'button', 'Pack a treat for Mossback (4x experience, 5 Bait)'),
+    ).toHaveLength(1);
   });
 
   it('in a list under a Treats heading says only the name and has no help of its own', () => {

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'preact/hooks';
+import { createContext } from 'preact';
+import { useContext, useEffect, useState } from 'preact/hooks';
 import { baitCount } from './count-items';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
@@ -6,6 +7,12 @@ import { Sprite } from './sprites/Sprite';
 import { CountBadge } from './ui/CountBadge';
 import { Switch } from './ui/Switch';
 import { Tag } from './ui/Tag';
+
+/**
+ * Today's treat multiplier from the forecast (`WeatherDay.treatTimes`; the server freezes the day's weather
+ * when an activity starts). `Game` provides it; without a forecast it is the usual doubling.
+ */
+export const TreatTimesContext = createContext(2);
 
 /** How long "Not enough Bait" stays in the row after a tap the player cannot afford. */
 export const SHORT_NOTE_MS = 3000;
@@ -31,7 +38,7 @@ export function TreatBox({
   disabled = false,
   onChange,
   who,
-  times = 2,
+  times: timesProp,
   help = true,
   listed = false,
 }: {
@@ -44,7 +51,7 @@ export function TreatBox({
   onChange: (checked: boolean) => void;
   /** The creature's name, said in the label (several boxes can be on one screen). */
   who?: string;
-  /** The treat's experience multiplier (2, or the day's 3 or 4 when a Boon raises it). */
+  /** The treat's experience multiplier; by default today's, from `TreatTimesContext`. */
   times?: number;
   /** Draw the "?" beside the row (off when a heading above a list of boxes has it). */
   help?: boolean;
@@ -54,6 +61,8 @@ export function TreatBox({
    */
   listed?: boolean;
 }) {
+  const dayTimes = useContext(TreatTimesContext);
+  const times = timesProp ?? dayTimes;
   // Each refused tap counts up, so a second tap restarts the shake and the timer; 0 is no note.
   const [refused, setRefused] = useState(0);
   useEffect(() => {

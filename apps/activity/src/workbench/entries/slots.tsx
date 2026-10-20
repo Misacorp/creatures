@@ -1,6 +1,7 @@
 import { content } from '@creatures/game';
 import { useMemo, useState } from 'preact/hooks';
 import { DungeonSetup } from '../../DungeonSetup';
+import { TreatTimesContext } from '../../TreatBox';
 import { DungeonTeam } from '../../DungeonTeam';
 import { CreatureConfigurator } from '../../CreatureConfigurator';
 import type { CardActions } from '../../CreaturePage';
@@ -157,17 +158,19 @@ function SetupDemo({ p }: { p: Props }) {
     ...(bool(p, 'map') ? {} : { map: null }),
   });
   return (
-    <DungeonSetup
-      today={today}
-      creatures={creatures}
-      bait={num(p, 'bait')}
-      busy={bool(p, 'busy')}
-      error={null}
-      draft={null}
-      onDraftChange={() => undefined}
-      onEnter={() => undefined}
-      onSeeLast={() => undefined}
-    />
+    <TreatTimesContext.Provider value={num(p, 'treatTimes')}>
+      <DungeonSetup
+        today={today}
+        creatures={creatures}
+        bait={num(p, 'bait')}
+        busy={bool(p, 'busy')}
+        error={null}
+        draft={null}
+        onDraftChange={() => undefined}
+        onEnter={() => undefined}
+        onSeeLast={() => undefined}
+      />
+    </TreatTimesContext.Provider>
   );
 }
 
@@ -183,6 +186,7 @@ const dungeonSetup: Entry = {
     streak: { kind: 'number', min: 0, max: 30 },
     depth: { kind: 'number', min: 1, max: 40 },
     bait: { kind: 'number', min: 0, max: 100 },
+    treatTimes: { kind: 'number', min: 2, max: 4 },
     busy: { kind: 'toggle' },
     map: { kind: 'toggle' },
     configure: { kind: 'toggle' },
@@ -193,6 +197,7 @@ const dungeonSetup: Entry = {
     streak: 3,
     depth: 1,
     bait: 40,
+    treatTimes: 2,
     busy: false,
     map: true,
     configure: false,
@@ -205,6 +210,7 @@ const dungeonSetup: Entry = {
     { name: 'The run is being sent', props: { busy: true } },
     { name: 'No Bait for treats', props: { bait: 0 } },
     { name: '12 Bait: one treat fits, the others say Not enough Bait', props: { bait: 12 } },
+    { name: 'Hearty Breakfast: treats give 3x today', props: { treatTimes: 3 } },
     { name: 'A server with no map (the old three-room strip)', props: { map: false } },
     {
       name: 'Getting the team ready (tap a creature for its configurator)',

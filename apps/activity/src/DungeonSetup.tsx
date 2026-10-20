@@ -252,34 +252,36 @@ export function DungeonSetup({
                 </span>
               </p>
             )}
-            {slots.flatMap((id) => {
-              const creature = creatures.find((c) => c.id === id);
-              if (creature === undefined) return [];
-              // A treat is paid up front: the boxes cannot add up to more Bait than the player has.
-              const others = [...treats]
-                .filter((t) => t !== creature.id)
-                .reduce((n, t) => n + (creatures.find((c) => c.id === t)?.treatCost ?? 0), 0);
-              return [
-                <TreatBox
-                  key={creature.id}
-                  cost={creature.treatCost}
-                  bait={bait - others}
-                  checked={treats.has(creature.id)}
-                  disabled={busy}
-                  who={creatureName(creature)}
-                  help={false}
-                  listed
-                  onChange={(on) => {
-                    setTreats((now) => {
-                      const next = new Set(now);
-                      if (on) next.add(creature.id);
-                      else next.delete(creature.id);
-                      return next;
-                    });
-                  }}
-                />,
-              ];
-            })}
+            <div class="treat-list">
+              {slots.flatMap((id) => {
+                const creature = creatures.find((c) => c.id === id);
+                if (creature === undefined) return [];
+                // A treat is paid up front: the boxes cannot add up to more Bait than the player has.
+                const others = [...treats]
+                  .filter((t) => t !== creature.id)
+                  .reduce((n, t) => n + (creatures.find((c) => c.id === t)?.treatCost ?? 0), 0);
+                return [
+                  <TreatBox
+                    key={creature.id}
+                    cost={creature.treatCost}
+                    bait={bait - others}
+                    checked={treats.has(creature.id)}
+                    disabled={busy}
+                    who={creatureName(creature)}
+                    help={false}
+                    listed
+                    onChange={(on) => {
+                      setTreats((now) => {
+                        const next = new Set(now);
+                        if (on) next.add(creature.id);
+                        else next.delete(creature.id);
+                        return next;
+                      });
+                    }}
+                  />,
+                ];
+              })}
+            </div>
           </div>
           <div class="dungeon-enter">
             {error !== null && (
