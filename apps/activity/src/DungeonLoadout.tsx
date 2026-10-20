@@ -9,10 +9,12 @@ import type { GearItem, GearSlot, GearState } from './gear-types';
 import { ElementChip } from './sprites/ElementChip';
 
 /**
- * How the loadout shows: `all` (every creature of the team at once, compact) or `tap` (only the creature
- * whose tile was tapped, at the creature page's own size).
+ * How the loadout shows: `all` (every creature of the team at once, compact), `tap` (only the creature
+ * whose tile was tapped, at the creature page's own size), `cards` (the Creatures tab's list cards under
+ * the board; a tap opens the creature's page) or `page` (nothing under the board; a tile opens the page).
+ * The last two are drawn by `DungeonSetup`.
  */
-export type LoadoutMode = 'all' | 'tap';
+export type LoadoutMode = 'all' | 'tap' | 'cards' | 'page';
 
 /** The three stats, as their short labels. */
 const STATS = [

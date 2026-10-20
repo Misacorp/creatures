@@ -158,6 +158,8 @@ export function CreaturePage({
   onBack,
   onAnswerCatch,
   flip,
+  backLabel = 'Creatures',
+  teamAction,
 }: {
   creature: Creature;
   state: GameState;
@@ -179,6 +181,10 @@ export function CreaturePage({
    * The owner draws the next creature's page anew, so scroll, drawers and expansions start clean.
    */
   flip?: FlipProps | undefined;
+  /** What the Back button names: the screen it returns to. */
+  backLabel?: string;
+  /** A button for the team the page was opened from ("Remove from team"), last on the page. */
+  teamAction?: { label: string; onAct: () => void } | undefined;
 }) {
   const id = `${cardDomId(creature.id)}-page`;
   const rootRef = useRef<HTMLElement>(null);
@@ -244,7 +250,7 @@ export function CreaturePage({
     >
       <div class="cp-top">
         <button type="button" class="ghost cp-back" onClick={onBack}>
-          <span aria-hidden="true">‹</span> Creatures
+          <span aria-hidden="true">‹</span> {backLabel}
         </button>
         {flip !== undefined && <FlipNav flip={flip} />}
         {canLounge(creature, state) && (
@@ -379,6 +385,13 @@ export function CreaturePage({
         </Accordion>
 
         <RenameForm creature={creature} busy={busy} onRename={actions.onRename} />
+        {teamAction !== undefined && (
+          <p class="cp-team-action">
+            <button type="button" disabled={busy} onClick={teamAction.onAct}>
+              {teamAction.label}
+            </button>
+          </p>
+        )}
       </FlipArea>
 
       {gearOpen !== null && (

@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { TreatBox } from './TreatBox';
-import type { Creature } from './api';
+import type { Creature, GameState } from './api';
+import { CreatureCard } from './CreatureCard';
+import { CreaturePage, type CardActions } from './CreaturePage';
+import type { PageFocus } from './creature-card-view';
+import { flipOver } from './ui/flip-logic';
 import { DungeonPrerun } from './DungeonPrerun';
 import { DungeonLoadout, type LoadoutProps } from './DungeonLoadout';
 import { DungeonTeam } from './DungeonTeam';
@@ -35,6 +39,11 @@ interface Props {
   onSeeLast: () => void;
   /** The team's gear and talents under the board; absent: none. */
   loadout?: Omit<LoadoutProps, 'team' | 'creatures' | 'selectedId' | 'onRemove'>;
+  /**
+   * What a creature's page needs (`cards` and `page` loadouts): the game state and the page's actions.
+   * The page takes the card's spot; Back returns to it.
+   */
+  pages?: { state: GameState; actions: CardActions };
 }
 
 /**
@@ -62,6 +71,7 @@ export function DungeonSetup({
   onEnter,
   onSeeLast,
   loadout,
+  pages,
 }: Props) {
   const pickable = useMemo(() => creatures.map(toPickerCreature), [creatures]);
   const saver = useDungeonDraft(saveDraft);
@@ -69,6 +79,8 @@ export function DungeonSetup({
   const [treats, setTreats] = useState<ReadonlySet<string>>(new Set());
   /** `tap` loadout: the creature whose tile was tapped. */
   const [selected, setSelected] = useState<string | null>(null);
+  /** `cards` and `page` loadouts: the team creature whose page is open, and where it opened. */
+  const [page, setPage] = useState<{ id: string; focus: PageFocus } | null>(null);
   const [slots, setSlots] = useState<Slots>(() =>
     setupTeam({
       memory: draft,
@@ -107,6 +119,45 @@ export function DungeonSetup({
     );
   }
 
+  const team = slots.flatMap((id) => creatures.filter((c) => c.id === id));
+  const paged = page === null ? undefined : team.find((c) => c.id === page.id);
+  if (pages !== undefined && page !== null && paged !== undefined) {
+    return (
+      <CreaturePage
+        key={paged.id}
+        creature={paged}
+        state={pages.state}
+        gear={loadout?.gear ?? null}
+        busy={busy}
+        actions={pages.actions}
+        focus={page.focus}
+        backLabel="Dungeon"
+        flip={flipOver({
+          list: team,
+          at: team.indexOf(paged),
+          noun: 'creature',
+          nameOf: creatureName,
+          pick: (target) => {
+            setPage({ id: target.id, focus: null });
+          },
+        })}
+        teamAction={{
+          label: 'Remove from team',
+          onAct: () => {
+            setPage(null);
+            change(unplace(slots, paged.id));
+          },
+        }}
+        onBack={() => {
+          setPage(null);
+        }}
+        onAnswerCatch={() => {
+          setPage(null);
+        }}
+      />
+    );
+  }
+
   const complete = isComplete(slots);
   return (
     <>
@@ -130,11 +181,37 @@ export function DungeonSetup({
           disabled={busy}
           onChange={change}
           {...(loadout?.mode === 'tap' ? { selectedId: selected, onSelect: setSelected } : {})}
+          {...(loadout?.mode === 'page' || loadout?.mode === 'cards'
+            ? {
+                onSelect: (id: string | null) => {
+                  if (id !== null) setPage({ id, focus: null });
+                },
+              }
+            : {})}
         >
-          {loadout !== undefined && (
+          {loadout?.mode === 'cards' && pages !== undefined && (
+            <ul class="cards creature-cards dungeon-cards">
+              {team.map((creature) => (
+                <CreatureCard
+                  key={creature.id}
+                  creature={creature}
+                  state={pages.state}
+                  gear={loadout.gear}
+                  busy={busy}
+                  found={false}
+                  actions={pages.actions}
+                  onAnswerCatch={() => undefined}
+                  onOpen={(focus) => {
+                    setPage({ id: creature.id, focus });
+                  }}
+                />
+              ))}
+            </ul>
+          )}
+          {loadout !== undefined && (loadout.mode === 'all' || loadout.mode === 'tap') && (
             <DungeonLoadout
               {...loadout}
-              team={slots.flatMap((id) => creatures.filter((c) => c.id === id))}
+              team={team}
               creatures={creatures}
               selectedId={selected}
               onRemove={(creature) => {

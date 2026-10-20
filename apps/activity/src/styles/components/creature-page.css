@@ -245,3 +245,9 @@ button.ip-act {
   text-decoration: line-through;
   text-decoration-thickness: 2px;
 }
+
+/* The team the page was opened from (the dungeon): its one button, last, centred and apart. */
+.cp-team-action {
+  margin: 1rem 0 0.25rem;
+  text-align: center;
+}

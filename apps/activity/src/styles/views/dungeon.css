@@ -287,3 +287,11 @@
     align-items: start;
   }
 }
+
+/* The Creatures tab's list cards under the board (`cards` loadout): the card's full width, left aligned. */
+.dungeon-team .dungeon-cards {
+  align-self: stretch;
+  margin: 0.75rem 0 0.25rem;
+  padding: 0;
+  text-align: left;
+}

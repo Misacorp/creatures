@@ -8,7 +8,7 @@ import { pageScene } from '../../creature-page/sample';
 import type { GearState } from '../../gear-types';
 import stateFixture from '../../fixtures/collection-state.json';
 import todayFixture from '../../fixtures/dungeon-today-map.json';
-import { parseGameState, type Creature } from '../../api';
+import { parseGameState, type Creature, type GameState } from '../../api';
 import { parseDungeonToday } from '../../dungeon-parse';
 import { isComplete, type Slots } from '../../dungeon-team';
 import type { PickerCreature } from '../../roster-picker';
@@ -260,7 +260,9 @@ function LoadoutDemo({ p }: { p: Props }) {
       id: `demo-extra-${String(i)}`,
     }));
     const gear: GearState = { ...pageScene('level 15').gear, items };
-    return { creatures: [...team, ...extra], team, gear };
+    const all = [...team, ...extra];
+    const state: GameState = { ...pageScene('level 15').state, creatures: all, loungerId: null };
+    return { creatures: all, team, gear, state };
   }, []);
   const today = parseDungeonToday({
     ...todayFixture,
@@ -268,7 +270,8 @@ function LoadoutDemo({ p }: { p: Props }) {
     depth: 6,
     lastTeam: scene.team.map((c) => c.id),
   });
-  const mode: LoadoutMode = str(p, 'mode') === 'tap' ? 'tap' : 'all';
+  const mode: LoadoutMode = LOADOUT_MODES.find((m) => m === str(p, 'mode')) ?? 'all';
+  const noop = () => undefined;
   return (
     <DungeonSetup
       today={today}
@@ -290,21 +293,36 @@ function LoadoutDemo({ p }: { p: Props }) {
         onSlotTalent: () => undefined,
         onOpenPage: () => undefined,
       }}
+      pages={{
+        state: scene.state,
+        actions: {
+          onEquip: () => Promise.resolve(false),
+          onRibbon: noop,
+          onEvolve: noop,
+          onRename: noop,
+          onLounge: noop,
+          onSlotTalent: noop,
+        },
+      }}
     />
   );
 }
+
+const LOADOUT_MODES: readonly LoadoutMode[] = ['all', 'tap', 'cards', 'page'];
 
 const dungeonLoadout: Entry = {
   name: 'DungeonLoadout',
   file: 'apps/activity/src/DungeonLoadout.tsx',
   group: 'Slots',
   description:
-    "The team's gear and talents on the dungeon card. All: the three creatures at once in compact cards (side by side on a wide screen). Tap: tap a creature's tile and its gear and talents show under the board at full size, with Creature page and Remove from team. A slot opens the creature page's own drawer (the item picker or the Talent Book).",
-  controls: { mode: { kind: 'select', options: ['all', 'tap'] } },
+    "The team's gear and talents on the dungeon card. All: the three creatures at once in compact cards (side by side on a wide screen). Tap: tap a creature's tile and its gear and talents show under the board at full size, with Creature page and Remove from team. Cards: the Creatures tab's list cards under the board. Page: nothing under the board. In Cards and Page, a tap opens the creature's own page in the card's place (Back: Dungeon, the arrows flip through the team, Remove from team at the end). A slot opens the creature page's own drawer (the item picker or the Talent Book).",
+  controls: { mode: { kind: 'select', options: LOADOUT_MODES } },
   defaults: { mode: 'all' },
   presets: [
     { name: 'All three at once', props: { mode: 'all' } },
     { name: 'On tap', props: { mode: 'tap' } },
+    { name: "The Creatures tab's cards (a tap opens the page)", props: { mode: 'cards' } },
+    { name: 'A tile opens the creature page', props: { mode: 'page' } },
   ],
   render: (p) => <LoadoutDemo key={str(p, 'mode')} p={p} />,
 };
