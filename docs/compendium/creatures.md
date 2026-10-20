@@ -1,6 +1,6 @@
 # Creatures
 
-Status: 2026-10-18. Covers all 30 species, grouped into 14 lines, plus the two Festival creatures and the guest roster.
+Status: 2026-10-20. Covers all 34 species, grouped into 16 lines, plus the two Festival creatures and the guest roster. The four Mire species (two lines) shipped 2026-10-20 and have their own section before the Festival creatures.
 
 Read `README.md` for the tags. Every section cites its source. Lines marked `(compendium detail, not shipped)` are new flavour for this file only.
 
@@ -946,6 +946,171 @@ A slim, floating creature with ribbons of aurora light. Dreamy, quiet and it loo
 **Quirk flavour** `(content: quirks.json aurorix)`: "Bumps into things when it gets excited." / "Cannot keep quiet and chatters to the stars." / "Secretly wishes it could walk like everyone else."
 
 **Notes** `(compendium detail, not shipped)`: the Storm Ridge page "The watcher above" says "The crowd has never seen its face" `(content: journal.json storm-aurora-watcher)`. Keep the face hidden in art. The Reef's "night singer" might be Aurorix, but the content does not say so (see `threads.md`).
+
+---
+
+## Mire lines (content)
+
+Status: 2026-10-19. The four species are shipped (`creatures.json`, `species-lore.json`, `quirks.json`, `finale-abilities.json`, `talents.json`) from `docs/design/speed-and-dodge.md` section 5.3 and the text in `docs/design/mire-content-drafts.md`. The two base forms are not catchable yet: they live nowhere until the Sunken Fen opens (the next slice), and the loader only lets a place hold a catchable species. Misa asked for a Guard line and a Support line for now; Setter and Payoff Mire lines come later `(design)`.
+
+The sprites are drawn and registered (`apps/activity/src/sprites/data/mire-species-sprites.ts`, in `SPECIES_SPRITE_DATA`) `(content)`.
+
+### At a glance (Mire)
+
+| Line    | Stage 1 | Stage 2   | Element | Role    | Rarity | Where found (catchable stage 1) |
+| ------- | ------- | --------- | ------- | ------- | ------ | ------------------------------- |
+| Mudlump | Mudlump | Bogwarden | Mire    | Guard   | Common | Sunken Fen                      |
+| Squelch | Squelch | Croakmire | Mire    | Support | Common | Sunken Fen                      |
+
+Neither line branches: each has one stage 2 form. Both evolve at level 15 for 20 Essence, like the other lines `(content: creatures.json)`.
+
+---
+
+## Mudlump line (Mire)
+
+Slow, patient lumps of peat that stand in front and let the bog do the rest. The Guard line of Mire. `(design, compendium detail, not shipped)`
+
+### Mudlump (stage 1)
+
+|             |                                       |
+| ----------- | ------------------------------------- |
+| Element     | Mire                                  |
+| Role        | Guard                                 |
+| Rarity      | Common                                |
+| Size        | Medium                                |
+| Evolves     | Bogwarden, at level 15 for 20 Essence |
+| Ability     | Mud Wall `(content)`                  |
+| Where found | Sunken Fen                            |
+
+**About (draft)** `(compendium detail, not shipped; text in mire-content-drafts.md)`: "A squat lump of wet peat with a calm face. It takes its time, takes the hits, and never takes offence."
+
+**Traits (draft)**: Calm and slow, never in a hurry. Takes hits without a fuss. Leaves round footprints in the mud. Naps in any warm puddle.
+
+**Look (draft)**:
+
+- Silhouette: Wide, low mound of peat with a stepped, lumpy top, short stubby legs and a flat bottom.
+- Size: medium.
+- Palette: Peat Brown `#8a6238`, Mud Light `#b8864a`, Ochre Fleck `#d9a02e`, Belly Cream `#d9bd7e`, Bog Sheen `#4d9c8f`.
+- Features: Round mound of peat that steps up in three lumps to a rounded top; two big dark eyes with one white highlight each, set wide and calm; a few ochre flecks on its back, and one teal sheen of oil on the top lump; cream belly patch, and short stubby legs half sunk in a puddle.
+- Pose: Sitting low and facing forward, as if it has been there for a hundred years.
+- Always: The stepped, lumpy top; calm, wide-set eyes.
+- Never: Spikes or sharp edges; a hurried or angry look.
+
+**Quirk flavour (draft)**: "Gets very excited about the smallest puddle." / "Secretly wants to be dry for one whole day." / "Counts its footprints and is never satisfied."
+
+**Notes** `(compendium detail, not shipped)`:
+
+- It is the lowest-Speed creature in the game (10 at level 1, growing by 1), so it dodges little, and it has the most HP of any common Guard. `(content: creatures.json)`
+- Mud Wall: its zone takes 40% less damage for 2 rounds, and whenever it takes a hit (not dodged, not shielded, not reflected) the boss gets Mired (60% power). The Mired part is always on, from round 1; it does nothing in a fight with status effects off. Bogwarden's Bog Hold is stronger: 60% less for 3 rounds, Mired at 80%. `(content: finale-abilities.json)`
+- The quirk pool leans against its calm: it gets excited about puddles. Working name kept; it hints at its nature, like Splashet.
+
+### Bogwarden (stage 2)
+
+|           |                      |
+| --------- | -------------------- |
+| Element   | Mire                 |
+| Role      | Guard                |
+| Rarity    | Common               |
+| Size      | Large                |
+| Catchable | No (evolves)         |
+| Ability   | Bog Hold `(content)` |
+
+**About (draft)** `(compendium detail, not shipped; text in mire-content-drafts.md)`: "A broad, steady warden of the bog, with cattails on its head and tar on its arms. Whatever strikes it gets a little stuck."
+
+**Traits (draft)**: Steady as the bog itself. Stands in front without being asked. Collects reeds and old, smooth stones. Slow to move and slower to give way.
+
+**Look (draft)**:
+
+- Silhouette: Broad, square body with a flat tar helm, two tall cattails on top and heavy plated arms.
+- Size: large.
+- Palette: Peat Brown `#8a6238`, Mud Light `#b8864a`, Tar Plate `#2a2230`, Cattail Brown `#6b3f22`, Reed Green `#7d8a3c`.
+- Features: A flat helm of tar-black plates with a teal oily sheen; two tall cattails growing from the helm, brown heads on green stems; calm dark eyes with one white highlight each, under the helm; heavy tar plates on both arms like old shoulder pads; cream belly patch on a wide, steady body.
+- Pose: Standing square and facing forward, arms down, planted like a gatepost.
+- Always: The cattails on the helm; tar plates on the arms.
+- Never: Weapons or spikes; a fierce face.
+- Changes from stage 1. Keeps: peat brown body, wide-set calm eyes, cream belly patch, teal sheen of oil. Changes: the lumpy top becomes a flat tar helm; two cattails sprout from the helm; tar plates appear on both arms; taller and broader, standing instead of sitting.
+
+**Quirk flavour:** the Mudlump line pool.
+
+**Notes** `(compendium detail, not shipped)`:
+
+- The steadfast tank of the bog. A talent in the Mudlump pool resists debuffs (Mud Off Its Back, the line Clean coat). `(content: talents.json)`
+- The cattails are the proof that something has stood in one place long enough for plants to grow on it. The tar plates are what the bog hardens into on its arms.
+- Stage 2 is bigger and broader, not meaner: it still sits still, but now it stands.
+
+---
+
+## Squelch line (Mire)
+
+Small ochre frogs that hum in the damp. They make the boss feel slow and heavy: the Support line of Mire. `(design, compendium detail, not shipped)`
+
+### Squelch (stage 1)
+
+|             |                                       |
+| ----------- | ------------------------------------- |
+| Element     | Mire                                  |
+| Role        | Support                               |
+| Rarity      | Common                                |
+| Size        | Medium                                |
+| Evolves     | Croakmire, at level 15 for 20 Essence |
+| Ability     | Squelch Song `(content)`              |
+| Where found | Sunken Fen                            |
+
+**About (draft)** `(compendium detail, not shipped; text in mire-content-drafts.md)`: "A small ochre frog that squelches when it walks and hums when it thinks nobody listens. Its croak makes big foes feel slow and heavy."
+
+**Traits (draft)**: Squelches when it walks. Hums a low tune in the damp. Loves rain and big puddles. Hides in the reeds when watched.
+
+**Look (draft)**:
+
+- Silhouette: Round, wide frog with two bulging brow bumps on top, a very wide mouth and short webbed feet.
+- Size: medium.
+- Palette: Ochre Hide `#c8962e`, Bright Ochre `#e8c068`, Dark Ochre `#8a5e1e`, Belly Cream `#f0dba0`, Tar Spot `#2a2230`.
+- Features: Two round brow bumps on top of the head, lighter on the upper left; big dark eyes with one white highlight each; a very wide, gentle smile; a few dark tar spots on its back; cream belly patch.
+- Pose: Sitting upright and facing forward, throat slightly puffed, as if about to hum.
+- Always: The wide smile; the two brow bumps.
+- Never: Teeth or a long tongue; a sticky or gross look.
+
+**Quirk flavour (draft)**: "Is embarrassed by the sound of its own squelch." / "Will not go near puddles it cannot see the bottom of." / "Pretends to be a stone whenever someone sings."
+
+**Notes** `(compendium detail, not shipped)`:
+
+- The debuffer. Besides its usual Support work, its round-start action leaves Mired on the boss (60% power). Squelch Song also rallies all creatures for +4% damage for 2 rounds; Deep Croak is Mired at 80% and +7%. `(content: finale-abilities.json)`
+- Its wide smile and brow bumps make it read as a frog at 16 pixels. The face is the same chibi face as every creature.
+- Always humming: the Mire folk say a squelch is the fen's way of saying hello.
+
+### Croakmire (stage 2)
+
+|           |                        |
+| --------- | ---------------------- |
+| Element   | Mire                   |
+| Role      | Support                |
+| Rarity    | Common                 |
+| Size      | Large                  |
+| Catchable | No (evolves)           |
+| Ability   | Deep Croak `(content)` |
+
+**About (draft)** `(compendium detail, not shipped; text in mire-content-drafts.md)`: "A big, patient frog with a lily pad on its head and a throat like a drum. One low croak and the boss sinks a little deeper into the mud."
+
+**Traits (draft)**: Croaks low and long. Wears a lily pad like a hat. Makes big foes feel slow and heavy. Calm in any storm.
+
+**Look (draft)**:
+
+- Silhouette: Tall, broad frog with high brow domes, a small lily pad between them and wide webbed feet.
+- Size: large.
+- Palette: Ochre Hide `#c8962e`, Bright Ochre `#e8c068`, Lily Green `#7d8a3c`, Belly Cream `#f0dba0`, Tar Spot `#2a2230`.
+- Features: Two tall brow domes, taller than Squelch's; a small green lily pad sitting between the domes; big dark eyes with one white highlight each, half closed and calm; a wide smile above a puffed cream throat like a drum; wide webbed feet in darker ochre, spread on the mud.
+- Pose: Standing tall and facing forward, throat puffed, ready for one long croak.
+- Always: The lily pad on its head; the puffed cream throat.
+- Never: Teeth or a long tongue; a fierce look.
+- Changes from stage 1. Keeps: ochre hide with tar spots, the wide, gentle smile, brow bumps on top of the head, cream belly patch. Changes: the brow bumps grow into tall domes; a lily pad appears between the domes; the throat puffs out like a drum; wide webbed feet, and a much larger body.
+
+**Quirk flavour:** the Squelch line pool.
+
+**Notes** `(compendium detail, not shipped)`:
+
+- Its talents lean to debuff duration (Sticks Around, the line Clinging) and debuff power (Low Croak, the line Heavy hand). `(content: talents.json)`
+- The lily pad is the one thing it will not take off.
+- One low croak is all it needs: the boss sinks a little deeper into the mud.
 
 ---
 

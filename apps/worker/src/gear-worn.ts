@@ -73,6 +73,16 @@ export function gearRulesOf(
   ).rules;
 }
 
+/**
+ * The flat dodge (basis points) a creature's worn gear and talents add on top of its Speed part: the
+ * modifier sheet's `dodgeBp`, 0 when the sheet is absent or has none. The creature page shows
+ * `min(maxBp, Speed x perSpeedBp + this)`, the number the fight uses (`creatureDodgeBp` in the engine).
+ */
+export function flatDodgeBp(mods: GearMods | undefined): number {
+  const value = mods?.dodgeBp ?? 0;
+  return Number.isSafeInteger(value) && value > 0 ? value : 0;
+}
+
 /** `value` times (10000 - `bp`) over 10000, floored (a reduction, at least 1 when `value` is). */
 export function minusBp(value: number, bp: number): number {
   return Math.max(value > 0 ? 1 : 0, Math.floor((value * (10_000 - bp)) / 10_000));

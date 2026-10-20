@@ -7,6 +7,7 @@
  * the fern pocket). The bottom third is kept calm for the walker.
  */
 import type { SpriteDef } from '../sprite-data';
+import { MIRE_BANNER_SPRITE_DATA } from './mire-banner-sprites';
 
 export const BANNER_SPRITE_DATA: Readonly<Record<string, SpriteDef>> = {
   // A sunlit rock shelf at low tide: four pools that each catch a bit of sky, starfish and anemones, little crabs, foam where the waves lap the edge, and wet footprints coming in from the left.
@@ -320,4 +321,6 @@ export const BANNER_SPRITE_DATA: Readonly<Record<string, SpriteDef>> = {
       'ggkgggggggggggggggghggggggggkgggghggggggggkggggggggggkggdddddddd',
     ],
   },
+  // The Sunken Fen, drawn in `mire-banner-sprites.ts`.
+  ...MIRE_BANNER_SPRITE_DATA,
 };

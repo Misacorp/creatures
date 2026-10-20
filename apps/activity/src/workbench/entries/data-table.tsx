@@ -22,6 +22,12 @@ const ROW_SETS: Readonly<Record<string, readonly DataRow[]>> = {
     { label: 'Attack', value: 96 },
     { label: 'Speed', value: 7, extra: gain(5) },
   ],
+  'Stats with Dodge (once dodge is on)': [
+    { label: 'HP', value: 349, extra: gain(204) },
+    { label: 'Attack', value: 128, extra: gain(67) },
+    { label: 'Speed', value: 117, extra: gain(14) },
+    { label: 'Dodge', value: '11.7%' },
+  ],
   'Stats, no gear': [
     { label: 'HP', value: 349 },
     { label: 'Attack', value: 128 },
@@ -93,6 +99,10 @@ const dataTable: Entry = {
     { name: 'Stats with gear (the creature page)', props: {} },
     { name: 'Stats, some without gear', props: { rows: 'Stats, some without gear' } },
     { name: 'Stats, no gear', props: { rows: 'Stats, no gear' } },
+    {
+      name: 'Stats with a Dodge row (when dodge is on)',
+      props: { rows: 'Stats with Dodge (once dodge is on)' },
+    },
     { name: 'Facts (About)', props: { rows: 'Facts', tabular: false } },
     {
       name: 'Breakdown in a popover, with a total',

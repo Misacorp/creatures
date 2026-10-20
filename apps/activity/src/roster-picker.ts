@@ -59,7 +59,7 @@ export function toPickerCreature(c: Creature): PickerCreature {
     species: c.species,
     nickname: c.nickname,
     level: c.level,
-    power: creaturePower(c.statsWithGear),
+    power: creaturePower(c.statsWithGear, c.dodgeBp),
     caughtAt: c.caughtAt,
   };
 }

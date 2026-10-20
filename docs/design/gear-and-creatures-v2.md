@@ -214,17 +214,18 @@ How to read the tables:
 | Area ward                       | Area hits −%                              | −3%     | −5%   | −7%   | −9%   | −12%  | —   | 60    | 10    | C R E  | Sheet  | Creatures not beside a Guard; rows that get swept                             |
 | Aimed ward                      | Aimed hits −%                             | −3%     | −5%   | −7%   | −9%   | −12%  | —   | 50    | 10    | C R E  | Sheet  | Guards (they take aimed hits for the row); the front creature                 |
 | Well-fed                        | Healing received +%                       | +8%     | +14%  | +20%  | +27%  | +35%  | —   | 40    | 15    | C R E  | Sheet  | A creature beside a Tide or Grove Support                                     |
+| Fleet (2026-10-20)              | Speed +% (a share of the creature's own)  | +5%     | +8%   | +11%  | +14%  | +17%  | 6   | 20    | 14    | C R E  | Ready  | Anyone who dodges: Speed is what dodge is made of (`speed-and-dodge.md` 2.4)  |
 
 ### 5.2 Element lines
 
 Each line exists once per element (X = Tide, Ember, Grove or Spark), so these four rows are 16 lines. An X-tagged base rolls its own X lines three times as often.
 
-| Line         | Effect                                                                                                    | I   | II  | III  | IV   | V    | Hat | Scarf | Charm | Rarity | Engine | Who wants it                                                                                 |
-| ------------ | --------------------------------------------------------------------------------------------------------- | --- | --- | ---- | ---- | ---- | --- | ----- | ----- | ------ | ------ | -------------------------------------------------------------------------------------------- |
-| X Attunement | Attack +% if the wearer is X                                                                              | +3% | +5% | +8%  | +11% | +14% | 30  | 10    | 40    | C R E  | Ready  | Any X creature: bigger than plain Attack, dead on the others                                 |
-| X Hunter     | Damage against foes of the element X beats +% (Tide Hunter: Ember foes)                                   | +4% | +7% | +10% | +13% | +17% | 40  | —     | 20    | C R E  | Sheet  | Anyone, when this week's boss or today's room is that element: a reason to swap gear by boss |
-| X Reaction   | The bonus of the reaction X sets off +% (Tide: Steam, Ember: Wildfire, Grove: Grounding, Spark: Overload) | +5% | +9% | +13% | +18% | +24% | 20  | —     | 50    | C R E  | Sheet  | The creature that cashes that reaction, Payoffs first                                        |
-| X Ward       | Damage from foes of the element that beats X −% (Tide Ward: Spark foes)                                   | −4% | −7% | −10% | −13% | −17% | —   | 50    | 10    | C R E  | Sheet  | Everyone, against that boss; X creatures most of all, since that boss counters them          |
+| Line         | Effect                                                                                                     | I   | II  | III  | IV   | V    | Hat | Scarf | Charm | Rarity | Engine | Who wants it                                                                                 |
+| ------------ | ---------------------------------------------------------------------------------------------------------- | --- | --- | ---- | ---- | ---- | --- | ----- | ----- | ------ | ------ | -------------------------------------------------------------------------------------------- |
+| X Attunement | Attack +% if the wearer is X                                                                               | +3% | +5% | +8%  | +11% | +14% | 30  | 10    | 40    | C R E  | Ready  | Any X creature: bigger than plain Attack, dead on the others                                 |
+| X Hunter     | Damage against foes of every element X deals 150% to on the element chart +% (Tide Hunter: Ember foes)     | +4% | +7% | +10% | +13% | +17% | 40  | —     | 20    | C R E  | Sheet  | Anyone, when this week's boss or today's room is that element: a reason to swap gear by boss |
+| X Reaction   | The bonus of the reactions X sets off +% (Tide: Steam, Ember: Wildfire, Grove: Grounding, Spark: Overload) | +5% | +9% | +13% | +18% | +24% | 20  | —     | 50    | C R E  | Sheet  | The creature that cashes that reaction, Payoffs first                                        |
+| X Ward       | Damage from foes of every element that deals 150% to X on the element chart −% (Tide Ward: Spark foes)     | −4% | −7% | −10% | −13% | −17% | —   | 50    | 10    | C R E  | Sheet  | Everyone, against that boss; X creatures most of all, since that boss counters them          |
 
 ### 5.3 Role lines
 
@@ -384,39 +385,53 @@ A set is three named pieces (Hat, Scarf, Charm) sharing a tag. Bonuses count pie
 
 Chance grows with tier and rarity: **4 / 6 / 8 / 10 / 12%** at tiers I to V, +2 points on Epics and Festival pieces. Combat chances need a per-creature "luck die" each round, drawn after every existing die and only when the feature is on, so older fights draw exactly what they did.
 
-| Line          | Effect                                                          | Who wants it                  | Engine |
-| ------------- | --------------------------------------------------------------- | ----------------------------- | ------ |
-| Second wind   | Chance each round to heal 5% of max HP                          | Front creatures               | Dice   |
-| Echo          | Chance its hit lands again at 30%                               | High-Attack Payoffs           | Dice   |
-| Sidestep      | Chance to take nothing from an area hit                         | Back-row creatures            | Dice   |
-| Quick re-mark | Chance its hit leaves its mark over another mark, like a Setter | Non-Setters who mark first    | Dice   |
-| Steady paws   | Chance to shrug off a silence                                   | Line ends                     | Dice   |
-| Spill-over    | Chance a reaction it sets off leaves its own mark after         | Payoffs in two-reaction teams | Dice   |
-| Warm heart    | Chance at round start to give a creature beside it a 10% boost  | Guards beside Payoffs         | Dice   |
-| Lucky find    | Chance a trip brings back one extra catch roll                  | Collectors                    | Rules  |
-| Tinker's luck | Chance a dismantle refunds the full craft cost                  | Crafters                      | Rules  |
-| Second look   | Chance a duplicate's talent rolls twice and you keep the better | Talent hunters                | Rules  |
+| Line          | Effect                                                                                       | Who wants it                  | Engine           |
+| ------------- | -------------------------------------------------------------------------------------------- | ----------------------------- | ---------------- |
+| Second wind   | Chance each round to heal 5% of max HP                                                       | Front creatures               | Dice             |
+| Light-footed  | Flat points of dodge on every hit (4 / 6 / 8 / 10 / 12, +2 on an Epic)                       | Anyone the boss hits a lot    | Dodge            |
+| Echo          | Chance its hit lands again at 30%                                                            | High-Attack Payoffs           | Dice             |
+| Sidestep      | Chance to take nothing from an area hit (with dodge on: flat dodge points against area hits) | Back-row creatures            | Dice, then dodge |
+| Quick re-mark | Chance its hit leaves its mark over another mark, like a Setter                              | Non-Setters who mark first    | Dice             |
+| Steady paws   | Chance to shrug off a silence                                                                | Line ends                     | Dice             |
+| Spill-over    | Chance a reaction it sets off leaves its own mark after                                      | Payoffs in two-reaction teams | Dice             |
+| Warm heart    | Chance at round start to give a creature beside it a 10% boost                               | Guards beside Payoffs         | Dice             |
+| Lucky find    | Chance a trip brings back one extra catch roll                                               | Collectors                    | Rules            |
+| Tinker's luck | Chance a dismantle refunds the full craft cost                                               | Crafters                      | Rules            |
+| Second look   | Chance a duplicate's talent rolls twice and you keep the better                              | Talent hunters                | Rules            |
 
 **Built 2026-10-18 (chance lines; `decisions.md`, same date).** Nine of the ten ship, **including** Quick re-mark and Spill-over (both fell out of the mark code): Second wind, Echo, Sidestep, Quick re-mark, Steady paws, Spill-over, Warm heart, Tinker's luck and Second look. Lucky find was already there. All are group `chance`, unit `chance` (the card reads "Echo 8%"), special lines, **Rare and up** (never on a Common), tiers 4 / 6 / 8 / 10 / 12% by item level like every line, **+2 points on an Epic or a Festival piece** (`lineBonus`; the three Festival pieces each have one chance line in their narrow pool). What they do when they fire is not tiered (Second wind heals 5% of max HP, Echo repeats 30% of the plain hit, Warm heart gives a 10% boost). The combat ones roll on each creature's **luck dice** (`combat-rules.md` 11): ten per creature per round, drawn after every other die and only when some creature in the fight carries a chance line. Two readings the table left open: **Tinker's luck** refunds the plain craft cost of the item (`craftCost`: scrap by item level and one shard of the base's element; no Reach, no glimmer or Essence), lifted per kind of part where the ranges gave less, for each item of a job the wearer runs; **Second look** judges "the better" by `talentScore` (the worth Equip best uses) for the player's creature of that line, a tie keeping the first roll.
+
+**Added 2026-10-20 (dodge and debuff lines, slice 6 of `speed-and-dodge.md`).** All of these roll on items now, even while the dodge and effects switches (`RULES.combat.dodge.enabled`, `RULES.combat.effects.enabled`) are off; they simply do nothing until the switches flip, and score 0 in Equip best until then (`lineScore`).
+
+- **Fleet** (group `core`, a `stat` line on Speed, Common and up): Speed +5 / 8 / 11 / 14 / 17%, folded into the creature's Speed like Zoomies (`spdBp`). Weights Hat 6, Scarf 20, Charm 14.
+- **Light-footed** (group `chance`, special, Rare and up): `dodgeBp` 4 / 6 / 8 / 10 / 12 points (balance pass 2026-10-20; it was 2 to 6), **+2 points on an Epic or Festival piece** like every chance line (the card reads "Light-footed 8%" at tier 3). Weights Scarf 14, Charm 10.
+- **Sidestep** keeps its line, name and numbers (4 / 6 / 8 / 10 / 12%, +2 on an Epic). With dodge on, the fold (`wornEffects`) writes them to `areaDodgeBp` (flat points of dodge against area hits, `combat-rules.md` 14.1) instead of `sidestepBp`; with dodge off it fills `sidestepBp` and rolls its own dice as before. The engine still handles `sidestepBp` in a stored fight, so old fights replay. The switch is the one `if` in `wornEffects`.
+- **Riposte, Momentum, Slipstream** (group `trigger`, special, Rare and up): `riposteBp` 20 / 25 / 30 / 35 / 40% of the wearer's Attack, `momentumBp` 8 / 12 / 16 / 20 / 25%, `slipstreamBp` 6 / 9 / 12 / 15 / 18%. They fire when the wearer **dodges a boss hit** (`combat-rules.md` 12). Weights: Riposte Hat 8, Scarf 6, Charm 10; Momentum Hat 10, Charm 8; Slipstream Scarf 8, Charm 12.
+- **Clean coat, Heavy hand, Clinging** (group `role`, Rare and up, no longer fixed-only; tiers as in 5a): Clean coat Scarf 14, Charm 6; Heavy hand Scarf 6, Charm 14; Clinging Scarf 4, Charm 12. The Support "aura" version of Clean coat is not built.
+- **Talents:** Slips Away (Coralynx, Light-footed 3 points), Long Strides (Solmane, Fleet +10%), Soot on Its Paws (Ashmole, Heavy hand +15%), each golden at 1.5 times. Zoomies stays the main Speed talent.
+- **Power score:** with dodge on, `creaturePower` counts a creature's HP as effective HP, `HP / (1 - dodge)` (dodge is its Speed's share plus the sheet's flat `dodgeBp`), so a fast creature outranks a slow one of the same Attack and HP in the auto team, Recommended and the simulator's picks. Off, it is exactly Attack + HP / 10. The line `worth` of the dodge and debuff lines counts only while their switch is on (Fleet 1500 like Zoomies, Light-footed 5000, Riposte 600, Momentum 300, Slipstream 300, the three debuff lines 300 each). The simulator's `fightPower` runs real fights, so it already sees dodge when the live rules carry it.
 
 ### 6.4 Trigger lines
 
 Each names a defined moment from `combat-rules.md` and writes a log line when it fires. They need per-creature hooks in the engine (the existing mutator hooks are fight-wide).
 
-| Line          | Moment                                  | Effect                                      | Who wants it                             |
-| ------------- | --------------------------------------- | ------------------------------------------- | ---------------------------------------- |
-| Payback       | It takes a hit for a neighbour          | Its next hit +30%                           | Guards                                   |
-| Kindling      | Round 1 starts                          | Creatures beside it start with a boost      | Supports                                 |
-| Opening mark  | Round 1 starts and the foe has no mark  | It leaves its mark                          | Setters                                  |
-| Rally cry     | A creature beside it is knocked out     | Its hits +15% for the rest of the fight     | Anyone in a row with a fragile neighbour |
-| Ember tail    | It crits                                | Its next hit +20%                           | Crit Payoffs                             |
-| Storm warning | A charge is announced with it marked    | It takes 30% less from the landing          | Front and middle rows                    |
-| Stubborn      | A hit would knock it out (once a fight) | It stays at 1 HP                            | Carries                                  |
-| Last stand    | It falls to a quarter of its HP         | Damage taken −20% for the rest of the fight | Guards                                   |
-| Overflow      | It sets off a reaction                  | The next creature to act gets a 15% boost   | Payoffs mid-order                        |
-| Second breath | The first enrage round starts           | Heals 10% of max HP                         | Teams that go to overtime                |
-| Patient       | It is silenced                          | Its next hit after the silence +25%         | Line ends                                |
-| Shared warmth | A Support heals it                      | The Support's next boost +3 pt              | Pairs of Support and Guard               |
+| Line          | Moment                                  | Effect                                                                 | Who wants it                             |
+| ------------- | --------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------- |
+| Payback       | It takes a hit for a neighbour          | Its next hit +30%                                                      | Guards                                   |
+| Kindling      | Round 1 starts                          | Creatures beside it start with a boost                                 | Supports                                 |
+| Opening mark  | Round 1 starts and the foe has no mark  | It leaves its mark                                                     | Setters                                  |
+| Rally cry     | A creature beside it is knocked out     | Its hits +15% for the rest of the fight                                | Anyone in a row with a fragile neighbour |
+| Ember tail    | It crits                                | Its next hit +20%                                                      | Crit Payoffs                             |
+| Storm warning | A charge is announced with it marked    | It takes 30% less from the landing                                     | Front and middle rows                    |
+| Stubborn      | A hit would knock it out (once a fight) | It stays at 1 HP                                                       | Carries                                  |
+| Last stand    | It falls to a quarter of its HP         | Damage taken −20% for the rest of the fight                            | Guards                                   |
+| Overflow      | It sets off a reaction                  | The next creature to act gets a 15% boost                              | Payoffs mid-order                        |
+| Second breath | The first enrage round starts           | Heals 10% of max HP                                                    | Teams that go to overtime                |
+| Patient       | It is silenced                          | Its next hit after the silence +25%                                    | Line ends                                |
+| Shared warmth | A Support heals it                      | The Support's next boost +3 pt                                         | Pairs of Support and Guard               |
+| Riposte       | It dodges a boss hit                    | It strikes the boss at once for 20 to 40% of its Attack                | Dodgers with a high Attack               |
+| Momentum      | It dodges a boss hit                    | Its next turn hit +8 to 25%                                            | Dodgers that hit often                   |
+| Slipstream    | It dodges a boss hit                    | The strongest creature beside it gets a 6 to 18% boost on its next hit | Dodgers beside a carry                   |
 
 **Built 2026-10-18 (trigger lines; `decisions.md`, same date).** All twelve ship, optional ones included. Group `trigger`, special lines, **Rare and up**; Stubborn is an **Epic line from item level 12** with one value (no tiers) and Opening mark a Rare line with one value, like Lingering and Unbothered. Tier V is the table's number; tiers I to IV scale to about 25 / 40 / 60 / 80% of it, and Kindling is 40% at tier V because it works once (a Support's boost is 15% every round). Each is an optional `SlotMods` field (absent: exactly today's fight) and writes a `proc` event when it fires (`combat-rules.md` 12). "Next hit" is the creature's next turn hit; an ability's strike neither gets nor spends it.
 

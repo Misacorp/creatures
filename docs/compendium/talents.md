@@ -46,7 +46,33 @@ Each line has a pool of 7 or 8. Branch forms share their line's pool, so a Sprou
 | Pounces When Perfect  | It saves its best pounce for a perfect moment.           |
 | Fiercely Loyal        | Hits harder while a Guard stands beside it.              |
 
-### Sproutle line (Grove Guard, or Support after the second branch)
+#### Mudlump and Squelch lines (Mire)
+
+Status: 2026-10-19. Shipped (`talents.json`, from `docs/design/mire-content-drafts.md`). Mudlump and Bogwarden are the Guard line, so the Mudlump pool is Guard talents. The Squelch line has a pool of its own (keyed `squelch`) that leans to debuff duration and power. The three the design asked for are marked; the rest are written in the same style. `(content, compendium detail, not shipped)`
+
+| Talent (Mudlump pool) | What it is about                                        |
+| --------------------- | ------------------------------------------------------- |
+| Mud Off Its Back      | Mud and muck slide off it. Debuffs on it are weaker.    |
+| Hard to Budge         | A lump that stays where it is put: more armor.          |
+| Stands in the Puddle  | It stands beside its neighbours and covers them.        |
+| Thick and Lumpy       | A thick, lumpy coat of peat: more health.               |
+| Shrugs It Off         | Aimed hits hurt less.                                   |
+| Naps in Warm Puddles  | Rests well between rooms of the dungeon.                |
+| Stays Calm in Storms  | Steady under pressure: it takes less from the big hits. |
+
+| Talent (Squelch pool)   | What it is about                                                   |
+| ----------------------- | ------------------------------------------------------------------ |
+| Sticks Around           | What it sticks to stays stuck. The debuffs it applies last longer. |
+| Low Croak               | A low, heavy croak. The debuffs it applies stack more often.       |
+| Hums in the Damp        | A low hum that powers up its neighbours.                           |
+| Splashes the Neighbours | A little water for the creatures beside it: a small heal.          |
+| Loves Big Puddles       | Heals better when it is looked after.                              |
+| Hides in the Reeds      | Does not like being aimed at, so aimed hits hurt less.             |
+| Finds Things in Mud     | Its trips turn up more finds.                                      |
+
+Mud Off Its Back is the Guard talent that resists debuffs (the line Clean coat); Sticks Around and Low Croak are the Support talents that make debuffs last longer (the line Clinging) and stack more often (Heavy hand). `(content)`
+
+## Sproutle line (Grove Guard, or Support after the second branch)
 
 | Talent                | What it is about                                       |
 | --------------------- | ------------------------------------------------------ |
@@ -96,6 +122,7 @@ Each line has a pool of 7 or 8. Branch forms share their line's pool, so a Sprou
 | Digs for Friends         | Teaches the workbench faster.                      |
 | Hoards Cosy Things       | Finds a few more parts on its trips.               |
 | Tunnels Through Anything | Digs past a foe's defence.                         |
+| Soot on Its Paws         | What it sticks to a foe sticks a little deeper.    |
 
 ### Stormray line (Spark Payoff, rare)
 
@@ -133,6 +160,7 @@ Each line has a pool of 7 or 8. Branch forms share their line's pool, so a Sprou
 | Fierce About Its Territory | Hits harder against Ember foes.                                                                                 |
 | Lance Practice             | Its Coral Lance strikes harder.                                                                                 |
 | Elegant                    | It does nothing clumsily: more attack.                                                                          |
+| Slips Away                 | Light on its feet: it is hit less often.                                                                        |
 | Patrols at Dusk            | Not shipped as written: it is a plain Explorer XP talent for now (the Moonlit Reef bonus waits for the engine). |
 
 ### Epic and Festival lines
@@ -160,6 +188,7 @@ Their pools:
 | Crown of Embers          | Its Ember reactions cash in bigger.    |
 | Generous with Its Warmth | The mark it leaves is worth following. |
 | Warm Steps               | Quick feet on a trip.                  |
+| Long Strides             | A longer stride: more Speed.           |
 
 ### Gaiadrake line (Grove Guard, epic)
 

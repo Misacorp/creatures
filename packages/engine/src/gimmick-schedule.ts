@@ -133,6 +133,9 @@ export function bossWarnings(boss: BossDef, round: number): BossWarning[] {
       case 'reflect_first_reaction':
         out.push({ ...base, target: { kind: 'reaction' } });
         break;
+      case 'purge':
+        // The boss clears its own debuffs: nobody is aimed at, so there is nothing to warn about.
+        break;
       default:
         out.push({ ...base, target: patternTarget(g, firingIndex(g, round)) });
     }

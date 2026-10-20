@@ -10,6 +10,7 @@ import {
 import {
   autoPlace,
   compactRow,
+  liveEffects,
   liveFightRules,
   placeSlots,
   raidEnrage,
@@ -32,7 +33,7 @@ import { slotOfCreature } from './raid';
  * 1. The raid team (the three strongest creatures, `pickTeam`) stands in one line in the order the
  *    raid's default placement gives it (`autoPlace`: Guards left, Payoffs right), each beside the
  *    next, and plays a full finale (live rules, live luck and boss attacks at the
- *    rank, the creature abilities of level 10 and up, overtime) against each of the four shipped bosses, at
+ *    rank, the creature abilities of level 10 and up, overtime) against each of the shipped bosses, at
  *    the Boss Rank given, with a boss whose pool cannot run out. The boss's Attack is a typical
  *    group's share (its Attack over the group size), since the raid spreads its hits over many more creatures.
  * 2. Each fight uses its own fixed seed, so the same team and rank always score the same, and a
@@ -64,7 +65,7 @@ export interface FightPowerOptions {
   group?: number;
 }
 
-/** Seeds per boss: 4 bosses x 3 seeds is 12 fights of 12 to 15 rounds for a score. */
+/** Seeds per boss: 5 bosses x 3 seeds is 15 fights of 12 to 15 rounds for a score. */
 export const DEFAULT_SEEDS = 3;
 
 /** The boss pool of a reference fight: it cannot run out, so the score is damage, not a win. */
@@ -119,6 +120,7 @@ export function referenceFight(
     ...(bossAttacks > 1 ? { bossAttacks } : {}),
     luck: luckAtRank(RULES.combat.luck, rank),
     rules: liveFightRules(),
+    ...liveEffects(),
     ...(enrage === undefined ? {} : { enrage }),
   };
 }

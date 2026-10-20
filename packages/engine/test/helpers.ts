@@ -147,8 +147,11 @@ export function slot(
 export function input(row: FightSlot[], overrides: Partial<FightInput> = {}): FightInput {
   const base = boss('tidal-colossus');
   const owners = [...new Set(row.map((s) => s.ownerId).filter((o): o is string => o !== null))];
+  // A plain boss has no Speed either (the shipped bosses have a little, which would give it dodge).
+  const plainBoss = { ...base, gimmicks: [], element: 'tide' as const };
+  delete plainBoss.baseSpd;
   return {
-    boss: { ...base, gimmicks: [], element: 'tide' },
+    boss: plainBoss,
     bossAtk: 1,
     phase: 'phase1',
     bossHpPool: { max: 1_000_000, current: 1_000_000 },

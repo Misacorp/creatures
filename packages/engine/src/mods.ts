@@ -59,6 +59,14 @@ export interface ResolvedMods {
   secondBreathBp: number;
   patientBp: number;
   sharedWarmthBp: number;
+  riposteBp: number;
+  momentumBp: number;
+  slipstreamBp: number;
+  dodgeBp: number;
+  areaDodgeBp: number;
+  debuffResistBp: number;
+  debuffPowerBp: number;
+  debuffDurationTurns: number;
 }
 
 /**
@@ -158,6 +166,14 @@ const EMPTY: ResolvedMods = Object.freeze({
   secondBreathBp: 0,
   patientBp: 0,
   sharedWarmthBp: 0,
+  riposteBp: 0,
+  momentumBp: 0,
+  slipstreamBp: 0,
+  dodgeBp: 0,
+  areaDodgeBp: 0,
+  debuffResistBp: 0,
+  debuffPowerBp: 0,
+  debuffDurationTurns: 0,
 });
 
 /** The sheet of a creature without one. */
@@ -279,6 +295,14 @@ export function resolveMods(
     secondBreathBp: n('secondBreathBp', SHARE),
     patientBp: n('patientBp'),
     sharedWarmthBp: n('sharedWarmthBp'),
+    riposteBp: n('riposteBp', [0, 100_000]),
+    momentumBp: n('momentumBp'),
+    slipstreamBp: n('slipstreamBp'),
+    dodgeBp: n('dodgeBp', SHARE),
+    areaDodgeBp: n('areaDodgeBp', SHARE),
+    debuffResistBp: n('debuffResistBp', SHARE),
+    debuffPowerBp: n('debuffPowerBp', [0, 100_000]),
+    debuffDurationTurns: n('debuffDurationTurns', [0, 10]),
   };
 }
 

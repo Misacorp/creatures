@@ -1,6 +1,8 @@
 // Damage to creatures: `hurt` and the guard helpers it uses (docs/design/attack-patterns.md section 1).
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
 import { RULES } from '@creatures/game';
+import { creatureDodgeBp, nextTakenDie, onDodged } from './fight-dodge';
+import { applyEffect, BOSS, clearEffects, effectBpOf } from './fight-effects';
 import {
   baseContext,
   besides,
@@ -122,11 +124,17 @@ export function hurt(
   charged = false,
 ): Creature {
   const { boss, shape, bossCrit, bossCritOn, rules, creatures, events, perCreature } = state;
+  state.lastHitDodged = false;
   const crit = die !== undefined && bossCritOn && die < bossCrit.chanceBp;
+  // The boss's own status effects (Mired) change the damage it deals; a reflected hit is a creature's
+  // reaction coming back, not the boss's own damage, so they do not touch it.
+  const effectBp = mode === 'reflect' ? 0 : effectBpOf(state, BOSS, 'damageDealtBp');
   let amount = Math.max(
     0,
     Math.floor(
-      (rawAmount * (10_000 + state.bossDamageBp + (crit ? bossCrit.damageBp : 0))) / 10_000,
+      (rawAmount *
+        Math.max(0, 10_000 + state.bossDamageBp + effectBp + (crit ? bossCrit.damageBp : 0))) /
+        10_000,
     ),
   );
   // 1. Who takes it (an aimed hit: a Guard steps in, see `guardFor`). The pick uses no state of the
@@ -136,6 +144,34 @@ export function hurt(
   if (intercepts && target.role !== 'guard') {
     const guard = guardFor(state, target);
     if (guard !== undefined) victim = guard;
+  }
+  // Dodge (combat-rules.md 14): the taker rolls before any wall, armor, cover or crit. Never on a reflected
+  // hit, and never on a hit a Guard stepped in to take (the Guard chose it). A charge landing and an enrage
+  // hit roll the full chance whatever their kind; any other area hit rolls the area chance. The die counts
+  // for every hit the taker takes, rolled or not, so the numbering never depends on the hit's kind.
+  if (state.dodge !== undefined) {
+    const die = nextTakenDie(state, victim);
+    if (mode !== 'reflect' && victim === target) {
+      const area = mode === 'area' && !charged && source !== 'enrage';
+      if (die < creatureDodgeBp(state, victim, area)) {
+        // Sidestep is only rolled when the dodge failed, but its die numbering still counts this area hit.
+        if (mode === 'area' && victim.mods.sidestepBp > 0) {
+          state.areaSeen[victim.idx] = (state.areaSeen[victim.idx] ?? 0) + 1;
+        }
+        state.lastHitDodged = true;
+        events.push({
+          t: 'boss_hit',
+          round: state.currentRound,
+          source,
+          target: victim.id,
+          damage: 0,
+          dodged: true,
+          ...(splash ? { splash: true as const } : {}),
+        });
+        onDodged(state, victim);
+        return victim;
+      }
+    }
   }
   // Sidestep: a chance to take nothing from an area hit (before any wall, armor or cover).
   if (mode === 'area' && victim.mods.sidestepBp > 0) {
@@ -284,8 +320,17 @@ export function hurt(
   });
   if (stubborn)
     events.push({ t: 'proc', round: state.currentRound, creature: victim.id, kind: 'stubborn' });
+  // A passive ability on the taker (`on_hit_taken`): a hit it takes that deals damage (not
+  // reflected) leaves an effect on the boss. A shielded or dodged hit returned above; a hit cut to
+  // 0 (armor, cover, ward, a Shield Wall) deals none and fires nothing (combat-rules 13.10).
+  if (mode !== 'reflect' && amount > 0) {
+    for (const a of victim.hitTakenApplies) {
+      applyEffect(state, BOSS, a.effect, a.powerBp, victim.id, a.durationTurns ?? 0);
+    }
+  }
   if (victim.hp === 0 && victim.alive) {
     victim.alive = false;
+    clearEffects(victim);
     (perCreature[victim.id] as CreatureTotals).knockedOutRound = state.currentRound;
     events.push({ t: 'knockout', round: state.currentRound, creature: victim.id });
     runHook(state, 'onKnockout', () => ({ ...baseContext(state), creature: view(victim) }));

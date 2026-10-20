@@ -50,7 +50,7 @@ describe('the journal', () => {
   it('counts the pages found in each place and in all', () => {
     expect(places.find((p) => p.place === 'tidepools')).toMatchObject({ found: 1 });
     expect(places.reduce((n, p) => n + p.found, 0)).toBe(profile.journal.found.length);
-    expect(journalProgressText(profile)).toBe('1 / 40 pages found');
+    expect(journalProgressText(profile)).toBe('1 / 45 pages found');
   });
 
   it('lists the sets of each place with their progress, from the server', () => {

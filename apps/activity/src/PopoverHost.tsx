@@ -265,7 +265,7 @@ function FoePopover({
         <PopoverCard
           visual={<Sprite sprite={art.sprite} scale={4} />}
           title={info.name}
-          short={`HP ${compactCount(info.hp)}`}
+          short={`HP ${compactCount(info.hp)}${info.dodge === null ? '' : ` · ${info.dodge}`}`}
           lines={info.moves}
           note={info.about}
           beside={

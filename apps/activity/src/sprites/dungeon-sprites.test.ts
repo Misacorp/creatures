@@ -62,12 +62,13 @@ const ELEMENT_HUES: Readonly<Record<string, readonly [number, number]>> = {
   ember: [0, 40],
   grove: [80, 150],
   spark: [40, 65],
+  mire: [20, 50],
 };
 
 describe('daily-dungeon sprites', () => {
-  it('has 8 foes and 4 floor bosses in the content, each with a sprite', () => {
-    expect(foes).toHaveLength(8);
-    expect(roomBosses).toHaveLength(4);
+  it('has 10 foes and 5 floor bosses in the content, each with a sprite', () => {
+    expect(foes).toHaveLength(10);
+    expect(roomBosses).toHaveLength(5);
     for (const { id, kind, def } of entries) expect(def, `${kind} ${id}`).toBeDefined();
   });
 

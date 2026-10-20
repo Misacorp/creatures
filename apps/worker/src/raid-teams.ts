@@ -86,7 +86,7 @@ function toTeamCreature(
     ...(folded.mods === undefined ? {} : { mods: folded.mods }),
     gearRules: folded.rules,
     gearIds: Object.values(worn ?? {}).map((item) => item.id),
-    power: creaturePower(folded.stats),
+    power: creaturePower(folded.stats, folded.mods?.dodgeBp ?? 0),
     kit: {
       stats: effectiveStats(species, row.level, row.fusion_count),
       crit: species.crit,

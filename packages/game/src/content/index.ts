@@ -1,9 +1,11 @@
 import type { Rng } from '../rng';
 import creatures from './data/creatures.json';
 import elements from './data/elements.json';
+import elementChart from './data/element-chart.json';
 import reactions from './data/reactions.json';
 import bosses from './data/bosses.json';
 import adaptations from './data/adaptations.json';
+import statusEffects from './data/status-effects.json';
 import finaleAbilities from './data/finale-abilities.json';
 import guests from './data/guests.json';
 import speciesLore from './data/species-lore.json';
@@ -30,7 +32,8 @@ import { loadContent } from './load';
 import { loadTalents, type TalentDef, type TalentPack } from './talent-schema';
 
 export * from './schema';
-export { loadContent, upgradeProblem, STARTER_COUNT } from './load';
+export * from './element-chart';
+export { appliedEffect, loadContent, upgradeProblem, STARTER_COUNT } from './load';
 export * from './lore';
 export * from './glossary-schema';
 export * from './gear-schema';
@@ -46,10 +49,12 @@ export * from './weather';
 export const content = loadContent({
   version: 1,
   elements,
+  elementChart,
   creatures,
   reactions,
   bosses,
   adaptations,
+  statusEffects,
   finaleAbilities,
   guests,
 });

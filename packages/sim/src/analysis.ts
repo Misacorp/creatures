@@ -509,7 +509,8 @@ export function wornItems(sims: readonly EconomyResult[]): WornRow[] {
           p.gear.parts['tide-shard'] +
           p.gear.parts['ember-shard'] +
           p.gear.parts['grove-shard'] +
-          p.gear.parts['spark-shard'],
+          p.gear.parts['spark-shard'] +
+          p.gear.parts['mire-shard'],
       ),
       glimmer: avg((p) => p.gear.parts.glimmer),
     });

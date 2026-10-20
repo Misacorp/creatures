@@ -114,7 +114,7 @@ function describeFinale(week: RaidWeek, labels: Record<string, string>): string[
  */
 export function runSweep(options: SweepOptions): SweepResult {
   const records: RunRecord[] = [];
-  const elementPicks: Record<Element, number> = { tide: 0, ember: 0, grove: 0, spark: 0 };
+  const elementPicks: Record<Element, number> = { tide: 0, ember: 0, grove: 0, spark: 0, mire: 0 };
   const creatures: Record<string, CreatureAggregate> = {};
   const archetypes = Object.fromEntries(
     ARCHETYPES.map((a) => [a, { shareSum: 0, playerWeeks: 0, essenceSum: 0 }]),

@@ -17,6 +17,7 @@ const ELEMENT_COLOURS: Readonly<Record<string, string>> = {
   ember: 'var(--ember)',
   grove: 'var(--grove)',
   spark: 'var(--spark)',
+  mire: 'var(--mire)',
 };
 
 const pixelHeading: Entry = {
@@ -31,7 +32,7 @@ const pixelHeading: Entry = {
     outline: { kind: 'select', options: ['ink', 'ink-drop', 'element-drop'] },
     size: { kind: 'select', options: [NONE, 'l', 'm'] },
     as: { kind: 'select', options: ['p', 'h3', 'span'] },
-    element: { kind: 'select', options: ['tide', 'ember', 'grove', 'spark'] },
+    element: { kind: 'select', options: ['tide', 'ember', 'grove', 'spark', 'mire'] },
   },
   defaults: {
     text: 'Storm Sovereign',

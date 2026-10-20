@@ -55,6 +55,10 @@ import { TEST_PACK, slot } from './helpers';
  *   11:lock-wave, 14:lock-line, 15:lock-volley, 19:lock-charge, 21:lock-wave, 22:lock-wave,
  *   22:lock-volley, 22:lock-slam). Only a creature with both `healOnReactionBp` and a non-zero
  *   `healReceivedBp` can change, and no other fight moved. `replay.json` did not move.
+ * - 2026-10-19, Mire species joined the catalogue (the fifth element): every result gains the keys
+ *   `damageByElement.mire` and `reactions.byType.smother` and `.flare` (0 here), so all 200 hashes
+ *   moved. Nothing else did: with those three keys removed from each result, all 200 hashes match
+ *   the old fixture (checked before the re-pin). `replay.json` did not move.
  */
 
 const ELEMENTS: readonly Element[] = ['tide', 'ember', 'grove', 'spark'];
@@ -354,7 +358,19 @@ const SHEETS: SlotMods[] = [
     ownerMarkBp: 1_000,
     keenReactionBp: 1_500,
   },
-  { shareBp: 2_500, boostBp: 1_200, mendBp: 300, sharedWarmthBp: 1_000 },
+  // dodgeBp and areaDodgeBp do nothing in these fights: their rules carry no dodge.
+  {
+    shareBp: 2_500,
+    boostBp: 1_200,
+    mendBp: 300,
+    sharedWarmthBp: 1_000,
+    dodgeBp: 500,
+    areaDodgeBp: 300,
+    // Nor do the status-effect fields: the input carries no `effects`.
+    debuffResistBp: 1_500,
+    debuffPowerBp: 2_000,
+    debuffDurationTurns: 1,
+  },
   { takenBp: 1_000, areaBp: 1_500, aimedBp: 1_500, reflectedBp: 2_500, chargedBp: 2_000 },
   { wardBp: { tide: 2_000, ember: 1_000, spark: 1_500, grove: 500 }, healReceivedBp: 3_500 },
   { armorBp: 1_000, coverBp: 1_500, shelterBp: 1_000, coverReach: 1, boostReach: 1 },
@@ -373,7 +389,15 @@ const SHEETS: SlotMods[] = [
   { paybackBp: 1_500, kindlingBp: 1_200, openingMark: 1, rallyCryBp: 800 },
   { emberTailBp: 1_500, stormWarningBp: 2_500, overflowBp: 1_500, secondBreathBp: 1_500 },
   { patientBp: 2_000, secondBreathBp: 2_000, takenBp: -1_500, lingerRounds: 1 },
-  { markedFoeBp: -500, mendBp: 500, healReceivedBp: 2_000 },
+  // The on-dodge lines (2026-10-20) are inert in these fights: they carry no dodge rules, so nobody dodges.
+  {
+    markedFoeBp: -500,
+    mendBp: 500,
+    healReceivedBp: 2_000,
+    riposteBp: 3_000,
+    momentumBp: 1_600,
+    slipstreamBp: 1_200,
+  },
 ];
 
 /** A 53-bit string hash (cyrb53): enough to tell two results apart. */

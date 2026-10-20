@@ -130,10 +130,10 @@
         ],
         "lines": [
           {
-            "id": "crit-damage",
-            "name": "Crit damage",
-            "text": "Crit damage +8 pt",
-            "about": "Crits hit harder, in points (the fight caps the total).",
+            "id": "grove-attunement",
+            "name": "Grove Attunement",
+            "text": "Grove Attunement +3%",
+            "about": "Raises Attack, but only for a Grove creature.",
             "source": "rolled",
             "tier": 1,
             "bestTier": 1,
@@ -194,10 +194,10 @@
             "active": null
           },
           {
-            "id": "mend",
-            "name": "Mend",
-            "text": "Mend +1%",
-            "about": "A Support's neighbours heal this share of max HP at round start.",
+            "id": "crit-chance",
+            "name": "Crit chance",
+            "text": "Crit chance +1 pt",
+            "about": "More chance to crit, in points (the fight caps the total).",
             "source": "rolled",
             "tier": 1,
             "bestTier": 2,
@@ -717,6 +717,7 @@
       "ember-shard": 4,
       "grove-shard": 0,
       "spark-shard": 4,
+      "mire-shard": 0,
       "glimmer": 3
     },
     "blueprints": [
@@ -874,6 +875,7 @@
           "atk": 82,
           "spd": 56
         },
+        "dodgeBp": 0,
         "gear": [],
         "busy": null,
         "ability": {
@@ -950,6 +952,7 @@
           "atk": 35,
           "spd": 29
         },
+        "dodgeBp": 0,
         "gear": [],
         "busy": null,
         "ability": {
@@ -1026,6 +1029,7 @@
           "atk": 44,
           "spd": 48
         },
+        "dodgeBp": 0,
         "gear": [],
         "busy": null,
         "ability": {

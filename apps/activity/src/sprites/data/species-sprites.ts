@@ -8,6 +8,7 @@
  * left half only.
  */
 import type { SpriteDef } from '../sprite-data';
+import { MIRE_SPECIES_SPRITE_DATA } from './mire-species-sprites';
 
 export const SPECIES_SPRITE_DATA: Readonly<Record<string, SpriteDef>> = {
   splashet: {
@@ -955,4 +956,6 @@ export const SPECIES_SPRITE_DATA: Readonly<Record<string, SpriteDef>> = {
       '..kkkk..',
     ],
   },
+  // Mire (Mudlump, Bogwarden, Squelch, Croakmire), drawn in `mire-species-sprites.ts`.
+  ...MIRE_SPECIES_SPRITE_DATA,
 };

@@ -35,8 +35,9 @@ export function bossArt(bossId: string): { sprite: SpriteDef; scale: number } {
 /**
  * Palette swaps for shiny creatures, by species id (the keys are the sprite's own palette keys, see
  * `creature-sprites.ts`). Each element has one hue shift (Tide to magenta, Ember to blue, Grove to
- * gold, Spark to pink and green) applied to every colour of the sprite except the outline, the eye
- * highlight and near-neutral colours. A species without an entry shows a sparkle frame instead.
+ * gold, Spark to pink and green, Mire to teal and violet) applied to every colour of the sprite
+ * except the outline, the eye highlight and near-neutral colours. A species without an entry shows
+ * a sparkle frame instead.
  */
 const SHINY_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   splashet: { b: '#c63fd6', h: '#f9e8ff', s: '#8a1f8b', p: '#b8f4ca' },
@@ -166,6 +167,28 @@ const SHINY_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>>
     m: '#a85cb8',
     y: '#fff3a0',
   },
+  // Mire: the oily sheen of the bog comes through, peat and ochre turn to teal and violet.
+  mudlump: { b: '#4e7a8a', h: '#7fb3c4', s: '#2d4a5a', p: '#c9dce0', o: '#c864d0', n: '#f0d060' },
+  bogwarden: {
+    b: '#4e7a8a',
+    h: '#7fb3c4',
+    s: '#2d4a5a',
+    p: '#c9dce0',
+    t: '#1d2a3a',
+    n: '#f0d060',
+    r: '#8a3f5a',
+    g: '#c864d0',
+  },
+  squelch: { b: '#7a5ab0', h: '#b49ae0', s: '#4a3278', p: '#e8d8f4', t: '#1d2a3a' },
+  croakmire: {
+    b: '#7a5ab0',
+    h: '#b49ae0',
+    s: '#4a3278',
+    p: '#e8d8f4',
+    t: '#1d2a3a',
+    g: '#5fd0a0',
+    o: '#b49ae0',
+  },
 };
 
 export function shinyPalette(speciesId: string): Readonly<Record<string, string>> | undefined {
@@ -190,6 +213,7 @@ const ELEMENT_COLOURS: Readonly<Record<string, string>> = {
   ember: '#ef6a3a',
   grove: '#5cbf5a',
   spark: '#f2d43d',
+  mire: '#b8864a',
 };
 
 const MARK_PALETTES: Readonly<Record<string, Readonly<Record<string, string>>>> =

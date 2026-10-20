@@ -16,10 +16,16 @@ import { turnOrder, zoneNeighbours, type FightSlot } from '@creatures/engine';
  */
 export type Setup = 'greedy' | 'protected';
 
-/** `markElement -> triggerElement` of the reactions in the content. */
-const TRIGGERS: ReadonlyMap<string, string> = new Map(
-  content.reactions.map((r) => [r.markElement, r.triggerElement]),
-);
+/** `markElement -> the elements that set it off` (one or more) of the reactions in the content. */
+const TRIGGERS: ReadonlyMap<string, ReadonlySet<string>> = (() => {
+  const map = new Map<string, Set<string>>();
+  for (const r of content.reactions) {
+    const set = map.get(r.markElement) ?? new Set<string>();
+    set.add(r.triggerElement);
+    map.set(r.markElement, set);
+  }
+  return map;
+})();
 
 /** The order the creatures act in, as indices into `row`. */
 function actingOrder(row: readonly FightSlot[], mode: TurnOrder): number[] {
@@ -45,7 +51,7 @@ export function reactionsPerRound(row: readonly FightSlot[], mode: TurnOrder): n
       const c = row[i] as FightSlot;
       if (mark === null) {
         mark = c.element;
-      } else if (triggers.get(mark) === c.element) {
+      } else if (triggers.get(mark)?.has(c.element) === true) {
         mark = null;
         if (pass === 1) counted += 1;
       } else if (c.role === 'setter' && mark !== c.element) {

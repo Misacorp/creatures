@@ -25,6 +25,7 @@ const ALL_OPS: Record<GimmickOp, true> = {
   slam: true,
   lance: true,
   pincer: true,
+  purge: true,
   charge: true,
 };
 

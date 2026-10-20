@@ -1,4 +1,4 @@
-/** 8x8 pixel icons for the four elements. Each shape is different, so colour is never the only cue. */
+/** 8x8 pixel icons for the five elements. Each shape is different, so colour is never the only cue. */
 import type { SpriteDef } from './sprite-data';
 
 export const ICON_SIZE = { width: 8, height: 8 } as const;
@@ -59,7 +59,22 @@ const spark: SpriteDef = {
   ],
 };
 
-const ICONS: Readonly<Record<string, SpriteDef>> = { tide, ember, grove, spark };
+/** A mud mound with a bog bubble rising from it: patience, in peat and ochre. */
+const mire: SpriteDef = {
+  palette: { k: '#0d0a1a', o: '#b8864a', h: '#e0b878', d: '#6b4a2e' },
+  rows: [
+    '...kk...',
+    '..k..k..',
+    '..k.hk..',
+    '.kkkkkk.',
+    'khhooook',
+    'kooooodk',
+    'kdoodddk',
+    '.kkkkkk.',
+  ],
+};
+
+const ICONS: Readonly<Record<string, SpriteDef>> = { tide, ember, grove, spark, mire };
 
 /** The icon for an element id, or undefined for an element without one. */
 export function elementIcon(elementId: string): SpriteDef | undefined {

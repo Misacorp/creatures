@@ -576,6 +576,12 @@ const EVENT_TYPES: ReadonlySet<string> = new Set([
   // Chance lines and trigger lines of gear (a log line when one fires).
   'proc',
   'cleanse',
+  // Status effects (no UI yet: they show in the log text only).
+  'effect_apply',
+  'effect_consume',
+  'effect_expire',
+  'effect_purge',
+  'effect_cleanse',
   'charge',
   'retreat',
   'enrage',

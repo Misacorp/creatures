@@ -245,6 +245,7 @@ const partsRow: Entry = {
         'ember-shard': num(p, 'ember-shard'),
         'grove-shard': num(p, 'grove-shard'),
         'spark-shard': num(p, 'spark-shard'),
+        'mire-shard': num(p, 'mire-shard'),
         glimmer: num(p, 'glimmer'),
       }}
     />
@@ -287,6 +288,7 @@ const costList: Entry = {
         'ember-shard': 0,
         'grove-shard': 0,
         'spark-shard': 0,
+        'mire-shard': 0,
         glimmer: num(p, 'glimmerHave'),
       }}
       {...(num(p, 'essence') > 0

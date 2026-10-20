@@ -94,6 +94,30 @@ describe('zones', () => {
 });
 
 describe('matchups', () => {
+  it('reads the element chart: all 16 pairs equal the old strong, weak and neutral rule', () => {
+    const cycle = ['tide', 'ember', 'grove', 'spark'] as const;
+    for (const a of cycle) {
+      for (const d of cycle) {
+        const beats = cycle[(cycle.indexOf(a) + 1) % 4];
+        const beaten = cycle[(cycle.indexOf(d) + 1) % 4];
+        const old = beats === d ? 15_000 : beaten === a ? 7_500 : 10_000;
+        expect(matchupBp(a, d), `${a} on ${d}`).toBe(old);
+      }
+    }
+  });
+
+  it('takes any chart: an unlisted pair is 100% and several strong pairs can share an attacker', () => {
+    const chart = [
+      { attacker: 'tide' as const, defender: 'ember' as const, bp: 15_000 },
+      { attacker: 'tide' as const, defender: 'grove' as const, bp: 15_000 },
+      { attacker: 'ember' as const, defender: 'tide' as const, bp: 7_500 },
+    ];
+    expect(matchupBp('tide', 'ember', chart)).toBe(15_000);
+    expect(matchupBp('tide', 'grove', chart)).toBe(15_000);
+    expect(matchupBp('ember', 'tide', chart)).toBe(7_500);
+    expect(matchupBp('grove', 'tide', chart)).toBe(10_000);
+  });
+
   it('follows Tide > Ember > Grove > Spark > Tide', () => {
     const cycle = ['tide', 'ember', 'grove', 'spark'] as const;
     for (let i = 0; i < 4; i++) {
@@ -122,6 +146,39 @@ describe('turn order', () => {
   });
   it('speed: highest first, ties by position', () => {
     expect(turnOrder(cs, 'speed')).toEqual([1, 3, 0, 2]);
+  });
+});
+
+describe('serpentine turn order', () => {
+  /** Creatures at the given board slots (idx = position in the row), on a board of `length` slots. */
+  const at = (length: number, slots: number[], round: number): number[] => {
+    const cs = slots.map((_, idx) => ({ idx, spd: 0 }));
+    const order = turnOrder(cs, 'serpentine', { round, board: { length, slots } });
+    return order.map((i) => slots[i] as number);
+  };
+  const dense = (n: number) => Array.from({ length: n }, (_, i) => i);
+
+  it('3 per row: rows go front, middle, back, and every row flips on even rounds', () => {
+    expect(at(9, dense(9), 1)).toEqual([0, 1, 2, 5, 4, 3, 6, 7, 8]);
+    expect(at(9, dense(9), 2)).toEqual([2, 1, 0, 3, 4, 5, 8, 7, 6]);
+    expect(at(9, dense(9), 3)).toEqual(at(9, dense(9), 1));
+  });
+
+  it('uneven rows (3 / 4 / 3) work the same', () => {
+    expect(at(10, dense(10), 1)).toEqual([0, 1, 2, 6, 5, 4, 3, 7, 8, 9]);
+    expect(at(10, dense(10), 2)).toEqual([2, 1, 0, 3, 4, 5, 6, 9, 8, 7]);
+  });
+
+  it('follows board positions: gaps stay gaps and only placed creatures appear', () => {
+    // Slots 1, 2, 4, 7 and 8 are empty on a board of 9.
+    const slots = [0, 3, 5, 6];
+    expect(at(9, slots, 1)).toEqual([0, 5, 3, 6]);
+    expect(at(9, slots, 2)).toEqual([0, 3, 5, 6]);
+  });
+
+  it('without a board or round it is a dense row on round 1', () => {
+    const cs = dense(9).map((idx) => ({ idx, spd: 0 }));
+    expect(turnOrder(cs, 'serpentine')).toEqual([0, 1, 2, 5, 4, 3, 6, 7, 8]);
   });
 });
 

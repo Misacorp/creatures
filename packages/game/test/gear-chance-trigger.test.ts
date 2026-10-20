@@ -313,7 +313,9 @@ describe('Epic and Festival pieces: +2 points of chance', () => {
 
 describe('the fold', () => {
   it('every chance and trigger line folds into its own sheet field at every tier', () => {
-    for (const [id, field] of Object.entries(FIELD)) {
+    for (const [id, plain] of Object.entries(FIELD)) {
+      // With dodge on (the shipped rules) Sidestep folds into flat area dodge instead of its own chance.
+      const field = id === 'sidestep' && RULES.combat.dodge.enabled ? 'areaDodgeBp' : plain;
       const line = gearLine(id);
       if (line === undefined) throw new Error(id);
       for (let tier = 0; tier < 5; tier++) {

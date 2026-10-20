@@ -49,6 +49,7 @@
         "atk": 128,
         "spd": 56
       },
+      "dodgeBp": 0,
       "gear": [
         {
           "id": "00000000-0000-4000-8500-000000000007",
@@ -65,11 +66,11 @@
           "itemLevel": 12
         },
         {
-          "id": "00000000-0000-4000-8500-000000000010",
-          "baseId": "crossroads-compass",
+          "id": "00000000-0000-4000-8500-000000000005",
+          "baseId": "tidepool-charm",
           "slot": "charm",
-          "rarity": "rare",
-          "itemLevel": 10
+          "rarity": "common",
+          "itemLevel": 6
         }
       ],
       "busy": {
@@ -147,9 +148,10 @@
       },
       "statsWithGear": {
         "hp": 307,
-        "atk": 37,
+        "atk": 38,
         "spd": 29
       },
+      "dodgeBp": 0,
       "gear": [
         {
           "id": "00000000-0000-4000-8500-000000000001",
@@ -241,6 +243,7 @@
         "atk": 44,
         "spd": 48
       },
+      "dodgeBp": 0,
       "gear": [],
       "busy": null,
       "ability": {

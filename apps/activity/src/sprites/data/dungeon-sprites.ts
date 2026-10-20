@@ -7,6 +7,7 @@
  * feature colours of that foe. Rows marked `mirror` store the left half only.
  */
 import type { SpriteDef } from '../sprite-data';
+import { MIRE_FOE_SPRITE_DATA } from './mire-boss-sprites';
 
 export const DUNGEON_FOE_SPRITE_DATA: Readonly<Record<string, SpriteDef>> = {
   // Tide: a little blue imp with two horns and a wide grin, standing in a puddle.
@@ -254,4 +255,6 @@ export const DUNGEON_FOE_SPRITE_DATA: Readonly<Record<string, SpriteDef>> = {
       '........',
     ],
   },
+  // Bog Toad and Tar Leech, drawn in `mire-boss-sprites.ts`.
+  ...MIRE_FOE_SPRITE_DATA,
 };

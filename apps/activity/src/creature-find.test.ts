@@ -26,7 +26,13 @@ const names = (found: ReturnType<typeof suggest>): string[] => found.map((s) => 
 
 describe('the chips', () => {
   it('know every element and every role of the content', () => {
-    expect(ELEMENT_OPTIONS.map((e) => e.id).sort()).toEqual(['ember', 'grove', 'spark', 'tide']);
+    expect(ELEMENT_OPTIONS.map((e) => e.id).sort()).toEqual([
+      'ember',
+      'grove',
+      'mire',
+      'spark',
+      'tide',
+    ]);
     const roles = new Set(content.creatures.map((c) => c.role));
     expect([...roles].every((r) => ROLE_OPTIONS.some((o) => o.id === r))).toBe(true);
     expect(ROLE_OPTIONS.map((r) => r.name)).toEqual(['Guard', 'Setter', 'Payoff', 'Support']);

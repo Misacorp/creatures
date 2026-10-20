@@ -14,19 +14,23 @@ import {
   type Element,
   type FinaleAbilityDef,
   type LuckConfig,
+  type StatusEffectDef,
   type ReactionDef,
   type Rng,
   type Stats,
   type TurnOrder,
   type Zone,
 } from '@creatures/game';
-import { announceCharges, enrageStrike, fireGimmick, plainAttacks } from './fight-boss';
+import { DODGE_RANGE, DODGE_TAKEN_DICE } from './fight-dodge';
+import { BOSS, applyEffect, tickEffects } from './fight-effects';
+import { announceCharges, bossDone, enrageStrike, fireGimmick, plainAttacks } from './fight-boss';
 import { gearRoundStart, fireAbility, rainHeals, supportBuffs } from './fight-round';
 import { hitBoss } from './fight-strike';
 import { firingIndex, gimmickDue, sweepRow } from './gimmick-schedule';
 import {
   baseContext,
   pick,
+  reactionKey,
   runHook,
   type Creature,
   type Dice,
@@ -45,14 +49,28 @@ import type {
   FightRules,
   PlayerTotals,
 } from './types';
-import { fightRowShape } from './zones';
+import { ZONES, fightRowShape, zoneOfIndex, type FightBoard } from './zones';
 
 export interface FightOptions {
   /** Mutators registered in code. A mutator runs only if `input.mutators` also lists its id. */
   mutators?: readonly Mutator[];
+  /**
+   * Tests only: called at the start of every round (after the dice are drawn, before the round's
+   * first event), so a test can put a status effect on a fighter. `target` is a creature id, or null
+   * for the boss. Needs `input.effects`, like every application.
+   */
+  effectHook?: (round: number, apply: ApplyEffect) => void;
   /** Content to use instead of the shipped pack (tests). */
   pack?: ContentPack;
 }
+
+/** What the test hook can do: apply an effect to a creature (id) or the boss (null). */
+export type ApplyEffect = (
+  target: string | null,
+  effectId: string,
+  powerBp: number,
+  durationTurns?: number,
+) => void;
 
 function zeroTotals(): PlayerTotals {
   return { damage: 0, setupCredit: 0, supportCredit: 0, guardCredit: 0, contribution: 0 };
@@ -91,6 +109,8 @@ export function needsCreature(def: FinaleAbilityDef): boolean {
   return def.effects.some(
     (e: Effect) =>
       e.op === 'strike' ||
+      e.op === 'on_hit_taken' ||
+      e.op === 'round_start' ||
       (e.op === 'shield_wall' && e.zone === 'own') ||
       (e.op === 're_mark' && e.element === 'own'),
   );
@@ -172,6 +192,10 @@ export function simulateFight(
   if (!isCount(lingerAllRounds, 0) || lingerAllRounds > 3) {
     fail('lingerAllRounds must be an integer from 0 to 3');
   }
+  const effects = input.effects;
+  if (effects !== undefined && (!isCount(effects.dice, 1) || effects.dice > 256)) {
+    fail('effects.dice must be an integer from 1 to 256');
+  }
   const phaseCfg = RULES.raid.phases.find((p) => p.id === phase);
   if (phaseCfg === undefined) fail(`unknown phase "${phase}"`);
   const rounds = phase === 'finale' ? boss.finaleRounds : phaseCfg.rounds;
@@ -191,8 +215,9 @@ export function simulateFight(
     if (!ids.has(id)) fail(`skipFirstTurn names unknown creature "${id}"`);
   }
 
-  const reactionByMark = new Map<Element, ReactionDef>();
-  for (const r of pack.reactions) reactionByMark.set(r.markElement, r);
+  const reactionByPair = new Map<string, ReactionDef>();
+  for (const r of pack.reactions)
+    reactionByPair.set(reactionKey(r.markElement, r.triggerElement), r);
   const abilityDefs = new Map<string, FinaleAbilityDef>();
   for (const a of pack.finaleAbilities) abilityDefs.set(a.id, a);
 
@@ -272,12 +297,16 @@ export function simulateFight(
       paybackReady: 0,
       emberTailReady: 0,
       patientReady: 0,
+      momentumReady: 0,
       rallyCry: 0,
       stubbornUsed: false,
       lastStandDone: false,
       lastStandCut: 0,
       stormRound: 0,
       nextBoostBp: 0,
+      effects: [],
+      hitTakenApplies: [],
+      roundStartApplies: [],
     };
   });
 
@@ -297,7 +326,7 @@ export function simulateFight(
   }
   const reactionsByType: Record<string, number> = {};
   for (const r of pack.reactions) reactionsByType[r.id] = 0;
-  const damageByElement = { tide: 0, ember: 0, grove: 0, spark: 0 } satisfies Record<
+  const damageByElement = Object.fromEntries(ELEMENTS.map((e) => [e, 0])) as Record<
     Element,
     number
   >;
@@ -315,7 +344,10 @@ export function simulateFight(
   }
 
   // ---- turn order ----
-  const order = turnOrder(creatures, input.turnOrderOverride ?? boss.turnOrder);
+  const orderMode = input.turnOrderOverride ?? boss.turnOrder;
+  const roundOrder = (round: number): number[] =>
+    turnOrder(creatures, orderMode, { round, board: shape });
+  const order = roundOrder(1);
 
   // ---- finale abilities ----
   const zoneHit = firstZoneHit(boss, rounds);
@@ -343,11 +375,33 @@ export function simulateFight(
     } else if (needsCreature(def)) {
       fail(`ability "${choice.key}" needs a creature`);
     }
+    // Passive effects are on from the start, whatever round the ability itself "fires" in (so the fight
+    // up to a round never depends on a press that comes later).
+    for (const e of def.effects) {
+      if (source === null) break;
+      if (e.op === 'on_hit_taken') source.hitTakenApplies.push(e.apply);
+      else if (e.op === 'round_start') source.roundStartApplies.push(e.apply);
+    }
     const byDefault = choice.fireAtRound === undefined;
     const round = choice.fireAtRound ?? defaultAbilityRound(boss, def, rounds);
     const list = abilitiesByRound.get(round) ?? [];
     list.push({ choice, def, byDefault, source });
     abilitiesByRound.set(round, list);
+  }
+
+  // Passive-only abilities (Phases 1 and 2 of a raid): the passives work, nothing fires.
+  const held = new Set(input.finaleAbilities.map((c) => `${c.creatureId ?? ''}:${c.abilityId}`));
+  for (const p of input.passives ?? []) {
+    const def = abilityDefs.get(p.abilityId);
+    if (def === undefined) fail(`unknown passive ability "${p.abilityId}"`);
+    const source = creatures.find((c) => c.id === p.creatureId);
+    if (source === undefined) fail(`passive "${p.abilityId}" names an unknown creature`);
+    if (held.has(`${p.creatureId}:${p.abilityId}`)) continue;
+    held.add(`${p.creatureId}:${p.abilityId}`);
+    for (const e of def.effects) {
+      if (e.op === 'on_hit_taken') source.hitTakenApplies.push(e.apply);
+      else if (e.op === 'round_start') source.roundStartApplies.push(e.apply);
+    }
   }
 
   // ---- the state the helpers share ----
@@ -376,9 +430,12 @@ export function simulateFight(
     rules,
     patternsOn,
     luckOn,
+    effectsOn: effects !== undefined,
+    dodge: rules?.dodge,
+    effectDefs: new Map<string, StatusEffectDef>(pack.statusEffects.map((e) => [e.id, e])),
     rule,
     adaptationTarget,
-    reactionByMark,
+    reactionByPair,
     guardReach,
     zoneHit,
     creatures,
@@ -408,6 +465,7 @@ export function simulateFight(
     brambleUsed: false,
     swingNow: 0,
     swingUntil: 0,
+    bossEffects: [],
     turnDice: [],
     strikeDice: [],
     bossAttackDice: [],
@@ -418,6 +476,13 @@ export function simulateFight(
     guardDice: [],
     luckDice: [],
     areaSeen: [],
+    effectDice: [],
+    effectDiceUsed: 0,
+    lastHitDodged: false,
+    dodgeTakenDice: [],
+    dodgeTurnDice: [],
+    dodgeStrikeDice: [],
+    dodgeSeen: [],
   };
 
   // ---- the fight ----
@@ -544,7 +609,29 @@ export function simulateFight(
       );
       state.areaSeen = creatures.map(() => 0);
     }
+    if (effects !== undefined) {
+      // After the luck dice, the very last of the round, and only when effects are on.
+      state.effectDice = Array.from({ length: effects.dice }, () => int(rng, 10_000));
+      state.effectDiceUsed = 0;
+    }
+    if (state.dodge !== undefined) {
+      // After the effect dice, the very last of the round, and only when the fight's rules have dodge.
+      state.dodgeTakenDice = creatures.map(() =>
+        Array.from({ length: DODGE_TAKEN_DICE }, () => int(rng, DODGE_RANGE)),
+      );
+      state.dodgeTurnDice = creatures.map(() => int(rng, DODGE_RANGE));
+      state.dodgeStrikeDice = creatures.map(() => int(rng, DODGE_RANGE));
+      state.dodgeSeen = creatures.map(() => 0);
+    }
     state.orderPos = -1;
+    // Serpentine flips every row each round; the other orders are the same every round.
+    if (orderMode === 'serpentine') state.order = roundOrder(round);
+
+    options.effectHook?.(round, (target, effectId, powerBp, durationTurns) => {
+      const who = target === null ? BOSS : creatures.find((c) => c.id === target);
+      if (who === undefined) fail(`effect hook names unknown creature "${target}"`);
+      applyEffect(state, who, effectId, powerBp, null, durationTurns);
+    });
 
     // Gimmicks rest in enrage rounds: no charge is announced and the reflect trap is not armed.
     if (!enraging) announceCharges(state);
@@ -570,7 +657,7 @@ export function simulateFight(
       fireAbility(state, a);
     }
 
-    for (const [pos, idx] of order.entries()) {
+    for (const [pos, idx] of state.order.entries()) {
       if (state.bossHp === 0 || state.retreated) break;
       state.orderPos = pos;
       const c = creatures[idx] as Creature;
@@ -581,23 +668,31 @@ export function simulateFight(
       if (c.silenced > 0) {
         c.silenced -= 1;
         events.push({ t: 'skip', round, creature: c.id, reason: 'silenced' });
+        tickEffects(state, c);
         continue;
       }
       if (hazed) {
         events.push({ t: 'skip', round, creature: c.id, reason: 'haze' });
+        tickEffects(state, c);
         continue;
       }
       events.push({ t: 'turn', round, creature: c.id });
       hitBoss(state, c);
+      tickEffects(state, c);
     }
 
     if (state.bossHp > 0 && !state.retreated) {
       if (!enraging) {
-        for (const [gi, g] of boss.gimmicks.entries())
+        for (const [gi, g] of boss.gimmicks.entries()) {
+          if (bossDone(state)) break;
           if (gimmickDue(g, round)) fireGimmick(state, g, gi);
+        }
       }
       plainAttacks(state);
       if (enraging) enrageStrike(state);
+      // The boss's turn is over: its effects count down once a round. A boss that fell or
+      // retreated during its own turn (a Riposte) has no tick, like one that fell earlier (13.4).
+      if (!bossDone(state)) tickEffects(state, BOSS);
     }
 
     events.push({ t: 'round_end', round, bossHp: state.bossHp });
@@ -664,6 +759,17 @@ function checkRules(r: FightRules): void {
     if (!isCount(value, 0) || value > max)
       fail(`rules.${name} must be an integer from 0 to ${max}`);
   }
+  if (r.dodge !== undefined) {
+    for (const [name, value] of [
+      ['perSpeedBp', r.dodge.perSpeedBp],
+      ['maxBp', r.dodge.maxBp],
+      ['areaShareBp', r.dodge.areaShareBp],
+    ] as const) {
+      if (!isCount(value, 0) || value > 10_000) {
+        fail(`rules.dodge.${name} must be an integer from 0 to 10000`);
+      }
+    }
+  }
 }
 
 function checkLuck(l: LuckConfig): void {
@@ -719,14 +825,36 @@ function statsFor(pack: ContentPack, speciesId: string, level: number, fusionCou
   return effectiveStats(species, level, fusionCount);
 }
 
-/** Indices in the order creatures act. Speed: highest first, ties by position. */
+/**
+ * Indices in the order creatures act. Speed: highest first, ties by position. Serpentine: row by
+ * row (Front, Middle, Back); on odd rounds Front and Back run left to right and Middle right to
+ * left, on even rounds every row flips. Serpentine needs `board` (`board.slots[i]` is the board slot
+ * of `creatures[i]`) and reads `round` (default 1); the other orders ignore both.
+ */
 export function turnOrder(
   creatures: readonly { idx: number; spd: number }[],
   mode: TurnOrder,
+  at?: { round: number; board: FightBoard },
 ): number[] {
   const idxs = creatures.map((c) => c.idx);
   if (mode === 'left_to_right') return idxs;
   if (mode === 'right_to_left') return idxs.reverse();
+  if (mode === 'serpentine') {
+    const round = at?.round ?? 1;
+    const board = at?.board ?? {
+      length: creatures.length,
+      slots: creatures.map((_, i) => i),
+    };
+    const out: number[] = [];
+    for (const [z, zone] of ZONES.entries()) {
+      // Position in `creatures`, left to right (slots rise with position).
+      const inZone = creatures.flatMap((c, i) => (zoneOfIndex(i, board) === zone ? [c.idx] : []));
+      // Front and Back run left to right on odd rounds, Middle right to left; even rounds flip all.
+      const leftToRight = (z === 1) === (round % 2 === 0);
+      out.push(...(leftToRight ? inZone : inZone.reverse()));
+    }
+    return out;
+  }
   const spd = new Map(creatures.map((c) => [c.idx, c.spd]));
   return idxs.sort((a, b) => (spd.get(b) ?? 0) - (spd.get(a) ?? 0) || a - b);
 }

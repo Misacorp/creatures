@@ -14,6 +14,8 @@ const BONE = '#f4eedc';
 const GOLD = '#ffd25a';
 const HAZE = '#a69fc8';
 const BAD = '#ff5f6d';
+const MUD = '#b8864a';
+const MUD_DARK = '#6b4a2e';
 
 // --- Boss gimmicks (one per gimmick op in the content schema, plus the chain's bolt) ---
 
@@ -159,6 +161,21 @@ const pincer: SpriteDef = {
   rows: ['....', 'r...', 'rr..', 'rrrw', 'rrrw', 'rr..', 'r...', '....'],
 };
 
+/** A droplet with a spark beside it: the boss washes its debuffs off. */
+const purge: SpriteDef = {
+  palette: { w: BONE, g: GOLD },
+  rows: [
+    '...w...g',
+    '..www.gg',
+    '..www..g',
+    '.wwwww..',
+    '.wwwww..',
+    '.wwwww..',
+    '..www...',
+    '........',
+  ],
+};
+
 /** An hourglass: a move that is gathering and lands next round. */
 const charge: SpriteDef = {
   palette: { w: BONE, g: GOLD },
@@ -215,6 +232,21 @@ const speed: SpriteDef = {
     'g...bb.g',
     'gg....gg',
     '.gggggg.',
+    '........',
+  ],
+};
+
+/** A zigzag snake: the rows run one way, then the other. */
+const serpentine: SpriteDef = {
+  palette: { g: GOLD },
+  rows: [
+    '.ggggg..',
+    '.g......',
+    '.ggggg..',
+    '......g.',
+    '.ggggg..',
+    '.g......',
+    '.ggggg..',
     '........',
   ],
 };
@@ -605,6 +637,38 @@ const slotCharm: SpriteDef = {
   ],
 };
 
+// --- Status effects and room modifiers ---
+
+/** A down arrow sinking into mud: the Mired status (slower and weaker). */
+const mired: SpriteDef = {
+  palette: { r: BAD, o: MUD, d: MUD_DARK },
+  rows: [
+    '..rrrr..',
+    '..rrrr..',
+    'rrrrrrrr',
+    '.rrrrrr.',
+    '..rrrr..',
+    '...rr...',
+    'oodooodo',
+    'dddddddd',
+  ],
+};
+
+/** A puddle of mud with two drops falling in: the Mud room modifier (the team's Speed is down). */
+const mud: SpriteDef = {
+  palette: { o: MUD, d: MUD_DARK, h: '#e0b878' },
+  rows: [
+    '..o..o..',
+    '..d..d..',
+    '........',
+    '..oooo..',
+    '.oohooo.',
+    'oooooood',
+    'odooodoo',
+    '.dddddd.',
+  ],
+};
+
 export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   hit_zone: hitZone,
   silence_ends: silenceEnds,
@@ -615,11 +679,13 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   slam,
   lance,
   pincer,
+  purge,
   charge,
   chain,
   left_to_right: leftToRight,
   right_to_left: rightToLeft,
   speed,
+  serpentine,
   mark,
   shield,
   sparkle,
@@ -641,6 +707,8 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   bait,
   flag,
   gift,
+  mired,
+  mud,
   'slot-hat': slotHat,
   'slot-scarf': slotScarf,
   'slot-charm': slotCharm,
@@ -678,6 +746,7 @@ export const GIMMICK_GLYPH_OPS = [
   'slam',
   'lance',
   'pincer',
+  'purge',
   'charge',
 ] as const;
 
@@ -686,4 +755,4 @@ export const GIMMICK_GLYPH_OPS = [
  * same op as the plain strike, drawn as a bolt so a boss card tells the two apart.
  */
 export const CHAIN_GLYPH = 'chain';
-export const TURN_ORDER_GLYPHS = ['left_to_right', 'right_to_left', 'speed'] as const;
+export const TURN_ORDER_GLYPHS = ['left_to_right', 'right_to_left', 'speed', 'serpentine'] as const;

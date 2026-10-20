@@ -1,5 +1,5 @@
 import { RULES } from '@creatures/game';
-import type { EnrageRules, FightRules, PhaseId } from './types';
+import type { EnrageRules, FightInput, FightRules, PhaseId } from './types';
 
 /**
  * The combat rules a live fight is built with today, copied out of `RULES.combat` so the stored
@@ -13,7 +13,27 @@ export function liveFightRules(): FightRules {
     guardHpBp: c.guard.hpBp,
     guardArmorBp: c.guard.armorBp,
     supportFx: Object.fromEntries(Object.entries(c.supportFx).map(([k, fx]) => [k, { ...fx }])),
+    // Dodge is in a new fight only while `RULES.combat.dodge.enabled`; absent means no dodge.
+    ...(c.dodge.enabled
+      ? {
+          dodge: {
+            perSpeedBp: c.dodge.perSpeedBp,
+            maxBp: c.dodge.maxBp,
+            areaShareBp: c.dodge.areaShareBp,
+          },
+        }
+      : {}),
   };
+}
+
+/**
+ * The effect dice a live fight is built with (`FightInput.effects`, combat-rules.md 13.3): only while
+ * `RULES.combat.effects.enabled`, otherwise nothing (no effect die is drawn, so no fight changes).
+ * Spread it into a fight input, or a dungeon run input.
+ */
+export function liveEffects(): Pick<FightInput, 'effects'> {
+  const e = RULES.combat.effects;
+  return e.enabled ? { effects: { dice: e.dice } } : {};
 }
 
 /**

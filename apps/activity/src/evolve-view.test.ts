@@ -124,7 +124,33 @@ describe('the words around a line that grows two ways', () => {
 });
 
 describe('the forms of every evolving line', () => {
-  const evolving = content.creatures.filter((c) => c.evolvesTo !== undefined);
+  const evolving = content.creatures.filter(
+    (c) => c.evolvesTo !== undefined && c.altEvolvesTo !== undefined,
+  );
+
+  it('shows one form for a line that does not branch (the Mire lines), with its ability', () => {
+    const single = content.creatures.filter(
+      (c) => c.evolvesTo !== undefined && c.altEvolvesTo === undefined,
+    );
+    expect(single.map((c) => c.id)).toEqual(['mudlump', 'squelch']);
+    for (const line of single) {
+      const creature = {
+        level: 15,
+        fusionCount: 0,
+        evolution: {
+          toSpecies: line.evolvesTo?.species ?? '',
+          level: 15,
+          essence: line.evolvesTo?.essence ?? 0,
+          available: true,
+        },
+      };
+      const forms = evolveForms(creature);
+      expect(forms.map((f) => f.species)).toEqual([line.evolvesTo?.species]);
+      expect(forms[0]?.element).toBe('mire');
+      expect(forms[0]?.ability?.text).toBeTruthy();
+      expect(evolveTargets(creature)).toEqual([line.evolvesTo?.species]);
+    }
+  });
 
   it('shows two forms of one element and two roles, each with an ability and a short name', () => {
     expect(evolving).toHaveLength(8);

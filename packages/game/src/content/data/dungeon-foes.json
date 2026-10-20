@@ -6,6 +6,7 @@
     "element": "tide",
     "baseHp": 260,
     "baseAtk": 12,
+    "baseSpd": 40,
     "gimmicks": [],
     "rounds": 6,
     "flavor": "Hides in puddles and splashes ankles. Not scary, just very wet."
@@ -17,6 +18,7 @@
     "element": "tide",
     "baseHp": 240,
     "baseAtk": 11,
+    "baseSpd": 40,
     "gimmicks": [
       {
         "id": "sea-mist",
@@ -37,6 +39,7 @@
     "element": "ember",
     "baseHp": 230,
     "baseAtk": 12,
+    "baseSpd": 45,
     "gimmicks": [
       {
         "id": "flare-up",
@@ -57,6 +60,7 @@
     "element": "ember",
     "baseHp": 250,
     "baseAtk": 11,
+    "baseSpd": 30,
     "gimmicks": [],
     "rounds": 6,
     "flavor": "Drifts out of cold hearths in a puff of grey and sneezes sparks."
@@ -68,6 +72,7 @@
     "element": "grove",
     "baseHp": 270,
     "baseAtk": 12,
+    "baseSpd": 35,
     "gimmicks": [
       {
         "id": "thorn-snap",
@@ -88,6 +93,7 @@
     "element": "grove",
     "baseHp": 240,
     "baseAtk": 10,
+    "baseSpd": 20,
     "gimmicks": [
       {
         "id": "root-grab",
@@ -109,6 +115,7 @@
     "element": "spark",
     "baseHp": 220,
     "baseAtk": 11,
+    "baseSpd": 50,
     "gimmicks": [
       {
         "id": "zap-dive",
@@ -130,6 +137,7 @@
     "element": "spark",
     "baseHp": 250,
     "baseAtk": 10,
+    "baseSpd": 50,
     "gimmicks": [
       {
         "id": "buzz-cloud",
@@ -150,6 +158,7 @@
     "element": "tide",
     "baseHp": 420,
     "baseAtk": 14,
+    "baseSpd": 25,
     "gimmicks": [
       {
         "id": "flood-gate",
@@ -181,6 +190,7 @@
     "element": "ember",
     "baseHp": 380,
     "baseAtk": 14,
+    "baseSpd": 20,
     "gimmicks": [
       {
         "id": "molten-shell",
@@ -220,6 +230,7 @@
     "element": "grove",
     "baseHp": 440,
     "baseAtk": 13,
+    "baseSpd": 25,
     "gimmicks": [
       {
         "id": "tangle",
@@ -259,6 +270,7 @@
     "element": "spark",
     "baseHp": 390,
     "baseAtk": 14,
+    "baseSpd": 40,
     "gimmicks": [
       {
         "id": "arc-lash",
@@ -284,5 +296,108 @@
     },
     "rounds": 8,
     "flavor": "A bad-tempered tangle of copper and lightning. It always goes for your best fighter."
+  },
+  {
+    "id": "bog-toad",
+    "name": "Bog Toad",
+    "kind": "foe",
+    "element": "mire",
+    "baseHp": 270,
+    "baseAtk": 11,
+    "baseSpd": 25,
+    "gimmicks": [
+      {
+        "id": "mud-spit",
+        "name": "Mud Spit",
+        "trigger": {
+          "every": 2
+        },
+        "op": "barrage",
+        "shells": {
+          "min": 1,
+          "max": 1,
+          "shareBp": 1
+        },
+        "power": 7500,
+        "applies": {
+          "effect": "mired",
+          "powerBp": 10000
+        }
+      }
+    ],
+    "rounds": 6,
+    "flavor": "Sits so still you take it for a stone, then spits a mouthful of mud. It is very sorry afterwards."
+  },
+  {
+    "id": "tar-leech",
+    "name": "Tar Leech",
+    "kind": "foe",
+    "element": "mire",
+    "baseHp": 250,
+    "baseAtk": 11,
+    "baseSpd": 20,
+    "gimmicks": [
+      {
+        "id": "tar-cling",
+        "name": "Tar Cling",
+        "trigger": {
+          "every": 3
+        },
+        "op": "slam",
+        "aim": "left",
+        "power": 11000,
+        "splashBp": 4000,
+        "applies": {
+          "effect": "mired",
+          "powerBp": 10000
+        }
+      }
+    ],
+    "rounds": 6,
+    "flavor": "Black, shiny and slow. It clings to the nearest creature and will not take the hint."
+  },
+  {
+    "id": "fen-lurker",
+    "name": "Fen Lurker",
+    "kind": "boss",
+    "element": "mire",
+    "baseHp": 430,
+    "baseAtk": 13,
+    "baseSpd": 20,
+    "gimmicks": [
+      {
+        "id": "sink-down",
+        "name": "Sink Down",
+        "trigger": {
+          "every": 3
+        },
+        "op": "sweep",
+        "rows": ["all"],
+        "power": 4500,
+        "applies": {
+          "effect": "mired",
+          "powerBp": 10000
+        }
+      }
+    ],
+    "signature": {
+      "id": "pull-under",
+      "name": "Pull Under",
+      "trigger": {
+        "every": 4
+      },
+      "op": "charge",
+      "applies": {
+        "effect": "mired",
+        "powerBp": 10000
+      },
+      "then": {
+        "op": "sweep",
+        "rows": ["all"],
+        "power": 8500
+      }
+    },
+    "rounds": 8,
+    "flavor": "Looks like a bog-oak log until it blinks. Then you see that the log was looking at you."
   }
 ]

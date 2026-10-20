@@ -16,7 +16,7 @@ export type GearRarity = 'common' | 'rare' | 'epic';
 /** The kinds of base stat: Attack and HP, and the crit stats (in basis points). */
 export type StatKind = 'atk' | 'hp' | 'critChance' | 'critDamage';
 export type PartKind =
-  'scrap' | 'tide-shard' | 'ember-shard' | 'grove-shard' | 'spark-shard' | 'glimmer';
+  'scrap' | 'tide-shard' | 'ember-shard' | 'grove-shard' | 'spark-shard' | 'mire-shard' | 'glimmer';
 /** Parts by kind; a kind that is absent is 0. */
 export type PartsBundle = Partial<Record<PartKind, number>>;
 /** The jobs a player can start. Improve and Enchant are gone; jobs started before gear v2 still finish. */
@@ -349,6 +349,8 @@ export interface WornGear {
 export interface CreatureGearFields {
   /** The creature's stats with the worn items folded in; equal to `stats` without gear. */
   statsWithGear: { hp: number; atk: number; spd: number };
+  /** Flat dodge from the worn gear and talents, in basis points (0 when none). */
+  dodgeBp: number;
   /** The items it wears, at most one per slot. */
   gear: WornGear[];
   /** Expedition or job; null when idle. `away` stays true for expeditions only. */

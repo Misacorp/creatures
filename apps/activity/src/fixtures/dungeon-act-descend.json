@@ -425,7 +425,7 @@
         "kind": "fight",
         "result": "fight",
         "cleared": true,
-        "rounds": 3,
+        "rounds": 4,
         "foeHpEnd": 0,
         "foeHpMax": 629,
         "loot": {

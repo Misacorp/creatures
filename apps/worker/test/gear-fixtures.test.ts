@@ -83,7 +83,7 @@ describe('the gear fixtures match what the server sends', () => {
     // The state has every job status and every part kind.
     expect(new Set(gearState.jobs.map((j) => j.status))).toEqual(new Set(['running', 'claimed']));
     expect(new Set(gearReady.jobs.map((j) => j.status))).toContain('ready');
-    expect(Object.keys(gearState.parts)).toHaveLength(6);
+    expect(Object.keys(gearState.parts)).toHaveLength(7);
     expect(gearState.items.some((i) => i.equippedOn !== null)).toBe(true);
     expect(gearState.items.some((i) => i.madeBy !== null)).toBe(true);
     expect(gearState.skills.some((s) => s.xp > 0)).toBe(true);

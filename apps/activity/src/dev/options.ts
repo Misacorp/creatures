@@ -70,6 +70,7 @@ export const PART_FIELDS: readonly Option[] = [
   { value: 'ember-shard', label: 'Ember shard' },
   { value: 'grove-shard', label: 'Grove shard' },
   { value: 'spark-shard', label: 'Spark shard' },
+  { value: 'mire-shard', label: 'Mire shard' },
   { value: 'glimmer', label: 'Glimmer' },
 ];
 

@@ -154,5 +154,44 @@
       "always": ["The lightning crown", "The raised lightning rod"],
       "never": ["Legs", "Warm fire colours"]
     }
+  },
+  "old-bogback": {
+    "description": "A huge toad, half sunk in the fen and older than its name. Its Sinking Mud smears a whole row, and stuck creatures move slower and hit softer.",
+    "appearance": {
+      "silhouette": "Huge, wide toad head and shoulders rising from the mud, with eye bulges on top and two cattails on the crown.",
+      "size": "huge",
+      "palette": [
+        {
+          "name": "Deep Peat",
+          "hex": "#4f3822"
+        },
+        {
+          "name": "Peat Brown",
+          "hex": "#8a6238"
+        },
+        {
+          "name": "Ochre Eye",
+          "hex": "#f2d060"
+        },
+        {
+          "name": "Tar Black",
+          "hex": "#2a2230"
+        },
+        {
+          "name": "Oily Sheen",
+          "hex": "#4d9c8f"
+        }
+      ],
+      "features": [
+        "A warty peat-brown back with ochre flecks and a few patches of green moss",
+        "Two big ochre-gold eyes with slit pupils on bulges at the top corners",
+        "A very wide, patient mouth drawn as one long dark line",
+        "Two cattails growing from the crown of its head",
+        "The lower body sunk in black tar, with teal and violet oily sheen on the surface"
+      ],
+      "pose": "Sitting up out of the mud, facing the viewer, hands resting flat in the tar, completely unbothered.",
+      "always": ["The half-sunk body in tar", "Gold eyes on bulges at the top corners"],
+      "never": ["A fierce or angry look", "Teeth, drool or gore"]
+    }
   }
 }

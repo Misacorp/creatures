@@ -6,6 +6,7 @@
     { "id": "static-letters", "name": "Static Letters", "place": "storm-ridge" },
     { "id": "signpost-series", "name": "The Signpost Series", "place": "old-crossroads" },
     { "id": "moonlit-verses", "name": "Moonlit Verses", "place": "moonlit-reef" },
+    { "id": "peat-notes", "name": "The Peat Notes", "place": "sunken-fen" },
     { "id": "lost-pages", "name": "Lost Pages", "place": "any" }
   ],
   "entries": [
@@ -20,7 +21,7 @@
       "id": "tide-low-water",
       "place": "tidepools",
       "title": "Low water",
-      "text": "When the tide drops, water-folk grow bold and quick. The slowest one in the pool is always last to turn around.",
+      "text": "When the tide drops, water-folk grow bold and quick. A quick one steps aside before the wave can reach it. The slow ones always get wet.",
       "set": "tide-ledger"
     },
     {
@@ -152,7 +153,7 @@
       "id": "road-fast-feet",
       "place": "old-crossroads",
       "title": "Fast feet",
-      "text": "Some beasts go by pure quickness, and whoever is fastest strikes first. The quick ones get the first word and sometimes the last.",
+      "text": "Some beasts are quick on their feet. A quick creature can step aside and let a hit go by. The quickest do it often, and the slow hardly ever.",
       "set": "signpost-series"
     },
     {
@@ -215,6 +216,34 @@
       "text": "The newts tuck their friends into the fog and the boss cannot see where to aim. Nobody has ever caught one asleep."
     },
     {
+      "id": "fen-old-things",
+      "place": "sunken-fen",
+      "title": "What the bog keeps",
+      "text": "A cart wheel, a gate, a lantern, a pair of boots. The bog keeps whatever it is given, and it keeps it well. Look closely before you leave.",
+      "set": "peat-notes"
+    },
+    {
+      "id": "fen-slow-ground",
+      "place": "sunken-fen",
+      "title": "Slow ground",
+      "text": "The fen does not hurt anyone. It only holds on to their feet. A creature held by the feet hits softer, and cannot step aside in time.",
+      "set": "peat-notes"
+    },
+    {
+      "id": "fen-damp-and-gas",
+      "place": "sunken-fen",
+      "title": "Damp and gas",
+      "text": "A damp fog puts out any fire without a sound. But under the peat the old gas is waiting for a single spark, and then it all goes up at once.",
+      "set": "peat-notes"
+    },
+    {
+      "id": "fen-patient-ones",
+      "place": "sunken-fen",
+      "title": "The patient ones",
+      "text": "The Mudlump sits and the Squelch hums, and neither is in a hurry. The bog has never once asked them to be. Whatever is old is very good at waiting.",
+      "set": "peat-notes"
+    },
+    {
       "id": "fest-paper-lanterns",
       "place": "festival-grounds",
       "title": "Paper lanterns",
@@ -270,6 +299,12 @@
       "place": "any",
       "title": "The wheel of elements",
       "text": "Water puts out fire, fire eats the green, the green drinks lightning, and lightning splits the water. The wheel has never once stopped."
+    },
+    {
+      "id": "any-the-chart",
+      "place": "any",
+      "title": "The chart of elements",
+      "text": "Water puts out fire, fire eats the green, the green drinks lightning, and lightning splits the water. But the wheel was never the whole world: in the fen, the mud drinks the flame."
     }
   ]
 }

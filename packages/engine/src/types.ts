@@ -39,6 +39,10 @@ export const PROC_KINDS = [
   'overflow',
   'patient',
   'shared_warmth',
+  // Dodge lines (it dodged a boss hit).
+  'riposte',
+  'momentum',
+  'slipstream',
 ] as const;
 export type ProcKind = (typeof PROC_KINDS)[number];
 
@@ -163,6 +167,21 @@ export interface SlotMods {
   /** 1: its first reaction each fight is a critical hit (Pounce Set; crits must be on). */
   firstReactionCrit?: 0 | 1;
 
+  // --- Dodge (`combat-rules.md` 14). Flat points on top of the chance Speed gives; read only in a fight whose
+  // stored rules carry `dodge`. ---
+  /** Flat dodge in basis points (0 to 10000), added to the Speed part for every hit it can dodge (Light-footed). */
+  dodgeBp?: number;
+  /** Flat dodge against area hits only, in basis points (0 to 10000), added in full after the area share (Sidestep, later). */
+  areaDodgeBp?: number;
+
+  // --- Status effects (`combat-rules.md` 13). Read only in a fight with effects on. ---
+  /** Debuffs on this creature are weaker: each stack's numbers are cut by this share (0 to 10000; Clean coat). */
+  debuffResistBp?: number;
+  /** Debuffs this creature applies: application power, in basis points (0 to 100000), added to the source's own (Heavy hand). */
+  debuffPowerBp?: number;
+  /** Debuffs this creature applies last this many more turns (0 to 10). */
+  debuffDurationTurns?: number;
+
   // --- Chance lines (2026-10-18, `combat-rules.md` 11). Each is a chance in basis points (0 to 10000), rolled
   // on the creature's own luck dice (`LUCK_DICE`), drawn only when some creature of the fight has one. ---
   /** Each round start: heal `CHANCE_FX.secondWindHealBp` of max HP. */
@@ -206,6 +225,15 @@ export interface SlotMods {
   patientBp?: number;
   /** A Support heals it: that Support's next boost is this much bigger. */
   sharedWarmthBp?: number;
+
+  // --- On-dodge lines (`combat-rules.md` 12, `speed-and-dodge.md` 2.5): fire when the creature dodges a boss hit,
+  // so they only act in a fight whose stored rules carry `dodge`. ---
+  /** It dodges a boss hit: it strikes the boss at once for this share of its Attack (no mark, no crit, no reaction; it always lands). */
+  riposteBp?: number;
+  /** It dodges a boss hit: its next turn hit deals this much more (replaces an earlier one). */
+  momentumBp?: number;
+  /** It dodges a boss hit: the living creature beside it with the most Attack gets a boost of this size on its next hit. */
+  slipstreamBp?: number;
 }
 
 export interface AbilityChoice {
@@ -262,6 +290,14 @@ export interface FightInput {
   /** Signed-up player ids. */
   players: readonly string[];
   finaleAbilities: readonly AbilityChoice[];
+  /**
+   * Passive abilities of creatures that have no finale choice in this fight (Phases 1 and 2 of a
+   * raid): only the ability's passive effects (`on_hit_taken`, `round_start`) are on, from round 1;
+   * nothing fires and no `ability` event is written. A creature that already has the same ability in
+   * `finaleAbilities` is skipped, so a passive never counts twice. Absent: none (a stored fight
+   * replays as it did).
+   */
+  passives?: readonly { creatureId: string; abilityId: string }[];
   turnOrderOverride?: TurnOrder;
   /**
    * Whom a Guard covers when the boss aims a hit at a creature that is not a Guard: `zone` (the
@@ -326,6 +362,13 @@ export interface FightInput {
    * creature's ability is not lengthened twice. Absent: 0, so a stored fight replays as it was.
    */
   lingerAllRounds?: number;
+  /**
+   * Turns status effects on (`combat-rules.md` 13): `dice` is the number of effect dice drawn at the
+   * end of every round's dice (1 to 256), which the extra-stack chances of that round's applications
+   * read in order. Absent: effects are off, nothing applies (a boss move's `applies` does nothing)
+   * and no die is drawn, so a stored fight replays as it was.
+   */
+  effects?: { dice: number };
 }
 
 export interface FightRules {
@@ -345,6 +388,21 @@ export interface FightRules {
   guardArmorBp: number;
   /** Support effects by element (`RULES.combat.supportFx`). */
   supportFx: Readonly<Partial<Record<Element, SupportFx>>>;
+  /**
+   * Dodge (`RULES.combat.dodge`, combat-rules.md 14). Absent: dodge is off in this fight (nobody dodges,
+   * no dodge die is drawn), so a stored fight replays as it was.
+   */
+  dodge?: DodgeRules;
+}
+
+/** The numbers of dodge stored with a fight (`RULES.combat.dodge` without its `enabled` switch). */
+export interface DodgeRules {
+  /** Basis points of dodge chance for each point of Speed. */
+  perSpeedBp: number;
+  /** The hard cap on any dodge chance, basis points. */
+  maxBp: number;
+  /** The share of the chance an area hit rolls, basis points. */
+  areaShareBp: number;
 }
 
 export interface EnrageRules {
@@ -447,6 +505,10 @@ export type FightEvent =
       setCrit?: true;
       /** Set when a gear set's crit window added crit damage to this crit (`critWindowBp`). */
       warm?: true;
+      /** The creature's status effects added this much to the damage bonus (negative: a debuff cut it); absent if none. */
+      effectBp?: number;
+      /** Set when the boss dodged the hit (`damage` is 0, nothing else of the hit happened). */
+      dodged?: true;
     }
   | {
       t: 'mark';
@@ -525,6 +587,8 @@ export type FightEvent =
       warded?: number;
       /** Set when the taker's Sidestep made it take nothing from an area hit (the damage is 0). */
       sidestep?: true;
+      /** Set when the taker's dodge made it take nothing (the damage is 0; no Guard stepped in, no reduction applied). */
+      dodged?: true;
       /** Set when the taker's Stubborn left it at 1 HP instead of knocking it out (the damage is still the full hit). */
       stubborn?: true;
     }
@@ -545,6 +609,46 @@ export type FightEvent =
       bossHp?: number;
     }
   | { t: 'silence'; round: number; creature: string; turns: number }
+  /**
+   * A status effect was applied and landed at least one stack. `target` is a creature id, or null for
+   * the boss; `stacksAdded` can be 0 when the target was at the cap (the timer was still refreshed);
+   * `source` is the creature that applied it, absent for the boss's moves.
+   */
+  | {
+      t: 'effect_apply';
+      round: number;
+      target: string | null;
+      effect: string;
+      stacksAdded: number;
+      stacks: number;
+      turnsLeft: number;
+      source?: string;
+    }
+  /** An effect ran out on its target's own turns; all its stacks fell off. */
+  | { t: 'effect_expire'; round: number; target: string | null; effect: string }
+  /**
+   * A reaction burned every stack of `effect` off the boss (Flare burns Mired): `stacks` of them, for
+   * `bonusBp` more reaction bonus. Written only when stacks went.
+   */
+  | {
+      t: 'effect_consume';
+      round: number;
+      reaction: string;
+      effect: string;
+      stacks: number;
+      bonusBp: number;
+    }
+  /** The boss purged its debuffs (written only when something went). */
+  | { t: 'effect_purge'; round: number; removed: { effect: string; stacks: number }[] }
+  /** A Support's cleanse removed one debuff from a neighbour. */
+  | {
+      t: 'effect_cleanse';
+      round: number;
+      supporter: string;
+      target: string;
+      effect: string;
+      stacks: number;
+    }
   | { t: 'round_end'; round: number; bossHp: number };
 
 export interface PlayerTotals {

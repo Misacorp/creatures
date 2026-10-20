@@ -140,6 +140,8 @@ export function describeGimmick(gimmick: Gimmick): string {
       return `${patternWords(gimmick)} ${when}`;
     case 'charge':
       return `winds up one round ahead, then ${patternWords(gimmick.then)}, ${when}`;
+    case 'purge':
+      return `shakes off every debuff on itself, ${when}`;
   }
 }
 
@@ -199,14 +201,23 @@ export const POST_COLOURS = {
   won: 0xf2b33d,
   cleared: 0x57a85a,
   lost: 0xc0504d,
-  element: { tide: 0x3fa7d6, ember: 0xe8743b, grove: 0x5fae4e, spark: 0xf2c94c } as Record<
-    string,
-    number
-  >,
+  element: {
+    tide: 0x3fa7d6,
+    ember: 0xe8743b,
+    grove: 0x5fae4e,
+    spark: 0xf2c94c,
+    mire: 0x7a5a3a,
+  } as Record<string, number>,
   plain: 0x6b3fa0,
 } as const;
 
-const ELEMENT_EMOJI: Record<string, string> = { tide: '🌊', ember: '🔥', grove: '🌿', spark: '⚡' };
+const ELEMENT_EMOJI: Record<string, string> = {
+  tide: '🌊',
+  ember: '🔥',
+  grove: '🌿',
+  spark: '⚡',
+  mire: '🟤',
+};
 
 const cut = (text: string, max: number): string => truncateMessage(text, max);
 
@@ -249,6 +260,7 @@ const TURN_ORDER_SHORT: Record<TurnOrder, string> = {
   left_to_right: 'creatures act left to right',
   right_to_left: 'creatures act right to left',
   speed: 'creatures act fastest first',
+  serpentine: 'creatures snake through the rows',
 };
 
 export interface RevealPost {

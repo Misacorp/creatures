@@ -38,6 +38,8 @@ describe('the icons of the room modifiers', () => {
     expect(modifierIcon('echoing')).toEqual({ kind: 'glyph', id: 'shield' });
     expect(modifierIcon('thorns')).toEqual({ kind: 'glyph', id: 'reflect_first_reaction' });
     expect(modifierIcon('brittle')).toEqual({ kind: 'glyph', id: 'warning' });
+    // The whole team's Speed down (Muddy) is a puddle of mud.
+    expect(modifierIcon('mud')).toEqual({ kind: 'glyph', id: 'mud' });
   });
 
   it('falls back to the plain diamond for a modifier it does not know', () => {

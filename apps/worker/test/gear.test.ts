@@ -512,13 +512,59 @@ describe('GET /api/gear and the welcome kit', () => {
 });
 
 describe('equip and the wear rule', () => {
+  it('shows Light-footed as flat dodge and Fleet in Speed, with dodge on', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = await player(ctx, 1, { species: ['cindle', 'splashet', 'sproutle'] });
+      skipWelcome(ctx, p.id);
+      const charm = give(ctx, p.id, 'trail-charm', {
+        rarity: 'rare',
+        level: 1,
+        lines: [['light-footed', 4]],
+      });
+      const scarf = give(ctx, p.id, 'patch-scarf', {
+        rarity: 'common',
+        level: 1,
+        lines: [['fleet', 0]],
+      });
+      const [cindle] = p.creatureIds as [string];
+      setCreature(ctx, cindle, { level: 13 }); // the charm slot opens at 13
+      await p.call('POST', equipPath(charm), { creatureId: cindle });
+      const res = await p.call('POST', equipPath(scarf), { creatureId: cindle });
+      expect(res.status).toBe(200);
+      const state = res.body['state'] as {
+        creatures: {
+          id: string;
+          stats: { spd: number };
+          statsWithGear: { spd: number };
+          dodgeBp: number;
+        }[];
+      };
+      const view = state.creatures.find((c) => c.id === cindle);
+      // Light-footed tier 4 is 12%, flat; Fleet (+5%) lifts Speed, which the Speed part of dodge reads.
+      expect(view?.dodgeBp).toBe(1_200);
+      expect(view?.statsWithGear.spd).toBeGreaterThan(view?.stats.spd ?? 0);
+      expect(state.creatures.filter((c) => c.id !== cindle).every((c) => c.dodgeBp === 0)).toBe(
+        true,
+      );
+    });
+  });
+
   it('puts an item on one of your creatures and shows it in the collection', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await player(ctx, 1, { species: ['cindle', 'splashet', 'sproutle'] });
         skipWelcome(ctx, p.id);
-        const itemId = give(ctx, p.id, 'coal-warm-cap', { rarity: 'epic', level: 5 });
+        // Lines that all work for an Ember Setter (a rolled item may carry a line for another element).
+        const itemId = give(ctx, p.id, 'coal-warm-cap', {
+          rarity: 'epic',
+          level: 5,
+          lines: [
+            ['ember-attunement', 2],
+            ['hp', 1],
+            ['crit-chance', 1],
+          ],
+        });
         const [cindle] = p.creatureIds as [string];
         const res = await p.call('POST', equipPath(itemId), { creatureId: cindle });
         expect(res.status).toBe(200);

@@ -9,7 +9,11 @@ import {
   dungeonContent,
   dungeonEvents,
   dungeonKeepsakes,
+  CHART_STRONG_BP,
   RULES,
+  chartBp,
+  strongAgainst,
+  weakAgainst,
   abilityView,
   content,
   glossary,
@@ -232,15 +236,26 @@ describe('the glossary text matches the rules', () => {
     const name = (id: string): string => content.elements.find((e) => e.id === id)?.name ?? '?';
     for (const el of content.elements) {
       const e = entry(GLOSSARY_IDS.element(el.id));
-      const weakTo = content.elements.find((o) => o.strongAgainst === el.id);
+      const chart = content.elementChart;
       const reaction = content.reactions.find((r) => r.markElement === el.id);
       expect(e.title).toBe(el.name);
-      expect(e.lines[0]).toContain(name(el.strongAgainst));
-      expect(e.lines[0]).toContain(percent(RULES.combat.strongBp - 10_000));
-      expect(e.lines[1]).toContain(name(weakTo?.id ?? ''));
-      expect(e.lines[1]).toContain(percent(10_000 - RULES.combat.weakBp));
-      expect(e.lines[2]).toContain(reaction?.markName);
-      expect(e.lines[2]).toContain(name(reaction?.triggerElement ?? ''));
+      // One "Hits X bosses for N% more/less damage." line for each matchup, then the mark line. The
+      // matchups an element is on the receiving end of (Ember: Mire hits it for 50% more) are in the text too.
+      const hits = (word: 'more' | 'less'): string =>
+        e.lines.filter((l) => l.startsWith('Hits ') && l.includes(`${word} damage`)).join(' ');
+      for (const id of strongAgainst(chart, el.id)) expect(hits('more')).toContain(name(id));
+      if (strongAgainst(chart, el.id).length > 0) {
+        expect(hits('more')).toContain(percent(CHART_STRONG_BP - 10_000));
+      }
+      for (const id of weakAgainst(chart, el.id)) {
+        expect(hits('less')).toContain(name(id));
+        expect(hits('less')).toContain(percent(10_000 - chartBp(chart, el.id, id)));
+      }
+      const markLine = e.lines.find((l) => l.includes(reaction?.markName ?? '?')) ?? '';
+      expect(markLine, el.id).not.toBe('');
+      for (const r of content.reactions.filter((x) => x.markElement === el.id)) {
+        expect(markLine).toContain(name(r.triggerElement));
+      }
     }
   });
 
@@ -394,9 +409,9 @@ describe('the glossary text matches the rules', () => {
     expect(text('duplicate-choice')).toContain('two forms');
     expect(text('evolution')).toContain('permanent');
     expect(text('evolution')).toContain('Keep a duplicate');
-    // Every evolving line (8) has a second form, so Keep can be offered for each.
+    // Eight evolving lines have a second form, so Keep can be offered for each; the two Mire lines have one.
     expect(content.creatures.filter((c) => c.altEvolvesTo !== undefined)).toHaveLength(8);
-    expect(content.creatures.filter((c) => c.evolvesTo !== undefined)).toHaveLength(8);
+    expect(content.creatures.filter((c) => c.evolvesTo !== undefined)).toHaveLength(10);
     // Bait pays for treats, lures and the book, and nothing turns into Bait.
     expect(text('bait')).toContain('lures');
     expect(text('bait')).not.toContain('turn into Bait');

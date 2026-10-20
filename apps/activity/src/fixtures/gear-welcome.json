@@ -34,10 +34,10 @@
       ],
       "lines": [
         {
-          "id": "crit-damage",
-          "name": "Crit damage",
-          "text": "Crit damage +8 pt",
-          "about": "Crits hit harder, in points (the fight caps the total).",
+          "id": "grove-attunement",
+          "name": "Grove Attunement",
+          "text": "Grove Attunement +3%",
+          "about": "Raises Attack, but only for a Grove creature.",
           "source": "rolled",
           "tier": 1,
           "bestTier": 1,
@@ -88,6 +88,7 @@
     "ember-shard": 0,
     "grove-shard": 0,
     "spark-shard": 0,
+    "mire-shard": 0,
     "glimmer": 0
   },
   "blueprints": [

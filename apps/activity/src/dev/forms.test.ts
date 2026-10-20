@@ -103,6 +103,7 @@ describe('goods', () => {
       'ember-shard',
       'grove-shard',
       'spark-shard',
+      'mire-shard',
       'glimmer',
     ]);
   });
