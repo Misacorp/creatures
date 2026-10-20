@@ -30,7 +30,7 @@ export function RewardSummary({
     <>
       <div class={pile ? 'reward-row' : 'reward-row no-pile'}>
         {pile && <RewardPile source={source} label={pileLabel(source, prefix)} />}
-        <CountBadgeList items={counts} label={countsLabel} class="reward-badges" />
+        <CountBadgeList items={counts} label={countsLabel} class="reward-badges" bare />
       </div>
       {children}
     </>

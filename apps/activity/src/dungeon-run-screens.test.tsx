@@ -594,6 +594,26 @@ describe('the results of a path run', () => {
     return page.root;
   }
 
+  /** The same, inside the popover host, so a glossary tag is the button it is in the game. */
+  function resultsWithHelp(run: ReturnType<typeof sampleSummary>): FakeElement {
+    page ??= createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={noop}>
+        <DungeonResults
+          run={run}
+          today={today}
+          offset={0}
+          canRetry={false}
+          busy={false}
+          error={null}
+          onWatch={noop}
+          onRetry={noop}
+        />
+      </PopoverHost>,
+    );
+    return page.root;
+  }
+
   const titleOf = (root: FakeElement): FakeElement =>
     byClass(root, 'result-title')[0] as FakeElement;
 
@@ -926,6 +946,61 @@ describe('the results of a path run', () => {
     const line = byName(next, 'p', /^Resets at /)[0] as FakeElement;
     expect(visibleText(line)).toMatch(/^Resets at [A-Z][a-z]{2} \d{1,2}:\d{2}, in \d/);
     expect(visibleText(next)).not.toContain('Europe/');
+  });
+
+  it('lists gear as find boxes under the resources, with no "?" on the resource badges', () => {
+    const base = sampleSummary('cleared');
+    const gear = [
+      { id: 'g1', baseId: 'kelp-cap', rarity: 'common' as const, itemLevel: 4 },
+      { id: 'g2', baseId: 'forge-scarf', rarity: 'rare' as const, itemLevel: 6 },
+    ];
+    const root = resultsWithHelp({ ...base, rewards: { ...base.rewards, gear } });
+    expect(byClass(root, 'find-row')).toHaveLength(2);
+    const badges = byClass(root, 'reward-badges')[0] as FakeElement;
+    const tags = find(badges, (e) => e.localName === 'button');
+    expect(tags.length).toBeGreaterThan(0);
+    expect(tags.every((t) => (t.getAttribute('class') ?? '').includes('gtag-bare'))).toBe(true);
+  });
+
+  it('gives the streak bonus its own titled section with the gift, and no lone parts under the gear', () => {
+    const base = sampleSummary('cleared');
+    const root = results({
+      ...base,
+      rewards: {
+        ...base.rewards,
+        streak: { day: 7, bait: 0, essence: 1, parts: { scrap: 1 } },
+      },
+    });
+    const section = byClass(root, 'streak-bonus')[0] as FakeElement;
+    expect(visibleText(byName(section, 'h4', /Streak Bonus/)[0] as FakeElement)).toBe(
+      '7 Day Streak Bonus',
+    );
+    expect(byClass(section, 'sprite').length).toBeGreaterThan(0);
+    const badges = byClass(section, 'reward-badges')[0] as FakeElement;
+    expect(byClass(badges, 'part-count')).toHaveLength(2);
+    // The old sentence is gone, and the bonus is not drawn as a loot list of its own.
+    expect(visibleText(root)).not.toContain('streak bonus:');
+    expect(byClass(root, 'loot-parts')).toHaveLength(0);
+  });
+
+  it('has no streak section when the run paid no bonus', () => {
+    const root = results(sampleSummary('cleared'));
+    expect(byClass(root, 'streak-bonus')).toHaveLength(0);
+  });
+
+  it('shows the streak as a titled row: "Streak" with a help button, the days, then the reset line', () => {
+    const root = resultsWithHelp(sampleSummary('cleared'));
+    const next = byClass(root, 'dungeon-next')[0] as FakeElement;
+    const title = byClass(next, 'dungeon-streak-title')[0] as FakeElement;
+    expect(title.localName).toBe('h5');
+    expect(visibleText(title)).toContain('Streak');
+    const help = find(title, (e) => e.localName === 'button')[0] as FakeElement;
+    expect(help.getAttribute('aria-label')).toMatch(/^What is /);
+    const streak = byClass(next, 'dungeon-streak')[0] as FakeElement;
+    const order = (streak.childNodes as FakeElement[]).map((n) => n.getAttribute('class') ?? '');
+    expect(order[0]).toContain('dungeon-streak-title');
+    expect(order[1]).toContain('streak-track');
+    expect(order[2]).toContain('dungeon-streak-reset');
   });
 
   it('has no empty-rewards note when the run paid something', () => {

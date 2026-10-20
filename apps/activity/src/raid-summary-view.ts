@@ -68,6 +68,28 @@ export interface SummaryRewards {
   progress: FinaleProgress | null;
 }
 
+/**
+ * The finale's reward slot and a Festival week's piece as one loot: the gear, blueprints, items that did
+ * not fit and parts of both, so the rewards are one list (the two are not told apart on the card). Null when
+ * both gave nothing.
+ */
+export function rewardLoot(
+  rewards: Pick<SummaryRewards, 'finaleLoot' | 'festivalLoot'>,
+): GrantLoot | null {
+  const grants = [rewards.finaleLoot, rewards.festivalLoot].filter((g) => g !== null);
+  if (grants.length === 0) return null;
+  const parts: Record<string, number> = {};
+  for (const g of grants) {
+    for (const [kind, amount] of Object.entries(g.parts)) parts[kind] = (parts[kind] ?? 0) + amount;
+  }
+  return {
+    gear: grants.flatMap((g) => g.gear),
+    converted: grants.flatMap((g) => g.converted),
+    parts,
+    blueprints: grants.flatMap((g) => g.blueprints),
+  };
+}
+
 /** Everything a summary is drawn from: the stage's stats and boss, and what it paid the caller. */
 export interface SummaryInput {
   /** Null when the boss is not known (the raid view is of another week): the summary says "The boss". */

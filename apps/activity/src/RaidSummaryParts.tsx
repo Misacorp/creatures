@@ -7,12 +7,19 @@ import type { ComponentChildren } from 'preact';
 import { abilitySummary, percentText, whoText } from './after-action';
 import { essenceCount, partCountItems } from './count-items';
 import { FinaleProgress } from './FinaleProgress';
-import { lootIsEmpty } from './gear-view';
-import type { GrantLoot, PartsBundle } from './gear-types';
 import { LootList } from './LootList';
 import type { AfterActionStats } from './raid-api';
-import { festivalGrantText, rankChangeText } from './raid-progress';
-import { grouped, type Highlight, type ScoreRow, type SummaryRewards } from './raid-summary-view';
+import { festivalFind } from './find-view';
+import type { GrantLoot } from './gear-types';
+import { rankChangeText } from './raid-progress';
+import { FindCreature } from './ui/FindCreature';
+import {
+  grouped,
+  rewardLoot,
+  type Highlight,
+  type ScoreRow,
+  type SummaryRewards,
+} from './raid-summary-view';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Accordion } from './ui/Accordion';
@@ -20,7 +27,6 @@ import { ActionButton } from './ui/ActionButton';
 import { DataTable, type DataRow } from './ui/DataTable';
 import { GameIcon } from './ui/GameIcon';
 import { RewardSummary } from './ui/RewardSummary';
-import { Tag } from './ui/Tag';
 
 // --- The scoreboard ---
 
@@ -111,60 +117,37 @@ export function SectionHead({ children, note }: { children: ComponentChildren; n
 
 // --- Rewards ---
 
-/** The parts of two grants added together (the counts above the gear list cover both). */
-function addParts(a: PartsBundle, b: PartsBundle): PartsBundle {
-  const sum: Record<string, number> = { ...a };
-  for (const [kind, amount] of Object.entries(b)) sum[kind] = (sum[kind] ?? 0) + (amount ?? 0);
-  return sum;
-}
-
-/** One grant's gear, blueprints and notes under a small name ("Finale reward"); nothing when it gave none. */
-function GrantBlock({ loot, label }: { loot: GrantLoot | null; label: string }) {
-  if (loot === null || lootIsEmpty(loot)) return null;
-  // Parts and supplies are in the count badges above, so the list leaves them out.
-  const rest = { ...loot, parts: {}, supplies: [] };
-  if (lootIsEmpty(rest)) return null;
-  return (
-    <section class="rs-grant">
-      <p class="rs-grant-label">{label}</p>
-      <LootList loot={loot} label={label} counted />
-    </section>
-  );
-}
-
 /**
- * What the stage paid the caller: one count badge for Essence and one for each kind of part (no pile
- * picture), then the gear and blueprints under their names, the Festival creature, and the server's
- * rank with the season pips. Raids pay no experience today, so there is no XP row (the shared `XpGain`
- * has nothing to show).
+ * What the stage paid the caller, all in one place with the finds every screen uses: Essence and each kind
+ * of part as count badges (no pile picture), then one list of finds: the gear pieces (`FindItem`), the
+ * blueprints (`FindBlueprint`) and the Festival creature (`FindCreature`); then the server's rank with the
+ * season pips. Raids pay no experience today, so there is no XP row (the shared `XpGain` has nothing to show).
  */
 export function Rewards({ rewards }: { rewards: SummaryRewards }) {
-  const { finaleLoot, festivalLoot } = rewards;
-  const parts = addParts(finaleLoot?.parts ?? {}, festivalLoot?.parts ?? {});
-  const counts = [essenceCount(rewards.essence, { entry: true }), ...partCountItems(parts)];
+  const loot = rewardLoot(rewards);
+  const counts = [
+    essenceCount(rewards.essence, { entry: true }),
+    ...partCountItems(loot?.parts ?? {}),
+  ];
+  const festival = rewards.festivalGrant === null ? null : festivalFind(rewards.festivalGrant);
+  const empty: GrantLoot = { gear: [], converted: [], parts: {}, blueprints: [] };
   return (
     <>
       <RewardSummary
-        source={{ parts, essence: rewards.essence }}
+        source={{ essence: rewards.essence }}
         prefix="Rewards"
         countsLabel="Rewards"
         counts={counts}
         pile={false}
       >
-        <GrantBlock loot={finaleLoot} label="Finale reward" />
-        <GrantBlock loot={festivalLoot} label="Festival gear" />
-      </RewardSummary>
-      {rewards.festivalGrant !== null && (
-        <div class="rs-festival">
-          <Sprite sprite={creatureSpriteOrFallback(rewards.festivalGrant.species)} scale={4} />
-          <p class="prose">{festivalGrantText(rewards.festivalGrant)}</p>
-          {rewards.festivalGrant.firstOnServer && (
-            <Tag kind="badge" tone="first">
-              First on server
-            </Tag>
+        <LootList loot={loot ?? empty} counted label="Gear, blueprints and creatures">
+          {festival === null ? undefined : (
+            <FindCreature creature={festival.creature}>
+              {festival.note !== null && <p class="muted find-answered">{festival.note}</p>}
+            </FindCreature>
           )}
-        </div>
-      )}
+        </LootList>
+      </RewardSummary>
       {rewards.rankChange !== null && (
         <p class="rs-rank-line">{rankChangeText(rewards.rankChange)}</p>
       )}
@@ -334,7 +317,7 @@ export function SummaryActions({
   if (onReplay === undefined && onDismiss === undefined) return null;
   return (
     <div class="rs-actions">
-      {onReplay !== undefined && <ActionButton label="Watch replay" wide onClick={onReplay} />}
+      {onReplay !== undefined && <ActionButton label="Watch replay" large onClick={onReplay} />}
       {onDismiss !== undefined && (
         <button type="button" disabled={busy} onClick={onDismiss}>
           Got it

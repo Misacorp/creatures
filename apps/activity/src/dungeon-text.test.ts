@@ -39,7 +39,6 @@ import {
   runHpText,
   runStatusLine,
   streakLabel,
-  streakLine,
   streakPips,
 } from './dungeon-text';
 import { DUNGEON_ERRORS, type DungeonRunResponse, type DungeonToday } from './dungeon-types';
@@ -144,12 +143,6 @@ describe('the streak', () => {
     expect(streakLabel(0)).toBe('Streak: 0 / 7 days of the cycle');
     expect(streakLabel(3)).toBe('Streak: 3 / 7 days of the cycle');
     expect(streakLabel(8)).toBe('Streak: 1 / 7 days of the cycle');
-  });
-
-  it('says the streak in words', () => {
-    expect(streakLine(0)).toContain('No streak');
-    expect(streakLine(1)).toBe('1 day in a row');
-    expect(streakLine(5)).toBe('5 days in a row');
   });
 });
 

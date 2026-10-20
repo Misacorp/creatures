@@ -1,7 +1,7 @@
 import { DepthProgress } from './DepthProgress';
 import { GlossaryTag } from './Glossary';
 import { useServerNow } from './hooks';
-import { streakLine, streakPips } from './dungeon-text';
+import { streakPips } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { StreakTrack } from './ui/StreakTrack';
 import { formatCountdown, formatZoned } from './time-format';
@@ -31,16 +31,15 @@ export function DungeonNext({ today, offset }: { today: DungeonToday; offset: nu
       <h4 id="dungeon-next-heading">Next run</h4>
       <DepthProgress depth={today.depth} />
       <div class="dungeon-streak">
-        <div class="dungeon-streak-head">
-          <GlossaryTag entry="streak">Streak</GlossaryTag>
-          <span class="muted">{streakLine(today.streak)}</span>
-        </div>
+        <h5 class="dungeon-streak-title">
+          Streak <GlossaryTag entry="streak" look="help" />
+        </h5>
         <StreakTrack pips={streakPips(today.streak)} label={streakLabel(today.streak)} />
+        <p class="dungeon-streak-reset">
+          Resets at {formatZoned(today.resetsAt, today.timezone, 'short')}, in{' '}
+          {formatCountdown(remaining, 'days')}.
+        </p>
       </div>
-      <p class="muted">
-        Resets at {formatZoned(today.resetsAt, today.timezone, 'short')}, in{' '}
-        {formatCountdown(remaining, 'days')}.
-      </p>
     </section>
   );
 }

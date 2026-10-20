@@ -1,4 +1,5 @@
 import { talentContent, talentDef, talentText } from '@creatures/game';
+import { FindList } from '../../ui/FindRow';
 import { parseGameState } from '../../api';
 import { FindCard } from '../../FindCard';
 import { firstPick, pendingFind } from '../../find-view';
@@ -101,14 +102,14 @@ function FindCardDemo({ p }: { p: Parameters<Entry['render']>[0] }) {
   const find = pendingFind(cardWith(p), WAITING.creatures);
   const [picked, setPicked] = useState<string | null>(null);
   return (
-    <ul class="dup-list">
+    <FindList label="Waiting catches">
       <FindCard
         find={find}
         picked={picked ?? firstPick(find.choice?.options ?? [])}
         disabled={bool(p, 'busy')}
         onPick={setPicked}
       />
-    </ul>
+    </FindList>
   );
 }
 

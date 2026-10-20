@@ -2,6 +2,8 @@ import type { ClaimResult, Creature } from './api';
 import { catchBadgeTags, creatureName, getSpecies } from './game';
 import { partName, partsEntries } from './gear-view';
 import type { TripCatch } from './expedition-types';
+import type { FestivalGrant } from './raid-api';
+import type { FoundCreature } from './ui/FindCreature';
 import type { ChoiceRequest, ChoiceResult, PendingCatch, TalentView } from './talent-types';
 import { choiceResultText } from './talent-view';
 import type { CountItem } from './ui/CountBadge';
@@ -197,6 +199,34 @@ export function tripFinds(
           : null,
     };
   });
+}
+
+/**
+ * The Festival creature a finale gave, as the creature card shows it (the same card a trip's catch has). Its
+ * badges are the catch badges: "New!", "Duplicate", a fusion or Bait for the old outcomes, and "First on
+ * server!". A duplicate waits for its answer on the Collection tab, which `note` says in a few words.
+ */
+export function festivalFind(grant: FestivalGrant): {
+  creature: FoundCreature;
+  note: string | null;
+} {
+  return {
+    creature: {
+      species: grant.species,
+      shiny: false,
+      talent: grant.talent ?? null,
+      talentNew: grant.outcome === 'new',
+      badges: catchBadgeTags({
+        species: grant.species,
+        shiny: false,
+        outcome: grant.outcome,
+        firstOnServer: grant.firstOnServer,
+        ...(grant.fusionCount === undefined ? {} : { fusionCount: grant.fusionCount }),
+        ...(grant.bait === undefined ? {} : { bait: grant.bait }),
+      }),
+    },
+    note: grant.outcome === 'duplicate' ? 'It waits on the Collection tab.' : null,
+  };
 }
 
 /** How many rolls of a trip brought no creature, in words ("No creature this time", "2 rolls found no creature"). */

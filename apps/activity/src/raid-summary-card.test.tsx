@@ -73,6 +73,7 @@ function first(list: FakeElement[]): FakeElement {
 }
 
 const text = (p: Page): string => visibleText(p.root);
+const classes = (el: FakeElement): string => el.getAttribute('class') ?? '';
 const scoreboard = (p: Page): FakeElement =>
   first(
     find(
@@ -148,16 +149,43 @@ describe('the rewards', () => {
     expect(row.getAttribute('class')).toContain('no-pile');
     const badges = first(byClass(row, 'reward-badges'));
     expect(visibleText(badges)).toContain('46');
-    // The finale's parts are counts too (Scrap 4, Glimmer 1), and the gear is listed under its name.
-    expect(text(p)).toContain('Finale reward');
-    expect(byClass(p.root, 'loot')).toHaveLength(1);
+    // The finale's parts are counts too (Scrap 4, Glimmer 1); the resource badges have no "?" marker.
+    expect(byClass(badges, 'gtag-bare').length).toBeGreaterThan(0);
+    // The gear is one find box in the same section, with no sub-heading of its own.
+    expect(byClass(p.root, 'find-row')).toHaveLength(1);
+    expect(text(p)).not.toContain('Finale reward');
+    expect(text(p)).not.toContain('Festival gear');
   });
 
-  it('name the Festival gear apart from the finale reward, and keep the Festival creature', () => {
+  it('put gear, a blueprint and the Festival creature in one list of finds, as everywhere', () => {
     const p = draw(clear3);
-    expect(text(p)).toContain('Finale reward');
-    expect(text(p)).toContain('Festival gear');
-    expect(text(p)).toContain('First on server');
+    const list = first(byClass(p.root, 'find-list'));
+    // Two gear pieces (finale and Festival), the blueprint, and the creature's card.
+    expect(
+      byClass(list, 'find-row').map((r) => visibleText(first(byClass(r, 'find-row-name')))),
+    ).toEqual([
+      expect.stringContaining('Kelp Cap'),
+      expect.stringContaining('Festival Hearth Scarf'),
+      'Blueprint: Forge Scarf',
+    ]);
+    const card = first(byClass(list, 'find-card'));
+    expect(visibleText(first(byClass(card, 'find-name')))).toContain('Lanternfin');
+    expect(visibleText(card)).toContain('First on server!');
+    // No prose about the creature any more.
+    expect(text(p)).not.toContain('You won');
+  });
+
+  it('say a duplicate Festival creature waits on the Collection tab, in one short line', () => {
+    const input = {
+      ...clear3,
+      rewards: {
+        ...clear3.rewards,
+        festivalGrant: { species: 'lanternfin', outcome: 'duplicate', firstOnServer: false },
+      },
+    } as SummaryInput;
+    const p = draw(input);
+    expect(text(p)).toContain('It waits on the Collection tab.');
+    expect(text(p)).toContain('Duplicate');
   });
 
   it('keep the server rank and the season pips', () => {
@@ -184,6 +212,10 @@ describe('the boss and its moves', () => {
     expect(icons).toHaveLength(1 + boss.gimmicks.length);
     expect(icons.every((i) => i.localName === 'button')).toBe(true);
     expect(first(icons).getAttribute('aria-label')).toMatch(/^Turn order/);
+    // Small tiles of one size, and no "New at rank" line on any of them.
+    expect(classes(first(byClass(p.root, 'boss-icons')))).toContain('compact');
+    expect(byClass(p.root, 'boss-icon-new')).toHaveLength(0);
+    expect(text(p)).not.toContain('New at rank');
     const list = first(byClass(p.root, 'boss-icons'));
     expect(list.getAttribute('aria-label')).toBe('How the boss fights');
   });

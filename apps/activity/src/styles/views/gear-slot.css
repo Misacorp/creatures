@@ -1,5 +1,5 @@
 /* The read-only worn-item list in a living room creature's popover (compact item rows, see loot.css). */
-.item-row-slot {
+.find-row-slot {
   font-size: var(--fs-row);
 }
 

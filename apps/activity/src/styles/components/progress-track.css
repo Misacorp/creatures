@@ -135,7 +135,9 @@
   left: auto;
 }
 
-.ptrack.edge .ptrack-unlock {
+/* The right end mirrors its lines (icon at the edge); the current step's stay on the left, under its label. */
+.ptrack.edge .ptrack-node.next .ptrack-unlock,
+.ptrack.edge .ptrack-node.max .ptrack-unlock {
   flex-direction: row-reverse;
 }
 

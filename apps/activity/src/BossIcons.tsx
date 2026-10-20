@@ -10,7 +10,7 @@ import { PopoverCard, popupProps } from './ui/Popover';
  * boss does. It is one of the app's popovers (`PopoverHost`: the same panel, the same dismissal, one
  * open at a time) but carries the boss-specific sentence the glossary entry cannot know.
  */
-function BossIcon({ icon }: { icon: BossIconInfo }) {
+function BossIcon({ icon, compact }: { icon: BossIconInfo; compact: boolean }) {
   const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();
   const sprite = icon.kind === 'turn' ? turnOrderGlyph(icon.glyph) : gimmickGlyph(icon.glyph);
   return (
@@ -36,9 +36,11 @@ function BossIcon({ icon }: { icon: BossIconInfo }) {
           });
         }}
       >
-        <Sprite sprite={sprite} scale={3} />
+        <Sprite sprite={sprite} scale={compact ? 2 : 3} />
         <span class="boss-icon-caption">{icon.caption}</span>
-        {icon.newAtRank !== null && <span class="boss-icon-new">New at rank {icon.newAtRank}</span>}
+        {!compact && icon.newAtRank !== null && (
+          <span class="boss-icon-new">New at rank {icon.newAtRank}</span>
+        )}
       </button>
     </li>
   );
@@ -51,15 +53,22 @@ function BossIcon({ icon }: { icon: BossIconInfo }) {
 export function BossIconList({
   boss,
   effectiveRank = null,
+  compact = false,
 }: {
   boss: Pick<RaidView['boss'], 'id' | 'turnOrder' | 'gimmicks'>;
   /** The week's rank the boss fights at, for the "New at rank" mark. */
   effectiveRank?: number | null;
+  /**
+   * Small tiles of one size, with no "New at rank" line (the popover leaves it out too): for a result screen,
+   * where which move is new matters less than seeing the whole list at a glance. The boss card keeps the
+   * line, because planning a team is where a new move matters.
+   */
+  compact?: boolean;
 }) {
   return (
-    <ul class="boss-icons" aria-label="How the boss fights">
-      {bossIcons(boss, effectiveRank).map((icon) => (
-        <BossIcon key={icon.key} icon={icon} />
+    <ul class={compact ? 'boss-icons compact' : 'boss-icons'} aria-label="How the boss fights">
+      {bossIcons(boss, compact ? null : effectiveRank).map((icon) => (
+        <BossIcon key={icon.key} icon={icon} compact={compact} />
       ))}
     </ul>
   );

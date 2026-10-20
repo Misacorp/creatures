@@ -191,13 +191,19 @@ describe('a claimed dismantle', () => {
     expect(text).toContain('Level up!');
   });
 
-  it('keeps the short notes about a learned blueprint and the quality of a known one', () => {
+  it('shows a learned blueprint and a known one as the blueprint find rows', () => {
     const p = draw(
       dismantle({ learned: ['forge-hood'], marked: [{ baseId: 'kelp-cap', marks: 3 }] }),
     );
     const text = visibleText(p.root);
-    expect(text).toContain('Learned the Forge Hood blueprint.');
-    expect(text).toContain('Kelp Cap: Quality 3 / 10.');
+    const rows = byClass(p.root, 'find-row');
+    expect(rows.map((r) => visibleText(first(byClass(r, 'find-row-name'))))).toEqual([
+      'Blueprint: Forge Hood',
+      'Blueprint: Kelp Cap',
+    ]);
+    expect(text).toContain('New!');
+    expect(text).toContain('Known');
+    expect(text).toContain('Quality 3 / 10');
   });
 
   it('has the Crafting bar alone for an old job that recorded no worker', () => {

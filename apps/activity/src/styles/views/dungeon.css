@@ -54,17 +54,31 @@
   margin: 0.375rem 0 0;
 }
 
-/* The streak after a run: its label and line, then the row of days. */
+/*
+  The streak after a run: a "Streak ?" title (the pixel font of every section title, row size; the ? opens what a
+  streak is), the row of days, and when it resets (body font, small, quiet). Every size is a token of the type scale.
+*/
 .dungeon-streak {
-  margin: 0.5rem 0;
+  margin: 0.75rem 0 0.5rem;
 }
 
-.dungeon-streak-head {
+.dungeon-streak-title {
   display: flex;
+  align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 0.625rem;
+  margin: 0;
+  font-size: var(--fs-row);
+}
+
+.dungeon-streak-title .gtag-help {
+  margin-left: 0.375rem;
+}
+
+.dungeon-streak-reset {
+  margin: 0.375rem 0 0;
+  color: var(--haze);
+  font-family: var(--body);
+  font-size: var(--fs-small);
 }
 
 .streak-track {

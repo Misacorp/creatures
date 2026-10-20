@@ -94,14 +94,6 @@
   margin: 0 0 0.25rem;
 }
 
-.dup-list {
-  display: grid;
-  gap: 0.625rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 /*
   A found creature (FindCard.tsx): picture, name, element and role, badges, the talent under a small
   "Discovered talent" heading, and for a duplicate its choice as radio rows.
@@ -110,7 +102,7 @@
   display: grid;
   gap: 0.5rem;
   padding: 0.625rem;
-  background: var(--dusk);
+  background: var(--night);
   box-shadow: inset 0 0 0 var(--px) var(--line);
 }
 

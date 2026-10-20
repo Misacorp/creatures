@@ -7,20 +7,14 @@ import { ExperienceGainRow } from './ExperienceGainRow';
 import { ItemFrame, ItemSprite, ItemThumb, PartsList, RarityTag } from './GearArt';
 import { GlossaryTag } from './Glossary';
 import type { GearItem, JobResult } from './gear-types';
-import {
-  gearName,
-  jobVerb,
-  qualityText,
-  partsText,
-  rarityName,
-  reachName,
-  slotName,
-} from './gear-view';
+import { gearName, jobVerb, partsText, rarityName, reachName, slotName } from './gear-view';
 import { ItemLines } from './ItemLines';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { supplyKindOf, supplyName } from './trip-view';
 import { CountBadgeList, type CountItem } from './ui/CountBadge';
+import { FindBlueprint } from './ui/FindBlueprint';
+import { FindList } from './ui/FindRow';
 import { RevealLater, RevealShell, RevealStage, useRevealSequence } from './ui/RevealShell';
 import { XpGain, XpList } from './ui/XpGain';
 import { craftingGain, experienceGain } from './xp-gain';
@@ -65,7 +59,7 @@ function DismantleRow({ result }: { result: Extract<JobResult, { kind: 'dismantl
       {gave.length === 0 ? (
         <p class="muted">Nothing</p>
       ) : (
-        <CountBadgeList items={gave} label="Became" class="gives jr-gives" />
+        <CountBadgeList items={gave} label="Became" class="gives jr-gives" bare />
       )}
     </div>
   );
@@ -134,16 +128,16 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
                 : `${String(result.tinkered)} items gave back their full craft cost.`}
             </p>
           )}
-          {result.learned.map((baseId) => (
-            <p key={baseId} class="good-note">
-              Learned the {gearName(baseId)} blueprint.
-            </p>
-          ))}
-          {result.marked.map((m) => (
-            <p key={m.baseId} class="good-note">
-              {gearName(m.baseId)}: {qualityText(m.marks)}.
-            </p>
-          ))}
+          {(result.learned.length > 0 || result.marked.length > 0) && (
+            <FindList label="Blueprints">
+              {result.learned.map((baseId) => (
+                <FindBlueprint key={baseId} baseId={baseId} />
+              ))}
+              {result.marked.map((m) => (
+                <FindBlueprint key={m.baseId} baseId={m.baseId} duplicate marks={m.marks} />
+              ))}
+            </FindList>
+          )}
         </>
       );
     case 'supply':

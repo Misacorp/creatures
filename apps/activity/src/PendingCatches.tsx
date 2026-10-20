@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { FindCard } from './FindCard';
+import { FindList } from './ui/FindRow';
 import { firstPick, pendingFind, type CatchChoiceActions, type CatchPick } from './find-view';
 import { GlossaryTag } from './Glossary';
 import type { PendingCatch } from './talent-types';
@@ -43,7 +44,7 @@ export function PendingCatches({
         </GlossaryTag>{' '}
         ({cards.length})
       </h3>
-      <ul class="dup-list">
+      <FindList label="Waiting catches">
         {finds.map((find) => (
           <FindCard
             key={find.key}
@@ -55,7 +56,7 @@ export function PendingCatches({
             }}
           />
         ))}
-      </ul>
+      </FindList>
       <p class="pending-confirm">
         <button
           type="button"

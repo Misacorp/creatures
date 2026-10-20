@@ -2,7 +2,7 @@ import { useMemo } from 'preact/hooks';
 import { groupSupplies } from './claim-view';
 import { GlossaryTag } from './Glossary';
 import { partCountItems, supplyCounts } from './count-items';
-import { GearRows } from './ItemRow';
+import { FindItems } from './ui/FindItem';
 import {
   DESCEND_BUTTON,
   DESCEND_EMPTY_PACK_HELP,
@@ -76,7 +76,7 @@ export function DungeonDescend({
             <>
               {descent.banked.gear.length > 0 && (
                 <div class="loot" role="group" aria-label="Banked by the chest">
-                  <GearRows pieces={descent.banked.gear} label="Items" />
+                  <FindItems pieces={descent.banked.gear} label="Items" />
                 </div>
               )}
               {counts.length > 0 && (
@@ -84,6 +84,7 @@ export function DungeonDescend({
                   items={counts}
                   label="Supplies and parts banked"
                   class="descend-counts"
+                  bare
                 />
               )}
             </>

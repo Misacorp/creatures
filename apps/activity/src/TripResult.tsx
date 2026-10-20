@@ -12,6 +12,7 @@ import type { TripResultView } from './trip-result-view';
 import { Accordion } from './ui/Accordion';
 import { Callout } from './ui/Callout';
 import { CountBadge } from './ui/CountBadge';
+import { FindList } from './ui/FindRow';
 import { GameIcon } from './ui/GameIcon';
 import { RevealShell } from './ui/RevealShell';
 import { XpExtraRow, XpGain, XpList } from './ui/XpGain';
@@ -130,7 +131,7 @@ export function TripResult({
       {view.pushOn !== null && <p class="muted push-result">{view.pushOn}</p>}
 
       {view.finds.length > 0 && (
-        <ul class="tr-finds" aria-label="Creatures found">
+        <FindList label="Creatures found">
           {view.finds.map((find) => (
             <FindCard
               key={find.key}
@@ -142,7 +143,7 @@ export function TripResult({
               }}
             />
           ))}
-        </ul>
+        </FindList>
       )}
       {view.noCatch !== null && <p class="muted no-catch">{view.noCatch}</p>}
       {view.autoSettled.map((line) => (
@@ -157,7 +158,7 @@ export function TripResult({
           {view.counts.length > 0 && (
             <p class="tr-counts">
               {view.counts.map(({ key, ...badge }) => (
-                <CountBadge key={key} {...badge} />
+                <CountBadge key={key} {...badge} bare />
               ))}
             </p>
           )}

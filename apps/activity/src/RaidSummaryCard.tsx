@@ -122,7 +122,7 @@ function Hero({ input }: { input: SummaryInput }) {
       {boss !== null && boss.turnOrder !== null && (
         <BossIconList
           boss={{ id: boss.id, turnOrder: boss.turnOrder, gimmicks: boss.gimmicks }}
-          effectiveRank={boss.effectiveRank}
+          compact
         />
       )}
     </div>
@@ -167,7 +167,7 @@ export function RaidSummaryCard({
       <div class="rs">
         <Hero input={input} />
 
-        <SectionHead note="damage, share of the raid">Scoreboard</SectionHead>
+        <SectionHead>Scoreboard</SectionHead>
         <ScoreTable rows={scoreboard(stats)} total />
 
         <SectionHead>Highlights</SectionHead>
