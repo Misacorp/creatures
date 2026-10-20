@@ -1,6 +1,6 @@
 # Places
 
-Status: 2026-10-13. Covers the seven destinations, and the daily dungeon as a place.
+Status: 2026-10-20. Covers the eight destinations, and the daily dungeon as a place.
 
 Read `README.md` for the tags. Banners, moods, residents, journal pages and the destination texts are shipped data `(content: destinations.json, journal.json, glossary.json)`. Push-on flavour, sensory details and story hooks are `(compendium detail, not shipped)`.
 

@@ -1,6 +1,6 @@
 # Creatures
 
-Status: 2026-10-19. Covers all 30 species, grouped into 14 lines, plus the two Festival creatures and the guest roster. The four Mire species (two lines) are a design draft, in their own section before the Festival creatures.
+Status: 2026-10-20. Covers all 34 species, grouped into 16 lines, plus the two Festival creatures and the guest roster. The four Mire species (two lines) shipped 2026-10-20 and have their own section before the Festival creatures.
 
 Read `README.md` for the tags. Every section cites its source. Lines marked `(compendium detail, not shipped)` are new flavour for this file only.
 

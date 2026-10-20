@@ -1,6 +1,6 @@
 # Mire: player-facing content drafts
 
-Status: **drafts, 2026-10-19.** For the Mire content slice (`docs/design/speed-and-dodge.md` section 5, build step 5). Text only: nothing here is loaded by the game. The slice copies each block into the data file named above it, then checks it with the loaders (`pnpm test`).
+Status: **shipped 2026-10-20: the text is in the content data files; this file is kept as history (the data files are the source now, and names or wording may have moved since).** Original status: **drafts, 2026-10-19.** For the Mire content slice (`docs/design/speed-and-dodge.md` section 5, build step 5). Text only: nothing here is loaded by the game. The slice copies each block into the data file named above it, then checks it with the loaders (`pnpm test`).
 
 Every block was length-checked against the schema limits (descriptions at most 220 characters, glossary `short` at most 80, glossary lines at most 120 each and 4 per entry, trait at most 60, foe flavour at most 120, journal text at most 220, destination flavour at most 120). All the ids are the fixed ids of the design. Display names are new where the design had working names: see "Names" below. Compendium canon for all of this is in `docs/compendium/` (`world.md`, `creatures.md`, `bosses.md`, `dungeon.md`, `places.md`, `items.md`, `talents.md`, `journal.md`, `threads.md`).
 

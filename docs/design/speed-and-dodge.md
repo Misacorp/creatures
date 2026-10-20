@@ -1,6 +1,6 @@
 # Speed, dodge, status effects and Mire
 
-Status: **design, 2026-10-19, building.** From a brainstorm with Misa (2026-10-19). One shippable PR. Numbers marked _start_ were first guesses; the balance pass (2026-10-20, `docs/balance/log.md` B-023) tuned them and replaced the marks with the final numbers. Misa's calls are marked **(Misa)**.
+Status: **built 2026-10-20.** Designed 2026-10-19, from a brainstorm with Misa (2026-10-19). One shippable PR. Numbers marked _start_ were first guesses; the balance pass (2026-10-20, `docs/balance/log.md` B-023) tuned them and replaced the marks with the final numbers. Misa's calls are marked **(Misa)**. Where the text below says what shipped, it follows the content as built (names, numbers and abilities).
 
 ## Why
 
@@ -67,10 +67,10 @@ If dodge streaks make the finale drag, the lever is enrage escalation (the boss'
 ### 2.4 Sources
 
 - **Fleet** (new gear line): Speed +% (a share). Stat line, tiered. 5 / 8 / 11 / 14 / 17%, kept by the balance pass.
-- **Light-footed** (new gear line): dodge, flat points. Special line, Rare and up. **4 / 6 / 8 / 10 / 12 points** (balance pass: it started at 2 to 6, half of every other chance line, which left a built creature near 20% instead of about 30%).
+- **Light-footed** (new gear line): dodge, flat points. Special line, Rare and up. **4 / 6 / 8 / 10 / 12 points** (final tiers 4 to 12; balance pass: it started at 2 to 6, half of every other chance line, which left a built creature near 20% instead of about 30%).
 - **Sidestep** folds into dodge: "+X points of dodge against area hits". Its old dice stay for replays only.
 - **Zoomies:** "Dodges more often" (it still raises Speed).
-- **Mud** room modifier (team Speed down) and room modifiers on `spd` already exist in the schema.
+- The **Muddy** room modifier (team Speed down) and room modifiers on `spd` already exist in the schema.
 
 ### 2.5 On-dodge lines (trigger lines, `combat-rules.md` 12)
 
@@ -121,7 +121,7 @@ A **turn** is one fighter's action. **A status effect counts down on its target'
 
 ### 3.6 Lines and talents for effects
 
-- **Lingering** (gear): debuffs you apply last +N turns.
+- **Clinging** (gear, Support): debuffs you apply last +N turns (+1, +1, +1, +2, +2 by tier). It is a separate line from the older Lingering (Rally, Shield Wall and Purge last one more round).
 - **Heavy hand** (gear): +% application power for debuffs you apply.
 - **Clean coat** (gear): debuffs on the wearer are weaker (−% per-stack effect); a Support version for its neighbours.
 - Talents use the same numbers (a Mire Guard talent that resists debuffs; Support talents that extend them).
@@ -168,21 +168,21 @@ Flare gives a real choice: keep the stacks (boss slower and weaker) or burn them
 
 ### 5.3 Creatures (Misa: a Guard and a Support for now)
 
-Two lines, each a base form that evolves at level 15, like the existing lines. Names below are working names; the compendium pass may refine them.
+Two lines, each a base form that evolves at level 15, like the existing lines. The names are final and in the compendium.
 
-- **Guard line: Mudlump → Bogwarden.** The steadfast tank: very high HP, the lowest Speed. Signature: when it takes a hit (not dodged), it applies Mired to the attacker (60% power in the first form, 80% in the second). A talent in its pool resists debuffs.
-- **Support line: Squelch → Croakmire.** The debuffer: its round-start action, besides its usual Support work, applies Mired to the boss (60% power in the first form, 80% in the second); its talents and gear lean to debuff duration and power.
+- **Guard line: Mudlump → Bogwarden.** The steadfast tank: very high HP, the lowest Speed. Finale ability (the Guard kind): **Mud Wall** (Mudlump) and **Bog Hold** (Bogwarden), a Shield Wall on its zone (40% less damage for 2 rounds, then 60% for 3) and, whenever it takes a hit (not dodged), Mired on the **boss** (60% power in the first form, 80% in the second). A talent in its pool resists debuffs.
+- **Support line: Squelch → Croakmire.** The debuffer: finale ability (the Support kind): **Squelch Song** (Squelch, all creatures hit 4% harder for 2 rounds) and **Deep Croak** (Croakmire, 7%), and every round it applies Mired to the boss (60% power in the first form, 80% in the second); its talents and gear lean to debuff duration and power (Clinging, Heavy hand).
 
 Setter and Payoff Mire lines come later **(Misa)**.
 
 ### 5.4 Raid boss: Old Bogback
 
-A huge, half-sunk ancient toad. Element Mire. Its moves put **Mired on creatures** (whole rows), which cuts their Speed and so their dodge, so debuff resistance and Clean coat are worth chasing on its week. It may also purge itself now and then. Needs lore, a sprite, a Discord portrait, retreat lines, a loot table and an adaptation like the other bosses. Spark is neutral against it; Ember teams shine (150%), Tide teams struggle (75%).
+A huge, half-sunk ancient toad. Element Mire. Its moves: **Sinking Mud** (a sweep of all three rows that puts Mired on every creature it hits), **Belly Flop** (a slam on the front), **Shake Off** (it purges its own debuffs), and from higher Boss Ranks **Bog Lob** (a slam on the Payoff, from Rank 4) and **Rising Bubbles** (a charged barrage, from Rank 7). Mired on creatures cuts their Speed and so their dodge, so debuff resistance and Clean coat are worth chasing on its week. It has lore, a sprite, a portrait, retreat lines, a loot table and an adaptation like the other bosses. Spark is neutral against it; Ember teams shine (150%), Tide teams struggle (75%).
 
 ### 5.5 Dungeon
 
 - Two or three Mire foes (for example a bog toad, a tar leech, a fen lurker room boss), with low Speed.
-- **Mud** room modifier: the team's Speed down (−30%).
+- **Muddy** room modifier (id `mud`): the whole team's Speed is 30% lower.
 
 ### 5.6 Trip place: Sunken Fen
 
@@ -192,7 +192,7 @@ A Mire destination where the bog keeps old things: better odds of old finds (gea
 
 - Mire shards; one or two Mire-tagged bases.
 - The four element lines for Mire (Attunement, Hunter, Reaction, Ward), from the per-element line set.
-- Mire bases favour staying power and debuff lines (Last stand, Stubborn, Second wind, Lingering, Heavy hand).
+- Mire bases favour staying power and debuff lines (Last stand, Stubborn, Second wind, Clinging, Heavy hand).
 
 ### 5.8 Everywhere elements are listed
 
@@ -217,7 +217,7 @@ Done in the balance pass of 2026-10-20 (`docs/balance/log.md` B-023); dodge and 
 2. The element chart (pairs, multi-trigger reactions), no Mire yet; nothing changes for players.
 3. Status effects in the engine (model, turns, power, refresh, purge, cleanse, events), with a test effect.
 4. Dodge in the engine (rules, dice, hit table, the Setter mark rule, events).
-5. Mire content: element, chart pairs, mark, Mired, Smother, Flare, creatures, boss, foes, Mud, Sunken Fen, shards, bases; foe Speeds for every foe.
-6. Lines and talents: Fleet, Light-footed, Sidestep, Riposte, Momentum, Slipstream, Lingering, Heavy hand, Clean coat; the power score counts dodge.
+5. Mire content: element, chart pairs, mark, Mired, Smother, Flare, creatures, boss, foes, Muddy, Sunken Fen, shards, bases; foe Speeds for every foe.
+6. Lines and talents: Fleet, Light-footed, Sidestep, Riposte, Momentum, Slipstream, Clinging, Heavy hand, Clean coat; the power score counts dodge.
 7. The game UI: sprites and portraits, Mire colours and icon, status icons, dodge on the stage and creature page, the element chart in help, the boss card.
 8. Balance pass, then everything on by default; docs (`combat-rules.md`, compendium, how-to-play).

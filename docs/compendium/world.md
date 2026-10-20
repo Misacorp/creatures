@@ -1,6 +1,6 @@
 # World: the setting
 
-Status: 2026-10-19 (Mire added as a design draft; the rest as of 2026-10-13). Canon for names, meaning and tone. Read `README.md` first for the tags: `(content)`, `(design)`, `(inferred)` and `(compendium detail, not shipped)`.
+Status: 2026-10-20 (Mire shipped; the rest as of 2026-10-13). Canon for names, meaning and tone. Read `README.md` first for the tags: `(content)`, `(design)`, `(inferred)` and `(compendium detail, not shipped)`.
 
 ## 1. The shape of the world
 

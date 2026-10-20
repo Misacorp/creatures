@@ -79,8 +79,8 @@ export function gearRulesOf(
  * `min(maxBp, Speed x perSpeedBp + this)`, the number the fight uses (`creatureDodgeBp` in the engine).
  */
 export function flatDodgeBp(mods: GearMods | undefined): number {
-  const value = (mods as { dodgeBp?: unknown } | undefined)?.dodgeBp;
-  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : 0;
+  const value = mods?.dodgeBp ?? 0;
+  return Number.isSafeInteger(value) && value > 0 ? value : 0;
 }
 
 /** `value` times (10000 - `bp`) over 10000, floored (a reduction, at least 1 when `value` is). */

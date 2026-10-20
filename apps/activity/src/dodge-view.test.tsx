@@ -40,9 +40,13 @@ describe('the creature page’s stats', () => {
   const labels = (rows: ReturnType<typeof statRows>) =>
     rows.map((r) => (typeof r.label === 'string' ? r.label : 'Dodge'));
 
-  it('has no Dodge row while dodge is off (today’s rules)', () => {
-    expect(RULES.combat.dodge.enabled).toBe(false);
-    expect(labels(statRows(creature))).toEqual(['HP', 'Attack', 'Speed']);
+  it('has no Dodge row while dodge is off', () => {
+    expect(labels(statRows(creature, OFF))).toEqual(['HP', 'Attack', 'Speed']);
+  });
+
+  it('has the Dodge row under today’s rules (dodge is on)', () => {
+    expect(RULES.combat.dodge.enabled).toBe(true);
+    expect(labels(statRows(creature))).toEqual(['HP', 'Attack', 'Speed', 'Dodge']);
   });
 
   it('adds Dodge under Speed when the flag is on', () => {
@@ -55,11 +59,15 @@ describe('the creature page’s stats', () => {
 });
 
 describe('the foe’s dodge and riders', () => {
-  it('shows a foe’s dodge only while dodge is on (off today)', () => {
-    expect(foeDodge('old-bogback')).toBeNull();
+  it('shows a foe’s dodge from its base Speed while dodge is on (today)', () => {
+    const spd = content.bosses.find((b) => b.id === 'old-bogback')?.baseSpd;
+    const text = foeDodgeText(spd);
+    expect(text).not.toBeNull();
+    expect(foeDodge('old-bogback')).toBe(`Dodge ${String(text)}`);
     expect(
       foeInfoOf({ id: 'old-bogback', name: 'Old Bogback', hp: 100, wording: 'zones' }).dodge,
-    ).toBeNull();
+    ).toBe(`Dodge ${String(text)}`);
+    expect(foeDodgeText(spd, OFF)).toBeNull();
   });
 
   it('lists Old Bogback’s moves, Shake Off with them, and what Sinking Mud applies', () => {
