@@ -2357,3 +2357,7 @@ Misa chose version C and asked to keep it compact throughout. The long supply li
 ## 2026-10-20: A deeper-area find is the deep species 20% of the time (was 35%)
 
 Misa (owner) wanted the deep species to stay a rare find: `RULES.expeditions.familiarity.deepFindBp` 3500 to 2000, so a deeper-area roll is one of the place's deep species 1 time in 5. The 35% in the Familiarity entries above is now 20%. The three lanterns' sure deep creature (`bonusBp`) was raised to keep the economy targets (`docs/balance/log.md`, B-025, "Follow-up: deep species 20%").
+
+## 2026-10-20: The send screen picks supplies from the Workshop grid
+
+Misa asked for the Workshop's compact supply grid on the expedition send screen too. `SupplyPicker` now draws `ui/SupplyGrid` (4 kinds across, 3 tiers down, rarity edges, stock badges) instead of the per-kind rows, and the separate `LurePicker` row is removed (lures are the first column). Tapping packs a supply (a tick; `aria-pressed`), tapping it again removes it, another tier of a packed kind swaps it, and the kit holds at most `RULES.expeditions.maxSupplies` kinds. Supplies with no stock, and (once the kit is full) the kinds not in the kit, are muted and disabled, with the reason in the button label. One card under the grid shows the last tapped supply (blurb and choice mark) and a "Packed:" line lists the kit. The send request is unchanged. `SupplyGrid` gained optional `disabled` and `packed` cell fields; the Workshop use is unchanged. Reason: one phone screen, one picker to learn.
