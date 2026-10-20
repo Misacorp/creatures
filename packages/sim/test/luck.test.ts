@@ -178,9 +178,10 @@ describe('the study', () => {
     const luck = parseLuck('critChanceBp=500').luck;
     // The tiny run's teams are low level (levels come from experience now, Creatures B), so the shipped
     // Attack already knocks out several of the 21 creatures: the targets sit above that, and a harder
-    // boss is needed for the higher one.
-    const low = calibrateKnockouts(cases, luck, 10, TINY);
-    const high = calibrateKnockouts(cases, luck, 14, TINY);
+    // boss is needed for the higher one. (Trips find gear in ticks now, so the tiny run's teams are sturdy:
+    // about 8 knockouts is the most a 100 times harder boss gets.)
+    const low = calibrateKnockouts(cases, luck, 4, TINY);
+    const high = calibrateKnockouts(cases, luck, 8, TINY);
     expect(high).toBeGreaterThan(low);
     expect(low).toBeGreaterThanOrEqual(10_000);
   });

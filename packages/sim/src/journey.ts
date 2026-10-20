@@ -274,9 +274,6 @@ export interface DayRecord {
   expJob: number;
   treats: number;
   ribbons: number;
-  /** Catch rolls so far that the pity forced: a species the player lacked, or a creature of any kind. */
-  pityNew: number;
-  pityCreature: number;
   /** Currencies held at the end of the day. */
   bait: number;
   essence: number;
@@ -473,8 +470,6 @@ export function recordDay(
     expJob: player.stats.exp_job,
     treats: player.stats.treats,
     ribbons: player.stats.ribbons,
-    pityNew: player.stats.pity_new,
-    pityCreature: player.stats.pity_creature,
     bait: player.bait,
     essence: player.essence,
     scrap: player.gear.parts.scrap,

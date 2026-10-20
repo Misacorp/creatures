@@ -64,9 +64,9 @@ export interface TripStats {
   shinies_found: number;
   offers: number;
   trip_hours: number;
-  /** Catch rolls rolled on trips. */
+  /** Ticks rolled for creatures on trips (the creature rolls of a claim). */
   catch_rolls: number;
-  /** Catch rolls that brought no creature (a small find of scrap instead). */
+  /** Ticks that brought no creature. */
   empty_rolls: number;
   /** Creatures the trips and the Festival brought: new species and duplicates. */
   catches: number;
@@ -91,9 +91,6 @@ export interface TripStats {
   /** Treats packed, and the ribbons bought. */
   treats: number;
   ribbons: number;
-  /** Catch rolls the pity forced: a species the player lacked, or a creature of any kind. */
-  pity_new: number;
-  pity_creature: number;
 }
 
 export const TRIP_STAT_KEYS: readonly (keyof TripStats)[] = [
@@ -134,8 +131,6 @@ export const TRIP_STAT_KEYS: readonly (keyof TripStats)[] = [
   'exp_job',
   'treats',
   'ribbons',
-  'pity_new',
-  'pity_creature',
 ];
 
 export function emptyTripStats(): TripStats {
@@ -307,8 +302,6 @@ export interface SimPlayer {
   essence: number;
   creatures: OwnedCreature[];
   dupeStreak: number;
-  /** The catch pity's counters (`RULES.catching.pity`): rolls since a new species, and since any creature. */
-  catchPity: { sinceNew: number; sinceCreature: number };
   firstExpeditionDone: boolean;
   /** Raids taken part in without a jackpot (the pity counter). */
   pity: number;
@@ -364,7 +357,6 @@ export function createPlayer(
     essence: 0,
     creatures: [],
     dupeStreak: 0,
-    catchPity: { sinceNew: 0, sinceCreature: 0 },
     firstExpeditionDone: false,
     pity: 0,
     maxPity: 0,
@@ -390,7 +382,6 @@ export function createPlayer(
 export function clonePlayer(p: SimPlayer): SimPlayer {
   return {
     ...p,
-    catchPity: { ...p.catchPity },
     creatures: p.creatures.map((c) => {
       const { items, talents, ...rest } = c;
       const own =

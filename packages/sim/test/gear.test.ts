@@ -617,7 +617,9 @@ describe('gear in the economy', () => {
       expect(p.gear.joinDay).toBe((p.joinWeek - 1) * 7);
       expect(p.gear.parts.scrap).toBeGreaterThanOrEqual(0);
       for (const kind of Object.values(p.gear.parts)) expect(kind).toBeGreaterThanOrEqual(0);
-      expect(allItems(p).length + p.gear.jobs.length).toBeLessThanOrEqual(RULES.gear.inventoryCap);
+      // Only craft jobs hold a slot (as in the worker); a trip may fill the bag with its gear pieces.
+      const crafts = p.gear.jobs.filter((j) => j.kind === 'craft').length;
+      expect(allItems(p).length + crafts).toBeLessThanOrEqual(RULES.gear.inventoryCap);
       // Every item is worn by at most one creature, no item is shared with the bag, and what is worn
       // obeys the wear rule (Equip best never breaks it; training only raises levels).
       const worn = p.creatures.flatMap((c) => wornOf(c));

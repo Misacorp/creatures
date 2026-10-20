@@ -218,7 +218,7 @@ describe('check-in', () => {
 describe('policy pieces', () => {
   it('uses the game curve for experience, and the content for the evolution cost', () => {
     expect(expToNext(1)).toBe(RULES.experience.perLevel + RULES.experience.perLevelSquared);
-    expect(RULES.expeditions.lengths.long.rolls).toBeGreaterThanOrEqual(1);
+    expect(RULES.expeditions.lengths.long.ticks).toBeGreaterThanOrEqual(1);
     expect(speciesOf('splashet').evolvesTo?.essence).toBe(20);
   });
 });

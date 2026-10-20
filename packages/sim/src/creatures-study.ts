@@ -49,11 +49,9 @@ export interface WeekMetrics {
   expDungeon: number;
   expRaid: number;
   expJob: number;
-  /** Treats packed, ribbons bought, and catch rolls the pity forced (a species the player lacked, any creature). */
+  /** Treats packed and ribbons bought. */
   treats: number;
   ribbons: number;
-  pityNew: number;
-  pityCreature: number;
   /** The best creature's level and the raid team's lowest, at the end of the week (medians). */
   topLevel: number;
   teamMinLevel: number;
@@ -176,8 +174,6 @@ function weekMetrics(week: number, journeys: readonly PlayerJourney[]): WeekMetr
     expJob: delta('expJob'),
     treats: delta('treats'),
     ribbons: delta('ribbons'),
-    pityNew: delta('pityNew'),
-    pityCreature: delta('pityCreature'),
     topLevel: round(median(rows.map((r) => r.end.topLevel)) ?? 0, 1),
     teamMinLevel: round(median(rows.map((r) => r.end.teamMinLevel)) ?? 0, 1),
     species: held('speciesOwned'),
@@ -377,10 +373,6 @@ export function creaturesMarkdown(
       cell: (m) => `${f1(m.taught)} / ${f1(m.fused)} / ${f1(m.released)}`,
     },
     { title: 'New species per week', cell: (m) => f1(m.newSpecies) },
-    {
-      title: 'Catch rolls the pity forced per week: a species the player lacked / any creature',
-      cell: (m) => `${f1(m.pityNew)} / ${f1(m.pityCreature)}`,
-    },
     { title: 'Base species owned', cell: (m) => f1(m.species) },
     {
       title: 'Best creature level / raid team lowest level (median, end of the week)',
