@@ -45,9 +45,28 @@ function bossView(p: Props): RaidView {
   const id = str(p, 'boss');
   const def = content.bosses.find((b) => b.id === id);
   const rank = num(p, 'rank');
+  const effective = rank === 0 ? 1 : Math.max(1, bool(p, 'festival') ? rank - 3 : rank);
+  // The chosen boss's own moves (the ones in play at the week's rank), as the server sends them.
+  const gimmicks =
+    def === undefined
+      ? SAMPLE_RAID.boss.gimmicks
+      : def.gimmicks
+          .filter((g) => g.fromRank === undefined || g.fromRank <= effective)
+          .map((g) => ({
+            id: g.id,
+            name: g.name,
+            ...(g.fromRank === undefined ? {} : { fromRank: g.fromRank }),
+          }));
   return {
     ...SAMPLE_RAID,
-    boss: { ...SAMPLE_RAID.boss, id, name: def?.name ?? id, element: def?.element ?? 'spark' },
+    boss: {
+      ...SAMPLE_RAID.boss,
+      id,
+      name: def?.name ?? id,
+      element: def?.element ?? 'spark',
+      turnOrder: def?.turnOrder ?? SAMPLE_RAID.boss.turnOrder,
+      gimmicks,
+    },
     festival: bool(p, 'festival'),
     festivalCreature: bool(p, 'festival') ? 'hearthshell' : null,
     rank: rank === 0 ? null : rank,
@@ -105,6 +124,7 @@ const bossCard: Entry = {
     },
     { name: 'Cinder Wyrm', props: { boss: 'cinder-wyrm' } },
     { name: 'Old Bogback', props: { boss: 'old-bogback' } },
+    { name: 'Old Bogback, rank 8 (every move)', props: { boss: 'old-bogback', rank: 8 } },
   ],
   render: (p) => <BossCard view={bossView(p)} />,
 };

@@ -491,6 +491,7 @@ describe('GET /api/state', () => {
           stats: { hp: 96, atk: 40, spd: 28 },
           // No gear yet: the fight stats are the same, nothing is worn and nothing is busy.
           statsWithGear: { hp: 96, atk: 40, spd: 28 },
+          dodgeBp: 0,
           gear: [],
           busy: null,
           exp: 0,

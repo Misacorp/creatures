@@ -20,6 +20,7 @@
 import { RULES, content, dungeonContent, effectiveStats, type BossDef } from '@creatures/game';
 import {
   planRounds,
+  turnOrder,
   zoneOfIndex,
   type FightBoard,
   ZONES,
@@ -32,7 +33,8 @@ import { getSpecies } from './game';
 import type { FightGuardRules, ReplayRowEntry } from './raid-api';
 import { stateAt, turnOrderOfRound, type StepState } from './replay';
 
-type FloatTone = 'hit' | 'hurt' | 'blocked' | 'buff' | 'heal' | 'cleanse' | 'immune';
+type FloatTone =
+  'hit' | 'hurt' | 'blocked' | 'buff' | 'heal' | 'cleanse' | 'immune' | 'dodge' | 'purge';
 type ZoneEffect = 'shield' | 'rally' | 'hit';
 
 /**
@@ -220,8 +222,25 @@ export function actingSlots(
   round: number,
   rowIds: readonly string[],
   fixed: boolean,
+  serpentine?: { board: FightBoard | undefined; knockedOut: readonly string[] },
 ): Map<string, number> {
-  const order = fixed ? rowIds : turnOrderOfRound(events, Math.max(1, round));
+  const at = Math.max(1, round);
+  if (!fixed && serpentine !== undefined) {
+    // Serpentine is a function of the round, so the whole round's order shows from its first beat
+    // (rows flip each round): the engine's own order, without creatures knocked out before the round
+    // (one that has its turn or skip event this round was alive for it).
+    const played = new Set(turnOrderOfRound(events, at));
+    const board = serpentine.board ?? { length: rowIds.length, slots: rowIds.map((_, i) => i) };
+    const order = turnOrder(
+      rowIds.map((_, idx) => ({ idx, spd: 0 })),
+      'serpentine',
+      { round: at, board },
+    )
+      .map((idx) => rowIds[idx] as string)
+      .filter((id) => played.has(id) || !serpentine.knockedOut.includes(id));
+    return new Map(order.map((id, i) => [id, i + 1]));
+  }
+  const order = fixed ? rowIds : turnOrderOfRound(events, at);
   return new Map(order.map((id, i) => [id, i + 1]));
 }
 
@@ -320,6 +339,11 @@ export const PROC_WORDS: Readonly<Record<ProcKind, string>> = {
   momentum: 'Momentum',
   slipstream: 'Slipstream',
 };
+
+/** The word floated over a fighter that dodged a hit. */
+export const DODGED_WORD = 'Dodged!';
+/** The word floated over a boss that purged its debuffs. */
+export const SHAKE_OFF_WORD = 'Shake Off';
 
 const KNOWN_ACTIONS: ReadonlySet<string> = new Set([
   'hit_zone',
@@ -670,6 +694,19 @@ export function cuesForEvents(
         }
         break;
       case 'hit':
+        // The boss dodged: a word over it, no flash and no number (the creature's hop still shows).
+        if (e.dodged === true) {
+          cues.push({
+            kind: 'float',
+            i,
+            target: null,
+            text: DODGED_WORD,
+            tone: 'dodge',
+            crit: false,
+            drift: driftFor(i),
+          });
+          break;
+        }
         cues.push({ kind: 'flash', i, target: null });
         cues.push({
           kind: 'float',
@@ -696,6 +733,19 @@ export function cuesForEvents(
         break;
       case 'boss_hit': {
         const zone = zoneOf(e.target);
+        // A dodge takes nothing: a word over the creature, no flash and no shake.
+        if (e.dodged === true) {
+          cues.push({
+            kind: 'float',
+            i,
+            target: e.target,
+            text: DODGED_WORD,
+            tone: 'dodge',
+            crit: false,
+            drift: driftFor(i),
+          });
+          break;
+        }
         // A Sidestep takes nothing: a word over the creature, no flash and no shake.
         if (e.sidestep === true) {
           cues.push({
@@ -754,6 +804,31 @@ export function cuesForEvents(
           target: e.target,
           text: 'Cleansed',
           tone: 'cleanse',
+          crit: false,
+          drift: driftFor(i),
+        });
+        break;
+      case 'effect_cleanse':
+        // A Support washed a debuff off a neighbour: the same quiet word as a silence cleanse.
+        cues.push({ kind: 'hop', i, creature: e.supporter });
+        cues.push({
+          kind: 'float',
+          i,
+          target: e.target,
+          text: 'Cleansed',
+          tone: 'cleanse',
+          crit: false,
+          drift: driftFor(i),
+        });
+        break;
+      case 'effect_purge':
+        // The boss shakes its debuffs off (the move's name).
+        cues.push({
+          kind: 'float',
+          i,
+          target: null,
+          text: SHAKE_OFF_WORD,
+          tone: 'purge',
           crit: false,
           drift: driftFor(i),
         });

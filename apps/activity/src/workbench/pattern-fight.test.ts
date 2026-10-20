@@ -136,4 +136,30 @@ describe('the hand-made boss moves of the workbench', () => {
     expect(crowdedHits(fight.events, 0, fight.events.length).size).toBe(15);
     expect(patternRow(15).map((r) => r.id)).toHaveLength(15);
   });
+
+  it('holds Mired on the boss and creatures, the dodge cues and the purge', () => {
+    const mired = patternFight('Mired: stacks and turns on the boss and a creature');
+    const state = stateAt(mired.events, mired.events.length, mired.hpMax);
+    expect(state.bossEffects).toEqual([{ effect: 'mired', stacks: 5, turnsLeft: 3 }]);
+    expect(Object.keys(state.creatureEffects)).toEqual(['c1', 'c4']);
+    const dodges = patternFight('Dodges: a creature and the boss');
+    const words = cuesForEvents(
+      dodges.events,
+      0,
+      dodges.events.length,
+      dodges.row.map((r) => r.id),
+      dodges.boss.id,
+    )
+      .filter((c) => c.kind === 'float')
+      .map((c) => [c.target, c.text]);
+    expect(words).toEqual(
+      expect.arrayContaining([
+        [null, 'Dodged!'],
+        ['c0', 'Dodged!'],
+      ]),
+    );
+    const purge = patternFight('Shake Off: the boss purges its Mired');
+    expect(stateAt(purge.events, 2, purge.hpMax).bossEffects).toHaveLength(1);
+    expect(stateAt(purge.events, purge.events.length, purge.hpMax).bossEffects).toEqual([]);
+  });
 });

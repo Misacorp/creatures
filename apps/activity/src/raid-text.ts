@@ -221,11 +221,41 @@ function patternClause(p: Pattern, wording: Wording): string {
 }
 
 /**
+ * What a move's rider says, for example "puts Mired x1 on each creature it hits": the effect's name
+ * and the stacks its power gives (100% is one stack; 140% is one, and sometimes a second; below 100% is
+ * a chance of one). A move without a rider has none.
+ */
+export function appliesClause(g: Gimmick): string | null {
+  const applies = 'applies' in g ? g.applies : undefined;
+  if (applies === undefined) return null;
+  const name = content.statusEffects.find((e) => e.id === applies.effect)?.name ?? applies.effect;
+  const sure = Math.floor(applies.powerBp / 10_000);
+  const chance = applies.powerBp % 10_000 > 0;
+  const stacks =
+    sure === 0
+      ? `sometimes ${name} ×1`
+      : chance
+        ? `${name} ×${String(sure)}, sometimes one more`
+        : `${name} ×${String(sure)}`;
+  const turns =
+    applies.durationTurns === undefined ? '' : `, ${String(applies.durationTurns)} turns longer`;
+  return `puts ${stacks}${turns} on each creature it hits`;
+}
+
+/**
  * One gimmick in plain words, for example "Every 3 rounds: hits every creature in the front zone for
  * 80% of its attack." `row` (the dungeon, where the team is one row of three and each zone is the
- * one creature at that place) says "hits the left creature" instead of naming a zone.
+ * one creature at that place) says "hits the left creature" instead of naming a zone. A move with a
+ * status effect rider ends with it: "..., and puts Mired ×1 on each creature it hits."
  */
 export function gimmickText(g: Gimmick, wording: Wording = 'zones'): string {
+  const base = gimmickBaseText(g, wording);
+  const rider = appliesClause(g);
+  if (rider === null || !base.endsWith('.')) return base;
+  return `${base.slice(0, -1)}, and ${rider}.`;
+}
+
+function gimmickBaseText(g: Gimmick, wording: Wording): string {
   switch (g.op) {
     case 'hit_zone':
       return wording === 'row'

@@ -875,6 +875,7 @@
           "atk": 126,
           "spd": 56
         },
+        "dodgeBp": 0,
         "gear": [
           {
             "id": "00000000-0000-4000-8500-000000000007",
@@ -959,6 +960,7 @@
           "atk": 35,
           "spd": 29
         },
+        "dodgeBp": 0,
         "gear": [],
         "busy": null,
         "ability": {
@@ -1035,6 +1037,7 @@
           "atk": 44,
           "spd": 48
         },
+        "dodgeBp": 0,
         "gear": [],
         "busy": null,
         "ability": {

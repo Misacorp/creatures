@@ -1,0 +1,96 @@
+/*
+  Status effect icons: a small chip for each effect on a fighter, the glyph and its stacks ("x5") and,
+  on the boss, the turns left under them. On the boss they stand in a column at the right of its
+  picture; on a creature they sit along the top of its sprite, glyph and stacks only.
+*/
+.effect-icons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.effect-chip {
+  display: block;
+  background: var(--ink);
+  box-shadow: 0 0 0 var(--px) var(--bad);
+}
+
+.effect-chip.buff {
+  box-shadow: 0 0 0 var(--px) var(--good);
+}
+
+.effect-chip .effect-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 0 0.25rem;
+  color: var(--bone);
+  white-space: nowrap;
+}
+
+.effect-top {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.effect-stacks {
+  font-family: var(--display);
+  font-size: var(--fs-small);
+  line-height: 1.25;
+}
+
+.effect-turns {
+  font-family: var(--display);
+  font-size: var(--fs-small);
+  line-height: 1.1;
+  color: var(--haze);
+}
+
+/* The boss's column sits beside its picture, so the picture stays centred. */
+.stage-boss-art > .effect-icons {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 0.25rem);
+  z-index: 3;
+}
+
+/* On a creature: a row along the top of the sprite, over it. */
+.effect-icons.compact {
+  position: absolute;
+  top: 1.125rem;
+  left: 0;
+  z-index: 3;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.125rem;
+}
+
+.effect-icons.compact .effect-chip {
+  box-shadow: 0 0 0 1px var(--bad);
+}
+
+.effect-icons.compact .effect-chip.buff {
+  box-shadow: 0 0 0 1px var(--good);
+}
+
+.effect-icons.compact .effect-tag {
+  padding: 0 0.125rem;
+}
+
+/* The workbench's sample box: room for a creature's small row, which sits over its sprite. */
+.effect-sample {
+  position: relative;
+  min-height: 4rem;
+}
+
+/* "Dodged!" over a creature or the boss, and the boss's "Shake Off". */
+.float-dodge,
+.float-purge {
+  color: var(--bone);
+  font-size: var(--fs-row);
+}

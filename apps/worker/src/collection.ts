@@ -48,7 +48,7 @@ import {
   type WornGear,
 } from './gear-store';
 import { settleExperience, type ExperienceView } from './creature-exp';
-import { foldCreature } from './gear-worn';
+import { flatDodgeBp, foldCreature } from './gear-worn';
 import { CatchChoices, type PendingView } from './catch-choices';
 import { booksByCreature, foldTalentsOf, insertCreature } from './talent-store';
 import { creatureTalentsView, type CreatureTalentsView } from './talent-view';
@@ -114,6 +114,11 @@ export interface CreatureView {
    * creature without gear. Gear changes nothing else about the creature.
    */
   statsWithGear: Stats;
+  /**
+   * Dodge from the worn gear and talents, flat, in basis points (Light-footed and the like; 0 when there
+   * is none). The Speed part (`RULES.combat.dodge`) comes on top; the creature page adds the two.
+   */
+  dodgeBp: number;
   /** The items the creature wears, one per slot (Hat, Scarf, Charm). The full items are in the gear view. */
   gear: WornGear[];
   /**
@@ -392,6 +397,7 @@ export class Collection {
         ? undefined
         : speciesOf(species.evolvesTo.species).ability?.id;
     const alt = species.altEvolvesTo;
+    const folded = foldCreature(row, worn, foldTalentsOf(row, book));
     return {
       id: row.id,
       species: species.id,
@@ -408,7 +414,8 @@ export class Collection {
       lineSlot: row.line_slot,
       talents: creatureTalentsView(row, book ?? []),
       stats,
-      statsWithGear: foldCreature(row, worn, foldTalentsOf(row, book)).stats,
+      statsWithGear: folded.stats,
+      dodgeBp: flatDodgeBp(folded.mods),
       gear: wornRows(worn).map(wornGearView),
       busy: away
         ? { kind: 'expedition', id: row.away_expedition_id as string }

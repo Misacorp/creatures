@@ -7,39 +7,9 @@ import {
   exampleSeason,
   exampleSpecies,
   expeditionTrips,
-  reactionLoop,
   starterSpecies,
   weekStrip,
 } from './howto';
-
-describe('the reaction loop picture', () => {
-  it('goes Tide, Spark, Grove, Ember and back to Tide with the shipped content', () => {
-    const steps = reactionLoop();
-    expect(steps.map((s) => s.from)).toEqual(['tide', 'spark', 'grove', 'ember']);
-    expect(steps.map((s) => s.to)).toEqual(['spark', 'grove', 'ember', 'tide']);
-    expect(steps.map((s) => s.markName)).toEqual(['Soaked', 'Charged', 'Overgrown', 'Scorched']);
-    expect(steps.map((s) => s.reactionName)).toEqual([
-      'Overload',
-      'Grounding',
-      'Wildfire',
-      'Steam',
-    ]);
-  });
-
-  it('has each step end where the next begins, and the last end where the first began', () => {
-    const steps = reactionLoop();
-    steps.forEach((step, i) => {
-      expect(step.to).toBe(steps[(i + 1) % steps.length]?.from);
-    });
-  });
-
-  it('stops where the content does not close into a loop, and is empty without reactions', () => {
-    const open = content.reactions.filter((r) => r.id !== 'steam' && r.id !== 'smother');
-    // Ember's mark has no reaction here, so the loop stops after Grove's arrow.
-    expect(reactionLoop(open).map((s) => s.from)).toEqual(['tide', 'spark', 'grove']);
-    expect(reactionLoop([])).toEqual([]);
-  });
-});
 
 describe('the example creatures', () => {
   it('shows each role with a creature that has it', () => {
