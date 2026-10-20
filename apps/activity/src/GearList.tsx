@@ -1,5 +1,5 @@
 import { GEAR_SLOTS, RULES } from '@creatures/game';
-import { FestivalTag, ItemThumb, RarityTag, SlotIcon, SlotTag } from './GearArt';
+import { FestivalTag, ItemThumb, RarityTag, SlotIcon } from './GearArt';
 import type { GearSlot } from './gear-types';
 import {
   activeSetLine,
@@ -11,14 +11,16 @@ import {
   type WornItem,
 } from './gear-view';
 import { FindRow } from './ui/FindRow';
+import { LockIcon } from './ui/Slot';
 import { Tag } from './ui/Tag';
 
 /**
  * A creature's gear as a list: the one way a creature's gear is shown in full (its page, the configurator,
  * a living room creature's popover). One row per slot (Hat, Scarf, Charm) in the find rows' look (`FindRow`):
- * the item's image, its name in the rarity colour, the rarity and slot badges, and the item's lines under
- * them once the gear view has given them. An open, empty slot says "Empty"; a slot not open yet shows the
- * level it opens at. With `onPick` every open slot is one button that asks for its picker; without it the
+ * the item's image (its slot's icon in the corner), its name in the rarity colour, the rarity badge, and
+ * the item's lines under it once the gear view has given them; no slot badge (the row is the slot). An
+ * open, empty slot shows its icon and "Empty"; a slot not open yet a padlock and the level it opens at, so
+ * a row that cannot be tapped says why. Tappable and locked rows look alike: the screen makes it clear. With `onPick` every open slot is one button that asks for its picker; without it the
  * list is locked (read only, and the badges explain themselves). The set bonus line closes it. An ink
  * panel in the pixel font (`.pix-panel`), wherever it is used.
  */
@@ -69,7 +71,7 @@ export function GearList({
                 key={slot}
                 image={
                   <span class="item-frame empty-slot locked">
-                    <SlotIcon slot={slot} />
+                    <LockIcon />
                   </span>
                 }
                 name={name}
@@ -110,7 +112,6 @@ export function GearList({
                   <RarityTag rarity={item.rarity} plain={plain} />
                   {isFestivalBase(item.baseId) &&
                     (plain ? <Tag class="festival-tag">Festival</Tag> : <FestivalTag />)}
-                  <SlotTag slot={slot} plain={plain} />
                 </>
               }
               button={button(

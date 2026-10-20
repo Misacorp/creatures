@@ -141,7 +141,7 @@ describe('compact item rows', () => {
     ).toHaveLength(1);
   });
 
-  it('lists what a creature wears the same way, with the slot and its lines', () => {
+  it('lists what a creature wears the same way, with its lines and no slot badge', () => {
     page = createPage();
     page.draw(
       <GearList
@@ -162,7 +162,7 @@ describe('compact item rows', () => {
     const rows = byClass(page.root, 'find-row');
     // In slot order: the hat first.
     expect(visibleText(first(byClass(rows[0] as FakeElement, 'item-lv')))).toBe('Lv 15');
-    expect(visibleText(first(byClass(rows[0] as FakeElement, 'slot-tag')))).toBe('Hat');
+    expect(byClass(rows[0] as FakeElement, 'slot-tag')).toHaveLength(0);
     // Only what is worn (no Scarf row), each item with its lines once they are known.
     expect(rows).toHaveLength(2);
     expect(visibleText(first(byClass(rows[1] as FakeElement, 'gear-list-lines')))).toBe(

@@ -93,8 +93,8 @@
 
 /*
   A creature's gear as a list (GearList.tsx): the find rows, one per slot, on an ink panel. A tappable row
-  is one button (the game's raised button, laid out like the row); an open slot with nothing in it, or one
-  not open yet, shows the slot's icon in a plain frame the size of an item's image (12 px at 3x).
+  is one button laid out like the row; an open slot with nothing in it shows the slot's icon, one not open
+  yet a padlock, in a plain frame the size of an item's image (12 px at 3x).
 */
 .gear-list {
   padding: 0.5rem;
@@ -124,13 +124,17 @@
   width: calc(36px + 6px);
   height: calc(36px + 6px);
   box-shadow: 0 0 0 var(--px) var(--line);
-}
-
-.item-frame.empty-slot.locked {
-  opacity: 0.5;
+  color: var(--haze);
 }
 
 .gear-list-lines {
   flex-basis: 100%;
   color: var(--haze);
+}
+
+/* A tappable row looks like a locked one (the screen makes it clear which is which): no raised edge. */
+.gear-list .find-row-button,
+.gear-list .find-row-button:active:not(:disabled) {
+  background: var(--dusk);
+  box-shadow: none;
 }

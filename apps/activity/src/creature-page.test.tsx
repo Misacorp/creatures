@@ -374,7 +374,7 @@ describe('the creature page: the gear list', () => {
   const rows = (root: FakeElement): FakeElement[] =>
     byClass(first(byClass(root, 'gear-list')), 'find-row');
 
-  it('shows a slot not open yet as the slot and the level it opens at, not a button', () => {
+  it('shows a slot not open yet as a padlock, the slot and the level it opens at, not a button', () => {
     const { root } = draw('level 2');
     const [, scarf, charm] = rows(root);
     expect(visibleText(scarf as FakeElement)).toBe('ScarfLv 7');
@@ -382,6 +382,7 @@ describe('the creature page: the gear list', () => {
     for (const row of [scarf, charm]) {
       expect(find(row as FakeElement, (e) => e.localName === 'button')).toHaveLength(0);
       expect(byClass(row as FakeElement, 'locked')).toHaveLength(1);
+      expect(byClass(row as FakeElement, 'lock-icon')).toHaveLength(1);
     }
   });
 
@@ -404,7 +405,8 @@ describe('the creature page: the gear list', () => {
     expect(visibleText(first(byClass(hat as FakeElement, 'find-row-name')))).toBe(
       "Emberkeeper's Crown, item level 15",
     );
-    expect(visibleText(first(byClass(hat as FakeElement, 'slot-tag')))).toBe('Hat');
+    // The row is the slot: no slot badge (finds have one).
+    expect(byClass(hat as FakeElement, 'slot-tag')).toHaveLength(0);
     expect(visibleText(first(byClass(hat as FakeElement, 'gear-list-lines')))).not.toBe('');
     expect(nameOf(first(find(hat as FakeElement, (e) => e.localName === 'button')))).toBe(
       "Hat: Emberkeeper's Crown, item level 15, Epic. Change",
