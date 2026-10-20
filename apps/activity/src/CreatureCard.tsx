@@ -83,7 +83,7 @@ export function CreatureCard({
     }
   }
 
-  const classes = ['card-item', 'creature-card', 'focused'];
+  const classes = ['card-item', 'creature-card', 'focused', 'pix-panel'];
   if (found) classes.push('found');
   if (current) classes.push('current');
   return (

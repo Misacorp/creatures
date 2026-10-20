@@ -55,7 +55,8 @@ export function TeamFace({
 }
 
 /**
- * One creature of the open run's row: its sprite (tap for its role and element), its name, an HP bar
+ * One creature of the open run's row: its sprite (tap for its role, element and the gear it carries in this
+ * run), its name, an HP bar
  * and its HP in words. A knocked-out creature is grey with the skull and says "Knocked out"; the
  * words say it as well, so colour is never the only cue. `children` (the camp's move buttons) sit
  * under it. Names are the player's own: drawn as text.
@@ -72,17 +73,21 @@ export function RunTile({
     <li class={`team-member run-tile ${state}`}>
       <TeamFace
         id={creature.id}
-        info={creatureInfoOf({
-          name: creature.name,
-          species: creature.speciesId,
-          level: creature.level,
-          element: creature.element,
-          role: creature.role,
-        })}
+        info={{
+          ...creatureInfoOf({
+            name: creature.name,
+            species: creature.speciesId,
+            level: creature.level,
+            element: creature.element,
+            role: creature.role,
+          }),
+          // What it wears in this run (frozen when it joined): the popover lists it, locked.
+          ...(creature.gear.length === 0 ? {} : { gear: creature.gear }),
+        }}
         speciesId={creature.speciesId}
         name={creature.name}
         ko={state === 'ko'}
-        label={`${tileLabel(creature)} Shows its role and element.`}
+        label={`${tileLabel(creature)} Shows its role and element${creature.gear.length === 0 ? '' : ' and its gear'}.`}
       />
       <Bar
         value={creature.hp}

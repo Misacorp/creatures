@@ -23,7 +23,7 @@ export interface CreatureInfo {
   explorerRank?: number;
   /** One short line about what it does for the creatures around it (a board's `effectLine`), when it does something. */
   effect?: string;
-  /** The items it wears, for a creature in the living room (set with `ownerName`); empty or missing for none. */
+  /** The items it wears (a living room creature, a creature of an open dungeon run); empty or missing for none. */
   gear?: readonly WornItem[];
   /** Your own lounger in the living room only: what lounging gave it today (its "Lounging 34 / 60 XP" tag). */
   loungeXp?: number;
@@ -69,11 +69,11 @@ export function creatureFactRows(
 }
 
 /**
- * The worn items the popover shows: only for a creature in the living room (it has an owner) that wears
- * something. Every other popover (a stage unit, a team member, an explorer) shows no item lines.
+ * The worn items the popover shows: the ones its info carries. Only a living room creature and a creature
+ * of an open dungeon run carry them; every other popover (a stage unit, a board tile, an explorer) shows none.
  */
 export function shownWornItems(info: CreatureInfo): readonly WornItem[] {
-  return info.ownerName !== undefined && info.gear !== undefined ? info.gear : [];
+  return info.gear ?? [];
 }
 
 /** The spoken label of a creature that belongs to someone else: "Misa's Splashet, level 12". */

@@ -12,7 +12,11 @@ import type {
   DungeonRunCreature,
   DungeonStepLog,
   Element,
+  DungeonRunGear,
 } from './dungeon-types';
+import type { GearRarity } from './gear-types';
+import { sampleItem } from './creature-page/bag-sample';
+import type { ItemLine } from '@creatures/game';
 
 const MODIFIERS = {
   flooded: { id: 'flooded', name: 'Flooded', description: 'Tide creatures hit 20% harder.' },
@@ -135,6 +139,17 @@ export const SAMPLE_MAP: DungeonMapView = {
   ],
 };
 
+/** An item a run's creature wears, with the game's own lines (fixture data). */
+export function runItem(
+  baseId: string,
+  rarity: GearRarity,
+  itemLevel: number,
+  rolled: readonly ItemLine[],
+): DungeonRunGear {
+  const item = sampleItem('run', baseId, rarity, itemLevel, rolled);
+  return { baseId, slot: item.slot, rarity, itemLevel, lines: item.lines.map((l) => l.text) };
+}
+
 const TEAM: DungeonRunCreature[] = [
   {
     id: 'c1',
@@ -146,6 +161,10 @@ const TEAM: DungeonRunCreature[] = [
     hp: 120,
     hpMax: 120,
     treat: false,
+    gear: [
+      runItem('brine-hood', 'rare', 8, [{ id: 'aimed-ward', tier: 1 }]),
+      runItem('patch-scarf', 'common', 5, []),
+    ],
   },
   {
     id: 'c2',
@@ -157,6 +176,7 @@ const TEAM: DungeonRunCreature[] = [
     hp: 80,
     hpMax: 110,
     treat: false,
+    gear: [],
   },
   {
     id: 'c3',
@@ -168,6 +188,7 @@ const TEAM: DungeonRunCreature[] = [
     hp: 140,
     hpMax: 140,
     treat: false,
+    gear: [],
   },
 ];
 

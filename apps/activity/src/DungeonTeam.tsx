@@ -180,7 +180,7 @@ export function DungeonTeam(props: Props) {
   return (
     <SingleRowBoard
       row={board}
-      class="dungeon-team"
+      class="dungeon-team pix-panel"
       label="Your team, left to right"
       emptyLabel="Add"
       disabled={disabled}

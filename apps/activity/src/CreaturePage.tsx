@@ -237,7 +237,7 @@ export function CreaturePage({
     <section
       id={id}
       ref={rootRef}
-      class="creature-page"
+      class="creature-page pix-panel"
       tabIndex={-1}
       aria-labelledby={`${id}-name`}
       onKeyDown={(event) => {
@@ -309,7 +309,7 @@ export function CreaturePage({
         {showAbility && (
           <div class="cp-block creature-ability">
             <h3 class="cp-title">Finale ability</h3>
-            <p>
+            <p class="prose">
               <GlossaryTag ability={abilityInfo.id}>{abilityInfo.name}</GlossaryTag>:{' '}
               {abilityInfo.description}
             </p>
@@ -353,7 +353,7 @@ export function CreaturePage({
         <Accordion title="About" headingLevel={3} defaultOpen class="cp-block">
           {about !== null && (
             <>
-              <p>{about.description}</p>
+              <p class="prose">{about.description}</p>
               <ul class="tags traits" aria-label="Traits">
                 {about.traits.map((trait) => (
                   <li class="tag" key={trait}>
@@ -363,7 +363,7 @@ export function CreaturePage({
               </ul>
             </>
           )}
-          {personality !== null && <p class="muted">{personality}</p>}
+          {personality !== null && <p class="muted prose">{personality}</p>}
           <DataTable
             class="sheet-facts"
             rows={[

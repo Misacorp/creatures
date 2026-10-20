@@ -151,6 +151,30 @@ describe('the map and the open run in today', () => {
     expect(parseDungeonToday({ ...today, map: null, active: null }).active).toBeNull();
   });
 
+  it('reads what each creature of the run wears, and refuses gear that is not an item', () => {
+    const open = sampleStateMid();
+    const hood = {
+      baseId: 'brine-hood',
+      slot: 'hat',
+      rarity: 'rare',
+      itemLevel: 8,
+      lines: ['Aimed ward -5%'],
+    };
+    const withGear = (gear: unknown[]) => ({
+      ...open,
+      team: open.team.map((c, i) => (i === 0 ? { ...c, gear } : c)),
+    });
+    const parsed = parseDungeonToday({ ...sampleToday(), active: withGear([hood]) });
+    expect(parsed.active?.team[0]?.gear).toEqual([hood]);
+    expect(parsed.active?.team[1]?.gear).toEqual([]);
+    expect(() =>
+      parseDungeonToday({ ...sampleToday(), active: withGear([{ baseId: 'brine-hood' }]) }),
+    ).toThrow();
+    expect(() =>
+      parseDungeonToday({ ...sampleToday(), active: withGear([{ ...hood, slot: 'boots' }]) }),
+    ).toThrow();
+  });
+
   it('refuses a map or a run that is not the shape the server sends', () => {
     expect(() => parseDungeonToday({ ...sampleToday(), map: { floors: 7 } })).toThrow();
     expect(() => parseDungeonToday({ ...sampleToday(), active: { id: 'x' } })).toThrow();

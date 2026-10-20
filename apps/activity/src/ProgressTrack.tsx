@@ -35,7 +35,7 @@ export function ProgressTrack({
   const nodes = trackNodes(steps, current);
   if (nodes.length === 0) return null;
   return (
-    <ol class={edge ? 'ptrack edge' : 'ptrack'} aria-label={label}>
+    <ol class={edge ? 'ptrack edge pix-panel' : 'ptrack pix-panel'} aria-label={label}>
       {nodes.map((node) => (
         <li
           key={node.key}

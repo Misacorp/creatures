@@ -24,9 +24,9 @@
 }
 
 /* The cost (or what holds it back) on the same row as the words, when it fits: one row saves height. */
+/* In the button's own pixel font, one step smaller (the font is set once, per panel: docs/design/ux-patterns.md). */
 .action-btn .ab-detail {
   max-width: 100%;
-  font-family: var(--body);
   font-size: var(--fs-small);
 }
 

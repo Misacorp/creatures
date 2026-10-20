@@ -253,6 +253,8 @@ button.ip-act {
 .configurator {
   width: 100%;
   max-width: 34rem;
+  margin: 0.75rem auto 0.25rem;
+  text-align: left;
 }
 
 /*

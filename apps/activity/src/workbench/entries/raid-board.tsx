@@ -1,6 +1,8 @@
 import { zoneIndices } from '@creatures/engine';
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { Placement } from '../../Placement';
+import { teamSample } from '../../creature-page/team-sample';
+import { toPickerCreature } from '../../roster-picker';
 import { dropOutcome } from '../../slot-outcome';
 import { useDragDrop } from '../../use-drag-drop';
 import { RaidBoard } from '../../ui/RaidBoard';
@@ -79,7 +81,13 @@ function ownedCreatures(count: number): PickerCreature[] {
  * A party of `players` players: everyone else stands in one lane of three (one creature in every
  * row) and `placed` of your creatures stand in your lane, one per row from the front.
  */
-function startBoard(players: number, yourLane: number, placed: number, empty: number): Board {
+function startBoard(
+  players: number,
+  yourLane: number,
+  placed: number,
+  empty: number,
+  ids: readonly string[] = [],
+): Board {
   const length = rowLength(players);
   const lanes = length / 3;
   const others: (Other | null)[] = Array.from({ length }, () => null);
@@ -103,7 +111,7 @@ function startBoard(players: number, yourLane: number, placed: number, empty: nu
   }
   ZONES.slice(0, placed).forEach((zone, z) => {
     const slot = zoneIndices(zone, length)[own];
-    if (slot !== undefined) mine[slot] = `mine-${String(z)}`;
+    if (slot !== undefined) mine[slot] = ids[z] ?? `mine-${String(z)}`;
   });
   return { others, mine };
 }
@@ -251,9 +259,22 @@ function partyView(
 /** The whole Raid Roster, wired to a stand-in for the server (the same rules, no network). */
 function RosterDemo({ p }: { p: Props }) {
   const players = num(p, 'players');
-  const owned = useMemo(() => ownedCreatures(num(p, 'owned')), [num(p, 'owned')]);
+  const configuring = bool(p, 'configure');
+  // With Configure: the three geared samples of the dungeon's team, so a tap shows a real configurator.
+  const sample = useMemo(() => (configuring ? teamSample() : null), [configuring]);
+  const owned = useMemo(
+    () =>
+      sample === null ? ownedCreatures(num(p, 'owned')) : sample.creatures.map(toPickerCreature),
+    [num(p, 'owned'), sample],
+  );
   const [board, setBoard] = useState(() =>
-    startBoard(players, num(p, 'yourLane') - 1, num(p, 'placed'), num(p, 'empty')),
+    startBoard(
+      players,
+      num(p, 'yourLane') - 1,
+      num(p, 'placed'),
+      num(p, 'empty'),
+      sample === null ? [] : sample.team.map((c) => c.id),
+    ),
   );
   const [refused, setRefused] = useState<string | null>(null);
   const locked = bool(p, 'locked');
@@ -280,6 +301,26 @@ function RosterDemo({ p }: { p: Props }) {
         turnOrder={str(p, 'turnOrder')}
         next={{ event: 'phase1', at: 0 }}
         onIntent={onIntent}
+        {...(sample === null
+          ? {}
+          : {
+              configure: {
+                state: sample.state,
+                gear: sample.gear,
+                busy: false,
+                actions: {
+                  onEquip: () => Promise.resolve(false),
+                  onRibbon: () => undefined,
+                  onEvolve: () => undefined,
+                  onRename: () => undefined,
+                  onLounge: () => undefined,
+                  onSlotTalent: () => undefined,
+                },
+                onAnswerCatch: () => undefined,
+              },
+              owned: sample.creatures,
+              onOpenPage: () => undefined,
+            })}
       />
       {refused !== null && (
         <p class="muted" role="status">
@@ -353,6 +394,7 @@ const raidBoard: Entry = {
     locked: { kind: 'toggle' },
     autoOthers: { kind: 'toggle' },
     away: { kind: 'toggle' },
+    configure: { kind: 'toggle' },
   },
   defaults: {
     board: 'Raid Roster',
@@ -366,6 +408,7 @@ const raidBoard: Entry = {
     locked: false,
     autoOthers: false,
     away: false,
+    configure: false,
   },
   presets: [
     { name: 'Eleven players, one of yours placed', props: {} },
@@ -386,6 +429,14 @@ const raidBoard: Entry = {
       name: 'A teammate is away (their tiles can be dragged, or swapped from the popover)',
       props: { away: true },
     },
+    {
+      name: 'Getting your creatures ready (tap one of yours for its configurator)',
+      props: { configure: true, placed: 3 },
+    },
+    {
+      name: 'Locked, with Configure (what they wear, nothing to change)',
+      props: { configure: true, placed: 3, locked: true },
+    },
     { name: 'Single row, the raid size (the default size)', props: { board: 'Single row' } },
     {
       name: 'Single row, large (the dungeon team: about halfway to the old big tiles)',
@@ -397,7 +448,7 @@ const raidBoard: Entry = {
       <SingleRowDemo key={`${str(p, 'board')}-${String(num(p, 'slots'))}`} p={p} />
     ) : (
       <RosterDemo
-        key={`${String(num(p, 'players'))}-${String(num(p, 'yourLane'))}-${String(num(p, 'placed'))}-${String(num(p, 'empty'))}-${String(num(p, 'owned'))}-${str(p, 'turnOrder')}-${String(bool(p, 'locked'))}-${String(bool(p, 'autoOthers'))}-${String(bool(p, 'away'))}`}
+        key={`${String(num(p, 'players'))}-${String(num(p, 'yourLane'))}-${String(num(p, 'placed'))}-${String(num(p, 'empty'))}-${String(num(p, 'owned'))}-${str(p, 'turnOrder')}-${String(bool(p, 'locked'))}-${String(bool(p, 'autoOthers'))}-${String(bool(p, 'away'))}-${String(bool(p, 'configure'))}`}
         p={p}
       />
     ),

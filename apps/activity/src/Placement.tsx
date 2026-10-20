@@ -1,6 +1,8 @@
 import { GLOSSARY_IDS } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { TOUCH_HOLD_MS } from './dnd-core';
+import type { Creature } from './api';
+import { CreatureConfigurator, type ConfiguratorParts } from './CreatureConfigurator';
 import { creatureInfoOf } from './creature-info';
 import { creatureName } from './game';
 import { GlossaryTag } from './Glossary';
@@ -37,6 +39,7 @@ import { RaidBoard, type BoardRowModel } from './ui/RaidBoard';
 import { RosterPicker } from './ui/RosterPicker';
 import { useSlotKeyboard } from './ui/use-slot-keyboard';
 import { useDragDrop } from './use-drag-drop';
+import type { TeamConfigure } from './TeamCreaturePage';
 
 type Party = NonNullable<RaidView['party']>;
 
@@ -55,12 +58,34 @@ interface Props {
   next: RaidView['next'];
   /** What a move comes to: the screen sends it to the server, which decides. */
   onIntent: (intent: Intent) => void;
+  /**
+   * Getting your creatures ready: a tap on one of yours on the board shows its configurator under the board
+   * (another tap hides it), with Creature page (`onOpenPage`) and, while the board can change, Remove from
+   * board. Absent: its popover with Remove from board.
+   */
+  configure?: TeamConfigure | undefined;
+  /** Everything the player owns, in full (the configurator reads its creature from here). */
+  owned?: readonly Creature[];
+  /** Opens one of your board's creatures' own page in the tab's place. */
+  onOpenPage?: (creatureId: string) => void;
 }
+
+/** What a raid asks of a creature while the board can change: who it is, how it grows, what it fights with. */
+const RAID_PARTS: ConfiguratorParts = { experience: true, stats: true, gear: true, talents: true };
+
+/** Once the board is locked for the finale the fight is frozen: what it wears, nothing to change. */
+const LOCKED_PARTS: ConfiguratorParts = {
+  experience: true,
+  stats: true,
+  gear: true,
+  gearLocked: true,
+};
 
 /**
  * The Raid Roster: the party board, where the player places up to three creatures beside everyone
  * else's. Tapping an empty slot (or pressing Enter on it) opens the creature picker; tapping a
- * creature opens its popover (yours has "Remove from board"); your own creatures are dragged to move
+ * creature opens its popover (yours, with `configure`, shows its configurator under the board instead:
+ * gear, talents, its page and Remove from board); your own creatures are dragged to move
  * them (a finger needs a short press and hold, so a swipe still scrolls the board). When the board
  * locks, the player's strongest creatures fill the places still empty, by the server.
  */
@@ -76,6 +101,8 @@ export function Placement(props: Props) {
   const [swapping, setSwapping] = useState<number | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [announcement, announce] = useState('');
+  /** Your creature whose configurator is shown under the board. */
+  const [selected, setSelected] = useState<string | null>(null);
   /** The slot to focus again once the request that follows a pick or a remove is answered. */
   const refocus = useRef<number | null>(null);
 
@@ -143,7 +170,14 @@ export function Placement(props: Props) {
 
   // The cues: the creature in focus (carried, or under the pointer) and the row as it would stand.
   // A creature whose popover is open counts as in focus too.
-  const inspectedSlot = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot;
+  // The creature whose configurator is shown counts as inspected while no popover is open.
+  const selectedSlot =
+    selected === null
+      ? undefined
+      : party.row.find((s) => s.creature?.creatureId === selected)?.slot;
+  const inspectedSlot =
+    popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot ??
+    (selectedSlot === undefined ? undefined : String(selectedSlot));
   const cueArgs = {
     row: party.row,
     length: party.rowLength,
@@ -163,7 +197,13 @@ export function Placement(props: Props) {
     label: <GlossaryTag entry={GLOSSARY_IDS.zone(row.zone)}>{ROW_NAMES[row.zone]}</GlossaryTag>,
     slots: row.slots.flatMap((n) => {
       const slot = bySlot.get(n);
-      return slot === undefined ? [] : [boardSlot(slot, party.rowLength, rosterNames, canEdit)];
+      if (slot === undefined) return [];
+      const model = boardSlot(slot, party.rowLength, rosterNames, canEdit);
+      return [
+        selected !== null && slot.creature?.creatureId === selected
+          ? { ...model, selected: true }
+          : model,
+      ];
     }),
   }));
 
@@ -183,12 +223,18 @@ export function Placement(props: Props) {
       setPicking(slot);
       return;
     }
+    const id = occupant.creatureId;
+    // Yours, with the configurator: a tap shows it under the board (another tap hides it), no popover.
+    if (props.configure !== undefined && occupant.mine && !occupant.auto && id !== undefined) {
+      setHint(null);
+      setSelected(selected === id ? null : id);
+      return;
+    }
     const info = boardCreatureInfo(occupant);
     if (info === null || popovers === null) return;
     const line = boardCues({ ...cueArgs, carried: null, pointer: null, inspected: slot }).effect;
     const shown = line === null ? info : { ...info, effect: line };
     const key = `raid-slot:${String(slot)}`;
-    const id = occupant.creatureId;
     if (occupant.mine && occupant.auto && id !== undefined) {
       // Joins by itself: tapping it makes the place a real placement, so it stays where it is.
       const own = {
@@ -270,6 +316,9 @@ export function Placement(props: Props) {
       ? undefined
       : party.away.find((a) => a.ownerName === swapTile.ownerName);
   const notes = awayNotes(party.away, party.row);
+  // The selected creature, while it is still one of yours on the board.
+  const shown =
+    selectedSlot === undefined ? undefined : props.owned?.find((c) => c.id === selected);
 
   function swap(creatureId: string): void {
     if (swapping === null) return;
@@ -284,9 +333,9 @@ export function Placement(props: Props) {
 
   return (
     <div id="raid-placement" onKeyDown={onKeyDown}>
-      <section class="raid-section placement" aria-labelledby="raid-place-heading">
+      <section class="raid-section placement pix-panel" aria-labelledby="raid-place-heading">
         <h3 id="raid-place-heading">Raid Roster</h3>
-        <p class="muted small roster-help">
+        <p class="muted small roster-help prose">
           Pick your creatures and place them on the board alongside everyone else.
           {props.turnOrder === 'serpentine' &&
             ' The board shows the order of round 1; the rows flip direction each round.'}
@@ -314,6 +363,44 @@ export function Placement(props: Props) {
           noneRow={noneRow}
           onTap={tapSlot}
         />
+        {props.configure !== undefined && shown !== undefined && (
+          <CreatureConfigurator
+            key={shown.id}
+            creature={shown}
+            state={props.configure.state}
+            gear={props.configure.gear}
+            busy={props.configure.busy}
+            parts={canEdit ? RAID_PARTS : LOCKED_PARTS}
+            actions={props.configure.actions}
+            buttons={[
+              ...(props.onOpenPage === undefined
+                ? []
+                : [
+                    {
+                      label: 'Creature page',
+                      withCreature: true,
+                      onAct: () => {
+                        props.onOpenPage?.(shown.id);
+                      },
+                    },
+                  ]),
+              ...(canEdit
+                ? [
+                    {
+                      label: 'Remove from board',
+                      danger: true,
+                      withCreature: true,
+                      onAct: () => {
+                        setSelected(null);
+                        announce(`${creatureName(shown)} removed from the board.`);
+                        props.onIntent({ type: 'unplace', creatureId: shown.id });
+                      },
+                    },
+                  ]
+                : []),
+            ]}
+          />
+        )}
         {(overHint ?? hint) !== null && (
           <p class="muted" role="status">
             {overHint ?? hint}

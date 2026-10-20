@@ -10,6 +10,7 @@
 import {
   RULES,
   abilitiesFor,
+  itemLines,
   undercroftBaseFloors,
   undercroftFloorCount,
   type GearRarity,
@@ -27,6 +28,7 @@ import {
   type Element,
   type Role,
   type FoldKit,
+  type GearItem,
   type KeepsakeDef,
   type WeatherDay,
 } from '@creatures/game';
@@ -43,9 +45,21 @@ import type {
   DungeonKeepsakeView,
   DungeonOutcome,
   DungeonPendingView,
+  DungeonRunGear,
   DungeonRunState,
   DungeonStepLog,
 } from './dungeon-types';
+
+/** The items a creature carries in a run (its seat's frozen kit), as the gear list draws them. */
+export function runGearView(items: readonly GearItem[]): DungeonRunGear[] {
+  return items.map((item) => ({
+    baseId: item.baseId,
+    slot: item.slot,
+    rarity: item.rarity,
+    itemLevel: item.itemLevel,
+    lines: itemLines(item).map((l) => l.text),
+  }));
+}
 
 /** The engine's key for the one player of a solo run. Never shown to anyone. */
 export const PLAYER = 'p1';
@@ -373,6 +387,7 @@ export function runView(meta: RunMeta, st: RunState): DungeonRunState {
       hp: hp[slot.id] ?? 0,
       hpMax: st.hpMax[slot.id] ?? 0,
       treat: treated.has(slot.id),
+      gear: runGearView(st.seats?.[slot.id]?.kit.items ?? []),
     })),
     keepsakes: keepsakeViews(st.keepsakes),
     pack: { ...st.pack },
