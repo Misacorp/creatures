@@ -186,10 +186,13 @@ export const SupplySchema = v.variant('kind', [
   v.strictObject({
     ...supplyFields,
     kind: v.literal('lantern'),
-    /** Per catch: added to the chance that a creature is drawn from the deeper area, which it opens without stars. */
+    /** Per creature: added to the chance that a creature is drawn from the deeper area, which it opens without stars. */
     deepBp: Bp,
-    /** Fixed: the chance that the first creature of the trip is drawn from the deeper area. */
-    firstDeepBp: Bp,
+    /**
+     * Fixed: the chance (basis points) of one bonus creature roll that surely brings a creature drawn from
+     * the deeper area (on a finished trip, where the deeper area is open).
+     */
+    bonusBp: Bp,
   }),
   v.strictObject({
     ...supplyFields,

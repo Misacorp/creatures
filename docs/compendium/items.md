@@ -186,6 +186,7 @@ Twelve supplies in four kinds, each in three tiers: basic, good and great. A tri
 - _Lures:_ camp cooks, who know that a sweet smell reaches further than a good eye.
 - _Map scraps:_ the cartographers of the Old Crossroads, who draw the four roads from the signpost.
 - _Lanterns:_ lamp-makers who work by moonlight. The Moon Lantern is the one they are proudest of.
+- _What a lantern does (2026-10-20, shipped as the blurbs and the glossary's Lantern entry):_ it opens the deeper area, and a finished trip has a chance that its light shows a way down and one more creature comes, always from there. `(content: supplies.json, glossary.json)`
 - _Satchels:_ the packers, who make a bag for anyone who walks.
 
 Crafting a supply is a Workshop job. Basic supplies need the lowest Crafting level, and the great ones need the highest. `(content: glossary.json "job-supply")`

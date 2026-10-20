@@ -381,11 +381,11 @@ export function kitDeepBp(kit: readonly SupplyDef[]): number {
   return kit.reduce((n, s) => n + (s.kind === 'lantern' ? s.deepBp : 0), 0);
 }
 
-/** The chance (basis points) that the first creature of a trip is from the deeper area, from the lanterns. */
-export function kitFirstDeepBp(kit: readonly SupplyDef[]): number {
+/** The chance (basis points) of a lantern's bonus roll: one extra creature roll from the deeper area. */
+export function kitDeepBonusBp(kit: readonly SupplyDef[]): number {
   return Math.min(
     BP,
-    kit.reduce((n, s) => n + (s.kind === 'lantern' ? s.firstDeepBp : 0), 0),
+    kit.reduce((n, s) => n + (s.kind === 'lantern' ? s.bonusBp : 0), 0),
   );
 }
 
@@ -496,7 +496,7 @@ export interface TripCatchContext {
   firstExpedition: boolean;
   /** This roll surely brings a creature (a lure's bonus roll): the chance is not drawn. */
   sure?: boolean;
-  /** This roll's creature is from the deeper area when there is one (a lantern's first find). */
+  /** This roll's creature is from the deeper area when there is one (a lantern's bonus roll). */
   forceDeep?: boolean;
 }
 
@@ -655,11 +655,12 @@ export function featuredSpecies(
 /**
  * All the creature rolls of one claim in order, carrying owned lines and the dupe streak from roll to
  * roll. `ticks` rolls come first. With `fixedParts` (a finished trip, not a recall) the fixed parts of
- * the supplies join in: a lure's chance of one bonus roll that surely brings a creature, which is rolled
- * after the ticks, and a lantern's chance that the first creature of the trip is from the deeper area.
- * Draw order: the lure's bonus chance, the lantern's first-find chance (each only with such a supply),
- * the ticks in order (`rollTripCatch`), the bonus roll. `results` are the creatures that came (in order),
- * `empty` the ticks that brought none.
+ * the supplies join in, each a chance of one bonus roll that surely brings a creature, rolled after the
+ * ticks: a lure's (any creature) and a lantern's (a creature from the deeper area; only where the deeper
+ * area is open, so a place without deep content gets none and its chance is not drawn).
+ * Draw order: the lure's bonus chance, the lantern's bonus chance (each only with such a supply), the
+ * ticks in order (`rollTripCatch`), the lure's bonus roll, the lantern's bonus roll. `results` are the
+ * creatures that came (in order), `empty` the ticks that brought none.
  */
 export function rollTripCatches(
   rng: Rng,
@@ -678,13 +679,13 @@ export function rollTripCatches(
   let empty = 0;
   const lure = lureEffect(ctx.kit);
   const bonus = fixedParts && lure.bonusBp > 0 && chance(rng, lure.bonusBp, BP);
-  const firstDeepBp = kitFirstDeepBp(ctx.kit);
-  let firstDeep =
+  const lanternBp = kitDeepBonusBp(ctx.kit);
+  const lanternBonus =
     fixedParts &&
-    firstDeepBp > 0 &&
+    lanternBp > 0 &&
     deepOpen(ctx.destination, ctx.stars, ctx.kit) &&
-    chance(rng, firstDeepBp, BP);
-  const total = ticks + (bonus ? 1 : 0);
+    chance(rng, lanternBp, BP);
+  const total = ticks + (bonus ? 1 : 0) + (lanternBonus ? 1 : 0);
   for (let i = 0; i < total; i++) {
     const roll = rollTripCatch(rng, {
       ...ctx,
@@ -692,13 +693,12 @@ export function rollTripCatches(
       dupeStreak,
       firstExpedition: i === 0 && ctx.firstExpedition,
       sure: i >= ticks,
-      forceDeep: firstDeep,
+      forceDeep: lanternBonus && i === total - 1,
     });
     if (roll.result === null) {
       empty += 1;
       continue;
     }
-    firstDeep = false;
     results.push(roll.result);
     owned.add(roll.result.species.line);
     dupeStreak = roll.dupeStreak;

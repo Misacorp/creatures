@@ -12,7 +12,7 @@ import {
   RULES,
   catchChanceBp,
   kitDeepBp,
-  kitFirstDeepBp,
+  kitDeepBonusBp,
   lengthRules,
   lureEffect,
   mapTicksBp,
@@ -99,7 +99,7 @@ function metricsOf(length: ExpeditionLength, kit: readonly SupplyDef[]): Metrics
     supply: per(scale(t.supplyBp, bonus.supplyBp)),
     journal: per(t.journalBp),
     rarity: rules.rarityUpBp,
-    deep: kitDeepBp(kit) + kitFirstDeepBp(kit),
+    deep: kitDeepBp(kit) + kitDeepBonusBp(kit),
   };
 }
 

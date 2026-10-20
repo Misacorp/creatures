@@ -34,7 +34,7 @@ Expeditions are about **creatures, not the account**: each creature builds its o
 - **A supply has a fixed part and a per-tick part** (2026-10-20): the fixed part is the same on any trip, so a supply is worth carrying on a 2 hour trip, and the per-tick part grows with the trip's ticks, so it is better on a long one.
   - a **Lure**: more creatures. A fixed chance of one bonus creature that surely comes, a little more chance every tick, and a better chance that it is a new species;
   - a **Map scrap**: a longer trip, more finds. Extra ticks, a fixed part plus a share of the trip's ticks (a fraction is a chance);
-  - a **Lantern**: finds from the deeper area. A better chance per creature, and a fixed chance that the first creature of the trip comes from there; it opens the deeper area without a star;
+  - a **Lantern**: finds from the deeper area. A better chance per creature, and a fixed chance of one bonus creature roll that surely brings a creature from there (like the lure's bonus, on a finished trip only); it opens the deeper area without a star;
   - a **Satchel**: more parts, meaning every crafting ingredient (scrap, shards, glimmer). Fixed scrap, shards and a chance of glimmer, plus a share more per tick, and more supply finds.
 - **The best supplies guarantee an end-of-trip choice;** lesser ones only make one likely.
 - **Trip lengths:** the shortest trip is **2 hours**. Trips are 2, 6 or 12 hours, plus 24 hours from explorer rank.

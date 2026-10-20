@@ -78,7 +78,7 @@ interface ResultBody {
   recalled: boolean;
   failed?: boolean;
   noCatch?: number;
-  catches: { species: string; outcome: string }[];
+  catches: { species: string; outcome: string; deep?: boolean }[];
   loot: {
     parts: Record<string, number>;
     gear: unknown[];
@@ -984,6 +984,33 @@ describe('the end-of-trip choice (push on)', () => {
         expect(resultOf(await claim(p, trip.id))).toEqual(result);
       },
       { tripRng: constantRng(draw), rng: createSeededRng('risky-rng') },
+    );
+  });
+
+  it('gives a lantern one bonus creature from the deeper area on a finished trip, drawn at the claim', async () => {
+    const draw = { v: 0 }; // every chance succeeds
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0);
+        const ticks = RULES.expeditions.lengths.long.ticks;
+        const plain = tripOf(await send(p, p.starterId, 'long', [], 'ember-caves'));
+        ctx.clock.t = plain.endsAt;
+        const without = resultOf(await claim(p, plain.id));
+        expect(without.catches).toHaveLength(ticks);
+        stock(ctx.sql, USER_ID, 'lantern-basic', 1);
+        const lit = tripOf(
+          await send(p, p.starterId, 'long', [owned('lantern-basic')], 'ember-caves'),
+        );
+        ctx.clock.t = lit.endsAt;
+        const result = resultOf(await claim(p, lit.id));
+        // The lantern's chance hits, so one creature comes on top of the ticks, from the deeper area.
+        expect(result.catches).toHaveLength(ticks + 1);
+        expect(result.catches.at(-1)).toMatchObject({ deep: true });
+        // A replay returns the stored result.
+        expect(resultOf(await claim(p, lit.id))).toEqual(result);
+      },
+      { rng: constantRng(draw) },
     );
   });
 

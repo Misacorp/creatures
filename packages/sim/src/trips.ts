@@ -347,13 +347,12 @@ export function supplyGain(
       return extra * tickLoot + offer;
     }
     case 'lantern': {
-      // The deeper area is worth more per creature (the rarest species live there); the fixed part is the
-      // first creature, which a trip brings almost surely over a few ticks.
+      // The deeper area is worth more per creature (the rarest species live there); the fixed part is a
+      // chance of one bonus creature from it.
       const hasDeep = trip.dest.deep.species.length > 0;
       const per = hasDeep ? 9 : 3;
       const creatures = ticks * (t.creatureBp / 10_000);
-      const first = 1 - (1 - t.creatureBp / 10_000) ** ticks;
-      return ((def.deepBp / 10_000) * creatures + (def.firstDeepBp / 10_000) * first) * per + offer;
+      return ((def.deepBp / 10_000) * creatures + def.bonusBp / 10_000) * per + offer;
     }
     case 'satchel': {
       const perTick = (t.scrapBp * w.scrap + t.shardBp * w.shard) / 10_000;

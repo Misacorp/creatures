@@ -72,7 +72,7 @@ import {
   rollMapTicks,
   rollCount,
   kitDeepBp,
-  kitFirstDeepBp,
+  kitDeepBonusBp,
   satchelBonus,
   weeklySpecial,
   type DestinationDef,
@@ -883,13 +883,13 @@ describe('supplies and the rolls of a trip', () => {
     expect(catchChanceBp([SURE])).toBe(BP);
   });
 
-  it('gives a lantern a deeper chance per catch and a fixed chance for the first find, and a satchel a fixed part', () => {
-    expect(kitFirstDeepBp([])).toBe(0);
-    expect(SUPPLY_TIERS.map((t) => kitFirstDeepBp([supply(`lantern-${t}`)]))).toEqual([
-      3_000, 10_000, 10_000,
+  it('gives a lantern a deeper chance per creature and a fixed chance of a bonus creature from there, and a satchel a fixed part', () => {
+    expect(kitDeepBonusBp([])).toBe(0);
+    expect(SUPPLY_TIERS.map((t) => kitDeepBonusBp([supply(`lantern-${t}`)]))).toEqual([
+      600, 1_800, 2_650,
     ]);
     expect(SUPPLY_TIERS.map((t) => kitDeepBp([supply(`lantern-${t}`)]))).toEqual([
-      500, 2_500, 5_500,
+      800, 2_300, 4_400,
     ]);
     expect(satchelBonus([])).toEqual({
       partsBp: 0,
@@ -1031,44 +1031,60 @@ describe('catching at a destination', () => {
     expect(withBonus).toBeGreaterThan(without + 3_000 * 0.55);
   });
 
-  it('draws a lantern’s first find from the deeper area, once, with its fixed chance', () => {
+  it('gives a lantern a chance of one bonus creature from the deeper area, after the ticks, on a finished trip', () => {
     const ember = dest('ember-caves');
-    const deepIds = new Set(allSpecies(ember));
-    expect(deepIds.size).toBeGreaterThan(0);
-    const great = supply('lantern-great');
-    const rng = createSeededRng('first-deep');
-    let firstDeep = 0;
-    let laterDeep = 0;
-    const n = 1_500;
-    for (let i = 0; i < n; i++) {
-      // The sure lure makes every tick a creature, the great lantern sends the first one deeper.
-      const out = rollTripCatches(
-        rng,
-        4,
-        { ...ctx({ destination: ember }), kit: [SURE, great] },
-        true,
-      );
-      expect(out.results).toHaveLength(4);
-      if (out.results[0]?.deep === true) firstDeep++;
-      for (const r of out.results.slice(1)) if (r.deep) laterDeep++;
+    const plain = { ...ctx({ destination: ember }), kit: [] as SupplyDef[] };
+    const lantern = supply('lantern-basic');
+    const lit = { ...plain, kit: [lantern] };
+    // A hit (the basic lantern's chance is a draw under `bonusBp`), then one tick that brings nothing,
+    // then the bonus roll: no deeper-area chance is drawn (it is forced), the deeper area's own species
+    // comes with `deepFindBp`, its index, and the shiny draw.
+    const hit = scripted([0, 9_999, 0, 0, 1]);
+    const out = rollTripCatches(hit, 1, lit, true);
+    expect(hit.drawn()).toBe(5);
+    expect(out.empty).toBe(1);
+    expect(out.results).toHaveLength(1);
+    expect(out.results[0]?.deep).toBe(true);
+    expect(ember.deep.species).toContain(out.results[0]?.species.id);
+    // A miss on the chance draws once and adds nothing.
+    const miss = scripted([9_999, 9_999]);
+    expect(rollTripCatches(miss, 1, lit, true).results).toEqual([]);
+    expect(miss.drawn()).toBe(2);
+    // A recall (no fixed parts) never rolls it.
+    const recall = scripted([9_999]);
+    expect(rollTripCatches(recall, 1, lit, false).results).toEqual([]);
+    expect(recall.drawn()).toBe(1);
+    // With a lure too: both chances first (lure, lantern), the ticks, the lure's bonus, then the lantern's.
+    const both = scripted([0, 0, 9_999, 9_999, 0, 9_999, 0, 1, 0, 0, 1]);
+    const lure = supply('lure-basic');
+    const two = rollTripCatches(both, 1, { ...plain, kit: [lure, lantern] }, true);
+    expect(two.results).toHaveLength(2);
+    expect(two.results[0]?.deep).toBe(false);
+    expect(two.results[1]?.deep).toBe(true);
+  });
+
+  it('draws the lantern bonus only where the deeper area is open, and keeps the rarity shift without deep species', () => {
+    const lantern = supply('lantern-great');
+    // No deeper content at all: the deeper area stays closed, the chance is not drawn, nothing is added.
+    const shut = { ...dest('tidepools'), deep: { species: [], rarityUpBp: 0 } };
+    const none = scripted([9_999]);
+    const out = rollTripCatches(none, 1, { ...ctx({ destination: shut }), kit: [lantern] }, true);
+    expect(out.results).toEqual([]);
+    expect(none.drawn()).toBe(1);
+    // A deeper area with a rarity push but no species of its own: the bonus creature is a deep roll.
+    const rng = createSeededRng('deep-shift');
+    const tide = dest('tidepools');
+    let deep = 0;
+    let all = 0;
+    for (let i = 0; i < 400; i++) {
+      const r = rollTripCatches(rng, 0, { ...ctx({ destination: tide }), kit: [lantern] }, true);
+      all += r.results.length;
+      for (const c of r.results) if (c.deep) deep++;
     }
-    // 100% for the first find; the others use only the lantern's per-catch 55%.
-    expect(firstDeep).toBe(n);
-    expect(Math.abs(laterDeep / (n * 3) - 0.55)).toBeLessThan(0.04);
-    // Without the fixed parts (a recall) the first find is an ordinary one.
-    let recallFirst = 0;
-    for (let i = 0; i < n; i++) {
-      const out = rollTripCatches(
-        rng,
-        4,
-        { ...ctx({ destination: ember }), kit: [SURE, great] },
-        false,
-      );
-      if (out.results[0]?.deep === true) recallFirst++;
-    }
-    expect(Math.abs(recallFirst / n - 0.55)).toBeLessThan(0.05);
-    // A basic lantern: 30% for the first find on top of its per-catch 5%, never more than certain.
-    expect(kitFirstDeepBp([supply('lantern-basic')])).toBe(3_000);
+    expect(all).toBeGreaterThan(400 * 0.25);
+    expect(deep).toBe(all);
+    // The great lantern's chance is its `bonusBp`.
+    expect(Math.abs(all / 400 - kitDeepBonusBp([lantern]) / BP)).toBeLessThan(0.08);
   });
 
   it('falls back to the nearest rarity somebody there has', () => {

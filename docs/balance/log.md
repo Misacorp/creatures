@@ -1161,6 +1161,11 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
 - **Lantern exception.** Its fixed part is "the first creature may be from the deeper area", which needs a creature: 23% of 2 h trips, 99% of 24 h ones. A lantern worth 1.1 at 2 h would be worth 4.5 at 24 h, so it is tuned to the 12 h and 24 h targets and is not worth its parts on a 2 h trip (`ECONOMY_TARGETS.lanternShortRoi`).
 - **Expected:** players with supplies see gains that grow with trip length; lantern tiers 2 and 3 are cheaper to craft; lures lean on the fixed bonus roll. The sim's headline pins (`run.test.ts`) are not re-pinned here.
 - **Follow-ups:**
-  - Give the lantern a bonus deep creature roll (like the lure's) so it can pay on 2 h trips (rule change in `rollTripCatches`).
+  - Give the lantern a bonus deep creature roll (like the lure's) so it can pay on 2 h trips (rule change in `rollTripCatches`). Done, see the follow-up below.
   - The new-species worth (40) and the owned share (50%) are study assumptions; revisit with live data.
   - Regenerate `docs/balance/scalars.md` (`pnpm scalars`).
+
+- **Follow-up: lantern bonus roll (2026-10-20).** The lantern's fixed part is now a chance (`bonusBp`) of one bonus creature roll that surely brings a creature from the deeper area, on a finished trip where the deeper area is open (like the lure's bonus; `firstDeepBp` removed, `deepBp` kept). `ECONOMY_TARGETS.lanternShortRoi` is removed. Scalars, old to new (`supplies.json`; recipes and costs unchanged):
+  - lantern-basic `deepBp` 500 to 800, `firstDeepBp` 3000 to `bonusBp` 600; lantern-good `deepBp` 2500 to 2300, `firstDeepBp` 10000 to `bonusBp` 1800; lantern-great `deepBp` 5500 to 4400, `firstDeepBp` 10000 to `bonusBp` 2650.
+  - ROI by length (2 h / 6 h / 12 h / 24 h), before: basic 0.53 / 1.43 / 2.23 / 3.10, good 0.53 / 1.49 / 2.44 / 3.74, great 0.36 / 1.11 / 2.07 / 3.78. After: basic 1.14 / 1.47 / 2.00 / 3.09, good 1.13 / 1.45 / 1.96 / 3.01, great 1.15 / 1.56 / 2.20 / 3.53.
+  - No single is flagged any more; the lantern pairs all stay at or above 1.0 on 2 h. Tiers still gain more than the one below, also with Guard, Keen nose and a parts Boon.

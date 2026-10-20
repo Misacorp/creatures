@@ -11,13 +11,6 @@ export const ECONOMY_TARGETS = {
   roi: { min: 1.1, max: 4.0 },
   /** What the study flags (a supply below this loses Bait; above `roi.max` it is too good). */
   flagRoi: { min: 1.0, max: 4.0 },
-  /**
-   * The lantern on a 2 hour trip (known exception, B-025). Its whole fixed part is "the first creature may
-   * be from the deeper area", which only exists when a creature comes: 23% of 2 hour trips, 99% of 24 hour
-   * ones. So a lantern that pays 1.1 at 2 h pays 4.5 at 24 h; it is tuned to the 12 h and 24 h targets and
-   * is not worth its parts on a 2 h trip. A bonus deep creature roll (like the lure's) would fix it.
-   */
-  lanternShortRoi: { min: 0.3 },
   /** A supply given another one (the second of a pair): synergy (a lure on a longer trip) may go a little over. */
   pairRoi: { min: 1.0, max: 5.0 },
   /** The ROI of every supply on a 12 hour trip (about 2). */

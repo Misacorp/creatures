@@ -128,21 +128,19 @@ Measured on the default server's sims for the species target and on 60-week sims
 
 Measured exactly, with no sampling, by `packages/sim/src/trip-ev.ts` (`pnpm sim:economy` prints the tables) and asserted by `packages/sim/test/economy-targets.test.ts`. The bands are `ECONOMY_TARGETS` in `packages/sim/src/economy-targets.ts`. Worth is in Bait (`RULES.expeditions.worth`, a new species 40, half of what a roll can bring already owned); a supply costs its blueprint (scrap 2, shard 6, glimmer 25, Bait 1:1); ROI is the extra expected worth over that cost. Today's numbers are in B-025.
 
-| Target                                                                                      | Band            | Today                         |
-| ------------------------------------------------------------------------------------------- | --------------- | ----------------------------- |
-| Unsupplied trip: worth, creatures, scrap, shards, gear and XP per hour rise with the length | strictly rising | yes                           |
-| 12 h, no supplies: creatures                                                                | 1.5-2.3         | 1.88                          |
-| 12 h, no supplies: scrap and shards in plain crafts (6 scrap + 1 shard)                     | 0.8-1.5         | 1.13                          |
-| 12 h, no supplies: gear pieces                                                              | 0.6-1.0         | 0.77                          |
-| 2 h, no supplies: chance of at least one gear piece                                         | 9-11%           | 10.0%                         |
-| Every supply, every length, with and without Guard, Keen nose and a parts Boon: ROI         | 1.1-4.0         | 1.14-3.78 (lantern 2 h: 0.36) |
-| Every supply on a 12 h trip: ROI                                                            | 1.6-2.6         | 2.01-2.44                     |
-| A supply is worth more (ROI) the longer the trip                                            | rising          | yes                           |
-| Each tier gains more Bait than the tier below, every length                                 | rising          | yes                           |
-| The second supply of a pair, given the first: ROI                                           | 1.0-5.0         | 1.1-4.9                       |
-| Every part kind and supply kind appears in the worth table                                  | complete        | yes                           |
-
-Known exception: the lantern on a 2 h trip (ROI at least 0.3; today 0.36 to 0.53), see B-025.
+| Target                                                                                      | Band            | Today     |
+| ------------------------------------------------------------------------------------------- | --------------- | --------- |
+| Unsupplied trip: worth, creatures, scrap, shards, gear and XP per hour rise with the length | strictly rising | yes       |
+| 12 h, no supplies: creatures                                                                | 1.5-2.3         | 1.88      |
+| 12 h, no supplies: scrap and shards in plain crafts (6 scrap + 1 shard)                     | 0.8-1.5         | 1.13      |
+| 12 h, no supplies: gear pieces                                                              | 0.6-1.0         | 0.77      |
+| 2 h, no supplies: chance of at least one gear piece                                         | 9-11%           | 10.0%     |
+| Every supply, every length, with and without Guard, Keen nose and a parts Boon: ROI         | 1.1-4.0         | 1.13-3.62 |
+| Every supply on a 12 h trip: ROI                                                            | 1.6-2.6         | 2.01-2.44 |
+| A supply is worth more (ROI) the longer the trip                                            | rising          | yes       |
+| Each tier gains more Bait than the tier below, every length                                 | rising          | yes       |
+| The second supply of a pair, given the first: ROI                                           | 1.0-5.0         | 1.1-4.9   |
+| Every part kind and supply kind appears in the worth table                                  | complete        | yes       |
 
 ## Supplies (since 2026-10-16, B-011)
 

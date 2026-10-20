@@ -3,7 +3,7 @@
  * kit of 0, 1 or 2 supplies, in things and in Bait, from the shipped rules (2026-10-20, B-025).
  *
  * The math follows the scalars the server rolls with: `tickChances`, `mapTicksBp`, `lureEffect`,
- * `satchelBonus`, `kitDeepBp`, `kitFirstDeepBp` and the `RULES.expeditions.worth` table. Every per-tick
+ * `satchelBonus`, `kitDeepBp`, `kitDeepBonusBp` and the `RULES.expeditions.worth` table. Every per-tick
  * table is linear in the ticks, so its expectation is the expected ticks (the nominal ones plus the maps'
  * share) times the chance; only the chance of at least one creature or gear piece is not, and that one is
  * computed over the maps' whole-tick mixture. A test (`economy-ev.test.ts`) checks the numbers against the
@@ -19,8 +19,8 @@ import {
   catchChanceBp,
   content,
   destinationDef,
+  kitDeepBonusBp,
   kitDeepBp,
-  kitFirstDeepBp,
   kitOf,
   lengthRules,
   lureEffect,
@@ -184,8 +184,11 @@ export function tripEv(
   // Creatures: a chance per tick (lures add to it) and the lure's bonus roll, which surely brings one.
   const p = catchChanceBp(kit) / BP;
   const bonus = lure.bonusBp / BP;
-  const creatures = ticks * p + bonus;
-  const anyCreature = 1 - (1 - bonus) * (1 - atLeastOne(p, mix.at));
+  // A lantern's bonus roll (the reference place's deeper area is open with a lantern) surely brings a
+  // creature from the deeper area.
+  const lantern = kit.some((s) => s.kind === 'lantern');
+  const deepBonus = lantern ? kitDeepBonusBp(kit) / BP : 0;
+  const creatures = ticks * p + bonus + deepBonus;
 
   // Each creature's worth: the rarity odds of the length, and the deeper area when a lantern is carried.
   const normalOdds = rollOdds({
@@ -210,14 +213,11 @@ export function tripEv(
       ? rollWorth(deepOdds)
       : (RULES.expeditions.familiarity.deepFindBp / BP) * nativeWorth +
         (1 - RULES.expeditions.familiarity.deepFindBp / BP) * rollWorth(deepOdds);
-  const lantern = kit.some((s) => s.kind === 'lantern');
   const deep = lantern ? Math.min(1, kitDeepBp(kit) / BP) : 0;
-  const first = lantern ? kitFirstDeepBp(kit) / BP : 0;
+  // The bonus creature is always from the deeper area; every other one by the per-creature chance.
+  const rolled = creatures - deepBonus;
   const creatureWorth =
-    creatures * ((1 - deep) * normalWorth + deep * deepWorth) +
-    // The first creature of the trip is from the deeper area with the lantern's own chance, whatever
-    // the per-creature chance says.
-    anyCreature * first * (1 - deep) * (deepWorth - normalWorth);
+    rolled * ((1 - deep) * normalWorth + deep * deepWorth) + deepBonus * deepWorth;
 
   // New species: a lure's own chance, else the share the player lacks.
   const newPer = lure.newBp / BP + (1 - lure.newBp / BP) * (1 - OWNED_SHARE);
@@ -254,7 +254,7 @@ export function tripEv(
   return {
     ticks,
     creatures,
-    deepCreatures: creatures * deep + anyCreature * first * (1 - deep),
+    deepCreatures: rolled * deep + deepBonus,
     newSpecies,
     scrap,
     shards,

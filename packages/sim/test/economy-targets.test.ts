@@ -4,13 +4,7 @@
  * expedition and crafting economy by accident. Pure arithmetic over the shipped rules: no sampling.
  */
 import { describe, expect, it } from 'vitest';
-import {
-  PART_KINDS,
-  RULES,
-  SUPPLY_KINDS,
-  expeditionContent,
-  type ExpeditionLength,
-} from '@creatures/game';
+import { PART_KINDS, RULES, SUPPLY_KINDS, expeditionContent } from '@creatures/game';
 import { ECONOMY_TARGETS as T } from '../src/economy-targets';
 import {
   LENGTHS,
@@ -24,11 +18,6 @@ import { PART_WORTH, WORTH_GROUPS, supplyCost, tripEv } from '../src/trip-ev';
 
 const inBand = (x: number, band: { min: number; max: number }): boolean =>
   x >= band.min && x <= band.max;
-
-/** The lowest ROI a supply may have on a length: the lantern is excused on the shortest trip. */
-function floorRoi(kind: string, length: ExpeditionLength): number {
-  return kind === 'lantern' && length === 'short' ? T.lanternShortRoi.min : T.roi.min;
-}
 
 describe('the unsupplied trip', () => {
   const base = baseRows({});
@@ -77,7 +66,7 @@ describe('every supply, on every trip length, with and without the common modifi
     it(`${scenario.id}: pays between ${T.roi.min} and ${T.roi.max} times its cost`, () => {
       expect(singles).toHaveLength(LENGTHS.length * expeditionContent.supplies.length);
       for (const r of singles) {
-        expect(r.roi, `${r.id} on ${r.length}`).toBeGreaterThanOrEqual(floorRoi(r.kind, r.length));
+        expect(r.roi, `${r.id} on ${r.length}`).toBeGreaterThanOrEqual(T.roi.min);
         expect(r.roi, `${r.id} on ${r.length}`).toBeLessThanOrEqual(T.roi.max);
       }
     });
@@ -120,10 +109,9 @@ describe('every supply, on every trip length, with and without the common modifi
           [r.second, r.first, r.roiSecond],
           [r.first, r.second, r.roiFirst],
         ] as const) {
-          const kind = added.startsWith('lantern') ? 'lantern' : 'other';
-          const min =
-            kind === 'lantern' && r.length === 'short' ? T.lanternShortRoi.min : T.pairRoi.min;
-          expect(roi, `${added} given ${given} on ${r.length}`).toBeGreaterThanOrEqual(min);
+          expect(roi, `${added} given ${given} on ${r.length}`).toBeGreaterThanOrEqual(
+            T.pairRoi.min,
+          );
           expect(roi, `${added} given ${given} on ${r.length}`).toBeLessThanOrEqual(T.pairRoi.max);
         }
       }
