@@ -102,3 +102,19 @@ button.supply-cell {
   font-size: var(--fs-small);
   text-align: center;
 }
+
+/* The send screen kit: a packed supply gets a tick in the corner. */
+.supply-packed {
+  position: absolute;
+  top: 0.375rem;
+  left: 0.375rem;
+  padding: 0.125rem 0.25rem;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: var(--fs-small);
+  line-height: 1;
+}
+
+.supply-kit {
+  margin: 0.25rem 0;
+}

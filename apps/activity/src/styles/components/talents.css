@@ -343,28 +343,6 @@
   font-size: var(--fs-row);
 }
 
-/* The lure row of the send screen. */
-.lure-picker {
-  margin: 0 0 0.5rem;
-}
-
-.lure-tiers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.lure-tiers button {
-  min-height: 2.5rem;
-}
-
-.lure-effect {
-  margin: 0.25rem 0 0;
-}
-
 .bait-cost {
   display: flex;
   flex-wrap: wrap;

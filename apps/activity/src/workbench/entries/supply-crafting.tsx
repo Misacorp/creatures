@@ -2,7 +2,9 @@ import { useState } from 'preact/hooks';
 import { sampleRoster, SAMPLE_GEAR } from '../../creature-card-sample';
 import type { GearState } from '../../gear-types';
 import { supplyCraftViews } from '../../gear-view';
+import type { SupplyPick } from '../../expedition-types';
 import { SupplyCrafting } from '../../SupplyCrafting';
+import { SupplyPicker } from '../../SupplyPicker';
 import { SupplyGrid, type SupplyCell } from '../../ui/SupplyGrid';
 import { num, str } from '../props';
 import type { Entry, Props } from '../types';
@@ -127,4 +129,45 @@ const supplyGrid: Entry = {
   render: (p) => <GridDemo p={p} />,
 };
 
-export const supplyCraftingEntries: readonly Entry[] = [supplyCrafting, supplyGrid];
+const KITS: Record<string, string[]> = {
+  empty: [],
+  'one packed': ['map-scrap-good'],
+  'full kit': ['lure-basic', 'satchel-basic'],
+};
+
+function PickerDemo({ p }: { p: Props }) {
+  const [picks, setPicks] = useState<SupplyPick[]>(
+    (KITS[str(p, 'kit')] ?? []).map((id) => ({ id, source: 'owned' as const })),
+  );
+  return (
+    <SupplyPicker
+      picks={picks}
+      stock={stockOf(str(p, 'stock'))}
+      onChange={setPicks}
+      onOpenWorkshop={() => undefined}
+    />
+  );
+}
+
+const supplyPicker: Entry = {
+  name: 'SupplyPicker',
+  file: 'apps/activity/src/SupplyPicker.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'The supply step of the send screen: the same grid as the Workshop, but tapping packs a supply (a tick) for the trip. At most two kinds; one tier per kind; once the kit is full the other kinds are dimmed; supplies you have none of cannot be tapped. One card shows the last tapped one.',
+  controls: {
+    stock: CONTROLS.stock,
+    kit: { kind: 'select', options: Object.keys(KITS) },
+  },
+  defaults: { stock: 'some', kit: 'empty' },
+  presets: [
+    { name: 'Empty kit', props: { stock: 'some', kit: 'empty' } },
+    { name: 'One packed', props: { stock: 'a lot', kit: 'one packed' } },
+    { name: 'Full kit', props: { stock: 'a lot', kit: 'full kit' } },
+    { name: 'Nothing in stock', props: { stock: 'nothing', kit: 'empty' } },
+  ],
+  // Keyed on the props so a preset starts from its own kit.
+  render: (p) => <PickerDemo key={`${str(p, 'kit')}-${str(p, 'stock')}`} p={p} />,
+};
+
+export const supplyCraftingEntries: readonly Entry[] = [supplyCrafting, supplyGrid, supplyPicker];

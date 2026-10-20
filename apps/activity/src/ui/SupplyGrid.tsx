@@ -13,6 +13,10 @@ export interface SupplyCell {
   owned: number;
   /** No creature can craft it yet: drawn dimmed, still selectable. */
   muted: boolean;
+  /** Not selectable at all (the button is disabled; the label says why). Default: selectable. */
+  disabled?: boolean;
+  /** Packed in the trip's kit: a tick in the corner (the send screen). Default: not. */
+  packed?: boolean;
 }
 
 /**
@@ -46,18 +50,25 @@ export function SupplyGrid({
             const classes = ['item-tile', 'supply-cell', `rarity-${rarity}`];
             if (cell.muted) classes.push('blocked');
             if (selected === cell.id) classes.push('selected');
+            if (cell.packed === true) classes.push('packed');
             return (
               <button
                 key={kind}
                 type="button"
                 class={classes.join(' ')}
                 aria-label={cell.label}
-                aria-pressed={selected === cell.id}
+                aria-pressed={cell.packed === undefined ? selected === cell.id : cell.packed}
+                disabled={cell.disabled === true}
                 onClick={() => {
                   onSelect(cell.id);
                 }}
               >
                 <Sprite sprite={glyphOrUnknown(kind)} scale={4} />
+                {cell.packed === true && (
+                  <span class="supply-packed pix" aria-hidden="true">
+                    ✓
+                  </span>
+                )}
                 {cell.owned > 0 && (
                   <span class="supply-count pix" aria-hidden="true">
                     {cell.owned}
