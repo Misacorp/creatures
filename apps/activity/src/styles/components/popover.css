@@ -129,7 +129,28 @@
   min-width: 0;
 }
 
-.pop-head .pop-short {
+.pop-head /* A creature's name in its rarity's colour, as on its card (the gold title is for everything else). */
+.pop-title.rarity-name {
+  color: var(--rar-text, var(--bone));
+  font-size: var(--fs-heading);
+}
+
+/* The creature's rarity and Shiny in its tag row: chips like the element's, the rarity in its colour. */
+.pop-tags .chip.rarity-tag,
+.pop-tags .chip.shiny {
+  padding: 0.125rem 0.5rem;
+}
+
+/* A creature's facts (level, owner, ranks) as the shared data table, then a board's effect sentence. */
+.pop-body .data-table {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.pop-effect {
+  margin: 0 0 0.5rem;
+}
+
+.pop-short {
   margin-bottom: 0;
 }
 

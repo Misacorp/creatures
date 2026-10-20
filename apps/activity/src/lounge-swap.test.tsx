@@ -112,6 +112,12 @@ describe('the popover of your own creature in the room', () => {
     const row = byClass(page.root, 'pop-actions')[0] as FakeElement;
     const buttons = find(row, (e) => e.localName === 'button');
     expect(buttons.map((b) => nameOf(b))).toEqual(['Move', 'Swap']);
+    // The modern head: the name in its rarity's colour, a rarity tag, and the facts as a data table.
+    const title = byClass(page.root, 'pop-title')[0] as FakeElement;
+    expect(title.getAttribute('class')).toContain('rarity-name');
+    expect(byClass(page.root, 'rarity-tag')).toHaveLength(1);
+    const table = byClass(page.root, 'data-table')[0] as FakeElement;
+    expect(visibleText(table)).toContain('Level');
     page.click(buttons[1] as FakeElement);
     expect(onSwap).toHaveBeenCalledTimes(1);
     expect(onMove).not.toHaveBeenCalled();

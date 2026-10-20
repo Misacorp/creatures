@@ -156,6 +156,8 @@ interface PopoverCardProps {
   /** The little picture at the top (sprites the game already has, never text). Hidden from assistive technology. */
   visual?: ComponentChildren;
   title: string;
+  /** Extra classes of the title (a creature's name in its rarity's colour: `rarity-name rarity-rare`). */
+  titleClass?: string | undefined;
   /** The one-line answer in bold; nothing when empty. */
   short?: string;
   lines?: readonly string[];
@@ -177,7 +179,9 @@ export function PopoverCard(props: PopoverCardProps) {
   const { lines = [] } = props;
   const heading = (
     <>
-      <p class="pop-title pix">{props.title}</p>
+      <p class={`pop-title pix${props.titleClass === undefined ? '' : ` ${props.titleClass}`}`}>
+        {props.title}
+      </p>
       {props.short !== undefined && props.short !== '' && <p class="pop-short">{props.short}</p>}
     </>
   );

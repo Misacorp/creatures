@@ -2,10 +2,10 @@ import { content, entryView } from '@creatures/game';
 import type { GlossarySection, GlossaryView } from '@creatures/game';
 import { createContext, type ComponentChildren, type RefObject } from 'preact';
 import { useContext, useMemo, useRef, useState } from 'preact/hooks';
-import { backLabel, creatureFacts, shownWornItems, type CreatureInfo } from './creature-info';
+import { backLabel, creatureFactRows, shownWornItems, type CreatureInfo } from './creature-info';
 import { bossArt, shinyPalette } from './art';
 import type { FoeInfo } from './foe-info';
-import { speciesName } from './game';
+import { capitalize, getSpecies, speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { compactCount } from './number-format';
 import { MORE_LABEL, resolveTag, tagKey, visualPlan, type TagRef } from './glossary-ui';
@@ -13,6 +13,7 @@ import { WornItemLines } from './WornItemLines';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { DataTable } from './ui/DataTable';
 import { Popover, PopoverBack, PopoverCard } from './ui/Popover';
 import { toggleActive, usePopoverNav } from './ui/popover-nav';
 
@@ -171,6 +172,7 @@ function CreaturePopover({
   onMore: (section: GlossarySection) => void;
 }) {
   const { info } = open;
+  const rarity = getSpecies(info.species)?.rarity;
   const worn = shownWornItems(info);
   const nav = usePopoverNav<string | null>(null, open);
   const entry = nav.view === null ? undefined : entryView(nav.view);
@@ -197,10 +199,20 @@ function CreaturePopover({
             />
           }
           title={info.name}
-          short={`Level ${String(info.level)}`}
-          lines={creatureFacts(info, speciesName(info.species))}
+          titleClass={rarity === undefined ? undefined : `rarity-name rarity-${rarity}`}
           beside={
             <p class="tags pop-tags">
+              {rarity !== undefined && (
+                <button
+                  type="button"
+                  class={`gtag gtag-chip chip rarity-tag rarity-${rarity}`}
+                  onClick={() => {
+                    nav.open('rarity');
+                  }}
+                >
+                  {capitalize(rarity)}
+                </button>
+              )}
               <ElementChip
                 as="button"
                 element={info.element}
@@ -209,9 +221,22 @@ function CreaturePopover({
                   nav.open(id);
                 }}
               />
+              {info.shiny === true && (
+                <button
+                  type="button"
+                  class="gtag gtag-chip chip badge shiny"
+                  onClick={() => {
+                    nav.open('shiny');
+                  }}
+                >
+                  Shiny
+                </button>
+              )}
             </p>
           }
         >
+          <DataTable bright rows={creatureFactRows(info, speciesName(info.species))} />
+          {info.effect !== undefined && <p class="pop-effect">{info.effect}</p>}
           {worn.length > 0 && <WornItemLines worn={worn} />}
           {open.actions !== undefined && open.actions.length > 0 && (
             <div class="pop-actions">

@@ -3,7 +3,7 @@ import { GLOSSARY_IDS, entryView } from '@creatures/game';
 import {
   backLabel,
   creatureButtonLabel,
-  creatureFacts,
+  creatureFactRows,
   shownWornItems,
   creatureInfoOf,
   ownedCreatureLabel,
@@ -44,12 +44,14 @@ describe('creatureInfoOf', () => {
   });
 });
 
-describe('creatureFacts', () => {
-  it('says nothing extra for a creature without the new fields', () => {
-    expect(creatureFacts(info, 'Cindle')).toEqual([]);
+describe('creatureFactRows', () => {
+  it('has the level for a creature without the other fields', () => {
+    expect(creatureFactRows(info, 'Cindle')).toEqual([
+      { label: 'Level', value: String(info.level) },
+    ]);
   });
 
-  it('lists the owner, the species of a nicknamed creature, shiny, Crafting level and Explorer rank', () => {
+  it('lists the level, the owner, the species of a nicknamed creature, Crafting level and Explorer rank', () => {
     const room: CreatureInfo = {
       ...info,
       name: 'Sparky',
@@ -58,28 +60,22 @@ describe('creatureFacts', () => {
       craftingLevel: 3,
       explorerRank: 2,
     };
-    expect(creatureFacts(room, 'Cindle')).toEqual([
-      'Owner: Misa',
-      'Species: Cindle',
-      'Shiny',
-      'Crafting level 3',
-      'Explorer rank 2',
+    expect(creatureFactRows(room, 'Cindle')).toEqual([
+      { label: 'Level', value: String(info.level) },
+      { label: 'Owner', value: 'Misa' },
+      { label: 'Species', value: 'Cindle' },
+      { label: 'Crafting level', value: '3' },
+      { label: 'Explorer rank', value: '2' },
     ]);
   });
 
-  it('ends with the one line about what the creature does for its neighbours', () => {
+  it('leaves out the species row when the name is the species name; shiny and an effect are not rows', () => {
     const line = "Boosts its neighbours' next hit by 15%.";
-    expect(creatureFacts({ ...info, ownerName: 'Bo', effect: line }, 'Cindle')).toEqual([
-      'Owner: Bo',
-      line,
-    ]);
-    expect(creatureFacts({ ...info, effect: line }, 'Cindle')).toEqual([line]);
-  });
-
-  it('leaves out the species line when the name is the species name, and shiny when false', () => {
-    expect(creatureFacts({ ...info, ownerName: 'Bo', shiny: false }, 'Cindle')).toEqual([
-      'Owner: Bo',
-    ]);
+    expect(
+      creatureFactRows({ ...info, ownerName: 'Bo', shiny: true, effect: line }, 'Cindle').map(
+        (r) => r.label,
+      ),
+    ).toEqual(['Level', 'Owner']);
   });
 });
 
