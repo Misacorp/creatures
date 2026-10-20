@@ -52,6 +52,7 @@ interface Setup {
   dice?: number | null;
   rng?: Rng;
   abilities?: AbilityChoice[];
+  passives?: { creatureId: string; abilityId: string }[];
   pack?: ContentPack;
   hook?: (round: number, apply: Apply) => void;
 }
@@ -72,6 +73,7 @@ function fight(row: FightSlot[], s: Setup = {}): FightResult {
     bossHpPool: { max: 1_000_000_000, current: 1_000_000_000 },
     turnOrderOverride: 'left_to_right',
     finaleAbilities: s.abilities ?? [],
+    ...(s.passives === undefined ? {} : { passives: s.passives }),
     ...(dice === null ? {} : { effects: { dice } }),
   };
   return simulateFight(inp, s.rng ?? scripted(), {
@@ -341,6 +343,91 @@ describe('the Guard passive (on_hit_taken)', () => {
     const hit = eventsOf(r, 'boss_hit').find((h) => h.source === 'gimmick');
     expect(hit?.shielded).toBe(true);
     expect(applies(r)).toEqual([]);
+  });
+});
+
+describe('the Guard passive on a hit that deals no damage', () => {
+  it('does not fire when the hit is cut to 0 damage', () => {
+    const nothing: Gimmick = {
+      id: 'tap',
+      name: 'Tap',
+      trigger: { eachRound: true },
+      op: 'hit_zone',
+      zone: 'front',
+      power: 10_000,
+    };
+    // A full ward against the boss's element cuts every hit to 0.
+    const warded = withMods(sturdy('g', { element: 'mire', role: 'guard' }), {
+      wardBp: { spark: 10_000 },
+    });
+    const r = fight([warded], {
+      gimmicks: [nothing],
+      abilities: [{ playerId: 'p1', abilityId: 'mud-wall', key: 'g:ability', creatureId: 'g' }],
+      rng: scripted([0]),
+    });
+    const hits = eventsOf(r, 'boss_hit');
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.every((h) => h.damage === 0)).toBe(true);
+    expect(applies(r)).toEqual([]);
+  });
+});
+
+describe('passives without a finale choice (Phases 1 and 2)', () => {
+  const slap: Gimmick = {
+    id: 'slap',
+    name: 'Slap',
+    trigger: { eachRound: true },
+    op: 'hit_zone',
+    zone: 'front',
+    power: 10_000,
+  };
+  const guard = () => sturdy('g', { element: 'mire', role: 'guard' });
+
+  it('works from `passives` alone: the effect lands, but the ability never fires', () => {
+    const r = fight([guard()], {
+      gimmicks: [slap],
+      passives: [{ creatureId: 'g', abilityId: 'mud-wall' }],
+      rounds: 4,
+      rng: scripted([0]),
+    });
+    expect(applies(r)).toHaveLength(1);
+    expect(eventsOf(r, 'ability')).toEqual([]);
+    // Its Shield Wall is not on: the hit is not shielded, in any round.
+    expect(eventsOf(r, 'boss_hit').some((h) => h.shielded === true)).toBe(false);
+  });
+
+  it('works for a Support too, and counts once when the ability is also a finale choice', () => {
+    const support = () => sturdy('s', { element: 'mire', role: 'support' });
+    const alone = fight([support()], {
+      passives: [{ creatureId: 's', abilityId: 'squelch-song' }],
+      rounds: 2,
+      dice: 1,
+      rng: scripted([0, 0]),
+    });
+    expect(applies(alone).map((e) => [e.round, e.stacks])).toEqual([
+      [1, 1],
+      [2, 2],
+    ]);
+    const both = fight([support()], {
+      passives: [{ creatureId: 's', abilityId: 'squelch-song' }],
+      abilities: [{ playerId: 'p1', abilityId: 'squelch-song', key: 's:ability', creatureId: 's' }],
+      rounds: 2,
+      dice: 1,
+      rng: scripted([0, 0]),
+    });
+    expect(applies(both).map((e) => [e.round, e.stacks])).toEqual([
+      [1, 1],
+      [2, 2],
+    ]);
+  });
+
+  it('refuses an unknown ability or creature', () => {
+    expect(() => fight([guard()], { passives: [{ creatureId: 'g', abilityId: 'nope' }] })).toThrow(
+      /passive/,
+    );
+    expect(() =>
+      fight([guard()], { passives: [{ creatureId: 'x', abilityId: 'mud-wall' }] }),
+    ).toThrow(/passive/);
   });
 });
 

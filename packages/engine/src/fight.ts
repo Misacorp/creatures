@@ -23,7 +23,7 @@ import {
 } from '@creatures/game';
 import { DODGE_RANGE, DODGE_TAKEN_DICE } from './fight-dodge';
 import { BOSS, applyEffect, tickEffects } from './fight-effects';
-import { announceCharges, enrageStrike, fireGimmick, plainAttacks } from './fight-boss';
+import { announceCharges, bossDone, enrageStrike, fireGimmick, plainAttacks } from './fight-boss';
 import { gearRoundStart, fireAbility, rainHeals, supportBuffs } from './fight-round';
 import { hitBoss } from './fight-strike';
 import { firingIndex, gimmickDue, sweepRow } from './gimmick-schedule';
@@ -389,6 +389,21 @@ export function simulateFight(
     abilitiesByRound.set(round, list);
   }
 
+  // Passive-only abilities (Phases 1 and 2 of a raid): the passives work, nothing fires.
+  const held = new Set(input.finaleAbilities.map((c) => `${c.creatureId ?? ''}:${c.abilityId}`));
+  for (const p of input.passives ?? []) {
+    const def = abilityDefs.get(p.abilityId);
+    if (def === undefined) fail(`unknown passive ability "${p.abilityId}"`);
+    const source = creatures.find((c) => c.id === p.creatureId);
+    if (source === undefined) fail(`passive "${p.abilityId}" names an unknown creature`);
+    if (held.has(`${p.creatureId}:${p.abilityId}`)) continue;
+    held.add(`${p.creatureId}:${p.abilityId}`);
+    for (const e of def.effects) {
+      if (e.op === 'on_hit_taken') source.hitTakenApplies.push(e.apply);
+      else if (e.op === 'round_start') source.roundStartApplies.push(e.apply);
+    }
+  }
+
   // ---- the state the helpers share ----
   const guardReach = input.guardReach ?? 'zone';
   const state: FightState = {
@@ -668,13 +683,16 @@ export function simulateFight(
 
     if (state.bossHp > 0 && !state.retreated) {
       if (!enraging) {
-        for (const [gi, g] of boss.gimmicks.entries())
+        for (const [gi, g] of boss.gimmicks.entries()) {
+          if (bossDone(state)) break;
           if (gimmickDue(g, round)) fireGimmick(state, g, gi);
+        }
       }
       plainAttacks(state);
       if (enraging) enrageStrike(state);
-      // The boss's turn is over: its effects count down once a round.
-      tickEffects(state, BOSS);
+      // The boss's turn is over: its effects count down once a round. A boss that fell or
+      // retreated during its own turn (a Riposte) has no tick, like one that fell earlier (13.4).
+      if (!bossDone(state)) tickEffects(state, BOSS);
     }
 
     events.push({ t: 'round_end', round, bossHp: state.bossHp });

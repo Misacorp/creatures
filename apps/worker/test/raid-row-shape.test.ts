@@ -64,3 +64,32 @@ describe('the fight keeps the board rows', () => {
     });
   });
 });
+
+describe('Mire passives in every raid phase', () => {
+  it('Phases 1 and 2 carry the passives of the row (and no finale ability); the finale carries the choice', async () => {
+    await runRaid((ctx) => {
+      const a = seedPlayer(ctx, 1, { level: 15, species: ['mudlump', 'squelch', 'splashet'] });
+      ctx.core.raid.currentWeek(HELSINKI);
+      const week = ctx.core.raid.week(W02.id);
+      if (week === null) throw new Error('no week');
+      const [mud, squelch] = a.creatureIds as [string, string];
+      for (const phase of ['phase1', 'phase2'] as const) {
+        const input = buildPhaseInput(ctx.sql, week, 1, phase)?.input;
+        expect(input?.finaleAbilities).toEqual([]);
+        expect(input?.passives).toEqual(
+          expect.arrayContaining([
+            { creatureId: mud, abilityId: 'mud-wall' },
+            { creatureId: squelch, abilityId: 'squelch-song' },
+          ]),
+        );
+        // Only the passive abilities: nothing else a creature brings is listed.
+        expect(
+          input?.passives?.every((p) => ['mud-wall', 'squelch-song'].includes(p.abilityId)),
+        ).toBe(true);
+      }
+      const finale = buildPhaseInput(ctx.sql, week, 1, 'finale')?.input;
+      expect(finale?.passives).toBeUndefined();
+      expect(finale?.finaleAbilities.some((c) => c.abilityId === 'mud-wall')).toBe(true);
+    });
+  });
+});

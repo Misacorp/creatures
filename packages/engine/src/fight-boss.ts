@@ -36,6 +36,11 @@ import { ZONES, nearestLivingZone, zoneOfIndex } from './zones';
  * - Guard intercept and Support buffs only count a living Guard or Support, and a buff only goes
  *   to a living neighbour; a Support beside a knocked-out creature simply buffs nobody there.
  */
+/** The boss has fallen or retreated (a Riposte can do either in the middle of its own turn). */
+export function bossDone(state: FightState): boolean {
+  return state.bossHp <= 0 || state.retreated;
+}
+
 function zoneWithLiving(state: FightState, aimed: Zone): Zone | undefined {
   return nearestLivingZone(aimed, (z) => livingIn(state, z).length > 0);
 }
@@ -83,6 +88,8 @@ function resolvePlan(
       if (next === undefined) continue;
       targetIdx = next;
     }
+    // The boss fell or retreated mid-move (a Riposte): the rest of the move does not happen.
+    if (bossDone(state)) return;
     const target = creatures[targetIdx] as Creature;
     // A creature that fell earlier in the same action is not hit again.
     if (!target.alive) continue;
@@ -103,6 +110,7 @@ function resolvePlan(
       const splashRaw = Math.floor((raw * plan.splashBp) / 10_000);
       for (const i of besides(state, impact.idx)) {
         const next = creatures[i] as Creature;
+        if (bossDone(state)) return;
         if (next.alive) {
           const taker = hurt(
             state,
@@ -196,6 +204,7 @@ export function fireGimmick(state: FightState, g: Gimmick, gimmickIndex: number)
       if (zone === undefined) break;
       const amount = Math.floor((input.bossAtk * g.power) / 10_000);
       for (const c of livingIn(state, zone)) {
+        if (bossDone(state)) break;
         const taker = hurt(state, c, amount, 'gimmick', 'area', state.bossGimmickDice[c.idx]);
         applyRider(state, g.applies, taker);
       }
@@ -330,7 +339,7 @@ function bossAttack(state: FightState, dice: readonly number[]): void {
 export function plainAttacks(state: FightState): void {
   const { bossAttacks, creatures } = state;
   for (let k = 0; k < bossAttacks; k++) {
-    if (!creatures.some((c) => c.alive)) return;
+    if (!creatures.some((c) => c.alive) || bossDone(state)) return;
     bossAttack(state, k === 0 ? state.bossAttackDice : (state.extraAttackDice[k - 1] ?? []));
   }
 }
@@ -343,6 +352,7 @@ export function enrageStrike(state: FightState): void {
   const { input, enrage, creatures } = state;
   const raw = Math.floor((input.bossAtk * (enrage?.powerBp ?? 0)) / 10_000);
   for (const c of creatures) {
+    if (bossDone(state)) return;
     if (c.alive) hurt(state, c, raw, 'enrage', 'area', state.bossGimmickDice[c.idx]);
   }
 }

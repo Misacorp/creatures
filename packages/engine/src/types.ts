@@ -290,6 +290,14 @@ export interface FightInput {
   /** Signed-up player ids. */
   players: readonly string[];
   finaleAbilities: readonly AbilityChoice[];
+  /**
+   * Passive abilities of creatures that have no finale choice in this fight (Phases 1 and 2 of a
+   * raid): only the ability's passive effects (`on_hit_taken`, `round_start`) are on, from round 1;
+   * nothing fires and no `ability` event is written. A creature that already has the same ability in
+   * `finaleAbilities` is skipped, so a passive never counts twice. Absent: none (a stored fight
+   * replays as it did).
+   */
+  passives?: readonly { creatureId: string; abilityId: string }[];
   turnOrderOverride?: TurnOrder;
   /**
    * Whom a Guard covers when the boss aims a hit at a creature that is not a Guard: `zone` (the

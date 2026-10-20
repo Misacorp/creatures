@@ -294,6 +294,30 @@ export function memberChoices(
   return choices;
 }
 
+/**
+ * The passive abilities of one member's creatures that stand in the row (Mire's `on_hit_taken` and
+ * `round_start` signatures). They work in every fight; in Phases 1 and 2 they are the only part of a
+ * creature ability that is on (the fireable ability is the finale's), so the input carries them as
+ * `passives` rather than as finale choices.
+ */
+export function memberPassives(
+  team: readonly TeamCreature[],
+  inRow: ReadonlySet<string>,
+): { creatureId: string; abilityId: string }[] {
+  return abilitiesFor(
+    team.map((c) => ({ id: c.id, speciesId: c.species.id, level: c.level })),
+    (c) => c.level,
+  )
+    .filter(
+      (a) =>
+        inRow.has(a.creatureId) &&
+        content.finaleAbilities
+          .find((d) => d.id === a.abilityId)
+          ?.effects.some((e) => e.op === 'on_hit_taken' || e.op === 'round_start') === true,
+    )
+    .map((a) => ({ creatureId: a.creatureId, abilityId: a.abilityId }));
+}
+
 /** A fight input built for one party, with who is in it (`aliases[i]` belongs to `memberIds[i]`). */
 export interface BuiltPhase {
   memberIds: string[];
@@ -484,6 +508,13 @@ export function buildPhaseInput(
     finaleAbilities: abilityIds.flatMap((abilityId, i) =>
       memberChoices(aliases[i] as string, abilityId, teams[i] as TeamCreature[], rowIds),
     ),
+    // Phases 1 and 2: the creatures' passive abilities only (the finale carries them as choices).
+    ...(phase === 'finale'
+      ? {}
+      : (() => {
+          const passives = teams.flatMap((team) => memberPassives(team, rowIds));
+          return passives.length > 0 ? { passives } : {};
+        })()),
     // Crits and the rest of the luck rules, stored with the input so a replay is exact.
     luck: { ...weatherLuck(day, luckAtRank(RULES.combat.luck, rank)) },
     // The combat rules, the phase floor and the finale's enrage, stored the same way.

@@ -508,6 +508,23 @@ export function fightFor(
               return at === undefined ? a : { ...a, fireAtRound: at };
             })
         : [],
+    // Phases 1 and 2: the creatures' passive abilities only, as the worker's `buildPhaseInput` does.
+    ...(stage === 'finale'
+      ? {}
+      : (() => {
+          const passives = creatureAbilityChoices(week, row)
+            .filter((a) =>
+              content.finaleAbilities
+                .find((d) => d.id === a.abilityId)
+                ?.effects.some((e) => e.op === 'on_hit_taken' || e.op === 'round_start'),
+            )
+            .flatMap((a) =>
+              a.creatureId === undefined
+                ? []
+                : [{ creatureId: a.creatureId, abilityId: a.abilityId }],
+            );
+          return passives.length > 0 ? { passives } : {};
+        })()),
     // As live play builds it: the curve's boss attacks and boss crit bonus for the rank.
     ...(bossAttacks > 1 ? { bossAttacks } : {}),
     ...skyFightFields(weatherSky(day), row),

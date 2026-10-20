@@ -173,6 +173,8 @@ Two lines, each a base form that evolves at level 15, like the existing lines. T
 - **Guard line: Mudlump → Bogwarden.** The steadfast tank: very high HP, the lowest Speed. Finale ability (the Guard kind): **Mud Wall** (Mudlump) and **Bog Hold** (Bogwarden), a Shield Wall on its zone (40% less damage for 2 rounds, then 60% for 3) and, whenever it takes a hit (not dodged), Mired on the **boss** (60% power in the first form, 80% in the second). A talent in its pool resists debuffs.
 - **Support line: Squelch → Croakmire.** The debuffer: finale ability (the Support kind): **Squelch Song** (Squelch, all creatures hit 4% harder for 2 rounds) and **Deep Croak** (Croakmire, 7%), and every round it applies Mired to the boss (60% power in the first form, 80% in the second); its talents and gear lean to debuff duration and power (Clinging, Heavy hand).
 
+The Mired parts of these abilities are always-on signatures: they work in every fight (Phase 1 and 2 of a raid, the finale, practice, the dungeon), not only when the ability fires in the finale. The Shield Wall and the rally stay the finale's. A hit that deals 0 damage does not fire the Guard's passive.
+
 Setter and Payoff Mire lines come later **(Misa)**.
 
 ### 5.4 Raid boss: Old Bogback

@@ -320,9 +320,10 @@ export function hurt(
   });
   if (stubborn)
     events.push({ t: 'proc', round: state.currentRound, creature: victim.id, kind: 'stubborn' });
-  // A passive ability on the taker (`on_hit_taken`): a hit it takes (dealt, not reflected) leaves an
-  // effect on the boss. A shielded or dodged hit returned above and takes nothing.
-  if (mode !== 'reflect') {
+  // A passive ability on the taker (`on_hit_taken`): a hit it takes that deals damage (not
+  // reflected) leaves an effect on the boss. A shielded or dodged hit returned above; a hit cut to
+  // 0 (armor, cover, ward, a Shield Wall) deals none and fires nothing (combat-rules 13.10).
+  if (mode !== 'reflect' && amount > 0) {
     for (const a of victim.hitTakenApplies) {
       applyEffect(state, BOSS, a.effect, a.powerBp, victim.id, a.durationTurns ?? 0);
     }

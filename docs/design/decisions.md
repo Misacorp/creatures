@@ -2207,3 +2207,9 @@ Misa: "Even with one evolution, let's use the same flow where they get to see th
 **Old finds.** A place has no knob of its own for gear finds, journal pages or the vault, and the schema forbids rare odds where no rare species lives. So the fen's "the bog keeps old things" rests on what already follows a place: gear a trip finds there is Mire gear, shards are Mire shards, and it has the largest rarer-catch push (15%). A real per-place find bonus is a rules change for Misa to ask for.
 
 **Why.** Slice 5b of `speed-and-dodge.md`. The dungeon fixture scenario now plays with the shipped foes and rooms minus the Mire ones (`pinPool`), because the seeded map draws from the whole pool and the client tests name the captured rooms; without it every new foe re-rolled the Undercroft fixtures and about 20 client tests. The dungeon test now allows a quiet mystery room on the route of the gamble test, and the chance-trigger test compares only fights that last as long as before (a trigger line that cuts damage can add a round, which draws its dice).
+
+## 2026-10-20: Riposte stops the boss's turn; Mire passives in every fight
+
+**Decision.** A boss that falls or retreats during its own turn (a Riposte on a dodged hit) stops there: no later hit, gimmick, plain attack or enrage hit, and no tick of its effects. `on_hit_taken` passives no longer fire on a hit that deals 0 damage. Passives (the Mire Guard and Support signatures) now work in Phase 1 and Phase 2 of a raid too, through a new `FightInput.passives` field, so those phases do not get the fireable finale ability.
+
+**Why.** Review findings: a Riposte could end the fight while the boss kept hitting (and the dungeon carried that damage to the next room); the passives were built only for the finale though speed-and-dodge.md 5.3 calls them always-on. Stored fights replay as before (new field optional, no dice moved).

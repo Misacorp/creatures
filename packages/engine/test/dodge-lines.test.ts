@@ -171,6 +171,111 @@ describe('Riposte', () => {
   });
 });
 
+describe('Riposte ends the boss mid-turn', () => {
+  const sweepAll = everyRound({ op: 'sweep', rows: ['all'], power: 10_000 });
+  /** Three creatures; only s0 hits hard and dodges (the sweep's area chance is 2500, die 0 beats it). */
+  const row = () => [
+    withMods('s0', { dodgeBp: 5_000, riposteBp: 30_000 }, { atk: 1_000 }),
+    withMods('s1', {}, { atk: 1 }),
+    withMods('s2', {}, { atk: 1 }),
+  ];
+  /** s0's dice for the hits it takes: the `hit`th (from 0) is dodged. */
+  const dieAt = (hit: number) => Array.from({ length: hit + 1 }, (_, k) => (k === hit ? 0 : MISS));
+  /** Dice for `rounds` rounds where only s0's first hit taken in the LAST round is dodged. */
+  const diceFor = (rounds: number, dodge: boolean, patterns = false, hit = 0) =>
+    Array.from({ length: rounds }, (_, i) => [
+      // A pattern move (the sweep) draws its own 40 dice first.
+      ...Array.from({ length: patterns ? 40 : 0 }, () => 0),
+      ...roundDice(3, dodge && i === rounds - 1 ? { 0: dieAt(hit) } : {}),
+    ]).flat();
+  /** Damage the creatures deal in `rounds` rounds when nothing is dodged (the boss's pool is then ample). */
+  const dealt = (rounds: number, o: Parameters<typeof play>[2] = {}, patterns = false): number => {
+    const probe = play(row(), diceFor(rounds, false, patterns), o);
+    const end = eventsOf(probe, 'round_end').find((e) => e.round === rounds);
+    return 1_000_000 - (end?.bossHp ?? 0);
+  };
+  const hitsBy = (r: FightResult, source: string) =>
+    eventsOf(r, 'boss_hit').filter((h) => h.source === source);
+
+  it('a Riposte that fells the boss stops the sweep and the plain attack (no later hit, so none carries to a next room)', () => {
+    const opts = { gimmicks: [sweepAll] };
+    const d = dealt(1, opts, true);
+    const r = play(row(), diceFor(1, true, true), {
+      ...opts,
+      extra: { bossHpPool: { max: 1_000_000, current: d + 1 } },
+    });
+    expect(procs(r, 'riposte')).toHaveLength(1);
+    expect(r.bossHpEnd).toBe(0);
+    // Only the dodged first hit of the sweep was made: no later hit, no plain attack.
+    expect(hitsBy(r, 'gimmick').map((h) => h.target)).toEqual(['s0']);
+    expect(hitsBy(r, 'attack')).toEqual([]);
+    expect(r.perCreature['s1']?.damageTaken).toBe(0);
+    expect(r.perCreature['s2']?.damageTaken).toBe(0);
+  });
+
+  it('a Riposte that takes the boss to the phase floor retreats it and stops its turn', () => {
+    const opts = { gimmicks: [sweepAll] };
+    const d = dealt(1, opts, true);
+    const floor = 500_000;
+    const r = play(row(), diceFor(1, true, true), {
+      ...opts,
+      extra: { bossHpPool: { max: 1_000_000, current: d + floor + 1 }, bossHpFloor: floor },
+    });
+    expect(eventsOf(r, 'retreat')).toHaveLength(1);
+    expect(r.bossHpEnd).toBe(floor);
+    expect(hitsBy(r, 'gimmick').map((h) => h.target)).toEqual(['s0']);
+    expect(hitsBy(r, 'attack')).toEqual([]);
+    expect(r.perCreature['s1']?.damageTaken).toBe(0);
+    expect(r.perCreature['s2']?.damageTaken).toBe(0);
+  });
+
+  it('a second gimmick of the same turn does not fire after the boss fell', () => {
+    const second = everyRound({ op: 'hit_zone', zone: 'front', power: 10_000 }, 'second');
+    const opts = {
+      gimmicks: [everyRound({ op: 'strike_highest_atk', power: 10_000 }, 'first'), second],
+    };
+    const d = dealt(1, opts);
+    const r = play(row(), diceFor(1, true), {
+      ...opts,
+      extra: { bossHpPool: { max: 1_000_000, current: d + 1 } },
+    });
+    // The strike on the strongest creature (s0) is dodged and the Riposte fells the boss.
+    expect(r.bossHpEnd).toBe(0);
+    expect(eventsOf(r, 'gimmick').map((e) => e.gimmick)).toEqual(['first']);
+    expect(hitsBy(r, 'attack')).toEqual([]);
+  });
+
+  it('an enrage strike stops at the creature whose Riposte felled the boss', () => {
+    const extra = { enrage: { rounds: 1, powerBp: 10_000 } };
+    const d = dealt(2, { extra });
+    // The plain attack is the first hit s0 takes in the enrage round, the enrage strike its second.
+    const r = play(row(), diceFor(2, true, false, 1), {
+      extra: { ...extra, bossHpPool: { max: 1_000_000, current: d + 1 } },
+    });
+    expect(eventsOf(r, 'enrage')).toHaveLength(1);
+    expect(r.bossHpEnd).toBe(0);
+    expect(hitsBy(r, 'enrage').map((h) => h.target)).toEqual(['s0']);
+    expect(hitsBy(r, 'attack')).toHaveLength(2); // one in each round
+  });
+
+  it('the plain attacks of a boss with several stop at the fall', () => {
+    const extra = { bossAttacks: 2 };
+    const d = dealt(1, { extra });
+    // The plain attack goes to the front creature (s0), which dodges its first hit taken.
+    const r = play(row(), diceFor(1, true), {
+      extra: { ...extra, bossHpPool: { max: 1_000_000, current: d + 1 } },
+    });
+    expect(r.bossHpEnd).toBe(0);
+    expect(hitsBy(r, 'attack')).toHaveLength(1);
+  });
+
+  it('does not change a fight where nothing is dodged', () => {
+    const r = play(row(), diceFor(2, false, true), { gimmicks: [sweepAll], rounds: 2 });
+    expect(hitsBy(r, 'gimmick')).toHaveLength(6);
+    expect(hitsBy(r, 'attack')).toHaveLength(2);
+  });
+});
+
 describe('the sheet', () => {
   it('rejects a bad number for the three lines', () => {
     const row = (mods: SlotMods) => [withMods('s0', mods)];
