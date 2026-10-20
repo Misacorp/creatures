@@ -74,7 +74,14 @@ export function DungeonTeam(props: Props) {
   }, [disabled]);
 
   // The cues read the creature in focus: carried, whose popover is open, or under the pointer.
-  const inspectedSlot = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot;
+  // The creature whose configurator is shown counts as inspected while no popover is open.
+  const selectedSlot =
+    props.selectedId === undefined || props.selectedId === null
+      ? undefined
+      : slotIndexOf(slots, props.selectedId);
+  const inspectedSlot =
+    popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot ??
+    (selectedSlot === undefined || selectedSlot === null ? undefined : String(selectedSlot));
   const board = useSingleRowBoard({
     slots,
     byId,

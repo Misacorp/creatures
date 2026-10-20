@@ -251,3 +251,16 @@ button.ip-act {
   margin: 1rem 0 0.25rem;
   text-align: center;
 }
+
+/*
+  The configurator (CreatureConfigurator): the page's blocks in a card, never wider than a drawer (34rem) so
+  it keeps the phone's proportions on a wide screen; its buttons a little apart.
+*/
+.configurator {
+  width: 100%;
+  max-width: 34rem;
+}
+
+.configurator-buttons {
+  margin: 0.75rem 0 0;
+}

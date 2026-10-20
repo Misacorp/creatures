@@ -1,19 +1,28 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { TreatBox } from './TreatBox';
 import type { Creature, GameState } from './api';
-import { CreatureCard } from './CreatureCard';
+import { CreatureConfigurator, type ConfiguratorParts } from './CreatureConfigurator';
 import { CreaturePage, type CardActions } from './CreaturePage';
-import type { PageFocus } from './creature-card-view';
-import { flipOver } from './ui/flip-logic';
 import { DungeonPrerun } from './DungeonPrerun';
-import { DungeonLoadout, type LoadoutProps } from './DungeonLoadout';
 import { DungeonTeam } from './DungeonTeam';
-import { isComplete, pruneSlots, sameSlots, setupTeam, unplace, type Slots } from './dungeon-team';
+import { EvolveDrawer } from './EvolveDrawer';
+import {
+  isComplete,
+  pruneSlots,
+  sameSlots,
+  setupTeam,
+  slotIndexOf,
+  unplace,
+  type Slots,
+} from './dungeon-team';
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { GlossaryTag } from './Glossary';
 import { creatureName } from './game';
+import type { GearState } from './gear-types';
 import { toPickerCreature } from './roster-picker';
+import { scrollAndFocus } from './scroll-to';
+import { flipOver } from './ui/flip-logic';
 import { useDungeonDraft } from './use-dungeon-draft';
 import type { Forecast } from './weather-types';
 
@@ -37,14 +46,33 @@ interface Props {
   onEnter: (slots: Slots, treats: ReadonlySet<string>) => void;
   /** Opens the summary of today's earlier run (the first-day retry offer). */
   onSeeLast: () => void;
-  /** The team's gear and talents under the board; absent: none. */
-  loadout?: Omit<LoadoutProps, 'team' | 'creatures' | 'selectedId' | 'onRemove'>;
   /**
-   * What a creature's page needs (`cards` and `page` loadouts): the game state and the page's actions.
-   * The page takes the card's spot; Back returns to it.
+   * Getting the team ready for the run. A tap on a creature of the board shows its configurator under the
+   * board (another tap hides it); its Creature page button opens the creature's own page in the card's
+   * place, flipping through the team, and Back returns. Absent: the creature's popover with Remove from team.
    */
-  pages?: { state: GameState; actions: CardActions };
+  configure?: TeamConfigure | undefined;
 }
+
+/** What the team's configurator and the creature page need from the game. */
+export interface TeamConfigure {
+  state: GameState;
+  /** The gear view; null until it has loaded. */
+  gear: GearState | null;
+  /** One of their actions is running. */
+  busy: boolean;
+  actions: CardActions;
+  /** The page's waiting catch: those are answered on the Creatures tab. */
+  onAnswerCatch: () => void;
+}
+
+/** What a dungeon run asks of a creature: who it is, how it grows, what it fights with. */
+const DUNGEON_PARTS: ConfiguratorParts = {
+  experience: true,
+  stats: true,
+  gear: true,
+  talents: true,
+};
 
 /**
  * The pre-run screen: one card (`DungeonPrerun`) with the title and streak, the three rooms and the
@@ -70,17 +98,20 @@ export function DungeonSetup({
   saveDraft,
   onEnter,
   onSeeLast,
-  loadout,
-  pages,
+  configure,
 }: Props) {
   const pickable = useMemo(() => creatures.map(toPickerCreature), [creatures]);
   const saver = useDungeonDraft(saveDraft);
   // The creatures that get a treat on this run (not kept for the next one: each run pays for its own).
   const [treats, setTreats] = useState<ReadonlySet<string>>(new Set());
-  /** `tap` loadout: the creature whose tile was tapped. */
+  /** The creature whose configurator is shown. */
   const [selected, setSelected] = useState<string | null>(null);
-  /** `cards` and `page` loadouts: the team creature whose page is open, and where it opened. */
-  const [page, setPage] = useState<{ id: string; focus: PageFocus } | null>(null);
+  /** The team creature whose page is open in the card's place. */
+  const [page, setPage] = useState<string | null>(null);
+  /** The creature whose page an evolve was asked on (its evolve screen is up). */
+  const [evolvingId, setEvolvingId] = useState<string | null>(null);
+  /** Back from a page: the tile of the creature shown last gets the focus. */
+  const backTo = useRef<string | null>(null);
   const [slots, setSlots] = useState<Slots>(() =>
     setupTeam({
       memory: draft,
@@ -104,6 +135,21 @@ export function DungeonSetup({
     if (!sameSlots(pruned, slots)) change(pruned);
   }, [owned.join(',')]);
 
+  // Back from a page: the card is drawn again; its creature's tile is scrolled to and focused.
+  useEffect(() => {
+    const id = backTo.current;
+    if (page !== null || id === null) return;
+    backTo.current = null;
+    const slot = slotIndexOf(slots, id);
+    if (slot === null) return;
+    scrollAndFocus(
+      document.body
+        .querySelector('.dungeon-team')
+        ?.querySelector<HTMLElement>(`[data-slot="${String(slot)}"]`) ?? null,
+      'auto',
+    );
+  }, [page]);
+
   const blocked =
     blockedText(today) ??
     (creatures.length < 3 ? blockedText({ blocked: 'need_creatures', canRun: false }) : null);
@@ -120,43 +166,69 @@ export function DungeonSetup({
   }
 
   const team = slots.flatMap((id) => creatures.filter((c) => c.id === id));
-  const paged = page === null ? undefined : team.find((c) => c.id === page.id);
-  if (pages !== undefined && page !== null && paged !== undefined) {
+  const paged = page === null ? undefined : team.find((c) => c.id === page);
+  const evolving = evolvingId === null ? undefined : team.find((c) => c.id === evolvingId);
+  const closePage = (): void => {
+    backTo.current = page;
+    setPage(null);
+  };
+  if (configure !== undefined && paged !== undefined) {
     return (
-      <CreaturePage
-        key={paged.id}
-        creature={paged}
-        state={pages.state}
-        gear={loadout?.gear ?? null}
-        busy={busy}
-        actions={pages.actions}
-        focus={page.focus}
-        backLabel="Dungeon"
-        flip={flipOver({
-          list: team,
-          at: team.indexOf(paged),
-          noun: 'creature',
-          nameOf: creatureName,
-          pick: (target) => {
-            setPage({ id: target.id, focus: null });
-          },
-        })}
-        teamAction={{
-          label: 'Remove from team',
-          onAct: () => {
-            setPage(null);
-            change(unplace(slots, paged.id));
-          },
-        }}
-        onBack={() => {
-          setPage(null);
-        }}
-        onAnswerCatch={() => {
-          setPage(null);
-        }}
-      />
+      <>
+        <CreaturePage
+          key={paged.id}
+          creature={paged}
+          state={configure.state}
+          gear={configure.gear}
+          busy={configure.busy}
+          actions={{
+            ...configure.actions,
+            // Every evolve opens the evolve screen, as on the Creatures tab.
+            onEvolve: (creature) => {
+              setEvolvingId(creature.id);
+            },
+          }}
+          focus={null}
+          backLabel="Dungeon"
+          flip={flipOver({
+            list: team,
+            at: team.indexOf(paged),
+            noun: 'creature',
+            nameOf: creatureName,
+            pick: (target) => {
+              setSelected(target.id);
+              setPage(target.id);
+            },
+          })}
+          teamAction={{
+            label: 'Remove from team',
+            onAct: () => {
+              setPage(null);
+              setSelected(null);
+              change(unplace(slots, paged.id));
+            },
+          }}
+          onBack={closePage}
+          onAnswerCatch={configure.onAnswerCatch}
+        />
+        {evolving !== undefined && (
+          <EvolveDrawer
+            open
+            creature={evolving}
+            busy={configure.busy}
+            onClose={() => {
+              setEvolvingId(null);
+            }}
+            onEvolve={(creature, species) => {
+              setEvolvingId(null);
+              configure.actions.onEvolve(creature, species);
+            }}
+          />
+        )}
+      </>
     );
   }
+  const shown = selected === null ? undefined : team.find((c) => c.id === selected);
 
   const complete = isComplete(slots);
   return (
@@ -180,44 +252,34 @@ export function DungeonSetup({
           slots={slots}
           disabled={busy}
           onChange={change}
-          {...(loadout?.mode === 'tap' ? { selectedId: selected, onSelect: setSelected } : {})}
-          {...(loadout?.mode === 'page' || loadout?.mode === 'cards'
-            ? {
-                onSelect: (id: string | null) => {
-                  if (id !== null) setPage({ id, focus: null });
-                },
-              }
-            : {})}
+          {...(configure === undefined
+            ? {}
+            : { selectedId: shown?.id ?? null, onSelect: setSelected })}
         >
-          {loadout?.mode === 'cards' && pages !== undefined && (
-            <ul class="cards creature-cards dungeon-cards">
-              {team.map((creature) => (
-                <CreatureCard
-                  key={creature.id}
-                  creature={creature}
-                  state={pages.state}
-                  gear={loadout.gear}
-                  busy={busy}
-                  found={false}
-                  actions={pages.actions}
-                  onAnswerCatch={() => undefined}
-                  onOpen={(focus) => {
-                    setPage({ id: creature.id, focus });
-                  }}
-                />
-              ))}
-            </ul>
-          )}
-          {loadout !== undefined && (loadout.mode === 'all' || loadout.mode === 'tap') && (
-            <DungeonLoadout
-              {...loadout}
-              team={team}
-              creatures={creatures}
-              selectedId={selected}
-              onRemove={(creature) => {
-                setSelected(null);
-                change(unplace(slots, creature.id));
-              }}
+          {configure !== undefined && shown !== undefined && (
+            <CreatureConfigurator
+              key={shown.id}
+              creature={shown}
+              state={configure.state}
+              gear={configure.gear}
+              busy={configure.busy}
+              parts={DUNGEON_PARTS}
+              actions={configure.actions}
+              buttons={[
+                {
+                  label: 'Creature page',
+                  onAct: () => {
+                    setPage(shown.id);
+                  },
+                },
+                {
+                  label: 'Remove from team',
+                  onAct: () => {
+                    setSelected(null);
+                    change(unplace(slots, shown.id));
+                  },
+                },
+              ]}
             />
           )}
           <div class="dungeon-treats">

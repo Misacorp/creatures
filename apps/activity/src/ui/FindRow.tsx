@@ -12,6 +12,7 @@ export function FindRow({
   nameClass = '',
   tags,
   children,
+  button,
 }: {
   /** The picture (an `ItemFrame`). Decoration: the name says it all. */
   image: ComponentChildren;
@@ -23,9 +24,14 @@ export function FindRow({
   tags?: ComponentChildren;
   /** An extra word or two after the tags (a slot's name, a note). */
   children?: ComponentChildren;
+  /**
+   * The whole row is one button (a gear list's slot that opens its picker): what it says and does, and
+   * whether its drawer is open. Absent: plain content. Tags inside then explain nothing on their own.
+   */
+  button?: { label: string; onClick: (event: MouseEvent) => void; expanded: boolean } | undefined;
 }) {
-  return (
-    <li class="find-row">
+  const inside = (
+    <>
       {image}
       <span class="find-row-text">
         <span class={`find-row-name pix ${nameClass}`.trim()}>{name}</span>
@@ -34,6 +40,21 @@ export function FindRow({
           {children}
         </span>
       </span>
+    </>
+  );
+  if (button === undefined) return <li class="find-row">{inside}</li>;
+  return (
+    <li class="find-row tappable">
+      <button
+        type="button"
+        class="find-row-button"
+        aria-label={button.label}
+        aria-haspopup="dialog"
+        aria-expanded={button.expanded}
+        onClick={button.onClick}
+      >
+        {inside}
+      </button>
     </li>
   );
 }
