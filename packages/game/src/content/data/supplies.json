@@ -137,7 +137,7 @@
     "worth": 15,
     "offerBp": 2500,
     "deepBp": 800,
-    "bonusBp": 600,
+    "bonusBp": 800,
     "blueprint": {
       "craftingLevel": 1,
       "hours": 2,
@@ -157,7 +157,7 @@
     "worth": 40,
     "offerBp": 5000,
     "deepBp": 2300,
-    "bonusBp": 1800,
+    "bonusBp": 2300,
     "blueprint": {
       "craftingLevel": 3,
       "hours": 4,
@@ -178,7 +178,7 @@
     "worth": 90,
     "offerBp": 10000,
     "deepBp": 4400,
-    "bonusBp": 2650,
+    "bonusBp": 3400,
     "blueprint": {
       "craftingLevel": 5,
       "hours": 6,

@@ -1040,7 +1040,7 @@ export const RULES = {
       tripsForStar1: 4,
       deepChanceBp: [0, 3_000, 4_000, 5_000],
       /** A deeper-area roll is one of the place's deep species at this chance (basis points). */
-      deepFindBp: 3_500,
+      deepFindBp: 2_000,
       rarityUpBp: [0, 200, 400, 800],
       partsBp: [0, 0, 1_000, 2_000],
     },

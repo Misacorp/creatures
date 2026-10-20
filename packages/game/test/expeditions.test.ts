@@ -886,7 +886,7 @@ describe('supplies and the rolls of a trip', () => {
   it('gives a lantern a deeper chance per creature and a fixed chance of a bonus creature from there, and a satchel a fixed part', () => {
     expect(kitDeepBonusBp([])).toBe(0);
     expect(SUPPLY_TIERS.map((t) => kitDeepBonusBp([supply(`lantern-${t}`)]))).toEqual([
-      600, 1_800, 2_650,
+      800, 2_300, 3_400,
     ]);
     expect(SUPPLY_TIERS.map((t) => kitDeepBp([supply(`lantern-${t}`)]))).toEqual([
       800, 2_300, 4_400,

@@ -134,7 +134,7 @@ Expeditions should **grow with the player**:
    - Each rank-up is a small celebration with a reveal.
 3. **Destination mastery.**
    - Each destination has three stars: a number of trips, catching every species there, and a shiny found there.
-   - Stars unlock a **deeper area** of that destination, with better odds and a rare species, plus small permanent bonuses there (for example, -10% supplies cost).
+   - Stars unlock a **deeper area** of that destination, with better odds and a rare species (one in five deeper-area rolls, since 2026-10-20), plus small permanent bonuses there (for example, -10% supplies cost).
    - This is the "I've gotten good at Ember Caves" feeling.
 4. **Explorer fit.**
    - The explorer's element keeps the existing affinity. Its **role** and **level** now matter too: Guards return with more items, Setters find more of their element, and higher levels shorten trips slightly.

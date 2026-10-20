@@ -2353,3 +2353,7 @@ Misa's rule is that every supply must be worth it on short trips too. The lanter
 ## 2026-10-20: The Workshop's supplies become one compact picker (version C)
 
 Misa chose version C and asked to keep it compact throughout. The long supply list and the separate Refine and Recycle section (`ConversionCrafting`, removed) are now one picker (`SupplyCrafting`): a grid of the 12 supplies as pictures (4 kinds across, 3 tiers down, rarity edges grey, blue and pink, stock in a corner, supplies no creature can craft yet dimmed but selectable) and one card under it for the chosen supply with its effect text from content, cost, time, Crafting level and actions: a primary Craft and small Refine and Recycle text buttons, each opening the same creature picker and server jobs as before (no API change). `ui/RecipeCard` gained a `compact` mode (no button or reason) to show a recipe inputs and outputs above the picker. The section keeps the id `ws-supplies` that the trip screen scrolls to. Reason: one phone screen instead of two long lists.
+
+## 2026-10-20: A deeper-area find is the deep species 20% of the time (was 35%)
+
+Misa (owner) wanted the deep species to stay a rare find: `RULES.expeditions.familiarity.deepFindBp` 3500 to 2000, so a deeper-area roll is one of the place's deep species 1 time in 5. The 35% in the Familiarity entries above is now 20%. The three lanterns' sure deep creature (`bonusBp`) was raised to keep the economy targets (`docs/balance/log.md`, B-025, "Follow-up: deep species 20%").
