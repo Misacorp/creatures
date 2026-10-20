@@ -3,7 +3,7 @@ import { BaitCost } from './BaitCost';
 import { Blueprints } from './Blueprints';
 import { CreaturePicker } from './CreaturePicker';
 import { SupplyCrafting } from './SupplyCrafting';
-import { TreatBox } from './TreatBox';
+import { SHORT_NOTE_MS, TreatBox } from './TreatBox';
 import { SAMPLE_GEAR, sampleRoster } from './creature-card-sample';
 import { pickerOptions } from './gear-view';
 import { byClass, byName, createPage, visibleText, type FakeElement, type Page } from './test-dom';
@@ -51,14 +51,45 @@ describe('the treat box', () => {
     expect(visibleText(root)).not.toContain('(11 Bait)');
   });
 
-  it('cannot be switched on without the Bait, and says so', () => {
-    const onChange = vi.fn();
+  it('takes a tap without the Bait, then says so in the row for a few seconds', () => {
+    vi.useFakeTimers();
+    try {
+      const onChange = vi.fn();
+      const root = draw(
+        <TreatBox cost={11} bait={4} checked={false} onChange={onChange} who="Cindle" times={3} />,
+      );
+      const [box] = byName(
+        root,
+        'button',
+        'Pack a treat for Cindle (3x experience, 11 Bait, not enough Bait)',
+      );
+      if (box === undefined) throw new Error('no switch');
+      expect(box.hasAttribute('disabled')).toBe(false);
+      expect(visibleText(root)).toContain('for Cindle');
+      page?.click(box);
+      expect(onChange).not.toHaveBeenCalled();
+      expect(byClass(root, 'treat-note')).toHaveLength(1);
+      expect(visibleText(root)).not.toContain('for Cindle');
+      page?.update(() => {
+        vi.advanceTimersByTime(SHORT_NOTE_MS);
+      });
+      expect(byClass(root, 'treat-note')).toHaveLength(0);
+      expect(visibleText(root)).toContain('for Cindle');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('in a list under a Treats heading says only the name and has no help of its own', () => {
     const root = draw(
-      <TreatBox cost={11} bait={4} checked={false} onChange={onChange} times={3} />,
+      <TreatBox cost={8} bait={40} checked onChange={vi.fn()} who="Zipmouse" help={false} listed />,
     );
-    const box = byName(root, 'button', 'Pack a treat (3x experience, 11 Bait)');
-    expect(box[0]?.getAttribute('disabled')).not.toBeNull();
-    expect(visibleText(root)).toContain('Not enough Bait');
+    expect(
+      byName(root, 'button', 'Pack a treat for Zipmouse (2x experience, 8 Bait)'),
+    ).toHaveLength(1);
+    expect(visibleText(root)).toContain('Zipmouse');
+    expect(visibleText(root)).not.toContain('Pack a treat');
+    expect(byClass(root, 'treat-help')).toHaveLength(0);
   });
 });
 

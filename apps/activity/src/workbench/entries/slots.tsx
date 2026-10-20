@@ -204,6 +204,7 @@ const dungeonSetup: Entry = {
     { name: 'Streak at day 7', props: { streak: 7 } },
     { name: 'The run is being sent', props: { busy: true } },
     { name: 'No Bait for treats', props: { bait: 0 } },
+    { name: '12 Bait: one treat fits, the others say Not enough Bait', props: { bait: 12 } },
     { name: 'A server with no map (the old three-room strip)', props: { map: false } },
     {
       name: 'Getting the team ready (tap a creature for its configurator)',

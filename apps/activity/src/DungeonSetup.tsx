@@ -16,7 +16,9 @@ import {
 } from './dungeon-team';
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
+import { baitCount } from './count-items';
 import { GlossaryTag } from './Glossary';
+import { CountBadge } from './ui/CountBadge';
 import { creatureName } from './game';
 import { toPickerCreature } from './roster-picker';
 import { scrollAndFocus } from './scroll-to';
@@ -180,6 +182,8 @@ export function DungeonSetup({
   const shown = selected === null ? undefined : team.find((c) => c.id === selected);
 
   const complete = isComplete(slots);
+  // What the packed treats leave of the Bait, shown once above the boxes (they share one purse).
+  const baitLeft = team.reduce((n, c) => n - (treats.has(c.id) ? c.treatCost : 0), bait);
   return (
     <>
       {isRetryOffer(today) && (
@@ -235,6 +239,16 @@ export function DungeonSetup({
             />
           )}
           <div class="dungeon-treats">
+            {team.length > 0 && (
+              <p class="treats-head">
+                <span class="treats-title">Treats</span>
+                <GlossaryTag entry="treat" look="help" />
+                <span class="treats-left">
+                  <CountBadge {...baitCount(baitLeft)} label="Bait left" />
+                  <span>left</span>
+                </span>
+              </p>
+            )}
             {slots.flatMap((id) => {
               const creature = creatures.find((c) => c.id === id);
               if (creature === undefined) return [];
@@ -250,6 +264,8 @@ export function DungeonSetup({
                   checked={treats.has(creature.id)}
                   disabled={busy}
                   who={creatureName(creature)}
+                  help={false}
+                  listed
                   onChange={(on) => {
                     setTreats((now) => {
                       const next = new Set(now);

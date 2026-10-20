@@ -618,6 +618,8 @@ function TreatDemo({ p }: { p: Props }) {
         checked={checked}
         disabled={bool(p, 'disabled')}
         times={num(p, 'times')}
+        help={!bool(p, 'listed')}
+        listed={bool(p, 'listed')}
         onChange={setChecked}
         {...(who === '' ? {} : { who })}
       />
@@ -630,22 +632,24 @@ const treatBox: Entry = {
   file: 'apps/activity/src/TreatBox.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The one row "Pack a treat for Cindle", a switch with the treat icon, the multiplier ("2x") and the Bait cost as a badge, where a creature is sent on a trip, put in the dungeon team or given a Workshop job. A treat doubles the experience of that one activity (more on some Boon days). It cannot be switched on without the Bait, and says so.',
+    'The one row "Pack a treat for Cindle", a switch with the treat icon, the multiplier ("2x") and the Bait cost as a badge, where a creature is sent on a trip, put in the dungeon team or given a Workshop job. A treat doubles the experience of that one activity (more on some Boon days). Short of Bait the cost is red, and a tap shakes the row and says "Not enough Bait" in place of the name for 3 seconds. Listed: one of the dungeon team\'s rows under its "Treats" heading (just the name, no "?"; see DungeonSetup).',
   controls: {
     cost: { kind: 'number', min: 1, max: 30 },
     bait: { kind: 'number', min: 0, max: 100 },
     who: { kind: 'text', maxLength: 20 },
     times: { kind: 'number', min: 2, max: 4 },
     disabled: { kind: 'toggle' },
+    listed: { kind: 'toggle' },
   },
-  defaults: { cost: 5, bait: 40, who: 'Cindle', times: 2, disabled: false },
+  defaults: { cost: 5, bait: 40, who: 'Cindle', times: 2, disabled: false, listed: false },
   presets: [
     { name: 'Enough Bait', props: {} },
-    { name: 'Not enough Bait', props: { bait: 2 } },
+    { name: 'Not enough Bait (tap the switch)', props: { bait: 2 } },
     { name: 'No name (a single creature screen)', props: { who: '' } },
     { name: 'Disabled while an action runs', props: { disabled: true } },
     { name: 'A Boon day: the treat gives 3x', props: { times: 3 } },
     { name: 'A 20-letter nickname', props: { who: 'Sir Wobblesnout III', cost: 18 } },
+    { name: 'Listed: a dungeon team row (name only)', props: { listed: true } },
   ],
   render: (p) => <TreatDemo p={p} />,
 };
