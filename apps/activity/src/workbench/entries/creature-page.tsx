@@ -6,7 +6,8 @@ import { CreaturePage, type CardActions, type PageOpen } from '../../CreaturePag
 import { ItemPickerDrawer } from '../../creature-page/ItemPicker';
 import { sampleCreature } from '../../creature-card-sample';
 import { PageHeader } from '../../creature-page/PageHeader';
-import { GearSlots, TalentSlots } from '../../creature-page/PageSlots';
+import { TalentSlots } from '../../creature-page/PageSlots';
+import { GearList } from '../../GearList';
 import { sampleItem, wornFromBag } from '../../creature-page/bag-sample';
 import {
   PAGE_SAMPLE_ID,
@@ -20,7 +21,7 @@ import type { GearActions } from '../../gear-actions';
 import { ItemFrame, ItemSprite } from '../../GearArt';
 import { LootList } from '../../LootList';
 import type { DismantlePreview, GearItem, GearState, GrantLoot } from '../../gear-types';
-import { dismantleDurationFor, gearName } from '../../gear-view';
+import { dismantleDurationFor, gearName, wornItemOf } from '../../gear-view';
 import { InventoryGrid } from '../../InventoryGrid';
 import { ItemDetail } from '../../ItemDetail';
 import { Drawer } from '../../ui/Drawer';
@@ -67,9 +68,9 @@ interface SceneDef {
 const SCENE_LIST: readonly SceneDef[] = [
   { id: 'H1', label: 'H1 · Header', kind: 'level 15', show: 'header' },
   { id: 'H2', label: 'H2 · Header, long name', kind: 'long name', show: 'header' },
-  { id: 'G1', label: 'G1 · Gear slots (level 2)', kind: 'level 2', show: 'gear' },
-  { id: 'G2', label: 'G2 · Gear slots (level 15, two filled)', kind: 'level 15', show: 'gear' },
-  { id: 'G3', label: 'G3 · Gear slots (level 8, two empty)', kind: 'level 8', show: 'gear' },
+  { id: 'G1', label: 'G1 · Gear list (level 2)', kind: 'level 2', show: 'gear' },
+  { id: 'G2', label: 'G2 · Gear list (level 15, two filled)', kind: 'level 15', show: 'gear' },
+  { id: 'G3', label: 'G3 · Gear list (level 8, two empty)', kind: 'level 8', show: 'gear' },
   {
     id: 'P-B',
     label: 'P-B · Item picker: grid and detail',
@@ -94,13 +95,13 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   {
     id: 'S1',
-    label: 'S1 · Gear slots: two pieces of a gear set (the set line)',
+    label: 'S1 · Gear list: two pieces of a gear set (the set line)',
     kind: 'set: two pieces',
     show: 'gear',
   },
   {
     id: 'S2',
-    label: 'S2 · Gear slots: all three pieces of a gear set',
+    label: 'S2 · Gear list: all three pieces of a gear set',
     kind: 'set: three pieces',
     show: 'gear',
   },
@@ -490,7 +491,12 @@ function Excerpt({ def, bait }: { def: SceneDef; bait: number }) {
         {def.show === 'gear' && (
           <div class="cp-block">
             <h3 class="cp-title">Gear</h3>
-            <GearSlots creature={creature} gear={gear} openSlot={null} onOpen={() => undefined} />
+            <GearList
+              level={creature.level}
+              worn={creature.gear.map((g) => wornItemOf(g, gear.items))}
+              slotOpens={gear.slotOpens}
+              onPick={() => undefined}
+            />
           </div>
         )}
         {def.show === 'talents' && (
@@ -551,8 +557,13 @@ function Rarities({ def }: { def: SceneDef }) {
     <div class="v3-bleed">
       <section class="creature-page" aria-label="Rarity colours">
         <div class="cp-block">
-          <h3 class="cp-title">Gear slots</h3>
-          <GearSlots creature={creature} gear={gear} openSlot={null} onOpen={() => undefined} />
+          <h3 class="cp-title">Gear list</h3>
+          <GearList
+            level={creature.level}
+            worn={creature.gear.map((g) => wornItemOf(g, gear.items))}
+            slotOpens={gear.slotOpens}
+            onPick={() => undefined}
+          />
         </div>
         <div class="cp-block">
           <h3 class="cp-title">Item frames</h3>

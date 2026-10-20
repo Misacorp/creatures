@@ -1,6 +1,7 @@
 import { gearContent } from '@creatures/game';
 import { afterEach, describe, expect, it } from 'vitest';
-import { GearSlots } from './creature-page/PageSlots';
+import { GearList } from './GearList';
+import { wornItemOf } from './gear-view';
 import { allBagItems } from './creature-page/bag-sample';
 import { PAGE_SAMPLE_ID, pageScene } from './creature-page/sample';
 import type { GearItem } from './gear-types';
@@ -169,17 +170,17 @@ describe('the creature page gear section', () => {
     const scene = pageScene(kind);
     page = createPage();
     page.draw(
-      <GearSlots
-        creature={scene.creature}
-        gear={scene.gear}
-        openSlot={null}
-        onOpen={() => undefined}
+      <GearList
+        level={scene.creature.level}
+        worn={scene.creature.gear.map((g) => wornItemOf(g, scene.gear.items))}
+        slotOpens={scene.gear.slotOpens}
+        onPick={() => undefined}
       />,
     );
     return page.root;
   };
 
-  it('says one compact line of the active set bonuses under the slots', () => {
+  it('says one compact line of the active set bonuses under the list', () => {
     const two = byClass(draw('set: two pieces'), 'cp-sets');
     expect(two).toHaveLength(1);
     expect(visibleText(first(two))).toBe('Forge-Warm Kit 2 / 3: Wildfire bonus +8%');

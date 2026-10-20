@@ -12,10 +12,11 @@ import { creatureNeeds } from './creature-needs';
 import { creatureDodgeText, type DodgeRules } from './dodge-view';
 import { ItemPickerDrawer } from './creature-page/ItemPicker';
 import { PageHeader } from './creature-page/PageHeader';
-import { GearSlots, TalentSlots } from './creature-page/PageSlots';
+import { TalentSlots } from './creature-page/PageSlots';
+import { GearList } from './GearList';
 import { TalentBookDrawer } from './creature-page/TalentBookDrawer';
 import type { GearItem, GearSlot, GearState } from './gear-types';
-import { gearShare } from './gear-view';
+import { gearShare, wornItemOf } from './gear-view';
 import { RibbonLine } from './CreatureProgress';
 import { scrollAndFocus, scrollToTop } from './scroll-to';
 import { creatureAbilityText, fusionStars, personalityLine, speciesAbout } from './game';
@@ -143,7 +144,7 @@ export function startingDrawer(
  * bottom: who it is (one row of name, element and level; the name in its rarity colour;
  * the experience bar; tags) with the buttons for what is ready (the ribbon once the creature waits for
  * one, evolution, a waiting catch), stats with the gear's share, the finale ability (once unlocked), gear
- * and talents as slots (a tap opens a bottom drawer: the item picker, or the Talent Book), About and
+ * as a list (`GearList`) and the talents as slots (a tap opens a bottom drawer: the item picker, or the Talent Book), About and
  * Rename. Nothing on it looks forward: a locked slot says its own level, nothing else does. It opens at
  * the top, or on the picker or the talents when the card's icon or chips were tapped.
  */
@@ -320,11 +321,12 @@ export function CreaturePage({
               Gear
             </GlossaryTag>
           </h3>
-          <GearSlots
-            creature={creature}
-            gear={gear}
+          <GearList
+            level={creature.level}
+            worn={creature.gear.map((g) => wornItemOf(g, gear?.items))}
+            slotOpens={gear?.slotOpens}
             openSlot={gearOpen}
-            onOpen={(slot, button) => {
+            onPick={(slot, button) => {
               opener.current = button;
               setGearOpen(slot);
             }}

@@ -5,10 +5,9 @@ import { statRows, type CardActions } from './CreaturePage';
 import { cardDomId, xpWords } from './creature-card-view';
 import { experienceLabel } from './CreatureProgress';
 import { ItemPickerDrawer } from './creature-page/ItemPicker';
-import { GearSlots, TalentSlots } from './creature-page/PageSlots';
+import { TalentSlots } from './creature-page/PageSlots';
 import { GearList } from './GearList';
 import { wornItemOf } from './gear-view';
-import { WornItemLines } from './WornItemLines';
 import { TalentBookDrawer } from './creature-page/TalentBookDrawer';
 import { creatureName } from './game';
 import type { GearItem, GearSlot, GearState } from './gear-types';
@@ -32,18 +31,13 @@ export interface ConfiguratorParts {
   stats?: boolean;
   /** The finale ability, once unlocked (the page's). */
   ability?: boolean;
-  /** The three gear slots; a tap opens the item picker. */
+  /** The gear list (`GearList`); a tap on a slot opens the item picker. */
   gear?: boolean;
+  /** The gear list is locked: it shows what is worn, a tap does nothing. */
+  gearLocked?: boolean;
   /** The talent slots; a tap opens the Talent Book. */
   talents?: boolean;
 }
-
-/**
- * How the gear part looks (a mock for Misa to choose from): `slots` (the page's three slots), `worn` (the
- * living room's read-only list as it is, `WornItemLines`), `list` (a row per slot, `GearList`) or `list-lines`
- * (the same rows with each item's lines). `locked`: the list rows do nothing when tapped.
- */
-export type GearLook = 'slots' | 'worn' | 'list' | 'list-lines';
 
 /** A button under the parts ("Creature page", "Remove from team"). */
 export interface ConfiguratorButton {
@@ -69,8 +63,6 @@ export function CreatureConfigurator({
   parts,
   actions,
   buttons = [],
-  gearLook = 'slots',
-  gearLocked = false,
 }: {
   creature: Creature;
   state: Pick<
@@ -83,8 +75,6 @@ export function CreatureConfigurator({
   parts: ConfiguratorParts;
   actions: Pick<CardActions, 'onEquip' | 'onSlotTalent'>;
   buttons?: readonly ConfiguratorButton[];
-  gearLook?: GearLook;
-  gearLocked?: boolean;
 }) {
   const [open, setOpen] = useState<Open>(null);
   // The slot that was tapped gets the focus back when its drawer closes.
@@ -164,38 +154,20 @@ export function CreatureConfigurator({
               Gear
             </GlossaryTag>
           </h3>
-          {gearLook === 'slots' && (
-            <GearSlots
-              creature={creature}
-              gear={gear}
-              openSlot={open?.kind === 'gear' ? open.slot : null}
-              onOpen={(slot, button) => {
-                opener.current = button;
-                setOpen({ kind: 'gear', slot });
-              }}
-            />
-          )}
-          {gearLook === 'worn' && (
-            <div class="gear-list">
-              <WornItemLines worn={creature.gear.map((g) => wornItemOf(g, gear?.items))} />
-            </div>
-          )}
-          {(gearLook === 'list' || gearLook === 'list-lines') && (
-            <GearList
-              creature={creature}
-              gear={gear}
-              lines={gearLook === 'list-lines'}
-              openSlot={open?.kind === 'gear' ? open.slot : null}
-              onPick={
-                gearLocked
-                  ? undefined
-                  : (slot, button) => {
-                      opener.current = button;
-                      setOpen({ kind: 'gear', slot });
-                    }
-              }
-            />
-          )}
+          <GearList
+            level={creature.level}
+            worn={creature.gear.map((g) => wornItemOf(g, gear?.items))}
+            slotOpens={gear?.slotOpens}
+            openSlot={open?.kind === 'gear' ? open.slot : null}
+            onPick={
+              parts.gearLocked === true
+                ? undefined
+                : (slot, button) => {
+                    opener.current = button;
+                    setOpen({ kind: 'gear', slot });
+                  }
+            }
+          />
         </div>
       )}
 

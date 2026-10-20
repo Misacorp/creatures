@@ -12,7 +12,8 @@ import { LivingRoom, sceneOf } from '../../LivingRoom';
 import { LoungeSwap } from '../../LoungeSwap';
 import { loungeSample } from '../../creature-card-sample';
 import { SmallCreature } from '../../SmallCreature';
-import { WornItemLines } from '../../WornItemLines';
+import { GearList } from '../../GearList';
+import { sampleItem } from '../../creature-page/bag-sample';
 import type { ReadinessBand, RaidView } from '../../raid-api';
 import { READINESS_BANDS } from '../../raid-api';
 import { turnChips } from '../../replay';
@@ -298,41 +299,50 @@ const turnStrip: Entry = {
   render: (p) => turnStripDemo(p),
 };
 
-const wornItemLines: Entry = {
-  name: 'WornItemLines',
-  file: 'apps/activity/src/WornItemLines.tsx',
+const gearList: Entry = {
+  name: 'GearList',
+  file: 'apps/activity/src/GearList.tsx',
   group: 'Creatures & game pieces',
   description:
-    "What a creature wears in a living room creature's popover: one compact row per item with its picture (rarity border, item level in the corner), its name, a rarity badge and the slot. No stats. The Creatures screen shows the same items as three slots instead.",
+    "A creature's gear as a list, the one way gear is shown in full (the creature page, the configurator, a living room creature's popover): a row per slot on an ink panel, each worn item with its picture, name, rarity and slot badges and its lines; Empty for an open slot, the level for one not open yet. Tappable: each open slot is one button that opens its picker. Locked: read only. The popover lists only what is worn.",
   controls: {
     item: { kind: 'select', options: GEAR_BASE_IDS },
     rarity: { kind: 'select', options: RARITIES },
     itemLevel: { kind: 'number', min: 1, max: 20 },
+    level: { kind: 'number', min: 1, max: 30 },
+    locked: { kind: 'toggle' },
+    wornOnly: { kind: 'toggle' },
   },
   defaults: {
     item: GEAR_BASE_IDS[0] ?? 'trail-cap',
     rarity: 'rare',
     itemLevel: 8,
+    level: 10,
+    locked: false,
+    wornOnly: false,
   },
   presets: [
-    { name: 'Plain', props: {} },
-    { name: 'Epic, item level 20', props: { itemLevel: 20, rarity: 'epic' } },
+    { name: 'One item, a slot empty and one not open yet', props: {} },
+    { name: 'Epic, item level 20', props: { itemLevel: 20, rarity: 'epic', level: 20 } },
     { name: 'Festival', props: { item: 'festival-hearth-scarf' } },
+    { name: 'Locked', props: { locked: true } },
+    {
+      name: "A living room creature's popover (only what is worn)",
+      props: { locked: true, wornOnly: true },
+    },
   ],
   render: (p) => {
     const baseId = str(p, 'item');
     const slot = gearBase(baseId)?.slot ?? 'hat';
     const rarity = RARITIES.find((r) => r === str(p, 'rarity')) ?? 'common';
+    const itemLevel = num(p, 'itemLevel');
+    const lines = sampleItem('demo', baseId, rarity, itemLevel, []).lines.map((l) => l.text);
     return (
-      <WornItemLines
-        worn={[
-          {
-            baseId,
-            slot,
-            rarity,
-            itemLevel: num(p, 'itemLevel'),
-          },
-        ]}
+      <GearList
+        level={num(p, 'level')}
+        worn={[{ baseId, slot, rarity, itemLevel, lines }]}
+        emptySlots={!bool(p, 'wornOnly')}
+        onPick={bool(p, 'locked') ? undefined : () => undefined}
       />
     );
   },
@@ -645,5 +655,5 @@ export const creatureEntries: readonly Entry[] = [
   creatureProgress,
   treatBox,
   turnStrip,
-  wornItemLines,
+  gearList,
 ];

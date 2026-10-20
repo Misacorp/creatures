@@ -1,7 +1,6 @@
 import { GEAR_SLOTS, RULES } from '@creatures/game';
-import type { Creature } from './api';
 import { FestivalTag, ItemThumb, RarityTag, SlotIcon, SlotTag } from './GearArt';
-import type { GearSlot, GearState } from './gear-types';
+import type { GearSlot } from './gear-types';
 import {
   activeSetLine,
   gearName,
@@ -9,54 +8,62 @@ import {
   itemLabel,
   rarityName,
   slotName,
-  wornItemOf,
+  type WornItem,
 } from './gear-view';
 import { FindRow } from './ui/FindRow';
 import { Tag } from './ui/Tag';
 
 /**
- * A creature's gear as a list, one row per slot (Hat, Scarf, Charm), in the find rows' look (`FindRow`:
- * the item's image, its name in the rarity colour, the rarity and slot badges). A worn item may show its
- * lines under the badges (`lines`). An open, empty slot says so; a slot not open yet shows the level it
- * opens at. With `onPick` every open slot is a button that asks for its picker; without it the list is
- * locked (read only). The set bonus line closes it, as under the slots. On an ink panel.
+ * A creature's gear as a list: the one way a creature's gear is shown in full (its page, the configurator,
+ * a living room creature's popover). One row per slot (Hat, Scarf, Charm) in the find rows' look (`FindRow`):
+ * the item's image, its name in the rarity colour, the rarity and slot badges, and the item's lines under
+ * them once the gear view has given them. An open, empty slot says "Empty"; a slot not open yet shows the
+ * level it opens at. With `onPick` every open slot is one button that asks for its picker; without it the
+ * list is locked (read only, and the badges explain themselves). The set bonus line closes it. An ink
+ * panel in the pixel font (`.pix-panel`), wherever it is used.
  */
 export function GearList({
-  creature,
-  gear,
-  lines = false,
+  level,
+  worn,
+  slotOpens = RULES.gear.slotUnlockLevel,
+  emptySlots = true,
   openSlot = null,
   onPick,
 }: {
-  creature: Creature;
-  /** The gear view: the slot levels and (for `lines`) the items; null while it loads. */
-  gear: Pick<GearState, 'slotOpens' | 'items'> | null;
-  /** Each worn item's lines under its badges ("Attack +6% · Crit chance +3 pt"). */
-  lines?: boolean;
+  /** The creature's level: a slot opens at its level in `slotOpens`. */
+  level: number;
+  /** What it wears, with each item's lines when they are known (`wornItemOf`). */
+  worn: readonly WornItem[];
+  /** The level each slot opens at (the gear view's; the rules' own while it loads). */
+  slotOpens?: Readonly<Record<GearSlot, number>> | undefined;
+  /** Rows for the slots with nothing in them (empty or not open yet); off: only what is worn. */
+  emptySlots?: boolean;
   /** The slot whose picker is open now. */
   openSlot?: GearSlot | null;
   /** Tapping an open slot; absent: the list is locked. */
   onPick?: ((slot: GearSlot, button: HTMLButtonElement) => void) | undefined;
 }) {
-  const opens = gear?.slotOpens ?? RULES.gear.slotUnlockLevel;
-  const setLine = activeSetLine(creature.gear);
+  const setLine = activeSetLine(worn);
+  // A tappable row is one button: its badges cannot be buttons of their own.
+  const plain = onPick !== undefined;
+  const button = (slot: GearSlot, label: string) =>
+    onPick === undefined
+      ? undefined
+      : {
+          label,
+          expanded: openSlot === slot,
+          onClick: (event: MouseEvent) => {
+            onPick(slot, event.currentTarget as HTMLButtonElement);
+          },
+        };
   return (
-    <div class="gear-list">
+    <div class="gear-list pix-panel">
       <ul class="stack-list" aria-label="Gear">
         {GEAR_SLOTS.map((slot) => {
           const name = slotName(slot);
-          const worn = creature.gear.find((g) => g.slot === slot);
-          const button = (label: string) =>
-            onPick === undefined
-              ? undefined
-              : {
-                  label,
-                  expanded: openSlot === slot,
-                  onClick: (event: MouseEvent) => {
-                    onPick(slot, event.currentTarget as HTMLButtonElement);
-                  },
-                };
-          if (creature.level < opens[slot]) {
+          const item = worn.find((g) => g.slot === slot);
+          if (item === undefined && !emptySlots) return null;
+          if (item === undefined && level < slotOpens[slot]) {
             return (
               <FindRow
                 key={slot}
@@ -67,11 +74,11 @@ export function GearList({
                 }
                 name={name}
                 nameClass="muted"
-                tags={<Tag>Lv {opens[slot]}</Tag>}
+                tags={<Tag>Lv {slotOpens[slot]}</Tag>}
               />
             );
           }
-          if (worn === undefined) {
+          if (item === undefined) {
             return (
               <FindRow
                 key={slot}
@@ -83,35 +90,35 @@ export function GearList({
                 name={name}
                 nameClass="muted"
                 tags={<Tag>Empty</Tag>}
-                button={button(`${name}: empty. Choose one`)}
+                button={button(slot, `${name}: empty. Choose one`)}
               />
             );
           }
-          const item = wornItemOf(worn, gear?.items);
           return (
             <FindRow
               key={slot}
-              image={<ItemThumb item={worn} scale={3} />}
-              name={gearName(worn.baseId)}
-              nameClass={`rarity-name rarity-${worn.rarity}`}
+              image={<ItemThumb item={item} scale={3} />}
+              name={
+                <>
+                  {gearName(item.baseId)}
+                  <span class="visually-hidden">, item level {item.itemLevel}</span>
+                </>
+              }
+              nameClass={`rarity-name rarity-${item.rarity}`}
               tags={
                 <>
-                  {/* A tappable row is one button: its badges cannot be buttons of their own. */}
-                  <RarityTag rarity={worn.rarity} plain={onPick !== undefined} />
-                  {isFestivalBase(worn.baseId) &&
-                    (onPick === undefined ? (
-                      <FestivalTag />
-                    ) : (
-                      <Tag class="festival-tag">Festival</Tag>
-                    ))}
-                  <SlotTag slot={slot} plain />
+                  <RarityTag rarity={item.rarity} plain={plain} />
+                  {isFestivalBase(item.baseId) &&
+                    (plain ? <Tag class="festival-tag">Festival</Tag> : <FestivalTag />)}
+                  <SlotTag slot={slot} plain={plain} />
                 </>
               }
               button={button(
-                `${name}: ${itemLabel(worn.baseId, worn.itemLevel)}, ${rarityName(worn.rarity)}. Change`,
+                slot,
+                `${name}: ${itemLabel(item.baseId, item.itemLevel)}, ${rarityName(item.rarity)}. Change`,
               )}
             >
-              {lines && item.lines !== undefined && item.lines.length > 0 && (
+              {item.lines !== undefined && item.lines.length > 0 && (
                 <span class="find-row-note gear-list-lines">{item.lines.join(' · ')}</span>
               )}
             </FindRow>
@@ -119,7 +126,7 @@ export function GearList({
         })}
       </ul>
       {setLine !== '' && (
-        <p class="cp-sets pix" aria-label="Set bonuses">
+        <p class="cp-sets" aria-label="Set bonuses">
           {setLine}
         </p>
       )}

@@ -2,7 +2,7 @@ import { content } from '@creatures/game';
 import { useMemo, useState } from 'preact/hooks';
 import { DungeonSetup } from '../../DungeonSetup';
 import { DungeonTeam } from '../../DungeonTeam';
-import { CreatureConfigurator, type GearLook } from '../../CreatureConfigurator';
+import { CreatureConfigurator } from '../../CreatureConfigurator';
 import type { CardActions } from '../../CreaturePage';
 import { teamSample } from '../../creature-page/team-sample';
 import stateFixture from '../../fixtures/collection-state.json';
@@ -234,6 +234,7 @@ const NO_ACTIONS: CardActions = {
 };
 
 const PART_NAMES = [
+  'gearLocked',
   'experience',
   'explorer',
   'crafting',
@@ -256,8 +257,6 @@ function ConfiguratorDemo({ p }: { p: Props }) {
       busy={false}
       parts={parts}
       actions={NO_ACTIONS}
-      gearLook={GEAR_LOOKS.find((l) => l === str(p, 'gearLook')) ?? 'slots'}
-      gearLocked={bool(p, 'gearLocked')}
       buttons={
         bool(p, 'buttons')
           ? [
@@ -270,11 +269,7 @@ function ConfiguratorDemo({ p }: { p: Props }) {
   );
 }
 
-const GEAR_LOOKS: readonly GearLook[] = ['slots', 'worn', 'list', 'list-lines'];
-
 const DUNGEON_DEFAULTS = {
-  gearLook: 'slots',
-  gearLocked: false,
   creature: 1,
   experience: true,
   explorer: false,
@@ -282,6 +277,7 @@ const DUNGEON_DEFAULTS = {
   stats: true,
   ability: false,
   gear: true,
+  gearLocked: false,
   talents: true,
   buttons: true,
 };
@@ -296,8 +292,6 @@ const creatureConfigurator: Entry = {
     creature: { kind: 'number', min: 0, max: 2 },
     ...Object.fromEntries(PART_NAMES.map((part) => [part, { kind: 'toggle' as const }])),
     buttons: { kind: 'toggle' },
-    gearLook: { kind: 'select', options: GEAR_LOOKS },
-    gearLocked: { kind: 'toggle' },
   },
   defaults: DUNGEON_DEFAULTS,
   presets: [
@@ -310,19 +304,9 @@ const creatureConfigurator: Entry = {
       name: 'For a crafting job (Crafting level and talents only)',
       props: { experience: false, crafting: true, stats: false, gear: false, buttons: false },
     },
-    {
-      name: "Gear: the living room's worn list as it is",
-      props: { creature: 2, gearLook: 'worn' },
-    },
-    { name: 'Gear: a list, a row per slot', props: { creature: 2, gearLook: 'list' } },
-    {
-      name: "Gear: a list with each item's lines",
-      props: { creature: 2, gearLook: 'list-lines' },
-    },
-    {
-      name: 'Gear: the list, locked',
-      props: { creature: 1, gearLook: 'list-lines', gearLocked: true },
-    },
+    { name: 'An empty Charm slot and a set bonus (Mossback)', props: { creature: 0 } },
+    { name: 'Every slot filled (Cindle)', props: { creature: 2 } },
+    { name: 'Gear locked: what is worn, no taps', props: { gearLocked: true } },
   ],
   render: (p) => <ConfiguratorDemo p={p} />,
 };

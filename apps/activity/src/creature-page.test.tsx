@@ -369,53 +369,54 @@ describe('the creature page: evolving a busy creature', () => {
   });
 });
 
-describe('the creature page: gear slots', () => {
-  it('shows locked slots as a padlock over the name with the level under it', () => {
+describe('the creature page: the gear list', () => {
+  /** The list's rows, Hat, Scarf and Charm. */
+  const rows = (root: FakeElement): FakeElement[] =>
+    byClass(first(byClass(root, 'gear-list')), 'find-row');
+
+  it('shows a slot not open yet as the slot and the level it opens at, not a button', () => {
     const { root } = draw('level 2');
-    const locked = byClass(first(byClass(root, 'slot-row')), 'locked');
-    expect(locked).toHaveLength(2);
-    for (const slot of locked) {
-      expect(byClass(slot, 'lock-icon')).toHaveLength(1);
-      expect(slot.localName).toBe('div');
+    const [, scarf, charm] = rows(root);
+    expect(visibleText(scarf as FakeElement)).toBe('ScarfLv 7');
+    expect(visibleText(charm as FakeElement)).toBe('CharmLv 13');
+    for (const row of [scarf, charm]) {
+      expect(find(row as FakeElement, (e) => e.localName === 'button')).toHaveLength(0);
+      expect(byClass(row as FakeElement, 'locked')).toHaveLength(1);
     }
-    expect(locked.map((s) => visibleText(s))).toEqual(['ScarfLv 7', 'CharmLv 13']);
-    // The stacking order is the padlock, the name, then the level.
-    const parts = locked[1]?.childNodes.map((n) => (n as FakeElement).getAttribute('class') ?? '');
-    expect(parts?.map((c) => c.split(' ')[0])).toEqual(['lock-icon', 'slot-word', 'slot-lock']);
   });
 
-  it('shows an empty open slot with only its name', () => {
+  it('shows an empty open slot as its name and Empty, and a tap asks for its picker', () => {
     const { root } = draw('level 8');
-    const [hat, scarf, charm] = byClass(first(byClass(root, 'slot-row')), 'slot');
-    expect(visibleText(scarf as FakeElement)).toBe('Scarf');
-    expect(visibleText(hat as FakeElement)).toBe('Hat');
-    expect(charm?.getAttribute('class')).toContain('locked');
-    expect(byClass(first(byClass(root, 'slot-row')), 'empty')).toHaveLength(2);
+    const [hat, scarf, charm] = rows(root);
+    expect(visibleText(hat as FakeElement)).toBe('HatEmpty');
+    expect(visibleText(scarf as FakeElement)).toBe('ScarfEmpty');
+    expect(byClass(charm as FakeElement, 'locked')).toHaveLength(1);
+    expect(nameOf(first(find(scarf as FakeElement, (e) => e.localName === 'button')))).toBe(
+      'Scarf: empty. Choose one',
+    );
   });
 
-  it('shows a worn item as its bare sprite in the rarity colour, with its slot icon and "Lv" and the level in the corners', () => {
+  it('shows a worn item as its picture, name, rarity and slot badges and its lines', () => {
     const { root } = draw('level 15');
-    const [hat, scarf] = byClass(first(byClass(root, 'slot-row')), 'slot');
-    // One border only: the slot's own, no inner frame round the sprite.
-    expect(byClass(root, 'item-frame')).toHaveLength(0);
-    expect(hat?.getAttribute('class')).toContain('rarity-epic');
-    expect(scarf?.getAttribute('class')).toContain('rarity-rare');
+    const [hat, scarf] = rows(root);
     expect(visibleText(first(byClass(hat as FakeElement, 'item-lv')))).toBe('Lv 15');
     expect(visibleText(first(byClass(scarf as FakeElement, 'item-lv')))).toBe('Lv 12');
-    // The item's sprite, and the slot's icon in the top-left corner.
-    expect(find(hat as FakeElement, (e) => e.localName === 'canvas')).toHaveLength(2);
-    expect(byClass(hat as FakeElement, 'item-slot')).toHaveLength(1);
-    expect(nameOf(hat as FakeElement)).toBe(
+    expect(visibleText(first(byClass(hat as FakeElement, 'find-row-name')))).toBe(
+      "Emberkeeper's Crown, item level 15",
+    );
+    expect(visibleText(first(byClass(hat as FakeElement, 'slot-tag')))).toBe('Hat');
+    expect(visibleText(first(byClass(hat as FakeElement, 'gear-list-lines')))).not.toBe('');
+    expect(nameOf(first(find(hat as FakeElement, (e) => e.localName === 'button')))).toBe(
       "Hat: Emberkeeper's Crown, item level 15, Epic. Change",
     );
   });
 
   it('uses the one rarity colour tokens, grey, blue and pink, everywhere', () => {
     const { root } = draw('rarities');
-    const [hat, scarf, charm] = byClass(first(byClass(root, 'slot-row')), 'slot');
-    expect(hat?.getAttribute('class')).toContain('rarity-common');
-    expect(scarf?.getAttribute('class')).toContain('rarity-rare');
-    expect(charm?.getAttribute('class')).toContain('rarity-epic');
+    const frames = rows(root).map((r) => first(byClass(r, 'item-frame')).getAttribute('class'));
+    expect(frames[0]).toContain('rarity-common');
+    expect(frames[1]).toContain('rarity-rare');
+    expect(frames[2]).toContain('rarity-epic');
   });
 });
 

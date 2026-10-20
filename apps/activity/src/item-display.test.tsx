@@ -6,7 +6,7 @@ import { LootList } from './LootList';
 import { InventoryGrid } from './InventoryGrid';
 import { ItemCard } from './ItemCard';
 import { byClass, createPage, find, visibleText, type FakeElement, type Page } from './test-dom';
-import { WornItemLines } from './WornItemLines';
+import { GearList } from './GearList';
 
 let page: Page | null = null;
 
@@ -141,10 +141,12 @@ describe('compact item rows', () => {
     ).toHaveLength(1);
   });
 
-  it('lists what a creature wears the same way, with the slot and no lines of text', () => {
+  it('lists what a creature wears the same way, with the slot and its lines', () => {
     page = createPage();
     page.draw(
-      <WornItemLines
+      <GearList
+        level={20}
+        emptySlots={false}
         worn={[
           {
             baseId: 'trail-charm',
@@ -160,7 +162,12 @@ describe('compact item rows', () => {
     const rows = byClass(page.root, 'find-row');
     // In slot order: the hat first.
     expect(visibleText(first(byClass(rows[0] as FakeElement, 'item-lv')))).toBe('Lv 15');
-    expect(visibleText(first(byClass(rows[0] as FakeElement, 'find-row-slot')))).toBe('Hat');
-    expect(visibleText(page.root)).not.toContain('Attack +4%');
+    expect(visibleText(first(byClass(rows[0] as FakeElement, 'slot-tag')))).toBe('Hat');
+    // Only what is worn (no Scarf row), each item with its lines once they are known.
+    expect(rows).toHaveLength(2);
+    expect(visibleText(first(byClass(rows[1] as FakeElement, 'gear-list-lines')))).toBe(
+      'Attack +4%',
+    );
+    expect(byClass(rows[0] as FakeElement, 'gear-list-lines')).toHaveLength(0);
   });
 });

@@ -116,15 +116,16 @@ const PRESETS = [
     name: 'Creature configurator, every part',
     entry: 'CreatureConfigurator',
     props: { creature: 0, explorer: true, crafting: true, ability: true },
-    panels: 1,
+    panels: 2,
   },
   {
     name: 'Dungeon team, a creature tapped (its configurator)',
     entry: 'DungeonSetup',
     props: { configure: true },
     tap: '.dungeon-team [data-slot="1"]',
-    panels: 1,
+    panels: 2,
   },
+  { name: 'Gear list, tappable', entry: 'GearList', props: {}, panels: 1 },
   {
     name: 'Drill head (shared by the item drawer and the camp)',
     entry: 'DrillHead',

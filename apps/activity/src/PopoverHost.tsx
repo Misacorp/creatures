@@ -10,7 +10,7 @@ import { capitalize, getSpecies, speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { compactCount } from './number-format';
 import { MORE_LABEL, resolveTag, tagKey, visualPlan, type TagRef } from './glossary-ui';
-import { WornItemLines } from './WornItemLines';
+import { GearList } from './GearList';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
@@ -252,7 +252,7 @@ function CreaturePopover({
           {/* The pixel font, as the creature page's tables: the popover's body font is for sentences. */}
           <DataTable class="pix" rows={creatureFactRows(info, speciesName(info.species))} />
           {info.effect !== undefined && <p class="pop-effect">{info.effect}</p>}
-          {worn.length > 0 && <WornItemLines worn={worn} />}
+          {worn.length > 0 && <GearList level={info.level} worn={worn} emptySlots={false} />}
           {open.actions !== undefined && open.actions.length > 0 && (
             <div class="pop-actions">
               {open.actions.map((action) => (
