@@ -163,9 +163,7 @@
   scroll-margin-top: 0.5rem;
 }
 
-/* The tapped creature's configurator under the board: centred like the tiles, its text left aligned. */
+/* The tapped creature's configurator under the board: centred like the tiles. */
 .dungeon-team .configurator {
   align-self: center;
-  margin: 0.75rem auto 0.25rem;
-  text-align: left;
 }

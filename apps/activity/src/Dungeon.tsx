@@ -4,7 +4,8 @@ import type { Creature } from './api';
 import { DungeonPlayback } from './DungeonPlayback';
 import { DungeonResults } from './DungeonResults';
 import { DungeonRun } from './DungeonRun';
-import { DungeonSetup, type TeamConfigure } from './DungeonSetup';
+import { DungeonSetup } from './DungeonSetup';
+import type { TeamConfigure } from './TeamCreaturePage';
 import {
   dungeonAct,
   fetchDungeonReplay,

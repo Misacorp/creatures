@@ -50,6 +50,7 @@ import { sceneOf } from './LivingRoom';
 import { LevelResetCard } from './LevelResetCard';
 import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
+import type { TeamConfigure } from './TeamCreaturePage';
 
 export function Game({
   initial,
@@ -356,6 +357,17 @@ export function Game({
     <DevPanelHost enabled={devTools} tab={tab} creatures={game.creatures} onChanged={devRefresh} />
   );
 
+  /** What the dungeon's and the raid's team screens need to get creatures ready (their configurator and page). */
+  const teamConfigure: TeamConfigure = {
+    state: game,
+    gear,
+    busy,
+    actions: { ...creatureActions, onEquip: equipOn },
+    onAnswerCatch: () => {
+      setTab('collection');
+    },
+  };
+
   const content = !game.starterChosen ? (
     <>
       {error !== null && (
@@ -385,7 +397,8 @@ export function Game({
           refreshState();
           room.refreshIfStale();
           loadForecast();
-          if (id === 'workshop' || id === 'collection' || id === 'dungeon') loadGear();
+          if (id === 'workshop' || id === 'collection' || id === 'dungeon' || id === 'raid')
+            loadGear();
         }}
       />
       <WipeNotice key={devNonce} cancelled={game.cancelled} creatures={game.creatures} />
@@ -494,6 +507,7 @@ export function Game({
                 raid: needed,
               }));
             }}
+            configure={teamConfigure}
           />
         )}
         {tab === 'dungeon' && (
@@ -522,15 +536,7 @@ export function Game({
               refreshState();
               loadGear();
             }}
-            configure={{
-              state: game,
-              gear,
-              busy,
-              actions: { ...creatureActions, onEquip: equipOn },
-              onAnswerCatch: () => {
-                setTab('collection');
-              },
-            }}
+            configure={teamConfigure}
           />
         )}
       </div>

@@ -32,6 +32,7 @@ import { needsPlacement, type NowTarget } from './raid-now';
 import { showFullResults } from './raid-timeline';
 import { RaidNews } from './RaidNews';
 import { Placement } from './Placement';
+import { TeamCreaturePage, type TeamConfigure } from './TeamCreaturePage';
 import { toPickerCreature } from './roster-picker';
 import type { Forecast } from './weather-types';
 import { Accordion } from './ui/Accordion';
@@ -51,6 +52,7 @@ export function Raid({
   showPractice,
   onBalanceChange,
   onNeedsPlacementChange,
+  configure,
 }: {
   creatures: Creature[];
   /** The valley's sky for today and tomorrow, for the one line on the boss card (null: none loaded). */
@@ -61,8 +63,12 @@ export function Raid({
   onBalanceChange: () => void;
   /** Whether team creatures are still to be placed, whenever the raid view loads or changes (the tab's pip). */
   onNeedsPlacementChange: (needed: boolean) => void;
+  /** Getting your board's creatures ready (their configurator and page); absent: their popovers only. */
+  configure?: TeamConfigure | undefined;
 }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
+  /** Your board creature whose own page is open in the tab's place. */
+  const [page, setPage] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   /** The replay on screen: the week and party come from the result or reveal it was opened from. */
   const [replay, setReplay] = useState<{
@@ -214,6 +220,45 @@ export function Raid({
   const rosterNames = view.roster.map((r) => r.displayName);
   const { reveal } = view.you;
 
+  // Your creatures on the board, left to right and row by row: what a page flips through.
+  const boardTeam =
+    party === null
+      ? []
+      : party.row.flatMap((slot) => {
+          const own = slot.creature;
+          if (own == null || !own.mine || own.creatureId === undefined) return [];
+          const creature = creatures.find((c) => c.id === own.creatureId);
+          return creature === undefined ? [] : [creature];
+        });
+  const paged = page === null ? undefined : boardTeam.find((c) => c.id === page);
+  if (configure !== undefined && paged !== undefined && !liveOpen && replay === null) {
+    return (
+      <TeamCreaturePage
+        creature={paged}
+        team={boardTeam}
+        configure={configure}
+        backLabel="Raid"
+        remove={
+          view.you.canEdit
+            ? {
+                label: 'Remove from board',
+                onAct: () => {
+                  setPage(null);
+                  runIntent({ type: 'unplace', creatureId: paged.id });
+                },
+              }
+            : undefined
+        }
+        onFlip={(target) => {
+          setPage(target.id);
+        }}
+        onBack={() => {
+          setPage(null);
+        }}
+      />
+    );
+  }
+
   if (liveOpen) {
     return (
       <Live
@@ -313,6 +358,9 @@ export function Raid({
           turnOrder={view.boss.turnOrder}
           next={view.next}
           onIntent={runIntent}
+          configure={configure}
+          owned={creatures}
+          onOpenPage={setPage}
         />
       )}
 

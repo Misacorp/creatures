@@ -237,7 +237,7 @@ export class FakeElement extends FakeNode {
   }
 
   /**
-   * Only the selectors the app's components use: `[role="x"]` (any attribute, as `[data-slot="1"]`),
+   * Only the selectors the app's components use: `[role="x"]` (any attribute, as `[data-slot="1"]`), `[data-lane]`,
    * `.class` and `button:not(:disabled)` (the popover's first focus); anything else throws.
    */
   querySelectorAll<T = FakeElement>(selector: string): T[] {
@@ -248,7 +248,12 @@ export class FakeElement extends FakeNode {
       ) as T[];
     }
     const attr = /^\[([\w-]+)="([^"]+)"\]$/.exec(selector);
+    // `[data-lane]`: the attribute is there, whatever its value.
+    const has = /^\[([\w-]+)\]$/.exec(selector)?.[1];
     const cls = /^\.([\w-]+)$/.exec(selector)?.[1];
+    if (has !== undefined) {
+      return find(this, (el) => el !== this && el.hasAttribute(has)) as T[];
+    }
     if (attr === null && cls === undefined) {
       throw new Error(`the fake DOM does not support the selector ${selector}`);
     }
