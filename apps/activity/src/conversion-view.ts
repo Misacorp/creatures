@@ -43,6 +43,25 @@ export function shortText(inputs: readonly RecipeInput[]): string | null {
   return `Needs ${String(short.amount - short.have)} more ${short.name ?? short.label ?? 'of those'}.`;
 }
 
+function viewOf(
+  r: ReturnType<typeof conversionRecipes>[number],
+  stock: Readonly<Record<string, number>>,
+  parts: Readonly<Record<string, number>>,
+): ConversionView {
+  return {
+    id: r.id,
+    kind: r.kind,
+    verb: r.kind === 'refine' ? 'Refine' : 'Recycle',
+    inputs: r.inputs.map((i): RecipeInput => ({
+      ...badgeOf(i),
+      amount: i.amount,
+      have: i.type === 'supply' ? (stock[i.id] ?? 0) : (parts[i.id] ?? 0),
+    })),
+    outputs: r.outputs.map(badgeOf),
+    level: r.craftingLevel,
+  };
+}
+
 /**
  * The recipes of one kind the player holds at least one input supply for, in data order (a player who has
  * none of an input has nothing to refine or recycle there, so the Workshop does not list it).
@@ -55,18 +74,23 @@ export function conversionViews(
   return conversionRecipes()
     .filter((r) => r.kind === kind)
     .filter((r) => r.inputs.some((i) => i.type === 'supply' && (stock[i.id] ?? 0) > 0))
-    .map((r) => ({
-      id: r.id,
-      kind: r.kind,
-      verb: r.kind === 'refine' ? 'Refine' : 'Recycle',
-      inputs: r.inputs.map((i): RecipeInput => ({
-        ...badgeOf(i),
-        amount: i.amount,
-        have: i.type === 'supply' ? (stock[i.id] ?? 0) : (parts[i.id] ?? 0),
-      })),
-      outputs: r.outputs.map(badgeOf),
-      level: r.craftingLevel,
-    }));
+    .map((r) => viewOf(r, stock, parts));
+}
+
+/**
+ * The recipe of one kind that takes this supply, held or not (null when the supply has none: the best
+ * tier cannot be refined and basic supplies cannot be recycled).
+ */
+export function conversionOf(
+  kind: 'refine' | 'recycle',
+  supplyId: string,
+  stock: Readonly<Record<string, number>>,
+  parts: Readonly<Record<string, number>>,
+): ConversionView | null {
+  const recipe = conversionRecipes().find(
+    (r) => r.kind === kind && r.inputs.some((i) => i.type === 'supply' && i.id === supplyId),
+  );
+  return recipe === undefined ? null : viewOf(recipe, stock, parts);
 }
 
 /** What a conversion takes a creature of this Crafting level, in milliseconds (the job's own time). */

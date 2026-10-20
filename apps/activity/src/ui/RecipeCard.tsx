@@ -14,6 +14,8 @@ export interface RecipeCardProps {
   disabledReason?: string | null | undefined;
   /** The words on the button ("Refine", "Recycle"). */
   actionLabel: string;
+  /** Only the inputs, the arrow, the outputs and the time: no reason and no button (a preview above another picker). */
+  compact?: boolean;
   /** True while any action runs. */
   busy?: boolean | undefined;
   /** The button was pressed (it is not called while disabled). */
@@ -32,6 +34,7 @@ export function RecipeCard({
   duration,
   disabledReason,
   actionLabel,
+  compact = false,
   busy = false,
   onStart,
 }: RecipeCardProps) {
@@ -71,23 +74,25 @@ export function RecipeCard({
           <CountBadge {...duration} />
         </p>
       )}
-      {reason !== null && (
+      {!compact && reason !== null && (
         <p class="reason" role="status">
           {reason}
         </p>
       )}
-      <p class="actions">
-        <button
-          type="button"
-          class="primary"
-          disabled={busy || reason !== null}
-          onClick={() => {
-            if (!busy && reason === null) onStart();
-          }}
-        >
-          {actionLabel}
-        </button>
-      </p>
+      {!compact && (
+        <p class="actions">
+          <button
+            type="button"
+            class="primary"
+            disabled={busy || reason !== null}
+            onClick={() => {
+              if (!busy && reason === null) onStart();
+            }}
+          >
+            {actionLabel}
+          </button>
+        </p>
+      )}
     </div>
   );
 }

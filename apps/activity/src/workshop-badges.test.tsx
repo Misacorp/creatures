@@ -96,6 +96,7 @@ describe('the Workshop lists', () => {
         stock={{}}
         busy={false}
         onCraft={vi.fn()}
+        onConvert={vi.fn()}
       />,
     );
     expect(visibleText(root)).not.toContain('about');
