@@ -131,7 +131,7 @@ export type AnalyticsEvent =
   | {
       /** An activity paid a creature experience (or a ribbon or evolution spent what it had banked). */
       kind: 'creature_exp';
-      source: 'trip' | 'dungeon' | 'raid' | 'job' | 'ribbon' | 'evolve';
+      source: 'trip' | 'dungeon' | 'raid' | 'job' | 'lounge' | 'ribbon' | 'evolve';
       species: string;
       gained: number;
       treat: boolean;

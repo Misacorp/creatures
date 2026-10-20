@@ -245,6 +245,7 @@ export const GEAR_TABLES = [
  * days lose the columns it added (a run that was open is dropped: a database from before had none).
  */
 export function undoDungeonPathsMigration(sql: SqlStorage): void {
+  undoLoungeCompanyMigration(sql);
   // A test may already have dropped a table (the version 3 test does): only what is there goes.
   const has = (table: string, column: string): boolean =>
     sql.exec(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = '${column}'`).toArray()
@@ -260,6 +261,13 @@ export function undoDungeonPathsMigration(sql: SqlStorage): void {
   if (has('dungeon_runs', 'outcome')) sql.exec('ALTER TABLE dungeon_runs DROP COLUMN outcome');
   if (has('dungeon_days', 'map_json')) sql.exec('ALTER TABLE dungeon_days DROP COLUMN map_json');
   sql.exec('DELETE FROM schema_version WHERE version = 34');
+}
+
+/** Puts a database back to before migration 35 (lounging with company). */
+export function undoLoungeCompanyMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS lounge_company');
+  sql.exec('DROP TABLE IF EXISTS lounge_rest');
+  sql.exec('DELETE FROM schema_version WHERE version = 35');
 }
 
 /** Puts a database back to before migration 33 (the lounge message). */

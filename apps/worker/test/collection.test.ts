@@ -388,6 +388,7 @@ describe('GET /api/state', () => {
             'leetSync',
             'levelReset',
             'loungeSpot',
+            'loungeXp',
             'loungerId',
             'pending',
             'serverFirsts',

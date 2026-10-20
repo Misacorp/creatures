@@ -5,6 +5,7 @@
  *
  * The user is always an argument supplied from the verified session, never from a request body.
  */
+import { loungePaidToday } from './lounge-company';
 import {
   RULES,
   content,
@@ -230,6 +231,11 @@ export interface PlayerState {
    * chosen (or the stored id is no longer a known spot).
    */
   loungeSpot: LoungeSpot | null;
+  /**
+   * What lounging with company gave each creature this game day (creature id to experience; creatures
+   * with nothing are left out). At `RULES.experience.lounge.dailyCap` a creature is Rested.
+   */
+  loungeXp: Record<string, number>;
 }
 
 export interface CollectionDeps {
@@ -269,6 +275,8 @@ export interface CollectionDeps {
   dev?: DevFlags | undefined;
   /** Test seam: the branches of a line, for the Keep choice (default: the shipped content). */
   branchesOf?: ((line: string) => readonly string[]) | undefined;
+  /** The current game day (lounging's daily cap). Optional: without it, `loungeXp` is empty. */
+  gameDay?: () => string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -527,6 +535,10 @@ export class Collection {
       serverFirsts: this.serverFirsts(userId),
       loungerId: this.lounge.resolve(userId),
       loungeSpot: this.lounge.spot(userId),
+      loungeXp:
+        this.deps.gameDay === undefined
+          ? {}
+          : Object.fromEntries(loungePaidToday(this.sql, userId, this.deps.gameDay())),
     };
   }
 

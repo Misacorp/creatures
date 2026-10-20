@@ -424,6 +424,11 @@ export interface GameState {
   loungerId: string | null;
   /** The spot of the living room the player chose for their lounger; null: the room decides. */
   loungeSpot: LoungeSpot | null;
+  /**
+   * What lounging with company gave each creature this game day (creature id to XP; creatures with none
+   * are left out). At `RULES.experience.lounge.dailyCap` the creature is Rested.
+   */
+  loungeXp: Record<string, number>;
   /** What needs the player (the pips on the tabs); present on GET /api/state only, null otherwise or when unknown. */
   attention: Attention | null;
 }
@@ -475,6 +480,18 @@ export function parseLoungeSpot(value: unknown): LoungeSpot | null {
   }
   const id = value['id'];
   return ROOM_SPOTS.some((spot) => spot.id === id) ? { id, at: value['at'] } : null;
+}
+
+/** The day's lounging XP per creature; absent (an older server) is none. */
+export function parseLoungeXp(value: unknown): Record<string, number> {
+  if (value === undefined || value === null) return {};
+  if (!isRecord(value)) throw new Error('the server returned unexpected lounging experience');
+  const out: Record<string, number> = {};
+  for (const [id, xp] of Object.entries(value)) {
+    if (!isInt(xp) || xp < 0) throw new Error('the server returned unexpected lounging experience');
+    out[id] = xp;
+  }
+  return out;
 }
 
 function isStats(value: unknown): value is Creature['stats'] {
@@ -614,6 +631,7 @@ export function parseGameState(data: unknown): GameState {
     timezone: data['timezone'] ?? null,
     loungerId: data['loungerId'],
     loungeSpot: parseLoungeSpot(data['loungeSpot']),
+    loungeXp: parseLoungeXp(data['loungeXp']),
     attention: parseAttention(data['attention']),
   };
 }
