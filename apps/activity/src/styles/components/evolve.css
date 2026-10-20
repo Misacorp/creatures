@@ -116,7 +116,6 @@ button.evolve-form:active:not(:disabled) {
   justify-content: center;
   gap: 0.625rem;
   margin: auto 0 0;
-  font-family: var(--body);
 }
 
 .evolve-stats dt {

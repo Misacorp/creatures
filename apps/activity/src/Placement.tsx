@@ -333,9 +333,9 @@ export function Placement(props: Props) {
 
   return (
     <div id="raid-placement" onKeyDown={onKeyDown}>
-      <section class="raid-section placement" aria-labelledby="raid-place-heading">
+      <section class="raid-section placement pix-panel" aria-labelledby="raid-place-heading">
         <h3 id="raid-place-heading">Raid Roster</h3>
-        <p class="muted small roster-help">
+        <p class="muted small roster-help prose">
           Pick your creatures and place them on the board alongside everyone else.
           {props.turnOrder === 'serpentine' &&
             ' The board shows the order of round 1; the rows flip direction each round.'}
