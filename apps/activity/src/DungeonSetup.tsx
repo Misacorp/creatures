@@ -268,6 +268,7 @@ export function DungeonSetup({
               buttons={[
                 {
                   label: 'Creature page',
+                  withCreature: true,
                   onAct: () => {
                     setPage(shown.id);
                   },
@@ -275,6 +276,7 @@ export function DungeonSetup({
                 {
                   label: 'Remove from team',
                   danger: true,
+                  withCreature: true,
                   onAct: () => {
                     setSelected(null);
                     change(unplace(slots, shown.id));

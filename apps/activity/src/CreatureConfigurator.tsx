@@ -1,6 +1,7 @@
 import { useRef, useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
 import { CreatureHead } from './CreatureHead';
+import { CreatureIcon } from './CreatureIcon';
 import { statRows, type CardActions } from './CreaturePage';
 import { cardDomId, xpWords } from './creature-card-view';
 import { experienceLabel } from './CreatureProgress';
@@ -45,6 +46,8 @@ export interface ConfiguratorButton {
   onAct: () => void;
   /** It takes something away (Remove from team): the red button. */
   danger?: boolean;
+  /** The creature's small picture before the words, so a button far down the card says whose it is. */
+  withCreature?: boolean;
 }
 
 /** Which drawer is up. */
@@ -201,6 +204,7 @@ export function CreatureConfigurator({
               disabled={busy}
               onClick={b.onAct}
             >
+              {b.withCreature === true && <CreatureIcon creature={creature} />}
               {b.label}
             </button>
           ))}

@@ -13,6 +13,7 @@ import { creatureDodgeText, type DodgeRules } from './dodge-view';
 import { ItemPickerDrawer } from './creature-page/ItemPicker';
 import { PageHeader } from './creature-page/PageHeader';
 import { TalentSlots } from './creature-page/PageSlots';
+import { CreatureIcon } from './CreatureIcon';
 import { GearList } from './GearList';
 import { TalentBookDrawer } from './creature-page/TalentBookDrawer';
 import type { GearItem, GearSlot, GearState } from './gear-types';
@@ -390,6 +391,7 @@ export function CreaturePage({
         {teamAction !== undefined && (
           <p class="cp-team-action">
             <button type="button" class="danger" disabled={busy} onClick={teamAction.onAct}>
+              <CreatureIcon creature={creature} />
               {teamAction.label}
             </button>
           </p>
