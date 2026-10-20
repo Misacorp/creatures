@@ -135,13 +135,6 @@ export const RULES = {
     dupeShieldStreak: 3,
     /** The first claim of a player's first expedition starts with this line. */
     firstExpeditionLine: 'zipmouse',
-    /**
-     * New-species pity (2026-10-17): the server counts a player's catch rolls. After `newAfter` rolls
-     * without a new species, the next roll brings a creature, and it is a species the player lacks (when
-     * the place has one). Whatever the species, the `creatureEvery`-th roll in a row without any
-     * creature brings one. Counters are stored per player and move with the trip claim.
-     */
-    pity: { newAfter: 60, creatureEvery: 10 },
   },
   fusion: {
     /** Cumulative stat bonus in basis points after N fusions (index = N). */
@@ -961,59 +954,44 @@ export const RULES = {
    */
   expeditions: {
     /**
-     * Per trip length: the time, the catch rolls and what a finished trip brings. A roll brings a
-     * creature only with chance `catchBp` (2026-10-16: trips brought far too many creatures and
-     * duplicates); a roll that brings none brings a small find, `findScrap` scrap. A lure raises the
-     * chance and the odds of a species the player lacks. Rewards grow faster
-     * than the hours (the 12 hour trip pays more than three 4 hour ones would): a short trip is the
-     * worst way to progress. `loot` are chances in basis points (a value above 10000 is a sure one plus
-     * a chance of another); `scrap` is a flat amount; a recalled trip pays only its share of the scrap.
+     * Per trip length (2026-10-20, trips pay in ticks): the time, the nominal ticks a finished trip
+     * pays and the rarity push. Every tick rolls each table of `tick` on its own, so a trip's reward is
+     * its ticks times the per-tick chances. The ticks run a little ahead of the hours on longer trips
+     * (12 h: 15, 24 h: 32) so a long trip beats the same hours in short ones; players are only told
+     * that longer trips are better. Ticks are nominal: explorer rank shortens the real time, not the
+     * ticks. The 24 hour trip needs `minRank`.
      */
     lengths: {
-      short: {
-        ms: 2 * HOUR_MS,
-        rolls: 1,
-        catchBp: 300,
-        findScrap: 1,
-        rarityUpBp: 0,
-        xp: 4,
-        minRank: 1,
-        loot: { scrap: 0, shardBp: 600, glimmerBp: 50, blueprintBp: 100, supplyBp: 500 },
-        journalBp: 300,
-      },
-      medium: {
-        ms: 6 * HOUR_MS,
-        rolls: 1,
-        catchBp: 600,
-        findScrap: 1,
-        rarityUpBp: 150,
-        xp: 110,
-        minRank: 1,
-        loot: { scrap: 0, shardBp: 1_000, glimmerBp: 150, blueprintBp: 300, supplyBp: 1_500 },
-        journalBp: 600,
-      },
-      long: {
-        ms: 12 * HOUR_MS,
-        rolls: 1,
-        catchBp: 1800,
-        findScrap: 2,
-        rarityUpBp: 300,
-        xp: 300,
-        minRank: 1,
-        loot: { scrap: 1, shardBp: 1_500, glimmerBp: 300, blueprintBp: 500, supplyBp: 3_000 },
-        journalBp: 1_000,
-      },
-      day: {
-        ms: 24 * HOUR_MS,
-        rolls: 2,
-        catchBp: 1800,
-        findScrap: 2,
-        rarityUpBp: 600,
-        xp: 700,
-        minRank: 5,
-        loot: { scrap: 3, shardBp: 4_000, glimmerBp: 800, blueprintBp: 1_000, supplyBp: 4_500 },
-        journalBp: 1_600,
-      },
+      short: { ms: 2 * HOUR_MS, ticks: 2, rarityUpBp: 0, minRank: 1 },
+      medium: { ms: 6 * HOUR_MS, ticks: 7, rarityUpBp: 150, minRank: 1 },
+      long: { ms: 12 * HOUR_MS, ticks: 15, rarityUpBp: 300, minRank: 1 },
+      day: { ms: 24 * HOUR_MS, ticks: 32, rarityUpBp: 600, minRank: 5 },
+    },
+    /**
+     * What one tick of a trip does (basis points per tick, rolled independently; a value above 10000 is
+     * a sure one plus a chance of another). Every modifier (gear lines, talents, weather, twists,
+     * stars, milestones, supplies) scales these scalars. Two hours of ticks is an expected 0.25
+     * creatures, 1 scrap, 0.12 shards and a 10% chance of a gear piece.
+     */
+    tick: {
+      /** Explorer XP of one tick (XP boosts multiply the total). */
+      xp: 20,
+      /** A creature (rarity, species, deeper area, featured, affinity, dupe shield and shiny as before). */
+      creatureBp: 1_250,
+      /** One scrap. */
+      scrapBp: 5_000,
+      /** One shard of the place's element (else the explorer's). */
+      shardBp: 600,
+      /** A gear piece, rolled like a push-on gear drop (the place's element, item level 2x rank). */
+      gearBp: 513,
+      /** The rarity odds of that piece (basis points, add up to 10000). */
+      gearOdds: { common: 8_500, rare: 1_350, epic: 150 },
+      glimmerBp: 30,
+      blueprintBp: 40,
+      /** A found supply (the tier follows the explorer's rank). */
+      supplyBp: 200,
+      /** A journal page (before the twist and the weather). About 0.1 pages for a 12 hour trip. */
+      journalBp: 70,
     },
     /** Most supplies one trip can carry. */
     maxSupplies: 2,
@@ -1095,8 +1073,8 @@ export const RULES = {
      * risky push-on goal of a trip must be a fair gamble against coming home.
      */
     worth: {
-      /** One catch roll, by the rarity it comes out as (about 10 at the default odds). */
-      roll: { common: 5, rare: 20, epic: 50 },
+      /** One catch roll, by the rarity it comes out as (about 20 at the default odds: fusing, talents and release make a catch worth more than a few Bait). */
+      roll: { common: 15, rare: 40, epic: 90 },
       scrap: 2,
       shard: 6,
       glimmer: 25,

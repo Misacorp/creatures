@@ -1194,7 +1194,7 @@
   {
     "id": "part-scrap",
     "title": "Scrap",
-    "short": "Generic parts. They pay for crafting.",
+    "short": "The plainest part. Parts are every crafting ingredient.",
     "lines": [
       "Found by dismantling gear, on expeditions, in cleared raid phases and in the daily dungeon."
     ],
@@ -1828,7 +1828,7 @@
     "title": "Weekly special",
     "short": "One place gets a twist each week.",
     "lines": [
-      "Trips that start there that week get the twist, such as more parts or an extra catch roll.",
+      "Trips that start there that week get the twist, such as more parts or one more hour of finds.",
       "In Festival weeks the special is the Festival Grounds."
     ],
     "section": "expeditions"
@@ -1867,9 +1867,9 @@
   {
     "id": "supply-lure",
     "title": "Lure",
-    "short": "Draws creatures, and new ones.",
+    "short": "More creatures, and new ones.",
     "lines": [
-      "Raises the chance that a trip brings a creature, and that it is a species you lack.",
+      "Raises the chance of a creature every hour, may bring one more for sure, and favours new species.",
       "Made in the Workshop from Bait and a little scrap.",
       "Comes in three tiers: Plain, Sweet and Golden."
     ],
@@ -1878,9 +1878,9 @@
   {
     "id": "supply-map-scrap",
     "title": "Map scrap",
-    "short": "One or more extra catches.",
+    "short": "A longer trip, more finds.",
     "lines": [
-      "Adds extra catch rolls to one trip, and always at least one.",
+      "Adds hours of finds to a trip: some for sure, and more on longer trips.",
       "Comes in three tiers: Map Scrap, Inked Map and Trail Atlas."
     ],
     "section": "expeditions"
@@ -1890,8 +1890,8 @@
     "title": "Lantern",
     "short": "Lights the way to the deeper area.",
     "lines": [
-      "Opens the deeper area, even without stars.",
-      "Handy at Moonlit Reef, where the rarest creatures wait."
+      "Opens the deeper area without stars and makes its finds likelier.",
+      "The better ones also send the first creature of the trip there."
     ],
     "section": "expeditions"
   },
@@ -1900,7 +1900,7 @@
     "title": "Satchel",
     "short": "More parts, and more finds.",
     "lines": [
-      "Adds to the parts the trip brings home and helps it find a supply.",
+      "Parts are every crafting ingredient: scrap, shards and glimmer. A satchel brings some home for sure and more per hour.",
       "Comes in three tiers, from the Small Satchel to the Explorer's Pack."
     ],
     "section": "expeditions"

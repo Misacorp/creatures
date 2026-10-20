@@ -15,7 +15,7 @@
     {
       "id": "good-hunting",
       "name": "Good hunting",
-      "description": "One extra catch roll on every trip here.",
+      "description": "Every trip here brings back one more hour of finds.",
       "effect": { "kind": "rolls", "extra": 1 }
     },
     {
@@ -33,7 +33,7 @@
     {
       "id": "festival-bounty",
       "name": "Festival bounty",
-      "description": "Two extra catch rolls on every trip, for the festival.",
+      "description": "Every trip brings back two more hours of finds, for the festival.",
       "effect": { "kind": "rolls", "extra": 2 }
     }
   ],

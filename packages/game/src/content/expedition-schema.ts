@@ -130,7 +130,7 @@ const SupplyBlueprintSchema = v.strictObject({
 });
 export type SupplyBlueprint = v.InferOutput<typeof SupplyBlueprintSchema>;
 
-export const MAX_SUPPLY_BLURB = 40;
+export const MAX_SUPPLY_BLURB = 50;
 /** A supply's effect in words: short, plain text, and never a digit or a percent sign. */
 const SupplyBlurb = v.pipe(
   Text(MAX_SUPPLY_BLURB),
@@ -157,11 +157,17 @@ const supplyFields = {
   blueprint: SupplyBlueprintSchema,
 };
 
+/**
+ * Every supply has a fixed part, the same whatever the trip (so it is worth carrying on a 2 hour trip),
+ * and a per-tick part that grows with the trip's ticks (so it is better on a long one).
+ */
 export const SupplySchema = v.variant('kind', [
   v.strictObject({
     ...supplyFields,
     kind: v.literal('lure'),
-    /** Added to the chance (basis points) that a catch roll of the trip brings a creature at all. */
+    /** Fixed: the chance (basis points) of one bonus creature roll that surely brings a creature. */
+    bonusBp: Bp,
+    /** Per tick: added to the chance (basis points) that a tick brings a creature. */
     catchBp: Bp,
     /**
      * The chance (basis points) that a roll that brings a creature brings one of a species the player
@@ -172,20 +178,31 @@ export const SupplySchema = v.variant('kind', [
   v.strictObject({
     ...supplyFields,
     kind: v.literal('map-scrap'),
-    /** Extra catch rolls: this share of the trip's rolls (at least one). */
-    rollsBp: Int(0, 30_000),
+    /** Fixed: extra ticks, in basis points of a tick (5000 is half a tick; a fraction rolls as a chance). */
+    fixedTicksBp: Int(0, 100_000),
+    /** Per tick: extra ticks per tick of the trip, in basis points (a fraction rolls as a chance). */
+    perTickBp: Int(0, 10_000),
   }),
   v.strictObject({
     ...supplyFields,
     kind: v.literal('lantern'),
-    /** Added to the chance that a roll is drawn from the deeper area, which it opens without stars. */
+    /** Per catch: added to the chance that a creature is drawn from the deeper area, which it opens without stars. */
     deepBp: Bp,
+    /** Fixed: the chance that the first creature of the trip is drawn from the deeper area. */
+    firstDeepBp: Bp,
   }),
   v.strictObject({
     ...supplyFields,
     kind: v.literal('satchel'),
-    /** More parts (basis points on top) and a better chance to find a supply. */
+    /** Fixed: scrap that always comes home. */
+    scrap: Int(0, 99),
+    /** Fixed: shards of the place's element: 10000 is one sure shard, 15000 one sure and a 50% chance of another. */
+    shardBp: Int(0, 30_000),
+    /** Fixed: the chance of one glimmer. */
+    glimmerBp: Bp,
+    /** Per tick: the scrap and shard chances grow by this share (basis points on top). */
     partsBp: Int(0, 30_000),
+    /** Per tick: the chance of a found supply grows by this share (basis points on top). */
     supplyBp: Bp,
   }),
 ]);
@@ -271,7 +288,7 @@ export const TwistEffectSchema = v.variant('kind', [
     rarity: RaritySchema,
     weight: Int(2, 9),
   }),
-  /** More catch rolls. */
+  /** More ticks (whole hours of finds). */
   v.strictObject({ kind: v.literal('rolls'), extra: Int(1, 5) }),
   /** More explorer XP, in basis points on top. */
   v.strictObject({ kind: v.literal('xp'), bp: Int(1, 30_000) }),

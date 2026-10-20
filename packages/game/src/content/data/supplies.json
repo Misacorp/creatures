@@ -5,10 +5,11 @@
     "tier": "basic",
     "name": "Plain Lure",
     "flavor": "A bit of dried fruit on a string. Better than nothing.",
-    "blurb": "Draws creatures near",
+    "blurb": "More creatures",
     "worth": 15,
     "offerBp": 2500,
-    "catchBp": 500,
+    "bonusBp": 1500,
+    "catchBp": 110,
     "newBp": 2500,
     "blueprint": {
       "craftingLevel": 1,
@@ -16,7 +17,7 @@
       "parts": {
         "scrap": 2
       },
-      "bait": 12,
+      "bait": 6,
       "yield": 1
     }
   },
@@ -26,10 +27,11 @@
     "tier": "good",
     "name": "Sweet Lure",
     "flavor": "Sticky and fragrant. Even shy creatures lean closer.",
-    "blurb": "Draws creatures, and new faces",
+    "blurb": "More creatures, and new faces",
     "worth": 36,
     "offerBp": 5000,
-    "catchBp": 900,
+    "bonusBp": 3500,
+    "catchBp": 250,
     "newBp": 4500,
     "blueprint": {
       "craftingLevel": 3,
@@ -37,7 +39,7 @@
       "parts": {
         "scrap": 3
       },
-      "bait": 30,
+      "bait": 15,
       "yield": 1
     }
   },
@@ -47,10 +49,11 @@
     "tier": "great",
     "name": "Golden Lure",
     "flavor": "It shines like honey in the sun. Rare creatures cannot resist.",
-    "blurb": "Draws creatures, mostly new ones",
+    "blurb": "More creatures, mostly new ones",
     "worth": 72,
     "offerBp": 10000,
-    "catchBp": 1500,
+    "bonusBp": 6500,
+    "catchBp": 470,
     "newBp": 7000,
     "blueprint": {
       "craftingLevel": 5,
@@ -58,7 +61,7 @@
       "parts": {
         "scrap": 4
       },
-      "bait": 60,
+      "bait": 30,
       "yield": 1
     }
   },
@@ -68,10 +71,11 @@
     "tier": "basic",
     "name": "Map Scrap",
     "flavor": "A torn corner with a few trails marked in pencil.",
-    "blurb": "One more catch",
+    "blurb": "Longer trip, more finds",
     "worth": 15,
     "offerBp": 2500,
-    "rollsBp": 3000,
+    "fixedTicksBp": 5000,
+    "perTickBp": 340,
     "blueprint": {
       "craftingLevel": 1,
       "hours": 2,
@@ -87,10 +91,11 @@
     "tier": "good",
     "name": "Inked Map",
     "flavor": "A neat map with the good spots circled twice.",
-    "blurb": "A few more catches",
+    "blurb": "Much longer trip, many more finds",
     "worth": 40,
     "offerBp": 5000,
-    "rollsBp": 6000,
+    "fixedTicksBp": 16500,
+    "perTickBp": 1200,
     "blueprint": {
       "craftingLevel": 3,
       "hours": 4,
@@ -107,10 +112,11 @@
     "tier": "great",
     "name": "Trail Atlas",
     "flavor": "Every path, pool and cave, drawn by someone who went there.",
-    "blurb": "Many more catches",
+    "blurb": "A far longer trip, far more finds",
     "worth": 90,
     "offerBp": 10000,
-    "rollsBp": 10000,
+    "fixedTicksBp": 37500,
+    "perTickBp": 2700,
     "blueprint": {
       "craftingLevel": 5,
       "hours": 6,
@@ -127,10 +133,11 @@
     "tier": "basic",
     "name": "Candle Lantern",
     "flavor": "A small flame in a tin. It shows the next few steps.",
-    "blurb": "Lights the way to the deeper area",
+    "blurb": "Finds from the deeper area",
     "worth": 15,
     "offerBp": 2500,
     "deepBp": 1500,
+    "firstDeepBp": 3000,
     "blueprint": {
       "craftingLevel": 1,
       "hours": 2,
@@ -146,10 +153,11 @@
     "tier": "good",
     "name": "Glow Lantern",
     "flavor": "It glows steady and warm, even in the deepest corners.",
-    "blurb": "Lights the deeper area, even at night",
+    "blurb": "More finds from the deeper area",
     "worth": 40,
     "offerBp": 5000,
     "deepBp": 3000,
+    "firstDeepBp": 6000,
     "blueprint": {
       "craftingLevel": 3,
       "hours": 4,
@@ -166,10 +174,11 @@
     "tier": "great",
     "name": "Moon Lantern",
     "flavor": "Lit by moonlight itself. The hidden places show their doors.",
-    "blurb": "Lights the way at Moonlit Reef",
+    "blurb": "The first find is from the deeper area",
     "worth": 90,
     "offerBp": 10000,
     "deepBp": 5000,
+    "firstDeepBp": 10000,
     "blueprint": {
       "craftingLevel": 5,
       "hours": 6,
@@ -186,10 +195,13 @@
     "tier": "basic",
     "name": "Small Satchel",
     "flavor": "Room for a few extra pebbles and berries.",
-    "blurb": "A few more parts",
+    "blurb": "More parts: scrap and some shards",
     "worth": 12,
     "offerBp": 2500,
-    "partsBp": 2500,
+    "scrap": 2,
+    "shardBp": 3500,
+    "glimmerBp": 0,
+    "partsBp": 2800,
     "supplyBp": 1000,
     "blueprint": {
       "craftingLevel": 1,
@@ -206,10 +218,13 @@
     "tier": "good",
     "name": "Sturdy Satchel",
     "flavor": "Plenty of pockets, and every one gets filled.",
-    "blurb": "More parts, and more finds",
+    "blurb": "More parts: scrap, shards and sometimes glimmer",
     "worth": 30,
     "offerBp": 5000,
-    "partsBp": 5000,
+    "scrap": 5,
+    "shardBp": 15000,
+    "glimmerBp": 1000,
+    "partsBp": 6000,
     "supplyBp": 2000,
     "blueprint": {
       "craftingLevel": 3,
@@ -227,9 +242,12 @@
     "tier": "great",
     "name": "Explorer's Pack",
     "flavor": "Straps, pouches and hooks for everything worth carrying home.",
-    "blurb": "Packs plenty of parts and finds",
+    "blurb": "Plenty of parts: scrap, shards, glimmer too",
     "worth": 70,
     "offerBp": 10000,
+    "scrap": 10,
+    "shardBp": 25000,
+    "glimmerBp": 3000,
     "partsBp": 10000,
     "supplyBp": 3500,
     "blueprint": {
