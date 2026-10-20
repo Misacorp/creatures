@@ -141,7 +141,10 @@
   padding: 0.125rem 0.5rem;
 }
 
-/* A creature's facts (level, owner, ranks) as the shared data table, then a board's effect sentence. */
+/*
+  A creature's facts (level, owner, ranks) as the shared data table in the pixel font (as on the creature
+  page), then a board's effect sentence.
+*/
 .pop-body .data-table {
   margin: 0.25rem 0 0.5rem;
 }

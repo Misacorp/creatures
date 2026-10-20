@@ -235,7 +235,8 @@ function CreaturePopover({
             </p>
           }
         >
-          <DataTable bright rows={creatureFactRows(info, speciesName(info.species))} />
+          {/* The pixel font, as the creature page's tables: the popover's body font is for sentences. */}
+          <DataTable class="pix" rows={creatureFactRows(info, speciesName(info.species))} />
           {info.effect !== undefined && <p class="pop-effect">{info.effect}</p>}
           {worn.length > 0 && <WornItemLines worn={worn} />}
           {open.actions !== undefined && open.actions.length > 0 && (
