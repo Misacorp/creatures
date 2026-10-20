@@ -87,6 +87,11 @@ export function kindName(kind: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+/** What a kind is called on a tag: "Lure", "Map", "Lantern", "Satchel" (a map scrap is a Map to the player). */
+export function kindLabel(kind: string): string {
+  return kind === 'map-scrap' ? 'Map' : kindName(kind);
+}
+
 function optionOf(def: SupplyDef, stock: Readonly<Record<string, number>>): SupplyOption {
   return {
     id: def.id,

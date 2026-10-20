@@ -1,7 +1,6 @@
 import { supplyDef } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature } from './api';
-import { BaitCost } from './BaitCost';
 import {
   conversionDurationFor,
   conversionOf,
@@ -22,7 +21,7 @@ import { capitalize } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { JobStarter } from './JobStarter';
 import { Sprite } from './sprites/Sprite';
-import { kindName, supplyEffect } from './trip-view';
+import { kindLabel, supplyEffect } from './trip-view';
 import { CountBadge } from './ui/CountBadge';
 import { RecipeCard } from './ui/RecipeCard';
 import { tierRarityClass, type SupplyTier } from './supply-tiers';
@@ -36,8 +35,7 @@ type Action = 'craft' | 'refine' | 'recycle';
  * pictures (kinds across, tiers down, a rarity edge on each), and one card under it for the chosen one with
  * what it does, its cost, time and Crafting level and the actions: Craft (the main button) and the small
  * Refine and Recycle. Each opens the same creature picker as every Workshop job; the supplies are taken when
- * a convert job starts and arrive when it is claimed. Supplies cannot be bought: this, the dungeon and trips
- * are where they come from.
+ * a convert job starts and arrive when it is claimed.
  */
 export function SupplyCrafting({
   gear,
@@ -87,7 +85,7 @@ export function SupplyCrafting({
       : (shortText(refine.inputs) ?? blockerOf(refine.level));
   const recycleReason =
     recycle === null
-      ? 'Basic supplies cannot be recycled.'
+      ? 'Basic cannot be recycled.'
       : (shortText(recycle.inputs) ?? blockerOf(recycle.level));
   const convertOpen: ConversionView | null =
     open === 'refine' ? refine : open === 'recycle' ? recycle : null;
@@ -103,7 +101,6 @@ export function SupplyCrafting({
       <h3 id="ws-supplies">
         Supplies <GlossaryTag entry="supplies" look="help" />
       </h3>
-      <p class="muted supply-note">Supplies cannot be bought. Craft them here.</p>
       <SupplyGrid kinds={kinds} cells={cells} selected={view?.id ?? null} onSelect={choose} />
       {view !== undefined && (
         <div class={`supply-card card-item ${tierRarityClass(view.tier)}`}>
@@ -114,7 +111,7 @@ export function SupplyCrafting({
             <div class="bp-text">
               <p class="pix bp-name rarity-name">{view.name}</p>
               <p class="tags">
-                <Tag entry={supplyEntry(view.kind)}>{kindName(view.kind)}</Tag>
+                <Tag entry={supplyEntry(view.kind)}>{kindLabel(view.kind)}</Tag>
                 <Tag>{capitalize(view.tier)}</Tag>
               </p>
               <p class="muted supply-owned" aria-live="polite">
@@ -123,8 +120,12 @@ export function SupplyCrafting({
             </div>
           </div>
           {def !== undefined && <p class="supply-effect">{supplyEffect(def)}</p>}
-          <CostList cost={view.cost} have={gear.parts} />
-          {view.bait > 0 && <BaitCost cost={view.bait} have={gear.balances.bait} />}
+          <CostList
+            cost={view.cost}
+            have={gear.parts}
+            bait={view.bait}
+            baitHave={gear.balances.bait}
+          />
           <p class="bp-meta muted">
             <span>
               Crafting level {view.level}
@@ -145,32 +146,42 @@ export function SupplyCrafting({
             </button>
           </p>
           {blocker !== null && <p class="reason">{blocker}</p>}
-          <p class="supply-more">
-            <button
-              type="button"
-              disabled={busy || refineReason !== null}
-              onClick={() => {
-                setOpen('refine');
-              }}
-            >
-              Refine
-            </button>
-            <button
-              type="button"
-              disabled={busy || recycleReason !== null}
-              onClick={() => {
-                setOpen('recycle');
-              }}
-            >
-              Recycle
-            </button>
-          </p>
-          {(refineReason !== null || recycleReason !== null) && (
-            <p class="muted supply-more-reason">
-              {refineReason !== null && <span>Refine: {refineReason} </span>}
-              {recycleReason !== null && <span>Recycle: {recycleReason}</span>}
-            </p>
-          )}
+          <div class="supply-more">
+            <div class="supply-more-item">
+              <button
+                type="button"
+                disabled={busy || refineReason !== null}
+                aria-describedby={refineReason === null ? undefined : 'supply-refine-reason'}
+                onClick={() => {
+                  setOpen('refine');
+                }}
+              >
+                Refine
+              </button>
+              {refineReason !== null && (
+                <p id="supply-refine-reason" class="muted supply-more-reason">
+                  {refineReason}
+                </p>
+              )}
+            </div>
+            <div class="supply-more-item">
+              <button
+                type="button"
+                disabled={busy || recycleReason !== null}
+                aria-describedby={recycleReason === null ? undefined : 'supply-recycle-reason'}
+                onClick={() => {
+                  setOpen('recycle');
+                }}
+              >
+                Recycle
+              </button>
+              {recycleReason !== null && (
+                <p id="supply-recycle-reason" class="muted supply-more-reason">
+                  {recycleReason}
+                </p>
+              )}
+            </div>
+          </div>
           {open === 'craft' && (
             <JobStarter
               id={`supply-${view.id}`}

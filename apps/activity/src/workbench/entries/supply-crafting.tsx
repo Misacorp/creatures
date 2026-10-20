@@ -36,7 +36,7 @@ function gearFor(p: Props): GearState {
 }
 
 function Demo({ p }: { p: Props }) {
-  const [started, setStarted] = useState('Nothing started');
+  const [started, setStarted] = useState<string | null>(null);
   const say = (text: string) => async () => {
     setStarted(text);
     return Promise.resolve(true);
@@ -51,9 +51,11 @@ function Demo({ p }: { p: Props }) {
         onCraft={async (id) => say(`Crafting ${id}`)()}
         onConvert={async (id) => say(`Converting ${id}`)()}
       />
-      <p class="muted" aria-live="polite">
-        {started}
-      </p>
+      {started !== null && (
+        <p class="muted" aria-live="polite">
+          {started}
+        </p>
+      )}
     </>
   );
 }

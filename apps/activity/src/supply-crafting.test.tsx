@@ -128,8 +128,27 @@ describe('the compact supply picker', () => {
     // The default supply is basic: nothing to recycle, and three are needed to refine.
     expect(button(root, 'Recycle').hasAttribute('disabled')).toBe(true);
     expect(button(root, 'Refine').hasAttribute('disabled')).toBe(true);
-    expect(visibleText(root)).toContain('Basic supplies cannot be recycled.');
-    expect(visibleText(root)).toContain('Needs 3 more Plain Lure.');
+    // Each small button carries its own short reason right under it.
+    const reasons = byClass(root, 'supply-more-item').map((item) => visibleText(item));
+    expect(reasons).toHaveLength(2);
+    expect(reasons[0]).toContain('Needs 3 more Plain Lure.');
+    expect(reasons[1]).toContain('Basic cannot be recycled.');
+  });
+
+  it('has no "cannot be bought" note, and names the Map kind for players', () => {
+    const root = draw({ 'map-scrap-basic': 1 }, 5);
+    expect(visibleText(root)).not.toContain('cannot be bought');
+    page?.click(cellBy(root, (l) => l.includes('1 in stock')));
+    const tags = byClass(root, 'tags')[0];
+    expect(tags === undefined ? '' : visibleText(tags)).toContain('Map');
+    expect(visibleText(root)).not.toContain('Map scrap');
+  });
+
+  it('draws the Bait of a lure as a chip beside the parts', () => {
+    const root = draw({}, 5);
+    const cost = byClass(root, 'cost-list')[0];
+    expect(cost === undefined ? '' : visibleText(cost)).toContain('Bait');
+    expect(byClass(root, 'bait-cost')).toHaveLength(0);
   });
 
   it('keeps Refine off for the best tier', () => {
