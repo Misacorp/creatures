@@ -140,7 +140,7 @@ export const SAMPLE_MAP: DungeonMapView = {
 };
 
 /** An item a run's creature wears, with the game's own lines (fixture data). */
-function runItem(
+export function runItem(
   baseId: string,
   rarity: GearRarity,
   itemLevel: number,

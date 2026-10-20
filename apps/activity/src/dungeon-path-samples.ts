@@ -26,6 +26,7 @@ import type {
   DungeonRunSummary,
   DungeonToday,
 } from './dungeon-types';
+import { runItem } from './dungeon-map-sample';
 
 const MODIFIERS = {
   flooded: { id: 'flooded', name: 'Flooded', description: 'Tide creatures hit 20% harder.' },
@@ -150,7 +151,14 @@ export function sampleRunCreatures(): DungeonRunCreature[] {
     hp: m.hpMax,
     hpMax: m.hpMax,
     treat: i === 0,
-    gear: [],
+    // The first carries a hat and a scarf (what its popover lists, locked, during the run).
+    gear:
+      i === 0
+        ? [
+            runItem('brine-hood', 'rare', 8, [{ id: 'aimed-ward', tier: 1 }]),
+            runItem('patch-scarf', 'common', 5, []),
+          ]
+        : [],
   }));
 }
 
