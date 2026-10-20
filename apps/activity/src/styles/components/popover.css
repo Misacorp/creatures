@@ -159,11 +159,17 @@
   margin: 0.125rem 0;
 }
 
-/* An action under a creature's facts (the raid board's "Remove from board"). */
+/* Actions under a creature's facts (the raid board's "Remove from board"; the room's "Move" and "Swap"), side by side. */
+.pop-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
 button.pop-action {
+  flex: 1 1 0;
   width: 100%;
   min-height: 2.25rem;
-  margin-top: 0.5rem;
   font-size: var(--fs-small);
 }
 

@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { Collection } from '../../Collection';
 import { CreatureCard } from '../../CreatureCard';
 import { CreatureFinder } from '../../CreatureFinder';
+import { LoungeSwap } from '../../LoungeSwap';
 import type { CardActions } from '../../CreaturePage';
 import {
   GEAR_STATE,
@@ -11,6 +12,7 @@ import {
   sampleCreature,
   sampleRoster,
   hardCaseRoster,
+  loungeSample,
   type SampleKind,
 } from '../../creature-card-sample';
 import { NO_FILTERS, applyFilters, type Filters } from '../../creature-find';
@@ -42,7 +44,15 @@ function kindOf(value: string): SampleKind {
 /** The Creatures screen of Misa's phone screenshot (2026-10-19): the tab bar, find and filter, and five hard cases. */
 function RosterScreen() {
   const roster = hardCaseRoster();
-  const state = { ...SAMPLE_STATE, creatures: roster, pending: [], loungerId: 'v-lanternfin' };
+  // Lanternfin lounges (34 of the day's 60 XP); Mistnewt had its 60 today and is Rested.
+  const lounge = loungeSample();
+  const state = {
+    ...SAMPLE_STATE,
+    creatures: roster,
+    pending: [],
+    loungerId: lounge.loungerId,
+    loungeXp: lounge.loungeXp,
+  };
   return (
     <div>
       <TabBar current="collection" alerts={NO_ALERTS} onSelect={() => undefined} />
@@ -76,6 +86,7 @@ function CardDemo({ p }: { p: Props }) {
         }))
       : [],
     loungerId: bool(p, 'lounging') ? creature.id : null,
+    loungeXp: { [creature.id]: num(p, 'loungeXp') },
   };
   return (
     <ul class="cards creature-cards">
@@ -105,6 +116,7 @@ const creatureCard: Entry = {
     waitingCatch: { kind: 'toggle' },
     gearLoaded: { kind: 'toggle' },
     lounging: { kind: 'toggle' },
+    loungeXp: { kind: 'number', min: 0, max: 60 },
     found: { kind: 'toggle' },
     busy: { kind: 'toggle' },
     screen: { kind: 'toggle' },
@@ -115,6 +127,7 @@ const creatureCard: Entry = {
     waitingCatch: false,
     gearLoaded: true,
     lounging: false,
+    loungeXp: 0,
     found: false,
     busy: false,
     screen: false,
@@ -130,7 +143,9 @@ const creatureCard: Entry = {
     { name: 'Top level', props: { state: 'top level' } },
     { name: 'Nickname, shiny and away', props: { state: 'nickname and badges' } },
     { name: 'Marked by the finder', props: { found: true } },
-    { name: 'Lounging', props: { state: 'growing', lounging: true } },
+    { name: 'Lounging', props: { state: 'growing', lounging: true, loungeXp: 34 } },
+    { name: 'Lounging, Rested', props: { state: 'growing', lounging: true, loungeXp: 60 } },
+    { name: 'Rested, not lounging', props: { state: 'growing', loungeXp: 60 } },
     {
       name: 'XP bar look: shrunk (tag shrunk to the bar)',
       props: { state: 'evolve ready', xpSize: 'shrunk' },
@@ -281,8 +296,23 @@ const creaturesTab: Entry = {
   render: (p) => <TabDemo p={p} />,
 };
 
+const loungeSwap: Entry = {
+  name: 'LoungeSwap',
+  file: 'apps/activity/src/LoungeSwap.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'Who lounges: the sheet that "Swap" opens from your own creature in the living room. Every creature with its experience bar (as on the card) and a Rested tag when it had all of today\'s lounging XP. Free creatures that still earn come first, lowest level first; then the Rested ones (they can still lounge); the lounger and the busy ones are listed but cannot be picked.',
+  controls: {},
+  defaults: {},
+  presets: [{ name: 'Five creatures, one Rested, one away', props: {} }],
+  render: () => (
+    <LoungeSwap state={loungeSample()} onPick={() => undefined} onClose={() => undefined} />
+  ),
+};
+
 export const creatureCardEntries: readonly Entry[] = [
   creatureCard,
+  loungeSwap,
   creatureFinder,
   creaturesTab,
   workshop,

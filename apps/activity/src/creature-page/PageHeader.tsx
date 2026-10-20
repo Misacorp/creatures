@@ -18,7 +18,7 @@ export function PageHeader({
   nameId,
 }: {
   creature: Creature;
-  state: Pick<GameState, 'loungerId' | 'serverFirsts'>;
+  state: Pick<GameState, 'loungerId' | 'loungeXp' | 'serverFirsts'>;
   nameId: string;
 }) {
   return (

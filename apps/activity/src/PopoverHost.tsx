@@ -19,7 +19,7 @@ import { toggleActive, usePopoverNav } from './ui/popover-nav';
 /** What the open popover is about: a glossary entry or ability, a small creature, or anything else. */
 type OpenPopover = { key: string; anchor: HTMLElement } & (
   | { kind: 'tag'; ref: TagRef }
-  | { kind: 'creature'; info: CreatureInfo; action?: CreatureAction }
+  | { kind: 'creature'; info: CreatureInfo; actions?: readonly CreatureAction[] }
   | { kind: 'foe'; info: FoeInfo }
   | { kind: 'custom'; label: string; body: ComponentChildren }
 );
@@ -30,6 +30,11 @@ export interface CreatureAction {
   onAct: () => void;
 }
 
+/** One action or several, as a list. */
+function actionList(action: CreatureAction | readonly CreatureAction[]): readonly CreatureAction[] {
+  return 'label' in action ? [action] : action;
+}
+
 export interface PopoverHostApi {
   /** The element whose popover is open, if any: a trigger says `aria-expanded` when it is this one. */
   anchor: HTMLElement | null;
@@ -37,13 +42,13 @@ export interface PopoverHostApi {
   openTag: (ref: TagRef, anchor: HTMLElement) => void;
   /**
    * A tap on a small creature: opens its popover (on the creature face), or closes it. `action` adds
-   * a button under the facts.
+   * buttons under the facts (one, or several side by side).
    */
   openCreature: (
     key: string,
     info: CreatureInfo,
     anchor: HTMLElement,
-    action?: CreatureAction,
+    action?: CreatureAction | readonly CreatureAction[],
   ) => void;
   /**
    * A tap on the foe or boss on the fight stage: opens its popover (name, element, HP and what it
@@ -208,17 +213,22 @@ function CreaturePopover({
           }
         >
           {worn.length > 0 && <WornItemLines worn={worn} />}
-          {open.action !== undefined && (
-            <button
-              type="button"
-              class="pop-action"
-              onClick={() => {
-                onClose();
-                open.action?.onAct();
-              }}
-            >
-              {open.action.label}
-            </button>
+          {open.actions !== undefined && open.actions.length > 0 && (
+            <div class="pop-actions">
+              {open.actions.map((action) => (
+                <button
+                  key={action.label}
+                  type="button"
+                  class="pop-action"
+                  onClick={() => {
+                    onClose();
+                    action.onAct();
+                  }}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
           )}
         </PopoverCard>
       ) : (
@@ -321,7 +331,7 @@ export function PopoverHost({
             key,
             anchor,
             info,
-            ...(action === undefined ? {} : { action }),
+            ...(action === undefined ? {} : { actions: actionList(action) }),
           }),
         );
       },

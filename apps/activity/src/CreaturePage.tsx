@@ -1,7 +1,13 @@
 import { RULES } from '@creatures/game';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
-import { cardDomId, explorerFacts, ribbonsHeldText, type PageFocus } from './creature-card-view';
+import {
+  canLounge,
+  cardDomId,
+  explorerFacts,
+  ribbonsHeldText,
+  type PageFocus,
+} from './creature-card-view';
 import { creatureNeeds } from './creature-needs';
 import { creatureDodgeText, type DodgeRules } from './dodge-view';
 import { ItemPickerDrawer } from './creature-page/ItemPicker';
@@ -241,7 +247,7 @@ export function CreaturePage({
           <span aria-hidden="true">‹</span> Creatures
         </button>
         {flip !== undefined && <FlipNav flip={flip} />}
-        {creature.busy === null && creature.id !== state.loungerId && (
+        {canLounge(creature, state) && (
           <button
             type="button"
             class="lounge-button"

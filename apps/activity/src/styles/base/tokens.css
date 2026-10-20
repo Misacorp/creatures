@@ -26,6 +26,7 @@
   --spark: #f2d43d;
   --mire: #b8864a;
   --good: #6fdc8c;
+  --lounge: var(--good); /* the living room: the Lounge button, the Lounging and Rested tags */
   --bad: #ff5f6d;
   --line: #4a4170; /* quiet outline between things on a panel */
   --mine: #3a3270; /* a slot that holds your creature */

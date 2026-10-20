@@ -3,6 +3,7 @@
  * the status badges and the lines of the creature page. Pure; `CreatureCard.tsx` and `CreaturePage.tsx`
  * draw it. The server decides every number; nothing here computes game rules.
  */
+import { RULES, isRested } from '@creatures/game';
 import type { Creature, GameState } from './api';
 import { ribbonName } from './experience';
 import { speciesName } from './game';
@@ -108,7 +109,7 @@ export function lockedText(levels: readonly number[]): string {
 /** A status badge of the card or its page. */
 export interface Badge {
   text: string;
-  tone: 'festival' | 'shiny' | 'away' | 'busy' | 'good' | 'first';
+  tone: 'festival' | 'shiny' | 'away' | 'busy' | 'lounge' | 'rested' | 'first';
   /** The glossary entry it explains, or null. */
   entry: string | null;
   /** A small pixel picture before the words (`armchair` for Lounging), or none. */
@@ -116,15 +117,38 @@ export interface Badge {
 }
 
 /** The badges worth a glance on the card itself: what the creature is doing now (it changes what you can do). */
-export function activityBadges(creature: Creature, state: Pick<GameState, 'loungerId'>): Badge[] {
+export function activityBadges(
+  creature: Creature,
+  state: Pick<GameState, 'loungerId' | 'loungeXp'>,
+): Badge[] {
   const badges: Badge[] = [];
   if (creature.away) badges.push({ text: 'Away', tone: 'away', entry: 'away' });
   if (creature.busy?.kind === 'job') {
     badges.push({ text: 'On a job', tone: 'busy', entry: 'workshop' });
   }
-  if (creature.id === state.loungerId)
-    badges.push({ text: 'Lounging', tone: 'good', entry: null, icon: 'armchair' });
+  const xp = state.loungeXp[creature.id] ?? 0;
+  if (creature.id === state.loungerId) {
+    badges.push({ text: loungingText(xp), tone: 'lounge', entry: 'lounging', icon: 'armchair' });
+  } else if (isRested(xp)) {
+    badges.push({ text: 'Rested', tone: 'rested', entry: 'lounging' });
+  }
   return badges;
+}
+
+/** The creature can be sent to the living room: it is free (no trip, no job) and is not the lounger already. A Rested one can too. */
+export function canLounge(creature: Creature, state: Pick<GameState, 'loungerId'>): boolean {
+  return creature.busy === null && creature.id !== state.loungerId;
+}
+
+/**
+ * The lounger's tag: "Lounging 34 / 60 XP" (what lounging with company gave it today, out of the daily cap),
+ * or "Lounging · Rested" once it has had it all.
+ */
+export function loungingText(xp: number): string {
+  const { dailyCap } = RULES.experience.lounge;
+  return isRested(xp)
+    ? 'Lounging · Rested'
+    : `Lounging ${String(Math.min(xp, dailyCap))} / ${String(dailyCap)} XP`;
 }
 
 /** "Bronze Ribbon, Silver Ribbon" for the ribbons held (0 to 3), or "None yet". */

@@ -168,6 +168,7 @@ export const FIXED_GLOSSARY_IDS = [
   'rarity',
   'shiny',
   'away',
+  'lounging',
   'first-on-server',
   'gear',
   'gear-item-level',

@@ -529,7 +529,11 @@ function RarityCards() {
             gear={null}
             busy={false}
             found={false}
-            actions={{ onRibbon: () => undefined, onEvolve: () => undefined }}
+            actions={{
+              onRibbon: () => undefined,
+              onEvolve: () => undefined,
+              onLounge: () => undefined,
+            }}
             onAnswerCatch={() => undefined}
             onOpen={() => undefined}
           />

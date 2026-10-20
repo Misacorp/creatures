@@ -121,6 +121,56 @@ button.cc-open:focus-visible {
   The name on one line, always (a nickname is at most 20 letters, which fits at 360 px); a name too wide for
   the line ends in "…", and the whole name is the button's tooltip and read out in full.
 */
+/* The name's line on the card: the name, and at its end the armchair when the creature can lounge. */
+.cc-name-row {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.cc-name-row > .cc-name {
+  flex: 1 1 auto;
+}
+
+/*
+  "Lounge" on the card: only the armchair, quiet (the page's own colour, no button face) until hovered or
+  focused, so a list of cards does not grow a row of buttons. 2rem square to be tapped; the negative margin
+  keeps the line as tall as the name.
+*/
+.creature-card button.cc-lounge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  min-height: 0;
+  margin: -0.375rem -0.375rem -0.375rem 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--haze);
+}
+
+.creature-card button.cc-lounge .armchair-icon {
+  margin-right: 0;
+}
+
+.creature-card button.cc-lounge:hover:not(:disabled),
+.creature-card button.cc-lounge:focus-visible {
+  color: var(--lounge);
+  filter: none;
+}
+
+.creature-card button.cc-lounge:focus-visible {
+  outline: var(--px) solid var(--lounge);
+}
+
+.creature-card button.cc-lounge:active:not(:disabled) {
+  box-shadow: none;
+}
+
 .cc-name {
   min-width: 0;
   margin: 0;

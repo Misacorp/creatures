@@ -3,6 +3,7 @@ import { EFFECT_PREFIX, RECOMMENDED_TAG, type PickerOption } from '../roster-pic
 import { ElementChip } from '../sprites/ElementChip';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
+import { XpTrack } from './XpTrack';
 
 export interface RosterListProps {
   options: readonly PickerOption[];
@@ -97,9 +98,22 @@ export function RosterList(props: RosterListProps) {
           <span class="ro-text">
             <span class="ro-line">
               <span class="ro-name">{o.name}</span>
-              {o.action !== true && <span class="ro-level">Lv {o.level}</span>}
+              {o.action !== true && o.xpBar === undefined && (
+                <span class="ro-level">Lv {o.level}</span>
+              )}
               {o.recommended && <span class="ro-recommended">{RECOMMENDED_TAG}</span>}
+              {o.rested === true && <span class="badge rested ro-rested">Rested</span>}
             </span>
+            {o.xpBar !== undefined && (
+              <XpTrack
+                level={o.level}
+                value={o.xpBar.value}
+                max={o.xpBar.max}
+                top={o.xpBar.top}
+                label={o.xpBar.label}
+                text={o.xpBar.text}
+              />
+            )}
             {o.action !== true && (
               <span class="tags ro-tags">
                 <ElementChip as="plain" element={o.element} role={o.role} />

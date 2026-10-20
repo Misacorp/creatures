@@ -12,6 +12,8 @@ type TagTone =
   | 'busy'
   | 'festival'
   | 'good'
+  | 'lounge'
+  | 'rested'
   | 'bad'
   | 'free'
   | 'role-chip'

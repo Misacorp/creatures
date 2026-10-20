@@ -3,6 +3,7 @@ import {
   RULES,
   companyMs,
   createSeededRng,
+  glossaryEntry,
   isRested,
   loungeExperience,
   mergeSpans,
@@ -138,5 +139,14 @@ describe('loungeExperience', () => {
   it('rejects a negative or fractional time', () => {
     expect(() => loungeExperience(fresh, -1)).toThrow(RangeError);
     expect(() => loungeExperience(fresh, 0.5)).toThrow(RangeError);
+  });
+});
+
+describe('the Lounging glossary entry', () => {
+  it('says the numbers of the rules', () => {
+    const text = (glossaryEntry('lounging')?.lines ?? []).join(' ');
+    const { msPerXp, dailyCap } = RULES.experience.lounge;
+    expect(text).toContain(`1 XP every ${String(msPerXp / 60_000)} minutes`);
+    expect(text).toContain(`up to ${String(dailyCap)} XP a day`);
   });
 });

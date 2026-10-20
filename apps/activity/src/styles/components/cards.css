@@ -40,6 +40,18 @@
   color: var(--ink);
 }
 
+/* The living room's tags: Lounging (filled) and Rested (the same colour, outlined). */
+.badge.lounge {
+  background: var(--lounge);
+  color: var(--ink);
+}
+
+.badge.rested {
+  background: var(--ink);
+  color: var(--lounge);
+  box-shadow: inset 0 0 0 var(--px) var(--lounge);
+}
+
 .traits {
   margin: 0.25rem 0;
   padding: 0;
