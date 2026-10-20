@@ -75,7 +75,9 @@ describe('the expedition fixtures match what the server sends', () => {
     // A safe goal that works comes with XP, familiarity, a journal page and a new slot.
     expect(claimWorked.result.pushOn.outcome).toBe('worked');
     expect(claimWorked.result.xp.gained).toBeGreaterThan(0);
-    expect(claimWorked.result.journal).toHaveLength(1);
+    // Every tick may turn up a page, and the scripted trip rng makes every chance succeed: a page for
+    // every one of the place's pages the player lacked (a trip of many ticks finds several).
+    expect(claimWorked.result.journal.length).toBeGreaterThan(0);
     expect(claimWorked.result.slotUnlocked).toEqual({ total: 2 });
     // ... and the one-time gift of the rank it reached.
     expect(claimWorked.result.xp.rank).toBe(claimWorked.result.xp.rankBefore + 1);
@@ -89,7 +91,7 @@ describe('the expedition fixtures match what the server sends', () => {
     // The profile has every account stat, the milestones and the journal.
     expect(Object.keys(profile.stats).length).toBeGreaterThan(8);
     expect(profile.milestones.length).toBeGreaterThan(5);
-    expect(profile.journal.found).toHaveLength(1);
+    expect(profile.journal.found).toHaveLength(claimWorked.result.journal.length);
     // Destinations: all of them, with the weekly special.
     expect(destinations.destinations.length).toBeGreaterThanOrEqual(7);
     expect(destinations.special.destination.length).toBeGreaterThan(0);

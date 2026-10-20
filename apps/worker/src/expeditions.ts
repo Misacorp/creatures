@@ -38,7 +38,7 @@ import {
   rollOffer,
   slotsFor,
   tripMs,
-  tripRolls,
+  tripTicks,
   tripWeather,
   weatherTimeMs,
   NO_TRIP_WEATHER,
@@ -87,6 +87,7 @@ import {
   twistOf,
   failTrip,
   payTrip,
+  sentTicks,
   vanishedGoal,
   type ClaimEnv,
 } from './expedition-claim';
@@ -415,7 +416,7 @@ export class Expeditions {
       kit,
       destination: row.destination_id,
       twist: row.special_id,
-      rolls: row.rolls,
+      rolls: sentTicks(row),
       cost: row.cost,
       treat: row.treat === 1,
       startedAt: row.started_at,
@@ -702,10 +703,12 @@ export class Expeditions {
 
     const special = week.destination === dest.id ? week.twistId : null;
     // What the explorer's gear does on a trip is fixed now: Quick feet changes the time (with the day's
-    // weather), and the Crossroads Wanderer set adds a catch roll to a 24 hour trip.
+    // weather), and the Crossroads Wanderer set adds a tick to a 24 hour trip. The trip's `rolls` are its
+    // whole ticks (the length's, the twist's, the day's and the gear's); the map's ticks are rolled at the
+    // claim, and a worked push-on adds its hours then.
     const gear = gearRulesOf(this.sql, creature);
     const rolls =
-      tripRolls(input.duration, kit, twistOf(special)) +
+      tripTicks(input.duration, twistOf(special)) +
       fx.extraRolls +
       (input.duration === 'day' ? gear.dayTripRolls : 0);
     const ms = weatherTimeMs(

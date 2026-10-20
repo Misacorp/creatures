@@ -241,7 +241,7 @@ describe('where a creature may go', () => {
         return trip.id;
       };
       const plain = rollsOf(await sendDay());
-      expect(plain).toBe(RULES.expeditions.lengths.day.rolls);
+      expect(plain).toBe(RULES.expeditions.lengths.day.ticks);
       // Free the creature (a recall brings nothing home), then dress it in the set: two pieces change nothing.
       const free = async (id: string): Promise<void> => {
         expect((await claim(p, id)).status).toBe(200);
@@ -259,7 +259,7 @@ describe('where a creature may go', () => {
       await free(three);
       // Only the 24 hour trip: a 12 hour one has the length's rolls.
       const long = tripOf(await send(p, p.starterId, 'long')).id;
-      expect(rollsOf(long)).toBe(RULES.expeditions.lengths.long.rolls);
+      expect(rollsOf(long)).toBe(RULES.expeditions.lengths.long.ticks);
     });
   });
 
@@ -333,7 +333,7 @@ describe('where a creature may go', () => {
     while (weekIdFor(start - HOUR, HELSINKI) === weekIdFor(festival, HELSINKI)) start -= HOUR;
     const festivalSpecies = new Set(['lanternfin', 'hearthshell']);
     // Every roll brings a creature, so 50 short trips are 50 catches (the shipped chance is small).
-    const restore = certainCatches(['short']);
+    const restore = certainCatches();
     try {
       await runCore(
         nextGuild(),
@@ -547,8 +547,11 @@ describe('ranks, XP and slots', () => {
         const second = tripOf(await send(p, p.starterId, 'long'));
         ctx.clock.t = second.endsAt;
         const done = resultOf(await claim(p, second.id));
-        expect(done.xp).toMatchObject({ gained: tripXp('long', []), total: tripXp('long', []) });
-        expect(explorerRank(tripXp('long', []))).toBe(done.xp?.rank);
+        expect(done.xp).toMatchObject({
+          gained: tripXp(lengthRules('long').ticks, []),
+          total: tripXp(lengthRules('long').ticks, []),
+        });
+        expect(explorerRank(tripXp(lengthRules('long').ticks, []))).toBe(done.xp?.rank);
         // Enough XP to the next rank raises it.
         const need = RULES.expeditions.rank.xpForRank[1] ?? 0;
         setRank(ctx.sql, USER_ID, p.starterId, 1);
@@ -829,6 +832,14 @@ describe('the end-of-trip choice (push on)', () => {
         ctx.clock.t = (chosen.pushOn?.endsAt ?? 0) + 1;
         const result = resultOf(await claim(p, trip.id));
         expect(result.pushOn).toMatchObject({ goalId: goal.id, risk: 'safe', outcome: 'worked' });
+        // Every hour the goal added is a tick (no bonus) on top of the trip's own: the XP shows it.
+        if (def?.reward.xpBp === undefined) {
+          expect(result.xp?.gained).toBe(
+            (lengthRules(trip.duration as 'short' | 'medium' | 'long' | 'day').ticks +
+              (def?.extraHours ?? 0)) *
+              RULES.expeditions.tick.xp,
+          );
+        }
         expect((await state(p)).creatures[0]?.away).toBe(false);
         // A replayed claim is the stored result.
         expect(resultOf(await claim(p, trip.id))).toEqual(result);
@@ -1349,8 +1360,10 @@ describe('migration 19 and the slot wipe', () => {
         // The finished trip still pays out its catches.
         const result = resultOf(await claim(a, TRIP_A));
         expect(result.recalled).toBe(false);
-        // The trip's three rolls each brought a creature or came up empty.
-        expect(result.catches.length + (result.noCatch ?? 0)).toBe(3);
+        // The trip was out when trips began to pay in ticks (it stored 3 catch rolls): it is paid by its
+        // length, the 15 ticks of a 12 hour trip, and the XP follows them.
+        expect(result.xp?.gained).toBe(lengthRules('long').ticks * RULES.expeditions.tick.xp);
+        expect(result.catches.length).toBeLessThanOrEqual(lengthRules('long').ticks);
         // With it claimed, the one running trip fills the single slot.
         expect((await state(a)).slots).toMatchObject({ total: 1, used: 1 });
       },
@@ -1369,7 +1382,7 @@ describe('migration 19 and the slot wipe', () => {
         ctx.clock.t = T0 + 13 * HOUR;
         const result = resultOf(await claim(a, OLD_KEPT));
         expect(result.recalled).toBe(false);
-        expect(result.catches.length + (result.noCatch ?? 0)).toBe(3);
+        expect(result.xp?.gained).toBe(lengthRules('long').ticks * RULES.expeditions.tick.xp);
         expect((await state(a)).creatures[0]?.away).toBe(false);
       },
       { rng: createSeededRng('kept'), tripRng: createSeededRng('kept-trip') },
@@ -1693,9 +1706,9 @@ describe('gear on trips', () => {
         // The compass's own base line (+5% at item level 13) and a tier III Trail XP (+12%).
         expect(second.xp?.gained).toBeGreaterThan(first.xp?.gained ?? 0);
         expect(second.xp?.gained).toBe(
-          tripXp('long', [{ source: 'gear', name: 'Trail XP', bp: 500 + 1200 }]),
+          tripXp(lengthRules('long').ticks, [{ source: 'gear', name: 'Trail XP', bp: 500 + 1200 }]),
         );
-        expect(first.xp?.gained).toBe(tripXp('long', []));
+        expect(first.xp?.gained).toBe(tripXp(lengthRules('long').ticks, []));
         // The result names what added it (the compass's two Trail XP lines, by the line's name); none before.
         expect(second.xp?.boost).toEqual({
           parts: [{ source: 'gear', name: 'Trail XP', bp: 1700 }],
@@ -1705,7 +1718,10 @@ describe('gear on trips', () => {
         // The amount is the base times the Total the breakdown shows, rounded down: one rule, one parts list.
         expect(second.xp?.gained).toBe(
           Math.floor(
-            (lengthRules('long').xp * (second.xp?.boost as { totalBp: number }).totalBp) / 10_000,
+            (lengthRules('long').ticks *
+              RULES.expeditions.tick.xp *
+              (second.xp?.boost as { totalBp: number }).totalBp) /
+              10_000,
           ),
         );
       },
@@ -1714,35 +1730,38 @@ describe('gear on trips', () => {
   });
 
   it('Keen nose brings back more parts on a finished trip', async () => {
-    // Every roll brings a creature, so no empty roll adds its small find to the scrap being compared.
-    const restore = certainCatches(['day']);
-    try {
-      await runCore(
-        nextGuild(),
-        async (ctx) => {
-          const p = await join(ctx, USER, 0, 'cindle');
-          setCreature(ctx, p.starterId, { level: 15 });
-          setRank(ctx.sql, USER_ID, p.starterId, 6);
-          const scrap = RULES.expeditions.lengths.day.loot.scrap;
-          const plain = tripOf(await send(p, p.starterId, 'day'));
-          ctx.clock.t = plain.endsAt;
-          const first = resultOf(await claim(p, plain.id));
-          // Three items with tier IV Keen nose: +60%.
-          wearOn(ctx, p.starterId, 'trail-cap', 15, [['keen-nose', 3]]);
-          wearOn(ctx, p.starterId, 'patch-scarf', 15, [['keen-nose', 3]]);
-          wearOn(ctx, p.starterId, 'trail-charm', 15, [['keen-nose', 3]]);
-          const rich = tripOf(await send(p, p.starterId, 'day'));
-          ctx.clock.t = rich.endsAt;
-          const second = resultOf(await claim(p, rich.id));
-          expect(first.loot.parts['scrap']).toBe(scrap);
-          expect(second.loot.parts['scrap']).toBe(Math.floor((scrap * 16_000) / 10_000));
-          expect(second.loot.parts['scrap'] ?? 0).toBeGreaterThan(scrap);
-        },
-        { tripRng: createSeededRng('keen-nose'), rng: createSeededRng('keen-nose-rng') },
-      );
-    } finally {
-      restore();
-    }
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0, 'cindle');
+        setCreature(ctx, p.starterId, { level: 15 });
+        setRank(ctx.sql, USER_ID, p.starterId, 6);
+        // Three day trips each: a tick brings a scrap with a chance, and Keen nose raises the chance.
+        const scrapOf3 = async (): Promise<number> => {
+          let total = 0;
+          for (let i = 0; i < 3; i++) {
+            const trip = tripOf(await send(p, p.starterId, 'day'));
+            ctx.clock.t = trip.endsAt;
+            total += resultOf(await claim(p, trip.id)).loot.parts['scrap'] ?? 0;
+          }
+          return total;
+        };
+        const plain = await scrapOf3();
+        // Three items with tier IV Keen nose: +60%.
+        wearOn(ctx, p.starterId, 'trail-cap', 15, [['keen-nose', 3]]);
+        wearOn(ctx, p.starterId, 'patch-scarf', 15, [['keen-nose', 3]]);
+        wearOn(ctx, p.starterId, 'trail-charm', 15, [['keen-nose', 3]]);
+        const rich = await scrapOf3();
+        // 96 ticks at 50% of a scrap: about 48 plain and 77 with the +60%.
+        expect(plain).toBeGreaterThan(30);
+        expect(rich).toBeGreaterThan(plain);
+      },
+      {
+        tripRng: createSeededRng('keen-nose'),
+        rng: createSeededRng('keen-nose-rng'),
+        gearRng: createSeededRng('keen-nose-gear'),
+      },
+    );
   });
 
   it('a gear find from a push-on is an item of the place’s element at twice the explorer rank, with where it came from', async () => {
@@ -1821,5 +1840,138 @@ describe('gear on trips', () => {
         gearRng: createSeededRng('cross'),
       },
     );
+  });
+});
+
+describe('trips pay in ticks', () => {
+  it('pays the XP of the length’s ticks, 20 for each, and keeps the ticks in the trip', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0);
+        const trip = tripOf(await send(p, p.starterId, 'medium'));
+        ctx.clock.t = trip.endsAt;
+        const result = resultOf(await claim(p, trip.id));
+        expect(result.xp?.gained).toBe(7 * 20);
+        // The trip stored its ticks in `rolls`, and the state shows them.
+        const stored = (await state(p)).expeditions.find((e) => e.id === trip.id) as TripBody & {
+          rolls: number;
+        };
+        expect(stored.rolls).toBe(7);
+        expect(rows<{ rolls: number }>(ctx.sql, 'SELECT rolls FROM expeditions')[0]?.rolls).toBe(7);
+      },
+      { rng: createSeededRng('ticks-xp'), tripRng: createSeededRng('ticks-xp-trip') },
+    );
+  });
+
+  it('rolls a map’s extra ticks at the claim, a fraction as a chance, and pays XP for each', async () => {
+    const xp = new Set<number>();
+    for (const seed of ['map-a', 'map-b', 'map-c', 'map-d', 'map-e', 'map-f']) {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await join(ctx, USER, 0);
+          stock(ctx.sql, USER_ID, 'map-scrap-great', 1);
+          const trip = tripOf(await send(p, p.starterId, 'short', [owned('map-scrap-great')]));
+          // The send stores the length's ticks only; the map's are rolled when the trip is claimed.
+          expect(rows<{ rolls: number }>(ctx.sql, 'SELECT rolls FROM expeditions')[0]?.rolls).toBe(
+            2,
+          );
+          ctx.clock.t = trip.endsAt;
+          xp.add(resultOf(await claim(p, trip.id)).xp?.gained ?? 0);
+        },
+        { rng: createSeededRng(seed), tripRng: createSeededRng(`${seed}-trip`) },
+      );
+    }
+    // The great map on a 2 hour trip: 3.75 + 27% x 2 = 4.29 ticks, so 4 or 5 more: 6 or 7 ticks in all.
+    for (const value of xp) expect([6 * 20, 7 * 20]).toContain(value);
+  });
+
+  it('brings a satchel’s fixed scrap and shard on a finished trip, and a recall only the ticks', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0);
+        stock(ctx.sql, USER_ID, 'satchel-great', 2);
+        const recalled = tripOf(await send(p, p.starterId, 'long', [owned('satchel-great')]));
+        // One whole hour spent: one tick, with the satchel's +100% making its scrap certain, and no fixed part.
+        ctx.clock.t = recalled.startedAt + HOUR + 60_000;
+        const early = resultOf(await claim(p, recalled.id));
+        expect(early.recalled).toBe(true);
+        expect(early.loot.parts['scrap']).toBe(1);
+        const full = tripOf(await send(p, p.starterId, 'short', [owned('satchel-great')]));
+        ctx.clock.t = full.endsAt;
+        const done = resultOf(await claim(p, full.id));
+        // 10 fixed scrap and 2 ticks of one each; one sure shard (of the place's element: Tide).
+        expect(done.loot.parts['scrap']).toBe(12);
+        expect(done.loot.parts['tide-shard'] ?? 0).toBeGreaterThanOrEqual(1);
+      },
+      { rng: createSeededRng('satchel'), gearRng: createSeededRng('satchel-gear') },
+    );
+  });
+
+  it('draws a lure’s bonus creature after the ticks, and a recall never gets it', async () => {
+    const restore = certainCatches();
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await join(ctx, USER, 0);
+          ctx.sql.exec('UPDATE player_progress SET expeditions_claimed = 1');
+          // The great lure's fixed bonus is a 65% chance of one more creature that surely comes; with every tick
+          // certain, a short trip brings 2 creatures and, with the bonus, 3.
+          const counts = new Set<number>();
+          for (let i = 0; i < 12; i++) {
+            stock(ctx.sql, USER_ID, 'lure-great', 1);
+            const trip = tripOf(await send(p, p.starterId, 'short', [owned('lure-great')]));
+            ctx.clock.t = trip.endsAt;
+            counts.add(resultOf(await claim(p, trip.id)).catches.length);
+          }
+          expect([...counts].sort()).toEqual([2, 3]);
+        },
+        { rng: createSeededRng('lure-bonus'), gearRng: createSeededRng('lure-bonus-gear') },
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  it('claims a big haul: many creatures and gear pieces at once, past the pending cap', async () => {
+    const restore = certainCatches();
+    const tick = RULES.expeditions.tick as unknown as { gearBp: number };
+    const gearBefore = tick.gearBp;
+    tick.gearBp = 10_000;
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await join(ctx, USER, 0);
+          setRank(ctx.sql, USER_ID, p.starterId, RULES.expeditions.lengths.day.minRank);
+          // A 24 hour trip is 32 ticks: 32 creatures and 32 gear pieces, all of them certain here.
+          ctx.sql.exec('UPDATE player_progress SET expeditions_claimed = 1');
+          const trip = tripOf(await send(p, p.starterId, 'day'));
+          ctx.clock.t = trip.endsAt;
+          const res = await claim(p, trip.id);
+          expect(res.status).toBe(200);
+          const result = resultOf(res);
+          expect(result.catches).toHaveLength(32);
+          // Every catch is a creature or a card; the cards the player may hold are capped, the rest settled.
+          const cards = (res.body['state'] as { pending: unknown[] }).pending.length;
+          expect(cards).toBeLessThanOrEqual(RULES.talents.maxPending);
+          const settled = (result as { autoSettled?: unknown[] }).autoSettled ?? [];
+          expect(cards + settled.length).toBe(
+            result.catches.filter((c) => c.outcome === 'duplicate').length,
+          );
+          const converted = (result.loot as unknown as { converted: unknown[] }).converted.length;
+          expect(result.loot.gear.length + converted).toBe(32);
+          // The claim is stored whole: a replay returns the same result.
+          expect(resultOf(await claim(p, trip.id))).toEqual(result);
+        },
+        { rng: createSeededRng('big'), gearRng: createSeededRng('big-gear') },
+      );
+    } finally {
+      tick.gearBp = gearBefore;
+      restore();
+    }
   });
 });

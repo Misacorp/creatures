@@ -1,4 +1,4 @@
-import { RULES, createSeededRng, type ExpeditionLength } from '@creatures/game';
+import { RULES, createSeededRng } from '@creatures/game';
 import { expect } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
@@ -11,19 +11,17 @@ import type { ActivityInstance, DiscordMember, DiscordRole, DiscordUser } from '
 export const ORIGIN = 'https://creatures.test';
 
 /**
- * Makes every catch roll of these trip lengths bring a creature (the chance is 100%), for a test that
- * needs a catch on every trip rather than the chance the game shipped with. Returns the function that
- * puts the shipped chances back; call it in a `finally`.
+ * Makes every tick of a trip bring a creature (the chance is 100%), for a test that needs catches rather
+ * than the chance the game shipped with (a 2 hour trip then brings two creatures). Returns the function
+ * that puts the shipped chance back; call it in a `finally`.
  */
-export function certainCatches(lengths: readonly ExpeditionLength[]): () => void {
+export function certainCatches(): () => void {
   // RULES is frozen by type only; the sim's tuning overrides write into it the same way.
-  const rules = (l: ExpeditionLength) => RULES.expeditions.lengths[l] as { catchBp: number };
-  const before = lengths.map((l) => rules(l).catchBp);
-  for (const l of lengths) rules(l).catchBp = 10_000;
+  const tick = RULES.expeditions.tick as { creatureBp: number };
+  const before = tick.creatureBp;
+  tick.creatureBp = 10_000;
   return () => {
-    lengths.forEach((l, i) => {
-      rules(l).catchBp = before[i] as number;
-    });
+    tick.creatureBp = before;
   };
 }
 

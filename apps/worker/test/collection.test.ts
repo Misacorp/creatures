@@ -8,7 +8,7 @@ import {
   lore,
   pickQuirk,
   quirkText,
-  recallCatches,
+  recallTicks,
   type Rng,
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
@@ -58,6 +58,8 @@ function scriptedRng(values: number[]): Rng & { drawn: () => number } {
 const COMMON_SPLASHET_PLAIN = [0, 0, 0, 1];
 /** Same, but shiny. */
 const COMMON_SPLASHET_SHINY = [0, 0, 0, 0];
+/** A short trip is two ticks: after a catch the other tick misses the creature chance and draws once. */
+const THEN_MISS = [9_999];
 
 function countingRng(seed: string): Rng & { drawn: () => number } {
   const inner = createSeededRng(seed);
@@ -220,9 +222,6 @@ function stock(sql: SqlStorage, userId: string, id: string, amount: number): voi
     amount,
   );
 }
-
-/** A map scrap of the best tier: doubles the rolls of a 1-roll trip. */
-const OWNED_ATLAS = [{ id: 'map-scrap-great', source: 'owned' as const }];
 
 /** A supply taken from stock for a trip (the only way to carry one: supplies cannot be bought). */
 const own = (id: string) => ({ id, source: 'owned' as const });
@@ -807,7 +806,7 @@ describe('POST /api/expeditions', () => {
           supplies: 'basic',
           kit: [],
           destination: 'tidepools',
-          rolls: RULES.expeditions.lengths.medium.rolls,
+          rolls: RULES.expeditions.lengths.medium.ticks,
           cost: 0,
           startedAt: T0,
           endsAt: T0 + 6 * HOUR,
@@ -1035,7 +1034,7 @@ describe('Festival species', () => {
     // The exhaustive "Festival species live only at the Festival Grounds" check is a pure rule
     // (packages/game/test/expeditions.test.ts); here one real trip per everyday place proves the worker
     // catches from that place's pool. Every roll brings a creature (the shipped chance is small).
-    const restore = certainCatches(['long']);
+    const restore = certainCatches();
     try {
       await runCore(
         nextGuild(),
@@ -1095,10 +1094,11 @@ describe('POST /api/expeditions/{id}/claim', () => {
         expect(res.status).toBe(200);
         const result = resultOf(res);
         expect(result.recalled).toBe(false);
-        // Every roll either brought a creature or came up empty (a small find instead).
-        expect(result.catches.length + (result.noCatch ?? 0)).toBe(
-          RULES.expeditions.lengths.long.rolls,
-        );
+        // The trip is paid in ticks: the length's ticks were fixed when it was sent, and each is a
+        // chance of a creature (so a catch count between none and every tick).
+        expect(exp.rolls).toBe(RULES.expeditions.lengths.long.ticks);
+        expect(result.catches.length).toBeLessThanOrEqual(exp.rolls);
+        expect(result.noCatch).toBeUndefined();
         const state = res.body['state'] as StateBody;
         expect(state.creatures.find((c) => c.id === p.starterId)?.away).toBe(false);
         expect(state.slots.used).toBe(0);
@@ -1118,34 +1118,39 @@ describe('POST /api/expeditions/{id}/claim', () => {
     );
   });
 
-  it('before the end recalls with floor(rolls x elapsed / duration) catches and gives the supply back to no one', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await joinWithStarter(ctx, USER, 200);
-        stock(ctx.sql, USER_ID, 'lure-basic', 1);
-        const exp = expeditionOf(await send(p, p.starterId, 'long', [own('lure-basic')]));
-        ctx.clock.t = exp.startedAt + 8 * HOUR; // 8 of 12 hours: floor(rolls * 2/3)
-        const expected = recallCatches(exp.rolls, exp.startedAt, exp.endsAt, ctx.clock.t);
-        expect(expected).toBe(Math.floor((RULES.expeditions.lengths.long.rolls * 2) / 3));
-        const res = await claim(p, exp.id);
-        expect(res.status).toBe(200);
-        expect(resultOf(res).recalled).toBe(true);
-        expect(resultOf(res).catches).toHaveLength(expected);
-        expect((res.body['state'] as StateBody).balances.bait).toBe(200);
-        expect((res.body['state'] as StateBody).slots.used).toBe(0);
-      },
-      seeded(),
-    );
+  it('before the end recalls with a tick for every whole hour spent and gives the supply back to no one', async () => {
+    const restore = certainCatches();
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await joinWithStarter(ctx, USER, 200);
+          stock(ctx.sql, USER_ID, 'lure-basic', 1);
+          const exp = expeditionOf(await send(p, p.starterId, 'long', [own('lure-basic')]));
+          ctx.clock.t = exp.startedAt + 8 * HOUR + 30 * 60_000; // 8.5 of 12 hours: 8 whole hours
+          const expected = recallTicks('long', exp.startedAt, exp.endsAt, ctx.clock.t);
+          expect(expected).toBe(8);
+          const res = await claim(p, exp.id);
+          expect(res.status).toBe(200);
+          expect(resultOf(res).recalled).toBe(true);
+          expect(resultOf(res).catches).toHaveLength(expected);
+          expect((res.body['state'] as StateBody).balances.bait).toBe(200);
+          expect((res.body['state'] as StateBody).slots.used).toBe(0);
+        },
+        seeded(),
+      );
+    } finally {
+      restore();
+    }
   });
 
-  it('a recall with less than one roll earned gives nothing and still frees the explorer', async () => {
+  it('a recall before the first whole hour gives nothing and still frees the explorer', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100);
         const exp = expeditionOf(await send(p, p.starterId, 'medium'));
-        ctx.clock.t = exp.startedAt + 2 * HOUR; // floor(2 * 1/3) = 0
+        ctx.clock.t = exp.startedAt + 59 * 60_000; // not one whole hour yet: no tick
         const res = await claim(p, exp.id);
         // Nothing was caught, so the trip brought back no scrap and nothing else.
         expect(resultOf(res)).toEqual({
@@ -1333,7 +1338,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const res = await claim(p, exp.id);
         expect(resultOf(res).catches).toHaveLength(1);
       },
-      { rng: scriptedRng(COMMON_SPLASHET_PLAIN) },
+      { rng: scriptedRng([...COMMON_SPLASHET_PLAIN, ...THEN_MISS]) },
     );
   });
 
@@ -1374,7 +1379,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
           ctx.sql.exec<{ s: number }>('SELECT dupe_streak AS s FROM player_progress').one().s,
         ).toBe(1);
       },
-      { rng: scriptedRng(COMMON_SPLASHET_PLAIN) },
+      { rng: scriptedRng([...COMMON_SPLASHET_PLAIN, ...THEN_MISS]) },
     );
   });
   it('a duplicate of a fully fused creature still waits as a card and pays no Bait, once even on a replayed claim', async () => {
@@ -1384,8 +1389,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
         const p = await joinWithStarter(ctx, USER, 100);
         skipFirstExpedition(ctx.sql, USER_ID);
         ctx.sql.exec('UPDATE creatures SET fusion_count = 5');
-        stock(ctx.sql, USER_ID, 'map-scrap-great', 1);
-        const exp = expeditionOf(await send(p, p.starterId, 'medium', OWNED_ATLAS)); // 2 rolls
+        const exp = expeditionOf(await send(p, p.starterId, 'short')); // 2 ticks
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
         expect(resultOf(res).catches.map((c) => c.outcome)).toEqual(['duplicate', 'duplicate']);
@@ -1418,7 +1422,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
         expect(resultOf(res).catches[0]).toMatchObject({ outcome: 'duplicate', shiny: true });
         expect((res.body['state'] as StateBody).creatures[0]?.shiny).toBe(true);
       },
-      { rng: scriptedRng(COMMON_SPLASHET_SHINY) },
+      { rng: scriptedRng([...COMMON_SPLASHET_SHINY, ...THEN_MISS]) },
     );
   });
 
@@ -1442,7 +1446,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
         );
         expect(splashet?.shiny).toBe(true);
       },
-      { rng: scriptedRng(COMMON_SPLASHET_SHINY) },
+      { rng: scriptedRng([...COMMON_SPLASHET_SHINY, ...THEN_MISS]) },
     );
 
     await runCore(
@@ -1457,7 +1461,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
         expect(resultOf(res).catches[0]).toMatchObject({ outcome: 'duplicate', shiny: true });
         expect((res.body['state'] as StateBody).creatures[0]?.shiny).toBe(true);
       },
-      { rng: scriptedRng(COMMON_SPLASHET_SHINY) },
+      { rng: scriptedRng([...COMMON_SPLASHET_SHINY, ...THEN_MISS]) },
     );
   });
 
@@ -1467,8 +1471,7 @@ describe('POST /api/expeditions/{id}/claim', () => {
       async (ctx) => {
         const p = await joinWithStarter(ctx, USER, 100, 'cindle');
         skipFirstExpedition(ctx.sql, USER_ID);
-        stock(ctx.sql, USER_ID, 'map-scrap-great', 1);
-        const exp = expeditionOf(await send(p, p.starterId, 'medium', OWNED_ATLAS));
+        const exp = expeditionOf(await send(p, p.starterId, 'short'));
         ctx.clock.t = exp.endsAt;
         const res = await claim(p, exp.id);
         const [first, second] = resultOf(res).catches;
@@ -1533,7 +1536,14 @@ describe('POST /api/expeditions/{id}/claim', () => {
           { kind: 'catch', species: 'splashet', at: expA.endsAt, mine: false, holders: ['Misa'] },
         ]);
       },
-      { rng: scriptedRng([...COMMON_SPLASHET_PLAIN, ...COMMON_SPLASHET_PLAIN]) },
+      {
+        rng: scriptedRng([
+          ...COMMON_SPLASHET_PLAIN,
+          ...THEN_MISS,
+          ...COMMON_SPLASHET_PLAIN,
+          ...THEN_MISS,
+        ]),
+      },
     );
   });
 
@@ -1859,12 +1869,12 @@ describe('creature quirks', () => {
         expect(quirkRng.drawn()).toBe(drawnAfterStarter);
         expect((await p.state()).creatures[0]?.quirk).toBe('hums-quietly');
       },
-      { rng: scriptedRng(COMMON_SPLASHET_PLAIN), quirkRng },
+      { rng: scriptedRng([...COMMON_SPLASHET_PLAIN, ...THEN_MISS]), quirkRng },
     );
   });
 
   it('never draws a quirk from the catch RNG, so a catch uses exactly its own draws', async () => {
-    const rng = scriptedRng([...COMMON_SPLASHET_PLAIN, 0, 1, 1]);
+    const rng = scriptedRng([...COMMON_SPLASHET_PLAIN, ...THEN_MISS, 0, 1, 1]);
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -1875,7 +1885,8 @@ describe('creature quirks', () => {
         const exp = expeditionOf(await send(p, p.starterId));
         ctx.clock.t = exp.endsAt;
         await claim(p, exp.id);
-        expect(rng.drawn()).toBe(COMMON_SPLASHET_PLAIN.length);
+        // The catch's four draws and the one the other tick makes.
+        expect(rng.drawn()).toBe(COMMON_SPLASHET_PLAIN.length + THEN_MISS.length);
       },
       { rng },
     );

@@ -186,7 +186,7 @@ describe('trips under the weather', () => {
         twoSlots(ctx, p.id);
         const [a, b] = p.creatureIds as [string, string, string];
         sky(ctx, 'high-water');
-        const base = lengthRules('long').rolls;
+        const base = lengthRules('long').ticks;
         expect(tripOf(await send(p, a, { duration: 'long' })).rolls).toBe(base + 1);
         expect(
           tripOf(await send(p, b, { duration: 'long', destination: 'ember-caves' })).rolls,
@@ -194,7 +194,7 @@ describe('trips under the weather', () => {
         const q = await apiPlayer(ctx, 2, { level: 8 });
         expect(
           tripOf(await send(q, q.creatureIds[0] as string, { duration: 'medium' })).rolls,
-        ).toBe(lengthRules('medium').rolls);
+        ).toBe(lengthRules('medium').ticks);
       },
       { weather: true },
     );
