@@ -12,9 +12,9 @@ import type {
   DungeonRunCreature,
   DungeonStepLog,
   Element,
+  DungeonRunGear,
 } from './dungeon-types';
 import type { GearRarity } from './gear-types';
-import type { WornItem } from './gear-view';
 import { sampleItem } from './creature-page/bag-sample';
 import type { ItemLine } from '@creatures/game';
 
@@ -145,7 +145,7 @@ export function runItem(
   rarity: GearRarity,
   itemLevel: number,
   rolled: readonly ItemLine[],
-): WornItem {
+): DungeonRunGear {
   const item = sampleItem('run', baseId, rarity, itemLevel, rolled);
   return { baseId, slot: item.slot, rarity, itemLevel, lines: item.lines.map((l) => l.text) };
 }
