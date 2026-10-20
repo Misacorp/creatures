@@ -140,6 +140,14 @@ export const RULES = {
     /** Cumulative stat bonus in basis points after N fusions (index = N). */
     cumulativeBonusBp: [0, 600, 1100, 1500, 1800, 2000],
     maxFusions: 5,
+    /**
+     * Fusion is incremental (docs/design/decisions.md, 2026-10-20): each duplicate fused in adds fusion
+     * points by its rarity, and a fusion level is reached when the points reach that level's threshold.
+     * The first levels come quickly and the last ones cost a lot more.
+     */
+    pointsByRarity: { common: 1, rare: 2, epic: 4 },
+    /** Cumulative points needed to reach fusion level 1, 2, 3, 4 and 5 (1, 2, 3, 5 and 8 points per level). */
+    thresholds: [1, 3, 6, 11, 19],
   },
   /**
    * Talents and the duplicate choice (docs/design/gear-and-creatures-v2.md section 8, "Creatures A").

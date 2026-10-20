@@ -261,11 +261,21 @@ export function undoDungeonPathsMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 34');
 }
 
+/** Puts a database back to before migration 37 (fusion points): the column goes. */
+export function undoFusionPointsMigration(sql: SqlStorage): void {
+  const present = sql
+    .exec("SELECT 1 FROM pragma_table_info('creatures') WHERE name = 'fusion_points'")
+    .toArray();
+  if (present.length > 0) sql.exec('ALTER TABLE creatures DROP COLUMN fusion_points');
+  sql.exec('DELETE FROM schema_version WHERE version = 37');
+}
+
 /**
  * Puts a database back to before migration 36 (Workshop conversions): convert jobs are dropped and the
  * Workshop jobs table goes back to the kinds of migration 29.
  */
 export function undoWorkshopConvertMigration(sql: SqlStorage): void {
+  undoFusionPointsMigration(sql);
   sql.exec("DELETE FROM workshop_jobs WHERE kind = 'convert'");
   sql.exec('ALTER TABLE workshop_jobs RENAME TO workshop_jobs_v4');
   sql.exec(`CREATE TABLE workshop_jobs (

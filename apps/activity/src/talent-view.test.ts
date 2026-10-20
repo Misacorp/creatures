@@ -15,7 +15,7 @@ describe('what Recommended says and what happened', () => {
       'Taught Bigger Splash (golden) to Splashet: it is in the Talent Book.',
     );
     expect(choiceResultText(chooseFuse.result as never, creatures)).toBe(
-      'Fused Splashet into Splashet: fusion 1 / 5.',
+      'Fused Splashet into Splashet: +1 fusion, Fusion 1 · 1/3.',
     );
     expect(choiceResultText(chooseRelease.result as never, creatures)).toBe(
       'Released Splashet for 3 Scrap.',

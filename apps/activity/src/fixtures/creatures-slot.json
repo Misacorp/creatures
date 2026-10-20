@@ -21,6 +21,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -114,7 +115,8 @@
         "line": "splashet",
         "level": 8,
         "levelCap": 15,
-        "fusionCount": 3,
+        "fusionCount": 2,
+        "fusionPoints": 3,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -176,14 +178,14 @@
           ]
         },
         "stats": {
-          "hp": 193,
-          "atk": 48,
-          "spd": 52
+          "hp": 186,
+          "atk": 46,
+          "spd": 51
         },
         "statsWithGear": {
-          "hp": 193,
-          "atk": 48,
-          "spd": 52
+          "hp": 186,
+          "atk": 46,
+          "spd": 51
         },
         "dodgeBp": 0,
         "gear": [],
@@ -227,6 +229,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,

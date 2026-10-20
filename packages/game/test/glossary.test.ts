@@ -380,7 +380,11 @@ describe('the glossary text matches the rules', () => {
 
     const bonuses = RULES.fusion.cumulativeBonusBp;
     expect(text('fusion')).toContain(percent(bonuses[RULES.fusion.maxFusions] ?? 0));
-    expect(text('fusion')).toContain(`After ${String(RULES.fusion.maxFusions)}`);
+    expect(text('fusion')).toContain(`up to 20% at level ${String(RULES.fusion.maxFusions)}`);
+    const points = RULES.fusion.pointsByRarity;
+    expect(text('fusion')).toContain(
+      `${String(points.common)} if common, ${String(points.rare)} if rare, ${String(points.epic)} if epic`,
+    );
     expect(text('shiny')).toContain(`1 in ${String(RULES.catching.shiny.denominator)}`);
     expect(RULES.catching.shiny.numerator).toBe(1);
 

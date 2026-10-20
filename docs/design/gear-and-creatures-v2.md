@@ -573,12 +573,12 @@ Commons get branch evolutions and many duplicates (plenty to teach); rares and e
 
 A duplicate catch arrives as a card with its rolled talent and four buttons. The choice waits (up to 10 pending; beyond that the oldest takes the Recommended choice), so nobody has to answer at once.
 
-| Choice      | What happens                                                                                                 | When it is offered                                                   |
-| ----------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| **Teach**   | Its talent goes into the Talent Book of your creature of that line (never a slot; slot it later for Bait)    | Always (a talent already in the book only if this one is golden)     |
-| **Fuse**    | One fusion step, as today (+6, +11, +15, +18, +20% stats at 1 to 5)                                          | Until 5 fusions                                                      |
-| **Release** | Parts, not Bait: Common 3 scrap; Rare 6 scrap and 1 shard of its element; Epic 12 scrap, 2 shards, 1 glimmer | Always                                                               |
-| **Keep**    | It stays as a second creature of the line, to evolve into the other branch                                   | Only while the line has a branch you do not own (at most 2 per line) |
+| Choice      | What happens                                                                                                                      | When it is offered                                                   |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Teach**   | Its talent goes into the Talent Book of your creature of that line (never a slot; slot it later for Bait)                         | Always (a talent already in the book only if this one is golden)     |
+| **Fuse**    | Fusion points by rarity (1, 2, 4); levels at 1, 3, 6, 11, 19 points (+6, +11, +15, +18, +20% stats at 1 to 5; amended 2026-10-20) | Until fusion level 5                                                 |
+| **Release** | Parts, not Bait: Common 3 scrap; Rare 6 scrap and 1 shard of its element; Epic 12 scrap, 2 shards, 1 glimmer                      | Always                                                               |
+| **Keep**    | It stays as a second creature of the line, to evolve into the other branch                                                        | Only while the line has a branch you do not own (at most 2 per line) |
 
 Teach never fills a slot by itself (owner decision, 2026-10-17): the talent joins the creature's Talent Book and the player slots it later from the book (8.1), for the usual 10 Bait. Teach only goes to a creature of the duplicate's own line.
 

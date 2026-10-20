@@ -85,6 +85,7 @@ interface CreatureBody {
   level: number;
   levelCap: number;
   fusionCount: number;
+  fusionPoints: number;
   shiny: boolean;
   nickname: string | null;
   away: boolean;
@@ -449,6 +450,7 @@ describe('GET /api/state', () => {
           level: 1,
           levelCap: 15,
           fusionCount: 0,
+          fusionPoints: 0,
           shiny: false,
           nickname: null,
           away: false,

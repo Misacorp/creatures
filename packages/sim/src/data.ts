@@ -48,6 +48,8 @@ export interface OwnedCreature {
   speciesId: string;
   level: number;
   fusionCount: number;
+  /** Fusion points gathered; absent: the points of its `fusionCount` (a creature a test made at a fusion level). */
+  fusionPoints?: number;
   /**
    * Experience banked towards the next level, and the ribbons held (0 none, 1 Bronze, 2 Silver, 3 Gold).
    * Absent: nothing banked, and the ribbons its level is past (a creature a test made at a level).
@@ -120,6 +122,11 @@ export function withoutTalents(c: OwnedCreature): OwnedCreature {
   const rest: OwnedCreature = { ...c, noTalents: true };
   delete rest.talents;
   return rest;
+}
+
+/** The same creature with its fusions taken away (for the share of power fusion gives). */
+export function withoutFusion(c: OwnedCreature): OwnedCreature {
+  return { ...c, fusionCount: 0 };
 }
 
 /**

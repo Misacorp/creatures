@@ -720,8 +720,8 @@
     "short": "Fuse a duplicate to make a creature stronger.",
     "lines": [
       "A duplicate catch waits as a choice. Fuse it into the creature you already have.",
-      "Each fusion adds stats, up to 20% after 5 fusions.",
-      "The stars show your fusions. After 5, Teach or Release the duplicate instead."
+      "A duplicate adds fusion points: 1 if common, 2 if rare, 4 if epic. Each level takes more than the last.",
+      "Each level adds stats, up to 20% at level 5. After that, Teach or Release instead."
     ],
     "section": "expeditions"
   },

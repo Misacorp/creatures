@@ -1,7 +1,9 @@
 import {
   RULES,
   foldTalent,
-  fuseOnce,
+  fuseInto,
+  fusionLevel,
+  fusionThreshold,
   recommend,
   releaseParts,
   rollTalent,
@@ -35,6 +37,11 @@ import type { SimPlayer } from './state';
  *   (by `talentScore`) goes in, for `RULES.talents.bookSlotBait` Bait, if the player has that much.
  */
 
+/** The fusion points of a creature (the points of its level when none are stored). */
+export function pointsOf(c: OwnedCreature): number {
+  return Math.max(c.fusionPoints ?? 0, fusionThreshold(c.fusionCount));
+}
+
 /** A creature as the duplicate choice sees it. */
 export function lineView(c: OwnedCreature): LineCreature {
   const species = speciesOf(c.speciesId);
@@ -45,6 +52,7 @@ export function lineView(c: OwnedCreature): LineCreature {
     speciesId: c.speciesId,
     level: c.level,
     fusionCount: c.fusionCount,
+    fusionPoints: pointsOf(c),
     rarity: species.rarity,
     role: species.role,
     element: species.element,
@@ -111,8 +119,12 @@ export function collect(
     holdTalent(existing, roll, null);
     player.stats.dupes_taught += 1;
   } else if (rec.choice === 'fuse') {
-    const next = fuseOnce(existing.fusionCount);
-    if (next !== null) existing.fusionCount = next;
+    // The duplicate's rarity sets the points it adds.
+    const next = fuseInto(pointsOf(existing), species.rarity);
+    if (next !== null) {
+      existing.fusionPoints = next;
+      existing.fusionCount = fusionLevel(next);
+    }
     player.stats.dupes_fused += 1;
   } else {
     if (parts) creditParts(player, releaseParts(kept.rarity, kept.element));

@@ -17,7 +17,12 @@ function OptionDetail({ option }: { option: FindOption }) {
   return (
     <>
       {option.who !== null && <span class="find-who">{option.who}</span>}
-      {option.fusion !== undefined && <FusionStars count={option.fusion.count} gain />}
+      {option.fusion !== undefined && (
+        <>
+          <FusionStars count={option.fusion.count} gain={option.fusion.levelsUp} />
+          <span>{option.fusion.gain}</span>
+        </>
+      )}
       {option.book !== undefined && option.who === null && <span>To its Talent Book</span>}
       {option.book !== undefined && option.who !== null && <span>Talent Book</span>}
       {option.pays !== undefined && (

@@ -16,6 +16,7 @@ import {
   pickTeam,
   speciesOf,
   withoutGear,
+  withoutFusion,
   withoutTalents,
   wornOf,
   type OwnedCreature,
@@ -256,6 +257,11 @@ export interface DayRecord {
   fightPowerBare: number | null;
   /** The same team with its talents taken off (the gear stays), scored the same way: the talents' share is `1 - fightPowerNoTalents / fightPower`. */
   fightPowerNoTalents: number | null;
+  /** The same team with its fusions taken off (the rest stays), scored the same way: fusion's share is `1 - fightPowerNoFusion / fightPower`. */
+  fightPowerNoFusion: number | null;
+  /** The raid team's mean fusion level, and how many of its creatures are at the maximum. */
+  teamFusion: number;
+  teamMaxFused: number;
   base: number;
   levels: number;
   fusion: number;
@@ -438,6 +444,10 @@ export function recordDay(
     info.fightRank === undefined
       ? null
       : fightPower(pickTeam(player.creatures).map(withoutTalents), info.fightRank);
+  const noFusion =
+    info.fightRank === undefined
+      ? null
+      : fightPower(pickTeam(player.creatures).map(withoutFusion), info.fightRank);
   const team = pickTeam(player.creatures);
   const items = allItems(player);
   const worn = player.creatures.flatMap((c) => wornOf(c));
@@ -455,6 +465,9 @@ export function recordDay(
     fightSurvivalBp: fights === null ? null : fights.survivalBp,
     fightPowerBare: bare === null ? null : bare.power,
     fightPowerNoTalents: noTalents === null ? null : noTalents.power,
+    fightPowerNoFusion: noFusion === null ? null : noFusion.power,
+    teamFusion: team.length === 0 ? 0 : team.reduce((n, c) => n + c.fusionCount, 0) / team.length,
+    teamMaxFused: team.filter((c) => c.fusionCount >= RULES.fusion.maxFusions).length,
     base: split.base,
     levels: split.levels,
     fusion: split.fusion,

@@ -9,7 +9,9 @@
     },
     "choice": "fuse",
     "creatureId": "00000000-0000-4000-8200-000000000003",
-    "fusionCount": 1
+    "fusionCount": 1,
+    "fusionPoints": 1,
+    "pointsAdded": 1
   },
   "state": {
     "serverNow": 1799762400000,
@@ -27,6 +29,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -121,6 +124,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 1,
+        "fusionPoints": 1,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -224,6 +228,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,

@@ -106,6 +106,8 @@ export function isChoiceResult(value: unknown): value is ChoiceResult {
     isStr(talent['talentId']) &&
     isBool(talent['golden']) &&
     (value['fusionCount'] === undefined || isCount(value['fusionCount'])) &&
+    (value['fusionPoints'] === undefined || isCount(value['fusionPoints'])) &&
+    (value['pointsAdded'] === undefined || isCount(value['pointsAdded'])) &&
     (value['parts'] === undefined || isPartsBundle(value['parts']))
   );
 }

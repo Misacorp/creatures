@@ -498,6 +498,7 @@ describe('the duplicate choice', () => {
     speciesId: 'sproutle',
     level: 1,
     fusionCount: 0,
+    fusionPoints: 0,
     rarity: 'common',
     role: 'guard',
     element: 'grove',
@@ -530,10 +531,13 @@ describe('the duplicate choice', () => {
   });
 
   it('offers Fuse until the creature has all 5 fusions', () => {
-    expect(fuseOffered([creature({ fusionCount: 4 })])).toBe(true);
-    expect(fuseOffered([creature({ fusionCount: 5 })])).toBe(false);
+    expect(fuseOffered([creature({ fusionCount: 4, fusionPoints: 11 })])).toBe(true);
+    expect(fuseOffered([creature({ fusionCount: 5, fusionPoints: 19 })])).toBe(false);
     expect(
-      fuseOffered([creature({ fusionCount: 5 }), creature({ id: 'c2', fusionCount: 1 })]),
+      fuseOffered([
+        creature({ fusionCount: 5, fusionPoints: 19 }),
+        creature({ id: 'c2', fusionCount: 1, fusionPoints: 1 }),
+      ]),
     ).toBe(true);
   });
 
@@ -644,15 +648,17 @@ describe('the duplicate choice', () => {
 
   it('recommends Keep, then Fuse until 5, then Release', () => {
     const idle = roll('shares-the-sun');
-    const full = creature({ fusionCount: 5 });
+    const full = creature({ fusionCount: 5, fusionPoints: 19 });
     expect(recommend(idle, [full], true)).toEqual({ choice: 'keep' });
     expect(recommend(idle, [full], false)).toEqual({ choice: 'release' });
-    expect(recommend(idle, [creature({ fusionCount: 4 })], false)).toEqual({
+    expect(recommend(idle, [creature({ fusionCount: 4, fusionPoints: 11 })], false)).toEqual({
       choice: 'fuse',
       creatureId: 'c1',
     });
     // With two creatures, the one that can still fuse takes it.
-    expect(recommend(idle, [full, creature({ id: 'c2', fusionCount: 2 })], false)).toEqual({
+    expect(
+      recommend(idle, [full, creature({ id: 'c2', fusionCount: 2, fusionPoints: 3 })], false),
+    ).toEqual({
       choice: 'fuse',
       creatureId: 'c2',
     });

@@ -18,7 +18,10 @@ import {
   RULES,
   canTeach,
   effectiveStats,
-  fuseOnce,
+  fuseInto,
+  fusionLevel,
+  fusionThreshold,
+  canFuse,
   keepOffered,
   recommend,
   releaseParts,
@@ -76,8 +79,13 @@ type CreatureRow = {
   species: string;
   level: number;
   fusion_count: number;
+  fusion_points: number;
   line_slot: number;
 };
+
+/** A creature's fusion points: the stored ones, never below the points of its stored level. */
+const pointsOfRow = (row: { fusion_count: number; fusion_points: number }): number =>
+  Math.max(row.fusion_points, fusionThreshold(row.fusion_count));
 
 /** What the client shows for a waiting duplicate. */
 export interface PendingView {
@@ -108,8 +116,10 @@ export interface ChoiceResult {
   /** Teach and Fuse: the creature that got it. Keep: the new creature. */
   creatureId?: string;
   talent: TalentRoll;
-  /** Fuse: the creature's fusion count now. */
+  /** Fuse: the creature's fusion level now, its fusion points and the points the duplicate added. */
   fusionCount?: number;
+  fusionPoints?: number;
+  pointsAdded?: number;
   /** Release: the parts it paid. */
   parts?: PartsBundle;
 }
@@ -153,7 +163,7 @@ export class CatchChoices {
   private lineRows(userId: string, line: string): CreatureRow[] {
     return this.sql
       .exec<CreatureRow>(
-        `SELECT id, species, level, fusion_count, line_slot FROM creatures
+        `SELECT id, species, level, fusion_count, fusion_points, line_slot FROM creatures
          WHERE user_id = ? AND line = ? ORDER BY line_slot, caught_at, rowid`,
         userId,
         line,
@@ -170,11 +180,12 @@ export class CatchChoices {
         id: row.id,
         speciesId: row.species,
         level: row.level,
-        fusionCount: row.fusion_count,
+        fusionCount: fusionLevel(pointsOfRow(row)),
+        fusionPoints: pointsOfRow(row),
         rarity: species.rarity,
         role: species.role,
         element: species.element,
-        stats: effectiveStats(species, row.level, row.fusion_count),
+        stats: effectiveStats(species, row.level, fusionLevel(pointsOfRow(row))),
         slots: slotsOf(species.rarity, row.level, book),
         book: book.map((b) => ({ talentId: b.talentId, golden: b.golden })),
       };
@@ -212,7 +223,7 @@ export class CatchChoices {
       talent,
       offered: {
         teach: creatures.filter((c) => canTeach(c, roll)).map((c) => c.id),
-        fuse: creatures.filter((c) => fuseOnce(c.fusionCount) !== null).map((c) => c.id),
+        fuse: creatures.filter((c) => canFuse(c.fusionPoints)).map((c) => c.id),
         release: true,
         keep,
       },
@@ -387,9 +398,15 @@ export class CatchChoices {
       }
       case 'fuse': {
         const target = this.lineCreature(creatures, choice.creatureId);
-        const next = fuseOnce(target.fusionCount);
-        if (next === null) throw new GameError(409, 'max_fusions');
-        this.sql.exec('UPDATE creatures SET fusion_count = ? WHERE id = ?', next, target.id);
+        const points = fuseInto(target.fusionPoints, species.rarity);
+        if (points === null) throw new GameError(409, 'max_fusions');
+        const next = fusionLevel(points);
+        this.sql.exec(
+          'UPDATE creatures SET fusion_points = ?, fusion_count = ? WHERE id = ?',
+          points,
+          next,
+          target.id,
+        );
         this.deps.analytics?.record(
           {
             kind: 'fuse',
@@ -401,7 +418,14 @@ export class CatchChoices {
           },
           userId,
         );
-        result = { ...base, choice: 'fuse', creatureId: target.id, fusionCount: next };
+        result = {
+          ...base,
+          choice: 'fuse',
+          creatureId: target.id,
+          fusionCount: next,
+          fusionPoints: points,
+          pointsAdded: points - target.fusionPoints,
+        };
         break;
       }
       case 'release': {
@@ -544,7 +568,7 @@ export class CatchChoices {
   ): void {
     const row = this.sql
       .exec<CreatureRow>(
-        'SELECT id, species, level, fusion_count, line_slot FROM creatures WHERE id = ? AND user_id = ?',
+        'SELECT id, species, level, fusion_count, fusion_points, line_slot FROM creatures WHERE id = ? AND user_id = ?',
         creatureId,
         userId,
       )

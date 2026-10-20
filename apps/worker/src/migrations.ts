@@ -10,6 +10,7 @@ import { dungeonDraftMigration } from './dungeon-draft-migration';
 import { dungeonMigration } from './dungeon-migration';
 import { dungeonPathMigration } from './dungeon-path-migration';
 import { expeditionsMigration } from './expedition-migration';
+import { fusionPointsMigration } from './fusion-points-migration';
 import { gearMigration } from './gear-migration';
 import { gearV2Migration } from './gear-v2-migration';
 import { loungeMigration } from './lounge';
@@ -277,6 +278,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   loungeCompanyMigration,
   // Version 36: Workshop conversion jobs, refine and recycle (see workshop-convert-migration.ts).
   workshopConvertMigration,
+  // Version 37: fusion points per creature (see fusion-points-migration.ts).
+  fusionPointsMigration,
 ];
 
 /** The schema version of a fresh database. */
