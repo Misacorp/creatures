@@ -8,14 +8,13 @@ type TagProps = (
 ) & {
   /**
    * `text`: a dotted underline under the words. `chip`: the element is already a pixel chip or tag
-   * (give it the chip's own classes with `class`), and gets a small "?" after its text. `help`: a
-   * tiny "?" button on its own, for things that are buttons themselves (children are ignored).
+   * (give it the chip's own classes with `class`); it draws no marker and brightens on hover (Misa,
+   * 2026-10-20: no "?" on tags). `help`: a tiny "?" button on its own, for things that are buttons
+   * themselves (children are ignored).
    */
   look?: 'text' | 'chip' | 'help';
   /** What assistive technology says instead of the visible text. */
   label?: string;
-  /** With `look="chip"`: a tag without the "?" (a mark, a modifier icon, a streak). */
-  bare?: boolean;
   class?: string;
   children?: ComponentChildren;
 };
@@ -37,12 +36,7 @@ export function GlossaryTag(props: TagProps) {
   if (host === null || view === undefined) {
     return look === 'help' ? null : <span class={plainClass}>{props.children}</span>;
   }
-  const classes = [
-    'gtag',
-    look === 'text' ? '' : `gtag-${look}`,
-    look === 'chip' && props.bare === true ? 'gtag-bare' : '',
-    plainClass ?? '',
-  ]
+  const classes = ['gtag', look === 'text' ? '' : `gtag-${look}`, plainClass ?? '']
     .filter(Boolean)
     .join(' ');
   const label = props.label ?? (look === 'help' ? `What is ${view.title}?` : undefined);

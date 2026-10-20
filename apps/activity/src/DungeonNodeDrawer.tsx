@@ -178,7 +178,7 @@ function LootRow({ pack }: { pack: DungeonPack }) {
   return (
     <div class="dnd-loot">
       <span>{LOOT_LABEL}:</span>
-      <CountBadgeList items={packBadges(pack)} label={LOOT_LABEL} class="dnd-loot-items" bare />
+      <CountBadgeList items={packBadges(pack)} label={LOOT_LABEL} class="dnd-loot-items" />
     </div>
   );
 }

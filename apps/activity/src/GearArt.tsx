@@ -212,17 +212,14 @@ export function PartCount({
   kind,
   amount,
   tag = true,
-  bare = false,
 }: {
   kind: PartKind;
   amount: number;
   /** False inside a button, where a tag cannot sit. */
   tag?: boolean;
-  /** Still tappable for its help, with no "?" after it (a found part). */
-  bare?: boolean;
 }) {
   const { entry, ...badge } = partBadge(kind, amount);
-  return <CountBadge {...badge} {...(tag && entry !== undefined ? { entry, bare } : {})} />;
+  return <CountBadge {...badge} {...(tag && entry !== undefined ? { entry } : {})} />;
 }
 
 /** All the parts a player holds, as icons with numbers (zero counts included, so the row never jumps). */

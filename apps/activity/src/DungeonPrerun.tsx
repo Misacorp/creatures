@@ -44,7 +44,6 @@ export function DungeonPrerun({
         <GlossaryTag
           entry="streak"
           look="chip"
-          bare
           class="streak-tag"
           label={`${streakLabel(today.streak)}. What is a streak?`}
         >

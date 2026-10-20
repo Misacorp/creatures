@@ -158,7 +158,7 @@ export function TripResult({
           {view.counts.length > 0 && (
             <p class="tr-counts">
               {view.counts.map(({ key, ...badge }) => (
-                <CountBadge key={key} {...badge} bare />
+                <CountBadge key={key} {...badge} />
               ))}
             </p>
           )}

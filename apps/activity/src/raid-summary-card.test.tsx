@@ -149,8 +149,8 @@ describe('the rewards', () => {
     expect(row.getAttribute('class')).toContain('no-pile');
     const badges = first(byClass(row, 'reward-badges'));
     expect(visibleText(badges)).toContain('46');
-    // The finale's parts are counts too (Scrap 4, Glimmer 1); the resource badges have no "?" marker.
-    expect(byClass(badges, 'gtag-bare').length).toBeGreaterThan(0);
+    // The finale's parts are counts too (Scrap 4, Glimmer 1), each a tag that opens its help.
+    expect(byClass(badges, 'gtag-chip').length).toBeGreaterThan(0);
     // The gear is one find box in the same section, with no sub-heading of its own.
     expect(byClass(p.root, 'find-row')).toHaveLength(1);
     expect(text(p)).not.toContain('Finale reward');

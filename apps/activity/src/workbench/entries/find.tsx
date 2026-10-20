@@ -183,7 +183,6 @@ const findRow: Entry = {
             items={[essenceCount(14, { entry: true }), ...partCountItems({ scrap: 3, glimmer: 1 })]}
             label="Resources"
             class="reward-badges"
-            bare
           />
         )}
         {any && (

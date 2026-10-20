@@ -15,8 +15,6 @@ export interface CountBadgeProps {
   entry?: string;
   /** A visible name after the number, for a badge that is not explained anywhere else. */
   name?: string;
-  /** With `entry`: still tappable for its help, but without the small "?" after it (a reward or find). */
-  bare?: boolean;
 }
 
 /** One entry of a row of count badges: the props of a badge and a key for the list. */
@@ -26,15 +24,7 @@ export type CountItem = CountBadgeProps & { key: string };
  * An icon with a number (and, when asked for, its name): the one count badge of parts, Bait,
  * Essence and supplies on every reward and cost line.
  */
-export function CountBadge({
-  icon,
-  amount,
-  spokenAmount,
-  label,
-  entry,
-  name,
-  bare = false,
-}: CountBadgeProps) {
+export function CountBadge({ icon, amount, spokenAmount, label, entry, name }: CountBadgeProps) {
   const body = (
     <>
       <GameIcon icon={icon} scale={2} />
@@ -48,7 +38,6 @@ export function CountBadge({
       <GlossaryTag
         entry={entry}
         look="chip"
-        bare={bare}
         class="part-count"
         {...(spoken === undefined ? {} : { label: spoken })}
       >
@@ -73,21 +62,18 @@ export function CountBadgeList({
   items,
   label,
   class: cls,
-  bare = false,
   children,
 }: {
   items: readonly CountItem[];
   label: string;
   class?: string;
-  /** No "?" after the badges that open a help (a list of finds or rewards). */
-  bare?: boolean;
   children?: ComponentChildren;
 }) {
   return (
     <ul {...(cls === undefined ? {} : { class: cls })} aria-label={label}>
       {items.map(({ key, ...badge }) => (
         <li key={key}>
-          <CountBadge {...badge} {...(bare ? { bare: true } : {})} />
+          <CountBadge {...badge} />
         </li>
       ))}
       {children}

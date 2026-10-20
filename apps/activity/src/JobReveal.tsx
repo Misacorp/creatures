@@ -59,7 +59,7 @@ function DismantleRow({ result }: { result: Extract<JobResult, { kind: 'dismantl
       {gave.length === 0 ? (
         <p class="muted">Nothing</p>
       ) : (
-        <CountBadgeList items={gave} label="Became" class="gives jr-gives" bare />
+        <CountBadgeList items={gave} label="Became" class="gives jr-gives" />
       )}
     </div>
   );

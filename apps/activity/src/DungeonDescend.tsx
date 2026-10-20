@@ -84,7 +84,6 @@ export function DungeonDescend({
                   items={counts}
                   label="Supplies and parts banked"
                   class="descend-counts"
-                  bare
                 />
               )}
             </>

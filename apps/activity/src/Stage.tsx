@@ -573,7 +573,6 @@ export function Stage({
               <GlossaryTag
                 entry={markId === undefined ? '' : GLOSSARY_IDS.mark(markId)}
                 look="chip"
-                bare
                 class="mark-tag"
                 label={`Marked: ${markName ?? state.mark}. What does this mean?`}
               >

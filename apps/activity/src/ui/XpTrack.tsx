@@ -60,7 +60,7 @@ export function XpTrack({
       {levelEntry === undefined ? (
         <span class="xp-lv">{tag}</span>
       ) : (
-        <GlossaryTag entry={levelEntry} look="chip" bare class="xp-lv pix">
+        <GlossaryTag entry={levelEntry} look="chip" class="xp-lv pix">
           {tag}
         </GlossaryTag>
       )}

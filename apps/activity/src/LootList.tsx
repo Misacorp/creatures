@@ -60,7 +60,7 @@ export function LootList({
         <ul class="loot-parts" aria-label="Parts">
           {parts.map((p) => (
             <li key={p.kind}>
-              <PartCount kind={p.kind} amount={p.amount} bare />
+              <PartCount kind={p.kind} amount={p.amount} />
             </li>
           ))}
         </ul>

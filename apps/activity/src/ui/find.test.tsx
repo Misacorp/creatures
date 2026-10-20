@@ -8,6 +8,13 @@ import { FindCreature } from './FindCreature';
 import { FindItem, FindItems } from './FindItem';
 import { FindList } from './FindRow';
 
+/** Every stylesheet as text: a "?" marker would be a CSS `content`, which the tests' DOM does not draw. */
+const sheets = import.meta.glob<string>('../styles/**/*.css', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
 /**
  * The shared "find" components (2026-10-20): anything gained or found is drawn with them, so a player
  * learns to recognise it. Gear is a `FindItem`, a blueprint a `FindBlueprint` (the same box, no rarity), a
@@ -166,11 +173,10 @@ describe('a found creature', () => {
 });
 
 describe('resources of a find', () => {
-  it('are count badges that open their help with no "?" marker', () => {
+  it('are count badges that open their help', () => {
     const p = draw(
       <CountBadgeList
         label="Rewards"
-        bare
         items={[
           {
             key: 'essence',
@@ -184,25 +190,15 @@ describe('resources of a find', () => {
     );
     const tag = first(find(p.root, (e) => e.localName === 'button'));
     expect(classes(tag)).toContain('gtag-chip');
-    expect(classes(tag)).toContain('gtag-bare');
+    expect(tag.getAttribute('aria-label')).toBe('Essence: 4');
   });
+});
 
-  it('keep the "?" where they are not a find (a cost, a price) unless asked', () => {
-    const p = draw(
-      <CountBadgeList
-        label="Cost"
-        items={[
-          {
-            key: 'essence',
-            icon: { kind: 'glyph', id: 'gem' },
-            amount: 4,
-            label: 'Essence',
-            entry: 'essence',
-          },
-        ]}
-      />,
-    );
-    const tag = first(find(p.root, (e) => e.localName === 'button'));
-    expect(classes(tag)).not.toContain('gtag-bare');
+describe('tags that explain themselves', () => {
+  it('draw no "?" marker anywhere (Misa: no "?" on tags; the lone help button is the only "?")', () => {
+    const css = Object.values(sheets)
+      .map((sheet) => sheet.replace(/\/\*[\s\S]*?\*\//g, ''))
+      .join('\n');
+    expect(css).not.toMatch(/content\s*:\s*['"]\?['"]/);
   });
 });

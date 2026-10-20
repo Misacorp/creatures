@@ -148,7 +148,6 @@ export function DungeonResults({
                 items={bonus.counts}
                 label={bonus.title}
                 class="reward-badges streak-bonus-badges"
-                bare
               />
             )}
           </section>

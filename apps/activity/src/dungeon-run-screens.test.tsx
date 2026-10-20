@@ -959,7 +959,7 @@ describe('the results of a path run', () => {
     const badges = byClass(root, 'reward-badges')[0] as FakeElement;
     const tags = find(badges, (e) => e.localName === 'button');
     expect(tags.length).toBeGreaterThan(0);
-    expect(tags.every((t) => (t.getAttribute('class') ?? '').includes('gtag-bare'))).toBe(true);
+    expect(tags.every((t) => (t.getAttribute('class') ?? '').includes('gtag-chip'))).toBe(true);
   });
 
   it('gives the streak bonus its own titled section with the gift, and no lone parts under the gear', () => {

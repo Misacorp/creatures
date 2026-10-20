@@ -238,18 +238,16 @@ const glossaryTag: Entry = {
   file: 'apps/activity/src/Glossary.tsx',
   group: 'Tags & chips',
   description:
-    'Any word or chip that explains itself: tap it and a popover with a short text opens. Text words get a dotted underline, chips a small "?".',
+    'Any word or chip that explains itself: tap it and a popover with a short text opens. Text words get a dotted underline; chips show no marker and brighten on hover.',
   controls: {
     entry: { kind: 'select', options: GLOSSARY_SAMPLE.filter((e) => e !== NONE) },
     look: { kind: 'select', options: ['text', 'chip', 'help'] },
-    bare: { kind: 'toggle' },
     text: { kind: 'text', maxLength: 30 },
   },
-  defaults: { entry: 'essence', look: 'text', bare: false, text: 'Essence' },
+  defaults: { entry: 'essence', look: 'text', text: 'Essence' },
   presets: [
     { name: 'Underlined word', props: { look: 'text', entry: 'essence', text: 'Essence' } },
-    { name: 'Chip with "?"', props: { look: 'chip', entry: 'festival', text: 'Festival' } },
-    { name: 'Bare chip', props: { look: 'chip', bare: true, entry: 'streak', text: 'Streak' } },
+    { name: 'Chip', props: { look: 'chip', entry: 'festival', text: 'Festival' } },
     { name: 'Help button', props: { look: 'help', entry: 'push-on' } },
   ],
   render: (p) => {
@@ -258,7 +256,6 @@ const glossaryTag: Entry = {
       <GlossaryTag
         entry={str(p, 'entry')}
         look={look === 'chip' || look === 'help' ? look : 'text'}
-        bare={bool(p, 'bare')}
         {...(look === 'chip' ? { class: 'chip' } : {})}
       >
         {str(p, 'text')}
