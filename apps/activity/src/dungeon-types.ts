@@ -13,6 +13,7 @@
 import type { FightEvent } from '@creatures/engine';
 import type { ExperienceView } from './experience';
 import type { LootPiece, PartsBundle } from './gear-types';
+import type { WornItem } from './gear-view';
 
 export type Element = 'tide' | 'ember' | 'grove' | 'spark' | 'mire';
 export type Role = 'setter' | 'payoff' | 'support' | 'guard';
@@ -129,6 +130,8 @@ export interface DungeonRunCreature {
   hpMax: number;
   /** It carries a treat (double experience). A creature swapped in at the camp never does. */
   treat: boolean;
+  /** What it wears in this run, frozen when it joined, each item with its lines' text. */
+  gear: WornItem[];
 }
 
 /** A buff for the rest of the run. `description` is the exact effect, one plain line. */

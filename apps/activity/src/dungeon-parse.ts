@@ -6,7 +6,8 @@
  */
 import { ELEMENTS, RoleSchema } from '@creatures/game';
 import { isExperienceView } from './experience';
-import { isConvertedLoot, isGearLoot, isPartsBundle } from './gear-parse';
+import { isConvertedLoot, isGearLoot, isPartsBundle, isRarity, isSlot } from './gear-parse';
+import type { WornItem } from './gear-view';
 import { isEvent, isEventNames } from './raid-api';
 import { isArrayOf, isBool, isCount, isInt, isRecord, isStr } from './parse-core';
 import type {
@@ -306,7 +307,20 @@ function isRunCreature(value: unknown): value is DungeonRunCreature {
     isInt(value['level']) &&
     isCount(value['hp']) &&
     isCount(value['hpMax']) &&
-    isBool(value['treat'])
+    isBool(value['treat']) &&
+    isArrayOf(value['gear'], isRunGear)
+  );
+}
+
+/** One item a run's creature wears: a known slot and rarity, a level, and its lines' text. */
+function isRunGear(value: unknown): value is WornItem {
+  return (
+    isRecord(value) &&
+    isStr(value['baseId']) &&
+    isSlot(value['slot']) &&
+    isRarity(value['rarity']) &&
+    isInt(value['itemLevel']) &&
+    isArrayOf(value['lines'], isStr)
   );
 }
 

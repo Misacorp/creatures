@@ -150,6 +150,7 @@ export function sampleRunCreatures(): DungeonRunCreature[] {
     hp: m.hpMax,
     hpMax: m.hpMax,
     treat: i === 0,
+    gear: [],
   }));
 }
 
