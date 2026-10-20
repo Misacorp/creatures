@@ -297,6 +297,7 @@ export function simulateFight(
       paybackReady: 0,
       emberTailReady: 0,
       patientReady: 0,
+      momentumReady: 0,
       rallyCry: 0,
       stubbornUsed: false,
       lastStandDone: false,

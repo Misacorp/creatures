@@ -389,7 +389,15 @@ const SHEETS: SlotMods[] = [
   { paybackBp: 1_500, kindlingBp: 1_200, openingMark: 1, rallyCryBp: 800 },
   { emberTailBp: 1_500, stormWarningBp: 2_500, overflowBp: 1_500, secondBreathBp: 1_500 },
   { patientBp: 2_000, secondBreathBp: 2_000, takenBp: -1_500, lingerRounds: 1 },
-  { markedFoeBp: -500, mendBp: 500, healReceivedBp: 2_000 },
+  // The on-dodge lines (2026-10-20) are inert in these fights: they carry no dodge rules, so nobody dodges.
+  {
+    markedFoeBp: -500,
+    mendBp: 500,
+    healReceivedBp: 2_000,
+    riposteBp: 3_000,
+    momentumBp: 1_600,
+    slipstreamBp: 1_200,
+  },
 ];
 
 /** A 53-bit string hash (cyrb53): enough to tell two results apart. */

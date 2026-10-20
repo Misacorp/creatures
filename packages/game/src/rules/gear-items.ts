@@ -538,6 +538,9 @@ export interface GearMods {
   secondWindBp?: number;
   echoBp?: number;
   sidestepBp?: number;
+  /** Dodge (`combat-rules.md` 14): flat points on every dodgeable hit (Light-footed), and on area hits only (Sidestep, with dodge on). */
+  dodgeBp?: number;
+  areaDodgeBp?: number;
   steadyPawsBp?: number;
   warmHeartBp?: number;
   quickRemarkBp?: number;
@@ -554,6 +557,10 @@ export interface GearMods {
   secondBreathBp?: number;
   patientBp?: number;
   sharedWarmthBp?: number;
+  /** On-dodge lines (`combat-rules.md` 12): they fire when the wearer dodges a boss hit. */
+  riposteBp?: number;
+  momentumBp?: number;
+  slipstreamBp?: number;
 }
 
 /** What gear does outside the fight, for the wearer (basis points; a time reduction is a positive number). */
@@ -633,7 +640,7 @@ export interface WornEffects {
   hpItem: number;
   critChanceBp: number;
   critDamageBp: number;
-  /** Speed, more (a share; only a talent gives it). */
+  /** Speed, more (a share): a Fleet line or the Zoomies talent. */
   spdBp: number;
   /** The modifier sheet; empty when no line fills it. */
   mods: GearMods;
@@ -674,6 +681,7 @@ type SheetNumeric =
   | 'debuffResistBp'
   | 'debuffPowerBp'
   | 'debuffDurationTurns'
+  | 'areaDodgeBp'
   | (typeof CHANCE_FIELDS)[number]
   | Exclude<(typeof TRIGGER_FIELDS)[number], 'openingMark' | 'stubborn'>;
 
@@ -783,6 +791,7 @@ const CAPPED_AT_WHOLE = [
   'reflectedBp',
   'chargedBp',
   'debuffResistBp',
+  'areaDodgeBp',
   ...CHANCE_FIELDS,
   'stormWarningBp',
   'lastStandBp',
@@ -849,6 +858,9 @@ export function wornEffects(
         } else if (effect.stat === 'hp') {
           if (effect.mode === 'pct') out.hpBp += value;
           else out.hpFlat += value;
+        } else if (effect.stat === 'spd') {
+          // Fleet: a share of the creature's Speed (folded like Zoomies, `applyGear`).
+          if (effect.mode === 'pct') out.spdBp += value;
         } else if (effect.stat === 'critChance') out.critChanceBp += value;
         else out.critDamageBp += value;
         break;
@@ -891,6 +903,10 @@ export function wornEffects(
           sheet.ignoreSilence = 1;
         } else if (effect.field === 'openingMark' || effect.field === 'stubborn') {
           sheet[effect.field] = 1;
+        } else if (effect.field === 'sidestepBp' && RULES.combat.dodge.enabled) {
+          // The one switch (`RULES.combat.dodge.enabled`): with dodge on, Sidestep is flat dodge against area
+          // hits; with it off the old chance (its own dice) stays. A stored fight with `sidestepBp` replays as it was.
+          addSheet('areaDodgeBp', value);
         } else {
           addSheet(effect.field, value);
         }
@@ -1070,6 +1086,32 @@ export function itemScore(
   return centi;
 }
 
+const DODGE_FIELDS: ReadonlySet<string> = new Set([
+  'dodgeBp',
+  'areaDodgeBp',
+  'riposteBp',
+  'momentumBp',
+  'slipstreamBp',
+]);
+const EFFECT_FIELDS: ReadonlySet<string> = new Set([
+  'debuffResistBp',
+  'debuffPowerBp',
+  'debuffDurationTurns',
+]);
+
+/**
+ * True for a line that does nothing in a fight while its rules switch is off: Fleet's Speed and the dodge
+ * lines need `RULES.combat.dodge.enabled`, the debuff lines `RULES.combat.effects.enabled`. Such a line
+ * scores 0, so "Equip best" and the simulator do not pick dead weight (and the score moves when the switch flips).
+ */
+function switchedOff(line: GearLine): boolean {
+  const effect = line.effect;
+  if (effect.kind === 'stat') return effect.stat === 'spd' && !RULES.combat.dodge.enabled;
+  if (effect.kind !== 'sheet') return false;
+  if (DODGE_FIELDS.has(effect.field)) return !RULES.combat.dodge.enabled;
+  return EFFECT_FIELDS.has(effect.field) && !RULES.combat.effects.enabled;
+}
+
 /**
  * The share of a creature's power one line adds, in hundredths of power (see `itemScore`): in full for
  * the wearer it is meant for, a quarter otherwise, 0 for a line that does nothing for the wearer or
@@ -1082,8 +1124,10 @@ export function lineScore(
   wearer: Wearer,
   powerCenti: number,
 ): number {
-  if (line.worth === 0 || !lineApplies(line, wearer)) return 0;
-  const v = line.unit === 'once' ? 10_000 : value;
+  if (line.worth === 0 || !lineApplies(line, wearer) || switchedOff(line)) return 0;
+  // Clinging counts turns, not basis points: each extra turn is worth a quarter of what a whole 100% line is.
+  const turns = line.effect.kind === 'sheet' && line.effect.field === 'debuffDurationTurns';
+  const v = line.unit === 'once' ? 10_000 : turns ? value * 2_500 : value;
   const meant =
     line.roles.length > 0 && !line.restricted
       ? line.roles.includes(wearer.role)

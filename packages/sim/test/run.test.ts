@@ -64,17 +64,26 @@ describe('simulation run', () => {
     // to 0.2529, creature ratio 1.0067 to 1.1972, a dungeon run 4.5268 to 4.7232 fights (home rate 0.1339
     // to 0.1429). The long run (0.8333, final rank 4), the top level and the Experience rate did not move.
     // Noise-sized moves from changed pools and dice in a tiny run, not a balance change.
+    // 2026-10-20 (dodge and debuff lines): Fleet, Light-footed, Riposte, Momentum and Slipstream joined the
+    // item line pools, Clean coat, Heavy hand and Clinging started rolling on items, and three talents were
+    // added (Slips Away, Long Strides, Soot on Its Paws). Dodge and effects are off, so none of it acts in a
+    // fight; the new lines score 0 while their switch is off. Checked by emptying the new lines' weights and
+    // taking the talents out again: every number came back to its old value exactly. So the moves are only
+    // the larger pools and talent lists changing every seeded draw after them: the raid phase 1 win rate 0.6667
+    // to 1 and the finale win rate 0.5 to 1 (two flipped weeks in 4), finale start share 0.4322 to 0.2549, top
+    // share 0.2529 to 0.2934, creature ratio 1.1972 to 1.0065, a dungeon run 4.7232 to 4.6518 fights (home rate
+    // 0.1429 to 0.125). The long run, the top level and the Experience rate did not move.
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
-      'raid.typical.phase1ClearRate': 0.6667,
-      'raid.typical.finaleWinRate': 0.5,
-      'raid.typical.finaleStartShare': 0.4322,
-      'fair.topShareMedian': 0.2529,
-      'choice.creatureRatioMax': 1.1972,
+      'raid.typical.phase1ClearRate': 1,
+      'raid.typical.finaleWinRate': 1,
+      'raid.typical.finaleStartShare': 0.2549,
+      'fair.topShareMedian': 0.2934,
+      'choice.creatureRatioMax': 1.0065,
       'econ.casualTopLevelWeek4': 10,
       'exp.rate.long': 75.4138,
-      'dungeon.meanFights': 4.7232,
-      'dungeon.dailyHomeRate': 0.1429,
+      'dungeon.meanFights': 4.6518,
+      'dungeon.dailyHomeRate': 0.125,
       'longrun.typical.finaleWinRate': 0.8333,
       'longrun.typicalFinalRank': 4,
     };

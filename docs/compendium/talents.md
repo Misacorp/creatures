@@ -122,6 +122,7 @@ Mud Off Its Back is the Guard talent that resists debuffs (the line Clean coat);
 | Digs for Friends         | Teaches the workbench faster.                      |
 | Hoards Cosy Things       | Finds a few more parts on its trips.               |
 | Tunnels Through Anything | Digs past a foe's defence.                         |
+| Soot on Its Paws         | What it sticks to a foe sticks a little deeper.    |
 
 ### Stormray line (Spark Payoff, rare)
 
@@ -159,6 +160,7 @@ Mud Off Its Back is the Guard talent that resists debuffs (the line Clean coat);
 | Fierce About Its Territory | Hits harder against Ember foes.                                                                                 |
 | Lance Practice             | Its Coral Lance strikes harder.                                                                                 |
 | Elegant                    | It does nothing clumsily: more attack.                                                                          |
+| Slips Away                 | Light on its feet: it is hit less often.                                                                        |
 | Patrols at Dusk            | Not shipped as written: it is a plain Explorer XP talent for now (the Moonlit Reef bonus waits for the engine). |
 
 ### Epic and Festival lines
@@ -186,6 +188,7 @@ Their pools:
 | Crown of Embers          | Its Ember reactions cash in bigger.    |
 | Generous with Its Warmth | The mark it leaves is worth following. |
 | Warm Steps               | Quick feet on a trip.                  |
+| Long Strides             | A longer stride: more Speed.           |
 
 ### Gaiadrake line (Grove Guard, epic)
 

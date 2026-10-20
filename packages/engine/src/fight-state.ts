@@ -61,7 +61,7 @@ export interface Creature {
    * Support buffs waiting for this creature's next hit. `tag` marks a boost a gear line gave (Kindling,
    * Warm heart, Overflow): it is kept apart from the Support's own, which a Support replaces each round.
    */
-  buffs: { from: number; bp: number; tag?: 'kindling' | 'warm' | 'overflow' }[];
+  buffs: { from: number; bp: number; tag?: 'kindling' | 'warm' | 'overflow' | 'slipstream' }[];
   /** This creature's crit chance and extra crit damage (basis points); 0 when crits are off. */
   critChanceBp: number;
   critBp: number;
@@ -79,6 +79,8 @@ export interface Creature {
   paybackReady: number;
   emberTailReady: number;
   patientReady: number;
+  /** Momentum: the bonus its next turn hit gets after a dodge (replaces an earlier one). */
+  momentumReady: number;
   /** Rally cry: the bonus its hits have for the rest of the fight (one share per fallen neighbour). */
   rallyCry: number;
   /** Stubborn has been used this fight. */

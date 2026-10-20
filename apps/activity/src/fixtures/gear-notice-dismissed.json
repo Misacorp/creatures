@@ -38,10 +38,10 @@
         ],
         "lines": [
           {
-            "id": "back-row-patience",
-            "name": "Back-row patience",
-            "text": "Back-row patience +1.5 pt",
-            "about": "More crit chance while in the Back row.",
+            "id": "tide-reaction",
+            "name": "Steam bonus",
+            "text": "Steam bonus +9%",
+            "about": "The bonus of the reaction Tide creatures set off is bigger.",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
@@ -49,10 +49,10 @@
             "active": true
           },
           {
-            "id": "ember-attunement",
-            "name": "Ember Attunement",
-            "text": "Ember Attunement +5%",
-            "about": "Raises Attack, but only for a Ember creature.",
+            "id": "edge-walker",
+            "name": "Edge-walker",
+            "text": "Edge-walker +4%",
+            "about": "More Attack at either end of its row.",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
@@ -115,17 +115,6 @@
         ],
         "lines": [
           {
-            "id": "front-liner",
-            "name": "Front-liner",
-            "text": "Front-liner −4%",
-            "about": "Takes less damage from every hit while in the Front row.",
-            "source": "rolled",
-            "tier": 2,
-            "bestTier": 1,
-            "local": false,
-            "active": true
-          },
-          {
             "id": "tide-ward",
             "name": "Tide Ward",
             "text": "Tide Ward −7%",
@@ -137,10 +126,21 @@
             "active": true
           },
           {
-            "id": "area-ward",
-            "name": "Area ward",
-            "text": "Area ward −5%",
-            "about": "Area hits do less damage to the wearer.",
+            "id": "tide-attunement",
+            "name": "Tide Attunement",
+            "text": "Tide Attunement +5%",
+            "about": "Raises Attack, but only for a Tide creature.",
+            "source": "rolled",
+            "tier": 2,
+            "bestTier": 1,
+            "local": false,
+            "active": false
+          },
+          {
+            "id": "ember-ward",
+            "name": "Ember Ward",
+            "text": "Ember Ward −7%",
+            "about": "Less damage from the foes that beat Ember.",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
@@ -201,10 +201,10 @@
             "active": null
           },
           {
-            "id": "guards-shadow",
-            "name": "Guard's shadow",
-            "text": "Guard's shadow +7%",
-            "about": "More Attack while a living Guard stands beside the wearer.",
+            "id": "packer",
+            "name": "Packer",
+            "text": "Packer +20%",
+            "about": "More chance of finding a supply on the wearer's trips.",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
@@ -358,7 +358,7 @@
         },
         "statsWithGear": {
           "hp": 148,
-          "atk": 66,
+          "atk": 63,
           "spd": 42
         },
         "gear": [

@@ -156,7 +156,8 @@ export type PositionRule = (typeof POSITION_RULES)[number];
 /**
  * The sheet fields of the chance lines (a chance in basis points, rolled on the creature's luck dice in the
  * fight) and of the trigger lines (a bonus, boost, cut or heal that a named moment sets off; the flags
- * `openingMark` and `stubborn` have no number). Both are special lines (`SPECIAL_GROUPS`).
+ * `openingMark` and `stubborn` have no number). Both are special lines (`SPECIAL_GROUPS`). Sidestep keeps its own
+ * field `sidestepBp`: with dodge on the fold turns it into `areaDodgeBp` (`wornEffects`).
  */
 export const CHANCE_FIELDS = [
   'secondWindBp',
@@ -166,6 +167,8 @@ export const CHANCE_FIELDS = [
   'warmHeartBp',
   'quickRemarkBp',
   'spillOverBp',
+  // Light-footed (2026-10-20): flat points of dodge, a chance line in the card's eyes (it reads "Light-footed 4%").
+  'dodgeBp',
 ] as const;
 export const TRIGGER_FIELDS = [
   'paybackBp',
@@ -180,6 +183,10 @@ export const TRIGGER_FIELDS = [
   'secondBreathBp',
   'patientBp',
   'sharedWarmthBp',
+  // On-dodge lines: they fire when the wearer dodges a boss hit (a fight with dodge on).
+  'riposteBp',
+  'momentumBp',
+  'slipstreamBp',
 ] as const;
 /** The chance lines that act outside the fight (the server rolls them with its live randomness). */
 export const CHANCE_RULES = ['tinkersLuck', 'secondLook'] as const;
@@ -196,7 +203,7 @@ export const CHANCE_RULES = ['tinkersLuck', 'secondLook'] as const;
 export const LineEffectSchema = v.variant('kind', [
   v.strictObject({
     kind: v.literal('stat'),
-    stat: v.picklist(['atk', 'hp', 'critChance', 'critDamage']),
+    stat: v.picklist(['atk', 'hp', 'critChance', 'critDamage', 'spd']),
     mode: v.picklist(['pct', 'flat']),
   }),
   v.strictObject({ kind: v.literal('attune') }),

@@ -200,10 +200,11 @@ export function hitBoss(
     if (c.turnHits === 0) sheetBp += m.firstHitBp;
     c.turnHits += 1;
     // The trigger lines that wait for the next turn hit are spent on it (an ability's strike keeps them).
-    sheetBp += c.paybackReady + c.emberTailReady + c.patientReady;
+    sheetBp += c.paybackReady + c.emberTailReady + c.patientReady + c.momentumReady;
     c.paybackReady = 0;
     c.emberTailReady = 0;
     c.patientReady = 0;
+    c.momentumReady = 0;
   }
   // Rally cry: every hit of the creature, for the rest of the fight.
   sheetBp += c.rallyCry;

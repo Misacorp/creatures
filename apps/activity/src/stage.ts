@@ -316,6 +316,9 @@ export const PROC_WORDS: Readonly<Record<ProcKind, string>> = {
   overflow: 'Overflow',
   patient: 'Patient',
   shared_warmth: 'Shared warmth',
+  riposte: 'Riposte',
+  momentum: 'Momentum',
+  slipstream: 'Slipstream',
 };
 
 const KNOWN_ACTIONS: ReadonlySet<string> = new Set([
@@ -609,8 +612,8 @@ export function cuesForEvents(
         break;
       case 'proc': {
         const word = PROC_WORDS[e.kind];
-        if (e.kind === 'echo') {
-          // Echo: the hit lands again, a number over the boss.
+        if (e.kind === 'echo' || e.kind === 'riposte') {
+          // Echo and Riposte: a hit lands on the boss, a number over the boss.
           cues.push({ kind: 'hop', i, creature: e.creature });
           cues.push({
             kind: 'float',
@@ -622,7 +625,10 @@ export function cuesForEvents(
             drift: driftFor(i),
           });
         } else if (
-          (e.kind === 'kindling' || e.kind === 'warm_heart' || e.kind === 'overflow') &&
+          (e.kind === 'kindling' ||
+            e.kind === 'warm_heart' ||
+            e.kind === 'overflow' ||
+            e.kind === 'slipstream') &&
           e.target !== undefined
         ) {
           // A boost for another creature, like a Support's: +N% over the creature that gets it.

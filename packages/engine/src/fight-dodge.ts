@@ -1,7 +1,8 @@
 // Dodge: Speed gives a chance to take nothing from a hit (docs/design/combat-rules.md section 14).
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
 import { BOSS, effectiveSpd } from './fight-effects';
-import type { Creature, FightState } from './fight-state';
+import { besides, credit, type Creature, type FightState } from './fight-state';
+import { matchupBp } from './matchup';
 
 /**
  * Dice a creature gets each round for the hits it takes (the Nth hit it takes that round, as the taker,
@@ -59,4 +60,68 @@ export function bossDodges(state: FightState, c: Creature, strike: boolean): boo
   if (chance <= 0) return false;
   const die = (strike ? state.dodgeStrikeDice : state.dodgeTurnDice)[c.idx] ?? DODGE_RANGE;
   return die < chance;
+}
+
+/**
+ * The on-dodge lines (combat-rules.md 12, speed-and-dodge.md 2.5), run when `victim` dodged a boss hit:
+ * - Momentum: its next turn hit deals more (replaces an earlier one).
+ * - Slipstream: the living creature beside it with the most Attack (ties to the lower slot) gets a boost on
+ *   its next hit, in place of an earlier one of the same creature's.
+ * - Riposte: it strikes the boss at once for a share of its Attack, at the element chart's matchup. No mark,
+ *   no crit, no reaction, no dodge: it always lands, counted down to the phase floor like any hit on the
+ *   boss (no overkill), credited to the creature as damage. A boss that is gone (fell or retreated) is not hit.
+ * Each writes a `proc` event. No die is drawn.
+ */
+export function onDodged(state: FightState, victim: Creature): void {
+  const m = victim.mods;
+  const { events } = state;
+  const round = state.currentRound;
+  if (m.momentumBp > 0) {
+    victim.momentumReady = m.momentumBp;
+    events.push({ t: 'proc', round, creature: victim.id, kind: 'momentum', amount: m.momentumBp });
+  }
+  if (m.slipstreamBp > 0) {
+    let best: Creature | undefined;
+    for (const i of besides(state, victim.idx)) {
+      const next = state.creatures[i] as Creature;
+      if (next.alive && (best === undefined || next.atk > best.atk)) best = next;
+    }
+    if (best !== undefined) {
+      best.buffs = best.buffs.filter((b) => !(b.from === victim.idx && b.tag === 'slipstream'));
+      best.buffs.push({ from: victim.idx, bp: m.slipstreamBp, tag: 'slipstream' });
+      events.push({
+        t: 'proc',
+        round,
+        creature: victim.id,
+        kind: 'slipstream',
+        target: best.id,
+        amount: m.slipstreamBp,
+      });
+    }
+  }
+  if (m.riposteBp > 0 && state.bossHp > 0 && !state.retreated) {
+    const plain = Math.floor((victim.atk * m.riposteBp) / 10_000);
+    const again = Math.floor(
+      (plain * matchupBp(victim.element, state.boss.element, state.pack.elementChart)) / 10_000,
+    );
+    const room = Math.max(0, state.bossHp - state.bossFloor);
+    const landed = Math.min(again, room);
+    if (landed > 0) {
+      state.bossHp -= landed;
+      state.damageByElement[victim.element] += landed;
+      credit(state, victim, null, 'damage', landed);
+      events.push({
+        t: 'proc',
+        round,
+        creature: victim.id,
+        kind: 'riposte',
+        amount: landed,
+        bossHp: state.bossHp,
+      });
+      if (state.bossFloor > 0 && again >= room) {
+        state.retreated = true;
+        events.push({ t: 'retreat', round, bossHp: state.bossHp });
+      }
+    }
+  }
 }

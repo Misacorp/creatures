@@ -34,10 +34,10 @@
       ],
       "lines": [
         {
-          "id": "edge-walker",
-          "name": "Edge-walker",
-          "text": "Edge-walker +2.5%",
-          "about": "More Attack at either end of its row.",
+          "id": "grove-attunement",
+          "name": "Grove Attunement",
+          "text": "Grove Attunement +3%",
+          "about": "Raises Attack, but only for a Grove creature.",
           "source": "rolled",
           "tier": 1,
           "bestTier": 1,
@@ -98,10 +98,10 @@
           "active": false
         },
         {
-          "id": "edge-walker",
-          "name": "Edge-walker",
-          "text": "Edge-walker +2.5%",
-          "about": "More Attack at either end of its row.",
+          "id": "crit-chance",
+          "name": "Crit chance",
+          "text": "Crit chance +1 pt",
+          "about": "More chance to crit, in points (the fight caps the total).",
           "source": "rolled",
           "tier": 1,
           "bestTier": 2,

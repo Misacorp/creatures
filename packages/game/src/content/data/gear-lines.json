@@ -622,7 +622,7 @@
   {
     "id": "sidestep",
     "name": "Sidestep",
-    "about": "Chance to take nothing from an area hit.",
+    "about": "Chance to dodge an area hit and take nothing.",
     "group": "chance",
     "effect": { "kind": "sheet", "field": "sidestepBp" },
     "unit": "chance",
@@ -1005,11 +1005,10 @@
     "unit": "pct",
     "reduction": true,
     "values": [1000, 1500, 2000, 2500, 3000],
-    "minRarity": "common",
-    "weights": { "hat": 0, "scarf": 0, "charm": 0 },
-    "fixedOnly": true,
+    "minRarity": "rare",
+    "weights": { "hat": 0, "scarf": 14, "charm": 6 },
     "roles": ["guard"],
-    "worth": 0
+    "worth": 300
   },
   {
     "id": "heavy-hand",
@@ -1019,11 +1018,10 @@
     "effect": { "kind": "sheet", "field": "debuffPowerBp" },
     "unit": "pct",
     "values": [1000, 1500, 2000, 2500, 3000],
-    "minRarity": "common",
-    "weights": { "hat": 0, "scarf": 0, "charm": 0 },
-    "fixedOnly": true,
+    "minRarity": "rare",
+    "weights": { "hat": 0, "scarf": 6, "charm": 14 },
     "roles": ["support"],
-    "worth": 0
+    "worth": 300
   },
   {
     "id": "clinging",
@@ -1033,10 +1031,69 @@
     "effect": { "kind": "sheet", "field": "debuffDurationTurns" },
     "unit": "flat",
     "values": [1, 1, 1, 2, 2],
-    "minRarity": "common",
-    "weights": { "hat": 0, "scarf": 0, "charm": 0 },
-    "fixedOnly": true,
+    "minRarity": "rare",
+    "weights": { "hat": 0, "scarf": 4, "charm": 12 },
     "roles": ["support"],
-    "worth": 0
+    "worth": 300
+  },
+  {
+    "id": "fleet",
+    "name": "Fleet",
+    "about": "Speed +%, and Speed is what dodging is made of.",
+    "group": "core",
+    "effect": { "kind": "stat", "stat": "spd", "mode": "pct" },
+    "unit": "pct",
+    "values": [500, 800, 1100, 1400, 1700],
+    "minRarity": "common",
+    "weights": { "hat": 6, "scarf": 20, "charm": 14 },
+    "worth": 1500
+  },
+  {
+    "id": "light-footed",
+    "name": "Light-footed",
+    "about": "Flat points of dodge on every hit, on top of Speed's.",
+    "group": "chance",
+    "effect": { "kind": "sheet", "field": "dodgeBp" },
+    "unit": "chance",
+    "values": [200, 300, 400, 500, 600],
+    "minRarity": "rare",
+    "weights": { "hat": 0, "scarf": 14, "charm": 10 },
+    "worth": 5000
+  },
+  {
+    "id": "riposte",
+    "name": "Riposte",
+    "about": "When it dodges a hit, it strikes the boss back at once.",
+    "group": "trigger",
+    "effect": { "kind": "sheet", "field": "riposteBp" },
+    "unit": "pct",
+    "values": [2000, 2500, 3000, 3500, 4000],
+    "minRarity": "rare",
+    "weights": { "hat": 8, "scarf": 6, "charm": 10 },
+    "worth": 600
+  },
+  {
+    "id": "momentum",
+    "name": "Momentum",
+    "about": "When it dodges a hit, its next hit deals more.",
+    "group": "trigger",
+    "effect": { "kind": "sheet", "field": "momentumBp" },
+    "unit": "pct",
+    "values": [800, 1200, 1600, 2000, 2500],
+    "minRarity": "rare",
+    "weights": { "hat": 10, "scarf": 0, "charm": 8 },
+    "worth": 300
+  },
+  {
+    "id": "slipstream",
+    "name": "Slipstream",
+    "about": "When it dodges a hit, the strongest creature beside it gets a boost.",
+    "group": "trigger",
+    "effect": { "kind": "sheet", "field": "slipstreamBp" },
+    "unit": "pct",
+    "values": [600, 900, 1200, 1500, 1800],
+    "minRarity": "rare",
+    "weights": { "hat": 0, "scarf": 8, "charm": 12 },
+    "worth": 300
   }
 ]

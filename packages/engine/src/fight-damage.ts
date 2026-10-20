@@ -1,7 +1,7 @@
 // Damage to creatures: `hurt` and the guard helpers it uses (docs/design/attack-patterns.md section 1).
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
 import { RULES } from '@creatures/game';
-import { creatureDodgeBp, nextTakenDie } from './fight-dodge';
+import { creatureDodgeBp, nextTakenDie, onDodged } from './fight-dodge';
 import { applyEffect, BOSS, clearEffects, effectBpOf } from './fight-effects';
 import {
   baseContext,
@@ -168,6 +168,7 @@ export function hurt(
           dodged: true,
           ...(splash ? { splash: true as const } : {}),
         });
+        onDodged(state, victim);
         return victim;
       }
     }

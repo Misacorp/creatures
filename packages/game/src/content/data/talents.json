@@ -242,6 +242,12 @@
         "name": "Tunnels Through Anything",
         "effect": { "line": "adaptation-pierce" },
         "value": 1000
+      },
+      {
+        "id": "soot-on-its-paws",
+        "name": "Soot on Its Paws",
+        "effect": { "line": "heavy-hand" },
+        "value": 1500
       }
     ],
     "stormray": [
@@ -376,6 +382,12 @@
         "name": "Patrols at Dusk",
         "effect": { "line": "trail-xp" },
         "value": 1200
+      },
+      {
+        "id": "slips-away",
+        "name": "Slips Away",
+        "effect": { "line": "light-footed" },
+        "value": 300
       }
     ],
     "solmane": [
@@ -410,7 +422,18 @@
         "effect": { "line": "owners-mark" },
         "value": 1000
       },
-      { "id": "warm-steps", "name": "Warm Steps", "effect": { "line": "quick-feet" }, "value": 400 }
+      {
+        "id": "warm-steps",
+        "name": "Warm Steps",
+        "effect": { "line": "quick-feet" },
+        "value": 400
+      },
+      {
+        "id": "long-strides",
+        "name": "Long Strides",
+        "effect": { "line": "fleet" },
+        "value": 1000
+      }
     ],
     "gaiadrake": [
       {

@@ -39,6 +39,10 @@ export const PROC_KINDS = [
   'overflow',
   'patient',
   'shared_warmth',
+  // Dodge lines (it dodged a boss hit).
+  'riposte',
+  'momentum',
+  'slipstream',
 ] as const;
 export type ProcKind = (typeof PROC_KINDS)[number];
 
@@ -221,6 +225,15 @@ export interface SlotMods {
   patientBp?: number;
   /** A Support heals it: that Support's next boost is this much bigger. */
   sharedWarmthBp?: number;
+
+  // --- On-dodge lines (`combat-rules.md` 12, `speed-and-dodge.md` 2.5): fire when the creature dodges a boss hit,
+  // so they only act in a fight whose stored rules carry `dodge`. ---
+  /** It dodges a boss hit: it strikes the boss at once for this share of its Attack (no mark, no crit, no reaction; it always lands). */
+  riposteBp?: number;
+  /** It dodges a boss hit: its next turn hit deals this much more (replaces an earlier one). */
+  momentumBp?: number;
+  /** It dodges a boss hit: the living creature beside it with the most Attack gets a boost of this size on its next hit. */
+  slipstreamBp?: number;
 }
 
 export interface AbilityChoice {

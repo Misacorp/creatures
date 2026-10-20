@@ -269,6 +269,12 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
           return `Patient: ${who} bides its time, so its next hit deals ${pct} more.`;
         case 'shared_warmth':
           return `Shared warmth: ${other}'s next boost is ${pct} bigger for healing ${who}.`;
+        case 'riposte':
+          return `Riposte: ${who} dodges and strikes back for ${event.amount ?? 0}; ${names.boss} has ${event.bossHp ?? 0} HP left.`;
+        case 'momentum':
+          return `Momentum: ${who} dodges, so its next hit deals ${pct} more.`;
+        case 'slipstream':
+          return `Slipstream: ${who} dodges and gives ${other} a ${pct} boost on its next hit.`;
         default:
           return '';
       }

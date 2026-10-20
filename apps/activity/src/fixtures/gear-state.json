@@ -34,10 +34,10 @@
       ],
       "lines": [
         {
-          "id": "edge-walker",
-          "name": "Edge-walker",
-          "text": "Edge-walker +2.5%",
-          "about": "More Attack at either end of its row.",
+          "id": "grove-attunement",
+          "name": "Grove Attunement",
+          "text": "Grove Attunement +3%",
+          "about": "Raises Attack, but only for a Grove creature.",
           "source": "rolled",
           "tier": 1,
           "bestTier": 1,
@@ -98,10 +98,10 @@
           "active": false
         },
         {
-          "id": "edge-walker",
-          "name": "Edge-walker",
-          "text": "Edge-walker +2.5%",
-          "about": "More Attack at either end of its row.",
+          "id": "crit-chance",
+          "name": "Crit chance",
+          "text": "Crit chance +1 pt",
+          "about": "More chance to crit, in points (the fight caps the total).",
           "source": "rolled",
           "tier": 1,
           "bestTier": 2,
@@ -541,9 +541,9 @@
       "stats": [
         {
           "stat": "atk",
-          "value": 4,
+          "value": 2,
           "base": 2,
-          "text": "Attack 4"
+          "text": "Attack 2"
         },
         {
           "stat": "hp",
@@ -554,14 +554,14 @@
       ],
       "lines": [
         {
-          "id": "attack-local-flat",
-          "name": "Attack",
-          "text": "+2 Attack (this item)",
-          "about": "Adds Attack to this item before its percentages (not the creature's).",
+          "id": "shoulder-to-shoulder",
+          "name": "Shoulder to shoulder",
+          "text": "Shoulder to shoulder +1.2%",
+          "about": "More Attack for each neighbour of its own element (at most 2).",
           "source": "rolled",
           "tier": 1,
           "bestTier": 1,
-          "local": true,
+          "local": false,
           "active": null
         }
       ],
