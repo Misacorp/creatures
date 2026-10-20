@@ -27,6 +27,9 @@ export const PATTERN_SCENARIOS = [
   'Cover pips (Guard beside)',
   'Armor pip (a Guard takes less)',
   'Crowded sweep (15 creatures)',
+  'Mired: stacks and turns on the boss and a creature',
+  'Dodges: a creature and the boss',
+  'Shake Off: the boss purges its Mired',
   'Enraged',
   'Retreat, Phase 1',
   'Retreat, Phase 2',
@@ -86,6 +89,22 @@ const start = (round: number, bossHp = 1000): FightEvent => ({
   mark: null,
 });
 
+/** A Mired application on a creature (`target`) or the boss (null), as the engine writes it. */
+const effect = (
+  round: number,
+  target: string | null,
+  stacks: number,
+  turnsLeft: number,
+): FightEvent => ({
+  t: 'effect_apply',
+  round,
+  target,
+  effect: 'mired',
+  stacksAdded: stacks,
+  stacks,
+  turnsLeft,
+});
+
 /** The fight of one scenario. */
 export function patternFight(scenario: PatternScenario): PatternFight {
   const row = patternRow(6);
@@ -109,6 +128,7 @@ export function patternFight(scenario: PatternScenario): PatternFight {
   const wyrm = { id: 'cinder-wyrm', name: 'Cinder Wyrm' };
   const thornmother = { id: 'thornmother', name: 'Thornmother' };
   const sovereign = { id: 'storm-sovereign', name: 'Storm Sovereign' };
+  const bogback = { id: 'old-bogback', name: 'Old Bogback' };
   switch (scenario) {
     case 'Sweep (Great Wave)':
       return done(colossus, [
@@ -320,6 +340,44 @@ export function patternFight(scenario: PatternScenario): PatternFight {
       }
       return { ...done(colossus, events), row: big };
     }
+    case 'Mired: stacks and turns on the boss and a creature':
+      return done(
+        bogback,
+        [
+          start(4, 900),
+          effect(4, null, 5, 3),
+          effect(4, 'c1', 2, 2),
+          effect(4, 'c4', 1, 3),
+          { t: 'turn', round: 4, creature: 'c0' },
+        ],
+        { moveAt: 0 },
+      );
+    case 'Dodges: a creature and the boss':
+      return done(bogback, [
+        start(4, 900),
+        { t: 'turn', round: 4, creature: 'c0' },
+        {
+          t: 'hit',
+          round: 4,
+          creature: 'c0',
+          damage: 0,
+          matchupBp: 10_000,
+          bonusBp: 0,
+          mark: null,
+          bossHp: 900,
+          dodged: true,
+        },
+        gimmick(4, 'sinking-mud', 'sweep', { rows: ['front'], targets: ['c0', 'c1'] }),
+        hit(4, 'c0', 0, { dodged: true }),
+        hit(4, 'c1', 80),
+      ]);
+    case 'Shake Off: the boss purges its Mired':
+      return done(bogback, [
+        start(5, 800),
+        effect(5, null, 4, 2),
+        gimmick(5, 'shake-off', 'purge'),
+        { t: 'effect_purge', round: 5, removed: [{ effect: 'mired', stacks: 4 }] },
+      ]);
     case 'Enraged':
       return done(
         wyrm,

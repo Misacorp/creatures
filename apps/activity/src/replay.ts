@@ -24,6 +24,54 @@ export interface StepState {
   /** Creatures that already acted this round. */
   acted: readonly string[];
   knockedOut: readonly string[];
+  /** The status effects on the boss right now (stacks and turns left). */
+  bossEffects: readonly EffectView[];
+  /** The status effects on each creature that carries any, by creature id. */
+  creatureEffects: Readonly<Record<string, readonly EffectView[]>>;
+  /** The boss retreated this round: its effects do not count down at the round's end. */
+  retreating: boolean;
+}
+
+/** One status effect on a fighter, as the stage shows it. */
+export interface EffectView {
+  effect: string;
+  stacks: number;
+  /** Turns left on its target's own turns; the effect ends when it reaches 0. */
+  turnsLeft: number;
+}
+
+const withoutEffect = (list: readonly EffectView[], effect: string): EffectView[] =>
+  list.filter((e) => e.effect !== effect);
+
+/** One turn of the fighter's has passed: every effect has one turn less (the engine's `tickEffects`). */
+function ticked(list: readonly EffectView[]): EffectView[] {
+  return list.map((e) => ({ ...e, turnsLeft: Math.max(1, e.turnsLeft - 1) }));
+}
+
+/** The creature's effects counted down (its turn is over); effects that would reach 0 were ended by their own event. */
+function creatureTicked(s: StepState, creature: string | null): StepState {
+  const list = creature === null ? undefined : s.creatureEffects[creature];
+  if (creature === null || list === undefined) return s;
+  return { ...s, creatureEffects: { ...s.creatureEffects, [creature]: ticked(list) } };
+}
+
+/** The creature's effects replaced; an empty list removes its entry. */
+function withCreatureEffects(
+  s: StepState,
+  creature: string,
+  list: readonly EffectView[],
+): StepState {
+  const next = { ...s.creatureEffects };
+  if (list.length === 0) delete next[creature];
+  else next[creature] = list;
+  return { ...s, creatureEffects: next };
+}
+
+/** An effect applied: new, or more stacks and a full timer. */
+function appliedTo(list: readonly EffectView[], e: EffectView): EffectView[] {
+  const at = list.findIndex((x) => x.effect === e.effect);
+  if (at < 0) return [...list, e];
+  return list.map((x, i) => (i === at ? e : x));
 }
 
 export function initialStep(bossHpStart: number): StepState {
@@ -36,6 +84,9 @@ export function initialStep(bossHpStart: number): StepState {
     bossActing: false,
     acted: [],
     knockedOut: [],
+    bossEffects: [],
+    creatureEffects: {},
+    retreating: false,
   };
 }
 
@@ -50,16 +101,20 @@ function applyOne(s: StepState, e: FightEvent): StepState {
         actor: null,
         bossActing: false,
         acted: [],
+        retreating: false,
       };
     case 'turn':
-    case 'skip':
+    case 'skip': {
+      // The creature before this one has finished its turn: its effects count down.
+      const done = creatureTicked(s, s.actor);
       return {
-        ...s,
+        ...done,
         round: e.round,
         actor: e.creature,
         bossActing: false,
         acted: s.actor === null ? s.acted : [...s.acted, s.actor],
       };
+    }
     case 'hit':
       return { ...s, bossHp: e.bossHp };
     case 'proc':
@@ -71,7 +126,7 @@ function applyOne(s: StepState, e: FightEvent): StepState {
       return { ...s, mark: null };
     case 'gimmick':
       return {
-        ...s,
+        ...creatureTicked(s, s.actor),
         actor: null,
         bossActing: true,
         acted: s.actor === null ? s.acted : [...s.acted, s.actor],
@@ -80,17 +135,53 @@ function applyOne(s: StepState, e: FightEvent): StepState {
       return e.source === 'reflect'
         ? s
         : {
-            ...s,
+            ...creatureTicked(s, s.actor),
             actor: null,
             bossActing: true,
             acted: s.actor === null ? s.acted : [...s.acted, s.actor],
           };
-    case 'knockout':
-      return s.knockedOut.includes(e.creature)
-        ? s
-        : { ...s, knockedOut: [...s.knockedOut, e.creature] };
-    case 'round_end':
-      return { ...s, bossHp: e.bossHp, actor: null, bossActing: false };
+    case 'knockout': {
+      if (s.knockedOut.includes(e.creature)) return s;
+      // A knocked-out creature's effects end at once (the engine writes no event for it).
+      const next = withCreatureEffects(s, e.creature, []);
+      return { ...next, knockedOut: [...s.knockedOut, e.creature] };
+    }
+    case 'retreat':
+      return { ...s, retreating: true };
+    case 'effect_apply': {
+      const view: EffectView = { effect: e.effect, stacks: e.stacks, turnsLeft: e.turnsLeft };
+      if (e.target === null) return { ...s, bossEffects: appliedTo(s.bossEffects, view) };
+      return withCreatureEffects(s, e.target, appliedTo(s.creatureEffects[e.target] ?? [], view));
+    }
+    case 'effect_expire':
+      if (e.target === null) {
+        return { ...s, bossEffects: withoutEffect(s.bossEffects, e.effect) };
+      }
+      return withCreatureEffects(
+        s,
+        e.target,
+        withoutEffect(s.creatureEffects[e.target] ?? [], e.effect),
+      );
+    case 'effect_consume':
+      return { ...s, bossEffects: withoutEffect(s.bossEffects, e.effect) };
+    case 'effect_purge':
+      return {
+        ...s,
+        bossEffects: s.bossEffects.filter((x) => !e.removed.some((r) => r.effect === x.effect)),
+      };
+    case 'effect_cleanse':
+      return withCreatureEffects(
+        s,
+        e.target,
+        withoutEffect(s.creatureEffects[e.target] ?? [], e.effect),
+      );
+    case 'round_end': {
+      // The boss's turn is over: its effects count down once a round (not when it retreated or fell).
+      const counted = creatureTicked(s, s.actor);
+      const bossEffects =
+        s.retreating || e.bossHp <= 0 ? counted.bossEffects : ticked(counted.bossEffects);
+      return { ...counted, bossEffects, bossHp: e.bossHp, actor: null, bossActing: false };
+    }
     default:
       return s;
   }

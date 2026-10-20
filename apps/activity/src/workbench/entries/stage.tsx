@@ -1,4 +1,4 @@
-import { roomModifier } from '@creatures/game';
+import { content, roomModifier } from '@creatures/game';
 import { DungeonPlayback } from '../../DungeonPlayback';
 import { FinaleProgress } from '../../FinaleProgress';
 import { Stage } from '../../Stage';
@@ -190,6 +190,12 @@ const stage: Entry = {
           names={{
             boss: fight.boss.name,
             creatures: Object.fromEntries(fight.row.map((r) => [r.id, r.name])),
+            gimmicks: Object.fromEntries(
+              (content.bosses.find((b) => b.id === fight.boss.id)?.gimmicks ?? []).map((g) => [
+                g.id,
+                g.name,
+              ]),
+            ),
           }}
           events={fight.events}
           index={index}

@@ -15,6 +15,7 @@ import {
   readinessMeter,
   winPaysText,
 } from './raid-progress';
+import { foeDodge } from './foe-info';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { PopoverCard, popupProps } from './ui/Popover';
@@ -121,6 +122,7 @@ export function BossCard({
   const best = bestRankText(view.bestRank);
   const art = bossArt(boss.id);
   const element = elementSlug(boss.element);
+  const dodge = foeDodge(boss.id);
   return (
     <section
       class={`raid-section boss-card el-${element}${view.festival ? ' festival' : ''}`}
@@ -148,6 +150,11 @@ export function BossCard({
             )}
             {readiness !== null && <ReadinessMeter band={readiness} />}
             <ElementChip element={boss.element} context="boss" />
+            {dodge !== null && (
+              <Tag kind="badge" entry="stat-dodge">
+                {dodge}
+              </Tag>
+            )}
             {view.festival && (
               <Tag kind="badge" tone="festival" entry="festival">
                 Festival week

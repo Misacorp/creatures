@@ -58,6 +58,7 @@ import {
   nameOf,
   strikeGlyph,
 } from './stage/StageFx';
+import { EffectIcons } from './ui/EffectIcons';
 import { AbilityBadge, CreatureTags, FoeFace, StageUnit } from './stage/StageUnit';
 import { useLiveStage, type Anim } from './use-live-stage';
 import { useStageAbilities, type StageAbilities } from './use-stage-abilities';
@@ -229,7 +230,15 @@ export function Stage({
   const state = stageStateAt(events, index, hpStart);
   // The acting order written under the creatures. The dungeon always acts left to right; the raid's
   // order varies by boss, so it follows the engine's own turn and skip events for the round on show.
-  const slots = actingSlots(events, state.round, rowIds, single);
+  const slots = actingSlots(
+    events,
+    state.round,
+    rowIds,
+    single,
+    content.bosses.find((b) => b.id === boss.id)?.turnOrder === 'serpentine'
+      ? { board, knockedOut: state.knockedOut }
+      : undefined,
+  );
   const cues =
     anim === null
       ? []
@@ -465,6 +474,7 @@ export function Stage({
                       }
                 }
                 slot={slots.get(c.id) ?? null}
+                effects={state.creatureEffects[c.id] ?? []}
                 onToggle={() => {
                   if (key !== null) toggle(key);
                 }}
@@ -577,6 +587,7 @@ export function Stage({
               </GlossaryTag>
             </span>
           )}
+          <EffectIcons effects={state.bossEffects} names={names} />
           <Floats fx={fx} target={null} />
           <Bursts fx={fx} target={null} names={names} />
           {bannerItem?.cue.kind === 'banner' && (

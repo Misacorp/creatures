@@ -35,15 +35,14 @@ import {
   exampleSeason,
   exampleSpecies,
   expeditionTrips,
-  reactionLoop,
   starterSpecies,
   weekStrip,
-  type LoopStep,
 } from './howto';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { elementIcon } from './sprites/element-icons';
+import { ElementChartGrid } from './ui/ElementChartGrid';
 import { PipRow } from './ui/PipRow';
 
 /** One item of each slot (a hat, a scarf and a charm), for the Workshop picture. */
@@ -166,64 +165,6 @@ function CreaturesArt() {
   );
 }
 
-/** One arrow of the loop: the mark, an arrow, and the reaction it makes. */
-function LoopEdge({
-  step,
-  turn,
-  place,
-}: {
-  step: LoopStep;
-  turn?: 'down' | 'up' | 'back';
-  place: string;
-}) {
-  return (
-    <div class={`loop-edge ${place}`}>
-      <GlossaryTag entry={GLOSSARY_IDS.mark(step.markId)} class={`loop-name el-${step.from}`}>
-        {step.markName}
-      </GlossaryTag>
-      <Arrow {...(turn === undefined ? {} : { turn })} />
-      <GlossaryTag entry={GLOSSARY_IDS.reaction(step.reactionId)} class="loop-name pix">
-        {step.reactionName}
-      </GlossaryTag>
-    </div>
-  );
-}
-
-/** The four reactions as a loop of element icons: each element's mark is cashed in by the next. */
-function ReactionLoop() {
-  const steps = reactionLoop();
-  const [a, b, c, d] = steps;
-  if (
-    steps.length !== 4 ||
-    a === undefined ||
-    b === undefined ||
-    c === undefined ||
-    d === undefined
-  ) {
-    return null;
-  }
-  const node = (element: string, place: string) => (
-    <div class={`loop-node ${place}`}>
-      <ElementChip element={element} />
-    </div>
-  );
-  return (
-    <div class="loop" role="group" aria-label="The reaction loop">
-      {node(a.from, 'tl')}
-      <LoopEdge step={a} place="top" />
-      {node(b.from, 'tr')}
-      <LoopEdge step={d} turn="up" place="left" />
-      <div class="loop-centre">
-        <Sprite sprite={glyphOrUnknown('mark')} scale={4} />
-      </div>
-      <LoopEdge step={b} turn="down" place="right" />
-      {node(d.from, 'bl')}
-      <LoopEdge step={c} turn="back" place="bottom" />
-      {node(c.from, 'br')}
-    </div>
-  );
-}
-
 /** The worked example: a real Setter marks, a real creature of the right element sets it off. */
 function ComboExample() {
   const { setter, payoff, title, lines } = howToPlay.example;
@@ -280,7 +221,7 @@ function ComboExample() {
 function CombosArt() {
   return (
     <>
-      <ReactionLoop />
+      <ElementChartGrid />
       <ComboExample />
     </>
   );
