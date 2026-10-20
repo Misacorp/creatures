@@ -1,12 +1,14 @@
 # Lounge live: WebSocket push for the living room
 
-Status: **prototype, 2026-10-19.** Built behind the `LOUNGE_LIVE` flag: on locally and on staging, **off in production** until Misa says so. Misa: "a prototype of websockets, but not in the raid yet. Try it in the lounge! Easier to test and opens up more cozy options." Builds on `living-room.md` (what the room shows) and `docs/research/platform.md` (what is known about Discord's proxy). The raid finale stays on polling.
+Status: **on everywhere since 2026-10-20** (Misa asked for production with lounging XP, see `living-room.md`, "Lounging with company"). Built 2026-10-19 behind the `LOUNGE_LIVE` flag, at first off in production. Misa: "a prototype of websockets, but not in the raid yet. Try it in the lounge! Easier to test and opens up more cozy options." Builds on `living-room.md` (what the room shows) and `docs/research/platform.md` (what is known about Discord's proxy). The raid finale stays on polling.
 
 ## What it does
 
 While the living room is visible and somebody else is in it, the client keeps one WebSocket open to the guild's Durable Object. When a player changes something the room shows (moves their lounger, picks another creature, levels it up, changes its nickname or gear), the server pushes that player's new room entry to everyone else's socket, so the change appears at once instead of within 45 seconds. Joins and leaves still come from Discord's participant events, as before.
 
-The socket is **only an accelerator.** Everything it carries can also be fetched with `POST /api/room`. If the socket is off, unsupported, refused or dropped, the room polls exactly as it did before this change.
+The socket is **an accelerator for the room view.** Everything it carries can also be fetched with `POST /api/room`. If the socket is off, unsupported, refused or dropped, the room polls exactly as it did before this change.
+
+Since 2026-10-20 the open sockets are also the server's **proof of who is here**: lounging with company pays the lounger experience only for time its player's socket was open together with another player's (`lounge-company.ts`, `living-room.md`). A client that falls back to polling still sees the room but earns no lounging XP. That is on purpose: the poll is client-driven and proves nothing, while a socket's owner comes from a ticket of an authenticated request and its lifetime is the server's own record (open time, last ping, close).
 
 ## How it works
 
@@ -74,7 +76,7 @@ Anything that goes wrong lands on the old polling, never on a broken room: no `W
 
 ## The flag
 
-`LOUNGE_LIVE` in `apps/worker/wrangler.jsonc`: `"on"` at the top level (local `wrangler dev`) and in `env.staging`, `"off"` in `env.production`. A test pins that. Anything other than `"on"` makes `/api/lounge/ticket` and `/api/lounge/live` answer 404 and leaves `loungeLive` out of `/api/config`, so the client never tries. **To turn it on in production:** change `env.production.vars.LOUNGE_LIVE` to `"on"` in a PR, update the pin in `apps/worker/test/lounge-live.test.ts`, and merge. To turn it off again, change it back (a deploy also closes every socket).
+`LOUNGE_LIVE` in `apps/worker/wrangler.jsonc`: `"on"` at the top level (local `wrangler dev`), in `env.staging` and, since 2026-10-20, in `env.production`. A test pins that. Anything other than `"on"` makes `/api/lounge/ticket` and `/api/lounge/live` answer 404 and leaves `loungeLive` out of `/api/config`, so the client never tries. **To turn it off again:** change `env.production.vars.LOUNGE_LIVE` to `"off"` in a PR, update the pin in `apps/worker/test/lounge-live.test.ts`, and merge (a deploy also closes every socket). With it off, lounging earns nothing (there is no proof of company).
 
 ## Cost and limits
 
@@ -95,7 +97,7 @@ We are on the Workers **Free** plan (Misa, 2026-10-19). Figures are from Cloudfl
 - Pushes: outgoing messages are free and need no request of their own. A push rides on the HTTP request that made the change, which the game paid for before this too.
 - The heartbeat: a text "ping" every 60 s, only when no other frame arrived, only while the lounge is visible and someone else is in it. The runtime answers it without waking the object, so it costs no duration. **Unknown:** whether such a ping counts as a DO request on Free, and whether Free applies the 1-in-20 rate for incoming messages that billing uses. So we count it both ways.
 - Duration: the object hibernates between requests about 10 s after the last one, and an idle object waiting to hibernate is not billed. The socket adds no awake time beyond the requests the lounge already makes. Without hibernation (`ws.accept()`) one guild's 24/7 socket would cost 11,059 GB-s a day, 85% of the Free allowance, so hibernation is required, not an optimisation.
-- Rows written: none. The socket stores nothing (tickets and the last pushed view are in memory). It never re-arms the alarm.
+- Rows written: the socket itself stores nothing (tickets and the last pushed view are in memory) and never re-arms the alarm. Lounging with company (2026-10-20) writes when it pays: when a socket joins or leaves, every player with a socket open who earned something is paid (their `lounge_company` row, and when a whole XP was earned also the creature's `lounge_rest` row, the creature row and one analytics event: at most 4 rows a player), and a player's own request pays them first (the same rows). A Rested lounger's player writes only the one `lounge_company` row. With 15 players opening and closing the room about 10 times a day each, that is under 15 × 10 × 15 × 4 = 9,000 rows a guild a day in the very worst case, and in practice far less (only players with company time since their last payment write).
 
 **What it saves:** today's lounge polls every 45 s while anyone else is there. A player who leaves it open all day makes 86,400 / 45 = 1,920 Worker requests and 1,920 DO requests a day. The socket replaces that poll.
 

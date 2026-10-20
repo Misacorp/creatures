@@ -497,6 +497,7 @@
   ],
   "loungerId": "00000000-0000-4000-8400-000000000003",
   "loungeSpot": null,
+  "loungeXp": {},
   "timezone": "Europe/Helsinki",
   "leetSync": {
     "source": "disabled",

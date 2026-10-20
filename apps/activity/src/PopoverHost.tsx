@@ -2,10 +2,11 @@ import { content, entryView } from '@creatures/game';
 import type { GlossarySection, GlossaryView } from '@creatures/game';
 import { createContext, type ComponentChildren, type RefObject } from 'preact';
 import { useContext, useMemo, useRef, useState } from 'preact/hooks';
-import { backLabel, creatureFacts, shownWornItems, type CreatureInfo } from './creature-info';
+import { loungingText } from './creature-card-view';
+import { backLabel, creatureFactRows, shownWornItems, type CreatureInfo } from './creature-info';
 import { bossArt, shinyPalette } from './art';
 import type { FoeInfo } from './foe-info';
-import { speciesName } from './game';
+import { capitalize, getSpecies, speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
 import { compactCount } from './number-format';
 import { MORE_LABEL, resolveTag, tagKey, visualPlan, type TagRef } from './glossary-ui';
@@ -13,13 +14,15 @@ import { WornItemLines } from './WornItemLines';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { ArmchairIcon } from './ui/ArmchairIcon';
+import { DataTable } from './ui/DataTable';
 import { Popover, PopoverBack, PopoverCard } from './ui/Popover';
 import { toggleActive, usePopoverNav } from './ui/popover-nav';
 
 /** What the open popover is about: a glossary entry or ability, a small creature, or anything else. */
 type OpenPopover = { key: string; anchor: HTMLElement } & (
   | { kind: 'tag'; ref: TagRef }
-  | { kind: 'creature'; info: CreatureInfo; action?: CreatureAction }
+  | { kind: 'creature'; info: CreatureInfo; actions?: readonly CreatureAction[] }
   | { kind: 'foe'; info: FoeInfo }
   | { kind: 'custom'; label: string; body: ComponentChildren }
 );
@@ -30,6 +33,11 @@ export interface CreatureAction {
   onAct: () => void;
 }
 
+/** One action or several, as a list. */
+function actionList(action: CreatureAction | readonly CreatureAction[]): readonly CreatureAction[] {
+  return 'label' in action ? [action] : action;
+}
+
 export interface PopoverHostApi {
   /** The element whose popover is open, if any: a trigger says `aria-expanded` when it is this one. */
   anchor: HTMLElement | null;
@@ -37,13 +45,13 @@ export interface PopoverHostApi {
   openTag: (ref: TagRef, anchor: HTMLElement) => void;
   /**
    * A tap on a small creature: opens its popover (on the creature face), or closes it. `action` adds
-   * a button under the facts.
+   * buttons under the facts (one, or several side by side).
    */
   openCreature: (
     key: string,
     info: CreatureInfo,
     anchor: HTMLElement,
-    action?: CreatureAction,
+    action?: CreatureAction | readonly CreatureAction[],
   ) => void;
   /**
    * A tap on the foe or boss on the fight stage: opens its popover (name, element, HP and what it
@@ -166,6 +174,7 @@ function CreaturePopover({
   onMore: (section: GlossarySection) => void;
 }) {
   const { info } = open;
+  const rarity = getSpecies(info.species)?.rarity;
   const worn = shownWornItems(info);
   const nav = usePopoverNav<string | null>(null, open);
   const entry = nav.view === null ? undefined : entryView(nav.view);
@@ -192,10 +201,20 @@ function CreaturePopover({
             />
           }
           title={info.name}
-          short={`Level ${String(info.level)}`}
-          lines={creatureFacts(info, speciesName(info.species))}
+          titleClass={rarity === undefined ? undefined : `rarity-name rarity-${rarity}`}
           beside={
             <p class="tags pop-tags">
+              {rarity !== undefined && (
+                <button
+                  type="button"
+                  class={`gtag gtag-chip chip rarity-tag rarity-${rarity}`}
+                  onClick={() => {
+                    nav.open('rarity');
+                  }}
+                >
+                  {capitalize(rarity)}
+                </button>
+              )}
               <ElementChip
                 as="button"
                 element={info.element}
@@ -204,21 +223,52 @@ function CreaturePopover({
                   nav.open(id);
                 }}
               />
+              {info.shiny === true && (
+                <button
+                  type="button"
+                  class="gtag gtag-chip chip badge shiny"
+                  onClick={() => {
+                    nav.open('shiny');
+                  }}
+                >
+                  Shiny
+                </button>
+              )}
+              {info.loungeXp !== undefined && (
+                <button
+                  type="button"
+                  class="gtag gtag-chip chip badge lounge"
+                  onClick={() => {
+                    nav.open('lounging');
+                  }}
+                >
+                  <ArmchairIcon />
+                  {loungingText(info.loungeXp)}
+                </button>
+              )}
             </p>
           }
         >
+          {/* The pixel font, as the creature page's tables: the popover's body font is for sentences. */}
+          <DataTable class="pix" rows={creatureFactRows(info, speciesName(info.species))} />
+          {info.effect !== undefined && <p class="pop-effect">{info.effect}</p>}
           {worn.length > 0 && <WornItemLines worn={worn} />}
-          {open.action !== undefined && (
-            <button
-              type="button"
-              class="pop-action"
-              onClick={() => {
-                onClose();
-                open.action?.onAct();
-              }}
-            >
-              {open.action.label}
-            </button>
+          {open.actions !== undefined && open.actions.length > 0 && (
+            <div class="pop-actions">
+              {open.actions.map((action) => (
+                <button
+                  key={action.label}
+                  type="button"
+                  class="pop-action"
+                  onClick={() => {
+                    onClose();
+                    action.onAct();
+                  }}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
           )}
         </PopoverCard>
       ) : (
@@ -321,7 +371,7 @@ export function PopoverHost({
             key,
             anchor,
             info,
-            ...(action === undefined ? {} : { action }),
+            ...(action === undefined ? {} : { actions: actionList(action) }),
           }),
         );
       },

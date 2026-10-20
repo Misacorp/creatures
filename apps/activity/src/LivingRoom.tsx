@@ -4,7 +4,7 @@ import { shinyPalette } from './art';
 import { cssVars } from './css-vars';
 import { TOUCH_HOLD_MS, type Point } from './dnd-core';
 import { useElementWidth, usePrefersReducedMotion } from './hooks';
-import { usePopoverTrigger } from './PopoverHost';
+import { usePopoverTrigger, type CreatureAction } from './PopoverHost';
 import { SmallCreature } from './SmallCreature';
 import { drawSprites } from './room-canvas';
 import type { Resident } from './room-data';
@@ -226,6 +226,10 @@ interface LivingRoomProps {
    * Absent: nothing can be moved.
    */
   onMove?: (spotId: string) => void;
+  /** Opens the lounge swap (who lounges), from "Swap" in the popover of the player's own creature. */
+  onSwap?: () => void;
+  /** What lounging gave your own lounger today: its popover shows the Lounging tag. Absent: no tag. */
+  ownLoungeXp?: number;
 }
 
 /**
@@ -248,6 +252,8 @@ export function LivingRoom({
   forecast,
   children,
   onMove,
+  onSwap,
+  ownLoungeXp,
 }: LivingRoomProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -265,6 +271,20 @@ export function LivingRoom({
   // Moving your own creature: dragging (`dragDrop`) or the keyboard way (`picking`).
   const movable = onMove !== undefined && own !== undefined && own.info !== null;
   const [picking, setPicking] = useState(false);
+  // The popover of your own creature: Move (the keyboard way to move it) and Swap (who lounges).
+  const ownActions: CreatureAction[] = [
+    ...(movable
+      ? [
+          {
+            label: 'Move',
+            onAct: () => {
+              setPicking(true);
+            },
+          },
+        ]
+      : []),
+    ...(onSwap === undefined ? [] : [{ label: 'Swap', onAct: onSwap }]),
+  ];
   const [landed, setLanded] = useState(false);
   const occupied = occupiedSpots(seated);
   const targets = dropSpotIds(ROOM_SPOTS, occupied, selfId);
@@ -398,19 +418,14 @@ export function LivingRoom({
               ) : (
                 <SmallCreature
                   id={seat.resident.creature.id}
-                  info={seat.info}
+                  info={
+                    seat === own && ownLoungeXp !== undefined
+                      ? { ...seat.info, loungeXp: ownLoungeXp }
+                      : seat.info
+                  }
                   label={seat.label}
                   class="room-creature"
-                  {...(movable && seat === own
-                    ? {
-                        action: {
-                          label: 'Move',
-                          onAct: () => {
-                            setPicking(true);
-                          },
-                        },
-                      }
-                    : {})}
+                  {...(seat === own ? { action: ownActions } : {})}
                 >
                   <Sprite
                     sprite={creatureSpriteOrFallback(seat.resident.creature.species)}

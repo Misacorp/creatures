@@ -11,6 +11,7 @@
  * Who a socket belongs to comes from a one-time ticket made by an authenticated request
  * (`lounge-ticket.ts`), never from anything the client sends over the socket.
  */
+import type { Span } from '@creatures/game';
 import type { Resident } from './lounger';
 import { TicketBook, parseTicket } from './lounge-ticket';
 import { errorResponse } from './http';
@@ -60,12 +61,17 @@ function readAttachment(ws: WebSocket): Attachment | null {
     : null;
 }
 
+/** Who had the room open, and when: per player, one span per open socket (lounging with company). */
+export type Presence = Map<string, Span[]>;
+
 /** The part of the push the guild core needs (a core without one has no live socket). */
 export interface LiveHooks {
   enabled(): boolean;
   mintTicket(guildId: string, userId: string): Promise<string>;
   /** `userId` just changed something: pushes their room view to the guild's sockets if it changed. */
   notify(userId: string): void;
+  /** Who has a socket open, and since when (`presence` of `LoungeLive`). */
+  presence(now: number, closing?: WebSocket | null): Presence;
 }
 
 export interface LoungeLiveDeps {
@@ -77,6 +83,11 @@ export interface LoungeLiveDeps {
   now: () => number;
   /** The room view of one player, or null when they are not a resident (no starter yet). */
   residentOf: (userId: string) => Resident | null;
+  /**
+   * Who is here is about to change: a socket joins (`closing` null) or `closing` goes. Called before
+   * anything is closed, so the time spent together so far can be paid (lounge-company.ts). Never throws.
+   */
+  onPresenceChange?: (closing: WebSocket | null) => void;
 }
 
 /** Remembered last pushes per player, so a request that changed nothing pushes nothing. */
@@ -103,6 +114,30 @@ export class LoungeLive implements LiveHooks {
   openSockets(): WebSocket[] {
     this.pruneStale(this.deps.now());
     return this.deps.ctx.getWebSockets();
+  }
+
+  /**
+   * Each player's sockets as spans: from the open to now, or, for a socket that has gone quiet for
+   * `STALE_MS`, to its last ping (it was there until then). `closing`, a socket that is going, counts
+   * until now even if the runtime no longer lists it. Unreadable sockets are left out.
+   */
+  presence(now: number, closing: WebSocket | null = null): Presence {
+    const sockets = new Set(this.deps.ctx.getWebSockets());
+    if (closing !== null) sockets.add(closing);
+    const out: Presence = new Map();
+    for (const ws of sockets) {
+      const att = readAttachment(ws);
+      if (att === null) continue;
+      const lastPing = this.deps.ctx.getWebSocketAutoResponseTimestamp(ws)?.getTime() ?? 0;
+      const lastAlive = Math.max(lastPing, att.connectedAt);
+      const to = ws === closing || now - lastAlive <= STALE_MS ? now : lastAlive;
+      const from = att.connectedAt;
+      if (to <= from) continue;
+      const spans = out.get(att.userId) ?? [];
+      spans.push({ from, to: Math.min(to, from + MAX_AGE_MS) });
+      out.set(att.userId, spans);
+    }
+    return out;
   }
 
   /** Closes sockets with no ping for `STALE_MS` or older than `MAX_AGE_MS`. Returns how many it closed. */
@@ -134,6 +169,7 @@ export class LoungeLive implements LiveHooks {
     const userId = await this.tickets.redeem(ticket.secret);
     if (userId === null) return errorResponse('invalid_ticket', 401);
 
+    this.presenceChange(null);
     const now = this.deps.now();
     this.pruneStale(now);
     const all = this.deps.ctx.getWebSockets();
@@ -189,11 +225,21 @@ export class LoungeLive implements LiveHooks {
   }
 
   webSocketClose(ws: WebSocket, code: number): void {
+    this.presenceChange(ws);
     closeQuietly(ws, safeCode(code), 'closed');
   }
 
   webSocketError(ws: WebSocket): void {
+    this.presenceChange(ws);
     closeQuietly(ws, 1011, 'error');
+  }
+
+  private presenceChange(closing: WebSocket | null): void {
+    try {
+      this.deps.onPresenceChange?.(closing);
+    } catch (err) {
+      console.error('lounge presence hook failed', err instanceof Error ? err.name : 'unknown');
+    }
   }
 }
 

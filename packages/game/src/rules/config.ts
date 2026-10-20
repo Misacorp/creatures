@@ -84,6 +84,14 @@ export const RULES = {
     /** A Workshop job: experience per hour of its nominal work time. */
     workshopPerHour: 8,
     /**
+     * Lounging with company (2026-10-20, option C): the lounger earns 1 experience per `msPerXp` that its
+     * player's live room socket is open while another player's is too, at most `dailyCap` a game day per
+     * creature (then it is Rested, and another creature can take its place). No player cap, no treats, no
+     * Boons or Omens. The cap is 2 hours of company and half of what 12 hours of back-to-back 2 hour trips
+     * give one creature (6 x 20), so lounging never beats playing a creature.
+     */
+    lounge: { msPerXp: 120_000, dailyCap: 60 },
+    /**
      * Treats (a per-creature checkbox when an activity starts): the activity's experience for that
      * creature is multiplied by `multiplier`, and the treat costs `baitBase + ceil(level / 2)` Bait, paid
      * when the activity starts. Raids take no treats.

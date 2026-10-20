@@ -21,8 +21,8 @@ export function SmallCreature(props: {
   class?: string;
   /** What assistive technology says instead of the default; keep the creature's name in it. */
   label?: string;
-  /** A button under the creature's facts in the popover (it closes the popover first), for example "Move". */
-  action?: CreatureAction;
+  /** Buttons under the creature's facts in the popover (each closes the popover first), for example "Move". */
+  action?: CreatureAction | readonly CreatureAction[];
   children: ComponentChildren;
 }) {
   const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();

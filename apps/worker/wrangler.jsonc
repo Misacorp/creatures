@@ -37,7 +37,8 @@
   // 404 and ignores a stored dev clock offset. A test pins production and the top level to "off".
   // LOUNGE_LIVE: "on" turns on the lounge's live WebSocket (docs/design/lounge-live.md): the ticket and
   // socket routes exist and /api/config tells the client. Any other value makes both answer 404 and the
-  // client polls as before. On locally and on staging, OFF in production until Misa says so (a test pins it).
+  // client polls as before. On everywhere since 2026-10-20 (Misa asked; a test pins it). Lounging with
+  // company (lounge-company.ts) earns experience only through these sockets.
   // DISCORD_PUBLIC_KEY: the Discord app's public key (hex, not a secret). The deploy job fills it from
   // Discord's verify_key; empty (or not 64 hex characters) turns POST /api/discord/interactions off (404),
   // which also turns off /feedback (docs/design/feedback.md).
@@ -99,7 +100,7 @@
         "LEET_API_URL": "https://rwozj697u0.execute-api.eu-north-1.amazonaws.com",
         "RAID_PRACTICE": "off",
         "DEV_TOOLS": "off",
-        "LOUNGE_LIVE": "off"
+        "LOUNGE_LIVE": "on"
       }
     }
   }

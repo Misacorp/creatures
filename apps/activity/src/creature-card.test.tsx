@@ -65,6 +65,7 @@ function draw(
     pending?: boolean;
     bait?: number;
     loungerId?: string | null;
+    loungeXp?: GameState['loungeXp'];
     serverFirsts?: GameState['serverFirsts'];
     busy?: boolean;
     actions?: Partial<CardActions>;
@@ -89,6 +90,7 @@ function draw(
         : [],
     balances: { ...SAMPLE_STATE.balances, bait: options.bait ?? 100 },
     loungerId: options.loungerId ?? null,
+    loungeXp: options.loungeXp ?? {},
     serverFirsts: options.serverFirsts ?? [],
   };
   page.draw(
@@ -173,6 +175,30 @@ describe('the small card', () => {
     expect(byClass(badge as FakeElement, 'armchair-icon')).toHaveLength(1);
   });
 
+  it('has a quiet armchair at the end of the name line that sends a free creature to the lounge', () => {
+    const creature = kind('growing');
+    const { page: p, card, actions, onOpen } = draw(creature);
+    const chair = byClass(card, 'cc-lounge')[0] as FakeElement;
+    expect(nameOf(chair)).toBe('Lounge Cindle');
+    expect(chair.parentNode).toBe(byClass(card, 'cc-name-row')[0]);
+    expect(byClass(chair, 'armchair-icon')).toHaveLength(1);
+    // No words on the card: just the picture.
+    expect(visibleText(chair)).toBe('');
+    p.click(chair);
+    expect(actions.onLounge).toHaveBeenCalledWith(creature);
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it('has no armchair on the lounger, nor on a creature that is away or on a job; a Rested one keeps it', () => {
+    const creature = kind('growing');
+    expect(byClass(draw(creature, { loungerId: creature.id }).card, 'cc-lounge')).toHaveLength(0);
+    const away = { ...creature, away: true, busy: { kind: 'expedition' as const, id: 't' } };
+    expect(byClass(draw(away).card, 'cc-lounge')).toHaveLength(0);
+    const rested = draw(creature, { loungeXp: { [creature.id]: 60 } }).card;
+    expect(byClass(rested, 'cc-lounge')).toHaveLength(1);
+    expect(byClass(rested, 'rested').map((b) => visibleText(b))).toEqual(['Rested']);
+  });
+
   it('puts every talent, each empty slot and the closed slots on a row of their own', () => {
     const { card } = draw(kind('talent to fill'));
     const talents = byClass(card, 'cc-talents')[0] as FakeElement;
@@ -234,7 +260,7 @@ describe('the small card', () => {
     // Under the name, in the same block.
     expect(tags?.parentNode).toBe(byClass(card, 'cc-id')[0]);
     const words = ((tags as FakeElement).childNodes as FakeElement[]).map((t) => visibleText(t));
-    expect(words).toEqual(['Cindle', 'Ember', 'Payoff', 'Shiny', 'Away', 'Lounging']);
+    expect(words).toEqual(['Cindle', 'Ember', 'Payoff', 'Shiny', 'Away', 'Lounging 0 / 60 XP']);
     expect(nameOf(find(card, (e) => e.localName === 'h3')[0] as FakeElement)).toBe('Ember');
   });
 

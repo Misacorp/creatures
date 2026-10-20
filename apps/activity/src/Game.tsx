@@ -18,6 +18,7 @@ import { allowanceNotice } from './allowance-text';
 import { AppHead } from './AppHead';
 import { Collection } from './Collection';
 import { createCreatureActions } from './creature-actions';
+import { LoungeSwap } from './LoungeSwap';
 import type { CatchChoiceActions } from './find-view';
 import { claimExpedition, pushOn, sendExpedition, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
@@ -102,6 +103,8 @@ export function Game({
   const [settled, setSettled] = useState<Record<string, string>>({});
   // Bumped by the debug panel after a tool changed something: the view on screen loads afresh.
   const [devNonce, setDevNonce] = useState(0);
+  /** The lounge swap sheet is open (from "Swap" in the popover of the player's own room creature). */
+  const [swapping, setSwapping] = useState(false);
   // Counts player actions, so a background refresh that started before one is never applied.
   const actionCount = useRef(0);
   // One action at a time (a second tap in the same tick is turned away before `busy` renders).
@@ -314,6 +317,12 @@ export function Game({
               scene: sceneOf(phase),
               forecast,
               onMove: moveLounger,
+              onSwap: () => {
+                setSwapping(true);
+              },
+              ...(game.loungerId === null
+                ? {}
+                : { ownLoungeXp: game.loungeXp[game.loungerId] ?? 0 }),
             },
           }
         : {})}
@@ -498,10 +507,25 @@ export function Game({
     </>
   );
 
+  const swap = swapping && (
+    <LoungeSwap
+      state={game}
+      onPick={(creatureId) => {
+        setSwapping(false);
+        const creature = game.creatures.find((c) => c.id === creatureId);
+        if (creature !== undefined) creatureActions.onLounge(creature);
+      }}
+      onClose={() => {
+        setSwapping(false);
+      }}
+    />
+  );
+
   return (
     <>
       {head}
       {content}
+      {swap}
       {devPanel}
     </>
   );

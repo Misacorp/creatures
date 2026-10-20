@@ -1,6 +1,7 @@
 import { GEAR_SLOTS, RULES } from '@creatures/game';
 import type { Creature, GameState } from './api';
 import {
+  canLounge,
   cardDomId,
   clickedButton,
   lockedText,
@@ -17,6 +18,7 @@ import type { GearState } from './gear-types';
 import { gearName, itemLabel, slotName } from './gear-view';
 import { ItemThumb } from './GearArt';
 import { ActionButton } from './ui/ActionButton';
+import { ArmchairIcon } from './ui/ArmchairIcon';
 import { XpTrack, type XpSize } from './ui/XpTrack';
 
 /**
@@ -49,7 +51,7 @@ export function CreatureCard({
   found: boolean;
   /** The creature whose page was open last: marked so the player sees where they were. */
   current?: boolean;
-  actions: Pick<CardActions, 'onRibbon' | 'onEvolve'>;
+  actions: Pick<CardActions, 'onRibbon' | 'onEvolve' | 'onLounge'>;
   /** Takes the player to the waiting catches at the top of the tab. */
   onAnswerCatch: () => void;
   /** Opens this creature's page, on a part of it or (null) at the top. */
@@ -103,6 +105,22 @@ export function CreatureCard({
         onOpen={() => {
           onOpen(null);
         }}
+        corner={
+          canLounge(creature, state) ? (
+            <button
+              type="button"
+              class="cc-lounge"
+              disabled={busy}
+              aria-label={`Lounge ${creatureName(creature)}`}
+              title="Lounge"
+              onClick={() => {
+                actions.onLounge(creature);
+              }}
+            >
+              <ArmchairIcon />
+            </button>
+          ) : undefined
+        }
       />
       <XpTrack
         level={creature.level}

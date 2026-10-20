@@ -129,6 +129,13 @@
   font-size: var(--fs-small);
 }
 
+/* Rested (the lounge swap): the card's outlined tag, at the line's height. */
+.ro-rested {
+  padding: 0 0.375rem;
+  font-size: var(--fs-small);
+  line-height: 1.4;
+}
+
 /* A quiet tag, no louder than the level: it says which creatures are recommended and nothing about why. */
 .ro-recommended {
   padding: 0 0.375rem;

@@ -9,6 +9,8 @@ import { BossCard } from '../../BossCard';
 import { RaidTimeline } from '../../RaidTimeline';
 import { AppHead } from '../../AppHead';
 import { LivingRoom, sceneOf } from '../../LivingRoom';
+import { LoungeSwap } from '../../LoungeSwap';
+import { loungeSample } from '../../creature-card-sample';
 import { SmallCreature } from '../../SmallCreature';
 import { WornItemLines } from '../../WornItemLines';
 import type { ReadinessBand, RaidView } from '../../raid-api';
@@ -360,33 +362,58 @@ function RoomDemo({
     residents.find((r) => r.userId === ROOM_SELF_ID)?.spot ?? null,
   );
   const shown = residents.map((r) => (r.userId === ROOM_SELF_ID ? { ...r, spot } : r));
+  // "Swap" in your own creature's popover opens the lounge swap, with the workbench's lounge sample.
+  const [swapping, setSwapping] = useState(false);
+  const onSwap = (): void => {
+    setSwapping(true);
+  };
+  const swap = swapping && (
+    <LoungeSwap
+      state={loungeSample()}
+      onPick={() => {
+        setSwapping(false);
+      }}
+      onClose={() => {
+        setSwapping(false);
+      }}
+    />
+  );
   const onMove = movable
     ? (spotId: string): void => {
         setSpot({ id: spotId, at: Date.now() });
       }
     : undefined;
   // With the title row it is drawn as the app draws it: a band as wide as the window.
-  return titleRow ? (
-    <AppHead
-      helpRef={NO_REF}
-      onHelp={() => undefined}
-      balances={{ bait: 52, essence: 52 }}
-      room={{
-        residents: shown,
-        selfId: ROOM_SELF_ID,
-        instanceId: 'workbench',
-        scene,
-        ...(onMove === undefined ? {} : { onMove }),
-      }}
-    />
-  ) : (
-    <LivingRoom
-      residents={shown}
-      selfId={ROOM_SELF_ID}
-      instanceId="workbench"
-      scene={scene}
-      {...(onMove === undefined ? {} : { onMove })}
-    />
+  return (
+    <>
+      {titleRow ? (
+        <AppHead
+          helpRef={NO_REF}
+          onHelp={() => undefined}
+          balances={{ bait: 52, essence: 52 }}
+          room={{
+            residents: shown,
+            selfId: ROOM_SELF_ID,
+            instanceId: 'workbench',
+            scene,
+            onSwap,
+            ownLoungeXp: 34,
+            ...(onMove === undefined ? {} : { onMove }),
+          }}
+        />
+      ) : (
+        <LivingRoom
+          residents={shown}
+          selfId={ROOM_SELF_ID}
+          instanceId="workbench"
+          scene={scene}
+          onSwap={onSwap}
+          ownLoungeXp={34}
+          {...(onMove === undefined ? {} : { onMove })}
+        />
+      )}
+      {swap}
+    </>
   );
 }
 

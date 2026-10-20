@@ -585,6 +585,7 @@
     "supplies": {},
     "serverFirsts": [],
     "loungerId": "00000000-0000-4000-8500-000000000020",
-    "loungeSpot": null
+    "loungeSpot": null,
+    "loungeXp": {}
   }
 }

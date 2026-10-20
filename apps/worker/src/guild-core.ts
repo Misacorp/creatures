@@ -17,6 +17,7 @@ import { Weather } from './weather';
 import { weatherRoutes } from './weather-routes';
 import { expeditionRoutes } from './expedition-routes';
 import { collectionRoutes } from './collection-routes';
+import { LoungeCompany, loungeDay } from './lounge-company';
 import { LIVE_QUIET_PATHS, type LiveHooks } from './lounge-live';
 import { liveRoutes } from './lounge-live-routes';
 import { DevState } from './dev-state';
@@ -333,6 +334,8 @@ export class GuildCore {
   readonly collection: Collection;
   /** The lounge's live socket hooks, or null when there is none (tests, or no flag). */
   readonly live: LiveHooks | null;
+  /** Lounging with company: the lounger's experience for time spent in the room with others. */
+  private readonly company: LoungeCompany;
   readonly gear: Gear;
   readonly dungeon: Dungeon;
   readonly raid: Raid;
@@ -408,6 +411,7 @@ export class GuildCore {
       tripRng: options.tripRng ?? liveRng(),
       ...(options.loungerRng === undefined ? {} : { loungerRng: options.loungerRng }),
       weather: this.weather,
+      gameDay: () => loungeDay(this.now(), this.timezone()).day,
     });
     this.gear = new Gear({
       storage,
@@ -444,6 +448,14 @@ export class GuildCore {
       maxKeys: RATE_MAX_KEYS,
     });
     this.live = options.live ?? null;
+    this.company = new LoungeCompany({
+      storage,
+      analytics: this.analytics,
+      timezone: () => this.timezone(),
+      // Sockets keep real time; the game day follows the dev clock where it runs.
+      gameOffset: () => this.now() - realNow(),
+      loungerOf: (userId) => this.collection.lounge.resolve(userId),
+    });
     this.dev =
       this.devState === null
         ? null
@@ -759,6 +771,9 @@ export class GuildCore {
     // The first authenticated request of a game day pays the daily allowance (once, race-safe).
     if (this.options.dailyAllowance !== false) this.allowance.grant(user.id);
     await this.ensureAlarm();
+    // Time this player spent in the room with company is paid before anything can change their lounger.
+    if (this.live !== null)
+      this.company.settle(this.live.presence(this.realNow()), this.realNow(), user.id);
     const template = matchTemplate(ROUTE_KEYS, pathname);
     const response = await dispatch(routes, request, template?.template ?? pathname, {
       user,
@@ -771,6 +786,15 @@ export class GuildCore {
     if (this.live !== null && request.method !== 'GET' && response.ok)
       this.pushLive(pathname, user.id);
     return response;
+  }
+
+  /**
+   * Someone joins the room or `closing` leaves it: pays everyone with a socket for the time so far, while
+   * the leaver still counts (lounge-company.ts). Never throws.
+   */
+  settleLounge(closing: WebSocket | null): void {
+    if (this.live === null) return;
+    this.company.settleAll(this.live.presence(this.realNow(), closing), this.realNow());
   }
 
   /** Never throws: the push is a courtesy, the request already succeeded. */

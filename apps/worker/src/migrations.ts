@@ -13,6 +13,7 @@ import { expeditionsMigration } from './expedition-migration';
 import { gearMigration } from './gear-migration';
 import { gearV2Migration } from './gear-v2-migration';
 import { loungeMigration } from './lounge';
+import { loungeCompanyMigration } from './lounge-company';
 import { raidAutofireMigration } from './raid-autofire-migration';
 import { raidDifficultyMigration } from './raid-difficulty-migration';
 import { raidLiveMigration } from './raid-live-migration';
@@ -271,6 +272,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   // `placed_by` and the lounge took those numbers, so it checks every step and also makes sure those two
   // migrations' tables and column exist.
   dungeonPathMigration,
+  // Version 35: what lounging with company has paid each player (see lounge-company.ts).
+  loungeCompanyMigration,
 ];
 
 /** The schema version of a fresh database. */

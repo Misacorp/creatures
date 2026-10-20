@@ -12,6 +12,8 @@ interface RosterPickerProps {
   placedNote: string;
   /** Show each option's line about what it would do in the slot (the effect preview). */
   showEffects: boolean;
+  /** Put each option's reason ("Away", "On a job") at the right of its row (see `RosterList`). */
+  reasonSide?: boolean;
   /** The slot that opened it: focus goes back there when it closes. */
   anchor: () => HTMLElement | null;
   onPick: (creatureId: string) => void;
@@ -106,6 +108,7 @@ export function RosterPicker(props: RosterPickerProps) {
           placedNote={props.placedNote}
           showEffects={props.showEffects}
           onPick={props.onPick}
+          {...(props.reasonSide === true ? { reasonSide: true } : {})}
         />
       </div>
     </div>

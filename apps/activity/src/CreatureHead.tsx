@@ -32,7 +32,7 @@ function showsSpecies(creature: Creature): boolean {
 /**
  * The creature's tags under its name, in words, in one order on the card and on the page: the species of a
  * nickname, the element (with its icon), the role, then Festival, Shiny, First on server and what it is doing
- * now (Away, On a job, Lounging). Away and On a job open their glossary entry on both. The other tags are
+ * now (Away, On a job, Lounging, Rested). Those open their glossary entry on both. The other tags are
  * plain on the card (the whole card opens the page) and, with `help` (the page), open their own entry.
  */
 export function NameTags({
@@ -41,7 +41,7 @@ export function NameTags({
   help = false,
 }: {
   creature: Creature;
-  state: Pick<GameState, 'loungerId' | 'serverFirsts'>;
+  state: Pick<GameState, 'loungerId' | 'loungeXp' | 'serverFirsts'>;
   /** The page: element, role, Festival, Shiny and First on server explain themselves when tapped. */
   help?: boolean;
 }) {
@@ -118,12 +118,15 @@ export function CreatureHead({
   state,
   nameId,
   onOpen,
+  corner,
 }: {
   creature: Creature;
-  state: Pick<GameState, 'loungerId' | 'serverFirsts'>;
+  state: Pick<GameState, 'loungerId' | 'loungeXp' | 'serverFirsts'>;
   nameId: string;
   /** The card's: opens the page. Leave out on the page itself. */
   onOpen?: (() => void) | undefined;
+  /** The card's: a small button at the end of the name's line (the armchair of `LoungeCorner`). */
+  corner?: ComponentChildren;
 }) {
   const species = getSpecies(creature.species);
   const shinyColours = creature.shiny ? shinyPalette(creature.species) : undefined;
@@ -157,17 +160,20 @@ export function CreatureHead({
             {species !== undefined && <span class="visually-hidden">, {species.rarity}</span>}
           </h2>
         ) : (
-          <h3 id={nameId} class={nameClass}>
-            <button
-              type="button"
-              class="cc-open"
-              title={name}
-              aria-label={`Open ${name}${species === undefined ? '' : `, ${species.rarity}`}`}
-              onClick={onOpen}
-            >
-              {name}
-            </button>
-          </h3>
+          <div class="cc-name-row">
+            <h3 id={nameId} class={nameClass}>
+              <button
+                type="button"
+                class="cc-open"
+                title={name}
+                aria-label={`Open ${name}${species === undefined ? '' : `, ${species.rarity}`}`}
+                onClick={onOpen}
+              >
+                {name}
+              </button>
+            </h3>
+            {corner}
+          </div>
         )}
         <NameTags creature={creature} state={state} help={onOpen === undefined} />
       </div>

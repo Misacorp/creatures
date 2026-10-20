@@ -129,7 +129,37 @@
   min-width: 0;
 }
 
-.pop-head .pop-short {
+.pop-head /* A creature's name in its rarity's colour, as on its card (the gold title is for everything else). */
+.pop-title.rarity-name {
+  color: var(--rar-text, var(--bone));
+  font-size: var(--fs-heading);
+}
+
+/* The creature's rarity and Shiny in its tag row: chips like the element's, the rarity in its colour. */
+.pop-tags .chip.rarity-tag,
+.pop-tags .chip.shiny,
+.pop-tags .chip.lounge {
+  padding: 0.125rem 0.5rem;
+}
+
+/* Your own lounger's "Lounging 34 / 60 XP": the armchair with the tag's own gap. */
+.pop-tags .chip.lounge .armchair-icon {
+  margin-right: 0;
+}
+
+/*
+  A creature's facts (level, owner, ranks) as the shared data table in the pixel font (as on the creature
+  page), then a board's effect sentence.
+*/
+.pop-body .data-table {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.pop-effect {
+  margin: 0 0 0.5rem;
+}
+
+.pop-short {
   margin-bottom: 0;
 }
 
@@ -159,11 +189,17 @@
   margin: 0.125rem 0;
 }
 
-/* An action under a creature's facts (the raid board's "Remove from board"). */
+/* Actions under a creature's facts (the raid board's "Remove from board"; the room's "Move" and "Swap"), side by side. */
+.pop-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
 button.pop-action {
+  flex: 1 1 0;
   width: 100%;
   min-height: 2.25rem;
-  margin-top: 0.5rem;
   font-size: var(--fs-small);
 }
 

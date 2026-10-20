@@ -229,7 +229,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
     case 'creature_exp':
       return {
         source: oneOf(
-          ['trip', 'dungeon', 'raid', 'job', 'ribbon', 'evolve'] as const,
+          ['trip', 'dungeon', 'raid', 'job', 'lounge', 'ribbon', 'evolve'] as const,
           event.source,
           'trip',
         ),

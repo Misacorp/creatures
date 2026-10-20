@@ -132,11 +132,11 @@ async function connect(player: Player): Promise<Live> {
 const residents = (live: Live) => live.messages.filter((m) => m['type'] === 'resident');
 
 describe('the LOUNGE_LIVE flag: configuration', () => {
-  it('is on locally and on staging, and off in production', () => {
+  it('is on locally, on staging and in production (2026-10-20)', () => {
     const config = parseWrangler();
     expect(config.vars['LOUNGE_LIVE']).toBe('on');
     expect(config.env['staging']?.vars['LOUNGE_LIVE']).toBe('on');
-    expect(config.env['production']?.vars['LOUNGE_LIVE']).toBe('off');
+    expect(config.env['production']?.vars['LOUNGE_LIVE']).toBe('on');
   });
 
   it('tells the client through /api/config only when on', async () => {

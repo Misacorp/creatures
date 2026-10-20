@@ -368,3 +368,20 @@ export function hardCaseRoster(): Creature[] {
   const evolve: Creature = { ...sampleCreature('evolve ready'), id: 'v-evolve' };
   return [mistnewt, lanternfin, longName, full, evolve];
 }
+
+/**
+ * The lounge sample of the workbench: the five hard cases with Lanternfin lounging (34 of the day's 60 XP),
+ * Mistnewt Rested (it had its 60 today) and the evolving one away on a trip.
+ */
+export function loungeSample(): Pick<GameState, 'creatures' | 'loungerId' | 'loungeXp'> {
+  const creatures = hardCaseRoster().map((c) =>
+    c.id === 'v-evolve'
+      ? { ...c, away: true, busy: { kind: 'expedition' as const, id: 'trip' } }
+      : c,
+  );
+  return {
+    creatures,
+    loungerId: 'v-lanternfin',
+    loungeXp: { 'v-lanternfin': 34, 'v-mistnewt': 60 },
+  };
+}

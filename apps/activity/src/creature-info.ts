@@ -25,6 +25,8 @@ export interface CreatureInfo {
   effect?: string;
   /** The items it wears, for a creature in the living room (set with `ownerName`); empty or missing for none. */
   gear?: readonly WornItem[];
+  /** Your own lounger in the living room only: what lounging gave it today (its "Lounging 34 / 60 XP" tag). */
+  loungeXp?: number;
 }
 
 /** The popover info of anything that is a creature on screen (a stage unit, a team member, an explorer). */
@@ -43,21 +45,27 @@ export function backLabel(info: Pick<CreatureInfo, 'name'>): string {
 }
 
 /**
- * The plain lines under the popover's title for what the creature info carries beyond its name and
- * level: the owner (and then the species of a nicknamed creature), shiny, Crafting level and Explorer rank.
- * `speciesLabel` is the species' display name. Nothing is invented: a missing field gives no line.
+ * The facts of the popover, as rows of its data table: the level, then what the creature info carries beyond
+ * its name: the owner (and then the species of a nicknamed creature), Crafting level and Explorer rank.
+ * `speciesLabel` is the species' display name. Nothing is invented: a missing field gives no row. Shiny is a
+ * tag beside the name, and a board's effect line is its own sentence under the table.
  */
-export function creatureFacts(info: CreatureInfo, speciesLabel: string): string[] {
-  const lines: string[] = [];
+export function creatureFactRows(
+  info: CreatureInfo,
+  speciesLabel: string,
+): { label: string; value: string }[] {
+  const rows = [{ label: 'Level', value: String(info.level) }];
   if (info.ownerName !== undefined) {
-    lines.push(`Owner: ${info.ownerName}`);
-    if (info.name !== speciesLabel) lines.push(`Species: ${speciesLabel}`);
+    rows.push({ label: 'Owner', value: info.ownerName });
+    if (info.name !== speciesLabel) rows.push({ label: 'Species', value: speciesLabel });
   }
-  if (info.shiny === true) lines.push('Shiny');
-  if (info.craftingLevel !== undefined) lines.push(`Crafting level ${String(info.craftingLevel)}`);
-  if (info.explorerRank !== undefined) lines.push(`Explorer rank ${String(info.explorerRank)}`);
-  if (info.effect !== undefined) lines.push(info.effect);
-  return lines;
+  if (info.craftingLevel !== undefined) {
+    rows.push({ label: 'Crafting level', value: String(info.craftingLevel) });
+  }
+  if (info.explorerRank !== undefined) {
+    rows.push({ label: 'Explorer rank', value: String(info.explorerRank) });
+  }
+  return rows;
 }
 
 /**

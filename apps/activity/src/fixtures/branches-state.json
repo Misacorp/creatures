@@ -315,6 +315,7 @@
   "serverFirsts": [],
   "loungerId": "00000000-0000-4000-8100-000000000001",
   "loungeSpot": null,
+  "loungeXp": {},
   "timezone": "Europe/Helsinki",
   "leetSync": {
     "source": "disabled",

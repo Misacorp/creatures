@@ -91,6 +91,13 @@ export interface PickerOption {
   recommended: boolean;
   /** A plain action, not a creature (the Workshop's "Take off"): its name is the whole option. */
   action?: boolean;
+  /**
+   * Its experience bar (the lounge swap): drawn as the card's `XpTrack` (the level tag, the bar, "140 / 222")
+   * under the name, in place of the "Lv" after it.
+   */
+  xpBar?: { value: number; max: number; top: boolean; label: string; text: string };
+  /** It had all of today's lounging experience: a small Rested tag (the lounge swap). */
+  rested?: boolean;
 }
 
 /** How many of the player's creatures are on the board. */

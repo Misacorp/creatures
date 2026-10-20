@@ -1,10 +1,13 @@
+import { RULES } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { sampleCreature, talentView } from './creature-card-sample';
 import {
   activityBadges,
+  canLounge,
   cardDomId,
   explorerFacts,
   lockedText,
+  loungingText,
   ribbonsHeldText,
   speciesSubtitle,
   talentKit,
@@ -60,12 +63,39 @@ describe('badges and facts', () => {
       ...sampleCreature('nickname and badges'),
       busy: { kind: 'job' as const, id: 'job' },
     };
-    expect(activityBadges(creature, { loungerId: creature.id }).map((b) => b.text)).toEqual([
-      'Away',
-      'On a job',
-      'Lounging',
+    expect(
+      activityBadges(creature, { loungerId: creature.id, loungeXp: { [creature.id]: 34 } }).map(
+        (b) => b.text,
+      ),
+    ).toEqual(['Away', 'On a job', 'Lounging 34 / 60 XP']);
+    expect(activityBadges(sampleCreature('growing'), { loungerId: null, loungeXp: {} })).toEqual(
+      [],
+    );
+  });
+
+  it('say Rested at the daily cap: on the lounger in its tag, on any other creature on its own', () => {
+    const creature = sampleCreature('growing');
+    const capped = { [creature.id]: RULES.experience.lounge.dailyCap };
+    expect(
+      activityBadges(creature, { loungerId: creature.id, loungeXp: capped }).map((b) => b.text),
+    ).toEqual(['Lounging · Rested']);
+    expect(activityBadges(creature, { loungerId: 'other', loungeXp: capped })).toEqual([
+      { text: 'Rested', tone: 'rested', entry: 'lounging' },
     ]);
-    expect(activityBadges(sampleCreature('growing'), { loungerId: null })).toEqual([]);
+    // Some XP short of the cap shows nothing on a creature that is not lounging.
+    expect(
+      activityBadges(creature, { loungerId: 'other', loungeXp: { [creature.id]: 59 } }),
+    ).toEqual([]);
+    expect(loungingText(0)).toBe('Lounging 0 / 60 XP');
+  });
+
+  it('let only a free creature that is not lounging already go to the living room', () => {
+    const creature = sampleCreature('growing');
+    expect(canLounge(creature, { loungerId: null })).toBe(true);
+    expect(canLounge(creature, { loungerId: creature.id })).toBe(false);
+    expect(canLounge({ ...creature, busy: { kind: 'job', id: 'j' } }, { loungerId: null })).toBe(
+      false,
+    );
   });
 
   it('name the ribbons held', () => {
