@@ -792,33 +792,33 @@ describe('supplies and the rolls of a trip', () => {
     expect(mapTicksBp('long', [])).toBe(0);
     const basic = supply('map-scrap-basic');
     if (basic.kind !== 'map-scrap') throw new Error('not a map');
-    // Basic: a third of a tick and 2.4% of the ticks (B-025: tuned so a map pays 1.2 times its cost on a
+    // Basic: 41% of a tick and 2.83% of the ticks (B-025, then x1.18 for the catch rate 800; a map pays about 1.2 times its cost on a
     // 2 hour trip and 3.5 times on a 24 hour one).
-    expect(basic.fixedTicksBp).toBe(3_500);
-    expect(basic.perTickBp).toBe(240);
-    expect(mapTicksBp('short', [basic])).toBe(3_500 + 240 * 2);
-    expect(mapTicksBp('day', [basic])).toBe(3_500 + 240 * 32);
+    expect(basic.fixedTicksBp).toBe(4_130);
+    expect(basic.perTickBp).toBe(283);
+    expect(mapTicksBp('short', [basic])).toBe(4_130 + 283 * 2);
+    expect(mapTicksBp('day', [basic])).toBe(4_130 + 283 * 32);
     // Better maps give more, and more on a longer trip.
     const bps = SUPPLY_TIERS.map((t) => mapTicksBp('long', [supply(`map-scrap-${t}`)]));
     expect(bps[0] as number).toBeLessThan(bps[1] as number);
     expect(bps[1] as number).toBeLessThan(bps[2] as number);
     expect(mapTicksBp('short', [basic])).toBeLessThan(mapTicksBp('day', [basic]));
-    // The great map on a long trip: 2.78 + 20% of 15 = 5.78 ticks: 5 sure and a 78% chance of a 6th.
+    // The great map on a long trip: 3.28 + 23.6% of 15 = 6.82 ticks: 6 sure and an 82% chance of a 7th.
     const great = supply('map-scrap-great');
-    expect(mapTicksBp('long', [great])).toBe(27_800 + 2_000 * 15);
-    // A fraction rolls as a chance, never rounded away: 0.398 ticks for the basic map on a short trip.
-    expect(mapTicksBp('short', [basic])).toBe(3_980);
+    expect(mapTicksBp('long', [great])).toBe(32_804 + 2_360 * 15);
+    // A fraction rolls as a chance, never rounded away: 0.4696 ticks for the basic map on a short trip.
+    expect(mapTicksBp('short', [basic])).toBe(4_696);
     let extra = 0;
     const rng = createSeededRng('map-fraction');
     for (let i = 0; i < 4_000; i++) extra += rollMapTicks(rng, 'short', [basic]);
-    expect(extra / 4_000).toBeGreaterThan(0.34);
-    expect(extra / 4_000).toBeLessThan(0.46);
+    expect(extra / 4_000).toBeGreaterThan(0.41);
+    expect(extra / 4_000).toBeLessThan(0.53);
     // Without a map nothing is drawn.
     const none = scripted([]);
     expect(rollMapTicks(none, 'long', [])).toBe(0);
     // With one the whole ticks are sure and the fraction draws once.
-    expect(rollMapTicks(scripted([0]), 'long', [great])).toBe(6);
-    expect(rollMapTicks(scripted([9_999]), 'long', [great])).toBe(5);
+    expect(rollMapTicks(scripted([0]), 'long', [great])).toBe(7);
+    expect(rollMapTicks(scripted([9_999]), 'long', [great])).toBe(6);
   });
 
   it('rolls a count from basis points: the sure ones and a chance of one more', () => {
@@ -876,20 +876,20 @@ describe('supplies and the rolls of a trip', () => {
       catchBp: 0,
       newBp: 0,
     });
-    // The tick's own chance (12.5%), plus the lure's, at most a sure thing.
+    // The tick's own chance (8%), plus the lure's, at most a sure thing.
     expect(catchChanceBp([])).toBe(RULES.expeditions.tick.creatureBp);
-    expect(RULES.expeditions.tick.creatureBp).toBe(1_250);
-    expect(catchChanceBp([supply('lure-great')])).toBe(1_250 + great.catchBp);
+    expect(RULES.expeditions.tick.creatureBp).toBe(800);
+    expect(catchChanceBp([supply('lure-great')])).toBe(800 + great.catchBp);
     expect(catchChanceBp([SURE])).toBe(BP);
   });
 
   it('gives a lantern a deeper chance per creature and a fixed chance of a bonus creature from there, and a satchel a fixed part', () => {
     expect(kitDeepBonusBp([])).toBe(0);
     expect(SUPPLY_TIERS.map((t) => kitDeepBonusBp([supply(`lantern-${t}`)]))).toEqual([
-      800, 2_300, 3_400,
+      1_040, 2_990, 4_420,
     ]);
     expect(SUPPLY_TIERS.map((t) => kitDeepBp([supply(`lantern-${t}`)]))).toEqual([
-      800, 2_300, 4_400,
+      1_040, 2_990, 5_720,
     ]);
     expect(satchelBonus([])).toEqual({
       partsBp: 0,

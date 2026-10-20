@@ -131,12 +131,12 @@ Measured exactly, with no sampling, by `packages/sim/src/trip-ev.ts` (`pnpm sim:
 | Target                                                                                      | Band            | Today     |
 | ------------------------------------------------------------------------------------------- | --------------- | --------- |
 | Unsupplied trip: worth, creatures, scrap, shards, gear and XP per hour rise with the length | strictly rising | yes       |
-| 12 h, no supplies: creatures                                                                | 1.5-2.3         | 1.88      |
+| 12 h, no supplies: creatures (a tick brings one 8% of the time, since 2026-10-20)           | 1.0-1.5         | 1.20      |
 | 12 h, no supplies: scrap and shards in plain crafts (6 scrap + 1 shard)                     | 0.8-1.5         | 1.13      |
 | 12 h, no supplies: gear pieces                                                              | 0.6-1.0         | 0.77      |
 | 2 h, no supplies: chance of at least one gear piece                                         | 9-11%           | 10.0%     |
-| Every supply, every length, with and without Guard, Keen nose and a parts Boon: ROI         | 1.1-4.0         | 1.13-3.62 |
-| Every supply on a 12 h trip: ROI                                                            | 1.6-2.6         | 2.01-2.44 |
+| Every supply, every length, with and without Guard, Keen nose and a parts Boon: ROI         | 1.1-4.0         | 1.10-3.59 |
+| Every supply on a 12 h trip: ROI                                                            | 1.6-2.6         | 1.87-2.23 |
 | A supply is worth more (ROI) the longer the trip                                            | rising          | yes       |
 | Each tier gains more Bait than the tier below, every length                                 | rising          | yes       |
 | The second supply of a pair, given the first: ROI                                           | 1.0-5.0         | 1.1-4.9   |

@@ -18,7 +18,7 @@ export const ECONOMY_TARGETS = {
   /** An unsupplied 12 hour trip. */
   long: {
     /** Expected creatures. */
-    creatures: { min: 1.5, max: 2.3 },
+    creatures: { min: 1.0, max: 1.5 },
     /** Its scrap and shards, in plain crafts (`craft`). */
     crafts: { min: 0.8, max: 1.5 },
     /** Expected gear pieces. */

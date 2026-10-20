@@ -681,26 +681,26 @@
   },
   {
     "id": "creatures-catches-min-maxer",
-    "description": "Creatures: a min-maxer brings home 8 to 20 creatures a week, with the pity floor counted (weeks 3 to 30; B-016, the plan is 10 to 15)",
+    "description": "Creatures: a min-maxer brings home 55 to 95 creatures a week (weeks 3 to 30; B-025 follow-up, catch rate 800: about 35 in week 1, 46 in week 2, 75 on average)",
     "metric": "creatures.min-maxer.catchesPerWeek",
     "comparator": "range",
-    "value": [8, 20],
+    "value": [55, 95],
     "unit": "number"
   },
   {
     "id": "creatures-catches-engaged",
-    "description": "Creatures: an engaged player brings home 5 to 14 creatures a week (weeks 3 to 30; B-014)",
+    "description": "Creatures: an engaged player brings home 40 to 70 creatures a week (weeks 3 to 30; B-025 follow-up, catch rate 800: about 20 in week 1, 25 in week 2, 55 on average)",
     "metric": "creatures.engaged.catchesPerWeek",
     "comparator": "range",
-    "value": [5, 14],
+    "value": [40, 70],
     "unit": "number"
   },
   {
     "id": "creatures-catches-regular",
-    "description": "Creatures: a regular player brings home 1.5 to 4 creatures a week (weeks 3 to 30; B-014)",
+    "description": "Creatures: a regular player brings home 7 to 14 creatures a week (weeks 3 to 30; B-025 follow-up, catch rate 800: about 4 in week 1, 6 in week 2, 10.5 on average)",
     "metric": "creatures.regular.catchesPerWeek",
     "comparator": "range",
-    "value": [1.5, 4],
+    "value": [7, 14],
     "unit": "number"
   },
   {

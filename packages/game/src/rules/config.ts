@@ -985,7 +985,7 @@ export const RULES = {
       /** Explorer XP of one tick (XP boosts multiply the total). */
       xp: 20,
       /** A creature (rarity, species, deeper area, featured, affinity, dupe shield and shiny as before). */
-      creatureBp: 1_250,
+      creatureBp: 800,
       /** One scrap. */
       scrapBp: 5_000,
       /** One shard of the place's element (else the explorer's). */

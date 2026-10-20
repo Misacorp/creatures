@@ -44,7 +44,7 @@ describe('the unsupplied trip', () => {
     }
   });
 
-  it('brings, in 12 hours, about 2 creatures, a craft of parts and under one gear piece', () => {
+  it('brings, in 12 hours, about one creature, a craft of parts and under one gear piece', () => {
     const ev = tripEv('long', []);
     expect(inBand(ev.creatures, T.long.creatures)).toBe(true);
     const crafts =
