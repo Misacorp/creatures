@@ -97,6 +97,8 @@ export const ActionIds = {
         return `job:dismantle:${request.creatureId}:${[...request.itemIds].sort().join(',')}${treatSuffix(request)}`;
       case 'supply':
         return `job:supply:${request.creatureId}:${request.supplyId}${treatSuffix(request)}`;
+      case 'convert':
+        return `job:convert:${request.creatureId}:${request.recipeId}${treatSuffix(request)}`;
     }
   },
   /** The same three creatures in the same order are the same run; other picks get their own key. */

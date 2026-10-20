@@ -11,6 +11,7 @@ import { gearName } from './gear-view';
 import { ItemDetail } from './ItemDetail';
 import { JobReveal } from './JobReveal';
 import { JobSlots } from './JobSlots';
+import { ConversionCrafting } from './ConversionCrafting';
 import { SupplyCrafting } from './SupplyCrafting';
 import { Accordion } from './ui/Accordion';
 import { Drawer } from './ui/Drawer';
@@ -227,6 +228,20 @@ export function Workshop({
             kind: 'supply',
             creatureId,
             supplyId,
+            ...(treat ? { treat: true } : {}),
+          })) !== undefined
+        }
+      />
+      <ConversionCrafting
+        gear={gear}
+        creatures={state.creatures}
+        stock={state.supplies}
+        busy={busy}
+        onStart={async (recipeId, creatureId, treat) =>
+          (await actions.startJob({
+            kind: 'convert',
+            creatureId,
+            recipeId,
             ...(treat ? { treat: true } : {}),
           })) !== undefined
         }

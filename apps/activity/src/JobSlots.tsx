@@ -39,9 +39,9 @@ function RunningSlot({
         <div class="job-text">
           <p class="pix job-title">
             <GlossaryTag entry={GLOSSARY_IDS.job(job.kind)} look="text">
-              {jobVerb(job.kind)}
+              {jobVerb(job.kind, job.input)}
             </GlossaryTag>
-            {title.slice(jobVerb(job.kind).length)}
+            {title.slice(jobVerb(job.kind, job.input).length)}
           </p>
           <p class="muted">{creature === undefined ? 'A creature' : creatureName(creature)}</p>
         </div>

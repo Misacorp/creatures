@@ -238,6 +238,8 @@ const ERROR_TEXT: Record<string, string> = {
   skill_too_low: 'That creature needs a higher Crafting level for this supply.',
   base_locked: 'That creature needs a higher Crafting level to make this item.',
   invalid_supply: 'That supply cannot be crafted.',
+  invalid_recipe: 'That recipe does not exist.',
+  insufficient_supplies: 'You do not have the supplies for that.',
   // Expeditions.
   destination_closed: 'That place is closed to this explorer right now.',
   rank_too_low: 'That explorer is not a high enough rank for that.',

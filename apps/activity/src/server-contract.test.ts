@@ -1293,6 +1293,8 @@ describe('the expedition errors the server sends', () => {
       'cancelled',
       'invalid_destination',
       'invalid_supply',
+      'invalid_recipe',
+      'insufficient_supplies',
       'skill_too_low',
       'base_locked',
       'creature_on_job',

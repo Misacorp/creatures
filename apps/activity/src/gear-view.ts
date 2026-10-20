@@ -7,6 +7,7 @@
  * view.
  */
 import {
+  conversionRecipe,
   GLOSSARY_IDS,
   PART_KINDS,
   baseElement,
@@ -535,8 +536,12 @@ export function openJobs(jobs: readonly Job[]): Job[] {
   return jobs.filter((j) => j.status !== 'claimed').sort((a, b) => a.endsAt - b.endsAt);
 }
 
-export function jobVerb(kind: Job['kind']): string {
+export function jobVerb(kind: Job['kind'], input: { recipeId?: string } = {}): string {
   if (kind === 'dismantle') return 'Dismantle';
+  if (kind === 'convert') {
+    const recipe = input.recipeId === undefined ? undefined : conversionRecipe(input.recipeId);
+    return recipe === undefined ? 'Convert' : recipe.kind === 'refine' ? 'Refine' : 'Recycle';
+  }
   return kind === 'craft' || kind === 'supply' ? 'Craft' : 'Old job';
 }
 
@@ -552,6 +557,13 @@ export function jobTitle(job: Pick<Job, 'kind' | 'input'>): string {
         ? ''
         : ` (${reachName(job.input.reach)})`;
     return `Craft ${gearName(job.input.baseId ?? 'item')}${reach}`;
+  }
+  if (job.kind === 'convert') {
+    // "Refine Plain Lure", "Recycle Sweet Lure": the verb and the supply it works on.
+    const recipe =
+      job.input.recipeId === undefined ? undefined : conversionRecipe(job.input.recipeId);
+    const from = recipe?.inputs[0];
+    return `${jobVerb('convert', job.input)} ${from?.type === 'supply' ? supplyName(from.id) : 'supplies'}`;
   }
   if (job.kind === 'dismantle') {
     const items = job.input.items ?? [];
