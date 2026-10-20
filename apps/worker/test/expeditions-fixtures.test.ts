@@ -85,9 +85,10 @@ describe('the expedition fixtures match what the server sends', () => {
     expect(claimWorked.result.rankGifts[0]?.rank).toBe(claimWorked.result.xp.rank);
     expect(claimWorked.result.rankGifts[0]?.bait).toBeGreaterThan(0);
     expect(stateAfter.slots.total).toBe(2);
-    // A recall has catches but no XP, journal or goal.
+    // A recall has catches and the XP of its ticks, but no journal or goal.
     expect(claimRecall.result.recalled).toBe(true);
-    expect('xp' in claimRecall.result).toBe(false);
+    expect(claimRecall.result.xp.gained).toBeGreaterThan(0);
+    expect('journal' in claimRecall.result).toBe(false);
     // The profile has every account stat, the milestones and the journal.
     expect(Object.keys(profile.stats).length).toBeGreaterThan(8);
     expect(profile.milestones.length).toBeGreaterThan(5);

@@ -25,9 +25,9 @@ describe('conversion views', () => {
   });
 
   it('lists a recycle with parts as outputs and no Bait', () => {
-    const [view] = conversionViews('recycle', { 'lantern-great': 1 }, {});
+    const [view] = conversionViews('recycle', { 'map-scrap-great': 1 }, {});
     expect(view?.verb).toBe('Recycle');
-    expect(view?.outputs.map((o) => o.key)).toEqual(['scrap', 'spark-shard']);
+    expect(view?.outputs.map((o) => o.key)).toEqual(['scrap', 'tide-shard']);
   });
 
   it('times a conversion at a Crafting level like the server does', () => {

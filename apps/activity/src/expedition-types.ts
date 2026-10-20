@@ -157,7 +157,7 @@ export interface TripResult {
     oddsBp: number;
     outcome: 'worked' | 'failed' | 'declined';
   };
-  /** Only for a finished trip (not a recall or a failure). */
+  /** For a finished trip and for a recall (its ticks pay XP), not for a failure. */
   xp?: {
     gained: number;
     total: number;

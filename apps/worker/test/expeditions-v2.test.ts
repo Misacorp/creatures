@@ -533,25 +533,27 @@ describe('supplies', () => {
 });
 
 describe('ranks, XP and slots', () => {
-  it('gives explorer XP for a finished trip, not for a recall, and raises the rank', async () => {
+  it('gives explorer XP for a finished trip and for a recall (its ticks), and raises the rank', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await join(ctx, USER, 0);
         const first = tripOf(await send(p, p.starterId, 'long'));
-        // A recall pays no XP.
+        // A recall pays the XP of its ticks (6 whole hours, 6 ticks), but is no finished trip.
         ctx.clock.t = first.startedAt + 6 * HOUR;
-        expect(resultOf(await claim(p, first.id)).xp).toBeUndefined();
-        expect((await state(p)).creatures[0]?.explorer.xp).toBe(0);
-        // A finished trip does.
+        const recall = resultOf(await claim(p, first.id));
+        expect(recall.xp).toMatchObject({ gained: tripXp(6, []), total: tripXp(6, []) });
+        expect((await state(p)).creatures[0]?.explorer.xp).toBe(tripXp(6, []));
+        expect(
+          rows<{ trips: number }>(ctx.sql, 'SELECT trips FROM explorer_progress')[0]?.trips,
+        ).toBe(0);
+        // A finished trip does too, on top.
         const second = tripOf(await send(p, p.starterId, 'long'));
         ctx.clock.t = second.endsAt;
         const done = resultOf(await claim(p, second.id));
-        expect(done.xp).toMatchObject({
-          gained: tripXp(lengthRules('long').ticks, []),
-          total: tripXp(lengthRules('long').ticks, []),
-        });
-        expect(explorerRank(tripXp(lengthRules('long').ticks, []))).toBe(done.xp?.rank);
+        const total = tripXp(6, []) + tripXp(lengthRules('long').ticks, []);
+        expect(done.xp).toMatchObject({ gained: tripXp(lengthRules('long').ticks, []), total });
+        expect(explorerRank(total)).toBe(done.xp?.rank);
         // Enough XP to the next rank raises it.
         const need = RULES.expeditions.rank.xpForRank[1] ?? 0;
         setRank(ctx.sql, USER_ID, p.starterId, 1);
@@ -1883,8 +1885,8 @@ describe('trips pay in ticks', () => {
         { rng: createSeededRng(seed), tripRng: createSeededRng(`${seed}-trip`) },
       );
     }
-    // The great map on a 2 hour trip: 3.75 + 27% x 2 = 4.29 ticks, so 4 or 5 more: 6 or 7 ticks in all.
-    for (const value of xp) expect([6 * 20, 7 * 20]).toContain(value);
+    // The great map on a 2 hour trip: 2.78 + 20% x 2 = 3.18 ticks, so 3 or 4 more: 5 or 6 ticks in all.
+    for (const value of xp) expect([5 * 20, 6 * 20]).toContain(value);
   });
 
   it('brings a satchel’s fixed scrap and shard on a finished trip, and a recall only the ticks', async () => {

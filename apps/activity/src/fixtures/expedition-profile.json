@@ -200,9 +200,9 @@
     },
     {
       "creatureId": "00000000-0000-4000-8400-000000000003",
-      "rank": 1,
-      "xp": 0,
-      "nextRankXp": 200,
+      "rank": 3,
+      "xp": 1800,
+      "nextRankXp": 2000,
       "trips": 0
     },
     {
@@ -230,7 +230,7 @@
   "slots": {
     "total": 2,
     "used": 0,
-    "rankSum": 3,
+    "rankSum": 5,
     "tripsFinished": 3,
     "next": {
       "kind": "rank_sum",

@@ -44,22 +44,25 @@ export function explorersByCreature(sql: SqlStorage, userId: string): Map<string
   );
 }
 
-/** Adds XP and one finished trip to a creature. Returns the new totals. */
+/** Adds XP and, unless `countTrip` is false (a recall), one finished trip to a creature. Returns the new totals. */
 export function addExplorerTrip(
   sql: SqlStorage,
   userId: string,
   creatureId: string,
   xp: number,
+  countTrip = true,
 ): ExplorerRow {
   if (!Number.isSafeInteger(xp) || xp < 0) throw new Error('invalid xp');
+  const trips = countTrip ? 1 : 0;
   return sql
     .exec<ExplorerRow>(
-      `INSERT INTO explorer_progress (user_id, creature_id, xp, trips) VALUES (?, ?, ?, 1)
-       ON CONFLICT(user_id, creature_id) DO UPDATE SET xp = xp + excluded.xp, trips = trips + 1
+      `INSERT INTO explorer_progress (user_id, creature_id, xp, trips) VALUES (?, ?, ?, ?)
+       ON CONFLICT(user_id, creature_id) DO UPDATE SET xp = xp + excluded.xp, trips = trips + excluded.trips
        RETURNING xp, trips`,
       userId,
       creatureId,
       xp,
+      trips,
     )
     .one();
 }

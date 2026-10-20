@@ -554,17 +554,6 @@
             "rank": 4,
             "rankBefore": 3
           },
-          "experience": {
-            "creatureId": "00000000-0000-4000-8400-000000000002",
-            "gained": 120,
-            "treat": false,
-            "levelBefore": 8,
-            "level": 8,
-            "exp": 120,
-            "needed": 328,
-            "waiting": false,
-            "gold": false
-          },
           "rankGifts": [
             {
               "rank": 4,
@@ -577,6 +566,17 @@
           ],
           "slotUnlocked": {
             "total": 2
+          },
+          "experience": {
+            "creatureId": "00000000-0000-4000-8400-000000000002",
+            "gained": 120,
+            "treat": false,
+            "levelBefore": 8,
+            "level": 8,
+            "exp": 120,
+            "needed": 328,
+            "waiting": false,
+            "gold": false
           },
           "familiarity": {
             "stars": 0,

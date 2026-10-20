@@ -334,7 +334,9 @@ export function payTrip(
   if (settled.length > 0) result.autoSettled = settled;
   if (push !== null) result.pushOn = pushView(expedition, push.goal, push.outcome);
 
-  // A recall brings what was caught and nothing more: no XP, no stars, no journal, no stats.
+  // A recall brings what was caught and the explorer XP of its ticks (2026-10-20: every tick gives its
+  // XP), and nothing more: no creature experience, stars, journal or stats, and it does not count as a
+  // finished trip.
   if (finished) {
     finishProgress(env, userId, expedition, explorer, dest, now, {
       result,
@@ -348,6 +350,17 @@ export function payTrip(
       twist,
       stats,
       ticks,
+    });
+  } else if (ticks > 0) {
+    payExplorerXp(env, userId, expedition, explorer, {
+      result,
+      explorerBefore,
+      worked: null,
+      milestoneXpBp: milestones.xpBp,
+      twist,
+      stats,
+      ticks,
+      countsAsTrip: false,
     });
   }
   logClaim(env, userId, expedition, result, now, dest);
@@ -369,27 +382,26 @@ export function payTrip(
   return result;
 }
 
-/** XP, familiarity, journal and stats of a trip that finished (not a recall, not a failure). */
-function finishProgress(
+/**
+ * The explorer XP of a claim and what it brings: the rank, the one-time rank gifts and a slot that the
+ * rank sum may open. A finished trip pays it (and counts as a trip); a recall pays the XP of its ticks
+ * too (`countsAsTrip: false`: the trip count, which the familiarity and slots follow, does not move).
+ */
+function payExplorerXp(
   env: ClaimEnv,
   userId: string,
   expedition: ExpeditionRow,
   explorer: CreatureLite,
-  dest: DestinationDef,
-  now: number,
   p: {
     result: ExpeditionResult;
-    catches: readonly TripCatch[];
-    views: readonly CatchView[];
     explorerBefore: ExplorerView;
-    famBefore: FamiliarityRecord;
-    starsBefore: number;
     worked: PushOnGoalDef | null;
     milestoneXpBp: number;
     twist: TwistEffect | null;
     stats: Partial<Record<AccountStat, number>>;
-    /** The ticks the trip paid (the XP follows them). */
+    /** The ticks paid (the XP follows them). */
     ticks: number;
+    countsAsTrip: boolean;
   },
 ): void {
   const analytics = env.deps.analytics;
@@ -408,7 +420,7 @@ function finishProgress(
     gearPart('trail-xp', gearRulesOf(env.sql, explorer).trailXpBp),
   ];
   const gained = tripXp(p.ticks, shares);
-  const after = addExplorerTrip(env.sql, userId, explorer.id, gained);
+  const after = addExplorerTrip(env.sql, userId, explorer.id, gained, p.countsAsTrip);
   const rankAfter = explorerRank(after.xp);
   const explorerBoost = xpBoost(shares);
   p.result.xp = {
@@ -418,22 +430,6 @@ function finishProgress(
     rankBefore: p.explorerBefore.rank,
     ...(explorerBoost === null ? {} : { boost: explorerBoost }),
   };
-  // Creature experience (training by activity): the explorer earns the trip's by its length, doubled
-  // by the treat packed when it was sent. A recall and a failed trip never get here.
-  const wx = env.tripWeatherOf(expedition);
-  const treat = expedition.treat === 1;
-  const expParts = creatureXpParts(treat, wx.treatMultiplier, env.tripDayXpOf(expedition));
-  const experience = awardExperience(
-    env.sql,
-    analytics,
-    userId,
-    explorer.id,
-    tripExperience(expedition.duration, expParts),
-    'trip',
-    treat,
-    xpBoost(expParts),
-  );
-  if (experience !== null) p.result.experience = experience;
   if (rankAfter > p.explorerBefore.rank) {
     analytics?.record(
       { kind: 'explorer_rank', species: explorer.species, rank: rankAfter },
@@ -468,12 +464,56 @@ function finishProgress(
   }
   // This trip counts as finished and may raise the rank: a slot may open.
   const sumAfter = sumBefore + (rankAfter - p.explorerBefore.rank);
-  const slotsAfter = slotsFor(sumAfter, tripsBefore + 1);
+  const slotsAfter = slotsFor(sumAfter, tripsBefore + (p.countsAsTrip ? 1 : 0));
   if (slotsAfter > slotsFor(sumBefore, tripsBefore)) {
     p.result.slotUnlocked = { total: slotsAfter };
     analytics?.record({ kind: 'slot_unlock', slots: slotsAfter, rankSum: sumAfter }, userId);
   }
+}
 
+/** XP, familiarity, journal and stats of a trip that finished (not a recall, not a failure). */
+function finishProgress(
+  env: ClaimEnv,
+  userId: string,
+  expedition: ExpeditionRow,
+  explorer: CreatureLite,
+  dest: DestinationDef,
+  now: number,
+  p: {
+    result: ExpeditionResult;
+    catches: readonly TripCatch[];
+    views: readonly CatchView[];
+    explorerBefore: ExplorerView;
+    famBefore: FamiliarityRecord;
+    starsBefore: number;
+    worked: PushOnGoalDef | null;
+    milestoneXpBp: number;
+    twist: TwistEffect | null;
+    stats: Partial<Record<AccountStat, number>>;
+    /** The ticks the trip paid (the XP follows them). */
+    ticks: number;
+  },
+): void {
+  const analytics = env.deps.analytics;
+
+  payExplorerXp(env, userId, expedition, explorer, { ...p, countsAsTrip: true });
+
+  // Creature experience (training by activity): the explorer earns the trip's by its length, doubled
+  // by the treat packed when it was sent. A recall and a failed trip never get here.
+  const wx = env.tripWeatherOf(expedition);
+  const treat = expedition.treat === 1;
+  const expParts = creatureXpParts(treat, wx.treatMultiplier, env.tripDayXpOf(expedition));
+  const experience = awardExperience(
+    env.sql,
+    analytics,
+    userId,
+    explorer.id,
+    tripExperience(expedition.duration, expParts),
+    'trip',
+    treat,
+    xpBoost(expParts),
+  );
+  if (experience !== null) p.result.experience = experience;
   // Familiarity: the trip, the species caught here, a shiny.
   const found = new Set(p.famBefore.found);
   const here = new Set(allSpecies(dest));

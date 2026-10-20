@@ -69,8 +69,8 @@ describe('the gift of a new rank', () => {
     expect(view?.lines.map((l) => l.text)).toEqual(['4 Bait', '2 Scrap']);
   });
 
-  it('has no gift for a trip that did not raise the rank, a recall or a failure', () => {
-    expect(rankGiftViews(recalled)).toEqual([]);
+  it('has no gift for a trip that did not raise the rank or a failure, and a recall that raises it gives its gifts', () => {
+    expect(rankGiftViews(recalled).map((g) => g.rank)).toEqual([2, 3]);
     expect(rankGiftViews(failed)).toEqual([]);
     expect(rankGiftViews({})).toEqual([]);
   });
@@ -134,7 +134,14 @@ describe('what the explorer earned', () => {
     });
     expect(xpView(worked)).toMatchObject({ rankBefore: 3, rank: 4, rankedUp: true });
     expect(xpView({ xp: { gained: 4, total: 10, rank: 1, rankBefore: 1 } })?.rankedUp).toBe(false);
-    expect(xpView(recalled)).toBeNull();
+    // A recall pays the XP of its ticks too (2026-10-20), and a failure pays none.
+    expect(xpView(recalled)).toMatchObject({
+      gained: 1800,
+      rankBefore: 1,
+      rank: 3,
+      rankedUp: true,
+    });
+    expect(xpView(failed)).toBeNull();
   });
 
   it('shows the familiarity stars and whether one was earned', () => {

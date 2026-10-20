@@ -45,12 +45,36 @@
         "map-scrap-basic",
         "map-scrap-basic"
       ]
-    }
+    },
+    "xp": {
+      "gained": 1800,
+      "total": 1800,
+      "rank": 3,
+      "rankBefore": 1
+    },
+    "rankGifts": [
+      {
+        "rank": 2,
+        "bait": 2,
+        "parts": {
+          "scrap": 1
+        },
+        "supplies": []
+      },
+      {
+        "rank": 3,
+        "bait": 3,
+        "parts": {
+          "scrap": 1
+        },
+        "supplies": []
+      }
+    ]
   },
   "state": {
     "serverNow": 1799852544002,
     "balances": {
-      "bait": 304,
+      "bait": 309,
       "essence": 0
     },
     "starterChosen": false,
@@ -185,9 +209,9 @@
           "nextId": "tidal-mark-2"
         },
         "explorer": {
-          "rank": 1,
-          "xp": 0,
-          "nextRankXp": 200,
+          "rank": 3,
+          "xp": 1800,
+          "nextRankXp": 2000,
           "trips": 0
         },
         "exp": 0,
@@ -537,7 +561,31 @@
               "map-scrap-basic",
               "map-scrap-basic"
             ]
-          }
+          },
+          "xp": {
+            "gained": 1800,
+            "total": 1800,
+            "rank": 3,
+            "rankBefore": 1
+          },
+          "rankGifts": [
+            {
+              "rank": 2,
+              "bait": 2,
+              "parts": {
+                "scrap": 1
+              },
+              "supplies": []
+            },
+            {
+              "rank": 3,
+              "bait": 3,
+              "parts": {
+                "scrap": 1
+              },
+              "supplies": []
+            }
+          ]
         },
         "offer": null,
         "pushOn": null
@@ -626,17 +674,6 @@
             "rank": 4,
             "rankBefore": 3
           },
-          "experience": {
-            "creatureId": "00000000-0000-4000-8400-000000000002",
-            "gained": 120,
-            "treat": false,
-            "levelBefore": 8,
-            "level": 8,
-            "exp": 120,
-            "needed": 328,
-            "waiting": false,
-            "gold": false
-          },
           "rankGifts": [
             {
               "rank": 4,
@@ -649,6 +686,17 @@
           ],
           "slotUnlocked": {
             "total": 2
+          },
+          "experience": {
+            "creatureId": "00000000-0000-4000-8400-000000000002",
+            "gained": 120,
+            "treat": false,
+            "levelBefore": 8,
+            "level": 8,
+            "exp": 120,
+            "needed": 328,
+            "waiting": false,
+            "gold": false
           },
           "familiarity": {
             "stars": 0,
@@ -722,7 +770,7 @@
     "slots": {
       "total": 2,
       "used": 0,
-      "rankSum": 3,
+      "rankSum": 5,
       "tripsFinished": 3,
       "next": {
         "kind": "rank_sum",

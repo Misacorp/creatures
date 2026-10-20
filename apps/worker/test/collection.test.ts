@@ -1136,6 +1136,21 @@ describe('POST /api/expeditions/{id}/claim', () => {
           expect(resultOf(res).catches).toHaveLength(expected);
           expect((res.body['state'] as StateBody).balances.bait).toBe(200);
           expect((res.body['state'] as StateBody).slots.used).toBe(0);
+          // Every tick gives its explorer XP, a recall's too (2026-10-20); but it is no finished trip: no
+          // trip count, creature experience, familiarity or journal.
+          const gained = expected * RULES.expeditions.tick.xp;
+          expect(resultOf(res)).toMatchObject({ xp: { gained, total: gained, rankBefore: 1 } });
+          expect(resultOf(res)).not.toHaveProperty('experience');
+          expect(resultOf(res)).not.toHaveProperty('familiarity');
+          expect(resultOf(res)).not.toHaveProperty('journal');
+          expect(
+            ctx.sql
+              .exec<{ xp: number; trips: number }>(
+                'SELECT xp, trips FROM explorer_progress WHERE user_id = ?',
+                USER_ID,
+              )
+              .one(),
+          ).toEqual({ xp: gained, trips: 0 });
         },
         seeded(),
       );
