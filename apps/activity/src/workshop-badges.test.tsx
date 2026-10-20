@@ -36,15 +36,29 @@ describe('the Bait cost of a job', () => {
 });
 
 describe('the treat box', () => {
-  it('shows the cost as a Bait badge and keeps it in the checkbox name', () => {
+  it('is one switch whose name says the multiplier and the cost, shown as chips', () => {
     const root = draw(
       <TreatBox cost={11} bait={40} checked={false} onChange={vi.fn()} who="Cindle" />,
     );
-    const box = byName(root, 'input', 'Pack a treat for Cindle (11 Bait)');
+    const box = byName(root, 'button', 'Pack a treat for Cindle (2x experience, 11 Bait)');
     expect(box).toHaveLength(1);
+    expect(box[0]?.getAttribute('role')).toBe('switch');
+    expect(box[0]?.getAttribute('aria-checked')).toBe('false');
     expect(byName(root, 'span', 'Bait: 11')).toHaveLength(1);
-    expect(visibleText(root)).toContain('Pack a treat for Cindle');
+    expect(visibleText(root)).toContain('Pack a treat');
+    expect(visibleText(root)).toContain('for Cindle');
+    expect(visibleText(root)).toContain('2x');
     expect(visibleText(root)).not.toContain('(11 Bait)');
+  });
+
+  it('cannot be switched on without the Bait, and says so', () => {
+    const onChange = vi.fn();
+    const root = draw(
+      <TreatBox cost={11} bait={4} checked={false} onChange={onChange} times={3} />,
+    );
+    const box = byName(root, 'button', 'Pack a treat (3x experience, 11 Bait)');
+    expect(box[0]?.getAttribute('disabled')).not.toBeNull();
+    expect(visibleText(root)).toContain('Not enough Bait');
   });
 });
 

@@ -51,18 +51,106 @@ body.howto-open {
 }
 
 /* "Pack a treat": one compact line where a creature is sent, put in the dungeon team or given a job. */
+/*
+  "Pack a treat" (TreatBox.tsx): one row on ink, the whole row a Switch. The switch, the treat icon (dim until
+  packed), the words, then the "2x" and the Bait cost at the right; the help "?" outside the row. Packed, the
+  edge turns gold, like Bait. Short of Bait, the row dims and the reason sits under it.
+*/
 .treat-box {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0 0.375rem;
-  margin: 0.25rem 0;
+  gap: 0.25rem 0.5rem;
+  margin: 0.5rem 0;
+  font-family: var(--display);
 }
 
-.treat-box label {
-  cursor: pointer;
+button.switch.treat-switch {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-areas:
+    'track icon label chips'
+    'track icon who chips';
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  gap: 0 0.5rem;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+  color: var(--bone);
+  text-align: left;
+}
+
+button.switch.treat-switch.on {
+  box-shadow: inset 0 0 0 var(--px) var(--gold);
+}
+
+button.switch.treat-switch:disabled {
+  color: var(--haze);
+}
+
+.treat-switch .switch-track {
+  grid-area: track;
+  align-self: center;
+}
+
+.treat-icon {
+  grid-area: icon;
+  align-self: center;
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+.treat-switch.on .treat-icon {
+  opacity: 1;
+  filter: none;
+}
+
+.treat-switch .switch-label {
+  grid-area: label;
+  align-self: end;
+  line-height: 1.1;
+}
+
+.treat-who {
+  grid-area: who;
+  overflow: hidden;
+  color: var(--haze);
+  font-size: var(--fs-small);
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.treat-switch.solo .switch-label {
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+.treat-chips {
+  display: inline-flex;
+  grid-area: chips;
+  align-self: center;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.treat-chips .tag.xp-times {
+  padding: 0.0625rem 0.25rem 0;
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+  line-height: 1.15;
+}
+
+.treat-box.short .treat-chips {
+  opacity: 0.6;
+}
+
+.treat-reason {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 .treat-help {
-  margin-left: 0.25rem;
+  flex: none;
 }
