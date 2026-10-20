@@ -1133,3 +1133,34 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   - Run `pnpm sim` (full) on a second seed to tell the gear-share and raid cells from noise before anyone tunes against them. If live play shows the dungeon's gear crowding out raid and expedition gear, the lever is `fullClear.gearBp` (for example 7000), not the loot numbers.
   - A gear piece on every clear makes the landmark's certain drop the same as every other clear's; only its rarity bonus (`gearOdds.landmarkBonusBp`) and its Essence, scrap and glimmer still set landmarks apart. If Misa wants landmarks to feel special again, give them a second piece.
   - Shards are at risk now (they are in the pack): a lost run keeps half of them per element, rounded up, so a single shard is kept (1 stays 1). If that feels too generous, the lever is `defeatKeepBp`, not `shardBp`. The sim figures above for the first quick runs were taken before shards moved into the pack; the shard and parts rows of the reward flow are from the sim run after.
+
+### B-025: Expedition economy study and supply tuning (open)
+
+- **Opened:** 2026-10-20, Misa's note: find broken or underperforming supply combos, tune the outliers, and add target tests so the economy cannot drift by accident.
+- **Finding:** an exact study (`pnpm sim:economy`, no sampling; checked against the real roll functions in `economy-ev.test.ts`) of every supply on every length. ROI is the extra expected worth over the crafting cost (parts at scrap 2, shard 6, glimmer 25, Bait 1:1; a new species 40, half of the rolls' species owned). Unsupplied trips already sat in their bands (12 h: 1.88 creatures, 1.13 crafts of parts, 0.77 gear; 2 h: 10% chance of gear; worth per hour rises with length). Flagged singles before: ROI under 1 for lure-basic (2 h 0.90), lantern-basic (2 h 0.65), lantern-good (0.33 at 2 h, 0.98 at 6 h), lantern-great (0.20 at 2 h, 0.61 at 6 h); ROI over 4 at 24 h for every lure (4.40 to 4.70), every map (4.80 to 4.92), lantern-basic (5.49) and satchel-basic (4.80). Lantern-basic was 3.29 at 12 h (high), lantern-great 1.12 (low). 116 pair rows were flagged.
+- **Hypothesis:** scaling each supply's fixed and per-tick effects so ROI is about 1.2 at 2 h, 1.6 at 6 h, 2.1 at 12 h and 3.5 at 24 h puts everything in the bands.
+- **Method:** the effects are close to linear in the ticks, so each fixed part and per-tick part was fitted from two lengths and then checked with the study.
+- **Action (every scalar, old to new).** `supplies.json`:
+  - lure-basic `bonusBp` 1500 to 2200, `catchBp` 110 to 35; lure-good `bonusBp` 3500 to 4200, `catchBp` 250 to 105; lure-great `bonusBp` 6500 to 7000, `catchBp` 470 to 230 (Bait costs unchanged at 6/15/30).
+  - map-scrap-basic `fixedTicksBp` 5000 to 3500, `perTickBp` 340 to 240; good 16500 to 12200 and 1200 to 890; great 37500 to 27800 and 2700 to 2000.
+  - satchel-basic `scrap` 2 to 1, `partsBp` 2800 to 2000, `supplyBp` 1000 to 700 (`shardBp` 3500 unchanged); satchel-good `scrap` 5 to 4, `shardBp` 15000 to 10000, `glimmerBp` 1000 to 600, `partsBp` 6000 to 6600; satchel-great unchanged.
+  - lantern-basic `deepBp` 1500 to 500 (`firstDeepBp` 3000 unchanged); lantern-good `deepBp` 3000 to 2500, `firstDeepBp` 6000 to 10000, recipe scrap 4 + 1 spark shard to scrap 3 + 1 spark shard (cost 14 to 12); lantern-great `deepBp` 5000 to 5500, recipe scrap 7 + 3 spark shards to scrap 3 + 2 spark shards (cost 32 to 18).
+  - `conversions.json`: recycle-lantern-great gives scrap 1 instead of scrap 3 + 1 spark shard (a recycle must give under half of each part of the recipe).
+- **Outcome (exact).** ROI by length, after:
+
+  | Supply (basic / good / great) | 2 h                | 6 h                | 12 h               | 24 h               |
+  | ----------------------------- | ------------------ | ------------------ | ------------------ | ------------------ |
+  | lure                          | 1.15 / 1.14 / 1.16 | 1.56 / 1.55 / 1.57 | 2.21 / 2.19 / 2.22 | 3.59 / 3.58 / 3.62 |
+  | map                           | 1.20 / 1.20 / 1.20 | 1.57 / 1.60 / 1.59 | 2.17 / 2.23 / 2.21 | 3.46 / 3.60 / 3.55 |
+  | lantern                       | 0.53 / 0.53 / 0.36 | 1.43 / 1.49 / 1.11 | 2.23 / 2.44 / 2.07 | 3.10 / 3.74 / 3.78 |
+  | satchel                       | 1.17 / 1.24 / 1.42 | 1.54 / 1.58 / 1.65 | 2.12 / 2.13 / 2.01 | 3.36 / 3.29 / 2.79 |
+
+  Flagged singles after: only the three lanterns on 2 h. Each tier gains more than the one below at every length, and no single leaves its band with Guard (+30% parts), Keen nose tier 3 (+15%) or a +25% parts Boon, or all three. Pairs: the second supply given the first now returns 1.1 to 4.9 (a lure with a map or lantern at 24 h is the top); before, up to 7.6.
+
+- **Refining.** Three basics against one good, absolute gain per trip at 12 h: lure 66 vs 46, map 26 vs 31, lantern 27 vs 29, satchel 25 vs 30 (good against great: lure 138 vs 84, map 94 vs 71, lantern 88 vs 37, satchel 90 vs 64). A trip carries one supply of a kind, so refining is for carrying fewer, better supplies; reported, no rule.
+- **Lantern exception.** Its fixed part is "the first creature may be from the deeper area", which needs a creature: 23% of 2 h trips, 99% of 24 h ones. A lantern worth 1.1 at 2 h would be worth 4.5 at 24 h, so it is tuned to the 12 h and 24 h targets and is not worth its parts on a 2 h trip (`ECONOMY_TARGETS.lanternShortRoi`).
+- **Expected:** players with supplies see gains that grow with trip length; lantern tiers 2 and 3 are cheaper to craft; lures lean on the fixed bonus roll. The sim's headline pins (`run.test.ts`) are not re-pinned here.
+- **Follow-ups:**
+  - Give the lantern a bonus deep creature roll (like the lure's) so it can pay on 2 h trips (rule change in `rollTripCatches`).
+  - The new-species worth (40) and the owned share (50%) are study assumptions; revisit with live data.
+  - Regenerate `docs/balance/scalars.md` (`pnpm scalars`).

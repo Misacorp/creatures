@@ -46,7 +46,7 @@ A finished trip pays in **ticks**: 2 for 2 h, 7 for 6 h, 15 for 12 h, 32 for 24 
 - Each tick gives 20 explorer XP and rolls every table on its own (`RULES.expeditions.tick`, basis points per tick): a creature 12.5%, 1 scrap at 50%, a shard of the **place's** element 6% (a place without one draws each shard's element at random), a gear piece 5.13%, glimmer 0.3%, a blueprint 0.4%, a found supply 2%, a journal page 0.7%. There are no caps: a lucky trip can bring several of anything.
 - Gear, talents, weather, twists, stars and milestones scale these chances. A twist that gave extra rolls gives extra ticks.
 - The catch pity is gone (the dupe shield and the first-expedition Zipmouse stay).
-- **Recall** pays the ticks of the whole hours already spent (never the bonus ticks), and nothing else.
+- **Recall** pays the ticks of the whole hours already spent (never the bonus ticks) and the explorer XP of those ticks (2026-10-20), and nothing else: no creature experience, journal, familiarity trip or stats.
 - **Push-on** hours are ticks, one per hour, on top of the goal's own reward. A goal's extra catch rolls are extra creature rolls at the tick's chance.
 - Trips in flight when ticks arrived are paid by their length.
 - `packages/sim/src/trip-yield-cli.ts` (`node packages/sim/scripts/trip-yield.mjs`) prints what a trip brings by length and supply.

@@ -60,10 +60,7 @@ describe('conversion content', () => {
       supplies: {},
       parts: { scrap: 1 },
     });
-    expect(conversionOutputs(recipe('recycle-lantern-great')).parts).toEqual({
-      scrap: 3,
-      'spark-shard': 1,
-    });
+    expect(conversionOutputs(recipe('recycle-lantern-great')).parts).toEqual({ scrap: 1 });
   });
 
   it('rejects recipes that break a rule', () => {

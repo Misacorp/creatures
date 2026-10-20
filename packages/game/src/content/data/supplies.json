@@ -8,8 +8,8 @@
     "blurb": "More creatures",
     "worth": 15,
     "offerBp": 2500,
-    "bonusBp": 1500,
-    "catchBp": 110,
+    "bonusBp": 2200,
+    "catchBp": 35,
     "newBp": 2500,
     "blueprint": {
       "craftingLevel": 1,
@@ -30,8 +30,8 @@
     "blurb": "More creatures, and new faces",
     "worth": 36,
     "offerBp": 5000,
-    "bonusBp": 3500,
-    "catchBp": 250,
+    "bonusBp": 4200,
+    "catchBp": 105,
     "newBp": 4500,
     "blueprint": {
       "craftingLevel": 3,
@@ -52,8 +52,8 @@
     "blurb": "More creatures, mostly new ones",
     "worth": 72,
     "offerBp": 10000,
-    "bonusBp": 6500,
-    "catchBp": 470,
+    "bonusBp": 7000,
+    "catchBp": 230,
     "newBp": 7000,
     "blueprint": {
       "craftingLevel": 5,
@@ -74,8 +74,8 @@
     "blurb": "Longer trip, more finds",
     "worth": 15,
     "offerBp": 2500,
-    "fixedTicksBp": 5000,
-    "perTickBp": 340,
+    "fixedTicksBp": 3500,
+    "perTickBp": 240,
     "blueprint": {
       "craftingLevel": 1,
       "hours": 2,
@@ -94,8 +94,8 @@
     "blurb": "Much longer trip, many more finds",
     "worth": 40,
     "offerBp": 5000,
-    "fixedTicksBp": 16500,
-    "perTickBp": 1200,
+    "fixedTicksBp": 12200,
+    "perTickBp": 890,
     "blueprint": {
       "craftingLevel": 3,
       "hours": 4,
@@ -115,8 +115,8 @@
     "blurb": "A far longer trip, far more finds",
     "worth": 90,
     "offerBp": 10000,
-    "fixedTicksBp": 37500,
-    "perTickBp": 2700,
+    "fixedTicksBp": 27800,
+    "perTickBp": 2000,
     "blueprint": {
       "craftingLevel": 5,
       "hours": 6,
@@ -136,7 +136,7 @@
     "blurb": "Finds from the deeper area",
     "worth": 15,
     "offerBp": 2500,
-    "deepBp": 1500,
+    "deepBp": 500,
     "firstDeepBp": 3000,
     "blueprint": {
       "craftingLevel": 1,
@@ -156,13 +156,13 @@
     "blurb": "More finds from the deeper area",
     "worth": 40,
     "offerBp": 5000,
-    "deepBp": 3000,
-    "firstDeepBp": 6000,
+    "deepBp": 2500,
+    "firstDeepBp": 10000,
     "blueprint": {
       "craftingLevel": 3,
       "hours": 4,
       "parts": {
-        "scrap": 4,
+        "scrap": 3,
         "spark-shard": 1
       },
       "yield": 1
@@ -177,14 +177,14 @@
     "blurb": "The first find is from the deeper area",
     "worth": 90,
     "offerBp": 10000,
-    "deepBp": 5000,
+    "deepBp": 5500,
     "firstDeepBp": 10000,
     "blueprint": {
       "craftingLevel": 5,
       "hours": 6,
       "parts": {
-        "scrap": 7,
-        "spark-shard": 3
+        "scrap": 3,
+        "spark-shard": 2
       },
       "yield": 1
     }
@@ -198,11 +198,11 @@
     "blurb": "More parts: scrap and some shards",
     "worth": 12,
     "offerBp": 2500,
-    "scrap": 2,
+    "scrap": 1,
     "shardBp": 3500,
     "glimmerBp": 0,
-    "partsBp": 2800,
-    "supplyBp": 1000,
+    "partsBp": 2000,
+    "supplyBp": 700,
     "blueprint": {
       "craftingLevel": 1,
       "hours": 2,
@@ -221,10 +221,10 @@
     "blurb": "More parts: scrap, shards and sometimes glimmer",
     "worth": 30,
     "offerBp": 5000,
-    "scrap": 5,
-    "shardBp": 15000,
-    "glimmerBp": 1000,
-    "partsBp": 6000,
+    "scrap": 4,
+    "shardBp": 10000,
+    "glimmerBp": 600,
+    "partsBp": 6600,
     "supplyBp": 2000,
     "blueprint": {
       "craftingLevel": 3,

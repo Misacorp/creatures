@@ -792,32 +792,33 @@ describe('supplies and the rolls of a trip', () => {
     expect(mapTicksBp('long', [])).toBe(0);
     const basic = supply('map-scrap-basic');
     if (basic.kind !== 'map-scrap') throw new Error('not a map');
-    // Basic: half a tick and 3.4% of the ticks.
-    expect(basic.fixedTicksBp).toBe(5_000);
-    expect(basic.perTickBp).toBe(340);
-    expect(mapTicksBp('short', [basic])).toBe(5_000 + 340 * 2);
-    expect(mapTicksBp('day', [basic])).toBe(5_000 + 340 * 32);
+    // Basic: a third of a tick and 2.4% of the ticks (B-025: tuned so a map pays 1.2 times its cost on a
+    // 2 hour trip and 3.5 times on a 24 hour one).
+    expect(basic.fixedTicksBp).toBe(3_500);
+    expect(basic.perTickBp).toBe(240);
+    expect(mapTicksBp('short', [basic])).toBe(3_500 + 240 * 2);
+    expect(mapTicksBp('day', [basic])).toBe(3_500 + 240 * 32);
     // Better maps give more, and more on a longer trip.
     const bps = SUPPLY_TIERS.map((t) => mapTicksBp('long', [supply(`map-scrap-${t}`)]));
     expect(bps[0] as number).toBeLessThan(bps[1] as number);
     expect(bps[1] as number).toBeLessThan(bps[2] as number);
     expect(mapTicksBp('short', [basic])).toBeLessThan(mapTicksBp('day', [basic]));
-    // The great map on a long trip: 3.75 + 27% of 15 = 7.8 ticks: 7 sure and an 80% chance of an 8th.
+    // The great map on a long trip: 2.78 + 20% of 15 = 5.78 ticks: 5 sure and a 78% chance of a 6th.
     const great = supply('map-scrap-great');
-    expect(mapTicksBp('long', [great])).toBe(37_500 + 2_700 * 15);
-    // A fraction rolls as a chance, never rounded away: 0.68 ticks for the basic map on a short trip.
-    expect(mapTicksBp('short', [basic])).toBe(5_680);
+    expect(mapTicksBp('long', [great])).toBe(27_800 + 2_000 * 15);
+    // A fraction rolls as a chance, never rounded away: 0.398 ticks for the basic map on a short trip.
+    expect(mapTicksBp('short', [basic])).toBe(3_980);
     let extra = 0;
     const rng = createSeededRng('map-fraction');
     for (let i = 0; i < 4_000; i++) extra += rollMapTicks(rng, 'short', [basic]);
-    expect(extra / 4_000).toBeGreaterThan(0.52);
-    expect(extra / 4_000).toBeLessThan(0.62);
+    expect(extra / 4_000).toBeGreaterThan(0.34);
+    expect(extra / 4_000).toBeLessThan(0.46);
     // Without a map nothing is drawn.
     const none = scripted([]);
     expect(rollMapTicks(none, 'long', [])).toBe(0);
     // With one the whole ticks are sure and the fraction draws once.
-    expect(rollMapTicks(scripted([0]), 'long', [great])).toBe(8);
-    expect(rollMapTicks(scripted([9_999]), 'long', [great])).toBe(7);
+    expect(rollMapTicks(scripted([0]), 'long', [great])).toBe(6);
+    expect(rollMapTicks(scripted([9_999]), 'long', [great])).toBe(5);
   });
 
   it('rolls a count from basis points: the sure ones and a chance of one more', () => {
@@ -885,10 +886,10 @@ describe('supplies and the rolls of a trip', () => {
   it('gives a lantern a deeper chance per catch and a fixed chance for the first find, and a satchel a fixed part', () => {
     expect(kitFirstDeepBp([])).toBe(0);
     expect(SUPPLY_TIERS.map((t) => kitFirstDeepBp([supply(`lantern-${t}`)]))).toEqual([
-      3_000, 6_000, 10_000,
+      3_000, 10_000, 10_000,
     ]);
     expect(SUPPLY_TIERS.map((t) => kitDeepBp([supply(`lantern-${t}`)]))).toEqual([
-      1_500, 3_000, 5_000,
+      500, 2_500, 5_500,
     ]);
     expect(satchelBonus([])).toEqual({
       partsBp: 0,
@@ -898,10 +899,10 @@ describe('supplies and the rolls of a trip', () => {
       glimmerBp: 0,
     });
     const satchels = SUPPLY_TIERS.map((t) => satchelBonus([supply(`satchel-${t}`)]));
-    expect(satchels.map((x) => x.scrap)).toEqual([2, 5, 10]);
-    expect(satchels.map((x) => x.shardBp)).toEqual([3_500, 15_000, 25_000]);
-    expect(satchels.map((x) => x.glimmerBp)).toEqual([0, 1_000, 3_000]);
-    expect(satchels.map((x) => x.partsBp)).toEqual([2_800, 6_000, 10_000]);
+    expect(satchels.map((x) => x.scrap)).toEqual([1, 4, 10]);
+    expect(satchels.map((x) => x.shardBp)).toEqual([3_500, 10_000, 25_000]);
+    expect(satchels.map((x) => x.glimmerBp)).toEqual([0, 600, 3_000]);
+    expect(satchels.map((x) => x.partsBp)).toEqual([2_000, 6_600, 10_000]);
   });
 
   it('chances an end-of-trip choice from the base, the rank and the supplies, the best tier a sure thing', () => {
@@ -1051,9 +1052,9 @@ describe('catching at a destination', () => {
       if (out.results[0]?.deep === true) firstDeep++;
       for (const r of out.results.slice(1)) if (r.deep) laterDeep++;
     }
-    // 100% for the first find; the others use only the lantern's per-catch 50%.
+    // 100% for the first find; the others use only the lantern's per-catch 55%.
     expect(firstDeep).toBe(n);
-    expect(Math.abs(laterDeep / (n * 3) - 0.5)).toBeLessThan(0.04);
+    expect(Math.abs(laterDeep / (n * 3) - 0.55)).toBeLessThan(0.04);
     // Without the fixed parts (a recall) the first find is an ordinary one.
     let recallFirst = 0;
     for (let i = 0; i < n; i++) {
@@ -1065,8 +1066,8 @@ describe('catching at a destination', () => {
       );
       if (out.results[0]?.deep === true) recallFirst++;
     }
-    expect(Math.abs(recallFirst / n - 0.5)).toBeLessThan(0.05);
-    // A basic lantern: 30% for the first find on top of its per-catch 15%, never more than certain.
+    expect(Math.abs(recallFirst / n - 0.55)).toBeLessThan(0.05);
+    // A basic lantern: 30% for the first find on top of its per-catch 5%, never more than certain.
     expect(kitFirstDeepBp([supply('lantern-basic')])).toBe(3_000);
   });
 
@@ -1225,7 +1226,7 @@ describe('catching at a destination', () => {
     for (const length of EXPEDITION_LENGTHS) {
       expect(Math.abs(rate([], length) - catchChanceBp([]))).toBeLessThan(300);
     }
-    expect(rate([supply('lure-great')], 'short')).toBeGreaterThan(rate([], 'short') + 300);
+    expect(rate([supply('lure-great')], 'short')).toBeGreaterThan(rate([], 'short') + 150);
     const out = rollTripCatches(
       createSeededRng('empties'),
       40,
@@ -1397,10 +1398,10 @@ describe('trip loot', () => {
     // Draws: the shard count, then the glimmer chance (only for a satchel that has one).
     expect(at('satchel-great', [0, 0])).toEqual({ scrap: 10, 'tide-shard': 3, glimmer: 1 });
     expect(at('satchel-great', [9_999, 9_999])).toEqual({ scrap: 10, 'tide-shard': 2 });
-    expect(at('satchel-good', [0, 0])).toEqual({ scrap: 5, 'tide-shard': 2, glimmer: 1 });
-    expect(at('satchel-good', [9_999, 9_999])).toEqual({ scrap: 5, 'tide-shard': 1 });
-    expect(at('satchel-basic', [0])).toEqual({ scrap: 2, 'tide-shard': 1 });
-    expect(at('satchel-basic', [9_999])).toEqual({ scrap: 2 });
+    expect(at('satchel-good', [0, 0])).toEqual({ scrap: 4, 'tide-shard': 1, glimmer: 1 });
+    expect(at('satchel-good', [9_999, 9_999])).toEqual({ scrap: 4, 'tide-shard': 1 });
+    expect(at('satchel-basic', [0])).toEqual({ scrap: 1, 'tide-shard': 1 });
+    expect(at('satchel-basic', [9_999])).toEqual({ scrap: 1 });
     // A recall brings the ticks only.
     const recall = rollTripLoot(scripted([]), {
       ...base,

@@ -278,11 +278,6 @@
       {
         "type": "part",
         "id": "scrap",
-        "amount": 3
-      },
-      {
-        "type": "part",
-        "id": "spark-shard",
         "amount": 1
       }
     ],
