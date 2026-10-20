@@ -1070,7 +1070,7 @@ describe('the dungeon targets', () => {
     expect(byId.get('dungeon-first-week-clear')).toMatchObject({ comparator: 'min', value: 0.8 });
     expect(byId.get('dungeon-depth-growth')).toMatchObject({ comparator: 'range', value: [1, 2] });
     expect(byId.get('dungeon-essence-share')).toMatchObject({ comparator: 'max', value: 0.4 });
-    expect(byId.get('dungeon-gear-share-week8')).toMatchObject({ comparator: 'max', value: 0.2 });
+    expect(byId.get('dungeon-gear-share-week8')).toMatchObject({ comparator: 'max', value: 0.3 });
     expect(byId.get('dungeon-home-rate')).toMatchObject({
       comparator: 'range',
       value: [0.1, 0.45],

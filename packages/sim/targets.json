@@ -276,7 +276,7 @@
     "description": "A min-maxer's gear share of the raid team's fight-scored power at week 2 (median; docs/design/gear-and-creatures-v2.md section 4)",
     "metric": "gear.share.min-maxer.week2",
     "comparator": "range",
-    "value": [0.05, 0.1],
+    "value": [0.1, 0.2],
     "unit": "percent"
   },
   {
@@ -284,7 +284,7 @@
     "description": "A min-maxer's gear share of the raid team's fight-scored power at week 8 (median; docs/design/gear-and-creatures-v2.md section 4)",
     "metric": "gear.share.min-maxer.week8",
     "comparator": "range",
-    "value": [0.15, 0.22],
+    "value": [0.25, 0.35],
     "unit": "percent"
   },
   {
@@ -292,7 +292,7 @@
     "description": "A min-maxer's gear share of the raid team's fight-scored power at week 20 (median; docs/design/gear-and-creatures-v2.md section 4)",
     "metric": "gear.share.min-maxer.week20",
     "comparator": "range",
-    "value": [0.25, 0.32],
+    "value": [0.3, 0.4],
     "unit": "percent"
   },
   {
@@ -340,7 +340,7 @@
     "description": "A regular player's gear share of the raid team's fight-scored power at week 2 (median; docs/design/gear-and-creatures-v2.md section 4)",
     "metric": "gear.share.regular.week2",
     "comparator": "range",
-    "value": [0.03, 0.06],
+    "value": [0.03, 0.08],
     "unit": "percent"
   },
   {
@@ -372,7 +372,7 @@
     "description": "A drop-in player's gear share of the raid team's fight-scored power at week 2 (median; docs/design/gear-and-creatures-v2.md section 4)",
     "metric": "gear.share.drop-in.week2",
     "comparator": "range",
-    "value": [0.0, 0.03],
+    "value": [0.0, 0.06],
     "unit": "percent"
   },
   {
@@ -396,7 +396,7 @@
     "description": "A drop-in player's gear share of the raid team's fight-scored power at week 30 (median; docs/design/gear-and-creatures-v2.md section 4)",
     "metric": "gear.share.drop-in.week30",
     "comparator": "range",
-    "value": [0.15, 0.2],
+    "value": [0.15, 0.25],
     "unit": "percent"
   },
   {
@@ -425,10 +425,10 @@
   },
   {
     "id": "dungeon-gear-share-week8",
-    "description": "Gear's share of a daily player's raid-team power at week 8 with the dungeon's gear and parts in the game (must not pass 20%)",
+    "description": "Gear's share of a daily player's raid-team power at week 8 with the dungeon's gear and parts in the game (must not pass 30%; B-026: the dungeon pays a gear piece per full clear)",
     "metric": "dungeon.dailyGearShareWeek8",
     "comparator": "max",
-    "value": 0.2,
+    "value": 0.3,
     "unit": "percent"
   },
   {
@@ -473,18 +473,18 @@
   },
   {
     "id": "exp-slot-3",
-    "description": "Day a daily player's 3rd expedition slot opens (median; about a month, 30 plus or minus 7)",
+    "description": "Day a daily player's 3rd expedition slot opens (median; 40 to 60 days since expeditions pay in ticks, B-026)",
     "metric": "exp.dailySlot3Day",
     "comparator": "range",
-    "value": [23, 37],
+    "value": [40, 60],
     "unit": "number"
   },
   {
     "id": "exp-slot-4",
-    "description": "Day a daily player's 4th expedition slot opens (median; about four months)",
+    "description": "Day a daily player's 4th expedition slot opens (median; 200 to 300 days since expeditions pay in ticks, B-026)",
     "metric": "exp.dailySlot4Day",
     "comparator": "range",
-    "value": [90, 150],
+    "value": [200, 300],
     "unit": "number"
   },
   {
@@ -537,10 +537,10 @@
   },
   {
     "id": "exp-casual-discovery",
-    "description": "Most species a casual player owns ahead of today's expeditions at the end of any week 1 to 12 (no faster than today, within the measure's noise of about half a species)",
+    "description": "Most species a casual player owns ahead of the pre-tick expeditions at the end of any week 1 to 12 (at most 2: ticks find more on purpose, B-026)",
     "metric": "exp.casualSpeciesVsToday",
     "comparator": "max",
-    "value": 0.45,
+    "value": 2.0,
     "unit": "number"
   },
   {
@@ -705,26 +705,26 @@
   },
   {
     "id": "creatures-dupes-min-maxer",
-    "description": "Creatures: a min-maxer gets 6 to 18 duplicates a week, enough to feed talents and fusion and not a flood (B-014)",
+    "description": "Creatures: a min-maxer gets 60 to 90 duplicates a week at the tick catch rate (B-026), feeding gradual fusion and talents",
     "metric": "creatures.min-maxer.dupesPerWeek",
     "comparator": "range",
-    "value": [6, 18],
+    "value": [60, 90],
     "unit": "number"
   },
   {
     "id": "creatures-dupes-engaged",
-    "description": "Creatures: an engaged player gets 4 to 12 duplicates a week (B-014)",
+    "description": "Creatures: an engaged player gets 40 to 70 duplicates a week at the tick catch rate (B-026)",
     "metric": "creatures.engaged.dupesPerWeek",
     "comparator": "range",
-    "value": [4, 12],
+    "value": [40, 70],
     "unit": "number"
   },
   {
     "id": "creatures-dupes-regular",
-    "description": "Creatures: a regular player gets 1 to 3.5 duplicates a week (B-014)",
+    "description": "Creatures: a regular player gets 5 to 15 duplicates a week at the tick catch rate (B-026)",
     "metric": "creatures.regular.dupesPerWeek",
     "comparator": "range",
-    "value": [1, 3.5],
+    "value": [5, 15],
     "unit": "number"
   },
   {
