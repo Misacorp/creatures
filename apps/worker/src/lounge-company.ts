@@ -1,25 +1,35 @@
 /**
  * Lounging with company (`docs/design/living-room.md`, "Lounging with company"): a player's lounger
- * earns a little experience for the time the player has the room open while another player who has a
- * lounging creature has it open too. Alone it earns nothing.
+ * earns a little experience while the player is in the Activity together with another player who has a
+ * lounging creature. Alone it earns nothing.
  *
- * Who is here comes from the lounge's live sockets (`lounge-live.ts`), whose owner is proven by a
- * one-time ticket from an authenticated request, never from anything a client says. The time is paid
- * lazily, without timers: when someone joins or leaves (`settleAll`, the socket's own events) and when a
- * player who has a socket makes a request (`settle`, so a change of lounger pays the old one first).
- * Each player's row remembers up to when they were paid, so no stretch is paid twice (and a swap never
- * pays the new lounger for time the old one sat). Time before the current game day's start is never paid.
+ * Who is here comes from Discord: the lounge check (`guild-core.ts`, about once a minute while anyone
+ * plays) asks Discord for each tracked Activity instance's participants with the bot token, never from
+ * anything a client says. Discord keeps a player listed while their tab is hidden or their phone sleeps,
+ * until they leave the Activity, so a hiccup costs nothing and everyone in the room keeps earning. When
+ * Discord cannot be asked, the last list it gave stands.
+ *
+ * At each check, players who were in company at the previous check and still are earn the time between
+ * the two (at most `LOUNGE_MAX_GAP_MS`, so a stalled alarm never pays a long gap, and never time from
+ * before the game day's start). The time collects in memory and is paid (a few rows written) when it
+ * reaches `LOUNGE_FLUSH_MS`, when the player leaves company, at the game day's turn, and at the start of
+ * the player's own request (`flush`, so a swap pays the old lounger first and the state they read is
+ * fresh). If the object is evicted, at most the unpaid part (under 10 minutes) is lost.
  * Each creature gets at most the daily cap a game day (then it is Rested: the time passes unpaid until
  * another creature takes its place); a player has no cap of their own.
  *
- * Synchronous; one transaction per paid player.
+ * Synchronous; one transaction per payment.
  */
-import { RULES, companyMs, isRested, loungeExperience, type Span } from '@creatures/game';
+import { RULES, isRested, loungeExperience } from '@creatures/game';
 import type { Analytics } from './analytics';
 import { awardExperience } from './creature-exp';
 import type { LedgerStorage } from './ledger';
-import type { Presence } from './lounge-live';
 import { gameDay, zonedTimeToEpoch } from './time';
+
+/** The most time one check pays (it is about a minute apart): a stalled alarm never pays a long gap. */
+export const LOUNGE_MAX_GAP_MS = 3 * 60_000;
+/** Unpaid company time is paid once it reaches this (5 XP), so a player out of sight writes rarely. */
+export const LOUNGE_FLUSH_MS = 10 * 60_000;
 
 export function loungeCompanyMigration(sql: SqlStorage): void {
   // Per player: company time up to `credited_until` is paid; `carry_ms` is time short of one more XP.
@@ -57,85 +67,126 @@ export function loungePaidToday(sql: SqlStorage, userId: string, day: string): M
   return new Map(rows.map((r) => [r.creature_id, r.paid]));
 }
 
+/** One Activity instance as the lounge check saw it: its participants and when Discord last said so. */
+export interface SeenInstance {
+  users: readonly string[];
+  checkedAt: number;
+}
+
 export interface LoungeCompanyDeps {
   storage: LedgerStorage;
   analytics: Analytics | undefined;
   timezone: () => string;
-  /** The game clock minus real time (the dev clock's shift; 0 in production). Spans are real time. */
+  /** The game clock minus real time (the dev clock's shift; 0 in production). Checks keep real time. */
   gameOffset?: () => number;
   /** The player's lounger (re-picked when gone or busy), or null when every creature is busy. */
   loungerOf: (userId: string) => string | null;
 }
 
+interface Pending {
+  /** The game day the time belongs to. */
+  day: string;
+  ms: number;
+}
+
+/**
+ * The players in company: in an instance with at least one other player who has a lounger (one without a
+ * starter, or with every creature busy, keeps nobody company and earns nothing).
+ */
+function companyOf(
+  instances: readonly SeenInstance[],
+  loungerOf: (userId: string) => string | null,
+): Set<string> {
+  const company = new Set<string>();
+  for (const instance of instances) {
+    const players = [...new Set(instance.users)].filter((u) => loungerOf(u) !== null);
+    if (players.length >= 2) for (const u of players) company.add(u);
+  }
+  return company;
+}
+
 export class LoungeCompany {
+  /** When the previous check ran (real time); after an eviction, the instances' own check times. */
+  private lastCheckAt: number | null = null;
+  private readonly pending = new Map<string, Pending>();
+
   constructor(private readonly deps: LoungeCompanyDeps) {}
 
   private get sql(): SqlStorage {
     return this.deps.storage.sql;
   }
 
-  /** Pays everyone who has a socket open (someone is joining or leaving). `now` is real time. Never throws. */
-  settleAll(presence: Presence, now: number): void {
-    this.run(presence, now, [...presence.keys()]);
+  /** The current game day (on the game clock) and its start in real time. */
+  private today(now: number): { day: string; start: number } {
+    const offset = this.deps.gameOffset?.() ?? 0;
+    const game = loungeDay(now + offset, this.deps.timezone());
+    return { day: game.day, start: game.start - offset };
   }
 
-  /** Pays one player, if they have a socket open (they are making a request). Never throws. */
-  settle(presence: Presence, now: number, userId: string): void {
-    if (presence.has(userId)) this.run(presence, now, [userId]);
-  }
-
-  private run(presence: Presence, now: number, userIds: readonly string[]): void {
-    // Company needs two players.
-    if (presence.size < 2 || userIds.length === 0) return;
+  /**
+   * A lounge check ran at `now` (real time): `before` is what the instances held before Discord was asked,
+   * `after` what they hold now. Credits the time since the previous check to everyone in company at both,
+   * and pays whoever reached `LOUNGE_FLUSH_MS` or left company. Never throws.
+   */
+  observe(before: readonly SeenInstance[], after: readonly SeenInstance[], now: number): void {
     try {
-      const offset = this.deps.gameOffset?.() ?? 0;
-      const game = loungeDay(now + offset, this.deps.timezone());
-      const today = { day: game.day, start: game.start - offset };
       const loungers = new Map<string, string | null>();
       const loungerOf = (userId: string): string | null => {
         if (!loungers.has(userId)) loungers.set(userId, this.deps.loungerOf(userId));
         return loungers.get(userId) ?? null;
       };
-      for (const userId of userIds) this.pay(userId, presence, now, today, loungerOf);
+      const today = this.today(now);
+      const was = companyOf(before, loungerOf);
+      const is = companyOf(after, loungerOf);
+      const previous = this.lastCheckAt ?? Math.max(0, ...before.map((i) => i.checkedAt));
+      this.lastCheckAt = now;
+      const ms = Math.max(0, now - Math.max(previous, now - LOUNGE_MAX_GAP_MS, today.start));
+      if (ms > 0) {
+        for (const userId of is) if (was.has(userId)) this.add(userId, ms, today.day, now);
+      }
+      for (const [userId, entry] of [...this.pending]) {
+        if (entry.ms >= LOUNGE_FLUSH_MS || !is.has(userId) || entry.day !== today.day) {
+          this.pay(userId, entry, now);
+        }
+      }
     } catch (err) {
       console.error('lounge company failed', err instanceof Error ? err.name : 'unknown');
     }
   }
 
-  private pay(
-    userId: string,
-    presence: Presence,
-    now: number,
-    today: { day: string; start: number },
-    loungerOf: (userId: string) => string | null,
-  ): void {
-    const own = presence.get(userId);
-    if (own === undefined) return;
-    // Company: other players with a creature in the room (one without a starter or with every creature
-    // busy has none to keep anyone company).
-    const others: Span[] = [];
-    for (const [otherId, spans] of presence) {
-      if (otherId !== userId && loungerOf(otherId) !== null) others.push(...spans);
+  /** Pays what the player has collected (they are making a request). Never throws. */
+  flush(userId: string, now: number): void {
+    const entry = this.pending.get(userId);
+    if (entry === undefined) return;
+    try {
+      this.pay(userId, entry, now);
+    } catch (err) {
+      console.error('lounge company failed', err instanceof Error ? err.name : 'unknown');
     }
-    if (others.length === 0) return;
-    const row = this.sql
-      .exec<{ carry_ms: number; credited_until: number }>(
-        'SELECT carry_ms, credited_until FROM lounge_company WHERE user_id = ?',
-        userId,
-      )
-      .toArray()[0];
-    const since = Math.max(row?.credited_until ?? 0, today.start);
-    const ms = companyMs(own, others, since, now);
-    if (ms <= 0) return;
+  }
 
-    const lounger = loungerOf(userId);
+  /** Collects `ms` for the player on `day`; time of an earlier day is paid to that day first. */
+  private add(userId: string, ms: number, day: string, now: number): void {
+    const entry = this.pending.get(userId);
+    if (entry !== undefined && entry.day !== day) this.pay(userId, entry, now);
+    const current = this.pending.get(userId);
+    this.pending.set(userId, { day, ms: (current?.ms ?? 0) + ms });
+  }
+
+  /** Pays the collected time to the player's lounger now, on the time's own game day, and forgets it. */
+  private pay(userId: string, entry: Pending, now: number): void {
+    this.pending.delete(userId);
+    const lounger = this.deps.loungerOf(userId);
+    const row = this.sql
+      .exec<{ carry_ms: number }>('SELECT carry_ms FROM lounge_company WHERE user_id = ?', userId)
+      .toArray()[0];
     const paid =
-      lounger === null ? 0 : (loungePaidToday(this.sql, userId, today.day).get(lounger) ?? 0);
-    // With every creature busy the time passes unpaid; a Rested lounger takes nothing more today.
+      lounger === null ? 0 : (loungePaidToday(this.sql, userId, entry.day).get(lounger) ?? 0);
+    // With every creature busy the time passes unpaid; a Rested lounger takes nothing more that day.
     const gain =
       lounger === null || isRested(paid)
         ? null
-        : loungeExperience({ paid, carryMs: row?.carry_ms ?? 0 }, ms);
+        : loungeExperience({ paid, carryMs: row?.carry_ms ?? 0 }, entry.ms);
     this.deps.storage.transactionSync(() => {
       this.sql.exec(
         `INSERT INTO lounge_company (user_id, carry_ms, credited_until) VALUES (?, ?, ?)
@@ -152,7 +203,7 @@ export class LoungeCompany {
            paid = excluded.paid`,
         lounger,
         userId,
-        today.day,
+        entry.day,
         gain.tally.paid,
       );
       awardExperience(this.sql, this.deps.analytics, userId, lounger, gain.xp, 'lounge', false);

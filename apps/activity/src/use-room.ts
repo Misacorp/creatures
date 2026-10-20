@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { fetchLoungeTicket, fetchRoom, loungeSocketUrl, type GameState } from './api';
 import type { GearItem } from './gear-types';
 import type { ParticipantSource } from './participants';
-import { ownResident, roomResidents, shouldOpenSocket, type Resident } from './room-data';
+import { othersOf, ownResident, roomResidents, shouldOpenSocket, type Resident } from './room-data';
 import { browserSocket, createLoungeSocket } from './lounge-socket';
 import { createRoomLoader, type RoomLoader } from './room-loader';
 
@@ -35,6 +35,8 @@ export interface RoomHandle {
   residents: readonly Resident[];
   /** Call on tab switches: refetches the others only when the last full fetch is over 60 s old. */
   refreshIfStale: () => void;
+  /** Somebody else is here (Discord's participants) and the page is visible: your lounger can earn. */
+  company: boolean;
 }
 
 export function useRoom({
@@ -133,5 +135,6 @@ export function useRoom({
     refreshIfStale: () => {
       loader.current?.refreshIfStale();
     },
+    company: enabled && !hidden && othersOf(present, selfId).length > 0,
   };
 }

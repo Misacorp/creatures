@@ -4,6 +4,7 @@
  * game state without any request. `room-loader.ts` runs them against the API and `use-room.ts` hands
  * the result to the screen.
  */
+import { RULES, isRested } from '@creatures/game';
 import type { Creature, GameState, LoungeSpot, RoomCreature, RoomResident } from './api';
 import type { GearItem } from './gear-types';
 import { wornItemOf, type WornItem } from './gear-view';
@@ -111,6 +112,27 @@ export function shouldOpenSocket(
   return (
     options.enabled && options.offered && !options.hidden && othersOf(present, selfId).length > 0
   );
+}
+
+/**
+ * How often the game reloads your state while your lounger earns: once per XP (the server pays what you
+ * collected when you make a request, so the tag and the bar move a step each time). One small request each
+ * time, and none while alone, hidden or Rested.
+ */
+export const LOUNGE_REFRESH_MS: number = RULES.experience.lounge.msPerXp;
+
+/**
+ * Whether your lounger is earning now, so the state is worth reloading every `LOUNGE_REFRESH_MS`: someone
+ * else is here (Discord's participants, the same list the server pays from), the page is visible, you have a
+ * lounger and it is not Rested yet.
+ */
+export function loungeEarning(
+  company: boolean,
+  hidden: boolean,
+  state: Pick<GameState, 'loungerId' | 'loungeXp'>,
+): boolean {
+  if (!company || hidden || state.loungerId === null) return false;
+  return !isRested(state.loungeXp[state.loungerId] ?? 0);
 }
 
 /**
