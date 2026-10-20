@@ -784,7 +784,14 @@ describe('the keeper and its chest', () => {
               sum.scrap += h.loot.scrap;
             }
           }
-          expect(sum).toEqual(end.pack);
+          expect(sum).toMatchObject({
+            bait: end.pack.bait,
+            essence: end.pack.essence,
+            scrap: end.pack.scrap,
+          });
+          // Both floor bosses (the main one and the keeper) drop a sure shard into the pack, kept whole.
+          const shardCount = Object.values(end.pack.shards ?? {}).reduce((n, c) => n + c, 0);
+          expect(shardCount).toBeGreaterThanOrEqual(2);
           expect(summary.pack.kept).toEqual(summary.pack.found);
           expect(summary.pack.found.essence).toBeGreaterThanOrEqual(
             RULES.dungeon.loot.boss.essence + RULES.dungeon.fullClear.essence + u.chest.essence,

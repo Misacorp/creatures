@@ -25,6 +25,7 @@ import {
   mapNode,
   mergeMods,
   nodeFoe,
+  rollRoomShard,
   nodeLoot,
   QUIET_ROOM,
   reachableNodes,
@@ -87,6 +88,8 @@ export interface PathEnv {
   userId: string;
   /** Live randomness. Crypto in production. */
   rng: Rng;
+  /** Live randomness for loot dice (the gear rng): a room's shard chance, so the fight's own draws do not move. */
+  gearRng: Rng;
   analytics?: Analytics | undefined;
   /**
    * Pays a boss chest's gear, shards and supply now, once, under the stable key `<run>:<tag>` (`chest`,
@@ -210,7 +213,12 @@ function drawKeepsake(rng: Rng, held: readonly string[]): string | null {
  * The loot of a cleared room goes in the pack, with Market Day's scrap for a fight. In the Undercroft
  * fights, elites and caches pay `lootMultiplier` times as much (Market Day's scrap too). Returns what went in.
  */
-function packLoot(st: RunState, kind: Parameters<typeof nodeLoot>[0], fight: boolean): DungeonPack {
+function packLoot(
+  st: RunState,
+  kind: Parameters<typeof nodeLoot>[0],
+  fight: boolean,
+  shards?: DungeonPack['shards'],
+): DungeonPack {
   const loot = nodeLoot(kind, st.level);
   const doubled =
     st.level > 0 && (kind === 'fight' || kind === 'elite' || kind === 'cache')
@@ -219,6 +227,7 @@ function packLoot(st: RunState, kind: Parameters<typeof nodeLoot>[0], fight: boo
   const gained = {
     ...loot,
     scrap: loot.scrap + (fight ? dungeonScrapPerRoom(st.weather) * doubled : 0),
+    ...(shards === undefined ? {} : { shards }),
   };
   st.pack = addPack(st.pack, gained);
   return gained;
@@ -409,7 +418,13 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
         return { fight, end: 'defeat' };
       }
       st.roomsCleared += 1;
-      const loot = packLoot(st, node.kind, true);
+      // A shard of the foe's element, by room kind (live randomness, rolled as the room is cleared).
+      const shard = rollRoomShard(
+        env.gearRng,
+        node.kind,
+        nodeFoe(node, depth, st.level)?.element ?? 'tide',
+      );
+      const loot = packLoot(st, node.kind, true, shard);
       st.tally = addFightsCleared(st.tally, standing);
       const earnedSupply = !st.supply;
       st.supply = true;

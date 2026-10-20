@@ -329,7 +329,10 @@
     "pack": {
       "bait": 1,
       "essence": 0,
-      "scrap": 5
+      "scrap": 5,
+      "shards": {
+        "spark-shard": 1
+      }
     },
     "roomsCleared": 1,
     "supply": true,
@@ -346,7 +349,10 @@
         "loot": {
           "bait": 1,
           "essence": 0,
-          "scrap": 1
+          "scrap": 1,
+          "shards": {
+            "spark-shard": 1
+          }
         },
         "supply": true
       },
@@ -454,7 +460,8 @@
       "bait": 1,
       "essence": 0,
       "parts": {
-        "scrap": 5
+        "scrap": 5,
+        "spark-shard": 1
       },
       "gear": [],
       "converted": [],
@@ -509,12 +516,18 @@
       "found": {
         "bait": 1,
         "essence": 0,
-        "scrap": 5
+        "scrap": 5,
+        "shards": {
+          "spark-shard": 1
+        }
       },
       "kept": {
         "bait": 1,
         "essence": 0,
-        "scrap": 5
+        "scrap": 5,
+        "shards": {
+          "spark-shard": 1
+        }
       }
     },
     "keepsakes": [],
@@ -808,7 +821,10 @@
           "loot": {
             "bait": 1,
             "essence": 0,
-            "scrap": 1
+            "scrap": 1,
+            "shards": {
+              "spark-shard": 1
+            }
           },
           "supply": true
         },
@@ -930,7 +946,8 @@
         "bait": 1,
         "essence": 0,
         "parts": {
-          "scrap": 5
+          "scrap": 5,
+          "spark-shard": 1
         },
         "gear": [],
         "converted": [],
@@ -985,12 +1002,18 @@
         "found": {
           "bait": 1,
           "essence": 0,
-          "scrap": 5
+          "scrap": 5,
+          "shards": {
+            "spark-shard": 1
+          }
         },
         "kept": {
           "bait": 1,
           "essence": 0,
-          "scrap": 5
+          "scrap": 5,
+          "shards": {
+            "spark-shard": 1
+          }
         }
       },
       "keepsakes": [],
@@ -1284,7 +1307,10 @@
             "loot": {
               "bait": 1,
               "essence": 0,
-              "scrap": 1
+              "scrap": 1,
+              "shards": {
+                "spark-shard": 1
+              }
             },
             "supply": true
           },

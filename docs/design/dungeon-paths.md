@@ -121,12 +121,12 @@ Or the player **heads home**: the run ends there and keeps the whole pack.
     - Rounding up is generous on purpose: an early defeat in a small run costs almost nothing, and the loss grows with how much the player risked.
     - Depth is unchanged.
   - **Left open** (the day ended with the run still open, for example the player closed the app): closed the next time the server looks at that player's dungeon, or at the guild alarm. A run resting at the camp with its choice pending closes as **home** (the player could have headed home there); anywhere else it closes as a **defeat** (half the pack). Otherwise quitting the app would be a free safe exit at every step and the camp's choice would mean nothing. Experience and the supply earned are paid either way.
-- **Loot per room** (`RULES.dungeon.loot`). B-024 (Misa, 2026-10-20): a full clear of the main map pays about 1.5 crafts of parts (about 10 scrap and 1.5 shards on the safe path) and one gear piece, and the choices pay more:
-  - fight: Bait 1, scrap 1;
+- **Loot per room** (`RULES.dungeon.loot`). B-024 (Misa, 2026-10-20): a full clear of the main map pays about 1.5 crafts of parts (about 10 scrap and 1.4 shards on the safe path) and one gear piece, and the choices pay more:
+  - fight: Bait 1, scrap 1, and a 15% chance of a shard of its foe's element (elite 40%, epic fight 60%, floor boss and Undercroft keeper a sure one; `RULES.dungeon.shardBp`); shards are in the pack and at risk like the rest;
   - elite: Bait 1, scrap 4, and a keepsake;
   - cache: Bait 1, scrap 3;
   - mystery: by option (the safe option 1 to 2 scrap, the risky one about 1 to 3 scrap more on average);
-  - boss chest: Essence 1, scrap 3, 1.5 shards on average (one sure, a 50% chance of another), a gear piece on every full clear (`fullClear.gearBp` 10000; landmark extras as before);
+  - boss chest: Essence 1, scrap 3, a sure shard of the boss's element, a gear piece on every full clear (`fullClear.gearBp` 10000; landmark extras as before);
   - Market Day: +1 scrap for each fight cleared, as today.
 - **The streak, the first-day retry and treats** are unchanged. Any finished run, home included, counts for the streak. The first-day retry opens only after a **defeat** in the player's first run.
 

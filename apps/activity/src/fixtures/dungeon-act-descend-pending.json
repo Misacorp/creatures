@@ -266,14 +266,13 @@
       "banked": {
         "gear": [
           {
-            "baseId": "ember-muffler",
+            "baseId": "cinder-charm",
             "rarity": "common",
             "itemLevel": 11
           }
         ],
-        "supplies": ["map-scrap-good"],
+        "supplies": ["lantern-good"],
         "parts": {
-          "ember-shard": 2,
           "glimmer": 1
         }
       }
@@ -317,7 +316,10 @@
     "pack": {
       "bait": 2,
       "essence": 3,
-      "scrap": 7
+      "scrap": 7,
+      "shards": {
+        "ember-shard": 1
+      }
     },
     "roomsCleared": 3,
     "supply": true,
@@ -402,7 +404,10 @@
         "loot": {
           "bait": 0,
           "essence": 1,
-          "scrap": 3
+          "scrap": 3,
+          "shards": {
+            "ember-shard": 1
+          }
         }
       },
       {
@@ -417,7 +422,7 @@
         },
         "gear": [
           {
-            "baseId": "ember-muffler",
+            "baseId": "cinder-charm",
             "rarity": "common",
             "itemLevel": 11
           }

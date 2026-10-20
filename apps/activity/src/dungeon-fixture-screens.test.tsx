@@ -760,7 +760,7 @@ describe('the Undercroft, with the real answers', () => {
     const card = visibleText(root);
     expect(card).toContain('Depth 15 unlocked');
     expect(card).toContain('Banked now');
-    expect(card).toContain('Ember Muffler');
+    expect(card).toContain('Cinder Charm');
     expect(card).toContain('Still at risk');
     expect(byName(root, 'span', 'Essence: 3')).toHaveLength(2);
     expect(card).toContain('4 rooms with a floor boss at the end. Foes are from depth 15.');

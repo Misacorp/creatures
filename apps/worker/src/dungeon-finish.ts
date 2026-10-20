@@ -211,6 +211,8 @@ function payRun(
   const bossNode = st.map.nodes.find((n) => n.kind === 'boss');
   const bossElement =
     (bossNode === undefined ? undefined : nodeFoe(bossNode, depth))?.element ?? 'tide';
+  // The scrap, the glimmer and the shards the rooms dropped (all at risk in the pack, kept with it).
+  const packParts = addParts({ scrap, glimmer }, kept.shards ?? {});
   const gearDeps = gearDepsOf(deps);
   const grant = grantDungeonRun(
     gearDeps,
@@ -218,7 +220,7 @@ function payRun(
     day,
     attempt,
     (rng) => {
-      if (chestPaid) return { parts: addParts({ scrap, glimmer }, {}), gear: [], supplies: [] };
+      if (chestPaid) return { parts: addParts(packParts, {}), gear: [], supplies: [] };
       const loot = rollDungeonLoot(
         rng,
         depth,
@@ -231,7 +233,7 @@ function payRun(
         bossElement,
       );
       return {
-        parts: addParts({ scrap, glimmer }, loot.parts),
+        parts: addParts(packParts, loot.parts),
         gear: loot.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
         supplies: loot.supplies,
       };

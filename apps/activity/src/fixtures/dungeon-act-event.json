@@ -329,7 +329,10 @@
     "pack": {
       "bait": 2,
       "essence": 0,
-      "scrap": 7
+      "scrap": 7,
+      "shards": {
+        "spark-shard": 1
+      }
     },
     "roomsCleared": 1,
     "supply": true,
@@ -350,7 +353,10 @@
         "loot": {
           "bait": 1,
           "essence": 0,
-          "scrap": 1
+          "scrap": 1,
+          "shards": {
+            "spark-shard": 1
+          }
         },
         "supply": true
       },

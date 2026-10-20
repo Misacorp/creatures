@@ -137,7 +137,7 @@
         }
       ],
       "converted": [],
-      "supplies": ["satchel-basic"],
+      "supplies": ["map-scrap-basic"],
       "landmark": false,
       "streak": null,
       "experience": [
@@ -211,12 +211,18 @@
       "found": {
         "bait": 3,
         "essence": 1,
-        "scrap": 10
+        "scrap": 10,
+        "shards": {
+          "spark-shard": 1
+        }
       },
       "kept": {
         "bait": 3,
         "essence": 1,
-        "scrap": 10
+        "scrap": 10,
+        "shards": {
+          "spark-shard": 1
+        }
       }
     },
     "keepsakes": [],
@@ -586,7 +592,10 @@
           "loot": {
             "bait": 0,
             "essence": 1,
-            "scrap": 3
+            "scrap": 3,
+            "shards": {
+              "spark-shard": 1
+            }
           }
         }
       ]

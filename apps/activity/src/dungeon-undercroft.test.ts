@@ -261,7 +261,7 @@ describe('what happened in the rooms of the Undercroft', () => {
     // A chest entry is only what the chest adds: a keeper's chest adds no loot, its own is on the fight.
     expect(chest && lootOf(chest)).toBeNull();
     const fight = stepsAt(keeper.history, 'u1f3l1')[0];
-    expect(fight && lootOf(fight)).toEqual({ bait: 0, essence: 2, scrap: 7 });
+    expect(fight && lootOf(fight)).toMatchObject({ bait: 0, essence: 2, scrap: 7 });
     const door = (keeper.history ?? []).find((e) => e.result === 'door');
     expect(door && lootOf(door)).toBeNull();
   });

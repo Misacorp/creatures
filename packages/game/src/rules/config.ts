@@ -804,10 +804,11 @@ export const RULES = {
       great: { fromDepth: 12, baseBp: 500, perDepthBp: 200, maxBp: 2_500 },
     },
     /**
-     * Shards of the floor boss's element when the boss room is cleared, in basis points: a value over 10000
-     * is that many sure shards plus a chance of one more (15000 is one and a half on average).
+     * The chance (basis points) that a cleared room puts one shard of its foe's element in the pack (at
+     * risk like the rest of it), by room kind: a plain fight, an elite, an Undercroft epic fight and a floor
+     * boss (the main one and an Undercroft keeper alike). Rooms with no foe drop none.
      */
-    bossShardBp: 15_000,
+    shardBp: { fight: 1_500, elite: 4_000, epic: 6_000, boss: 10_000 },
     /**
      * Extra for clearing every room: Essence, and a chance (basis points) at a gear drop (10000: every
      * full clear drops one piece, rolled by the dungeon's gear odds).
@@ -876,7 +877,7 @@ export const RULES = {
      * What each kind of room puts in the run's pack when it is cleared (the pack is at risk; the
      * run's supply never goes in it). Mystery rooms pay by the option picked. `boss` is the boss
      * chest's Essence and scrap; its shard and gear chances are the keys above. B-024 (2026-10-20, Misa): a
-     * full clear of the main map pays about 1.5 crafts of parts (10 scrap on the safe path, 1.5 shards)
+     * full clear of the main map pays about 1.5 crafts of parts (10 scrap on the safe path, about 1.4 shards)
      * and one gear piece, and the choices (elites, risky mystery options, the Undercroft) pay more.
      */
     loot: {

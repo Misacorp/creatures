@@ -476,7 +476,7 @@ describe('DungeonMap with the Undercroft', () => {
     expect(text).toContain('Won in 5 rounds.');
     expect(text).toContain('The boss chest opened.');
     expect(text).toContain('Banked at once');
-    expect(text).toContain('Ember Muffler');
+    expect(text).toContain('Cinder Charm');
     expect(text).toContain('You went down into Undercroft 1.');
     // The chest entry only holds what the chest added, and the fight shows its own loot.
     expect(text).not.toContain('Nothing went into the pack.');
@@ -488,10 +488,10 @@ describe('DungeonMap with the Undercroft', () => {
       <DungeonMap map={run.map} undercroft={run.undercroft?.maps} state={run} initialOpen="f6l1" />,
     );
     const rows = byClass(first(byRole(p.root, 'dialog')), 'dnd-loot').map(visibleText);
-    // The fight added 1 Essence and 3 scrap, the chest 2 and 2 more (the landmark's): two rows, none hidden.
+    // The fight added 1 Essence, 3 scrap and a shard, the chest 2 and 2 more (the landmark's): two rows, none hidden.
     expect(rows).toHaveLength(2);
     // (A row's text is its amounts: Essence then scrap.)
-    expect(rows[0]).toBe('Into your pack:13');
+    expect(rows[0]).toBe('Into your pack:131');
     expect(rows[1]).toBe('Into your pack:22');
     // The loot list is not the replay's indented bullet list (`plain-list`): no bullet over the label.
     const lists = byClass(first(byRole(p.root, 'dialog')), 'dnd-loot-items');

@@ -432,7 +432,10 @@
     "pack": {
       "bait": 8,
       "essence": 5,
-      "scrap": 26
+      "scrap": 26,
+      "shards": {
+        "ember-shard": 3
+      }
     },
     "roomsCleared": 7,
     "supply": true,
@@ -517,7 +520,10 @@
         "loot": {
           "bait": 0,
           "essence": 1,
-          "scrap": 3
+          "scrap": 3,
+          "shards": {
+            "ember-shard": 1
+          }
         }
       },
       {
@@ -532,7 +538,7 @@
         },
         "gear": [
           {
-            "baseId": "ember-muffler",
+            "baseId": "cinder-charm",
             "rarity": "common",
             "itemLevel": 11
           }
@@ -585,7 +591,10 @@
         "loot": {
           "bait": 2,
           "essence": 0,
-          "scrap": 8
+          "scrap": 8,
+          "shards": {
+            "ember-shard": 1
+          }
         },
         "keepsake": {
           "id": "lullaby-bell",
@@ -604,7 +613,10 @@
         "loot": {
           "bait": 0,
           "essence": 2,
-          "scrap": 7
+          "scrap": 7,
+          "shards": {
+            "ember-shard": 1
+          }
         }
       },
       {
@@ -619,7 +631,7 @@
         },
         "gear": [
           {
-            "baseId": "cinder-charm",
+            "baseId": "emberkeepers-crown",
             "rarity": "common",
             "itemLevel": 10
           }
@@ -1422,26 +1434,26 @@
       "bait": 8,
       "essence": 5,
       "parts": {
-        "ember-shard": 2,
         "glimmer": 1,
-        "scrap": 26
+        "scrap": 26,
+        "ember-shard": 3
       },
       "gear": [
         {
           "id": "00000000-0000-4000-8300-000000000023",
-          "baseId": "ember-muffler",
+          "baseId": "cinder-charm",
           "rarity": "common",
           "itemLevel": 11
         },
         {
           "id": "00000000-0000-4000-8300-000000000024",
-          "baseId": "cinder-charm",
+          "baseId": "emberkeepers-crown",
           "rarity": "common",
           "itemLevel": 10
         }
       ],
       "converted": [],
-      "supplies": ["map-scrap-good"],
+      "supplies": ["lantern-good"],
       "landmark": true,
       "streak": null,
       "experience": [
@@ -1504,12 +1516,18 @@
       "found": {
         "bait": 8,
         "essence": 5,
-        "scrap": 26
+        "scrap": 26,
+        "shards": {
+          "ember-shard": 3
+        }
       },
       "kept": {
         "bait": 8,
         "essence": 5,
-        "scrap": 26
+        "scrap": 26,
+        "shards": {
+          "ember-shard": 3
+        }
       }
     },
     "keepsakes": [
@@ -1852,7 +1870,10 @@
           "loot": {
             "bait": 0,
             "essence": 1,
-            "scrap": 3
+            "scrap": 3,
+            "shards": {
+              "ember-shard": 1
+            }
           }
         },
         {
@@ -1867,7 +1888,7 @@
           },
           "gear": [
             {
-              "baseId": "ember-muffler",
+              "baseId": "cinder-charm",
               "rarity": "common",
               "itemLevel": 11
             }
@@ -1920,7 +1941,10 @@
           "loot": {
             "bait": 2,
             "essence": 0,
-            "scrap": 8
+            "scrap": 8,
+            "shards": {
+              "ember-shard": 1
+            }
           },
           "keepsake": {
             "id": "lullaby-bell",
@@ -1939,7 +1963,10 @@
           "loot": {
             "bait": 0,
             "essence": 2,
-            "scrap": 7
+            "scrap": 7,
+            "shards": {
+              "ember-shard": 1
+            }
           }
         },
         {
@@ -1954,7 +1981,7 @@
           },
           "gear": [
             {
-              "baseId": "cinder-charm",
+              "baseId": "emberkeepers-crown",
               "rarity": "common",
               "itemLevel": 10
             }
@@ -2280,26 +2307,26 @@
         "bait": 8,
         "essence": 5,
         "parts": {
-          "ember-shard": 2,
           "glimmer": 1,
-          "scrap": 26
+          "scrap": 26,
+          "ember-shard": 3
         },
         "gear": [
           {
             "id": "00000000-0000-4000-8300-000000000023",
-            "baseId": "ember-muffler",
+            "baseId": "cinder-charm",
             "rarity": "common",
             "itemLevel": 11
           },
           {
             "id": "00000000-0000-4000-8300-000000000024",
-            "baseId": "cinder-charm",
+            "baseId": "emberkeepers-crown",
             "rarity": "common",
             "itemLevel": 10
           }
         ],
         "converted": [],
-        "supplies": ["map-scrap-good"],
+        "supplies": ["lantern-good"],
         "landmark": true,
         "streak": null,
         "experience": [
@@ -2362,12 +2389,18 @@
         "found": {
           "bait": 8,
           "essence": 5,
-          "scrap": 26
+          "scrap": 26,
+          "shards": {
+            "ember-shard": 3
+          }
         },
         "kept": {
           "bait": 8,
           "essence": 5,
-          "scrap": 26
+          "scrap": 26,
+          "shards": {
+            "ember-shard": 3
+          }
         }
       },
       "keepsakes": [
@@ -2710,7 +2743,10 @@
             "loot": {
               "bait": 0,
               "essence": 1,
-              "scrap": 3
+              "scrap": 3,
+              "shards": {
+                "ember-shard": 1
+              }
             }
           },
           {
@@ -2725,7 +2761,7 @@
             },
             "gear": [
               {
-                "baseId": "ember-muffler",
+                "baseId": "cinder-charm",
                 "rarity": "common",
                 "itemLevel": 11
               }
@@ -2778,7 +2814,10 @@
             "loot": {
               "bait": 2,
               "essence": 0,
-              "scrap": 8
+              "scrap": 8,
+              "shards": {
+                "ember-shard": 1
+              }
             },
             "keepsake": {
               "id": "lullaby-bell",
@@ -2797,7 +2836,10 @@
             "loot": {
               "bait": 0,
               "essence": 2,
-              "scrap": 7
+              "scrap": 7,
+              "shards": {
+                "ember-shard": 1
+              }
             }
           },
           {
@@ -2812,7 +2854,7 @@
             },
             "gear": [
               {
-                "baseId": "cinder-charm",
+                "baseId": "emberkeepers-crown",
                 "rarity": "common",
                 "itemLevel": 10
               }

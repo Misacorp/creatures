@@ -27,6 +27,7 @@ import {
   nodeLoot,
   reachableNodes,
   resolveEvent,
+  rollRoomShard,
   roomSpecForNode,
   rollDungeonLoot,
   rollUndercroftChest,
@@ -729,7 +730,15 @@ export function walkMap(options: {
       }
       fightsCleared += 1;
       tally = addFightsCleared(tally, standing);
-      pack = addPack(pack, roomLoot(node.kind, level, weather, true));
+      const shard = rollRoomShard(
+        rng,
+        node.kind,
+        nodeFoe(node, depth, level)?.element ?? bossFoe.element,
+      );
+      pack = addPack(pack, {
+        ...roomLoot(node.kind, level, weather, true),
+        ...(shard === undefined ? {} : { shards: shard }),
+      });
       if (node.kind === 'elite' || node.kind === 'epic') {
         if (node.kind === 'elite') elites += 1;
         const left = dungeonKeepsakes.filter((k) => !held.some((h) => h.id === k.id));
@@ -915,7 +924,7 @@ export function playDungeonDay(
     }
 
     // Pay: the kept pack (Market Day's scrap, the boss chest's Essence and scrap and the keepers' are in
-    // it), the chests' dice (the main boss's shard, gear and landmark glimmer, each keeper's gear), the
+    // it), the chests' dice (the main boss's gear and landmark glimmer, each keeper's gear), the
     // supply of the first fight cleared (safe), and the streak bonus on the first run of a day.
     const kept = run.outcome === 'defeat' ? keptOnDefeat(run.pack) : run.pack;
     const landmark = cleared && isLandmark(depth);
@@ -936,7 +945,7 @@ export function playDungeonDay(
     );
     const gear: GearItem[] = [...drop.gear];
     for (const element of run.keepers) gear.push(...rollUndercroftChest(loot, depth, element));
-    const parts = addParts({ scrap, glimmer }, drop.parts);
+    const parts = addParts(addParts({ scrap, glimmer }, kept.shards ?? {}), drop.parts);
     player.bait += bait;
     player.essence += essence;
     const week = player.week;

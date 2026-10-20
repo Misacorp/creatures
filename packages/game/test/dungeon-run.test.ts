@@ -18,7 +18,9 @@ import {
   mapNode,
   mapView,
   nodeLoot,
+  packShardCount,
   resolveEvent,
+  rollRoomShard,
   roomSpecForNode,
   scaledFoe,
   type DungeonEventDef,
@@ -131,6 +133,44 @@ describe('the pack', () => {
       essence: 1,
       scrap: 0,
     });
+  });
+
+  it('adds shards by element and keeps half of them (rounded up) on a defeat', () => {
+    const a = { bait: 0, essence: 0, scrap: 0, shards: { 'ember-shard': 1 } } as const;
+    const b = {
+      bait: 0,
+      essence: 0,
+      scrap: 0,
+      shards: { 'ember-shard': 2, 'tide-shard': 1 },
+    } as const;
+    const sum = addPack(a, b);
+    expect(sum.shards).toEqual({ 'ember-shard': 3, 'tide-shard': 1 });
+    expect(packShardCount(sum)).toBe(4);
+    expect(keptOnDefeat(sum).shards).toEqual({ 'ember-shard': 2, 'tide-shard': 1 });
+    // No shards stays no shards key at all.
+    expect('shards' in addPack(emptyPack(), emptyPack())).toBe(false);
+    expect('shards' in keptOnDefeat(emptyPack())).toBe(false);
+  });
+
+  it('rolls a shard of the foe element by room kind: sure for a floor boss, never for a room with no foe', () => {
+    expect(RULES.dungeon.shardBp.boss).toBe(10_000);
+    for (let i = 0; i < 30; i++) {
+      const rng = createSeededRng(`boss-${String(i)}`);
+      expect(rollRoomShard(rng, 'boss', 'grove')).toEqual({ 'grove-shard': 1 });
+      expect(rollRoomShard(rng, 'cache', 'grove')).toBeUndefined();
+      expect(rollRoomShard(rng, 'mystery', 'grove')).toBeUndefined();
+      expect(rollRoomShard(rng, 'camp', 'grove')).toBeUndefined();
+    }
+    const runs = 4000;
+    for (const kind of ['fight', 'elite', 'epic'] as const) {
+      let n = 0;
+      const rng = createSeededRng(`rate-${kind}`);
+      for (let i = 0; i < runs; i++) if (rollRoomShard(rng, kind, 'tide') !== undefined) n += 1;
+      expect(Math.abs(n / runs - RULES.dungeon.shardBp[kind] / 10_000)).toBeLessThan(0.03);
+    }
+    // Elites drop more than fights, epic fights more than elites.
+    expect(RULES.dungeon.shardBp.fight).toBeLessThan(RULES.dungeon.shardBp.elite);
+    expect(RULES.dungeon.shardBp.elite).toBeLessThan(RULES.dungeon.shardBp.epic);
   });
 
   it('never keeps more than was found and never less than half', () => {

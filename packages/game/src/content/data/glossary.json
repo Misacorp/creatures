@@ -1371,7 +1371,7 @@
     "title": "Pack",
     "short": "The loot you carry out of the dungeon.",
     "lines": [
-      "Fights, elites, chests and mystery rooms put Bait, Essence and scrap in your pack.",
+      "Rooms put Bait, Essence and scrap in your pack. Foes may also drop a shard: bosses always, elites often.",
       "Head home or beat the boss and you keep all of it. A defeat keeps half, rounded up.",
       "Experience and the run's supply are safe. They never go in the pack.",
       "A run left open when the day ends counts as a defeat, unless it is resting at the camp."
