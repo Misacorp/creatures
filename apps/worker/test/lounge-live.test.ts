@@ -209,8 +209,11 @@ describe('auth', () => {
       new Request(`${ORIGIN}${LIVE_PATH}`, { headers: { Upgrade: 'websocket' } }),
     );
     expect(none.status).toBe(401);
-    // A valid shape with a broken MAC never reaches an object.
-    const forged = await upgrade(`${ticket.slice(0, -1)}${ticket.endsWith('A') ? 'B' : 'A'}`);
+    // A valid shape with a broken MAC never reaches an object. The MAC's first character is changed: its
+    // last one carries two spare bits, so swapping it can decode to the very same bytes.
+    const macAt = ticket.lastIndexOf('.') + 1;
+    const flipped = ticket[macAt] === 'A' ? 'Q' : 'A';
+    const forged = await upgrade(`${ticket.slice(0, macAt)}${flipped}${ticket.slice(macAt + 1)}`);
     expect(forged.status).toBe(401);
     // A session token is not a ticket.
     const asSession = await upgrade(player.token);
