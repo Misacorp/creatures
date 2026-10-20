@@ -29,9 +29,6 @@ export class GuildWorld extends DurableObject<Env> {
       guildId: () => ctx.id.name ?? '',
       now: Date.now,
       residentOf: (userId) => this.core.collection.lounge.room([userId])[0] ?? null,
-      onPresenceChange: (closing) => {
-        this.core.settleLounge(closing);
-      },
     });
     this.core = new GuildCore(ctx.storage, Date.now, {
       guildId: () => ctx.id.name,

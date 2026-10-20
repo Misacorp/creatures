@@ -287,7 +287,7 @@ describe('shouldOpenSocket', () => {
 
 describe('loungeEarning', () => {
   const state = { loungerId: 'c1', loungeXp: { c1: 34 } };
-  it('is true only while live, visible, with a lounger that is not Rested', () => {
+  it('is true only with company, visible, with a lounger that is not Rested', () => {
     expect(loungeEarning(true, false, state)).toBe(true);
     expect(loungeEarning(false, false, state)).toBe(false);
     expect(loungeEarning(true, true, state)).toBe(false);
@@ -297,7 +297,7 @@ describe('loungeEarning', () => {
     expect(loungeEarning(true, false, { loungerId: 'c1', loungeXp: {} })).toBe(true);
   });
 
-  it('reloads every 4 minutes: 2 XP at the lounging rate', () => {
-    expect(LOUNGE_REFRESH_MS).toBe(2 * 2 * 60_000);
+  it('reloads once per XP: every 2 minutes', () => {
+    expect(LOUNGE_REFRESH_MS).toBe(2 * 60_000);
   });
 });

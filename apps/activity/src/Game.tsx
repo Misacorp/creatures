@@ -303,9 +303,9 @@ export function Game({
       setError(errorText(err));
     });
   }
-  // While your lounger earns, reload the state now and then so its tag and XP bar move (the server pays
-  // lounging XP when you make a request). Nothing while alone, hidden or Rested.
-  const earning = loungeEarning(room.live, false, game);
+  // While your lounger earns, reload the state once per XP so its tag and XP bar move (the server pays what
+  // you collected when you make a request). Nothing while alone, hidden or Rested.
+  const earning = loungeEarning(room.company, false, game);
   useEffect(() => {
     if (!earning) return undefined;
     const timer = setInterval(() => {

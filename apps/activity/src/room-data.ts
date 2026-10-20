@@ -4,7 +4,7 @@
  * game state without any request. `room-loader.ts` runs them against the API and `use-room.ts` hands
  * the result to the screen.
  */
-import { isRested } from '@creatures/game';
+import { RULES, isRested } from '@creatures/game';
 import type { Creature, GameState, LoungeSpot, RoomCreature, RoomResident } from './api';
 import type { GearItem } from './gear-types';
 import { wornItemOf, type WornItem } from './gear-view';
@@ -115,23 +115,23 @@ export function shouldOpenSocket(
 }
 
 /**
- * How often the game reloads your state while your lounger earns: the server pays lounging XP lazily (on
- * your requests and when someone joins or leaves), so without a request the cards would not move. 4 minutes
- * is 2 XP; one small request each time, and none while alone, hidden or Rested.
+ * How often the game reloads your state while your lounger earns: once per XP (the server pays what you
+ * collected when you make a request, so the tag and the bar move a step each time). One small request each
+ * time, and none while alone, hidden or Rested.
  */
-export const LOUNGE_REFRESH_MS = 4 * 60_000;
+export const LOUNGE_REFRESH_MS: number = RULES.experience.lounge.msPerXp;
 
 /**
- * Whether your lounger is earning now, so the state is worth reloading every `LOUNGE_REFRESH_MS`: the live
- * socket is up (the server's proof of company), the page is visible, you have a lounger and it is not
- * Rested yet.
+ * Whether your lounger is earning now, so the state is worth reloading every `LOUNGE_REFRESH_MS`: someone
+ * else is here (Discord's participants, the same list the server pays from), the page is visible, you have a
+ * lounger and it is not Rested yet.
  */
 export function loungeEarning(
-  live: boolean,
+  company: boolean,
   hidden: boolean,
   state: Pick<GameState, 'loungerId' | 'loungeXp'>,
 ): boolean {
-  if (!live || hidden || state.loungerId === null) return false;
+  if (!company || hidden || state.loungerId === null) return false;
   return !isRested(state.loungeXp[state.loungerId] ?? 0);
 }
 

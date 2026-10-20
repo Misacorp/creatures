@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { fetchLoungeTicket, fetchRoom, loungeSocketUrl, type GameState } from './api';
 import type { GearItem } from './gear-types';
 import type { ParticipantSource } from './participants';
-import { ownResident, roomResidents, shouldOpenSocket, type Resident } from './room-data';
+import { othersOf, ownResident, roomResidents, shouldOpenSocket, type Resident } from './room-data';
 import { browserSocket, createLoungeSocket } from './lounge-socket';
 import { createRoomLoader, type RoomLoader } from './room-loader';
 
@@ -35,8 +35,8 @@ export interface RoomHandle {
   residents: readonly Resident[];
   /** Call on tab switches: refetches the others only when the last full fetch is over 60 s old. */
   refreshIfStale: () => void;
-  /** The live socket is up (the server can see you are here with company), and the page is visible. */
-  live: boolean;
+  /** Somebody else is here (Discord's participants) and the page is visible: your lounger can earn. */
+  company: boolean;
 }
 
 export function useRoom({
@@ -52,7 +52,6 @@ export function useRoom({
   const [present, setPresent] = useState<readonly string[]>(() => participants.ids());
   const [known, setKnown] = useState<ReadonlyMap<string, Resident>>(() => new Map());
   const [hidden, setHidden] = useState(() => typeof document !== 'undefined' && document.hidden);
-  const [live, setLive] = useState(false);
   const loader = useRef<RoomLoader | null>(null);
 
   useEffect(() => {
@@ -88,9 +87,8 @@ export function useRoom({
       getTicket: fetchLoungeTicket,
       url: (ticket) => loungeSocketUrl(ticket, window.location),
       createSocket: browserSocket,
-      onLive: (up) => {
-        loader.current?.setLive(up);
-        setLive(up);
+      onLive: (live) => {
+        loader.current?.setLive(live);
       },
       onResident: (resident) => {
         loader.current?.applyResident(resident);
@@ -99,7 +97,6 @@ export function useRoom({
     socket.start();
     return () => {
       socket.stop();
-      setLive(false);
     };
   }, [wantSocket, selfId]);
 
@@ -138,6 +135,6 @@ export function useRoom({
     refreshIfStale: () => {
       loader.current?.refreshIfStale();
     },
-    live: live && !hidden,
+    company: enabled && !hidden && othersOf(present, selfId).length > 0,
   };
 }
