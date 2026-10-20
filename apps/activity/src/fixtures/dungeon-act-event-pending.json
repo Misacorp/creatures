@@ -298,11 +298,11 @@
         "options": [
           {
             "label": "Peek inside",
-            "description": "You gain 1 Bait."
+            "description": "You gain 2 scrap."
           },
           {
             "label": "Shake it out",
-            "description": "50%: 2 Bait and 1 scrap. 50%: nothing."
+            "description": "50%: 6 scrap and 1 Bait. 50%: nothing."
           }
         ]
       }
@@ -346,7 +346,7 @@
     "pack": {
       "bait": 1,
       "essence": 0,
-      "scrap": 0
+      "scrap": 1
     },
     "roomsCleared": 1,
     "supply": true,
@@ -363,7 +363,7 @@
         "loot": {
           "bait": 1,
           "essence": 0,
-          "scrap": 0
+          "scrap": 1
         },
         "supply": true
       },

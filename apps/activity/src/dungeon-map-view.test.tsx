@@ -376,7 +376,7 @@ describe('DungeonMap with the Undercroft', () => {
     expect(byClass(dialog, 'dnd-tags')[0]?.textContent ?? '').not.toContain('Floor boss');
     // The chest is badges, not a sentence.
     expect(dialogText(p)).toContain('Chest:');
-    expect(byClass(dialog, 'part-count').map(visibleText)).toEqual(['1', '2', '40%']);
+    expect(byClass(dialog, 'part-count').map(visibleText)).toEqual(['2', '7', '80%']);
   });
 
   it('an uncracked keeper has no cracked-floor line', () => {
@@ -460,7 +460,7 @@ describe('DungeonMap with the Undercroft', () => {
     expect(text).toContain('One fierce foe at boss strength.');
     expect(text).toContain('Win:');
     const dialog = first(byRole(p.root, 'dialog'));
-    expect(byClass(dialog, 'part-count').map(visibleText)).toEqual(['1', '2']);
+    expect(byClass(dialog, 'part-count').map(visibleText)).toEqual(['1', '5']);
     expect(text).toContain('Keepsake');
     // The Undercroft tag says where it is; there is no second line saying it.
     expect(text).toContain('Undercroft');
@@ -476,7 +476,7 @@ describe('DungeonMap with the Undercroft', () => {
     expect(text).toContain('Won in 5 rounds.');
     expect(text).toContain('The boss chest opened.');
     expect(text).toContain('Banked at once');
-    expect(text).toContain('Cinder Charm');
+    expect(text).toContain('Ember Muffler');
     expect(text).toContain('You went down into Undercroft 1.');
     // The chest entry only holds what the chest added, and the fight shows its own loot.
     expect(text).not.toContain('Nothing went into the pack.');
@@ -488,10 +488,10 @@ describe('DungeonMap with the Undercroft', () => {
       <DungeonMap map={run.map} undercroft={run.undercroft?.maps} state={run} initialOpen="f6l1" />,
     );
     const rows = byClass(first(byRole(p.root, 'dialog')), 'dnd-loot').map(visibleText);
-    // The fight added 1 Essence and 1 scrap, the chest 2 and 2 more: two rows, none hidden.
+    // The fight added 1 Essence and 3 scrap, the chest 2 and 2 more (the landmark's): two rows, none hidden.
     expect(rows).toHaveLength(2);
     // (A row's text is its amounts: Essence then scrap.)
-    expect(rows[0]).toBe('Into your pack:11');
+    expect(rows[0]).toBe('Into your pack:13');
     expect(rows[1]).toBe('Into your pack:22');
     // The loot list is not the replay's indented bullet list (`plain-list`): no bullet over the label.
     const lists = byClass(first(byRole(p.root, 'dialog')), 'dnd-loot-items');

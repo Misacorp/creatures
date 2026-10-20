@@ -475,7 +475,7 @@ describe('going down', () => {
         expect(gained).toEqual({
           bait: RULES.dungeon.loot.fight.bait * u.lootMultiplier,
           essence: 0,
-          scrap: 0,
+          scrap: RULES.dungeon.loot.fight.scrap * u.lootMultiplier,
         });
         expect(res.body.room?.node).toBe(down.reachable[0]);
         // The replay shows the fights of every level in order, with the main map's first.

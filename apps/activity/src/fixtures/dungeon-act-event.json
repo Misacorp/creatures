@@ -327,16 +327,16 @@
     ],
     "keepsakes": [],
     "pack": {
-      "bait": 3,
+      "bait": 2,
       "essence": 0,
-      "scrap": 1
+      "scrap": 7
     },
     "roomsCleared": 1,
     "supply": true,
     "lastEvent": {
       "name": "Lost Satchel",
       "option": "Shake it out",
-      "outcome": "Lucky! You find 2 Bait and 1 scrap."
+      "outcome": "Lucky! You find 1 Bait and 6 scrap."
     },
     "history": [
       {
@@ -350,7 +350,7 @@
         "loot": {
           "bait": 1,
           "essence": 0,
-          "scrap": 0
+          "scrap": 1
         },
         "supply": true
       },
@@ -360,11 +360,11 @@
         "result": "event",
         "event": "Lost Satchel",
         "option": "Shake it out",
-        "outcome": "Lucky! You find 2 Bait and 1 scrap.",
+        "outcome": "Lucky! You find 1 Bait and 6 scrap.",
         "loot": {
-          "bait": 2,
+          "bait": 1,
           "essence": 0,
-          "scrap": 1
+          "scrap": 6
         }
       }
     ]

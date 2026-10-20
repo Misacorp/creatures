@@ -463,7 +463,11 @@ describe('rewards', () => {
         'spark',
       );
       drops += loot.gear.length;
-      shards += loot.parts['spark-shard'] ?? 0;
+      const got = loot.parts['spark-shard'] ?? 0;
+      // A value over 10000 is that many sure shards and a chance of one more.
+      expect(got).toBeGreaterThanOrEqual(Math.floor(RULES.dungeon.bossShardBp / 10_000));
+      expect(got).toBeLessThanOrEqual(Math.ceil(RULES.dungeon.bossShardBp / 10_000));
+      shards += got;
     }
     expect(drops / runs).toBeGreaterThan(RULES.dungeon.fullClear.gearBp / 10_000 - 0.06);
     expect(drops / runs).toBeLessThan(RULES.dungeon.fullClear.gearBp / 10_000 + 0.06);

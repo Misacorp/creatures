@@ -50,7 +50,8 @@ function draw(over: Partial<Parameters<typeof DungeonDescend>[0]> = {}): {
 describe('what the chest banked, as the descent card shows it', () => {
   it('counts the supplies and the parts, and knows when nothing was banked', () => {
     expect(bankedCounts(descent.banked).map((c) => [c.key, c.amount])).toEqual([
-      ['supply-satchel-good', 1],
+      ['supply-map-scrap-good', 1],
+      ['ember-shard', 2],
       ['glimmer', 1],
     ]);
     expect(nothingBanked(descent.banked)).toBe(false);
@@ -71,11 +72,11 @@ describe('DungeonDescend', () => {
     expect(text).toContain('Banked now');
     // The headings say it: no help paragraph under them.
     expect(text).not.toContain('are yours, no matter what happens below');
-    expect(text).toContain('Cinder Charm');
-    expect(text).toContain('Sturdy Satchel');
+    expect(text).toContain('Ember Muffler');
+    expect(text).toContain('Inked Map');
     expect(byName(p.root, 'span', 'Bait: 2')).toHaveLength(1);
     expect(byName(p.root, 'span', 'Essence: 3')).toHaveLength(1);
-    expect(byName(p.root, 'span', 'Scrap: 3')).toHaveLength(1);
+    expect(byName(p.root, 'span', 'Scrap: 7')).toHaveLength(1);
     expect(text).toContain('Still at risk');
     expect(text).not.toContain('you risk losing some of them');
     expect(text).not.toContain('In your pack:');

@@ -329,7 +329,7 @@
     "pack": {
       "bait": 1,
       "essence": 0,
-      "scrap": 0
+      "scrap": 1
     },
     "roomsCleared": 1,
     "supply": true,
@@ -346,7 +346,7 @@
         "loot": {
           "bait": 1,
           "essence": 0,
-          "scrap": 0
+          "scrap": 1
         },
         "supply": true
       }

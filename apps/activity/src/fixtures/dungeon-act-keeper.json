@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "00000000-0000-4000-8300-000000000018",
+    "id": "00000000-0000-4000-8300-000000000019",
     "day": "2027-01-16",
     "attempt": 1,
     "depth": 14,
@@ -389,7 +389,7 @@
     "pending": null,
     "team": [
       {
-        "id": "00000000-0000-4000-8300-000000000019",
+        "id": "00000000-0000-4000-8300-000000000020",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -400,7 +400,7 @@
         "treat": false
       },
       {
-        "id": "00000000-0000-4000-8300-000000000020",
+        "id": "00000000-0000-4000-8300-000000000021",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -411,7 +411,7 @@
         "treat": false
       },
       {
-        "id": "00000000-0000-4000-8300-000000000021",
+        "id": "00000000-0000-4000-8300-000000000022",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
@@ -430,9 +430,9 @@
       }
     ],
     "pack": {
-      "bait": 6,
-      "essence": 4,
-      "scrap": 7
+      "bait": 8,
+      "essence": 5,
+      "scrap": 26
     },
     "roomsCleared": 7,
     "supply": true,
@@ -449,7 +449,7 @@
         "loot": {
           "bait": 1,
           "essence": 0,
-          "scrap": 0
+          "scrap": 1
         },
         "supply": true
       },
@@ -477,7 +477,7 @@
         "loot": {
           "bait": 1,
           "essence": 0,
-          "scrap": 0
+          "scrap": 1
         }
       },
       {
@@ -517,7 +517,7 @@
         "loot": {
           "bait": 0,
           "essence": 1,
-          "scrap": 1
+          "scrap": 3
         }
       },
       {
@@ -532,8 +532,8 @@
         },
         "gear": [
           {
-            "baseId": "cinder-charm",
-            "rarity": "epic",
+            "baseId": "ember-muffler",
+            "rarity": "common",
             "itemLevel": 11
           }
         ]
@@ -557,7 +557,7 @@
         "loot": {
           "bait": 2,
           "essence": 0,
-          "scrap": 0
+          "scrap": 2
         }
       },
       {
@@ -571,7 +571,7 @@
         "loot": {
           "bait": 2,
           "essence": 0,
-          "scrap": 0
+          "scrap": 2
         }
       },
       {
@@ -583,9 +583,9 @@
         "foeHpEnd": 0,
         "foeHpMax": 898,
         "loot": {
-          "bait": 0,
+          "bait": 2,
           "essence": 0,
-          "scrap": 2
+          "scrap": 8
         },
         "keepsake": {
           "id": "lullaby-bell",
@@ -603,8 +603,8 @@
         "foeHpMax": 1061,
         "loot": {
           "bait": 0,
-          "essence": 1,
-          "scrap": 2
+          "essence": 2,
+          "scrap": 7
         }
       },
       {
@@ -617,7 +617,13 @@
           "essence": 0,
           "scrap": 0
         },
-        "gear": []
+        "gear": [
+          {
+            "baseId": "cinder-charm",
+            "rarity": "common",
+            "itemLevel": 10
+          }
+        ]
       }
     ]
   },
@@ -628,7 +634,7 @@
     "row": [
       {
         "position": 0,
-        "id": "00000000-0000-4000-8300-000000000019",
+        "id": "00000000-0000-4000-8300-000000000020",
         "name": "Sproutle",
         "species": "sproutle",
         "element": "grove",
@@ -637,7 +643,7 @@
       },
       {
         "position": 1,
-        "id": "00000000-0000-4000-8300-000000000020",
+        "id": "00000000-0000-4000-8300-000000000021",
         "name": "Splashet",
         "species": "splashet",
         "element": "tide",
@@ -646,7 +652,7 @@
       },
       {
         "position": 2,
-        "id": "00000000-0000-4000-8300-000000000021",
+        "id": "00000000-0000-4000-8300-000000000022",
         "name": "Cindle",
         "species": "cindle",
         "element": "ember",
@@ -675,14 +681,14 @@
     "cleared": true,
     "rounds": 5,
     "hpStart": {
-      "00000000-0000-4000-8300-000000000019": 268,
-      "00000000-0000-4000-8300-000000000020": 211,
-      "00000000-0000-4000-8300-000000000021": 189
+      "00000000-0000-4000-8300-000000000020": 268,
+      "00000000-0000-4000-8300-000000000021": 211,
+      "00000000-0000-4000-8300-000000000022": 189
     },
     "hpMax": {
-      "00000000-0000-4000-8300-000000000019": 314,
-      "00000000-0000-4000-8300-000000000020": 224,
-      "00000000-0000-4000-8300-000000000021": 194
+      "00000000-0000-4000-8300-000000000020": 314,
+      "00000000-0000-4000-8300-000000000021": 224,
+      "00000000-0000-4000-8300-000000000022": 194
     },
     "events": [
       {
@@ -700,12 +706,12 @@
       {
         "t": "turn",
         "round": 1,
-        "creature": "00000000-0000-4000-8300-000000000019"
+        "creature": "00000000-0000-4000-8300-000000000020"
       },
       {
         "t": "hit",
         "round": 1,
-        "creature": "00000000-0000-4000-8300-000000000019",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "damage": 27,
         "matchupBp": 7500,
         "bonusBp": 0,
@@ -715,33 +721,10 @@
       {
         "t": "mark",
         "round": 1,
-        "creature": "00000000-0000-4000-8300-000000000019",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "player": "p1",
         "element": "grove",
         "replaced": null
-      },
-      {
-        "t": "turn",
-        "round": 1,
-        "creature": "00000000-0000-4000-8300-000000000020"
-      },
-      {
-        "t": "hit",
-        "round": 1,
-        "creature": "00000000-0000-4000-8300-000000000020",
-        "damage": 84,
-        "matchupBp": 15000,
-        "bonusBp": 0,
-        "mark": "grove",
-        "bossHp": 950
-      },
-      {
-        "t": "mark",
-        "round": 1,
-        "creature": "00000000-0000-4000-8300-000000000020",
-        "player": "p1",
-        "element": "tide",
-        "replaced": "grove"
       },
       {
         "t": "turn",
@@ -752,6 +735,29 @@
         "t": "hit",
         "round": 1,
         "creature": "00000000-0000-4000-8300-000000000021",
+        "damage": 84,
+        "matchupBp": 15000,
+        "bonusBp": 0,
+        "mark": "grove",
+        "bossHp": 950
+      },
+      {
+        "t": "mark",
+        "round": 1,
+        "creature": "00000000-0000-4000-8300-000000000021",
+        "player": "p1",
+        "element": "tide",
+        "replaced": "grove"
+      },
+      {
+        "t": "turn",
+        "round": 1,
+        "creature": "00000000-0000-4000-8300-000000000022"
+      },
+      {
+        "t": "hit",
+        "round": 1,
+        "creature": "00000000-0000-4000-8300-000000000022",
         "damage": 82,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -762,7 +768,7 @@
         "t": "boss_hit",
         "round": 1,
         "source": "attack",
-        "target": "00000000-0000-4000-8300-000000000019",
+        "target": "00000000-0000-4000-8300-000000000020",
         "damage": 4,
         "armored": 1
       },
@@ -786,32 +792,17 @@
       {
         "t": "turn",
         "round": 2,
-        "creature": "00000000-0000-4000-8300-000000000019"
-      },
-      {
-        "t": "hit",
-        "round": 2,
-        "creature": "00000000-0000-4000-8300-000000000019",
-        "damage": 27,
-        "matchupBp": 7500,
-        "bonusBp": 0,
-        "mark": "tide",
-        "bossHp": 841
-      },
-      {
-        "t": "turn",
-        "round": 2,
         "creature": "00000000-0000-4000-8300-000000000020"
       },
       {
         "t": "hit",
         "round": 2,
         "creature": "00000000-0000-4000-8300-000000000020",
-        "damage": 84,
-        "matchupBp": 15000,
+        "damage": 27,
+        "matchupBp": 7500,
         "bonusBp": 0,
         "mark": "tide",
-        "bossHp": 757
+        "bossHp": 841
       },
       {
         "t": "turn",
@@ -822,6 +813,21 @@
         "t": "hit",
         "round": 2,
         "creature": "00000000-0000-4000-8300-000000000021",
+        "damage": 84,
+        "matchupBp": 15000,
+        "bonusBp": 0,
+        "mark": "tide",
+        "bossHp": 757
+      },
+      {
+        "t": "turn",
+        "round": 2,
+        "creature": "00000000-0000-4000-8300-000000000022"
+      },
+      {
+        "t": "hit",
+        "round": 2,
+        "creature": "00000000-0000-4000-8300-000000000022",
         "damage": 82,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -832,7 +838,7 @@
         "t": "boss_hit",
         "round": 2,
         "source": "attack",
-        "target": "00000000-0000-4000-8300-000000000019",
+        "target": "00000000-0000-4000-8300-000000000020",
         "damage": 6,
         "crit": true,
         "critBp": 5000,
@@ -855,7 +861,7 @@
         "landing": 4,
         "gimmick": "slag-spill",
         "op": "slam",
-        "marks": ["00000000-0000-4000-8300-000000000021"]
+        "marks": ["00000000-0000-4000-8300-000000000022"]
       },
       {
         "t": "gimmick",
@@ -869,7 +875,7 @@
         "player": "p1",
         "ability": "bark-guard",
         "key": "p1:c0",
-        "creature": "00000000-0000-4000-8300-000000000019",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "zone": "front",
         "byDefault": true
       },
@@ -879,14 +885,14 @@
         "player": "p1",
         "ability": "tidal-mark",
         "key": "p1:c1",
-        "creature": "00000000-0000-4000-8300-000000000020",
+        "creature": "00000000-0000-4000-8300-000000000021",
         "element": "tide",
         "byDefault": true
       },
       {
         "t": "mark",
         "round": 3,
-        "creature": "00000000-0000-4000-8300-000000000020",
+        "creature": "00000000-0000-4000-8300-000000000021",
         "player": "p1",
         "element": "tide",
         "replaced": "tide"
@@ -894,12 +900,12 @@
       {
         "t": "turn",
         "round": 3,
-        "creature": "00000000-0000-4000-8300-000000000019"
+        "creature": "00000000-0000-4000-8300-000000000020"
       },
       {
         "t": "hit",
         "round": 3,
-        "creature": "00000000-0000-4000-8300-000000000019",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "damage": 44,
         "matchupBp": 7500,
         "bonusBp": 6300,
@@ -912,12 +918,12 @@
       {
         "t": "turn",
         "round": 3,
-        "creature": "00000000-0000-4000-8300-000000000020"
+        "creature": "00000000-0000-4000-8300-000000000021"
       },
       {
         "t": "hit",
         "round": 3,
-        "creature": "00000000-0000-4000-8300-000000000020",
+        "creature": "00000000-0000-4000-8300-000000000021",
         "damage": 94,
         "matchupBp": 15000,
         "bonusBp": 1300,
@@ -927,12 +933,12 @@
       {
         "t": "turn",
         "round": 3,
-        "creature": "00000000-0000-4000-8300-000000000021"
+        "creature": "00000000-0000-4000-8300-000000000022"
       },
       {
         "t": "hit",
         "round": 3,
-        "creature": "00000000-0000-4000-8300-000000000021",
+        "creature": "00000000-0000-4000-8300-000000000022",
         "damage": 92,
         "matchupBp": 10000,
         "bonusBp": 1300,
@@ -944,15 +950,7 @@
         "round": 3,
         "gimmick": "anvil-fall",
         "op": "slam",
-        "targets": ["00000000-0000-4000-8300-000000000019"]
-      },
-      {
-        "t": "boss_hit",
-        "round": 3,
-        "source": "gimmick",
-        "target": "00000000-0000-4000-8300-000000000019",
-        "damage": 2,
-        "reducedBp": 6000
+        "targets": ["00000000-0000-4000-8300-000000000020"]
       },
       {
         "t": "boss_hit",
@@ -960,9 +958,17 @@
         "source": "gimmick",
         "target": "00000000-0000-4000-8300-000000000020",
         "damage": 2,
+        "reducedBp": 6000
+      },
+      {
+        "t": "boss_hit",
+        "round": 3,
+        "source": "gimmick",
+        "target": "00000000-0000-4000-8300-000000000021",
+        "damage": 2,
         "splash": true,
         "covered": {
-          "guard": "00000000-0000-4000-8300-000000000019",
+          "guard": "00000000-0000-4000-8300-000000000020",
           "prevented": 1
         }
       },
@@ -970,7 +976,7 @@
         "t": "boss_hit",
         "round": 3,
         "source": "attack",
-        "target": "00000000-0000-4000-8300-000000000019",
+        "target": "00000000-0000-4000-8300-000000000020",
         "damage": 2,
         "reducedBp": 6000
       },
@@ -994,12 +1000,12 @@
       {
         "t": "turn",
         "round": 4,
-        "creature": "00000000-0000-4000-8300-000000000019"
+        "creature": "00000000-0000-4000-8300-000000000020"
       },
       {
         "t": "hit",
         "round": 4,
-        "creature": "00000000-0000-4000-8300-000000000019",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "damage": 27,
         "matchupBp": 7500,
         "bonusBp": 0,
@@ -1009,12 +1015,12 @@
       {
         "t": "turn",
         "round": 4,
-        "creature": "00000000-0000-4000-8300-000000000020"
+        "creature": "00000000-0000-4000-8300-000000000021"
       },
       {
         "t": "hit",
         "round": 4,
-        "creature": "00000000-0000-4000-8300-000000000020",
+        "creature": "00000000-0000-4000-8300-000000000021",
         "damage": 126,
         "matchupBp": 15000,
         "bonusBp": 5000,
@@ -1027,12 +1033,12 @@
       {
         "t": "turn",
         "round": 4,
-        "creature": "00000000-0000-4000-8300-000000000021"
+        "creature": "00000000-0000-4000-8300-000000000022"
       },
       {
         "t": "hit",
         "round": 4,
-        "creature": "00000000-0000-4000-8300-000000000021",
+        "creature": "00000000-0000-4000-8300-000000000022",
         "damage": 82,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -1044,24 +1050,24 @@
         "round": 4,
         "gimmick": "slag-spill",
         "op": "charge",
-        "targets": ["00000000-0000-4000-8300-000000000021"]
+        "targets": ["00000000-0000-4000-8300-000000000022"]
       },
       {
         "t": "boss_hit",
         "round": 4,
         "source": "gimmick",
-        "target": "00000000-0000-4000-8300-000000000021",
+        "target": "00000000-0000-4000-8300-000000000022",
         "damage": 12
       },
       {
         "t": "boss_hit",
         "round": 4,
         "source": "gimmick",
-        "target": "00000000-0000-4000-8300-000000000020",
+        "target": "00000000-0000-4000-8300-000000000021",
         "damage": 4,
         "splash": true,
         "covered": {
-          "guard": "00000000-0000-4000-8300-000000000019",
+          "guard": "00000000-0000-4000-8300-000000000020",
           "prevented": 2
         }
       },
@@ -1069,7 +1075,7 @@
         "t": "boss_hit",
         "round": 4,
         "source": "attack",
-        "target": "00000000-0000-4000-8300-000000000019",
+        "target": "00000000-0000-4000-8300-000000000020",
         "damage": 2,
         "reducedBp": 6000,
         "crit": true,
@@ -1098,13 +1104,13 @@
         "player": "p1",
         "ability": "flare-strike",
         "key": "p1:c2",
-        "creature": "00000000-0000-4000-8300-000000000021",
+        "creature": "00000000-0000-4000-8300-000000000022",
         "byDefault": true
       },
       {
         "t": "hit",
         "round": 5,
-        "creature": "00000000-0000-4000-8300-000000000021",
+        "creature": "00000000-0000-4000-8300-000000000022",
         "damage": 180,
         "matchupBp": 10000,
         "bonusBp": 0,
@@ -1116,12 +1122,12 @@
       {
         "t": "turn",
         "round": 5,
-        "creature": "00000000-0000-4000-8300-000000000019"
+        "creature": "00000000-0000-4000-8300-000000000020"
       },
       {
         "t": "hit",
         "round": 5,
-        "creature": "00000000-0000-4000-8300-000000000019",
+        "creature": "00000000-0000-4000-8300-000000000020",
         "damage": 27,
         "matchupBp": 7500,
         "bonusBp": 0,
@@ -1131,12 +1137,12 @@
       {
         "t": "turn",
         "round": 5,
-        "creature": "00000000-0000-4000-8300-000000000020"
+        "creature": "00000000-0000-4000-8300-000000000021"
       },
       {
         "t": "hit",
         "round": 5,
-        "creature": "00000000-0000-4000-8300-000000000020",
+        "creature": "00000000-0000-4000-8300-000000000021",
         "damage": 3,
         "matchupBp": 15000,
         "bonusBp": 0,
@@ -1152,9 +1158,9 @@
     "names": {
       "boss": "Slag Tyrant",
       "creatures": {
-        "00000000-0000-4000-8300-000000000019": "Sproutle",
-        "00000000-0000-4000-8300-000000000020": "Splashet",
-        "00000000-0000-4000-8300-000000000021": "Cindle"
+        "00000000-0000-4000-8300-000000000020": "Sproutle",
+        "00000000-0000-4000-8300-000000000021": "Splashet",
+        "00000000-0000-4000-8300-000000000022": "Cindle"
       },
       "players": {
         "p1": "Player 8"
@@ -1233,7 +1239,7 @@
     }
   },
   "summary": {
-    "id": "00000000-0000-4000-8300-000000000018",
+    "id": "00000000-0000-4000-8300-000000000019",
     "day": "2027-01-16",
     "attempt": 1,
     "depth": 14,
@@ -1246,7 +1252,7 @@
     "createdAt": 1800100800000,
     "team": [
       {
-        "id": "00000000-0000-4000-8300-000000000019",
+        "id": "00000000-0000-4000-8300-000000000020",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -1256,7 +1262,7 @@
         "hpEnd": 252
       },
       {
-        "id": "00000000-0000-4000-8300-000000000020",
+        "id": "00000000-0000-4000-8300-000000000021",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -1266,7 +1272,7 @@
         "hpEnd": 205
       },
       {
-        "id": "00000000-0000-4000-8300-000000000021",
+        "id": "00000000-0000-4000-8300-000000000022",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
@@ -1413,27 +1419,34 @@
       }
     ],
     "rewards": {
-      "bait": 6,
-      "essence": 4,
+      "bait": 8,
+      "essence": 5,
       "parts": {
+        "ember-shard": 2,
         "glimmer": 1,
-        "scrap": 7
+        "scrap": 26
       },
       "gear": [
         {
-          "id": "00000000-0000-4000-8300-000000000022",
-          "baseId": "cinder-charm",
-          "rarity": "epic",
+          "id": "00000000-0000-4000-8300-000000000023",
+          "baseId": "ember-muffler",
+          "rarity": "common",
           "itemLevel": 11
+        },
+        {
+          "id": "00000000-0000-4000-8300-000000000024",
+          "baseId": "cinder-charm",
+          "rarity": "common",
+          "itemLevel": 10
         }
       ],
       "converted": [],
-      "supplies": ["satchel-good"],
+      "supplies": ["map-scrap-good"],
       "landmark": true,
       "streak": null,
       "experience": [
         {
-          "creatureId": "00000000-0000-4000-8300-000000000019",
+          "creatureId": "00000000-0000-4000-8300-000000000020",
           "gained": 305,
           "treat": false,
           "levelBefore": 15,
@@ -1446,7 +1459,7 @@
           "dayEffects": []
         },
         {
-          "creatureId": "00000000-0000-4000-8300-000000000020",
+          "creatureId": "00000000-0000-4000-8300-000000000021",
           "gained": 305,
           "treat": false,
           "levelBefore": 15,
@@ -1459,7 +1472,7 @@
           "dayEffects": []
         },
         {
-          "creatureId": "00000000-0000-4000-8300-000000000021",
+          "creatureId": "00000000-0000-4000-8300-000000000022",
           "gained": 305,
           "treat": false,
           "levelBefore": 15,
@@ -1489,14 +1502,14 @@
     ],
     "pack": {
       "found": {
-        "bait": 6,
-        "essence": 4,
-        "scrap": 7
+        "bait": 8,
+        "essence": 5,
+        "scrap": 26
       },
       "kept": {
-        "bait": 6,
-        "essence": 4,
-        "scrap": 7
+        "bait": 8,
+        "essence": 5,
+        "scrap": 26
       }
     },
     "keepsakes": [
@@ -1771,7 +1784,7 @@
           "loot": {
             "bait": 1,
             "essence": 0,
-            "scrap": 0
+            "scrap": 1
           },
           "supply": true
         },
@@ -1799,7 +1812,7 @@
           "loot": {
             "bait": 1,
             "essence": 0,
-            "scrap": 0
+            "scrap": 1
           }
         },
         {
@@ -1839,7 +1852,7 @@
           "loot": {
             "bait": 0,
             "essence": 1,
-            "scrap": 1
+            "scrap": 3
           }
         },
         {
@@ -1854,8 +1867,8 @@
           },
           "gear": [
             {
-              "baseId": "cinder-charm",
-              "rarity": "epic",
+              "baseId": "ember-muffler",
+              "rarity": "common",
               "itemLevel": 11
             }
           ]
@@ -1879,7 +1892,7 @@
           "loot": {
             "bait": 2,
             "essence": 0,
-            "scrap": 0
+            "scrap": 2
           }
         },
         {
@@ -1893,7 +1906,7 @@
           "loot": {
             "bait": 2,
             "essence": 0,
-            "scrap": 0
+            "scrap": 2
           }
         },
         {
@@ -1905,9 +1918,9 @@
           "foeHpEnd": 0,
           "foeHpMax": 898,
           "loot": {
-            "bait": 0,
+            "bait": 2,
             "essence": 0,
-            "scrap": 2
+            "scrap": 8
           },
           "keepsake": {
             "id": "lullaby-bell",
@@ -1925,8 +1938,8 @@
           "foeHpMax": 1061,
           "loot": {
             "bait": 0,
-            "essence": 1,
-            "scrap": 2
+            "essence": 2,
+            "scrap": 7
           }
         },
         {
@@ -1939,7 +1952,13 @@
             "essence": 0,
             "scrap": 0
           },
-          "gear": []
+          "gear": [
+            {
+              "baseId": "cinder-charm",
+              "rarity": "common",
+              "itemLevel": 10
+            }
+          ]
         }
       ],
       "undercroft": [
@@ -2078,7 +2097,7 @@
     "canRun": false,
     "blocked": "already_run",
     "last": {
-      "id": "00000000-0000-4000-8300-000000000018",
+      "id": "00000000-0000-4000-8300-000000000019",
       "day": "2027-01-16",
       "attempt": 1,
       "depth": 14,
@@ -2091,7 +2110,7 @@
       "createdAt": 1800100800000,
       "team": [
         {
-          "id": "00000000-0000-4000-8300-000000000019",
+          "id": "00000000-0000-4000-8300-000000000020",
           "name": "Sproutle",
           "speciesId": "sproutle",
           "element": "grove",
@@ -2101,7 +2120,7 @@
           "hpEnd": 252
         },
         {
-          "id": "00000000-0000-4000-8300-000000000020",
+          "id": "00000000-0000-4000-8300-000000000021",
           "name": "Splashet",
           "speciesId": "splashet",
           "element": "tide",
@@ -2111,7 +2130,7 @@
           "hpEnd": 205
         },
         {
-          "id": "00000000-0000-4000-8300-000000000021",
+          "id": "00000000-0000-4000-8300-000000000022",
           "name": "Cindle",
           "speciesId": "cindle",
           "element": "ember",
@@ -2258,27 +2277,34 @@
         }
       ],
       "rewards": {
-        "bait": 6,
-        "essence": 4,
+        "bait": 8,
+        "essence": 5,
         "parts": {
+          "ember-shard": 2,
           "glimmer": 1,
-          "scrap": 7
+          "scrap": 26
         },
         "gear": [
           {
-            "id": "00000000-0000-4000-8300-000000000022",
-            "baseId": "cinder-charm",
-            "rarity": "epic",
+            "id": "00000000-0000-4000-8300-000000000023",
+            "baseId": "ember-muffler",
+            "rarity": "common",
             "itemLevel": 11
+          },
+          {
+            "id": "00000000-0000-4000-8300-000000000024",
+            "baseId": "cinder-charm",
+            "rarity": "common",
+            "itemLevel": 10
           }
         ],
         "converted": [],
-        "supplies": ["satchel-good"],
+        "supplies": ["map-scrap-good"],
         "landmark": true,
         "streak": null,
         "experience": [
           {
-            "creatureId": "00000000-0000-4000-8300-000000000019",
+            "creatureId": "00000000-0000-4000-8300-000000000020",
             "gained": 305,
             "treat": false,
             "levelBefore": 15,
@@ -2291,7 +2317,7 @@
             "dayEffects": []
           },
           {
-            "creatureId": "00000000-0000-4000-8300-000000000020",
+            "creatureId": "00000000-0000-4000-8300-000000000021",
             "gained": 305,
             "treat": false,
             "levelBefore": 15,
@@ -2304,7 +2330,7 @@
             "dayEffects": []
           },
           {
-            "creatureId": "00000000-0000-4000-8300-000000000021",
+            "creatureId": "00000000-0000-4000-8300-000000000022",
             "gained": 305,
             "treat": false,
             "levelBefore": 15,
@@ -2334,14 +2360,14 @@
       ],
       "pack": {
         "found": {
-          "bait": 6,
-          "essence": 4,
-          "scrap": 7
+          "bait": 8,
+          "essence": 5,
+          "scrap": 26
         },
         "kept": {
-          "bait": 6,
-          "essence": 4,
-          "scrap": 7
+          "bait": 8,
+          "essence": 5,
+          "scrap": 26
         }
       },
       "keepsakes": [
@@ -2616,7 +2642,7 @@
             "loot": {
               "bait": 1,
               "essence": 0,
-              "scrap": 0
+              "scrap": 1
             },
             "supply": true
           },
@@ -2644,7 +2670,7 @@
             "loot": {
               "bait": 1,
               "essence": 0,
-              "scrap": 0
+              "scrap": 1
             }
           },
           {
@@ -2684,7 +2710,7 @@
             "loot": {
               "bait": 0,
               "essence": 1,
-              "scrap": 1
+              "scrap": 3
             }
           },
           {
@@ -2699,8 +2725,8 @@
             },
             "gear": [
               {
-                "baseId": "cinder-charm",
-                "rarity": "epic",
+                "baseId": "ember-muffler",
+                "rarity": "common",
                 "itemLevel": 11
               }
             ]
@@ -2724,7 +2750,7 @@
             "loot": {
               "bait": 2,
               "essence": 0,
-              "scrap": 0
+              "scrap": 2
             }
           },
           {
@@ -2738,7 +2764,7 @@
             "loot": {
               "bait": 2,
               "essence": 0,
-              "scrap": 0
+              "scrap": 2
             }
           },
           {
@@ -2750,9 +2776,9 @@
             "foeHpEnd": 0,
             "foeHpMax": 898,
             "loot": {
-              "bait": 0,
+              "bait": 2,
               "essence": 0,
-              "scrap": 2
+              "scrap": 8
             },
             "keepsake": {
               "id": "lullaby-bell",
@@ -2770,8 +2796,8 @@
             "foeHpMax": 1061,
             "loot": {
               "bait": 0,
-              "essence": 1,
-              "scrap": 2
+              "essence": 2,
+              "scrap": 7
             }
           },
           {
@@ -2784,7 +2810,13 @@
               "essence": 0,
               "scrap": 0
             },
-            "gear": []
+            "gear": [
+              {
+                "baseId": "cinder-charm",
+                "rarity": "common",
+                "itemLevel": 10
+              }
+            ]
           }
         ],
         "undercroft": [
@@ -2910,9 +2942,9 @@
       }
     },
     "lastTeam": [
-      "00000000-0000-4000-8300-000000000019",
       "00000000-0000-4000-8300-000000000020",
-      "00000000-0000-4000-8300-000000000021"
+      "00000000-0000-4000-8300-000000000021",
+      "00000000-0000-4000-8300-000000000022"
     ],
     "draftTeam": null,
     "map": {

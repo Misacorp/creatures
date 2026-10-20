@@ -803,10 +803,16 @@ export const RULES = {
       good: { fromDepth: 4, baseBp: 1_500, perDepthBp: 400, maxBp: 5_000 },
       great: { fromDepth: 12, baseBp: 500, perDepthBp: 200, maxBp: 2_500 },
     },
-    /** Chance (basis points) of one shard of the floor boss's element when the boss room is cleared. */
-    bossShardBp: 6_000,
-    /** Extra for clearing every room: Essence, and a chance (basis points) at a gear drop. */
-    fullClear: { essence: 0, gearBp: 1_500 },
+    /**
+     * Shards of the floor boss's element when the boss room is cleared, in basis points: a value over 10000
+     * is that many sure shards plus a chance of one more (15000 is one and a half on average).
+     */
+    bossShardBp: 15_000,
+    /**
+     * Extra for clearing every room: Essence, and a chance (basis points) at a gear drop (10000: every
+     * full clear drops one piece, rolled by the dungeon's gear odds).
+     */
+    fullClear: { essence: 0, gearBp: 10_000 },
     /**
      * Gear odds of a dungeon drop (basis points; the rest is common): rare and epic start at `baseBp`
      * at depth 1, grow by `perDepthBp` for every depth above 1 and stop at `maxBp`. A landmark drop
@@ -869,14 +875,15 @@ export const RULES = {
     /**
      * What each kind of room puts in the run's pack when it is cleared (the pack is at risk; the
      * run's supply never goes in it). Mystery rooms pay by the option picked. `boss` is the boss
-     * chest's Essence and scrap; its shard and gear chances are the keys above. Starting values: the
-     * simulator tunes them so a full clear pays about what a three-room run did.
+     * chest's Essence and scrap; its shard and gear chances are the keys above. B-024 (2026-10-20, Misa): a
+     * full clear of the main map pays about 1.5 crafts of parts (10 scrap on the safe path, 1.5 shards)
+     * and one gear piece, and the choices (elites, risky mystery options, the Undercroft) pay more.
      */
     loot: {
-      fight: { bait: 1, essence: 0, scrap: 0 },
-      elite: { bait: 0, essence: 0, scrap: 1 },
-      cache: { bait: 1, essence: 0, scrap: 1 },
-      boss: { bait: 0, essence: 1, scrap: 1 },
+      fight: { bait: 1, essence: 0, scrap: 1 },
+      elite: { bait: 1, essence: 0, scrap: 4 },
+      cache: { bait: 1, essence: 0, scrap: 3 },
+      boss: { bait: 0, essence: 1, scrap: 3 },
     },
     /**
      * A defeat keeps this share of the pack, each amount rounded up (1 Bait stays 1, 3 scrap becomes
@@ -919,15 +926,15 @@ export const RULES = {
       /** A level's map: the same weights as the main map's rooms (`map.kinds`), with these caps per level. */
       map: { maxElites: 2, maxCaches: 1, maxMysteries: 2 },
       /** The epic fight: one normal foe at boss strength (basis points of its depth-scaled numbers) and what it pays into the pack. */
-      epic: { hpBp: 16_000, atkBp: 13_000, loot: { bait: 0, essence: 1, scrap: 2 } },
+      epic: { hpBp: 16_000, atkBp: 13_000, loot: { bait: 0, essence: 1, scrap: 5 } },
       /**
        * The keeper's chest: Essence and scrap into the pack, a `gearBp` chance of a piece with
        * `rareBonusBp` and `epicBonusBp` added to the dungeon's gear odds and `itemLevelBonus` item levels more.
        */
       chest: {
-        essence: 1,
-        scrap: 2,
-        gearBp: 4_000,
+        essence: 2,
+        scrap: 7,
+        gearBp: 8_000,
         rareBonusBp: 1_500,
         epicBonusBp: 500,
         itemLevelBonus: 2,

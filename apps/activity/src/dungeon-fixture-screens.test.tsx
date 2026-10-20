@@ -360,8 +360,8 @@ describe('the camp, with the real answers', () => {
     const text = visibleText(root);
     expect(text).toContain('Standing creatures heal 40% HP.');
     expect(text).toContain('Head home with your pack');
-    expect(byName(root, 'span', 'Bait: 2')).toHaveLength(1);
-    expect(byName(root, 'span', 'Scrap: 1')).toHaveLength(1);
+    expect(byName(root, 'span', 'Bait: 1')).toHaveLength(1);
+    expect(byName(root, 'span', 'Scrap: 5')).toHaveLength(1);
     expect(text).toContain('At risk');
   });
 
@@ -760,7 +760,7 @@ describe('the Undercroft, with the real answers', () => {
     const card = visibleText(root);
     expect(card).toContain('Depth 15 unlocked');
     expect(card).toContain('Banked now');
-    expect(card).toContain('Cinder Charm');
+    expect(card).toContain('Ember Muffler');
     expect(card).toContain('Still at risk');
     expect(byName(root, 'span', 'Essence: 3')).toHaveLength(2);
     expect(card).toContain('4 rooms with a floor boss at the end. Foes are from depth 15.');

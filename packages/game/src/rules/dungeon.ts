@@ -304,8 +304,12 @@ export function rollDungeonLoot(
   const parts: PartsBundle = {};
   const gear: DungeonLoot['gear'] = [];
   const supplies: string[] = [];
-  if (payout.bossCleared && chance(rng, RULES.dungeon.bossShardBp, 10_000)) {
-    parts[shardOf(bossElement)] = 1;
+  if (payout.bossCleared) {
+    // Like the expeditions' loot chances: a value over 10000 is that many sure shards plus a chance of one more.
+    const sure = Math.floor(RULES.dungeon.bossShardBp / 10_000);
+    const extra = RULES.dungeon.bossShardBp % 10_000;
+    const shards = sure + (extra > 0 && chance(rng, extra, 10_000) ? 1 : 0);
+    if (shards > 0) parts[shardOf(bossElement)] = shards;
   }
   if (payout.fullClear) {
     const lucky = chance(rng, RULES.dungeon.fullClear.gearBp, 10_000);
