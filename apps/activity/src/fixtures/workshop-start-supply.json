@@ -165,6 +165,7 @@
           "atk": 61,
           "spd": 42
         },
+        "dodgeBp": 0,
         "gear": [],
         "busy": {
           "kind": "job",
@@ -244,6 +245,7 @@
           "atk": 42,
           "spd": 46
         },
+        "dodgeBp": 0,
         "gear": [],
         "busy": null,
         "ability": {
@@ -320,6 +322,7 @@
           "atk": 29,
           "spd": 23
         },
+        "dodgeBp": 0,
         "gear": [],
         "busy": null,
         "ability": {
@@ -413,6 +416,7 @@
           "atk": 28,
           "spd": 16
         },
+        "dodgeBp": 0,
         "gear": [],
         "busy": null,
         "ability": {

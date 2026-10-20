@@ -349,6 +349,8 @@ export interface WornGear {
 export interface CreatureGearFields {
   /** The creature's stats with the worn items folded in; equal to `stats` without gear. */
   statsWithGear: { hp: number; atk: number; spd: number };
+  /** Flat dodge from the worn gear and talents, in basis points (0 when none). */
+  dodgeBp: number;
   /** The items it wears, at most one per slot. */
   gear: WornGear[];
   /** Expedition or job; null when idle. `away` stays true for expeditions only. */

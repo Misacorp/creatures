@@ -506,6 +506,7 @@ function isCreature(value: unknown): value is Creature {
   const evolution = value['evolution'];
   return (
     isStats(value['statsWithGear']) &&
+    isInt(value['dodgeBp']) &&
     isCreatureGear(value['gear']) &&
     isBusy(value['busy']) &&
     isStr(value['id']) &&

@@ -104,6 +104,7 @@ function creature(over: Partial<Creature>): Creature {
     quirk: 'hums-quietly',
     stats: { hp: 1, atk: 1, spd: 1 },
     statsWithGear: { hp: 1, atk: 1, spd: 1 },
+    dodgeBp: 0,
     gear: [],
     busy: null,
     exp: 0,
