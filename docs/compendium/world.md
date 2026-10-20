@@ -1,6 +1,6 @@
 # World: the setting
 
-Status: 2026-10-13. Canon for names, meaning and tone. Read `README.md` first for the tags: `(content)`, `(design)`, `(inferred)` and `(compendium detail, not shipped)`.
+Status: 2026-10-20 (Mire shipped; the rest as of 2026-10-13). Canon for names, meaning and tone. Read `README.md` first for the tags: `(content)`, `(design)`, `(inferred)` and `(compendium detail, not shipped)`.
 
 ## 1. The shape of the world
 
@@ -26,17 +26,18 @@ Status: 2026-10-13. Canon for names, meaning and tone. Read `README.md` first fo
 
 Use these words. They are what the shipped text already uses.
 
-| Word                                     | Meaning                                            | Source                                     |
-| ---------------------------------------- | -------------------------------------------------- | ------------------------------------------ |
-| explorer                                 | the player, out in the wild                        | glossary, journal                          |
-| trip, expedition                         | a creature out in a place                          | glossary "away", "destination"             |
-| creature                                 | any team member                                    | throughout                                 |
-| beast                                    | a wild creature met on a trip                      | journal ("Some beasts take their turn...") |
-| folk, pups, wardens, mice, cats, diggers | informal names for kinds of creature               | journal, species-lore                      |
-| boss, foe, room                          | fights: a raid boss, a dungeon foe, a dungeon room | bosses, dungeon-foes                       |
-| finale                                   | the live fight at the end of a raid week           | glossary "finale"                          |
-| push on                                  | a choice to stay out longer at the end of a trip   | glossary "push-on"                         |
-| the wheel                                | the four elements in a loop                        | journal ("any-the-wheel")                  |
+| Word                                     | Meaning                                              | Source                                     |
+| ---------------------------------------- | ---------------------------------------------------- | ------------------------------------------ |
+| explorer                                 | the player, out in the wild                          | glossary, journal                          |
+| trip, expedition                         | a creature out in a place                            | glossary "away", "destination"             |
+| creature                                 | any team member                                      | throughout                                 |
+| beast                                    | a wild creature met on a trip                        | journal ("Some beasts take their turn...") |
+| folk, pups, wardens, mice, cats, diggers | informal names for kinds of creature                 | journal, species-lore                      |
+| boss, foe, room                          | fights: a raid boss, a dungeon foe, a dungeon room   | bosses, dungeon-foes                       |
+| finale                                   | the live fight at the end of a raid week             | glossary "finale"                          |
+| push on                                  | a choice to stay out longer at the end of a trip     | glossary "push-on"                         |
+| the wheel                                | the four older elements in a loop                    | journal ("any-the-wheel")                  |
+| the element chart                        | who deals more or less damage to whom, wheel and all | design (`speed-and-dodge.md` section 4)    |
 
 ## 2. The four elements as forces
 
@@ -44,7 +45,7 @@ The four elements are forces of the world, not just colours. The journal states 
 
 ### The wheel (content)
 
-Each element is **strong against** exactly one other. `(content: elements.json)`
+Each element is **strong against** exactly one other. `(content: element-chart.json)`
 
 | Element | Force        | Strong against | Weak to (beaten by) |
 | ------- | ------------ | -------------- | ------------------- |
@@ -78,6 +79,34 @@ A cashed mark is used up. The next hit leaves a new one. Only a Setter of anothe
 - **Spark** is quick, bright and short-lived. Its creatures strike first and fast. `(content: Zipmouse, Stormray, Voltaro, Tempestray roles)`
 - **Lightning and water** share a story. Overload (a spark on a wet creature) and Steam (water on heat) are the two reactions the journal tells most often. `(content: journal.json, count of two each; the reading is inferred)`
 
+### Mire: the fifth force, and how the wheel became a chart
+
+Status: design, not shipped (`(design: speed-and-dodge.md section 5)`). Everything below is `(design)` or `(compendium detail, not shipped)`.
+
+**Mire is patience. It sticks, it holds, it keeps.** `(design)` It is mud, tar, bog, peat and silt. Its colours are peat brown, ochre and tar black with an oily rainbow sheen. Its creatures are slow and sturdy. The bog keeps old things: a cart wheel, a gate, a lantern. `(design, compendium detail, not shipped)`
+
+**The wheel was never the whole world.** `(compendium detail, not shipped)` For as long as explorers kept notes, they drew the elements as a loop, because that is what four things do when each beats one other. Then someone walked into the Sunken Fen and wrote down that the mud drank a flame, and that the flame, in turn, lit the swamp gas. Two elements beat each other: the loop had a chord across it, and then a fifth point. The explorers did not throw out the wheel. They gave it a new name, the **element chart**: a table of who is strong against whom, with the old loop as its first four lines. The journal keeps the new line: "the wheel was never the whole world." (Draft text in `docs/design/mire-content-drafts.md`, page `any-the-chart`.) New elements can be added to the chart without breaking the old ones.
+
+| Pair                                            | Reading                                   | Source     |
+| ----------------------------------------------- | ----------------------------------------- | ---------- |
+| Mire against Ember                              | Damp smothers fire.                       | `(design)` |
+| Ember against Mire                              | Swamp gas goes up.                        | `(design)` |
+| Tide against Mire                               | It is already wet, so a wave does little. | `(design)` |
+| Grove or Spark with Mire, and Mire against Tide | Nothing special happens.                  | `(design)` |
+
+**The mark and the reactions** `(design)`:
+
+| Element | Mark it leaves | Cashed in by           | Reaction               | What it means in-world `(compendium detail, not shipped)`                                                                                                                         |
+| ------- | -------------- | ---------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mire    | Muddied        | Ember                  | Flare                  | The swamp gas in the mud catches a spark and goes up in one great breath. It also burns the Mired mud off the boss: keeping the mud keeps the boss slow, and burning it pays out. |
+| Ember   | Scorched       | Tide, and now Mire too | Steam, and now Smother | Water on a hot rock is Steam. Wet earth on a fire is Smother: no steam, just a soft sound and the fire is gone, and the mud sticks to whatever it covered.                        |
+
+**The derived fact still holds** `(design)`: every reaction pairs an element with the mark of the element it beats. Mire beats Ember, so Mire cashes Scorched (Smother). Ember beats Mire, so Ember cashes Muddied (Flare). Ember and Mire are the first pair that cash each other's marks.
+
+**Mired** `(design)` is the first status effect a boss can put on your creatures and your creatures can put on a boss: mud that holds on to the feet. It makes a fighter slower and weaker for a few turns. It is not a wound; the fen only holds on. `(compendium detail, not shipped)`
+
+**Mire as a force** `(compendium detail, not shipped)`: Grove is living patience, which grows. Mire is patience that keeps: it does not grow, it holds. Where Grove shelters, Mire keeps. Where Tide washes, Mire stays put. Its creatures are guards and debuffers, the ones who make a fight slower, which is how patience wins. Together with Ember it forms the first pair of elements that are strong against each other.
+
 ### Balance as a world idea (inferred)
 
 Nothing in the content says any element is good. Every element is strong against one and weak to another, and the reactions reward teams that use the loop. A world-level reading: no force wins for good; the loop keeps turning. The "wheel" line `(content)` supports this.
@@ -97,6 +126,7 @@ Nothing in the content says any element is good. Every element is strong against
 - **Thornmother** is tied to the Verdant Hollow. The journal calls her "the old queen of thorns", and the Hollow's pages are about waiting and listening trees. `(inferred from journal verdant-both-ends)`
 - **Storm Sovereign** is tied to Storm Ridge. The journal's "king of the clouds" page is set there. `(content: journal.json storm-lightning-rod)` The Sovereign is the Ridge's king; Tempestray's "storms" are his weather. `(inferred)`
 - **Tidal Colossus** and **Cinder Wyrm** are not placed by the content. Tidal Colossus "rises from the deep" `(content: bosses-lore.json)`, so it sleeps under the Tidepools or the Moonlit Reef `(inferred)`. Cinder Wyrm is "black stone and living magma", which fits the Ember Caves `(inferred)`.
+- **Old Bogback** (Mire, design, not shipped) is the oldest creature of the Sunken Fen: a huge toad half sunk in the peat, the one the fen's smaller toads and leeches grew up near. `(compendium detail, not shipped)` See `bosses.md`.
 - The **floor bosses** of the daily dungeon are smaller echoes of the raid bosses. Slag Tyrant is "king of a cooled forge" and Bramble Matron is "the old hedge that all the little hedges follow". `(content: dungeon-foes.json)` They are lesser cousins of the raid bosses `(inferred)`. See `dungeon.md` and `bosses.md`.
 
 ## 4. Recurring motifs
@@ -116,6 +146,7 @@ Use these to keep new work in the same voice. Each motif has a shipped example.
 11. **Calm and sudden.** Coralynx "moves in quiet, sudden bursts" and "strikes from the shadows". Pyrelynx "waits for the perfect moment". `(content: species-lore.json)`
 12. **Fog and cover.** Mistnewt, Fogwyrm and the Fog room modifier all use mist as cover `(content)`. The Reef's "fog on the reef" lets friends hide `(content: journal.json reef-fog-newt)`.
 13. **Remembering.** The silver tide is gone by morning "and nobody remembers the way" `(content: journal.json reef-silver-tide)`. Bosses "have a long memory" `(content)`. The world forgets some things and keeps others.
+14. **Keeping.** `(design, compendium detail, not shipped)` The bog keeps old things, and Mire's whole nature is to hold on: a cart wheel, a lantern, a creature's feet. It joins "Remembering" (motif 13): the world forgets some things, and the fen is where it keeps the rest.
 
 ## 5. Things the content does not say
 

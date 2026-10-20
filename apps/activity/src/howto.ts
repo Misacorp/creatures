@@ -1,60 +1,18 @@
 /**
  * What the How to play page draws, worked out from the content and the rules so the pictures can
- * never disagree with the game: the reaction loop, example creatures, the raid week and the
+ * never disagree with the game: example creatures, the raid week and the
  * expedition trips and the rooms of the dungeon. Pure functions; `HowToPlayArt.tsx` draws them.
  */
 import {
   RULES,
   content,
   dungeonContent,
-  type ContentPack,
   type CreatureSpecies,
   type DungeonFoeDef,
   type Role,
 } from '@creatures/game';
 import { eventTitle } from './raid-time';
 import type { RaidEventId } from './raid-api';
-
-/** One arrow of the reaction loop: a mark's element, the reaction, and who cashes it in. */
-export interface LoopStep {
-  /** The element whose hits leave the mark. */
-  from: string;
-  markId: string;
-  markName: string;
-  reactionId: string;
-  reactionName: string;
-  /** The element whose hit sets the reaction off (the next node of the loop). */
-  to: string;
-}
-
-/**
- * The reactions as a loop of elements, starting at Tide (or the first mark's element): each step
- * goes from an element to the element that cashes its mark in. With the shipped content it is
- * Tide, Spark, Grove, Ember and back to Tide. Stops if the content does not close into a loop.
- */
-export function reactionLoop(reactions: ContentPack['reactions'] = content.reactions): LoopStep[] {
-  const start = reactions.some((r) => r.markElement === 'tide')
-    ? 'tide'
-    : reactions[0]?.markElement;
-  if (start === undefined) return [];
-  const steps: LoopStep[] = [];
-  let current = start;
-  for (let n = 0; n < reactions.length; n++) {
-    const r = reactions.find((x) => x.markElement === current);
-    if (r === undefined) break;
-    steps.push({
-      from: current,
-      markId: r.markId,
-      markName: r.markName,
-      reactionId: r.id,
-      reactionName: r.name,
-      to: r.triggerElement,
-    });
-    current = r.triggerElement;
-    if (current === start) break;
-  }
-  return steps;
-}
 
 /** The species that shows a role: the first catchable stage-1 species of that role in the content. */
 export function exampleSpecies(

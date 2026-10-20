@@ -276,7 +276,9 @@ export function boardKeys(row: readonly RowSlotView[], length: number): (string 
 
 /** What a boss's `turnOrder` text says, as the engine's value (anything else counts as left to right). */
 export function parseTurnOrder(text: string): TurnOrder {
-  return text === 'right_to_left' || text === 'speed' ? text : 'left_to_right';
+  return text === 'right_to_left' || text === 'speed' || text === 'serpentine'
+    ? text
+    : 'left_to_right';
 }
 
 /**

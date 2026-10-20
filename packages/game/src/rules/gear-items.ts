@@ -14,6 +14,7 @@
  * reactions, wards, roles, utility).
  */
 import { content } from '../content';
+import { strongAgainst, strongOver } from '../content/element-chart';
 import { eligibleBases, gearBase, gearContent, gearLine, gearSet } from '../content/gear';
 import {
   CHANCE_FIELDS,
@@ -517,6 +518,10 @@ export interface GearMods {
   boostBp?: number;
   mendBp?: number;
   lingerRounds?: number;
+  /** Status effects: weaker debuffs on the wearer (a share), and debuffs it applies: more power, more turns. */
+  debuffResistBp?: number;
+  debuffPowerBp?: number;
+  debuffDurationTurns?: number;
   ignoreSilence?: 0 | 1;
   /** Cover a Guard's cover on it gains (the position line Sheltered). */
   shelterBp?: number;
@@ -533,6 +538,9 @@ export interface GearMods {
   secondWindBp?: number;
   echoBp?: number;
   sidestepBp?: number;
+  /** Dodge (`combat-rules.md` 14): flat points on every dodgeable hit (Light-footed), and on area hits only (Sidestep, with dodge on). */
+  dodgeBp?: number;
+  areaDodgeBp?: number;
   steadyPawsBp?: number;
   warmHeartBp?: number;
   quickRemarkBp?: number;
@@ -549,6 +557,10 @@ export interface GearMods {
   secondBreathBp?: number;
   patientBp?: number;
   sharedWarmthBp?: number;
+  /** On-dodge lines (`combat-rules.md` 12): they fire when the wearer dodges a boss hit. */
+  riposteBp?: number;
+  momentumBp?: number;
+  slipstreamBp?: number;
 }
 
 /** What gear does outside the fight, for the wearer (basis points; a time reduction is a positive number). */
@@ -628,7 +640,7 @@ export interface WornEffects {
   hpItem: number;
   critChanceBp: number;
   critDamageBp: number;
-  /** Speed, more (a share; only a talent gives it). */
+  /** Speed, more (a share): a Fleet line or the Zoomies talent. */
   spdBp: number;
   /** The modifier sheet; empty when no line fills it. */
   mods: GearMods;
@@ -639,25 +651,11 @@ export interface WornEffects {
   idleTalents: string[];
 }
 
-/** The element that `element` is strong against (Tide beats Ember). */
-function beatenBy(element: Element): Element {
-  const found = content.elements.find((e) => e.id === element);
-  if (found === undefined) throw new Error(`unknown element "${element}"`);
-  return found.strongAgainst;
-}
-
-/** The element that is strong against `element` (Spark beats Tide). */
-function beaterOf(element: Element): Element {
-  const found = content.elements.find((e) => e.strongAgainst === element);
-  if (found === undefined) throw new Error(`nothing beats "${element}"`);
-  return found.id;
-}
-
-/** The id of the reaction an element sets off (Tide: steam). */
-function reactionOf(element: Element): string {
-  const found = content.reactions.find((r) => r.triggerElement === element);
-  if (found === undefined) throw new Error(`no reaction is set off by "${element}"`);
-  return found.id;
+/** The ids of the reactions an element sets off (Tide: steam; Mire later adds a second for Ember). */
+function reactionsOf(element: Element): string[] {
+  const found = content.reactions.filter((r) => r.triggerElement === element);
+  if (found.length === 0) throw new Error(`no reaction is set off by "${element}"`);
+  return found.map((r) => r.id);
 }
 
 type SheetNumeric =
@@ -680,6 +678,10 @@ type SheetNumeric =
   | 'coverBp'
   | 'boostBp'
   | 'mendBp'
+  | 'debuffResistBp'
+  | 'debuffPowerBp'
+  | 'debuffDurationTurns'
+  | 'areaDodgeBp'
   | (typeof CHANCE_FIELDS)[number]
   | Exclude<(typeof TRIGGER_FIELDS)[number], 'openingMark' | 'stubborn'>;
 
@@ -788,6 +790,8 @@ const CAPPED_AT_WHOLE = [
   'aimedBp',
   'reflectedBp',
   'chargedBp',
+  'debuffResistBp',
+  'areaDodgeBp',
   ...CHANCE_FIELDS,
   'stormWarningBp',
   'lastStandBp',
@@ -798,8 +802,8 @@ const CAPPED_SET: ReadonlySet<string> = new Set(CAPPED_AT_WHOLE);
 /**
  * Everything a creature's worn items give, summed. Lines that do nothing for the wearer (a Guard's
  * armor on a Support, an Attunement of another element) are listed in `idle` and add nothing. The
- * sheet's conditions are resolved here: an element Hunter becomes a bonus against the element it beats,
- * an element Ward a reduction against the element that beats it, a reaction line the bonus of that
+ * sheet's conditions are resolved here: an element Hunter becomes a bonus against every element it deals 150% to,
+ * an element Ward a reduction against every element that deals 150% to it, a reaction line the bonus of that
  * reaction, a position line the bonus beside a role. Pure and deterministic; no caps beyond the ones
  * the engine's sheet checks (a reduction stays below 100%, a pierce at most 100%, Lingering at most 3 rounds).
  *
@@ -854,6 +858,9 @@ export function wornEffects(
         } else if (effect.stat === 'hp') {
           if (effect.mode === 'pct') out.hpBp += value;
           else out.hpFlat += value;
+        } else if (effect.stat === 'spd') {
+          // Fleet: a share of the creature's Speed (folded like Zoomies, `applyGear`).
+          if (effect.mode === 'pct') out.spdBp += value;
         } else if (effect.stat === 'critChance') out.critChanceBp += value;
         else out.critDamageBp += value;
         break;
@@ -864,17 +871,23 @@ export function wornEffects(
         // Counted in the item's own stats (`itemStats`), not on the creature.
         break;
       case 'hunter': {
-        const foe = beatenBy(line.element as Element);
-        sheet.vsElementBp = addTo(sheet.vsElementBp, foe, value);
+        // Foes of every element the Hunter's element deals 150% to.
+        for (const foe of strongAgainst(content.elementChart, line.element as Element)) {
+          sheet.vsElementBp = addTo(sheet.vsElementBp, foe, value);
+        }
         break;
       }
       case 'ward': {
-        const foe = beaterOf(line.element as Element);
-        sheet.wardBp = addTo(sheet.wardBp, foe, value);
+        // Foes of every element that deals 150% to the Ward's element.
+        for (const foe of strongOver(content.elementChart, line.element as Element)) {
+          sheet.wardBp = addTo(sheet.wardBp, foe, value);
+        }
         break;
       }
       case 'reaction':
-        sheet.reactionBp = addTo(sheet.reactionBp, reactionOf(line.element as Element), value);
+        for (const id of reactionsOf(line.element as Element)) {
+          sheet.reactionBp = addTo(sheet.reactionBp, id, value);
+        }
         break;
       case 'besideRole':
         sheet.besideRoleBp = addTo(sheet.besideRoleBp, effect.role, value);
@@ -890,6 +903,10 @@ export function wornEffects(
           sheet.ignoreSilence = 1;
         } else if (effect.field === 'openingMark' || effect.field === 'stubborn') {
           sheet[effect.field] = 1;
+        } else if (effect.field === 'sidestepBp' && RULES.combat.dodge.enabled) {
+          // The one switch (`RULES.combat.dodge.enabled`): with dodge on, Sidestep is flat dodge against area
+          // hits; with it off the old chance (its own dice) stays. A stored fight with `sidestepBp` replays as it was.
+          addSheet('areaDodgeBp', value);
         } else {
           addSheet(effect.field, value);
         }
@@ -928,7 +945,9 @@ export function wornEffects(
         break;
       case 'fourElements':
         if (new Set(at.rowElements).size >= 4) {
-          sheet.reactionBp = addTo(sheet.reactionBp, reactionOf(wearer.element), value);
+          for (const id of reactionsOf(wearer.element)) {
+            sheet.reactionBp = addTo(sheet.reactionBp, id, value);
+          }
         }
         break;
       case 'sheltered':
@@ -973,6 +992,9 @@ export function wornEffects(
     if (!CAPPED_SET.has(field)) continue;
     const value = sheet[field] as number;
     (sheet as Record<string, number>)[field] = Math.min(10_000, value);
+  }
+  if (sheet.debuffDurationTurns !== undefined) {
+    sheet.debuffDurationTurns = Math.min(10, sheet.debuffDurationTurns);
   }
   out.rules.tinkersLuckBp = Math.min(10_000, out.rules.tinkersLuckBp);
   out.rules.secondLookBp = Math.min(10_000, out.rules.secondLookBp);
@@ -1064,6 +1086,32 @@ export function itemScore(
   return centi;
 }
 
+const DODGE_FIELDS: ReadonlySet<string> = new Set([
+  'dodgeBp',
+  'areaDodgeBp',
+  'riposteBp',
+  'momentumBp',
+  'slipstreamBp',
+]);
+const EFFECT_FIELDS: ReadonlySet<string> = new Set([
+  'debuffResistBp',
+  'debuffPowerBp',
+  'debuffDurationTurns',
+]);
+
+/**
+ * True for a line that does nothing in a fight while its rules switch is off: Fleet's Speed and the dodge
+ * lines need `RULES.combat.dodge.enabled`, the debuff lines `RULES.combat.effects.enabled`. Such a line
+ * scores 0, so "Equip best" and the simulator do not pick dead weight (and the score moves when the switch flips).
+ */
+function switchedOff(line: GearLine): boolean {
+  const effect = line.effect;
+  if (effect.kind === 'stat') return effect.stat === 'spd' && !RULES.combat.dodge.enabled;
+  if (effect.kind !== 'sheet') return false;
+  if (DODGE_FIELDS.has(effect.field)) return !RULES.combat.dodge.enabled;
+  return EFFECT_FIELDS.has(effect.field) && !RULES.combat.effects.enabled;
+}
+
 /**
  * The share of a creature's power one line adds, in hundredths of power (see `itemScore`): in full for
  * the wearer it is meant for, a quarter otherwise, 0 for a line that does nothing for the wearer or
@@ -1076,8 +1124,10 @@ export function lineScore(
   wearer: Wearer,
   powerCenti: number,
 ): number {
-  if (line.worth === 0 || !lineApplies(line, wearer)) return 0;
-  const v = line.unit === 'once' ? 10_000 : value;
+  if (line.worth === 0 || !lineApplies(line, wearer) || switchedOff(line)) return 0;
+  // Clinging counts turns, not basis points: each extra turn is worth a quarter of what a whole 100% line is.
+  const turns = line.effect.kind === 'sheet' && line.effect.field === 'debuffDurationTurns';
+  const v = line.unit === 'once' ? 10_000 : turns ? value * 2_500 : value;
   const meant =
     line.roles.length > 0 && !line.restricted
       ? line.roles.includes(wearer.role)

@@ -73,6 +73,8 @@ const HUE_BANDS: Record<string, [number, number][]> = {
     [40, 70],
     [235, 300],
   ],
+  // Peat browns and ochres.
+  mire: [[20, 50]],
 };
 
 function inBand(element: string, hex: string): boolean {
@@ -81,8 +83,8 @@ function inBand(element: string, hex: string): boolean {
 }
 
 describe('shipped lore', () => {
-  it('has an entry for every one of the 30 species, and nothing else', () => {
-    expect(content.creatures).toHaveLength(30);
+  it('has an entry for every one of the 34 species, and nothing else', () => {
+    expect(content.creatures).toHaveLength(34);
     expect(Object.keys(lore.species).sort()).toEqual(content.creatures.map((c) => c.id).sort());
     expect(Object.keys(lore.species)).toEqual(
       expect.arrayContaining(['lanternfin', 'hearthshell']),

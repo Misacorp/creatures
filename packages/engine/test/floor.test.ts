@@ -53,7 +53,7 @@ describe('the phase floor', () => {
     expect(r.perCreature.a?.contribution).toBe(100);
     expect(r.perPlayer.p1?.damage).toBe(100);
     expect(r.perPlayer.p1?.contribution).toBe(100);
-    expect(r.damageByElement).toEqual({ tide: 0, ember: 100, grove: 0, spark: 0 });
+    expect(r.damageByElement).toEqual({ tide: 0, ember: 100, grove: 0, spark: 0, mire: 0 });
     expect(r.bossHpStart - r.bossHpEnd).toBe(100);
     expect(r.perCreature.b?.damage).toBe(0);
   });

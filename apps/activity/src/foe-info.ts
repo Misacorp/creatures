@@ -5,6 +5,7 @@
  * is plain text.
  */
 import { content, dungeonContent, lore, type Gimmick } from '@creatures/game';
+import { foeDodgeText } from './dodge-view';
 import { gimmickText } from './raid-text';
 
 /** What the foe popover shows. */
@@ -18,6 +19,8 @@ export interface FoeInfo {
   hp: number;
   /** A line about it from the content (a foe's flavour, a boss's description), or null. */
   about: string | null;
+  /** Its dodge chance ("Dodge 2%") while dodge is on; null while it is off or the foe has no Speed. */
+  dodge: string | null;
   /** What it does, one line each: the basic attack first, then its tricks. */
   moves: readonly string[];
 }
@@ -44,6 +47,15 @@ function gimmicksOf(id: string, added: readonly Gimmick[]): Gimmick[] {
   const all: Gimmick[] = [...own];
   for (const g of added) if (!all.some((o) => o.id === g.id)) all.push(g);
   return all;
+}
+
+/** The foe's or boss's dodge ("Dodge 2%", from its base Speed) while dodge is on, else null. */
+export function foeDodge(id: string): string | null {
+  const baseSpd =
+    content.bosses.find((b) => b.id === id)?.baseSpd ??
+    dungeonContent.foes.find((f) => f.id === id)?.baseSpd;
+  const text = foeDodgeText(baseSpd);
+  return text === null ? null : `Dodge ${text}`;
 }
 
 /** The line about the foe from the content. */
@@ -74,6 +86,7 @@ export function foeInfoOf(args: {
     element: args.element ?? foeElement(id) ?? 'unknown',
     hp: args.hp,
     about: aboutOf(id),
+    dodge: foeDodge(id),
     moves: [
       ATTACK_LINE,
       ...gimmicksOf(id, args.added ?? []).map((g) => `${g.name}. ${gimmickText(g, wording)}`),

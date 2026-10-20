@@ -112,11 +112,13 @@ describe('lines and their tiers', () => {
     expect(lineIdle({ active: false })).toBe(true);
     expect(lineIdle({ active: true })).toBe(false);
     expect(lineIdle({ active: null })).toBe(false);
-    // Every line of the worn fixture items is at work; one marked as not is idle (an off-element Attunement).
+    // The worn fixture items' lines are at work, but for an off-element Attunement (a Charm of one element can
+    // sit on a creature of another); one marked as not is idle.
     const lines = gear.items.flatMap((i) => i.lines);
-    expect(lines.filter(lineIdle)).toEqual([]);
+    expect(lines.filter(lineIdle).every((l) => l.id.endsWith('-attunement'))).toBe(true);
     const off = { ...(lines[0] as (typeof lines)[number]), id: 'tide-attunement', active: false };
-    expect([...lines, off].filter(lineIdle).map((l) => l.id)).toEqual(['tide-attunement']);
+    expect([...lines, off].filter(lineIdle)).toHaveLength(lines.filter(lineIdle).length + 1);
+    expect(lineIdle(off)).toBe(true);
   });
 });
 

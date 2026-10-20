@@ -1,4 +1,4 @@
-import { itemOf } from '@creatures/game';
+import { content, itemOf } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { SlotMods } from '@creatures/engine';
 import { speciesOf, type OwnedCreature } from '../src/data';
@@ -26,9 +26,9 @@ const team = (mods: Record<string, SlotMods> = {}): OwnedCreature[] => [
 ];
 
 describe('fight-scored power', () => {
-  it('plays four bosses at each seed and gives whole numbers', () => {
+  it('plays every boss at each seed and gives whole numbers', () => {
     const p = fightPower(team(), 4);
-    expect(p.fights).toBe(4 * DEFAULT_SEEDS);
+    expect(p.fights).toBe(content.bosses.length * DEFAULT_SEEDS);
     expect(Number.isInteger(p.power)).toBe(true);
     expect(p.power).toBeGreaterThan(0);
     expect(p.survivalBp).toBeGreaterThanOrEqual(0);
@@ -41,7 +41,7 @@ describe('fight-scored power', () => {
     // A different seed text is a different set of fights, and repeats too.
     const c = fightPower(team(), 5, { seed: 'other' });
     expect(fightPower(team(), 5, { seed: 'other' })).toEqual(c);
-    expect(fightPower(team(), 5, { seeds: 1 }).fights).toBe(4);
+    expect(fightPower(team(), 5, { seeds: 1 }).fights).toBe(content.bosses.length);
   });
 
   it('rises with levels and moves with the boss rank', () => {

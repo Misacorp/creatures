@@ -1522,5 +1522,212 @@
       "Stands very still when the bloom is close",
       "Smells wonderful and pretends not to notice"
     ]
+  },
+  "mudlump": {
+    "description": "A squat lump of wet peat with a calm face. It takes its time, takes the hits, and never takes offence.",
+    "appearance": {
+      "silhouette": "Wide, low mound of peat with a stepped, lumpy top, short stubby legs and a flat bottom.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Peat Brown",
+          "hex": "#8a6238"
+        },
+        {
+          "name": "Mud Light",
+          "hex": "#b8864a"
+        },
+        {
+          "name": "Ochre Fleck",
+          "hex": "#d9a02e"
+        },
+        {
+          "name": "Belly Cream",
+          "hex": "#d9bd7e"
+        },
+        {
+          "name": "Bog Sheen",
+          "hex": "#4d9c8f"
+        }
+      ],
+      "features": [
+        "Round mound of peat that steps up in three lumps to a rounded top",
+        "Two big dark eyes with one white highlight each, set wide and calm",
+        "A few ochre flecks on its back, and one teal sheen of oil on the top lump",
+        "Cream belly patch, and short stubby legs half sunk in a puddle"
+      ],
+      "pose": "Sitting low and facing forward, as if it has been there for a hundred years.",
+      "always": ["The stepped, lumpy top", "Calm, wide-set eyes"],
+      "never": ["Spikes or sharp edges", "A hurried or angry look"]
+    },
+    "traits": [
+      "Calm and slow, never in a hurry",
+      "Takes hits without a fuss",
+      "Leaves round footprints in the mud",
+      "Naps in any warm puddle"
+    ]
+  },
+  "bogwarden": {
+    "description": "A broad, steady warden of the bog, with cattails on its head and tar on its arms. Whatever strikes it gets a little stuck.",
+    "appearance": {
+      "silhouette": "Broad, square body with a flat tar helm, two tall cattails on top and heavy plated arms.",
+      "size": "large",
+      "palette": [
+        {
+          "name": "Peat Brown",
+          "hex": "#8a6238"
+        },
+        {
+          "name": "Mud Light",
+          "hex": "#b8864a"
+        },
+        {
+          "name": "Tar Plate",
+          "hex": "#2a2230"
+        },
+        {
+          "name": "Cattail Brown",
+          "hex": "#6b3f22"
+        },
+        {
+          "name": "Reed Green",
+          "hex": "#7d8a3c"
+        }
+      ],
+      "features": [
+        "A flat helm of tar-black plates with a teal oily sheen",
+        "Two tall cattails growing from the helm, brown heads on green stems",
+        "Calm dark eyes with one white highlight each, under the helm",
+        "Heavy tar plates on both arms like old shoulder pads",
+        "Cream belly patch on a wide, steady body"
+      ],
+      "pose": "Standing square and facing forward, arms down, planted like a gatepost.",
+      "always": ["The cattails on the helm", "Tar plates on the arms"],
+      "never": ["Weapons or spikes", "A fierce face"],
+      "fromStage1": {
+        "keeps": [
+          "Peat brown body",
+          "Wide-set calm eyes",
+          "Cream belly patch",
+          "Teal sheen of oil"
+        ],
+        "changes": [
+          "The lumpy top becomes a flat tar helm",
+          "Two cattails sprout from the helm",
+          "Tar plates appear on both arms",
+          "Taller and broader, standing instead of sitting"
+        ]
+      }
+    },
+    "traits": [
+      "Steady as the bog itself",
+      "Stands in front without being asked",
+      "Collects reeds and old, smooth stones",
+      "Slow to move and slower to give way"
+    ]
+  },
+  "squelch": {
+    "description": "A small ochre frog that squelches when it walks and hums when it thinks nobody listens. Its croak makes big foes feel slow and heavy.",
+    "appearance": {
+      "silhouette": "Round, wide frog with two bulging brow bumps on top, a very wide mouth and short webbed feet.",
+      "size": "medium",
+      "palette": [
+        {
+          "name": "Ochre Hide",
+          "hex": "#c8962e"
+        },
+        {
+          "name": "Bright Ochre",
+          "hex": "#e8c068"
+        },
+        {
+          "name": "Dark Ochre",
+          "hex": "#8a5e1e"
+        },
+        {
+          "name": "Belly Cream",
+          "hex": "#f0dba0"
+        },
+        {
+          "name": "Tar Spot",
+          "hex": "#2a2230"
+        }
+      ],
+      "features": [
+        "Two round brow bumps on top of the head, lighter on the upper left",
+        "Big dark eyes with one white highlight each",
+        "A very wide, gentle smile",
+        "A few dark tar spots on its back",
+        "Cream belly patch"
+      ],
+      "pose": "Sitting upright and facing forward, throat slightly puffed, as if about to hum.",
+      "always": ["The wide smile", "The two brow bumps"],
+      "never": ["Teeth or a long tongue", "A sticky or gross look"]
+    },
+    "traits": [
+      "Squelches when it walks",
+      "Hums a low tune in the damp",
+      "Loves rain and big puddles",
+      "Hides in the reeds when watched"
+    ]
+  },
+  "croakmire": {
+    "description": "A big, patient frog with a lily pad on its head and a throat like a drum. One low croak and the boss sinks a little deeper into the mud.",
+    "appearance": {
+      "silhouette": "Tall, broad frog with high brow domes, a small lily pad between them and wide webbed feet.",
+      "size": "large",
+      "palette": [
+        {
+          "name": "Ochre Hide",
+          "hex": "#c8962e"
+        },
+        {
+          "name": "Bright Ochre",
+          "hex": "#e8c068"
+        },
+        {
+          "name": "Lily Green",
+          "hex": "#7d8a3c"
+        },
+        {
+          "name": "Belly Cream",
+          "hex": "#f0dba0"
+        },
+        {
+          "name": "Tar Spot",
+          "hex": "#2a2230"
+        }
+      ],
+      "features": [
+        "Two tall brow domes, taller than Squelch's",
+        "A small green lily pad sitting between the domes",
+        "Big dark eyes with one white highlight each, half closed and calm",
+        "A wide smile above a puffed cream throat like a drum",
+        "Wide webbed feet in darker ochre, spread on the mud"
+      ],
+      "pose": "Standing tall and facing forward, throat puffed, ready for one long croak.",
+      "always": ["The lily pad on its head", "The puffed cream throat"],
+      "never": ["Teeth or a long tongue", "A fierce look"],
+      "fromStage1": {
+        "keeps": [
+          "Ochre hide with tar spots",
+          "The wide, gentle smile",
+          "Brow bumps on top of the head",
+          "Cream belly patch"
+        ],
+        "changes": [
+          "The brow bumps grow into tall domes",
+          "A lily pad appears between the domes",
+          "The throat puffs out like a drum",
+          "Wide webbed feet, and a much larger body"
+        ]
+      }
+    },
+    "traits": [
+      "Croaks low and long",
+      "Wears a lily pad like a hat",
+      "Makes big foes feel slow and heavy",
+      "Calm in any storm"
+    ]
   }
 }

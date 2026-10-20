@@ -1,7 +1,7 @@
 import { content, gearContent, glossaryEntry } from '@creatures/game';
 import { afterEach, describe, expect, it } from 'vitest';
 import { GearTagBadge, ItemCorners } from './GearArt';
-import { elementEntry, type ElementContext } from './sprites/ElementChip';
+import { ElementChip, elementEntry, type ElementContext } from './sprites/ElementChip';
 import { byClass, createPage, visibleText, type Page } from './test-dom';
 
 let page: Page | null = null;
@@ -30,11 +30,28 @@ describe('an element explains itself by whose it is', () => {
 
   it('says who hits an Ember boss hardest, and what an Ember place gives', () => {
     expect(glossaryEntry(elementEntry('ember', 'boss'))?.short).toBe(
-      'Tide creatures deal it 50% more damage, Grove creatures 25% less.',
+      'Tide and Mire creatures deal it 50% more damage, Grove creatures 25% less.',
     );
     expect(glossaryEntry(elementEntry('ember', 'place'))?.lines).toContain(
       'Shards found here are Ember shards.',
     );
+  });
+
+  it('says who hits a Mire boss hardest, and shows a Mire chip with its own name and colour', () => {
+    expect(glossaryEntry(elementEntry('mire', 'boss'))?.short).toBe(
+      'Ember creatures deal it 50% more damage, Tide creatures 25% less.',
+    );
+    expect(glossaryEntry(elementEntry('mire', 'place'))?.lines).toContain(
+      'Shards found here are Mire shards.',
+    );
+    page = createPage();
+    page.draw(
+      <p>
+        <ElementChip element="mire" as="plain" role="guard" />
+      </p>,
+    );
+    expect(visibleText(page.root)).toContain('Mire');
+    expect(byClass(page.root, 't-mire').length).toBeGreaterThan(0);
   });
 
   it('gives bosses, foes, places and blueprints their own context', () => {

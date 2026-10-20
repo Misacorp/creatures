@@ -5,6 +5,7 @@
  * The eight small foes are in `dungeon-sprites.ts`.
  */
 import type { SpriteDef } from '../sprite-data';
+import { MIRE_DUNGEON_BOSS_SPRITE_DATA } from './mire-boss-sprites';
 
 export const DUNGEON_BOSS_SPRITE_DATA: Readonly<Record<string, SpriteDef>> = {
   // Tide: a sunken guardian in barnacled armour, with a barred flood gate on its chest and water
@@ -149,4 +150,6 @@ export const DUNGEON_BOSS_SPRITE_DATA: Readonly<Record<string, SpriteDef>> = {
       '............',
     ],
   },
+  // Fen Lurker, drawn in `mire-boss-sprites.ts`.
+  ...MIRE_DUNGEON_BOSS_SPRITE_DATA,
 };

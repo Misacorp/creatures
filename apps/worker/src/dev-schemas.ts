@@ -104,6 +104,7 @@ export const GrantPartsBodySchema = v.pipe(
     'ember-shard': partAmount,
     'grove-shard': partAmount,
     'spark-shard': partAmount,
+    'mire-shard': partAmount,
     glimmer: partAmount,
   }),
   v.check((o) => Object.values(o).some((n) => n !== undefined), NEED_ONE),

@@ -1,7 +1,8 @@
 // The boss's turn: gimmicks (patterns, charges), its plain attacks and the enrage strike.
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
-import { RULES, type Gimmick, type Zone } from '@creatures/game';
+import { RULES, type AppliesDef, type Gimmick, type Zone } from '@creatures/game';
 import { hurt, pickGuard } from './fight-damage';
+import { applyRider, purgeBoss } from './fight-effects';
 import { besides, livingIn, rolls, type Creature, type FightState } from './fight-state';
 import { firingIndex, gimmickDue } from './gimmick-schedule';
 import {
@@ -35,6 +36,11 @@ import { ZONES, nearestLivingZone, zoneOfIndex } from './zones';
  * - Guard intercept and Support buffs only count a living Guard or Support, and a buff only goes
  *   to a living neighbour; a Support beside a knocked-out creature simply buffs nobody there.
  */
+/** The boss has fallen or retreated (a Riposte can do either in the middle of its own turn). */
+export function bossDone(state: FightState): boolean {
+  return state.bossHp <= 0 || state.retreated;
+}
+
 function zoneWithLiving(state: FightState, aimed: Zone): Zone | undefined {
   return nearestLivingZone(aimed, (z) => livingIn(state, z).length > 0);
 }
@@ -66,7 +72,12 @@ function patternContext(
  * With `rules`, a chain's jumps skip the creature that took its first hit (a Guard that stepped in
  * for it): each jump goes to the next strongest creature not yet hit (`plan.chain`).
  */
-function resolvePlan(state: FightState, plan: PatternPlan, charged = false): void {
+function resolvePlan(
+  state: FightState,
+  plan: PatternPlan,
+  charged = false,
+  applies?: AppliesDef,
+): void {
   const { input, rules, creatures } = state;
   const chain = rules === undefined ? undefined : plan.chain;
   let jumps = chain?.rest ?? [];
@@ -77,6 +88,8 @@ function resolvePlan(state: FightState, plan: PatternPlan, charged = false): voi
       if (next === undefined) continue;
       targetIdx = next;
     }
+    // The boss fell or retreated mid-move (a Riposte): the rest of the move does not happen.
+    if (bossDone(state)) return;
     const target = creatures[targetIdx] as Creature;
     // A creature that fell earlier in the same action is not hit again.
     if (!target.alive) continue;
@@ -91,13 +104,15 @@ function resolvePlan(state: FightState, plan: PatternPlan, charged = false): voi
       false,
       charged,
     );
+    applyRider(state, applies, impact);
     if (chain !== undefined && k === 0) jumps = chain.rest.filter((i) => i !== impact.idx);
     if (plan.splashBp !== undefined && h.kind === 'aimed') {
       const splashRaw = Math.floor((raw * plan.splashBp) / 10_000);
       for (const i of besides(state, impact.idx)) {
         const next = creatures[i] as Creature;
+        if (bossDone(state)) return;
         if (next.alive) {
-          hurt(
+          const taker = hurt(
             state,
             next,
             splashRaw,
@@ -107,6 +122,7 @@ function resolvePlan(state: FightState, plan: PatternPlan, charged = false): voi
             true,
             charged,
           );
+          applyRider(state, applies, taker);
         }
       }
     }
@@ -178,7 +194,7 @@ export function fireGimmick(state: FightState, g: Gimmick, gimmickIndex: number)
         ...(rows === undefined ? {} : { rows }),
       }),
     );
-    resolvePlan(state, pending, true);
+    resolvePlan(state, pending, true, g.applies);
     return;
   }
   switch (g.op) {
@@ -187,8 +203,11 @@ export function fireGimmick(state: FightState, g: Gimmick, gimmickIndex: number)
       const zone = zoneWithLiving(state, g.zone);
       if (zone === undefined) break;
       const amount = Math.floor((input.bossAtk * g.power) / 10_000);
-      for (const c of livingIn(state, zone))
-        hurt(state, c, amount, 'gimmick', 'area', state.bossGimmickDice[c.idx]);
+      for (const c of livingIn(state, zone)) {
+        if (bossDone(state)) break;
+        const taker = hurt(state, c, amount, 'gimmick', 'area', state.bossGimmickDice[c.idx]);
+        applyRider(state, g.applies, taker);
+      }
       break;
     }
     case 'silence_ends': {
@@ -241,7 +260,7 @@ export function fireGimmick(state: FightState, g: Gimmick, gimmickIndex: number)
         decayBp: g.decayBp ?? DEFAULT_DECAY_BP,
       });
       events.push(jumps > 0 ? named(plan) : base);
-      resolvePlan(state, plan);
+      resolvePlan(state, plan, false, g.applies);
       break;
     }
     case 'reflect_first_reaction':
@@ -256,9 +275,14 @@ export function fireGimmick(state: FightState, g: Gimmick, gimmickIndex: number)
       const plan = planPattern(g, patternContext(state, g, gimmickIndex));
       events.push(named(plan));
       if (g.op === 'barrage') state.lastVolley.set(g.id, plan.targets);
-      resolvePlan(state, plan);
+      resolvePlan(state, plan, false, g.applies);
       break;
     }
+    case 'purge':
+      // The boss shakes off its debuffs, in its normal move order.
+      events.push(base);
+      purgeBoss(state);
+      break;
   }
 }
 
@@ -315,7 +339,7 @@ function bossAttack(state: FightState, dice: readonly number[]): void {
 export function plainAttacks(state: FightState): void {
   const { bossAttacks, creatures } = state;
   for (let k = 0; k < bossAttacks; k++) {
-    if (!creatures.some((c) => c.alive)) return;
+    if (!creatures.some((c) => c.alive) || bossDone(state)) return;
     bossAttack(state, k === 0 ? state.bossAttackDice : (state.extraAttackDice[k - 1] ?? []));
   }
 }
@@ -328,6 +352,7 @@ export function enrageStrike(state: FightState): void {
   const { input, enrage, creatures } = state;
   const raw = Math.floor((input.bossAtk * (enrage?.powerBp ?? 0)) / 10_000);
   for (const c of creatures) {
+    if (bossDone(state)) return;
     if (c.alive) hurt(state, c, raw, 'enrage', 'area', state.bossGimmickDice[c.idx]);
   }
 }

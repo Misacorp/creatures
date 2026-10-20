@@ -1,0 +1,10 @@
+[
+  {
+    "id": "mired",
+    "name": "Mired",
+    "kind": "debuff",
+    "maxStacks": 5,
+    "turns": 3,
+    "perStack": { "spdBp": -300, "damageDealtBp": -300 }
+  }
+]

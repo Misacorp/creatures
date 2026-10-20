@@ -827,5 +827,85 @@
       "echo"
     ],
     "flavor": "A paper cap with a candle-glow inside, made for the longest night of the Festival."
+  },
+  {
+    "id": "peat-cap",
+    "name": "Peat Cap",
+    "slot": "hat",
+    "tag": "mire",
+    "stats": [
+      { "stat": "atk", "value": 1 },
+      { "stat": "hp", "value": 5 }
+    ],
+    "flavor": "Woven from peat moss that stays a little damp, and a little warm."
+  },
+  {
+    "id": "reed-hood",
+    "name": "Reed Hood",
+    "slot": "hat",
+    "tag": "mire",
+    "stats": [
+      { "stat": "atk", "value": 10 },
+      { "stat": "hp", "value": 30 },
+      { "stat": "critChance", "value": 100 }
+    ],
+    "minItemLevel": 5,
+    "flavor": "Braided cattail leaves, soft as felt and tough as rope."
+  },
+  {
+    "id": "bogwardens-crown",
+    "name": "Bogwarden's Crown",
+    "slot": "hat",
+    "tag": "mire",
+    "stats": [
+      { "stat": "atk", "value": 20 },
+      { "stat": "hp", "value": 60 },
+      { "stat": "critChance", "value": 200 }
+    ],
+    "minItemLevel": 10,
+    "flavor": "Tar-black bog oak with an oily shine. It is older than the hands that carved it."
+  },
+  {
+    "id": "mudcloth-scarf",
+    "name": "Mudcloth Scarf",
+    "slot": "scarf",
+    "tag": "mire",
+    "stats": [
+      { "stat": "hp", "value": 14 },
+      { "stat": "atk", "value": 1 }
+    ],
+    "flavor": "Dyed in peat water until the colour stays for good. It dries slowly and keeps you warm."
+  },
+  {
+    "id": "fen-wrap",
+    "name": "Fen Wrap",
+    "slot": "scarf",
+    "tag": "mire",
+    "stats": [
+      { "stat": "hp", "value": 80 },
+      { "stat": "atk", "value": 4 }
+    ],
+    "minItemLevel": 5,
+    "flavor": "A heavy wrap, thick as a blanket, that smells of rain on the reeds."
+  },
+  {
+    "id": "bogkeepers-mantle",
+    "name": "Bogkeeper's Mantle",
+    "slot": "scarf",
+    "tag": "mire",
+    "stats": [
+      { "stat": "hp", "value": 170 },
+      { "stat": "atk", "value": 10 }
+    ],
+    "minItemLevel": 10,
+    "flavor": "A mantle for those who keep the old places. It remembers every step in the mud."
+  },
+  {
+    "id": "bog-charm",
+    "name": "Bog Charm",
+    "slot": "charm",
+    "tag": "mire",
+    "implicit": { "line": "mire-attunement", "values": [200, 300, 400, 500, 600] },
+    "flavor": "A smooth peat-dark stone that stays cool and a little damp in any pocket."
   }
 ]

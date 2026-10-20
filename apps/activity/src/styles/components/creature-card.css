@@ -16,6 +16,10 @@
   --el: var(--spark);
 }
 
+.el-mire {
+  --el: var(--mire);
+}
+
 /* The level as a pixel tag (a tappable tag resets its font, so the pixel font is set again here; no "?" is drawn). */
 .lvl-tag {
   display: inline-flex;

@@ -6,6 +6,7 @@
     "lines": [
       "Hits Ember bosses for 50% more damage.",
       "Hits Spark bosses for 25% less damage.",
+      "Hits Mire bosses for 25% less damage.",
       "Tide hits leave Soaked on the boss. Spark cashes it in."
     ],
     "visual": {
@@ -17,11 +18,12 @@
   {
     "id": "element-ember",
     "title": "Ember",
-    "short": "Fire. Strong against Grove.",
+    "short": "Fire. Strong against Grove and Mire.",
     "lines": [
       "Hits Grove bosses for 50% more damage.",
-      "Hits Tide bosses for 25% less damage.",
-      "Ember hits leave Scorched on the boss. Tide cashes it in."
+      "Hits Mire bosses for 50% more damage.",
+      "Hits Tide bosses for 25% less damage. Mire hits it for 50% more.",
+      "Ember hits leave Scorched on the boss. Tide or Mire cashes it in."
     ],
     "visual": {
       "kind": "element",
@@ -173,10 +175,10 @@
   {
     "id": "mark-scorched",
     "title": "Scorched",
-    "short": "Ember's mark. Tide cashes it in.",
+    "short": "Ember's mark. Tide or Mire cashes it in.",
     "lines": [
-      "Left on the boss by a Ember hit.",
-      "A Tide hit sets off Steam.",
+      "Left on the boss by an Ember hit.",
+      "A Tide hit sets off Steam. A Mire hit sets off Smother.",
       "Only a Setter of another element can swap it.",
       "It stays until it is cashed in or swapped."
     ],
@@ -350,6 +352,17 @@
     "section": "raid-week"
   },
   {
+    "id": "gimmick-purge",
+    "title": "Purge",
+    "short": "The boss shakes every debuff off itself.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "purge"
+    },
+    "section": "raid-week"
+  },
+  {
     "id": "gimmick-charge",
     "title": "Charge",
     "short": "Marks victims a round ahead. A fallen mark is spared. Never round 1 or overtime.",
@@ -406,11 +419,22 @@
   {
     "id": "turn-speed",
     "title": "By Speed",
-    "short": "Fastest creature acts first.",
+    "short": "Retired: the fastest creature used to act first.",
     "lines": [],
     "visual": {
       "kind": "glyph",
       "id": "speed"
+    },
+    "section": "raid-week"
+  },
+  {
+    "id": "turn-serpentine",
+    "title": "Serpentine",
+    "short": "Row by row, front first. Every row flips direction each round.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "serpentine"
     },
     "section": "raid-week"
   },
@@ -927,7 +951,7 @@
   {
     "id": "boss-element-ember",
     "title": "Ember boss",
-    "short": "Tide creatures deal it 50% more damage, Grove creatures 25% less.",
+    "short": "Tide and Mire creatures deal it 50% more damage, Grove creatures 25% less.",
     "lines": [],
     "section": "raid-week"
   },
@@ -1552,6 +1576,14 @@
     "section": "dungeon"
   },
   {
+    "id": "modifier-mud",
+    "title": "Muddy",
+    "short": "Your whole team is 30% slower.",
+    "lines": [],
+    "section": "dungeon",
+    "visual": { "kind": "glyph", "id": "mud" }
+  },
+  {
     "id": "keepsake-wayfarer-charm",
     "title": "Wayfarer's Charm",
     "short": "Every creature gets 12% more Attack and 12% more HP.",
@@ -1924,5 +1956,189 @@
       "A well-planned raid can meet a bad Saturday. Plan the team, or the dungeon run, for the day."
     ],
     "section": "ranks"
+  },
+  {
+    "id": "element-mire",
+    "title": "Mire",
+    "short": "Mud and bog. Strong against Ember.",
+    "lines": [
+      "Hits Ember bosses for 50% more damage.",
+      "Ember hits Mire bosses for 50% more. Tide hits them for 25% less.",
+      "Mire hits leave Muddied on the boss. Ember cashes it in.",
+      "Slow and sturdy: they hold the line and weigh the boss down."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "mire"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "mark-muddied",
+    "title": "Muddied",
+    "short": "Mire's mark. Ember cashes it in.",
+    "lines": [
+      "Left on the boss by a Mire hit.",
+      "An Ember hit sets off Flare.",
+      "Only a Setter of another element can swap it.",
+      "It stays until it is cashed in or swapped."
+    ],
+    "visual": {
+      "kind": "mark",
+      "id": "mire"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "reaction-smother",
+    "title": "Smother",
+    "short": "Mire on Scorched: deals much more damage and mires the boss.",
+    "lines": [
+      "A Mire hit on a Scorched boss sets it off.",
+      "It deals much more damage than a normal hit.",
+      "It also leaves Mired on the boss.",
+      "It uses up the mark. The next hit leaves a new one."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "smother"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "reaction-flare",
+    "title": "Flare",
+    "short": "Ember on Muddied: deals much more damage, burns off Mired.",
+    "lines": [
+      "An Ember hit on a Muddied boss sets it off.",
+      "It deals much more damage than a normal hit.",
+      "It then burns away every Mired stack on the boss, for extra damage on each.",
+      "Keep the stacks to keep the boss slow, or burn them for one big hit."
+    ],
+    "visual": {
+      "kind": "reaction",
+      "id": "flare"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "status-mired",
+    "title": "Mired",
+    "short": "Stuck in the mud: slower and weaker.",
+    "lines": [
+      "Each stack lowers Speed and the damage dealt.",
+      "Stacks add up to a limit. Every new application resets the timer.",
+      "When the timer ends, all the stacks fall off together.",
+      "A Purge, or a Support's cleanse, washes it off."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "mired"
+    },
+    "section": "combos"
+  },
+  {
+    "id": "status-effects",
+    "title": "Status effects",
+    "short": "Lasting effects on a creature or a boss, counted in turns.",
+    "lines": [
+      "A turn is one fighter's action. An effect counts down on its owner's own turns.",
+      "Stacks add up to a limit. Each new application sets the timer back to full.",
+      "When the timer ends, the effect and all its stacks end together.",
+      "A knocked-out creature loses its effects."
+    ],
+    "section": "combos"
+  },
+  {
+    "id": "stat-dodge",
+    "title": "Dodge",
+    "short": "A chance to avoid a hit completely.",
+    "lines": [
+      "Dodge comes from Speed. Some gear and talents add more. It never goes above 50%.",
+      "A dodged hit does no damage and sets off nothing.",
+      "Hits on many creatures at once are dodged half as often.",
+      "Foes dodge too. A Setter's hit still leaves its mark when dodged."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "speed"
+    },
+    "section": "creatures"
+  },
+  {
+    "id": "element-chart",
+    "title": "Element chart",
+    "short": "Who deals more or less damage to whom.",
+    "lines": [
+      "Tide beats Ember, Ember beats Grove, Grove beats Spark, Spark beats Tide.",
+      "Mire and Ember beat each other. Tide deals less damage to Mire.",
+      "A pair that is not listed deals normal damage.",
+      "It changes your hits on bosses and foes. Their hits ignore it."
+    ],
+    "section": "creatures"
+  },
+  {
+    "id": "place-element-mire",
+    "title": "Mire place",
+    "short": "Mire creatures live here.",
+    "lines": [
+      "Most creatures that live here are Mire.",
+      "Shards found here are Mire shards.",
+      "Gear found here is Mire gear: its lines lean Mire."
+    ],
+    "section": "expeditions"
+  },
+  {
+    "id": "boss-element-mire",
+    "title": "Mire boss",
+    "short": "Ember creatures deal it 50% more damage, Tide creatures 25% less.",
+    "lines": [],
+    "section": "raid-week"
+  },
+  {
+    "id": "gear-tag-mire",
+    "title": "Mire gear",
+    "short": "Its lines lean Mire.",
+    "lines": [
+      "Mire lines roll three times as often on it: Mire Attunement, Hunter and Ward, and the Mire reaction bonus.",
+      "Anyone can wear it. Mire Attunement only helps a Mire creature.",
+      "Crafting it takes a Mire shard."
+    ],
+    "section": "gear"
+  },
+  {
+    "id": "part-mire-shard",
+    "title": "Mire Shard",
+    "short": "A shard of Mire. It pays for Mire crafts.",
+    "lines": [
+      "Found on expeditions with a Mire explorer, from Mire floor bosses and by dismantling Mire gear."
+    ],
+    "visual": {
+      "kind": "element",
+      "id": "mire"
+    },
+    "section": "workshop"
+  },
+  {
+    "id": "ability-on-hit-taken",
+    "title": "Sticky hits",
+    "short": "Sticky hits: whenever it takes a hit, the boss gets a debuff.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "finale"
+  },
+  {
+    "id": "ability-round-start",
+    "title": "Round start",
+    "short": "Every round: it leaves a debuff on the boss.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "ability"
+    },
+    "section": "finale"
   }
 ]

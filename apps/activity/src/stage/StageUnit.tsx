@@ -16,6 +16,8 @@ import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { elementIcon } from '../sprites/element-icons';
 import { popupProps } from '../ui/Popover';
 import { SegmentBar } from '../ui/SegmentBar';
+import type { EffectView } from '../replay';
+import { EffectIcons } from '../ui/EffectIcons';
 import { Bursts, Floats, KoTags, Marks } from './StageFx';
 
 /** The creatures and the foe of the fight stage: one unit with its marks, its badge and its popover button. */
@@ -105,6 +107,8 @@ export interface UnitProps {
   charged: boolean;
   /** The creature's HP now and at most (the dungeon); null when the stage shows no creature HP. */
   hp: { current: number; max: number } | null;
+  /** The status effects on the creature right now (small icons over its sprite). */
+  effects?: readonly EffectView[];
   /**
    * The creature's place in this round's acting order from 1 ("1st", "2nd", ...), written under it;
    * null when it has no turn this round (knocked out, or the round has not been played yet).
@@ -199,6 +203,9 @@ export function StageUnit(props: UnitProps) {
         >
           {face}
         </SmallCreature>
+      )}
+      {props.effects !== undefined && (
+        <EffectIcons compact effects={props.effects} names={props.names} />
       )}
       <Floats fx={props.fx} target={c.id} />
       <Bursts fx={props.fx} target={c.id} names={props.names} />

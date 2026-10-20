@@ -202,6 +202,25 @@ describe('affects: reaction partners are the pairs the fight sets off', () => {
     });
   }
 
+  it('serpentine previews round 1: the Middle row runs right to left', () => {
+    // Slots 3 to 5 are the Middle row of nine. Round 1 acts 5, 4, 3, so the Ember setter in slot 5
+    // marks and the Tide payoff in slot 4 cashes in.
+    const row: AffectRow = [
+      null,
+      null,
+      null,
+      null,
+      { role: 'payoff', element: 'tide' },
+      { role: 'setter', element: 'ember' },
+      null,
+      null,
+      null,
+    ];
+    expect(slotReactions(row, { row: 'raid', turnOrder: 'serpentine' })).toEqual([
+      { marker: 5, payoff: 4, reaction: 'steam' },
+    ]);
+  });
+
   it('says whether the partner leaves the mark or sets it off', () => {
     // Ember marks, Tide cashes in: Steam.
     const row: AffectRow = [

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RULES, content } from '@creatures/game';
 import { simulateFight } from '../src/index';
-import { eventsOf, input, inRound, rng, run, slot } from './helpers';
+import { TEST_PACK, eventsOf, input, inRound, rng, run, slot } from './helpers';
 
 // Boss is Tide in these tests: Spark hits it at x1.5, Ember at x0.75, Tide and Grove at x1.
 
@@ -74,6 +74,36 @@ describe('marks and reactions', () => {
     }
   });
 
+  it('sets a mark off by more than one element, each with its own reaction (test pack)', () => {
+    // A test-only chart: Grove also deals 150% to Tide, and "Smother" is Soaked's second reaction.
+    const soaked = content.reactions.find((r) => r.markElement === 'tide');
+    if (soaked === undefined) throw new Error('no Soaked reaction');
+    const pack = {
+      ...TEST_PACK,
+      elementChart: [
+        ...TEST_PACK.elementChart,
+        { attacker: 'grove' as const, defender: 'tide' as const, bp: 15_000 },
+      ].filter((p) => !(p.attacker === 'tide' && p.defender === 'grove')),
+      reactions: [
+        ...TEST_PACK.reactions,
+        { ...soaked, id: 'smother', name: 'Smother', triggerElement: 'grove' as const },
+      ],
+    };
+    const row = (trigger: 'spark' | 'grove') => [
+      slot('s', { element: 'tide', role: 'setter' }),
+      slot('p', { element: trigger, role: 'payoff', atk: 100 }),
+    ];
+    const grove = run(row('grove'), {}, { pack });
+    expect(eventsOf(grove, 'reaction')[0]).toMatchObject({ reaction: 'smother', payoff: 'p' });
+    expect(eventsOf(grove, 'hit').find((e) => e.creature === 'p')).toMatchObject({
+      matchupBp: 15_000,
+    });
+    const spark = run(row('spark'), {}, { pack });
+    expect(eventsOf(spark, 'reaction')[0]).toMatchObject({ reaction: soaked.id, payoff: 'p' });
+    // Without the extra reaction in the shipped content, Grove does not set Soaked off.
+    expect(eventsOf(run(row('grove')), 'reaction')).toHaveLength(0);
+  });
+
   it('does not react to a hit that is not the trigger element', () => {
     const r = run([
       slot('s', { element: 'tide', role: 'setter' }),
@@ -133,7 +163,14 @@ describe('marks and reactions', () => {
       slot('p', { element: 'spark', role: 'payoff' }),
     ]);
     expect(r.reactions.total).toBe(10);
-    expect(r.reactions.byType).toEqual({ overload: 10, grounding: 0, wildfire: 0, steam: 0 });
+    expect(r.reactions.byType).toEqual({
+      overload: 10,
+      grounding: 0,
+      wildfire: 0,
+      steam: 0,
+      smother: 0,
+      flare: 0,
+    });
   });
 
   it('credits setup to the creature only for guests (no player)', () => {

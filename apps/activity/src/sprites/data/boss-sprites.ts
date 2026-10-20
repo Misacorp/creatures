@@ -1,5 +1,6 @@
 /** Pixel sprites (24x24) for every boss, drawn from the visual briefs in `bosses-lore.json`. */
 import type { SpriteDef } from '../sprite-data';
+import { MIRE_BOSS_SPRITE_DATA } from './mire-boss-sprites';
 
 export const BOSS_SPRITE_DATA: Readonly<Record<string, SpriteDef>> = {
   'tidal-colossus': {
@@ -127,4 +128,6 @@ export const BOSS_SPRITE_DATA: Readonly<Record<string, SpriteDef>> = {
       '........k.....k.........',
     ],
   },
+  // Old Bogback, drawn in `mire-boss-sprites.ts`.
+  ...MIRE_BOSS_SPRITE_DATA,
 };

@@ -36,17 +36,59 @@ describe('simulation run', () => {
     // with a Boon and an Omen on experience multiplies them. The tiny run has only 4 raid weeks, so one flipped
     // week moves the raid rates by 0.25 (here two weeks flip, 0.75 to 0.25 for both); the start share, top share, creature ratio
     // and mean fights move by about 1% each. Experience per hour of a long trip (75.41) is unchanged.
+    // 2026-10-19 (Serpentine): Cinder Wyrm now acts row by row instead of by Speed, on purpose, so its
+    // fights play out differently and the dice of everything simulated after them shift. The raid
+    // win rates stay at 0.25, the finale start share goes 0.4903 to 0.5073, the top share 0.2551 to
+    // 0.2958, the creature ratio 1.2668 to 1.0673, a dungeon run 4.4643 to 4.3214 fights (home rate
+    // 0.1339 to 0.1696) and the long run wins every finale (0.8333 to 1, final rank 4 to 5). The tiny
+    // run is only 4 raid weeks and a few runs, so these are noise-sized moves from changed dice, not
+    // a balance change.
+    // 2026-10-19 (Mire): Mire species joined the catalogue, with the fifth element's gear: seven Mire bases
+    // (more blueprints and drops to draw from), four Mire element lines in every item's line pool and a
+    // fifth shard kind for a random shard. No creature is catchable yet (the Sunken Fen comes next), so
+    // nothing but those draws changed: with Mire's bases, lines and shard kind left out of the draws every
+    // number below came back to its old value exactly (checked before the re-pin). Moved: the raid phase 1
+    // and finale win rates 0.25 to 0.75 (one flipped week in 4 each), finale start share 0.5073 to 0.4231,
+    // top share 0.2958 to 0.2956, creature ratio 1.0673 to 1.0067, a dungeon run 4.3214 to 4.5268 fights
+    // (home rate 0.1696 to 0.1339) and the long run 1 to 0.8333 finale wins (final rank 5 to 4). Noise-sized
+    // moves from shifted dice in a tiny run, not a balance change; the Experience rate and the top level
+    // did not move.
+    // 2026-10-20 (Sunken Fen): the Mire content landed: Old Bogback is the fifth raid boss in the rotation
+    // (weeks now cycle through five bosses, so the tiny run meets it where it met Storm Sovereign), the
+    // dungeon has two more foes, a floor boss and the Muddy room (bigger pools, so every seeded draw of a
+    // map shifts), Mudlump and Squelch are catchable in the Sunken Fen (a new place, a new journal set and
+    // two more species in every catch draw) and every boss and foe has a low `baseSpd` (no effect: dodge is
+    // off). Checked by taking Old Bogback out again: the raid phase 1 win rate (0.75 to 0.6667) and the
+    // finale start share (0.4231 to 0.4322) are Old Bogback's, a week it plays differently; the rest moved
+    // with the other changes: the finale win rate 0.75 to 0.5 (one more week flips in 4), top share 0.2956
+    // to 0.2529, creature ratio 1.0067 to 1.1972, a dungeon run 4.5268 to 4.7232 fights (home rate 0.1339
+    // to 0.1429). The long run (0.8333, final rank 4), the top level and the Experience rate did not move.
+    // Noise-sized moves from changed pools and dice in a tiny run, not a balance change.
+    // 2026-10-20 (dodge and debuff lines): Fleet, Light-footed, Riposte, Momentum and Slipstream joined the
+    // item line pools, Clean coat, Heavy hand and Clinging started rolling on items, and three talents were
+    // added (Slips Away, Long Strides, Soot on Its Paws). Dodge and effects are off, so none of it acts in a
+    // fight; the new lines score 0 while their switch is off. Checked by emptying the new lines' weights and
+    // taking the talents out again: every number came back to its old value exactly. So the moves are only
+    // the larger pools and talent lists changing every seeded draw after them: the raid phase 1 win rate 0.6667
+    // to 1 and the finale win rate 0.5 to 1 (two flipped weeks in 4), finale start share 0.4322 to 0.2549, top
+    // share 0.2529 to 0.2934, creature ratio 1.1972 to 1.0065, a dungeon run 4.7232 to 4.6518 fights (home rate
+    // 0.1429 to 0.125). The long run, the top level and the Experience rate did not move.
+    // 2026-10-20 (dodge and status effects switched on, balance pass, B-023): dodge and effects are on, the
+    // five bosses have new HP and Attack (30 to 33), and Light-footed's values doubled. A tiny run only has
+    // 4 raid weeks, so the moves are dice shifts, not a measure: the raid win rates stay at 1, finale start
+    // share 0.2549 to 0.2414, top share 0.2934 to 0.3162, creature ratio 1.0065 to 1.5963, a dungeon run
+    // 4.6518 to 4.9464 fights (home rate, top level, Experience rate and the long run did not move).
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
-      'raid.typical.phase1ClearRate': 0.25,
-      'raid.typical.finaleWinRate': 0.25,
-      'raid.typical.finaleStartShare': 0.4903,
-      'fair.topShareMedian': 0.2551,
-      'choice.creatureRatioMax': 1.2668,
+      'raid.typical.phase1ClearRate': 1,
+      'raid.typical.finaleWinRate': 1,
+      'raid.typical.finaleStartShare': 0.2414,
+      'fair.topShareMedian': 0.3162,
+      'choice.creatureRatioMax': 1.5963,
       'econ.casualTopLevelWeek4': 10,
       'exp.rate.long': 75.4138,
-      'dungeon.meanFights': 4.4643,
-      'dungeon.dailyHomeRate': 0.1339,
+      'dungeon.meanFights': 4.9464,
+      'dungeon.dailyHomeRate': 0.125,
       'longrun.typical.finaleWinRate': 0.8333,
       'longrun.typicalFinalRank': 4,
     };

@@ -1,3 +1,4 @@
+import { creaturePower } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { Creature } from './api';
 import type { RowSlotView } from './raid-api';
@@ -126,8 +127,9 @@ describe('the Recommended tag', () => {
       caughtAt: 77,
       stats: { hp: 100, atk: 10, spd: 10 },
       statsWithGear: { hp: 120, atk: 25, spd: 10 },
+      dodgeBp: 0,
     } as unknown as Creature;
-    // 25 attack + 120 / 10 HP = 37; the bare stats (10 + 10) would give 20.
+    // 25 attack + 120 / 10 HP = 37 (Speed 10 is 1% dodge: 121 effective HP, still 12); the bare stats would give 20.
     expect(toPickerCreature(owned)).toEqual({
       id: 'g',
       species: 'splashet',
@@ -136,6 +138,24 @@ describe('the Recommended tag', () => {
       power: 37,
       caughtAt: 77,
     });
+  });
+});
+
+describe('flat dodge in the ranking', () => {
+  it('counts the creature’s flat dodge like the server’s power does', () => {
+    const base = {
+      id: 'g',
+      species: 'splashet',
+      nickname: null,
+      level: 5,
+      caughtAt: 77,
+      stats: { hp: 100, atk: 10, spd: 10 },
+      statsWithGear: { hp: 120, atk: 25, spd: 10 },
+    };
+    // Speed 10 = 100 points plus 2900 flat = 30% dodge: floor(120 / 0.7) = 171 effective HP, 25 + 17.
+    const dodgy = { ...base, dodgeBp: 2_900 } as unknown as Creature;
+    expect(toPickerCreature(dodgy).power).toBe(42);
+    expect(toPickerCreature(dodgy).power).toBe(creaturePower(base.statsWithGear, 2_900));
   });
 });
 

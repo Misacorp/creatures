@@ -265,10 +265,10 @@ describe('the two-piece bonuses', () => {
   const sheet = (id: string, count: number) =>
     wornEffects(WEARER[id] as Wearer, wearing(id, count));
 
-  it('Tidepool Finery: Steam +8%; Forge-Warm: Wildfire +8%', () => {
+  it('Tidepool Finery: Steam +8%; Forge-Warm: Wildfire and Flare +8% (Ember sets off both)', () => {
     expect(sheet('tidepool-finery', 1).mods.reactionBp).toBeUndefined();
     expect(sheet('tidepool-finery', 2).mods.reactionBp).toEqual({ steam: 800 });
-    expect(sheet('forge-warm-kit', 2).mods.reactionBp).toEqual({ wildfire: 800 });
+    expect(sheet('forge-warm-kit', 2).mods.reactionBp).toEqual({ wildfire: 800, flare: 800 });
   });
 
   it('Hollow Weave: HP +8% of the creature (global, so it never multiplies an item stat)', () => {

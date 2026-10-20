@@ -3,8 +3,9 @@
     "id": "tidal-colossus",
     "name": "Tidal Colossus",
     "element": "tide",
-    "baseHp": 5915,
-    "baseAtk": 30,
+    "baseHp": 5510,
+    "baseAtk": 33,
+    "baseSpd": 30,
     "turnOrder": "left_to_right",
     "gimmicks": [
       {
@@ -84,9 +85,10 @@
     "id": "cinder-wyrm",
     "name": "Cinder Wyrm",
     "element": "ember",
-    "baseHp": 2490,
-    "baseAtk": 30,
-    "turnOrder": "speed",
+    "baseHp": 2740,
+    "baseAtk": 33,
+    "baseSpd": 40,
+    "turnOrder": "serpentine",
     "gimmicks": [
       {
         "id": "backdraft",
@@ -160,8 +162,9 @@
     "id": "thornmother",
     "name": "Thornmother",
     "element": "grove",
-    "baseHp": 4737,
-    "baseAtk": 30,
+    "baseHp": 4200,
+    "baseAtk": 33,
+    "baseSpd": 25,
     "turnOrder": "right_to_left",
     "gimmicks": [
       {
@@ -237,8 +240,9 @@
     "id": "storm-sovereign",
     "name": "Storm Sovereign",
     "element": "spark",
-    "baseHp": 3974,
-    "baseAtk": 30,
+    "baseHp": 3665,
+    "baseAtk": 33,
+    "baseSpd": 50,
     "turnOrder": "left_to_right",
     "gimmicks": [
       {
@@ -297,6 +301,91 @@
     "retreat": {
       "phase1": "Storm Sovereign drifts up into the clouds. It will return in Phase 2.",
       "phase2": "Storm Sovereign rolls off over the ridge. Face it in the finale on Sunday."
+    }
+  },
+  {
+    "id": "old-bogback",
+    "name": "Old Bogback",
+    "element": "mire",
+    "baseHp": 4490,
+    "baseAtk": 33,
+    "baseSpd": 20,
+    "turnOrder": "left_to_right",
+    "gimmicks": [
+      {
+        "id": "sinking-mud",
+        "name": "Sinking Mud",
+        "trigger": {
+          "every": 3
+        },
+        "op": "sweep",
+        "rows": ["front", "middle", "back"],
+        "power": 14000,
+        "applies": {
+          "effect": "mired",
+          "powerBp": 10000
+        }
+      },
+      {
+        "id": "belly-flop",
+        "name": "Belly Flop",
+        "trigger": {
+          "every": 4
+        },
+        "op": "slam",
+        "aim": "front",
+        "power": 28000,
+        "splashBp": 5000
+      },
+      {
+        "id": "shake-off",
+        "name": "Shake Off",
+        "trigger": {
+          "every": 5
+        },
+        "op": "purge"
+      },
+      {
+        "id": "bog-lob",
+        "name": "Bog Lob",
+        "fromRank": 4,
+        "trigger": {
+          "every": 7
+        },
+        "op": "slam",
+        "aim": "payoff",
+        "power": 28000,
+        "splashBp": 4000
+      },
+      {
+        "id": "rising-bubbles",
+        "name": "Rising Bubbles",
+        "fromRank": 7,
+        "trigger": {
+          "every": 9
+        },
+        "op": "charge",
+        "then": {
+          "op": "barrage",
+          "shells": {
+            "min": 2,
+            "max": 5,
+            "shareBp": 1200
+          },
+          "power": 22000
+        }
+      }
+    ],
+    "adaptation": "resist-top-element",
+    "lootTable": "old-bogback",
+    "finaleRounds": 12,
+    "hpExponent": {
+      "num": 112,
+      "den": 100
+    },
+    "retreat": {
+      "phase1": "Old Bogback sinks slowly into the fen. It will rise again in Phase 2.",
+      "phase2": "Old Bogback settles back into the peat. Face it in the finale on Sunday."
     }
   }
 ]

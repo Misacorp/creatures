@@ -1,10 +1,12 @@
 import type {
   AdaptationDef,
+  AppliesDef,
   BossDef,
   ContentPack,
   Element,
   FinaleAbilityDef,
   LuckConfig,
+  StatusEffectDef,
   ReactionDef,
   Rng,
   Role,
@@ -18,6 +20,7 @@ import type {
   CreatureTotals,
   FightEvent,
   FightInput,
+  DodgeRules,
   FightRules,
   PlayerTotals,
 } from './types';
@@ -29,6 +32,16 @@ import { neighbours, zoneIndices, zoneNeighbours, zoneTwoAway, type fightRowShap
  * thirty `let`s inside `simulateFight`; every field is the same variable, now named, so the order of the
  * dice draws and of every update stayed exactly as it was.
  */
+
+/** A status effect on a fighter: its stacks and the turns it has left (`combat-rules.md` 13). */
+export interface ActiveEffect {
+  id: string;
+  stacks: number;
+  turnsLeft: number;
+}
+
+/** Whoever can carry effects: a creature, or the boss (a foe too). */
+export type Fighter = Creature | 'boss';
 
 export interface Creature {
   idx: number;
@@ -48,7 +61,7 @@ export interface Creature {
    * Support buffs waiting for this creature's next hit. `tag` marks a boost a gear line gave (Kindling,
    * Warm heart, Overflow): it is kept apart from the Support's own, which a Support replaces each round.
    */
-  buffs: { from: number; bp: number; tag?: 'kindling' | 'warm' | 'overflow' }[];
+  buffs: { from: number; bp: number; tag?: 'kindling' | 'warm' | 'overflow' | 'slipstream' }[];
   /** This creature's crit chance and extra crit damage (basis points); 0 when crits are off. */
   critChanceBp: number;
   critBp: number;
@@ -66,6 +79,8 @@ export interface Creature {
   paybackReady: number;
   emberTailReady: number;
   patientReady: number;
+  /** Momentum: the bonus its next turn hit gets after a dodge (replaces an earlier one). */
+  momentumReady: number;
   /** Rally cry: the bonus its hits have for the rest of the fight (one share per fallen neighbour). */
   rallyCry: number;
   /** Stubborn has been used this fight. */
@@ -77,6 +92,11 @@ export interface Creature {
   stormRound: number;
   /** Shared warmth, on a Support: the extra its next boost carries. */
   nextBoostBp: number;
+  /** Status effects it carries (always empty in a fight with effects off). */
+  effects: ActiveEffect[];
+  /** Passive abilities (`on_hit_taken`, `round_start`): the riders it puts on the boss, set when the fight starts. */
+  hitTakenApplies: AppliesDef[];
+  roundStartApplies: AppliesDef[];
 }
 
 export interface Mark {
@@ -135,15 +155,22 @@ export interface FightState {
   readonly patternsOn: boolean;
   /** True when a creature of the fight has a chance line. */
   readonly luckOn: boolean;
+  /** Status effects are on in this fight (`FightInput.effects`): off, nothing applies and no die is drawn. */
+  readonly effectsOn: boolean;
+  /** The status effects of the content pack, by id. */
+  readonly effectDefs: ReadonlyMap<string, StatusEffectDef>;
+  /** Dodge numbers of the fight's stored rules (`FightRules.dodge`); undefined: dodge is off. */
+  readonly dodge: DodgeRules | undefined;
   readonly rule: AdaptationDef | null;
   readonly adaptationTarget: string;
-  readonly reactionByMark: ReadonlyMap<Element, ReactionDef>;
+  /** The reaction of each (mark element, trigger element) pair, by `reactionKey`. */
+  readonly reactionByPair: ReadonlyMap<string, ReactionDef>;
   readonly guardReach: 'zone' | 'adjacent';
   /** The first zone attack of the boss, where the default Shield Wall goes. */
   readonly zoneHit: { round: number; zone: Zone } | null;
   readonly creatures: Creature[];
   /** Indices in the order creatures act. */
-  readonly order: number[];
+  order: number[];
   readonly active: Mutator[];
 
   // ---- what has happened (filled in as the fight goes) ----
@@ -182,6 +209,8 @@ export interface FightState {
   /** The running Surge (+) or Slump (-) in basis points of team damage, and its last round. */
   swingNow: number;
   swingUntil: number;
+  /** Status effects on the boss (or foe). */
+  bossEffects: ActiveEffect[];
 
   // ---- this round's dice, drawn at the start of every round (see `fight.ts`) ----
   /** Every creature's turn dice and strike dice: a creature's roll depends on the seed, the round and its slot only. */
@@ -222,6 +251,27 @@ export interface FightState {
   luckDice: number[][];
   /** Area hits each creature has met this round, for Sidestep's dice. */
   areaSeen: number[];
+  /**
+   * With effects on (`FightInput.effects`): `dice` uniform integers in [0, 10000) drawn at the very
+   * end of the round's dice, after the luck dice, and only then, so a fight without effects draws what
+   * it always did. Each application of an effect with a fractional power takes the next one in order
+   * (`effectDiceUsed`, reset every round); when they run out, further chances count as a miss.
+   */
+  effectDice: number[];
+  effectDiceUsed: number;
+  /** The last `hurt` call ended in a dodge (set on every call), so a move's rider can skip it. */
+  lastHitDodged: boolean;
+  /**
+   * With dodge on (`FightRules.dodge`): drawn after the effect dice, in this order, and only then.
+   * `dodgeTakenDice`: `DODGE_TAKEN_DICE` dice per creature, the Nth hit it takes that round uses die N (the
+   * last die for any later one). `dodgeTurnDice` and `dodgeStrikeDice`: one die per creature, the boss's
+   * roll against that creature's turn hit and against its ability strike. All uniform in [0, 10000).
+   * `dodgeSeen` counts the hits each creature has taken this round.
+   */
+  dodgeTakenDice: number[][];
+  dodgeTurnDice: number[];
+  dodgeStrikeDice: number[];
+  dodgeSeen: number[];
 }
 
 export function pick(result: unknown, key: string): unknown {
@@ -330,4 +380,9 @@ export function receivedHeal(c: Creature, healed: number): number {
   return c.mods.healReceivedBp === 0
     ? healed
     : Math.floor((healed * Math.max(0, 10_000 + c.mods.healReceivedBp)) / 10_000);
+}
+
+/** The key of a (mark element, trigger element) pair in `reactionByPair`. */
+export function reactionKey(mark: Element, trigger: Element): string {
+  return `${mark}<${trigger}`;
 }

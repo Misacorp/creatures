@@ -182,7 +182,10 @@ export function basePower(c: Pick<OwnedCreature, 'speciesId' | 'level' | 'fusion
 
 /** A creature's power as the raid sees it: gear included, like the worker's `power`. */
 export function creaturePower(c: OwnedCreature): number {
-  return isFolded(c) ? statsPower(foldedCreature(c).stats) : statsPower(creatureStats(c));
+  if (!isFolded(c)) return statsPower(creatureStats(c));
+  const folded = foldedCreature(c);
+  // With dodge on the score counts effective HP: Speed's share and the sheet's flat dodge.
+  return statsPower(folded.stats, folded.mods?.dodgeBp ?? 0);
 }
 
 /** Strongest first; ties by line id so the order is deterministic. */

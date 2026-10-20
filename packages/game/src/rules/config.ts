@@ -178,9 +178,6 @@ export const RULES = {
     leetBonusByCount: [0, 15, 15, 17, 19, 21, 23, 25, 27, 29, 32] as readonly number[],
   },
   combat: {
-    /** Element matchup multipliers in basis points. */
-    strongBp: 15_000,
-    weakBp: 7_500,
     /** Support: extra damage on each neighbour's next hit. */
     supportBuffBp: 1_500,
     /**
@@ -238,6 +235,8 @@ export const RULES = {
       spark: { reactionBp: 1_500 },
       tide: { healBp: 400, cleanse: true },
       grove: { healBp: 600 },
+      // Mire's Support work is debuffs (its creatures' own abilities), not an element effect.
+      mire: {},
     } satisfies Record<Element, SupportFx>,
     /**
      * Luck: small, visible randomness in the player-side damage. Crits (5%, +50%, for players and
@@ -286,6 +285,21 @@ export const RULES = {
       swingBp: 5_000,
       swingRounds: 3,
     },
+    /**
+     * Dodge (docs/design/speed-and-dodge.md section 2, combat-rules.md 14): Speed gives a chance to take
+     * nothing from a hit. A fighter's chance is `min(maxBp, floor(Speed x perSpeedBp) + flat dodge)`; area
+     * hits roll `areaShareBp` of it, plus the flat area dodge in full. `enabled` is the one switch: false
+     * (this slice: engine and wiring only, balance comes later) leaves it out of every new fight, so no
+     * fight changes. When on, the numbers are copied into `FightInput.rules.dodge` (`liveFightRules`) and a
+     * stored fight replays with its own; a fight stored without them has no dodge.
+     */
+    dodge: { enabled: true, perSpeedBp: 10, maxBp: 5_000, areaShareBp: 5_000 },
+    /**
+     * Status effects (combat-rules.md 13): `enabled` is the one switch for putting `FightInput.effects`
+     * (the effect dice) on new fights; `dice` is how many effect dice every round draws. Off in this slice:
+     * nothing in shipped content applies an effect yet, and a fight without `effects` draws no such die.
+     */
+    effects: { enabled: true, dice: 32 },
     /** Row size that guests fill up to when fewer than 3 players take part. */
     guestRowSize: 9,
     /** Guests are added when fewer than this many players take part. */

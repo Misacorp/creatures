@@ -37,6 +37,7 @@
   "RULES.expeditions.worth": ["exp-long-best", "exp-spam-worst", "exp-risky-fair-*"],
   "content.bosses": ["raid-*"],
   "content.creatures": ["choice-creature-*", "econ-casual-level-15", "econ-power-ratio"],
+  "content.elementChart": ["choice-*", "fair-*", "raid-*"],
   "content.reactions": ["fair-setup-share", "fair-reactions", "choice-element-*"],
   "content.dungeonFoes": ["dungeon-first-week-clear", "dungeon-depth-growth"],
   "content.roomModifiers": ["dungeon-first-week-clear"],

@@ -166,12 +166,13 @@ function rollSure(rng: Rng, c: TripCatchContext): SureRoll {
 describe('the shipped expedition content', () => {
   const pack = expeditionContent;
 
-  it('has the seven destinations of the spec, each with an element, a banner brief and a flavour line', () => {
+  it('has the eight destinations of the spec, each with an element, a banner brief and a flavour line', () => {
     expect(pack.destinations.map((d) => d.id)).toEqual([
       'tidepools',
       'ember-caves',
       'verdant-hollow',
       'storm-ridge',
+      'sunken-fen',
       'old-crossroads',
       'moonlit-reef',
       'festival-grounds',
@@ -181,8 +182,8 @@ describe('the shipped expedition content', () => {
       expect(d.banner.details.length, d.id).toBeGreaterThanOrEqual(2);
       expect(d.flavor.length, d.id).toBeGreaterThan(0);
     }
-    // The four elemental places are open from the start, the others have a gate.
-    for (const id of ['tidepools', 'ember-caves', 'verdant-hollow', 'storm-ridge']) {
+    // The five elemental places are open from the start, the others have a gate.
+    for (const id of ['tidepools', 'ember-caves', 'verdant-hollow', 'storm-ridge', 'sunken-fen']) {
       expect(dest(id).access).toEqual({ minRank: 1 });
     }
     expect(dest('old-crossroads').element).toBeNull();
@@ -318,7 +319,7 @@ describe('the shipped expedition content', () => {
   it('has about 40 journal entries, grouped by place, with sets, that hint without naming the mechanics', () => {
     const { entries, sets } = pack.journal;
     expect(entries.length).toBeGreaterThanOrEqual(38);
-    expect(entries.length).toBeLessThanOrEqual(44);
+    expect(entries.length).toBeLessThanOrEqual(46);
     for (const d of pack.destinations) {
       expect(entries.filter((e) => e.place === d.id).length, d.id).toBeGreaterThanOrEqual(4);
     }
@@ -401,7 +402,7 @@ describe('the expedition content loader', () => {
       [
         'a species in three places',
         (p) =>
-          (p.destinations[5] as { species: string[] }).species.push('splashet', 'cindle') &&
+          (p.destinations[6] as { species: string[] }).species.push('splashet', 'cindle') &&
           (p.destinations[3] as { species: string[] }).species.push('splashet'),
         /at most 2/,
       ],
@@ -422,7 +423,7 @@ describe('the expedition content loader', () => {
       [
         'odds that do not add up',
         (p) =>
-          ((p.destinations[5] as { odds: unknown }).odds = {
+          ((p.destinations[6] as { odds: unknown }).odds = {
             common: 5000,
             rare: 5000,
             epic: 5000,

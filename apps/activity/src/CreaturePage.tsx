@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
 import { cardDomId, explorerFacts, ribbonsHeldText, type PageFocus } from './creature-card-view';
 import { creatureNeeds } from './creature-needs';
+import { creatureDodgeText, type DodgeRules } from './dodge-view';
 import { ItemPickerDrawer } from './creature-page/ItemPicker';
 import { PageHeader } from './creature-page/PageHeader';
 import { GearSlots, TalentSlots } from './creature-page/PageSlots';
@@ -95,6 +96,23 @@ function statRow(label: string, stat: 'hp' | 'atk' | 'spd', creature: Creature):
         }
       : {}),
   };
+}
+
+/**
+ * The rows of the Stats table: HP, Attack, Speed and, while dodge is on (`RULES.combat.dodge.enabled`),
+ * Dodge under Speed (the Speed part plus the flat dodge of gear and talents, capped; the number the
+ * fight uses). `dodge` is the rules to read (the game's own by default; tests pass their own).
+ */
+export function statRows(creature: Creature, dodge: DodgeRules = RULES.combat.dodge): DataRow[] {
+  const dodgeText = creatureDodgeText(creature, dodge);
+  return [
+    statRow('HP', 'hp', creature),
+    statRow('Attack', 'atk', creature),
+    statRow('Speed', 'spd', creature),
+    ...(dodgeText === null
+      ? []
+      : [{ label: <GlossaryTag entry="stat-dodge">Dodge</GlossaryTag>, value: dodgeText }]),
+  ];
 }
 
 /** Which drawer is up: an item picker for a gear slot, the Talent Book for a talent slot, or none. */
@@ -271,14 +289,7 @@ export function CreaturePage({
 
         <div class="cp-block">
           <h3 class="cp-title">Stats</h3>
-          <DataTable
-            tabular
-            rows={[
-              statRow('HP', 'hp', creature),
-              statRow('Attack', 'atk', creature),
-              statRow('Speed', 'spd', creature),
-            ]}
-          />
+          <DataTable tabular rows={statRows(creature)} />
         </div>
 
         {showAbility && (

@@ -1,7 +1,9 @@
 // A creature hitting the boss (`hitBoss`): turn hits and ability strikes, reactions, marks, crits, credit.
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
-import { RULES, type ReactionDef } from '@creatures/game';
+import { RULES, type Element, type ReactionDef } from '@creatures/game';
 import { hurt } from './fight-damage';
+import { bossDodges } from './fight-dodge';
+import { applyEffect, BOSS, bossStacks, consumeBossEffect, effectBpOf } from './fight-effects';
 import {
   baseContext,
   besides,
@@ -9,6 +11,7 @@ import {
   pick,
   receivedHeal,
   rolls,
+  reactionKey,
   runHook,
   view,
   type Creature,
@@ -28,6 +31,63 @@ export function rallyBp(state: FightState): number {
 export function adaptationOn(state: FightState): boolean {
   const { rule } = state;
   return rule !== null && state.currentRound > state.purgedThrough;
+}
+
+/** The creature leaves its element's mark on the boss (replacing `replaced`, if any), sealing it with a gear set's help. */
+function leaveMark(state: FightState, c: Creature, replaced: Element | null): void {
+  const seal = c.mods.sealMark && !c.sealed;
+  if (seal) c.sealed = true;
+  state.mark = {
+    element: c.element,
+    creature: c,
+    player: c.ownerId,
+    ...(seal ? { sealed: true } : {}),
+  };
+  state.events.push({
+    t: 'mark',
+    round: state.currentRound,
+    creature: c.id,
+    player: c.ownerId,
+    element: c.element,
+    replaced,
+    ...(seal ? { sealed: true as const } : {}),
+  });
+}
+
+/**
+ * The boss dodged a creature's hit (combat-rules.md 14.4): a `hit` event with `damage: 0` and `dodged`,
+ * and nothing else of the hit happens: no damage, crit, reaction, credit, Echo, boost spent or trigger
+ * line. The one thing that still happens is setup (Misa: setup never misses): a Setter's dodged hit leaves
+ * or replaces the mark exactly as its hit would have (5.1, 5.2). Any other role's dodged hit leaves
+ * nothing, and a hit that would have set off a reaction leaves the standing mark where it is.
+ */
+function dodgedHit(
+  state: FightState,
+  c: Creature,
+  strike: { atkBp: number; ability: string; key: string } | undefined,
+): void {
+  const markBefore = state.mark;
+  const reaction =
+    markBefore === null
+      ? undefined
+      : state.reactionByPair.get(reactionKey(markBefore.element, c.element));
+  state.events.push({
+    t: 'hit',
+    round: state.currentRound,
+    creature: c.id,
+    damage: 0,
+    matchupBp: matchupBp(c.element, state.boss.element, state.pack.elementChart),
+    bonusBp: 0,
+    mark: markBefore?.element ?? null,
+    bossHp: state.bossHp,
+    dodged: true,
+    ...(strike === undefined ? {} : { ability: strike.ability, key: strike.key }),
+  });
+  if (c.role !== 'setter' || reaction !== undefined) return;
+  if (markBefore === null) leaveMark(state, c, null);
+  else if (markBefore.element !== c.element && markBefore.sealed !== true) {
+    leaveMark(state, c, markBefore.element);
+  }
 }
 
 /**
@@ -50,13 +110,18 @@ export function hitBoss(
     rules,
     rule,
     adaptationTarget,
-    reactionByMark,
+    reactionByPair,
     creatures,
     events,
     reactionsByType,
     damageByElement,
   } = state;
-  const matchup = matchupBp(c.element, boss.element, pack.elements);
+  // The boss dodges before anything of the hit happens (no boost, bonus or trap is spent on it).
+  if (bossDodges(state, c, strike !== undefined)) {
+    dodgedHit(state, c, strike);
+    return;
+  }
+  const matchup = matchupBp(c.element, boss.element, pack.elementChart);
   const atk = strike === undefined ? c.atk : Math.floor((c.atk * strike.atkBp) / 10_000);
   const buffs = strike === undefined ? c.buffs : [];
   if (strike === undefined) c.buffs = [];
@@ -65,11 +130,10 @@ export function hitBoss(
 
   const m = c.mods;
 
-  let reaction: ReactionDef | undefined;
-  if (markBefore !== null) {
-    const candidate = reactionByMark.get(markBefore.element);
-    if (candidate !== undefined && candidate.triggerElement === c.element) reaction = candidate;
-  }
+  const reaction: ReactionDef | undefined =
+    markBefore === null
+      ? undefined
+      : reactionByPair.get(reactionKey(markBefore.element, c.element));
   const trapped = reaction !== undefined && c.alive && state.reflectArmed && !state.reflectUsed;
   if (trapped) state.reflectUsed = true;
   // A gear set turns the trap aside for the creature's first reaction of the fight (`unreflected`).
@@ -80,6 +144,11 @@ export function hitBoss(
   const brambling = reaction !== undefined && c.alive && brambleBp > 0 && !state.brambleUsed;
   if (brambling) state.brambleUsed = true;
   const brambled = brambling && !reflected;
+  // A reaction that consumes a status effect on the boss (Flare burns Mired) adds its share of the bonus
+  // for each stack on it. Nothing without effects on, or on a reflected reaction (no bonus lands).
+  const burned =
+    reaction?.consumes === undefined || reflected ? 0 : bossStacks(state, reaction.consumes.effect);
+  const burnBp = reaction?.consumes === undefined ? 0 : burned * reaction.consumes.bonusPerStackBp;
 
   const dice = (strike === undefined ? state.turnDice : state.strikeDice)[c.idx];
   let luckBp = state.swingNow;
@@ -131,10 +200,11 @@ export function hitBoss(
     if (c.turnHits === 0) sheetBp += m.firstHitBp;
     c.turnHits += 1;
     // The trigger lines that wait for the next turn hit are spent on it (an ability's strike keeps them).
-    sheetBp += c.paybackReady + c.emberTailReady + c.patientReady;
+    sheetBp += c.paybackReady + c.emberTailReady + c.patientReady + c.momentumReady;
     c.paybackReady = 0;
     c.emberTailReady = 0;
     c.patientReady = 0;
+    c.momentumReady = 0;
   }
   // Rally cry: every hit of the creature, for the rest of the fight.
   sheetBp += c.rallyCry;
@@ -218,7 +288,9 @@ export function hitBoss(
     if (reactionResist > 0) bonus -= Math.floor((bonus * reactionResist) / 10_000);
     bonus = Math.max(
       0,
-      Math.floor((bonus * Math.max(0, 10_000 + reactionHookBp + reactionSheetBp + fxBp)) / 10_000),
+      Math.floor(
+        (bonus * Math.max(0, 10_000 + reactionHookBp + reactionSheetBp + fxBp + burnBp)) / 10_000,
+      ),
     );
     if (reflected) return { damage: plain, bonus: 0, reflect: bonus };
     if (brambled) {
@@ -229,7 +301,9 @@ export function hitBoss(
   };
 
   const rally = rallyBp(state);
-  const totalBp = supportBp + rally + state.roundBonusBp + hookBp + luckBp + sheetBp;
+  // The creature's status effects (a debuff cuts, a buff adds) join the same combined bonus.
+  const effectBp = effectBpOf(state, c, 'damageDealtBp');
+  const totalBp = supportBp + rally + state.roundBonusBp + hookBp + luckBp + sheetBp + effectBp;
   const full = calc(totalBp);
   // The phase floor: a hit that reaches it counts only down to it, so nothing is overkill (the
   // damage, the reaction bonus, the credit and the element totals). The plain hit is counted
@@ -308,6 +382,7 @@ export function hitBoss(
     ...(luckBp === 0 ? {} : { luckBp }),
     ...(crit ? { crit: true as const, critBp: c.critBp + (warm ? m.critWindowBp : 0) } : {}),
     ...(sheetBp === 0 ? {} : { sheetBp }),
+    ...(effectBp === 0 ? {} : { effectBp }),
     ...(setCrit && crit ? { setCrit: true as const } : {}),
     ...(warm ? { warm: true as const } : {}),
   });
@@ -345,6 +420,13 @@ export function hitBoss(
     if (reflected) hurt(state, c, hit.reflect, 'reflect', 'reflect');
     else if (brambled && hit.reflect > 0) hurt(state, c, hit.reflect, 'reflect', 'reflect');
     if (!reflected) {
+      // The reaction's riders on the boss: burn the stacks it counted (Flare), or leave an effect (Smother).
+      if (reaction.consumes !== undefined && burned > 0) {
+        consumeBossEffect(state, reaction.id, reaction.consumes.effect, burnBp);
+      }
+      if (reaction.appliesToFoe !== undefined) {
+        applyEffect(state, BOSS, reaction.appliesToFoe.effect, reaction.appliesToFoe.powerBp, c.id);
+      }
       // The gear sets that act on a reaction that was really cashed.
       if (m.critWindowBp !== 0) c.critWindowUntil = state.currentRound + 1;
       if (m.healOnReactionBp > 0 && c.alive) {
@@ -405,41 +487,9 @@ export function hitBoss(
     }
     c.cashes += 1;
   } else if (markBefore === null) {
-    const seal = m.sealMark && !c.sealed;
-    if (seal) c.sealed = true;
-    state.mark = {
-      element: c.element,
-      creature: c,
-      player: c.ownerId,
-      ...(seal ? { sealed: true } : {}),
-    };
-    events.push({
-      t: 'mark',
-      round: state.currentRound,
-      creature: c.id,
-      player: c.ownerId,
-      element: c.element,
-      replaced: null,
-      ...(seal ? { sealed: true as const } : {}),
-    });
+    leaveMark(state, c, null);
   } else if (replaces) {
-    const seal = m.sealMark && !c.sealed;
-    if (seal) c.sealed = true;
-    state.mark = {
-      element: c.element,
-      creature: c,
-      player: c.ownerId,
-      ...(seal ? { sealed: true } : {}),
-    };
-    events.push({
-      t: 'mark',
-      round: state.currentRound,
-      creature: c.id,
-      player: c.ownerId,
-      element: c.element,
-      replaced: markBefore.element,
-      ...(seal ? { sealed: true as const } : {}),
-    });
+    leaveMark(state, c, markBefore.element);
     if (quick) {
       events.push({ t: 'proc', round: state.currentRound, creature: c.id, kind: 'quick_remark' });
     }

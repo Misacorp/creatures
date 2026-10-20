@@ -24,6 +24,7 @@ const TINTS: Readonly<Record<string, Readonly<Record<'t' | 'u' | 'h', string>>>>
   ember: { t: '#ef6a3a', u: '#b0391c', h: '#ffc08a' },
   grove: { t: '#5cbf5a', u: '#2f7a3a', h: '#b8f08a' },
   spark: { t: '#f2d43d', u: '#b08f12', h: '#fff6b0' },
+  mire: { t: '#b8864a', u: '#6b4a2a', h: '#e8c068' },
 };
 
 /** A round charm hanging from a cord. */
@@ -263,6 +264,13 @@ const sparkShard: SpriteDef = {
   ],
 };
 
+/** A rounded, lumpy crystal with an oily sheen. */
+const mireShard: SpriteDef = {
+  mirror: true,
+  palette: { k: INK, b: '#b8864a', h: '#e8c068', m: '#6b4a2a' },
+  rows: ['.kkk', 'kbhh', 'kbhb', 'kbbb', 'kmbb', 'kmmb', '.kmm', '..kk'],
+};
+
 /** A rare twinkle: a bright gem with points of light around it. */
 const glimmer: SpriteDef = {
   mirror: true,
@@ -276,6 +284,7 @@ export const BUNDLED_PART_ICONS: Readonly<Record<PartKind, SpriteDef>> = {
   'ember-shard': emberShard,
   'grove-shard': groveShard,
   'spark-shard': sparkShard,
+  'mire-shard': mireShard,
   glimmer,
 };
 

@@ -346,7 +346,10 @@ const raidBoard: Entry = {
     placed: { kind: 'number', min: 0, max: 3 },
     empty: { kind: 'number', min: 0, max: 14 },
     owned: { kind: 'number', min: 1, max: 12 },
-    turnOrder: { kind: 'select', options: ['left_to_right', 'right_to_left', 'speed'] },
+    turnOrder: {
+      kind: 'select',
+      options: ['left_to_right', 'right_to_left', 'speed', 'serpentine'],
+    },
     locked: { kind: 'toggle' },
     autoOthers: { kind: 'toggle' },
     away: { kind: 'toggle' },
@@ -460,7 +463,10 @@ const rosterPicker: Entry = {
     effects: { kind: 'toggle' },
     placed: { kind: 'number', min: 0, max: 3 },
     owned: { kind: 'number', min: 1, max: 12 },
-    turnOrder: { kind: 'select', options: ['left_to_right', 'right_to_left', 'speed'] },
+    turnOrder: {
+      kind: 'select',
+      options: ['left_to_right', 'right_to_left', 'speed', 'serpentine'],
+    },
     open: { kind: 'toggle' },
   },
   defaults: { effects: true, placed: 1, owned: 7, turnOrder: 'left_to_right', open: true },

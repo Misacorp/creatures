@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 
-export const ElementSchema = v.picklist(['tide', 'ember', 'grove', 'spark']);
+export const ElementSchema = v.picklist(['tide', 'ember', 'grove', 'spark', 'mire']);
 export type Element = v.InferOutput<typeof ElementSchema>;
 export const ELEMENTS: readonly Element[] = ElementSchema.options;
 
@@ -91,9 +91,25 @@ export type CreatureSpecies = v.InferOutput<typeof CreatureSpeciesSchema>;
 export const ElementDefSchema = v.strictObject({
   id: ElementSchema,
   name: NameSchema,
-  strongAgainst: ElementSchema,
 });
 export type ElementDef = v.InferOutput<typeof ElementDefSchema>;
+
+/**
+ * One pair of the element chart: a creature of `attacker` element hits a boss or foe of `defender`
+ * element for `bp` basis points of its damage (15000 strong, 7500 weak). A pair not listed deals
+ * 10000. "Strong" means exactly `CHART_STRONG_BP`: marks, Hunter and Ward lines read it that way.
+ */
+export const ElementChartPairSchema = v.strictObject({
+  attacker: ElementSchema,
+  defender: ElementSchema,
+  bp: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100_000)),
+});
+export type ElementChartPair = v.InferOutput<typeof ElementChartPairSchema>;
+export const ElementChartSchema = v.pipe(v.array(ElementChartPairSchema), v.maxLength(100));
+export type ElementChart = v.InferOutput<typeof ElementChartSchema>;
+
+/** The multiplier that counts as "strong" on the element chart (150%). */
+export const CHART_STRONG_BP = 15_000;
 
 // --- Raid content (M3) ---
 
@@ -103,12 +119,19 @@ const Description = v.pipe(v.string(), v.minLength(1), v.maxLength(200));
 export const ZoneSchema = v.picklist(['front', 'middle', 'back']);
 export type Zone = v.InferOutput<typeof ZoneSchema>;
 
-export const TurnOrderSchema = v.picklist(['left_to_right', 'right_to_left', 'speed']);
+export const TurnOrderSchema = v.picklist([
+  'left_to_right',
+  'right_to_left',
+  'speed',
+  'serpentine',
+]);
 export type TurnOrder = v.InferOutput<typeof TurnOrderSchema>;
 
 /**
- * A mark on the boss and the reaction that consumes it. The mark is identified by its element (the
- * element of the hits that apply it); `triggerElement` is the element that consumes it.
+ * A mark on the boss and one reaction that consumes it. The mark is identified by its element (the
+ * element of the hits that apply it); `triggerElement` is the element that consumes it. A mark can
+ * be set off by several elements: each (mark, trigger) pair is its own entry with its own id and
+ * name, and entries of one mark repeat the same `markId` and `markName`.
  */
 export const ReactionDefSchema = v.strictObject({
   id: IdSchema,
@@ -121,6 +144,27 @@ export const ReactionDefSchema = v.strictObject({
   multiplierBp: BasisPoints,
   /** Extra multiplier for Payoff creatures on reactions in basis points (12500 = x1.25). */
   payoffBonusBp: BasisPoints,
+  /**
+   * Optional rider: a reaction hit that lands (not reflected) puts the status effect on the boss at
+   * `powerBp` application power (Smother mires it). Only in a fight with effects on; else a plain reaction.
+   */
+  appliesToFoe: v.optional(
+    v.strictObject({
+      effect: IdSchema,
+      powerBp: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100_000)),
+    }),
+  ),
+  /**
+   * Optional rider: the reaction burns off every stack of the status effect on the boss and adds
+   * `bonusPerStackBp` to the reaction's bonus (its extra damage) for each stack burned (Flare burns
+   * Mired). Only in a fight with effects on; else a plain reaction.
+   */
+  consumes: v.optional(
+    v.strictObject({
+      effect: IdSchema,
+      bonusPerStackBp: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100_000)),
+    }),
+  ),
 });
 export type ReactionDef = v.InferOutput<typeof ReactionDefSchema>;
 
@@ -203,6 +247,42 @@ const pincerFields = {
  */
 export const FromRankSchema = v.pipe(v.number(), v.integer(), v.minValue(2), v.maxValue(99));
 
+/**
+ * A status effect (docs/design/combat-rules.md section 13). `perStack` is a strict list of optional
+ * signed numbers, each in basis points per stack: `spdBp` changes the fighter's Speed (negative:
+ * slower), `damageDealtBp` changes the damage it deals (negative: less). A debuff is removed by purge
+ * and cleanse; a buff by neither.
+ */
+const SignedBp = v.pipe(v.number(), v.integer(), v.minValue(-10_000), v.maxValue(10_000));
+export const StatusEffectSchema = v.strictObject({
+  id: IdSchema,
+  name: NameSchema,
+  kind: v.picklist(['debuff', 'buff']),
+  /** The most stacks a fighter can carry. */
+  maxStacks: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(99)),
+  /** The base duration, in the target's own turns. */
+  turns: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(30)),
+  perStack: v.strictObject({
+    spdBp: v.optional(SignedBp),
+    damageDealtBp: v.optional(SignedBp),
+  }),
+});
+export type StatusEffectDef = v.InferOutput<typeof StatusEffectSchema>;
+
+/**
+ * An optional rider on a damaging boss move: every creature the move hits (the creature that takes
+ * the hit, a Guard that stepped in, a splash taker) gets the effect at `powerBp` application power
+ * (10000 = one stack, 20000 = two, 14000 = one plus a 40% chance of a second), for the effect's
+ * duration plus `durationTurns`.
+ */
+export const AppliesSchema = v.strictObject({
+  effect: IdSchema,
+  powerBp: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100_000)),
+  durationTurns: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(10))),
+});
+export type AppliesDef = v.InferOutput<typeof AppliesSchema>;
+const appliesField = { applies: v.optional(AppliesSchema) };
+
 const gimmickBase = {
   id: IdSchema,
   name: NameSchema,
@@ -217,6 +297,7 @@ export const GimmickSchema = v.variant('op', [
     op: v.literal('hit_zone'),
     zone: ZoneSchema,
     power: BasisPoints,
+    ...appliesField,
   }),
   v.strictObject({
     ...gimmickBase,
@@ -241,12 +322,18 @@ export const GimmickSchema = v.variant('op', [
     power: BasisPoints,
     jumps: v.optional(Count0to3),
     decayBp: v.optional(Share),
+    ...appliesField,
   }),
-  v.strictObject({ ...gimmickBase, op: v.literal('sweep'), ...sweepFields }),
-  v.strictObject({ ...gimmickBase, op: v.literal('barrage'), ...barrageFields }),
-  v.strictObject({ ...gimmickBase, op: v.literal('slam'), ...slamFields }),
-  v.strictObject({ ...gimmickBase, op: v.literal('lance'), ...lanceFields }),
-  v.strictObject({ ...gimmickBase, op: v.literal('pincer'), ...pincerFields }),
+  v.strictObject({ ...gimmickBase, op: v.literal('sweep'), ...sweepFields, ...appliesField }),
+  v.strictObject({ ...gimmickBase, op: v.literal('barrage'), ...barrageFields, ...appliesField }),
+  v.strictObject({ ...gimmickBase, op: v.literal('slam'), ...slamFields, ...appliesField }),
+  v.strictObject({ ...gimmickBase, op: v.literal('lance'), ...lanceFields, ...appliesField }),
+  v.strictObject({ ...gimmickBase, op: v.literal('pincer'), ...pincerFields, ...appliesField }),
+  /**
+   * The boss removes every debuff from itself (status effects, `combat-rules.md` 13.6), in its
+   * normal move order. Any trigger. It does not touch buffs or the adaptation.
+   */
+  v.strictObject({ ...gimmickBase, op: v.literal('purge') }),
   /**
    * A pattern announced a round ahead (docs/design/attack-patterns.md 2.7). `trigger` is the round
    * it lands (so it needs `every`, at least 2); at the start of the round before, the engine picks
@@ -255,6 +342,7 @@ export const GimmickSchema = v.variant('op', [
   v.strictObject({
     ...gimmickBase,
     op: v.literal('charge'),
+    ...appliesField,
     then: v.variant('op', [
       v.strictObject({ op: v.literal('sweep'), ...sweepFields }),
       v.strictObject({ op: v.literal('barrage'), ...barrageFields }),
@@ -281,6 +369,11 @@ export const BossSchema = v.strictObject({
   element: ElementSchema,
   baseHp: PositiveInt,
   baseAtk: PositiveInt,
+  /**
+   * Optional Speed (0 when absent): the base of the boss's dodge chance (`RULES.combat.dodge`). Not
+   * scaled by Boss Rank: the raid curve does not move it.
+   */
+  baseSpd: v.optional(NonNegativeInt),
   turnOrder: TurnOrderSchema,
   gimmicks: v.pipe(v.array(GimmickSchema), v.maxLength(MAX_BOSS_GIMMICKS)),
   /** Id of the Phase 2 adaptation rule. */
@@ -366,6 +459,18 @@ export const EffectSchema = v.variant('op', [
   v.strictObject({ op: v.literal('purge'), rounds: v.optional(EffectRounds) }),
   /** The ability's creature hits the boss at once for `atk x atkBp / 10000`. */
   v.strictObject({ op: v.literal('strike'), atkBp: BasisPoints }),
+  /**
+   * Passive, on for the whole fight from round 1 (it has no firing time; it needs the ability's creature):
+   * each time the creature takes a boss hit (not dodged, shielded or reflected) the boss gets the status
+   * effect, at `apply.powerBp` application power. Does nothing in a fight with effects off.
+   */
+  v.strictObject({ op: v.literal('on_hit_taken'), apply: AppliesSchema }),
+  /**
+   * Passive, on for the whole fight from round 1: at each round start, with the creature's Support action
+   * (a living Support that is not silenced), the boss gets the status effect. Does nothing in a fight with
+   * effects off.
+   */
+  v.strictObject({ op: v.literal('round_start'), apply: AppliesSchema }),
 ]);
 export type Effect = v.InferOutput<typeof EffectSchema>;
 export type EffectOp = Effect['op'];
@@ -399,10 +504,12 @@ export type GuestDef = v.InferOutput<typeof GuestSchema>;
 export const ContentPackSchema = v.strictObject({
   version: PositiveInt,
   elements: v.pipe(v.array(ElementDefSchema), v.maxLength(8)),
+  elementChart: ElementChartSchema,
   creatures: v.pipe(v.array(CreatureSpeciesSchema), v.maxLength(1000)),
-  reactions: v.pipe(v.array(ReactionDefSchema), v.maxLength(8)),
+  reactions: v.pipe(v.array(ReactionDefSchema), v.maxLength(40)),
   bosses: v.pipe(v.array(BossSchema), v.maxLength(100)),
   adaptations: v.pipe(v.array(AdaptationSchema), v.maxLength(20)),
+  statusEffects: v.pipe(v.array(StatusEffectSchema), v.maxLength(40)),
   finaleAbilities: v.pipe(v.array(FinaleAbilitySchema), v.maxLength(200)),
   guests: v.pipe(v.array(GuestSchema), v.maxLength(20)),
 });

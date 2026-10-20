@@ -90,6 +90,23 @@ describe('the cues of a proc', () => {
     ).toEqual([[null, '300', 'hit']]);
   });
 
+  it('shows a dodge followed by Momentum and Riposte as Dodged!, a word, then a hop and a number on the boss', () => {
+    const events: FightEvent[] = [
+      start(),
+      { t: 'boss_hit', round: 1, source: 'attack', target: 'b', damage: 0, dodged: true },
+      { t: 'proc', round: 1, creature: 'b', kind: 'momentum', amount: 1_200 },
+      { t: 'proc', round: 1, creature: 'b', kind: 'riposte', amount: 40, bossHp: 960 },
+    ];
+    const cues = cuesOf(events);
+    expect(cues.some((c) => c.kind === 'flash')).toBe(false);
+    expect(floats(events)).toEqual([
+      ['b', 'Dodged!', 'dodge'],
+      ['b', 'Momentum', 'buff'],
+      [null, '40', 'hit'],
+    ]);
+    expect(cues.filter((c) => c.kind === 'hop').map((c) => [c.i, c.creature])).toEqual([[3, 'b']]);
+  });
+
   it('shows a Sidestep as a word, with no hit flash and no shake', () => {
     const events: FightEvent[] = [
       start(),

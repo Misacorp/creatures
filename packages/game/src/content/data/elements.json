@@ -1,22 +1,22 @@
 [
   {
     "id": "tide",
-    "name": "Tide",
-    "strongAgainst": "ember"
+    "name": "Tide"
   },
   {
     "id": "ember",
-    "name": "Ember",
-    "strongAgainst": "grove"
+    "name": "Ember"
   },
   {
     "id": "grove",
-    "name": "Grove",
-    "strongAgainst": "spark"
+    "name": "Grove"
   },
   {
     "id": "spark",
-    "name": "Spark",
-    "strongAgainst": "tide"
+    "name": "Spark"
+  },
+  {
+    "id": "mire",
+    "name": "Mire"
   }
 ]

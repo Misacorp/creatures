@@ -18,6 +18,8 @@ import {
   type MapNode,
   type NodeKind,
   type WeatherDay,
+  strongAgainst,
+  strongOver,
 } from '@creatures/game';
 import { dungeonBossEnrage } from '@creatures/engine';
 import { DEFAULT_MIX } from '../src/archetypes';
@@ -213,13 +215,13 @@ describe('the run input in the simulator', () => {
 
 describe('the policy', () => {
   it('knows which elements beat which, from content', () => {
-    for (const e of content.elements) {
-      expect(elementBeats(e.id, e.strongAgainst)).toBe(true);
-      expect(elementBeats(e.strongAgainst, e.id)).toBe(false);
+    for (const p of content.elementChart) {
+      expect(elementBeats(p.attacker, p.defender)).toBe(p.bp === 15_000);
     }
     const [first] = content.elements;
     if (first === undefined) throw new Error('no elements');
-    const beaten = first.strongAgainst;
+    const [beaten] = strongAgainst(content.elementChart, first.id);
+    if (beaten === undefined) throw new Error('nothing beaten');
     expect(elementAdvantage([first.id, first.id, first.id], beaten)).toBe(1);
     expect(elementAdvantage([beaten, beaten], first.id)).toBe(-1);
     expect(elementAdvantage([], first.id)).toBe(0);
@@ -229,13 +231,11 @@ describe('the policy', () => {
     const fight = node('f1l0', 'fight');
     const foe = dungeonContent.foes.find((f) => f.kind === 'foe');
     if (foe === undefined) throw new Error('no foe');
-    const strong = content.elements.find(
-      (e) => e.id !== foe.element && e.strongAgainst === foe.element,
-    );
-    const weak = content.elements.find((e) => e.id === foe.element);
+    const [strong] = strongOver(content.elementChart, foe.element);
+    const [weak] = strongAgainst(content.elementChart, foe.element);
     if (strong === undefined || weak === undefined) throw new Error('no wheel');
-    const beats = routeScore(fight, foe.element, [strong.id, strong.id, strong.id], healthy);
-    const beaten = routeScore(fight, foe.element, [weak.strongAgainst], healthy);
+    const beats = routeScore(fight, foe.element, [strong, strong, strong], healthy);
+    const beaten = routeScore(fight, foe.element, [weak], healthy);
     expect(beats).toBeGreaterThan(routeScore(fight, foe.element, [], healthy));
     expect(beaten).toBeLessThan(routeScore(fight, foe.element, [], healthy));
 

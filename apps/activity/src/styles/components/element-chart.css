@@ -1,0 +1,99 @@
+/*
+  The element chart: a table with the attacker down the side and the defender across the top, then one
+  line per element. Five elements fit 360 px: the columns are headed by icons, the rows by icon and name.
+*/
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.chart-grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+  table-layout: fixed;
+}
+
+.chart-caption {
+  margin-bottom: 0.25rem;
+  color: var(--haze);
+  font-size: var(--fs-small);
+  text-align: left;
+}
+
+.chart-head,
+.chart-side {
+  padding: 0.125rem 0.25rem;
+  background: var(--ink);
+  box-shadow: inset 0 calc(var(--px) * -1) 0 var(--el, var(--haze));
+  font-weight: normal;
+  text-align: left;
+}
+
+.chart-side {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--el, var(--haze));
+  white-space: nowrap;
+}
+
+.chart-head {
+  text-align: center;
+}
+
+.chart-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+}
+
+.chart-head .chart-icon {
+  margin-right: 0;
+}
+
+.chart-name {
+  font-size: var(--fs-small);
+  vertical-align: middle;
+}
+
+.chart-grid thead td:first-child,
+.chart-grid tbody th {
+  width: 5.5rem;
+}
+
+.chart-cell {
+  height: 1.75rem;
+  background: var(--night);
+  font-size: var(--fs-small);
+  text-align: center;
+}
+
+.chart-cell.strong {
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--good);
+  color: var(--good);
+}
+
+.chart-cell.weak {
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--bad);
+  color: var(--bad);
+}
+
+.chart-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  font-size: var(--fs-small);
+  list-style: none;
+}
+
+.chart-lines li {
+  padding-left: 0.375rem;
+  border-left: var(--px) solid var(--el, var(--haze));
+}

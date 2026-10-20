@@ -371,7 +371,7 @@ export function createPlayer(
     jackpots: 0,
     raids: 0,
     expeditions: [],
-    taste: { tide: 1, ember: 1, grove: 1, spark: 1 },
+    taste: { tide: 1, ember: 1, grove: 1, spark: 1, mire: 1 },
     explorerXp: {},
     familiarity: {},
     supplies: {},

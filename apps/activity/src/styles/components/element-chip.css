@@ -30,3 +30,7 @@
 .t-spark {
   box-shadow: inset calc(var(--px) * -1) 0 0 var(--spark);
 }
+
+.t-mire {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--mire);
+}

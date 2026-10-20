@@ -49,7 +49,7 @@ interface Props {
   /** A request is in flight: the tiles are switched off until it is answered. */
   busy: boolean;
   rosterNames: readonly string[];
-  /** How the boss's turn order reads (`left_to_right`, `right_to_left` or `speed`): the order reactions are set off in. */
+  /** How the boss's turn order reads (`left_to_right`, `right_to_left`, `speed` or `serpentine`): the order reactions are set off in. */
   turnOrder: string;
   /** The week's next event: when the creatures still missing from the board join by themselves. */
   next: RaidView['next'];
@@ -288,6 +288,8 @@ export function Placement(props: Props) {
         <h3 id="raid-place-heading">Raid Roster</h3>
         <p class="muted small roster-help">
           Pick your creatures and place them on the board alongside everyone else.
+          {props.turnOrder === 'serpentine' &&
+            ' The board shows the order of round 1; the rows flip direction each round.'}
         </p>
         <PlacedCount placed={placed}>
           <span class="roster-total">

@@ -994,7 +994,8 @@ function partsWorth(parts: PartsSpec | undefined): number {
     ((parts['tide-shard'] ?? 0) +
       (parts['ember-shard'] ?? 0) +
       (parts['grove-shard'] ?? 0) +
-      (parts['spark-shard'] ?? 0)) *
+      (parts['spark-shard'] ?? 0) +
+      (parts['mire-shard'] ?? 0)) *
       w.shard +
     (parts.glimmer ?? 0) * w.glimmer
   );

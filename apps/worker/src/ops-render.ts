@@ -22,6 +22,7 @@ const RESOURCE_ORDER = [
   'ember-shard',
   'grove-shard',
   'spark-shard',
+  'mire-shard',
   'shard-any',
   'glimmer',
   'supplies',

@@ -60,3 +60,7 @@ An ability is a list of **effects**. The engine interprets a small set of operat
 ## Pity: finale wins only **[Misa]**
 
 The pity counter now advances only on a finale **win** without a jackpot. A loss changes nothing. Soft pity starts at raid 5, not 6 (`RULES.raid.jackpot.softPityFromRaid`); the simulator showed both pity targets pass this way. The sim's `PITY_COUNTS_LOSSES` becomes `false`. The worker's `rollJackpots` makes the same change.
+
+## Passive parts work in every fight (2026-10-20)
+
+The passive effects of a creature ability (`on_hit_taken`, `round_start`: Mudlump, Bogwarden, Squelch and Croakmire) are on from round 1 of every fight the creature is in, including Phase 1 and Phase 2 of a raid, where the fireable ability itself does not exist. A raid's early phases carry them as `FightInput.passives`. See `combat-rules.md` 13.10.

@@ -91,6 +91,7 @@ export const WeatherEffectSchema = v.variant('op', [
           ember: Int(1, 10_000),
           grove: Int(1, 10_000),
           spark: Int(1, 10_000),
+          mire: Int(1, 10_000),
         }),
       ),
     ),

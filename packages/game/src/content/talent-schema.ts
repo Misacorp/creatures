@@ -21,7 +21,7 @@ export type TalentRule = (typeof TALENT_RULES)[number];
 /** How a talent-only rule reads: its name on the card, its unit and one plain sentence. */
 export const TALENT_RULE_INFO: Record<TalentRule, { name: string; unit: LineUnit; about: string }> =
   {
-    speed: { name: 'Speed', unit: 'pct', about: 'Acts earlier when the boss goes by speed.' },
+    speed: { name: 'Speed', unit: 'pct', about: 'Dodges more often.' },
     glimmerFind: {
       name: 'Glimmer finds',
       unit: 'pct',

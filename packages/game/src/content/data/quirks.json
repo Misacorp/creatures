@@ -357,6 +357,34 @@
         "id": "hearthshell-party-wiggle",
         "text": "Cannot hold still once the festival music starts."
       }
+    ],
+    "mudlump": [
+      {
+        "id": "mudlump-puddle-fan",
+        "text": "Gets very excited about the smallest puddle."
+      },
+      {
+        "id": "mudlump-dry-wish",
+        "text": "Secretly wants to be dry for one whole day."
+      },
+      {
+        "id": "mudlump-footprint-count",
+        "text": "Counts its footprints and is never satisfied."
+      }
+    ],
+    "squelch": [
+      {
+        "id": "squelch-shy-of-squelch",
+        "text": "Is embarrassed by the sound of its own squelch."
+      },
+      {
+        "id": "squelch-deep-water",
+        "text": "Will not go near puddles it cannot see the bottom of."
+      },
+      {
+        "id": "squelch-stone-act",
+        "text": "Pretends to be a stone whenever someone sings."
+      }
     ]
   }
 }

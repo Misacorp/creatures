@@ -96,6 +96,7 @@ const LINE_POOL: Readonly<Record<string, readonly string[]>> = {
   tide: ['tide-attunement', 'aimed-ward', 'tide-hunter'],
   grove: ['aimed-ward', 'hp', 'grove-reaction'],
   spark: ['spark-reaction', 'crit-chance', 'spark-attunement'],
+  mire: ['mire-reaction', 'armor', 'mire-ward'],
   neutral: ['crit-damage', 'trail-xp', 'attack'],
   explorer: ['trail-xp', 'quick-feet', 'lucky-find'],
   guard: ['armor', 'cover', 'all-damage-taken'],

@@ -33,10 +33,10 @@ const foes = (): Record<string, unknown>[] => clone(foesJson);
 const mods = (): Record<string, unknown>[] => clone(modifiersJson);
 
 describe('the dungeon content', () => {
-  it('has about 8 normal foes, 4 floor bosses and 8 modifiers, and loads', () => {
-    expect(dungeonContent.foes.filter((f) => f.kind === 'foe')).toHaveLength(8);
-    expect(dungeonContent.foes.filter((f) => f.kind === 'boss')).toHaveLength(4);
-    expect(dungeonContent.modifiers).toHaveLength(8);
+  it('has about 10 normal foes, 5 floor bosses and 9 modifiers, and loads', () => {
+    expect(dungeonContent.foes.filter((f) => f.kind === 'foe')).toHaveLength(10);
+    expect(dungeonContent.foes.filter((f) => f.kind === 'boss')).toHaveLength(5);
+    expect(dungeonContent.modifiers).toHaveLength(9);
     expect(() => loadDungeon(foes(), mods(), rooms)).not.toThrow();
   });
 
@@ -76,6 +76,29 @@ describe('the dungeon content', () => {
       { op: 'team_stat', stat: 'atk', bp: 5_000, role: 'guard' },
       { op: 'team_stat', stat: 'atk', bp: 5_000, role: 'support' },
     ]);
+  });
+
+  it('has the Mire foes and the Muddy room: Mired on the foes, the whole team slower in the room', () => {
+    for (const id of ['bog-toad', 'tar-leech', 'fen-lurker']) {
+      const f = dungeonFoe(id);
+      expect(f?.element, id).toBe('mire');
+      const moves =
+        f?.signature === undefined ? f?.gimmicks : [...(f?.gimmicks ?? []), f.signature];
+      expect(
+        moves?.every((g) => 'applies' in g && g.applies?.effect === 'mired'),
+        id,
+      ).toBe(true);
+    }
+    expect(dungeonFoe('bog-toad')?.kind).toBe('foe');
+    expect(dungeonFoe('tar-leech')?.kind).toBe('foe');
+    expect(dungeonFoe('fen-lurker')).toMatchObject({
+      kind: 'boss',
+      signature: { id: 'pull-under', op: 'charge', applies: { effect: 'mired' } },
+    });
+    expect(roomModifier('mud')).toMatchObject({
+      name: 'Muddy',
+      effects: [{ op: 'team_stat', stat: 'spd', bp: -3_000 }],
+    });
   });
 
   it('looks foes and modifiers up by id', () => {
@@ -651,5 +674,30 @@ describe('the order of a team decides whether reactions happen', () => {
     const tide = (id: string, role: Role) => ({ id, role, element: 'tide' as Element });
     const none = dungeonRowOrder([tide('p', 'payoff'), tide('g', 'guard'), tide('s', 'setter')]);
     expect(none.map((c) => c.id)).toEqual(['s', 'g', 'p']);
+  });
+});
+
+describe('dungeon foe Speed', () => {
+  it('lets a foe carry a baseSpd (a whole number from 0), and has none by default', () => {
+    // Every shipped foe is slow: 2 to 5% dodge at 10 bp a point.
+    for (const f of dungeonContent.foes) {
+      expect(f.baseSpd, f.id).toBeGreaterThanOrEqual(20);
+      expect(f.baseSpd, f.id).toBeLessThanOrEqual(50);
+    }
+    const noSpd = foes().map((f) => {
+      const copy = { ...f };
+      delete copy['baseSpd'];
+      return copy;
+    });
+    expect(loadDungeon(noSpd, mods(), rooms).foes.every((f) => f.baseSpd === undefined)).toBe(true);
+    const withSpd = (value: unknown) => {
+      const list = foes();
+      (list[0] as Record<string, unknown>)['baseSpd'] = value;
+      return () => loadDungeon(list, mods(), rooms);
+    };
+    expect(withSpd(0)).not.toThrow();
+    expect(withSpd(25)).not.toThrow();
+    expect(withSpd(-3)).toThrow(/schema/);
+    expect(withSpd(2.5)).toThrow(/schema/);
   });
 });

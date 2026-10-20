@@ -876,5 +876,119 @@
       "id": "full-bloom"
     },
     "flavor": "A turtle whose shell garden has opened into one enormous flower."
+  },
+  {
+    "id": "mudlump",
+    "name": "Mudlump",
+    "line": "mudlump",
+    "stage": 1,
+    "element": "mire",
+    "rarity": "common",
+    "role": "guard",
+    "catchable": true,
+    "starter": false,
+    "baseStats": {
+      "hp": 168,
+      "atk": 20,
+      "spd": 10
+    },
+    "growth": {
+      "hp": 12,
+      "atk": 1,
+      "spd": 1
+    },
+    "levelCap": 15,
+    "evolvesTo": {
+      "species": "bogwarden",
+      "level": 15,
+      "essence": 20
+    },
+    "ability": {
+      "id": "mud-wall"
+    },
+    "flavor": "A squat lump of peat that sits in front, takes the hits and never takes offence."
+  },
+  {
+    "id": "bogwarden",
+    "name": "Bogwarden",
+    "line": "mudlump",
+    "stage": 2,
+    "element": "mire",
+    "rarity": "common",
+    "role": "guard",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 240,
+      "atk": 30,
+      "spd": 14
+    },
+    "growth": {
+      "hp": 16,
+      "atk": 2,
+      "spd": 1
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "bog-hold"
+    },
+    "flavor": "A broad, steady warden of the bog. Whatever strikes it gets a little stuck."
+  },
+  {
+    "id": "squelch",
+    "name": "Squelch",
+    "line": "squelch",
+    "stage": 1,
+    "element": "mire",
+    "rarity": "common",
+    "role": "support",
+    "catchable": true,
+    "starter": false,
+    "baseStats": {
+      "hp": 136,
+      "atk": 22,
+      "spd": 12
+    },
+    "growth": {
+      "hp": 10,
+      "atk": 2,
+      "spd": 1
+    },
+    "levelCap": 15,
+    "evolvesTo": {
+      "species": "croakmire",
+      "level": 15,
+      "essence": 20
+    },
+    "ability": {
+      "id": "squelch-song"
+    },
+    "flavor": "A small ochre frog that squelches when it walks and hums when nobody listens."
+  },
+  {
+    "id": "croakmire",
+    "name": "Croakmire",
+    "line": "squelch",
+    "stage": 2,
+    "element": "mire",
+    "rarity": "common",
+    "role": "support",
+    "catchable": false,
+    "starter": false,
+    "baseStats": {
+      "hp": 192,
+      "atk": 32,
+      "spd": 14
+    },
+    "growth": {
+      "hp": 14,
+      "atk": 2,
+      "spd": 1
+    },
+    "levelCap": 30,
+    "ability": {
+      "id": "deep-croak"
+    },
+    "flavor": "A big, patient frog. One low croak and the boss sinks a little deeper into the mud."
   }
 ]

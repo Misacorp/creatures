@@ -61,7 +61,7 @@ function besides(index: number, length: number, mode: AffectMode): number[] {
 /**
  * The reactions of a row (null slots are skipped), as `rowReactions` plays the marks in the order the
  * row acts: left to right in the dungeon, the boss's turn order in the raid (speed order: fastest
- * first, ties by position). Slot numbers, not positions in the acting order. Each marker, payoff and
+ * first, ties by position; serpentine: round 1's order). Slot numbers, not positions in the acting order. Each marker, payoff and
  * reaction triple appears once.
  */
 export function slotReactions(
@@ -70,7 +70,11 @@ export function slotReactions(
   reactions: readonly ReactionDef[] = content.reactions,
 ): SlotReaction[] {
   const present = row.flatMap((s, idx) => (s === null ? [] : [{ idx, spd: s.speed ?? 0 }]));
-  const slotAt = turnOrder(present, mode.row === 'dungeon' ? 'left_to_right' : mode.turnOrder);
+  // Serpentine shows round 1's order (the rows flip every round).
+  const slotAt = turnOrder(present, mode.row === 'dungeon' ? 'left_to_right' : mode.turnOrder, {
+    round: 1,
+    board: { length: row.length, slots: present.map((p) => p.idx) },
+  });
   const acting = slotAt.map((idx) => row[idx] as AffectSlot);
   const out: SlotReaction[] = [];
   const seen = new Set<string>();

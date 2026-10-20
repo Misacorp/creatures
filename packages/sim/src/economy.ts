@@ -344,7 +344,10 @@ function join(player: SimPlayer, all: readonly SimPlayer[], taste: Rng, talents:
   const starter = chooseStarter(all.filter((p) => p.joined));
   player.joined = true;
   // A liking for each element between 0.8 and 1.2 (in tenths), so players explore different places.
-  for (const element of ELEMENTS) player.taste[element] = (8 + int(taste, 5)) / 10;
+  // Mire has no place to explore yet (its taste stays 1 and draws no die, so the other tastes do not move).
+  for (const element of ELEMENTS) {
+    if (element !== 'mire') player.taste[element] = (8 + int(taste, 5)) / 10;
+  }
   player.creatures.push(newCreature(player, starter, talents));
 }
 

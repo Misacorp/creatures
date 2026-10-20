@@ -1,11 +1,14 @@
 import * as v from 'valibot';
+import { chartBp } from './element-chart';
 import {
+  CHART_STRONG_BP,
   ContentPackSchema,
   ELEMENTS,
   type BossDef,
   type ContentPack,
   type CreatureSpecies,
   type Effect,
+  type Gimmick,
   type FinaleAbilityDef,
 } from './schema';
 
@@ -24,7 +27,8 @@ export function loadContent(raw: unknown): ContentPack {
     throw new Error(`Invalid content schema at "${path}": ${first?.message ?? 'unknown error'}`);
   }
   const pack = parsed.output;
-  checkElementCycle(pack);
+  checkElements(pack);
+  checkElementChart(pack);
   checkCreatures(pack);
   checkReactions(pack);
   checkRaidContent(pack);
@@ -36,28 +40,25 @@ function fail(message: string): never {
   throw new Error(`Invalid content: ${message}`);
 }
 
-function checkElementCycle(pack: ContentPack): void {
-  const strongAgainst = new Map<string, string>();
+function checkElements(pack: ContentPack): void {
+  const ids = new Set<string>();
   for (const def of pack.elements) {
-    if (strongAgainst.has(def.id)) fail(`duplicate element "${def.id}"`);
-    strongAgainst.set(def.id, def.strongAgainst);
+    if (ids.has(def.id)) fail(`duplicate element "${def.id}"`);
+    ids.add(def.id);
   }
-  if (strongAgainst.size !== ELEMENTS.length) {
-    fail(`expected ${ELEMENTS.length} elements, got ${strongAgainst.size}`);
+  if (ids.size !== ELEMENTS.length) {
+    fail(`expected ${ELEMENTS.length} elements, got ${ids.size}`);
   }
-  // Walk the cycle from the first element: it must visit all four and return to the start.
-  const start = ELEMENTS[0];
-  if (start === undefined) fail('no elements defined');
+}
+
+function checkElementChart(pack: ContentPack): void {
   const seen = new Set<string>();
-  let current: string = start;
-  while (!seen.has(current)) {
-    seen.add(current);
-    const next = strongAgainst.get(current);
-    if (next === undefined) fail(`element "${current}" is missing`);
-    current = next;
-  }
-  if (current !== start || seen.size !== ELEMENTS.length) {
-    fail('elements must form a single cycle through all four elements');
+  for (const p of pack.elementChart) {
+    const key = `${p.attacker}>${p.defender}`;
+    if (p.attacker === p.defender) fail(`element chart pairs "${p.attacker}" with itself`);
+    if (seen.has(key)) fail(`element chart lists ${p.attacker} against ${p.defender} twice`);
+    seen.add(key);
+    if (p.bp === 10_000) fail(`element chart lists ${key} at 100%; leave neutral pairs out`);
   }
 }
 
@@ -153,23 +154,53 @@ function checkUniqueIds(kind: string, items: readonly { id: string }[]): Map<str
 
 function checkReactions(pack: ContentPack): void {
   checkUniqueIds('reaction', pack.reactions);
+  const markByElement = new Map<string, { id: string; name: string }>();
   const markIds = new Set<string>();
-  const markElements = new Set<string>();
+  const pairs = new Set<string>();
   for (const r of pack.reactions) {
-    if (markIds.has(r.markId)) fail(`duplicate mark id "${r.markId}"`);
-    markIds.add(r.markId);
-    if (markElements.has(r.markElement)) fail(`two marks for element "${r.markElement}"`);
-    markElements.add(r.markElement);
-    // The trigger is the element that is strong against the marked element.
-    const trigger = pack.elements.find((e) => e.strongAgainst === r.markElement);
-    if (trigger?.id !== r.triggerElement) {
-      fail(`reaction "${r.id}" must be triggered by the element strong against ${r.markElement}`);
+    // Every reaction of one mark repeats the mark's id and name; two elements never share a mark id.
+    const mark = markByElement.get(r.markElement);
+    if (mark === undefined) {
+      if (markIds.has(r.markId)) fail(`duplicate mark id "${r.markId}"`);
+      markIds.add(r.markId);
+      markByElement.set(r.markElement, { id: r.markId, name: r.markName });
+    } else if (mark.id !== r.markId || mark.name !== r.markName) {
+      fail(`reaction "${r.id}" names a different mark than the other marks of ${r.markElement}`);
+    }
+    const key = `${r.markElement}<${r.triggerElement}`;
+    if (pairs.has(key))
+      fail(`two reactions for mark "${r.markElement}" set off by "${r.triggerElement}"`);
+    pairs.add(key);
+    // A rider names a real status effect.
+    for (const rider of [r.appliesToFoe, r.consumes]) {
+      if (rider !== undefined && !pack.statusEffects.some((e) => e.id === rider.effect)) {
+        fail(`reaction "${r.id}" uses unknown status effect "${rider.effect}"`);
+      }
+    }
+    // A reaction's trigger must deal 150% to the marked element on the chart.
+    if (chartBp(pack.elementChart, r.triggerElement, r.markElement) !== CHART_STRONG_BP) {
+      fail(`reaction "${r.id}" must be triggered by an element strong against ${r.markElement}`);
     }
   }
-  if (markElements.size !== ELEMENTS.length) fail('every element needs exactly one mark');
+  if (markByElement.size !== ELEMENTS.length) fail('every element needs exactly one mark');
+  // Every strong pair has its reaction.
+  for (const p of pack.elementChart) {
+    if (p.bp === CHART_STRONG_BP && !pairs.has(`${p.defender}<${p.attacker}`)) {
+      fail(`no reaction for mark "${p.defender}" set off by "${p.attacker}"`);
+    }
+  }
 }
 
-function checkBoss(boss: BossDef, adaptationIds: ReadonlyMap<string, number>): void {
+/** The status effect a move applies, if any (a rider on a damaging move or a charge). */
+export function appliedEffect(g: Gimmick): string | undefined {
+  return 'applies' in g ? g.applies?.effect : undefined;
+}
+
+function checkBoss(
+  boss: BossDef,
+  adaptationIds: ReadonlyMap<string, number>,
+  effectIds: ReadonlyMap<string, number>,
+): void {
   if (!adaptationIds.has(boss.adaptation)) {
     fail(`boss "${boss.id}" names unknown adaptation "${boss.adaptation}"`);
   }
@@ -181,13 +212,18 @@ function checkBoss(boss: BossDef, adaptationIds: ReadonlyMap<string, number>): v
   for (const g of boss.gimmicks) {
     if (gimmickIds.has(g.id)) fail(`boss "${boss.id}" has duplicate gimmick id "${g.id}"`);
     gimmickIds.add(g.id);
+    const effect = appliedEffect(g);
+    if (effect !== undefined && !effectIds.has(effect)) {
+      fail(`boss "${boss.id}" gimmick "${g.id}" applies unknown status effect "${effect}"`);
+    }
   }
 }
 
 function checkRaidContent(pack: ContentPack): void {
   checkUniqueIds('boss', pack.bosses);
   const adaptationIds = checkUniqueIds('adaptation', pack.adaptations);
-  for (const boss of pack.bosses) checkBoss(boss, adaptationIds);
+  const effectIds = checkUniqueIds('status effect', pack.statusEffects);
+  for (const boss of pack.bosses) checkBoss(boss, adaptationIds, effectIds);
 
   checkUniqueIds('finale ability', pack.finaleAbilities);
 
@@ -216,6 +252,9 @@ function effectAmount(e: Effect): number {
       return e.reduceBp;
     case 'strike':
       return e.atkBp;
+    case 'on_hit_taken':
+    case 'round_start':
+      return e.apply.powerBp;
     case 're_mark':
     case 'purge':
       return 0;
@@ -254,6 +293,14 @@ function checkAbilities(pack: ContentPack): void {
     byId.set(a.id, a);
     const ops = a.effects.map((e) => e.op);
     if (new Set(ops).size !== ops.length) fail(`ability "${a.id}" repeats an effect`);
+    for (const e of a.effects) {
+      if (
+        (e.op === 'on_hit_taken' || e.op === 'round_start') &&
+        !pack.statusEffects.some((s) => s.id === e.apply.effect)
+      ) {
+        fail(`ability "${a.id}" applies unknown status effect "${e.apply.effect}"`);
+      }
+    }
     if (a.kind === 'basic') {
       // Basic abilities are the four plain ops, with the player's pick: no creature is involved.
       const [only] = a.effects;
@@ -261,6 +308,9 @@ function checkAbilities(pack: ContentPack): void {
         fail(`basic ability "${a.id}" must have exactly one effect`);
       }
       if (only.op === 'strike') fail(`basic ability "${a.id}" cannot strike`);
+      if (only.op === 'on_hit_taken' || only.op === 'round_start') {
+        fail(`basic ability "${a.id}" cannot be passive (it has no creature)`);
+      }
       if (
         (only.op === 'shield_wall' && only.zone !== 'choose') ||
         (only.op === 're_mark' && only.element !== 'choose')

@@ -45,6 +45,7 @@ import {
 } from '@creatures/game';
 import {
   dungeonBossEnrage,
+  liveEffects,
   liveFightRules,
   skyRunFields,
   type DungeonRoomResult,
@@ -638,6 +639,8 @@ export class Dungeon {
       // The combat rules, the boss room's enrage and the depth (a landmark gives the floor boss its
       // signature), stored with the input so a replay is exact.
       rules: liveFightRules(),
+      // The effect dice, while status effects are switched on (`RULES.combat.effects`).
+      ...liveEffects(),
       depth,
       ...(enrage === undefined ? {} : { enrage }),
     };

@@ -149,8 +149,10 @@ export function loadHowToPlay(raw: unknown, pack: ContentPack): HowToPlay {
   if (setterSpecies === undefined) fail(`the example uses unknown species "${setter}"`);
   if (payoffSpecies === undefined) fail(`the example uses unknown species "${payoff}"`);
   if (setterSpecies.role !== 'setter') fail(`the example's "${setter}" must be a Setter`);
-  const reaction = pack.reactions.find((r) => r.markElement === setterSpecies.element);
-  if (reaction?.triggerElement !== payoffSpecies.element) {
+  const cashesIn = pack.reactions.some(
+    (r) => r.markElement === setterSpecies.element && r.triggerElement === payoffSpecies.element,
+  );
+  if (!cashesIn) {
     fail(
       `the example's "${payoff}" must be of the element that cashes in ${setterSpecies.element}`,
     );
