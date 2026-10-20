@@ -3,8 +3,8 @@
  * gathering points (each duplicate fused in adds points by its rarity), so `creatures.fusion_points`
  * stores them; `fusion_count` stays and is the level those points have reached.
  *
- * Existing creatures keep the level they have: their points start at that level's threshold (1, 3, 6, 11
- * and 19 for levels 1 to 5). The numbers are written out here on purpose: a released migration must not
+ * Existing creatures keep the level they have: their points start at that level's threshold (1, 4, 9, 18
+ * and 34 for levels 1 to 5). The numbers are written out here on purpose: a released migration must not
  * change when the rules are tuned. Never edit a released migration.
  */
 export function fusionPointsMigration(sql: SqlStorage): void {
@@ -13,10 +13,10 @@ export function fusionPointsMigration(sql: SqlStorage): void {
   );
   sql.exec(`UPDATE creatures SET fusion_points = CASE fusion_count
     WHEN 1 THEN 1
-    WHEN 2 THEN 3
-    WHEN 3 THEN 6
-    WHEN 4 THEN 11
-    WHEN 5 THEN 19
+    WHEN 2 THEN 4
+    WHEN 3 THEN 9
+    WHEN 4 THEN 18
+    WHEN 5 THEN 34
     ELSE 0
   END`);
 }

@@ -85,19 +85,27 @@ describe('simulation run', () => {
     // at week 4 10 to 14, a dungeon run 4.9464 to 5.7232 fights (home rate 0.125 to 0.0893), creature ratio
     // 1.5963 to 1.0154, finale start share 0.2414 to 0.2369, top share 0.3162 to 0.3159, the long run
     // 0.8333 to 1 finale wins (final rank 4 to 5). The raid win rates stay at 1 (4 raid weeks, dice shifts).
+    // 2026-10-20 (B-026, raid retune for the tick economy, steeper fusion thresholds 1, 4, 9, 18, 34, early
+    // gear levels lower): boss HP 20 to 40% up with a new rank curve, Attack 33 to 35, expedition gear at
+    // item level 1 a rank and dungeon gear a level every 3 depths. A tiny run only has 4 raid weeks, so these
+    // are dice shifts and the real effect of the raid retune (harder teams, fewer wins) shows in the quick
+    // sim, not here. Moved: finale start share 0.2369 to 0.2968, top share 0.3159 to 0.3371, creature ratio
+    // 1.0154 to 1.3609, Experience per hour of a long trip 145.8809 to 131.3262 (the trip's gear finds are
+    // worth less), a dungeon run 5.7232 to 5.2946 fights (home rate 0.0893 to 0.0804), the long run 1 to
+    // 0.8333 finale wins (final rank 5 to 4). The raid phase 1 and finale win rates stay at 1 (4 raid weeks).
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
       'raid.typical.phase1ClearRate': 1,
       'raid.typical.finaleWinRate': 1,
-      'raid.typical.finaleStartShare': 0.2369,
-      'fair.topShareMedian': 0.3159,
-      'choice.creatureRatioMax': 1.0154,
+      'raid.typical.finaleStartShare': 0.2968,
+      'fair.topShareMedian': 0.3371,
+      'choice.creatureRatioMax': 1.3609,
       'econ.casualTopLevelWeek4': 14,
-      'exp.rate.long': 145.8809,
-      'dungeon.meanFights': 5.7232,
-      'dungeon.dailyHomeRate': 0.0893,
-      'longrun.typical.finaleWinRate': 1,
-      'longrun.typicalFinalRank': 5,
+      'exp.rate.long': 131.3262,
+      'dungeon.meanFights': 5.2946,
+      'dungeon.dailyHomeRate': 0.0804,
+      'longrun.typical.finaleWinRate': 0.8333,
+      'longrun.typicalFinalRank': 4,
     };
     for (const [id, expected] of Object.entries(headline)) {
       expect(m[id], id).toBeCloseTo(expected, 3);

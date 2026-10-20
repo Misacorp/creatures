@@ -153,12 +153,12 @@ describe('a creature that arrives', () => {
       levels.push(c.fusionCount);
     }
     expect(c.fusionPoints).toBe(4);
-    expect(levels).toEqual([1, 1, 2, 2]);
+    expect(levels).toEqual([1, 1, 1, 2]);
     // Points past the top are not stored, and the level stays 5.
     c.fusionPoints = RULES.fusion.thresholds[RULES.fusion.maxFusions - 1] as number;
     c.fusionCount = RULES.fusion.maxFusions;
     collect(p, species('splashet'), scripted([1, 5]), true);
-    expect(c.fusionPoints).toBe(19);
+    expect(c.fusionPoints).toBe(34);
     expect(c.fusionCount).toBe(5);
   });
 

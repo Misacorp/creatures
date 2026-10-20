@@ -268,7 +268,7 @@
           {
             "baseId": "cinder-charm",
             "rarity": "common",
-            "itemLevel": 11
+            "itemLevel": 8
           }
         ],
         "supplies": ["lantern-good"],
@@ -424,7 +424,7 @@
           {
             "baseId": "cinder-charm",
             "rarity": "common",
-            "itemLevel": 11
+            "itemLevel": 8
           }
         ]
       },

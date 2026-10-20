@@ -146,8 +146,8 @@ export const RULES = {
      * The first levels come quickly and the last ones cost a lot more.
      */
     pointsByRarity: { common: 1, rare: 2, epic: 4 },
-    /** Cumulative points needed to reach fusion level 1, 2, 3, 4 and 5 (1, 2, 3, 5 and 8 points per level). */
-    thresholds: [1, 3, 6, 11, 19],
+    /** Cumulative points needed to reach fusion level 1, 2, 3, 4 and 5 (1, 3, 5, 9 and 16 points per level). */
+    thresholds: [1, 4, 9, 18, 34],
   },
   /**
    * Talents and the duplicate choice (docs/design/gear-and-creatures-v2.md section 8, "Creatures A").
@@ -357,12 +357,12 @@ export const RULES = {
      *
      * The shape, and why (docs/balance/log.md B-010; the targets are the `curve-*` ones in
      * `packages/sim/targets.json`, measured on whole journey servers):
-     * - Rank 1 is a tutorial boss (35% of the pool, 65% Attack): a new server's first week is won by
+     * - Rank 1 is a tutorial boss (26% of the pool, 65% Attack; B-026 moved the pool numbers up for the tick economy and lowered this row by the same factor): a new server's first week is won by
      *   mostly casual players (about 85% for a server with no engaged player at all, 97% to 100% with
      *   one or two) so players learn what a raid pays.
      * - Ranks 2 to 5 climb steeply (1.9x, 3.0x, 3.6x and 4.3x the calibrated pool) while the roster grows fast (levels,
      *   evolutions, fusions, gear): a default server wins about 80%, a committed one about 97%.
-     * - From rank 6 the pool is nearly flat (4.7x to 4.95x the calibrated pool) because player power stops growing
+     * - From rank 6 the pool is nearly flat (5.1x to 5.4x the calibrated pool after B-026) because player power stops growing
      *   quickly after week 6: Attack, boss crit chance (from rank 9) and a second plain attack (from
      *   rank 14) carry the difficulty, and the rank-gated moves punish setups. A default server wins
      *   about 55%, a committed one about 87%; luck, positioning and loadouts decide it.
@@ -371,21 +371,21 @@ export const RULES = {
      */
     curve: {
       ranks: [
-        { hpBp: 3_500, atkBp: 6_500, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 2_600, atkBp: 6_500, bossAttacks: 1, critBonusBp: 0 },
         { hpBp: 19_200, atkBp: 11_000, bossAttacks: 1, critBonusBp: 0 },
         { hpBp: 29_800, atkBp: 12_500, bossAttacks: 1, critBonusBp: 0 },
         { hpBp: 36_000, atkBp: 14_000, bossAttacks: 1, critBonusBp: 0 },
         { hpBp: 43_200, atkBp: 15_500, bossAttacks: 1, critBonusBp: 0 },
-        { hpBp: 47_000, atkBp: 17_000, bossAttacks: 1, critBonusBp: 0 },
-        { hpBp: 47_500, atkBp: 18_500, bossAttacks: 1, critBonusBp: 0 },
-        { hpBp: 48_500, atkBp: 20_000, bossAttacks: 1, critBonusBp: 0 },
-        { hpBp: 49_500, atkBp: 21_500, bossAttacks: 1, critBonusBp: 250 },
-        { hpBp: 49_500, atkBp: 23_000, bossAttacks: 1, critBonusBp: 250 },
-        { hpBp: 49_500, atkBp: 24_500, bossAttacks: 1, critBonusBp: 500 },
-        { hpBp: 49_500, atkBp: 26_000, bossAttacks: 1, critBonusBp: 500 },
-        { hpBp: 49_500, atkBp: 27_500, bossAttacks: 1, critBonusBp: 500 },
-        { hpBp: 49_500, atkBp: 29_000, bossAttacks: 2, critBonusBp: 750 },
-        { hpBp: 49_500, atkBp: 30_500, bossAttacks: 2, critBonusBp: 750 },
+        { hpBp: 51_230, atkBp: 17_000, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 51_780, atkBp: 18_500, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 52_870, atkBp: 20_000, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 53_960, atkBp: 21_500, bossAttacks: 1, critBonusBp: 250 },
+        { hpBp: 53_960, atkBp: 23_000, bossAttacks: 1, critBonusBp: 250 },
+        { hpBp: 53_960, atkBp: 24_500, bossAttacks: 1, critBonusBp: 500 },
+        { hpBp: 53_960, atkBp: 26_000, bossAttacks: 1, critBonusBp: 500 },
+        { hpBp: 53_960, atkBp: 27_500, bossAttacks: 1, critBonusBp: 500 },
+        { hpBp: 53_960, atkBp: 29_000, bossAttacks: 2, critBonusBp: 750 },
+        { hpBp: 53_960, atkBp: 30_500, bossAttacks: 2, critBonusBp: 750 },
       ] as RankRow[],
       /**
        * Above the table's last rank every rank multiplies the row below it: HP by `hpStepBp` and
@@ -587,9 +587,9 @@ export const RULES = {
       /** Raid finale reward slot: `base + Boss Rank`. */
       finale: { base: 3 },
       /** Daily dungeon: `base + floor(depth / depthPerLevel)`, plus `landmarkBonus` at a landmark. */
-      dungeon: { base: 1, depthPerLevel: 2, landmarkBonus: 3 },
+      dungeon: { base: 1, depthPerLevel: 3, landmarkBonus: 3 },
       /** Expedition finds: this times the finder's explorer rank. */
-      expeditionPerRank: 2,
+      expeditionPerRank: 1,
       /** Crafting: this times the crafter's Crafting level. */
       craftPerLevel: 2,
       /**

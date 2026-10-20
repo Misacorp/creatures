@@ -531,11 +531,11 @@ describe('the duplicate choice', () => {
   });
 
   it('offers Fuse until the creature has all 5 fusions', () => {
-    expect(fuseOffered([creature({ fusionCount: 4, fusionPoints: 11 })])).toBe(true);
-    expect(fuseOffered([creature({ fusionCount: 5, fusionPoints: 19 })])).toBe(false);
+    expect(fuseOffered([creature({ fusionCount: 4, fusionPoints: 18 })])).toBe(true);
+    expect(fuseOffered([creature({ fusionCount: 5, fusionPoints: 34 })])).toBe(false);
     expect(
       fuseOffered([
-        creature({ fusionCount: 5, fusionPoints: 19 }),
+        creature({ fusionCount: 5, fusionPoints: 34 }),
         creature({ id: 'c2', fusionCount: 1, fusionPoints: 1 }),
       ]),
     ).toBe(true);
@@ -648,10 +648,10 @@ describe('the duplicate choice', () => {
 
   it('recommends Keep, then Fuse until 5, then Release', () => {
     const idle = roll('shares-the-sun');
-    const full = creature({ fusionCount: 5, fusionPoints: 19 });
+    const full = creature({ fusionCount: 5, fusionPoints: 34 });
     expect(recommend(idle, [full], true)).toEqual({ choice: 'keep' });
     expect(recommend(idle, [full], false)).toEqual({ choice: 'release' });
-    expect(recommend(idle, [creature({ fusionCount: 4, fusionPoints: 11 })], false)).toEqual({
+    expect(recommend(idle, [creature({ fusionCount: 4, fusionPoints: 18 })], false)).toEqual({
       choice: 'fuse',
       creatureId: 'c1',
     });

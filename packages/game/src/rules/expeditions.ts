@@ -855,7 +855,7 @@ export function rollTripLoot(rng: Rng, ctx: TripLootContext): TripLoot {
 
 /**
  * A gear drop of one rarity from a trip's push-on goal: the place's element is its tag and its item
- * level twice the explorer's rank (`rollExpeditionItem`).
+ * level the explorer's rank (`rollExpeditionItem`).
  */
 export function rollGearDrop(
   rng: Rng,

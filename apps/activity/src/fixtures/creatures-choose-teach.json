@@ -446,13 +446,13 @@
                 "id": "00000000-0000-4000-8200-000000000010",
                 "baseId": "kelp-cap",
                 "rarity": "common",
-                "itemLevel": 2
+                "itemLevel": 1
               },
               {
                 "id": "00000000-0000-4000-8200-000000000011",
                 "baseId": "kelp-cap",
                 "rarity": "common",
-                "itemLevel": 2
+                "itemLevel": 1
               }
             ],
             "converted": [],
@@ -528,7 +528,7 @@
                 "id": "00000000-0000-4000-8200-000000000013",
                 "baseId": "kelp-cap",
                 "rarity": "rare",
-                "itemLevel": 2
+                "itemLevel": 1
               }
             ],
             "converted": [],

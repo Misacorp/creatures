@@ -470,9 +470,9 @@ describe('creatureAbilityText', () => {
 describe('fusion in words', () => {
   it('shows the level and the points toward the next one, or max', () => {
     expect(fusionProgressText(0)).toBe('Fusion 0 · 0/1');
-    expect(fusionProgressText(4)).toBe('Fusion 2 · 4/6');
-    expect(fusionProgressText(10)).toBe('Fusion 3 · 10/11');
-    expect(fusionProgressText(19)).toBe('Fusion 5 · max');
+    expect(fusionProgressText(4)).toBe('Fusion 2 · 4/9');
+    expect(fusionProgressText(10)).toBe('Fusion 3 · 10/18');
+    expect(fusionProgressText(34)).toBe('Fusion 5 · max');
   });
 
   it('says what a duplicate adds, by its rarity, and when that is a new level', () => {
@@ -482,13 +482,13 @@ describe('fusion in words', () => {
       text: '+1 fusion · level up',
     });
     expect(fusionGain(1, 'common').text).toBe('+1 fusion');
-    expect(fusionGain(1, 'rare').text).toBe('+2 fusion · level up');
+    expect(fusionGain(1, 'rare').text).toBe('+2 fusion');
     expect(fusionGain(2, 'epic').text).toBe('+4 fusion · level up');
-    expect(fusionGain(18, 'epic')).toEqual({
+    expect(fusionGain(33, 'epic')).toEqual({
       points: 1,
       levelsUp: true,
       text: '+1 fusion · level up',
     });
-    expect(fusionGain(19, 'common').points).toBe(0);
+    expect(fusionGain(34, 'common').points).toBe(0);
   });
 });

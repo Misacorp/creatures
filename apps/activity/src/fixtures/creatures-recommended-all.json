@@ -21,7 +21,7 @@
       },
       "choice": "fuse",
       "creatureId": "00000000-0000-4000-8200-000000000003",
-      "fusionCount": 2,
+      "fusionCount": 1,
       "fusionPoints": 3,
       "pointsAdded": 1
     }
@@ -136,7 +136,7 @@
         "line": "splashet",
         "level": 8,
         "levelCap": 15,
-        "fusionCount": 2,
+        "fusionCount": 1,
         "fusionPoints": 3,
         "shiny": false,
         "nickname": null,
@@ -199,14 +199,14 @@
           ]
         },
         "stats": {
-          "hp": 186,
-          "atk": 46,
-          "spd": 51
+          "hp": 178,
+          "atk": 44,
+          "spd": 48
         },
         "statsWithGear": {
-          "hp": 186,
-          "atk": 46,
-          "spd": 51
+          "hp": 178,
+          "atk": 44,
+          "spd": 48
         },
         "dodgeBp": 0,
         "gear": [],
@@ -531,13 +531,13 @@
                 "id": "00000000-0000-4000-8200-000000000010",
                 "baseId": "kelp-cap",
                 "rarity": "common",
-                "itemLevel": 2
+                "itemLevel": 1
               },
               {
                 "id": "00000000-0000-4000-8200-000000000011",
                 "baseId": "kelp-cap",
                 "rarity": "common",
-                "itemLevel": 2
+                "itemLevel": 1
               }
             ],
             "converted": [],
@@ -613,7 +613,7 @@
                 "id": "00000000-0000-4000-8200-000000000013",
                 "baseId": "kelp-cap",
                 "rarity": "rare",
-                "itemLevel": 2
+                "itemLevel": 1
               }
             ],
             "converted": [],

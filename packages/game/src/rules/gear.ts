@@ -689,7 +689,7 @@ export function rollBlueprint(rng: Rng): string {
 
 /**
  * A gear find of a trip's push-on goal: the place's element is the tag (the Old Crossroads gives the
- * explorer's Compass, a place without an element a neutral piece), item level twice the explorer's rank.
+ * explorer's Compass, a place without an element a neutral piece), item level the explorer's rank.
  */
 export function rollExpeditionItem(
   rng: Rng,

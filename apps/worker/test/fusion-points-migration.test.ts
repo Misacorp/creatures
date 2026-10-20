@@ -27,7 +27,7 @@ describe('migration 37', () => {
         'SELECT fusion_count, fusion_points FROM creatures ORDER BY rowid',
       );
       // The points are the level's threshold, so the level is kept exactly (and never lower).
-      expect(after.map((c) => c.fusion_points)).toEqual([0, 1, 3, 6, 11, 19]);
+      expect(after.map((c) => c.fusion_points)).toEqual([0, 1, 4, 9, 18, 34]);
       for (const c of after) {
         expect(fusionLevel(c.fusion_points)).toBe(c.fusion_count);
         expect(c.fusion_points).toBe(fusionThreshold(c.fusion_count));

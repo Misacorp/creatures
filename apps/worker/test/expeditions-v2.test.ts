@@ -1793,7 +1793,7 @@ describe('gear on trips', () => {
     );
   });
 
-  it('a gear find from a push-on is an item of the place’s element at twice the explorer rank, with where it came from', async () => {
+  it('a gear find from a push-on is an item of the place’s element at the explorer rank as its level, with where it came from', async () => {
     const draw = { v: 0 };
     await runCore(
       nextGuild(),
@@ -1824,8 +1824,8 @@ describe('gear on trips', () => {
           origin_json: string;
         }>(ctx.sql, 'SELECT tag, slot, item_level, rarity, source, origin_json FROM gear_items');
         expect(items).toHaveLength(1);
-        // Rank 4 explorer: item level 8; the Ember Caves: an Ember (or role) piece.
-        expect(items[0]).toMatchObject({ item_level: 8, rarity: 'rare', source: 'expedition' });
+        // Rank 4 explorer: item level 4; the Ember Caves: an Ember (or role) piece.
+        expect(items[0]).toMatchObject({ item_level: 4, rarity: 'rare', source: 'expedition' });
         expect(['ember', 'guard', 'setter', 'payoff', 'support']).toContain(items[0]?.tag);
         const origin = JSON.parse(items[0]?.origin_json ?? '{}') as Record<string, unknown>;
         expect(origin).toMatchObject({ kind: 'trip', place: 'ember-caves' });

@@ -1334,13 +1334,13 @@ describe('trip loot', () => {
     expect(() => rollTripLoot(scripted([]), { ...base, ticks: -1 })).toThrow(RangeError);
   });
 
-  it('rolls a gear piece like a push-on drop: the place’s tag, the rarity from the odds, item level twice the rank', () => {
+  it('rolls a gear piece like a push-on drop: the place’s tag, the rarity from the odds, item level the rank (times RULES.gear.itemLevel.expeditionPerRank)', () => {
     const rng = createSeededRng('gear-ticks');
     const loot = rollTripLoot(rng, { ...base, ticks: 6_000, rank: 3, fixedParts: false });
     expect(loot.gear.length).toBeGreaterThan(200);
     const shares = { common: 0, rare: 0, epic: 0 };
     for (const g of loot.gear) {
-      expect(g.itemLevel).toBe(6);
+      expect(g.itemLevel).toBe(3);
       shares[g.rarity] += 1;
     }
     const odds = RULES.expeditions.tick.gearOdds;

@@ -305,7 +305,7 @@ export function payTrip(
       const parts: PartsBundle = { ...drawn.parts };
       const blueprints = [...drawn.blueprints];
       const supplies = [...drawn.supplies];
-      // The gear pieces the ticks found: the place's element is the tag, the item level twice the rank.
+      // The gear pieces the ticks found: the place's element is the tag, the item level the rank.
       const gear: DraftItem[] = drawn.gear.map((item) => ({
         item,
         origin: { kind: 'trip', place: dest.id, rank },
@@ -321,7 +321,7 @@ export function payTrip(
         if (worked.reward.blueprint === true) blueprints.push(rollBlueprint(rng));
         if (worked.reward.gear !== undefined) {
           // The place's element is the tag, the Old Crossroads gives explorer pieces, and the item
-          // level is twice the finder's explorer rank.
+          // level is the finder's explorer rank.
           const item = rollGearDrop(rng, worked.reward.gear, place, rank);
           gear.push({ item, origin: { kind: 'trip', place: dest.id, rank } });
         }

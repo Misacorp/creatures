@@ -70,11 +70,11 @@ describe('fusion', () => {
     }
   });
 
-  it('turns points into levels by steep thresholds, 1 2 3 5 8 points per level', () => {
+  it('turns points into levels by steep thresholds, 1 3 5 9 16 points per level', () => {
     expect(RULES.fusion.thresholds).toHaveLength(RULES.fusion.maxFusions);
-    const levels = [0, 1, 2, 3, 5, 6, 10, 11, 18, 19, 40].map(fusionLevel);
+    const levels = [0, 1, 3, 4, 8, 9, 17, 18, 33, 34, 40].map(fusionLevel);
     expect(levels).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
-    expect([1, 2, 3, 4, 5].map(fusionThreshold)).toEqual([1, 3, 6, 11, 19]);
+    expect([1, 2, 3, 4, 5].map(fusionThreshold)).toEqual([1, 4, 9, 18, 34]);
     expect(fusionThreshold(0)).toBe(0);
     // Each level costs more than the one before.
     const steps = [1, 2, 3, 4, 5].map((l) => fusionThreshold(l) - fusionThreshold(l - 1));
@@ -90,28 +90,28 @@ describe('fusion', () => {
     ]);
     expect(fuseInto(0, 'common')).toBe(1);
     expect(fuseInto(1, 'rare')).toBe(3);
-    expect(fusionLevel(fuseInto(5, 'common') as number)).toBe(3);
+    expect(fusionLevel(fuseInto(5, 'common') as number)).toBe(2);
     // Past the maximum nothing is stored: the last step stops at the top threshold.
-    expect(fuseInto(18, 'epic')).toBe(19);
-    expect(fuseInto(19, 'common')).toBeNull();
+    expect(fuseInto(32, 'epic')).toBe(34);
+    expect(fuseInto(34, 'common')).toBeNull();
     expect(fuseInto(0, 'epic')).toBe(4);
-    // Commons alone: 19 duplicates reach level 5.
+    // Commons alone: 34 duplicates reach level 5.
     let points = 0;
     let n = 0;
     for (let next = fuseInto(points, 'common'); next !== null; next = fuseInto(points, 'common')) {
       points = next;
       n += 1;
     }
-    expect(n).toBe(19);
+    expect(n).toBe(34);
     expect(fusionLevel(points)).toBe(5);
     expect(() => fuseInto(-1, 'common')).toThrow(RangeError);
   });
 
   it('reports progress toward the next level', () => {
     expect(fusionProgress(0)).toEqual({ level: 0, into: 0, need: 1 });
-    expect(fusionProgress(4)).toEqual({ level: 2, into: 1, need: 3 });
-    expect(fusionProgress(10)).toEqual({ level: 3, into: 4, need: 5 });
-    expect(fusionProgress(19)).toEqual({ level: 5, into: 0, need: null });
+    expect(fusionProgress(4)).toEqual({ level: 2, into: 0, need: 5 });
+    expect(fusionProgress(10)).toEqual({ level: 3, into: 1, need: 9 });
+    expect(fusionProgress(34)).toEqual({ level: 5, into: 0, need: null });
   });
 
   it('makes the creature shiny from a shiny duplicate, only once', () => {

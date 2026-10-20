@@ -540,7 +540,7 @@
           {
             "baseId": "cinder-charm",
             "rarity": "common",
-            "itemLevel": 11
+            "itemLevel": 8
           }
         ]
       },
@@ -631,9 +631,9 @@
         },
         "gear": [
           {
-            "baseId": "emberkeepers-crown",
+            "baseId": "coal-warm-cap",
             "rarity": "common",
-            "itemLevel": 10
+            "itemLevel": 7
           }
         ]
       }
@@ -1443,13 +1443,13 @@
           "id": "00000000-0000-4000-8300-000000000023",
           "baseId": "cinder-charm",
           "rarity": "common",
-          "itemLevel": 11
+          "itemLevel": 8
         },
         {
           "id": "00000000-0000-4000-8300-000000000024",
-          "baseId": "emberkeepers-crown",
+          "baseId": "coal-warm-cap",
           "rarity": "common",
-          "itemLevel": 10
+          "itemLevel": 7
         }
       ],
       "converted": [],
@@ -1890,7 +1890,7 @@
             {
               "baseId": "cinder-charm",
               "rarity": "common",
-              "itemLevel": 11
+              "itemLevel": 8
             }
           ]
         },
@@ -1981,9 +1981,9 @@
           },
           "gear": [
             {
-              "baseId": "emberkeepers-crown",
+              "baseId": "coal-warm-cap",
               "rarity": "common",
-              "itemLevel": 10
+              "itemLevel": 7
             }
           ]
         }
@@ -2316,13 +2316,13 @@
             "id": "00000000-0000-4000-8300-000000000023",
             "baseId": "cinder-charm",
             "rarity": "common",
-            "itemLevel": 11
+            "itemLevel": 8
           },
           {
             "id": "00000000-0000-4000-8300-000000000024",
-            "baseId": "emberkeepers-crown",
+            "baseId": "coal-warm-cap",
             "rarity": "common",
-            "itemLevel": 10
+            "itemLevel": 7
           }
         ],
         "converted": [],
@@ -2763,7 +2763,7 @@
               {
                 "baseId": "cinder-charm",
                 "rarity": "common",
-                "itemLevel": 11
+                "itemLevel": 8
               }
             ]
           },
@@ -2854,9 +2854,9 @@
             },
             "gear": [
               {
-                "baseId": "emberkeepers-crown",
+                "baseId": "coal-warm-cap",
                 "rarity": "common",
-                "itemLevel": 10
+                "itemLevel": 7
               }
             ]
           }
