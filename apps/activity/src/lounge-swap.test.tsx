@@ -97,6 +97,7 @@ describe('the popover of your own creature in the room', () => {
             element: 'tide',
             role: 'guard',
             shiny: false,
+            loungeXp: 34,
           }}
           action={[
             { label: 'Move', onAct: onMove },
@@ -118,6 +119,10 @@ describe('the popover of your own creature in the room', () => {
     expect(byClass(page.root, 'rarity-tag')).toHaveLength(1);
     const table = byClass(page.root, 'data-table')[0] as FakeElement;
     expect(visibleText(table)).toContain('Level');
+    // Your own lounger says how far it is today, as on its card.
+    const tag = byClass(page.root, 'lounge')[0] as FakeElement;
+    expect(visibleText(tag)).toBe('Lounging 34 / 60 XP');
+    expect(byClass(tag, 'armchair-icon')).toHaveLength(1);
     page.click(buttons[1] as FakeElement);
     expect(onSwap).toHaveBeenCalledTimes(1);
     expect(onMove).not.toHaveBeenCalled();

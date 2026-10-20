@@ -320,6 +320,9 @@ export function Game({
               onSwap: () => {
                 setSwapping(true);
               },
+              ...(game.loungerId === null
+                ? {}
+                : { ownLoungeXp: game.loungeXp[game.loungerId] ?? 0 }),
             },
           }
         : {})}

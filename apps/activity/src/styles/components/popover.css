@@ -137,8 +137,14 @@
 
 /* The creature's rarity and Shiny in its tag row: chips like the element's, the rarity in its colour. */
 .pop-tags .chip.rarity-tag,
-.pop-tags .chip.shiny {
+.pop-tags .chip.shiny,
+.pop-tags .chip.lounge {
   padding: 0.125rem 0.5rem;
+}
+
+/* Your own lounger's "Lounging 34 / 60 XP": the armchair with the tag's own gap. */
+.pop-tags .chip.lounge .armchair-icon {
+  margin-right: 0;
 }
 
 /*

@@ -397,6 +397,7 @@ function RoomDemo({
             instanceId: 'workbench',
             scene,
             onSwap,
+            ownLoungeXp: 34,
             ...(onMove === undefined ? {} : { onMove }),
           }}
         />
@@ -407,6 +408,7 @@ function RoomDemo({
           instanceId="workbench"
           scene={scene}
           onSwap={onSwap}
+          ownLoungeXp={34}
           {...(onMove === undefined ? {} : { onMove })}
         />
       )}

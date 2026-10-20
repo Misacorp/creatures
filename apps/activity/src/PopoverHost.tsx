@@ -2,6 +2,7 @@ import { content, entryView } from '@creatures/game';
 import type { GlossarySection, GlossaryView } from '@creatures/game';
 import { createContext, type ComponentChildren, type RefObject } from 'preact';
 import { useContext, useMemo, useRef, useState } from 'preact/hooks';
+import { loungingText } from './creature-card-view';
 import { backLabel, creatureFactRows, shownWornItems, type CreatureInfo } from './creature-info';
 import { bossArt, shinyPalette } from './art';
 import type { FoeInfo } from './foe-info';
@@ -13,6 +14,7 @@ import { WornItemLines } from './WornItemLines';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { ArmchairIcon } from './ui/ArmchairIcon';
 import { DataTable } from './ui/DataTable';
 import { Popover, PopoverBack, PopoverCard } from './ui/Popover';
 import { toggleActive, usePopoverNav } from './ui/popover-nav';
@@ -230,6 +232,18 @@ function CreaturePopover({
                   }}
                 >
                   Shiny
+                </button>
+              )}
+              {info.loungeXp !== undefined && (
+                <button
+                  type="button"
+                  class="gtag gtag-chip chip badge lounge"
+                  onClick={() => {
+                    nav.open('lounging');
+                  }}
+                >
+                  <ArmchairIcon />
+                  {loungingText(info.loungeXp)}
                 </button>
               )}
             </p>

@@ -25,6 +25,8 @@ export interface CreatureInfo {
   effect?: string;
   /** The items it wears, for a creature in the living room (set with `ownerName`); empty or missing for none. */
   gear?: readonly WornItem[];
+  /** Your own lounger in the living room only: what lounging gave it today (its "Lounging 34 / 60 XP" tag). */
+  loungeXp?: number;
 }
 
 /** The popover info of anything that is a creature on screen (a stage unit, a team member, an explorer). */

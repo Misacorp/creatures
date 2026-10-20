@@ -228,6 +228,8 @@ interface LivingRoomProps {
   onMove?: (spotId: string) => void;
   /** Opens the lounge swap (who lounges), from "Swap" in the popover of the player's own creature. */
   onSwap?: () => void;
+  /** What lounging gave your own lounger today: its popover shows the Lounging tag. Absent: no tag. */
+  ownLoungeXp?: number;
 }
 
 /**
@@ -251,6 +253,7 @@ export function LivingRoom({
   children,
   onMove,
   onSwap,
+  ownLoungeXp,
 }: LivingRoomProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
@@ -415,7 +418,11 @@ export function LivingRoom({
               ) : (
                 <SmallCreature
                   id={seat.resident.creature.id}
-                  info={seat.info}
+                  info={
+                    seat === own && ownLoungeXp !== undefined
+                      ? { ...seat.info, loungeXp: ownLoungeXp }
+                      : seat.info
+                  }
                   label={seat.label}
                   class="room-creature"
                   {...(seat === own ? { action: ownActions } : {})}
