@@ -31,20 +31,32 @@ Expeditions are about **creatures, not the account**: each creature builds its o
 
 - **Trips without supplies are free.** They still cost the creature's time, which could go to Workshop jobs.
 - **Supplies are a meaningful boost.** They **cannot be bought** (since 2026-10-16, B-011): the daily dungeon drops one on every run that clears its first room (better tiers deeper), trips **find** them, and the Workshop **crafts** them from supply blueprints (higher tiers need a higher Crafting level), the one way to pick the kind and tier you want.
-- Examples:
-  - a Lure (rarity odds);
-  - a Map scrap (more catch rolls);
-  - a Lantern (Moonlit Reef odds).
+- **A supply has a fixed part and a per-tick part** (2026-10-20): the fixed part is the same on any trip, so a supply is worth carrying on a 2 hour trip, and the per-tick part grows with the trip's ticks, so it is better on a long one.
+  - a **Lure**: more creatures. A fixed chance of one bonus creature that surely comes, a little more chance every tick, and a better chance that it is a new species;
+  - a **Map scrap**: a longer trip, more finds. Extra ticks, a fixed part plus a share of the trip's ticks (a fraction is a chance);
+  - a **Lantern**: finds from the deeper area. A better chance per creature, and a fixed chance that the first creature of the trip comes from there; it opens the deeper area without a star;
+  - a **Satchel**: more parts, meaning every crafting ingredient (scrap, shards, glimmer). Fixed scrap, shards and a chance of glimmer, plus a share more per tick, and more supply finds.
 - **The best supplies guarantee an end-of-trip choice;** lesser ones only make one likely.
 - **Trip lengths:** the shortest trip is **2 hours**. Trips are 2, 6 or 12 hours, plus 24 hours from explorer rank.
-- **Rewards grow faster than the hours** (catch rolls, parts and loot chances per hour rise with length). Spamming short trips is the worst way to progress. Note that the gear sim found nobody sends 12 h trips today, and this fixes it.
+
+### Ticks (2026-10-20)
+
+A finished trip pays in **ticks**: 2 for 2 h, 7 for 6 h, 15 for 12 h, 32 for 24 h (`RULES.expeditions.lengths.<l>.ticks`). The ticks run ahead of the hours, so a long trip beats the same hours in short ones; players are only told longer trips are better. Ticks are nominal: explorer rank shortens the time, not the ticks.
+
+- Each tick gives 20 explorer XP and rolls every table on its own (`RULES.expeditions.tick`, basis points per tick): a creature 12.5%, 1 scrap at 50%, a shard of the **place's** element 6% (a place without one draws each shard's element at random), a gear piece 5.13%, glimmer 0.3%, a blueprint 0.4%, a found supply 2%, a journal page 0.7%. There are no caps: a lucky trip can bring several of anything.
+- Gear, talents, weather, twists, stars and milestones scale these chances. A twist that gave extra rolls gives extra ticks.
+- The catch pity is gone (the dupe shield and the first-expedition Zipmouse stay).
+- **Recall** pays the ticks of the whole hours already spent (never the bonus ticks), and nothing else.
+- **Push-on** hours are ticks, one per hour, on top of the goal's own reward. A goal's extra catch rolls are extra creature rolls at the tick's chance.
+- Trips in flight when ticks arrived are paid by their length.
+- `packages/sim/src/trip-yield-cli.ts` (`node packages/sim/scripts/trip-yield.mjs`) prints what a trip brings by length and supply.
 
 ### End-of-trip choices
 
 - When a trip **would end**, it may offer one of two **push-on goals** instead of coming home. Or you claim and come home as usual.
 - **Risk and reward are clearly flagged, with exact odds.** For example:
   - risky: "+2 h, a 50% chance the whole trip fails and brings nothing back, otherwise a rare gear piece";
-  - safe: "+1 h, one more catch roll".
+  - safe: "+1 h, a chance of one more creature".
 - The sim sets each goal's odds so the risky one is a fair gamble.
 - The choice waits until the player opens the app; ignoring it means coming home. The extra hours start when the player chooses, not when the trip ended: pushing on carries its price in time. Results are rolled on the server with live randomness when the push-on ends.
 

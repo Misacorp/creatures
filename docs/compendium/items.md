@@ -133,7 +133,7 @@ Added 2026-10-18 (more gear and modifiers). A **set** is three named pieces, a H
 | Hearth Helpers      | Support  | Boost +3 pt             | Its boost also lands on the creature two slots away.            | "The kit of the one who makes sure everyone is warm, fed and within reach."           |
 | First Footprints    | Setter   | Marking hit +8%         | Its first mark each fight cannot be replaced.                   | "Whoever leaves the first mark is the one the others follow."                         |
 | Pounce Set          | Payoff   | Payoff's pounce +5%     | Its first reaction each fight crits.                            | "For the creature that waits for the mark, and then does not wait at all."            |
-| Crossroads Wanderer | Explorer | Trips take 4% less time | One extra catch roll on 24 hour trips.                          | "Worn by those who take the fifth road at the Old Crossroads."                        |
+| Crossroads Wanderer | Explorer | Trips take 4% less time | One more hour of finds on 24 hour trips.                        | "Worn by those who take the fifth road at the Old Crossroads."                        |
 | Lantern Night       | Festival | Attack and HP +3%       | Guards in its row: their abilities last 1 more round.           | "The Festival pieces together: hearth, lantern and cap, lit once a season."           |
 
 **Compendium detail, not shipped** (who makes them):
@@ -190,7 +190,7 @@ Twelve supplies in four kinds, each in three tiers: basic, good and great. A tri
 
 Crafting a supply is a Workshop job. Basic supplies need the lowest Crafting level, and the great ones need the highest. `(content: glossary.json "job-supply")`
 
-**Lures are the one supply made from Bait** (and a little scrap), since 2026-10-16: Bait's two jobs are treats, which grow creatures, and lures, which find them. A trip no longer always brings a creature; a lure raises the chance that it does, and the chance that the creature is a species the player does not have yet, the better tiers more. Lures are crafted only: trips and the dungeon do not drop them, and rank gifts give the lure tiers of old supplies as map scraps and satchels instead. `(content: supplies.json, glossary.json "supply-lure"; design: gear-and-creatures-v2.md 9.5)`
+**Lures are the one supply made from Bait** (and a little scrap), since 2026-10-16: Bait's two jobs are treats, which grow creatures, and lures, which find them. A trip no longer always brings a creature; a lure raises the chance that every hour of a trip brings one, may bring one more for sure, and raises the chance that the creature is a species the player does not have yet, the better tiers more. Lures are crafted only: trips and the dungeon do not drop them, and rank gifts give the lure tiers of old supplies as map scraps and satchels instead. `(content: supplies.json, glossary.json "supply-lure"; design: gear-and-creatures-v2.md 9.5)`
 
 ## Treats
 
