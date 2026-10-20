@@ -34,8 +34,8 @@ export interface ItemPickerProps {
 
 /**
  * One entry of the grid: an item, whether the creature wears it, who else does (their name and species) and
- * why it cannot be worn here. An item another creature wears is taken: it is not moved from the picker
- * (a tap here never takes gear off someone else by accident); its reason is "On Pebble".
+ * the game's reason it cannot be worn here. An item another creature wears is taken: greyed out in the grid,
+ * and moved only by its own button ("Take from Pebble"), never by a plain Equip.
  */
 interface Cell {
   item: GearItem;
@@ -43,6 +43,11 @@ interface Cell {
   wornBy: string | null;
   wornBySpecies: string | null;
   blocked: string | null;
+}
+
+/** Greyed out in the grid: it cannot be worn, or another creature wears it. */
+function dimmed(cell: Cell): boolean {
+  return cell.blocked !== null || cell.wornBy !== null;
 }
 
 /**
@@ -73,7 +78,7 @@ function DetailPanel({
   /** Close the details (the item stays marked in the grid): the same as a second tap on its tile. */
   onClose: () => void;
 }) {
-  const { item, worn, blocked } = cell;
+  const { item, worn, wornBy, blocked } = cell;
   // Nothing to compare when the slot is empty or the item is the worn one: no switch then.
   const comparable = !worn && wornItem !== undefined;
   const comparing = comparable && compareOn;
@@ -114,6 +119,18 @@ function DetailPanel({
           </button>
         ) : blocked !== null ? (
           <span class="ip-reason">{blocked}</span>
+        ) : wornBy !== null ? (
+          // Not the gold Equip: the words say whose item it is, so moving it is never a surprise.
+          <button
+            type="button"
+            class="ip-act"
+            disabled={busy}
+            onClick={() => {
+              onEquip(item);
+            }}
+          >
+            Take from {wornBy}
+          </button>
         ) : (
           <button
             type="button"
@@ -166,10 +183,7 @@ export function ItemPickerDrawer({
       worn: false,
       wornBy: choice.wornBy,
       wornBySpecies: choice.wornBySpecies,
-      // The game's own reason comes first; a wearable item someone else wears is taken.
-      blocked:
-        compactReason(choice.item, creature) ??
-        (choice.wornBy === null ? null : `On ${choice.wornBy}`),
+      blocked: compactReason(choice.item, creature),
     })),
   ];
   const [picked, setPicked] = useState<string | null>(initialPicked ?? null);
@@ -227,10 +241,10 @@ export function ItemPickerDrawer({
             <ItemTile
               key={cell.item.id}
               item={cell.item}
-              label={`${itemLabel(cell.item.baseId, cell.item.itemLevel)}, ${rarityName(cell.item.rarity)}${cell.worn ? ', worn now' : ''}${cell.wornBy === null ? '' : `, worn by ${cell.wornBy}`}${cell.blocked === null || cell.blocked === `On ${cell.wornBy ?? ''}` ? '' : `. ${cell.blocked}`}`}
+              label={`${itemLabel(cell.item.baseId, cell.item.itemLevel)}, ${rarityName(cell.item.rarity)}${cell.worn ? ', worn now' : ''}${cell.wornBy === null ? '' : `, worn by ${cell.wornBy}`}${cell.blocked === null ? '' : `. ${cell.blocked}`}`}
               selected={cell.item.id === shown?.item.id}
               pressed={cell.item.id === selected?.item.id}
-              blocked={cell.blocked !== null}
+              blocked={dimmed(cell)}
               flag={cell.worn ? 'Worn' : null}
               wearer={cell.wornBySpecies}
               onSelect={() => {

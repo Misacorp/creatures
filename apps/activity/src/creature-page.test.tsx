@@ -504,8 +504,8 @@ describe('the creature page: the item picker drawer', () => {
     expect(byRole(root, 'dialog')).toHaveLength(1);
   });
 
-  it("greys out an item another creature wears, with that creature's picture, and does not move it", () => {
-    const { root, page: p } = draw('level 15');
+  it("greys out an item another creature wears, with that creature's picture, and moves it only with Take from", async () => {
+    const { root, page: p, actions, creature } = draw('level 15');
     p.click(slotButton(root, /^Hat: /));
     const dialog = first(byRole(root, 'dialog'));
     const cell = first(
@@ -520,8 +520,16 @@ describe('the creature page: the item picker drawer', () => {
       cells.slice(1, at).every((c) => !(c.getAttribute('class') ?? '').includes('blocked')),
     ).toBe(true);
     p.click(cell);
+    // No plain Equip: the one button says whose item it is.
     expect(byName(dialog, 'button', 'Equip')).toHaveLength(0);
-    expect(visibleText(first(byClass(dialog, 'ip-reason')))).toBe('On Pebble');
+    const take = first(byName(dialog, 'button', 'Take from Pebble'));
+    expect(take.getAttribute('class')).not.toContain('primary');
+    p.click(take);
+    await vi.waitFor(() => {
+      expect(actions.onEquip).toHaveBeenCalledTimes(1);
+    });
+    const call: unknown[] = (actions.onEquip as ReturnType<typeof vi.fn>).mock.calls[0] ?? [];
+    expect(call[1]).toBe(creature.id);
   });
 
   it('shows the reason an item cannot be worn instead of an Equip button', () => {
