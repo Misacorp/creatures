@@ -107,6 +107,8 @@ export function Game({
   const [swapping, setSwapping] = useState(false);
   // Counts player actions, so a background refresh that started before one is never applied.
   const actionCount = useRef(0);
+  // Counts background state reloads, so only the newest one is applied.
+  const refreshSeq = useRef(0);
   // One action at a time (a second tap in the same tick is turned away before `busy` renders).
   // Idempotency keys are reused when the outcome is unknown (network error) so a retry cannot spend
   // twice. After a definite "no" the state is reloaded, since the screen was probably out of date.
@@ -183,8 +185,12 @@ export function Game({
   function refreshState(): boolean {
     if (inFlight()) return false;
     const startedAt = actionCount.current;
+    // Only the newest reload may land: an older one that answers late would show older numbers (a
+    // lounging tag that seems to go back a step).
+    const seq = ++refreshSeq.current;
     fetchState().then(
       (next) => {
+        if (seq !== refreshSeq.current) return;
         if (!inFlight() && actionCount.current === startedAt) setCurrent(loaded(next));
       },
       () => undefined,

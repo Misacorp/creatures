@@ -2336,3 +2336,11 @@ From Misa's staging test on a phone: "The buttons at the bottom are ugly in thei
 
 - **The configurator's buttons** share one row in equal columns, sat in by their ring; a button can be `danger` (the red `button.danger`), and Remove from team is red, on the configurator and at the end of the creature page opened from the dungeon.
 - **The item picker always has Compare** beside Equip (not for the worn item itself). For an empty slot it compares against nothing (`diffItems(next, null)`): every stat is a gain and every line is new, so they all show green.
+
+## 2026-10-20: Lounging XP, the evening check
+
+Misa: "People report not getting as much exp as they expect, and even losing some if the game disconnects… I want to make sure our end of the deal is solid." The production report could not help yet (it covers days up to two days back; lounging went live today), so the code was audited for every way our end loses time.
+
+- **Deploys lost up to 10 minutes a player.** Collected time was paid every 10 minutes and lived in the guild object's memory; every deploy restarts the object (and closes every socket, which players see as a disconnect). There were three deploys on the first evening. **Fix:** each XP is paid as soon as it is earned (`LOUNGE_FLUSH_MS` is one XP, 2 minutes), so a restart loses under one XP. Writes stay bounded by the cap (60 payments a creature a day), and a Rested lounger now collects nothing and writes nothing.
+- **A tag that seemed to go back a step.** Two background state reloads at once (the 2-minute one and a tab switch) could answer out of order, and the older one landed last. Only the newest reload is applied now (`refreshState` in `Game.tsx`).
+- **Not ours, but worth knowing:** "Lounging 34 / 60" starts over at the daily reset (13:37); the XP bar drops at a level-up; a creature waiting at a ribbon or its evolution keeps only the next level's XP, as from any activity; the first minute after someone joins and the last before they leave count for nobody (company is measured at two checks a minute apart); and when Discord drops a player from the Activity (a crash, a reload into a new session), they stop counting until it lists them again.
