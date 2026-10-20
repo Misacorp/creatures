@@ -1,41 +1,75 @@
-/* Loot lists: expedition claims and the finale. */
+/* Finds: the rows of items and blueprints (ui/FindRow, FindItem, FindBlueprint) and the loot lists that hold them. */
 .loot {
   margin: 0.5rem 0;
 }
 
-.loot-items {
-  flex-direction: column;
+/*
+  The list every find sits in: the boxes side by side, centred, wrapping onto the next line with a gap between
+  them. A creature's card is wider (its talent and choice), so it takes a whole line.
+*/
+.find-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem 0.75rem;
   align-items: stretch;
-  gap: 0.5rem;
+  justify-content: center;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
 }
 
-/* One compact item row (ItemRow.tsx): the image on the left, name and rarity badge on the right. No stats. */
-.item-row {
+.find-list > .find-card {
+  flex: 1 1 100%;
+}
+
+/*
+  One compact find (ui/FindRow.tsx): the image on the left, name and tags on the right, in a box (a darker
+  panel with padding, no line of its own: the item's rarity frame is the only edge) so a find reads as a
+  thing gained. No stats.
+*/
+.find-row {
   display: flex;
   align-items: center;
   gap: 0.625rem;
   min-width: 0;
+  max-width: 100%;
+  padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+  background: var(--night);
   text-align: left;
 }
 
-.item-row .item-frame {
+.find-row .item-frame {
   flex: none;
   margin: 0;
 }
 
-.item-row-text {
+.find-row-text {
   display: grid;
   gap: 0.125rem;
   min-width: 0;
 }
 
-.item-row-name {
+.find-row-name {
   font-size: var(--fs-heading);
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
 
-.item-row-tags {
+/* A blueprint's picture: the item in a plain frame with a dashed outline (it is not made yet). */
+.item-frame.blueprint {
+  outline: 2px dashed var(--haze);
+  outline-offset: 2px;
+}
+
+.find-row-name.blueprint-name {
+  color: var(--bone);
+}
+
+.find-row-note {
+  font-size: var(--fs-small);
+}
+
+.find-row-tags {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

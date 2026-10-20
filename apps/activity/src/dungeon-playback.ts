@@ -8,7 +8,9 @@ import { dungeonContent, roomModifier, type Gimmick } from '@creatures/game';
 import { groupSupplies } from './claim-view';
 import { experienceGain } from './xp-gain';
 import type { XpChange } from './xp-change';
-import { partsEntries, partsText } from './gear-view';
+import { baitCount, essenceCount, partCountItems } from './count-items';
+import { partsEntries } from './gear-view';
+import type { CountItem } from './ui/CountBadge';
 import type { GrantLoot } from './gear-types';
 import type {
   DungeonReplay,
@@ -469,11 +471,24 @@ export function droppedSupplies(
   return groupSupplies(rewards.supplies ?? []);
 }
 
-/** The streak bonus as a loot list (its parts), or null when the run paid none. */
-export function streakLoot(rewards: DungeonRewards): GrantLoot | null {
+/**
+ * The streak bonus of the day as its own section: the title ("7 Day Streak Bonus") and what it paid as count
+ * badges (Bait, Essence, parts). Null when the run paid none. It is apart from the run's own rewards (the
+ * server does not add the two), so the player sees what the streak gave.
+ */
+export function streakBonus(
+  rewards: DungeonRewards,
+): { title: string; counts: CountItem[] } | null {
   const bonus = rewards.streak;
   if (bonus === null) return null;
-  return { gear: [], converted: [], parts: bonus.parts, blueprints: [] };
+  return {
+    title: `${String(bonus.day)} Day Streak Bonus`,
+    counts: [
+      ...(bonus.bait > 0 ? [baitCount(bonus.bait, { entry: true })] : []),
+      ...(bonus.essence > 0 ? [essenceCount(bonus.essence, { entry: true })] : []),
+      ...partCountItems(bonus.parts),
+    ],
+  };
 }
 
 /** What the results say when a run paid nothing, and the hint under it. */
@@ -490,18 +505,6 @@ export function noRewards(rewards: DungeonRewards): boolean {
     (rewards.supplies ?? []).length === 0 &&
     rewards.streak === null
   );
-}
-
-/** The streak bonus in words, for the line under the rewards: "Day 3 streak bonus: 1 Scrap". */
-export function streakBonusText(rewards: DungeonRewards): string | null {
-  const bonus = rewards.streak;
-  if (bonus === null) return null;
-  const items: string[] = [];
-  if (bonus.bait > 0) items.push(`${String(bonus.bait)} Bait`);
-  if (bonus.essence > 0) items.push(`${String(bonus.essence)} Essence`);
-  const parts = partsEntries(bonus.parts).length === 0 ? '' : partsText(bonus.parts);
-  if (parts !== '') items.push(parts);
-  return `Day ${String(bonus.day)} streak bonus: ${items.length === 0 ? 'nothing this time' : items.join(', ')}`;
 }
 
 /**

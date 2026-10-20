@@ -13,9 +13,11 @@ import { dungeonRunEntries } from './entries/dungeon-run';
 import { headingEntries } from './entries/headings';
 import { iconEntries } from './entries/icons';
 import { jobRevealEntries } from './entries/job-reveal';
+import { findEntries } from './entries/find';
 import { lootEntries } from './entries/loot';
 import { popoverEntries } from './entries/popovers';
 import { raidBoardEntries } from './entries/raid-board';
+import { raidSummaryEntries } from './entries/raid-summary';
 import { skyEntries } from './entries/sky';
 import { slotDrawerEntries } from './entries/slot-drawer';
 import { slotEntries } from './entries/slots';
@@ -37,7 +39,9 @@ export const ENTRIES: readonly Entry[] = [
   ...slotEntries,
   ...slotDrawerEntries,
   ...raidBoardEntries,
+  ...raidSummaryEntries,
   ...lootEntries,
+  ...findEntries,
   ...jobRevealEntries,
   ...headingEntries,
   ...iconEntries,

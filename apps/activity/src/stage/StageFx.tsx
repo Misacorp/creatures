@@ -263,7 +263,7 @@ export function Beam({
   ms,
   between = false,
 }: {
-  layer: RefObject<HTMLElement>;
+  layer: RefObject<HTMLElement | null>;
   from: () => HTMLElement | null;
   to: () => HTMLElement | null;
   ms: number;

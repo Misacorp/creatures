@@ -1,10 +1,9 @@
 import { useState } from 'preact/hooks';
 import { LandmarkChip } from './ui/Tag';
-import { GlossaryTag } from './Glossary';
 import { LootList } from './LootList';
 import { glyphOrUnknown } from './glyphs';
 import { baitCount, essenceCount, partCountItems, supplyCounts } from './count-items';
-import type { CountItem } from './ui/CountBadge';
+import { CountBadgeList, type CountItem } from './ui/CountBadge';
 import { RevealLater, RevealShell, useRevealSequence } from './ui/RevealShell';
 import { RewardSummary } from './ui/RewardSummary';
 import { ToggleButton } from './ui/ToggleButton';
@@ -15,8 +14,7 @@ import {
   noRewards,
   rewardLoot,
   roomStrip,
-  streakBonusText,
-  streakLoot,
+  streakBonus,
   teamBreakdown,
   type StripRoom,
   type TeamEntry,
@@ -75,7 +73,7 @@ export function DungeonResults({
   const empty = noRewards(rewards);
   const { frame, done } = useRevealSequence(rewards.essence);
   const loot = rewardLoot(rewards);
-  const bonus = streakLoot(rewards);
+  const bonus = streakBonus(rewards);
   const counts: CountItem[] = [
     ...(rewards.bait > 0 ? [baitCount(rewards.bait, { entry: true })] : []),
     ...(rewards.essence > 0
@@ -133,14 +131,27 @@ export function DungeonResults({
         >
           <RevealLater done={done}>
             <LootList loot={loot} counted label="Loot from the dungeon" />
-            {bonus !== null && <LootList loot={bonus} label="Streak bonus" />}
-            {streakBonusText(rewards) !== null && (
-              <p class="muted">
-                <GlossaryTag entry="streak">{streakBonusText(rewards)}</GlossaryTag>
-              </p>
-            )}
           </RevealLater>
         </RewardSummary>
+      )}
+      {bonus !== null && (
+        <RevealLater done={done}>
+          <section class="streak-bonus" aria-labelledby="streak-bonus-heading">
+            <h4 id="streak-bonus-heading">
+              <Sprite sprite={glyphOrUnknown('gift')} scale={2} />
+              {bonus.title}
+            </h4>
+            {bonus.counts.length === 0 ? (
+              <p class="muted">Nothing this time.</p>
+            ) : (
+              <CountBadgeList
+                items={bonus.counts}
+                label={bonus.title}
+                class="reward-badges streak-bonus-badges"
+              />
+            )}
+          </section>
+        </RevealLater>
       )}
 
       <RouteSection run={run} initialView={initialView ?? 'map'} />

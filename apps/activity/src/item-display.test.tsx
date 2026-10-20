@@ -113,7 +113,7 @@ describe('compact item rows', () => {
   it('lists loot as image, name and rarity badge, with the level only in the image corner', () => {
     page = createPage();
     page.draw(<LootList loot={loot} label="Loot" />);
-    const rows = byClass(page.root, 'item-row');
+    const rows = byClass(page.root, 'find-row');
     expect(rows).toHaveLength(4);
     expect(rows.slice(0, 3).map((r) => visibleText(first(byClass(r, 'item-lv'))))).toEqual([
       'Lv 15',
@@ -133,11 +133,11 @@ describe('compact item rows', () => {
     ).toContain('item-frame');
     expect(byClass(page.root, 'idc-stats')).toHaveLength(0);
     expect(byClass(page.root, 'item-stats')).toHaveLength(0);
-    expect(visibleText(first(byClass(rows[0] as FakeElement, 'item-row-name')))).toBe(
+    expect(visibleText(first(byClass(rows[0] as FakeElement, 'find-row-name')))).toBe(
       "Emberkeeper's Crown, item level 15",
     );
     expect(
-      byClass(first(byClass(rows[0] as FakeElement, 'item-row-name')), 'visually-hidden'),
+      byClass(first(byClass(rows[0] as FakeElement, 'find-row-name')), 'visually-hidden'),
     ).toHaveLength(1);
   });
 
@@ -157,10 +157,10 @@ describe('compact item rows', () => {
         ]}
       />,
     );
-    const rows = byClass(page.root, 'item-row');
+    const rows = byClass(page.root, 'find-row');
     // In slot order: the hat first.
     expect(visibleText(first(byClass(rows[0] as FakeElement, 'item-lv')))).toBe('Lv 15');
-    expect(visibleText(first(byClass(rows[0] as FakeElement, 'item-row-slot')))).toBe('Hat');
+    expect(visibleText(first(byClass(rows[0] as FakeElement, 'find-row-slot')))).toBe('Hat');
     expect(visibleText(page.root)).not.toContain('Attack +4%');
   });
 });

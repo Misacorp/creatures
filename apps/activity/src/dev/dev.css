@@ -84,20 +84,9 @@
   padding: 0.2rem 0.6rem 0.6rem;
 }
 
-.dev-clock {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 0.1rem 0.6rem;
+/* The clock is a data table (ui/DataTable); only the gap below it is the panel's. */
+.data-table.dev-clock {
   margin: 0 0 0.5rem;
-}
-
-.dev-clock dt {
-  color: var(--haze);
-}
-
-.dev-clock dd {
-  margin: 0;
-  overflow-wrap: anywhere;
 }
 
 .dev-quick-row {

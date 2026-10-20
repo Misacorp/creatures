@@ -60,6 +60,7 @@ export function Game({
   allowance,
   showPractice,
   devTools,
+  loungeLive = false,
 }: {
   initial: GameState;
   /** The signed-in player (their id and display name put their own creature in the living room). */
@@ -67,10 +68,12 @@ export function Game({
   /** Who has the Activity open: the living room shows them. */
   participants: ParticipantSource;
   /** The "?" button of the title row and what it does (the app owns the How to play page). */
-  helpRef: RefObject<HTMLButtonElement>;
+  helpRef: RefObject<HTMLButtonElement | null>;
   onHelp: () => void;
   /** True on staging, where the server has the dev tools on: the debug panel loads (see `dev-gate.ts`). */
   devTools: boolean;
+  /** The server offers the lounge's live socket (`loungeLive` of `/api/config`); the room polls without it. */
+  loungeLive?: boolean;
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
   /** Called with the sync status of every state this component loads, so the footer stays current. */
@@ -268,6 +271,7 @@ export function Game({
     selfName: user.displayName,
     state: game,
     craftingLevels,
+    loungeLive,
     ...(gear === null ? {} : { gearItems: gear.items }),
   });
   // The room's light follows the guild's local time by the server's clock; one timer swaps it.

@@ -36,8 +36,8 @@ import {
 import type { RaidView, ReplayRowEntry } from './raid-api';
 import { AbilityPopoverBody, AbilityPopoverSection } from './AbilityPopover';
 import { setRaidAutofire } from './raid-api';
+import { summaryBoss } from './raid-summary-view';
 import { phaseLine } from './raid-text';
-import { enragedAt } from './stage';
 import { RevealCard } from './Reveal';
 import { LiveRegion } from './ui/LiveRegion';
 import { BossHp } from './ui/SegmentBar';
@@ -59,6 +59,7 @@ export function Live({
   onRevealSeen,
   onReplay,
   season = null,
+  view = null,
 }: {
   /** A snapshot the caller already has (a practice fight that was just started). */
   initial: LiveSnapshot | null;
@@ -71,6 +72,8 @@ export function Live({
   onReplay: (week: string, party: number) => void;
   /** The raid page's week and its place in the season, for the season pips of the finale result. */
   season?: { weekId: string; season: RaidView['season'] } | null;
+  /** The raid page's view, for the boss's moves on the finale result (used only when it is of the finale's week). */
+  view?: Pick<RaidView, 'weekId' | 'boss' | 'effectiveRank'> | null;
 }) {
   const [snapshot, setSnapshot] = useState<LiveSnapshot | null>(initial);
   const [pollError, setPollError] = useState<string | null>(null);
@@ -316,13 +319,10 @@ export function Live({
       {fight.practice && <p class="badge first practice-label">{PRACTICE_LABEL}</p>}
       {fight.status !== 'lobby' && fight.loot !== null && !fight.practice && !dismissed && (
         <RevealCard
-          reveal={{
-            ...fight.loot,
-            ...(enragedAt(fight.events, fight.events.length) ? { enraged: true } : {}),
-          }}
+          reveal={fight.loot}
           busy={false}
-          gearWeek={fight.week}
           season={season}
+          boss={summaryBoss(view, fight.week, fight.boss)}
           afterAction={{
             week: fight.week,
             party: fight.party,

@@ -85,6 +85,90 @@ describe('the DataTable', () => {
     expect(set).toContain('bright');
   });
 
+  it("marks the viewer's own row, and only that one", () => {
+    const table = draw([
+      { label: 'Dee', value: 900 },
+      { label: 'You', value: 700, mine: true },
+      { label: 'Bob', value: 500 },
+    ]);
+    const rows = byClass(table, 'data-row');
+    expect(rows.map((row) => classes(row).includes('mine'))).toEqual([false, true, false]);
+    expect(byClass(table, 'mine')).toHaveLength(1);
+  });
+
+  describe('with column headings', () => {
+    const rows: DataRow[] = [
+      { label: 'Dee', value: '4,210', extra: '19%', icon: <span class="pic" /> },
+      { label: 'You', value: '2,950', extra: '13%', mine: true },
+      { label: 'Raid total', value: '7,160', extra: '100%', total: true },
+    ];
+    const drawHeaded = (over: Partial<Parameters<typeof DataTable>[0]> = {}) => {
+      page = createPage();
+      page.draw(
+        <DataTable
+          rows={rows}
+          headings={{ label: 'Player', value: 'Damage', extra: '%' }}
+          label="Scoreboard"
+          {...over}
+        />,
+      );
+      const [table] = byClass(page.root, 'data-table');
+      if (table === undefined) throw new Error('no table');
+      return table;
+    };
+    const tags = (el: FakeElement, tag: string, scope?: string): FakeElement[] =>
+      find(
+        el,
+        (e) => e.localName === tag && (scope === undefined || e.getAttribute('scope') === scope),
+      );
+
+    it('becomes a real table with a header row, and the label of each row as its row header', () => {
+      const table = drawHeaded();
+      expect(table.localName).toBe('table');
+      expect(classes(table)).toContain('headed');
+      expect(table.getAttribute('aria-label')).toBe('Scoreboard');
+      expect(tags(table, 'th', 'col').map(visibleText)).toEqual(['Player', 'Damage', '%']);
+      expect(find(table, (e) => e.localName === 'thead')).toHaveLength(1);
+      const body = find(table, (e) => e.localName === 'tbody')[0] as FakeElement;
+      expect(tags(body, 'th', 'row').map(visibleText)).toEqual(['Dee', 'You', 'Raid total']);
+      expect(tags(body, 'td').map(visibleText)).toEqual([
+        '4,210',
+        '19%',
+        '2,950',
+        '13%',
+        '7,160',
+        '100%',
+      ]);
+    });
+
+    it('keeps the picture, the mine band and the total on their rows', () => {
+      const table = drawHeaded();
+      const dataRows = byClass(table, 'data-row');
+      expect(dataRows.map((r) => r.localName)).toEqual(['tr', 'tr', 'tr']);
+      expect(dataRows.map((r) => classes(r).includes('mine'))).toEqual([false, true, false]);
+      expect(dataRows.map((r) => classes(r).includes('total'))).toEqual([false, false, true]);
+      expect(byClass(dataRows[0] as FakeElement, 'pic')).toHaveLength(1);
+    });
+
+    it('has two columns when no heading or row has an extra value', () => {
+      const table = drawHeaded({
+        rows: [{ label: 'HP', value: 349 }],
+        headings: { label: 'Stat', value: 'Value' },
+      });
+      expect(tags(table, 'th', 'col').map(visibleText)).toEqual(['Stat', 'Value']);
+      expect(classes(table)).not.toContain('wide');
+      expect(byClass(table, 'data-extra')).toHaveLength(0);
+    });
+
+    it('is off by default: no headings means the description list it always was', () => {
+      page = createPage();
+      page.draw(<DataTable rows={rows} />);
+      const [table] = byClass(page.root, 'data-table');
+      expect((table as FakeElement).localName).toBe('dl');
+      expect(find(page.root, (e) => e.localName === 'th')).toHaveLength(0);
+    });
+  });
+
   it('shows text only, with no inline style, and an empty list as an empty table', () => {
     const table = draw([{ label: '<b>HP</b>', value: '<i>1</i>' }]);
     expect(visibleText(table)).toContain('<b>HP</b>');

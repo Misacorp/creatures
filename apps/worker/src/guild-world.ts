@@ -2,6 +2,7 @@ import { DurableObject } from 'cloudflare:workers';
 import { createGuildApi } from './discord';
 import { createPostSender, publicOrigin } from './discord-posts';
 import { createLoungeClient } from './lounge-discord';
+import { LIVE_PATH, LoungeLive } from './lounge-live';
 import type { DailyRow } from './analytics-rollup';
 import { GuildCore, type SessionUser } from './guild-core';
 import { DIRECTORY_NAME } from './guild-directory';
@@ -14,15 +15,26 @@ import { LEET_BACKFILL_DAYS, createLeetSourceFromEnv } from './leet';
  */
 export class GuildWorld extends DurableObject<Env> {
   private readonly core: GuildCore;
+  /** The lounge's live sockets (Hibernation API); `LOUNGE_LIVE` turns them on. */
+  readonly live: LoungeLive;
   /** The UTC day this object last told the directory about its guild. */
   private directoryDay: string | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+    this.live = new LoungeLive({
+      ctx,
+      enabled: env.LOUNGE_LIVE === 'on',
+      clientSecret: env.DISCORD_CLIENT_SECRET,
+      guildId: () => ctx.id.name ?? '',
+      now: Date.now,
+      residentOf: (userId) => this.core.collection.lounge.room([userId])[0] ?? null,
+    });
     this.core = new GuildCore(ctx.storage, Date.now, {
       guildId: () => ctx.id.name,
       raidPractice: env.RAID_PRACTICE === 'on',
       devTools: env.DEV_TOOLS === 'on',
+      live: this.live,
       analyticsSecret: env.DISCORD_CLIENT_SECRET,
       guildApi: createGuildApi({
         botToken: env.DISCORD_BOT_TOKEN,
@@ -102,7 +114,22 @@ export class GuildWorld extends DurableObject<Env> {
   }
 
   override fetch(request: Request): Promise<Response> {
+    // The socket upgrade has no Authorization header: it carries a one-time ticket (lounge-ticket.ts).
+    if (new URL(request.url).pathname === LIVE_PATH) return this.live.upgrade(request);
     return this.core.handle(request);
+  }
+
+  // The Hibernation API's handlers: the runtime calls them even after the object slept.
+  override webSocketMessage(ws: WebSocket): void {
+    this.live.webSocketMessage(ws);
+  }
+
+  override webSocketClose(ws: WebSocket, code: number): void {
+    this.live.webSocketClose(ws, code);
+  }
+
+  override webSocketError(ws: WebSocket): void {
+    this.live.webSocketError(ws);
   }
 
   override alarm(): Promise<void> {

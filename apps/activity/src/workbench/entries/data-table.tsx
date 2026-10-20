@@ -1,6 +1,6 @@
 import { glyphOrUnknown } from '../../glyphs';
 import { Sprite } from '../../sprites/Sprite';
-import { DataTable, type DataRow } from '../../ui/DataTable';
+import { DataTable, type DataHeadings, type DataRow } from '../../ui/DataTable';
 import { bool, str } from '../props';
 import type { Entry } from '../types';
 
@@ -50,6 +50,13 @@ const ROW_SETS: Readonly<Record<string, readonly DataRow[]>> = {
     { label: 'Cold Snap', value: '0.8x' },
     { label: 'Total', value: '3.15x', total: true },
   ],
+  Scoreboard: [
+    { label: '1  Dee', value: '4,210', extra: '19%' },
+    { label: '2  Bob', value: '3,480', extra: '16%' },
+    { label: '3  You', value: '2,950', extra: '13%', mine: true },
+    { label: '4  Kaisa', value: '2,310', extra: '10%' },
+    { label: 'Raid total', value: '22,000', extra: '100%', total: true },
+  ],
   'Long labels': [
     { label: 'A label long enough to need two lines on a narrow phone', value: '12 / 40' },
     { label: 'Short', value: 'A value that is quite long too' },
@@ -57,19 +64,37 @@ const ROW_SETS: Readonly<Record<string, readonly DataRow[]>> = {
 };
 const SETS = Object.keys(ROW_SETS);
 
+/** The column headings each row set takes when they are turned on (a heading per column, the last one short). */
+const HEADINGS: Readonly<Record<string, DataHeadings>> = {
+  Scoreboard: { label: 'Player', value: 'Damage', extra: '%' },
+  'Stats with gear': { label: 'Stat', value: 'Base', extra: 'Gear' },
+  'Stats, some without gear': { label: 'Stat', value: 'Base', extra: 'Gear' },
+  'Stats, no gear': { label: 'Stat', value: 'Value' },
+  Facts: { label: 'Fact', value: 'Value' },
+  'XP breakdown': { label: 'Boost', value: 'Multiplier' },
+  'Long labels': { label: 'Label', value: 'Value' },
+};
+
 const dataTable: Entry = {
   name: 'DataTable',
   file: 'apps/activity/src/ui/DataTable.tsx',
   group: 'Creatures & game pieces',
   description:
-    "A table of data in a panel a shade darker than the one around it, with padding and square corners: rows of a label and a value, an optional second value column (the gear's share, \"+204\") and an optional gold total row. The creature page's stats and facts and the experience multiplier's breakdown use it. In a popover the names are in the text colour (bright), in the body font.",
+    "A table of data in a panel a shade darker than the one around it, with padding and square corners: rows of a label and a value, an optional second value column (the gear's share, \"+204\"), an optional gold total row and a marked row for the viewer's own (a scoreboard's \"You\"). Column headings are off by default; turned on, it is a real table with a header row and a row header per row (the raid summary's scoreboard uses them). The creature page's stats and facts and the experience multiplier's breakdown use it. In a popover the names are in the text colour (bright), in the body font.",
   controls: {
     rows: { kind: 'select', options: SETS },
     where: { kind: 'select', options: ['panel', 'popover'] },
     tabular: { kind: 'toggle' },
     bright: { kind: 'toggle' },
+    headings: { kind: 'toggle' },
   },
-  defaults: { rows: 'Stats with gear', where: 'panel', tabular: true, bright: false },
+  defaults: {
+    rows: 'Stats with gear',
+    where: 'panel',
+    tabular: true,
+    bright: false,
+    headings: false,
+  },
   presets: [
     { name: 'Stats with gear (the creature page)', props: {} },
     { name: 'Stats, some without gear', props: { rows: 'Stats, some without gear' } },
@@ -83,6 +108,15 @@ const dataTable: Entry = {
       name: 'Breakdown in a popover, with a total',
       props: { rows: 'XP breakdown', where: 'popover', tabular: false, bright: true },
     },
+    { name: 'A scoreboard, your row marked', props: { rows: 'Scoreboard' } },
+    {
+      name: 'A scoreboard with column headings (the raid summary)',
+      props: { rows: 'Scoreboard', headings: true },
+    },
+    {
+      name: 'Facts with column headings',
+      props: { rows: 'Facts', headings: true, tabular: false },
+    },
     { name: 'Long labels wrap', props: { rows: 'Long labels', tabular: false } },
   ],
   render: (p) => {
@@ -91,6 +125,9 @@ const dataTable: Entry = {
         rows={ROW_SETS[str(p, 'rows')] ?? []}
         tabular={bool(p, 'tabular')}
         bright={bool(p, 'bright')}
+        {...(bool(p, 'headings') && HEADINGS[str(p, 'rows')] !== undefined
+          ? { headings: HEADINGS[str(p, 'rows')] as DataHeadings, label: str(p, 'rows') }
+          : {})}
         {...(str(p, 'where') === 'popover' ? { class: 'xp-boost-lines' } : {})}
       />
     );

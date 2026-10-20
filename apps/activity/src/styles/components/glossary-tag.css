@@ -1,8 +1,9 @@
 /*
   Tappable tags (glossary popovers). They are real buttons, reset to look like the thing they are
-  on: words get a dotted underline, pixel chips and tags get a small "?" after their text, and a
-  lone "?" button is for things that are buttons themselves. This block comes before the chip, tag
-  and badge rules on purpose: those classes set the look, and win where both set the same thing.
+  on: words get a dotted underline, pixel chips and tags show no marker at all (Misa, 2026-10-20: no
+  "?" on tags) and brighten on hover, and a lone "?" button is for things that are buttons themselves.
+  This block comes before the chip, tag and badge rules on purpose: those classes set the look, and win
+  where both set the same thing.
 */
 .gtag {
   all: unset;
@@ -42,16 +43,9 @@ button.gtag:active:not(:disabled) {
   text-decoration: none;
 }
 
-.gtag-chip::after {
-  content: '?';
-  margin-left: 0.3em;
-  font-size: 0.7em;
-  opacity: 0.75;
-}
-
-.gtag-chip:hover::after,
-.gtag-chip[aria-expanded='true']::after {
-  opacity: 1;
+.gtag-chip:hover,
+.gtag-chip[aria-expanded='true'] {
+  filter: brightness(1.2);
 }
 
 .gtag-help {
@@ -71,21 +65,6 @@ button.gtag:active:not(:disabled) {
 
 .gtag-help::before {
   inset: -0.5rem;
-}
-
-/* An item's badges (slot, rarity, element) are tappable but, like the level badge, show no "?". */
-.item-badge.gtag-chip::after {
-  content: none;
-}
-
-/* The mark on the boss, a modifier's icon and the streak are tags without the "?" (`bare`). */
-.gtag-bare::after {
-  content: none;
-}
-
-.gtag-bare:hover,
-.gtag-bare[aria-expanded='true'] {
-  filter: brightness(1.2);
 }
 
 .mark-tag {

@@ -40,7 +40,7 @@ import {
   stepsAt,
 } from './dungeon-history';
 import { packBadges } from './dungeon-run';
-import { GearRows } from './ItemRow';
+import { FindItems } from './ui/FindItem';
 import { essenceCount, partBadge } from './count-items';
 import { modifierIcon } from './dungeon-rooms';
 import { roomTrick } from './dungeon-playback';
@@ -266,7 +266,7 @@ function Outcome({ entry }: { entry: DungeonStepLog }) {
           <div class="dnd-gear">
             <span>{CHEST_GEAR_LABEL}:</span>
             <div class="loot" role="group" aria-label={CHEST_GEAR_LABEL}>
-              <GearRows pieces={entry.gear} label="Items" />
+              <FindItems pieces={entry.gear} label="Items" />
             </div>
           </div>
         )}

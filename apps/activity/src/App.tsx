@@ -22,6 +22,8 @@ import { PopoverHost } from './PopoverHost';
 import { HowToPlay } from './HowToPlay';
 import { leetStatusLine } from './leet-status';
 import { RecentActivity } from './RecentActivity';
+import { DataTable } from './ui/DataTable';
+import { footerRows } from './footer-rows';
 
 type Status<T> =
   { state: 'loading' } | { state: 'error'; message: string } | { state: 'ok'; value: T };
@@ -99,15 +101,6 @@ function useAsync<T>(load: () => Promise<T>): Status<T> {
     };
   }, []);
   return status;
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div class="row">
-      <dt>{label}</dt>
-      <dd>{value}</dd>
-    </div>
-  );
 }
 
 /** The newest known sync status: from polling, else the state call, else the /api/me call. */
@@ -191,6 +184,7 @@ export function App() {
                   allowance={bootStatus.value.me.allowance}
                   showPractice={bootStatus.value.config.environment !== 'production'}
                   devTools={bootStatus.value.config.devTools || bootStatus.value.me.devTools}
+                  loungeLive={bootStatus.value.config.loungeLive}
                 />
                 {bootStatus.value.config.leetSource === 'mock' && (
                   <p class="note">Leet points are simulated until the leet bot API is live</p>
@@ -210,21 +204,19 @@ export function App() {
           {bootStatus.state === 'ok' && bootStatus.value.me !== null && (
             <LeetStatus status={shownLeetSync(bootStatus.value, leetSync)} />
           )}
-          <dl>
-            {bootStatus.state === 'ok' && (
-              <>
-                <Row label="Environment" value={bootStatus.value.config.environment} />
-                <Row label="Server version" value={bootStatus.value.config.version} />
-                {bootStatus.value.config.branch !== null && (
-                  <Row label="Branch" value={bootStatus.value.config.branch} />
-                )}
-                {bootStatus.value.me !== null && (
-                  <Row label="Guild ID" value={bootStatus.value.me.guildId} />
-                )}
-              </>
+          <DataTable
+            rows={footerRows(
+              bootStatus.state === 'ok'
+                ? {
+                    environment: bootStatus.value.config.environment,
+                    version: bootStatus.value.config.version,
+                    branch: bootStatus.value.config.branch,
+                    guildId: bootStatus.value.me?.guildId ?? null,
+                  }
+                : null,
+              healthText,
             )}
-            <Row label="API health" value={healthText} />
-          </dl>
+          />
         </footer>
       </main>
       {howTo !== null && (

@@ -134,8 +134,8 @@ describe('the small card', () => {
     const [level, bar] = (track as FakeElement).childNodes as FakeElement[];
     expect(level?.getAttribute('class')).toContain('xp-lv');
     expect(level?.getAttribute('class')).toContain('pix');
-    // No popover host in this test, so the tag is plain text; with one it is a button with `gtag-bare`
-    // (no "?" drawn) that opens the level's explanation.
+    // No popover host in this test, so the tag is plain text; with one it is a chip button that opens
+    // the level's explanation.
     expect(visibleText(level as FakeElement)).toBe('Lv 6');
     expect(bar?.getAttribute('role')).toBe('progressbar');
     expect(visibleText(bar as FakeElement)).toBe('140 / 222');

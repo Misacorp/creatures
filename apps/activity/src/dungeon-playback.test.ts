@@ -31,8 +31,7 @@ import {
   roomStrip,
   stageRow,
   teamBreakdown,
-  streakBonusText,
-  streakLoot,
+  streakBonus,
 } from './dungeon-playback';
 import type { DungeonRunResponse, DungeonRunSummary } from './dungeon-types';
 import { turnOrderOfRound } from './replay';
@@ -225,18 +224,22 @@ describe('the results', () => {
     expect(loot.parts).toEqual(landmark.rewards.parts);
   });
 
-  it('shows the streak bonus apart from the amounts, in words and as parts', () => {
-    expect(streakBonusText(landmark.rewards)).toBe('Day 3 streak bonus: 1 Scrap');
-    expect(streakLoot(landmark.rewards)?.parts).toEqual({ scrap: 1 });
-    expect(streakBonusText(cleared.rewards)).toBeNull();
-    expect(streakLoot(cleared.rewards)).toBeNull();
+  it('shows the streak bonus apart from the amounts, as a titled list of count badges', () => {
+    const three = streakBonus(landmark.rewards);
+    expect(three?.title).toBe('3 Day Streak Bonus');
+    expect(three?.counts.map((c) => [c.key, c.amount])).toEqual([['scrap', 1]]);
+    expect(streakBonus(cleared.rewards)).toBeNull();
     const empty = { ...landmark.rewards, streak: { day: 7, bait: 0, essence: 0, parts: {} } };
-    expect(streakBonusText(empty)).toBe('Day 7 streak bonus: nothing this time');
+    expect(streakBonus(empty)).toEqual({ title: '7 Day Streak Bonus', counts: [] });
     const money = {
       ...landmark.rewards,
       streak: { day: 7, bait: 2, essence: 1, parts: { scrap: 1 } },
     };
-    expect(streakBonusText(money)).toBe('Day 7 streak bonus: 2 Bait, 1 Essence, 1 Scrap');
+    expect(streakBonus(money)?.counts.map((c) => [c.key, c.amount])).toEqual([
+      ['bait', 2],
+      ['essence', 1],
+      ['scrap', 1],
+    ]);
   });
 });
 

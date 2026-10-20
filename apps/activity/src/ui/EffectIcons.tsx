@@ -26,7 +26,7 @@ export function EffectIcons({
     <ul class={`effect-icons${compact ? ' compact' : ''}`} aria-label="Status effects">
       {icons.map((icon) => (
         <li key={icon.id} class={`effect-chip ${icon.kind}`} data-effect={icon.id}>
-          <GlossaryTag entry={icon.entry} look="chip" bare class="effect-tag" label={icon.label}>
+          <GlossaryTag entry={icon.entry} look="chip" class="effect-tag" label={icon.label}>
             <span class="effect-top">
               <Sprite sprite={glyphOrUnknown(icon.id)} scale={2} />
               <span class="effect-stacks pix">{icon.stacksText}</span>

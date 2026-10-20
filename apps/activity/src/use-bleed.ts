@@ -22,7 +22,7 @@ export function bleedOf(width: number, left: number, columnWidth: number): Bleed
 }
 
 /** The bleed of `probe`, kept up to date as the window or the column resizes; null until measured. */
-export function useBleed(probe: RefObject<HTMLElement>): Bleed | null {
+export function useBleed(probe: RefObject<HTMLElement | null>): Bleed | null {
   const [bleed, setBleed] = useState<Bleed | null>(null);
   useLayoutEffect(() => {
     const el = probe.current;

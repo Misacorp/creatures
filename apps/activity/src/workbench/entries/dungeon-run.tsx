@@ -31,7 +31,7 @@ import {
   undercroftSummary,
 } from '../../dungeon-undercroft-sample';
 import type { ExperienceView } from '../../experience';
-import type { DungeonRunState, DungeonRunSummary } from '../../dungeon-types';
+import type { DungeonRewards, DungeonRunState, DungeonRunSummary } from '../../dungeon-types';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 import { experienceBoostOf } from './xp-boosts';
@@ -357,6 +357,45 @@ function experienceFor(
   }
 }
 
+/** The gear a result page can be shown with (the capture has none), and the streak bonuses of the 3rd and 7th day. */
+const GEAR_OPTIONS = ['none (as captured)', 'one piece', 'three pieces', 'five pieces'] as const;
+const STREAK_OPTIONS = [
+  'none (as captured)',
+  'day 3 (Bait and Scrap)',
+  'day 7 (Essence and Scrap)',
+];
+const SAMPLE_GEAR = [
+  { id: 'wb-g1', baseId: 'kelp-cap', rarity: 'common', itemLevel: 4 },
+  { id: 'wb-g2', baseId: 'forge-scarf', rarity: 'rare', itemLevel: 6 },
+  { id: 'wb-g3', baseId: 'trail-charm', rarity: 'epic', itemLevel: 5 },
+  { id: 'wb-g4', baseId: 'emberkeepers-crown', rarity: 'common', itemLevel: 3 },
+  { id: 'wb-g5', baseId: 'festival-hearth-scarf', rarity: 'rare', itemLevel: 7 },
+] as const;
+
+/** The run with the gear and the streak bonus the page's controls ask for. */
+function withRewards<T extends { rewards: DungeonRewards }>(run: T, p: Props): T {
+  const count = Math.max(0, GEAR_OPTIONS.indexOf(str(p, 'gear') as (typeof GEAR_OPTIONS)[number]));
+  const streak = str(p, 'streak');
+  return {
+    ...run,
+    rewards: {
+      ...run.rewards,
+      ...(count === 0
+        ? {}
+        : {
+            gear: SAMPLE_GEAR.slice(0, count === 1 ? 1 : count === 2 ? 3 : 5).map((g) => ({
+              ...g,
+            })),
+          }),
+      ...(streak === STREAK_OPTIONS[1]
+        ? { streak: { day: 3, bait: 2, essence: 0, parts: { scrap: 1 } } }
+        : streak === STREAK_OPTIONS[2]
+          ? { streak: { day: 7, bait: 0, essence: 1, parts: { scrap: 1 } } }
+          : {}),
+    },
+  };
+}
+
 function ResultsDemo({ p }: { p: Props }) {
   const outcome = str(p, 'outcome');
   const noRewards = outcome === 'no rewards (lost in the first room)';
@@ -405,8 +444,10 @@ function ResultsDemo({ p }: { p: Props }) {
           return omitKey(run, 'route');
         })();
   const paid = experienceFor(routed.team, str(p, 'experience'));
-  const shown: typeof routed =
-    paid === undefined ? routed : { ...routed, rewards: { ...routed.rewards, experience: paid } };
+  const shown: typeof routed = withRewards(
+    paid === undefined ? routed : { ...routed, rewards: { ...routed.rewards, experience: paid } },
+    p,
+  );
   const view = str(p, 'view');
   return (
     <DungeonResults
@@ -436,6 +477,8 @@ const dungeonResults: Entry = {
     capture: { kind: 'toggle' },
     route: { kind: 'toggle' },
     view: { kind: 'select', options: ['map', 'rooms'] },
+    gear: { kind: 'select', options: [...GEAR_OPTIONS] },
+    streak: { kind: 'select', options: STREAK_OPTIONS },
   },
   defaults: {
     outcome: 'cleared',
@@ -444,9 +487,20 @@ const dungeonResults: Entry = {
     capture: false,
     route: true,
     view: 'map',
+    gear: GEAR_OPTIONS[0],
+    streak: STREAK_OPTIONS[0] ?? '',
   },
   presets: [
     { name: 'Cleared', props: {} },
+    {
+      name: 'One gear piece and a day 7 streak bonus',
+      props: { gear: 'one piece', streak: STREAK_OPTIONS[2] ?? '' },
+    },
+    { name: 'Five gear pieces, wrapping', props: { gear: 'five pieces' } },
+    {
+      name: 'Three gear pieces and a day 3 streak bonus',
+      props: { gear: 'three pieces', streak: STREAK_OPTIONS[1] ?? '' },
+    },
     { name: 'Home safe', props: { outcome: 'home' } },
     {
       name: "Defeated on the day's floor (half the pack)",

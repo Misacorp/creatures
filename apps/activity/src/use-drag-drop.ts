@@ -35,7 +35,7 @@ interface UseDragDropArgs<T = DropTarget> {
   /** No drags can start while true (locked row, or a request in flight). */
   disabled: boolean;
   /** The strip holding the slots (`[data-slot]` buttons): the raid board scrolls sideways. */
-  stripRef: RefObject<HTMLElement>;
+  stripRef: RefObject<HTMLElement | null>;
   /**
    * Touch only: pick a creature up after the finger has rested on it this long (ms), and treat a
    * move before that as a scroll. Absent: a touch drags at once, as a mouse does (the dungeon).
@@ -57,7 +57,7 @@ export interface DragDrop<T = DropTarget> {
   /** The slot to shake after a refused drop. */
   shakeSlot: number | null;
   /** Position this element under the pointer while dragging (via CSS custom properties). */
-  ghostRef: RefObject<HTMLDivElement>;
+  ghostRef: RefObject<HTMLDivElement | null>;
   /** Attach to `onPointerDown` of anything that can be picked up. */
   startDrag: (creatureId: string, event: PointerEvent) => void;
   /** True right after a drag, when the browser's follow-up click must be ignored. */

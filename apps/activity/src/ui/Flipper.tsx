@@ -1,4 +1,4 @@
-import type { ComponentChildren, JSX } from 'preact';
+import type { ComponentChildren, TargetedPointerEvent } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import {
   canStep,
@@ -148,7 +148,7 @@ function SwipeArea({
     el.style.setProperty('--flip-x', '0px');
   }
 
-  function down(event: JSX.TargetedPointerEvent<HTMLDivElement>): void {
+  function down(event: TargetedPointerEvent<HTMLDivElement>): void {
     swallow.current = false;
     const current = flipRef.current;
     if (current.count < 2 || current.paused === true || !event.isPrimary) return;
@@ -163,7 +163,7 @@ function SwipeArea({
     };
   }
 
-  function move(event: JSX.TargetedPointerEvent<HTMLDivElement>): void {
+  function move(event: TargetedPointerEvent<HTMLDivElement>): void {
     const g = gesture.current;
     if (g === null || g.id !== event.pointerId) return;
     const dx = event.clientX - g.x;
@@ -192,7 +192,7 @@ function SwipeArea({
     slide.current?.style.setProperty('--flip-x', `${String(offset)}px`);
   }
 
-  function up(event: JSX.TargetedPointerEvent<HTMLDivElement>): void {
+  function up(event: TargetedPointerEvent<HTMLDivElement>): void {
     const g = gesture.current;
     if (g === null || g.id !== event.pointerId) return;
     gesture.current = null;
@@ -209,7 +209,7 @@ function SwipeArea({
     if (step !== 0) tryFlip(flipRef.current, step, 'swipe');
   }
 
-  function cancel(event: JSX.TargetedPointerEvent<HTMLDivElement>): void {
+  function cancel(event: TargetedPointerEvent<HTMLDivElement>): void {
     const g = gesture.current;
     if (g === null || g.id !== event.pointerId) return;
     gesture.current = null;

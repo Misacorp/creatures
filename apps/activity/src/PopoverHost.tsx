@@ -73,7 +73,7 @@ export function usePopoverHost(): PopoverHostApi | null {
  */
 export function usePopoverTrigger<E extends HTMLElement>(): {
   host: PopoverHostApi | null;
-  ref: RefObject<E>;
+  ref: RefObject<E | null>;
   open: boolean;
 } {
   const host = usePopoverHost();

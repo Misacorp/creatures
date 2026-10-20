@@ -43,7 +43,6 @@ export function StageHead({ place, modifiers = [], round, children }: StageHeadP
             key={m.id}
             entry={GLOSSARY_IDS.modifier(m.id)}
             look="chip"
-            bare
             class="chip stage-mod"
             label={`${m.name}: ${m.description}`}
           >

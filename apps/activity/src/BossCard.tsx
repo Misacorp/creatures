@@ -1,10 +1,8 @@
 import { Tag } from './ui/Tag';
 import { GLOSSARY_IDS } from '@creatures/game';
 import { bossArt, elementSlug } from './art';
-import { bossIcons, type BossIconInfo } from './boss-icons';
+import { BossIconList } from './BossIcons';
 import { GlossaryTag } from './Glossary';
-import { usePopoverTrigger } from './PopoverHost';
-import { gimmickGlyph, turnOrderGlyph } from './glyphs';
 import type { RaidView } from './raid-api';
 import {
   bestRankText,
@@ -18,52 +16,11 @@ import {
 import { foeDodge } from './foe-info';
 import { ElementChip } from './sprites/ElementChip';
 import { Sprite } from './sprites/Sprite';
-import { PopoverCard, popupProps } from './ui/Popover';
 import { PixelHeading } from './ui/PixelHeading';
 import { SkyLine } from './SkyLine';
 import type { Forecast } from './weather-types';
 import { eventTitle } from './raid-time';
 import { SegmentBar } from './ui/SegmentBar';
-
-/**
- * One icon of the boss card (the turn order or a trick): a small button that opens a popover with
- * what this boss does. It is one of the app's popovers (`PopoverHost`: the same panel, the same
- * dismissal, one open at a time) but carries the boss-specific sentence the glossary entry cannot
- * know.
- */
-function BossIcon({ icon }: { icon: BossIconInfo }) {
-  const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();
-  const sprite = icon.kind === 'turn' ? turnOrderGlyph(icon.glyph) : gimmickGlyph(icon.glyph);
-  return (
-    <li class="boss-icon-item">
-      <button
-        ref={ref}
-        type="button"
-        class={open ? 'boss-icon open' : 'boss-icon'}
-        {...popupProps(open)}
-        aria-label={icon.label}
-        onClick={() => {
-          if (ref.current === null) return;
-          host?.openCustom(icon.key, ref.current, {
-            label: icon.title,
-            body: (
-              <PopoverCard
-                visual={<Sprite sprite={sprite} scale={4} />}
-                title={icon.title}
-                short={icon.detail}
-                note={icon.general}
-              />
-            ),
-          });
-        }}
-      >
-        <Sprite sprite={sprite} scale={3} />
-        <span class="boss-icon-caption">{icon.caption}</span>
-        {icon.newAtRank !== null && <span class="boss-icon-new">New at rank {icon.newAtRank}</span>}
-      </button>
-    </li>
-  );
-}
 
 /** The readiness band next to the Rank: four small steps and the word, never a number. */
 function ReadinessMeter({
@@ -112,7 +69,6 @@ export function BossCard({
   forecast?: Forecast | null;
 }) {
   const { boss } = view;
-  const icons = bossIcons(boss, view.effectiveRank);
   const adaptation = view.party?.adaptation ?? null;
   const hp = view.party?.bossHp ?? null;
   const rank = rankLabel(view.rank);
@@ -171,11 +127,7 @@ export function BossCard({
               />
             </div>
           )}
-          <ul class="boss-icons" aria-label="How the boss fights">
-            {icons.map((icon) => (
-              <BossIcon key={icon.key} icon={icon} />
-            ))}
-          </ul>
+          <BossIconList boss={boss} effectiveRank={view.effectiveRank} />
         </div>
       </div>
       {banner !== null && <p class="festival-banner">{banner}</p>}

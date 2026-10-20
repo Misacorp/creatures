@@ -102,12 +102,6 @@ export const ORDER_LINE = 'Your creatures act left to right, then the foe.';
 
 export const RETRY_TEXT = 'Your first run was lost. You get one more try today, free.';
 
-/** How many days in a row, in words. */
-export function streakLine(streak: number): string {
-  if (streak <= 0) return 'No streak yet. Run today to start one.';
-  return streak === 1 ? '1 day in a row' : `${String(streak)} days in a row`;
-}
-
 export interface StreakPip {
   day: number;
   on: boolean;

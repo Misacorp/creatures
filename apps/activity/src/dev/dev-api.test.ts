@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api';
 import {
+  clockRows,
   describeResult,
   errorCode,
   errorSentence,
   eventLine,
+  formatGameTime,
   formatOffset,
   parseDevEvents,
   parseDevState,
@@ -103,5 +105,39 @@ describe('text helpers', () => {
     expect(formatOffset(0)).toBe('none');
     expect(formatOffset(3_600_000)).toBe('+1h 0m');
     expect(formatOffset(86_400_000 + 6 * 3_600_000 + 5 * 60_000)).toBe('+1d 6h 5m');
+  });
+});
+
+describe('clockRows', () => {
+  const view = {
+    offsetMs: 90_000_000,
+    now: Date.UTC(2026, 9, 19, 8, 53, 20),
+    timezone: 'Europe/Helsinki',
+    gameDay: 'Mon',
+    raid: { weekId: '2026-W43', status: 'open', bossId: 'bog-king' },
+    guests: 3,
+  };
+
+  it('gives every fact its own short row', () => {
+    expect(clockRows(view)).toEqual([
+      { label: 'Game time', value: formatGameTime(view.now, view.timezone) },
+      { label: 'Game day', value: 'Mon' },
+      { label: 'Shifted by', value: '+1d 1h 0m' },
+      { label: 'Raid week', value: '2026-W43' },
+      { label: 'Raid status', value: 'open' },
+      { label: 'Raid boss', value: 'bog-king' },
+      { label: 'Simulated players', value: '3' },
+    ]);
+  });
+
+  it('says none without a raid week and leaves out the players when there are none', () => {
+    const rows = clockRows({ ...view, raid: null, guests: 0 });
+    expect(rows.map((r) => r.label)).toEqual(['Game time', 'Game day', 'Shifted by', 'Raid week']);
+    expect(rows[3]?.value).toBe('none');
+  });
+
+  it('shows a dash for a raid without a boss yet', () => {
+    const rows = clockRows({ ...view, raid: { weekId: '2026-W43', status: 'prep', bossId: null } });
+    expect(rows.find((r) => r.label === 'Raid boss')?.value).toBe('-');
   });
 });

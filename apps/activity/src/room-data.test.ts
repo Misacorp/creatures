@@ -18,6 +18,7 @@ import {
   settleClaim,
   shouldPoll,
   type Resident,
+  shouldOpenSocket,
 } from './room-data';
 
 const resident = (userId: string, name = userId): Resident => ({
@@ -267,5 +268,17 @@ describe('the slow poll rules', () => {
     expect(isStale(1000, 1000 + ROOM_STALE_MS)).toBe(false);
     expect(isStale(1000, 1000 + ROOM_STALE_MS + 1)).toBe(true);
     expect(isStale(1000, 1000 + ROOM_POLL_MS + 1, ROOM_POLL_MS)).toBe(true);
+  });
+});
+
+describe('shouldOpenSocket', () => {
+  const on = { enabled: true, offered: true, hidden: false };
+
+  it('opens only when offered, visible and somebody else is here', () => {
+    expect(shouldOpenSocket(on, ['1', '2'], '1')).toBe(true);
+    expect(shouldOpenSocket(on, ['1'], '1')).toBe(false);
+    expect(shouldOpenSocket({ ...on, hidden: true }, ['1', '2'], '1')).toBe(false);
+    expect(shouldOpenSocket({ ...on, offered: false }, ['1', '2'], '1')).toBe(false);
+    expect(shouldOpenSocket({ ...on, enabled: false }, ['1', '2'], '1')).toBe(false);
   });
 });
