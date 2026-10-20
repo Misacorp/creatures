@@ -19,6 +19,9 @@ import type { DungeonToday } from './dungeon-types';
 import { baitCount } from './count-items';
 import { GlossaryTag } from './Glossary';
 import { CountBadge } from './ui/CountBadge';
+import { glyphOrUnknown } from './glyphs';
+import { Sprite } from './sprites/Sprite';
+import { tabPalette } from './tabs';
 import { creatureName } from './game';
 import { toPickerCreature } from './roster-picker';
 import { scrollAndFocus } from './scroll-to';
@@ -296,7 +299,16 @@ export function DungeonSetup({
                   onEnter(slots, new Set([...treats].filter((id) => slots.includes(id))));
                 }}
               >
-                {busy ? 'Entering...' : 'Enter the dungeon'}
+                {/* The Dungeon tab's door, in ink on gold as on the active tab. */}
+                <Sprite
+                  sprite={glyphOrUnknown('door')}
+                  scale={2}
+                  class="dungeon-enter-door"
+                  {...(tabPalette(true) === undefined
+                    ? {}
+                    : { palette: tabPalette(true) as Readonly<Record<string, string>> })}
+                />
+                <span>{busy ? 'Entering...' : 'Enter the dungeon'}</span>
               </button>
             </p>
             {!complete && (
