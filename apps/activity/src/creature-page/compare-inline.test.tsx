@@ -170,10 +170,12 @@ describe('the Compare switch', () => {
     expect(byClass(detail(p), 'cmp-delta')).toHaveLength(0);
   });
 
-  it('is hidden when the slot is empty, and Equip stays at the bottom right', () => {
+  it('stays beside Equip when the slot is empty, and compares against nothing (every number a gain)', () => {
     const p = draw('level 8', 'hat', 'bag-hat-11');
-    expect(sw(p)).toBeUndefined();
-    expect(byClass(detail(p), 'cmp-delta')).toHaveLength(0);
+    expect(sw(p)).toBeDefined();
+    const deltas = byClass(detail(p), 'cmp-delta');
+    expect(deltas.length).toBeGreaterThan(0);
+    expect(deltas.every((d) => (d.getAttribute('class') ?? '').includes('good'))).toBe(true);
     expect(byName(first(byClass(detail(p), 'ip-actions')), 'button', 'Equip')).toHaveLength(1);
   });
 

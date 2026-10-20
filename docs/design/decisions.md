@@ -2319,3 +2319,10 @@ Misa: "Items in the item picker… give no indication that it's worn on some oth
 - **In the item picker** (the creature page, the configurator), an item another creature wears is **taken**: greyed out like an item the creature cannot wear, with the wearer's small picture at the top right of its tile (bright, not greyed), listed after the free items and before the ones it cannot wear (`equipChoices`). Its details have no gold Equip; they have a plain **"Take from Pebble"** button (Misa: "Let's build it with the 'take from' wording"), which moves it with the same equip call. A mis-tap in the grid only opens the details, and the button names who loses the item. If the creature cannot wear it anyway, only the reason shows.
 - **The Workshop bag** shows the wearer's picture instead of the word "Worn" (it may be any creature there); its items stay tappable.
 - **The server is unchanged:** an equip still moves an item from its wearer (the Workshop needs it). This is a client guard against a mis-tap, not a rule.
+
+## 2026-10-20: Configurator buttons in one row; Compare against an empty slot
+
+From Misa's staging test on a phone: "The buttons at the bottom are ugly in their positioning and alignment. The remove button could be red." And in the item picker, for an empty slot: "the equip button looks wonky on its own row. Normally there'd be the compare toggle in the bottom left corner… we could 'compare against no gear', resulting in a bunch of green lines."
+
+- **The configurator's buttons** share one row in equal columns, sat in by their ring; a button can be `danger` (the red `button.danger`), and Remove from team is red, on the configurator and at the end of the creature page opened from the dungeon.
+- **The item picker always has Compare** beside Equip (not for the worn item itself). For an empty slot it compares against nothing (`diffItems(next, null)`): every stat is a gain and every line is new, so they all show green.

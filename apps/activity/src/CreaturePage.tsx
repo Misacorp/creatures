@@ -389,7 +389,7 @@ export function CreaturePage({
         <RenameForm creature={creature} busy={busy} onRename={actions.onRename} />
         {teamAction !== undefined && (
           <p class="cp-team-action">
-            <button type="button" disabled={busy} onClick={teamAction.onAct}>
+            <button type="button" class="danger" disabled={busy} onClick={teamAction.onAct}>
               {teamAction.label}
             </button>
           </p>

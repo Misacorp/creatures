@@ -68,7 +68,7 @@ function DetailPanel({
 }: {
   cell: Cell;
   creature: Creature;
-  /** The item worn in this slot, to compare with; undefined when the slot is empty. */
+  /** The item worn in this slot, to compare with; undefined when the slot is empty (then against nothing). */
   wornItem: GearItem | undefined;
   compareOn: boolean;
   onCompareChange: (on: boolean) => void;
@@ -79,8 +79,9 @@ function DetailPanel({
   onClose: () => void;
 }) {
   const { item, worn, wornBy, blocked } = cell;
-  // Nothing to compare when the slot is empty or the item is the worn one: no switch then.
-  const comparable = !worn && wornItem !== undefined;
+  // Nothing to compare when the item is the worn one: no switch then. An empty slot compares against nothing
+  // (every stat a gain, every line new), so the switch keeps its place beside Equip.
+  const comparable = !worn;
   const comparing = comparable && compareOn;
   return (
     <section class="ip-detail pix-panel" aria-label="Selected item">
@@ -101,7 +102,7 @@ function DetailPanel({
             </button>
           }
           wornInSet={setPiecesWith(item, creature.gear)}
-          {...(comparing ? { diff: diffItems(item, wornItem) } : {})}
+          {...(comparing ? { diff: diffItems(item, wornItem ?? null) } : {})}
         />
       </ScrollHint>
       <div class="ip-actions">

@@ -274,6 +274,7 @@ export function DungeonSetup({
                 },
                 {
                   label: 'Remove from team',
+                  danger: true,
                   onAct: () => {
                     setSelected(null);
                     change(unplace(slots, shown.id));

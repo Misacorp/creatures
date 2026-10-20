@@ -482,6 +482,8 @@ describe('the creature page: the item picker drawer', () => {
     const cell = first(byName(dialog, 'button', /^Cinder Charm, item level 14/));
     p.click(cell);
     expect(cell.getAttribute('aria-pressed')).toBe('true');
+    // The Charm slot is empty: Compare is still there, beside Equip (it compares against nothing).
+    expect(byRole(dialog, 'switch')).toHaveLength(1);
     p.click(first(byName(dialog, 'button', 'Equip')));
     await vi.waitFor(() => {
       expect(actions.onEquip).toHaveBeenCalledTimes(1);

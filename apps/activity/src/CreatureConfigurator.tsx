@@ -43,6 +43,8 @@ export interface ConfiguratorParts {
 export interface ConfiguratorButton {
   label: string;
   onAct: () => void;
+  /** It takes something away (Remove from team): the red button. */
+  danger?: boolean;
 }
 
 /** Which drawer is up. */
@@ -190,9 +192,15 @@ export function CreatureConfigurator({
       )}
 
       {buttons.length > 0 && (
-        <p class="cp-buttons configurator-buttons">
+        <p class="configurator-buttons">
           {buttons.map((b) => (
-            <button key={b.label} type="button" disabled={busy} onClick={b.onAct}>
+            <button
+              key={b.label}
+              type="button"
+              {...(b.danger === true ? { class: 'danger' } : {})}
+              disabled={busy}
+              onClick={b.onAct}
+            >
               {b.label}
             </button>
           ))}

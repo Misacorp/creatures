@@ -98,10 +98,10 @@ describe('the compare presets', () => {
     expect(byClass(drawn('K4').root, 'cmp-gone').length).toBeGreaterThan(0);
   });
 
-  it('K5, an empty slot, has no switch and no inline changes, and Equip at the bottom right', () => {
+  it('K5, an empty slot, has the switch on and compares against nothing, with Equip at the bottom right', () => {
     const p = drawn('K5');
-    expect(switchOf(p)).toBeUndefined();
-    expect(marks(p)).toBe(0);
+    expect(switchOf(p)?.getAttribute('aria-checked')).toBe('true');
+    expect(marks(p)).toBeGreaterThan(0);
     expect(byName(first(byClass(p.root, 'ip-actions')), 'button', 'Equip')).toHaveLength(1);
   });
 

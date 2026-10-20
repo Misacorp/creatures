@@ -146,7 +146,7 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   {
     id: 'K5',
-    label: 'K5 · Compare: an empty slot (Charm, nothing worn)',
+    label: 'K5 · Compare: an empty slot (Charm, nothing worn: every line is new)',
     kind: 'compare: plain gear',
     show: 'compare',
     open: { kind: 'gear', slot: 'charm' },
