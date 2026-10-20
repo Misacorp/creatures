@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import type { Creature } from './api';
+import { SAMPLE_STATE } from './creature-card-sample';
 import { allBagItems } from './creature-page/bag-sample';
 import { PAGE_SAMPLE_ID } from './creature-page/sample';
 import type { GrantLoot } from './gear-types';
@@ -62,6 +64,27 @@ describe('one item-level indicator everywhere', () => {
       expect(byClass(cell, 'item-frame')).toHaveLength(0);
       expect(byClass(cell, 'rarity-mark')).toHaveLength(0);
     });
+  });
+
+  it("marks an item a creature wears with that creature's picture, not a word", () => {
+    const wearer = { ...SAMPLE_STATE.creatures[0], id: 'wearer-1' } as Creature;
+    const items = bag
+      .slice(0, 2)
+      .map((item, i) => ({ ...item, equippedOn: i === 0 ? wearer.id : null }));
+    page = createPage();
+    page.draw(
+      <InventoryGrid
+        items={items}
+        creatures={[wearer]}
+        selectedId={null}
+        onSelect={() => undefined}
+      />,
+    );
+    const cells = find(page.root, (e) => e.localName === 'button');
+    const worn = cells.filter((c) => byClass(c, 'item-tile-wearer').length === 1);
+    expect(worn).toHaveLength(1);
+    expect(byClass(page.root, 'item-tile-flag')).toHaveLength(0);
+    expect(worn[0]?.getAttribute('aria-label')).toContain('worn by');
   });
 });
 

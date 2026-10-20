@@ -12,7 +12,7 @@ import { OTHER_WEARER, allBagItems, wornFromBag, type WornRows } from './bag-sam
 /** The creature of every v3 scene. */
 export const PAGE_SAMPLE_ID = 'v3-cindle';
 
-/** A creature that wears an item in the bag (the picker says "On Pebble" for it). */
+/** A creature that wears an item in the bag (the picker greys it out with Pebble's picture and "On Pebble"). */
 const OTHER: Creature = {
   ...sampleCreature('growing'),
   id: OTHER_WEARER,

@@ -153,12 +153,6 @@ button.ip-close:active:not(:disabled) {
   transform: none;
 }
 
-.ip-on {
-  margin: 0.25rem 0 0;
-  color: var(--haze);
-  font-size: var(--fs-small);
-}
-
 button.ip-act {
   min-width: 3.75rem;
   margin-right: var(--px); /* its 3 px ring ends at the content edge */

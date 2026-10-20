@@ -32,11 +32,16 @@ export interface ItemPickerProps {
   initialCompare?: boolean;
 }
 
-/** One entry of the grid: an item, whether the creature wears it, who else does and why it cannot be worn. */
+/**
+ * One entry of the grid: an item, whether the creature wears it, who else does (their name and species) and
+ * why it cannot be worn here. An item another creature wears is taken: it is not moved from the picker
+ * (a tap here never takes gear off someone else by accident); its reason is "On Pebble".
+ */
 interface Cell {
   item: GearItem;
   worn: boolean;
   wornBy: string | null;
+  wornBySpecies: string | null;
   blocked: string | null;
 }
 
@@ -68,7 +73,7 @@ function DetailPanel({
   /** Close the details (the item stays marked in the grid): the same as a second tap on its tile. */
   onClose: () => void;
 }) {
-  const { item, worn, wornBy, blocked } = cell;
+  const { item, worn, blocked } = cell;
   // Nothing to compare when the slot is empty or the item is the worn one: no switch then.
   const comparable = !worn && wornItem !== undefined;
   const comparing = comparable && compareOn;
@@ -92,7 +97,6 @@ function DetailPanel({
           }
           wornInSet={setPiecesWith(item, creature.gear)}
           {...(comparing ? { diff: diffItems(item, wornItem) } : {})}
-          {...(wornBy === null ? {} : { note: <p class="ip-on">On {wornBy}</p> })}
         />
       </ScrollHint>
       <div class="ip-actions">
@@ -154,12 +158,18 @@ export function ItemPickerDrawer({
   const wornId = creature.gear.find((g) => g.slot === slot)?.id;
   const worn = items?.find((i) => i.id === wornId);
   const cells: Cell[] = [
-    ...(worn === undefined ? [] : [{ item: worn, worn: true, wornBy: null, blocked: null }]),
+    ...(worn === undefined
+      ? []
+      : [{ item: worn, worn: true, wornBy: null, wornBySpecies: null, blocked: null }]),
     ...choices.map((choice) => ({
       item: choice.item,
       worn: false,
       wornBy: choice.wornBy,
-      blocked: compactReason(choice.item, creature),
+      wornBySpecies: choice.wornBySpecies,
+      // The game's own reason comes first; a wearable item someone else wears is taken.
+      blocked:
+        compactReason(choice.item, creature) ??
+        (choice.wornBy === null ? null : `On ${choice.wornBy}`),
     })),
   ];
   const [picked, setPicked] = useState<string | null>(initialPicked ?? null);
@@ -217,11 +227,12 @@ export function ItemPickerDrawer({
             <ItemTile
               key={cell.item.id}
               item={cell.item}
-              label={`${itemLabel(cell.item.baseId, cell.item.itemLevel)}, ${rarityName(cell.item.rarity)}${cell.worn ? ', worn now' : ''}${cell.blocked === null ? '' : `. ${cell.blocked}`}`}
+              label={`${itemLabel(cell.item.baseId, cell.item.itemLevel)}, ${rarityName(cell.item.rarity)}${cell.worn ? ', worn now' : ''}${cell.wornBy === null ? '' : `, worn by ${cell.wornBy}`}${cell.blocked === null || cell.blocked === `On ${cell.wornBy ?? ''}` ? '' : `. ${cell.blocked}`}`}
               selected={cell.item.id === shown?.item.id}
               pressed={cell.item.id === selected?.item.id}
               blocked={cell.blocked !== null}
               flag={cell.worn ? 'Worn' : null}
+              wearer={cell.wornBySpecies}
               onSelect={() => {
                 if (cell.item.id === selected?.item.id) {
                   setDetailOpen(false);

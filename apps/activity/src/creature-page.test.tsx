@@ -504,6 +504,26 @@ describe('the creature page: the item picker drawer', () => {
     expect(byRole(root, 'dialog')).toHaveLength(1);
   });
 
+  it("greys out an item another creature wears, with that creature's picture, and does not move it", () => {
+    const { root, page: p } = draw('level 15');
+    p.click(slotButton(root, /^Hat: /));
+    const dialog = first(byRole(root, 'dialog'));
+    const cell = first(
+      byName(dialog, 'button', /^Bark Hood, item level 13, Rare, worn by Pebble$/),
+    );
+    expect(cell.getAttribute('class')).toContain('blocked');
+    expect(byClass(cell, 'item-tile-wearer')).toHaveLength(1);
+    // After every free item it can wear, before the ones it cannot.
+    const cells = byClass(dialog, 'item-tile');
+    const at = cells.indexOf(cell);
+    expect(
+      cells.slice(1, at).every((c) => !(c.getAttribute('class') ?? '').includes('blocked')),
+    ).toBe(true);
+    p.click(cell);
+    expect(byName(dialog, 'button', 'Equip')).toHaveLength(0);
+    expect(visibleText(first(byClass(dialog, 'ip-reason')))).toBe('On Pebble');
+  });
+
   it('shows the reason an item cannot be worn instead of an Equip button', () => {
     const { root, page: p } = draw('level 15');
     p.click(slotButton(root, /^Hat: /));
