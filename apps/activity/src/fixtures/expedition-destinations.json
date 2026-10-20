@@ -38,6 +38,13 @@
       "closed": []
     },
     {
+      "id": "sunken-fen",
+      "minRank": 1,
+      "nightOnly": false,
+      "festivalOnly": false,
+      "closed": []
+    },
+    {
       "id": "old-crossroads",
       "minRank": 2,
       "nightOnly": false,

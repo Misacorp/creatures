@@ -1,4 +1,4 @@
-import { seasonOf } from '@creatures/game';
+import { content, seasonOf } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { RaidView, ReplayView } from '../src/raid-view';
 import { eventTimes, weekIndex } from '../src/raid-schedule';
@@ -395,11 +395,9 @@ describe('GET /api/raid', () => {
       expect(body.timezone).toBe(HELSINKI);
       expect(body.schedule).toEqual(eventTimes('2027-W02', HELSINKI));
       expect(body.next).toEqual({ event: 'phase1', at: eventTimes('2027-W02', HELSINKI).phase1 });
-      expect(body.boss).toMatchObject({
-        id: 'storm-sovereign',
-        name: 'Storm Sovereign',
-        element: 'spark',
-      });
+      // The week's boss is the week index's turn in the rotation of the content.
+      const boss = content.bosses[weekIndex('2027-W02') % content.bosses.length];
+      expect(body.boss).toMatchObject({ id: boss?.id, name: boss?.name, element: boss?.element });
       expect(body.roster).toEqual(
         expect.arrayContaining([
           { displayName: 'Misa', you: true, party: 1 },
@@ -608,7 +606,8 @@ describe('GET /api/raid/replay/:week/:party/:phase', () => {
       expect(res.body.events).toEqual(stored.events);
       expect(res.body).toMatchObject({ weekId: '2027-W02', party: 1, phase: 'phase1' });
       expect(res.body.seed).toMatch(/^[0-9a-f]{32}$/);
-      expect(res.body.names.boss).toBe('Storm Sovereign');
+      const boss = content.bosses[weekIndex('2027-W02') % content.bosses.length];
+      expect(res.body.names.boss).toBe(boss?.name);
       expect(Object.values(res.body.names.players ?? {}).sort()).toEqual(['Bob', 'Cy', 'Misa']);
       expect(Object.keys(res.body.names.players ?? {}).every((k) => /^m\d+$/.test(k))).toBe(true);
       // Phase 2 has not resolved yet.
@@ -621,6 +620,28 @@ describe('GET /api/raid/replay/:week/:party/:phase', () => {
         expect(text).not.toContain(id);
       }
     });
+  });
+
+  it('schedules Old Bogback in the rotation and fights it through the finished phase', async () => {
+    // Five bosses rotate by the week index; 2027-W06 is Old Bogback's turn (the fifth, after four weeks).
+    expect(content.bosses[weekIndex('2027-W06') % content.bosses.length]?.id).toBe('old-bogback');
+    await runRaid(
+      async (ctx) => {
+        const me = seedPlayer(ctx, 1, { name: 'Misa' });
+        seedPlayer(ctx, 2, { name: 'Bob' });
+        seedPlayer(ctx, 3, { name: 'Cy' });
+        expect(ctx.core.raid.currentWeek(HELSINKI).bossId).toBe('old-bogback');
+        ctx.clock.t = Date.parse('2027-02-12T12:00:00Z');
+        const secret = await login(ctx, me);
+        const res = await api<ReplayView>(ctx, secret, 'GET', '/api/raid/replay/2027-W06/1/phase1');
+        expect(res.status).toBe(200);
+        expect(res.body.names.boss).toBe('Old Bogback');
+        expect(res.body.events.length).toBeGreaterThan(0);
+        const view = await api(ctx, secret, 'GET', '/api/raid');
+        expect(view.body.boss).toMatchObject({ id: 'old-bogback', element: 'mire' });
+      },
+      { start: Date.parse('2027-02-12T10:00:00Z') },
+    );
   });
 
   it('names the caller by their owner key, and has the boss maximum HP', async () => {

@@ -7,8 +7,7 @@
  * right. The four brief colours are Peat brown `#5b4630`, Tar black `#1f1a26`, Ochre reed `#c49a3c` and
  * Fen mist `#b9b49a`.
  *
- * Not yet in `BANNER_SPRITE_DATA`: the banner test requires a banner for exactly the destinations that
- * exist, so the Mire content slice adds it when `destinations.json` gets `sunken-fen`.
+ * Registered in `BANNER_SPRITE_DATA`.
  */
 import type { SpriteDef } from '../sprite-data';
 

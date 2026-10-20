@@ -66,9 +66,9 @@ const ELEMENT_HUES: Readonly<Record<string, readonly [number, number]>> = {
 };
 
 describe('daily-dungeon sprites', () => {
-  it('has 8 foes and 4 floor bosses in the content, each with a sprite', () => {
-    expect(foes).toHaveLength(8);
-    expect(roomBosses).toHaveLength(4);
+  it('has 10 foes and 5 floor bosses in the content, each with a sprite', () => {
+    expect(foes).toHaveLength(10);
+    expect(roomBosses).toHaveLength(5);
     for (const { id, kind, def } of entries) expect(def, `${kind} ${id}`).toBeDefined();
   });
 

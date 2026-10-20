@@ -69,8 +69,8 @@ describe('shipped content', () => {
     expect(content.creatures).toHaveLength(34);
   });
 
-  it('has 12 catchable species and 3 common starters of different elements', () => {
-    expect(content.creatures.filter((c) => c.catchable)).toHaveLength(12);
+  it('has 14 catchable species and 3 common starters of different elements', () => {
+    expect(content.creatures.filter((c) => c.catchable)).toHaveLength(14);
     const starters = content.creatures.filter((c) => c.starter).map((c) => c.id);
     expect(starters.sort()).toEqual(['cindle', 'splashet', 'sproutle']);
   });
@@ -424,7 +424,7 @@ describe('raid content', () => {
     }
   });
 
-  it('has the four bosses from the design doc', () => {
+  it('has the five bosses of the design docs, Old Bogback last', () => {
     expect(
       content.bosses.map((b) => [
         b.id,
@@ -437,6 +437,7 @@ describe('raid content', () => {
       ['cinder-wyrm', 'ember', 'serpentine', ['reflect_first_reaction', 'barrage', 'slam']],
       ['thornmother', 'grove', 'right_to_left', ['silence_ends', 'pincer', 'charge']],
       ['storm-sovereign', 'spark', 'left_to_right', ['strike_highest_atk', 'slam']],
+      ['old-bogback', 'mire', 'left_to_right', ['sweep', 'slam', 'purge']],
     ]);
     // `speed` order stays in the engine so stored fights replay, but no boss uses it any more.
     expect(content.bosses.filter((b) => b.turnOrder === 'speed')).toEqual([]);
@@ -821,13 +822,12 @@ describe('festival creatures', () => {
       expect(c.ability, c.id).toBeDefined();
       expect(c.levelCap, c.id).toBe(30);
     }
-    // Nothing else is flagged, and the 12 catchable species are untouched. The two Mire base forms wait
-    // for the Sunken Fen (they live nowhere until it opens, so they cannot be catchable yet).
+    // Nothing else is flagged: every other stage 1 species can be caught (the Mire base forms live in the Sunken Fen).
     expect(
       content.creatures
         .filter((c) => c.festival !== true && !c.catchable && c.stage === 1)
         .map((c) => c.id),
-    ).toEqual(['mudlump', 'squelch']);
+    ).toEqual([]);
   });
 
   it('gives them a role and an element the catchable epics lack, at epic strength', () => {
@@ -1238,7 +1238,7 @@ describe('status effects', () => {
     });
   const move = { id: 'bog-slap', name: 'Bog Slap', trigger: { every: 3 } };
 
-  it('ships Mired and nothing else, with no boss or foe move that applies it yet', () => {
+  it('ships Mired and nothing else, and only Mire bosses and foes apply it', () => {
     expect(content.statusEffects).toEqual([
       {
         id: 'mired',
@@ -1250,8 +1250,19 @@ describe('status effects', () => {
       },
     ]);
     const uses = (g: Gimmick) => 'applies' in g && g.applies !== undefined;
-    expect(content.bosses.flatMap((b) => b.gimmicks).some(uses)).toBe(false);
-    expect(dungeonContent.foes.flatMap((f) => f.gimmicks).some(uses)).toBe(false);
+    const movesOf = (f: { gimmicks: readonly Gimmick[]; signature?: Gimmick | undefined }) =>
+      f.signature === undefined ? f.gimmicks : [...f.gimmicks, f.signature];
+    // Mired comes from the Mire bosses and foes only, and Sinking Mud is the raid's source.
+    for (const b of content.bosses) expect(b.gimmicks.some(uses), b.id).toBe(b.element === 'mire');
+    for (const f of dungeonContent.foes) {
+      expect(movesOf(f).some(uses), f.id).toBe(f.element === 'mire');
+    }
+    const sinking = content.bosses.find((b) => b.id === 'old-bogback')?.gimmicks[0];
+    expect(sinking).toMatchObject({
+      id: 'sinking-mud',
+      op: 'sweep',
+      applies: { effect: 'mired', powerBp: 10_000 },
+    });
   });
 
   it('only names effects that exist, in boss and dungeon content alike', () => {
@@ -1345,7 +1356,15 @@ describe('foe Speed and the dodge rules', () => {
   const boss = (p: ContentPack) => p.bosses[0] as Record<string, unknown>;
 
   it('lets a boss carry a baseSpd (a whole number from 0), and has none by default', () => {
-    expect(content.bosses.every((b) => b.baseSpd === undefined)).toBe(true);
+    // Every shipped boss is slow: 2 to 5% dodge at 10 bp a point.
+    for (const b of content.bosses) {
+      expect(b.baseSpd, b.id).toBeGreaterThanOrEqual(20);
+      expect(b.baseSpd, b.id).toBeLessThanOrEqual(50);
+    }
+    expect(content.bosses.find((b) => b.id === 'old-bogback')?.baseSpd).toBe(20);
+    const plain = clone();
+    delete (plain.bosses[0] as { baseSpd?: number }).baseSpd;
+    expect(loadContent(plain).bosses[0]?.baseSpd).toBeUndefined();
     expect(() => loadContent(mutate((p) => (boss(p)['baseSpd'] = 0)))).not.toThrow();
     expect(() => loadContent(mutate((p) => (boss(p)['baseSpd'] = 40)))).not.toThrow();
     expect(() => loadContent(mutate((p) => (boss(p)['baseSpd'] = -1)))).toThrow(/schema/);
@@ -1469,8 +1488,8 @@ describe('Mire', () => {
     expect(ref('bogwarden').catchable).toBe(false);
     expect(ref('mudlump').altEvolvesTo).toBeUndefined();
     expect(ref('squelch').altEvolvesTo).toBeUndefined();
-    // They wait for the Sunken Fen: no place holds them yet.
-    expect([ref('mudlump').catchable, ref('squelch').catchable]).toEqual([false, false]);
+    // They are caught in the Sunken Fen.
+    expect([ref('mudlump').catchable, ref('squelch').catchable]).toEqual([true, true]);
   });
 
   it('is the slowest element: the lowest Speed in the game, with the highest HP of its role and the lowest Attack', () => {

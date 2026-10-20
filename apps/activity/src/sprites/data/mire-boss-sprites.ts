@@ -3,10 +3,8 @@
  * `bosses-lore.json`, in the style of `boss-sprites.ts`) and the dungeon's Mire foes (16x16 foes and
  * a 24x24 floor boss, in the style of `dungeon-sprites.ts` and `dungeon-boss-sprites.ts`).
  *
- * These are not yet in `BOSS_SPRITE_DATA`, `DUNGEON_FOE_SPRITE_DATA` or `DUNGEON_BOSS_SPRITE_DATA`:
- * the content tests require a sprite for exactly the bosses and foes that exist, so the Mire content
- * slice adds them to those maps when `old-bogback`, `bog-toad`, `tar-leech` and `fen-lurker` exist.
- * Registering `old-bogback` in `BOSS_SPRITE_DATA` is also what `scripts/boss-portraits.mts` reads.
+ * They are registered in `BOSS_SPRITE_DATA`, `DUNGEON_FOE_SPRITE_DATA` and `DUNGEON_BOSS_SPRITE_DATA`;
+ * `old-bogback` in `BOSS_SPRITE_DATA` is also what `scripts/boss-portraits.mts` reads.
  */
 import type { SpriteDef } from '../sprite-data';
 

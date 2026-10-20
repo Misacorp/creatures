@@ -1,26 +1,26 @@
 # Raid bosses
 
-Status: 2026-10-19. Covers the four raid bosses: lore, look and fighting style. A fifth, Old Bogback (Mire), is a design draft with its own section before "Raid bosses as a set". The daily dungeon's floor bosses are in `dungeon.md`.
+Status: 2026-10-19. Covers the five raid bosses: lore, look and fighting style. The fifth, Old Bogback (Mire), has its own section before "Raid bosses as a set". The daily dungeon's floor bosses are in `dungeon.md`.
 
-Read `README.md` for the tags. Every boss has one element, and the four shipped bosses are the wheel's four forces: Tide, Ember, Grove and Spark. Mire, the fifth element, has Old Bogback (design).
+Read `README.md` for the tags. Every boss has one element, and four of the bosses are the wheel's four forces: Tide, Ember, Grove and Spark. Mire, the fifth element, has Old Bogback `(content)`.
 
 **Source of truth:** `bosses.json` (element, turn order, gimmicks, adaptation), `bosses-lore.json` (description and look), `adaptations.json` (what the adaptation does), and `glossary.json` (how the rules are explained to players). The numbers stay in the data.
 
 ## At a glance
 
-| Boss                 | Element | Turn order    | What it does each fight                                                          | Adaptation after Phase 1 |
-| -------------------- | ------- | ------------- | -------------------------------------------------------------------------------- | ------------------------ |
-| Tidal Colossus       | Tide    | Left to right | Undertow: a zone attack on the front every few rounds                            | Reaction Resistance      |
-| Cinder Wyrm          | Ember   | Serpentine    | Backdraft: turns the first reaction of every round back on the team              | Element Resistance       |
-| Thornmother          | Grove   | Right to left | Bramble Bind: silences the creatures at both ends of each row every second round | Reaction Resistance      |
-| Storm Sovereign      | Spark   | Left to right | Lightning Rod: strikes the creature with the highest Attack every round          | Element Resistance       |
-| Old Bogback (design) | Mire    | Not set yet   | Sinking Mud: a sweep of one row that leaves Mired on every creature in it        | To be set                |
+| Boss            | Element | Turn order    | What it does each fight                                                          | Adaptation after Phase 1 |
+| --------------- | ------- | ------------- | -------------------------------------------------------------------------------- | ------------------------ |
+| Tidal Colossus  | Tide    | Left to right | Undertow: a zone attack on the front every few rounds                            | Reaction Resistance      |
+| Cinder Wyrm     | Ember   | Serpentine    | Backdraft: turns the first reaction of every round back on the team              | Element Resistance       |
+| Thornmother     | Grove   | Right to left | Bramble Bind: silences the creatures at both ends of each row every second round | Reaction Resistance      |
+| Storm Sovereign | Spark   | Left to right | Lightning Rod: strikes the creature with the highest Attack every round          | Element Resistance       |
+| Old Bogback     | Mire    | Left to right | Sinking Mud: a sweep of one row that leaves Mired on every creature in it        | Element Resistance       |
 
 `(content: bosses.json, adaptations.json)`
 
 Each boss keeps its trick from the table and has two new moves, listed under its fighting style below. Each boss also has two **rank-gated moves**: they only join the fight when the server's Boss Rank reaches a number (rank 4 and rank 7 today), so a boss changes how it fights as the ranks climb. These are the moves that punish a way of lining up: a Payoff left out in the open, Payoffs stacked in one row, one carry that does everything, or no Guard to cover. `(content: bosses.json fromRank)` Each boss also has two retreat lines, shown when it pulls back at the end of a phase `(content: bosses.json retreat)`.
 
-All four fight for twelve finale rounds. `(content: bosses.json finaleRounds)` All four are sized **huge** in art, which means about 20 to 24 pixels on a 24 by 24 grid. `(content: bosses-lore.json, m6-look.md, creatures.md)`
+All five fight for twelve finale rounds. `(content: bosses.json finaleRounds)` All five are sized **huge** in art, which means about 20 to 24 pixels on a 24 by 24 grid. `(content: bosses-lore.json, m6-look.md, creatures.md)`
 
 ### How the adaptation works (content)
 
@@ -183,13 +183,13 @@ After Phase 1, the boss adapts to what worked best for the team:
 
 ---
 
-## Old Bogback (Mire, design, not shipped)
+## Old Bogback (Mire)
 
-Status: 2026-10-19. A design draft from `docs/design/speed-and-dodge.md` section 5.4. Facts marked `(design)` are from the design; the rest is `(compendium detail, not shipped)`. The sprite is drawn (`apps/activity/src/sprites/data/mire-boss-sprites.ts`) and waits for the boss to exist. Text drafts: `docs/design/mire-content-drafts.md`.
+Status: 2026-10-20. Shipped (`bosses.json`, `bosses-lore.json`) from `docs/design/speed-and-dodge.md` section 5.4. Facts marked `(content)` are in the data; the rest is `(compendium detail, not shipped)`. The sprite is `apps/activity/src/sprites/data/mire-boss-sprites.ts`. Text drafts: `docs/design/mire-content-drafts.md`.
 
 ### Lore
 
-**Draft** `(compendium detail, not shipped)`: "A huge toad, half sunk in the fen and older than its name. Its Sinking Mud smears a whole row, and stuck creatures move slower and hit softer."
+**Shipped text** `(content: bosses-lore.json)`: "A huge toad, half sunk in the fen and older than its name. Its Sinking Mud smears a whole row, and stuck creatures move slower and hit softer."
 
 **Compendium detail, not shipped:**
 
@@ -198,7 +198,7 @@ Status: 2026-10-19. A design draft from `docs/design/speed-and-dodge.md` section
 - It is the Mire answer to Mossback: where the turtle carries a garden on its back, the toad carries a whole fen. The names rhyme on purpose.
 - It is not unkind. Its Belly Flop is the joke of the set: the boss is not scary, it just sits on someone.
 
-### Look (draft, as in `bosses-lore.json`)
+### Look `(content: bosses-lore.json)`
 
 - **Silhouette:** Huge, wide toad head and shoulders rising from the mud, with eye bulges on top and two cattails on the crown.
 - **Size:** huge.
@@ -208,16 +208,18 @@ Status: 2026-10-19. A design draft from `docs/design/speed-and-dodge.md` section
 - **Always:** The half-sunk body in tar; gold eyes on bulges at the top corners.
 - **Never:** A fierce or angry look; teeth, drool or gore.
 
-### Fighting style `(design)`
+### Fighting style `(content: bosses.json)`
 
-- **Turn order:** not set by the design. A suggestion: left to right. Cinder Wyrm moves to the new Serpentine order in the same release; the content slice decides.
-- **Sinking Mud:** the trick. A sweep of one row that leaves Mired on every creature in it. Mired cuts Speed (so dodge) and damage, so debuff resistance and Clean coat are worth chasing on this boss's week. `(design)`
-- **Belly Flop:** a slam on the strongest creature, with a share on its neighbours. `(draft move)`
-- **Shake Off:** a purge: the boss washes every debuff off itself now and then, so a team cannot park Mired at its cap for the whole fight. `(design: "it may also purge itself now and then")`
-- **Rising Bubbles (rank-gated):** bubbles rise under some creatures, marked a round ahead, then burst. Swamp gas going up, the same gas Flare sets alight. `(draft move)`
-- **Adaptation:** to be set with the content (the design says "an adaptation like the other bosses").
+- **Turn order:** left to right.
+- **Sinking Mud:** the trick, every third round. A sweep of one row (front, then middle, then back) that leaves Mired on every creature in it. Mired cuts Speed (so dodge) and damage, so debuff resistance and Clean coat are worth chasing on this boss's week.
+- **Belly Flop:** every fourth round, a slam on the front creature, with a share on its neighbours. The joke of the set.
+- **Shake Off:** every fifth round, a purge: the boss washes every debuff off itself, so a team cannot park Mired at its cap for the whole fight.
+- **Bog Lob (rank 4 and up):** every seventh round, a slam on the strongest Payoff. A move added so that every boss has a rank-4 move and a rank-7 move; it is the mud the toad spits at whoever has been showing off. `(compendium detail, not shipped)`
+- **Rising Bubbles (rank 7 and up):** every ninth round, bubbles rise under some creatures, marked a round ahead, then burst. Swamp gas going up, the same gas Flare sets alight.
+- **Adaptation:** Element Resistance: the bog learns the element that hurt it most. Ember teams still shine, but not for the whole fight.
+- **Speed:** very low (2% dodge when dodge is on): it is a toad half sunk in tar.
 - **Matchups** `(design)`: Spark is neutral against it; Ember teams shine; Tide teams struggle.
-- **Retreat (draft):** "Old Bogback sinks slowly into the fen. It will rise again in Phase 2." After Phase 2: "Old Bogback settles back into the peat. Face it in the finale on Sunday."
+- **Retreat** `(content)`: "Old Bogback sinks slowly into the fen. It will rise again in Phase 2." After Phase 2: "Old Bogback settles back into the peat. Face it in the finale on Sunday."
 
 **In-world reading** `(inferred)`: the bog slows what it holds. Old Bogback does not hit hard so much as make everything heavy, and a team that is held by the feet cannot dodge and cannot hit. Ember is the answer the bog fears, because the gas under it burns. A Guard that resists debuffs, or a Support that washes them off, is how a team keeps its feet.
 

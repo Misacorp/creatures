@@ -8,17 +8,17 @@ Read `README.md` for the tags. Banners, moods, residents, journal pages and the 
 
 ## At a glance
 
-| Place               | Element                               | Access                      | Residents (catchable, stage 1)                               | Deeper area           | In the weekly rotation |
-| ------------------- | ------------------------------------- | --------------------------- | ------------------------------------------------------------ | --------------------- | ---------------------- |
-| Tidepools           | Tide                                  | Explorer rank 1             | Splashet, Mistnewt, Coralynx                                 | No deep-only creature | Yes                    |
-| Ember Caves         | Ember                                 | Explorer rank 1             | Cindle, Ashmole, Mossback                                    | Solmane               | Yes                    |
-| Verdant Hollow      | Grove                                 | Explorer rank 1             | Sproutle, Mossback                                           | Gaiadrake             | Yes                    |
-| Storm Ridge         | Spark                                 | Explorer rank 1             | Zipmouse, Stormray                                           | Aurorix               | Yes                    |
-| Old Crossroads      | None (mixed)                          | Explorer rank 2             | Splashet, Cindle, Sproutle, Zipmouse, Stormray               | Gaiadrake             | Yes                    |
-| Moonlit Reef        | Tide                                  | Explorer rank 4, night only | Mistnewt, Coralynx                                           | Aurorix               | Yes                    |
-| Sunken Fen (design) | Mire                                  | To be set                   | Mudlump, Squelch                                             | Not set               | Not set yet            |
-| Festival Grounds    | None                                  | Festival weeks only         | Ashmole, Solmane; Lanternfin and Hearthshell (not catchable) | No deep-only creature | Festival week only     |
-| Daily dungeon       | None (all four elements in its rooms) | One run a day               | Dungeon foes and floor bosses (see `dungeon.md`)             | Not applicable        | No                     |
+| Place            | Element                               | Access                      | Residents (catchable, stage 1)                               | Deeper area           | In the weekly rotation |
+| ---------------- | ------------------------------------- | --------------------------- | ------------------------------------------------------------ | --------------------- | ---------------------- |
+| Tidepools        | Tide                                  | Explorer rank 1             | Splashet, Mistnewt, Coralynx                                 | No deep-only creature | Yes                    |
+| Ember Caves      | Ember                                 | Explorer rank 1             | Cindle, Ashmole, Mossback                                    | Solmane               | Yes                    |
+| Verdant Hollow   | Grove                                 | Explorer rank 1             | Sproutle, Mossback                                           | Gaiadrake             | Yes                    |
+| Storm Ridge      | Spark                                 | Explorer rank 1             | Zipmouse, Stormray                                           | Aurorix               | Yes                    |
+| Old Crossroads   | None (mixed)                          | Explorer rank 2             | Splashet, Cindle, Sproutle, Zipmouse, Stormray               | Gaiadrake             | Yes                    |
+| Moonlit Reef     | Tide                                  | Explorer rank 4, night only | Mistnewt, Coralynx                                           | Aurorix               | Yes                    |
+| Sunken Fen       | Mire                                  | Explorer rank 1             | Mudlump, Squelch                                             | No deep-only creature | Yes                    |
+| Festival Grounds | None                                  | Festival weeks only         | Ashmole, Solmane; Lanternfin and Hearthshell (not catchable) | No deep-only creature | Festival week only     |
+| Daily dungeon    | None (all four elements in its rooms) | One run a day               | Dungeon foes and floor bosses (see `dungeon.md`)             | Not applicable        | No                     |
 
 `(content: destinations.json, weekly-specials.json, glossary.json "daily-dungeon")`
 
@@ -588,35 +588,35 @@ From `glossary.json`, entry `destination-festival-grounds`:
 
 ---
 
-## Sunken Fen (design, not shipped)
+## Sunken Fen
 
-**Element:** Mire. **Access:** to be set (the design gives none; the other element places are open from explorer rank 1). **Residents:** Mudlump and Squelch (the catch table is "the two Mire lines"). **Deeper area:** not set. `(design: speed-and-dodge.md section 5.6; compendium detail, not shipped)`
+**Element:** Mire. **Access:** explorer rank 1, like the other element places. **Residents:** Mudlump and Squelch (both common, so every roll is a common catch). **Deeper area:** no deep-only creature; a rarer-catch push of 15%, the highest of any place. `(content: destinations.json; design: speed-and-dodge.md section 5.6)`
 
-**Flavour line (draft)**: "A flat, quiet bog where the mud keeps everything it is given. Old things turn up here."
+**Flavour line** `(content)`: "A flat, quiet bog where the mud keeps everything it is given. Old things turn up here."
 
-**Design note** `(design)`: a Mire destination where the bog keeps old things: better odds of old finds (gear, journal pages, the Ancient vault push-on). It needs a banner, a catch table, journal pages and this entry.
+**Design note** `(design)`: a Mire destination where the bog keeps old things: better odds of old finds (gear, journal pages, the Ancient vault push-on). **As built** `(content)`: places have no knob of their own for old finds, so the identity is carried by what already follows a place's element. Gear a trip finds here (the Ancient vault, the lost cache) is Mire gear, shards found here are Mire shards, and it has the biggest rarer-catch push. Its journal set is the Peat Notes, four pages, so its pages come around as often as any place's do.
 
 ### Mood and climate
 
 - **Mood** (draft): still, damp and patient, with a little gold in it.
 - **Climate** `(compendium detail, not shipped)`: a flat bog under pale mist at dusk. The air is cool and damp and smells of peat and rain. Sound carries a long way over it and then stops.
 
-### Banner art brief (draft, as in `destinations.json`)
+### Banner art brief `(content: destinations.json)`
 
 - **Scene:** "A flat bog at dusk under pale mist: pools of black water with an oily sheen, banks of peat and ochre reeds, a half-sunk cart wheel and signpost, and a half-sunk stone arch at the far end."
 - **Palette:** Peat brown `#5b4630`, Tar black `#1f1a26`, Ochre reed `#c49a3c`, Fen mist `#b9b49a`.
 - **Details:** an oily rainbow sheen drifting on the black pools; a half-sunk cart wheel, a leaning signpost and a stone arch: things the bog kept; clusters of cattail reeds, their dark heads against the pale mist.
 - **Never:** bright sunshine or loud colours; any creature drawn in the scene.
-- **Drawn:** `apps/activity/src/sprites/data/mire-banner-sprites.ts` (64 by 24). It waits for the destination.
+- **Drawn:** `apps/activity/src/sprites/data/mire-banner-sprites.ts` (64 by 24).
 
 ### Residents
 
-| Creature | Rarity | Note                           |
-| -------- | ------ | ------------------------------ |
-| Mudlump  | Common | Mire line, guard `(design)`.   |
-| Squelch  | Common | Mire line, support `(design)`. |
+| Creature | Rarity | Note                            |
+| -------- | ------ | ------------------------------- |
+| Mudlump  | Common | Mire line, guard `(content)`.   |
+| Squelch  | Common | Mire line, support `(content)`. |
 
-Old Bogback, the raid boss, is the fen's oldest creature, and the Bog Toad, Tar Leech and Fen Lurker are the dungeon's smaller kin. `(compendium detail, not shipped)`
+Old Bogback, the raid boss, is the fen's oldest creature, and the Bog Toad, Tar Leech and Fen Lurker are the dungeon's smaller kin. `(content: bosses.json, dungeon-foes.json; the kinship is compendium detail, not shipped)`
 
 ### Push-on flavour `(compendium detail, not shipped)`
 
@@ -631,13 +631,14 @@ Old Bogback, the raid boss, is the fen's oldest creature, and the Bog Toad, Tar 
 | Press deeper         | Past the last reed the mist thickens, and the ground begins to hum.            |
 | Break into the vault | A stone arch half sunk in the fen, with a lantern still burning under it.      |
 
-### Journal pages set here `(draft)`
+### Journal pages set here `(content: journal.json)`
 
 | Page                                  | Set            |
 | ------------------------------------- | -------------- |
 | What the bog keeps (`fen-old-things`) | The Peat Notes |
 | Slow ground (`fen-slow-ground`)       | The Peat Notes |
 | Damp and gas (`fen-damp-and-gas`)     | The Peat Notes |
+| The patient ones (`fen-patient-ones`) | The Peat Notes |
 
 ### Sensory details `(compendium detail, not shipped)`
 

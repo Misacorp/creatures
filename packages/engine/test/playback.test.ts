@@ -349,8 +349,12 @@ describe('bossWarnings', () => {
         // (The engine announces the reflect trap twice a round: when it arms and at the boss's turn.)
         // A charge is announced by a `charge` event a round before its `gimmick` event lands it:
         // the forecast says `gathering` in the first round and `landing` in the second.
+        // (A purge is not forecast: nobody is aimed at, so it is left out of the comparison.)
+        const purges = new Set(b.gimmicks.filter((g) => g.op === 'purge').map((g) => g.id));
         const landed = new Set(
-          result.events.flatMap((e) => (e.t === 'gimmick' && e.round === r ? [e.gimmick] : [])),
+          result.events.flatMap((e) =>
+            e.t === 'gimmick' && e.round === r && !purges.has(e.gimmick) ? [e.gimmick] : [],
+          ),
         );
         const announced = new Set(
           result.events.flatMap((e) => (e.t === 'charge' && e.round === r ? [e.gimmick] : [])),

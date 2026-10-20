@@ -1179,7 +1179,8 @@ describe('a mystery room', () => {
           const route = routeThrough(mapOf(state), (m) => m.kind === 'mystery') as string[];
           const waiting = await walk(p, state, route, (s) => s.pending?.kind === 'event');
           const pending = waiting.pending;
-          if (pending?.kind !== 'event') throw new Error('no event');
+          // A mystery room can also be a quiet room (nothing happens, no event waits): skip that day.
+          if (pending?.kind !== 'event') continue;
           const def = dungeonEvent(pending.event.id);
           const gamble = def?.options.findIndex((o) => o.effects.some((e) => e.op === 'gamble'));
           if (gamble === undefined || gamble < 0) continue;

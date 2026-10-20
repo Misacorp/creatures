@@ -53,17 +53,28 @@ describe('simulation run', () => {
     // (home rate 0.1696 to 0.1339) and the long run 1 to 0.8333 finale wins (final rank 5 to 4). Noise-sized
     // moves from shifted dice in a tiny run, not a balance change; the Experience rate and the top level
     // did not move.
+    // 2026-10-20 (Sunken Fen): the Mire content landed: Old Bogback is the fifth raid boss in the rotation
+    // (weeks now cycle through five bosses, so the tiny run meets it where it met Storm Sovereign), the
+    // dungeon has two more foes, a floor boss and the Muddy room (bigger pools, so every seeded draw of a
+    // map shifts), Mudlump and Squelch are catchable in the Sunken Fen (a new place, a new journal set and
+    // two more species in every catch draw) and every boss and foe has a low `baseSpd` (no effect: dodge is
+    // off). Checked by taking Old Bogback out again: the raid phase 1 win rate (0.75 to 0.6667) and the
+    // finale start share (0.4231 to 0.4322) are Old Bogback's, a week it plays differently; the rest moved
+    // with the other changes: the finale win rate 0.75 to 0.5 (one more week flips in 4), top share 0.2956
+    // to 0.2529, creature ratio 1.0067 to 1.1972, a dungeon run 4.5268 to 4.7232 fights (home rate 0.1339
+    // to 0.1429). The long run (0.8333, final rank 4), the top level and the Experience rate did not move.
+    // Noise-sized moves from changed pools and dice in a tiny run, not a balance change.
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
-      'raid.typical.phase1ClearRate': 0.75,
-      'raid.typical.finaleWinRate': 0.75,
-      'raid.typical.finaleStartShare': 0.4231,
-      'fair.topShareMedian': 0.2956,
-      'choice.creatureRatioMax': 1.0067,
+      'raid.typical.phase1ClearRate': 0.6667,
+      'raid.typical.finaleWinRate': 0.5,
+      'raid.typical.finaleStartShare': 0.4322,
+      'fair.topShareMedian': 0.2529,
+      'choice.creatureRatioMax': 1.1972,
       'econ.casualTopLevelWeek4': 10,
       'exp.rate.long': 75.4138,
-      'dungeon.meanFights': 4.5268,
-      'dungeon.dailyHomeRate': 0.1339,
+      'dungeon.meanFights': 4.7232,
+      'dungeon.dailyHomeRate': 0.1429,
       'longrun.typical.finaleWinRate': 0.8333,
       'longrun.typicalFinalRank': 4,
     };

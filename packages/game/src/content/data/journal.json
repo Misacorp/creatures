@@ -6,6 +6,7 @@
     { "id": "static-letters", "name": "Static Letters", "place": "storm-ridge" },
     { "id": "signpost-series", "name": "The Signpost Series", "place": "old-crossroads" },
     { "id": "moonlit-verses", "name": "Moonlit Verses", "place": "moonlit-reef" },
+    { "id": "peat-notes", "name": "The Peat Notes", "place": "sunken-fen" },
     { "id": "lost-pages", "name": "Lost Pages", "place": "any" }
   ],
   "entries": [
@@ -213,6 +214,34 @@
       "place": "moonlit-reef",
       "title": "Fog on the reef",
       "text": "The newts tuck their friends into the fog and the boss cannot see where to aim. Nobody has ever caught one asleep."
+    },
+    {
+      "id": "fen-old-things",
+      "place": "sunken-fen",
+      "title": "What the bog keeps",
+      "text": "A cart wheel, a gate, a lantern, a pair of boots. The bog keeps whatever it is given, and it keeps it well. Look closely before you leave.",
+      "set": "peat-notes"
+    },
+    {
+      "id": "fen-slow-ground",
+      "place": "sunken-fen",
+      "title": "Slow ground",
+      "text": "The fen does not hurt anyone. It only holds on to their feet. A creature held by the feet hits softer, and cannot step aside in time.",
+      "set": "peat-notes"
+    },
+    {
+      "id": "fen-damp-and-gas",
+      "place": "sunken-fen",
+      "title": "Damp and gas",
+      "text": "A damp fog puts out any fire without a sound. But under the peat the old gas is waiting for a single spark, and then it all goes up at once.",
+      "set": "peat-notes"
+    },
+    {
+      "id": "fen-patient-ones",
+      "place": "sunken-fen",
+      "title": "The patient ones",
+      "text": "The Mudlump sits and the Squelch hums, and neither is in a hurry. The bog has never once asked them to be. Whatever is old is very good at waiting.",
+      "set": "peat-notes"
     },
     {
       "id": "fest-paper-lanterns",

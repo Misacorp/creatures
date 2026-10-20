@@ -885,7 +885,7 @@
     "element": "mire",
     "rarity": "common",
     "role": "guard",
-    "catchable": false,
+    "catchable": true,
     "starter": false,
     "baseStats": {
       "hp": 168,
@@ -942,7 +942,7 @@
     "element": "mire",
     "rarity": "common",
     "role": "support",
-    "catchable": false,
+    "catchable": true,
     "starter": false,
     "baseStats": {
       "hp": 136,

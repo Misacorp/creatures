@@ -21,10 +21,8 @@ import { MIRE_SPECIES_SPRITE_DATA } from './data/mire-species-sprites';
 import { BUNDLED_ELEMENT_ICONS, ICON_SIZE, elementIcon } from './element-icons';
 import { expandRows, parseSprite, swapPalette, type SpriteDef } from './sprite-data';
 
-// The Mire art was drawn ahead of its content. The four species are registered now (the bundled map
-// has them); the boss, foes, room boss and banner are not, because the content tests require a sprite
-// for exactly the bosses, foes and destinations that exist. The Sunken Fen slice registers them, and
-// these tests keep all of the art honest until then.
+// The Mire art was drawn ahead of its content. Everything is registered now (the bundled maps spread
+// the Mire maps in), and these tests keep the art honest: size, ink, palette, edge, silhouette.
 
 const INK = '#0d0a1a';
 
@@ -198,6 +196,14 @@ describe('the Mire bosses and foes', () => {
   const leech = MIRE_FOE_SPRITE_DATA['tar-leech'];
   const lurker = MIRE_DUNGEON_BOSS_SPRITE_DATA['fen-lurker'];
 
+  it('is registered in the bundled maps, which the portrait script and the stage read', () => {
+    expect(BUNDLED_BOSS_SPRITES['old-bogback']).toBe(boss);
+    expect(BUNDLED_DUNGEON_FOE_SPRITES['bog-toad']).toBe(bog);
+    expect(BUNDLED_DUNGEON_FOE_SPRITES['tar-leech']).toBe(leech);
+    expect(BUNDLED_DUNGEON_BOSS_SPRITES['fen-lurker']).toBe(lurker);
+    expect(BUNDLED_BANNER_SPRITES['sunken-fen']).toBe(MIRE_BANNER_SPRITE_DATA['sunken-fen']);
+  });
+
   it('has Old Bogback, two foes and a floor boss, and no other', () => {
     expect(Object.keys(MIRE_BOSS_SPRITE_DATA)).toEqual(['old-bogback']);
     expect(Object.keys(MIRE_FOE_SPRITE_DATA).sort()).toEqual(['bog-toad', 'tar-leech']);
@@ -272,17 +278,14 @@ describe('the Mire bosses and foes', () => {
   });
 
   it('has a different silhouette from every other sprite of the same size', () => {
+    // (The Mire sprites are in the bundled maps.)
     const big = [
       ...Object.entries(BUNDLED_BOSS_SPRITES),
       ...Object.entries(BUNDLED_DUNGEON_BOSS_SPRITES),
-      ...Object.entries(MIRE_BOSS_SPRITE_DATA),
-      ...Object.entries(MIRE_DUNGEON_BOSS_SPRITE_DATA),
     ];
-    // (The Mire species are already in the bundled creature map.)
     const small = [
       ...Object.entries(BUNDLED_CREATURE_SPRITES),
       ...Object.entries(BUNDLED_DUNGEON_FOE_SPRITES),
-      ...Object.entries(MIRE_FOE_SPRITE_DATA),
     ];
     for (const group of [big, small]) {
       const seen = new Map<string, string>();
@@ -339,8 +342,10 @@ describe('the Sunken Fen banner', () => {
         .cells.map((c) => `${String(c.x)},${String(c.y)},${c.colour}`)
         .join('/');
     const mine = picture(banner);
-    for (const [id, def] of Object.entries(BUNDLED_BANNER_SPRITES))
+    for (const [id, def] of Object.entries(BUNDLED_BANNER_SPRITES)) {
+      if (id === 'sunken-fen') continue;
       expect(picture(def) === mine, id).toBe(false);
+    }
   });
 });
 

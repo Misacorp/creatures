@@ -23,7 +23,7 @@ const ROLE_GLYPH: Readonly<Record<Role, string>> = {
 
 /**
  * An icon for a room modifier, from what it does: a boost to one element shows that element, a boost
- * to one role that role's glyph, extra crits the reticle, a trick the foe plays its own icon and a
+ * to one role that role's glyph, a change to the whole team's Speed the mud glyph, extra crits the reticle, a trick the foe plays its own icon and a
  * change to the foe's stats a warning mark. Anything unknown (an old run's removed modifier) gets
  * the plain diamond.
  */
@@ -34,6 +34,8 @@ export function modifierIcon(id: string): IconRef {
       case 'team_stat':
         if (effect.element !== undefined) return { kind: 'element', element: effect.element };
         if (effect.role !== undefined) return { kind: 'glyph', id: ROLE_GLYPH[effect.role] };
+        // The whole team's Speed down (Muddy): a puddle of mud.
+        if (effect.stat === 'spd') return { kind: 'glyph', id: 'mud' };
         break;
       case 'team_crit':
         return { kind: 'glyph', id: 'reticle' };

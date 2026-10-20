@@ -15,16 +15,16 @@ The glossary says it plainly: "Read closely: the pages hint at how things work."
 
 ## Sets at a glance
 
-| Set ID            | Name                    | Place          | Pages |
-| ----------------- | ----------------------- | -------------- | ----- |
-| `tide-ledger`     | The Tide Ledger         | Tidepools      | 3     |
-| `ash-records`     | The Ash Records         | Ember Caves    | 3     |
-| `rootwork-notes`  | Rootwork Notes          | Verdant Hollow | 3     |
-| `static-letters`  | Static Letters          | Storm Ridge    | 3     |
-| `signpost-series` | The Signpost Series     | Old Crossroads | 4     |
-| `moonlit-verses`  | Moonlit Verses          | Moonlit Reef   | 3     |
-| `lost-pages`      | Lost Pages              | Any place      | 3     |
-| `peat-notes`      | The Peat Notes (design) | Sunken Fen     | 3     |
+| Set ID            | Name                | Place          | Pages |
+| ----------------- | ------------------- | -------------- | ----- |
+| `tide-ledger`     | The Tide Ledger     | Tidepools      | 3     |
+| `ash-records`     | The Ash Records     | Ember Caves    | 3     |
+| `rootwork-notes`  | Rootwork Notes      | Verdant Hollow | 3     |
+| `static-letters`  | Static Letters      | Storm Ridge    | 3     |
+| `signpost-series` | The Signpost Series | Old Crossroads | 4     |
+| `moonlit-verses`  | Moonlit Verses      | Moonlit Reef   | 3     |
+| `lost-pages`      | Lost Pages          | Any place      | 3     |
+| `peat-notes`      | The Peat Notes      | Sunken Fen     | 4     |
 
 `(content: journal.json sets)`. The Festival Grounds has no set. The pages without a set are single pages, and the set is optional.
 
@@ -110,23 +110,24 @@ The glossary says it plainly: "Read closely: the pages hint at how things work."
 | `any-boss-adapts`       | It remembers          | none       | Bosses learn. After the first night of a hard fight, the big ones come back with a new trick and a long memory.                         | **Adaptation after Phase 1** `(content: adaptations.json)`.                                                  |
 | `any-the-wheel`         | The wheel of elements | none       | Water puts out fire, fire eats the green, the green drinks lightning, and lightning splits the water. The wheel has never once stopped. | **The element wheel** `(content: elements.json)`.                                                            |
 
-## Sunken Fen (3 pages, design, not shipped)
+## Sunken Fen (4 pages)
 
-Status: 2026-10-19. Drafts for the Mire content slice (`docs/design/mire-content-drafts.md`). The set `peat-notes` ("The Peat Notes") belongs to Sunken Fen. Gists and hints are `(inferred)`.
+Status: 2026-10-20. Shipped (`journal.json`); text from `docs/design/mire-content-drafts.md`, except `fen-patient-ones`, which the slice added because every place needs four pages. The set `peat-notes` ("The Peat Notes") belongs to Sunken Fen. Gists and hints are `(inferred)`.
 
 | ID                 | Title              | Set        | Gist                                                                                                     | Hints at (mechanic)                               |
 | ------------------ | ------------------ | ---------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | `fen-old-things`   | What the bog keeps | Peat Notes | The bog keeps whatever it is given, and keeps it well: a cart wheel, a gate, a lantern, a pair of boots. | **The old-finds bonus** of Sunken Fen `(design)`. |
-| `fen-slow-ground`  | Slow ground        | Peat Notes | The fen only holds on to your feet, and a creature held by the feet hits softer and cannot step aside.   | **Mired**: Speed and damage down `(design)`.      |
-| `fen-damp-and-gas` | Damp and gas       | Peat Notes | Damp puts out a fire without a sound, but the gas under the peat waits for one spark.                    | **Smother** and **Flare** `(design)`.             |
+| `fen-slow-ground`  | Slow ground        | Peat Notes | The fen only holds on to your feet, and a creature held by the feet hits softer and cannot step aside.   | **Mired**: Speed and damage down `(content)`.     |
+| `fen-damp-and-gas` | Damp and gas       | Peat Notes | Damp puts out a fire without a sound, but the gas under the peat waits for one spark.                    | **Smother** and **Flare** `(content)`.            |
+| `fen-patient-ones` | The patient ones   | Peat Notes | Mudlump sits and Squelch hums, and neither is in a hurry; whatever is old is good at waiting.            | **Patience**, Mire's nature. `(inferred)`         |
 
-## One new "any place" page (design, not shipped)
+## One new "any place" page (shipped)
 
-| ID              | Title                 | Set  | Gist                                                                                                   | Hints at (mechanic)                                                                       |
-| --------------- | --------------------- | ---- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| `any-the-chart` | The chart of elements | none | Finishes the wheel page: the wheel was never the whole world, and in the fen the mud drinks the flame. | **The element chart** and the first pair that beat each other, Mire and Ember `(design)`. |
+| ID              | Title                 | Set  | Gist                                                                                                   | Hints at (mechanic)                                                                        |
+| --------------- | --------------------- | ---- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `any-the-chart` | The chart of elements | none | Finishes the wheel page: the wheel was never the whole world, and in the fen the mud drinks the flame. | **The element chart** and the first pair that beat each other, Mire and Ember `(content)`. |
 
-Draft text for all four is in `docs/design/mire-content-drafts.md` (section 5); the text is not repeated here. The existing page `any-the-wheel` keeps its text.
+Text for the fen pages and this one is in `journal.json` (drafts: `docs/design/mire-content-drafts.md` section 5). The existing page `any-the-wheel` keeps its text.
 
 ---
 

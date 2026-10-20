@@ -1576,6 +1576,14 @@
     "section": "dungeon"
   },
   {
+    "id": "modifier-mud",
+    "title": "Muddy",
+    "short": "Your whole team is 30% slower.",
+    "lines": [],
+    "section": "dungeon",
+    "visual": { "kind": "glyph", "id": "mud" }
+  },
+  {
     "id": "keepsake-wayfarer-charm",
     "title": "Wayfarer's Charm",
     "short": "Every creature gets 12% more Attack and 12% more HP.",

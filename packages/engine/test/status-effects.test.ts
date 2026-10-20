@@ -1,4 +1,4 @@
-import { RULES, type Gimmick, type Rng, type StatusEffectDef } from '@creatures/game';
+import { RULES, content, type Gimmick, type Rng, type StatusEffectDef } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import {
   buildNames,
@@ -613,6 +613,33 @@ describe('a boss move that applies an effect', () => {
     // After round 1's move a carries 3 stacks (-9%), so its round 2 hit is cut.
     expect(hits[1]?.effectBp).toBe(-900);
     expect(hits[1]?.damage).toBe(910);
+  });
+});
+
+describe('Old Bogback in the shipped content', () => {
+  const sinking = content.bosses
+    .find((b) => b.id === 'old-bogback')
+    ?.gimmicks.find((g) => g.id === 'sinking-mud');
+
+  it('leaves Mired on every creature Sinking Mud hits, in a fight with effects on', () => {
+    if (sinking === undefined) throw new Error('missing move');
+    const r = fight([sturdy('a'), sturdy('b'), sturdy('c')], { rounds: 3, gimmicks: [sinking] });
+    // The move fires in round 3: each creature of the row it walks to is hit, then mired for 1 stack.
+    const got = applies(r);
+    expect(got.length).toBeGreaterThan(0);
+    for (const e of got) {
+      expect([e.round, e.effect, e.stacksAdded, e.turnsLeft]).toEqual([3, 'mired', 1, 3]);
+    }
+    const hit = eventsOf(r, 'boss_hit')
+      .filter((e) => e.round === 3)
+      .map((e) => e.target);
+    for (const e of got) expect(hit).toContain(e.target);
+  });
+
+  it('does nothing to the creatures with effects off', () => {
+    if (sinking === undefined) throw new Error('missing move');
+    const r = fight([sturdy('a')], { rounds: 3, dice: null, gimmicks: [sinking] });
+    expect(applies(r)).toEqual([]);
   });
 });
 

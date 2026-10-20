@@ -89,17 +89,23 @@ describe('the luck dice: drawn only when some creature has a chance line', () =>
   });
 
   it('a trigger line alone draws exactly what the fight drew before', () => {
+    // A trigger line that cuts damage can keep a creature alive a round longer, and a longer fight
+    // draws the dice of its extra round: so only fights that last as long as before are compared.
+    let compared = 0;
     for (const base of fights().slice(0, 8)) {
       const plain = counting('same');
-      simulateFight(base, plain.rng);
+      const before = simulateFight(base, plain.rng);
       const row = base.row.map((s) => ({
         ...s,
         mods: { stormWarningBp: 1_000, kindlingBp: 500, lastStandBp: 1_000 } satisfies SlotMods,
       }));
       const trig = counting('same');
-      simulateFight({ ...base, row }, trig.rng);
+      const after = simulateFight({ ...base, row }, trig.rng);
+      if (after.rounds !== before.rounds) continue;
+      compared += 1;
       expect(trig.count()).toBe(plain.count());
     }
+    expect(compared).toBeGreaterThanOrEqual(5);
   });
 
   it('one chance line anywhere draws LUCK_DICE dice per creature per round, and nothing else', () => {

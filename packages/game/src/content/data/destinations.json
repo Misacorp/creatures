@@ -188,6 +188,53 @@
     "flavor": "A windy ridge where the air tingles and the thunder is close enough to touch."
   },
   {
+    "id": "sunken-fen",
+    "name": "Sunken Fen",
+    "element": "mire",
+    "access": {
+      "minRank": 1
+    },
+    "odds": {
+      "common": 10000,
+      "rare": 0,
+      "epic": 0
+    },
+    "species": ["mudlump", "squelch"],
+    "deep": {
+      "species": [],
+      "rarityUpBp": 1500
+    },
+    "banner": {
+      "scene": "A flat bog at dusk under pale mist: pools of black water with an oily sheen, banks of peat and ochre reeds, a half-sunk cart wheel and signpost, and a half-sunk stone arch at the far end.",
+      "palette": [
+        {
+          "name": "Peat brown",
+          "hex": "#5b4630"
+        },
+        {
+          "name": "Tar black",
+          "hex": "#1f1a26"
+        },
+        {
+          "name": "Ochre reed",
+          "hex": "#c49a3c"
+        },
+        {
+          "name": "Fen mist",
+          "hex": "#b9b49a"
+        }
+      ],
+      "mood": "Still, damp and patient, with a little gold in it",
+      "details": [
+        "An oily rainbow sheen drifting on the black pools",
+        "A half-sunk cart wheel, a leaning signpost and a stone arch: things the bog kept",
+        "Clusters of cattail reeds, their dark heads against the pale mist"
+      ],
+      "never": ["Bright sunshine or loud colours", "Any creature drawn in the scene"]
+    },
+    "flavor": "A flat, quiet bog where the mud keeps everything it is given. Old things turn up here."
+  },
+  {
     "id": "old-crossroads",
     "name": "Old Crossroads",
     "element": null,

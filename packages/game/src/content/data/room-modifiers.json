@@ -62,5 +62,17 @@
       { "op": "team_stat", "stat": "atk", "bp": 5000, "role": "guard" },
       { "op": "team_stat", "stat": "atk", "bp": 5000, "role": "support" }
     ]
+  },
+  {
+    "id": "mud",
+    "name": "Muddy",
+    "description": "Your whole team is 30% slower.",
+    "effects": [
+      {
+        "op": "team_stat",
+        "stat": "spd",
+        "bp": -3000
+      }
+    ]
   }
 ]

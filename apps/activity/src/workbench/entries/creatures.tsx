@@ -104,6 +104,7 @@ const bossCard: Entry = {
       props: { hpNow: 42023, hpMax: 50233 },
     },
     { name: 'Cinder Wyrm', props: { boss: 'cinder-wyrm' } },
+    { name: 'Old Bogback', props: { boss: 'old-bogback' } },
   ],
   render: (p) => <BossCard view={bossView(p)} />,
 };

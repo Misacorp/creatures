@@ -26,7 +26,7 @@ Read `README.md` for the tags. The dungeon has no look brief in the shipped data
 
 ## Foes
 
-Eight foes, two per element. Each foe is a small fight in one room. `(content: dungeon-foes.json)` Two more, for Mire, are a design draft (below).
+Ten foes, two per element. Each foe is a small fight in one room. `(content: dungeon-foes.json)` Every foe has a low Speed (2 to 5% dodge when dodge is on).
 
 Foes have no turn order of their own: in the dungeon **your creatures always act left to right, then the foe** (`RULES.dungeon.turnOrder`, decided 2026-10-14). The raid's bosses keep theirs. `(content: glossary.json "dungeon-row")`
 
@@ -78,25 +78,25 @@ Foes have no turn order of their own: in the dungeon **your creatures always act
 - Shipped flavour `(content)`: "A hundred sparks that agree on nothing except which creature to pester."
 - Compendium detail: a crowd of sparks that moves as one. It does not care where a creature stands, only that it is there to pester.
 
-### Mire foes (design, not shipped)
+### Mire foes
 
-Status: 2026-10-19. A design draft (`docs/design/speed-and-dodge.md` section 5.5: "two or three Mire foes, for example a bog toad, a tar leech, a fen lurker room boss, with low Speed"). Flavour lines are drafts (`docs/design/mire-content-drafts.md`). The sprites are drawn and wait for the foes. `(compendium detail, not shipped)`
+Status: 2026-10-20. Shipped (`docs/design/speed-and-dodge.md` section 5.5). Both foes leave Mired on the creatures they hit. `(content: dungeon-foes.json)`
 
-**Bog Toad** (Mud Spit, suggested: every second round, a small shell of mud on one random creature that leaves Mired)
+**Bog Toad** (Mud Spit, every second round, a small shell of mud on one random creature that leaves Mired)
 
-- Draft flavour: "Sits so still you take it for a stone, then spits a mouthful of mud. It is very sorry afterwards."
+- Shipped flavour `(content)`: "Sits so still you take it for a stone, then spits a mouthful of mud. It is very sorry afterwards."
 - Compendium detail: a small cousin of Old Bogback, the one the Sunken Fen sends to the dungeon's damp corners. It leaves Mired on whoever it spits at, which is the first taste of the fen's slow ground.
 
-**Tar Leech** (Tar Cling, suggested: every third round, a heavy hit on the left creature that leaves Mired)
+**Tar Leech** (Tar Cling, every third round, a heavy hit on the left creature that leaves Mired)
 
-- Draft flavour: "Black, shiny and slow. It clings to the nearest creature and will not take the hint."
+- Shipped flavour `(content)`: "Black, shiny and slow. It clings to the nearest creature and will not take the hint."
 - Compendium detail: tar that has learned to cling. It is the dungeon's patient foe: it is slow, it is not scary, and it will not let go.
 
 ---
 
 ## Floor bosses
 
-Four floor bosses, one per element; a fifth, for Mire, is a design draft. Each is the last room's foe on its floor, has more HP and hits harder than the foes before it, and has its own trick. At a landmark depth it also gains a signature move, announced a round ahead. `(content: dungeon-foes.json, glossary.json "floor-boss")`
+Five floor bosses, one per element. Each is the last room's foe on its floor, has more HP and hits harder than the foes before it, and has its own trick. At a landmark depth it also gains a signature move, announced a round ahead. `(content: dungeon-foes.json, glossary.json "floor-boss")`
 
 Each floor boss is a smaller echo of a raid boss `(inferred)`. The raid bosses are in `bosses.md`.
 
@@ -128,12 +128,12 @@ Each floor boss is a smaller echo of a raid boss `(inferred)`. The raid bosses a
 - Echo: the Storm Sovereign's Lightning Rod `(inferred)`.
 - Landmark signature, **Overload** (every fourth round, marked a round ahead): a slam on the strongest creature, and the creatures beside it are splashed. `(content: dungeon-foes.json)`
 
-### Fen Lurker (Mire, design, not shipped; Sink Down, suggested: every third round, a sweep of one row that leaves Mired)
+### Fen Lurker (Mire; Sink Down, every third round, a sweep of the row that leaves Mired)
 
-- Draft flavour: "Looks like a bog-oak log until it blinks. Then you see that the log was looking at you."
+- Shipped flavour `(content)`: "Looks like a bog-oak log until it blinks. Then you see that the log was looking at you."
 - Compendium detail: a bog-oak log, black and mossy, with reeds growing from its back. It lies half sunk in tar and watches with two gold eyes. It is the dungeon's patient floor boss, the smaller echo of Old Bogback `(inferred)`.
 - Echo: Old Bogback's Sinking Mud `(inferred)`.
-- Landmark signature, **Pull Under** (suggested: every fourth round, announced a round ahead: a sweep of every row that leaves Mired). `(compendium detail, not shipped)`
+- Landmark signature, **Pull Under** (every fourth round, marked a round ahead): a sweep of the whole row that leaves Mired. `(content: dungeon-foes.json)`
 
 ---
 
@@ -143,17 +143,17 @@ Each room rolls one modifier. It is shown before the run, and it lasts for that 
 
 The modifiers are **phenomena**: things the dungeon does to its rooms, the way weather does to a valley. The shipped descriptions give the exact effect. This table gives the feel. The numbers stay in `room-modifiers.json`.
 
-| Modifier                                  | Shipped rule `(content)`                                          | In-world phenomenon `(compendium detail, not shipped)`                                                                                                                                                      |
-| ----------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Flooded**                               | Tide creatures hit harder.                                        | The room is under water. Tide runs strong in it.                                                                                                                                                            |
-| **Scorched**                              | Ember creatures hit harder.                                       | A heat wave. The room is hot and everything burns brighter.                                                                                                                                                 |
-| **Overgrown**                             | Grove creatures hit harder.                                       | Roots and vines have grown into the room in one night. Growth feeds the Grove.                                                                                                                              |
-| **Stormy**                                | Spark creatures hit harder.                                       | Storm air. Static hangs in the room and charges the Spark creatures.                                                                                                                                        |
-| **Dark**                                  | Your creatures crit more often.                                   | No light at all. Creatures act on instinct and land more critical hits in the dark.                                                                                                                         |
-| **Thorns**                                | The foe turns the first reaction of each round back on your team. | Briars grow across the room. The first reaction of each round tangles back into the team. Shipped text is `(content: room-modifiers.json thorns)`.                                                          |
-| **Brittle**                               | The foe has less HP but hits harder.                              | Cracked stone. The foe is fragile and it knows it, so it hits harder.                                                                                                                                       |
-| **Muddy** (design, not shipped; id `mud`) | The whole team is slower.                                         | The room is knee-deep in mud. Every step is a squelch, and everyone arrives a little late. Draft text: "Your whole team is 30% slower." The first modifier that changes Speed, the stat dodge is made from. |
-| **Echoing**                               | Guards and supports hit harder.                                   | Sound carries in the stone and doubles back. The quiet ones, the ones who hold the line and lift the others, ring loudest.                                                                                  |
+| Modifier             | Shipped rule `(content)`                                          | In-world phenomenon `(compendium detail, not shipped)`                                                                                                                                                                    |
+| -------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Flooded**          | Tide creatures hit harder.                                        | The room is under water. Tide runs strong in it.                                                                                                                                                                          |
+| **Scorched**         | Ember creatures hit harder.                                       | A heat wave. The room is hot and everything burns brighter.                                                                                                                                                               |
+| **Overgrown**        | Grove creatures hit harder.                                       | Roots and vines have grown into the room in one night. Growth feeds the Grove.                                                                                                                                            |
+| **Stormy**           | Spark creatures hit harder.                                       | Storm air. Static hangs in the room and charges the Spark creatures.                                                                                                                                                      |
+| **Dark**             | Your creatures crit more often.                                   | No light at all. Creatures act on instinct and land more critical hits in the dark.                                                                                                                                       |
+| **Thorns**           | The foe turns the first reaction of each round back on your team. | Briars grow across the room. The first reaction of each round tangles back into the team. Shipped text is `(content: room-modifiers.json thorns)`.                                                                        |
+| **Brittle**          | The foe has less HP but hits harder.                              | Cracked stone. The foe is fragile and it knows it, so it hits harder.                                                                                                                                                     |
+| **Muddy** (id `mud`) | The whole team is slower (30%).                                   | The room is knee-deep in mud. Every step is a squelch, and everyone arrives a little late. Shipped text `(content)`: "Your whole team is 30% slower." The first modifier that changes Speed, the stat dodge is made from. |
+| **Echoing**          | Guards and supports hit harder.                                   | Sound carries in the stone and doubles back. The quiet ones, the ones who hold the line and lift the others, ring loudest.                                                                                                |
 
 Notes:
 

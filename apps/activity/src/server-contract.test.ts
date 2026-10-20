@@ -1162,6 +1162,7 @@ describe('the expedition requests the client sends', () => {
       'ember-caves',
       'verdant-hollow',
       'storm-ridge',
+      'sunken-fen',
       'old-crossroads',
       'moonlit-reef',
       'festival-grounds',
@@ -1172,7 +1173,7 @@ describe('the expedition requests the client sends', () => {
     apiFetch.mockReset();
     apiFetch.mockResolvedValue(expeditionProfile);
     const profile = await fetchProfile();
-    expect(profile.journal.total).toBe(41);
+    expect(profile.journal.total).toBe(45);
     expect(profile.explorers).toHaveLength(4);
     expect(profile.milestones).toHaveLength(10);
     expect(profile.slots.next).toEqual({ kind: 'rank_sum', at: 26 });
