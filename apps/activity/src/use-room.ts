@@ -35,6 +35,8 @@ export interface RoomHandle {
   residents: readonly Resident[];
   /** Call on tab switches: refetches the others only when the last full fetch is over 60 s old. */
   refreshIfStale: () => void;
+  /** The live socket is up (the server can see you are here with company), and the page is visible. */
+  live: boolean;
 }
 
 export function useRoom({
@@ -50,6 +52,7 @@ export function useRoom({
   const [present, setPresent] = useState<readonly string[]>(() => participants.ids());
   const [known, setKnown] = useState<ReadonlyMap<string, Resident>>(() => new Map());
   const [hidden, setHidden] = useState(() => typeof document !== 'undefined' && document.hidden);
+  const [live, setLive] = useState(false);
   const loader = useRef<RoomLoader | null>(null);
 
   useEffect(() => {
@@ -85,8 +88,9 @@ export function useRoom({
       getTicket: fetchLoungeTicket,
       url: (ticket) => loungeSocketUrl(ticket, window.location),
       createSocket: browserSocket,
-      onLive: (live) => {
-        loader.current?.setLive(live);
+      onLive: (up) => {
+        loader.current?.setLive(up);
+        setLive(up);
       },
       onResident: (resident) => {
         loader.current?.applyResident(resident);
@@ -95,6 +99,7 @@ export function useRoom({
     socket.start();
     return () => {
       socket.stop();
+      setLive(false);
     };
   }, [wantSocket, selfId]);
 
@@ -133,5 +138,6 @@ export function useRoom({
     refreshIfStale: () => {
       loader.current?.refreshIfStale();
     },
+    live: live && !hidden,
   };
 }

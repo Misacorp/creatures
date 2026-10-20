@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Creature, RoomResident } from './api';
 import type { GearItem } from './gear-types';
 import {
+  LOUNGE_REFRESH_MS,
   ROOM_CHUNK,
   ROOM_POLL_MS,
   ROOM_STALE_MS,
@@ -9,6 +10,7 @@ import {
   dropAbsent,
   idsToFetch,
   isStale,
+  loungeEarning,
   mergeResidents,
   nextPollDelay,
   onVisibleAction,
@@ -280,5 +282,22 @@ describe('shouldOpenSocket', () => {
     expect(shouldOpenSocket({ ...on, hidden: true }, ['1', '2'], '1')).toBe(false);
     expect(shouldOpenSocket({ ...on, offered: false }, ['1', '2'], '1')).toBe(false);
     expect(shouldOpenSocket({ ...on, enabled: false }, ['1', '2'], '1')).toBe(false);
+  });
+});
+
+describe('loungeEarning', () => {
+  const state = { loungerId: 'c1', loungeXp: { c1: 34 } };
+  it('is true only while live, visible, with a lounger that is not Rested', () => {
+    expect(loungeEarning(true, false, state)).toBe(true);
+    expect(loungeEarning(false, false, state)).toBe(false);
+    expect(loungeEarning(true, true, state)).toBe(false);
+    expect(loungeEarning(true, false, { ...state, loungerId: null })).toBe(false);
+    expect(loungeEarning(true, false, { loungerId: 'c1', loungeXp: { c1: 60 } })).toBe(false);
+    // A lounger with nothing yet today earns.
+    expect(loungeEarning(true, false, { loungerId: 'c1', loungeXp: {} })).toBe(true);
+  });
+
+  it('reloads every 4 minutes: 2 XP at the lounging rate', () => {
+    expect(LOUNGE_REFRESH_MS).toBe(2 * 2 * 60_000);
   });
 });

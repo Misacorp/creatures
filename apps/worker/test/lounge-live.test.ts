@@ -406,6 +406,34 @@ describe('the socket', () => {
     expect(left).toBe(0);
   });
 
+  it('pays everyone (the presence hook) before it closes a stale socket, while the dead still count', async () => {
+    const guildId = nextGuild();
+    const [p1, p2] = await Promise.all([join(guildId, 1), join(guildId, 2)]);
+    const a = await connect(p1);
+    const b = await connect(p2);
+    const seen = await runInDurableObject(stubOf(guildId), (_instance, state) => {
+      const open: number[] = [];
+      const live = new LoungeLive({
+        ctx: state,
+        enabled: true,
+        clientSecret: 'test-only-client-secret',
+        guildId: () => guildId,
+        now: Date.now,
+        residentOf: () => null,
+        onPresenceChange: (closing) => {
+          expect(closing).toBeNull();
+          open.push(state.getWebSockets().length);
+        },
+      });
+      expect(live.pruneStale(Date.now())).toBe(0);
+      expect(live.pruneStale(Date.now() + STALE_MS + 1)).toBe(2);
+      return open;
+    });
+    // Called once, with both sockets still there to be paid.
+    expect(seen).toEqual([2]);
+    await until(() => a.closed !== null && b.closed !== null);
+  });
+
   it('does not close a live socket that is not stale', async () => {
     const guildId = nextGuild();
     const player = await join(guildId, 1);

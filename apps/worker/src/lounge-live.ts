@@ -140,20 +140,22 @@ export class LoungeLive implements LiveHooks {
     return out;
   }
 
-  /** Closes sockets with no ping for `STALE_MS` or older than `MAX_AGE_MS`. Returns how many it closed. */
+  /**
+   * Closes sockets with no ping for `STALE_MS` or older than `MAX_AGE_MS`. Returns how many it closed. Before
+   * closing any, everyone is paid for the time so far (the presence hook), while the dead ones still count up
+   * to their last ping: a socket the server closes may never get a close event of its own.
+   */
   pruneStale(now: number): number {
-    let closed = 0;
-    for (const ws of this.deps.ctx.getWebSockets()) {
+    const dead = this.deps.ctx.getWebSockets().filter((ws) => {
       const att = readAttachment(ws);
       const lastPing = this.deps.ctx.getWebSocketAutoResponseTimestamp(ws)?.getTime() ?? 0;
       const lastAlive = Math.max(lastPing, att?.connectedAt ?? 0);
-      const dead = att === null || now - lastAlive > STALE_MS || now - att.connectedAt > MAX_AGE_MS;
-      if (dead) {
-        closeQuietly(ws, CLOSE_STALE, 'stale');
-        closed++;
-      }
-    }
-    return closed;
+      return att === null || now - lastAlive > STALE_MS || now - att.connectedAt > MAX_AGE_MS;
+    });
+    if (dead.length === 0) return 0;
+    this.presenceChange(null);
+    for (const ws of dead) closeQuietly(ws, CLOSE_STALE, 'stale');
+    return dead.length;
   }
 
   /** The upgrade request: the Worker has already checked the ticket's MAC, the object redeems it. */

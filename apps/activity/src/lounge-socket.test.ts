@@ -230,7 +230,7 @@ describe('reconnecting', () => {
 });
 
 describe('the heartbeat', () => {
-  it('pings after 60 s of silence, not while frames keep arriving', async () => {
+  it('pings every 60 s, also while pushes keep arriving (the ping tells the server you are here)', async () => {
     const { socket, sockets } = setup();
     socket.start();
     await vi.advanceTimersByTimeAsync(0);
@@ -238,16 +238,16 @@ describe('the heartbeat', () => {
     s?.hello();
     await vi.advanceTimersByTimeAsync(HEARTBEAT_MS - 20_000);
     expect(s?.sent).toEqual([]);
-    // A push counts as life: no ping is due until 60 s after it.
+    // A push 40 s in does not put the ping off: two busy players must still look present.
     s?.push(residentMessage);
-    await vi.advanceTimersByTimeAsync(HEARTBEAT_MS - 20_000);
-    expect(s?.sent).toEqual([]);
-    await vi.advanceTimersByTimeAsync(40_000);
+    await vi.advanceTimersByTimeAsync(20_000);
     expect(s?.sent).toEqual(['ping']);
-    // The pong is life too.
-    s?.push('pong');
-    await vi.advanceTimersByTimeAsync(40_000);
-    expect(s?.sent).toEqual(['ping']);
+    // Pushes every 20 s for the next three minutes: a ping still goes out every minute.
+    for (let i = 0; i < 9; i++) {
+      s?.push(residentMessage);
+      await vi.advanceTimersByTimeAsync(20_000);
+    }
+    expect(s?.sent).toEqual(['ping', 'ping', 'ping', 'ping']);
   });
 
   it('drops a connection that has been silent for 150 s and reconnects', async () => {
