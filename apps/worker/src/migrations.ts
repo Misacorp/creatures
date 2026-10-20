@@ -22,6 +22,7 @@ import { raidMigration } from './raid-migration';
 import { raidPlacementCapMigration } from './raid-placement-cap-migration';
 import { raidProgressionMigration } from './raid-progression-migration';
 import { weatherMigration } from './weather-migration';
+import { workshopConvertMigration } from './workshop-convert-migration';
 import { workshopV2Migration } from './workshop-v2-migration';
 
 /** Versioned schema migrations; index 0 is version 1. Never edit a released migration. */
@@ -274,6 +275,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   dungeonPathMigration,
   // Version 35: what lounging with company has paid each player (see lounge-company.ts).
   loungeCompanyMigration,
+  // Version 36: Workshop conversion jobs, refine and recycle (see workshop-convert-migration.ts).
+  workshopConvertMigration,
 ];
 
 /** The schema version of a fresh database. */

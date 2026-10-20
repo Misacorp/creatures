@@ -1,4 +1,4 @@
-import { content, expeditionContent, gearContent } from '@creatures/game';
+import { content, conversionContent, expeditionContent, gearContent } from '@creatures/game';
 
 /**
  * The content id lists that request schemas (`v.picklist`) and the analytics sanitizers check
@@ -8,6 +8,8 @@ type Ids = [string, ...string[]];
 
 export const SPECIES_IDS = content.creatures.map((c) => c.id) as Ids;
 export const SUPPLY_IDS = expeditionContent.supplies.map((s) => s.id) as Ids;
+/** Every Workshop conversion recipe id (refine, recycle). */
+export const CONVERSION_IDS = conversionContent.map((c) => c.id) as Ids;
 export const DESTINATION_IDS = expeditionContent.destinations.map((d) => d.id) as Ids;
 export const GOAL_IDS = expeditionContent.goals.map((g) => g.id) as Ids;
 /** Every gear base id. */

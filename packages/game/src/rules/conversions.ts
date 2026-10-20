@@ -82,6 +82,6 @@ export function conversionJobMs(def: ConversionDef, craftingLevel: number): numb
 }
 
 /** The Crafting XP a finished conversion gives: its nominal hours times the usual XP per hour. */
-export function conversionXp(def: ConversionDef): number {
+export function conversionXp(def: Pick<ConversionDef, 'hours'>): number {
   return def.hours * RULES.gear.skill.xpPerHour;
 }

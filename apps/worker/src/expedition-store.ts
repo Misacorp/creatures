@@ -281,6 +281,31 @@ export function takeSupply(sql: SqlStorage, userId: string, supplyId: string): b
   );
 }
 
+/**
+ * Takes `amount` of one supply, all or nothing. Returns false and changes nothing if the player has fewer
+ * (it can never go below 0).
+ */
+export function takeSupplies(
+  sql: SqlStorage,
+  userId: string,
+  supplyId: string,
+  amount: number,
+): boolean {
+  if (!Number.isSafeInteger(amount) || amount < 1) throw new Error('invalid supply amount');
+  return (
+    sql
+      .exec(
+        `UPDATE supplies SET amount = amount - ?
+         WHERE user_id = ? AND supply_id = ? AND amount >= ? RETURNING amount`,
+        amount,
+        userId,
+        supplyId,
+        amount,
+      )
+      .toArray().length > 0
+  );
+}
+
 // --- Offers ---
 
 export function offerOf(sql: SqlStorage, expeditionId: string): string[] | null {
