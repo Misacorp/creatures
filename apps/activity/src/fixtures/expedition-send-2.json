@@ -294,7 +294,7 @@
         "kit": ["lure-great", "map-scrap-basic"],
         "destination": "tidepools",
         "twist": null,
-        "rolls": 2,
+        "rolls": 1,
         "cost": 0,
         "treat": false,
         "startedAt": 1799733600000,
@@ -309,7 +309,7 @@
           "pushOn": {
             "goalId": "shortcut",
             "risk": "risky",
-            "oddsBp": 6100,
+            "oddsBp": 6480,
             "outcome": "failed"
           }
         },
@@ -318,7 +318,7 @@
           "goalId": "shortcut",
           "startedAt": 1799775072000,
           "endsAt": 1799782272000,
-          "oddsBp": 6100
+          "oddsBp": 6480
         }
       }
     ],

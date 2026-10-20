@@ -48,9 +48,10 @@ describe('the journal', () => {
   });
 
   it('counts the pages found in each place and in all', () => {
-    expect(places.find((p) => p.place === 'tidepools')).toMatchObject({ found: 1 });
+    // The scenario's trip was three ticks (one and a push-on's two): a page each, all at the Tidepools.
+    expect(places.find((p) => p.place === 'tidepools')).toMatchObject({ found: 3 });
     expect(places.reduce((n, p) => n + p.found, 0)).toBe(profile.journal.found.length);
-    expect(journalProgressText(profile)).toBe('1 / 45 pages found');
+    expect(journalProgressText(profile)).toBe('3 / 45 pages found');
   });
 
   it('lists the sets of each place with their progress, from the server', () => {
@@ -59,9 +60,9 @@ describe('the journal', () => {
       {
         id: 'tide-ledger',
         name: expect.any(String) as string,
-        found: 1,
+        found: 3,
         total: 3,
-        complete: false,
+        complete: true,
       },
     ]);
     const done = journalPlaces({
@@ -76,7 +77,7 @@ describe('the journal', () => {
   it('still works if the server leaves a set out: it counts from the pages', () => {
     const bare = journalPlaces({ journal: { ...profile.journal, sets: [] } });
     const tide = bare.find((p) => p.place === 'tidepools');
-    expect(tide?.sets[0]).toMatchObject({ found: 1, total: 3 });
+    expect(tide?.sets[0]).toMatchObject({ found: 3, total: 3 });
   });
 });
 

@@ -7,7 +7,6 @@ import type { SendRequest } from './expedition-api';
 import type { DestinationsView, ExpeditionLength, Slots, SupplyPick } from './expedition-types';
 import { ChoiceMark } from './ExpeditionIcons';
 import { ExplorerPicker } from './ExplorerPicker';
-import { getSpecies } from './game';
 import { HaulStrip } from './HaulStrip';
 import { LengthPicker } from './LengthPicker';
 import { clampLength, defaultExplorer, explorerOptions, sendBlocker } from './send-view';
@@ -82,8 +81,7 @@ export function SendTrip({
   const place = cards[index];
   const rank = explorer?.rank ?? 1;
   const duration = clampLength(length, rank);
-  const species = explorer === undefined ? undefined : getSpecies(explorer.creature.species);
-  const shardElement = place?.element ?? species?.element ?? null;
+  const shardElement = place?.element ?? null;
 
   const blocker = sendBlocker({
     slots,

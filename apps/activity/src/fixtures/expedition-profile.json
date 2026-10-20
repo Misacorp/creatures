@@ -3,10 +3,10 @@
     "trips_finished": 3,
     "trips_failed": 1,
     "trip_hours": 12,
-    "species_found": 1,
+    "species_found": 2,
     "places_visited": 1,
-    "journal_pages": 1,
-    "journal_sets": 0,
+    "journal_pages": 3,
+    "journal_sets": 1,
     "reactions_seen": 0,
     "pushons_taken": 2,
     "pushons_won": 1,
@@ -73,7 +73,7 @@
       "id": "collector",
       "stat": "species_found",
       "at": 6,
-      "value": 1,
+      "value": 2,
       "reached": false,
       "bonus": {
         "kind": "xp",
@@ -84,7 +84,7 @@
       "id": "scholar",
       "stat": "journal_pages",
       "at": 10,
-      "value": 1,
+      "value": 3,
       "reached": false,
       "bonus": {
         "kind": "xp",
@@ -95,7 +95,7 @@
       "id": "archivist",
       "stat": "journal_sets",
       "at": 4,
-      "value": 0,
+      "value": 1,
       "reached": false,
       "bonus": {
         "kind": "offer",
@@ -136,13 +136,21 @@
       {
         "entryId": "tide-first-pool",
         "foundAt": 1799830944002
+      },
+      {
+        "entryId": "tide-low-water",
+        "foundAt": 1799830944002
+      },
+      {
+        "entryId": "tide-warm-stone",
+        "foundAt": 1799830944002
       }
     ],
     "total": 45,
     "sets": [
       {
         "id": "tide-ledger",
-        "found": 1,
+        "found": 3,
         "total": 3
       },
       {
@@ -186,7 +194,7 @@
     {
       "creatureId": "00000000-0000-4000-8400-000000000002",
       "rank": 4,
-      "xp": 2200,
+      "xp": 2800,
       "nextRankXp": 4500,
       "trips": 1
     },
@@ -206,6 +214,13 @@
     },
     {
       "creatureId": "00000000-0000-4000-8400-000000000007",
+      "rank": 1,
+      "xp": 0,
+      "nextRankXp": 200,
+      "trips": 0
+    },
+    {
+      "creatureId": "00000000-0000-4000-8400-000000000008",
       "rank": 1,
       "xp": 0,
       "nextRankXp": 200,

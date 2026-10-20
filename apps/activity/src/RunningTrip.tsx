@@ -156,7 +156,7 @@ export function RunningTrip({
               ? 'Claim'
               : status.claim === 'early'
                 ? 'Come home now (skips the push-on)'
-                : `Recall (keeps ${String(keeps)} ${keeps === 1 ? 'catch' : 'catches'})`}
+                : `Recall (keeps ${String(keeps)} ${keeps === 1 ? 'hour' : 'hours'} of finds)`}
           </button>
         )}
       </div>

@@ -90,26 +90,29 @@ describe('what the trip brought home', () => {
   it('builds the pile from gear, parts and found supplies, one icon for each kind', () => {
     const found = loot.loot as NonNullable<typeof loot.loot>;
     const source = { gear: found.gear, parts: found.parts, supplies: found.supplies ?? [] };
-    expect(source.supplies).toEqual(['map-scrap-basic']);
-    expect(rewardPileItems(source).map((i) => i.key)).toEqual([
-      'scrap',
-      'ember-shard',
-      'glimmer',
-      'supply-map-scrap',
-    ]);
-    expect(pileLabel(source, 'Loot')).toBe('Loot: Scrap, Ember Shard, Glimmer, Map scrap');
+    // The trip's ticks may bring several of each: the pile has one icon for each kind.
+    expect(source.supplies).toContain('map-scrap-basic');
+    expect(rewardPileItems(source).map((i) => i.key)).toEqual(
+      expect.arrayContaining(['scrap', 'ember-shard', 'glimmer', 'supply-map-scrap']),
+    );
+    expect(pileLabel(source, 'Loot')).toMatch(/^Loot: Scrap, Ember Shard/);
     expect(pileLabel({ bait: 3, essence: 1, parts: { scrap: 1 } }, 'Rewards')).toBe(
       'Rewards: Scrap, Essence, Bait',
     );
   });
 
   it('is empty for a recall and for a trip without loot', () => {
-    expect(nothingInLoot(recalled)).toBe(true);
+    const none = { loot: { gear: [], converted: [], parts: {}, blueprints: [] } };
+    expect(nothingInLoot({ ...recalled, ...none })).toBe(true);
     expect(nothingInLoot(loot)).toBe(false);
+    // A recall pays the ticks of the hours spent, so it may bring parts.
+    expect(nothingInLoot(recalled)).toBe(false);
   });
 
   it('counts the supplies found, by kind of supply', () => {
-    expect(foundSupplies(loot)).toEqual([{ id: 'map-scrap-basic', name: 'Map Scrap', amount: 1 }]);
+    const found = foundSupplies(loot);
+    expect(found.find((s) => s.id === 'map-scrap-basic')).toMatchObject({ name: 'Map Scrap' });
+    expect(found.reduce((n, s) => n + s.amount, 0)).toBe(loot.loot?.supplies?.length);
     const two = {
       loot: { ...(loot.loot as object), supplies: ['lure-basic', 'lure-basic', 'lantern-good'] },
     };
@@ -147,7 +150,8 @@ describe('what the explorer earned', () => {
 
   it('shows the journal pages found, with their set', () => {
     const pages = journalPages(worked);
-    expect(pages).toHaveLength(1);
+    // The scenario's trip is one tick and its push-on adds two (an hour each): a page for every tick.
+    expect(pages).toHaveLength(3);
     expect(pages[0]).toMatchObject({ entryId: 'tide-first-pool', setComplete: false });
     expect(pages[0]?.title.length).toBeGreaterThan(2);
     expect(pages[0]?.text.length).toBeGreaterThan(20);

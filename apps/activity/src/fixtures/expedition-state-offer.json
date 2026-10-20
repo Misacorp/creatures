@@ -253,7 +253,7 @@
       "kit": ["lure-great", "map-scrap-basic"],
       "destination": "tidepools",
       "twist": null,
-      "rolls": 2,
+      "rolls": 1,
       "cost": 0,
       "treat": false,
       "startedAt": 1799733600000,
@@ -274,7 +274,7 @@
             "id": "shortcut",
             "risk": "risky",
             "extraHours": 2,
-            "oddsBp": 6100
+            "oddsBp": 6480
           }
         ]
       },
