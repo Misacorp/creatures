@@ -78,6 +78,7 @@ export const ICONS: Readonly<Record<string, IconRef>> = {
   'part: ember-shard': { kind: 'part', part: 'ember-shard' },
   'part: grove-shard': { kind: 'part', part: 'grove-shard' },
   'part: spark-shard': { kind: 'part', part: 'spark-shard' },
+  'part: mire-shard': { kind: 'part', part: 'mire-shard' },
   'part: glimmer': { kind: 'part', part: 'glimmer' },
   'gear: trail-charm': { kind: 'gear', baseId: 'trail-charm' },
   'gear: kelp-cap': { kind: 'gear', baseId: 'kelp-cap' },
@@ -86,6 +87,7 @@ export const ICONS: Readonly<Record<string, IconRef>> = {
   'element: ember': { kind: 'element', element: 'ember' },
   'element: grove': { kind: 'element', element: 'grove' },
   'element: spark': { kind: 'element', element: 'spark' },
+  'element: mire': { kind: 'element', element: 'mire' },
 };
 export const ICON_NAMES: readonly string[] = Object.keys(ICONS);
 const FALLBACK_ICON: IconRef = { kind: 'glyph', id: 'unknown' };

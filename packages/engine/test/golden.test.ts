@@ -138,10 +138,10 @@ describe('golden fight', () => {
       knockedOutRound: null,
     });
     expect(r.reactions).toEqual({
-      byType: { overload: 2, grounding: 0, wildfire: 0, steam: 0 },
+      byType: { overload: 2, grounding: 0, wildfire: 0, steam: 0, smother: 0, flare: 0 },
       total: 2,
     });
-    expect(r.damageByElement).toEqual({ tide: 230, ember: 30, grove: 0, spark: 1074 });
+    expect(r.damageByElement).toEqual({ tide: 230, ember: 30, grove: 0, spark: 1074, mire: 0 });
     // Phase 1 ends with the counter for phase 2 (the helper boss uses the reaction rule).
     expect(r.adaptationSuggestion).toMatchObject({
       rule: 'resist-top-reaction',

@@ -29,6 +29,10 @@
   --cue: var(--spark);
 }
 
+.cue-el-mire {
+  --cue: var(--mire);
+}
+
 /* --- The reaction pair --- */
 
 .party-slot.cue-react {

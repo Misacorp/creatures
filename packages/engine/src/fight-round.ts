@@ -1,7 +1,7 @@
 // The start of a round, besides the dice: Support buffs, Kind Rain, gear lines and finale abilities.
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
 import { ELEMENTS, RULES, type Element, type Zone } from '@creatures/game';
-import { cleanseDebuffs } from './fight-effects';
+import { applyEffect, BOSS, cleanseDebuffs } from './fight-effects';
 import { adaptationOn, hitBoss } from './fight-strike';
 import {
   besides,
@@ -86,6 +86,10 @@ export function supportBuffs(state: FightState, round: number): void {
       }
       // A cleanse also removes the neighbour's debuffs (status effects), one event each.
       if (fx?.cleanse === true) cleanseDebuffs(state, s, t);
+    }
+    // A Support's passive ability (`round_start`) also leaves its effect on the boss with its action.
+    for (const a of s.roundStartApplies) {
+      applyEffect(state, BOSS, a.effect, a.powerBp, s.id, a.durationTurns ?? 0);
     }
   }
 }
@@ -289,6 +293,10 @@ export function fireAbility(state: FightState, a: Scheduled): void {
         if (source !== null && state.bossHp > 0 && !state.retreated) {
           hitBoss(state, source, { atkBp: e.atkBp, ability: def.id, key: choice.key });
         }
+        break;
+      case 'on_hit_taken':
+      case 'round_start':
+        // Passive: registered when the fight starts, so firing does nothing more.
         break;
     }
   }

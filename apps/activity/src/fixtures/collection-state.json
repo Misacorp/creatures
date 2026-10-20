@@ -65,11 +65,11 @@
           "itemLevel": 12
         },
         {
-          "id": "00000000-0000-4000-8500-000000000010",
-          "baseId": "crossroads-compass",
+          "id": "00000000-0000-4000-8500-000000000005",
+          "baseId": "tidepool-charm",
           "slot": "charm",
-          "rarity": "rare",
-          "itemLevel": 10
+          "rarity": "common",
+          "itemLevel": 6
         }
       ],
       "busy": {

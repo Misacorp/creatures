@@ -396,7 +396,7 @@ describe('the gear responses the server sends', () => {
     for (const fixture of [gearState, gearReady, gearRunning, gearWelcome, gearNotice]) {
       const parsed = parseGearState(fixture);
       expect(parsed.slots.total).toBeGreaterThan(0);
-      expect(Object.keys(parsed.parts)).toHaveLength(6);
+      expect(Object.keys(parsed.parts)).toHaveLength(7);
     }
   });
 
@@ -1172,7 +1172,7 @@ describe('the expedition requests the client sends', () => {
     apiFetch.mockReset();
     apiFetch.mockResolvedValue(expeditionProfile);
     const profile = await fetchProfile();
-    expect(profile.journal.total).toBe(40);
+    expect(profile.journal.total).toBe(41);
     expect(profile.explorers).toHaveLength(4);
     expect(profile.milestones).toHaveLength(10);
     expect(profile.slots.next).toEqual({ kind: 'rank_sum', at: 26 });

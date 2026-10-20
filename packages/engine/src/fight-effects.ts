@@ -30,8 +30,17 @@ export function effectBpOf(
   f: Fighter,
   field: 'spdBp' | 'damageDealtBp',
 ): number {
+  // Clean coat (`debuffResistBp`): a creature's debuffs have weaker numbers per stack, rounded toward 0.
+  const resist = f === BOSS ? 0 : f.mods.debuffResistBp;
   let sum = 0;
-  for (const e of listOf(state, f)) sum += e.stacks * (defOf(state, e.id).perStack[field] ?? 0);
+  for (const e of listOf(state, f)) {
+    const def = defOf(state, e.id);
+    let per = def.perStack[field] ?? 0;
+    if (resist > 0 && def.kind === 'debuff') {
+      per = Math.sign(per) * Math.floor((Math.abs(per) * (10_000 - resist)) / 10_000);
+    }
+    sum += e.stacks * per;
+  }
   return sum;
 }
 
@@ -80,6 +89,14 @@ export function applyEffect(
   }
   const def = defOf(state, effectId);
   if (target !== BOSS && !target.alive) return;
+  // The applier's sheet (Heavy hand, Clinging): a debuff it applies has more power and lasts longer.
+  if (source !== null && def.kind === 'debuff') {
+    const from = state.creatures.find((c) => c.id === source);
+    if (from !== undefined) {
+      powerBp += from.mods.debuffPowerBp;
+      durationTurns += from.mods.debuffDurationTurns;
+    }
+  }
   const sure = Math.floor(powerBp / 10_000);
   const chance = powerBp % 10_000;
   const rolled = sure + (chance > 0 && effectDie(state) < chance ? 1 : 0);
@@ -170,5 +187,37 @@ export function cleanseDebuffs(state: FightState, supporter: Creature, t: Creatu
       stacks: e.stacks,
     });
     return false;
+  });
+}
+
+/**
+ * The stacks of `effectId` the boss carries (0 when none, or when effects are off): what a reaction
+ * that consumes the effect (Flare) counts before its hit.
+ */
+export function bossStacks(state: FightState, effectId: string): number {
+  if (!state.effectsOn) return 0;
+  return state.bossEffects.find((e) => e.id === effectId)?.stacks ?? 0;
+}
+
+/**
+ * A reaction burns every stack of `effectId` off the boss (the effect ends at once, not by turns): one
+ * `effect_consume` event, only if it had stacks. `bonusBp` is the reaction bonus the stacks added.
+ */
+export function consumeBossEffect(
+  state: FightState,
+  reaction: string,
+  effectId: string,
+  bonusBp: number,
+): void {
+  const have = state.bossEffects.find((e) => e.id === effectId);
+  if (have === undefined) return;
+  state.bossEffects = state.bossEffects.filter((e) => e !== have);
+  state.events.push({
+    t: 'effect_consume',
+    round: state.currentRound,
+    reaction,
+    effect: effectId,
+    stacks: have.stacks,
+    bonusBp,
   });
 }

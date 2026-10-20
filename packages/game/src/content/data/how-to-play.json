@@ -15,9 +15,9 @@
       "id": "creatures",
       "title": "Creatures",
       "lines": [
-        "Each creature has an element (Tide, Ember, Grove or Spark) and a role (Setter, Payoff, Guard or Support).",
+        "Each creature has an element (Tide, Ember, Grove, Spark or Mire) and a role (Setter, Payoff, Guard or Support).",
         "Whatever a creature does earns it experience. A treat (Bait) doubles it for one activity.",
-        "Ribbons (made from parts) wait at levels 10 and 20. Many evolve at 15 for Essence, and each picks one of two forms.",
+        "Ribbons (made from parts) wait at levels 10 and 20. Many evolve at 15 for Essence, and most pick one of two forms.",
         "Every catch rolls a talent. More talent slots open at higher levels, and the Talent Book keeps old ones.",
         "A duplicate catch is a choice: Teach its talent, Fuse it, Release it for parts, or sometimes Keep it."
       ]
@@ -27,7 +27,7 @@
       "title": "Combos",
       "lines": [
         "The boss carries one mark at a time. Your hits leave it.",
-        "Hit a marked boss with the right element to set off a reaction.",
+        "Hit a marked boss with the right element (see the Element chart) to set off a reaction.",
         "A reaction deals much more damage and uses up the mark.",
         "Setters swap marks. Put them before the creature that cashes in.",
         "Payoffs hit even harder when they set off a reaction."

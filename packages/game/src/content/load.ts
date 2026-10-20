@@ -171,6 +171,12 @@ function checkReactions(pack: ContentPack): void {
     if (pairs.has(key))
       fail(`two reactions for mark "${r.markElement}" set off by "${r.triggerElement}"`);
     pairs.add(key);
+    // A rider names a real status effect.
+    for (const rider of [r.appliesToFoe, r.consumes]) {
+      if (rider !== undefined && !pack.statusEffects.some((e) => e.id === rider.effect)) {
+        fail(`reaction "${r.id}" uses unknown status effect "${rider.effect}"`);
+      }
+    }
     // A reaction's trigger must deal 150% to the marked element on the chart.
     if (chartBp(pack.elementChart, r.triggerElement, r.markElement) !== CHART_STRONG_BP) {
       fail(`reaction "${r.id}" must be triggered by an element strong against ${r.markElement}`);
@@ -246,6 +252,9 @@ function effectAmount(e: Effect): number {
       return e.reduceBp;
     case 'strike':
       return e.atkBp;
+    case 'on_hit_taken':
+    case 'round_start':
+      return e.apply.powerBp;
     case 're_mark':
     case 'purge':
       return 0;
@@ -284,6 +293,14 @@ function checkAbilities(pack: ContentPack): void {
     byId.set(a.id, a);
     const ops = a.effects.map((e) => e.op);
     if (new Set(ops).size !== ops.length) fail(`ability "${a.id}" repeats an effect`);
+    for (const e of a.effects) {
+      if (
+        (e.op === 'on_hit_taken' || e.op === 'round_start') &&
+        !pack.statusEffects.some((s) => s.id === e.apply.effect)
+      ) {
+        fail(`ability "${a.id}" applies unknown status effect "${e.apply.effect}"`);
+      }
+    }
     if (a.kind === 'basic') {
       // Basic abilities are the four plain ops, with the player's pick: no creature is involved.
       const [only] = a.effects;
@@ -291,6 +308,9 @@ function checkAbilities(pack: ContentPack): void {
         fail(`basic ability "${a.id}" must have exactly one effect`);
       }
       if (only.op === 'strike') fail(`basic ability "${a.id}" cannot strike`);
+      if (only.op === 'on_hit_taken' || only.op === 'round_start') {
+        fail(`basic ability "${a.id}" cannot be passive (it has no creature)`);
+      }
       if (
         (only.op === 'shield_wall' && only.zone !== 'choose') ||
         (only.op === 're_mark' && only.element !== 'choose')

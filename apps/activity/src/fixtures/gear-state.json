@@ -34,10 +34,10 @@
       ],
       "lines": [
         {
-          "id": "crit-damage",
-          "name": "Crit damage",
-          "text": "Crit damage +8 pt",
-          "about": "Crits hit harder, in points (the fight caps the total).",
+          "id": "edge-walker",
+          "name": "Edge-walker",
+          "text": "Edge-walker +2.5%",
+          "about": "More Attack at either end of its row.",
           "source": "rolled",
           "tier": 1,
           "bestTier": 1,
@@ -95,25 +95,25 @@
           "tier": null,
           "bestTier": null,
           "local": false,
-          "active": null
+          "active": false
         },
         {
-          "id": "mend",
-          "name": "Mend",
-          "text": "Mend +1%",
-          "about": "A Support's neighbours heal this share of max HP at round start.",
+          "id": "edge-walker",
+          "name": "Edge-walker",
+          "text": "Edge-walker +2.5%",
+          "about": "More Attack at either end of its row.",
           "source": "rolled",
           "tier": 1,
           "bestTier": 2,
           "local": false,
-          "active": null
+          "active": true
         }
       ],
       "needs": {
         "level": 13,
         "role": null
       },
-      "equippedOn": null,
+      "equippedOn": "00000000-0000-4000-8500-000000000002",
       "dismantle": {
         "scrap": {
           "min": 1,
@@ -401,7 +401,7 @@
           "tier": null,
           "bestTier": null,
           "local": false,
-          "active": true
+          "active": null
         },
         {
           "id": "quick-feet",
@@ -412,7 +412,7 @@
           "tier": 2,
           "bestTier": 3,
           "local": false,
-          "active": true
+          "active": null
         },
         {
           "id": "lucky-find",
@@ -423,14 +423,14 @@
           "tier": 1,
           "bestTier": 3,
           "local": false,
-          "active": true
+          "active": null
         }
       ],
       "needs": {
         "level": 13,
         "role": null
       },
-      "equippedOn": "00000000-0000-4000-8500-000000000002",
+      "equippedOn": null,
       "dismantle": {
         "scrap": {
           "min": 3,
@@ -541,9 +541,9 @@
       "stats": [
         {
           "stat": "atk",
-          "value": 2,
+          "value": 4,
           "base": 2,
-          "text": "Attack 2"
+          "text": "Attack 4"
         },
         {
           "stat": "hp",
@@ -554,14 +554,14 @@
       ],
       "lines": [
         {
-          "id": "crit-chance",
-          "name": "Crit chance",
-          "text": "Crit chance +1 pt",
-          "about": "More chance to crit, in points (the fight caps the total).",
+          "id": "attack-local-flat",
+          "name": "Attack",
+          "text": "+2 Attack (this item)",
+          "about": "Adds Attack to this item before its percentages (not the creature's).",
           "source": "rolled",
           "tier": 1,
           "bestTier": 1,
-          "local": false,
+          "local": true,
           "active": null
         }
       ],
@@ -611,6 +611,7 @@
     "ember-shard": 4,
     "grove-shard": 0,
     "spark-shard": 4,
+    "mire-shard": 0,
     "glimmer": 3
   },
   "blueprints": [

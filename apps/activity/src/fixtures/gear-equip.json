@@ -130,10 +130,10 @@
         ],
         "lines": [
           {
-            "id": "crit-damage",
-            "name": "Crit damage",
-            "text": "Crit damage +8 pt",
-            "about": "Crits hit harder, in points (the fight caps the total).",
+            "id": "edge-walker",
+            "name": "Edge-walker",
+            "text": "Edge-walker +2.5%",
+            "about": "More Attack at either end of its row.",
             "source": "rolled",
             "tier": 1,
             "bestTier": 1,
@@ -194,10 +194,10 @@
             "active": null
           },
           {
-            "id": "mend",
-            "name": "Mend",
-            "text": "Mend +1%",
-            "about": "A Support's neighbours heal this share of max HP at round start.",
+            "id": "edge-walker",
+            "name": "Edge-walker",
+            "text": "Edge-walker +2.5%",
+            "about": "More Attack at either end of its row.",
             "source": "rolled",
             "tier": 1,
             "bestTier": 2,
@@ -717,6 +717,7 @@
       "ember-shard": 4,
       "grove-shard": 0,
       "spark-shard": 4,
+      "mire-shard": 0,
       "glimmer": 3
     },
     "blueprints": [

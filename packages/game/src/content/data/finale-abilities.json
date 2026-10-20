@@ -580,5 +580,93 @@
     "defaultRound": 3,
     "defaultAtZoneHit": true,
     "description": "Its zone takes 70% less damage for 3 rounds; all creatures hit 7% harder this round."
+  },
+  {
+    "id": "mud-wall",
+    "name": "Mud Wall",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 4000,
+        "rounds": 2
+      },
+      {
+        "op": "on_hit_taken",
+        "apply": {
+          "effect": "mired",
+          "powerBp": 6000
+        }
+      }
+    ],
+    "defaultRound": 3,
+    "description": "Its zone takes 40% less damage for 2 rounds. Whenever it takes a hit, the boss gets stuck in the mud.",
+    "defaultAtZoneHit": true
+  },
+  {
+    "id": "bog-hold",
+    "name": "Bog Hold",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "shield_wall",
+        "zone": "own",
+        "reduceBp": 6000,
+        "rounds": 3
+      },
+      {
+        "op": "on_hit_taken",
+        "apply": {
+          "effect": "mired",
+          "powerBp": 8000
+        }
+      }
+    ],
+    "defaultRound": 3,
+    "description": "Its zone takes 60% less damage for 3 rounds. Whenever it takes a hit, the boss sinks deeper into the mud.",
+    "defaultAtZoneHit": true
+  },
+  {
+    "id": "squelch-song",
+    "name": "Squelch Song",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "rally",
+        "damageBp": 400,
+        "rounds": 2
+      },
+      {
+        "op": "round_start",
+        "apply": {
+          "effect": "mired",
+          "powerBp": 6000
+        }
+      }
+    ],
+    "defaultRound": 5,
+    "description": "All creatures hit 4% harder for 2 rounds. Every round, its hum leaves the boss stuck in the mud."
+  },
+  {
+    "id": "deep-croak",
+    "name": "Deep Croak",
+    "kind": "creature",
+    "effects": [
+      {
+        "op": "rally",
+        "damageBp": 700,
+        "rounds": 2
+      },
+      {
+        "op": "round_start",
+        "apply": {
+          "effect": "mired",
+          "powerBp": 8000
+        }
+      }
+    ],
+    "defaultRound": 5,
+    "description": "All creatures hit 7% harder for 2 rounds. Every round, its low croak sinks the boss deeper into the mud."
   }
 ]

@@ -1,5 +1,6 @@
 import type {
   AdaptationDef,
+  AppliesDef,
   BossDef,
   ContentPack,
   Element,
@@ -91,6 +92,9 @@ export interface Creature {
   nextBoostBp: number;
   /** Status effects it carries (always empty in a fight with effects off). */
   effects: ActiveEffect[];
+  /** Passive abilities (`on_hit_taken`, `round_start`): the riders it puts on the boss, set when the fight starts. */
+  hitTakenApplies: AppliesDef[];
+  roundStartApplies: AppliesDef[];
 }
 
 export interface Mark {

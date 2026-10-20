@@ -217,7 +217,7 @@ const slotButton: Entry = {
     level: { kind: 'number', min: 1, max: 30 },
     owner: { kind: 'toggle' },
     ownerColour: { kind: 'number', min: 0, max: 7 },
-    element: { kind: 'select', options: ['none', 'tide', 'ember', 'grove', 'spark'] },
+    element: { kind: 'select', options: ['none', 'tide', 'ember', 'grove', 'spark', 'mire'] },
     target: { kind: 'select', options: ['none', 'valid', 'invalid'] },
     reaction: { kind: 'select', options: ['none', ...REACTION_IDS] },
     influence: { kind: 'select', options: ['none', 'buff', 'cover'] },

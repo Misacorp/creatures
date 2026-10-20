@@ -36,6 +36,7 @@ const TONES = [
   't-ember',
   't-grove',
   't-spark',
+  't-mire',
 ] as const;
 
 type TagKind = 'tag' | 'badge' | 'chip';

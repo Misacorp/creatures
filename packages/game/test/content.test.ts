@@ -66,7 +66,7 @@ function creature(pack: ContentPack, id: string) {
 describe('shipped content', () => {
   it('loads', () => {
     expect(() => loadContent(clone())).not.toThrow();
-    expect(content.creatures).toHaveLength(30);
+    expect(content.creatures).toHaveLength(34);
   });
 
   it('has 12 catchable species and 3 common starters of different elements', () => {
@@ -88,6 +88,8 @@ describe('shipped content', () => {
       ashmole: 'magmole',
       stormray: 'tempestray',
       mossback: 'ancientshell',
+      mudlump: 'bogwarden',
+      squelch: 'croakmire',
     });
     const meta = (id: string) => {
       const c = creature(content, id);
@@ -319,7 +321,7 @@ describe('loadContent rejects invalid content', () => {
       loadContent(mutate((p) => ((p.elementChart[0] as { bp: number }).bp = 12_000))),
     ).toThrow(/must be triggered by/);
     // Missing and duplicate elements.
-    expect(() => loadContent(mutate((p) => p.elements.pop()))).toThrow(/expected 4 elements/);
+    expect(() => loadContent(mutate((p) => p.elements.pop()))).toThrow(/expected 5 elements/);
     expect(() =>
       loadContent(
         mutate((p) => {
@@ -332,17 +334,28 @@ describe('loadContent rejects invalid content', () => {
 });
 
 describe('raid content', () => {
-  it('has the element chart of the four-element wheel', () => {
+  it('has the element chart: the four-element wheel and the Mire pairs', () => {
     const wheel: [string, string][] = [
       ['tide', 'ember'],
       ['ember', 'grove'],
       ['grove', 'spark'],
       ['spark', 'tide'],
     ];
-    expect(content.elementChart).toHaveLength(8);
+    expect(content.elementChart).toHaveLength(11);
     for (const [a, d] of wheel) {
       expect(chartBp(content.elementChart, a as Element, d as Element)).toBe(15_000);
       expect(chartBp(content.elementChart, d as Element, a as Element)).toBe(7_500);
+    }
+    // Mire (speed-and-dodge.md section 4): it and Ember each deal 150% to the other, Tide deals 75% to it.
+    expect(chartBp(content.elementChart, 'mire', 'ember')).toBe(15_000);
+    expect(chartBp(content.elementChart, 'ember', 'mire')).toBe(15_000);
+    expect(chartBp(content.elementChart, 'tide', 'mire')).toBe(7_500);
+    // The rest of Mire's pairs are neutral: Grove and Spark both ways, and Mire into Tide.
+    for (const other of ['grove', 'spark', 'tide'] as const) {
+      expect(chartBp(content.elementChart, 'mire', other), `mire into ${other}`).toBe(10_000);
+    }
+    for (const other of ['grove', 'spark'] as const) {
+      expect(chartBp(content.elementChart, other, 'mire'), `${other} into mire`).toBe(10_000);
     }
     // The chart's numbers are the ones the rules named before the chart (balance docs use them).
     expect(CHART_STRONG_BP).toBe(15_000);
@@ -359,7 +372,10 @@ describe('raid content', () => {
     ];
     expect(strongAgainst(content.elementChart, 'tide')).toEqual(['ember']);
     expect(strongAgainst(chart, 'tide')).toEqual(['ember', 'grove']);
-    expect(strongOver(content.elementChart, 'ember')).toEqual(['tide']);
+    expect(strongOver(content.elementChart, 'ember')).toEqual(['tide', 'mire']);
+    expect(strongAgainst(content.elementChart, 'ember')).toEqual(['grove', 'mire']);
+    expect(strongAgainst(content.elementChart, 'mire')).toEqual(['ember']);
+    expect(resists(content.elementChart, 'mire')).toEqual(['tide']);
     expect(strongOver(chart, 'grove')).toEqual(['ember', 'tide']);
     expect(weakAgainst(chart, 'grove')).toEqual(['ember', 'tide']);
     expect(resists(chart, 'tide')).toEqual(['ember', 'grove']);
@@ -385,16 +401,19 @@ describe('raid content', () => {
     }
   });
 
-  it('has the four marks and reactions with the specified triggers', () => {
-    const table = Object.fromEntries(
-      content.reactions.map((r) => [r.markId, [r.markElement, r.triggerElement, r.name]]),
-    );
-    expect(table).toEqual({
-      soaked: ['tide', 'spark', 'Overload'],
-      charged: ['spark', 'grove', 'Grounding'],
-      overgrown: ['grove', 'ember', 'Wildfire'],
-      scorched: ['ember', 'tide', 'Steam'],
-    });
+  it('has the five marks and the reactions with the specified triggers', () => {
+    // One entry per reaction (a mark with two triggers has two).
+    const table = content.reactions.map((r) => [r.markId, r.markElement, r.triggerElement, r.name]);
+    expect(table).toEqual([
+      ['soaked', 'tide', 'spark', 'Overload'],
+      ['charged', 'spark', 'grove', 'Grounding'],
+      ['overgrown', 'grove', 'ember', 'Wildfire'],
+      ['scorched', 'ember', 'tide', 'Steam'],
+      ['scorched', 'ember', 'mire', 'Smother'],
+      ['muddied', 'mire', 'ember', 'Flare'],
+    ]);
+    expect(content.reactions.find((r) => r.id === 'smother')?.markName).toBe('Scorched');
+    expect(content.reactions.find((r) => r.id === 'flare')?.markName).toBe('Muddied');
     // Every reaction uses the same multipliers; their values are balance tuning (the simulator).
     const [first] = content.reactions;
     for (const r of content.reactions) {
@@ -603,16 +622,16 @@ describe('creature abilities', () => {
     return a;
   };
 
-  it('gives all 30 species an ability: 8 lines with two strengths, 8 branch forms and 6 single species', () => {
+  it('gives all 34 species an ability: 10 lines with two strengths, 8 branch forms and 6 single species', () => {
     for (const c of content.creatures) {
       expect(c.ability, c.id).toBeDefined();
       expect(ability(c.ability?.id ?? '').kind).toBe('creature');
     }
-    expect(content.finaleAbilities.filter((a) => a.kind === 'creature')).toHaveLength(30);
+    expect(content.finaleAbilities.filter((a) => a.kind === 'creature')).toHaveLength(34);
     expect(content.finaleAbilities.filter((a) => a.kind === 'basic')).toHaveLength(4);
     // Every ability belongs to exactly one species.
     const ids = content.creatures.map((c) => c.ability?.id);
-    expect(new Set(ids).size).toBe(30);
+    expect(new Set(ids).size).toBe(34);
   });
 
   it('has a stage-2 ability that is stronger than stage 1 in every line', () => {
@@ -648,7 +667,10 @@ describe('creature abilities', () => {
   });
 
   it('gives every evolving line a second form of the same element and another role', () => {
-    const evolving = content.creatures.filter((c) => c.evolvesTo !== undefined);
+    // The two Mire lines have one form each (Setter and Payoff Mire lines come later), so they are not here.
+    const evolving = content.creatures.filter(
+      (c) => c.evolvesTo !== undefined && c.element !== 'mire',
+    );
     expect(evolving.map((c) => c.id).sort()).toEqual(BRANCH_FORMS.map((b) => b[0]).sort());
     for (const [from, to, element, role, rarity, abilityId] of BRANCH_FORMS) {
       const parent = creature(content, from);
@@ -799,10 +821,13 @@ describe('festival creatures', () => {
       expect(c.ability, c.id).toBeDefined();
       expect(c.levelCap, c.id).toBe(30);
     }
-    // Nothing else is flagged, and the 12 catchable species are untouched.
+    // Nothing else is flagged, and the 12 catchable species are untouched. The two Mire base forms wait
+    // for the Sunken Fen (they live nowhere until it opens, so they cannot be catchable yet).
     expect(
-      content.creatures.filter((c) => c.festival !== true && !c.catchable && c.stage === 1),
-    ).toHaveLength(0);
+      content.creatures
+        .filter((c) => c.festival !== true && !c.catchable && c.stage === 1)
+        .map((c) => c.id),
+    ).toEqual(['mudlump', 'squelch']);
   });
 
   it('gives them a role and an element the catchable epics lack, at epic strength', () => {
@@ -1213,7 +1238,7 @@ describe('status effects', () => {
     });
   const move = { id: 'bog-slap', name: 'Bog Slap', trigger: { every: 3 } };
 
-  it('ships Mired and nothing else, with no source yet', () => {
+  it('ships Mired and nothing else, with no boss or foe move that applies it yet', () => {
     expect(content.statusEffects).toEqual([
       {
         id: 'mired',
@@ -1335,5 +1360,210 @@ describe('foe Speed and the dodge rules', () => {
       areaShareBp: 5_000,
     });
     expect(RULES.combat.effects).toEqual({ enabled: false, dice: 32 });
+  });
+});
+
+describe('Mire', () => {
+  const ref = (id: string) => creature(content, id);
+  /** A creature's summed stats at its level cap, the role budget the design compares (decisions.md). */
+  const summed = (id: string): number => {
+    const c = ref(id);
+    const n = c.levelCap - 1;
+    return (
+      c.baseStats.hp +
+      c.growth.hp * n +
+      c.baseStats.atk +
+      c.growth.atk * n +
+      c.baseStats.spd +
+      c.growth.spd * n
+    );
+  };
+
+  it('is the fifth element, with the chart pairs, the mark Muddied and the reactions Smother and Flare', () => {
+    expect(content.elements.map((e) => e.id)).toEqual(['tide', 'ember', 'grove', 'spark', 'mire']);
+    expect(content.elements.find((e) => e.id === 'mire')?.name).toBe('Mire');
+    const smother = content.reactions.find((r) => r.id === 'smother');
+    const flare = content.reactions.find((r) => r.id === 'flare');
+    expect(smother).toMatchObject({
+      markId: 'scorched',
+      markElement: 'ember',
+      triggerElement: 'mire',
+    });
+    expect(flare).toMatchObject({
+      markId: 'muddied',
+      markName: 'Muddied',
+      markElement: 'mire',
+      triggerElement: 'ember',
+    });
+    // The same multiplier and payoff numbers as the four older reactions.
+    const steam = content.reactions.find((r) => r.id === 'steam');
+    for (const r of [smother, flare]) {
+      expect(r?.multiplierBp).toBe(steam?.multiplierBp);
+      expect(r?.payoffBonusBp).toBe(steam?.payoffBonusBp);
+    }
+  });
+
+  it('gives Smother and Flare their riders, and no other reaction has one', () => {
+    expect(content.reactions.find((r) => r.id === 'smother')?.appliesToFoe).toEqual({
+      effect: 'mired',
+      powerBp: 10_000,
+    });
+    expect(content.reactions.find((r) => r.id === 'smother')?.consumes).toBeUndefined();
+    expect(content.reactions.find((r) => r.id === 'flare')?.consumes).toEqual({
+      effect: 'mired',
+      bonusPerStackBp: 2_000,
+    });
+    expect(content.reactions.find((r) => r.id === 'flare')?.appliesToFoe).toBeUndefined();
+    const others = content.reactions.filter((r) => r.id !== 'smother' && r.id !== 'flare');
+    expect(others.some((r) => r.appliesToFoe !== undefined || r.consumes !== undefined)).toBe(
+      false,
+    );
+  });
+
+  it('refuses a rider that names an unknown effect or has an extra key', () => {
+    const smother = (p: ContentPack) =>
+      p.reactions.find((r) => r.id === 'smother') as Record<string, unknown>;
+    const flare = (p: ContentPack) =>
+      p.reactions.find((r) => r.id === 'flare') as Record<string, unknown>;
+    expect(() =>
+      loadContent(
+        mutate((p) => (smother(p)['appliesToFoe'] = { effect: 'nope', powerBp: 10_000 })),
+      ),
+    ).toThrow(/unknown status effect/);
+    expect(() =>
+      loadContent(mutate((p) => (flare(p)['consumes'] = { effect: 'nope', bonusPerStackBp: 1 }))),
+    ).toThrow(/unknown status effect/);
+    expect(() =>
+      loadContent(
+        mutate((p) => (smother(p)['appliesToFoe'] = { effect: 'mired', powerBp: 1, extra: 1 })),
+      ),
+    ).toThrow(/schema/);
+    expect(() =>
+      loadContent(mutate((p) => (flare(p)['consumes'] = { effect: 'mired', bonusPerStackBp: 0 }))),
+    ).toThrow(/schema/);
+  });
+
+  it('has a Guard line and a Support line, common, one evolution each at level 15', () => {
+    for (const [id, role, stage] of [
+      ['mudlump', 'guard', 1],
+      ['bogwarden', 'guard', 2],
+      ['squelch', 'support', 1],
+      ['croakmire', 'support', 2],
+    ] as const) {
+      expect(ref(id), id).toMatchObject({
+        element: 'mire',
+        role,
+        stage,
+        rarity: 'common',
+        starter: false,
+      });
+    }
+    expect(ref('mudlump')).toMatchObject({
+      evolvesTo: { species: 'bogwarden', level: 15, essence: 20 },
+      levelCap: 15,
+    });
+    expect(ref('squelch')).toMatchObject({
+      evolvesTo: { species: 'croakmire', level: 15, essence: 20 },
+      levelCap: 15,
+    });
+    expect(ref('bogwarden').catchable).toBe(false);
+    expect(ref('mudlump').altEvolvesTo).toBeUndefined();
+    expect(ref('squelch').altEvolvesTo).toBeUndefined();
+    // They wait for the Sunken Fen: no place holds them yet.
+    expect([ref('mudlump').catchable, ref('squelch').catchable]).toEqual([false, false]);
+  });
+
+  it('is the slowest element: the lowest Speed in the game, with the highest HP of its role and the lowest Attack', () => {
+    const mire = content.creatures.filter((c) => c.element === 'mire');
+    const others = content.creatures.filter((c) => c.element !== 'mire');
+    for (const c of mire) {
+      // Base Speed and growth both under every other creature's (Speed is the dodge: Mire dodges least).
+      const slowestOther = Math.min(
+        ...others.filter((o) => o.stage === c.stage).map((o) => o.baseStats.spd),
+      );
+      expect(c.baseStats.spd, c.id).toBeLessThan(slowestOther);
+      expect(c.growth.spd, c.id).toBe(1);
+      // HP at or above the top of every other common of its role and stage.
+      const peers = others.filter(
+        (o) => o.role === c.role && o.stage === c.stage && o.rarity === 'common',
+      );
+      expect(c.baseStats.hp, c.id).toBeGreaterThanOrEqual(
+        Math.max(...peers.map((o) => o.baseStats.hp)),
+      );
+      // Attack at the low end of the role.
+      expect(c.baseStats.atk, c.id).toBeLessThanOrEqual(
+        Math.min(...peers.map((o) => o.baseStats.atk)),
+      );
+    }
+  });
+
+  it('keeps the power budget of its role: finished forms within 5% of the common reference', () => {
+    // Guards: Thornbuck is the reference (decisions.md). Supports: Magmole.
+    expect(Math.abs(summed('bogwarden') / summed('thornbuck') - 1)).toBeLessThanOrEqual(0.05);
+    expect(Math.abs(summed('croakmire') / summed('magmole') - 1)).toBeLessThanOrEqual(0.05);
+    // And a stage 1 form is a little under its evolved form, like every line.
+    expect(summed('bogwarden')).toBeGreaterThan(
+      ref('mudlump').baseStats.hp + ref('mudlump').growth.hp * 14,
+    );
+  });
+
+  it('gives each line its signature as a passive ability, and an upgrade at stage 2', () => {
+    const ability = (id: string) => content.finaleAbilities.find((a) => a.id === id);
+    expect(ref('mudlump').ability?.id).toBe('mud-wall');
+    expect(ref('bogwarden').ability?.id).toBe('bog-hold');
+    expect(ref('squelch').ability?.id).toBe('squelch-song');
+    expect(ref('croakmire').ability?.id).toBe('deep-croak');
+    const power = (id: string, op: 'on_hit_taken' | 'round_start') => {
+      const e = ability(id)?.effects.find((x) => x.op === op);
+      return e !== undefined && 'apply' in e ? e.apply : undefined;
+    };
+    expect(power('mud-wall', 'on_hit_taken')).toEqual({ effect: 'mired', powerBp: 6_000 });
+    expect(power('bog-hold', 'on_hit_taken')).toEqual({ effect: 'mired', powerBp: 8_000 });
+    expect(power('squelch-song', 'round_start')).toEqual({ effect: 'mired', powerBp: 6_000 });
+    expect(power('deep-croak', 'round_start')).toEqual({ effect: 'mired', powerBp: 8_000 });
+    // Guards fire (their wall) when the boss first hits a zone, like every Guard.
+    expect(ability('mud-wall')?.defaultAtZoneHit).toBe(true);
+    expect(ability('bog-hold')?.defaultAtZoneHit).toBe(true);
+    const guard = ability('mud-wall');
+    const guard2 = ability('bog-hold');
+    const support = ability('squelch-song');
+    const support2 = ability('deep-croak');
+    if (!guard || !guard2 || !support || !support2) throw new Error('missing Mire ability');
+    expect(upgradeProblem(guard, guard2)).toBeNull();
+    expect(upgradeProblem(support, support2)).toBeNull();
+  });
+
+  it('refuses a passive ability that is basic, or applies an unknown effect', () => {
+    const passive = { op: 'on_hit_taken', apply: { effect: 'mired', powerBp: 6_000 } };
+    expect(() =>
+      loadContent(
+        mutate((p) => {
+          const rally = p.finaleAbilities.find((a) => a.id === 'rally');
+          if (rally) (rally.effects as unknown[]) = [passive];
+        }),
+      ),
+    ).toThrow(/cannot be passive/);
+    expect(() =>
+      loadContent(
+        mutate((p) => {
+          const a = p.finaleAbilities.find((x) => x.id === 'mud-wall');
+          if (a)
+            (a.effects as unknown[]) = [
+              { op: 'on_hit_taken', apply: { effect: 'nope', powerBp: 1 } },
+            ];
+        }),
+      ),
+    ).toThrow(/unknown status effect/);
+    expect(() =>
+      loadContent(
+        mutate((p) => {
+          const a = p.finaleAbilities.find((x) => x.id === 'mud-wall');
+          if (a)
+            (a.effects as unknown[]) = [
+              { op: 'round_start', apply: { effect: 'mired', powerBp: 0 } },
+            ];
+        }),
+      ),
+    ).toThrow(/schema/);
   });
 });

@@ -38,5 +38,20 @@
     "attacker": "tide",
     "defender": "spark",
     "bp": 7500
+  },
+  {
+    "attacker": "mire",
+    "defender": "ember",
+    "bp": 15000
+  },
+  {
+    "attacker": "ember",
+    "defender": "mire",
+    "bp": 15000
+  },
+  {
+    "attacker": "tide",
+    "defender": "mire",
+    "bp": 7500
   }
 ]

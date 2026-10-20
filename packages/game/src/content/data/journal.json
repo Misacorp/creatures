@@ -20,7 +20,7 @@
       "id": "tide-low-water",
       "place": "tidepools",
       "title": "Low water",
-      "text": "When the tide drops, water-folk grow bold and quick. The slowest one in the pool is always last to turn around.",
+      "text": "When the tide drops, water-folk grow bold and quick. A quick one steps aside before the wave can reach it. The slow ones always get wet.",
       "set": "tide-ledger"
     },
     {
@@ -152,7 +152,7 @@
       "id": "road-fast-feet",
       "place": "old-crossroads",
       "title": "Fast feet",
-      "text": "Some beasts go by pure quickness, and whoever is fastest strikes first. The quick ones get the first word and sometimes the last.",
+      "text": "Some beasts are quick on their feet. A quick creature can step aside and let a hit go by. The quickest do it often, and the slow hardly ever.",
       "set": "signpost-series"
     },
     {
@@ -270,6 +270,12 @@
       "place": "any",
       "title": "The wheel of elements",
       "text": "Water puts out fire, fire eats the green, the green drinks lightning, and lightning splits the water. The wheel has never once stopped."
+    },
+    {
+      "id": "any-the-chart",
+      "place": "any",
+      "title": "The chart of elements",
+      "text": "Water puts out fire, fire eats the green, the green drinks lightning, and lightning splits the water. But the wheel was never the whole world: in the fen, the mud drinks the flame."
     }
   ]
 }

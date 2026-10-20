@@ -62,6 +62,7 @@ const ELEMENT_HUES: Readonly<Record<string, readonly [number, number]>> = {
   ember: [0, 40],
   grove: [80, 150],
   spark: [40, 65],
+  mire: [20, 50],
 };
 
 describe('daily-dungeon sprites', () => {

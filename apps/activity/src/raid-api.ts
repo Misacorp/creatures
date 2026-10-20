@@ -578,6 +578,7 @@ const EVENT_TYPES: ReadonlySet<string> = new Set([
   'cleanse',
   // Status effects (no UI yet: they show in the log text only).
   'effect_apply',
+  'effect_consume',
   'effect_expire',
   'effect_purge',
   'effect_cleanse',

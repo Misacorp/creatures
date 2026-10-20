@@ -14,5 +14,9 @@
   {
     "id": "spark",
     "name": "Spark"
+  },
+  {
+    "id": "mire",
+    "name": "Mire"
   }
 ]

@@ -518,6 +518,10 @@ export interface GearMods {
   boostBp?: number;
   mendBp?: number;
   lingerRounds?: number;
+  /** Status effects: weaker debuffs on the wearer (a share), and debuffs it applies: more power, more turns. */
+  debuffResistBp?: number;
+  debuffPowerBp?: number;
+  debuffDurationTurns?: number;
   ignoreSilence?: 0 | 1;
   /** Cover a Guard's cover on it gains (the position line Sheltered). */
   shelterBp?: number;
@@ -667,6 +671,9 @@ type SheetNumeric =
   | 'coverBp'
   | 'boostBp'
   | 'mendBp'
+  | 'debuffResistBp'
+  | 'debuffPowerBp'
+  | 'debuffDurationTurns'
   | (typeof CHANCE_FIELDS)[number]
   | Exclude<(typeof TRIGGER_FIELDS)[number], 'openingMark' | 'stubborn'>;
 
@@ -775,6 +782,7 @@ const CAPPED_AT_WHOLE = [
   'aimedBp',
   'reflectedBp',
   'chargedBp',
+  'debuffResistBp',
   ...CHANCE_FIELDS,
   'stormWarningBp',
   'lastStandBp',
@@ -968,6 +976,9 @@ export function wornEffects(
     if (!CAPPED_SET.has(field)) continue;
     const value = sheet[field] as number;
     (sheet as Record<string, number>)[field] = Math.min(10_000, value);
+  }
+  if (sheet.debuffDurationTurns !== undefined) {
+    sheet.debuffDurationTurns = Math.min(10, sheet.debuffDurationTurns);
   }
   out.rules.tinkersLuckBp = Math.min(10_000, out.rules.tinkersLuckBp);
   out.rules.secondLookBp = Math.min(10_000, out.rules.secondLookBp);

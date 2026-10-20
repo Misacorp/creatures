@@ -518,7 +518,16 @@ describe('equip and the wear rule', () => {
       async (ctx) => {
         const p = await player(ctx, 1, { species: ['cindle', 'splashet', 'sproutle'] });
         skipWelcome(ctx, p.id);
-        const itemId = give(ctx, p.id, 'coal-warm-cap', { rarity: 'epic', level: 5 });
+        // Lines that all work for an Ember Setter (a rolled item may carry a line for another element).
+        const itemId = give(ctx, p.id, 'coal-warm-cap', {
+          rarity: 'epic',
+          level: 5,
+          lines: [
+            ['ember-attunement', 2],
+            ['hp', 1],
+            ['crit-chance', 1],
+          ],
+        });
         const [cindle] = p.creatureIds as [string];
         const res = await p.call('POST', equipPath(itemId), { creatureId: cindle });
         expect(res.status).toBe(200);

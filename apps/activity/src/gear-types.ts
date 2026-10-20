@@ -16,7 +16,7 @@ export type GearRarity = 'common' | 'rare' | 'epic';
 /** The kinds of base stat: Attack and HP, and the crit stats (in basis points). */
 export type StatKind = 'atk' | 'hp' | 'critChance' | 'critDamage';
 export type PartKind =
-  'scrap' | 'tide-shard' | 'ember-shard' | 'grove-shard' | 'spark-shard' | 'glimmer';
+  'scrap' | 'tide-shard' | 'ember-shard' | 'grove-shard' | 'spark-shard' | 'mire-shard' | 'glimmer';
 /** Parts by kind; a kind that is absent is 0. */
 export type PartsBundle = Partial<Record<PartKind, number>>;
 /** The jobs a player can start. Improve and Enchant are gone; jobs started before gear v2 still finish. */

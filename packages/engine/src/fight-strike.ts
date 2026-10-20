@@ -3,7 +3,7 @@
 import { RULES, type Element, type ReactionDef } from '@creatures/game';
 import { hurt } from './fight-damage';
 import { bossDodges } from './fight-dodge';
-import { effectBpOf } from './fight-effects';
+import { applyEffect, BOSS, bossStacks, consumeBossEffect, effectBpOf } from './fight-effects';
 import {
   baseContext,
   besides,
@@ -144,6 +144,11 @@ export function hitBoss(
   const brambling = reaction !== undefined && c.alive && brambleBp > 0 && !state.brambleUsed;
   if (brambling) state.brambleUsed = true;
   const brambled = brambling && !reflected;
+  // A reaction that consumes a status effect on the boss (Flare burns Mired) adds its share of the bonus
+  // for each stack on it. Nothing without effects on, or on a reflected reaction (no bonus lands).
+  const burned =
+    reaction?.consumes === undefined || reflected ? 0 : bossStacks(state, reaction.consumes.effect);
+  const burnBp = reaction?.consumes === undefined ? 0 : burned * reaction.consumes.bonusPerStackBp;
 
   const dice = (strike === undefined ? state.turnDice : state.strikeDice)[c.idx];
   let luckBp = state.swingNow;
@@ -282,7 +287,9 @@ export function hitBoss(
     if (reactionResist > 0) bonus -= Math.floor((bonus * reactionResist) / 10_000);
     bonus = Math.max(
       0,
-      Math.floor((bonus * Math.max(0, 10_000 + reactionHookBp + reactionSheetBp + fxBp)) / 10_000),
+      Math.floor(
+        (bonus * Math.max(0, 10_000 + reactionHookBp + reactionSheetBp + fxBp + burnBp)) / 10_000,
+      ),
     );
     if (reflected) return { damage: plain, bonus: 0, reflect: bonus };
     if (brambled) {
@@ -412,6 +419,13 @@ export function hitBoss(
     if (reflected) hurt(state, c, hit.reflect, 'reflect', 'reflect');
     else if (brambled && hit.reflect > 0) hurt(state, c, hit.reflect, 'reflect', 'reflect');
     if (!reflected) {
+      // The reaction's riders on the boss: burn the stacks it counted (Flare), or leave an effect (Smother).
+      if (reaction.consumes !== undefined && burned > 0) {
+        consumeBossEffect(state, reaction.id, reaction.consumes.effect, burnBp);
+      }
+      if (reaction.appliesToFoe !== undefined) {
+        applyEffect(state, BOSS, reaction.appliesToFoe.effect, reaction.appliesToFoe.powerBp, c.id);
+      }
       // The gear sets that act on a reaction that was really cashed.
       if (m.critWindowBp !== 0) c.critWindowUntil = state.currentRound + 1;
       if (m.healOnReactionBp > 0 && c.alive) {

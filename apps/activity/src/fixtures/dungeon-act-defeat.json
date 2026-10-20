@@ -636,7 +636,9 @@
         "overload": "Overload",
         "grounding": "Grounding",
         "wildfire": "Wildfire",
-        "steam": "Steam"
+        "steam": "Steam",
+        "smother": "Smother",
+        "flare": "Flare"
       },
       "gimmicks": {
         "zap-dive": "Zap Dive"
@@ -675,19 +677,25 @@
         "verdant-roar": "Verdant Roar",
         "aurora-surge": "Aurora Surge",
         "lantern-glow": "Lantern Glow",
-        "hearth-ward": "Hearth Ward"
+        "hearth-ward": "Hearth Ward",
+        "mud-wall": "Mud Wall",
+        "bog-hold": "Bog Hold",
+        "squelch-song": "Squelch Song",
+        "deep-croak": "Deep Croak"
       },
       "marks": {
         "tide": "Soaked",
         "spark": "Charged",
         "grove": "Overgrown",
-        "ember": "Scorched"
+        "ember": "Scorched",
+        "mire": "Muddied"
       },
       "elements": {
         "tide": "Tide",
         "ember": "Ember",
         "grove": "Grove",
-        "spark": "Spark"
+        "spark": "Spark",
+        "mire": "Mire"
       },
       "adaptations": {
         "resist-top-reaction": "Reaction Resistance",

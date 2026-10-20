@@ -170,6 +170,14 @@ export interface SlotMods {
   /** Flat dodge against area hits only, in basis points (0 to 10000), added in full after the area share (Sidestep, later). */
   areaDodgeBp?: number;
 
+  // --- Status effects (`combat-rules.md` 13). Read only in a fight with effects on. ---
+  /** Debuffs on this creature are weaker: each stack's numbers are cut by this share (0 to 10000; Clean coat). */
+  debuffResistBp?: number;
+  /** Debuffs this creature applies: application power, in basis points (0 to 100000), added to the source's own (Heavy hand). */
+  debuffPowerBp?: number;
+  /** Debuffs this creature applies last this many more turns (0 to 10). */
+  debuffDurationTurns?: number;
+
   // --- Chance lines (2026-10-18, `combat-rules.md` 11). Each is a chance in basis points (0 to 10000), rolled
   // on the creature's own luck dice (`LUCK_DICE`), drawn only when some creature of the fight has one. ---
   /** Each round start: heal `CHANCE_FX.secondWindHealBp` of max HP. */
@@ -597,6 +605,18 @@ export type FightEvent =
     }
   /** An effect ran out on its target's own turns; all its stacks fell off. */
   | { t: 'effect_expire'; round: number; target: string | null; effect: string }
+  /**
+   * A reaction burned every stack of `effect` off the boss (Flare burns Mired): `stacks` of them, for
+   * `bonusBp` more reaction bonus. Written only when stacks went.
+   */
+  | {
+      t: 'effect_consume';
+      round: number;
+      reaction: string;
+      effect: string;
+      stacks: number;
+      bonusBp: number;
+    }
   /** The boss purged its debuffs (written only when something went). */
   | { t: 'effect_purge'; round: number; removed: { effect: string; stacks: number }[] }
   /** A Support's cleanse removed one debuff from a neighbour. */

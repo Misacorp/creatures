@@ -326,6 +326,8 @@ describe('the size of a talent', () => {
     expect(talentText(def('slow-to-move'), false).text).toBe('Thick coat +40');
     expect(talentText(def('puddle-hopper'), false).text).toContain('−7%');
     expect(talentText(def('zoomies'), false).text).toBe('Speed +12%');
+    // Speed is the dodge now (docs/design/speed-and-dodge.md): the card says so.
+    expect(talentText(def('zoomies'), false).about).toBe('Dodges more often.');
     expect(talentText(def('easily-distracted'), true).text).toBe('Glimmer finds +37%');
     expect(talentText(def('watcher-above'), false).text).toBe('Lingering');
     expect(talentUnit(def('zoomies'))).toBe('pct');
@@ -394,10 +396,11 @@ describe('folding talents like gear', () => {
     const item = itemOf('trail-cap', 'rare', 20, [{ id: 'ember-reaction', tier: 2 }]);
     const viaItem = wornEffects(payoff, [item]);
     expect(viaTalent.mods.reactionBp).toEqual(viaItem.mods.reactionBp);
-    expect(viaTalent.mods.reactionBp).toEqual({ wildfire: 1300 });
+    expect(viaTalent.mods.reactionBp).toEqual({ wildfire: 1300, flare: 1300 });
     // Both together add up.
     expect(wornEffects(payoff, [item], [talent]).mods.reactionBp).toEqual({
       wildfire: viaItem.mods.reactionBp?.['wildfire'] === undefined ? 0 : 2600,
+      flare: 2600,
     });
   });
 
@@ -783,5 +786,40 @@ describe('branches in the content', () => {
     const pack = withBudfawn();
     find(pack, 'zipmouse')['altEvolvesTo'] = { species: 'budfawn', level: 15, essence: 20 };
     expect(() => loadContent(pack)).toThrow();
+  });
+});
+
+describe('the Mire talents', () => {
+  const mireGuard = { role: 'guard', element: 'mire' } as const;
+  const mireSupport = { role: 'support', element: 'mire' } as const;
+  const fold = (id: string) => foldTalent(def(id), false);
+
+  it('has a pool for each Mire line of the usual size, with the three the design asked for', () => {
+    for (const line of ['mudlump', 'squelch']) {
+      const pool = talentPool(line);
+      expect(pool.length, line).toBeGreaterThanOrEqual(POOL_SIZE.min);
+      expect(pool.length, line).toBeLessThanOrEqual(POOL_SIZE.max);
+    }
+    expect(talentPool('mudlump').map((t) => t.id)).toContain('mud-off-its-back');
+    expect(talentPool('squelch').map((t) => t.id)).toEqual(
+      expect.arrayContaining(['sticks-around', 'low-croak']),
+    );
+  });
+
+  it('Mud Off Its Back fills debuffResistBp on a Guard, Sticks Around debuffDurationTurns and Low Croak debuffPowerBp on a Support', () => {
+    expect(wornEffects(mireGuard, [], [fold('mud-off-its-back')]).mods.debuffResistBp).toBe(2_500);
+    expect(wornEffects(mireSupport, [], [fold('sticks-around')]).mods.debuffDurationTurns).toBe(1);
+    expect(wornEffects(mireSupport, [], [fold('low-croak')]).mods.debuffPowerBp).toBe(2_000);
+    // A golden talent is stronger (`talentValue` rounds it).
+    expect(
+      wornEffects(mireGuard, [], [foldTalent(def('mud-off-its-back'), true)]).mods.debuffResistBp,
+    ).toBe(talentValue(def('mud-off-its-back'), true));
+  });
+
+  it('keeps the sheet within what the engine accepts: resist at most 100%, duration at most 10 turns', () => {
+    const many = Array.from({ length: 6 }, () => fold('mud-off-its-back'));
+    expect(wornEffects(mireGuard, [], many).mods.debuffResistBp).toBe(10_000);
+    const long = Array.from({ length: 14 }, () => fold('sticks-around'));
+    expect(wornEffects(mireSupport, [], long).mods.debuffDurationTurns).toBe(10);
   });
 });

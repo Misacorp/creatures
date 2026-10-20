@@ -46,17 +46,31 @@ Each line has a pool of 7 or 8. Branch forms share their line's pool, so a Sprou
 | Pounces When Perfect  | It saves its best pounce for a perfect moment.           |
 | Fiercely Loyal        | Hits harder while a Guard stands beside it.              |
 
-#### Mudlump and Squelch lines (Mire, design, not shipped)
+#### Mudlump and Squelch lines (Mire)
 
-Status: 2026-10-19. A design draft for the Mire content slice (`docs/design/speed-and-dodge.md` sections 3.6 and 5.3; the full text is in `docs/design/mire-content-drafts.md`). The Mudlump pool mixes a Guard and Support talents on purpose, like the Sproutle pool: its talents hint which branch it wants. Mudlump and Bogwarden are the Guard line; the Squelch line has a pool of its own (keyed `squelch`) that leans to debuff duration and power. The three below are the ones the design asks for. A full pool needs seven or eight, so the rest are for the content slice to write in the same style. `(design, compendium detail, not shipped)`
+Status: 2026-10-19. Shipped (`talents.json`, from `docs/design/mire-content-drafts.md`). Mudlump and Bogwarden are the Guard line, so the Mudlump pool is Guard talents. The Squelch line has a pool of its own (keyed `squelch`) that leans to debuff duration and power. The three the design asked for are marked; the rest are written in the same style. `(content, compendium detail, not shipped)`
 
-| Talent           | What it is about                                                   |
-| ---------------- | ------------------------------------------------------------------ |
-| Mud Off Its Back | Mud and muck slide off it. Debuffs on it are weaker.               |
-| Sticks Around    | What it sticks to stays stuck. The debuffs it applies last longer. |
-| Low Croak        | A low, heavy croak. The debuffs it applies stack more often.       |
+| Talent (Mudlump pool) | What it is about                                        |
+| --------------------- | ------------------------------------------------------- |
+| Mud Off Its Back      | Mud and muck slide off it. Debuffs on it are weaker.    |
+| Hard to Budge         | A lump that stays where it is put: more armor.          |
+| Stands in the Puddle  | It stands beside its neighbours and covers them.        |
+| Thick and Lumpy       | A thick, lumpy coat of peat: more health.               |
+| Shrugs It Off         | Aimed hits hurt less.                                   |
+| Naps in Warm Puddles  | Rests well between rooms of the dungeon.                |
+| Stays Calm in Storms  | Steady under pressure: it takes less from the big hits. |
 
-The first is a Guard talent that resists debuffs (the line Clean coat); the other two are Support talents that make debuffs last longer (Lingering) and stack more often (Heavy hand). `(design)`
+| Talent (Squelch pool)   | What it is about                                                   |
+| ----------------------- | ------------------------------------------------------------------ |
+| Sticks Around           | What it sticks to stays stuck. The debuffs it applies last longer. |
+| Low Croak               | A low, heavy croak. The debuffs it applies stack more often.       |
+| Hums in the Damp        | A low hum that powers up its neighbours.                           |
+| Splashes the Neighbours | A little water for the creatures beside it: a small heal.          |
+| Loves Big Puddles       | Heals better when it is looked after.                              |
+| Hides in the Reeds      | Does not like being aimed at, so aimed hits hurt less.             |
+| Finds Things in Mud     | Its trips turn up more finds.                                      |
+
+Mud Off Its Back is the Guard talent that resists debuffs (the line Clean coat); Sticks Around and Low Croak are the Support talents that make debuffs last longer (the line Clinging) and stack more often (Heavy hand). `(content)`
 
 ## Sproutle line (Grove Guard, or Support after the second branch)
 

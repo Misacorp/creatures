@@ -14,7 +14,7 @@ import type { FightEvent } from '@creatures/engine';
 import type { ExperienceView } from './experience';
 import type { LootPiece, PartsBundle } from './gear-types';
 
-export type Element = 'tide' | 'ember' | 'grove' | 'spark';
+export type Element = 'tide' | 'ember' | 'grove' | 'spark' | 'mire';
 export type Role = 'setter' | 'payoff' | 'support' | 'guard';
 /** `GET /api/dungeon/today`. */
 export interface DungeonToday {

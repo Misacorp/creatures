@@ -105,6 +105,8 @@ export const GLOSSARY_IDS = {
   readiness: (band: string): string => `readiness-${kebab(band)}`,
   /** The kind of effect an ability has, such as `shield_wall`. */
   abilityEffect: (op: string): string => `ability-${kebab(op)}`,
+  /** A status effect such as `mired`. */
+  status: (id: string): string => `status-${id}`,
   /** A gear slot such as `scarf`. */
   gearSlot: (slot: string): string => `gear-slot-${slot}`,
   /** A gear line such as `tide-attunement`. */
@@ -139,6 +141,9 @@ export const GLOSSARY_IDS = {
 
 /** Entries that are not tied to one piece of content: the game's own words. */
 export const FIXED_GLOSSARY_IDS = [
+  'status-effects',
+  'stat-dodge',
+  'element-chart',
   'auto-fire',
   'creature-ability',
   'basic-ability',
@@ -292,6 +297,8 @@ export function requiredGlossaryIds(pack: ContentPack): string[] {
   for (const a of pack.finaleAbilities) for (const e of a.effects) effects.add(e.op);
   for (const op of effects) ids.push(GLOSSARY_IDS.abilityEffect(op));
   for (const a of pack.finaleAbilities) ids.push(...abilityEntryIds(a));
+  // Every status effect (Mired), and the rules around them.
+  for (const e of pack.statusEffects) ids.push(GLOSSARY_IDS.status(e.id));
   // Gear: every slot, line, rarity, part kind and job kind the rules know, and the Crafting skill.
   for (const slot of GEAR_SLOTS) ids.push(GLOSSARY_IDS.gearSlot(slot));
   for (const line of gearContent.lines) ids.push(GLOSSARY_IDS.gearLine(line.id));

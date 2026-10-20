@@ -12,6 +12,7 @@ import {
   bossWarnings,
 } from '../src/index';
 import { BOSS, effectiveSpd } from '../src/fight-effects';
+import { NO_MODS } from '../src/mods';
 import type { Creature, FightState } from '../src/fight-state';
 import { TEST_PACK, eventsOf, input, slot } from './helpers';
 import { everyRound, rulesOf } from './pattern-helpers';
@@ -450,6 +451,7 @@ describe('what stacks do to the numbers', () => {
     } as unknown as FightState;
     const c = {
       spd: 100,
+      mods: NO_MODS,
       effects: [
         { id: 'mired', stacks: 3, turnsLeft: 1 },
         { id: 'sluggish', stacks: 3, turnsLeft: 1 },

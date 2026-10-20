@@ -14,9 +14,9 @@ export interface EventNames {
   elements?: Readonly<Record<string, string>>;
   adaptations?: Readonly<Record<string, string>>;
   /**
-   * Status effect names by id, for example mired: "Mired". `buildNames` does not fill it yet (the names
-   * the server sends the client keep their shape until the effects have a UI slice); without it the
-   * log says the effect's id.
+   * Status effect names by id, for example mired: "Mired". `buildNames` does not fill it (the names the
+   * server sends the client keep their shape until the effects have a UI slice); without it the log
+   * uses the shipped content's name for the effect, or its id.
    */
   effects?: Readonly<Record<string, string>>;
 }
@@ -56,6 +56,10 @@ function rowsText(rows: readonly string[] | undefined): string {
 
 /** "+12%", "-5%", "+1.5%": basis points as a signed percentage. */
 const signedPct = (bp: number): string => `${bp < 0 ? '-' : '+'}${Math.abs(bp) / 100}%`;
+
+/** An effect's display name: the names table, else the shipped content's, else the id. */
+const effectName = (names: EventNames, id: string): string =>
+  names.effects?.[id] ?? content.statusEffects.find((e) => e.id === id)?.name ?? id;
 
 const lookup = (table: Readonly<Record<string, string>> | undefined, id: string): string =>
   table?.[id] ?? id;
@@ -274,14 +278,16 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
     case 'effect_apply': {
       const who = event.target === null ? names.boss : creature(event.target);
       const turns = `${event.turnsLeft} turn${event.turnsLeft === 1 ? '' : 's'}`;
-      return `${who} is ${lookup(names.effects, event.effect)} ×${event.stacks} (${turns}).`;
+      return `${who} is ${effectName(names, event.effect)} ×${event.stacks} (${turns}).`;
     }
     case 'effect_expire':
-      return `${event.target === null ? names.boss : creature(event.target)} is no longer ${lookup(names.effects, event.effect)}.`;
+      return `${event.target === null ? names.boss : creature(event.target)} is no longer ${effectName(names, event.effect)}.`;
+    case 'effect_consume':
+      return `${lookup(names.reactions, event.reaction)} burns off ${effectName(names, event.effect)} ×${event.stacks}!`;
     case 'effect_purge':
-      return `${names.boss} shakes off ${list(event.removed.map((r) => lookup(names.effects, r.effect)))}.`;
+      return `${names.boss} shakes off ${list(event.removed.map((r) => effectName(names, r.effect)))}.`;
     case 'effect_cleanse':
-      return `${creature(event.supporter)} clears ${lookup(names.effects, event.effect)} from ${creature(event.target)}.`;
+      return `${creature(event.supporter)} clears ${effectName(names, event.effect)} from ${creature(event.target)}.`;
     case 'charge':
       return `${names.boss} gathers ${lookup(names.gimmicks, event.gimmick)}${rowsText(event.rows)}, aimed at ${list(event.marks.map(creature))}. It lands in round ${event.landing}.`;
     case 'retreat':

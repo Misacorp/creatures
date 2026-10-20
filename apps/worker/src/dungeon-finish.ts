@@ -437,7 +437,8 @@ function logRun(
     (parts['tide-shard'] ?? 0) +
     (parts['ember-shard'] ?? 0) +
     (parts['grove-shard'] ?? 0) +
-    (parts['spark-shard'] ?? 0);
+    (parts['spark-shard'] ?? 0) +
+    (parts['mire-shard'] ?? 0);
   const bait = rewards.bait + (rewards.streak?.bait ?? 0);
   const essence = rewards.essence + (rewards.streak?.essence ?? 0);
   if (

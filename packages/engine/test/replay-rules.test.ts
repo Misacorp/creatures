@@ -55,6 +55,10 @@ import { TEST_PACK, slot } from './helpers';
  *   11:lock-wave, 14:lock-line, 15:lock-volley, 19:lock-charge, 21:lock-wave, 22:lock-wave,
  *   22:lock-volley, 22:lock-slam). Only a creature with both `healOnReactionBp` and a non-zero
  *   `healReceivedBp` can change, and no other fight moved. `replay.json` did not move.
+ * - 2026-10-19, Mire species joined the catalogue (the fifth element): every result gains the keys
+ *   `damageByElement.mire` and `reactions.byType.smother` and `.flare` (0 here), so all 200 hashes
+ *   moved. Nothing else did: with those three keys removed from each result, all 200 hashes match
+ *   the old fixture (checked before the re-pin). `replay.json` did not move.
  */
 
 const ELEMENTS: readonly Element[] = ['tide', 'ember', 'grove', 'spark'];
@@ -362,6 +366,10 @@ const SHEETS: SlotMods[] = [
     sharedWarmthBp: 1_000,
     dodgeBp: 500,
     areaDodgeBp: 300,
+    // Nor do the status-effect fields: the input carries no `effects`.
+    debuffResistBp: 1_500,
+    debuffPowerBp: 2_000,
+    debuffDurationTurns: 1,
   },
   { takenBp: 1_000, areaBp: 1_500, aimedBp: 1_500, reflectedBp: 2_500, chargedBp: 2_000 },
   { wardBp: { tide: 2_000, ember: 1_000, spark: 1_500, grove: 500 }, healReceivedBp: 3_500 },

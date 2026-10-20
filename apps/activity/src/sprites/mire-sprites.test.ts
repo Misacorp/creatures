@@ -21,9 +21,10 @@ import { MIRE_SPECIES_SPRITE_DATA } from './data/mire-species-sprites';
 import { BUNDLED_ELEMENT_ICONS, ICON_SIZE, elementIcon } from './element-icons';
 import { expandRows, parseSprite, swapPalette, type SpriteDef } from './sprite-data';
 
-// The Mire art is drawn ahead of its content: these sprites are not in the bundled maps yet, because
-// the content tests require a sprite for exactly the species, bosses, foes and destinations that
-// exist. The Mire content slice registers them, and these tests keep them honest until then.
+// The Mire art was drawn ahead of its content. The four species are registered now (the bundled map
+// has them); the boss, foes, room boss and banner are not, because the content tests require a sprite
+// for exactly the bosses, foes and destinations that exist. The Sunken Fen slice registers them, and
+// these tests keep all of the art honest until then.
 
 const INK = '#0d0a1a';
 
@@ -139,7 +140,10 @@ describe('the Mire species sprites', () => {
   });
 
   it('is clearly different from every other creature and from each other', () => {
-    const others = Object.entries(BUNDLED_CREATURE_SPRITES);
+    // The four Mire species are in the bundled map now: compare each with every other creature but itself.
+    const others = Object.entries(BUNDLED_CREATURE_SPRITES).filter(
+      ([id]) => !(id in MIRE_SPECIES_SPRITE_DATA),
+    );
     for (const { id, def } of entries) {
       if (def === undefined) throw new Error(id);
       for (const [otherId, other] of others) {
@@ -274,10 +278,10 @@ describe('the Mire bosses and foes', () => {
       ...Object.entries(MIRE_BOSS_SPRITE_DATA),
       ...Object.entries(MIRE_DUNGEON_BOSS_SPRITE_DATA),
     ];
+    // (The Mire species are already in the bundled creature map.)
     const small = [
       ...Object.entries(BUNDLED_CREATURE_SPRITES),
       ...Object.entries(BUNDLED_DUNGEON_FOE_SPRITES),
-      ...Object.entries(MIRE_SPECIES_SPRITE_DATA),
       ...Object.entries(MIRE_FOE_SPRITE_DATA),
     ];
     for (const group of [big, small]) {

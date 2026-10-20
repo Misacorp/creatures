@@ -38,5 +38,33 @@
     "triggerElement": "tide",
     "multiplierBp": 45000,
     "payoffBonusBp": 11000
+  },
+  {
+    "id": "smother",
+    "name": "Smother",
+    "markId": "scorched",
+    "markName": "Scorched",
+    "markElement": "ember",
+    "triggerElement": "mire",
+    "multiplierBp": 45000,
+    "payoffBonusBp": 11000,
+    "appliesToFoe": {
+      "effect": "mired",
+      "powerBp": 10000
+    }
+  },
+  {
+    "id": "flare",
+    "name": "Flare",
+    "markId": "muddied",
+    "markName": "Muddied",
+    "markElement": "mire",
+    "triggerElement": "ember",
+    "multiplierBp": 45000,
+    "payoffBonusBp": 11000,
+    "consumes": {
+      "effect": "mired",
+      "bonusPerStackBp": 2000
+    }
   }
 ]

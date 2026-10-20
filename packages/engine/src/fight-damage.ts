@@ -2,7 +2,7 @@
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
 import { RULES } from '@creatures/game';
 import { creatureDodgeBp, nextTakenDie } from './fight-dodge';
-import { BOSS, clearEffects, effectBpOf } from './fight-effects';
+import { applyEffect, BOSS, clearEffects, effectBpOf } from './fight-effects';
 import {
   baseContext,
   besides,
@@ -319,6 +319,13 @@ export function hurt(
   });
   if (stubborn)
     events.push({ t: 'proc', round: state.currentRound, creature: victim.id, kind: 'stubborn' });
+  // A passive ability on the taker (`on_hit_taken`): a hit it takes (dealt, not reflected) leaves an
+  // effect on the boss. A shielded or dodged hit returned above and takes nothing.
+  if (mode !== 'reflect') {
+    for (const a of victim.hitTakenApplies) {
+      applyEffect(state, BOSS, a.effect, a.powerBp, victim.id, a.durationTurns ?? 0);
+    }
+  }
   if (victim.hp === 0 && victim.alive) {
     victim.alive = false;
     clearEffects(victim);

@@ -109,6 +109,8 @@ export function needsCreature(def: FinaleAbilityDef): boolean {
   return def.effects.some(
     (e: Effect) =>
       e.op === 'strike' ||
+      e.op === 'on_hit_taken' ||
+      e.op === 'round_start' ||
       (e.op === 'shield_wall' && e.zone === 'own') ||
       (e.op === 're_mark' && e.element === 'own'),
   );
@@ -302,6 +304,8 @@ export function simulateFight(
       stormRound: 0,
       nextBoostBp: 0,
       effects: [],
+      hitTakenApplies: [],
+      roundStartApplies: [],
     };
   });
 
@@ -321,7 +325,7 @@ export function simulateFight(
   }
   const reactionsByType: Record<string, number> = {};
   for (const r of pack.reactions) reactionsByType[r.id] = 0;
-  const damageByElement = { tide: 0, ember: 0, grove: 0, spark: 0 } satisfies Record<
+  const damageByElement = Object.fromEntries(ELEMENTS.map((e) => [e, 0])) as Record<
     Element,
     number
   >;
@@ -369,6 +373,13 @@ export function simulateFight(
       }
     } else if (needsCreature(def)) {
       fail(`ability "${choice.key}" needs a creature`);
+    }
+    // Passive effects are on from the start, whatever round the ability itself "fires" in (so the fight
+    // up to a round never depends on a press that comes later).
+    for (const e of def.effects) {
+      if (source === null) break;
+      if (e.op === 'on_hit_taken') source.hitTakenApplies.push(e.apply);
+      else if (e.op === 'round_start') source.roundStartApplies.push(e.apply);
     }
     const byDefault = choice.fireAtRound === undefined;
     const round = choice.fireAtRound ?? defaultAbilityRound(boss, def, rounds);

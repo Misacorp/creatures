@@ -561,6 +561,94 @@
         "value": 2000
       },
       { "id": "cosy-shell", "name": "Cosy Shell", "effect": { "line": "thick-coat" }, "value": 40 }
+    ],
+    "mudlump": [
+      {
+        "id": "mud-off-its-back",
+        "name": "Mud Off Its Back",
+        "effect": { "line": "clean-coat" },
+        "value": 2500
+      },
+      {
+        "id": "hard-to-budge",
+        "name": "Hard to Budge",
+        "effect": { "line": "armor" },
+        "value": 500
+      },
+      {
+        "id": "stands-in-the-puddle",
+        "name": "Stands in the Puddle",
+        "effect": { "line": "cover" },
+        "value": 700
+      },
+      {
+        "id": "thick-and-lumpy",
+        "name": "Thick and Lumpy",
+        "effect": { "line": "hp" },
+        "value": 800
+      },
+      {
+        "id": "shrugs-it-off",
+        "name": "Shrugs It Off",
+        "effect": { "line": "aimed-ward" },
+        "value": 700
+      },
+      {
+        "id": "naps-in-warm-puddles",
+        "name": "Naps in Warm Puddles",
+        "effect": { "line": "between-room-rest" },
+        "value": 400
+      },
+      {
+        "id": "stays-calm-in-storms",
+        "name": "Stays Calm in Storms",
+        "effect": { "line": "brace" },
+        "value": 1000
+      }
+    ],
+    "squelch": [
+      {
+        "id": "sticks-around",
+        "name": "Sticks Around",
+        "effect": { "line": "clinging" },
+        "value": 1
+      },
+      {
+        "id": "low-croak",
+        "name": "Low Croak",
+        "effect": { "line": "heavy-hand" },
+        "value": 2000
+      },
+      {
+        "id": "hums-in-the-damp",
+        "name": "Hums in the Damp",
+        "effect": { "line": "boost" },
+        "value": 400
+      },
+      {
+        "id": "splashes-the-neighbours",
+        "name": "Splashes the Neighbours",
+        "effect": { "line": "mend" },
+        "value": 200
+      },
+      {
+        "id": "loves-big-puddles",
+        "name": "Loves Big Puddles",
+        "effect": { "line": "well-fed" },
+        "value": 2000
+      },
+      {
+        "id": "hides-in-the-reeds",
+        "name": "Hides in the Reeds",
+        "effect": { "line": "aimed-ward" },
+        "value": 700
+      },
+      {
+        "id": "finds-things-in-mud",
+        "name": "Finds Things in Mud",
+        "effect": { "line": "keen-nose" },
+        "value": 1500
+      }
     ]
   },
   "signatures": {

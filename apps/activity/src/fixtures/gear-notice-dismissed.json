@@ -38,10 +38,10 @@
         ],
         "lines": [
           {
-            "id": "heart-of-the-row",
-            "name": "Heart of the row",
-            "text": "Heart of the row +5%",
-            "about": "More HP in the middle of its row.",
+            "id": "back-row-patience",
+            "name": "Back-row patience",
+            "text": "Back-row patience +1.5 pt",
+            "about": "More crit chance while in the Back row.",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
@@ -49,15 +49,15 @@
             "active": true
           },
           {
-            "id": "tide-attunement",
-            "name": "Tide Attunement",
-            "text": "Tide Attunement +5%",
-            "about": "Raises Attack, but only for a Tide creature.",
+            "id": "ember-attunement",
+            "name": "Ember Attunement",
+            "text": "Ember Attunement +5%",
+            "about": "Raises Attack, but only for a Ember creature.",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
             "local": false,
-            "active": false
+            "active": true
           }
         ],
         "needs": {
@@ -115,10 +115,10 @@
         ],
         "lines": [
           {
-            "id": "all-damage-taken",
-            "name": "All damage taken",
-            "text": "All damage taken −3%",
-            "about": "Every hit on the wearer does less damage.",
+            "id": "front-liner",
+            "name": "Front-liner",
+            "text": "Front-liner −4%",
+            "about": "Takes less damage from every hit while in the Front row.",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
@@ -126,10 +126,10 @@
             "active": true
           },
           {
-            "id": "ember-ward",
-            "name": "Ember Ward",
-            "text": "Ember Ward −7%",
-            "about": "Less damage from the foes that beat Ember.",
+            "id": "tide-ward",
+            "name": "Tide Ward",
+            "text": "Tide Ward −7%",
+            "about": "Less damage from the foes that beat Tide.",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
@@ -137,10 +137,10 @@
             "active": true
           },
           {
-            "id": "armor",
-            "name": "Armor",
-            "text": "Armor +3 pt",
-            "about": "A Guard's armor grows by these points. No effect on other roles.",
+            "id": "area-ward",
+            "name": "Area ward",
+            "text": "Area ward −5%",
+            "about": "Area hits do less damage to the wearer.",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
@@ -201,10 +201,10 @@
             "active": null
           },
           {
-            "id": "boost",
-            "name": "Boost",
-            "text": "Boost +3 pt",
-            "about": "A Support's boost to the creatures beside it grows by these points.",
+            "id": "guards-shadow",
+            "name": "Guard's shadow",
+            "text": "Guard's shadow +7%",
+            "about": "More Attack while a living Guard stands beside the wearer.",
             "source": "rolled",
             "tier": 2,
             "bestTier": 1,
@@ -255,6 +255,7 @@
       "ember-shard": 3,
       "grove-shard": 0,
       "spark-shard": 0,
+      "mire-shard": 0,
       "glimmer": 2
     },
     "blueprints": [
@@ -357,7 +358,7 @@
         },
         "statsWithGear": {
           "hp": 148,
-          "atk": 63,
+          "atk": 66,
           "spd": 42
         },
         "gear": [

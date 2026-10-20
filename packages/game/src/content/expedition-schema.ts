@@ -50,6 +50,7 @@ export const PARTS_KEYS = [
   'ember-shard',
   'grove-shard',
   'spark-shard',
+  'mire-shard',
   'glimmer',
 ] as const;
 export const PartsSchema = v.strictObject({
@@ -58,6 +59,7 @@ export const PartsSchema = v.strictObject({
   'ember-shard': v.optional(Int(1, 99)),
   'grove-shard': v.optional(Int(1, 99)),
   'spark-shard': v.optional(Int(1, 99)),
+  'mire-shard': v.optional(Int(1, 99)),
   glimmer: v.optional(Int(1, 99)),
 });
 export type PartsSpec = v.InferOutput<typeof PartsSchema>;

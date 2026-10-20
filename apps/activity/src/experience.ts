@@ -147,6 +147,7 @@ const PART_NAMES: Readonly<Record<string, string>> = {
   'ember-shard': 'Ember shards',
   'grove-shard': 'Grove shards',
   'spark-shard': 'Spark shards',
+  'mire-shard': 'Mire shards',
 };
 
 /** "6 scrap and 2 Ember shards": a ribbon's parts, in the order the server lists them, as words. */

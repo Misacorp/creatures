@@ -118,7 +118,10 @@ function item(
 }
 
 function reactionRefs() {
-  return reactionsJson as { name: string; triggerElement: 'tide' | 'ember' | 'grove' | 'spark' }[];
+  return reactionsJson as {
+    name: string;
+    triggerElement: 'tide' | 'ember' | 'grove' | 'spark' | 'mire';
+  }[];
 }
 
 describe('the gear content', () => {
@@ -131,12 +134,12 @@ describe('the gear content', () => {
     expect(gearContent.bases.filter((b) => b.festival === true).length).toBeGreaterThanOrEqual(2);
     for (const role of ROLES) expect(baseFor('charm', role)?.slot).toBe('charm');
     expect(gearContent.bases.some((b) => b.tag === 'explorer')).toBe(true);
-    // 5 tags x 3 makes of Hats and of Scarves, the Festival pieces, 11 Charms, and the nine plain gear
+    // 6 tags x 3 makes of Hats and of Scarves, the Festival pieces, 12 Charms, and the nine plain gear
     // sets (a Hat, a Scarf and a Charm each; Lantern Night is made of the three Festival pieces).
-    expect(gearContent.bases.filter((b) => b.slot === 'hat')).toHaveLength(25);
-    expect(gearContent.bases.filter((b) => b.slot === 'scarf')).toHaveLength(25);
-    expect(gearContent.bases.filter((b) => b.slot === 'charm')).toHaveLength(20);
-    expect(gearContent.bases).toHaveLength(70);
+    expect(gearContent.bases.filter((b) => b.slot === 'hat')).toHaveLength(28);
+    expect(gearContent.bases.filter((b) => b.slot === 'scarf')).toHaveLength(28);
+    expect(gearContent.bases.filter((b) => b.slot === 'charm')).toHaveLength(21);
+    expect(gearContent.bases).toHaveLength(77);
   });
 
   it('expands the element lines into 16 lines and keeps every line weighted somewhere (but the fixed-only ones)', () => {
@@ -1025,8 +1028,10 @@ describe('folding worn items', () => {
     ]);
     // Tide beats Ember: a Tide Hunter hits Ember foes. Spark beats Tide: a Tide Ward cuts Spark foes.
     expect(fx.mods.vsElementBp).toEqual({ ember: 1_700 });
-    expect(fx.mods.wardBp).toEqual({ spark: 1_700, tide: 400 });
-    expect(fx.mods.reactionBp).toEqual({ wildfire: 2_400 });
+    // The Ember Ward (value 0 is tier I, 400) covers every element that deals 150% to Ember: Tide and Mire.
+    expect(fx.mods.wardBp).toEqual({ spark: 1_700, tide: 400, mire: 400 });
+    // Ember sets off two reactions (Wildfire on Overgrown, Flare on Muddied): its reaction line boosts both.
+    expect(fx.mods.reactionBp).toEqual({ wildfire: 2_400, flare: 2_400 });
     expect(fx.mods.besideRoleBp).toEqual({ guard: 1_700 });
     expect(fx.mods.chargedBp).toBe(2_500);
   });
@@ -1055,8 +1060,8 @@ describe('folding worn items', () => {
       ]);
       // Hunter: every element Tide deals 150% to. Ward: every element that deals 150% to Tide.
       expect(fx.mods.vsElementBp).toEqual({ ember: 1_700, grove: 1_700 });
-      expect(fx.mods.wardBp).toEqual({ spark: 1_700, ember: 1_700, tide: 400 });
-      expect(fx.mods.reactionBp).toEqual({ wildfire: 2_400, extra: 2_400 });
+      expect(fx.mods.wardBp).toEqual({ spark: 1_700, ember: 1_700, tide: 400, mire: 400 });
+      expect(fx.mods.reactionBp).toEqual({ wildfire: 2_400, flare: 2_400, extra: 2_400 });
     } finally {
       content.elementChart.length = chartLength;
       content.reactions.length = reactionsLength;

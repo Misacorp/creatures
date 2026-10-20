@@ -235,6 +235,8 @@ export const RULES = {
       spark: { reactionBp: 1_500 },
       tide: { healBp: 400, cleanse: true },
       grove: { healBp: 600 },
+      // Mire's Support work is debuffs (its creatures' own abilities), not an element effect.
+      mire: {},
     } satisfies Record<Element, SupportFx>,
     /**
      * Luck: small, visible randomness in the player-side damage. Crits (5%, +50%, for players and

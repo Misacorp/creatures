@@ -1571,7 +1571,8 @@ describe('gear and creatures that change during a run', () => {
         const scarf = giveItem(ctx.sql, p.id, 'patch-scarf', {
           rarity: 'rare',
           level: 5,
-          seed: 'once-scarf',
+          // A line that fills the creature's sheet (a rolled scarf may carry only stat lines).
+          lines: [['aimed-ward', 1]],
           now: ctx.clock.t,
         });
         const equip = async (item: string, creatureId: string | null) =>

@@ -6,9 +6,8 @@
  * `p` belly patch; the other letters are feature colours of that species. Rows marked `mirror` store
  * the left half only.
  *
- * These are not yet in `SPECIES_SPRITE_DATA`: the content tests require a sprite for exactly the
- * species that exist, so the Mire content slice adds them to that map (and the shiny palettes to
- * `art.ts`) when `creatures.json` gets `mudlump`, `bogwarden`, `squelch` and `croakmire`.
+ * They are spread into `SPECIES_SPRITE_DATA` (`species-sprites.ts`), the shiny palettes are in `art.ts`,
+ * and the species are in `creatures.json`; the content tests require a sprite for every species.
  */
 import type { SpriteDef } from '../sprite-data';
 

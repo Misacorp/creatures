@@ -34,7 +34,7 @@ describe('the reaction loop picture', () => {
   });
 
   it('stops where the content does not close into a loop, and is empty without reactions', () => {
-    const open = content.reactions.filter((r) => r.id !== 'steam');
+    const open = content.reactions.filter((r) => r.id !== 'steam' && r.id !== 'smother');
     // Ember's mark has no reaction here, so the loop stops after Grove's arrow.
     expect(reactionLoop(open).map((s) => s.from)).toEqual(['tide', 'spark', 'grove']);
     expect(reactionLoop([])).toEqual([]);

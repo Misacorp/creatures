@@ -340,7 +340,7 @@ describe('the filter chips', () => {
       (e) => e.getAttribute('role') === 'group' && e.getAttribute('aria-label') === 'Filters',
     )[0] as FakeElement;
     const buttons = find(group, (e) => e.localName === 'button');
-    expect(buttons).toHaveLength(1 + 4 + 4);
+    expect(buttons).toHaveLength(1 + 5 + 4);
     expect(buttons.every((b) => b.getAttribute('aria-pressed') === 'false')).toBe(true);
   });
 });

@@ -43,19 +43,29 @@ describe('simulation run', () => {
     // 0.1339 to 0.1696) and the long run wins every finale (0.8333 to 1, final rank 4 to 5). The tiny
     // run is only 4 raid weeks and a few runs, so these are noise-sized moves from changed dice, not
     // a balance change.
+    // 2026-10-19 (Mire): Mire species joined the catalogue, with the fifth element's gear: seven Mire bases
+    // (more blueprints and drops to draw from), four Mire element lines in every item's line pool and a
+    // fifth shard kind for a random shard. No creature is catchable yet (the Sunken Fen comes next), so
+    // nothing but those draws changed: with Mire's bases, lines and shard kind left out of the draws every
+    // number below came back to its old value exactly (checked before the re-pin). Moved: the raid phase 1
+    // and finale win rates 0.25 to 0.75 (one flipped week in 4 each), finale start share 0.5073 to 0.4231,
+    // top share 0.2958 to 0.2956, creature ratio 1.0673 to 1.0067, a dungeon run 4.3214 to 4.5268 fights
+    // (home rate 0.1696 to 0.1339) and the long run 1 to 0.8333 finale wins (final rank 5 to 4). Noise-sized
+    // moves from shifted dice in a tiny run, not a balance change; the Experience rate and the top level
+    // did not move.
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
-      'raid.typical.phase1ClearRate': 0.25,
-      'raid.typical.finaleWinRate': 0.25,
-      'raid.typical.finaleStartShare': 0.5073,
-      'fair.topShareMedian': 0.2958,
-      'choice.creatureRatioMax': 1.0673,
+      'raid.typical.phase1ClearRate': 0.75,
+      'raid.typical.finaleWinRate': 0.75,
+      'raid.typical.finaleStartShare': 0.4231,
+      'fair.topShareMedian': 0.2956,
+      'choice.creatureRatioMax': 1.0067,
       'econ.casualTopLevelWeek4': 10,
       'exp.rate.long': 75.4138,
-      'dungeon.meanFights': 4.3214,
-      'dungeon.dailyHomeRate': 0.1696,
-      'longrun.typical.finaleWinRate': 1,
-      'longrun.typicalFinalRank': 5,
+      'dungeon.meanFights': 4.5268,
+      'dungeon.dailyHomeRate': 0.1339,
+      'longrun.typical.finaleWinRate': 0.8333,
+      'longrun.typicalFinalRank': 4,
     };
     for (const [id, expected] of Object.entries(headline)) {
       expect(m[id], id).toBeCloseTo(expected, 3);

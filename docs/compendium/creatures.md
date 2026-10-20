@@ -949,11 +949,11 @@ A slim, floating creature with ribbons of aurora light. Dreamy, quiet and it loo
 
 ---
 
-## Mire lines (design, not shipped)
+## Mire lines (content)
 
-Status: 2026-10-19. A design draft from `docs/design/speed-and-dodge.md` section 5.3 and the text drafts in `docs/design/mire-content-drafts.md`. Every fact marked `(design)` is from the design; the lore, looks and quirks are `(compendium detail, not shipped)` until the content slice ships them. Misa asked for a Guard line and a Support line for now; Setter and Payoff Mire lines come later `(design)`.
+Status: 2026-10-19. The four species are shipped (`creatures.json`, `species-lore.json`, `quirks.json`, `finale-abilities.json`, `talents.json`) from `docs/design/speed-and-dodge.md` section 5.3 and the text in `docs/design/mire-content-drafts.md`. The two base forms are not catchable yet: they live nowhere until the Sunken Fen opens (the next slice), and the loader only lets a place hold a catchable species. Misa asked for a Guard line and a Support line for now; Setter and Payoff Mire lines come later `(design)`.
 
-The sprites are drawn (`apps/activity/src/sprites/data/mire-species-sprites.ts`) but not registered yet: they wait for the species.
+The sprites are drawn and registered (`apps/activity/src/sprites/data/mire-species-sprites.ts`, in `SPECIES_SPRITE_DATA`) `(content)`.
 
 ### At a glance (Mire)
 
@@ -962,7 +962,7 @@ The sprites are drawn (`apps/activity/src/sprites/data/mire-species-sprites.ts`)
 | Mudlump | Mudlump | Bogwarden | Mire    | Guard   | Common | Sunken Fen                      |
 | Squelch | Squelch | Croakmire | Mire    | Support | Common | Sunken Fen                      |
 
-Neither line branches in the design: each has one stage 2 form. Both evolve at level 15 `(design)`.
+Neither line branches: each has one stage 2 form. Both evolve at level 15 for 20 Essence, like the other lines `(content: creatures.json)`.
 
 ---
 
@@ -972,15 +972,15 @@ Slow, patient lumps of peat that stand in front and let the bog do the rest. The
 
 ### Mudlump (stage 1)
 
-|             |                                                                |
-| ----------- | -------------------------------------------------------------- |
-| Element     | Mire                                                           |
-| Role        | Guard                                                          |
-| Rarity      | Common                                                         |
-| Size        | Medium                                                         |
-| Evolves     | Bogwarden, at level 15 (Essence cost set by the content slice) |
-| Ability     | Mud Wall (suggested)                                           |
-| Where found | Sunken Fen                                                     |
+|             |                                       |
+| ----------- | ------------------------------------- |
+| Element     | Mire                                  |
+| Role        | Guard                                 |
+| Rarity      | Common                                |
+| Size        | Medium                                |
+| Evolves     | Bogwarden, at level 15 for 20 Essence |
+| Ability     | Mud Wall `(content)`                  |
+| Where found | Sunken Fen                            |
 
 **About (draft)** `(compendium detail, not shipped; text in mire-content-drafts.md)`: "A squat lump of wet peat with a calm face. It takes its time, takes the hits, and never takes offence."
 
@@ -1000,8 +1000,8 @@ Slow, patient lumps of peat that stand in front and let the bog do the rest. The
 
 **Notes** `(compendium detail, not shipped)`:
 
-- It is the lowest-Speed creature in the game, so it dodges little and has the most HP. `(design)`
-- Signature, from the design: when it takes a hit that is not dodged, it leaves Mired on the attacker. A hit that sticks to the hitter. `(design)`
+- It is the lowest-Speed creature in the game (10 at level 1, growing by 1), so it dodges little, and it has the most HP of any common Guard. `(content: creatures.json)`
+- Mud Wall: its zone takes 40% less damage for 2 rounds, and whenever it takes a hit (not dodged, not shielded, not reflected) the boss gets Mired (60% power). The Mired part is always on, from round 1; it does nothing in a fight with status effects off. Bogwarden's Bog Hold is stronger: 60% less for 3 rounds, Mired at 80%. `(content: finale-abilities.json)`
 - The quirk pool leans against its calm: it gets excited about puddles. Working name kept; it hints at its nature, like Splashet.
 
 ### Bogwarden (stage 2)
@@ -1013,7 +1013,7 @@ Slow, patient lumps of peat that stand in front and let the bog do the rest. The
 | Rarity    | Common               |
 | Size      | Large                |
 | Catchable | No (evolves)         |
-| Ability   | Bog Hold (suggested) |
+| Ability   | Bog Hold `(content)` |
 
 **About (draft)** `(compendium detail, not shipped; text in mire-content-drafts.md)`: "A broad, steady warden of the bog, with cattails on its head and tar on its arms. Whatever strikes it gets a little stuck."
 
@@ -1034,7 +1034,7 @@ Slow, patient lumps of peat that stand in front and let the bog do the rest. The
 
 **Notes** `(compendium detail, not shipped)`:
 
-- The steadfast tank of the bog. A talent in the Mudlump pool resists debuffs (Mud Off Its Back). `(design)`
+- The steadfast tank of the bog. A talent in the Mudlump pool resists debuffs (Mud Off Its Back, the line Clean coat). `(content: talents.json)`
 - The cattails are the proof that something has stood in one place long enough for plants to grow on it. The tar plates are what the bog hardens into on its arms.
 - Stage 2 is bigger and broader, not meaner: it still sits still, but now it stands.
 
@@ -1046,15 +1046,15 @@ Small ochre frogs that hum in the damp. They make the boss feel slow and heavy: 
 
 ### Squelch (stage 1)
 
-|             |                                                                |
-| ----------- | -------------------------------------------------------------- |
-| Element     | Mire                                                           |
-| Role        | Support                                                        |
-| Rarity      | Common                                                         |
-| Size        | Medium                                                         |
-| Evolves     | Croakmire, at level 15 (Essence cost set by the content slice) |
-| Ability     | Squelch Song (suggested)                                       |
-| Where found | Sunken Fen                                                     |
+|             |                                       |
+| ----------- | ------------------------------------- |
+| Element     | Mire                                  |
+| Role        | Support                               |
+| Rarity      | Common                                |
+| Size        | Medium                                |
+| Evolves     | Croakmire, at level 15 for 20 Essence |
+| Ability     | Squelch Song `(content)`              |
+| Where found | Sunken Fen                            |
 
 **About (draft)** `(compendium detail, not shipped; text in mire-content-drafts.md)`: "A small ochre frog that squelches when it walks and hums when it thinks nobody listens. Its croak makes big foes feel slow and heavy."
 
@@ -1074,7 +1074,7 @@ Small ochre frogs that hum in the damp. They make the boss feel slow and heavy: 
 
 **Notes** `(compendium detail, not shipped)`:
 
-- The debuffer. Besides its usual Support work, its round-start action leaves Mired on the boss. `(design)`
+- The debuffer. Besides its usual Support work, its round-start action leaves Mired on the boss (60% power). Squelch Song also rallies all creatures for +4% damage for 2 rounds; Deep Croak is Mired at 80% and +7%. `(content: finale-abilities.json)`
 - Its wide smile and brow bumps make it read as a frog at 16 pixels. The face is the same chibi face as every creature.
 - Always humming: the Mire folk say a squelch is the fen's way of saying hello.
 
@@ -1087,7 +1087,7 @@ Small ochre frogs that hum in the damp. They make the boss feel slow and heavy: 
 | Rarity    | Common                 |
 | Size      | Large                  |
 | Catchable | No (evolves)           |
-| Ability   | Deep Croak (suggested) |
+| Ability   | Deep Croak `(content)` |
 
 **About (draft)** `(compendium detail, not shipped; text in mire-content-drafts.md)`: "A big, patient frog with a lily pad on its head and a throat like a drum. One low croak and the boss sinks a little deeper into the mud."
 
@@ -1108,7 +1108,7 @@ Small ochre frogs that hum in the damp. They make the boss feel slow and heavy: 
 
 **Notes** `(compendium detail, not shipped)`:
 
-- Its talents and gear lean to debuff duration and power. `(design)`
+- Its talents lean to debuff duration (Sticks Around, the line Clinging) and debuff power (Low Croak, the line Heavy hand). `(content: talents.json)`
 - The lily pad is the one thing it will not take off.
 - One low croak is all it needs: the boss sinks a little deeper into the mud.
 

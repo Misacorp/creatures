@@ -34,6 +34,7 @@ export const PART_KINDS = [
   'ember-shard',
   'grove-shard',
   'spark-shard',
+  'mire-shard',
   'glimmer',
 ] as const;
 export type PartKind = (typeof PART_KINDS)[number];

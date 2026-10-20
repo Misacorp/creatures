@@ -163,7 +163,14 @@ describe('marks and reactions', () => {
       slot('p', { element: 'spark', role: 'payoff' }),
     ]);
     expect(r.reactions.total).toBe(10);
-    expect(r.reactions.byType).toEqual({ overload: 10, grounding: 0, wildfire: 0, steam: 0 });
+    expect(r.reactions.byType).toEqual({
+      overload: 10,
+      grounding: 0,
+      wildfire: 0,
+      steam: 0,
+      smother: 0,
+      flare: 0,
+    });
   });
 
   it('credits setup to the creature only for guests (no player)', () => {

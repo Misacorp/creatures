@@ -25,6 +25,7 @@
       "ember-shard": 0,
       "grove-shard": 0,
       "spark-shard": 0,
+      "mire-shard": 0,
       "glimmer": 0
     },
     "blueprints": [],

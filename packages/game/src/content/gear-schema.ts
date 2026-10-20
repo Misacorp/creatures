@@ -42,6 +42,7 @@ export const GEAR_TAGS = [
   'ember',
   'grove',
   'spark',
+  'mire',
   'explorer',
   'setter',
   'payoff',
@@ -225,6 +226,9 @@ export const LineEffectSchema = v.variant('kind', [
       'boostBp',
       'mendBp',
       'lingerRounds',
+      'debuffResistBp',
+      'debuffPowerBp',
+      'debuffDurationTurns',
       'ignoreSilence',
       ...CHANCE_FIELDS,
       ...TRIGGER_FIELDS,
@@ -454,6 +458,7 @@ const ELEMENT_NAMES: Record<Element, string> = {
   ember: 'Ember',
   grove: 'Grove',
   spark: 'Spark',
+  mire: 'Mire',
 };
 
 /**

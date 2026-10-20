@@ -61,6 +61,9 @@ export interface ResolvedMods {
   sharedWarmthBp: number;
   dodgeBp: number;
   areaDodgeBp: number;
+  debuffResistBp: number;
+  debuffPowerBp: number;
+  debuffDurationTurns: number;
 }
 
 /**
@@ -162,6 +165,9 @@ const EMPTY: ResolvedMods = Object.freeze({
   sharedWarmthBp: 0,
   dodgeBp: 0,
   areaDodgeBp: 0,
+  debuffResistBp: 0,
+  debuffPowerBp: 0,
+  debuffDurationTurns: 0,
 });
 
 /** The sheet of a creature without one. */
@@ -285,6 +291,9 @@ export function resolveMods(
     sharedWarmthBp: n('sharedWarmthBp'),
     dodgeBp: n('dodgeBp', SHARE),
     areaDodgeBp: n('areaDodgeBp', SHARE),
+    debuffResistBp: n('debuffResistBp', SHARE),
+    debuffPowerBp: n('debuffPowerBp', [0, 100_000]),
+    debuffDurationTurns: n('debuffDurationTurns', [0, 10]),
   };
 }
 

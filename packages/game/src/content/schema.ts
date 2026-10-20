@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 
-export const ElementSchema = v.picklist(['tide', 'ember', 'grove', 'spark']);
+export const ElementSchema = v.picklist(['tide', 'ember', 'grove', 'spark', 'mire']);
 export type Element = v.InferOutput<typeof ElementSchema>;
 export const ELEMENTS: readonly Element[] = ElementSchema.options;
 
@@ -144,6 +144,27 @@ export const ReactionDefSchema = v.strictObject({
   multiplierBp: BasisPoints,
   /** Extra multiplier for Payoff creatures on reactions in basis points (12500 = x1.25). */
   payoffBonusBp: BasisPoints,
+  /**
+   * Optional rider: a reaction hit that lands (not reflected) puts the status effect on the boss at
+   * `powerBp` application power (Smother mires it). Only in a fight with effects on; else a plain reaction.
+   */
+  appliesToFoe: v.optional(
+    v.strictObject({
+      effect: IdSchema,
+      powerBp: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100_000)),
+    }),
+  ),
+  /**
+   * Optional rider: the reaction burns off every stack of the status effect on the boss and adds
+   * `bonusPerStackBp` to the reaction's bonus (its extra damage) for each stack burned (Flare burns
+   * Mired). Only in a fight with effects on; else a plain reaction.
+   */
+  consumes: v.optional(
+    v.strictObject({
+      effect: IdSchema,
+      bonusPerStackBp: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(100_000)),
+    }),
+  ),
 });
 export type ReactionDef = v.InferOutput<typeof ReactionDefSchema>;
 
@@ -438,6 +459,18 @@ export const EffectSchema = v.variant('op', [
   v.strictObject({ op: v.literal('purge'), rounds: v.optional(EffectRounds) }),
   /** The ability's creature hits the boss at once for `atk x atkBp / 10000`. */
   v.strictObject({ op: v.literal('strike'), atkBp: BasisPoints }),
+  /**
+   * Passive, on for the whole fight from round 1 (it has no firing time; it needs the ability's creature):
+   * each time the creature takes a boss hit (not dodged, shielded or reflected) the boss gets the status
+   * effect, at `apply.powerBp` application power. Does nothing in a fight with effects off.
+   */
+  v.strictObject({ op: v.literal('on_hit_taken'), apply: AppliesSchema }),
+  /**
+   * Passive, on for the whole fight from round 1: at each round start, with the creature's Support action
+   * (a living Support that is not silenced), the boss gets the status effect. Does nothing in a fight with
+   * effects off.
+   */
+  v.strictObject({ op: v.literal('round_start'), apply: AppliesSchema }),
 ]);
 export type Effect = v.InferOutput<typeof EffectSchema>;
 export type EffectOp = Effect['op'];
