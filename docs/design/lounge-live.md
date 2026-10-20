@@ -8,7 +8,7 @@ While the living room is visible and somebody else is in it, the client keeps on
 
 The socket is **an accelerator for the room view.** Everything it carries can also be fetched with `POST /api/room`. If the socket is off, unsupported, refused or dropped, the room polls exactly as it did before this change.
 
-Since 2026-10-20 the open sockets are also the server's **proof of who is here**: lounging with company pays the lounger experience only for time its player's socket was open together with another player's (`lounge-company.ts`, `living-room.md`). A client that falls back to polling still sees the room but earns no lounging XP. That is on purpose: the poll is client-driven and proves nothing, while a socket's owner comes from a ticket of an authenticated request and its lifetime is the server's own record (open time, last ping, close).
+Lounging with company does not use the socket: it pays from Discord's participant list, which the lounge check reads about once a minute (`lounge-company.ts`, `living-room.md`). (For a few hours on 2026-10-20 it paid from the sockets; a hidden tab closes its socket, so that cost players their XP.)
 
 ## How it works
 
@@ -21,7 +21,7 @@ client                          Worker                         guild Durable Obj
   | <-- {"v":1,"type":"hello","serverNow":...}
   | ... any player's change -->  existing HTTP route  -->  state changes, then the push:
   | <-- {"v":1,"type":"resident","resident":{...}}
-  | "ping" every 60 s of silence  -->  answered with "pong" by the runtime, the object stays asleep
+  | "ping" every 60 s            -->  answered with "pong" by the runtime, the object stays asleep
 ```
 
 - **One object, no new class.** The sockets live in the existing `GuildWorld` object, so the push happens inside the same serialised path as the writes that cause it. The code is `apps/worker/src/lounge-live.ts` (sockets, caps, push), `lounge-ticket.ts` (tickets) and `lounge-live-routes.ts` (the ticket route).
@@ -65,7 +65,7 @@ A socket is closed by the server after 12 hours (the longest a session lives), a
 
 ## Client (`apps/activity`)
 
-- `lounge-socket.ts` (framework-free, everything injected): fetches a ticket, opens the socket, goes live on `hello`, hands pushed residents to the room, pings after 60 s of silence (skipped while other frames arrive), treats 150 s of silence as dead, and reconnects with backoff 1 s, 2 s, 4 s up to 30 s with half-to-full jitter (dice from `crypto.getRandomValues`). It gives up after 6 tries in a row that never got a `hello` and when the ticket route says 404 (flag off). Code 4000 also stops it.
+- `lounge-socket.ts` (framework-free, everything injected): fetches a ticket, opens the socket, goes live on `hello`, hands pushed residents to the room, pings every 60 s (also while pushes arrive: the ping is the server's only sign that the player is still there; skipping it while pushes arrived made two busy players look gone, fixed 2026-10-20), treats 150 s of silence as dead, and reconnects with backoff 1 s, 2 s, 4 s up to 30 s with half-to-full jitter (dice from `crypto.getRandomValues`). It gives up after 6 tries in a row that never got a `hello` and when the ticket route says 404 (flag off). Code 4000 also stops it.
 - `room-loader.ts`: `setLive(true)` stops the 45 s poll and fetches everyone once; `setLive(false)` brings the poll back; `applyResident` merges a pushed resident for someone present (never the player; their creature comes from their own state). Joins are still fetched by the debounced newcomer request, because presence is not pushed.
 - `use-room.ts`: opens the socket only while the server offers it (`/api/config` has `loungeLive: true`), the page is visible and somebody else is here (`shouldOpenSocket`). Hidden or alone: no socket, no timer, no request, like the poll.
 - CSP: `connect-src` lists `wss://creatures.misacorp.dev`, `wss://creatures-staging.misacorp.dev` and `wss://*.discordsays.com` next to `'self'` (older browsers do not let `'self'` cover `wss:`).
@@ -76,7 +76,7 @@ Anything that goes wrong lands on the old polling, never on a broken room: no `W
 
 ## The flag
 
-`LOUNGE_LIVE` in `apps/worker/wrangler.jsonc`: `"on"` at the top level (local `wrangler dev`), in `env.staging` and, since 2026-10-20, in `env.production`. A test pins that. Anything other than `"on"` makes `/api/lounge/ticket` and `/api/lounge/live` answer 404 and leaves `loungeLive` out of `/api/config`, so the client never tries. **To turn it off again:** change `env.production.vars.LOUNGE_LIVE` to `"off"` in a PR, update the pin in `apps/worker/test/lounge-live.test.ts`, and merge (a deploy also closes every socket). With it off, lounging earns nothing (there is no proof of company).
+`LOUNGE_LIVE` in `apps/worker/wrangler.jsonc`: `"on"` at the top level (local `wrangler dev`), in `env.staging` and, since 2026-10-20, in `env.production`. A test pins that. Anything other than `"on"` makes `/api/lounge/ticket` and `/api/lounge/live` answer 404 and leaves `loungeLive` out of `/api/config`, so the client never tries. **To turn it off again:** change `env.production.vars.LOUNGE_LIVE` to `"off"` in a PR, update the pin in `apps/worker/test/lounge-live.test.ts`, and merge (a deploy also closes every socket). Lounging XP does not depend on it.
 
 ## Cost and limits
 
@@ -95,9 +95,11 @@ We are on the Workers **Free** plan (Misa, 2026-10-19). Figures are from Cloudfl
 
 - Opening it: one `POST /api/lounge/ticket`, the upgrade, and one full room fetch. That is about 3 Worker requests and 3 DO requests. A socket closes at 12 h, on a deploy and when a phone sleeps, so count about 3 opens a day for a player who never closes the game.
 - Pushes: outgoing messages are free and need no request of their own. A push rides on the HTTP request that made the change, which the game paid for before this too.
-- The heartbeat: a text "ping" every 60 s, only when no other frame arrived, only while the lounge is visible and someone else is in it. The runtime answers it without waking the object, so it costs no duration. **Unknown:** whether such a ping counts as a DO request on Free, and whether Free applies the 1-in-20 rate for incoming messages that billing uses. So we count it both ways.
+- The heartbeat: a text "ping" every 60 s, only while the lounge is visible and someone else is in it. The runtime answers it without waking the object, so it costs no duration. **Unknown:** whether such a ping counts as a DO request on Free, and whether Free applies the 1-in-20 rate for incoming messages that billing uses. So we count it both ways.
 - Duration: the object hibernates between requests about 10 s after the last one, and an idle object waiting to hibernate is not billed. The socket adds no awake time beyond the requests the lounge already makes. Without hibernation (`ws.accept()`) one guild's 24/7 socket would cost 11,059 GB-s a day, 85% of the Free allowance, so hibernation is required, not an optimisation.
-- Rows written: the socket itself stores nothing (tickets and the last pushed view are in memory) and never re-arms the alarm. Lounging with company (2026-10-20) writes when it pays: when a socket joins or leaves, every player with a socket open who earned something is paid (their `lounge_company` row, and when a whole XP was earned also the creature's `lounge_rest` row, the creature row and one analytics event: at most 4 rows a player), and a player's own request pays them first (the same rows). A Rested lounger's player writes only the one `lounge_company` row. With 15 players opening and closing the room about 10 times a day each, that is under 15 × 10 × 15 × 4 = 9,000 rows a guild a day in the very worst case, and in practice far less (only players with company time since their last payment write).
+- Rows written: the socket itself stores nothing (tickets and the last pushed view are in memory) and never re-arms the alarm. Lounging with company writes when it pays (at most 4 rows: the player's `lounge_company` row, the creature's `lounge_rest` row, the creature row and one analytics event): every 10 minutes of company for a player out of sight, and at each of a player's own requests (every 2 minutes while they watch it earn). A Rested lounger's player writes one row a payment. A player watching all day with a creature swapped in every 2 hours writes about 30 × 4 = 120 rows an hour; the lounge check itself already wrote its instance rows once a minute.
+
+- Lounging XP on screen (2026-10-20): while your lounger earns (someone else here, page visible, not Rested), the client reloads `GET /api/state` every 2 minutes: 30 requests an hour, and none once Rested (2 hours of company per creature), so 60 requests per creature rested. For 15 players resting one creature each a day, 900 Worker and DO requests a guild a day, far under the old poll.
 
 **What it saves:** today's lounge polls every 45 s while anyone else is there. A player who leaves it open all day makes 86,400 / 45 = 1,920 Worker requests and 1,920 DO requests a day. The socket replaces that poll.
 

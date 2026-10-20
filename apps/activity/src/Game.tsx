@@ -29,7 +29,7 @@ import type { ChoiceResult } from './talent-types';
 import { errorText } from './game';
 import { loaded, type Loaded } from './loaded-state';
 import type { ParticipantSource } from './participants';
-import { settleClaim } from './room-data';
+import { LOUNGE_REFRESH_MS, loungeEarning, settleClaim } from './room-data';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
@@ -306,6 +306,19 @@ export function Game({
       setError(errorText(err));
     });
   }
+  // While your lounger earns, reload the state once per XP so its tag and XP bar move (the server pays what
+  // you collected when you make a request). Nothing while alone, hidden or Rested.
+  const earning = loungeEarning(room.company, false, game);
+  useEffect(() => {
+    if (!earning) return undefined;
+    const timer = setInterval(() => {
+      refreshState();
+    }, LOUNGE_REFRESH_MS);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [earning]);
+
   const head = (
     <AppHead
       helpRef={helpRef}
@@ -322,6 +335,7 @@ export function Game({
               onMove: moveLounger,
               onSwap: () => {
                 setSwapping(true);
+                refreshState();
               },
               ...(game.loungerId === null
                 ? {}
