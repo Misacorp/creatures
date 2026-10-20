@@ -115,9 +115,9 @@ describe('lounging with company, from Discord', () => {
       const a = await arrive(ctx, discord, 1);
       const b = await arrive(ctx, discord, 2);
       const ms = await together(ctx, 10);
-      // Ten minutes collected: paid without anyone asking, 1 XP per 2 minutes.
+      // Ten minutes together: paid without anyone asking, 1 XP per 2 minutes.
       const xp = Math.floor(ms / msPerXp);
-      expect(ms).toBeGreaterThanOrEqual(LOUNGE_FLUSH_MS);
+      expect(LOUNGE_FLUSH_MS).toBe(msPerXp);
       expect(stored(ctx)).toEqual({ [loungerOf(ctx, a)]: xp, [loungerOf(ctx, b)]: xp });
     });
   });
@@ -130,16 +130,72 @@ describe('lounging with company, from Discord', () => {
     });
   });
 
-  it('pays what was collected when the player makes a request, so the state they read is fresh', async () => {
+  it('pays each XP as it is earned, with no request needed, and a request pays the rest', async () => {
     await inGuild(async (ctx, discord) => {
       const a = await arrive(ctx, discord, 1);
       await arrive(ctx, discord, 2);
       const ms = await together(ctx, 4);
-      expect(stored(ctx)).toEqual({});
+      // Paid as it went: every 2 minutes collected became 1 XP, with no one asking.
+      expect(stored(ctx)[loungerOf(ctx, a)]).toBe(Math.floor((ms - 15 * SECOND) / msPerXp));
       const state = await stateOf(ctx, a);
       expect(state.loungeXp).toEqual({ [loungerOf(ctx, a)]: Math.floor(ms / msPerXp) });
-      // The other player has not asked: theirs is still collecting.
-      expect(Object.keys(stored(ctx))).toEqual([loungerOf(ctx, a)]);
+    });
+  });
+
+  it('loses at most one XP of time a player when the object restarts (a deploy)', async () => {
+    const guildId = nextGuild();
+    const discord = fakeDiscord(guildId);
+    let clock = 0;
+    let a: Seat | undefined;
+    let lounger = '';
+    await runCore(
+      guildId,
+      async (ctx) => {
+        ctx.clock.t = loungeDay(ctx.clock.t, TZ).start + 24 * 60 * MIN + MIN;
+        a = await arrive(ctx, discord, 1);
+        await arrive(ctx, discord, 2);
+        await together(ctx, 21);
+        lounger = loungerOf(ctx, a);
+        clock = ctx.clock.t;
+      },
+      { lounge: discord },
+    );
+    // A new core on the same storage: what was in memory is gone, as after a deploy.
+    await runCore(
+      guildId,
+      async (ctx) => {
+        ctx.clock.t = clock;
+        for (let i = 0; i < 9; i++) await check(ctx);
+        const who = a as Seat;
+        const total = 15 * SECOND + 30 * MIN;
+        const got = (await stateOf(ctx, who)).loungeXp[lounger] ?? 0;
+        expect(got).toBeLessThanOrEqual(Math.floor(total / msPerXp));
+        expect(got).toBeGreaterThanOrEqual(Math.floor(total / msPerXp) - 1);
+      },
+      { lounge: discord },
+    );
+  });
+
+  it('collects nothing for a Rested lounger, so it writes nothing', async () => {
+    await inGuild(async (ctx, discord) => {
+      const a = await arrive(ctx, discord, 1);
+      await arrive(ctx, discord, 2);
+      await together(ctx, 125);
+      expect(stored(ctx)[loungerOf(ctx, a)]).toBe(dailyCap);
+      const before = ctx.sql
+        .exec<{ credited_until: number }>(
+          'SELECT credited_until FROM lounge_company WHERE user_id = ?',
+          a.id,
+        )
+        .one().credited_until;
+      for (let i = 0; i < 10; i++) await check(ctx);
+      const after = ctx.sql
+        .exec<{ credited_until: number }>(
+          'SELECT credited_until FROM lounge_company WHERE user_id = ?',
+          a.id,
+        )
+        .one().credited_until;
+      expect(after).toBe(before);
     });
   });
 

@@ -12,9 +12,10 @@
  * At each check, players who were in company at the previous check and still are earn the time between
  * the two (at most `LOUNGE_MAX_GAP_MS`, so a stalled alarm never pays a long gap, and never time from
  * before the game day's start). The time collects in memory and is paid (a few rows written) when it
- * reaches `LOUNGE_FLUSH_MS`, when the player leaves company, at the game day's turn, and at the start of
- * the player's own request (`flush`, so a swap pays the old lounger first and the state they read is
- * fresh). If the object is evicted, at most the unpaid part (under 10 minutes) is lost.
+ * reaches `LOUNGE_FLUSH_MS` (one XP: each XP is paid as it is earned), when the player leaves company, at
+ * the game day's turn, and at the start of the player's own request (`flush`, so a swap pays the old
+ * lounger first and the state they read is fresh). A restart of the object (a deploy, an eviction) loses at
+ * most that unpaid part, under 2 minutes a player. A Rested lounger collects nothing, so it writes nothing.
  * Each creature gets at most the daily cap a game day (then it is Rested: the time passes unpaid until
  * another creature takes its place); a player has no cap of their own.
  *
@@ -28,8 +29,12 @@ import { gameDay, zonedTimeToEpoch } from './time';
 
 /** The most time one check pays (it is about a minute apart): a stalled alarm never pays a long gap. */
 export const LOUNGE_MAX_GAP_MS = 3 * 60_000;
-/** Unpaid company time is paid once it reaches this (5 XP), so a player out of sight writes rarely. */
-export const LOUNGE_FLUSH_MS = 10 * 60_000;
+/**
+ * Unpaid company time is paid once it reaches this: one XP, so a restart of the object (every deploy does
+ * one) loses at most one XP's worth a player. Was 10 minutes until 2026-10-20 (players lost XP at deploys).
+ * Writes stay bounded by the daily cap: at most `dailyCap` payments a creature a day.
+ */
+export const LOUNGE_FLUSH_MS: number = RULES.experience.lounge.msPerXp;
 
 export function loungeCompanyMigration(sql: SqlStorage): void {
   // Per player: company time up to `credited_until` is paid; `carry_ms` is time short of one more XP.
@@ -142,7 +147,11 @@ export class LoungeCompany {
       this.lastCheckAt = now;
       const ms = Math.max(0, now - Math.max(previous, now - LOUNGE_MAX_GAP_MS, today.start));
       if (ms > 0) {
-        for (const userId of is) if (was.has(userId)) this.add(userId, ms, today.day, now);
+        for (const userId of is) {
+          if (was.has(userId) && !this.restedToday(userId, today.day, loungerOf)) {
+            this.add(userId, ms, today.day, now);
+          }
+        }
       }
       for (const [userId, entry] of [...this.pending]) {
         if (entry.ms >= LOUNGE_FLUSH_MS || !is.has(userId) || entry.day !== today.day) {
@@ -163,6 +172,17 @@ export class LoungeCompany {
     } catch (err) {
       console.error('lounge company failed', err instanceof Error ? err.name : 'unknown');
     }
+  }
+
+  /** The player's lounger has had all of `day`'s lounging XP (or there is none): nothing to collect. */
+  private restedToday(
+    userId: string,
+    day: string,
+    loungerOf: (userId: string) => string | null,
+  ): boolean {
+    const lounger = loungerOf(userId);
+    if (lounger === null) return true;
+    return isRested(loungePaidToday(this.sql, userId, day).get(lounger) ?? 0);
   }
 
   /** Collects `ms` for the player on `day`; time of an earlier day is paid to that day first. */
