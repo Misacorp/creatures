@@ -63,6 +63,16 @@
       "rank": 2,
       "rankBefore": 1
     },
+    "rankGifts": [
+      {
+        "rank": 2,
+        "bait": 2,
+        "parts": {
+          "scrap": 1
+        },
+        "supplies": []
+      }
+    ],
     "experience": {
       "creatureId": "00000000-0000-4000-8500-000000000025",
       "gained": 120,
@@ -74,16 +84,6 @@
       "waiting": false,
       "gold": false
     },
-    "rankGifts": [
-      {
-        "rank": 2,
-        "bait": 2,
-        "parts": {
-          "scrap": 1
-        },
-        "supplies": []
-      }
-    ],
     "familiarity": {
       "stars": 0,
       "starsBefore": 0,
@@ -473,6 +473,16 @@
             "rank": 2,
             "rankBefore": 1
           },
+          "rankGifts": [
+            {
+              "rank": 2,
+              "bait": 2,
+              "parts": {
+                "scrap": 1
+              },
+              "supplies": []
+            }
+          ],
           "experience": {
             "creatureId": "00000000-0000-4000-8500-000000000025",
             "gained": 120,
@@ -484,16 +494,6 @@
             "waiting": false,
             "gold": false
           },
-          "rankGifts": [
-            {
-              "rank": 2,
-              "bait": 2,
-              "parts": {
-                "scrap": 1
-              },
-              "supplies": []
-            }
-          ],
           "familiarity": {
             "stars": 0,
             "starsBefore": 0,

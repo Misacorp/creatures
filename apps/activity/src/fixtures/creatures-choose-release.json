@@ -484,6 +484,9 @@
             "rank": 1,
             "rankBefore": 1
           },
+          "slotUnlocked": {
+            "total": 2
+          },
           "experience": {
             "creatureId": "00000000-0000-4000-8200-000000000002",
             "gained": 20,
@@ -494,9 +497,6 @@
             "needed": 328,
             "waiting": false,
             "gold": false
-          },
-          "slotUnlocked": {
-            "total": 2
           },
           "familiarity": {
             "stars": 0,

@@ -78,19 +78,26 @@ describe('simulation run', () => {
     // 4 raid weeks, so the moves are dice shifts, not a measure: the raid win rates stay at 1, finale start
     // share 0.2549 to 0.2414, top share 0.2934 to 0.3162, creature ratio 1.0065 to 1.5963, a dungeon run
     // 4.6518 to 4.9464 fights (home rate, top level, Experience rate and the long run did not move).
+    // 2026-10-20 (integration of the push-on timer, Workshop Refine and Recycle, expedition ticks, dungeon
+    // rewards B-024, the economy targets B-025, the lantern bonus roll and the supply retunes): expedition
+    // ticks pay more XP, scrap, gear and creatures (and no catch pity), and a full dungeon clear pays about
+    // 1.5 crafts and 1 gear. Moved: Experience per hour of a long trip 75.4138 to 145.8809, casual top level
+    // at week 4 10 to 14, a dungeon run 4.9464 to 5.7232 fights (home rate 0.125 to 0.0893), creature ratio
+    // 1.5963 to 1.0154, finale start share 0.2414 to 0.2369, top share 0.3162 to 0.3159, the long run
+    // 0.8333 to 1 finale wins (final rank 4 to 5). The raid win rates stay at 1 (4 raid weeks, dice shifts).
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
       'raid.typical.phase1ClearRate': 1,
       'raid.typical.finaleWinRate': 1,
-      'raid.typical.finaleStartShare': 0.2414,
-      'fair.topShareMedian': 0.3162,
-      'choice.creatureRatioMax': 1.5963,
-      'econ.casualTopLevelWeek4': 10,
-      'exp.rate.long': 75.4138,
-      'dungeon.meanFights': 4.9464,
-      'dungeon.dailyHomeRate': 0.125,
-      'longrun.typical.finaleWinRate': 0.8333,
-      'longrun.typicalFinalRank': 4,
+      'raid.typical.finaleStartShare': 0.2369,
+      'fair.topShareMedian': 0.3159,
+      'choice.creatureRatioMax': 1.0154,
+      'econ.casualTopLevelWeek4': 14,
+      'exp.rate.long': 145.8809,
+      'dungeon.meanFights': 5.7232,
+      'dungeon.dailyHomeRate': 0.0893,
+      'longrun.typical.finaleWinRate': 1,
+      'longrun.typicalFinalRank': 5,
     };
     for (const [id, expected] of Object.entries(headline)) {
       expect(m[id], id).toBeCloseTo(expected, 3);
