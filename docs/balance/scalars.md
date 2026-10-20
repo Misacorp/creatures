@@ -1066,8 +1066,8 @@ The knobs are the numbers of `RULES` (`packages/game/src/rules/config.ts`) and t
 
 | Path                                                                     | Value   | Unit  | Meaning                                                                                                           | Sim targets |
 | ------------------------------------------------------------------------ | ------- | ----- | ----------------------------------------------------------------------------------------------------------------- | ----------- |
-| `content.bosses.tidal-colossus.baseHp`                                   | `5915`  | count |                                                                                                                   | `raid-*`    |
-| `content.bosses.tidal-colossus.baseAtk`                                  | `30`    | count |                                                                                                                   | `raid-*`    |
+| `content.bosses.tidal-colossus.baseHp`                                   | `5510`  | count |                                                                                                                   | `raid-*`    |
+| `content.bosses.tidal-colossus.baseAtk`                                  | `33`    | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.tidal-colossus.baseSpd`                                  | `30`    | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.tidal-colossus.gimmicks.undertow.trigger.every`          | `3`     | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.tidal-colossus.gimmicks.undertow.power`                  | `8000`  | count |                                                                                                                   | `raid-*`    |
@@ -1086,8 +1086,8 @@ The knobs are the numbers of `RULES` (`packages/game/src/rules/config.ts`) and t
 | `content.bosses.tidal-colossus.finaleRounds`                             | `12`    | count | Rounds in the live finale (default 12; at most 30, which is 5 minutes at 10 s a round).                           | `raid-*`    |
 | `content.bosses.tidal-colossus.hpExponent.num`                           | `108`   | count | Optional head-count exponent of this boss's HP, a fraction `num / den` (absent: `RULES.raid.scaling.hpExponent`). | `raid-*`    |
 | `content.bosses.tidal-colossus.hpExponent.den`                           | `100`   | count | Optional head-count exponent of this boss's HP, a fraction `num / den` (absent: `RULES.raid.scaling.hpExponent`). | `raid-*`    |
-| `content.bosses.cinder-wyrm.baseHp`                                      | `2490`  | count |                                                                                                                   | `raid-*`    |
-| `content.bosses.cinder-wyrm.baseAtk`                                     | `30`    | count |                                                                                                                   | `raid-*`    |
+| `content.bosses.cinder-wyrm.baseHp`                                      | `2740`  | count |                                                                                                                   | `raid-*`    |
+| `content.bosses.cinder-wyrm.baseAtk`                                     | `33`    | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.cinder-wyrm.baseSpd`                                     | `40`    | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.cinder-wyrm.gimmicks.cinder-fall.trigger.every`          | `2`     | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.cinder-wyrm.gimmicks.cinder-fall.shells.min`             | `2`     | count |                                                                                                                   | `raid-*`    |
@@ -1107,8 +1107,8 @@ The knobs are the numbers of `RULES` (`packages/game/src/rules/config.ts`) and t
 | `content.bosses.cinder-wyrm.finaleRounds`                                | `12`    | count | Rounds in the live finale (default 12; at most 30, which is 5 minutes at 10 s a round).                           | `raid-*`    |
 | `content.bosses.cinder-wyrm.hpExponent.num`                              | `129`   | count | Optional head-count exponent of this boss's HP, a fraction `num / den` (absent: `RULES.raid.scaling.hpExponent`). | `raid-*`    |
 | `content.bosses.cinder-wyrm.hpExponent.den`                              | `100`   | count | Optional head-count exponent of this boss's HP, a fraction `num / den` (absent: `RULES.raid.scaling.hpExponent`). | `raid-*`    |
-| `content.bosses.thornmother.baseHp`                                      | `4737`  | count |                                                                                                                   | `raid-*`    |
-| `content.bosses.thornmother.baseAtk`                                     | `30`    | count |                                                                                                                   | `raid-*`    |
+| `content.bosses.thornmother.baseHp`                                      | `4200`  | count |                                                                                                                   | `raid-*`    |
+| `content.bosses.thornmother.baseAtk`                                     | `33`    | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.thornmother.baseSpd`                                     | `25`    | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.thornmother.gimmicks.bramble-bind.trigger.every`         | `2`     | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.thornmother.gimmicks.bramble-bind.turns`                 | `1`     | count |                                                                                                                   | `raid-*`    |
@@ -1130,8 +1130,8 @@ The knobs are the numbers of `RULES` (`packages/game/src/rules/config.ts`) and t
 | `content.bosses.thornmother.finaleRounds`                                | `12`    | count | Rounds in the live finale (default 12; at most 30, which is 5 minutes at 10 s a round).                           | `raid-*`    |
 | `content.bosses.thornmother.hpExponent.num`                              | `113`   | count | Optional head-count exponent of this boss's HP, a fraction `num / den` (absent: `RULES.raid.scaling.hpExponent`). | `raid-*`    |
 | `content.bosses.thornmother.hpExponent.den`                              | `100`   | count | Optional head-count exponent of this boss's HP, a fraction `num / den` (absent: `RULES.raid.scaling.hpExponent`). | `raid-*`    |
-| `content.bosses.storm-sovereign.baseHp`                                  | `3974`  | count |                                                                                                                   | `raid-*`    |
-| `content.bosses.storm-sovereign.baseAtk`                                 | `30`    | count |                                                                                                                   | `raid-*`    |
+| `content.bosses.storm-sovereign.baseHp`                                  | `3665`  | count |                                                                                                                   | `raid-*`    |
+| `content.bosses.storm-sovereign.baseAtk`                                 | `33`    | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.storm-sovereign.baseSpd`                                 | `50`    | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.storm-sovereign.gimmicks.lightning-rod.power`            | `17000` | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.storm-sovereign.gimmicks.lightning-rod.jumps`            | `2`     | count |                                                                                                                   | `raid-*`    |
@@ -1149,8 +1149,8 @@ The knobs are the numbers of `RULES` (`packages/game/src/rules/config.ts`) and t
 | `content.bosses.storm-sovereign.finaleRounds`                            | `12`    | count | Rounds in the live finale (default 12; at most 30, which is 5 minutes at 10 s a round).                           | `raid-*`    |
 | `content.bosses.storm-sovereign.hpExponent.num`                          | `119`   | count | Optional head-count exponent of this boss's HP, a fraction `num / den` (absent: `RULES.raid.scaling.hpExponent`). | `raid-*`    |
 | `content.bosses.storm-sovereign.hpExponent.den`                          | `100`   | count | Optional head-count exponent of this boss's HP, a fraction `num / den` (absent: `RULES.raid.scaling.hpExponent`). | `raid-*`    |
-| `content.bosses.old-bogback.baseHp`                                      | `4400`  | count |                                                                                                                   | `raid-*`    |
-| `content.bosses.old-bogback.baseAtk`                                     | `30`    | count |                                                                                                                   | `raid-*`    |
+| `content.bosses.old-bogback.baseHp`                                      | `4490`  | count |                                                                                                                   | `raid-*`    |
+| `content.bosses.old-bogback.baseAtk`                                     | `33`    | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.old-bogback.baseSpd`                                     | `20`    | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.old-bogback.gimmicks.sinking-mud.trigger.every`          | `3`     | count |                                                                                                                   | `raid-*`    |
 | `content.bosses.old-bogback.gimmicks.sinking-mud.power`                  | `14000` | count |                                                                                                                   | `raid-*`    |
@@ -2050,7 +2050,7 @@ The knobs are the numbers of `RULES` (`packages/game/src/rules/config.ts`) and t
 | `content.gearLines.fleet.weights.scarf`                 | `20`                              | count |         | `gear-share-*` |
 | `content.gearLines.fleet.weights.charm`                 | `14`                              | count |         | `gear-share-*` |
 | `content.gearLines.fleet.worth`                         | `1500`                            | count |         | `gear-share-*` |
-| `content.gearLines.light-footed.values`                 | `[200, 300, 400, 500, 600]`       | count |         | `gear-share-*` |
+| `content.gearLines.light-footed.values`                 | `[400, 600, 800, 1000, 1200]`     | count |         | `gear-share-*` |
 | `content.gearLines.light-footed.minItemLevel`           | `1`                               | count |         | `gear-share-*` |
 | `content.gearLines.light-footed.weights.hat`            | `0`                               | count |         | `gear-share-*` |
 | `content.gearLines.light-footed.weights.scarf`          | `14`                              | count |         | `gear-share-*` |

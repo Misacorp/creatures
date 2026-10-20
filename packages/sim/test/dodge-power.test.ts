@@ -9,8 +9,9 @@ import { byPowerDesc, creaturePower, teamPower, type OwnedCreature } from '../sr
  */
 
 const dodge = RULES.combat.dodge as { enabled: boolean };
+const shipped = dodge.enabled;
 afterEach(() => {
-  dodge.enabled = false;
+  dodge.enabled = shipped;
 });
 
 const base = (line: string): OwnedCreature => ({
@@ -32,6 +33,7 @@ const wearing = (c: OwnedCreature, lineId?: string): OwnedCreature => ({
 
 describe('the simulator power score and dodge', () => {
   it('is unchanged by Fleet and Light-footed while dodge is off', () => {
+    dodge.enabled = false;
     const plain = wearing(base('pyrelynx'));
     expect(creaturePower(wearing(base('pyrelynx'), 'fleet'))).toBe(creaturePower(plain));
     expect(creaturePower(wearing(base('pyrelynx'), 'light-footed'))).toBe(creaturePower(plain));

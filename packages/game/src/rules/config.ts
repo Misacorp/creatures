@@ -293,13 +293,13 @@ export const RULES = {
      * fight changes. When on, the numbers are copied into `FightInput.rules.dodge` (`liveFightRules`) and a
      * stored fight replays with its own; a fight stored without them has no dodge.
      */
-    dodge: { enabled: false, perSpeedBp: 10, maxBp: 5_000, areaShareBp: 5_000 },
+    dodge: { enabled: true, perSpeedBp: 10, maxBp: 5_000, areaShareBp: 5_000 },
     /**
      * Status effects (combat-rules.md 13): `enabled` is the one switch for putting `FightInput.effects`
      * (the effect dice) on new fights; `dice` is how many effect dice every round draws. Off in this slice:
      * nothing in shipped content applies an effect yet, and a fight without `effects` draws no such die.
      */
-    effects: { enabled: false, dice: 32 },
+    effects: { enabled: true, dice: 32 },
     /** Row size that guests fill up to when fewer than 3 players take part. */
     guestRowSize: 9,
     /** Guests are added when fewer than this many players take part. */

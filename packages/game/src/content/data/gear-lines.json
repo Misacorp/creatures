@@ -1055,7 +1055,7 @@
     "group": "chance",
     "effect": { "kind": "sheet", "field": "dodgeBp" },
     "unit": "chance",
-    "values": [200, 300, 400, 500, 600],
+    "values": [400, 600, 800, 1000, 1200],
     "minRarity": "rare",
     "weights": { "hat": 0, "scarf": 14, "charm": 10 },
     "worth": 5000

@@ -546,7 +546,7 @@ Gear lines that wait for a defined moment (`gear-and-creatures-v2.md` 6.4). Each
 
 ## 13. Status effects (2026-10-19)
 
-The general system for debuffs now and buffs later (`speed-and-dodge.md` section 3). It is off in a fight unless the fight's input says so, nothing in shipped content applies an effect yet, and a stored fight replays as it was.
+The general system for debuffs now and buffs later (`speed-and-dodge.md` section 3). It is off in a fight unless the fight's input says so (`liveFightRules`-style: new fights carry `effects` since the balance pass of 2026-10-20, `RULES.combat.effects`), and a stored fight replays as it was. Shipped content applies effects (Mire's lines, Smother, Flare).
 
 **13.1 What an effect is.** A status effect is content (`status-effects.json`, `StatusEffectSchema`): `id`, `name`, `kind` (`debuff` or `buff`), `maxStacks` (1 or more), `turns` (1 or more, the base duration) and `perStack`, a strict object of optional signed numbers in basis points per stack: `spdBp` (Speed; negative is slower) and `damageDealtBp` (the damage the fighter deals; negative is less). Today there is one, **Mired** (debuff, at most 5 stacks, 3 turns, Speed -3% and damage dealt -3% a stack). On a fighter an effect is `{ id, stacks, turnsLeft }`; every creature and the boss (a foe too) carry a list of them, and each effect id is in the list at most once.
 
@@ -588,7 +588,7 @@ The general system for debuffs now and buffs later (`speed-and-dodge.md` section
 
 ## 14. Dodge (2026-10-19)
 
-Speed gives a chance to take nothing from a hit (`speed-and-dodge.md` section 2). It is off unless the fight's stored rules carry it (`FightRules.dodge`, copied from `RULES.combat.dodge` by `liveFightRules()` only while `RULES.combat.dodge.enabled`; today it is false, so no fight has it and a stored fight without it replays as it was). Zoomies, gear and talents that raise Speed now matter through it (the wording of the talents changes in a later slice).
+Speed gives a chance to take nothing from a hit (`speed-and-dodge.md` section 2). It is off unless the fight's stored rules carry it (`FightRules.dodge`, copied from `RULES.combat.dodge` by `liveFightRules()` only while `RULES.combat.dodge.enabled`; it is true since the balance pass of 2026-10-20, so a new fight stores it; a stored fight without it replays as it was). Zoomies, gear and talents that raise Speed now matter through it (the wording of the talents changes in a later slice).
 
 **14.1 The chance.** A fighter's dodge chance is `min(maxBp, floor(Speed x perSpeedBp) + flat dodge)` (`RULES.combat.dodge`: `perSpeedBp` 10, `maxBp` 5000, so 100 Speed is 10% and nobody goes past 50%). Speed is `effectiveSpd`: the stats' Speed with the fighter's status effects folded in, so Mired lowers it (13.5). A creature uses the Speed of its stats (gear and talents are already in them) and its sheet's flat `dodgeBp` (Light-footed, later gear). A boss or foe uses its content `baseSpd` (optional, 0 when absent; a raid boss's `baseSpd` is not scaled by Boss Rank) and has no flat dodge. Against an **area hit** the chance is `areaShareBp` (5000, half) of the chance above, rounded down, plus the sheet's `areaDodgeBp` in full, capped at `maxBp` again (Sidestep folds into `areaDodgeBp` when the gear is folded with dodge on, see 11; a stored fight's `sidestepBp` and its dice are unchanged).
 

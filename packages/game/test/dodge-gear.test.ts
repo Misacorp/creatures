@@ -53,7 +53,7 @@ afterEach(() => {
 describe('the new lines in the content', () => {
   it('has the numbers of the design', () => {
     expect(gearLine('fleet')?.values).toEqual([500, 800, 1100, 1400, 1700]);
-    expect(gearLine('light-footed')?.values).toEqual([200, 300, 400, 500, 600]);
+    expect(gearLine('light-footed')?.values).toEqual([400, 600, 800, 1000, 1200]);
     expect(gearLine('riposte')?.values).toEqual([2000, 2500, 3000, 3500, 4000]);
     expect(gearLine('momentum')?.values).toEqual([800, 1200, 1600, 2000, 2500]);
     expect(gearLine('slipstream')?.values).toEqual([600, 900, 1200, 1500, 1800]);
@@ -107,15 +107,15 @@ describe('Fleet', () => {
 describe('Light-footed', () => {
   it('adds flat dodge points to the sheet, two more on an Epic', () => {
     const rare = wornEffects(wearer, [charm('rare', [['light-footed', 4]])]);
-    expect(rare.mods.dodgeBp).toBe(600);
+    expect(rare.mods.dodgeBp).toBe(1_200);
     const epic = wornEffects(wearer, [charm('epic', [['light-footed', 4]])]);
-    expect(epic.mods.dodgeBp).toBe(600 + CHANCE_BONUS_BP);
-    expect(itemLines(charm('rare', [['light-footed', 2]])).at(-1)?.text).toBe('Light-footed 4%');
+    expect(epic.mods.dodgeBp).toBe(1_200 + CHANCE_BONUS_BP);
+    expect(itemLines(charm('rare', [['light-footed', 2]])).at(-1)?.text).toBe('Light-footed 8%');
   });
 
   it('caps at the whole when two items carry it', () => {
     const items = [charm('epic', [['light-footed', 4]]), scarf('epic', [['light-footed', 4]])];
-    expect(wornEffects(wearer, items).mods.dodgeBp).toBe(1_600);
+    expect(wornEffects(wearer, items).mods.dodgeBp).toBe(2_800);
   });
 });
 

@@ -1,6 +1,6 @@
 # Speed, dodge, status effects and Mire
 
-Status: **design, 2026-10-19, building.** From a brainstorm with Misa (2026-10-19). One shippable PR. Numbers marked _start_ are first guesses; the balance simulator tunes them before the PR is done. Misa's calls are marked **(Misa)**.
+Status: **design, 2026-10-19, building.** From a brainstorm with Misa (2026-10-19). One shippable PR. Numbers marked _start_ were first guesses; the balance pass (2026-10-20, `docs/balance/log.md` B-023) tuned them and replaced the marks with the final numbers. Misa's calls are marked **(Misa)**.
 
 ## Why
 
@@ -38,7 +38,7 @@ _Example (3 per row, board slots 1 to 9)._ Round 1: 1, 2, 3, 6, 5, 4, 7, 8, 9. R
 
 Every creature and every foe has a **dodge chance**. A dodged hit deals nothing.
 
-- dodge = Speed × `dodgePerSpeedBp` (_start 10 bp a point_: 100 Speed is 10%), plus flat dodge from lines, capped at `dodgeMaxBp` (**50%**, hard).
+- dodge = Speed × `dodgePerSpeedBp` (10 bp a point, kept by the balance pass: 100 Speed is 10%), plus flat dodge from lines, capped at `dodgeMaxBp` (**50%**, hard).
 - It is the fighter's own number, not relative to the attacker, so what the creature page shows is what the fight uses.
 - Targets **(Misa)**: about **10–15% without trying**, about **30% with moderate investment**, near 50% only with the right species, real investment and perhaps a golden talent. Today's level-30 Speeds give Guards about 5–8%, most creatures about 12%, Ancientshell 17%.
 
@@ -60,25 +60,25 @@ If dodge streaks make the finale drag, the lever is enrage escalation (the boss'
 
 ### 2.3 Foes dodge too
 
-- Every boss and dungeon foe gets `baseSpd`; foes sit low (_start 2–5% dodge_). A raid boss's Speed may grow with Boss Rank (a curve column).
+- Every boss and dungeon foe gets `baseSpd`; foes sit low (2–5% dodge, kept by the balance pass). A raid boss's Speed may grow with Boss Rank (a curve column).
 - A dodged creature hit: no damage, no crit, no Echo, no reaction, no credit.
 - **Marks (Misa):** a **Setter's** hit always leaves its mark, even when dodged (setup never misses). Any other dodged hit leaves no mark (Quick re-mark included). A Payoff's dodged hit leaves the existing mark standing.
 
 ### 2.4 Sources
 
-- **Fleet** (new gear line): Speed +% (a share). Stat line, tiered. _Start 5 / 8 / 11 / 14 / 17%._
-- **Light-footed** (new gear line): dodge, flat points. Special line, Rare and up. _Start 2 / 3 / 4 / 5 / 6._
+- **Fleet** (new gear line): Speed +% (a share). Stat line, tiered. 5 / 8 / 11 / 14 / 17%, kept by the balance pass.
+- **Light-footed** (new gear line): dodge, flat points. Special line, Rare and up. **4 / 6 / 8 / 10 / 12 points** (balance pass: it started at 2 to 6, half of every other chance line, which left a built creature near 20% instead of about 30%).
 - **Sidestep** folds into dodge: "+X points of dodge against area hits". Its old dice stay for replays only.
 - **Zoomies:** "Dodges more often" (it still raises Speed).
 - **Mud** room modifier (team Speed down) and room modifiers on `spd` already exist in the schema.
 
 ### 2.5 On-dodge lines (trigger lines, `combat-rules.md` 12)
 
-| Line       | Effect when it dodges                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------- |
-| Riposte    | Strikes back at once for a share of its Attack (_start 30%_); no mark, no crit, no reaction |
-| Momentum   | Its next turn hit deals this much more (replaces an earlier one)                            |
-| Slipstream | The creature beside it with the most Attack gets a boost on its next hit                    |
+| Line       | Effect when it dodges                                                                              |
+| ---------- | -------------------------------------------------------------------------------------------------- |
+| Riposte    | Strikes back at once for a share of its Attack (20% to 40% by tier); no mark, no crit, no reaction |
+| Momentum   | Its next turn hit deals this much more (replaces an earlier one)                                   |
+| Slipstream | The creature beside it with the most Attack gets a boost on its next hit                           |
 
 ## 3. Status effects
 
@@ -155,14 +155,14 @@ Matchups become a list of attacker → defender pairs with a multiplier. A pair 
 ### 5.1 Mark and the Mired debuff
 
 - **Mark:** **Muddied** (Mire's element mark, left like every mark).
-- **Mired** (status effect, debuff): per stack Speed −3% and damage dealt −3% (_start_), cap 5, 3 turns (_start_).
+- **Mired** (status effect, debuff): per stack Speed −3% and damage dealt −3%, cap 5, 3 turns (all kept by the balance pass).
 
 ### 5.2 Reactions
 
-| Reaction    | Mark set off     | By    | Extra                                                                                          |
-| ----------- | ---------------- | ----- | ---------------------------------------------------------------------------------------------- |
-| **Smother** | Scorched (Ember) | Mire  | Normal reaction bonus, and applies Mired (_start 100% power_)                                  |
-| **Flare**   | Muddied (Mire)   | Ember | Normal reaction bonus, then **burns off all Mired stacks** for +20% (_start_) damage per stack |
+| Reaction    | Mark set off     | By    | Extra                                                                                |
+| ----------- | ---------------- | ----- | ------------------------------------------------------------------------------------ |
+| **Smother** | Scorched (Ember) | Mire  | Normal reaction bonus, and applies Mired (100% power)                                |
+| **Flare**   | Muddied (Mire)   | Ember | Normal reaction bonus, then **burns off all Mired stacks** for +20% damage per stack |
 
 Flare gives a real choice: keep the stacks (boss slower and weaker) or burn them for one big hit.
 
@@ -170,8 +170,8 @@ Flare gives a real choice: keep the stacks (boss slower and weaker) or burn them
 
 Two lines, each a base form that evolves at level 15, like the existing lines. Names below are working names; the compendium pass may refine them.
 
-- **Guard line: Mudlump → Bogwarden.** The steadfast tank: very high HP, the lowest Speed. Signature: when it takes a hit (not dodged), it applies Mired to the attacker (_start 60% power_). A talent in its pool resists debuffs.
-- **Support line: Squelch → Croakmire.** The debuffer: its round-start action, besides its usual Support work, applies Mired to the boss (_start 60% power_); its talents and gear lean to debuff duration and power.
+- **Guard line: Mudlump → Bogwarden.** The steadfast tank: very high HP, the lowest Speed. Signature: when it takes a hit (not dodged), it applies Mired to the attacker (60% power in the first form, 80% in the second). A talent in its pool resists debuffs.
+- **Support line: Squelch → Croakmire.** The debuffer: its round-start action, besides its usual Support work, applies Mired to the boss (60% power in the first form, 80% in the second); its talents and gear lean to debuff duration and power.
 
 Setter and Payoff Mire lines come later **(Misa)**.
 
@@ -182,7 +182,7 @@ A huge, half-sunk ancient toad. Element Mire. Its moves put **Mired on creatures
 ### 5.5 Dungeon
 
 - Two or three Mire foes (for example a bog toad, a tar leech, a fen lurker room boss), with low Speed.
-- **Mud** room modifier: the team's Speed down (_start −30%_).
+- **Mud** room modifier: the team's Speed down (−30%).
 
 ### 5.6 Trip place: Sunken Fen
 
@@ -205,9 +205,11 @@ Every list, switch and palette that names the four elements gets Mire: the auto 
 
 ## 7. Balance
 
-- 50% dodge doubles real HP. Boss damage is re-tuned so the targets in `balance-targets.md` still hold with typical dodge in the teams; foe dodge and Mired move boss HP the other way.
-- The simulator runs before and after with seeded dice; results go in `docs/balance/log.md`.
-- Watch: Cinder Wyrm on Serpentine, Ember + Mire pairs, enrage length with dodge, Old Bogback's clear rates by element.
+Done in the balance pass of 2026-10-20 (`docs/balance/log.md` B-023); dodge and status effects are on by default (`RULES.combat.dodge.enabled`, `RULES.combat.effects.enabled`).
+
+- 50% dodge doubles real HP. Boss damage was re-tuned so the targets in `balance-targets.md` hold as well as they did before with typical dodge in the teams: every boss's Attack 30 to **33**, and HP Tidal Colossus 5915 to 5510, Cinder Wyrm 2490 to 2740, Thornmother 4737 to 4200, Storm Sovereign 3974 to 3665, Old Bogback 4400 to 4490. The typical finale win rate went 72.1% (both off) to 76.2%, and the boss spread 50 to 28 points (quick sim, one seed).
+- Measured: level-30 creatures dodge 4% to 17% without trying (median 12.6%), about 28% with Fleet and two Light-footed pieces at tier 3, up to 44% with the best tiers; the 50% cap needs a talent or Zoomies on top. Effect dice never ran out (at most 5 of 32 a round). Enrage is fixed at 3 rounds and 30.6% of typical finales reach it (34.0% before). Old Bogback 85.7%, Cinder Wyrm 89.3%.
+- Still open: Thornmother (67.9%) and Storm Sovereign (61.3%) are under the 85% band, and Mire is picked in under 1% of raid slots in the sim, so Ember + Mire pairs are not measured; both wait for a full run and for Mire Setter and Payoff lines.
 
 ## 8. Build order (one PR, one commit per slice)
 

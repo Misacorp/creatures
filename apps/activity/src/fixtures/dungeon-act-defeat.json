@@ -564,7 +564,9 @@
         "round": 2,
         "source": "attack",
         "target": "00000000-0000-4000-8300-000000000016",
-        "damage": 3300
+        "damage": 4950,
+        "crit": true,
+        "critBp": 5000
       },
       {
         "t": "knockout",

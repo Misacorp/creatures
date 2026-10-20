@@ -715,25 +715,38 @@ describe('checks and wiring', () => {
     expect(() => play([withMods('s0', { areaDodgeBp: -1 })], [])).toThrow(/areaDodgeBp/);
   });
 
+  /** Runs `body` with the two switches set, and puts the shipped values back. */
+  const withSwitches = (on: boolean, body: () => void): void => {
+    const dodge = RULES.combat.dodge as { enabled: boolean };
+    const effects = RULES.combat.effects as { enabled: boolean };
+    const was = { dodge: dodge.enabled, effects: effects.enabled };
+    try {
+      dodge.enabled = on;
+      effects.enabled = on;
+      body();
+    } finally {
+      dodge.enabled = was.dodge;
+      effects.enabled = was.effects;
+    }
+  };
+
+  it('is on in the shipped rules (the balance pass switched it on)', () => {
+    expect(RULES.combat.dodge.enabled).toBe(true);
+    expect(RULES.combat.effects.enabled).toBe(true);
+  });
+
   it('is off in the live rules and the live effect dice while the switches are off', () => {
-    expect(RULES.combat.dodge.enabled).toBe(false);
-    expect(RULES.combat.effects.enabled).toBe(false);
-    expect(liveFightRules().dodge).toBeUndefined();
-    expect(liveEffects()).toEqual({});
+    withSwitches(false, () => {
+      expect(liveFightRules().dodge).toBeUndefined();
+      expect(liveEffects()).toEqual({});
+    });
   });
 
   it('copies the dodge numbers into the live rules and the effect dice into the input when switched on', () => {
-    const dodge = RULES.combat.dodge as { enabled: boolean };
-    const effects = RULES.combat.effects as { enabled: boolean };
-    try {
-      dodge.enabled = true;
-      effects.enabled = true;
+    withSwitches(true, () => {
       expect(liveFightRules().dodge).toEqual({ perSpeedBp: 10, maxBp: 5_000, areaShareBp: 5_000 });
       expect(liveEffects()).toEqual({ effects: { dice: 32 } });
-    } finally {
-      dodge.enabled = false;
-      effects.enabled = false;
-    }
+    });
   });
 
   it('gives a dungeon room its foe`s baseSpd', () => {

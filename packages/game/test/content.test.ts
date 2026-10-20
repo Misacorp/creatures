@@ -1371,14 +1371,15 @@ describe('foe Speed and the dodge rules', () => {
     expect(() => loadContent(mutate((p) => (boss(p)['baseSpd'] = 1.5)))).toThrow(/schema/);
   });
 
-  it('is off, with the first guesses of the design stored', () => {
+  it('is on, with the balance pass numbers stored', () => {
+    // Switched on by the balance pass (docs/balance/log.md B-023).
     expect(RULES.combat.dodge).toEqual({
-      enabled: false,
+      enabled: true,
       perSpeedBp: 10,
       maxBp: 5_000,
       areaShareBp: 5_000,
     });
-    expect(RULES.combat.effects).toEqual({ enabled: false, dice: 32 });
+    expect(RULES.combat.effects).toEqual({ enabled: true, dice: 32 });
   });
 });
 

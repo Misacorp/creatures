@@ -1047,3 +1047,49 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   - Run `pnpm sim` (full) on a second seed once, to tell the min-maxer's gear share and `raid-boss-spread` from noise before anyone tunes against them.
   - Halcyray's stats are an extrapolation the 2026-10-18 decision flagged for review; the sim now plays it, so its raid contribution is visible in the creatures section of the report.
   - Keep for min-maxers is the remaining gap; Tinker's luck and Second look are also not played.
+
+### B-023: Dodge and status effects switched on, bosses retuned (closed)
+
+- **Opened:** 2026-10-20, slice 8 of `docs/design/speed-and-dodge.md` (the balance pass before "everything on by default").
+- **Finding:** with dodge and effects on and nothing else changed (`on`), creatures take less damage and bosses lose their bite in some places and not others: the typical finale win rate fell 72.1% to 68.0% (more dodge on the foe side than the team side: bosses have 20 to 50 Speed, creatures about 5 to 17%), and the bosses spread wider (Cinder Wyrm and Old Bogback easy, Thornmother and Tidal Colossus hard). Light-footed (2 to 6 points) left a creature built for it near 20% dodge, not the design's 30%.
+- **Hypothesis:** a few scalars (boss Attack, one HP number per boss, Light-footed values) bring the typical finale win rate and the boss spread back to where they were, or better, without changing a rule.
+- **Method.** `pnpm sim:quick` (seed `leet`, 96 targets) at three states: `base` (62e2771, both switches off), `on` (switches on, nothing else) and `final` (this change). Between them, five single-seed experiments on the raid sweep only (phase 1, finale typical and 15 players, per boss): boss `baseAtk` 30 to 33 on its own (typical 73.0%), a rank 1 curve Attack bump (73.9%, dropped) and several `baseHp` sets. Quick settings have 20 runs a cell, so one standard error of a typical win rate is about 3 points and of a single boss about 8: differences under that are noise (B-007, B-021, B-022).
+- **Action (every scalar changed, old to new).**
+  - `RULES.combat.dodge.enabled` false to **true** and `RULES.combat.effects.enabled` false to **true** (`packages/game/src/rules/config.ts`). `perSpeedBp` 10, `maxBp` 5000, `areaShareBp` 5000, effect `dice` 32 are unchanged.
+  - Boss `baseAtk` (all five bosses, `bosses.json`) 30 to **33**: dodge takes about a tenth of the hits away, so the Attack moves up to keep the team under the same pressure.
+  - Boss `baseHp`: Tidal Colossus 5915 to **5510**, Cinder Wyrm 2490 to **2740**, Thornmother 4737 to **4200**, Storm Sovereign 3974 to **3665**, Old Bogback 4400 to **4490**. Why: each boss's win rate was moved to the typical-group middle; Cinder Wyrm (Serpentine, fast, took nothing from dodge in the Wyrm's favour) was a 100% win and gets more HP, Thornmother (50%) and Tidal Colossus (69%) less.
+  - Light-footed (`gear-lines.json`) `values` [200, 300, 400, 500, 600] to **[400, 600, 800, 1000, 1200]** (points of flat dodge, in basis points): see the dodge table.
+  - Not changed: Fleet 5 to 17%, `perSpeedBp`, `maxBp`, enrage (3 rounds at 400%), foe `baseSpd` (2 to 5% dodge: Tidal 30, Cinder 40, Thornmother 25, Storm 50, Bogback 20), Mired (3% a stack, 5 stacks, 3 turns), Riposte, Momentum, Slipstream.
+- **Outcome (sim): quick sim, seed `leet`.**
+
+  |                                            | base (switches off)      | on, no retune | final  |
+  | ------------------------------------------ | ------------------------ | ------------- | ------ |
+  | targets failed (of 96; 1 not measured)     | 29                       | 27            | **27** |
+  | typical finale win (85 to 97%)             | 72.1%                    | 68.0%         | 76.2%  |
+  | 15-player finale win (85 to 99%)           | 75.0%                    | 78.0%         | 81.0%  |
+  | phase 1 clear, typical (>= 80%)            | 68.0%                    | 66.0%         | 75.5%  |
+  | boss spread (<= 15 points)                 | 50.0%                    | 39.7%         | 28.0%  |
+  | `raid-boss-extremes` (a boss at 0 or 100%) | fails (Cinder Wyrm 100%) | passes        | passes |
+  | Tidal Colossus, typical finale             | 68.8%                    | 53.1%         | 78.1%  |
+  | Cinder Wyrm, typical finale                | 100.0%                   | 92.9%         | 89.3%  |
+  | Thornmother, typical finale                | 50.0%                    | 53.6%         | 67.9%  |
+  | Storm Sovereign, typical finale            | 58.1%                    | 61.3%         | 61.3%  |
+  | Old Bogback, typical finale                | 85.7%                    | 82.1%         | 85.7%  |
+  | finales reaching enrage                    | 34.0%                    | 36.7%         | 30.6%  |
+  | win inside enrage (3 fixed rounds)         | 18.0%                    | 13.0%         | 22.2%  |
+  | creatures knocked out in the finale        | 25.8%                    | 26.2%         | 23.8%  |
+
+  The per-boss figures are 28 to 32 runs each (one standard error 8 to 9 points).
+
+- **Outcome (sim): the targets that moved.** Newly passing against base: `raid-boss-extremes`, `curve-r2to5-default` (62.2% to in band), `curve-default-phase1` (63.2% to in band), `gear-share-*` (min-maxer week 20, engaged week 2 and 20, regular week 20, drop-in week 8). Newly failing: `curve-r6up-default` (80.0%, needs 45 to 65%), `gear-newcomer-catchup` (57.5%, needs 60%), `exp-slot-5` (406 against 330 to 400), and gear-share cells (regular week 8 9.2% against 10%, drop-in week 20 and 30). Still failing, as at base: raid typical and 15-player finale (below band: the team wins less than the targets want, as before), phase 1, boss spread, `choice-element-min` and `choice-dead-elements` (Mire is picked in 0.8% of raid slots: the sim's players take their three strongest creatures and no Mire creature is strong yet, so this is the pre-existing Mire gap, and the Ember plus Mire pairs cannot be judged from the sim until someone brings them), `econ-*`, `longrun-win-*` (94%, above the band, as before: 91.7%), `exp-slot-3` and `-4` (Experience slots, nothing to do with this change), `curve-week1-casual` (83.3%, the same number as base, 85% needed), `curve-r2to5-committed` (91.7%, base 85.4%), and the gear-share cells, which shuffle with the seeded gear rolls (the min-maxer, engaged and regular week 8 and 30 cells fail at base and now as well: noise, not systematic).
+- **`curve-r6up-default` 80.0%.** The cell is the rank 6 and up part of the default server's curve: a handful of finales (about 15 weeks), so a swing of 20 points is a few weeks. B-021 logged the same cell going 67.7% to 59.1% with no relevant change. It sits inside the noise of that cell and the cause is more likely dice than the retune (ranks 6 and up scale boss Attack and HP by the curve, which the retune does not touch). Left as is; the next full run should show it.
+- **Dodge distribution (level-30 creatures, `perSpeedBp` 10).** The 24 level-30 forms sit at 43 to 172 Speed, so at 4.3% to 17.2% dodge without trying: median 12.6%, middle half 8% to 13.2% (guards 4 to 5%, Ancientshell 17.2%). With Fleet tier 3 (11% Speed) and two Light-footed pieces at tier 3 (8 points each, scarf and charm) a typical creature is at about 28% (range 20% to 33%), the design's "about 30% with moderate investment". Heavy investment (Fleet tier 5, two Light-footed tier 5 at 12 points each) gives 31% to 44%; the 50% cap needs the best species plus a Speed talent or Zoomies on top, as designed. Before the Light-footed change a moderately built creature reached 20%.
+- **Effect dice.** The pool of 32 per round was never used up in the experiments' raids (68 000 to 78 000 calls over the sweeps, up to 15 players: at most 5 of the 32 dice used in any round, no exhausted round). A sweep that hits every creature of a 45-creature raid applies once per creature, but those are whole stacks and take no die; only a fractional power (Mud Wall at 60%, Bog Hold 80%) takes one. 32 stays.
+- **Enrage.** 30.6% of typical finales reach the enrage rounds (34.0% at base); the enrage is a fixed 3 rounds, so finales are not longer, and dodge streaks do not drag them. The win rate inside enrage rose from 18.0% to 22.2%. No escalation needed (the lever in `speed-and-dodge.md` 2.2 stays unused).
+- **Old Bogback and Cinder Wyrm.** Old Bogback 85.7% typical (target band 85 to 97%), unchanged; Cinder Wyrm (Serpentine) 89.3%, in band, down from a 100% win at base. Thornmother (67.9%) and Storm Sovereign (61.3%) are still under the band but within one to two standard errors of the sim's usual per-boss spread (Storm Sovereign did not move with any `baseHp` tried).
+- **Expected.** Live: players notice that creatures with high Speed and Light-footed gear dodge hits (about one hit in four to five at 25 to 30%), the finale win rates for typical groups sit in the high 70s, and Cinder Wyrm is no longer a certain win.
+- **Outcome:** quick sim only (one seed, quick settings). The full `pnpm sim` did not finish for this change (it takes much longer than the quick run), so the quick numbers are the reference; the next full run should tell Storm Sovereign, Thornmother and `curve-r6up-default` from noise.
+- **Pins.** The sim's headline pins (`packages/sim/test/run.test.ts`) are re-pinned (dated 2026-10-20 in the test); the stored-fight replay hash fixture did not move; the worker fixtures captured unchanged except the dungeon act fixtures (new numbers).
+- **Follow-ups.**
+  - Run `pnpm sim` (full) on a second seed to check Thornmother, Storm Sovereign and `curve-r6up-default`.
+  - Mire needs Setter and Payoff lines (design: later) before the sim picks it and before Ember plus Mire pairs can be measured.

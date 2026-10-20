@@ -73,16 +73,21 @@ describe('simulation run', () => {
     // to 1 and the finale win rate 0.5 to 1 (two flipped weeks in 4), finale start share 0.4322 to 0.2549, top
     // share 0.2529 to 0.2934, creature ratio 1.1972 to 1.0065, a dungeon run 4.7232 to 4.6518 fights (home rate
     // 0.1429 to 0.125). The long run, the top level and the Experience rate did not move.
+    // 2026-10-20 (dodge and status effects switched on, balance pass, B-023): dodge and effects are on, the
+    // five bosses have new HP and Attack (30 to 33), and Light-footed's values doubled. A tiny run only has
+    // 4 raid weeks, so the moves are dice shifts, not a measure: the raid win rates stay at 1, finale start
+    // share 0.2549 to 0.2414, top share 0.2934 to 0.3162, creature ratio 1.0065 to 1.5963, a dungeon run
+    // 4.6518 to 4.9464 fights (home rate, top level, Experience rate and the long run did not move).
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
       'raid.typical.phase1ClearRate': 1,
       'raid.typical.finaleWinRate': 1,
-      'raid.typical.finaleStartShare': 0.2549,
-      'fair.topShareMedian': 0.2934,
-      'choice.creatureRatioMax': 1.0065,
+      'raid.typical.finaleStartShare': 0.2414,
+      'fair.topShareMedian': 0.3162,
+      'choice.creatureRatioMax': 1.5963,
       'econ.casualTopLevelWeek4': 10,
       'exp.rate.long': 75.4138,
-      'dungeon.meanFights': 4.6518,
+      'dungeon.meanFights': 4.9464,
       'dungeon.dailyHomeRate': 0.125,
       'longrun.typical.finaleWinRate': 0.8333,
       'longrun.typicalFinalRank': 4,

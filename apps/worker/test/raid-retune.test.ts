@@ -72,7 +72,14 @@ describe('the fight inputs the server builds', () => {
           guardHpBp: RULES.combat.guard.hpBp,
           guardArmorBp: RULES.combat.guard.armorBp,
           supportFx: RULES.combat.supportFx,
+          // Dodge is switched on (the balance pass): a new fight stores its numbers.
+          dodge: {
+            perSpeedBp: RULES.combat.dodge.perSpeedBp,
+            maxBp: RULES.combat.dodge.maxBp,
+            areaShareBp: RULES.combat.dodge.areaShareBp,
+          },
         });
+        expect(run?.input.effects).toEqual({ dice: RULES.combat.effects.dice });
         expect(run?.input.enrage).toBeUndefined();
         expect(run?.input.luck).toEqual(RULES.combat.luck);
       }
