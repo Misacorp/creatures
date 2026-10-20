@@ -17,6 +17,7 @@ import journalJson from './data/journal.json';
 import specialsJson from './data/weekly-specials.json';
 import suppliesJson from './data/supplies.json';
 import talentsJson from './data/talents.json';
+import conversionsJson from './data/conversions.json';
 import {
   loadExpeditions,
   type DestinationDef,
@@ -25,6 +26,7 @@ import {
   type PushOnGoalDef,
   type SupplyDef,
 } from './expedition-schema';
+import { loadConversions, type ConversionDef } from './conversion-schema';
 import { gearContent } from './gear';
 import type { CreatureSpecies, Evolution } from './schema';
 import { loadLore, pickQuirkFrom } from './lore';
@@ -41,6 +43,7 @@ export * from './gear';
 export * from './dungeon-schema';
 export * from './dungeon';
 export * from './expedition-schema';
+export * from './conversion-schema';
 export * from './talent-schema';
 export * from './weather-schema';
 export * from './weather';
@@ -100,6 +103,12 @@ export const expeditionContent: ExpeditionPack = loadExpeditions(
     specials: specialsJson,
   },
   content,
+);
+
+/** The Workshop's conversion recipes (refine, recycle), validated against the supplies at module load. */
+export const conversionContent: readonly ConversionDef[] = loadConversions(
+  conversionsJson,
+  expeditionContent.supplies,
 );
 
 const DESTINATIONS = new Map<string, DestinationDef>(

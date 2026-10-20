@@ -43,7 +43,7 @@ export type PartKind = (typeof PART_KINDS)[number];
 export type PartsBundle = Partial<Record<PartKind, number>>;
 
 /** The jobs a player can start. Improve and enchant are gone; jobs started before v2 still finish. */
-export const JOB_KINDS = ['craft', 'supply', 'dismantle'] as const;
+export const JOB_KINDS = ['craft', 'supply', 'dismantle', 'convert'] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
 /** Job kinds a stored job may have: the current ones and the two removed in v2. */
 export type StoredJobKind = JobKind | 'improve' | 'enchant';

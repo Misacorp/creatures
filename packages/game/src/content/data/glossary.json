@@ -1937,6 +1937,17 @@
     "section": "workshop"
   },
   {
+    "id": "job-convert",
+    "title": "Refine and recycle",
+    "short": "Turns supplies into better supplies, or back into parts.",
+    "lines": [
+      "Refine: 3 supplies of one kind and tier become 1 of the next tier. It needs the Crafting level of what it makes.",
+      "Recycle: 1 good or great supply gives back a few parts, less than half of what it cost. Never any Bait.",
+      "The supplies are taken when the job starts. The result is yours when you claim it."
+    ],
+    "section": "workshop"
+  },
+  {
     "id": "boon",
     "title": "Boon",
     "short": "A good turn of the weather, for the whole valley.",
