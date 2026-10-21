@@ -138,7 +138,7 @@ const BASE: TripResultView = {
   journal: [],
 };
 
-const SCENES: Record<string, TripResultView> = {
+export const SCENES: Record<string, TripResultView> = {
   'one new creature': {
     ...BASE,
     finds: [MISTNEWT],

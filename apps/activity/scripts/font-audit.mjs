@@ -153,6 +153,24 @@ const PRESETS = [
     props: {},
     panels: 1,
   },
+  {
+    name: 'Expedition world map, phone with trips',
+    entry: 'ExpeditionWorld',
+    props: { layout: 'phone' },
+    panels: 2,
+  },
+  {
+    name: 'Expedition world map, phone place sheet',
+    entry: 'ExpeditionWorld',
+    props: { layout: 'phone', place: 'ember-caves' },
+    panels: 3,
+  },
+  {
+    name: 'Expedition world map, desktop place selected',
+    entry: 'ExpeditionWorld',
+    props: { layout: 'desktop', place: 'old-crossroads' },
+    panels: 4,
+  },
 ];
 
 /** Runs in the page: the offenders among the text of every `.pix-panel` and `.prose` part. */

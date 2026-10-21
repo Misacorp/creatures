@@ -14,11 +14,11 @@ const FIXTURE = parseGameState(stateOffer);
 const FIRST = FIXTURE.expeditions[0];
 if (FIRST === undefined) throw new Error('the fixture has no trip');
 const BASE_TRIP: Trip = FIRST;
-const CREATURES: readonly Creature[] = FIXTURE.creatures;
+export const CREATURES: readonly Creature[] = FIXTURE.creatures;
 
 const HOUR = 3_600_000;
 /** A fixed "now" so every state reads the same on every visit. */
-const NOW = 1_800_000_000_000;
+export const NOW = 1_800_000_000_000;
 const NOTHING = () => undefined;
 
 /** The states the strip and the shelf show, in order: a mix, so every kind of chip and button is seen. */
@@ -28,7 +28,7 @@ const LENGTHS = ['short', 'medium', 'long', 'day'] as const;
 const LENGTH_HOURS = { short: 2, medium: 6, long: 12, day: 24 } as const;
 
 /** A trip in one of the four states, at a place, for the n-th explorer. */
-function tripIn(state: string, n: number, place?: string): Trip {
+export function tripIn(state: string, n: number, place?: string): Trip {
   const creature = CREATURES[n % CREATURES.length];
   const duration = LENGTHS[n % LENGTHS.length] ?? 'medium';
   const hours = LENGTH_HOURS[duration];
