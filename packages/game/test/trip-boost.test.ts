@@ -1,0 +1,154 @@
+import { describe, expect, it } from 'vitest';
+import {
+  BOOST_BRACKETS,
+  BOOST_CATEGORIES,
+  BOOST_FLOOR_BP,
+  boostLevel,
+  boostWords,
+  destinationDef,
+  expectedTrip,
+  expeditionContent,
+  kitOf,
+  RULES,
+  tripBoost,
+  type DestinationDef,
+  type ExpeditionLength,
+  type TripBoostInput,
+} from '../src';
+
+function emberCaves(): DestinationDef {
+  const found = destinationDef('ember-caves');
+  if (found === undefined) throw new Error('no ember-caves');
+  return found;
+}
+const place = emberCaves();
+
+function boostOf(
+  length: ExpeditionLength,
+  kitIds: string[],
+  extra: Partial<Omit<TripBoostInput, 'place' | 'kit' | 'length'>> = {},
+) {
+  return tripBoost({
+    length,
+    kit: kitOf(kitIds),
+    place,
+    role: 'payoff',
+    stars: 0,
+    twist: null,
+    ...extra,
+  });
+}
+
+describe('the boost brackets', () => {
+  it('puts a relative boost in its bracket, at the edges', () => {
+    expect(boostLevel(0)).toBe(0);
+    expect(boostLevel(BOOST_FLOOR_BP / 10_000 - 0.0001)).toBe(0);
+    expect(boostLevel(BOOST_FLOOR_BP / 10_000)).toBe(1);
+    expect(boostLevel(0.2499)).toBe(1);
+    expect(boostLevel(0.25)).toBe(2);
+    expect(boostLevel(0.5999)).toBe(2);
+    expect(boostLevel(0.6)).toBe(3);
+    expect(boostLevel(0.9999)).toBe(3);
+    expect(boostLevel(1)).toBe(4);
+    expect(boostLevel(14)).toBe(4);
+    expect(boostLevel(Infinity)).toBe(4);
+  });
+
+  it('says each bracket in words without a digit', () => {
+    expect(BOOST_BRACKETS.map((b) => b.words)).toEqual([
+      'slightly more',
+      'more',
+      'a lot more',
+      'at least double',
+    ]);
+    expect(boostWords(0)).toBe('');
+    for (const b of BOOST_BRACKETS) expect(b.words).not.toMatch(/[\d%]/);
+  });
+});
+
+describe('the boost of a kit on a trip', () => {
+  it('is exactly the ratio of the expected hauls with and without the kit', () => {
+    const input = {
+      length: 'long',
+      place,
+      role: 'payoff',
+      stars: 0,
+      twist: null,
+      milestonePartsBp: 0,
+      milestoneRarityBp: 0,
+      gearPartsBp: 0,
+      weatherPartsBp: 0,
+      ownedShare: 0.5,
+      newSpeciesWorth: 0,
+    } as const;
+    const plain = expectedTrip({ ...input, kit: [] });
+    const lured = expectedTrip({ ...input, kit: kitOf(['lure-good']) });
+    const boost = boostOf('long', ['lure-good']);
+    expect(boost.creatures).toBeCloseTo(lured.creatures / plain.creatures - 1, 12);
+    expect(boost.newSpecies).toBeCloseTo(lured.newSpecies / plain.newSpecies - 1, 12);
+    const w = RULES.expeditions.worth;
+    const partsOf = (e: typeof plain) =>
+      e.scrap * w.scrap + e.shards * w.shard + e.glimmer * w.glimmer;
+    const satchel = expectedTrip({ ...input, kit: kitOf(['satchel-good']) });
+    expect(boostOf('long', ['satchel-good']).parts).toBeCloseTo(
+      partsOf(satchel) / partsOf(plain) - 1,
+      12,
+    );
+  });
+
+  it('is nothing for an empty kit', () => {
+    for (const c of BOOST_CATEGORIES) expect(boostOf('long', [])[c]).toBe(0);
+  });
+
+  it('puts a Small Satchel at least double on parts on 2 h and "more" on 12 h', () => {
+    expect(boostLevel(boostOf('short', ['satchel-basic']).parts)).toBe(4);
+    expect(boostLevel(boostOf('long', ['satchel-basic']).parts)).toBe(2);
+  });
+
+  it('has a map raise every category', () => {
+    for (const length of ['short', 'long'] as const) {
+      const boost = boostOf(length, ['map-scrap-good']);
+      for (const c of ['creatures', 'newSpecies', 'parts', 'gear', 'xp'] as const) {
+        expect(boost[c], `${length} ${c}`).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('raises the deeper creatures with a lantern and the new species and creatures with a lure', () => {
+    const lantern = boostOf('long', ['lantern-good']);
+    expect(lantern.deepCreatures).toBeGreaterThan(0);
+    expect(lantern.parts).toBe(0);
+    const lure = boostOf('long', ['lure-good']);
+    expect(lure.newSpecies).toBeGreaterThan(lure.creatures);
+    expect(lure.deepCreatures).toBe(0);
+  });
+
+  it('gives a better tier at least as much on every category and every length', () => {
+    for (const kind of ['lure', 'map-scrap', 'lantern', 'satchel'] as const) {
+      const tiers = expeditionContent.supplies.filter((s) => s.kind === kind).map((s) => s.id);
+      for (const length of ['short', 'medium', 'long', 'day'] as const) {
+        let last = boostOf(length, []);
+        for (const id of tiers) {
+          const next = boostOf(length, [id]);
+          for (const c of BOOST_CATEGORIES)
+            expect(next[c], `${id} ${length} ${c}`).toBeGreaterThanOrEqual(last[c]);
+          last = next;
+        }
+      }
+    }
+  });
+
+  it('shrinks with the length: the same supply is worth less on a longer trip', () => {
+    expect(boostOf('short', ['lure-basic']).creatures).toBeGreaterThan(
+      boostOf('long', ['lure-basic']).creatures,
+    );
+  });
+
+  it('follows the explorer and the twist (a Guard already finds more parts, so a satchel adds relatively less)', () => {
+    const payoff = boostOf('long', ['satchel-basic']).parts;
+    const guard = boostOf('long', ['satchel-basic'], { role: 'guard' }).parts;
+    expect(guard).toBeLessThan(payoff);
+    const rolls = boostOf('long', ['lure-basic'], { twist: { kind: 'rolls', extra: 5 } }).creatures;
+    expect(rolls).toBeLessThan(boostOf('long', ['lure-basic']).creatures);
+  });
+});

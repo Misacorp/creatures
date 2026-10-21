@@ -8,6 +8,8 @@ import { TripSummary } from './TripSummary';
 import type { Forecast } from './weather-types';
 import type { Creature } from './api';
 import { Catalogue } from './Catalogue';
+import type { TripContext } from './boost-view';
+import { getSpecies } from './game';
 import { destinationCards } from './destination-view';
 import type { SendRequest } from './expedition-api';
 import type { DestinationsView, ExpeditionLength, Slots, SupplyPick } from './expedition-types';
@@ -100,6 +102,14 @@ export function SendTrip({
     picks,
     stock,
   });
+  // What the supply cards and the haul strip work the boost brackets out for (recomputed on every change).
+  const trip: TripContext = {
+    length: duration,
+    place: place?.id ?? null,
+    role: explorer === undefined ? null : (getSpecies(explorer.creature.species)?.role ?? null),
+    stars: explorer?.stars ?? 0,
+    twist: place !== undefined && view.special.destination === place.id ? view.special.twist : null,
+  };
   const choice = kitChoice(picks);
   const names = picks.map((p) => supplyName(p.id));
   // The time the summary says the trip would be back, if sent right now.
@@ -148,7 +158,7 @@ export function SendTrip({
           </button>
         )}
       </div>
-      <SupplyPicker picks={picks} stock={stock} onChange={setPicks} />
+      <SupplyPicker picks={picks} stock={stock} onChange={setPicks} trip={trip} />
 
       <div class="send-summary">
         {explorer !== undefined && (
@@ -188,6 +198,7 @@ export function SendTrip({
           length={duration}
           element={shardElement}
           kit={picks.map((p) => p.id)}
+          trip={trip}
           summary={
             <TripSummary
               duration={lengthLabel(duration)}

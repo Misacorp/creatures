@@ -255,3 +255,24 @@ label.length-option:focus-within {
   width: 100%;
   white-space: normal;
 }
+
+/* What a supply adds to the trip being sent, in words (brackets, never a count). */
+.supply-boosts {
+  display: grid;
+  gap: 0.125rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-small);
+}
+
+.supply-boost {
+  color: var(--gold);
+}
+
+/* The "+" marks of the haul strip: one to four, under the word. */
+.worth-plus {
+  display: block;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}

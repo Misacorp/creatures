@@ -1,6 +1,7 @@
 import { RULES } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { SupplyPick } from './expedition-types';
+import { supplyBoostLines, type TripContext } from './boost-view';
 import { SupplyCard } from './SupplyCard';
 import { pickFor, setSupply, supplyKindOf, supplyOptions } from './trip-view';
 import { SupplyGrid, type SupplyCell } from './ui/SupplyGrid';
@@ -10,6 +11,8 @@ interface Props {
   stock: Readonly<Record<string, number>>;
   /** Replaces the picks (the caller holds them). */
   onChange: (picks: SupplyPick[]) => void;
+  /** The trip being sent: the card of a packed supply says how much more it brings on it. */
+  trip?: TripContext;
 }
 
 /**
@@ -21,7 +24,7 @@ interface Props {
  * tick is the whole packed state). Supplies cannot be bought: with none in stock this points to the
  * Workshop (the "Craft" shortcut sits in the step's title row, in `SendTrip`).
  */
-export function SupplyPicker({ picks, stock, onChange }: Props) {
+export function SupplyPicker({ picks, stock, onChange, trip }: Props) {
   const [focus, setFocus] = useState<string | null>(null);
   const options = supplyOptions(stock);
   const kinds = [...new Set(options.map((o) => o.kind))];
@@ -63,7 +66,13 @@ export function SupplyPicker({ picks, stock, onChange }: Props) {
         }}
       />
       {none && <p class="empty muted">You have no supplies. Craft them in the Workshop.</p>}
-      {view !== undefined && <SupplyCard view={view} packed />}
+      {view !== undefined && (
+        <SupplyCard
+          view={view}
+          packed
+          lines={trip === undefined ? [] : supplyBoostLines(trip, view.id)}
+        />
+      )}
     </div>
   );
 }

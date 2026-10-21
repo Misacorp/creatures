@@ -1876,9 +1876,9 @@
   {
     "id": "supply-lure",
     "title": "Lure",
-    "short": "More creatures, and new ones.",
+    "short": "More creatures, and likelier new species.",
     "lines": [
-      "Raises the chance of a creature every hour, may bring one more for sure, and favours new species.",
+      "More creatures on a trip, and likelier new species. Higher tiers do more.",
       "Made in the Workshop from Bait and a little scrap.",
       "Comes in three tiers: Plain, Sweet and Golden."
     ],
@@ -1887,9 +1887,9 @@
   {
     "id": "supply-map-scrap",
     "title": "Map scrap",
-    "short": "A longer trip, more finds.",
+    "short": "A better route: more of everything.",
     "lines": [
-      "Adds hours of finds to a trip: some for sure, and more on longer trips.",
+      "A better route: more of everything a trip finds, in the same hours. Higher tiers do more.",
       "Comes in three tiers: Map Scrap, Inked Map and Trail Atlas."
     ],
     "section": "expeditions"
@@ -1899,7 +1899,7 @@
     "title": "Lantern",
     "short": "Lights the way to the deeper area.",
     "lines": [
-      "Opens the deeper area without stars and makes its creatures likelier to come from there.",
+      "Opens the deeper area without stars and makes creatures from there likelier. Higher tiers do more.",
       "A finished trip may bring one more creature, always from the deeper area. Better lanterns make it likelier."
     ],
     "section": "expeditions"
@@ -1907,9 +1907,9 @@
   {
     "id": "supply-satchel",
     "title": "Satchel",
-    "short": "More parts, and more finds.",
+    "short": "More parts, and sometimes glimmer.",
     "lines": [
-      "Parts are every crafting ingredient: scrap, shards and glimmer. A satchel brings some home for sure and more per hour.",
+      "Parts are every crafting ingredient: scrap, shards and glimmer. A satchel brings more home. Higher tiers do more.",
       "Comes in three tiers, from the Small Satchel to the Explorer's Pack."
     ],
     "section": "expeditions"

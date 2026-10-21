@@ -8,6 +8,7 @@
  */
 import {
   EXPEDITION_LENGTHS,
+  boostWords,
   expeditionContent,
   RULES,
   catchChanceBp,
@@ -18,6 +19,8 @@ import {
   mapTicksBp,
   satchelBonus,
   shardOf,
+  type BoostCategory,
+  type BoostLevel,
   type Element,
   type ExpeditionLength,
   type SupplyDef,
@@ -39,7 +42,7 @@ export const CHANCE_WORDS: readonly string[] = [
   'very often',
 ];
 
-interface HaulRow {
+interface BaseRow {
   key: string;
   icon: IconRef;
   /** The short word under the icon: "Catches", "Scrap". */
@@ -50,6 +53,42 @@ interface HaulRow {
   level: number;
   /** A chosen supply raises it. */
   boosted: boolean;
+}
+
+interface HaulRow extends BaseRow {
+  /**
+   * How much the kit raises it on this trip, as a bracket (1 to 4, `BOOST_BRACKETS`; 0 when the row is
+   * not raised or the trip's bracket is not known). The "+" marks show it.
+   */
+  bracket: BoostLevel;
+}
+
+/** The brackets of a kit on this trip per category (`kitLevels`). */
+export type HaulLevels = Readonly<Record<BoostCategory, BoostLevel>>;
+
+/** Which boost category a row follows (rows without one keep the plain "raised" mark). */
+const ROW_CATEGORY: Readonly<Record<string, BoostCategory>> = {
+  catch: 'creatures',
+  fresh: 'newSpecies',
+  deep: 'deepCreatures',
+  scrap: 'parts',
+  glimmer: 'parts',
+  gear: 'gear',
+  xp: 'xp',
+};
+
+/** Puts the kit's brackets on the rows: a row's mark follows its category's bracket (shards: parts). */
+function withBrackets(rows: BaseRow[], levels: HaulLevels | null): HaulRow[] {
+  return rows.map((row) => {
+    const category = ROW_CATEGORY[row.key] ?? (row.key.endsWith('-shard') ? 'parts' : undefined);
+    // Gear and XP only rise with a map (no legacy mark); the others follow the mark the metrics give.
+    const eligible = row.boosted || row.key === 'gear' || row.key === 'xp';
+    const bracket = levels === null || category === undefined || !eligible ? 0 : levels[category];
+    const boosted = row.boosted || bracket > 0;
+    const detail =
+      bracket > 0 ? `${row.detail}; ${boostWords(bracket)} with your supplies` : row.detail;
+    return { ...row, boosted, detail, bracket };
+  });
 }
 
 interface Metrics {
@@ -143,6 +182,7 @@ export function expectedHaul(
   length: ExpeditionLength,
   element: string | null,
   kitIds: readonly string[],
+  levels: HaulLevels | null = null,
 ): HaulRow[] {
   const kit = supplyDefs(kitIds);
   const here = metricsOf(length, kit);
@@ -151,7 +191,7 @@ export function expectedHaul(
   const boosted = (key: keyof Metrics): boolean => here[key] > plain[key];
   const chance = (key: keyof Metrics, name: string): string =>
     `${name}: ${CHANCE_WORDS[pips(key, here[key])] ?? CHANCE_WORDS[0] ?? ''}`;
-  const rows: HaulRow[] = [
+  const rows: BaseRow[] = [
     {
       key: 'catch',
       icon: { kind: 'glyph', id: 'paw' },
@@ -254,7 +294,7 @@ export function expectedHaul(
       boosted: true,
     });
   }
-  return rows;
+  return withBrackets(rows, levels);
 }
 
 /** The line above the strip: which trip and what the haul includes. "A 12 h trip with Sweet Lure". */
