@@ -2496,3 +2496,15 @@ Misa: the "In your pack" line said what you carry, but not visually that it can 
 - **Keepsakes**: the title with its "?", the chips under it. The results screen uses the same block.
 - **The whole strip is a pixel panel** (`.pix-panel`); the last mystery room's sentence stays in the body font (`.prose`), as reading text does.
 - An alternative look (the whole pack panel drawn as leather, the loot in a pocket, the tag at the corner) was mocked for Misa to choose from; the ink panel is the default because it matches every other panel.
+
+## 2026-10-21: One Alert component for notices, warnings and errors; the pack rolls out of the backpack
+
+**Alerts** (`ui/Alert`, Misa's spec). Four levels, each with its colour and its own 8 x 8 pixel icon: info (blue "i"), success (green tick), warning (gold triangle), alert (red stop sign). An optional bold title in the level's colour, then the message in the body font, inline after the title or on its own line (`layout`). `onDismiss` adds an X on the right.
+
+- **Where the X sits.** The icon and the X are in boxes exactly one line of text tall at the top of the alert, so with one line both are centred on it and with several they stay in the top corners. CSS does it; nothing is measured.
+- **Dismissing** slides the alert 1.5 rem to the right while it fades (140 ms, 4 steps), then folds its height shut (`grid-template-rows` 1fr to 0fr) by 220 ms, and only then calls `onDismiss`. Under reduced motion it goes at once.
+- `role="alert"` only at the alert level; the rest are `role="status"`, so a notice never interrupts a screen reader.
+- **The overhaul** (Misa: the existing alert-like messages go too): the game's notice line (daily Bait, renames, talents, catch results) is a dismissible success alert, the game's error line a dismissible alert, and every `p.error role="alert"` across the screens (loading failures, refused actions) is an alert without an X. The full bag warning is a warning alert with its Workshop button. The Workshop's one-off "Gear has changed" card, the `.reason` refusal lines and the gold Callout for good news stay as they are: they are part of their screens, not alerts.
+- The notice and error alerts take their text as `key`, so a new message shows again after the last one was dismissed.
+
+**The pack** (Misa chose the leather look and asked for more): the backpack (now at scale 4) sits on the left and rises above its box, and the leather canvas (`--leather` tokens) rolls out from under it to the right, holding the "Pack" title with "At risk" beside it and the loot, so the loot reads as the pack's contents.

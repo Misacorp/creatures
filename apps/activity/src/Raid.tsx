@@ -37,6 +37,7 @@ import { toPickerCreature } from './roster-picker';
 import type { Forecast } from './weather-types';
 import { Accordion } from './ui/Accordion';
 import { BagFullNote } from './ui/BagFullNote';
+import { Alert } from './ui/Alert';
 
 interface Loaded {
   view: RaidView;
@@ -208,11 +209,7 @@ export function Raid({
   }
 
   if (loadError !== null) {
-    return (
-      <p class="error" role="alert">
-        {loadError}
-      </p>
-    );
+    return <Alert level="alert">{loadError}</Alert>;
   }
   if (loaded === null) return <p class="muted">Loading the raid...</p>;
 
@@ -306,11 +303,7 @@ export function Raid({
   return (
     <>
       {SHOW_COACH_MARK && <CoachMark />}
-      {error !== null && (
-        <p class="error" role="alert">
-          {error}
-        </p>
-      )}
+      {error !== null && <Alert level="alert">{error}</Alert>}
       {reveal !== null && (
         <RevealCard
           reveal={reveal}

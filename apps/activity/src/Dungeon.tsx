@@ -35,6 +35,7 @@ import type {
 import { clockOffset } from './game';
 import { useActionRunner } from './use-action-runner';
 import type { Forecast } from './weather-types';
+import { Alert } from './ui/Alert';
 
 /**
  * What the tab shows. `run` is an open run on its map; a mystery room's card and the camp's card
@@ -275,9 +276,7 @@ export function Dungeon({
   if (loadError !== null && today === null) {
     return (
       <section class="raid-section">
-        <p class="error" role="alert">
-          {loadError}
-        </p>
+        <Alert level="alert">{loadError}</Alert>
         <p>
           <button
             type="button"
@@ -298,11 +297,7 @@ export function Dungeon({
 
   return (
     <>
-      {loadError !== null && (
-        <p class="error" role="alert">
-          {loadError}
-        </p>
-      )}
+      {loadError !== null && <Alert level="alert">{loadError}</Alert>}
       {view.kind === 'setup' && (
         <DungeonSetup
           today={today}

@@ -51,6 +51,7 @@ import { LevelResetCard } from './LevelResetCard';
 import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
 import type { TeamConfigure } from './TeamCreaturePage';
+import { Alert } from './ui/Alert';
 
 export function Game({
   initial,
@@ -375,9 +376,15 @@ export function Game({
   const content = !game.starterChosen ? (
     <>
       {error !== null && (
-        <p class="error" role="alert">
+        <Alert
+          key={error}
+          level="alert"
+          onDismiss={() => {
+            setError(null);
+          }}
+        >
           {error}
-        </p>
+        </Alert>
       )}
       <StarterPicker
         options={game.starterOptions}
@@ -422,14 +429,26 @@ export function Game({
         />
       )}
       {error !== null && (
-        <p class="error" role="alert">
+        <Alert
+          key={error}
+          level="alert"
+          onDismiss={() => {
+            setError(null);
+          }}
+        >
           {error}
-        </p>
+        </Alert>
       )}
       {notice !== null && (
-        <p class="notice" role="status">
+        <Alert
+          key={notice}
+          level="success"
+          onDismiss={() => {
+            setNotice(null);
+          }}
+        >
           {notice}
-        </p>
+        </Alert>
       )}
       <div key={devNonce} role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
         {tab === 'collection' && (

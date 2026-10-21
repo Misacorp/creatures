@@ -17,8 +17,10 @@ describe('the full bag', () => {
       <BagFullNote inventory={{ cap: 60, used: 61, reserved: 1 }} onOpenWorkshop={onOpen} />,
     );
     const [note] = byClass(page.root, 'bag-full-note');
-    expect(visibleText(note ?? page.root)).toContain('Your bag is full (62 / 60)');
-    expect(visibleText(note ?? page.root)).toContain('Gear you find becomes parts.');
+    expect(note?.getAttribute('class')).toContain('alert-warning');
+    expect(visibleText(note ?? page.root)).toContain(
+      'Your bag is full. 62 / 60. Gear you find becomes parts.',
+    );
     const [button] = byName(page.root, 'button', /Workshop/);
     if (button === undefined) throw new Error('no Workshop button');
     page.click(button);

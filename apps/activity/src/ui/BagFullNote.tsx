@@ -1,7 +1,8 @@
-import { bagFull, bagFullLine } from '../gear-view';
+import { bagFull, bagFullDetail } from '../gear-view';
 import { glyphOrUnknown } from '../glyphs';
 import type { GearState } from '../gear-types';
 import { Sprite } from '../sprites/Sprite';
+import { Alert } from './Alert';
 
 type Inventory = GearState['inventory'];
 
@@ -20,14 +21,17 @@ export function BagFullNote({
 }) {
   if (inventory === null || inventory === undefined || !bagFull(inventory)) return null;
   return (
-    <p class="reason bag-full-note" role="status">
-      <span>{bagFullLine(inventory)}</span>
+    <Alert level="warning" title="Your bag is full." class="bag-full-note">
+      {bagFullDetail(inventory)}
       {onOpenWorkshop !== undefined && (
-        <button type="button" class="bag-full-open" onClick={onOpenWorkshop}>
-          <Sprite sprite={glyphOrUnknown('anvil')} scale={2} />
-          Workshop
-        </button>
+        <>
+          <br />
+          <button type="button" class="bag-full-open" onClick={onOpenWorkshop}>
+            <Sprite sprite={glyphOrUnknown('anvil')} scale={2} />
+            Workshop
+          </button>
+        </>
       )}
-    </p>
+    </Alert>
   );
 }

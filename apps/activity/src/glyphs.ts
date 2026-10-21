@@ -14,6 +14,8 @@ const BONE = '#f4eedc';
 const GOLD = '#ffd25a';
 const HAZE = '#a69fc8';
 const BAD = '#ff5f6d';
+const GOOD = '#6fdc8c';
+const TIDE = '#4f8fe6';
 const MUD = '#b8864a';
 const MUD_DARK = '#6b4a2e';
 
@@ -300,6 +302,51 @@ const warning: SpriteDef = {
     'yyyyyyyy',
     'yyykkyyy',
     'yyyyyyyy',
+  ],
+};
+
+/** A blue disc with an "i": an info alert (`ui/Alert`). */
+const info: SpriteDef = {
+  palette: { b: TIDE, k: INK },
+  rows: [
+    '..bbbb..',
+    '.bbkkbb.',
+    'bbbbbbbb',
+    'bbbkkbbb',
+    'bbbkkbbb',
+    'bbbkkbbb',
+    '.bbkkbb.',
+    '..bbbb..',
+  ],
+};
+
+/** A green disc with a tick: a success alert (`ui/Alert`). */
+const success: SpriteDef = {
+  palette: { g: GOOD, k: INK },
+  rows: [
+    '..gggg..',
+    '.gggggg.',
+    'ggggggkg',
+    'gggggkkg',
+    'gkggkkgg',
+    'gkkkkggg',
+    '.ggkkgg.',
+    '..gggg..',
+  ],
+};
+
+/** A red stop sign with an "!": an alert (`ui/Alert`, the most serious level). */
+const alert: SpriteDef = {
+  palette: { r: BAD, k: INK },
+  rows: [
+    '..rrrr..',
+    '.rrkkrr.',
+    'rrrkkrrr',
+    'rrrkkrrr',
+    'rrrkkrrr',
+    'rrrrrrrr',
+    '.rrkkrr.',
+    '..rrrr..',
   ],
 };
 
@@ -724,6 +771,9 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   check,
   tick,
   warning,
+  info,
+  success,
+  alert,
   reticle,
   anvil,
   treat,

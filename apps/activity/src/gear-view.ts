@@ -376,9 +376,9 @@ export function bagFull(inventory: GearState['inventory']): boolean {
   return inventory.used + inventory.reserved >= inventory.cap;
 }
 
-/** The warning's words: how full the bag is and what happens to gear found now. */
-export function bagFullLine(inventory: GearState['inventory']): string {
-  return `Your bag is full (${String(inventory.used + inventory.reserved)} / ${String(inventory.cap)}). Gear you find becomes parts.`;
+/** The full bag warning's message under its title: how full the bag is and what happens to gear found now. */
+export function bagFullDetail(inventory: GearState['inventory']): string {
+  return `${String(inventory.used + inventory.reserved)} / ${String(inventory.cap)}. Gear you find becomes parts.`;
 }
 
 export interface EquipChoice {

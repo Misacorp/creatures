@@ -1,0 +1,148 @@
+/*
+  An alert (ui/Alert): a tinted panel with a pixel edge on the left in the level's colour, the level's
+  icon, an optional bold title and the message in the body font. The icon and the X sit in boxes one
+  line tall at the top, so with one line of text they are centred on it and with more they stay in the
+  top corners. Dismissing slides it right in pixel steps and folds its height away.
+*/
+.alert {
+  --alert-tone: var(--haze);
+  --alert-tint: rgb(var(--ink-rgb) / 40%);
+  --alert-line: calc(var(--fs-row) * 1.35);
+
+  display: grid;
+  grid-template-rows: 1fr;
+  margin: 0.5rem 0;
+  font-size: var(--fs-row);
+  text-align: left;
+}
+
+.alert-info {
+  --alert-tone: var(--tide);
+  --alert-tint: rgb(var(--tide-rgb) / 12%);
+}
+
+.alert-success {
+  --alert-tone: var(--good);
+  --alert-tint: rgb(var(--good-rgb) / 12%);
+}
+
+.alert-warning {
+  --alert-tone: var(--gold);
+  --alert-tint: rgb(var(--gold-rgb) / 10%);
+}
+
+.alert-alert {
+  --alert-tone: var(--bad);
+  --alert-tint: rgb(var(--bad-rgb) / 14%);
+}
+
+.alert-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0.5rem 0.625rem;
+  border-left: var(--px) solid var(--alert-tone);
+  background: var(--alert-tint);
+}
+
+.alert-icon,
+.alert-close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  height: var(--alert-line);
+}
+
+.alert-text {
+  flex: 1;
+  min-width: 0;
+  color: var(--bone);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.alert-title {
+  color: var(--alert-tone);
+  font-weight: 700;
+}
+
+.alert-text.stacked .alert-title {
+  display: block;
+}
+
+/* A button in a message (the full bag's "Workshop") sits on its own line under the words. */
+.alert-message > button {
+  display: inline-flex;
+  margin-top: 0.375rem;
+}
+
+button.alert-close {
+  position: relative;
+  width: var(--alert-line);
+  min-width: 0;
+  min-height: 0;
+  margin: 0 -0.25rem 0 0;
+  padding: 0;
+  line-height: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--haze);
+}
+
+/* A finger-sized target around the small X. */
+button.alert-close::before {
+  position: absolute;
+  inset: -0.5rem;
+  content: '';
+}
+
+button.alert-close:hover:not(:disabled),
+button.alert-close:focus-visible {
+  color: var(--bone);
+}
+
+.alert-close .drawer-x {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+/* Dismissed: a quick slide to the right in pixel steps, then the row it took folds shut. */
+.alert.leaving {
+  animation: alert-fold 220ms steps(4, end) forwards;
+  pointer-events: none;
+}
+
+.alert.leaving .alert-body {
+  animation: alert-slide 140ms steps(4, end) forwards;
+}
+
+@keyframes alert-slide {
+  to {
+    opacity: 0;
+    transform: translateX(1.5rem);
+  }
+}
+
+@keyframes alert-fold {
+  0%,
+  60% {
+    grid-template-rows: 1fr;
+    margin-block: 0.5rem;
+  }
+
+  100% {
+    grid-template-rows: 0fr;
+    margin-block: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alert.leaving,
+  .alert.leaving .alert-body {
+    animation: none;
+  }
+}

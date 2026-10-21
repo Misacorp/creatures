@@ -23,6 +23,7 @@ import { scrollAndFocus } from './scroll-to';
 import { useDungeonDraft } from './use-dungeon-draft';
 import { BagFullNote } from './ui/BagFullNote';
 import type { Forecast } from './weather-types';
+import { Alert } from './ui/Alert';
 
 interface Props {
   today: DungeonToday;
@@ -264,11 +265,7 @@ export function DungeonSetup({
             })}
           </div>
           <div class="dungeon-enter">
-            {error !== null && (
-              <p class="error" role="alert">
-                {error}
-              </p>
-            )}
+            {error !== null && <Alert level="alert">{error}</Alert>}
             <BagFullNote
               inventory={configure?.gear?.inventory}
               onOpenWorkshop={configure?.onOpenWorkshop}

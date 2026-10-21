@@ -152,15 +152,7 @@
   font-size: var(--fs-small);
 }
 
-/* The full bag's warning where the player sets off: the words, then a small button to the Workshop. */
-.bag-full-note {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.375rem 0.75rem;
-  text-align: left;
-}
-
+/* The full bag warning's small button to the Workshop, under its words. */
 .bag-full-open {
   display: inline-flex;
   align-items: center;

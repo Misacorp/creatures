@@ -276,8 +276,11 @@ export class FakeElement extends FakeNode {
     if (has === undefined && cls === undefined) {
       throw new Error(`the fake DOM does not support the selector ${selector}`);
     }
-    for (let el: FakeElement | null = this; el !== null; el = el.parentNode) {
-      if (has !== undefined ? el.hasAttribute(has) : el.classList.contains(cls ?? '')) return el;
+    const matches = (el: FakeElement): boolean =>
+      has !== undefined ? el.hasAttribute(has) : el.classList.contains(cls ?? '');
+    if (matches(this)) return this;
+    for (let el = this.parentNode; el !== null; el = el.parentNode) {
+      if (matches(el)) return el;
     }
     return null;
   }

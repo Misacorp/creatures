@@ -23,6 +23,7 @@ import { clampLength, defaultExplorer, explorerOptions, sendBlocker } from './se
 import { SupplyPicker } from './SupplyPicker';
 import { TreatBox } from './TreatBox';
 import { kitChoice, lengthLabel, supplyName } from './trip-view';
+import { Alert } from './ui/Alert';
 
 /**
  * The send flow: pick a place from the catalogue, who goes, how long and (optionally) supplies, then
@@ -75,9 +76,7 @@ export function SendTrip({
   if (view === null) {
     return viewFailed ? (
       <section class="send">
-        <p class="error" role="alert">
-          The places could not be loaded.
-        </p>
+        <Alert level="alert">The places could not be loaded.</Alert>
         <button type="button" onClick={onRetry}>
           Try again
         </button>

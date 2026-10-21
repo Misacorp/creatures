@@ -23,6 +23,7 @@ import { Accordion } from './ui/Accordion';
 import { Drawer } from './ui/Drawer';
 import { flipOver } from './ui/flip-logic';
 import { FlipArea } from './ui/Flipper';
+import { Alert } from './ui/Alert';
 
 /**
  * The Workshop tab: your parts, the job slots (with timers and claims), the bag of gear (an item's
@@ -66,9 +67,7 @@ export function Workshop({
   if (gear === null) {
     return failed ? (
       <section class="ws-section">
-        <p class="error" role="alert">
-          The Workshop could not be loaded.
-        </p>
+        <Alert level="alert">The Workshop could not be loaded.</Alert>
         <button type="button" onClick={onRetry}>
           Try again
         </button>
@@ -170,7 +169,7 @@ export function Workshop({
           </span>
         </div>
         {bagFull(gear.inventory) && (
-          <p class="reason">Gear you find becomes parts until the bag has room.</p>
+          <Alert level="warning">Gear you find becomes parts until the bag has room.</Alert>
         )}
         {gear.items.length === 0 ? (
           <p class="empty muted">Your bag is empty.</p>
