@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import type { ExpeditionLength } from './expedition-types';
 import { GameIcon } from './ui/GameIcon';
 import { PipRow } from './ui/PipRow';
@@ -13,7 +14,10 @@ export function HaulStrip({
   length,
   element,
   kit,
+  summary,
 }: {
+  /** The trip's settings in a line (`TripSummary`), under the heading. */
+  summary?: ComponentChildren;
   length: ExpeditionLength;
   /** The element of the place (its shards drop here); null for a mixed place. */
   element: string | null;
@@ -26,7 +30,7 @@ export function HaulStrip({
       <h4 id="haul-title" class="label">
         Expected haul
       </h4>
-      <p class="muted haul-for">{haulTitle(length, kit)}</p>
+      {summary}
       <ul class="worth" aria-label={haulTitle(length, kit)}>
         {rows.map((row) => (
           <li

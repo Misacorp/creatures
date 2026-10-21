@@ -5,14 +5,19 @@ import { parseDestinations } from './expedition-parse';
 import type { SupplyPick } from './expedition-types';
 import destinationsFixture from './fixtures/expedition-destinations.json';
 import stateOffer from './fixtures/expedition-state-offer.json';
+import { PopoverHost } from './PopoverHost';
 import { SendTrip } from './SendTrip';
+import { TripSummary } from './TripSummary';
 import { SupplyPicker } from './SupplyPicker';
-import { byClass, byName, createPage, visibleText, type FakeElement, type Page } from './test-dom';
+import { FakeElement, byClass, byName, createPage, visibleText, type Page } from './test-dom';
 
 let page: Page | null = null;
+const originalRect: unknown = Reflect.get(FakeElement.prototype, 'getBoundingClientRect');
 afterEach(() => {
   page?.unmount();
   page = null;
+  Reflect.set(FakeElement.prototype, 'getBoundingClientRect', originalRect);
+  vi.unstubAllGlobals();
 });
 
 const STOCK = {
@@ -32,7 +37,6 @@ function Kit({ stock, seen }: { stock: Record<string, number>; seen: SupplyPick[
         seen.push(next);
         setPicks(next);
       }}
-      onOpenWorkshop={() => undefined}
     />
   );
 }
@@ -68,11 +72,22 @@ describe('the send screen supply grid', () => {
     page?.click(cell(root, 'Plain Lure'));
     expect(ids(seen.at(-1))).toEqual(['lure-basic']);
     expect(pressed(cell(root, 'Plain Lure'))).toBe(true);
-    expect(visibleText(root)).toContain('Packed: Plain Lure');
+    expect(visibleText(root)).not.toContain('Packed:');
     expect(byClass(root, 'supply-card')).toHaveLength(1);
+    expect(byClass(cell(root, 'Plain Lure'), 'supply-packed')).toHaveLength(1);
     page?.click(cell(root, 'Plain Lure'));
     expect(ids(seen.at(-1))).toEqual([]);
     expect(pressed(cell(root, 'Plain Lure'))).toBe(false);
+  });
+
+  it('deselecting hides the card and clears the selection ring and the tick', () => {
+    const { root } = draw();
+    page?.click(cell(root, 'Plain Lure'));
+    expect(cell(root, 'Plain Lure').getAttribute('class')).toContain('selected');
+    page?.click(cell(root, 'Plain Lure'));
+    expect(byClass(root, 'supply-card')).toHaveLength(0);
+    expect(cell(root, 'Plain Lure').getAttribute('class')).not.toContain('selected');
+    expect(byClass(cell(root, 'Plain Lure'), 'supply-packed')).toHaveLength(0);
   });
 
   it('swaps another tier of the same kind in, one per kind', () => {
@@ -117,7 +132,6 @@ describe('the send screen supply grid', () => {
   it('with nothing in stock, points to the Workshop in one line', () => {
     const { root, seen } = draw({});
     expect(visibleText(root)).toContain('You have no supplies. Craft them in the Workshop.');
-    expect(byName(root, 'button', 'Craft supplies in the Workshop')).toHaveLength(1);
     for (const c of byClass(root, 'supply-cell')) page?.click(c);
     expect(seen).toHaveLength(0);
   });
@@ -158,5 +172,124 @@ describe('sending with a kit', () => {
       { id: 'lure-basic', source: 'owned' },
       { id: 'satchel-basic', source: 'owned' },
     ]);
+  });
+});
+
+function drawSend(options: { onOpenWorkshop?: () => void } = {}) {
+  page = createPage();
+  const view = parseDestinations(destinationsFixture);
+  const creatures = parseGameState(stateOffer).creatures.map((c) => ({
+    ...c,
+    away: false,
+    busy: null,
+  }));
+  page.draw(
+    <PopoverHost onOpenHowTo={() => undefined}>
+      <SendTrip
+        creatures={creatures}
+        slots={{ total: 2, used: 0, rankSum: 2, tripsFinished: 3, next: null }}
+        stock={STOCK}
+        bait={0}
+        busy={false}
+        view={view}
+        viewFailed={false}
+        timezone="Europe/Helsinki"
+        onRetry={() => undefined}
+        onSend={() => Promise.resolve(true)}
+        {...options}
+      />
+    </PopoverHost>,
+  );
+  return page.root;
+}
+
+describe('the supplies step of the send screen', () => {
+  it('has a help tag in the title row and no explanatory paragraph', () => {
+    const root = drawSend();
+    const [row] = byClass(root, 'step-row');
+    if (row === undefined) throw new Error('no title row');
+    expect(visibleText(row)).toContain('Supplies');
+    expect(byName(row, 'button', 'What is Supplies?')).toHaveLength(1);
+    expect(visibleText(root)).not.toContain('Optional: trips are always free');
+    expect(visibleText(root)).not.toContain('What are supplies?');
+  });
+
+  it('has a Craft button that opens the Workshop', () => {
+    let opened = 0;
+    const root = drawSend({
+      onOpenWorkshop: () => {
+        opened += 1;
+      },
+    });
+    const [craft] = byName(root, 'button', 'Craft supplies in the Workshop');
+    if (craft === undefined) throw new Error('no Craft button');
+    expect(visibleText(craft)).toBe('Craft');
+    page?.click(craft);
+    expect(opened).toBe(1);
+  });
+
+  it('sums the trip up with a button per supply that opens its card', () => {
+    // The little the fake DOM leaves out that the popover asks a browser for (its place on the page).
+    vi.stubGlobal('window', {
+      innerHeight: 800,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    });
+    Reflect.set(FakeElement.prototype, 'getBoundingClientRect', () => ({
+      top: 0,
+      left: 0,
+      width: 10,
+      height: 10,
+    }));
+    const root = drawSend();
+    Reflect.set(page?.document ?? {}, 'addEventListener', () => undefined);
+    Reflect.set(page?.document ?? {}, 'removeEventListener', () => undefined);
+    page?.click(cell(root, 'Plain Lure'));
+    page?.click(cell(root, 'Small Satchel'));
+    const [summary] = byClass(root, 'trip-summary');
+    if (summary === undefined) throw new Error('no summary');
+    const text = visibleText(summary);
+    expect(text).toMatch(/^12 h trip to .+ with .+, carrying Plain Lure and Small Satchel\. Back /);
+    expect(text).toMatch(/\d\d:\d\d\.$/);
+    expect(visibleText(root)).not.toContain('A 12 h trip with');
+    const before = byClass(root, 'supply-card').length;
+    const [lure] = byName(summary, 'button', 'Plain Lure');
+    if (lure === undefined) throw new Error('no supply button');
+    page?.click(lure);
+    expect(byClass(root, 'supply-card').length).toBe(before + 1);
+  });
+});
+
+describe('the trip summary notes', () => {
+  const entry = (name: string, trips: string[]) => ({
+    id: name,
+    name,
+    flavor: '',
+    bubbles: [],
+    fight: [],
+    trips,
+  });
+
+  it('lists the Boon and Omen only when they touch trips, and the weekly twist', () => {
+    page = createPage();
+    page.draw(
+      <TripSummary
+        duration="2 h"
+        place="Mossy Burrow"
+        explorer="Gobbo"
+        supplies={[]}
+        treat={false}
+        now={0}
+        endsAt={null}
+        timezone={null}
+        boon={entry('Calm', [])}
+        omen={entry('Gloom', ['Trips are slower.'])}
+        twist={{ name: 'Gold Rush', description: 'More coins.' }}
+      />,
+    );
+    const text = visibleText(page.root);
+    expect(text).not.toContain('Boon');
+    expect(text).toContain('Omen: Gloom');
+    expect(text).toContain('Weekly twist: Gold Rush');
   });
 });

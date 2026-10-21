@@ -116,8 +116,12 @@ label.length-option:focus-within {
   margin: 0.75rem 0 0.25rem;
 }
 
-.haul-for {
+/* The trip's settings in a line: reading text, so the body font (the heading above is the pixel label). */
+.trip-summary {
   margin: 0 0 0.25rem;
+  color: var(--haze);
+  font-family: var(--body);
+  line-height: 1.5;
 }
 
 /* A trip's worth as pictures: icon over pips over a short word. */

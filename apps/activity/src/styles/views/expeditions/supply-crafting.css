@@ -103,18 +103,29 @@ button.supply-cell {
   text-align: center;
 }
 
-/* The send screen kit: a packed supply gets a tick in the corner. */
-.supply-packed {
+/* The send screen kit: a packed supply gets a pixel tick badge in the corner (the tick is the whole state). */
+canvas.supply-packed {
   position: absolute;
   top: 0.375rem;
   left: 0.375rem;
-  padding: 0.125rem 0.25rem;
-  background: var(--gold);
-  color: var(--ink);
-  font-size: var(--fs-small);
-  line-height: 1;
 }
 
-.supply-kit {
-  margin: 0.25rem 0;
+/* The step's title row: the title and its help at the left, the Craft shortcut at the right. */
+.step-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 1rem 0 0.25rem;
+}
+
+.step-row .step {
+  margin: 0;
+}
+
+.step-craft {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
 }

@@ -436,6 +436,7 @@ export function Game({
         {tab === 'expeditions' && (
           <Expeditions
             state={game}
+            forecast={forecast}
             offset={offset}
             busy={busy}
             reveal={reveal}

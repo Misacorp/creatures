@@ -65,9 +65,7 @@ export function SupplyGrid({
               >
                 <Sprite sprite={glyphOrUnknown(kind)} scale={4} />
                 {cell.packed === true && (
-                  <span class="supply-packed pix" aria-hidden="true">
-                    ✓
-                  </span>
+                  <Sprite sprite={glyphOrUnknown('tick')} scale={2} class="supply-packed" />
                 )}
                 {cell.owned > 0 && (
                   <span class="supply-count pix" aria-hidden="true">

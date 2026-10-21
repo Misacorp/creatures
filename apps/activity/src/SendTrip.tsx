@@ -1,5 +1,11 @@
+import { tripMs } from '@creatures/game';
 import { Tag } from './ui/Tag';
 import { useState } from 'preact/hooks';
+import { GlossaryTag } from './Glossary';
+import { glyphOrUnknown } from './glyphs';
+import { Sprite } from './sprites/Sprite';
+import { TripSummary } from './TripSummary';
+import type { Forecast } from './weather-types';
 import type { Creature } from './api';
 import { Catalogue } from './Catalogue';
 import { destinationCards } from './destination-view';
@@ -29,6 +35,7 @@ export function SendTrip({
   view,
   viewFailed,
   timezone,
+  forecast = null,
   onRetry,
   onSend,
   onOpenWorkshop,
@@ -43,6 +50,8 @@ export function SendTrip({
   view: DestinationsView | null;
   viewFailed: boolean;
   timezone: string | null;
+  /** The valley sky; today's Boon and Omen show in the summary when they touch trips. */
+  forecast?: Forecast | null;
   onRetry: () => void;
   /** Sends the trip; resolves true when it started (the supplies are then put down). */
   onSend: (request: SendRequest) => Promise<boolean>;
@@ -93,6 +102,8 @@ export function SendTrip({
   });
   const choice = kitChoice(picks);
   const names = picks.map((p) => supplyName(p.id));
+  // The time the summary says the trip would be back, if sent right now.
+  const now = Date.now();
   const treatCost = explorer?.creature.treatCost ?? 0;
   // A treat the Bait no longer covers (the explorer changed, or Bait was spent) is not packed.
   const packing = treat && explorer !== undefined && bait >= treatCost;
@@ -121,15 +132,23 @@ export function SendTrip({
       </h4>
       <LengthPicker name="send-length" rank={rank} value={duration} onChange={setLength} />
 
-      <h4 class="step">
-        <span class="step-n">4</span> Supplies
-      </h4>
-      <SupplyPicker
-        picks={picks}
-        stock={stock}
-        onChange={setPicks}
-        {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}
-      />
+      <div class="step-row">
+        <h4 class="step">
+          <span class="step-n">4</span> Supplies <GlossaryTag entry="supplies" look="help" />
+        </h4>
+        {onOpenWorkshop !== undefined && (
+          <button
+            type="button"
+            class="step-craft"
+            aria-label="Craft supplies in the Workshop"
+            onClick={onOpenWorkshop}
+          >
+            <Sprite sprite={glyphOrUnknown('anvil')} scale={2} />
+            Craft
+          </button>
+        )}
+      </div>
+      <SupplyPicker picks={picks} stock={stock} onChange={setPicks} />
 
       <div class="send-summary">
         {explorer !== undefined && (
@@ -165,7 +184,26 @@ export function SendTrip({
             <ChoiceMark choice={choice} />
           </p>
         )}
-        <HaulStrip length={duration} element={shardElement} kit={picks.map((p) => p.id)} />
+        <HaulStrip
+          length={duration}
+          element={shardElement}
+          kit={picks.map((p) => p.id)}
+          summary={
+            <TripSummary
+              duration={lengthLabel(duration)}
+              place={place?.name ?? null}
+              explorer={explorer?.name ?? null}
+              supplies={picks.map((p) => p.id)}
+              treat={packing}
+              now={now}
+              endsAt={now + tripMs(duration, rank)}
+              timezone={timezone}
+              boon={forecast?.today?.boon ?? null}
+              omen={forecast?.today?.omen ?? null}
+              twist={place?.twist ?? null}
+            />
+          }
+        />
         {blocker !== null && (
           <p class="reason" role="status">
             {blocker}

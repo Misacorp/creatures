@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  backAtText,
   formatCountdown,
   formatDuration,
   formatHourOfDay,
@@ -105,6 +106,13 @@ describe('hours and hours of the day', () => {
   it('writes the hour of a day as a clock', () => {
     expect(formatHourOfDay(6)).toBe('06:00');
     expect(formatHourOfDay(20)).toBe('20:00');
+  });
+});
+
+describe('backAtText', () => {
+  it('says the clock time on the same local day, and adds the weekday on another', () => {
+    expect(backAtText(FRIDAY, FRIDAY + 4 * HOUR, 'Europe/Helsinki')).toBe('back at 17:37');
+    expect(backAtText(FRIDAY, FRIDAY + DAY, 'Europe/Helsinki')).toBe('back Sat 13:37');
   });
 });
 

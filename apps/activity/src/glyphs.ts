@@ -379,6 +379,24 @@ const check: SpriteDef = {
   ],
 };
 
+/**
+ * A pixel tick for a packed supply: a gold tick on an ink badge (the ink is its outline), so it reads on
+ * any picture. Unlike `check` it is a badge of its own.
+ */
+const tick: SpriteDef = {
+  palette: { k: INK, g: GOLD },
+  rows: [
+    'kkkkkkkk',
+    'kkkkkkgk',
+    'kkkkkggk',
+    'kgkkggkk',
+    'kggkggkk',
+    'kkgggkkk',
+    'kkkgkkkk',
+    'kkkkkkkk',
+  ],
+};
+
 // --- Workshop ---
 
 /** An anvil: the Workshop tab and its jobs. */
@@ -696,6 +714,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   skull,
   hand,
   check,
+  tick,
   warning,
   reticle,
   anvil,

@@ -1,4 +1,9 @@
 import { useState } from 'preact/hooks';
+import { parseGameState } from '../../api';
+import { parseDestinations } from '../../expedition-parse';
+import destinationsFixture from '../../fixtures/expedition-destinations.json';
+import stateOffer from '../../fixtures/expedition-state-offer.json';
+import { SendTrip } from '../../SendTrip';
 import { sampleRoster, SAMPLE_GEAR } from '../../creature-card-sample';
 import type { GearState } from '../../gear-types';
 import { supplyCraftViews } from '../../gear-view';
@@ -139,14 +144,7 @@ function PickerDemo({ p }: { p: Props }) {
   const [picks, setPicks] = useState<SupplyPick[]>(
     (KITS[str(p, 'kit')] ?? []).map((id) => ({ id, source: 'owned' as const })),
   );
-  return (
-    <SupplyPicker
-      picks={picks}
-      stock={stockOf(str(p, 'stock'))}
-      onChange={setPicks}
-      onOpenWorkshop={() => undefined}
-    />
-  );
+  return <SupplyPicker picks={picks} stock={stockOf(str(p, 'stock'))} onChange={setPicks} />;
 }
 
 const supplyPicker: Entry = {
@@ -154,7 +152,7 @@ const supplyPicker: Entry = {
   file: 'apps/activity/src/SupplyPicker.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The supply step of the send screen: the same grid as the Workshop, but tapping packs a supply (a tick) for the trip. At most two kinds; one tier per kind; once the kit is full the other kinds are dimmed; supplies you have none of cannot be tapped. One card shows the last tapped one.',
+    'The supply step of the send screen: the same grid as the Workshop, but tapping packs a supply (a tick) for the trip. At most two kinds; one tier per kind; once the kit is full the other kinds are dimmed; supplies you have none of cannot be tapped. One card shows the last tapped one while it is packed (taking it out hides the card).',
   controls: {
     stock: CONTROLS.stock,
     kit: { kind: 'select', options: Object.keys(KITS) },
@@ -170,4 +168,52 @@ const supplyPicker: Entry = {
   render: (p) => <PickerDemo key={`${str(p, 'kit')}-${str(p, 'stock')}`} p={p} />,
 };
 
-export const supplyCraftingEntries: readonly Entry[] = [supplyCrafting, supplyGrid, supplyPicker];
+const SEND_VIEW = parseDestinations(destinationsFixture);
+const SEND_CREATURES = parseGameState(stateOffer).creatures.map((c) => ({
+  ...c,
+  away: false,
+  busy: null,
+}));
+
+function SendDemo({ p }: { p: Props }) {
+  return (
+    <SendTrip
+      creatures={SEND_CREATURES}
+      slots={{ total: 2, used: 0, rankSum: 2, tripsFinished: 3, next: null }}
+      stock={stockOf(str(p, 'stock'))}
+      bait={100}
+      busy={false}
+      view={SEND_VIEW}
+      viewFailed={false}
+      timezone="Europe/Helsinki"
+      onRetry={() => undefined}
+      onSend={() => {
+        return Promise.resolve(true);
+      }}
+      onOpenWorkshop={() => undefined}
+    />
+  );
+}
+
+const sendTrip: Entry = {
+  name: 'SendTrip',
+  file: 'apps/activity/src/SendTrip.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    'The whole send screen on fixture places and creatures. Step 4 (Supplies) has a "?" help tag and a Craft button at the right of its title row; a packed supply shows the pixel tick, deselecting hides its card, and the expected haul starts with a one-line summary (duration, place, explorer, each supply as a button for its card, a treat, and when the trip is back).',
+  controls: { stock: CONTROLS.stock },
+  defaults: { stock: 'some' },
+  presets: [
+    { name: 'Some stock', props: { stock: 'some' } },
+    { name: 'A lot of stock', props: { stock: 'a lot' } },
+    { name: 'Nothing in stock', props: { stock: 'nothing' } },
+  ],
+  render: (p) => <SendDemo key={str(p, 'stock')} p={p} />,
+};
+
+export const supplyCraftingEntries: readonly Entry[] = [
+  supplyCrafting,
+  supplyGrid,
+  supplyPicker,
+  sendTrip,
+];
