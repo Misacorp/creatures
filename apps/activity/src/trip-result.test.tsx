@@ -4,6 +4,7 @@ import creaturesState from './fixtures/creatures-state.json';
 import { pendingFind } from './find-view';
 import type { PendingCatch } from './talent-types';
 import { FakeElement, byClass, byName, createPage, find, visibleText, type Page } from './test-dom';
+import { rankGiftViews } from './claim-view';
 import { TripResult } from './TripResult';
 import type { TripResultView } from './trip-result-view';
 import { experienceGain } from './xp-gain';
@@ -176,3 +177,59 @@ function first(root: FakeElement, tagOrList: string | FakeElement[]): FakeElemen
   if (el === undefined) throw new Error('not found');
   return el;
 }
+
+describe('arriving after a claim', () => {
+  it('brings the card to the top of the view and focuses it when its top is out of view', () => {
+    const rect = vi.spyOn(FakeElement.prototype, 'getBoundingClientRect');
+    rect.mockReturnValue({ top: -600, left: 0, width: 320, height: 0 });
+    const raf = vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+      cb(0);
+      return 0;
+    });
+    const scroll = vi.fn();
+    Reflect.set(FakeElement.prototype, 'scrollIntoView', scroll);
+    Reflect.set(globalThis, 'window', { innerHeight: 800 });
+    try {
+      page = createPage();
+      page.draw(<TripResult view={view} busy={false} onClaim={() => undefined} />);
+      expect(scroll).toHaveBeenCalledTimes(1);
+      expect(scroll.mock.calls[0]?.[0]).toMatchObject({ block: 'start' });
+      const card = first(page.root, byClass(page.root, 'trip-result'));
+      expect(card.focused).toBe(1);
+    } finally {
+      rect.mockRestore();
+      raf.mockRestore();
+      Reflect.deleteProperty(globalThis, 'window');
+      Reflect.set(FakeElement.prototype, 'scrollIntoView', () => undefined);
+    }
+  });
+});
+
+describe('the rank gift box', () => {
+  it('shows the gift as tags with a spoken label each, under the "Rank N gift" heading', () => {
+    page = createPage();
+    page.draw(
+      <TripResult
+        view={{
+          ...view,
+          gifts: rankGiftViews({
+            rankGifts: [
+              { rank: 5, bait: 25, parts: { 'tide-shard': 3 }, supplies: ['satchel-basic'] },
+            ],
+          }),
+        }}
+        busy={false}
+        onClaim={() => undefined}
+      />,
+    );
+    const box = first(page.root, byClass(page.root, 'rank-gift'));
+    expect(visibleText(box)).toContain('Rank 5 gift');
+    expect(box.querySelector('.gift-lines')).toBeNull();
+    const labels = find(box, (e) => e.getAttribute('aria-label') !== null).map((e) =>
+      e.getAttribute('aria-label'),
+    );
+    expect(labels).toContain('Rank 5 gift');
+    expect(labels).toContain('Bait: 25');
+    expect(visibleText(box)).toContain('Satchel');
+  });
+});

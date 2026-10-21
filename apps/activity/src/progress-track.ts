@@ -3,11 +3,14 @@
  * current and the next step, so nothing past the next step is ever given away. Generic: the caller
  * supplies the steps (explorer ranks, dungeon landmark depths) and the glyph ids of their unlocks.
  */
+import type { CountItem } from './ui/CountBadge';
 
 /** One thing a step unlocks: a glyph id (see `glyphs.ts`) and a few words. */
 export interface TrackUnlock {
   icon: string;
   text: string;
+  /** Count badges shown under the words (a rank's gift); `text` then names the group for assistive technology. */
+  tags?: readonly CountItem[];
 }
 
 export interface TrackStep {

@@ -1,7 +1,7 @@
 /**
  * The explorer-rank ladder for `ProgressTrack`, built from the shared content and rules: what each rank
  * unlocks (places, push-on goals and the 24 h trip, from the content's own `minRank`s) and the one-time
- * gift every rank from 2 on brings. Nothing is copied here, so a place or goal moved to another rank
+ * gift every rank from 2 on brings (as tags). Nothing is copied here, so a place or goal moved to another rank
  * moves on the track too. No chances are shown: the gift and the unlocks are things, not odds.
  */
 import {
@@ -11,34 +11,57 @@ import {
   type RankGift,
   type RankUnlocks,
 } from '@creatures/game';
-import { partName } from './gear-view';
-import type { PartKind } from './gear-types';
+import { groupSupplies } from './claim-view';
+import { baitCount, partCountItems, supplyCounts } from './count-items';
 import type { TrackStep, TrackUnlock } from './progress-track';
-import { lengthLabel, supplyName } from './trip-view';
+import { lengthLabel } from './trip-view';
+import type { CountItem } from './ui/CountBadge';
 
-/** The gift as short words: "20 Bait, 2 scrap, Candle Lantern". Parts are lower-cased names. */
-export function giftText(
+/**
+ * The gift as compact tags (icon and count; supplies and the gear piece also carry a name): Bait, parts,
+ * shards, the gear piece and supplies. The ladder is for every creature, so the shards get the generic
+ * sparkle icon (their element is the explorer's) and the piece shows only a rarity hint.
+ */
+export function giftTags(
   gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'> &
     Partial<Pick<RankGift, 'shards' | 'gearOddsBp'>>,
-): string {
-  const items: string[] = [];
-  if (gift.bait > 0) items.push(`${String(gift.bait)} Bait`);
-  for (const [kind, amount] of Object.entries(gift.parts) as [PartKind, number][]) {
-    if (amount > 0) items.push(`${String(amount)} ${partName(kind).toLowerCase()}`);
+): CountItem[] {
+  const tags: CountItem[] = [];
+  if (gift.bait > 0) tags.push(baitCount(gift.bait));
+  tags.push(...partCountItems(gift.parts).map((item) => withoutEntry(item)));
+  if ((gift.shards ?? 0) > 0) {
+    tags.push({
+      key: 'shards',
+      icon: { kind: 'glyph', id: 'sparkle' },
+      amount: gift.shards ?? 0,
+      label: 'Shards of its element',
+    });
   }
-  // The ladder is for every creature, so the shards and the piece are "of its element".
-  if ((gift.shards ?? 0) > 0) items.push(`${String(gift.shards)} shards of its element`);
   if (gift.gearOddsBp !== null && gift.gearOddsBp !== undefined) {
-    items.push(gift.gearOddsBp.common === 0 ? 'a rare gear piece' : 'a gear piece');
+    const rare = gift.gearOddsBp.common === 0;
+    tags.push({
+      key: 'gear',
+      icon: { kind: 'glyph', id: 'blade' },
+      amount: 1,
+      label: rare ? 'Rare gear piece' : 'Gear piece',
+      name: rare ? 'Rare gear' : 'Gear',
+    });
   }
-  for (const id of gift.supplies) items.push(supplyName(id));
-  return items.join(', ');
+  tags.push(...supplyCounts(groupSupplies(gift.supplies)).map((item) => withoutEntry(item)));
+  return tags;
+}
+
+/** The ladder is a small place: tags there are plain, not buttons that open help. */
+function withoutEntry(item: CountItem): CountItem {
+  const rest: Partial<CountItem> = { ...item };
+  delete rest.entry;
+  return rest as CountItem;
 }
 
 /** The unlocks of a rank, one entry each: places, goals, trip lengths, then the gift. */
 function rankUnlockList(
   unlocks: RankUnlocks,
-  gift: Parameters<typeof giftText>[0] | null,
+  gift: Parameters<typeof giftTags>[0] | null,
 ): TrackUnlock[] {
   const out: TrackUnlock[] = [];
   for (const place of unlocks.destinations) {
@@ -48,7 +71,7 @@ function rankUnlockList(
   for (const length of unlocks.lengths) {
     out.push({ icon: 'clock', text: `${lengthLabel(length)} trips` });
   }
-  if (gift !== null) out.push({ icon: 'bait', text: `Gift: ${giftText(gift)}` });
+  if (gift !== null) out.push({ icon: 'bait', text: 'Gift', tags: giftTags(gift) });
   return out;
 }
 

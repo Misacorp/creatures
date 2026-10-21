@@ -2,6 +2,7 @@ import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { ROLE_WORDS, trackNodes, type TrackStep } from './progress-track';
 import { Sprite } from './sprites/Sprite';
+import { CountBadgeList } from './ui/CountBadge';
 
 /**
  * A horizontal rank or depth timeline: the previous step (dimmed), the current one (lit) and the
@@ -56,9 +57,15 @@ export function ProgressTrack({
           ) : (
             <ul class="ptrack-unlocks">
               {node.unlocks.map((unlock) => (
-                <li key={`${unlock.icon}:${unlock.text}`} class="ptrack-unlock">
+                <li
+                  key={`${unlock.icon}:${unlock.text}`}
+                  class={unlock.tags === undefined ? 'ptrack-unlock' : 'ptrack-unlock tagged'}
+                >
                   <Sprite sprite={glyphOrUnknown(unlock.icon)} scale={2} />
                   <span>{unlock.text}</span>
+                  {unlock.tags !== undefined && (
+                    <CountBadgeList items={unlock.tags} label={unlock.text} class="ptrack-tags" />
+                  )}
                 </li>
               ))}
             </ul>

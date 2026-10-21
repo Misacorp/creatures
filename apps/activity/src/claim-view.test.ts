@@ -3,7 +3,7 @@ import { parseClaimResponse } from './expedition-api';
 import {
   failureLine,
   foundSupplies,
-  giftLines,
+  giftTags,
   journalPages,
   nothingInLoot,
   pileLabel,
@@ -66,8 +66,12 @@ describe('the gift of a new rank', () => {
     expect(worked.rankGifts?.length).toBe(1);
     expect(view?.rank).toBe(worked.xp?.rank);
     expect(view?.title).toBe(`Rank ${String(worked.xp?.rank)} gift`);
-    expect(view?.lines.map((l) => l.key)).toEqual(['bait', 'scrap', 'ember-shard']);
-    expect(view?.lines.map((l) => l.text)).toEqual(['20 Bait', '8 Scrap', '2 Ember Shards']);
+    expect(view?.tags.map((t) => t.key)).toEqual(['bait', 'scrap', 'ember-shard']);
+    expect(view?.tags.map((t) => `${String(t.amount)} ${t.label ?? ''}`)).toEqual([
+      '20 Bait',
+      '8 Scrap',
+      '2 Ember Shard',
+    ]);
   });
 
   it('has no gift for a trip that did not raise the rank or a failure, and a recall that raises it gives its gifts', () => {
@@ -77,13 +81,20 @@ describe('the gift of a new rank', () => {
   });
 
   it('counts supplies of a kind and leaves out what is not in the gift', () => {
-    const lines = giftLines({
+    const tags = giftTags({
       bait: 0,
       parts: { glimmer: 3 },
       supplies: ['lure-good', 'lure-good', 'satchel-good'],
     });
-    expect(lines.map((l) => l.text)).toEqual(['3 Glimmer', '2 Sweet Lure', 'Sturdy Satchel']);
-    expect(lines.find((l) => l.key === 'lure-good')?.icon).toEqual({ kind: 'supply', id: 'lure' });
+    expect(tags.map((t) => `${String(t.amount)} ${t.label ?? t.name ?? ''}`)).toEqual([
+      '3 Glimmer',
+      '2 Sweet Lure',
+      '1 Sturdy Satchel',
+    ]);
+    expect(tags.find((t) => t.key === 'supply-lure-good')?.icon).toEqual({
+      kind: 'supply',
+      id: 'lure',
+    });
   });
 });
 
@@ -150,8 +161,12 @@ describe('the gear piece of a rank gift', () => {
         },
       ],
     });
-    expect(view?.lines.map((l) => l.text)).toEqual(['25 Bait', '10 Scrap', '3 Tide Shards']);
-    expect(view?.lines.find((l) => l.key === 'tide-shard')?.icon).toEqual({
+    expect(view?.tags.map((t) => `${String(t.amount)} ${t.label ?? ''}`)).toEqual([
+      '25 Bait',
+      '10 Scrap',
+      '3 Tide Shard',
+    ]);
+    expect(view?.tags.find((t) => t.key === 'tide-shard')?.icon).toEqual({
       kind: 'part',
       part: 'tide-shard',
     });

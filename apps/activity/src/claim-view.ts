@@ -6,15 +6,15 @@
  */
 import { GLOSSARY_IDS, journalEntry, expeditionContent } from '@creatures/game';
 import type { ClaimResult } from './api';
-import { BAIT_ICON } from './count-items';
+import { baitCount, partCountItems, supplyCounts } from './count-items';
 import type { JournalFind, RankGift, Trip, TripResult } from './expedition-types';
 import type { GrantLoot } from './gear-types';
 import type { XpBoost } from './experience';
 import { lootIsEmpty } from './gear-view';
-import { partName, partsEntries } from './gear-view';
-import type { IconRef } from './icon-ref';
+import { partName } from './gear-view';
 import { rewardPileItems, type PileSource } from './reward-pile';
 import { goalName, kindName, lengthLabel, supplyKindOf, supplyName } from './trip-view';
+import type { CountItem } from './ui/CountBadge';
 
 export type RevealTone = 'home' | 'recalled' | 'failed';
 
@@ -149,50 +149,23 @@ export function pileLabel(source: PileSource, prefix: 'Loot' | 'Rewards'): strin
   return `${prefix}: ${kinds.join(', ')}`;
 }
 
-/** One thing a rank-up gift gives: a picture and a few words. */
-interface GiftLine {
-  key: string;
-  icon: IconRef;
-  text: string;
-}
-
 export interface RankGiftView {
   rank: number;
   /** "Rank 4 gift". */
   title: string;
-  lines: GiftLine[];
+  /** The gift's things as count tags (icon and number; supplies with their name), like "Brought home". */
+  tags: CountItem[];
   /** The gear piece of the gift, as grant loot for the shared loot list (empty before rank 5). */
   gear: Pick<GrantLoot, 'gear' | 'converted'>;
 }
 
-/** The things of one rank's gift, one line each: Bait, parts, supplies (several of a kind are counted). */
-export function giftLines(gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'>): GiftLine[] {
-  const lines: GiftLine[] = [];
-  if (gift.bait > 0) {
-    lines.push({
-      key: 'bait',
-      icon: BAIT_ICON,
-      text: `${String(gift.bait)} Bait`,
-    });
-  }
-  for (const part of partsEntries(gift.parts)) {
-    lines.push({
-      key: part.kind,
-      icon: { kind: 'part', part: part.kind },
-      // "3 Tide Shards"; Scrap and Glimmer read the same either way.
-      text: `${String(part.amount)} ${partName(part.kind)}${part.amount > 1 && part.kind.endsWith('-shard') ? 's' : ''}`,
-    });
-  }
-  const counts = new Map<string, number>();
-  for (const id of gift.supplies) counts.set(id, (counts.get(id) ?? 0) + 1);
-  for (const [id, amount] of counts) {
-    lines.push({
-      key: id,
-      icon: { kind: 'supply', id: supplyKindOf(id) ?? 'unknown' },
-      text: amount === 1 ? supplyName(id) : `${String(amount)} ${supplyName(id)}`,
-    });
-  }
-  return lines;
+/** The things of one rank's gift as tags: Bait, parts, supplies (several of a kind are counted). */
+export function giftTags(gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'>): CountItem[] {
+  return [
+    ...(gift.bait > 0 ? [baitCount(gift.bait)] : []),
+    ...partCountItems(gift.parts),
+    ...supplyCounts(groupSupplies(gift.supplies)),
+  ];
 }
 
 /** The gifts of the ranks a trip reached, lowest first. Empty when the rank did not rise. */
@@ -200,7 +173,7 @@ export function rankGiftViews(result: Pick<ClaimResult, 'rankGifts'>): RankGiftV
   return (result.rankGifts ?? []).map((gift) => ({
     rank: gift.rank,
     title: `Rank ${String(gift.rank)} gift`,
-    lines: giftLines(gift),
+    tags: giftTags(gift),
     gear: { gear: gift.gear ?? [], converted: gift.converted ?? [] },
   }));
 }
