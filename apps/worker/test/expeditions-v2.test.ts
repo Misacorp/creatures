@@ -2006,17 +2006,19 @@ describe('trips pay in ticks', () => {
         const p = await join(ctx, USER, 0);
         stock(ctx.sql, USER_ID, 'satchel-great', 2);
         const recalled = tripOf(await send(p, p.starterId, 'long', [owned('satchel-great')]));
-        // One whole hour spent: one tick, with the satchel's +100% making its scrap certain, and no fixed part.
+        // One whole hour spent: one tick, with the satchel's +140% making its scrap 1 for sure plus a 20%
+        // chance of a second, and no fixed part.
         ctx.clock.t = recalled.startedAt + HOUR + 60_000;
         const early = resultOf(await claim(p, recalled.id));
         expect(early.recalled).toBe(true);
-        expect(early.loot.parts['scrap']).toBe(1);
+        expect([1, 2]).toContain(early.loot.parts['scrap']);
         const full = tripOf(await send(p, p.starterId, 'short', [owned('satchel-great')]));
         ctx.clock.t = full.endsAt;
         const done = resultOf(await claim(p, full.id));
-        // 10 fixed scrap and 2 ticks of one each; one sure shard (of the place's element: Tide).
-        expect(done.loot.parts['scrap']).toBe(12);
-        expect(done.loot.parts['tide-shard'] ?? 0).toBeGreaterThanOrEqual(1);
+        // 9 fixed scrap and 2 ticks of one or two each; at least two sure shards (of the place's element: Tide).
+        expect(done.loot.parts['scrap']).toBeGreaterThanOrEqual(11);
+        expect(done.loot.parts['scrap']).toBeLessThanOrEqual(13);
+        expect(done.loot.parts['tide-shard'] ?? 0).toBeGreaterThanOrEqual(2);
       },
       { rng: createSeededRng('satchel'), gearRng: createSeededRng('satchel-gear') },
     );
