@@ -102,7 +102,7 @@ Noted while testing the expedition and Workshop rework on staging. The component
 
 1. ~~**Expedition screen overhaul**~~ **Done (2026-10-21):** the Trips view is a world map (see decisions.md).
    - App-wide wide frame (top bar with tabs and currencies) for desktop: later, Expeditions first.
-2. **Refine and Recycle flow.** Today, tapping Refine opens the recipe preview between the supply card and the creature picker, and the picker repeats a "Refine ?" header with an empty "Cost" heading. Every creature is listed, most with "Needs Crafting level 3". Ideas:
+2. ~~**Refine and Recycle flow.**~~ **Done (2026-10-21):** Craft, Refine and Recycle are one job wizard in a drawer (see decisions.md). Before: today, tapping Refine opens the recipe preview between the supply card and the creature picker, and the picker repeats a "Refine ?" header with an empty "Cost" heading. Every creature is listed, most with "Needs Crafting level 3". Ideas:
    - Show the recipe once, inside the picker's header (in, arrow, out, time).
    - Drop the empty Cost heading.
    - List only the creatures that can do the job, with a short line such as "4 more need Crafting level 3".
