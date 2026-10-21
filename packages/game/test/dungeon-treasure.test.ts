@@ -118,7 +118,7 @@ describe('the treasure roll', () => {
     expect(seen.size).toBeGreaterThan(1);
   });
 
-  it('shards: one per creature by its element, and the glimmer', () => {
+  it('shards: two per creature by its element, and the glimmer', () => {
     const find = (c: TreasureContext): Treasure => {
       for (let i = 0; i < 200; i++) {
         const t = rollTreasure(createSeededRng(`sh-${String(i)}`), c);
@@ -128,12 +128,36 @@ describe('the treasure roll', () => {
     };
     expect(find(ctx())).toEqual({
       kind: 'shards',
-      parts: { 'tide-shard': 1, 'ember-shard': 1, 'grove-shard': 1, glimmer: 2 },
+      parts: { 'tide-shard': 2, 'ember-shard': 2, 'grove-shard': 2, glimmer: 4 },
     });
     expect(find(ctx({ elements: ['spark', 'spark', 'mire'] }))).toEqual({
       kind: 'shards',
-      parts: { 'spark-shard': 2, 'mire-shard': 1, glimmer: 2 },
+      parts: { 'spark-shard': 4, 'mire-shard': 2, glimmer: 4 },
     });
+  });
+});
+
+describe('the treasure gear piece', () => {
+  it('is fully rolled with the treasure (stats, lines, level, tag) and the win hands over that same piece', () => {
+    const find = (seed: string): Extract<Treasure, { kind: 'gear' }> => {
+      for (let i = 0; i < 200; i++) {
+        const t = rollTreasure(createSeededRng(`${seed}-${String(i)}`), ctx());
+        if (t.kind === 'gear') return t;
+      }
+      throw new Error('no gear');
+    };
+    const a = find('card');
+    expect(find('card')).toEqual(a);
+    expect(a.item.rarity).toBe('epic');
+    expect(a.item.itemLevel).toBe(dungeonItemLevel(5, false));
+    expect(a.item.lines.length).toBeGreaterThan(0);
+    const won = resolveEvent(
+      chasm,
+      0,
+      { hp: { a: 10 }, hpMax: { a: 10 }, keepsakes: [], treasure: a },
+      WIN,
+    );
+    expect(won.treasure).toBe(a);
   });
 });
 

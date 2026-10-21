@@ -92,11 +92,11 @@ Content: `packages/game/src/content/data/dungeon-events.json`, with its schema i
 "A narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There's a valuable treasure on the other side." **Cross the plank**: 50% the team crosses and takes the treasure, 50% the whole team falls and the run ends as a defeat (half the pack kept). **Don't risk it**: nothing happens.
 
 - **Rarity:** each mystery room a run steps into becomes the chasm with 15% (`chanceBp: 1500`), from depth 3, at most once a run: about one run in six to seven that walks a mystery room at depth 3 or more. Content: `rare` on the event; the odds of the crossing are the gamble's `chanceBp` (5000).
-- **The treasure** is rolled when the room opens (`rollTreasure`, live gear rng), stored in the run's pending state and shown in the room before the choice. One kind is drawn evenly among those that apply to the player:
+- **The treasure** is rolled when the room opens (`rollTreasure`, live gear rng), stored in the run's pending state and shown in the room before the choice (a gear piece as its full item card, tap or hover, no Equip: the rolled item is the one a won run grants). One kind is drawn evenly among those that apply to the player:
   - an **Epic gear piece** at the item level of the run's depth (`rollDungeonItem`), tagged with the element of one team creature;
   - a **blueprint** the player does not know, one tier above their best (a base's tier is its `minItemLevel`: 1, 5, 10, and the gear sets' 12; the nearest unknown tier above the best known one, else the highest unknown one); only when they lack one;
   - **two great supplies** of one kind (never a lure);
-  - **3 shards** (one per creature, by its element) and **2 glimmer** (`RULES.dungeon.treasure`).
+  - **6 shards** (two per creature of a team of three, by its element) and **4 glimmer** (`RULES.dungeon.treasure`).
   - A creature of a species the player lacks is not in the table yet: granting a creature from a run needs its own grant path (collection rules, talents, server firsts) and is a follow-up.
 - **Delivery:** a won treasure is kept in the run state (`treasures`) and paid at the run's end through the run's own grant (`dungeon:<day>:<attempt>`), so a replay pays nothing twice. It is part of the pack in spirit: a run that ends in a defeat (the fall, or any later one) **does not win it** (an item cannot be halved). Heading home, a clear, or a run left open and closed pays it. The end screen shows it as finds (gear, blueprint, supplies, parts) and says when it was lost.
 - **Old runs:** a run saved before this change has no `treasures` or `rare` list and loads as having none.

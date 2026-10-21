@@ -30,6 +30,7 @@ const canHover = (event: PointerEvent): boolean =>
  */
 export function FindItem({
   id,
+  card,
   baseId,
   rarity,
   level,
@@ -44,6 +45,13 @@ export function FindItem({
    * plain.
    */
   id?: string | undefined;
+  /**
+   * The full card handed over directly, for a piece the player does not own yet (a rare room's treasure:
+   * the server's own card of the rolled piece). The row opens it like an owned one, but with no Equip button.
+   * The rule: Equip appears only for a piece found by `id` in the player's own gear; a `card` is never
+   * equippable. When both are given, `card` wins (and so no Equip).
+   */
+  card?: GearItem | undefined;
   baseId: string;
   rarity: GearRarity;
   level?: number | undefined;
@@ -54,7 +62,9 @@ export function FindItem({
 }) {
   const slot = gearBase(baseId)?.slot;
   const items = useContext(GearItemsContext);
-  const item = id === undefined ? undefined : items.find((i) => i.id === id);
+  const owned = id === undefined ? undefined : items.find((i) => i.id === id);
+  const item = card ?? owned;
+  const canEquip = card === undefined;
   const equip = useContext(EquipContext);
   const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();
   // Opened by hovering: leaving closes it. A tap or Enter while it is open keeps it open (pinned).
@@ -88,7 +98,7 @@ export function FindItem({
         }}
       >
         <ItemCard item={shown} plainRarity />
-        {equip !== null && (
+        {equip !== null && canEquip && (
           <div class="pop-actions pop-actions-center">
             <button
               type="button"

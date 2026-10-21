@@ -7,6 +7,7 @@
  * The server owns all of it. Nothing in it comes from the client, and nothing in what is sent out
  * holds a seed: the seeds of the fights are in `dungeon_steps` only.
  */
+import { previewItemView } from './gear-access';
 import {
   RULES,
   abilitiesFor,
@@ -294,8 +295,11 @@ export function keepsakeViews(ids: readonly string[]): DungeonKeepsakeView[] {
   });
 }
 
-/** A treasure as the client is shown it: the rolled piece itself, the blueprint's base, the supplies or the parts. */
-export function treasureView(treasure: Treasure): DungeonTreasureView {
+/**
+ * A treasure as the client is shown it: the rolled piece itself, the blueprint's base, the supplies or the
+ * parts. With `cardDepth` (the room that is still waiting for the choice) a gear piece carries its full card.
+ */
+export function treasureView(treasure: Treasure, cardDepth?: number): DungeonTreasureView {
   switch (treasure.kind) {
     case 'gear':
       return {
@@ -303,6 +307,8 @@ export function treasureView(treasure: Treasure): DungeonTreasureView {
         baseId: treasure.item.baseId,
         rarity: treasure.item.rarity,
         itemLevel: treasure.item.itemLevel,
+        // The pending room also sends the piece's full card (the stored item's own stats and lines, not a re-roll).
+        ...(cardDepth === undefined ? {} : { card: previewItemView(treasure.item, cardDepth) }),
       };
     case 'blueprint':
       return { kind: 'blueprint', baseId: treasure.baseId };
@@ -314,7 +320,11 @@ export function treasureView(treasure: Treasure): DungeonTreasureView {
 }
 
 /** The scene of a mystery room with its two options (the exact outcomes are in their descriptions) and its treasure, if it rolled one. */
-export function eventView(eventId: string, treasure?: Treasure): DungeonEventView | null {
+export function eventView(
+  eventId: string,
+  treasure?: Treasure,
+  depth?: number,
+): DungeonEventView | null {
   const def = dungeonEvent(eventId);
   if (def === undefined) return null;
   return {
@@ -322,7 +332,7 @@ export function eventView(eventId: string, treasure?: Treasure): DungeonEventVie
     name: def.name,
     text: def.text,
     options: def.options.map((o) => ({ label: o.label, description: o.description })),
-    ...(treasure === undefined ? {} : { treasure: treasureView(treasure) }),
+    ...(treasure === undefined ? {} : { treasure: treasureView(treasure, depth) }),
   };
 }
 
@@ -363,7 +373,7 @@ function pendingView(st: RunState, depth: number): DungeonPendingView {
     };
   }
   if (pending.kind === 'event') {
-    const event = eventView(pending.eventId, pending.treasure);
+    const event = eventView(pending.eventId, pending.treasure, depth);
     return event === null ? null : { kind: 'event', event };
   }
   return {

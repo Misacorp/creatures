@@ -10,6 +10,7 @@
 import type { Creature } from './api';
 import { sampleRoster } from './creature-card-sample';
 import { sampleHistory } from './dungeon-map-sample';
+import { sampleGearItem } from './workbench/gear-sample';
 import replayFixture from './fixtures/dungeon-replay.json';
 import todayFixture from './fixtures/dungeon-today.json';
 import type {
@@ -390,12 +391,19 @@ export function omitKey<T extends object, K extends keyof T>(value: T, key: K): 
 
 /** The four kinds of treasure the chasm shows, as the server rolls them (`rollTreasure`). */
 export const SAMPLE_TREASURES = {
-  gear: { kind: 'gear', baseId: 'forge-scarf', rarity: 'epic', itemLevel: 9 },
+  gear: {
+    kind: 'gear',
+    baseId: 'forge-scarf',
+    rarity: 'epic',
+    itemLevel: 9,
+    // The card the server sends with the waiting room: the rolled piece's real stats and lines.
+    card: sampleGearItem({ id: 'preview', baseId: 'forge-scarf', rarity: 'epic', itemLevel: 9 }),
+  },
   blueprint: { kind: 'blueprint', baseId: 'felt-hat' },
   supplies: { kind: 'supplies', supplyId: 'lantern-great', count: 2 },
   shards: {
     kind: 'shards',
-    parts: { 'tide-shard': 1, 'ember-shard': 1, 'grove-shard': 1, glimmer: 2 },
+    parts: { 'tide-shard': 2, 'ember-shard': 2, 'grove-shard': 2, glimmer: 4 },
   },
 } as const satisfies Record<string, DungeonTreasureView>;
 
