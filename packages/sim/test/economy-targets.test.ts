@@ -14,7 +14,7 @@ import {
   singleRows,
   tierSteps,
 } from '../src/economy-study';
-import { PART_WORTH, WORTH_GROUPS, supplyCost, tripEv } from '../src/trip-ev';
+import { PART_WORTH, WORTH_GROUPS, kitCost, supplyCost, tripEv } from '../src/trip-ev';
 
 const inBand = (x: number, band: { min: number; max: number }): boolean =>
   x >= band.min && x <= band.max;
@@ -114,6 +114,48 @@ describe('every supply, on every trip length, with and without the common modifi
           );
           expect(roi, `${added} given ${given} on ${r.length}`).toBeLessThanOrEqual(T.pairRoi.max);
         }
+      }
+    }
+  });
+});
+
+describe('repeating short trips', () => {
+  const ids = expeditionContent.supplies.map((s) => s.id);
+  const kind = (id: string): string =>
+    expeditionContent.supplies.find((s) => s.id === id)?.kind ?? '';
+  const kits: string[][] = [
+    ...ids.map((id) => [id]),
+    ...ids.flatMap((a, i) =>
+      ids.slice(i + 1).flatMap((b) => (kind(a) === kind(b) ? [] : [[a, b]])),
+    ),
+  ];
+  const cases = [
+    { k: 3, short: 'short', long: 'medium' },
+    { k: 6, short: 'short', long: 'long' },
+    { k: 2, short: 'medium', long: 'long' },
+  ] as const;
+
+  it('never nets more than one long trip of the same hours (worth minus supply cost)', () => {
+    for (const { k, short, long } of cases) {
+      for (const kit of kits) {
+        const spam = k * (tripEv(short, kit).total - kitCost(kit));
+        const one = tripEv(long, kit).total - kitCost(kit);
+        const slack = kit.length === 1 ? 0 : T.repeat.pairSlack * one;
+        expect(spam, `${k} x ${short} vs ${long} with ${kit.join('+')}`).toBeLessThanOrEqual(
+          one + slack + T.repeat.tolerance,
+        );
+      }
+    }
+  });
+
+  it('still brings more in total with the supplies spent (a kit of only basic supplies is too weak to show it)', () => {
+    for (const { k, short, long } of cases) {
+      for (const kit of kits) {
+        if (kit.every((id) => id.endsWith('-basic'))) continue;
+        expect(
+          k * tripEv(short, kit).total,
+          `${k} x ${short} vs ${long} with ${kit.join('+')}`,
+        ).toBeGreaterThan(tripEv(long, kit).total);
       }
     }
   });

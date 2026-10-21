@@ -1158,6 +1158,23 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
   Flagged singles after: only the three lanterns on 2 h. Each tier gains more than the one below at every length, and no single leaves its band with Guard (+30% parts), Keen nose tier 3 (+15%) or a +25% parts Boon, or all three. Pairs: the second supply given the first now returns 1.1 to 4.9 (a lure with a map or lantern at 24 h is the top); before, up to 7.6.
 
 - **Refining.** Three basics against one good, absolute gain per trip at 12 h: lure 66 vs 46, map 26 vs 31, lantern 27 vs 29, satchel 25 vs 30 (good against great: lure 138 vs 84, map 94 vs 71, lantern 88 vs 37, satchel 90 vs 64). A trip carries one supply of a kind, so refining is for carrying fewer, better supplies; reported, no rule.
+
+- **Follow-up: long trips stay the efficient choice (2026-10-21).** Exact EV showed that repeating short trips with the same supply beat one long trip of the same hours on value minus supply cost for satchel-great (3 x 2 h net 101.8 vs 6 h 92.8; 6 x 2 h 203.5 vs 12 h 187.7) and, barely, lantern-great (87.7 vs 84.9; 175.4 vs 174.3). Cause: a supply's fixed part repeats with every trip, and a long trip has bonus ticks (7 ticks for 6 h, 15 for 12 h, against 2 per short trip). Misa: spamming big supplies should be hard to pull off because of the crafting effort, so fix it with a tiny change. New target (`ECONOMY_TARGETS.repeat`): for every single supply, k short trips net (worth minus cost) at most what one long trip of the same hours nets (3 x 2 h vs 6 h, 6 x 2 h vs 12 h, 2 x 6 h vs 12 h), and k short trips still bring more gross, so more supplies means more stuff. Gross is not asserted for kits of only basic supplies (too weak to beat the long trip's own bonus ticks). Pairs may go over by 20% of the long trip's net (`pairSlack`): stacked fixed bonuses (a lure's bonus roll with a lantern, a map's fixed ticks with a satchel) reach 1.17 times at worst, and removing that needs more than one supply's scalars without leaving the ROI bands.
+  - Action, `supplies.json`: satchel-great `scrap` 10 to 9, `shardBp` 25000 to 22500, `glimmerBp` 3000 to 2700, `partsBp` 10000 to 14000; lantern-great `bonusBp` 4420 to 3800, `deepBp` 5720 to 6300.
+  - Outcome, great supplies only (cost 70 and 90 Bait; gross and net in Bait):
+
+    | Supply        | Trips    | Gross before | Net before | Gross after | Net after |
+    | ------------- | -------- | ------------ | ---------- | ----------- | --------- |
+    | satchel-great | 3 x 2 h  | 197.8        | 101.8      | 188.3       | 92.3      |
+    | satchel-great | 1 x 6 h  | 124.8        | 92.8       | 124.4       | 92.4      |
+    | satchel-great | 6 x 2 h  | 395.5        | 203.5      | 376.5       | 184.5     |
+    | satchel-great | 1 x 12 h | 219.7        | 187.7      | 223.6       | 191.6     |
+    | lantern-great | 3 x 2 h  | 141.7        | 87.7       | 131.5       | 77.5      |
+    | lantern-great | 1 x 6 h  | 102.9        | 84.9       | 99.8        | 81.8      |
+    | lantern-great | 6 x 2 h  | 283.4        | 175.4      | 263.1       | 155.1     |
+    | lantern-great | 1 x 12 h | 192.3        | 174.3      | 189.8       | 171.8     |
+
+    ROI after (2 / 6 / 12 / 24 h): satchel-great 1.32 / 1.63 / 2.13 / 3.20 (before 1.42 / 1.65 / 2.01 / 2.79), lantern-great 1.30 / 1.54 / 1.92 / 2.70 (before 1.48 / 1.71 / 2.05 / 2.77). All existing bands still hold.
 - **Lantern exception.** Its fixed part is "the first creature may be from the deeper area", which needs a creature: 23% of 2 h trips, 99% of 24 h ones. A lantern worth 1.1 at 2 h would be worth 4.5 at 24 h, so it is tuned to the 12 h and 24 h targets and is not worth its parts on a 2 h trip (`ECONOMY_TARGETS.lanternShortRoi`).
 - **Expected:** players with supplies see gains that grow with trip length; lantern tiers 2 and 3 are cheaper to craft; lures lean on the fixed bonus roll. The sim's headline pins (`run.test.ts`) are not re-pinned here.
 - **Follow-ups:**

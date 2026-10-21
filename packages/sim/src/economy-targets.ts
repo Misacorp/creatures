@@ -28,6 +28,14 @@ export const ECONOMY_TARGETS = {
   shortGearChance: { min: 0.09, max: 0.11 },
   /** One plain craft: the parts of a common gear piece. */
   craft: { scrap: 6, shards: 1 },
+  /**
+   * Long trips stay the efficient choice: for the same hours, one long trip with a kit nets (worth minus the
+   * kit's cost) at least as much as repeating shorter trips with that kit. `tolerance` is in Bait (rounding
+   * only). `pairSlack` is how far a two-supply kit may go over it, as a share of the long trip's net: pairs
+   * stack fixed bonuses (a lure's bonus roll, a map's fixed ticks) that repeat with every trip, which a
+   * single supply's scalars cannot undo without leaving the ROI bands.
+   */
+  repeat: { tolerance: 0.01, pairSlack: 0.2 },
   /** The trip lengths, shortest first (the order "per hour" must rise in). */
   lengths: ['short', 'medium', 'long', 'day'] as readonly ExpeditionLength[],
 } as const;

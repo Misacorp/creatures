@@ -934,10 +934,10 @@ describe('supplies and the rolls of a trip', () => {
   it('gives a lantern a deeper chance per creature and a fixed chance of a bonus creature from there, and a satchel a fixed part', () => {
     expect(kitDeepBonusBp([])).toBe(0);
     expect(SUPPLY_TIERS.map((t) => kitDeepBonusBp([supply(`lantern-${t}`)]))).toEqual([
-      1_040, 2_990, 4_420,
+      1_040, 2_990, 3_800,
     ]);
     expect(SUPPLY_TIERS.map((t) => kitDeepBp([supply(`lantern-${t}`)]))).toEqual([
-      1_040, 2_990, 5_720,
+      1_040, 2_990, 6_300,
     ]);
     expect(satchelBonus([])).toEqual({
       partsBp: 0,
@@ -947,10 +947,10 @@ describe('supplies and the rolls of a trip', () => {
       glimmerBp: 0,
     });
     const satchels = SUPPLY_TIERS.map((t) => satchelBonus([supply(`satchel-${t}`)]));
-    expect(satchels.map((x) => x.scrap)).toEqual([1, 4, 10]);
-    expect(satchels.map((x) => x.shardBp)).toEqual([3_500, 10_000, 25_000]);
-    expect(satchels.map((x) => x.glimmerBp)).toEqual([0, 600, 3_000]);
-    expect(satchels.map((x) => x.partsBp)).toEqual([2_000, 6_600, 10_000]);
+    expect(satchels.map((x) => x.scrap)).toEqual([1, 4, 9]);
+    expect(satchels.map((x) => x.shardBp)).toEqual([3_500, 10_000, 22_500]);
+    expect(satchels.map((x) => x.glimmerBp)).toEqual([0, 600, 2_700]);
+    expect(satchels.map((x) => x.partsBp)).toEqual([2_000, 6_600, 14_000]);
   });
 
   it('chances an end-of-trip choice from the base, the rank and the supplies, the best tier a sure thing', () => {
@@ -1460,8 +1460,8 @@ describe('trip loot', () => {
     const at = (id: string, draws: number[]) =>
       rollTripLoot(scripted(draws), { ...base, ticks: 0, kit: [supply(id)] }).parts;
     // Draws: the shard count, then the glimmer chance (only for a satchel that has one).
-    expect(at('satchel-great', [0, 0])).toEqual({ scrap: 10, 'tide-shard': 3, glimmer: 1 });
-    expect(at('satchel-great', [9_999, 9_999])).toEqual({ scrap: 10, 'tide-shard': 2 });
+    expect(at('satchel-great', [0, 0])).toEqual({ scrap: 9, 'tide-shard': 3, glimmer: 1 });
+    expect(at('satchel-great', [9_999, 9_999])).toEqual({ scrap: 9, 'tide-shard': 2 });
     expect(at('satchel-good', [0, 0])).toEqual({ scrap: 4, 'tide-shard': 1, glimmer: 1 });
     expect(at('satchel-good', [9_999, 9_999])).toEqual({ scrap: 4, 'tide-shard': 1 });
     expect(at('satchel-basic', [0])).toEqual({ scrap: 1, 'tide-shard': 1 });
