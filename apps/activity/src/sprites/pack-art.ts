@@ -29,28 +29,27 @@ export const PACK_ART: SpriteDef = {
 };
 
 /**
- * The run's keepsakes: a gold locket on a ring, a tall oval (10 x 11) with a cut red gem set in the middle, 16 x 16 (drawn at scale 4
+ * The run's keepsakes: a gold locket on a ring, an oval 11 pixels wide and 11 tall (drawn whole, not mirrored, so it can be odd) with a cut red gem set in the middle, 16 x 16 (drawn at scale 4
  * beside the keepsakes like the backpack beside the pack). Small treasures kept for this run only.
  */
 export const LOCKET_ART: SpriteDef = {
-  mirror: true,
   palette: { y: '#ffd25a', k: '#8a5a12', h: '#fff2b8', r: '#e8505b', d: '#a02a3a' },
   rows: [
-    '......kk',
-    '.....k..',
-    '.....k..',
-    '......kk',
-    '.....kkk',
-    '....kyyy',
-    '...kyhhy',
-    '...kyhyk',
-    '...khykr',
-    '...kykrr',
-    '...kyykd',
-    '...kyyyk',
-    '...kyyyy',
-    '....kyyy',
-    '.....kkk',
-    '........',
+    '.......kkk......',
+    '......k...k.....',
+    '......k...k.....',
+    '.......kkk......',
+    '......kkkkk.....',
+    '....kkyyyyykk...',
+    '...kyhhyyyyyyk..',
+    '...kyhyykyyyyk..',
+    '...khyykrkyyyk..',
+    '...kyykrrrkyyk..',
+    '...kyyykdkyyyk..',
+    '...kyyyykyyyyk..',
+    '...kyyyyyyyyyk..',
+    '....kkyyyyykk...',
+    '......kkkkk.....',
+    '................',
   ],
 };

@@ -38,6 +38,7 @@
   --velvet: #4a2350;
   --velvet-dark: #2a1030;
   --velvet-light: #6b3a73;
+  --velvet-glow: #b56cc4; /* the keepsake chips' edge: the keepsakes' own purple */
   --display: 'Jersey 10', 'Courier New', ui-monospace, monospace;
   --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --px: 3px; /* one "pixel" of UI chrome */
