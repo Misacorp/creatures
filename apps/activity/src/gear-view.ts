@@ -825,7 +825,7 @@ export function supplyLevelBlocker(
 
 // --- Blueprints ---
 
-interface BlueprintView {
+export interface BlueprintView {
   baseId: string;
   name: string;
   slot: GearSlot;

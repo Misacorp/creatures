@@ -220,6 +220,7 @@ export function Workshop({
         gear={gear}
         creatures={state.creatures}
         busy={busy}
+        error={error}
         loadPreview={actions.previewCraft}
         onCraft={async (baseId, creatureId, reach, treat) =>
           (await actions.startJob({
