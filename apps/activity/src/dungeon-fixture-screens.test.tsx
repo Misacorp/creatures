@@ -257,7 +257,7 @@ describe('the pre-run card with the real map', () => {
     expect(byClass(page.root, 'dungeon-card')).toHaveLength(0);
     expect(byClass(page.root, 'dungeon-run-map')).toHaveLength(1);
     expect(visibleText(page.root)).toContain('At the entrance');
-    expect(visibleText(page.root)).toContain('Your pack is empty.');
+    expect(visibleText(byClass(page.root, 'run-pack')[0] as FakeElement)).toContain('Empty');
     // The three creatures of the row, in order.
     expect(byClass(page.root, 'run-tile')).toHaveLength(3);
   });
@@ -284,7 +284,7 @@ describe('a move into a fight, with the real answer', () => {
     await playOut(root);
     // Back on the map, one step on, standing on the room that was played.
     expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
-    expect(visibleText(root)).toContain('In your pack:');
+    expect(byName(root, 'ul', /^In your pack:/)).toHaveLength(1);
     expect(answer.state.at).toBe('f0l0');
     expect(visibleText(root)).toContain('Room 1 / 7');
   });

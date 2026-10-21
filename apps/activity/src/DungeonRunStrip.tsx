@@ -12,6 +12,7 @@ import type {
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { SmallCreature } from './SmallCreature';
+import { PACK_ART } from './sprites/pack-art';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Bar } from './ui/Bar';
@@ -120,20 +121,31 @@ export function RunRow({
 }
 
 /**
- * The pack as icons with numbers ("In your pack: 2 Bait, 1 Scrap") and, when it holds anything, an
- * "At risk" tag: a defeat keeps only half of it. Empty, it says so in a quiet line.
+ * The pack: a "Pack" title, the backpack with an "At risk" tag hung under it (a defeat keeps only half;
+ * the tag opens why), and the loot inside as icons with numbers. Empty, the backpack has no tag and the
+ * pack says so.
  */
 export function RunPack({ pack }: { pack: DungeonPack }) {
   const items = packItems(pack);
-  if (items.length === 0) return <p class="muted run-pack">{packLine(pack)}</p>;
   return (
-    <div class="run-pack">
-      <span class="run-pack-label">In your pack:</span>
-      <CountBadgeList items={items} label={packLine(pack)} class="run-pack-items" />
-      <Tag kind="badge" tone="bad" entry="dungeon-pack">
-        At risk
-      </Tag>
-    </div>
+    <section class="run-ledger-cell run-pack" aria-label="Your pack">
+      <p class="run-ledger-title">Pack</p>
+      <div class="run-pack-body">
+        <div class="run-pack-bag">
+          <Sprite sprite={PACK_ART} scale={3} />
+          {items.length > 0 && (
+            <Tag kind="badge" tone="bad" entry="dungeon-pack" class="run-pack-risk">
+              At risk
+            </Tag>
+          )}
+        </div>
+        {items.length === 0 ? (
+          <p class="muted run-pack-empty">Empty</p>
+        ) : (
+          <CountBadgeList items={items} label={packLine(pack)} class="run-pack-items" />
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -141,17 +153,18 @@ export function RunPack({ pack }: { pack: DungeonPack }) {
 export const KEEPSAKE_ONLY_LINE = 'Only for this run. It is gone when the run ends.';
 
 /**
- * The keepsakes the run holds: a "Keepsakes" label with a "?" that explains they last only for the
- * run, then one chip each; a tap opens a sheet with what that one does. Nothing when there are none.
+ * The keepsakes the run holds: a "Keepsakes" title with a "?" that explains they last only for the
+ * run, then one chip each under it; a tap opens a sheet with what that one does. Nothing when there
+ * are none.
  */
 export function RunKeepsakes({ keepsakes }: { keepsakes: readonly DungeonKeepsakeView[] }) {
   const [shown, setShown] = useState<DungeonKeepsakeView | null>(null);
   if (keepsakes.length === 0) return null;
   return (
-    <div class="run-keepsakes-row">
-      <span class="run-keepsakes-label">
+    <section class="run-ledger-cell run-keepsakes-row" aria-label="Keepsakes">
+      <p class="run-ledger-title">
         Keepsakes <GlossaryTag entry="keepsake" look="help" />
-      </span>
+      </p>
       <ul class="run-keepsakes" aria-label="Keepsakes">
         {keepsakes.map((k) => (
           <li key={k.id}>
@@ -179,7 +192,7 @@ export function RunKeepsakes({ keepsakes }: { keepsakes: readonly DungeonKeepsak
         <p>{shown?.description}</p>
         <p class="muted">{KEEPSAKE_ONLY_LINE}</p>
       </Drawer>
-    </div>
+    </section>
   );
 }
 
@@ -191,9 +204,9 @@ export function DungeonRunStrip({ state }: { state: DungeonRunState }) {
   const event =
     state.pending === null && state.lastEvent !== null ? lastEventText(state.lastEvent) : null;
   return (
-    <section class="raid-section dungeon-run-strip" aria-label="Your run">
+    <section class="raid-section dungeon-run-strip pix-panel" aria-label="Your run">
       <p class="run-status">
-        <span class="pix">{runStatusLine(state)}</span>
+        <span>{runStatusLine(state)}</span>
         {state.landmark && (
           <>
             {' '}
@@ -211,10 +224,13 @@ export function DungeonRunStrip({ state }: { state: DungeonRunState }) {
       </p>
       {/* At the camp the card has the row itself (to rearrange, with the same HP under each). */}
       {state.pending?.kind !== 'camp' && <RunRow team={state.team} />}
-      <RunKeepsakes keepsakes={state.keepsakes} />
-      <RunPack pack={state.pack} />
+      {/* What the run carries: the pack and the keepsakes, side by side when there is room. */}
+      <div class="run-ledger">
+        <RunPack pack={state.pack} />
+        <RunKeepsakes keepsakes={state.keepsakes} />
+      </div>
       {event !== null && (
-        <p class="run-event" role="status">
+        <p class="run-event prose" role="status">
           <strong>{event.title}.</strong> {event.outcome}
         </p>
       )}

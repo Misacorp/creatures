@@ -92,7 +92,7 @@ const dungeonRunStrip: Entry = {
   file: 'apps/activity/src/DungeonRunStrip.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The strip at the top of an open dungeon run (above the map, a mystery room and the camp): where the run is, the row with an HP bar and the HP in words under each creature (a knocked-out one is grey with the skull), the keepsakes as chips you can tap, the pack as icons with numbers and an "At risk" tag, and the line about what the last mystery room did.',
+    'The strip at the top of an open dungeon run (above the map, a mystery room and the camp): where the run is, the row with an HP bar and the HP in words under each creature (a knocked-out one is grey with the skull), then what the run carries on two ink panels (side by side when they fit, stacked on a phone): the Pack (a pixel backpack with "At risk" hung under it and the loot as icons with numbers beside it) and the Keepsakes (a title with its "?" and the chips you can tap under it), and the line about what the last mystery room did.',
   controls: {
     at: { kind: 'select', options: ['entrance', 'mid-run', 'camp'] },
     hp: {

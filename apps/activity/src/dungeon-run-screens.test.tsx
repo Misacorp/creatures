@@ -114,8 +114,8 @@ describe('the strip of an open run', () => {
       'team-member run-tile ok',
       'team-member run-tile ko',
     ]);
-    // The pack and its warning.
-    expect(text).toContain('In your pack:');
+    // The pack (the backpack, its loot named for a screen reader) and its warning.
+    expect(byName(root, 'ul', /^In your pack:/)).toHaveLength(1);
     expect(byName(root, 'span', 'Bait: 2')).toHaveLength(1);
     expect(byName(root, 'span', 'Scrap: 1')).toHaveLength(1);
     expect(text).toContain('At risk');
@@ -125,7 +125,7 @@ describe('the strip of an open run', () => {
 
   it('says the pack is empty, with no warning, and has no keepsake row when there are none', () => {
     const { root } = draw(<DungeonRunStrip state={sampleState()} />);
-    expect(visibleText(root)).toContain('Your pack is empty.');
+    expect(visibleText(byClass(root, 'run-pack')[0] as FakeElement)).toContain('Empty');
     expect(visibleText(root)).not.toContain('At risk');
     expect(byClass(root, 'run-keepsakes')).toHaveLength(0);
     expect(visibleText(root)).toContain('Depth 3 · At the entrance');

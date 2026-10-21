@@ -2486,3 +2486,13 @@ Misa, play-testing the camp: tapping a creature to see it (what it wears) and th
 - **Keyboard reordering at the camp is gone with it** (Enter on two creatures was the same tap). Misa accepts this: accessibility is nice where it is cheap, and the UI is heading towards a more game-like look.
 - The same rule now holds on every board: a tap shows (the dungeon team's configurator, the raid board's configurator or popover, the camp's popover), a drag moves.
 - Tests drag for real in the fake DOM: `test-drag.ts` gives tiles a layout and a window for the move and release listeners. The fake DOM gained `closest` and `dataset`.
+
+## 2026-10-21: The run strip's pack is a backpack, and the keepsakes get their own panel
+
+Misa: the "In your pack" line said what you carry, but not visually that it can be lost; the fonts were wrong, "At risk" sat out of line, and "Keepsakes ? Chalk Mark" read as one jumbled line.
+
+- **Two ink panels under the row** (`.run-ledger`): **Pack** and **Keepsakes**, side by side when both fit (`minmax(15rem, 1fr)`), one under the other on a phone. Each has a small title in the pixel font.
+- **The pack is a pixel backpack** (`sprites/pack-art.ts`, 16 x 16 at scale 3) with the red "At risk" tag hung under it (it still opens the pack's glossary entry), and the loot as count badges beside it. An empty pack shows the backpack without the tag and "Empty".
+- **Keepsakes**: the title with its "?", the chips under it. The results screen uses the same block.
+- **The whole strip is a pixel panel** (`.pix-panel`); the last mystery room's sentence stays in the body font (`.prose`), as reading text does.
+- An alternative look (the whole pack panel drawn as leather, the loot in a pocket, the tag at the corner) was mocked for Misa to choose from; the ink panel is the default because it matches every other panel.
