@@ -21,7 +21,8 @@
   font-size: var(--fs-row);
 }
 
-.pick-fam {
+.pick-fam,
+.pick-rank {
   display: flex;
   flex-wrap: wrap;
   align-items: center;

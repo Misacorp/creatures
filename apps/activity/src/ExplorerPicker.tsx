@@ -60,7 +60,7 @@ export function ExplorerPicker({
         fieldClass={`explorer-picker${compact ? ' compact' : ''}`}
         more={({ explorer: option }) =>
           compact ? (
-            <span class="pick-fam">
+            <span class="pick-rank">
               <Tag>{`Rank ${String(option.rank)}`}</Tag>
               <Stars
                 stars={option.stars}
