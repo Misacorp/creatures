@@ -2485,3 +2485,11 @@ Misa: the Workshop item drawer's "Equip on" list did not show which creatures al
 - **An empty slot draws nothing.** The tile is the signal; a dashed "empty" box on most rows would make the list noisier and say less. The creature that wears this very item shows it too, next to "Wears it now".
 - **Client only.** `PickerOption.worn` is filled by `equipOptions` from `Creature.gear` (the state view already carries base, rarity and item level of each worn item), matched on the item's slot. No server change.
 - The tile has `role="img"` and the label "Wearing <item>, item level N, <rarity>".
+
+## 2026-10-21: A found item opens its item card (tap, or hover with a mouse)
+
+Misa asked to inspect an item where it is found, ideally on hover on a computer.
+
+- **`FindItem` does it itself**, so every screen that pays gear gets it (dungeon end screen, trip result, raid summary, other grants via `LootList`). The row becomes one button that opens the full `ItemCard` in the shared page popover (`host.openCustom`). Tap and Enter/Space open it, a second tap or Escape closes it. Hover (a mouse or pen, and only when `(hover: hover) and (pointer: fine)` matches) opens it and leaving closes it; a click while it is open from hover pins it. A hover never replaces another open popover.
+- **Where the data comes from.** A grant's gear carries only base, rarity and level; the card's stats and lines are the server's and are not worked out in the client. `Game` therefore provides the gear view's items as `GearItemsContext`, and `FindItem` takes an optional `id` and looks the item up. No id (a boss chest's banked gear on the descent card and node drawer), the gear view not loaded yet, or the item since dismantled: the row stays plain, as before, with its badges tappable.
+- **Badges inside the button are plain** (not tappable), as in the gear list, so no button sits inside a button. The card's own badges are plain too.

@@ -42,6 +42,8 @@ import { TabBar } from './TabBar';
 import type { Tab } from './tabs';
 import { useActionRunner } from './use-action-runner';
 import { useForecast } from './use-forecast';
+import { GearItemsContext } from './gear-items-context';
+import type { GearItem } from './gear-types';
 import { TreatTimesContext } from './TreatBox';
 import { useGearState } from './use-gear-state';
 import { useRoom } from './use-room';
@@ -52,6 +54,9 @@ import { LevelResetCard } from './LevelResetCard';
 import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
 import type { TeamConfigure } from './TeamCreaturePage';
+
+/** Before the gear view has loaded. */
+const NO_ITEMS: readonly GearItem[] = [];
 
 export function Game({
   initial,
@@ -561,10 +566,12 @@ export function Game({
 
   return (
     <TreatTimesContext.Provider value={forecast?.today?.treatTimes ?? 2}>
-      {head}
-      {content}
-      {swap}
-      {devPanel}
+      <GearItemsContext.Provider value={gear?.items ?? NO_ITEMS}>
+        {head}
+        {content}
+        {swap}
+        {devPanel}
+      </GearItemsContext.Provider>
     </TreatTimesContext.Provider>
   );
 }
