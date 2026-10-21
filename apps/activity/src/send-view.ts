@@ -109,28 +109,55 @@ export function clampLength(length: ExpeditionLength, rank: number): ExpeditionL
   return open.at(-1)?.id ?? EXPEDITION_LENGTHS[0];
 }
 
-/** Why a trip cannot be sent as chosen; null when it can. */
-export function sendBlocker(args: {
+/** The steps of the phone wizard: who goes, pack up (length, supplies, treat), ready (the summary). */
+export type SendStep = 'who' | 'pack' | 'ready';
+
+/** What a trip is as chosen so far: the plain data the blockers read. */
+export interface SendChoice {
   slots: Slots;
   explorer: ExplorerOption | undefined;
   place: DestinationCard | undefined;
   length: ExpeditionLength;
   picks: readonly SupplyPick[];
   stock: Readonly<Record<string, number>>;
-}): string | null {
-  const { slots, explorer, place, length, picks, stock } = args;
+}
+
+/** Why the Who step cannot go on: no free slot, no place, nobody, or this creature cannot go. */
+function whoBlocker({ slots, explorer, place }: SendChoice): string | null {
   if (slots.used >= slots.total) {
     return `All ${String(slots.total)} expedition ${slots.total === 1 ? 'slot is' : 'slots are'} in use. Claim a trip first.`;
   }
   if (place === undefined) return 'Pick a place first.';
   if (explorer === undefined) return 'No creature to send.';
   if (explorer.blocked !== null) return `${explorer.name}: ${explorer.blocked}.`;
-  const lock = place.locked[0];
-  if (lock !== undefined) return lock.text;
-  if (!lengthOpen(length, explorer.rank)) return 'That trip is too long for this explorer.';
-  const kit = kitBlocker(picks, stock);
-  if (kit !== null) return kit;
   return null;
+}
+
+/** Why the Pack step cannot go on: a length too long for the explorer or a supply that is not in stock. */
+function packBlocker({ explorer, length, picks, stock }: SendChoice): string | null {
+  if (explorer !== undefined && !lengthOpen(length, explorer.rank)) {
+    return 'That trip is too long for this explorer.';
+  }
+  return kitBlocker(picks, stock);
+}
+
+/**
+ * Why Next is disabled on a step (null when it is not): Who and Pack each check their own part, Ready
+ * checks everything a send needs (`sendBlocker`).
+ */
+export function stepBlocker(step: SendStep, form: SendChoice): string | null {
+  if (step === 'who') return whoBlocker(form);
+  if (step === 'pack') return packBlocker(form);
+  return sendBlocker(form);
+}
+
+/** Why a trip cannot be sent as chosen; null when it can. A place the clock shuts counts ("Opens tonight at 20:00"). */
+export function sendBlocker(args: SendChoice): string | null {
+  const who = whoBlocker(args);
+  if (who !== null) return who;
+  const rule = args.place?.timeRule ?? null;
+  if (rule !== null) return rule.text;
+  return packBlocker(args);
 }
 
 /** What the small-creature popover shows for an explorer; null for a species the content does not know. */

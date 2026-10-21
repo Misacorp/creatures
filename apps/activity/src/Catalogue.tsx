@@ -49,8 +49,8 @@ export function Catalogue({
             <li key={other.id}>
               <button
                 type="button"
-                class={`dot-button${i === index ? ' on' : ''}${other.locked.length > 0 ? ' locked' : ''}`}
-                aria-label={`${other.name}${other.locked.length > 0 ? ' (closed)' : ''}`}
+                class={`dot-button${i === index ? ' on' : ''}${other.timeRule !== null ? ' locked' : ''}`}
+                aria-label={`${other.name}${other.timeRule !== null ? ' (closed)' : ''}`}
                 aria-current={i === index ? 'true' : undefined}
                 onClick={() => {
                   onIndex(i);
@@ -58,7 +58,7 @@ export function Catalogue({
               >
                 <Sprite
                   sprite={
-                    other.locked.length > 0
+                    other.timeRule !== null
                       ? glyphOrUnknown('lock')
                       : (icon ?? glyphOrUnknown('compass'))
                   }
@@ -69,7 +69,7 @@ export function Catalogue({
           );
         })}
       </ul>
-      <div class={`catalogue-hero${card.locked.length > 0 ? ' locked' : ''}`}>
+      <div class={`catalogue-hero${card.timeRule !== null ? ' locked' : ''}`}>
         <Banner destination={card.id}>
           <button
             type="button"

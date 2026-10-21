@@ -34,13 +34,13 @@ function ResidentView({ resident }: { resident: Resident }) {
   );
 }
 
-const LOCK_GLYPH: Record<string, string> = { rank: 'rank', night: 'moon', festival: 'flag' };
+const TIME_GLYPH = { night: 'moon', festival: 'flag' } as const;
 
 /**
  * The information under a place's title plate: its element, the italic flavour line, the plain facts
  * (only Moonlit Reef has one), this week's twist when it is the special place, who lives there
  * (silhouettes until found), the deeper area (a single line once it is open to the explorer that would
- * go) and, when it is closed, why. Familiarity is not here: it belongs to the creature (see
+ * go) and, when the clock shuts it (night, Festival), one line saying when it opens. Familiarity is not here: it belongs to the creature (see
  * `ExplorerPicker`). Text only apart from the pictures. The banner and the title plate are in
  * `Catalogue`.
  */
@@ -94,16 +94,11 @@ export function PlaceInfo({ card }: { card: DestinationCard }) {
           </>
         )}
       </div>
-      {card.locked.length > 0 && (
-        <ul class="locks" aria-label="Why it is closed">
-          {card.locked.map((lock) => (
-            <li key={lock.kind}>
-              <Sprite sprite={glyphOrUnknown('lock')} scale={2} />
-              <Sprite sprite={glyphOrUnknown(LOCK_GLYPH[lock.kind] ?? 'lock')} scale={2} />
-              <span>{lock.text}</span>
-            </li>
-          ))}
-        </ul>
+      {card.timeRule !== null && (
+        <p class="locks time-rule">
+          <Sprite sprite={glyphOrUnknown(TIME_GLYPH[card.timeRule.kind])} scale={2} />
+          <span>{card.timeRule.text}</span>
+        </p>
       )}
     </div>
   );

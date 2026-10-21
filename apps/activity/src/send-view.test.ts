@@ -11,6 +11,7 @@ import {
   explorerInfo,
   explorerOptions,
   sendBlocker,
+  stepBlocker,
   starsAt,
   tripsAt,
   tripsHereText,
@@ -169,5 +170,56 @@ describe('why a trip cannot be sent', () => {
         stock: { 'lure-good': 1 },
       }),
     ).toBeNull();
+  });
+});
+
+describe('why Next is disabled on a step', () => {
+  const options = explorerOptions(creatures, place('tidepools'), view);
+  const explorer = options[0];
+  const base = {
+    slots: open,
+    explorer,
+    place: place('tidepools'),
+    length: 'long' as const,
+    picks: [],
+    stock: {},
+  };
+
+  it('is open on every step for a free trip', () => {
+    for (const step of ['who', 'pack', 'ready'] as const) {
+      expect(stepBlocker(step, base)).toBeNull();
+    }
+  });
+
+  it('checks who goes on the first step only', () => {
+    const full = { ...base, slots: { ...open, total: 1, used: 1 } };
+    expect(stepBlocker('who', full)).toContain('All 1 expedition slot is in use');
+    expect(stepBlocker('pack', full)).toBeNull();
+    expect(stepBlocker('who', { ...base, explorer: undefined })).toBe('No creature to send.');
+    const low = explorerOptions(creatures, place('old-crossroads'), view).find(
+      (o) => o.blocked !== null,
+    );
+    expect(low?.blocked).toContain('Needs explorer rank');
+    expect(stepBlocker('who', { ...base, explorer: low })).toContain('Needs explorer rank');
+  });
+
+  it('checks the length and the supplies on the pack step', () => {
+    const missing = { ...base, picks: [{ id: 'lure-good', source: 'owned' as const }] };
+    expect(stepBlocker('who', missing)).toBeNull();
+    expect(stepBlocker('pack', missing)).toContain('no Sweet Lure');
+    const lowRank = { ...(explorer as NonNullable<typeof explorer>), rank: 1 };
+    expect(stepBlocker('pack', { ...base, explorer: lowRank, length: 'day' })).toBe(
+      'That trip is too long for this explorer.',
+    );
+  });
+
+  it('says on the last step that a place the clock shuts opens later; the steps before go on', () => {
+    const reef = { ...base, place: place('moonlit-reef') };
+    const text = reef.place.timeRule?.text;
+    expect(text).toMatch(/^Opens (tonight at|\w{3}) 20:00$/);
+    expect(stepBlocker('who', reef)).toBeNull();
+    expect(stepBlocker('pack', reef)).toBeNull();
+    expect(stepBlocker('ready', reef)).toBe(text);
+    expect(sendBlocker(reef)).toBe(text);
   });
 });

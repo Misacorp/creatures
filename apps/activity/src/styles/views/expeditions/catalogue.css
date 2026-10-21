@@ -156,6 +156,13 @@
   gap: 0.375rem;
 }
 
-.locks li span {
+.locks.time-rule {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.locks li span,
+.locks.time-rule span {
   min-width: 0;
 }

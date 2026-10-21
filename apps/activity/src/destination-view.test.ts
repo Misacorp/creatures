@@ -4,7 +4,7 @@ import { parseGameState } from './api';
 import {
   destinationCards,
   nextNightStart,
-  nightText,
+  opensText,
   nightWindowText,
   turnCatalogue,
 } from './destination-view';
@@ -103,25 +103,28 @@ describe('the destination catalogue', () => {
     expect(cards.filter((c) => c.twist !== null).map((c) => c.id)).toEqual(['moonlit-reef']);
   });
 
-  it('is open for a creature that has the rank and for places nothing closes', () => {
-    expect(card('tidepools').locked).toEqual([]);
-    expect(card('old-crossroads').locked).toEqual([]);
+  it('is open for places nothing closes', () => {
+    expect(card('tidepools').timeRule).toBeNull();
+    expect(card('old-crossroads').timeRule).toBeNull();
   });
 
-  it('says why a place is closed: the rank of this explorer, the night, the Festival', () => {
+  it('has no rank lock: the explorer rank is enforced per creature, every place is on the map', () => {
     const forSplashet = destinationCards(view, splashet, TZ);
-    const crossroads = forSplashet.find((c) => c.id === 'old-crossroads');
-    expect(crossroads?.locked.map((l) => l.kind)).toEqual(['rank']);
-    expect(crossroads?.locked[0]?.text).toContain(`rank ${String(card('old-crossroads').minRank)}`);
-    expect(crossroads?.locked[0]?.text).toContain('rank 1');
-    // The reef needs a higher rank than the fixture's best explorer and a night.
+    expect(forSplashet.find((c) => c.id === 'old-crossroads')?.timeRule).toBeNull();
+    const noExplorer = destinationCards(view, undefined, TZ);
+    expect(noExplorer.find((c) => c.id === 'old-crossroads')?.timeRule).toBeNull();
+    expect(card('old-crossroads').minRank).toBeGreaterThan(1);
+  });
+
+  it('says what shuts a place by the clock: the night, the Festival', () => {
     const reef = card('moonlit-reef');
-    expect(reef.locked.map((l) => l.kind)).toEqual(['rank', 'night']);
-    expect(reef.locked[1]?.text).toContain('Night only');
-    expect(reef.locked[1]?.text).toMatch(/Opens \w{3} 20:00/);
-    expect(card('festival-grounds').locked).toEqual([
-      { kind: 'festival', text: 'Only open in Festival weeks.' },
-    ]);
+    expect(reef.timeRule?.kind).toBe('night');
+    expect(reef.timeRule?.text).toBe(opensText('night', view.serverNow, TZ));
+    expect(reef.timeRule?.text).toMatch(/^Opens (tonight at|\w{3}) 20:00$/);
+    expect(card('festival-grounds').timeRule).toEqual({
+      kind: 'festival',
+      text: 'Opens in Festival weeks',
+    });
   });
 
   it('opens the night places at night and the Festival Grounds in Festival weeks', () => {
@@ -132,8 +135,7 @@ describe('the destination catalogue', () => {
       destinations: destinationsFixture.destinations.map((d) => ({ ...d, closed: [] })),
     });
     const all = destinationCards(open, cindle, TZ);
-    expect(all.find((c) => c.id === 'festival-grounds')?.locked).toEqual([]);
-    expect(all.find((c) => c.id === 'moonlit-reef')?.locked.map((l) => l.kind)).toEqual(['rank']);
+    expect(all.every((c) => c.timeRule === null)).toBe(true);
   });
 
   it('skips a place the content does not know', () => {
@@ -190,13 +192,26 @@ describe('the night window', () => {
     expect(nextNightStart(late, TZ)).toBe(late - (late % 60_000));
   });
 
-  it('writes the window and, with a timezone, when it opens', () => {
+  it('says when a place opens: tonight, or the Festival', () => {
+    // 2027-01-15 12:00 UTC is 14:00 in Helsinki, so the night starts later the same day.
     const noon = Date.UTC(2027, 0, 15, 12, 0);
-    const text = nightText(noon, TZ);
-    expect(text).toContain('Night only (20:00 to 06:00 server time)');
-    expect(text).toContain('Opens Fri 20:00.');
-    expect(nightText(noon, null)).toBe('Night only (20:00 to 06:00 server time).');
-    expect(nightText(noon, 'Nowhere/Land')).toBe('Night only (20:00 to 06:00 server time).');
+    expect(opensText('night', noon, TZ)).toBe('Opens tonight at 20:00');
+    // New York: 07:00 local, 20:00 the same day.
+    expect(opensText('night', noon, 'America/New_York')).toBe('Opens tonight at 20:00');
+    expect(opensText('festival', noon, TZ)).toBe('Opens in Festival weeks');
+    expect(opensText('night', noon, null)).toBe('Opens at night');
+    expect(opensText('night', noon, 'Nowhere/Land')).toBe('Opens at night');
+  });
+
+  it('keeps saying 20:00 around the days the clocks change', () => {
+    // Helsinki ends summer time on 2026-10-25 and starts it on 2027-03-28.
+    const days = [
+      Date.UTC(2026, 9, 24, 9, 0),
+      Date.UTC(2026, 9, 25, 5, 0),
+      Date.UTC(2027, 2, 27, 9, 0),
+      Date.UTC(2027, 2, 28, 5, 0),
+    ];
+    for (const at of days) expect(opensText('night', at, TZ)).toBe('Opens tonight at 20:00');
   });
 });
 
