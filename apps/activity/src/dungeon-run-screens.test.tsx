@@ -114,19 +114,18 @@ describe('the strip of an open run', () => {
       'team-member run-tile ok',
       'team-member run-tile ko',
     ]);
-    // The pack (the backpack, its loot named for a screen reader) and its warning.
+    // The pack (the backpack, its loot named for a screen reader) and its "?", which says what a defeat costs.
     expect(byName(root, 'ul', /^In your pack:/)).toHaveLength(1);
     expect(byName(root, 'span', 'Bait: 2')).toHaveLength(1);
     expect(byName(root, 'span', 'Scrap: 1')).toHaveLength(1);
-    expect(text).toContain('At risk');
+    expect(glossaryEntry('dungeon-pack')?.lines.join(' ')).toMatch(/A defeat keeps half/);
     // A keepsake chip, named for what it does.
     expect(byName(root, 'button', /Lantern Moth: Your creatures crit/)).toHaveLength(1);
   });
 
-  it('says the pack is empty, with no warning, and has no keepsake row when there are none', () => {
+  it('says the pack is empty, and has no keepsake row when there are none', () => {
     const { root } = draw(<DungeonRunStrip state={sampleState()} />);
     expect(visibleText(byClass(root, 'run-pack')[0] as FakeElement)).toContain('Empty');
-    expect(visibleText(root)).not.toContain('At risk');
     expect(byClass(root, 'run-keepsakes')).toHaveLength(0);
     expect(visibleText(root)).toContain('Depth 3 · At the entrance');
   });
@@ -168,6 +167,9 @@ describe('the strip of an open run', () => {
     const row = byClass(root, 'run-keepsakes-row')[0] as FakeElement;
     expect(visibleText(row)).toContain('Keepsakes');
     expect(byName(row, 'button', 'What is Keepsake?')).toHaveLength(1);
+    // The pack has the same "?", which says what a defeat costs.
+    const pack = byClass(root, 'run-pack')[0] as FakeElement;
+    expect(byName(pack, 'button', 'What is Pack?')).toHaveLength(1);
     expect(glossaryEntry('keepsake')?.lines.join(' ')).toMatch(/When the run ends it is gone/);
     expect(glossaryEntry('keepsake')?.lines.join(' ')).toMatch(/do not keep it/);
   });

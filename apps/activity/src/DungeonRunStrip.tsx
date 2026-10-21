@@ -122,9 +122,8 @@ export function RunRow({
 
 /**
  * The pack: the pixel backpack on the left, breaking out of its box, and a leather canvas that rolls out
- * from under it holding what the pack carries: the "Pack" title with the "At risk" tag beside it (a
- * defeat keeps only half; the tag opens why), then the loot as icons with numbers. Empty, there is no
- * tag and the canvas says so.
+ * from under it holding what the pack carries: the "Pack" title with its "?" (what the pack is, and
+ * that a defeat keeps only half), then the loot as icons with numbers. Empty, the canvas says so.
  */
 export function RunPack({ pack }: { pack: DungeonPack }) {
   const items = packItems(pack);
@@ -135,12 +134,7 @@ export function RunPack({ pack }: { pack: DungeonPack }) {
       </span>
       <div class="run-stash-canvas">
         <p class="run-ledger-title">
-          Pack
-          {items.length > 0 && (
-            <Tag kind="badge" tone="bad" entry="dungeon-pack" class="run-pack-risk">
-              At risk
-            </Tag>
-          )}
+          Pack <GlossaryTag entry="dungeon-pack" look="help" />
         </p>
         {items.length === 0 ? (
           <p class="run-pack-empty">Empty</p>

@@ -363,7 +363,6 @@ describe('the camp, with the real answers', () => {
     expect(text).toContain('Head home with your pack');
     expect(byName(root, 'span', 'Bait: 1')).toHaveLength(1);
     expect(byName(root, 'span', 'Scrap: 5')).toHaveLength(1);
-    expect(text).toContain('At risk');
   });
 
   it('resumes at the camp from today, and takes a keepsake offered by the server', async () => {
