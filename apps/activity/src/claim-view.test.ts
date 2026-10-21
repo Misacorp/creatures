@@ -67,7 +67,7 @@ describe('the gift of a new rank', () => {
     expect(view?.rank).toBe(worked.xp?.rank);
     expect(view?.title).toBe(`Rank ${String(worked.xp?.rank)} gift`);
     expect(view?.lines.map((l) => l.key)).toEqual(['bait', 'scrap', 'ember-shard']);
-    expect(view?.lines.map((l) => l.text)).toEqual(['20 Bait', '8 Scrap', '2 Ember Shard']);
+    expect(view?.lines.map((l) => l.text)).toEqual(['20 Bait', '8 Scrap', '2 Ember Shards']);
   });
 
   it('has no gift for a trip that did not raise the rank or a failure, and a recall that raises it gives its gifts', () => {
@@ -150,7 +150,7 @@ describe('the gear piece of a rank gift', () => {
         },
       ],
     });
-    expect(view?.lines.map((l) => l.text)).toEqual(['25 Bait', '10 Scrap', '3 Tide Shard']);
+    expect(view?.lines.map((l) => l.text)).toEqual(['25 Bait', '10 Scrap', '3 Tide Shards']);
     expect(view?.lines.find((l) => l.key === 'tide-shard')?.icon).toEqual({
       kind: 'part',
       part: 'tide-shard',

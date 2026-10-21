@@ -179,7 +179,8 @@ export function giftLines(gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'>): 
     lines.push({
       key: part.kind,
       icon: { kind: 'part', part: part.kind },
-      text: `${String(part.amount)} ${partName(part.kind)}`,
+      // "3 Tide Shards"; Scrap and Glimmer read the same either way.
+      text: `${String(part.amount)} ${partName(part.kind)}${part.amount > 1 && part.kind.endsWith('-shard') ? 's' : ''}`,
     });
   }
   const counts = new Map<string, number>();
