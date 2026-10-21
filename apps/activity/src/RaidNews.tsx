@@ -8,6 +8,7 @@ import {
   type RaidChannelState,
 } from './raid-channel';
 import { useLoaded } from './use-loaded';
+import { Alert } from './ui/Alert';
 
 /**
  * Lets a server admin choose the channel the bot posts raid news to. Asks the server once when the
@@ -65,11 +66,7 @@ export function RaidNews() {
         ))}
       </p>
       <p class="muted">{card.help}</p>
-      {error !== null && (
-        <p class="error" role="alert">
-          {error}
-        </p>
-      )}
+      {error !== null && <Alert level="alert">{error}</Alert>}
     </section>
   );
 }

@@ -152,6 +152,19 @@
   font-size: var(--fs-small);
 }
 
+/* The full bag warning's small button to the Workshop, under its words. */
+.bag-full-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* The Workshop's bag count at or over the cap. */
+.bag-count.over {
+  color: var(--bad);
+}
+
 button.danger {
   background: var(--bad);
   color: var(--ink);

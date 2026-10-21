@@ -9,8 +9,8 @@ import { FindList } from './ui/FindRow';
 
 /**
  * What a grant gave, as finds: each gear piece as a `FindItem`, each blueprint as a `FindBlueprint` (both
- * rows in one `FindList`, the images popping in when motion is allowed), a note for items that did not fit
- * in the bag and became parts, and parts as icons with numbers. Text only.
+ * rows in one `FindList`, the images popping in when motion is allowed), a note for each item that became
+ * parts because the bag was full, and parts as icons with numbers. Text only.
  */
 export function LootList({
   loot: given,
@@ -57,8 +57,8 @@ export function LootList({
         <ul class="loot-notes">
           {loot.converted.map((c, i) => (
             <li key={i} class="muted">
-              <GlossaryTag entry="gear">{lootItemName(c)}</GlossaryTag> did not fit in the bag. It
-              became parts.
+              Your bag was full, so <GlossaryTag entry="gear">{lootItemName(c)}</GlossaryTag> became
+              parts.
             </li>
           ))}
         </ul>

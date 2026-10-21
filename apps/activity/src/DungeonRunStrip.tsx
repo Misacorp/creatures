@@ -12,6 +12,7 @@ import type {
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { SmallCreature } from './SmallCreature';
+import { LOCKET_ART, PACK_ART } from './sprites/pack-art';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Bar } from './ui/Bar';
@@ -120,20 +121,28 @@ export function RunRow({
 }
 
 /**
- * The pack as icons with numbers ("In your pack: 2 Bait, 1 Scrap") and, when it holds anything, an
- * "At risk" tag: a defeat keeps only half of it. Empty, it says so in a quiet line.
+ * The pack: the pixel backpack on the left, breaking out of its box, and a leather canvas that rolls out
+ * from under it holding what the pack carries: the "Pack" title with its "?" (what the pack is, and
+ * that a defeat keeps only half), then the loot as icons with numbers. Empty, the canvas says so.
  */
 export function RunPack({ pack }: { pack: DungeonPack }) {
   const items = packItems(pack);
-  if (items.length === 0) return <p class="muted run-pack">{packLine(pack)}</p>;
   return (
-    <div class="run-pack">
-      <span class="run-pack-label">In your pack:</span>
-      <CountBadgeList items={items} label={packLine(pack)} class="run-pack-items" />
-      <Tag kind="badge" tone="bad" entry="dungeon-pack">
-        At risk
-      </Tag>
-    </div>
+    <section class="run-ledger-cell run-stash run-pack" aria-label="Your pack">
+      <span class="run-stash-art" aria-hidden="true">
+        <Sprite sprite={PACK_ART} scale={4} />
+      </span>
+      <div class="run-stash-canvas">
+        <p class="run-ledger-title">
+          Pack <GlossaryTag entry="dungeon-pack" look="help" />
+        </p>
+        {items.length === 0 ? (
+          <p class="run-pack-empty">Empty</p>
+        ) : (
+          <CountBadgeList items={items} label={packLine(pack)} class="run-pack-items" />
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -141,34 +150,41 @@ export function RunPack({ pack }: { pack: DungeonPack }) {
 export const KEEPSAKE_ONLY_LINE = 'Only for this run. It is gone when the run ends.';
 
 /**
- * The keepsakes the run holds: a "Keepsakes" label with a "?" that explains they last only for the
- * run, then one chip each; a tap opens a sheet with what that one does. Nothing when there are none.
+ * The keepsakes the run holds, laid out like the pack: a gold locket on the left breaking out of its
+ * box, and a velvet canvas from under it with the "Keepsakes" title and its "?" (they last only for
+ * the run), then one chip each; a tap opens a sheet with what that one does. Nothing when there
+ * are none.
  */
 export function RunKeepsakes({ keepsakes }: { keepsakes: readonly DungeonKeepsakeView[] }) {
   const [shown, setShown] = useState<DungeonKeepsakeView | null>(null);
   if (keepsakes.length === 0) return null;
   return (
-    <div class="run-keepsakes-row">
-      <span class="run-keepsakes-label">
-        Keepsakes <GlossaryTag entry="keepsake" look="help" />
+    <section class="run-ledger-cell run-stash run-keepsakes-row" aria-label="Keepsakes">
+      <span class="run-stash-art" aria-hidden="true">
+        <Sprite sprite={LOCKET_ART} scale={4} />
       </span>
-      <ul class="run-keepsakes" aria-label="Keepsakes">
-        {keepsakes.map((k) => (
-          <li key={k.id}>
-            <button
-              type="button"
-              class="chip run-keepsake"
-              aria-label={`${k.name}: ${k.description}`}
-              onClick={() => {
-                setShown(k);
-              }}
-            >
-              <Sprite sprite={glyphOrUnknown('sparkle')} scale={2} />
-              <span>{k.name}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div class="run-stash-canvas">
+        <p class="run-ledger-title">
+          Keepsakes <GlossaryTag entry="keepsake" look="help" />
+        </p>
+        <ul class="run-keepsakes" aria-label="Keepsakes">
+          {keepsakes.map((k) => (
+            <li key={k.id}>
+              <button
+                type="button"
+                class="chip run-keepsake"
+                aria-label={`${k.name}: ${k.description}`}
+                onClick={() => {
+                  setShown(k);
+                }}
+              >
+                <Sprite sprite={glyphOrUnknown('sparkle')} scale={2} />
+                <span>{k.name}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
       <Drawer
         open={shown !== null}
         title={shown?.name ?? ''}
@@ -179,7 +195,7 @@ export function RunKeepsakes({ keepsakes }: { keepsakes: readonly DungeonKeepsak
         <p>{shown?.description}</p>
         <p class="muted">{KEEPSAKE_ONLY_LINE}</p>
       </Drawer>
-    </div>
+    </section>
   );
 }
 
@@ -191,9 +207,9 @@ export function DungeonRunStrip({ state }: { state: DungeonRunState }) {
   const event =
     state.pending === null && state.lastEvent !== null ? lastEventText(state.lastEvent) : null;
   return (
-    <section class="raid-section dungeon-run-strip" aria-label="Your run">
+    <section class="raid-section dungeon-run-strip pix-panel" aria-label="Your run">
       <p class="run-status">
-        <span class="pix">{runStatusLine(state)}</span>
+        <span>{runStatusLine(state)}</span>
         {state.landmark && (
           <>
             {' '}
@@ -211,10 +227,13 @@ export function DungeonRunStrip({ state }: { state: DungeonRunState }) {
       </p>
       {/* At the camp the card has the row itself (to rearrange, with the same HP under each). */}
       {state.pending?.kind !== 'camp' && <RunRow team={state.team} />}
-      <RunKeepsakes keepsakes={state.keepsakes} />
-      <RunPack pack={state.pack} />
+      {/* What the run carries: the pack and the keepsakes, side by side when there is room. */}
+      <div class="run-ledger">
+        <RunPack pack={state.pack} />
+        <RunKeepsakes keepsakes={state.keepsakes} />
+      </div>
       {event !== null && (
-        <p class="run-event" role="status">
+        <p class="run-event prose" role="status">
           <strong>{event.title}.</strong> {event.outcome}
         </p>
       )}

@@ -10,6 +10,7 @@ import { LogToggle, Stage } from './Stage';
 import { PlaybackControls } from './ui/PlaybackControls';
 import { useLoaded } from './use-loaded';
 import { usePlayback } from './use-playback';
+import { Alert } from './ui/Alert';
 
 export function Replay({
   weekId,
@@ -41,11 +42,7 @@ export function Replay({
           Back to the raid
         </button>
       </p>
-      {error !== null && (
-        <p class="error" role="alert">
-          {error}
-        </p>
-      )}
+      {error !== null && <Alert level="alert">{error}</Alert>}
       {data === null && error === null && <p class="muted">Loading the replay...</p>}
       {data !== null && <Player data={data} showControls={showControls} />}
     </section>

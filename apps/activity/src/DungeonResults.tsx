@@ -31,6 +31,7 @@ import { creatureInfoOf } from './creature-info';
 import { Sprite } from './sprites/Sprite';
 import { ExperienceGainRow } from './ExperienceGainRow';
 import { XpList } from './ui/XpGain';
+import { Alert } from './ui/Alert';
 
 /** A room panel's picture is 64 px (a foe) or 72 px (a floor boss), so three fit a 390 px phone. */
 const PANEL_SCALE = { foe: 4, boss: 3 } as const;
@@ -159,11 +160,7 @@ export function DungeonResults({
       {run.keepsakes !== undefined && <RunKeepsakes keepsakes={run.keepsakes} />}
       <DungeonNext today={today} offset={offset} />
 
-      {error !== null && (
-        <p class="error" role="alert">
-          {error}
-        </p>
-      )}
+      {error !== null && <Alert level="alert">{error}</Alert>}
     </RevealShell>
   );
 }

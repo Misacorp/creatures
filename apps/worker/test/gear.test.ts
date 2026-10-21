@@ -1388,6 +1388,29 @@ describe('workshop jobs: claiming', () => {
     return (res.body['result'] as { jobId: string }).jobId;
   }
 
+  it('puts a claimed craft in the bag even when a grant filled it past the cap meanwhile', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await player(ctx, 1);
+        skipWelcome(ctx, p.id);
+        learn(ctx, p.id, 'kelp-cap');
+        parts(ctx, p.id, { scrap: 30, 'tide-shard': 3 });
+        const jobId = await startCraft(p);
+        for (let i = 0; i < RULES.gear.inventoryCap + 2; i++) {
+          give(ctx, p.id, 'trail-cap', { seed: `over${String(i)}` });
+        }
+        ctx.clock.t = T0 + 3 * HOUR;
+        const res = await p.call('POST', `/api/workshop/jobs/${jobId}/claim`, {
+          idempotencyKey: newKey(),
+        });
+        expect(res.status).toBe(200);
+        expect(count(ctx.sql, 'gear_items')).toBe(RULES.gear.inventoryCap + 3);
+      },
+      opts(),
+    );
+  });
+
   it('rolls the item when claimed, with the live rng at that moment: item level, lines, maker', async () => {
     const rng = counting('claim');
     await runCore(

@@ -1,4 +1,5 @@
 import type { PreviewStatusName } from '../use-job-preview';
+import { Alert } from './Alert';
 
 /**
  * The line a server preview shows while it is not here: a quiet "Loading..." and, when it failed, the error
@@ -22,11 +23,7 @@ export function PreviewStatus({
     );
   }
   if (status === 'failed') {
-    return (
-      <p class="error" role="alert">
-        Could not load {what}. Pick again to retry.
-      </p>
-    );
+    return <Alert level="alert">Could not load {what}. Pick again to retry.</Alert>;
   }
   return null;
 }

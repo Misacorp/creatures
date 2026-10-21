@@ -15,7 +15,7 @@ export interface SlotModel {
   ariaLabel: string;
   /** Leave the slot number off the tile (the raid board names places by row and lane instead). */
   hideNumber?: boolean;
-  /** The tile is the one picked up by a tap (tap-to-swap): it gets a bright frame. */
+  /** The tile is the one selected (its configurator shows under the board): it gets a bright frame. */
   selected?: boolean;
   occupant: null | {
     species: string;

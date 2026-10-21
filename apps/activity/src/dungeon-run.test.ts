@@ -13,7 +13,6 @@ import {
   sameOrder,
   swapAct,
   swapPlaces,
-  tapToSwap,
   orderAfterSwap,
   campHp,
   campSlotLabel,
@@ -101,15 +100,7 @@ describe('the row order at the camp', () => {
   it('never changes the order it was given', () => {
     const order = ['a', 'b', 'c'];
     swapPlaces(order, 'a', 'b');
-    tapToSwap(order, 'a', 'b');
     expect(order).toEqual(['a', 'b', 'c']);
-  });
-
-  it('a tap picks a creature up, puts it down, or swaps it with the one picked up', () => {
-    const order = ['a', 'b', 'c'];
-    expect(tapToSwap(order, null, 'b')).toEqual({ order, selected: 'b' });
-    expect(tapToSwap(order, 'b', 'b')).toEqual({ order, selected: null });
-    expect(tapToSwap(order, 'a', 'c')).toEqual({ order: ['c', 'b', 'a'], selected: null });
   });
 
   it('puts the creature that comes in where the one that leaves stood', () => {
@@ -166,14 +157,29 @@ describe('the HP under a creature at the camp', () => {
     expect(campHp({ now: 5, max: 0 }).ratio).toBe(0);
   });
 
-  it('names the place, the HP and whether it is picked up for a screen reader', () => {
-    const c = { id: 'a', name: 'Sproutle', species: 'sproutle', level: 12, element: 'bloom' };
-    expect(campSlotLabel({ ...c, hp: { now: 240, max: 281 } }, 0, false)).toBe(
-      'Left: Sproutle, level 12, 240 / 281 HP.',
+  it('names the place, the HP and what a tap shows for a screen reader', () => {
+    const c = {
+      id: 'a',
+      name: 'Sproutle',
+      species: 'sproutle',
+      level: 12,
+      element: 'grove',
+      role: 'guard',
+      gear: [],
+    };
+    expect(campSlotLabel({ ...c, hp: { now: 240, max: 281 } }, 0)).toBe(
+      'Left: Sproutle, level 12, 240 / 281 HP. Shows its role and element.',
     );
-    expect(campSlotLabel({ ...c, hp: { now: 0, max: 281 } }, 1, false)).toContain('knocked out');
-    expect(campSlotLabel({ ...c, hp: null }, 2, true)).toBe(
-      'Right: Sproutle, level 12, full HP. Picked up. Tap another creature to swap places.',
+    expect(campSlotLabel({ ...c, hp: { now: 0, max: 281 } }, 1)).toContain('knocked out');
+    const worn = {
+      baseId: 'trail-cap',
+      slot: 'hat' as const,
+      rarity: 'common' as const,
+      itemLevel: 3,
+      lines: [],
+    };
+    expect(campSlotLabel({ ...c, hp: null, gear: [worn] }, 2)).toBe(
+      'Right: Sproutle, level 12, full HP. Shows its role, element and gear.',
     );
   });
 });

@@ -2,6 +2,8 @@ import { tripMs } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
+import type { GearState } from './gear-types';
+import { BagFullNote } from './ui/BagFullNote';
 import { Sprite } from './sprites/Sprite';
 import { TripSummary } from './TripSummary';
 import type { Forecast } from './weather-types';
@@ -21,6 +23,7 @@ import { TreatBox } from './TreatBox';
 import { baitCount } from './count-items';
 import { CountBadge } from './ui/CountBadge';
 import { lengthLabel } from './trip-view';
+import { Alert } from './ui/Alert';
 
 /**
  * The send flow: pick a place from the catalogue, who goes, how long and (optionally) supplies, then
@@ -41,6 +44,7 @@ export function SendTrip({
   onRetry,
   onSend,
   onOpenWorkshop,
+  bag = null,
 }: {
   creatures: readonly Creature[];
   slots: Slots;
@@ -59,6 +63,8 @@ export function SendTrip({
   onSend: (request: SendRequest) => Promise<boolean>;
   /** Opens the Workshop, where supplies are crafted. */
   onOpenWorkshop?: () => void;
+  /** The bag's fill; a full bag warns that the trip's gear becomes parts. */
+  bag?: GearState['inventory'] | null;
 }) {
   const [placeIndex, setPlaceIndex] = useState(0);
   const [creatureId, setCreatureId] = useState<string | null>(null);
@@ -70,9 +76,7 @@ export function SendTrip({
   if (view === null) {
     return viewFailed ? (
       <section class="send">
-        <p class="error" role="alert">
-          The places could not be loaded.
-        </p>
+        <Alert level="alert">The places could not be loaded.</Alert>
         <button type="button" onClick={onRetry}>
           Try again
         </button>
@@ -196,6 +200,7 @@ export function SendTrip({
             {blocker}
           </p>
         )}
+        <BagFullNote inventory={bag} onOpenWorkshop={onOpenWorkshop} />
         <button
           type="button"
           class="primary send-button"

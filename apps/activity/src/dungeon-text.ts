@@ -327,9 +327,9 @@ export function percentText(bp: number): string {
 
 export const CAMP_TITLE = 'The camp';
 /** The camp's one line of help: pick a choice, and the row can be reordered. */
-export const CAMP_INTRO = 'Pick one. Drag or tap two creatures to swap places.';
+export const CAMP_INTRO = 'Pick one. Drag a creature onto another to swap places.';
 /** The arrange step's one line, after a swap. */
-export const CAMP_ARRANGE_LINE = 'Drag or tap two creatures to swap places, then confirm.';
+export const CAMP_ARRANGE_LINE = 'Drag a creature onto another to swap places, then confirm.';
 export const CAMP_HOME_BUTTON = 'Head home with your pack';
 
 /** The three choices of the camp, each with its exact effect (the rest's number is the server's). */

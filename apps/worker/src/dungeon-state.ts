@@ -170,6 +170,11 @@ export interface RunState {
   deepest: number;
   /** The gear, supply and shards the boss chests paid already (their grant keys are stable). Null: the run's end pays the chest. */
   banked: BankedRewards | null;
+  /**
+   * The bag was full (at or over the cap) when the run started: the gear the run finds becomes parts.
+   * Under the cap, everything it finds goes in. Absent in a state stored before: decided at each grant.
+   */
+  bagFull?: boolean;
 }
 
 /** Reads a stored state, or null when it is missing or is not a state this code wrote. */

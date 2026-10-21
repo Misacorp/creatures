@@ -63,7 +63,6 @@ import {
   addCreatureXp,
   addMark,
   blueprintMarks,
-  countItems,
   creatureXp,
   creditParts,
   debitParts,
@@ -682,10 +681,8 @@ export class Workshop {
               const baseId = input.baseId;
               const base = baseId === undefined ? undefined : gearBase(baseId);
               if (base === undefined) throw new Error('stored craft has an unknown base');
-              if (countItems(this.sql, userId) >= RULES.gear.inventoryCap) {
-                // Cannot happen (a craft holds its place), but never lose the item if it does.
-                throw new GameError(409, 'inventory_full');
-              }
+              // A craft held its place in the bag when it started: it always goes in, even past the cap
+              // (a grant can fill the bag over it meanwhile).
               // A craft started before gear v2 was sized by its blueprint's rarity: it keeps that
               // promise (never less than the old rarity) and pays the XP of its old hours.
               const legacyRarity = input.rarity;
