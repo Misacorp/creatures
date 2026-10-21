@@ -95,10 +95,10 @@ button.run-keepsake {
 }
 
 /*
-  The pack and the keepsakes: a picture (the backpack, the locket) on the left that breaks out of its
-  box (it rises above the canvas's top edge), and a canvas that rolls out from under it, starting well
-  left of the picture's middle, holding the title and what the run carries. Leather for the pack,
-  velvet for the keepsakes.
+  The pack and the keepsakes: a picture (the backpack, the locket) on the left, centred on the height
+  of its canvas, and a canvas that rolls out from under it, starting well left of the picture's
+  middle, holding the title and what the run carries. Leather for the pack, velvet for the keepsakes.
+  Side by side, the two stretch to the taller one's height (the grid's row), so they always match.
 */
 .run-ledger-cell.run-stash {
   --canvas: var(--leather);
@@ -108,7 +108,7 @@ button.run-keepsake {
   --tuck: 3.25rem; /* how far the canvas reaches in under the picture */
 
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   gap: 0;
   padding: 0;
   background: transparent;
@@ -127,16 +127,17 @@ button.run-keepsake {
   width: var(--art);
   margin-right: calc(var(--tuck) * -1);
   line-height: 0;
-  filter: drop-shadow(0 var(--px) 0 var(--canvas-dark));
 }
 
 .run-stash-canvas {
   display: flex;
   flex: 1;
   flex-direction: column;
+  align-self: stretch;
+  justify-content: center;
   gap: 0.375rem;
   min-width: 0;
-  margin-top: 0.875rem;
+  min-height: calc(var(--art) + 0.5rem);
   padding: 0.5rem 0.625rem 0.625rem calc(var(--tuck) + 0.75rem);
   background: var(--canvas);
   box-shadow:
