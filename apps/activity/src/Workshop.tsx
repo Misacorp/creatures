@@ -4,7 +4,14 @@ import { Blueprints } from './Blueprints';
 import type { GearActions } from './gear-actions';
 import { PartsRow } from './GearArt';
 import type { GearState, JobResult } from './gear-types';
-import { bagText, jobResultRarity, noticeLines, sortItems, unequippedReason } from './gear-view';
+import {
+  bagFull,
+  bagText,
+  jobResultRarity,
+  noticeLines,
+  sortItems,
+  unequippedReason,
+} from './gear-view';
 import { GlossaryTag } from './Glossary';
 import { InventoryGrid } from './InventoryGrid';
 import { gearName } from './gear-view';
@@ -158,8 +165,13 @@ export function Workshop({
           <h3 id="ws-gear">
             Gear <GlossaryTag entry="gear" look="help" />
           </h3>
-          <span class="muted">Bag: {bagText(gear.inventory)}</span>
+          <span class={bagFull(gear.inventory) ? 'bag-count over' : 'bag-count muted'}>
+            Bag: {bagText(gear.inventory)}
+          </span>
         </div>
+        {bagFull(gear.inventory) && (
+          <p class="reason">Gear you find becomes parts until the bag has room.</p>
+        )}
         {gear.items.length === 0 ? (
           <p class="empty muted">Your bag is empty.</p>
         ) : (

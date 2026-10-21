@@ -16,6 +16,8 @@ export interface TeamConfigure {
   actions: CardActions;
   /** The page's waiting catch: those are answered on the Creatures tab. */
   onAnswerCatch: () => void;
+  /** Opens the Workshop (from the full bag's warning). */
+  onOpenWorkshop?: (() => void) | undefined;
 }
 
 /**

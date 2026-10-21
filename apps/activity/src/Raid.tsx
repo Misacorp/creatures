@@ -36,6 +36,7 @@ import { TeamCreaturePage, type TeamConfigure } from './TeamCreaturePage';
 import { toPickerCreature } from './roster-picker';
 import type { Forecast } from './weather-types';
 import { Accordion } from './ui/Accordion';
+import { BagFullNote } from './ui/BagFullNote';
 
 interface Loaded {
   view: RaidView;
@@ -361,6 +362,12 @@ export function Raid({
           configure={configure}
           owned={creatures}
           onOpenPage={setPage}
+        />
+      )}
+      {party !== null && view.you.canEdit && (
+        <BagFullNote
+          inventory={configure?.gear?.inventory}
+          onOpenWorkshop={configure?.onOpenWorkshop}
         />
       )}
 

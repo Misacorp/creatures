@@ -21,6 +21,7 @@ import { creatureName } from './game';
 import { toPickerCreature } from './roster-picker';
 import { scrollAndFocus } from './scroll-to';
 import { useDungeonDraft } from './use-dungeon-draft';
+import { BagFullNote } from './ui/BagFullNote';
 import type { Forecast } from './weather-types';
 
 interface Props {
@@ -268,6 +269,10 @@ export function DungeonSetup({
                 {error}
               </p>
             )}
+            <BagFullNote
+              inventory={configure?.gear?.inventory}
+              onOpenWorkshop={configure?.onOpenWorkshop}
+            />
             <p>
               <button
                 type="button"

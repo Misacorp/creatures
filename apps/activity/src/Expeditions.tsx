@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { markFreshReveal } from './reveal-arrive';
 import type { ClaimResult, GameState } from './api';
 import type { CatchChoiceActions } from './find-view';
+import type { GearState } from './gear-types';
 import { ExplorerProfile } from './ExplorerProfile';
 import { fetchDestinations, fetchProfile, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
@@ -73,6 +74,8 @@ interface Props {
   onDismissReveal: () => void;
   /** Opens the Workshop tab, where supplies are crafted. */
   onOpenWorkshop?: () => void;
+  /** The bag's fill (from the gear view); null until it has loaded. A full bag warns before a trip. */
+  bag?: GearState['inventory'] | null;
 }
 
 export function Expeditions({
@@ -90,6 +93,7 @@ export function Expeditions({
   onRefresh,
   onDismissReveal,
   onOpenWorkshop,
+  bag = null,
 }: Props) {
   const [screen, setScreen] = useState<Screen>('trips');
   const active = state.expeditions.filter((e) => e.status === 'active');
@@ -201,6 +205,7 @@ export function Expeditions({
               onRetry={destinations.reload}
               onSend={onSend}
               {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}
+              bag={bag}
             />
           )}
         </>

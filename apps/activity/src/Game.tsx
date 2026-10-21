@@ -366,6 +366,10 @@ export function Game({
     onAnswerCatch: () => {
       setTab('collection');
     },
+    onOpenWorkshop: () => {
+      setTab('workshop');
+      loadGear();
+    },
   };
 
   const content = !game.starterChosen ? (
@@ -397,7 +401,13 @@ export function Game({
           refreshState();
           room.refreshIfStale();
           loadForecast();
-          if (id === 'workshop' || id === 'collection' || id === 'dungeon' || id === 'raid')
+          if (
+            id === 'workshop' ||
+            id === 'collection' ||
+            id === 'dungeon' ||
+            id === 'raid' ||
+            id === 'expeditions'
+          )
             loadGear();
         }}
       />
@@ -476,6 +486,7 @@ export function Game({
               setTab('workshop');
               loadGear();
             }}
+            bag={gear?.inventory ?? null}
           />
         )}
         {tab === 'workshop' && (
