@@ -243,27 +243,23 @@ describe('creature experience from trips', () => {
     expect(p.creatures.find((c) => c.id === 'p01/splashet')?.exp ?? 0).toBe(0);
   });
 
-  it('counts the pity: every dry roll moves both counters, and a creature resets what it should', () => {
+  it('pays a finished trip by its ticks: XP follows them, and there is no pity', () => {
     const p = player();
     p.firstExpeditionDone = true;
-    p.catchPity = { sinceNew: RULES.catching.pity.newAfter, sinceCreature: 0 };
     p.expeditions.push({
       explorerId: 'p01/splashet',
       length: 'short',
       destination: 'tidepools',
       kit: [],
-      rolls: 1,
+      rolls: 2,
       twist: null,
       startHour: 0,
       endsAtHour: 2,
     });
-    claimTrips(p, ctx(1_000, 'pity'));
-    // The pity forced a species the player lacked (the Tidepools hold three the player does not own).
-    if (p.stats.trips_finished === 1) {
-      expect(p.stats.pity_new).toBe(1);
-      expect(p.catchPity).toEqual({ sinceNew: 0, sinceCreature: 0 });
-      expect(p.creatures.length).toBe(CREATURES.length + 1);
-    }
+    claimTrips(p, ctx(1_000, 'ticks'));
+    expect(p.stats.trips_finished).toBe(1);
+    expect(p.explorerXp['p01/splashet']).toBe(2 * RULES.expeditions.tick.xp);
+    expect(p.stats.catch_rolls).toBe(2);
   });
 });
 

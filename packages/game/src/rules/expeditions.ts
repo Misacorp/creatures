@@ -22,6 +22,7 @@ import {
 } from '../content/expedition-schema';
 import { expeditionContent, supplyDef } from '../content';
 import {
+  ELEMENTS,
   RARITIES,
   type ContentPack,
   type CreatureSpecies,
@@ -117,11 +118,15 @@ export function nextSlot(
   return at === undefined ? null : { kind: 'rank_sum', at };
 }
 
-/** The one-time gift of reaching an explorer rank: Bait, parts and supplies (content ids). */
+/** The one-time gift of reaching an explorer rank: Bait, parts, supplies (content ids), shards and a gear piece. */
 export interface RankGift {
   bait: number;
-  /** Scrap and glimmer; zero amounts left out. */
+  /** Scrap and glimmer; zero amounts left out. Shards are `shards`, of the explorer's element. */
   parts: PartsBundle;
+  /** Shards of the explorer's element (0 for the first ranks). */
+  shards: number;
+  /** Rarity weights of the gift's one gear piece (basis points); null: no gear piece. */
+  gearOddsBp: { common: number; rare: number; epic: number } | null;
   supplies: readonly string[];
 }
 
@@ -132,7 +137,40 @@ export function rankGift(rank: number): RankGift | null {
   const parts: PartsBundle = {};
   if (gift.scrap > 0) parts.scrap = gift.scrap;
   if (gift.glimmer > 0) parts.glimmer = gift.glimmer;
-  return { bait: gift.bait, parts, supplies: [...gift.supplies] };
+  return {
+    bait: gift.bait,
+    parts,
+    shards: gift.shards,
+    gearOddsBp: gift.gearOddsBp === null ? null : { ...gift.gearOddsBp },
+    supplies: [...gift.supplies],
+  };
+}
+
+/** The parts a rank gift pays an explorer of `element`: its scrap and glimmer plus the shards of that element. */
+export function rankGiftParts(gift: RankGift, element: Element): PartsBundle {
+  const parts: PartsBundle = { ...gift.parts };
+  if (gift.shards > 0) parts[shardOf(element)] = gift.shards;
+  return parts;
+}
+
+/**
+ * The gear piece of a rank gift, or null when the gift has none: the rarity by the gift's odds (one
+ * draw), then a piece tagged with the explorer's element at the item level of the rank reached
+ * (`rollExpeditionItem`, never the Crossroads Compass: ranking up is the creature's own achievement).
+ */
+export function rollRankGiftItem(
+  rng: Rng,
+  gift: RankGift,
+  explorerElement: Element,
+  rank: number,
+): GearItem | null {
+  const odds = gift.gearOddsBp;
+  if (odds === null) return null;
+  const rarity = pickWeighted(
+    rng,
+    RARITIES.map((r) => ({ rarity: r, weight: odds[r] })),
+  ).rarity;
+  return rollExpeditionItem(rng, rarity, { element: explorerElement, crossroads: false }, rank);
 }
 
 /**
@@ -296,59 +334,124 @@ export function kitProblem(
   return null;
 }
 
-/** The catch rolls of a trip: the length's rolls, the map scrap's share (at least one), the twist's extra. */
-export function tripRolls(
-  length: ExpeditionLength,
-  kit: readonly SupplyDef[],
-  twist: TwistEffect | null,
-): number {
-  const base = lengthRules(length).rolls;
-  let rolls = base;
-  for (const s of kit) {
-    if (s.kind === 'map-scrap') rolls += Math.max(1, Math.floor((base * s.rollsBp) / BP));
-  }
-  if (twist?.kind === 'rolls') rolls += twist.extra;
-  return rolls;
+/**
+ * The ticks fixed when a trip is sent: the length's nominal ticks and the twist's extra ones (whole
+ * ticks). The map's ticks are rolled at the claim (`rollMapTicks`), push-on hours are added when a goal
+ * works out; the server stores this number as the trip's `rolls`.
+ */
+export function tripTicks(length: ExpeditionLength, twist: TwistEffect | null): number {
+  return lengthRules(length).ticks + (twist?.kind === 'rolls' ? twist.extra : 0);
 }
 
 /**
- * What a kit's lures do (they are made from Bait, 2026-10-16): the chance, added to every roll of the
- * trip, that it brings a creature at all, and the chance that a creature it brings is of a species the
- * player does not own yet. Basis points, summed over the lures (a kit holds one of each kind, so one).
+ * The extra ticks a kit's maps give, in basis points of a tick: each map's fixed part plus its per-tick
+ * part times the length's ticks (the nominal ones, so the bonus follows the trip's length).
  */
-export function lureEffect(kit: readonly SupplyDef[]): { catchBp: number; newBp: number } {
+export function mapTicksBp(length: ExpeditionLength, kit: readonly SupplyDef[]): number {
+  const ticks = lengthRules(length).ticks;
+  let bp = 0;
+  for (const s of kit) {
+    if (s.kind === 'map-scrap') bp += s.fixedTicksBp + s.perTickBp * ticks;
+  }
+  return bp;
+}
+
+/** A whole number of things from a chance in basis points: the sure ones plus one more with the remainder. */
+export function rollCount(rng: Rng, bp: number): number {
+  const sure = Math.floor(bp / BP);
+  return sure + (chance(rng, bp % BP, BP) ? 1 : 0);
+}
+
+/**
+ * The extra ticks of a trip's maps: the whole ticks and one more with the chance of the fraction
+ * (nothing is rounded away). Draws once, and only when the kit holds a map.
+ */
+export function rollMapTicks(
+  rng: Rng,
+  length: ExpeditionLength,
+  kit: readonly SupplyDef[],
+): number {
+  const bp = mapTicksBp(length, kit);
+  return bp <= 0 ? 0 : rollCount(rng, bp);
+}
+
+/**
+ * What a kit's lures do (they are made from Bait, 2026-10-16), in basis points, summed over the lures (a
+ * kit holds one of each kind, so one): `bonusBp` the fixed chance of one bonus creature roll that surely
+ * brings a creature, `catchBp` the chance added to every tick's creature chance, and `newBp` the chance
+ * that a creature it brings is of a species the player does not own yet.
+ */
+export function lureEffect(kit: readonly SupplyDef[]): {
+  bonusBp: number;
+  catchBp: number;
+  newBp: number;
+} {
+  let bonusBp = 0;
   let catchBp = 0;
   let newBp = 0;
   for (const s of kit) {
     if (s.kind === 'lure') {
+      bonusBp += s.bonusBp;
       catchBp += s.catchBp;
       newBp += s.newBp;
     }
   }
-  return { catchBp: Math.min(BP, catchBp), newBp: Math.min(BP, newBp) };
+  return {
+    bonusBp: Math.min(BP, bonusBp),
+    catchBp: Math.min(BP, catchBp),
+    newBp: Math.min(BP, newBp),
+  };
 }
 
-/** The chance (basis points) that one catch roll of a trip of this length brings a creature, lures included. */
-export function catchChanceBp(length: ExpeditionLength, kit: readonly SupplyDef[]): number {
-  return Math.min(BP, lengthRules(length).catchBp + lureEffect(kit).catchBp);
+/** The chance (basis points) that one tick brings a creature, lures included. */
+export function catchChanceBp(kit: readonly SupplyDef[]): number {
+  return Math.min(BP, RULES.expeditions.tick.creatureBp + lureEffect(kit).catchBp);
 }
 
-/** The extra chance, from a kit's lanterns, that a roll comes from the deeper area. */
+/** True if the kit holds a lantern (it opens the deeper area without a star). */
+export function hasLantern(kit: readonly SupplyDef[]): boolean {
+  return kit.some((s) => s.kind === 'lantern');
+}
+
+/** The extra chance, from a kit's lanterns, that a creature comes from the deeper area. */
 export function kitDeepBp(kit: readonly SupplyDef[]): number {
   return kit.reduce((n, s) => n + (s.kind === 'lantern' ? s.deepBp : 0), 0);
 }
 
-/** The extra parts (basis points on top) and supply finds a kit's satchels give. */
-export function satchelBonus(kit: readonly SupplyDef[]): { partsBp: number; supplyBp: number } {
+/** The chance (basis points) of a lantern's bonus roll: one extra creature roll from the deeper area. */
+export function kitDeepBonusBp(kit: readonly SupplyDef[]): number {
+  return Math.min(
+    BP,
+    kit.reduce((n, s) => n + (s.kind === 'lantern' ? s.bonusBp : 0), 0),
+  );
+}
+
+/**
+ * What a kit's satchels give: a share more scrap and shards per tick (`partsBp`, basis points on top) and
+ * more supply finds per tick (`supplyBp`, a share), and the fixed part, scrap and the chance of a shard.
+ */
+export function satchelBonus(kit: readonly SupplyDef[]): {
+  partsBp: number;
+  supplyBp: number;
+  scrap: number;
+  shardBp: number;
+  glimmerBp: number;
+} {
   let partsBp = 0;
   let supplyBp = 0;
+  let scrap = 0;
+  let shardBp = 0;
+  let glimmerBp = 0;
   for (const s of kit) {
     if (s.kind === 'satchel') {
       partsBp += s.partsBp;
       supplyBp += s.supplyBp;
+      scrap += s.scrap;
+      shardBp += s.shardBp;
+      glimmerBp += s.glimmerBp;
     }
   }
-  return { partsBp, supplyBp };
+  return { partsBp, supplyBp, scrap, shardBp, glimmerBp };
 }
 
 /**
@@ -408,7 +511,6 @@ export function rollOdds(args: {
     long.epicUpBp + fam.epicUpBp + mile.epicUpBp + deep.epicUpBp,
   );
 }
-
 // --- Catches ---
 
 export interface TripCatchContext {
@@ -429,21 +531,11 @@ export interface TripCatchContext {
   dupeStreak: number;
   /** True if this is the player's first claim that brings catches back (the first-expedition guarantee). */
   firstExpedition: boolean;
-  /**
-   * The player's pity counters (`RULES.catching.pity`). Absent: no pity (rolls only follow their chances).
-   * `rollTripCatches` advances them from roll to roll; the caller stores what it returns.
-   */
-  pity?: PityCounters;
+  /** This roll surely brings a creature (a lure's bonus roll): the chance is not drawn. */
+  sure?: boolean;
+  /** This roll's creature is from the deeper area when there is one (a lantern's bonus roll). */
+  forceDeep?: boolean;
 }
-
-/** Catch rolls since the player last got a new species, and since they last got any creature. */
-export interface PityCounters {
-  sinceNew: number;
-  sinceCreature: number;
-}
-
-/** What a roll did with the pity: `new` forced a species the player lacks, `creature` forced a creature. */
-export type PityKind = 'new' | 'creature';
 
 export interface TripCatch {
   species: CreatureSpecies;
@@ -453,16 +545,16 @@ export interface TripCatch {
   deep: boolean;
 }
 
-/** What one catch roll came to: a creature, or nothing this time (a small find instead). */
+/** What one catch roll came to: a creature, or nothing this time. */
 export type TripRoll = { kind: 'catch'; catch: TripCatch } | { kind: 'nothing' };
 
 /** True if the deeper area can be drawn from: stars, or a lantern, and something in it to draw. */
 export function deepOpen(dest: DestinationDef, stars: number, kit: readonly SupplyDef[]): boolean {
   const hasContent = dest.deep.species.length > 0 || dest.deep.rarityUpBp > 0;
-  return hasContent && (stars >= 1 || kitDeepBp(kit) > 0);
+  return hasContent && (stars >= 1 || hasLantern(kit));
 }
 
-/** The chance (basis points) that a roll is drawn from the deeper area. */
+/** The chance (basis points) that a creature is drawn from the deeper area. */
 export function deepChanceBp(
   dest: DestinationDef,
   stars: number,
@@ -479,12 +571,13 @@ const RARITY_FALLBACK: Record<Rarity, readonly Rarity[]> = {
 };
 
 /**
- * Rolls one catch at a destination. Draw order on `rng`: whether the roll brings a creature at all
- * (skipped for the first-expedition guarantee), the deeper-area chance (only when the deeper area is
- * open), the rarity, the species (skipped for the guarantee), the lure's draw for a species the player
- * lacks (only with a lure that has one), the shiny. A roll that brings nothing draws once.
+ * Rolls one creature tick at a destination. Draw order on `rng`: whether the tick brings a creature at
+ * all (skipped for the first-expedition guarantee and for a sure roll), the deeper-area chance (only when
+ * the deeper area is open and the roll is not forced into it), the rarity, the species (skipped for the
+ * guarantee), the lure's draw for a species the player lacks (only with a lure that has one), the
+ * shiny. A tick that brings nothing draws once.
  *
- * 0. A roll brings a creature with the trip length's chance plus the lures' (`catchChanceBp`).
+ * 0. A tick brings a creature with `catchChanceBp` (the tick's chance plus the lures').
  * 1. First-expedition guarantee: a zipmouse, wherever the trip went, and it always comes.
  * 2. Otherwise the rarity from the roll's odds, then a species of that rarity that lives there (the
  *    deeper area's too, on a deeper roll); a rarity nobody there has falls back to the nearest one that
@@ -493,40 +586,20 @@ const RARITY_FALLBACK: Record<Rarity, readonly Rarity[]> = {
  * 3. Dupe shield: with a streak of `RULES.catching.dupeShieldStreak` (3) or more, only species the player does not own, if any. A lure's
  *    `newBp` does the same with its own chance.
  * 4. Shiny: 1 in 500.
+ *
+ * There is no catch pity (removed 2026-10-20): the ticks follow their chances.
  */
 export function rollTripCatch(
   rng: Rng,
   ctx: TripCatchContext,
-): { result: TripCatch | null; dupeStreak: number; guaranteed: boolean; pity: PityKind | null } {
+): { result: TripCatch | null; dupeStreak: number; guaranteed: boolean } {
   const { destination: dest } = ctx;
   const byId = new Map(ctx.content.creatures.map((c) => [c.id, c]));
   let species: CreatureSpecies | undefined;
   let deep = false;
   const guaranteed = ctx.firstExpedition && !ctx.ownedLines.has(RULES.catching.firstExpeditionLine);
-  // The pity (2026-10-17): a roll after `newAfter` rolls without a new species brings a creature and it
-  // is a species the player lacks (when this place has one); the `creatureEvery`-th roll without any
-  // creature brings one. Neither draws anything: the counters are the whole decision.
-  const pity = ctx.pity;
-  const lacking =
-    pity === undefined || pity.sinceNew < RULES.catching.pity.newAfter
-      ? []
-      : allSpecies(dest)
-          .map((id) => byId.get(id))
-          .filter((c): c is CreatureSpecies => c !== undefined && c.catchable)
-          .filter((c) => !ctx.ownedLines.has(c.line));
-  const pityNew = !guaranteed && lacking.length > 0;
-  const pityCreature =
-    !guaranteed &&
-    !pityNew &&
-    pity !== undefined &&
-    pity.sinceCreature + 1 >= RULES.catching.pity.creatureEvery;
-  if (
-    !guaranteed &&
-    !pityNew &&
-    !pityCreature &&
-    !chance(rng, catchChanceBp(ctx.length, ctx.kit), BP)
-  ) {
-    return { result: null, dupeStreak: ctx.dupeStreak, guaranteed: false, pity: null };
+  if (!guaranteed && ctx.sure !== true && !chance(rng, catchChanceBp(ctx.kit), BP)) {
+    return { result: null, dupeStreak: ctx.dupeStreak, guaranteed: false };
   }
 
   if (guaranteed) {
@@ -535,8 +608,12 @@ export function rollTripCatch(
     );
     if (species === undefined) throw new Error('content has no catchable zipmouse line');
   } else {
-    const deepBp = deepChanceBp(dest, ctx.stars, ctx.kit);
-    deep = deepBp > 0 && chance(rng, deepBp, BP);
+    if (ctx.forceDeep === true && deepOpen(dest, ctx.stars, ctx.kit)) {
+      deep = true;
+    } else {
+      const deepBp = deepChanceBp(dest, ctx.stars, ctx.kit);
+      deep = deepBp > 0 && chance(rng, deepBp, BP);
+    }
     // A roll in the deeper area is often the place's deep species itself (the rarest ones).
     const native = dest.deep.species
       .map((id) => byId.get(id))
@@ -561,19 +638,15 @@ export function rollTripCatch(
       .map((id) => byId.get(id))
       .filter((c): c is CreatureSpecies => c !== undefined);
     let candidates: CreatureSpecies[] = [];
-    // The pity reaches the whole place, the deeper area too: it takes the drawn rarity first and the
-    // nearest one that still has a species the player lacks after it.
-    const from = pityNew ? lacking : pool;
     for (const r of RARITY_FALLBACK[rarity]) {
-      candidates = from.filter((c) => c.rarity === r);
+      candidates = pool.filter((c) => c.rarity === r);
       if (candidates.length > 0) break;
     }
     if (candidates.length === 0) throw new Error(`destination "${dest.id}" has nobody to catch`);
     // The dupe shield, or a lure's draw for a species the player lacks: only the unowned, if any.
     const newBp = lureEffect(ctx.kit).newBp;
     const wantsNew =
-      !pityNew &&
-      (ctx.dupeStreak >= RULES.catching.dupeShieldStreak || (newBp > 0 && chance(rng, newBp, BP)));
+      ctx.dupeStreak >= RULES.catching.dupeShieldStreak || (newBp > 0 && chance(rng, newBp, BP));
     if (wantsNew) {
       const unowned = candidates.filter((c) => !ctx.ownedLines.has(c.line));
       if (unowned.length > 0) candidates = unowned;
@@ -590,9 +663,6 @@ export function rollTripCatch(
         (featured !== null && c.id === featured.species.id ? featured.weight : 1),
     }));
     species = pickWeighted(rng, weighted).species;
-    if (pityNew && dest.deep.species.includes(species.id) && !dest.species.includes(species.id)) {
-      deep = true;
-    }
   }
 
   const { numerator, denominator } = RULES.catching.shiny;
@@ -602,7 +672,6 @@ export function rollTripCatch(
     result: { species, shiny, duplicate, deep },
     dupeStreak: duplicate ? ctx.dupeStreak + 1 : 0,
     guaranteed,
-    pity: pityNew ? 'new' : pityCreature ? 'creature' : null,
   };
 }
 
@@ -621,60 +690,72 @@ export function featuredSpecies(
 }
 
 /**
- * All the catch rolls of one claim in order, carrying owned lines and the dupe streak from roll to
- * roll. `results` are the creatures that came (in order), `empty` the rolls that brought none.
+ * All the creature rolls of one claim in order, carrying owned lines and the dupe streak from roll to
+ * roll. `ticks` rolls come first. With `fixedParts` (a finished trip, not a recall) the fixed parts of
+ * the supplies join in, each a chance of one bonus roll that surely brings a creature, rolled after the
+ * ticks: a lure's (any creature) and a lantern's (a creature from the deeper area; only where the deeper
+ * area is open, so a place without deep content gets none and its chance is not drawn).
+ * Draw order: the lure's bonus chance, the lantern's bonus chance (each only with such a supply), the
+ * ticks in order (`rollTripCatch`), the lure's bonus roll, the lantern's bonus roll. `results` are the
+ * creatures that came (in order), `empty` the ticks that brought none.
  */
 export function rollTripCatches(
   rng: Rng,
-  count: number,
+  ticks: number,
   ctx: TripCatchContext,
+  fixedParts: boolean,
 ): {
   results: TripCatch[];
   dupeStreak: number;
   empty: number;
-  /** The pity counters after the last roll (unchanged when the context had none). */
-  pity: PityCounters;
-  /** The rolls the pity forced, in order: a species the player lacked (`new`) or a creature of any kind. */
-  forced: { pity: PityKind; species: string }[];
 } {
-  if (!Number.isInteger(count) || count < 0) throw new RangeError('count must be an integer >= 0');
+  if (!Number.isInteger(ticks) || ticks < 0) throw new RangeError('ticks must be an integer >= 0');
   const owned = new Set(ctx.ownedLines);
   let dupeStreak = ctx.dupeStreak;
-  let pity: PityCounters = ctx.pity ?? { sinceNew: 0, sinceCreature: 0 };
   const results: TripCatch[] = [];
   let empty = 0;
-  const forced: { pity: PityKind; species: string }[] = [];
-  for (let i = 0; i < count; i++) {
+  const lure = lureEffect(ctx.kit);
+  const bonus = fixedParts && lure.bonusBp > 0 && chance(rng, lure.bonusBp, BP);
+  const lanternBp = kitDeepBonusBp(ctx.kit);
+  const lanternBonus =
+    fixedParts &&
+    lanternBp > 0 &&
+    deepOpen(ctx.destination, ctx.stars, ctx.kit) &&
+    chance(rng, lanternBp, BP);
+  const total = ticks + (bonus ? 1 : 0) + (lanternBonus ? 1 : 0);
+  for (let i = 0; i < total; i++) {
     const roll = rollTripCatch(rng, {
       ...ctx,
       ownedLines: owned,
       dupeStreak,
       firstExpedition: i === 0 && ctx.firstExpedition,
-      ...(ctx.pity === undefined ? {} : { pity }),
+      sure: i >= ticks,
+      forceDeep: lanternBonus && i === total - 1,
     });
     if (roll.result === null) {
       empty += 1;
-      pity = { sinceNew: pity.sinceNew + 1, sinceCreature: pity.sinceCreature + 1 };
       continue;
     }
-    if (roll.pity !== null) forced.push({ pity: roll.pity, species: roll.result.species.id });
-    // A new species resets both counters, a duplicate only the creature one.
-    pity = roll.result.duplicate
-      ? { sinceNew: pity.sinceNew + 1, sinceCreature: 0 }
-      : { sinceNew: 0, sinceCreature: 0 };
     results.push(roll.result);
     owned.add(roll.result.species.line);
     dupeStreak = roll.dupeStreak;
   }
-  return { results, dupeStreak, empty, pity, forced };
+  return { results, dupeStreak, empty };
 }
 
 // --- Loot ---
 
 export interface TripLootContext {
-  length: ExpeditionLength;
-  /** The element the shard is of: the destination's, else the explorer's. */
-  shardElement: Element;
+  /** The ticks to roll: a finished trip's, or a recall's whole hours. */
+  ticks: number;
+  /** A finished trip: the supplies' fixed parts (a satchel's scrap and shard) come home too. A recall: not. */
+  fixedParts: boolean;
+  /**
+   * The place: its element is the element of every shard the trip brings (a place without one draws each
+   * shard's element evenly from the five) and the tag of the gear a tick finds; the Old Crossroads gives
+   * explorer pieces. Never the explorer's element.
+   */
+  place: { element: Element | null; crossroads: boolean };
   role: Role;
   kit: readonly SupplyDef[];
   stars: number;
@@ -687,8 +768,6 @@ export interface TripLootContext {
   gearSupplyBp?: number;
   /** Glimmer-finding talents of the explorer: the glimmer chance grows by this share. Absent: none. */
   gearGlimmerBp?: number;
-  /** Catch rolls of a finished trip that brought no creature: each brings a small find of scrap. Absent: none. */
-  emptyRolls?: number;
   /** The day's Boon or Omen on parts (basis points on top, stored with the trip). Absent: none. */
   weatherPartsBp?: number;
   /** The day's effect on the chance of a shard (a share of the chance, basis points on top). Absent: none. */
@@ -699,15 +778,20 @@ export interface TripLootContext {
 
 export interface TripLoot {
   parts: PartsBundle;
-  /** A blueprint base id, if one dropped (it may turn out to be a duplicate: the server decides). */
-  blueprint: string | null;
+  /** Blueprint base ids that dropped (each may turn out to be a duplicate: the server decides). */
+  blueprints: string[];
   /** Supplies found. */
   supplies: string[];
+  /** Gear pieces found. */
+  gear: GearItem[];
 }
 
-/** The parts bonus (basis points on top) a trip gets: role, satchels, stars, milestones and the twist. */
+/**
+ * The parts bonus (basis points on top) a trip gets: role, satchels' per-tick share, stars, milestones,
+ * the day and the twist. It scales the scrap and shard chances of every tick.
+ */
 export function partsBonusBp(
-  ctx: Omit<TripLootContext, 'length' | 'shardElement' | 'rank'>,
+  ctx: Omit<TripLootContext, 'ticks' | 'fixedParts' | 'rank' | 'place'>,
 ): number {
   return (
     (ctx.role === 'guard' ? RULES.expeditions.roles.guardPartsBp : 0) +
@@ -724,55 +808,91 @@ function addPart(bundle: PartsBundle, kind: keyof PartsBundle, amount: number): 
   if (amount > 0) bundle[kind] = (bundle[kind] ?? 0) + amount;
 }
 
-/**
- * The loot of a claimed trip besides the catches. Scrap follows the length (more with the parts
- * bonus); a recall pays the share of it that was brought back (`caught` of `rolls`) and nothing else. A
- * finished trip also rolls its shards, a glimmer, a blueprint and a found supply at the length's odds.
- * Draws in a fixed order, always the same number of draws for a finished trip.
- */
-export function rollTripLoot(
-  rng: Rng,
-  ctx: TripLootContext,
-  trip: { completed: boolean; caught: number; rolls: number },
-): TripLoot {
-  const table = lengthRules(ctx.length).loot;
+/** The chance (basis points) of each table of one tick, with every modifier applied. */
+export function tickChances(
+  ctx: Omit<TripLootContext, 'ticks' | 'fixedParts' | 'place' | 'rank'>,
+): {
+  scrapBp: number;
+  shardBp: number;
+  gearBp: number;
+  glimmerBp: number;
+  blueprintBp: number;
+  supplyBp: number;
+} {
+  const t = RULES.expeditions.tick;
   const bonusBp = partsBonusBp(ctx);
-  const parts: PartsBundle = {};
-  const full = scaleBp(table.scrap, bonusBp);
-  const scrap = trip.completed
-    ? full
-    : trip.rolls > 0
-      ? Math.floor((full * Math.max(0, trip.caught)) / trip.rolls)
-      : 0;
-  addPart(parts, 'scrap', scrap);
-  if (!trip.completed) return { parts, blueprint: null, supplies: [] };
-  // A roll that brought no creature brings a small find instead (a finished trip only).
-  addPart(parts, 'scrap', (ctx.emptyRolls ?? 0) * lengthRules(ctx.length).findScrap);
-
-  const shardBp = Math.max(0, scaleBp(scaleBp(table.shardBp, bonusBp), ctx.weatherShardsBp ?? 0));
-  const shards = Math.floor(shardBp / BP) + (chance(rng, shardBp % BP, BP) ? 1 : 0);
-  addPart(parts, shardOf(ctx.shardElement), shards);
-  if (chance(rng, Math.min(BP, scaleBp(table.glimmerBp, ctx.gearGlimmerBp ?? 0)), BP)) {
-    addPart(parts, 'glimmer', 1);
-  }
-  const blueprint = chance(rng, Math.min(BP, table.blueprintBp), BP) ? rollBlueprint(rng) : null;
-  const supplyBp = Math.max(
-    0,
-    Math.min(
-      BP,
-      scaleBp(
-        scaleBp(table.supplyBp + satchelBonus(ctx.kit).supplyBp, ctx.gearSupplyBp ?? 0),
-        ctx.weatherSupplyBp ?? 0,
+  return {
+    scrapBp: Math.max(0, scaleBp(t.scrapBp, bonusBp)),
+    shardBp: Math.max(0, scaleBp(scaleBp(t.shardBp, bonusBp), ctx.weatherShardsBp ?? 0)),
+    gearBp: Math.min(BP, t.gearBp),
+    glimmerBp: Math.min(BP, scaleBp(t.glimmerBp, ctx.gearGlimmerBp ?? 0)),
+    blueprintBp: Math.min(BP, t.blueprintBp),
+    supplyBp: Math.max(
+      0,
+      Math.min(
+        BP,
+        scaleBp(
+          scaleBp(scaleBp(t.supplyBp, satchelBonus(ctx.kit).supplyBp), ctx.gearSupplyBp ?? 0),
+          ctx.weatherSupplyBp ?? 0,
+        ),
       ),
     ),
-  );
-  const supplies = chance(rng, supplyBp, BP) ? [foundSupplyId(rng, ctx.rank)] : [];
-  return { parts, blueprint, supplies };
+  };
+}
+
+/**
+ * The loot of a trip besides the catches: every tick rolls each table on its own (`RULES.expeditions.tick`,
+ * every modifier scaling the chances), and a finished trip adds the supplies' fixed parts. Draw order:
+ * for each tick, the scrap count, the shard count (then, at a place without an element, the element of each
+ * shard: one draw of five), the gear piece (the chance, then its rarity from
+ * `gearOdds`, then the piece), the glimmer, the blueprint (the chance, then which), the found supply
+ * (the chance, then which); after the ticks a satchel's fixed shard (only with a satchel that has one).
+ * No caps: a lucky trip can bring several of anything.
+ */
+export function rollTripLoot(rng: Rng, ctx: TripLootContext): TripLoot {
+  if (!Number.isInteger(ctx.ticks) || ctx.ticks < 0) {
+    throw new RangeError('ticks must be an integer >= 0');
+  }
+  const t = RULES.expeditions.tick;
+  const odds = tickChances(ctx);
+  const parts: PartsBundle = {};
+  const blueprints: string[] = [];
+  const supplies: string[] = [];
+  const gear: GearItem[] = [];
+  // Shards are of the place's element; a place without one draws each shard's element evenly (one draw
+  // per shard, right after its count).
+  const addShards = (count: number): void => {
+    for (let n = 0; n < count; n++) {
+      const element = ctx.place.element ?? (ELEMENTS[int(rng, ELEMENTS.length)] as Element);
+      addPart(parts, shardOf(element), 1);
+    }
+  };
+  for (let i = 0; i < ctx.ticks; i++) {
+    addPart(parts, 'scrap', rollCount(rng, odds.scrapBp));
+    addShards(rollCount(rng, odds.shardBp));
+    if (chance(rng, odds.gearBp, BP)) {
+      const rarity = pickWeighted(
+        rng,
+        RARITIES.map((r) => ({ rarity: r, weight: t.gearOdds[r] })),
+      ).rarity;
+      gear.push(rollExpeditionItem(rng, rarity, ctx.place, ctx.rank));
+    }
+    if (chance(rng, odds.glimmerBp, BP)) addPart(parts, 'glimmer', 1);
+    if (chance(rng, odds.blueprintBp, BP)) blueprints.push(rollBlueprint(rng));
+    if (chance(rng, odds.supplyBp, BP)) supplies.push(foundSupplyId(rng, ctx.rank));
+  }
+  if (ctx.fixedParts) {
+    const satchel = satchelBonus(ctx.kit);
+    addPart(parts, 'scrap', satchel.scrap);
+    if (satchel.shardBp > 0) addShards(rollCount(rng, satchel.shardBp));
+    if (satchel.glimmerBp > 0) addPart(parts, 'glimmer', rollCount(rng, satchel.glimmerBp));
+  }
+  return { parts, blueprints, supplies, gear };
 }
 
 /**
  * A gear drop of one rarity from a trip's push-on goal: the place's element is its tag and its item
- * level twice the explorer's rank (`rollExpeditionItem`).
+ * level the explorer's rank (`rollExpeditionItem`).
  */
 export function rollGearDrop(
   rng: Rng,
@@ -783,14 +903,33 @@ export function rollGearDrop(
   return rollExpeditionItem(rng, rarity, place, explorerRank);
 }
 
+/**
+ * The ticks a recall pays: the whole nominal hours already spent (the floor of the elapsed share of the
+ * trip's hours, never the length's bonus ticks), clamped to the trip. A clock before the start gives 0.
+ * Times are UTC epoch milliseconds.
+ */
+export function recallTicks(
+  length: ExpeditionLength,
+  startedAt: number,
+  endsAt: number,
+  now: number,
+): number {
+  const total = endsAt - startedAt;
+  if (!Number.isFinite(total) || total <= 0) throw new RangeError('endsAt must be after startedAt');
+  const hours = Math.round(lengthRules(length).ms / HOUR_MS);
+  const elapsed = Math.min(Math.max(now - startedAt, 0), total);
+  return Math.floor((hours * elapsed) / total);
+}
+
 // --- Explorer XP ---
 
 /**
- * The XP a finished trip gives, with the bonuses (milestones, twist, goal, gear) as `trip` and `gear` parts
- * that multiply (`xp-boost.ts`). Pass the same parts to `xpBoost` for the result's breakdown.
+ * The XP a finished trip gives: `RULES.expeditions.tick.xp` for each tick (the map's and push-on
+ * ticks too), with the bonuses (milestones, twist, goal, gear) as `trip` and `gear` parts that multiply
+ * the total (`xp-boost.ts`). Pass the same parts to `xpBoost` for the result's breakdown.
  */
-export function tripXp(length: ExpeditionLength, parts: readonly XpBoostPart[]): number {
-  return applyXpBoost(lengthRules(length).xp, parts);
+export function tripXp(ticks: number, parts: readonly XpBoostPart[]): number {
+  return applyXpBoost(Math.max(0, Math.trunc(ticks)) * RULES.expeditions.tick.xp, parts);
 }
 
 // --- The end-of-trip choice ---
@@ -899,13 +1038,9 @@ export function rollJournal(
   return picked === undefined ? null : picked.id;
 }
 
-/** The chance (basis points) of a journal page on a finished trip of this length, with the twist. */
-export function journalChanceBp(
-  length: ExpeditionLength,
-  twist: TwistEffect | null,
-  weatherBp = 0,
-): number {
-  const base = lengthRules(length).journalBp;
+/** The chance (basis points) of a journal page on one tick of a finished trip, with the twist and the day. */
+export function journalChanceBp(twist: TwistEffect | null, weatherBp = 0): number {
+  const base = RULES.expeditions.tick.journalBp;
   const withTwist = twist?.kind === 'journal' ? scaleBp(base, twist.bp) : base;
   return Math.max(0, Math.min(BP, scaleBp(withTwist, weatherBp)));
 }
@@ -1008,13 +1143,11 @@ export function rollWorth(odds: RarityOdds): number {
 }
 
 /**
- * The worth of one catch roll of a trip of this length with no lure: the chance it brings a creature
- * times what the creature is worth, plus the small find of scrap when it does not.
+ * The worth of one creature roll with no lure: the chance it brings a creature times what the creature
+ * is worth (a goal's extra catch rolls are this).
  */
-export function catchRollWorth(length: ExpeditionLength, odds: RarityOdds): number {
-  const l = lengthRules(length);
-  const p = l.catchBp / BP;
-  return p * rollWorth(odds) + (1 - p) * l.findScrap * RULES.expeditions.worth.scrap;
+export function catchRollWorth(odds: RarityOdds): number {
+  return (RULES.expeditions.tick.creatureBp / BP) * rollWorth(odds);
 }
 
 /** The default odds shifted by a trip length's own bonus (what a roll is worth with no supplies and no stars). */
@@ -1034,20 +1167,31 @@ export function partsOfSpec(spec: PartsSpec | undefined): PartsBundle {
   return out;
 }
 
+/** The expected worth, in Bait, of one tick without supplies for an explorer of rank 1 on a trip of this length. */
+export function tickWorth(length: ExpeditionLength): number {
+  const t = RULES.expeditions.tick;
+  const w = RULES.expeditions.worth;
+  const gear =
+    (t.gearOdds.common * w.gear.common +
+      t.gearOdds.rare * w.gear.rare +
+      t.gearOdds.epic * w.gear.epic) /
+    BP;
+  return (
+    catchRollWorth(shiftedDefaultOdds(length)) +
+    (t.scrapBp * w.scrap) / BP +
+    (t.shardBp * w.shard) / BP +
+    (t.gearBp * gear) / BP +
+    (t.glimmerBp * w.glimmer) / BP +
+    (t.blueprintBp * w.blueprint) / BP +
+    (t.supplyBp * averageSupplyWorth()) / BP +
+    (t.journalBp * w.journal) / BP +
+    (t.xp * w.xpPer10) / 10
+  );
+}
+
 /** The expected worth, in Bait, of a finished trip without supplies for an explorer of rank 1. */
 export function expectedTripWorth(length: ExpeditionLength): number {
-  const l = lengthRules(length);
-  const w = RULES.expeditions.worth;
-  return (
-    l.rolls * catchRollWorth(length, shiftedDefaultOdds(length)) +
-    l.loot.scrap * w.scrap +
-    (l.loot.shardBp * w.shard) / BP +
-    (l.loot.glimmerBp * w.glimmer) / BP +
-    (l.loot.blueprintBp * w.blueprint) / BP +
-    (l.loot.supplyBp * averageSupplyWorth()) / BP +
-    (l.journalBp * w.journal) / BP +
-    (l.xp * w.xpPer10) / 10
-  );
+  return lengthRules(length).ticks * tickWorth(length);
 }
 
 /** The mean Bait worth of a basic supply (what a found supply is worth at low ranks). */
@@ -1056,18 +1200,19 @@ export function averageSupplyWorth(): number {
   return basics.reduce((n, s) => n + s.worth, 0) / basics.length;
 }
 
-/** The expected worth of what a goal that works out adds. */
+/** The expected worth of what a goal that works out adds: its hours as ticks (one per hour) and its own reward. */
 export function goalRewardWorth(goal: PushOnGoalDef, length: ExpeditionLength): number {
   const w = RULES.expeditions.worth;
   const r = goal.reward;
   return (
-    (r.catchRolls ?? 0) * catchRollWorth(length, shiftedDefaultOdds(length)) +
+    goal.extraHours * tickWorth(length) +
+    (r.catchRolls ?? 0) * catchRollWorth(shiftedDefaultOdds(length)) +
     partsWorth(r.parts) +
     (r.supply === true ? averageSupplyWorth() : 0) +
     (r.gear === undefined ? 0 : w.gear[r.gear]) +
     (r.blueprint === true ? w.blueprint : 0) +
     (r.journal === true ? w.journal : 0) +
-    ((r.xpBp ?? 0) * lengthRules(length).xp * w.xpPer10) / (BP * 10)
+    ((r.xpBp ?? 0) * lengthRules(length).ticks * RULES.expeditions.tick.xp * w.xpPer10) / (BP * 10)
   );
 }
 

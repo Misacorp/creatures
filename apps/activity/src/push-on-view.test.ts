@@ -88,8 +88,8 @@ describe('what a goal can bring', () => {
   });
 
   it('writes each reward in words', () => {
-    expect(rewardLines({ catchRolls: 1 })[0]?.text).toBe('1 more catch roll');
-    expect(rewardLines({ catchRolls: 2 })[0]?.text).toBe('2 more catch rolls');
+    expect(rewardLines({ catchRolls: 1 })[0]?.text).toBe('A chance of one more creature');
+    expect(rewardLines({ catchRolls: 2 })[0]?.text).toBe('2 more chances at a creature');
     expect(rewardLines({ gear: 'rare' })[0]?.text).toBe('A rare gear piece');
     expect(rewardLines({ blueprint: true })[0]?.text).toBe('A blueprint');
     expect(rewardLines({ journal: true, xpBp: 5000 }).map((l) => l.text)).toEqual([

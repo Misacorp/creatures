@@ -7,6 +7,12 @@
 import {
   RULES,
   chance,
+  conversionBlock,
+  conversionInputs,
+  conversionJobMs,
+  conversionOutputs,
+  conversionRecipe,
+  conversionXp,
   craftCostFor,
   craftHours,
   craftItemLevel,
@@ -52,7 +58,7 @@ import {
 import { awardExperience } from './creature-exp';
 import { runKeyed, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
-import { addSupply } from './expedition-store';
+import { addSupply, supplyStock, takeSupplies } from './expedition-store';
 import {
   addCreatureXp,
   addMark,
@@ -105,6 +111,17 @@ function failSupply(): never {
 }
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+
+/** The analytics base and rarity of a conversion: the first supply it takes (ids only, never numbers of effects). */
+function convertAnalytics(
+  recipeId: string,
+  took: Readonly<Record<string, number>>,
+): { base: string; rarity: GearRarity } {
+  const from = supplyDef(Object.keys(took)[0] ?? '');
+  return from === undefined
+    ? { base: recipeId, rarity: 'common' }
+    : { base: from.id, rarity: SUPPLY_RARITY[from.tier] };
+}
 
 const sumShards = (bundle: PartsBundle): number =>
   PART_KINDS.filter((k) => k.endsWith('-shard')).reduce((n, k) => n + (bundle[k] ?? 0), 0);
@@ -312,7 +329,9 @@ export class Workshop {
         ? [input.kind, input.creatureId, input.blueprintId, input.reach ?? 'none']
         : input.kind === 'supply'
           ? [input.kind, input.creatureId, input.supplyId]
-          : [input.kind, input.creatureId, [...input.itemIds]]),
+          : input.kind === 'convert'
+            ? [input.kind, input.creatureId, input.recipeId]
+            : [input.kind, input.creatureId, [...input.itemIds]]),
       ...(input.treat === true ? ['treat'] : []),
     ]);
     return this.atomically(() =>
@@ -337,6 +356,8 @@ export class Workshop {
                 return this.startSupply(userId, input, creature, worker);
               case 'dismantle':
                 return this.startDismantle(userId, input, creature, worker);
+              case 'convert':
+                return this.startConvert(userId, input, creature, worker);
             }
           })();
           if (input.treat === true) this.packTreat(userId, creature, started.jobId);
@@ -510,6 +531,62 @@ export class Workshop {
     return { jobId };
   }
 
+  /**
+   * Refine or recycle: takes the recipe's supplies and parts now, all or nothing, and stores the recipe's
+   * resolved inputs and outputs with the job so the claim pays exactly what was shown. The request names
+   * only the recipe.
+   */
+  private startConvert(
+    userId: string,
+    input: Extract<StartJobInput, { kind: 'convert' }>,
+    creature: CreatureRow,
+    worker: { level: number; busyBp: number },
+  ): { jobId: string } {
+    const def = conversionRecipe(input.recipeId);
+    if (def === undefined) throw new GameError(400, 'invalid_recipe');
+    const block = conversionBlock(def, worker.level, {
+      supplies: supplyStock(this.sql, userId),
+      parts: getParts(this.sql, userId),
+    });
+    if (block !== null) throw new GameError(409, block);
+    const took = conversionInputs(def);
+    const gave = conversionOutputs(def);
+    for (const [id, amount] of Object.entries(took.supplies)) {
+      if (!takeSupplies(this.sql, userId, id, amount)) {
+        throw new GameError(409, 'insufficient_supplies');
+      }
+    }
+    if (!debitParts(this.sql, userId, took.parts)) throw new GameError(409, 'insufficient_parts');
+    const duration = this.weatherMs(minusBp(conversionJobMs(def, worker.level), worker.busyBp));
+    const jobId = this.insertJob(
+      userId,
+      creature.id,
+      'convert',
+      {
+        recipeId: def.id,
+        took,
+        gave,
+        hours: def.hours,
+        cost: {},
+        ...this.storedWeather(userId),
+      },
+      duration,
+    );
+    this.deps.analytics?.record(
+      {
+        kind: 'job_start',
+        job: 'convert',
+        ...convertAnalytics(def.id, took.supplies),
+        species: creature.species,
+        hours: Math.round(duration / 3_600_000),
+        skillLevel: worker.level,
+        ...(Object.keys(took.parts).length === 0 ? {} : { parts: took.parts }),
+      },
+      userId,
+    );
+    return { jobId };
+  }
+
   private startDismantle(
     userId: string,
     input: Extract<StartJobInput, { kind: 'dismantle' }>,
@@ -659,6 +736,26 @@ export class Workshop {
               workMinutes = Math.round(def.blueprint.hours * 60);
               break;
             }
+            case 'convert': {
+              const took = input.took;
+              const gave = input.gave;
+              const recipeId = input.recipeId;
+              if (took === undefined || gave === undefined || recipeId === undefined) {
+                throw new Error('stored convert job has no recipe');
+              }
+              for (const [id, amount] of Object.entries(gave.supplies)) {
+                addSupply(this.sql, userId, id, amount);
+              }
+              creditParts(this.sql, userId, gave.parts);
+              result = { kind: 'convert', recipeId, took, gave };
+              const made = convertAnalytics(recipeId, took.supplies);
+              analyticsBase = made.base;
+              analyticsRarity = made.rarity;
+              const hours = input.hours ?? conversionRecipe(recipeId)?.hours ?? 1;
+              xpBase = conversionXp({ hours });
+              workMinutes = Math.round(hours * 60);
+              break;
+            }
             case 'dismantle': {
               const items = input.items;
               const first = items?.[0];
@@ -783,7 +880,10 @@ export class Workshop {
             {
               kind: 'job_claim',
               job:
-                job.kind === 'craft' || job.kind === 'supply' || job.kind === 'dismantle'
+                job.kind === 'craft' ||
+                job.kind === 'supply' ||
+                job.kind === 'dismantle' ||
+                job.kind === 'convert'
                   ? job.kind
                   : 'craft',
               base: analyticsBase,
@@ -794,6 +894,9 @@ export class Workshop {
               leveledUp: after > before,
               ...(job.kind === 'supply' && result.kind === 'supply'
                 ? { yield: result.amount }
+                : {}),
+              ...(result.kind === 'convert' && Object.keys(result.gave.supplies).length > 0
+                ? { yield: Object.values(result.gave.supplies).reduce((n, a) => n + a, 0) }
                 : {}),
               ...(result.kind === 'craft' ? { reach: result.reach } : {}),
               ...(result.kind === 'dismantle' ? { items: result.items.length } : {}),

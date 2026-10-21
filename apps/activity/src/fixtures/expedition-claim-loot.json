@@ -16,23 +16,46 @@
           "about": "Crits hit harder, in points (the fight caps the total).",
           "idle": false
         }
+      },
+      {
+        "species": "cindle",
+        "shiny": false,
+        "firstOnServer": false,
+        "outcome": "duplicate",
+        "pendingId": "00000000-0000-4000-8500-000000000024",
+        "talent": {
+          "id": "waits-for-the-moment",
+          "name": "Waits for the Moment",
+          "golden": false,
+          "text": "Marked foe +9%",
+          "about": "Hits on a marked foe that set off no reaction do more damage.",
+          "idle": false
+        }
       }
     ],
     "loot": {
       "gear": [],
       "converted": [],
       "parts": {
-        "scrap": 1,
-        "ember-shard": 1,
-        "glimmer": 1
+        "scrap": 5,
+        "ember-shard": 6,
+        "glimmer": 3
       },
       "blueprints": [
         {
-          "baseId": "trail-cap",
+          "baseId": "stormcallers-mantle",
+          "duplicate": false
+        },
+        {
+          "baseId": "acorn-cap",
+          "duplicate": false
+        },
+        {
+          "baseId": "static-wrap",
           "duplicate": false
         }
       ],
-      "supplies": ["map-scrap-basic"]
+      "supplies": ["map-scrap-basic", "satchel-basic", "lantern-basic", "lantern-basic"]
     },
     "xp": {
       "gained": 300,
@@ -40,8 +63,20 @@
       "rank": 2,
       "rankBefore": 1
     },
+    "rankGifts": [
+      {
+        "rank": 2,
+        "bait": 10,
+        "parts": {
+          "scrap": 5
+        },
+        "supplies": [],
+        "gear": [],
+        "converted": []
+      }
+    ],
     "experience": {
-      "creatureId": "00000000-0000-4000-8500-000000000024",
+      "creatureId": "00000000-0000-4000-8500-000000000025",
       "gained": 120,
       "treat": false,
       "levelBefore": 8,
@@ -51,16 +86,6 @@
       "waiting": false,
       "gold": false
     },
-    "rankGifts": [
-      {
-        "rank": 2,
-        "bait": 2,
-        "parts": {
-          "scrap": 1
-        },
-        "supplies": []
-      }
-    ],
     "familiarity": {
       "stars": 0,
       "starsBefore": 0,
@@ -70,19 +95,20 @@
   "state": {
     "serverNow": 1799776800000,
     "balances": {
-      "bait": 202,
+      "bait": 210,
       "essence": 0
     },
     "starterChosen": false,
     "starterOptions": ["splashet", "cindle", "sproutle"],
     "creatures": [
       {
-        "id": "00000000-0000-4000-8500-000000000024",
+        "id": "00000000-0000-4000-8500-000000000025",
         "species": "cindle",
         "line": "cindle",
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -154,12 +180,13 @@
         }
       },
       {
-        "id": "00000000-0000-4000-8500-000000000025",
+        "id": "00000000-0000-4000-8500-000000000026",
         "species": "splashet",
         "line": "splashet",
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -231,12 +258,13 @@
         }
       },
       {
-        "id": "00000000-0000-4000-8500-000000000026",
+        "id": "00000000-0000-4000-8500-000000000027",
         "species": "sproutle",
         "line": "sproutle",
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -325,8 +353,8 @@
           "idle": false
         },
         "offered": {
-          "teach": ["00000000-0000-4000-8500-000000000024"],
-          "fuse": ["00000000-0000-4000-8500-000000000024"],
+          "teach": ["00000000-0000-4000-8500-000000000025"],
+          "fuse": ["00000000-0000-4000-8500-000000000025"],
           "release": true,
           "keep": true
         },
@@ -335,21 +363,51 @@
         },
         "recommended": {
           "choice": "teach",
-          "creatureId": "00000000-0000-4000-8500-000000000024"
+          "creatureId": "00000000-0000-4000-8500-000000000025"
+        }
+      },
+      {
+        "id": "00000000-0000-4000-8500-000000000024",
+        "species": "cindle",
+        "line": "cindle",
+        "shiny": false,
+        "source": "expedition",
+        "createdAt": 1799776800000,
+        "talent": {
+          "id": "waits-for-the-moment",
+          "name": "Waits for the Moment",
+          "golden": false,
+          "text": "Marked foe +9%",
+          "about": "Hits on a marked foe that set off no reaction do more damage.",
+          "idle": false
+        },
+        "offered": {
+          "teach": ["00000000-0000-4000-8500-000000000025"],
+          "fuse": ["00000000-0000-4000-8500-000000000025"],
+          "release": true,
+          "keep": true
+        },
+        "releases": {
+          "scrap": 3
+        },
+        "recommended": {
+          "choice": "teach",
+          "creatureId": "00000000-0000-4000-8500-000000000025"
         }
       }
     ],
     "bookSlotBait": 10,
     "expeditions": [
       {
-        "id": "00000000-0000-4000-8500-000000000027",
-        "creatureId": "00000000-0000-4000-8500-000000000024",
+        "id": "00000000-0000-4000-8500-000000000028",
+        "creatureId": "00000000-0000-4000-8500-000000000025",
         "duration": "long",
         "supplies": "basic",
         "kit": [],
         "destination": "ember-caves",
         "twist": null,
-        "rolls": 1,
+        "weather": null,
+        "rolls": 15,
         "cost": 0,
         "treat": false,
         "startedAt": 1799733600000,
@@ -374,23 +432,46 @@
                 "about": "Crits hit harder, in points (the fight caps the total).",
                 "idle": false
               }
+            },
+            {
+              "species": "cindle",
+              "shiny": false,
+              "firstOnServer": false,
+              "outcome": "duplicate",
+              "pendingId": "00000000-0000-4000-8500-000000000024",
+              "talent": {
+                "id": "waits-for-the-moment",
+                "name": "Waits for the Moment",
+                "golden": false,
+                "text": "Marked foe +9%",
+                "about": "Hits on a marked foe that set off no reaction do more damage.",
+                "idle": false
+              }
             }
           ],
           "loot": {
             "gear": [],
             "converted": [],
             "parts": {
-              "scrap": 1,
-              "ember-shard": 1,
-              "glimmer": 1
+              "scrap": 5,
+              "ember-shard": 6,
+              "glimmer": 3
             },
             "blueprints": [
               {
-                "baseId": "trail-cap",
+                "baseId": "stormcallers-mantle",
+                "duplicate": false
+              },
+              {
+                "baseId": "acorn-cap",
+                "duplicate": false
+              },
+              {
+                "baseId": "static-wrap",
                 "duplicate": false
               }
             ],
-            "supplies": ["map-scrap-basic"]
+            "supplies": ["map-scrap-basic", "satchel-basic", "lantern-basic", "lantern-basic"]
           },
           "xp": {
             "gained": 300,
@@ -398,8 +479,20 @@
             "rank": 2,
             "rankBefore": 1
           },
+          "rankGifts": [
+            {
+              "rank": 2,
+              "bait": 10,
+              "parts": {
+                "scrap": 5
+              },
+              "supplies": [],
+              "gear": [],
+              "converted": []
+            }
+          ],
           "experience": {
-            "creatureId": "00000000-0000-4000-8500-000000000024",
+            "creatureId": "00000000-0000-4000-8500-000000000025",
             "gained": 120,
             "treat": false,
             "levelBefore": 8,
@@ -409,16 +502,6 @@
             "waiting": false,
             "gold": false
           },
-          "rankGifts": [
-            {
-              "rank": 2,
-              "bait": 2,
-              "parts": {
-                "scrap": 1
-              },
-              "supplies": []
-            }
-          ],
           "familiarity": {
             "stars": 0,
             "starsBefore": 0,
@@ -442,7 +525,9 @@
       }
     },
     "supplies": {
-      "map-scrap-basic": 1
+      "lantern-basic": 2,
+      "map-scrap-basic": 1,
+      "satchel-basic": 1
     },
     "serverFirsts": [
       {
@@ -453,7 +538,7 @@
         "holders": ["Player 2"]
       }
     ],
-    "loungerId": "00000000-0000-4000-8500-000000000026",
+    "loungerId": "00000000-0000-4000-8500-000000000027",
     "loungeSpot": null,
     "loungeXp": {}
   }

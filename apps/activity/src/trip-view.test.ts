@@ -201,10 +201,11 @@ describe('a running trip', () => {
   });
 
   it('counts what a recall keeps with the same rule as the server', () => {
-    const many = { ...trip, rolls: 4 };
-    expect(recallKeeps(many, many.startedAt)).toBe(0);
-    expect(recallKeeps(many, many.startedAt + (many.endsAt - many.startedAt) / 2)).toBe(2);
-    expect(recallKeeps(many, many.endsAt + 5 * HOUR)).toBe(4);
+    // A 12 hour trip: a tick for every whole hour spent, never the length's bonus ticks.
+    const long = { ...trip, duration: 'long' as const, endsAt: trip.startedAt + 12 * HOUR };
+    expect(recallKeeps(long, long.startedAt)).toBe(0);
+    expect(recallKeeps(long, long.startedAt + 5.5 * HOUR)).toBe(5);
+    expect(recallKeeps(long, long.endsAt + 5 * HOUR)).toBe(12);
   });
 });
 

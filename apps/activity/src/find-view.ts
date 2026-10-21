@@ -1,5 +1,5 @@
 import type { ClaimResult, Creature } from './api';
-import { catchBadgeTags, creatureName, getSpecies } from './game';
+import { catchBadgeTags, creatureName, fusionGain, getSpecies } from './game';
 import { partName, partsEntries } from './gear-view';
 import type { TripCatch } from './expedition-types';
 import type { FestivalGrant } from './raid-api';
@@ -34,8 +34,8 @@ export interface FindOption {
   label: string;
   /** Who it goes to, when the line has more than one creature ("Tidewing"); null when there is one. */
   who: string | null;
-  /** Fuse: the creature's fusions now (the stars), and that one more is gained. */
-  fusion?: { count: number };
+  /** Fuse: the creature's fusion level now (the stars), the points this duplicate adds and whether that reaches the next level. */
+  fusion?: { count: number; gain: string; levelsUp: boolean };
   /** Teach: the Talent Book it goes into. */
   book?: string;
   /** Release: what it pays, as count badges. */
@@ -99,14 +99,16 @@ export function duplicateOptions(card: PendingCatch, creatures: readonly Creatur
   const line = lineCreatures(card.species, creatures);
   const many = line.length > 1;
   const rec = card.recommended;
+  const rarity = getSpecies(card.species)?.rarity ?? 'common';
   const rows: FindOption[] = [];
   for (const c of line) {
     const fusable = card.offered.fuse.includes(c.id);
+    const gain = fusionGain(c.fusionPoints, rarity);
     rows.push({
       key: `fuse-${c.id}`,
       label: 'Fuse',
       who: many ? creatureName(c) : null,
-      fusion: { count: c.fusionCount },
+      fusion: { count: c.fusionCount, gain: gain.text, levelsUp: gain.levelsUp },
       blocked: fusable ? null : 'Fully fused',
       recommended: rec.choice === 'fuse' && rec.creatureId === c.id,
       request: { choice: 'fuse', creatureId: c.id },

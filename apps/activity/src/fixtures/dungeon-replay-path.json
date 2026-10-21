@@ -122,15 +122,22 @@
       }
     ],
     "rewards": {
-      "bait": 4,
+      "bait": 3,
       "essence": 1,
       "parts": {
-        "scrap": 2,
+        "scrap": 10,
         "spark-shard": 1
       },
-      "gear": [],
+      "gear": [
+        {
+          "id": "00000000-0000-4000-8300-000000000018",
+          "baseId": "static-charm",
+          "rarity": "common",
+          "itemLevel": 1
+        }
+      ],
       "converted": [],
-      "supplies": ["satchel-basic"],
+      "supplies": ["map-scrap-basic"],
       "landmark": false,
       "streak": null,
       "experience": [
@@ -202,14 +209,20 @@
     "path": ["fight", "mystery", "mystery", "camp", "fight", "fight", "boss"],
     "pack": {
       "found": {
-        "bait": 4,
+        "bait": 3,
         "essence": 1,
-        "scrap": 2
+        "scrap": 10,
+        "shards": {
+          "spark-shard": 1
+        }
       },
       "kept": {
-        "bait": 4,
+        "bait": 3,
         "essence": 1,
-        "scrap": 2
+        "scrap": 10,
+        "shards": {
+          "spark-shard": 1
+        }
       }
     },
     "keepsakes": [],
@@ -503,7 +516,7 @@
           "loot": {
             "bait": 1,
             "essence": 0,
-            "scrap": 0
+            "scrap": 1
           },
           "supply": true
         },
@@ -513,11 +526,11 @@
           "result": "event",
           "event": "Lost Satchel",
           "option": "Peek inside",
-          "outcome": "You find 1 Bait.",
+          "outcome": "You find 2 scrap.",
           "loot": {
-            "bait": 1,
+            "bait": 0,
             "essence": 0,
-            "scrap": 0
+            "scrap": 2
           }
         },
         {
@@ -526,11 +539,11 @@
           "result": "event",
           "event": "Sleeping Beetle",
           "option": "Take one coin",
-          "outcome": "You find 1 scrap.",
+          "outcome": "You find 2 scrap.",
           "loot": {
             "bait": 0,
             "essence": 0,
-            "scrap": 1
+            "scrap": 2
           }
         },
         {
@@ -551,7 +564,7 @@
           "loot": {
             "bait": 1,
             "essence": 0,
-            "scrap": 0
+            "scrap": 1
           }
         },
         {
@@ -565,7 +578,7 @@
           "loot": {
             "bait": 1,
             "essence": 0,
-            "scrap": 0
+            "scrap": 1
           }
         },
         {
@@ -579,7 +592,10 @@
           "loot": {
             "bait": 0,
             "essence": 1,
-            "scrap": 1
+            "scrap": 3,
+            "shards": {
+              "spark-shard": 1
+            }
           }
         }
       ]

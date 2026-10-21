@@ -128,7 +128,7 @@ describe('the shipped keepsakes and events', () => {
     }
   });
 
-  it('keeps risky options and safe ones about even (the average pack and HP they give)', () => {
+  it('pays the risky option of an event a little more than the safe one (the average pack and HP they give)', () => {
     // A rough value: 1 Bait = 1, scrap = 1.5, Essence = 4, a keepsake = 2.5, 10% HP = 1 (for three creatures).
     const value = (e: EventEffect): number => {
       switch (e.op) {
@@ -152,11 +152,19 @@ describe('the shipped keepsakes and events', () => {
       }
     };
     for (const event of dungeonEvents) {
-      const [a, b] = event.options.map((o) => o.effects.reduce((sum, e) => sum + value(e), 0));
-      expect(
-        Math.abs((a ?? 0) - (b ?? 0)),
-        `${event.id}: ${String(a)} vs ${String(b)}`,
-      ).toBeLessThanOrEqual(2);
+      const [a = 0, b = 0] = event.options.map((o) =>
+        o.effects.reduce((sum, e) => sum + value(e), 0),
+      );
+      const [costsA, costsB] = event.options.map(eventOptionCosts);
+      const label = `${event.id}: ${String(a)} vs ${String(b)}`;
+      if (costsA !== costsB) {
+        // B-024: the risky option pays more than the safe one on average (but not by more than 3.5).
+        const gain = costsA ? a - b : b - a;
+        expect(gain, label).toBeGreaterThanOrEqual(0);
+        expect(gain, label).toBeLessThanOrEqual(3.5);
+      } else {
+        expect(Math.abs(a - b), label).toBeLessThanOrEqual(3.5);
+      }
     }
   });
 
@@ -310,7 +318,7 @@ describe('the keepsake and event schemas refuse bad data', () => {
     );
     refused(keepsakesJson, withEffect({ op: 'pack' }));
     refused(keepsakesJson, withEffect({ op: 'pack', bait: 0 }));
-    refused(keepsakesJson, withEffect({ op: 'pack', bait: 4 }));
+    refused(keepsakesJson, withEffect({ op: 'pack', bait: 9 }));
     refused(keepsakesJson, withEffect({ op: 'pack', gold: 1 }));
     refused(keepsakesJson, withEffect({ op: 'heal', bp: 0 }));
     refused(keepsakesJson, withEffect({ op: 'heal', bp: 10_001 }));

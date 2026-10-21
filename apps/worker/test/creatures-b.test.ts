@@ -831,8 +831,7 @@ describe('the old training route', () => {
   });
 });
 
-describe('the new-species pity', () => {
-  const rule = RULES.catching.pity;
+describe('no catch pity', () => {
   const counters = (ctx: CoreContext, userId: string) =>
     rows<{ pity_new: number; pity_creature: number }>(
       ctx.sql,
@@ -849,83 +848,24 @@ describe('the new-species pity', () => {
       sinceCreature,
     );
 
-  /** Sends one short trip (one catch roll), claims it and returns the claimed result. */
-  async function oneRoll(ctx: CoreContext, p: Api, creatureId: string) {
-    const sent = await send(p, creatureId, {}, 'short');
-    expect(sent.status, JSON.stringify(sent.body)).toBe(200);
-    const trip = sent.body['expedition'] as { id: string; endsAt: number };
-    ctx.clock.t = trip.endsAt;
-    const claimed = await claim(p, trip.id);
-    expect(claimed.status).toBe(200);
-    return claimed.body['result'] as {
-      catches: { species: string; outcome: string }[];
-      noCatch?: number;
-    };
-  }
-
-  it('counts dry rolls in the stored counters, with the claim', async () => {
+  it('follows only the tick chances: counters far past the old limits change nothing, and stay as they were', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
         const p = await apiPlayer(ctx, 1, { level: 5, creatures: 1, species: ['splashet'] });
-        setCounters(ctx, p.id, 0, 0);
-        // The first draw of the roll misses (`dryRng`), so it brings nothing and both counters move.
-        const result = await oneRoll(ctx, p, p.creatureIds[0] as string);
-        expect(result.catches).toEqual([]);
-        expect(result.noCatch).toBe(1);
-        expect(counters(ctx, p.id)).toEqual({ pity_new: 1, pity_creature: 1 });
-      },
-      { ...options(), rng: dryRng() },
-    );
-  });
-
-  it(`brings a species the player lacks on the roll after ${String(rule.newAfter)} without one, and resets`, async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await apiPlayer(ctx, 1, { level: 5, creatures: 1, species: ['splashet'] });
-        setCounters(ctx, p.id, rule.newAfter, 0);
-        const result = await oneRoll(ctx, p, p.creatureIds[0] as string);
-        expect(result.catches).toHaveLength(1);
-        expect(result.catches[0]?.outcome).toBe('new');
-        expect(result.catches[0]?.species).not.toBe('splashet');
-        expect(counters(ctx, p.id)).toEqual({ pity_new: 0, pity_creature: 0 });
-        expect(events(ctx, 'catch_pity')).toMatchObject([{ pity: 'new' }]);
-      },
-      { ...options(), rng: dryRng() },
-    );
-  });
-
-  it(`brings a creature on the ${String(rule.creatureEvery)}th roll without one`, async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await apiPlayer(ctx, 1, { level: 5, creatures: 1, species: ['splashet'] });
-        setCounters(ctx, p.id, 0, rule.creatureEvery - 1);
-        const result = await oneRoll(ctx, p, p.creatureIds[0] as string);
-        expect(result.catches).toHaveLength(1);
-        expect(counters(ctx, p.id)?.pity_creature).toBe(0);
-        expect(events(ctx, 'catch_pity')).toMatchObject([{ pity: 'creature' }]);
-      },
-      { ...options(), rng: dryRng() },
-    );
-  });
-
-  it('is decided once: a repeat claim changes nothing, and the pity cannot be asked for', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await apiPlayer(ctx, 1, { level: 5, creatures: 1, species: ['splashet'] });
-        setCounters(ctx, p.id, rule.newAfter, 0);
+        // The old pity would have forced a new species here (60 dry rolls) and a creature (10).
+        setCounters(ctx, p.id, 500, 500);
         const sent = await send(p, p.creatureIds[0] as string, {}, 'short');
+        expect(sent.status, JSON.stringify(sent.body)).toBe(200);
         const trip = sent.body['expedition'] as { id: string; endsAt: number };
         ctx.clock.t = trip.endsAt;
-        const first = await claim(p, trip.id);
-        const lines = count(ctx, 'creatures');
-        const second = await claim(p, trip.id);
-        expect(second.body['result']).toEqual(first.body['result']);
-        expect(count(ctx, 'creatures')).toBe(lines);
-        expect(counters(ctx, p.id)).toEqual({ pity_new: 0, pity_creature: 0 });
+        const claimed = await claim(p, trip.id);
+        expect(claimed.status).toBe(200);
+        const result = claimed.body['result'] as { catches: unknown[] };
+        // Every draw misses: no creature came, the counters are not touched, and nothing is logged.
+        expect(result.catches).toEqual([]);
+        expect(counters(ctx, p.id)).toEqual({ pity_new: 500, pity_creature: 500 });
+        expect(events(ctx, 'catch_pity')).toEqual([]);
         // The counters are not part of any request: a body that names them is refused.
         const sneaky = await send(p, p.creatureIds[0] as string, { pity: 99 }, 'short');
         expect(sneaky.status).toBe(400);
@@ -935,22 +875,7 @@ describe('the new-species pity', () => {
   });
 });
 
-/**
- * An rng that makes every plain chance roll miss (2^31 is above any chance the game ships) and
- * otherwise lets the pity decide: a creature that comes is drawn from a seeded stream.
- */
+/** An rng that makes every plain chance roll miss (2^31 is above any chance the game ships). */
 function dryRng() {
-  const seeded = createSeededRng('creatures-b:dry');
-  let first = true;
-  return {
-    nextU32() {
-      // The first draw of a catch roll is whether it brings a creature at all: make it miss. The later
-      // draws of a roll that the pity forces come from the seeded stream (the pity draws nothing itself).
-      if (first) {
-        first = false;
-        return 0x80000000;
-      }
-      return seeded.nextU32();
-    },
-  };
+  return { nextU32: () => 0x80000000 };
 }

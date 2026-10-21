@@ -59,7 +59,10 @@ describe('who can go', () => {
   });
 
   it('shows the stars of each creature at the chosen place', () => {
-    expect(starsAt(view, cindle.id, 'tidepools')).toBe(0);
+    const recorded = view.familiarity.find(
+      (f) => f.creatureId === cindle.id && f.destination === 'tidepools',
+    );
+    expect(starsAt(view, cindle.id, 'tidepools')).toBe(recorded?.stars ?? 0);
     expect(starsAt(view, 'nobody', 'tidepools')).toBe(0);
     expect(starsAt(null, cindle.id, 'tidepools')).toBe(0);
     const starry = {

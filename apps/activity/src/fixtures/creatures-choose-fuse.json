@@ -9,7 +9,9 @@
     },
     "choice": "fuse",
     "creatureId": "00000000-0000-4000-8200-000000000003",
-    "fusionCount": 1
+    "fusionCount": 1,
+    "fusionPoints": 1,
+    "pointsAdded": 1
   },
   "state": {
     "serverNow": 1799762400000,
@@ -27,6 +29,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -90,7 +93,7 @@
         },
         "explorer": {
           "rank": 1,
-          "xp": 16,
+          "xp": 160,
           "nextRankXp": 200,
           "trips": 4
         },
@@ -121,6 +124,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 1,
+        "fusionPoints": 1,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -224,6 +228,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -382,7 +387,8 @@
         "kit": [],
         "destination": "tidepools",
         "twist": null,
-        "rolls": 1,
+        "weather": null,
+        "rolls": 2,
         "cost": 0,
         "treat": false,
         "startedAt": 1799755200000,
@@ -410,14 +416,29 @@
             }
           ],
           "loot": {
-            "gear": [],
+            "gear": [
+              {
+                "id": "00000000-0000-4000-8200-000000000010",
+                "baseId": "kelp-cap",
+                "rarity": "common",
+                "itemLevel": 1
+              },
+              {
+                "id": "00000000-0000-4000-8200-000000000011",
+                "baseId": "kelp-cap",
+                "rarity": "common",
+                "itemLevel": 1
+              }
+            ],
             "converted": [],
-            "parts": {},
+            "parts": {
+              "scrap": 1
+            },
             "blueprints": []
           },
           "xp": {
-            "gained": 4,
-            "total": 16,
+            "gained": 40,
+            "total": 160,
             "rank": 1,
             "rankBefore": 1
           },
@@ -442,14 +463,15 @@
         "pushOn": null
       },
       {
-        "id": "00000000-0000-4000-8200-000000000010",
+        "id": "00000000-0000-4000-8200-000000000012",
         "creatureId": "00000000-0000-4000-8200-000000000002",
         "duration": "short",
         "supplies": "basic",
         "kit": [],
         "destination": "tidepools",
         "twist": null,
-        "rolls": 1,
+        "weather": null,
+        "rolls": 2,
         "cost": 0,
         "treat": false,
         "startedAt": 1799748000000,
@@ -477,16 +499,28 @@
             }
           ],
           "loot": {
-            "gear": [],
+            "gear": [
+              {
+                "id": "00000000-0000-4000-8200-000000000013",
+                "baseId": "kelp-cap",
+                "rarity": "rare",
+                "itemLevel": 1
+              }
+            ],
             "converted": [],
-            "parts": {},
+            "parts": {
+              "scrap": 1
+            },
             "blueprints": []
           },
           "xp": {
-            "gained": 4,
-            "total": 12,
+            "gained": 40,
+            "total": 120,
             "rank": 1,
             "rankBefore": 1
+          },
+          "slotUnlocked": {
+            "total": 2
           },
           "experience": {
             "creatureId": "00000000-0000-4000-8200-000000000002",
@@ -499,9 +533,6 @@
             "waiting": false,
             "gold": false
           },
-          "slotUnlocked": {
-            "total": 2
-          },
           "familiarity": {
             "stars": 0,
             "starsBefore": 0,
@@ -512,14 +543,15 @@
         "pushOn": null
       },
       {
-        "id": "00000000-0000-4000-8200-000000000011",
+        "id": "00000000-0000-4000-8200-000000000014",
         "creatureId": "00000000-0000-4000-8200-000000000002",
         "duration": "short",
         "supplies": "basic",
         "kit": [],
         "destination": "tidepools",
         "twist": null,
-        "rolls": 1,
+        "weather": null,
+        "rolls": 2,
         "cost": 0,
         "treat": false,
         "startedAt": 1799740800000,
@@ -553,8 +585,8 @@
             "blueprints": []
           },
           "xp": {
-            "gained": 4,
-            "total": 8,
+            "gained": 40,
+            "total": 80,
             "rank": 1,
             "rankBefore": 1
           },
@@ -586,7 +618,8 @@
         "kit": [],
         "destination": "tidepools",
         "twist": null,
-        "rolls": 1,
+        "weather": null,
+        "rolls": 2,
         "cost": 0,
         "treat": false,
         "startedAt": 1799733600000,
@@ -616,12 +649,14 @@
           "loot": {
             "gear": [],
             "converted": [],
-            "parts": {},
+            "parts": {
+              "scrap": 1
+            },
             "blueprints": []
           },
           "xp": {
-            "gained": 4,
-            "total": 4,
+            "gained": 40,
+            "total": 40,
             "rank": 1,
             "rankBefore": 1
           },

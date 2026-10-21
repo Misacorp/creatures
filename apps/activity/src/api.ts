@@ -305,6 +305,8 @@ export interface Creature extends CreatureGearFields {
   level: number;
   levelCap: number;
   fusionCount: number;
+  /** Fusion points gathered: the level is `fusionCount`, the next one is at `RULES.fusion.thresholds`. */
+  fusionPoints: number;
   shiny: boolean;
   nickname: string | null;
   away: boolean;
@@ -535,6 +537,7 @@ function isCreature(value: unknown): value is Creature {
     isInt(value['level']) &&
     isInt(value['levelCap']) &&
     isInt(value['fusionCount']) &&
+    isInt(value['fusionPoints']) &&
     isInt(value['caughtAt']) &&
     typeof value['shiny'] === 'boolean' &&
     (value['nickname'] === null || isStr(value['nickname'])) &&

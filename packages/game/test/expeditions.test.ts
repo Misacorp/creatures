@@ -11,6 +11,8 @@ import {
   SUPPLY_TIERS,
   allSpecies,
   closedReasons,
+  gearBase,
+  tagElement,
   partsBonusBp,
   content,
   createSeededRng,
@@ -47,7 +49,10 @@ import {
   nextSlot,
   offerChanceBp,
   rankGift,
+  rankGiftParts,
   rankGiftsBetween,
+  rollRankGiftItem,
+  shardOf,
   rankSum,
   rankUnlocks,
   rollJournal,
@@ -64,8 +69,16 @@ import {
   supplyJobMs,
   supplyJobXp,
   tripMs,
-  tripRolls,
+  tripTicks,
+  recallTicks,
+  tickChances,
   tripXp,
+  mapTicksBp,
+  rollMapTicks,
+  rollCount,
+  kitDeepBp,
+  kitDeepBonusBp,
+  satchelBonus,
   weeklySpecial,
   type DestinationDef,
   type ExpeditionLength,
@@ -135,6 +148,7 @@ function supply(id: string): SupplyDef {
  */
 const SURE: SupplyDef = {
   ...(supplyDef('lure-basic') as SupplyDef & { kind: 'lure' }),
+  bonusBp: 0,
   catchBp: BP,
   newBp: 0,
 };
@@ -221,16 +235,7 @@ describe('the shipped expedition content', () => {
         const rng = createSeededRng(`pool-${d.id}-${stars}`);
         const seen = new Set<string>();
         for (let i = 0; i < 300; i++) {
-          // Every other roll is the pity's "new species" roll (the owned lines are empty either way).
-          const roll = rollSure(
-            rng,
-            ctx({
-              destination: d,
-              length: 'long',
-              stars,
-              pity: { sinceNew: i % 2 === 0 ? RULES.catching.pity.newAfter : 0, sinceCreature: 0 },
-            }),
-          );
+          const roll = rollSure(rng, ctx({ destination: d, length: 'long', stars }));
           seen.add(roll.result.species.id);
         }
         for (const id of seen) {
@@ -573,14 +578,13 @@ describe('explorer rank, trip length and slots', () => {
     for (let i = 1; i < perHour.length; i++) {
       expect(perHour[i] as number, EXPEDITION_LENGTHS[i]).toBeGreaterThan(perHour[i - 1] as number);
     }
-    // XP and the loot chances rise with the length too.
+    // The ticks run ahead of the hours on the longer trips.
     for (let i = 1; i < EXPEDITION_LENGTHS.length; i++) {
       const a = lengthRules(EXPEDITION_LENGTHS[i - 1] as ExpeditionLength);
       const b = lengthRules(EXPEDITION_LENGTHS[i] as ExpeditionLength);
-      expect(b.xp / (b.ms / HOUR)).toBeGreaterThan(a.xp / (a.ms / HOUR));
-      expect(b.loot.scrap).toBeGreaterThanOrEqual(a.loot.scrap);
-      expect(b.loot.blueprintBp).toBeGreaterThan(a.loot.blueprintBp);
+      expect(b.ticks / (b.ms / HOUR)).toBeGreaterThan(a.ticks / (a.ms / HOUR));
     }
+    expect(EXPEDITION_LENGTHS.map((l) => lengthRules(l).ticks)).toEqual([2, 7, 15, 32]);
   });
 
   it('gives a fixed gift at every rank from 2 to the top, growing with rank, and none at rank 1', () => {
@@ -619,6 +623,49 @@ describe('explorer rank, trip length and slots', () => {
       expect(rankGift(rank)?.supplies.length, `supplies at rank ${String(rank)}`).toBeGreaterThan(
         0,
       );
+    }
+  });
+
+  it('adds shards from rank 4 and a gear piece from rank 5, with rising odds', () => {
+    const top = RULES.expeditions.rank.xpForRank.length;
+    for (let rank = 2; rank <= 3; rank++) {
+      expect(rankGift(rank)?.shards).toBe(0);
+      expect(rankGift(rank)?.gearOddsBp).toBeNull();
+    }
+    expect(rankGift(4)?.shards).toBe(2);
+    expect(rankGift(4)?.gearOddsBp).toBeNull();
+    let lastShards = 0;
+    let lastEpic = 0;
+    for (let rank = 4; rank <= top; rank++) {
+      const g = rankGift(rank);
+      expect(g?.shards, `shards at rank ${String(rank)}`).toBeGreaterThan(lastShards);
+      lastShards = g?.shards ?? 0;
+      if (rank < 5) continue;
+      const odds = g?.gearOddsBp;
+      if (odds === null || odds === undefined) throw new Error(`no gear at rank ${String(rank)}`);
+      expect(odds.common + odds.rare + odds.epic).toBe(10_000);
+      expect(odds.epic, `epic at rank ${String(rank)}`).toBeGreaterThanOrEqual(lastEpic);
+      lastEpic = odds.epic;
+      if (rank >= 6) expect(odds.common).toBe(0);
+    }
+    expect(rankGift(9)?.gearOddsBp?.epic).toBeGreaterThan(0);
+  });
+
+  it('pays the shards in the explorer element and rolls the gear piece for that element', () => {
+    const gift = rankGift(5);
+    if (gift === null) throw new Error('no gift');
+    expect(rankGiftParts(gift, 'ember')).toEqual({
+      scrap: gift.parts.scrap,
+      [shardOf('ember')]: gift.shards,
+    });
+    expect(rankGiftParts(rankGift(2) ?? gift, 'tide')[shardOf('tide')]).toBeUndefined();
+    expect(rollRankGiftItem(createSeededRng('none'), rankGift(3) ?? gift, 'tide', 3)).toBeNull();
+    const rng = createSeededRng('rank-gear');
+    for (let i = 0; i < 20; i++) {
+      const item = rollRankGiftItem(rng, rankGift(6) ?? gift, 'grove', 6);
+      if (item === null) throw new Error('no item');
+      expect(item.rarity).not.toBe('common');
+      expect(tagElement(gearBase(item.baseId)?.tag ?? 'neutral')).toBe('grove');
     }
   });
 
@@ -680,11 +727,16 @@ describe('explorer rank, trip length and slots', () => {
     expect(rankSum([1, 2, 5, 10])).toBe(0 + 1 + 4 + 9);
   });
 
-  it('gives XP that grows with the length, with the bonuses on top', () => {
-    expect(tripXp('short', [])).toBe(lengthRules('short').xp);
-    expect(tripXp('day', [])).toBeGreaterThan(tripXp('long', []));
-    expect(tripXp('long', [{ source: 'trip', name: 'Milestones', bp: 5_000 }])).toBe(
-      Math.floor(lengthRules('long').xp * 1.5),
+  it('gives a fixed XP for every tick, with the bonuses multiplying the total', () => {
+    const xp = RULES.expeditions.tick.xp;
+    expect(xp).toBe(20);
+    expect(tripXp(0, [])).toBe(0);
+    expect(tripXp(lengthRules('short').ticks, [])).toBe(2 * xp);
+    expect(tripXp(lengthRules('day').ticks, [])).toBeGreaterThan(
+      tripXp(lengthRules('long').ticks, []),
+    );
+    expect(tripXp(15, [{ source: 'trip', name: 'Milestones', bp: 5_000 }])).toBe(
+      Math.floor(15 * xp * 1.5),
     );
   });
 
@@ -693,10 +745,8 @@ describe('explorer rank, trip length and slots', () => {
       { source: 'trip', name: 'Milestones', bp: 5_000 },
       { source: 'gear', name: 'Trail XP', bp: 2_000 },
     ];
-    expect(tripXp('long', parts)).toBe(Math.floor((lengthRules('long').xp * 18_000) / 10_000));
-    expect(tripXp('long', parts)).toBeGreaterThan(
-      Math.floor((lengthRules('long').xp * 17_000) / 10_000),
-    );
+    expect(tripXp(15, parts)).toBe(Math.floor((15 * 20 * 18_000) / 10_000));
+    expect(tripXp(15, parts)).toBeGreaterThan(Math.floor((15 * 20 * 17_000) / 10_000));
   });
 });
 
@@ -780,20 +830,50 @@ describe('supplies and the rolls of a trip', () => {
     expect(() => kitOf(['moon-pie'])).toThrow();
   });
 
-  it('adds the map scrap share of the rolls (at least one) and the twist extra', () => {
-    const base = lengthRules('long').rolls;
-    expect(tripRolls('long', [], null)).toBe(base);
-    for (const tier of SUPPLY_TIERS) {
-      const s = supply(`map-scrap-${tier}`);
-      if (s.kind !== 'map-scrap') throw new Error('not a map scrap');
-      expect(tripRolls('long', [s], null)).toBe(
-        base + Math.max(1, Math.floor((base * s.rollsBp) / BP)),
-      );
-    }
-    expect(tripRolls('short', [], { kind: 'rolls', extra: 2 })).toBe(
-      lengthRules('short').rolls + 2,
-    );
-    expect(tripRolls('short', [], { kind: 'parts', bp: 5_000 })).toBe(lengthRules('short').rolls);
+  it('fixes the ticks of a trip when it is sent: the length, the twist extra, never the map', () => {
+    expect(tripTicks('long', null)).toBe(lengthRules('long').ticks);
+    expect(tripTicks('short', { kind: 'rolls', extra: 2 })).toBe(lengthRules('short').ticks + 2);
+    expect(tripTicks('short', { kind: 'parts', bp: 5_000 })).toBe(lengthRules('short').ticks);
+  });
+
+  it('gives a map a fixed part and a part per tick, and rolls the fraction as a chance', () => {
+    expect(mapTicksBp('long', [])).toBe(0);
+    const basic = supply('map-scrap-basic');
+    if (basic.kind !== 'map-scrap') throw new Error('not a map');
+    // Basic: 41% of a tick and 2.83% of the ticks (B-025, then x1.18 for the catch rate 800; a map pays about 1.2 times its cost on a
+    // 2 hour trip and 3.5 times on a 24 hour one).
+    expect(basic.fixedTicksBp).toBe(4_130);
+    expect(basic.perTickBp).toBe(283);
+    expect(mapTicksBp('short', [basic])).toBe(4_130 + 283 * 2);
+    expect(mapTicksBp('day', [basic])).toBe(4_130 + 283 * 32);
+    // Better maps give more, and more on a longer trip.
+    const bps = SUPPLY_TIERS.map((t) => mapTicksBp('long', [supply(`map-scrap-${t}`)]));
+    expect(bps[0] as number).toBeLessThan(bps[1] as number);
+    expect(bps[1] as number).toBeLessThan(bps[2] as number);
+    expect(mapTicksBp('short', [basic])).toBeLessThan(mapTicksBp('day', [basic]));
+    // The great map on a long trip: 3.28 + 23.6% of 15 = 6.82 ticks: 6 sure and an 82% chance of a 7th.
+    const great = supply('map-scrap-great');
+    expect(mapTicksBp('long', [great])).toBe(32_804 + 2_360 * 15);
+    // A fraction rolls as a chance, never rounded away: 0.4696 ticks for the basic map on a short trip.
+    expect(mapTicksBp('short', [basic])).toBe(4_696);
+    let extra = 0;
+    const rng = createSeededRng('map-fraction');
+    for (let i = 0; i < 4_000; i++) extra += rollMapTicks(rng, 'short', [basic]);
+    expect(extra / 4_000).toBeGreaterThan(0.41);
+    expect(extra / 4_000).toBeLessThan(0.53);
+    // Without a map nothing is drawn.
+    const none = scripted([]);
+    expect(rollMapTicks(none, 'long', [])).toBe(0);
+    // With one the whole ticks are sure and the fraction draws once.
+    expect(rollMapTicks(scripted([0]), 'long', [great])).toBe(7);
+    expect(rollMapTicks(scripted([9_999]), 'long', [great])).toBe(6);
+  });
+
+  it('rolls a count from basis points: the sure ones and a chance of one more', () => {
+    expect(rollCount(scripted([9_999]), 4_000)).toBe(0);
+    expect(rollCount(scripted([0]), 4_000)).toBe(1);
+    expect(rollCount(scripted([9_999]), 20_000)).toBe(2);
+    expect(rollCount(scripted([0]), 25_000)).toBe(3);
   });
 
   it('shifts odds from Common without losing or inventing any', () => {
@@ -826,31 +906,51 @@ describe('supplies and the rolls of a trip', () => {
   });
 
   it('makes lures raise the chance of a creature and of a new species, by tier', () => {
-    expect(lureEffect([])).toEqual({ catchBp: 0, newBp: 0 });
+    expect(lureEffect([])).toEqual({ bonusBp: 0, catchBp: 0, newBp: 0 });
     const basic = lureEffect([supply('lure-basic')]);
     const good = lureEffect([supply('lure-good')]);
     const great = lureEffect([supply('lure-great')]);
     expect(basic.catchBp).toBeGreaterThan(0);
     expect(good.catchBp).toBeGreaterThan(basic.catchBp);
     expect(great.catchBp).toBeGreaterThan(good.catchBp);
+    expect(basic.bonusBp).toBeGreaterThan(0);
+    expect(good.bonusBp).toBeGreaterThan(basic.bonusBp);
+    expect(great.bonusBp).toBeGreaterThan(good.bonusBp);
     expect(good.newBp).toBeGreaterThan(basic.newBp);
     expect(great.newBp).toBeGreaterThan(good.newBp);
     // Only lures count; the other supplies change nothing here.
     expect(lureEffect([supply('map-scrap-great'), supply('satchel-great')])).toEqual({
+      bonusBp: 0,
       catchBp: 0,
       newBp: 0,
     });
-    // The trip length's own chance, plus the lure's, at most a sure thing.
-    for (const length of EXPEDITION_LENGTHS) {
-      expect(catchChanceBp(length, [])).toBe(lengthRules(length).catchBp);
-      expect(catchChanceBp(length, [supply('lure-great')])).toBe(
-        Math.min(BP, lengthRules(length).catchBp + great.catchBp),
-      );
-    }
-    expect(catchChanceBp('day', [SURE])).toBe(BP);
-    // Longer trips bring a creature more often than short ones.
-    expect(lengthRules('short').catchBp).toBeLessThan(lengthRules('medium').catchBp);
-    expect(lengthRules('medium').catchBp).toBeLessThan(lengthRules('long').catchBp);
+    // The tick's own chance (8%), plus the lure's, at most a sure thing.
+    expect(catchChanceBp([])).toBe(RULES.expeditions.tick.creatureBp);
+    expect(RULES.expeditions.tick.creatureBp).toBe(800);
+    expect(catchChanceBp([supply('lure-great')])).toBe(800 + great.catchBp);
+    expect(catchChanceBp([SURE])).toBe(BP);
+  });
+
+  it('gives a lantern a deeper chance per creature and a fixed chance of a bonus creature from there, and a satchel a fixed part', () => {
+    expect(kitDeepBonusBp([])).toBe(0);
+    expect(SUPPLY_TIERS.map((t) => kitDeepBonusBp([supply(`lantern-${t}`)]))).toEqual([
+      1_040, 2_990, 3_800,
+    ]);
+    expect(SUPPLY_TIERS.map((t) => kitDeepBp([supply(`lantern-${t}`)]))).toEqual([
+      1_040, 2_990, 6_300,
+    ]);
+    expect(satchelBonus([])).toEqual({
+      partsBp: 0,
+      supplyBp: 0,
+      scrap: 0,
+      shardBp: 0,
+      glimmerBp: 0,
+    });
+    const satchels = SUPPLY_TIERS.map((t) => satchelBonus([supply(`satchel-${t}`)]));
+    expect(satchels.map((x) => x.scrap)).toEqual([1, 4, 9]);
+    expect(satchels.map((x) => x.shardBp)).toEqual([3_500, 10_000, 22_500]);
+    expect(satchels.map((x) => x.glimmerBp)).toEqual([0, 600, 2_700]);
+    expect(satchels.map((x) => x.partsBp)).toEqual([2_000, 6_600, 14_000]);
   });
 
   it('chances an end-of-trip choice from the base, the rank and the supplies, the best tier a sure thing', () => {
@@ -931,6 +1031,108 @@ describe('catching at a destination', () => {
       if (rollSure(rng, ctx({ destination: ember, kit: [lantern] })).result.deep) lit++;
     }
     expect(lit).toBeGreaterThan(0);
+  });
+
+  it('has no catch pity: a long run of misses is followed by another miss', () => {
+    const plain = { ...ctx(), kit: [] as SupplyDef[] };
+    // Every draw misses the 12.5% chance. A hundred ticks bring nothing and draw once each.
+    const rng = scripted(Array.from({ length: 100 }, () => BP - 1));
+    const out = rollTripCatches(rng, 100, plain, true);
+    expect(out.results).toEqual([]);
+    expect(out.empty).toBe(100);
+    expect(rng.drawn()).toBe(100);
+  });
+
+  it('rolls a sure roll without drawing the chance, and a lure’s bonus roll after the ticks', () => {
+    // A sure roll brings a creature whatever the chance: rarity, species and shiny only.
+    const plain = { ...ctx(), kit: [] as SupplyDef[] };
+    const sure = scripted([0, 0, 1]);
+    expect(rollTripCatch(sure, { ...plain, sure: true }).result?.species.id).toBe('splashet');
+    expect(sure.drawn()).toBe(3);
+    // The Plain Lure's 15% bonus: a hit draws first, then the ticks, then the sure roll.
+    const lure = supply('lure-basic');
+    const out = rollTripCatches(
+      scripted([0, 9_999, 0, 9_999, 0, 1]),
+      1,
+      { ...plain, kit: [lure], ownedLines: new Set() },
+      true,
+    );
+    expect(out.results).toHaveLength(1);
+    expect(out.empty).toBe(1);
+    // A miss on the bonus chance draws once and adds nothing.
+    const none = scripted([9_999, 9_999]);
+    expect(rollTripCatches(none, 1, { ...plain, kit: [lure] }, true).results).toEqual([]);
+    expect(none.drawn()).toBe(2);
+    // A recall (no fixed parts) never rolls the bonus.
+    const recall = scripted([9_999]);
+    expect(rollTripCatches(recall, 1, { ...plain, kit: [lure] }, false).results).toEqual([]);
+    expect(recall.drawn()).toBe(1);
+    // A great lure's bonus is 65%: over many trips the bonus roll shows.
+    const great = supply('lure-great');
+    const rng = createSeededRng('bonus');
+    let withBonus = 0;
+    let without = 0;
+    for (let i = 0; i < 3_000; i++) {
+      withBonus += rollTripCatches(rng, 2, { ...plain, kit: [great] }, true).results.length;
+      without += rollTripCatches(rng, 2, { ...plain, kit: [great] }, false).results.length;
+    }
+    expect(withBonus).toBeGreaterThan(without + 3_000 * 0.55);
+  });
+
+  it('gives a lantern a chance of one bonus creature from the deeper area, after the ticks, on a finished trip', () => {
+    const ember = dest('ember-caves');
+    const plain = { ...ctx({ destination: ember }), kit: [] as SupplyDef[] };
+    const lantern = supply('lantern-basic');
+    const lit = { ...plain, kit: [lantern] };
+    // A hit (the basic lantern's chance is a draw under `bonusBp`), then one tick that brings nothing,
+    // then the bonus roll: no deeper-area chance is drawn (it is forced), the deeper area's own species
+    // comes with `deepFindBp`, its index, and the shiny draw.
+    const hit = scripted([0, 9_999, 0, 0, 1]);
+    const out = rollTripCatches(hit, 1, lit, true);
+    expect(hit.drawn()).toBe(5);
+    expect(out.empty).toBe(1);
+    expect(out.results).toHaveLength(1);
+    expect(out.results[0]?.deep).toBe(true);
+    expect(ember.deep.species).toContain(out.results[0]?.species.id);
+    // A miss on the chance draws once and adds nothing.
+    const miss = scripted([9_999, 9_999]);
+    expect(rollTripCatches(miss, 1, lit, true).results).toEqual([]);
+    expect(miss.drawn()).toBe(2);
+    // A recall (no fixed parts) never rolls it.
+    const recall = scripted([9_999]);
+    expect(rollTripCatches(recall, 1, lit, false).results).toEqual([]);
+    expect(recall.drawn()).toBe(1);
+    // With a lure too: both chances first (lure, lantern), the ticks, the lure's bonus, then the lantern's.
+    const both = scripted([0, 0, 9_999, 9_999, 0, 9_999, 0, 1, 0, 0, 1]);
+    const lure = supply('lure-basic');
+    const two = rollTripCatches(both, 1, { ...plain, kit: [lure, lantern] }, true);
+    expect(two.results).toHaveLength(2);
+    expect(two.results[0]?.deep).toBe(false);
+    expect(two.results[1]?.deep).toBe(true);
+  });
+
+  it('draws the lantern bonus only where the deeper area is open, and keeps the rarity shift without deep species', () => {
+    const lantern = supply('lantern-great');
+    // No deeper content at all: the deeper area stays closed, the chance is not drawn, nothing is added.
+    const shut = { ...dest('tidepools'), deep: { species: [], rarityUpBp: 0 } };
+    const none = scripted([9_999]);
+    const out = rollTripCatches(none, 1, { ...ctx({ destination: shut }), kit: [lantern] }, true);
+    expect(out.results).toEqual([]);
+    expect(none.drawn()).toBe(1);
+    // A deeper area with a rarity push but no species of its own: the bonus creature is a deep roll.
+    const rng = createSeededRng('deep-shift');
+    const tide = dest('tidepools');
+    let deep = 0;
+    let all = 0;
+    for (let i = 0; i < 400; i++) {
+      const r = rollTripCatches(rng, 0, { ...ctx({ destination: tide }), kit: [lantern] }, true);
+      all += r.results.length;
+      for (const c of r.results) if (c.deep) deep++;
+    }
+    expect(all).toBeGreaterThan(400 * 0.25);
+    expect(deep).toBe(all);
+    // The great lantern's chance is its `bonusBp`.
+    expect(Math.abs(all / 400 - kitDeepBonusBp([lantern]) / BP)).toBeLessThan(0.08);
   });
 
   it('falls back to the nearest rarity somebody there has', () => {
@@ -1038,7 +1240,7 @@ describe('catching at a destination', () => {
 
   it('rolls all the catches of a claim, carrying owned lines from roll to roll', () => {
     const rng = createSeededRng('claim');
-    const out = rollTripCatches(rng, 6, ctx({ destination: dest('old-crossroads') }));
+    const out = rollTripCatches(rng, 6, ctx({ destination: dest('old-crossroads') }), true);
     expect(out.results).toHaveLength(6);
     const owned = new Set<string>();
     let streak = 0;
@@ -1048,8 +1250,8 @@ describe('catching at a destination', () => {
       owned.add(r.species.line);
     }
     expect(out.dupeStreak).toBe(streak);
-    expect(() => rollTripCatches(rng, -1, ctx())).toThrow(RangeError);
-    expect(rollTripCatches(rng, 0, ctx()).results).toEqual([]);
+    expect(() => rollTripCatches(rng, -1, ctx(), true)).toThrow(RangeError);
+    expect(rollTripCatches(rng, 0, ctx(), true).results).toEqual([]);
     expect(out.empty).toBe(0);
   });
 
@@ -1086,14 +1288,15 @@ describe('catching at a destination', () => {
       return (got * BP) / n;
     };
     for (const length of EXPEDITION_LENGTHS) {
-      expect(Math.abs(rate([], length) - catchChanceBp(length, []))).toBeLessThan(300);
+      expect(Math.abs(rate([], length) - catchChanceBp([]))).toBeLessThan(300);
     }
-    expect(rate([supply('lure-great')], 'short')).toBeGreaterThan(rate([], 'short') + 1_000);
-    const out = rollTripCatches(createSeededRng('empties'), 40, {
-      ...ctx(),
-      kit: [],
-      destination: dest('old-crossroads'),
-    });
+    expect(rate([supply('lure-great')], 'short')).toBeGreaterThan(rate([], 'short') + 150);
+    const out = rollTripCatches(
+      createSeededRng('empties'),
+      40,
+      { ...ctx(), kit: [], destination: dest('old-crossroads') },
+      true,
+    );
     expect(out.results.length + out.empty).toBe(40);
     expect(out.empty).toBeGreaterThan(10);
   });
@@ -1121,8 +1324,9 @@ describe('catching at a destination', () => {
 
 describe('trip loot', () => {
   const base = {
-    length: 'long' as ExpeditionLength,
-    shardElement: 'tide' as const,
+    ticks: 15,
+    fixedParts: true,
+    place: { element: 'tide' as const, crossroads: false },
     role: 'payoff' as const,
     kit: [] as SupplyDef[],
     stars: 0,
@@ -1130,7 +1334,147 @@ describe('trip loot', () => {
     twist: null,
     rank: 1,
   };
-  const done = { completed: true, caught: 1, rolls: 1 };
+  type LootCtx = Parameters<typeof rollTripLoot>[1];
+  /** Everything a lot of ticks bring, summed (the same seed for every variant). */
+  const sum = (ticks: number, extra: Partial<LootCtx> = {}, seed = 'sum') => {
+    const total = {
+      scrap: 0,
+      shards: 0,
+      glimmer: 0,
+      blueprints: 0,
+      supplies: 0,
+      gear: 0,
+      rarity: { common: 0, rare: 0, epic: 0 },
+    };
+    const rng = createSeededRng(seed);
+    const loot = rollTripLoot(rng, { ...base, ...extra, fixedParts: false, ticks });
+    total.scrap = loot.parts.scrap ?? 0;
+    total.shards = loot.parts['tide-shard'] ?? 0;
+    total.glimmer = loot.parts.glimmer ?? 0;
+    total.blueprints = loot.blueprints.length;
+    total.supplies = loot.supplies.length;
+    total.gear = loot.gear.length;
+    for (const g of loot.gear) total.rarity[g.rarity] += 1;
+    return total;
+  };
+
+  it('rolls every table once per tick at its own chance, and nothing without ticks', () => {
+    const t = RULES.expeditions.tick;
+    const n = 40_000;
+    const total = sum(n);
+    const near = (got: number, bp: number, label: string): void => {
+      const want = (n * bp) / BP;
+      expect(Math.abs(got - want), `${label}: ${String(got)} of ${String(want)}`).toBeLessThan(
+        Math.max(40, want * 0.08),
+      );
+    };
+    near(total.scrap, t.scrapBp, 'scrap');
+    near(total.shards, t.shardBp, 'shards');
+    near(total.gear, t.gearBp, 'gear');
+    near(total.glimmer, t.glimmerBp, 'glimmer');
+    near(total.blueprints, t.blueprintBp, 'blueprints');
+    near(total.supplies, t.supplyBp, 'supplies');
+    // A 2 hour trip (2 ticks) has about a 10% chance of at least one gear piece.
+    expect(1 - (1 - t.gearBp / BP) ** 2).toBeGreaterThan(0.099);
+    expect(1 - (1 - t.gearBp / BP) ** 2).toBeLessThan(0.102);
+    const nothing = rollTripLoot(scripted([]), { ...base, ticks: 0, fixedParts: false });
+    expect(nothing).toEqual({ parts: {}, blueprints: [], supplies: [], gear: [] });
+    expect(() => rollTripLoot(scripted([]), { ...base, ticks: -1 })).toThrow(RangeError);
+  });
+
+  it('rolls a gear piece like a push-on drop: the place’s tag, the rarity from the odds, item level the rank (times RULES.gear.itemLevel.expeditionPerRank)', () => {
+    const rng = createSeededRng('gear-ticks');
+    const loot = rollTripLoot(rng, { ...base, ticks: 6_000, rank: 3, fixedParts: false });
+    expect(loot.gear.length).toBeGreaterThan(200);
+    const shares = { common: 0, rare: 0, epic: 0 };
+    for (const g of loot.gear) {
+      expect(g.itemLevel).toBe(3);
+      shares[g.rarity] += 1;
+    }
+    const odds = RULES.expeditions.tick.gearOdds;
+    expect(odds.common + odds.rare + odds.epic).toBe(BP);
+    expect(shares.common / loot.gear.length).toBeGreaterThan(0.78);
+    expect(shares.rare).toBeGreaterThan(shares.epic);
+    expect(shares.rare).toBeGreaterThan(0);
+  });
+
+  it('brings shards of the place’s element, never the explorer’s, and any element from a place without one', () => {
+    const shardsOf = (parts: Record<string, number | undefined>) =>
+      Object.entries(parts).filter(([k]) => k.endsWith('-shard'));
+    // An Ember place: every shard (the ticks' and the satchel's) is an Ember shard.
+    const ember = rollTripLoot(createSeededRng('ember'), {
+      ...base,
+      ticks: 3_000,
+      kit: [supply('satchel-great')],
+      place: { element: 'ember', crossroads: false },
+    });
+    expect(shardsOf(ember.parts).map(([k]) => k)).toEqual(['ember-shard']);
+    expect(ember.parts['ember-shard'] ?? 0).toBeGreaterThan(100);
+    // A neutral place (the Old Crossroads, the Festival Grounds): each shard draws its element evenly of five.
+    const neutral = rollTripLoot(createSeededRng('neutral'), {
+      ...base,
+      ticks: 20_000,
+      place: { element: null, crossroads: false },
+    });
+    const kinds = shardsOf(neutral.parts);
+    expect(kinds.map(([k]) => k).sort()).toEqual([
+      'ember-shard',
+      'grove-shard',
+      'mire-shard',
+      'spark-shard',
+      'tide-shard',
+    ]);
+    const total = kinds.reduce((n, [, v]) => n + (v ?? 0), 0);
+    for (const [k, v] of kinds) expect(Math.abs((v ?? 0) / total - 0.2), k).toBeLessThan(0.05);
+    // One draw of five for each shard, right after its count: a count of 1 then element 3 (Spark).
+    const order = RULES.expeditions.tick;
+    expect(order.shardBp).toBeLessThan(BP);
+    const drawn = rollTripLoot(scripted([9_999, 0, 3, 9_999, 9_999, 9_999, 9_999, 9_999, 9_999]), {
+      ...base,
+      ticks: 1,
+      place: { element: null, crossroads: false },
+    });
+    expect(drawn.parts).toEqual({ 'spark-shard': 1 });
+  });
+
+  it('is deterministic for a seed, in a fixed draw order', () => {
+    const a = rollTripLoot(createSeededRng('order'), base);
+    const b = rollTripLoot(createSeededRng('order'), base);
+    expect(a).toEqual(b);
+  });
+
+  it('puts no cap on a lucky trip: with sure chances every tick pays', () => {
+    const t = RULES.expeditions.tick;
+    expect(t.scrapBp).toBeLessThan(BP);
+    // A parts bonus of +100% makes the scrap chance 100%: a sure scrap on every tick (and no cap on top).
+    const lucky = rollTripLoot(createSeededRng('lucky'), {
+      ...base,
+      ticks: 20,
+      fixedParts: false,
+      milestonePartsBp: 10_000,
+    });
+    expect(lucky.parts.scrap ?? 0).toBeGreaterThanOrEqual(20);
+  });
+
+  it('adds a satchel’s fixed part on a finished trip only: scrap, shards and glimmer, whatever the length', () => {
+    const at = (id: string, draws: number[]) =>
+      rollTripLoot(scripted(draws), { ...base, ticks: 0, kit: [supply(id)] }).parts;
+    // Draws: the shard count, then the glimmer chance (only for a satchel that has one).
+    expect(at('satchel-great', [0, 0])).toEqual({ scrap: 9, 'tide-shard': 3, glimmer: 1 });
+    expect(at('satchel-great', [9_999, 9_999])).toEqual({ scrap: 9, 'tide-shard': 2 });
+    expect(at('satchel-good', [0, 0])).toEqual({ scrap: 4, 'tide-shard': 1, glimmer: 1 });
+    expect(at('satchel-good', [9_999, 9_999])).toEqual({ scrap: 4, 'tide-shard': 1 });
+    expect(at('satchel-basic', [0])).toEqual({ scrap: 1, 'tide-shard': 1 });
+    expect(at('satchel-basic', [9_999])).toEqual({ scrap: 1 });
+    // A recall brings the ticks only.
+    const recall = rollTripLoot(scripted([]), {
+      ...base,
+      ticks: 0,
+      fixedParts: false,
+      kit: [supply('satchel-great')],
+    });
+    expect(recall.parts).toEqual({});
+  });
 
   it('gear: Keen nose adds to the parts bonus and Packer grows the supply find chance by its share', () => {
     const plainCtx = {
@@ -1142,73 +1486,35 @@ describe('trip loot', () => {
     };
     expect(partsBonusBp({ ...plainCtx, gearPartsBp: 1_500 })).toBe(partsBonusBp(plainCtx) + 1_500);
     expect(partsBonusBp({ ...plainCtx, gearPartsBp: 0 })).toBe(partsBonusBp(plainCtx));
-    // A day trip at rank 1: the supply find chance is 4500 basis points, with Packer +50% it is 6750.
-    const found = (gearSupplyBp: number): number => {
-      let n = 0;
-      for (let i = 0; i < 4_000; i++) {
-        const loot = rollTripLoot(
-          createSeededRng(`packer-${String(i)}`),
-          { ...base, length: 'day', gearSupplyBp },
-          done,
-        );
-        n += loot.supplies.length;
-      }
-      return n / 4_000;
-    };
-    const chance = lengthRules('day').loot.supplyBp / 10_000;
-    expect(found(0)).toBeGreaterThan(chance - 0.04);
-    expect(found(0)).toBeLessThan(chance + 0.04);
-    expect(found(5_000)).toBeGreaterThan(chance * 1.5 - 0.04);
-    expect(found(5_000)).toBeLessThan(chance * 1.5 + 0.04);
-    // The same seed finds a supply with Packer whenever it found one without.
-    expect(
-      rollTripLoot(createSeededRng('same'), { ...base, length: 'day', gearSupplyBp: 5_000 }, done)
-        .parts,
-    ).toEqual(rollTripLoot(createSeededRng('same'), { ...base, length: 'day' }, done).parts);
+    const t = RULES.expeditions.tick;
+    expect(tickChances({ ...plainCtx }).supplyBp).toBe(t.supplyBp);
+    expect(tickChances({ ...plainCtx, gearSupplyBp: 5_000 }).supplyBp).toBe(
+      Math.floor((t.supplyBp * 15_000) / BP),
+    );
+    // Over many ticks the supplies found follow the chance and grow with Packer.
+    const n = 40_000;
+    const plain = sum(n).supplies;
+    const packer = sum(n, { gearSupplyBp: 5_000 }).supplies;
+    expect(packer).toBeGreaterThan(plain * 1.3);
+    expect(packer).toBeLessThan(plain * 1.7);
   });
 
-  it('pays scrap by length, and a recall only the share that was caught', () => {
-    for (const length of EXPEDITION_LENGTHS) {
-      const loot = rollTripLoot(createSeededRng('scrap'), { ...base, length }, done);
-      expect(loot.parts.scrap ?? 0).toBe(lengthRules(length).loot.scrap);
-    }
-    const recall = rollTripLoot(scripted([]), base, { completed: false, caught: 1, rolls: 4 });
-    const share = Math.floor(lengthRules('long').loot.scrap / 4);
-    expect(recall).toEqual({
-      parts: share > 0 ? { scrap: share } : {},
-      blueprint: null,
-      supplies: [],
-    });
-    expect(
-      rollTripLoot(scripted([]), base, { completed: false, caught: 0, rolls: 4 }).parts,
-    ).toEqual({});
-  });
-
-  it('draws a fixed number of times for a finished trip, and always a shard of the place’s element on a sure chance', () => {
-    const rng = scripted([0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    const loot = rollTripLoot(rng, { ...base, length: 'day' }, done);
-    // Day trips give a good chance of a shard (the scripted draw is a hit).
-    expect(loot.parts['tide-shard']).toBe(1);
-    expect(loot.parts.glimmer).toBe(1);
-    expect(loot.blueprint).not.toBeNull();
-    expect(loot.supplies).toEqual(['map-scrap-basic']);
-    // Five chances, then the blueprint (a set piece or an ordinary base, then which one).
-    expect(rng.drawn()).toBe(7);
+  it('scales every table of a tick with its modifiers: the parts bonus, shards, glimmer and the weather', () => {
+    const n = 20_000;
+    const plain = sum(n);
+    expect(sum(n, { gearPartsBp: 10_000 }).scrap).toBeGreaterThan(plain.scrap * 1.8);
+    expect(sum(n, { gearPartsBp: 10_000 }).shards).toBeGreaterThan(plain.shards * 1.7);
+    expect(sum(n, { gearGlimmerBp: 10_000 }).glimmer).toBeGreaterThan(plain.glimmer * 1.7);
+    expect(sum(n, { weatherShardsBp: 10_000 }).shards).toBeGreaterThan(plain.shards * 1.7);
+    expect(sum(n, { weatherShardsBp: -10_000 }).shards).toBe(0);
+    expect(sum(n, { weatherSupplyBp: 10_000 }).supplies).toBeGreaterThan(plain.supplies * 1.7);
+    expect(sum(n, { weatherPartsBp: -10_000 }).scrap).toBe(0);
   });
 
   it('brings more for a Guard, a satchel, stars, milestones and a twist', () => {
-    // Parts (scrap and shards) over many trips of the longest length, the same seeds for every variant.
-    const total = (extra: Partial<Parameters<typeof rollTripLoot>[1]>): number => {
-      let sum = 0;
-      for (let i = 0; i < 400; i++) {
-        const parts = rollTripLoot(
-          createSeededRng(`p${String(i)}`),
-          { ...base, length: 'day', ...extra },
-          done,
-        ).parts;
-        sum += (parts.scrap ?? 0) + (parts['tide-shard'] ?? 0);
-      }
-      return sum;
+    const total = (extra: Partial<LootCtx>): number => {
+      const x = sum(6_000, extra, 'more');
+      return x.scrap + x.shards;
     };
     const plain = total({});
     const guard = total({ role: 'guard' });
@@ -1241,56 +1547,46 @@ describe('trip loot', () => {
     for (let i = 0; i < 300; i++) expect(foundSupplyId(rng, 9)).not.toMatch(/^lure-/);
   });
 
-  it('pays a small find of scrap for every roll that brought no creature, and nothing for a recall', () => {
-    for (const length of EXPEDITION_LENGTHS) {
-      const plain = rollTripLoot(createSeededRng('find'), { ...base, length }, done);
-      const finds = rollTripLoot(createSeededRng('find'), { ...base, length, emptyRolls: 3 }, done);
-      expect((finds.parts.scrap ?? 0) - (plain.parts.scrap ?? 0)).toBe(
-        3 * lengthRules(length).findScrap,
-      );
-    }
-    const recall = rollTripLoot(
-      scripted([]),
-      { ...base, emptyRolls: 3 },
-      { completed: false, caught: 1, rolls: 4 },
-    );
-    expect(recall.parts.scrap ?? 0).toBe(Math.floor(lengthRules('long').loot.scrap / 4));
-    // It does not use any draw: the same seed gives the same shards and glimmer.
-    const a = rollTripLoot(createSeededRng('same-draws'), { ...base, length: 'day' }, done);
-    const b = rollTripLoot(
-      createSeededRng('same-draws'),
-      { ...base, length: 'day', emptyRolls: 5 },
-      done,
-    );
-    expect({ ...b.parts, scrap: 0 }).toEqual({ ...a.parts, scrap: 0 });
-  });
-
   it('grows the chance of a glimmer with the explorer’s glimmer-finding talents', () => {
-    const found = (gearGlimmerBp: number): number => {
-      let n = 0;
-      for (let i = 0; i < 6_000; i++) {
-        const loot = rollTripLoot(
-          createSeededRng(`glim-${String(i)}`),
-          { ...base, length: 'day', gearGlimmerBp },
-          done,
-        );
-        n += loot.parts.glimmer ?? 0;
-      }
-      return n;
-    };
-    expect(found(5_000)).toBeGreaterThan(found(0));
-    expect(found(0)).toBeGreaterThan(6_000 * 0.06);
+    const n = 60_000;
+    expect(sum(n, { gearGlimmerBp: 5_000 }).glimmer).toBeGreaterThan(sum(n).glimmer);
   });
 
-  it('values a catch roll by its chance, with the scrap find when it brings nothing', () => {
+  it('values a creature roll by the tick’s chance', () => {
     const odds = RULES.expeditions.defaultOddsBp;
-    for (const length of EXPEDITION_LENGTHS) {
-      const worth = catchRollWorth(length, odds);
-      expect(worth).toBeGreaterThan(0);
-      expect(worth).toBeLessThan(
-        rollWorth(odds) * 1.0 + lengthRules(length).findScrap * RULES.expeditions.worth.scrap,
-      );
-    }
+    const worth = catchRollWorth(odds);
+    expect(worth).toBeGreaterThan(0);
+    expect(worth).toBeCloseTo((rollWorth(odds) * RULES.expeditions.tick.creatureBp) / BP, 9);
+  });
+});
+
+describe('a recall', () => {
+  const start = 1_000_000;
+  const end = start + 12 * HOUR;
+  const at = (hours: number): number => start + hours * HOUR;
+
+  it('pays the ticks of the whole hours already spent, never the length’s bonus ticks', () => {
+    expect(recallTicks('long', start, end, start)).toBe(0);
+    expect(recallTicks('long', start, end, at(0.99))).toBe(0);
+    expect(recallTicks('long', start, end, at(1))).toBe(1);
+    expect(recallTicks('long', start, end, at(5.9))).toBe(5);
+    expect(recallTicks('long', start, end, at(12) - 1)).toBe(11);
+    // At the end it is the hours (12), not the 15 ticks a finished trip pays.
+    expect(recallTicks('long', start, end, end)).toBe(12);
+    expect(recallTicks('long', start, end, end + HOUR)).toBe(12);
+    expect(recallTicks('long', start, end, start - HOUR)).toBe(0);
+    expect(recallTicks('short', start, start + 2 * HOUR, at(1.5))).toBe(1);
+  });
+
+  it('counts nominal hours: a faster explorer’s trip still pays a tick per nominal hour', () => {
+    // A rank that cut the 12 hour trip to 10 hours: halfway (5 real hours) is 6 nominal hours.
+    const quick = start + 10 * HOUR;
+    expect(recallTicks('long', start, quick, at(5))).toBe(6);
+    expect(recallTicks('long', start, quick, at(5) - 1)).toBe(5);
+  });
+
+  it('refuses a trip that does not end after it starts', () => {
+    expect(() => recallTicks('long', start, start, start)).toThrow(RangeError);
   });
 });
 
@@ -1397,11 +1693,17 @@ describe('the journal', () => {
     );
   });
 
-  it('chances a page by the length, more with a twist', () => {
-    const chances = EXPEDITION_LENGTHS.map((l) => journalChanceBp(l, null));
-    expect([...chances].sort((a, b) => a - b)).toEqual(chances);
-    expect(journalChanceBp('short', { kind: 'journal', bp: 10_000 })).toBe(chances[0]! * 2);
-    expect(journalChanceBp('day', { kind: 'journal', bp: 30_000 })).toBeLessThanOrEqual(BP);
+  it('chances a page on every tick, more with a twist', () => {
+    expect(journalChanceBp(null)).toBe(RULES.expeditions.tick.journalBp);
+    expect(journalChanceBp({ kind: 'journal', bp: 10_000 })).toBe(
+      RULES.expeditions.tick.journalBp * 2,
+    );
+    expect(journalChanceBp({ kind: 'journal', bp: 300_000 })).toBeLessThanOrEqual(BP);
+    expect(journalChanceBp(null, -10_000)).toBe(0);
+    // About a tenth of a page for a 12 hour trip, as before the ticks.
+    const perTrip = (lengthRules('long').ticks * RULES.expeditions.tick.journalBp) / BP;
+    expect(perTrip).toBeGreaterThan(0.08);
+    expect(perTrip).toBeLessThan(0.13);
   });
 });
 

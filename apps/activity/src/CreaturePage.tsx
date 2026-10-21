@@ -20,7 +20,13 @@ import type { GearItem, GearSlot, GearState } from './gear-types';
 import { gearShare, wornItemOf } from './gear-view';
 import { RibbonLine } from './CreatureProgress';
 import { scrollAndFocus, scrollToTop } from './scroll-to';
-import { creatureAbilityText, fusionStars, personalityLine, speciesAbout } from './game';
+import {
+  creatureAbilityText,
+  fusionProgressText,
+  fusionStars,
+  personalityLine,
+  speciesAbout,
+} from './game';
 import { GlossaryTag } from './Glossary';
 import { abilityDef } from './live';
 import { Accordion } from './ui/Accordion';
@@ -374,7 +380,7 @@ export function CreaturePage({
                     <span class="stars" aria-hidden="true">
                       {fusionStars(creature.fusionCount)}
                     </span>{' '}
-                    {creature.fusionCount} / 5
+                    {fusionProgressText(creature.fusionPoints)}
                   </>
                 ),
               },

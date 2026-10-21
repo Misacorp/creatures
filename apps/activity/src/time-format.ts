@@ -112,3 +112,13 @@ export function zonedClock(at: number, timeZone: string): { hour: number; minute
     return null;
   }
 }
+
+/**
+ * When something that ends at `at` is back, as a short phrase in the given timezone: "back at 20:15" on the
+ * same local day as `now`, "back Fri 08:15" on another one. The timezone is never printed.
+ */
+export function backAtText(now: number, at: number, timeZone: string): string {
+  const [nowDay] = formatZoned(now, timeZone, 'short').split(' ');
+  const [atDay, atTime] = formatZoned(at, timeZone, 'short').split(' ');
+  return nowDay === atDay ? `back at ${atTime ?? ''}` : `back ${atDay ?? ''} ${atTime ?? ''}`;
+}

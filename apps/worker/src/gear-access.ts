@@ -12,6 +12,7 @@ import {
   itemStats,
   statText,
   wornEffects,
+  type ConversionBundle,
   type DayXpEffect,
   type GearRarity,
   type PartsBundle,
@@ -162,6 +163,7 @@ export function jobView(row: JobRow, now: number): JobView {
     input: {
       ...(input.baseId === undefined ? {} : { baseId: input.baseId }),
       ...(input.supplyId === undefined ? {} : { supplyId: input.supplyId }),
+      ...(input.recipeId === undefined ? {} : { recipeId: input.recipeId }),
       ...(input.reach === undefined || input.reach === 'none' ? {} : { reach: input.reach }),
       ...(input.items === undefined ? {} : { items: input.items }),
     },
@@ -203,6 +205,12 @@ export interface StoredInput {
   enchantId?: string;
   secondaryIndex?: number;
   supplyId?: string;
+  /** Convert: the recipe and what it took and gives, as resolved when the job started (the claim pays these). */
+  recipeId?: string;
+  took?: ConversionBundle;
+  /** Convert: the recipe's nominal hours (the XP and the creature experience follow them). */
+  hours?: number;
+  gave?: ConversionBundle;
   cost: PartsBundle;
   /** Bait a lure job cost (absent for every other job). */
   bait?: number;

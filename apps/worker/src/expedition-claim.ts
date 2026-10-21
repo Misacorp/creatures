@@ -22,9 +22,10 @@ import {
   milestoneBonuses,
   partsOfSpec,
   rankGiftsBetween,
-  recallCatches,
+  recallTicks,
   rollGearDrop,
   rollJournal,
+  rollMapTicks,
   rollTripCatches,
   rollTripLoot,
   rollBlueprint,
@@ -167,6 +168,14 @@ export function failTrip(
   return { recalled: false, catches: [], failed: true, pushOn };
 }
 
+/**
+ * The ticks fixed when the trip was sent (its `rolls`): at least the length's own, so a trip that was
+ * already out when trips began paying in ticks is paid by its length.
+ */
+export function sentTicks(expedition: ExpeditionRow): number {
+  return Math.max(expedition.rolls, lengthRules(expedition.duration).ticks);
+}
+
 function waitedMin(expedition: ExpeditionRow, now: number): number {
   const readyAt = expedition.push_ends_at ?? expedition.ends_at;
   return Math.max(0, Math.floor((now - readyAt) / 60_000));
@@ -189,11 +198,17 @@ export function payTrip(
   // What the day did to this trip when it was sent: the claim reads this, never the weather.
   const wx = env.tripWeatherOf(expedition);
   const worked = push?.outcome === 'worked' ? push.goal : null;
-  const extraRolls = worked?.reward.catchRolls ?? 0;
-  const totalRolls = expedition.rolls + extraRolls;
-  const count = finished
-    ? totalRolls
-    : recallCatches(expedition.rolls, expedition.started_at, expedition.ends_at, now);
+  // The ticks of the trip (2026-10-20, trips pay in ticks). A finished trip pays the ticks fixed when it
+  // was sent, the map's ticks (rolled now, a fraction as a chance) and one tick for every hour a worked
+  // push-on adds; a recall pays only the whole hours already spent. A trip in flight when ticks came is
+  // paid by its length (what was stored then was the old catch rolls, below the length's ticks).
+  const ticks = finished
+    ? sentTicks(expedition) +
+      rollMapTicks(env.deps.tripRng, expedition.duration, kit) +
+      (worked?.extraHours ?? 0)
+    : recallTicks(expedition.duration, expedition.started_at, expedition.ends_at, now);
+  // A goal's own catch rolls are extra creature rolls (no other loot) at the tick's chance.
+  const count = ticks + (worked?.reward.catchRolls ?? 0);
 
   const stats = statsOf(env.sql, userId);
   const milestones = milestoneBonuses(stats);
@@ -206,13 +221,8 @@ export function payTrip(
     .exec<{
       expeditions_claimed: number;
       dupe_streak: number;
-      pity_new: number;
-      pity_creature: number;
-    }>(
-      'SELECT expeditions_claimed, dupe_streak, pity_new, pity_creature FROM player_progress WHERE user_id = ?',
-      userId,
-    )
-    .toArray()[0] ?? { expeditions_claimed: 0, dupe_streak: 0, pity_new: 0, pity_creature: 0 };
+    }>('SELECT expeditions_claimed, dupe_streak FROM player_progress WHERE user_id = ?', userId)
+    .toArray()[0] ?? { expeditions_claimed: 0, dupe_streak: 0 };
   const owned = new Set(
     env.sql
       .exec<{ line: string }>('SELECT line FROM creatures WHERE user_id = ?', userId)
@@ -221,21 +231,24 @@ export function payTrip(
   );
 
   // Rolled now, at claim time, from the live RNG: nothing is decided earlier.
-  const rolled = rollTripCatches(env.deps.rng, count, {
-    content,
-    destination: dest,
-    length: expedition.duration,
-    explorer: { element: species.element, role: species.role },
-    kit,
-    stars: starsBefore,
-    milestoneRarityBp: milestones.rarityBp + gearRules.luckyFindBp + wx.rarityBp,
-    twist,
-    ownedLines: owned,
-    dupeStreak: progress.dupe_streak,
-    firstExpedition: progress.expeditions_claimed === 0,
-    // The pity: the counters move with this claim and are stored below, in the same transaction.
-    pity: { sinceNew: progress.pity_new, sinceCreature: progress.pity_creature },
-  });
+  const rolled = rollTripCatches(
+    env.deps.rng,
+    count,
+    {
+      content,
+      destination: dest,
+      length: expedition.duration,
+      explorer: { element: species.element, role: species.role },
+      kit,
+      stars: starsBefore,
+      milestoneRarityBp: milestones.rarityBp + gearRules.luckyFindBp + wx.rarityBp,
+      twist,
+      ownedLines: owned,
+      dupeStreak: progress.dupe_streak,
+      firstExpedition: progress.expeditions_claimed === 0,
+    },
+    finished,
+  );
   const settled: ChoiceResult[] = [];
   const catches = rolled.results.map((caught) => {
     const made = applyCatch(env, userId, expedition.id, caught, now, gearRules.secondLookBp);
@@ -245,27 +258,16 @@ export function payTrip(
 
   // A claim that brought nothing back (an early recall) must not use up the first-expedition
   // guarantee, so it is not counted (a trip whose rolls all came up empty did bring a roll).
+  // (The catch pity is gone since 2026-10-20: its two counters stay in the table, unused.)
   env.sql.exec(
-    `INSERT INTO player_progress
-       (user_id, expeditions_claimed, dupe_streak, pity_new, pity_creature) VALUES (?, ?, ?, ?, ?)
+    `INSERT INTO player_progress (user_id, expeditions_claimed, dupe_streak) VALUES (?, ?, ?)
      ON CONFLICT(user_id) DO UPDATE SET
        expeditions_claimed = expeditions_claimed + excluded.expeditions_claimed,
-       dupe_streak = excluded.dupe_streak,
-       pity_new = excluded.pity_new,
-       pity_creature = excluded.pity_creature`,
+       dupe_streak = excluded.dupe_streak`,
     userId,
     count > 0 ? 1 : 0,
     rolled.dupeStreak,
-    rolled.pity.sinceNew,
-    rolled.pity.sinceCreature,
   );
-  // What the pity forced is logged by kind (no counters, no player data beyond the species).
-  for (const forced of rolled.forced) {
-    env.deps.analytics?.record(
-      { kind: 'catch_pity', pity: forced.pity, species: forced.species },
-      userId,
-    );
-  }
 
   // Parts, supplies, gear and maybe a blueprint, from their own live RNG (the catches used `rng`).
   const rank = explorerBefore.rank;
@@ -279,31 +281,35 @@ export function payTrip(
     userId,
     expedition.id,
     (rng) => {
-      const drawn = rollTripLoot(
-        rng,
-        {
-          length: expedition.duration,
-          shardElement: dest.element ?? species.element,
-          role: species.role,
-          kit,
-          stars: starsBefore,
-          milestonePartsBp: milestones.partsBp,
-          twist,
-          rank,
-          gearPartsBp: gearRules.keenNoseBp,
-          gearSupplyBp: gearRules.packerBp,
-          gearGlimmerBp: gearRules.glimmerFindBp,
-          weatherPartsBp: wx.partsBp,
-          weatherShardsBp: wx.shardsBp,
-          weatherSupplyBp: wx.supplyBp,
-          emptyRolls: rolled.empty,
-        },
-        { completed: finished, caught: count, rolls: expedition.rolls },
-      );
+      const place = {
+        element: dest.element ?? null,
+        crossroads: dest.id === RULES.gear.compassPlace,
+      };
+      const drawn = rollTripLoot(rng, {
+        ticks,
+        fixedParts: finished,
+        place,
+        role: species.role,
+        kit,
+        stars: starsBefore,
+        milestonePartsBp: milestones.partsBp,
+        twist,
+        rank,
+        gearPartsBp: gearRules.keenNoseBp,
+        gearSupplyBp: gearRules.packerBp,
+        gearGlimmerBp: gearRules.glimmerFindBp,
+        weatherPartsBp: wx.partsBp,
+        weatherShardsBp: wx.shardsBp,
+        weatherSupplyBp: wx.supplyBp,
+      });
       const parts: PartsBundle = { ...drawn.parts };
-      const blueprints = drawn.blueprint === null ? [] : [drawn.blueprint];
+      const blueprints = [...drawn.blueprints];
       const supplies = [...drawn.supplies];
-      const gear: DraftItem[] = [];
+      // The gear pieces the ticks found: the place's element is the tag, the item level the rank.
+      const gear: DraftItem[] = drawn.gear.map((item) => ({
+        item,
+        origin: { kind: 'trip', place: dest.id, rank },
+      }));
       if (worked !== null) {
         for (const [kind, amount] of Object.entries(partsOfSpec(worked.reward.parts)) as [
           keyof PartsBundle,
@@ -315,13 +321,8 @@ export function payTrip(
         if (worked.reward.blueprint === true) blueprints.push(rollBlueprint(rng));
         if (worked.reward.gear !== undefined) {
           // The place's element is the tag, the Old Crossroads gives explorer pieces, and the item
-          // level is twice the finder's explorer rank.
-          const item = rollGearDrop(
-            rng,
-            worked.reward.gear,
-            { element: dest.element ?? null, crossroads: dest.id === RULES.gear.compassPlace },
-            rank,
-          );
+          // level is the finder's explorer rank.
+          const item = rollGearDrop(rng, worked.reward.gear, place, rank);
           gear.push({ item, origin: { kind: 'trip', place: dest.id, rank } });
         }
       }
@@ -330,11 +331,12 @@ export function payTrip(
   );
 
   const result: ExpeditionResult = { recalled: !finished, catches, loot };
-  if (rolled.empty > 0) result.noCatch = rolled.empty;
   if (settled.length > 0) result.autoSettled = settled;
   if (push !== null) result.pushOn = pushView(expedition, push.goal, push.outcome);
 
-  // A recall brings what was caught and nothing more: no XP, no stars, no journal, no stats.
+  // A recall brings what was caught and the explorer XP of its ticks (2026-10-20: every tick gives its
+  // XP), and nothing more: no creature experience, stars, journal or stats, and it does not count as a
+  // finished trip.
   if (finished) {
     finishProgress(env, userId, expedition, explorer, dest, now, {
       result,
@@ -347,6 +349,18 @@ export function payTrip(
       milestoneXpBp: milestones.xpBp,
       twist,
       stats,
+      ticks,
+    });
+  } else if (ticks > 0) {
+    payExplorerXp(env, userId, expedition, explorer, {
+      result,
+      explorerBefore,
+      worked: null,
+      milestoneXpBp: milestones.xpBp,
+      twist,
+      stats,
+      ticks,
+      countsAsTrip: false,
     });
   }
   logClaim(env, userId, expedition, result, now, dest);
@@ -368,25 +382,26 @@ export function payTrip(
   return result;
 }
 
-/** XP, familiarity, journal and stats of a trip that finished (not a recall, not a failure). */
-function finishProgress(
+/**
+ * The explorer XP of a claim and what it brings: the rank, the one-time rank gifts and a slot that the
+ * rank sum may open. A finished trip pays it (and counts as a trip); a recall pays the XP of its ticks
+ * too (`countsAsTrip: false`: the trip count, which the familiarity and slots follow, does not move).
+ */
+function payExplorerXp(
   env: ClaimEnv,
   userId: string,
   expedition: ExpeditionRow,
   explorer: CreatureLite,
-  dest: DestinationDef,
-  now: number,
   p: {
     result: ExpeditionResult;
-    catches: readonly TripCatch[];
-    views: readonly CatchView[];
     explorerBefore: ExplorerView;
-    famBefore: FamiliarityRecord;
-    starsBefore: number;
     worked: PushOnGoalDef | null;
     milestoneXpBp: number;
     twist: TwistEffect | null;
     stats: Partial<Record<AccountStat, number>>;
+    /** The ticks paid (the XP follows them). */
+    ticks: number;
+    countsAsTrip: boolean;
   },
 ): void {
   const analytics = env.deps.analytics;
@@ -404,8 +419,8 @@ function finishProgress(
     { source: 'trip', name: p.worked?.name ?? 'Push on', bp: p.worked?.reward.xpBp ?? 0 },
     gearPart('trail-xp', gearRulesOf(env.sql, explorer).trailXpBp),
   ];
-  const gained = tripXp(expedition.duration, shares);
-  const after = addExplorerTrip(env.sql, userId, explorer.id, gained);
+  const gained = tripXp(p.ticks, shares);
+  const after = addExplorerTrip(env.sql, userId, explorer.id, gained, p.countsAsTrip);
   const rankAfter = explorerRank(after.xp);
   const explorerBoost = xpBoost(shares);
   p.result.xp = {
@@ -415,22 +430,6 @@ function finishProgress(
     rankBefore: p.explorerBefore.rank,
     ...(explorerBoost === null ? {} : { boost: explorerBoost }),
   };
-  // Creature experience (training by activity): the explorer earns the trip's by its length, doubled
-  // by the treat packed when it was sent. A recall and a failed trip never get here.
-  const wx = env.tripWeatherOf(expedition);
-  const treat = expedition.treat === 1;
-  const expParts = creatureXpParts(treat, wx.treatMultiplier, env.tripDayXpOf(expedition));
-  const experience = awardExperience(
-    env.sql,
-    analytics,
-    userId,
-    explorer.id,
-    tripExperience(expedition.duration, expParts),
-    'trip',
-    treat,
-    xpBoost(expParts),
-  );
-  if (experience !== null) p.result.experience = experience;
   if (rankAfter > p.explorerBefore.rank) {
     analytics?.record(
       { kind: 'explorer_rank', species: explorer.species, rank: rankAfter },
@@ -451,13 +450,25 @@ function finishProgress(
         explorer.id,
         rank,
         gift,
+        { element: speciesOf(explorer.species).element, place: expedition.destination_id },
       );
       if (granted.fresh) {
         gifts.push({
           rank,
           bait: gift.bait,
-          parts: { ...gift.parts },
+          parts: { ...granted.view.parts },
           supplies: [...gift.supplies],
+          gear: granted.view.gear.map((g) => ({
+            id: g.id,
+            baseId: g.baseId,
+            rarity: g.rarity,
+            ...(g.itemLevel === undefined ? {} : { itemLevel: g.itemLevel }),
+          })),
+          converted: granted.view.converted.map((g) => ({
+            baseId: g.baseId,
+            rarity: g.rarity,
+            ...(g.itemLevel === undefined ? {} : { itemLevel: g.itemLevel }),
+          })),
         });
       }
     }
@@ -465,12 +476,56 @@ function finishProgress(
   }
   // This trip counts as finished and may raise the rank: a slot may open.
   const sumAfter = sumBefore + (rankAfter - p.explorerBefore.rank);
-  const slotsAfter = slotsFor(sumAfter, tripsBefore + 1);
+  const slotsAfter = slotsFor(sumAfter, tripsBefore + (p.countsAsTrip ? 1 : 0));
   if (slotsAfter > slotsFor(sumBefore, tripsBefore)) {
     p.result.slotUnlocked = { total: slotsAfter };
     analytics?.record({ kind: 'slot_unlock', slots: slotsAfter, rankSum: sumAfter }, userId);
   }
+}
 
+/** XP, familiarity, journal and stats of a trip that finished (not a recall, not a failure). */
+function finishProgress(
+  env: ClaimEnv,
+  userId: string,
+  expedition: ExpeditionRow,
+  explorer: CreatureLite,
+  dest: DestinationDef,
+  now: number,
+  p: {
+    result: ExpeditionResult;
+    catches: readonly TripCatch[];
+    views: readonly CatchView[];
+    explorerBefore: ExplorerView;
+    famBefore: FamiliarityRecord;
+    starsBefore: number;
+    worked: PushOnGoalDef | null;
+    milestoneXpBp: number;
+    twist: TwistEffect | null;
+    stats: Partial<Record<AccountStat, number>>;
+    /** The ticks the trip paid (the XP follows them). */
+    ticks: number;
+  },
+): void {
+  const analytics = env.deps.analytics;
+
+  payExplorerXp(env, userId, expedition, explorer, { ...p, countsAsTrip: true });
+
+  // Creature experience (training by activity): the explorer earns the trip's by its length, doubled
+  // by the treat packed when it was sent. A recall and a failed trip never get here.
+  const wx = env.tripWeatherOf(expedition);
+  const treat = expedition.treat === 1;
+  const expParts = creatureXpParts(treat, wx.treatMultiplier, env.tripDayXpOf(expedition));
+  const experience = awardExperience(
+    env.sql,
+    analytics,
+    userId,
+    explorer.id,
+    tripExperience(expedition.duration, expParts),
+    'trip',
+    treat,
+    xpBoost(expParts),
+  );
+  if (experience !== null) p.result.experience = experience;
   // Familiarity: the trip, the species caught here, a shiny.
   const found = new Set(p.famBefore.found);
   const here = new Set(allSpecies(dest));
@@ -496,6 +551,7 @@ function finishProgress(
     now,
     p.twist,
     p.worked?.reward.journal === true,
+    p.ticks,
   );
   if (pages.length > 0) p.result.journal = pages;
 
@@ -521,17 +577,15 @@ function rollPages(
   now: number,
   twist: TwistEffect | null,
   sure: boolean,
+  ticks: number,
 ): JournalFindView[] {
   const entries = expeditionContent.journal.entries;
   const found = foundPages(env.sql, userId);
   const finds: JournalFindView[] = [];
-  const attempts: boolean[] = [
-    chance(
-      env.deps.tripRng,
-      journalChanceBp(expedition.duration, twist, env.tripWeatherOf(expedition).journalBp),
-      10_000,
-    ),
-  ];
+  // Every tick may turn up a page: one chance each, drawn in order.
+  const pageBp = journalChanceBp(twist, env.tripWeatherOf(expedition).journalBp);
+  const attempts: boolean[] = [];
+  for (let i = 0; i < ticks; i++) attempts.push(chance(env.deps.tripRng, pageBp, 10_000));
   if (sure) attempts.push(true);
   for (const wanted of attempts) {
     if (!wanted) continue;

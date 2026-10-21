@@ -1,7 +1,7 @@
 import { REACH_IDS, RULES, blueprintBases } from '@creatures/game';
 import * as v from 'valibot';
 import { IdSchema } from './collection-schemas';
-import { SUPPLY_IDS } from './content-ids';
+import { CONVERSION_IDS, SUPPLY_IDS } from './content-ids';
 import { IdempotencyKeySchema } from './schemas';
 
 /** Equip (a creature id) or unequip (null). The item is in the path, the player is the session's. */
@@ -51,6 +51,14 @@ export const StartJobBodySchema = v.variant('kind', [
     kind: v.literal('supply'),
     creatureId: IdSchema,
     supplyId: v.picklist(SUPPLY_IDS),
+    treat: TreatSchema,
+    idempotencyKey: IdempotencyKeySchema,
+  }),
+  v.strictObject({
+    // Refine or recycle: what it takes and gives is the recipe's, never the request's.
+    kind: v.literal('convert'),
+    creatureId: IdSchema,
+    recipeId: v.picklist(CONVERSION_IDS),
     treat: TreatSchema,
     idempotencyKey: IdempotencyKeySchema,
   }),

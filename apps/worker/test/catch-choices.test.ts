@@ -1,4 +1,4 @@
-import { RULES, fuseOnce, releaseParts, talentPool } from '@creatures/game';
+import { RULES, fuseInto, fusionLevel, releaseParts, talentPool } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { bookOf, holdTalent } from '../src/talent-store';
 import { runCore, type CoreContext } from './helpers';
@@ -85,6 +85,13 @@ const parts = (ctx: CoreContext, userId: string): Record<string, number> =>
       userId,
     ).map((r) => [r.kind, r.amount]),
   );
+
+const pointsOf = (ctx: CoreContext, id: string): number =>
+  rows<{ fusion_points: number }>(
+    ctx.sql,
+    'SELECT fusion_points FROM creatures WHERE id = ?',
+    id,
+  )[0]?.fusion_points ?? -1;
 
 const fusionOf = (ctx: CoreContext, id: string): number =>
   rows<{ fusion_count: number }>(ctx.sql, 'SELECT fusion_count FROM creatures WHERE id = ?', id)[0]
@@ -345,7 +352,7 @@ describe('Teach', () => {
 });
 
 describe('Fuse', () => {
-  it('raises the fusion count by one step, and a retry does it once', async () => {
+  it('adds points by the duplicate rarity, reaches a level only at its threshold, and a retry does it once', async () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await player(ctx, 1, ['splashet']);
       const [splashet] = p.creatureIds as [string];
@@ -356,7 +363,63 @@ describe('Fuse', () => {
       expect(first.status).toBe(200);
       expect(again.status).toBe(200);
       expect(again.body['result']).toEqual(first.body['result']);
-      expect(fusionOf(ctx, splashet)).toBe(fuseOnce(0));
+      expect(first.body['result']).toMatchObject({
+        fusionCount: 1,
+        fusionPoints: 1,
+        pointsAdded: 1,
+      });
+      expect(pointsOf(ctx, splashet)).toBe(fuseInto(0, 'common'));
+      expect(fusionOf(ctx, splashet)).toBe(1);
+      // The second common adds one point: 2 of 4, still level 1.
+      const second = p.addCard('splashet');
+      await choose(p, second.id, { choice: 'fuse', creatureId: splashet });
+      expect([pointsOf(ctx, splashet), fusionOf(ctx, splashet)]).toEqual([2, 1]);
+      const third = p.addCard('splashet');
+      await choose(p, third.id, { choice: 'fuse', creatureId: splashet });
+      expect([pointsOf(ctx, splashet), fusionOf(ctx, splashet)]).toEqual([3, 1]);
+      // The fourth reaches the level 2 threshold (4 points).
+      const fourth = p.addCard('splashet');
+      await choose(p, fourth.id, { choice: 'fuse', creatureId: splashet });
+      expect([pointsOf(ctx, splashet), fusionOf(ctx, splashet)]).toEqual([4, 2]);
+    });
+  });
+
+  it('pays more points for a rarer duplicate', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = await player(ctx, 1, ['solmane']);
+      const [solmane] = p.creatureIds as [string];
+      const card = p.addCard('solmane');
+      const res = await choose(p, card.id, { choice: 'fuse', creatureId: solmane });
+      expect(res.body['result']).toMatchObject({ fusionPoints: 4, fusionCount: 2, pointsAdded: 4 });
+      expect(fusionOf(ctx, solmane)).toBe(fusionLevel(4));
+    });
+  });
+
+  it('stores no points past the maximum: the last step stops at the top threshold', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = await player(ctx, 1, ['solmane']);
+      const [solmane] = p.creatureIds as [string];
+      setCreature(ctx, solmane, { fusion_count: 4, fusion_points: 33 });
+      const card = p.addCard('solmane');
+      const res = await choose(p, card.id, { choice: 'fuse', creatureId: solmane });
+      expect(res.body['result']).toMatchObject({
+        fusionPoints: 34,
+        fusionCount: 5,
+        pointsAdded: 1,
+      });
+      expect([pointsOf(ctx, solmane), fusionOf(ctx, solmane)]).toEqual([34, 5]);
+    });
+  });
+
+  it('reads a creature whose level was set without points (an older row) as having the level it has', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = await player(ctx, 1, ['splashet']);
+      const [splashet] = p.creatureIds as [string];
+      setCreature(ctx, splashet, { fusion_count: 2, fusion_points: 0 });
+      const card = p.addCard('splashet');
+      await choose(p, card.id, { choice: 'fuse', creatureId: splashet });
+      // The level 2 threshold (4 points) plus one; the level never drops.
+      expect([pointsOf(ctx, splashet), fusionOf(ctx, splashet)]).toEqual([5, 2]);
     });
   });
 
@@ -364,8 +427,8 @@ describe('Fuse', () => {
     await runCore(nextGuild(), async (ctx) => {
       const p = await player(ctx, 1, ['splashet']);
       const [splashet] = p.creatureIds as [string];
-      setCreature(ctx, splashet, { fusion_count: 5 });
-      expect(fuseOnce(5)).toBeNull();
+      setCreature(ctx, splashet, { fusion_count: 5, fusion_points: 34 });
+      expect(fuseInto(34, 'common')).toBeNull();
       const card = p.addCard('splashet');
       const [view] = await p.pending();
       expect(view?.offered.fuse).toEqual([]);
@@ -373,6 +436,7 @@ describe('Fuse', () => {
       expect(refused.status).toBe(409);
       expect(refused.body['error']).toBe('max_fusions');
       expect(fusionOf(ctx, splashet)).toBe(5);
+      expect(pointsOf(ctx, splashet)).toBe(34);
       const rec = await choose(p, card.id, { choice: 'recommended' });
       expect(rec.status).toBe(200);
       expect(['teach', 'release', 'keep']).toContain(

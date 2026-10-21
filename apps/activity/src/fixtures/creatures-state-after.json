@@ -1,7 +1,7 @@
 {
-  "serverNow": 1799776800000,
+  "serverNow": 1799776656000,
   "balances": {
-    "bait": 80,
+    "bait": 90,
     "essence": 0
   },
   "starterChosen": false,
@@ -14,6 +14,7 @@
       "level": 8,
       "levelCap": 15,
       "fusionCount": 0,
+      "fusionPoints": 0,
       "shiny": false,
       "nickname": null,
       "away": false,
@@ -76,9 +77,9 @@
         "nextId": "flare-strike-2"
       },
       "explorer": {
-        "rank": 1,
-        "xp": 24,
-        "nextRankXp": 200,
+        "rank": 2,
+        "xp": 240,
+        "nextRankXp": 800,
         "trips": 6
       },
       "exp": 120,
@@ -107,7 +108,8 @@
       "line": "splashet",
       "level": 8,
       "levelCap": 15,
-      "fusionCount": 3,
+      "fusionCount": 1,
+      "fusionPoints": 3,
       "shiny": false,
       "nickname": null,
       "away": false,
@@ -169,14 +171,14 @@
         ]
       },
       "stats": {
-        "hp": 193,
-        "atk": 48,
-        "spd": 52
+        "hp": 178,
+        "atk": 44,
+        "spd": 48
       },
       "statsWithGear": {
-        "hp": 193,
-        "atk": 48,
-        "spd": 52
+        "hp": 178,
+        "atk": 44,
+        "spd": 48
       },
       "dodgeBp": 0,
       "gear": [],
@@ -220,6 +222,7 @@
       "level": 8,
       "levelCap": 15,
       "fusionCount": 0,
+      "fusionPoints": 0,
       "shiny": false,
       "nickname": null,
       "away": false,
@@ -312,21 +315,22 @@
   "bookSlotBait": 10,
   "expeditions": [
     {
-      "id": "00000000-0000-4000-8200-000000000014",
+      "id": "00000000-0000-4000-8200-000000000017",
       "creatureId": "00000000-0000-4000-8200-000000000002",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
       "destination": "tidepools",
       "twist": null,
-      "rolls": 1,
+      "weather": null,
+      "rolls": 2,
       "cost": 0,
       "treat": false,
       "startedAt": 1799769600000,
-      "endsAt": 1799776800000,
-      "readyAt": 1799776800000,
+      "endsAt": 1799776656000,
+      "readyAt": 1799776656000,
       "status": "claimed",
-      "claimedAt": 1799776800000,
+      "claimedAt": 1799776656000,
       "result": {
         "recalled": false,
         "catches": [
@@ -335,7 +339,7 @@
             "shiny": false,
             "firstOnServer": false,
             "outcome": "duplicate",
-            "pendingId": "00000000-0000-4000-8200-000000000013",
+            "pendingId": "00000000-0000-4000-8200-000000000016",
             "talent": {
               "id": "wet-footprints",
               "name": "Wet Footprints",
@@ -349,14 +353,16 @@
         "loot": {
           "gear": [],
           "converted": [],
-          "parts": {},
+          "parts": {
+            "scrap": 1
+          },
           "blueprints": []
         },
         "xp": {
-          "gained": 4,
-          "total": 24,
-          "rank": 1,
-          "rankBefore": 1
+          "gained": 40,
+          "total": 240,
+          "rank": 2,
+          "rankBefore": 2
         },
         "experience": {
           "creatureId": "00000000-0000-4000-8200-000000000002",
@@ -379,14 +385,15 @@
       "pushOn": null
     },
     {
-      "id": "00000000-0000-4000-8200-000000000015",
+      "id": "00000000-0000-4000-8200-000000000018",
       "creatureId": "00000000-0000-4000-8200-000000000002",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
       "destination": "tidepools",
       "twist": null,
-      "rolls": 1,
+      "weather": null,
+      "rolls": 2,
       "cost": 0,
       "treat": false,
       "startedAt": 1799762400000,
@@ -402,7 +409,7 @@
             "shiny": false,
             "firstOnServer": false,
             "outcome": "duplicate",
-            "pendingId": "00000000-0000-4000-8200-000000000012",
+            "pendingId": "00000000-0000-4000-8200-000000000015",
             "talent": {
               "id": "wet-footprints",
               "name": "Wet Footprints",
@@ -416,15 +423,29 @@
         "loot": {
           "gear": [],
           "converted": [],
-          "parts": {},
+          "parts": {
+            "scrap": 1
+          },
           "blueprints": []
         },
         "xp": {
-          "gained": 4,
-          "total": 20,
-          "rank": 1,
+          "gained": 40,
+          "total": 200,
+          "rank": 2,
           "rankBefore": 1
         },
+        "rankGifts": [
+          {
+            "rank": 2,
+            "bait": 10,
+            "parts": {
+              "scrap": 5
+            },
+            "supplies": [],
+            "gear": [],
+            "converted": []
+          }
+        ],
         "experience": {
           "creatureId": "00000000-0000-4000-8200-000000000002",
           "gained": 20,
@@ -453,7 +474,8 @@
       "kit": [],
       "destination": "tidepools",
       "twist": null,
-      "rolls": 1,
+      "weather": null,
+      "rolls": 2,
       "cost": 0,
       "treat": false,
       "startedAt": 1799755200000,
@@ -481,14 +503,29 @@
           }
         ],
         "loot": {
-          "gear": [],
+          "gear": [
+            {
+              "id": "00000000-0000-4000-8200-000000000010",
+              "baseId": "kelp-cap",
+              "rarity": "common",
+              "itemLevel": 1
+            },
+            {
+              "id": "00000000-0000-4000-8200-000000000011",
+              "baseId": "kelp-cap",
+              "rarity": "common",
+              "itemLevel": 1
+            }
+          ],
           "converted": [],
-          "parts": {},
+          "parts": {
+            "scrap": 1
+          },
           "blueprints": []
         },
         "xp": {
-          "gained": 4,
-          "total": 16,
+          "gained": 40,
+          "total": 160,
           "rank": 1,
           "rankBefore": 1
         },
@@ -513,14 +550,15 @@
       "pushOn": null
     },
     {
-      "id": "00000000-0000-4000-8200-000000000010",
+      "id": "00000000-0000-4000-8200-000000000012",
       "creatureId": "00000000-0000-4000-8200-000000000002",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
       "destination": "tidepools",
       "twist": null,
-      "rolls": 1,
+      "weather": null,
+      "rolls": 2,
       "cost": 0,
       "treat": false,
       "startedAt": 1799748000000,
@@ -548,16 +586,28 @@
           }
         ],
         "loot": {
-          "gear": [],
+          "gear": [
+            {
+              "id": "00000000-0000-4000-8200-000000000013",
+              "baseId": "kelp-cap",
+              "rarity": "rare",
+              "itemLevel": 1
+            }
+          ],
           "converted": [],
-          "parts": {},
+          "parts": {
+            "scrap": 1
+          },
           "blueprints": []
         },
         "xp": {
-          "gained": 4,
-          "total": 12,
+          "gained": 40,
+          "total": 120,
           "rank": 1,
           "rankBefore": 1
+        },
+        "slotUnlocked": {
+          "total": 2
         },
         "experience": {
           "creatureId": "00000000-0000-4000-8200-000000000002",
@@ -570,9 +620,6 @@
           "waiting": false,
           "gold": false
         },
-        "slotUnlocked": {
-          "total": 2
-        },
         "familiarity": {
           "stars": 0,
           "starsBefore": 0,
@@ -583,14 +630,15 @@
       "pushOn": null
     },
     {
-      "id": "00000000-0000-4000-8200-000000000011",
+      "id": "00000000-0000-4000-8200-000000000014",
       "creatureId": "00000000-0000-4000-8200-000000000002",
       "duration": "short",
       "supplies": "basic",
       "kit": [],
       "destination": "tidepools",
       "twist": null,
-      "rolls": 1,
+      "weather": null,
+      "rolls": 2,
       "cost": 0,
       "treat": false,
       "startedAt": 1799740800000,
@@ -624,8 +672,8 @@
           "blueprints": []
         },
         "xp": {
-          "gained": 4,
-          "total": 8,
+          "gained": 40,
+          "total": 80,
           "rank": 1,
           "rankBefore": 1
         },
@@ -655,7 +703,7 @@
   "slots": {
     "total": 2,
     "used": 0,
-    "rankSum": 0,
+    "rankSum": 1,
     "tripsFinished": 6,
     "next": {
       "kind": "rank_sum",

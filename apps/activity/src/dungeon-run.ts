@@ -3,9 +3,11 @@
  * creature's tile, the camp's row order and the acts it builds, and the options of the swap picker.
  * Nothing here touches the DOM or the network; the server checks every act again.
  */
+import type { PartKind } from '@creatures/game';
 import type { Creature } from './api';
 import { BAIT_ICON, ESSENCE_ICON } from './count-items';
-import { ON_A_TRIP_REASON } from './gear-view';
+import { ON_A_TRIP_REASON, partName } from './gear-view';
+import { packShardEntries } from './dungeon-text';
 import type { DungeonAct, DungeonPack, DungeonRunCreature } from './dungeon-types';
 import { creatureName, getSpecies } from './game';
 import type { IconRef } from './icon-ref';
@@ -36,24 +38,33 @@ export function packBadges(pack: DungeonPack): CountItem[] {
 
 /** One kind of the pack with what was found and what came home. */
 export interface PackKind {
-  key: 'bait' | 'essence' | 'scrap';
+  key: 'bait' | 'essence' | 'scrap' | PartKind;
   icon: IconRef;
   label: string;
   found: number;
   kept: number;
 }
 
-const PACK_ICON: Readonly<Record<PackKind['key'], { icon: IconRef; label: string }>> = {
-  bait: { icon: BAIT_ICON, label: 'Bait' },
-  essence: { icon: ESSENCE_ICON, label: 'Essence' },
-  scrap: { icon: { kind: 'part', part: 'scrap' }, label: 'Scrap' },
-};
+const PACK_ICON: Readonly<Record<'bait' | 'essence' | 'scrap', { icon: IconRef; label: string }>> =
+  {
+    bait: { icon: BAIT_ICON, label: 'Bait' },
+    essence: { icon: ESSENCE_ICON, label: 'Essence' },
+    scrap: { icon: { kind: 'part', part: 'scrap' }, label: 'Scrap' },
+  };
 
 /** The kinds the pack held (what was found), with what of each was kept. Empty when nothing was found. */
 export function packKinds(found: DungeonPack, kept: DungeonPack): PackKind[] {
-  return (['bait', 'essence', 'scrap'] as const)
+  const plain = (['bait', 'essence', 'scrap'] as const)
     .filter((key) => found[key] > 0)
-    .map((key) => ({ key, ...PACK_ICON[key], found: found[key], kept: kept[key] }));
+    .map((key): PackKind => ({ key, ...PACK_ICON[key], found: found[key], kept: kept[key] }));
+  const shards = packShardEntries(found).map(([key, n]): PackKind => ({
+    key,
+    icon: { kind: 'part', part: key },
+    label: partName(key),
+    found: n,
+    kept: kept.shards?.[key] ?? 0,
+  }));
+  return [...plain, ...shards];
 }
 
 /** How a creature's tile reads: knocked out, hurt (under a third of its HP) or fine. */

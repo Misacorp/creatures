@@ -345,9 +345,9 @@
     ],
     "keepsakes": [],
     "pack": {
-      "bait": 2,
+      "bait": 1,
       "essence": 0,
-      "scrap": 1
+      "scrap": 5
     },
     "roomsCleared": 1,
     "supply": true,
@@ -364,7 +364,7 @@
         "loot": {
           "bait": 1,
           "essence": 0,
-          "scrap": 0
+          "scrap": 1
         },
         "supply": true
       },
@@ -374,11 +374,11 @@
         "result": "event",
         "event": "Lost Satchel",
         "option": "Peek inside",
-        "outcome": "You find 1 Bait.",
+        "outcome": "You find 2 scrap.",
         "loot": {
-          "bait": 1,
+          "bait": 0,
           "essence": 0,
-          "scrap": 0
+          "scrap": 2
         }
       },
       {
@@ -387,11 +387,11 @@
         "result": "event",
         "event": "Sleeping Beetle",
         "option": "Take one coin",
-        "outcome": "You find 1 scrap.",
+        "outcome": "You find 2 scrap.",
         "loot": {
           "bait": 0,
           "essence": 0,
-          "scrap": 1
+          "scrap": 2
         }
       },
       {

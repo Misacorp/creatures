@@ -669,7 +669,8 @@ describe('the dungeon in the economy', () => {
       0,
     );
     expect(plain).toBeGreaterThan(0);
-    expect(daily?.tripStats['exp_dungeon'] ?? 0).toBeGreaterThanOrEqual(plain);
+    // A creature at the level cap is paid nothing, so the paid sum may sit a little under the plain one.
+    expect(daily?.tripStats['exp_dungeon'] ?? 0).toBeGreaterThanOrEqual(plain * 0.95);
   });
 
   it('adds what the dungeon pays to the economy', () => {
@@ -1069,7 +1070,7 @@ describe('the dungeon targets', () => {
     expect(byId.get('dungeon-first-week-clear')).toMatchObject({ comparator: 'min', value: 0.8 });
     expect(byId.get('dungeon-depth-growth')).toMatchObject({ comparator: 'range', value: [1, 2] });
     expect(byId.get('dungeon-essence-share')).toMatchObject({ comparator: 'max', value: 0.4 });
-    expect(byId.get('dungeon-gear-share-week8')).toMatchObject({ comparator: 'max', value: 0.2 });
+    expect(byId.get('dungeon-gear-share-week8')).toMatchObject({ comparator: 'max', value: 0.3 });
     expect(byId.get('dungeon-home-rate')).toMatchObject({
       comparator: 'range',
       value: [0.1, 0.45],

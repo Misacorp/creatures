@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { RULES } from '@creatures/game';
 import chooseFuse from './fixtures/creatures-choose-fuse.json';
 import chooseRecommended from './fixtures/creatures-choose-recommended.json';
 import chooseRelease from './fixtures/creatures-choose-release.json';
@@ -219,7 +220,9 @@ describe('the requests the client sends', () => {
     );
     expect(slotted.result.slot).toBe(1);
     // The scenario slots the taught Bigger Splash first (not recorded), then puts Splashes First back: two slottings.
-    expect(slotted.state.balances.bait).toBe(chooseTeach.state.balances.bait - 20);
+    // (The explorer's trips in between reach rank 2, whose one-time gift adds its Bait.)
+    const gift = RULES.expeditions.rank.gifts[0]?.bait ?? 0;
+    expect(slotted.state.balances.bait).toBe(chooseTeach.state.balances.bait - 20 + gift);
     expect(lastRequest()).toEqual({ path: put.path, method: 'POST', body: put.body });
   });
 

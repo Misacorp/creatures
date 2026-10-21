@@ -1329,10 +1329,10 @@ describe('item levels by source', () => {
   it('follows the spec table', () => {
     expect([2, 7, 12, 17].map(finaleItemLevel)).toEqual([5, 10, 15, 20]);
     expect(finaleItemLevel(40)).toBe(20);
-    expect([8, 18, 29, 38].map((d) => dungeonItemLevel(d, false))).toEqual([5, 10, 15, 20]);
-    expect(dungeonItemLevel(7, true)).toBe(7);
+    expect([12, 27, 42, 57].map((d) => dungeonItemLevel(d, false))).toEqual([5, 10, 15, 20]);
+    expect(dungeonItemLevel(7, true)).toBe(6);
     expect(dungeonItemLevel(60, true)).toBe(20);
-    expect([3, 6, 10].map(expeditionItemLevel)).toEqual([6, 12, 20]);
+    expect([3, 6, 10].map(expeditionItemLevel)).toEqual([3, 6, 10]);
     expect([5, 8, 10].map(craftItemLevel)).toEqual([10, 16, 20]);
     expect(craftItemLevel(1)).toBe(2);
   });
@@ -1340,8 +1340,8 @@ describe('item levels by source', () => {
   it('converts to the higher of 3 + Boss Rank and the best depth drop level, at most 12', () => {
     expect(convertedItemLevel(1, 0)).toBe(4);
     expect(convertedItemLevel(5, 0)).toBe(8);
-    expect(convertedItemLevel(1, 12)).toBe(7);
-    expect(convertedItemLevel(2, 18)).toBe(10);
+    expect(convertedItemLevel(1, 12)).toBe(5);
+    expect(convertedItemLevel(2, 18)).toBe(7);
     expect(convertedItemLevel(15, 40)).toBe(12);
   });
 });
@@ -1587,20 +1587,20 @@ describe('drops', () => {
   it('a dungeon piece has the floor boss element and a level by depth, landmark bonus included', () => {
     const rng = createSeededRng('dungeon');
     const plain = rollDungeonItem(rng, 'rare', 18, false, 'grove');
-    expect(plain.itemLevel).toBe(10);
+    expect(plain.itemLevel).toBe(7);
     expect(['grove']).toContain(plain.tag);
-    expect(rollDungeonItem(rng, 'common', 7, true, 'spark').itemLevel).toBe(7);
+    expect(rollDungeonItem(rng, 'common', 7, true, 'spark').itemLevel).toBe(6);
   });
 
-  it('an expedition find has the place element and twice the explorer rank; the Crossroads gives explorer pieces (the Compass until item level 12)', () => {
+  it('an expedition find has the place element and the explorer rank as its level; the Crossroads gives explorer pieces (the Compass until item level 12)', () => {
     const rng = createSeededRng('trip');
     const find = rollExpeditionItem(rng, 'rare', { element: 'tide', crossroads: false }, 6);
-    expect(find.itemLevel).toBe(12);
+    expect(find.itemLevel).toBe(6);
     expect(find.tag).toBe('tide');
     const compass = rollExpeditionItem(rng, 'epic', { element: null, crossroads: true }, 5);
     expect(compass.baseId).toBe('crossroads-compass');
-    expect(compass.itemLevel).toBe(10);
-    const high = rollExpeditionItem(rng, 'epic', { element: null, crossroads: true }, 10);
+    expect(compass.itemLevel).toBe(5);
+    const high = rollExpeditionItem(rng, 'epic', { element: null, crossroads: true }, 20);
     expect(high.tag).toBe('explorer');
     expect(high.itemLevel).toBe(20);
     expect(rollExpeditionItem(rng, 'rare', { element: null, crossroads: false }, 3).tag).toBe(

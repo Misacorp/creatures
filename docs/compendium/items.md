@@ -133,7 +133,7 @@ Added 2026-10-18 (more gear and modifiers). A **set** is three named pieces, a H
 | Hearth Helpers      | Support  | Boost +3 pt             | Its boost also lands on the creature two slots away.            | "The kit of the one who makes sure everyone is warm, fed and within reach."           |
 | First Footprints    | Setter   | Marking hit +8%         | Its first mark each fight cannot be replaced.                   | "Whoever leaves the first mark is the one the others follow."                         |
 | Pounce Set          | Payoff   | Payoff's pounce +5%     | Its first reaction each fight crits.                            | "For the creature that waits for the mark, and then does not wait at all."            |
-| Crossroads Wanderer | Explorer | Trips take 4% less time | One extra catch roll on 24 hour trips.                          | "Worn by those who take the fifth road at the Old Crossroads."                        |
+| Crossroads Wanderer | Explorer | Trips take 4% less time | One more hour of finds on 24 hour trips.                        | "Worn by those who take the fifth road at the Old Crossroads."                        |
 | Lantern Night       | Festival | Attack and HP +3%       | Guards in its row: their abilities last 1 more round.           | "The Festival pieces together: hearth, lantern and cap, lit once a season."           |
 
 **Compendium detail, not shipped** (who makes them):
@@ -186,11 +186,12 @@ Twelve supplies in four kinds, each in three tiers: basic, good and great. A tri
 - _Lures:_ camp cooks, who know that a sweet smell reaches further than a good eye.
 - _Map scraps:_ the cartographers of the Old Crossroads, who draw the four roads from the signpost.
 - _Lanterns:_ lamp-makers who work by moonlight. The Moon Lantern is the one they are proudest of.
+- _What a lantern does (2026-10-20, shipped as the blurbs and the glossary's Lantern entry):_ it opens the deeper area, and a finished trip has a chance that its light shows a way down and one more creature comes, always from there. `(content: supplies.json, glossary.json)`
 - _Satchels:_ the packers, who make a bag for anyone who walks.
 
 Crafting a supply is a Workshop job. Basic supplies need the lowest Crafting level, and the great ones need the highest. `(content: glossary.json "job-supply")`
 
-**Lures are the one supply made from Bait** (and a little scrap), since 2026-10-16: Bait's two jobs are treats, which grow creatures, and lures, which find them. A trip no longer always brings a creature; a lure raises the chance that it does, and the chance that the creature is a species the player does not have yet, the better tiers more. Lures are crafted only: trips and the dungeon do not drop them, and rank gifts give the lure tiers of old supplies as map scraps and satchels instead. `(content: supplies.json, glossary.json "supply-lure"; design: gear-and-creatures-v2.md 9.5)`
+**Lures are the one supply made from Bait** (and a little scrap), since 2026-10-16: Bait's two jobs are treats, which grow creatures, and lures, which find them. A trip no longer always brings a creature; a lure raises the chance that every hour of a trip brings one, may bring one more for sure, and raises the chance that the creature is a species the player does not have yet, the better tiers more. Lures are crafted only: trips and the dungeon do not drop them, and rank gifts give the lure tiers of old supplies as map scraps and satchels instead. `(content: supplies.json, glossary.json "supply-lure"; design: gear-and-creatures-v2.md 9.5)`
 
 ## Treats
 
@@ -224,14 +225,15 @@ Sources: expeditions (more often on long ones, and some push-on rewards), the we
 
 The Workshop is where creatures work while the explorer is away. There are two job slots at the start `(content: glossary.json "workshop")`. A creature on a job cannot go on a trip, and the other way round. A creature on a job still fights in raids `(content)`.
 
-| Job            | Shipped text `(content)`                                                                                                                                                                                                                      |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Craft          | Makes a new item from a blueprint you know. Takes 3 hours and makes a Common. The parts are paid when the job starts. The item is rolled when you claim it. Reach for a Rare or an Epic costs more and takes longer.                          |
-| Reach          | Essence (and a glimmer for an Epic) on top of a craft for a chance at a Rare or an Epic. Rare needs Crafting level 3, Epic level 6. The odds are shown first; there are no rerolls.                                                           |
-| Dismantle      | A creature takes items apart: Commons in bundles of up to 5 in 15 minutes, a Rare in an hour, an Epic or a Festival piece in two. The refund is a range, a fraction of what the craft cost, rolled at the claim, the same for every creature. |
-| Craft supplies | Makes supplies for expeditions. Costs scrap, and shards for the better tiers. One supply per job.                                                                                                                                             |
+| Job                | Shipped text `(content)`                                                                                                                                                                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Craft              | Makes a new item from a blueprint you know. Takes 3 hours and makes a Common. The parts are paid when the job starts. The item is rolled when you claim it. Reach for a Rare or an Epic costs more and takes longer.                                             |
+| Reach              | Essence (and a glimmer for an Epic) on top of a craft for a chance at a Rare or an Epic. Rare needs Crafting level 3, Epic level 6. The odds are shown first; there are no rerolls.                                                                              |
+| Dismantle          | A creature takes items apart: Commons in bundles of up to 5 in 15 minutes, a Rare in an hour, an Epic or a Festival piece in two. The refund is a range, a fraction of what the craft cost, rolled at the claim, the same for every creature.                    |
+| Craft supplies     | Makes supplies for expeditions. Costs scrap, and shards for the better tiers. One supply per job.                                                                                                                                                                |
+| Refine and recycle | Refine turns three supplies of one kind and tier into one of the next tier up. Recycle gives one good or great supply back as a few parts, always less than half of what it cost, and never any Bait. `(content: glossary.json "job-convert"; conversions.json)` |
 
-**Compendium detail, not shipped** (in-world): a job is a creature's slow, patient work. The Workshop smells of hot metal, wet wool and pine. Creatures work at their own pace. The explorer comes back to a finished thing.
+**Compendium detail, not shipped** (in-world): refining is the slow patient trade of a bench full of good-enough things: three scraps of rope and one hard afternoon make one proper line. Recycling is picking a worn-out thing apart for what still shines, and the bench keeps its share, which is why the pile never comes back whole. A job is a creature's slow, patient work. The Workshop smells of hot metal, wet wool and pine. Creatures work at their own pace. The explorer comes back to a finished thing.
 
 ### Crafting skill
 

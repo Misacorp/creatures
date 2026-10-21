@@ -31,14 +31,20 @@ import {
   rollOffer,
   rollTripCatches,
   rollTripLoot,
+  rankGiftParts,
   rankGiftsBetween,
+  rollRankGiftItem,
   rollWorth,
   seasonOf,
   slotsFor,
   supplyDef,
   tripExperience,
   tripMs,
-  tripRolls,
+  tripTicks,
+  catchChanceBp,
+  mapTicksBp,
+  rollMapTicks,
+  tickWorth,
   tripWeather,
   tripXp,
   weatherTimeMs,
@@ -311,46 +317,50 @@ export function supplyGain(
 ): number {
   const discovery = (rarity: Rarity): number => newShare(player, trip.dest, trip.stars, rarity);
   const w = RULES.expeditions.worth;
-  const l = lengthRules(trip.length);
+  const t = RULES.expeditions.tick;
+  const ticks = lengthRules(trip.length).ticks;
   const odds = RULES.expeditions.defaultOddsBp;
   const offer = (def.offerBp / 10_000) * 12;
+  // What a creature a tick brings is worth: its rarity and, when it is new, the species.
+  const fresh =
+    (odds.common * discovery('common') +
+      odds.rare * discovery('rare') +
+      odds.epic * discovery('epic')) /
+    10_000;
+  const anyNew = (['common', 'rare', 'epic'] as const).some((r) => discovery(r) > 0) ? 1 : 0;
+  const creature = rollWorth(odds) + fresh * TRIP_POLICY.newSpeciesWorth;
   switch (def.kind) {
     case 'lure': {
-      // A lure adds to the chance a roll brings a creature, and to the chance that creature is a species
-      // the player lacks. What a roll with a creature is worth: its rarity and, when new, the species.
-      const fresh =
-        (odds.common * discovery('common') +
-          odds.rare * discovery('rare') +
-          odds.epic * discovery('epic')) /
-        10_000;
-      const anyNew = (['common', 'rare', 'epic'] as const).some((r) => discovery(r) > 0) ? 1 : 0;
-      const more = Math.min(1, (l.catchBp + def.catchBp) / 10_000);
-      const creature = rollWorth(odds) + fresh * TRIP_POLICY.newSpeciesWorth;
-      const kept = def.catchBp / 10_000;
-      // Extra creatures, and the extra new species the lure's draw finds among all of them.
-      const extraCreatures = l.rolls * kept * creature;
+      // The fixed bonus creature, and the lure's share of every tick's chance, and the extra new species
+      // the lure's draw finds among all the creatures of the trip.
+      const own = catchChanceBp([]) / 10_000;
+      const lured = Math.min(1, own + def.catchBp / 10_000);
+      const creatures = ticks * lured + def.bonusBp / 10_000;
+      const extraCreatures = ticks * (lured - own) + def.bonusBp / 10_000;
       const extraNew =
-        l.rolls * more * (def.newBp / 10_000) * (anyNew - fresh) * TRIP_POLICY.newSpeciesWorth;
-      // A roll that brings nothing still brings a small find of scrap, so a creature costs that.
-      const lostFind = l.rolls * kept * l.findScrap * w.scrap;
-      return extraCreatures + extraNew - lostFind + offer;
+        creatures * (def.newBp / 10_000) * (anyNew - fresh) * TRIP_POLICY.newSpeciesWorth;
+      return extraCreatures * creature + extraNew + offer;
     }
     case 'map-scrap': {
-      const extra = Math.max(1, Math.floor((l.rolls * def.rollsBp) / 10_000));
-      const fresh =
-        (odds.common * discovery('common') +
-          odds.rare * discovery('rare') +
-          odds.epic * discovery('epic')) /
-        10_000;
-      return extra * (rollWorth(odds) + fresh * TRIP_POLICY.newSpeciesWorth) + offer;
+      // More ticks: each is worth a tick's loot, and a creature's discovery value on top.
+      const extra = mapTicksBp(trip.length, [def]) / 10_000;
+      const tickLoot =
+        tickWorth(trip.length) + (t.creatureBp / 10_000) * fresh * TRIP_POLICY.newSpeciesWorth;
+      return extra * tickLoot + offer;
     }
     case 'lantern': {
+      // The deeper area is worth more per creature (the rarest species live there); the fixed part is a
+      // chance of one bonus creature from it.
       const hasDeep = trip.dest.deep.species.length > 0;
-      return (def.deepBp / 10_000) * l.rolls * (hasDeep ? 9 : 3) + offer;
+      const per = hasDeep ? 9 : 3;
+      const creatures = ticks * (t.creatureBp / 10_000);
+      return ((def.deepBp / 10_000) * creatures + def.bonusBp / 10_000) * per + offer;
     }
     case 'satchel': {
-      const parts = l.loot.scrap * w.scrap + (l.loot.shardBp * w.shard) / 10_000;
-      return (def.partsBp / 10_000) * parts + (def.supplyBp / 10_000) * averageWorth() + offer;
+      const perTick = (t.scrapBp * w.scrap + t.shardBp * w.shard) / 10_000;
+      const fixed = def.scrap * w.scrap + (def.shardBp / 10_000) * w.shard;
+      const finds = (def.supplyBp / 10_000) * ticks * (t.supplyBp / 10_000) * averageWorth();
+      return fixed + (def.partsBp / 10_000) * ticks * perTick + finds + offer;
     }
   }
 }
@@ -425,7 +435,6 @@ export function sendTrips(
     player.stats.supplies_used += picked.length;
     player.stats.lures_used += picked.filter((id) => supplyDef(id)?.kind === 'lure').length;
     const twist = special.destination === dest.id ? special.twist : null;
-    const kit = kitOf(picked);
     // The day's weather, as the worker stores it with the trip when it is sent.
     const fx = tripWeather(ctx.weather ?? null, { destination: dest.id, length });
     const changes = (Object.keys(NO_TRIP_WEATHER) as (keyof TripWeather)[]).some(
@@ -438,7 +447,7 @@ export function sendTrips(
       ...(treat ? { treat: true } : {}),
       kit: picked,
       rolls:
-        tripRolls(length, kit, twist === null ? null : twist.effect) +
+        tripTicks(length, twist === null ? null : twist.effect) +
         fx.extraRolls +
         (length === 'day' ? foldedCreature(creature).rules.dayTripRolls : 0),
       twist: twist === null ? null : twist.id,
@@ -553,9 +562,16 @@ function payTrip(
   const famBefore = famOf(player, explorer.id, dest.id);
   const starsBefore = familiarityStars(dest, famBefore);
 
-  const { results, dupeStreak, empty, pity, forced } = rollTripCatches(
+  // The ticks of the trip: the length's (and the twist's, the day's and the gear's, stored when it was
+  // sent), the map's rolled now, and an hour for every hour a worked goal added. A goal's own catch
+  // rolls are extra creature rolls.
+  const ticks =
+    Math.max(trip.rolls, lengthRules(trip.length).ticks) +
+    rollMapTicks(ctx.trip, trip.length, kit) +
+    (worked && goal !== undefined ? goal.extraHours : 0);
+  const { results, dupeStreak, empty } = rollTripCatches(
     ctx.catches,
-    trip.rolls + (reward?.catchRolls ?? 0),
+    ticks + (reward?.catchRolls ?? 0),
     {
       content,
       destination: dest,
@@ -568,15 +584,10 @@ function payTrip(
       ownedLines: ownedLines(player),
       dupeStreak: player.dupeStreak,
       firstExpedition: !player.firstExpeditionDone,
-      pity: player.catchPity,
     },
+    true,
   );
   player.dupeStreak = dupeStreak;
-  player.catchPity = pity;
-  for (const f of forced) {
-    if (f.pity === 'new') player.stats.pity_new += 1;
-    else player.stats.pity_creature += 1;
-  }
   player.firstExpeditionDone = true;
   player.stats.catch_rolls += results.length + empty;
   player.stats.empty_rolls += empty;
@@ -591,39 +602,36 @@ function payTrip(
 
   // Loot (parts, a blueprint, found supplies) and what the goal gives, with the gear rng.
   if (ctx.gear !== undefined) {
-    const loot = rollTripLoot(
-      ctx.gear.rng,
-      {
-        length: trip.length,
-        shardElement: dest.element ?? species.element,
-        role: species.role,
-        kit,
-        stars: starsBefore,
-        milestonePartsBp: bonuses.partsBp,
-        twist,
-        rank,
-        gearPartsBp: gearRules.keenNoseBp,
-        gearSupplyBp: gearRules.packerBp,
-        gearGlimmerBp: gearRules.glimmerFindBp,
-        weatherPartsBp: wx.partsBp,
-        weatherShardsBp: wx.shardsBp,
-        weatherSupplyBp: wx.supplyBp,
-        emptyRolls: empty,
-      },
-      { completed: true, caught: results.length, rolls: trip.rolls },
-    );
+    const place = {
+      element: dest.element ?? null,
+      crossroads: dest.id === RULES.gear.compassPlace,
+    };
+    const loot = rollTripLoot(ctx.gear.rng, {
+      ticks,
+      fixedParts: true,
+      place,
+      role: species.role,
+      kit,
+      stars: starsBefore,
+      milestonePartsBp: bonuses.partsBp,
+      twist,
+      rank,
+      gearPartsBp: gearRules.keenNoseBp,
+      gearSupplyBp: gearRules.packerBp,
+      gearGlimmerBp: gearRules.glimmerFindBp,
+      weatherPartsBp: wx.partsBp,
+      weatherShardsBp: wx.shardsBp,
+      weatherSupplyBp: wx.supplyBp,
+    });
     addParts(player, loot.parts, ctx);
-    if (loot.blueprint !== null) learnBlueprint(player, loot.blueprint);
+    for (const id of loot.blueprints) learnBlueprint(player, id);
     for (const id of loot.supplies) addSupply(player, id);
+    for (const item of loot.gear) grantItem(player, item);
     if (reward !== null) {
       addParts(player, partsOfSpec(reward.parts), ctx);
       if (reward.supply === true) addSupply(player, foundSupplyId(ctx.gear.rng, rank));
       if (reward.blueprint === true) learnBlueprint(player, rollBlueprint(ctx.gear.rng));
       if (reward.gear !== undefined) {
-        const place = {
-          element: dest.element ?? null,
-          crossroads: dest.id === RULES.gear.compassPlace,
-        };
         grantItem(player, rollGearDrop(ctx.gear.rng, reward.gear, place, rank));
       }
     }
@@ -637,8 +645,7 @@ function payTrip(
     { source: 'trip', name: 'Push on', bp: reward?.xpBp ?? 0 },
     gearPart('trail-xp', gearRules.trailXpBp),
   ];
-  player.explorerXp[explorer.id] =
-    (player.explorerXp[explorer.id] ?? 0) + tripXp(trip.length, xpParts);
+  player.explorerXp[explorer.id] = (player.explorerXp[explorer.id] ?? 0) + tripXp(ticks, xpParts);
   // Creature experience: a finished trip pays its explorer by the length, doubled by a treat.
   giveExperience(
     player,
@@ -650,10 +657,17 @@ function payTrip(
     'trip',
   );
   // The one-time gift of every rank this trip reached (Bait, and parts and supplies with the gear sim).
-  for (const { gift } of rankGiftsBetween(rank, rankOfCreature(player, explorer.id))) {
+  for (const { rank: giftRank, gift } of rankGiftsBetween(
+    rank,
+    rankOfCreature(player, explorer.id),
+  )) {
     player.bait += gift.bait;
     if (ctx.gear !== undefined) {
-      addParts(player, gift.parts, ctx);
+      // Shards and the gear piece follow the explorer's element, not the place.
+      const element = speciesOf(explorer.speciesId).element;
+      addParts(player, rankGiftParts(gift, element), ctx);
+      const piece = rollRankGiftItem(ctx.gear.rng, gift, element, giftRank);
+      if (piece !== null) grantItem(player, piece);
       for (const id of gift.supplies) {
         if (supplyDef(id) === undefined) continue;
         player.supplies[id] = (player.supplies[id] ?? 0) + 1;
@@ -668,7 +682,7 @@ function payTrip(
     found: [...found],
     shiny: famBefore.shiny || results.some((c) => c.shiny),
   };
-  rollPages(player, dest, trip, twist, reward?.journal === true, ctx, wx.journalBp);
+  rollPages(player, dest, ticks, twist, reward?.journal === true, ctx, wx.journalBp);
 
   player.stats.trips_finished += 1;
   recordSlotDays(player, ctx.day);
@@ -689,7 +703,7 @@ function addSupply(player: SimPlayer, id: string): void {
 function rollPages(
   player: SimPlayer,
   dest: DestinationDef,
-  trip: PendingExpedition,
+  ticks: number,
   twist: TwistEffect | null,
   sure: boolean,
   ctx: TripContext,
@@ -697,7 +711,10 @@ function rollPages(
 ): void {
   const entries = expeditionContent.journal.entries;
   const found = new Set(player.journal);
-  const attempts = [chance(ctx.trip, journalChanceBp(trip.length, twist, weatherBp), 10_000)];
+  const attempts: boolean[] = [];
+  for (let i = 0; i < ticks; i++) {
+    attempts.push(chance(ctx.trip, journalChanceBp(twist, weatherBp), 10_000));
+  }
   if (sure) attempts.push(true);
   for (const wanted of attempts) {
     if (!wanted) continue;

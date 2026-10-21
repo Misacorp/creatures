@@ -1,0 +1,332 @@
+[
+  {
+    "id": "refine-lure-basic",
+    "kind": "refine",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "lure-basic",
+        "amount": 3
+      }
+    ],
+    "outputs": [
+      {
+        "type": "supply",
+        "id": "lure-good",
+        "amount": 1
+      }
+    ],
+    "hours": 2,
+    "craftingLevel": 3
+  },
+  {
+    "id": "refine-lure-good",
+    "kind": "refine",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "lure-good",
+        "amount": 3
+      }
+    ],
+    "outputs": [
+      {
+        "type": "supply",
+        "id": "lure-great",
+        "amount": 1
+      }
+    ],
+    "hours": 4,
+    "craftingLevel": 5
+  },
+  {
+    "id": "refine-map-scrap-basic",
+    "kind": "refine",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "map-scrap-basic",
+        "amount": 3
+      }
+    ],
+    "outputs": [
+      {
+        "type": "supply",
+        "id": "map-scrap-good",
+        "amount": 1
+      }
+    ],
+    "hours": 2,
+    "craftingLevel": 3
+  },
+  {
+    "id": "refine-map-scrap-good",
+    "kind": "refine",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "map-scrap-good",
+        "amount": 3
+      }
+    ],
+    "outputs": [
+      {
+        "type": "supply",
+        "id": "map-scrap-great",
+        "amount": 1
+      }
+    ],
+    "hours": 4,
+    "craftingLevel": 5
+  },
+  {
+    "id": "refine-lantern-basic",
+    "kind": "refine",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "lantern-basic",
+        "amount": 3
+      }
+    ],
+    "outputs": [
+      {
+        "type": "supply",
+        "id": "lantern-good",
+        "amount": 1
+      }
+    ],
+    "hours": 2,
+    "craftingLevel": 3
+  },
+  {
+    "id": "refine-lantern-good",
+    "kind": "refine",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "lantern-good",
+        "amount": 3
+      }
+    ],
+    "outputs": [
+      {
+        "type": "supply",
+        "id": "lantern-great",
+        "amount": 1
+      }
+    ],
+    "hours": 4,
+    "craftingLevel": 5
+  },
+  {
+    "id": "refine-satchel-basic",
+    "kind": "refine",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "satchel-basic",
+        "amount": 3
+      }
+    ],
+    "outputs": [
+      {
+        "type": "supply",
+        "id": "satchel-good",
+        "amount": 1
+      }
+    ],
+    "hours": 2,
+    "craftingLevel": 3
+  },
+  {
+    "id": "refine-satchel-good",
+    "kind": "refine",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "satchel-good",
+        "amount": 3
+      }
+    ],
+    "outputs": [
+      {
+        "type": "supply",
+        "id": "satchel-great",
+        "amount": 1
+      }
+    ],
+    "hours": 4,
+    "craftingLevel": 5
+  },
+  {
+    "id": "recycle-lure-good",
+    "kind": "recycle",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "lure-good",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "type": "part",
+        "id": "scrap",
+        "amount": 1
+      }
+    ],
+    "hours": 1,
+    "craftingLevel": 1
+  },
+  {
+    "id": "recycle-lure-great",
+    "kind": "recycle",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "lure-great",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "type": "part",
+        "id": "scrap",
+        "amount": 1
+      }
+    ],
+    "hours": 2,
+    "craftingLevel": 1
+  },
+  {
+    "id": "recycle-map-scrap-good",
+    "kind": "recycle",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "map-scrap-good",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "type": "part",
+        "id": "scrap",
+        "amount": 1
+      }
+    ],
+    "hours": 1,
+    "craftingLevel": 1
+  },
+  {
+    "id": "recycle-map-scrap-great",
+    "kind": "recycle",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "map-scrap-great",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "type": "part",
+        "id": "scrap",
+        "amount": 3
+      },
+      {
+        "type": "part",
+        "id": "tide-shard",
+        "amount": 1
+      }
+    ],
+    "hours": 2,
+    "craftingLevel": 1
+  },
+  {
+    "id": "recycle-lantern-good",
+    "kind": "recycle",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "lantern-good",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "type": "part",
+        "id": "scrap",
+        "amount": 1
+      }
+    ],
+    "hours": 1,
+    "craftingLevel": 1
+  },
+  {
+    "id": "recycle-lantern-great",
+    "kind": "recycle",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "lantern-great",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "type": "part",
+        "id": "scrap",
+        "amount": 1
+      }
+    ],
+    "hours": 2,
+    "craftingLevel": 1
+  },
+  {
+    "id": "recycle-satchel-good",
+    "kind": "recycle",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "satchel-good",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "type": "part",
+        "id": "scrap",
+        "amount": 1
+      }
+    ],
+    "hours": 1,
+    "craftingLevel": 1
+  },
+  {
+    "id": "recycle-satchel-great",
+    "kind": "recycle",
+    "inputs": [
+      {
+        "type": "supply",
+        "id": "satchel-great",
+        "amount": 1
+      }
+    ],
+    "outputs": [
+      {
+        "type": "part",
+        "id": "scrap",
+        "amount": 3
+      },
+      {
+        "type": "part",
+        "id": "ember-shard",
+        "amount": 1
+      }
+    ],
+    "hours": 2,
+    "craftingLevel": 1
+  }
+]

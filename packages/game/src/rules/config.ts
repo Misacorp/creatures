@@ -12,6 +12,18 @@ export interface SupportFx {
   cleanse?: boolean;
 }
 
+/** One row of the explorer rank gifts (`RULES.expeditions.rank.gifts`), whole numbers only. */
+export interface RankGiftRow {
+  bait: number;
+  scrap: number;
+  glimmer: number;
+  /** Shards of the explorer's element. */
+  shards: number;
+  /** Rarity weights (basis points, summing to 10000) of the gift's one gear piece; null: no gear piece. */
+  gearOddsBp: { common: number; rare: number; epic: number } | null;
+  supplies: readonly string[];
+}
+
 /** One row of the raid difficulty curve (`RULES.raid.curve.ranks`), whole numbers only. */
 export interface RankRow {
   hpBp: number;
@@ -135,18 +147,19 @@ export const RULES = {
     dupeShieldStreak: 3,
     /** The first claim of a player's first expedition starts with this line. */
     firstExpeditionLine: 'zipmouse',
-    /**
-     * New-species pity (2026-10-17): the server counts a player's catch rolls. After `newAfter` rolls
-     * without a new species, the next roll brings a creature, and it is a species the player lacks (when
-     * the place has one). Whatever the species, the `creatureEvery`-th roll in a row without any
-     * creature brings one. Counters are stored per player and move with the trip claim.
-     */
-    pity: { newAfter: 60, creatureEvery: 10 },
   },
   fusion: {
     /** Cumulative stat bonus in basis points after N fusions (index = N). */
     cumulativeBonusBp: [0, 600, 1100, 1500, 1800, 2000],
     maxFusions: 5,
+    /**
+     * Fusion is incremental (docs/design/decisions.md, 2026-10-20): each duplicate fused in adds fusion
+     * points by its rarity, and a fusion level is reached when the points reach that level's threshold.
+     * The first levels come quickly and the last ones cost a lot more.
+     */
+    pointsByRarity: { common: 1, rare: 2, epic: 4 },
+    /** Cumulative points needed to reach fusion level 1, 2, 3, 4 and 5 (1, 3, 5, 9 and 16 points per level). */
+    thresholds: [1, 4, 9, 18, 34],
   },
   /**
    * Talents and the duplicate choice (docs/design/gear-and-creatures-v2.md section 8, "Creatures A").
@@ -356,12 +369,12 @@ export const RULES = {
      *
      * The shape, and why (docs/balance/log.md B-010; the targets are the `curve-*` ones in
      * `packages/sim/targets.json`, measured on whole journey servers):
-     * - Rank 1 is a tutorial boss (35% of the pool, 65% Attack): a new server's first week is won by
+     * - Rank 1 is a tutorial boss (26% of the pool, 65% Attack; B-026 moved the pool numbers up for the tick economy and lowered this row by the same factor): a new server's first week is won by
      *   mostly casual players (about 85% for a server with no engaged player at all, 97% to 100% with
      *   one or two) so players learn what a raid pays.
      * - Ranks 2 to 5 climb steeply (1.9x, 3.0x, 3.6x and 4.3x the calibrated pool) while the roster grows fast (levels,
      *   evolutions, fusions, gear): a default server wins about 80%, a committed one about 97%.
-     * - From rank 6 the pool is nearly flat (4.7x to 4.95x the calibrated pool) because player power stops growing
+     * - From rank 6 the pool is nearly flat (5.1x to 5.4x the calibrated pool after B-026) because player power stops growing
      *   quickly after week 6: Attack, boss crit chance (from rank 9) and a second plain attack (from
      *   rank 14) carry the difficulty, and the rank-gated moves punish setups. A default server wins
      *   about 55%, a committed one about 87%; luck, positioning and loadouts decide it.
@@ -370,21 +383,21 @@ export const RULES = {
      */
     curve: {
       ranks: [
-        { hpBp: 3_500, atkBp: 6_500, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 2_600, atkBp: 6_500, bossAttacks: 1, critBonusBp: 0 },
         { hpBp: 19_200, atkBp: 11_000, bossAttacks: 1, critBonusBp: 0 },
         { hpBp: 29_800, atkBp: 12_500, bossAttacks: 1, critBonusBp: 0 },
         { hpBp: 36_000, atkBp: 14_000, bossAttacks: 1, critBonusBp: 0 },
         { hpBp: 43_200, atkBp: 15_500, bossAttacks: 1, critBonusBp: 0 },
-        { hpBp: 47_000, atkBp: 17_000, bossAttacks: 1, critBonusBp: 0 },
-        { hpBp: 47_500, atkBp: 18_500, bossAttacks: 1, critBonusBp: 0 },
-        { hpBp: 48_500, atkBp: 20_000, bossAttacks: 1, critBonusBp: 0 },
-        { hpBp: 49_500, atkBp: 21_500, bossAttacks: 1, critBonusBp: 250 },
-        { hpBp: 49_500, atkBp: 23_000, bossAttacks: 1, critBonusBp: 250 },
-        { hpBp: 49_500, atkBp: 24_500, bossAttacks: 1, critBonusBp: 500 },
-        { hpBp: 49_500, atkBp: 26_000, bossAttacks: 1, critBonusBp: 500 },
-        { hpBp: 49_500, atkBp: 27_500, bossAttacks: 1, critBonusBp: 500 },
-        { hpBp: 49_500, atkBp: 29_000, bossAttacks: 2, critBonusBp: 750 },
-        { hpBp: 49_500, atkBp: 30_500, bossAttacks: 2, critBonusBp: 750 },
+        { hpBp: 51_230, atkBp: 17_000, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 51_780, atkBp: 18_500, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 52_870, atkBp: 20_000, bossAttacks: 1, critBonusBp: 0 },
+        { hpBp: 53_960, atkBp: 21_500, bossAttacks: 1, critBonusBp: 250 },
+        { hpBp: 53_960, atkBp: 23_000, bossAttacks: 1, critBonusBp: 250 },
+        { hpBp: 53_960, atkBp: 24_500, bossAttacks: 1, critBonusBp: 500 },
+        { hpBp: 53_960, atkBp: 26_000, bossAttacks: 1, critBonusBp: 500 },
+        { hpBp: 53_960, atkBp: 27_500, bossAttacks: 1, critBonusBp: 500 },
+        { hpBp: 53_960, atkBp: 29_000, bossAttacks: 2, critBonusBp: 750 },
+        { hpBp: 53_960, atkBp: 30_500, bossAttacks: 2, critBonusBp: 750 },
       ] as RankRow[],
       /**
        * Above the table's last rank every rank multiplies the row below it: HP by `hpStepBp` and
@@ -586,9 +599,9 @@ export const RULES = {
       /** Raid finale reward slot: `base + Boss Rank`. */
       finale: { base: 3 },
       /** Daily dungeon: `base + floor(depth / depthPerLevel)`, plus `landmarkBonus` at a landmark. */
-      dungeon: { base: 1, depthPerLevel: 2, landmarkBonus: 3 },
+      dungeon: { base: 1, depthPerLevel: 3, landmarkBonus: 3 },
       /** Expedition finds: this times the finder's explorer rank. */
-      expeditionPerRank: 2,
+      expeditionPerRank: 1,
       /** Crafting: this times the crafter's Crafting level. */
       craftPerLevel: 2,
       /**
@@ -810,10 +823,17 @@ export const RULES = {
       good: { fromDepth: 4, baseBp: 1_500, perDepthBp: 400, maxBp: 5_000 },
       great: { fromDepth: 12, baseBp: 500, perDepthBp: 200, maxBp: 2_500 },
     },
-    /** Chance (basis points) of one shard of the floor boss's element when the boss room is cleared. */
-    bossShardBp: 6_000,
-    /** Extra for clearing every room: Essence, and a chance (basis points) at a gear drop. */
-    fullClear: { essence: 0, gearBp: 1_500 },
+    /**
+     * The chance (basis points) that a cleared room puts one shard of its foe's element in the pack (at
+     * risk like the rest of it), by room kind: a plain fight, an elite, an Undercroft epic fight and a floor
+     * boss (the main one and an Undercroft keeper alike). Rooms with no foe drop none.
+     */
+    shardBp: { fight: 1_500, elite: 4_000, epic: 6_000, boss: 10_000 },
+    /**
+     * Extra for clearing every room: Essence, and a chance (basis points) at a gear drop (10000: every
+     * full clear drops one piece, rolled by the dungeon's gear odds).
+     */
+    fullClear: { essence: 0, gearBp: 10_000 },
     /**
      * Gear odds of a dungeon drop (basis points; the rest is common): rare and epic start at `baseBp`
      * at depth 1, grow by `perDepthBp` for every depth above 1 and stop at `maxBp`. A landmark drop
@@ -876,14 +896,15 @@ export const RULES = {
     /**
      * What each kind of room puts in the run's pack when it is cleared (the pack is at risk; the
      * run's supply never goes in it). Mystery rooms pay by the option picked. `boss` is the boss
-     * chest's Essence and scrap; its shard and gear chances are the keys above. Starting values: the
-     * simulator tunes them so a full clear pays about what a three-room run did.
+     * chest's Essence and scrap; its shard and gear chances are the keys above. B-024 (2026-10-20, Misa): a
+     * full clear of the main map pays about 1.5 crafts of parts (10 scrap on the safe path, about 1.4 shards)
+     * and one gear piece, and the choices (elites, risky mystery options, the Undercroft) pay more.
      */
     loot: {
-      fight: { bait: 1, essence: 0, scrap: 0 },
-      elite: { bait: 0, essence: 0, scrap: 1 },
-      cache: { bait: 1, essence: 0, scrap: 1 },
-      boss: { bait: 0, essence: 1, scrap: 1 },
+      fight: { bait: 1, essence: 0, scrap: 1 },
+      elite: { bait: 1, essence: 0, scrap: 4 },
+      cache: { bait: 1, essence: 0, scrap: 3 },
+      boss: { bait: 0, essence: 1, scrap: 3 },
     },
     /**
      * A defeat keeps this share of the pack, each amount rounded up (1 Bait stays 1, 3 scrap becomes
@@ -926,15 +947,15 @@ export const RULES = {
       /** A level's map: the same weights as the main map's rooms (`map.kinds`), with these caps per level. */
       map: { maxElites: 2, maxCaches: 1, maxMysteries: 2 },
       /** The epic fight: one normal foe at boss strength (basis points of its depth-scaled numbers) and what it pays into the pack. */
-      epic: { hpBp: 16_000, atkBp: 13_000, loot: { bait: 0, essence: 1, scrap: 2 } },
+      epic: { hpBp: 16_000, atkBp: 13_000, loot: { bait: 0, essence: 1, scrap: 5 } },
       /**
        * The keeper's chest: Essence and scrap into the pack, a `gearBp` chance of a piece with
        * `rareBonusBp` and `epicBonusBp` added to the dungeon's gear odds and `itemLevelBonus` item levels more.
        */
       chest: {
-        essence: 1,
-        scrap: 2,
-        gearBp: 4_000,
+        essence: 2,
+        scrap: 7,
+        gearBp: 8_000,
         rareBonusBp: 1_500,
         epicBonusBp: 500,
         itemLevelBonus: 2,
@@ -961,59 +982,44 @@ export const RULES = {
    */
   expeditions: {
     /**
-     * Per trip length: the time, the catch rolls and what a finished trip brings. A roll brings a
-     * creature only with chance `catchBp` (2026-10-16: trips brought far too many creatures and
-     * duplicates); a roll that brings none brings a small find, `findScrap` scrap. A lure raises the
-     * chance and the odds of a species the player lacks. Rewards grow faster
-     * than the hours (the 12 hour trip pays more than three 4 hour ones would): a short trip is the
-     * worst way to progress. `loot` are chances in basis points (a value above 10000 is a sure one plus
-     * a chance of another); `scrap` is a flat amount; a recalled trip pays only its share of the scrap.
+     * Per trip length (2026-10-20, trips pay in ticks): the time, the nominal ticks a finished trip
+     * pays and the rarity push. Every tick rolls each table of `tick` on its own, so a trip's reward is
+     * its ticks times the per-tick chances. The ticks run a little ahead of the hours on longer trips
+     * (12 h: 15, 24 h: 32) so a long trip beats the same hours in short ones; players are only told
+     * that longer trips are better. Ticks are nominal: explorer rank shortens the real time, not the
+     * ticks. The 24 hour trip needs `minRank`.
      */
     lengths: {
-      short: {
-        ms: 2 * HOUR_MS,
-        rolls: 1,
-        catchBp: 300,
-        findScrap: 1,
-        rarityUpBp: 0,
-        xp: 4,
-        minRank: 1,
-        loot: { scrap: 0, shardBp: 600, glimmerBp: 50, blueprintBp: 100, supplyBp: 500 },
-        journalBp: 300,
-      },
-      medium: {
-        ms: 6 * HOUR_MS,
-        rolls: 1,
-        catchBp: 600,
-        findScrap: 1,
-        rarityUpBp: 150,
-        xp: 110,
-        minRank: 1,
-        loot: { scrap: 0, shardBp: 1_000, glimmerBp: 150, blueprintBp: 300, supplyBp: 1_500 },
-        journalBp: 600,
-      },
-      long: {
-        ms: 12 * HOUR_MS,
-        rolls: 1,
-        catchBp: 1800,
-        findScrap: 2,
-        rarityUpBp: 300,
-        xp: 300,
-        minRank: 1,
-        loot: { scrap: 1, shardBp: 1_500, glimmerBp: 300, blueprintBp: 500, supplyBp: 3_000 },
-        journalBp: 1_000,
-      },
-      day: {
-        ms: 24 * HOUR_MS,
-        rolls: 2,
-        catchBp: 1800,
-        findScrap: 2,
-        rarityUpBp: 600,
-        xp: 700,
-        minRank: 5,
-        loot: { scrap: 3, shardBp: 4_000, glimmerBp: 800, blueprintBp: 1_000, supplyBp: 4_500 },
-        journalBp: 1_600,
-      },
+      short: { ms: 2 * HOUR_MS, ticks: 2, rarityUpBp: 0, minRank: 1 },
+      medium: { ms: 6 * HOUR_MS, ticks: 7, rarityUpBp: 150, minRank: 1 },
+      long: { ms: 12 * HOUR_MS, ticks: 15, rarityUpBp: 300, minRank: 1 },
+      day: { ms: 24 * HOUR_MS, ticks: 32, rarityUpBp: 600, minRank: 5 },
+    },
+    /**
+     * What one tick of a trip does (basis points per tick, rolled independently; a value above 10000 is
+     * a sure one plus a chance of another). Every modifier (gear lines, talents, weather, twists,
+     * stars, milestones, supplies) scales these scalars. Two hours of ticks is an expected 0.25
+     * creatures, 1 scrap, 0.12 shards and a 10% chance of a gear piece.
+     */
+    tick: {
+      /** Explorer XP of one tick (XP boosts multiply the total). */
+      xp: 20,
+      /** A creature (rarity, species, deeper area, featured, affinity, dupe shield and shiny as before). */
+      creatureBp: 800,
+      /** One scrap. */
+      scrapBp: 5_000,
+      /** One shard of the place's element (else the explorer's). */
+      shardBp: 600,
+      /** A gear piece, rolled like a push-on gear drop (the place's element, item level 2x rank). */
+      gearBp: 513,
+      /** The rarity odds of that piece (basis points, add up to 10000). */
+      gearOdds: { common: 8_500, rare: 1_350, epic: 150 },
+      glimmerBp: 30,
+      blueprintBp: 40,
+      /** A found supply (the tier follows the explorer's rank). */
+      supplyBp: 200,
+      /** A journal page (before the twist and the weather). About 0.1 pages for a 12 hour trip. */
+      journalBp: 70,
     },
     /** Most supplies one trip can carry. */
     maxSupplies: 2,
@@ -1028,22 +1034,68 @@ export const RULES = {
       xpForRank: [0, 200, 800, 2_000, 4_500, 10_000, 22_000, 45_000, 90_000, 160_000],
       speedBpPerRank: 200,
       /**
-       * A fixed one-time gift for reaching each rank from 2 to 10 (index 0 is rank 2): Bait, parts and
-       * supplies (content ids), growing with rank, with ranks 7 to 10 the biggest. Every rank unlocks
-       * or gives something, so there is always a next thing to look forward to. Granted once per
-       * (creature, rank) on the claim that raises the rank. Kept modest: the sim checks the economy.
+       * A fixed one-time gift for reaching each rank from 2 to 10 (index 0 is rank 2): Bait, parts,
+       * supplies (content ids) and, from rank 4, shards of the explorer's own element and, from rank 5, one
+       * gear piece tagged with the explorer's element (item level of the rank reached; `gearOddsBp` are the
+       * rarity weights, summing to 10000). Ranking up is the creature's achievement, so shards and gear
+       * follow the creature, not the place. Raised on 2026-10-21 ("richer rank gifts", Misa) without a
+       * balance pass: materials and Bait first, then shards and gear, rising to rank 10. Granted once per
+       * (creature, rank) on the claim that raises the rank, so several explorers are a good reason to
+       * explore with more than one creature.
        */
       gifts: [
-        { bait: 2, scrap: 1, glimmer: 0, supplies: [] },
-        { bait: 3, scrap: 1, glimmer: 0, supplies: [] },
-        { bait: 4, scrap: 2, glimmer: 0, supplies: [] },
-        { bait: 5, scrap: 2, glimmer: 0, supplies: [] },
-        { bait: 6, scrap: 3, glimmer: 1, supplies: [] },
-        { bait: 50, scrap: 5, glimmer: 2, supplies: ['lantern-good', 'satchel-good'] },
-        { bait: 75, scrap: 8, glimmer: 3, supplies: ['map-scrap-good', 'satchel-good'] },
-        { bait: 100, scrap: 10, glimmer: 4, supplies: ['lantern-great'] },
-        { bait: 150, scrap: 15, glimmer: 6, supplies: ['map-scrap-great', 'satchel-great'] },
-      ],
+        { bait: 10, scrap: 5, glimmer: 0, shards: 0, gearOddsBp: null, supplies: [] },
+        { bait: 15, scrap: 8, glimmer: 0, shards: 0, gearOddsBp: null, supplies: [] },
+        { bait: 20, scrap: 8, glimmer: 0, shards: 2, gearOddsBp: null, supplies: [] },
+        {
+          bait: 25,
+          scrap: 10,
+          glimmer: 0,
+          shards: 3,
+          gearOddsBp: { common: 8_000, rare: 2_000, epic: 0 },
+          supplies: [],
+        },
+        {
+          bait: 40,
+          scrap: 12,
+          glimmer: 1,
+          shards: 4,
+          gearOddsBp: { common: 0, rare: 10_000, epic: 0 },
+          supplies: [],
+        },
+        {
+          bait: 50,
+          scrap: 5,
+          glimmer: 2,
+          shards: 5,
+          gearOddsBp: { common: 0, rare: 9_500, epic: 500 },
+          supplies: ['lantern-good', 'satchel-good'],
+        },
+        {
+          bait: 75,
+          scrap: 8,
+          glimmer: 3,
+          shards: 6,
+          gearOddsBp: { common: 0, rare: 9_000, epic: 1_000 },
+          supplies: ['map-scrap-good', 'satchel-good'],
+        },
+        {
+          bait: 100,
+          scrap: 10,
+          glimmer: 4,
+          shards: 8,
+          gearOddsBp: { common: 0, rare: 7_500, epic: 2_500 },
+          supplies: ['lantern-great'],
+        },
+        {
+          bait: 150,
+          scrap: 15,
+          glimmer: 6,
+          shards: 10,
+          gearOddsBp: { common: 0, rare: 5_000, epic: 5_000 },
+          supplies: ['map-scrap-great', 'satchel-great'],
+        },
+      ] as RankGiftRow[],
     },
     /**
      * Familiarity, per creature and destination, three stars: 1 from `tripsForStar1` finished trips
@@ -1054,7 +1106,7 @@ export const RULES = {
       tripsForStar1: 4,
       deepChanceBp: [0, 3_000, 4_000, 5_000],
       /** A deeper-area roll is one of the place's deep species at this chance (basis points). */
-      deepFindBp: 3_500,
+      deepFindBp: 2_000,
       rarityUpBp: [0, 200, 400, 800],
       partsBp: [0, 0, 1_000, 2_000],
     },
@@ -1095,8 +1147,8 @@ export const RULES = {
      * risky push-on goal of a trip must be a fair gamble against coming home.
      */
     worth: {
-      /** One catch roll, by the rarity it comes out as (about 10 at the default odds). */
-      roll: { common: 5, rare: 20, epic: 50 },
+      /** One catch roll, by the rarity it comes out as (about 20 at the default odds: fusing, talents and release make a catch worth more than a few Bait). */
+      roll: { common: 15, rare: 40, epic: 90 },
       scrap: 2,
       shard: 6,
       glimmer: 25,

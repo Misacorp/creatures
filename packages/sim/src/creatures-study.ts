@@ -49,11 +49,9 @@ export interface WeekMetrics {
   expDungeon: number;
   expRaid: number;
   expJob: number;
-  /** Treats packed, ribbons bought, and catch rolls the pity forced (a species the player lacked, any creature). */
+  /** Treats packed and ribbons bought. */
   treats: number;
   ribbons: number;
-  pityNew: number;
-  pityCreature: number;
   /** The best creature's level and the raid team's lowest, at the end of the week (medians). */
   topLevel: number;
   teamMinLevel: number;
@@ -62,6 +60,16 @@ export interface WeekMetrics {
   fightPower: number | null;
   /** `1 - fightPowerNoTalents / fightPower` as a fraction, or null when the week was not scored. */
   talentShare: number | null;
+  /** The same for fusion and gear (`1 - without / fightPower`), and the Attack + HP score's split (Shapley) as fractions of the team's power. */
+  fusionShare: number | null;
+  gearShare: number | null;
+  levelsStatShare: number;
+  evolutionStatShare: number;
+  fusionStatShare: number;
+  gearStatShare: number;
+  /** The raid team's mean fusion level and how many of its creatures are at the maximum (means). */
+  teamFusion: number;
+  teamMaxFused: number;
 }
 
 /** The levels a profile's players reach: the pace the design asks for (spec 9.2) and the unlock stretches (9.3a). */
@@ -150,6 +158,17 @@ function weekMetrics(week: number, journeys: readonly PlayerJourney[]): WeekMetr
           4,
         );
   const fights = rows.filter((r) => r.end.fightPower !== null);
+  const shareOf = (without: (r: Row) => number | null): number | null => {
+    const used = scored.filter((r) => without(r) !== null);
+    return used.length === 0
+      ? null
+      : round(
+          mean(used.map((r) => 1 - (without(r) as number) / (r.end.fightPower as number))) ?? 0,
+          4,
+        );
+  };
+  const stat = (key: 'levels' | 'evolution' | 'fusion' | 'gear'): number =>
+    round(mean(rows.map((r) => (r.end.power > 0 ? r.end[key] / r.end.power : 0))) ?? 0, 4);
   return {
     week,
     players: rows.length,
@@ -176,8 +195,6 @@ function weekMetrics(week: number, journeys: readonly PlayerJourney[]): WeekMetr
     expJob: delta('expJob'),
     treats: delta('treats'),
     ribbons: delta('ribbons'),
-    pityNew: delta('pityNew'),
-    pityCreature: delta('pityCreature'),
     topLevel: round(median(rows.map((r) => r.end.topLevel)) ?? 0, 1),
     teamMinLevel: round(median(rows.map((r) => r.end.teamMinLevel)) ?? 0, 1),
     species: held('speciesOwned'),
@@ -187,6 +204,14 @@ function weekMetrics(week: number, journeys: readonly PlayerJourney[]): WeekMetr
         ? null
         : round(mean(fights.map((r) => r.end.fightPower as number)) ?? 0, 1),
     talentShare: share,
+    fusionShare: shareOf((r) => r.end.fightPowerNoFusion),
+    gearShare: shareOf((r) => r.end.fightPowerBare),
+    levelsStatShare: stat('levels'),
+    evolutionStatShare: stat('evolution'),
+    fusionStatShare: stat('fusion'),
+    gearStatShare: stat('gear'),
+    teamFusion: round(mean(rows.map((r) => r.end.teamFusion)) ?? 0, 2),
+    teamMaxFused: held('teamMaxFused'),
   };
 }
 
@@ -377,10 +402,6 @@ export function creaturesMarkdown(
       cell: (m) => `${f1(m.taught)} / ${f1(m.fused)} / ${f1(m.released)}`,
     },
     { title: 'New species per week', cell: (m) => f1(m.newSpecies) },
-    {
-      title: 'Catch rolls the pity forced per week: a species the player lacked / any creature',
-      cell: (m) => `${f1(m.pityNew)} / ${f1(m.pityCreature)}`,
-    },
     { title: 'Base species owned', cell: (m) => f1(m.species) },
     {
       title: 'Best creature level / raid team lowest level (median, end of the week)',
@@ -411,6 +432,19 @@ export function creaturesMarkdown(
     {
       title: "Talents' share of fight power (weeks that were scored)",
       cell: (m) => pct(m.talentShare),
+    },
+    {
+      title: "Fusion's / gear's share of fight power (weeks that were scored)",
+      cell: (m) => `${pct(m.fusionShare)} / ${pct(m.gearShare)}`,
+    },
+    {
+      title: 'Attack + HP split: levels / evolution / fusion / gear',
+      cell: (m) =>
+        `${pct(m.levelsStatShare)} / ${pct(m.evolutionStatShare)} / ${pct(m.fusionStatShare)} / ${pct(m.gearStatShare)}`,
+    },
+    {
+      title: 'Team mean fusion level / creatures at the maximum',
+      cell: (m) => `${m.teamFusion.toFixed(2)} / ${m.teamMaxFused.toFixed(2)}`,
     },
     { title: 'Team power', cell: (m) => m.power.toFixed(0) },
   ];

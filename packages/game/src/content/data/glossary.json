@@ -720,8 +720,8 @@
     "short": "Fuse a duplicate to make a creature stronger.",
     "lines": [
       "A duplicate catch waits as a choice. Fuse it into the creature you already have.",
-      "Each fusion adds stats, up to 20% after 5 fusions.",
-      "The stars show your fusions. After 5, Teach or Release the duplicate instead."
+      "A duplicate adds fusion points: 1 if common, 2 if rare, 4 if epic. Each level takes more than the last.",
+      "Each level adds stats, up to 20% at level 5. After that, Teach or Release instead."
     ],
     "section": "expeditions"
   },
@@ -1196,7 +1196,7 @@
   {
     "id": "part-scrap",
     "title": "Scrap",
-    "short": "Generic parts. They pay for crafting.",
+    "short": "The plainest part. Parts are every crafting ingredient.",
     "lines": [
       "Found by dismantling gear, on expeditions, in cleared raid phases and in the daily dungeon."
     ],
@@ -1373,7 +1373,7 @@
     "title": "Pack",
     "short": "The loot you carry out of the dungeon.",
     "lines": [
-      "Fights, elites, chests and mystery rooms put Bait, Essence and scrap in your pack.",
+      "Rooms put Bait, Essence and scrap in your pack. Foes may also drop a shard: bosses always, elites often.",
       "Head home or beat the boss and you keep all of it. A defeat keeps half, rounded up.",
       "Experience and the run's supply are safe. They never go in the pack.",
       "A run left open when the day ends counts as a defeat, unless it is resting at the camp."
@@ -1414,7 +1414,7 @@
     "id": "cache",
     "title": "Cache",
     "short": "A free chest. Nothing guards it.",
-    "lines": ["A cache puts 1 Bait and 1 scrap in your pack."],
+    "lines": ["A cache puts 1 Bait and 3 scrap in your pack."],
     "section": "dungeon"
   },
   {
@@ -1458,7 +1458,7 @@
     "short": "One mighty foe, at boss strength.",
     "lines": [
       "Found in the Undercroft, where a carved door can add one.",
-      "Beat it for 1 Essence, 2 scrap and a keepsake."
+      "Beat it for 1 Essence, 5 scrap and a keepsake."
     ],
     "section": "dungeon"
   },
@@ -1497,10 +1497,10 @@
   {
     "id": "landmark",
     "title": "Landmark",
-    "short": "Every 7th depth. Beating its boss drops gear for sure.",
+    "short": "Every 7th depth. Beating its boss pays extra and drops better gear.",
     "lines": [
       "Landmark depths are 7, 14, 21 and so on.",
-      "Beat the floor boss on one to get a gear drop for certain, with better odds of rare and epic gear.",
+      "Beat the floor boss on one for better odds of rare and epic gear than any other depth.",
       "It also pays extra Essence, scrap and a glimmer."
     ],
     "section": "dungeon"
@@ -1594,7 +1594,10 @@
     "short": "Your whole team is 30% slower.",
     "lines": [],
     "section": "dungeon",
-    "visual": { "kind": "glyph", "id": "mud" }
+    "visual": {
+      "kind": "glyph",
+      "id": "mud"
+    }
   },
   {
     "id": "keepsake-wayfarer-charm",
@@ -1672,14 +1675,17 @@
     "id": "event-glowing-pool",
     "title": "Glowing Pool",
     "short": "Two choices: Drink or Fill a flask.",
-    "lines": ["Drink: Every creature heals 25% of its max HP.", "Fill a flask: You gain 1 Bait."],
+    "lines": [
+      "Drink: Every creature heals 25% of its max HP.",
+      "Fill a flask: You gain 1 Bait and 2 scrap."
+    ],
     "section": "dungeon"
   },
   {
     "id": "event-loose-stones",
     "title": "Loose Stones",
     "short": "Two choices: Dig or Walk on.",
-    "lines": ["Dig: 60%: 2 scrap. 40%: every creature loses 15% HP.", "Walk on: You gain 1 Bait."],
+    "lines": ["Dig: 60%: 6 scrap. 40%: every creature loses 15% HP.", "Walk on: You gain 2 scrap."],
     "section": "dungeon"
   },
   {
@@ -1687,8 +1693,8 @@
     "title": "Sleeping Beetle",
     "short": "Two choices: Take one coin or Take the pile.",
     "lines": [
-      "Take one coin: You gain 1 scrap.",
-      "Take the pile: 50%: 3 scrap. 50%: every creature loses 20% HP."
+      "Take one coin: You gain 2 scrap.",
+      "Take the pile: 50%: 7 scrap. 50%: every creature loses 20% HP."
     ],
     "section": "dungeon"
   },
@@ -1697,8 +1703,8 @@
     "title": "Old Shrine",
     "short": "Two choices: Make an offering or Bow and walk on.",
     "lines": [
-      "Make an offering: Every creature loses 15% HP. You gain a keepsake.",
-      "Bow and walk on: Nothing happens."
+      "Make an offering: Every creature loses 15% HP. You gain 2 scrap and a keepsake.",
+      "Bow and walk on: You gain 1 scrap."
     ],
     "section": "dungeon"
   },
@@ -1707,8 +1713,8 @@
     "title": "Lost Satchel",
     "short": "Two choices: Peek inside or Shake it out.",
     "lines": [
-      "Peek inside: You gain 1 Bait.",
-      "Shake it out: 50%: 2 Bait and 1 scrap. 50%: nothing."
+      "Peek inside: You gain 2 scrap.",
+      "Shake it out: 50%: 6 scrap and 1 Bait. 50%: nothing."
     ],
     "section": "dungeon"
   },
@@ -1717,8 +1723,8 @@
     "title": "Echoing Well",
     "short": "Two choices: Call down or Drop in a coin.",
     "lines": [
-      "Call down: Every creature heals 20% of its max HP.",
-      "Drop in a coin: 30%: a keepsake. 70%: nothing."
+      "Call down: Every creature heals 20% of its max HP. You gain 1 scrap.",
+      "Drop in a coin: 30%: 7 scrap and a keepsake. 70%: nothing."
     ],
     "section": "dungeon"
   },
@@ -1727,8 +1733,8 @@
     "title": "Mossy Bridge",
     "short": "Two choices: Cross slowly or Run across.",
     "lines": [
-      "Cross slowly: You gain 1 Bait.",
-      "Run across: 60%: 1 Essence. 40%: every creature loses 20% HP."
+      "Cross slowly: You gain 2 scrap.",
+      "Run across: 60%: 1 Essence and 5 scrap. 40%: every creature loses 20% HP."
     ],
     "section": "dungeon"
   },
@@ -1737,8 +1743,8 @@
     "title": "Mushroom Ring",
     "short": "Two choices: Pick a few or Dance in the ring.",
     "lines": [
-      "Pick a few: You gain 1 scrap.",
-      "Dance in the ring: 50%: every creature heals 30% HP. 50%: every creature loses 10% HP."
+      "Pick a few: You gain 2 scrap.",
+      "Dance in the ring: 50%: every creature heals 30% HP and you gain 5 scrap. 50%: every creature loses 10% HP."
     ],
     "section": "dungeon"
   },
@@ -1749,7 +1755,8 @@
     "lines": [
       "A creature earns explorer XP from its own trips, and more from longer ones.",
       "Each rank makes its trips a little shorter. Ranks open places, the 24 hour trip and better choices.",
-      "Your slots come from all your creatures' ranks added together."
+      "Your slots come from all your creatures' ranks added together.",
+      "Each new rank gives that creature a one-time gift: Bait and parts, later shards and a gear piece of its element."
     ],
     "section": "expeditions"
   },
@@ -1830,7 +1837,7 @@
     "title": "Weekly special",
     "short": "One place gets a twist each week.",
     "lines": [
-      "Trips that start there that week get the twist, such as more parts or an extra catch roll.",
+      "Trips that start there that week get the twist, such as more parts or one more hour of finds.",
       "In Festival weeks the special is the Festival Grounds."
     ],
     "section": "expeditions"
@@ -1869,9 +1876,9 @@
   {
     "id": "supply-lure",
     "title": "Lure",
-    "short": "Draws creatures, and new ones.",
+    "short": "More creatures, and likelier new species.",
     "lines": [
-      "Raises the chance that a trip brings a creature, and that it is a species you lack.",
+      "More creatures on a trip, and likelier new species. Higher tiers do more.",
       "Made in the Workshop from Bait and a little scrap.",
       "Comes in three tiers: Plain, Sweet and Golden."
     ],
@@ -1880,9 +1887,9 @@
   {
     "id": "supply-map-scrap",
     "title": "Map scrap",
-    "short": "One or more extra catches.",
+    "short": "A better route: more of everything.",
     "lines": [
-      "Adds extra catch rolls to one trip, and always at least one.",
+      "A better route: more of everything a trip finds, in the same hours. Higher tiers do more.",
       "Comes in three tiers: Map Scrap, Inked Map and Trail Atlas."
     ],
     "section": "expeditions"
@@ -1892,17 +1899,17 @@
     "title": "Lantern",
     "short": "Lights the way to the deeper area.",
     "lines": [
-      "Opens the deeper area, even without stars.",
-      "Handy at Moonlit Reef, where the rarest creatures wait."
+      "Opens the deeper area without stars and makes creatures from there likelier. Higher tiers do more.",
+      "A finished trip may bring one more creature, always from the deeper area. Better lanterns make it likelier."
     ],
     "section": "expeditions"
   },
   {
     "id": "supply-satchel",
     "title": "Satchel",
-    "short": "More parts, and more finds.",
+    "short": "More parts, and sometimes glimmer.",
     "lines": [
-      "Adds to the parts the trip brings home and helps it find a supply.",
+      "Parts are every crafting ingredient: scrap, shards and glimmer. A satchel brings more home. Higher tiers do more.",
       "Comes in three tiers, from the Small Satchel to the Explorer's Pack."
     ],
     "section": "expeditions"
@@ -1935,6 +1942,17 @@
     "lines": [
       "Takes 1 to 6 hours by tier. The creature needs Crafting level 1, 3 or 5.",
       "Costs scrap, shards for some tiers and, for a lure, Bait. One supply per job."
+    ],
+    "section": "workshop"
+  },
+  {
+    "id": "job-convert",
+    "title": "Refine and recycle",
+    "short": "Turns supplies into better supplies, or back into parts.",
+    "lines": [
+      "Refine: 3 supplies of one kind and tier become 1 of the next tier. It needs the Crafting level of what it makes.",
+      "Recycle: 1 good or great supply gives back a few parts, less than half of what it cost. Never any Bait.",
+      "The supplies are taken when the job starts. The result is yours when you claim it."
     ],
     "section": "workshop"
   },

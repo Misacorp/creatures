@@ -2,7 +2,7 @@ import { GLOSSARY_IDS } from '@creatures/game';
 import type { Creature } from './api';
 import { creatureName } from './game';
 import { glyphOrUnknown } from './glyphs';
-import { essenceCount, partCountItems } from './count-items';
+import { conversionCountItems, essenceCount, partCountItems } from './count-items';
 import { ExperienceGainRow } from './ExperienceGainRow';
 import { ItemFrame, ItemSprite, ItemThumb, PartsList, RarityTag } from './GearArt';
 import { GlossaryTag } from './Glossary';
@@ -61,6 +61,23 @@ function DismantleRow({ result }: { result: Extract<JobResult, { kind: 'dismantl
       ) : (
         <CountBadgeList items={gave} label="Became" class="gives jr-gives" />
       )}
+    </div>
+  );
+}
+
+/** Row 1 of a refine or recycle: what went in, an arrow, and what came out, all as count badges. */
+function ConvertRow({ result }: { result: Extract<JobResult, { kind: 'convert' }> }) {
+  const gave = conversionCountItems(result.gave);
+  return (
+    <div class="jr-row">
+      <CountBadgeList
+        items={conversionCountItems(result.took)}
+        label="Used"
+        class="gives jr-gives"
+      />
+      <Chevron />
+      <span class="visually-hidden">became</span>
+      <CountBadgeList items={gave} label="Made" class="gives jr-gives" />
     </div>
   );
 }
@@ -151,6 +168,8 @@ function Outcome({ result, items }: { result: JobResult; items: readonly GearIte
           </p>
         </>
       );
+    case 'convert':
+      return null;
     case 'retired':
       return (
         <>
@@ -187,8 +206,11 @@ export function JobReveal({
   onDismiss: () => void;
 }) {
   const { frame, done } = useRevealSequence(0);
-  const title = result.kind === 'retired' ? 'Old job over' : `${jobVerb(result.kind)} finished`;
-  const dismantled = result.kind === 'dismantle';
+  const title =
+    result.kind === 'retired'
+      ? 'Old job over'
+      : `${jobVerb(result.kind, result.kind === 'convert' ? result : {})} finished`;
+  const rowOnly = result.kind === 'dismantle' || result.kind === 'convert';
   return (
     <RevealShell
       id="job-reveal-heading"
@@ -200,6 +222,8 @@ export function JobReveal({
     >
       {result.kind === 'dismantle' ? (
         <DismantleRow result={result} />
+      ) : result.kind === 'convert' ? (
+        <ConvertRow result={result} />
       ) : (
         <RevealStage
           frame={frame}
@@ -224,7 +248,7 @@ export function JobReveal({
           }
         />
       )}
-      <RevealLater done={done || dismantled}>
+      <RevealLater done={done || rowOnly}>
         <Outcome result={result} items={items} />
         <Worker result={result} creatures={creatures} />
       </RevealLater>

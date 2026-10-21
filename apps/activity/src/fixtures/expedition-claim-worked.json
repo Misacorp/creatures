@@ -15,15 +15,45 @@
           "about": "Every hit on the wearer does less damage.",
           "idle": false
         }
+      },
+      {
+        "species": "coralynx",
+        "shiny": false,
+        "firstOnServer": true,
+        "outcome": "new",
+        "talent": {
+          "id": "lance-practice",
+          "name": "Lance Practice",
+          "golden": false,
+          "text": "Strike +14%",
+          "about": "The strike of the wearer's ability does more damage.",
+          "idle": false
+        }
       }
     ],
     "loot": {
       "gear": [],
       "converted": [],
       "parts": {
-        "scrap": 5
+        "scrap": 7,
+        "tide-shard": 3,
+        "glimmer": 3
       },
-      "blueprints": []
+      "blueprints": [
+        {
+          "baseId": "tidecallers-crown",
+          "duplicate": false
+        },
+        {
+          "baseId": "bogkeepers-mantle",
+          "duplicate": false
+        },
+        {
+          "baseId": "firstfoot-cap",
+          "duplicate": false
+        }
+      ],
+      "supplies": ["map-scrap-basic", "map-scrap-basic", "lantern-basic"]
     },
     "pushOn": {
       "goalId": "forage",
@@ -32,10 +62,26 @@
       "outcome": "worked"
     },
     "xp": {
-      "gained": 300,
-      "total": 2200,
+      "gained": 900,
+      "total": 2800,
       "rank": 4,
       "rankBefore": 3
+    },
+    "rankGifts": [
+      {
+        "rank": 4,
+        "bait": 20,
+        "parts": {
+          "scrap": 8,
+          "ember-shard": 2
+        },
+        "supplies": [],
+        "gear": [],
+        "converted": []
+      }
+    ],
+    "slotUnlocked": {
+      "total": 2
     },
     "experience": {
       "creatureId": "00000000-0000-4000-8400-000000000002",
@@ -48,19 +94,6 @@
       "waiting": false,
       "gold": false
     },
-    "rankGifts": [
-      {
-        "rank": 4,
-        "bait": 4,
-        "parts": {
-          "scrap": 2
-        },
-        "supplies": []
-      }
-    ],
-    "slotUnlocked": {
-      "total": 2
-    },
     "familiarity": {
       "stars": 0,
       "starsBefore": 0,
@@ -71,13 +104,23 @@
         "entryId": "tide-first-pool",
         "set": "tide-ledger",
         "setComplete": false
+      },
+      {
+        "entryId": "tide-low-water",
+        "set": "tide-ledger",
+        "setComplete": false
+      },
+      {
+        "entryId": "tide-warm-stone",
+        "set": "tide-ledger",
+        "setComplete": true
       }
     ]
   },
   "state": {
     "serverNow": 1799830944002,
     "balances": {
-      "bait": 304,
+      "bait": 320,
       "essence": 0
     },
     "starterChosen": false,
@@ -90,6 +133,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -136,7 +180,7 @@
         },
         "explorer": {
           "rank": 4,
-          "xp": 2200,
+          "xp": 2800,
           "nextRankXp": 4500,
           "trips": 1
         },
@@ -167,6 +211,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -244,6 +289,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -321,6 +367,7 @@
         "level": 1,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -407,6 +454,97 @@
             "toSpecies": "drizzlewt"
           }
         }
+      },
+      {
+        "id": "00000000-0000-4000-8400-000000000008",
+        "species": "coralynx",
+        "line": "coralynx",
+        "level": 1,
+        "levelCap": 30,
+        "fusionCount": 0,
+        "fusionPoints": 0,
+        "shiny": false,
+        "nickname": null,
+        "away": false,
+        "origin": "expedition",
+        "caughtAt": 1799830944002,
+        "quirk": "last-bite-sharer",
+        "lineSlot": 1,
+        "talents": {
+          "slots": [
+            {
+              "slot": 1,
+              "opensAt": 1,
+              "open": true,
+              "talent": {
+                "id": "lance-practice",
+                "name": "Lance Practice",
+                "golden": false,
+                "text": "Strike +14%",
+                "about": "The strike of the wearer's ability does more damage.",
+                "idle": false
+              }
+            },
+            {
+              "slot": 2,
+              "opensAt": 20,
+              "open": false,
+              "talent": null
+            },
+            {
+              "slot": 3,
+              "opensAt": 25,
+              "open": false,
+              "talent": null
+            }
+          ],
+          "signature": null,
+          "book": [
+            {
+              "id": "lance-practice",
+              "name": "Lance Practice",
+              "golden": false,
+              "text": "Strike +14%",
+              "about": "The strike of the wearer's ability does more damage.",
+              "idle": false,
+              "slot": 1
+            }
+          ]
+        },
+        "stats": {
+          "hp": 120,
+          "atk": 50,
+          "spd": 35
+        },
+        "statsWithGear": {
+          "hp": 120,
+          "atk": 50,
+          "spd": 35
+        },
+        "dodgeBp": 0,
+        "gear": [],
+        "busy": null,
+        "ability": {
+          "id": "coral-lance",
+          "unlocked": false,
+          "unlockLevel": 10
+        },
+        "explorer": {
+          "rank": 1,
+          "xp": 0,
+          "nextRankXp": 200,
+          "trips": 0
+        },
+        "exp": 0,
+        "expNeeded": 27,
+        "waiting": false,
+        "ribbons": 0,
+        "nextUnlock": {
+          "level": 7,
+          "name": "Scarf"
+        },
+        "ribbon": null,
+        "treatCost": 4
       }
     ],
     "pending": [],
@@ -420,6 +558,7 @@
         "kit": ["lure-great"],
         "destination": "tidepools",
         "twist": null,
+        "weather": null,
         "rolls": 1,
         "cost": 0,
         "treat": false,
@@ -444,15 +583,45 @@
                 "about": "Every hit on the wearer does less damage.",
                 "idle": false
               }
+            },
+            {
+              "species": "coralynx",
+              "shiny": false,
+              "firstOnServer": true,
+              "outcome": "new",
+              "talent": {
+                "id": "lance-practice",
+                "name": "Lance Practice",
+                "golden": false,
+                "text": "Strike +14%",
+                "about": "The strike of the wearer's ability does more damage.",
+                "idle": false
+              }
             }
           ],
           "loot": {
             "gear": [],
             "converted": [],
             "parts": {
-              "scrap": 5
+              "scrap": 7,
+              "tide-shard": 3,
+              "glimmer": 3
             },
-            "blueprints": []
+            "blueprints": [
+              {
+                "baseId": "tidecallers-crown",
+                "duplicate": false
+              },
+              {
+                "baseId": "bogkeepers-mantle",
+                "duplicate": false
+              },
+              {
+                "baseId": "firstfoot-cap",
+                "duplicate": false
+              }
+            ],
+            "supplies": ["map-scrap-basic", "map-scrap-basic", "lantern-basic"]
           },
           "pushOn": {
             "goalId": "forage",
@@ -461,10 +630,26 @@
             "outcome": "worked"
           },
           "xp": {
-            "gained": 300,
-            "total": 2200,
+            "gained": 900,
+            "total": 2800,
             "rank": 4,
             "rankBefore": 3
+          },
+          "rankGifts": [
+            {
+              "rank": 4,
+              "bait": 20,
+              "parts": {
+                "scrap": 8,
+                "ember-shard": 2
+              },
+              "supplies": [],
+              "gear": [],
+              "converted": []
+            }
+          ],
+          "slotUnlocked": {
+            "total": 2
           },
           "experience": {
             "creatureId": "00000000-0000-4000-8400-000000000002",
@@ -477,19 +662,6 @@
             "waiting": false,
             "gold": false
           },
-          "rankGifts": [
-            {
-              "rank": 4,
-              "bait": 4,
-              "parts": {
-                "scrap": 2
-              },
-              "supplies": []
-            }
-          ],
-          "slotUnlocked": {
-            "total": 2
-          },
           "familiarity": {
             "stars": 0,
             "starsBefore": 0,
@@ -500,6 +672,16 @@
               "entryId": "tide-first-pool",
               "set": "tide-ledger",
               "setComplete": false
+            },
+            {
+              "entryId": "tide-low-water",
+              "set": "tide-ledger",
+              "setComplete": false
+            },
+            {
+              "entryId": "tide-warm-stone",
+              "set": "tide-ledger",
+              "setComplete": true
             }
           ]
         },
@@ -519,7 +701,8 @@
         "kit": ["lure-great", "map-scrap-basic"],
         "destination": "tidepools",
         "twist": null,
-        "rolls": 2,
+        "weather": null,
+        "rolls": 1,
         "cost": 0,
         "treat": false,
         "startedAt": 1799733600000,
@@ -534,7 +717,7 @@
           "pushOn": {
             "goalId": "shortcut",
             "risk": "risky",
-            "oddsBp": 6100,
+            "oddsBp": 6480,
             "outcome": "failed"
           }
         },
@@ -543,7 +726,7 @@
           "goalId": "shortcut",
           "startedAt": 1799775072000,
           "endsAt": 1799782272000,
-          "oddsBp": 6100
+          "oddsBp": 6480
         }
       }
     ],
@@ -560,9 +743,18 @@
       }
     },
     "supplies": {
-      "lure-great": 1
+      "lantern-basic": 1,
+      "lure-great": 1,
+      "map-scrap-basic": 2
     },
     "serverFirsts": [
+      {
+        "kind": "catch",
+        "species": "coralynx",
+        "at": 1799830944002,
+        "mine": true,
+        "holders": ["Player 3"]
+      },
       {
         "kind": "catch",
         "species": "mistnewt",

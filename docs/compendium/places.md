@@ -30,13 +30,13 @@ Push-on goals are not tied to one place in the data. Every trip can offer them w
 
 | Goal                 | Risk `(content)` | Earliest rank | Trip lengths             | Reward kind                         | Shipped flavour                                                                    |
 | -------------------- | ---------------- | ------------- | ------------------------ | ----------------------------------- | ---------------------------------------------------------------------------------- |
-| Linger a while       | Safe             | 4             | Short, medium, long, day | One more catch roll                 | "There is still something rustling nearby. One more look cannot hurt."             |
+| Linger a while       | Safe             | 4             | Short, medium, long, day | A chance of one more creature       | "There is still something rustling nearby. One more look cannot hurt."             |
 | Forage around        | Safe             | 1             | Short, medium, long, day | Scrap                               | "Berries, bark and bits of metal: the ground is full of useful things."            |
 | Take field notes     | Safe             | 1             | Short, medium, long, day | A journal page and some explorer XP | "Sit down, look closely and write it all down while it is fresh."                  |
 | Scout ahead          | Safe             | 2             | Medium, long, day        | A supply                            | "A faint trail leads on. Someone left supplies along it."                          |
 | Take the shortcut    | Risky            | 3             | Medium, long, day        | A rare gear piece                   | "A narrow gap in the rocks. It could be a treasure road, or a trap."               |
 | Open the lost cache  | Risky            | 3             | Medium, long, day        | A blueprint                         | "A sealed chest with an old symbol on the lid. Nobody knows what is inside."       |
-| Press deeper         | Risky            | 4             | Long, day                | Extra catch rolls and a supply      | "Past the last marker the creatures grow thick. So does the danger."               |
+| Press deeper         | Risky            | 4             | Long, day                | Chances at creatures and a supply   | "Past the last marker the creatures grow thick. So does the danger."               |
 | Break into the vault | Risky            | 6             | Long, day                | An epic gear piece                  | "A door older than any road. What is behind it is worth a great deal, or nothing." |
 
 `(content: push-on-goals.json)`. The glossary also says a goal can be "Very risky". The data has only "safe" and "risky" (`README.md`, contradiction 6).
@@ -513,7 +513,7 @@ From `glossary.json`, entry `destination-moonlit-reef`:
 
 **Flavour line** `(content)`: "The lanterns are lit and the music has started: the whole meadow is a party."
 
-**Festival:** every fifth raid week is a Festival. In a Festival week, this place is the weekly special, with the "festival-bounty" twist: two extra catch rolls on every trip `(content: weekly-specials.json, glossary.json "festival")`.
+**Festival:** every fifth raid week is a Festival. In a Festival week, this place is the weekly special, with the "festival-bounty" twist: two more hours of finds on every trip `(content: weekly-specials.json, glossary.json "festival")`.
 
 ### Mood and climate
 

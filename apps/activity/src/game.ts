@@ -6,9 +6,14 @@ import {
   GLOSSARY_IDS,
   RULES,
   content,
+  fuseInto,
+  fusionLevel,
+  fusionProgress,
+  fusionThreshold,
   lore,
   quirkText,
   type CreatureSpecies,
+  type Rarity,
 } from '@creatures/game';
 import { ApiError, type CatchResult, type Creature, type ServerFirst } from './api';
 
@@ -141,6 +146,32 @@ export function fusionStars(count: number): string {
   return '★'.repeat(filled) + '☆'.repeat(RULES.fusion.maxFusions - filled);
 }
 
+/**
+ * A creature's fusion in a few words: "Fusion 2 · 4/6" (level, then points toward the next level) or
+ * "Fusion 5 · max". Fusion stays quiet: the level and the progress, nothing more.
+ */
+export function fusionProgressText(points: number): string {
+  const { level, into, need } = fusionProgress(points);
+  if (need === null) return `Fusion ${String(level)} · max`;
+  const floor = fusionThreshold(level);
+  return `Fusion ${String(level)} · ${String(floor + into)}/${String(floor + need)}`;
+}
+
+/** What fusing a duplicate of `rarity` into a creature with `points` gives: "+2 fusion", "+2 fusion · level up". */
+export function fusionGain(
+  points: number,
+  rarity: Rarity,
+): { points: number; levelsUp: boolean; text: string } {
+  const gained = fuseInto(points, rarity);
+  const added = gained === null ? 0 : gained - points;
+  const levelsUp = gained !== null && fusionLevel(gained) > fusionLevel(points);
+  return {
+    points: added,
+    levelsUp,
+    text: `+${String(added)} fusion${levelsUp ? ' · level up' : ''}`,
+  };
+}
+
 /** The badges of a catch, in display order, with the glossary entry each one explains (null: nothing to explain). */
 export function catchBadgeTags(entry: CatchResult): { text: string; entry: string | null }[] {
   const badges: { text: string; entry: string | null }[] = [];
@@ -238,6 +269,8 @@ const ERROR_TEXT: Record<string, string> = {
   skill_too_low: 'That creature needs a higher Crafting level for this supply.',
   base_locked: 'That creature needs a higher Crafting level to make this item.',
   invalid_supply: 'That supply cannot be crafted.',
+  invalid_recipe: 'That recipe does not exist.',
+  insufficient_supplies: 'You do not have the supplies for that.',
   // Expeditions.
   destination_closed: 'That place is closed to this explorer right now.',
   rank_too_low: 'That explorer is not a high enough rank for that.',

@@ -592,8 +592,9 @@ describe('trips', () => {
 
   it('fewer shards and supplies on a bad day, in the loot the trip rolls', () => {
     const ctx = {
-      length: 'long' as const,
-      shardElement: 'tide' as const,
+      ticks: 15,
+      fixedParts: true,
+      place: { element: 'tide' as const, crossroads: false },
       role: 'setter' as const,
       kit: [],
       stars: 0,
@@ -606,11 +607,7 @@ describe('trips', () => {
       let shards = 0;
       let supplies = 0;
       for (let i = 0; i < 3000; i++) {
-        const loot = rollTripLoot(
-          rng,
-          { ...ctx, ...extra },
-          { completed: true, caught: 0, rolls: 1 },
-        );
+        const loot = rollTripLoot(rng, { ...ctx, ...extra });
         shards += loot.parts['tide-shard'] ?? 0;
         supplies += loot.supplies.length;
       }
@@ -627,10 +624,11 @@ describe('trips', () => {
   });
 
   it('Lantern Light doubles the journal chance and never goes above certain', () => {
-    expect(journalChanceBp('long', null)).toBe(1_000);
-    expect(journalChanceBp('long', null, 10_000)).toBe(2_000);
-    expect(journalChanceBp('long', null, 1_000_000)).toBe(10_000);
-    expect(journalChanceBp('long', null, -20_000)).toBe(0);
+    const one = RULES.expeditions.tick.journalBp;
+    expect(journalChanceBp(null)).toBe(one);
+    expect(journalChanceBp(null, 10_000)).toBe(one * 2);
+    expect(journalChanceBp(null, 2_000_000)).toBe(10_000);
+    expect(journalChanceBp(null, -20_000)).toBe(0);
   });
 });
 

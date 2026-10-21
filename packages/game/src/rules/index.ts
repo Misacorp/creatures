@@ -22,3 +22,6 @@ export * from './dungeon-map';
 export * from './dungeon-run';
 export * from './economy';
 export * from './xp-boost';
+export * from './conversions';
+export * from './trip-ev';
+export * from './trip-boost';

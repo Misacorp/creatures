@@ -9,7 +9,7 @@ import { content } from '../content';
 import type { Element, ReactionDef, Role } from '../content/schema';
 import { chance, int, pickWeighted, type Rng } from '../rng';
 import { RULES } from './config';
-import { rollDungeonItem, shardOf, type GearItem, type PartsBundle } from './gear';
+import { rollDungeonItem, type GearItem, type PartsBundle } from './gear';
 import { SUPPLY_KINDS, type SupplyTier } from '../content/expedition-schema';
 
 /** True when `depth` is a landmark: every `RULES.dungeon.landmarkEvery`-th depth. */
@@ -304,9 +304,6 @@ export function rollDungeonLoot(
   const parts: PartsBundle = {};
   const gear: DungeonLoot['gear'] = [];
   const supplies: string[] = [];
-  if (payout.bossCleared && chance(rng, RULES.dungeon.bossShardBp, 10_000)) {
-    parts[shardOf(bossElement)] = 1;
-  }
   if (payout.fullClear) {
     const lucky = chance(rng, RULES.dungeon.fullClear.gearBp, 10_000);
     if (lucky || payout.landmark) {

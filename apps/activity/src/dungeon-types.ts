@@ -115,6 +115,8 @@ export interface DungeonPack {
   bait: number;
   essence: number;
   scrap: number;
+  /** Shards the rooms dropped, by part kind (`ember-shard`); absent when none. */
+  shards?: Partial<Record<`${Element}-shard`, number>>;
 }
 
 /** A creature in the row of an open run. */

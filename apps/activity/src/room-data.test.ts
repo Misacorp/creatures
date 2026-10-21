@@ -100,6 +100,7 @@ function creature(over: Partial<Creature>): Creature {
     level: 12,
     levelCap: 20,
     fusionCount: 0,
+    fusionPoints: 0,
     shiny: true,
     nickname: 'Bubbles',
     away: false,

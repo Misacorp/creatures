@@ -24,7 +24,7 @@
  * `dungeon-team-draft.json` come from the all-at-once run that no longer exists: they are kept, never
  * captured.
  */
-import { createSeededRng } from '@creatures/game';
+import { RULES, createSeededRng } from '@creatures/game';
 import { branchesScenarioOptions, runBranchesScenario } from './branches-scenario';
 import { creaturesScenarioOptions, runCreaturesScenario } from './creatures-scenario';
 import { dungeonScenarioOptions, runDungeonScenario } from './dungeon-scenario';
@@ -81,6 +81,35 @@ function seededRngs(set: string) {
 /** `named('a', 'b')` is `{ a: 'a.json', b: 'b.json' }`: the capture key is the file name. */
 const named = (...keys: string[]): Record<string, string> =>
   Object.fromEntries(keys.map((k) => [k, `${k}.json`]));
+
+/**
+ * Runs a scenario with some `RULES.expeditions` values set (`'tick.xp'`, `'lengths.long.ticks'`) and puts
+ * them back afterwards, even when it fails.
+ */
+async function withRules<T>(values: Record<string, number>, run: () => Promise<T>): Promise<T> {
+  const holder = (path: string): { target: Record<string, number>; key: string } => {
+    const parts = path.split('.');
+    let target = RULES.expeditions as unknown as Record<string, unknown>;
+    for (const part of parts.slice(0, -1)) target = target[part] as Record<string, unknown>;
+    return { target: target as Record<string, number>, key: parts.at(-1) as string };
+  };
+  const before = Object.keys(values).map((path) => {
+    const { target, key } = holder(path);
+    return { path, was: target[key] as number };
+  });
+  for (const [path, value] of Object.entries(values)) {
+    const { target, key } = holder(path);
+    target[key] = value;
+  }
+  try {
+    return await run();
+  } finally {
+    for (const { path, was } of before) {
+      const { target, key } = holder(path);
+      target[key] = was;
+    }
+  }
+}
 
 /** Several scenario runs (each in its own guild) as one capture. */
 function merge(runs: Captured[]): Captured {
@@ -173,10 +202,26 @@ export const FIXTURE_SETS: readonly FixtureSet[] = [
     nibble: '4',
     run: () => {
       const { draw, options } = tripsScenarioOptions();
-      return runCore(nextGuild(), (ctx) => runTripsScenario(ctx, draw), {
-        ...seededRngs('expeditions'),
-        ...options,
-      });
+      // The scenario plays a trip of one tick that is worth the XP of the old 12 hour trip and whose every
+      // loot table is certain (a shard, scrap, glimmer, a blueprint, a supply), so the claims keep the
+      // small, known shape the client tests read; the trip rng is a switch, so one tick is one page too.
+      return withRules(
+        {
+          'lengths.long.ticks': 1,
+          'tick.xp': 300,
+          'tick.scrapBp': 10_000,
+          'tick.shardBp': 10_000,
+          'tick.glimmerBp': 10_000,
+          'tick.blueprintBp': 10_000,
+          'tick.supplyBp': 10_000,
+          'tick.gearBp': 0,
+        },
+        () =>
+          runCore(nextGuild(), (ctx) => runTripsScenario(ctx, draw), {
+            ...seededRngs('expeditions'),
+            ...options,
+          }),
+      );
     },
     files: {
       responses: named(
@@ -210,17 +255,29 @@ export const FIXTURE_SETS: readonly FixtureSet[] = [
         ...seededRngs('gear'),
         gearRng: createSeededRng('fixture-gear'),
       });
-      // Shard, glimmer, blueprint (and its base), then a found supply (and its kind).
-      const script = [0, 0, 0, 0, 0, 0, 0];
-      let i = 0;
-      const rest = createSeededRng('fixture-exp');
-      const expedition = await runCore(nextGuild(), (ctx) => runExpeditionScenario(ctx), {
-        ...seededRngs('gear'),
-        // A catch that is certain (a new creature), so the claim shows a catch next to the loot.
-        rng: scriptedThenSeeded([0, 0, 0, 1], 'fixture-catch'),
-        tripRng: createSeededRng('fixture-trip'),
-        gearRng: { nextU32: () => script[i++] ?? rest.nextU32() },
+      // A 12 hour trip is 15 ticks: the chances of a glimmer and a blueprint are raised (and no gear piece
+      // drops) so that the claim shows a shard, a glimmer, a blueprint and a found supply next to the scrap.
+      const tick = RULES.expeditions.tick as unknown as Record<string, number>;
+      const before = { ...tick };
+      Object.assign(tick, {
+        shardBp: 3_000,
+        glimmerBp: 2_500,
+        blueprintBp: 1_500,
+        supplyBp: 1_500,
+        gearBp: 0,
       });
+      let expedition: Captured;
+      try {
+        expedition = await runCore(nextGuild(), (ctx) => runExpeditionScenario(ctx), {
+          ...seededRngs('gear'),
+          // A catch that is certain (a new creature), so the claim shows a catch next to the loot.
+          rng: scriptedThenSeeded([0, 0, 0, 1], 'fixture-catch'),
+          tripRng: createSeededRng('fixture-trip'),
+          gearRng: createSeededRng('fixture-exp'),
+        });
+      } finally {
+        Object.assign(tick, before);
+      }
       return merge([main, converted, expedition]);
     },
     files: {

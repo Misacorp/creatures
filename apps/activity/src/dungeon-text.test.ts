@@ -250,6 +250,11 @@ describe('the pack words', () => {
     expect(packText({ bait: 2, essence: 0, scrap: 1 })).toBe('2 Bait · 1 Scrap');
     expect(packText({ bait: 0, essence: 1, scrap: 0 })).toBe('1 Essence');
     expect(packText(EMPTY_PACK)).toBe('nothing');
+    // Shards are in the pack too, by element, after the plain kinds.
+    const shards = { ...EMPTY_PACK, bait: 1, shards: { 'ember-shard': 1, 'tide-shard': 2 } };
+    expect(packText(shards)).toBe('1 Bait · 1 Ember Shard · 2 Tide Shard');
+    expect(isPackEmpty({ ...EMPTY_PACK, shards: { 'grove-shard': 1 } })).toBe(false);
+    expect(isPackEmpty({ ...EMPTY_PACK, shards: {} })).toBe(true);
     expect(isPackEmpty(EMPTY_PACK)).toBe(true);
     expect(isPackEmpty({ bait: 0, essence: 0, scrap: 1 })).toBe(false);
   });

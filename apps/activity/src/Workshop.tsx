@@ -230,6 +230,14 @@ export function Workshop({
             ...(treat ? { treat: true } : {}),
           })) !== undefined
         }
+        onConvert={async (recipeId, creatureId, treat) =>
+          (await actions.startJob({
+            kind: 'convert',
+            creatureId,
+            recipeId,
+            ...(treat ? { treat: true } : {}),
+          })) !== undefined
+        }
       />
     </div>
   );

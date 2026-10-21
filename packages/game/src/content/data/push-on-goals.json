@@ -108,13 +108,13 @@
     "extraHours": 2,
     "lengths": {
       "medium": {
-        "oddsBp": 4000
+        "oddsBp": 4600
       },
       "long": {
-        "oddsBp": 6100
+        "oddsBp": 6480
       },
       "day": {
-        "oddsBp": 7800
+        "oddsBp": 7990
       }
     },
     "reward": {
@@ -130,13 +130,13 @@
     "extraHours": 2,
     "lengths": {
       "medium": {
-        "oddsBp": 4500
+        "oddsBp": 5020
       },
       "long": {
-        "oddsBp": 6600
+        "oddsBp": 6850
       },
       "day": {
-        "oddsBp": 8200
+        "oddsBp": 8240
       }
     },
     "reward": {
@@ -152,10 +152,10 @@
     "extraHours": 3,
     "lengths": {
       "long": {
-        "oddsBp": 6600
+        "oddsBp": 7440
       },
       "day": {
-        "oddsBp": 8100
+        "oddsBp": 8610
       }
     },
     "reward": {
@@ -172,10 +172,10 @@
     "extraHours": 3,
     "lengths": {
       "long": {
-        "oddsBp": 3600
+        "oddsBp": 4260
       },
       "day": {
-        "oddsBp": 5600
+        "oddsBp": 6160
       }
     },
     "reward": {

@@ -31,13 +31,21 @@ const SPLASHET_STARRED = [0, 0x80000000, 0, 0, 1];
  * First again (already in the book), then Wet Footprints twice more.
  */
 export function creaturesScenarioOptions() {
+  // A short trip is two ticks: the first brings the Splashet, the second misses (one draw).
+  const MISS = [0x80000000];
   const catches = [
     ...SPLASHET,
+    ...MISS,
     ...SPLASHET,
+    ...MISS,
     ...SPLASHET,
+    ...MISS,
     ...SPLASHET,
+    ...MISS,
     ...SPLASHET_STARRED,
+    ...MISS,
     ...SPLASHET_STARRED,
+    ...MISS,
   ];
   const talents = [
     [0, 5], // the Cindle: Quick to Pounce

@@ -28,7 +28,11 @@ describe('the choice of a waiting duplicate', () => {
     expect(options.find((o) => o.recommended)?.label).toBe('Teach');
     // One creature of the line: no name on the rows, the fusion as stars, Release as its parts.
     expect(options.every((o) => o.who === null)).toBe(true);
-    expect(options[0]?.fusion).toEqual({ count: splashet?.fusionCount });
+    expect(options[0]?.fusion).toEqual({
+      count: splashet?.fusionCount,
+      gain: '+1 fusion · level up',
+      levelsUp: true,
+    });
     expect(options[2]?.pays?.map((p) => [p.key, p.amount])).toEqual([['scrap', 3]]);
     // Teach goes into the Talent Book: the request names the creature, never a slot.
     expect(options[1]?.request).toEqual({ choice: 'teach', creatureId: splashet?.id });

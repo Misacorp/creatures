@@ -7,7 +7,10 @@ import {
   nothingInLoot,
   pushOnLine,
   rankGiftViews,
+  setOutItems,
+  type SetOutItem,
   revealTone,
+  type RankGiftView,
   slotLine,
   starsView,
   xpView,
@@ -21,7 +24,6 @@ import type { GrantLoot } from './gear-types';
 import type { PendingCatch } from './talent-types';
 import { destinationName, explorerXp, lengthHours } from './trip-view';
 import type { CountItem } from './ui/CountBadge';
-import type { IconRef } from './icon-ref';
 import { experienceGain, explorerGain } from './xp-gain';
 import type { XpChange } from './xp-change';
 
@@ -32,6 +34,8 @@ export interface TripResultView {
   place: { id: string; name: string } | null;
   /** The trip's length in hours (absent for an old claim without its trip). */
   hours: number | null;
+  /** What the trip set out with (length, supplies, treat, weather, twist, push-on); empty for an old claim without its trip. */
+  setOut: SetOutItem[];
   /** A risky push-on that did not work out: the whole trip came to nothing. */
   failure: string | null;
   /** What the push-on did, when there was one. */
@@ -49,7 +53,7 @@ export interface TripResultView {
   growth: XpChange | null;
   stars: { stars: number; gained: boolean; trips: number } | null;
   slot: string | null;
-  gifts: { rank: number; title: string; lines: { key: string; icon: IconRef; text: string }[] }[];
+  gifts: RankGiftView[];
   journal: { title: string; text: string; set: string | null; setComplete: boolean }[];
 }
 
@@ -88,6 +92,7 @@ export function tripResultView(input: {
     place:
       trip === undefined ? null : { id: trip.destination, name: destinationName(trip.destination) },
     hours: trip === undefined ? null : lengthHours(trip.duration),
+    setOut: trip === undefined ? [] : setOutItems(trip, result),
     failure: failureLine(result),
     pushOn: pushOnLine(result),
     finds: tripFinds(result.catches, pending, creatures, settled),

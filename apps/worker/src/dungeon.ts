@@ -788,6 +788,7 @@ export class Dungeon {
       sql: this.sql,
       userId,
       rng: this.deps.rng,
+      gearRng: this.deps.gearRng,
       analytics: this.deps.analytics,
       bank: (tag, draw) =>
         grantDungeonChest(gearDepsOf(this.deps), userId, row.day, row.attempt, tag, draw),

@@ -1,5 +1,6 @@
 import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
+import { RULES } from '@creatures/game';
 import chooseFuse from '../../activity/src/fixtures/creatures-choose-fuse.json';
 import chooseRecommended from '../../activity/src/fixtures/creatures-choose-recommended.json';
 import chooseRelease from '../../activity/src/fixtures/creatures-choose-release.json';
@@ -80,7 +81,9 @@ describe('the creatures fixtures match what the server sends', () => {
     expect(recommendedAll.results.every((x) => x.auto)).toBe(true);
     expect(recommendedAll.state.pending).toHaveLength(0);
     // Slotting from the book costs the 10 Bait the rules say, and fills the slot (the scenario slots twice).
-    expect(slot.state.balances.bait).toBe(chooseTeach.state.balances.bait - 20);
+    // (The explorer's trips in between reach rank 2, whose one-time gift adds its Bait.)
+    const gift = RULES.expeditions.rank.gifts[0]?.bait ?? 0;
+    expect(slot.state.balances.bait).toBe(chooseTeach.state.balances.bait - 20 + gift);
     expect(slot.result.slot).toBe(1);
     // Creatures carry slots, the book and a golden entry; the Bigger Splash stayed in the book.
     const splashet = stateAfter.creatures.find((c) => c.species === 'splashet');

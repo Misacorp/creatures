@@ -13,6 +13,7 @@ import type {
   DungeonToday,
 } from './dungeon-types';
 import { nodeLevel } from './dungeon-map';
+import { partName } from './gear-view';
 import { errorText } from './game';
 
 /** One short plain message for every error code the dungeon routes send. */
@@ -227,16 +228,30 @@ const PACK_KINDS = [
   ['scrap', 'Scrap'],
 ] as const;
 
-/** True when the pack holds nothing. */
-export function isPackEmpty(pack: DungeonPack): boolean {
-  return pack.bait === 0 && pack.essence === 0 && pack.scrap === 0;
+/** The shards of a pack as [part kind, amount], without the empty ones. */
+export function packShardEntries(
+  pack: DungeonPack,
+): [keyof NonNullable<DungeonPack['shards']>, number][] {
+  return (
+    Object.entries(pack.shards ?? {}) as [keyof NonNullable<DungeonPack['shards']>, number][]
+  ).filter(([, n]) => n > 0);
 }
 
-/** What a pack holds, without the empty kinds: "2 Bait · 1 Scrap". Empty: "nothing". */
-export function packText(pack: DungeonPack): string {
-  const parts = PACK_KINDS.filter(([kind]) => pack[kind] > 0).map(
-    ([kind, name]) => `${String(pack[kind])} ${name}`,
+/** True when the pack holds nothing. */
+export function isPackEmpty(pack: DungeonPack): boolean {
+  return (
+    pack.bait === 0 && pack.essence === 0 && pack.scrap === 0 && packShardEntries(pack).length === 0
   );
+}
+
+/** What a pack holds, without the empty kinds: "2 Bait · 1 Scrap · 1 Ember Shard". Empty: "nothing". */
+export function packText(pack: DungeonPack): string {
+  const parts = [
+    ...PACK_KINDS.filter(([kind]) => pack[kind] > 0).map(
+      ([kind, name]) => `${String(pack[kind])} ${name}`,
+    ),
+    ...packShardEntries(pack).map(([kind, n]) => `${String(n)} ${partName(kind)}`),
+  ];
   return parts.length === 0 ? 'nothing' : parts.join(' · ');
 }
 

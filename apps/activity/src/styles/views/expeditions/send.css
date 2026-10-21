@@ -116,8 +116,12 @@ label.length-option:focus-within {
   margin: 0.75rem 0 0.25rem;
 }
 
-.haul-for {
+/* The trip's settings in a line: reading text, so the body font (the heading above is the pixel label). */
+.trip-summary {
   margin: 0 0 0.25rem;
+  color: var(--haze);
+  font-family: var(--body);
+  line-height: 1.5;
 }
 
 /* A trip's worth as pictures: icon over pips over a short word. */
@@ -250,4 +254,11 @@ label.length-option:focus-within {
 .send-button {
   width: 100%;
   white-space: normal;
+}
+
+/* The "+" marks of the haul strip: one to four, under the word. */
+.worth-plus {
+  display: block;
+  letter-spacing: -0.05em;
+  line-height: 1;
 }

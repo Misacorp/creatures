@@ -92,6 +92,23 @@
   line-height: 1.25;
 }
 
+/* A tagged unlock (a rank's gift): the words, then the tags wrapping inside the column. */
+.ptrack-unlock.tagged {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ptrack-tags {
+  display: flex;
+  flex: 1 0 100%;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .ptrack-unlock canvas.sprite {
   flex: none;
 }

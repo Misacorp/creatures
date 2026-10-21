@@ -14,6 +14,7 @@ import {
   allSpecies,
   destinationDef,
   familiarityStars,
+  fusionThreshold,
   gearBase,
   gearContent,
   int,
@@ -138,9 +139,10 @@ export function grantCreature(ctx: ToolCtx, body: Body<typeof GrantCreatureBodyS
       },
     ).id;
     ctx.sql.exec(
-      'UPDATE creatures SET level = ?, fusion_count = ?, exp = 0, ribbons = ? WHERE id = ?',
+      'UPDATE creatures SET level = ?, fusion_count = ?, fusion_points = ?, exp = 0, ribbons = ? WHERE id = ?',
       body.level ?? 1,
       body.fusion ?? 0,
+      fusionThreshold(body.fusion ?? 0),
       ribbonsForLevel(body.level ?? 1),
       creatureId,
     );
@@ -148,11 +150,13 @@ export function grantCreature(ctx: ToolCtx, body: Body<typeof GrantCreatureBodyS
     creatureId = existing.id;
     ctx.sql.exec(
       `UPDATE creatures SET species = ?,
-         level = COALESCE(?, level), fusion_count = COALESCE(?, fusion_count), shiny = COALESCE(?, shiny)
+         level = COALESCE(?, level), fusion_count = COALESCE(?, fusion_count),
+         fusion_points = COALESCE(?, fusion_points), shiny = COALESCE(?, shiny)
        WHERE id = ?`,
       species.id,
       body.level ?? null,
       body.fusion ?? null,
+      body.fusion === undefined ? null : fusionThreshold(body.fusion),
       body.shiny === undefined ? null : body.shiny ? 1 : 0,
       creatureId,
     );
@@ -175,10 +179,11 @@ export function setCreature(ctx: ToolCtx, body: Body<typeof SetCreatureBodySchem
   if (level > target.levelCap) throw new DevError(400, 'level_cap');
   // A level set by hand comes with the ribbons the level is past, and no banked experience.
   ctx.sql.exec(
-    'UPDATE creatures SET species = ?, level = ?, fusion_count = ?, exp = 0, ribbons = ? WHERE id = ?',
+    'UPDATE creatures SET species = ?, level = ?, fusion_count = ?, fusion_points = COALESCE(?, fusion_points), exp = 0, ribbons = ? WHERE id = ?',
     target.id,
     level,
     body.fusion ?? row.fusion_count,
+    body.fusion === undefined ? null : fusionThreshold(body.fusion),
     ribbonsForLevel(level),
     row.id,
   );

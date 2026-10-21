@@ -78,17 +78,41 @@ describe('simulation run', () => {
     // 4 raid weeks, so the moves are dice shifts, not a measure: the raid win rates stay at 1, finale start
     // share 0.2549 to 0.2414, top share 0.2934 to 0.3162, creature ratio 1.0065 to 1.5963, a dungeon run
     // 4.6518 to 4.9464 fights (home rate, top level, Experience rate and the long run did not move).
+    // 2026-10-20 (integration of the push-on timer, Workshop Refine and Recycle, expedition ticks, dungeon
+    // rewards B-024, the economy targets B-025, the lantern bonus roll and the supply retunes): expedition
+    // ticks pay more XP, scrap, gear and creatures (and no catch pity), and a full dungeon clear pays about
+    // 1.5 crafts and 1 gear. Moved: Experience per hour of a long trip 75.4138 to 145.8809, casual top level
+    // at week 4 10 to 14, a dungeon run 4.9464 to 5.7232 fights (home rate 0.125 to 0.0893), creature ratio
+    // 1.5963 to 1.0154, finale start share 0.2414 to 0.2369, top share 0.3162 to 0.3159, the long run
+    // 0.8333 to 1 finale wins (final rank 4 to 5). The raid win rates stay at 1 (4 raid weeks, dice shifts).
+    // 2026-10-20 (B-026, raid retune for the tick economy, steeper fusion thresholds 1, 4, 9, 18, 34, early
+    // gear levels lower): boss HP 20 to 40% up with a new rank curve, Attack 33 to 35, expedition gear at
+    // item level 1 a rank and dungeon gear a level every 3 depths. A tiny run only has 4 raid weeks, so these
+    // are dice shifts and the real effect of the raid retune (harder teams, fewer wins) shows in the quick
+    // sim, not here. Moved: finale start share 0.2369 to 0.2968, top share 0.3159 to 0.3371, creature ratio
+    // 1.0154 to 1.3609, Experience per hour of a long trip 145.8809 to 131.3262 (the trip's gear finds are
+    // worth less), a dungeon run 5.7232 to 5.2946 fights (home rate 0.0893 to 0.0804), the long run 1 to
+    // 0.8333 finale wins (final rank 5 to 4). The raid phase 1 and finale win rates stay at 1 (4 raid weeks).
+    // 2026-10-21 (richer rank gifts): ranks 2 to 10 pay more Bait and scrap and, from rank 4, shards of the
+    // explorer's element and from rank 5 a gear piece, so the sim's gear stream draws differently. A tiny run
+    // is dice, not a measure: finale start share 0.2968 to 0.3250, top share 0.3371 to 0.3022, creature
+    // ratio 1.3609 to 1.3887, a dungeon run 5.2946 to 5.2321 fights (home rate 0.0804 to 0.0893). The raid
+    // win rates, the casual top level, Experience per hour and the long run did not move.
+    // 2026-10-21 (long trips stay the efficient choice): satchel-great and lantern-great moved part of their
+    // fixed bonus into their per-tick bonus, so trips with them draw differently. Dice at this size: finale
+    // start share 0.3250 to 0.3084, top share 0.3022 to 0.3015, creature ratio 1.3887 to 1.3802, a dungeon
+    // run 5.2321 to 5.1339 fights (home rate 0.0893 to 0.1071). Nothing else moved.
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
       'raid.typical.phase1ClearRate': 1,
       'raid.typical.finaleWinRate': 1,
-      'raid.typical.finaleStartShare': 0.2414,
-      'fair.topShareMedian': 0.3162,
-      'choice.creatureRatioMax': 1.5963,
-      'econ.casualTopLevelWeek4': 10,
-      'exp.rate.long': 75.4138,
-      'dungeon.meanFights': 4.9464,
-      'dungeon.dailyHomeRate': 0.125,
+      'raid.typical.finaleStartShare': 0.3084,
+      'fair.topShareMedian': 0.3015,
+      'choice.creatureRatioMax': 1.3802,
+      'econ.casualTopLevelWeek4': 14,
+      'exp.rate.long': 131.3262,
+      'dungeon.meanFights': 5.1339,
+      'dungeon.dailyHomeRate': 0.1071,
       'longrun.typical.finaleWinRate': 0.8333,
       'longrun.typicalFinalRank': 4,
     };

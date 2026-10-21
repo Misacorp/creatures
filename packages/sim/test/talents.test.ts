@@ -142,6 +142,26 @@ describe('a creature that arrives', () => {
     expect(p.gear.parts.scrap).toBe(scrap + (releaseParts('common', 'tide').scrap ?? 0));
   });
 
+  it('fuses by points: a duplicate adds its rarity, a level comes at its threshold, nothing is stored past the top', () => {
+    const p = player();
+    p.creatures.push(newCreature(p, species('splashet'), scripted([1, 5])));
+    const c = p.creatures[0] as OwnedCreature;
+    // Nothing to teach once the book holds the talent: each duplicate fuses 1 point (common).
+    const levels: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      collect(p, species('splashet'), scripted([1, 5]), true);
+      levels.push(c.fusionCount);
+    }
+    expect(c.fusionPoints).toBe(4);
+    expect(levels).toEqual([1, 1, 1, 2]);
+    // Points past the top are not stored, and the level stays 5.
+    c.fusionPoints = RULES.fusion.thresholds[RULES.fusion.maxFusions - 1] as number;
+    c.fusionCount = RULES.fusion.maxFusions;
+    collect(p, species('splashet'), scripted([1, 5]), true);
+    expect(c.fusionPoints).toBe(34);
+    expect(c.fusionCount).toBe(5);
+  });
+
   it('releases for nothing when the simulation tracks no parts, and never touches Bait', () => {
     const p = player();
     p.creatures.push(newCreature(p, species('splashet'), scripted([1, 5])));

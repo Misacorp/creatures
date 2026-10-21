@@ -12,7 +12,7 @@ import {
   kitProblem,
   lengthOpen,
   lengthRules,
-  recallCatches,
+  recallTicks,
   supplyDef,
   tripMs,
   type SupplyDef,
@@ -44,7 +44,7 @@ interface LengthOption {
   label: string;
   /** What the trip takes for this explorer (each rank above 1 shortens it), for example "11 h 31 min". */
   takes: string;
-  /** The trip's catch rolls, before supplies. */
+  /** The trip's nominal ticks, before supplies. */
   rolls: number;
 }
 
@@ -54,7 +54,7 @@ export function lengthOptions(rank: number): LengthOption[] {
     id,
     label: lengthLabel(id),
     takes: formatDuration(tripMs(id, rank)),
-    rolls: lengthRules(id).rolls,
+    rolls: lengthRules(id).ticks,
   }));
 }
 
@@ -85,6 +85,11 @@ export function supplyEffect(def: SupplyDef): string {
 export function kindName(kind: string): string {
   const words = kind.replaceAll('-', ' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** What a kind is called on a tag: "Lure", "Map", "Lantern", "Satchel" (a map scrap is a Map to the player). */
+export function kindLabel(kind: string): string {
+  return kind === 'map-scrap' ? 'Map' : kindName(kind);
 }
 
 function optionOf(def: SupplyDef, stock: Readonly<Record<string, number>>): SupplyOption {
@@ -248,10 +253,10 @@ export function needsOfferRefresh(trip: Trip, now: number): boolean {
   );
 }
 
-/** The catches a recall at this moment would keep (the same rule as the server's). */
+/** The ticks (whole hours of finds) a recall at this moment would pay (the same rule as the server's). */
 export function recallKeeps(trip: Trip, now: number): number {
   if (trip.endsAt <= trip.startedAt) return 0;
-  return recallCatches(trip.rolls, trip.startedAt, trip.endsAt, now);
+  return recallTicks(trip.duration, trip.startedAt, trip.endsAt, now);
 }
 
 // --- Explorer XP and slots ---
