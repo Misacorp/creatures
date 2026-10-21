@@ -40,6 +40,7 @@ Everything is checked at 390 px wide first (Discord on a phone), in the componen
 - **Pick lists show everyone.** Who can do it comes first; who can't is listed after, greyed, with a short reason on the right of the row ("Needs level 7", "Guards only", "Away on a trip", "On a job"). No separate "who cannot" section. Pass the server's actual refusal rules through as reasons, so a tap never fails afterwards.
 - **A pick acts right away** (no extra confirm button), unless the action is destructive or costs something; then one clear button with the cost.
 - **A trigger that opens a list looks like a dropdown** (current choice with sprite and name, a chevron), not a native `<select>`.
+- **A tap shows, a drag moves.** Tapping a creature on a board opens what it is (its popover or configurator) and never moves it; moving is by dragging (the camp lost tap-to-swap, decisions.md 2026-10-21).
 - **Grids open with nothing selected.** Tapping an item shows its details; tapping it again (or the details' X) closes them.
 - **A choice with one option is still shown.** Evolving always opens the evolve screen; with one form it shows that form on one card, already picked, with the same button, cost and "permanent" line and no sentence about there being one (show, don't tell).
 - **Keep the player anchored.** The item or creature shown last stays marked (light edge inside the rarity edge) and in view after its details close; going back to a list restores where it was and marks the creature viewed last.

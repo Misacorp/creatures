@@ -269,6 +269,28 @@ export class FakeElement extends FakeNode {
   querySelector<T = FakeElement>(selector: string): T | null {
     return this.querySelectorAll<T>(selector)[0] ?? null;
   }
+  /** The nearest of this element and its parents that matches `[attr]` or `.class` (the selectors popovers use). */
+  closest(selector: string): FakeElement | null {
+    const has = /^\[([\w-]+)\]$/.exec(selector)?.[1];
+    const cls = /^\.([\w-]+)$/.exec(selector)?.[1];
+    if (has === undefined && cls === undefined) {
+      throw new Error(`the fake DOM does not support the selector ${selector}`);
+    }
+    for (let el: FakeElement | null = this; el !== null; el = el.parentNode) {
+      if (has !== undefined ? el.hasAttribute(has) : el.classList.contains(cls ?? '')) return el;
+    }
+    return null;
+  }
+  /** The `data-*` attributes, by their camel-cased names (read only). */
+  get dataset(): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const [name, value] of this.attributes) {
+      if (name.startsWith('data-')) {
+        out[name.slice(5).replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())] = value;
+      }
+    }
+    return out;
+  }
   getContext(): null {
     return null;
   }

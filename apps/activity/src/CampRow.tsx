@@ -1,6 +1,7 @@
-import { useState } from 'preact/hooks';
-import { campHp, campSlotLabel, tapToSwap, type CampRowCreature } from './dungeon-run';
+import { useEffect } from 'preact/hooks';
+import { campHp, campSlotLabel, type CampRowCreature } from './dungeon-run';
 import type { Slots } from './dungeon-team';
+import { usePopoverHost } from './PopoverHost';
 import { SingleRowBoard } from './SingleRowBoard';
 import type { SlotModel } from './ui/SlotButton';
 import { emptySlotLabel, useSingleRowBoard } from './use-single-row-board';
@@ -17,34 +18,36 @@ interface Props {
 /**
  * The camp's row, on the same board as the dungeon entry (`RaidBoard`, single large row, with the same
  * slot tiles, drag and drop, and reaction cues), with each creature's HP under it: the HP moves with
- * the creature. A creature is moved by dragging it onto another (a finger needs a short press and hold,
- * so a swipe still scrolls the page) or, for anyone who cannot drag, by tapping it and then another one
- * (the picked-up one is framed). Keyboard users walk with the arrow keys and press Enter on two
- * creatures. The server checks the order again when the choice is sent; this only builds it.
+ * the creature. A creature is moved only by dragging it onto another (a finger needs a short press and
+ * hold, so a swipe still scrolls the page). A tap never moves anything: it opens the creature's popover
+ * (role, element, what it does in this order and its gear, locked). The server checks the order again
+ * when the choice is sent; this only builds it.
  */
 export function CampRow({ creatures, disabled, onChange }: Props) {
-  /** The creature picked up by a tap (waiting for the one to swap with). */
-  const [selected, setSelected] = useState<string | null>(null);
-
+  const popovers = usePopoverHost();
   const ids = creatures.map((c) => c.id);
   const slots = [ids[0] ?? null, ids[1] ?? null, ids[2] ?? null] as const satisfies Slots;
   const byId = new Map(creatures.map((c) => [c.id, c]));
   const nameOf = (id: string): string => byId.get(id)?.name ?? 'Creature';
 
+  // The cues read the creature whose popover is open, as on the dungeon's team.
+  const inspectedSlot = popovers?.anchor?.closest<HTMLElement>('[data-slot]')?.dataset.slot;
   const board = useSingleRowBoard({
     slots,
     byId,
     nameOf,
     disabled,
-    // The cues read the row as it would stand: the creature carried (or picked up) and where it hovers.
-    carried: selected,
-    onDropped: () => {
-      setSelected(null);
-    },
+    inspected: inspectedSlot === undefined ? null : Number(inspectedSlot),
     onSlots: (next) => {
       onChange(next.filter((id): id is string => id !== null));
     },
   });
+  const { dragging } = board;
+
+  // A drag starting closes any open popover at once, so it cannot sit over the board while a creature moves.
+  useEffect(() => {
+    if (dragging !== null) popovers?.close();
+  }, [dragging === null]);
 
   const model = (index: number): SlotModel => {
     const creature = byId.get(slots[index] ?? '');
@@ -53,8 +56,7 @@ export function CampRow({ creatures, disabled, onChange }: Props) {
     }
     return {
       index,
-      ariaLabel: campSlotLabel(creature, index, selected === creature.id),
-      selected: selected === creature.id,
+      ariaLabel: campSlotLabel(creature, index),
       occupant: {
         species: creature.species,
         name: creature.name,
@@ -67,29 +69,33 @@ export function CampRow({ creatures, disabled, onChange }: Props) {
     };
   };
 
-  /** A tap on a tile: pick the creature up, put it down, or swap it with the one picked up. */
-  function tapSlot(slot: number): void {
+  /** A tap on a tile opens (or closes) the creature's popover; it never changes the order. */
+  function tapSlot(slot: number, button: HTMLElement): void {
     if (board.dragDrop.consumeClick()) return;
-    const id = slots[slot] ?? null;
-    if (id === null) return;
-    const result = tapToSwap(ids, selected, id);
+    const creature = byId.get(slots[slot] ?? '');
+    if (creature === undefined || popovers === null) return;
     board.setHint(null);
-    setSelected(result.selected);
-    if (result.selected !== null) {
-      board.announce(`${nameOf(id)} picked up. Tap another creature to swap places.`);
-    } else if (selected === id) {
-      board.announce(`${nameOf(id)} put down.`);
-    } else {
-      board.announce(`Swapped ${nameOf(selected ?? '')} with ${nameOf(id)}.`);
-      onChange(result.order);
-    }
+    const line = board.effectOf(slots, slot);
+    popovers.openCreature(
+      `camp-slot:${String(slot)}`,
+      {
+        name: creature.name,
+        species: creature.species,
+        level: creature.level,
+        element: creature.element,
+        role: creature.role,
+        ...(line === null ? {} : { effect: line }),
+        ...(creature.gear.length === 0 ? {} : { gear: creature.gear }),
+      },
+      button,
+    );
   }
 
   return (
     <SingleRowBoard
       row={board}
       class="camp-row"
-      label="Your team, left to right. You can change the order."
+      label="Your team, left to right. Drag a creature onto another to swap places."
       emptyLabel=""
       disabled={disabled}
       model={model}

@@ -1,5 +1,5 @@
 import { act } from 'preact/test-utils';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { sampleRoster } from './creature-card-sample';
 import type { Creature } from './api';
 import { Dungeon } from './Dungeon';
@@ -39,6 +39,7 @@ import {
   visibleText,
   type Page,
 } from './test-dom';
+import { installDrag } from './test-drag';
 
 /**
  * The Dungeon tab driven by the real server answers (`fixtures/dungeon-*.json`, captured from the
@@ -408,6 +409,8 @@ describe('the camp, with the real answers', () => {
   });
 
   it('swaps, with the new row from the answer shown after it', async () => {
+    const dnd = installDrag();
+    onTestFinished(dnd.restore);
     const swapped = parseDungeonAct(actCamp);
     api.fetchDungeonToday.mockResolvedValue(parseDungeonToday(todayActive));
     api.dungeonAct.mockResolvedValue(swapped);
@@ -415,7 +418,7 @@ describe('the camp, with the real answers', () => {
     await settle();
     const fixture = bodyOf('dungeon-act-camp').act;
     if (fixture.type !== 'camp') throw new Error('camp act');
-    // The player swaps the first two creatures by taps (the order of the capture), then swaps.
+    // The player drags the first creature onto the second (the order of the capture), then swaps.
     const tile = (name: string): FakeElement => {
       const found = byClass(root, 'party-slot').find((e) =>
         (e.getAttribute('aria-label') ?? '').includes(`: ${name},`),
@@ -423,8 +426,11 @@ describe('the camp, with the real answers', () => {
       if (found === undefined) throw new Error(`no tile for ${name}`);
       return found;
     };
-    page?.click(tile(campState.team[0]?.name ?? ''));
-    page?.click(tile(campState.team[1]?.name ?? ''));
+    dnd.drag(
+      page as Page,
+      tile(campState.team[0]?.name ?? ''),
+      tile(campState.team[1]?.name ?? ''),
+    );
     page?.click(button(root, /^Swap a creature/));
     await settle();
     // Who comes in: Zipmouse, the one creature outside the row.

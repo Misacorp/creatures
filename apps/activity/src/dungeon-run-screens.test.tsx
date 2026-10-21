@@ -1,5 +1,5 @@
 import { act } from 'preact/test-utils';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { sampleRoster } from './creature-card-sample';
 import { ApiError } from './api';
 import { Dungeon } from './Dungeon';
@@ -38,6 +38,7 @@ import {
   visibleText,
   type Page,
 } from './test-dom';
+import { installDrag } from './test-drag';
 
 const api = vi.hoisted(() => ({
   dungeonAct: vi.fn(),
@@ -241,7 +242,7 @@ describe('the camp', () => {
     expect(text).toContain('Take a keepsake');
     expect(text).toContain('Swap a creature');
     expect(visibleText(button(root, 'Head home with your pack'))).toBe('Head home with your pack');
-    expect(text).toContain('Drag or tap two creatures to swap places.');
+    expect(text).toContain('Drag a creature onto another to swap places.');
     // Three choices in the list; the home button is outside it.
     expect(byClass(root, 'choice')).toHaveLength(3);
     expect(byClass(root, 'camp-home')[0]?.textContent).toContain('Head home with your pack');
@@ -269,7 +270,9 @@ describe('the camp', () => {
     expect(byClass(root, 'run-move')).toHaveLength(0);
   });
 
-  it('sends the new order with the choice after two creatures were swapped by taps', () => {
+  it('sends the new order with the choice after a creature was dragged onto another', () => {
+    const dnd = installDrag();
+    onTestFinished(dnd.restore);
     const acts: DungeonAct[] = [];
     const root = drawCamp((a) => acts.push(a));
     const [a, b, c] = state.team.map((t) => t.id) as [string, string, string];
@@ -281,9 +284,7 @@ describe('the camp', () => {
       if (found === undefined) throw new Error(`no tile for ${name}`);
       return found;
     };
-    page?.click(tile(c));
-    expect(tile(c).getAttribute('class')).toContain('selected');
-    page?.click(tile(a));
+    dnd.drag(page as Page, tile(c), tile(a));
     // The HP moved with the creature: the row now reads c, b, a.
     expect(byClass(root, 'slot-hp-text').map((e) => e.textContent)).toEqual(
       [c, b, a].map((id) => {
@@ -295,12 +296,38 @@ describe('the camp', () => {
     expect(acts).toEqual([{ type: 'camp', choice: 'rest', order: [c, b, a] }]);
   });
 
-  it('puts a picked-up creature down again when it is tapped twice', () => {
+  it("opens a creature's popover on a tap, with what it wears in this run", () => {
+    // The popover listens on the window; the drag helper's fake window takes the listeners.
+    onTestFinished(installDrag().restore);
+    const root = draw(
+      <PopoverHost onOpenHowTo={noop}>
+        <DungeonCamp
+          team={state.team}
+          pack={state.pack}
+          camp={camp}
+          creatures={owned}
+          busy={false}
+          onAct={noop}
+        />
+      </PopoverHost>,
+    ).root;
+    const worn = state.team.find((c) => c.gear.length > 0);
+    if (worn === undefined) throw new Error('the sample team wears nothing');
+    const tile = byClass(root, 'party-slot').find((e) =>
+      (e.getAttribute('aria-label') ?? '').includes(`: ${worn.name},`),
+    );
+    if (tile === undefined) throw new Error('no tile');
+    expect(tile.getAttribute('aria-label')).toContain('Shows its role, element and gear.');
+    page?.click(tile);
+    expect(byClass(page?.document.body ?? root, 'gear-list')).toHaveLength(1);
+  });
+
+  it('never moves a creature on taps: two taps on two creatures leave the order as it was', () => {
     const acts: DungeonAct[] = [];
     const root = drawCamp((a) => acts.push(a));
-    const first = byClass(root, 'party-slot')[0] as FakeElement;
+    const [first, , third] = byClass(root, 'party-slot') as [FakeElement, FakeElement, FakeElement];
     page?.click(first);
-    page?.click(first);
+    page?.click(third);
     expect(first.getAttribute('class')).not.toContain('selected');
     page?.click(button(root, /^Rest/));
     expect(acts).toEqual([{ type: 'camp', choice: 'rest', order: state.team.map((c) => c.id) }]);
@@ -356,6 +383,8 @@ describe('the camp', () => {
   });
 
   it('arranges the row after the swap, with the new creature in place and at full HP, and sends that order', () => {
+    const dnd = installDrag();
+    onTestFinished(dnd.restore);
     const acts: DungeonAct[] = [];
     const incoming = owned[4]?.id ?? '';
     const out = state.team[2]?.id ?? '';
@@ -381,9 +410,8 @@ describe('the camp', () => {
     expect(byClass(root, 'slot-hp-text').map((e) => e.textContent)[0]).toBe(
       `${String(state.team[0]?.hp)} / ${String(state.team[0]?.hpMax)} HP`,
     );
-    // Move the recruit to the left end by taps.
-    page?.click(tiles[2] as FakeElement);
-    page?.click(tiles[0] as FakeElement);
+    // Move the recruit to the left end by dragging it there.
+    dnd.drag(page as Page, tiles[2] as FakeElement, tiles[0] as FakeElement);
     expect(byClass(root, 'slot-hp-text').map((e) => e.textContent)[0]).toBe('Full HP');
     page?.click(button(root, 'Swap and push on'));
     expect(acts).toEqual([

@@ -2477,3 +2477,12 @@ Misa found a dungeon find turned into parts because his bag was full, with no wa
 - **The warning** (`ui/BagFullNote`): where the player sets off (the dungeon's Enter, the send screen, the raid board while it can change) a gold-edged line says "Your bag is full (62 / 60). Gear you find becomes parts." with a Workshop button. It never blocks. The Workshop's bag count turns red at or over the cap, with one line under it. The results line now names the reason: "Your bag was full, so Bog Charm became parts."
 - Expeditions and the raid decide at the grant (their claim or finale), since there is no single start state to stamp. The warning is still right: while the bag is full, gear found becomes parts.
 
+## 2026-10-21: At the camp a tap shows the creature; only a drag moves it
+
+Misa, play-testing the camp: tapping a creature to see it (what it wears) and then tapping another swapped the two, and he felt he lost control. Tap-to-swap is gone.
+
+- **A tap on a camp tile opens the creature's popover**: role, element, what it does in this order, and the gear it wears in this run (locked, frozen when it joined). A recruit that has not joined yet shows no gear. A second tap closes it, and a drag starting closes it too.
+- **Only a drag moves a creature** (a finger needs the short hold, so a swipe still scrolls). The copy reads "Pick one. Drag a creature onto another to swap places."
+- **Keyboard reordering at the camp is gone with it** (Enter on two creatures was the same tap). Misa accepts this: accessibility is nice where it is cheap, and the UI is heading towards a more game-like look.
+- The same rule now holds on every board: a tap shows (the dungeon team's configurator, the raid board's configurator or popover, the camp's popover), a drag moves.
+- Tests drag for real in the fake DOM: `test-drag.ts` gives tiles a layout and a window for the move and release listeners. The fake DOM gained `closest` and `dataset`.
