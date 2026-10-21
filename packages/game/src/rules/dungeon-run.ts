@@ -7,7 +7,13 @@
  * (`keptOnDefeat`). Randomness is injected: the worker passes its live crypto source for events and
  * camp offers, tests and the simulator pass seeded streams.
  */
-import { dungeonEvent, dungeonFoe, dungeonKeepsakes, roomModifier } from '../content/dungeon';
+import {
+  dungeonEvent,
+  dungeonEvents,
+  dungeonFoe,
+  dungeonKeepsakes,
+  roomModifier,
+} from '../content/dungeon';
 import type {
   DungeonEventDef,
   DungeonFoeDef,
@@ -22,6 +28,7 @@ import { RULES } from './config';
 import { shardOf } from './gear';
 import { landmarkBossId, scaledFoe, undercroftDepth } from './dungeon';
 import { mapNode, type DungeonMap, type MapNode, type NodeKind } from './dungeon-map';
+import type { Treasure } from './dungeon-treasure';
 
 // --- Rooms ---
 
@@ -229,6 +236,8 @@ export interface EventContext {
   hp: Readonly<Record<string, number>>;
   hpMax: Readonly<Record<string, number>>;
   keepsakes: readonly string[];
+  /** The treasure the room rolled when the player came in (a `treasure` effect that wins takes it). */
+  treasure?: Treasure | undefined;
 }
 
 export interface EventResolution {
@@ -242,6 +251,41 @@ export interface EventResolution {
   won: boolean | null;
   /** One plain line of what happened, for the map screen. */
   outcome: string;
+  /** The room's treasure, when the option won it (absent otherwise). It goes into the run to be paid at the end. */
+  treasure?: Treasure;
+  /** The whole team fell: the run ends as a defeat (absent otherwise). Everyone's HP in `hp` is 0. */
+  fell?: true;
+}
+
+/**
+ * The rare event a mystery room turns into, or undefined for the room's own event. Each rare event
+ * (`rare` in the content) not in `seen` is tried in content order once the run's `depth` reaches its
+ * `fromDepth`: it takes the room with `chanceBp`, drawn from `rng` (live in the worker, one draw per event
+ * tried). `seen` is the ids of the rare events the run met already: one at most each run.
+ */
+export function rollRareEvent(
+  rng: Rng,
+  depth: number,
+  seen: readonly string[],
+  events: readonly DungeonEventDef[] = dungeonEvents,
+): DungeonEventDef | undefined {
+  for (const event of events) {
+    const rare = event.rare;
+    if (rare === undefined || seen.includes(event.id) || depth < rare.fromDepth) continue;
+    if (chance(rng, rare.chanceBp, 10_000)) return event;
+  }
+  return undefined;
+}
+
+/** True when an option of the event takes the room's treasure (so the room rolls one when it opens). */
+export function eventHasTreasure(event: DungeonEventDef): boolean {
+  return event.options.some((o) =>
+    o.effects.some(
+      (e) =>
+        e.op === 'treasure' ||
+        (e.op === 'gamble' && [...e.win, ...e.lose].some((x) => x.op === 'treasure')),
+    ),
+  );
 }
 
 /** `bp` of 10000 as a percentage word: 2500 is "25%", 1250 is "12.5%". */
@@ -280,6 +324,8 @@ export function resolveEvent(
   const held = new Set(ctx.keepsakes);
   const gained: string[] = [];
   let won: boolean | null = null;
+  let treasure: Treasure | undefined;
+  let fell = false;
   /** "Lucky!" or "No luck.", when the option has a gamble. */
   let luck = '';
   const lines: string[] = [];
@@ -324,6 +370,19 @@ export function resolveEvent(
       }
       case 'nothing':
         break; // says nothing: an option with no other line reads "Nothing happens."
+      case 'treasure':
+        if (ctx.treasure === undefined) {
+          lines.push('The treasure is gone.');
+          break;
+        }
+        treasure = ctx.treasure;
+        lines.push('You cross the plank and take the treasure.');
+        break;
+      case 'fall':
+        fell = true;
+        for (const id of Object.keys(hp)) hp[id] = 0;
+        lines.push('The plank gives way and the whole team falls into the chasm.');
+        break;
     }
   };
 
@@ -341,7 +400,15 @@ export function resolveEvent(
   const outcome = [luck, ...(lines.length === 0 ? ['Nothing happens.'] : lines)]
     .filter((l) => l !== '')
     .join(' ');
-  return { hp, packDelta: pack, keepsakesGained: gained, won, outcome };
+  return {
+    hp,
+    packDelta: pack,
+    keepsakesGained: gained,
+    won,
+    outcome,
+    ...(treasure === undefined ? {} : { treasure }),
+    ...(fell ? { fell: true as const } : {}),
+  };
 }
 
 // --- The camp ---

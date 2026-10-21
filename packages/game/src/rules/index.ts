@@ -20,6 +20,7 @@ export * from './income';
 export * from './weather';
 export * from './dungeon-map';
 export * from './dungeon-run';
+export * from './dungeon-treasure';
 export * from './economy';
 export * from './xp-boost';
 export * from './conversions';

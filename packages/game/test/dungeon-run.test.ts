@@ -323,10 +323,12 @@ describe('events', () => {
           const r = resolveEvent(e, option, ctx(), rng);
           expect(r.outcome.length, e.id).toBeGreaterThan(0);
           for (const [id, hp] of Object.entries(r.hp)) {
-            expect(hp).toBeGreaterThanOrEqual(id === 'c' ? 0 : 1);
+            // A fall takes everyone down (the run ends); anything else leaves the standing on their feet.
+            expect(hp).toBeGreaterThanOrEqual(id === 'c' || r.fell === true ? 0 : 1);
             expect(hp).toBeLessThanOrEqual(100);
           }
           expect(r.hp['c']).toBe(0);
+          if (r.fell === true) expect(Object.values(r.hp).every((hp) => hp === 0)).toBe(true);
         }
       }
     }

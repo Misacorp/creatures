@@ -305,5 +305,30 @@
         ]
       }
     ]
+  },
+  {
+    "id": "blue-chasm",
+    "name": "Blue Chasm",
+    "text": "A narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There's a valuable treasure on the other side.",
+    "rare": { "chanceBp": 1500, "fromDepth": 3 },
+    "options": [
+      {
+        "label": "Cross the plank",
+        "description": "50%: you cross and take the treasure shown. 50%: the team falls and the run ends.",
+        "effects": [
+          {
+            "op": "gamble",
+            "chanceBp": 5000,
+            "win": [{ "op": "treasure" }],
+            "lose": [{ "op": "fall" }]
+          }
+        ]
+      },
+      {
+        "label": "Don't risk it",
+        "description": "Nothing happens.",
+        "effects": [{ "op": "nothing" }]
+      }
+    ]
   }
 ]

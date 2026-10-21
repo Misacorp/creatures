@@ -305,8 +305,17 @@ The tone is the one of the quirks: funny, warm, never mean `(inferred)`. Nothing
 - Answers `(content)`: **Pick a few** (a little scrap) or **Dance in the ring** (a gamble: the team is refreshed, or a little worn out).
 - Compendium detail: the mushrooms sing the dungeon's lullaby, off key. Dancing along is either restful or silly, and the creatures do not mind which `(inferred)`.
 
+### Blue Chasm (a rare room)
+
+- Scene `(content)`: a narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There is a valuable treasure on the other side.
+- Answers `(content)`: **Cross the plank** (a gamble: the team crosses and takes the treasure, or the whole team falls and the run ends) or **Don't risk it** (nothing happens).
+- It is **rare**: it is not drawn onto the day's map, and the other eight are. A room can turn into it as a player steps in (`rare` in `dungeon-events.json`), from a few depths down, and never twice in a run. `(design: dungeon-paths.md "The Blue Chasm")`
+- The treasure is shown in the room before the choice, so the gamble is the player's with open eyes. It fits where the player is: gear of their depth, a blueprint a step above their best, two great supplies, or shards and glimmer of the team's elements. `(design)`
+- Compendium detail: the Blue Chasm is the dungeon's one honest drop. Its walls are lined with **pale blue crystals** that glow on their own, the same cool light as the Moonlit Reef's coral and the Echoing Well's voice `(inferred)`. Nobody mined them and nobody knows who laid the plank. The crystals hum when a creature steps on the wood, and the plank is old but is _not_ rotten: the chasm simply does not care whether you cross `(compendium detail, not shipped)`.
+- The fall is not a trap. Nothing in the chasm is hostile, and the team is not hurt: the dungeon carries them out the way it brought them in, tired and a little embarrassed, with half of what they had gathered `(compendium detail, not shipped)`. This is the one mystery room whose bad answer ends the run, and it is the only reason the plank is a choice at all (Misa, 2026-10-21).
+
 Notes:
 
 - **Names** are a descriptor and a noun, as for foes and bosses: Glowing Pool, Loose Stones, Old Shrine.
 - **Voice for new events:** one scene with one small oddity, one plain safe answer and one answer with a risk or a reward. The text is at most a few sentences and speaks to "you" only through the options `(compendium detail, not shipped)`.
-- **Never** make a mystery room a fight, a trap or a loss of something permanent. The worst case is HP lost for the run, never a creature, an item or a currency from the player's own stock `(design)`.
+- **Never** make a mystery room a fight, a trap or a loss of something permanent. The worst case is HP lost for the run, never a creature, an item or a currency from the player's own stock `(design)`. **One exception, decided with Misa (2026-10-21):** the Blue Chasm's fall ends the run as a defeat. It still takes nothing from the player's own stock: a defeat keeps half the pack, and no creature is lost.

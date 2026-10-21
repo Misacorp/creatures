@@ -1749,6 +1749,16 @@
     "section": "dungeon"
   },
   {
+    "id": "event-blue-chasm",
+    "title": "Blue Chasm",
+    "short": "Two choices: Cross the plank or Don't risk it.",
+    "lines": [
+      "Cross the plank: 50%: you cross and take the treasure shown. 50%: the team falls and the run ends.",
+      "Don't risk it: Nothing happens."
+    ],
+    "section": "dungeon"
+  },
+  {
     "id": "explorer-rank",
     "title": "Explorer rank",
     "short": "Each creature gets better at exploring.",
