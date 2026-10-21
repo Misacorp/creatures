@@ -1,12 +1,13 @@
 import { SCHEMA_VERSION } from '../src/migrations';
+import { baseExperienceOf, paidFor } from './dungeon-xp-helpers';
 import { dungeonPathMigration } from '../src/dungeon-path-migration';
 import {
   RULES,
   createSeededRng,
+  emptyEarned,
   dungeonContent,
   dungeonEvent,
   creatureXpParts,
-  dungeonExperience,
   dungeonKeepsakes,
   dungeonMapValid,
   generateDungeonMap,
@@ -25,7 +26,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { giveItem } from './gear-helpers';
 import { ACT_ANSWER_RETENTION_MS } from '../src/dungeon';
-import type { RunState } from '../src/dungeon-state';
+import { parseState, type RunState } from '../src/dungeon-state';
 import type { DungeonRunState, DungeonStepLog } from '../src/dungeon-types';
 import { drawSeed, slotFor } from '../src/raid-resolve';
 import { loadCreatures } from '../src/raid-teams';
@@ -1068,6 +1069,99 @@ describe('a cache', () => {
   });
 });
 
+describe('experience while the run is open', () => {
+  const earnedOf = (ctx: CoreContext, runId: string) => stored(ctx, runId).earned;
+
+  it('pays the row for each cleared fight, by kind, and a lost fight pays nothing', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const state = await begin(p);
+        const first = await walk(p, state, [], (s) => s.roomsCleared >= 1);
+        const fight = RULES.experience.dungeon.fight;
+        const entry = first.history.find((h) => h.result === 'fight');
+        // The first room is a plain fight or an elite: either way every creature of the row is paid it once.
+        const paid = entry?.kind === 'elite' ? RULES.experience.dungeon.elite : fight;
+        const earned = earnedOf(ctx, state.id);
+        expect(Object.keys(earned).sort()).toEqual([...first.team.map((t) => t.id)].sort());
+        for (const e of Object.values(earned)) expect(e.base).toBe(paid);
+      },
+      opts(),
+    );
+  });
+
+  it('pays a cache to the creatures in the row, less than a fight', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const state = await begin(p);
+        const route = routeThrough(mapOf(state), (n) => n.kind === 'cache') as string[];
+        const target = route.at(-1) as string;
+        const before = await walk(p, state, route, (s) => s.reachable.includes(target));
+        const had = earnedOf(ctx, state.id);
+        await p.act(before, { type: 'move', node: target });
+        const after = earnedOf(ctx, state.id);
+        for (const t of before.team) {
+          expect(after[t.id]?.caches).toBe(1);
+          expect(after[t.id]?.base).toBe((had[t.id]?.base ?? 0) + RULES.experience.dungeon.cache);
+        }
+        expect(RULES.experience.dungeon.cache).toBeLessThan(RULES.experience.dungeon.fight);
+      },
+      opts(seedWithRoom('cache')),
+    );
+  });
+
+  it('pays a mystery room that gives experience to the standing creatures only', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        const state = await begin(p);
+        const route = routeThrough(mapOf(state), (m) => m.kind === 'mystery') as string[];
+        const waiting = await walk(p, state, route, (s) => s.pending?.kind === 'event');
+        // The shrine's second answer gives every creature 20 experience. One creature is down.
+        patchState(ctx, state.id, (st) => {
+          st.pending = { kind: 'event', eventId: 'old-shrine' };
+          const [a] = st.input.team;
+          st.hp = Object.fromEntries(st.input.team.map((s) => [s.id, st.hpMax[s.id] ?? 1]));
+          if (a !== undefined) st.hp[a.id] = 0;
+        });
+        const had = earnedOf(ctx, state.id);
+        const res = await p.act(waiting, { type: 'event', option: 1 });
+        expect(res.status).toBe(200);
+        expect(res.body.state.lastEvent?.outcome).toContain('gains 20 experience');
+        const earned = earnedOf(ctx, state.id);
+        const [down, ...up] = waiting.team.map((t) => t.id);
+        expect(earned[down as string]).toEqual(had[down as string]);
+        for (const id of up) {
+          expect(earned[id]?.events).toBe(1);
+          expect(earned[id]?.base).toBe((had[id]?.base ?? 0) + 20);
+        }
+      },
+      opts(),
+    );
+  });
+
+  it('reads the tally of a run stored before experience was paid per room', () => {
+    const old = {
+      v: 1,
+      tally: { a: 3, b: 3, c: 1 },
+      fullClear: ['a', 'b'],
+    };
+    const st = parseState(JSON.stringify(old));
+    const D = RULES.experience.dungeon;
+    expect(st?.earned['a']).toMatchObject({ base: 2 * D.fight + D.boss, fights: 2, bosses: 1 });
+    expect(st?.earned['b']?.base).toBe(2 * D.fight + D.boss);
+    expect(st?.earned['c']).toMatchObject({ base: D.fight, fights: 1, bosses: 0 });
+    expect('tally' in (st ?? {})).toBe(false);
+    // A state that already has `earned` is left as it is.
+    const kept = { v: 1, earned: { a: { ...emptyEarned(), base: 7 } }, tally: { a: 9 } };
+    expect(parseState(JSON.stringify(kept))?.earned).toEqual(kept.earned);
+  });
+});
+
 describe('a mystery room', () => {
   it('waits for an answer with the scene and two options, and does not let the run move on', async () => {
     await runCore(
@@ -1766,18 +1860,34 @@ describe('clearing the floor boss', () => {
         const gained = Object.fromEntries(
           (run?.rewards.experience ?? []).map((e) => [e.creatureId, e]),
         );
-        const exp = (fights: number, cleared: boolean, treat: boolean) =>
-          dungeonExperience(fights, cleared, creatureXpParts(treat, null, []));
-        // The full-clear bonus is for the row that beat the boss; the treat doubles a creature's own share.
-        expect(gained[a]?.gained).toBe(exp(before + after, true, false));
-        expect(gained[b]?.gained).toBe(exp(before + after, true, true));
+        // Each creature is paid for the rooms it stood in, by kind (the boss carries the old full-clear
+        // bonus); the treat doubles a creature's own share.
+        const history = run?.route?.history ?? [];
+        const campAt = history.findIndex((h) => h.kind === 'camp');
+        expect(campAt).toBeGreaterThan(0);
+        const beforeCamp = history.slice(0, campAt + 1);
+        const afterCamp = history.slice(campAt + 1);
+        const paid = (steps: typeof history, treat: boolean) =>
+          paidFor(steps, creatureXpParts(treat, null, []));
+        expect(gained[a]?.gained).toBe(paid(history, false));
+        expect(gained[b]?.gained).toBe(paid(history, true));
         expect(gained[b]?.treat).toBe(true);
-        // The creature that went home at the camp keeps what it fought for, and no more.
-        expect(gained[c]?.gained).toBe(exp(before, false, false));
-        // The newcomer is paid only for its fights, with no treat.
-        expect(gained[d]?.gained).toBe(exp(after, true, false));
+        // The creature that went home at the camp keeps what it earned before it, and no more.
+        expect(gained[c]?.gained).toBe(paid(beforeCamp, false));
+        expect(gained[c]?.gained).toBeLessThan(gained[a]?.gained ?? 0);
+        // The newcomer is paid only for the rooms after the camp, with no treat.
+        expect(gained[d]?.gained).toBe(paid(afterCamp, false));
         expect(gained[d]?.treat).toBe(false);
         expect(Object.keys(gained)).toEqual([a, b, c, d]);
+        // The recap names each creature and counts what paid it: the departed one stops at the camp.
+        const recap = Object.fromEntries((run?.rewards.recap ?? []).map((r) => [r.creatureId, r]));
+        expect(Object.keys(recap)).toEqual([a, b, c, d]);
+        expect(recap[c]).toMatchObject({ base: baseExperienceOf(beforeCamp) });
+        expect(recap[d]).toMatchObject({ base: baseExperienceOf(afterCamp) });
+        expect(recap[a]).toMatchObject({ base: baseExperienceOf(history), bosses: 1 });
+        expect(recap[c]?.bosses).toBe(0);
+        expect(recap[c]?.name).toBeTruthy();
+        expect(recap[c]?.speciesId).toBeTruthy();
         // The whole pack is kept and the boss chest is added: the run's Essence is the pack's plus the full clear's.
         expect(run?.pack?.kept).toEqual(run?.pack?.found);
         expect(run?.rewards.essence).toBe(
@@ -1860,11 +1970,11 @@ describe('a run left open', () => {
         expect(summary.rewards.bait).toBe(kept.bait);
         expect(dungeonLedger(ctx, p.id).find((l) => l.currency === 'bait')?.amount).toBe(kept.bait);
         expect(summary.rewards.supplies).toHaveLength(1);
-        expect(
-          summary.rewards.experience.every(
-            (e) => e.gained === dungeonExperience(mid.roomsCleared, false, []),
-          ),
-        ).toBe(true);
+        expect(summary.rewards.experience).toHaveLength(3);
+        expect(summary.rewards.experience.every((e) => e.gained === paidFor(mid.history))).toBe(
+          true,
+        );
+        expect(paidFor(mid.history)).toBeGreaterThan(0);
         expect(growth()).not.toEqual(levelBefore);
         expect(progressOf(ctx, p.id)).toMatchObject({
           runs: 1,

@@ -1,7 +1,8 @@
 import {
   RULES,
   abilitiesFor,
-  addFightsCleared,
+  addEventExperience,
+  addRoomExperience,
   addPack,
   addParts,
   campOffers,
@@ -27,6 +28,8 @@ import {
   nodeLoot,
   reachableNodes,
   resolveEvent,
+  roomXpSource,
+  type DungeonEarned,
   rollRoomShard,
   roomSpecForNode,
   rollDungeonLoot,
@@ -156,11 +159,11 @@ export interface DungeonLogEntry {
   /** The pack at the end (at risk) and what was kept of it. */
   packFound: DungeonRunPack;
   packKept: DungeonRunPack;
-  /** Fights cleared by each creature that stood in the row for them: the experience is paid on these. */
-  fightsBy: Record<string, number>;
+  /** What each creature earned (base experience, by room: fights, caches, events): the experience is paid on these. */
+  earned: Record<string, DungeonEarned>;
   /** The creature ids in the row at the end. */
   finalRow: string[];
-  /** The row that beat the main boss (the full clear's experience goes to these); empty when it did not. */
+  /** The row that beat the main boss; empty when it did not. */
   fullClearRow: string[];
   /** Fights played before the Undercroft (`fights` minus the Undercroft's). */
   mainFights: number;
@@ -567,8 +570,8 @@ export interface RunResult {
   atCamp: RunView | null;
   /** The pack at the end, before a defeat halves it. */
   pack: DungeonRunPack;
-  /** Fights cleared per creature id (the row at each fight's start). */
-  fightsBy: Record<string, number>;
+  /** What each creature earned (base experience by room) per creature id. */
+  earned: Record<string, DungeonEarned>;
   /** The creature ids in the row at the end. */
   finalRow: string[];
   /** The row that stood when the main boss fell (empty when it did not). */
@@ -636,7 +639,7 @@ export function walkMap(options: {
 
   const held: KeepsakeDef[] = [];
   let pack = emptyPack();
-  let tally: Record<string, number> = {};
+  let earned: Record<string, DungeonEarned> = {};
   let at: string | null = null;
   let fights = 0;
   let fightsCleared = 0;
@@ -729,7 +732,8 @@ export function walkMap(options: {
         break;
       }
       fightsCleared += 1;
-      tally = addFightsCleared(tally, standing);
+      const xpSource = roomXpSource(node.kind, level);
+      if (xpSource !== null) earned = addRoomExperience(earned, standing, xpSource);
       const shard = rollRoomShard(
         rng,
         node.kind,
@@ -776,6 +780,7 @@ export function walkMap(options: {
       }
     } else if (node.kind === 'cache') {
       pack = addPack(pack, roomLoot('cache', level, weather, false));
+      earned = addRoomExperience(earned, rowIds(), 'cache');
     } else if (node.kind === 'door') {
       // Below depth 8 a quiet room. From it, a room is added to the Undercroft, of a kind drawn now
       // (never more than `maxMarks`).
@@ -794,6 +799,7 @@ export function walkMap(options: {
       );
       hp = resolved.hp;
       pack = addPack(pack, resolved.packDelta);
+      earned = addEventExperience(earned, resolved.xp);
       for (const kid of resolved.keepsakesGained) gain(dungeonKeepsake(kid));
     } else if (node.kind === 'camp' && hp !== null) {
       const offers = campOffers(
@@ -860,7 +866,7 @@ export function walkMap(options: {
     camp,
     atCamp,
     pack,
-    fightsBy: tally,
+    earned,
     finalRow: rowIds(),
     fullClearRow,
     boss: { element: bossFoe.element },
@@ -985,7 +991,7 @@ export function playDungeonDay(
       campDown: run.atCamp === null ? 0 : run.atCamp.down,
       packFound: { ...run.pack },
       packKept: { ...kept },
-      fightsBy: { ...run.fightsBy },
+      earned: { ...run.earned },
       finalRow: [...run.finalRow],
       fullClearRow: [...run.fullClearRow],
       mainFights: run.fights - run.under.fights,

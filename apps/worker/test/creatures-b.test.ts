@@ -3,7 +3,6 @@ import {
   RULES,
   addExperience,
   createSeededRng,
-  dungeonExperience,
   expToNext,
   raidExperience,
   ribbonsForLevel,
@@ -15,6 +14,7 @@ import {
 } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { playThrough } from './dungeon-helpers';
+import { paidFor, type XpStep } from './dungeon-xp-helpers';
 import { apiPlayer, giveParts, learnBase, skipWelcome, type Api } from './gear-helpers';
 import { T0, runCore, undoCreaturesBMigration, type CoreContext } from './helpers';
 import {
@@ -325,7 +325,7 @@ describe('the daily dungeon pays experience', () => {
       body: Record<string, unknown>;
     }>;
 
-  it('pays every creature of the team per room cleared and for a full clear', async () => {
+  it('pays every creature of the team per room it stood in, by what the room was', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -334,11 +334,11 @@ describe('the daily dungeon pays experience', () => {
         const res = await run(p, body(team));
         expect(res.status, JSON.stringify(res.body)).toBe(200);
         const summary = res.body['run'] as {
-          roomsCleared: number;
-          cleared: boolean;
+          route: { history: XpStep[] };
           rewards: { experience: { creatureId: string; gained: number; treat: boolean }[] };
         };
-        const gained = dungeonExperience(summary.roomsCleared, summary.cleared, []);
+        const gained = paidFor(summary.route.history);
+        expect(gained).toBeGreaterThan(0);
         expect(summary.rewards.experience.map((e) => e.creatureId)).toEqual(team);
         for (const view of summary.rewards.experience) {
           expect(view).toMatchObject({ gained, treat: false });
@@ -368,8 +368,8 @@ describe('the daily dungeon pays experience', () => {
         expect(baitOf(ctx, p.id)).toBe(100 - treatCost(8) + dungeonBait(res.body));
         const exp = (res.body['run'] as { rewards: { experience: Record<string, unknown>[] } })
           .rewards.experience;
-        const summary = res.body['run'] as { roomsCleared: number; cleared: boolean };
-        const plain = dungeonExperience(summary.roomsCleared, summary.cleared, []);
+        const summary = res.body['run'] as { route: { history: XpStep[] } };
+        const plain = paidFor(summary.route.history);
         expect(exp.map((e) => [e['creatureId'], e['gained'], e['treat']])).toEqual([
           [a, plain, false],
           [b, plain * 2, true],

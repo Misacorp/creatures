@@ -474,11 +474,11 @@
       "experience": [
         {
           "creatureId": "00000000-0000-4000-8300-000000000011",
-          "gained": 35,
+          "gained": 32,
           "treat": false,
           "levelBefore": 12,
           "level": 12,
-          "exp": 35,
+          "exp": 32,
           "needed": 588,
           "waiting": false,
           "gold": false,
@@ -487,11 +487,11 @@
         },
         {
           "creatureId": "00000000-0000-4000-8300-000000000012",
-          "gained": 35,
+          "gained": 32,
           "treat": false,
           "levelBefore": 12,
           "level": 12,
-          "exp": 35,
+          "exp": 32,
           "needed": 588,
           "waiting": false,
           "gold": false,
@@ -500,16 +500,57 @@
         },
         {
           "creatureId": "00000000-0000-4000-8300-000000000013",
-          "gained": 35,
+          "gained": 32,
           "treat": false,
           "levelBefore": 12,
           "level": 12,
-          "exp": 35,
+          "exp": 32,
           "needed": 588,
           "waiting": false,
           "gold": false,
           "treatTimes": null,
           "dayEffects": []
+        }
+      ],
+      "recap": [
+        {
+          "creatureId": "00000000-0000-4000-8300-000000000011",
+          "name": "Zipmouse",
+          "speciesId": "zipmouse",
+          "base": 32,
+          "fights": 1,
+          "elites": 0,
+          "epics": 0,
+          "keepers": 0,
+          "bosses": 0,
+          "caches": 0,
+          "events": 0
+        },
+        {
+          "creatureId": "00000000-0000-4000-8300-000000000012",
+          "name": "Mistnewt",
+          "speciesId": "mistnewt",
+          "base": 32,
+          "fights": 1,
+          "elites": 0,
+          "epics": 0,
+          "keepers": 0,
+          "bosses": 0,
+          "caches": 0,
+          "events": 0
+        },
+        {
+          "creatureId": "00000000-0000-4000-8300-000000000013",
+          "name": "Ashmole",
+          "speciesId": "ashmole",
+          "base": 32,
+          "fights": 1,
+          "elites": 0,
+          "epics": 0,
+          "keepers": 0,
+          "bosses": 0,
+          "caches": 0,
+          "events": 0
         }
       ]
     },
@@ -960,11 +1001,11 @@
         "experience": [
           {
             "creatureId": "00000000-0000-4000-8300-000000000011",
-            "gained": 35,
+            "gained": 32,
             "treat": false,
             "levelBefore": 12,
             "level": 12,
-            "exp": 35,
+            "exp": 32,
             "needed": 588,
             "waiting": false,
             "gold": false,
@@ -973,11 +1014,11 @@
           },
           {
             "creatureId": "00000000-0000-4000-8300-000000000012",
-            "gained": 35,
+            "gained": 32,
             "treat": false,
             "levelBefore": 12,
             "level": 12,
-            "exp": 35,
+            "exp": 32,
             "needed": 588,
             "waiting": false,
             "gold": false,
@@ -986,16 +1027,57 @@
           },
           {
             "creatureId": "00000000-0000-4000-8300-000000000013",
-            "gained": 35,
+            "gained": 32,
             "treat": false,
             "levelBefore": 12,
             "level": 12,
-            "exp": 35,
+            "exp": 32,
             "needed": 588,
             "waiting": false,
             "gold": false,
             "treatTimes": null,
             "dayEffects": []
+          }
+        ],
+        "recap": [
+          {
+            "creatureId": "00000000-0000-4000-8300-000000000011",
+            "name": "Zipmouse",
+            "speciesId": "zipmouse",
+            "base": 32,
+            "fights": 1,
+            "elites": 0,
+            "epics": 0,
+            "keepers": 0,
+            "bosses": 0,
+            "caches": 0,
+            "events": 0
+          },
+          {
+            "creatureId": "00000000-0000-4000-8300-000000000012",
+            "name": "Mistnewt",
+            "speciesId": "mistnewt",
+            "base": 32,
+            "fights": 1,
+            "elites": 0,
+            "epics": 0,
+            "keepers": 0,
+            "bosses": 0,
+            "caches": 0,
+            "events": 0
+          },
+          {
+            "creatureId": "00000000-0000-4000-8300-000000000013",
+            "name": "Ashmole",
+            "speciesId": "ashmole",
+            "base": 32,
+            "fights": 1,
+            "elites": 0,
+            "epics": 0,
+            "keepers": 0,
+            "bosses": 0,
+            "caches": 0,
+            "events": 0
           }
         ]
       },

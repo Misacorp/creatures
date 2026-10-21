@@ -89,8 +89,17 @@ export const RULES = {
     maxLevel: 30,
     /** Experience per creature for a finished trip, by length (a recall or a failed trip pays none). */
     trip: { short: 20, medium: 60, long: 120, day: 240 },
-    /** The daily dungeon: per fight cleared (a run is 3 to 6 fights), and on top of that for beating the floor boss. Depth adds nothing. */
-    dungeon: { perRoom: 35, fullClear: 60 },
+    /**
+     * The daily dungeon (2026-10-21, B-028): every creature that stood in the row for a room earns that
+     * room's amount, by what the room is: a fight cleared (`fight`, `elite`, `epic` for an Undercroft epic
+     * fight, `keeper` for an Undercroft keeper, `boss` for the floor boss) or a cache (`cache`, always
+     * below a fight: it costs no fight). Mystery rooms pay through their own `xp` effect (the event's
+     * content, at most `maxEvent`). A fight that is lost pays nothing. The treat and the day's Boons and
+     * Omens multiply the total once, at the end. Depth adds nothing. There is no separate full-clear bonus:
+     * the boss's amount carries it (the old 60 on top of 35 a room), so the row that beat the boss is paid
+     * for it and a creature that left at a camp keeps what it earned.
+     */
+    dungeon: { fight: 32, elite: 48, epic: 58, keeper: 58, boss: 105, cache: 10, maxEvent: 60 },
     /** Raid stages, per creature in the fight: the stage's experience, times `clearedBp` when it was cleared. */
     raid: { phase1: 200, phase2: 200, finale: 400, clearedBp: 15_000 },
     /** A Workshop job: experience per hour of its nominal work time. */

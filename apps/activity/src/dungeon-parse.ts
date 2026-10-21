@@ -15,6 +15,7 @@ import type {
   DungeonEventView,
   DungeonKeepsakeView,
   DungeonMapNode,
+  DungeonExperienceRecap,
   DungeonMapView,
   DungeonNodeKind,
   DungeonPack,
@@ -98,6 +99,25 @@ function isRoomSummary(value: unknown): value is DungeonRoomSummary {
   );
 }
 
+/** A creature's recap line of a run: its name and species and whole-number counts. */
+function isRecap(value: unknown): value is DungeonExperienceRecap {
+  return (
+    isRecord(value) &&
+    isStr(value['creatureId']) &&
+    isStr(value['name']) &&
+    value['name'].length <= 64 &&
+    isStr(value['speciesId']) &&
+    isCount(value['base']) &&
+    isCount(value['fights']) &&
+    isCount(value['elites']) &&
+    isCount(value['epics']) &&
+    isCount(value['keepers']) &&
+    isCount(value['bosses']) &&
+    isCount(value['caches']) &&
+    isCount(value['events'])
+  );
+}
+
 function isRewards(value: unknown): value is DungeonRewards {
   if (!isRecord(value)) return false;
   const streak = value['streak'];
@@ -109,6 +129,7 @@ function isRewards(value: unknown): value is DungeonRewards {
     isArrayOf(value['converted'], isConvertedLoot) &&
     (value['supplies'] === undefined || isArrayOf(value['supplies'], isStr)) &&
     (value['experience'] === undefined || isArrayOf(value['experience'], isExperienceView)) &&
+    (value['recap'] === undefined || isArrayOf(value['recap'], isRecap)) &&
     isBool(value['landmark']) &&
     (streak === null ||
       (isRecord(streak) &&

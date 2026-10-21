@@ -475,6 +475,32 @@ describe('the new fields of a summary and of a replayed room', () => {
     expect(() => paid({ dayEffects: [{ name: 1, bp: 1 }] })).toThrow();
   });
 
+  it('read the experience recap of a run, and refuse a broken one', () => {
+    const base = sampleSummary('home');
+    const line = {
+      creatureId: 'c1',
+      name: 'Pip',
+      speciesId: 'cindle',
+      base: 100,
+      fights: 3,
+      elites: 0,
+      epics: 0,
+      keepers: 0,
+      bosses: 1,
+      caches: 1,
+      events: 0,
+    };
+    const withRecap = (recap: unknown) =>
+      summaryIn({ rewards: { ...base.rewards, recap } })?.rewards.recap;
+    expect(withRecap([line])).toEqual([line]);
+    expect(summaryIn({})?.rewards.recap).toBeUndefined();
+    expect(() => withRecap([{ ...line, fights: -1 }])).toThrow();
+    expect(() => withRecap([{ ...line, bosses: 1.5 }])).toThrow();
+    expect(() => withRecap([{ ...line, name: 5 }])).toThrow();
+    expect(() => withRecap([{ ...line, caches: undefined }])).toThrow();
+    expect(() => withRecap('x')).toThrow();
+  });
+
   it('read the weather a run was fought under, and refuse a broken one', () => {
     expect(summaryIn({})?.weather).toBeUndefined();
     expect(summaryIn({ weather: { boon: 'sunny-nap', omen: null } })?.weather).toEqual({

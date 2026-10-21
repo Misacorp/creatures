@@ -13,11 +13,13 @@ import {
   ROOM_END_MS,
   atSpeed,
   droppedSupplies,
+  experienceRecap,
   fightScroll,
   hpLine,
   mineIds,
   modifierGimmicks,
   nextRoom,
+  recapLine,
   NO_REWARDS_HINT,
   NO_REWARDS_LINE,
   noRewards,
@@ -384,6 +386,85 @@ describe('the team breakdown of the end report', () => {
       role: cleared.team[0]?.role,
       level: cleared.team[0]?.level,
     });
+  });
+});
+
+describe('the experience recap', () => {
+  const none = { fights: 0, elites: 0, epics: 0, keepers: 0, bosses: 0, caches: 0, events: 0 };
+
+  it('words what paid a creature, leaving out what did not', () => {
+    expect(recapLine({ ...none, fights: 4, caches: 1, bosses: 1 })).toBe('4 fights, 1 cache, boss');
+    expect(recapLine({ ...none, fights: 1 })).toBe('1 fight');
+    expect(recapLine({ ...none, fights: 2, elites: 1, events: 2 })).toBe(
+      '2 fights, 1 elite, 2 mystery rooms',
+    );
+    expect(recapLine({ ...none, epics: 1, keepers: 1, bosses: 1, caches: 2, events: 1 })).toBe(
+      '1 epic fight, 1 keeper, 2 caches, 1 mystery room, boss',
+    );
+    expect(recapLine(none)).toBeNull();
+  });
+
+  const [a, b] = cleared.team;
+  if (a === undefined || b === undefined) throw new Error('fixture has a team');
+  const paid = (id: string, gained: number) => ({
+    creatureId: id,
+    gained,
+    treat: false,
+    levelBefore: 4,
+    level: 4,
+    exp: 20,
+    needed: 175,
+    waiting: false,
+    gold: false,
+  });
+
+  it('lists every creature the run paid, one sent home at a camp too, with its line', () => {
+    const away = {
+      creatureId: 'gone',
+      name: 'Pip',
+      speciesId: 'cindle',
+      base: 64,
+      ...none,
+      fights: 2,
+    };
+    const entries = experienceRecap({
+      team: [a, b],
+      rewards: {
+        ...cleared.rewards,
+        experience: [paid(a.id, 150), paid('gone', 64), paid(b.id, 90)],
+        recap: [
+          {
+            creatureId: a.id,
+            name: a.name,
+            speciesId: a.speciesId,
+            base: 150,
+            ...none,
+            fights: 4,
+            bosses: 1,
+          },
+          away,
+          { creatureId: b.id, name: b.name, speciesId: b.speciesId, base: 90, ...none, fights: 3 },
+        ],
+      },
+    });
+    expect(entries.map((e) => e.id)).toEqual([a.id, 'gone', b.id]);
+    expect(entries.map((e) => e.wentHome)).toEqual([false, true, false]);
+    expect(entries.map((e) => e.name)).toEqual([a.name, 'Pip', b.name]);
+    expect(entries.map((e) => e.line)).toEqual(['4 fights, boss', '2 fights', '3 fights']);
+    expect(entries[1]?.exp).toMatchObject({ gained: 64, kind: 'experience' });
+  });
+
+  it('reads a run from before the recap: the team only, with no line', () => {
+    const entries = experienceRecap({
+      team: [a],
+      rewards: { ...cleared.rewards, experience: [paid(a.id, 150), paid('gone', 64)] },
+    });
+    // The creature that is not in the team cannot be named, so it is left out.
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({ id: a.id, line: null, wentHome: false });
+    const old = { ...cleared.rewards };
+    delete old.experience;
+    expect(experienceRecap({ team: [a], rewards: old })).toEqual([]);
   });
 });
 
