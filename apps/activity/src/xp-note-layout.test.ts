@@ -1,7 +1,11 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const css = readFileSync(new URL('./styles/components/xp-gain.css', import.meta.url), 'utf8');
+const files = import.meta.glob<string>('./styles/components/xp-gain.css', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+const css = Object.values(files)[0] ?? '';
 
 describe('the XP recap note', () => {
   it('spans every column of the shared grid, so the bar keeps its full width', () => {
