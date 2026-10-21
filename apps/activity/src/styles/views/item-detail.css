@@ -285,6 +285,20 @@ button.danger {
 }
 
 /*
+  Dismantling as a wizard (2026-10-22): a drill-in in the place of the item. The gold button and its reason sit
+  at the bottom of the drawer's scrolling body (sticky), like the job wizard's pinned footer, so they stay in
+  view while the list scrolls. It reaches the drawer's edges and is drawn over the list.
+*/
+.dismantle-footer {
+  position: sticky;
+  bottom: -0.75rem;
+  margin: 0.75rem calc(var(--drawer-pad) * -1) -0.75rem;
+  padding: 0.5rem var(--drawer-pad) 0.75rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 2px 0 0 var(--line);
+}
+
+/*
   The "Equip on" row of the Workshop item drawer: the label, then a trigger that looks like a dropdown (the
   wearer's sprite and name, or "Choose a creature", and a chevron). It opens the creature picker sheet.
 */

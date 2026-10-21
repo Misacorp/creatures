@@ -144,18 +144,24 @@ export function JobWhoStep({
   value,
   onPick,
   startOpen = false,
+  legend = 'Who crafts',
+  groupName = WHO_GROUP,
 }: {
   who: JobWho;
   value: string | null;
   onPick: (creatureId: string) => void;
   /** The folded row starts open (the workbench; the game starts it folded). */
   startOpen?: boolean;
+  /** The group's name for screen readers ("Who dismantles" in the dismantle wizard). */
+  legend?: string;
+  /** Names the radio group; unique on the page. */
+  groupName?: string;
 }) {
   const [open, setOpen] = useState(startOpen);
   const row = (option: JobWho['able'][number]) => (
     <PickRow
       key={option.creature.id}
-      name={WHO_GROUP}
+      name={groupName}
       option={option}
       selected={value === option.creature.id}
       onChange={onPick}
@@ -163,7 +169,7 @@ export function JobWhoStep({
   );
   return (
     <fieldset class="picker job-who">
-      <legend class="visually-hidden">Who crafts</legend>
+      <legend class="visually-hidden">{legend}</legend>
       {who.able.map(row)}
       {who.busy.map(row)}
       {who.summary !== null && (

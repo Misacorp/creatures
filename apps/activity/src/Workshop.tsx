@@ -206,6 +206,7 @@ export function Workshop({
                 creatures={state.creatures}
                 busy={busy}
                 actions={actions}
+                error={error}
                 focusName={!flipped}
                 onDrill={setDrilling}
                 onGone={() => {
