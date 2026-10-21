@@ -102,7 +102,7 @@ export function SendTrip({
     picks,
     stock,
   });
-  // What the supply cards and the haul strip work the boost brackets out for (recomputed on every change).
+  // What the haul strip works the boost brackets out for (recomputed on every change).
   const trip: TripContext = {
     length: duration,
     place: place?.id ?? null,
@@ -158,7 +158,7 @@ export function SendTrip({
           </button>
         )}
       </div>
-      <SupplyPicker picks={picks} stock={stock} onChange={setPicks} trip={trip} />
+      <SupplyPicker picks={picks} stock={stock} onChange={setPicks} />
 
       <div class="send-summary">
         {explorer !== undefined && (

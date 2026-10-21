@@ -1,12 +1,11 @@
 /**
- * What supplies add to the trip being sent, as brackets in words (2026-10-21): "Parts: at least double on
- * this trip". The exact numbers come from the game package (`tripBoost`, the economy study's own math),
- * shown only as a bracket, never a count. Recomputed whenever the length, place, explorer or kit changes;
- * the Workshop has no trip, so it shows only the supply's blurb.
+ * What the whole kit adds to the trip being sent, as a bracket per category (2026-10-21): the Expected haul
+ * strip's "+" marks. The exact numbers come from the game package (`tripBoost`, the economy study's own
+ * math), shown only as a bracket, never a count. A supply's own card shows just its blurb, anchored to a
+ * reference trip (`REFERENCE_TRIP`).
  */
 import {
   boostLevel,
-  boostWords,
   destinationDef,
   expeditionContent,
   tripBoost,
@@ -29,34 +28,6 @@ export interface TripContext {
   /** The id of the week's twist when it applies to this place (`special.twist`), else null. */
   twist: string | null;
 }
-
-/** One line of a supply card: the category and how much more of it the supply brings on this trip. */
-export interface BoostLine {
-  category: BoostCategory | 'everything';
-  level: BoostLevel;
-  /** "Parts: at least double on this trip". */
-  text: string;
-}
-
-export const CATEGORY_LABEL: Readonly<Record<BoostCategory | 'everything', string>> = {
-  creatures: 'Creatures',
-  newSpecies: 'New species',
-  deepCreatures: 'Deeper area',
-  parts: 'Parts',
-  gear: 'Gear',
-  xp: 'XP',
-  everything: 'Everything',
-};
-
-/** The categories a kind of supply is described by on its card (a map raises every table the same way). */
-const CARD_CATEGORIES: Readonly<
-  Record<SupplyDef['kind'], readonly (BoostCategory | 'everything')[]>
-> = {
-  lure: ['creatures', 'newSpecies'],
-  'map-scrap': ['everything'],
-  lantern: ['deepCreatures', 'creatures'],
-  satchel: ['parts'],
-};
 
 function levelsFor(
   trip: TripContext,
@@ -88,23 +59,4 @@ export function kitLevels(
   kitIds: readonly string[],
 ): Record<BoostCategory, BoostLevel> | null {
   return levelsFor(trip, supplyDefs(kitIds));
-}
-
-/** The one or two lines of a supply's card for this trip; empty when no trip is chosen or it adds nothing. */
-export function supplyBoostLines(trip: TripContext, supplyId: string): BoostLine[] {
-  const def = supplyDefs([supplyId])[0];
-  if (def === undefined) return [];
-  const levels = levelsFor(trip, [def]);
-  if (levels === null) return [];
-  const lines: BoostLine[] = [];
-  for (const category of CARD_CATEGORIES[def.kind]) {
-    const level = levels[category === 'everything' ? 'creatures' : category];
-    if (level === 0) continue;
-    lines.push({
-      category,
-      level,
-      text: `${CATEGORY_LABEL[category]}: ${boostWords(level)} on this trip`,
-    });
-  }
-  return lines;
 }

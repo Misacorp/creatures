@@ -294,28 +294,18 @@ describe('the trip summary notes', () => {
   });
 });
 
-describe('the boost brackets on the send screen', () => {
-  it('shows what a packed supply adds to this trip on its card, and marks the strip', () => {
+describe('the supply card on the send screen', () => {
+  it('shows one line for a packed supply (its blurb) and marks the strip', () => {
     const root = drawSend();
-    expect(byClass(root, 'supply-boost')).toHaveLength(0);
     page?.click(cell(root, 'Small Satchel'));
-    const lines = byClass(root, 'supply-boost').map((l) => visibleText(l));
-    expect(lines).toHaveLength(1);
-    expect(lines[0]).toMatch(
-      /^Parts: (slightly more|more|a lot more|at least double) on this trip$/,
-    );
+    const card = byClass(root, 'supply-card');
+    expect(card).toHaveLength(1);
+    expect(byClass(root, 'supply-effect')).toHaveLength(1);
+    expect(byClass(root, 'supply-boosts')).toHaveLength(0);
+    expect(card.map((c) => visibleText(c)).join(' ')).not.toContain('on this trip');
     // The strip's marks follow the bracket: one to four "+" under the raised rows.
     const marks = byClass(root, 'worth-plus').map((m) => visibleText(m).trim());
     expect(marks.length).toBeGreaterThan(0);
     expect(marks.every((m) => /^\+{1,4}$/.test(m))).toBe(true);
-  });
-
-  it('shows no lines on a card drawn without a trip (the Workshop)', () => {
-    page = createPage();
-    const seen: SupplyPick[][] = [];
-    page.draw(<Kit stock={STOCK} seen={seen} />);
-    page.click(cell(page.root, 'Small Satchel'));
-    expect(byClass(page.root, 'supply-card')).toHaveLength(1);
-    expect(byClass(page.root, 'supply-boost')).toHaveLength(0);
   });
 });

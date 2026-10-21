@@ -130,7 +130,7 @@ const SupplyBlueprintSchema = v.strictObject({
 });
 export type SupplyBlueprint = v.InferOutput<typeof SupplyBlueprintSchema>;
 
-export const MAX_SUPPLY_BLURB = 50;
+export const MAX_SUPPLY_BLURB = 60;
 /** A supply's effect in words: short, plain text, and never a digit or a percent sign. */
 const SupplyBlurb = v.pipe(
   Text(MAX_SUPPLY_BLURB),

@@ -11,6 +11,7 @@ import type {
   TwistEffect,
 } from '../content/expedition-schema';
 import type { Role } from '../content/schema';
+import { destinationDef } from '../content';
 import { RULES } from './config';
 import { expectedTrip, type TripEv, type TripEvInput } from './trip-ev';
 
@@ -130,4 +131,39 @@ export function tripBoostLevels(input: TripBoostInput): Record<BoostCategory, Bo
     BoostCategory,
     BoostLevel
   >;
+}
+
+/**
+ * The trip every supply blurb is anchored to (2026-10-21): 12 hours at the economy study's reference
+ * place, a payoff explorer with no stars and no twist. A blurb's strength word is the bracket of the
+ * supply's main category on this trip, so tuning cannot make the words lie (a test holds them to it).
+ */
+export const REFERENCE_TRIP = {
+  length: 'long',
+  placeId: 'ember-caves',
+  role: 'payoff',
+  stars: 0,
+} as const satisfies { length: ExpeditionLength; placeId: string; role: Role; stars: number };
+
+/** The category a kind of supply is described by in its blurb (a map raises every table alike). */
+export const BLURB_CATEGORY: Readonly<Record<SupplyDef['kind'], BoostCategory>> = {
+  lure: 'creatures',
+  'map-scrap': 'creatures',
+  lantern: 'deepCreatures',
+  satchel: 'parts',
+};
+
+/** The relative boost of one supply's main category on the reference trip. */
+export function referenceBoost(supply: SupplyDef): number {
+  const place = destinationDef(REFERENCE_TRIP.placeId);
+  if (place === undefined) throw new Error(`no reference place ${REFERENCE_TRIP.placeId}`);
+  const boost = tripBoost({
+    length: REFERENCE_TRIP.length,
+    kit: [supply],
+    place,
+    role: REFERENCE_TRIP.role,
+    stars: REFERENCE_TRIP.stars,
+    twist: null,
+  });
+  return boost[BLURB_CATEGORY[supply.kind]];
 }

@@ -10,6 +10,8 @@ import {
   expeditionContent,
   kitOf,
   RULES,
+  referenceBoost,
+  REFERENCE_TRIP,
   tripBoost,
   type DestinationDef,
   type ExpeditionLength,
@@ -150,5 +152,69 @@ describe('the boost of a kit on a trip', () => {
     expect(guard).toBeLessThan(payoff);
     const rolls = boostOf('long', ['lure-basic'], { twist: { kind: 'rolls', extra: 5 } }).creatures;
     expect(rolls).toBeLessThan(boostOf('long', ['lure-basic']).creatures);
+  });
+});
+
+describe('the supply blurbs are anchored to the reference trip', () => {
+  /** The words a blurb may use per bracket (lanterns speak of chance). Each is checked as a whole phrase. */
+  const WORDS: Record<'creature' | 'lantern', Record<1 | 2 | 3 | 4, readonly string[]>> = {
+    creature: {
+      1: ['slightly more'],
+      2: ['more'],
+      3: ['many more', 'much more'],
+      4: ['double', 'at least double'],
+    },
+    lantern: {
+      1: ['a slight chance'],
+      2: ['a fair chance'],
+      3: ['a strong chance'],
+      4: ['a very strong chance'],
+    },
+  };
+
+  const phrasesOf = (kind: string, level: 1 | 2 | 3 | 4) =>
+    WORDS[kind === 'lantern' ? 'lantern' : 'creature'][level];
+
+  const allPhrases = (kind: string) =>
+    ([1, 2, 3, 4] as const).flatMap((l) => phrasesOf(kind, l)).sort((a, b) => b.length - a.length);
+
+  it('names the reference trip: 12 hours at the economy study place, a payoff, no stars', () => {
+    expect(REFERENCE_TRIP).toEqual({
+      length: 'long',
+      placeId: 'ember-caves',
+      role: 'payoff',
+      stars: 0,
+    });
+  });
+
+  it('opens each blurb with the strength word of its bracket on that trip, and no other', () => {
+    for (const s of expeditionContent.supplies) {
+      const level = boostLevel(referenceBoost(s));
+      expect(level, `${s.id} is visible on the reference trip`).toBeGreaterThan(0);
+      const blurb = s.blurb.toLowerCase();
+      const own = phrasesOf(s.kind, level as 1 | 2 | 3 | 4);
+      // The blurb starts with the phrase (after an optional "A good route: " style lead).
+      const lead = blurb.replace(/^[^:]*: /, '');
+      const used = own.find((p) => lead.startsWith(p) || lead.startsWith(`a ${p}`));
+      expect(used, `${s.id} (bracket ${String(level)}): "${s.blurb}"`).toBeDefined();
+      // Nothing else in it names a different bracket ("more" alone and "double" are parts of other phrases).
+      const rest = lead.replace(used ?? '', '');
+      for (const p of allPhrases(s.kind)) {
+        if (p === 'more' || p === 'double' || p === 'at least double') continue;
+        expect(rest.includes(p), `${s.id}: "${p}" in "${s.blurb}"`).toBe(false);
+      }
+    }
+  });
+
+  it('reads as rising within a kind: a better tier is never in a lower bracket', () => {
+    for (const kind of ['lure', 'map-scrap', 'lantern', 'satchel'] as const) {
+      const levels = expeditionContent.supplies
+        .filter((s) => s.kind === kind)
+        .map((s) => boostLevel(referenceBoost(s)));
+      expect(
+        [...levels].sort((a, b) => a - b),
+        kind,
+      ).toEqual(levels);
+    }
   });
 });

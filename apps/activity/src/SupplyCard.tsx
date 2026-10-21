@@ -1,4 +1,3 @@
-import type { BoostLine } from './boost-view';
 import { ChoiceMark, supplyEntry } from './ExpeditionIcons';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
@@ -10,18 +9,9 @@ import { kindLabel, type SupplyOption } from './trip-view';
  * The item card of one supply: its picture, its name in its tier's colour, its kind (a glossary tag), what
  * it does and how sure the end-of-trip choice is. Shown under the send screen's grid for a packed supply
  * and in a popover from the trip summary. `packed` adds "Packed" after the kind (the grid's card only).
- * On the send screen `lines` add how much more it brings on the chosen trip (never a count).
+ * One line says what it does (the blurb, whose strength word is anchored to a reference trip).
  */
-export function SupplyCard({
-  view,
-  packed = false,
-  lines = [],
-}: {
-  view: SupplyOption;
-  packed?: boolean;
-  /** What it adds to the trip being sent, in brackets (`supplyBoostLines`); none in the Workshop. */
-  lines?: readonly BoostLine[];
-}) {
+export function SupplyCard({ view, packed = false }: { view: SupplyOption; packed?: boolean }) {
   return (
     <div class={`supply-card card-item ${tierRarityClass(view.tier)}`} aria-live="polite">
       <div class="bp-row">
@@ -39,15 +29,6 @@ export function SupplyCard({
         </div>
       </div>
       <p class="supply-effect">{view.effect}</p>
-      {lines.length > 0 && (
-        <ul class="supply-boosts" aria-label="On this trip">
-          {lines.map((line) => (
-            <li key={line.category} class={`supply-boost level-${String(line.level)}`}>
-              {line.text}
-            </li>
-          ))}
-        </ul>
-      )}
       <ChoiceMark choice={view.choice} />
     </div>
   );
