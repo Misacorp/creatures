@@ -108,22 +108,14 @@ function isRoomSummary(value: unknown): value is DungeonRoomSummary {
   );
 }
 
-/** A creature's recap line of a run: its name and species and whole-number counts. */
+/** A creature's recap of a run: its id, name and species. */
 function isRecap(value: unknown): value is DungeonExperienceRecap {
   return (
     isRecord(value) &&
     isStr(value['creatureId']) &&
     isStr(value['name']) &&
     value['name'].length <= 64 &&
-    isStr(value['speciesId']) &&
-    isCount(value['base']) &&
-    isCount(value['fights']) &&
-    isCount(value['elites']) &&
-    isCount(value['epics']) &&
-    isCount(value['keepers']) &&
-    isCount(value['bosses']) &&
-    isCount(value['caches']) &&
-    isCount(value['events'])
+    isStr(value['speciesId'])
   );
 }
 

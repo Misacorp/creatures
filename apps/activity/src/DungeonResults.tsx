@@ -340,7 +340,7 @@ function RoomStrip({ rooms, path }: { rooms: readonly StripRoom[]; path: boolean
  * one list, the experience recap: a row for every creature the run paid (one sent home at a camp too, tagged
  * "Went home") as the same row every result screen shows (`ExperienceGainRow`: its name, the level change and
  * "Level up!" when the run levelled it, the bar counting up, the "+N" and the multiplier with its breakdown),
- * and a short line of what paid it ("4 fights, 1 cache, boss"); a third of a phone is too narrow for it under each sprite. Tapping a sprite opens the small-creature popover with its role and element.
+ * (a third of a phone is too narrow for it under each sprite). Tapping a sprite opens the small-creature popover with its role and element.
  */
 function TeamBreakdown({
   team,
@@ -379,7 +379,6 @@ function TeamBreakdown({
               key={m.id}
               who={{ name: m.name, species: m.speciesId }}
               gain={m.exp}
-              note={m.line}
               home={m.wentHome}
             />
           ))}

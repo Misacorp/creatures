@@ -259,23 +259,13 @@ export interface DungeonExperienceView extends ExperienceView {
 }
 
 /**
- * What one creature earned in a run, for the end screen's recap: which rooms paid it (counts of plain
- * fights, elites, epic fights, keepers, the floor boss, caches and mystery rooms) and the plain total
- * before the treat and the day's multipliers (`base`; what was paid is in the creature's
+ * A creature that earned experience in a run, for the end screen's recap (what it was paid is in its
  * `DungeonExperienceView`). It names the creature, so a creature sent home at a camp can be listed.
  */
 export interface DungeonExperienceRecap {
   creatureId: string;
   name: string;
   speciesId: string;
-  base: number;
-  fights: number;
-  elites: number;
-  epics: number;
-  keepers: number;
-  bosses: number;
-  caches: number;
-  events: number;
 }
 
 /** What a run paid. The streak bonus is listed apart from what the rooms paid. */

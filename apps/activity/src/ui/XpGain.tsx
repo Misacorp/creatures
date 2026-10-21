@@ -134,7 +134,6 @@ export function XpGain({
   what,
   who,
   tags,
-  note,
 }: {
   change: XpChange;
   /** "Experience", "Crafting" or "Explorer" (a glossary tag), or the creature's name in a team's list. */
@@ -145,8 +144,6 @@ export function XpGain({
   who?: { species: string } | undefined;
   /** More small tags after the level change (Gold Ribbon, Waiting). */
   tags?: ComponentChildren;
-  /** A short line under the bar: what paid the gain ("4 fights, 1 cache, boss"). Plain text. */
-  note?: string | null | undefined;
 }) {
   const reduced = usePrefersReducedMotion();
   const count = useCount(gain, reduced);
@@ -202,7 +199,6 @@ export function XpGain({
         <span class={done ? 'xp-plus done' : 'xp-plus'}>+{gain.gained}</span>
         <BoostButton boost={gain.boost} what={what} id={gain.label} />
       </div>
-      {note !== undefined && note !== null && <p class="xp-note">{note}</p>}
     </li>
   );
 }

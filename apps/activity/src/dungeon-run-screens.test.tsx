@@ -891,59 +891,28 @@ describe('the results of a path run', () => {
     expect(visibleText(root)).not.toContain('level 7 to 8');
   });
 
-  it('recaps what paid each creature under its row, and lists one sent home at a camp too', () => {
+  it('lists one sent home at a camp too', () => {
     const run = withExperience(sampleSummary('cleared'));
     const [a, b, c] = run.team.map((m) => m.id) as [string, string, string];
     const [pa, pb, pc] = run.rewards.experience ?? [];
     if (pa === undefined || pb === undefined || pc === undefined) throw new Error('sample');
-    const none = { fights: 0, elites: 0, epics: 0, keepers: 0, bosses: 0, caches: 0, events: 0 };
     const root = results({
       ...run,
       rewards: {
         ...run.rewards,
         experience: [...(run.rewards.experience ?? []), { ...pa, creatureId: 'gone', gained: 70 }],
         recap: [
-          {
-            creatureId: a,
-            name: 'A',
-            speciesId: 'cindle',
-            base: 130,
-            ...none,
-            fights: 3,
-            bosses: 1,
-            caches: 1,
-          },
-          {
-            creatureId: b,
-            name: 'B',
-            speciesId: 'cindle',
-            base: 65,
-            ...none,
-            fights: 2,
-            events: 1,
-          },
-          {
-            creatureId: c,
-            name: 'C',
-            speciesId: 'cindle',
-            base: 90,
-            ...none,
-            fights: 2,
-            elites: 1,
-          },
-          { creatureId: 'gone', name: 'Pip', speciesId: 'cindle', base: 35, ...none, fights: 1 },
+          { creatureId: a, name: 'A', speciesId: 'cindle' },
+          { creatureId: b, name: 'B', speciesId: 'cindle' },
+          { creatureId: c, name: 'C', speciesId: 'cindle' },
+          { creatureId: 'gone', name: 'Pip', speciesId: 'cindle' },
         ],
       },
     });
     const rows = byClass(byClass(root, 'team-xp')[0] as FakeElement, 'xp-row');
     expect(rows).toHaveLength(4);
-    const notes = rows.map((r) => visibleText(byClass(r, 'xp-note')[0] as FakeElement));
-    expect(notes).toEqual([
-      '3 fights, 1 cache, boss',
-      '2 fights, 1 mystery room',
-      '2 fights, 1 elite',
-      '1 fight',
-    ]);
+    // No reason line under any bar: just the experience.
+    expect(byClass(root, 'xp-note')).toHaveLength(0);
     // The creature that is not in the final row is there, by its recap name, tagged.
     const gone = visibleText(rows[3] as FakeElement);
     expect(gone).toContain('Pip');

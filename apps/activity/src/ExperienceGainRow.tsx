@@ -12,13 +12,10 @@ import { XpGain } from './ui/XpGain';
 export function ExperienceGainRow({
   gain,
   who,
-  note,
   home,
 }: {
   gain: XpChange;
   who?: { name: string; species: string };
-  /** What paid the gain, as one short line under the bar. */
-  note?: string | null;
   /** The creature was sent home at a camp: it keeps what it earned. */
   home?: boolean;
 }) {
@@ -30,7 +27,6 @@ export function ExperienceGainRow({
         who === undefined ? <GlossaryTag entry="experience">Experience</GlossaryTag> : who.name
       }
       who={who}
-      note={note}
       tags={
         <>
           {gain.gold && (

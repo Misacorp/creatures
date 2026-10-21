@@ -1504,41 +1504,17 @@
         {
           "creatureId": "00000000-0000-4000-8300-000000000020",
           "name": "Sproutle",
-          "speciesId": "sproutle",
-          "base": 339,
-          "fights": 4,
-          "elites": 1,
-          "epics": 0,
-          "keepers": 1,
-          "bosses": 1,
-          "caches": 0,
-          "events": 0
+          "speciesId": "sproutle"
         },
         {
           "creatureId": "00000000-0000-4000-8300-000000000021",
           "name": "Splashet",
-          "speciesId": "splashet",
-          "base": 339,
-          "fights": 4,
-          "elites": 1,
-          "epics": 0,
-          "keepers": 1,
-          "bosses": 1,
-          "caches": 0,
-          "events": 0
+          "speciesId": "splashet"
         },
         {
           "creatureId": "00000000-0000-4000-8300-000000000022",
           "name": "Cindle",
-          "speciesId": "cindle",
-          "base": 339,
-          "fights": 4,
-          "elites": 1,
-          "epics": 0,
-          "keepers": 1,
-          "bosses": 1,
-          "caches": 0,
-          "events": 0
+          "speciesId": "cindle"
         }
       ]
     },
@@ -2418,41 +2394,17 @@
           {
             "creatureId": "00000000-0000-4000-8300-000000000020",
             "name": "Sproutle",
-            "speciesId": "sproutle",
-            "base": 339,
-            "fights": 4,
-            "elites": 1,
-            "epics": 0,
-            "keepers": 1,
-            "bosses": 1,
-            "caches": 0,
-            "events": 0
+            "speciesId": "sproutle"
           },
           {
             "creatureId": "00000000-0000-4000-8300-000000000021",
             "name": "Splashet",
-            "speciesId": "splashet",
-            "base": 339,
-            "fights": 4,
-            "elites": 1,
-            "epics": 0,
-            "keepers": 1,
-            "bosses": 1,
-            "caches": 0,
-            "events": 0
+            "speciesId": "splashet"
           },
           {
             "creatureId": "00000000-0000-4000-8300-000000000022",
             "name": "Cindle",
-            "speciesId": "cindle",
-            "base": 339,
-            "fights": 4,
-            "elites": 1,
-            "epics": 0,
-            "keepers": 1,
-            "bosses": 1,
-            "caches": 0,
-            "events": 0
+            "speciesId": "cindle"
           }
         ]
       },

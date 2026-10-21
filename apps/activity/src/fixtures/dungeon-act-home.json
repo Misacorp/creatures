@@ -516,41 +516,17 @@
         {
           "creatureId": "00000000-0000-4000-8300-000000000011",
           "name": "Zipmouse",
-          "speciesId": "zipmouse",
-          "base": 32,
-          "fights": 1,
-          "elites": 0,
-          "epics": 0,
-          "keepers": 0,
-          "bosses": 0,
-          "caches": 0,
-          "events": 0
+          "speciesId": "zipmouse"
         },
         {
           "creatureId": "00000000-0000-4000-8300-000000000012",
           "name": "Mistnewt",
-          "speciesId": "mistnewt",
-          "base": 32,
-          "fights": 1,
-          "elites": 0,
-          "epics": 0,
-          "keepers": 0,
-          "bosses": 0,
-          "caches": 0,
-          "events": 0
+          "speciesId": "mistnewt"
         },
         {
           "creatureId": "00000000-0000-4000-8300-000000000013",
           "name": "Ashmole",
-          "speciesId": "ashmole",
-          "base": 32,
-          "fights": 1,
-          "elites": 0,
-          "epics": 0,
-          "keepers": 0,
-          "bosses": 0,
-          "caches": 0,
-          "events": 0
+          "speciesId": "ashmole"
         }
       ]
     },
@@ -1043,41 +1019,17 @@
           {
             "creatureId": "00000000-0000-4000-8300-000000000011",
             "name": "Zipmouse",
-            "speciesId": "zipmouse",
-            "base": 32,
-            "fights": 1,
-            "elites": 0,
-            "epics": 0,
-            "keepers": 0,
-            "bosses": 0,
-            "caches": 0,
-            "events": 0
+            "speciesId": "zipmouse"
           },
           {
             "creatureId": "00000000-0000-4000-8300-000000000012",
             "name": "Mistnewt",
-            "speciesId": "mistnewt",
-            "base": 32,
-            "fights": 1,
-            "elites": 0,
-            "epics": 0,
-            "keepers": 0,
-            "bosses": 0,
-            "caches": 0,
-            "events": 0
+            "speciesId": "mistnewt"
           },
           {
             "creatureId": "00000000-0000-4000-8300-000000000013",
             "name": "Ashmole",
-            "speciesId": "ashmole",
-            "base": 32,
-            "fights": 1,
-            "elites": 0,
-            "epics": 0,
-            "keepers": 0,
-            "bosses": 0,
-            "caches": 0,
-            "events": 0
+            "speciesId": "ashmole"
           }
         ]
       },

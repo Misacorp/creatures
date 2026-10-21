@@ -203,14 +203,6 @@ export function finishRun(
         creatureId: id,
         name: who.name,
         speciesId: who.speciesId,
-        base: earned.base,
-        fights: earned.fights,
-        elites: earned.elites,
-        epics: earned.epics,
-        keepers: earned.keepers,
-        bosses: earned.bosses,
-        caches: earned.caches,
-        events: earned.events,
       });
     }
   }

@@ -419,7 +419,7 @@ export interface DungeonRewards {
   experience?: ExperienceView[];
   /**
    * The recap behind `experience`: for each creature that earned any (one sent home at a camp too), its
-   * name and what paid it. Absent in runs from before experience was paid per room.
+   * name and species. Absent in runs from before experience was paid per room.
    */
   recap?: DungeonExperienceRecap[];
   /** A fully cleared landmark depth. */
@@ -429,22 +429,13 @@ export interface DungeonRewards {
 }
 
 /**
- * What one creature earned in a run, for the recap: counts of the rooms that paid it and the plain total
- * before the treat and the day's multipliers (what it was paid is in its `ExperienceView`). Names are
- * player text: draw them as text.
+ * A creature that earned experience in a run, for the recap (what it was paid is in its `ExperienceView`).
+ * It names the creature, so one sent home at a camp can be listed. Names are player text: draw them as text.
  */
 export interface DungeonExperienceRecap {
   creatureId: string;
   name: string;
   speciesId: string;
-  base: number;
-  fights: number;
-  elites: number;
-  epics: number;
-  keepers: number;
-  bosses: number;
-  caches: number;
-  events: number;
 }
 
 export interface DungeonRoomSummary {

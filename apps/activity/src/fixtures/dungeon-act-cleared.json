@@ -836,54 +836,22 @@
         {
           "creatureId": "00000000-0000-4000-8300-000000000001",
           "name": "Sproutle",
-          "speciesId": "sproutle",
-          "base": 201,
-          "fights": 3,
-          "elites": 0,
-          "epics": 0,
-          "keepers": 0,
-          "bosses": 1,
-          "caches": 0,
-          "events": 0
+          "speciesId": "sproutle"
         },
         {
           "creatureId": "00000000-0000-4000-8300-000000000002",
           "name": "Splashet",
-          "speciesId": "splashet",
-          "base": 201,
-          "fights": 3,
-          "elites": 0,
-          "epics": 0,
-          "keepers": 0,
-          "bosses": 1,
-          "caches": 0,
-          "events": 0
+          "speciesId": "splashet"
         },
         {
           "creatureId": "00000000-0000-4000-8300-000000000003",
           "name": "Cindle",
-          "speciesId": "cindle",
-          "base": 32,
-          "fights": 1,
-          "elites": 0,
-          "epics": 0,
-          "keepers": 0,
-          "bosses": 0,
-          "caches": 0,
-          "events": 0
+          "speciesId": "cindle"
         },
         {
           "creatureId": "00000000-0000-4000-8300-000000000009",
           "name": "Zipmouse",
-          "speciesId": "zipmouse",
-          "base": 169,
-          "fights": 2,
-          "elites": 0,
-          "epics": 0,
-          "keepers": 0,
-          "bosses": 1,
-          "caches": 0,
-          "events": 0
+          "speciesId": "zipmouse"
         }
       ]
     },
@@ -1505,54 +1473,22 @@
           {
             "creatureId": "00000000-0000-4000-8300-000000000001",
             "name": "Sproutle",
-            "speciesId": "sproutle",
-            "base": 201,
-            "fights": 3,
-            "elites": 0,
-            "epics": 0,
-            "keepers": 0,
-            "bosses": 1,
-            "caches": 0,
-            "events": 0
+            "speciesId": "sproutle"
           },
           {
             "creatureId": "00000000-0000-4000-8300-000000000002",
             "name": "Splashet",
-            "speciesId": "splashet",
-            "base": 201,
-            "fights": 3,
-            "elites": 0,
-            "epics": 0,
-            "keepers": 0,
-            "bosses": 1,
-            "caches": 0,
-            "events": 0
+            "speciesId": "splashet"
           },
           {
             "creatureId": "00000000-0000-4000-8300-000000000003",
             "name": "Cindle",
-            "speciesId": "cindle",
-            "base": 32,
-            "fights": 1,
-            "elites": 0,
-            "epics": 0,
-            "keepers": 0,
-            "bosses": 0,
-            "caches": 0,
-            "events": 0
+            "speciesId": "cindle"
           },
           {
             "creatureId": "00000000-0000-4000-8300-000000000009",
             "name": "Zipmouse",
-            "speciesId": "zipmouse",
-            "base": 169,
-            "fights": 2,
-            "elites": 0,
-            "epics": 0,
-            "keepers": 0,
-            "bosses": 1,
-            "caches": 0,
-            "events": 0
+            "speciesId": "zipmouse"
           }
         ]
       },
