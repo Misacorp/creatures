@@ -336,3 +336,20 @@ button.descend-home {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* The Blue Chasm: the prize shown between the scene and the choice. */
+.event-treasure {
+  margin: 0 0 0.75rem;
+}
+
+.event-treasure h4 {
+  margin: 0 0 0.25rem;
+}
+
+.dungeon-treasure {
+  margin: 0;
+}
+
+.event-treasure .reward-badges {
+  justify-content: center;
+}

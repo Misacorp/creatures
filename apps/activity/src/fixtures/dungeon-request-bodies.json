@@ -170,8 +170,8 @@
     "method": "POST",
     "body": {
       "runId": "00000000-0000-4000-8300-000000000019",
-      "step": 15,
-      "idempotencyKey": "dungeon-00000057-test",
+      "step": 14,
+      "idempotencyKey": "dungeon-00000056-test",
       "act": {
         "type": "move",
         "node": "u1f3l1"

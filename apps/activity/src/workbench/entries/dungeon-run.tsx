@@ -24,6 +24,9 @@ import {
   sampleSummary,
   sampleToday,
   omitKey,
+  SAMPLE_TREASURES,
+  sampleChasmSummary,
+  sampleStateChasm,
 } from '../../dungeon-path-samples';
 import {
   undercroftLostSummary,
@@ -37,6 +40,13 @@ import type { Entry, Props } from '../types';
 import { experienceBoostOf } from './xp-boosts';
 
 const EVENT_IDS = dungeonEvents.map((e) => e.id);
+const TREASURE_OPTIONS = [
+  'an Epic gear piece',
+  'a blueprint',
+  'two supplies',
+  'shards and glimmer',
+] as const;
+const TREASURE_KEYS = ['gear', 'blueprint', 'supplies', 'shards'] as const;
 const OUTCOMES = [
   'cleared',
   'home',
@@ -45,6 +55,9 @@ const OUTCOMES = [
   'lost in the Undercroft',
   'an older run (no outcome)',
   'no rewards (lost in the first room)',
+  'Blue Chasm: crossed, home with the treasure',
+  'Blue Chasm: crossed, then lost the run',
+  'Blue Chasm: the plank gave way',
 ] as const;
 
 /** The summary of a run's end as a real server answered it (`fixtures/dungeon-act-*.json`). */
@@ -153,16 +166,26 @@ const dungeonEvent: Entry = {
     "A mystery room of the daily dungeon: its name, the scene, and two big buttons that each say the exact outcome (the odds of a gamble too). Picking one is the run's next step. It is shown from the shipped events.",
   controls: {
     event: { kind: 'select', options: EVENT_IDS },
+    treasure: { kind: 'select', options: TREASURE_OPTIONS },
     busy: { kind: 'toggle' },
   },
-  defaults: { event: EVENT_IDS[0] ?? '', busy: false },
+  defaults: { event: EVENT_IDS[0] ?? '', treasure: TREASURE_OPTIONS[0], busy: false },
   presets: [
-    ...dungeonEvents.slice(0, 4).map((e) => ({ name: e.name, props: { event: e.id } })),
+    ...dungeonEvents
+      .filter((e) => e.rare === undefined)
+      .slice(0, 4)
+      .map((e) => ({ name: e.name, props: { event: e.id } })),
+    ...TREASURE_OPTIONS.map((t) => ({
+      name: `Blue Chasm: ${t}`,
+      props: { event: 'blue-chasm', treasure: t },
+    })),
     { name: 'A step is on its way', props: { busy: true } },
   ],
   render: (p) => {
     const found = dungeonEvents.find((e) => e.id === str(p, 'event')) ?? dungeonEvents[0];
     if (found === undefined) return <p class="muted">The content has no events.</p>;
+    // The rare room rolls a prize when it opens: the page picks which of the four kinds it shows.
+    const kind = TREASURE_KEYS[Math.max(0, TREASURE_OPTIONS.indexOf(str(p, 'treasure') as never))];
     return (
       <DungeonEvent
         event={{
@@ -170,6 +193,9 @@ const dungeonEvent: Entry = {
           name: found.name,
           text: found.text,
           options: found.options.map((o) => ({ label: o.label, description: o.description })),
+          ...(found.rare === undefined || kind === undefined
+            ? {}
+            : { treasure: SAMPLE_TREASURES[kind] }),
         }}
         busy={bool(p, 'busy')}
         onPick={() => undefined}
@@ -409,9 +435,15 @@ function ResultsDemo({ p }: { p: Props }) {
       ? undercroftSummary()
       : outcome === 'lost in the Undercroft'
         ? undercroftLostSummary()
-        : bool(p, 'capture')
-          ? captured(kind)
-          : sampleSummary(kind);
+        : outcome === OUTCOMES[7]
+          ? sampleChasmSummary('won')
+          : outcome === OUTCOMES[8]
+            ? sampleChasmSummary('lost')
+            : outcome === OUTCOMES[9]
+              ? sampleChasmSummary('fell')
+              : bool(p, 'capture')
+                ? captured(kind)
+                : sampleSummary(kind);
   // A run lost in its first room paid nothing and kept an empty pack.
   const base: typeof sample = noRewards
     ? {
@@ -519,6 +551,9 @@ const dungeonResults: Entry = {
       props: { outcome: 'no rewards (lost in the first room)', canRetry: true },
     },
     { name: 'Cleared, the rooms', props: { view: 'rooms' } },
+    { name: 'Blue Chasm: home with the treasure', props: { outcome: OUTCOMES[7] } },
+    { name: 'Blue Chasm: the treasure was lost', props: { outcome: OUTCOMES[8] } },
+    { name: 'Blue Chasm: the plank gave way', props: { outcome: OUTCOMES[9] } },
     { name: 'Home safe, the rooms', props: { outcome: 'home', view: 'rooms' } },
     {
       name: 'Defeated, the rooms (the last one Defeated)',
@@ -580,6 +615,7 @@ const SCENES = {
   'at the entrance': () => parseDungeonStart(startFixture).state,
   'after the first fight': () => parseDungeonAct(actFight).state,
   'a mystery room': () => parseDungeonAct(actEventPending).state,
+  'the Blue Chasm (a rare mystery room)': () => sampleStateChasm(SAMPLE_TREASURES.blueprint),
   'after the mystery room': () => parseDungeonAct(actEvent).state,
   'at the camp': () => parseDungeonAct(actCampPending).state,
   'after the camp (swapped)': () => parseDungeonAct(actCamp).state,

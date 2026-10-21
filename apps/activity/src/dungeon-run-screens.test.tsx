@@ -22,6 +22,9 @@ import {
   sampleCampCreatures,
   sampleStateCamp,
   sampleStateEvent,
+  SAMPLE_TREASURES,
+  chasmEvent,
+  sampleChasmSummary,
   sampleStateMid,
   sampleSummary,
   sampleToday,
@@ -1481,5 +1484,105 @@ describe('the pre-run card', () => {
     page?.unmount();
     page = null;
     expect(byClass(prerun(sampleToday({ depth: 7 })), 'dmap-descend')).toHaveLength(0);
+  });
+});
+
+describe('the Blue Chasm', () => {
+  it('shows its treasure between the scene and the choice, for every kind of prize', () => {
+    for (const treasure of Object.values(SAMPLE_TREASURES)) {
+      page?.unmount();
+      page = createPage();
+      page.draw(<DungeonEvent event={chasmEvent(treasure)} busy={false} onPick={noop} />);
+      const root = page.root;
+      const text = visibleText(root);
+      expect(text).toContain('Blue Chasm');
+      expect(text).toContain('A narrow wooden plank crosses a bottomless chasm');
+      expect(text).toContain('The treasure');
+      expect(byClass(root, 'event-treasure')).toHaveLength(1);
+      expect(byClass(root, 'dungeon-treasure').length).toBeGreaterThan(0);
+      // The prize sits before the two choices in the card.
+      expect(text.indexOf('The treasure')).toBeLessThan(text.indexOf('Cross the plank'));
+      // The odds are in the option itself.
+      expect(visibleText(button(root, /Cross the plank/))).toContain('50%');
+      expect(visibleText(button(root, /Don't risk it/))).toContain('Nothing happens.');
+    }
+  });
+
+  it('draws the prize as the find it is: the piece, the blueprint, the supplies or the shards', () => {
+    const shown = (treasure: (typeof SAMPLE_TREASURES)[keyof typeof SAMPLE_TREASURES]): string => {
+      page?.unmount();
+      page = createPage();
+      page.draw(<DungeonEvent event={chasmEvent(treasure)} busy={false} onPick={noop} />);
+      return visibleText(byClass(page.root, 'event-treasure')[0] as FakeElement);
+    };
+    expect(shown(SAMPLE_TREASURES.gear)).toContain('Epic');
+    expect(shown(SAMPLE_TREASURES.blueprint)).toContain('Blueprint: Felt Hat');
+    expect(shown(SAMPLE_TREASURES.supplies)).toMatch(/2/);
+    expect(shown(SAMPLE_TREASURES.shards)).toMatch(/2/);
+  });
+
+  it('shows no treasure block in a room that has none, and picks like any room', () => {
+    page = createPage();
+    page.draw(<DungeonEvent event={SAMPLE_EVENT} busy={false} onPick={noop} />);
+    expect(byClass(page.root, 'event-treasure')).toHaveLength(0);
+    const picked: (0 | 1)[] = [];
+    page.draw(
+      <DungeonEvent
+        event={chasmEvent()}
+        busy={false}
+        onPick={(o) => {
+          picked.push(o);
+        }}
+      />,
+    );
+    page.click(button(page.root, /Cross the plank/));
+    page.click(button(page.root, /Don't risk it/));
+    expect(picked).toEqual([0, 1]);
+  });
+
+  const today = sampleToday();
+  const results = (run: ReturnType<typeof sampleChasmSummary>): FakeElement => {
+    page?.unmount();
+    page = createPage();
+    page.draw(
+      <DungeonResults
+        run={run}
+        today={today}
+        offset={0}
+        canRetry={false}
+        busy={false}
+        error={null}
+        onWatch={noop}
+        onRetry={noop}
+      />,
+    );
+    return page.root;
+  };
+
+  it('shows a won blueprint on the end screen as a find, and no lost-treasure note', () => {
+    const root = results(sampleChasmSummary('won'));
+    const text = visibleText(root);
+    expect(text).toContain('Blueprint: Felt Hat');
+    expect(byClass(root, 'treasure-lost')).toHaveLength(0);
+  });
+
+  it('says a treasure taken and then lost with the run was lost, and shows what it was', () => {
+    const root = results(sampleChasmSummary('lost'));
+    const lost = byClass(root, 'treasure-lost')[0] as FakeElement;
+    expect(visibleText(lost)).toContain('Treasure lost');
+    expect(visibleText(lost)).toContain('a defeat keeps nothing of it');
+    expect(byClass(lost, 'find-row')).toHaveLength(1);
+  });
+
+  it('shows the fall as the room of a defeat, with what the plank did', () => {
+    const run = sampleChasmSummary('fell');
+    const root = results(run);
+    expect(run.outcome).toBe('defeat');
+    expect(byClass(root, 'treasure-lost')).toHaveLength(0);
+    // The route names the room and the line of what happened in it.
+    page?.click(button(root, /Rooms/));
+    const text = visibleText(root);
+    expect(text).toContain('Blue Chasm');
+    expect(text).toContain('the whole team falls into the chasm');
   });
 });

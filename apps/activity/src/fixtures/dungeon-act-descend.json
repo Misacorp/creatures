@@ -260,17 +260,17 @@
               "kind": "fight",
               "next": ["u1f1l0"],
               "foe": {
-                "id": "puddle-imp",
-                "name": "Puddle Imp",
-                "element": "tide",
+                "id": "ember-mite",
+                "name": "Ember Mite",
+                "element": "ember",
                 "kind": "foe",
-                "hpMax": 726,
+                "hpMax": 642,
                 "elite": false
               },
               "modifier": {
-                "id": "echoing",
-                "name": "Echoing",
-                "description": "Guards and supports hit 50% harder."
+                "id": "thorns",
+                "name": "Thorns",
+                "description": "The foe turns the first reaction of each round back on your team."
               }
             },
             {
@@ -280,11 +280,11 @@
               "kind": "fight",
               "next": ["u1f1l2"],
               "foe": {
-                "id": "drift-wisp",
-                "name": "Drift Wisp",
+                "id": "puddle-imp",
+                "name": "Puddle Imp",
                 "element": "tide",
                 "kind": "foe",
-                "hpMax": 670,
+                "hpMax": 726,
                 "elite": false
               },
               "modifier": {
@@ -300,17 +300,17 @@
               "kind": "fight",
               "next": ["u1f2l1"],
               "foe": {
-                "id": "drift-wisp",
-                "name": "Drift Wisp",
-                "element": "tide",
+                "id": "ember-mite",
+                "name": "Ember Mite",
+                "element": "ember",
                 "kind": "foe",
-                "hpMax": 670,
+                "hpMax": 642,
                 "elite": false
               },
               "modifier": {
-                "id": "flooded",
-                "name": "Flooded",
-                "description": "Tide creatures hit 20% harder."
+                "id": "echoing",
+                "name": "Echoing",
+                "description": "Guards and supports hit 50% harder."
               }
             },
             {
@@ -320,19 +320,28 @@
               "kind": "mystery",
               "next": ["u1f2l1"],
               "event": {
-                "id": "loose-stones",
-                "name": "Loose Stones"
+                "id": "mushroom-ring",
+                "name": "Mushroom Ring"
               }
             },
             {
               "id": "u1f2l1",
               "floor": 2,
               "lane": 1,
-              "kind": "mystery",
+              "kind": "elite",
               "next": ["u1f3l1"],
-              "event": {
-                "id": "old-shrine",
-                "name": "Old Shrine"
+              "foe": {
+                "id": "ember-mite",
+                "name": "Ember Mite",
+                "element": "ember",
+                "kind": "foe",
+                "hpMax": 898,
+                "elite": true
+              },
+              "modifier": {
+                "id": "echoing",
+                "name": "Echoing",
+                "description": "Guards and supports hit 50% harder."
               }
             },
             {
@@ -342,23 +351,22 @@
               "kind": "boss",
               "next": [],
               "foe": {
-                "id": "drowned-warden",
-                "name": "Drowned Warden",
-                "element": "tide",
+                "id": "slag-tyrant",
+                "name": "Slag Tyrant",
+                "element": "ember",
                 "kind": "boss",
-                "hpMax": 1172,
+                "hpMax": 1061,
                 "elite": false
               },
               "modifier": {
-                "id": "stormy",
-                "name": "Stormy",
-                "description": "Spark creatures hit 20% harder."
+                "id": "dark",
+                "name": "Dark",
+                "description": "Your creatures crit 5 points more often."
               }
             }
           ],
           "level": 1,
-          "label": "Undercroft 1",
-          "crack": true
+          "label": "Undercroft 1"
         }
       ],
       "marks": 1

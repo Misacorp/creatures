@@ -14,7 +14,7 @@
  * all-at-once run that no longer exists; they stay, as the shapes of the runs stored before the map,
  * and are not captured again.
  */
-import { RULES, createSeededRng, dungeonContent } from '@creatures/game';
+import { RULES, createSeededRng, dungeonContent, dungeonEvents } from '@creatures/game';
 import {
   deadlyFoes,
   dungeonPlayer,
@@ -44,7 +44,7 @@ const FOES: [hpBp: number, atkBp: number] = [2_000, 1_000];
 
 /**
  * The pool the scenario was written against: the shipped foes and room modifiers without the Mire ones
- * (Bog Toad, Tar Leech, Fen Lurker and Muddy). The map draws its rooms from the whole pool, so a new foe
+ * (Bog Toad, Tar Leech, Fen Lurker and Muddy), and no rare room. The map draws its rooms from the whole pool, so a new foe
  * moves every seeded map, and the client tests name the captured rooms (a carved door on floor 5, the
  * Slag Tyrant keeper). The Mire rooms' own wiring is proven where it belongs (`packages/game`, the
  * engine). The pool is put back when the scenario ends, so no other test sees the change.
@@ -52,13 +52,18 @@ const FOES: [hpBp: number, atkBp: number] = [2_000, 1_000];
 function pinPool(): () => void {
   const foes = [...dungeonContent.foes];
   const modifiers = [...dungeonContent.modifiers];
+  const events = [...dungeonEvents];
+  const pool = dungeonEvents as unknown as (typeof dungeonEvents)[number][];
   const keep = <T>(list: T[], wanted: (x: T) => boolean): void => {
     const kept = list.filter(wanted);
     list.splice(0, list.length, ...kept);
   };
   keep(dungeonContent.foes, (f) => f.element !== 'mire');
   keep(dungeonContent.modifiers, (m) => m.id !== 'mud');
+  // A rare room (the Blue Chasm) is drawn live as a run steps into a mystery room: it would move every later draw.
+  keep(pool, (e) => e.rare === undefined);
   return () => {
+    pool.splice(0, pool.length, ...events);
     dungeonContent.foes.splice(0, dungeonContent.foes.length, ...foes);
     dungeonContent.modifiers.splice(0, dungeonContent.modifiers.length, ...modifiers);
   };
