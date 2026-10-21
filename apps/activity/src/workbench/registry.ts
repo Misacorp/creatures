@@ -30,6 +30,7 @@ import { tagEntries } from './entries/tags';
 import { talentEntries } from './entries/talents';
 import { tripResult } from './entries/trip-result';
 import { tripEntries } from './entries/trips';
+import { wizardEntries } from './entries/wizard';
 import { worldMapEntries } from './entries/world-map';
 import { GROUPS, type Entry, type Group } from './types';
 
@@ -66,6 +67,7 @@ export const ENTRIES: readonly Entry[] = [
   tripResult,
   ...tripEntries,
   ...sendFormEntries,
+  ...wizardEntries,
   ...stageEntries,
   ...skyEntries,
   ...dungeonMapEntries,
