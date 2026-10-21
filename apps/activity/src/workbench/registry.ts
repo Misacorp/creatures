@@ -20,6 +20,7 @@ import { recipeCardEntries } from './entries/recipe-card';
 import { supplyCraftingEntries } from './entries/supply-crafting';
 import { raidBoardEntries } from './entries/raid-board';
 import { raidSummaryEntries } from './entries/raid-summary';
+import { sendFormEntries } from './entries/send-form';
 import { skyEntries } from './entries/sky';
 import { slotDrawerEntries } from './entries/slot-drawer';
 import { slotEntries } from './entries/slots';
@@ -62,6 +63,7 @@ export const ENTRIES: readonly Entry[] = [
   ...talentEntries,
   tripResult,
   ...tripEntries,
+  ...sendFormEntries,
   ...stageEntries,
   ...skyEntries,
   ...dungeonMapEntries,
