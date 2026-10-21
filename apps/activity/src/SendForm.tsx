@@ -102,6 +102,7 @@ function WhoSection({ form }: { form: SendFormState }) {
       options={form.options}
       value={form.explorer?.creature.id ?? null}
       onChange={form.pickExplorer}
+      compact
     />
   );
 }

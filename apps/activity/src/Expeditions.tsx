@@ -143,7 +143,7 @@ export function Expeditions({
   return (
     <>
       {!wideTrips && revealCard}
-      {!wideTrips && <SlotsStrip slots={state.slots} />}
+      {screen !== 'trips' && <SlotsStrip slots={state.slots} />}
       <nav class="exp-nav" aria-label="Expeditions sections">
         {SCREENS.map(({ id, label }) => (
           <ToggleButton

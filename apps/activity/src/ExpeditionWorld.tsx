@@ -1,15 +1,17 @@
 import type { ComponentChildren } from 'preact';
-import { useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { destinationCards } from './destination-view';
 import type { SendRequest } from './expedition-api';
 import type { DestinationsView, Slots, Trip } from './expedition-types';
+import { centerOn, startingPlace } from './map-start';
 import { mapPlaces } from './map-view';
 import { OutStrip } from './OutStrip';
 import { PlacePanel } from './PlacePanel';
 import { PlaceSheet, type SheetMode } from './PlaceSheet';
 import { markFreshReveal } from './reveal-arrive';
 import type { SendStep } from './send-view';
+import { SlotsLine } from './SlotsLine';
 import { TripShelf } from './TripShelf';
 import { destinationName } from './trip-view';
 import { LiveRegion } from './ui/LiveRegion';
@@ -95,6 +97,31 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
     [cards],
   );
   const places = mapPlaces({ trips, creatures, now: serverNow, selected, rules });
+  // A map that scrolls starts on the place that matters most (once, without a glide).
+  const mapBox = useRef<HTMLDivElement>(null);
+  const start = useRef(startingPlace(places, trips));
+  useEffect(() => {
+    const frame =
+      typeof requestAnimationFrame === 'function'
+        ? requestAnimationFrame(() => {
+            const scroller = mapBox.current?.querySelector<HTMLElement>('.world-map');
+            const target = mapBox.current?.querySelector<HTMLElement>(
+              `[data-place="${start.current}"]`,
+            );
+            if (
+              scroller !== null &&
+              scroller !== undefined &&
+              target !== null &&
+              target !== undefined
+            ) {
+              centerOn(scroller, target);
+            }
+          })
+        : null;
+    return () => {
+      if (frame !== null) cancelAnimationFrame(frame);
+    };
+  }, []);
   const card = cards.find((c) => c.id === selected);
   const here = trips.filter((t) => t.destination === selected);
   const deciding = decideId === null ? null : (trips.find((t) => t.id === decideId) ?? null);
@@ -159,6 +186,7 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
       <div class="exp-world-main">
         <div
           class="exp-world-map"
+          ref={mapBox}
           onClickCapture={(event) => {
             opener.current = buttonAbove(event.target);
           }}
@@ -169,6 +197,7 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
             night={view?.night ?? false}
             onPick={pick}
           />
+          {!wide && <SlotsLine slots={props.slots} />}
           {!wide && (
             <OutStrip trips={trips} creatures={creatures} serverNow={serverNow} onOpen={open} />
           )}

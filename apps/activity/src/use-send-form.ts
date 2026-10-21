@@ -107,7 +107,15 @@ export function useSendForm(input: SendFormInput): SendForm {
   );
   const rank = explorer?.rank ?? 1;
   const length = clampLength(wanted, rank);
-  const choice = { slots, explorer, place, length, picks, stock };
+  const choice = {
+    slots,
+    explorer,
+    place,
+    length,
+    picks,
+    stock,
+    none: options[0]?.blocked ?? null,
+  };
   const blocker = sendBlocker(choice);
   const blockedHere = stepBlocker(step, choice);
   const treatCost = explorer?.creature.treatCost ?? 0;

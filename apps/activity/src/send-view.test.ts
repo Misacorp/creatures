@@ -104,6 +104,31 @@ describe('who can go', () => {
     expect(defaultExplorer([], null)).toBeUndefined();
   });
 
+  it('never defaults to a creature that cannot go: away, or too low a rank', () => {
+    const away = creatures.map((c) => ({
+      ...c,
+      away: true,
+      busy: { kind: 'expedition' as const, id: 'x' },
+    }));
+    expect(defaultExplorer(explorerOptions(away, place('tidepools'), view), null)).toBeUndefined();
+    // Only the rank-1 creatures are free, the place wants rank 2: nobody is chosen.
+    const low = creatures.map((c) => ({ ...c, explorer: { ...c.explorer, rank: 1 } }));
+    expect(
+      defaultExplorer(explorerOptions(low, place('old-crossroads'), view), null),
+    ).toBeUndefined();
+    // A picked creature that became unavailable is dropped for the first that can go.
+    const options = explorerOptions(
+      creatures.map((c) =>
+        c.id === splashet.id
+          ? { ...c, away: true, busy: { kind: 'expedition' as const, id: 'x' } }
+          : c,
+      ),
+      place('tidepools'),
+      view,
+    );
+    expect(defaultExplorer(options, splashet.id)?.creature.id).not.toBe(splashet.id);
+  });
+
   it('gives the small-creature popover what it needs for an explorer', () => {
     expect(explorerInfo(cindle)).toMatchObject({
       species: 'cindle',
@@ -156,7 +181,7 @@ describe('why a trip cannot be sent', () => {
   });
 
   it('says when nobody can go, the place is closed or the trip is too long', () => {
-    expect(sendBlocker({ ...base, explorer: undefined })).toBe('No creature to send.');
+    expect(sendBlocker({ ...base, explorer: undefined })).toBe('Nobody can go there right now.');
     expect(sendBlocker({ ...base, place: undefined })).toBe('Pick a place first.');
     const away = explorerOptions([{ ...cindle, away: true }], place('tidepools'), view)[0];
     expect(sendBlocker({ ...base, explorer: away })).toContain('Away on a trip');
@@ -203,7 +228,9 @@ describe('why Next is disabled on a step', () => {
     const full = { ...base, slots: { ...open, total: 1, used: 1 } };
     expect(stepBlocker('who', full)).toContain('All 1 expedition slot is in use');
     expect(stepBlocker('pack', full)).toBeNull();
-    expect(stepBlocker('who', { ...base, explorer: undefined })).toBe('No creature to send.');
+    expect(stepBlocker('who', { ...base, explorer: undefined })).toBe(
+      'Nobody can go there right now.',
+    );
     const low = explorerOptions(creatures, place('old-crossroads'), view).find(
       (o) => o.blocked !== null,
     );

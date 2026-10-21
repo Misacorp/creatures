@@ -6,7 +6,7 @@ import destinationsFixture from './fixtures/expedition-destinations.json';
 import stateOffer from './fixtures/expedition-state-offer.json';
 import { PopoverHost } from './PopoverHost';
 import { SEND_STEP_HEAD, SendFooter, SendForm } from './SendForm';
-import { FakeElement, byClass, createPage, visibleText, type Page } from './test-dom';
+import { FakeElement, byClass, createPage, find, visibleText, type Page } from './test-dom';
 import { useSendForm } from './use-send-form';
 
 let page: Page | null = null;
@@ -116,6 +116,34 @@ describe('the send form in steps', () => {
     expect(visibleText(byClass(root, 'reason')[0] as FakeElement)).toContain(
       'Needs explorer rank 4',
     );
+  });
+});
+
+describe('who goes, compact', () => {
+  it('is one short row per creature with no XP bar, and folds the rank track away', () => {
+    const root = draw('steps', 'tidepools');
+    expect(byClass(root, 'pick compact').length + byClass(root, 'compact').length).toBeGreaterThan(
+      0,
+    );
+    expect(byClass(root, 'xpbar')).toHaveLength(0);
+    expect(byClass(root, 'pick-fam')).toHaveLength(0);
+    expect(visibleText(root)).toContain('What ranks unlock');
+  });
+
+  it('chooses nobody when everybody is away, and says why', () => {
+    const away = base.map((c) => ({
+      ...c,
+      away: true,
+      busy: { kind: 'expedition' as const, id: 'x' },
+    }));
+    const root = draw('steps', 'tidepools', away);
+    const radios = find(root, (el) => el.localName === 'input');
+    expect(radios.length).toBe(away.length);
+    expect(
+      radios.some((r) => r.hasAttribute('checked') || r.getAttribute('checked') === 'true'),
+    ).toBe(false);
+    expect(disabled(button(root))).toBe(true);
+    expect(visibleText(root)).toContain('Away on a trip');
   });
 });
 

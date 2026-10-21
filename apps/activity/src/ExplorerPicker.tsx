@@ -7,6 +7,7 @@ import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { ProgressTrack } from './ProgressTrack';
 import { rankIndex, rankSteps } from './rank-track';
 import { XpBar } from './XpBar';
+import { Accordion } from './ui/Accordion';
 
 const STEPS = rankSteps();
 
@@ -24,12 +25,19 @@ export function ExplorerPicker({
   options,
   value,
   onChange,
+  compact = false,
 }: {
   /** Names the radio group; unique on the page. */
   name: string;
   options: readonly ExplorerOption[];
   value: string | null;
   onChange: (creatureId: string) => void;
+  /**
+   * One short row per creature (face, name and level, rank, the stars at this place, and the reason in
+   * words when it cannot go), with no XP bar, and the rank track folded under the list in "What ranks
+   * unlock". The send form uses it; the full rows are the default.
+   */
+  compact?: boolean;
 }) {
   const chosen = options.find((o) => o.creature.id === value);
   return (
@@ -40,6 +48,39 @@ export function ExplorerPicker({
           const { creature } = option;
           const selected = value === creature.id;
           const blocked = option.blocked !== null;
+          if (compact) {
+            return (
+              <label
+                key={creature.id}
+                class={`pick compact${blocked ? ' busy' : ''}${selected ? ' on' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name={name}
+                  value={creature.id}
+                  checked={selected}
+                  disabled={blocked}
+                  onChange={() => {
+                    onChange(creature.id);
+                  }}
+                />
+                <Sprite sprite={creatureSpriteOrFallback(creature.species)} scale={2} />
+                <span class="pick-text">
+                  <span class="pick-line">
+                    <span class="pick-name pix">
+                      {option.name} <span class="lvl">Lv {creature.level}</span>
+                    </span>
+                    <Tag>{`Rank ${String(option.rank)}`}</Tag>
+                    <Stars
+                      stars={option.stars}
+                      label={`${String(option.stars)} / 3 stars at this place`}
+                    />
+                  </span>
+                  {blocked && <span class="pick-meta pick-why">{option.blocked ?? ''}</span>}
+                </span>
+              </label>
+            );
+          }
           return (
             <label
               key={creature.id}
@@ -89,13 +130,22 @@ export function ExplorerPicker({
           );
         })}
       </fieldset>
-      {chosen !== undefined && (
-        <ProgressTrack
-          steps={STEPS}
-          current={rankIndex(chosen.rank)}
-          label={`${chosen.name}'s explorer rank`}
-        />
-      )}
+      {chosen !== undefined &&
+        (compact ? (
+          <Accordion title="What ranks unlock" variant="compact" class="rank-unlocks">
+            <ProgressTrack
+              steps={STEPS}
+              current={rankIndex(chosen.rank)}
+              label={`${chosen.name}'s explorer rank`}
+            />
+          </Accordion>
+        ) : (
+          <ProgressTrack
+            steps={STEPS}
+            current={rankIndex(chosen.rank)}
+            label={`${chosen.name}'s explorer rank`}
+          />
+        ))}
     </>
   );
 }
