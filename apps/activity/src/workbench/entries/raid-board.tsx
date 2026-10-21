@@ -16,6 +16,7 @@ import {
   pickerTitle,
   placedCount,
   type PickerCreature,
+  type PickerOption,
 } from '../../roster-picker';
 import { RosterList } from '../../ui/RosterList';
 import { RosterPicker } from '../../ui/RosterPicker';
@@ -537,13 +538,20 @@ const rosterPicker: Entry = {
   ),
 };
 
+/** What the creatures of the "slot taken" demo wear in the slot, in turn. */
+const TAKEN_WORN: readonly NonNullable<PickerOption['worn']>[] = [
+  { baseId: 'trail-cap', rarity: 'common', itemLevel: 5 },
+  { baseId: 'trail-cap', rarity: 'rare', itemLevel: 12 },
+  { baseId: 'trail-cap', rarity: 'epic', itemLevel: 27 },
+];
+
 /** The list on its own, as the item drawer's "Equip on" view draws it (flat, in a drawer's width). */
 function ListDemo({ p }: { p: Props }) {
   const owned = useMemo(() => ownedCreatures(num(p, 'owned')), [num(p, 'owned')]);
   const board = useMemo(() => startBoard(5, 2, num(p, 'placed'), 1), [num(p, 'placed')]);
   const party = partyView(board, owned);
   const slot = party.row.find((s) => s.zone === 'middle' && s.creature === null)?.slot ?? 0;
-  const options = pickerOptions({
+  const picked = pickerOptions({
     creatures: owned,
     row: party.row,
     length: party.rowLength,
@@ -551,12 +559,26 @@ function ListDemo({ p }: { p: Props }) {
     turnOrder: 'left_to_right',
     showEffects: bool(p, 'effects'),
   });
+  // The Equip on list: most creatures already wear something in the slot, two cannot take the item.
+  const options = bool(p, 'taken')
+    ? picked.map((o, i): PickerOption => {
+        const worn = TAKEN_WORN[i % TAKEN_WORN.length];
+        return {
+          ...o,
+          recommended: false,
+          ...(i % 3 === 2 || worn === undefined ? {} : { worn }),
+          ...(i === 1 ? { disabled: 'Away on a trip' } : {}),
+          ...(i === 3 ? { disabled: 'Needs level 12' } : {}),
+        };
+      })
+    : picked;
   return (
     <div class="workshop">
       <RosterList
         options={options}
         placedNote={ON_BOARD_NOTE}
         showEffects={bool(p, 'effects')}
+        reasonSide={bool(p, 'taken')}
         onPick={() => undefined}
         class={bool(p, 'flat') ? 'flat' : ''}
       />
@@ -575,15 +597,20 @@ const rosterList: Entry = {
     placed: { kind: 'number', min: 0, max: 3 },
     owned: { kind: 'number', min: 1, max: 12 },
     flat: { kind: 'toggle' },
+    taken: { kind: 'toggle' },
   },
-  defaults: { effects: false, placed: 3, owned: 5, flat: true },
+  defaults: { effects: false, placed: 3, owned: 5, flat: true, taken: false },
   presets: [
     { name: 'As the item drawer draws it (flat)', props: {} },
+    {
+      name: 'Equip on: slot taken (worn item tile at the right, some with a reason)',
+      props: { taken: true, placed: 1, owned: 6 },
+    },
     { name: 'As the sheet draws it (scrolls itself)', props: { flat: false, owned: 9 } },
   ],
   render: (p) => (
     <ListDemo
-      key={`${String(bool(p, 'effects'))}-${String(num(p, 'placed'))}-${String(num(p, 'owned'))}`}
+      key={`${String(bool(p, 'effects'))}-${String(num(p, 'placed'))}-${String(num(p, 'owned'))}-${String(bool(p, 'taken'))}`}
       p={p}
     />
   ),

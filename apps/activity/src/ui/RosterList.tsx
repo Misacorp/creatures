@@ -3,6 +3,8 @@ import { EFFECT_PREFIX, RECOMMENDED_TAG, type PickerOption } from '../roster-pic
 import { ElementChip } from '../sprites/ElementChip';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
+import { gearName, rarityName } from '../gear-view';
+import { ItemThumb } from '../GearArt';
 import { XpTrack } from './XpTrack';
 
 export interface RosterListProps {
@@ -136,6 +138,16 @@ export function RosterList(props: RosterListProps) {
           )}
           {props.reasonSide === true && o.disabled === null && o.onBoard && (
             <span class="ro-note ro-side">{props.placedNote}</span>
+          )}
+          {o.worn !== undefined && (
+            <span
+              class="ro-worn"
+              role="img"
+              aria-label={`Wearing ${gearName(o.worn.baseId)}, item level ${String(o.worn.itemLevel)}, ${rarityName(o.worn.rarity)}`}
+              title={`Wearing ${gearName(o.worn.baseId)}`}
+            >
+              <ItemThumb item={o.worn} scale={2} />
+            </span>
           )}
         </li>
       ))}

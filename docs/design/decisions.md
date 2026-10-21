@@ -2476,3 +2476,12 @@ Misa asked for a better treat box, then reviewed the screenshots: no gold edge w
 - **One box for the dungeon's treats** (Misa, same day): the three rows share one ink box split by thin lines, each a little shorter, with room before the Enter button.
 - **The send screen** (Misa, 2026-10-21): the sentence under the treat box ("This trip costs 7 Bait for the treat, and takes … from your stock" / "Free · This trip costs nothing") is gone: the treat row shows its cost and the haul summary names the supplies and the treat. A packed treat's Bait is a badge on the Send button instead, the one clear button with the cost. "Choice likely / guaranteed" moved from under the treat box into the Expected haul icons (see the next line). The supply's own card keeps its mark. More room above Send.
 - **The Expected haul** (Misa, same day; he picked the bar from two versions): each icon sits in a box of one height so the grid lines up; under its word is a four-segment bar in the boss HP bar's look, gold for what the trip gives on its own and green for what the supplies add (any help at all shows at least one green step, since a basic supply often moves less than a quarter). The "+" marks are gone. "Choice" is the last icon with the same bar: the chance of an end-of-trip choice (`offerChanceBp`: base, rank, supplies; the milestone bonus is not known on the send screen) in quarters, rounded up. 16 px from the treat row to the heading (was 30).
+
+## 2026-10-21: "Equip on" shows what is already worn
+
+Misa: the Workshop item drawer's "Equip on" list did not show which creatures already have something in the slot.
+
+- **A small item tile at the right end of the row** (`ui/RosterList`, `.ro-worn`): the creature card's own `ItemThumb` (rarity frame, item level in the corner) at scale 2, after any reason ("Away on a trip" stays beside it). It reads at a glance as "slot taken", and shows which item.
+- **An empty slot draws nothing.** The tile is the signal; a dashed "empty" box on most rows would make the list noisier and say less. The creature that wears this very item shows it too, next to "Wears it now".
+- **Client only.** `PickerOption.worn` is filled by `equipOptions` from `Creature.gear` (the state view already carries base, rarity and item level of each worn item), matched on the item's slot. No server change.
+- The tile has `role="img"` and the label "Wearing <item>, item level N, <rarity>".
