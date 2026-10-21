@@ -202,6 +202,9 @@ export type KeepsakeDef = v.InferOutput<typeof KeepsakeSchema>;
 
 // --- Mystery rooms: events with two options ---
 
+/** The most experience one event effect gives each creature (`RULES.experience.dungeon.maxEvent` is the same number, tested). */
+export const MAX_EVENT_XP = 60;
+
 const PackAmount = v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(8));
 
 const PackEffectSchema = v.strictObject({
@@ -227,6 +230,11 @@ const PLAIN_EFFECTS = [
   }),
   /** A random keepsake the run does not hold yet. */
   v.strictObject({ op: v.literal('keepsake') }),
+  /** Every standing creature gains this much creature experience (before the treat and the day's multipliers). */
+  v.strictObject({
+    op: v.literal('xp'),
+    amount: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(MAX_EVENT_XP)),
+  }),
   v.strictObject({ op: v.literal('nothing') }),
   /**
    * The treasure the room rolled when the player came in (`rollTreasure`, shown before the choice) goes

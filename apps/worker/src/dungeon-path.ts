@@ -8,9 +8,10 @@
  * them to the stored state. Storage, payment and the response belong to `dungeon.ts`.
  */
 import {
-  addFightsCleared,
+  addEventExperience,
   addPack,
   addParts,
+  addRoomExperience,
   campOffers,
   campRest,
   catchBreath,
@@ -37,6 +38,7 @@ import {
   rollUndercroftChest,
   RULES,
   roomSpecForNode,
+  roomXpSource,
   undercroftBaseFloors,
   undercroftOpen,
   weatherSheet,
@@ -430,7 +432,9 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
         nodeFoe(node, depth, st.level)?.element ?? 'tide',
       );
       const loot = packLoot(st, node.kind, true, shard);
-      st.tally = addFightsCleared(st.tally, standing);
+      // Experience: each creature that stood in the row for the fight earns the room's amount (a lost fight pays none).
+      const source = roomXpSource(node.kind, st.level);
+      if (source !== null) st.earned = addRoomExperience(st.earned, standing, source);
       const earnedSupply = !st.supply;
       st.supply = true;
       let keepsake: DungeonKeepsakeView | null = null;
@@ -456,6 +460,7 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       return { fight };
     }
     case 'cache':
+      st.earned = addRoomExperience(st.earned, rowIds(st), 'cache');
       st.history.push({
         node: nodeId,
         kind: 'cache',
@@ -540,6 +545,7 @@ export function applyEvent(env: PathEnv, st: RunState, option: 0 | 1): ActOutcom
   st.pack = addPack(st.pack, resolved.packDelta);
   st.keepsakes.push(...resolved.keepsakesGained);
   if (resolved.treasure !== undefined) st.treasures.push(resolved.treasure);
+  st.earned = addEventExperience(st.earned, resolved.xp);
   st.lastEvent = { name: event.name, option: chosen.label, outcome: resolved.outcome };
   const gained = resolved.keepsakesGained[0];
   const gainedView = gained === undefined ? null : keepsakeView(gained);

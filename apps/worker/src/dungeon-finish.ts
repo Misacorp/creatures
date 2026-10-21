@@ -38,6 +38,7 @@ import type {
   DungeonRoomSummary,
   DungeonRunSummary,
   DungeonExperienceView,
+  DungeonExperienceRecap,
 } from './dungeon-types';
 import { addDays } from './time';
 import {
@@ -58,6 +59,14 @@ function xpDayEffects(day: WeatherDay | null): { name: string; bp: number }[] {
   return dayParts(dayXpEffects(day)).flatMap((p) =>
     p.source === 'day' ? [{ name: p.name, bp: p.bp }] : [],
   );
+}
+
+/** A creature that stood in the row at some point: its name and species as the run froze them (the start row, a seat, or the row now). */
+function creatureNameOf(st: RunState, id: string): { name: string; speciesId: string } {
+  const slot = st.input.team.find((s) => s.id === id) ?? st.seats?.[id]?.slot;
+  if (slot !== undefined) return { name: slot.name, speciesId: slot.speciesId };
+  const start = st.start.find((s) => s.id === id);
+  return { name: start?.name ?? 'A creature', speciesId: start?.speciesId ?? '' };
 }
 
 const totalOf = (pack: DungeonPack): number => pack.bait + pack.essence + pack.scrap;
@@ -159,8 +168,8 @@ export function finishRun(
   );
 
   // --- Creature experience, from the fights each creature stood in the row for (a treat doubles it) ---
-  const inRow = new Set(st.input.team.map((slot) => slot.id));
   const experience: DungeonExperienceView[] = [];
+  const recap: DungeonExperienceRecap[] = [];
   const dayEffects = xpDayEffects(st.weather);
   const days = dayParts(dayXpEffects(st.weather));
   const treatTimes = xpWeather(st.weather).treatMultiplier;
@@ -168,12 +177,11 @@ export function finishRun(
     const treat = st.treats.includes(id);
     // One list of parts gives the amount and the breakdown.
     const parts = creatureXpParts(treat, treatTimes, days);
-    const gained = dungeonExperience(
-      st.tally[id] ?? 0,
-      // The full-clear bonus is for the row that beat the boss (a state stored before the Undercroft: the row at the end).
-      st.fullClear !== undefined ? st.fullClear.includes(id) : cleared && inRow.has(id),
-      parts,
-    );
+    // Only a creature that earned something is paid and listed (one lost in its first fight, or sent
+    // home before any room, is not). A creature sent home at a camp keeps what it had earned.
+    const earned = st.earned[id];
+    if (earned === undefined || earned.base <= 0) continue;
+    const gained = dungeonExperience(earned, parts);
     const view = awardExperience(
       deps.storage.sql,
       deps.analytics,
@@ -190,9 +198,24 @@ export function finishRun(
         treatTimes: treat ? (treatTimes ?? RULES.experience.treat.multiplier) : null,
         dayEffects,
       });
+      const who = creatureNameOf(st, id);
+      recap.push({
+        creatureId: id,
+        name: who.name,
+        speciesId: who.speciesId,
+        base: earned.base,
+        fights: earned.fights,
+        elites: earned.elites,
+        epics: earned.epics,
+        keepers: earned.keepers,
+        bosses: earned.bosses,
+        caches: earned.caches,
+        events: earned.events,
+      });
     }
   }
   rewards.experience = experience;
+  rewards.recap = recap;
 
   // --- Store ---
   const summary = summarise(deps, {

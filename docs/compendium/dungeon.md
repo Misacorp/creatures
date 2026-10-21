@@ -278,8 +278,8 @@ The tone is the one of the quirks: funny, warm, never mean `(inferred)`. Nothing
 ### Old Shrine
 
 - Scene `(content)`: a tiny shrine of stacked stones, with an empty cup at its foot. It looks like it is waiting for something.
-- Answers `(content)`: **Make an offering** (the team gives up a little HP and receives a keepsake) or **Bow and walk on** (nothing happens).
-- Compendium detail: the cup wants a little of the team's warmth, which is what the HP is. The keepsake is the shrine saying thank you. Bowing is polite and costs nothing `(inferred)`.
+- Answers `(content)`: **Make an offering** (the team gives up a little HP and receives a keepsake) or **Bow and walk on** (a little scrap, and every creature learns something from the quiet: a gift of experience).
+- Compendium detail: the cup wants a little of the team's warmth, which is what the HP is. The keepsake is the shrine saying thank you. Bowing is polite and costs nothing, and the shrine remembers manners: the creatures come away a little wiser, which is the experience `(inferred)`.
 
 ### Lost Satchel
 
@@ -302,8 +302,8 @@ The tone is the one of the quirks: funny, warm, never mean `(inferred)`. Nothing
 ### Mushroom Ring
 
 - Scene `(content)`: a ring of small mushrooms hums a tune. One of them is plainly out of key, and proud of it.
-- Answers `(content)`: **Pick a few** (a little scrap) or **Dance in the ring** (a gamble: the team is refreshed, or a little worn out).
-- Compendium detail: the mushrooms sing the dungeon's lullaby, off key. Dancing along is either restful or silly, and the creatures do not mind which `(inferred)`.
+- Answers `(content)`: **Pick a few** (a little scrap) or **Dance in the ring** (a gamble: the team is refreshed, with scrap and a gift of experience, or a little worn out).
+- Compendium detail: the mushrooms sing the dungeon's lullaby, off key. Dancing along is either restful or silly, and the creatures do not mind which. When it goes well they learn the tune, and that is the experience `(inferred)`.
 
 ### Blue Chasm (a rare room)
 

@@ -64,7 +64,7 @@ Every day the server draws one **map** for the whole server: the day's map is on
 - **Between-room rest** (the gear line, Sunny Nap and Hearth warmth) heals as each fight starts, except the run's first fight. Rooms that are not fights do not trigger it.
 - **A lost fight ends the run** (the foe survives its rounds or every creature is knocked out). That is a **defeat**.
 - **Knocked-out creatures stay out** until the camp (Swap) brings a fresh one in.
-- **Experience:** `RULES.experience.dungeon.perRoom` per fight cleared, for each creature that stood in the row for that fight. `fullClear` goes to the team that beat the boss. Treats double a treated creature's share, as today. A creature swapped in cannot be treated.
+- **Experience (changed 2026-10-21, B-028):** each creature that stood in the row for a room earns that room's amount, by kind (`RULES.experience.dungeon`: `fight` 32, `elite` 48, `epic` 58, `keeper` 58, `boss` 105, `cache` 10). A cache pays a little and less than a fight, a mystery room pays through its own `xp` effect, a lost fight pays nothing, and the old separate full-clear bonus is folded into the boss's amount. The run keeps each creature's own earnings (`RunState.earned`), so a creature sent home at a camp keeps what it had and one swapped in earns only for the rooms after. Treats and the day's Boons and Omens multiply the total once, at the end; a creature swapped in cannot be treated. The end screen recaps every creature that earned any (`DungeonRewards.recap`).
 - **Supply:** as today, the first fight cleared drops the run's supply (the tier is rolled by depth). It is **safe**: it never goes into the pack.
 
 ## Mystery rooms (events)

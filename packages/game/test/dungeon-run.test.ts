@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   RULES,
-  addFightsCleared,
+  addRoomExperience,
   addPack,
   campOffers,
   campRest,
@@ -20,9 +20,11 @@ import {
   nodeLoot,
   packShardCount,
   resolveEvent,
+  roomXpSource,
   rollRoomShard,
   roomSpecForNode,
   scaledFoe,
+  type DungeonEarned,
   type DungeonEventDef,
   type DungeonMap,
   type EventContext,
@@ -217,6 +219,37 @@ describe('events', () => {
     expect(big.hp).toEqual({ a: 100, b: 100, c: 0 });
   });
 
+  it('xp gives every standing creature the amount, and the fallen nothing', () => {
+    const r = resolveEvent(
+      event([
+        { op: 'xp', amount: 20 },
+        { op: 'xp', amount: 5 },
+      ]),
+      0,
+      ctx(),
+      WIN,
+    );
+    expect(r.xp).toEqual({ a: 25, b: 25 });
+    expect(r.outcome).toBe(
+      'Every creature gains 20 experience. Every creature gains 5 experience.',
+    );
+    expect(r.hp).toEqual({ a: 50, b: 100, c: 0 });
+    expect(resolveEvent(event([{ op: 'pack', scrap: 1 }]), 0, ctx(), WIN).xp).toEqual({});
+  });
+
+  it('xp can be a gamble branch, paid only on the branch that was played', () => {
+    const gamble = event([
+      {
+        op: 'gamble',
+        chanceBp: 5000,
+        win: [{ op: 'xp', amount: 30 }],
+        lose: [{ op: 'hurt', bp: 1000 }],
+      },
+    ]);
+    expect(resolveEvent(gamble, 0, ctx(), WIN).xp).toEqual({ a: 30, b: 30 });
+    expect(resolveEvent(gamble, 0, ctx(), LOSE).xp).toEqual({});
+  });
+
   it('hurt lowers standing creatures by a share of max HP, never below 1', () => {
     const r = resolveEvent(event([{ op: 'hurt', bp: 1500 }]), 0, ctx(), WIN);
     expect(r.hp).toEqual({ a: 35, b: 85, c: 0 });
@@ -367,14 +400,27 @@ describe('the camp', () => {
   });
 });
 
-describe('experience tally', () => {
-  it('counts a cleared fight for each creature that stood in the row', () => {
-    let tally: Record<string, number> = {};
-    tally = addFightsCleared(tally, ['a', 'b', 'c']);
-    tally = addFightsCleared(tally, ['a', 'b', 'c']);
-    const afterSwap = addFightsCleared(tally, ['a', 'b', 'd']);
-    expect(tally).toEqual({ a: 2, b: 2, c: 2 });
-    expect(afterSwap).toEqual({ a: 3, b: 3, c: 2, d: 1 });
+describe('experience by room', () => {
+  it('a creature swapped in later earns only for the rooms it stood in', () => {
+    let earned: Record<string, DungeonEarned> = {};
+    earned = addRoomExperience(earned, ['a', 'b', 'c'], 'fight');
+    const afterSwap = addRoomExperience(earned, ['a', 'b', 'd'], 'fight');
+    expect(Object.keys(earned)).toEqual(['a', 'b', 'c']);
+    expect(afterSwap['c']?.fights).toBe(1);
+    expect(afterSwap['a']?.fights).toBe(2);
+    expect(afterSwap['d']?.fights).toBe(1);
+  });
+
+  it('names what each kind of room pays', () => {
+    expect(roomXpSource('fight', 0)).toBe('fight');
+    expect(roomXpSource('elite', 0)).toBe('elite');
+    expect(roomXpSource('epic', 1)).toBe('epic');
+    expect(roomXpSource('cache', 1)).toBe('cache');
+    expect(roomXpSource('boss', 0)).toBe('boss');
+    expect(roomXpSource('boss', 1)).toBe('keeper');
+    for (const kind of ['mystery', 'camp', 'door'] as const) {
+      expect(roomXpSource(kind, 0)).toBeNull();
+    }
   });
 });
 

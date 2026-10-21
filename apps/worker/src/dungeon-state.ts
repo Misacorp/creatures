@@ -13,6 +13,8 @@ import {
   itemLines,
   undercroftBaseFloors,
   undercroftFloorCount,
+  earnedFromTally,
+  type DungeonEarned,
   type GearRarity,
   type PartsBundle,
   type UndercroftMark,
@@ -147,8 +149,13 @@ export interface RunState {
   roomsCleared: number;
   /** Fights played so far (the index of the next one). */
   fights: number;
-  /** Fights cleared by each creature that stood in the row for them (experience is paid from it at the end). */
-  tally: Record<string, number>;
+  /**
+   * What each creature earned in the run so far, by creature id (`DungeonEarned`: the base experience and
+   * how many fights, caches and events paid it). Experience is paid from it at the end, so a creature sent
+   * home at a camp keeps what it had. A state stored before experience was paid per room has `tally` instead
+   * (`parseState` turns it into this).
+   */
+  earned: Record<string, DungeonEarned>;
   /** The first fight was cleared: the run's supply is earned. */
   supply: boolean;
   lastEvent: { name: string; option: string; outcome: string } | null;
@@ -203,6 +210,12 @@ export function parseState(json: string | null): RunState | null {
     // A state stored before the Blue Chasm took no treasure and met no rare room.
     parsed.treasures ??= [];
     parsed.rareSeen ??= [];
+    // A state stored before experience was paid per room counted the fights each creature cleared.
+    if (parsed.earned === undefined || parsed.earned === null) {
+      const old = (parsed as { tally?: Record<string, number> }).tally;
+      parsed.earned = earnedFromTally(old ?? {}, parsed.fullClear ?? []);
+    }
+    delete (parsed as { tally?: unknown }).tally;
     return parsed as RunState;
   } catch {
     return null;

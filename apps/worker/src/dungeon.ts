@@ -682,7 +682,7 @@ export class Dungeon {
       pack: emptyPack(),
       roomsCleared: 0,
       fights: 0,
-      tally: {},
+      earned: {},
       supply: false,
       lastEvent: null,
       campChoice: null,

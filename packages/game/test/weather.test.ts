@@ -7,7 +7,9 @@ import {
   content,
   createSeededRng,
   dayCreatureXpParts,
+  addRoomExperience,
   dungeonExperience,
+  emptyEarned,
   dungeonScrapPerRoom,
   drawWeather,
   figure,
@@ -658,7 +660,8 @@ describe('experience and the Workshop', () => {
     const hearty = day('hearty-breakfast');
     const plain = dayCreatureXpParts(true, null);
     const boosted = dayCreatureXpParts(true, hearty);
-    expect(dungeonExperience(3, true, boosted)).toBeGreaterThan(dungeonExperience(3, true, plain));
+    const earned = addRoomExperience({}, ['a'], 'boss')['a'] ?? emptyEarned();
+    expect(dungeonExperience(earned, boosted)).toBeGreaterThan(dungeonExperience(earned, plain));
     expect(raidExperience('finale', true, dayCreatureXpParts(false, hearty))).toBeGreaterThan(
       raidExperience('finale', true, []),
     );

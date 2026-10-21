@@ -102,6 +102,8 @@ describe('the shipped keepsakes and events', () => {
         case 'heal':
         case 'hurt':
           return [pct(e.bp)];
+        case 'xp':
+          return [String(e.amount)];
         case 'pack':
           return [e.bait, e.essence, e.scrap].filter((n) => n !== undefined).map(String);
         case 'gamble':
@@ -130,6 +132,21 @@ describe('the shipped keepsakes and events', () => {
         }
       }
     }
+  });
+
+  it('has an xp effect in a plain option and in a gamble branch, within the cap', () => {
+    const amounts: number[] = [];
+    const walk = (e: EventEffect): void => {
+      if (e.op === 'xp') amounts.push(e.amount);
+      if (e.op === 'gamble') [...e.win, ...e.lose].forEach(walk);
+    };
+    for (const event of dungeonEvents) for (const o of event.options) o.effects.forEach(walk);
+    expect(amounts.length).toBeGreaterThanOrEqual(2);
+    for (const a of amounts) expect(a).toBeLessThanOrEqual(RULES.experience.dungeon.maxEvent);
+    const shrine = dungeonEvent('old-shrine')?.options[1]?.effects ?? [];
+    expect(shrine.some((e) => e.op === 'xp')).toBe(true);
+    const ring = dungeonEvent('mushroom-ring')?.options[1]?.effects[0];
+    expect(ring?.op === 'gamble' && ring.win.some((e) => e.op === 'xp')).toBe(true);
   });
 
   it('pays the risky option of an event a little more than the safe one (the average pack and HP they give)', () => {
@@ -402,6 +419,11 @@ describe('the keepsake and event schemas refuse bad data', () => {
       keepsakesJson,
       withEffect({ op: 'gamble', chanceBp: 5000, win: [], lose: [{ op: 'nothing' }] }),
     );
+    refused(keepsakesJson, withEffect({ op: 'xp' }));
+    refused(keepsakesJson, withEffect({ op: 'xp', amount: 0 }));
+    refused(keepsakesJson, withEffect({ op: 'xp', amount: 61 }));
+    refused(keepsakesJson, withEffect({ op: 'xp', amount: 2.5 }));
+    refused(keepsakesJson, withEffect({ op: 'xp', amount: 5, extra: 1 }));
     refused(keepsakesJson, withEffect({ op: 'steal' }));
     refused(keepsakesJson, withEffect({ op: 'keepsake', extra: 1 }));
     refused(keepsakesJson, withEffect({ op: 'pack', bait: 1.5 }));

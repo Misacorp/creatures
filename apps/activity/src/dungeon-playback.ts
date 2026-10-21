@@ -13,6 +13,7 @@ import { partsEntries } from './gear-view';
 import type { CountItem } from './ui/CountBadge';
 import type { GrantLoot } from './gear-types';
 import type {
+  DungeonExperienceRecap,
   DungeonReplay,
   DungeonReplayRoom,
   DungeonRewards,
@@ -370,6 +371,70 @@ export function teamBreakdown(run: Pick<DungeonRunSummary, 'team' | 'rewards'>):
       spoken: `${m.name}, level ${String(m.level)}: ${hp}${knockedOut ? ', knocked out' : ''}.`,
       exp: paid === undefined ? null : experienceGain(paid, m.name),
     };
+  });
+}
+
+/** "1 fight" or "3 fights". */
+const countOf = (n: number, one: string, many: string): string =>
+  `${String(n)} ${n === 1 ? one : many}`;
+
+/**
+ * The rooms that paid a creature, in one short line: "4 fights, 1 elite, 1 cache, 1 mystery room, boss".
+ * The kinds that did not pay it are left out; null when the recap names none.
+ */
+export function recapLine(
+  r: Pick<
+    DungeonExperienceRecap,
+    'fights' | 'elites' | 'epics' | 'keepers' | 'bosses' | 'caches' | 'events'
+  >,
+): string | null {
+  const parts = [
+    r.fights > 0 ? countOf(r.fights, 'fight', 'fights') : null,
+    r.elites > 0 ? countOf(r.elites, 'elite', 'elites') : null,
+    r.epics > 0 ? countOf(r.epics, 'epic fight', 'epic fights') : null,
+    r.keepers > 0 ? countOf(r.keepers, 'keeper', 'keepers') : null,
+    r.caches > 0 ? countOf(r.caches, 'cache', 'caches') : null,
+    r.events > 0 ? countOf(r.events, 'mystery room', 'mystery rooms') : null,
+    r.bosses > 0 ? (r.bosses === 1 ? 'boss' : `${String(r.bosses)} bosses`) : null,
+  ].filter((part): part is string => part !== null);
+  return parts.length === 0 ? null : parts.join(', ');
+}
+
+/** One creature of the experience recap: every creature the run paid, the one sent home at a camp too. */
+export interface RecapEntry {
+  id: string;
+  name: string;
+  speciesId: string;
+  exp: XpChange;
+  /** What paid it ("4 fights, 1 cache, boss"), or null in a run from before the recap. */
+  line: string | null;
+  /** It was not in the row at the end (sent home at a camp): it keeps what it earned. */
+  wentHome: boolean;
+}
+
+/**
+ * The experience recap of a finished run: a row for every creature that earned experience, in the order
+ * the server paid them (the start row first). A run from before the recap lists its team's creatures only,
+ * without the breakdown line.
+ */
+export function experienceRecap(run: Pick<DungeonRunSummary, 'team' | 'rewards'>): RecapEntry[] {
+  const { experience = [], recap = [] } = run.rewards;
+  return experience.flatMap((paid) => {
+    const member = run.team.find((m) => m.id === paid.creatureId);
+    const note = recap.find((r) => r.creatureId === paid.creatureId);
+    const name = member?.name ?? note?.name;
+    const speciesId = member?.speciesId ?? note?.speciesId;
+    if (name === undefined || speciesId === undefined) return [];
+    return [
+      {
+        id: paid.creatureId,
+        name,
+        speciesId,
+        exp: experienceGain(paid, name),
+        line: note === undefined ? null : recapLine(note),
+        wentHome: member === undefined,
+      },
+    ];
   });
 }
 

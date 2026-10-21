@@ -729,9 +729,8 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
               if (!takesPart(dungeonPercent)) continue;
               const team = chooseDungeonTeam(p, p.profile.dungeon, rng.profile);
               // A treat for each of the three (Bait paid as the run starts), then the run, then the
-              // experience: per fight cleared by each creature that stood in the row for it, and for a
-              // full clear to the row that beat the boss, doubled for a treated creature (one swapped in
-              // at the camp has no treat).
+              // experience: per room (fight, cache, mystery room) by each creature that stood in the row for
+              // it, doubled for a treated creature (one swapped in at the camp has no treat).
               const treated = new Set(
                 team.creatures.filter((c) => packTreat(p, c, { kind: 'dungeon' })).map((c) => c.id),
               );
@@ -747,19 +746,13 @@ export function runEconomy(options: EconomyOptions): EconomyResult {
                 p.profile.dungeon,
               );
               for (const run of runs) {
-                for (const [id, fights] of Object.entries(run.fightsBy)) {
+                for (const [id, earned] of Object.entries(run.earned)) {
                   const c = p.creatures.find((x) => x.id === id);
                   if (c === undefined) continue;
-                  // The full clear bonus is for the row that beat the main boss, whatever happens below it.
-                  const beatBoss = run.fullClearRow.includes(id);
                   giveExperience(
                     p,
                     c,
-                    dungeonExperience(
-                      fights,
-                      beatBoss,
-                      dayCreatureXpParts(treated.has(id), weather),
-                    ),
+                    dungeonExperience(earned, dayCreatureXpParts(treated.has(id), weather)),
                     'dungeon',
                   );
                 }

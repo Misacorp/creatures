@@ -37,7 +37,12 @@ import {
   undercroftSummary,
 } from '../../dungeon-undercroft-sample';
 import type { ExperienceView } from '../../experience';
-import type { DungeonRewards, DungeonRunState, DungeonRunSummary } from '../../dungeon-types';
+import type {
+  DungeonExperienceRecap,
+  DungeonRewards,
+  DungeonRunState,
+  DungeonRunSummary,
+} from '../../dungeon-types';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 import { experienceBoostOf } from './xp-boosts';
@@ -332,8 +337,39 @@ const EXPERIENCE_MODES = [
   'a level up with a treat',
   'Hearty Breakfast and a treat',
   'waiting and top level',
+  'a creature sent home at the camp',
   'as the server sent it',
 ] as const;
+
+/**
+ * The recap the server sends with the experience (what paid each creature), made up to match: the first
+ * creature was in every room and beat the boss, the others missed some, and a creature that is not in the
+ * team (sent home at the camp) stopped there.
+ */
+function recapFor(
+  team: DungeonRunSummary['team'],
+  paid: readonly ExperienceView[],
+): DungeonExperienceRecap[] {
+  const none = { elites: 0, epics: 0, keepers: 0, bosses: 0, caches: 0, events: 0 };
+  return paid.map((e, i) => {
+    const member = team.find((m) => m.id === e.creatureId);
+    const counts =
+      i === 0
+        ? { ...none, fights: 4, bosses: 1, caches: 1 }
+        : i === 1
+          ? { ...none, fights: 3, elites: 1, events: 1, bosses: 1 }
+          : i === 2
+            ? { ...none, fights: 2 }
+            : { ...none, fights: 2, caches: 1 };
+    return {
+      creatureId: e.creatureId,
+      name: member?.name ?? 'Pip',
+      speciesId: member?.speciesId ?? 'cindle',
+      base: Math.round(e.gained / (e.treat ? 2 : 1)),
+      ...counts,
+    };
+  });
+}
 
 /**
  * What the run paid the team, made up for the workbench: one case of each thing the team section can show,
@@ -380,6 +416,13 @@ function experienceFor(
         { ...paid(0, { gained: 200, from: 10, to: 10, exp: expToNext(10) }), waiting: true },
         { ...paid(1, { gained: 200, from: 29, to: 30, exp: 0 }), gold: true },
         paid(2, { gained: 90, from: 30, to: 30, exp: 0 }),
+      ];
+    case 'a creature sent home at the camp':
+      return [
+        paid(0, { gained: 260, from: 7, to: 8, exp: 90, boost: 'treat ×2' }),
+        paid(1, { gained: 130, from: 7, to: 7, exp: 190 }),
+        paid(2, { gained: 40, from: 3, to: 3, exp: 60 }),
+        { ...paid(2, { gained: 70, from: 5, to: 5, exp: 40 }), creatureId: 'wb-sent-home' },
       ];
     default:
       return undefined;
@@ -480,7 +523,12 @@ function ResultsDemo({ p }: { p: Props }) {
         })();
   const paid = experienceFor(routed.team, str(p, 'experience'));
   const shown: typeof routed = withRewards(
-    paid === undefined ? routed : { ...routed, rewards: { ...routed.rewards, experience: paid } },
+    paid === undefined
+      ? routed
+      : {
+          ...routed,
+          rewards: { ...routed.rewards, experience: paid, recap: recapFor(routed.team, paid) },
+        },
     p,
   );
   const view = str(p, 'view');
@@ -508,7 +556,7 @@ const dungeonResults: Entry = {
   file: 'apps/activity/src/DungeonResults.tsx',
   group: 'Loot & reveals',
   description:
-    'The end of a dungeon run. A short title (green when cleared or home safe, red when defeated) and one line that sums the run up; the rewards as badges only; the route as the map (opens first) or as Rooms, every room the run went through in order with a Cleared or Defeated banner and, for a camp, a mystery room, a cache or a door, a short line of what happened; the team, each creature with its level (a green +1 when it levelled up), its experience bar with the part just gained drawn brighter, and a line saying what multiplied the experience ("Treat gave 2x experience"); then the keepsakes the run held. An older three-room run keeps a plain line about its rooms. A run that paid nothing says "No rewards this time." with a small sad creature and a hint.',
+    'The end of a dungeon run. A short title (green when cleared or home safe, red when defeated) and one line that sums the run up; the rewards as badges only; the route as the map (opens first) or as Rooms, every room the run went through in order with a Cleared or Defeated banner and, for a camp, a mystery room, a cache or a door, a short line of what happened; the team, each creature with its level (a green +1 when it levelled up), its experience bar with the part just gained drawn brighter, and the experience recap (a row for every creature that earned any, one sent home at a camp too, with a short line of what paid it such as "4 fights, 1 cache, boss"); then the keepsakes the run held. An older three-room run keeps a plain line about its rooms. A run that paid nothing says "No rewards this time." with a small sad creature and a hint.',
   controls: {
     outcome: { kind: 'select', options: OUTCOMES },
     experience: { kind: 'select', options: EXPERIENCE_MODES },

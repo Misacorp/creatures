@@ -250,6 +250,26 @@ export interface DungeonExperienceView extends ExperienceView {
   dayEffects: { name: string; bp: number }[];
 }
 
+/**
+ * What one creature earned in a run, for the end screen's recap: which rooms paid it (counts of plain
+ * fights, elites, epic fights, keepers, the floor boss, caches and mystery rooms) and the plain total
+ * before the treat and the day's multipliers (`base`; what was paid is in the creature's
+ * `DungeonExperienceView`). It names the creature, so a creature sent home at a camp can be listed.
+ */
+export interface DungeonExperienceRecap {
+  creatureId: string;
+  name: string;
+  speciesId: string;
+  base: number;
+  fights: number;
+  elites: number;
+  epics: number;
+  keepers: number;
+  bosses: number;
+  caches: number;
+  events: number;
+}
+
 /** What a run paid. The streak bonus is listed apart from what the rooms paid. */
 export interface DungeonRewards {
   bait: number;
@@ -270,6 +290,11 @@ export interface DungeonRewards {
    * what it did to their levels. Absent in runs stored before training by activity.
    */
   experience?: DungeonExperienceView[];
+  /**
+   * The recap behind `experience`: for each creature that earned any, what paid it (absent in runs
+   * stored before experience was paid per room).
+   */
+  recap?: DungeonExperienceRecap[];
   /** A fully cleared landmark depth: its gear drop was certain. */
   landmark: boolean;
   streak: { day: number; bait: number; essence: number; parts: PartsBundle } | null;

@@ -20,6 +20,7 @@ import {
   type WeatherDay,
   strongAgainst,
   strongOver,
+  type DungeonEarned,
 } from '@creatures/game';
 import { dungeonBossEnrage } from '@creatures/engine';
 import { DEFAULT_MIX } from '../src/archetypes';
@@ -125,6 +126,9 @@ function findRun(
   }
   throw new Error('no run of that kind in the scan');
 }
+
+/** Fights a creature stood in and cleared (every kind, not the caches or events). */
+const fought = (e: DungeonEarned): number => e.fights + e.elites + e.epics + e.keepers + e.bosses;
 
 describe('the day map in the simulator', () => {
   it('is one valid map per server and day, the same for every player, and another on another day', () => {
@@ -422,7 +426,9 @@ describe('a run on the map', () => {
     expect(run.fights).toBeLessThanOrEqual(RULES.dungeon.floors - 1);
     expect(run.finalRow).toHaveLength(3);
     // Nobody was swapped: each creature has every fight, and the experience is paid on them.
-    expect(Object.values(run.fightsBy)).toEqual([run.fights, run.fights, run.fights]);
+    expect(Object.values(run.earned).map(fought)).toEqual([run.fights, run.fights, run.fights]);
+    // Each is also paid for the boss and for every cache the route went through.
+    for (const e of Object.values(run.earned)) expect(e.bosses).toBe(1);
     const bossNode = dayMap('walk', 2).nodes.find((n) => n.kind === 'boss');
     expect(run.boss.element).toBe(
       dungeonContent.foes.find((f) => f.id === bossNode?.foeId)?.element,
@@ -441,7 +447,7 @@ describe('a run on the map', () => {
     });
     expect(run).toMatchObject({ outcome: 'defeat', fights: 1, fightsCleared: 0, camp: null });
     expect(run.pack).toEqual({ bait: 0, essence: 0, scrap: 0 });
-    expect(run.fightsBy).toEqual({});
+    expect(run.earned).toEqual({});
   });
 
   it('gives a run the same dice whatever the policy skill reads, and a random player still finishes', () => {
@@ -484,9 +490,12 @@ describe('a run on the map', () => {
     if (swapped === undefined) throw new Error('no run swapped in the scan');
     // The creature that left stood in the fights before the camp and is not in the final row; the row is three.
     expect(swapped.finalRow).toHaveLength(3);
-    const left = Object.keys(swapped.fightsBy).filter((id) => !swapped?.finalRow.includes(id));
+    const left = Object.keys(swapped.earned).filter((id) => !swapped?.finalRow.includes(id));
     expect(left).toHaveLength(1);
-    expect(swapped.fightsBy[left[0] as string]).toBeLessThanOrEqual(RULES.dungeon.campFloor);
+    const gone = swapped.earned[left[0] as string];
+    expect(fought(gone as DungeonEarned)).toBeLessThanOrEqual(RULES.dungeon.campFloor);
+    // It keeps what it earned before it went home.
+    expect(gone?.base).toBeGreaterThan(0);
   });
 });
 
@@ -651,21 +660,13 @@ describe('the dungeon in the economy', () => {
     expect(JSON.stringify(run(true).players)).toBe(JSON.stringify(on.players));
   });
 
-  it('pays experience per fight cleared, to the row that stood in it', () => {
+  it('pays experience per room, to the row that stood in it', () => {
     const on = run(true);
     const daily = on.players.find((p) => p.archetype === 'daily');
     // Fights cleared by creatures add up to the experience the sim counted (no treat doubles it here:
     // `exp_dungeon` counts the experience as paid, treats included, so it is at least the plain sum).
     const plain = (daily?.dungeon ?? []).reduce(
-      (n, r) =>
-        n +
-        Object.entries(r.fightsBy).reduce(
-          (m, [id, f]) =>
-            m +
-            RULES.experience.dungeon.perRoom * f +
-            (r.fullClearRow.includes(id) ? RULES.experience.dungeon.fullClear : 0),
-          0,
-        ),
+      (n, r) => n + Object.values(r.earned).reduce((m, e) => m + e.base, 0),
       0,
     );
     expect(plain).toBeGreaterThan(0);
