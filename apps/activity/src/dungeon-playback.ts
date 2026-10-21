@@ -373,6 +373,40 @@ export function teamBreakdown(run: Pick<DungeonRunSummary, 'team' | 'rewards'>):
   });
 }
 
+/** One creature of the experience recap: every creature the run paid, the one sent home at a camp too. */
+export interface RecapEntry {
+  id: string;
+  name: string;
+  speciesId: string;
+  exp: XpChange;
+  /** It was not in the row at the end (sent home at a camp): it keeps what it earned. */
+  wentHome: boolean;
+}
+
+/**
+ * The experience recap of a finished run: a row for every creature that earned experience, in the order
+ * the server paid them (the start row first). A run from before the recap lists its team's creatures only.
+ */
+export function experienceRecap(run: Pick<DungeonRunSummary, 'team' | 'rewards'>): RecapEntry[] {
+  const { experience = [], recap = [] } = run.rewards;
+  return experience.flatMap((paid) => {
+    const member = run.team.find((m) => m.id === paid.creatureId);
+    const note = recap.find((r) => r.creatureId === paid.creatureId);
+    const name = member?.name ?? note?.name;
+    const speciesId = member?.speciesId ?? note?.speciesId;
+    if (name === undefined || speciesId === undefined) return [];
+    return [
+      {
+        id: paid.creatureId,
+        name,
+        speciesId,
+        exp: experienceGain(paid, name),
+        wentHome: member === undefined,
+      },
+    ];
+  });
+}
+
 /** What the banner over the stage says when a room opens. Names and descriptions are plain text. */
 interface RoomIntroView {
   /** "ROOM 2" in big letters, "FLOOR BOSS" for the last room, "FIGHT" for a room of a path ("EPIC FIGHT" below). */
@@ -453,13 +487,13 @@ export function roomIntroView(
   };
 }
 
-/** The rewards as the loot list shows them: gear, bag overflow, parts and supplies (the dungeon has no blueprints). */
+/** The rewards as the loot list shows them: gear, bag overflow, blueprints (a rare room's treasure), parts and supplies. */
 export function rewardLoot(rewards: DungeonRewards): GrantLoot {
   return {
     gear: rewards.gear,
     converted: rewards.converted,
     parts: rewards.parts,
-    blueprints: [],
+    blueprints: rewards.blueprints ?? [],
     supplies: rewards.supplies ?? [],
   };
 }
@@ -502,6 +536,7 @@ export function noRewards(rewards: DungeonRewards): boolean {
     rewards.essence === 0 &&
     partsEntries(rewards.parts).length === 0 &&
     rewards.gear.length === 0 &&
+    (rewards.blueprints ?? []).length === 0 &&
     (rewards.supplies ?? []).length === 0 &&
     rewards.streak === null
   );

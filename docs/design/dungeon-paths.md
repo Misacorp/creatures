@@ -64,7 +64,7 @@ Every day the server draws one **map** for the whole server: the day's map is on
 - **Between-room rest** (the gear line, Sunny Nap and Hearth warmth) heals as each fight starts, except the run's first fight. Rooms that are not fights do not trigger it.
 - **A lost fight ends the run** (the foe survives its rounds or every creature is knocked out). That is a **defeat**.
 - **Knocked-out creatures stay out** until the camp (Swap) brings a fresh one in.
-- **Experience:** `RULES.experience.dungeon.perRoom` per fight cleared, for each creature that stood in the row for that fight. `fullClear` goes to the team that beat the boss. Treats double a treated creature's share, as today. A creature swapped in cannot be treated.
+- **Experience (changed 2026-10-21, B-028):** each creature that stood in the row for a room earns that room's amount, by kind (`RULES.experience.dungeon`: `fight` 32, `elite` 48, `epic` 58, `keeper` 58, `boss` 105, `cache` 10). A cache pays a little and less than a fight, a mystery room pays through its own `xp` effect, a lost fight pays nothing, and the old separate full-clear bonus is folded into the boss's amount. The run keeps each creature's own earnings (`RunState.earned`), so a creature sent home at a camp keeps what it had and one swapped in earns only for the rooms after. Treats and the day's Boons and Omens multiply the total once, at the end; a creature swapped in cannot be treated. The end screen recaps every creature that earned any (`DungeonRewards.recap`).
 - **Supply:** as today, the first fight cleared drops the run's supply (the tier is rolled by depth). It is **safe**: it never goes into the pack.
 
 ## Mystery rooms (events)
@@ -81,8 +81,25 @@ Content: `packages/game/src/content/data/dungeon-events.json`, with its schema i
   - `keepsake {}`: a random keepsake the run does not have.
   - `gamble {chanceBp, win: Effect[], lose: Effect[]}`: rolled with live randomness when picked; the description states the odds.
   - `nothing {}`.
-- **About 8 events** in the game's voice. Read `docs/compendium/` first and add the events to `docs/compendium/dungeon.md`.
+  - `treasure {}`: takes the treasure the room rolled when the player stepped in (see "The Blue Chasm"). One per event.
+  - `fall {}`: the whole team falls (HP 0) and the run ends as a defeat. It counts as a cost for "an option that costs nothing".
+- **Rare events:** an event may carry `rare: {chanceBp, fromDepth}`. A rare event is **never drawn onto a map**. Each time a run steps into a mystery room it may turn into a rare event (`rollRareEvent`: `chanceBp` drawn live, once the run's depth is `fromDepth` or more, each rare event at most once a run). The map and the other players are not affected: it is the player's own dice.
+- **8 common events and 1 rare one** in the game's voice. Read `docs/compendium/` first and add the events to `docs/compendium/dungeon.md`.
 - The odds of every gamble are shown ("2 scrap, or a 40% chance every creature loses 15% HP"). Risky options are worth about the same as safe ones on average, so neither is always right.
+
+### The Blue Chasm (the rare room, 2026-10-21)
+
+"A narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There's a valuable treasure on the other side." **Cross the plank**: 50% the team crosses and takes the treasure, 50% the whole team falls and the run ends as a defeat (half the pack kept). **Don't risk it**: nothing happens.
+
+- **Rarity:** each mystery room a run steps into becomes the chasm with 15% (`chanceBp: 1500`), from depth 3, at most once a run: about one run in six to seven that walks a mystery room at depth 3 or more. Content: `rare` on the event; the odds of the crossing are the gamble's `chanceBp` (5000).
+- **The treasure** is rolled when the room opens (`rollTreasure`, live gear rng), stored in the run's pending state and shown in the room before the choice (a gear piece as its full item card, tap or hover, no Equip: the rolled item is the one a won run grants). One kind is drawn evenly among those that apply to the player:
+  - an **Epic gear piece** at the item level of the run's depth (`rollDungeonItem`), tagged with the element of one team creature;
+  - a **blueprint** the player does not know, one tier above their best (a base's tier is its `minItemLevel`: 1, 5, 10, and the gear sets' 12; the nearest unknown tier above the best known one, else the highest unknown one); only when they lack one;
+  - **two great supplies** of one kind (never a lure);
+  - **6 shards** (two per creature of a team of three, by its element) and **4 glimmer** (`RULES.dungeon.treasure`).
+  - A creature of a species the player lacks is not in the table yet: granting a creature from a run needs its own grant path (collection rules, talents, server firsts) and is a follow-up.
+- **Delivery:** a won treasure is kept in the run state (`treasures`) and paid at the run's end through the run's own grant (`dungeon:<day>:<attempt>`), so a replay pays nothing twice. It is part of the pack in spirit: a run that ends in a defeat (the fall, or any later one) **does not win it** (an item cannot be halved). Heading home, a clear, or a run left open and closed pays it. The end screen shows it as finds (gear, blueprint, supplies, parts) and says when it was lost.
+- **Old runs:** a run saved before this change has no `treasures` or `rare` list and loads as having none.
 
 ## Keepsakes (run buffs)
 

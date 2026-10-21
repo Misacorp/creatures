@@ -66,13 +66,18 @@ function actionsOf(over: Partial<GearActions> = {}): GearActions {
   } as unknown as GearActions;
 }
 
-function draw(item: GearItem, actions: GearActions, busy = false): Page {
+function draw(
+  item: GearItem,
+  actions: GearActions,
+  busy = false,
+  creatures: readonly Creature[] = ROSTER,
+): Page {
   page = createPage();
   page.draw(
     <ItemDetail
       item={item}
       gear={{ ...SAMPLE_GEAR, items: [item] }}
-      creatures={ROSTER}
+      creatures={creatures}
       busy={busy}
       actions={actions}
       onGone={() => undefined}
@@ -160,6 +165,16 @@ describe('the Equip on row', () => {
     expect(names.map((n) => n.split('Lv')[0])).toEqual(['high', 'mid', 'away', 'job', 'low']);
     expect(names[2]).toContain('Away on a trip');
     expect(names[3]).toContain('On a job');
+    // Busy reasons are the card's status badges; no Recommended tag in this list.
+    const opts = options(p);
+    expect(byClass(opts[2] as FakeElement, 'badge').map((b) => b.getAttribute('class'))).toEqual([
+      expect.stringContaining('away'),
+    ]);
+    expect(byClass(opts[3] as FakeElement, 'badge').map((b) => b.getAttribute('class'))).toEqual([
+      expect.stringContaining('busy'),
+    ]);
+    expect(byClass(opts[4] as FakeElement, 'badge')).toHaveLength(0);
+    expect(byClass(p.root, 'ro-recommended')).toHaveLength(0);
     expect(names[4]).toContain('Needs level 5');
     expect(options(p).map((o) => o.getAttribute('aria-disabled'))).toEqual([
       'false',
@@ -168,6 +183,85 @@ describe('the Equip on row', () => {
       'true',
       'true',
     ]);
+  });
+
+  it('shows what a creature already wears in the slot as a tile at the right of its row, and nothing for an empty slot', () => {
+    const worn = (
+      id: string,
+      slot: 'hat' | 'scarf',
+      baseId: string,
+      rarity: 'common' | 'rare',
+    ) => ({
+      id,
+      baseId,
+      slot,
+      rarity,
+      itemLevel: 9,
+    });
+    const wearing = [
+      {
+        ...high,
+        gear: [worn('w1', 'hat', 'trail-cap', 'rare'), worn('w2', 'scarf', 'trail-cap', 'common')],
+      },
+      { ...mid, gear: [worn('w3', 'scarf', 'trail-cap', 'common')] },
+      low,
+      away,
+      job,
+    ];
+    const p = draw(hat(), actionsOf(), false, wearing);
+    p.click(trigger(p));
+    const tiles = (o: FakeElement): FakeElement[] => byClass(o, 'ro-worn');
+    // High wears a Hat: one tile, last in the row, spoken as "Wearing ...". Its Scarf is a different slot.
+    const highRow = optionOf(p, 'high');
+    const [tile] = tiles(highRow);
+    expect(tiles(highRow)).toHaveLength(1);
+    expect(tile?.getAttribute('aria-label')).toBe('Wearing Trail Cap, item level 9, Rare');
+    expect((highRow.childNodes as FakeElement[]).at(-1)).toBe(tile);
+    // Mid wears only a Scarf, so its Hat slot is empty: nothing is drawn.
+    expect(tiles(optionOf(p, 'mid'))).toHaveLength(0);
+    expect(tiles(optionOf(p, 'low'))).toHaveLength(0);
+  });
+
+  it('keeps the reason beside the tile for a creature that cannot take the item', () => {
+    const busyWearer = {
+      ...away,
+      gear: [
+        {
+          id: 'w9',
+          baseId: 'trail-cap',
+          slot: 'hat' as const,
+          rarity: 'common' as const,
+          itemLevel: 4,
+        },
+      ],
+    };
+    const p = draw(hat(), actionsOf(), false, [high, busyWearer]);
+    p.click(trigger(p));
+    const row = optionOf(p, 'away');
+    expect(visibleText(row)).toContain('Away on a trip');
+    expect(byClass(row, 'ro-worn')).toHaveLength(1);
+  });
+
+  it('shows the item itself on the creature that wears it now, next to "Wears it now"', () => {
+    const wearer = {
+      ...mid,
+      gear: [
+        {
+          id: 'hat-1',
+          baseId: 'trail-cap',
+          slot: 'hat' as const,
+          rarity: 'common' as const,
+          itemLevel: 5,
+        },
+      ],
+    };
+    const p = draw(hat('mid'), actionsOf(), false, [high, wearer]);
+    p.click(trigger(p));
+    const row = optionOf(p, 'mid');
+    expect(visibleText(row)).toContain('Wears it now');
+    expect(first(byClass(row, 'ro-worn')).getAttribute('aria-label')).toContain(
+      'Wearing Trail Cap',
+    );
   });
 
   it('equips right away on a pick, with the item and the creature, and returns to the item', () => {

@@ -135,7 +135,7 @@ function isOrigin(value: unknown): value is ItemOrigin {
   }
 }
 
-function isGearItem(value: unknown): value is GearItem {
+export function isGearItem(value: unknown): value is GearItem {
   if (!isRecord(value)) return false;
   const needs = value['needs'];
   const madeBy = value['madeBy'];
@@ -260,7 +260,7 @@ function isJob(value: unknown): value is Job {
   );
 }
 
-const isBlueprintLoot = (value: unknown): value is GrantLoot['blueprints'][number] =>
+export const isBlueprintLoot = (value: unknown): value is GrantLoot['blueprints'][number] =>
   isRecord(value) &&
   isStr(value['baseId']) &&
   typeof value['duplicate'] === 'boolean' &&

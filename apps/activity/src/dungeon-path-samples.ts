@@ -10,6 +10,7 @@
 import type { Creature } from './api';
 import { sampleRoster } from './creature-card-sample';
 import { sampleHistory } from './dungeon-map-sample';
+import { sampleGearItem } from './workbench/gear-sample';
 import replayFixture from './fixtures/dungeon-replay.json';
 import todayFixture from './fixtures/dungeon-today.json';
 import type {
@@ -25,6 +26,7 @@ import type {
   DungeonRunState,
   DungeonRunSummary,
   DungeonToday,
+  DungeonTreasureView,
 } from './dungeon-types';
 import { runItem } from './dungeon-map-sample';
 
@@ -383,4 +385,105 @@ export function sampleToday(over: Partial<DungeonToday> = {}): DungeonToday {
 /** A copy of an object without one key (for an answer from an older server that lacks a field). */
 export function omitKey<T extends object, K extends keyof T>(value: T, key: K): Omit<T, K> {
   return Object.fromEntries(Object.entries(value).filter(([k]) => k !== key)) as Omit<T, K>;
+}
+
+// --- The Blue Chasm (a rare mystery room) ---
+
+/** The four kinds of treasure the chasm shows, as the server rolls them (`rollTreasure`). */
+export const SAMPLE_TREASURES = {
+  gear: {
+    kind: 'gear',
+    baseId: 'forge-scarf',
+    rarity: 'epic',
+    itemLevel: 9,
+    // The card the server sends with the waiting room: the rolled piece's real stats and lines.
+    card: sampleGearItem({ id: 'preview', baseId: 'forge-scarf', rarity: 'epic', itemLevel: 9 }),
+  },
+  blueprint: { kind: 'blueprint', baseId: 'felt-hat' },
+  supplies: { kind: 'supplies', supplyId: 'lantern-great', count: 2 },
+  shards: {
+    kind: 'shards',
+    parts: { 'tide-shard': 2, 'ember-shard': 2, 'grove-shard': 2, glimmer: 4 },
+  },
+} as const satisfies Record<string, DungeonTreasureView>;
+
+/** The Blue Chasm as the server sends it while it waits: its scene, its two options and the prize across. */
+export function chasmEvent(
+  treasure: DungeonTreasureView = SAMPLE_TREASURES.gear,
+): DungeonEventView {
+  return {
+    id: 'blue-chasm',
+    name: 'Blue Chasm',
+    text: "A narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There's a valuable treasure on the other side.",
+    options: [
+      {
+        label: 'Cross the plank',
+        description:
+          '50%: you cross and take the treasure shown. 50%: the team falls and the run ends.',
+      },
+      { label: "Don't risk it", description: 'Nothing happens.' },
+    ],
+    treasure,
+  };
+}
+
+/** A run standing in the Blue Chasm with the prize shown. */
+export function sampleStateChasm(
+  treasure: DungeonTreasureView = SAMPLE_TREASURES.gear,
+): DungeonRunState {
+  return { ...sampleStateEvent(), pending: { kind: 'event', event: chasmEvent(treasure) } };
+}
+
+/**
+ * The end of a run that met the Blue Chasm: `won` went home with the treasure (a blueprint, in the rewards),
+ * `lost` took it and then lost the run (the treasure is shown as lost), `fell` lost the crossing (the run ended
+ * in the room, a defeat with half the pack).
+ */
+export function sampleChasmSummary(variant: 'won' | 'lost' | 'fell'): DungeonRunSummary {
+  const base = sampleSummary(variant === 'won' ? 'home' : 'defeat');
+  const route = base.route;
+  if (route === undefined) throw new Error('the sample has a route');
+  const chasm = { id: 'blue-chasm', name: 'Blue Chasm' };
+  const map: DungeonMapView = {
+    ...route.map,
+    nodes: route.map.nodes.map((n) => (n.id === 'f1l1' ? { ...n, event: chasm } : n)),
+  };
+  const fell = variant === 'fell';
+  const path = fell ? ['f0l1', 'f1l1'] : [...route.path];
+  const history = sampleHistory(map, path, { lostLast: variant === 'lost' }).map((step) =>
+    step.node === 'f1l1' && step.result === 'event'
+      ? fell
+        ? {
+            ...step,
+            event: chasm.name,
+            option: 'Cross the plank',
+            outcome: 'No luck. The plank gives way and the whole team falls into the chasm.',
+            loot: { bait: 0, essence: 0, scrap: 0 },
+            fell: true as const,
+          }
+        : {
+            ...step,
+            event: chasm.name,
+            option: 'Cross the plank',
+            outcome: 'Lucky! You cross the plank and take the treasure.',
+            loot: { bait: 0, essence: 0, scrap: 0 },
+            treasure: SAMPLE_TREASURES.blueprint,
+          }
+      : step,
+  );
+  const rooms = fell ? base.rooms.slice(0, 1) : base.rooms;
+  return {
+    ...base,
+    rooms,
+    roomsCleared: rooms.filter((r) => r.cleared).length,
+    path: fell ? ['fight', 'mystery'] : (base.path ?? []),
+    route: { ...route, map, path, history },
+    rewards: {
+      ...base.rewards,
+      ...(variant === 'won'
+        ? { blueprints: [{ baseId: SAMPLE_TREASURES.blueprint.baseId, duplicate: false }] }
+        : {}),
+      ...(variant === 'lost' ? { treasureLost: SAMPLE_TREASURES.gear } : {}),
+    },
+  };
 }

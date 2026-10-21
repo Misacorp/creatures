@@ -13,6 +13,7 @@ import {
   ROOM_END_MS,
   atSpeed,
   droppedSupplies,
+  experienceRecap,
   fightScroll,
   hpLine,
   mineIds,
@@ -384,6 +385,55 @@ describe('the team breakdown of the end report', () => {
       role: cleared.team[0]?.role,
       level: cleared.team[0]?.level,
     });
+  });
+});
+
+describe('the experience recap', () => {
+  const [a, b] = cleared.team;
+  if (a === undefined || b === undefined) throw new Error('fixture has a team');
+  const paid = (id: string, gained: number) => ({
+    creatureId: id,
+    gained,
+    treat: false,
+    levelBefore: 4,
+    level: 4,
+    exp: 20,
+    needed: 175,
+    waiting: false,
+    gold: false,
+  });
+
+  it('lists every creature the run paid, one sent home at a camp too, named', () => {
+    const away = { creatureId: 'gone', name: 'Pip', speciesId: 'cindle' };
+    const entries = experienceRecap({
+      team: [a, b],
+      rewards: {
+        ...cleared.rewards,
+        experience: [paid(a.id, 150), paid('gone', 64), paid(b.id, 90)],
+        recap: [
+          { creatureId: a.id, name: a.name, speciesId: a.speciesId },
+          away,
+          { creatureId: b.id, name: b.name, speciesId: b.speciesId },
+        ],
+      },
+    });
+    expect(entries.map((e) => e.id)).toEqual([a.id, 'gone', b.id]);
+    expect(entries.map((e) => e.wentHome)).toEqual([false, true, false]);
+    expect(entries.map((e) => e.name)).toEqual([a.name, 'Pip', b.name]);
+    expect(entries[1]?.exp).toMatchObject({ gained: 64, kind: 'experience' });
+  });
+
+  it('reads a run from before the recap: the team only', () => {
+    const entries = experienceRecap({
+      team: [a],
+      rewards: { ...cleared.rewards, experience: [paid(a.id, 150), paid('gone', 64)] },
+    });
+    // The creature that is not in the team cannot be named, so it is left out.
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({ id: a.id, wentHome: false });
+    const old = { ...cleared.rewards };
+    delete old.experience;
+    expect(experienceRecap({ team: [a], rewards: old })).toEqual([]);
   });
 });
 

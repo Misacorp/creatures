@@ -143,11 +143,11 @@
       "experience": [
         {
           "creatureId": "00000000-0000-4000-8300-000000000001",
-          "gained": 400,
+          "gained": 402,
           "treat": true,
           "levelBefore": 12,
           "level": 12,
-          "exp": 400,
+          "exp": 402,
           "needed": 588,
           "waiting": false,
           "gold": false,
@@ -166,11 +166,11 @@
         },
         {
           "creatureId": "00000000-0000-4000-8300-000000000002",
-          "gained": 200,
+          "gained": 201,
           "treat": false,
           "levelBefore": 12,
           "level": 12,
-          "exp": 200,
+          "exp": 201,
           "needed": 588,
           "waiting": false,
           "gold": false,
@@ -179,11 +179,11 @@
         },
         {
           "creatureId": "00000000-0000-4000-8300-000000000003",
-          "gained": 35,
+          "gained": 32,
           "treat": false,
           "levelBefore": 12,
           "level": 12,
-          "exp": 35,
+          "exp": 32,
           "needed": 588,
           "waiting": false,
           "gold": false,
@@ -192,16 +192,38 @@
         },
         {
           "creatureId": "00000000-0000-4000-8300-000000000009",
-          "gained": 165,
+          "gained": 169,
           "treat": false,
           "levelBefore": 12,
           "level": 12,
-          "exp": 165,
+          "exp": 169,
           "needed": 588,
           "waiting": false,
           "gold": false,
           "treatTimes": null,
           "dayEffects": []
+        }
+      ],
+      "recap": [
+        {
+          "creatureId": "00000000-0000-4000-8300-000000000001",
+          "name": "Sproutle",
+          "speciesId": "sproutle"
+        },
+        {
+          "creatureId": "00000000-0000-4000-8300-000000000002",
+          "name": "Splashet",
+          "speciesId": "splashet"
+        },
+        {
+          "creatureId": "00000000-0000-4000-8300-000000000003",
+          "name": "Cindle",
+          "speciesId": "cindle"
+        },
+        {
+          "creatureId": "00000000-0000-4000-8300-000000000009",
+          "name": "Zipmouse",
+          "speciesId": "zipmouse"
         }
       ]
     },

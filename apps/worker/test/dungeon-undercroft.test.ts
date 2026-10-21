@@ -2,7 +2,6 @@ import {
   RULES,
   createSeededRng,
   dungeonContent,
-  dungeonExperience,
   dungeonItemLevel,
   generateDungeonMap,
   keptOnDefeat,
@@ -23,6 +22,7 @@ import {
   type DungeonPlayer,
   type Policy,
 } from './dungeon-helpers';
+import { paidFor } from './dungeon-xp-helpers';
 import { runCore, type CoreContext } from './helpers';
 import { nextGuild, rows } from './raid-helpers';
 import { DAY, newKey } from './kit';
@@ -341,7 +341,7 @@ describe('the descent after the floor boss', () => {
     );
   });
 
-  it('pays the full-clear experience to the row that beat the boss, even if the Undercroft is lost', async () => {
+  it('pays the boss to the row that beat it, even if the Undercroft is lost', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -354,8 +354,12 @@ describe('the descent after the floor boss', () => {
         expect(res.body.state).toMatchObject({ status: 'done', outcome: 'defeat' });
         const exp = res.body.summary?.rewards.experience ?? [];
         expect(exp).toHaveLength(3);
-        const fights = state.roomsCleared;
-        for (const e of exp) expect(e.gained).toBe(dungeonExperience(fights, true, []));
+        // The boss is paid whole (it carries the old full-clear bonus); the lost fight below it pays nothing.
+        const history = res.body.summary?.route?.history ?? [];
+        expect(history.some((h) => h.kind === 'boss' && h.result === 'fight' && h.cleared)).toBe(
+          true,
+        );
+        for (const e of exp) expect(e.gained).toBe(paidFor(history));
       },
       opts(),
     );

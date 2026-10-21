@@ -3,9 +3,12 @@ import { DungeonCamp } from '../../DungeonCamp';
 import { DungeonDescend } from '../../DungeonDescend';
 import { DungeonEvent } from '../../DungeonEvent';
 import { DungeonResults } from '../../DungeonResults';
+import { EquipHost } from '../../equip-from-card';
+import { GearItemsContext } from '../../gear-items-context';
+import { sampleGearItem } from '../gear-sample';
 import { DungeonRun } from '../../DungeonRun';
 import { DungeonRunStrip } from '../../DungeonRunStrip';
-import { sampleRoster } from '../../creature-card-sample';
+import { GEAR_STATE, sampleRoster } from '../../creature-card-sample';
 import actCampPending from '../../fixtures/dungeon-act-camp-pending.json';
 import actCamp from '../../fixtures/dungeon-act-camp.json';
 import actCleared from '../../fixtures/dungeon-act-cleared.json';
@@ -24,6 +27,9 @@ import {
   sampleSummary,
   sampleToday,
   omitKey,
+  SAMPLE_TREASURES,
+  sampleChasmSummary,
+  sampleStateChasm,
 } from '../../dungeon-path-samples';
 import {
   undercroftLostSummary,
@@ -31,12 +37,24 @@ import {
   undercroftSummary,
 } from '../../dungeon-undercroft-sample';
 import type { ExperienceView } from '../../experience';
-import type { DungeonRewards, DungeonRunState, DungeonRunSummary } from '../../dungeon-types';
+import type {
+  DungeonExperienceRecap,
+  DungeonRewards,
+  DungeonRunState,
+  DungeonRunSummary,
+} from '../../dungeon-types';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 import { experienceBoostOf } from './xp-boosts';
 
 const EVENT_IDS = dungeonEvents.map((e) => e.id);
+const TREASURE_OPTIONS = [
+  'an Epic gear piece',
+  'a blueprint',
+  'two supplies',
+  'shards and glimmer',
+] as const;
+const TREASURE_KEYS = ['gear', 'blueprint', 'supplies', 'shards'] as const;
 const OUTCOMES = [
   'cleared',
   'home',
@@ -45,6 +63,9 @@ const OUTCOMES = [
   'lost in the Undercroft',
   'an older run (no outcome)',
   'no rewards (lost in the first room)',
+  'Blue Chasm: crossed, home with the treasure',
+  'Blue Chasm: crossed, then lost the run',
+  'Blue Chasm: the plank gave way',
 ] as const;
 
 /** The summary of a run's end as a real server answered it (`fixtures/dungeon-act-*.json`). */
@@ -153,16 +174,26 @@ const dungeonEvent: Entry = {
     "A mystery room of the daily dungeon: its name, the scene, and two big buttons that each say the exact outcome (the odds of a gamble too). Picking one is the run's next step. It is shown from the shipped events.",
   controls: {
     event: { kind: 'select', options: EVENT_IDS },
+    treasure: { kind: 'select', options: TREASURE_OPTIONS },
     busy: { kind: 'toggle' },
   },
-  defaults: { event: EVENT_IDS[0] ?? '', busy: false },
+  defaults: { event: EVENT_IDS[0] ?? '', treasure: TREASURE_OPTIONS[0], busy: false },
   presets: [
-    ...dungeonEvents.slice(0, 4).map((e) => ({ name: e.name, props: { event: e.id } })),
+    ...dungeonEvents
+      .filter((e) => e.rare === undefined)
+      .slice(0, 4)
+      .map((e) => ({ name: e.name, props: { event: e.id } })),
+    ...TREASURE_OPTIONS.map((t) => ({
+      name: `Blue Chasm: ${t}`,
+      props: { event: 'blue-chasm', treasure: t },
+    })),
     { name: 'A step is on its way', props: { busy: true } },
   ],
   render: (p) => {
     const found = dungeonEvents.find((e) => e.id === str(p, 'event')) ?? dungeonEvents[0];
     if (found === undefined) return <p class="muted">The content has no events.</p>;
+    // The rare room rolls a prize when it opens: the page picks which of the four kinds it shows.
+    const kind = TREASURE_KEYS[Math.max(0, TREASURE_OPTIONS.indexOf(str(p, 'treasure') as never))];
     return (
       <DungeonEvent
         event={{
@@ -170,6 +201,9 @@ const dungeonEvent: Entry = {
           name: found.name,
           text: found.text,
           options: found.options.map((o) => ({ label: o.label, description: o.description })),
+          ...(found.rare === undefined || kind === undefined
+            ? {}
+            : { treasure: SAMPLE_TREASURES[kind] }),
         }}
         busy={bool(p, 'busy')}
         onPick={() => undefined}
@@ -303,8 +337,24 @@ const EXPERIENCE_MODES = [
   'a level up with a treat',
   'Hearty Breakfast and a treat',
   'waiting and top level',
+  'a creature sent home at the camp',
   'as the server sent it',
 ] as const;
+
+/** The recap the server sends with the experience: each creature's id, name and species. */
+function recapFor(
+  team: DungeonRunSummary['team'],
+  paid: readonly ExperienceView[],
+): DungeonExperienceRecap[] {
+  return paid.map((e) => {
+    const member = team.find((m) => m.id === e.creatureId);
+    return {
+      creatureId: e.creatureId,
+      name: member?.name ?? 'Pip',
+      speciesId: member?.speciesId ?? 'cindle',
+    };
+  });
+}
 
 /**
  * What the run paid the team, made up for the workbench: one case of each thing the team section can show,
@@ -351,6 +401,13 @@ function experienceFor(
         { ...paid(0, { gained: 200, from: 10, to: 10, exp: expToNext(10) }), waiting: true },
         { ...paid(1, { gained: 200, from: 29, to: 30, exp: 0 }), gold: true },
         paid(2, { gained: 90, from: 30, to: 30, exp: 0 }),
+      ];
+    case 'a creature sent home at the camp':
+      return [
+        paid(0, { gained: 260, from: 7, to: 8, exp: 90, boost: 'treat ×2' }),
+        paid(1, { gained: 130, from: 7, to: 7, exp: 190 }),
+        paid(2, { gained: 40, from: 3, to: 3, exp: 60 }),
+        { ...paid(2, { gained: 70, from: 5, to: 5, exp: 40 }), creatureId: 'wb-sent-home' },
       ];
     default:
       return undefined;
@@ -409,9 +466,15 @@ function ResultsDemo({ p }: { p: Props }) {
       ? undercroftSummary()
       : outcome === 'lost in the Undercroft'
         ? undercroftLostSummary()
-        : bool(p, 'capture')
-          ? captured(kind)
-          : sampleSummary(kind);
+        : outcome === OUTCOMES[7]
+          ? sampleChasmSummary('won')
+          : outcome === OUTCOMES[8]
+            ? sampleChasmSummary('lost')
+            : outcome === OUTCOMES[9]
+              ? sampleChasmSummary('fell')
+              : bool(p, 'capture')
+                ? captured(kind)
+                : sampleSummary(kind);
   // A run lost in its first room paid nothing and kept an empty pack.
   const base: typeof sample = noRewards
     ? {
@@ -445,22 +508,31 @@ function ResultsDemo({ p }: { p: Props }) {
         })();
   const paid = experienceFor(routed.team, str(p, 'experience'));
   const shown: typeof routed = withRewards(
-    paid === undefined ? routed : { ...routed, rewards: { ...routed.rewards, experience: paid } },
+    paid === undefined
+      ? routed
+      : {
+          ...routed,
+          rewards: { ...routed.rewards, experience: paid, recap: recapFor(routed.team, paid) },
+        },
     p,
   );
   const view = str(p, 'view');
   return (
-    <DungeonResults
-      run={shown}
-      initialView={view === 'rooms' ? 'rooms' : 'map'}
-      today={sampleToday({ canRun: false, last: shown })}
-      offset={0}
-      canRetry={bool(p, 'canRetry')}
-      busy={false}
-      error={null}
-      onWatch={() => undefined}
-      onRetry={() => undefined}
-    />
+    <GearItemsContext.Provider value={shown.rewards.gear.map(sampleGearItem)}>
+      <EquipHost creatures={GEAR_STATE.creatures} onEquip={() => undefined}>
+        <DungeonResults
+          run={shown}
+          initialView={view === 'rooms' ? 'rooms' : 'map'}
+          today={sampleToday({ canRun: false, last: shown })}
+          offset={0}
+          canRetry={bool(p, 'canRetry')}
+          busy={false}
+          error={null}
+          onWatch={() => undefined}
+          onRetry={() => undefined}
+        />
+      </EquipHost>
+    </GearItemsContext.Provider>
   );
 }
 
@@ -469,7 +541,7 @@ const dungeonResults: Entry = {
   file: 'apps/activity/src/DungeonResults.tsx',
   group: 'Loot & reveals',
   description:
-    'The end of a dungeon run. A short title (green when cleared or home safe, red when defeated) and one line that sums the run up; the rewards as badges only; the route as the map (opens first) or as Rooms, every room the run went through in order with a Cleared or Defeated banner and, for a camp, a mystery room, a cache or a door, a short line of what happened; the team, each creature with its level (a green +1 when it levelled up), its experience bar with the part just gained drawn brighter, and a line saying what multiplied the experience ("Treat gave 2x experience"); then the keepsakes the run held. An older three-room run keeps a plain line about its rooms. A run that paid nothing says "No rewards this time." with a small sad creature and a hint.',
+    'The end of a dungeon run. A short title (green when cleared or home safe, red when defeated) and one line that sums the run up; the rewards as badges only; the route as the map (opens first) or as Rooms, every room the run went through in order with a Cleared or Defeated banner and, for a camp, a mystery room, a cache or a door, a short line of what happened; the team, each creature with its level (a green +1 when it levelled up), its experience bar with the part just gained drawn brighter, and the experience recap (a row for every creature that earned any, one sent home at a camp too); then the keepsakes the run held. An older three-room run keeps a plain line about its rooms. A run that paid nothing says "No rewards this time." with a small sad creature and a hint.',
   controls: {
     outcome: { kind: 'select', options: OUTCOMES },
     experience: { kind: 'select', options: EXPERIENCE_MODES },
@@ -519,6 +591,9 @@ const dungeonResults: Entry = {
       props: { outcome: 'no rewards (lost in the first room)', canRetry: true },
     },
     { name: 'Cleared, the rooms', props: { view: 'rooms' } },
+    { name: 'Blue Chasm: home with the treasure', props: { outcome: OUTCOMES[7] } },
+    { name: 'Blue Chasm: the treasure was lost', props: { outcome: OUTCOMES[8] } },
+    { name: 'Blue Chasm: the plank gave way', props: { outcome: OUTCOMES[9] } },
     { name: 'Home safe, the rooms', props: { outcome: 'home', view: 'rooms' } },
     {
       name: 'Defeated, the rooms (the last one Defeated)',
@@ -580,6 +655,7 @@ const SCENES = {
   'at the entrance': () => parseDungeonStart(startFixture).state,
   'after the first fight': () => parseDungeonAct(actFight).state,
   'a mystery room': () => parseDungeonAct(actEventPending).state,
+  'the Blue Chasm (a rare mystery room)': () => sampleStateChasm(SAMPLE_TREASURES.blueprint),
   'after the mystery room': () => parseDungeonAct(actEvent).state,
   'at the camp': () => parseDungeonAct(actCampPending).state,
   'after the camp (swapped)': () => parseDungeonAct(actCamp).state,

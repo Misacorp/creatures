@@ -245,3 +245,14 @@ button.pop-back {
 .pop-back-arrow {
   transform: scaleX(-1);
 }
+
+/* One action centred under a popover's content, as wide as its label needs (an item card's "Equip"). */
+.pop-actions-center {
+  justify-content: center;
+}
+
+.pop-actions-center button.pop-action {
+  flex: 0 0 auto;
+  width: auto;
+  padding-inline: 1.25rem;
+}

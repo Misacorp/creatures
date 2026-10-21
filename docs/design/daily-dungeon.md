@@ -40,6 +40,7 @@ No real-time backend is needed.
 - **Rewards:**
   - Per cleared room: a little Bait or Essence and **gear materials**.
   - **A supply (2026-10-16, B-011):** the first room of a run drops one expedition supply, guaranteed once it is cleared (a run lost later keeps it; a run lost in the first room pays none). Its tier is rolled by depth (`RULES.dungeon.supplyTiers`: basic only at first, good from depth 4, great from depth 12, better odds the deeper the run) and its kind evenly, with the live gear RNG, inside the run's grant (key `dungeon:<day>:<attempt>`), so a retry grants nothing twice. The pre-run card promises it; the result screen shows it.
+  - **Creature experience (2026-10-21, B-028):** paid per room, to each creature that stood in the row for it: a fight 32, an elite 48, an Undercroft epic fight or keeper 58, the floor boss 105 (it carries what used to be the full-clear bonus), a cache 10; some mystery rooms add more through an `xp` effect. A lost fight pays nothing, a creature sent home at a camp keeps what it earned, and the treat and the day's Boons and Omens multiply the total once (`RULES.experience.dungeon`; decisions.md 2026-10-21). The end screen recaps each creature that earned any.
   - A full clear adds a chance at a **gear drop** (see `gear.md`).
   - Landmark depths: a guaranteed gear drop.
   - Daily streaks: a small bonus on the 3rd and 7th day of each 7-day cycle (the cycle length is `RULES.dungeon.streak.cycleDays`); missing a day starts the count again, and depth is kept.

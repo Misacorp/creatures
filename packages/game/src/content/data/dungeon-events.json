@@ -129,11 +129,15 @@
       },
       {
         "label": "Bow and walk on",
-        "description": "You gain 1 scrap.",
+        "description": "You gain 1 scrap. Every creature gains 20 experience.",
         "effects": [
           {
             "op": "pack",
             "scrap": 1
+          },
+          {
+            "op": "xp",
+            "amount": 20
           }
         ]
       }
@@ -280,7 +284,7 @@
       },
       {
         "label": "Dance in the ring",
-        "description": "50%: every creature heals 30% HP and you gain 5 scrap. 50%: every creature loses 10% HP.",
+        "description": "50%: all heal 30% HP, 5 scrap, 25 experience. 50%: every creature loses 10% HP.",
         "effects": [
           {
             "op": "gamble",
@@ -293,6 +297,10 @@
               {
                 "op": "pack",
                 "scrap": 5
+              },
+              {
+                "op": "xp",
+                "amount": 25
               }
             ],
             "lose": [
@@ -303,6 +311,31 @@
             ]
           }
         ]
+      }
+    ]
+  },
+  {
+    "id": "blue-chasm",
+    "name": "Blue Chasm",
+    "text": "A narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There's a valuable treasure on the other side.",
+    "rare": { "chanceBp": 1500, "fromDepth": 3 },
+    "options": [
+      {
+        "label": "Cross the plank",
+        "description": "50%: you cross and take the treasure shown. 50%: the team falls and the run ends.",
+        "effects": [
+          {
+            "op": "gamble",
+            "chanceBp": 5000,
+            "win": [{ "op": "treasure" }],
+            "lose": [{ "op": "fall" }]
+          }
+        ]
+      },
+      {
+        "label": "Don't risk it",
+        "description": "Nothing happens.",
+        "effects": [{ "op": "nothing" }]
       }
     ]
   }

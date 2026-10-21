@@ -33,7 +33,7 @@ function option(id: string, over: Partial<PickerOption> = {}): PickerOption {
 }
 
 const OPTIONS = [
-  option('stuck', { disabled: 'On a job' }),
+  option('stuck', { disabled: 'On a job', busy: 'job' }),
   option('a'),
   option('b', { onBoard: true }),
   option('off', { name: 'Take off', action: true }),
@@ -67,6 +67,37 @@ describe('the shared creature list', () => {
     ]);
     expect(visibleText(first(options))).toContain('On a job');
     expect(visibleText(options[2] as FakeElement)).toContain('Wears it now');
+  });
+
+  it('draws a busy reason as the status badge, any other reason as text, in the pixel font', () => {
+    page = createPage();
+    page.draw(
+      <RosterList
+        options={[
+          option('j', { disabled: 'On a job', busy: 'job' }),
+          option('t', { disabled: 'Away on a trip', busy: 'away' }),
+          option('l', { disabled: 'Needs level 12' }),
+        ]}
+        placedNote="Wears it now"
+        showEffects={false}
+        reasonSide
+        onPick={() => undefined}
+      />,
+    );
+    const [job, trip, level] = byRole(page.root, 'option') as [
+      FakeElement,
+      FakeElement,
+      FakeElement,
+    ];
+    expect(first(byClass(job, 'badge')).getAttribute('class')).toContain('busy');
+    expect(visibleText(first(byClass(job, 'badge')))).toBe('On a job');
+    expect(first(byClass(trip, 'badge')).getAttribute('class')).toContain('away');
+    // The words after "Away" are kept for assistive technology.
+    expect(visibleText(trip)).toContain('Away on a trip');
+    expect(job.getAttribute('aria-disabled')).toBe('true');
+    expect(byClass(level, 'badge')).toHaveLength(0);
+    expect(visibleText(first(byClass(level, 'ro-side')))).toBe('Needs level 12');
+    expect(first(byRole(page.root, 'listbox')).getAttribute('class')).toContain('pix-panel');
   });
 
   it('shows an action option as its name alone, with no sprite, level or tags', () => {
@@ -131,7 +162,9 @@ describe('the shared creature list', () => {
 
   it('can be drawn flat, for a drawer body that scrolls instead of the list', () => {
     const p = drawList(vi.fn(), 'flat');
-    expect(first(byRole(p.root, 'listbox')).getAttribute('class')).toBe('roster-list flat');
+    expect(first(byRole(p.root, 'listbox')).getAttribute('class')).toBe(
+      'roster-list pix-panel flat',
+    );
   });
 });
 

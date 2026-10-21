@@ -682,7 +682,7 @@ export class Dungeon {
       pack: emptyPack(),
       roomsCleared: 0,
       fights: 0,
-      tally: {},
+      earned: {},
       supply: false,
       lastEvent: null,
       campChoice: null,
@@ -695,6 +695,8 @@ export class Dungeon {
       deepest: 0,
       banked: null,
       bagFull: !hasRoom(this.sql, userId),
+      treasures: [],
+      rareSeen: [],
     };
     // A map run has no run-level seed (every fight draws its own when the player steps in, stored in
     // `dungeon_steps`): the NOT NULL column holds an empty string.

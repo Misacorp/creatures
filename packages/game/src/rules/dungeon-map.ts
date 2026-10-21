@@ -264,7 +264,11 @@ function drawMap(rng: Rng, pack: MapContent, doors: boolean): DungeonMap | null 
   const bossNode = at(nodeId(last, MIDDLE_LANE));
   bossNode.foeId = boss.id;
   bossNode.modifierId = modifier();
-  const events = shuffled(rng, pack.events);
+  // A rare event is never drawn onto a map: a run meets it live as it steps into a mystery room.
+  const events = shuffled(
+    rng,
+    pack.events.filter((e) => e.rare === undefined),
+  );
   for (const [i, node] of nodes.filter((n) => n.kind === 'mystery').entries()) {
     const event = events[i];
     if (event === undefined) return null;
@@ -589,7 +593,11 @@ function drawUndercroftMap(rng: Rng, spec: UndercroftSpec, pack: MapContent): Du
   if (boss === undefined || keeper === undefined) return null;
   keeper.foeId = boss.id;
   keeper.modifierId = modifier();
-  const events = shuffled(rng, pack.events);
+  // A rare event is never drawn onto a map: a run meets it live as it steps into a mystery room.
+  const events = shuffled(
+    rng,
+    pack.events.filter((e) => e.rare === undefined),
+  );
   for (const [i, node] of nodes.filter((n) => n.kind === 'mystery').entries()) {
     const event = events[i];
     if (event === undefined) return null;

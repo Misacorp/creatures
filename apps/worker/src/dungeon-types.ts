@@ -14,6 +14,7 @@ import type {
 } from '@creatures/game';
 import type { EventNames, FightEvent } from '@creatures/engine';
 import type { ExperienceView } from './creature-exp';
+import type { GearItemView } from './gear-types';
 
 export type { DungeonMapView };
 
@@ -63,12 +64,31 @@ export interface DungeonKeepsakeView {
   description: string;
 }
 
+/**
+ * A rare room's treasure as the player sees it, before the choice and again on the end screen. A gear piece
+ * is the actual rolled item (its base, rarity and level); a blueprint is a base the player does not know.
+ */
+export type DungeonTreasureView =
+  | {
+      kind: 'gear';
+      baseId: string;
+      rarity: GearRarity;
+      itemLevel: number;
+      /** The full card of the piece (its real stats and lines: the item the run grants), only while the room waits for the choice. */
+      card?: GearItemView;
+    }
+  | { kind: 'blueprint'; baseId: string }
+  | { kind: 'supplies'; supplyId: string; count: number }
+  | { kind: 'shards'; parts: PartsBundle };
+
 /** A mystery room's scene, once the run is in it. Exactly two options; `description` is the exact outcome. */
 export interface DungeonEventView {
   id: string;
   name: string;
   text: string;
   options: { label: string; description: string }[];
+  /** The prize of a rare room, rolled when it opened. Absent in a room with none. */
+  treasure?: DungeonTreasureView;
 }
 
 /** What the boss chest already gave (the Undercroft's descent card shows it): gear and supplies are in the player's stock, shards and glimmer in their parts. */
@@ -134,6 +154,10 @@ export type DungeonStepLog =
       outcome: string;
       loot: DungeonPack;
       keepsake?: DungeonKeepsakeView;
+      /** The treasure the option took (paid at the run's end unless the run ended in a defeat). */
+      treasure?: DungeonTreasureView;
+      /** The option was a fall: the whole team fell and the run ended. */
+      fell?: true;
     }
   | {
       node: string;
@@ -234,6 +258,16 @@ export interface DungeonExperienceView extends ExperienceView {
   dayEffects: { name: string; bp: number }[];
 }
 
+/**
+ * A creature that earned experience in a run, for the end screen's recap (what it was paid is in its
+ * `DungeonExperienceView`). It names the creature, so a creature sent home at a camp can be listed.
+ */
+export interface DungeonExperienceRecap {
+  creatureId: string;
+  name: string;
+  speciesId: string;
+}
+
 /** What a run paid. The streak bonus is listed apart from what the rooms paid. */
 export interface DungeonRewards {
   bait: number;
@@ -245,11 +279,20 @@ export interface DungeonRewards {
   converted: { baseId: string; rarity: GearRarity }[];
   /** The supplies the run dropped, one content id each (absent in runs stored before supplies dropped here). */
   supplies?: string[];
+  /** Blueprints the run's grant taught (a rare room's treasure), as the grant gave them. Absent when none. */
+  blueprints?: { baseId: string; duplicate: boolean; marks?: number }[];
+  /** A rare room's treasure that was taken but lost because the run ended in a defeat. Absent otherwise. */
+  treasureLost?: DungeonTreasureView;
   /**
    * The creature experience the run paid each creature that stood in the row (a treat doubles it) and
    * what it did to their levels. Absent in runs stored before training by activity.
    */
   experience?: DungeonExperienceView[];
+  /**
+   * The recap behind `experience`: for each creature that earned any, what paid it (absent in runs
+   * stored before experience was paid per room).
+   */
+  recap?: DungeonExperienceRecap[];
   /** A fully cleared landmark depth: its gear drop was certain. */
   landmark: boolean;
   streak: { day: number; bait: number; essence: number; parts: PartsBundle } | null;

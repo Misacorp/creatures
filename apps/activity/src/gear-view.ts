@@ -264,6 +264,13 @@ export function busyReason(creature: Pick<Creature, 'busy' | 'away'>): string | 
   return null;
 }
 
+/** Which busy status a creature has ("job" or "away"), for the shared status badge; null when it is free. */
+export function busyKind(creature: Pick<Creature, 'busy' | 'away'>): 'away' | 'job' | null {
+  if (creature.busy?.kind === 'job') return 'job';
+  if (creature.busy?.kind === 'expedition' || creature.away) return 'away';
+  return null;
+}
+
 function isFree(creature: Pick<Creature, 'busy' | 'away'>): boolean {
   return busyReason(creature) === null;
 }

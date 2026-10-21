@@ -8,6 +8,7 @@ import {
   type Allowance,
   type Attention,
   type ClaimResult,
+  type Creature,
   type GameState,
   type LeetSyncStatus,
   type LoungeSpot,
@@ -42,6 +43,9 @@ import { TabBar } from './TabBar';
 import type { Tab } from './tabs';
 import { useActionRunner } from './use-action-runner';
 import { useForecast } from './use-forecast';
+import { EquipHost } from './equip-from-card';
+import { GearItemsContext } from './gear-items-context';
+import type { GearItem } from './gear-types';
 import { TreatTimesContext } from './TreatBox';
 import { useGearState } from './use-gear-state';
 import { useRoom } from './use-room';
@@ -53,6 +57,10 @@ import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
 import type { TeamConfigure } from './TeamCreaturePage';
 import { Alert } from './ui/Alert';
+
+/** Before the gear view has loaded. */
+const NO_ITEMS: readonly GearItem[] = [];
+const NO_CREATURES: readonly Creature[] = [];
 
 export function Game({
   initial,
@@ -591,10 +599,14 @@ export function Game({
 
   return (
     <TreatTimesContext.Provider value={forecast?.today?.treatTimes ?? 2}>
-      {head}
-      {content}
-      {swap}
-      {devPanel}
+      <GearItemsContext.Provider value={gear?.items ?? NO_ITEMS}>
+        <EquipHost creatures={gear === null ? NO_CREATURES : game.creatures} onEquip={equipOn}>
+          {head}
+          {content}
+          {swap}
+          {devPanel}
+        </EquipHost>
+      </GearItemsContext.Provider>
     </TreatTimesContext.Provider>
   );
 }
