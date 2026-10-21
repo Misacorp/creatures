@@ -16,6 +16,7 @@ import {
   kitDeepBonusBp,
   lengthRules,
   lureEffect,
+  offerChanceBp,
   mapTicksBp,
   satchelBonus,
   shardOf,
@@ -51,6 +52,8 @@ interface BaseRow {
   detail: string;
   /** 0 to 4 pips against the best any length does with the best supplies. */
   level: number;
+  /** The pips the trip has without the supplies; the ones above it are the supplies' (drawn apart). */
+  baseLevel: number;
   /** A chosen supply raises it. */
   boosted: boolean;
 }
@@ -183,6 +186,7 @@ export function expectedHaul(
   element: string | null,
   kitIds: readonly string[],
   levels: HaulLevels | null = null,
+  rank: number | null = null,
 ): HaulRow[] {
   const kit = supplyDefs(kitIds);
   const here = metricsOf(length, kit);
@@ -198,6 +202,7 @@ export function expectedHaul(
       label: 'Catches',
       detail: `${chance('catch', 'Creatures')}; each hour of the trip may bring one`,
       level: pips('catch', here.catch),
+      baseLevel: pips('catch', plain.catch),
       boosted: boosted('catch'),
     },
     {
@@ -206,6 +211,7 @@ export function expectedHaul(
       label: 'Rare finds',
       detail: chance('rarity', 'Rarer creatures'),
       level: pips('rarity', here.rarity),
+      baseLevel: pips('rarity', plain.rarity),
       boosted: boosted('rarity'),
     },
     {
@@ -214,6 +220,7 @@ export function expectedHaul(
       label: 'XP',
       detail: `${String(here.xp)} explorer XP`,
       level: pips('xp', here.xp),
+      baseLevel: pips('xp', plain.xp),
       boosted: false,
     },
     {
@@ -222,6 +229,7 @@ export function expectedHaul(
       label: 'Scrap',
       detail: chance('scrap', 'Scrap'),
       level: pips('scrap', here.scrap),
+      baseLevel: pips('scrap', plain.scrap),
       boosted: boosted('scrap'),
     },
     {
@@ -230,6 +238,7 @@ export function expectedHaul(
       label: 'Gear',
       detail: chance('gear', 'A gear piece'),
       level: pips('gear', here.gear),
+      baseLevel: pips('gear', plain.gear),
       boosted: false,
     },
     {
@@ -239,6 +248,7 @@ export function expectedHaul(
       detail:
         element === null ? chance('shard', 'Shards of any element') : chance('shard', 'Shards'),
       level: pips('shard', here.shard),
+      baseLevel: pips('shard', plain.shard),
       boosted: boosted('shard'),
     },
     {
@@ -247,6 +257,7 @@ export function expectedHaul(
       label: 'Glimmer',
       detail: chance('glimmer', 'Glimmer'),
       level: pips('glimmer', here.glimmer),
+      baseLevel: pips('glimmer', plain.glimmer),
       boosted: boosted('glimmer'),
     },
     {
@@ -255,6 +266,7 @@ export function expectedHaul(
       label: 'Blueprint',
       detail: chance('blueprint', 'A blueprint'),
       level: pips('blueprint', here.blueprint),
+      baseLevel: pips('blueprint', plain.blueprint),
       boosted: false,
     },
     {
@@ -263,6 +275,7 @@ export function expectedHaul(
       label: 'Supplies',
       detail: chance('supply', 'A found supply'),
       level: pips('supply', here.supply),
+      baseLevel: pips('supply', plain.supply),
       boosted: boosted('supply'),
     },
     {
@@ -271,6 +284,7 @@ export function expectedHaul(
       label: 'Journal',
       detail: chance('journal', 'A journal page'),
       level: pips('journal', here.journal),
+      baseLevel: pips('journal', plain.journal),
       boosted: false,
     },
   ];
@@ -281,6 +295,7 @@ export function expectedHaul(
       label: 'New faces',
       detail: 'A lure often draws species you do not have yet',
       level: pips('fresh', here.fresh),
+      baseLevel: pips('fresh', plain.fresh),
       boosted: true,
     });
   }
@@ -291,10 +306,40 @@ export function expectedHaul(
       label: 'Deeper area',
       detail: 'Opens the deeper area, where the rarer creatures live',
       level: pips('deep', here.deep),
+      baseLevel: pips('deep', plain.deep),
       boosted: true,
     });
   }
-  return withBrackets(rows, levels);
+  if (rank !== null) rows.push(choiceRow(rank, kit));
+  return withBrackets(rows, levels).map(showRaise);
+}
+
+/**
+ * A supply's raise always shows as at least one step of its own: a small boost (less than a quarter of the
+ * best trip) would otherwise leave the pips as they were, and the player could not see the supply work.
+ */
+function showRaise(row: HaulRow): HaulRow {
+  if (!row.boosted || row.level > row.baseLevel || row.baseLevel >= MAX_PIPS) return row;
+  return { ...row, level: row.baseLevel + 1 };
+}
+
+/**
+ * The end-of-trip choice as the last row: its chance (`offerChanceBp`: the base, the explorer's rank and
+ * the supplies; the small milestone bonus is not known here) in quarters, rounded up, so the best tier's
+ * sure thing is 4 pips and any chance at all is at least 1.
+ */
+function choiceRow(rank: number, kit: readonly SupplyDef[]): BaseRow {
+  const quarters = (bp: number): number => Math.min(MAX_PIPS, Math.ceil((bp * MAX_PIPS) / BP));
+  const level = quarters(offerChanceBp(rank, kit, 0));
+  return {
+    key: 'choice',
+    icon: { kind: 'glyph', id: 'fork' },
+    label: 'Choice',
+    detail: `A choice at the end of the trip: ${level >= MAX_PIPS ? 'certain' : (CHANCE_WORDS[level] ?? '')}`,
+    level,
+    baseLevel: quarters(offerChanceBp(rank, [], 0)),
+    boosted: kit.length > 0,
+  };
 }
 
 /** The line above the strip: which trip and what the haul includes. "A 12 h trip with Sweet Lure". */

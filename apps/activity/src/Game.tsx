@@ -42,6 +42,7 @@ import { TabBar } from './TabBar';
 import type { Tab } from './tabs';
 import { useActionRunner } from './use-action-runner';
 import { useForecast } from './use-forecast';
+import { TreatTimesContext } from './TreatBox';
 import { useGearState } from './use-gear-state';
 import { useRoom } from './use-room';
 import { useRoomPhase } from './use-room-phase';
@@ -589,11 +590,11 @@ export function Game({
   );
 
   return (
-    <>
+    <TreatTimesContext.Provider value={forecast?.today?.treatTimes ?? 2}>
       {head}
       {content}
       {swap}
       {devPanel}
-    </>
+    </TreatTimesContext.Provider>
   );
 }

@@ -146,3 +146,32 @@ describe('the title of the haul', () => {
     );
   });
 });
+
+describe('the steps a supply adds, and the end-of-trip choice', () => {
+  it('keeps the steps a trip has on its own apart from the ones the supplies add', () => {
+    const plain = expectedHaul('long', 'ember', []);
+    expect(plain.every((r) => r.level === r.baseLevel)).toBe(true);
+    const kit = expectedHaul('long', 'ember', ['map-scrap-great']);
+    const scrap = row(kit, 'scrap');
+    expect(scrap.baseLevel).toBe(row(plain, 'scrap').level);
+    expect(scrap.level).toBeGreaterThan(scrap.baseLevel);
+  });
+
+  it('shows a small raise as one step of its own', () => {
+    for (const row of expectedHaul('short', 'ember', ['lure-basic', 'satchel-basic'])) {
+      if (row.boosted && row.baseLevel < MAX_PIPS) expect(row.level).toBeGreaterThan(row.baseLevel);
+    }
+  });
+
+  it('adds the choice last only with the explorer rank, its chance in quarters rounded up', () => {
+    expect(expectedHaul('long', 'ember', []).some((r) => r.key === 'choice')).toBe(false);
+    const none = expectedHaul('long', 'ember', [], null, 1);
+    expect(none.at(-1)?.key).toBe('choice');
+    // Rank 1 alone is the base chance (15%): one step, nothing added.
+    expect(row(none, 'choice')).toMatchObject({ level: 1, baseLevel: 1, boosted: false });
+    // The best tier is a sure thing: all four steps, three of them the supply's.
+    const great = row(expectedHaul('long', 'ember', ['lure-great'], null, 1), 'choice');
+    expect(great).toMatchObject({ level: 4, baseLevel: 1, boosted: true });
+    expect(great.detail).toContain('certain');
+  });
+});

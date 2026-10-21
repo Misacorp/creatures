@@ -21,6 +21,7 @@ import {
   weatherDef,
   weatherLines,
   weatherStrength,
+  xpWeather,
   type Rng,
   type WeatherDay,
 } from '@creatures/game';
@@ -114,6 +115,11 @@ export interface WeatherDayView {
   boon: WeatherEntryView;
   omen: WeatherEntryView | null;
   wild: boolean;
+  /**
+   * What a treat multiplies creature experience by on this day: the usual doubling, or the 3 or 4 a Boon
+   * sets. An activity started on the day freezes the day's weather, so the treat box shows this number.
+   */
+  treatTimes: number;
 }
 
 export interface ForecastView {
@@ -147,6 +153,7 @@ export function dayView(day: WeatherDay, tz: string): WeatherDayView | null {
     boon,
     omen,
     wild: day.wild && omen !== null,
+    treatTimes: xpWeather(day).treatMultiplier ?? RULES.experience.treat.multiplier,
   };
 }
 

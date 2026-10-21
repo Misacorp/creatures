@@ -16,7 +16,12 @@ import {
 } from './dungeon-team';
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
+import { baitCount } from './count-items';
 import { GlossaryTag } from './Glossary';
+import { CountBadge } from './ui/CountBadge';
+import { glyphOrUnknown } from './glyphs';
+import { Sprite } from './sprites/Sprite';
+import { tabPalette } from './tabs';
 import { creatureName } from './game';
 import { toPickerCreature } from './roster-picker';
 import { scrollAndFocus } from './scroll-to';
@@ -182,6 +187,8 @@ export function DungeonSetup({
   const shown = selected === null ? undefined : team.find((c) => c.id === selected);
 
   const complete = isComplete(slots);
+  // What the packed treats leave of the Bait, shown once above the boxes (they share one purse).
+  const baitLeft = team.reduce((n, c) => n - (treats.has(c.id) ? c.treatCost : 0), bait);
   return (
     <>
       {isRetryOffer(today) && (
@@ -237,32 +244,46 @@ export function DungeonSetup({
             />
           )}
           <div class="dungeon-treats">
-            {slots.flatMap((id) => {
-              const creature = creatures.find((c) => c.id === id);
-              if (creature === undefined) return [];
-              // A treat is paid up front: the boxes cannot add up to more Bait than the player has.
-              const others = [...treats]
-                .filter((t) => t !== creature.id)
-                .reduce((n, t) => n + (creatures.find((c) => c.id === t)?.treatCost ?? 0), 0);
-              return [
-                <TreatBox
-                  key={creature.id}
-                  cost={creature.treatCost}
-                  bait={bait - others}
-                  checked={treats.has(creature.id)}
-                  disabled={busy}
-                  who={creatureName(creature)}
-                  onChange={(on) => {
-                    setTreats((now) => {
-                      const next = new Set(now);
-                      if (on) next.add(creature.id);
-                      else next.delete(creature.id);
-                      return next;
-                    });
-                  }}
-                />,
-              ];
-            })}
+            {team.length > 0 && (
+              <p class="treats-head">
+                <span class="treats-title">Treats</span>
+                <GlossaryTag entry="treat" look="help" />
+                <span class="treats-left">
+                  <CountBadge {...baitCount(baitLeft)} label="Bait left" />
+                  <span>left</span>
+                </span>
+              </p>
+            )}
+            <div class="treat-list">
+              {slots.flatMap((id) => {
+                const creature = creatures.find((c) => c.id === id);
+                if (creature === undefined) return [];
+                // A treat is paid up front: the boxes cannot add up to more Bait than the player has.
+                const others = [...treats]
+                  .filter((t) => t !== creature.id)
+                  .reduce((n, t) => n + (creatures.find((c) => c.id === t)?.treatCost ?? 0), 0);
+                return [
+                  <TreatBox
+                    key={creature.id}
+                    cost={creature.treatCost}
+                    bait={bait - others}
+                    checked={treats.has(creature.id)}
+                    disabled={busy}
+                    who={creatureName(creature)}
+                    help={false}
+                    listed
+                    onChange={(on) => {
+                      setTreats((now) => {
+                        const next = new Set(now);
+                        if (on) next.add(creature.id);
+                        else next.delete(creature.id);
+                        return next;
+                      });
+                    }}
+                  />,
+                ];
+              })}
+            </div>
           </div>
           <div class="dungeon-enter">
             {error !== null && <Alert level="alert">{error}</Alert>}
@@ -282,7 +303,16 @@ export function DungeonSetup({
                   onEnter(slots, new Set([...treats].filter((id) => slots.includes(id))));
                 }}
               >
-                {busy ? 'Entering...' : 'Enter the dungeon'}
+                {/* The Dungeon tab's door, in ink on gold as on the active tab. */}
+                <Sprite
+                  sprite={glyphOrUnknown('door')}
+                  scale={2}
+                  class="dungeon-enter-door"
+                  {...(tabPalette(true) === undefined
+                    ? {}
+                    : { palette: tabPalette(true) as Readonly<Record<string, string>> })}
+                />
+                <span>{busy ? 'Entering...' : 'Enter the dungeon'}</span>
               </button>
             </p>
             {!complete && (

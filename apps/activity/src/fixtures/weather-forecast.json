@@ -19,7 +19,8 @@
       "fight": ["Foes' crit chance +4 pt."],
       "trips": []
     },
-    "wild": false
+    "wild": false,
+    "treatTimes": 2
   },
   "tomorrow": {
     "day": "2027-01-14",
@@ -36,6 +37,7 @@
       ]
     },
     "omen": null,
-    "wild": false
+    "wild": false,
+    "treatTimes": 2
   }
 }
