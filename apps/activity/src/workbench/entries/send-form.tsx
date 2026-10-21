@@ -2,7 +2,6 @@ import { parseGameState, type Creature } from '../../api';
 import { parseDestinations } from '../../expedition-parse';
 import destinationsFixture from '../../fixtures/expedition-destinations.json';
 import stateOffer from '../../fixtures/expedition-state-offer.json';
-import { PopoverHost } from '../../PopoverHost';
 import { SEND_STEP_HEAD, SendFooter, SendForm } from '../../SendForm';
 import type { SendStep } from '../../send-view';
 import { DrillHead } from '../../ui/DrillHead';
@@ -50,37 +49,33 @@ function SendFormDemo({ p }: { p: Props }) {
   const step: SendStep = form.step;
   if (layout === 'panel') {
     return (
-      <PopoverHost onOpenHowTo={NOTHING}>
-        <div class="send-panel-frame" style={{ maxWidth: '25rem' }}>
-          <SendForm form={form} layout="panel" busy={false} onSend={() => Promise.resolve(true)} />
-        </div>
-      </PopoverHost>
+      <div class="send-panel-frame" style={{ maxWidth: '25rem' }}>
+        <SendForm form={form} layout="panel" busy={false} onSend={() => Promise.resolve(true)} />
+      </div>
     );
   }
   const head = SEND_STEP_HEAD[step];
   return (
-    <PopoverHost onOpenHowTo={NOTHING}>
-      <div class="v3-phone">
-        <Drawer
-          open
-          onClose={NOTHING}
-          title={form.place?.name ?? 'Send an explorer'}
-          footer={
-            <SendFooter
-              form={form}
-              mode={step === 'ready' ? 'send' : 'next'}
-              busy={false}
-              onSend={() => Promise.resolve(true)}
-            />
-          }
-        >
-          {step !== 'who' && (
-            <DrillHead title={head.title} backLabel={head.backLabel} onBack={form.back} />
-          )}
-          <SendForm form={form} layout="steps" busy={false} onSend={() => Promise.resolve(true)} />
-        </Drawer>
-      </div>
-    </PopoverHost>
+    <div class="v3-phone">
+      <Drawer
+        open
+        onClose={NOTHING}
+        title={form.place?.name ?? 'Send an explorer'}
+        footer={
+          <SendFooter
+            form={form}
+            mode={step === 'ready' ? 'send' : 'next'}
+            busy={false}
+            onSend={() => Promise.resolve(true)}
+          />
+        }
+      >
+        {step !== 'who' && (
+          <DrillHead title={head.title} backLabel={head.backLabel} onBack={form.back} />
+        )}
+        <SendForm form={form} layout="steps" busy={false} onSend={() => Promise.resolve(true)} />
+      </Drawer>
+    </div>
   );
 }
 
