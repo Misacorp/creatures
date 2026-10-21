@@ -114,7 +114,7 @@ button.run-keepsake::before {
   --canvas: var(--leather);
   --canvas-dark: var(--leather-dark);
   --canvas-light: var(--leather-light);
-  --art: 4rem; /* the 16 px picture at scale 4 */
+  --art: 3.6rem; /* the 16 px picture at scale 4, drawn 10% smaller so it clears the canvas's top edge */
 
   position: relative;
   flex-direction: row;
@@ -137,6 +137,12 @@ button.run-keepsake::before {
   width: var(--art);
   line-height: 0;
   transform: translateY(-50%);
+}
+
+.run-stash-art canvas {
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
 }
 
 .run-stash-canvas {
