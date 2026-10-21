@@ -64,6 +64,7 @@
 @import './components/data-table.css';
 @import './views/workshop.css';
 @import './views/item-detail.css';
+@import './components/fold-row.css';
 @import './components/picker.css';
 @import './components/scroll-hint.css';
 @import './views/jobs.css';

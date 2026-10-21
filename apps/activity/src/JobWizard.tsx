@@ -12,7 +12,7 @@ import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { TreatBox } from './TreatBox';
 import { Alert } from './ui/Alert';
-import { Chevron } from './ui/Accordion';
+import { FoldRow } from './ui/FoldRow';
 import { CountBadge, type CountItem } from './ui/CountBadge';
 import { Drawer } from './ui/Drawer';
 import { RecipeCard, type RecipeInput } from './ui/RecipeCard';
@@ -159,20 +159,15 @@ export function JobWhoStep({
       {who.busy.map(row)}
       {who.summary !== null && (
         <>
-          <button
-            type="button"
-            class={`pick pick-fold${open ? ' open' : ''}`}
-            aria-expanded={open}
-            aria-controls="job-who-folded"
-            onClick={() => {
+          <FoldRow
+            open={open}
+            controls="job-who-folded"
+            onToggle={() => {
               setOpen(!open);
             }}
           >
-            <span class="pick-fold-chev">
-              <Chevron />
-            </span>
-            <span class="pick-fold-text">{who.summary}</span>
-          </button>
+            {who.summary}
+          </FoldRow>
           {open && <div id="job-who-folded">{who.tooLow.map(row)}</div>}
         </>
       )}

@@ -5,6 +5,7 @@ import { ALERT_TEXT, NO_ALERTS, type TabAlerts } from '../../tab-alerts';
 import { TABS, type Tab } from '../../tabs';
 import { ActionButton } from '../../ui/ActionButton';
 import { ChoiceButton, ChoiceList } from '../../ui/ChoiceList';
+import { FoldRow } from '../../ui/FoldRow';
 import { DrillHead } from '../../ui/DrillHead';
 import { LiveRegion } from '../../ui/LiveRegion';
 import { PlaybackControls } from '../../ui/PlaybackControls';
@@ -102,6 +103,63 @@ const switchEntry: Entry = {
     { name: 'Disabled', props: { on: true, disabled: true } },
   ],
   render: (p) => <SwitchDemo p={p} />,
+};
+
+function FoldRowDemo({ p }: { p: Props }) {
+  const initial = bool(p, 'open');
+  const [open, setOpen] = useState(initial);
+  useEffect(() => {
+    setOpen(initial);
+  }, [initial]);
+  const rows = Math.max(0, Math.floor(num(p, 'rows')));
+  return (
+    <>
+      <FoldRow
+        open={open}
+        controls="fold-demo"
+        onToggle={() => {
+          setOpen(!open);
+        }}
+      >
+        {str(p, 'label')}
+      </FoldRow>
+      {open && (
+        <div id="fold-demo">
+          {Array.from({ length: rows }, (_, i) => (
+            <p class="muted small" key={i}>
+              Folded row {i + 1}
+            </p>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+const foldRow: Entry = {
+  name: 'FoldRow',
+  file: 'apps/activity/src/ui/FoldRow.tsx',
+  group: 'Controls',
+  description:
+    'A quiet fold for a group the player rarely needs: a centred label between two dashed lines, like a divider. A real button (aria-expanded, no icon) with a 44 px tall hit area; the caller draws the folded rows after it. Used for the creatures under a level in the job wizard. Tap it in the preview.',
+  controls: {
+    open: { kind: 'toggle' },
+    label: { kind: 'text', maxLength: 80 },
+    rows: { kind: 'number', min: 0, max: 6 },
+  },
+  defaults: { open: false, label: '3 more need Crafting level 3', rows: 3 },
+  presets: [
+    { name: 'Folded', props: { open: false } },
+    { name: 'Open', props: { open: true } },
+    {
+      name: 'Long label, wraps at 360 px',
+      props: {
+        open: false,
+        label: 'Seven more creatures need Crafting level 3 or higher for this job',
+      },
+    },
+  ],
+  render: (p) => <FoldRowDemo p={p} />,
 };
 
 function PlaybackDemo({ p }: { p: Props }) {
@@ -494,6 +552,7 @@ export const controlEntries: readonly Entry[] = [
   previewStatus,
   toggleButton,
   switchEntry,
+  foldRow,
   playbackControls,
   liveRegion,
   currencyPile,
