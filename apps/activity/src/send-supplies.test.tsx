@@ -6,7 +6,11 @@ import type { SupplyPick } from './expedition-types';
 import destinationsFixture from './fixtures/expedition-destinations.json';
 import stateOffer from './fixtures/expedition-state-offer.json';
 import { PopoverHost } from './PopoverHost';
-import { SendTrip } from './SendTrip';
+import { SendForm } from './SendForm';
+import type { SendRequest } from './expedition-api';
+import type { Creature } from './api';
+import type { DestinationsView, Slots } from './expedition-types';
+import { useSendForm } from './use-send-form';
 import { TripSummary } from './TripSummary';
 import { SupplyPicker } from './SupplyPicker';
 import { FakeElement, byClass, byName, createPage, visibleText, type Page } from './test-dom';
@@ -26,6 +30,43 @@ const STOCK = {
   'map-scrap-basic': 1,
   'satchel-basic': 3,
 };
+
+/** The send form for Tidepools, as the map's panel draws it. */
+function Panel({
+  creatures,
+  view,
+  stock,
+  bait,
+  onSend,
+  onOpenWorkshop,
+}: {
+  creatures: readonly Creature[];
+  view: DestinationsView;
+  stock: Readonly<Record<string, number>>;
+  bait: number;
+  onSend: (request: SendRequest) => Promise<boolean>;
+  onOpenWorkshop?: () => void;
+}) {
+  const slots: Slots = { total: 2, used: 0, rankSum: 2, tripsFinished: 3, next: null };
+  const form = useSendForm({
+    creatures,
+    view,
+    destination: 'tidepools',
+    slots,
+    stock,
+    bait,
+    timezone: 'Europe/Helsinki',
+  });
+  return (
+    <SendForm
+      form={form}
+      layout="panel"
+      busy={false}
+      onSend={onSend}
+      {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}
+    />
+  );
+}
 
 function Kit({ stock, seen }: { stock: Record<string, number>; seen: SupplyPick[][] }) {
   const [picks, setPicks] = useState<SupplyPick[]>([]);
@@ -147,31 +188,32 @@ describe('sending with a kit', () => {
       busy: null,
     }));
     const onSend = vi.fn().mockResolvedValue(true);
-    page.draw(
-      <SendTrip
-        creatures={creatures}
-        slots={{ total: 2, used: 0, rankSum: 2, tripsFinished: 3, next: null }}
-        stock={STOCK}
-        bait={0}
-        busy={false}
-        view={view}
-        viewFailed={false}
-        timezone="Europe/Helsinki"
-        onRetry={() => undefined}
-        onSend={onSend}
-      />,
-    );
+    page.draw(<Panel creatures={creatures} view={view} stock={STOCK} bait={0} onSend={onSend} />);
     page.click(cell(page.root, 'Plain Lure'));
     page.click(cell(page.root, 'Small Satchel'));
     const [send] = byClass(page.root, 'send-button');
     if (send === undefined) throw new Error('no send button');
     page.click(send);
     expect(onSend).toHaveBeenCalledTimes(1);
-    const request = onSend.mock.calls[0]?.[0] as { supplies: SupplyPick[] };
+    const request = onSend.mock.calls[0]?.[0] as SendRequest;
     expect(request.supplies).toEqual([
       { id: 'lure-basic', source: 'owned' },
       { id: 'satchel-basic', source: 'owned' },
     ]);
+    // The same request the old send screen made for the same choices: the first explorer that can go,
+    // 12 h, no treat (the key is absent, not false).
+    const first = creatures.slice().sort((a, b) => b.explorer.rank - a.explorer.rank)[0];
+    expect(Object.keys(request).sort()).toEqual([
+      'creatureId',
+      'destination',
+      'duration',
+      'supplies',
+    ]);
+    expect(request).toMatchObject({
+      creatureId: first?.id,
+      destination: 'tidepools',
+      duration: 'long',
+    });
   });
 });
 
@@ -186,16 +228,11 @@ function drawSend(options: { onOpenWorkshop?: () => void; bait?: number } = {}) 
   }));
   page.draw(
     <PopoverHost onOpenHowTo={() => undefined}>
-      <SendTrip
+      <Panel
         creatures={creatures}
-        slots={{ total: 2, used: 0, rankSum: 2, tripsFinished: 3, next: null }}
+        view={view}
         stock={STOCK}
         bait={bait}
-        busy={false}
-        view={view}
-        viewFailed={false}
-        timezone="Europe/Helsinki"
-        onRetry={() => undefined}
         onSend={() => Promise.resolve(true)}
         {...rest}
       />

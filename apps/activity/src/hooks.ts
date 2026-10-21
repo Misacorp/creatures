@@ -48,6 +48,29 @@ export function usePrefersReducedMotion(): boolean {
 }
 
 /**
+ * True while the media query matches (updates when the window changes). False where there is no
+ * `matchMedia` (the tests' fake DOM) until a test provides one.
+ */
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(
+    () => typeof matchMedia === 'function' && matchMedia(query).matches,
+  );
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return undefined;
+    const list = matchMedia(query);
+    const update = (): void => {
+      setMatches(list.matches);
+    };
+    update();
+    list.addEventListener('change', update);
+    return () => {
+      list.removeEventListener('change', update);
+    };
+  }, [query]);
+  return matches;
+}
+
+/**
  * The width of an element in CSS pixels, kept up to date as it resizes. `fallback` is used until the
  * element has been measured (and where there is no layout at all).
  */

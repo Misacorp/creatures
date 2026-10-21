@@ -83,13 +83,15 @@
 @import './views/expeditions/banner.css';
 @import './views/expeditions/nav.css';
 @import './components/title-plate.css';
-@import './views/expeditions/catalogue.css';
+@import './views/expeditions/place.css';
 @import './views/expeditions/send.css';
 @import './views/expeditions/trips.css';
 @import './views/expeditions/claim.css';
 @import './views/expeditions/profile.css';
 @import './views/expeditions/wipe-notice.css';
 @import './views/expeditions/supply-crafting.css';
+@import './views/expeditions/world-map.css';
+@import './views/expeditions/world.css';
 @import './components/progress-track.css';
 @import './components/recipe-card.css';
 @import './components/xp-bar.css';

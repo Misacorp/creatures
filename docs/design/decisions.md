@@ -2535,6 +2535,19 @@ Misa's next round on the run strip: the leather should start at least from the b
 - **Fourth follow-up (Misa):** the canvases are full width again, so their left edge lines up with everything else in the strip, and the pictures spill out past that edge instead (`--spill`: 0.75 rem for the backpack, 1.25 rem for the locket, whose drawing starts two pixels further in). Both canvases keep the same text edge. When the pack and the keepsakes sit side by side (a container query on `.run-ledger`, two columns from 30.5 rem), the locket stays inside its canvas so it never reaches over the pack; on its own row it spills like the backpack.
 - **Final (Misa):** after the spill-out experiments, the pictures sit fully inside their full-width canvases everywhere, as the locket did beside the pack. No spill, no container query. Simpler, and it keeps every edge on the grid.
 
+## 2026-10-21: The Trips view is a world map
+
+Misa approved the world-map design for the Expeditions tab (mockups MapPhone / MapDesktop). The Trips view now shows a pixel map with a marker per place instead of the catalogue and the send screen; Journal, Profile and every other tab are unchanged.
+
+- **All places are open on the map.** Every marker can be tapped. The explorer rank a place needs stays a per-creature limit, shown in the explorer picker (greyed with the reason). Time rules stay: Moonlit Reef by day and the Festival Grounds outside Festival weeks show their rule as a line on the marker and in the place's sheet or panel, and Send is disabled with "Opens tonight at 20:00".
+- **Phone (under 60 rem): sheet and wizard.** Map, then a strip of chips for the trips that are out. A marker or a chip opens a `ui/Drawer` place sheet (banner, what the place says, the explorers there as rows, a gold "Send an explorer here"). Sending is a drill-in wizard in the same sheet (Who goes, Pack up, Ready) with the pinned Next / Send button; Back and Escape go one step back, from Who back to the place. "Decide" opens the push-on choice as a drill-in. After a started send the sheet closes and the new trip is on the map. A claim closes the sheet and the reveal shows above the map as before.
+- **Desktop (60 rem and up): panel.** Map and the "Out exploring" shelf on the left, a 24 rem side panel on the right: "Where to?" until a place is picked, then the place and the whole send form with one Send button. Picking a place does not move focus (a live region says which place). A claim's reveal shows in the panel (the page only scrolls if the panel is out of view), and Decide shows the push-on choice in the panel with a Back.
+- **The app card widens only for this view**: `main.card:has(.exp-world)` is up to 84 rem from 60 rem (`styles/views/expeditions/world.css`); Journal, Profile and every other tab keep 48 rem. An app-wide wide frame (top bar with tabs and currencies) is later work (roadmap).
+- **The full bag warning** (`ui/BagFullNote`, from the bag overflow change) sits beside Send in both layouts: on the wizard's Ready step and at the panel's bottom.
+- **Map positions are client-only**, like the room's `ROOM_SPOTS`: the server knows nothing about where a place sits on the map.
+- **Selection is state in `ExpeditionWorld`**; the wide or narrow layout comes from the same media query as the CSS (`WIDE_QUERY`).
+- Removed: `SendTrip`, `Catalogue`, `RunningTrip` (the per-trip cards), `turnCatalogue` and the catalogue styles. `PlaceInfo` stays, its styles are in `place.css`.
+
 ## 2026-10-21: "Equip on" shows what is already worn
 
 Misa: the Workshop item drawer's "Equip on" list did not show which creatures already have something in the slot.

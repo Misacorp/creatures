@@ -5,6 +5,7 @@ import { creatureCardEntries } from './entries/creature-card';
 import { creaturePageEntries } from './entries/creature-page';
 import { creatureEntries } from './entries/creatures';
 import { evolveEntries } from './entries/evolve';
+import { expeditionWorldEntries } from './entries/expedition-world';
 import { flipperEntries } from './entries/flipper';
 import { dataTableEntries } from './entries/data-table';
 import { effectEntries } from './entries/effects';
@@ -20,6 +21,7 @@ import { recipeCardEntries } from './entries/recipe-card';
 import { supplyCraftingEntries } from './entries/supply-crafting';
 import { raidBoardEntries } from './entries/raid-board';
 import { raidSummaryEntries } from './entries/raid-summary';
+import { sendFormEntries } from './entries/send-form';
 import { skyEntries } from './entries/sky';
 import { slotDrawerEntries } from './entries/slot-drawer';
 import { slotEntries } from './entries/slots';
@@ -27,6 +29,8 @@ import { stageEntries } from './entries/stage';
 import { tagEntries } from './entries/tags';
 import { talentEntries } from './entries/talents';
 import { tripResult } from './entries/trip-result';
+import { tripEntries } from './entries/trips';
+import { worldMapEntries } from './entries/world-map';
 import { GROUPS, type Entry, type Group } from './types';
 
 /**
@@ -60,10 +64,14 @@ export const ENTRIES: readonly Entry[] = [
   ...flipperEntries,
   ...talentEntries,
   tripResult,
+  ...tripEntries,
+  ...sendFormEntries,
   ...stageEntries,
   ...skyEntries,
   ...dungeonMapEntries,
   ...dungeonRunEntries,
+  ...worldMapEntries,
+  ...expeditionWorldEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {
