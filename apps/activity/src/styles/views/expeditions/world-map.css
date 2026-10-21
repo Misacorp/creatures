@@ -1,0 +1,371 @@
+/*
+  The Expeditions world map (`WorldMap.tsx`). One pixel canvas drawn at a whole-number scale
+  (`image-rendering: pixelated`, so every pixel border is whole), scrolling sideways on a phone, with real
+  buttons over it. A marker's point is its pin: the faces sit above the pin, the name plate below it.
+  The bottom padding keeps a strip placed under the map from covering a plate.
+*/
+.world-map {
+  --wm-grass: #3b6b43;
+  --wm-pin-ink: 20px;
+  --wm-faces-h: 40px;
+  --wm-pin-h: 28px;
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* A few pixels of padding with a matching negative margin: a ring at the edge shows whole. */
+  padding: 0 3px;
+  margin: 0 -3px;
+  background: var(--wm-grass);
+  scrollbar-width: none;
+}
+
+.world-map::-webkit-scrollbar {
+  display: none;
+}
+
+.world-map-stage {
+  position: relative;
+  width: var(--wm-w);
+  height: var(--wm-h);
+  margin: 0 auto;
+}
+
+.world-map-canvas {
+  display: block;
+  width: var(--wm-w);
+  height: var(--wm-h);
+  image-rendering: pixelated;
+}
+
+/* Night: a blue tint over the art (and under the markers, which stay readable). */
+.world-map.night .world-map-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgb(13 10 40 / 0.45);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .world-map.night .world-map-stage::after {
+    animation: wm-night-in 0.6s steps(6) both;
+  }
+}
+
+@keyframes wm-night-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.world-map-places {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  z-index: 1;
+}
+
+.world-map-places li {
+  display: contents;
+}
+
+.wm-marker {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  translate: -50% calc(-1 * (var(--wm-faces-h) + var(--wm-pin-h) / 2));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--bone);
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wm-faces {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: var(--wm-faces-h);
+  padding-bottom: 2px;
+}
+
+.wm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 3px;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--bevel-hi);
+}
+
+.wm-chip .button-creature {
+  display: block;
+}
+
+.wm-more {
+  padding: 0 3px;
+  font-size: var(--fs-small);
+  color: var(--bone);
+}
+
+.wm-flag {
+  padding: 0 4px;
+  font-size: var(--fs-small);
+  line-height: 1.3;
+  color: var(--ink);
+  background: var(--gold);
+  box-shadow: 0 2px 0 var(--gold-shade);
+}
+
+.wm-choice {
+  min-width: 16px;
+  padding: 0 4px;
+  text-align: center;
+  font-size: var(--fs-small);
+  line-height: 1.3;
+  color: var(--ink);
+  background: var(--bone);
+  box-shadow:
+    0 0 0 2px var(--mire),
+    0 2px 0 2px var(--ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wm-marker.push-on .wm-choice {
+    animation: wm-nudge 1.2s steps(2) infinite;
+  }
+}
+
+@keyframes wm-nudge {
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+/* The pin: a stepped (pixel) diamond in three layers: gold ring, ink, the element's colour. */
+.wm-pin {
+  position: relative;
+  width: 28px;
+  height: var(--wm-pin-h);
+}
+
+.wm-ring,
+.wm-ink,
+.wm-gem {
+  position: absolute;
+}
+
+.wm-ring {
+  inset: 0;
+  background: var(--gold);
+  clip-path: polygon(
+    16px 0,
+    16px 2px,
+    18px 2px,
+    18px 4px,
+    20px 4px,
+    20px 6px,
+    22px 6px,
+    22px 8px,
+    24px 8px,
+    24px 10px,
+    26px 10px,
+    26px 12px,
+    28px 12px,
+    28px 16px,
+    26px 16px,
+    26px 18px,
+    24px 18px,
+    24px 20px,
+    22px 20px,
+    22px 22px,
+    20px 22px,
+    20px 24px,
+    18px 24px,
+    18px 26px,
+    16px 26px,
+    16px 28px,
+    12px 28px,
+    12px 26px,
+    10px 26px,
+    10px 24px,
+    8px 24px,
+    8px 22px,
+    6px 22px,
+    6px 20px,
+    4px 20px,
+    4px 18px,
+    2px 18px,
+    2px 16px,
+    0 16px,
+    0 12px,
+    2px 12px,
+    2px 10px,
+    4px 10px,
+    4px 8px,
+    6px 8px,
+    6px 6px,
+    8px 6px,
+    8px 4px,
+    10px 4px,
+    10px 2px,
+    12px 2px,
+    12px 0
+  );
+  visibility: hidden;
+}
+
+.wm-marker.selected .wm-ring {
+  visibility: visible;
+}
+
+.wm-ink {
+  inset: 4px;
+  background: var(--ink);
+  clip-path: polygon(
+    12px 0,
+    12px 2px,
+    14px 2px,
+    14px 4px,
+    16px 4px,
+    16px 6px,
+    18px 6px,
+    18px 8px,
+    20px 8px,
+    20px 12px,
+    18px 12px,
+    18px 14px,
+    16px 14px,
+    16px 16px,
+    14px 16px,
+    14px 18px,
+    12px 18px,
+    12px 20px,
+    8px 20px,
+    8px 18px,
+    6px 18px,
+    6px 16px,
+    4px 16px,
+    4px 14px,
+    2px 14px,
+    2px 12px,
+    0 12px,
+    0 8px,
+    2px 8px,
+    2px 6px,
+    4px 6px,
+    4px 4px,
+    6px 4px,
+    6px 2px,
+    8px 2px,
+    8px 0
+  );
+}
+
+.wm-gem {
+  inset: 8px;
+  background: var(--wm-el, #c9c2ea);
+  clip-path: polygon(
+    8px 0,
+    8px 2px,
+    10px 2px,
+    10px 4px,
+    12px 4px,
+    12px 8px,
+    10px 8px,
+    10px 10px,
+    8px 10px,
+    8px 12px,
+    4px 12px,
+    4px 10px,
+    2px 10px,
+    2px 8px,
+    0 8px,
+    0 4px,
+    2px 4px,
+    2px 2px,
+    4px 2px,
+    4px 0
+  );
+}
+
+.wm-el-tide {
+  --wm-el: var(--tide);
+}
+.wm-el-ember {
+  --wm-el: var(--ember);
+}
+.wm-el-grove {
+  --wm-el: var(--grove);
+}
+.wm-el-spark {
+  --wm-el: var(--spark);
+}
+.wm-el-mire {
+  --wm-el: var(--mire);
+}
+
+.wm-plate {
+  margin-top: 2px;
+  padding: 2px 6px;
+  font-size: var(--fs-row);
+  line-height: 1.1;
+  white-space: nowrap;
+  color: var(--bone);
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--bevel-hi);
+}
+
+.wm-marker.selected .wm-plate {
+  color: var(--ink);
+  background: var(--gold);
+  box-shadow:
+    0 0 0 2px var(--ink),
+    0 0 0 4px var(--gold);
+}
+
+.wm-rule {
+  margin-top: 4px;
+  padding: 0 4px;
+  font-size: var(--fs-small);
+  line-height: 1.3;
+  white-space: nowrap;
+  color: #a69fc8;
+  background: var(--ink);
+}
+
+.world-map-places .wm-marker:hover:not(:disabled),
+.world-map-places .wm-marker:active:not(:disabled) {
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.wm-marker:focus-visible {
+  outline: none;
+}
+
+.wm-marker:focus-visible .wm-plate {
+  box-shadow: var(--ring);
+}
+
+.wm-marker:hover .wm-plate {
+  background: var(--night);
+}
+
+.wm-marker.selected:hover .wm-plate {
+  background: var(--gold);
+}

@@ -29,6 +29,7 @@ import { tagEntries } from './entries/tags';
 import { talentEntries } from './entries/talents';
 import { tripResult } from './entries/trip-result';
 import { tripEntries } from './entries/trips';
+import { worldMapEntries } from './entries/world-map';
 import { GROUPS, type Entry, type Group } from './types';
 
 /**
@@ -68,6 +69,7 @@ export const ENTRIES: readonly Entry[] = [
   ...skyEntries,
   ...dungeonMapEntries,
   ...dungeonRunEntries,
+  ...worldMapEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {
