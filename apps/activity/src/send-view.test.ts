@@ -11,6 +11,8 @@ import {
   explorerInfo,
   explorerOptions,
   sendBlocker,
+  slotsFullReason,
+  stepBlocker,
   starsAt,
   tripsAt,
   tripsHereText,
@@ -102,6 +104,31 @@ describe('who can go', () => {
     expect(defaultExplorer([], null)).toBeUndefined();
   });
 
+  it('never defaults to a creature that cannot go: away, or too low a rank', () => {
+    const away = creatures.map((c) => ({
+      ...c,
+      away: true,
+      busy: { kind: 'expedition' as const, id: 'x' },
+    }));
+    expect(defaultExplorer(explorerOptions(away, place('tidepools'), view), null)).toBeUndefined();
+    // Only the rank-1 creatures are free, the place wants rank 2: nobody is chosen.
+    const low = creatures.map((c) => ({ ...c, explorer: { ...c.explorer, rank: 1 } }));
+    expect(
+      defaultExplorer(explorerOptions(low, place('old-crossroads'), view), null),
+    ).toBeUndefined();
+    // A picked creature that became unavailable is dropped for the first that can go.
+    const options = explorerOptions(
+      creatures.map((c) =>
+        c.id === splashet.id
+          ? { ...c, away: true, busy: { kind: 'expedition' as const, id: 'x' } }
+          : c,
+      ),
+      place('tidepools'),
+      view,
+    );
+    expect(defaultExplorer(options, splashet.id)?.creature.id).not.toBe(splashet.id);
+  });
+
   it('gives the small-creature popover what it needs for an explorer', () => {
     expect(explorerInfo(cindle)).toMatchObject({
       species: 'cindle',
@@ -137,6 +164,13 @@ describe('why a trip cannot be sent', () => {
     expect(sendBlocker(base)).toBeNull();
   });
 
+  it('names the full slots as one reason, for the sheet button as well', () => {
+    expect(slotsFullReason({ ...open, total: 2, used: 1 })).toBeNull();
+    expect(slotsFullReason({ ...open, total: 2, used: 2 })).toBe(
+      'All 2 expedition slots are in use. Claim a trip first.',
+    );
+  });
+
   it('says when every slot is out', () => {
     expect(sendBlocker({ ...base, slots: { ...open, total: 1, used: 1 } })).toContain(
       'All 1 expedition slot is in use',
@@ -147,7 +181,7 @@ describe('why a trip cannot be sent', () => {
   });
 
   it('says when nobody can go, the place is closed or the trip is too long', () => {
-    expect(sendBlocker({ ...base, explorer: undefined })).toBe('No creature to send.');
+    expect(sendBlocker({ ...base, explorer: undefined })).toBe('Nobody can go there right now.');
     expect(sendBlocker({ ...base, place: undefined })).toBe('Pick a place first.');
     const away = explorerOptions([{ ...cindle, away: true }], place('tidepools'), view)[0];
     expect(sendBlocker({ ...base, explorer: away })).toContain('Away on a trip');
@@ -169,5 +203,58 @@ describe('why a trip cannot be sent', () => {
         stock: { 'lure-good': 1 },
       }),
     ).toBeNull();
+  });
+});
+
+describe('why Next is disabled on a step', () => {
+  const options = explorerOptions(creatures, place('tidepools'), view);
+  const explorer = options[0];
+  const base = {
+    slots: open,
+    explorer,
+    place: place('tidepools'),
+    length: 'long' as const,
+    picks: [],
+    stock: {},
+  };
+
+  it('is open on every step for a free trip', () => {
+    for (const step of ['who', 'pack', 'ready'] as const) {
+      expect(stepBlocker(step, base)).toBeNull();
+    }
+  });
+
+  it('checks who goes on the first step only', () => {
+    const full = { ...base, slots: { ...open, total: 1, used: 1 } };
+    expect(stepBlocker('who', full)).toContain('All 1 expedition slot is in use');
+    expect(stepBlocker('pack', full)).toBeNull();
+    expect(stepBlocker('who', { ...base, explorer: undefined })).toBe(
+      'Nobody can go there right now.',
+    );
+    const low = explorerOptions(creatures, place('old-crossroads'), view).find(
+      (o) => o.blocked !== null,
+    );
+    expect(low?.blocked).toContain('Needs explorer rank');
+    expect(stepBlocker('who', { ...base, explorer: low })).toContain('Needs explorer rank');
+  });
+
+  it('checks the length and the supplies on the pack step', () => {
+    const missing = { ...base, picks: [{ id: 'lure-good', source: 'owned' as const }] };
+    expect(stepBlocker('who', missing)).toBeNull();
+    expect(stepBlocker('pack', missing)).toContain('no Sweet Lure');
+    const lowRank = { ...(explorer as NonNullable<typeof explorer>), rank: 1 };
+    expect(stepBlocker('pack', { ...base, explorer: lowRank, length: 'day' })).toBe(
+      'That trip is too long for this explorer.',
+    );
+  });
+
+  it('says on the last step that a place the clock shuts opens later; the steps before go on', () => {
+    const reef = { ...base, place: place('moonlit-reef') };
+    const text = reef.place.timeRule?.text;
+    expect(text).toMatch(/^Opens (tonight at|\w{3}) 20:00$/);
+    expect(stepBlocker('who', reef)).toBeNull();
+    expect(stepBlocker('pack', reef)).toBeNull();
+    expect(stepBlocker('ready', reef)).toBe(text);
+    expect(sendBlocker(reef)).toBe(text);
   });
 });

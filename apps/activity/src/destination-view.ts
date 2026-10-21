@@ -1,5 +1,5 @@
 /**
- * The destination catalogue as plain data: for each place a banner card with its element, who lives
+ * The places of the world map as plain data: for each place a banner card with its element, who lives
  * there (known ones by name, the rest as silhouettes), whether the deeper area is open to the creature
  * that would go, the weekly twist, and why it is closed. Familiarity (stars and trips) is a trait of the
  * creature, not of the place, so it is not on the card: see `send-view.ts`. Names, species and flavour
@@ -13,8 +13,10 @@ import type { DestinationsView } from './expedition-types';
 import { speciesName } from './game';
 import { formatHourOfDay, formatZoned, zonedClock } from './time-format';
 
-interface LockReason {
-  kind: 'rank' | 'night' | 'festival';
+/** The time rule that keeps a place shut right now: only at night, or only in Festival weeks. */
+export interface TimeRule {
+  kind: 'night' | 'festival';
+  /** When it opens, as a phrase: "Opens tonight at 20:00", "Opens Fri 20:00", "Opens in Festival weeks". */
   text: string;
 }
 
@@ -45,8 +47,11 @@ export interface DestinationCard {
   deepOpen: boolean;
   /** The weekly twist if this is the special place this week. */
   twist: { name: string; description: string; festival: boolean } | null;
-  /** Why it is closed to the chosen explorer; empty when it is open. */
-  locked: LockReason[];
+  /**
+   * Why it is shut right now (night only, Festival only); null when it is open. The explorer's rank is
+   * not here: it is enforced per creature (see `explorerOptions`), every place is open on the map.
+   */
+  timeRule: TimeRule | null;
 }
 
 /**
@@ -71,45 +76,39 @@ export function nightWindowText(): string {
   return `Only open at night, ${formatHourOfDay(fromHour)} to ${formatHourOfDay(toHour)} server time.`;
 }
 
-/** "Night only (20:00 to 06:00). Opens Fri 20:00." for a place that is closed by day. */
-export function nightText(now: number, timeZone: string | null): string {
-  const { fromHour, toHour } = RULES.expeditions.night;
-  const base = `Night only (${formatHourOfDay(fromHour)} to ${formatHourOfDay(toHour)} server time)`;
-  if (timeZone === null) return `${base}.`;
+/**
+ * When a shut place opens, as a phrase. Night: "Opens tonight at 20:00" when the night starts later on
+ * the same local day as `now`, else "Opens Fri 20:00" (without a usable timezone just "Opens at night").
+ * Festival: "Opens in Festival weeks". The timezone is the guild's, passed explicitly.
+ */
+export function opensText(kind: TimeRule['kind'], now: number, timeZone: string | null): string {
+  if (kind === 'festival') return 'Opens in Festival weeks';
+  if (timeZone === null) return 'Opens at night';
   const next = nextNightStart(now, timeZone);
-  return next === null ? `${base}.` : `${base}. Opens ${formatZoned(next, timeZone, 'short')}.`;
+  if (next === null) return 'Opens at night';
+  const [nowDay] = formatZoned(now, timeZone, 'short').split(' ');
+  const [nextDay, nextTime] = formatZoned(next, timeZone, 'short').split(' ');
+  return nowDay === nextDay
+    ? `Opens tonight at ${nextTime ?? ''}`
+    : `Opens ${nextDay ?? ''} ${nextTime ?? ''}`;
 }
 
-function lockReasons(
-  view: DestinationsView,
+function timeRuleOf(
+  view: Pick<DestinationsView, 'serverNow'>,
   place: DestinationsView['destinations'][number],
-  explorer: Pick<Creature, 'explorer'> | undefined,
   timeZone: string | null,
-): LockReason[] {
-  const out: LockReason[] = [];
-  const rank = explorer?.explorer.rank;
-  if (rank !== undefined ? rank < place.minRank : place.minRank > 1) {
-    out.push({
-      kind: 'rank',
-      text:
-        rank === undefined
-          ? `Needs explorer rank ${String(place.minRank)}.`
-          : `Needs explorer rank ${String(place.minRank)} (this one is rank ${String(rank)}).`,
-    });
-  }
-  if (place.closed.includes('night')) {
-    out.push({ kind: 'night', text: nightText(view.serverNow, timeZone) });
-  }
-  if (place.closed.includes('festival')) {
-    out.push({ kind: 'festival', text: 'Only open in Festival weeks.' });
-  }
-  return out;
+): TimeRule | null {
+  const kind = place.closed.includes('night')
+    ? 'night'
+    : place.closed.includes('festival')
+      ? 'festival'
+      : null;
+  return kind === null ? null : { kind, text: opensText(kind, view.serverNow, timeZone) };
 }
 
 /**
  * One card per place the server lists, in its order. `explorer` is the creature that would go (its stars
- * decide whether the deeper area is open, and its rank gate applies); without one the deeper area is
- * closed and the rank gate shows for rank 2 and above.
+ * decide whether the deeper area is open); without one the deeper area is closed.
  */
 export function destinationCards(
   view: DestinationsView,
@@ -153,14 +152,8 @@ export function destinationCards(
         ],
         deepOpen: deepOpen(def, mine?.stars ?? 0, []),
         twist,
-        locked: lockReasons(view, place, explorer, timeZone),
+        timeRule: timeRuleOf(view, place, timeZone),
       },
     ];
   });
-}
-
-/** The index of a card to show after moving `step` places in the catalogue (it wraps round). */
-export function turnCatalogue(index: number, step: number, count: number): number {
-  if (count <= 0) return 0;
-  return (((index + step) % count) + count) % count;
 }

@@ -19,7 +19,7 @@ interface Props {
  * are dimmed and cannot be tapped; once the kit is full so are the kinds that are not in it. One card
  * under the grid describes the last tapped supply while it is packed (nothing once it is taken out; the
  * tick is the whole packed state). Supplies cannot be bought: with none in stock this points to the
- * Workshop (the "Craft" shortcut sits in the step's title row, in `SendTrip`).
+ * Workshop (the "Craft" shortcut sits in the step's title row, in `SendForm`).
  */
 export function SupplyPicker({ picks, stock, onChange }: Props) {
   const [focus, setFocus] = useState<string | null>(null);

@@ -90,15 +90,17 @@ export function explorerOptions(
   ];
 }
 
-/** The explorer to start on: the one picked if it still exists, else the first that can go, else the first. */
+/**
+ * The explorer to start on: the one picked while it can still go, else the first that can go (not away,
+ * rank high enough for the place). When nobody can go, none: nothing is chosen and the list says why.
+ */
 export function defaultExplorer(
   options: readonly ExplorerOption[],
   picked: string | null,
 ): ExplorerOption | undefined {
   return (
-    options.find((o) => o.creature.id === picked) ??
-    options.find((o) => o.blocked === null) ??
-    options[0]
+    options.find((o) => o.creature.id === picked && o.blocked === null) ??
+    options.find((o) => o.blocked === null)
   );
 }
 
@@ -109,28 +111,62 @@ export function clampLength(length: ExpeditionLength, rank: number): ExpeditionL
   return open.at(-1)?.id ?? EXPEDITION_LENGTHS[0];
 }
 
-/** Why a trip cannot be sent as chosen; null when it can. */
-export function sendBlocker(args: {
+/** The steps of the phone wizard: who goes, pack up (length, supplies, treat), ready (the summary). */
+export type SendStep = 'who' | 'pack' | 'ready';
+
+/** What a trip is as chosen so far: the plain data the blockers read. */
+export interface SendChoice {
   slots: Slots;
   explorer: ExplorerOption | undefined;
   place: DestinationCard | undefined;
   length: ExpeditionLength;
   picks: readonly SupplyPick[];
   stock: Readonly<Record<string, number>>;
-}): string | null {
-  const { slots, explorer, place, length, picks, stock } = args;
-  if (slots.used >= slots.total) {
-    return `All ${String(slots.total)} expedition ${slots.total === 1 ? 'slot is' : 'slots are'} in use. Claim a trip first.`;
-  }
+  /** Why nobody can go, when no explorer is chosen (the best creature's reason); a general line without it. */
+  none?: string | null;
+}
+
+/** Why nobody can be sent: every expedition slot is out (null while one is free). */
+export function slotsFullReason(slots: Slots): string | null {
+  if (slots.used < slots.total) return null;
+  return `All ${String(slots.total)} expedition ${slots.total === 1 ? 'slot is' : 'slots are'} in use. Claim a trip first.`;
+}
+
+/** Why the Who step cannot go on: no free slot, no place, nobody, or this creature cannot go. */
+function whoBlocker({ slots, explorer, place, none }: SendChoice): string | null {
+  const full = slotsFullReason(slots);
+  if (full !== null) return full;
   if (place === undefined) return 'Pick a place first.';
-  if (explorer === undefined) return 'No creature to send.';
+  if (explorer === undefined) return none ?? 'Nobody can go there right now.';
   if (explorer.blocked !== null) return `${explorer.name}: ${explorer.blocked}.`;
-  const lock = place.locked[0];
-  if (lock !== undefined) return lock.text;
-  if (!lengthOpen(length, explorer.rank)) return 'That trip is too long for this explorer.';
-  const kit = kitBlocker(picks, stock);
-  if (kit !== null) return kit;
   return null;
+}
+
+/** Why the Pack step cannot go on: a length too long for the explorer or a supply that is not in stock. */
+function packBlocker({ explorer, length, picks, stock }: SendChoice): string | null {
+  if (explorer !== undefined && !lengthOpen(length, explorer.rank)) {
+    return 'That trip is too long for this explorer.';
+  }
+  return kitBlocker(picks, stock);
+}
+
+/**
+ * Why Next is disabled on a step (null when it is not): Who and Pack each check their own part, Ready
+ * checks everything a send needs (`sendBlocker`).
+ */
+export function stepBlocker(step: SendStep, form: SendChoice): string | null {
+  if (step === 'who') return whoBlocker(form);
+  if (step === 'pack') return packBlocker(form);
+  return sendBlocker(form);
+}
+
+/** Why a trip cannot be sent as chosen; null when it can. A place the clock shuts counts ("Opens tonight at 20:00"). */
+export function sendBlocker(args: SendChoice): string | null {
+  const who = whoBlocker(args);
+  if (who !== null) return who;
+  const rule = args.place?.timeRule ?? null;
+  if (rule !== null) return rule.text;
+  return packBlocker(args);
 }
 
 /** What the small-creature popover shows for an explorer; null for a species the content does not know. */
