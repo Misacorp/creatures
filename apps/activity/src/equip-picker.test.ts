@@ -97,6 +97,21 @@ describe('the options of the Equip on picker', () => {
     expect(equipOptions(hat('job'), all)[0]?.disabled).toBe('job is on a job');
   });
 
+  it('carries the item each creature wears in the same slot, and nothing for an empty slot or another slot', () => {
+    const wears = (slot: 'hat' | 'scarf') => [
+      { id: `w-${slot}`, baseId: 'trail-cap', slot, rarity: 'epic' as const, itemLevel: 14 },
+    ];
+    const options = equipOptions(hat(), [
+      { ...high, gear: wears('hat') },
+      { ...mid, gear: wears('scarf') },
+      { ...low, gear: [] },
+    ]);
+    const by = (id: string) => options.find((o) => o.id === id);
+    expect(by('high')?.worn).toEqual({ baseId: 'trail-cap', rarity: 'epic', itemLevel: 14 });
+    expect(by('mid')?.worn).toBeUndefined();
+    expect(by('low')?.worn).toBeUndefined();
+  });
+
   it('says every creature cannot wear a Guards-only piece when none is a Guard', () => {
     const options = equipOptions(guardCharm(), [high, mid]);
     expect(options.map((o) => o.disabled)).toEqual(['Guards only', 'Guards only']);

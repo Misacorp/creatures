@@ -7,6 +7,7 @@
 import { affects, type AffectMode } from '@creatures/engine';
 import { RULES, content, creaturePower, strongest } from '@creatures/game';
 import type { Creature } from './api';
+import type { GearRarity } from './gear-types';
 import { creatureName, getSpecies, speciesName } from './game';
 import type { AwayView, RaidEventId, RowSlotView } from './raid-api';
 import { boardAffectRow, boardKeys, parseTurnOrder } from './raid-board';
@@ -98,6 +99,11 @@ export interface PickerOption {
   xpBar?: { value: number; max: number; top: boolean; label: string; text: string };
   /** It had all of today's lounging experience: a small Rested tag (the lounge swap). */
   rested?: boolean;
+  /**
+   * The item this creature already wears in the slot the option is for (the Workshop's "Equip on" list): drawn
+   * as a small item tile at the right end of the row. Absent: the slot is empty, and nothing is drawn.
+   */
+  worn?: { baseId: string; rarity: GearRarity; itemLevel: number };
 }
 
 /** How many of the player's creatures are on the board. */
