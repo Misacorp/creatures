@@ -121,26 +121,29 @@ export function RunRow({
 }
 
 /**
- * The pack: a "Pack" title, the backpack with an "At risk" tag hung under it (a defeat keeps only half;
- * the tag opens why), and the loot inside as icons with numbers. Empty, the backpack has no tag and the
- * pack says so.
+ * The pack: the pixel backpack on the left, breaking out of its box, and a leather canvas that rolls out
+ * from under it holding what the pack carries: the "Pack" title with the "At risk" tag beside it (a
+ * defeat keeps only half; the tag opens why), then the loot as icons with numbers. Empty, there is no
+ * tag and the canvas says so.
  */
 export function RunPack({ pack }: { pack: DungeonPack }) {
   const items = packItems(pack);
   return (
     <section class="run-ledger-cell run-pack" aria-label="Your pack">
-      <p class="run-ledger-title">Pack</p>
-      <div class="run-pack-body">
-        <div class="run-pack-bag">
-          <Sprite sprite={PACK_ART} scale={3} />
+      <span class="run-pack-bag" aria-hidden="true">
+        <Sprite sprite={PACK_ART} scale={4} />
+      </span>
+      <div class="run-pack-canvas">
+        <p class="run-ledger-title">
+          Pack
           {items.length > 0 && (
             <Tag kind="badge" tone="bad" entry="dungeon-pack" class="run-pack-risk">
               At risk
             </Tag>
           )}
-        </div>
+        </p>
         {items.length === 0 ? (
-          <p class="muted run-pack-empty">Empty</p>
+          <p class="run-pack-empty">Empty</p>
         ) : (
           <CountBadgeList items={items} label={packLine(pack)} class="run-pack-items" />
         )}
