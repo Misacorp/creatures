@@ -175,7 +175,8 @@ describe('sending with a kit', () => {
   });
 });
 
-function drawSend(options: { onOpenWorkshop?: () => void } = {}) {
+function drawSend(options: { onOpenWorkshop?: () => void; bait?: number } = {}) {
+  const { bait = 0, ...rest } = options;
   page = createPage();
   const view = parseDestinations(destinationsFixture);
   const creatures = parseGameState(stateOffer).creatures.map((c) => ({
@@ -189,14 +190,14 @@ function drawSend(options: { onOpenWorkshop?: () => void } = {}) {
         creatures={creatures}
         slots={{ total: 2, used: 0, rankSum: 2, tripsFinished: 3, next: null }}
         stock={STOCK}
-        bait={0}
+        bait={bait}
         busy={false}
         view={view}
         viewFailed={false}
         timezone="Europe/Helsinki"
         onRetry={() => undefined}
         onSend={() => Promise.resolve(true)}
-        {...options}
+        {...rest}
       />
     </PopoverHost>,
   );
@@ -307,5 +308,30 @@ describe('the supply card on the send screen', () => {
     const marks = byClass(root, 'worth-plus').map((m) => visibleText(m).trim());
     expect(marks.length).toBeGreaterThan(0);
     expect(marks.every((m) => /^\+{1,4}$/.test(m))).toBe(true);
+  });
+});
+
+describe('the cost and the choice on the send screen', () => {
+  it("puts a packed treat's Bait on the Send button, and says no cost sentence", () => {
+    const root = drawSend({ bait: 100 });
+    const [send] = byClass(root, 'send-button');
+    if (send === undefined) throw new Error('no send button');
+    expect(byClass(send, 'part-count')).toHaveLength(0);
+    const [treat] = byClass(root, 'treat-switch');
+    if (treat === undefined) throw new Error('no treat switch');
+    page?.click(treat);
+    const [badge] = byClass(send, 'part-count');
+    expect(badge?.getAttribute('aria-label')).toMatch(/^Bait: \d+$/);
+    expect(visibleText(root)).not.toContain('This trip costs');
+    expect(visibleText(root)).not.toContain('from your stock');
+  });
+
+  it('shows the end-of-trip choice as the last haul icon once a supply is packed', () => {
+    const root = drawSend();
+    expect(byClass(root, 'worth-choice')).toHaveLength(0);
+    page?.click(cell(root, 'Plain Lure'));
+    const [choice] = byClass(root, 'worth-choice');
+    expect(visibleText(choice as FakeElement)).toBe('LikelyChoice: likely at the end of the trip');
+    expect(byClass(root, 'choice-line')).toHaveLength(0);
   });
 });

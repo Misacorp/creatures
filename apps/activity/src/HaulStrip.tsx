@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import type { ExpeditionLength } from './expedition-types';
+import { GlossaryTag } from './Glossary';
 import { GameIcon } from './ui/GameIcon';
 import { PipRow } from './ui/PipRow';
 import { kitLevels, type TripContext } from './boost-view';
@@ -10,7 +11,9 @@ import { expectedHaul, haulTitle } from './haul-view';
  * of icons. Each icon has a short word under it (and the fuller line as hover text and for screen
  * readers), and up to four pips that compare with the best any trip does. A "+" marks what a supply
  * raises, one to four of them for the bracket of the boost on this trip (`boost-view.ts`). No chances are
- * shown as numbers. It sits just above the Send button.
+ * shown as numbers. When the supplies make the end-of-trip choice likely or certain, a last "Choice" icon
+ * says so (the fork, "Likely" or "Guaranteed" in place of the pips; the word opens the push-on help). It
+ * sits just above the Send button.
  */
 export function HaulStrip({
   length,
@@ -18,6 +21,7 @@ export function HaulStrip({
   kit,
   summary,
   trip,
+  choice = 'none',
 }: {
   /** The trip's settings in a line (`TripSummary`), under the heading. */
   summary?: ComponentChildren;
@@ -28,6 +32,8 @@ export function HaulStrip({
   kit: readonly string[];
   /** The whole trip (place, explorer): the "+" marks follow the boost brackets for it. Absent: a plain mark. */
   trip?: TripContext;
+  /** The end-of-trip choice the supplies give (`kitChoice`); none draws no Choice icon. */
+  choice?: 'guaranteed' | 'likely' | 'none';
 }) {
   const rows = expectedHaul(length, element, kit, trip === undefined ? null : kitLevels(trip, kit));
   return (
@@ -60,6 +66,24 @@ export function HaulStrip({
             </span>
           </li>
         ))}
+        {choice !== 'none' && (
+          <li class={`worth-item worth-choice ${choice}`}>
+            <GameIcon icon={{ kind: 'glyph', id: 'fork' }} scale={4} />
+            <span class="worth-chance" aria-hidden="true">
+              {choice === 'guaranteed' ? 'Guaranteed' : 'Likely'}
+            </span>
+            <span class="worth-name">
+              <GlossaryTag entry="push-on" look="text">
+                Choice
+              </GlossaryTag>
+            </span>
+            <span class="visually-hidden">
+              {choice === 'guaranteed'
+                ? ': guaranteed at the end of the trip'
+                : ': likely at the end of the trip'}
+            </span>
+          </li>
+        )}
       </ul>
     </section>
   );

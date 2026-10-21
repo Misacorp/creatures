@@ -1,5 +1,4 @@
 import { tripMs } from '@creatures/game';
-import { Tag } from './ui/Tag';
 import { useState } from 'preact/hooks';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
@@ -13,14 +12,15 @@ import { getSpecies } from './game';
 import { destinationCards } from './destination-view';
 import type { SendRequest } from './expedition-api';
 import type { DestinationsView, ExpeditionLength, Slots, SupplyPick } from './expedition-types';
-import { ChoiceMark } from './ExpeditionIcons';
 import { ExplorerPicker } from './ExplorerPicker';
 import { HaulStrip } from './HaulStrip';
 import { LengthPicker } from './LengthPicker';
 import { clampLength, defaultExplorer, explorerOptions, sendBlocker } from './send-view';
 import { SupplyPicker } from './SupplyPicker';
 import { TreatBox } from './TreatBox';
-import { kitChoice, lengthLabel, supplyName } from './trip-view';
+import { baitCount } from './count-items';
+import { CountBadge } from './ui/CountBadge';
+import { kitChoice, lengthLabel } from './trip-view';
 
 /**
  * The send flow: pick a place from the catalogue, who goes, how long and (optionally) supplies, then
@@ -111,7 +111,6 @@ export function SendTrip({
     twist: place !== undefined && view.special.destination === place.id ? view.special.twist : null,
   };
   const choice = kitChoice(picks);
-  const names = picks.map((p) => supplyName(p.id));
   // The time the summary says the trip would be back, if sent right now.
   const now = Date.now();
   const treatCost = explorer?.creature.treatCost ?? 0;
@@ -171,34 +170,12 @@ export function SendTrip({
             onChange={setTreat}
           />
         )}
-        <p class="cost-line" aria-live="polite">
-          {packing ? (
-            <>
-              <Tag kind="badge">Treat</Tag>{' '}
-              {`This trip costs ${String(treatCost)} Bait for the treat`}
-              {picks.length === 0 ? '.' : `, and takes ${names.join(' and ')} from your stock.`}
-            </>
-          ) : (
-            <>
-              <Tag kind="badge" tone="free">
-                Free
-              </Tag>{' '}
-              {picks.length === 0
-                ? 'This trip costs nothing.'
-                : `Taking ${names.join(' and ')} from your stock.`}
-            </>
-          )}
-        </p>
-        {choice !== 'none' && (
-          <p class="choice-line">
-            <ChoiceMark choice={choice} />
-          </p>
-        )}
         <HaulStrip
           length={duration}
           element={shardElement}
           kit={picks.map((p) => p.id)}
           trip={trip}
+          choice={choice}
           summary={
             <TripSummary
               duration={lengthLabel(duration)}
@@ -240,9 +217,13 @@ export function SendTrip({
             });
           }}
         >
-          {explorer === undefined || place === undefined
-            ? 'Send'
-            : `Send ${explorer.name} to ${place.name} for ${lengthLabel(duration)}`}
+          <span>
+            {explorer === undefined || place === undefined
+              ? 'Send'
+              : `Send ${explorer.name} to ${place.name} for ${lengthLabel(duration)}`}
+          </span>
+          {/* A packed treat's Bait, on the button that spends it (the trip itself is free). */}
+          {packing && <CountBadge {...baitCount(treatCost)} label="Bait" />}
         </button>
       </div>
     </section>

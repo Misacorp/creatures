@@ -113,7 +113,7 @@ label.length-option:focus-within {
 
 /* The expected haul, just above Send. */
 .haul {
-  margin: 0.75rem 0 0.25rem;
+  margin: 0.25rem 0;
 }
 
 /* The trip's settings in a line: reading text, so the body font (the heading above is the pixel label). */
@@ -150,6 +150,17 @@ label.length-option:focus-within {
   font-size: var(--fs-small);
   line-height: 1.1;
   text-align: center;
+}
+
+/* The end-of-trip choice: the fork, "Likely" or "Guaranteed" where the pips would be, then its word. */
+.worth-chance {
+  color: var(--haze);
+  font-size: var(--fs-small);
+  line-height: 1;
+}
+
+.worth-choice.guaranteed .worth-chance {
+  color: var(--gold);
 }
 
 .worth-plus {
@@ -241,18 +252,18 @@ label.length-option:focus-within {
   box-shadow: inset 0 0 0 var(--px) var(--ink);
 }
 
-.cost-line,
-.choice-line {
-  margin: 0;
-}
-
 .badge.free {
   background: var(--good);
   color: var(--ink);
 }
 
 .send-button {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
   width: 100%;
+  margin-top: 0.75rem;
   white-space: normal;
 }
 
