@@ -116,6 +116,15 @@ label.length-option:focus-within {
   margin: 0.25rem 0;
 }
 
+/* 16 px from the treat row to the heading: the summary's gap, the haul's margin and this one. */
+.haul > .label {
+  margin-top: 0.375rem;
+}
+
+.send-summary > .treat-box {
+  margin: 0;
+}
+
 /* The trip's settings in a line: reading text, so the body font (the heading above is the pixel label). */
 .trip-summary {
   margin: 0 0 0.25rem;
@@ -138,8 +147,52 @@ label.length-option:focus-within {
 
 .worth-item {
   display: grid;
+  grid-template-rows: 2rem auto auto;
+  align-content: start;
   justify-items: center;
   gap: 0.25rem;
+}
+
+/* Every icon in a box of the same height, sitting on its bottom, so the pips and words line up. */
+.worth-icon {
+  display: flex;
+  align-items: flex-end;
+  height: 2rem;
+}
+
+/* The steps a supply adds: lit in the "gained" green instead of gold. */
+.worth .pips i.on.raised {
+  background: var(--good);
+}
+
+/*
+  Version B ("bar"): the same four steps as one segmented bar, like the boss's HP: ink behind, the
+  segments touching but for a hair, as wide as the word under it.
+*/
+.worth.bars .pips {
+  display: grid;
+  align-items: stretch;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  width: 3rem;
+  height: 0.75rem;
+  padding: 2px;
+  background: var(--ink);
+}
+
+.worth.bars .pips i {
+  width: auto;
+  height: auto;
+  background: var(--hp-gone);
+  box-shadow: none;
+}
+
+.worth.bars .pips i.on {
+  background: var(--gold);
+}
+
+.worth.bars .pips i.on.raised {
+  background: var(--good);
 }
 
 .worth-item.none {
@@ -150,22 +203,6 @@ label.length-option:focus-within {
   font-size: var(--fs-small);
   line-height: 1.1;
   text-align: center;
-}
-
-/* The end-of-trip choice: the fork, "Likely" or "Guaranteed" where the pips would be, then its word. */
-.worth-chance {
-  color: var(--haze);
-  font-size: var(--fs-small);
-  line-height: 1;
-}
-
-.worth-choice.guaranteed .worth-chance {
-  color: var(--gold);
-}
-
-.worth-plus {
-  color: var(--gold);
-  font-weight: 700;
 }
 
 /* Supplies. */
@@ -265,11 +302,4 @@ label.length-option:focus-within {
   width: 100%;
   margin-top: 0.75rem;
   white-space: normal;
-}
-
-/* The "+" marks of the haul strip: one to four, under the word. */
-.worth-plus {
-  display: block;
-  letter-spacing: -0.05em;
-  line-height: 1;
 }

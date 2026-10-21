@@ -9,11 +9,10 @@ import { expectedHaul, haulTitle } from './haul-view';
 /**
  * "Expected haul": what this trip can bring, with the effects of the chosen supplies folded in, as a row
  * of icons. Each icon has a short word under it (and the fuller line as hover text and for screen
- * readers), and up to four pips that compare with the best any trip does. A "+" marks what a supply
- * raises, one to four of them for the bracket of the boost on this trip (`boost-view.ts`). No chances are
- * shown as numbers. When the supplies make the end-of-trip choice likely or certain, a last "Choice" icon
- * says so (the fork, "Likely" or "Guaranteed" in place of the pips; the word opens the push-on help). It
- * sits just above the Send button.
+ * readers), and four pips that compare with the best any trip does; the pips a supply adds are lit in
+ * the "gained" colour (Misa, 2026-10-21: no "+" marks). No chances are shown as numbers. With the
+ * explorer's rank, the last icon is the end-of-trip choice, its chance in quarters (the word opens the
+ * push-on help). It sits just above the Send button.
  */
 export function HaulStrip({
   length,
@@ -21,7 +20,8 @@ export function HaulStrip({
   kit,
   summary,
   trip,
-  choice = 'none',
+  rank = null,
+  look = 'pips',
 }: {
   /** The trip's settings in a line (`TripSummary`), under the heading. */
   summary?: ComponentChildren;
@@ -30,60 +30,54 @@ export function HaulStrip({
   element: string | null;
   /** The chosen supplies' ids. */
   kit: readonly string[];
-  /** The whole trip (place, explorer): the "+" marks follow the boost brackets for it. Absent: a plain mark. */
+  /** The whole trip (place, explorer): the detail lines follow the boost brackets for it. */
   trip?: TripContext;
-  /** The end-of-trip choice the supplies give (`kitChoice`); none draws no Choice icon. */
-  choice?: 'guaranteed' | 'likely' | 'none';
+  /** The explorer's rank: adds the end-of-trip choice as the last icon. Null: no choice icon. */
+  rank?: number | null;
+  /** `pips`: four square pips. `bar`: the same four steps as one segmented bar, like the boss's HP. */
+  look?: 'pips' | 'bar';
 }) {
-  const rows = expectedHaul(length, element, kit, trip === undefined ? null : kitLevels(trip, kit));
+  const rows = expectedHaul(
+    length,
+    element,
+    kit,
+    trip === undefined ? null : kitLevels(trip, kit),
+    rank,
+  );
   return (
     <section class="haul" aria-labelledby="haul-title">
       <h4 id="haul-title" class="label">
         Expected haul
       </h4>
       {summary}
-      <ul class="worth" aria-label={haulTitle(length, kit)}>
+      <ul class={look === 'bar' ? 'worth bars' : 'worth'} aria-label={haulTitle(length, kit)}>
         {rows.map((row) => (
           <li
             key={row.key}
             class={`worth-item${row.level === 0 ? ' none' : ''}${row.boosted ? ' boosted' : ''}`}
             title={row.detail}
           >
-            <GameIcon icon={row.icon} scale={4} />
-            {/* Four pips: how much of the best a trip brings (the words are the label). */}
-            <PipRow count={4} lit={row.level} />
+            <span class="worth-icon">
+              <GameIcon icon={row.icon} scale={4} />
+            </span>
+            {/* Four steps against the best a trip does; the supplies' steps in their own colour. */}
+            <PipRow
+              count={4}
+              lit={row.level}
+              mark={(i) => (i >= row.baseLevel && i < row.level ? 'raised' : undefined)}
+            />
             <span class="worth-name">
-              {row.label}
-              {row.boosted && (
-                <span class="worth-plus" aria-hidden="true">
-                  {` ${'+'.repeat(Math.max(1, row.bracket))}`}
-                </span>
+              {row.key === 'choice' ? (
+                <GlossaryTag entry="push-on" look="text">
+                  {row.label}
+                </GlossaryTag>
+              ) : (
+                row.label
               )}
             </span>
-            <span class="visually-hidden">
-              {row.detail}
-              {row.boosted && row.bracket === 0 ? ', raised by your supplies' : ''}
-            </span>
+            <span class="visually-hidden">{row.detail}</span>
           </li>
         ))}
-        {choice !== 'none' && (
-          <li class={`worth-item worth-choice ${choice}`}>
-            <GameIcon icon={{ kind: 'glyph', id: 'fork' }} scale={4} />
-            <span class="worth-chance" aria-hidden="true">
-              {choice === 'guaranteed' ? 'Guaranteed' : 'Likely'}
-            </span>
-            <span class="worth-name">
-              <GlossaryTag entry="push-on" look="text">
-                Choice
-              </GlossaryTag>
-            </span>
-            <span class="visually-hidden">
-              {choice === 'guaranteed'
-                ? ': guaranteed at the end of the trip'
-                : ': likely at the end of the trip'}
-            </span>
-          </li>
-        )}
       </ul>
     </section>
   );

@@ -304,10 +304,9 @@ describe('the supply card on the send screen', () => {
     expect(byClass(root, 'supply-effect')).toHaveLength(1);
     expect(byClass(root, 'supply-boosts')).toHaveLength(0);
     expect(card.map((c) => visibleText(c)).join(' ')).not.toContain('on this trip');
-    // The strip's marks follow the bracket: one to four "+" under the raised rows.
-    const marks = byClass(root, 'worth-plus').map((m) => visibleText(m).trim());
-    expect(marks.length).toBeGreaterThan(0);
-    expect(marks.every((m) => /^\+{1,4}$/.test(m))).toBe(true);
+    // What the satchel adds is drawn as steps of their own, never as "+" marks.
+    expect(byClass(root, 'raised').length).toBeGreaterThan(0);
+    expect(visibleText(byClass(root, 'worth')[0] as FakeElement)).not.toContain('+');
   });
 });
 
@@ -326,12 +325,16 @@ describe('the cost and the choice on the send screen', () => {
     expect(visibleText(root)).not.toContain('from your stock');
   });
 
-  it('shows the end-of-trip choice as the last haul icon once a supply is packed', () => {
+  it('ends the haul with the choice, its word under the steps like the others', () => {
     const root = drawSend();
-    expect(byClass(root, 'worth-choice')).toHaveLength(0);
+    const last = (): FakeElement => {
+      const items = byClass(root, 'worth-item');
+      return items[items.length - 1] as FakeElement;
+    };
+    expect(visibleText(last())).toMatch(/^Choice/);
+    expect(byClass(last(), 'raised')).toHaveLength(0);
     page?.click(cell(root, 'Plain Lure'));
-    const [choice] = byClass(root, 'worth-choice');
-    expect(visibleText(choice as FakeElement)).toBe('LikelyChoice: likely at the end of the trip');
+    expect(byClass(last(), 'raised').length).toBeGreaterThan(0);
     expect(byClass(root, 'choice-line')).toHaveLength(0);
   });
 });

@@ -113,6 +113,26 @@ Noted while testing the expedition and Workshop rework on staging. The component
    - The basic supply blurbs ("More creatures") read bare on their own.
 5. **Gear crafting for non-min-maxers** (balance log B-026). Engaged and regular players' gear share stays at 10–24% late in the game, under the intent that gear grows late. A crafting pass should make crafting into gear easier for them to reach, rather than loosening the targets.
 
+## After the treat box PR (Misa, 2026-10-21)
+
+Noted while PR #53 was open; to start once it merges.
+
+1. **"Equip on" shows what is already worn.** The Workshop item drawer's "Equip on" list (`ui/RosterList`) names who can wear the item but not who already has something in that slot. Show the worn item as a small tile at the right of the row (the creature card's gear slot look), so "slot taken" reads at a glance. Reasons such as "Away on a trip" stay.
+2. **Item details on the dungeon end screen.** A found item (`ui/FindItem`) can't be inspected there. Open the full `ItemCard` in a popover on tap, and on hover on a computer, the same way everywhere an item is found.
+3. **Dungeon experience per fight.** Today each creature gets a flat amount per fight it stood in the row for (`RULES.experience.dungeon.perRoom`), so creatures sent home at a camp are already paid for their fights; the full-clear bonus goes only to the row that beat the boss. Rework:
+   - a base experience per fight, more for elites, epics, keepers and the floor boss;
+   - a little for a cache room, less than a fight;
+   - experience as a possible mystery room effect;
+   - the end screen shows a recap and the gain for every creature that earned experience.
+   - Set the numbers with the balance simulator (`balance-review` skill) before they ship.
+4. **Blue Chasm, a rare mystery room.** "A narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There's a valuable treasure on the other side." Two choices: **Cross the plank** or **Don't risk it** (nothing happens). Crossing: 50% the team crosses and takes the treasure, 50% the whole team falls and the run ends as a defeat (a defeat keeps half the pack, `RULES.dungeon.defeatKeepBp`). The treasure is rolled when the room comes up and shown before the choice, so the player knows the prize. It should be a clear step up for the player's progress, never an extreme jump. Candidate table, each at the player's current level band:
+   - an **Epic gear piece** at the item level of the player's depth;
+   - a **blueprint** the player doesn't have yet, one tier above their best;
+   - two **great-tier supplies** of one kind;
+   - a **stack of shards** of the team's elements and some **glimmer** (about a craft's worth);
+   - a **creature of a species the player lacks**, from the floor's pool.
+   - Open: the odds (Claude suggested 75% to cross, or a fall that sends one creature home instead of ending the run, so walking around isn't always the right call); how rare the room is; its lore and names go in `docs/compendium/` first.
+
 ## Upkeep
 
 - **Vitest 5 and `@cloudflare/vitest-plugin` together.** One PR: vitest 5.0.3, `@cloudflare/vitest-plugin` 1.4.0 (its peer range allows vitest 5), wrangler 4.149.0 (what the plugin pins), vite 8.3.4, typescript-eslint 8.71.1, prettier 3.9.10. Regenerate `worker-configuration.d.ts`, run the full gate, then close Dependabot #2 and #13. TypeScript 7 waits for typescript-eslint support (it allows `<6.1.0`); Preact 11 gets its own PR with a workbench check.

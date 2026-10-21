@@ -20,7 +20,7 @@ import { SupplyPicker } from './SupplyPicker';
 import { TreatBox } from './TreatBox';
 import { baitCount } from './count-items';
 import { CountBadge } from './ui/CountBadge';
-import { kitChoice, lengthLabel } from './trip-view';
+import { lengthLabel } from './trip-view';
 
 /**
  * The send flow: pick a place from the catalogue, who goes, how long and (optionally) supplies, then
@@ -110,7 +110,6 @@ export function SendTrip({
     stars: explorer?.stars ?? 0,
     twist: place !== undefined && view.special.destination === place.id ? view.special.twist : null,
   };
-  const choice = kitChoice(picks);
   // The time the summary says the trip would be back, if sent right now.
   const now = Date.now();
   const treatCost = explorer?.creature.treatCost ?? 0;
@@ -175,7 +174,7 @@ export function SendTrip({
           element={shardElement}
           kit={picks.map((p) => p.id)}
           trip={trip}
-          choice={choice}
+          rank={explorer === undefined ? null : rank}
           summary={
             <TripSummary
               duration={lengthLabel(duration)}
