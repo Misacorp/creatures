@@ -151,7 +151,15 @@
 }
 
 .dungeon-enter .primary {
+  display: inline-flex;
+  gap: 0.625rem;
+  align-items: center;
+  justify-content: center;
   width: 100%;
+}
+
+.dungeon-enter-door {
+  flex: none;
 }
 
 .dungeon-enter p {

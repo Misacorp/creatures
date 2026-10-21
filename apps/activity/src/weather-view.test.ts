@@ -40,6 +40,7 @@ const day = (at: number, boon: string, omen: string | null = null, wild = false)
   boon: entry(boon),
   omen: omen === null ? null : entry(omen),
   wild,
+  treatTimes: 2,
 });
 
 const T = 1_800_000_000_000;
@@ -208,6 +209,7 @@ describe('parsing what the server sends', () => {
     expect(parsed.today?.omen?.name).toBe('Static Sky');
     expect(parsed.tomorrow?.omen).toBeNull();
     expect(parsed.tomorrow?.wild).toBe(false);
+    expect(parsed.today?.treatTimes).toBe(2);
   });
 
   it('reads a forecast with no days', () => {
@@ -228,6 +230,8 @@ describe('parsing what the server sends', () => {
     expect(() => parseForecast(broken((d) => (d['wild'] = 'no')))).toThrow();
     expect(() => parseForecast(broken((d) => delete d['boon']))).toThrow();
     expect(() => parseForecast(broken((d) => (d['omen'] = 5)))).toThrow();
+    expect(() => parseForecast(broken((d) => delete d['treatTimes']))).toThrow();
+    expect(() => parseForecast(broken((d) => (d['treatTimes'] = 0)))).toThrow();
     expect(() =>
       parseForecast(broken((d) => ((d['boon'] as Record<string, unknown>)['fight'] = [1]))),
     ).toThrow();

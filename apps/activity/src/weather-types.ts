@@ -28,6 +28,8 @@ export interface WeatherDay {
   omen: WeatherEntry | null;
   /** The Omen is a wild one (shown a day ahead, at most one a week). */
   wild: boolean;
+  /** What a treat multiplies creature experience by on this day (2, or a Boon's 3 or 4); the server's number. */
+  treatTimes: number;
 }
 
 export interface Forecast {

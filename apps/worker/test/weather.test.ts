@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import forecastFixture from '../../activity/src/fixtures/weather-forecast.json';
 import { addWeeks, eventTimes, weekIdFor, weekIndex } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
-import { readWeatherDay, type ForecastView } from '../src/weather';
+import { dayView, readWeatherDay, type ForecastView } from '../src/weather';
 import { USER_ID, runCore, undoWeatherMigration, type CoreContext } from './helpers';
 import { DAY, HELSINKI, HOUR, MINUTE, count, nextGuild, rows } from './raid-helpers';
 
@@ -460,10 +460,24 @@ describe('the forecast fixture of the client', () => {
           expect(got['boon']).toEqual(want.boon);
           expect(got['omen']).toEqual(want.omen);
           expect(got['wild']).toBe(want.wild);
+          expect(got['treatTimes']).toBe(want.treatTimes);
         }
       },
       { weather: true },
     );
+  });
+});
+
+describe("a day's treat multiplier", () => {
+  const day = (boon: string) =>
+    dayView(
+      { day: '2026-10-20', boon, omen: null, wild: false, boonBp: 10_000, omenBp: 0 },
+      HELSINKI,
+    );
+
+  it('is the usual doubling, or the number a Boon sets (Hearty Breakfast triples it)', () => {
+    expect(day('fair-winds')?.treatTimes).toBe(RULES.experience.treat.multiplier);
+    expect(day('hearty-breakfast')?.treatTimes).toBe(3);
   });
 });
 

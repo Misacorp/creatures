@@ -10,6 +10,7 @@ import {
   gearContent,
   weatherDef,
   weatherLines,
+  xpWeather,
 } from '@creatures/game';
 import type { CreatureInfo } from '../creature-info';
 import type { Resident } from '../room-data';
@@ -277,6 +278,16 @@ function skyDay(
     boon: skyEntry(...boon),
     omen: omen === null ? null : skyEntry(...omen),
     wild,
+    // The server's number for the day (`dayView`), from the same content.
+    treatTimes:
+      xpWeather({
+        day: '',
+        boon: boon[0],
+        omen: omen === null ? null : omen[0],
+        wild,
+        boonBp: boon[1],
+        omenBp: omen === null ? 0 : omen[1],
+      }).treatMultiplier ?? 2,
   };
 }
 
