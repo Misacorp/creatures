@@ -112,20 +112,21 @@ describe('placeLabel', () => {
 });
 
 describe('mapScale', () => {
-  it('is a whole number: 3 on a phone, 4 once the whole map fits at 4', () => {
+  it('is a whole number: 3 on a phone, 4 once the whole map fits at 4 (1216)', () => {
     expect(mapScale(360)).toBe(3);
     expect(mapScale(390)).toBe(3);
     expect(mapScale(900)).toBe(3);
-    expect(mapScale(1151)).toBe(3);
-    expect(mapScale(1152)).toBe(4);
+    expect(mapScale(1215)).toBe(3);
+    expect(mapScale(1216)).toBe(4);
     expect(mapScale(1600)).toBe(4);
   });
 
   it('scrolls while the map is wider than its window', () => {
     expect(mapScrolls(390)).toBe(true);
-    expect(mapScrolls(864)).toBe(false);
+    expect(mapScrolls(911)).toBe(true);
+    expect(mapScrolls(912)).toBe(false);
     expect(mapScrolls(1000)).toBe(false);
-    expect(mapScrolls(1152)).toBe(false);
+    expect(mapScrolls(1216)).toBe(false);
   });
 });
 

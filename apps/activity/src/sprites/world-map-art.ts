@@ -1,23 +1,25 @@
 /**
- * The Expeditions world map as data: a 288x184 pixel world (grass, a sea strip on the left, one
+ * The Expeditions world map as data: a 304x192 pixel world (grass, a sea strip on the left, one
  * landmark per destination, a dashed trail through them in order and a few small props) plus the
  * client-only `MAP_SPOTS` (where each place's marker sits, like `ROOM_SPOTS` in the living room). The
  * pixel data lives in `data/world-map-sprites.ts`; `WorldMap.tsx` draws it with `drawSprites`.
  *
- * A spot is the point on the trail where a place's marker sits, in map pixels. The landmark stands just
- * above it (its feet `LANDMARK_LIFT` px over the spot), so the marker, its name plate and the explorers'
- * faces never hide the picture. Spots zigzag high and low and grow in x in the order of the content's
- * destinations, so the trail reads left to right.
+ * A spot is the point on the trail where a place's marker sits, in map pixels. The landmark stands on it
+ * (its feet `LANDMARK_LIFT` px over the spot), so the pin is at the landmark's foot, the name plate under
+ * the pin and the explorers' faces under the plate, never over the picture. Spots zigzag between a high
+ * row (landmarks at the top, markers under them) and a low row, 68 px apart within a row, so a marker's
+ * stack hangs in the empty band under its own landmark. They grow in x in the order of the content's
+ * destinations, so the trail reads left to right; its vertical legs climb in the gaps between landmarks.
  */
 import { WORLD_MAP_SPRITE_DATA, type WorldMapSpriteName } from './data/world-map-sprites';
 import { spriteSize, type SpriteDef } from './sprite-data';
 
-export const MAP_SIZE = { width: 288, height: 184 } as const;
+export const MAP_SIZE = { width: 304, height: 192 } as const;
 export const GRASS_TILE = 16;
 /** The sea strip's tile height; it repeats downwards, its wave edge is periodic over it. */
 export const SEA_TILE_HEIGHT = 32;
 /** How far a landmark's feet stand above its spot (map pixels). */
-export const LANDMARK_LIFT = 20;
+export const LANDMARK_LIFT = 6;
 
 export interface MapPoint {
   x: number;
@@ -26,14 +28,14 @@ export interface MapPoint {
 
 /** Where each destination's marker sits (client-only; the content knows nothing of the map). */
 export const MAP_SPOTS: Readonly<Record<string, MapPoint>> = {
-  tidepools: { x: 36, y: 112 },
-  'ember-caves': { x: 76, y: 80 },
-  'verdant-hollow': { x: 100, y: 130 },
-  'storm-ridge': { x: 136, y: 84 },
-  'sunken-fen': { x: 160, y: 132 },
-  'old-crossroads': { x: 194, y: 90 },
-  'moonlit-reef': { x: 220, y: 134 },
-  'festival-grounds': { x: 256, y: 90 },
+  tidepools: { x: 34, y: 156 },
+  'ember-caves': { x: 68, y: 64 },
+  'verdant-hollow': { x: 102, y: 156 },
+  'storm-ridge': { x: 136, y: 64 },
+  'sunken-fen': { x: 170, y: 156 },
+  'old-crossroads': { x: 204, y: 64 },
+  'moonlit-reef': { x: 238, y: 156 },
+  'festival-grounds': { x: 272, y: 64 },
 };
 
 /** The landmark of each destination. */
@@ -108,29 +110,23 @@ export interface MapPlacement {
 
 /** Small props that fill the gaps between the landmarks (top-left, map pixels). */
 const DECOR: readonly (readonly [WorldMapSpriteName, number, number])[] = [
-  ['smallPine', 30, 6],
-  ['smallPine', 38, 12],
-  ['smallTree', 84, 6],
-  ['smallPine', 172, 8],
-  ['smallPine', 182, 14],
-  ['smallTree', 222, 6],
-  ['smallPine', 276, 8],
+  ['smallPine', 30, 10],
+  ['smallPine', 38, 22],
   ['bush', 32, 60],
-  ['flowers', 58, 100],
-  ['rock', 24, 126],
-  ['bush', 60, 150],
-  ['flowers', 100, 152],
-  ['smallTree', 136, 120],
-  ['rock', 140, 156],
-  ['bush', 176, 150],
-  ['flowers', 186, 124],
-  ['rock', 210, 150],
-  ['flowers', 250, 126],
-  ['bush', 262, 150],
-  ['smallTree', 268, 100],
-  ['smallPine', 40, 160],
-  ['smallTree', 120, 160],
-  ['smallPine', 240, 160],
+  ['smallTree', 100, 68],
+  ['flowers', 94, 90],
+  ['flowers', 166, 84],
+  ['smallPine', 170, 66],
+  ['bush', 238, 66],
+  ['rock', 236, 84],
+  ['smallPine', 296, 120],
+  ['smallTree', 298, 70],
+  ['rock', 20, 176],
+  ['bush', 70, 176],
+  ['flowers', 132, 176],
+  ['rock', 192, 176],
+  ['bush', 252, 178],
+  ['smallPine', 290, 150],
 ];
 
 /** Where a landmark's top-left sits: centred on its spot, feet `LANDMARK_LIFT` above it. */

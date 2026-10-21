@@ -1,20 +1,22 @@
 /*
   The Expeditions world map (`WorldMap.tsx`). One pixel canvas drawn at a whole-number scale
   (`image-rendering: pixelated`, so every pixel border is whole), scrolling sideways on a phone, with real
-  buttons over it. A marker's point is its pin: the faces sit above the pin, the name plate below it.
-  The bottom padding keeps a strip placed under the map from covering a plate.
+  buttons over it. A marker's point is its pin: the pin stands at the foot of its landmark, the name plate under it, then the faces of the explorers there
+  (so they never cover the landmark art). The map has grass below the last marker, so a strip placed under it
+  never covers a plate.
 */
 .world-map {
   --wm-grass: #3b6b43;
   --wm-pin-ink: 20px;
-  --wm-faces-h: 40px;
   --wm-pin-h: 28px;
   position: relative;
   overflow-x: auto;
   overflow-y: hidden;
-  /* A few pixels of padding with a matching negative margin: a ring at the edge shows whole. */
+  /* As wide as the map and no wider (centred on a wide screen, so the sea stays at its left edge);
+     a few pixels of padding so a ring at the edge shows whole. */
+  max-width: calc(var(--wm-w) + 6px);
   padding: 0 3px;
-  margin: 0 -3px;
+  margin: 0 auto;
   background: var(--wm-grass);
   scrollbar-width: none;
 }
@@ -78,7 +80,7 @@
   position: absolute;
   left: var(--x);
   top: var(--y);
-  translate: -50% calc(-1 * (var(--wm-faces-h) + var(--wm-pin-h) / 2));
+  translate: -50% calc(-1 * var(--wm-pin-h) / 2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -96,10 +98,8 @@
 
 .wm-faces {
   display: flex;
-  align-items: flex-end;
   justify-content: center;
-  height: var(--wm-faces-h);
-  padding-bottom: 2px;
+  margin-top: 4px;
 }
 
 .wm-chip {
@@ -144,7 +144,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .wm-marker.push-on .wm-choice {
+  .wm-marker.choosing .wm-choice {
     animation: wm-nudge 1.2s steps(2) infinite;
   }
 }

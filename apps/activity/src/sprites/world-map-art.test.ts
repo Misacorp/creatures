@@ -29,7 +29,7 @@ describe('the world map art', () => {
       expect(spot.x).toBeGreaterThanOrEqual(24);
       expect(spot.x).toBeLessThanOrEqual(MAP_SIZE.width - 24);
       expect(spot.y).toBeGreaterThanOrEqual(60);
-      expect(spot.y).toBeLessThanOrEqual(MAP_SIZE.height - 40);
+      expect(spot.y).toBeLessThanOrEqual(MAP_SIZE.height - 30);
     }
     for (const [i, a] of spots.entries()) {
       for (const b of spots.slice(i + 1)) {
@@ -90,15 +90,17 @@ describe('the trail', () => {
       expect(cell.y).toBeGreaterThanOrEqual(0);
     }
     // Dashes, not a solid line: gaps along each straight leg.
-    const row = new Set(cells.filter((c) => c.y === (spots[0]?.y ?? 0) - 1).map((c) => c.x));
     const first = spots[0];
     const second = spots[1];
     if (first === undefined || second === undefined) throw new Error('spots');
     const corner = trailCorner(first, second);
     const lo = Math.min(first.x, corner.x);
     const hi = Math.max(first.x, corner.x);
-    expect(row.size).toBeGreaterThan(0);
-    expect(row.size).toBeLessThan(hi - lo);
+    const leg = new Set(
+      cells.filter((c) => c.y === first.y - 1 && c.x >= lo - 1 && c.x <= hi - 1).map((c) => c.x),
+    );
+    expect(leg.size).toBeGreaterThan(0);
+    expect(leg.size).toBeLessThan(hi - lo);
   });
 
   it('runs along the lower spot row and climbs at the higher spot column', () => {

@@ -59,31 +59,33 @@ export function WorldMap({ places, selected, night, onPick, width }: WorldMapPro
   };
 
   return (
-    <div ref={rootRef} class={night ? 'world-map night' : 'world-map'}>
+    <div ref={rootRef} class="world-map-wrap">
       <div
-        class="world-map-stage"
+        class={night ? 'world-map night' : 'world-map'}
         ref={cssVars({ '--wm-w': `${String(pixelWidth)}px`, '--wm-h': `${String(pixelHeight)}px` })}
       >
-        <canvas
-          ref={canvasRef}
-          class="world-map-canvas"
-          width={pixelWidth}
-          height={pixelHeight}
-          aria-hidden="true"
-        />
-        <ul class="world-map-places pix-panel" aria-label="Places on the map">
-          {places.map((place) => (
-            <li key={place.id}>
-              <Marker
-                place={place}
-                selected={place.id === selected}
-                scale={scale}
-                onPick={onPick}
-                onArrow={onArrow}
-              />
-            </li>
-          ))}
-        </ul>
+        <div class="world-map-stage">
+          <canvas
+            ref={canvasRef}
+            class="world-map-canvas"
+            width={pixelWidth}
+            height={pixelHeight}
+            aria-hidden="true"
+          />
+          <ul class="world-map-places pix-panel" aria-label="Places on the map">
+            {places.map((place) => (
+              <li key={place.id}>
+                <Marker
+                  place={place}
+                  selected={place.id === selected}
+                  scale={scale}
+                  onPick={onPick}
+                  onArrow={onArrow}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );
@@ -105,7 +107,7 @@ function Marker({
   const classes = ['wm-marker', `wm-el-${place.element ?? 'mixed'}`];
   if (selected) classes.push('selected');
   if (place.home) classes.push('home');
-  if (place.pushOn) classes.push('push-on');
+  if (place.pushOn) classes.push('choosing');
   return (
     <button
       type="button"
@@ -124,18 +126,6 @@ function Marker({
         onArrow(place.id, event);
       }}
     >
-      <span class="wm-faces" aria-hidden="true">
-        {place.count > 0 && (
-          <span class="wm-chip">
-            {place.faces.slice(0, MAP_MAX_FACES).map((face) => (
-              <CreatureIcon key={face.creatureId} creature={face} />
-            ))}
-            {place.more > 0 && <span class="wm-more">+{place.more}</span>}
-            {place.home && <span class="wm-flag">HOME</span>}
-            {place.pushOn && <span class="wm-choice">!</span>}
-          </span>
-        )}
-      </span>
       <span class="wm-pin" aria-hidden="true">
         <span class="wm-ring" />
         <span class="wm-ink" />
@@ -144,6 +134,18 @@ function Marker({
       <span class="wm-plate" aria-hidden="true">
         {place.name}
       </span>
+      {place.count > 0 && (
+        <span class="wm-faces" aria-hidden="true">
+          <span class="wm-chip">
+            {place.faces.slice(0, MAP_MAX_FACES).map((face) => (
+              <CreatureIcon key={face.creatureId} creature={face} />
+            ))}
+            {place.more > 0 && <span class="wm-more">+{place.more}</span>}
+            {place.home && <span class="wm-flag">HOME</span>}
+            {place.pushOn && <span class="wm-choice">!</span>}
+          </span>
+        </span>
+      )}
       {place.rule !== null && (
         <span class="wm-rule" aria-hidden="true">
           {place.rule}

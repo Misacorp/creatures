@@ -64,7 +64,7 @@ describe('WorldMap', () => {
     expect(byClass(p.root, 'wm-chip')).toHaveLength(3);
     const ember = markers(p)[1];
     expect(ember?.classList.contains('home')).toBe(true);
-    expect(markers(p)[3]?.classList.contains('push-on')).toBe(true);
+    expect(markers(p)[3]?.classList.contains('choosing')).toBe(true);
   });
 
   it('presses only the selected place and tells the caller which was picked', () => {
