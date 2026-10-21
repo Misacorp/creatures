@@ -13,6 +13,7 @@ import {
   referenceBoost,
   REFERENCE_TRIP,
   tripBoost,
+  TRIPLE_FROM_BP,
   type DestinationDef,
   type ExpeditionLength,
   type TripBoostInput,
@@ -172,11 +173,18 @@ describe('the supply blurbs are anchored to the reference trip', () => {
     },
   };
 
-  const phrasesOf = (kind: string, level: 1 | 2 | 3 | 4) =>
-    WORDS[kind === 'lantern' ? 'lantern' : 'creature'][level];
+  /** Bracket 4 says "triple" from TRIPLE_FROM_BP and "double" below it. */
+  const phrasesOf = (kind: string, level: 1 | 2 | 3 | 4, bp = 0) =>
+    level === 4 && kind !== 'lantern'
+      ? bp >= TRIPLE_FROM_BP
+        ? ['triple']
+        : ['double', 'at least double']
+      : WORDS[kind === 'lantern' ? 'lantern' : 'creature'][level];
 
   const allPhrases = (kind: string) =>
-    ([1, 2, 3, 4] as const).flatMap((l) => phrasesOf(kind, l)).sort((a, b) => b.length - a.length);
+    [...([1, 2, 3, 4] as const).flatMap((l) => phrasesOf(kind, l)), 'triple'].sort(
+      (a, b) => b.length - a.length,
+    );
 
   it('names the reference trip: 12 hours at the economy study place, a payoff, no stars', () => {
     expect(REFERENCE_TRIP).toEqual({
@@ -189,10 +197,11 @@ describe('the supply blurbs are anchored to the reference trip', () => {
 
   it('opens each blurb with the strength word of its bracket on that trip, and no other', () => {
     for (const s of expeditionContent.supplies) {
+      if (s.kind === 'map-scrap') continue; // the documented exception, below
       const level = boostLevel(referenceBoost(s));
       expect(level, `${s.id} is visible on the reference trip`).toBeGreaterThan(0);
       const blurb = s.blurb.toLowerCase();
-      const own = phrasesOf(s.kind, level as 1 | 2 | 3 | 4);
+      const own = phrasesOf(s.kind, level as 1 | 2 | 3 | 4, referenceBoost(s) * 10_000);
       // The blurb starts with the phrase (after an optional "A good route: " style lead).
       const lead = blurb.replace(/^[^:]*: /, '');
       const used = own.find((p) => lead.startsWith(p) || lead.startsWith(`a ${p}`));
@@ -200,10 +209,46 @@ describe('the supply blurbs are anchored to the reference trip', () => {
       // Nothing else in it names a different bracket ("more" alone and "double" are parts of other phrases).
       const rest = lead.replace(used ?? '', '');
       for (const p of allPhrases(s.kind)) {
-        if (p === 'more' || p === 'double' || p === 'at least double') continue;
+        if (p === 'more' || p === 'double' || p === 'triple' || p === 'at least double') continue;
         expect(rest.includes(p), `${s.id}: "${p}" in "${s.blurb}"`).toBe(false);
       }
     }
+  });
+
+  it('says triple only from +200% and double below it', () => {
+    const word = (id: string) => {
+      const s = expeditionContent.supplies.find((x) => x.id === id);
+      if (s === undefined) throw new Error(id);
+      return { bp: referenceBoost(s) * 10_000, blurb: s.blurb.toLowerCase() };
+    };
+    const sturdy = word('satchel-good');
+    expect(sturdy.bp).toBeGreaterThanOrEqual(10_000);
+    expect(sturdy.bp).toBeLessThan(TRIPLE_FROM_BP);
+    expect(sturdy.blurb).toMatch(/^double /);
+    const pack = word('satchel-great');
+    expect(pack.bp).toBeGreaterThanOrEqual(TRIPLE_FROM_BP);
+    expect(pack.blurb).toMatch(/^triple /);
+  });
+
+  it('promises glimmer only as a chance unless the satchel always gives it', () => {
+    for (const s of expeditionContent.supplies) {
+      if (s.kind !== 'satchel' || !/glimmer/i.test(s.blurb)) continue;
+      if (s.glimmerBp >= 10_000) continue;
+      expect(s.blurb.toLowerCase(), s.id).toMatch(/chance of glimmer/);
+    }
+  });
+
+  it('words maps relative to each other (the one exception to the brackets), never a longer trip', () => {
+    const maps = expeditionContent.supplies.filter((s) => s.kind === 'map-scrap');
+    const boosts = maps.map((s) => referenceBoost(s));
+    for (let i = 1; i < boosts.length; i++) expect(boosts[i]).toBeGreaterThan(boosts[i - 1] ?? 0);
+    const ladder = ['a bit more', 'more', 'much more'];
+    expect(maps).toHaveLength(ladder.length);
+    maps.forEach((s, i) => {
+      const lead = s.blurb.toLowerCase().replace(/^[^:]*: /, '');
+      expect(lead, s.id).toMatch(new RegExp(`^${ladder[i] ?? ''} of everything$`));
+      expect(s.blurb.toLowerCase(), s.id).not.toMatch(/longer|hours|time/);
+    });
   });
 
   it('reads as rising within a kind: a better tier is never in a lower bracket', () => {

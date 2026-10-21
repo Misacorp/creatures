@@ -37,6 +37,12 @@ export const BOOST_BRACKETS = [
   { level: 4, fromBp: 10_000, words: 'at least double' },
 ] as const;
 
+/**
+ * From this boost (basis points of the plain haul) a blurb may say "triple" instead of "double"
+ * (bracket 4 only: "double" is +100% to under +200%).
+ */
+export const TRIPLE_FROM_BP = 20_000;
+
 /** 0 for no visible boost, else 1 to 4 (the index into `BOOST_BRACKETS` plus one). */
 export type BoostLevel = 0 | 1 | 2 | 3 | 4;
 
