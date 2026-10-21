@@ -33,11 +33,13 @@ function Harness({
   destination,
   layout,
   onSend,
+  bag = null,
 }: {
   creatures: readonly Creature[];
   destination: string;
   layout: 'steps' | 'panel';
   onSend: (request: SendRequest) => Promise<boolean>;
+  bag?: { cap: number; used: number; reserved: number } | null;
 }) {
   const form = useSendForm({
     creatures,
@@ -51,9 +53,15 @@ function Harness({
   const final = form.step === 'ready';
   return (
     <PopoverHost onOpenHowTo={() => undefined}>
-      <SendForm form={form} layout={layout} busy={false} onSend={onSend} />
+      <SendForm form={form} layout={layout} busy={false} onSend={onSend} bag={bag} />
       {layout === 'steps' && (
-        <SendFooter form={form} mode={final ? 'send' : 'next'} busy={false} onSend={onSend} />
+        <SendFooter
+          form={form}
+          mode={final ? 'send' : 'next'}
+          busy={false}
+          onSend={onSend}
+          bag={bag}
+        />
       )}
     </PopoverHost>
   );
@@ -165,6 +173,53 @@ describe('a place the clock shuts', () => {
     page?.click(button(root));
     expect(visibleText(root)).toContain('Opens tonight at 20:00');
     expect(disabled(button(root))).toBe(true);
+  });
+});
+
+describe('a full bag', () => {
+  const full = { cap: 60, used: 61, reserved: 1 };
+
+  it('warns beside Send in the panel, and Send still works', () => {
+    page = createPage();
+    page.draw(
+      <Harness
+        creatures={base}
+        destination="tidepools"
+        layout="panel"
+        onSend={() => Promise.resolve(true)}
+        bag={full}
+      />,
+    );
+    expect(byClass(page.root, 'bag-full-note')).toHaveLength(1);
+    expect(disabled(button(page.root))).toBe(false);
+  });
+
+  it('waits for the Ready step in the wizard', () => {
+    page = createPage();
+    page.draw(
+      <Harness
+        creatures={base}
+        destination="tidepools"
+        layout="steps"
+        onSend={() => Promise.resolve(true)}
+        bag={full}
+      />,
+    );
+    expect(byClass(page.root, 'bag-full-note')).toHaveLength(0);
+  });
+
+  it('says nothing while the bag has room', () => {
+    page = createPage();
+    page.draw(
+      <Harness
+        creatures={base}
+        destination="tidepools"
+        layout="panel"
+        onSend={() => Promise.resolve(true)}
+        bag={{ cap: 60, used: 10, reserved: 0 }}
+      />,
+    );
+    expect(byClass(page.root, 'bag-full-note')).toHaveLength(0);
   });
 });
 

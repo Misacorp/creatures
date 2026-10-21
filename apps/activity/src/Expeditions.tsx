@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { ClaimResult, GameState } from './api';
 import type { CatchChoiceActions } from './find-view';
+import type { GearState } from './gear-types';
 import { ExplorerProfile } from './ExplorerProfile';
 import { fetchDestinations, fetchProfile, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
@@ -15,6 +16,7 @@ import { ToggleButton } from './ui/ToggleButton';
 import { needsOfferRefresh } from './trip-view';
 import { useLoaded } from './use-loaded';
 import type { Forecast } from './weather-types';
+import { Alert } from './ui/Alert';
 
 /** The three screens of the Expeditions tab (the Journal and the profile need no tab of their own). */
 type Screen = 'trips' | 'journal' | 'profile';
@@ -30,12 +32,12 @@ function Book({ screen, state }: { screen: 'journal' | 'profile'; state: GameSta
   const loaded = useLoaded(fetchProfile, [state.slots.tripsFinished]);
   if (loaded.value === null) {
     return loaded.failed ? (
-      <p class="error" role="alert">
+      <Alert level="alert">
         Could not load it.{' '}
         <button type="button" onClick={loaded.reload}>
           Try again
         </button>
-      </p>
+      </Alert>
     ) : (
       <p class="muted">Opening the book...</p>
     );
@@ -71,6 +73,8 @@ interface Props {
   onDismissReveal: () => void;
   /** Opens the Workshop tab, where supplies are crafted. */
   onOpenWorkshop?: () => void;
+  /** The bag's fill (from the gear view); null until it has loaded. A full bag warns before a trip. */
+  bag?: GearState['inventory'] | null;
 }
 
 export function Expeditions({
@@ -88,6 +92,7 @@ export function Expeditions({
   onRefresh,
   onDismissReveal,
   onOpenWorkshop,
+  bag = null,
 }: Props) {
   const [screen, setScreen] = useState<Screen>('trips');
   const active = state.expeditions.filter((e) => e.status === 'active');
@@ -186,6 +191,7 @@ export function Expeditions({
             onClaim={onClaim}
             onPushOn={onPushOn}
             {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}
+            bag={bag}
           />
         </>
       )}

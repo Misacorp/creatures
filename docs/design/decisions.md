@@ -2477,6 +2477,64 @@ Misa asked for a better treat box, then reviewed the screenshots: no gold edge w
 - **The send screen** (Misa, 2026-10-21): the sentence under the treat box ("This trip costs 7 Bait for the treat, and takes … from your stock" / "Free · This trip costs nothing") is gone: the treat row shows its cost and the haul summary names the supplies and the treat. A packed treat's Bait is a badge on the Send button instead, the one clear button with the cost. "Choice likely / guaranteed" moved from under the treat box into the Expected haul icons (see the next line). The supply's own card keeps its mark. More room above Send.
 - **The Expected haul** (Misa, same day; he picked the bar from two versions): each icon sits in a box of one height so the grid lines up; under its word is a four-segment bar in the boss HP bar's look, gold for what the trip gives on its own and green for what the supplies add (any help at all shows at least one green step, since a basic supply often moves less than a quarter). The "+" marks are gone. "Choice" is the last icon with the same bar: the chance of an end-of-trip choice (`offerChanceBp`: base, rank, supplies; the milestone bonus is not known on the send screen) in quarters, rounded up. 16 px from the treat row to the heading (was 30).
 
+## 2026-10-21: The bag may overflow; a full bag warns where you set off
+
+Misa found a dungeon find turned into parts because his bag was full, with no warning beforehand. It felt like a loss the game never explained. The new rule:
+
+- **A reward that arrives while the bag is under the cap puts every item in**, even past the cap (58 + 4 = 62 / 60). The choice is made once per grant, before any of its items go in (`grantOnce`, `fits`).
+- **A reward that arrives while the bag is full** (items plus crafts still to claim at or over the cap) turns its gear into the dismantle yield, as before (`converted`).
+- **A dungeon run decides at its start** (`RunState.bagFull`): the boss chest on the way and the run's end follow the bag as it was when the run began, so a chest that fills the bag never costs the end of the same run. A state stored before has no flag and decides at each grant.
+- **A finished craft always goes in.** It held its place when it started, and a grant may have filled the bag past the cap meanwhile. The old "cannot happen" refusal at the claim is gone, so a paid craft is never stuck.
+- Starting a craft and the dev tools' item grant still refuse when the bag is full: those are deliberate actions.
+- **The warning** (`ui/BagFullNote`): where the player sets off (the dungeon's Enter, the send screen, the raid board while it can change) a gold-edged line says "Your bag is full (62 / 60). Gear you find becomes parts." with a Workshop button. It never blocks. The Workshop's bag count turns red at or over the cap, with one line under it. The results line now names the reason: "Your bag was full, so Bog Charm became parts."
+- Expeditions and the raid decide at the grant (their claim or finale), since there is no single start state to stamp. The warning is still right: while the bag is full, gear found becomes parts.
+
+## 2026-10-21: At the camp a tap shows the creature; only a drag moves it
+
+Misa, play-testing the camp: tapping a creature to see it (what it wears) and then tapping another swapped the two, and he felt he lost control. Tap-to-swap is gone.
+
+- **A tap on a camp tile opens the creature's popover**: role, element, what it does in this order, and the gear it wears in this run (locked, frozen when it joined). A recruit that has not joined yet shows no gear. A second tap closes it, and a drag starting closes it too.
+- **Only a drag moves a creature** (a finger needs the short hold, so a swipe still scrolls). The copy reads "Pick one. Drag a creature onto another to swap places."
+- **Keyboard reordering at the camp is gone with it** (Enter on two creatures was the same tap). Misa accepts this: accessibility is nice where it is cheap, and the UI is heading towards a more game-like look.
+- The same rule now holds on every board: a tap shows (the dungeon team's configurator, the raid board's configurator or popover, the camp's popover), a drag moves.
+- Tests drag for real in the fake DOM: `test-drag.ts` gives tiles a layout and a window for the move and release listeners. The fake DOM gained `closest` and `dataset`.
+
+## 2026-10-21: The run strip's pack is a backpack, and the keepsakes get their own panel
+
+Misa: the "In your pack" line said what you carry, but not visually that it can be lost; the fonts were wrong, "At risk" sat out of line, and "Keepsakes ? Chalk Mark" read as one jumbled line.
+
+- **Two ink panels under the row** (`.run-ledger`): **Pack** and **Keepsakes**, side by side when both fit (`minmax(15rem, 1fr)`), one under the other on a phone. Each has a small title in the pixel font.
+- **The pack is a pixel backpack** (`sprites/pack-art.ts`, 16 x 16 at scale 3) with the red "At risk" tag hung under it (it still opens the pack's glossary entry), and the loot as count badges beside it. An empty pack shows the backpack without the tag and "Empty".
+- **Keepsakes**: the title with its "?", the chips under it. The results screen uses the same block.
+- **The whole strip is a pixel panel** (`.pix-panel`); the last mystery room's sentence stays in the body font (`.prose`), as reading text does.
+- An alternative look (the whole pack panel drawn as leather, the loot in a pocket, the tag at the corner) was mocked for Misa to choose from; the ink panel is the default because it matches every other panel.
+
+## 2026-10-21: One Alert component for notices, warnings and errors; the pack rolls out of the backpack
+
+**Alerts** (`ui/Alert`, Misa's spec). Four levels, each with its colour and its own 8 x 8 pixel icon: info (blue "i"), success (green tick), warning (gold triangle), alert (red stop sign). An optional bold title in the level's colour, then the message in the body font, inline after the title or on its own line (`layout`). `onDismiss` adds an X on the right.
+
+- **Where the X sits.** The icon and the X are in boxes exactly one line of text tall at the top of the alert, so with one line both are centred on it and with several they stay in the top corners. CSS does it; nothing is measured.
+- **Dismissing** slides the alert 1.5 rem to the right while it fades (140 ms, 4 steps), then folds its height shut (`grid-template-rows` 1fr to 0fr) by 220 ms, and only then calls `onDismiss`. Under reduced motion it goes at once.
+- `role="alert"` only at the alert level; the rest are `role="status"`, so a notice never interrupts a screen reader.
+- **The overhaul** (Misa: the existing alert-like messages go too): the game's notice line (daily Bait, renames, talents, catch results) is a dismissible success alert, the game's error line a dismissible alert, and every `p.error role="alert"` across the screens (loading failures, refused actions) is an alert without an X. The full bag warning is a warning alert with its Workshop button. The Workshop's one-off "Gear has changed" card, the `.reason` refusal lines and the gold Callout for good news stay as they are: they are part of their screens, not alerts.
+- The notice and error alerts take their text as `key`, so a new message shows again after the last one was dismissed.
+
+**The pack** (Misa chose the leather look and asked for more): the backpack (now at scale 4) sits on the left and rises above its box, and the leather canvas (`--leather` tokens) rolls out from under it to the right, holding the "Pack" title with "At risk" beside it and the loot, so the loot reads as the pack's contents.
+
+## 2026-10-21: The keepsakes get a locket and a velvet canvas; the canvases reach further under the picture
+
+Misa's next round on the run strip: the leather should start at least from the backpack's middle, and the keepsakes should get the same treatment with a picture of their own.
+
+- **One layout for both** (`.run-stash`): a 16 x 16 picture at scale 4 breaking out of the top of its box, and a canvas that reaches 3.25 rem in under the 4 rem picture, so it starts well left of the picture's middle. The colours come from three variables per canvas: leather for the pack, velvet (`--velvet` tokens, a deep plum) for the keepsakes.
+- **The keepsakes' picture is a gold locket** on a ring with a cut red gem (`LOCKET_ART` in `sprites/pack-art.ts`): small treasures kept for this run only. The results screen's keepsakes use the same block.
+- **The success icon's tick** was redrawn: the long arm one pixel longer and the whole tick a row higher, so it sits in the middle of the disc instead of on its bottom edge.
+
+- **Follow-up the same day (Misa):** the pictures no longer rise above their boxes. Each is centred on its canvas's height, the canvases stretch to the taller one's height when they sit side by side (the grid row), and neither is shorter than its picture. The drop shadow under the pictures is gone, and the locket is a narrower, taller oval (10 x 11 pixels), since the old one read as stretched.
+- **Second follow-up (Misa):** 10 pixels was too narrow; the locket is now 11 x 11, drawn whole (an odd width cannot be mirrored from a half). The keepsake chips are as tall as the pack's resource badges (1.375 rem, with a finger-sized target around them), and their edge is the keepsakes' own purple (`--velvet-glow`) instead of gold, to keep the velvet identity.
+- **Third follow-up (Misa):** the pack's red "At risk" tag is gone. The pack has the same "?" as the keepsakes, which opens the pack's glossary entry (what goes in it, and that a defeat keeps half). The camp's "Head home" card and the descent card keep their own "at risk" wording.
+- **Fourth follow-up (Misa):** the canvases are full width again, so their left edge lines up with everything else in the strip, and the pictures spill out past that edge instead (`--spill`: 0.75 rem for the backpack, 1.25 rem for the locket, whose drawing starts two pixels further in). Both canvases keep the same text edge. When the pack and the keepsakes sit side by side (a container query on `.run-ledger`, two columns from 30.5 rem), the locket stays inside its canvas so it never reaches over the pack; on its own row it spills like the backpack.
+- **Final (Misa):** after the spill-out experiments, the pictures sit fully inside their full-width canvases everywhere, as the locket did beside the pack. No spill, no container query. Simpler, and it keeps every edge on the grid.
+
 ## 2026-10-21: The Trips view is a world map
 
 Misa approved the world-map design for the Expeditions tab (mockups MapPhone / MapDesktop). The Trips view now shows a pixel map with a marker per place instead of the catalogue and the send screen; Journal, Profile and every other tab are unchanged.
@@ -2485,6 +2543,7 @@ Misa approved the world-map design for the Expeditions tab (mockups MapPhone / M
 - **Phone (under 60 rem): sheet and wizard.** Map, then a strip of chips for the trips that are out. A marker or a chip opens a `ui/Drawer` place sheet (banner, what the place says, the explorers there as rows, a gold "Send an explorer here"). Sending is a drill-in wizard in the same sheet (Who goes, Pack up, Ready) with the pinned Next / Send button; Back and Escape go one step back, from Who back to the place. "Decide" opens the push-on choice as a drill-in. After a started send the sheet closes and the new trip is on the map. A claim closes the sheet and the reveal shows above the map as before.
 - **Desktop (60 rem and up): panel.** Map and the "Out exploring" shelf on the left, a 24 rem side panel on the right: "Where to?" until a place is picked, then the place and the whole send form with one Send button. Picking a place does not move focus (a live region says which place). A claim's reveal shows in the panel (the page only scrolls if the panel is out of view), and Decide shows the push-on choice in the panel with a Back.
 - **The app card widens only for this view**: `main.card:has(.exp-world)` is up to 84 rem from 60 rem (`styles/views/expeditions/world.css`); Journal, Profile and every other tab keep 48 rem. An app-wide wide frame (top bar with tabs and currencies) is later work (roadmap).
+- **The full bag warning** (`ui/BagFullNote`, from the bag overflow change) sits beside Send in both layouts: on the wizard's Ready step and at the panel's bottom.
 - **Map positions are client-only**, like the room's `ROOM_SPOTS`: the server knows nothing about where a place sits on the map.
 - **Selection is state in `ExpeditionWorld`**; the wide or narrow layout comes from the same media query as the CSS (`WIDE_QUERY`).
 - Removed: `SendTrip`, `Catalogue`, `RunningTrip` (the per-trip cards), `turnCatalogue` and the catalogue styles. `PlaceInfo` stays, its styles are in `place.css`.

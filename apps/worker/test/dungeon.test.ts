@@ -25,6 +25,7 @@ import type { RunState } from '../src/dungeon-state';
 import {
   deadlyFoes,
   dungeonPlayer,
+  playThrough,
   easyFoes,
   scaleFoes,
   withDeadlyFoes,
@@ -1490,6 +1491,113 @@ describe('streaks and landmarks', () => {
         expect(run.rewards.gear).toEqual([]);
         expect(run.rewards.converted).toHaveLength(1);
         expect(count(ctx.sql, 'gear_items', `user_id = '${p.id}'`)).toBe(RULES.gear.inventoryCap);
+      },
+      opts(),
+    );
+  });
+
+  it('puts every item of a grant in while the bag is under the cap, and none once it is over', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        for (let i = 0; i < RULES.gear.inventoryCap - 1; i++) {
+          giveItem(ctx.sql, p.id, 'trail-cap', { seed: `bag-${String(i)}`, now: ctx.clock.t });
+        }
+        const deps = { storage: ctx.storage, now: () => ctx.clock.t, rng: createSeededRng('room') };
+        const three = (seed: string) => () => ({
+          parts: {},
+          gear: [0, 1, 2].map((i) => ({
+            item: rollItem(createSeededRng(`${seed}-${String(i)}`), {
+              baseId: 'trail-cap',
+              rarity: 'common',
+              itemLevel: 3,
+            }),
+            origin: { kind: 'dungeon' as const, depth: 3 },
+          })),
+        });
+        // One place left: the whole grant goes in, two past the cap.
+        const first = grantDungeonRun(deps, p.id, '2027-01-15', 1, three('a'));
+        expect(first.gear).toHaveLength(3);
+        expect(first.converted).toEqual([]);
+        expect(count(ctx.sql, 'gear_items', `user_id = '${p.id}'`)).toBe(
+          RULES.gear.inventoryCap + 2,
+        );
+        // Over the cap: the next grant's items become parts.
+        const second = grantDungeonRun(deps, p.id, '2027-01-15', 2, three('b'));
+        expect(second.gear).toEqual([]);
+        expect(second.converted).toHaveLength(3);
+        expect(count(ctx.sql, 'gear_items', `user_id = '${p.id}'`)).toBe(
+          RULES.gear.inventoryCap + 2,
+        );
+      },
+      opts(),
+    );
+  });
+
+  it('lets the bag overflow when it had room at the start, even if it filled up during the run', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        setProgress(ctx, p.id, { depth: 7 });
+        let filled = false;
+        const result = await playThrough(
+          p.call,
+          { team: p.creatureIds.slice(0, 3), idempotencyKey: newKey('dungeon', 'test') },
+          {
+            // After the start, the bag fills to the cap (another grant, say): the run still had room.
+            pick: (state) => {
+              if (!filled) {
+                for (let i = 0; i < RULES.gear.inventoryCap; i++) {
+                  giveItem(ctx.sql, p.id, 'trail-cap', {
+                    seed: `late-${String(i)}`,
+                    now: ctx.clock.t,
+                  });
+                }
+                filled = true;
+              }
+              return state.reachable[0] ?? '';
+            },
+          },
+        );
+        const run = result.body.run;
+        expect(run?.rewards.converted).toEqual([]);
+        expect(run?.rewards.gear.length).toBeGreaterThan(0);
+        expect(count(ctx.sql, 'gear_items', `user_id = '${p.id}'`)).toBe(
+          RULES.gear.inventoryCap + (run?.rewards.gear.length ?? 0),
+        );
+      },
+      opts(),
+    );
+  });
+
+  it('turns the finds into parts when the bag was full at the start, even if room was made during the run', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        setProgress(ctx, p.id, { depth: 7 });
+        for (let i = 0; i < RULES.gear.inventoryCap; i++) {
+          giveItem(ctx.sql, p.id, 'trail-cap', { seed: `bag-${String(i)}`, now: ctx.clock.t });
+        }
+        let emptied = false;
+        const result = await playThrough(
+          p.call,
+          { team: p.creatureIds.slice(0, 3), idempotencyKey: newKey('dungeon', 'test') },
+          {
+            pick: (state) => {
+              if (!emptied) {
+                ctx.sql.exec('DELETE FROM gear_items WHERE user_id = ?', p.id);
+                emptied = true;
+              }
+              return state.reachable[0] ?? '';
+            },
+          },
+        );
+        const run = result.body.run;
+        expect(run?.rewards.gear).toEqual([]);
+        expect(run?.rewards.converted.length).toBeGreaterThan(0);
       },
       opts(),
     );

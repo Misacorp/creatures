@@ -1,4 +1,5 @@
 import { Tag } from './ui/Tag';
+import { Alert } from './ui/Alert';
 import { silhouettePalette } from './art';
 import type { Creature } from './api';
 import { Banner } from './Banner';
@@ -111,12 +112,12 @@ export function PlaceInfo({ card }: { card: DestinationCard }) {
 /** Shown in place of a place's card while the places load (or when they could not). */
 export function PlaceLoading({ failed, onRetry }: { failed: boolean; onRetry: () => void }) {
   return failed ? (
-    <p class="error" role="alert">
+    <Alert level="alert">
       The places could not be loaded.{' '}
       <button type="button" onClick={onRetry}>
         Try again
       </button>
-    </p>
+    </Alert>
   ) : (
     <p class="muted">Looking at the map...</p>
   );

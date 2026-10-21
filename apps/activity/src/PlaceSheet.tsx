@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
+import type { GearState } from './gear-types';
 import type { Creature } from './api';
 import { Banner } from './Banner';
 import type { DestinationCard } from './destination-view';
@@ -47,6 +48,8 @@ export interface PlaceSheetProps {
   onClaim: (trip: Trip) => void;
   onPushOn: (trip: Trip, goalId: string) => void;
   onOpenWorkshop?: (() => void) | undefined;
+  /** The bag's fill; a full bag warns, beside Send, that the trip's gear becomes parts. */
+  bag?: GearState['inventory'] | null;
   /** The wizard step the form starts on (Who by default; the workbench opens it on a later one). */
   initialStep?: SendStep | undefined;
 }
@@ -124,6 +127,8 @@ function SheetFrame({ form, ...props }: PlaceSheetProps & { form: SendFormState 
               mode={form.step === 'ready' ? 'send' : 'next'}
               busy={props.busy}
               onSend={props.onSend}
+              bag={props.bag ?? null}
+              onOpenWorkshop={props.onOpenWorkshop}
             />
           </div>
         }

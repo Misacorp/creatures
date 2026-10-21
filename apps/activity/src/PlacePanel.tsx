@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact';
+import type { GearState } from './gear-types';
 import type { Creature } from './api';
 import type { DestinationCard } from './destination-view';
 import type { SendRequest } from './expedition-api';
@@ -44,6 +45,8 @@ export interface PlacePanelProps {
   onDecide: (trip: Trip) => void;
   onPushOn: (trip: Trip, goalId: string) => void;
   onOpenWorkshop?: (() => void) | undefined;
+  /** The bag's fill; a full bag warns, beside Send, that the trip's gear becomes parts. */
+  bag?: GearState['inventory'] | null;
 }
 
 /** The send form of the chosen place, all at once; its state is dropped when another place is chosen. */
@@ -64,6 +67,7 @@ function PanelForm(props: PlacePanelProps & { view: DestinationsView; destinatio
       busy={props.busy}
       forecast={props.forecast}
       onSend={props.onSend}
+      bag={props.bag ?? null}
       {...(props.onOpenWorkshop === undefined ? {} : { onOpenWorkshop: props.onOpenWorkshop })}
     />
   );

@@ -8,7 +8,7 @@ import type { Creature } from './api';
 import { BAIT_ICON, ESSENCE_ICON } from './count-items';
 import { ON_A_TRIP_REASON, partName } from './gear-view';
 import { packShardEntries } from './dungeon-text';
-import type { DungeonAct, DungeonPack, DungeonRunCreature } from './dungeon-types';
+import type { DungeonAct, DungeonPack, DungeonRunCreature, DungeonRunGear } from './dungeon-types';
 import { creatureName, getSpecies } from './game';
 import type { IconRef } from './icon-ref';
 import type { CountItem } from './ui/CountBadge';
@@ -90,7 +90,10 @@ export interface CampRowCreature {
   species: string;
   level: number;
   element: string;
+  role: string;
   hp: { now: number; max: number } | null;
+  /** What it wears in this run (frozen when it joined); empty for one that has not joined yet. */
+  gear: readonly DungeonRunGear[];
 }
 
 /** The creature of an open run's row as the camp's tile reads it. */
@@ -101,7 +104,9 @@ export function campCreatureOf(creature: DungeonRunCreature): CampRowCreature {
     species: creature.speciesId,
     level: creature.level,
     element: creature.element,
+    role: creature.role,
     hp: { now: creature.hp, max: creature.hpMax },
+    gear: creature.gear,
   };
 }
 
@@ -116,8 +121,8 @@ export function campHp(hp: CampRowCreature['hp']): SlotHp {
   };
 }
 
-/** What a screen reader says for a tile of the camp's row: "Left: Sproutle, level 12, 240 / 281 HP." */
-export function campSlotLabel(creature: CampRowCreature, index: number, picked: boolean): string {
+/** What a screen reader says for a tile of the camp's row: "Left: Sproutle, level 12, 240 / 281 HP. Shows …" */
+export function campSlotLabel(creature: CampRowCreature, index: number): string {
   const place = ['Left', 'Middle', 'Right'][index] ?? `Place ${String(index + 1)}`;
   const health =
     creature.hp === null
@@ -125,8 +130,8 @@ export function campSlotLabel(creature: CampRowCreature, index: number, picked: 
       : creature.hp.now <= 0
         ? `knocked out, 0 / ${String(creature.hp.max)} HP`
         : `${String(creature.hp.now)} / ${String(creature.hp.max)} HP`;
-  const base = `${place}: ${creature.name}, level ${String(creature.level)}, ${health}.`;
-  return picked ? `${base} Picked up. Tap another creature to swap places.` : base;
+  const shows = creature.gear.length === 0 ? 'its role and element' : 'its role, element and gear';
+  return `${place}: ${creature.name}, level ${String(creature.level)}, ${health}. Shows ${shows}.`;
 }
 
 /** The ids of the row, left to right. */
@@ -143,21 +148,6 @@ export function swapPlaces(order: readonly string[], a: string, b: string): stri
   next[from] = b;
   next[to] = a;
   return next;
-}
-
-/**
- * What a tap on a creature of the row does (the camp's tap-to-swap). With nobody picked up it picks
- * that creature up; tapping the picked-up one puts it down again; tapping another swaps the two and
- * puts both down.
- */
-export function tapToSwap(
-  order: readonly string[],
-  selected: string | null,
-  tapped: string,
-): { order: string[]; selected: string | null } {
-  if (selected === null) return { order: [...order], selected: tapped };
-  if (selected === tapped) return { order: [...order], selected: null };
-  return { order: swapPlaces(order, selected, tapped), selected: null };
 }
 
 /**

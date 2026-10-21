@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact';
+import type { GearState } from './gear-types';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Creature } from './api';
 import { destinationCards } from './destination-view';
@@ -49,6 +50,8 @@ export interface ExpeditionWorldProps {
   onClaim: (trip: Trip) => void;
   onPushOn: (trip: Trip, goalId: string) => void;
   onOpenWorkshop?: (() => void) | undefined;
+  /** The bag's fill; a full bag warns, beside Send, that the trip's gear becomes parts. */
+  bag?: GearState['inventory'] | null;
   /** Starts with this place chosen (the workbench and the tests; the game starts with none). */
   initialPlace?: string | undefined;
   /** With a place: starts in its send wizard on this step (a phone sheet). */
@@ -179,6 +182,7 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
     onClaim: claim,
     onPushOn: props.onPushOn,
     onOpenWorkshop: props.onOpenWorkshop,
+    bag: props.bag ?? null,
   };
 
   return (

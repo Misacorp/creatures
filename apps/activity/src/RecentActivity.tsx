@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { fetchLedger, type LedgerEntry } from './api';
 import { describeEntry } from './ledger-text';
 import { Accordion } from './ui/Accordion';
+import { Alert } from './ui/Alert';
 
 /** The latest Bait movements, fetched each time the section is opened so it is never stale. */
 export function RecentActivity({ refreshKey }: { refreshKey: number | null }) {
@@ -33,7 +34,7 @@ export function RecentActivity({ refreshKey }: { refreshKey: number | null }) {
       }}
     >
       {failed ? (
-        <p class="error">Could not load the history.</p>
+        <Alert level="alert">Could not load the history.</Alert>
       ) : entries === null ? (
         <p class="muted">Loading...</p>
       ) : entries.length === 0 ? (

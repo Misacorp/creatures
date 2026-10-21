@@ -11,7 +11,9 @@ import { SupplyPicker } from './SupplyPicker';
 import { TreatBox } from './TreatBox';
 import { lengthLabel } from './trip-view';
 import { TripSummary } from './TripSummary';
+import { BagFullNote } from './ui/BagFullNote';
 import { CountBadge } from './ui/CountBadge';
+import type { GearState } from './gear-types';
 import type { SendForm as SendFormState } from './use-send-form';
 import type { Forecast } from './weather-types';
 
@@ -49,11 +51,17 @@ export function SendFooter({
   mode,
   busy,
   onSend,
+  bag = null,
+  onOpenWorkshop,
 }: {
   form: SendFormState;
   mode: 'next' | 'send';
   busy: boolean;
   onSend: (request: SendRequest) => Promise<boolean>;
+  /** The bag's fill; a full bag warns, beside Send, that the trip's gear becomes parts. */
+  bag?: GearState['inventory'] | null;
+  /** Opens the Workshop (the full bag warning's shortcut). */
+  onOpenWorkshop?: (() => void) | undefined;
 }) {
   const sending = mode === 'send';
   const reason = sending ? form.blocker : form.stepBlocker;
@@ -72,6 +80,7 @@ export function SendFooter({
           {reason}
         </p>
       )}
+      {sending && <BagFullNote inventory={bag} onOpenWorkshop={onOpenWorkshop} />}
       <button
         type="button"
         class="primary send-button"
@@ -206,6 +215,7 @@ export function SendForm({
   forecast = null,
   onSend,
   onOpenWorkshop,
+  bag = null,
 }: {
   form: SendFormState;
   layout: 'steps' | 'panel';
@@ -216,6 +226,8 @@ export function SendForm({
   onSend: (request: SendRequest) => Promise<boolean>;
   /** Opens the Workshop, where supplies are crafted. */
   onOpenWorkshop?: () => void;
+  /** The bag's fill; a full bag warns, beside Send, that the trip's gear becomes parts. */
+  bag?: GearState['inventory'] | null;
 }) {
   if (layout === 'steps') {
     return (
@@ -242,7 +254,14 @@ export function SendForm({
         <span class="step-n">3</span> {SEND_STEP_HEAD.ready.title}
       </h4>
       <ReadySection form={form} forecast={forecast} />
-      <SendFooter form={form} mode="send" busy={busy} onSend={onSend} />
+      <SendFooter
+        form={form}
+        mode="send"
+        busy={busy}
+        onSend={onSend}
+        bag={bag}
+        onOpenWorkshop={onOpenWorkshop}
+      />
     </div>
   );
 }
