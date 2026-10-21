@@ -165,6 +165,16 @@ describe('the Equip on row', () => {
     expect(names.map((n) => n.split('Lv')[0])).toEqual(['high', 'mid', 'away', 'job', 'low']);
     expect(names[2]).toContain('Away on a trip');
     expect(names[3]).toContain('On a job');
+    // Busy reasons are the card's status badges; no Recommended tag in this list.
+    const opts = options(p);
+    expect(byClass(opts[2] as FakeElement, 'badge').map((b) => b.getAttribute('class'))).toEqual([
+      expect.stringContaining('away'),
+    ]);
+    expect(byClass(opts[3] as FakeElement, 'badge').map((b) => b.getAttribute('class'))).toEqual([
+      expect.stringContaining('busy'),
+    ]);
+    expect(byClass(opts[4] as FakeElement, 'badge')).toHaveLength(0);
+    expect(byClass(p.root, 'ro-recommended')).toHaveLength(0);
     expect(names[4]).toContain('Needs level 5');
     expect(options(p).map((o) => o.getAttribute('aria-disabled'))).toEqual([
       'false',

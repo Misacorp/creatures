@@ -2485,6 +2485,7 @@ Misa: the Workshop item drawer's "Equip on" list did not show which creatures al
 - **An empty slot draws nothing.** The tile is the signal; a dashed "empty" box on most rows would make the list noisier and say less. The creature that wears this very item shows it too, next to "Wears it now".
 - **Client only.** `PickerOption.worn` is filled by `equipOptions` from `Creature.gear` (the state view already carries base, rarity and item level of each worn item), matched on the item's slot. No server change.
 - The tile has `role="img"` and the label "Wearing <item>, item level N, <rarity>".
+- **Round 2 (Misa, 2026-10-21):** busy reasons are the creature card's status badges, not text ("On a job" `badge busy`, "Away" `badge away` with "on a trip" kept for screen readers; `PickerOption.busy` is set where the reason is made, other reasons such as "Needs level 12" stay text). The list is a `pix-panel` (pixel font for names, levels, notes and reasons; the effect line stays `.prose`), names truncate with an ellipsis. The Equip on list has no Recommended tag and no "On the board" note (those are the raid picker's); the workbench "slot taken" demo now matches the real drawer.
 
 ## 2026-10-21: A found item opens its item card (tap, or hover with a mouse)
 

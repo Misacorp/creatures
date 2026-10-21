@@ -120,6 +120,11 @@
 }
 
 .ro-name {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--fs-row);
   line-height: 1.2;
 }

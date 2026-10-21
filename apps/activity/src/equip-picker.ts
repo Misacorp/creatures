@@ -9,7 +9,7 @@ import { wearBlock } from '@creatures/game';
 import type { Creature } from './api';
 import { capitalize, creatureName, getSpecies } from './game';
 import type { GearItem, GearSlot } from './gear-types';
-import { ON_A_JOB_REASON, busyReason } from './gear-view';
+import { ON_A_JOB_REASON, busyKind, busyReason } from './gear-view';
 import type { PickerOption } from './roster-picker';
 
 /** The id of the "Take off" option (no creature has it). */
@@ -46,6 +46,7 @@ function creatureOption(
 ): PickerOption {
   const species = getSpecies(creature.species);
   const worn = creature.gear.find((g) => g.slot === slot);
+  const kind = busyKind(creature);
   return {
     id: creature.id,
     name: creatureName(creature),
@@ -57,6 +58,8 @@ function creatureOption(
     disabled,
     effect: null,
     recommended: false,
+    // A creature's own busy reason is a status badge; "Cindle is away on a trip" (the frozen wearer) stays text.
+    ...(kind !== null && disabled === busyReason(creature) ? { busy: kind } : {}),
     ...(worn === undefined
       ? {}
       : { worn: { baseId: worn.baseId, rarity: worn.rarity, itemLevel: worn.itemLevel } }),

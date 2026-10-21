@@ -86,6 +86,11 @@ export interface PickerOption {
   onBoard: boolean;
   /** Why it cannot be picked, or null when it can. */
   disabled: string | null;
+  /**
+   * Set when `disabled` is because the creature is on a Workshop job or away on a trip: the row draws the same
+   * status badge as the creature card ("On a job", "Away") instead of the reason as text.
+   */
+  busy?: 'away' | 'job';
   /** What it would do in this slot (the effect preview), or null for nothing or when the preview is off. */
   effect: string | null;
   /** One of the player's three strongest: the picker shows a small "Recommended" tag. */

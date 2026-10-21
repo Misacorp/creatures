@@ -5,6 +5,7 @@ import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { gearName, rarityName } from '../gear-view';
 import { ItemThumb } from '../GearArt';
+import { Tag } from './Tag';
 import { XpTrack } from './XpTrack';
 
 export interface RosterListProps {
@@ -23,6 +24,28 @@ export interface RosterListProps {
   reasonSide?: boolean;
   /** Extra classes of the list (`flat`: no gutter, for a list that sits in a scrolling drawer body). */
   class?: string;
+}
+
+/**
+ * The reason of a row that cannot be picked: a busy creature wears the card's status badge ("On a job", "Away"; the
+ * rest of the trip wording is kept for assistive technology), any other reason is plain text.
+ */
+function Reason({ option, side }: { option: PickerOption; side: boolean }) {
+  const className = `ro-note ro-reason${side ? ' ro-side' : ''}`;
+  if (option.busy === undefined) return <span class={className}>{option.disabled}</span>;
+  return (
+    <span class={className}>
+      {option.busy === 'job' ? (
+        <Tag kind="badge" tone="busy" class="ro-busy">
+          On a job
+        </Tag>
+      ) : (
+        <Tag kind="badge" tone="away" class="ro-busy">
+          Away<span class="visually-hidden"> on a trip</span>
+        </Tag>
+      )}
+    </span>
+  );
 }
 
 /** The index of the option to focus first: the first one that can be picked, else the first. */
@@ -78,7 +101,7 @@ export function RosterList(props: RosterListProps) {
   return (
     <ul
       ref={listRef}
-      class={`roster-list${props.class === undefined ? '' : ` ${props.class}`}`}
+      class={`roster-list pix-panel${props.class === undefined ? '' : ` ${props.class}`}`}
       role="listbox"
       aria-label={props.label ?? 'Your creatures'}
       onKeyDown={onListKey}
@@ -129,13 +152,9 @@ export function RosterList(props: RosterListProps) {
             {props.reasonSide !== true && o.onBoard && (
               <span class="ro-note">{props.placedNote}</span>
             )}
-            {props.reasonSide !== true && o.disabled !== null && (
-              <span class="ro-note ro-reason">{o.disabled}</span>
-            )}
+            {props.reasonSide !== true && o.disabled !== null && <Reason option={o} side={false} />}
           </span>
-          {props.reasonSide === true && o.disabled !== null && (
-            <span class="ro-note ro-reason ro-side">{o.disabled}</span>
-          )}
+          {props.reasonSide === true && o.disabled !== null && <Reason option={o} side />}
           {props.reasonSide === true && o.disabled === null && o.onBoard && (
             <span class="ro-note ro-side">{props.placedNote}</span>
           )}

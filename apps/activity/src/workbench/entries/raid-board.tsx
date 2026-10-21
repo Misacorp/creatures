@@ -18,6 +18,7 @@ import {
   type PickerCreature,
   type PickerOption,
 } from '../../roster-picker';
+import { WEARS_IT_NOTE } from '../../equip-picker';
 import { RosterList } from '../../ui/RosterList';
 import { RosterPicker } from '../../ui/RosterPicker';
 import { SPECIES_IDS, speciesLabel } from '../data';
@@ -567,8 +568,9 @@ function ListDemo({ p }: { p: Props }) {
           ...o,
           recommended: false,
           ...(i % 3 === 2 || worn === undefined ? {} : { worn }),
-          ...(i === 1 ? { disabled: 'Away on a trip' } : {}),
+          ...(i === 1 ? { disabled: 'Away on a trip', busy: 'away' as const } : {}),
           ...(i === 3 ? { disabled: 'Needs level 12' } : {}),
+          ...(i === 4 ? { disabled: 'On a job', busy: 'job' as const } : {}),
         };
       })
     : picked;
@@ -576,7 +578,7 @@ function ListDemo({ p }: { p: Props }) {
     <div class="workshop">
       <RosterList
         options={options}
-        placedNote={ON_BOARD_NOTE}
+        placedNote={bool(p, 'taken') ? WEARS_IT_NOTE : ON_BOARD_NOTE}
         showEffects={bool(p, 'effects')}
         reasonSide={bool(p, 'taken')}
         onPick={() => undefined}
