@@ -1,7 +1,7 @@
 /**
  * What the Expeditions world map says about each place, as plain functions (tested without a browser):
  * who is out there, whether a trip is ready or waits for a push-on choice, the spoken label, the whole-number
- * scale of the art and arrow-key movement along the trail. The art and the spots are in
+ * scale of the art and arrow-key movement in reading order. The art and the spots are in
  * `sprites/world-map-art.ts`; the drawing is in `WorldMap.tsx`. Every place is open on the map: rank
  * limits are per creature (the explorer picker), and a place's time rule is only passed through as a line.
  */
@@ -72,7 +72,7 @@ export function placeLabel(
   return parts.join(', ');
 }
 
-/** One entry per destination of the content, in content order (the trail's order). */
+/** One entry per destination of the content, in content order. */
 export function mapPlaces(input: MapPlacesInput): MapPlace[] {
   const byId = new Map(input.creatures.map((c) => [c.id, c]));
   return expeditionContent.destinations.flatMap((d) => {
@@ -110,21 +110,34 @@ export function mapPlaces(input: MapPlacesInput): MapPlace[] {
   });
 }
 
-export const MAP_SCALE_PHONE = 3;
-export const MAP_SCALE_WIDE = 4;
+export const MAP_SCALE_SMALL = 2;
+export const MAP_SCALE_LARGE = 3;
 
-/** The whole-number scale of the map art: 3 on a phone, 4 once the whole map fits at 4. */
+/**
+ * The whole-number scale of the map art: 3 once the whole map fits at 3, else 2 (crisp, never a fraction).
+ * At 2 the 368 px map is 736 px wide: it fits whole in the desktop card (48rem) and pans sideways on a phone.
+ */
 export function mapScale(width: number): number {
-  return width >= MAP_SIZE.width * MAP_SCALE_WIDE ? MAP_SCALE_WIDE : MAP_SCALE_PHONE;
+  return width >= MAP_SIZE.width * MAP_SCALE_LARGE ? MAP_SCALE_LARGE : MAP_SCALE_SMALL;
 }
 
-/** True when the map at this scale is wider than its window (it scrolls sideways). */
+/** True when the map at its scale is wider than its window (it pans sideways). */
 export function mapScrolls(width: number): boolean {
   return MAP_SIZE.width * mapScale(width) > width;
 }
 
 /**
- * The marker an arrow key moves to: the next (`1`) or previous (`-1`) in trail order, stopping at the
+ * The places in reading order, west to east and, within the same column, north to south: the order of the
+ * list over the map and of the arrow keys. Places keep their content order from `mapPlaces`.
+ */
+export function mapReadingOrder<T extends { spot: { x: number; y: number } }>(
+  places: readonly T[],
+): T[] {
+  return [...places].sort((a, b) => a.spot.x - b.spot.x || a.spot.y - b.spot.y);
+}
+
+/**
+ * The marker an arrow key moves to: the next (`1`) or previous (`-1`) in reading order (the order of the ids), stopping at the
  * ends. With nothing current, `1` goes to the first and `-1` to the last. Null for an empty list.
  */
 export function nextMarker(

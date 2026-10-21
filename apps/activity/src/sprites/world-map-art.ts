@@ -1,42 +1,72 @@
 /**
- * The Expeditions world map as data: a 304x192 pixel world (grass, a sea strip on the left, one
- * landmark per destination, a dashed trail through them in order and a few small props) plus the
- * client-only `MAP_SPOTS` (where each place's marker sits, like `ROOM_SPOTS` in the living room). The
- * pixel data lives in `data/world-map-sprites.ts`; `WorldMap.tsx` draws it with `drawSprites`.
+ * The Expeditions world map as data: a 368x288 pixel world with the sea along the west edge, a landmark
+ * per destination, a small graph of dashed paths between them and a scatter of small props, plus the
+ * client-only `MAP_SPOTS` (where each place's marker sits, like `ROOM_SPOTS` in the living room). The pixel
+ * data lives in `data/world-map-sprites.ts`, the title logos in `world-map-logos.ts`; `WorldMap.tsx` draws it
+ * with `drawSprites`.
  *
- * A spot is the point on the trail where a place's marker sits, in map pixels. The landmark stands on it
- * (its feet `LANDMARK_LIFT` px over the spot), so the pin is at the landmark's foot, the name plate under
- * the pin and the explorers' faces under the plate, never over the picture. Spots zigzag between a high
- * row (landmarks at the top, markers under them) and a low row, 68 px apart within a row, so a marker's
- * stack hangs in the empty band under its own landmark. They grow in x in the order of the content's
- * destinations, so the trail reads left to right; its vertical legs climb in the gaps between landmarks.
+ * Geography: Tidepools and Moonlit Reef on the west shore (north and south), Ember Caves and Storm Ridge up
+ * north, Old Crossroads at the centre as the hub, Verdant Hollow and Sunken Fen in the south and the
+ * Festival Grounds in the east. A spot is the point where a place's marker pin sits, in map pixels. The
+ * landmark stands on it (its feet `LANDMARK_LIFT` px above), the place's logo hangs just over the landmark,
+ * and the explorers' faces hang under the pin, so nothing covers the art.
  */
 import { WORLD_MAP_SPRITE_DATA, type WorldMapSpriteName } from './data/world-map-sprites';
-import { spriteSize, type SpriteDef } from './sprite-data';
+import { parseSprite, spriteSize, type SpriteDef } from './sprite-data';
+import { logoOf } from './world-map-logos';
+import { PATH_CELL, routeCells, type GridPoint } from './world-map-paths';
 
-export const MAP_SIZE = { width: 304, height: 192 } as const;
+export const MAP_SIZE = { width: 368, height: 288 } as const;
 export const GRASS_TILE = 16;
 /** The sea strip's tile height; it repeats downwards, its wave edge is periodic over it. */
 export const SEA_TILE_HEIGHT = 32;
 /** How far a landmark's feet stand above its spot (map pixels). */
 export const LANDMARK_LIFT = 6;
+/** Where the sea ends (paths and props keep east of it); the sand reaches a little further. */
+export const SEA_EDGE = 20;
 
 export interface MapPoint {
   x: number;
   y: number;
 }
 
-/** Where each destination's marker sits (client-only; the content knows nothing of the map). */
+export interface MapRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Where each destination's marker pin sits (client-only; the content knows nothing of the map). */
 export const MAP_SPOTS: Readonly<Record<string, MapPoint>> = {
-  tidepools: { x: 34, y: 156 },
-  'ember-caves': { x: 68, y: 64 },
-  'verdant-hollow': { x: 102, y: 156 },
-  'storm-ridge': { x: 136, y: 64 },
-  'sunken-fen': { x: 170, y: 156 },
-  'old-crossroads': { x: 204, y: 64 },
-  'moonlit-reef': { x: 238, y: 156 },
-  'festival-grounds': { x: 272, y: 64 },
+  tidepools: { x: 46, y: 62 },
+  'ember-caves': { x: 112, y: 84 },
+  'verdant-hollow': { x: 120, y: 250 },
+  'storm-ridge': { x: 232, y: 84 },
+  'sunken-fen': { x: 250, y: 250 },
+  'old-crossroads': { x: 176, y: 168 },
+  'moonlit-reef': { x: 46, y: 205 },
+  'festival-grounds': { x: 322, y: 140 },
 };
+
+/** The place every path leads to. */
+export const HUB = 'old-crossroads';
+
+/** The places a path joins: every place reaches the hub, directly or through a neighbour. */
+export const MAP_PATHS: readonly (readonly [string, string])[] = [
+  ['old-crossroads', 'ember-caves'],
+  ['old-crossroads', 'storm-ridge'],
+  ['old-crossroads', 'festival-grounds'],
+  ['old-crossroads', 'verdant-hollow'],
+  ['old-crossroads', 'sunken-fen'],
+  ['tidepools', 'ember-caves'],
+  ['ember-caves', 'storm-ridge'],
+  ['tidepools', 'moonlit-reef'],
+  ['moonlit-reef', 'verdant-hollow'],
+  ['verdant-hollow', 'sunken-fen'],
+  ['sunken-fen', 'festival-grounds'],
+  ['storm-ridge', 'festival-grounds'],
+];
 
 /** The landmark of each destination. */
 export const LANDMARKS: Readonly<Record<string, WorldMapSpriteName>> = {
@@ -54,52 +84,123 @@ export function worldSprite(name: WorldMapSpriteName): SpriteDef {
   return WORLD_MAP_SPRITE_DATA[name];
 }
 
-/** One dash of the trail (2x2 map pixels): sand with a darker lower edge. */
+/** One dash of a path (2x2 map pixels): sand with a darker lower edge. */
 export const TRAIL_DASH: SpriteDef = {
   palette: { e: '#efe2b4', d: '#b89968' },
   rows: ['ee', 'dd'],
 };
 
-const TRAIL_ON = 4;
-const TRAIL_OFF = 3;
-
-/**
- * The dashed trail through the spots in the given order: the top-left of each 2x2 dash, walking whole
- * pixels along the horizontal and vertical legs through `trailCorner`. The pattern runs on across
- * corners and spots, so a corner never starts a new dash early.
- */
-export function trailCells(spots: readonly MapPoint[]): MapPoint[] {
-  const cells: MapPoint[] = [];
-  let step = 0;
-  const walk = (a: MapPoint, b: MapPoint): void => {
-    const sx = Math.sign(b.x - a.x);
-    const sy = Math.sign(b.y - a.y);
-    let x = a.x;
-    let y = a.y;
-    while (x !== b.x || y !== b.y) {
-      if (step % (TRAIL_ON + TRAIL_OFF) < TRAIL_ON) cells.push({ x: x - 1, y: y - 1 });
-      step++;
-      x += sx;
-      y += sy;
-    }
+/** The landmark's box on the map (null for an id the map does not know). */
+export function landmarkRect(id: string): MapRect | null {
+  const spot = MAP_SPOTS[id];
+  const name = LANDMARKS[id];
+  if (spot === undefined || name === undefined) return null;
+  const size = spriteSize(worldSprite(name));
+  return {
+    x: spot.x - Math.floor(size.width / 2),
+    y: spot.y - LANDMARK_LIFT - size.height,
+    width: size.width,
+    height: size.height,
   };
-  for (let i = 0; i + 1 < spots.length; i++) {
-    const from = spots[i];
-    const to = spots[i + 1];
-    if (from === undefined || to === undefined) continue;
-    const corner = trailCorner(from, to);
-    walk(from, corner);
-    walk(corner, to);
+}
+
+/** Where a landmark's top-left sits. */
+export function landmarkOrigin(id: string): MapPoint | null {
+  const rect = landmarkRect(id);
+  return rect === null ? null : { x: rect.x, y: rect.y };
+}
+
+/** The place's logo: its box, hung centred just over the landmark (null where there is no logo). */
+export function logoRect(id: string): MapRect | null {
+  const land = landmarkRect(id);
+  const spot = MAP_SPOTS[id];
+  const logo = logoOf(id);
+  if (land === null || spot === undefined || logo === undefined) return null;
+  const size = spriteSize(logo);
+  return {
+    x: spot.x - Math.floor(size.width / 2),
+    y: land.y - size.height - 1,
+    width: size.width,
+    height: size.height,
+  };
+}
+
+function inflate(r: MapRect, by: number): MapRect {
+  return { x: r.x - by, y: r.y - by, width: r.width + 2 * by, height: r.height + 2 * by };
+}
+
+function overlaps(a: MapRect, b: MapRect): boolean {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+}
+
+/** What paths may not cross: every landmark and logo (with a margin) and the sea. */
+export function pathObstacles(): MapRect[] {
+  const out: MapRect[] = [{ x: 0, y: 0, width: SEA_EDGE, height: MAP_SIZE.height }];
+  for (const id of Object.keys(MAP_SPOTS)) {
+    const land = landmarkRect(id);
+    if (land !== null) out.push(inflate(land, 2));
+    const logo = logoRect(id);
+    if (logo !== null) out.push(inflate(logo, 2));
   }
-  return cells;
+  return out;
+}
+
+/** A pin is this far (px) clear of a path that is not going to it. */
+const PIN_CLEARANCE = 9;
+
+/** The routes of the path graph as cells (`PATH_CELL` px square), one per edge; null for an edge with no route. */
+export function pathRoutes(
+  edges: readonly (readonly [string, string])[] = MAP_PATHS,
+  spots: Readonly<Record<string, MapPoint>> = MAP_SPOTS,
+  obstacles: readonly MapRect[] = pathObstacles(),
+): (GridPoint[] | null)[] {
+  const cols = Math.ceil(MAP_SIZE.width / PATH_CELL);
+  const rows = Math.ceil(MAP_SIZE.height / PATH_CELL);
+  return edges.map(([a, b]) => {
+    const from = spots[a];
+    const to = spots[b];
+    if (from === undefined || to === undefined) return null;
+    const others = Object.entries(spots)
+      .filter(([id]) => id !== a && id !== b)
+      .map(([, p]) => p);
+    const blocked = (cx: number, cy: number): boolean => {
+      const cell = { x: cx * PATH_CELL, y: cy * PATH_CELL, width: PATH_CELL, height: PATH_CELL };
+      if (obstacles.some((o) => overlaps(cell, o))) return true;
+      return others.some(
+        (p) => Math.abs(cell.x - p.x) < PIN_CLEARANCE && Math.abs(cell.y - p.y) < PIN_CLEARANCE,
+      );
+    };
+    return routeCells(
+      { cx: Math.floor(from.x / PATH_CELL), cy: Math.floor(from.y / PATH_CELL) },
+      { cx: Math.floor(to.x / PATH_CELL), cy: Math.floor(to.y / PATH_CELL) },
+      cols,
+      rows,
+      blocked,
+    );
+  });
 }
 
 /**
- * The corner of the trail between two neighbouring spots: it runs along the lower spot's row and climbs
- * at the higher spot's column, so it never cuts through a landmark standing above the lower spot.
+ * The dashes of the path graph: the top-left of each 2x2 dash. Routes that share a stretch share its
+ * dashes (the pattern depends on the cell, not on the route), so a shared trunk never turns solid.
  */
-export function trailCorner(from: MapPoint, to: MapPoint): MapPoint {
-  return from.y < to.y ? { x: from.x, y: to.y } : { x: to.x, y: from.y };
+export function pathCells(
+  edges: readonly (readonly [string, string])[] = MAP_PATHS,
+  spots: Readonly<Record<string, MapPoint>> = MAP_SPOTS,
+  obstacles: readonly MapRect[] = pathObstacles(),
+): MapPoint[] {
+  const seen = new Set<number>();
+  const out: MapPoint[] = [];
+  const cols = Math.ceil(MAP_SIZE.width / PATH_CELL);
+  for (const route of pathRoutes(edges, spots, obstacles)) {
+    for (const { cx, cy } of route ?? []) {
+      const k = cy * cols + cx;
+      if (seen.has(k) || (cx + cy) % 4 >= 2) continue;
+      seen.add(k);
+      out.push({ x: cx * PATH_CELL, y: cy * PATH_CELL });
+    }
+  }
+  return out;
 }
 
 export interface MapPlacement {
@@ -108,38 +209,64 @@ export interface MapPlacement {
   y: number;
 }
 
-/** Small props that fill the gaps between the landmarks (top-left, map pixels). */
-const DECOR: readonly (readonly [WorldMapSpriteName, number, number])[] = [
-  ['smallPine', 30, 10],
-  ['smallPine', 38, 22],
-  ['bush', 32, 60],
-  ['smallTree', 100, 68],
-  ['flowers', 94, 90],
-  ['flowers', 166, 84],
-  ['smallPine', 170, 66],
-  ['bush', 238, 66],
-  ['rock', 236, 84],
-  ['smallPine', 296, 120],
-  ['smallTree', 298, 70],
-  ['rock', 20, 176],
-  ['bush', 70, 176],
-  ['flowers', 132, 176],
-  ['rock', 192, 176],
-  ['bush', 252, 178],
-  ['smallPine', 290, 150],
+type DecorName = 'smallPine' | 'smallTree' | 'bush' | 'rock' | 'flowers';
+const DECOR_KINDS: readonly DecorName[] = [
+  'smallPine',
+  'smallTree',
+  'bush',
+  'bush',
+  'rock',
+  'flowers',
+  'flowers',
+  'smallTree',
 ];
+const DECOR_COUNT = 46;
 
-/** Where a landmark's top-left sits: centred on its spot, feet `LANDMARK_LIFT` above it. */
-export function landmarkOrigin(id: string): MapPoint | null {
-  const spot = MAP_SPOTS[id];
-  const name = LANDMARKS[id];
-  if (spot === undefined || name === undefined) return null;
-  const size = spriteSize(worldSprite(name));
-  return { x: spot.x - Math.floor(size.width / 2), y: spot.y - LANDMARK_LIFT - size.height };
+/**
+ * Small props scattered over the free ground (a fixed pseudo-random walk, so the map is the same for
+ * everyone): never on a landmark, a logo, the room under a pin where the explorers' faces hang, a path or
+ * the sea, and never on each other.
+ */
+export function decorPlacements(
+  dashes: readonly MapPoint[] = pathCells(),
+  obstacles: readonly MapRect[] = pathObstacles(),
+): { name: DecorName; x: number; y: number }[] {
+  const keep: MapRect[] = [
+    ...obstacles.map((o) => inflate(o, 3)),
+    ...Object.values(MAP_SPOTS).map((s) => ({ x: s.x - 24, y: s.y - 8, width: 48, height: 58 })),
+    ...dashes.map((d) => ({ x: d.x - 1, y: d.y - 1, width: PATH_CELL + 2, height: PATH_CELL + 2 })),
+  ];
+  const out: { name: DecorName; x: number; y: number }[] = [];
+  const boxes: MapRect[] = [];
+  let state = 20_261_021;
+  const next = (n: number): number => {
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+    return state % n;
+  };
+  for (let attempt = 0; attempt < 600 && out.length < DECOR_COUNT; attempt++) {
+    const name = DECOR_KINDS[next(DECOR_KINDS.length)];
+    if (name === undefined) continue;
+    const size = spriteSize(worldSprite(name));
+    const box = {
+      x: next(MAP_SIZE.width - size.width - 4) + 2,
+      y: next(MAP_SIZE.height - size.height - 4) + 2,
+      width: size.width,
+      height: size.height,
+    };
+    if (keep.some((r) => overlaps(box, r)) || boxes.some((r) => overlaps(box, inflate(r, 2)))) {
+      continue;
+    }
+    boxes.push(box);
+    out.push({ name, x: box.x, y: box.y });
+  }
+  return out;
 }
 
-/** Every placement of the map in draw order: ground, sea, trail, small props, landmarks (top to bottom). */
+let cached: MapPlacement[] | null = null;
+
+/** Every placement of the map in draw order: ground, sea, paths, small props, landmarks (top to bottom). */
 export function mapPlacements(): MapPlacement[] {
+  if (cached !== null) return cached;
   const out: MapPlacement[] = [];
   const grass = worldSprite('grass');
   for (let y = 0; y < MAP_SIZE.height; y += GRASS_TILE) {
@@ -147,9 +274,10 @@ export function mapPlacements(): MapPlacement[] {
   }
   const sea = worldSprite('sea');
   for (let y = 0; y < MAP_SIZE.height; y += SEA_TILE_HEIGHT) out.push({ sprite: sea, x: 0, y });
-  for (const cell of trailCells(Object.values(MAP_SPOTS)))
-    out.push({ sprite: TRAIL_DASH, ...cell });
-  for (const [name, x, y] of DECOR) out.push({ sprite: worldSprite(name), x, y });
+  const dashes = pathCells();
+  for (const cell of dashes) out.push({ sprite: TRAIL_DASH, ...cell });
+  for (const d of decorPlacements(dashes))
+    out.push({ sprite: worldSprite(d.name), x: d.x, y: d.y });
   const ids = Object.keys(MAP_SPOTS).sort(
     (a, b) => (MAP_SPOTS[a]?.y ?? 0) - (MAP_SPOTS[b]?.y ?? 0),
   );
@@ -159,5 +287,18 @@ export function mapPlacements(): MapPlacement[] {
     if (origin === null || name === undefined) continue;
     out.push({ sprite: worldSprite(name), ...origin });
   }
+  cached = out;
   return out;
+}
+
+/** The pixels a landmark really covers (not its box), as "x,y" keys in map pixels: for tests and tools. */
+export function landmarkPixels(id: string): Set<string> {
+  const origin = landmarkOrigin(id);
+  const name = LANDMARKS[id];
+  const pixels = new Set<string>();
+  if (origin === null || name === undefined) return pixels;
+  for (const cell of parseSprite(worldSprite(name)).cells) {
+    pixels.add(`${String(origin.x + cell.x)},${String(origin.y + cell.y)}`);
+  }
+  return pixels;
 }

@@ -1,7 +1,14 @@
 import { expeditionContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_EXPLORERS, sampleMapTrips } from './map-sample';
-import { mapPlaces, mapScale, mapScrolls, nextMarker, placeLabel } from './map-view';
+import {
+  mapPlaces,
+  mapReadingOrder,
+  mapScale,
+  mapScrolls,
+  nextMarker,
+  placeLabel,
+} from './map-view';
 import { MAP_SPOTS } from './sprites/world-map-art';
 
 const NOW = Date.UTC(2026, 9, 21, 12, 0, 0);
@@ -112,21 +119,39 @@ describe('placeLabel', () => {
 });
 
 describe('mapScale', () => {
-  it('is a whole number: 3 on a phone, 4 once the whole map fits at 4 (1216)', () => {
-    expect(mapScale(360)).toBe(3);
-    expect(mapScale(390)).toBe(3);
-    expect(mapScale(900)).toBe(3);
-    expect(mapScale(1215)).toBe(3);
-    expect(mapScale(1216)).toBe(4);
-    expect(mapScale(1600)).toBe(4);
+  it('is a whole number: 2 until the whole map fits at 3 (1104 px), then 3', () => {
+    expect(mapScale(360)).toBe(2);
+    expect(mapScale(390)).toBe(2);
+    expect(mapScale(736)).toBe(2);
+    expect(mapScale(1103)).toBe(2);
+    expect(mapScale(1104)).toBe(3);
+    expect(mapScale(1600)).toBe(3);
   });
 
-  it('scrolls while the map is wider than its window', () => {
+  it('pans sideways only while the map is wider than its window', () => {
     expect(mapScrolls(390)).toBe(true);
-    expect(mapScrolls(911)).toBe(true);
-    expect(mapScrolls(912)).toBe(false);
-    expect(mapScrolls(1000)).toBe(false);
-    expect(mapScrolls(1216)).toBe(false);
+    expect(mapScrolls(735)).toBe(true);
+    expect(mapScrolls(736)).toBe(false);
+    expect(mapScrolls(1103)).toBe(false);
+    expect(mapScrolls(1104)).toBe(false);
+  });
+});
+
+describe('mapReadingOrder', () => {
+  it('goes west to east and, within a column, north to south, and keeps the input unchanged', () => {
+    const list = places('empty');
+    const ordered = mapReadingOrder(list).map((p) => p.id);
+    expect(ordered).toEqual([
+      'tidepools',
+      'moonlit-reef',
+      'ember-caves',
+      'verdant-hollow',
+      'old-crossroads',
+      'storm-ridge',
+      'sunken-fen',
+      'festival-grounds',
+    ]);
+    expect(list.map((p) => p.id)).toEqual(expeditionContent.destinations.map((d) => d.id));
   });
 });
 

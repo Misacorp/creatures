@@ -33,20 +33,37 @@ function build(
   return p;
 }
 
+function place(p: Page, id: string) {
+  const found = p.root.querySelector(`[data-place="${id}"]`);
+  if (found === null) throw new Error(id);
+  return found;
+}
+
 function markers(p: Page) {
   return p.root.querySelectorAll('[data-place]');
 }
 
 describe('WorldMap', () => {
-  it('lists a button per place in trail order, each with its spoken label', () => {
+  it('lists a button per place in reading order, each with its spoken label', () => {
     const p = build(null);
     const list = markers(p);
     expect(list).toHaveLength(8);
     expect(list.every((b) => b.localName === 'button')).toBe(true);
-    expect(list[0]?.getAttribute('data-place')).toBe('tidepools');
-    expect(list[7]?.getAttribute('data-place')).toBe('festival-grounds');
-    expect(list[1]?.getAttribute('aria-label')).toBe('Ember Caves, 1 explorer there, 1 home');
-    expect(list[6]?.getAttribute('aria-label')).toBe('Moonlit Reef, Night only');
+    // West to east, north to south within a column (not the content order).
+    expect(list.map((b) => b.getAttribute('data-place'))).toEqual([
+      'tidepools',
+      'moonlit-reef',
+      'ember-caves',
+      'verdant-hollow',
+      'old-crossroads',
+      'storm-ridge',
+      'sunken-fen',
+      'festival-grounds',
+    ]);
+    expect(place(p, 'ember-caves').getAttribute('aria-label')).toBe(
+      'Ember Caves, 1 explorer there, 1 home',
+    );
+    expect(place(p, 'moonlit-reef').getAttribute('aria-label')).toBe('Moonlit Reef, Night only');
   });
 
   it('keeps the canvas out of the accessibility tree and draws the list inside a labelled list', () => {
@@ -62,9 +79,8 @@ describe('WorldMap', () => {
     expect(byClass(p.root, 'wm-flag')).toHaveLength(1);
     expect(byClass(p.root, 'wm-choice')).toHaveLength(1);
     expect(byClass(p.root, 'wm-chip')).toHaveLength(3);
-    const ember = markers(p)[1];
-    expect(ember?.classList.contains('home')).toBe(true);
-    expect(markers(p)[3]?.classList.contains('choosing')).toBe(true);
+    expect(place(p, 'ember-caves').classList.contains('home')).toBe(true);
+    expect(place(p, 'storm-ridge').classList.contains('choosing')).toBe(true);
   });
 
   it('presses only the selected place and tells the caller which was picked', () => {
@@ -73,10 +89,17 @@ describe('WorldMap', () => {
     const pressed = markers(p).filter((b) => b.getAttribute('aria-pressed') === 'true');
     expect(pressed.map((b) => b.getAttribute('data-place'))).toEqual(['ember-caves']);
     expect(pressed[0]?.classList.contains('selected')).toBe(true);
-    const fen = markers(p)[4];
-    if (fen === undefined) throw new Error('no fen');
-    p.click(fen);
+    p.click(place(p, 'sunken-fen'));
     expect(picked).toEqual(['sunken-fen']);
+  });
+
+  it('shows each place as a logo over its landmark and keeps the real name for screen readers', () => {
+    const p = build(null);
+    expect(byClass(p.root, 'wm-logo')).toHaveLength(8);
+    for (const logo of byClass(p.root, 'wm-logo'))
+      expect(logo.getAttribute('aria-hidden')).toBe('true');
+    expect(byClass(p.root, 'wm-plate')).toHaveLength(0);
+    expect(place(p, 'tidepools').getAttribute('aria-label')).toMatch(/^Tidepools/);
   });
 
   it('tints the map at night', () => {
@@ -85,11 +108,13 @@ describe('WorldMap', () => {
     expect(byClass(build(null, false).root, 'night')).toHaveLength(0);
   });
 
-  it('moves focus along the trail with the arrow keys and brings the marker into view', () => {
+  it('moves focus in reading order with the arrow keys and brings the marker into view', () => {
     const p = build(null);
     const list = markers(p);
     const [first, second] = list;
     if (first === undefined || second === undefined) throw new Error('markers');
+    expect(first.getAttribute('data-place')).toBe('tidepools');
+    expect(second.getAttribute('data-place')).toBe('moonlit-reef');
     const event = p.key(first, 'ArrowRight');
     expect(event.defaultPrevented).toBe(true);
     expect(second.focused).toBe(1);

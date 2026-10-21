@@ -39,7 +39,7 @@ const worldMap: Entry = {
   file: 'apps/activity/src/WorldMap.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The Expeditions world map: a pixel-art world with a sea on the left, a landmark for each of the eight places and a dashed trail through them in order. Each place is a button with its name; the explorers out there show as up to two faces above it with "+N" for more, a gold HOME flag when a trip is ready to claim and a "!" when a trip waits for its push-on choice. The chosen place has a gold plate and ring. It scrolls sideways at phone width (Left and Right arrows move along the trail); night tints it blue. Every place is open on the map; Moonlit Reef and the Festival Grounds only show their time rule as a small line.',
+    'The Expeditions world map: a pixel-art world with the sea on the west edge, Tidepools and Moonlit Reef on the shore, Ember Caves and Storm Ridge up north, Old Crossroads at the centre where the paths meet, Verdant Hollow and Sunken Fen in the south and the Festival Grounds in the east, joined by dashed paths. Each place is a button shown as its pixel-art title logo over its landmark (the real name is the button label) with a pin at the landmark foot. Under the pin: up to two explorer faces there with "+N" for more, a gold HOME flag when a trip is ready to claim, a "!" when a trip waits for its push-on choice, and a small muted line for a time rule (Night only, Festival weeks). The chosen place has a gold outline round its logo and a gold ring on its pin. Every place is open on the map. Whole-number scale: 2 (the whole map fits a desktop card, 736 px; at 390 px it pans sideways) or 3 at 1104 px and up; Left and Right arrows move through the places west to east. Night tints it blue. Use the width switcher: 360, 390 and full.',
   controls: {
     trips: { kind: 'select', options: SAMPLES },
     selected: { kind: 'select', options: [NONE, ...DESTINATION_IDS] },
@@ -53,6 +53,10 @@ const worldMap: Entry = {
     { name: 'Crowded: +N, several home', props: { trips: 'crowded' } },
     { name: 'Night', props: { trips: 'four-out', night: true } },
     { name: 'A place selected', props: { trips: 'four-out', selected: 'ember-caves' } },
+    {
+      name: 'Crowded, Storm Ridge selected, night',
+      props: { trips: 'crowded', selected: 'storm-ridge', night: true },
+    },
   ],
   render: (p) => <Demo p={p} />,
 };

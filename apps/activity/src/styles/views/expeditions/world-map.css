@@ -80,12 +80,14 @@
   position: absolute;
   left: var(--x);
   top: var(--y);
-  translate: -50% calc(-1 * var(--wm-pin-h) / 2);
+  translate: -50% 0;
+  /* The button is only a column that holds the parts; the parts take the taps, so the empty space between
+     a logo and its pin never steals a tap from the landmark of a neighbour. */
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 44px;
-  min-height: 44px;
+  min-height: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -94,6 +96,28 @@
   font-family: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.wm-logo,
+.wm-pin,
+.wm-chip,
+.wm-plate {
+  pointer-events: auto;
+}
+
+.wm-logo {
+  display: block;
+  line-height: 0;
+}
+
+.wm-logo .sprite {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.wm-gap {
+  display: block;
+  height: var(--gap, 0);
 }
 
 .wm-faces {
@@ -160,6 +184,12 @@
   position: relative;
   width: 28px;
   height: var(--wm-pin-h);
+}
+
+.wm-pin::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
 }
 
 .wm-ring,
@@ -354,18 +384,27 @@
   box-shadow: none;
 }
 
+/* Selected: a gold outline hugging the logo's letters, as thick as one map pixel step, and the gold ring on the pin. */
+.wm-marker.selected .wm-logo .sprite {
+  filter: drop-shadow(2px 0 0 var(--gold)) drop-shadow(-2px 0 0 var(--gold))
+    drop-shadow(0 2px 0 var(--gold)) drop-shadow(0 -2px 0 var(--gold));
+}
+
 .wm-marker:focus-visible {
   outline: none;
 }
 
+.wm-marker:focus-visible .wm-logo .sprite,
 .wm-marker:focus-visible .wm-plate {
-  box-shadow: var(--ring);
+  outline: var(--px) solid var(--bone);
+  outline-offset: 2px;
 }
 
-.wm-marker:hover .wm-plate {
-  background: var(--night);
+.wm-marker:hover .wm-logo .sprite {
+  filter: brightness(1.15);
 }
 
-.wm-marker.selected:hover .wm-plate {
-  background: var(--gold);
+.wm-marker.selected:hover .wm-logo .sprite {
+  filter: drop-shadow(2px 0 0 var(--gold)) drop-shadow(-2px 0 0 var(--gold))
+    drop-shadow(0 2px 0 var(--gold)) drop-shadow(0 -2px 0 var(--gold)) brightness(1.15);
 }
