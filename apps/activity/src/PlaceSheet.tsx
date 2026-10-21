@@ -7,12 +7,13 @@ import type { SendRequest } from './expedition-api';
 import type { DestinationsView, Slots, Trip } from './expedition-types';
 import { PlaceHead, PlaceLoading, PlaceTrips } from './PlaceCard';
 import { PushOnChoice } from './PushOnChoice';
-import { SEND_STEP_HEAD, SendFooter, SendForm } from './SendForm';
+import { SendFooter, SendForm } from './SendForm';
 import { slotsFullReason, type SendStep } from './send-view';
 import { destinationName } from './trip-view';
 import { Drawer } from './ui/Drawer';
-import { DrillHead } from './ui/DrillHead';
 import { onDrillKey } from './ui/drill-keys';
+import { DrillHead } from './ui/DrillHead';
+import { WizardView } from './ui/Wizard';
 import { useSendForm, type SendForm as SendFormState } from './use-send-form';
 import type { Forecast } from './weather-types';
 
@@ -80,6 +81,10 @@ function SheetWithForm(props: PlaceSheetProps & { view: DestinationsView }) {
     stock: props.stock,
     bait: props.bait,
     timezone: props.timezone,
+    // Back from Who goes back to the place view.
+    onExit: () => {
+      props.onMode({ kind: 'place' });
+    },
     ...(props.initialStep === undefined ? {} : { initialStep: props.initialStep }),
   });
   return <SheetFrame {...props} form={form} />;
@@ -103,7 +108,7 @@ function SheetFrame({ form, ...props }: PlaceSheetProps & { form: SendFormState 
     onMode({ kind: 'place' });
   };
   const goBack = (): void => {
-    if (mode.kind === 'send' && form !== null && form.step !== 'who') form.back();
+    if (mode.kind === 'send' && form !== null) form.wizard.back();
     else toPlace();
   };
   const keys = onDrillKey(goBack);
@@ -116,25 +121,21 @@ function SheetFrame({ form, ...props }: PlaceSheetProps & { form: SendFormState 
   } as const;
 
   if (mode.kind === 'send' && form !== null) {
-    const head = SEND_STEP_HEAD[form.step];
     return (
       <Drawer
         {...common}
         footer={
-          <div onKeyDown={keys}>
-            <SendFooter
-              form={form}
-              mode={form.step === 'ready' ? 'send' : 'next'}
-              busy={props.busy}
-              onSend={props.onSend}
-              bag={props.bag ?? null}
-              onOpenWorkshop={props.onOpenWorkshop}
-            />
-          </div>
+          <SendFooter
+            form={form}
+            layout="steps"
+            busy={props.busy}
+            onSend={props.onSend}
+            bag={props.bag ?? null}
+            onOpenWorkshop={props.onOpenWorkshop}
+          />
         }
       >
-        <div class="place-drill" onKeyDown={keys}>
-          <DrillHead title={head.title} backLabel={head.backLabel} onBack={goBack} focus />
+        <WizardView wizard={form.wizard} class="place-drill" focus>
           <SendForm
             form={form}
             layout="steps"
@@ -145,7 +146,7 @@ function SheetFrame({ form, ...props }: PlaceSheetProps & { form: SendFormState 
               ? {}
               : { onOpenWorkshop: props.onOpenWorkshop })}
           />
-        </div>
+        </WizardView>
       </Drawer>
     );
   }
@@ -189,7 +190,7 @@ function SheetFrame({ form, ...props }: PlaceSheetProps & { form: SendFormState 
             class="primary send-button"
             disabled={form === null || card === undefined || reason !== null || props.busy}
             onClick={() => {
-              form?.setStep('who');
+              form?.wizard.goTo('who');
               onMode({ kind: 'send' });
             }}
           >

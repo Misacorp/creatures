@@ -6,6 +6,7 @@ import { destinationCards, type DestinationCard } from './destination-view';
 import type { SendRequest } from './expedition-api';
 import type { DestinationsView, ExpeditionLength, Slots, SupplyPick } from './expedition-types';
 import { getSpecies } from './game';
+import { useWizard, type Wizard, type WizardStep } from './ui/use-wizard';
 import {
   clampLength,
   defaultExplorer,
@@ -16,8 +17,12 @@ import {
   type SendStep,
 } from './send-view';
 
-/** The steps of the phone wizard in order. */
-export const SEND_STEPS: readonly SendStep[] = ['who', 'pack', 'ready'];
+/** The steps of the phone wizard in order: the title of each, what Back goes back to (said only to screen readers) and its forward button. */
+export const SEND_STEP_DEFS: readonly WizardStep<SendStep>[] = [
+  { id: 'who', title: 'Who goes', backLabel: 'to the place', next: 'Next' },
+  { id: 'pack', title: 'Pack up', backLabel: 'to who goes', next: 'Next' },
+  { id: 'ready', title: 'Ready', backLabel: 'to packing up', next: 'Send' },
+];
 
 /** What the send form needs from the app. The destination is fixed: the place was chosen on the map. */
 export interface SendFormInput {
@@ -34,6 +39,8 @@ export interface SendFormInput {
   timezone: string | null;
   /** The step to start on (Who by default). */
   initialStep?: SendStep;
+  /** Back on the first step (Who) calls this: the sheet goes back to the place view. */
+  onExit?: (() => void) | undefined;
 }
 
 /** The send form's state and everything derived from it, for one fixed place. */
@@ -72,13 +79,10 @@ export interface SendForm {
   stepBlocker: string | null;
   /** The request to send; null while there is no explorer or place. */
   request: SendRequest | null;
-  /** The wizard step (the panel layout ignores it). */
+  /** The wizard's position and moves (`ui/Wizard`); the panel layout ignores it. */
+  wizard: Wizard<SendStep>;
+  /** The wizard's current step. */
   step: SendStep;
-  setStep: (step: SendStep) => void;
-  /** One step on, when this step has no blocker. */
-  next: () => void;
-  /** One step back (not before Who). */
-  back: () => void;
   /** After a send that started: puts the supplies and the treat down and goes back to Who. */
   reset: () => void;
 }
@@ -90,13 +94,14 @@ export interface SendForm {
  * supplies, no treat. The server decides every send; this only collects the choice.
  */
 export function useSendForm(input: SendFormInput): SendForm {
-  const { creatures, view, destination, slots, stock, bait, timezone, initialStep = 'who' } = input;
+  const { creatures, view, destination, slots, stock, bait, timezone, initialStep, onExit } = input;
   const [creatureId, setCreatureId] = useState<string | null>(null);
   const [wanted, setLength] = useState<ExpeditionLength>('long');
   const [picks, setPicks] = useState<SupplyPick[]>([]);
   // A treat for this one trip (never kept for the next: it costs Bait each time).
   const [asked, setTreat] = useState(false);
-  const [step, setStep] = useState<SendStep>(initialStep);
+  const wizard = useWizard(SEND_STEP_DEFS, { initial: initialStep, onExit });
+  const step = wizard.step;
 
   // Who can go depends on the place's rank gate; the card depends on who goes (stars, deeper area).
   const bare = destinationCards(view, undefined, timezone).find((c) => c.id === destination);
@@ -163,21 +168,12 @@ export function useSendForm(input: SendFormInput): SendForm {
     blocker,
     stepBlocker: blockedHere,
     request,
+    wizard,
     step,
-    setStep,
-    next: () => {
-      if (blockedHere !== null) return;
-      const at = SEND_STEPS.indexOf(step);
-      setStep(SEND_STEPS[Math.min(at + 1, SEND_STEPS.length - 1)] ?? 'ready');
-    },
-    back: () => {
-      const at = SEND_STEPS.indexOf(step);
-      setStep(SEND_STEPS[Math.max(at - 1, 0)] ?? 'who');
-    },
     reset: () => {
       setPicks([]);
       setTreat(false);
-      setStep('who');
+      wizard.goTo('who');
     },
   };
 }
