@@ -178,7 +178,7 @@ export const tripEntries: readonly Entry[] = [
     file: 'apps/activity/src/TripShelf.tsx',
     group: 'Creatures & game pieces',
     description:
-      'The "Out exploring" shelf under the desktop map: a card per slot with the running trips first, then free slots and one locked slot that says what opens it.',
+      'The "Out exploring" shelf under the desktop map: a card per slot with the running trips first, then free slots; the header says what opens the next slot.',
     controls: {
       out: { kind: 'number', min: 0, max: 4 },
       slots: { kind: 'number', min: 1, max: 4 },
@@ -187,7 +187,10 @@ export const tripEntries: readonly Entry[] = [
     },
     defaults: { out: 3, slots: 4, locked: true, busy: false },
     presets: [
-      { name: '3 out, 1 free, locked next (880 px)', props: { out: 3, slots: 4, locked: true } },
+      {
+        name: '3 out, 1 free, next slot in the header (880 px)',
+        props: { out: 3, slots: 4, locked: true },
+      },
       { name: 'All four out', props: { out: 4, slots: 4, locked: false } },
       { name: 'One slot, one out', props: { out: 1, slots: 1, locked: true } },
       { name: 'Nobody out', props: { out: 0, slots: 2, locked: true } },

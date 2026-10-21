@@ -213,18 +213,18 @@ describe('TripShelf', () => {
     next,
   });
 
-  it('lists running trips, then free slots, then what opens the next slot', () => {
+  it('lists running trips then free slots, and says in the header what opens the next slot', () => {
     shelf(slots(3, { kind: 'trips', at: 5 }), [plain]);
-    expect(byClass(page!.root, 'trip-slot')).toHaveLength(4);
     expect(byClass(page!.root, 'free')).toHaveLength(2);
-    const closed = byClass(page!.root, 'closed');
-    expect(closed).toHaveLength(1);
-    expect(visibleText(closed[0]!)).toContain('finish 5 trips (2 so far)');
+    expect(byClass(page!.root, 'trip-slot')).toHaveLength(3);
+    const next = byClass(page!.root, 'trip-shelf-next');
+    expect(next).toHaveLength(1);
+    expect(visibleText(next[0]!)).toContain('finish 5 trips (2 so far)');
   });
 
-  it('has no locked card when every slot is open', () => {
+  it('has no next-slot line when every slot is open', () => {
     shelf(slots(2, null), [plain]);
-    expect(byClass(page!.root, 'closed')).toHaveLength(0);
+    expect(byClass(page!.root, 'trip-shelf-next')).toHaveLength(0);
     expect(byClass(page!.root, 'free')).toHaveLength(1);
   });
 

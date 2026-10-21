@@ -12,7 +12,7 @@ import { destinationName, slotsLine, tripShortStatus } from './trip-view';
 /**
  * "Out exploring", under the desktop map: a card per expedition slot in a four column grid. The running
  * trips come first (face, name, place and length, timer bar, status and the button of `TripActions`), then a
- * "Free slot" card for each open slot nobody is out in, then one locked card that says what opens the next
+ * "Free slot" card for each open slot nobody is out in, then, in the header line after the slot count, a lock and what opens the next
  * slot (the same words as the slots strip). Tapping the body of a trip's card calls `onOpen` with its
  * place; the button on it acts without opening. `serverNow` is server time, ticked by the caller.
  */
@@ -41,6 +41,18 @@ export function TripShelf({
     <section class="trip-shelf pix-panel" aria-label="Out exploring">
       <h3 class="trip-shelf-head">
         <span class="pix">Out exploring</span> <span class="muted">{line.use}</span>
+        {line.next !== null && (
+          <span class="trip-shelf-next muted">
+            <Sprite sprite={glyphOrUnknown('lock')} scale={2} />
+            <span>{line.next}</span>
+            <Bar
+              class="trip-shelf-bar"
+              value={line.progress?.value ?? 0}
+              max={line.progress?.max ?? 1}
+              label={line.next}
+            />
+          </span>
+        )}
       </h3>
       <ul class="trip-shelf-grid">
         {trips.map((trip) => {
@@ -93,21 +105,6 @@ export function TripShelf({
             <span class="muted">Pick a place on the map</span>
           </li>
         ))}
-        {line.next !== null && (
-          <li class="trip-slot closed">
-            <p class="trip-slot-lock">
-              <Sprite sprite={glyphOrUnknown('lock')} scale={2} />
-              <b class="trip-slot-name">Locked</b>
-            </p>
-            <span class="muted">{line.next}</span>
-            <Bar
-              class="trip-row-bar"
-              value={line.progress?.value ?? 0}
-              max={line.progress?.max ?? 1}
-              label={line.next}
-            />
-          </li>
-        )}
       </ul>
     </section>
   );
