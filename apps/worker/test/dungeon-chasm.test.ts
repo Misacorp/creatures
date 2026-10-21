@@ -378,6 +378,27 @@ describe('falling', () => {
     }, 'fall');
   });
 
+  it('a fall still pays the experience earned in the rooms before it, and the recap says what paid it', async () => {
+    await withChasm(async (s) => {
+      const { state, target } = await toDoor(s);
+      const waiting = await openChasm(s, state, target, 'gear');
+      const before = stored(s.ctx, waiting.id).earned;
+      const fought = Object.entries(before).filter(([, e]) => e.base > 0);
+      expect(fought.length).toBeGreaterThan(0);
+      s.dungeonRng.queue.push(HIGH);
+      const res = await s.p.act(waiting, { type: 'event', option: 0 });
+      expect(res.body.state).toMatchObject({ status: 'done', outcome: 'defeat' });
+      const rewards = res.body.summary?.rewards;
+      const recap = rewards?.recap ?? [];
+      // Every creature that earned before the fall is in the recap with the same base, and was paid.
+      for (const [id, e] of fought) {
+        expect(recap.find((r) => r.creatureId === id)?.base).toBe(e.base);
+      }
+      expect(rewards?.experience?.length).toBeGreaterThan(0);
+      expect(rewards?.experience?.every((x) => x.gained > 0)).toBe(true);
+    }, 'fall-xp');
+  });
+
   it('a treasure taken and then lost to a defeat in a later fight is not won, and the end screen says so', async () => {
     await withChasm(async (s) => {
       const { state, target } = await toDoor(s);
