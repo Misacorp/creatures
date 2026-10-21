@@ -33,12 +33,25 @@ import { creatureName, getSpecies } from './game';
 import { IN_TEAM_NOTE } from './roster-picker';
 import { ChoiceButton, ChoiceList } from './ui/ChoiceList';
 import { CountBadgeList } from './ui/CountBadge';
-import { DrillHead } from './ui/DrillHead';
-import { onDrillKey } from './ui/drill-keys';
 import { RevealShell } from './ui/RevealShell';
 import { RosterPicker } from './ui/RosterPicker';
+import { useWizard, type WizardStep } from './ui/use-wizard';
+import { WizardView } from './ui/Wizard';
 
 type Step = 'menu' | 'keepsake' | 'out' | 'arrange';
+
+/**
+ * The camp's steps on the shared wizard (`ui/Wizard`): a branching flow. The menu opens either the keepsake
+ * step (a pick acts) or the swap chain (who comes in, from a picker, then `out`, then `arrange`). Back from
+ * `out` is the menu, though `keepsake` stands before it in the list. The menu is drawn by the card itself
+ * (no head); the other steps get the wizard's head, level 4 under the card's heading.
+ */
+const CAMP_STEPS: readonly WizardStep<Step>[] = [
+  { id: 'menu', title: CAMP_TITLE, backLabel: 'to the camp' },
+  { id: 'keepsake', title: 'Take a keepsake', backLabel: 'to the camp' },
+  { id: 'out', title: 'Who goes home?', backLabel: 'to the camp', back: 'menu' },
+  { id: 'arrange', title: 'Arrange your row', backLabel: 'to who goes home' },
+];
 
 interface Props {
   /** The row now, left to right. */
@@ -69,7 +82,8 @@ interface Props {
  * "who goes home": the row as it will stand, with the new creature in the place of the one that left,
  * which can be rearranged before the swap is confirmed, so the recruit can stand anywhere. Apart
  * from the three, the player may head home and keep the whole pack; that asks once more before it
- * ends the run. The server checks every act again: this only builds them.
+ * ends the run. The steps run on the shared wizard (`ui/Wizard`, branching; see `CAMP_STEPS`). The server
+ * checks every act again: this only builds them.
  */
 export function DungeonCamp({
   team,
@@ -83,7 +97,8 @@ export function DungeonCamp({
   initialOut,
 }: Props) {
   const [order, setOrder] = useState(() => rowIds(team));
-  const [step, setStep] = useState<Step>(initialStep ?? 'menu');
+  const wizard = useWizard(CAMP_STEPS, { initial: initialStep });
+  const step = wizard.step;
   const [incoming, setIncoming] = useState<string | null>(initialIncoming ?? null);
   const [picking, setPicking] = useState(false);
   const [confirmHome, setConfirmHome] = useState(false);
@@ -126,20 +141,6 @@ export function DungeonCamp({
     ];
   };
 
-  /** The steps' way back: Back and Escape do the same (not while an act is running). */
-  const toMenu = (): void => {
-    setStep('menu');
-  };
-  /** Back from "who goes home" is back to the menu with nobody picked to come in. */
-  const fromOut = (): void => {
-    setIncoming(null);
-    setStep('menu');
-  };
-  const toOut = (): void => {
-    setStep('out');
-  };
-  const keysFor = (back: () => void) => (busy ? undefined : onDrillKey(back));
-
   const row = (
     ids: readonly string[],
     onChange: (order: string[]) => void,
@@ -174,7 +175,7 @@ export function DungeonCamp({
               line={lines.keepsake.line}
               disabled={busy || camp.offers.length === 0}
               onClick={() => {
-                setStep('keepsake');
+                wizard.goTo('keepsake');
               }}
             />
             <ChoiceButton
@@ -242,91 +243,70 @@ export function DungeonCamp({
         </>
       )}
 
-      {step === 'keepsake' && (
-        <div class="camp-step" onKeyDown={keysFor(toMenu)}>
-          <DrillHead
-            title="Take a keepsake"
-            level={4}
-            backLabel="to the camp"
-            focus
-            disabled={busy}
-            onBack={toMenu}
-          />
-          <ChoiceList label="Keepsakes on offer">
-            {camp.offers.map((offer) => (
-              <ChoiceButton
-                key={offer.id}
-                label={offer.name}
-                line={offer.description}
-                disabled={busy}
-                onClick={() => {
-                  onAct(keepsakeAct(order, offer.id));
-                }}
-              />
-            ))}
-          </ChoiceList>
-        </div>
-      )}
+      {step !== 'menu' && (
+        <WizardView key={step} wizard={wizard} level={4} focus disabled={busy} class="camp-step">
+          {step === 'keepsake' && (
+            <ChoiceList label="Keepsakes on offer">
+              {camp.offers.map((offer) => (
+                <ChoiceButton
+                  key={offer.id}
+                  label={offer.name}
+                  line={offer.description}
+                  disabled={busy}
+                  onClick={() => {
+                    onAct(keepsakeAct(order, offer.id));
+                  }}
+                />
+              ))}
+            </ChoiceList>
+          )}
 
-      {step === 'out' && (
-        <div class="camp-step" onKeyDown={keysFor(fromOut)}>
-          <DrillHead
-            title="Who goes home?"
-            level={4}
-            backLabel="to the camp"
-            focus
-            disabled={busy}
-            onBack={fromOut}
-          />
-          <p class="muted prose">
-            {comesIn === undefined ? 'A fresh creature' : creatureName(comesIn)} comes in at full
-            HP.
-          </p>
-          <ChoiceList label="Pick who goes home">
-            {ordered.map((creature) => (
-              <ChoiceButton
-                key={creature.id}
-                class={`camp-out${creature.hp <= 0 ? ' ko' : ''}`}
-                label={creature.name}
-                line={`Level ${String(creature.level)} · ${runHpText(creature)}`}
-                disabled={busy || incoming === null}
-                onClick={() => {
-                  if (incoming === null) return;
-                  setOutId(creature.id);
-                  setArranged(orderAfterSwap(order, creature.id, incoming));
-                  setStep('arrange');
-                }}
-              />
-            ))}
-          </ChoiceList>
-        </div>
-      )}
+          {step === 'out' && (
+            <>
+              <p class="muted prose">
+                {comesIn === undefined ? 'A fresh creature' : creatureName(comesIn)} comes in at
+                full HP.
+              </p>
+              <ChoiceList label="Pick who goes home">
+                {ordered.map((creature) => (
+                  <ChoiceButton
+                    key={creature.id}
+                    class={`camp-out${creature.hp <= 0 ? ' ko' : ''}`}
+                    label={creature.name}
+                    line={`Level ${String(creature.level)} · ${runHpText(creature)}`}
+                    disabled={busy || incoming === null}
+                    onClick={() => {
+                      if (incoming === null) return;
+                      setOutId(creature.id);
+                      setArranged(orderAfterSwap(order, creature.id, incoming));
+                      wizard.goTo('arrange');
+                    }}
+                  />
+                ))}
+              </ChoiceList>
+            </>
+          )}
 
-      {step === 'arrange' && (
-        <div class="camp-step" onKeyDown={keysFor(toOut)}>
-          <DrillHead
-            title="Arrange your row"
-            level={4}
-            backLabel="to who goes home"
-            focus
-            disabled={busy}
-            onBack={toOut}
-          />
-          <p class="muted prose">{CAMP_ARRANGE_LINE}</p>
-          {row(arranged, setArranged)}
-          <p class="button-row camp-arrange-actions">
-            <button
-              type="button"
-              class="camp-confirm"
-              disabled={busy || incoming === null || outId === null}
-              onClick={() => {
-                if (incoming !== null && outId !== null) onAct(swapAct(arranged, outId, incoming));
-              }}
-            >
-              Swap and push on
-            </button>
-          </p>
-        </div>
+          {step === 'arrange' && (
+            <>
+              <p class="muted prose">{CAMP_ARRANGE_LINE}</p>
+              {row(arranged, setArranged)}
+              <p class="button-row camp-arrange-actions">
+                <button
+                  type="button"
+                  class="camp-confirm"
+                  disabled={busy || incoming === null || outId === null}
+                  onClick={() => {
+                    if (incoming !== null && outId !== null)
+                      onAct(swapAct(arranged, outId, incoming));
+                  }}
+                >
+                  Swap and push on
+                </button>
+              </p>
+            </>
+          )}
+        </WizardView>
       )}
 
       {picking && (
@@ -340,7 +320,7 @@ export function DungeonCamp({
           onPick={(id) => {
             setPicking(false);
             setIncoming(id);
-            setStep('out');
+            wizard.goTo('out');
           }}
           onClose={() => {
             setPicking(false);
