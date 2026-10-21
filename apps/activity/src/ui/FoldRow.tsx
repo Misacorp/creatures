@@ -19,7 +19,7 @@ export function FoldRow({
   controls: string;
   /** Extra class for the root (spacing, where it is used). */
   class?: string;
-  /** The label ("3 more need Crafting level 3"). */
+  /** The label ("3 more creatures need Crafting level 3"). */
   children: ComponentChildren;
 }) {
   return (

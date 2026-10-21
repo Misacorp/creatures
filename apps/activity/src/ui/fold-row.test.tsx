@@ -12,7 +12,7 @@ function drawn(open: boolean, onToggle = vi.fn()): FakeElement {
   page = createPage();
   page.draw(
     <FoldRow open={open} onToggle={onToggle} controls="folded-things">
-      3 more need Crafting level 3
+      3 more creatures need Crafting level 3
     </FoldRow>,
   );
   const [row] = byClass(page.root, 'fold-row');
@@ -25,7 +25,7 @@ describe('the FoldRow', () => {
     const row = drawn(false);
     expect(row.localName).toBe('button');
     expect(row.getAttribute('type')).toBe('button');
-    expect(visibleText(row)).toBe('3 more need Crafting level 3');
+    expect(visibleText(row)).toBe('3 more creatures need Crafting level 3');
   });
 
   it('says closed or open in aria-expanded', () => {

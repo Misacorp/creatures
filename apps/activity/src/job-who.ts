@@ -19,7 +19,7 @@ export interface JobWho {
   tooLow: PickerOption[];
   /** The creature picked when the player has not picked: the first that can do it; null when nobody can. */
   pick: string | null;
-  /** The folded row's words ("4 more need Crafting level 3"); null when nobody is under the level. */
+  /** The folded row's words ("4 more creatures need Crafting level 3"); null when nobody is under the level. */
   summary: string | null;
   /** Why nobody can do it; null when somebody can. Said in the footer, so a grey button is never silent. */
   blocker: string | null;
@@ -30,10 +30,14 @@ export function needsLevelReason(minLevel: number): string {
   return `Needs level ${String(minLevel)}`;
 }
 
-/** The folded row: "4 more need Crafting level 3", "1 more needs ..."; without "more" when nobody else is listed. */
+/**
+ * The folded row: "4 more creatures need Crafting level 3", "1 more creature needs ..."; without "more" when
+ * nobody else is listed. "Creatures" says what the count is about.
+ */
 function summaryText(count: number, minLevel: number, others: boolean): string {
   const more = others ? ' more' : '';
-  return `${String(count)}${more} ${count === 1 ? 'needs' : 'need'} Crafting level ${String(minLevel)}`;
+  const who = count === 1 ? 'creature needs' : 'creatures need';
+  return `${String(count)}${more} ${who} Crafting level ${String(minLevel)}`;
 }
 
 export function jobWho(

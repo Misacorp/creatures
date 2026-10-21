@@ -199,7 +199,7 @@ describe('the folded row of creatures under the level', () => {
     const root = draw({ 'lure-basic': 3 });
     open('Refine');
     const fold = button(root, /need Crafting level 3/);
-    expect(visibleText(fold)).toBe('3 more need Crafting level 3');
+    expect(visibleText(fold)).toBe('3 more creatures need Crafting level 3');
     expect(fold.getAttribute('aria-expanded')).toBe('false');
     // Only the two creatures that can refine are rows; the other three are not listed one by one.
     expect(radios(root)).toHaveLength(2);

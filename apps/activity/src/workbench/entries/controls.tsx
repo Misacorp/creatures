@@ -147,7 +147,7 @@ const foldRow: Entry = {
     label: { kind: 'text', maxLength: 80 },
     rows: { kind: 'number', min: 0, max: 6 },
   },
-  defaults: { open: false, label: '3 more need Crafting level 3', rows: 3 },
+  defaults: { open: false, label: '3 more creatures need Crafting level 3', rows: 3 },
   presets: [
     { name: 'Folded', props: { open: false } },
     { name: 'Open', props: { open: true } },

@@ -21,14 +21,14 @@ describe('jobWho: who can do a job', () => {
     expect(who.busy[0]?.busy).toBe('On a job');
     expect(ids(who.tooLow)).toEqual(['sample-4', 'sample-3']);
     expect(who.tooLow.map((o) => o.busy)).toEqual(['Needs level 3', 'Needs level 3']);
-    expect(who.summary).toBe('2 more need Crafting level 3');
+    expect(who.summary).toBe('2 more creatures need Crafting level 3');
     expect(who.pick).toBe('sample-2');
     expect(who.blocker).toBeNull();
   });
 
-  it('says "1 more needs" for one, and nothing when nobody is under the level', () => {
+  it('says "1 more creature needs" for one, and nothing when nobody is under the level', () => {
     const one = jobWho(roster.slice(0, 2), at([4, 1]), hours, 3);
-    expect(one.summary).toBe('1 more needs Crafting level 3');
+    expect(one.summary).toBe('1 more creature needs Crafting level 3');
     const none = jobWho(roster, at([3, 3, 3, 3, 3, 3]), hours, 3);
     expect(none.summary).toBeNull();
     expect(none.tooLow).toEqual([]);
@@ -49,13 +49,13 @@ describe('jobWho: who can do a job', () => {
     expect(who.pick).toBeNull();
     expect(ids(who.busy)).toEqual(['sample-0', 'sample-1']);
     expect(who.blocker).toBe('Nobody free has Crafting level 3.');
-    expect(who.summary).toBe('4 more need Crafting level 3');
+    expect(who.summary).toBe('4 more creatures need Crafting level 3');
   });
 
   it('says the level is needed when nobody has it at all', () => {
     const who = jobWho(roster, at([1, 1, 1, 1, 1, 1]), hours, 3);
     expect(who.blocker).toBe('Needs Crafting level 3.');
-    expect(who.summary).toBe('6 need Crafting level 3');
+    expect(who.summary).toBe('6 creatures need Crafting level 3');
   });
 
   it('leaves the "no creature" case to the start blocker', () => {
