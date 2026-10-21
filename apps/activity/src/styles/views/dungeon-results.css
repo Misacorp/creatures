@@ -270,3 +270,12 @@
   gap: 0.125rem;
   margin: 0;
 }
+
+/* A treasure taken and then lost with the run: shown quietly, as it was. */
+.treasure-lost h4 {
+  margin: 1rem 0 0.25rem;
+}
+
+.treasure-lost .dungeon-treasure {
+  opacity: 0.6;
+}

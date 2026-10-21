@@ -260,7 +260,7 @@ function isJob(value: unknown): value is Job {
   );
 }
 
-const isBlueprintLoot = (value: unknown): value is GrantLoot['blueprints'][number] =>
+export const isBlueprintLoot = (value: unknown): value is GrantLoot['blueprints'][number] =>
   isRecord(value) &&
   isStr(value['baseId']) &&
   typeof value['duplicate'] === 'boolean' &&

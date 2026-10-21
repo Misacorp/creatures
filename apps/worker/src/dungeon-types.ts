@@ -63,12 +63,24 @@ export interface DungeonKeepsakeView {
   description: string;
 }
 
+/**
+ * A rare room's treasure as the player sees it, before the choice and again on the end screen. A gear piece
+ * is the actual rolled item (its base, rarity and level); a blueprint is a base the player does not know.
+ */
+export type DungeonTreasureView =
+  | { kind: 'gear'; baseId: string; rarity: GearRarity; itemLevel: number }
+  | { kind: 'blueprint'; baseId: string }
+  | { kind: 'supplies'; supplyId: string; count: number }
+  | { kind: 'shards'; parts: PartsBundle };
+
 /** A mystery room's scene, once the run is in it. Exactly two options; `description` is the exact outcome. */
 export interface DungeonEventView {
   id: string;
   name: string;
   text: string;
   options: { label: string; description: string }[];
+  /** The prize of a rare room, rolled when it opened. Absent in a room with none. */
+  treasure?: DungeonTreasureView;
 }
 
 /** What the boss chest already gave (the Undercroft's descent card shows it): gear and supplies are in the player's stock, shards and glimmer in their parts. */
@@ -134,6 +146,10 @@ export type DungeonStepLog =
       outcome: string;
       loot: DungeonPack;
       keepsake?: DungeonKeepsakeView;
+      /** The treasure the option took (paid at the run's end unless the run ended in a defeat). */
+      treasure?: DungeonTreasureView;
+      /** The option was a fall: the whole team fell and the run ended. */
+      fell?: true;
     }
   | {
       node: string;
@@ -245,6 +261,10 @@ export interface DungeonRewards {
   converted: { baseId: string; rarity: GearRarity }[];
   /** The supplies the run dropped, one content id each (absent in runs stored before supplies dropped here). */
   supplies?: string[];
+  /** Blueprints the run's grant taught (a rare room's treasure), as the grant gave them. Absent when none. */
+  blueprints?: { baseId: string; duplicate: boolean; marks?: number }[];
+  /** A rare room's treasure that was taken but lost because the run ended in a defeat. Absent otherwise. */
+  treasureLost?: DungeonTreasureView;
   /**
    * The creature experience the run paid each creature that stood in the row (a treat doubles it) and
    * what it did to their levels. Absent in runs stored before training by activity.

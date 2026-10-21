@@ -25,6 +25,7 @@ import {
   reachableNodes,
   type DungeonMap,
   type DungeonRunPack,
+  type Treasure,
   type Element,
   type Role,
   type FoldKit,
@@ -48,6 +49,7 @@ import type {
   DungeonRunGear,
   DungeonRunState,
   DungeonStepLog,
+  DungeonTreasureView,
 } from './dungeon-types';
 
 /** The items a creature carries in a run (its seat's frozen kit), as the gear list draws them. */
@@ -70,7 +72,7 @@ export const PLAYER = 'p1';
  */
 export type PendingState =
   | null
-  | { kind: 'event'; eventId: string }
+  | { kind: 'event'; eventId: string; treasure?: Treasure }
   | { kind: 'camp'; offers: string[] }
   | { kind: 'descend'; level: number };
 
@@ -175,6 +177,10 @@ export interface RunState {
    * Under the cap, everything it finds goes in. Absent in a state stored before: decided at each grant.
    */
   bagFull?: boolean;
+  /** The treasures the run took (the Blue Chasm's): paid at the run's end unless it ended in a defeat. Absent before the chasm: none. */
+  treasures: Treasure[];
+  /** The ids of the rare events the run met (one at most each run, taken or not). Absent before the chasm: none. */
+  rareSeen: string[];
 }
 
 /** Reads a stored state, or null when it is missing or is not a state this code wrote. */
@@ -194,6 +200,9 @@ export function parseState(json: string | null): RunState | null {
     parsed.bossCleared ??= false;
     parsed.deepest ??= 0;
     parsed.banked ??= null;
+    // A state stored before the Blue Chasm took no treasure and met no rare room.
+    parsed.treasures ??= [];
+    parsed.rareSeen ??= [];
     return parsed as RunState;
   } catch {
     return null;
@@ -285,8 +294,27 @@ export function keepsakeViews(ids: readonly string[]): DungeonKeepsakeView[] {
   });
 }
 
-/** The scene of a mystery room with its two options (the exact outcomes are in their descriptions). */
-export function eventView(eventId: string): DungeonEventView | null {
+/** A treasure as the client is shown it: the rolled piece itself, the blueprint's base, the supplies or the parts. */
+export function treasureView(treasure: Treasure): DungeonTreasureView {
+  switch (treasure.kind) {
+    case 'gear':
+      return {
+        kind: 'gear',
+        baseId: treasure.item.baseId,
+        rarity: treasure.item.rarity,
+        itemLevel: treasure.item.itemLevel,
+      };
+    case 'blueprint':
+      return { kind: 'blueprint', baseId: treasure.baseId };
+    case 'supplies':
+      return { kind: 'supplies', supplyId: treasure.supplyId, count: treasure.count };
+    case 'shards':
+      return { kind: 'shards', parts: { ...treasure.parts } };
+  }
+}
+
+/** The scene of a mystery room with its two options (the exact outcomes are in their descriptions) and its treasure, if it rolled one. */
+export function eventView(eventId: string, treasure?: Treasure): DungeonEventView | null {
   const def = dungeonEvent(eventId);
   if (def === undefined) return null;
   return {
@@ -294,6 +322,7 @@ export function eventView(eventId: string): DungeonEventView | null {
     name: def.name,
     text: def.text,
     options: def.options.map((o) => ({ label: o.label, description: o.description })),
+    ...(treasure === undefined ? {} : { treasure: treasureView(treasure) }),
   };
 }
 
@@ -334,7 +363,7 @@ function pendingView(st: RunState, depth: number): DungeonPendingView {
     };
   }
   if (pending.kind === 'event') {
-    const event = eventView(pending.eventId);
+    const event = eventView(pending.eventId, pending.treasure);
     return event === null ? null : { kind: 'event', event };
   }
   return {

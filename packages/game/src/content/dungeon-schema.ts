@@ -228,6 +228,13 @@ const PLAIN_EFFECTS = [
   /** A random keepsake the run does not hold yet. */
   v.strictObject({ op: v.literal('keepsake') }),
   v.strictObject({ op: v.literal('nothing') }),
+  /**
+   * The treasure the room rolled when the player came in (`rollTreasure`, shown before the choice) goes
+   * into the run's pack: paid at the run's end, lost on a defeat. Only in an event that rolls one.
+   */
+  v.strictObject({ op: v.literal('treasure') }),
+  /** The whole team falls: the run ends as a defeat (it keeps half the pack, `RULES.dungeon.defeatKeepBp`). A cost. */
+  v.strictObject({ op: v.literal('fall') }),
 ] as const;
 
 /** A pack effect that gives nothing is a typo, not a choice. */
@@ -267,11 +274,23 @@ export const EventOptionSchema = v.strictObject({
 });
 export type EventOptionDef = v.InferOutput<typeof EventOptionSchema>;
 
+/**
+ * A rare event is not drawn onto a map. Each time a run steps into a mystery room it may take the room's
+ * place: with `chanceBp` (basis points, drawn live), from run depth `fromDepth`, at most once a run.
+ */
+export const RareEventSchema = v.strictObject({
+  chanceBp: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(10_000)),
+  fromDepth: PositiveInt,
+});
+export type RareEvent = v.InferOutput<typeof RareEventSchema>;
+
 export const DungeonEventSchema = v.strictObject({
   id: v.pipe(IdSchema, v.maxLength(EVENT_ID_MAX)),
   name: Name,
   /** The scene, shown once the player is in the room. */
   text: v.pipe(v.string(), v.minLength(1), v.maxLength(160)),
+  /** Absent: a common event, drawn onto the day's map. Present: a rare one (see `RareEventSchema`). */
+  rare: v.optional(RareEventSchema),
   options: v.pipe(v.array(EventOptionSchema), v.length(2)),
 });
 export type DungeonEventDef = v.InferOutput<typeof DungeonEventSchema>;
@@ -282,14 +301,15 @@ export const DungeonRunContentSchema = v.strictObject({
 });
 export type DungeonRunContent = v.InferOutput<typeof DungeonRunContentSchema>;
 
-/** True when taking the effect can cost the player something: HP, or the chance of losing HP. */
+/** True when taking the effect can cost the player something: HP, the run (a fall), or the chance of either. */
 function effectCosts(e: EventEffect): boolean {
-  if (e.op === 'hurt') return true;
-  if (e.op === 'gamble') return [...e.win, ...e.lose].some((x) => x.op === 'hurt');
+  if (e.op === 'hurt' || e.op === 'fall') return true;
+  if (e.op === 'gamble')
+    return [...e.win, ...e.lose].some((x) => x.op === 'hurt' || x.op === 'fall');
   return false;
 }
 
-/** True when picking the option can cost HP (a `hurt`, or a gamble with a `hurt` on a branch). */
+/** True when picking the option can cost HP or the run (a `hurt` or a `fall`, or a gamble with one on a branch). */
 export function eventOptionCosts(option: EventOptionDef): boolean {
   return option.effects.some(effectCosts);
 }
@@ -297,9 +317,9 @@ export function eventOptionCosts(option: EventOptionDef): boolean {
 /**
  * Validates the keepsakes and the events (schema first, then cross-references) and returns them typed.
  * Throws an Error naming the first problem. Ids are unique across both lists and do not clash with a
- * foe or a room modifier. Every event has at least one option that costs nothing (no `hurt`, no
- * gamble with a `hurt` on a branch), so a hurt team can always walk through; an option holds at most
- * one gamble, so "did it win" has one answer. Shipped content is checked at module load.
+ * foe or a room modifier. Every event has at least one option that costs nothing (no `hurt` or `fall`, no
+ * gamble with one on a branch), so a hurt team can always walk through; an option holds at most
+ * one gamble, so "did it win" has one answer. An event holds at most one `treasure` (the room rolls one prize). Shipped content is checked at module load.
  */
 export function loadDungeonRun(
   rawKeepsakes: unknown,
@@ -339,6 +359,12 @@ export function loadDungeonRun(
   for (const e of out.events) {
     if (!e.options.some((o) => !eventOptionCosts(o))) {
       fail(`event "${e.id}" needs at least one option that costs nothing`);
+    }
+    const ops = e.options.flatMap((o) =>
+      o.effects.flatMap((x) => (x.op === 'gamble' ? [x, ...x.win, ...x.lose] : [x])),
+    );
+    if (ops.filter((x) => x.op === 'treasure').length > 1) {
+      fail(`event "${e.id}" has more than one treasure`);
     }
     for (const o of e.options) {
       if (o.effects.filter((x) => x.op === 'gamble').length > 1) {

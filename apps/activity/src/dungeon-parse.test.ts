@@ -22,6 +22,10 @@ import {
 } from './dungeon-parse';
 import {
   SAMPLE_EVENT,
+  SAMPLE_TREASURES,
+  chasmEvent,
+  sampleChasmSummary,
+  sampleStateChasm,
   sampleActFight,
   sampleMap,
   sampleRoom,
@@ -784,6 +788,100 @@ describe('the Undercroft in the dungeon answers', () => {
         ...actKeeper,
         summary: { ...keeper.summary, route: { ...keeper.summary.route, undercroft: [{}] } },
       }),
+    ).toThrow();
+  });
+});
+
+describe('the Blue Chasm in the answers', () => {
+  const stateWith = (treasure: unknown) =>
+    parseDungeonAct({
+      state: {
+        ...sampleStateChasm(),
+        pending: { kind: 'event', event: { ...chasmEvent(), treasure } },
+      },
+      today: sampleToday(),
+    }).state;
+
+  it('reads the room with each kind of treasure', () => {
+    for (const treasure of Object.values(SAMPLE_TREASURES)) {
+      const pending = stateWith(treasure).pending;
+      expect(pending?.kind === 'event' ? pending.event.treasure : null).toEqual(treasure);
+    }
+  });
+
+  it('reads a room with no treasure, as an older server sends it', () => {
+    const state = parseDungeonAct({ state: sampleStateEvent(), today: sampleToday() }).state;
+    const pending = state.pending;
+    expect(pending?.kind === 'event' ? pending.event.treasure : 'x').toBeUndefined();
+  });
+
+  it('refuses a treasure that is not one of the four kinds or has the wrong fields', () => {
+    for (const bad of [
+      null,
+      'gear',
+      {},
+      { kind: 'creature', speciesId: 'x' },
+      { kind: 'gear', baseId: 'felt-hat', rarity: 'mythic', itemLevel: 3 },
+      { kind: 'gear', baseId: 'felt-hat', rarity: 'epic' },
+      { kind: 'gear', baseId: 'felt-hat', rarity: 'epic', itemLevel: -1 },
+      { kind: 'blueprint' },
+      { kind: 'supplies', supplyId: 'lantern-great' },
+      { kind: 'supplies', supplyId: 'lantern-great', count: 1.5 },
+      { kind: 'shards', parts: { 'tide-shard': -1 } },
+      { kind: 'shards' },
+    ]) {
+      expect(() => stateWith(bad), JSON.stringify(bad)).toThrow();
+    }
+  });
+
+  it('reads the won blueprint and the lost treasure in the rewards, and refuses broken ones', () => {
+    const rewardsIn = (change: Record<string, unknown>) =>
+      parseDungeonAct({
+        state: sampleState(),
+        summary: {
+          ...sampleSummary('home'),
+          rewards: { ...sampleSummary('home').rewards, ...change },
+        },
+        today: sampleToday(),
+      }).summary?.rewards;
+    expect(
+      rewardsIn({ blueprints: [{ baseId: 'felt-hat', duplicate: false }] })?.blueprints,
+    ).toEqual([{ baseId: 'felt-hat', duplicate: false }]);
+    expect(
+      rewardsIn({ blueprints: [{ baseId: 'felt-hat', duplicate: true, marks: 2 }] })
+        ?.blueprints?.[0]?.marks,
+    ).toBe(2);
+    expect(rewardsIn({ treasureLost: SAMPLE_TREASURES.gear })?.treasureLost).toEqual(
+      SAMPLE_TREASURES.gear,
+    );
+    expect(rewardsIn({})?.blueprints).toBeUndefined();
+    expect(() => rewardsIn({ blueprints: [{ baseId: 7 }] })).toThrow();
+    expect(() => rewardsIn({ blueprints: 'felt-hat' })).toThrow();
+    expect(() => rewardsIn({ treasureLost: { kind: 'nope' } })).toThrow();
+  });
+
+  it('reads the step of a crossing (the treasure) and of a fall, and refuses a fall that is not true', () => {
+    const won = sampleChasmSummary('won');
+    const fell = sampleChasmSummary('fell');
+    for (const run of [won, fell]) {
+      const parsed = parseDungeonAct({
+        state: sampleState(),
+        summary: run,
+        today: sampleToday(),
+      }).summary;
+      expect(
+        parsed?.route?.history.some((h) => h.result === 'event' && h.event === 'Blue Chasm'),
+      ).toBe(true);
+    }
+    const steps = fell.route?.history ?? [];
+    const last = steps[steps.length - 1];
+    expect(last).toMatchObject({ result: 'event', fell: true });
+    const broken = {
+      ...fell,
+      route: { ...fell.route, history: [...steps.slice(0, -1), { ...last, fell: false }] },
+    };
+    expect(() =>
+      parseDungeonAct({ state: sampleState(), summary: broken, today: sampleToday() }),
     ).toThrow();
   });
 });

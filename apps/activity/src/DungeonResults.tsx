@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { LandmarkChip } from './ui/Tag';
 import { LootList } from './LootList';
+import { DungeonTreasure } from './DungeonTreasure';
 import { glyphOrUnknown } from './glyphs';
 import { baitCount, essenceCount, partCountItems, supplyCounts } from './count-items';
 import { CountBadgeList, type CountItem } from './ui/CountBadge';
@@ -134,6 +135,13 @@ export function DungeonResults({
             <LootList loot={loot} counted label="Loot from the dungeon" />
           </RevealLater>
         </RewardSummary>
+      )}
+      {rewards.treasureLost !== undefined && (
+        <section class="treasure-lost" aria-labelledby="treasure-lost-heading">
+          <h4 id="treasure-lost-heading">Treasure lost</h4>
+          <p class="muted">The treasure was lost with the run: a defeat keeps nothing of it.</p>
+          <DungeonTreasure treasure={rewards.treasureLost} label="The lost treasure" />
+        </section>
       )}
       {bonus !== null && (
         <RevealLater done={done}>

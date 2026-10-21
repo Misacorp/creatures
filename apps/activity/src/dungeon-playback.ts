@@ -453,13 +453,13 @@ export function roomIntroView(
   };
 }
 
-/** The rewards as the loot list shows them: gear, bag overflow, parts and supplies (the dungeon has no blueprints). */
+/** The rewards as the loot list shows them: gear, bag overflow, blueprints (a rare room's treasure), parts and supplies. */
 export function rewardLoot(rewards: DungeonRewards): GrantLoot {
   return {
     gear: rewards.gear,
     converted: rewards.converted,
     parts: rewards.parts,
-    blueprints: [],
+    blueprints: rewards.blueprints ?? [],
     supplies: rewards.supplies ?? [],
   };
 }
@@ -502,6 +502,7 @@ export function noRewards(rewards: DungeonRewards): boolean {
     rewards.essence === 0 &&
     partsEntries(rewards.parts).length === 0 &&
     rewards.gear.length === 0 &&
+    (rewards.blueprints ?? []).length === 0 &&
     (rewards.supplies ?? []).length === 0 &&
     rewards.streak === null
   );
