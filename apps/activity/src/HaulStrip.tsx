@@ -9,8 +9,9 @@ import { expectedHaul, haulTitle } from './haul-view';
 /**
  * "Expected haul": what this trip can bring, with the effects of the chosen supplies folded in, as a row
  * of icons. Each icon has a short word under it (and the fuller line as hover text and for screen
- * readers), and four pips that compare with the best any trip does; the pips a supply adds are lit in
- * the "gained" colour (Misa, 2026-10-21: no "+" marks). No chances are shown as numbers. With the
+ * readers), and under the word a four-segment bar (the boss HP bar's look) that compares with the best
+ * any trip does; the segments a supply adds are lit in the "gained" colour (Misa, 2026-10-21: no "+"
+ * marks, the bar under its word). No chances are shown as numbers. With the
  * explorer's rank, the last icon is the end-of-trip choice, its chance in quarters (the word opens the
  * push-on help). It sits just above the Send button.
  */
@@ -21,7 +22,6 @@ export function HaulStrip({
   summary,
   trip,
   rank = null,
-  look = 'pips',
 }: {
   /** The trip's settings in a line (`TripSummary`), under the heading. */
   summary?: ComponentChildren;
@@ -34,8 +34,6 @@ export function HaulStrip({
   trip?: TripContext;
   /** The explorer's rank: adds the end-of-trip choice as the last icon. Null: no choice icon. */
   rank?: number | null;
-  /** `pips`: four square pips. `bar`: the same four steps as one segmented bar, like the boss's HP. */
-  look?: 'pips' | 'bar';
 }) {
   const rows = expectedHaul(
     length,
@@ -50,7 +48,7 @@ export function HaulStrip({
         Expected haul
       </h4>
       {summary}
-      <ul class={look === 'bar' ? 'worth bars' : 'worth'} aria-label={haulTitle(length, kit)}>
+      <ul class="worth" aria-label={haulTitle(length, kit)}>
         {rows.map((row) => (
           <li
             key={row.key}
@@ -60,12 +58,6 @@ export function HaulStrip({
             <span class="worth-icon">
               <GameIcon icon={row.icon} scale={4} />
             </span>
-            {/* Four steps against the best a trip does; the supplies' steps in their own colour. */}
-            <PipRow
-              count={4}
-              lit={row.level}
-              mark={(i) => (i >= row.baseLevel && i < row.level ? 'raised' : undefined)}
-            />
             <span class="worth-name">
               {row.key === 'choice' ? (
                 <GlossaryTag entry="push-on" look="text">
@@ -75,6 +67,12 @@ export function HaulStrip({
                 row.label
               )}
             </span>
+            {/* Under the word: four steps against the best a trip does, the supplies' steps in their own colour. */}
+            <PipRow
+              count={4}
+              lit={row.level}
+              mark={(i) => (i >= row.baseLevel && i < row.level ? 'raised' : undefined)}
+            />
             <span class="visually-hidden">{row.detail}</span>
           </li>
         ))}

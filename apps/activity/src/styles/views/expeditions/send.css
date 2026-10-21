@@ -161,15 +161,11 @@ label.length-option:focus-within {
 }
 
 /* The steps a supply adds: lit in the "gained" green instead of gold. */
-.worth .pips i.on.raised {
-  background: var(--good);
-}
-
 /*
-  Version B ("bar"): the same four steps as one segmented bar, like the boss's HP: ink behind, the
-  segments touching but for a hair, as wide as the word under it.
+  The four steps as one segmented bar under the word, like the boss's HP: ink behind, the segments
+  touching but for a hair. Gold is what the trip gives on its own, green what the supplies add.
 */
-.worth.bars .pips {
+.worth .pips {
   display: grid;
   align-items: stretch;
   grid-template-columns: repeat(4, 1fr);
@@ -180,18 +176,18 @@ label.length-option:focus-within {
   background: var(--ink);
 }
 
-.worth.bars .pips i {
+.worth .pips i {
   width: auto;
   height: auto;
   background: var(--hp-gone);
   box-shadow: none;
 }
 
-.worth.bars .pips i.on {
+.worth .pips i.on {
   background: var(--gold);
 }
 
-.worth.bars .pips i.on.raised {
+.worth .pips i.on.raised {
   background: var(--good);
 }
 
