@@ -2,10 +2,9 @@ import { parseGameState, type Creature } from '../../api';
 import { parseDestinations } from '../../expedition-parse';
 import destinationsFixture from '../../fixtures/expedition-destinations.json';
 import stateOffer from '../../fixtures/expedition-state-offer.json';
-import { SEND_STEP_HEAD, SendFooter, SendForm } from '../../SendForm';
-import type { SendStep } from '../../send-view';
-import { DrillHead } from '../../ui/DrillHead';
+import { SendFooter, SendForm } from '../../SendForm';
 import { Drawer } from '../../ui/Drawer';
+import { WizardView } from '../../ui/Wizard';
 import { useSendForm } from '../../use-send-form';
 import { bool, str } from '../props';
 import type { Entry, Props } from '../types';
@@ -46,7 +45,6 @@ function SendFormDemo({ p }: { p: Props }) {
     timezone: 'Europe/Helsinki',
     initialStep: STEPS.find((s) => s === str(p, 'step')) ?? 'who',
   });
-  const step: SendStep = form.step;
   if (layout === 'panel') {
     return (
       <div class="send-panel-frame" style={{ maxWidth: '25rem' }}>
@@ -54,7 +52,6 @@ function SendFormDemo({ p }: { p: Props }) {
       </div>
     );
   }
-  const head = SEND_STEP_HEAD[step];
   return (
     <div class="v3-phone">
       <Drawer
@@ -64,16 +61,15 @@ function SendFormDemo({ p }: { p: Props }) {
         footer={
           <SendFooter
             form={form}
-            mode={step === 'ready' ? 'send' : 'next'}
+            layout="steps"
             busy={false}
             onSend={() => Promise.resolve(true)}
           />
         }
       >
-        {step !== 'who' && (
-          <DrillHead title={head.title} backLabel={head.backLabel} onBack={form.back} />
-        )}
-        <SendForm form={form} layout="steps" busy={false} onSend={() => Promise.resolve(true)} />
+        <WizardView wizard={form.wizard}>
+          <SendForm form={form} layout="steps" busy={false} onSend={() => Promise.resolve(true)} />
+        </WizardView>
       </Drawer>
     </div>
   );

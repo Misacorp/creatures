@@ -5,7 +5,6 @@ import type { SendRequest } from './expedition-api';
 import { ExplorerPicker } from './ExplorerPicker';
 import { HaulStrip } from './HaulStrip';
 import { LengthPicker } from './LengthPicker';
-import type { SendStep } from './send-view';
 import { Sprite } from './sprites/Sprite';
 import { SupplyPicker } from './SupplyPicker';
 import { TreatBox } from './TreatBox';
@@ -13,18 +12,16 @@ import { lengthLabel } from './trip-view';
 import { TripSummary } from './TripSummary';
 import { BagFullNote } from './ui/BagFullNote';
 import { CountBadge } from './ui/CountBadge';
+import { WizardFooter } from './ui/Wizard';
 import type { GearState } from './gear-types';
-import type { SendForm as SendFormState } from './use-send-form';
+import type { SendStep } from './send-view';
+import { SEND_STEP_DEFS, type SendForm as SendFormState } from './use-send-form';
 import type { Forecast } from './weather-types';
 
-/** The title of each wizard step and what Back goes back to (said only to screen readers). */
-export const SEND_STEP_HEAD: Readonly<
-  Record<SendStep, { title: string; backLabel: string; next: string }>
-> = {
-  who: { title: 'Who goes', backLabel: 'to the place', next: 'Next' },
-  pack: { title: 'Pack up', backLabel: 'to who goes', next: 'Next' },
-  ready: { title: 'Ready', backLabel: 'to packing up', next: 'Send' },
-};
+/** The title of a send step (the panel's headings). */
+function stepTitle(id: SendStep): string {
+  return SEND_STEP_DEFS.find((d) => d.id === id)?.title ?? id;
+}
 
 const TIME_GLYPH = { night: 'moon', festival: 'flag' } as const;
 
@@ -40,22 +37,22 @@ function sendNow(
 }
 
 /**
- * The pinned footer of the send flow: the reason the button is disabled (always visible, never a silent
- * grey button), the place's time rule when it is shut ("Opens tonight at 20:00") and the gold button.
- * `mode` is what the button does: `next` goes one step on, `send` sends the trip. The steps layout puts
- * this in the Drawer's `footer` slot with `mode` from the step (`SEND_STEP_HEAD[step].next`); the panel
- * layout draws it at the bottom of the form itself.
+ * The pinned footer of the send flow: `ui/WizardFooter` with what is the trip's own: the place's time rule
+ * when it is shut ("Opens tonight at 20:00") above the reason, the full bag warning under it, the label
+ * "Send Mossy to Tidepools for 12 h" and a packed treat's Bait badge. `layout="steps"` (phone) is the
+ * wizard's footer: Next on the first steps, the send on the last; it goes in the Drawer's `footer` slot.
+ * `layout="panel"` (desktop) has no steps: the one Send button, drawn at the bottom of the form itself.
  */
 export function SendFooter({
   form,
-  mode,
+  layout,
   busy,
   onSend,
   bag = null,
   onOpenWorkshop,
 }: {
   form: SendFormState;
-  mode: 'next' | 'send';
+  layout: 'steps' | 'panel';
   busy: boolean;
   onSend: (request: SendRequest) => Promise<boolean>;
   /** The bag's fill; a full bag warns, beside Send, that the trip's gear becomes parts. */
@@ -63,44 +60,42 @@ export function SendFooter({
   /** Opens the Workshop (the full bag warning's shortcut). */
   onOpenWorkshop?: (() => void) | undefined;
 }) {
-  const sending = mode === 'send';
+  const wizard = layout === 'steps' ? form.wizard : undefined;
+  const sending = wizard === undefined || wizard.last;
   const reason = sending ? form.blocker : form.stepBlocker;
   const rule = form.place?.timeRule ?? null;
   const { explorer, place } = form;
   return (
-    <div class="send-footer">
-      {sending && rule !== null && (
-        <p class="time-rule send-rule" role="status">
-          <Sprite sprite={glyphOrUnknown(TIME_GLYPH[rule.kind])} scale={2} />
-          <span>{rule.text}</span>
-        </p>
-      )}
-      {reason !== null && reason !== rule?.text && (
-        <p class="reason" role="status">
-          {reason}
-        </p>
-      )}
-      {sending && <BagFullNote inventory={bag} onOpenWorkshop={onOpenWorkshop} />}
-      <button
-        type="button"
-        class="primary send-button"
-        disabled={busy || reason !== null || (sending && form.request === null)}
-        onClick={() => {
-          if (sending) void sendNow(form, onSend);
-          else form.next();
-        }}
-      >
-        <span>
-          {!sending
-            ? 'Next'
-            : explorer === undefined || place === undefined
-              ? 'Send'
-              : `Send ${explorer.name} to ${place.name} for ${lengthLabel(form.length)}`}
-        </span>
-        {/* A packed treat's Bait, on the button that spends it (the trip itself is free). */}
-        {sending && form.treat && <CountBadge {...baitCount(form.treatCost)} label="Bait" />}
-      </button>
-    </div>
+    <WizardFooter
+      wizard={wizard}
+      blocked={reason}
+      busy={busy}
+      disabled={sending && form.request === null}
+      reasonShown={reason !== rule?.text}
+      {...(sending
+        ? {
+            label:
+              explorer === undefined || place === undefined
+                ? 'Send'
+                : `Send ${explorer.name} to ${place.name} for ${lengthLabel(form.length)}`,
+            onFinish: () => {
+              void sendNow(form, onSend);
+            },
+          }
+        : {})}
+      before={
+        sending &&
+        rule !== null && (
+          <p class="time-rule send-rule" role="status">
+            <Sprite sprite={glyphOrUnknown(TIME_GLYPH[rule.kind])} scale={2} />
+            <span>{rule.text}</span>
+          </p>
+        )
+      }
+      extra={sending && <BagFullNote inventory={bag} onOpenWorkshop={onOpenWorkshop} />}
+      /* A packed treat's Bait, on the button that spends it (the trip itself is free). */
+      badge={sending && form.treat && <CountBadge {...baitCount(form.treatCost)} label="Bait" />}
+    />
   );
 }
 
@@ -202,9 +197,8 @@ function ReadySection({ form, forecast }: { form: SendFormState; forecast: Forec
  * caller so the sheet around it can read the step (for its `DrillHead` and footer).
  *
  * - `layout="steps"` (phone): draws only the section of `form.step`; no heading and no button. The
- *   caller puts `<DrillHead title={SEND_STEP_HEAD[step].title} backLabel=... onBack={form.back}/>` above
- *   it (not on Who, where the sheet's own close is) and `<SendFooter mode=... />` in the Drawer's
- *   `footer` slot.
+ *   caller puts a `WizardView` (`form.wizard`) around it and `<SendFooter layout="steps" />` in the
+ *   Drawer's `footer` slot.
  * - `layout="panel"` (desktop): all three sections stacked with their headings and the Send footer at
  *   the bottom; `form.step` is ignored.
  */
@@ -243,20 +237,20 @@ export function SendForm({
   return (
     <div class="send-form panel">
       <h4 class="step">
-        <span class="step-n">1</span> {SEND_STEP_HEAD.who.title}
+        <span class="step-n">1</span> {stepTitle('who')}
       </h4>
       <WhoSection form={form} />
       <h4 class="step">
-        <span class="step-n">2</span> {SEND_STEP_HEAD.pack.title}
+        <span class="step-n">2</span> {stepTitle('pack')}
       </h4>
       <PackSection form={form} busy={busy} onOpenWorkshop={onOpenWorkshop} />
       <h4 class="step">
-        <span class="step-n">3</span> {SEND_STEP_HEAD.ready.title}
+        <span class="step-n">3</span> {stepTitle('ready')}
       </h4>
       <ReadySection form={form} forecast={forecast} />
       <SendFooter
         form={form}
-        mode="send"
+        layout="panel"
         busy={busy}
         onSend={onSend}
         bag={bag}
