@@ -227,6 +227,22 @@ describe('the creature list in choose mode and with its optional parts', () => {
     expect(visibleText(first(byClass(page.root, 'ro-side')))).toBe('On a job');
   });
 
+  it('colours a creature name by its species rarity and says the rarity aloud, but not an action row', () => {
+    page = createPage();
+    page.draw(
+      <CreatureList
+        options={[option('a'), option('off', { name: 'Take off', action: true })]}
+        selection={{ mode: 'pick', onPick: () => undefined }}
+      />,
+    );
+    const [creature, action] = byClass(page.root, 'ro-name') as [FakeElement, FakeElement];
+    expect(creature.getAttribute('class')).toMatch(/rarity-name rarity-(common|rare|epic|mythic)/);
+    expect(visibleText(creature)).toMatch(/^a, \w+$/);
+    expect(action.getAttribute('class')).toBe('ro-name');
+    // The level stays the quiet text, not the rarity colour.
+    expect(first(byClass(page.root, 'ro-level')).getAttribute('class')).toBe('ro-level');
+  });
+
   it('leaves the chips out with chips off', () => {
     page = createPage();
     page.draw(

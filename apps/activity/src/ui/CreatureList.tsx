@@ -5,6 +5,7 @@ import { ElementChip } from '../sprites/ElementChip';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { gearName, rarityName } from '../gear-view';
+import { getSpecies } from '../game';
 import { ItemThumb } from '../GearArt';
 import { Tag } from './Tag';
 import { XpTrack } from './XpTrack';
@@ -91,13 +92,18 @@ function RowContent<T extends PickerOption>({ o, props }: { o: T; props: Creatur
   const chips = props.chips !== false;
   const placedNote = props.placedNote ?? '';
   const more = props.more?.(o);
+  // The name is in its species' rarity colour, as on the creature card (an action row has no species).
+  const rarity = o.action === true ? undefined : getSpecies(o.species)?.rarity;
   const detail = o.disabled === null ? props.side?.(o) : undefined;
   return (
     <>
       {o.action !== true && <Sprite sprite={creatureSpriteOrFallback(o.species)} scale={2} />}
       <span class="ro-text">
         <span class="ro-line">
-          <span class="ro-name">{o.name}</span>
+          <span class={rarity === undefined ? 'ro-name' : `ro-name rarity-name rarity-${rarity}`}>
+            {o.name}
+            {rarity !== undefined && <span class="visually-hidden">, {rarity}</span>}
+          </span>
           {o.action !== true && o.xpBar === undefined && <span class="ro-level">Lv {o.level}</span>}
           {o.recommended && <span class="ro-recommended">{RECOMMENDED_TAG}</span>}
           {o.rested === true && <span class="badge rested ro-rested">Rested</span>}

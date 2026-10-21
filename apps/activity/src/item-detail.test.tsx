@@ -162,7 +162,13 @@ describe('the Equip on row', () => {
     const p = draw(hat(), actionsOf());
     p.click(trigger(p));
     const names = options(p).map((o) => visibleText(o));
-    expect(names.map((n) => n.split('Lv')[0])).toEqual(['high', 'mid', 'away', 'job', 'low']);
+    expect(names.map((n) => n.split('Lv')[0]?.replace(/, \w+$/, ''))).toEqual([
+      'high',
+      'mid',
+      'away',
+      'job',
+      'low',
+    ]);
     expect(names[2]).toContain('Away on a trip');
     expect(names[3]).toContain('On a job');
     // Busy reasons are the card's status badges; no Recommended tag in this list.
@@ -288,7 +294,11 @@ describe('the Equip on row', () => {
     const actions = actionsOf();
     const p = draw(hat('mid'), actions);
     p.click(trigger(p));
-    const names = options(p).map((o) => visibleText(o).split('Lv')[0]);
+    const names = options(p).map((o) =>
+      visibleText(o)
+        .split('Lv')[0]
+        ?.replace(/, \w+$/, ''),
+    );
     expect(names.slice(0, 3)).toEqual(['Take off', 'mid', 'high']);
     expect(visibleText(options(p)[1] as FakeElement)).toContain('Wears it now');
     p.click(optionOf(p, 'Take off'));

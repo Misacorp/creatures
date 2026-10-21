@@ -1,6 +1,5 @@
 import { Tag } from './ui/Tag';
 import { Stars } from './ExpeditionIcons';
-import { GlossaryTag } from './Glossary';
 import { busyKind } from './gear-view';
 import { tripsHereText, type ExplorerOption } from './send-view';
 import { CreatureList } from './ui/CreatureList';
@@ -51,15 +50,8 @@ export function ExplorerPicker({
         options={rows}
         selection={{ mode: 'choose', name, value, onChange, legend: 'Who goes?' }}
         fieldClass="explorer-picker"
-        chips={false}
         more={({ explorer: option }) => (
           <>
-            <span class="pick-meta">
-              <GlossaryTag entry="explorer-rank" look="text">
-                Explorer rank
-              </GlossaryTag>{' '}
-              {option.rank}
-            </span>
             <XpBar
               value={option.xp.value}
               max={option.xp.max}
