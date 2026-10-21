@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { markFreshReveal } from './reveal-arrive';
 import type { ClaimResult, GameState } from './api';
 import type { CatchChoiceActions } from './find-view';
 import { ExplorerProfile } from './ExplorerProfile';
@@ -173,7 +174,10 @@ export function Expeditions({
                   creature={state.creatures.find((c) => c.id === trip.creatureId)}
                   serverNow={serverNow}
                   busy={busy}
-                  onClaim={onClaim}
+                  onClaim={(trip) => {
+                    markFreshReveal();
+                    onClaim(trip);
+                  }}
                   onPushOn={onPushOn}
                 />
               ))}

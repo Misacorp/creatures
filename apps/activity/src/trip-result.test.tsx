@@ -5,6 +5,7 @@ import { pendingFind } from './find-view';
 import type { PendingCatch } from './talent-types';
 import { FakeElement, byClass, byName, createPage, find, visibleText, type Page } from './test-dom';
 import { rankGiftViews } from './claim-view';
+import { markFreshReveal } from './reveal-arrive';
 import { TripResult } from './TripResult';
 import type { TripResultView } from './trip-result-view';
 import { experienceGain } from './xp-gain';
@@ -179,6 +180,33 @@ function first(root: FakeElement, tagOrList: string | FakeElement[]): FakeElemen
 }
 
 describe('arriving after a claim', () => {
+  it('scrolls a card whose top is low on the screen when it came from a claim, but not on a plain return', () => {
+    const rect = vi.spyOn(FakeElement.prototype, 'getBoundingClientRect');
+    rect.mockReturnValue({ top: 600, left: 0, width: 320, height: 0 });
+    const raf = vi.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
+      cb(0);
+      return 0;
+    });
+    const scroll = vi.fn();
+    Reflect.set(FakeElement.prototype, 'scrollIntoView', scroll);
+    Reflect.set(globalThis, 'window', { innerHeight: 844 });
+    try {
+      page = createPage();
+      page.draw(<TripResult view={view} busy={false} onClaim={() => undefined} />);
+      expect(scroll).not.toHaveBeenCalled();
+      page.unmount();
+      markFreshReveal();
+      page = createPage();
+      page.draw(<TripResult view={view} busy={false} onClaim={() => undefined} />);
+      expect(scroll).toHaveBeenCalledTimes(1);
+    } finally {
+      rect.mockRestore();
+      raf.mockRestore();
+      Reflect.deleteProperty(globalThis, 'window');
+      Reflect.set(FakeElement.prototype, 'scrollIntoView', () => undefined);
+    }
+  });
+
   it('brings the card to the top of the view and focuses it when its top is out of view', () => {
     const rect = vi.spyOn(FakeElement.prototype, 'getBoundingClientRect');
     rect.mockReturnValue({ top: -600, left: 0, width: 320, height: 0 });

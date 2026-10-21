@@ -116,7 +116,7 @@ describe('the gift as tags', () => {
       'shards:3:Shards of its element:',
       'gear:1:Gear piece:Gear',
     ]);
-    expect(tags.find((t) => t.key === 'shards')?.icon).toEqual({ kind: 'glyph', id: 'sparkle' });
+    expect(tags.find((t) => t.key === 'shards')?.icon).toEqual({ kind: 'glyph', id: 'shard-any' });
     expect(tags.some((t) => t.entry !== undefined)).toBe(false);
     expect(
       giftTags({

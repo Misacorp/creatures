@@ -1,4 +1,5 @@
 import { GLOSSARY_IDS } from '@creatures/game';
+import { markFreshReveal } from './reveal-arrive';
 import type { Creature } from './api';
 import { creatureName } from './game';
 import { GlossaryTag } from './Glossary';
@@ -68,6 +69,7 @@ function RunningSlot({
         class="primary"
         disabled={busy || !progress.ready}
         onClick={() => {
+          markFreshReveal();
           onClaim(job);
         }}
       >

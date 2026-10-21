@@ -3,7 +3,12 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { glyphOrUnknown } from '../glyphs';
 import { usePrefersReducedMotion } from '../hooks';
 import { finalFrame, revealFrames, type RevealFrame } from '../reveal-anim';
-import { arriveScroll, shouldFocusCard, shouldScrollToCard } from '../reveal-arrive';
+import {
+  arriveScroll,
+  consumeFreshReveal,
+  shouldFocusCard,
+  shouldScrollToCard,
+} from '../reveal-arrive';
 import { Sprite } from '../sprites/Sprite';
 import { Tag } from './Tag';
 
@@ -92,17 +97,18 @@ export function OutcomeBadge({ cleared }: { cleared: boolean }) {
 }
 
 /**
- * When the card mounts: on the next frame, bring it to the top of the screen if its top is out of
- * view (not at all when it already is, so coming back to a tab with the reveal open does not move
- * the page), then give it focus when the button that was pressed is gone.
+ * When the card mounts: on the next frame, bring it to the top of the screen (a card that came from a
+ * claim always; any other only if its top is out of view, so coming back to a tab with the reveal open
+ * does not move the page), then give it focus when the button that was pressed is gone.
  */
 function useArrive(ref: { current: HTMLElement | null }, enabled: boolean): void {
   const reduced = usePrefersReducedMotion();
   useEffect(() => {
     const card = ref.current;
     if (!enabled || card === null) return undefined;
+    const fresh = consumeFreshReveal();
     const frame = requestAnimationFrame(() => {
-      if (shouldScrollToCard(card.getBoundingClientRect().top, window.innerHeight)) {
+      if (shouldScrollToCard(card.getBoundingClientRect().top, window.innerHeight, fresh)) {
         card.scrollIntoView(arriveScroll(reduced));
       }
       if (shouldFocusCard(document.activeElement, document.body)) {

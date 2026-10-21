@@ -20,7 +20,7 @@ import type { CountItem } from './ui/CountBadge';
 /**
  * The gift as compact tags (icon and count; supplies and the gear piece also carry a name): Bait, parts,
  * shards, the gear piece and supplies. The ladder is for every creature, so the shards get the generic
- * sparkle icon (their element is the explorer's) and the piece shows only a rarity hint.
+ * grey shard icon (clearly not Glimmer's) (their element is the explorer's) and the piece shows only a rarity hint.
  */
 export function giftTags(
   gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'> &
@@ -32,7 +32,7 @@ export function giftTags(
   if ((gift.shards ?? 0) > 0) {
     tags.push({
       key: 'shards',
-      icon: { kind: 'glyph', id: 'sparkle' },
+      icon: { kind: 'glyph', id: 'shard-any' },
       amount: gift.shards ?? 0,
       label: 'Shards of its element',
     });
