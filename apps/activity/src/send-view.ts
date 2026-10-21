@@ -122,11 +122,16 @@ export interface SendChoice {
   stock: Readonly<Record<string, number>>;
 }
 
+/** Why nobody can be sent: every expedition slot is out (null while one is free). */
+export function slotsFullReason(slots: Slots): string | null {
+  if (slots.used < slots.total) return null;
+  return `All ${String(slots.total)} expedition ${slots.total === 1 ? 'slot is' : 'slots are'} in use. Claim a trip first.`;
+}
+
 /** Why the Who step cannot go on: no free slot, no place, nobody, or this creature cannot go. */
 function whoBlocker({ slots, explorer, place }: SendChoice): string | null {
-  if (slots.used >= slots.total) {
-    return `All ${String(slots.total)} expedition ${slots.total === 1 ? 'slot is' : 'slots are'} in use. Claim a trip first.`;
-  }
+  const full = slotsFullReason(slots);
+  if (full !== null) return full;
   if (place === undefined) return 'Pick a place first.';
   if (explorer === undefined) return 'No creature to send.';
   if (explorer.blocked !== null) return `${explorer.name}: ${explorer.blocked}.`;

@@ -1,5 +1,5 @@
 /**
- * The destination catalogue as plain data: for each place a banner card with its element, who lives
+ * The places of the world map as plain data: for each place a banner card with its element, who lives
  * there (known ones by name, the rest as silhouettes), whether the deeper area is open to the creature
  * that would go, the weekly twist, and why it is closed. Familiarity (stars and trips) is a trait of the
  * creature, not of the place, so it is not on the card: see `send-view.ts`. Names, species and flavour
@@ -156,10 +156,4 @@ export function destinationCards(
       },
     ];
   });
-}
-
-/** The index of a card to show after moving `step` places in the catalogue (it wraps round). */
-export function turnCatalogue(index: number, step: number, count: number): number {
-  if (count <= 0) return 0;
-  return (((index + step) % count) + count) % count;
 }

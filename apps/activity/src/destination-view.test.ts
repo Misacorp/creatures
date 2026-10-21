@@ -1,13 +1,7 @@
 import { RULES, expeditionContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { parseGameState } from './api';
-import {
-  destinationCards,
-  nextNightStart,
-  opensText,
-  nightWindowText,
-  turnCatalogue,
-} from './destination-view';
+import { destinationCards, nextNightStart, opensText, nightWindowText } from './destination-view';
 import { parseDestinations } from './expedition-parse';
 import destinationsFixture from './fixtures/expedition-destinations.json';
 import stateOffer from './fixtures/expedition-state-offer.json';
@@ -212,15 +206,5 @@ describe('the night window', () => {
       Date.UTC(2027, 2, 28, 5, 0),
     ];
     for (const at of days) expect(opensText('night', at, TZ)).toBe('Opens tonight at 20:00');
-  });
-});
-
-describe('turning the pages of the catalogue', () => {
-  it('wraps round in both directions', () => {
-    expect(turnCatalogue(0, 1, 7)).toBe(1);
-    expect(turnCatalogue(6, 1, 7)).toBe(0);
-    expect(turnCatalogue(0, -1, 7)).toBe(6);
-    expect(turnCatalogue(3, 0, 7)).toBe(3);
-    expect(turnCatalogue(0, 1, 0)).toBe(0);
   });
 });

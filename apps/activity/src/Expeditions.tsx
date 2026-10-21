@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { markFreshReveal } from './reveal-arrive';
 import type { ClaimResult, GameState } from './api';
 import type { CatchChoiceActions } from './find-view';
 import { ExplorerProfile } from './ExplorerProfile';
 import { fetchDestinations, fetchProfile, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
 import { expeditionBlocked } from './gear-view';
-import { useServerNow } from './hooks';
+import { ExpeditionWorld, WIDE_QUERY } from './ExpeditionWorld';
+import { useMediaQuery, useServerNow } from './hooks';
 import { Journal } from './Journal';
-import { RunningTrip } from './RunningTrip';
-import { SendTrip } from './SendTrip';
 import { SlotsStrip } from './SlotsStrip';
 import { TripResult } from './TripResult';
 import { tripResultView } from './trip-result-view';
@@ -111,37 +109,41 @@ export function Expeditions({
   });
 
   const blocked = expeditionBlocked(state.creatures);
-  const full = state.slots.used >= state.slots.total;
+  const wide = useMediaQuery(WIDE_QUERY);
   const revealCreature =
     reveal?.trip === undefined
       ? undefined
       : state.creatures.find((c) => c.id === reveal.trip?.creatureId);
+  const revealCard =
+    reveal === null ? null : (
+      <TripResult
+        view={tripResultView({
+          result: reveal.result,
+          trip: reveal.trip,
+          creature: revealCreature,
+          pending: state.pending,
+          creatures: state.creatures,
+          settled,
+        })}
+        busy={busy}
+        onClaim={(picks) => {
+          if (picks.length === 0) {
+            onDismissReveal();
+            return;
+          }
+          void catchActions.chooseMany(picks).then((all) => {
+            if (all) onDismissReveal();
+          });
+        }}
+      />
+    );
+  // The wide Trips screen has the reveal in its side panel; everywhere else it sits on top, as before.
+  const wideTrips = screen === 'trips' && wide;
 
   return (
     <>
-      {reveal !== null && (
-        <TripResult
-          view={tripResultView({
-            result: reveal.result,
-            trip: reveal.trip,
-            creature: revealCreature,
-            pending: state.pending,
-            creatures: state.creatures,
-            settled,
-          })}
-          busy={busy}
-          onClaim={(picks) => {
-            if (picks.length === 0) {
-              onDismissReveal();
-              return;
-            }
-            void catchActions.chooseMany(picks).then((all) => {
-              if (all) onDismissReveal();
-            });
-          }}
-        />
-      )}
-      <SlotsStrip slots={state.slots} />
+      {!wideTrips && revealCard}
+      {!wideTrips && <SlotsStrip slots={state.slots} />}
       <nav class="exp-nav" aria-label="Expeditions sections">
         {SCREENS.map(({ id, label }) => (
           <ToggleButton
@@ -165,44 +167,26 @@ export function Expeditions({
               ))}
             </ul>
           )}
-          {active.length > 0 && (
-            <ul class="cards trip-cards" aria-label="Trips that are out">
-              {active.map((trip) => (
-                <RunningTrip
-                  key={trip.id}
-                  trip={trip}
-                  creature={state.creatures.find((c) => c.id === trip.creatureId)}
-                  serverNow={serverNow}
-                  busy={busy}
-                  onClaim={(trip) => {
-                    markFreshReveal();
-                    onClaim(trip);
-                  }}
-                  onPushOn={onPushOn}
-                />
-              ))}
-            </ul>
-          )}
-          {full ? (
-            <p class="muted all-out">
-              Every expedition slot is out. Claim a trip to send someone else.
-            </p>
-          ) : (
-            <SendTrip
-              creatures={state.creatures}
-              slots={state.slots}
-              stock={state.supplies}
-              bait={state.balances.bait}
-              busy={busy}
-              view={destinations.value}
-              viewFailed={destinations.failed}
-              timezone={timezone}
-              forecast={forecast}
-              onRetry={destinations.reload}
-              onSend={onSend}
-              {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}
-            />
-          )}
+          <ExpeditionWorld
+            trips={active}
+            creatures={state.creatures}
+            slots={state.slots}
+            stock={state.supplies}
+            bait={state.balances.bait}
+            view={destinations.value}
+            viewFailed={destinations.failed}
+            onRetry={destinations.reload}
+            timezone={timezone}
+            forecast={forecast}
+            serverNow={serverNow}
+            busy={busy}
+            wide={wide}
+            reveal={revealCard}
+            onSend={onSend}
+            onClaim={onClaim}
+            onPushOn={onPushOn}
+            {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}
+          />
         </>
       )}
     </>

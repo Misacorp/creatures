@@ -11,6 +11,7 @@ import {
   explorerInfo,
   explorerOptions,
   sendBlocker,
+  slotsFullReason,
   stepBlocker,
   starsAt,
   tripsAt,
@@ -136,6 +137,13 @@ describe('why a trip cannot be sent', () => {
 
   it('is fine for a free trip', () => {
     expect(sendBlocker(base)).toBeNull();
+  });
+
+  it('names the full slots as one reason, for the sheet button as well', () => {
+    expect(slotsFullReason({ ...open, total: 2, used: 1 })).toBeNull();
+    expect(slotsFullReason({ ...open, total: 2, used: 2 })).toBe(
+      'All 2 expedition slots are in use. Claim a trip first.',
+    );
   });
 
   it('says when every slot is out', () => {

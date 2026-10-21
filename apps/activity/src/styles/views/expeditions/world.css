@@ -1,0 +1,110 @@
+/*
+  The Trips screen as a world map (`ExpeditionWorld.tsx`). Narrow: the map, then the "out now" strip; a place
+  opens as a bottom sheet (`PlaceSheet`). From 60 rem (the same width `WIDE_QUERY` asks for): the app card is
+  wider while this screen shows and the screen is two columns, the map and the shelf on the left and the
+  side panel (`PlacePanel`) on the right. The base width of the card is in `base/base.css`.
+*/
+@media (min-width: 60rem) {
+  main.card:has(.exp-world) {
+    width: min(84rem, 100% - 1.25rem);
+  }
+}
+
+.exp-world {
+  min-width: 0;
+}
+
+.exp-world-main {
+  min-width: 0;
+}
+
+/* The map and, on a phone, the strip of trips right under it. */
+.exp-world-map {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.exp-world.wide {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24rem;
+  gap: 1rem;
+  align-items: start;
+}
+
+.exp-world.wide .trip-shelf {
+  margin: 0.75rem 0 0;
+}
+
+/* The side panel. */
+.place-panel {
+  min-width: 0;
+  padding: 0.75rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.place-panel.reveal {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.place-panel.reveal .reveal-card {
+  margin: 0;
+}
+
+.place-panel-title {
+  margin: 0 0 0.5rem;
+  color: var(--gold);
+  font-size: var(--fs-title);
+}
+
+.place-panel-prompt {
+  margin: 0 0 0.75rem;
+}
+
+/* A place's banner and what it says, in the sheet and the panel. */
+.place-head {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.place-head .place-body {
+  padding-inline: 0.625rem;
+}
+
+/* The explorers out at the place: a list of rows. */
+.place-trips {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.place-panel .place-trips {
+  margin-bottom: 0.25rem;
+}
+
+/* A drill-in inside the sheet or the panel (the send steps, the push-on choice). */
+.place-drill {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.place-panel .drill-head {
+  margin-top: 0;
+}
+
+.place-panel .send-form.panel {
+  margin-top: 0.5rem;
+}
+
+/* Phone: the slots strip and the nav are kept slim so the map is on the first screen. */
+.exp-world:not(.wide) .out-strip {
+  margin: 0;
+}
