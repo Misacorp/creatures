@@ -5,9 +5,9 @@ import { parseDestinations } from './expedition-parse';
 import destinationsFixture from './fixtures/expedition-destinations.json';
 import stateOffer from './fixtures/expedition-state-offer.json';
 import { PopoverHost } from './PopoverHost';
-import { SEND_STEP_HEAD, SendFooter, SendForm } from './SendForm';
+import { SendFooter, SendForm } from './SendForm';
 import { FakeElement, byClass, createPage, find, visibleText, type Page } from './test-dom';
-import { useSendForm } from './use-send-form';
+import { SEND_STEP_DEFS, useSendForm } from './use-send-form';
 
 let page: Page | null = null;
 afterEach(() => {
@@ -50,18 +50,11 @@ function Harness({
     bait: 0,
     timezone: 'Europe/Helsinki',
   });
-  const final = form.step === 'ready';
   return (
     <PopoverHost onOpenHowTo={() => undefined}>
       <SendForm form={form} layout={layout} busy={false} onSend={onSend} bag={bag} />
       {layout === 'steps' && (
-        <SendFooter
-          form={form}
-          mode={final ? 'send' : 'next'}
-          busy={false}
-          onSend={onSend}
-          bag={bag}
-        />
+        <SendFooter form={form} layout="steps" busy={false} onSend={onSend} bag={bag} />
       )}
     </PopoverHost>
   );
@@ -105,11 +98,7 @@ describe('the send form in steps', () => {
   });
 
   it('names the steps for the sheet around it', () => {
-    expect(Object.values(SEND_STEP_HEAD).map((s) => s.title)).toEqual([
-      'Who goes',
-      'Pack up',
-      'Ready',
-    ]);
+    expect(SEND_STEP_DEFS.map((s) => s.title)).toEqual(['Who goes', 'Pack up', 'Ready']);
   });
 
   it('greys a creature below the place rank with its reason, and cannot go on without an explorer', () => {
