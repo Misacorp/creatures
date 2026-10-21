@@ -63,7 +63,7 @@ export function SupplyPicker({ picks, stock, onChange }: Props) {
         }}
       />
       {none && <p class="empty muted">You have no supplies. Craft them in the Workshop.</p>}
-      {view !== undefined && <SupplyCard view={view} packed />}
+      {view !== undefined && <SupplyCard view={view} packed pointAt={kinds.indexOf(view.kind)} />}
     </div>
   );
 }

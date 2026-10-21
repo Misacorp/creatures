@@ -103,7 +103,10 @@ export function SupplyCrafting({
       </h3>
       <SupplyGrid kinds={kinds} cells={cells} selected={view?.id ?? null} onSelect={choose} />
       {view !== undefined && (
-        <div class={`supply-card card-item ${tierRarityClass(view.tier)}`}>
+        <div
+          class={`supply-card card-item supply-card-pointer ${tierRarityClass(view.tier)}`}
+          style={{ '--supply-col': String(kinds.indexOf(view.kind)) }}
+        >
           <div class="bp-row">
             <span class="supply-icon">
               <Sprite sprite={glyphOrUnknown(view.kind)} scale={4} />

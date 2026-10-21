@@ -10,10 +10,23 @@ import { kindLabel, type SupplyOption } from './trip-view';
  * it does and how sure the end-of-trip choice is. Shown under the send screen's grid for a packed supply
  * and in a popover from the trip summary. `packed` adds "Packed" after the kind (the grid's card only).
  * One line says what it does (the blurb, whose strength word is anchored to a reference trip).
+ * `pointAt` is the grid column (0 to 3) of the chosen supply: the card under the grid points up at it.
  */
-export function SupplyCard({ view, packed = false }: { view: SupplyOption; packed?: boolean }) {
+export function SupplyCard({
+  view,
+  packed = false,
+  pointAt,
+}: {
+  view: SupplyOption;
+  packed?: boolean;
+  pointAt?: number;
+}) {
   return (
-    <div class={`supply-card card-item ${tierRarityClass(view.tier)}`} aria-live="polite">
+    <div
+      class={`supply-card card-item ${tierRarityClass(view.tier)}${pointAt === undefined ? '' : ' supply-card-pointer'}`}
+      style={pointAt === undefined ? undefined : { '--supply-col': String(pointAt) }}
+      aria-live="polite"
+    >
       <div class="bp-row">
         <span class="supply-icon">
           <Sprite sprite={glyphOrUnknown(view.kind)} scale={4} />
