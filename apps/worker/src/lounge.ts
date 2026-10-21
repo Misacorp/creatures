@@ -185,15 +185,17 @@ function parseUsers(json: string): string[] {
 export interface TrackedInstance {
   id: string;
   users: string[];
+  /** When Discord last gave its participants (or when it was first seen). */
+  checkedAt: number;
 }
 
 export function trackedInstances(sql: SqlStorage): TrackedInstance[] {
   return sql
-    .exec<{ instance_id: string; user_ids: string }>(
-      'SELECT instance_id, user_ids FROM lounge_instances ORDER BY first_seen_at, rowid',
+    .exec<{ instance_id: string; user_ids: string; checked_at: number }>(
+      'SELECT instance_id, user_ids, checked_at FROM lounge_instances ORDER BY first_seen_at, rowid',
     )
     .toArray()
-    .map((r) => ({ id: r.instance_id, users: parseUsers(r.user_ids) }));
+    .map((r) => ({ id: r.instance_id, users: parseUsers(r.user_ids), checkedAt: r.checked_at }));
 }
 
 export function storeInstanceUsers(

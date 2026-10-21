@@ -2,6 +2,9 @@ import { content } from '@creatures/game';
 import { useMemo, useState } from 'preact/hooks';
 import { DungeonSetup } from '../../DungeonSetup';
 import { DungeonTeam } from '../../DungeonTeam';
+import { CreatureConfigurator } from '../../CreatureConfigurator';
+import type { CardActions } from '../../CreaturePage';
+import { teamSample } from '../../creature-page/team-sample';
 import stateFixture from '../../fixtures/collection-state.json';
 import todayFixture from '../../fixtures/dungeon-today-map.json';
 import { parseGameState, type Creature } from '../../api';
@@ -173,7 +176,7 @@ const dungeonSetup: Entry = {
   file: 'apps/activity/src/DungeonSetup.tsx',
   group: 'Slots',
   description:
-    "The whole pre-run dungeon card: the big Daily Dungeon title with its question mark and the streak (under the title on a phone), today's map as a preview (the one a real server sent; tap a room to see what is there), the depth track, then the team board centred, the count right under the tiles, the order line and the Enter button, all in one card. The team starts as the last team.",
+    "The whole pre-run dungeon card: the big Daily Dungeon title with its question mark and the streak (under the title on a phone), today's map as a preview (the one a real server sent; tap a room to see what is there), the depth track, then the team board centred, the count right under the tiles, the order line and the Enter button, all in one card. The team starts as the last team. Configure: the team of three geared samples, ready to configure: tap a creature for its configurator under the board (another tap hides it); its Creature page opens the creature's own page in the card's place (the arrows flip through the team, Back returns).",
   controls: {
     owned: { kind: 'number', min: 3, max: 8 },
     placed: { kind: 'number', min: 1, max: 3 },
@@ -182,8 +185,18 @@ const dungeonSetup: Entry = {
     bait: { kind: 'number', min: 0, max: 100 },
     busy: { kind: 'toggle' },
     map: { kind: 'toggle' },
+    configure: { kind: 'toggle' },
   },
-  defaults: { owned: 6, placed: 3, streak: 3, depth: 1, bait: 40, busy: false, map: true },
+  defaults: {
+    owned: 6,
+    placed: 3,
+    streak: 3,
+    depth: 1,
+    bait: 40,
+    busy: false,
+    map: true,
+    configure: false,
+  },
   presets: [
     { name: '3 / 3 placed, streak at day 3', props: {} },
     { name: '2 / 3 placed (Enter is off, with the reason)', props: { placed: 2 } },
@@ -192,14 +205,142 @@ const dungeonSetup: Entry = {
     { name: 'The run is being sent', props: { busy: true } },
     { name: 'No Bait for treats', props: { bait: 0 } },
     { name: 'A server with no map (the old three-room strip)', props: { map: false } },
+    {
+      name: 'Getting the team ready (tap a creature for its configurator)',
+      props: { configure: true },
+    },
   ],
-  render: (p) => (
-    <SetupDemo
-      key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}-${String(bool(p, 'map'))}`}
-      p={p}
-    />
-  ),
+  render: (p) =>
+    bool(p, 'configure') ? (
+      <ConfigureSetupDemo />
+    ) : (
+      <SetupDemo
+        key={`${String(num(p, 'owned'))}-${String(num(p, 'placed'))}-${String(num(p, 'streak'))}-${String(num(p, 'depth'))}-${String(bool(p, 'map'))}`}
+        p={p}
+      />
+    ),
 };
+
+const noop = (): undefined => undefined;
+
+/** The card and page actions, with nothing behind them (the workbench has no server). */
+const NO_ACTIONS: CardActions = {
+  onEquip: () => Promise.resolve(false),
+  onRibbon: noop,
+  onEvolve: noop,
+  onRename: noop,
+  onLounge: noop,
+  onSlotTalent: noop,
+};
+
+const PART_NAMES = [
+  'gearLocked',
+  'experience',
+  'explorer',
+  'crafting',
+  'stats',
+  'ability',
+  'gear',
+  'talents',
+] as const;
+
+function ConfiguratorDemo({ p }: { p: Props }) {
+  const scene = useMemo(teamSample, []);
+  const creature = scene.team[num(p, 'creature')] ?? scene.team[0];
+  if (creature === undefined) return null;
+  const parts = Object.fromEntries(PART_NAMES.map((part) => [part, bool(p, part)]));
+  return (
+    <CreatureConfigurator
+      creature={creature}
+      state={scene.state}
+      gear={scene.gear}
+      busy={false}
+      parts={parts}
+      actions={NO_ACTIONS}
+      buttons={
+        bool(p, 'buttons')
+          ? [
+              { label: 'Creature page', onAct: noop },
+              { label: 'Remove from team', onAct: noop },
+            ]
+          : []
+      }
+    />
+  );
+}
+
+const DUNGEON_DEFAULTS = {
+  creature: 1,
+  experience: true,
+  explorer: false,
+  crafting: false,
+  stats: true,
+  ability: false,
+  gear: true,
+  gearLocked: false,
+  talents: true,
+  buttons: true,
+};
+
+const creatureConfigurator: Entry = {
+  name: 'CreatureConfigurator',
+  file: 'apps/activity/src/CreatureConfigurator.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    "A creature, small, to see what it is and get it ready for a task: the card's top, then the parts the screen asks for (experience, explorer rank, Crafting level, stats, finale ability, gear, talents), then the screen's buttons. A gear slot opens the item picker, a talent slot the Talent Book. The dungeon card shows it under the board for the tapped creature.",
+  controls: {
+    creature: { kind: 'number', min: 0, max: 2 },
+    ...Object.fromEntries(PART_NAMES.map((part) => [part, { kind: 'toggle' as const }])),
+    buttons: { kind: 'toggle' },
+  },
+  defaults: DUNGEON_DEFAULTS,
+  presets: [
+    { name: 'For a dungeon run (experience, stats, gear, talents)', props: {} },
+    {
+      name: 'Everything (explorer rank, Crafting level and the finale ability too)',
+      props: { creature: 0, explorer: true, crafting: true, ability: true },
+    },
+    {
+      name: 'For a crafting job (Crafting level and talents only)',
+      props: { experience: false, crafting: true, stats: false, gear: false, buttons: false },
+    },
+    { name: 'An empty Charm slot and a set bonus (Mossback)', props: { creature: 0 } },
+    { name: 'Every slot filled (Cindle)', props: { creature: 2 } },
+    { name: 'Gear locked: what is worn, no taps', props: { gearLocked: true } },
+  ],
+  render: (p) => <ConfiguratorDemo p={p} />,
+};
+
+/** The pre-run card with the team's configurator: tap a creature of the board. */
+function ConfigureSetupDemo() {
+  const scene = useMemo(teamSample, []);
+  const today = parseDungeonToday({
+    ...todayFixture,
+    streak: 3,
+    depth: 6,
+    lastTeam: scene.team.map((c) => c.id),
+  });
+  return (
+    <DungeonSetup
+      today={today}
+      creatures={scene.creatures}
+      bait={40}
+      busy={false}
+      error={null}
+      draft={null}
+      onDraftChange={noop}
+      onEnter={noop}
+      onSeeLast={noop}
+      configure={{
+        state: scene.state,
+        gear: scene.gear,
+        busy: false,
+        actions: NO_ACTIONS,
+        onAnswerCatch: noop,
+      }}
+    />
+  );
+}
 
 const dragGhost = demoEntry(
   'DragGhost',
@@ -368,6 +509,7 @@ const placedCount: Entry = {
 
 export const slotEntries: readonly Entry[] = [
   dungeonSetup,
+  creatureConfigurator,
   dungeonTeam,
   slotButton,
   placedCount,

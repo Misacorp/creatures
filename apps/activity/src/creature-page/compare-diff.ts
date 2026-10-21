@@ -107,20 +107,23 @@ function resolved(item: GearItem): Map<string, ResolvedLine> {
 }
 
 /**
- * The inline diff of `next` against `worn` (the item in the same slot). Stats are matched by kind, lines by
- * id and source; equal numbers say nothing.
+ * The inline diff of `next` against `worn` (the item in the same slot), or against nothing (`null`: an empty
+ * slot, so every stat is a gain and every line is new). Stats are matched by kind, lines by id and source;
+ * equal numbers say nothing.
  */
-export function diffItems(next: GearItem, worn: GearItem): CardDiff {
+export function diffItems(next: GearItem, worn: GearItem | null): CardDiff {
+  const wornStats = worn?.stats ?? [];
+  const wornLines = worn?.lines ?? [];
   const stats = new Map<GearStat['stat'], Mark>();
   for (const stat of next.stats) {
-    const before = worn.stats.find((s) => s.stat === stat.stat)?.value ?? 0;
+    const before = wornStats.find((s) => s.stat === stat.stat)?.value ?? 0;
     const delta = stat.value - before;
     if (delta !== 0) {
       const text = statDelta(stat.stat, delta);
       stats.set(stat.stat, markOf(text, delta > 0));
     }
   }
-  const goneStats: GoneStat[] = worn.stats
+  const goneStats: GoneStat[] = wornStats
     .filter((s) => !next.stats.some((n) => n.stat === s.stat) && s.value !== 0)
     .map((s) => {
       const amount = statAmount(s.stat, s.value);
@@ -132,11 +135,11 @@ export function diffItems(next: GearItem, worn: GearItem): CardDiff {
     });
 
   const mine = resolved(next);
-  const theirs = resolved(worn);
+  const theirs = worn === null ? new Map<string, ResolvedLine>() : resolved(worn);
   const lines = new Map<string, LineDiff>();
   for (const line of next.lines) {
     const key = lineKey(line);
-    if (!worn.lines.some((w) => lineKey(w) === key)) {
+    if (!wornLines.some((w) => lineKey(w) === key)) {
       lines.set(key, { kind: 'new' });
       continue;
     }
@@ -152,7 +155,7 @@ export function diffItems(next: GearItem, worn: GearItem): CardDiff {
     const text = `${up ? '+' : MINUS}${lineAmount(now.unit, delta)}`;
     lines.set(key, { kind: 'changed', mark: markOf(text, delta > 0) });
   }
-  const goneLines = worn.lines
+  const goneLines = wornLines
     .filter((l) => !next.lines.some((n) => lineKey(n) === lineKey(l)))
     .map((l) => ({ id: l.id, source: l.source, text: l.text }));
   return { stats, goneStats, lines, goneLines };

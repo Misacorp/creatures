@@ -5,6 +5,7 @@ import { DungeonPlayback } from './DungeonPlayback';
 import { DungeonResults } from './DungeonResults';
 import { DungeonRun } from './DungeonRun';
 import { DungeonSetup } from './DungeonSetup';
+import type { TeamConfigure } from './TeamCreaturePage';
 import {
   dungeonAct,
   fetchDungeonReplay,
@@ -73,6 +74,7 @@ export function Dungeon({
   onRunStarted,
   onCanRunChange,
   onRunFinished,
+  configure,
 }: {
   creatures: readonly Creature[];
   /** The valley's sky for today and tomorrow, for the one line on the pre-run card (null: none loaded). */
@@ -89,6 +91,8 @@ export function Dungeon({
   onCanRunChange: (canRun: boolean) => void;
   /** The run's playback ended (or was skipped): balances and the bag changed, so reload them. */
   onRunFinished: () => void;
+  /** Getting the team ready on the pre-run card (see `DungeonSetup`); absent: the creature popover only. */
+  configure?: TeamConfigure | undefined;
 }) {
   const [today, setToday] = useState<DungeonToday | null>(null);
   const [offset, setOffset] = useState(0);
@@ -316,6 +320,7 @@ export function Dungeon({
           onSeeLast={() => {
             if (today.last !== null) setView({ kind: 'results', run: today.last });
           }}
+          configure={configure}
         />
       )}
       {view.kind === 'run' && (

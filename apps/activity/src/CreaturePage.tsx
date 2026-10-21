@@ -12,10 +12,12 @@ import { creatureNeeds } from './creature-needs';
 import { creatureDodgeText, type DodgeRules } from './dodge-view';
 import { ItemPickerDrawer } from './creature-page/ItemPicker';
 import { PageHeader } from './creature-page/PageHeader';
-import { GearSlots, TalentSlots } from './creature-page/PageSlots';
+import { TalentSlots } from './creature-page/PageSlots';
+import { CreatureIcon } from './CreatureIcon';
+import { GearList } from './GearList';
 import { TalentBookDrawer } from './creature-page/TalentBookDrawer';
 import type { GearItem, GearSlot, GearState } from './gear-types';
-import { gearShare } from './gear-view';
+import { gearShare, wornItemOf } from './gear-view';
 import { RibbonLine } from './CreatureProgress';
 import { scrollAndFocus, scrollToTop } from './scroll-to';
 import {
@@ -93,7 +95,7 @@ export function RenameForm({
 }
 
 /** One stat with gear folded in, and the gear's own share next to it in the gear colour ("ATK 79 +12"). */
-function statRow(label: string, stat: 'hp' | 'atk' | 'spd', creature: Creature): DataRow {
+export function statRow(label: string, stat: 'hp' | 'atk' | 'spd', creature: Creature): DataRow {
   const share = gearShare(creature).find((s) => s.stat === stat)?.amount ?? 0;
   return {
     label,
@@ -149,7 +151,7 @@ export function startingDrawer(
  * bottom: who it is (one row of name, element and level; the name in its rarity colour;
  * the experience bar; tags) with the buttons for what is ready (the ribbon once the creature waits for
  * one, evolution, a waiting catch), stats with the gear's share, the finale ability (once unlocked), gear
- * and talents as slots (a tap opens a bottom drawer: the item picker, or the Talent Book), About and
+ * as a list (`GearList`) and the talents as slots (a tap opens a bottom drawer: the item picker, or the Talent Book), About and
  * Rename. Nothing on it looks forward: a locked slot says its own level, nothing else does. It opens at
  * the top, or on the picker or the talents when the card's icon or chips were tapped.
  */
@@ -164,6 +166,8 @@ export function CreaturePage({
   onBack,
   onAnswerCatch,
   flip,
+  backLabel = 'Creatures',
+  teamAction,
 }: {
   creature: Creature;
   state: GameState;
@@ -185,6 +189,10 @@ export function CreaturePage({
    * The owner draws the next creature's page anew, so scroll, drawers and expansions start clean.
    */
   flip?: FlipProps | undefined;
+  /** What the Back button names: the screen it returns to. */
+  backLabel?: string;
+  /** A button for the team the page was opened from ("Remove from team"), last on the page. */
+  teamAction?: { label: string; onAct: () => void } | undefined;
 }) {
   const id = `${cardDomId(creature.id)}-page`;
   const rootRef = useRef<HTMLElement>(null);
@@ -235,7 +243,7 @@ export function CreaturePage({
     <section
       id={id}
       ref={rootRef}
-      class="creature-page"
+      class="creature-page pix-panel"
       tabIndex={-1}
       aria-labelledby={`${id}-name`}
       onKeyDown={(event) => {
@@ -250,7 +258,7 @@ export function CreaturePage({
     >
       <div class="cp-top">
         <button type="button" class="ghost cp-back" onClick={onBack}>
-          <span aria-hidden="true">‹</span> Creatures
+          <span aria-hidden="true">‹</span> {backLabel}
         </button>
         {flip !== undefined && <FlipNav flip={flip} />}
         {canLounge(creature, state) && (
@@ -307,7 +315,7 @@ export function CreaturePage({
         {showAbility && (
           <div class="cp-block creature-ability">
             <h3 class="cp-title">Finale ability</h3>
-            <p>
+            <p class="prose">
               <GlossaryTag ability={abilityInfo.id}>{abilityInfo.name}</GlossaryTag>:{' '}
               {abilityInfo.description}
             </p>
@@ -320,11 +328,12 @@ export function CreaturePage({
               Gear
             </GlossaryTag>
           </h3>
-          <GearSlots
-            creature={creature}
-            gear={gear}
+          <GearList
+            level={creature.level}
+            worn={creature.gear.map((g) => wornItemOf(g, gear?.items))}
+            slotOpens={gear?.slotOpens}
             openSlot={gearOpen}
-            onOpen={(slot, button) => {
+            onPick={(slot, button) => {
               opener.current = button;
               setGearOpen(slot);
             }}
@@ -350,7 +359,7 @@ export function CreaturePage({
         <Accordion title="About" headingLevel={3} defaultOpen class="cp-block">
           {about !== null && (
             <>
-              <p>{about.description}</p>
+              <p class="prose">{about.description}</p>
               <ul class="tags traits" aria-label="Traits">
                 {about.traits.map((trait) => (
                   <li class="tag" key={trait}>
@@ -360,7 +369,7 @@ export function CreaturePage({
               </ul>
             </>
           )}
-          {personality !== null && <p class="muted">{personality}</p>}
+          {personality !== null && <p class="muted prose">{personality}</p>}
           <DataTable
             class="sheet-facts"
             rows={[
@@ -385,6 +394,14 @@ export function CreaturePage({
         </Accordion>
 
         <RenameForm creature={creature} busy={busy} onRename={actions.onRename} />
+        {teamAction !== undefined && (
+          <p class="cp-team-action">
+            <button type="button" class="danger" disabled={busy} onClick={teamAction.onAct}>
+              <CreatureIcon creature={creature} />
+              {teamAction.label}
+            </button>
+          </p>
+        )}
       </FlipArea>
 
       {gearOpen !== null && (

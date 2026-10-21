@@ -4,7 +4,14 @@
  * `apps/activity/src/dungeon-types.ts`, and `test/dungeon-fixtures.test.ts` checks that the server
  * still sends what the captured fixtures have. Types only. No seed is ever part of any of them.
  */
-import type { DungeonMapView, Element, GearRarity, PartsBundle, Role } from '@creatures/game';
+import type {
+  DungeonMapView,
+  Element,
+  GearRarity,
+  GearSlot,
+  PartsBundle,
+  Role,
+} from '@creatures/game';
 import type { EventNames, FightEvent } from '@creatures/engine';
 import type { ExperienceView } from './creature-exp';
 
@@ -34,6 +41,20 @@ export interface DungeonRunCreature {
   hpMax: number;
   /** It carries a treat (double experience). A creature swapped in at the camp never does. */
   treat: boolean;
+  /**
+   * What it wears in this run, frozen when it joined (the run's own copy: a later change on the Creatures tab
+   * never reaches it), each item with the text of its lines. Empty for a run stored before seats.
+   */
+  gear: DungeonRunGear[];
+}
+
+/** One item a creature of a run wears: what the gear list draws. */
+export interface DungeonRunGear {
+  baseId: string;
+  slot: GearSlot;
+  rarity: GearRarity;
+  itemLevel: number;
+  lines: string[];
 }
 
 export interface DungeonKeepsakeView {

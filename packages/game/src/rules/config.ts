@@ -85,9 +85,9 @@ export const RULES = {
     workshopPerHour: 8,
     /**
      * Lounging with company (2026-10-20, option C): the lounger earns 1 experience per `msPerXp` that its
-     * player's live room socket is open while another player's is too, at most `dailyCap` a game day per
-     * creature (then it is Rested, and another creature can take its place). No player cap, no treats, no
-     * Boons or Omens. The cap is 2 hours of company and half of what 12 hours of back-to-back 2 hour trips
+     * player is in the Activity (Discord's participant list) with another player who has a lounger, at
+     * most `dailyCap` a game day per creature (then it is Rested, and another creature can take its
+     * place). No player cap, no treats, no Boons or Omens. The cap is 2 hours of company and half of what 12 hours of back-to-back 2 hour trips
      * give one creature (6 x 20), so lounging never beats playing a creature.
      */
     lounge: { msPerXp: 120_000, dailyCap: 60 },

@@ -162,3 +162,8 @@
 .dungeon-arena {
   scroll-margin-top: 0.5rem;
 }
+
+/* The tapped creature's configurator under the board: centred like the tiles. */
+.dungeon-team .configurator {
+  align-self: center;
+}

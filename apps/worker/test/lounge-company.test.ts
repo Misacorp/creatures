@@ -1,247 +1,297 @@
-import { env } from 'cloudflare:workers';
-import { runInDurableObject } from 'cloudflare:test';
-import { RULES, type Span } from '@creatures/game';
+import { RULES } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { createHandler } from '../src/index';
-import { loungeDay } from '../src/lounge-company';
-import type { LiveHooks, Presence } from '../src/lounge-live';
-import { LIVE_PATH, TICKET_PATH } from '../src/lounge-live';
-import { ORIGIN, callHandler, runCore, tokenFor, type CoreContext } from './helpers';
+import type { LoungeClient } from '../src/lounge-discord';
+import { LOUNGE_FLUSH_MS, LOUNGE_MAX_GAP_MS, loungeDay } from '../src/lounge-company';
+import type { ActivityInstance } from '../src/schemas';
+import { runCore, type CoreContext } from './helpers';
 import { nextGuild, seedPlayer } from './raid-helpers';
 
 const { msPerXp, dailyCap } = RULES.experience.lounge;
-const MIN = 60_000;
+const SECOND = 1000;
+const MIN = 60 * SECOND;
 const TZ = 'Europe/Helsinki';
+const INSTANCE = 'i-1234-gc-5678';
 
-/** A live socket stand-in: whoever the test says is in the room. */
-function fakeLive(presence: { now: Presence }): LiveHooks {
-  return {
-    enabled: () => true,
-    mintTicket: () => Promise.resolve('unused'),
-    notify: () => undefined,
-    presence: () => presence.now,
+/** Discord as the lounge check sees it: who is in each Activity instance. Message calls just succeed. */
+interface FakeDiscord extends LoungeClient {
+  instances: Map<string, string[]>;
+  lookupFails: boolean;
+}
+
+function fakeDiscord(guildId: string): FakeDiscord {
+  const ok = <T>(value: T) => Promise.resolve({ kind: 'ok' as const, value });
+  const fake: FakeDiscord = {
+    instances: new Map(),
+    lookupFails: false,
+    getInstance(id): Promise<ActivityInstance | null> {
+      if (fake.lookupFails) return Promise.reject(new Error('down'));
+      const users = fake.instances.get(id);
+      return Promise.resolve(
+        users === undefined ? null : { location: { guild_id: guildId }, users },
+      );
+    },
+    createMessage: () => ok('900000000000000001'),
+    editMessage: () => ok(null),
+    deleteMessage: () => ok(null),
+    recentMessageIds: () => ok([]),
+    appIconUrl: () => Promise.resolve(null),
   };
+  return fake;
 }
 
 interface Seat {
   id: string;
-  secret: string;
+  name: string;
   creatureIds: string[];
 }
 
-async function seat(ctx: CoreContext, n: number, creatures = 2): Promise<Seat> {
+/** A player with creatures who opens the Activity in the instance (Discord lists them there). */
+async function arrive(
+  ctx: CoreContext,
+  discord: FakeDiscord,
+  n: number,
+  creatures = 2,
+): Promise<Seat> {
   const s = seedPlayer(ctx, n, { creatures, level: 3 });
-  const secret = await ctx.core.createSession(ctx.guildId, { id: s.id, displayName: s.name }, null);
-  return { id: s.id, secret, creatureIds: s.creatureIds };
+  discord.instances.set(INSTANCE, [...(discord.instances.get(INSTANCE) ?? []), s.id]);
+  await ctx.core.createSession(ctx.guildId, { id: s.id, displayName: s.name }, null, INSTANCE);
+  return { id: s.id, name: s.name, creatureIds: s.creatureIds };
+}
+
+/** Moves the clock and runs the lounge check, as the alarm does about once a minute. */
+async function check(ctx: CoreContext, ms = MIN): Promise<void> {
+  ctx.clock.t += ms;
+  await ctx.core.runLounge();
 }
 
 type State = { loungerId: string | null; loungeXp: Record<string, number> };
 
+/** The player's state (a request: it also pays what they collected). A fresh session each time. */
 async function stateOf(ctx: CoreContext, who: Seat): Promise<State> {
-  const res = await ctx.request(who.secret, '/api/state');
+  const secret = await ctx.core.createSession(ctx.guildId, { id: who.id, displayName: who.name });
+  const res = await ctx.request(secret, '/api/state');
   expect(res.status).toBe(200);
   return res.json<State>();
 }
 
-function expOf(ctx: CoreContext, creatureId: string): { level: number; exp: number } {
-  const row = ctx.sql
-    .exec<{ level: number; exp: number }>(
-      'SELECT level, exp FROM creatures WHERE id = ?',
-      creatureId,
-    )
-    .toArray()[0];
-  if (row === undefined) throw new Error('no creature');
-  return row;
+/** What lounging paid, per creature, as stored (no request: nothing is paid by reading it). */
+function stored(ctx: CoreContext): Record<string, number> {
+  return Object.fromEntries(
+    ctx.sql
+      .exec<{ creature_id: string; paid: number }>('SELECT creature_id, paid FROM lounge_rest')
+      .toArray()
+      .map((r) => [r.creature_id, r.paid]),
+  );
 }
 
-/** A total experience comparable across level-ups (level 3 to 4 needs 93). */
-const totalExp = (e: { level: number; exp: number }): number => (e.level > 3 ? 93 : 0) + e.exp;
-
-/** A game day's start after T0, so every test runs inside one game day. */
-function dayStartAfter(t: number): number {
-  const { start } = loungeDay(t, TZ);
-  return start + 24 * 60 * MIN;
+function loungerOf(ctx: CoreContext, who: Seat): string {
+  return ctx.core.collection.lounge.resolve(who.id) ?? '';
 }
 
-describe('lounging with company', () => {
-  it('pays the lounger 1 XP per 2 minutes while another player is here, and nothing alone', async () => {
-    const room = { now: new Map<string, Span[]>() };
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const start = dayStartAfter(ctx.clock.t) + MIN;
-        ctx.clock.t = start;
-        const a = await seat(ctx, 1);
-        const b = await seat(ctx, 2);
-        const lounger = (await stateOf(ctx, a)).loungerId ?? '';
-        const before = totalExp(expOf(ctx, lounger));
+/** Runs a test inside one game day: the clock starts a minute after a daily reset. */
+function inGuild(fn: (ctx: CoreContext, discord: FakeDiscord) => Promise<void>): Promise<void> {
+  const guildId = nextGuild();
+  const discord = fakeDiscord(guildId);
+  return runCore(
+    guildId,
+    async (ctx) => {
+      ctx.clock.t = loungeDay(ctx.clock.t, TZ).start + 24 * 60 * MIN + MIN;
+      await fn(ctx, discord);
+    },
+    { lounge: discord },
+  );
+}
 
-        // Alone for 20 minutes: nothing.
-        room.now = new Map([[a.id, [{ from: start, to: start + 20 * MIN }]]]);
-        ctx.clock.t = start + 20 * MIN;
-        expect((await stateOf(ctx, a)).loungeXp).toEqual({});
+/** The first check after the sessions, then `minutes` checks a minute apart: the company time it pays. */
+async function together(ctx: CoreContext, minutes: number): Promise<number> {
+  await check(ctx, 15 * SECOND);
+  for (let i = 0; i < minutes; i++) await check(ctx);
+  return 15 * SECOND + minutes * MIN;
+}
 
-        // Then b joins for 21 minutes: 10 XP, 1 minute carried.
-        room.now = new Map([
-          [a.id, [{ from: start, to: start + 41 * MIN }]],
-          [b.id, [{ from: start + 20 * MIN, to: start + 41 * MIN }]],
-        ]);
-        ctx.clock.t = start + 41 * MIN;
-        const after = await stateOf(ctx, a);
-        expect(after.loungeXp).toEqual({ [lounger]: Math.floor((21 * MIN) / msPerXp) });
-        expect(totalExp(expOf(ctx, lounger)) - before).toBe(10);
-
-        // The same stretch is never paid twice; the carried minute counts on.
-        expect((await stateOf(ctx, a)).loungeXp[lounger]).toBe(10);
-        room.now = new Map([
-          [a.id, [{ from: start, to: start + 42 * MIN }]],
-          [b.id, [{ from: start + 20 * MIN, to: start + 42 * MIN }]],
-        ]);
-        ctx.clock.t = start + 42 * MIN;
-        expect((await stateOf(ctx, a)).loungeXp[lounger]).toBe(11);
-      },
-      { live: fakeLive(room) },
-    );
+describe('lounging with company, from Discord', () => {
+  it('pays both players while Discord lists them together: no live socket needed (a hidden tab earns)', async () => {
+    await inGuild(async (ctx, discord) => {
+      const a = await arrive(ctx, discord, 1);
+      const b = await arrive(ctx, discord, 2);
+      const ms = await together(ctx, 10);
+      // Ten minutes together: paid without anyone asking, 1 XP per 2 minutes.
+      const xp = Math.floor(ms / msPerXp);
+      expect(LOUNGE_FLUSH_MS).toBe(msPerXp);
+      expect(stored(ctx)).toEqual({ [loungerOf(ctx, a)]: xp, [loungerOf(ctx, b)]: xp });
+    });
   });
 
-  it('caps each creature at the daily cap; a swapped-in creature starts fresh from the swap', async () => {
-    const room = { now: new Map<string, Span[]>() };
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const start = dayStartAfter(ctx.clock.t) + MIN;
-        ctx.clock.t = start;
-        const a = await seat(ctx, 1);
-        const b = await seat(ctx, 2);
-        const first = (await stateOf(ctx, a)).loungerId ?? '';
-        const second = a.creatureIds.find((id) => id !== first) ?? '';
-        const both = (to: number) =>
-          new Map([
-            [a.id, [{ from: start, to }]],
-            [b.id, [{ from: start, to }]],
-          ]);
-
-        // Five hours together (a request every 50 minutes keeps the session): the first lounger is
-        // Rested at the cap, not paid for the rest.
-        for (let m = 50; m <= 300; m += 50) {
-          room.now = both(start + m * MIN);
-          ctx.clock.t = start + m * MIN;
-          await stateOf(ctx, a);
-        }
-        expect((await stateOf(ctx, a)).loungeXp).toEqual({ [first]: dailyCap });
-
-        // Swap: the request pays the old lounger first (it is Rested, so nothing), then the new one
-        // earns only from the swap on.
-        const swap = await ctx.request(a.secret, '/api/lounger', 'PUT', { creatureId: second });
-        expect(swap.status).toBe(200);
-        expect((await stateOf(ctx, a)).loungeXp).toEqual({ [first]: dailyCap });
-        room.now = both(start + 320 * MIN);
-        ctx.clock.t = start + 320 * MIN;
-        expect((await stateOf(ctx, a)).loungeXp).toEqual({ [first]: dailyCap, [second]: 10 });
-
-        // A Rested creature can still be chosen; it just earns nothing more today.
-        expect(
-          (await ctx.request(a.secret, '/api/lounger', 'PUT', { creatureId: first })).status,
-        ).toBe(200);
-        room.now = both(start + 340 * MIN);
-        ctx.clock.t = start + 340 * MIN;
-        expect((await stateOf(ctx, a)).loungeXp).toEqual({ [first]: dailyCap, [second]: 10 });
-
-        // The next game day it is fresh again.
-        const nextDay = start - MIN + 24 * 60 * MIN;
-        room.now = both(nextDay + 10 * MIN);
-        ctx.clock.t = nextDay + 10 * MIN;
-        // A new day needs a new session (sessions last 12 hours).
-        a.secret = await ctx.core.createSession(ctx.guildId, { id: a.id, displayName: 'A' }, null);
-        expect((await stateOf(ctx, a)).loungeXp).toEqual({ [first]: 5 });
-      },
-      { live: fakeLive(room) },
-    );
+  it('pays nothing alone', async () => {
+    await inGuild(async (ctx, discord) => {
+      await arrive(ctx, discord, 1);
+      await together(ctx, 30);
+      expect(stored(ctx)).toEqual({});
+    });
   });
 
-  it('is not kept company by a player with no creature in the room, and pays no time from before the day', async () => {
-    const room = { now: new Map<string, Span[]>() };
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const start = dayStartAfter(ctx.clock.t);
-        ctx.clock.t = start + 30 * MIN;
-        const a = await seat(ctx, 1);
-        const empty = await seat(ctx, 2, 0);
-        const b = await seat(ctx, 3);
-        room.now = new Map([
-          [a.id, [{ from: start - 60 * MIN, to: start + 30 * MIN }]],
-          [empty.id, [{ from: start - 60 * MIN, to: start + 30 * MIN }]],
-        ]);
-        expect((await stateOf(ctx, a)).loungeXp).toEqual({});
-
-        // With b there since an hour before the reset, only the 30 minutes of today count.
-        room.now.set(b.id, [{ from: start - 60 * MIN, to: start + 30 * MIN }]);
-        const lounger = (await stateOf(ctx, a)).loungerId ?? '';
-        expect((await stateOf(ctx, a)).loungeXp).toEqual({ [lounger]: 15 });
-      },
-      { live: fakeLive(room) },
-    );
+  it('pays each XP as it is earned, with no request needed, and a request pays the rest', async () => {
+    await inGuild(async (ctx, discord) => {
+      const a = await arrive(ctx, discord, 1);
+      await arrive(ctx, discord, 2);
+      const ms = await together(ctx, 4);
+      // Paid as it went: every 2 minutes collected became 1 XP, with no one asking.
+      expect(stored(ctx)[loungerOf(ctx, a)]).toBe(Math.floor((ms - 15 * SECOND) / msPerXp));
+      const state = await stateOf(ctx, a);
+      expect(state.loungeXp).toEqual({ [loungerOf(ctx, a)]: Math.floor(ms / msPerXp) });
+    });
   });
-});
 
-describe('lounging with company: the live socket', () => {
-  const handler = createHandler();
-  const stubOf = (guildId: string) => env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(guildId));
-
-  it('settles when a socket leaves: the leaver and the one who stays are both credited up to then', async () => {
+  it('loses at most one XP of time a player when the object restarts (a deploy)', async () => {
     const guildId = nextGuild();
-    const stub = stubOf(guildId);
-    const players = await runInDurableObject(stub, (_i, state) =>
-      [1, 2].map((n) => {
-        const s = seedPlayer({ sql: state.storage.sql, clock: { t: Date.now() } }, n, {
-          creatures: 1,
-        });
-        state.storage.sql.exec(
-          "INSERT INTO player_progress (user_id, starter_species) VALUES (?, 'splashet') ON CONFLICT(user_id) DO UPDATE SET starter_species = excluded.starter_species",
-          s.id,
-        );
-        return s;
-      }),
+    const discord = fakeDiscord(guildId);
+    let clock = 0;
+    let a: Seat | undefined;
+    let lounger = '';
+    await runCore(
+      guildId,
+      async (ctx) => {
+        ctx.clock.t = loungeDay(ctx.clock.t, TZ).start + 24 * 60 * MIN + MIN;
+        a = await arrive(ctx, discord, 1);
+        await arrive(ctx, discord, 2);
+        await together(ctx, 21);
+        lounger = loungerOf(ctx, a);
+        clock = ctx.clock.t;
+      },
+      { lounge: discord },
     );
-    const sockets: WebSocket[] = [];
-    for (const p of players) {
-      const secret = await stub.createSession(guildId, { id: p.id, displayName: p.name }, null);
-      const token = await tokenFor(guildId, secret);
-      const t = await callHandler(
-        handler,
-        new Request(`${ORIGIN}${TICKET_PATH}`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+    // A new core on the same storage: what was in memory is gone, as after a deploy.
+    await runCore(
+      guildId,
+      async (ctx) => {
+        ctx.clock.t = clock;
+        for (let i = 0; i < 9; i++) await check(ctx);
+        const who = a as Seat;
+        const total = 15 * SECOND + 30 * MIN;
+        const got = (await stateOf(ctx, who)).loungeXp[lounger] ?? 0;
+        expect(got).toBeLessThanOrEqual(Math.floor(total / msPerXp));
+        expect(got).toBeGreaterThanOrEqual(Math.floor(total / msPerXp) - 1);
+      },
+      { lounge: discord },
+    );
+  });
+
+  it('collects nothing for a Rested lounger, so it writes nothing', async () => {
+    await inGuild(async (ctx, discord) => {
+      const a = await arrive(ctx, discord, 1);
+      await arrive(ctx, discord, 2);
+      await together(ctx, 125);
+      expect(stored(ctx)[loungerOf(ctx, a)]).toBe(dailyCap);
+      const before = ctx.sql
+        .exec<{ credited_until: number }>(
+          'SELECT credited_until FROM lounge_company WHERE user_id = ?',
+          a.id,
+        )
+        .one().credited_until;
+      for (let i = 0; i < 10; i++) await check(ctx);
+      const after = ctx.sql
+        .exec<{ credited_until: number }>(
+          'SELECT credited_until FROM lounge_company WHERE user_id = ?',
+          a.id,
+        )
+        .one().credited_until;
+      expect(after).toBe(before);
+    });
+  });
+
+  it('keeps paying from the last list when Discord cannot be asked', async () => {
+    await inGuild(async (ctx, discord) => {
+      const a = await arrive(ctx, discord, 1);
+      await arrive(ctx, discord, 2);
+      await check(ctx, 15 * SECOND);
+      discord.lookupFails = true;
+      for (let i = 0; i < 4; i++) await check(ctx);
+      expect((await stateOf(ctx, a)).loungeXp[loungerOf(ctx, a)]).toBe(
+        Math.floor((15 * SECOND + 4 * MIN) / msPerXp),
       );
-      const { ticket } = await t.json<{ ticket: string }>();
-      const res = await callHandler(
-        handler,
-        new Request(`${ORIGIN}${LIVE_PATH}?ticket=${ticket}`, {
-          headers: { Upgrade: 'websocket' },
-        }),
+    });
+  });
+
+  it('pays at most a few minutes for a long gap between checks (a stalled alarm)', async () => {
+    await inGuild(async (ctx, discord) => {
+      const a = await arrive(ctx, discord, 1);
+      await arrive(ctx, discord, 2);
+      await check(ctx, 15 * SECOND);
+      await check(ctx, 60 * MIN);
+      expect((await stateOf(ctx, a)).loungeXp[loungerOf(ctx, a)]).toBe(
+        Math.floor((15 * SECOND + LOUNGE_MAX_GAP_MS) / msPerXp),
       );
-      expect(res.status).toBe(101);
-      const ws = res.webSocket;
-      if (ws === null) throw new Error('no socket');
-      ws.accept();
-      sockets.push(ws);
-    }
-    await new Promise((r) => setTimeout(r, 30));
-    sockets[1]?.close(1000);
-    const rows = async () =>
-      runInDurableObject(stub, (_i, state) =>
-        state.storage.sql
-          .exec<{ user_id: string }>('SELECT user_id FROM lounge_company ORDER BY user_id')
-          .toArray()
-          .map((r) => r.user_id),
-      );
-    const end = Date.now() + 2000;
-    while ((await rows()).length < 2 && Date.now() < end) {
-      await new Promise((r) => setTimeout(r, 10));
-    }
-    expect(await rows()).toEqual(players.map((p) => p.id).sort());
-    sockets[0]?.close(1000);
+    });
+  });
+
+  it('pays the one who stays as soon as the friend leaves, then stops', async () => {
+    await inGuild(async (ctx, discord) => {
+      const a = await arrive(ctx, discord, 1);
+      const b = await arrive(ctx, discord, 2);
+      const ms = await together(ctx, 4);
+      discord.instances.set(INSTANCE, [a.id]);
+      await check(ctx);
+      // Paid at the check that saw b gone (the minute in between counts for neither).
+      const xp = Math.floor(ms / msPerXp);
+      expect(stored(ctx)).toEqual({ [loungerOf(ctx, a)]: xp, [loungerOf(ctx, b)]: xp });
+      for (let i = 0; i < 20; i++) await check(ctx);
+      expect((await stateOf(ctx, a)).loungeXp[loungerOf(ctx, a)]).toBe(xp);
+    });
+  });
+
+  it('is not kept company by a player with no creature', async () => {
+    await inGuild(async (ctx, discord) => {
+      await arrive(ctx, discord, 1);
+      await arrive(ctx, discord, 2, 0);
+      await together(ctx, 30);
+      expect(stored(ctx)).toEqual({});
+    });
+  });
+
+  it('caps each creature at the daily cap; a swapped-in creature earns from the swap on', async () => {
+    await inGuild(async (ctx, discord) => {
+      const a = await arrive(ctx, discord, 1);
+      await arrive(ctx, discord, 2);
+      const first = loungerOf(ctx, a);
+      const second = a.creatureIds.find((id) => id !== first) ?? '';
+      await together(ctx, 150);
+      expect((await stateOf(ctx, a)).loungeXp).toEqual({ [first]: dailyCap });
+
+      const secret = await ctx.core.createSession(ctx.guildId, { id: a.id, displayName: a.name });
+      const swap = await ctx.request(secret, '/api/lounger', 'PUT', { creatureId: second });
+      expect(swap.status).toBe(200);
+      for (let i = 0; i < 20; i++) await check(ctx);
+      expect((await stateOf(ctx, a)).loungeXp).toEqual({ [first]: dailyCap, [second]: 10 });
+    });
+  });
+
+  it('pays no time from before the daily reset to the new day, and pays the old day its own', async () => {
+    await inGuild(async (ctx, discord) => {
+      const a = await arrive(ctx, discord, 1);
+      await arrive(ctx, discord, 2);
+      // Start four minutes before the next reset.
+      ctx.clock.t = loungeDay(ctx.clock.t, TZ).start + 24 * 60 * MIN - 4 * MIN - 15 * SECOND;
+      await ctx.core.createSession(ctx.guildId, { id: a.id, displayName: a.name }, null, INSTANCE);
+      await together(ctx, 6);
+      const lounger = loungerOf(ctx, a);
+      const rows = ctx.sql
+        .exec<{ day: string; paid: number }>(
+          'SELECT day, paid FROM lounge_rest WHERE creature_id = ?',
+          lounger,
+        )
+        .toArray();
+      // The old day's minutes were paid to the old day when the new one began.
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.paid).toBeGreaterThanOrEqual(1);
+      const today = loungeDay(ctx.clock.t, TZ).day;
+      // Today's two minutes are collecting; the state shows only today's.
+      const state = await stateOf(ctx, a);
+      expect(state.loungeXp[lounger]).toBe(1);
+      expect(
+        ctx.sql
+          .exec<{ day: string }>('SELECT day FROM lounge_rest WHERE creature_id = ?', lounger)
+          .one().day,
+      ).toBe(today);
+    });
   });
 });

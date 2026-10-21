@@ -29,7 +29,7 @@ import type { ChoiceResult } from './talent-types';
 import { errorText } from './game';
 import { loaded, type Loaded } from './loaded-state';
 import type { ParticipantSource } from './participants';
-import { settleClaim } from './room-data';
+import { LOUNGE_REFRESH_MS, loungeEarning, settleClaim } from './room-data';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
@@ -50,6 +50,7 @@ import { sceneOf } from './LivingRoom';
 import { LevelResetCard } from './LevelResetCard';
 import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
+import type { TeamConfigure } from './TeamCreaturePage';
 
 export function Game({
   initial,
@@ -107,6 +108,8 @@ export function Game({
   const [swapping, setSwapping] = useState(false);
   // Counts player actions, so a background refresh that started before one is never applied.
   const actionCount = useRef(0);
+  // Counts background state reloads, so only the newest one is applied.
+  const refreshSeq = useRef(0);
   // One action at a time (a second tap in the same tick is turned away before `busy` renders).
   // Idempotency keys are reused when the outcome is unknown (network error) so a retry cannot spend
   // twice. After a definite "no" the state is reloaded, since the screen was probably out of date.
@@ -183,8 +186,12 @@ export function Game({
   function refreshState(): boolean {
     if (inFlight()) return false;
     const startedAt = actionCount.current;
+    // Only the newest reload may land: an older one that answers late would show older numbers (a
+    // lounging tag that seems to go back a step).
+    const seq = ++refreshSeq.current;
     fetchState().then(
       (next) => {
+        if (seq !== refreshSeq.current) return;
         if (!inFlight() && actionCount.current === startedAt) setCurrent(loaded(next));
       },
       () => undefined,
@@ -203,6 +210,9 @@ export function Game({
   });
 
   const creatureActions = createCreatureActions({ run, runKeyed, setCurrent, setNotice });
+  /** Wears an item or takes it off (the card's and the dungeon's); true when the server took it. */
+  const equipOn = async (gearId: string, creatureId: string | null): Promise<boolean> =>
+    (await gearActions.equip(gearId, creatureId)) !== undefined;
   const gearActions = createGearActions({
     run,
     runKeyed,
@@ -303,6 +313,19 @@ export function Game({
       setError(errorText(err));
     });
   }
+  // While your lounger earns, reload the state once per XP so its tag and XP bar move (the server pays what
+  // you collected when you make a request). Nothing while alone, hidden or Rested.
+  const earning = loungeEarning(room.company, false, game);
+  useEffect(() => {
+    if (!earning) return undefined;
+    const timer = setInterval(() => {
+      refreshState();
+    }, LOUNGE_REFRESH_MS);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [earning]);
+
   const head = (
     <AppHead
       helpRef={helpRef}
@@ -319,6 +342,7 @@ export function Game({
               onMove: moveLounger,
               onSwap: () => {
                 setSwapping(true);
+                refreshState();
               },
               ...(game.loungerId === null
                 ? {}
@@ -332,6 +356,17 @@ export function Game({
   const devPanel = (
     <DevPanelHost enabled={devTools} tab={tab} creatures={game.creatures} onChanged={devRefresh} />
   );
+
+  /** What the dungeon's and the raid's team screens need to get creatures ready (their configurator and page). */
+  const teamConfigure: TeamConfigure = {
+    state: game,
+    gear,
+    busy,
+    actions: { ...creatureActions, onEquip: equipOn },
+    onAnswerCatch: () => {
+      setTab('collection');
+    },
+  };
 
   const content = !game.starterChosen ? (
     <>
@@ -362,7 +397,8 @@ export function Game({
           refreshState();
           room.refreshIfStale();
           loadForecast();
-          if (id === 'workshop' || id === 'collection') loadGear();
+          if (id === 'workshop' || id === 'collection' || id === 'dungeon' || id === 'raid')
+            loadGear();
         }}
       />
       <WipeNotice key={devNonce} cancelled={game.cancelled} creatures={game.creatures} />
@@ -392,9 +428,7 @@ export function Game({
             gear={gear}
             busy={busy}
             viewerId={user.id}
-            onEquip={async (gearId, creatureId) =>
-              (await gearActions.equip(gearId, creatureId)) !== undefined
-            }
+            onEquip={equipOn}
             catchActions={catchActions}
             {...creatureActions}
           />
@@ -473,6 +507,7 @@ export function Game({
                 raid: needed,
               }));
             }}
+            configure={teamConfigure}
           />
         )}
         {tab === 'dungeon' && (
@@ -501,6 +536,7 @@ export function Game({
               refreshState();
               loadGear();
             }}
+            configure={teamConfigure}
           />
         )}
       </div>

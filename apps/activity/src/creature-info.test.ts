@@ -93,8 +93,8 @@ describe('shownWornItems', () => {
     expect(shownWornItems({ ...info, ownerName: 'Misa' })).toEqual([]);
   });
 
-  it('shows nothing in popovers that are not about a room creature', () => {
-    expect(shownWornItems({ ...info, gear: worn })).toEqual([]);
+  it('shows the items of any creature whose info carries them (a dungeon run), and none otherwise', () => {
+    expect(shownWornItems({ ...info, gear: worn })).toEqual(worn);
     expect(shownWornItems(info)).toEqual([]);
   });
 });

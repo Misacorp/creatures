@@ -1,14 +1,25 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { TreatBox } from './TreatBox';
 import type { Creature } from './api';
+import { CreatureConfigurator, type ConfiguratorParts } from './CreatureConfigurator';
 import { DungeonPrerun } from './DungeonPrerun';
 import { DungeonTeam } from './DungeonTeam';
-import { isComplete, pruneSlots, sameSlots, setupTeam, type Slots } from './dungeon-team';
+import { TeamCreaturePage, type TeamConfigure } from './TeamCreaturePage';
+import {
+  isComplete,
+  pruneSlots,
+  sameSlots,
+  setupTeam,
+  slotIndexOf,
+  unplace,
+  type Slots,
+} from './dungeon-team';
 import { blockedText, isRetryOffer, RETRY_TEXT } from './dungeon-text';
 import type { DungeonToday } from './dungeon-types';
 import { GlossaryTag } from './Glossary';
 import { creatureName } from './game';
 import { toPickerCreature } from './roster-picker';
+import { scrollAndFocus } from './scroll-to';
 import { useDungeonDraft } from './use-dungeon-draft';
 import type { Forecast } from './weather-types';
 
@@ -32,7 +43,21 @@ interface Props {
   onEnter: (slots: Slots, treats: ReadonlySet<string>) => void;
   /** Opens the summary of today's earlier run (the first-day retry offer). */
   onSeeLast: () => void;
+  /**
+   * Getting the team ready for the run. A tap on a creature of the board shows its configurator under the
+   * board (another tap hides it); its Creature page button opens the creature's own page in the card's
+   * place, flipping through the team, and Back returns. Absent: the creature's popover with Remove from team.
+   */
+  configure?: TeamConfigure | undefined;
 }
+
+/** What a dungeon run asks of a creature: who it is, how it grows, what it fights with. */
+const DUNGEON_PARTS: ConfiguratorParts = {
+  experience: true,
+  stats: true,
+  gear: true,
+  talents: true,
+};
 
 /**
  * The pre-run screen: one card (`DungeonPrerun`) with the title and streak, the three rooms and the
@@ -58,11 +83,18 @@ export function DungeonSetup({
   saveDraft,
   onEnter,
   onSeeLast,
+  configure,
 }: Props) {
   const pickable = useMemo(() => creatures.map(toPickerCreature), [creatures]);
   const saver = useDungeonDraft(saveDraft);
   // The creatures that get a treat on this run (not kept for the next one: each run pays for its own).
   const [treats, setTreats] = useState<ReadonlySet<string>>(new Set());
+  /** The creature whose configurator is shown. */
+  const [selected, setSelected] = useState<string | null>(null);
+  /** The team creature whose page is open in the card's place. */
+  const [page, setPage] = useState<string | null>(null);
+  /** Back from a page: the tile of the creature shown last gets the focus. */
+  const backTo = useRef<string | null>(null);
   const [slots, setSlots] = useState<Slots>(() =>
     setupTeam({
       memory: draft,
@@ -86,6 +118,21 @@ export function DungeonSetup({
     if (!sameSlots(pruned, slots)) change(pruned);
   }, [owned.join(',')]);
 
+  // Back from a page: the card is drawn again; its creature's tile is scrolled to and focused.
+  useEffect(() => {
+    const id = backTo.current;
+    if (page !== null || id === null) return;
+    backTo.current = null;
+    const slot = slotIndexOf(slots, id);
+    if (slot === null) return;
+    scrollAndFocus(
+      document.body
+        .querySelector('.dungeon-team')
+        ?.querySelector<HTMLElement>(`[data-slot="${String(slot)}"]`) ?? null,
+      'auto',
+    );
+  }, [page]);
+
   const blocked =
     blockedText(today) ??
     (creatures.length < 3 ? blockedText({ blocked: 'need_creatures', canRun: false }) : null);
@@ -100,6 +147,37 @@ export function DungeonSetup({
       </>
     );
   }
+
+  const team = slots.flatMap((id) => creatures.filter((c) => c.id === id));
+  const paged = page === null ? undefined : team.find((c) => c.id === page);
+  const closePage = (): void => {
+    backTo.current = page;
+    setPage(null);
+  };
+  if (configure !== undefined && paged !== undefined) {
+    return (
+      <TeamCreaturePage
+        creature={paged}
+        team={team}
+        configure={configure}
+        backLabel="Dungeon"
+        remove={{
+          label: 'Remove from team',
+          onAct: () => {
+            setPage(null);
+            setSelected(null);
+            change(unplace(slots, paged.id));
+          },
+        }}
+        onFlip={(target) => {
+          setSelected(target.id);
+          setPage(target.id);
+        }}
+        onBack={closePage}
+      />
+    );
+  }
+  const shown = selected === null ? undefined : team.find((c) => c.id === selected);
 
   const complete = isComplete(slots);
   return (
@@ -118,7 +196,44 @@ export function DungeonSetup({
         </section>
       )}
       <DungeonPrerun today={today} forecast={forecast}>
-        <DungeonTeam creatures={pickable} slots={slots} disabled={busy} onChange={change}>
+        <DungeonTeam
+          creatures={pickable}
+          slots={slots}
+          disabled={busy}
+          onChange={change}
+          {...(configure === undefined
+            ? {}
+            : { selectedId: shown?.id ?? null, onSelect: setSelected })}
+        >
+          {configure !== undefined && shown !== undefined && (
+            <CreatureConfigurator
+              key={shown.id}
+              creature={shown}
+              state={configure.state}
+              gear={configure.gear}
+              busy={configure.busy}
+              parts={DUNGEON_PARTS}
+              actions={configure.actions}
+              buttons={[
+                {
+                  label: 'Creature page',
+                  withCreature: true,
+                  onAct: () => {
+                    setPage(shown.id);
+                  },
+                },
+                {
+                  label: 'Remove from team',
+                  danger: true,
+                  withCreature: true,
+                  onAct: () => {
+                    setSelected(null);
+                    change(unplace(slots, shown.id));
+                  },
+                },
+              ]}
+            />
+          )}
           <div class="dungeon-treats">
             {slots.flatMap((id) => {
               const creature = creatures.find((c) => c.id === id);

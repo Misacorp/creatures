@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   RULES,
-  companyMs,
   createSeededRng,
   glossaryEntry,
   isRested,
   loungeExperience,
-  mergeSpans,
   pickLounger,
   type Rng,
 } from '../src/index';
@@ -67,48 +65,6 @@ describe('pickLounger', () => {
     const rng = createSeededRng('members');
     for (let i = 0; i < 50; i++) expect(ids).toContain(pickLounger(ids, rng));
     expect(ids).toEqual(['x', 'y']);
-  });
-});
-
-describe('companyMs', () => {
-  const M = 60_000;
-  it('counts only the time someone else was there too, inside the window', () => {
-    expect(companyMs([{ from: 0, to: 10 * M }], [{ from: 4 * M, to: 20 * M }], 0, 30 * M)).toBe(
-      6 * M,
-    );
-    // Clipped to the window.
-    expect(companyMs([{ from: 0, to: 10 * M }], [{ from: 0, to: 10 * M }], 3 * M, 5 * M)).toBe(
-      2 * M,
-    );
-    expect(companyMs([{ from: 0, to: 10 * M }], [], 0, 30 * M)).toBe(0);
-    expect(companyMs([{ from: 0, to: 10 * M }], [{ from: 0, to: 10 * M }], 5 * M, 5 * M)).toBe(0);
-  });
-
-  it('never counts an overlap twice: own tabs and several friends merge', () => {
-    const own = [
-      { from: 0, to: 10 * M },
-      { from: 5 * M, to: 12 * M },
-    ];
-    const others = [
-      { from: 2 * M, to: 8 * M },
-      { from: 6 * M, to: 11 * M },
-      { from: 20 * M, to: 30 * M },
-    ];
-    expect(companyMs(own, others, 0, 40 * M)).toBe(9 * M);
-  });
-
-  it('merges spans, dropping empty ones', () => {
-    expect(
-      mergeSpans([
-        { from: 5, to: 9 },
-        { from: 1, to: 3 },
-        { from: 3, to: 4 },
-        { from: 7, to: 7 },
-      ]),
-    ).toEqual([
-      { from: 1, to: 4 },
-      { from: 5, to: 9 },
-    ]);
   });
 });
 

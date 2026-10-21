@@ -771,9 +771,8 @@ export class GuildCore {
     // The first authenticated request of a game day pays the daily allowance (once, race-safe).
     if (this.options.dailyAllowance !== false) this.allowance.grant(user.id);
     await this.ensureAlarm();
-    // Time this player spent in the room with company is paid before anything can change their lounger.
-    if (this.live !== null)
-      this.company.settle(this.live.presence(this.realNow()), this.realNow(), user.id);
+    // Lounging time this player has collected is paid before anything can change their lounger.
+    this.company.flush(user.id, this.realNow());
     const template = matchTemplate(ROUTE_KEYS, pathname);
     const response = await dispatch(routes, request, template?.template ?? pathname, {
       user,
@@ -786,15 +785,6 @@ export class GuildCore {
     if (this.live !== null && request.method !== 'GET' && response.ok)
       this.pushLive(pathname, user.id);
     return response;
-  }
-
-  /**
-   * Someone joins the room or `closing` leaves it: pays everyone with a socket for the time so far, while
-   * the leaver still counts (lounge-company.ts). Never throws.
-   */
-  settleLounge(closing: WebSocket | null): void {
-    if (this.live === null) return;
-    this.company.settleAll(this.live.presence(this.realNow(), closing), this.realNow());
   }
 
   /** Never throws: the push is a courtesy, the request already succeeded. */
@@ -1069,7 +1059,10 @@ export class GuildCore {
       if (due === null || due > t) return;
       // Leased: a run that dies halfway is tried again at the next tick.
       setNextCheck(this.sql, t + LOUNGE_TICK_MS);
+      const before = trackedInstances(this.sql);
       const present = await this.refreshInstances(client, t);
+      // Lounging with company: who was together at the last check and still is earns the time between.
+      this.company.observe(before, trackedInstances(this.sql), t);
       const retry = await this.syncLounge(client, present, t);
       const state = readLounge(this.sql);
       if (retry !== null && state.failures < LOUNGE_MAX_FAILURES) {

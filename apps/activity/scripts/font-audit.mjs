@@ -113,6 +113,41 @@ const PRESETS = [
     panels: 1,
   },
   {
+    name: 'Creature configurator, every part',
+    entry: 'CreatureConfigurator',
+    props: { creature: 0, explorer: true, crafting: true, ability: true },
+    panels: 2,
+  },
+  {
+    name: 'Dungeon team, a creature tapped (its configurator)',
+    entry: 'DungeonSetup',
+    props: { configure: true },
+    tap: '.dungeon-team [data-slot="1"]',
+    panels: 4,
+  },
+  { name: 'Gear list, tappable', entry: 'GearList', props: {}, panels: 1 },
+  {
+    name: 'Creature page, the whole page',
+    entry: 'CreaturePage',
+    props: { scene: 'P3' },
+    panels: 2,
+  },
+  { name: 'Creature card', entry: 'CreatureCard', props: {}, panels: 1 },
+  {
+    name: 'Dungeon card, the team and the depth track',
+    entry: 'DungeonSetup',
+    props: {},
+    panels: 2,
+  },
+  { name: 'Raid Roster', entry: 'RaidBoard', props: {}, panels: 1 },
+  {
+    name: 'Raid Roster, one of yours tapped (its configurator)',
+    entry: 'RaidBoard',
+    props: { configure: true, placed: 3 },
+    tap: '.raid-board button.party-slot.mine',
+    panels: 3,
+  },
+  {
     name: 'Drill head (shared by the item drawer and the camp)',
     entry: 'DrillHead',
     props: {},
@@ -171,10 +206,11 @@ let failures = 0;
 try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   for (const preset of PRESETS) {
-    const hash = `c=${preset.entry}&p=${encodeURIComponent(JSON.stringify(preset.props))}&w=full&bg=night`;
+    const hash = `c=${encodeURIComponent(preset.entry)}&p=${encodeURIComponent(JSON.stringify(preset.props))}&w=full&bg=night`;
     await page.goto(`${base}workbench.html?frame=1#${hash}`);
     await page.reload();
-    await page.waitForSelector('.pix-panel', { timeout: 15000 });
+    // A view whose pixel panel opens with a tap waits for the thing to tap instead.
+    await page.waitForSelector(preset.tap ?? '.pix-panel', { timeout: 15000 });
     await page.evaluate(() => document.fonts.ready);
     if (preset.tap !== undefined) {
       await page.locator(preset.tap).first().click();

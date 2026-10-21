@@ -63,3 +63,15 @@ button.item-tile.selected:active:not(:disabled) {
   line-height: 1;
   text-shadow: var(--ink-outline-thin);
 }
+
+/* Another creature wears it: that creature's small picture at the top right, where "Worn" would be; it stays
+   bright on a greyed-out tile, so who has it reads at a glance. */
+button.item-tile.blocked canvas.sprite.item-tile-wearer {
+  opacity: 1;
+}
+
+.item-tile-wearer {
+  position: absolute;
+  top: 0.1875rem;
+  right: 0.1875rem;
+}

@@ -237,8 +237,8 @@ export class FakeElement extends FakeNode {
   }
 
   /**
-   * Only the selectors the app's components use: `[role="x"]`, `.class` and `button:not(:disabled)` (the
-   * popover's first focus); anything else throws.
+   * Only the selectors the app's components use: `[role="x"]` (any attribute, as `[data-slot="1"]`), `[data-lane]`,
+   * `.class` and `button:not(:disabled)` (the popover's first focus); anything else throws.
    */
   querySelectorAll<T = FakeElement>(selector: string): T[] {
     if (selector === 'button:not(:disabled)') {
@@ -247,16 +247,23 @@ export class FakeElement extends FakeNode {
         (el) => el !== this && el.localName === 'button' && !el.hasAttribute('disabled'),
       ) as T[];
     }
-    const role = /^\[role="([^"]+)"\]$/.exec(selector)?.[1];
+    const attr = /^\[([\w-]+)="([^"]+)"\]$/.exec(selector);
+    // `[data-lane]`: the attribute is there, whatever its value.
+    const has = /^\[([\w-]+)\]$/.exec(selector)?.[1];
     const cls = /^\.([\w-]+)$/.exec(selector)?.[1];
-    if (role === undefined && cls === undefined) {
+    if (has !== undefined) {
+      return find(this, (el) => el !== this && el.hasAttribute(has)) as T[];
+    }
+    if (attr === null && cls === undefined) {
       throw new Error(`the fake DOM does not support the selector ${selector}`);
     }
     return find(
       this,
       (el) =>
         el !== this &&
-        (role !== undefined ? el.getAttribute('role') === role : el.classList.contains(cls ?? '')),
+        (attr !== null
+          ? el.getAttribute(attr[1] ?? '') === attr[2]
+          : el.classList.contains(cls ?? '')),
     ) as T[];
   }
   querySelector<T = FakeElement>(selector: string): T | null {

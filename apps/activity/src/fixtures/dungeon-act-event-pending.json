@@ -317,7 +317,8 @@
         "level": 12,
         "hp": 281,
         "hpMax": 281,
-        "treat": false
+        "treat": false,
+        "gear": []
       },
       {
         "id": "00000000-0000-4000-8300-000000000007",
@@ -328,7 +329,8 @@
         "level": 12,
         "hp": 200,
         "hpMax": 200,
-        "treat": false
+        "treat": false,
+        "gear": []
       },
       {
         "id": "00000000-0000-4000-8300-000000000008",
@@ -339,7 +341,8 @@
         "level": 12,
         "hp": 281,
         "hpMax": 281,
-        "treat": false
+        "treat": false,
+        "gear": []
       }
     ],
     "keepsakes": [],

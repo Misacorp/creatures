@@ -369,53 +369,56 @@ describe('the creature page: evolving a busy creature', () => {
   });
 });
 
-describe('the creature page: gear slots', () => {
-  it('shows locked slots as a padlock over the name with the level under it', () => {
+describe('the creature page: the gear list', () => {
+  /** The list's rows, Hat, Scarf and Charm. */
+  const rows = (root: FakeElement): FakeElement[] =>
+    byClass(first(byClass(root, 'gear-list')), 'find-row');
+
+  it('shows a slot not open yet as a padlock, the slot and the level it opens at, not a button', () => {
     const { root } = draw('level 2');
-    const locked = byClass(first(byClass(root, 'slot-row')), 'locked');
-    expect(locked).toHaveLength(2);
-    for (const slot of locked) {
-      expect(byClass(slot, 'lock-icon')).toHaveLength(1);
-      expect(slot.localName).toBe('div');
+    const [, scarf, charm] = rows(root);
+    expect(visibleText(scarf as FakeElement)).toBe('ScarfLv 7');
+    expect(visibleText(charm as FakeElement)).toBe('CharmLv 13');
+    for (const row of [scarf, charm]) {
+      expect(find(row as FakeElement, (e) => e.localName === 'button')).toHaveLength(0);
+      expect(byClass(row as FakeElement, 'locked')).toHaveLength(1);
+      expect(byClass(row as FakeElement, 'lock-icon')).toHaveLength(1);
     }
-    expect(locked.map((s) => visibleText(s))).toEqual(['ScarfLv 7', 'CharmLv 13']);
-    // The stacking order is the padlock, the name, then the level.
-    const parts = locked[1]?.childNodes.map((n) => (n as FakeElement).getAttribute('class') ?? '');
-    expect(parts?.map((c) => c.split(' ')[0])).toEqual(['lock-icon', 'slot-word', 'slot-lock']);
   });
 
-  it('shows an empty open slot with only its name', () => {
+  it('shows an empty open slot as its name and Empty, and a tap asks for its picker', () => {
     const { root } = draw('level 8');
-    const [hat, scarf, charm] = byClass(first(byClass(root, 'slot-row')), 'slot');
-    expect(visibleText(scarf as FakeElement)).toBe('Scarf');
-    expect(visibleText(hat as FakeElement)).toBe('Hat');
-    expect(charm?.getAttribute('class')).toContain('locked');
-    expect(byClass(first(byClass(root, 'slot-row')), 'empty')).toHaveLength(2);
+    const [hat, scarf, charm] = rows(root);
+    expect(visibleText(hat as FakeElement)).toBe('HatEmpty');
+    expect(visibleText(scarf as FakeElement)).toBe('ScarfEmpty');
+    expect(byClass(charm as FakeElement, 'locked')).toHaveLength(1);
+    expect(nameOf(first(find(scarf as FakeElement, (e) => e.localName === 'button')))).toBe(
+      'Scarf: empty. Choose one',
+    );
   });
 
-  it('shows a worn item as its bare sprite in the rarity colour, with its slot icon and "Lv" and the level in the corners', () => {
+  it('shows a worn item as its picture, name, rarity and slot badges and its lines', () => {
     const { root } = draw('level 15');
-    const [hat, scarf] = byClass(first(byClass(root, 'slot-row')), 'slot');
-    // One border only: the slot's own, no inner frame round the sprite.
-    expect(byClass(root, 'item-frame')).toHaveLength(0);
-    expect(hat?.getAttribute('class')).toContain('rarity-epic');
-    expect(scarf?.getAttribute('class')).toContain('rarity-rare');
+    const [hat, scarf] = rows(root);
     expect(visibleText(first(byClass(hat as FakeElement, 'item-lv')))).toBe('Lv 15');
     expect(visibleText(first(byClass(scarf as FakeElement, 'item-lv')))).toBe('Lv 12');
-    // The item's sprite, and the slot's icon in the top-left corner.
-    expect(find(hat as FakeElement, (e) => e.localName === 'canvas')).toHaveLength(2);
-    expect(byClass(hat as FakeElement, 'item-slot')).toHaveLength(1);
-    expect(nameOf(hat as FakeElement)).toBe(
+    expect(visibleText(first(byClass(hat as FakeElement, 'find-row-name')))).toBe(
+      "Emberkeeper's Crown, item level 15",
+    );
+    // The row is the slot: no slot badge (finds have one).
+    expect(byClass(hat as FakeElement, 'slot-tag')).toHaveLength(0);
+    expect(visibleText(first(byClass(hat as FakeElement, 'gear-list-lines')))).not.toBe('');
+    expect(nameOf(first(find(hat as FakeElement, (e) => e.localName === 'button')))).toBe(
       "Hat: Emberkeeper's Crown, item level 15, Epic. Change",
     );
   });
 
   it('uses the one rarity colour tokens, grey, blue and pink, everywhere', () => {
     const { root } = draw('rarities');
-    const [hat, scarf, charm] = byClass(first(byClass(root, 'slot-row')), 'slot');
-    expect(hat?.getAttribute('class')).toContain('rarity-common');
-    expect(scarf?.getAttribute('class')).toContain('rarity-rare');
-    expect(charm?.getAttribute('class')).toContain('rarity-epic');
+    const frames = rows(root).map((r) => first(byClass(r, 'item-frame')).getAttribute('class'));
+    expect(frames[0]).toContain('rarity-common');
+    expect(frames[1]).toContain('rarity-rare');
+    expect(frames[2]).toContain('rarity-epic');
   });
 });
 
@@ -479,6 +482,8 @@ describe('the creature page: the item picker drawer', () => {
     const cell = first(byName(dialog, 'button', /^Cinder Charm, item level 14/));
     p.click(cell);
     expect(cell.getAttribute('aria-pressed')).toBe('true');
+    // The Charm slot is empty: Compare is still there, beside Equip (it compares against nothing).
+    expect(byRole(dialog, 'switch')).toHaveLength(1);
     p.click(first(byName(dialog, 'button', 'Equip')));
     await vi.waitFor(() => {
       expect(actions.onEquip).toHaveBeenCalledTimes(1);
@@ -499,6 +504,34 @@ describe('the creature page: the item picker drawer', () => {
     });
     await Promise.resolve();
     expect(byRole(root, 'dialog')).toHaveLength(1);
+  });
+
+  it("greys out an item another creature wears, with that creature's picture, and moves it only with Take from", async () => {
+    const { root, page: p, actions, creature } = draw('level 15');
+    p.click(slotButton(root, /^Hat: /));
+    const dialog = first(byRole(root, 'dialog'));
+    const cell = first(
+      byName(dialog, 'button', /^Bark Hood, item level 13, Rare, worn by Pebble$/),
+    );
+    expect(cell.getAttribute('class')).toContain('blocked');
+    expect(byClass(cell, 'item-tile-wearer')).toHaveLength(1);
+    // After every free item it can wear, before the ones it cannot.
+    const cells = byClass(dialog, 'item-tile');
+    const at = cells.indexOf(cell);
+    expect(
+      cells.slice(1, at).every((c) => !(c.getAttribute('class') ?? '').includes('blocked')),
+    ).toBe(true);
+    p.click(cell);
+    // No plain Equip: the one button says whose item it is.
+    expect(byName(dialog, 'button', 'Equip')).toHaveLength(0);
+    const take = first(byName(dialog, 'button', 'Take from Pebble'));
+    expect(take.getAttribute('class')).not.toContain('primary');
+    p.click(take);
+    await vi.waitFor(() => {
+      expect(actions.onEquip).toHaveBeenCalledTimes(1);
+    });
+    const call: unknown[] = (actions.onEquip as ReturnType<typeof vi.fn>).mock.calls[0] ?? [];
+    expect(call[1]).toBe(creature.id);
   });
 
   it('shows the reason an item cannot be worn instead of an Equip button', () => {

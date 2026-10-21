@@ -142,8 +142,8 @@ const slot: Entry = {
   file: 'apps/activity/src/ui/Slot.tsx',
   group: 'Slots',
   description:
-    'One slot for a creature\'s gear (Hat, Scarf, Charm) and its talents, side by side across the full width: filled it shows the item icon (with its level, "Lv 4", in the corner) or the talent name and number (golden ones shimmer), empty it names itself ("Scarf", "Talent"), locked it is muted with the level it opens at ("Lv 7"). A tappable one is a button that opens a Drawer (also SlotRow, the row they stand in).',
-  covers: ['SlotRow'],
+    'One slot for a creature\'s gear (Hat, Scarf, Charm) and its talents, side by side across the full width: filled it shows the item icon (with its level, "Lv 4", in the corner) or the talent name and number (golden ones shimmer), empty it names itself ("Scarf", "Talent"), locked it is muted with the level it opens at ("Lv 7"). A tappable one is a button that opens a Drawer (also SlotRow, the row they stand in, and LockIcon, the padlock, which the gear list shows for a slot not open yet).',
+  covers: ['LockIcon', 'SlotRow'],
   controls: {
     layout: { kind: 'select', options: LAYOUTS },
     kind: { kind: 'select', options: KINDS },

@@ -195,3 +195,19 @@ describe('statDelta', () => {
     expect(statDelta('critDamage', -2000)).toBe(`${MINUS}20 pt`);
   });
 });
+
+describe('diffItems: against nothing (an empty slot)', () => {
+  it('marks every stat as a gain and every line as new, and loses nothing', () => {
+    const next = hat([{ id: 'crit-chance', tier: 2 }]);
+    const diff = diffItems(next, null);
+    expect(next.stats.length).toBeGreaterThan(0);
+    for (const stat of next.stats) {
+      expect(diff.stats.get(stat.stat)?.good).toBe(true);
+    }
+    for (const line of next.lines) {
+      expect(diff.lines.get(lineKey(line))).toEqual({ kind: 'new' });
+    }
+    expect(diff.goneStats).toEqual([]);
+    expect(diff.goneLines).toEqual([]);
+  });
+});

@@ -3,15 +3,20 @@
  * socket, the clock, the timers and the dice all injected, so the tests drive it deterministically.
  *
  * What it does: asks for a one-time ticket, opens the socket, reports `live` once the server's `hello`
- * arrives, hands every pushed resident to the room, pings every 60 s when nothing else arrived (the
- * server answers without waking its object), and reconnects after a drop with a jittered exponential
+ * arrives, hands every pushed resident to the room, pings every 60 s (the server answers without waking
+ * its object; the ping is the server's only sign that this player is still here, so it goes out even while
+ * pushes keep arriving), and reconnects after a drop with a jittered exponential
  * backoff (1 s up to 30 s). While it is not live the room polls, as it always did; that is the fallback
  * for an unsupported browser, a proxy that refuses the upgrade, a full guild or a server with the flag
  * off. After 6 failed tries in a row it stops trying until it is started again.
  */
 import { ApiError, parseLiveMessage, type LiveMessage, type RoomResident } from './api';
 
-/** Ping when nothing has arrived for this long. */
+/**
+ * Ping this often, whatever arrives: the server counts a socket with no ping for 150 s as gone (no lounging
+ * XP for it, and it is closed). Until 2026-10-20 a push postponed the ping, so two players busy in the room
+ * looked gone to the server.
+ */
 export const HEARTBEAT_MS = 60_000;
 /** How often the socket looks at its own health. */
 const TICK_MS = 20_000;
@@ -168,7 +173,7 @@ export function createLoungeSocket(deps: LoungeSocketDeps): LoungeSocket {
       fail(thisRun);
       return;
     }
-    if (t - lastHeardAt >= HEARTBEAT_MS && t - lastPingAt >= HEARTBEAT_MS) {
+    if (t - lastPingAt >= HEARTBEAT_MS) {
       lastPingAt = t;
       try {
         socket.send('ping');

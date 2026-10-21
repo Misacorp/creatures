@@ -1585,6 +1585,12 @@ describe('gear and creatures that change during a run', () => {
         await equip(scarf, d); // worn by a creature that is not in the run: it counts when it joins
         const state = await begin(p, { team: [a, b, c] });
         expect(stored(ctx, state.id).gear).toEqual([hat]);
+        // The run sends what each creature wears in it, frozen at the start.
+        const gearOf = (s: typeof state, id: string) =>
+          s.team.find((x) => x.id === id)?.gear.map((g) => g.baseId);
+        expect(gearOf(state, a)).toEqual(['trail-cap']);
+        expect(state.team.find((x) => x.id === a)?.gear[0]?.lines.length).toBeGreaterThan(0);
+        expect(gearOf(state, b)).toEqual([]);
         // The hat moves from a creature of the row to the bench creature.
         await equip(hat, null);
         await equip(hat, d);
@@ -1598,6 +1604,9 @@ describe('gear and creatures that change during a run', () => {
         const waiting = await walk(p, state, route, (s) => s.pending?.kind === 'camp');
         const res = await p.act(waiting, { type: 'camp', choice: 'swap', out: c, in: d });
         expect(res.status).toBe(200);
+        // The hat moved on the Creatures tab, but the run's copy still has it on a; d joins with the scarf.
+        expect(gearOf(res.body.state, a)).toEqual(['trail-cap']);
+        expect(gearOf(res.body.state, d)).toEqual(['patch-scarf']);
         const st = stored(ctx, state.id);
         // The hat is still frozen into the row once (on a); the newcomer joins with the scarf only.
         expect(st.gear.sort()).toEqual([hat, scarf].sort());
@@ -2175,7 +2184,18 @@ describe('the run’s state', () => {
           ].sort(),
         );
         expect(Object.keys(state.team[0] ?? {}).sort()).toEqual(
-          ['element', 'hp', 'hpMax', 'id', 'level', 'name', 'role', 'speciesId', 'treat'].sort(),
+          [
+            'element',
+            'gear',
+            'hp',
+            'hpMax',
+            'id',
+            'level',
+            'name',
+            'role',
+            'speciesId',
+            'treat',
+          ].sort(),
         );
         void ctx;
       },

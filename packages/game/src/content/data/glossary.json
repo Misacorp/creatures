@@ -685,7 +685,7 @@
     "lines": [
       "Bronze Ribbon at level 10: 6 scrap and 2 shards of its element.",
       "Silver Ribbon at level 20: 15 scrap, 5 shards, 1 glimmer and 5 finished trips.",
-      "Experience earned while it waits is kept.",
+      "While it waits it keeps only the experience the next level needs. Anything over that is lost.",
       "Gold Ribbon at level 30 is a reward."
     ],
     "section": "creatures"
@@ -775,6 +775,7 @@
     "short": "A creature grows into its final form.",
     "lines": [
       "At level 15, for Essence. The level cap rises to 30.",
+      "Until it evolves it keeps only the experience level 16 needs. Anything over that is lost.",
       "Every line that evolves grows one of two ways: a different role and ability. The choice is permanent.",
       "To own both forms, Keep a duplicate and evolve it the other way."
     ],
@@ -823,6 +824,7 @@
     "lines": [
       "Your lounger earns 1 XP every 2 minutes while another player is in the living room with you. Alone it earns nothing.",
       "Each creature can earn up to 60 XP a day this way. Then it is Rested until the daily reset: swap in another creature.",
+      "It keeps earning in the background while Discord shows you both in the Activity. Leaving the Activity stops it.",
       "To swap, tap your creature in the living room and choose Swap, or tap the armchair on a creature's card."
     ],
     "section": "creatures"

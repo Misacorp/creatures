@@ -19,8 +19,13 @@ describe('the item picker rules', () => {
     );
   });
 
-  it('says who wears an item that would move, and leaves the worn item out of the choices', () => {
-    expect(choices.some((c) => c.wornBy === 'Pebble')).toBe(true);
+  it('says who wears an item, lists those after the free ones, and leaves the worn item out', () => {
+    const taken = choices.filter((c) => c.wornBy === 'Pebble');
+    expect(taken.length).toBeGreaterThan(0);
+    expect(taken.every((c) => c.wornBySpecies !== null)).toBe(true);
+    const firstTaken = choices.findIndex((c) => c.wornBy !== null && c.blocked === null);
+    const free = choices.filter((c) => c.wornBy === null && c.blocked === null);
+    expect(choices.slice(0, firstTaken)).toEqual(free);
     expect(choices.some((c) => c.item.equippedOn === PAGE_SAMPLE_ID)).toBe(false);
   });
 

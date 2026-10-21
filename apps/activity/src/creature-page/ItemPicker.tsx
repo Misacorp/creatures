@@ -32,12 +32,22 @@ export interface ItemPickerProps {
   initialCompare?: boolean;
 }
 
-/** One entry of the grid: an item, whether the creature wears it, who else does and why it cannot be worn. */
+/**
+ * One entry of the grid: an item, whether the creature wears it, who else does (their name and species) and
+ * the game's reason it cannot be worn here. An item another creature wears is taken: greyed out in the grid,
+ * and moved only by its own button ("Take from Pebble"), never by a plain Equip.
+ */
 interface Cell {
   item: GearItem;
   worn: boolean;
   wornBy: string | null;
+  wornBySpecies: string | null;
   blocked: string | null;
+}
+
+/** Greyed out in the grid: it cannot be worn, or another creature wears it. */
+function dimmed(cell: Cell): boolean {
+  return cell.blocked !== null || cell.wornBy !== null;
 }
 
 /**
@@ -58,7 +68,7 @@ function DetailPanel({
 }: {
   cell: Cell;
   creature: Creature;
-  /** The item worn in this slot, to compare with; undefined when the slot is empty. */
+  /** The item worn in this slot, to compare with; undefined when the slot is empty (then against nothing). */
   wornItem: GearItem | undefined;
   compareOn: boolean;
   onCompareChange: (on: boolean) => void;
@@ -69,8 +79,9 @@ function DetailPanel({
   onClose: () => void;
 }) {
   const { item, worn, wornBy, blocked } = cell;
-  // Nothing to compare when the slot is empty or the item is the worn one: no switch then.
-  const comparable = !worn && wornItem !== undefined;
+  // Nothing to compare when the item is the worn one: no switch then. An empty slot compares against nothing
+  // (every stat a gain, every line new), so the switch keeps its place beside Equip.
+  const comparable = !worn;
   const comparing = comparable && compareOn;
   return (
     <section class="ip-detail pix-panel" aria-label="Selected item">
@@ -91,8 +102,7 @@ function DetailPanel({
             </button>
           }
           wornInSet={setPiecesWith(item, creature.gear)}
-          {...(comparing ? { diff: diffItems(item, wornItem) } : {})}
-          {...(wornBy === null ? {} : { note: <p class="ip-on">On {wornBy}</p> })}
+          {...(comparing ? { diff: diffItems(item, wornItem ?? null) } : {})}
         />
       </ScrollHint>
       <div class="ip-actions">
@@ -110,6 +120,18 @@ function DetailPanel({
           </button>
         ) : blocked !== null ? (
           <span class="ip-reason">{blocked}</span>
+        ) : wornBy !== null ? (
+          // Not the gold Equip: the words say whose item it is, so moving it is never a surprise.
+          <button
+            type="button"
+            class="ip-act"
+            disabled={busy}
+            onClick={() => {
+              onEquip(item);
+            }}
+          >
+            Take from {wornBy}
+          </button>
         ) : (
           <button
             type="button"
@@ -154,11 +176,14 @@ export function ItemPickerDrawer({
   const wornId = creature.gear.find((g) => g.slot === slot)?.id;
   const worn = items?.find((i) => i.id === wornId);
   const cells: Cell[] = [
-    ...(worn === undefined ? [] : [{ item: worn, worn: true, wornBy: null, blocked: null }]),
+    ...(worn === undefined
+      ? []
+      : [{ item: worn, worn: true, wornBy: null, wornBySpecies: null, blocked: null }]),
     ...choices.map((choice) => ({
       item: choice.item,
       worn: false,
       wornBy: choice.wornBy,
+      wornBySpecies: choice.wornBySpecies,
       blocked: compactReason(choice.item, creature),
     })),
   ];
@@ -217,11 +242,12 @@ export function ItemPickerDrawer({
             <ItemTile
               key={cell.item.id}
               item={cell.item}
-              label={`${itemLabel(cell.item.baseId, cell.item.itemLevel)}, ${rarityName(cell.item.rarity)}${cell.worn ? ', worn now' : ''}${cell.blocked === null ? '' : `. ${cell.blocked}`}`}
+              label={`${itemLabel(cell.item.baseId, cell.item.itemLevel)}, ${rarityName(cell.item.rarity)}${cell.worn ? ', worn now' : ''}${cell.wornBy === null ? '' : `, worn by ${cell.wornBy}`}${cell.blocked === null ? '' : `. ${cell.blocked}`}`}
               selected={cell.item.id === shown?.item.id}
               pressed={cell.item.id === selected?.item.id}
-              blocked={cell.blocked !== null}
+              blocked={dimmed(cell)}
               flag={cell.worn ? 'Worn' : null}
+              wearer={cell.wornBySpecies}
               onSelect={() => {
                 if (cell.item.id === selected?.item.id) {
                   setDetailOpen(false);

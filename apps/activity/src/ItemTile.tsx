@@ -2,13 +2,15 @@ import { useEffect, useRef } from 'preact/hooks';
 import { ItemCorners, ItemSprite } from './GearArt';
 import type { GearItem } from './gear-types';
 import { isFestivalBase } from './gear-view';
+import { Sprite } from './sprites/Sprite';
+import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 
 /**
  * One item in an item grid: the one look for every grid of items (the creature page's item picker and the
  * Workshop bag). A square button, the item's art filling it, its rarity as the single edge, the slot icon at
- * the top left and the item level at the bottom right, and a small gold flag at the top right ("Worn").
- * `selected` lights it from inside with a light edge (the item shown, or shown last); `blocked` dims an item
- * that cannot be worn. A selected tile scrolls itself into view (when it is selected and again when its details
+ * the top left and the item level at the bottom right, and at the top right a small gold flag ("Worn") or the
+ * small picture of another creature that wears it. `selected` lights it from inside with a light edge (the
+ * item shown, or shown last); `blocked` dims an item that cannot be worn (or that another creature wears). A selected tile scrolls itself into view (when it is selected and again when its details
  * close), so a closed detail never leaves the player lost in a long grid.
  */
 export function ItemTile({
@@ -18,6 +20,7 @@ export function ItemTile({
   pressed = selected,
   blocked = false,
   flag = null,
+  wearer = null,
   onSelect,
 }: {
   item: Pick<GearItem, 'baseId' | 'rarity' | 'itemLevel'>;
@@ -30,6 +33,8 @@ export function ItemTile({
   blocked?: boolean;
   /** A short word at the top right ("Worn"); hidden from screen readers, so say it in `label` too. */
   flag?: string | null;
+  /** The species of another creature that wears it: its small picture at the top right. Decoration: say who in `label`. */
+  wearer?: string | null;
   onSelect: () => void;
 }) {
   const button = useRef<HTMLButtonElement>(null);
@@ -57,6 +62,9 @@ export function ItemTile({
           <span class="item-tile-flag pix" aria-hidden="true">
             {flag}
           </span>
+        )}
+        {wearer !== null && (
+          <Sprite sprite={creatureSpriteOrFallback(wearer)} scale={2} class="item-tile-wearer" />
         )}
         <ItemCorners level={item.itemLevel} baseId={item.baseId} />
       </button>

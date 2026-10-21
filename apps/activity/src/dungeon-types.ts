@@ -12,7 +12,8 @@
  */
 import type { FightEvent } from '@creatures/engine';
 import type { ExperienceView } from './experience';
-import type { LootPiece, PartsBundle } from './gear-types';
+import type { GearRarity, LootPiece, PartsBundle } from './gear-types';
+import type { GearSlot } from '@creatures/game';
 
 export type Element = 'tide' | 'ember' | 'grove' | 'spark' | 'mire';
 export type Role = 'setter' | 'payoff' | 'support' | 'guard';
@@ -131,6 +132,20 @@ export interface DungeonRunCreature {
   hpMax: number;
   /** It carries a treat (double experience). A creature swapped in at the camp never does. */
   treat: boolean;
+  /** What it wears in this run, frozen when it joined, each item with its lines' text. */
+  gear: DungeonRunGear[];
+}
+
+/**
+ * One item a creature of a run wears: the gear list's `WornItem` with its lines. Written out here, not
+ * imported: the worker's fixture test reads this file, and must not pull the UI's modules in with it.
+ */
+export interface DungeonRunGear {
+  baseId: string;
+  slot: GearSlot;
+  rarity: GearRarity;
+  itemLevel: number;
+  lines: readonly string[];
 }
 
 /** A buff for the rest of the run. `description` is the exact effect, one plain line. */

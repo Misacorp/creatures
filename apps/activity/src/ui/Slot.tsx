@@ -4,7 +4,7 @@ import type { ComponentChildren, Ref } from 'preact';
 export type SlotRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
 /** A small pixel padlock, drawn as an SVG of square cells (no emoji, no picture file). Decorative. */
-function LockIcon({ class: extra }: { class?: string }) {
+export function LockIcon({ class: extra }: { class?: string }) {
   return (
     <svg
       class={`lock-icon${extra === undefined ? '' : ` ${extra}`}`}
