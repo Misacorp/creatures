@@ -1,5 +1,6 @@
 import { talentContent, talentText } from '@creatures/game';
 import { parseGameState } from '../../api';
+import { rankGiftViews } from '../../claim-view';
 import creaturesState from '../../fixtures/creatures-state.json';
 import { pendingFind, type Find } from '../../find-view';
 import type { PendingCatch, TalentView } from '../../talent-types';
@@ -112,6 +113,13 @@ const BASE: TripResultView = {
   explorer: { id: 'sproutle', species: 'sproutle', shiny: false, name: 'Sproutle' },
   place: { id: 'tidepools', name: 'Tidepools' },
   hours: 12,
+  setOut: [
+    { key: 'length', text: '12 hours trip' },
+    { key: 'supply-0', text: 'Candle Lantern', entry: 'supply-lantern' },
+    { key: 'supply-1', text: 'Sturdy Satchel', entry: 'supply-satchel' },
+    { key: 'treat', text: 'Treat', entry: 'treat' },
+    { key: 'boon', text: 'Fair Winds', entry: 'boon' },
+  ],
   failure: null,
   pushOn: null,
   finds: [],
@@ -162,6 +170,22 @@ const SCENES: Record<string, TripResultView> = {
     // A long trip that took the explorer up a rank.
     xp: explorer({ gained: 600, rank: 4, rankBefore: 3, value: 60 }),
     stars: { stars: 2, gained: true, trips: 10 },
+  },
+  'rank 5 gift with gear': {
+    ...BASE,
+    xp: explorer({ gained: 600, rank: 5, rankBefore: 4, value: 60 }),
+    gifts: rankGiftViews({
+      rankGifts: [
+        {
+          rank: 5,
+          bait: 25,
+          parts: { scrap: 10, 'tide-shard': 3 },
+          supplies: [],
+          gear: [{ id: 'g2', baseId: 'kelp-cap', rarity: 'rare', itemLevel: 6 }],
+          converted: [],
+        },
+      ],
+    }),
   },
   'called home early': {
     ...BASE,

@@ -4,8 +4,11 @@ import {
   createSeededRng,
   expeditionContent,
   explorerRank,
+  gearBase,
   lengthRules,
   rankGift,
+  shardOf,
+  tagElement,
   seasonOf,
   tripMs,
   tripXp,
@@ -15,6 +18,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import { grantRankGift } from '../src/gear-grants';
 import { creditParts } from '../src/gear-store';
+import { speciesOf } from '../src/species';
 import { giveItem } from './gear-helpers';
 import { weekIdFor, weekIndex } from '../src/raid-schedule';
 import { zonedHour } from '../src/time';
@@ -95,6 +99,8 @@ interface ResultBody {
     bait: number;
     parts: Record<string, number>;
     supplies: string[];
+    gear?: { id: string; baseId: string; rarity: string; itemLevel?: number }[];
+    converted?: { baseId: string; rarity: string; itemLevel?: number }[];
   }[];
 }
 
@@ -593,7 +599,14 @@ describe('ranks, XP and slots', () => {
         const result = resultOf(await claim(p, trip.id));
         expect(result.xp?.rank).toBe(2);
         expect(result.rankGifts).toEqual([
-          { rank: 2, bait: gift.bait, parts: gift.parts, supplies: [...gift.supplies] },
+          {
+            rank: 2,
+            bait: gift.bait,
+            parts: gift.parts,
+            supplies: [...gift.supplies],
+            gear: [],
+            converted: [],
+          },
         ]);
         // The Bait is in the ledger once, under the (creature, rank) key.
         const ledger = rows<{ amount: number; idempotency_key: string }>(
@@ -652,15 +665,85 @@ describe('ranks, XP and slots', () => {
       const deps = { storage: ctx.storage, now: () => ctx.clock.t, rng: createSeededRng('unused') };
       const gift = rankGift(7);
       if (gift === null) throw new Error('no gift at rank 7');
-      const one = grantRankGift(deps, USER_ID, p.starterId, 7, gift);
-      const again = grantRankGift(deps, USER_ID, p.starterId, 7, gift);
+      const who = { element: 'tide' as const, place: 'old-crossroads' };
+      const one = grantRankGift(deps, USER_ID, p.starterId, 7, gift, who);
+      const again = grantRankGift(deps, USER_ID, p.starterId, 7, gift, who);
       expect(one.fresh).toBe(true);
       expect(again.fresh).toBe(false);
       expect(again.view).toEqual(one.view);
       expect(ctx.core.balances(USER_ID).bait).toBe(gift.bait);
       // Another rank, or another creature, is a different gift.
-      expect(grantRankGift(deps, USER_ID, p.starterId, 8, rankGift(8) ?? gift).fresh).toBe(true);
-      expect(grantRankGift(deps, USER_ID, 'another-creature', 7, gift).fresh).toBe(true);
+      expect(grantRankGift(deps, USER_ID, p.starterId, 8, rankGift(8) ?? gift, who).fresh).toBe(
+        true,
+      );
+      expect(grantRankGift(deps, USER_ID, 'another-creature', 7, gift, who).fresh).toBe(true);
+    });
+  });
+
+  it('pays shards of the explorer element and one gear piece of that element at rank 5, once', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await join(ctx, USER, 0);
+        setRank(ctx.sql, USER_ID, p.starterId, 4);
+        ctx.sql.exec(
+          'UPDATE explorer_progress SET xp = ?',
+          (RULES.expeditions.rank.xpForRank[4] ?? 0) - 1,
+        );
+        const gift = rankGift(5);
+        if (gift === null) throw new Error('no gift at rank 5');
+        const element = speciesOf('splashet').element;
+        const trip = tripOf(await send(p, p.starterId, 'long'));
+        ctx.clock.t = trip.endsAt;
+        const result = resultOf(await claim(p, trip.id));
+        expect(result.xp?.rank).toBe(5);
+        const given = result.rankGifts?.[0];
+        expect(given?.rank).toBe(5);
+        // The shards are of the explorer's element, whatever the place gave.
+        expect(given?.parts[shardOf(element)]).toBe(gift.shards);
+        expect(given?.parts['scrap']).toBe(gift.parts.scrap);
+        expect(given?.gear).toHaveLength(1);
+        const piece = given?.gear?.[0];
+        expect(tagElement(gearBase(piece?.baseId ?? '')?.tag ?? 'neutral')).toBe(element);
+        expect(piece?.itemLevel).toBeGreaterThan(0);
+        expect(
+          count(ctx.sql, 'gear_items', `id = '${piece?.id ?? ''}' AND user_id = '${USER_ID}'`),
+        ).toBe(1);
+        // A repeat claim returns the stored result and grants nothing new.
+        const items = count(ctx.sql, 'gear_items');
+        expect(resultOf(await claim(p, trip.id))).toEqual(result);
+        expect(count(ctx.sql, 'gear_items')).toBe(items);
+        expect(count(ctx.sql, 'gear_grants', "source = 'rank_gift'")).toBe(1);
+      },
+      {
+        rng: createSeededRng('gift5'),
+        tripRng: createSeededRng('gift5-trip'),
+        gearRng: createSeededRng('gift5-gear'),
+      },
+    );
+  });
+
+  it('turns the rank gift piece into parts when the bag is full, and loses nothing', async () => {
+    await runCore(nextGuild(), async (ctx) => {
+      const p = await join(ctx, USER, 0);
+      for (let i = 0; i < RULES.gear.inventoryCap; i++) {
+        giveItem(ctx.sql, USER_ID, 'trail-cap', { now: ctx.clock.t });
+      }
+      const deps = {
+        storage: ctx.storage,
+        now: () => ctx.clock.t,
+        rng: createSeededRng('gift-full'),
+      };
+      const gift = rankGift(6);
+      if (gift === null) throw new Error('no gift at rank 6');
+      const { view } = grantRankGift(deps, USER_ID, p.starterId, 6, gift, {
+        element: 'ember',
+        place: 'old-crossroads',
+      });
+      expect(view.gear).toEqual([]);
+      expect(view.converted).toHaveLength(1);
+      expect(count(ctx.sql, 'gear_items', `user_id = '${USER_ID}'`)).toBe(RULES.gear.inventoryCap);
+      expect(view.parts[shardOf('ember')] ?? 0).toBeGreaterThanOrEqual(gift.shards);
     });
   });
 

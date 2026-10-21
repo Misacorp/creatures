@@ -57,6 +57,11 @@ export interface Trip {
   destination: string;
   /** The weekly twist that applies to this trip, or null. */
   twist: string | null;
+  /** The Boon and Omen that changed the trip, by name; null when none did (absent from an older server). */
+  weather?: {
+    boon: { id: string; name: string };
+    omen: { id: string; name: string } | null;
+  } | null;
   rolls: number;
   /** Bait paid for supplies: 0 for every trip sent since supplies stopped being sold (older trips may have paid). */
   cost: number;
@@ -176,12 +181,20 @@ export interface TripResult {
   rankGifts?: RankGift[];
 }
 
-/** The gift of reaching an explorer rank: Bait, parts (scrap, glimmer) and supplies (content ids). */
+/**
+ * The gift of reaching an explorer rank: Bait, parts (scrap, glimmer, shards of the explorer's element)
+ * and supplies (content ids), and from rank 5 one gear piece. `gear` and `converted` are absent in
+ * results stored before rank gear.
+ */
 export interface RankGift {
   rank: number;
   bait: number;
   parts: Partial<Record<PartKind, number>>;
   supplies: string[];
+  /** The gear piece now in the bag. */
+  gear?: GrantLoot['gear'];
+  /** The gear piece that did not fit the bag and became parts (already in `parts`). */
+  converted?: GrantLoot['converted'];
 }
 
 export interface Milestone {

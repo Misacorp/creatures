@@ -12,6 +12,18 @@ export interface SupportFx {
   cleanse?: boolean;
 }
 
+/** One row of the explorer rank gifts (`RULES.expeditions.rank.gifts`), whole numbers only. */
+export interface RankGiftRow {
+  bait: number;
+  scrap: number;
+  glimmer: number;
+  /** Shards of the explorer's element. */
+  shards: number;
+  /** Rarity weights (basis points, summing to 10000) of the gift's one gear piece; null: no gear piece. */
+  gearOddsBp: { common: number; rare: number; epic: number } | null;
+  supplies: readonly string[];
+}
+
 /** One row of the raid difficulty curve (`RULES.raid.curve.ranks`), whole numbers only. */
 export interface RankRow {
   hpBp: number;
@@ -1022,22 +1034,68 @@ export const RULES = {
       xpForRank: [0, 200, 800, 2_000, 4_500, 10_000, 22_000, 45_000, 90_000, 160_000],
       speedBpPerRank: 200,
       /**
-       * A fixed one-time gift for reaching each rank from 2 to 10 (index 0 is rank 2): Bait, parts and
-       * supplies (content ids), growing with rank, with ranks 7 to 10 the biggest. Every rank unlocks
-       * or gives something, so there is always a next thing to look forward to. Granted once per
-       * (creature, rank) on the claim that raises the rank. Kept modest: the sim checks the economy.
+       * A fixed one-time gift for reaching each rank from 2 to 10 (index 0 is rank 2): Bait, parts,
+       * supplies (content ids) and, from rank 4, shards of the explorer's own element and, from rank 5, one
+       * gear piece tagged with the explorer's element (item level of the rank reached; `gearOddsBp` are the
+       * rarity weights, summing to 10000). Ranking up is the creature's achievement, so shards and gear
+       * follow the creature, not the place. Raised on 2026-10-21 ("richer rank gifts", Misa) without a
+       * balance pass: materials and Bait first, then shards and gear, rising to rank 10. Granted once per
+       * (creature, rank) on the claim that raises the rank, so several explorers are a good reason to
+       * explore with more than one creature.
        */
       gifts: [
-        { bait: 2, scrap: 1, glimmer: 0, supplies: [] },
-        { bait: 3, scrap: 1, glimmer: 0, supplies: [] },
-        { bait: 4, scrap: 2, glimmer: 0, supplies: [] },
-        { bait: 5, scrap: 2, glimmer: 0, supplies: [] },
-        { bait: 6, scrap: 3, glimmer: 1, supplies: [] },
-        { bait: 50, scrap: 5, glimmer: 2, supplies: ['lantern-good', 'satchel-good'] },
-        { bait: 75, scrap: 8, glimmer: 3, supplies: ['map-scrap-good', 'satchel-good'] },
-        { bait: 100, scrap: 10, glimmer: 4, supplies: ['lantern-great'] },
-        { bait: 150, scrap: 15, glimmer: 6, supplies: ['map-scrap-great', 'satchel-great'] },
-      ],
+        { bait: 10, scrap: 5, glimmer: 0, shards: 0, gearOddsBp: null, supplies: [] },
+        { bait: 15, scrap: 8, glimmer: 0, shards: 0, gearOddsBp: null, supplies: [] },
+        { bait: 20, scrap: 8, glimmer: 0, shards: 2, gearOddsBp: null, supplies: [] },
+        {
+          bait: 25,
+          scrap: 10,
+          glimmer: 0,
+          shards: 3,
+          gearOddsBp: { common: 8_000, rare: 2_000, epic: 0 },
+          supplies: [],
+        },
+        {
+          bait: 40,
+          scrap: 12,
+          glimmer: 1,
+          shards: 4,
+          gearOddsBp: { common: 0, rare: 10_000, epic: 0 },
+          supplies: [],
+        },
+        {
+          bait: 50,
+          scrap: 5,
+          glimmer: 2,
+          shards: 5,
+          gearOddsBp: { common: 0, rare: 9_500, epic: 500 },
+          supplies: ['lantern-good', 'satchel-good'],
+        },
+        {
+          bait: 75,
+          scrap: 8,
+          glimmer: 3,
+          shards: 6,
+          gearOddsBp: { common: 0, rare: 9_000, epic: 1_000 },
+          supplies: ['map-scrap-good', 'satchel-good'],
+        },
+        {
+          bait: 100,
+          scrap: 10,
+          glimmer: 4,
+          shards: 8,
+          gearOddsBp: { common: 0, rare: 7_500, epic: 2_500 },
+          supplies: ['lantern-great'],
+        },
+        {
+          bait: 150,
+          scrap: 15,
+          glimmer: 6,
+          shards: 10,
+          gearOddsBp: { common: 0, rare: 5_000, epic: 5_000 },
+          supplies: ['map-scrap-great', 'satchel-great'],
+        },
+      ] as RankGiftRow[],
     },
     /**
      * Familiarity, per creature and destination, three stars: 1 from `tripsForStar1` finished trips

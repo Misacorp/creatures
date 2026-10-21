@@ -11,6 +11,8 @@ import {
   SUPPLY_TIERS,
   allSpecies,
   closedReasons,
+  gearBase,
+  tagElement,
   partsBonusBp,
   content,
   createSeededRng,
@@ -47,7 +49,10 @@ import {
   nextSlot,
   offerChanceBp,
   rankGift,
+  rankGiftParts,
   rankGiftsBetween,
+  rollRankGiftItem,
+  shardOf,
   rankSum,
   rankUnlocks,
   rollJournal,
@@ -618,6 +623,49 @@ describe('explorer rank, trip length and slots', () => {
       expect(rankGift(rank)?.supplies.length, `supplies at rank ${String(rank)}`).toBeGreaterThan(
         0,
       );
+    }
+  });
+
+  it('adds shards from rank 4 and a gear piece from rank 5, with rising odds', () => {
+    const top = RULES.expeditions.rank.xpForRank.length;
+    for (let rank = 2; rank <= 3; rank++) {
+      expect(rankGift(rank)?.shards).toBe(0);
+      expect(rankGift(rank)?.gearOddsBp).toBeNull();
+    }
+    expect(rankGift(4)?.shards).toBe(2);
+    expect(rankGift(4)?.gearOddsBp).toBeNull();
+    let lastShards = 0;
+    let lastEpic = 0;
+    for (let rank = 4; rank <= top; rank++) {
+      const g = rankGift(rank);
+      expect(g?.shards, `shards at rank ${String(rank)}`).toBeGreaterThan(lastShards);
+      lastShards = g?.shards ?? 0;
+      if (rank < 5) continue;
+      const odds = g?.gearOddsBp;
+      if (odds === null || odds === undefined) throw new Error(`no gear at rank ${String(rank)}`);
+      expect(odds.common + odds.rare + odds.epic).toBe(10_000);
+      expect(odds.epic, `epic at rank ${String(rank)}`).toBeGreaterThanOrEqual(lastEpic);
+      lastEpic = odds.epic;
+      if (rank >= 6) expect(odds.common).toBe(0);
+    }
+    expect(rankGift(9)?.gearOddsBp?.epic).toBeGreaterThan(0);
+  });
+
+  it('pays the shards in the explorer element and rolls the gear piece for that element', () => {
+    const gift = rankGift(5);
+    if (gift === null) throw new Error('no gift');
+    expect(rankGiftParts(gift, 'ember')).toEqual({
+      scrap: gift.parts.scrap,
+      [shardOf('ember')]: gift.shards,
+    });
+    expect(rankGiftParts(rankGift(2) ?? gift, 'tide')[shardOf('tide')]).toBeUndefined();
+    expect(rollRankGiftItem(createSeededRng('none'), rankGift(3) ?? gift, 'tide', 3)).toBeNull();
+    const rng = createSeededRng('rank-gear');
+    for (let i = 0; i < 20; i++) {
+      const item = rollRankGiftItem(rng, rankGift(6) ?? gift, 'grove', 6);
+      if (item === null) throw new Error('no item');
+      expect(item.rarity).not.toBe('common');
+      expect(tagElement(gearBase(item.baseId)?.tag ?? 'neutral')).toBe('grove');
     }
   });
 

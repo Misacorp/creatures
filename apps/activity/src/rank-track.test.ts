@@ -92,6 +92,27 @@ describe('the gift in words', () => {
     expect(giftText({ bait: 0, parts: {}, supplies: ['lantern-basic'] })).toBe('Candle Lantern');
   });
 
+  it('says shards and the gear piece in words, "of its element" since the ladder is for every creature', () => {
+    expect(
+      giftText({
+        bait: 25,
+        parts: { scrap: 10 },
+        supplies: [],
+        shards: 3,
+        gearOddsBp: { common: 8000, rare: 2000, epic: 0 },
+      }),
+    ).toBe('25 Bait, 10 scrap, 3 shards of its element, a gear piece');
+    expect(
+      giftText({
+        bait: 0,
+        parts: {},
+        supplies: [],
+        shards: 0,
+        gearOddsBp: { common: 0, rare: 10000, epic: 0 },
+      }),
+    ).toBe('a rare gear piece');
+  });
+
   it('matches the gift the rules set for every rank', () => {
     for (let rank = 2; rank <= MAX_EXPLORER_RANK; rank++) {
       const gift = rankGift(rank);

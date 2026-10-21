@@ -38,6 +38,7 @@ const view: TripResultView = {
   explorer: { id: 'e', species: 'sproutle', shiny: false, name: 'Sproutle' },
   place: { id: 'tidepools', name: 'Tidepools' },
   hours: 12,
+  setOut: [],
   failure: null,
   pushOn: null,
   finds: [pendingFind(teachable, waiting.creatures), pendingFind(known, waiting.creatures)],

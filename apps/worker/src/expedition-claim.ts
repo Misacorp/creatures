@@ -450,13 +450,25 @@ function payExplorerXp(
         explorer.id,
         rank,
         gift,
+        { element: speciesOf(explorer.species).element, place: expedition.destination_id },
       );
       if (granted.fresh) {
         gifts.push({
           rank,
           bait: gift.bait,
-          parts: { ...gift.parts },
+          parts: { ...granted.view.parts },
           supplies: [...gift.supplies],
+          gear: granted.view.gear.map((g) => ({
+            id: g.id,
+            baseId: g.baseId,
+            rarity: g.rarity,
+            ...(g.itemLevel === undefined ? {} : { itemLevel: g.itemLevel }),
+          })),
+          converted: granted.view.converted.map((g) => ({
+            baseId: g.baseId,
+            rarity: g.rarity,
+            ...(g.itemLevel === undefined ? {} : { itemLevel: g.itemLevel }),
+          })),
         });
       }
     }

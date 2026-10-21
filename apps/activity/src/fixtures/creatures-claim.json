@@ -385,6 +385,7 @@
         "kit": [],
         "destination": "tidepools",
         "twist": null,
+        "weather": null,
         "rolls": 2,
         "cost": 0,
         "treat": false,

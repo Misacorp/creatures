@@ -1755,7 +1755,8 @@
     "lines": [
       "A creature earns explorer XP from its own trips, and more from longer ones.",
       "Each rank makes its trips a little shorter. Ranks open places, the 24 hour trip and better choices.",
-      "Your slots come from all your creatures' ranks added together."
+      "Your slots come from all your creatures' ranks added together.",
+      "Each new rank gives that creature a one-time gift: Bait and parts, later shards and a gear piece of its element."
     ],
     "section": "expeditions"
   },

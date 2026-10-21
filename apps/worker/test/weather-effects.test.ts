@@ -79,6 +79,10 @@ interface TripJson {
   startedAt: number;
   endsAt: number;
   rolls: number;
+  weather?: {
+    boon: { id: string; name: string };
+    omen: { id: string; name: string } | null;
+  } | null;
 }
 
 const tripOf = (res: { body: Record<string, unknown> }): TripJson =>
@@ -128,6 +132,11 @@ describe('trips under the weather', () => {
           omen: null,
           timeBp: -1_000,
         });
+        // The trip view names them for the claim screen's "Set out with" line.
+        expect(fair.weather).toEqual({
+          boon: { id: 'fair-winds', name: 'Fair Winds' },
+          omen: null,
+        });
 
         sky(ctx, 'market-day', 'muddy-roads');
         const muddy = tripOf(await send(p, b));
@@ -138,6 +147,8 @@ describe('trips under the weather', () => {
           timeBp: 1_500,
           supplyBp: -3_000,
         });
+        expect(muddy.weather?.boon.id).toBe('market-day');
+        expect(muddy.weather?.omen).toMatchObject({ id: 'muddy-roads' });
         // Both were logged, once each.
         expect(weatherUses(ctx, 'trip')).toBe(2);
       },

@@ -40,6 +40,7 @@ import {
   tripMs,
   tripTicks,
   tripWeather,
+  weatherDef,
   weatherTimeMs,
   NO_TRIP_WEATHER,
   treatCost,
@@ -101,6 +102,7 @@ import type {
   SendInput,
   SlotsView,
   TripsState,
+  TripWeatherView,
 } from './expedition-types';
 
 export type {
@@ -115,6 +117,7 @@ export type {
   ProfileView,
   PushOnResultView,
   RankGiftView,
+  TripWeatherView,
   SendInput,
   SlotsView,
   TripsState,
@@ -382,6 +385,27 @@ export class Expeditions {
     );
   }
 
+  /**
+   * The Boon and Omen that changed this trip, by name, from what was stored when it was sent. Null for a trip
+   * that no weather touched (nothing is stored then), from before the weather, or with a damaged value.
+   */
+  private tripWeatherView(row: ExpeditionRow): TripWeatherView | null {
+    if (row.weather_json === null) return null;
+    try {
+      const parsed = v.safeParse(StoredTripWeatherSchema, JSON.parse(row.weather_json));
+      if (!parsed.success) return null;
+      const boon = weatherDef(parsed.output.boon);
+      if (boon === undefined) return null;
+      const omen = parsed.output.omen === null ? undefined : weatherDef(parsed.output.omen);
+      return {
+        boon: { id: boon.id, name: boon.name },
+        omen: omen === undefined ? null : { id: omen.id, name: omen.name },
+      };
+    } catch {
+      return null;
+    }
+  }
+
   private parseResult(row: ExpeditionRow): ExpeditionResult | null {
     if (row.result === null) return null;
     try {
@@ -416,6 +440,7 @@ export class Expeditions {
       kit,
       destination: row.destination_id,
       twist: row.special_id,
+      weather: this.tripWeatherView(row),
       rolls: sentTicks(row),
       cost: row.cost,
       treat: row.treat === 1,

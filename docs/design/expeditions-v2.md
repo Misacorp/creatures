@@ -131,7 +131,19 @@ Expeditions should **grow with the player**:
      - longer trips (24 h);
      - better supply tiers;
      - **targeted expeditions** (bias toward a chosen species you have already found).
-   - Each rank-up is a small celebration with a reveal.
+   - Each rank-up is a small celebration with a reveal, and a **one-time gift** per creature and rank (`RULES.expeditions.rank.gifts`, richer since 2026-10-21). Materials and Bait first, then shards and a gear piece. Shards and the gear piece are **of the explorer's own element** (not the place's): ranking up is the creature's achievement, so it is a good reason to explore with several creatures. The gear piece is rolled like a trip's gear find (item level of the rank reached, the explorer's element as its tag, never the Compass) with the odds below; a full bag turns it into parts like every other grant.
+
+     | Rank | Bait | Scrap | Glimmer | Shards | Gear piece (common / rare / epic) | Supplies                       |
+     | ---- | ---- | ----- | ------- | ------ | --------------------------------- | ------------------------------ |
+     | 2    | 10   | 5     |         |        |                                   |                                |
+     | 3    | 15   | 8     |         |        |                                   |                                |
+     | 4    | 20   | 8     |         | 2      |                                   |                                |
+     | 5    | 25   | 10    |         | 3      | 80% / 20% / 0%                    |                                |
+     | 6    | 40   | 12    | 1       | 4      | 0% / 100% / 0%                    |                                |
+     | 7    | 50   | 5     | 2       | 5      | 0% / 95% / 5%                     | Good Lantern, Good Satchel     |
+     | 8    | 75   | 8     | 3       | 6      | 0% / 90% / 10%                    | Good Map Scrap, Good Satchel   |
+     | 9    | 100  | 10    | 4       | 8      | 0% / 75% / 25%                    | Great Lantern                  |
+     | 10   | 150  | 15    | 6       | 10     | 0% / 50% / 50%                    | Great Map Scrap, Great Satchel |
 3. **Destination mastery.**
    - Each destination has three stars: a number of trips, catching every species there, and a shiny found there.
    - Stars unlock a **deeper area** of that destination, with better odds and a rare species (one in five deeper-area rolls, since 2026-10-20), plus small permanent bonuses there (for example, -10% supplies cost).

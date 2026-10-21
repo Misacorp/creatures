@@ -152,6 +152,25 @@ export function TripResult({
         </p>
       ))}
 
+      {view.setOut.length > 0 && (
+        <div class="tr-setout">
+          <p class="label">Set out with</p>
+          <ul class="tr-setout-list" aria-label="Set out with">
+            {view.setOut.map((item) => (
+              <li key={item.key}>
+                {item.entry === undefined ? (
+                  item.text
+                ) : (
+                  <GlossaryTag entry={item.entry} look="text">
+                    {item.text}
+                  </GlossaryTag>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {(view.counts.length > 0 || view.loot !== null) && (
         <div class="tr-loot">
           <p class="label">Brought home</p>
@@ -212,6 +231,12 @@ export function TripResult({
               </li>
             ))}
           </ul>
+          {(gift.gear.gear.length > 0 || gift.gear.converted.length > 0) && (
+            <LootList
+              loot={{ ...gift.gear, parts: {}, blueprints: [] }}
+              label={`${gift.title}: gear`}
+            />
+          )}
         </Callout>
       ))}
 

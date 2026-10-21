@@ -55,26 +55,30 @@
     "rankGifts": [
       {
         "rank": 2,
-        "bait": 2,
+        "bait": 10,
         "parts": {
-          "scrap": 1
+          "scrap": 5
         },
-        "supplies": []
+        "supplies": [],
+        "gear": [],
+        "converted": []
       },
       {
         "rank": 3,
-        "bait": 3,
+        "bait": 15,
         "parts": {
-          "scrap": 1
+          "scrap": 8
         },
-        "supplies": []
+        "supplies": [],
+        "gear": [],
+        "converted": []
       }
     ]
   },
   "state": {
     "serverNow": 1799852544002,
     "balances": {
-      "bait": 309,
+      "bait": 345,
       "essence": 0
     },
     "starterChosen": false,
@@ -512,6 +516,7 @@
         "kit": [],
         "destination": "tidepools",
         "twist": null,
+        "weather": null,
         "rolls": 1,
         "cost": 0,
         "treat": false,
@@ -576,19 +581,23 @@
           "rankGifts": [
             {
               "rank": 2,
-              "bait": 2,
+              "bait": 10,
               "parts": {
-                "scrap": 1
+                "scrap": 5
               },
-              "supplies": []
+              "supplies": [],
+              "gear": [],
+              "converted": []
             },
             {
               "rank": 3,
-              "bait": 3,
+              "bait": 15,
               "parts": {
-                "scrap": 1
+                "scrap": 8
               },
-              "supplies": []
+              "supplies": [],
+              "gear": [],
+              "converted": []
             }
           ]
         },
@@ -603,6 +612,7 @@
         "kit": ["lure-great"],
         "destination": "tidepools",
         "twist": null,
+        "weather": null,
         "rolls": 1,
         "cost": 0,
         "treat": false,
@@ -682,11 +692,14 @@
           "rankGifts": [
             {
               "rank": 4,
-              "bait": 4,
+              "bait": 20,
               "parts": {
-                "scrap": 2
+                "scrap": 8,
+                "ember-shard": 2
               },
-              "supplies": []
+              "supplies": [],
+              "gear": [],
+              "converted": []
             }
           ],
           "slotUnlocked": {
@@ -742,6 +755,7 @@
         "kit": ["lure-great", "map-scrap-basic"],
         "destination": "tidepools",
         "twist": null,
+        "weather": null,
         "rolls": 1,
         "cost": 0,
         "treat": false,

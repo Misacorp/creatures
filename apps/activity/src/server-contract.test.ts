@@ -1150,7 +1150,7 @@ describe('the expedition requests the client sends', () => {
     expect(failed.result.pushOn).toMatchObject({ risk: 'risky', outcome: 'failed' });
     const worked = parseClaimResponse(expeditionClaimWorked);
     expect(worked.result.slotUnlocked?.total).toBe(2);
-    expect(worked.result.rankGifts?.[0]).toMatchObject({ rank: 4, bait: 4, parts: { scrap: 2 } });
+    expect(worked.result.rankGifts?.[0]).toMatchObject({ rank: 4, bait: 20, parts: { scrap: 8 } });
     expect(worked.result.rankGifts?.[0]?.supplies).toEqual([]);
     expect(worked.result.journal?.[0]?.entryId).toBe('tide-first-pool');
     expect(parseClaimResponse(expeditionClaimRecall).result.recalled).toBe(true);

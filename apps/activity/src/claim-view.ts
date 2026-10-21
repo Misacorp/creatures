@@ -4,16 +4,17 @@
  * worked out from the server's result alone (names and texts come from the shared content), so nothing
  * here can disagree with what the server paid.
  */
-import { journalEntry, expeditionContent } from '@creatures/game';
+import { GLOSSARY_IDS, journalEntry, expeditionContent } from '@creatures/game';
 import type { ClaimResult } from './api';
 import { BAIT_ICON } from './count-items';
-import type { JournalFind, RankGift, TripResult } from './expedition-types';
+import type { JournalFind, RankGift, Trip, TripResult } from './expedition-types';
+import type { GrantLoot } from './gear-types';
 import type { XpBoost } from './experience';
 import { lootIsEmpty } from './gear-view';
 import { partName, partsEntries } from './gear-view';
 import type { IconRef } from './icon-ref';
 import { rewardPileItems, type PileSource } from './reward-pile';
-import { goalName, kindName, supplyKindOf, supplyName } from './trip-view';
+import { goalName, kindName, lengthLabel, supplyKindOf, supplyName } from './trip-view';
 
 export type RevealTone = 'home' | 'recalled' | 'failed';
 
@@ -160,6 +161,8 @@ export interface RankGiftView {
   /** "Rank 4 gift". */
   title: string;
   lines: GiftLine[];
+  /** The gear piece of the gift, as grant loot for the shared loot list (empty before rank 5). */
+  gear: Pick<GrantLoot, 'gear' | 'converted'>;
 }
 
 /** The things of one rank's gift, one line each: Bait, parts, supplies (several of a kind are counted). */
@@ -197,5 +200,52 @@ export function rankGiftViews(result: Pick<ClaimResult, 'rankGifts'>): RankGiftV
     rank: gift.rank,
     title: `Rank ${String(gift.rank)} gift`,
     lines: giftLines(gift),
+    gear: { gear: gift.gear ?? [], converted: gift.converted ?? [] },
   }));
+}
+
+/** One thing the trip set out with: its words, and the glossary entry it opens when tapped (if any). */
+export interface SetOutItem {
+  key: string;
+  text: string;
+  entry?: string;
+}
+
+/**
+ * What the player put into the trip, in plain words: the length, each supply packed, a treat, the day's
+ * Boon and Omen that changed it, the weekly twist and a push-on goal. A trip from before a field was stored
+ * just leaves it out; an empty list means nothing to show.
+ */
+export function setOutItems(
+  trip: Pick<Trip, 'duration' | 'kit' | 'treat' | 'twist' | 'weather'>,
+  result: Pick<TripResult, 'pushOn'>,
+): SetOutItem[] {
+  const items: SetOutItem[] = [{ key: 'length', text: `${lengthLabel(trip.duration)} trip` }];
+  for (const [i, id] of trip.kit.entries()) {
+    const kind = supplyKindOf(id);
+    items.push({
+      key: `supply-${String(i)}-${id}`,
+      text: supplyName(id),
+      ...(kind === null ? {} : { entry: GLOSSARY_IDS.supply(kind) }),
+    });
+  }
+  if (trip.treat) items.push({ key: 'treat', text: 'Treat', entry: 'treat' });
+  if (trip.weather !== undefined && trip.weather !== null) {
+    items.push({ key: 'boon', text: trip.weather.boon.name, entry: 'boon' });
+    if (trip.weather.omen !== null) {
+      items.push({ key: 'omen', text: trip.weather.omen.name, entry: 'omen' });
+    }
+  }
+  if (trip.twist !== null) {
+    const twist = expeditionContent.specials.twists.find((t) => t.id === trip.twist);
+    items.push({ key: 'twist', text: twist?.name ?? 'Weekly twist', entry: 'weekly-special' });
+  }
+  if (result.pushOn !== undefined) {
+    items.push({
+      key: 'push-on',
+      text: `Push on: ${goalName(result.pushOn.goalId)}`,
+      entry: 'push-on',
+    });
+  }
+  return items;
 }

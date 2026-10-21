@@ -31,7 +31,9 @@ import {
   rollOffer,
   rollTripCatches,
   rollTripLoot,
+  rankGiftParts,
   rankGiftsBetween,
+  rollRankGiftItem,
   rollWorth,
   seasonOf,
   slotsFor,
@@ -655,10 +657,17 @@ function payTrip(
     'trip',
   );
   // The one-time gift of every rank this trip reached (Bait, and parts and supplies with the gear sim).
-  for (const { gift } of rankGiftsBetween(rank, rankOfCreature(player, explorer.id))) {
+  for (const { rank: giftRank, gift } of rankGiftsBetween(
+    rank,
+    rankOfCreature(player, explorer.id),
+  )) {
     player.bait += gift.bait;
     if (ctx.gear !== undefined) {
-      addParts(player, gift.parts, ctx);
+      // Shards and the gear piece follow the explorer's element, not the place.
+      const element = speciesOf(explorer.speciesId).element;
+      addParts(player, rankGiftParts(gift, element), ctx);
+      const piece = rollRankGiftItem(ctx.gear.rng, gift, element, giftRank);
+      if (piece !== null) grantItem(player, piece);
       for (const id of gift.supplies) {
         if (supplyDef(id) === undefined) continue;
         player.supplies[id] = (player.supplies[id] ?? 0) + 1;

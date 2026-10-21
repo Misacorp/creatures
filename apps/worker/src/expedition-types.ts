@@ -8,6 +8,7 @@ import type {
   AccountStat,
   ClosedReason,
   ExpeditionLength,
+  GearRarity,
   PartsBundle,
   SuppliesId,
   XpBoost,
@@ -101,10 +102,20 @@ export interface ExpeditionResult {
 export interface RankGiftView {
   rank: number;
   bait: number;
-  /** Scrap and glimmer. */
+  /** Scrap, glimmer and shards of the explorer's element (a converted gear piece's yield is included). */
   parts: PartsBundle;
   /** Supplies, one content id each. */
   supplies: string[];
+  /** The gear piece now in the bag (empty for the first ranks; absent in results stored before rank gear). */
+  gear?: { id: string; baseId: string; rarity: GearRarity; itemLevel?: number }[];
+  /** The gear piece that did not fit the bag and became parts (already counted in `parts`). */
+  converted?: { baseId: string; rarity: GearRarity; itemLevel?: number }[];
+}
+
+/** The Boon and Omen a trip went out under (content ids and names). */
+export interface TripWeatherView {
+  boon: { id: string; name: string };
+  omen: { id: string; name: string } | null;
 }
 
 export interface OfferGoalView {
@@ -128,6 +139,8 @@ export interface ExpeditionView {
   destination: string;
   /** The weekly twist that applied, if the trip went to the special destination that week. */
   twist: string | null;
+  /** The day's Boon and Omen that changed this trip, by name (set when the trip was sent); null when none did. */
+  weather: TripWeatherView | null;
   rolls: number;
   /** Bait paid for supplies (always 0 now: supplies cannot be bought). */
   cost: number;

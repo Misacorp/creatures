@@ -66,11 +66,13 @@
     "rankGifts": [
       {
         "rank": 2,
-        "bait": 2,
+        "bait": 10,
         "parts": {
-          "scrap": 1
+          "scrap": 5
         },
-        "supplies": []
+        "supplies": [],
+        "gear": [],
+        "converted": []
       }
     ],
     "experience": {
@@ -93,7 +95,7 @@
   "state": {
     "serverNow": 1799776800000,
     "balances": {
-      "bait": 202,
+      "bait": 210,
       "essence": 0
     },
     "starterChosen": false,
@@ -404,6 +406,7 @@
         "kit": [],
         "destination": "ember-caves",
         "twist": null,
+        "weather": null,
         "rolls": 15,
         "cost": 0,
         "treat": false,
@@ -479,11 +482,13 @@
           "rankGifts": [
             {
               "rank": 2,
-              "bait": 2,
+              "bait": 10,
               "parts": {
-                "scrap": 1
+                "scrap": 5
               },
-              "supplies": []
+              "supplies": [],
+              "gear": [],
+              "converted": []
             }
           ],
           "experience": {

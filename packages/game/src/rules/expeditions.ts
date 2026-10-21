@@ -118,11 +118,15 @@ export function nextSlot(
   return at === undefined ? null : { kind: 'rank_sum', at };
 }
 
-/** The one-time gift of reaching an explorer rank: Bait, parts and supplies (content ids). */
+/** The one-time gift of reaching an explorer rank: Bait, parts, supplies (content ids), shards and a gear piece. */
 export interface RankGift {
   bait: number;
-  /** Scrap and glimmer; zero amounts left out. */
+  /** Scrap and glimmer; zero amounts left out. Shards are `shards`, of the explorer's element. */
   parts: PartsBundle;
+  /** Shards of the explorer's element (0 for the first ranks). */
+  shards: number;
+  /** Rarity weights of the gift's one gear piece (basis points); null: no gear piece. */
+  gearOddsBp: { common: number; rare: number; epic: number } | null;
   supplies: readonly string[];
 }
 
@@ -133,7 +137,40 @@ export function rankGift(rank: number): RankGift | null {
   const parts: PartsBundle = {};
   if (gift.scrap > 0) parts.scrap = gift.scrap;
   if (gift.glimmer > 0) parts.glimmer = gift.glimmer;
-  return { bait: gift.bait, parts, supplies: [...gift.supplies] };
+  return {
+    bait: gift.bait,
+    parts,
+    shards: gift.shards,
+    gearOddsBp: gift.gearOddsBp === null ? null : { ...gift.gearOddsBp },
+    supplies: [...gift.supplies],
+  };
+}
+
+/** The parts a rank gift pays an explorer of `element`: its scrap and glimmer plus the shards of that element. */
+export function rankGiftParts(gift: RankGift, element: Element): PartsBundle {
+  const parts: PartsBundle = { ...gift.parts };
+  if (gift.shards > 0) parts[shardOf(element)] = gift.shards;
+  return parts;
+}
+
+/**
+ * The gear piece of a rank gift, or null when the gift has none: the rarity by the gift's odds (one
+ * draw), then a piece tagged with the explorer's element at the item level of the rank reached
+ * (`rollExpeditionItem`, never the Crossroads Compass: ranking up is the creature's own achievement).
+ */
+export function rollRankGiftItem(
+  rng: Rng,
+  gift: RankGift,
+  explorerElement: Element,
+  rank: number,
+): GearItem | null {
+  const odds = gift.gearOddsBp;
+  if (odds === null) return null;
+  const rarity = pickWeighted(
+    rng,
+    RARITIES.map((r) => ({ rarity: r, weight: odds[r] })),
+  ).rarity;
+  return rollExpeditionItem(rng, rarity, { element: explorerElement, crossroads: false }, rank);
 }
 
 /**

@@ -87,6 +87,26 @@
   margin: 0;
 }
 
+.tr-setout .label,
+.tr-setout p {
+  margin: 0;
+}
+
+/* One or two lines of plain words, separated by dots; a supply or a Boon opens its card. */
+.tr-setout-list {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--haze);
+}
+
+.tr-setout-list li + li::before {
+  content: '\00b7';
+  margin: 0 0.375rem;
+}
+
 .tr-counts {
   display: flex;
   flex-wrap: wrap;

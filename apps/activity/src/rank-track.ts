@@ -17,11 +17,19 @@ import type { TrackStep, TrackUnlock } from './progress-track';
 import { lengthLabel, supplyName } from './trip-view';
 
 /** The gift as short words: "20 Bait, 2 scrap, Candle Lantern". Parts are lower-cased names. */
-export function giftText(gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'>): string {
+export function giftText(
+  gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'> &
+    Partial<Pick<RankGift, 'shards' | 'gearOddsBp'>>,
+): string {
   const items: string[] = [];
   if (gift.bait > 0) items.push(`${String(gift.bait)} Bait`);
   for (const [kind, amount] of Object.entries(gift.parts) as [PartKind, number][]) {
     if (amount > 0) items.push(`${String(amount)} ${partName(kind).toLowerCase()}`);
+  }
+  // The ladder is for every creature, so the shards and the piece are "of its element".
+  if ((gift.shards ?? 0) > 0) items.push(`${String(gift.shards)} shards of its element`);
+  if (gift.gearOddsBp !== null && gift.gearOddsBp !== undefined) {
+    items.push(gift.gearOddsBp.common === 0 ? 'a rare gear piece' : 'a gear piece');
   }
   for (const id of gift.supplies) items.push(supplyName(id));
   return items.join(', ');
@@ -30,7 +38,7 @@ export function giftText(gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'>): s
 /** The unlocks of a rank, one entry each: places, goals, trip lengths, then the gift. */
 function rankUnlockList(
   unlocks: RankUnlocks,
-  gift: Pick<RankGift, 'bait' | 'parts' | 'supplies'> | null,
+  gift: Parameters<typeof giftText>[0] | null,
 ): TrackUnlock[] {
   const out: TrackUnlock[] = [];
   for (const place of unlocks.destinations) {

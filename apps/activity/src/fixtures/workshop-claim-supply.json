@@ -22,7 +22,7 @@
   "gear": {
     "serverNow": 1799881344002,
     "balances": {
-      "bait": 303,
+      "bait": 339,
       "essence": 0
     },
     "inventory": {
@@ -37,9 +37,9 @@
       "charm": 13
     },
     "parts": {
-      "scrap": 25,
+      "scrap": 42,
       "tide-shard": 9,
-      "ember-shard": 0,
+      "ember-shard": 2,
       "grove-shard": 0,
       "spark-shard": 0,
       "mire-shard": 0,
@@ -175,7 +175,7 @@
         "gear": [],
         "converted": [],
         "parts": {
-          "scrap": 1
+          "scrap": 8
         },
         "blueprints": [],
         "key": "rank:00000000-0000-4000-8400-000000000003:3",
@@ -186,7 +186,7 @@
         "gear": [],
         "converted": [],
         "parts": {
-          "scrap": 1
+          "scrap": 5
         },
         "blueprints": [],
         "key": "rank:00000000-0000-4000-8400-000000000003:2",
@@ -244,7 +244,8 @@
         "gear": [],
         "converted": [],
         "parts": {
-          "scrap": 2
+          "scrap": 8,
+          "ember-shard": 2
         },
         "blueprints": [],
         "key": "rank:00000000-0000-4000-8400-000000000002:4",
@@ -284,7 +285,7 @@
   "state": {
     "serverNow": 1799881344002,
     "balances": {
-      "bait": 303,
+      "bait": 339,
       "essence": 0
     },
     "starterChosen": false,
@@ -722,6 +723,7 @@
         "kit": [],
         "destination": "tidepools",
         "twist": null,
+        "weather": null,
         "rolls": 1,
         "cost": 0,
         "treat": false,
@@ -786,19 +788,23 @@
           "rankGifts": [
             {
               "rank": 2,
-              "bait": 2,
+              "bait": 10,
               "parts": {
-                "scrap": 1
+                "scrap": 5
               },
-              "supplies": []
+              "supplies": [],
+              "gear": [],
+              "converted": []
             },
             {
               "rank": 3,
-              "bait": 3,
+              "bait": 15,
               "parts": {
-                "scrap": 1
+                "scrap": 8
               },
-              "supplies": []
+              "supplies": [],
+              "gear": [],
+              "converted": []
             }
           ]
         },
@@ -813,6 +819,7 @@
         "kit": ["lure-great"],
         "destination": "tidepools",
         "twist": null,
+        "weather": null,
         "rolls": 1,
         "cost": 0,
         "treat": false,
@@ -892,11 +899,14 @@
           "rankGifts": [
             {
               "rank": 4,
-              "bait": 4,
+              "bait": 20,
               "parts": {
-                "scrap": 2
+                "scrap": 8,
+                "ember-shard": 2
               },
-              "supplies": []
+              "supplies": [],
+              "gear": [],
+              "converted": []
             }
           ],
           "slotUnlocked": {
@@ -952,6 +962,7 @@
         "kit": ["lure-great", "map-scrap-basic"],
         "destination": "tidepools",
         "twist": null,
+        "weather": null,
         "rolls": 1,
         "cost": 0,
         "treat": false,

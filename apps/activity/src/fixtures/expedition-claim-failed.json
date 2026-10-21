@@ -265,6 +265,7 @@
         "kit": ["lure-great", "map-scrap-basic"],
         "destination": "tidepools",
         "twist": null,
+        "weather": null,
         "rolls": 1,
         "cost": 0,
         "treat": false,

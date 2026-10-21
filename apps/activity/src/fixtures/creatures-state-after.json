@@ -1,7 +1,7 @@
 {
   "serverNow": 1799776656000,
   "balances": {
-    "bait": 82,
+    "bait": 90,
     "essence": 0
   },
   "starterChosen": false,
@@ -322,6 +322,7 @@
       "kit": [],
       "destination": "tidepools",
       "twist": null,
+      "weather": null,
       "rolls": 2,
       "cost": 0,
       "treat": false,
@@ -391,6 +392,7 @@
       "kit": [],
       "destination": "tidepools",
       "twist": null,
+      "weather": null,
       "rolls": 2,
       "cost": 0,
       "treat": false,
@@ -435,11 +437,13 @@
         "rankGifts": [
           {
             "rank": 2,
-            "bait": 2,
+            "bait": 10,
             "parts": {
-              "scrap": 1
+              "scrap": 5
             },
-            "supplies": []
+            "supplies": [],
+            "gear": [],
+            "converted": []
           }
         ],
         "experience": {
@@ -470,6 +474,7 @@
       "kit": [],
       "destination": "tidepools",
       "twist": null,
+      "weather": null,
       "rolls": 2,
       "cost": 0,
       "treat": false,
@@ -552,6 +557,7 @@
       "kit": [],
       "destination": "tidepools",
       "twist": null,
+      "weather": null,
       "rolls": 2,
       "cost": 0,
       "treat": false,
@@ -631,6 +637,7 @@
       "kit": [],
       "destination": "tidepools",
       "twist": null,
+      "weather": null,
       "rolls": 2,
       "cost": 0,
       "treat": false,
