@@ -21,13 +21,16 @@ import {
   undercroftOpen,
   xpBoost,
   xpWeather,
+  type GearItem,
+  type PartsBundle,
+  type Treasure,
   type WeatherDay,
 } from '@creatures/game';
 import { type DungeonRoomResult } from '@creatures/engine';
 import { awardExperience } from './creature-exp';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
 import { SUPPLIES_PER_RUN } from './dungeon-path';
-import { currentHp, keepsakeViews, runNode, type RunState } from './dungeon-state';
+import { currentHp, keepsakeViews, runNode, treasureView, type RunState } from './dungeon-state';
 import type {
   DungeonOutcome,
   DungeonPack,
@@ -58,6 +61,42 @@ function xpDayEffects(day: WeatherDay | null): { name: string; bp: number }[] {
 }
 
 const totalOf = (pack: DungeonPack): number => pack.bait + pack.essence + pack.scrap;
+
+/**
+ * What the treasures a run won are, as a grant draws them: gear (already rolled when the room opened),
+ * supplies (one id each), blueprint base ids and parts. A defeat wins none (an item cannot be halved).
+ */
+function treasureLoot(
+  treasures: readonly Treasure[],
+  depth: number,
+): {
+  parts: PartsBundle;
+  gear: { item: GearItem; origin: { kind: 'dungeon'; depth: number } }[];
+  supplies: string[];
+  blueprints: string[];
+} {
+  let parts: PartsBundle = {};
+  const gear: { item: GearItem; origin: { kind: 'dungeon'; depth: number } }[] = [];
+  const supplies: string[] = [];
+  const blueprints: string[] = [];
+  for (const t of treasures) {
+    switch (t.kind) {
+      case 'gear':
+        gear.push({ item: t.item, origin: { kind: 'dungeon', depth } });
+        break;
+      case 'blueprint':
+        blueprints.push(t.baseId);
+        break;
+      case 'supplies':
+        for (let i = 0; i < t.count; i++) supplies.push(t.supplyId);
+        break;
+      case 'shards':
+        parts = addParts(parts, t.parts);
+        break;
+    }
+  }
+  return { parts, gear, supplies, blueprints };
+}
 
 /**
  * Ends a run, paying everything in the caller's transaction: the progress (depth only after a clear),
@@ -213,6 +252,8 @@ function payRun(
     (bossNode === undefined ? undefined : nodeFoe(bossNode, depth))?.element ?? 'tide';
   // The scrap, the glimmer and the shards the rooms dropped (all at risk in the pack, kept with it).
   const packParts = addParts({ scrap, glimmer }, kept.shards ?? {});
+  // A rare room's treasure is won unless the run ended in a defeat; it is paid by the same grant (so once).
+  const prize = treasureLoot(outcome === 'defeat' ? [] : st.treasures, depth);
   const gearDeps = gearDepsOf(deps);
   const grant = grantDungeonRun(
     gearDeps,
@@ -220,7 +261,14 @@ function payRun(
     day,
     attempt,
     (rng) => {
-      if (chestPaid) return { parts: addParts(packParts, {}), gear: [], supplies: [] };
+      if (chestPaid) {
+        return {
+          parts: addParts(packParts, prize.parts),
+          gear: prize.gear,
+          supplies: prize.supplies,
+          blueprints: prize.blueprints,
+        };
+      }
       const loot = rollDungeonLoot(
         rng,
         depth,
@@ -233,9 +281,13 @@ function payRun(
         bossElement,
       );
       return {
-        parts: addParts(packParts, loot.parts),
-        gear: loot.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
-        supplies: loot.supplies,
+        parts: addParts(addParts(packParts, loot.parts), prize.parts),
+        gear: [
+          ...loot.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
+          ...prize.gear,
+        ],
+        supplies: [...loot.supplies, ...prize.supplies],
+        blueprints: prize.blueprints,
       };
     },
     { bait, essence, meta: { day, depth, attempt } },
@@ -264,6 +316,10 @@ function payRun(
     gear: [...(banked?.gear ?? []), ...grant.gear],
     converted: [...(banked?.converted ?? []), ...grant.converted],
     supplies: [...(banked?.supplies ?? []), ...(grant.supplies ?? [])],
+    ...(grant.blueprints.length === 0 ? {} : { blueprints: grant.blueprints }),
+    ...(outcome === 'defeat' && st.treasures[0] !== undefined
+      ? { treasureLost: treasureView(st.treasures[0]) }
+      : {}),
     landmark,
     streak: streakPaid,
   };

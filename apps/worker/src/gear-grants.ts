@@ -495,7 +495,13 @@ export function grantDungeonRun(
   userId: string,
   day: string,
   attempt: number,
-  draw: (rng: Rng) => { parts: PartsBundle; gear: Draft['gear']; supplies?: string[] },
+  draw: (rng: Rng) => {
+    parts: PartsBundle;
+    gear: Draft['gear'];
+    supplies?: string[];
+    /** Blueprint base ids (a rare room's treasure): each is learned, or marks a known one, as any blueprint find. */
+    blueprints?: string[];
+  },
   credits?: PayoutCredits,
 ): GrantView {
   return payOnce(deps, userId, `dungeon:${day}:${String(attempt)}`, {
@@ -505,7 +511,7 @@ export function grantDungeonRun(
       return {
         gear: drawn.gear,
         parts: addParts({}, drawn.parts),
-        blueprints: [],
+        blueprints: drawn.blueprints ?? [],
         ...(drawn.supplies === undefined ? {} : { supplies: drawn.supplies }),
       };
     },

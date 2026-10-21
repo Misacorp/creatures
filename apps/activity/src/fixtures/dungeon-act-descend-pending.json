@@ -517,12 +517,19 @@
         "t": "hit",
         "round": 1,
         "creature": "00000000-0000-4000-8300-000000000020",
-        "damage": 0,
+        "damage": 27,
         "matchupBp": 7500,
         "bonusBp": 0,
         "mark": null,
-        "bossHp": 957,
-        "dodged": true
+        "bossHp": 930
+      },
+      {
+        "t": "mark",
+        "round": 1,
+        "creature": "00000000-0000-4000-8300-000000000020",
+        "player": "p1",
+        "element": "grove",
+        "replaced": null
       },
       {
         "t": "turn",
@@ -536,8 +543,8 @@
         "damage": 84,
         "matchupBp": 15000,
         "bonusBp": 0,
-        "mark": null,
-        "bossHp": 873
+        "mark": "grove",
+        "bossHp": 846
       },
       {
         "t": "mark",
@@ -545,7 +552,7 @@
         "creature": "00000000-0000-4000-8300-000000000021",
         "player": "p1",
         "element": "tide",
-        "replaced": null
+        "replaced": "grove"
       },
       {
         "t": "turn",
@@ -560,7 +567,7 @@
         "matchupBp": 10000,
         "bonusBp": 0,
         "mark": "tide",
-        "bossHp": 791
+        "bossHp": 764
       },
       {
         "t": "boss_hit",
@@ -573,12 +580,12 @@
       {
         "t": "round_end",
         "round": 1,
-        "bossHp": 791
+        "bossHp": 764
       },
       {
         "t": "round_start",
         "round": 2,
-        "bossHp": 791,
+        "bossHp": 764,
         "mark": "tide"
       },
       {
@@ -596,11 +603,12 @@
         "t": "hit",
         "round": 2,
         "creature": "00000000-0000-4000-8300-000000000020",
-        "damage": 27,
+        "damage": 0,
         "matchupBp": 7500,
         "bonusBp": 0,
         "mark": "tide",
-        "bossHp": 764
+        "bossHp": 764,
+        "dodged": true
       },
       {
         "t": "turn",
@@ -751,10 +759,7 @@
         "source": "gimmick",
         "target": "00000000-0000-4000-8300-000000000020",
         "damage": 3,
-        "reducedBp": 6000,
-        "crit": true,
-        "critBp": 5000,
-        "armored": 1
+        "reducedBp": 6000
       },
       {
         "t": "boss_hit",
@@ -832,14 +837,11 @@
         "t": "hit",
         "round": 4,
         "creature": "00000000-0000-4000-8300-000000000022",
-        "damage": 143,
+        "damage": 82,
         "matchupBp": 10000,
-        "bonusBp": 7500,
+        "bonusBp": 0,
         "mark": "tide",
-        "bossHp": 128,
-        "luckBp": 7500,
-        "crit": true,
-        "critBp": 7500
+        "bossHp": 189
       },
       {
         "t": "gimmick",
@@ -878,12 +880,12 @@
       {
         "t": "round_end",
         "round": 4,
-        "bossHp": 128
+        "bossHp": 189
       },
       {
         "t": "round_start",
         "round": 5,
-        "bossHp": 128,
+        "bossHp": 189,
         "mark": "tide"
       },
       {
@@ -905,13 +907,28 @@
         "t": "hit",
         "round": 5,
         "creature": "00000000-0000-4000-8300-000000000022",
-        "damage": 128,
+        "damage": 180,
         "matchupBp": 10000,
         "bonusBp": 0,
         "mark": "tide",
-        "bossHp": 0,
+        "bossHp": 9,
         "ability": "flare-strike",
         "key": "p1:c2"
+      },
+      {
+        "t": "turn",
+        "round": 5,
+        "creature": "00000000-0000-4000-8300-000000000020"
+      },
+      {
+        "t": "hit",
+        "round": 5,
+        "creature": "00000000-0000-4000-8300-000000000020",
+        "damage": 9,
+        "matchupBp": 7500,
+        "bonusBp": 0,
+        "mark": "tide",
+        "bossHp": 0
       },
       {
         "t": "round_end",
