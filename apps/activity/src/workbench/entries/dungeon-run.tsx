@@ -3,11 +3,12 @@ import { DungeonCamp } from '../../DungeonCamp';
 import { DungeonDescend } from '../../DungeonDescend';
 import { DungeonEvent } from '../../DungeonEvent';
 import { DungeonResults } from '../../DungeonResults';
+import { EquipHost } from '../../equip-from-card';
 import { GearItemsContext } from '../../gear-items-context';
 import { sampleGearItem } from '../gear-sample';
 import { DungeonRun } from '../../DungeonRun';
 import { DungeonRunStrip } from '../../DungeonRunStrip';
-import { sampleRoster } from '../../creature-card-sample';
+import { GEAR_STATE, sampleRoster } from '../../creature-card-sample';
 import actCampPending from '../../fixtures/dungeon-act-camp-pending.json';
 import actCamp from '../../fixtures/dungeon-act-camp.json';
 import actCleared from '../../fixtures/dungeon-act-cleared.json';
@@ -453,17 +454,19 @@ function ResultsDemo({ p }: { p: Props }) {
   const view = str(p, 'view');
   return (
     <GearItemsContext.Provider value={shown.rewards.gear.map(sampleGearItem)}>
-      <DungeonResults
-        run={shown}
-        initialView={view === 'rooms' ? 'rooms' : 'map'}
-        today={sampleToday({ canRun: false, last: shown })}
-        offset={0}
-        canRetry={bool(p, 'canRetry')}
-        busy={false}
-        error={null}
-        onWatch={() => undefined}
-        onRetry={() => undefined}
-      />
+      <EquipHost creatures={GEAR_STATE.creatures} onEquip={() => undefined}>
+        <DungeonResults
+          run={shown}
+          initialView={view === 'rooms' ? 'rooms' : 'map'}
+          today={sampleToday({ canRun: false, last: shown })}
+          offset={0}
+          canRetry={bool(p, 'canRetry')}
+          busy={false}
+          error={null}
+          onWatch={() => undefined}
+          onRetry={() => undefined}
+        />
+      </EquipHost>
     </GearItemsContext.Provider>
   );
 }

@@ -1,4 +1,5 @@
 import { gearContent, talentDef, talentText } from '@creatures/game';
+import { EquipHost } from '../../equip-from-card';
 import { GearItemsContext } from '../../gear-items-context';
 import { sampleGearItem } from '../gear-sample';
 import { essenceCount, partCountItems } from '../../count-items';
@@ -9,6 +10,7 @@ import { FindBlueprint } from '../../ui/FindBlueprint';
 import { FindCreature, type FoundCreature } from '../../ui/FindCreature';
 import { FindItem, FindItems } from '../../ui/FindItem';
 import { FindList } from '../../ui/FindRow';
+import { GEAR_STATE } from '../../creature-card-sample';
 import { bool, num, str } from '../props';
 import type { Entry } from '../types';
 
@@ -66,7 +68,9 @@ const findItem: Entry = {
     }));
     return (
       <GearItemsContext.Provider value={pieces.map(sampleGearItem)}>
-        <FindItems label="Found items" pieces={pieces} />
+        <EquipHost creatures={GEAR_STATE.creatures} onEquip={() => undefined}>
+          <FindItems label="Found items" pieces={pieces} />
+        </EquipHost>
       </GearItemsContext.Provider>
     );
   },
@@ -182,44 +186,46 @@ const findRow: Entry = {
     const any = gear.length > 0 || bool(p, 'blueprint') || bool(p, 'creature');
     return (
       <GearItemsContext.Provider value={gear.map(sampleGearItem)}>
-        <div class="reveal-card pix-panel">
-          {bool(p, 'resources') && (
-            <CountBadgeList
-              items={[
-                essenceCount(14, { entry: true }),
-                ...partCountItems({ scrap: 3, glimmer: 1 }),
-              ]}
-              label="Resources"
-              class="reward-badges"
-            />
-          )}
-          {any && (
-            <FindList label="Gear, blueprints and creatures">
-              {gear.map((g) => (
-                <FindItem
-                  key={g.id}
-                  id={g.id}
-                  baseId={g.baseId}
-                  rarity={g.rarity}
-                  level={g.itemLevel}
-                  motion
-                />
-              ))}
-              {bool(p, 'blueprint') && <FindBlueprint baseId={WITH_ELEMENT} />}
-              {bool(p, 'creature') && (
-                <FindCreature
-                  creature={{
-                    species: 'lanternfin',
-                    shiny: false,
-                    talent: talentView(false),
-                    talentNew: true,
-                    badges: [{ text: 'New!', entry: null }],
-                  }}
-                />
-              )}
-            </FindList>
-          )}
-        </div>
+        <EquipHost creatures={GEAR_STATE.creatures} onEquip={() => undefined}>
+          <div class="reveal-card pix-panel">
+            {bool(p, 'resources') && (
+              <CountBadgeList
+                items={[
+                  essenceCount(14, { entry: true }),
+                  ...partCountItems({ scrap: 3, glimmer: 1 }),
+                ]}
+                label="Resources"
+                class="reward-badges"
+              />
+            )}
+            {any && (
+              <FindList label="Gear, blueprints and creatures">
+                {gear.map((g) => (
+                  <FindItem
+                    key={g.id}
+                    id={g.id}
+                    baseId={g.baseId}
+                    rarity={g.rarity}
+                    level={g.itemLevel}
+                    motion
+                  />
+                ))}
+                {bool(p, 'blueprint') && <FindBlueprint baseId={WITH_ELEMENT} />}
+                {bool(p, 'creature') && (
+                  <FindCreature
+                    creature={{
+                      species: 'lanternfin',
+                      shiny: false,
+                      talent: talentView(false),
+                      talentNew: true,
+                      badges: [{ text: 'New!', entry: null }],
+                    }}
+                  />
+                )}
+              </FindList>
+            )}
+          </div>
+        </EquipHost>
       </GearItemsContext.Provider>
     );
   },

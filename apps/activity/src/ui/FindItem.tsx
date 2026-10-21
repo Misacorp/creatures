@@ -1,14 +1,18 @@
 import type { ComponentChildren } from 'preact';
 import { useContext, useRef } from 'preact/hooks';
+import { EquipContext } from '../equip-from-card';
 import { gearBase } from '@creatures/game';
 import { FestivalTag, ItemThumb, RarityTag, SlotTag } from '../GearArt';
-import type { GearRarity, LootPiece } from '../gear-types';
+import type { GearItem, GearRarity, LootPiece } from '../gear-types';
 import { GearItemsContext } from '../gear-items-context';
 import { gearName, isFestivalBase, itemLabel, rarityName } from '../gear-view';
 import { ItemCard } from '../ItemCard';
 import { usePopoverTrigger } from '../PopoverHost';
 import { FindList, FindRow } from './FindRow';
 import { Tag } from './Tag';
+
+/** How long a hover-opened popover stays after the mouse leaves, so the mouse can reach its button. */
+const HOVER_CLOSE_MS = 200;
 
 /** A mouse or pen that can hover (a finger cannot, and taps instead). */
 const canHover = (event: PointerEvent): boolean =>
@@ -51,9 +55,59 @@ export function FindItem({
   const slot = gearBase(baseId)?.slot;
   const items = useContext(GearItemsContext);
   const item = id === undefined ? undefined : items.find((i) => i.id === id);
+  const equip = useContext(EquipContext);
   const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();
   // Opened by hovering: leaving closes it. A tap or Enter while it is open keeps it open (pinned).
   const hovered = useRef(false);
+  // Leaving the row (or the popover) closes a hover-opened popover after a moment, so the mouse can cross to
+  // the popover's Equip button; entering either cancels it.
+  const leaving = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelLeave = (): void => {
+    if (leaving.current !== null) clearTimeout(leaving.current);
+    leaving.current = null;
+  };
+  const leaveSoon = (): void => {
+    cancelLeave();
+    leaving.current = setTimeout(() => {
+      leaving.current = null;
+      if (!hovered.current) return;
+      hovered.current = false;
+      host?.close();
+    }, HOVER_CLOSE_MS);
+  };
+  const popover = (shown: GearItem) => ({
+    label: gearName(shown.baseId),
+    body: (
+      <div
+        class="find-item-pop"
+        onPointerEnter={(event: PointerEvent) => {
+          if (event.pointerType !== 'touch') cancelLeave();
+        }}
+        onPointerLeave={(event: PointerEvent) => {
+          if (event.pointerType !== 'touch' && hovered.current) leaveSoon();
+        }}
+      >
+        <ItemCard item={shown} plainRarity />
+        {equip !== null && (
+          <div class="pop-actions pop-actions-center">
+            <button
+              type="button"
+              class="pop-action"
+              onClick={() => {
+                const from = ref.current;
+                cancelLeave();
+                hovered.current = false;
+                host?.close();
+                equip.open(shown, from);
+              }}
+            >
+              Equip
+            </button>
+          </div>
+        )}
+      </div>
+    ),
+  });
   const button =
     item === undefined || host === null
       ? undefined
@@ -68,23 +122,18 @@ export function FindItem({
               return;
             }
             hovered.current = false;
-            host.openCustom(`find-item:${item.id}`, ref.current, {
-              label: gearName(item.baseId),
-              body: <ItemCard item={item} plainRarity />,
-            });
+            cancelLeave();
+            host.openCustom(`find-item:${item.id}`, ref.current, popover(item));
           },
           onPointerEnter: (event: PointerEvent) => {
             if (ref.current === null || !canHover(event) || host.anchor !== null) return;
             hovered.current = true;
-            host.openCustom(`find-item:${item.id}`, ref.current, {
-              label: gearName(item.baseId),
-              body: <ItemCard item={item} plainRarity />,
-            });
+            cancelLeave();
+            host.openCustom(`find-item:${item.id}`, ref.current, popover(item));
           },
           onPointerLeave: (event: PointerEvent) => {
             if (event.pointerType === 'touch' || !hovered.current) return;
-            hovered.current = false;
-            host.close();
+            leaveSoon();
           },
         };
   const plain = button !== undefined;
