@@ -135,7 +135,7 @@ function isOrigin(value: unknown): value is ItemOrigin {
   }
 }
 
-function isGearItem(value: unknown): value is GearItem {
+export function isGearItem(value: unknown): value is GearItem {
   if (!isRecord(value)) return false;
   const needs = value['needs'];
   const madeBy = value['madeBy'];

@@ -246,3 +246,28 @@ describe('the Equip button of a found item popover', () => {
     expect(dialogs(p)).toHaveLength(0);
   });
 });
+
+describe('a found item given its card directly', () => {
+  const card = { ...sampleGearItem(piece), id: 'preview' };
+  const given = (
+    <FindList label="Treasure">
+      <FindItem card={card} baseId={piece.baseId} rarity={piece.rarity} level={piece.itemLevel} />
+    </FindList>
+  );
+
+  it('opens that card on a tap with no inventory id and nothing loaded, and has no Equip', () => {
+    const p = draw(given, false, { creatures, onEquip: vi.fn() });
+    p.click(rowButton(p));
+    expect(byClass(p.root, 'idc')).toHaveLength(1);
+    expect(byClass(p.root, 'pop-action')).toHaveLength(0);
+  });
+
+  it('opens on hover with a mouse, also without Equip', () => {
+    vi.useFakeTimers();
+    stubHover(true);
+    const p = draw(given, false, { creatures, onEquip: vi.fn() });
+    p.pointer(rowButton(p), 'pointerenter', { x: 0, y: 0, kind: 'mouse' });
+    expect(byClass(p.root, 'idc')).toHaveLength(1);
+    expect(byClass(p.root, 'pop-action')).toHaveLength(0);
+  });
+});

@@ -12,7 +12,7 @@
  */
 import type { FightEvent } from '@creatures/engine';
 import type { ExperienceView } from './experience';
-import type { GearRarity, LootPiece, PartsBundle } from './gear-types';
+import type { GearItem, GearRarity, LootPiece, PartsBundle } from './gear-types';
 import type { GearSlot } from '@creatures/game';
 
 export type Element = 'tide' | 'ember' | 'grove' | 'spark' | 'mire';
@@ -160,7 +160,14 @@ export interface DungeonKeepsakeView {
  * rolled item (its base, rarity and level); a blueprint is a base the player did not know when it was rolled.
  */
 export type DungeonTreasureView =
-  | { kind: 'gear'; baseId: string; rarity: GearRarity; itemLevel: number }
+  | {
+      kind: 'gear';
+      baseId: string;
+      rarity: GearRarity;
+      itemLevel: number;
+      /** The piece's full card (its real stats and lines, the item a won run grants): only while the room waits. */
+      card?: GearItem;
+    }
   | { kind: 'blueprint'; baseId: string }
   | { kind: 'supplies'; supplyId: string; count: number }
   | { kind: 'shards'; parts: PartsBundle };

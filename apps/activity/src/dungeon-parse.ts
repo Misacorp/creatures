@@ -9,6 +9,7 @@ import { isExperienceView } from './experience';
 import {
   isBlueprintLoot,
   isConvertedLoot,
+  isGearItem,
   isGearLoot,
   isPartsBundle,
   isRarity,
@@ -158,7 +159,12 @@ function isTreasureView(value: unknown): value is DungeonTreasureView {
   if (!isRecord(value)) return false;
   switch (value['kind']) {
     case 'gear':
-      return isStr(value['baseId']) && isRarity(value['rarity']) && isCount(value['itemLevel']);
+      return (
+        isStr(value['baseId']) &&
+        isRarity(value['rarity']) &&
+        isCount(value['itemLevel']) &&
+        (value['card'] === undefined || isGearItem(value['card']))
+      );
     case 'blueprint':
       return isStr(value['baseId']);
     case 'supplies':
