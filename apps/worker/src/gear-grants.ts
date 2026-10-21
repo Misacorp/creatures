@@ -6,8 +6,9 @@
  * draws from the live RNG and applies the grant, a repeat returns what the first one gave and draws
  * nothing. Call them inside the transaction of the action they belong to (they nest as savepoints).
  *
- * A full inventory never loses a drop: an item that does not fit becomes its dismantle yield, shown
- * as `converted`. A blueprint the player already knows adds a well-thumbed mark (scrap once it has the most).
+ * The bag may overflow: a grant that arrives while the bag is under the cap puts every item in, even
+ * past the cap. A grant that arrives while the bag is full (at or over the cap) turns its items into
+ * their dismantle yield, shown as `converted`. An activity can decide that at its start instead (`room`). A blueprint the player already knows adds a well-thumbed mark (scrap once it has the most).
  */
 import {
   RULES,
@@ -158,6 +159,7 @@ function grantOnce(
   source: GearSource,
   draw: () => Draft,
   actor?: string,
+  room?: boolean,
 ): { view: GrantView; fresh: boolean } {
   const { storage } = deps;
   const sql = storage.sql;
@@ -176,8 +178,10 @@ function grantOnce(
     const view = emptyView();
     const parts: PartsBundle = {};
     add(parts, draft.parts);
+    // Decided once for the whole grant, before any of its items goes in.
+    const fits = room ?? hasRoom(sql, userId);
     for (const { item, origin } of draft.gear) {
-      if (hasRoom(sql, userId)) {
+      if (fits) {
         const id = insertItem(sql, userId, item, { source, now, origin });
         view.gear.push({ id, baseId: item.baseId, rarity: item.rarity, itemLevel: item.itemLevel });
       } else {
@@ -458,9 +462,11 @@ export function payOnce(
     source: GearSource;
     draw: () => Draft;
     credits?: PayoutCredits;
+    /** The bag had room when the activity started; absent: decided when the grant arrives. */
+    room?: boolean | undefined;
   },
 ): GrantView {
-  const { source, draw, credits = {} } = options;
+  const { source, draw, credits = {}, room } = options;
   return deps.storage.transactionSync(() => {
     for (const currency of ['bait', 'essence'] as const) {
       const amount = credits[currency] ?? 0;
@@ -479,7 +485,7 @@ export function payOnce(
         );
       }
     }
-    return grantOnce(deps, userId, key, source, draw, userId).view;
+    return grantOnce(deps, userId, key, source, draw, userId, room).view;
   });
 }
 
@@ -497,9 +503,11 @@ export function grantDungeonRun(
   attempt: number,
   draw: (rng: Rng) => { parts: PartsBundle; gear: Draft['gear']; supplies?: string[] },
   credits?: PayoutCredits,
+  room?: boolean,
 ): GrantView {
   return payOnce(deps, userId, `dungeon:${day}:${String(attempt)}`, {
     source: 'dungeon',
+    room,
     draw: () => {
       const drawn = draw(deps.rng);
       return {
@@ -526,9 +534,11 @@ export function grantDungeonChest(
   attempt: number,
   tag: string,
   draw: (rng: Rng) => { parts: PartsBundle; gear: Draft['gear']; supplies?: string[] },
+  room?: boolean,
 ): GrantView {
   return payOnce(deps, userId, `dungeon:${day}:${String(attempt)}:${tag}`, {
     source: 'dungeon',
+    room,
     draw: () => {
       const drawn = draw(deps.rng);
       return {

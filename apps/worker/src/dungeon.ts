@@ -57,6 +57,7 @@ import { devKey } from './dev-state';
 import { keyTaken, settleSpend } from './keyed-action';
 import { GameError, atomically, type Outcome } from './outcome';
 import { grantDungeonChest } from './gear-grants';
+import { hasRoom } from './gear-store';
 import { spend } from './ledger';
 import { drawSeed } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
@@ -693,6 +694,7 @@ export class Dungeon {
       bossCleared: false,
       deepest: 0,
       banked: null,
+      bagFull: !hasRoom(this.sql, userId),
     };
     // A map run has no run-level seed (every fight draws its own when the player steps in, stored in
     // `dungeon_steps`): the NOT NULL column holds an empty string.
@@ -791,7 +793,15 @@ export class Dungeon {
       gearRng: this.deps.gearRng,
       analytics: this.deps.analytics,
       bank: (tag, draw) =>
-        grantDungeonChest(gearDepsOf(this.deps), userId, row.day, row.attempt, tag, draw),
+        grantDungeonChest(
+          gearDepsOf(this.deps),
+          userId,
+          row.day,
+          row.attempt,
+          tag,
+          draw,
+          st.bagFull === undefined ? undefined : !st.bagFull,
+        ),
       lockDepth: (depth) => lockDepth(this.deps, userId, depth),
     };
     const act = body.act;

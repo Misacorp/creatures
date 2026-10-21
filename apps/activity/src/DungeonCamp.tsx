@@ -65,7 +65,7 @@ interface Props {
  * take a keepsake (one of two), or Swap (a creature from the collection comes in at full HP, and
  * one of the row goes home; the knocked-out one is easy to see). The row sits above the choices on
  * the same board as the dungeon entry, each creature with its HP under it, and can be rearranged
- * for free (drag, or tap two); the order goes along with the choice. A Swap has one more step after
+ * for free by dragging (a tap opens a creature's popover); the order goes along with the choice. A Swap has one more step after
  * "who goes home": the row as it will stand, with the new creature in the place of the one that left,
  * which can be rearranged before the swap is confirmed, so the recruit can stand anywhere. Apart
  * from the three, the player may head home and keep the whole pack; that asks once more before it
@@ -119,7 +119,9 @@ export function DungeonCamp({
         species: fresh.species,
         level: fresh.level,
         element: getSpecies(fresh.species)?.element ?? 'unknown',
+        role: getSpecies(fresh.species)?.role ?? 'unknown',
         hp: null,
+        gear: [],
       },
     ];
   };

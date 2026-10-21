@@ -17,6 +17,7 @@ import type { GearRarity, GrantLoot, PartKind, PartsBundle } from '../../gear-ty
 import type { RevealFrame } from '../../reveal-anim';
 import type { PileSource } from '../../reward-pile';
 import { RewardPile } from '../../RewardPile';
+import { BagFullNote } from '../../ui/BagFullNote';
 import { CountBadge, type CountItem } from '../../ui/CountBadge';
 import { RevealLater, RevealShell, RevealStage } from '../../ui/RevealShell';
 import { RewardSummary } from '../../ui/RewardSummary';
@@ -569,7 +570,33 @@ const itemCard: Entry = {
   },
 };
 
+const bagFullNote: Entry = {
+  name: 'BagFullNote',
+  file: 'apps/activity/src/ui/BagFullNote.tsx',
+  group: 'Loot & reveals',
+  description:
+    'The warning where the player sets off (the dungeon, an expedition, the raid) while the bag is full: gear found then becomes parts. It never blocks. Nothing shows while the bag has room.',
+  controls: {
+    used: { kind: 'number', min: 0, max: 80 },
+    reserved: { kind: 'number', min: 0, max: 5 },
+    workshop: { kind: 'toggle' },
+  },
+  defaults: { used: 62, reserved: 0, workshop: true },
+  presets: [
+    { name: 'Overflowing', props: {} },
+    { name: 'Exactly full', props: { used: 59, reserved: 1 } },
+    { name: 'Room left (nothing)', props: { used: 40 } },
+  ],
+  render: (p) => (
+    <BagFullNote
+      inventory={{ cap: 60, used: num(p, 'used'), reserved: num(p, 'reserved') }}
+      onOpenWorkshop={bool(p, 'workshop') ? () => undefined : undefined}
+    />
+  ),
+};
+
 export const lootEntries: readonly Entry[] = [
+  bagFullNote,
   rewardPile,
   rewardSummary,
   lootList,

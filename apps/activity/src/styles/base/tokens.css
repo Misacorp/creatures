@@ -30,6 +30,15 @@
   --bad: #ff5f6d;
   --line: #4a4170; /* quiet outline between things on a panel */
   --mine: #3a3270; /* a slot that holds your creature */
+  /* The dungeon pack's leather: the canvas that rolls out from under the backpack, its outline and its top edge. */
+  --leather: #5a3a20;
+  --leather-dark: #3b2414;
+  --leather-light: #7a4a24;
+  /* The keepsakes' velvet: the same three for the locket's canvas. */
+  --velvet: #4a2350;
+  --velvet-dark: #2a1030;
+  --velvet-light: #6b3a73;
+  --velvet-glow: #b56cc4; /* the keepsake chips' edge: the keepsakes' own purple */
   --display: 'Jersey 10', 'Courier New', ui-monospace, monospace;
   --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --px: 3px; /* one "pixel" of UI chrome */
@@ -69,6 +78,7 @@
   --good-rgb: 111 220 140;
   --bad-rgb: 255 95 109;
   --gold-rgb: 255 210 90;
+  --tide-rgb: 79 143 230;
   /* An ink outline round pixel text: four steps (thin: two pixels, whatever --px is). */
   --ink-outline:
     var(--px) 0 var(--ink), calc(var(--px) * -1) 0 var(--ink), 0 var(--px) var(--ink),

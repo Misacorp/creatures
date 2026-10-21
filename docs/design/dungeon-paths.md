@@ -101,7 +101,7 @@ Content: `packages/game/src/content/data/dungeon-keepsakes.json`.
 
 ## The camp (checkpoint)
 
-When the run reaches the camp, the player picks **one** of these. They may also reorder the row for free: the row sits on the same board as the dungeon entry (drag a creature onto another, or tap two), with each creature's current HP under it. The order goes along with the choice in the same act; there is no separate reorder step.
+When the run reaches the camp, the player picks **one** of these. They may also reorder the row for free: the row sits on the same board as the dungeon entry (drag a creature onto another; a tap opens the creature's popover and never moves it, 2026-10-21), with each creature's current HP under it. The order goes along with the choice in the same act; there is no separate reorder step.
 
 - **Rest:** standing creatures recover `RULES.dungeon.camp.restBp` (40%) of max HP.
 - **Swap:** one creature in the row (knocked out or not) goes home. One of the player's other creatures, not already in the row, takes its place at full HP. Its stats and gear are loaded at that moment and frozen for the rest of the run.

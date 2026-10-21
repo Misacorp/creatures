@@ -10,6 +10,7 @@ import { mapFocusNode, scrollRoomIntoTopHalf } from './dungeon-scroll';
 import type { DungeonAct, DungeonRunState } from './dungeon-types';
 import { usePrefersReducedMotion } from './hooks';
 import { arriveScroll, shouldScrollToCard } from './reveal-arrive';
+import { Alert } from './ui/Alert';
 
 /**
  * An open run: the strip (the row with its HP, the keepsakes, the pack), then what the run stands at:
@@ -61,11 +62,7 @@ export function DungeonRun({
   return (
     <div ref={top} class="dungeon-run">
       <DungeonRunStrip state={state} />
-      {error !== null && (
-        <p class="error" role="alert">
-          {error}
-        </p>
-      )}
+      {error !== null && <Alert level="alert">{error}</Alert>}
       {state.pending?.kind === 'event' && (
         <DungeonEvent
           key={state.step}

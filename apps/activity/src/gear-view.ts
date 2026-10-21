@@ -371,6 +371,16 @@ export function bagText(inventory: GearState['inventory']): string {
   return inventory.reserved > 0 ? `${base} (${String(inventory.reserved)} held for a craft)` : base;
 }
 
+/** The bag is full: items and crafts still to be claimed are at or over the cap (the bag can overflow). */
+export function bagFull(inventory: GearState['inventory']): boolean {
+  return inventory.used + inventory.reserved >= inventory.cap;
+}
+
+/** The full bag warning's message under its title: how full the bag is and what happens to gear found now. */
+export function bagFullDetail(inventory: GearState['inventory']): string {
+  return `${String(inventory.used + inventory.reserved)} / ${String(inventory.cap)}. Gear you find becomes parts.`;
+}
+
 export interface EquipChoice {
   item: GearItem;
   /** The name of another creature that wears it now; null otherwise. */

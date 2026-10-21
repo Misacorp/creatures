@@ -239,6 +239,7 @@ function payRun(
       };
     },
     { bait, essence, meta: { day, depth, attempt } },
+    st.bagFull === undefined ? undefined : !st.bagFull,
   );
   let streakPaid: DungeonRewards['streak'] = null;
   const bonus = firstOfDay ? streakBonus(streak) : null;

@@ -5,6 +5,7 @@ import { CoachMark } from '../../CoachMark';
 import { Countdown } from '../../Countdown';
 import { tierOf } from '../../countdown';
 import { cssVars } from '../../css-vars';
+import { Alert, type AlertLevel } from '../../ui/Alert';
 import { Callout } from '../../ui/Callout';
 import { PixelHeading } from '../../ui/PixelHeading';
 import { TitlePlate } from '../../ui/TitlePlate';
@@ -244,10 +245,80 @@ const countdown: Entry = {
   },
 };
 
+const LEVELS: readonly AlertLevel[] = ['info', 'success', 'warning', 'alert'];
+
+const alert: Entry = {
+  name: 'Alert',
+  file: 'apps/activity/src/ui/Alert.tsx',
+  group: 'Headings & banners',
+  covers: ['ALERT_ICONS', 'ALERT_DISMISS_MS'],
+  description:
+    "A note in four levels (info, success, warning, alert): the level's icon on the left, an optional bold title, then the message on one line or several, inline after the title or under it. With an X it can be dismissed: it slides out in pixel steps and folds away. The X is centred on a single line of text and stays in the top right corner when there are more. The game's notice line, its errors and the full bag warning are alerts.",
+  controls: {
+    level: { kind: 'select', options: LEVELS },
+    title: { kind: 'text', maxLength: 60 },
+    text: { kind: 'text', maxLength: 300 },
+    layout: { kind: 'select', options: ['inline', 'stacked'] },
+    dismissible: { kind: 'toggle' },
+    all: { kind: 'toggle' },
+  },
+  defaults: {
+    level: 'success',
+    title: '',
+    text: 'You got your daily 20 Bait.',
+    layout: 'inline',
+    dismissible: true,
+    all: false,
+  },
+  presets: [
+    { name: 'One line, with an X', props: {} },
+    {
+      name: 'Several lines, with an X',
+      props: {
+        level: 'warning',
+        title: 'Your bag is full.',
+        text: '62 / 60. Gear you find on a dungeon run, an expedition or in the raid becomes parts until you dismiss or dismantle a few items in the Workshop.',
+      },
+    },
+    {
+      name: 'Title on its own line',
+      props: {
+        level: 'info',
+        title: 'The raid starts on Sunday',
+        text: 'Place your creatures on the board before the finale locks it.',
+        layout: 'stacked',
+        dismissible: false,
+      },
+    },
+    { name: 'An error', props: { level: 'alert', text: 'The Workshop could not be loaded.' } },
+    { name: 'All four levels', props: { all: true, title: 'Title.' } },
+  ],
+  render: (p) => {
+    const one = (level: AlertLevel, key?: string) => {
+      const title = str(p, 'title');
+      return (
+        <Alert
+          key={key ?? `${level}-${str(p, 'text')}`}
+          level={level}
+          title={title === '' ? undefined : title}
+          layout={str(p, 'layout') === 'stacked' ? 'stacked' : 'inline'}
+          onDismiss={bool(p, 'dismissible') ? () => undefined : undefined}
+        >
+          {str(p, 'text')}
+        </Alert>
+      );
+    };
+    if (bool(p, 'all')) return <div>{LEVELS.map((level) => one(level, level))}</div>;
+    const level = str(p, 'level');
+    return one(LEVELS.find((l) => l === level) ?? 'info');
+  },
+};
+
 export const headingEntries: readonly Entry[] = [
   pixelHeading,
   titlePlate,
   callout,
+  alert,
   banner,
   coachMark,
   countdown,

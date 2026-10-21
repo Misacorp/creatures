@@ -1,5 +1,5 @@
 import { act } from 'preact/test-utils';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { sampleRoster } from './creature-card-sample';
 import type { Creature } from './api';
 import { Dungeon } from './Dungeon';
@@ -39,6 +39,7 @@ import {
   visibleText,
   type Page,
 } from './test-dom';
+import { installDrag } from './test-drag';
 
 /**
  * The Dungeon tab driven by the real server answers (`fixtures/dungeon-*.json`, captured from the
@@ -256,7 +257,7 @@ describe('the pre-run card with the real map', () => {
     expect(byClass(page.root, 'dungeon-card')).toHaveLength(0);
     expect(byClass(page.root, 'dungeon-run-map')).toHaveLength(1);
     expect(visibleText(page.root)).toContain('At the entrance');
-    expect(visibleText(page.root)).toContain('Your pack is empty.');
+    expect(visibleText(byClass(page.root, 'run-pack')[0] as FakeElement)).toContain('Empty');
     // The three creatures of the row, in order.
     expect(byClass(page.root, 'run-tile')).toHaveLength(3);
   });
@@ -283,7 +284,7 @@ describe('a move into a fight, with the real answer', () => {
     await playOut(root);
     // Back on the map, one step on, standing on the room that was played.
     expect(byClass(root, 'dungeon-run-map')).toHaveLength(1);
-    expect(visibleText(root)).toContain('In your pack:');
+    expect(byName(root, 'ul', /^In your pack:/)).toHaveLength(1);
     expect(answer.state.at).toBe('f0l0');
     expect(visibleText(root)).toContain('Room 1 / 7');
   });
@@ -362,7 +363,6 @@ describe('the camp, with the real answers', () => {
     expect(text).toContain('Head home with your pack');
     expect(byName(root, 'span', 'Bait: 1')).toHaveLength(1);
     expect(byName(root, 'span', 'Scrap: 5')).toHaveLength(1);
-    expect(text).toContain('At risk');
   });
 
   it('resumes at the camp from today, and takes a keepsake offered by the server', async () => {
@@ -408,6 +408,8 @@ describe('the camp, with the real answers', () => {
   });
 
   it('swaps, with the new row from the answer shown after it', async () => {
+    const dnd = installDrag();
+    onTestFinished(dnd.restore);
     const swapped = parseDungeonAct(actCamp);
     api.fetchDungeonToday.mockResolvedValue(parseDungeonToday(todayActive));
     api.dungeonAct.mockResolvedValue(swapped);
@@ -415,7 +417,7 @@ describe('the camp, with the real answers', () => {
     await settle();
     const fixture = bodyOf('dungeon-act-camp').act;
     if (fixture.type !== 'camp') throw new Error('camp act');
-    // The player swaps the first two creatures by taps (the order of the capture), then swaps.
+    // The player drags the first creature onto the second (the order of the capture), then swaps.
     const tile = (name: string): FakeElement => {
       const found = byClass(root, 'party-slot').find((e) =>
         (e.getAttribute('aria-label') ?? '').includes(`: ${name},`),
@@ -423,8 +425,11 @@ describe('the camp, with the real answers', () => {
       if (found === undefined) throw new Error(`no tile for ${name}`);
       return found;
     };
-    page?.click(tile(campState.team[0]?.name ?? ''));
-    page?.click(tile(campState.team[1]?.name ?? ''));
+    dnd.drag(
+      page as Page,
+      tile(campState.team[0]?.name ?? ''),
+      tile(campState.team[1]?.name ?? ''),
+    );
     page?.click(button(root, /^Swap a creature/));
     await settle();
     // Who comes in: Zipmouse, the one creature outside the row.

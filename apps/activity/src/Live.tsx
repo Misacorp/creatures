@@ -45,6 +45,7 @@ import type { Badge } from './stage-abilities';
 import { LiveStage, LogToggle } from './Stage';
 import { useRemaining } from './use-countdown';
 import { Accordion } from './ui/Accordion';
+import { Alert } from './ui/Alert';
 
 /**
  * The live Sunday finale: the lobby and the fight, with the boss HP, the row, the round's events
@@ -215,15 +216,7 @@ export function Live({
       </button>
     </p>
   );
-  const errors = (
-    <>
-      {pollError !== null && (
-        <p class="error" role="alert">
-          {pollError}
-        </p>
-      )}
-    </>
-  );
+  const errors = <>{pollError !== null && <Alert level="alert">{pollError}</Alert>}</>;
 
   if (snapshot === null) {
     return (
@@ -393,9 +386,7 @@ export function Live({
         </p>
       )}
       {lobby && showStage && mine.length === 0 && actionError !== null && (
-        <p class="error" role="alert">
-          {actionError.text}
-        </p>
+        <Alert level="alert">{actionError.text}</Alert>
       )}
 
       {fight.status !== 'lobby' && mine.length > 0 && (
@@ -409,9 +400,7 @@ export function Live({
       )}
 
       {!lobby && mine.length === 0 && actionError !== null && (
-        <p class="error" role="alert">
-          {actionError.text}
-        </p>
+        <Alert level="alert">{actionError.text}</Alert>
       )}
 
       {fight.status !== 'lobby' && <LiveDetails fight={fight} />}

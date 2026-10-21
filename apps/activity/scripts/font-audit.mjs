@@ -126,6 +126,7 @@ const PRESETS = [
     panels: 4,
   },
   { name: 'Gear list, tappable', entry: 'GearList', props: {}, panels: 1 },
+  { name: 'Run strip: the pack and the keepsakes', entry: 'DungeonRunStrip', props: {}, panels: 1 },
   {
     name: 'Creature page, the whole page',
     entry: 'CreaturePage',
