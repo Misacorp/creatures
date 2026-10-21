@@ -2508,3 +2508,11 @@ Misa: the "In your pack" line said what you carry, but not visually that it can 
 - The notice and error alerts take their text as `key`, so a new message shows again after the last one was dismissed.
 
 **The pack** (Misa chose the leather look and asked for more): the backpack (now at scale 4) sits on the left and rises above its box, and the leather canvas (`--leather` tokens) rolls out from under it to the right, holding the "Pack" title with "At risk" beside it and the loot, so the loot reads as the pack's contents.
+
+## 2026-10-21: The keepsakes get a locket and a velvet canvas; the canvases reach further under the picture
+
+Misa's next round on the run strip: the leather should start at least from the backpack's middle, and the keepsakes should get the same treatment with a picture of their own.
+
+- **One layout for both** (`.run-stash`): a 16 x 16 picture at scale 4 breaking out of the top of its box, and a canvas that reaches 3.25 rem in under the 4 rem picture, so it starts well left of the picture's middle. The colours come from three variables per canvas: leather for the pack, velvet (`--velvet` tokens, a deep plum) for the keepsakes.
+- **The keepsakes' picture is a gold locket** on a ring with a cut red gem (`LOCKET_ART` in `sprites/pack-art.ts`): small treasures kept for this run only. The results screen's keepsakes use the same block.
+- **The success icon's tick** was redrawn: the long arm one pixel longer and the whole tick a row higher, so it sits in the middle of the disc instead of on its bottom edge.

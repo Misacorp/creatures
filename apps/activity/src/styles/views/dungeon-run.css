@@ -95,11 +95,18 @@ button.run-keepsake {
 }
 
 /*
-  The pack: the backpack sits on the left and breaks out of the box (it rises above the canvas's top
-  edge), and the leather canvas rolls out from under it to the right, holding the title, "At risk" and
-  the loot, so what is on the canvas reads as what is in the pack.
+  The pack and the keepsakes: a picture (the backpack, the locket) on the left that breaks out of its
+  box (it rises above the canvas's top edge), and a canvas that rolls out from under it, starting well
+  left of the picture's middle, holding the title and what the run carries. Leather for the pack,
+  velvet for the keepsakes.
 */
-.run-ledger-cell.run-pack {
+.run-ledger-cell.run-stash {
+  --canvas: var(--leather);
+  --canvas-dark: var(--leather-dark);
+  --canvas-light: var(--leather-light);
+  --art: 4rem; /* the 16 px picture at scale 4 */
+  --tuck: 3.25rem; /* how far the canvas reaches in under the picture */
+
   flex-direction: row;
   align-items: flex-start;
   gap: 0;
@@ -107,31 +114,42 @@ button.run-keepsake {
   background: transparent;
 }
 
-.run-pack-bag {
+.run-ledger-cell.run-keepsakes-row {
+  --canvas: var(--velvet);
+  --canvas-dark: var(--velvet-dark);
+  --canvas-light: var(--velvet-light);
+}
+
+.run-stash-art {
   position: relative;
   z-index: 1;
   flex: none;
-  margin-right: -1.5rem;
+  width: var(--art);
+  margin-right: calc(var(--tuck) * -1);
   line-height: 0;
-  filter: drop-shadow(0 var(--px) 0 var(--leather-dark));
+  filter: drop-shadow(0 var(--px) 0 var(--canvas-dark));
 }
 
-.run-pack-canvas {
+.run-stash-canvas {
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: 0.375rem;
   min-width: 0;
   margin-top: 0.875rem;
-  padding: 0.5rem 0.625rem 0.625rem 2.25rem;
-  background: var(--leather);
+  padding: 0.5rem 0.625rem 0.625rem calc(var(--tuck) + 0.75rem);
+  background: var(--canvas);
   box-shadow:
-    inset 0 0 0 var(--px) var(--leather-dark),
-    inset 0 calc(var(--px) * 2) 0 0 var(--leather-light);
+    inset 0 0 0 var(--px) var(--canvas-dark),
+    inset 0 calc(var(--px) * 2) 0 0 var(--canvas-light);
 }
 
-.run-pack .run-ledger-title {
+.run-stash .run-ledger-title {
   color: var(--bone);
+}
+
+.run-stash .run-ledger-title .gtag-help {
+  background: var(--canvas-dark);
 }
 
 .run-pack-empty {

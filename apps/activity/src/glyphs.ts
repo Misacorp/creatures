@@ -325,12 +325,12 @@ const success: SpriteDef = {
   palette: { g: GOOD, k: INK },
   rows: [
     '..gggg..',
-    '.gggggg.',
-    'ggggggkg',
+    '.gggggk.',
     'gggggkkg',
     'gkggkkgg',
     'gkkkkggg',
-    '.ggkkgg.',
+    'ggkkgggg',
+    '.gggggg.',
     '..gggg..',
   ],
 };

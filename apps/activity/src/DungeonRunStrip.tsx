@@ -12,7 +12,7 @@ import type {
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { SmallCreature } from './SmallCreature';
-import { PACK_ART } from './sprites/pack-art';
+import { LOCKET_ART, PACK_ART } from './sprites/pack-art';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Bar } from './ui/Bar';
@@ -129,11 +129,11 @@ export function RunRow({
 export function RunPack({ pack }: { pack: DungeonPack }) {
   const items = packItems(pack);
   return (
-    <section class="run-ledger-cell run-pack" aria-label="Your pack">
-      <span class="run-pack-bag" aria-hidden="true">
+    <section class="run-ledger-cell run-stash run-pack" aria-label="Your pack">
+      <span class="run-stash-art" aria-hidden="true">
         <Sprite sprite={PACK_ART} scale={4} />
       </span>
-      <div class="run-pack-canvas">
+      <div class="run-stash-canvas">
         <p class="run-ledger-title">
           Pack
           {items.length > 0 && (
@@ -156,35 +156,41 @@ export function RunPack({ pack }: { pack: DungeonPack }) {
 export const KEEPSAKE_ONLY_LINE = 'Only for this run. It is gone when the run ends.';
 
 /**
- * The keepsakes the run holds: a "Keepsakes" title with a "?" that explains they last only for the
- * run, then one chip each under it; a tap opens a sheet with what that one does. Nothing when there
+ * The keepsakes the run holds, laid out like the pack: a gold locket on the left breaking out of its
+ * box, and a velvet canvas from under it with the "Keepsakes" title and its "?" (they last only for
+ * the run), then one chip each; a tap opens a sheet with what that one does. Nothing when there
  * are none.
  */
 export function RunKeepsakes({ keepsakes }: { keepsakes: readonly DungeonKeepsakeView[] }) {
   const [shown, setShown] = useState<DungeonKeepsakeView | null>(null);
   if (keepsakes.length === 0) return null;
   return (
-    <section class="run-ledger-cell run-keepsakes-row" aria-label="Keepsakes">
-      <p class="run-ledger-title">
-        Keepsakes <GlossaryTag entry="keepsake" look="help" />
-      </p>
-      <ul class="run-keepsakes" aria-label="Keepsakes">
-        {keepsakes.map((k) => (
-          <li key={k.id}>
-            <button
-              type="button"
-              class="chip run-keepsake"
-              aria-label={`${k.name}: ${k.description}`}
-              onClick={() => {
-                setShown(k);
-              }}
-            >
-              <Sprite sprite={glyphOrUnknown('sparkle')} scale={2} />
-              <span>{k.name}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+    <section class="run-ledger-cell run-stash run-keepsakes-row" aria-label="Keepsakes">
+      <span class="run-stash-art" aria-hidden="true">
+        <Sprite sprite={LOCKET_ART} scale={4} />
+      </span>
+      <div class="run-stash-canvas">
+        <p class="run-ledger-title">
+          Keepsakes <GlossaryTag entry="keepsake" look="help" />
+        </p>
+        <ul class="run-keepsakes" aria-label="Keepsakes">
+          {keepsakes.map((k) => (
+            <li key={k.id}>
+              <button
+                type="button"
+                class="chip run-keepsake"
+                aria-label={`${k.name}: ${k.description}`}
+                onClick={() => {
+                  setShown(k);
+                }}
+              >
+                <Sprite sprite={glyphOrUnknown('sparkle')} scale={2} />
+                <span>{k.name}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
       <Drawer
         open={shown !== null}
         title={shown?.name ?? ''}

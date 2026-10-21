@@ -34,6 +34,10 @@
   --leather: #5a3a20;
   --leather-dark: #3b2414;
   --leather-light: #7a4a24;
+  /* The keepsakes' velvet: the same three for the locket's canvas. */
+  --velvet: #4a2350;
+  --velvet-dark: #2a1030;
+  --velvet-light: #6b3a73;
   --display: 'Jersey 10', 'Courier New', ui-monospace, monospace;
   --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --px: 3px; /* one "pixel" of UI chrome */
