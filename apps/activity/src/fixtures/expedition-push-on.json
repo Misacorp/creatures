@@ -7,7 +7,8 @@
     "kit": ["lure-great", "map-scrap-basic"],
     "destination": "tidepools",
     "twist": null,
-    "rolls": 2,
+    "weather": null,
+    "rolls": 1,
     "cost": 0,
     "treat": false,
     "startedAt": 1799733600000,
@@ -21,7 +22,7 @@
       "goalId": "shortcut",
       "startedAt": 1799775072000,
       "endsAt": 1799782272000,
-      "oddsBp": 6100
+      "oddsBp": 6480
     }
   },
   "state": {
@@ -40,6 +41,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": true,
@@ -120,6 +122,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -197,6 +200,7 @@
         "level": 8,
         "levelCap": 15,
         "fusionCount": 0,
+        "fusionPoints": 0,
         "shiny": false,
         "nickname": null,
         "away": false,
@@ -279,7 +283,8 @@
         "kit": ["lure-great", "map-scrap-basic"],
         "destination": "tidepools",
         "twist": null,
-        "rolls": 2,
+        "weather": null,
+        "rolls": 1,
         "cost": 0,
         "treat": false,
         "startedAt": 1799733600000,
@@ -293,7 +298,7 @@
           "goalId": "shortcut",
           "startedAt": 1799775072000,
           "endsAt": 1799782272000,
-          "oddsBp": 6100
+          "oddsBp": 6480
         }
       }
     ],

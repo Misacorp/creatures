@@ -4,13 +4,10 @@ import { parseGameState } from '../../api';
 import { FindCard } from '../../FindCard';
 import { firstPick, pendingFind } from '../../find-view';
 import { useState } from 'preact/hooks';
-import { LurePicker } from '../../LurePicker';
 import { PendingCatches } from '../../PendingCatches';
 import { TalentChip } from '../../TalentChip';
 import creaturesState from '../../fixtures/creatures-state.json';
-import type { SupplyPick } from '../../expedition-types';
 import type { DuplicateChoice, PendingCatch, TalentView } from '../../talent-types';
-import { NONE } from '../data';
 import { bool, num, str } from '../props';
 import type { Entry } from '../types';
 
@@ -136,43 +133,4 @@ const pendingCatches: Entry = {
   ),
 };
 
-const LURE_PICKS: Record<string, SupplyPick[]> = {
-  [NONE]: [],
-  'lure-basic': [{ id: 'lure-basic', source: 'owned' }],
-  'lure-good': [{ id: 'lure-good', source: 'owned' }],
-  'lure-great': [{ id: 'lure-great', source: 'owned' }],
-};
-
-const lurePicker: Entry = {
-  name: 'LurePicker',
-  file: 'apps/activity/src/LurePicker.tsx',
-  group: 'Creatures & game pieces',
-  description:
-    'The lure row of the send screen: three tiers as toggle buttons with how many you have, what the chosen one does, and where to make lures (the Workshop, from Bait) when you have none.',
-  controls: {
-    basic: { kind: 'number', min: 0, max: 9 },
-    good: { kind: 'number', min: 0, max: 9 },
-    great: { kind: 'number', min: 0, max: 9 },
-    taken: { kind: 'select', options: Object.keys(LURE_PICKS) },
-  },
-  defaults: { basic: 2, good: 1, great: 0, taken: NONE },
-  presets: [
-    { name: 'Some lures', props: {} },
-    { name: 'None in stock', props: { basic: 0, good: 0, great: 0 } },
-    { name: 'A Golden Lure taken', props: { great: 1, taken: 'lure-great' } },
-  ],
-  render: (p) => (
-    <LurePicker
-      picks={LURE_PICKS[str(p, 'taken')] ?? []}
-      stock={{
-        'lure-basic': num(p, 'basic'),
-        'lure-good': num(p, 'good'),
-        'lure-great': num(p, 'great'),
-      }}
-      onChange={() => undefined}
-      onOpenWorkshop={() => undefined}
-    />
-  ),
-};
-
-export const talentEntries: readonly Entry[] = [talentChip, findCard, pendingCatches, lurePicker];
+export const talentEntries: readonly Entry[] = [talentChip, findCard, pendingCatches];

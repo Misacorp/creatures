@@ -96,6 +96,23 @@ Small items noticed during M6. Each is a one-line fix or a short task.
 10. ~~**Contract fixtures were partly script-edited** (PR #8). Left: a `pnpm fixtures:capture` script.~~ Done (2026-10-18/19): `pnpm fixtures:capture` re-captures the five scenario sets (branches, creatures, dungeon, expeditions, gear) with stable ids; see `design/testing.md`. The raid fixtures (`live-*`, `action-*`, `practice-*`, `raid-*`, `errors.json`, `request-bodies.json`) have no scenario yet: a `raid-scenario.ts` in `apps/worker/test/fixture-sets.ts` would cover them (phase 2).
 11. **Others' abilities summary** under the stage could become small icons on other players' creatures. Today it is a collapsed list.
 
+## Next UI passes (Misa, 2026-10-21)
+
+Noted while testing the expedition and Workshop rework on staging. The components exist; these are layout passes.
+
+1. **Expedition screen overhaul**, after the tick economy PR merges. Start with proposals and mockups, as for the supply picker.
+2. **Refine and Recycle flow.** Today, tapping Refine opens the recipe preview between the supply card and the creature picker, and the picker repeats a "Refine ?" header with an empty "Cost" heading. Every creature is listed, most with "Needs Crafting level 3". Ideas:
+   - Show the recipe once, inside the picker's header (in, arrow, out, time).
+   - Drop the empty Cost heading.
+   - List only the creatures that can do the job, with a short line such as "4 more need Crafting level 3".
+   - Keep the time per creature.
+3. **Creature pages show Crafting level and explorer rank.** Show both with progress bars, reusing the bars from the trip claim screen. Place them next to the creature's Experience, so a player can tell who to send exploring and who to put in the Workshop.
+4. **Smaller follow-ups from the same round:**
+   - The send screen's supply card shows the effect on the chosen trip length, not just the blurb.
+   - Stock badges on muted supply cells are hard to read.
+   - The basic supply blurbs ("More creatures") read bare on their own.
+5. **Gear crafting for non-min-maxers** (balance log B-026). Engaged and regular players' gear share stays at 10–24% late in the game, under the intent that gear grows late. A crafting pass should make crafting into gear easier for them to reach, rather than loosening the targets.
+
 ## Upkeep
 
 - **Vitest 5 and `@cloudflare/vitest-plugin` together.** One PR: vitest 5.0.3, `@cloudflare/vitest-plugin` 1.4.0 (its peer range allows vitest 5), wrangler 4.149.0 (what the plugin pins), vite 8.3.4, typescript-eslint 8.71.1, prettier 3.9.10. Regenerate `worker-configuration.d.ts`, run the full gate, then close Dependabot #2 and #13. TypeScript 7 waits for typescript-eslint support (it allows `<6.1.0`); Preact 11 gets its own PR with a workbench check.

@@ -7,12 +7,34 @@
 /** How much of the card has to be on screen, from its top edge down, to count as seen. */
 export const MIN_VISIBLE_PX = 48;
 
+/** A fresh card whose top is already this close to the top of the screen is not moved (no jiggle). */
+export const TOP_SLACK_PX = 4;
+
+/** How long a claim's "fresh" mark lives: a claim whose card never came is forgotten after this. */
+export const FRESH_TTL_MS = 10_000;
+
+let freshAt: number | null = null;
+
+/** Called by a claim action: the reveal card that mounts next arrived from this claim. */
+export function markFreshReveal(now: number = Date.now()): void {
+  freshAt = now;
+}
+
+/** True once for the card that mounts after a claim (and not after the mark has gone stale); clears the mark. */
+export function consumeFreshReveal(now: number = Date.now()): boolean {
+  const fresh = freshAt !== null && now - freshAt <= FRESH_TTL_MS;
+  freshAt = null;
+  return fresh;
+}
+
 /**
- * True when the card's top edge is not in view, so the page should bring it to the top of the screen.
- * A card whose top is already on screen is left alone (coming back to a tab with a reveal still open
- * must not move the page). `top` is the card's distance from the top of the viewport.
+ * True when the page should bring the card to the top of the screen. A card that just arrived from a
+ * claim (`fresh`) always goes to the top unless it is already there. Any other card (coming back to a
+ * tab with a reveal still open) is left alone while its top edge is on screen. `top` is the card's
+ * distance from the top of the viewport.
  */
-export function shouldScrollToCard(top: number, viewportHeight: number): boolean {
+export function shouldScrollToCard(top: number, viewportHeight: number, fresh = false): boolean {
+  if (fresh) return Math.abs(top) > TOP_SLACK_PX;
   return top < 0 || top > viewportHeight - MIN_VISIBLE_PX;
 }
 

@@ -83,6 +83,8 @@ export interface ChoiceResult {
   slot?: number;
   talent: { talentId: string; golden: boolean };
   fusionCount?: number;
+  fusionPoints?: number;
+  pointsAdded?: number;
   parts?: Partial<Record<PartKind, number>>;
 }
 

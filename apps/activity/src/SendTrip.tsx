@@ -1,13 +1,20 @@
+import { tripMs } from '@creatures/game';
 import { Tag } from './ui/Tag';
 import { useState } from 'preact/hooks';
+import { GlossaryTag } from './Glossary';
+import { glyphOrUnknown } from './glyphs';
+import { Sprite } from './sprites/Sprite';
+import { TripSummary } from './TripSummary';
+import type { Forecast } from './weather-types';
 import type { Creature } from './api';
 import { Catalogue } from './Catalogue';
+import type { TripContext } from './boost-view';
+import { getSpecies } from './game';
 import { destinationCards } from './destination-view';
 import type { SendRequest } from './expedition-api';
 import type { DestinationsView, ExpeditionLength, Slots, SupplyPick } from './expedition-types';
 import { ChoiceMark } from './ExpeditionIcons';
 import { ExplorerPicker } from './ExplorerPicker';
-import { getSpecies } from './game';
 import { HaulStrip } from './HaulStrip';
 import { LengthPicker } from './LengthPicker';
 import { clampLength, defaultExplorer, explorerOptions, sendBlocker } from './send-view';
@@ -30,6 +37,7 @@ export function SendTrip({
   view,
   viewFailed,
   timezone,
+  forecast = null,
   onRetry,
   onSend,
   onOpenWorkshop,
@@ -44,6 +52,8 @@ export function SendTrip({
   view: DestinationsView | null;
   viewFailed: boolean;
   timezone: string | null;
+  /** The valley sky; today's Boon and Omen show in the summary when they touch trips. */
+  forecast?: Forecast | null;
   onRetry: () => void;
   /** Sends the trip; resolves true when it started (the supplies are then put down). */
   onSend: (request: SendRequest) => Promise<boolean>;
@@ -82,8 +92,7 @@ export function SendTrip({
   const place = cards[index];
   const rank = explorer?.rank ?? 1;
   const duration = clampLength(length, rank);
-  const species = explorer === undefined ? undefined : getSpecies(explorer.creature.species);
-  const shardElement = place?.element ?? species?.element ?? null;
+  const shardElement = place?.element ?? null;
 
   const blocker = sendBlocker({
     slots,
@@ -93,8 +102,18 @@ export function SendTrip({
     picks,
     stock,
   });
+  // What the haul strip works the boost brackets out for (recomputed on every change).
+  const trip: TripContext = {
+    length: duration,
+    place: place?.id ?? null,
+    role: explorer === undefined ? null : (getSpecies(explorer.creature.species)?.role ?? null),
+    stars: explorer?.stars ?? 0,
+    twist: place !== undefined && view.special.destination === place.id ? view.special.twist : null,
+  };
   const choice = kitChoice(picks);
   const names = picks.map((p) => supplyName(p.id));
+  // The time the summary says the trip would be back, if sent right now.
+  const now = Date.now();
   const treatCost = explorer?.creature.treatCost ?? 0;
   // A treat the Bait no longer covers (the explorer changed, or Bait was spent) is not packed.
   const packing = treat && explorer !== undefined && bait >= treatCost;
@@ -123,15 +142,23 @@ export function SendTrip({
       </h4>
       <LengthPicker name="send-length" rank={rank} value={duration} onChange={setLength} />
 
-      <h4 class="step">
-        <span class="step-n">4</span> Supplies
-      </h4>
-      <SupplyPicker
-        picks={picks}
-        stock={stock}
-        onChange={setPicks}
-        {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}
-      />
+      <div class="step-row">
+        <h4 class="step">
+          <span class="step-n">4</span> Supplies <GlossaryTag entry="supplies" look="help" />
+        </h4>
+        {onOpenWorkshop !== undefined && (
+          <button
+            type="button"
+            class="step-craft"
+            aria-label="Craft supplies in the Workshop"
+            onClick={onOpenWorkshop}
+          >
+            <Sprite sprite={glyphOrUnknown('anvil')} scale={2} />
+            Craft
+          </button>
+        )}
+      </div>
+      <SupplyPicker picks={picks} stock={stock} onChange={setPicks} />
 
       <div class="send-summary">
         {explorer !== undefined && (
@@ -167,7 +194,27 @@ export function SendTrip({
             <ChoiceMark choice={choice} />
           </p>
         )}
-        <HaulStrip length={duration} element={shardElement} kit={picks.map((p) => p.id)} />
+        <HaulStrip
+          length={duration}
+          element={shardElement}
+          kit={picks.map((p) => p.id)}
+          trip={trip}
+          summary={
+            <TripSummary
+              duration={lengthLabel(duration)}
+              place={place?.name ?? null}
+              explorer={explorer?.name ?? null}
+              supplies={picks.map((p) => p.id)}
+              treat={packing}
+              now={now}
+              endsAt={now + tripMs(duration, rank)}
+              timezone={timezone}
+              boon={forecast?.today?.boon ?? null}
+              omen={forecast?.today?.omen ?? null}
+              twist={place?.twist ?? null}
+            />
+          }
+        />
         {blocker !== null && (
           <p class="reason" role="status">
             {blocker}

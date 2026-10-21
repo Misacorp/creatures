@@ -10,7 +10,6 @@ import {
   createSeededRng,
   dropBase,
   eligibleBases,
-  expeditionItemLevel,
   gearBase,
   gearContent,
   gearSet,
@@ -435,18 +434,13 @@ describe('where set pieces come from', () => {
   it('the Crossroads gives the Compass until item level 12, then the Wanderer pieces too', () => {
     const rng = createSeededRng('crossroads');
     for (let i = 0; i < 50; i++) {
-      expect(
-        rollExpeditionItem(
-          rng,
-          'rare',
-          { element: null, crossroads: true },
-          expeditionItemLevel(5) / 2,
-        ).baseId,
-      ).toBe('crossroads-compass');
+      expect(rollExpeditionItem(rng, 'rare', { element: null, crossroads: true }, 5).baseId).toBe(
+        'crossroads-compass',
+      );
     }
     const ids = new Set<string>();
     for (let i = 0; i < 400; i++) {
-      ids.add(rollExpeditionItem(rng, 'rare', { element: null, crossroads: true }, 6).baseId);
+      ids.add(rollExpeditionItem(rng, 'rare', { element: null, crossroads: true }, 12).baseId);
     }
     expect(ids).toEqual(
       new Set(['crossroads-compass', 'wanderers-hat', 'wanderers-scarf', 'wanderers-coin']),

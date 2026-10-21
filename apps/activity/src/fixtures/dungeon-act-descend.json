@@ -1,6 +1,6 @@
 {
   "state": {
-    "id": "00000000-0000-4000-8300-000000000018",
+    "id": "00000000-0000-4000-8300-000000000019",
     "day": "2027-01-16",
     "attempt": 1,
     "depth": 14,
@@ -377,7 +377,7 @@
     "pending": null,
     "team": [
       {
-        "id": "00000000-0000-4000-8300-000000000019",
+        "id": "00000000-0000-4000-8300-000000000020",
         "name": "Sproutle",
         "speciesId": "sproutle",
         "element": "grove",
@@ -389,7 +389,7 @@
         "gear": []
       },
       {
-        "id": "00000000-0000-4000-8300-000000000020",
+        "id": "00000000-0000-4000-8300-000000000021",
         "name": "Splashet",
         "speciesId": "splashet",
         "element": "tide",
@@ -401,7 +401,7 @@
         "gear": []
       },
       {
-        "id": "00000000-0000-4000-8300-000000000021",
+        "id": "00000000-0000-4000-8300-000000000022",
         "name": "Cindle",
         "speciesId": "cindle",
         "element": "ember",
@@ -417,7 +417,10 @@
     "pack": {
       "bait": 2,
       "essence": 3,
-      "scrap": 3
+      "scrap": 7,
+      "shards": {
+        "ember-shard": 1
+      }
     },
     "roomsCleared": 3,
     "supply": true,
@@ -434,7 +437,7 @@
         "loot": {
           "bait": 1,
           "essence": 0,
-          "scrap": 0
+          "scrap": 1
         },
         "supply": true
       },
@@ -462,7 +465,7 @@
         "loot": {
           "bait": 1,
           "essence": 0,
-          "scrap": 0
+          "scrap": 1
         }
       },
       {
@@ -502,7 +505,10 @@
         "loot": {
           "bait": 0,
           "essence": 1,
-          "scrap": 1
+          "scrap": 3,
+          "shards": {
+            "ember-shard": 1
+          }
         }
       },
       {
@@ -518,8 +524,8 @@
         "gear": [
           {
             "baseId": "cinder-charm",
-            "rarity": "epic",
-            "itemLevel": 11
+            "rarity": "common",
+            "itemLevel": 8
           }
         ]
       },

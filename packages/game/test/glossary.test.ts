@@ -380,7 +380,11 @@ describe('the glossary text matches the rules', () => {
 
     const bonuses = RULES.fusion.cumulativeBonusBp;
     expect(text('fusion')).toContain(percent(bonuses[RULES.fusion.maxFusions] ?? 0));
-    expect(text('fusion')).toContain(`After ${String(RULES.fusion.maxFusions)}`);
+    expect(text('fusion')).toContain(`up to 20% at level ${String(RULES.fusion.maxFusions)}`);
+    const points = RULES.fusion.pointsByRarity;
+    expect(text('fusion')).toContain(
+      `${String(points.common)} if common, ${String(points.rare)} if rare, ${String(points.epic)} if epic`,
+    );
     expect(text('shiny')).toContain(`1 in ${String(RULES.catching.shiny.denominator)}`);
     expect(RULES.catching.shiny.numerator).toBe(1);
 
@@ -800,7 +804,7 @@ describe('the glossary covers the daily dungeon', () => {
     expect(text('landmark')).toContain(
       `${String(d.landmarkEvery)}, ${String(2 * d.landmarkEvery)}, ${String(3 * d.landmarkEvery)}`,
     );
-    expect(text('landmark')).toContain('for certain');
+    expect(text('landmark')).toContain('better odds of rare and epic gear');
     expect(d.streak.bonuses.map((b) => b.day)).toEqual([3, 7]);
     expect(d.streak.cycleDays).toBe(7);
     expect(text('streak')).toContain('3rd and 7th day of every 7');
@@ -860,8 +864,9 @@ describe('the glossary covers the daily dungeon', () => {
     const d = RULES.dungeon;
     expect(text('elite')).toContain(`${percent(d.elite.hpBp - 10_000)} more HP`);
     expect(text('elite')).toContain(`hits ${percent(d.elite.atkBp - 10_000)} harder`);
-    expect(d.loot.cache).toEqual({ bait: 1, essence: 0, scrap: 1 });
-    expect(text('cache')).toContain('1 Bait and 1 scrap');
+    expect(text('cache')).toContain(
+      `${String(d.loot.cache.bait)} Bait and ${String(d.loot.cache.scrap)} scrap`,
+    );
     expect(text('keepsake')).toContain('cannot hold the same one twice');
     expect(text('mystery-room')).toContain('odds are always written out');
   });

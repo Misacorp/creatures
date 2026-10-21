@@ -81,9 +81,8 @@ describe('the creatures study', () => {
     expect(runCreaturesStudy('test', '', STUDY)).toEqual(run);
   });
 
-  it('answers a tuning override: nothing caught when no roll brings a creature (and the pity is off)', () => {
-    const set =
-      'expeditions.lengths.short.catchBp=0,expeditions.lengths.medium.catchBp=0,expeditions.lengths.long.catchBp=0,expeditions.lengths.day.catchBp=0,catching.pity.newAfter=1000000,catching.pity.creatureEvery=1000000';
+  it('answers a tuning override: nothing caught when no tick brings a creature', () => {
+    const set = 'expeditions.tick.creatureBp=0';
     const restore = applyOverrides(set);
     try {
       const none = runCreaturesStudy('none', set, STUDY);
@@ -98,7 +97,7 @@ describe('the creatures study', () => {
     } finally {
       restore();
     }
-    expect(RULES.expeditions.lengths.short.catchBp).toBeGreaterThan(0);
+    expect(RULES.expeditions.tick.creatureBp).toBeGreaterThan(0);
   });
 
   it('takes a lure override from the content, and puts it back', () => {

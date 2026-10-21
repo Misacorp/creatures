@@ -90,6 +90,7 @@ export interface CreaturePatch {
   exp?: number;
   ribbons?: number;
   fusion_count?: number;
+  fusion_points?: number;
   shiny?: 0 | 1;
   nickname?: string | null;
   quirk_id?: string | null;
@@ -101,6 +102,7 @@ const CREATURE_COLUMNS: readonly string[] = [
   'exp',
   'ribbons',
   'fusion_count',
+  'fusion_points',
   'shiny',
   'nickname',
   'quirk_id',

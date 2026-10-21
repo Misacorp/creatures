@@ -18,7 +18,9 @@ import {
   gearBase,
   legacyBase,
   rollFestivalItem,
+  rankGiftParts,
   rollFinaleReward,
+  rollRankGiftItem,
   rollWelcomeKit,
   type Element,
   type GearItem,
@@ -356,8 +358,9 @@ export function grantTripLoot(
 }
 
 /**
- * The one-time gift of reaching an explorer rank: parts and supplies through the grant ledger, Bait
- * through the Bait ledger. Idempotent per (creature, rank): key `rank:<creature>:<rank>` in both, so a
+ * The one-time gift of reaching an explorer rank: parts (with shards of the explorer's element), a gear
+ * piece tagged with that element (rolled now with the live RNG; a full bag turns it into its dismantle
+ * yield, like every grant) and supplies through the grant ledger, Bait through the Bait ledger. Idempotent per (creature, rank): key `rank:<creature>:<rank>` in both, so a
  * repeat gives nothing and returns what the first call gave. Call it inside the claim's transaction.
  * `fresh` is false for a repeat.
  */
@@ -367,6 +370,7 @@ export function grantRankGift(
   creatureId: string,
   rank: number,
   gift: RankGift,
+  explorer: { element: Element; place: string },
 ): { view: GrantView; fresh: boolean } {
   const key = `rank:${creatureId}:${String(rank)}`;
   return deps.storage.transactionSync(() => {
@@ -375,12 +379,18 @@ export function grantRankGift(
       userId,
       key,
       'rank_gift',
-      () => ({
-        gear: [],
-        parts: addParts({}, gift.parts),
-        blueprints: [],
-        supplies: [...gift.supplies],
-      }),
+      () => {
+        const item = rollRankGiftItem(deps.rng, gift, explorer.element, rank);
+        return {
+          gear:
+            item === null
+              ? []
+              : [{ item, origin: { kind: 'trip', place: explorer.place, rank } as const }],
+          parts: addParts({}, rankGiftParts(gift, explorer.element)),
+          blueprints: [],
+          supplies: [...gift.supplies],
+        };
+      },
       userId,
     );
     if (granted.fresh && gift.bait > 0) {

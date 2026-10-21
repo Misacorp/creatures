@@ -128,9 +128,14 @@ function isPack(value: unknown): value is DungeonPack {
     isRecord(value) &&
     isCount(value['bait']) &&
     isCount(value['essence']) &&
-    isCount(value['scrap'])
+    isCount(value['scrap']) &&
+    (value['shards'] === undefined ||
+      (isRecord(value['shards']) &&
+        Object.entries(value['shards']).every(([kind, n]) => SHARD_KIND.test(kind) && isCount(n))))
   );
 }
+
+const SHARD_KIND = /^(?:tide|ember|grove|spark|mire)-shard$/;
 
 function isKeepsake(value: unknown): value is DungeonKeepsakeView {
   return (

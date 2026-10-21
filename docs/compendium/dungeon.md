@@ -218,7 +218,7 @@ A set of optional floors below the day's floor boss, for explorers who have pass
 
 **Carved door.** A door with no handle, carved with a pattern that nobody can read twice the same way. It stands in the upper halls only (depth 8 and on), and it is never guarded. Stepping through it fights nothing. It asks the first Undercroft floor for one more room, and the Undercroft decides which: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight, never a boss. The player is told only that list, and finds out on the stair `(design; the door's patterns are compendium detail, not shipped)`.
 
-**Epic fight.** A single room with one foe in a very large mood: the same kind of foe as in a normal room, at boss strength. Shown as "Fierce <name>". It leaves an Essence, two scrap and a keepsake `(design)`.
+**Epic fight.** A single room with one foe in a very large mood: the same kind of foe as in a normal room, at boss strength. Shown as "Fierce <name>". It leaves an Essence, scrap and a keepsake `(design)`.
 
 **Camp (Undercroft).** The same small fire as upstairs, set on a landing of the stair. The only place down there where the team can go home `(design)`.
 
@@ -260,13 +260,13 @@ The tone is the one of the quirks: funny, warm, never mean `(inferred)`. Nothing
 ### Glowing Pool
 
 - Scene `(content)`: a small pool glows softly at the bottom of the room, and the water smells like warm tea.
-- Answers `(content)`: **Drink** (the team heals) or **Fill a flask** (a little Bait).
+- Answers `(content)`: **Drink** (the team heals) or **Fill a flask** (a little Bait and scrap).
 - Compendium detail: a pool that has been left on all night. It is the dungeon's nicest corner `(inferred)`. The safe answers here are both good ones.
 
 ### Loose Stones
 
 - Scene `(content)`: the floor is a patchwork of loose stones, and something shiny winks from under one of them.
-- Answers `(content)`: **Dig** (a gamble: scrap, or a bump on every creature) or **Walk on** (a little Bait).
+- Answers `(content)`: **Dig** (a gamble: scrap, or a bump on every creature) or **Walk on** (a little scrap).
 - Compendium detail: the shiny thing is a button. It is nearly always a button `(inferred)`. The scrape is from the stones, never from a trap.
 
 ### Sleeping Beetle
@@ -284,7 +284,7 @@ The tone is the one of the quirks: funny, warm, never mean `(inferred)`. Nothing
 ### Lost Satchel
 
 - Scene `(content)`: a small satchel sits on a ledge, its strap tied in a knot. Someone's lunch, maybe.
-- Answers `(content)`: **Peek inside** (a little Bait) or **Shake it out** (a gamble: more Bait and scrap, or only crumbs).
+- Answers `(content)`: **Peek inside** (a little scrap) or **Shake it out** (a gamble: more Bait and scrap, or only crumbs).
 - Compendium detail: the satchel belongs to another explorer who went home early. Neither answer is theft, since it is clearly lost `(inferred)`.
 
 ### Echoing Well

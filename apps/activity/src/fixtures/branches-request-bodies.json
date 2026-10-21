@@ -1,6 +1,6 @@
 {
   "branches-claim": {
-    "path": "/api/expeditions/00000000-0000-4000-8100-000000000005/claim",
+    "path": "/api/expeditions/00000000-0000-4000-8100-000000000006/claim",
     "method": "POST",
     "body": {}
   },
@@ -21,7 +21,7 @@
     }
   },
   "branches-evolve-other": {
-    "path": "/api/creatures/00000000-0000-4000-8100-000000000006/evolve",
+    "path": "/api/creatures/00000000-0000-4000-8100-000000000007/evolve",
     "method": "POST",
     "body": {
       "species": "thornbuck",

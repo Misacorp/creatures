@@ -5,7 +5,7 @@
  */
 import { talentDef } from '@creatures/game';
 import type { Creature } from './api';
-import { creatureName, speciesName } from './game';
+import { creatureName, fusionProgressText, speciesName } from './game';
 import { partsText } from './gear-view';
 import type { ChoiceResult, TalentSlotView } from './talent-types';
 
@@ -32,7 +32,7 @@ export function choiceResultText(
         ? `${lead}Taught ${talent}${result.talent.golden ? ' (golden)' : ''} to ${who}: it is in the Talent Book.`
         : `${lead}Taught ${talent}${result.talent.golden ? ' (golden)' : ''} to ${who}, slot ${String(result.slot)}.`;
     case 'fuse':
-      return `${lead}Fused ${speciesName(result.species)} into ${who}${result.fusionCount === undefined ? '' : `: fusion ${String(result.fusionCount)} / 5`}.`;
+      return `${lead}Fused ${speciesName(result.species)} into ${who}${fusedText(result)}.`;
     case 'release':
       return `${lead}Released ${speciesName(result.species)} for ${partsText(result.parts ?? {})}.`;
     case 'keep':
@@ -121,4 +121,13 @@ export function talentTextParts(text: string): TalentTextParts {
     value: match[0],
     after: text.slice(at + match[0].length),
   };
+}
+
+/** What a Fuse result adds to its sentence: ": +2 fusion, Fusion 2 · 4/6" (older results only know the level). */
+function fusedText(result: ChoiceResult): string {
+  if (result.fusionPoints !== undefined) {
+    const added = result.pointsAdded === undefined ? '' : `+${String(result.pointsAdded)} fusion, `;
+    return `: ${added}${fusionProgressText(result.fusionPoints)}`;
+  }
+  return result.fusionCount === undefined ? '' : `: fusion ${String(result.fusionCount)} / 5`;
 }

@@ -41,10 +41,64 @@ export function applyCatchToCollection(
   return { kind: 'duplicate', becameShiny: caught.shiny && !entry.shiny };
 }
 
-/** The fusion count after one more fusion, or null when the creature has all of them already. */
-export function fuseOnce(fusionCount: number): number | null {
-  if (!Number.isInteger(fusionCount) || fusionCount < 0) {
-    throw new RangeError(`fusionCount must be an integer >= 0, got ${fusionCount}`);
+/** Fusion points a duplicate of this rarity adds when fused in. */
+export function fusionPointsFor(rarity: Rarity): number {
+  return RULES.fusion.pointsByRarity[rarity];
+}
+
+function checkPoints(points: number): void {
+  if (!Number.isInteger(points) || points < 0) {
+    throw new RangeError(`fusion points must be an integer >= 0, got ${points}`);
   }
-  return fusionCount >= RULES.fusion.maxFusions ? null : fusionCount + 1;
+}
+
+/** Cumulative points needed to reach fusion `level` (1 to the maximum); 0 for level 0. */
+export function fusionThreshold(level: number): number {
+  if (!Number.isInteger(level) || level < 0 || level > RULES.fusion.maxFusions) {
+    throw new RangeError(`fusion level must be an integer from 0 to ${RULES.fusion.maxFusions}`);
+  }
+  if (level === 0) return 0;
+  const t = RULES.fusion.thresholds[level - 1];
+  if (t === undefined) throw new Error('fusion thresholds are shorter than maxFusions');
+  return t;
+}
+
+/** The fusion level (0 to the maximum) a creature with this many points has reached. */
+export function fusionLevel(points: number): number {
+  checkPoints(points);
+  let level = 0;
+  while (level < RULES.fusion.maxFusions && points >= fusionThreshold(level + 1)) level += 1;
+  return level;
+}
+
+/** Where a creature stands: its level and the points into the next level (`need` is null at the maximum). */
+export interface FusionProgress {
+  level: number;
+  /** Points gathered toward the next level. */
+  into: number;
+  /** Points the next level takes from the last one; null at the maximum. */
+  need: number | null;
+}
+
+export function fusionProgress(points: number): FusionProgress {
+  const level = fusionLevel(points);
+  if (level >= RULES.fusion.maxFusions) return { level, into: 0, need: null };
+  const floor = fusionThreshold(level);
+  return { level, into: points - floor, need: fusionThreshold(level + 1) - floor };
+}
+
+/**
+ * The points after fusing a duplicate of `rarity` in, or null when the creature is at the maximum
+ * level already (nothing to fuse). Points past the maximum are not stored.
+ */
+export function fuseInto(points: number, rarity: Rarity): number | null {
+  checkPoints(points);
+  const max = fusionThreshold(RULES.fusion.maxFusions);
+  if (points >= max) return null;
+  return Math.min(max, points + fusionPointsFor(rarity));
+}
+
+/** True while a creature with these points can take more (below the maximum level). */
+export function canFuse(points: number): boolean {
+  return fuseInto(points, 'common') !== null;
 }

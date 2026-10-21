@@ -202,7 +202,7 @@ export type KeepsakeDef = v.InferOutput<typeof KeepsakeSchema>;
 
 // --- Mystery rooms: events with two options ---
 
-const PackAmount = v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(3));
+const PackAmount = v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(8));
 
 const PackEffectSchema = v.strictObject({
   op: v.literal('pack'),

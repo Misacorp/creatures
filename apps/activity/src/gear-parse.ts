@@ -161,6 +161,15 @@ function isGearItem(value: unknown): value is GearItem {
   );
 }
 
+function isConversionBundle(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isRecord(value['supplies']) &&
+    Object.entries(value['supplies']).every(([id, n]) => isStr(id) && isCount(n)) &&
+    isPartsBundle(value['parts'])
+  );
+}
+
 function isJobResult(value: unknown): value is JobResult {
   if (!isRecord(value)) return false;
   const common =
@@ -196,6 +205,12 @@ function isJobResult(value: unknown): value is JobResult {
       );
     case 'supply':
       return isStr(value['supplyId']) && isCount(value['amount']);
+    case 'convert':
+      return (
+        isStr(value['recipeId']) &&
+        isConversionBundle(value['took']) &&
+        isConversionBundle(value['gave'])
+      );
     case 'retired':
       return (
         (value['was'] === 'improve' || value['was'] === 'enchant') && isPartsBundle(value['refund'])
@@ -210,12 +225,20 @@ function isJobInput(value: unknown): value is Job['input'] {
     isRecord(value) &&
     (value['baseId'] === undefined || isStr(value['baseId'])) &&
     (value['supplyId'] === undefined || isStr(value['supplyId'])) &&
+    (value['recipeId'] === undefined || isStr(value['recipeId'])) &&
     (value['reach'] === undefined || isReach(value['reach'])) &&
     (value['items'] === undefined || isArrayOf(value['items'], isSnapshot))
   );
 }
 
-const JOB_KINDS_STORED: readonly unknown[] = ['craft', 'supply', 'dismantle', 'improve', 'enchant'];
+const JOB_KINDS_STORED: readonly unknown[] = [
+  'craft',
+  'supply',
+  'dismantle',
+  'convert',
+  'improve',
+  'enchant',
+];
 
 function isJob(value: unknown): value is Job {
   return (

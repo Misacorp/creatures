@@ -3,19 +3,24 @@
  * the chosen supplies folded in, as a row of icons that each have a short word and 0 to 4 pips. Pips
  * compare with the best any length does with the best supplies, so lengths and supplies can be compared
  * at a glance. Nothing here is a chance shown as a number (discovery is part of the fun): chances
- * come out as words ("rarely", "often"); only counts a player will really see (catch rolls, XP, scrap)
- * are numbers. Every figure is worked out from the shared rules and content, never copied.
+ * come out as words ("rarely", "often"); only the explorer XP is a number. Every figure is worked out
+ * from the shared rules and content, never copied.
  */
 import {
   EXPEDITION_LENGTHS,
+  boostWords,
   expeditionContent,
+  RULES,
   catchChanceBp,
   kitDeepBp,
+  kitDeepBonusBp,
   lengthRules,
   lureEffect,
+  mapTicksBp,
   satchelBonus,
   shardOf,
-  tripRolls,
+  type BoostCategory,
+  type BoostLevel,
   type Element,
   type ExpeditionLength,
   type SupplyDef,
@@ -37,7 +42,7 @@ export const CHANCE_WORDS: readonly string[] = [
   'very often',
 ];
 
-interface HaulRow {
+interface BaseRow {
   key: string;
   icon: IconRef;
   /** The short word under the icon: "Catches", "Scrap". */
@@ -50,15 +55,54 @@ interface HaulRow {
   boosted: boolean;
 }
 
+interface HaulRow extends BaseRow {
+  /**
+   * How much the kit raises it on this trip, as a bracket (1 to 4, `BOOST_BRACKETS`; 0 when the row is
+   * not raised or the trip's bracket is not known). The "+" marks show it.
+   */
+  bracket: BoostLevel;
+}
+
+/** The brackets of a kit on this trip per category (`kitLevels`). */
+export type HaulLevels = Readonly<Record<BoostCategory, BoostLevel>>;
+
+/** Which boost category a row follows (rows without one keep the plain "raised" mark). */
+const ROW_CATEGORY: Readonly<Record<string, BoostCategory>> = {
+  catch: 'creatures',
+  fresh: 'newSpecies',
+  deep: 'deepCreatures',
+  scrap: 'parts',
+  glimmer: 'parts',
+  gear: 'gear',
+  xp: 'xp',
+};
+
+/** Puts the kit's brackets on the rows: a row's mark follows its category's bracket (shards: parts). */
+function withBrackets(rows: BaseRow[], levels: HaulLevels | null): HaulRow[] {
+  return rows.map((row) => {
+    const category = ROW_CATEGORY[row.key] ?? (row.key.endsWith('-shard') ? 'parts' : undefined);
+    // Gear and XP only rise with a map (no legacy mark); the others follow the mark the metrics give.
+    const eligible = row.boosted || row.key === 'gear' || row.key === 'xp';
+    const bracket = levels === null || category === undefined || !eligible ? 0 : levels[category];
+    const boosted = row.boosted || bracket > 0;
+    const detail =
+      bracket > 0 ? `${row.detail}; ${boostWords(bracket)} with your supplies` : row.detail;
+    return { ...row, boosted, detail, bracket };
+  });
+}
+
 interface Metrics {
-  /** Creatures the rolls bring, in hundredths (rolls times the chance each brings one). */
+  /** Creatures a trip brings, in hundredths (its ticks times the chance each brings one, and a lure's bonus). */
   catch: number;
   /** The chance a creature it brings is of a species the player lacks (a lure's draw), in basis points. */
   fresh: number;
   xp: number;
+  /** What a trip brings of each part, in hundredths. */
   scrap: number;
   shard: number;
   glimmer: number;
+  /** Gear pieces, blueprints, found supplies and journal pages, in hundredths. */
+  gear: number;
   blueprint: number;
   supply: number;
   journal: number;
@@ -68,24 +112,33 @@ interface Metrics {
 
 const scale = (value: number, bp: number): number => Math.floor((value * (BP + bp)) / BP);
 
-/** The numbers behind each row for a trip length and a kit. */
+/** The ticks of a trip with this kit, in hundredths (the map's fraction counts as it is). */
+function ticksOf(length: ExpeditionLength, kit: readonly SupplyDef[]): number {
+  return lengthRules(length).ticks * 100 + Math.round(mapTicksBp(length, kit) / 100);
+}
+
+/** The numbers behind each row for a trip length and a kit (expected values, never shown as numbers). */
 function metricsOf(length: ExpeditionLength, kit: readonly SupplyDef[]): Metrics {
   const rules = lengthRules(length);
+  const t = RULES.expeditions.tick;
   // Only the supplies' own part bonus: the explorer's role and stars are not known here.
-  const partsBp = satchelBonus(kit).partsBp;
+  const bonus = satchelBonus(kit);
   const lure = lureEffect(kit);
+  const ticks = ticksOf(length, kit);
+  const per = (bp: number): number => Math.round((ticks * bp) / BP);
   return {
-    catch: Math.round((tripRolls(length, kit, null) * catchChanceBp(length, kit)) / 100),
+    catch: Math.round((ticks * catchChanceBp(kit)) / BP + lure.bonusBp / 100),
     fresh: lure.newBp,
-    xp: rules.xp,
-    scrap: scale(rules.loot.scrap, partsBp),
-    shard: scale(rules.loot.shardBp, partsBp),
-    glimmer: rules.loot.glimmerBp,
-    blueprint: rules.loot.blueprintBp,
-    supply: Math.min(BP, rules.loot.supplyBp + satchelBonus(kit).supplyBp),
-    journal: rules.journalBp,
+    xp: rules.ticks * t.xp,
+    scrap: per(scale(t.scrapBp, bonus.partsBp)) + bonus.scrap * 100,
+    shard: per(scale(t.shardBp, bonus.partsBp)) + Math.round(bonus.shardBp / 100),
+    glimmer: per(t.glimmerBp) + Math.round(bonus.glimmerBp / 100),
+    gear: per(t.gearBp),
+    blueprint: per(t.blueprintBp),
+    supply: per(scale(t.supplyBp, bonus.supplyBp)),
+    journal: per(t.journalBp),
     rarity: rules.rarityUpBp,
-    deep: kitDeepBp(kit),
+    deep: kitDeepBp(kit) + kitDeepBonusBp(kit),
   };
 }
 
@@ -120,26 +173,16 @@ function pips(key: keyof Metrics, value: number): number {
   return Math.min(MAX_PIPS, Math.max(1, Math.round((MAX_PIPS * value) / top)));
 }
 
-/** How often one catch roll brings a creature, in words. */
-function rollWord(bp: number): string {
-  if (bp >= 5000) return 'very often';
-  if (bp >= 2500) return 'often';
-  if (bp >= 1000) return 'sometimes';
-  return 'rarely';
-}
-
-const plural = (n: number, one: string, many: string): string =>
-  `${String(n)} ${n === 1 ? one : many}`;
-
 /**
  * The haul of a trip: the same rows for every length (so they can be compared), plus a "Deeper area" row
  * when a lantern is carried. `kit` is the chosen supplies' ids (unknown ids are left out); `element` is
- * the element of the place, whose shards drop there (null for a mixed place: Tide shards).
+ * the element of the place, whose shards drop there (null for a mixed place: shards of any element).
  */
 export function expectedHaul(
   length: ExpeditionLength,
   element: string | null,
   kitIds: readonly string[],
+  levels: HaulLevels | null = null,
 ): HaulRow[] {
   const kit = supplyDefs(kitIds);
   const here = metricsOf(length, kit);
@@ -148,13 +191,12 @@ export function expectedHaul(
   const boosted = (key: keyof Metrics): boolean => here[key] > plain[key];
   const chance = (key: keyof Metrics, name: string): string =>
     `${name}: ${CHANCE_WORDS[pips(key, here[key])] ?? CHANCE_WORDS[0] ?? ''}`;
-  const rolls = tripRolls(length, kit, null);
-  const rows: HaulRow[] = [
+  const rows: BaseRow[] = [
     {
       key: 'catch',
       icon: { kind: 'glyph', id: 'paw' },
       label: 'Catches',
-      detail: `${plural(rolls, 'catch roll', 'catch rolls')}, each ${rollWord(catchChanceBp(length, kit))} brings a creature`,
+      detail: `${chance('catch', 'Creatures')}; each hour of the trip may bring one`,
       level: pips('catch', here.catch),
       boosted: boosted('catch'),
     },
@@ -178,15 +220,24 @@ export function expectedHaul(
       key: 'scrap',
       icon: { kind: 'part', part: 'scrap' },
       label: 'Scrap',
-      detail: here.scrap === 0 ? 'No scrap' : `${String(here.scrap)} scrap`,
+      detail: chance('scrap', 'Scrap'),
       level: pips('scrap', here.scrap),
       boosted: boosted('scrap'),
+    },
+    {
+      key: 'gear',
+      icon: { kind: 'glyph', id: 'slot-hat' },
+      label: 'Gear',
+      detail: chance('gear', 'A gear piece'),
+      level: pips('gear', here.gear),
+      boosted: false,
     },
     {
       key: shard,
       icon: { kind: 'part', part: shard },
       label: 'Shards',
-      detail: chance('shard', 'Shards'),
+      detail:
+        element === null ? chance('shard', 'Shards of any element') : chance('shard', 'Shards'),
       level: pips('shard', here.shard),
       boosted: boosted('shard'),
     },
@@ -196,7 +247,7 @@ export function expectedHaul(
       label: 'Glimmer',
       detail: chance('glimmer', 'Glimmer'),
       level: pips('glimmer', here.glimmer),
-      boosted: false,
+      boosted: boosted('glimmer'),
     },
     {
       key: 'blueprint',
@@ -243,7 +294,7 @@ export function expectedHaul(
       boosted: true,
     });
   }
-  return rows;
+  return withBrackets(rows, levels);
 }
 
 /** The line above the strip: which trip and what the haul includes. "A 12 h trip with Sweet Lure". */

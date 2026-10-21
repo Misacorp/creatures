@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { markFreshReveal } from './reveal-arrive';
 import type { ClaimResult, GameState } from './api';
 import type { CatchChoiceActions } from './find-view';
 import { ExplorerProfile } from './ExplorerProfile';
@@ -15,6 +16,7 @@ import { tripResultView } from './trip-result-view';
 import { ToggleButton } from './ui/ToggleButton';
 import { needsOfferRefresh } from './trip-view';
 import { useLoaded } from './use-loaded';
+import type { Forecast } from './weather-types';
 
 /** The three screens of the Expeditions tab (the Journal and the profile need no tab of their own). */
 type Screen = 'trips' | 'journal' | 'profile';
@@ -52,6 +54,8 @@ interface Props {
   /** Server clock minus local clock, in ms. */
   offset: number;
   busy: boolean;
+  /** The valley sky (today's Boon and Omen), for what affects a trip; null when not loaded. */
+  forecast?: Forecast | null;
   /** The guild's timezone (for the night window of the Moonlit Reef); null when it is not known. */
   timezone: string | null;
   /** What the last claim brought home, with the trip and the fresh state. */
@@ -76,6 +80,7 @@ export function Expeditions({
   offset,
   busy,
   timezone,
+  forecast = null,
   reveal,
   catchActions,
   settled,
@@ -169,7 +174,10 @@ export function Expeditions({
                   creature={state.creatures.find((c) => c.id === trip.creatureId)}
                   serverNow={serverNow}
                   busy={busy}
-                  onClaim={onClaim}
+                  onClaim={(trip) => {
+                    markFreshReveal();
+                    onClaim(trip);
+                  }}
                   onPushOn={onPushOn}
                 />
               ))}
@@ -189,6 +197,7 @@ export function Expeditions({
               view={destinations.value}
               viewFailed={destinations.failed}
               timezone={timezone}
+              forecast={forecast}
               onRetry={destinations.reload}
               onSend={onSend}
               {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}

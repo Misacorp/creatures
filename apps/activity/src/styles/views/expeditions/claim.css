@@ -10,21 +10,6 @@
   margin: 0 0 0.25rem;
 }
 
-.gift-lines {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.75rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.gift-lines li {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-}
-
 /*
   The trip result (TripResult.tsx): the place's banner with the explorer on it, one sentence, the creatures
   found (FindCard), what came home, one progress block, slot, gifts, journal pages and a full-width Claim.
@@ -85,6 +70,26 @@
 .tr-loot .label,
 .tr-loot p {
   margin: 0;
+}
+
+.tr-setout .label,
+.tr-setout p {
+  margin: 0;
+}
+
+/* One or two lines of plain words, separated by dots; a supply or a Boon opens its card. */
+.tr-setout-list {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--haze);
+}
+
+.tr-setout-list li + li::before {
+  content: '\00b7';
+  margin: 0 0.375rem;
 }
 
 .tr-counts {

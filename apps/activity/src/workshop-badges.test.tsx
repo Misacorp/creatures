@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { BaitCost } from './BaitCost';
 import { Blueprints } from './Blueprints';
 import { CreaturePicker } from './CreaturePicker';
+import { CostList } from './GearArt';
 import { SupplyCrafting } from './SupplyCrafting';
 import { TreatBox } from './TreatBox';
 import { SAMPLE_GEAR, sampleRoster } from './creature-card-sample';
@@ -22,15 +22,20 @@ function draw(vnode: Parameters<Page['draw']>[0]): FakeElement {
 }
 
 describe('the Bait cost of a job', () => {
-  it('is a Bait badge and what the player has, red when short', () => {
-    const enough = draw(<BaitCost cost={12} have={199} />);
+  it('is a chip like the parts, with what the player has only when short', () => {
+    const enough = draw(
+      <CostList cost={{ scrap: 2 }} have={SAMPLE_GEAR.parts} bait={12} baitHave={199} />,
+    );
     expect(byName(enough, 'span', 'Bait: 12')).toHaveLength(1);
-    expect(visibleText(enough)).toBe('12(you have 199)');
+    expect(visibleText(enough)).not.toContain('have');
     expect(byClass(enough, 'short')).toHaveLength(0);
     page?.unmount();
 
-    const short = draw(<BaitCost cost={12} have={3} />);
+    const short = draw(
+      <CostList cost={{ scrap: 2 }} have={SAMPLE_GEAR.parts} bait={12} baitHave={3} />,
+    );
     expect(byClass(short, 'short')).toHaveLength(1);
+    expect(visibleText(short)).toContain('(have 3)');
     expect(visibleText(short)).toContain('Not enough Bait.');
   });
 });
@@ -96,6 +101,7 @@ describe('the Workshop lists', () => {
         stock={{}}
         busy={false}
         onCraft={vi.fn()}
+        onConvert={vi.fn()}
       />,
     );
     expect(visibleText(root)).not.toContain('about');

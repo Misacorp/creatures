@@ -10,6 +10,7 @@ import { dungeonDraftMigration } from './dungeon-draft-migration';
 import { dungeonMigration } from './dungeon-migration';
 import { dungeonPathMigration } from './dungeon-path-migration';
 import { expeditionsMigration } from './expedition-migration';
+import { fusionPointsMigration } from './fusion-points-migration';
 import { gearMigration } from './gear-migration';
 import { gearV2Migration } from './gear-v2-migration';
 import { loungeMigration } from './lounge';
@@ -22,6 +23,7 @@ import { raidMigration } from './raid-migration';
 import { raidPlacementCapMigration } from './raid-placement-cap-migration';
 import { raidProgressionMigration } from './raid-progression-migration';
 import { weatherMigration } from './weather-migration';
+import { workshopConvertMigration } from './workshop-convert-migration';
 import { workshopV2Migration } from './workshop-v2-migration';
 
 /** Versioned schema migrations; index 0 is version 1. Never edit a released migration. */
@@ -274,6 +276,10 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   dungeonPathMigration,
   // Version 35: what lounging with company has paid each player (see lounge-company.ts).
   loungeCompanyMigration,
+  // Version 36: Workshop conversion jobs, refine and recycle (see workshop-convert-migration.ts).
+  workshopConvertMigration,
+  // Version 37: fusion points per creature (see fusion-points-migration.ts).
+  fusionPointsMigration,
 ];
 
 /** The schema version of a fresh database. */

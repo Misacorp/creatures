@@ -23,7 +23,7 @@ import type {
   TripResult,
 } from './expedition-types';
 import { isExperienceView, isXpBoost } from './experience';
-import { isGrantLoot, isPartsBundle } from './gear-parse';
+import { isConvertedLoot, isGearLoot, isGrantLoot, isPartsBundle } from './gear-parse';
 import { isArrayOf, isBool, isCount, isInt, isRecord, isStr } from './parse-core';
 import { isChoiceResult, isTalentView } from './talent-parse';
 
@@ -99,6 +99,15 @@ function isPushOnResult(value: unknown): value is NonNullable<TripResult['pushOn
   );
 }
 
+const isNamed = (value: unknown): boolean =>
+  isRecord(value) && isStr(value['id']) && isStr(value['name']);
+
+function isTripWeather(value: unknown): boolean {
+  return (
+    isRecord(value) && isNamed(value['boon']) && (value['omen'] === null || isNamed(value['omen']))
+  );
+}
+
 function isRankGift(value: unknown): value is RankGift {
   return (
     isRecord(value) &&
@@ -106,7 +115,9 @@ function isRankGift(value: unknown): value is RankGift {
     value['rank'] >= 2 &&
     isCount(value['bait']) &&
     isPartsBundle(value['parts']) &&
-    isArrayOf(value['supplies'], isStr)
+    isArrayOf(value['supplies'], isStr) &&
+    (value['gear'] === undefined || isArrayOf(value['gear'], isGearLoot)) &&
+    (value['converted'] === undefined || isArrayOf(value['converted'], isConvertedLoot))
   );
 }
 
@@ -165,6 +176,9 @@ export function isTrip(value: unknown): value is Trip {
     isArrayOf(value['kit'], isStr) &&
     isStr(value['destination']) &&
     (value['twist'] === null || isStr(value['twist'])) &&
+    (value['weather'] === undefined ||
+      value['weather'] === null ||
+      isTripWeather(value['weather'])) &&
     isCount(value['rolls']) &&
     isCount(value['cost']) &&
     isBool(value['treat']) &&

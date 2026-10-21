@@ -360,8 +360,8 @@ describe('the camp, with the real answers', () => {
     const text = visibleText(root);
     expect(text).toContain('Standing creatures heal 40% HP.');
     expect(text).toContain('Head home with your pack');
-    expect(byName(root, 'span', 'Bait: 2')).toHaveLength(1);
-    expect(byName(root, 'span', 'Scrap: 1')).toHaveLength(1);
+    expect(byName(root, 'span', 'Bait: 1')).toHaveLength(1);
+    expect(byName(root, 'span', 'Scrap: 5')).toHaveLength(1);
     expect(text).toContain('At risk');
   });
 

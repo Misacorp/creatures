@@ -71,8 +71,8 @@ describe('the Undercroft rules', () => {
       maxLevels: 3,
       doorFloors: [4, 5],
     });
-    expect(u.epic.loot).toEqual({ bait: 0, essence: 1, scrap: 2 });
-    expect(u.chest).toMatchObject({ essence: 1, scrap: 2, gearBp: 4_000, itemLevelBonus: 2 });
+    expect(u.epic.loot).toEqual({ bait: 0, essence: 1, scrap: 5 });
+    expect(u.chest).toMatchObject({ essence: 2, scrap: 7, gearBp: 8_000, itemLevelBonus: 2 });
     expect(Object.values(u.markOdds).reduce((a, b) => a + b, 0)).toBe(10_000);
     expect(Object.keys(u.markOdds).sort()).toEqual([...UNDERCROFT_MARKS].sort());
   });
@@ -488,11 +488,11 @@ describe('rooms of an Undercroft map', () => {
     expect(nodeLoot('fight', 1)).toEqual({
       bait: RULES.dungeon.loot.fight.bait * u.lootMultiplier,
       essence: 0,
-      scrap: 0,
+      scrap: RULES.dungeon.loot.fight.scrap * u.lootMultiplier,
     });
     expect(nodeLoot('elite', 1).scrap).toBe(RULES.dungeon.loot.elite.scrap * u.lootMultiplier);
     expect(nodeLoot('cache', 1).bait).toBe(RULES.dungeon.loot.cache.bait * u.lootMultiplier);
-    expect(nodeLoot('epic', 1)).toEqual({ bait: 0, essence: 1, scrap: 2 });
+    expect(nodeLoot('epic', 1)).toEqual({ bait: 0, essence: 1, scrap: 5 });
     expect(nodeLoot('boss', 1)).toEqual({
       bait: 0,
       essence: u.chest.essence,

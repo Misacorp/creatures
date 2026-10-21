@@ -19,6 +19,7 @@ import type {
 import type { Element } from '../content/schema';
 import { chance, int, type Rng } from '../rng';
 import { RULES } from './config';
+import { shardOf } from './gear';
 import { landmarkBossId, scaledFoe, undercroftDepth } from './dungeon';
 import { mapNode, type DungeonMap, type MapNode, type NodeKind } from './dungeon-map';
 
@@ -123,12 +124,49 @@ export interface DungeonRunPack {
   bait: number;
   essence: number;
   scrap: number;
+  /** Shards the rooms dropped, by part kind (`ember-shard`). Absent when none (and in runs stored before shards). */
+  shards?: PackShards;
 }
+
+/** Shards in a pack, by part kind. */
+export type PackShards = Partial<Record<`${Element}-shard`, number>>;
 
 export const emptyPack = (): DungeonRunPack => ({ bait: 0, essence: 0, scrap: 0 });
 
+const addShards = (
+  a: PackShards | undefined,
+  b: PackShards | undefined,
+): PackShards | undefined => {
+  if (a === undefined && b === undefined) return undefined;
+  const out: PackShards = { ...a };
+  for (const [kind, n] of Object.entries(b ?? {}) as [keyof PackShards, number][]) {
+    out[kind] = (out[kind] ?? 0) + n;
+  }
+  return out;
+};
+
+/** The shards of a pack in all, over every element. */
+export const packShardCount = (pack: Pick<DungeonRunPack, 'shards'>): number =>
+  Object.values(pack.shards ?? {}).reduce((sum, n) => sum + n, 0);
+
 export function addPack(a: DungeonRunPack, b: DungeonRunPack): DungeonRunPack {
-  return { bait: a.bait + b.bait, essence: a.essence + b.essence, scrap: a.scrap + b.scrap };
+  const shards = addShards(a.shards, b.shards);
+  return {
+    bait: a.bait + b.bait,
+    essence: a.essence + b.essence,
+    scrap: a.scrap + b.scrap,
+    ...(shards === undefined ? {} : { shards }),
+  };
+}
+
+/**
+ * The shard a cleared room drops, if any: one shard of its foe's element with chance
+ * `RULES.dungeon.shardBp[kind]`. Rooms with no foe (cache, camp, door, mystery) never drop one. Live
+ * randomness from the caller's `rng`, drawn only for a room that can drop.
+ */
+export function rollRoomShard(rng: Rng, kind: NodeKind, element: Element): PackShards | undefined {
+  if (kind !== 'fight' && kind !== 'elite' && kind !== 'epic' && kind !== 'boss') return undefined;
+  return chance(rng, RULES.dungeon.shardBp[kind], 10_000) ? { [shardOf(element)]: 1 } : undefined;
 }
 
 /**
@@ -173,7 +211,15 @@ export function nodeLoot(kind: NodeKind, level = 0): DungeonRunPack {
 /** What a defeat keeps of the pack: `RULES.dungeon.defeatKeepBp` of each amount, rounded up (1 stays 1, 3 becomes 2). */
 export function keptOnDefeat(pack: DungeonRunPack): DungeonRunPack {
   const keep = (n: number): number => Math.floor((n * RULES.dungeon.defeatKeepBp + 9_999) / 10_000);
-  return { bait: keep(pack.bait), essence: keep(pack.essence), scrap: keep(pack.scrap) };
+  const shards = Object.entries(pack.shards ?? {}) as [keyof PackShards, number][];
+  return {
+    bait: keep(pack.bait),
+    essence: keep(pack.essence),
+    scrap: keep(pack.scrap),
+    ...(shards.length === 0
+      ? {}
+      : { shards: Object.fromEntries(shards.map(([kind, n]) => [kind, keep(n)])) }),
+  };
 }
 
 // --- Events ---

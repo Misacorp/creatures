@@ -115,7 +115,7 @@ describe('the gear fixtures match what the server sends', () => {
     expect(creatures.some((c) => c.gear.length > 0)).toBe(true);
     expect(creatures.some((c) => c.busy?.kind === 'job')).toBe(true);
     // The expedition loot has a blueprint and every kind of extra.
-    expect(expeditionClaimLoot.result.loot.blueprints).toHaveLength(1);
+    expect(expeditionClaimLoot.result.loot.blueprints.length).toBeGreaterThan(0);
     expect(Object.keys(expeditionClaimLoot.result.loot.parts).sort()).toEqual(
       ['ember-shard', 'glimmer', 'scrap'].sort(),
     );

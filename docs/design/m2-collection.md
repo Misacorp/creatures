@@ -80,7 +80,7 @@ Cost = rolls × supplies cost (so a Long, Great expedition costs 150 Bait). Odds
 ## Fusion
 
 - A catch of a line the player already owns used to **fuse** into the existing creature (into the evolved form if it has evolved); since 2026-10-16 it waits as a card and Fuse is one of four choices.
-- Each fusion adds a permanent stat boost: +6%, +5%, +4%, +3%, +2% for fusions 1 to 5 (+20% total, then capped).
+- Each fusion level adds a permanent stat boost: +6%, +5%, +4%, +3%, +2% for levels 1 to 5 (+20% total, then capped). _Amended 2026-10-20: a duplicate adds fusion points by its rarity (common 1, rare 2, epic 4) and a level is reached at 1, 4, 9, 18 and 34 points; see `decisions.md`._
 - **Superseded 2026-10-16 (Creatures A):** a duplicate no longer fuses by itself and never turns into Bait. It waits as a card with a talent and the player chooses Teach, Fuse (these steps, up to 5), Release (parts, never Bait) or Keep; see `gear-and-creatures-v2.md` section 8.2 and `decisions.md`.
 - A shiny duplicate makes the existing creature shiny (if it wasn't already).
 

@@ -87,7 +87,7 @@
     "body": {}
   },
   "expedition-claim": {
-    "path": "/api/expeditions/00000000-0000-4000-8500-000000000027/claim",
+    "path": "/api/expeditions/00000000-0000-4000-8500-000000000028/claim",
     "method": "POST",
     "body": {}
   }

@@ -171,7 +171,7 @@ describe('converting the first gear model', () => {
           `key-${String(n)}-xxxxxxxx`,
           depth,
         );
-      // Rank 6: 9. A depth 12 dungeon: 7. Depth 29 gives 15, capped at 12.
+      // Rank 6: 9. A depth 12 dungeon: 5. Depth 42 gives 15, capped at 12.
       legacy(ctx, a.id, {
         id: ID(1),
         base: 'cinder-charm',
@@ -191,7 +191,7 @@ describe('converting the first gear model', () => {
         rarity: 'common',
         on: c.creatureIds[0] as string,
       });
-      run(c.id, 29, 2);
+      run(c.id, 42, 2);
       convert(ctx, createSeededRng('levels'));
       const level = (id: string) =>
         rows<{ item_level: number }>(
@@ -203,7 +203,7 @@ describe('converting the first gear model', () => {
       expect(level(ID(2))).toBe(9);
       expect(level(ID(3))).toBe(12);
       expect(convertedItemLevel(6, 12)).toBe(9);
-      expect(convertedItemLevel(1, 29)).toBe(12);
+      expect(convertedItemLevel(1, 42)).toBe(12);
       return Promise.resolve();
     });
   });
@@ -452,7 +452,7 @@ describe('converting the first gear model', () => {
       // A deep dungeon run gives a converted item level above 8, where the second-tier bases unlock.
       ctx.sql.exec(
         `INSERT INTO dungeon_runs (id, user_id, day, attempt, idempotency_key, fingerprint, depth, seed, cleared, rooms_cleared, summary_json, rewards_json, created_at)
-         VALUES (?, ?, '2027-01-11', 1, 'key-1-xxxxxxxx', 'f', 18, 's', 1, 3, '{}', '{}', 0)`,
+         VALUES (?, ?, '2027-01-11', 1, 'key-1-xxxxxxxx', 'f', 27, 's', 1, 3, '{}', '{}', 0)`,
         ID(100),
         p.id,
       );

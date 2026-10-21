@@ -1,4 +1,5 @@
 import { ProgressTrack } from '../../ProgressTrack';
+import { rankSteps } from '../../rank-track';
 import type { TrackStep } from '../../progress-track';
 import { XpBar, type XpKind } from '../../XpBar';
 import { Bar } from '../../ui/Bar';
@@ -334,14 +335,30 @@ const progressTrack: Entry = {
   description:
     'A horizontal rank timeline showing the step before, the current step and the next one with what each unlocks; it is on the explorer profile and the dungeon start screen.',
   controls: {
-    steps: { kind: 'number', min: 1, max: 8 },
-    current: { kind: 'number', min: 0, max: 7 },
+    steps: { kind: 'number', min: 1, max: 10 },
+    current: { kind: 'number', min: 0, max: 9 },
     edge: { kind: 'toggle' },
     between: { kind: 'number', min: 0, max: 8 },
     glossaryLabels: { kind: 'toggle' },
+    realRanks: { kind: 'toggle' },
   },
-  defaults: { steps: 6, current: 2, edge: false, between: 4, glossaryLabels: false },
+  defaults: {
+    steps: 6,
+    current: 2,
+    edge: false,
+    between: 4,
+    glossaryLabels: false,
+    realRanks: false,
+  },
   presets: [
+    {
+      name: 'Explorer ranks (the real ladder with gift tags, rank 4)',
+      props: { realRanks: true, steps: 10, current: 3 },
+    },
+    {
+      name: 'Explorer ranks (rank 5 gift: shards and gear)',
+      props: { realRanks: true, steps: 10, current: 4 },
+    },
     { name: 'First step', props: { current: 0 } },
     { name: 'Middle', props: { current: 2 } },
     { name: 'Last step (Max)', props: { current: 5 } },
@@ -352,7 +369,7 @@ const progressTrack: Entry = {
   ],
   render: (p) => (
     <ProgressTrack
-      steps={trackSteps(num(p, 'steps'))}
+      steps={bool(p, 'realRanks') ? rankSteps() : trackSteps(num(p, 'steps'))}
       current={Math.min(num(p, 'current'), num(p, 'steps') - 1)}
       label="Explorer ranks"
       edge={bool(p, 'edge')}

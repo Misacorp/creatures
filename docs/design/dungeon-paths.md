@@ -121,12 +121,12 @@ Or the player **heads home**: the run ends there and keeps the whole pack.
     - Rounding up is generous on purpose: an early defeat in a small run costs almost nothing, and the loss grows with how much the player risked.
     - Depth is unchanged.
   - **Left open** (the day ended with the run still open, for example the player closed the app): closed the next time the server looks at that player's dungeon, or at the guild alarm. A run resting at the camp with its choice pending closes as **home** (the player could have headed home there); anywhere else it closes as a **defeat** (half the pack). Otherwise quitting the app would be a free safe exit at every step and the camp's choice would mean nothing. Experience and the supply earned are paid either way.
-- **Loot per room** (`RULES.dungeon.loot`), tuned by the sim so that a typical full clear pays about what today's does:
-  - fight: Bait 1;
-  - elite: Bait 1, scrap 1, and a keepsake;
-  - cache: Bait 1, scrap 1;
-  - mystery: by option (0 to 2 of something);
-  - boss chest: Essence 1, scrap 1, shard 60%, gear 15% (landmark extras as today);
+- **Loot per room** (`RULES.dungeon.loot`). B-024 (Misa, 2026-10-20): a full clear of the main map pays about 1.5 crafts of parts (about 10 scrap and 1.4 shards on the safe path) and one gear piece, and the choices pay more:
+  - fight: Bait 1, scrap 1, and a 15% chance of a shard of its foe's element (elite 40%, epic fight 60%, floor boss and Undercroft keeper a sure one; `RULES.dungeon.shardBp`); shards are in the pack and at risk like the rest;
+  - elite: Bait 1, scrap 4, and a keepsake;
+  - cache: Bait 1, scrap 3;
+  - mystery: by option (the safe option 1 to 2 scrap, the risky one about 1 to 3 scrap more on average);
+  - boss chest: Essence 1, scrap 3, a sure shard of the boss's element, a gear piece on every full clear (`fullClear.gearBp` 10000; landmark extras as before);
   - Market Day: +1 scrap for each fight cleared, as today.
 - **The streak, the first-day retry and treats** are unchanged. Any finished run, home included, counts for the streak. The first-day retry opens only after a **defeat** in the player's first run.
 
@@ -151,11 +151,11 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
   - The player is told only what it could be ("A carved door. Step through to add one room to the first Undercroft floor: a fight, a fierce foe, a mystery, a cache, a camp or an epic fight."), and the history says only that a room was added. Which kind shows when the Undercroft is drawn on descent.
   - The added room is a row of its own with one room, before the floor boss (camps last: a rest before the floor boss). A run holds at most `maxMarks` (2); past it the door adds nothing and says so. Only the first Undercroft takes marks; a deeper floor has its own two rooms.
   - The room only counts if the player descends. Below depth 8 a door is a quiet room: its view is a mystery room named "Quiet room" (no scene), and nothing happens in it.
-  - The room kinds of an added room: **an epic fight** (one fierce foe at boss strength, paying Essence 1, scrap 2 and a keepsake), **a camp** (rest, swap or a keepsake, and the only place in the Undercroft to head home), or any other kind, which plays as on the main map (fights, elites and caches there pay double).
+  - The room kinds of an added room: **an epic fight** (one fierce foe at boss strength, paying Essence 1, scrap 5 and a keepsake), **a camp** (rest, swap or a keepsake, and the only place in the Undercroft to head home), or any other kind, which plays as on the main map (fights, elites and caches there pay double).
 - **Loot.**
   - Undercroft fights put twice their usual loot into the pack.
   - Every fight there pays experience as usual.
-  - The Undercroft floor boss's **Undercroft chest** is better: Essence 1, scrap 2, and a 40% gear chance with better rare and epic odds and +2 item level.
+  - The Undercroft floor boss's **Undercroft chest** is better: Essence 2, scrap 7, and an 80% gear chance with better rare and epic odds and +2 item level.
   - There is no extra depth: depth moves only by the main boss.
 - **No guaranteed camp below** (Misa, 2026-10-18). A camp in the Undercroft comes only from a carved door (about 5% of descents), so a descent is close to all-in. The layout and its odds are kept as design space for future gear lines, after the gear branch in progress merges.
 - **Risk.** The pack, now holding the boss chest's currencies, stays at risk all the way down:
@@ -245,7 +245,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
 
 ### The Undercroft on the server
 
-- **Rules** (`RULES.dungeon.undercroft`, `packages/game/src/rules/dungeon-map.ts`, `dungeon-run.ts`): `fromDepth 8`, `catchBreathBp 2000`, `reviveBp 1000`, `depthBonus 1` (3 at first: the keeper stood five times in six, B-020), `baseFloors 2`, `perLandmark 1`, `maxFloors 5`, `deeperFloors 2`, `maxMarks 2`, `lootMultiplier 2`, `crackBp 1500`, `maxLevels 3`, `epic {hpBp 16000, atkBp 13000, loot {0, 1, 2}}`, `chest {essence 1, scrap 2, gearBp 4000, rareBonusBp 1500, epicBonusBp 500, itemLevelBonus 2}`, `doorFloors [4, 5]`, `doorBp 3500`, `markOdds`.
+- **Rules** (`RULES.dungeon.undercroft`, `packages/game/src/rules/dungeon-map.ts`, `dungeon-run.ts`): `fromDepth 8`, `catchBreathBp 2000`, `reviveBp 1000`, `depthBonus 1` (3 at first: the keeper stood five times in six, B-020), `baseFloors 2`, `perLandmark 1`, `maxFloors 5`, `deeperFloors 2`, `maxMarks 2`, `lootMultiplier 2`, `crackBp 1500`, `maxLevels 3`, `epic {hpBp 16000, atkBp 13000, loot {0, 1, 5}}`, `chest {essence 2, scrap 7, gearBp 8000, rareBonusBp 1500, epicBonusBp 500, itemLevelBonus 2}`, `doorFloors [4, 5]`, `doorBp 3500`, `markOdds`.
   - The first Undercroft has `min(maxFloors, baseFloors + perLandmark x (landmarks passed - 1))` floors of two rooms, where the landmarks passed by a run at depth d are `floor((d - 1) / 7)` (depth 8 to 14: 2 floors, 15 to 21: 3, up to 5), plus one floor for each mark, plus the keeper's floor. A deeper level has `deeperFloors` floors plus the keeper, and no marks.
 - **The main map's door** is drawn last in `generateDungeonMap`, only when the caller asks (`{ doors: true }`: the server and the simulator both do), so a map without a door is the map it was before doors: a fight on floor 4 or 5 becomes a `door` node (no foe, modifier or event). `mapView(map, depth)` shows it as `door` at depth 8 and over, and as a `mystery` node with no event below it.
 - **Undercroft maps** come from `generateUndercroftMap(rng, {level, floors, marks})`: node ids `u<level>f<floor>l<lane>`; rows of two rooms in lanes 0 and 2 that lead straight up their lane (the first floor is all fights, the rest roll like the main map's rooms with caps of 2 elites, 1 cache and 2 mysteries per level, none beside its mate); a floor of one room (lane 1) for each mark (camps last); the keeper alone on the last floor (a floor boss, its own foe whatever the depth, with its `signature` on). `crack` is drawn last with `crackBp` (never on level `maxLevels`). `undercroftMapValid` checks it.

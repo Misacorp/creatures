@@ -18,7 +18,7 @@ Status: 2026-10-20 (Mire shipped; the rest as of 2026-10-13). Canon for names, m
 ### What we infer
 
 - The ribbons read as a rite of passage: a creature that has seen a lot of the wild is given a token of it, made at the Workshop from the things it brought home. Bronze marks its first real season, Silver its first long road. Treats are a small kindness before a hard day, not a purchase. `(inferred)`
-- The explorers say a long dry spell always ends: the wild owes you a creature. The game keeps a count of trips since your last new species and, after a long drought, the next place you visit shows you one you have not met. `(inferred, content: how-to-play.json "expeditions")`
+- The explorers used to say a long dry spell always ends: the wild owed you a creature. Since 2026-10-20 it owes nothing: every hour of a trip simply has its chance, and long trips are better. `(inferred, design: decisions.md 2026-10-20)`
 - A Discord server is a single **valley** or region, with its own sky, calendar and boss. The raid boss and the Festival belong to that region, not to one player. `(inferred)`
 - The explorers' base is a **Workshop** at the edge of the wild, and the Old Crossroads is the nearest meeting point to it. `(inferred)` The Crossroads banner shows "a worn dirt crossing" and "travellers' campfire ashes", which fits. `(content: destinations.json)`
 

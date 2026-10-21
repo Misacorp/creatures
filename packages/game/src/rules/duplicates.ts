@@ -2,14 +2,14 @@
  * The duplicate choice (docs/design/gear-and-creatures-v2.md section 8.2). A duplicate catch arrives as a
  * card with its rolled talent and four buttons: **Teach** its talent to your creature of that line (it goes
  * into the creature's Talent Book, never into a slot; slotting it later costs Bait),
- * **Fuse** it (one fusion step, up to 5), **Release** it for parts (never Bait), or **Keep** it as a second
+ * **Fuse** it (fusion points by its rarity, up to fusion level 5), **Release** it for parts (never Bait), or **Keep** it as a second
  * creature of a line that has a branch you do not own yet. Pure functions: what is offered and what
  * Recommended is. The server decides, checks and applies every choice (`apps/worker/src/catch-choices.ts`).
  */
 import { lineBranches, content, talentDef, type Element, type Rarity, type Role } from '../content';
 import { RULES } from './config';
 import { shardOf, type PartsBundle } from './gear';
-import { fuseOnce } from './fusion';
+import { canFuse } from './fusion';
 import { foldTalent, slotsOpen, talentScore, type TalentRoll } from './talents';
 
 export type DuplicateChoice = 'teach' | 'fuse' | 'release' | 'keep';
@@ -19,6 +19,8 @@ export interface LineCreature {
   speciesId: string;
   level: number;
   fusionCount: number;
+  /** Fusion points (the level is `fusionLevel` of it; Fuse is offered below the maximum level). */
+  fusionPoints: number;
   rarity: Rarity;
   role: Role;
   element: Element;
@@ -51,9 +53,9 @@ export function teachOffered(creatures: readonly LineCreature[], roll: TalentRol
   return creatures.some((c) => canTeach(c, roll));
 }
 
-/** True if any creature of the line can still take a fusion step (Fuse is offered). */
+/** True if any creature of the line can still take fusion points (Fuse is offered). */
 export function fuseOffered(creatures: readonly LineCreature[]): boolean {
-  return creatures.some((c) => fuseOnce(c.fusionCount) !== null);
+  return creatures.some((c) => canFuse(c.fusionPoints));
 }
 
 /**
@@ -120,7 +122,7 @@ export function recommend(
   }
   if (best !== null && best.gain > 0) return { choice: 'teach', creatureId: best.creatureId };
   if (keep) return { choice: 'keep' };
-  const fuser = creatures.find((c) => fuseOnce(c.fusionCount) !== null);
+  const fuser = creatures.find((c) => canFuse(c.fusionPoints));
   if (fuser !== undefined) return { choice: 'fuse', creatureId: fuser.id };
   return { choice: 'release' };
 }

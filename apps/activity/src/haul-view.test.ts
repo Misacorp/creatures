@@ -57,32 +57,32 @@ describe('the expected haul of a trip', () => {
     expect(shards(null)?.icon).toEqual({ kind: 'part', part: 'tide-shard' });
   });
 
-  it('says no scrap on a trip that brings none', () => {
-    expect(lengthRules('short').loot.scrap).toBe(0);
-    expect(row(expectedHaul('short', 'tide', []), 'scrap').detail).toBe('No scrap');
-    expect(row(expectedHaul('short', 'tide', []), 'scrap').level).toBe(0);
-    expect(row(expectedHaul('long', 'tide', []), 'scrap').detail).toBe(
-      `${String(lengthRules('long').loot.scrap)} scrap`,
+  it('says the explorer XP in numbers, a tick at a time, and the rest in words', () => {
+    expect(row(expectedHaul('long', 'tide', []), 'xp').detail).toBe(
+      `${String(lengthRules('long').ticks * 20)} explorer XP`,
+    );
+    expect(row(expectedHaul('short', 'tide', []), 'scrap').detail).toMatch(/^Scrap: /);
+    // A longer trip finds more of everything: the gear row grows with the length.
+    expect(row(expectedHaul('short', 'tide', []), 'gear').level).toBeLessThanOrEqual(
+      row(expectedHaul('day', 'tide', []), 'gear').level,
     );
   });
 });
 
 describe('what the chosen supplies add to the haul', () => {
-  it('counts the catch rolls a map scrap adds, and marks the row as raised', () => {
+  it('raises every row a map scrap adds ticks to, and marks the row as raised', () => {
     const plain = row(expectedHaul('long', 'tide', []), 'catch');
-    const mapped = row(expectedHaul('long', 'tide', ['map-scrap-basic']), 'catch');
-    expect(plain.detail).toMatch(/^1 catch roll, each (rarely|sometimes|often|very often) brings/);
-    expect(mapped.detail).toMatch(/^2 catch rolls, each /);
+    const mapped = row(expectedHaul('long', 'tide', ['map-scrap-great']), 'catch');
     expect(mapped.level).toBeGreaterThanOrEqual(plain.level);
     expect(plain.boosted).toBe(false);
     expect(mapped.boosted).toBe(true);
   });
 
   it('says in words how often a roll brings a creature, and a lure raises it', () => {
-    const none = row(expectedHaul('short', 'tide', []), 'catch');
-    const great = row(expectedHaul('short', 'tide', ['lure-great']), 'catch');
-    expect(none.detail).toContain('each rarely brings a creature');
-    expect(great.detail).not.toContain('each rarely');
+    const none = row(expectedHaul('long', 'tide', []), 'catch');
+    const great = row(expectedHaul('long', 'tide', ['lure-great']), 'catch');
+    expect(none.detail).toMatch(/^Creatures: /);
+    expect(great.level).toBeGreaterThan(none.level);
     expect(great.level).toBeGreaterThanOrEqual(none.level);
     expect(great.boosted).toBe(true);
     expect(none.boosted).toBe(false);

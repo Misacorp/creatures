@@ -1,4 +1,4 @@
-import { partBadge } from './count-items';
+import { baitCount, partBadge } from './count-items';
 import { CountBadge } from './ui/CountBadge';
 import { GameIcon } from './ui/GameIcon';
 import { Tag } from './ui/Tag';
@@ -244,12 +244,17 @@ export function CostList({
   have,
   essence,
   essenceHave,
+  bait,
+  baitHave,
 }: {
   cost: PartsBundle;
   have: Readonly<Record<PartKind, number>>;
   /** Essence the action also costs; leave out when it costs none. */
   essence?: number;
   essenceHave?: number;
+  /** Bait the action also costs (a lure): drawn as a chip like the parts; leave out when it costs none. */
+  bait?: number;
+  baitHave?: number;
 }) {
   const short = (need: number, held: number): boolean => held < need;
   return (
@@ -258,6 +263,17 @@ export function CostList({
         <li class={short(essence, essenceHave ?? 0) ? 'short' : undefined}>
           <GlossaryTag entry="essence">{String(essence)} Essence</GlossaryTag>
           {short(essence, essenceHave ?? 0) && <span class="visually-hidden"> (not enough)</span>}
+        </li>
+      )}
+      {bait !== undefined && bait > 0 && (
+        <li class={short(bait, baitHave ?? 0) ? 'short' : undefined}>
+          <CountBadge {...baitCount(bait, { name: true })} />
+          {short(bait, baitHave ?? 0) && (
+            <>
+              <span class="cost-name">(have {baitHave ?? 0})</span>
+              <span class="visually-hidden"> Not enough Bait.</span>
+            </>
+          )}
         </li>
       )}
       {partsEntries(cost).map(({ kind, amount }) => {

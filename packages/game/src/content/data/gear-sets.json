@@ -91,7 +91,7 @@
     "flavor": "Worn by those who take the fifth road at the Old Crossroads.",
     "two": { "text": "Trips take 4% less time", "lines": [{ "line": "quick-feet", "value": 400 }] },
     "three": {
-      "text": "One extra catch roll on 24 hour trips.",
+      "text": "One more hour of finds on 24 hour trips.",
       "effect": "longTripCatch",
       "value": 1
     }

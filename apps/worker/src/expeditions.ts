@@ -38,8 +38,9 @@ import {
   rollOffer,
   slotsFor,
   tripMs,
-  tripRolls,
+  tripTicks,
   tripWeather,
+  weatherDef,
   weatherTimeMs,
   NO_TRIP_WEATHER,
   treatCost,
@@ -87,6 +88,7 @@ import {
   twistOf,
   failTrip,
   payTrip,
+  sentTicks,
   vanishedGoal,
   type ClaimEnv,
 } from './expedition-claim';
@@ -100,6 +102,7 @@ import type {
   SendInput,
   SlotsView,
   TripsState,
+  TripWeatherView,
 } from './expedition-types';
 
 export type {
@@ -114,6 +117,7 @@ export type {
   ProfileView,
   PushOnResultView,
   RankGiftView,
+  TripWeatherView,
   SendInput,
   SlotsView,
   TripsState,
@@ -381,6 +385,27 @@ export class Expeditions {
     );
   }
 
+  /**
+   * The Boon and Omen that changed this trip, by name, from what was stored when it was sent. Null for a trip
+   * that no weather touched (nothing is stored then), from before the weather, or with a damaged value.
+   */
+  private tripWeatherView(row: ExpeditionRow): TripWeatherView | null {
+    if (row.weather_json === null) return null;
+    try {
+      const parsed = v.safeParse(StoredTripWeatherSchema, JSON.parse(row.weather_json));
+      if (!parsed.success) return null;
+      const boon = weatherDef(parsed.output.boon);
+      if (boon === undefined) return null;
+      const omen = parsed.output.omen === null ? undefined : weatherDef(parsed.output.omen);
+      return {
+        boon: { id: boon.id, name: boon.name },
+        omen: omen === undefined ? null : { id: omen.id, name: omen.name },
+      };
+    } catch {
+      return null;
+    }
+  }
+
   private parseResult(row: ExpeditionRow): ExpeditionResult | null {
     if (row.result === null) return null;
     try {
@@ -415,7 +440,8 @@ export class Expeditions {
       kit,
       destination: row.destination_id,
       twist: row.special_id,
-      rolls: row.rolls,
+      weather: this.tripWeatherView(row),
+      rolls: sentTicks(row),
       cost: row.cost,
       treat: row.treat === 1,
       startedAt: row.started_at,
@@ -577,8 +603,8 @@ export class Expeditions {
 
   /**
    * Chooses a push-on goal of a finished trip's offer: the trip goes on for the goal's extra hours,
-   * counted from the moment the trip ended (so a player who opens the app late loses no time: the
-   * push-on is already over and can be claimed at once). Choosing the same goal again returns the same
+   * counted from the moment the player chooses (pushing on carries its price in time: a player who
+   * opens the app late waits the full extra hours from then; the creature stays busy until then). Choosing the same goal again returns the same
    * trip; another goal after one was chosen is refused. The result (a risky goal can fail) is rolled when
    * the trip is claimed after the push-on's end, with live randomness.
    */
@@ -605,8 +631,8 @@ export class Expeditions {
           `UPDATE expeditions SET push_goal = ?, push_started_at = ?, push_ends_at = ?, push_odds_bp = ?
            WHERE id = ? AND status = 'active' AND push_goal IS NULL RETURNING *`,
           goal.id,
-          row.ends_at,
-          row.ends_at + goal.extraHours * HOUR_MS,
+          now,
+          now + goal.extraHours * HOUR_MS,
           oddsBp,
           row.id,
         )
@@ -702,10 +728,12 @@ export class Expeditions {
 
     const special = week.destination === dest.id ? week.twistId : null;
     // What the explorer's gear does on a trip is fixed now: Quick feet changes the time (with the day's
-    // weather), and the Crossroads Wanderer set adds a catch roll to a 24 hour trip.
+    // weather), and the Crossroads Wanderer set adds a tick to a 24 hour trip. The trip's `rolls` are its
+    // whole ticks (the length's, the twist's, the day's and the gear's); the map's ticks are rolled at the
+    // claim, and a worked push-on adds its hours then.
     const gear = gearRulesOf(this.sql, creature);
     const rolls =
-      tripRolls(input.duration, kit, twistOf(special)) +
+      tripTicks(input.duration, twistOf(special)) +
       fx.extraRolls +
       (input.duration === 'day' ? gear.dayTripRolls : 0);
     const ms = weatherTimeMs(

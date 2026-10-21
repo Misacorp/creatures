@@ -59,11 +59,11 @@
       "id": "expeditions",
       "title": "Expeditions",
       "lines": [
-        "Send a creature to a place for 2, 6 or 12 hours. Longer trips find much more, and a 24 hour trip opens later.",
-        "Trips are free and may bring a creature; a long dry spell always ends with one. Lures (made from Bait) raise the odds.",
+        "Send a creature out for 2, 6 or 12 hours. Each hour may find creatures, parts, gear or supplies. Longer is better.",
+        "Trips are free. Parts are every crafting ingredient: scrap, shards and glimmer. Supplies make a trip better.",
         "Every creature gets better at exploring: ranks, stars for each place and Journal pages.",
         "A finished trip may offer a push-on choice. Safe goals always work. Risky ones can fail.",
-        "You start with 1 slot, and more open as your creatures grow. Recall early to keep what was caught."
+        "You start with 1 slot, and more open as your creatures grow. Recall early to keep what the hours so far found."
       ]
     },
     {

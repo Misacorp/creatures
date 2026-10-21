@@ -12,6 +12,7 @@ import {
   effectiveStats,
   evolutionsOf,
   expToNext,
+  fusionThreshold,
   nextUnlock,
   quirkText,
   ribbonNeeded,
@@ -74,6 +75,7 @@ type CreatureRow = {
   species: string;
   level: number;
   fusion_count: number;
+  fusion_points: number;
   shiny: number;
   nickname: string | null;
   away_expedition_id: string | null;
@@ -92,6 +94,8 @@ export interface CreatureView {
   level: number;
   levelCap: number;
   fusionCount: number;
+  /** Fusion points gathered; the level is `fusionCount` and the next one takes `RULES.fusion.thresholds`. */
+  fusionPoints: number;
   shiny: boolean;
   nickname: string | null;
   away: boolean;
@@ -413,6 +417,7 @@ export class Collection {
       level: row.level,
       levelCap: species.levelCap,
       fusionCount: row.fusion_count,
+      fusionPoints: Math.max(row.fusion_points, fusionThreshold(row.fusion_count)),
       shiny: row.shiny === 1,
       nickname: row.nickname,
       away,

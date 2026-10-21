@@ -723,7 +723,8 @@ describe('moving into a fight', () => {
         expect(room?.keepsakes).toBeUndefined();
         expect(room?.names.players).toEqual({ p1: p.name });
         // The pack holds the fight's loot (and no seed or stored detail is sent).
-        expect(next.pack).toEqual(nodeLoot('fight'));
+        // (and perhaps a shard of the foe's element: its chance is rolled per room kind.)
+        expect(next.pack).toMatchObject(nodeLoot('fight'));
         expect(next.supply).toBe(true); // the first fight cleared earns the supply
         expect(JSON.stringify(res.body)).not.toContain('seed');
         // The HP the state shows is what the fight left, and it carries into the next fight.
@@ -2244,7 +2245,7 @@ describe('the room history', () => {
         const one = first.body.state;
         expect(one.history).toHaveLength(1);
         const entry = one.history[0];
-        expect(entry).toEqual({
+        expect(entry).toMatchObject({
           node: one.at,
           kind: 'fight',
           result: 'fight',

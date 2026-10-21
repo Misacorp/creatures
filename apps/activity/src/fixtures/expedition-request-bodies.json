@@ -84,7 +84,7 @@
     }
   },
   "workshop-claim-supply": {
-    "path": "/api/workshop/jobs/00000000-0000-4000-8400-000000000008/claim",
+    "path": "/api/workshop/jobs/00000000-0000-4000-8400-000000000009/claim",
     "method": "POST",
     "body": {
       "idempotencyKey": "trips-fixture-00000014-key"

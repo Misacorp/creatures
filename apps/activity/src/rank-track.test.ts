@@ -2,7 +2,7 @@ import { MAX_EXPLORER_RANK, RULES, expeditionContent, rankGift } from '@creature
 import { describe, expect, it } from 'vitest';
 import { glyph } from './glyphs';
 import { trackNodes } from './progress-track';
-import { giftText, rankIndex, rankSteps } from './rank-track';
+import { giftTags, rankIndex, rankSteps } from './rank-track';
 
 const steps = rankSteps();
 const unlocks = (rank: number): string[] =>
@@ -17,7 +17,7 @@ describe('the explorer rank ladder', () => {
   });
 
   it('lists what Misa named, from the content: places, goals and the 24 h trip', () => {
-    const at = (rank: number) => unlocks(rank).filter((u) => !u.includes('Gift:'));
+    const at = (rank: number) => unlocks(rank).filter((u) => u !== 'bait:Gift');
     expect(at(1)).toEqual([]);
     expect(at(2)).toEqual(['compass:Old Crossroads', 'fork:Goal: Scout ahead']);
     expect(at(3).sort()).toEqual([
@@ -39,7 +39,7 @@ describe('the explorer rank ladder', () => {
     for (let rank = 2; rank <= MAX_EXPLORER_RANK; rank++) {
       expect(unlocks(rank).length, `rank ${String(rank)}`).toBeGreaterThan(0);
       expect(
-        unlocks(rank).some((u) => u.startsWith('bait:Gift: ')),
+        unlocks(rank).some((u) => u === 'bait:Gift'),
         `gift ${String(rank)}`,
       ).toBe(true);
     }
@@ -84,19 +84,58 @@ describe('the explorer rank ladder', () => {
   });
 });
 
-describe('the gift in words', () => {
-  it('lists Bait, parts and supplies by name', () => {
-    expect(giftText({ bait: 30, parts: { scrap: 3, glimmer: 1 }, supplies: ['lure-good'] })).toBe(
-      '30 Bait, 3 scrap, 1 glimmer, Sweet Lure',
-    );
-    expect(giftText({ bait: 0, parts: {}, supplies: ['lantern-basic'] })).toBe('Candle Lantern');
+describe('the gift as tags', () => {
+  const view = (tags: ReturnType<typeof giftTags>) =>
+    tags.map((t) => `${t.key}:${String(t.amount)}:${t.label ?? ''}:${t.name ?? ''}`);
+
+  it('lists Bait, parts and supplies as tags, supplies with their name', () => {
+    expect(
+      view(giftTags({ bait: 30, parts: { scrap: 3, glimmer: 1 }, supplies: ['lure-good'] })),
+    ).toEqual([
+      'bait:30:Bait:',
+      'scrap:3:Scrap:',
+      'glimmer:1:Glimmer:',
+      'supply-lure-good:1::Sweet Lure',
+    ]);
+    expect(view(giftTags({ bait: 0, parts: {}, supplies: ['lantern-basic'] }))).toEqual([
+      'supply-lantern-basic:1::Candle Lantern',
+    ]);
+  });
+
+  it('shows shards with the generic icon and the gear piece with a rarity hint, and no help buttons', () => {
+    const tags = giftTags({
+      bait: 25,
+      parts: { scrap: 10 },
+      supplies: [],
+      shards: 3,
+      gearOddsBp: { common: 8000, rare: 2000, epic: 0 },
+    });
+    expect(view(tags)).toEqual([
+      'bait:25:Bait:',
+      'scrap:10:Scrap:',
+      'shards:3:Shards of its element:',
+      'gear:1:Gear piece:Gear',
+    ]);
+    expect(tags.find((t) => t.key === 'shards')?.icon).toEqual({ kind: 'glyph', id: 'shard-any' });
+    expect(tags.some((t) => t.entry !== undefined)).toBe(false);
+    expect(
+      giftTags({
+        bait: 0,
+        parts: {},
+        supplies: [],
+        shards: 0,
+        gearOddsBp: { common: 0, rare: 10000, epic: 0 },
+      }).map((t) => t.name),
+    ).toEqual(['Rare gear']);
   });
 
   it('matches the gift the rules set for every rank', () => {
     for (let rank = 2; rank <= MAX_EXPLORER_RANK; rank++) {
       const gift = rankGift(rank);
       if (gift === null) throw new Error(`no gift at rank ${String(rank)}`);
-      expect(unlocks(rank)).toContain(`bait:Gift: ${giftText(gift)}`);
+      const unlock = steps[rank - 1]?.unlocks.find((u) => u.icon === 'bait');
+      expect(unlock?.text).toBe('Gift');
+      expect(unlock?.tags).toEqual(giftTags(gift));
     }
   });
 });

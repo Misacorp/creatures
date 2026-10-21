@@ -1,4 +1,4 @@
-import { RULES, createSeededRng, type ExpeditionLength } from '@creatures/game';
+import { RULES, createSeededRng } from '@creatures/game';
 import { expect } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
@@ -11,19 +11,17 @@ import type { ActivityInstance, DiscordMember, DiscordRole, DiscordUser } from '
 export const ORIGIN = 'https://creatures.test';
 
 /**
- * Makes every catch roll of these trip lengths bring a creature (the chance is 100%), for a test that
- * needs a catch on every trip rather than the chance the game shipped with. Returns the function that
- * puts the shipped chances back; call it in a `finally`.
+ * Makes every tick of a trip bring a creature (the chance is 100%), for a test that needs catches rather
+ * than the chance the game shipped with (a 2 hour trip then brings two creatures). Returns the function
+ * that puts the shipped chance back; call it in a `finally`.
  */
-export function certainCatches(lengths: readonly ExpeditionLength[]): () => void {
+export function certainCatches(): () => void {
   // RULES is frozen by type only; the sim's tuning overrides write into it the same way.
-  const rules = (l: ExpeditionLength) => RULES.expeditions.lengths[l] as { catchBp: number };
-  const before = lengths.map((l) => rules(l).catchBp);
-  for (const l of lengths) rules(l).catchBp = 10_000;
+  const tick = RULES.expeditions.tick as { creatureBp: number };
+  const before = tick.creatureBp;
+  tick.creatureBp = 10_000;
   return () => {
-    lengths.forEach((l, i) => {
-      rules(l).catchBp = before[i] as number;
-    });
+    tick.creatureBp = before;
   };
 }
 
@@ -263,8 +261,54 @@ export function undoDungeonPathsMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 34');
 }
 
+/** Puts a database back to before migration 37 (fusion points): the column goes. */
+export function undoFusionPointsMigration(sql: SqlStorage): void {
+  const present = sql
+    .exec("SELECT 1 FROM pragma_table_info('creatures') WHERE name = 'fusion_points'")
+    .toArray();
+  if (present.length > 0) sql.exec('ALTER TABLE creatures DROP COLUMN fusion_points');
+  sql.exec('DELETE FROM schema_version WHERE version = 37');
+}
+
+/**
+ * Puts a database back to before migration 36 (Workshop conversions): convert jobs are dropped and the
+ * Workshop jobs table goes back to the kinds of migration 29.
+ */
+export function undoWorkshopConvertMigration(sql: SqlStorage): void {
+  undoFusionPointsMigration(sql);
+  sql.exec("DELETE FROM workshop_jobs WHERE kind = 'convert'");
+  sql.exec('ALTER TABLE workshop_jobs RENAME TO workshop_jobs_v4');
+  sql.exec(`CREATE TABLE workshop_jobs (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    creature_id TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('craft', 'improve', 'enchant', 'supply', 'dismantle')),
+    gear_id TEXT,
+    input_json TEXT NOT NULL,
+    started_at INTEGER NOT NULL,
+    ends_at INTEGER NOT NULL,
+    claimed_at INTEGER,
+    result_json TEXT,
+    work_minutes INTEGER NOT NULL DEFAULT 0 CHECK (work_minutes >= 0)
+  )`);
+  sql.exec(`INSERT INTO workshop_jobs
+      (id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at, claimed_at, result_json, work_minutes)
+    SELECT id, user_id, creature_id, kind, gear_id, input_json, started_at, ends_at, claimed_at, result_json, work_minutes
+    FROM workshop_jobs_v4 ORDER BY rowid`);
+  sql.exec('DROP TABLE workshop_jobs_v4');
+  sql.exec(
+    'CREATE UNIQUE INDEX workshop_jobs_creature_open ON workshop_jobs(creature_id) WHERE claimed_at IS NULL',
+  );
+  sql.exec(
+    'CREATE UNIQUE INDEX workshop_jobs_gear_open ON workshop_jobs(gear_id) WHERE claimed_at IS NULL AND gear_id IS NOT NULL',
+  );
+  sql.exec('CREATE INDEX workshop_jobs_user ON workshop_jobs(user_id, claimed_at)');
+  sql.exec('DELETE FROM schema_version WHERE version = 36');
+}
+
 /** Puts a database back to before migration 35 (lounging with company). */
 export function undoLoungeCompanyMigration(sql: SqlStorage): void {
+  undoWorkshopConvertMigration(sql);
   sql.exec('DROP TABLE IF EXISTS lounge_company');
   sql.exec('DROP TABLE IF EXISTS lounge_rest');
   sql.exec('DELETE FROM schema_version WHERE version = 35');

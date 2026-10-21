@@ -4,6 +4,7 @@
  * `apps/activity/src/gear-types.ts`, and `test/gear-fixtures.test.ts` checks the captured fixtures.
  */
 import type {
+  ConversionBundle,
   CraftOdds,
   DismantleRange,
   GearRarity,
@@ -129,6 +130,13 @@ export type JobResult =
       amount: number;
     } & JobCommon)
   | ({
+      /** A refine or recycle: what the recipe took and what went into the stock (supplies by id, parts by kind). */
+      kind: 'convert';
+      recipeId: string;
+      took: ConversionBundle;
+      gave: ConversionBundle;
+    } & JobCommon)
+  | ({
       /** An Improve or Enchant job started before gear v2: it paid its XP, and its parts came back. */
       kind: 'retired';
       was: 'improve' | 'enchant';
@@ -147,7 +155,13 @@ export interface JobView {
   creatureId: string;
   kind: JobKind | 'improve' | 'enchant';
   /** What the job works on: the base crafted (and the Reach), the supply, or the items taken apart. */
-  input: { baseId?: string; supplyId?: string; reach?: ReachId; items?: ItemSnapshot[] };
+  input: {
+    baseId?: string;
+    supplyId?: string;
+    recipeId?: string;
+    reach?: ReachId;
+    items?: ItemSnapshot[];
+  };
   /** The parts it cost when it started. */
   cost: PartsBundle;
   /** The Bait it cost when it started (a lure): 0 for every other job. */
@@ -214,6 +228,13 @@ export type StartJobInput =
       kind: 'dismantle';
       creatureId: string;
       itemIds: string[];
+      treat?: boolean | undefined;
+      idempotencyKey: string;
+    }
+  | {
+      kind: 'convert';
+      creatureId: string;
+      recipeId: string;
       treat?: boolean | undefined;
       idempotencyKey: string;
     };

@@ -43,7 +43,7 @@ export type PartKind = (typeof PART_KINDS)[number];
 export type PartsBundle = Partial<Record<PartKind, number>>;
 
 /** The jobs a player can start. Improve and enchant are gone; jobs started before v2 still finish. */
-export const JOB_KINDS = ['craft', 'supply', 'dismantle'] as const;
+export const JOB_KINDS = ['craft', 'supply', 'dismantle', 'convert'] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
 /** Job kinds a stored job may have: the current ones and the two removed in v2. */
 export type StoredJobKind = JobKind | 'improve' | 'enchant';
@@ -689,7 +689,7 @@ export function rollBlueprint(rng: Rng): string {
 
 /**
  * A gear find of a trip's push-on goal: the place's element is the tag (the Old Crossroads gives the
- * explorer's Compass, a place without an element a neutral piece), item level twice the explorer's rank.
+ * explorer's Compass, a place without an element a neutral piece), item level the explorer's rank.
  */
 export function rollExpeditionItem(
   rng: Rng,

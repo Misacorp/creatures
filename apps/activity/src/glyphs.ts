@@ -332,6 +332,13 @@ const gem: SpriteDef = {
   rows: ['..kk', '.kwc', 'kwcc', 'kccc', '.kcc', '..kc', '...k', '....'],
 };
 
+/** A plain grey crystal: a shard of any element (the same shape as the Tide Shard, with no element colour). */
+const shardAny: SpriteDef = {
+  mirror: true,
+  palette: { k: INK, b: '#9a98ae', h: '#c9c7d8', w: '#eeeef5' },
+  rows: ['...k', '..kb', '.kbh', 'kbwh', 'kbbh', '.kbb', '..kb', '...k'],
+};
+
 // --- Creature states on the stage ---
 
 /** A skull: the creature is knocked out. */
@@ -376,6 +383,24 @@ const check: SpriteDef = {
     '.hhh....',
     '..h.....',
     '........',
+  ],
+};
+
+/**
+ * A pixel tick for a packed supply: a gold tick on an ink badge (the ink is its outline), so it reads on
+ * any picture. Unlike `check` it is a badge of its own.
+ */
+const tick: SpriteDef = {
+  palette: { k: INK, g: GOLD },
+  rows: [
+    'kkkkkkkk',
+    'kkkkkkgk',
+    'kkkkkggk',
+    'kgkkggkk',
+    'kggkggkk',
+    'kkgggkkk',
+    'kkkgkkkk',
+    'kkkkkkkk',
   ],
 };
 
@@ -693,9 +718,11 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   unknown,
   orb,
   gem,
+  'shard-any': shardAny,
   skull,
   hand,
   check,
+  tick,
   warning,
   reticle,
   anvil,

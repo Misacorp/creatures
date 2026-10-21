@@ -42,6 +42,7 @@ import { LIVE_ROUND_MS, evaluate, loadLive, roundStartsOf } from '../src/raid-li
 import { eventTimes } from '../src/raid-schedule';
 import {
   OTHER_USER_ID,
+  certainCatches,
   USER_ID,
   runCore,
   undoAnalyticsMigration,
@@ -118,6 +119,8 @@ function scriptedRng(values: number[]): Rng {
  */
 const SPLASHET_PLAIN = [0, 0, 0, 1];
 const SPLASHET_SHINY = [0, 0, 0, 0];
+/** A short trip is two ticks: the second one misses the creature chance and draws once. */
+const THEN_MISS = [9_999];
 
 type Json = Record<string, unknown>;
 
@@ -794,7 +797,7 @@ describe('collection events', () => {
                 { species: 'splashet', rarity: 'common', shiny: true, result: 'duplicate' },
               ],
               pushOn: 'none',
-              xp: RULES.expeditions.lengths.short.xp,
+              xp: RULES.expeditions.lengths.short.ticks * RULES.expeditions.tick.xp,
               // The scripted catch is a shiny: a star on its own.
               stars: 1,
             },
@@ -829,7 +832,7 @@ describe('collection events', () => {
         expect(missing.status).toBe(404);
         expect(events(ctx.sql, 'expedition_claim')).toHaveLength(1);
       },
-      { rng: scriptedRng(SPLASHET_SHINY) },
+      { rng: scriptedRng([...SPLASHET_SHINY, ...THEN_MISS]) },
     );
   });
 
@@ -873,52 +876,50 @@ describe('collection events', () => {
         expect(events(ctx.sql, 'fuse')).toHaveLength(1);
         expect(events(ctx.sql, 'duplicate_choice')).toHaveLength(1);
       },
-      { rng: scriptedRng(SPLASHET_PLAIN) },
+      { rng: scriptedRng([...SPLASHET_PLAIN, ...THEN_MISS]) },
     );
   });
 
   it('logs a recall as a recall, with how much of the trip had passed', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const joined = await joinWithStarter(ctx, USER, 200);
-        const { starterId } = joined;
-        let secret = joined.secret;
-        ctx.sql.exec('UPDATE player_progress SET expeditions_claimed = 1');
-        stock(ctx.sql, USER_ID, 'lure-good', 1);
-        const exp = expeditionOf(await send(ctx, secret, starterId, 'long', [own('lure-good')]));
-        ctx.clock.t = exp.startedAt + 8 * HOUR; // two thirds of 12 hours
-        secret = await signIn(ctx, USER);
-        const res = await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
-        expect(res.status).toBe(200);
-        expect(events(ctx.sql, 'expedition_claim')).toEqual([]);
-        expect(events(ctx.sql, 'expedition_recall')).toMatchObject([
-          {
-            props: {
-              duration: 'long',
-              destination: 'tidepools',
-              supplies: ['lure-good'],
-              elapsedPct: 66,
-              catches: Array.from(
-                { length: Math.floor((RULES.expeditions.lengths.long.rolls * 2) / 3) },
-                () => ({ species: 'splashet' }),
-              ),
+    const restore = certainCatches();
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const joined = await joinWithStarter(ctx, USER, 200);
+          const { starterId } = joined;
+          let secret = joined.secret;
+          ctx.sql.exec('UPDATE player_progress SET expeditions_claimed = 1');
+          stock(ctx.sql, USER_ID, 'lure-good', 1);
+          const exp = expeditionOf(await send(ctx, secret, starterId, 'long', [own('lure-good')]));
+          ctx.clock.t = exp.startedAt + 8 * HOUR; // two thirds of 12 hours
+          secret = await signIn(ctx, USER);
+          const res = await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
+          expect(res.status).toBe(200);
+          expect(events(ctx.sql, 'expedition_claim')).toEqual([]);
+          expect(events(ctx.sql, 'expedition_recall')).toMatchObject([
+            {
+              props: {
+                duration: 'long',
+                destination: 'tidepools',
+                supplies: ['lure-good'],
+                elapsedPct: 66,
+                // 8 of 12 hours: eight ticks, each of them a creature (the chance is made certain).
+                catches: Array.from({ length: 8 }, () => ({
+                  species: expect.any(String) as string,
+                })),
+              },
             },
-          },
-        ]);
-        // The replay logs nothing.
-        await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
-        expect(events(ctx.sql, 'expedition_recall')).toHaveLength(1);
-      },
-      {
-        rng: scriptedRng(
-          Array.from(
-            { length: Math.floor((RULES.expeditions.lengths.long.rolls * 2) / 3) },
-            () => SPLASHET_PLAIN,
-          ).flat(),
-        ),
-      },
-    );
+          ]);
+          // The replay logs nothing.
+          await call(ctx, secret, 'POST', `/api/expeditions/${exp.id}/claim`, {});
+          expect(events(ctx.sql, 'expedition_recall')).toHaveLength(1);
+        },
+        { rng: createSeededRng('recall-log') },
+      );
+    } finally {
+      restore();
+    }
   });
 
   it('logs an evolution once and nothing for a retry or a refusal', async () => {
@@ -1602,10 +1603,14 @@ describe('privacy', () => {
         const kit = (await call(ctx, a.secret, 'GET', '/api/gear')).body as {
           items: { id: string }[];
         };
-        const kitItem = kit.items[0]?.id as string;
-        await call(ctx, a.secret, 'POST', `/api/gear/${kitItem}/equip`, {
-          creatureId: a.starterId,
-        });
+        // The trips may have found pieces too (a tick may), and a piece made for another role does not
+        // fit this explorer: wear the first one that does.
+        for (const item of kit.items) {
+          const worn = await call(ctx, a.secret, 'POST', `/api/gear/${item.id}/equip`, {
+            creatureId: a.starterId,
+          });
+          if (worn.status === 200) break;
+        }
         // A base this Crafting level can make (a better base needs a higher level).
         const blueprint = rows<{ base_id: string }>(
           ctx.sql,

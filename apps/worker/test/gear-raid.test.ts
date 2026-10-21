@@ -790,13 +790,21 @@ describe('expedition loot', () => {
     (
       (res.body['result'] as { rankGifts?: { parts: { scrap?: number } }[] }).rankGifts ?? []
     ).reduce((n, g) => n + (g.parts.scrap ?? 0), 0);
-  /** The scrap the rolls of a claim that brought no creature found instead (`findScrap` each). */
-  const findScrapOf = (
-    res: { body: Record<string, unknown> },
-    duration: 'short' | 'medium' | 'long' | 'day',
-  ): number =>
-    ((res.body['result'] as { noCatch?: number }).noCatch ?? 0) *
-    RULES.expeditions.lengths[duration].findScrap;
+  /**
+   * Makes every table of a tick certain (and no gear piece), for a test that needs the loot of a trip to
+   * be known. Returns the function that puts the shipped chances back.
+   */
+  const sureTicks = (): (() => void) => {
+    const tick = RULES.expeditions.tick as unknown as Record<string, number>;
+    const keys = ['scrapBp', 'shardBp', 'glimmerBp', 'blueprintBp', 'supplyBp', 'gearBp'] as const;
+    const before = keys.map((k) => tick[k] as number);
+    for (const k of keys) tick[k] = k === 'gearBp' ? 0 : 10_000;
+    return () => {
+      keys.forEach((k, i) => {
+        tick[k] = before[i] as number;
+      });
+    };
+  };
   /** The `gear_drop` events of one source (the rank gift has its own). */
   const dropEvents = (ctx: { sql: SqlStorage }, source: string) =>
     rows<{ props_json: string }>(
@@ -804,7 +812,7 @@ describe('expedition loot', () => {
       "SELECT props_json FROM analytics_events WHERE kind = 'gear_drop' ORDER BY id",
     ).filter((e) => (JSON.parse(e.props_json) as { source: string }).source === source);
 
-  it('pays scrap by duration to the claimer, with the loot in the claim result and the stored state', async () => {
+  it('pays the loot of the ticks to the claimer, with the loot in the claim result and the stored state', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -815,17 +823,14 @@ describe('expedition loot', () => {
           [1, 'medium'],
           [2, 'long'],
         ] as const) {
-          const scrap = RULES.expeditions.lengths[duration].loot.scrap;
           const exp = await p.trip(index, duration);
           ctx.clock.t = exp.endsAt;
           const before = scrapOf(ctx, p.id);
           const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
           expect(res.status).toBe(200);
           const loot = lootOf(res);
-          // The length's scrap, and the small find of every roll that brought no creature.
-          const found = findScrapOf(res, duration);
-          expect(loot.parts.scrap ?? 0).toBe(scrap + found);
-          expect(scrapOf(ctx, p.id)).toBe(before + scrap + found + giftScrapOf(res));
+          // What the claim says is what the player got: the scrap of the ticks, and any rank gift.
+          expect(scrapOf(ctx, p.id)).toBe(before + (loot.parts.scrap ?? 0) + giftScrapOf(res));
           // The same loot is in the state the client reloads.
           const state = (await p.call('GET', '/api/state')).body as {
             expeditions: { id: string; result: { loot: Loot } | null }[];
@@ -837,95 +842,109 @@ describe('expedition loot', () => {
     );
   });
 
-  it('pays the share of the scrap that was caught on a recall, and nothing else', async () => {
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await explorer(ctx, 1);
-        const long = RULES.expeditions.lengths.long;
-        const exp = await p.trip(0, 'long');
-        ctx.clock.t = exp.startedAt + 8 * 3_600_000; // floor(rolls * 8 / 12) rolls
-        const caught = Math.floor((long.rolls * 8) / 12);
-        const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
-        const result = res.body['result'] as { recalled: boolean; catches: unknown[]; loot: Loot };
-        expect(result.recalled).toBe(true);
-        expect(result.catches).toHaveLength(caught);
-        // The share of the scrap that was caught, and nothing else.
-        const share = Math.floor((long.loot.scrap * caught) / long.rolls);
-        expect(result.loot.parts).toEqual(share > 0 ? { scrap: share } : {});
-        expect(result.loot.blueprints).toEqual([]);
-      },
-      { gearRng: createSeededRng('exp-recall') },
-    );
+  it('pays a recall only the ticks of the whole hours spent, with no fixed part', async () => {
+    const restore = sureTicks();
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await explorer(ctx, 1);
+          const exp = await p.trip(0, 'long');
+          ctx.clock.t = exp.startedAt + 8 * 3_600_000 + 30 * 60_000; // 8 whole hours of 12
+          const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
+          const result = res.body['result'] as { recalled: boolean; loot: Loot };
+          expect(result.recalled).toBe(true);
+          // Every table is certain: eight ticks bring eight scrap, shards and glimmer, never the 15 of a full trip.
+          expect(result.loot.parts).toEqual({ scrap: 8, 'tide-shard': 8, glimmer: 8 });
+          expect(result.loot.blueprints).toHaveLength(8);
+        },
+        { gearRng: createSeededRng('exp-recall') },
+      );
+    } finally {
+      restore();
+    }
   });
 
-  it('can bring back a shard of the explorer’s element, a glimmer and a blueprint on a 12 hour trip', async () => {
-    // Draws in order: shard chance, glimmer chance, blueprint chance, the blueprint's rarity and base, then the supply chance and kind.
-    const script = Array.from({ length: 20 }, () => 0);
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        const p = await explorer(ctx, 1, ['cindle', 'splashet', 'sproutle']);
-        const scrap = RULES.expeditions.lengths.long.loot.scrap;
-        const exp = await p.trip(0, 'long', 'ember-caves'); // the shard is of the place's element
-        ctx.clock.t = exp.endsAt;
-        const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
-        const loot = lootOf(res);
-        const gift = giftScrapOf(res);
-        const found = findScrapOf(res, 'long');
-        expect(loot.parts).toEqual({ scrap: scrap + found, 'ember-shard': 1, glimmer: 1 });
-        // The draw of 0 also finds a supply: the explorer is rank 1, so a plain one.
-        expect((loot as { supplies?: string[] }).supplies).toEqual(['map-scrap-basic']);
-        expect(loot.blueprints).toEqual([{ baseId: 'trail-cap', duplicate: false }]);
-        expect(rows(ctx.sql, 'SELECT base_id FROM blueprints')).toEqual([{ base_id: 'trail-cap' }]);
-        expect(
-          rows(ctx.sql, 'SELECT kind, amount FROM parts WHERE user_id = ? ORDER BY kind', p.id),
-        ).toEqual([
-          { kind: 'ember-shard', amount: 1 },
-          { kind: 'glimmer', amount: 1 },
-          { kind: 'scrap', amount: scrap + found + gift },
-        ]);
-        // A blueprint the player knows already adds a well-thumbed mark, not scrap.
-        const again = await p.trip(1, 'long', 'tidepools');
-        ctx.clock.t = again.endsAt;
-        const res2 = await p.call('POST', `/api/expeditions/${again.id}/claim`, {});
-        const loot2 = lootOf(res2);
-        expect(loot2.blueprints).toEqual([{ baseId: 'trail-cap', duplicate: true, marks: 1 }]);
-        expect(loot2.parts.scrap).toBe(scrap + findScrapOf(res2, 'long'));
-        expect(rows(ctx.sql, 'SELECT marks FROM blueprints')).toEqual([{ marks: 1 }]);
-        expect(count(ctx.sql, 'blueprints')).toBe(1);
-        const events = dropEvents(ctx, 'expedition');
-        expect(events).toHaveLength(2);
-        expect(JSON.parse(events[0]?.props_json ?? '{}')).toEqual({
-          source: 'expedition',
-          gear: [],
-          converted: 0,
-          scrap: scrap + found,
-          shards: 1,
-          glimmer: 1,
-          blueprint: 'trail-cap',
-          blueprintDuplicate: false,
-          supplies: 1,
-          parts: { scrap: scrap + found, 'ember-shard': 1, glimmer: 1 },
-        });
-        const actor = rows<{ actor_hash: string | null }>(
-          ctx.sql,
-          "SELECT actor_hash FROM analytics_events WHERE kind = 'gear_drop' ORDER BY id",
-        )[0]?.actor_hash;
-        expect(actor).toMatch(/^[0-9a-f]{32}$/);
-      },
-      {
-        gearRng: {
-          ...(() => {
-            const rest = createSeededRng('exp-bp');
-            let i = 0;
-            return {
-              nextU32: () => script[i++] ?? rest.nextU32(),
-            };
-          })(),
+  it('brings back shards of the place’s element, glimmer, blueprints and supplies from the ticks, once', async () => {
+    const restore = sureTicks();
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await explorer(ctx, 1, ['cindle', 'splashet', 'sproutle']);
+          const exp = await p.trip(0, 'short', 'ember-caves'); // the shard is of the place's element
+          ctx.clock.t = exp.endsAt;
+          const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
+          const loot = lootOf(res);
+          const gift = giftScrapOf(res);
+          // A short trip is two ticks, and every table of a tick is certain here.
+          expect(loot.parts).toEqual({ scrap: 2, 'ember-shard': 2, glimmer: 2 });
+          const supplies = (loot as { supplies?: string[] }).supplies ?? [];
+          expect(supplies).toHaveLength(2);
+          // The explorer is rank 1, so plain ones, and never a lure.
+          for (const id of supplies) expect(id).toMatch(/^(map-scrap|lantern|satchel)-basic$/);
+          expect(loot.blueprints).toHaveLength(2);
+          expect(loot.blueprints[0]?.duplicate).toBe(false);
+          const known = new Set(loot.blueprints.map((b) => b.baseId));
+          expect(count(ctx.sql, 'blueprints')).toBe(known.size);
+          expect(
+            rows(ctx.sql, 'SELECT kind, amount FROM parts WHERE user_id = ? ORDER BY kind', p.id),
+          ).toEqual([
+            { kind: 'ember-shard', amount: 2 },
+            { kind: 'glimmer', amount: 2 },
+            { kind: 'scrap', amount: 2 + gift },
+          ]);
+          const events = dropEvents(ctx, 'expedition');
+          expect(events).toHaveLength(1);
+          expect(JSON.parse(events[0]?.props_json ?? '{}')).toMatchObject({
+            source: 'expedition',
+            gear: [],
+            converted: 0,
+            scrap: 2,
+            shards: 2,
+            glimmer: 2,
+            blueprint: loot.blueprints[0]?.baseId,
+            blueprintDuplicate: false,
+            supplies: 2,
+            parts: { scrap: 2, 'ember-shard': 2, glimmer: 2 },
+          });
+          const actor = rows<{ actor_hash: string | null }>(
+            ctx.sql,
+            "SELECT actor_hash FROM analytics_events WHERE kind = 'gear_drop' ORDER BY id",
+          )[0]?.actor_hash;
+          expect(actor).toMatch(/^[0-9a-f]{32}$/);
         },
-      },
-    );
+        { gearRng: createSeededRng('exp-bp') },
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  it('can bring back several gear pieces and blueprints in one claim, from the ticks', async () => {
+    // Every tick finds a gear piece: a long trip is 15 pieces, as many as the bag has room for.
+    const tick = RULES.expeditions.tick as unknown as { gearBp: number };
+    const before = tick.gearBp;
+    tick.gearBp = 10_000;
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          const p = await explorer(ctx, 1);
+          const exp = await p.trip(0, 'long', 'ember-caves');
+          ctx.clock.t = exp.endsAt;
+          const res = await p.call('POST', `/api/expeditions/${exp.id}/claim`, {});
+          expect(res.status).toBe(200);
+          const loot = lootOf(res);
+          // Every piece is in the bag or, when the bag is full, dismantled into parts (and listed).
+          expect(loot.gear.length + loot.converted.length).toBe(15);
+          expect(count(ctx.sql, 'gear_items')).toBe(loot.gear.length);
+        },
+        { gearRng: createSeededRng('exp-gear') },
+      );
+    } finally {
+      tick.gearBp = before;
+    }
   });
 
   it('claiming again returns the stored result: no second payout, no second draw', async () => {

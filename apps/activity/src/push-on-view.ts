@@ -38,7 +38,7 @@ export interface GoalCard {
   risk: OfferedGoal['risk'];
   /** The risk in words: Safe, Risky or Very risky. */
   riskWord: RiskWord;
-  /** "+2 h": hours added to the trip, counted from its end. */
+  /** "+2 h": hours added to the trip, counted from the choice. */
   extra: string;
   /** What it brings home when it works. */
   rewards: RewardLine[];
@@ -53,7 +53,7 @@ export function rewardLines(reward: GoalReward): RewardLine[] {
     out.push({
       key: 'catch',
       icon: { kind: 'glyph', id: 'paw' },
-      text: `${String(reward.catchRolls)} more catch ${reward.catchRolls === 1 ? 'roll' : 'rolls'}`,
+      text: `${reward.catchRolls === 1 ? 'A chance of one more creature' : `${String(reward.catchRolls)} more chances at a creature`}`,
     });
   }
   for (const part of partsEntries(partsOfSpec(reward.parts))) {

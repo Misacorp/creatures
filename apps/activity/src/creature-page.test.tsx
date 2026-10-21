@@ -699,7 +699,7 @@ describe('the creature page: About and Rename', () => {
     const text = visibleText(root);
     for (const word of [
       'Fusion',
-      '0 / 5',
+      'Fusion 0 · 0/1',
       'Ribbons',
       'Explorer rank',
       'Trips',

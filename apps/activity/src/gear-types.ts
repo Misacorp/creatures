@@ -20,7 +20,13 @@ export type PartKind =
 /** Parts by kind; a kind that is absent is 0. */
 export type PartsBundle = Partial<Record<PartKind, number>>;
 /** The jobs a player can start. Improve and Enchant are gone; jobs started before gear v2 still finish. */
-export type JobKind = 'craft' | 'supply' | 'dismantle';
+export type JobKind = 'craft' | 'supply' | 'dismantle' | 'convert';
+
+/** What a recipe takes or gives: supplies by id and parts by kind (only what is there). */
+export interface ConversionBundle {
+  supplies: Record<string, number>;
+  parts: PartsBundle;
+}
 
 /** An inclusive range of whole numbers. */
 export interface Range {
@@ -144,6 +150,13 @@ export type JobResult =
     } & JobCommon)
   /** A crafted supply for expeditions: `amount` of `supplyId` went into the stock. */
   | ({ kind: 'supply'; supplyId: string; amount: number } & JobCommon)
+  /** A refine or recycle: what the recipe took and what went into the stock. */
+  | ({
+      kind: 'convert';
+      recipeId: string;
+      took: ConversionBundle;
+      gave: ConversionBundle;
+    } & JobCommon)
   /** An Improve or Enchant job started before gear v2: it paid its XP, and its parts came back. */
   | ({ kind: 'retired'; was: 'improve' | 'enchant'; refund: PartsBundle } & JobCommon);
 
@@ -152,7 +165,13 @@ export interface Job {
   creatureId: string;
   /** `improve` and `enchant` only on jobs started before gear v2. */
   kind: JobKind | 'improve' | 'enchant';
-  input: { baseId?: string; supplyId?: string; reach?: ReachId; items?: ItemSnapshot[] };
+  input: {
+    baseId?: string;
+    supplyId?: string;
+    recipeId?: string;
+    reach?: ReachId;
+    items?: ItemSnapshot[];
+  };
   /** The parts it cost when it started. */
   cost: PartsBundle;
   /** The Bait it cost when it started (a lure costs Bait; absent on jobs stored before lures did). */
@@ -284,6 +303,14 @@ export type StartJobRequest =
       kind: 'dismantle';
       creatureId: string;
       itemIds: readonly string[];
+      treat?: boolean | undefined;
+      idempotencyKey: string;
+    }
+  | {
+      /** Refine or recycle: the recipe decides what goes in and what comes out. */
+      kind: 'convert';
+      creatureId: string;
+      recipeId: string;
       treat?: boolean | undefined;
       idempotencyKey: string;
     };

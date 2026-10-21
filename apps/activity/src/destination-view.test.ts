@@ -49,8 +49,8 @@ describe('the destination catalogue', () => {
   it('shows only the species the player has found as known, the rest as unknown', () => {
     const tide = card('tidepools').residents;
     const known = tide.filter((r) => r.known);
-    expect(known.map((r) => r.species)).toEqual(['mistnewt']);
-    expect(known[0]?.name).toBe('Mistnewt');
+    expect(known.map((r) => r.species)).toContain('mistnewt');
+    expect(known.find((r) => r.species === 'mistnewt')?.name).toBe('Mistnewt');
     for (const r of tide.filter((x) => !x.known)) expect(r.name).toBe('???');
   });
 

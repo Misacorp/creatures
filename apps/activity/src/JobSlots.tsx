@@ -1,4 +1,5 @@
 import { GLOSSARY_IDS } from '@creatures/game';
+import { markFreshReveal } from './reveal-arrive';
 import type { Creature } from './api';
 import { creatureName } from './game';
 import { GlossaryTag } from './Glossary';
@@ -39,9 +40,9 @@ function RunningSlot({
         <div class="job-text">
           <p class="pix job-title">
             <GlossaryTag entry={GLOSSARY_IDS.job(job.kind)} look="text">
-              {jobVerb(job.kind)}
+              {jobVerb(job.kind, job.input)}
             </GlossaryTag>
-            {title.slice(jobVerb(job.kind).length)}
+            {title.slice(jobVerb(job.kind, job.input).length)}
           </p>
           <p class="muted">{creature === undefined ? 'A creature' : creatureName(creature)}</p>
         </div>
@@ -68,6 +69,7 @@ function RunningSlot({
         class="primary"
         disabled={busy || !progress.ready}
         onClick={() => {
+          markFreshReveal();
           onClaim(job);
         }}
       >

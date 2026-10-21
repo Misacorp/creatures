@@ -8,7 +8,7 @@ import { GLOSSARY_IDS, type PartKind } from '@creatures/game';
 import type { PartsBundle } from './gear-types';
 import { partName, partsEntries } from './gear-view';
 import type { IconRef } from './icon-ref';
-import { supplyKindOf } from './trip-view';
+import { supplyKindOf, supplyName } from './trip-view';
 import type { CountBadgeProps, CountItem } from './ui/CountBadge';
 
 /** The pictures of Essence and Bait, for every list that draws them (count badges, the reward pile, gifts). */
@@ -70,4 +70,20 @@ export function partBadge(kind: PartKind, amount: number): CountBadgeProps {
 /** The count badges of a bundle of parts, in the order of the part kinds, without the empty ones. */
 export function partCountItems(parts: PartsBundle): CountItem[] {
   return partsEntries(parts).map(({ kind, amount }) => ({ key: kind, ...partBadge(kind, amount) }));
+}
+
+/**
+ * The badges of what a recipe takes or gives: its supplies (with the supply's name after the number), then
+ * its parts. Supplies come in the order of the ids given, so a screen can keep the recipe's own order.
+ */
+export function conversionCountItems(bundle: {
+  supplies: Readonly<Record<string, number>>;
+  parts: PartsBundle;
+}): CountItem[] {
+  return [
+    ...supplyCounts(
+      Object.entries(bundle.supplies).map(([id, amount]) => ({ id, name: supplyName(id), amount })),
+    ),
+    ...partCountItems(bundle.parts),
+  ];
 }
