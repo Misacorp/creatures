@@ -21,11 +21,6 @@
   font-size: var(--fs-row);
 }
 
-.explorer-picker .pick-text {
-  flex: 1;
-  gap: 0.125rem;
-}
-
 .pick-fam {
   display: flex;
   flex-wrap: wrap;
@@ -328,30 +323,6 @@ label.length-option:focus-within {
   width: 100%;
   margin-top: 0.75rem;
   white-space: normal;
-}
-
-/* Who goes, compact: one short row per creature. */
-label.pick.compact {
-  min-height: 2.25rem;
-  gap: 0.5rem;
-}
-
-.pick.compact .pick-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.125rem 0.5rem;
-}
-
-.pick.compact .pick-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pick.compact .pick-why {
-  color: var(--haze);
 }
 
 .rank-unlocks {

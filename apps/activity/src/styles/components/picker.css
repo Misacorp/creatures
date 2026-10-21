@@ -60,12 +60,3 @@ label.pick input[type='radio'] {
   color: var(--haze);
   font-size: var(--fs-small);
 }
-
-/* The right of a row: how long the job takes, or why the creature cannot do it (as in the roster list). */
-.pick-side {
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 38%;
-  margin-left: auto;
-  text-align: right;
-}

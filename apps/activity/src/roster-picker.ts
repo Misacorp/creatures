@@ -102,6 +102,8 @@ export interface PickerOption {
    * under the name, in place of the "Lv" after it.
    */
   xpBar?: { value: number; max: number; top: boolean; label: string; text: string };
+  /** A quiet line under the name and chips (a job's "Crafting level 3"). */
+  note?: string;
   /** It had all of today's lounging experience: a small Rested tag (the lounge swap). */
   rested?: boolean;
   /**
@@ -109,6 +111,28 @@ export interface PickerOption {
    * as a small item tile at the right end of the row. Absent: the slot is empty, and nothing is drawn.
    */
   worn?: { baseId: string; rarity: GearRarity; itemLevel: number };
+}
+
+/**
+ * A row of the creature list for a creature, with nothing extra: free, not placed, no effect. A screen spreads
+ * what it adds over it (`{ ...baseOption(c), note, disabled }`).
+ */
+export function baseOption(
+  c: Pick<Creature, 'id' | 'species' | 'nickname' | 'level'>,
+): PickerOption {
+  const species = getSpecies(c.species);
+  return {
+    id: c.id,
+    name: creatureName(c),
+    species: c.species,
+    level: c.level,
+    element: species?.element ?? 'unknown',
+    role: species?.role ?? '',
+    onBoard: false,
+    disabled: null,
+    effect: null,
+    recommended: false,
+  };
 }
 
 /** How many of the player's creatures are on the board. */

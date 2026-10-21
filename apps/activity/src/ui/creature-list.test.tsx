@@ -1,7 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PickerOption } from '../roster-picker';
-import { byClass, byRole, createPage, visibleText, type FakeElement, type Page } from '../test-dom';
-import { RosterList } from './RosterList';
+import {
+  byClass,
+  byRole,
+  createPage,
+  find,
+  visibleText,
+  type FakeElement,
+  type Page,
+} from '../test-dom';
+import { CreatureList } from './CreatureList';
 import { RosterPicker } from './RosterPicker';
 
 let page: Page | null = null;
@@ -42,11 +50,11 @@ const OPTIONS = [
 function drawList(onPick = vi.fn(), cls?: string): Page {
   page = createPage();
   page.draw(
-    <RosterList
+    <CreatureList
       options={OPTIONS}
       placedNote="Wears it now"
       showEffects={false}
-      onPick={onPick}
+      selection={{ mode: 'pick', onPick }}
       {...(cls === undefined ? {} : { class: cls })}
     />,
   );
@@ -72,7 +80,7 @@ describe('the shared creature list', () => {
   it('draws a busy reason as the status badge, any other reason as text, in the pixel font', () => {
     page = createPage();
     page.draw(
-      <RosterList
+      <CreatureList
         options={[
           option('j', { disabled: 'On a job', busy: 'job' }),
           option('t', { disabled: 'Away on a trip', busy: 'away' }),
@@ -81,7 +89,7 @@ describe('the shared creature list', () => {
         placedNote="Wears it now"
         showEffects={false}
         reasonSide
-        onPick={() => undefined}
+        selection={{ mode: 'pick', onPick: () => undefined }}
       />,
     );
     const [job, trip, level] = byRole(page.root, 'option') as [
@@ -133,12 +141,12 @@ describe('the shared creature list', () => {
   it('puts the note and the reason at the right of the row with reasonSide, not under the name', () => {
     page = createPage();
     page.draw(
-      <RosterList
+      <CreatureList
         options={OPTIONS}
         placedNote="Wears it now"
         showEffects={false}
         reasonSide
-        onPick={() => undefined}
+        selection={{ mode: 'pick', onPick: () => undefined }}
       />,
     );
     const options = byRole(page.root, 'option');
@@ -165,6 +173,87 @@ describe('the shared creature list', () => {
     expect(first(byRole(p.root, 'listbox')).getAttribute('class')).toBe(
       'roster-list pix-panel flat',
     );
+  });
+});
+
+describe('the creature list in choose mode and with its optional parts', () => {
+  function radiosOf(root: FakeElement): FakeElement[] {
+    return find(root, (e) => e.localName === 'input' && e.getAttribute('type') === 'radio');
+  }
+
+  it('is a fieldset of native radios that stay chosen, the busy row a disabled radio with its reason', () => {
+    const onChange = vi.fn();
+    page = createPage();
+    page.draw(
+      <CreatureList
+        options={OPTIONS.slice(0, 3)}
+        selection={{ mode: 'choose', name: 'who', value: 'a', onChange, legend: 'Who goes?' }}
+        reasonSide
+      />,
+    );
+    expect(byRole(page.root, 'listbox')).toHaveLength(0);
+    const radios = radiosOf(page.root);
+    expect(radios).toHaveLength(3);
+    expect(radios.map((r) => r.hasAttribute('disabled'))).toEqual([true, false, false]);
+    expect(radios.map((r) => r.getAttribute('name'))).toEqual(['who', 'who', 'who']);
+    expect(visibleText(first(find(page.root, (e) => e.localName === 'legend')))).toBe('Who goes?');
+    // The chosen row has the gold ring class, and only that one.
+    expect(byClass(page.root, 'on')).toHaveLength(1);
+    page.event(radios[2] as FakeElement, 'change');
+    expect(onChange).toHaveBeenCalledWith('b');
+    expect(visibleText(first(byClass(page.root, 'ro-side')))).toBe('On a job');
+  });
+
+  it('draws the quiet note, and the side and more slots only where they apply', () => {
+    const rows = [
+      option('a', { note: 'Crafting level 3' }),
+      option('x', { disabled: 'On a job', busy: 'job' }),
+    ];
+    page = createPage();
+    page.draw(
+      <CreatureList
+        options={rows}
+        selection={{ mode: 'pick', onPick: () => undefined }}
+        reasonSide
+        side={(o) => <b class="clock">{`3 h ${o.id}`}</b>}
+        more={(o) => <i class="extra">{`more ${o.id}`}</i>}
+      />,
+    );
+    expect(byClass(page.root, 'ro-tags')).toHaveLength(2);
+    expect(visibleText(first(byClass(page.root, 'ro-quiet')))).toBe('Crafting level 3');
+    expect(byClass(page.root, 'extra')).toHaveLength(2);
+    // The right-end detail is only for a row that can be picked; the other row has its reason there.
+    expect(byClass(page.root, 'clock').map((c) => visibleText(c))).toEqual(['3 h a']);
+    expect(visibleText(first(byClass(page.root, 'ro-side')))).toBe('On a job');
+  });
+
+  it('colours a creature name by its species rarity and says the rarity aloud, but not an action row', () => {
+    page = createPage();
+    page.draw(
+      <CreatureList
+        options={[option('a'), option('off', { name: 'Take off', action: true })]}
+        selection={{ mode: 'pick', onPick: () => undefined }}
+      />,
+    );
+    const [creature, action] = byClass(page.root, 'ro-name') as [FakeElement, FakeElement];
+    expect(creature.getAttribute('class')).toMatch(/rarity-name rarity-(common|rare|epic|mythic)/);
+    expect(visibleText(creature)).toMatch(/^a, \w+$/);
+    expect(action.getAttribute('class')).toBe('ro-name');
+    // The level stays the quiet text, not the rarity colour.
+    expect(first(byClass(page.root, 'ro-level')).getAttribute('class')).toBe('ro-level');
+  });
+
+  it('leaves the chips out with chips off', () => {
+    page = createPage();
+    page.draw(
+      <CreatureList
+        options={[option('a')]}
+        chips={false}
+        selection={{ mode: 'pick', onPick: () => undefined }}
+      />,
+    );
+    expect(byClass(page.root, 'ro-tags')).toHaveLength(0);
+    expect(byClass(page.root, 'ro-detail')).toHaveLength(0);
   });
 });
 

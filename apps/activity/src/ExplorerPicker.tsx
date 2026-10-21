@@ -1,9 +1,9 @@
 import { Tag } from './ui/Tag';
 import { Stars } from './ExpeditionIcons';
-import { GlossaryTag } from './Glossary';
+import { busyKind } from './gear-view';
 import { tripsHereText, type ExplorerOption } from './send-view';
-import { Sprite } from './sprites/Sprite';
-import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { CreatureList } from './ui/CreatureList';
+import { baseOption, type PickerOption as Row } from './roster-picker';
 import { ProgressTrack } from './ProgressTrack';
 import { rankIndex, rankSteps } from './rank-track';
 import { XpBar } from './XpBar';
@@ -11,14 +11,16 @@ import { Accordion } from './ui/Accordion';
 
 const STEPS = rankSteps();
 
+/** An explorer row: the list's row plus what the explorer block under the name draws. */
+type ExplorerRow = Row & { explorer: ExplorerOption };
+
 /**
- * Who goes: a radio list of creatures. One row each: its sprite, name and level; its explorer rank; the
- * XP bar with the current rank on the left and the next on the right; and its familiarity at the chosen
- * place (the stars and the trips there), because familiarity is a trait of the creature, not of the
- * place. Under the list, the rank track of the creature that goes: the previous, current and next rank
- * and what each unlocks. A creature that cannot go (away, on a job, rank too low for the place) is
- * listed but disabled, with the reason in words. Native radios: arrow keys and screen readers work as
- * usual.
+ * Who goes: the shared creature list (`ui/CreatureList`) in `choose` mode (native radios). One row each: its
+ * sprite, name and level; under them (the `more` block) its explorer rank, the XP bar with the current rank on
+ * the left and the next on the right, and its familiarity at the chosen place (the stars and the trips there),
+ * because familiarity is a trait of the creature, not of the place. Under the list, the rank track of the
+ * creature that goes: the previous, current and next rank and what each unlocks. A creature that cannot go
+ * (away, on a job, rank too low for the place) is listed but disabled, with the reason under its name.
  */
 export function ExplorerPicker({
   name,
@@ -40,96 +42,54 @@ export function ExplorerPicker({
   compact?: boolean;
 }) {
   const chosen = options.find((o) => o.creature.id === value);
+  const rows = options.map((explorer): ExplorerRow => {
+    const kind = busyKind(explorer.creature);
+    return {
+      ...baseOption(explorer.creature),
+      name: explorer.name,
+      disabled: explorer.blocked,
+      ...(kind === null || explorer.blocked === null ? {} : { busy: kind }),
+      explorer,
+    };
+  });
   return (
     <>
-      <fieldset class="picker explorer-picker">
-        <legend>Who goes?</legend>
-        {options.map((option) => {
-          const { creature } = option;
-          const selected = value === creature.id;
-          const blocked = option.blocked !== null;
-          if (compact) {
-            return (
-              <label
-                key={creature.id}
-                class={`pick compact${blocked ? ' busy' : ''}${selected ? ' on' : ''}`}
-              >
-                <input
-                  type="radio"
-                  name={name}
-                  value={creature.id}
-                  checked={selected}
-                  disabled={blocked}
-                  onChange={() => {
-                    onChange(creature.id);
-                  }}
-                />
-                <Sprite sprite={creatureSpriteOrFallback(creature.species)} scale={2} />
-                <span class="pick-text">
-                  <span class="pick-line">
-                    <span class="pick-name pix">
-                      {option.name} <span class="lvl">Lv {creature.level}</span>
-                    </span>
-                    <Tag>{`Rank ${String(option.rank)}`}</Tag>
-                    <Stars
-                      stars={option.stars}
-                      label={`${String(option.stars)} / 3 stars at this place`}
-                    />
-                  </span>
-                  {blocked && <span class="pick-meta pick-why">{option.blocked ?? ''}</span>}
-                </span>
-              </label>
-            );
-          }
-          return (
-            <label
-              key={creature.id}
-              class={`pick${blocked ? ' busy' : ''}${selected ? ' on' : ''}`}
-            >
-              <input
-                type="radio"
-                name={name}
-                value={creature.id}
-                checked={selected}
-                disabled={blocked}
-                onChange={() => {
-                  onChange(creature.id);
-                }}
+      <CreatureList
+        options={rows}
+        selection={{ mode: 'choose', name, value, onChange, legend: 'Who goes?' }}
+        fieldClass={`explorer-picker${compact ? ' compact' : ''}`}
+        more={({ explorer: option }) =>
+          compact ? (
+            <span class="pick-fam">
+              <Tag>{`Rank ${String(option.rank)}`}</Tag>
+              <Stars
+                stars={option.stars}
+                label={`${String(option.stars)} / 3 stars at this place`}
               />
-              <Sprite sprite={creatureSpriteOrFallback(creature.species)} scale={3} />
-              <span class="pick-text">
-                <span class="pick-name pix">
-                  {option.name} <span class="lvl">Lv {creature.level}</span>
-                </span>
-                <span class="pick-meta">
-                  <GlossaryTag entry="explorer-rank" look="text">
-                    Explorer rank
-                  </GlossaryTag>{' '}
-                  {option.rank}
-                  {blocked && ` · ${option.blocked ?? ''}`}
-                </span>
-                <XpBar
-                  value={option.xp.value}
-                  max={option.xp.max}
-                  label={`${option.name}'s explorer XP`}
-                  {...(option.xp.text === undefined ? {} : { text: option.xp.text })}
-                  startCap={option.xp.startCap}
-                  {...(option.xp.endCap === undefined ? {} : { endCap: option.xp.endCap })}
-                  kind="explorer"
+            </span>
+          ) : (
+            <>
+              <XpBar
+                value={option.xp.value}
+                max={option.xp.max}
+                label={`${option.name}'s explorer XP`}
+                {...(option.xp.text === undefined ? {} : { text: option.xp.text })}
+                startCap={option.xp.startCap}
+                {...(option.xp.endCap === undefined ? {} : { endCap: option.xp.endCap })}
+                kind="explorer"
+              />
+              <span class="pick-fam">
+                <Tag entry="familiarity">Familiarity</Tag>
+                <Stars
+                  stars={option.stars}
+                  label={`${String(option.stars)} / 3 stars at this place`}
                 />
-                <span class="pick-fam">
-                  <Tag entry="familiarity">Familiarity</Tag>
-                  <Stars
-                    stars={option.stars}
-                    label={`${String(option.stars)} / 3 stars at this place`}
-                  />
-                  <span class="muted">{tripsHereText(option.trips)}</span>
-                </span>
+                <span class="muted">{tripsHereText(option.trips)}</span>
               </span>
-            </label>
-          );
-        })}
-      </fieldset>
+            </>
+          )
+        }
+      />
       {chosen !== undefined &&
         (compact ? (
           <Accordion title="What ranks unlock" variant="compact" class="rank-unlocks">
