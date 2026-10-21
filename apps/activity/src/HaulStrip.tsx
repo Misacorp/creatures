@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import type { ExpeditionLength } from './expedition-types';
+import { GlossaryTag } from './Glossary';
 import { GameIcon } from './ui/GameIcon';
 import { PipRow } from './ui/PipRow';
 import { kitLevels, type TripContext } from './boost-view';
@@ -8,9 +9,11 @@ import { expectedHaul, haulTitle } from './haul-view';
 /**
  * "Expected haul": what this trip can bring, with the effects of the chosen supplies folded in, as a row
  * of icons. Each icon has a short word under it (and the fuller line as hover text and for screen
- * readers), and up to four pips that compare with the best any trip does. A "+" marks what a supply
- * raises, one to four of them for the bracket of the boost on this trip (`boost-view.ts`). No chances are
- * shown as numbers. It sits just above the Send button.
+ * readers), and under the word a four-segment bar (the boss HP bar's look) that compares with the best
+ * any trip does; the segments a supply adds are lit in the "gained" colour (Misa, 2026-10-21: no "+"
+ * marks, the bar under its word). No chances are shown as numbers. With the
+ * explorer's rank, the last icon is the end-of-trip choice, its chance in quarters (the word opens the
+ * push-on help). It sits just above the Send button.
  */
 export function HaulStrip({
   length,
@@ -18,6 +21,7 @@ export function HaulStrip({
   kit,
   summary,
   trip,
+  rank = null,
 }: {
   /** The trip's settings in a line (`TripSummary`), under the heading. */
   summary?: ComponentChildren;
@@ -26,10 +30,18 @@ export function HaulStrip({
   element: string | null;
   /** The chosen supplies' ids. */
   kit: readonly string[];
-  /** The whole trip (place, explorer): the "+" marks follow the boost brackets for it. Absent: a plain mark. */
+  /** The whole trip (place, explorer): the detail lines follow the boost brackets for it. */
   trip?: TripContext;
+  /** The explorer's rank: adds the end-of-trip choice as the last icon. Null: no choice icon. */
+  rank?: number | null;
 }) {
-  const rows = expectedHaul(length, element, kit, trip === undefined ? null : kitLevels(trip, kit));
+  const rows = expectedHaul(
+    length,
+    element,
+    kit,
+    trip === undefined ? null : kitLevels(trip, kit),
+    rank,
+  );
   return (
     <section class="haul" aria-labelledby="haul-title">
       <h4 id="haul-title" class="label">
@@ -43,21 +55,25 @@ export function HaulStrip({
             class={`worth-item${row.level === 0 ? ' none' : ''}${row.boosted ? ' boosted' : ''}`}
             title={row.detail}
           >
-            <GameIcon icon={row.icon} scale={4} />
-            {/* Four pips: how much of the best a trip brings (the words are the label). */}
-            <PipRow count={4} lit={row.level} />
+            <span class="worth-icon">
+              <GameIcon icon={row.icon} scale={4} />
+            </span>
             <span class="worth-name">
-              {row.label}
-              {row.boosted && (
-                <span class="worth-plus" aria-hidden="true">
-                  {` ${'+'.repeat(Math.max(1, row.bracket))}`}
-                </span>
+              {row.key === 'choice' ? (
+                <GlossaryTag entry="push-on" look="text">
+                  {row.label}
+                </GlossaryTag>
+              ) : (
+                row.label
               )}
             </span>
-            <span class="visually-hidden">
-              {row.detail}
-              {row.boosted && row.bracket === 0 ? ', raised by your supplies' : ''}
-            </span>
+            {/* Under the word: four steps against the best a trip does, the supplies' steps in their own colour. */}
+            <PipRow
+              count={4}
+              lit={row.level}
+              mark={(i) => (i >= row.baseLevel && i < row.level ? 'raised' : undefined)}
+            />
+            <span class="visually-hidden">{row.detail}</span>
           </li>
         ))}
       </ul>

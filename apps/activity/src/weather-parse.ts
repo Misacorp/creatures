@@ -25,7 +25,9 @@ function isDay(value: unknown): value is WeatherDay {
     isInt(value['endsAt']) &&
     isEntry(value['boon']) &&
     (value['omen'] === null || isEntry(value['omen'])) &&
-    isBool(value['wild'])
+    isBool(value['wild']) &&
+    isInt(value['treatTimes']) &&
+    value['treatTimes'] >= 1
   );
 }
 

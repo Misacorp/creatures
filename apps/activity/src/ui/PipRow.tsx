@@ -2,8 +2,11 @@ interface PipRowProps {
   count: number;
   /** How many pips are lit (the first ones), or which of them are. */
   lit: number | ((index: number) => boolean);
-  /** A mark for one pip, for example `fest` for a bonus day (a gold ring until it is lit). */
-  mark?: (index: number) => 'fest' | undefined;
+  /**
+   * A mark for one pip: `fest` for a bonus day (a gold ring until it is lit), `raised` for a step a
+   * supply adds (the Expected haul; lit in the "gained" colour).
+   */
+  mark?: (index: number) => 'fest' | 'raised' | undefined;
   /** `md` is the larger pip of the dungeon screens. */
   size?: 'sm' | 'md';
   /**
