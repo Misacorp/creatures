@@ -1,4 +1,4 @@
-import type { ComponentChildren } from 'preact';
+import type { ComponentChildren, Ref } from 'preact';
 
 /**
  * The one row of anything found or gained that has a picture and a name: the picture on the left, the name
@@ -28,7 +28,18 @@ export function FindRow({
    * The whole row is one button (a gear list's slot that opens its picker): what it says and does, and
    * whether its drawer is open. Absent: plain content. Tags inside then explain nothing on their own.
    */
-  button?: { label: string; onClick: (event: MouseEvent) => void; expanded: boolean } | undefined;
+  button?:
+    | {
+        label: string;
+        onClick: (event: MouseEvent) => void;
+        expanded: boolean;
+        /** For a popover that points at the button (`FindItem`'s item card). */
+        ref?: Ref<HTMLButtonElement>;
+        /** Mouse or pen moving onto or off the button (`FindItem`'s hover card). */
+        onPointerEnter?: (event: PointerEvent) => void;
+        onPointerLeave?: (event: PointerEvent) => void;
+      }
+    | undefined;
 }) {
   const inside = (
     <>
@@ -48,10 +59,13 @@ export function FindRow({
       <button
         type="button"
         class="find-row-button"
+        {...(button.ref === undefined ? {} : { ref: button.ref })}
         aria-label={button.label}
         aria-haspopup="dialog"
         aria-expanded={button.expanded}
         onClick={button.onClick}
+        {...(button.onPointerEnter === undefined ? {} : { onPointerEnter: button.onPointerEnter })}
+        {...(button.onPointerLeave === undefined ? {} : { onPointerLeave: button.onPointerLeave })}
       >
         {inside}
       </button>

@@ -1,4 +1,6 @@
 import { gearContent, talentDef, talentText } from '@creatures/game';
+import { GearItemsContext } from '../../gear-items-context';
+import { sampleGearItem } from '../gear-sample';
 import { essenceCount, partCountItems } from '../../count-items';
 import type { GearRarity } from '../../gear-types';
 import type { TalentView } from '../../talent-types';
@@ -38,7 +40,7 @@ const findItem: Entry = {
   file: 'apps/activity/src/ui/FindItem.tsx',
   group: 'Loot & reveals',
   description:
-    'A gear piece that was found or gained, as one box: its picture with the rarity border and the item level in the corner, its name in the rarity colour and a rarity badge (and Festival for a Festival piece). The one row of a found item on every screen that pays gear (the trip result, the dungeon results and chests, the raid summary, the Workshop), and what a creature wears. Several pieces sit side by side, centred, and wrap.',
+    'A gear piece that was found or gained, as one box (a tap opens its full item card in a popover, and so does hovering with a mouse; a piece with no inventory id stays plain): its picture with the rarity border and the item level in the corner, its name in the rarity colour and a rarity badge (and Festival for a Festival piece). The one row of a found item on every screen that pays gear (the trip result, the dungeon results and chests, the raid summary, the Workshop), and what a creature wears. Several pieces sit side by side, centred, and wrap.',
   covers: ['FindItems'],
   controls: {
     item: { kind: 'select', options: BASE_NAMES },
@@ -55,17 +57,19 @@ const findItem: Entry = {
     { name: 'A Festival piece', props: { item: 'A Festival piece', rarity: 'rare', level: 7 } },
     { name: 'Five pieces wrapping', props: { pieces: 5 } },
   ],
-  render: (p) => (
-    <FindItems
-      label="Found items"
-      pieces={Array.from({ length: num(p, 'pieces') }, (_, i) => ({
-        id: `wb-${String(i)}`,
-        baseId: i === 0 ? baseOf(p) : (BASES[(i * 7) % BASES.length]?.id ?? NEUTRAL),
-        rarity: i === 0 ? (str(p, 'rarity') as GearRarity) : (RARITIES[i % 3] ?? 'common'),
-        itemLevel: num(p, 'level') + i,
-      }))}
-    />
-  ),
+  render: (p) => {
+    const pieces = Array.from({ length: num(p, 'pieces') }, (_, i) => ({
+      id: `wb-${String(i)}`,
+      baseId: i === 0 ? baseOf(p) : (BASES[(i * 7) % BASES.length]?.id ?? NEUTRAL),
+      rarity: i === 0 ? (str(p, 'rarity') as GearRarity) : (RARITIES[i % 3] ?? 'common'),
+      itemLevel: num(p, 'level') + i,
+    }));
+    return (
+      <GearItemsContext.Provider value={pieces.map(sampleGearItem)}>
+        <FindItems label="Found items" pieces={pieces} />
+      </GearItemsContext.Provider>
+    );
+  },
 };
 
 const findBlueprint: Entry = {
@@ -177,34 +181,46 @@ const findRow: Entry = {
     }));
     const any = gear.length > 0 || bool(p, 'blueprint') || bool(p, 'creature');
     return (
-      <div class="reveal-card pix-panel">
-        {bool(p, 'resources') && (
-          <CountBadgeList
-            items={[essenceCount(14, { entry: true }), ...partCountItems({ scrap: 3, glimmer: 1 })]}
-            label="Resources"
-            class="reward-badges"
-          />
-        )}
-        {any && (
-          <FindList label="Gear, blueprints and creatures">
-            {gear.map((g) => (
-              <FindItem key={g.id} baseId={g.baseId} rarity={g.rarity} level={g.itemLevel} motion />
-            ))}
-            {bool(p, 'blueprint') && <FindBlueprint baseId={WITH_ELEMENT} />}
-            {bool(p, 'creature') && (
-              <FindCreature
-                creature={{
-                  species: 'lanternfin',
-                  shiny: false,
-                  talent: talentView(false),
-                  talentNew: true,
-                  badges: [{ text: 'New!', entry: null }],
-                }}
-              />
-            )}
-          </FindList>
-        )}
-      </div>
+      <GearItemsContext.Provider value={gear.map(sampleGearItem)}>
+        <div class="reveal-card pix-panel">
+          {bool(p, 'resources') && (
+            <CountBadgeList
+              items={[
+                essenceCount(14, { entry: true }),
+                ...partCountItems({ scrap: 3, glimmer: 1 }),
+              ]}
+              label="Resources"
+              class="reward-badges"
+            />
+          )}
+          {any && (
+            <FindList label="Gear, blueprints and creatures">
+              {gear.map((g) => (
+                <FindItem
+                  key={g.id}
+                  id={g.id}
+                  baseId={g.baseId}
+                  rarity={g.rarity}
+                  level={g.itemLevel}
+                  motion
+                />
+              ))}
+              {bool(p, 'blueprint') && <FindBlueprint baseId={WITH_ELEMENT} />}
+              {bool(p, 'creature') && (
+                <FindCreature
+                  creature={{
+                    species: 'lanternfin',
+                    shiny: false,
+                    talent: talentView(false),
+                    talentNew: true,
+                    badges: [{ text: 'New!', entry: null }],
+                  }}
+                />
+              )}
+            </FindList>
+          )}
+        </div>
+      </GearItemsContext.Provider>
     );
   },
 };
