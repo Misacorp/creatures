@@ -54,7 +54,10 @@ export function TripShelf({
           </span>
         )}
       </h3>
-      <ul class="trip-shelf-grid">
+      <ul
+        class="trip-shelf-grid"
+        style={{ '--shelf-cols': String(Math.max(4, trips.length + free)) }}
+      >
         {trips.map((trip) => {
           const creature = creatures.find((c) => c.id === trip.creatureId);
           const name = explorerLabel(creature);
