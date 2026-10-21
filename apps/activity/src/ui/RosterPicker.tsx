@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'preact/hooks';
 import type { PickerOption } from '../roster-picker';
-import { RosterList } from './RosterList';
+import { CreatureList } from './CreatureList';
 
 interface RosterPickerProps {
   /** The dialog's name, which also heads it ("Choose a creature for Middle, lane 3"). */
@@ -12,7 +12,7 @@ interface RosterPickerProps {
   placedNote: string;
   /** Show each option's line about what it would do in the slot (the effect preview). */
   showEffects: boolean;
-  /** Put each option's reason ("Away", "On a job") at the right of its row (see `RosterList`). */
+  /** Put each option's reason ("Away", "On a job") at the right of its row (see `CreatureList`). */
   reasonSide?: boolean;
   /** The slot that opened it: focus goes back there when it closes. */
   anchor: () => HTMLElement | null;
@@ -31,7 +31,7 @@ function tabStopOf(sheet: HTMLElement): HTMLElement | null {
 
 /**
  * The creature picker of the Raid Roster and the dungeon team: a bottom sheet over a page with a listbox of
- * the player's creatures (`RosterList`, which says what each option shows). Escape (or the Close button, or a
+ * the player's creatures (`CreatureList`, which says what each option shows). Escape (or the Close button, or a
  * tap outside) closes, Tab stays in the sheet, and focus goes back to the slot when it closes. Opened from a
  * page only: inside a drawer a choice is a view of the drawer itself (never a sheet over a drawer, 2026-10-18).
  */
@@ -103,11 +103,11 @@ export function RosterPicker(props: RosterPickerProps) {
           </button>
         </div>
         {props.status !== undefined && <p class="muted small sheet-status">{props.status}</p>}
-        <RosterList
+        <CreatureList
           options={props.options}
+          selection={{ mode: 'pick', onPick: props.onPick }}
           placedNote={props.placedNote}
           showEffects={props.showEffects}
-          onPick={props.onPick}
           {...(props.reasonSide === true ? { reasonSide: true } : {})}
         />
       </div>

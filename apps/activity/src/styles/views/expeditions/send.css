@@ -21,11 +21,6 @@
   font-size: var(--fs-row);
 }
 
-.explorer-picker .pick-text {
-  flex: 1;
-  gap: 0.125rem;
-}
-
 .pick-fam {
   display: flex;
   flex-wrap: wrap;

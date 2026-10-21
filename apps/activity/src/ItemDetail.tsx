@@ -12,7 +12,7 @@ import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Accordion } from './ui/Accordion';
 import { DrillHead } from './ui/DrillHead';
-import { RosterList } from './ui/RosterList';
+import { CreatureList } from './ui/CreatureList';
 
 /**
  * The "Equip on" row: a trigger that looks and acts like a dropdown, showing who wears the item (their
@@ -71,7 +71,7 @@ function EquipOn({
 /**
  * The "Equip on" view: a drill-in of the item drawer, in the place of the item (never a sheet over the drawer).
  * "‹ Back" at the top left (or Escape) returns to the item with nothing changed; a pick asks the server and
- * returns too. The list is the creature picker's (`RosterList`): Take off first for a worn item, who can wear it
+ * returns too. The list is the creature picker's (`CreatureList`): Take off first for a worn item, who can wear it
  * first, a short reason on the rest. Left and Right do not flip the item behind it, and a swipe is ignored.
  */
 function EquipView({
@@ -103,12 +103,11 @@ function EquipView({
     >
       {/* The view starts at its top, whatever the item view had been scrolled to. */}
       <DrillHead title="Equip on" backLabel="to the item" scroll onBack={onBack} />
-      <RosterList
+      <CreatureList
         options={equipOptions(item, creatures)}
+        selection={{ mode: 'pick', onPick }}
         placedNote={WEARS_IT_NOTE}
-        showEffects={false}
         reasonSide
-        onPick={onPick}
         class="flat"
       />
     </section>
