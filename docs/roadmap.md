@@ -116,23 +116,18 @@ Noted while testing the expedition and Workshop rework on staging. The component
 
 ## After the treat box PR (Misa, 2026-10-21)
 
-Noted while PR #53 was open; to start once it merges.
+Shipped together in one PR (details in `docs/design/decisions.md`, 2026-10-21):
 
-1. **"Equip on" shows what is already worn.** The Workshop item drawer's "Equip on" list (`ui/RosterList`) names who can wear the item but not who already has something in that slot. Show the worn item as a small tile at the right of the row (the creature card's gear slot look), so "slot taken" reads at a glance. Reasons such as "Away on a trip" stay.
-2. **Item details on the dungeon end screen.** A found item (`ui/FindItem`) can't be inspected there. Open the full `ItemCard` in a popover on tap, and on hover on a computer, the same way everywhere an item is found.
-3. **Dungeon experience per fight.** Today each creature gets a flat amount per fight it stood in the row for (`RULES.experience.dungeon.perRoom`), so creatures sent home at a camp are already paid for their fights; the full-clear bonus goes only to the row that beat the boss. Rework:
-   - a base experience per fight, more for elites, epics, keepers and the floor boss;
-   - a little for a cache room, less than a fight;
-   - experience as a possible mystery room effect;
-   - the end screen shows a recap and the gain for every creature that earned experience.
-   - Set the numbers with the balance simulator (`balance-review` skill) before they ship.
-4. **Blue Chasm, a rare mystery room.** "A narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There's a valuable treasure on the other side." Two choices: **Cross the plank** or **Don't risk it** (nothing happens). Crossing: 50% the team crosses and takes the treasure, 50% the whole team falls and the run ends as a defeat (a defeat keeps half the pack, `RULES.dungeon.defeatKeepBp`). The treasure is rolled when the room comes up and shown before the choice, so the player knows the prize. It should be a clear step up for the player's progress, never an extreme jump. Candidate table, each at the player's current level band:
-   - an **Epic gear piece** at the item level of the player's depth;
-   - a **blueprint** the player doesn't have yet, one tier above their best;
-   - two **great-tier supplies** of one kind;
-   - a **stack of shards** of the team's elements and some **glimmer** (6 and 4 as shipped);
-   - Deferred, very low priority: a **creature of a species the player lacks**, from the floor's pool. Misa: "a fun idea where you rescue a friend in need".
-   - Open: the odds (Claude suggested 75% to cross, or a fall that sends one creature home instead of ending the run, so walking around isn't always the right call); how rare the room is; its lore and names go in `docs/compendium/` first.
+1. "Equip on" shows the item each creature already wears in the slot, with the shared Away / On a job tags.
+2. A found item opens its full `ItemCard` on tap, or on hover with a mouse, with an Equip button when the item is owned.
+3. Dungeon experience per room a creature stood in (more for elites, epics, keepers and the floor boss, a little for a cache, an `xp` mystery room effect), with a recap per creature on the end screen (B-028).
+4. Blue Chasm, a rare mystery room (15% of mystery rooms from depth 3, once per run): 50% take the treasure shown (its item card can be inspected first), 50% the team falls and the run ends as a defeat.
+
+Still open:
+
+- **The shared creature list** (`ui/CreatureList` for every creature pick, Misa's "what a creature list shows" rule): built on its own branch, its own PR once the one above merges.
+- **More risk-and-reward mystery rooms** (Misa: from rooms with decent rolls for any pick to drastic ones like the chasm; bigger risks may pay bigger rewards). Claude to propose ideas.
+- Deferred, very low priority: a Blue Chasm prize of a **creature of a species the player lacks**. Misa: "a fun idea where you rescue a friend in need".
 
 ## Upkeep
 
