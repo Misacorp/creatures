@@ -2,7 +2,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SAMPLE_GEAR, sampleRoster } from './creature-card-sample';
 import type { GearState } from './gear-types';
 import { SupplyCrafting } from './SupplyCrafting';
-import { byClass, byName, createPage, visibleText, type FakeElement, type Page } from './test-dom';
+import {
+  byClass,
+  byName,
+  byRole,
+  createPage,
+  visibleText,
+  type FakeElement,
+  type Page,
+} from './test-dom';
 
 let page: Page | null = null;
 afterEach(() => {
@@ -109,17 +117,18 @@ describe('the compact supply picker', () => {
     expect(button(root, 'Craft').hasAttribute('disabled')).toBe(true);
     expect(visibleText(root)).toMatch(/Needs Crafting level \d/);
     page?.click(button(root, 'Craft'));
-    expect(byClass(root, 'job-starter')).toHaveLength(0);
+    expect(byRole(root, 'dialog')).toHaveLength(0);
     expect(onCraft).not.toHaveBeenCalled();
   });
 
-  it('crafts through the creature picker', () => {
+  it('crafts through the job drawer', () => {
     const onCraft = started();
     const root = draw({}, 1, { onCraft });
     page?.click(button(root, 'Craft'));
-    expect(byClass(root, 'job-starter')).toHaveLength(1);
+    expect(byRole(root, 'dialog')).toHaveLength(1);
     expect(onCraft).not.toHaveBeenCalled();
-    page?.click(button(root, 'Start crafting'));
+    next(root);
+    next(root);
     expect(onCraft).toHaveBeenCalledWith('lure-basic', expect.any(String), false);
   });
 
@@ -159,15 +168,16 @@ describe('the compact supply picker', () => {
     expect(button(root, 'Recycle').hasAttribute('disabled')).toBe(false);
   });
 
-  it('refines three into one through the creature picker', () => {
+  it('refines three into one through the job drawer', () => {
     const onConvert = started();
     const root = draw({ 'lure-basic': 3 }, 5, { onConvert });
     expect(button(root, 'Refine').hasAttribute('disabled')).toBe(false);
     page?.click(button(root, 'Refine'));
     expect(byClass(root, 'recipe-card')).toHaveLength(1);
-    expect(byClass(root, 'job-starter')).toHaveLength(1);
+    expect(byRole(root, 'dialog')).toHaveLength(1);
     expect(onConvert).not.toHaveBeenCalled();
-    page?.click(button(root, 'Start refine'));
+    next(root);
+    next(root);
     expect(onConvert).toHaveBeenCalledWith('refine-lure-basic', expect.any(String), false);
   });
 
@@ -176,7 +186,15 @@ describe('the compact supply picker', () => {
     const root = draw({ 'lure-good': 1 }, 5, { onConvert });
     page?.click(cellBy(root, (l) => l.includes('1 in stock')));
     page?.click(button(root, 'Recycle'));
-    page?.click(button(root, 'Start recycle'));
+    next(root);
+    next(root);
     expect(onConvert).toHaveBeenCalledWith('recycle-lure-good', expect.any(String), false);
   });
 });
+
+/** The gold button at the foot of the job drawer: Next on Who, the start on Ready. */
+function next(root: FakeElement): void {
+  const [footer] = byClass(root, 'send-button');
+  if (footer === undefined) throw new Error('no drawer footer button');
+  page?.click(footer);
+}

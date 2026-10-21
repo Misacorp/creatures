@@ -15,7 +15,7 @@ export interface JobWho {
   able: PickerOption[];
   /** At the level but busy, each with its reason. */
   busy: PickerOption[];
-  /** Under the level, closest first, each with "Needs Crafting level N" as its reason. */
+  /** Under the level, closest first, each with "Needs level N" as its reason. */
   tooLow: PickerOption[];
   /** The creature picked when the player has not picked: the first that can do it; null when nobody can. */
   pick: string | null;
@@ -25,9 +25,9 @@ export interface JobWho {
   blocker: string | null;
 }
 
-/** The reason of a creature under the level (also the words of its row). */
+/** The reason of a creature under the level, short so it fits a row beside "Crafting level 1" (the row says what level). */
 export function needsLevelReason(minLevel: number): string {
-  return `Needs Crafting level ${String(minLevel)}`;
+  return `Needs level ${String(minLevel)}`;
 }
 
 /** The folded row: "4 more need Crafting level 3", "1 more needs ..."; without "more" when nobody else is listed. */
@@ -54,7 +54,9 @@ export function jobWho(
   let blocker: string | null = null;
   if (able.length === 0 && creatures.length > 0) {
     blocker =
-      atLevel.length === 0 ? `${reason}.` : `Nobody free has Crafting level ${String(minLevel)}.`;
+      atLevel.length === 0
+        ? `Needs Crafting level ${String(minLevel)}.`
+        : `Nobody free has Crafting level ${String(minLevel)}.`;
   }
   return {
     able,

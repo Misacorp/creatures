@@ -36,6 +36,7 @@ export function Workshop({
   failed,
   offset,
   busy,
+  error = null,
   reveal,
   actions,
   onRetry,
@@ -50,6 +51,8 @@ export function Workshop({
   /** Server clock minus local clock, in ms. */
   offset: number;
   busy: boolean;
+  /** The server's last error (the game's notice line is behind a drawer, so a job's drawer shows it itself). */
+  error?: string | null;
   reveal: JobResult | null;
   actions: GearActions;
   onRetry: () => void;
@@ -233,6 +236,7 @@ export function Workshop({
         creatures={state.creatures}
         stock={state.supplies}
         busy={busy}
+        error={error}
         onCraft={async (supplyId, creatureId, treat) =>
           (await actions.startJob({
             kind: 'supply',

@@ -20,10 +20,7 @@ describe('jobWho: who can do a job', () => {
     expect(ids(who.busy)).toEqual(['sample-1']);
     expect(who.busy[0]?.busy).toBe('On a job');
     expect(ids(who.tooLow)).toEqual(['sample-4', 'sample-3']);
-    expect(who.tooLow.map((o) => o.busy)).toEqual([
-      'Needs Crafting level 3',
-      'Needs Crafting level 3',
-    ]);
+    expect(who.tooLow.map((o) => o.busy)).toEqual(['Needs level 3', 'Needs level 3']);
     expect(who.summary).toBe('2 more need Crafting level 3');
     expect(who.pick).toBe('sample-2');
     expect(who.blocker).toBeNull();
@@ -42,9 +39,7 @@ describe('jobWho: who can do a job', () => {
     const who = jobWho(creatures, at([4, 1, 1, 1, 1, 1]), hours, 3);
     expect(ids(who.busy)).toEqual([]);
     expect(ids(who.tooLow)).toContain('sample-3');
-    expect(who.tooLow.find((o) => o.creature.id === 'sample-3')?.busy).toBe(
-      'Needs Crafting level 3',
-    );
+    expect(who.tooLow.find((o) => o.creature.id === 'sample-3')?.busy).toBe('Needs level 3');
   });
 
   it('has no pick and says why when everyone at the level is busy but a lower one is free (the old silent grey)', () => {

@@ -516,6 +516,7 @@ export function Game({
             failed={gearFailed}
             offset={offset}
             busy={busy}
+            error={error}
             reveal={jobReveal}
             actions={gearActions}
             onRetry={loadGear}

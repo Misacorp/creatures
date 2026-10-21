@@ -3,10 +3,13 @@ import { sampleRoster, SAMPLE_GEAR } from '../../creature-card-sample';
 import type { GearState } from '../../gear-types';
 import { supplyCraftViews } from '../../gear-view';
 import type { SupplyPick } from '../../expedition-types';
+import { JobDrawer } from '../../JobWizard';
+import { supplyActions, supplyJob, type SupplyAction } from '../../supply-job';
 import { SupplyCrafting } from '../../SupplyCrafting';
 import { SupplyPicker } from '../../SupplyPicker';
 import { SupplyGrid, type SupplyCell } from '../../ui/SupplyGrid';
-import { num, str } from '../props';
+import { bool, num, str } from '../props';
+import type { Creature } from '../../api';
 import type { Entry, Props } from '../types';
 
 const STOCKS = ['nothing', 'some', 'a lot'] as const;
@@ -163,4 +166,147 @@ const supplyPicker: Entry = {
   render: (p) => <PickerDemo key={`${str(p, 'kit')}-${str(p, 'stock')}`} p={p} />,
 };
 
-export const supplyCraftingEntries: readonly Entry[] = [supplyCrafting, supplyGrid, supplyPicker];
+const JOBS = ['Craft Sweet Lure', 'Refine Plain Lure', 'Recycle Sweet Lure'] as const;
+const WORLDS = [
+  'some under the level (folded)',
+  'a busy one at the level',
+  'nobody free at the level',
+  'both job slots busy',
+] as const;
+
+/** Five creatures: the first at Crafting level 5, the second at 3, the rest at 1; some busy for the case. */
+function jobWorld(name: string): { gear: GearState; creatures: Creature[] } {
+  const roster = sampleRoster(5);
+  const busyAt =
+    name === 'a busy one at the level' ? [1] : name === 'nobody free at the level' ? [0, 1] : [];
+  const levels = [5, 3, 1, 1, 1];
+  return {
+    creatures: roster.map((c, i) =>
+      busyAt.includes(i) ? { ...c, busy: { kind: 'job' as const, id: `job-${String(i)}` } } : c,
+    ),
+    gear: {
+      ...SAMPLE_GEAR,
+      slots: { total: 2, used: name === 'both job slots busy' ? 2 : 0 },
+      skills: roster.map((c, i) => ({
+        creatureId: c.id,
+        xp: 0,
+        level: levels[i] ?? 1,
+        nextLevelXp: null,
+      })),
+    },
+  };
+}
+
+const JOB_SUPPLY: Record<(typeof JOBS)[number], { id: string; action: SupplyAction }> = {
+  'Craft Sweet Lure': { id: 'lure-good', action: 'craft' },
+  'Refine Plain Lure': { id: 'lure-basic', action: 'refine' },
+  'Recycle Sweet Lure': { id: 'lure-good', action: 'recycle' },
+};
+
+function JobDemo({ p }: { p: Props }) {
+  const [open, setOpen] = useState(true);
+  const [note, setNote] = useState('');
+  const world = jobWorld(str(p, 'creatures'));
+  const stock = { 'lure-basic': 3, 'lure-good': 1 };
+  const choice = JOB_SUPPLY[JOBS.find((j) => j === str(p, 'job')) ?? JOBS[0]];
+  const view = supplyCraftViews(stock).find((v) => v.id === choice.id);
+  const actions =
+    view === undefined ? null : supplyActions(view, stock, world.gear, world.creatures);
+  const start = (what: string, who: string, treat: boolean): Promise<boolean> => {
+    if (bool(p, 'failStart')) return Promise.resolve(false);
+    setNote(`${what} with ${who}${treat ? ' and a treat' : ''}.`);
+    return Promise.resolve(true);
+  };
+  const job =
+    view === undefined || actions === null
+      ? null
+      : supplyJob(choice.action, view, actions, world.gear, {
+          onCraft: (id, who, treat) => start(`Craft ${id}`, who, treat),
+          onConvert: (id, who, treat) => start(`Convert ${id}`, who, treat),
+        });
+  return (
+    <div class="v3-phone">
+      {!open && (
+        <p>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true);
+            }}
+          >
+            Open the job again
+          </button>
+        </p>
+      )}
+      {job !== null && open && (
+        <JobDrawer
+          {...job}
+          gear={world.gear}
+          creatures={world.creatures}
+          busy={false}
+          error={bool(p, 'failStart') ? 'Not enough Bait.' : null}
+          start={{
+            step: str(p, 'step') === 'ready' ? 'ready' : 'who',
+            treat: bool(p, 'treat'),
+            foldOpen: bool(p, 'unfold'),
+          }}
+          onClose={() => {
+            setOpen(false);
+          }}
+        />
+      )}
+      <p class="muted" role="status">
+        {note}
+      </p>
+    </div>
+  );
+}
+
+const jobDrawer: Entry = {
+  name: 'JobDrawer',
+  file: 'apps/activity/src/JobWizard.tsx',
+  group: 'Creatures & game pieces',
+  description:
+    "The Workshop's supply job as a wizard in a drawer (Craft, Refine, Recycle): the recipe once at the top, then Who crafts (creatures who can do it first with their time, busy ones greyed with their reason, the ones under the level folded into one tappable summary row) and Ready (who, the treat), with the gold start button pinned below and the reason it is off always shown. Back on Who closes it; Escape goes one step back. Built on the shared Wizard. Press the start with 'The server refuses the start' on to see the error in the footer.",
+  controls: {
+    job: { kind: 'select', options: JOBS },
+    creatures: { kind: 'select', options: WORLDS },
+    step: { kind: 'select', options: ['who', 'ready'] },
+    unfold: { kind: 'toggle' },
+    treat: { kind: 'toggle' },
+    failStart: { kind: 'toggle' },
+  },
+  defaults: {
+    job: 'Refine Plain Lure',
+    creatures: 'some under the level (folded)',
+    step: 'who',
+    unfold: false,
+    treat: false,
+    failStart: false,
+  },
+  presets: [
+    { name: 'Refine, some creatures folded', props: {} },
+    { name: 'Refine, the folded row open', props: { unfold: true } },
+    { name: 'Refine, ready', props: { step: 'ready' } },
+    { name: 'Refine, ready with a treat packed', props: { step: 'ready', treat: true } },
+    { name: 'Recycle, who crafts', props: { job: 'Recycle Sweet Lure' } },
+    { name: 'Recycle, ready', props: { job: 'Recycle Sweet Lure', step: 'ready' } },
+    { name: 'Craft a supply, who crafts', props: { job: 'Craft Sweet Lure' } },
+    { name: 'Craft a supply, ready', props: { job: 'Craft Sweet Lure', step: 'ready' } },
+    { name: 'A busy creature at the level', props: { creatures: 'a busy one at the level' } },
+    { name: 'Nobody free at the level', props: { creatures: 'nobody free at the level' } },
+    { name: 'Both job slots busy', props: { creatures: 'both job slots busy' } },
+    {
+      name: 'A start the server refused (press the button)',
+      props: { step: 'ready', failStart: true },
+    },
+  ],
+  render: (p) => <JobDemo key={JSON.stringify(p)} p={p} />,
+};
+
+export const supplyCraftingEntries: readonly Entry[] = [
+  supplyCrafting,
+  jobDrawer,
+  supplyGrid,
+  supplyPicker,
+];

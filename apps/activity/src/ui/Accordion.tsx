@@ -49,7 +49,7 @@ export interface AccordionProps {
 }
 
 /** A pixel chevron, drawn with squares so it stays sharp; the stylesheet turns it when open. */
-function Chevron() {
+export function Chevron() {
   return (
     <svg class="acc-chev" viewBox="0 0 7 4" aria-hidden="true" shape-rendering="crispEdges">
       <rect x="0" y="0" width="2" height="1" />
