@@ -18,7 +18,7 @@ import {
   type SupplyDef,
 } from '@creatures/game';
 import type { ExpeditionLength, ExplorerView, Slots, SupplyPick, Trip } from './expedition-types';
-import { formatDuration, formatHours } from './time-format';
+import { formatCountdown, formatDuration, formatHours } from './time-format';
 
 const BP = 10_000;
 
@@ -240,6 +240,33 @@ export function tripStatus(trip: Trip, now: number): TripStatus {
     return { phase: 'choice', fraction: 1, remainingMs: 0, claim: 'claim' };
   }
   return { phase: 'ready', fraction: 1, remainingMs: 0, claim: 'claim' };
+}
+
+/** The one button a trip has now: claim it, decide the push-on, recall it early or come home from a push-on. */
+export type TripAction = 'claim' | 'decide' | 'recall' | 'early';
+
+/** Which action a trip offers at server time `now` (a pending end-of-trip choice comes first). */
+export function tripAction(trip: Trip, now: number): TripAction {
+  const status = tripStatus(trip, now);
+  return status.phase === 'choice' ? 'decide' : status.claim;
+}
+
+/**
+ * The short status of a trip for a chip, a row or a card: "Back in 5 h", "Home!" or "Push on?". A push-on
+ * that runs reads "Pushing on: 2 h"; the time left uses the short style (hours and minutes).
+ */
+export function tripShortStatus(trip: Trip, now: number): string {
+  const status = tripStatus(trip, now);
+  switch (status.phase) {
+    case 'out':
+      return `Back in ${formatCountdown(status.remainingMs, 'short')}`;
+    case 'pushing':
+      return `Pushing on: ${formatCountdown(status.remainingMs, 'short')}`;
+    case 'choice':
+      return 'Push on?';
+    case 'ready':
+      return 'Home!';
+  }
 }
 
 /**

@@ -20,6 +20,8 @@ import {
   supplyEffect,
   supplyOptions,
   tripStatus,
+  tripAction,
+  tripShortStatus,
   explorerXp,
   supplyDefs,
 } from './trip-view';
@@ -206,6 +208,30 @@ describe('a running trip', () => {
     expect(recallKeeps(long, long.startedAt)).toBe(0);
     expect(recallKeeps(long, long.startedAt + 5.5 * HOUR)).toBe(5);
     expect(recallKeeps(long, long.endsAt + 5 * HOUR)).toBe(12);
+  });
+});
+
+describe('what a trip offers to do and says in short', () => {
+  const plain = tripOf({ offer: null, pushOn: null });
+  const offered = tripOf({ pushOn: null });
+  const pushed = parseGameState(pushOnFixture.state).expeditions[0];
+  const push = pushed?.pushOn;
+  if (pushed === undefined || push === null || push === undefined) throw new Error('no push-on');
+
+  it('recalls while out, decides at a choice, comes home during a push-on and claims when done', () => {
+    expect(tripAction(plain, plain.startedAt)).toBe('recall');
+    expect(tripAction(plain, plain.endsAt)).toBe('claim');
+    expect(tripAction(offered, offered.endsAt - 1)).toBe('recall');
+    expect(tripAction(offered, offered.endsAt)).toBe('decide');
+    expect(tripAction(pushed, push.startedAt)).toBe('early');
+    expect(tripAction(pushed, push.endsAt)).toBe('claim');
+  });
+
+  it('says the time left, Push on? or Home!', () => {
+    expect(tripShortStatus(plain, plain.endsAt - 5 * HOUR)).toBe('Back in 5 h');
+    expect(tripShortStatus(offered, offered.endsAt)).toBe('Push on?');
+    expect(tripShortStatus(plain, plain.endsAt)).toBe('Home!');
+    expect(tripShortStatus(pushed, push.endsAt - 2 * HOUR)).toBe('Pushing on: 2 h');
   });
 });
 

@@ -8,6 +8,7 @@ import { GameIcon } from './ui/GameIcon';
 import { TimerBar } from './ui/TimerBar';
 import { creatureName, getSpecies } from './game';
 import { PushOnChoice } from './PushOnChoice';
+import { TripActions } from './TripActions';
 import { riskWord } from './push-on-view';
 import { explorerInfo } from './send-view';
 import { ElementChip } from './sprites/ElementChip';
@@ -16,7 +17,6 @@ import {
   destinationName,
   goalName,
   lengthLabel,
-  recallKeeps,
   supplyKindOf,
   supplyName,
   tripStatus,
@@ -60,7 +60,6 @@ export function RunningTrip({
   const status = tripStatus(trip, serverNow);
   const species = creature === undefined ? undefined : getSpecies(creature.species);
   const info = creature === undefined ? null : explorerInfo(creature);
-  const keeps = recallKeeps(trip, serverNow);
   const pct = percent(status.fraction, 1);
   const pushing = status.phase === 'pushing' && trip.pushOn !== null;
   // The leg the bar times: the push-on while it runs, the trip itself otherwise.
@@ -144,20 +143,13 @@ export function RunningTrip({
             }}
           />
         ) : (
-          <button
-            type="button"
-            class={status.claim === 'claim' ? 'primary' : ''}
-            disabled={busy}
-            onClick={() => {
-              onClaim(trip);
-            }}
-          >
-            {status.claim === 'claim'
-              ? 'Claim'
-              : status.claim === 'early'
-                ? 'Come home now (skips the push-on)'
-                : `Recall (keeps ${String(keeps)} ${keeps === 1 ? 'hour' : 'hours'} of finds)`}
-          </button>
+          <TripActions
+            trip={trip}
+            serverNow={serverNow}
+            busy={busy}
+            onClaim={onClaim}
+            onDecide={onClaim}
+          />
         )}
       </div>
     </li>
