@@ -7,6 +7,7 @@
 import { affects, type AffectMode } from '@creatures/engine';
 import { RULES, content, creaturePower, strongest } from '@creatures/game';
 import type { Creature } from './api';
+import type { GearRarity } from './gear-types';
 import { creatureName, getSpecies, speciesName } from './game';
 import type { AwayView, RaidEventId, RowSlotView } from './raid-api';
 import { boardAffectRow, boardKeys, parseTurnOrder } from './raid-board';
@@ -85,6 +86,11 @@ export interface PickerOption {
   onBoard: boolean;
   /** Why it cannot be picked, or null when it can. */
   disabled: string | null;
+  /**
+   * Set when `disabled` is because the creature is on a Workshop job or away on a trip: the row draws the same
+   * status badge as the creature card ("On a job", "Away") instead of the reason as text.
+   */
+  busy?: 'away' | 'job';
   /** What it would do in this slot (the effect preview), or null for nothing or when the preview is off. */
   effect: string | null;
   /** One of the player's three strongest: the picker shows a small "Recommended" tag. */
@@ -98,6 +104,11 @@ export interface PickerOption {
   xpBar?: { value: number; max: number; top: boolean; label: string; text: string };
   /** It had all of today's lounging experience: a small Rested tag (the lounge swap). */
   rested?: boolean;
+  /**
+   * The item this creature already wears in the slot the option is for (the Workshop's "Equip on" list): drawn
+   * as a small item tile at the right end of the row. Absent: the slot is empty, and nothing is drawn.
+   */
+  worn?: { baseId: string; rarity: GearRarity; itemLevel: number };
 }
 
 /** How many of the player's creatures are on the board. */

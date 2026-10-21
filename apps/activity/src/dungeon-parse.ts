@@ -6,7 +6,15 @@
  */
 import { ELEMENTS, RoleSchema } from '@creatures/game';
 import { isExperienceView } from './experience';
-import { isConvertedLoot, isGearLoot, isPartsBundle, isRarity, isSlot } from './gear-parse';
+import {
+  isBlueprintLoot,
+  isConvertedLoot,
+  isGearItem,
+  isGearLoot,
+  isPartsBundle,
+  isRarity,
+  isSlot,
+} from './gear-parse';
 import { isEvent, isEventNames } from './raid-api';
 import { isArrayOf, isBool, isCount, isInt, isRecord, isStr } from './parse-core';
 import type {
@@ -14,7 +22,9 @@ import type {
   DungeonActResponse,
   DungeonEventView,
   DungeonKeepsakeView,
+  DungeonTreasureView,
   DungeonMapNode,
+  DungeonExperienceRecap,
   DungeonMapView,
   DungeonNodeKind,
   DungeonPack,
@@ -98,6 +108,17 @@ function isRoomSummary(value: unknown): value is DungeonRoomSummary {
   );
 }
 
+/** A creature's recap of a run: its id, name and species. */
+function isRecap(value: unknown): value is DungeonExperienceRecap {
+  return (
+    isRecord(value) &&
+    isStr(value['creatureId']) &&
+    isStr(value['name']) &&
+    value['name'].length <= 64 &&
+    isStr(value['speciesId'])
+  );
+}
+
 function isRewards(value: unknown): value is DungeonRewards {
   if (!isRecord(value)) return false;
   const streak = value['streak'];
@@ -108,7 +129,10 @@ function isRewards(value: unknown): value is DungeonRewards {
     isArrayOf(value['gear'], isGearLoot) &&
     isArrayOf(value['converted'], isConvertedLoot) &&
     (value['supplies'] === undefined || isArrayOf(value['supplies'], isStr)) &&
+    (value['blueprints'] === undefined || isArrayOf(value['blueprints'], isBlueprintLoot)) &&
+    (value['treasureLost'] === undefined || isTreasureView(value['treasureLost'])) &&
     (value['experience'] === undefined || isArrayOf(value['experience'], isExperienceView)) &&
+    (value['recap'] === undefined || isArrayOf(value['recap'], isRecap)) &&
     isBool(value['landmark']) &&
     (streak === null ||
       (isRecord(streak) &&
@@ -143,9 +167,32 @@ function isKeepsake(value: unknown): value is DungeonKeepsakeView {
   );
 }
 
+/** A rare room's treasure: one of the four kinds, each with its own fields (a gear piece with its rolled level). */
+function isTreasureView(value: unknown): value is DungeonTreasureView {
+  if (!isRecord(value)) return false;
+  switch (value['kind']) {
+    case 'gear':
+      return (
+        isStr(value['baseId']) &&
+        isRarity(value['rarity']) &&
+        isCount(value['itemLevel']) &&
+        (value['card'] === undefined || isGearItem(value['card']))
+      );
+    case 'blueprint':
+      return isStr(value['baseId']);
+    case 'supplies':
+      return isStr(value['supplyId']) && isCount(value['count']);
+    case 'shards':
+      return isPartsBundle(value['parts']);
+    default:
+      return false;
+  }
+}
+
 function isEventView(value: unknown): value is DungeonEventView {
   return (
     isRecord(value) &&
+    (value['treasure'] === undefined || isTreasureView(value['treasure'])) &&
     isStr(value['id']) &&
     isStr(value['name']) &&
     isStr(value['text']) &&
@@ -218,7 +265,9 @@ function isStepLog(value: unknown): value is DungeonStepLog {
         isStr(value['option']) &&
         isStr(value['outcome']) &&
         isPack(value['loot']) &&
-        isOptionalKeepsake(value['keepsake'])
+        isOptionalKeepsake(value['keepsake']) &&
+        (value['treasure'] === undefined || isTreasureView(value['treasure'])) &&
+        (value['fell'] === undefined || value['fell'] === true)
       );
     case 'camp':
       return (

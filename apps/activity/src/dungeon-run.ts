@@ -238,6 +238,7 @@ export function swapOptions(
         disabled: c.away ? AWAY_REASON : null,
         effect: null,
         recommended: false,
+        ...(c.away ? { busy: 'away' as const } : {}),
       };
     })
     .sort(

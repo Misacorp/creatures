@@ -782,47 +782,8 @@
       "supplies": [],
       "landmark": false,
       "streak": null,
-      "experience": [
-        {
-          "creatureId": "00000000-0000-4000-8300-000000000015",
-          "gained": 0,
-          "treat": false,
-          "levelBefore": 1,
-          "level": 1,
-          "exp": 0,
-          "needed": 27,
-          "waiting": false,
-          "gold": false,
-          "treatTimes": null,
-          "dayEffects": []
-        },
-        {
-          "creatureId": "00000000-0000-4000-8300-000000000016",
-          "gained": 0,
-          "treat": false,
-          "levelBefore": 1,
-          "level": 1,
-          "exp": 0,
-          "needed": 27,
-          "waiting": false,
-          "gold": false,
-          "treatTimes": null,
-          "dayEffects": []
-        },
-        {
-          "creatureId": "00000000-0000-4000-8300-000000000017",
-          "gained": 0,
-          "treat": false,
-          "levelBefore": 1,
-          "level": 1,
-          "exp": 0,
-          "needed": 27,
-          "waiting": false,
-          "gold": false,
-          "treatTimes": null,
-          "dayEffects": []
-        }
-      ]
+      "experience": [],
+      "recap": []
     },
     "outcome": "defeat",
     "path": ["fight"],
@@ -1222,47 +1183,8 @@
         "supplies": [],
         "landmark": false,
         "streak": null,
-        "experience": [
-          {
-            "creatureId": "00000000-0000-4000-8300-000000000015",
-            "gained": 0,
-            "treat": false,
-            "levelBefore": 1,
-            "level": 1,
-            "exp": 0,
-            "needed": 27,
-            "waiting": false,
-            "gold": false,
-            "treatTimes": null,
-            "dayEffects": []
-          },
-          {
-            "creatureId": "00000000-0000-4000-8300-000000000016",
-            "gained": 0,
-            "treat": false,
-            "levelBefore": 1,
-            "level": 1,
-            "exp": 0,
-            "needed": 27,
-            "waiting": false,
-            "gold": false,
-            "treatTimes": null,
-            "dayEffects": []
-          },
-          {
-            "creatureId": "00000000-0000-4000-8300-000000000017",
-            "gained": 0,
-            "treat": false,
-            "levelBefore": 1,
-            "level": 1,
-            "exp": 0,
-            "needed": 27,
-            "waiting": false,
-            "gold": false,
-            "treatTimes": null,
-            "dayEffects": []
-          }
-        ]
+        "experience": [],
+        "recap": []
       },
       "outcome": "defeat",
       "path": ["fight"],

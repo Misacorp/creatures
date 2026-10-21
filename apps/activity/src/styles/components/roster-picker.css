@@ -120,6 +120,11 @@
 }
 
 .ro-name {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--fs-row);
   line-height: 1.2;
 }
@@ -180,4 +185,18 @@
   min-width: 0;
   margin-left: auto;
   text-align: right;
+}
+
+/*
+  The item the creature already wears in the slot (the Equip on list): the creature card's item tile, small, at the
+  right end of the row after any reason. An empty slot draws nothing, so the tiles alone say "slot taken".
+*/
+.ro-worn {
+  display: grid;
+  flex: none;
+  place-items: center;
+}
+
+.ro-worn .item-frame {
+  --lv-size: 0.75rem;
 }

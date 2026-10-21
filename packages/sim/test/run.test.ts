@@ -102,17 +102,22 @@ describe('simulation run', () => {
     // fixed bonus into their per-tick bonus, so trips with them draw differently. Dice at this size: finale
     // start share 0.3250 to 0.3084, top share 0.3022 to 0.3015, creature ratio 1.3887 to 1.3802, a dungeon
     // run 5.2321 to 5.1339 fights (home rate 0.0893 to 0.1071). Nothing else moved.
+    // 2026-10-21 (B-028, dungeon experience per room): creatures earn per room they stood in (fights by kind,
+    // caches, mystery rooms) instead of 35 a fight and 60 for a clear, so levels, and the dice after them,
+    // move a little. Dice at this size: finale start share 0.3084 to 0.3044, top share 0.3015 to 0.309,
+    // creature ratio 1.3802 to 1.3962, a dungeon run 5.1339 to 5.3036 fights (home rate 0.1071 to 0.1161).
+    // Nothing else moved.
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
       'raid.typical.phase1ClearRate': 1,
       'raid.typical.finaleWinRate': 1,
-      'raid.typical.finaleStartShare': 0.3084,
-      'fair.topShareMedian': 0.3015,
-      'choice.creatureRatioMax': 1.3802,
+      'raid.typical.finaleStartShare': 0.3044,
+      'fair.topShareMedian': 0.309,
+      'choice.creatureRatioMax': 1.3962,
       'econ.casualTopLevelWeek4': 14,
       'exp.rate.long': 131.3262,
-      'dungeon.meanFights': 5.1339,
-      'dungeon.dailyHomeRate': 0.1071,
+      'dungeon.meanFights': 5.3036,
+      'dungeon.dailyHomeRate': 0.1161,
       'longrun.typical.finaleWinRate': 0.8333,
       'longrun.typicalFinalRank': 4,
     };

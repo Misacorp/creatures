@@ -23,10 +23,14 @@ const options = (list: Record<string, unknown>[], at = 0): Record<string, unknow
   (list[at] as { options: Record<string, unknown>[] }).options;
 
 describe('the shipped keepsakes and events', () => {
-  it('load, with about eight of each', () => {
+  it('load, with eight keepsakes and eight common events and one rare one', () => {
     expect(() => load(keepsakesJson, eventsJson)).not.toThrow();
     expect(dungeonKeepsakes).toHaveLength(8);
-    expect(dungeonEvents).toHaveLength(8);
+    expect(dungeonEvents).toHaveLength(9);
+    expect(dungeonEvents.filter((e) => e.rare === undefined)).toHaveLength(8);
+    expect(dungeonEvents.filter((e) => e.rare !== undefined).map((e) => e.id)).toEqual([
+      'blue-chasm',
+    ]);
   });
 
   it('have unique ids that do not clash with foes, modifiers or each other', () => {
@@ -98,6 +102,8 @@ describe('the shipped keepsakes and events', () => {
         case 'heal':
         case 'hurt':
           return [pct(e.bp)];
+        case 'xp':
+          return [String(e.amount)];
         case 'pack':
           return [e.bait, e.essence, e.scrap].filter((n) => n !== undefined).map(String);
         case 'gamble':
@@ -126,6 +132,21 @@ describe('the shipped keepsakes and events', () => {
         }
       }
     }
+  });
+
+  it('has an xp effect in a plain option and in a gamble branch, within the cap', () => {
+    const amounts: number[] = [];
+    const walk = (e: EventEffect): void => {
+      if (e.op === 'xp') amounts.push(e.amount);
+      if (e.op === 'gamble') [...e.win, ...e.lose].forEach(walk);
+    };
+    for (const event of dungeonEvents) for (const o of event.options) o.effects.forEach(walk);
+    expect(amounts.length).toBeGreaterThanOrEqual(2);
+    for (const a of amounts) expect(a).toBeLessThanOrEqual(RULES.experience.dungeon.maxEvent);
+    const shrine = dungeonEvent('old-shrine')?.options[1]?.effects ?? [];
+    expect(shrine.some((e) => e.op === 'xp')).toBe(true);
+    const ring = dungeonEvent('mushroom-ring')?.options[1]?.effects[0];
+    expect(ring?.op === 'gamble' && ring.win.some((e) => e.op === 'xp')).toBe(true);
   });
 
   it('pays the risky option of an event a little more than the safe one (the average pack and HP they give)', () => {
@@ -300,6 +321,59 @@ describe('the keepsake and event schemas refuse bad data', () => {
     expect(() => load(keepsakesJson, costly(risky, { op: 'nothing' }))).not.toThrow();
   });
 
+  it('a fall counts as a cost: two risky options are refused, a fall beside a free one loads', () => {
+    const fall = { op: 'fall' };
+    const gambleFall = { op: 'gamble', chanceBp: 5000, win: [{ op: 'nothing' }], lose: [fall] };
+    const costly = (a: unknown, b: unknown): Record<string, unknown>[] => {
+      const e = events();
+      (options(e)[0] as Record<string, unknown>)['effects'] = [a];
+      (options(e)[1] as Record<string, unknown>)['effects'] = [b];
+      return e;
+    };
+    refused(keepsakesJson, costly(fall, fall));
+    refused(keepsakesJson, costly(gambleFall, gambleFall));
+    expect(() => load(keepsakesJson, costly(gambleFall, { op: 'nothing' }))).not.toThrow();
+  });
+
+  it('an event holds at most one treasure, and a rare block has a real chance and depth', () => {
+    const e = events();
+    (options(e)[1] as Record<string, unknown>)['effects'] = [
+      { op: 'treasure' },
+      { op: 'treasure' },
+    ];
+    refused(keepsakesJson, e);
+    for (const rare of [
+      { chanceBp: 0, fromDepth: 3 },
+      { chanceBp: 10_001, fromDepth: 3 },
+      { chanceBp: 1500, fromDepth: 0 },
+      { chanceBp: 1500, fromDepth: 3, extra: 1 },
+    ]) {
+      const bad = events();
+      (bad[0] as Record<string, unknown>)['rare'] = rare;
+      refused(keepsakesJson, bad);
+    }
+  });
+
+  it('the Blue Chasm: the words of the design, a 50% crossing that wins the treasure or falls, a free way out', () => {
+    const chasm = dungeonEvent('blue-chasm');
+    if (chasm === undefined) throw new Error('no blue chasm');
+    expect(chasm.name).toBe('Blue Chasm');
+    expect(chasm.text).toBe(
+      "A narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There's a valuable treasure on the other side.",
+    );
+    expect(chasm.rare).toEqual({ chanceBp: 1500, fromDepth: 3 });
+    expect(chasm.options.map((o) => o.label)).toEqual(['Cross the plank', "Don't risk it"]);
+    const [cross, leave] = chasm.options;
+    expect(cross?.effects).toEqual([
+      { op: 'gamble', chanceBp: 5000, win: [{ op: 'treasure' }], lose: [{ op: 'fall' }] },
+    ]);
+    // The words follow the numbers (the odds are tunable in the content).
+    expect(cross?.description).toContain('50%');
+    expect(eventOptionCosts(cross as NonNullable<typeof cross>)).toBe(true);
+    expect(leave?.effects).toEqual([{ op: 'nothing' }]);
+    expect(eventOptionCosts(leave as NonNullable<typeof leave>)).toBe(false);
+  });
+
   it('a bad effect: nested gamble, empty pack, big numbers, bad chance, unknown op or key', () => {
     const withEffect = (effect: unknown): Record<string, unknown>[] => {
       const e = events();
@@ -345,6 +419,11 @@ describe('the keepsake and event schemas refuse bad data', () => {
       keepsakesJson,
       withEffect({ op: 'gamble', chanceBp: 5000, win: [], lose: [{ op: 'nothing' }] }),
     );
+    refused(keepsakesJson, withEffect({ op: 'xp' }));
+    refused(keepsakesJson, withEffect({ op: 'xp', amount: 0 }));
+    refused(keepsakesJson, withEffect({ op: 'xp', amount: 61 }));
+    refused(keepsakesJson, withEffect({ op: 'xp', amount: 2.5 }));
+    refused(keepsakesJson, withEffect({ op: 'xp', amount: 5, extra: 1 }));
     refused(keepsakesJson, withEffect({ op: 'steal' }));
     refused(keepsakesJson, withEffect({ op: 'keepsake', extra: 1 }));
     refused(keepsakesJson, withEffect({ op: 'pack', bait: 1.5 }));

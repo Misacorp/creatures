@@ -21,13 +21,16 @@ import {
   undercroftOpen,
   xpBoost,
   xpWeather,
+  type GearItem,
+  type PartsBundle,
+  type Treasure,
   type WeatherDay,
 } from '@creatures/game';
 import { type DungeonRoomResult } from '@creatures/engine';
 import { awardExperience } from './creature-exp';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
 import { SUPPLIES_PER_RUN } from './dungeon-path';
-import { currentHp, keepsakeViews, runNode, type RunState } from './dungeon-state';
+import { currentHp, keepsakeViews, runNode, treasureView, type RunState } from './dungeon-state';
 import type {
   DungeonOutcome,
   DungeonPack,
@@ -35,6 +38,7 @@ import type {
   DungeonRoomSummary,
   DungeonRunSummary,
   DungeonExperienceView,
+  DungeonExperienceRecap,
 } from './dungeon-types';
 import { addDays } from './time';
 import {
@@ -57,7 +61,51 @@ function xpDayEffects(day: WeatherDay | null): { name: string; bp: number }[] {
   );
 }
 
+/** A creature that stood in the row at some point: its name and species as the run froze them (the start row, a seat, or the row now). */
+function creatureNameOf(st: RunState, id: string): { name: string; speciesId: string } {
+  const slot = st.input.team.find((s) => s.id === id) ?? st.seats?.[id]?.slot;
+  if (slot !== undefined) return { name: slot.name, speciesId: slot.speciesId };
+  const start = st.start.find((s) => s.id === id);
+  return { name: start?.name ?? 'A creature', speciesId: start?.speciesId ?? '' };
+}
+
 const totalOf = (pack: DungeonPack): number => pack.bait + pack.essence + pack.scrap;
+
+/**
+ * What the treasures a run won are, as a grant draws them: gear (already rolled when the room opened),
+ * supplies (one id each), blueprint base ids and parts. A defeat wins none (an item cannot be halved).
+ */
+function treasureLoot(
+  treasures: readonly Treasure[],
+  depth: number,
+): {
+  parts: PartsBundle;
+  gear: { item: GearItem; origin: { kind: 'dungeon'; depth: number } }[];
+  supplies: string[];
+  blueprints: string[];
+} {
+  let parts: PartsBundle = {};
+  const gear: { item: GearItem; origin: { kind: 'dungeon'; depth: number } }[] = [];
+  const supplies: string[] = [];
+  const blueprints: string[] = [];
+  for (const t of treasures) {
+    switch (t.kind) {
+      case 'gear':
+        gear.push({ item: t.item, origin: { kind: 'dungeon', depth } });
+        break;
+      case 'blueprint':
+        blueprints.push(t.baseId);
+        break;
+      case 'supplies':
+        for (let i = 0; i < t.count; i++) supplies.push(t.supplyId);
+        break;
+      case 'shards':
+        parts = addParts(parts, t.parts);
+        break;
+    }
+  }
+  return { parts, gear, supplies, blueprints };
+}
 
 /**
  * Ends a run, paying everything in the caller's transaction: the progress (depth only after a clear),
@@ -120,8 +168,8 @@ export function finishRun(
   );
 
   // --- Creature experience, from the fights each creature stood in the row for (a treat doubles it) ---
-  const inRow = new Set(st.input.team.map((slot) => slot.id));
   const experience: DungeonExperienceView[] = [];
+  const recap: DungeonExperienceRecap[] = [];
   const dayEffects = xpDayEffects(st.weather);
   const days = dayParts(dayXpEffects(st.weather));
   const treatTimes = xpWeather(st.weather).treatMultiplier;
@@ -129,12 +177,11 @@ export function finishRun(
     const treat = st.treats.includes(id);
     // One list of parts gives the amount and the breakdown.
     const parts = creatureXpParts(treat, treatTimes, days);
-    const gained = dungeonExperience(
-      st.tally[id] ?? 0,
-      // The full-clear bonus is for the row that beat the boss (a state stored before the Undercroft: the row at the end).
-      st.fullClear !== undefined ? st.fullClear.includes(id) : cleared && inRow.has(id),
-      parts,
-    );
+    // Only a creature that earned something is paid and listed (one lost in its first fight, or sent
+    // home before any room, is not). A creature sent home at a camp keeps what it had earned.
+    const earned = st.earned[id];
+    if (earned === undefined || earned.base <= 0) continue;
+    const gained = dungeonExperience(earned, parts);
     const view = awardExperience(
       deps.storage.sql,
       deps.analytics,
@@ -151,9 +198,16 @@ export function finishRun(
         treatTimes: treat ? (treatTimes ?? RULES.experience.treat.multiplier) : null,
         dayEffects,
       });
+      const who = creatureNameOf(st, id);
+      recap.push({
+        creatureId: id,
+        name: who.name,
+        speciesId: who.speciesId,
+      });
     }
   }
   rewards.experience = experience;
+  rewards.recap = recap;
 
   // --- Store ---
   const summary = summarise(deps, {
@@ -213,6 +267,8 @@ function payRun(
     (bossNode === undefined ? undefined : nodeFoe(bossNode, depth))?.element ?? 'tide';
   // The scrap, the glimmer and the shards the rooms dropped (all at risk in the pack, kept with it).
   const packParts = addParts({ scrap, glimmer }, kept.shards ?? {});
+  // A rare room's treasure is won unless the run ended in a defeat; it is paid by the same grant (so once).
+  const prize = treasureLoot(outcome === 'defeat' ? [] : st.treasures, depth);
   const gearDeps = gearDepsOf(deps);
   const grant = grantDungeonRun(
     gearDeps,
@@ -220,7 +276,14 @@ function payRun(
     day,
     attempt,
     (rng) => {
-      if (chestPaid) return { parts: addParts(packParts, {}), gear: [], supplies: [] };
+      if (chestPaid) {
+        return {
+          parts: addParts(packParts, prize.parts),
+          gear: prize.gear,
+          supplies: prize.supplies,
+          blueprints: prize.blueprints,
+        };
+      }
       const loot = rollDungeonLoot(
         rng,
         depth,
@@ -233,9 +296,13 @@ function payRun(
         bossElement,
       );
       return {
-        parts: addParts(packParts, loot.parts),
-        gear: loot.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
-        supplies: loot.supplies,
+        parts: addParts(addParts(packParts, loot.parts), prize.parts),
+        gear: [
+          ...loot.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
+          ...prize.gear,
+        ],
+        supplies: [...loot.supplies, ...prize.supplies],
+        blueprints: prize.blueprints,
       };
     },
     { bait, essence, meta: { day, depth, attempt } },
@@ -265,6 +332,10 @@ function payRun(
     gear: [...(banked?.gear ?? []), ...grant.gear],
     converted: [...(banked?.converted ?? []), ...grant.converted],
     supplies: [...(banked?.supplies ?? []), ...(grant.supplies ?? [])],
+    ...(grant.blueprints.length === 0 ? {} : { blueprints: grant.blueprints }),
+    ...(outcome === 'defeat' && st.treasures[0] !== undefined
+      ? { treasureLost: treasureView(st.treasures[0]) }
+      : {}),
     landmark,
     streak: streakPaid,
   };

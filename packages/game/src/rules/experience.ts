@@ -165,15 +165,109 @@ export function tripExperience(length: ExpeditionLength, parts: readonly XpBoost
   return applyXpBoost(E.trip[length], parts);
 }
 
-/** Experience each creature of the dungeon team gets: per room cleared, and a full clear on top. */
-export function dungeonExperience(
-  roomsCleared: number,
-  cleared: boolean,
-  parts: readonly XpBoostPart[],
-): number {
-  assertWhole(roomsCleared, 'roomsCleared');
-  const base = E.dungeon.perRoom * roomsCleared + (cleared ? E.dungeon.fullClear : 0);
-  return applyXpBoost(base, parts);
+// --- The dungeon: experience per room a creature stood in the row for ---
+
+/** What pays a creature in a dungeon run: a cleared fight by its kind, or a cache. A mystery room pays by its `xp` effect. */
+export type DungeonXpSource = 'fight' | 'elite' | 'epic' | 'keeper' | 'boss' | 'cache';
+
+/**
+ * What one creature earned in a run so far, before the treat and the day's multipliers: `base` is the
+ * sum (kept as paid, so a rules change mid-run never changes it); the other fields count what paid, for
+ * the recap ("4 fights, 1 cache, boss"). `fights` counts plain fights; elites, epics, keepers and the
+ * boss have their own counts.
+ */
+export interface DungeonEarned {
+  base: number;
+  fights: number;
+  elites: number;
+  epics: number;
+  keepers: number;
+  bosses: number;
+  caches: number;
+  /** Mystery rooms that paid experience. */
+  events: number;
+}
+
+export function emptyEarned(): DungeonEarned {
+  return { base: 0, fights: 0, elites: 0, epics: 0, keepers: 0, bosses: 0, caches: 0, events: 0 };
+}
+
+const COUNT_OF = {
+  fight: 'fights',
+  elite: 'elites',
+  epic: 'epics',
+  keeper: 'keepers',
+  boss: 'bosses',
+  cache: 'caches',
+} as const satisfies Record<DungeonXpSource, Exclude<keyof DungeonEarned, 'base' | 'events'>>;
+
+/** A creature's earnings with one room added. */
+function earn(
+  earned: DungeonEarned | undefined,
+  count: Exclude<keyof DungeonEarned, 'base'>,
+  amount: number,
+): DungeonEarned {
+  const out = { ...(earned ?? emptyEarned()) };
+  out.base += amount;
+  out[count] += 1;
+  return out;
+}
+
+/**
+ * The run's earnings with a room of `source` paid to each creature in `standing` (the row when the room
+ * was played: a creature that joined later gets nothing for earlier rooms, one sent home keeps what it
+ * had). A new record; the input is not changed.
+ */
+export function addRoomExperience(
+  all: Readonly<Record<string, DungeonEarned>>,
+  standing: readonly string[],
+  source: DungeonXpSource,
+): Record<string, DungeonEarned> {
+  const out = { ...all };
+  for (const id of standing) out[id] = earn(out[id], COUNT_OF[source], E.dungeon[source]);
+  return out;
+}
+
+/** The run's earnings with a mystery room's `xp` paid: `amounts` by creature id (0 pays nothing). A new record. */
+export function addEventExperience(
+  all: Readonly<Record<string, DungeonEarned>>,
+  amounts: Readonly<Record<string, number>>,
+): Record<string, DungeonEarned> {
+  const out = { ...all };
+  for (const [id, amount] of Object.entries(amounts)) {
+    if (amount > 0) out[id] = earn(out[id], 'events', amount);
+  }
+  return out;
+}
+
+/**
+ * Reads the tally of a run stored before experience was paid per room: fights cleared by each creature,
+ * and the ids of the row that beat the boss. Each fight is priced as a plain fight, and one of them as
+ * the boss for a creature in `beatBoss`.
+ */
+export function earnedFromTally(
+  tally: Readonly<Record<string, number>>,
+  beatBoss: readonly string[],
+): Record<string, DungeonEarned> {
+  const out: Record<string, DungeonEarned> = {};
+  for (const [id, n] of Object.entries(tally)) {
+    if (!Number.isInteger(n) || n <= 0) continue;
+    const boss = beatBoss.includes(id) ? 1 : 0;
+    const plain = n - boss;
+    out[id] = {
+      ...emptyEarned(),
+      base: plain * E.dungeon.fight + boss * E.dungeon.boss,
+      fights: plain,
+      bosses: boss,
+    };
+  }
+  return out;
+}
+
+/** Experience one creature of the dungeon team gets for what it earned: the total, times the treat and the day's multipliers once. */
+export function dungeonExperience(earned: DungeonEarned, parts: readonly XpBoostPart[]): number {
+  assertWhole(earned.base, 'earned.base');
+  return applyXpBoost(earned.base, parts);
 }
 
 /** Experience each creature that fought a raid stage gets: the stage's, times 1.5 when it was cleared. No treats. */

@@ -8,9 +8,10 @@
  * them to the stored state. Storage, payment and the response belong to `dungeon.ts`.
  */
 import {
-  addFightsCleared,
+  addEventExperience,
   addPack,
   addParts,
+  addRoomExperience,
   campOffers,
   campRest,
   catchBreath,
@@ -19,6 +20,7 @@ import {
   dungeonKeepsakes,
   dungeonScrapPerRoom,
   emptyPack,
+  eventHasTreasure,
   generateUndercroftMap,
   int,
   isLandmark,
@@ -31,9 +33,12 @@ import {
   reachableNodes,
   resolveEvent,
   rollDungeonLoot,
+  rollRareEvent,
+  rollTreasure,
   rollUndercroftChest,
   RULES,
   roomSpecForNode,
+  roomXpSource,
   undercroftBaseFloors,
   undercroftOpen,
   weatherSheet,
@@ -59,9 +64,11 @@ import {
   heldKeepsakes,
   keepsakeView,
   maxHpOfRow,
+  treasureView,
   type RunState,
   type Seat,
 } from './dungeon-state';
+import { knownBlueprints } from './gear-store';
 import type { Draft, GrantView } from './gear-grants';
 import type {
   DungeonKeepsakeView,
@@ -425,7 +432,9 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
         nodeFoe(node, depth, st.level)?.element ?? 'tide',
       );
       const loot = packLoot(st, node.kind, true, shard);
-      st.tally = addFightsCleared(st.tally, standing);
+      // Experience: each creature that stood in the row for the fight earns the room's amount (a lost fight pays none).
+      const source = roomXpSource(node.kind, st.level);
+      if (source !== null) st.earned = addRoomExperience(st.earned, standing, source);
       const earnedSupply = !st.supply;
       st.supply = true;
       let keepsake: DungeonKeepsakeView | null = null;
@@ -451,6 +460,7 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       return { fight };
     }
     case 'cache':
+      st.earned = addRoomExperience(st.earned, rowIds(st), 'cache');
       st.history.push({
         node: nodeId,
         kind: 'cache',
@@ -459,15 +469,26 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       });
       return {};
     case 'mystery': {
+      // A rare room may take this room's place (live dice, drawn as the room opens, at most once a run).
+      const rare = rollRareEvent(env.rng, depth, st.rareSeen);
+      if (rare !== undefined) st.rareSeen.push(rare.id);
       // An event the content no longer has is a quiet room: nothing waits.
-      if (node.eventId !== undefined && dungeonEvent(node.eventId) !== undefined) {
-        st.pending = { kind: 'event', eventId: node.eventId };
-        st.history.push({
-          node: nodeId,
-          kind: 'mystery',
-          result: 'pending',
-          event: dungeonEvent(node.eventId)?.name ?? '',
-        });
+      const event = rare ?? (node.eventId === undefined ? undefined : dungeonEvent(node.eventId));
+      if (event !== undefined) {
+        // A room with a prize rolls it now, from this player's progress, and shows it before the choice.
+        const treasure = eventHasTreasure(event)
+          ? rollTreasure(env.gearRng, {
+              depth,
+              elements: st.input.team.map((slot) => slot.element),
+              knownBlueprints: new Set(knownBlueprints(env.sql, env.userId).map((b) => b.baseId)),
+            })
+          : undefined;
+        st.pending = {
+          kind: 'event',
+          eventId: event.id,
+          ...(treasure === undefined ? {} : { treasure }),
+        };
+        st.history.push({ node: nodeId, kind: 'mystery', result: 'pending', event: event.name });
       }
       return {};
     }
@@ -512,12 +533,19 @@ export function applyEvent(env: PathEnv, st: RunState, option: 0 | 1): ActOutcom
   const resolved = resolveEvent(
     event,
     option,
-    { hp: currentHp(st), hpMax: st.hpMax, keepsakes: st.keepsakes },
+    {
+      hp: currentHp(st),
+      hpMax: st.hpMax,
+      keepsakes: st.keepsakes,
+      treasure: st.pending.treasure,
+    },
     env.rng,
   );
   st.hp = resolved.hp;
   st.pack = addPack(st.pack, resolved.packDelta);
   st.keepsakes.push(...resolved.keepsakesGained);
+  if (resolved.treasure !== undefined) st.treasures.push(resolved.treasure);
+  st.earned = addEventExperience(st.earned, resolved.xp);
   st.lastEvent = { name: event.name, option: chosen.label, outcome: resolved.outcome };
   const gained = resolved.keepsakesGained[0];
   const gainedView = gained === undefined ? null : keepsakeView(gained);
@@ -530,6 +558,8 @@ export function applyEvent(env: PathEnv, st: RunState, option: 0 | 1): ActOutcom
     outcome: resolved.outcome,
     loot: { ...resolved.packDelta },
     ...(gainedView === null ? {} : { keepsake: gainedView }),
+    ...(resolved.treasure === undefined ? {} : { treasure: treasureView(resolved.treasure) }),
+    ...(resolved.fell === true ? { fell: true as const } : {}),
   });
   st.pending = null;
   env.analytics?.record(
@@ -541,7 +571,8 @@ export function applyEvent(env: PathEnv, st: RunState, option: 0 | 1): ActOutcom
     },
     env.userId,
   );
-  return {};
+  // The whole team fell: the run is over, as any defeat (half the pack is kept; a taken treasure is not).
+  return resolved.fell === true ? { end: 'defeat' } : {};
 }
 
 // --- Camp ---

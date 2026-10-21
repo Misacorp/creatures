@@ -33,7 +33,14 @@ export function LootList({
       {(loot.gear.length > 0 || loot.blueprints.length > 0 || children !== undefined) && (
         <FindList label="Finds">
           {loot.gear.map((g) => (
-            <FindItem key={g.id} baseId={g.baseId} rarity={g.rarity} level={g.itemLevel} motion />
+            <FindItem
+              key={g.id}
+              id={g.id}
+              baseId={g.baseId}
+              rarity={g.rarity}
+              level={g.itemLevel}
+              motion
+            />
           ))}
           {loot.blueprints.map((b, i) => (
             <FindBlueprint

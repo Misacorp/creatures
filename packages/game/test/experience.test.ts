@@ -3,7 +3,13 @@ import {
   MAX_RIBBONS,
   RULES,
   addExperience,
+  addEventExperience,
+  addRoomExperience,
   dungeonExperience,
+  earnedFromTally,
+  emptyEarned,
+  MAX_EVENT_XP,
+  type DungeonEarned,
   expToNext,
   expToReach,
   nextUnlock,
@@ -161,12 +167,83 @@ describe('what the activities give', () => {
     expect(tripExperience('long', TREAT)).toBe(RULES.experience.trip.long * 2);
   });
 
-  it('pays the dungeon per room cleared and for a full clear, with no depth in it', () => {
-    const { perRoom, fullClear } = RULES.experience.dungeon;
-    expect(dungeonExperience(0, false, NONE)).toBe(0);
-    expect(dungeonExperience(2, false, NONE)).toBe(2 * perRoom);
-    expect(dungeonExperience(3, true, NONE)).toBe(3 * perRoom + fullClear);
-    expect(dungeonExperience(3, true, TREAT)).toBe(2 * (3 * perRoom + fullClear));
+  describe('the dungeon pays per room a creature stood in the row for', () => {
+    const D = RULES.experience.dungeon;
+
+    it('orders the rooms: cache < fight < elite < epic and keeper < floor boss', () => {
+      expect(D.cache).toBeGreaterThan(0);
+      expect(D.cache).toBeLessThan(D.fight);
+      expect(D.fight).toBeLessThan(D.elite);
+      expect(D.elite).toBeLessThan(D.epic);
+      expect(D.keeper).toBeGreaterThanOrEqual(D.epic);
+      expect(D.epic).toBeLessThan(D.boss);
+      expect(D.keeper).toBeLessThan(D.boss);
+    });
+
+    it('adds each room to the creatures in the row only, and does not change the input', () => {
+      const none = {};
+      let all = addRoomExperience(none, ['a', 'b'], 'fight');
+      all = addRoomExperience(all, ['a', 'c'], 'elite');
+      all = addRoomExperience(all, ['a', 'b', 'c'], 'cache');
+      expect(none).toEqual({});
+      expect(all['a']).toEqual({
+        ...emptyEarned(),
+        base: D.fight + D.elite + D.cache,
+        fights: 1,
+        elites: 1,
+        caches: 1,
+      });
+      expect(all['b']?.base).toBe(D.fight + D.cache);
+      expect(all['c']?.base).toBe(D.elite + D.cache);
+    });
+
+    it('counts every kind of room under its own name', () => {
+      let all: Record<string, DungeonEarned> = {};
+      for (const kind of ['fight', 'elite', 'epic', 'keeper', 'boss', 'cache'] as const) {
+        all = addRoomExperience(all, ['a'], kind);
+      }
+      expect(all['a']).toEqual({
+        base: D.fight + D.elite + D.epic + D.keeper + D.boss + D.cache,
+        fights: 1,
+        elites: 1,
+        epics: 1,
+        keepers: 1,
+        bosses: 1,
+        caches: 1,
+        events: 0,
+      });
+    });
+
+    it('adds a mystery room that paid, and skips a zero', () => {
+      const all = addEventExperience(addRoomExperience({}, ['a'], 'fight'), { a: 25, b: 25, c: 0 });
+      expect(all['a']).toMatchObject({ base: D.fight + 25, fights: 1, events: 1 });
+      expect(all['b']).toMatchObject({ base: 25, events: 1 });
+      expect(all['c']).toBeUndefined();
+    });
+
+    it('pays the total once, times the treat, with no depth and no extra full-clear bonus', () => {
+      expect(dungeonExperience(emptyEarned(), NONE)).toBe(0);
+      const all = addRoomExperience(
+        addRoomExperience(addRoomExperience({}, ['a'], 'fight'), ['a'], 'fight'),
+        ['a'],
+        'boss',
+      );
+      const earned = all['a'] as DungeonEarned;
+      expect(earned.base).toBe(2 * D.fight + D.boss);
+      expect(dungeonExperience(earned, NONE)).toBe(2 * D.fight + D.boss);
+      expect(dungeonExperience(earned, TREAT)).toBe(2 * (2 * D.fight + D.boss));
+    });
+
+    it('prices an older run by its tally: plain fights, and the boss for the row that beat it', () => {
+      expect(earnedFromTally({ a: 4, b: 2, z: 0 }, ['a'])).toEqual({
+        a: { ...emptyEarned(), base: 3 * D.fight + D.boss, fights: 3, bosses: 1 },
+        b: { ...emptyEarned(), base: 2 * D.fight, fights: 2 },
+      });
+    });
+
+    it('keeps the event cap in step with the schema', () => {
+      expect(D.maxEvent).toBe(MAX_EVENT_XP);
+    });
   });
 
   it('pays a raid stage, one and a half times when cleared', () => {

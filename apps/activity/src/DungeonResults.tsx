@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { LandmarkChip } from './ui/Tag';
 import { LootList } from './LootList';
+import { DungeonTreasure } from './DungeonTreasure';
 import { glyphOrUnknown } from './glyphs';
 import { baitCount, essenceCount, partCountItems, supplyCounts } from './count-items';
 import { CountBadgeList, type CountItem } from './ui/CountBadge';
@@ -13,9 +14,11 @@ import {
   NO_REWARDS_LINE,
   noRewards,
   rewardLoot,
+  experienceRecap,
   roomStrip,
   streakBonus,
   teamBreakdown,
+  type RecapEntry,
   type StripRoom,
   type TeamEntry,
 } from './dungeon-playback';
@@ -135,6 +138,13 @@ export function DungeonResults({
           </RevealLater>
         </RewardSummary>
       )}
+      {rewards.treasureLost !== undefined && (
+        <section class="treasure-lost" aria-labelledby="treasure-lost-heading">
+          <h4 id="treasure-lost-heading">Treasure lost</h4>
+          <p class="muted">The treasure was lost with the run: a defeat keeps nothing of it.</p>
+          <DungeonTreasure treasure={rewards.treasureLost} label="The lost treasure" />
+        </section>
+      )}
       {bonus !== null && (
         <RevealLater done={done}>
           <section class="streak-bonus" aria-labelledby="streak-bonus-heading">
@@ -156,7 +166,7 @@ export function DungeonResults({
       )}
 
       <RouteSection run={run} initialView={initialView ?? 'map'} />
-      <TeamBreakdown team={teamBreakdown(run)} />
+      <TeamBreakdown team={teamBreakdown(run)} recap={experienceRecap(run)} />
       {run.keepsakes !== undefined && <RunKeepsakes keepsakes={run.keepsakes} />}
       <DungeonNext today={today} offset={offset} />
 
@@ -327,13 +337,18 @@ function RoomStrip({ rooms, path }: { rooms: readonly StripRoom[]; path: boolean
 /**
  * The team in its fighting order, one row, left to right: each sprite with the HP it ended with under it
  * ("340 / 391 HP"; a knocked-out creature is grey with a skull and "0 / 391 HP" in red). Under the row,
- * one list with each creature's experience as the same row every result screen shows (`ExperienceGainRow`:
- * its name, the level change and "Level up!" when the run levelled it, the bar counting up, the "+N" and the
- * multiplier with its breakdown); a third of a phone is too narrow for it under each sprite. Tapping a sprite opens the small-creature popover with its role and element.
+ * one list, the experience recap: a row for every creature the run paid (one sent home at a camp too, tagged
+ * "Went home") as the same row every result screen shows (`ExperienceGainRow`: its name, the level change and
+ * "Level up!" when the run levelled it, the bar counting up, the "+N" and the multiplier with its breakdown),
+ * (a third of a phone is too narrow for it under each sprite). Tapping a sprite opens the small-creature popover with its role and element.
  */
-function TeamBreakdown({ team }: { team: readonly TeamEntry[] }) {
-  /** The members the run paid experience (each with its row under the team). */
-  const paid = team.flatMap((m) => (m.exp === null ? [] : [{ ...m, exp: m.exp }]));
+function TeamBreakdown({
+  team,
+  recap,
+}: {
+  team: readonly TeamEntry[];
+  recap: readonly RecapEntry[];
+}) {
   return (
     <>
       <h4>Your team</h4>
@@ -357,13 +372,14 @@ function TeamBreakdown({ team }: { team: readonly TeamEntry[] }) {
           </li>
         ))}
       </ul>
-      {paid.length > 0 && (
+      {recap.length > 0 && (
         <XpList label="Experience after the run" caption class="team-xp">
-          {paid.map((m) => (
+          {recap.map((m) => (
             <ExperienceGainRow
               key={m.id}
               who={{ name: m.name, species: m.speciesId }}
               gain={m.exp}
+              home={m.wentHome}
             />
           ))}
         </XpList>

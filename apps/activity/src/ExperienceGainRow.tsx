@@ -12,9 +12,12 @@ import { XpGain } from './ui/XpGain';
 export function ExperienceGainRow({
   gain,
   who,
+  home,
 }: {
   gain: XpChange;
   who?: { name: string; species: string };
+  /** The creature was sent home at a camp: it keeps what it earned. */
+  home?: boolean;
 }) {
   return (
     <XpGain
@@ -34,6 +37,11 @@ export function ExperienceGainRow({
           {gain.waiting && (
             <Tag kind="badge" class="xp-tag">
               Waiting
+            </Tag>
+          )}
+          {home === true && (
+            <Tag kind="badge" class="xp-tag">
+              Went home
             </Tag>
           )}
         </>

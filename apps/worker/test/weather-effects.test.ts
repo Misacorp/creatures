@@ -8,7 +8,6 @@ import {
   RULES,
   createSeededRng,
   dismantleRange,
-  dungeonExperience,
   lengthRules,
   raidExperience,
   treatPart,
@@ -22,6 +21,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { eventTimes } from '../src/raid-schedule';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
 import { dungeonPlayer, easyFoes } from './dungeon-helpers';
+import { paidFor } from './dungeon-xp-helpers';
 import { apiPlayer, giveItem, giveParts, learnBase, skipWelcome, type Api } from './gear-helpers';
 import { runCore, type CoreContext } from './helpers';
 import {
@@ -771,9 +771,10 @@ describe('the dungeon under the weather', () => {
         const run = res.body.run;
         const gained = run.rewards.experience?.map((e) => e.gained) ?? [];
         expect(gained).toHaveLength(3);
-        const want = dungeonExperience(run.roomsCleared, run.cleared, [HEARTY]);
+        const history = run.route?.history ?? [];
+        const want = paidFor(history, [HEARTY]);
         expect(gained).toEqual([want, want, want]);
-        expect(want).toBeGreaterThan(dungeonExperience(run.roomsCleared, run.cleared, []));
+        expect(want).toBeGreaterThan(paidFor(history));
       },
       { weather: true },
     );

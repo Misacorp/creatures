@@ -7,7 +7,13 @@
  * (`keptOnDefeat`). Randomness is injected: the worker passes its live crypto source for events and
  * camp offers, tests and the simulator pass seeded streams.
  */
-import { dungeonEvent, dungeonFoe, dungeonKeepsakes, roomModifier } from '../content/dungeon';
+import {
+  dungeonEvent,
+  dungeonEvents,
+  dungeonFoe,
+  dungeonKeepsakes,
+  roomModifier,
+} from '../content/dungeon';
 import type {
   DungeonEventDef,
   DungeonFoeDef,
@@ -19,9 +25,11 @@ import type {
 import type { Element } from '../content/schema';
 import { chance, int, type Rng } from '../rng';
 import { RULES } from './config';
+import type { DungeonXpSource } from './experience';
 import { shardOf } from './gear';
 import { landmarkBossId, scaledFoe, undercroftDepth } from './dungeon';
 import { mapNode, type DungeonMap, type MapNode, type NodeKind } from './dungeon-map';
+import type { Treasure } from './dungeon-treasure';
 
 // --- Rooms ---
 
@@ -229,6 +237,8 @@ export interface EventContext {
   hp: Readonly<Record<string, number>>;
   hpMax: Readonly<Record<string, number>>;
   keepsakes: readonly string[];
+  /** The treasure the room rolled when the player came in (a `treasure` effect that wins takes it). */
+  treasure?: Treasure | undefined;
 }
 
 export interface EventResolution {
@@ -236,12 +246,49 @@ export interface EventResolution {
   hp: Record<string, number>;
   /** What the event adds to the pack. */
   packDelta: DungeonRunPack;
+  /** The experience the event gives, by creature id: every creature standing at the end of the event (empty when it gives none). */
+  xp: Record<string, number>;
   /** The keepsake ids the event gave, in order. */
   keepsakesGained: string[];
   /** The result of the option's gamble, or null when it has none. */
   won: boolean | null;
   /** One plain line of what happened, for the map screen. */
   outcome: string;
+  /** The room's treasure, when the option won it (absent otherwise). It goes into the run to be paid at the end. */
+  treasure?: Treasure;
+  /** The whole team fell: the run ends as a defeat (absent otherwise). Everyone's HP in `hp` is 0. */
+  fell?: true;
+}
+
+/**
+ * The rare event a mystery room turns into, or undefined for the room's own event. Each rare event
+ * (`rare` in the content) not in `seen` is tried in content order once the run's `depth` reaches its
+ * `fromDepth`: it takes the room with `chanceBp`, drawn from `rng` (live in the worker, one draw per event
+ * tried). `seen` is the ids of the rare events the run met already: one at most each run.
+ */
+export function rollRareEvent(
+  rng: Rng,
+  depth: number,
+  seen: readonly string[],
+  events: readonly DungeonEventDef[] = dungeonEvents,
+): DungeonEventDef | undefined {
+  for (const event of events) {
+    const rare = event.rare;
+    if (rare === undefined || seen.includes(event.id) || depth < rare.fromDepth) continue;
+    if (chance(rng, rare.chanceBp, 10_000)) return event;
+  }
+  return undefined;
+}
+
+/** True when an option of the event takes the room's treasure (so the room rolls one when it opens). */
+export function eventHasTreasure(event: DungeonEventDef): boolean {
+  return event.options.some((o) =>
+    o.effects.some(
+      (e) =>
+        e.op === 'treasure' ||
+        (e.op === 'gamble' && [...e.win, ...e.lose].some((x) => x.op === 'treasure')),
+    ),
+  );
 }
 
 /** `bp` of 10000 as a percentage word: 2500 is "25%", 1250 is "12.5%". */
@@ -280,6 +327,10 @@ export function resolveEvent(
   const held = new Set(ctx.keepsakes);
   const gained: string[] = [];
   let won: boolean | null = null;
+  let treasure: Treasure | undefined;
+  let fell = false;
+  /** The experience each standing creature is given (the `xp` effects, added up). */
+  let xpEach = 0;
   /** "Lucky!" or "No luck.", when the option has a gamble. */
   let luck = '';
   const lines: string[] = [];
@@ -322,8 +373,25 @@ export function resolveEvent(
         lines.push(`You gain the ${pick.name}.`);
         break;
       }
+      case 'xp':
+        xpEach += effect.amount;
+        lines.push(`Every creature gains ${String(effect.amount)} experience.`);
+        break;
       case 'nothing':
         break; // says nothing: an option with no other line reads "Nothing happens."
+      case 'treasure':
+        if (ctx.treasure === undefined) {
+          lines.push('The treasure is gone.');
+          break;
+        }
+        treasure = ctx.treasure;
+        lines.push('You cross the plank and take the treasure.');
+        break;
+      case 'fall':
+        fell = true;
+        for (const id of Object.keys(hp)) hp[id] = 0;
+        lines.push('The plank gives way and the whole team falls into the chasm.');
+        break;
     }
   };
 
@@ -341,7 +409,20 @@ export function resolveEvent(
   const outcome = [luck, ...(lines.length === 0 ? ['Nothing happens.'] : lines)]
     .filter((l) => l !== '')
     .join(' ');
-  return { hp, packDelta: pack, keepsakesGained: gained, won, outcome };
+  const xp: Record<string, number> = {};
+  if (xpEach > 0) {
+    for (const [id, now] of Object.entries(hp)) if (now > 0) xp[id] = xpEach;
+  }
+  return {
+    hp,
+    packDelta: pack,
+    xp,
+    keepsakesGained: gained,
+    won,
+    outcome,
+    ...(treasure === undefined ? {} : { treasure }),
+    ...(fell ? { fell: true as const } : {}),
+  };
 }
 
 // --- The camp ---
@@ -408,18 +489,22 @@ export function catchBreath(
 // --- Experience ---
 
 /**
- * Counts a cleared fight for every creature that stood in the row for it (`standing` is the ids in the
- * row when the fight started). Experience is paid at the run's end per creature
- * (`dungeonExperience(count, cleared, treat)`), so a creature swapped in at the camp earns only for the
- * fights it was there for. A new record.
+ * What a room of this kind pays the creatures that stood in the row for it (`addRoomExperience`), once
+ * it is cleared: a fight, an elite, an epic fight, the floor boss (a keeper on an Undercroft level) or a
+ * cache. Null for a room that pays nothing by its kind (a camp, a door; a mystery room pays by its event).
  */
-export function addFightsCleared(
-  tally: Readonly<Record<string, number>>,
-  standing: readonly string[],
-): Record<string, number> {
-  const out = { ...tally };
-  for (const id of standing) out[id] = (out[id] ?? 0) + 1;
-  return out;
+export function roomXpSource(kind: NodeKind, level: number): DungeonXpSource | null {
+  switch (kind) {
+    case 'fight':
+    case 'elite':
+    case 'epic':
+    case 'cache':
+      return kind;
+    case 'boss':
+      return level > 0 ? 'keeper' : 'boss';
+    default:
+      return null;
+  }
 }
 
 // --- What the client sees of the map ---

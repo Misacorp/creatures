@@ -8,8 +8,8 @@
 import { wearBlock } from '@creatures/game';
 import type { Creature } from './api';
 import { capitalize, creatureName, getSpecies } from './game';
-import type { GearItem } from './gear-types';
-import { ON_A_JOB_REASON, busyReason } from './gear-view';
+import type { GearItem, GearSlot } from './gear-types';
+import { ON_A_JOB_REASON, busyKind, busyReason } from './gear-view';
 import type { PickerOption } from './roster-picker';
 
 /** The id of the "Take off" option (no creature has it). */
@@ -38,8 +38,15 @@ export function equipReason(
     : `Needs level ${String(block.needs)}`;
 }
 
-function creatureOption(creature: Creature, disabled: string | null, wears: boolean): PickerOption {
+function creatureOption(
+  creature: Creature,
+  disabled: string | null,
+  wears: boolean,
+  slot: GearSlot,
+): PickerOption {
   const species = getSpecies(creature.species);
+  const worn = creature.gear.find((g) => g.slot === slot);
+  const kind = busyKind(creature);
   return {
     id: creature.id,
     name: creatureName(creature),
@@ -51,6 +58,11 @@ function creatureOption(creature: Creature, disabled: string | null, wears: bool
     disabled,
     effect: null,
     recommended: false,
+    // A creature's own busy reason is a status badge; "Cindle is away on a trip" (the frozen wearer) stays text.
+    ...(kind !== null && disabled === busyReason(creature) ? { busy: kind } : {}),
+    ...(worn === undefined
+      ? {}
+      : { worn: { baseId: worn.baseId, rarity: worn.rarity, itemLevel: worn.itemLevel } }),
   };
 }
 
@@ -74,7 +86,7 @@ export function equipOptions(
     b.level - a.level || a.name.localeCompare(b.name) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   const others = creatures
     .filter((c) => c.id !== wearer?.id)
-    .map((c) => creatureOption(c, stuck ?? equipReason(item, c), false));
+    .map((c) => creatureOption(c, stuck ?? equipReason(item, c), false, item.slot));
   const able = others.filter((o) => o.disabled === null).sort(byLevel);
   const unable = others.filter((o) => o.disabled !== null).sort(byLevel);
   const lead: PickerOption[] = [];
@@ -92,7 +104,7 @@ export function equipOptions(
       recommended: false,
       action: true,
     });
-    lead.push(creatureOption(wearer, null, true));
+    lead.push(creatureOption(wearer, null, true, item.slot));
   }
   return [...lead, ...able, ...unable];
 }
