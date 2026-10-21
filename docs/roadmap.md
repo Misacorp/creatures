@@ -129,8 +129,8 @@ Noted while PR #53 was open; to start once it merges.
    - an **Epic gear piece** at the item level of the player's depth;
    - a **blueprint** the player doesn't have yet, one tier above their best;
    - two **great-tier supplies** of one kind;
-   - a **stack of shards** of the team's elements and some **glimmer** (about a craft's worth);
-   - a **creature of a species the player lacks**, from the floor's pool.
+   - a **stack of shards** of the team's elements and some **glimmer** (6 and 4 as shipped);
+   - Deferred, very low priority: a **creature of a species the player lacks**, from the floor's pool. Misa: "a fun idea where you rescue a friend in need".
    - Open: the odds (Claude suggested 75% to cross, or a fall that sends one creature home instead of ending the run, so walking around isn't always the right call); how rare the room is; its lore and names go in `docs/compendium/` first.
 
 ## Upkeep

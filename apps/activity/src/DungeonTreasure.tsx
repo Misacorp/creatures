@@ -24,7 +24,12 @@ export function DungeonTreasure({
     case 'gear':
       return (
         <FindList label={label} class="dungeon-treasure">
-          <FindItem baseId={treasure.baseId} rarity={treasure.rarity} level={treasure.itemLevel} />
+          <FindItem
+            baseId={treasure.baseId}
+            rarity={treasure.rarity}
+            level={treasure.itemLevel}
+            card={treasure.card}
+          />
         </FindList>
       );
     case 'blueprint':

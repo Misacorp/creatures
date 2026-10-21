@@ -1,5 +1,7 @@
 import { RULES, createSeededRng, dungeonEvent, keptOnDefeat, type Rng } from '@creatures/game';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { itemView } from '../src/gear-access';
+import type { GearRow } from '../src/gear-store';
 import { parseState, type RunState } from '../src/dungeon-state';
 import type { DungeonRunState } from '../src/dungeon-types';
 import {
@@ -181,6 +183,25 @@ describe('the Blue Chasm room', () => {
     });
   });
 
+  it('sends the gear piece’s full card with the waiting room, and not on the end screen', async () => {
+    await withChasm(async (s) => {
+      const { state, target } = await toDoor(s);
+      const waiting = await openChasm(s, state, target, 'gear');
+      const pending = waiting.pending;
+      if (pending?.kind !== 'event') throw new Error('expected an event');
+      const shown = pending.event.treasure;
+      if (shown?.kind !== 'gear') throw new Error('expected gear');
+      expect(shown.card).toMatchObject({
+        baseId: shown.baseId,
+        rarity: 'epic',
+        itemLevel: shown.itemLevel,
+        equippedOn: null,
+      });
+      expect(shown.card?.stats.length).toBeGreaterThan(0);
+      expect(shown.card?.lines.length).toBeGreaterThan(0);
+    }, 'card');
+  });
+
   it('does not come up before depth 3, whatever the dice say', async () => {
     await withChasm(async (s) => {
       const { state, target } = await toDoor(s, 1);
@@ -279,6 +300,22 @@ describe('crossing the plank', () => {
             s.p.id,
           );
           expect(owned.some((g) => g.base_id === shown.baseId && g.rarity === 'epic')).toBe(true);
+          // The item granted is the very one the card showed: the same stats, lines and level.
+          const card = shown.card;
+          expect(card).toBeDefined();
+          const row = rows<GearRow>(
+            s.ctx.sql,
+            'SELECT * FROM gear_items WHERE user_id = ? AND base_id = ? AND rarity = ?',
+            s.p.id,
+            shown.baseId,
+            'epic',
+          ).find((r) => r.source === 'dungeon' && r.item_level === shown.itemLevel);
+          expect(row).toBeDefined();
+          const granted = itemView(s.ctx.sql, row as GearRow);
+          expect(granted.stats).toEqual(card?.stats);
+          expect(granted.lines).toEqual(card?.lines);
+          expect(granted.tag).toBe(card?.tag);
+          expect(granted.itemLevel).toBe(card?.itemLevel);
         }
         if (shown?.kind === 'blueprint') {
           expect(run.rewards.blueprints?.[0]).toMatchObject({

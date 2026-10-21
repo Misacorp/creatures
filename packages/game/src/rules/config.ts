@@ -923,15 +923,15 @@ export const RULES = {
     /**
      * What a rare room's treasure (`rollTreasure`, the Blue Chasm) is made of, at the player's progress:
      * the gear piece is `gearRarity` at the item level of the run's depth; the supplies are `supplies.count`
-     * of `supplies.tier`, all of one kind; the shards are `shards` in all, one for each creature of the team
-     * (of its element) and then round again, with `glimmer` on top (about one craft's worth: a plain craft
-     * takes 1 shard and 6 or more scrap, a Reach craft some glimmer).
+     * of `supplies.tier`, all of one kind; the shards are `shards` in all, dealt round the team by element (two for each
+     * creature of a team of three), with `glimmer` on top (Misa, 2026-10-21: bigger than a craft's worth, so
+     * the prize is worth the fall risk).
      */
     treasure: {
       gearRarity: 'epic',
       supplies: { tier: 'great', count: 2 },
-      shards: 3,
-      glimmer: 2,
+      shards: 6,
+      glimmer: 4,
     },
     /**
      * The Undercroft (docs/design/dungeon-paths.md): a deeper, optional level below the floor boss, from

@@ -14,6 +14,7 @@ import {
   wornEffects,
   type ConversionBundle,
   type DayXpEffect,
+  type GearItem,
   type GearRarity,
   type PartsBundle,
   type ReachId,
@@ -96,26 +97,26 @@ function idleLines(sql: SqlStorage, row: GearRow): ReadonlySet<string> {
   return new Set(wornEffects(wearerOf(speciesOf(wearer.species)), [rowToItem(row)]).idle);
 }
 
-export function itemView(sql: SqlStorage, row: GearRow): GearItemView {
-  const item = rowToItem(row);
-  const base = gearBase(row.base_id);
-  if (base === undefined) throw new Error('stored gear has an unknown base');
-  const idle = idleLines(sql, row);
-  const stats = itemStats(item);
-  const worn = row.equipped_on !== null;
+/**
+ * The card parts every item view shares, worked out from the item alone: its stats, its lines (`active` is
+ * null for an item nobody wears) and what a creature needs to wear it.
+ */
+function cardParts(
+  item: GearItem,
+  idle: ReadonlySet<string> | null,
+): Pick<GearItemView, 'baseId' | 'slot' | 'tag' | 'festival' | 'stats' | 'lines' | 'needs'> {
+  const base = gearBase(item.baseId);
+  if (base === undefined) throw new Error('gear has an unknown base');
   const role =
     base.tag === 'setter' || base.tag === 'payoff' || base.tag === 'support' || base.tag === 'guard'
       ? base.tag
       : null;
   return {
-    id: row.id,
-    baseId: row.base_id,
-    slot: row.slot,
+    baseId: item.baseId,
+    slot: base.slot,
     tag: item.tag,
-    rarity: row.rarity,
     festival: base.festival === true,
-    itemLevel: row.item_level,
-    stats: stats.map((s) => ({
+    stats: itemStats(item).map((s) => ({
       stat: s.stat,
       value: s.value,
       base: s.base,
@@ -130,9 +131,27 @@ export function itemView(sql: SqlStorage, row: GearRow): GearItemView {
       tier: l.tier,
       bestTier: l.bestTier,
       local: l.local,
-      active: worn ? !idle.has(l.id) : null,
+      active: idle === null ? null : !idle.has(l.id),
     })),
-    needs: { level: Math.max(RULES.gear.slotUnlockLevel[row.slot], row.item_level), role },
+    needs: { level: Math.max(RULES.gear.slotUnlockLevel[base.slot], item.itemLevel), role },
+  };
+}
+
+export function itemView(sql: SqlStorage, row: GearRow): GearItemView {
+  const item = rowToItem(row);
+  const worn = row.equipped_on !== null;
+  const parts = cardParts(item, worn ? idleLines(sql, row) : null);
+  return {
+    id: row.id,
+    baseId: parts.baseId,
+    slot: row.slot,
+    tag: parts.tag,
+    rarity: row.rarity,
+    festival: parts.festival,
+    itemLevel: row.item_level,
+    stats: parts.stats,
+    lines: parts.lines,
+    needs: parts.needs,
     equippedOn: row.equipped_on,
     dismantle: dismantleRange([item]),
     source: row.source,
@@ -142,6 +161,33 @@ export function itemView(sql: SqlStorage, row: GearRow): GearItemView {
         ? null
         : { name: row.made_by_name, at: row.made_at },
     origin: parseOrigin(row.origin_json),
+  };
+}
+
+/**
+ * The card of an item the player does not own yet (a rare room's treasure, shown before the choice): the
+ * very stats and lines of the rolled piece, built by the same code as the Workshop's cards. It has no id of
+ * its own, is worn by nobody and has no maker.
+ */
+export function previewItemView(item: GearItem, depth: number): GearItemView {
+  const parts = cardParts(item, null);
+  return {
+    id: 'preview',
+    baseId: parts.baseId,
+    slot: parts.slot,
+    tag: parts.tag,
+    rarity: item.rarity,
+    festival: parts.festival,
+    itemLevel: item.itemLevel,
+    stats: parts.stats,
+    lines: parts.lines,
+    needs: parts.needs,
+    equippedOn: null,
+    dismantle: dismantleRange([item]),
+    source: 'dungeon',
+    createdAt: 0,
+    madeBy: null,
+    origin: { kind: 'dungeon', depth },
   };
 }
 

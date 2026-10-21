@@ -835,6 +835,14 @@ describe('the Blue Chasm in the answers', () => {
     }
   });
 
+  it('reads a gear treasure with its card, and one without (a room saved before the card)', () => {
+    const withCard = SAMPLE_TREASURES.gear;
+    expect(withCard.card.lines.length).toBeGreaterThan(0);
+    const bare = omitKey(withCard, 'card');
+    const pending = stateWith(bare).pending;
+    expect(pending?.kind === 'event' ? pending.event.treasure : null).toEqual(bare);
+  });
+
   it('reads a room with no treasure, as an older server sends it', () => {
     const state = parseDungeonAct({ state: sampleStateEvent(), today: sampleToday() }).state;
     const pending = state.pending;
@@ -850,6 +858,7 @@ describe('the Blue Chasm in the answers', () => {
       { kind: 'gear', baseId: 'felt-hat', rarity: 'mythic', itemLevel: 3 },
       { kind: 'gear', baseId: 'felt-hat', rarity: 'epic' },
       { kind: 'gear', baseId: 'felt-hat', rarity: 'epic', itemLevel: -1 },
+      { kind: 'gear', baseId: 'felt-hat', rarity: 'epic', itemLevel: 3, card: { id: 1 } },
       { kind: 'blueprint' },
       { kind: 'supplies', supplyId: 'lantern-great' },
       { kind: 'supplies', supplyId: 'lantern-great', count: 1.5 },

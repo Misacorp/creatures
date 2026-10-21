@@ -1,6 +1,6 @@
 import { act } from 'preact/test-utils';
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
-import { sampleRoster } from './creature-card-sample';
+import { sampleCreature, sampleRoster } from './creature-card-sample';
 import { ApiError } from './api';
 import { Dungeon } from './Dungeon';
 import { DungeonCamp } from './DungeonCamp';
@@ -11,6 +11,7 @@ import { ROOM_CARD_MS, arenaOutOfView, fightScroll, roomInput } from './dungeon-
 import { DungeonResults } from './DungeonResults';
 import { DungeonRun } from './DungeonRun';
 import { DungeonRunStrip, KEEPSAKE_ONLY_LINE } from './DungeonRunStrip';
+import { EquipHost } from './equip-from-card';
 import { PopoverHost } from './PopoverHost';
 import { glossaryEntry } from '@creatures/game';
 import {
@@ -30,7 +31,7 @@ import {
   sampleToday,
   omitKey,
 } from './dungeon-path-samples';
-import type { DungeonAct, DungeonRunState } from './dungeon-types';
+import type { DungeonAct, DungeonRunState, DungeonTreasureView } from './dungeon-types';
 import {
   byClass,
   byName,
@@ -1612,6 +1613,49 @@ describe('the Blue Chasm', () => {
     expect(shown(SAMPLE_TREASURES.blueprint)).toContain('Blueprint: Felt Hat');
     expect(shown(SAMPLE_TREASURES.supplies)).toMatch(/2/);
     expect(shown(SAMPLE_TREASURES.shards)).toMatch(/2/);
+  });
+
+  describe('inspecting the Epic piece before choosing', () => {
+    const drawRoom = (treasure: DungeonTreasureView): Page => {
+      Reflect.set(globalThis, 'window', {
+        innerHeight: 800,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      });
+      page?.unmount();
+      page = createPage();
+      page.draw(
+        <PopoverHost onOpenHowTo={noop}>
+          <EquipHost creatures={[sampleCreature('growing')]} onEquip={noop}>
+            <DungeonEvent event={chasmEvent(treasure)} busy={false} onPick={noop} />
+          </EquipHost>
+        </PopoverHost>,
+      );
+      return page;
+    };
+
+    it('opens the full item card with the real stats and lines, and no Equip button', () => {
+      const p = drawRoom(SAMPLE_TREASURES.gear);
+      const row = byClass(p.root, 'find-row-button')[0] as FakeElement;
+      p.click(row);
+      expect(byClass(p.root, 'idc')).toHaveLength(1);
+      const card = SAMPLE_TREASURES.gear.card;
+      const text = visibleText(byClass(p.root, 'idc')[0] as FakeElement);
+      expect(card.stats.length).toBeGreaterThan(0);
+      expect(text).toContain('HP 70');
+      for (const line of card.lines) expect(text).toContain(line.text);
+      // Not owned: no Equip, though an Equip host is there.
+      expect(byClass(p.root, 'pop-action').filter((b) => visibleText(b) === 'Equip')).toHaveLength(
+        0,
+      );
+    });
+
+    it('stays a plain row when the room has no card (a room saved before it)', () => {
+      const bare = omitKey(SAMPLE_TREASURES.gear, 'card');
+      const p = drawRoom(bare);
+      expect(byClass(p.root, 'find-row-button')).toHaveLength(0);
+      expect(visibleText(p.root)).toContain('Epic');
+    });
   });
 
   it('shows no treasure block in a room that has none, and picks like any room', () => {

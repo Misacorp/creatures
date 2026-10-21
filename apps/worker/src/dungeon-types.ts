@@ -14,6 +14,7 @@ import type {
 } from '@creatures/game';
 import type { EventNames, FightEvent } from '@creatures/engine';
 import type { ExperienceView } from './creature-exp';
+import type { GearItemView } from './gear-types';
 
 export type { DungeonMapView };
 
@@ -68,7 +69,14 @@ export interface DungeonKeepsakeView {
  * is the actual rolled item (its base, rarity and level); a blueprint is a base the player does not know.
  */
 export type DungeonTreasureView =
-  | { kind: 'gear'; baseId: string; rarity: GearRarity; itemLevel: number }
+  | {
+      kind: 'gear';
+      baseId: string;
+      rarity: GearRarity;
+      itemLevel: number;
+      /** The full card of the piece (its real stats and lines: the item the run grants), only while the room waits for the choice. */
+      card?: GearItemView;
+    }
   | { kind: 'blueprint'; baseId: string }
   | { kind: 'supplies'; supplyId: string; count: number }
   | { kind: 'shards'; parts: PartsBundle };
