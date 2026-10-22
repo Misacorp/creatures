@@ -15,7 +15,7 @@ button.fold-row {
   background: none;
   box-shadow: none;
   color: var(--haze);
-  font-family: inherit;
+  font-family: var(--display);
   font-size: var(--fs-small);
   opacity: 0.85;
   cursor: pointer;
