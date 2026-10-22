@@ -22,3 +22,4 @@ export {
 export * from './dungeon';
 export * from './sky';
 export * from './live-rules';
+export * from './games/index';

@@ -1214,6 +1214,37 @@ export const RULES = {
   room: {
     twilightHours: 2,
   },
+  /**
+   * The Valley Games (docs/design/valley-games.md): a daily show of four events, one creature per event.
+   * Entries lock at the daily reset (`lockAt`, the same time as `daily.reset`), the server resolves the
+   * day's events then, and the show plays to everyone at `showAt` (guild time), when tomorrow's lineup is
+   * revealed. An event takes at most `maxEntrants` creatures (`maxTeamEntrants` in a team event). A day has `eventsPerDay` events, `teamEventsPerDay` of them team events (a player's team of
+   * up to `teamSize`). Experience is per creature: `enter` for taking part, `place` for 1st, 2nd and 3rd,
+   * `pin` for beating its own record in the event; a team event pays every member. `medalPoints` price
+   * the Prize Stall. Commentary lines are at least `sayGapMs` apart. First numbers (2026-10-22).
+   */
+  games: {
+    /** Entries lock and the day's events are resolved at the daily reset (guild time). */
+    lockAt: { hour: 13, minute: 37 },
+    /** The show plays to everyone, and tomorrow's lineup is revealed (guild time). */
+    showAt: { hour: 13, minute: 40 },
+    /** Events in a day's show. */
+    eventsPerDay: 4,
+    /** Team events among them. */
+    teamEventsPerDay: 1,
+    /** Creatures in a team. */
+    teamSize: 3,
+    /** Creatures in a solo event at most. */
+    maxEntrants: 24,
+    /** Creatures in a team event at most (16 full teams). */
+    maxTeamEntrants: 48,
+    /** Experience per creature: for entering, for 1st to 3rd place, and for a pin. */
+    xp: { enter: 50, place: [60, 40, 25], pin: 15 },
+    /** Prize Stall prices: what each medal and pin is worth. */
+    medalPoints: { gold: 3, silver: 2, bronze: 1, pin: 1 },
+    /** Commentary lines at least this far apart. */
+    sayGapMs: 3_000,
+  },
   nickname: {
     maxCodePoints: 20,
     /** Inputs longer than this (UTF-16 units) are refused before any normalisation work. */
