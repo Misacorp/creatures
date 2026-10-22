@@ -41,12 +41,13 @@ The engine stays pure and unchanged. The live finale relies on one property of i
 2. **The current round comes from the clock and a cumulative schedule [Misa, 2026-10-11]:** round 1 starts at `started_at`, and round r+1 starts at `start(r) + roundPlaybackMs(events of round r)`. `roundPlaybackMs` is a pure function in the engine package (`packages/engine/src/playback.ts`), shared with the client, so the two cannot disagree:
    - **Length of a round** = the intro + the staggers of every beat but the last visible one + that beat's wind-up (for boss actions) + a **tail** after the last effect appears, **clamped** to the pace's shortest and longest round. The numbers are one `Pace` (`packages/engine/src/playback.ts`), chosen by the stored `pacing` (`paceOfPacing`):
 
-     | Pace                                   | Intro | Beat (plain to busiest) | Wind-up | Tail  | Round      | Effects on screen |
-     | -------------------------------------- | ----- | ----------------------- | ------- | ----- | ---------- | ----------------- |
-     | Slow (`pacing` 2, from 2026-10-22)     | 2.5 s | 2.0 to 2.6 s            | 1.5 s   | 4 s   | 20 to 45 s | 150%              |
-     | Classic (`pacing` 0 and 1, replays)    | 1.5 s | 0.5 to 0.7 s            | 0.6 s   | 2 s   | 6 to 22 s  | 100%              |
+     | Pace                                | Intro | Beat (plain to busiest) | Wind-up | Tail | Round      | Effects on screen |
+     | ----------------------------------- | ----- | ----------------------- | ------- | ---- | ---------- | ----------------- |
+     | Slow (`pacing` 2, from 2026-10-22)  | 2.5 s | 2.0 to 2.6 s            | 1.5 s   | 4 s  | 20 to 45 s | 150%              |
+     | Classic (`pacing` 0 and 1, replays) | 1.5 s | 0.5 to 0.7 s            | 0.6 s   | 2 s  | 6 to 22 s  | 100%              |
 
      The busiest beat is a crit, reaction, ability, knockout, boss gimmick or luck banner. If the round would pass its longest length, the staggers are squeezed in proportion (keeping at least the pace's shortest beat each where that fits). The snapshot carries `pacing`, and the client plays the round with the same pace.
+
    - The beat boundaries (`beatEnds`: a round opening, a creature's turn, a boss attack, a boss gimmick, the round's end) live in the same module and are the replay's steps too.
    - This is sound because of the prefix property: round r's events are fixed once round r has started, and Fire only takes effect from the next round on, so a press never changes the length of the round it is pressed in, nor the start of the next one. The schedule up to the current round and the start of the next never changes.
    - **Current round** = the last round whose start is not after `now`. A read re-runs `simulateFight` on the stored input with the abilities known so far (the simulation is remembered for a few reads, keyed by seed, input and abilities) and returns the events of rounds 1..round. Held abilities count as firing at the last round in that simulation.

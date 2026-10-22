@@ -207,7 +207,7 @@ describe('nextLiveDelay', () => {
     expect(nextLiveDelay({ status: 'none', serverNow: 1 }, START)).toBeNull();
     expect(nextLiveDelay(fightOf({ status: 'done' }), START + 130_000)).toBeNull();
     const ended = fightOf({ round: 12, nextRoundAt: null });
-    expect(nextLiveDelay(ended, START + 12 * 22_000 + GIVE_UP_MS + 1)).toBeNull();
+    expect(nextLiveDelay(ended, START + 12 * 45_000 + GIVE_UP_MS + 1)).toBeNull();
   });
 
   it('is a slow safety poll while no boundary is near', () => {
