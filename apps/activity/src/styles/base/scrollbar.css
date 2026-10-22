@@ -1,0 +1,51 @@
+/*
+  Pixel scrollbars, desktop only (a mouse: `hover: hover` and `pointer: fine`). The bar is 5 UI pixels wide
+  (`--px` each): a 1-pixel ink frame around a raised haze thumb with the panels' bevel, lit gold under the
+  mouse, in a night track. Phones keep the system's thin, fading scroll indicator (see decisions.md,
+  2026-10-22). Boxes that hide their bar on purpose (the world map, the living room, the scroll hint) keep
+  `scrollbar-width: none` and their own `::-webkit-scrollbar { display: none }`.
+
+  Chromium ignores `::-webkit-scrollbar` on any box with `scrollbar-width` or `scrollbar-color` set, so those
+  are only set for browsers without it (Firefox), which get the nearest colours instead.
+*/
+@media (hover: hover) and (pointer: fine) {
+  ::-webkit-scrollbar {
+    width: calc(var(--px) * 5);
+    height: calc(var(--px) * 5);
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--night);
+    box-shadow: inset 0 0 0 var(--px) var(--ink);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border: var(--px) solid var(--ink);
+    background: var(--haze);
+    box-shadow:
+      inset var(--px) var(--px) 0 0 color-mix(in srgb, var(--haze), var(--bone) 55%),
+      inset calc(var(--px) * -1) calc(var(--px) * -1) 0 0 var(--line);
+  }
+
+  ::-webkit-scrollbar-thumb:hover,
+  ::-webkit-scrollbar-thumb:active {
+    background: var(--gold);
+    box-shadow:
+      inset var(--px) var(--px) 0 0 color-mix(in srgb, var(--gold), var(--bone) 55%),
+      inset calc(var(--px) * -1) calc(var(--px) * -1) 0 0 var(--gold-shade);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: var(--ink);
+  }
+
+  ::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-color: var(--haze) var(--night);
+    }
+  }
+}

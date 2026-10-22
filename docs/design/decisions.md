@@ -2643,3 +2643,11 @@ Misa's feedback on the desktop world map, after testing it.
 - **The map keeps its scale.** On desktop the scale is picked from the full width, so opening the panel narrows the map's window instead of shrinking the art. When the panel opens, closes or switches place, the map glides (smooth unless reduced motion is on) so the chosen place, or the last one, is as near the middle as it can scroll. Closing gives the place's marker the focus.
 - **Drag to pan.** A mouse can drag a map that pans (`ui/use-drag-scroll`). A press that moves 4 px or less stays a click on a marker; a real drag swallows the click that ends it. Touch keeps the browser's own scrolling. The cursor is a hand only when the map can pan.
 - **Removed:** the "X is on a job in the Workshop. Claim it first." lines above the map. The explorer list already says "On a job" for each creature.
+
+## 2026-10-22: Pixel scrollbars on desktop, the system's own on phones
+
+Misa asked for scrollbars in the arcade look. `styles/base/scrollbar.css` styles every scrollbar, but only for a mouse (`hover: hover` and `pointer: fine`). The bar is 5 UI pixels wide: a night track in an ink frame, and a haze thumb with the panels' bevel that turns gold under the mouse.
+
+- **Built with `::-webkit-scrollbar`.** Discord's desktop client is Chromium, and the standard `scrollbar-color` only sets two flat colours, which cannot make a pixel bevel. Chromium ignores `::-webkit-scrollbar` on any box that sets `scrollbar-width` or `scrollbar-color`. So the three `scrollbar-width: thin` lines were removed, and Firefox gets `scrollbar-color` only when it lacks the webkit selector.
+- **Phones are left alone.** Discord's iOS and Android webviews draw a thin overlay indicator that shows only while scrolling and fades. Mobile games hide the scrollbar or rely on that indicator; a permanent bar on touch looks cramped and out of place. A themed bar is not worth it there. Where content is cut off with no other cue, a peek or an edge fade (`ui/ScrollHint`) tells the player there is more.
+- **Boxes that hide their bar on purpose keep it hidden:** the world map, the living room and the scroll hint.

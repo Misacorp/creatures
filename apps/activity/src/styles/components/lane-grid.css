@@ -56,7 +56,6 @@
   padding: var(--board-pad);
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: thin;
 }
 
 .board-lanes,
