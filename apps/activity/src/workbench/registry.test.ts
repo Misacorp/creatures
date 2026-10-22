@@ -9,11 +9,14 @@ import { GROUPS } from './types';
  * component under `src/workbench/entries/` (see `docs/design/workbench.md`).
  */
 
-const sources = import.meta.glob<string>(['../*.tsx', '../ui/*.tsx', '../sprites/*.tsx', '../stage/*.tsx'], {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
+const sources = import.meta.glob<string>(
+  ['../*.tsx', '../ui/*.tsx', '../sprites/*.tsx', '../stage/*.tsx'],
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+);
 
 /** Exported names of a source file (functions and constants). */
 function exportsOf(source: string): string[] {
