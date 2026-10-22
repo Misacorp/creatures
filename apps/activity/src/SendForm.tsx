@@ -14,14 +14,8 @@ import { BagFullNote } from './ui/BagFullNote';
 import { CountBadge } from './ui/CountBadge';
 import { WizardFooter } from './ui/Wizard';
 import type { GearState } from './gear-types';
-import type { SendStep } from './send-view';
-import { SEND_STEP_DEFS, type SendForm as SendFormState } from './use-send-form';
+import type { SendForm as SendFormState } from './use-send-form';
 import type { Forecast } from './weather-types';
-
-/** The title of a send step (the panel's headings). */
-function stepTitle(id: SendStep): string {
-  return SEND_STEP_DEFS.find((d) => d.id === id)?.title ?? id;
-}
 
 const TIME_GLYPH = { night: 'moon', festival: 'flag' } as const;
 
@@ -39,20 +33,17 @@ function sendNow(
 /**
  * The pinned footer of the send flow: `ui/WizardFooter` with what is the trip's own: the place's time rule
  * when it is shut ("Opens tonight at 20:00") above the reason, the full bag warning under it, the label
- * "Send Mossy to Tidepools for 12 h" and a packed treat's Bait badge. `layout="steps"` (phone) is the
- * wizard's footer: Next on the first steps, the send on the last; it goes in the Drawer's `footer` slot.
- * `layout="panel"` (desktop) has no steps: the one Send button, drawn at the bottom of the form itself.
+ * "Send Mossy to Tidepools for 12 h" and a packed treat's Bait badge. It is the wizard's footer: Next on the
+ * first steps, the send on the last; it goes in the frame's pinned footer (the sheet's or the panel's).
  */
 export function SendFooter({
   form,
-  layout,
   busy,
   onSend,
   bag = null,
   onOpenWorkshop,
 }: {
   form: SendFormState;
-  layout: 'steps' | 'panel';
   busy: boolean;
   onSend: (request: SendRequest) => Promise<boolean>;
   /** The bag's fill; a full bag warns, beside Send, that the trip's gear becomes parts. */
@@ -60,8 +51,8 @@ export function SendFooter({
   /** Opens the Workshop (the full bag warning's shortcut). */
   onOpenWorkshop?: (() => void) | undefined;
 }) {
-  const wizard = layout === 'steps' ? form.wizard : undefined;
-  const sending = wizard === undefined || wizard.last;
+  const wizard = form.wizard;
+  const sending = wizard.last;
   const reason = sending ? form.blocker : form.stepBlocker;
   const rule = form.place?.timeRule ?? null;
   const { explorer, place } = form;
@@ -192,70 +183,31 @@ function ReadySection({ form, forecast }: { form: SendFormState; forecast: Forec
 }
 
 /**
- * The send form for a fixed place (the place was chosen on the map): who goes, how long and which
- * supplies and treat, then the summary and the expected haul. The state is `useSendForm`'s, kept by the
- * caller so the sheet around it can read the step (for its `DrillHead` and footer).
- *
- * - `layout="steps"` (phone): draws only the section of `form.step`; no heading and no button. The
- *   caller puts a `WizardView` (`form.wizard`) around it and `<SendFooter layout="steps" />` in the
- *   Drawer's `footer` slot.
- * - `layout="panel"` (desktop): all three sections stacked with their headings and the Send footer at
- *   the bottom; `form.step` is ignored.
+ * The send form for a fixed place (the place was chosen on the map), as wizard steps: who goes, then how
+ * long and which supplies and treat, then the summary and the expected haul. It draws only the section of
+ * `form.step`, with no heading and no button: the caller puts a `WizardView` (`form.wizard`) around it and
+ * `<SendFooter />` in its frame's pinned footer. The state is `useSendForm`'s, kept by the caller.
  */
 export function SendForm({
   form,
-  layout,
   busy,
   forecast = null,
-  onSend,
   onOpenWorkshop,
-  bag = null,
 }: {
   form: SendFormState;
-  layout: 'steps' | 'panel';
   busy: boolean;
   /** The valley sky; today's Boon and Omen show in the summary when they touch trips. */
   forecast?: Forecast | null;
-  /** Sends the trip; resolves true when it started (the supplies are then put down). */
-  onSend: (request: SendRequest) => Promise<boolean>;
   /** Opens the Workshop, where supplies are crafted. */
-  onOpenWorkshop?: () => void;
-  /** The bag's fill; a full bag warns, beside Send, that the trip's gear becomes parts. */
-  bag?: GearState['inventory'] | null;
+  onOpenWorkshop?: (() => void) | undefined;
 }) {
-  if (layout === 'steps') {
-    return (
-      <div class="send-form steps">
-        {form.step === 'who' && <WhoSection form={form} />}
-        {form.step === 'pack' && (
-          <PackSection form={form} busy={busy} onOpenWorkshop={onOpenWorkshop} />
-        )}
-        {form.step === 'ready' && <ReadySection form={form} forecast={forecast} />}
-      </div>
-    );
-  }
   return (
-    <div class="send-form panel">
-      <h4 class="step">
-        <span class="step-n">1</span> {stepTitle('who')}
-      </h4>
-      <WhoSection form={form} />
-      <h4 class="step">
-        <span class="step-n">2</span> {stepTitle('pack')}
-      </h4>
-      <PackSection form={form} busy={busy} onOpenWorkshop={onOpenWorkshop} />
-      <h4 class="step">
-        <span class="step-n">3</span> {stepTitle('ready')}
-      </h4>
-      <ReadySection form={form} forecast={forecast} />
-      <SendFooter
-        form={form}
-        layout="panel"
-        busy={busy}
-        onSend={onSend}
-        bag={bag}
-        onOpenWorkshop={onOpenWorkshop}
-      />
+    <div class="send-form steps">
+      {form.step === 'who' && <WhoSection form={form} />}
+      {form.step === 'pack' && (
+        <PackSection form={form} busy={busy} onOpenWorkshop={onOpenWorkshop} />
+      )}
+      {form.step === 'ready' && <ReadySection form={form} forecast={forecast} />}
     </div>
   );
 }

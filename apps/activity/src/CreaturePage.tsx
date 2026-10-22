@@ -277,7 +277,12 @@ export function CreaturePage({
 
       <FlipArea flip={flip}>
         <div class="cp-block">
-          <PageHeader creature={creature} state={state} nameId={`${id}-name`} />
+          <PageHeader
+            creature={creature}
+            state={state}
+            nameId={`${id}-name`}
+            skills={gear?.skills}
+          />
           {hasActions && (
             <div class="cp-actions">
               <RibbonLine creature={creature} busy={busy} onRibbon={actions.onRibbon} large />

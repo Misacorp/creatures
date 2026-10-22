@@ -13,6 +13,7 @@
 @import './base/fonts.css';
 @import './base/tokens.css';
 @import './base/base.css';
+@import './base/scrollbar.css';
 @import './base/controls.css';
 @import './components/glossary-tag.css';
 @import './components/alert.css';

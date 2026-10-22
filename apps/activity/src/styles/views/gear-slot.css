@@ -2,9 +2,3 @@
 .find-row-slot {
   font-size: var(--fs-row);
 }
-
-.blocked-note {
-  margin: 0 0 0.5rem;
-  padding: 0;
-  list-style: none;
-}

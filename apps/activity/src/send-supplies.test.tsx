@@ -6,7 +6,8 @@ import type { SupplyPick } from './expedition-types';
 import destinationsFixture from './fixtures/expedition-destinations.json';
 import stateOffer from './fixtures/expedition-state-offer.json';
 import { PopoverHost } from './PopoverHost';
-import { SendForm } from './SendForm';
+import { SendFooter, SendForm } from './SendForm';
+import type { SendStep } from './send-view';
 import type { SendRequest } from './expedition-api';
 import type { Creature } from './api';
 import type { DestinationsView, Slots } from './expedition-types';
@@ -31,7 +32,7 @@ const STOCK = {
   'satchel-basic': 3,
 };
 
-/** The send form for Tidepools, as the map's panel draws it. */
+/** The send form for Tidepools, as the map's sheet and panel draw it, from the Pack up step by default. */
 function Panel({
   creatures,
   view,
@@ -39,7 +40,9 @@ function Panel({
   bait,
   onSend,
   onOpenWorkshop,
+  initialStep = 'pack',
 }: {
+  initialStep?: SendStep;
   creatures: readonly Creature[];
   view: DestinationsView;
   stock: Readonly<Record<string, number>>;
@@ -56,15 +59,13 @@ function Panel({
     stock,
     bait,
     timezone: 'Europe/Helsinki',
+    initialStep,
   });
   return (
-    <SendForm
-      form={form}
-      layout="panel"
-      busy={false}
-      onSend={onSend}
-      {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}
-    />
+    <>
+      <SendForm form={form} busy={false} onOpenWorkshop={onOpenWorkshop} />
+      <SendFooter form={form} busy={false} onSend={onSend} />
+    </>
   );
 }
 
@@ -193,6 +194,8 @@ describe('sending with a kit', () => {
     page.click(cell(page.root, 'Small Satchel'));
     const [send] = byClass(page.root, 'send-button');
     if (send === undefined) throw new Error('no send button');
+    // Next to Ready, then Send.
+    page.click(send);
     page.click(send);
     expect(onSend).toHaveBeenCalledTimes(1);
     const request = onSend.mock.calls[0]?.[0] as SendRequest;
@@ -241,6 +244,13 @@ function drawSend(options: { onOpenWorkshop?: () => void; bait?: number } = {}) 
   return page.root;
 }
 
+/** Next, from Pack up to Ready (the gold button). */
+function toReady(root: FakeElement): void {
+  const [next] = byClass(root, 'send-button');
+  if (next === undefined) throw new Error('no Next button');
+  page?.click(next);
+}
+
 describe('the supplies step of the send screen', () => {
   it('has a help tag in the title row and no explanatory paragraph', () => {
     const root = drawSend();
@@ -284,6 +294,7 @@ describe('the supplies step of the send screen', () => {
     Reflect.set(page?.document ?? {}, 'removeEventListener', () => undefined);
     page?.click(cell(root, 'Plain Lure'));
     page?.click(cell(root, 'Small Satchel'));
+    toReady(root);
     const [summary] = byClass(root, 'trip-summary');
     if (summary === undefined) throw new Error('no summary');
     const text = visibleText(summary);
@@ -341,6 +352,7 @@ describe('the supply card on the send screen', () => {
     expect(byClass(root, 'supply-effect')).toHaveLength(1);
     expect(byClass(root, 'supply-boosts')).toHaveLength(0);
     expect(card.map((c) => visibleText(c)).join(' ')).not.toContain('on this trip');
+    toReady(root);
     // What the satchel adds is drawn as steps of their own, never as "+" marks.
     expect(byClass(root, 'raised').length).toBeGreaterThan(0);
     expect(visibleText(byClass(root, 'worth')[0] as FakeElement)).not.toContain('+');
@@ -356,6 +368,7 @@ describe('the cost and the choice on the send screen', () => {
     const [treat] = byClass(root, 'treat-switch');
     if (treat === undefined) throw new Error('no treat switch');
     page?.click(treat);
+    toReady(root);
     const [badge] = byClass(send, 'part-count');
     expect(badge?.getAttribute('aria-label')).toMatch(/^Bait: \d+$/);
     expect(visibleText(root)).not.toContain('This trip costs');
@@ -363,15 +376,19 @@ describe('the cost and the choice on the send screen', () => {
   });
 
   it('ends the haul with the choice, its word under the steps like the others', () => {
-    const root = drawSend();
-    const last = (): FakeElement => {
+    const last = (root: FakeElement): FakeElement => {
       const items = byClass(root, 'worth-item');
       return items[items.length - 1] as FakeElement;
     };
-    expect(visibleText(last())).toMatch(/^Choice/);
-    expect(byClass(last(), 'raised')).toHaveLength(0);
-    page?.click(cell(root, 'Plain Lure'));
-    expect(byClass(last(), 'raised').length).toBeGreaterThan(0);
-    expect(byClass(root, 'choice-line')).toHaveLength(0);
+    const bare = drawSend();
+    toReady(bare);
+    expect(visibleText(last(bare))).toMatch(/^Choice/);
+    expect(byClass(last(bare), 'raised')).toHaveLength(0);
+    page?.unmount();
+    const lured = drawSend();
+    page?.click(cell(lured, 'Plain Lure'));
+    toReady(lured);
+    expect(byClass(last(lured), 'raised').length).toBeGreaterThan(0);
+    expect(byClass(lured, 'choice-line')).toHaveLength(0);
   });
 });

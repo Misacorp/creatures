@@ -5,7 +5,6 @@ import type { GearState } from './gear-types';
 import { ExplorerProfile } from './ExplorerProfile';
 import { fetchDestinations, fetchProfile, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
-import { expeditionBlocked } from './gear-view';
 import { ExpeditionWorld, WIDE_QUERY } from './ExpeditionWorld';
 import { useMediaQuery, useServerNow } from './hooks';
 import { Journal } from './Journal';
@@ -113,7 +112,6 @@ export function Expeditions({
     }
   });
 
-  const blocked = expeditionBlocked(state.creatures);
   const wide = useMediaQuery(WIDE_QUERY);
   const revealCreature =
     reveal?.trip === undefined
@@ -165,13 +163,6 @@ export function Expeditions({
       {screen !== 'trips' && <Book screen={screen} state={state} />}
       {screen === 'trips' && (
         <>
-          {blocked.length > 0 && (
-            <ul class="blocked-note muted" aria-label="Creatures that cannot go">
-              {blocked.map(({ creature, reason }) => (
-                <li key={creature.id}>{reason}</li>
-              ))}
-            </ul>
-          )}
           <ExpeditionWorld
             trips={active}
             creatures={state.creatures}

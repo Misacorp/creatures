@@ -2680,3 +2680,22 @@ Misa found three separate chances (25%, 20%, 15%) and a pick among the hits too 
 - `chanceBp` is removed from the `rare` field of an event (`rare: { fromDepth }`, the schema is still strict, so an old `chanceBp` is refused). `rollRareEvent` is now two draws at most (the roll, then the pick), live from the server's rng only. Adding a rare room is one `rare: { fromDepth }`; the odds of the whole pool are the one number in the rules.
 - At depth 1 only the vault can come up, so a rare room there is always the vault (before it was 25%); at depth 2 the pool is the door and the vault; from depth 3 each is a third of the rare rooms (about 13% of mystery rooms each). Tests: each room's gate, once per run, the filter, the draw counts (none when nothing is eligible, one on a miss, two on a hit), the 40% share and the even split over 20000 seeded rolls.
 - Worker tests that script the dice now push two values for a rare room (the roll, then the index of the pick in content order: chasm 0, door 1, vault 2).
+
+## 2026-10-22: Desktop Expeditions map: full width until a place is chosen, the panel runs the wizard
+
+Misa's feedback on the desktop world map, after testing it.
+
+- **No "Where to?" panel.** With nothing chosen the map takes the whole width, with the "Out exploring" shelf under it. Choosing a place (or claiming a trip, whose result shows there) opens the side panel. An X in its heading (and Escape on the place) closes it.
+- **The panel runs the phone's flow.** It was the whole send form as one long scrolling list. Now `PlaceFlow` holds the place, the send wizard (Who goes, Pack up, Ready) and the push-on choice, and draws them into a frame: `PlaceSheet` puts it in a `ui/Drawer`, `PlacePanel` in the panel, with the gold button pinned at the bottom in both. `SendForm` lost its all-at-once "panel" layout. After a send that started, both close.
+- **The map keeps its scale.** On desktop the scale is picked from the full width, so opening the panel narrows the map's window instead of shrinking the art. When the panel opens, closes or switches place, the map glides (smooth unless reduced motion is on) so the chosen place, or the last one, is as near the middle as it can scroll. Closing gives the place's marker the focus.
+- **Drag to pan.** A mouse can drag a map that pans (`ui/use-drag-scroll`). A press that moves 4 px or less stays a click on a marker; a real drag swallows the click that ends it. Touch keeps the browser's own scrolling. The cursor is a hand only when the map can pan.
+- **Removed:** the "X is on a job in the Workshop. Claim it first." lines above the map. The explorer list already says "On a job" for each creature.
+
+## 2026-10-22: Pixel scrollbars on desktop, the system's own on phones
+
+Misa asked for scrollbars in the arcade look. `styles/base/scrollbar.css` styles every scrollbar, but only for a mouse (`hover: hover` and `pointer: fine`). The bar is 5 UI pixels wide: a night track in an ink frame, and a haze thumb with the panels' bevel that turns gold under the mouse.
+
+- **Built with `::-webkit-scrollbar`.** Discord's desktop client is Chromium, and the standard `scrollbar-color` only sets two flat colours, which cannot make a pixel bevel. Chromium ignores `::-webkit-scrollbar` on any box that sets `scrollbar-width` or `scrollbar-color`. So the three `scrollbar-width: thin` lines were removed, and Firefox gets `scrollbar-color` only when it lacks the webkit selector.
+- **Phones are left alone.** Discord's iOS and Android webviews draw a thin overlay indicator that shows only while scrolling and fades. Mobile games hide the scrollbar or rely on that indicator; a permanent bar on touch looks cramped and out of place. A themed bar is not worth it there. Where content is cut off with no other cue, a peek or an edge fade (`ui/ScrollHint`) tells the player there is more.
+- **Boxes that hide their bar on purpose keep it hidden:** the world map, the living room and the scroll hint.
+- **One scrollbar at a time.** While anything with `aria-modal` is open (a drawer, the roster sheet, How to play), the page behind it does not scroll and drops its scrollbar (`html:has([aria-modal='true']) { overflow: hidden }`). Only the drawer's own bar shows. The page keeps its scroll position and gets its bar back on close. Misa saw two bars side by side in a narrow desktop window.

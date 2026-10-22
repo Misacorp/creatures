@@ -6,6 +6,7 @@ import { MAP_MAX_FACES, mapReadingOrder, mapScale, nextMarker, type MapPlace } f
 import { scrollBehavior } from './scroll-to';
 import { drawSprites } from './room-canvas';
 import { Sprite } from './sprites/Sprite';
+import { useDragScroll } from './ui/use-drag-scroll';
 import { MAP_SIZE, logoRect, mapPlacements } from './sprites/world-map-art';
 import { logoOf } from './sprites/world-map-logos';
 
@@ -24,20 +25,25 @@ export interface WorldMapProps {
   onPick: (id: string) => void;
   /** The width to lay out for (CSS px). Default: measured from the element. */
   width?: number;
+  /** The pixel scale (2 or 3). Default: the largest whole scale that fits `width` (desktop fixes it). */
+  scale?: number;
 }
 
 /**
  * The Expeditions world map: one pixel-art canvas (decoration, hidden from screen readers) at a whole
  * number scale (2 or 3), panning sideways when it is wider than its window, with a list of real buttons
  * laid over it, one marker per place in reading order (west to east, north to south). Each marker shows
- * the place's pixel-art logo over its landmark. Left and Right move along that order.
+ * the place's pixel-art logo over its landmark. Left and Right move along that order. A map that pans can
+ * be dragged with a mouse too (a finger scrolls it anyway); a short press stays a click on a marker.
  */
-export function WorldMap({ places, selected, night, onPick, width }: WorldMapProps) {
+export function WorldMap({ places, selected, night, onPick, width, scale: fixed }: WorldMapProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const measured = useElementWidth(rootRef, FALLBACK_WIDTH);
   const available = width ?? measured;
-  const scale = mapScale(available);
+  const scale = fixed ?? mapScale(available);
+  useDragScroll(mapRef);
   const pixelWidth = MAP_SIZE.width * scale;
   const pixelHeight = MAP_SIZE.height * scale;
   const placements = useMemo(() => mapPlacements(), []);
@@ -64,11 +70,22 @@ export function WorldMap({ places, selected, night, onPick, width }: WorldMapPro
     button.scrollIntoView({ inline: 'center', block: 'nearest', behavior: scrollBehavior() });
   };
 
+  const vars = cssVars({
+    '--wm-w': `${String(pixelWidth)}px`,
+    '--wm-h': `${String(pixelHeight)}px`,
+  });
+  const classes = ['world-map'];
+  if (night) classes.push('night');
+  // The 6 px are the map's side padding (world-map.css).
+  if (pixelWidth + 6 > available) classes.push('pans');
   return (
     <div ref={rootRef} class="world-map-wrap">
       <div
-        class={night ? 'world-map night' : 'world-map'}
-        ref={cssVars({ '--wm-w': `${String(pixelWidth)}px`, '--wm-h': `${String(pixelHeight)}px` })}
+        class={classes.join(' ')}
+        ref={(el) => {
+          mapRef.current = el;
+          vars(el);
+        }}
       >
         <div class="world-map-stage">
           <canvas

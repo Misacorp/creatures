@@ -49,6 +49,11 @@ button.lounge-button {
   gap: 0.5rem;
 }
 
+/* The Experience, Explorer and Crafting rows share one tag width ("Lv 12", "Rank 3", "Craft 3"), so their bars line up. */
+.cp-head .xp-static {
+  --xp-tag-w: 4rem;
+}
+
 .cp-head .cc-head p {
   margin: 0;
 }
