@@ -112,8 +112,14 @@
   --ly: -1.1rem;
 }
 
+/* The boss's hits on creatures: big, so a hit on a whole row is a big moment (overlapping is fine). */
 .float-hurt {
   color: var(--bad);
+  font-size: 1.5rem;
+}
+
+.float-hurt.crit {
+  font-size: 2rem;
 }
 
 .float-blocked {

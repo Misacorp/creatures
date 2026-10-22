@@ -1,33 +1,10 @@
-/* Beams from the boss to the creatures a strike hits are drawn in this layer. */
+/* The boss's attacks in flight are drawn in this layer (stage/BossShots.tsx, shots.css). */
 .stage-strikes {
   position: absolute;
   inset: 0;
   z-index: 6;
   overflow: hidden;
   pointer-events: none;
-}
-
-.strike-beam {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: none;
-  width: var(--blen, 0);
-  height: 6px;
-  margin-top: -3px;
-  background: var(--bad);
-  box-shadow:
-    0 0 0 2px var(--ink),
-    0 0 8px 2px var(--bad);
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad));
-  transform-origin: 0 50%;
-  will-change: transform, opacity;
-}
-
-.strike-beam.placed {
-  display: block;
 }
 
 /*

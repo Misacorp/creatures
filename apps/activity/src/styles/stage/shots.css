@@ -1,0 +1,152 @@
+/*
+  The boss's attacks in flight (stage/BossShots.tsx): crescents, waves, orbs and a spear of light, all
+  CSS shapes tinted with the boss's element (`--shot`, set by the element class on the strike layer).
+  The script moves them; here they only get their shape and glow, and start hidden at the layer's
+  top left corner.
+*/
+.stage-strikes {
+  --shot: var(--bad);
+  --shot-core: #fff;
+}
+
+.stage-strikes.shot-tide {
+  --shot: var(--tide);
+}
+
+.stage-strikes.shot-ember {
+  --shot: var(--ember);
+}
+
+.stage-strikes.shot-grove {
+  --shot: var(--grove);
+}
+
+.stage-strikes.shot-spark {
+  --shot: var(--spark);
+}
+
+.stage-strikes.shot-mire {
+  --shot: var(--mire);
+}
+
+.shot,
+.shot-impact {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 6;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* A crescent of light, its bright edge in front: the plain attack, a chain, a slam. */
+.shot-arc,
+.shot-pincer,
+.shot-hex {
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: -1.125rem 0 0 -1.125rem;
+  border-radius: 50%;
+  box-shadow:
+    inset -0.4375rem 0 0 0 var(--shot-core),
+    inset -0.6875rem 0 0 0 var(--shot);
+  filter: drop-shadow(0 0 0.25rem var(--shot)) drop-shadow(0 0 0.625rem var(--shot));
+}
+
+.shot-hex {
+  --shot: var(--velvet-glow);
+}
+
+/* A row-wide wave: a tall crescent that sweeps across the row, a glowing wash trailing behind it. */
+.shot-wave {
+  width: 3rem;
+  height: var(--h, 4rem);
+  margin: calc(var(--h, 4rem) / -2) 0 0 -1.5rem;
+  border-radius: 50%;
+  box-shadow:
+    inset -0.5rem 0 0 0 var(--shot-core),
+    inset -1rem 0 0 0 var(--shot);
+  filter: drop-shadow(0 0 0.375rem var(--shot)) drop-shadow(0 0 1rem var(--shot));
+}
+
+.shot-wave::after {
+  content: '';
+  position: absolute;
+  top: 12%;
+  right: 55%;
+  bottom: 12%;
+  width: 7rem;
+  background: linear-gradient(90deg, transparent, var(--shot));
+  opacity: 0.45;
+  filter: blur(0.25rem);
+}
+
+/* The ghosts that trail a crescent: smaller and fainter copies behind it (it is turned to where it flies). */
+.shot-arc::before,
+.shot-arc::after,
+.shot-pincer::before,
+.shot-hex::before {
+  content: '';
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  box-shadow: inset -0.375rem 0 0 0 var(--shot);
+  opacity: 0.45;
+  transform: translateX(-70%);
+}
+
+.shot-arc::after {
+  inset: 24%;
+  opacity: 0.22;
+  transform: translateX(-150%);
+}
+
+/* An orb that falls from above: a barrage, a charge landing on its marks. */
+.shot-rain {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: -0.625rem 0 0 -0.625rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--shot-core) 0 28%, var(--shot) 55%, transparent 72%);
+  filter: drop-shadow(0 0 0.5rem var(--shot));
+}
+
+/* A spear of light down a lane: it grows from the boss to the last creature. */
+.shot-spear {
+  width: var(--len, 10rem);
+  height: 0.5rem;
+  margin-top: -0.25rem;
+  border-radius: 0.25rem;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--shot) 15%,
+    var(--shot-core) 70%,
+    var(--shot)
+  );
+  filter: drop-shadow(0 0 0.375rem var(--shot));
+  transform-origin: 0 50%;
+}
+
+/* Where a shot lands: a ring that bursts outwards. */
+.shot-impact {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: -1.25rem 0 0 -1.25rem;
+  border: 0.1875rem solid var(--shot-core);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0.625rem var(--shot),
+    inset 0 0 0.5rem var(--shot);
+}
+
+.shot-impact.wide {
+  width: 4rem;
+  height: 4rem;
+  margin: -2rem 0 0 -2rem;
+}
+
+.shot-impact.hex {
+  border-color: var(--velvet-glow);
+}

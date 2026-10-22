@@ -49,7 +49,8 @@ import { StageHead, type StageModifier } from './ui/StageHead';
 import { ToggleButton } from './ui/ToggleButton';
 import { Sprite } from './sprites/Sprite';
 import { elementIcon } from './sprites/element-icons';
-import { Beam, Bursts, Floats, RoundIntro, beamsOf, fxRef, nameOf } from './stage/StageFx';
+import { Bursts, Floats, RoundIntro, fxRef, nameOf } from './stage/StageFx';
+import { BossShots } from './stage/BossShots';
 import { EffectIcons } from './ui/EffectIcons';
 import { AbilityBadge, CreatureTags, FoeFace, StageUnit } from './stage/StageUnit';
 import { useLiveStage, type Anim } from './use-live-stage';
@@ -274,7 +275,6 @@ export function Stage({
   const bannerItem = fx.filter((i) => i.cue.kind === 'banner').at(-1);
   // The boss leans in while it winds up, and the label of its newest hit shows in the boss's line.
   const windupItem = fx.find((i) => i.cue.kind === 'windup');
-  const strikeItems = fx.filter((i) => i.cue.kind === 'strike');
   // The move track: the boss's special moves in the boxes of the rounds they come in (move-track.ts).
   const trackBoss = bossOrFoe(boss.id, addedGimmicks ?? [], names.gimmicks);
   const track =
@@ -766,22 +766,30 @@ export function Stage({
           {abilities.help}
         </Popover>
       )}
-      <div class="stage-strikes" ref={layerRef} aria-hidden="true">
-        {strikeItems.map((item) => {
+      <div
+        class={`stage-strikes${foe.element === 'unknown' ? '' : ` shot-${foe.element}`}`}
+        ref={layerRef}
+        aria-hidden="true"
+      >
+        {fx.map((item) => {
           const { cue } = item;
-          if (cue.kind !== 'strike' || item.ms === 0) return null;
-          return beamsOf(cue.strike).map((beam) => (
-            <Beam
-              key={`beam-${String(cue.i)}-${beam.from ?? 'boss'}-${beam.to}`}
-              layer={layerRef}
-              from={() =>
-                beam.from === null ? bossRef.current : (boxes.current.get(beam.from) ?? null)
-              }
-              to={() => boxes.current.get(beam.to) ?? null}
+          if (cue.kind !== 'windup' || item.ms === 0) return null;
+          return (
+            <BossShots
+              key={`shots-${String(cue.i)}`}
+              strike={cue.strike}
+              seed={cue.i}
               ms={item.ms}
-              between={beam.from !== null}
+              layer={layerRef}
+              boss={() => bossRef.current}
+              unit={(id) => boxes.current.get(id) ?? null}
+              zone={(z) =>
+                layerRef.current?.parentElement?.querySelector<HTMLElement>(
+                  `.stage-zone.zone-${z}`,
+                ) ?? null
+              }
             />
-          ));
+          );
         })}
       </div>
       {intro !== null && <RoundIntro intro={intro} />}

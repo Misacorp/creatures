@@ -127,10 +127,6 @@
     animation: block-pop var(--fx-ms) ease-out both;
   }
 
-  .strike-beam.placed {
-    animation: beam-fire 650ms ease-out both;
-  }
-
   .warn-mark,
   .zone-warn {
     animation: warn-pulse 1.4s ease-in-out infinite;
@@ -382,23 +378,6 @@
     100% {
       opacity: 0;
       transform: translateX(-50%) scale(1);
-    }
-  }
-
-  @keyframes beam-fire {
-    0% {
-      opacity: 0;
-      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(0.02);
-    }
-
-    30% {
-      opacity: 1;
-      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(1);
-    }
-
-    100% {
-      opacity: 0;
-      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(1);
     }
   }
 

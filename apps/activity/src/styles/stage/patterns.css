@@ -89,15 +89,6 @@
 }
 
 /* A line between two creatures: a chain's jump or a lance's lane, thinner than the boss's own beam. */
-.strike-beam.between {
-  height: 4px;
-  margin-top: -2px;
-  background: var(--bone);
-  box-shadow:
-    0 0 0 2px var(--ink),
-    0 0 8px 2px var(--bad);
-}
-
 /* Numbers: a heal is green, a cleanse is small and quiet, "Immune!" is big and plain. */
 .float-heal {
   color: var(--good);
