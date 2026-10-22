@@ -1,0 +1,501 @@
+/**
+ * One event of the show on its scene: the entrants (dropping in during the intro), the props and effects
+ * of the kind (the melon, the sharks, the plates and peppers, the floe, the heat), your marker, and the
+ * podium card at the end. Purely a view of a frame from `show-timeline`; the clock is the caller's.
+ */
+import { Fragment } from 'preact';
+import { shinyPalette } from '../art';
+import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
+import { cssVars } from '../css-vars';
+import { GamesActor, GamesScene, GamesSprite } from './art/GamesScene';
+import { PODIUM_HEIGHTS } from './art/drawn';
+import { propSprite, propTinted } from './art/props';
+import { PEPPER_TABLE_TOP, type GamesSceneId, GAMES_SCENE_IDS } from './art/scenes';
+import type { RampName } from './art/tint';
+import {
+  PEPPER_TIERS,
+  drawnState,
+  fxArt,
+  fxMotion,
+  meterTint,
+  numberSprite,
+  teamDot,
+  teamRamp,
+  youArrow,
+} from './show-art';
+import {
+  FX_MS,
+  SHOW_PODIUM_MS,
+  dropAt,
+  podiumOf,
+  type ActorFrame,
+  type EventFrame,
+  type PreparedEvent,
+  type ShowPhase,
+} from './show-timeline';
+
+/** More entrants than this and the meters crowd each other out. */
+const CROWDED = 16;
+const MEDAL_RAMPS: readonly RampName[] = ['gold', 'silver', 'bronze'];
+const MEDAL_SECOND: readonly RampName[] = ['blue', 'red', 'green'];
+/** Where the podium's steps stand (their bottom-centre), in the order of the standings. */
+const PODIUM_X = [96, 68, 124] as const;
+const PODIUM_FLOOR = 102;
+/** Confetti pieces of the podium: where each falls and how fast (scene px, px a second). */
+const CONFETTI = [
+  { x: 24, speed: 30, phase: 0 },
+  { x: 58, speed: 38, phase: 40 },
+  { x: 88, speed: 26, phase: 75 },
+  { x: 112, speed: 34, phase: 20 },
+  { x: 140, speed: 29, phase: 60 },
+  { x: 168, speed: 36, phase: 90 },
+  { x: 40, speed: 33, phase: 100 },
+  { x: 152, speed: 27, phase: 5 },
+] as const;
+const CONFETTI_TINTS: readonly (readonly [RampName, RampName])[] = [
+  ['pink', 'teal'],
+  ['yellow', 'blue'],
+  ['red', 'green'],
+];
+
+export function sceneOf(id: string): GamesSceneId {
+  return (GAMES_SCENE_IDS as readonly string[]).includes(id) ? (id as GamesSceneId) : 'sauna';
+}
+
+/** How an actor is shown now: hidden (gone through the door, under the splash), greyed or as itself. */
+export function actorLook(kind: PreparedEvent['kind'], f: ActorFrame): 'hidden' | 'grey' | 'in' {
+  if (!f.out) return 'in';
+  const ms = f.outMs ?? 0;
+  switch (kind) {
+    case 'endure':
+      return f.state === 'out' ? 'hidden' : 'in';
+    case 'shove':
+      return ms < 450 ? 'hidden' : 'grey';
+    case 'chase':
+      return ms > 900 ? 'grey' : 'in';
+    default:
+      return f.state === 'out' ? 'grey' : 'in';
+  }
+}
+
+/** Facing: runners face right; swimmers the way they swim; sitters and sumo face the middle. */
+function flipOf(p: PreparedEvent, f: ActorFrame): boolean {
+  switch (p.kind) {
+    case 'chase':
+      return false;
+    case 'swim':
+      return f.out ? false : f.y > 62;
+    case 'feast':
+      return false;
+    default:
+      return f.x > 104;
+  }
+}
+
+function moveClass(state: string): string {
+  switch (state) {
+    case 'run':
+      return 'is-run';
+    case 'swim':
+      return 'is-swim';
+    case 'eat':
+      return 'is-eat';
+    case 'cheer':
+      return 'is-cheer';
+    case 'sweat':
+    case 'flame':
+      return 'is-shiver';
+    default:
+      return '';
+  }
+}
+
+interface ActorsProps {
+  p: PreparedEvent;
+  frame: EventFrame;
+  youId: string | undefined;
+  /** The intro: ms into it (actors drop in); null during the event. */
+  introMs: number | null;
+  reduced: boolean;
+}
+
+/** The entrants, drawn between the scene's back and front layers. */
+function Actors({ p, frame, youId, introMs, reduced }: ActorsProps) {
+  const team = p.result.team === 3;
+  const tint = meterTint(p.kind, p.result.scene);
+  const count = frame.actors.length;
+  return (
+    <>
+      {frame.actors.map((f) => {
+        const actor = p.result.actors[f.a];
+        if (actor === undefined) return null;
+        const look = actorLook(p.kind, f);
+        if (look === 'hidden') return null;
+        let lift = f.lift;
+        const classes = ['gs-act'];
+        if (introMs !== null) {
+          const drop = dropAt(f.a, count, reduced ? Number.POSITIVE_INFINITY : introMs);
+          lift += drop.lift;
+          if (drop.landedMs !== null && drop.landedMs < 160) classes.push('is-land');
+        } else {
+          for (const fx of frame.fx) {
+            if (fx.a !== f.a) continue;
+            const motion = fxMotion(fx.fx);
+            if (motion === 'hop') lift += 7 * Math.sin((Math.PI * fx.age) / FX_MS);
+            else if (motion !== null) classes.push(`is-${motion}`);
+          }
+          const move = moveClass(f.state);
+          if (move !== '' && look === 'in') classes.push(move);
+        }
+        if (look === 'grey') classes.push('is-out');
+        if (actor.playerId === youId) classes.push('is-mine');
+        const engineState = look === 'grey' && p.kind === 'shove' ? 'swim' : f.state;
+        const x = Math.round(f.x);
+        const y = Math.round(f.y);
+        // A swimmer's stamina shows once a shark has had a go at it.
+        const showMeter =
+          tint !== undefined &&
+          look === 'in' &&
+          !f.out &&
+          f.meter !== undefined &&
+          !(p.kind === 'swim' && f.meter >= 100) &&
+          // A packed room shows only your creatures' meters.
+          (count <= CROWDED || actor.playerId === youId);
+        const palette = actor.shiny === true ? shinyPalette(actor.speciesId) : undefined;
+        return (
+          <Fragment key={f.a}>
+            {team && look === 'in' && (
+              <GamesSprite x={x} y={y + 1} sprite={teamDot(teamRamp(actor.playerId))} z={y - 1} />
+            )}
+            <div class={classes.join(' ')}>
+              <GamesActor
+                x={x}
+                y={Math.round(y - lift)}
+                sprite={creatureSpriteOrFallback(actor.speciesId)}
+                palette={palette}
+                state={drawnState(p.kind, engineState)}
+                flip={flipOf(p, f)}
+                meter={showMeter ? (f.meter ?? 0) / 100 : undefined}
+                meterTint={tint}
+                z={y}
+              />
+            </div>
+          </Fragment>
+        );
+      })}
+    </>
+  );
+}
+
+/** Props that live between the layers: the melon (it rolls over the runners) and the shark fins. */
+function BackProps({ p, frame, still }: { p: PreparedEvent; frame: EventFrame; still: boolean }) {
+  const { melon, sharks } = frame.props;
+  return (
+    <>
+      {melon !== null && (
+        <>
+          <GamesSprite
+            x={Math.round(melon.x - 14)}
+            y={Math.round(melon.y + melon.size / 2 + 2)}
+            sprite={propSprite('dust', still ? 0 : Math.floor(melon.roll / 4))}
+            z={melon.y + melon.size / 2 - 1}
+          />
+          <GamesSprite
+            x={Math.round(melon.x)}
+            y={Math.round(melon.y)}
+            anchor="centre"
+            sprite={propSprite('melon', still ? 0 : Math.floor(melon.roll / 5))}
+            z={melon.y + melon.size / 2}
+          />
+        </>
+      )}
+      {p.kind === 'swim' &&
+        sharks.map((s) => (
+          <GamesSprite
+            key={s.i}
+            x={Math.round(s.x)}
+            y={Math.round(s.y + 4)}
+            sprite={propSprite('sharkFin', still ? 0 : Math.floor(frame.ms / 300) + s.i)}
+            flip={s.flip}
+            z={s.y + 4}
+          />
+        ))}
+    </>
+  );
+}
+
+/** Over the front layer: plates and peppers, effects, popping numbers and your arrows. */
+function FrontProps({
+  p,
+  frame,
+  youId,
+  still,
+  introMs,
+}: {
+  p: PreparedEvent;
+  frame: EventFrame;
+  youId: string | undefined;
+  still: boolean;
+  introMs: number | null;
+}) {
+  const plates =
+    p.kind === 'feast'
+      ? p.result.actors.map((a) => ({
+          a: a.a,
+          x: a.x,
+          y: (a.y <= 60 ? PEPPER_TABLE_TOP.back : PEPPER_TABLE_TOP.front) + 3,
+        }))
+      : [];
+  const pepperOf = new Map(frame.props.peppers.map((pp) => [pp.a, pp.tier]));
+  const count = frame.actors.length;
+  return (
+    <>
+      {plates.map((plate) => {
+        const tier = pepperOf.get(plate.a);
+        return (
+          <Fragment key={plate.a}>
+            <GamesSprite x={plate.x} y={plate.y} sprite={propTinted('plate', undefined)} z={1} />
+            {tier !== undefined && introMs === null && (
+              <GamesSprite
+                x={plate.x}
+                y={plate.y - 2}
+                sprite={propSprite('pepper', 0, PEPPER_TIERS[tier] ?? 'green')}
+                flip={plate.a % 2 === 1}
+                z={2}
+              />
+            )}
+          </Fragment>
+        );
+      })}
+      {introMs === null &&
+        frame.fx.map((fx) => {
+          const art = fxArt(p.kind, fx.fx);
+          if (art === null) return null;
+          const f = fx.a === undefined ? undefined : frame.actors[fx.a];
+          if (f !== undefined && actorLook(p.kind, f) === 'hidden' && fx.fx !== 'splash')
+            return null;
+          const x = Math.round(fx.x + art.dx);
+          const y = Math.round(fx.y + art.dy - (f?.lift ?? 0));
+          const rise = Math.round((fx.age / FX_MS) * 6);
+          return (
+            <Fragment key={fx.id}>
+              <GamesSprite
+                x={x}
+                y={y - (art.prop === 'steam' ? rise : 0)}
+                anchor="centre"
+                sprite={propSprite(art.prop, still ? 0 : Math.floor(fx.age / 150), art.tint)}
+                z={500}
+              />
+              {art.pop !== undefined && (
+                <GamesSprite
+                  x={x + 9}
+                  y={y - 6 - rise}
+                  anchor="centre"
+                  sprite={numberSprite(art.pop, 'gold')}
+                  z={501}
+                />
+              )}
+            </Fragment>
+          );
+        })}
+      {frame.actors.map((f) => {
+        const actor = p.result.actors[f.a];
+        if (actor === undefined || actor.playerId !== youId) return null;
+        if (actorLook(p.kind, f) === 'hidden') return null;
+        const lift =
+          f.lift + (introMs === null ? 0 : dropAt(f.a, count, still ? 1e9 : introMs).lift);
+        return (
+          <div key={f.a} class="gs-you">
+            <GamesSprite
+              x={Math.round(f.x)}
+              y={Math.round(f.y - 18 - lift)}
+              sprite={youArrow(teamRamp(actor.playerId))}
+              z={600}
+            />
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/** The podium card: the scene dimmed, the top three on their steps with medals, confetti falling. */
+function Podium({
+  p,
+  ms,
+  youId,
+  still,
+  cameraX,
+}: {
+  p: PreparedEvent;
+  ms: number;
+  youId: string | undefined;
+  still: boolean;
+  /** The scene's camera: the podium stands in the middle of the view, wherever it is. */
+  cameraX: number;
+}) {
+  const { rows, more } = podiumOf(p);
+  // The steps rise in one after another: bronze, silver, gold.
+  const order = rows.map((_, i) => i).reverse();
+  return (
+    <>
+      <div class="gs-dim" />
+      {rows.map((row, i) => {
+        const actor = p.result.actors[row.actor];
+        if (actor === undefined) return null;
+        const place = Math.max(1, Math.min(3, row.place)) as 1 | 2 | 3;
+        const x = cameraX + (PODIUM_X[i] ?? 96);
+        const shownAt = 250 + order.indexOf(i) * 350;
+        const u = still ? 1 : Math.max(0, Math.min(1, (ms - shownAt) / 300));
+        if (u <= 0) return null;
+        const height = Math.round(PODIUM_HEIGHTS[place] * u);
+        const top = PODIUM_FLOOR - height;
+        const ramp = MEDAL_RAMPS[place - 1] ?? 'gold';
+        const palette = actor.shiny === true ? shinyPalette(actor.speciesId) : undefined;
+        const landed = u >= 1;
+        const cheer = landed && !still && Math.floor((ms - shownAt) / 220) % 2 === 0;
+        return (
+          <Fragment key={row.teamId}>
+            <GamesSprite
+              x={x}
+              y={PODIUM_FLOOR}
+              sprite={propSprite(`podium${String(place)}` as 'podium1', 0, ramp)}
+              z={700}
+            />
+            {landed && (
+              <GamesSprite
+                x={x}
+                y={top + 15}
+                sprite={propSprite('medal', 0, ramp, MEDAL_SECOND[place - 1])}
+                z={702}
+              />
+            )}
+            <div class={actor.playerId === youId ? 'gs-podium-actor is-mine' : 'gs-podium-actor'}>
+              <GamesActor
+                x={x}
+                y={top - (cheer ? 2 : 0)}
+                sprite={creatureSpriteOrFallback(actor.speciesId)}
+                palette={palette}
+                z={701}
+              />
+            </div>
+            {actor.playerId === youId && landed && (
+              <GamesSprite x={x} y={top - 19} sprite={youArrow(teamRamp(actor.playerId))} z={703} />
+            )}
+          </Fragment>
+        );
+      })}
+      {more > 0 && (
+        <GamesSprite
+          x={cameraX + 150}
+          y={PODIUM_FLOOR - 4}
+          sprite={numberSprite(`+${String(more)}`, 'gold')}
+          z={704}
+        />
+      )}
+      {CONFETTI.map((c, i) => {
+        const fall = still ? c.phase : (c.phase + (ms / 1000) * c.speed) % 120;
+        return (
+          <GamesSprite
+            key={i}
+            x={cameraX + c.x + (still ? 0 : Math.round(Math.sin(ms / 400 + i) * 3))}
+            y={Math.round(fall) - 8}
+            anchor="centre"
+            sprite={propTinted(
+              'confetti',
+              CONFETTI_TINTS[i % CONFETTI_TINTS.length],
+              still ? 0 : Math.floor(ms / 200) + i,
+            )}
+            z={705}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+export interface ShowStageProps {
+  p: PreparedEvent;
+  phase: ShowPhase;
+  /** Ms into the phase. */
+  phaseMs: number;
+  frame: EventFrame;
+  youId?: string | undefined;
+  reduced: boolean;
+  /** A still frame (tests and the workbench's fixed moments): no idle animation. */
+  still?: boolean | undefined;
+  label: string;
+}
+
+/** The scene of one event at one moment of its intro, its run or its podium. */
+export function ShowStage({
+  p,
+  phase,
+  phaseMs,
+  frame,
+  youId,
+  reduced,
+  still,
+  label,
+}: ShowStageProps) {
+  const quiet = reduced || still === true;
+  const scene = sceneOf(p.result.scene);
+  const heat = frame.props.heat;
+  const steaming = p.kind === 'endure' && frame.fx.some((f) => f.fx === 'steam' && f.age < FX_MS);
+  const shaking =
+    !quiet &&
+    phase === 'event' &&
+    frame.fx.some((f) => (f.fx === 'squash' || f.fx === 'bonk' || f.fx === 'out') && f.age < 220);
+  const introMs = phase === 'intro' ? phaseMs : null;
+  const heatShare = heat === null ? 0 : Math.max(0, Math.min(1, (heat - 20) / 80));
+  return (
+    <div
+      class={[
+        'gs-stage',
+        `gs-kind-${p.kind}`,
+        scene === 'frost-bath' ? 'is-cold' : '',
+        shaking ? 'is-shake' : '',
+        steaming ? 'is-steam' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      ref={cssVars({ '--heat': heatShare.toFixed(3) })}
+    >
+      <GamesScene
+        scene={scene}
+        cameraX={Math.round(frame.cameraX)}
+        worldWidth={p.worldWidth}
+        heat={heat === null ? undefined : Math.round(heat)}
+        floeRadius={frame.props.floe === null ? undefined : Math.round(frame.props.floe)}
+        animate={!quiet}
+        frame={still === true ? 0 : undefined}
+        label={label}
+        overlay={
+          <>
+            {p.kind === 'endure' && <div class="gs-heat" />}
+            {p.kind === 'endure' && <div class="gs-mist" />}
+            <FrontProps
+              p={p}
+              frame={frame}
+              youId={phase === 'podium' ? undefined : youId}
+              still={quiet}
+              introMs={introMs}
+            />
+            {phase === 'podium' && (
+              <Podium
+                p={p}
+                ms={phaseMs}
+                youId={youId}
+                still={quiet || phaseMs >= SHOW_PODIUM_MS}
+                cameraX={Math.round(frame.cameraX)}
+              />
+            )}
+          </>
+        }
+      >
+        <BackProps p={p} frame={frame} still={quiet} />
+        <Actors p={p} frame={frame} youId={youId} introMs={introMs} reduced={reduced} />
+      </GamesScene>
+    </div>
+  );
+}

@@ -10,7 +10,7 @@ import { GROUPS } from './types';
  */
 
 const sources = import.meta.glob<string>(
-  ['../*.tsx', '../ui/*.tsx', '../sprites/*.tsx', '../games/art/*.tsx'],
+  ['../*.tsx', '../ui/*.tsx', '../sprites/*.tsx', '../games/*.tsx', '../games/art/*.tsx'],
   {
     query: '?raw',
     import: 'default',

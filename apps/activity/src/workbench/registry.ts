@@ -8,6 +8,7 @@ import { evolveEntries } from './entries/evolve';
 import { expeditionWorldEntries } from './entries/expedition-world';
 import { flipperEntries } from './entries/flipper';
 import { gamesArtEntries } from './entries/games-art';
+import { gamesShowEntries } from './entries/games-show';
 import { dataTableEntries } from './entries/data-table';
 import { effectEntries } from './entries/effects';
 import { dungeonMapEntries } from './entries/dungeon-map';
@@ -76,6 +77,7 @@ export const ENTRIES: readonly Entry[] = [
   ...worldMapEntries,
   ...expeditionWorldEntries,
   ...gamesArtEntries,
+  ...gamesShowEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {
