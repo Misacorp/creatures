@@ -395,7 +395,17 @@ button.dmap-node.s-reachable {
   font-size: var(--fs-row);
 }
 
-.dnd-trick,
+.dnd-trick {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 0 0.5rem;
+}
+
+.dnd-trick-text {
+  min-width: 0;
+}
+
 .dnd-mod {
   display: flex;
   flex-wrap: wrap;
