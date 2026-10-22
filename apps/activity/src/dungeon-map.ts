@@ -9,7 +9,7 @@
  * bottom (the player delves downward, and the Undercroft's floors come below it), three lanes across. At 320 px (the narrowest phone) one unit is one pixel, so every room
  * button of `MIN_NODE` units is at least 44 px there, and bigger on wider screens.
  */
-import { undercroftOpen } from '@creatures/game';
+import { SEALED_MARK, undercroftOpen } from '@creatures/game';
 import { elementName } from './game';
 import type {
   DungeonMapNode,
@@ -436,9 +436,12 @@ export function isKeeper(node: Pick<DungeonMapNode, 'id' | 'kind'>): boolean {
   return node.kind === 'boss' && nodeLevel(node.id) > 0;
 }
 
-/** The glyph of a room: the keeper has a crown of its own (darker), every other room the one of its kind. */
-export function nodeGlyphOf(node: Pick<DungeonMapNode, 'id' | 'kind'>): string {
-  return isKeeper(node) ? 'map-keeper' : nodeGlyph(node.kind);
+/**
+ * The glyph of a room: the keeper has a crown of its own (darker), a fight or an elite a broken Sealed Vault marked
+ * wears the epic skull while it carries the mark (the x2 badge stays on it), every other room the one of its kind.
+ */
+export function nodeGlyphOf(node: Pick<DungeonMapNode, 'id' | 'kind' | 'marks'>): string {
+  return isKeeper(node) ? 'map-keeper' : nodeGlyph(shownKind(node));
 }
 
 /**
@@ -448,7 +451,7 @@ export function nodeGlyphOf(node: Pick<DungeonMapNode, 'id' | 'kind'>): string {
  */
 export function nodeLabel(node: DungeonMapNode): string {
   const name = foeDisplayName(node);
-  switch (node.kind) {
+  switch (shownKind(node)) {
     case 'fight':
       return name === ''
         ? 'Fight'
@@ -499,6 +502,11 @@ interface AriaExtras {
   lost?: boolean;
 }
 
+/** The spoken labels of the badges a room wears ("Sealed Vault: epic fight, double rewards"). */
+export function markLabels(node: Pick<DungeonMapNode, 'marks'>): string[] {
+  return (node.marks ?? []).map((m) => m.label);
+}
+
 export function nodeAriaLabel(
   node: DungeonMapNode,
   status: NodeStatus,
@@ -507,6 +515,7 @@ export function nodeAriaLabel(
   const word = extras.lost === true ? LOST_WORD : STATUS_WORDS[status];
   const parts = [
     nodeLabel(node),
+    ...markLabels(node),
     ...(extras.crack === true ? [CRACKED_WORD] : []),
     ...(extras.descent === true && extras.crack !== true ? [DESCENT_WORD] : []),
     ...(word === '' ? [] : [word]),
@@ -514,9 +523,18 @@ export function nodeAriaLabel(
   return `${parts.join('. ')}. Show details`;
 }
 
+/**
+ * What a room is as the player is told: its kind, except that a fight or an elite a broken Sealed Vault marked is
+ * an epic fight (it fights as one). The badge itself stays on the room.
+ */
+export function shownKind(node: Pick<DungeonMapNode, 'kind' | 'marks'>): DungeonNodeKind {
+  const sealed = (node.marks ?? []).some((m) => m.kind === SEALED_MARK.kind);
+  return sealed && (node.kind === 'fight' || node.kind === 'elite') ? 'epic' : node.kind;
+}
+
 /** The title of a room's drawer. The foe's own name is in the body. */
-export function nodeTitle(node: Pick<DungeonMapNode, 'id' | 'kind'>): string {
-  switch (node.kind) {
+export function nodeTitle(node: Pick<DungeonMapNode, 'id' | 'kind' | 'marks'>): string {
+  switch (shownKind(node)) {
     case 'fight':
       return 'Fight';
     case 'elite':

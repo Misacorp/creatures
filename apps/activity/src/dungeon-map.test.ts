@@ -17,6 +17,8 @@ import {
   hpLine,
   isKeeper,
   levelLabel,
+  markLabels,
+  shownKind,
   descentRooms,
   lostAt,
   startLevel,
@@ -37,7 +39,13 @@ import {
   stackLayout,
 } from './dungeon-map';
 import { undercroftState } from './dungeon-undercroft-sample';
-import { SAMPLE_MAP, SAMPLE_STAGES, sampleState } from './dungeon-map-sample';
+import {
+  SAMPLE_MAP,
+  SAMPLE_MAP_VAULT,
+  SAMPLE_STAGES,
+  VAULT_MARK,
+  sampleState,
+} from './dungeon-map-sample';
 import type { DungeonMapNode, DungeonMapView } from './dungeon-types';
 import { glyph } from './glyphs';
 
@@ -694,5 +702,51 @@ describe('the room where the run was lost', () => {
       'You were defeated here',
     );
     expect(nodeAriaLabel(node('f2l1'), 'visited', { lost: true })).not.toContain('Visited');
+  });
+});
+
+describe('room marks', () => {
+  const vaultNode = (id: string): DungeonMapNode => {
+    const found = SAMPLE_MAP_VAULT.nodes.find((n) => n.id === id);
+    if (found === undefined) throw new Error(`no node ${id}`);
+    return found;
+  };
+
+  it('a fight or an elite a broken vault marked is told as an epic fight, and a plain one is not', () => {
+    expect(shownKind(vaultNode('f2l0'))).toBe('epic');
+    expect(shownKind(vaultNode('f2l1'))).toBe('epic');
+    expect(shownKind(node('f2l0'))).toBe('elite');
+    expect(shownKind(node('f2l1'))).toBe('fight');
+    expect(nodeTitle(vaultNode('f2l0'))).toBe('Epic fight');
+    expect(nodeTitle(node('f2l0'))).toBe('Elite fight');
+    expect(nodeLabel(vaultNode('f2l1'))).toBe('Fierce Drift Wisp (epic fight)');
+    // Only those two kinds change: the floor boss with a mark stays the floor boss.
+    expect(shownKind({ kind: 'boss', marks: [VAULT_MARK] })).toBe('boss');
+    // Any other mark is a badge only.
+    expect(
+      shownKind({ kind: 'fight', marks: [{ kind: 'other', text: '!', label: 'Other' }] }),
+    ).toBe('fight');
+  });
+
+  it('a marked room wears the epic skull while it carries the mark, and its own glyph once it is gone', () => {
+    expect(nodeGlyphOf(vaultNode('f2l0'))).toBe('map-epic');
+    expect(nodeGlyphOf(vaultNode('f2l1'))).toBe('map-epic');
+    expect(nodeGlyphOf(node('f2l0'))).toBe('map-elite');
+    expect(nodeGlyphOf(node('f2l1'))).toBe('map-fight');
+    // The floor boss and a plain badge keep their own glyph.
+    expect(nodeGlyphOf({ id: 'f6l1', kind: 'boss', marks: [VAULT_MARK] })).toBe('map-boss');
+    expect(
+      nodeGlyphOf({ id: 'f2l1', kind: 'fight', marks: [{ kind: 'other', text: '!', label: 'x' }] }),
+    ).toBe('map-fight');
+  });
+
+  it('the spoken label carries the labels of every badge, before where the run stands', () => {
+    expect(markLabels(vaultNode('f2l1'))).toEqual([VAULT_MARK.label]);
+    expect(markLabels(node('f2l1'))).toEqual([]);
+    const label = nodeAriaLabel(vaultNode('f2l1'), 'reachable');
+    expect(label).toBe(
+      'Fierce Drift Wisp (epic fight). Sealed Vault: epic fight, double rewards. You can go here. Show details',
+    );
+    expect(nodeAriaLabel(node('f2l1'), 'reachable')).not.toContain('Sealed Vault');
   });
 });

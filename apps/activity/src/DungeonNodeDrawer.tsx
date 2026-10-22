@@ -1,4 +1,4 @@
-import { GLOSSARY_IDS, QUIET_ROOM, RULES } from '@creatures/game';
+import { GLOSSARY_IDS, QUIET_ROOM, RULES, SEALED_MARK } from '@creatures/game';
 import type { ComponentChildren } from 'preact';
 import { bossArt, elementClass } from './art';
 import {
@@ -40,6 +40,7 @@ import {
   stepsAt,
 } from './dungeon-history';
 import { packBadges } from './dungeon-run';
+import { keepsakeGlyph } from './dungeon-text';
 import { FindItems } from './ui/FindItem';
 import { essenceCount, partBadge } from './count-items';
 import { modifierIcon } from './dungeon-rooms';
@@ -49,6 +50,7 @@ import type {
   DungeonMapNode,
   DungeonPack,
   DungeonStepLog,
+  RoomMark,
 } from './dungeon-types';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
@@ -57,6 +59,7 @@ import { Sprite } from './sprites/Sprite';
 import { ElementChip } from './sprites/ElementChip';
 import { CountBadgeList, type CountItem } from './ui/CountBadge';
 import { Drawer } from './ui/Drawer';
+import { RoomMarkBadge } from './ui/RoomMark';
 import { Tag } from './ui/Tag';
 
 interface Props {
@@ -136,7 +139,11 @@ export function DungeonNodeDrawer({
     <Drawer
       open
       onClose={onClose}
-      title={nodeTitle(node)}
+      title={nodeTitle(
+        entry?.result === 'fight' && entry.sealed === true
+          ? { ...node, marks: [SEALED_MARK] }
+          : node,
+      )}
       titleHelp={help === null ? undefined : <GlossaryTag entry={help} look="help" />}
       class="dnd"
       footer={footer}
@@ -203,13 +210,23 @@ function PrizeRow({
   );
 }
 
-/** A keepsake the room gave: its name as a chip (tap for what keepsakes are) and what it does. */
+/**
+ * A keepsake the room gave: its name as a chip (tap for what keepsakes are) and what it does. A curse is
+ * the same line with its own glyph and tone (its help is the curse entry).
+ */
 function KeepsakeLine({ keepsake }: { keepsake: DungeonKeepsakeView }) {
+  const icon = { kind: 'glyph' as const, id: keepsakeGlyph(keepsake) };
   return (
     <p class="dnd-keepsake">
-      <Tag kind="chip" entry="keepsake" icon={{ kind: 'glyph', id: 'sparkle' }}>
-        {keepsake.name}
-      </Tag>
+      {keepsake.curse === true ? (
+        <Tag kind="chip" tone="bad" entry="curse" icon={icon} label={`Curse, ${keepsake.name}`}>
+          {keepsake.name}
+        </Tag>
+      ) : (
+        <Tag kind="chip" entry="keepsake" icon={icon}>
+          {keepsake.name}
+        </Tag>
+      )}
       <span>{keepsake.description}</span>
     </p>
   );
@@ -294,8 +311,28 @@ function Outcome({ entry }: { entry: DungeonStepLog }) {
       )}
       {(entry.result === 'fight' || entry.result === 'event' || entry.result === 'camp') &&
         entry.keepsake !== undefined && <KeepsakeLine keepsake={entry.keepsake} />}
+      {entry.result === 'fight' && entry.bonusKeepsake !== undefined && (
+        <KeepsakeLine keepsake={entry.bonusKeepsake} />
+      )}
+      {entry.result === 'event' && entry.curse !== undefined && (
+        <KeepsakeLine keepsake={entry.curse} />
+      )}
       {entry.result === 'fight' && entry.supply === true && <p class="dnd-line">{SUPPLY_LINE}</p>}
     </div>
+  );
+}
+
+/** What each badge on the room means: the badge itself, then its spoken line as a sentence ("x2 Sealed Vault: epic fight, double rewards"). */
+function MarkNotes({ marks }: { marks: readonly RoomMark[] | undefined }) {
+  return (
+    <>
+      {(marks ?? []).map((mark) => (
+        <p key={mark.kind} class="dnd-line dnd-mark">
+          <RoomMarkBadge mark={mark} inline />
+          <span>{mark.label}</span>
+        </p>
+      ))}
+    </>
   );
 }
 
@@ -321,6 +358,7 @@ function PlainBody({
       {node.kind === 'mystery' && node.event !== undefined && visited && (
         <p class="dnd-event pix">{node.event.name}</p>
       )}
+      <MarkNotes marks={node.marks} />
       {/* A room the run has been in says what happened there, not what it might be. */}
       {lines.map((line) => (
         <p key={line} class="dnd-line">
@@ -355,7 +393,10 @@ function FoeBody({
   const art = bossArt(foe.id);
   const trick = roomTrick({ kind: foe.kind, foe }, landmark);
   const modifier = node.modifier;
-  const epic = node.kind === 'epic';
+  // A room a broken Sealed Vault marked fights as an epic fight; once fought, its log entry says so (the mark is gone).
+  const marks: readonly RoomMark[] = node.marks ?? (entry?.sealed === true ? [SEALED_MARK] : []);
+  const sealed = marks.some((m) => m.kind === SEALED_MARK.kind);
+  const epic = node.kind === 'epic' || sealed;
   const elite = (node.kind === 'elite' || foe.elite) && !epic;
   const keeper = isKeeper(node);
   const deeper = nodeLevel(node.id) > 0;
@@ -397,6 +438,7 @@ function FoeBody({
           </p>
         </div>
       </div>
+      <MarkNotes marks={marks} />
       {elite && entry === undefined && (
         <p class="dnd-line">
           A fiercer fight. Win it to earn a{' '}
@@ -406,7 +448,7 @@ function FoeBody({
           .
         </p>
       )}
-      {epic && entry === undefined && (
+      {node.kind === 'epic' && entry === undefined && (
         <>
           <p class="dnd-line">One fierce foe at boss strength.</p>
           <PrizeRow

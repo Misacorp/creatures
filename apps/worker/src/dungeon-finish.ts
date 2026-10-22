@@ -16,6 +16,7 @@ import {
   mapView,
   nodeFoe,
   rollDungeonLoot,
+  rollSealedBonus,
   streakBonus,
   creatureXpParts,
   undercroftOpen,
@@ -30,7 +31,7 @@ import { type DungeonRoomResult } from '@creatures/engine';
 import { awardExperience } from './creature-exp';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
 import { SUPPLIES_PER_RUN } from './dungeon-path';
-import { currentHp, keepsakeViews, runNode, treasureView, type RunState } from './dungeon-state';
+import { currentHp, heldViews, runNode, treasureView, type RunState } from './dungeon-state';
 import type {
   DungeonOutcome,
   DungeonPack,
@@ -276,11 +277,20 @@ function payRun(
     day,
     attempt,
     (rng) => {
+      // The run's own dice come first; the marked fights' extra rolls are drawn after them (none: nothing drawn).
+      const sealed = () => {
+        const extra = rollSealedBonus(rng, depth, st.sealedWins, bossElement);
+        return {
+          gear: extra.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
+          supplies: extra.supplies,
+        };
+      };
       if (chestPaid) {
+        const extra = sealed();
         return {
           parts: addParts(packParts, prize.parts),
-          gear: prize.gear,
-          supplies: prize.supplies,
+          gear: [...prize.gear, ...extra.gear],
+          supplies: [...prize.supplies, ...extra.supplies],
           blueprints: prize.blueprints,
         };
       }
@@ -295,13 +305,15 @@ function payRun(
         },
         bossElement,
       );
+      const extra = sealed();
       return {
         parts: addParts(addParts(packParts, loot.parts), prize.parts),
         gear: [
           ...loot.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
           ...prize.gear,
+          ...extra.gear,
         ],
-        supplies: [...loot.supplies, ...prize.supplies],
+        supplies: [...loot.supplies, ...prize.supplies, ...extra.supplies],
         blueprints: prize.blueprints,
       };
     },
@@ -443,7 +455,7 @@ export function summarise(
       return kind === 'door' && !undercroftOpen(row.depth) ? 'mystery' : kind;
     }),
     pack: { found: { ...args.found }, kept: { ...args.kept } },
-    keepsakes: keepsakeViews(st.keepsakes),
+    keepsakes: heldViews(st),
     ...(outcome === null
       ? {}
       : {

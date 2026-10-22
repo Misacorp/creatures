@@ -23,8 +23,13 @@ import {
   sampleCampCreatures,
   sampleStateCamp,
   sampleStateEvent,
+  SAMPLE_CURSE,
+  SAMPLE_DOOR_TREASURES,
   SAMPLE_TREASURES,
   chasmEvent,
+  doorEvent,
+  sampleDoorSummary,
+  sampleStateCursed,
   sampleChasmSummary,
   sampleStateMid,
   sampleSummary,
@@ -1692,5 +1697,143 @@ describe('the Blue Chasm', () => {
     const text = visibleText(root);
     expect(text).toContain('Blue Chasm');
     expect(text).toContain('the whole team falls into the chasm');
+  });
+});
+
+describe('the Cursed Idol curse on the run', () => {
+  it('lists the curse in the keepsakes like any keepsake: same chip, a curse glyph and a spoken "Curse"', () => {
+    const { root } = draw(<DungeonRunStrip state={sampleStateCursed()} />);
+    // No separate warning note any more.
+    expect(byClass(root, 'run-curses')).toHaveLength(0);
+    expect(byClass(root, 'alert')).toHaveLength(0);
+    const list = byClass(root, 'run-keepsakes')[0] as FakeElement;
+    const chips = byClass(list, 'run-keepsake');
+    expect(chips).toHaveLength(2);
+    const chip = byName(
+      list,
+      'button',
+      `Curse, ${SAMPLE_CURSE.name}: ${SAMPLE_CURSE.description}`,
+    )[0] as FakeElement;
+    expect(chip).toBe(chips[1]);
+    expect(chip.getAttribute('class')).toContain('chip');
+    expect(chip.getAttribute('class')).toContain('run-curse');
+    // A real keepsake keeps its plain label and no curse class.
+    const plain = byName(list, 'button', /^Lantern Moth: /)[0] as FakeElement;
+    expect(plain.getAttribute('class')).not.toContain('run-curse');
+    expect(glossaryEntry('curse')?.title).toBe('Curse');
+  });
+
+  it("shows the curse's effect on tap, the same sheet any keepsake opens", () => {
+    const { root, document } = draw(<DungeonRunStrip state={sampleStateCursed()} />);
+    page?.click(button(root, /^Curse, Idol's Curse/));
+    const sheet = find(document.body, (e) => e.getAttribute('role') === 'dialog')[0];
+    expect(sheet).toBeDefined();
+    expect(visibleText(sheet as FakeElement)).toContain("Idol's Curse");
+    expect(visibleText(sheet as FakeElement)).toContain(SAMPLE_CURSE.description);
+    expect(visibleText(sheet as FakeElement)).toContain(KEEPSAKE_ONLY_LINE);
+  });
+
+  it('has no curse chip on a run without one', () => {
+    const { root } = draw(<DungeonRunStrip state={sampleStateMid()} />);
+    expect(byClass(root, 'run-curse')).toHaveLength(0);
+  });
+
+  it('lists the curse on the end screen among the keepsakes', () => {
+    const run = sampleSummary('home');
+    const { root } = draw(
+      <DungeonResults
+        run={{ ...run, keepsakes: [...(run.keepsakes ?? []), SAMPLE_CURSE] }}
+        today={sampleToday()}
+        offset={0}
+        canRetry={false}
+        busy={false}
+        error={null}
+        onWatch={noop}
+        onRetry={noop}
+      />,
+    );
+    const chip = byClass(root, 'run-curse')[0] as FakeElement;
+    expect(chip.getAttribute('aria-label')).toBe(
+      `Curse, ${SAMPLE_CURSE.name}: ${SAMPLE_CURSE.description}`,
+    );
+  });
+});
+
+describe('the Hungry Door', () => {
+  it('shows its Rare-tier treasure between the scene and the choice, with the exact outcomes', () => {
+    for (const treasure of Object.values(SAMPLE_DOOR_TREASURES)) {
+      page?.unmount();
+      page = createPage();
+      page.draw(<DungeonEvent event={doorEvent(treasure)} busy={false} onPick={noop} />);
+      const root = page.root;
+      const text = visibleText(root);
+      expect(text).toContain('Hungry Door');
+      expect(byClass(root, 'event-treasure')).toHaveLength(1);
+      expect(text.indexOf('The treasure')).toBeLessThan(text.indexOf('Feed it'));
+      expect(visibleText(button(root, /Feed it/))).toContain('highest-level creature goes home');
+      expect(visibleText(button(root, /Pry it open/))).toContain('40%');
+      expect(visibleText(button(root, /Pry it open/))).toContain('60%');
+    }
+    expect(SAMPLE_DOOR_TREASURES.gear.rarity).toBe('rare');
+  });
+
+  it('opens the full item card of the Rare piece before choosing, with no Equip button', () => {
+    Reflect.set(globalThis, 'window', {
+      innerHeight: 800,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    });
+    const p = draw(
+      <PopoverHost onOpenHowTo={noop}>
+        <EquipHost creatures={[sampleCreature('growing')]} onEquip={noop}>
+          <DungeonEvent event={doorEvent()} busy={false} onPick={noop} />
+        </EquipHost>
+      </PopoverHost>,
+    );
+    p.click(byClass(p.root, 'find-row-button')[0] as FakeElement);
+    expect(byClass(p.root, 'idc')).toHaveLength(1);
+    const text = visibleText(byClass(p.root, 'idc')[0] as FakeElement);
+    for (const line of SAMPLE_DOOR_TREASURES.gear.card.lines) expect(text).toContain(line.text);
+    expect(byClass(p.root, 'pop-action').filter((b) => visibleText(b) === 'Equip')).toHaveLength(0);
+  });
+
+  it('turns Feed it off with the reason when only one creature stands, and Pry it open still picks', () => {
+    const picked: (0 | 1)[] = [];
+    const { root } = draw(
+      <DungeonEvent
+        event={doorEvent(undefined, 'Needs two creatures standing.')}
+        busy={false}
+        onPick={(o) => {
+          picked.push(o);
+        }}
+      />,
+    );
+    const feed = button(root, /Feed it/);
+    expect(visibleText(feed)).toContain('Needs two creatures standing.');
+    expect(feed.hasAttribute('disabled')).toBe(true);
+    expect(button(root, /Pry it open/).hasAttribute('disabled')).toBe(false);
+    page?.click(feed);
+    page?.click(button(root, /Pry it open/));
+    expect(picked).toEqual([1]);
+  });
+
+  it('says on the end screen which creature went home, with the treasure it bought', () => {
+    const run = sampleDoorSummary();
+    const { root } = draw(
+      <DungeonResults
+        run={run}
+        today={sampleToday()}
+        offset={0}
+        canRetry={false}
+        busy={false}
+        error={null}
+        onWatch={noop}
+        onRetry={noop}
+      />,
+    );
+    page?.click(button(root, /Rooms/));
+    const text = visibleText(root);
+    expect(text).toContain('Hungry Door');
+    expect(text).toContain('Pip heads home. You take the treasure.');
   });
 });

@@ -43,8 +43,12 @@ export function DungeonEvent({
           <ChoiceButton
             key={option.label}
             label={option.label}
-            line={option.description}
-            disabled={busy}
+            line={
+              option.blocked === undefined
+                ? option.description
+                : `${option.description} ${option.blocked}`
+            }
+            disabled={busy || option.blocked !== undefined}
             onClick={() => {
               onPick(index === 0 ? 0 : 1);
             }}

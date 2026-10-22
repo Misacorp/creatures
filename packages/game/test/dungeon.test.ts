@@ -14,6 +14,7 @@ import {
   loadDungeon,
   roomModifier,
   rollDungeonLoot,
+  rollSealedBonus,
   rollDungeonSupply,
   rowReactions,
   rowScore,
@@ -695,5 +696,29 @@ describe('dungeon foe Speed', () => {
     expect(withSpd(25)).not.toThrow();
     expect(withSpd(-3)).toThrow(/schema/);
     expect(withSpd(2.5)).toThrow(/schema/);
+  });
+});
+
+describe('the Sealed Vault bonus loot', () => {
+  it('draws nothing with no marked fight', () => {
+    let draws = 0;
+    const counting = { nextU32: () => (draws += 1) };
+    expect(rollSealedBonus(counting, 3, 0, 'tide')).toEqual({ gear: [], supplies: [] });
+    expect(draws).toBe(0);
+  });
+
+  it('adds one gear roll and one supply for each marked fight, with independent dice', () => {
+    const one = rollSealedBonus(createSeededRng('seal'), 3, 1, 'ember');
+    expect(one.supplies).toHaveLength(RULES.dungeon.seal.rewardMultiplier - 1);
+    // The full clear's gear chance is certain today, so each marked fight adds a piece.
+    expect(RULES.dungeon.fullClear.gearBp).toBe(10_000);
+    expect(one.gear).toHaveLength(1);
+    const two = rollSealedBonus(createSeededRng('seal'), 3, 2, 'ember');
+    expect(two.gear).toHaveLength(2);
+    expect(two.supplies).toHaveLength(2);
+    // The second piece comes from later dice, so it is not a copy of the first.
+    expect(two.gear[1]).not.toEqual(two.gear[0]);
+    // Deterministic with a seeded rng.
+    expect(rollSealedBonus(createSeededRng('seal'), 3, 2, 'ember')).toEqual(two);
   });
 });

@@ -17,10 +17,12 @@ import {
   catchBreath,
   drawMark,
   dungeonEvent,
-  dungeonKeepsakes,
+  dungeonGifts,
   dungeonScrapPerRoom,
   emptyPack,
-  eventHasTreasure,
+  eventTreasureTable,
+  treasureTable,
+  eventOptionBlock,
   generateUndercroftMap,
   int,
   isLandmark,
@@ -33,12 +35,14 @@ import {
   reachableNodes,
   resolveEvent,
   rollDungeonLoot,
+  rareEventsAt,
   rollRareEvent,
   rollTreasure,
   rollUndercroftChest,
   RULES,
   roomSpecForNode,
   roomXpSource,
+  sealTargets,
   undercroftBaseFloors,
   undercroftOpen,
   weatherSheet,
@@ -61,7 +65,8 @@ import {
   abilityChoices,
   currentHp,
   currentMap,
-  heldKeepsakes,
+  heldFolds,
+  curseViews,
   keepsakeView,
   maxHpOfRow,
   treasureView,
@@ -211,7 +216,7 @@ function someoneStands(st: RunState): boolean {
 
 /** A random keepsake the run does not hold, or null when it holds them all. */
 function drawKeepsake(rng: Rng, held: readonly string[]): string | null {
-  const left = dungeonKeepsakes.filter((k) => !held.includes(k.id));
+  const left = dungeonGifts.filter((k) => !held.includes(k.id));
   const pick = left[int(rng, left.length || 1)];
   return pick === undefined ? null : pick.id;
 }
@@ -225,6 +230,7 @@ function packLoot(
   kind: Parameters<typeof nodeLoot>[0],
   fight: boolean,
   shards?: DungeonPack['shards'],
+  times = 1,
 ): DungeonPack {
   const loot = nodeLoot(kind, st.level);
   const doubled =
@@ -232,12 +238,34 @@ function packLoot(
       ? RULES.dungeon.undercroft.lootMultiplier
       : 1;
   const gained = {
-    ...loot,
-    scrap: loot.scrap + (fight ? dungeonScrapPerRoom(st.weather) * doubled : 0),
+    bait: loot.bait * times,
+    essence: loot.essence * times,
+    scrap: (loot.scrap + (fight ? dungeonScrapPerRoom(st.weather) * doubled : 0)) * times,
     ...(shards === undefined ? {} : { shards }),
   };
   st.pack = addPack(st.pack, gained);
   return gained;
+}
+
+/**
+ * The shards a cleared room drops, `rolls` times over (live dice from the gear rng, one roll each: a room the
+ * Sealed Vault marked rolls twice), added up. Undefined when none dropped.
+ */
+function rollShards(
+  rng: Rng,
+  kind: Parameters<typeof nodeLoot>[0],
+  element: Parameters<typeof rollRoomShard>[2],
+  rolls: number,
+): DungeonPack['shards'] {
+  const total: NonNullable<DungeonPack['shards']> = {};
+  for (let i = 0; i < rolls; i++) {
+    const one = rollRoomShard(rng, kind, element);
+    if (one === undefined) continue;
+    for (const [part, n] of Object.entries(one) as [keyof typeof total, number][]) {
+      total[part] = (total[part] ?? 0) + n;
+    }
+  }
+  return Object.keys(total).length === 0 ? undefined : total;
 }
 
 /**
@@ -398,8 +426,12 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
     case 'elite':
     case 'epic':
     case 'boss': {
-      const held = heldKeepsakes(st.keepsakes);
-      const base = roomSpecForNode(map, nodeId, depth, st.fights);
+      const held = heldFolds(st);
+      // A room the Sealed Vault marked is fought as an epic fight with double rewards; the first one entered
+      // uses up the mark, and the other marked rooms go back to normal.
+      const sealed = st.sealed.includes(nodeId) && (node.kind === 'fight' || node.kind === 'elite');
+      st.sealed = [];
+      const base = roomSpecForNode(map, nodeId, depth, st.fights, sealed);
       const spec: DungeonRoomSpec = held.length === 0 ? base : { ...base, keepsakes: held };
       // The seed is drawn now: a client can neither know it before nor pick it.
       const seed = drawSeed(env.rng);
@@ -419,6 +451,7 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
         rounds: result.result.rounds,
         foeHpEnd: result.result.bossHpEnd,
         foeHpMax: result.result.bossHpStart,
+        ...(sealed ? { sealed: true as const } : {}),
       };
       if (!result.cleared) {
         st.history.push({ ...step, loot: { bait: 0, essence: 0, scrap: 0 } });
@@ -426,30 +459,40 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       }
       st.roomsCleared += 1;
       // A shard of the foe's element, by room kind (live randomness, rolled as the room is cleared).
-      const shard = rollRoomShard(
+      const rolls = sealed ? RULES.dungeon.seal.rewardMultiplier : 1;
+      const shard = rollShards(
         env.gearRng,
         node.kind,
         nodeFoe(node, depth, st.level)?.element ?? 'tide',
+        rolls,
       );
-      const loot = packLoot(st, node.kind, true, shard);
+      const loot = packLoot(st, node.kind, true, shard, rolls);
       // Experience: each creature that stood in the row for the fight earns the room's amount (a lost fight pays none).
-      const source = roomXpSource(node.kind, st.level);
+      const source = roomXpSource(sealed ? 'epic' : node.kind, st.level);
       if (source !== null) st.earned = addRoomExperience(st.earned, standing, source);
       const earnedSupply = !st.supply;
       st.supply = true;
+      // A marked fight's gear and supply are paid with the run's end grant (`rollSealedBonus`).
+      if (sealed) st.sealedWins += 1;
       let keepsake: DungeonKeepsakeView | null = null;
+      let bonusKeepsake: DungeonKeepsakeView | null = null;
       if (node.kind === 'elite' || node.kind === 'epic') {
         if (node.kind === 'elite') st.elites += 1;
-        const gift = drawKeepsake(env.rng, st.keepsakes);
-        if (gift !== null) {
+        // A marked elite gives a second keepsake (distinct, and not held): as many as are left.
+        const gifts = sealed ? RULES.dungeon.seal.rewardMultiplier : 1;
+        for (let i = 0; i < gifts; i++) {
+          const gift = drawKeepsake(env.rng, st.keepsakes);
+          if (gift === null) break;
           st.keepsakes.push(gift);
-          keepsake = keepsakeView(gift);
+          if (i === 0) keepsake = keepsakeView(gift);
+          else bonusKeepsake = keepsakeView(gift);
         }
       }
       st.history.push({
         ...step,
         loot,
         ...(keepsake === null ? {} : { keepsake }),
+        ...(bonusKeepsake === null ? {} : { bonusKeepsake }),
         ...(earnedSupply ? { supply: true } : {}),
       });
       if (node.kind === 'boss') {
@@ -470,19 +513,27 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       return {};
     case 'mystery': {
       // A rare room may take this room's place (live dice, drawn as the room opens, at most once a run).
-      const rare = rollRareEvent(env.rng, depth, st.rareSeen);
+      const rare = rollRareEvent(env.rng, depth, st.rareSeen, rareEventsAt(map, nodeId));
       if (rare !== undefined) st.rareSeen.push(rare.id);
       // An event the content no longer has is a quiet room: nothing waits.
       const event = rare ?? (node.eventId === undefined ? undefined : dungeonEvent(node.eventId));
       if (event !== undefined) {
         // A room with a prize rolls it now, from this player's progress, and shows it before the choice.
-        const treasure = eventHasTreasure(event)
-          ? rollTreasure(env.gearRng, {
-              depth,
-              elements: st.input.team.map((slot) => slot.element),
-              knownBlueprints: new Set(knownBlueprints(env.sql, env.userId).map((b) => b.baseId)),
-            })
-          : undefined;
+        const table = eventTreasureTable(event);
+        const treasure =
+          table === undefined
+            ? undefined
+            : rollTreasure(
+                env.gearRng,
+                {
+                  depth,
+                  elements: st.input.team.map((slot) => slot.element),
+                  knownBlueprints: new Set(
+                    knownBlueprints(env.sql, env.userId).map((b) => b.baseId),
+                  ),
+                },
+                treasureTable(table),
+              );
         st.pending = {
           kind: 'event',
           eventId: event.id,
@@ -524,27 +575,76 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
 
 // --- Event ---
 
+/**
+ * Sends creatures home from the row, as a camp swap sends one out but with nobody coming in: it leaves
+ * the row (its slot, ability picks, rest and HP), keeps what it earned (`earned`) and stays in `everyone`,
+ * so the end screen pays and lists it with a "Went home" tag. The row is placed again for the neighbours
+ * it has left. Returns the name of the first creature sent (undefined when none). A row is never left
+ * empty: the last creature is not sent (the event refuses first).
+ */
+function sendHome(st: RunState, ids: readonly string[]): string | undefined {
+  let name: string | undefined;
+  for (const id of ids) {
+    const row = st.input.team;
+    const leaving = row.find((slot) => slot.id === id);
+    if (leaving === undefined || row.length < 2) continue;
+    name ??= leaving.name;
+    const team = row.filter((slot) => slot.id !== id);
+    const rest = { ...st.input.rest };
+    delete rest[id];
+    const withoutRest = { ...st.input };
+    delete withoutRest.rest;
+    st.input = {
+      ...withoutRest,
+      team,
+      abilities: abilityChoices(team),
+      ...(Object.keys(rest).length === 0 ? {} : { rest }),
+    };
+    const max = { ...st.hpMax };
+    delete max[id];
+    st.hpMax = max;
+    if (st.hp !== null) {
+      const hp = { ...st.hp };
+      delete hp[id];
+      st.hp = hp;
+    }
+  }
+  reseat(st);
+  return name;
+}
+
 export function applyEvent(env: PathEnv, st: RunState, option: 0 | 1): ActOutcome {
   if (st.pending?.kind !== 'event') throw invalidAct('no mystery room is waiting');
   const event = dungeonEvent(st.pending.eventId);
   if (event === undefined) throw invalidAct('that scene is gone');
   const chosen = event.options[option];
   if (chosen === undefined) throw invalidAct('no such option');
+  const standing = currentHp(st);
+  const blocked = eventOptionBlock(chosen, { hp: standing });
+  if (blocked !== null) throw invalidAct(blocked);
   const resolved = resolveEvent(
     event,
     option,
     {
-      hp: currentHp(st),
+      hp: standing,
       hpMax: st.hpMax,
       keepsakes: st.keepsakes,
       treasure: st.pending.treasure,
+      levels: Object.fromEntries(st.input.team.map((slot) => [slot.id, slot.level])),
+      names: Object.fromEntries(st.input.team.map((slot) => [slot.id, slot.name])),
     },
     env.rng,
   );
   st.hp = resolved.hp;
+  // A curse the run does not carry yet goes on for the rest of the run.
+  const newCurses = (resolved.curses ?? []).filter((c) => !st.curses.some((h) => h.id === c.id));
+  st.curses.push(...newCurses);
+  const sentName = sendHome(st, resolved.sentHome ?? []);
   st.pack = addPack(st.pack, resolved.packDelta);
   st.keepsakes.push(...resolved.keepsakesGained);
   if (resolved.treasure !== undefined) st.treasures.push(resolved.treasure);
+  // A broken seal marks the fights the run can step into next (see `sealTargets`).
+  if (resolved.sealed === true) st.sealed = sealTargets(currentMap(st), st.at ?? '');
   st.earned = addEventExperience(st.earned, resolved.xp);
   st.lastEvent = { name: event.name, option: chosen.label, outcome: resolved.outcome };
   const gained = resolved.keepsakesGained[0];
@@ -558,6 +658,8 @@ export function applyEvent(env: PathEnv, st: RunState, option: 0 | 1): ActOutcom
     outcome: resolved.outcome,
     loot: { ...resolved.packDelta },
     ...(gainedView === null ? {} : { keepsake: gainedView }),
+    ...(newCurses[0] === undefined ? {} : { curse: curseViews([newCurses[0]])[0] }),
+    ...(sentName === undefined ? {} : { sentHome: sentName }),
     ...(resolved.treasure === undefined ? {} : { treasure: treasureView(resolved.treasure) }),
     ...(resolved.fell === true ? { fell: true as const } : {}),
   });
@@ -750,6 +852,7 @@ export function applyDescend(env: PathEnv, st: RunState, depth: number): ActOutc
   st.hp = after;
   st.under.push(map);
   st.level = level;
+  st.sealed = [];
   settleStep(st, { node: st.at ?? '', kind: 'descend', result: 'descend', level, healed, revived });
   st.pending = null;
   st.at = null;

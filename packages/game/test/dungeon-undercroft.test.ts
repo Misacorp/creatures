@@ -534,6 +534,9 @@ describe('the carved door on the main map', () => {
       const withDoors = mains[i] as DungeonMap;
       // (A door that left a map invalid is a map drawn again: only the maps that kept their draw compare.)
       if (withDoors.nodes.length !== plain.nodes.length) continue;
+      // (A redraw can also land on the same number of rooms: only a map whose paths are the same compares.)
+      const paths = (m: DungeonMap): string[] => m.nodes.map((n) => `${n.id}>${n.next.join(',')}`);
+      if (paths(withDoors).join('|') !== paths(plain).join('|')) continue;
       compared += 1;
       for (const n of withDoors.nodes) {
         const same = plain.nodes.find((p) => p.id === n.id);

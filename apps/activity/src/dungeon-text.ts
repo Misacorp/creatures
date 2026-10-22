@@ -7,6 +7,7 @@ import { RULES, dungeonContent } from '@creatures/game';
 import { ApiError } from './api';
 import type {
   DungeonErrorCode,
+  DungeonKeepsakeView,
   DungeonPack,
   DungeonRunState,
   DungeonRunSummary,
@@ -437,3 +438,13 @@ export function descendLines(
 export const DESCEND_RISK_LINE = 'Keep half of your pack if you are defeated.';
 /** Under the home button. */
 export const DESCEND_HOME_LINE = 'Keep your full pack.';
+
+/** The glyph of a keepsake chip: a sparkle, or the cracked skull of a curse. */
+export function keepsakeGlyph(k: Pick<DungeonKeepsakeView, 'curse'>): 'sparkle' | 'curse' {
+  return k.curse === true ? 'curse' : 'sparkle';
+}
+
+/** The spoken label of a keepsake chip; a curse says it is one. */
+export function keepsakeLabel(k: DungeonKeepsakeView): string {
+  return `${k.curse === true ? 'Curse, ' : ''}${k.name}: ${k.description}`;
+}

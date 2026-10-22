@@ -23,13 +23,15 @@ const options = (list: Record<string, unknown>[], at = 0): Record<string, unknow
   (list[at] as { options: Record<string, unknown>[] }).options;
 
 describe('the shipped keepsakes and events', () => {
-  it('load, with eight keepsakes and eight common events and one rare one', () => {
+  it('load, with eight keepsakes, eleven common events and three rare ones', () => {
     expect(() => load(keepsakesJson, eventsJson)).not.toThrow();
     expect(dungeonKeepsakes).toHaveLength(8);
-    expect(dungeonEvents).toHaveLength(9);
-    expect(dungeonEvents.filter((e) => e.rare === undefined)).toHaveLength(8);
+    expect(dungeonEvents).toHaveLength(14);
+    expect(dungeonEvents.filter((e) => e.rare === undefined)).toHaveLength(11);
     expect(dungeonEvents.filter((e) => e.rare !== undefined).map((e) => e.id)).toEqual([
       'blue-chasm',
+      'hungry-door',
+      'sealed-vault',
     ]);
   });
 
@@ -104,6 +106,8 @@ describe('the shipped keepsakes and events', () => {
           return [pct(e.bp)];
         case 'xp':
           return [String(e.amount)];
+        case 'curse':
+          return e.curse.effects.map((f) => pct(f.bp));
         case 'pack':
           return [e.bait, e.essence, e.scrap].filter((n) => n !== undefined).map(String);
         case 'gamble':
@@ -161,6 +165,8 @@ describe('the shipped keepsakes and events', () => {
           return -e.bp / 1000;
         case 'keepsake':
           return 2.5;
+        case 'xp':
+          return e.amount / 20;
         case 'gamble': {
           const p = e.chanceBp / 10_000;
           return (
@@ -173,6 +179,8 @@ describe('the shipped keepsakes and events', () => {
       }
     };
     for (const event of dungeonEvents) {
+      // A rare room's prize (a treasure, a creature sent home) is not priced here: it has its own odds and table.
+      if (event.rare !== undefined) continue;
       const [a = 0, b = 0] = event.options.map((o) =>
         o.effects.reduce((sum, e) => sum + value(e), 0),
       );
@@ -184,7 +192,8 @@ describe('the shipped keepsakes and events', () => {
         expect(gain, label).toBeGreaterThanOrEqual(0);
         expect(gain, label).toBeLessThanOrEqual(3.5);
       } else {
-        expect(Math.abs(a - b), label).toBeLessThanOrEqual(3.5);
+        // Two safe or two risky options: close in value (6 since Crystal Hollow: 1 Essence and 3 scrap against a 30% heal).
+        expect(Math.abs(a - b), label).toBeLessThanOrEqual(6);
       }
     }
   });
@@ -335,6 +344,23 @@ describe('the keepsake and event schemas refuse bad data', () => {
     expect(() => load(keepsakesJson, costly(gambleFall, { op: 'nothing' }))).not.toThrow();
   });
 
+  it('a seal counts as a cost (it adds danger): two seals are refused, a seal beside a free option loads, and it takes no keys', () => {
+    const seal = { op: 'seal' };
+    const costly = (a: unknown, b: unknown): Record<string, unknown>[] => {
+      const e = events();
+      (options(e)[0] as Record<string, unknown>)['effects'] = [a];
+      (options(e)[1] as Record<string, unknown>)['effects'] = [b];
+      return e;
+    };
+    refused(keepsakesJson, costly(seal, seal));
+    refused(
+      keepsakesJson,
+      costly({ op: 'gamble', chanceBp: 5000, win: [seal], lose: [{ op: 'nothing' }] }, seal),
+    );
+    expect(() => load(keepsakesJson, costly(seal, { op: 'nothing' }))).not.toThrow();
+    refused(keepsakesJson, costly({ op: 'seal', amount: 2 }, { op: 'nothing' }));
+  });
+
   it('an event holds at most one treasure, and a rare block has a real chance and depth', () => {
     const e = events();
     (options(e)[1] as Record<string, unknown>)['effects'] = [
@@ -343,10 +369,11 @@ describe('the keepsake and event schemas refuse bad data', () => {
     ];
     refused(keepsakesJson, e);
     for (const rare of [
-      { chanceBp: 0, fromDepth: 3 },
-      { chanceBp: 10_001, fromDepth: 3 },
-      { chanceBp: 1500, fromDepth: 0 },
-      { chanceBp: 1500, fromDepth: 3, extra: 1 },
+      { fromDepth: 0 },
+      { fromDepth: 3, extra: 1 },
+      // A room has no chance of its own any more: one roll in the rules decides for all of them.
+      { chanceBp: 1500, fromDepth: 3 },
+      {},
     ]) {
       const bad = events();
       (bad[0] as Record<string, unknown>)['rare'] = rare;
@@ -361,7 +388,7 @@ describe('the keepsake and event schemas refuse bad data', () => {
     expect(chasm.text).toBe(
       "A narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There's a valuable treasure on the other side.",
     );
-    expect(chasm.rare).toEqual({ chanceBp: 1500, fromDepth: 3 });
+    expect(chasm.rare).toEqual({ fromDepth: 3 });
     expect(chasm.options.map((o) => o.label)).toEqual(['Cross the plank', "Don't risk it"]);
     const [cross, leave] = chasm.options;
     expect(cross?.effects).toEqual([
