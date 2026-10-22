@@ -1,6 +1,6 @@
 # Lounge live: WebSocket push for the living room
 
-Status: **on everywhere since 2026-10-20** (Misa asked for production with lounging XP, see `living-room.md`, "Lounging with company"). Built 2026-10-19 behind the `LOUNGE_LIVE` flag, at first off in production. Misa: "a prototype of websockets, but not in the raid yet. Try it in the lounge! Easier to test and opens up more cozy options." Builds on `living-room.md` (what the room shows) and `docs/research/platform.md` (what is known about Discord's proxy). The raid finale stays on polling.
+Status: **on everywhere since 2026-10-20** (Misa asked for production with lounging XP, see `living-room.md`, "Lounging with company"). Built 2026-10-19 behind the `LOUNGE_LIVE` flag, at first off in production. Misa: "a prototype of websockets, but not in the raid yet. Try it in the lounge! Easier to test and opens up more cozy options." Builds on `living-room.md` (what the room shows) and `docs/research/platform.md` (what is known about Discord's proxy). The raid finale now uses the same sockets as a second topic: see `finale-live.md` (2026-10-22).
 
 ## What it does
 
@@ -24,10 +24,10 @@ client                          Worker                         guild Durable Obj
   | "ping" every 60 s            -->  answered with "pong" by the runtime, the object stays asleep
 ```
 
-- **One object, no new class.** The sockets live in the existing `GuildWorld` object, so the push happens inside the same serialised path as the writes that cause it. The code is `apps/worker/src/lounge-live.ts` (sockets, caps, push), `lounge-ticket.ts` (tickets) and `lounge-live-routes.ts` (the ticket route).
-- **Hibernation API.** Sockets are accepted with `ctx.acceptWebSocket(ws, ['u:<userId>'])`; the identity is stored with `serializeAttachment`; `webSocketMessage`, `webSocketClose` and `webSocketError` are class methods. The object sets `setWebSocketAutoResponse('ping' -> 'pong')` in its constructor. No timer, interval or outbound fetch is kept for the sockets, so the object can sleep while the sockets stay open.
+- **One object, no new class.** The sockets live in the existing `GuildWorld` object, so the push happens inside the same serialised path as the writes that cause it. The code is `apps/worker/src/live-socket.ts` (sockets, caps, topics), `lounge-live.ts` (the lounge's push), `live-ticket.ts` (tickets) and `live-routes.ts` (the ticket routes). Since 2026-10-22 the sockets carry a **topic** (`t:lounge`, or a party's finale, `finale-live.md`); everything below describes the lounge topic, whose behaviour did not change.
+- **Hibernation API.** Sockets are accepted with `ctx.acceptWebSocket(ws, ['u:<userId>', 't:lounge'])`; the identity is stored with `serializeAttachment`; `webSocketMessage`, `webSocketClose` and `webSocketError` are class methods. The object sets `setWebSocketAutoResponse('ping' -> 'pong')` in its constructor. No timer, interval or outbound fetch is kept for the sockets, so the object can sleep while the sockets stay open.
 - **When the push runs.** After a successful non-GET request (`GuildCore.handle`), if the guild has any socket belonging to someone else, the actor's room entry is read with the same code as `POST /api/room` and compared with the last one pushed for that player (kept in memory). Only a different entry is sent, once per request, as one frame, to every socket of the guild except the actor's own (their client draws their creature from its own state). `POST /api/room` and the ticket route are skipped. A guild with nobody listening pays one `getWebSockets()` call per write and nothing else.
-- **The alarm.** Neither the upgrade nor a push touches the alarm. (`ensureAlarm` only calls `setAlarm` when the wanted time is earlier than the stored one, so a request does not write a row each time.)
+- **The alarm.** Neither the lounge's upgrade nor a lounge push touches the alarm (the finale's sockets do arm it, `finale-live.md`). (`ensureAlarm` only calls `setAlarm` when the wanted time is earlier than the stored one, so a request does not write a row each time.)
 
 ## Messages
 
@@ -65,7 +65,7 @@ A socket is closed by the server after 12 hours (the longest a session lives), a
 
 ## Client (`apps/activity`)
 
-- `lounge-socket.ts` (framework-free, everything injected): fetches a ticket, opens the socket, goes live on `hello`, hands pushed residents to the room, pings every 60 s (also while pushes arrive: the ping is the server's only sign that the player is still there; skipping it while pushes arrived made two busy players look gone, fixed 2026-10-20), treats 150 s of silence as dead, and reconnects with backoff 1 s, 2 s, 4 s up to 30 s with half-to-full jitter (dice from `crypto.getRandomValues`). It gives up after 6 tries in a row that never got a `hello` and when the ticket route says 404 (flag off). Code 4000 also stops it.
+- `live-socket.ts` (was `lounge-socket.ts`; framework-free, everything injected): fetches a ticket, opens the socket, goes live on `hello`, hands pushed residents to the room, pings every 60 s (also while pushes arrive: the ping is the server's only sign that the player is still there; skipping it while pushes arrived made two busy players look gone, fixed 2026-10-20), treats 150 s of silence as dead, and reconnects with backoff 1 s, 2 s, 4 s up to 30 s with half-to-full jitter (dice from `crypto.getRandomValues`). It gives up after 6 tries in a row that never got a `hello` and when the ticket route says 404 (flag off). Code 4000 also stops it.
 - `room-loader.ts`: `setLive(true)` stops the 45 s poll and fetches everyone once; `setLive(false)` brings the poll back; `applyResident` merges a pushed resident for someone present (never the player; their creature comes from their own state). Joins are still fetched by the debounced newcomer request, because presence is not pushed.
 - `use-room.ts`: opens the socket only while the server offers it (`/api/config` has `loungeLive: true`), the page is visible and somebody else is here (`shouldOpenSocket`). Hidden or alone: no socket, no timer, no request, like the poll.
 - CSP: `connect-src` lists `wss://creatures.misacorp.dev`, `wss://creatures-staging.misacorp.dev` and `wss://*.discordsays.com` next to `'self'` (older browsers do not let `'self'` cover `wss:`).
@@ -120,11 +120,11 @@ We are on the Workers **Free** plan (Misa, 2026-10-19). Figures are from Cloudfl
 
 **Still to measure on staging:** whether Discord's proxy keeps the `?ticket=` query, its idle timeout, and what a phone does when the app goes to the background. Then look at Cloudflare's dashboard after a day with the flag on, to see how pings count on Free.
 
-## Extending this to the raid finale
+## The raid finale
 
-The finale snapshot (`GET /api/raid/live`) is a full state each time, which is the same shape of problem: a push channel that says "something changed" or carries the new snapshot. The same pieces carry over: the ticket and upgrade, the object's sockets (a tag per party instead of per user), the client controller and the fall back to polling. What changes is the broadcaster (a round tick instead of a request), which would need an alarm per round (an alarm does not block hibernation) and a decision about where the fight's state is derived. Not done now; the finale keeps polling every 2 s until the lounge prototype has proved itself inside Discord on desktop, iOS and Android.
+Done on 2026-10-22 as a second topic on the same sockets, ticket mechanism and client controller: see `finale-live.md`. What the lounge prototype settled (the proxy carries the socket and the query string, hibernation, the fallback to polling) is what the finale relies on. The finale's broadcaster is the Durable Object alarm at each round start instead of a request.
 
 ## Tests
 
-- Worker (`apps/worker/test/lounge-live.test.ts`): the flag's configuration pin and 404s, ticket auth (no session, forged, replayed, wrong guild, extra parameters, not an upgrade), ticket expiry and bound, the push reaching the other sockets of the guild and never another guild's or the actor's own, no push for a change of nothing or for a read, the auto-response pair, closing an unexpected message, the per-player and per-guild caps, stale pruning.
-- Client: `lounge-socket.test.ts` (connect, hello, fallback, backoff, give-up, heartbeat, dead connection, replaced), `room-loader.test.ts` (live stops the poll, applies pushes, falls back), `api.test.ts` (message parsing, flag, address), `room-data.test.ts` (when the socket opens).
+- Worker (`apps/worker/test/lounge-live.test.ts`; the finale's are in `finale-live.test.ts`): the flag's configuration pin and 404s, ticket auth (no session, forged, replayed, wrong guild, extra parameters, not an upgrade), ticket expiry and bound, the push reaching the other sockets of the guild and never another guild's or the actor's own, no push for a change of nothing or for a read, the auto-response pair, closing an unexpected message, the per-player and per-guild caps, stale pruning.
+- Client: `live-socket.test.ts` (was `lounge-socket.test.ts`: connect, hello, fallback, backoff, give-up, heartbeat, dead connection, replaced), `room-loader.test.ts` (live stops the poll, applies pushes, falls back), `api.test.ts` (message parsing, flag, address), `room-data.test.ts` (when the socket opens).
