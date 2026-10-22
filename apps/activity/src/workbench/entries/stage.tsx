@@ -1,3 +1,4 @@
+import { TRACK_LOOKS, type TrackLook } from '../../stage/MoveTrack';
 import { content, roomModifier } from '@creatures/game';
 import { DungeonPlayback } from '../../DungeonPlayback';
 import { FinaleProgress } from '../../FinaleProgress';
@@ -121,6 +122,7 @@ const stage: Entry = {
     players: { kind: 'number', min: 1, max: 15 },
     yourLane: { kind: 'number', min: 1, max: 15 },
     roundIntro: { kind: 'toggle' },
+    track: { kind: 'select', options: TRACK_LOOKS },
   },
   defaults: {
     fight: 'Raid',
@@ -131,6 +133,7 @@ const stage: Entry = {
     players: 11,
     yourLane: 5,
     roundIntro: false,
+    track: 'glass',
   },
   presets: [
     { name: 'Raid, third round, fourth creature acting', props: {} },
@@ -181,6 +184,7 @@ const stage: Entry = {
         : cuesForEvents(fight.events, 0, fight.events.length, ids, fight.boss.id);
       return (
         <Stage
+          trackLook={str(p, 'track') as TrackLook}
           boss={fight.boss}
           hpMax={fight.hpMax}
           hpStart={fight.hpMax}
@@ -211,6 +215,7 @@ const stage: Entry = {
       if (room === undefined) return <p class="muted">The fixture has no room.</p>;
       return (
         <Stage
+          trackLook={str(p, 'track') as TrackLook}
           boss={roomBoss(room)}
           hpMax={room.foe.hpMax}
           hpStart={room.foe.hpMax}
@@ -234,6 +239,7 @@ const stage: Entry = {
       const big = bigRaidFight(num(p, 'players'), num(p, 'yourLane') - 1);
       return (
         <Stage
+          trackLook={str(p, 'track') as TrackLook}
           boss={big.boss}
           hpMax={big.hpMax}
           hpStart={big.hpMax}
@@ -252,6 +258,7 @@ const stage: Entry = {
     const fight = sampleFight();
     return (
       <Stage
+        trackLook={str(p, 'track') as TrackLook}
         boss={fight.boss}
         hpMax={fight.boss.hpMax}
         hpStart={fight.boss.hpStart}

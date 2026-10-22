@@ -65,10 +65,6 @@
     animation: callout-hold var(--fx-ms) ease-out both;
   }
 
-  .strike-label {
-    animation: label-hold var(--fx-ms) ease-out both;
-  }
-
   .crit-pop {
     animation: crit-pop var(--fx-ms) ease-out both;
   }
@@ -467,26 +463,6 @@
     100% {
       opacity: 0;
       transform: translateX(-50%) scale(1);
-    }
-  }
-
-  @keyframes label-hold {
-    0% {
-      opacity: 0;
-      transform: scale(1.35);
-    }
-
-    8% {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    82% {
-      opacity: 1;
-    }
-
-    100% {
-      opacity: 0;
     }
   }
 

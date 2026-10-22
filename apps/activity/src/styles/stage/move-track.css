@@ -1,56 +1,48 @@
 /*
   The boss's move track (stage/MoveTrack.tsx): a column of boxes left of the boss, one per round, this
-  round on top. Moves sit in the box of the round they fire in and rise one box a round. The top box is
-  taller and lights up red when a move is due, with the move's name along its bottom.
+  round on top. Moves sit in the box of the round they fire in and rise one box a round. Four looks
+  (`look-*`) share the markup and differ in size, frames, fading and how the rise moves; each sets the
+  same custom properties and adds its own touches below.
 */
 .move-track {
-  --track-box: 2.25rem;
-  --track-top: 4rem;
-  --track-lane: 2.125rem;
+  --tr-row: 1.5rem; /* a box */
+  --tr-top: 2.25rem; /* this round's box */
+  --tr-lane: 1.5rem; /* the width of one move's column */
+  --tr-tile: 1.25rem; /* a move */
+  --tr-gap: 0.125rem;
+  --tr-fade: 0; /* how much each box further down fades */
+  --tr-glide: 520ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --tr-due: var(--bad); /* the colour of this round's box when a move is due */
   position: relative;
-  width: calc(3 * var(--track-lane) + 0.5rem);
+  width: calc(3 * var(--tr-lane) + 0.5rem);
 }
 
 .track-grid {
   display: grid;
-  grid-template-columns: repeat(3, var(--track-lane));
-  grid-template-rows: var(--track-top);
-  grid-auto-rows: var(--track-box);
-  gap: 0.25rem 0;
+  grid-template-columns: repeat(3, var(--tr-lane));
+  grid-template-rows: var(--tr-top);
+  grid-auto-rows: var(--tr-row);
+  gap: var(--tr-gap) 0;
   padding: 0 0.25rem;
 }
 
-/* The boxes: a quiet frame each, drawn under the moves across the whole width. */
 .track-box {
   position: relative;
   grid-column: 1 / -1;
   margin: 0 -0.25rem;
-  background: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--line);
-}
-
-.track-box.now {
-  background: var(--dusk);
-  box-shadow: 0 0 0 var(--px) var(--haze);
-}
-
-.track-box.now.lit {
-  background: #4a1420;
-  box-shadow:
-    0 0 0 var(--px) var(--bad),
-    0 0 0.75rem rgb(255 95 109 / 60%);
+  opacity: calc(1 - var(--depth, 0) * var(--tr-fade));
 }
 
 .track-round {
   position: absolute;
-  right: 0.25rem;
-  bottom: 0.125rem;
+  right: 0.1875rem;
+  bottom: 0.0625rem;
   font-size: var(--fs-small);
   line-height: 1;
   color: var(--line);
 }
 
-/* A move: a small framed button with the move's glyph. */
+/* A move: a small button with the move's glyph. */
 .track-move {
   z-index: 1;
   display: flex;
@@ -59,13 +51,14 @@
   justify-content: center;
   align-self: center;
   justify-self: center;
-  width: 1.875rem;
-  height: 1.875rem;
+  width: var(--tr-tile);
+  height: var(--tr-tile);
   min-height: 0;
   padding: 0;
   border: 0;
-  background: var(--bevel-lo);
-  box-shadow: 0 0 0 2px var(--haze);
+  background: transparent;
+  box-shadow: none;
+  opacity: calc(1 - var(--depth, 0) * var(--tr-fade));
   cursor: pointer;
 }
 
@@ -75,19 +68,13 @@
 
 .track-move:hover,
 .track-move.open {
-  box-shadow: 0 0 0 2px var(--gold);
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
 }
 
 .track-box.now ~ .track-move:not(.charge) {
   align-self: start;
-  margin-top: 0.1875rem;
-}
-
-/* A whole-round move (armed from the start of the round): a dashed edge. */
-.track-move.round {
-  box-shadow: none;
-  outline: 2px dashed var(--gold);
-  outline-offset: -2px;
+  margin-top: calc((var(--tr-row) - var(--tr-tile)) / 2);
 }
 
 /* A charged move: a long block over the round it marks and the round it lands, its glyph on top. */
@@ -95,47 +82,40 @@
   align-self: stretch;
   justify-content: flex-start;
   height: auto;
-  margin: 0.1875rem 0;
-  padding-top: 0.125rem;
-  background: #1f3a63;
-  box-shadow: 0 0 0 2px var(--tide);
+  margin: 0.0625rem 0;
 }
 
 .track-charge-bar {
   flex-grow: 1;
-  width: 0.25rem;
-  margin: 0.125rem 0 0.25rem;
+  width: 0.1875rem;
+  margin: 0.0625rem 0 0.125rem;
   background: var(--tide);
 }
 
-/* A block cut by the track's top or bottom edge runs on out of view. */
 .track-move.charge.cut-top {
   margin-top: 0;
 }
 
 .track-move.charge.cut-bottom {
-  margin-bottom: -0.25rem;
+  margin-bottom: calc(var(--tr-gap) * -1);
 }
 
-/* The names of this round's moves, along the bottom of the top box. */
+/* The names of this round's moves, along the bottom of the top box; a long name runs on toward the boss. */
 .track-now {
   position: absolute;
-  text-shadow:
-    1px 0 var(--ink),
-    -1px 0 var(--ink),
-    0 1px var(--ink),
-    0 -1px var(--ink);
-  top: 2.25rem;
+  top: calc(var(--tr-top) - 1rem);
   left: 0;
-  right: 0;
+  width: max-content;
+  max-width: 10rem;
   z-index: 2;
   display: flex;
   flex-direction: column;
   margin: 0;
   padding: 0 0.25rem;
   font-size: var(--fs-small);
-  line-height: 1.05;
+  line-height: 1;
   color: var(--bone);
+  text-shadow: var(--ink-outline-thin);
   pointer-events: none;
 }
 
@@ -149,19 +129,200 @@
   color: var(--gold);
 }
 
-/* Each new round, the moves rise one box into place. */
+/* ---- Whisper: no frames, glyphs fade with distance, a gold tick marks this round. ---- */
+.move-track.look-whisper {
+  --tr-row: 1.375rem;
+  --tr-top: 1.625rem;
+  --tr-lane: 1.375rem;
+  --tr-tile: 1.125rem;
+  --tr-fade: 0.18;
+  --tr-glide: 700ms cubic-bezier(0.25, 1, 0.5, 1);
+  width: calc(3 * var(--tr-lane) + 0.75rem);
+}
+
+.look-whisper .track-box.now::before {
+  content: '';
+  position: absolute;
+  top: 25%;
+  bottom: 25%;
+  left: 0;
+  width: 2px;
+  background: var(--haze);
+}
+
+.look-whisper .track-box.now.lit::before {
+  background: var(--gold);
+}
+
+.look-whisper .track-box:not(.now) {
+  border-bottom: 1px dotted rgb(166 159 200 / 18%);
+}
+
+.look-whisper .track-round {
+  display: none;
+}
+
+.look-whisper .track-move.round {
+  outline: 1px dashed var(--gold);
+}
+
+.look-whisper .track-move.charge {
+  width: 0.75rem;
+}
+
+/* ---- Glass: faint see-through boxes, a smooth glide, a soft glow when a move is due. ---- */
+.move-track.look-glass {
+  --tr-fade: 0.14;
+  --tr-tile: 1.25rem;
+}
+
+.look-glass .track-box {
+  background: rgb(244 238 220 / 5%);
+  box-shadow: inset 0 0 0 1px rgb(244 238 220 / 8%);
+}
+
+.look-glass .track-box.now {
+  background: rgb(244 238 220 / 9%);
+}
+
+.look-glass .track-box.now.lit {
+  background: rgb(255 95 109 / 16%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 95 109 / 55%),
+    0 0 0.75rem rgb(255 95 109 / 30%);
+}
+
+.look-glass .track-move.round {
+  outline: 1px dashed var(--gold);
+  outline-offset: 0;
+}
+
+.look-glass .track-move.charge {
+  background: rgb(79 143 230 / 22%);
+  box-shadow: inset 0 0 0 1px rgb(79 143 230 / 60%);
+}
+
+/* ---- Ladder: crisp pixel boxes, a stepped rise; this round's box framed in red. ---- */
+.move-track.look-ladder {
+  --tr-glide: 360ms steps(3, end);
+}
+
+.look-ladder .track-box {
+  background: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.look-ladder .track-box.now {
+  background: var(--dusk);
+  box-shadow: 0 0 0 2px var(--haze);
+}
+
+.look-ladder .track-box.now.lit {
+  background: #3a1220;
+  box-shadow: 0 0 0 2px var(--bad);
+}
+
+.look-ladder .track-move {
+  background: var(--bevel-lo);
+  box-shadow: 0 0 0 1px var(--haze);
+}
+
+.look-ladder .track-move.round {
+  box-shadow: none;
+  outline: 1px dashed var(--gold);
+  outline-offset: 0;
+}
+
+.look-ladder .track-move.charge {
+  background: #1f3a63;
+  box-shadow: 0 0 0 1px var(--tide);
+}
+
+/* ---- Arcade: the loudest: bigger tiles, the box of this round pulses, an arriving move pops in. ---- */
+.move-track.look-arcade {
+  --tr-row: 1.75rem;
+  --tr-top: 2.75rem;
+  --tr-lane: 1.75rem;
+  --tr-tile: 1.5rem;
+  --tr-glide: 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.look-arcade .track-box {
+  background: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.look-arcade .track-box.now {
+  background: var(--dusk);
+  box-shadow: 0 0 0 2px var(--haze);
+}
+
+.look-arcade .track-box.now.lit {
+  background: #4a1420;
+  box-shadow:
+    0 0 0 2px var(--bad),
+    0 0 0.75rem rgb(255 95 109 / 60%);
+}
+
+.look-arcade .track-move {
+  background: var(--bevel-lo);
+  box-shadow: 0 0 0 2px var(--haze);
+}
+
+.look-arcade .track-move.round {
+  box-shadow: none;
+  outline: 2px dashed var(--gold);
+  outline-offset: -2px;
+}
+
+.look-arcade .track-move.charge {
+  background: #1f3a63;
+  box-shadow: 0 0 0 2px var(--tide);
+}
+
+/* Each new round the moves rise one box into place; how they move is the look's. */
 @media (prefers-reduced-motion: no-preference) {
   .track-move {
-    animation: track-rise 450ms ease-out both;
+    animation: track-rise var(--tr-glide) both;
+  }
+
+  .look-arcade .track-box.now.lit {
+    animation: track-pulse 1.2s ease-in-out infinite;
+  }
+
+  .look-arcade .track-move.top {
+    animation: track-pop 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
 }
 
 @keyframes track-rise {
   from {
-    transform: translateY(calc(var(--track-box) + 0.25rem));
+    transform: translateY(calc(var(--tr-row) + var(--tr-gap)));
   }
 
   to {
+    transform: none;
+  }
+}
+
+@keyframes track-pulse {
+  50% {
+    box-shadow:
+      0 0 0 2px var(--bad),
+      0 0 1.25rem rgb(255 95 109 / 85%);
+  }
+}
+
+@keyframes track-pop {
+  0% {
+    transform: translateY(calc(var(--tr-row) + var(--tr-gap))) scale(1);
+  }
+
+  60% {
+    transform: translateY(0) scale(1.35);
+  }
+
+  100% {
     transform: none;
   }
 }

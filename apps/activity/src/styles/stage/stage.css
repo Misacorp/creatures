@@ -174,68 +174,6 @@ button.stage-help::after {
   box-shadow: 0 0 0 var(--px) var(--haze);
 }
 
-/*
-  The boss's line under its HP bar: the label of the attack that just landed ("Undertow · whole FRONT
-  row"), over the forecast of the next round ("Next round: Undertow hits FRONT"). The slot keeps its
-  height, so nothing jumps; the label sits on top of the forecast while it shows.
-*/
-.stage-line {
-  display: grid;
-  align-items: center;
-  justify-items: center;
-  width: 100%;
-  min-height: 2.25rem;
-}
-
-/* While a label shows, the forecast under it steps aside (it is back when the label is gone). */
-.stage-line.has-strike .forecast {
-  visibility: hidden;
-}
-
-.stage-line > * {
-  grid-area: 1 / 1;
-  margin: 0;
-}
-
-.forecast {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.125rem 0.5rem;
-  border: 1px solid var(--gold);
-  background: rgb(var(--gold-rgb) / 8%);
-  color: var(--gold);
-  font-size: var(--fs-small);
-  line-height: 1.2;
-}
-
-.forecast > canvas {
-  flex: none;
-}
-
-.strike-label {
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  max-width: 100%;
-  padding: 0.25rem 0.5rem;
-  background: var(--ink);
-  box-shadow: 0 0 0 var(--px) var(--bad);
-  color: var(--bone);
-  font-size: var(--fs-small);
-  line-height: 1.2;
-}
-
-.strike-label > canvas {
-  flex: none;
-}
-
-.strike-label > span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
 /* Crosshairs over a creature the boss is about to hit, and the frame it keeps for a moment after. */
 .reticle {
   position: absolute;

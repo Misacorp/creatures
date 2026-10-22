@@ -85,10 +85,11 @@ function TrackMove({
     <button
       ref={ref}
       type="button"
-      class={`track-move ${tile.kind}${cut}${open ? ' open' : ''}`}
+      class={`track-move ${tile.kind}${cut}${tile.from <= first ? ' top' : ''}${open ? ' open' : ''}`}
       style={{
         gridRow: `${String(from - first + 1)} / span ${String(to - from + 1)}`,
         gridColumn: String(tile.lane + 1),
+        '--depth': String(from - first),
       }}
       {...popupProps(open)}
       aria-label={`${tile.name}, ${whenText(tile, now)}. What does it do?`}
@@ -116,24 +117,44 @@ function TrackMove({
 }
 
 /**
+ * How the track looks (Misa's design round, 2026-10-22: four versions that differ in how smooth they
+ * feel and how much attention they draw). The markup is the same; the stylesheet does the rest.
+ * - `whisper`: no frames, small glyphs fading with distance, a gold tick at this round. Quietest.
+ * - `glass`: faint see-through boxes that fade with distance and glide smoothly; a soft glow when
+ *   a move is due.
+ * - `ladder`: crisp pixel boxes and a stepped, arcade-like rise; this round's box framed in red.
+ * - `arcade`: the loudest: bigger tiles, this round's box pulses and the arriving move pops in.
+ */
+export type TrackLook = 'whisper' | 'glass' | 'ladder' | 'arcade';
+export const TRACK_LOOKS: readonly TrackLook[] = ['whisper', 'glass', 'ladder', 'arcade'];
+
+/**
  * The boss's move track (see `move-track.ts`): one box per round, this round on top and lit when a
  * move is due, the next rounds under it. Each round everything rises one box (`key` on the round, so
- * the rise plays again). The top box names what comes this round.
+ * the rise plays again). The top box names what comes this round (not in `whisper`).
  */
-export function MoveTrack({ track, round }: { track: MoveTrackView; round: number }) {
+export function MoveTrack({
+  track,
+  round,
+  look = 'glass',
+}: {
+  track: MoveTrackView;
+  round: number;
+  look?: TrackLook;
+}) {
   const first = track.rounds[0];
   const last = track.rounds.at(-1);
   if (first === undefined || last === undefined) return null;
   const now = Math.max(1, round);
   const lit = track.now.length > 0;
   return (
-    <section class="move-track" aria-label="The boss's next moves">
+    <section class={`move-track look-${look}`} aria-label="The boss's next moves">
       <div class="track-grid" key={first}>
         {track.rounds.map((r, k) => (
           <div
             key={r}
             class={`track-box${k === 0 ? ' now' : ''}${k === 0 && lit ? ' lit' : ''}`}
-            style={{ gridRow: String(k + 1) }}
+            style={{ gridRow: String(k + 1), '--depth': String(k) }}
             aria-hidden="true"
           >
             {k > 0 && <span class="track-round pix">{r}</span>}
@@ -143,7 +164,7 @@ export function MoveTrack({ track, round }: { track: MoveTrackView; round: numbe
           <TrackMove key={t.key} tile={t} now={now} first={first} last={last} />
         ))}
       </div>
-      {lit && (
+      {lit && look !== 'whisper' && (
         <p class="track-now pix">
           {track.now.map((m, k) => (
             <span key={k} class="track-now-line">

@@ -56,10 +56,10 @@ describe('the move track', () => {
     expect(late.tiles.every((t) => t.to <= 12)).toBe(true);
   });
 
-  it('shows an every-round move in the top box only, and a whole-round trap as its own kind', () => {
+  it('shows an every-round move in every box, and a whole-round trap as its own kind', () => {
     const storm = moveTrack(bossOf('storm-sovereign'), 1, 12);
     expect(storm.tiles.filter((t) => t.gimmick === 'lightning-rod').map((t) => t.from)).toEqual([
-      1,
+      1, 2, 3, 4, 5,
     ]);
     const wyrm = moveTrack(bossOf('cinder-wyrm'), 1, 12);
     expect(wyrm.tiles.find((t) => t.gimmick === 'backdraft')?.kind).toBe('round');

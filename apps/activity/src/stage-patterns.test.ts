@@ -3,19 +3,15 @@ import type { FightEvent } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { addFx, FX_MS, staticFx } from './stage-fx';
 import {
-  BIG_HIT_BP,
-  CROWDED_HITS,
   MAX_RETICLES,
   buildBeats,
   creatureHpAt,
-  crowdedHits,
   cuesForEvents,
   enragedAt,
   estimatedMaxHp,
   pendingChargesAt,
   retreatedAt,
   reticleTargets,
-  showsNumber,
   strikeRows,
   strikesOf,
   windupCuesForEvents,
@@ -194,7 +190,6 @@ describe('reading the attack patterns from the events', () => {
     const odd = { t: 'tidal_surge', round: 3, power: 9 } as unknown as FightEvent;
     expect(cuesForEvents([odd], 0, 1, ROW)).toEqual([]);
     expect(strikesOf([odd], 0, 1, ROW)).toEqual([]);
-    expect(crowdedHits([odd], 0, 1).size).toBe(0);
     expect(pendingChargesAt([odd], 1)).toEqual([]);
     expect(creatureHpAt([odd], 1, { a: 10 })).toEqual({ a: 10 });
   });
@@ -310,49 +305,7 @@ describe('the cues of the new events', () => {
   });
 });
 
-describe('a crowded action shows only its big numbers', () => {
-  const hits = (n: number, source: 'gimmick' | 'enrage' = 'gimmick') =>
-    Array.from({ length: n }, (_, k): FightEvent => ({
-      t: 'boss_hit',
-      round: 4,
-      source,
-      target: `c${String(k)}`,
-      damage: 5,
-    }));
-
-  it('marks the hits of an action that hit more than eight creatures', () => {
-    const nine = [gimmick(4, 'flood-gate', 'sweep'), ...hits(CROWDED_HITS + 1)];
-    expect(crowdedHits(nine, 0, nine.length).size).toBe(CROWDED_HITS + 1);
-    const eight = [gimmick(4, 'flood-gate', 'sweep'), ...hits(CROWDED_HITS)];
-    expect(crowdedHits(eight, 0, eight.length).size).toBe(0);
-    // The enrage round counts as one action, with no gimmick event before it.
-    const enrage = [{ t: 'enrage', round: 13, first: true } as FightEvent, ...hits(10, 'enrage')];
-    expect(crowdedHits(enrage, 0, enrage.length).size).toBe(10);
-  });
-
-  it('does not count a creature hit twice, or hits of two different actions together', () => {
-    const twice = [gimmick(4, 'x', 'barrage'), ...hits(5), ...hits(5)];
-    expect(crowdedHits(twice, 0, twice.length).size).toBe(0);
-    const two = [gimmick(4, 'x', 'barrage'), ...hits(6), gimmick(4, 'y', 'slam'), ...hits(6)];
-    expect(crowdedHits(two, 0, two.length).size).toBe(0);
-  });
-
-  it('puts the damage on the number of a crowded hit, and judges it by max HP', () => {
-    const events = [gimmick(4, 'flood-gate', 'sweep'), ...hits(10)];
-    const floats = cuesForEvents(events, 0, events.length, ROW).filter((c) => c.kind === 'float');
-    expect(floats).toHaveLength(10);
-    const first = floats[0] as Extract<Cue, { kind: 'float' }>;
-    expect(first).toMatchObject({ crowded: true, damage: 5 });
-    // 5 of 100 is under 10%: hidden. 10 of 100 is 10%: shown. Unknown max HP: shown.
-    expect(showsNumber(first, 100)).toBe(false);
-    expect(showsNumber({ ...first, damage: 10 }, 100)).toBe(true);
-    expect(BIG_HIT_BP).toBe(1000);
-    expect(showsNumber(first, null)).toBe(true);
-    // A number of a small action is always shown.
-    const small = cuesForEvents([bossHit('a', 1)], 0, 1, ROW).find((c) => c.kind === 'float');
-    expect(showsNumber(small as Extract<Cue, { kind: 'float' }>, 100)).toBe(true);
-  });
-
+describe('the max HP the stage estimates', () => {
   it('estimates max HP from the species and level, a Guard with its extra HP', () => {
     const species = content.creatures[0];
     if (species === undefined) throw new Error('no species');

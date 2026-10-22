@@ -10,8 +10,8 @@
  *   before it lands (the engine's `announceCharges`) and lands at the boss's turn of the next.
  * - A whole-round move (Backdraft's trap) is one box, drawn dashed: it is armed from the start of the
  *   round.
- * - A move that comes every round is shown in the top box only: it is never "coming", it is always
- *   there, and a copy in every box would hide the moves that do come.
+ * - A move that comes every round is in every box (Misa, 2026-10-22: the track shows what each round
+ *   brings, so a move used every round shows in each one).
  *
  * Several moves in one round stand side by side (`lane`).
  */
@@ -99,9 +99,7 @@ export function moveTrack(
       }
       continue;
     }
-    // An every-round move is not "coming": it is shown in this round's box only.
-    const everyRound = !('every' in g.trigger) || g.trigger.every === 1;
-    for (let r = top; r <= (everyRound ? Math.min(top, bottom) : bottom); r++) {
+    for (let r = top; r <= bottom; r++) {
       if (!gimmickDue(g, r)) continue;
       const kind: TrackKind = g.op === 'reflect_first_reaction' ? 'round' : 'move';
       raw.push({ ...base, key: `${g.id}:${String(r)}`, kind, from: r, to: r });

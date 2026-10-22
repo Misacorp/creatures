@@ -17,7 +17,7 @@ import { gimmickGlyph, glyphOrUnknown } from './glyphs';
 import { useElementWidth, usePrefersReducedMotion } from './hooks';
 import { abilityName, abilityTitle } from './live';
 import { scrollToLanes } from './lane-scroll';
-import type { FightGuardRules, RaidPhaseId, ReplayRowEntry } from './raid-api';
+import type { RaidPhaseId, ReplayRowEntry } from './raid-api';
 import { boardRows, laneStates, ownLaneSpan } from './raid-board';
 import { stateAt } from './replay';
 import { enrageLine, retreatLine } from './raid-text';
@@ -27,12 +27,10 @@ import {
   cuesForEvents,
   creatureHpAt,
   enragedAt,
-  estimatedMaxHp,
   creatureAtSlot,
   groupByZone,
   pendingChargesAt,
   retreatedAt,
-  showsNumber,
   stageStateAt,
   strikeRows,
   type AbilityUse,
@@ -42,25 +40,16 @@ import { compactPair } from './number-format';
 import { ElementChip } from './sprites/ElementChip';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
 import { roundLabel } from './stage-rounds';
-import { bossOrFoe, forecastNextRound, strikeLabel, type Wording } from './telegraph';
+import { bossOrFoe, forecastNextRound, type Wording } from './telegraph';
 import { moveTrack } from './move-track';
-import { MoveTrack } from './stage/MoveTrack';
+import { MoveTrack, type TrackLook } from './stage/MoveTrack';
 import { Popover, popupProps } from './ui/Popover';
 import { SegmentBar } from './ui/SegmentBar';
 import { StageHead, type StageModifier } from './ui/StageHead';
 import { ToggleButton } from './ui/ToggleButton';
 import { Sprite } from './sprites/Sprite';
 import { elementIcon } from './sprites/element-icons';
-import {
-  Beam,
-  Bursts,
-  Floats,
-  RoundIntro,
-  beamsOf,
-  fxRef,
-  nameOf,
-  strikeGlyph,
-} from './stage/StageFx';
+import { Beam, Bursts, Floats, RoundIntro, beamsOf, fxRef, nameOf } from './stage/StageFx';
 import { EffectIcons } from './ui/EffectIcons';
 import { AbilityBadge, CreatureTags, FoeFace, StageUnit } from './stage/StageUnit';
 import { useLiveStage, type Anim } from './use-live-stage';
@@ -123,8 +112,6 @@ interface StageProps {
   rounds: number | null;
   /** The row, left to right. */
   row: readonly ReplayRowEntry[];
-  /** The Guard numbers of the rules the fight was played with; absent: the content's old Guard. */
-  rules?: FightGuardRules;
   /** Where the row stands on the board (the fight's own); absent: the dense row. */
   board?: FightBoard;
   /** The lobby's preview: no round yet, so the head says to get ready instead of "Round 1". */
@@ -167,6 +154,8 @@ interface StageProps {
   phase?: RaidPhaseId;
   /** Gimmicks the foe has only in this room (the dungeon's modifier), so the forecast names them too. */
   addedGimmicks?: readonly Gimmick[];
+  /** How the boss's move track looks (the design round's four versions; default `glass`). */
+  trackLook?: TrackLook;
   /**
    * Something drawn over the whole stage, above the round intro (the dungeon's room banner). It sits
    * inside the stage's own box, so the stage keeps its size while it shows.
@@ -198,7 +187,6 @@ export function Stage({
   hpStart,
   rounds,
   row,
-  rules,
   board,
   lobby,
   mineIds,
@@ -214,6 +202,7 @@ export function Stage({
   modifiers,
   phase,
   addedGimmicks,
+  trackLook,
   overlay,
   abilities,
 }: StageProps) {
@@ -248,20 +237,8 @@ export function Stage({
       : cuesForEvents(events, anim.from, Math.min(anim.to, index), rowIds, boss.id, board);
   const creatureHpNow =
     creatureHp === undefined ? {} : creatureHpAt(events, index, creatureHp.start);
-  // A crowded action (more than eight creatures hit) shows only its big numbers, judged by each
-  // creature's max HP: the dungeon's own, or an estimate from species and level in the raid.
-  const maxHpOf = (id: string): number | null => {
-    const known = creatureHp?.max[id];
-    if (known !== undefined) return known;
-    const entry = row.find((c) => c.id === id);
-    return entry === undefined ? null : estimatedMaxHp(entry, rules);
-  };
-  const fx = allFx.filter(
-    (item) =>
-      item.cue.kind !== 'float' ||
-      item.cue.target === null ||
-      showsNumber(item.cue, maxHpOf(item.cue.target)),
-  );
+  // Every number shows: when a move hits a whole row, they may overlap (Misa, 2026-10-22).
+  const fx = allFx;
   // Charged attacks that are announced and have not landed: their victims and rows stay marked.
   const pending = pendingChargesAt(events, index);
   const chargedIds = new Set(pending.flatMap((c) => c.marks));
@@ -298,7 +275,6 @@ export function Stage({
   // The boss leans in while it winds up, and the label of its newest hit shows in the boss's line.
   const windupItem = fx.find((i) => i.cue.kind === 'windup');
   const strikeItems = fx.filter((i) => i.cue.kind === 'strike');
-  const strikeItem = strikeItems.at(-1);
   // The move track: the boss's special moves in the boxes of the rounds they come in (move-track.ts).
   const trackBoss = bossOrFoe(boss.id, addedGimmicks ?? [], names.gimmicks);
   const track =
@@ -570,7 +546,13 @@ export function Stage({
 
       <div class="stage-boss">
         <div class="stage-boss-row">
-          {track !== null && <MoveTrack track={track} round={state.round} />}
+          {track !== null && (
+            <MoveTrack
+              track={track}
+              round={state.round}
+              {...(trackLook === undefined ? {} : { look: trackLook })}
+            />
+          )}
           <div
             ref={bossRef}
             class={`stage-boss-art${hit.has(null) ? ' hit' : ''}${windupItem === undefined ? '' : ' windup'}${retreated ? ' retreated' : ''}${enraged ? ' enraged' : ''}`}
@@ -643,31 +625,6 @@ export function Stage({
             <span>{retreatLine(boss.id, boss.name, phase, boss.retreat)}</span>
           </p>
         )}
-        <div class={`stage-line${strikeItem === undefined ? '' : ' has-strike'}`}>
-          {forecast !== null && (
-            <p class="forecast pix" role="note" aria-label={forecast.text}>
-              <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
-              <span class="forecast-lines" aria-hidden="true">
-                {forecast.lines.map((line, k) => (
-                  <span key={k} class="forecast-line">
-                    {line}
-                  </span>
-                ))}
-              </span>
-            </p>
-          )}
-          {strikeItem?.cue.kind === 'strike' && (
-            <p
-              key={`strike-${String(strikeItem.cue.i)}`}
-              class={`strike-label pix act-${strikeItem.cue.strike.action}`}
-              aria-hidden="true"
-              ref={fxRef(strikeItem)}
-            >
-              <Sprite sprite={strikeGlyph(strikeItem.cue.strike)} scale={2} />
-              <span>{strikeLabel(strikeItem.cue.strike, names, wording).text}</span>
-            </p>
-          )}
-        </div>
       </div>
 
       <div class="stage-abilities-slot">
