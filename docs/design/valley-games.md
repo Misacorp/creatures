@@ -53,3 +53,13 @@ Open for the Wednesday game day (from the reset to the next reset, guild time). 
 
 - Bots: a dev-only route adds bot players with random rosters who enter every event; they appear in the show and the post and get no real prizes.
 - Run now: a dev-only route locks, resolves and starts the show in 10 s, so a show can be tried any time.
+
+## Server (worker) design
+
+- **Days.** Show day D: entries are open from D-1's show (13:40) to the lock at D's reset (13:37); the show plays at 13:40 on D. Between the lock and the show nothing new can be entered. D's lineup is drawn (live RNG, `chooseLineup`, avoiding D-1's events) the first time anyone needs it after D-1's show.
+- **Entries** are per player, event and slot (a team event has three slots). One creature per show day across all events. Before the lock only, own creatures only.
+- **Auto-entry** keeps casual players in: a player who has entered once is auto-entered (on by default, a switch turns it off). At the lock, any event they left empty gets the creature that ran it last time, else their best-fitting free creature by `gamesAptitude`.
+- **Lock.** In one transaction at the reset: snapshot every entrant (the raid's fold: stats, crit, gear and talent mods), draw a seed with the live RNG, run the four events, store the results and placings. Nothing is sent before 13:40.
+- **Awards at the show's end** (13:40 + the show's length, an alarm candidate, idempotent): creature experience (`RULES.games.xp`), medals (lifetime and pocket), pins for personal bests, creature records, then the Discord podium post (escaped names, no mentions).
+- **Bots (dev only):** the raid's dev guests (`dev-guest-*` players with creatures) are reused. They are ordinary players to the Games and auto-enter. Dev tools: add bots, run now (lock now, show in 15 s), reset today.
+- **Stall:** content offers, open on the Wednesday game day, priced in medal points, with a weekly limit per offer. Bought with an idempotency key through `runKeyed`, and granted with the existing grant helpers.
