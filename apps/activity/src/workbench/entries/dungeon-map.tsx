@@ -33,14 +33,44 @@ function Demo({ p }: { p: Props }) {
   const uc = UNDERCROFT_STAGES.find((s) => `${UC_PREFIX}${s}` === picked);
   const stage = SAMPLE_STAGES.find((s) => s === picked) ?? 'preview';
   const run = uc === undefined ? null : undercroftState(uc);
-  const state = run ?? sampleState(stage);
-  const map = run?.map ?? state?.map ?? SAMPLE_MAP;
+  const sampled = run ?? sampleState(stage);
+  // The Slag Tyrant stands in the boss room (it has a regular move and a signature, the drawer lists both).
+  const slag = bool(p, 'slagBoss');
+  const swapBoss = <T extends { nodes: readonly { id: string; foe?: unknown }[] }>(m: T): T =>
+    !slag
+      ? m
+      : {
+          ...m,
+          nodes: m.nodes.map((n) =>
+            n.id === 'f6l1' && n.foe !== undefined
+              ? {
+                  ...n,
+                  foe: {
+                    ...(n.foe as object),
+                    id: 'slag-tyrant',
+                    name: 'Slag Tyrant',
+                    element: 'ember',
+                  },
+                }
+              : n,
+          ),
+        };
+  // A run's own landmark flag wins in the drawer, so the toggle sets it here.
+  const state =
+    sampled === null
+      ? null
+      : {
+          ...sampled,
+          map: swapBoss(sampled.map),
+          ...(slag && bool(p, 'landmark') ? { landmark: true } : {}),
+        };
+  const map = swapBoss(run?.map ?? state?.map ?? SAMPLE_MAP);
   const open = str(p, 'open');
   return (
     <div class="dungeon-card raid-section">
       <DungeonMap
         // A new map when the stage or the open room changes, so its drawer starts as the page says.
-        key={`${picked}-${open}`}
+        key={`${picked}-${open}-${String(slag)}`}
         map={map}
         undercroft={run?.undercroft?.maps}
         depth={num(p, 'depth')}
@@ -95,6 +125,7 @@ const dungeonMap: Entry = {
     withGo: { kind: 'toggle' },
     busy: { kind: 'toggle' },
     landmark: { kind: 'toggle' },
+    slagBoss: { kind: 'toggle' },
     depth: { kind: 'number', min: 1, max: 60 },
   },
   defaults: {
@@ -103,6 +134,7 @@ const dungeonMap: Entry = {
     withGo: true,
     busy: false,
     landmark: false,
+    slagBoss: false,
     depth: 5,
   },
   presets: [
@@ -144,6 +176,14 @@ const dungeonMap: Entry = {
     { name: 'Drawer: an elite', props: { stage: 'after-elite', open: 'f2l0' } },
     { name: 'Drawer: a mystery room', props: { stage: 'entrance', open: 'f1l1' } },
     { name: 'Drawer: the floor boss', props: { stage: 'past-camp', open: 'f6l1', landmark: true } },
+    {
+      name: 'Drawer: the Slag Tyrant (every move it uses is listed)',
+      props: { stage: 'past-camp', open: 'f6l1', slagBoss: true },
+    },
+    {
+      name: 'Drawer: the Slag Tyrant at a landmark (its signature first, then its moves)',
+      props: { stage: 'past-camp', open: 'f6l1', landmark: true, slagBoss: true },
+    },
     { name: 'Drawer: the camp', props: { stage: 'midway', open: 'f3l1' } },
     {
       name: 'Drawer: a fight the run won (HP 0, Cleared, loot, supply)',

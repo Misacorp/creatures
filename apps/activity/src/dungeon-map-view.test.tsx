@@ -710,4 +710,48 @@ describe('DungeonMap room marks', () => {
     expect(text).toContain(VAULT_MARK.label);
     expect(text).toContain('Epic');
   });
+
+  describe('the moves of the foe, listed before the fight', () => {
+    const slagRun = (landmark: boolean): DungeonRunState => {
+      const run = stageRun('past-camp');
+      return {
+        ...run,
+        landmark,
+        map: {
+          ...run.map,
+          nodes: run.map.nodes.map((n) =>
+            n.id === 'f6l1' && n.foe !== undefined
+              ? {
+                  ...n,
+                  foe: { ...n.foe, id: 'slag-tyrant', name: 'Slag Tyrant', element: 'ember' },
+                }
+              : n,
+          ),
+        },
+      };
+    };
+    const open = (landmark: boolean) => {
+      const run = slagRun(landmark);
+      const p = draw(
+        <DungeonMap map={run.map} state={run} landmark={landmark} initialOpen="f6l1" />,
+      );
+      return visibleText(first(byRole(p.root, 'dialog')));
+    };
+
+    it('names every move of the Slag Tyrant, Molten Shell included', () => {
+      const text = open(false);
+      expect(text).toContain('Anvil Fall');
+      expect(text).toContain('Molten Shell');
+      expect(text).toContain('May reflect a reaction');
+      expect(text).not.toContain('Slag Spill');
+    });
+
+    it('puts the signature first at a landmark, then every regular move', () => {
+      const text = open(true);
+      const at = (name: string) => text.indexOf(name);
+      expect(at('Slag Spill')).toBeGreaterThan(-1);
+      expect(at('Slag Spill')).toBeLessThan(at('Molten Shell'));
+      expect(at('Molten Shell')).toBeLessThan(at('Anvil Fall'));
+    });
+  });
 });

@@ -183,6 +183,23 @@ export function roomTrick(
   return foe.gimmicks[foe.gimmicks.length - 1] ?? null;
 }
 
+/**
+ * Every move the foe uses in this room, for the pre-fight drawer: the floor boss's signature first
+ * when the room is a landmark's boss room, then its own gimmicks as the content lists them. Empty for
+ * a foe with none (the gentle ones) or one the content does not know. The room modifier's own gimmick
+ * (Thorns) is not here: the modifier line names it.
+ */
+export function roomMoves(
+  room: Pick<DungeonReplayRoom, 'kind' | 'foe'>,
+  landmark = false,
+): Gimmick[] {
+  const foe = dungeonContent.foes.find((f) => f.id === room.foe.id);
+  if (foe === undefined) return [];
+  const signature =
+    landmark && room.kind === 'boss' && foe.signature !== undefined ? [foe.signature] : [];
+  return [...signature, ...foe.gimmicks];
+}
+
 /** The stage's boss for a room: the foe's content id, name and element. */
 export function roomBoss(
   room: Pick<DungeonReplayRoom, 'foe'> & Partial<Pick<DungeonReplayRoom, 'elite'>>,
