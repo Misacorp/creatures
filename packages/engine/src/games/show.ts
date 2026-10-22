@@ -14,6 +14,7 @@ export class Show {
   private readonly scoreOf: (number | undefined)[];
   private readonly propAt = new Map<string, string>();
   private lastSay = Number.NEGATIVE_INFINITY;
+  private lastLine: string | undefined;
   private lastT = 0;
 
   constructor(
@@ -104,10 +105,22 @@ export class Show {
     return t - this.lastSay >= this.sayGapTicks;
   }
 
-  /** A commentary line, if the gap allows; returns whether it was said. */
+  /**
+   * A commentary line, if the gap allows and it is not the same line as the last one (so the show
+   * does not repeat itself); returns whether it was said.
+   */
   say(t: number, line: GamesSayKey, args: { a?: number; b?: number; n?: number } = {}): boolean {
-    if (!this.canSay(t)) return false;
+    if (!this.canSay(t) || line === this.lastLine) return false;
+    return this.speak(t, line, args);
+  }
+
+  private speak(
+    t: number,
+    line: GamesSayKey,
+    args: { a?: number; b?: number; n?: number },
+  ): boolean {
     this.lastSay = t;
+    this.lastLine = line;
     const b: GamesBeat = { t, k: 'say', line };
     if (args.a !== undefined) b.a = args.a;
     if (args.b !== undefined) b.b = args.b;
@@ -116,10 +129,17 @@ export class Show {
     return true;
   }
 
+  /** A line that must be said: at `t` or as soon after as the gap allows. Returns its tick. */
+  sayNext(t: number, line: GamesSayKey, args: { a?: number; b?: number; n?: number } = {}): number {
+    const at = Math.max(t, this.lastSay + this.sayGapTicks);
+    this.speak(at, line, args);
+    return at;
+  }
+
   /** The closing line: at `t` or as soon after as the gap allows. Returns its tick. */
   closing(t: number, line: GamesSayKey, args: { a?: number; b?: number; n?: number } = {}): number {
     const at = Math.max(t, this.lastSay + this.sayGapTicks);
-    this.say(at, line, args);
+    this.speak(at, line, args);
     return at;
   }
 

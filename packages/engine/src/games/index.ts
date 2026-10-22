@@ -5,13 +5,20 @@
  */
 import { RULES, type GamesEventDef, type Rng } from '@creatures/game';
 import { runChase } from './chase';
-import { checkEntrants, standingsOf, teamIndex, type KindInput, type KindOutcome } from './common';
+import {
+  checkEntrants,
+  compareKeys,
+  standingsOf,
+  teamIndex,
+  type KindInput,
+  type KindOutcome,
+} from './common';
 import { runEndure } from './endure';
 import { runFeast } from './feast';
 import { Show } from './show';
 import { runShove } from './shove';
 import { runSwim } from './swim';
-import type { GamesEntrant, GamesEventResult } from './types';
+import type { GamesEntrant, GamesEventResult, GamesStanding } from './types';
 
 export * from './types';
 export { gamesAptitude, gamesEntrantFrom, type GamesCreatureInput } from './entrant';
@@ -19,6 +26,35 @@ export { gamesAptitude, gamesEntrantFrom, type GamesCreatureInput } from './entr
 /** Ticks between two commentary lines at least (`RULES.games.sayGapMs`). */
 export function sayGapTicks(tickMs: number): number {
   return Math.ceil(RULES.games.sayGapMs / tickMs);
+}
+
+/**
+ * The end of every show: the first place (every member of a winning team) cheers, after every other beat,
+ * and the closing line names it; a shared first place gets the kind's draw line instead.
+ */
+function crown(
+  def: GamesEventDef,
+  show: Show,
+  standings: readonly GamesStanding[],
+  out: KindOutcome,
+): void {
+  const at = Math.max(out.end + 1, show.lastTick);
+  const first = standings.filter((s) => s.place === 1);
+  for (const s of first) {
+    for (const a of s.actors) {
+      show.state(at, a, 'cheer');
+      show.fx(at, 'cheer', { a });
+    }
+  }
+  const only = first.length === 1 ? first[0] : undefined;
+  if (only === undefined) {
+    show.closing(at, `${def.kind}.draw`);
+    return;
+  }
+  const star = [...only.actors].sort(
+    (p, q) => compareKeys(out.keys[p] ?? [], out.keys[q] ?? []) || p - q,
+  )[0] as number;
+  show.closing(at, `${def.kind}.win`, { a: star });
 }
 
 /**
@@ -52,6 +88,8 @@ export function runGamesEvent(
       out = runShove({ ...base, def });
       break;
   }
+  const standings = standingsOf(def, entrants, teamOf, out.keys, out.scores);
+  crown(def, show, standings, out);
   const actors = entrants.map((e: GamesEntrant, a) => {
     const s = out.starts[a] as { x: number; y: number };
     const actor: GamesEventResult['actors'][number] = {
@@ -77,7 +115,7 @@ export function runGamesEvent(
     ticks: Math.max(out.end, show.lastTick) + 1,
     actors,
     beats: show.sorted(),
-    standings: standingsOf(def, entrants, teamOf, out.keys, out.scores),
+    standings,
     moments: show.moments,
     scores: out.scores,
     outAt: out.outAt,

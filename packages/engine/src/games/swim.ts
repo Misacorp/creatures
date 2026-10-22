@@ -117,9 +117,11 @@ export function runSwim(input: KindInput<Def>): KindOutcome {
         finishedAt[a] = t;
         finished += 1;
         show.score(t, a, p.laps);
-        show.state(t, a, 'cheer');
-        show.fx(t, 'cheer', { a }, true);
-        show.say(t, 'swim.finish', { a });
+        show.state(t, a, 'idle');
+        show.fx(t, 'star', { a }, true);
+        // The first one home always gets its line; the others when there is room.
+        if (finished === 1) show.sayNext(t, 'swim.finish', { a });
+        else show.say(t, 'swim.finish', { a });
       } else if (lap > before) {
         show.score(t, a, lap);
         // The first one into a new lap gets a line.
@@ -245,16 +247,5 @@ export function runSwim(input: KindInput<Def>): KindOutcome {
   for (let a = 0; a < n; a++) {
     show.score(end + 1, a, Math.floor((progress[a] as number) / TURN));
   }
-  const winner = keys.reduce((best, k, a) => (cmp(k, keys[best] as number[]) > 0 ? a : best), 0);
-  if (finished === 0 && entrants.every((_, a) => alive[a])) show.closing(end + 1, 'swim.draw');
-  else show.closing(end + 1, 'swim.win', { a: winner });
   return { starts, scores, outAt, keys, end };
-}
-
-function cmp(a: readonly number[], b: readonly number[]): number {
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    const d = (a[i] ?? 0) - (b[i] ?? 0);
-    if (d !== 0) return d;
-  }
-  return 0;
 }

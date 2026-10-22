@@ -8,7 +8,7 @@ import {
   candidatesOf,
   gamesReport,
   gamesRosters,
-  gamesRows,
+  gamesChecks,
   runGamesStudy,
   showScript,
   type GamesPolicy,
@@ -170,7 +170,6 @@ export function main(argv: readonly string[], io: Io = defaultIo): number {
   const study = runGamesStudy(options.study);
   io.out(gamesReport(study));
   io.out(`Took ${((performance.now() - started) / 1000).toFixed(1)} s.`);
-  if (options.strict && gamesRows(study).some((r) => Object.values(r.pass).includes(false)))
-    return 1;
+  if (options.strict && gamesChecks(study).includes(false)) return 1;
   return 0;
 }

@@ -108,6 +108,7 @@ export const GAMES_SAY_KEYS = {
     'feast.echo',
     'feast.burp',
     'feast.stubborn',
+    'feast.encore',
     'feast.lead',
     'feast.duel',
     'feast.win',

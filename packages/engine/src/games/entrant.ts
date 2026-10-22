@@ -148,8 +148,9 @@ export function gamesAptitude(def: GamesEventDef, e: GamesEntrant): number {
     }
     case 'shove': {
       const p = def.params;
-      // Push and grip both: the geometric mean of the Attack and HP curves.
-      const pushGrip = isqrt(mulBp(sAtk, role) * mulBp(mulBp(sHp, elem), small));
+      // Grip most (it decides who stays on), push a little: grip^0.75 x push^0.25.
+      const grip = mulBp(mulBp(sHp, elem), small);
+      const pushGrip = isqrt(isqrt(mulBp(sAtk, role) * grip) * grip);
       f = mulBp(
         pushGrip,
         BP + mulBp(mulBp(e.dodgeBp, p.dodgeShareBp), 3_000) + Math.floor((m.sidestepBp ?? 0) / 3),
@@ -159,5 +160,7 @@ export function gamesAptitude(def: GamesEventDef, e: GamesEntrant): number {
       break;
     }
   }
+  // Size counts where the event says so (shove already has it in the grip).
+  if (def.kind !== 'shove') f = mulBp(f, small);
   return Math.max(1, Math.floor(f / 10));
 }

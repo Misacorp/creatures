@@ -117,6 +117,26 @@ function checkShape(
     }
   }
   for (const v of outs.values()) expect(v).toBe(1);
+  // The end crowns the standings' first place: every cheer is a winner's, every winner cheers last,
+  // and the closing line names one of them (or calls a shared first place a draw).
+  const firsts = r.standings.filter((s) => s.place === 1);
+  const winners = firsts.flatMap((s) => s.actors).sort((a, b) => a - b);
+  const cheered = [
+    ...new Set(r.beats.flatMap((b) => (b.k === 'fx' && b.fx === 'cheer' ? [b.a as number] : []))),
+  ].sort((a, b) => a - b);
+  expect(cheered).toEqual(winners);
+  for (const a of winners) {
+    const states = r.beats.filter((b) => b.k === 'state' && b.a === a);
+    expect(states[states.length - 1]).toMatchObject({ s: 'cheer' });
+  }
+  const says = r.beats.filter((b) => b.k === 'say');
+  const closing = says[says.length - 1];
+  if (firsts.length === 1) {
+    expect(closing).toMatchObject({ line: `${def.kind}.win` });
+    expect(winners).toContain(closing?.k === 'say' ? closing.a : -1);
+  } else {
+    expect(closing).toMatchObject({ line: `${def.kind}.draw` });
+  }
   expect(r.outAt.filter((t) => t !== null)).toHaveLength(outs.size);
   // Standings: every actor once, competition places.
   const seen = r.standings.flatMap((s) => s.actors).sort((a, b) => a - b);
@@ -273,6 +293,32 @@ describe('what each kind reads', () => {
     expect(gulps.length).toBeGreaterThan(0);
     expect(gulps.every((b) => b.k === 'fx' && b.a === 0)).toBe(true);
     expect(r.scores[0]).toBeGreaterThan(r.scores[1] as number);
+  });
+
+  it('feast: the last one eating eats on, so outlasting everyone wins', () => {
+    const def = event('pepper-panic');
+    for (let k = 0; k < 10; k++) {
+      const field = [0, 1, 2, 3, 4].map((i) => entrant(i, { critBp: 0 }));
+      const r = runGamesEvent(def, field, createSeededRng(`encore:${String(k)}`));
+      const top = r.standings[0]?.actors[0] as number;
+      const lastOut = Math.max(...r.outAt.map((t) => t ?? Number.POSITIVE_INFINITY));
+      expect(r.outAt[top] ?? Number.POSITIVE_INFINITY).toBe(lastOut);
+    }
+  });
+
+  it('size: an event with smallBp favours stage-1 creatures (Floe Sumo grip)', () => {
+    const def = event('floe-sumo');
+    expect(def.smallBp ?? 10_000).toBeGreaterThan(10_000);
+    const field = [0, 1, 2, 3, 4, 5].map((i) =>
+      twin({ stage: i % 2 === 0 ? 1 : 2, dodgeBp: 0 }, i),
+    );
+    let small = 0;
+    for (let k = 0; k < 40; k++) {
+      const r = runGamesEvent(def, field, createSeededRng(`size:${String(k)}`));
+      const top = r.standings[0]?.actors[0] as number;
+      if (field[top]?.stage === 1) small += 1;
+    }
+    expect(small).toBeGreaterThanOrEqual(28);
   });
 
   it('chase: a small creature ducks under the rind once; a big one does not', () => {

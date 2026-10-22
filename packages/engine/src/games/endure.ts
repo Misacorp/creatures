@@ -233,27 +233,10 @@ export function runEndure(input: KindInput<Def>): KindOutcome {
     if (alive[a]) {
       scores[a] = end;
       keys.push([end, FULL - (meter[a] as number)]);
-      show.state(end + 1, a, 'cheer');
-      show.fx(end + 1, 'cheer', { a });
     } else {
       keys.push([scores[a] as number, 0]);
     }
     show.score(end + 1, a, scores[a] as number);
   }
-  const winners = alive.flatMap((on, a) => (on ? [a] : []));
-  const top = winners.length > 0 ? winners : bestOut(scores, outAt);
-  if (teamsAlive(alive, teamOf) === 1 || (winners.length === 0 && top.length === 1)) {
-    show.closing(end + 1, 'endure.win', { a: top[0] as number });
-  } else {
-    show.closing(end + 1, 'endure.draw');
-  }
   return { starts, scores, outAt, keys, end };
-}
-
-/** The actors who lasted longest when nobody is left (the last ones out). */
-export function bestOut(scores: readonly number[], outAt: readonly (number | null)[]): number[] {
-  let best = -1;
-  for (let a = 0; a < scores.length; a++)
-    if (outAt[a] !== null) best = Math.max(best, scores[a] as number);
-  return scores.flatMap((s, a) => (outAt[a] !== null && s === best ? [a] : []));
 }

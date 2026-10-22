@@ -1,21 +1,13 @@
 /**
  * Shove (Floe Sumo): everyone stands on an elliptical ice floe that shrinks (faster with Ember creatures
- * on it). Each tick a few creatures shove a near neighbour: push (Attack against the field, a little
+ * on it). Each tick a few creatures shove a near neighbour (one of the two nearest): push (Attack against the field, a little
  * luck) against grip (HP against the field, element, size): the loser slides. A dodge sidesteps and the
  * shover skids instead. Off the edge is a splash, unless a Stubborn creature teeters back (once). Last
  * one on wins; score = ticks on the floe.
  */
 import { int, type GamesEventOf } from '@creatures/game';
 import { BP, TURN, cosU, isqrt, jitter, mulBp, roll, shuffle, sinU } from './math';
-import {
-  decided,
-  gear,
-  keyFactor,
-  smallMult,
-  teamsAlive,
-  type KindInput,
-  type KindOutcome,
-} from './common';
+import { decided, gear, keyFactor, teamsAlive, type KindInput, type KindOutcome } from './common';
 
 type Def = GamesEventOf<'shove'>;
 
@@ -23,7 +15,6 @@ const CX = 96;
 const CY = 62;
 /** The floe's y-radius is this share of its x-radius. */
 const FLAT_BP = 5_200;
-const GOLDEN = 1_375; // tenths of a degree
 
 export function runShove(input: KindInput<Def>): KindOutcome {
   const { def, entrants, rng, show, teamOf, teams } = input;
@@ -31,7 +22,8 @@ export function runShove(input: KindInput<Def>): KindOutcome {
   const n = entrants.length;
   let rx = p.floeStartPx * 100;
   const ry = (): number => mulBp(rx, FLAT_BP);
-  // A sunflower spread inside 75% of the floe, in a random order.
+  // A fair start: everyone the same way from the middle, on a ring at 60% of the floe, in a random order
+  // (one creature alone stands in the middle).
   const order = shuffle(
     rng,
     entrants.map((_, a) => a),
@@ -39,8 +31,8 @@ export function runShove(input: KindInput<Def>): KindOutcome {
   const xc = new Array<number>(n).fill(0);
   const yc = new Array<number>(n).fill(0);
   order.forEach((a, i) => {
-    const r = mulBp(isqrt(Math.floor(((2 * i + 1) * BP * BP) / (2 * n))), 7_500);
-    const ang = (i * GOLDEN) % TURN;
+    const r = n === 1 ? 0 : 6_000;
+    const ang = Math.floor((i * TURN) / n);
     xc[a] = CX * 100 + Math.trunc((mulBp(rx, r) * cosU(ang)) / BP);
     yc[a] = CY * 100 + Math.trunc((mulBp(ry(), r) * sinU(ang)) / BP);
   });
@@ -57,10 +49,8 @@ export function runShove(input: KindInput<Def>): KindOutcome {
   show.say(0, 'shove.start');
 
   // Push: Attack and role; grip: HP, element and size.
-  const pushOf = keyFactor(def, entrants, 'atk', { element: false });
-  const gripOf = keyFactor(def, entrants, 'hp', { role: false }).map((v, a) =>
-    Math.max(1, mulBp(v, smallMult(def, entrants[a] as (typeof entrants)[number]))),
-  );
+  const pushOf = keyFactor(def, entrants, 'atk', { element: false, small: false });
+  const gripOf = keyFactor(def, entrants, 'hp', { role: false });
   const alive = new Array<boolean>(n).fill(true);
   const outAt: (number | null)[] = new Array<number | null>(n).fill(null);
   const saved = new Array<boolean>(n).fill(false);
@@ -102,14 +92,12 @@ export function runShove(input: KindInput<Def>): KindOutcome {
     }
     if (t % 40 === 0) show.say(t, 'shove.shrink');
 
-    // Everyone waddles back towards the middle a little.
+    // Everyone waddles back towards the middle a little: the same share of the way from anywhere on
+    // the floe (so where it starts on the ring does not matter).
+    const frac = Math.floor((p.driftCpx * BP) / Math.max(1, rx));
     for (const a of living()) {
-      const dx = CX * 100 - (xc[a] as number);
-      const dy = CY * 100 - (yc[a] as number);
-      const len = isqrt(dx * dx + dy * dy);
-      if (len <= p.driftCpx) continue;
-      xc[a] = (xc[a] as number) + Math.trunc((dx * p.driftCpx) / len);
-      yc[a] = (yc[a] as number) + Math.trunc((dy * p.driftCpx) / len);
+      xc[a] = (xc[a] as number) + mulBp(CX * 100 - (xc[a] as number), frac);
+      yc[a] = (yc[a] as number) + mulBp(CY * 100 - (yc[a] as number), frac);
     }
 
     // A crowd jostles: two creatures closer than `spacePx` push each other apart.
@@ -125,15 +113,21 @@ export function runShove(input: KindInput<Def>): KindOutcome {
           const dy = (yc[b] as number) - (yc[a] as number);
           const d = isqrt(dx * dx + dy * dy);
           if (d >= space) continue;
-          const push = Math.floor((space - d) / 4);
+          // The grippier one holds its ground: each moves by the other's share of the grip.
+          // (Squared, so a real difference in grip shows.)
+          const ga = Math.floor(((gripOf[a] as number) * (gripOf[a] as number)) / BP);
+          const gb = Math.floor(((gripOf[b] as number) * (gripOf[b] as number)) / BP);
+          const both = Math.max(1, ga + gb);
+          const pushA = Math.floor(((space - d) * gb) / (2 * both));
+          const pushB = Math.floor(((space - d) * ga) / (2 * both));
           const ux = d === 0 ? (a < b ? -BP : BP) : Math.trunc((dx * BP) / d);
           const uy = d === 0 ? 0 : Math.trunc((dy * BP) / d);
           const mi = moves[i] as { x: number; y: number };
           const mj = moves[j] as { x: number; y: number };
-          mi.x -= mulBp(ux, push);
-          mi.y -= mulBp(uy, push);
-          mj.x += mulBp(ux, push);
-          mj.y += mulBp(uy, push);
+          mi.x -= mulBp(ux, pushA);
+          mi.y -= mulBp(uy, pushA);
+          mj.x += mulBp(ux, pushB);
+          mj.y += mulBp(uy, pushB);
         }
       }
       here.forEach((a, i) => {
@@ -145,7 +139,8 @@ export function runShove(input: KindInput<Def>): KindOutcome {
 
     // The shoves.
     const now = living();
-    const count = Math.max(1, Math.floor((now.length * p.shoveRateBp) / BP));
+    const count =
+      p.shoveRateBp > 0 ? Math.max(1, Math.floor((now.length * p.shoveRateBp) / BP)) : 0;
     const shovers = shuffle(rng, now).slice(0, count);
     for (const s of shovers) {
       if (!alive[s]) continue;
@@ -158,7 +153,7 @@ export function runShove(input: KindInput<Def>): KindOutcome {
           return { b, d: dx * dx + dy * dy };
         })
         .sort((u, w) => u.d - w.d || u.b - w.b)
-        .slice(0, 3);
+        .slice(0, 2);
       const target = (near[int(rng, near.length)] as { b: number }).b;
       const te = entrants[target];
       if (te === undefined) continue;
@@ -230,22 +225,6 @@ export function runShove(input: KindInput<Def>): KindOutcome {
   const keys = entrants.map((_, a) =>
     alive[a] ? [end + 1, BP * 4 - edge(a)] : [scores[a] as number, 0],
   );
-  let best = 0;
-  for (let a = 0; a < n; a++) {
-    show.score(end + 1, a, scores[a] as number);
-    if (alive[a]) {
-      show.state(end + 1, a, 'cheer');
-      show.fx(end + 1, 'cheer', { a });
-    }
-    const k = keys[a] as number[];
-    const kb = keys[best] as number[];
-    if (
-      (k[0] as number) > (kb[0] as number) ||
-      (k[0] === kb[0] && (k[1] as number) > (kb[1] as number))
-    )
-      best = a;
-  }
-  if (teamsAlive(alive, teamOf) > 1) show.closing(end + 1, 'shove.draw');
-  else show.closing(end + 1, 'shove.win', { a: best });
+  for (let a = 0; a < n; a++) show.score(end + 1, a, scores[a] as number);
   return { starts, scores, outAt, keys, end };
 }

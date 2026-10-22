@@ -4,6 +4,10 @@ import { runGamesEvent, type GamesEntrant } from '@creatures/engine';
 import { main, parseGamesCli } from '../src/games-cli';
 import {
   assignEntries,
+  emptyTally,
+  soloSummary,
+  tallyEvent,
+  type Entry,
   gamesReport,
   gamesRows,
   runGamesStudy,
@@ -21,6 +25,7 @@ function event(id: string): GamesEventDef {
 function candidate(i: number, over: Partial<GamesEntrant> = {}, power = 100 + i): Candidate {
   return {
     power,
+    rank: 1,
     entrant: {
       id: `p/${String(i)}`,
       playerId: 'p',
@@ -84,6 +89,52 @@ describe('assignEntries', () => {
   it('a small roster enters what it can', () => {
     const picks = assignEntries(lineup, pool.slice(0, 2), 'random', createSeededRng('a'));
     expect(picks.flat()).toHaveLength(2);
+  });
+});
+
+describe('tallies', () => {
+  it('count solo wins and podiums by roster rank, and the bench and level ratios', () => {
+    const def = event('melon-run');
+    const field = [0, 1, 2, 3].map((i) => ({
+      ...candidate(i).entrant,
+      id: `c${String(i)}`,
+      playerId: `p${String(i)}`,
+      teamId: `p${String(i)}`,
+    }));
+    const result = runGamesEvent(def, field, createSeededRng('tally'));
+    const entry = (rank: number, level: number, place: number): Entry => ({
+      playerId: `p${String(rank)}`,
+      policy: 'random',
+      power: 100,
+      aptitude: 100,
+      level,
+      rank,
+      place,
+    });
+    const tally = emptyTally(def.id);
+    tallyEvent(tally, def, result, [
+      entry(5, 3, 1),
+      entry(1, 35, 2),
+      entry(2, 15, 3),
+      entry(4, 12, 4),
+    ]);
+    tallyEvent(tally, def, result, [
+      entry(1, 35, 1),
+      entry(5, 3, 2),
+      entry(2, 15, 3),
+      entry(4, 12, 4),
+    ]);
+    expect(tally.winsByRank).toMatchObject({ '1st': 1, '5th+': 1, '4th': 0 });
+    expect(tally.podiumsByRank).toMatchObject({ '1st': 2, '2nd': 2, '5th+': 2, '4th': 0 });
+    const sum = soloSummary({
+      settings: { seed: 's', sizes: [4], weeks: [1], days: 1 },
+      events: [tally],
+    });
+    expect(sum.benchWins).toBeCloseTo(0.5);
+    // Level 1-9: a quarter of entries, half the wins.
+    expect(sum.lowLevelRatio).toBeCloseTo(2);
+    expect(sum.highLevelRatio).toBeCloseTo(2);
+    expect(sum.pass).toEqual({ bench: true, low: true, high: false });
   });
 });
 

@@ -74,11 +74,12 @@ export function runFeast(input: KindInput<Def>): KindOutcome {
   let end = 0;
   let round = 0;
   let duelSaid = false;
+  let encore = false;
   for (let t = 1; t <= def.maxTicks; t++) {
     end = t;
     if (t % p.roundTicks !== 0) continue;
     round += 1;
-    const ramp = BP + p.rampBp * round;
+    const ramp = (BP + p.rampBp * round) * (encore ? 2 : 1);
     const ghost = round > 3 && roll(rng, p.ghostRoundBp);
     if (ghost) {
       show.say(t, 'feast.ghost');
@@ -175,27 +176,16 @@ export function runFeast(input: KindInput<Def>): KindOutcome {
       )[0] as number;
       show.say(t, 'feast.lead', { a: lead, n: score[lead] as number });
     }
-    if (decided(alive, teamOf, teams)) break;
+    // The last team standing eats on, faster and hotter, until it bursts too: outlasting everyone
+    // usually means the most peppers.
+    if (!alive.some((on) => on)) break;
+    if (!encore && decided(alive, teamOf, teams)) {
+      encore = true;
+      show.sayNext(t, 'feast.encore', { a: living[0] as number });
+    }
   }
 
   const keys = entrants.map((_, a) => [score[a] as number, outAt[a] ?? end + 1]);
-  let best = 0;
-  for (let a = 0; a < n; a++) {
-    show.score(end, a, score[a] as number);
-    const k = keys[a] as number[];
-    const kb = keys[best] as number[];
-    if (
-      (k[0] as number) > (kb[0] as number) ||
-      (k[0] === kb[0] && (k[1] as number) > (kb[1] as number))
-    )
-      best = a;
-    if (alive[a]) {
-      show.state(end + 1, a, 'cheer');
-      show.fx(end + 1, 'cheer', { a });
-    }
-  }
-  const tied = keys.filter((k) => k[0] === keys[best]?.[0] && k[1] === keys[best]?.[1]).length;
-  if (tied > 1 && teamsAlive(alive, teamOf) !== 1) show.closing(end + 1, 'feast.draw');
-  else show.closing(end + 1, 'feast.win', { a: best });
+  for (let a = 0; a < n; a++) show.score(end, a, score[a] as number);
   return { starts, scores: score, outAt, keys, end };
 }

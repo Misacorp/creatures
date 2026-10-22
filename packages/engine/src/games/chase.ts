@@ -150,14 +150,6 @@ export function runChase(input: KindInput<Def>): KindOutcome {
   for (let a = 0; a < n; a++) {
     show.pos(end, a, Math.floor((xc[a] as number) / 100), yOf[a] as number);
     show.score(end, a, scores[a] as number);
-    if (alive[a]) {
-      show.state(end + 1, a, 'cheer');
-      show.fx(end + 1, 'cheer', { a });
-    }
   }
-  let best = 0;
-  for (let a = 1; a < n; a++) if ((keys[a]?.[0] as number) > (keys[best]?.[0] as number)) best = a;
-  if (alive.every((on) => on)) show.closing(end + 1, 'chase.draw');
-  else show.closing(end + 1, 'chase.win', { a: best });
   return { starts, scores, outAt, keys, end };
 }

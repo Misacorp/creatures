@@ -9,8 +9,8 @@
       "tickMs": 400,
       "maxTicks": 150,
       "params": {
-        "statBp": 20000,
-        "jitterBp": 1000,
+        "statBp": 13000,
+        "jitterBp": 2000,
         "dodgeShareBp": 5000,
         "heatStartBp": 2000,
         "heatRiseBp": 150,
@@ -35,9 +35,9 @@
         "secondWindBp": 1500
       },
       "elementBp": {
-        "tide": 9500,
-        "ember": 11500,
-        "grove": 9500,
+        "tide": 10000,
+        "ember": 12500,
+        "grove": 10000,
         "spark": 10000,
         "mire": 10500
       },
@@ -45,7 +45,8 @@
         "guard": 11000
       },
       "line": "The benches are warm and the stove is hungry. Last one in wins.",
-      "favours": ["hp", "ember", "guard", "support"]
+      "favours": ["hp", "ember", "guard", "small"],
+      "smallBp": 13000
     },
     {
       "id": "frost-bath",
@@ -56,8 +57,8 @@
       "tickMs": 400,
       "maxTicks": 150,
       "params": {
-        "statBp": 18000,
-        "jitterBp": 1000,
+        "statBp": 12500,
+        "jitterBp": 2000,
         "dodgeShareBp": 5000,
         "heatStartBp": 2000,
         "heatRiseBp": 150,
@@ -82,17 +83,17 @@
         "secondWindBp": 1500
       },
       "elementBp": {
-        "tide": 11500,
+        "tide": 12500,
         "ember": 9000,
         "grove": 10000,
-        "spark": 9500,
+        "spark": 10000,
         "mire": 11000
       },
       "roleBp": {
-        "guard": 11000
+        "support": 11000
       },
       "line": "An icy pond and a brave crowd. Sit beside an Ember creature and stay toasty.",
-      "favours": ["hp", "tide", "mire", "guard"],
+      "favours": ["hp", "tide", "mire", "support", "small"],
       "say": {
         "endure.start": "Into the icy pond! Who can stay in longest?",
         "endure.steam": "Brr! {a} splashes ice water on everyone.",
@@ -103,8 +104,9 @@
         "endure.shelter": "{a} keeps the cold wind off the others.",
         "endure.fan": "{a} rubs {b}'s paws warm.",
         "endure.win": "{a} is the last one in the ice!",
-        "endure.draw": "Time! Everyone still in is a little blue."
-      }
+        "endure.draw": "Time! They share the ice and the win."
+      },
+      "smallBp": 13000
     },
     {
       "id": "sauna-stack",
@@ -116,7 +118,7 @@
       "tickMs": 400,
       "maxTicks": 150,
       "params": {
-        "statBp": 10000,
+        "statBp": 5000,
         "jitterBp": 2000,
         "dodgeShareBp": 5000,
         "heatStartBp": 2000,
@@ -143,16 +145,17 @@
       },
       "elementBp": {
         "tide": 9500,
-        "ember": 13000,
+        "ember": 12000,
         "grove": 9500,
         "spark": 10000,
         "mire": 11000
       },
       "roleBp": {
-        "guard": 11000
+        "guard": 12000
       },
       "line": "Bring three friends to the bench. Your team lasts as long as its last sitter.",
-      "favours": ["guard", "support", "hp", "ember"]
+      "favours": ["guard", "hp", "ember", "small", "support"],
+      "smallBp": 11000
     },
     {
       "id": "melon-run",
@@ -163,7 +166,7 @@
       "tickMs": 400,
       "maxTicks": 150,
       "params": {
-        "statBp": 6500,
+        "statBp": 7000,
         "jitterBp": 2500,
         "dodgeShareBp": 30000,
         "runCpx": 150,
@@ -181,11 +184,15 @@
         "tide": 10000,
         "ember": 10000,
         "grove": 9500,
-        "spark": 12000,
+        "spark": 12500,
         "mire": 9000
       },
       "line": "A giant watermelon is rolling down the hill. Run!",
-      "favours": ["spd", "dodge", "small", "spark"]
+      "favours": ["spd", "small", "spark", "setter", "dodge"],
+      "roleBp": {
+        "setter": 11500
+      },
+      "smallBp": 13000
     },
     {
       "id": "pepper-panic",
@@ -196,8 +203,8 @@
       "tickMs": 400,
       "maxTicks": 150,
       "params": {
-        "statBp": 15000,
-        "jitterBp": 1500,
+        "statBp": 3000,
+        "jitterBp": 3000,
         "dodgeShareBp": 5000,
         "roundTicks": 4,
         "mildBp": 300,
@@ -222,10 +229,13 @@
         "ember": 13500,
         "grove": 9000,
         "spark": 9500,
-        "mire": 10500
+        "mire": 11000
       },
       "line": "Mild, hot or ghost: eat what lands on your plate. Most peppers wins.",
-      "favours": ["hp", "crit", "ember", "tide"]
+      "favours": ["hp", "ember", "payoff", "crit"],
+      "roleBp": {
+        "payoff": 12000
+      }
     },
     {
       "id": "berry-bonanza",
@@ -236,12 +246,12 @@
       "tickMs": 400,
       "maxTicks": 150,
       "params": {
-        "statBp": 18000,
-        "jitterBp": 1500,
+        "statBp": 11000,
+        "jitterBp": 3000,
         "dodgeShareBp": 5000,
         "roundTicks": 4,
-        "mildBp": 350,
-        "hotBp": 650,
+        "mildBp": 400,
+        "hotBp": 700,
         "ghostBp": 1100,
         "mildWeight": 50,
         "hotWeight": 40,
@@ -259,13 +269,13 @@
       },
       "elementBp": {
         "tide": 10000,
-        "ember": 9500,
-        "grove": 11000,
+        "ember": 9000,
+        "grove": 13000,
         "spark": 9500,
         "mire": 10500
       },
       "line": "Sour berries by the bowlful. Grove creatures barely pucker.",
-      "favours": ["hp", "crit", "grove", "mire"],
+      "favours": ["hp", "grove", "support", "small"],
       "say": {
         "feast.start": "Bowls of sour berries! Eat as many as you can.",
         "feast.gulp": "{a} pops two berries at once!",
@@ -276,8 +286,13 @@
         "feast.echo": "{a} sneaks an extra berry.",
         "feast.lead": "{a} is on {n} berries!",
         "feast.win": "{a} eats the most berries!",
-        "feast.draw": "Time! The bowls are empty."
-      }
+        "feast.draw": "Not a berry between them! They share the win.",
+        "feast.encore": "{a} is the last one munching, and keeps going!"
+      },
+      "roleBp": {
+        "support": 12000
+      },
+      "smallBp": 13000
     },
     {
       "id": "shark-derby",
@@ -288,7 +303,7 @@
       "tickMs": 400,
       "maxTicks": 160,
       "params": {
-        "statBp": 11000,
+        "statBp": 6500,
         "jitterBp": 2500,
         "dodgeShareBp": 30000,
         "laps": 2,
@@ -316,7 +331,11 @@
         "mire": 10500
       },
       "line": "Two laps of the lake. The sharks are only rubber, but they bonk hard.",
-      "favours": ["spd", "dodge", "tide", "hp"]
+      "favours": ["spd", "tide", "small", "setter", "dodge"],
+      "roleBp": {
+        "setter": 11500
+      },
+      "smallBp": 13000
     },
     {
       "id": "shark-relay",
@@ -327,7 +346,7 @@
       "tickMs": 400,
       "maxTicks": 160,
       "params": {
-        "statBp": 13000,
+        "statBp": 6000,
         "jitterBp": 2500,
         "dodgeShareBp": 30000,
         "laps": 2,
@@ -355,8 +374,12 @@
         "mire": 10500
       },
       "line": "Three swimmers a team, every length counts. Keep away from the rubber sharks.",
-      "favours": ["spd", "tide", "dodge", "hp"],
-      "teamScore": "sum"
+      "favours": ["spd", "tide", "small", "setter", "hp"],
+      "teamScore": "sum",
+      "roleBp": {
+        "setter": 11500
+      },
+      "smallBp": 11500
     },
     {
       "id": "floe-sumo",
@@ -367,8 +390,8 @@
       "tickMs": 400,
       "maxTicks": 150,
       "params": {
-        "statBp": 9000,
-        "jitterBp": 3000,
+        "statBp": 6000,
+        "jitterBp": 1500,
         "dodgeShareBp": 5000,
         "floeStartPx": 46,
         "floeMinPx": 10,
@@ -376,8 +399,8 @@
         "meltElement": "ember",
         "meltCpx": 3,
         "shoveRateBp": 1000,
-        "slidePx": 4,
-        "maxSlidePx": 10,
+        "slidePx": 3,
+        "maxSlidePx": 8,
         "driftCpx": 40,
         "spacePx": 8
       },
@@ -386,11 +409,14 @@
         "ember": 10000,
         "grove": 10500,
         "spark": 9500,
-        "mire": 11500
+        "mire": 12000
       },
-      "smallBp": 12000,
+      "smallBp": 15000,
       "line": "Everyone onto a melting ice floe. Shove, slip and stay dry.",
-      "favours": ["atk", "hp", "small", "mire"]
+      "favours": ["hp", "small", "mire", "guard", "atk"],
+      "roleBp": {
+        "guard": 12000
+      }
     }
   ],
   "say": {
@@ -407,7 +433,7 @@
     "endure.half": "Half the room has gone. {n} still sitting.",
     "endure.duel": "Down to the last two: {a} and {b}!",
     "endure.win": "{a} is the last one in!",
-    "endure.draw": "Time! Everyone still sitting shares the glory.",
+    "endure.draw": "Time! They share the bench and the win.",
     "chase.start": "Here comes the melon!",
     "chase.hop": "{a} hops the log like it is nothing.",
     "chase.stumble": "{a} trips over a puddle!",
@@ -419,7 +445,7 @@
     "chase.lead": "{a} is out in front by {n} metres.",
     "chase.last": "Only {a} is still running!",
     "chase.win": "{a} outruns the melon!",
-    "chase.draw": "The melon runs out of hill. Everyone made it!",
+    "chase.draw": "Neck and neck! They share the win.",
     "feast.start": "Peppers up! Eat as many as you can.",
     "feast.gulp": "{a} gulps two at once!",
     "feast.ghost": "Ghost peppers for everyone!",
@@ -432,7 +458,7 @@
     "feast.lead": "{a} is on {n} peppers!",
     "feast.duel": "Just {a} and {b} still eating!",
     "feast.win": "{a} eats the most!",
-    "feast.draw": "Time! The plates are empty.",
+    "feast.draw": "Not a pepper between them! They share the win.",
     "swim.start": "Swimmers ready... go!",
     "swim.shark": "Another shark joins the race!",
     "swim.bite": "Bonk! A shark gets {a}.",
@@ -445,7 +471,7 @@
     "swim.finish": "{a} touches the finish!",
     "swim.lead": "{a} leads the pack.",
     "swim.win": "{a} wins the derby!",
-    "swim.draw": "Time! The lifeguard calls everyone in.",
+    "swim.draw": "A dead heat in the water! They share the win.",
     "shove.start": "Everyone onto the ice!",
     "shove.shove": "{a} shoves {b}!",
     "shove.bounce": "{b} does not budge. {a} bounces off.",
@@ -456,6 +482,7 @@
     "shove.shrink": "The floe is getting smaller.",
     "shove.duel": "Just {a} and {b} left on the ice!",
     "shove.win": "{a} is the last one on!",
-    "shove.draw": "Time! The ice holds, and so do they."
+    "shove.draw": "Time! They share the ice and the win.",
+    "feast.encore": "{a} is the last one eating, and keeps going!"
   }
 }

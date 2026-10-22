@@ -34,11 +34,13 @@ export type GamesPolicy = (typeof GAMES_POLICIES)[number];
 export interface Candidate {
   entrant: GamesEntrant;
   power: number;
+  /** Its place in its owner's roster by power: 1 is the strongest. */
+  rank: number;
 }
 
 /** The candidates of a player: every creature it owns, folded the way fights fold them. */
 export function candidatesOf(player: Pick<SimPlayer, 'id' | 'creatures'>): Candidate[] {
-  return player.creatures.map((c: OwnedCreature) => {
+  const list = player.creatures.map((c: OwnedCreature) => {
     const folded = foldedCreature(c);
     const species = speciesOf(c.speciesId);
     return {
@@ -53,8 +55,16 @@ export function candidatesOf(player: Pick<SimPlayer, 'id' | 'creatures'>): Candi
         mods: folded.mods,
       }),
       power: creaturePower(c),
+      rank: 0,
     };
   });
+  const order = [...list].sort(
+    (a, b) => b.power - a.power || (a.entrant.id < b.entrant.id ? -1 : 1),
+  );
+  order.forEach((c, i) => {
+    c.rank = i + 1;
+  });
+  return list;
 }
 
 /**
@@ -133,12 +143,14 @@ export function assignEntries(
 }
 
 /** One team in one played event, for the metrics. */
-interface Entry {
+export interface Entry {
   playerId: string;
   policy: GamesPolicy;
   power: number;
   aptitude: number;
   level: number;
+  /** The best roster rank among its members (`Candidate.rank`). */
+  rank: number;
   place: number;
 }
 
@@ -157,6 +169,10 @@ export interface EventTally {
   entriesByPolicy: Record<GamesPolicy, number>;
   winsByBand: Record<string, number>;
   entriesByBand: Record<string, number>;
+  /** Solo events only: wins, podiums and entries by the creature's rank in its owner's roster. */
+  winsByRank: Record<string, number>;
+  podiumsByRank: Record<string, number>;
+  entriesByRank: Record<string, number>;
   spearmanApt: number;
   spearmanPower: number;
   spearmanRuns: number;
@@ -167,6 +183,10 @@ export interface EventTally {
 }
 
 export const LEVEL_BANDS = ['1-9', '10-19', '20-29', '30+'] as const;
+export const ROSTER_RANKS = ['1st', '2nd', '3rd', '4th', '5th+'] as const;
+function rankBucket(rank: number): string {
+  return ROSTER_RANKS[Math.min(rank, 5) - 1] ?? '5th+';
+}
 function band(level: number): string {
   if (level < 10) return '1-9';
   if (level < 20) return '10-19';
@@ -174,9 +194,10 @@ function band(level: number): string {
   return '30+';
 }
 
-function emptyTally(eventId: string): EventTally {
+export function emptyTally(eventId: string): EventTally {
   const z = (): Record<GamesPolicy, number> => ({ best: 0, aptitude: 0, random: 0 });
   const b = (): Record<string, number> => Object.fromEntries(LEVEL_BANDS.map((x) => [x, 0]));
+  const r = (): Record<string, number> => Object.fromEntries(ROSTER_RANKS.map((x) => [x, 0]));
   return {
     eventId,
     runs: 0,
@@ -190,6 +211,9 @@ function emptyTally(eventId: string): EventTally {
     entriesByPolicy: z(),
     winsByBand: b(),
     entriesByBand: b(),
+    winsByRank: r(),
+    podiumsByRank: r(),
+    entriesByRank: r(),
     spearmanApt: 0,
     spearmanPower: 0,
     spearmanRuns: 0,
@@ -256,6 +280,12 @@ export function tallyEvent(
     if (bottom.some((e) => e.place <= 3)) tally.bottomPodium += 1;
   }
   for (const e of entries) {
+    if (def.team === 1) {
+      const k = rankBucket(e.rank);
+      tally.entriesByRank[k] = (tally.entriesByRank[k] ?? 0) + 1;
+      if (e.place <= 3) tally.podiumsByRank[k] = (tally.podiumsByRank[k] ?? 0) + 1;
+      if (e.place === 1) tally.winsByRank[k] = (tally.winsByRank[k] ?? 0) + 1;
+    }
     tally.entriesByPolicy[e.policy] += 1;
     tally.entriesByBand[band(e.level)] = (tally.entriesByBand[band(e.level)] ?? 0) + 1;
     if (e.place === 1) {
@@ -384,6 +414,7 @@ export function playDay(
         power: members.reduce((n, m) => n + m.c.power, 0),
         aptitude: members.reduce((n, m) => n + gamesAptitude(def, m.entrant), 0),
         level: Math.max(...members.map((m) => m.entrant.level)),
+        rank: Math.min(...members.map((m) => m.c.rank)),
         place: s.place,
       };
     });
@@ -421,17 +452,26 @@ export function runGamesStudy(settings: GamesStudySettings): GamesStudy {
   return { settings, events: [...tallies.values()] };
 }
 
-/** The spec's targets. */
+/** The spec's targets, and the lead's (2026-10-22, round 2: the bench must be worth entering). */
 export const GAMES_TARGETS = {
-  strongestWins: { min: 0.25, max: 0.45 },
+  strongestWins: { min: 0.15, max: 0.45 },
   bottomPodium: { min: 0.15 },
   seconds: { min: 20, max: 50 },
   /** Moments per second (one every 4 s). */
   momentsPerSecond: { min: 0.25 },
+  /** Results still follow the fit: aptitude against place, and aptitude picks win this many times as often as random ones. */
+  spearmanApt: { min: 0.6 },
+  aptitudeOverRandom: { min: 1.5 },
+  /** Solo events, all together: creatures 4th or lower in their own roster take this share of the wins. */
+  benchWins: { min: 0.15 },
+  /** Solo events: level 1-9 creatures' share of wins over their share of entries, and level 30+'s. */
+  lowLevelRatio: { min: 0.4 },
+  highLevelRatio: { max: 1.5 },
 } as const;
 
 export interface EventRow {
   eventId: string;
+  team: boolean;
   runs: number;
   ticks: number;
   seconds: number;
@@ -443,13 +483,34 @@ export interface EventRow {
   winRandom: number;
   spearmanApt: number;
   spearmanPower: number;
+  /** Solo events: the share of wins taken by creatures 4th or lower in their roster. */
+  benchWins: number | null;
   outSpread: number | null;
   outBurst: number | null;
   bands: Record<string, { wins: number; entries: number }>;
-  pass: { strongest: boolean; bottom: boolean; length: boolean; moments: boolean };
+  pass: {
+    strongest: boolean;
+    bottom: boolean;
+    length: boolean;
+    moments: boolean;
+    spearman: boolean;
+    fit: boolean;
+  };
+}
+
+/** Solo events added up: wins, podiums and entries by roster rank and by level band. */
+export interface SoloSummary {
+  ranks: Record<string, { wins: number; podiums: number; entries: number }>;
+  bands: Record<string, { wins: number; entries: number }>;
+  benchWins: number;
+  lowLevelRatio: number;
+  highLevelRatio: number;
+  pass: { bench: boolean; low: boolean; high: boolean };
 }
 
 const div = (a: number, b: number): number => (b === 0 ? 0 : a / b);
+const total = (r: Record<string, number>): number => Object.values(r).reduce((a, b) => a + b, 0);
+const BENCH = ['4th', '5th+'];
 
 /** The table rows of a study. */
 export function gamesRows(study: GamesStudy): EventRow[] {
@@ -460,21 +521,33 @@ export function gamesRows(study: GamesStudy): EventRow[] {
       const mps = div(t.moments, t.seconds);
       const strongest = div(t.strongestWins, t.runs);
       const bottom = div(t.bottomPodium, t.bottomRuns);
-      const totalWins = Object.values(t.winsByBand).reduce((a, b) => a + b, 0);
-      const totalEntries = Object.values(t.entriesByBand).reduce((a, b) => a + b, 0);
+      const totalWins = total(t.winsByBand);
+      const totalEntries = total(t.entriesByBand);
+      const rankWins = total(t.winsByRank);
+      const winAptitude = div(t.winsByPolicy.aptitude, t.entriesByPolicy.aptitude);
+      const winRandom = div(t.winsByPolicy.random, t.entriesByPolicy.random);
+      const spearmanApt = div(t.spearmanApt, t.spearmanRuns);
       return {
         eventId: t.eventId,
+        team: rankWins === 0 && total(t.entriesByRank) === 0,
         runs: t.runs,
         ticks: div(t.ticks, t.runs),
         seconds,
         momentsPer10s: mps * 10,
         strongestWins: strongest,
         bottomPodium: bottom,
-        winAptitude: div(t.winsByPolicy.aptitude, t.entriesByPolicy.aptitude),
+        winAptitude,
         winBest: div(t.winsByPolicy.best, t.entriesByPolicy.best),
-        winRandom: div(t.winsByPolicy.random, t.entriesByPolicy.random),
-        spearmanApt: div(t.spearmanApt, t.spearmanRuns),
+        winRandom,
+        spearmanApt,
         spearmanPower: div(t.spearmanPower, t.spearmanRuns),
+        benchWins:
+          rankWins === 0
+            ? null
+            : div(
+                BENCH.reduce((n, k) => n + (t.winsByRank[k] ?? 0), 0),
+                rankWins,
+              ),
         outSpread: t.outRuns === 0 ? null : t.outSpread / t.outRuns,
         outBurst: t.outRuns === 0 ? null : t.outBurst / t.outRuns,
         bands: Object.fromEntries(
@@ -493,17 +566,79 @@ export function gamesRows(study: GamesStudy): EventRow[] {
           bottom: bottom >= GAMES_TARGETS.bottomPodium.min,
           length: seconds >= GAMES_TARGETS.seconds.min && seconds <= GAMES_TARGETS.seconds.max,
           moments: mps >= GAMES_TARGETS.momentsPerSecond.min,
+          spearman: spearmanApt >= GAMES_TARGETS.spearmanApt.min,
+          fit: winAptitude >= GAMES_TARGETS.aptitudeOverRandom.min * winRandom,
         },
       };
     });
 }
 
+/** The solo events of a study added up (team events have no roster rank: three creatures share a result). */
+export function soloSummary(study: GamesStudy): SoloSummary {
+  const solo = study.events.filter((t) => total(t.entriesByRank) > 0);
+  const sumOf = (pick: (t: EventTally) => Record<string, number>, key: string): number =>
+    solo.reduce((n, t) => n + (pick(t)[key] ?? 0), 0);
+  const ranks = Object.fromEntries(
+    ROSTER_RANKS.map((k) => [
+      k,
+      {
+        wins: sumOf((t) => t.winsByRank, k),
+        podiums: sumOf((t) => t.podiumsByRank, k),
+        entries: sumOf((t) => t.entriesByRank, k),
+      },
+    ]),
+  );
+  const bandsRaw = Object.fromEntries(
+    LEVEL_BANDS.map((b) => [
+      b,
+      { wins: sumOf((t) => t.winsByBand, b), entries: sumOf((t) => t.entriesByBand, b) },
+    ]),
+  );
+  const wins = Object.values(bandsRaw).reduce((n, x) => n + x.wins, 0);
+  const entries = Object.values(bandsRaw).reduce((n, x) => n + x.entries, 0);
+  const bands = Object.fromEntries(
+    LEVEL_BANDS.map((b) => [
+      b,
+      { wins: div(bandsRaw[b]?.wins ?? 0, wins), entries: div(bandsRaw[b]?.entries ?? 0, entries) },
+    ]),
+  );
+  const rankWins = Object.values(ranks).reduce((n, x) => n + x.wins, 0);
+  const benchWins = div(
+    BENCH.reduce((n, k) => n + (ranks[k]?.wins ?? 0), 0),
+    rankWins,
+  );
+  const ratio = (b: string): number => div(bands[b]?.wins ?? 0, bands[b]?.entries ?? 0);
+  const lowLevelRatio = ratio('1-9');
+  const highLevelRatio = ratio('30+');
+  return {
+    ranks,
+    bands,
+    benchWins,
+    lowLevelRatio,
+    highLevelRatio,
+    pass: {
+      bench: benchWins >= GAMES_TARGETS.benchWins.min,
+      low: lowLevelRatio >= GAMES_TARGETS.lowLevelRatio.min,
+      high: highLevelRatio <= GAMES_TARGETS.highLevelRatio.max,
+    },
+  };
+}
+
 const pct = (v: number): string => `${(v * 100).toFixed(0)}%`;
 const mark = (ok: boolean): string => (ok ? 'PASS' : 'FAIL');
 
-/** The study as a plain-text report (a markdown table). */
+/** Every target check of a study: the events' and the solo summary's. */
+export function gamesChecks(study: GamesStudy): boolean[] {
+  return [
+    ...gamesRows(study).flatMap((r) => Object.values(r.pass)),
+    ...Object.values(soloSummary(study).pass),
+  ];
+}
+
+/** The study as a plain-text report (markdown tables). */
 export function gamesReport(study: GamesStudy): string {
   const rows = gamesRows(study);
+  const sum = soloSummary(study);
   const s = study.settings;
   const lines: string[] = [];
   lines.push(`# Valley Games study`);
@@ -512,29 +647,52 @@ export function gamesReport(study: GamesStudy): string {
     `Seed \`${s.seed}\`; servers of ${s.sizes.join(' and ')} players; rosters at weeks ${s.weeks.join(', ')}; ${String(s.days)} days each; every player's policy (best, aptitude, random) drawn each day.`,
   );
   lines.push(
-    'Targets: strongest wins 25-45%; a bottom-half entrant on the podium in at least 15% of events (4+ teams); 20-50 s; at least 2.5 moments per 10 s.',
+    'Targets per event: strongest wins 15-45%; a bottom-half entrant on the podium in at least 15% of events (4+ teams); 20-50 s; at least 2.5 moments per 10 s; Spearman aptitude vs result at least 0.6; aptitude picks win at least 1.5x as often as random ones. Solo events together: the bench (4th or lower in its roster) takes at least 15% of wins; level 1-9 win share at least 0.4x their entry share; level 30+ at most 1.5x.',
   );
   lines.push('');
   lines.push(
-    '| Event | Runs | Ticks | Seconds | Moments/10 s | Strongest wins | Bottom half podium | Win: aptitude / best / random | Spearman apt / power | Out spread / burst |',
+    '| Event | Runs | Seconds | Moments/10 s | Strongest wins | Bottom half podium | Bench wins | Win: aptitude / best / random | Spearman apt / power | Out spread / burst |',
   );
   lines.push('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
   for (const r of rows) {
     lines.push(
-      `| ${r.eventId} | ${String(r.runs)} | ${r.ticks.toFixed(0)} | ${r.seconds.toFixed(1)} ${mark(r.pass.length)} | ${r.momentsPer10s.toFixed(1)} ${mark(r.pass.moments)} | ${pct(r.strongestWins)} ${mark(r.pass.strongest)} | ${pct(r.bottomPodium)} ${mark(r.pass.bottom)} | ${pct(r.winAptitude)} / ${pct(r.winBest)} / ${pct(r.winRandom)} | ${r.spearmanApt.toFixed(2)} / ${r.spearmanPower.toFixed(2)} | ${r.outSpread === null ? '-' : pct(r.outSpread)} / ${r.outBurst === null ? '-' : pct(r.outBurst)} |`,
+      `| ${r.eventId} | ${String(r.runs)} | ${r.seconds.toFixed(1)} ${mark(r.pass.length)} | ${r.momentsPer10s.toFixed(1)} ${mark(r.pass.moments)} | ${pct(r.strongestWins)} ${mark(r.pass.strongest)} | ${pct(r.bottomPodium)} ${mark(r.pass.bottom)} | ${r.benchWins === null ? '-' : pct(r.benchWins)} | ${pct(r.winAptitude)} / ${pct(r.winBest)} / ${pct(r.winRandom)} ${mark(r.pass.fit)} | ${r.spearmanApt.toFixed(2)} ${mark(r.pass.spearman)} / ${r.spearmanPower.toFixed(2)} | ${r.outSpread === null ? '-' : pct(r.outSpread)} / ${r.outBurst === null ? '-' : pct(r.outBurst)} |`,
     );
   }
   lines.push('');
-  lines.push('Wins by level band (share of wins / share of entries):');
+  lines.push("Solo events by the creature's rank in its own roster (by power):");
+  lines.push('');
+  lines.push('| Rank | Share of wins | Share of podiums | Share of entries |');
+  lines.push('| --- | ---: | ---: | ---: |');
+  const rw = Object.values(sum.ranks).reduce((n, x) => n + x.wins, 0);
+  const rp = Object.values(sum.ranks).reduce((n, x) => n + x.podiums, 0);
+  const re = Object.values(sum.ranks).reduce((n, x) => n + x.entries, 0);
+  for (const k of ROSTER_RANKS) {
+    const x = sum.ranks[k] ?? { wins: 0, podiums: 0, entries: 0 };
+    lines.push(
+      `| ${k} | ${pct(div(x.wins, rw))} | ${pct(div(x.podiums, rp))} | ${pct(div(x.entries, re))} |`,
+    );
+  }
+  lines.push('');
+  lines.push(
+    `Bench (4th+) share of solo wins: ${pct(sum.benchWins)} ${mark(sum.pass.bench)}. Level 1-9 wins/entries: ${sum.lowLevelRatio.toFixed(2)}x ${mark(sum.pass.low)}. Level 30+: ${sum.highLevelRatio.toFixed(2)}x ${mark(sum.pass.high)}.`,
+  );
+  lines.push('');
+  lines.push(
+    'Wins by level band (share of wins / share of entries), solo events together and per event:',
+  );
   lines.push('');
   lines.push(`| Event | ${LEVEL_BANDS.join(' | ')} |`);
   lines.push(`| --- | ${LEVEL_BANDS.map(() => '---:').join(' | ')} |`);
+  lines.push(
+    `| all solo | ${LEVEL_BANDS.map((b) => `${pct(sum.bands[b]?.wins ?? 0)} / ${pct(sum.bands[b]?.entries ?? 0)}`).join(' | ')} |`,
+  );
   for (const r of rows) {
     lines.push(
       `| ${r.eventId} | ${LEVEL_BANDS.map((b) => `${pct(r.bands[b]?.wins ?? 0)} / ${pct(r.bands[b]?.entries ?? 0)}`).join(' | ')} |`,
     );
   }
-  const checks = rows.flatMap((r) => Object.values(r.pass));
+  const checks = gamesChecks(study);
   lines.push('');
   lines.push(
     `Targets passed: ${String(checks.filter((c) => c).length)} of ${String(checks.length)}.`,

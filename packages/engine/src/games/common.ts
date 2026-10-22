@@ -142,14 +142,14 @@ export function smallMult(def: GamesEventDef, e: GamesEntrant): number {
 }
 
 /**
- * A stat's curve against the field times the element and role multipliers (each can be left out), in
- * basis points, at least 1.
+ * A stat's curve against the field times the element, role and size multipliers (each can be left
+ * out), in basis points, at least 1.
  */
 export function keyFactor(
   def: GamesEventDef,
   entrants: readonly GamesEntrant[],
   stat: 'hp' | 'atk' | 'spd',
-  use: { element?: boolean; role?: boolean } = {},
+  use: { element?: boolean; role?: boolean; small?: boolean } = {},
 ): number[] {
   const curve = fieldCurve(
     entrants.map((e) => e[stat]),
@@ -159,6 +159,7 @@ export function keyFactor(
     let f = curve[i] as number;
     if (use.element !== false) f = mulBp(f, def.elementBp[e.element]);
     if (use.role !== false) f = mulBp(f, roleMult(def, e));
+    if (use.small !== false) f = mulBp(f, smallMult(def, e));
     return Math.max(1, f);
   });
 }
@@ -168,7 +169,7 @@ export function gear(e: GamesEntrant, line: keyof NonNullable<GamesEntrant['mods
   return e.mods?.[line] ?? 0;
 }
 
-function compareKeys(a: readonly number[], b: readonly number[]): number {
+export function compareKeys(a: readonly number[], b: readonly number[]): number {
   const n = Math.max(a.length, b.length);
   for (let i = 0; i < n; i++) {
     const d = (b[i] ?? 0) - (a[i] ?? 0);
