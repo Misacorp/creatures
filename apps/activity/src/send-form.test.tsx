@@ -103,9 +103,9 @@ describe('the send form in steps', () => {
 
   it('greys a creature below the place rank with its reason, and cannot go on without an explorer', () => {
     const root = draw('steps', 'moonlit-reef');
-    const rows = byClass(root, 'pick');
+    const rows = byClass(root, 'roster-option');
     expect(rows.length).toBe(base.length);
-    expect(rows.every((r) => (r.getAttribute('class') ?? '').includes('busy'))).toBe(true);
+    expect(rows.every((r) => (r.getAttribute('class') ?? '').includes('disabled'))).toBe(true);
     expect(visibleText(root)).toContain('Needs explorer rank 4 for this place');
     expect(disabled(button(root))).toBe(true);
     // The reason is on the screen next to the button, not only in a disabled state.
@@ -119,9 +119,8 @@ describe('the send form in steps', () => {
 describe('who goes, compact', () => {
   it('is one short row per creature with no XP bar, and folds the rank track away', () => {
     const root = draw('steps', 'tidepools');
-    expect(byClass(root, 'pick compact').length + byClass(root, 'compact').length).toBeGreaterThan(
-      0,
-    );
+    expect(byClass(root, 'roster-option').length).toBeGreaterThan(0);
+    expect(byClass(root, 'pick-rank').length).toBeGreaterThan(0);
     expect(byClass(root, 'xpbar')).toHaveLength(0);
     expect(byClass(root, 'pick-fam')).toHaveLength(0);
     expect(visibleText(root)).toContain('What ranks unlock');

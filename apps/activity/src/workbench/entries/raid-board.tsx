@@ -19,7 +19,9 @@ import {
   type PickerOption,
 } from '../../roster-picker';
 import { WEARS_IT_NOTE } from '../../equip-picker';
-import { RosterList } from '../../ui/RosterList';
+import { CreatureList } from '../../ui/CreatureList';
+import { CountBadge } from '../../ui/CountBadge';
+import { durationCountItem } from '../../gear-view';
 import { RosterPicker } from '../../ui/RosterPicker';
 import { SPECIES_IDS, speciesLabel } from '../data';
 import { bool, num, str } from '../props';
@@ -550,6 +552,7 @@ const TAKEN_WORN: readonly NonNullable<PickerOption['worn']>[] = [
 function ListDemo({ p }: { p: Props }) {
   const owned = useMemo(() => ownedCreatures(num(p, 'owned')), [num(p, 'owned')]);
   const board = useMemo(() => startBoard(5, 2, num(p, 'placed'), 1), [num(p, 'placed')]);
+  const [chosen, setChosen] = useState<string | null>(null);
   const party = partyView(board, owned);
   const slot = party.row.find((s) => s.zone === 'middle' && s.creature === null)?.slot ?? 0;
   const picked = pickerOptions({
@@ -560,62 +563,135 @@ function ListDemo({ p }: { p: Props }) {
     turnOrder: 'left_to_right',
     showEffects: bool(p, 'effects'),
   });
+  const taken = bool(p, 'taken');
   // The Equip on list: most creatures already wear something in the slot, two cannot take the item.
-  const options = bool(p, 'taken')
-    ? picked.map((o, i): PickerOption => {
-        const worn = TAKEN_WORN[i % TAKEN_WORN.length];
-        return {
-          ...o,
-          recommended: false,
-          ...(i % 3 === 2 || worn === undefined ? {} : { worn }),
-          ...(i === 1 ? { disabled: 'Away on a trip', busy: 'away' as const } : {}),
-          ...(i === 3 ? { disabled: 'Needs level 12' } : {}),
-          ...(i === 4 ? { disabled: 'On a job', busy: 'job' as const } : {}),
-        };
-      })
-    : picked;
+  const options = picked.map((o, i): PickerOption => {
+    const worn = TAKEN_WORN[i % TAKEN_WORN.length];
+    return {
+      ...o,
+      ...(taken ? { recommended: false } : {}),
+      ...(taken && i % 3 !== 2 && worn !== undefined ? { worn } : {}),
+      ...(taken && i === 1 ? { disabled: 'Away on a trip', busy: 'away' as const } : {}),
+      ...(taken && i === 3 ? { disabled: 'Needs level 12' } : {}),
+      ...(taken && i === 4 ? { disabled: 'On a job', busy: 'job' as const } : {}),
+      ...(bool(p, 'note') ? { note: `Crafting level ${String(1 + (i % 4))}` } : {}),
+      ...(bool(p, 'xp')
+        ? {
+            xpBar: {
+              value: 40 + i * 20,
+              max: 222,
+              top: false,
+              label: `${o.name}'s experience`,
+              text: `${String(40 + i * 20)} / 222`,
+            },
+          }
+        : {}),
+      ...(bool(p, 'rested') && i === 0 ? { rested: true } : {}),
+    };
+  });
+  const selection =
+    str(p, 'mode') === 'choose'
+      ? ({
+          mode: 'choose',
+          name: 'demo-who',
+          value: chosen ?? options.find((o) => o.disabled === null)?.id ?? null,
+          onChange: setChosen,
+          legend: 'Who does the work?',
+        } as const)
+      : ({ mode: 'pick', onPick: () => undefined } as const);
   return (
     <div class="workshop">
-      <RosterList
+      <CreatureList
         options={options}
-        placedNote={bool(p, 'taken') ? WEARS_IT_NOTE : ON_BOARD_NOTE}
+        selection={selection}
+        placedNote={taken ? WEARS_IT_NOTE : ON_BOARD_NOTE}
         showEffects={bool(p, 'effects')}
-        reasonSide={bool(p, 'taken')}
-        onPick={() => undefined}
+        chips={bool(p, 'chips')}
+        reasonSide={bool(p, 'reasonSide')}
+        {...(bool(p, 'clock')
+          ? { side: () => <CountBadge {...durationCountItem(10_800_000)} /> }
+          : {})}
+        {...(bool(p, 'more')
+          ? {
+              more: (o: PickerOption) => <span class="muted small">{`Block under ${o.name}`}</span>,
+            }
+          : {})}
         class={bool(p, 'flat') ? 'flat' : ''}
       />
     </div>
   );
 }
 
-const rosterList: Entry = {
-  name: 'RosterList',
-  file: 'apps/activity/src/ui/RosterList.tsx',
+const creatureList: Entry = {
+  name: 'CreatureList',
+  file: 'apps/activity/src/ui/CreatureList.tsx',
   group: 'Slots',
   description:
-    'The list of creature options of the creature picker: a listbox with each creature\'s sprite, name, level, element and role, and either a note ("On the board") or why it cannot be picked. The raid and dungeon sheet (RosterPicker) and the Workshop item drawer\'s "Equip on" view, which shows it inside the drawer, both use it. Up, Down, Home and End move through it, Enter or a tap picks.',
+    'The one list of creatures to choose from, used wherever the player picks one creature: the raid and dungeon sheet (RosterPicker), the dungeon camp swap, the lounge swap, the Workshop item drawer\'s "Equip on" view, a Workshop job\'s worker and an expedition\'s explorer. The row is fixed (sprite, name and level, in the pixel font); every other part is a switch: element and role chips, an XP track, the Rested tag, the Recommended tag, a worn item tile, a quiet note, the effect preview, why a row cannot be picked (under the name, or at the right with reasonSide; busy rows get the status badge), a right-end detail (the clock badge) and an extra block under the name. "pick" is a listbox for pick-and-close views (Up, Down, Home, End, Enter); "choose" is native radios in a fieldset for a choice that stays.',
   controls: {
+    mode: { kind: 'select', options: ['pick', 'choose'] },
+    chips: { kind: 'toggle' },
     effects: { kind: 'toggle' },
+    xp: { kind: 'toggle' },
+    rested: { kind: 'toggle' },
+    taken: { kind: 'toggle' },
+    note: { kind: 'toggle' },
+    reasonSide: { kind: 'toggle' },
+    clock: { kind: 'toggle' },
+    more: { kind: 'toggle' },
+    flat: { kind: 'toggle' },
     placed: { kind: 'number', min: 0, max: 3 },
     owned: { kind: 'number', min: 1, max: 12 },
-    flat: { kind: 'toggle' },
-    taken: { kind: 'toggle' },
   },
-  defaults: { effects: false, placed: 3, owned: 5, flat: true, taken: false },
+  defaults: {
+    mode: 'pick',
+    chips: true,
+    effects: false,
+    xp: false,
+    rested: false,
+    taken: false,
+    note: false,
+    reasonSide: false,
+    clock: false,
+    more: false,
+    flat: true,
+    placed: 3,
+    owned: 5,
+  },
   presets: [
     { name: 'As the item drawer draws it (flat)', props: {} },
     {
       name: 'Equip on: slot taken (worn item tile at the right, some with a reason)',
-      props: { taken: true, placed: 1, owned: 6 },
+      props: { taken: true, reasonSide: true, placed: 1, owned: 6 },
     },
     { name: 'As the sheet draws it (scrolls itself)', props: { flat: false, owned: 9 } },
+    {
+      name: 'Lounge swap (XP track, Rested, reasons at the right)',
+      props: { taken: true, xp: true, rested: true, reasonSide: true, owned: 6 },
+    },
+    {
+      name: 'Job worker (choose: radios, Crafting level note, clock badge, no chips)',
+      props: {
+        mode: 'choose',
+        chips: false,
+        note: true,
+        clock: true,
+        reasonSide: true,
+        taken: true,
+        owned: 5,
+      },
+    },
+    {
+      name: 'Explorer (choose: radios, an extra block under the name, no chips)',
+      props: { mode: 'choose', chips: false, more: true, taken: true, owned: 4 },
+    },
   ],
   render: (p) => (
     <ListDemo
-      key={`${String(bool(p, 'effects'))}-${String(num(p, 'placed'))}-${String(num(p, 'owned'))}-${String(bool(p, 'taken'))}`}
+      key={`${String(bool(p, 'effects'))}-${String(num(p, 'placed'))}-${String(num(p, 'owned'))}-${str(p, 'mode')}`}
       p={p}
     />
   ),
 };
 
-export const raidBoardEntries: readonly Entry[] = [raidBoard, rosterPicker, rosterList];
+export const raidBoardEntries: readonly Entry[] = [raidBoard, rosterPicker, creatureList];

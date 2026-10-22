@@ -164,7 +164,9 @@ button.switch.treat-switch {
   }
 }
 
-.treat-help {
+.treat-box > .treat-help {
+  /* Centred between the switch row and the container edge: the gap before it is 0.5rem, so the same after it. */
+  margin: 0 0.5rem 0 0;
   flex: none;
 }
 

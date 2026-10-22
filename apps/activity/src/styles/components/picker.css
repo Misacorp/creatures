@@ -85,3 +85,12 @@ label.pick input[type='radio'] {
   display: grid;
   gap: 0.5rem;
 }
+
+/* The job wizards' Who step: the step title says it, so the legend is for assistive technology only. */
+.job-who legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

@@ -1,59 +1,41 @@
 import { Tag } from './ui/Tag';
 import type { PickerOption } from './gear-view';
-import { durationCountItem } from './gear-view';
+import { busyKind, durationCountItem } from './gear-view';
 import { CountBadge } from './ui/CountBadge';
-import { creatureName } from './game';
-import { Sprite } from './sprites/Sprite';
-import { creatureSpriteOrFallback } from './sprites/creature-sprites';
+import { CreatureList } from './ui/CreatureList';
+import { baseOption, type PickerOption as Row } from './roster-picker';
+
+/** A worker row: the list's row plus how long the job takes with this creature. */
+export type WorkerRow = Row & { durationMs: number };
 
 /**
- * One creature of a pick list: a radio row with its sprite, name, Crafting level and (at the right) the time
- * the job would take, or the reason it cannot be picked (the radio is then disabled and the row greyed).
+ * One creature of a job's list as a `CreatureList` row: its Crafting level as the note, the reason it cannot
+ * work as the row's reason (a busy creature gets the status badge unless `plainReason`, for a row that is
+ * greyed for another reason such as "Needs level 3"), and its time for the job.
  */
-export function PickRow({
-  name,
-  option: { creature, level, busy, durationMs },
-  selected,
-  onChange,
-}: {
-  /** Names the radio group; unique on the page. */
-  name: string;
-  option: PickerOption;
-  selected: boolean;
-  onChange: (creatureId: string) => void;
-}) {
-  return (
-    <label class={`pick${busy === null ? '' : ' busy'}${selected ? ' on' : ''}`}>
-      <input
-        type="radio"
-        name={name}
-        value={creature.id}
-        checked={selected}
-        disabled={busy !== null}
-        onChange={() => {
-          onChange(creature.id);
-        }}
-      />
-      <Sprite sprite={creatureSpriteOrFallback(creature.species)} scale={2} />
-      <span class="pick-text">
-        <span class="pick-name pix">{creatureName(creature)}</span>
-        <span class="pick-meta">Crafting level {level}</span>
-      </span>
-      {busy === null ? (
-        <span class="pick-side">
-          <CountBadge {...durationCountItem(durationMs)} />
-        </span>
-      ) : (
-        <span class="pick-meta pick-side pick-reason">{busy}</span>
-      )}
-    </label>
-  );
+export function workerRow(
+  { creature, level, busy, durationMs }: PickerOption,
+  plainReason = false,
+): WorkerRow {
+  const kind = plainReason ? null : busyKind(creature);
+  return {
+    ...baseOption(creature),
+    note: `Crafting level ${String(level)}`,
+    disabled: busy,
+    ...(kind === null ? {} : { busy: kind }),
+    durationMs,
+  };
+}
+
+/** The clock badge at the right of a row that can do the job. */
+export function workerSide(row: WorkerRow) {
+  return <CountBadge {...durationCountItem(row.durationMs)} />;
 }
 
 /**
- * Who does the work: a radio list of creatures with each one's Crafting level and how long the job
- * would take with it (a clock badge). A creature that is busy is listed but cannot be picked, and the row
- * says why at its right, like `ui/RosterList`. Native radios, so the arrow keys and screen readers work as usual.
+ * Who does the work: the shared creature list (`ui/CreatureList`) in `choose` mode (native radios) with each
+ * one's Crafting level as the quiet line and how long the job would take with it as a clock badge at the right.
+ * A creature that is busy is listed but cannot be picked; the row says why at its right (the status badge).
  */
 export function CreaturePicker({
   name,
@@ -67,20 +49,24 @@ export function CreaturePicker({
   value: string | null;
   onChange: (creatureId: string) => void;
 }) {
+  const rows = options.map((option) => workerRow(option));
   return (
-    <fieldset class="picker">
-      <legend>
-        Who does the work? <Tag entry="skill-crafting">Crafting skill</Tag>
-      </legend>
-      {options.map((option) => (
-        <PickRow
-          key={option.creature.id}
-          name={name}
-          option={option}
-          selected={value === option.creature.id}
-          onChange={onChange}
-        />
-      ))}
-    </fieldset>
+    <CreatureList
+      options={rows}
+      selection={{
+        mode: 'choose',
+        name,
+        value,
+        onChange,
+        legend: (
+          <>
+            Who does the work? <Tag entry="skill-crafting">Crafting skill</Tag>
+          </>
+        ),
+      }}
+      chips={false}
+      reasonSide
+      side={workerSide}
+    />
   );
 }

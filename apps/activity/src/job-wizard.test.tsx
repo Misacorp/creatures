@@ -85,7 +85,7 @@ const radios = (root: FakeElement): FakeElement[] =>
 const rows = (root: FakeElement): string[] =>
   find(
     root,
-    (e) => e.localName === 'label' && (e.getAttribute('class') ?? '').includes('pick'),
+    (e) => e.localName === 'label' && (e.getAttribute('class') ?? '').includes('roster-option'),
   ).map((e) => visibleText(e));
 
 /** Opens a job from the supply card and returns the root. */

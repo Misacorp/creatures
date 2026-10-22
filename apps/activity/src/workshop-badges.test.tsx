@@ -121,16 +121,17 @@ describe('the worker picker', () => {
     const root = draw(
       <CreaturePicker name="who" options={options} value={null} onChange={vi.fn()} />,
     );
-    const rows = byClass(root, 'pick');
+    const rows = byClass(root, 'roster-option');
     expect(rows).toHaveLength(2);
     const [first, second] = rows as [FakeElement, FakeElement];
     expect(byName(first, 'span', 'Takes: 1 h')).toHaveLength(1);
-    expect(byClass(first, 'pick-reason')).toHaveLength(0);
-    expect(visibleText(byClass(first, 'pick-meta')[0] as FakeElement)).toMatch(
+    expect(byClass(first, 'ro-reason')).toHaveLength(0);
+    expect(visibleText(byClass(first, 'ro-quiet')[0] as FakeElement)).toMatch(
       /^Crafting level \d+$/,
     );
-    // The busy row names the reason in the right-hand column, in the same words as the other pick lists.
-    expect(visibleText(byClass(second, 'pick-reason')[0] as FakeElement)).toBe('Away on a trip');
+    // The busy row names the reason in the right-hand column as the card's status badge, like the other lists.
+    expect(visibleText(byClass(second, 'ro-side')[0] as FakeElement)).toBe('Away on a trip');
+    expect(first.getAttribute('class')).toContain('roster-option');
     expect(byClass(second, 'part-count')).toHaveLength(0);
   });
 });

@@ -2,7 +2,8 @@ import { GLOSSARY_IDS } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature } from './api';
 import type { ReachId } from './gear-types';
-import { PickRow } from './CreaturePicker';
+import { workerRow, workerSide } from './CreaturePicker';
+import { CreatureList } from './ui/CreatureList';
 import { baitCount } from './count-items';
 import { creatureName } from './game';
 import { CostList } from './GearArt';
@@ -17,7 +18,6 @@ import { TreatBox } from './TreatBox';
 import { Accordion } from './ui/Accordion';
 import { Alert } from './ui/Alert';
 import { PreviewStatus } from './ui/PreviewStatus';
-import { FoldRow } from './ui/FoldRow';
 import { CountBadge, type CountItem } from './ui/CountBadge';
 import { Drawer } from './ui/Drawer';
 import { RecipeCard, type RecipeInput } from './ui/RecipeCard';
@@ -158,35 +158,36 @@ export function JobWhoStep({
   groupName?: string;
 }) {
   const [open, setOpen] = useState(startOpen);
-  const row = (option: JobWho['able'][number]) => (
-    <PickRow
-      key={option.creature.id}
-      name={groupName}
-      option={option}
-      selected={value === option.creature.id}
-      onChange={onPick}
-    />
-  );
+  const rows = [...who.able, ...who.busy].map((o) => workerRow(o));
+  const folded = who.tooLow.map((o) => workerRow(o, true));
   return (
-    <fieldset class="picker job-who">
-      <legend class="visually-hidden">{legend}</legend>
-      {who.able.map(row)}
-      {who.busy.map(row)}
-      {who.summary !== null && (
-        <>
-          <FoldRow
-            open={open}
-            controls="job-who-folded"
-            onToggle={() => {
-              setOpen(!open);
-            }}
-          >
-            {who.summary}
-          </FoldRow>
-          {open && <div id="job-who-folded">{who.tooLow.map(row)}</div>}
-        </>
-      )}
-    </fieldset>
+    <CreatureList
+      options={rows}
+      selection={{
+        mode: 'choose',
+        name: groupName,
+        value,
+        onChange: onPick,
+        legend,
+      }}
+      fieldClass="job-who"
+      chips={false}
+      reasonSide
+      side={workerSide}
+      {...(who.summary === null
+        ? {}
+        : {
+            fold: {
+              options: folded,
+              label: who.summary,
+              open,
+              id: `${groupName}-folded`,
+              onToggle: () => {
+                setOpen(!open);
+              },
+            },
+          })}
+    />
   );
 }
 
