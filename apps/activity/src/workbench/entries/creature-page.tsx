@@ -496,7 +496,12 @@ function Excerpt({ def, bait }: { def: SceneDef; bait: number }) {
     <div class="v3-bleed">
       <section class="creature-page" aria-label="Excerpt of the creature page">
         <div class="cp-block">
-          <PageHeader creature={creature} state={state} nameId={`page-${def.id}-name`} />
+          <PageHeader
+            creature={creature}
+            state={state}
+            nameId={`page-${def.id}-name`}
+            skills={gear.skills}
+          />
         </div>
         {def.show === 'gear' && (
           <div class="cp-block">

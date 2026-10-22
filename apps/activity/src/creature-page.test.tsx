@@ -229,12 +229,39 @@ describe('the creature page: the head and tags', () => {
     expect(byClass(root, 'v3-level')).toHaveLength(0);
   });
 
+  it('shows the Explorer and Crafting bars under Experience, with Max at the top and no Crafting until the gear loads', () => {
+    const { root } = draw('level 15');
+    const bars = byRole(root, 'progressbar');
+    expect(bars.map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Experience: 310 / 825 towards level 16',
+      expect.stringContaining('explorer XP'),
+      expect.stringContaining('Crafting XP'),
+    ]);
+    expect(bars.map((b) => b.getAttribute('aria-valuetext'))).toEqual([
+      '310 / 825',
+      '500 / 1200',
+      '70 / 200',
+    ]);
+    const tags = byClass(root, 'xp-lv').map((t) => visibleText(t));
+    expect(tags).toEqual(['Lv 15', 'Rank 3', 'Craft 3']);
+    page?.unmount();
+    const unloaded = draw('level 15', { gearLoaded: false });
+    expect(byRole(unloaded.root, 'progressbar')).toHaveLength(2);
+    page?.unmount();
+    const top = draw('level 15', {
+      change: (c) => ({ ...c, explorer: { ...c.explorer, rank: 10, nextRankXp: null } }),
+    });
+    expect(byRole(top.root, 'progressbar')[1]?.getAttribute('aria-valuetext')).toBe('Max');
+  });
+
   it('reads like the card: the portrait, the name, the tags, then the level and bar, then the buttons', () => {
     const { root } = draw('evolve ready');
     const head = first(byClass(root, 'cp-head'));
     const parts = head.childNodes as FakeElement[];
     expect(parts.map((p) => p.getAttribute('class')?.split(' ')[0])).toEqual([
       'cc-head',
+      'xp-static',
+      'xp-static',
       'xp-static',
     ]);
     const top = first(byClass(head, 'cc-head'));
