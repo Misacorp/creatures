@@ -56,8 +56,8 @@ interface SceneDef {
   /** `compare`: a long Epic against a long worn Epic (many lines, changed, new and lost), to show the card scroll. */
   long?: boolean;
   open?: PageOpen;
-  /** `item`: what the item drawer shows open: the creature list of "Equip on" (a view of the drawer), or the dismantle panel. */
-  drawer?: 'equip' | 'dismantle';
+  /** `item`: what the item drawer shows open: the creature list of "Equip on" (a view of the drawer), or the dismantle wizard (on Who dismantles, or on the confirmation). */
+  drawer?: 'equip' | 'dismantle' | 'dismantle-confirm';
   /** `item`: creatures of every state beside the two of the sample (a Guard, a low level, away, on a job). */
   crowd?: boolean;
   /** The gear view has not loaded yet. */
@@ -271,11 +271,21 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   {
     id: 'W6',
-    label: 'W6 · Item drawer: Dismantle open (yields as badges, the time, quality)',
+    label: 'W6 · Item drawer: Dismantle, step 1 (Who dismantles: able, busy greyed)',
     kind: 'level 15',
     show: 'item',
     pick: 'hat:2',
     drawer: 'dismantle',
+    crowd: true,
+  },
+  {
+    id: 'W6b',
+    label:
+      'W6b · Item drawer: Dismantle, step 2 (the confirmation: yields, time, Cannot be undone)',
+    kind: 'level 15',
+    show: 'item',
+    pick: 'hat:2',
+    drawer: 'dismantle-confirm',
     crowd: true,
   },
   {
@@ -660,7 +670,7 @@ function ItemScene({ def }: { def: SceneDef }) {
       busy={false}
       actions={actions}
       onGone={() => undefined}
-      initialDismantle={def.drawer === 'dismantle'}
+      initialDismantle={def.drawer === 'dismantle-confirm' ? 'confirm' : def.drawer === 'dismantle'}
       initialPicking={def.drawer === 'equip'}
     />
   );

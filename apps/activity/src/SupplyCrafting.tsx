@@ -1,12 +1,6 @@
 import { supplyDef } from '@creatures/game';
 import { useState } from 'preact/hooks';
 import type { Creature } from './api';
-import {
-  conversionDurationFor,
-  conversionOf,
-  shortText,
-  type ConversionView,
-} from './conversion-view';
 import { supplyEntry } from './ExpeditionIcons';
 import { CostList } from './GearArt';
 import { GlossaryTag } from './Glossary';
@@ -19,29 +13,34 @@ import {
 } from './gear-view';
 import { capitalize } from './game';
 import { glyphOrUnknown } from './glyphs';
-import { JobStarter } from './JobStarter';
+import { JobDrawer } from './JobWizard';
+import { supplyActions, supplyJob, type SupplyAction } from './supply-job';
 import { Sprite } from './sprites/Sprite';
 import { kindLabel, supplyEffect } from './trip-view';
 import { CountBadge } from './ui/CountBadge';
-import { RecipeCard } from './ui/RecipeCard';
 import { tierRarityClass, type SupplyTier } from './supply-tiers';
 import { SupplyGrid, type SupplyCell } from './ui/SupplyGrid';
 import { Tag } from './ui/Tag';
 
-type Action = 'craft' | 'refine' | 'recycle';
+/** Which job is open, and the button that opened it (it gets the focus back when the drawer closes). */
+interface Opened {
+  action: SupplyAction;
+  opener: HTMLElement | null;
+}
 
 /**
  * The Workshop's supply section, one compact picker (Misa's version C, 2026-10-20): a grid of the supplies'
  * pictures (kinds across, tiers down, a rarity edge on each), and one card under it for the chosen one with
  * what it does, its cost, time and Crafting level and the actions: Craft (the main button) and the small
- * Refine and Recycle. Each opens the same creature picker as every Workshop job; the supplies are taken when
- * a convert job starts and arrive when it is claimed.
+ * Refine and Recycle. Each opens the job wizard in a drawer (`JobDrawer`: the recipe, who crafts, ready); the
+ * supplies are taken when a convert job starts and arrive when it is claimed.
  */
 export function SupplyCrafting({
   gear,
   creatures,
   stock,
   busy,
+  error = null,
   onCraft,
   onConvert,
 }: {
@@ -50,16 +49,18 @@ export function SupplyCrafting({
   /** Supplies in stock (the state's `supplies`). */
   stock: Readonly<Record<string, number>>;
   busy: boolean;
-  /** Starts the craft; resolves true when it started (the picker then closes). */
+  /** The server's last error; the open job's drawer shows it after a start that failed. */
+  error?: string | null;
+  /** Starts the craft; resolves true when it started (the drawer then closes). */
   onCraft: (supplyId: string, creatureId: string, treat: boolean) => Promise<boolean>;
-  /** Starts a refine or recycle; resolves true when it started (the picker then closes). */
+  /** Starts a refine or recycle; resolves true when it started (the drawer then closes). */
   onConvert: (recipeId: string, creatureId: string, treat: boolean) => Promise<boolean>;
 }) {
   const views = supplyCraftViews(stock);
   const kinds = [...new Set(views.map((v) => v.kind))];
   const blockerOf = (level: number) => supplyLevelBlocker(level, gear.skills, creatures);
   const [picked, setPicked] = useState<string | null>(null);
-  const [open, setOpen] = useState<Action | null>(null);
+  const [open, setOpen] = useState<Opened | null>(null);
 
   const first = views.find((v) => blockerOf(v.level) === null) ?? views[0];
   const view = views.find((v) => v.id === picked) ?? first;
@@ -76,25 +77,20 @@ export function SupplyCrafting({
   });
 
   const def = view === undefined ? undefined : supplyDef(view.id);
-  const blocker = view === undefined ? null : blockerOf(view.level);
-  const refine = view === undefined ? null : conversionOf('refine', view.id, stock, gear.parts);
-  const recycle = view === undefined ? null : conversionOf('recycle', view.id, stock, gear.parts);
-  const refineReason =
-    refine === null
-      ? 'Already the best tier.'
-      : (shortText(refine.inputs) ?? blockerOf(refine.level));
-  const recycleReason =
-    recycle === null
-      ? 'Basic cannot be recycled.'
-      : (shortText(recycle.inputs) ?? blockerOf(recycle.level));
-  const convertOpen: ConversionView | null =
-    open === 'refine' ? refine : open === 'recycle' ? recycle : null;
-  const convertReason = open === 'refine' ? refineReason : recycleReason;
+  const actions = view === undefined ? null : supplyActions(view, stock, gear, creatures);
+  const blocker = actions?.blocker ?? null;
+  const refineReason = actions?.refineReason ?? null;
+  const recycleReason = actions?.recycleReason ?? null;
 
   const choose = (id: string) => {
     setPicked(id);
     setOpen(null);
   };
+
+  const job =
+    open === null || view === undefined || actions === null
+      ? null
+      : supplyJob(open.action, view, actions, gear, { onCraft, onConvert });
 
   return (
     <section class="ws-section supply-section" aria-labelledby="ws-supplies">
@@ -141,8 +137,8 @@ export function SupplyCrafting({
               type="button"
               class="primary"
               disabled={busy || blocker !== null}
-              onClick={() => {
-                setOpen('craft');
+              onClick={(event) => {
+                setOpen({ action: 'craft', opener: event.currentTarget });
               }}
             >
               Craft
@@ -155,8 +151,8 @@ export function SupplyCrafting({
                 type="button"
                 disabled={busy || refineReason !== null}
                 aria-describedby={refineReason === null ? undefined : 'supply-refine-reason'}
-                onClick={() => {
-                  setOpen('refine');
+                onClick={(event) => {
+                  setOpen({ action: 'refine', opener: event.currentTarget });
                 }}
               >
                 Refine
@@ -172,8 +168,8 @@ export function SupplyCrafting({
                 type="button"
                 disabled={busy || recycleReason !== null}
                 aria-describedby={recycleReason === null ? undefined : 'supply-recycle-reason'}
-                onClick={() => {
-                  setOpen('recycle');
+                onClick={(event) => {
+                  setOpen({ action: 'recycle', opener: event.currentTarget });
                 }}
               >
                 Recycle
@@ -185,64 +181,20 @@ export function SupplyCrafting({
               )}
             </div>
           </div>
-          {open === 'craft' && (
-            <JobStarter
-              id={`supply-${view.id}`}
-              kind="supply"
-              title={`Craft ${view.name}`}
-              cost={view.cost}
-              bait={view.bait}
-              gear={gear}
-              creatures={creatures}
-              busy={busy}
-              startLabel="Start crafting"
-              minLevel={view.level}
-              durationAtLevel={(level) => supplyDurationFor(view.id, level)}
-              extraBlocker={blocker}
-              onStart={(creatureId, treat) => {
-                void onCraft(view.id, creatureId, treat).then((started) => {
-                  if (started) setOpen(null);
-                });
-              }}
-              onCancel={() => {
-                setOpen(null);
-              }}
-            />
-          )}
-          {convertOpen !== null && (
-            <>
-              <RecipeCard
-                compact
-                inputs={convertOpen.inputs}
-                outputs={convertOpen.outputs}
-                duration={nominalDurationCountItem(conversionDurationFor(convertOpen.id, 1))}
-                actionLabel={convertOpen.verb}
-                onStart={() => undefined}
-              />
-              <JobStarter
-                id={`convert-${convertOpen.id}`}
-                kind="convert"
-                title={convertOpen.verb}
-                cost={{}}
-                gear={gear}
-                creatures={creatures}
-                busy={busy}
-                startLabel={`Start ${convertOpen.verb.toLowerCase()}`}
-                minLevel={convertOpen.level}
-                durationAtLevel={(level) => conversionDurationFor(convertOpen.id, level)}
-                extraBlocker={convertReason}
-                onStart={(creatureId, treat) => {
-                  void onConvert(convertOpen.id, creatureId, treat).then((started) => {
-                    if (started) setOpen(null);
-                  });
-                }}
-                onCancel={() => {
-                  setOpen(null);
-                }}
-              />
-            </>
-          )}
         </div>
+      )}
+      {job !== null && open !== null && (
+        <JobDrawer
+          {...job}
+          gear={gear}
+          creatures={creatures}
+          busy={busy}
+          error={error}
+          returnFocusTo={open.opener}
+          onClose={() => {
+            setOpen(null);
+          }}
+        />
       )}
     </section>
   );

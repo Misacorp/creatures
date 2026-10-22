@@ -9,7 +9,9 @@ import {
   conversionRecipes,
   type Ingredient,
 } from '@creatures/game';
-import { partBadge } from './count-items';
+import { baitCount, partBadge } from './count-items';
+import type { PartsBundle } from './gear-types';
+import { partsEntries } from './gear-view';
 import { supplyKindOf, supplyName } from './trip-view';
 import type { CountItem } from './ui/CountBadge';
 import type { RecipeInput } from './ui/RecipeCard';
@@ -25,15 +27,42 @@ export interface ConversionView {
   level: number;
 }
 
+/** A supply as a count badge, with its name after the number (what a craft makes). */
+export function supplyBadge(supplyId: string, amount: number): CountItem {
+  return {
+    key: `supply-${supplyId}`,
+    icon: { kind: 'supply', id: supplyKindOf(supplyId) ?? 'unknown' },
+    amount,
+    name: supplyName(supplyId),
+  };
+}
+
 /** A supply or a part as a count badge (a supply with its name after the number). */
 function badgeOf(i: Ingredient): CountItem {
   if (i.type === 'part') return { key: i.id, ...partBadge(i.id, i.amount) };
-  return {
-    key: `supply-${i.id}`,
-    icon: { kind: 'supply', id: supplyKindOf(i.id) ?? 'unknown' },
-    amount: i.amount,
-    name: supplyName(i.id),
-  };
+  return supplyBadge(i.id, i.amount);
+}
+
+/**
+ * What a supply craft takes, as the recipe card's inputs: each part with the amount needed and held, and the
+ * Bait of a lure (held: the player's Bait). The same look as a refine's inputs, so Craft, Refine and Recycle
+ * show their recipe the same way.
+ */
+export function craftInputs(
+  cost: PartsBundle,
+  bait: number,
+  parts: Readonly<Record<string, number>>,
+  baitHeld: number,
+): RecipeInput[] {
+  const inputs = partsEntries(cost).map(({ kind, amount }): RecipeInput => ({
+    key: kind,
+    ...partBadge(kind, amount),
+    amount,
+    have: parts[kind] ?? 0,
+  }));
+  return bait > 0
+    ? [{ ...baitCount(bait, { name: true }), amount: bait, have: baitHeld }, ...inputs]
+    : inputs;
 }
 
 /** "Needs 2 more Plain Lure." for the first input the player is short of, or null when none is. */

@@ -1,8 +1,9 @@
 import { useState } from 'preact/hooks';
 import type { Creature } from './api';
-import { CraftStarter } from './CraftStarter';
+import { craftJob } from './craft-job';
 import { CostList, ItemFrame, ItemSprite } from './GearArt';
 import { GlossaryTag } from './Glossary';
+import { JobDrawer } from './JobWizard';
 import type { CraftPreview, GearState, ReachId } from './gear-types';
 import {
   blueprintViews,
@@ -16,7 +17,7 @@ import { CountBadge } from './ui/CountBadge';
 
 /**
  * The blueprints a player has learned, each with its quality, the parts a plain craft costs
- * and a Craft button that opens the craft panel (who does it, how hard to reach, the exact odds). A craft
+ * and a Craft button that opens the job drawer (who does it, how hard to reach with the exact odds, ready). A craft
  * takes hours; the parts and Essence are paid when it starts and the item is rolled when the job is
  * claimed.
  */
@@ -24,18 +25,23 @@ export function Blueprints({
   gear,
   creatures,
   busy,
+  error = null,
   loadPreview,
   onCraft,
 }: {
   gear: GearState;
   creatures: readonly Creature[];
   busy: boolean;
+  /** The server's last error; the open craft's drawer shows it after a start that failed. */
+  error?: string | null;
   loadPreview: (creatureId: string, blueprintId: string) => Promise<CraftPreview>;
-  /** Starts the craft; resolves true when it started (the panel then closes). */
+  /** Starts the craft; resolves true when it started (the drawer then closes). */
   onCraft: (baseId: string, creatureId: string, reach: ReachId, treat: boolean) => Promise<boolean>;
 }) {
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<{ baseId: string; opener: HTMLElement | null } | null>(null);
   const views = blueprintViews(gear.blueprints, gear.skills);
+  const opened = views.find((v) => v.baseId === open?.baseId);
+  const job = opened === undefined ? null : craftJob(opened, gear, { load: loadPreview }, onCraft);
   return (
     <section class="ws-section" aria-labelledby="ws-blueprints">
       <h3 id="ws-blueprints">
@@ -70,39 +76,32 @@ export function Blueprints({
                 </div>
               </div>
               <CostList cost={bp.cost} have={gear.parts} />
-              {open === bp.baseId ? (
-                <CraftStarter
-                  id={`craft-${bp.baseId}`}
-                  name={bp.name}
-                  baseId={bp.baseId}
-                  gear={gear}
-                  creatures={creatures}
-                  busy={busy}
-                  loadPreview={loadPreview}
-                  onStart={(creatureId, reach, treat) => {
-                    void onCraft(bp.baseId, creatureId, reach, treat).then((started) => {
-                      if (started) setOpen(null);
-                    });
+              <p>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    setOpen({ baseId: bp.baseId, opener: event.currentTarget });
                   }}
-                  onCancel={() => {
-                    setOpen(null);
-                  }}
-                />
-              ) : (
-                <p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(bp.baseId);
-                    }}
-                  >
-                    Craft
-                  </button>
-                </p>
-              )}
+                >
+                  Craft
+                </button>
+              </p>
             </li>
           ))}
         </ul>
+      )}
+      {job !== null && open !== null && (
+        <JobDrawer
+          {...job}
+          gear={gear}
+          creatures={creatures}
+          busy={busy}
+          error={error}
+          returnFocusTo={open.opener}
+          onClose={() => {
+            setOpen(null);
+          }}
+        />
       )}
     </section>
   );

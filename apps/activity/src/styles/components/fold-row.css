@@ -1,0 +1,58 @@
+/*
+  The FoldRow (ui/FoldRow.tsx): a quiet divider that toggles. No box, no icon: the label is centred and a
+  line of whole dashes (4 pixel units, a gap of 2) runs out to the row's edge on both sides. The right line
+  is mirrored, so both start with a dash at the outer edge and the text sits in the middle. Open or closed
+  is aria-expanded.
+*/
+button.fold-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+  min-height: 2.75rem;
+  margin: 0.25rem 0 0;
+  padding: 0 0.25rem;
+  background: none;
+  box-shadow: none;
+  color: var(--haze);
+  font-family: inherit;
+  font-size: var(--fs-small);
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+button.fold-row::before,
+button.fold-row::after {
+  flex: 1;
+  height: var(--px);
+  background: linear-gradient(90deg, var(--dusk-2) calc(var(--px) * 4), transparent 0);
+  background-size: calc(var(--px) * 6) 100%;
+  /* "space" fits whole dashes only (none is cut) and spreads the leftover into the gaps. */
+  background-repeat: space;
+  content: '';
+}
+
+button.fold-row::after {
+  transform: scaleX(-1);
+}
+
+button.fold-row:hover,
+button.fold-row:focus-visible {
+  color: var(--bone);
+  opacity: 1;
+}
+
+button.fold-row:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+button.fold-row:focus-visible {
+  outline: var(--px) solid var(--bone);
+  outline-offset: calc(var(--px) * -2);
+}
+
+.fold-row-text {
+  min-width: 0;
+  text-align: center;
+}

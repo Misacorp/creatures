@@ -449,13 +449,19 @@ describe('the Workshop item drawer flips through the bag in the grid order', () 
     expect(gearActions.equip).not.toHaveBeenCalled();
   });
 
-  it('starts the next item clean: an open panel is gone after the flip', () => {
+  it('pauses the flipping while the dismantle wizard is shown, and Back returns to the same item with the arrows', () => {
     const p = drawWorkshop();
     p.click(cells(p)[0] as FakeElement);
+    const shownId = (): string | null =>
+      byClass(dialog(p), 'item-detail')[0]?.getAttribute('aria-labelledby') ?? null;
+    const before = shownId();
     p.click(first(byName(dialog(p), 'button', 'Dismantle')));
     expect(byClass(dialog(p), 'dismantle-items')).toHaveLength(1);
-    p.click(first(byName(dialog(p), 'button', /^Next item/)));
+    expect(byClass(dialog(p), 'flip-nav')).toHaveLength(0);
+    p.click(first(byName(dialog(p), 'button', /^‹ Back/)));
     expect(byClass(dialog(p), 'dismantle-items')).toHaveLength(0);
+    expect(shownId()).toBe(before);
+    expect(byClass(dialog(p), 'flip-nav')).toHaveLength(1);
     expect(byName(dialog(p), 'button', 'Dismantle')).toHaveLength(1);
   });
 

@@ -22,6 +22,12 @@ import type { Wizard } from './use-wizard';
  *   </Drawer>
  *
  * The caller owns validation: `blocked` is the reason the current step cannot go on (null when it can).
+ *
+ * Branching flows (2026-10-22; the dungeon camp): a step can name where Back and Next go (`back`,
+ * `forward`) and be a `final` step, and a pick inside a step can open another with `wizard.goTo(id)`. A step
+ * whose forward action is the pick itself simply has no footer. `WizardView`/`WizardHead` take `disabled`
+ * (Back and Escape off while a request is out) and `level` 4 for a card's own heading; the camp's first
+ * step (the choices) has no head and is drawn by the caller, the wizard still holds the position.
  */
 
 /**
@@ -33,10 +39,13 @@ export function WizardHead<Id extends string>({
   wizard,
   level = 3,
   focus = false,
+  disabled = false,
 }: {
   wizard: Wizard<Id>;
   level?: 3 | 4;
   focus?: boolean;
+  /** Back is disabled while a request is out (the camp's acts). */
+  disabled?: boolean;
 }) {
   return (
     <DrillHead
@@ -45,7 +54,7 @@ export function WizardHead<Id extends string>({
       onBack={wizard.back}
       level={level}
       focus={focus}
-      disabled={!wizard.canBack}
+      disabled={disabled || !wizard.canBack}
     />
   );
 }
@@ -59,21 +68,24 @@ export function WizardView<Id extends string>({
   children,
   level = 3,
   focus = false,
+  disabled = false,
   class: className,
 }: {
   wizard: Wizard<Id>;
   children: ComponentChildren;
   level?: 3 | 4;
   focus?: boolean;
+  /** Back and Escape do nothing (a request is out). */
+  disabled?: boolean;
   /** An extra class on the wrapper (where it is used). */
   class?: string | undefined;
 }) {
   return (
     <div
       class={className === undefined ? 'wizard' : `wizard ${className}`}
-      onKeyDown={onDrillKey(wizard.back)}
+      onKeyDown={disabled ? undefined : onDrillKey(wizard.back)}
     >
-      <WizardHead wizard={wizard} level={level} focus={focus} />
+      <WizardHead wizard={wizard} level={level} focus={focus} disabled={disabled} />
       {children}
     </div>
   );

@@ -7,7 +7,7 @@ import type { GearActions } from './gear-actions';
 import type { GearItem, GearState } from './gear-types';
 import { detailLines, setPiecesWith } from './gear-view';
 import { ItemCard } from './ItemCard';
-import { DismantlePanel } from './DismantlePanel';
+import { DismantleWizard, type DismantleStep } from './DismantleWizard';
 import { Sprite } from './sprites/Sprite';
 import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Accordion } from './ui/Accordion';
@@ -132,6 +132,7 @@ export function ItemDetail({
   onGone,
   initialDismantle = false,
   initialPicking = false,
+  error = null,
   onDrill,
 }: {
   item: GearItem;
@@ -143,17 +144,20 @@ export function ItemDetail({
   focusName?: boolean;
   /** The item no longer exists (it went into a dismantle job): the screen drops the selection. */
   onGone: () => void;
-  /** The workbench shows the dismantle panel open. */
-  initialDismantle?: boolean;
+  /** The workbench shows the dismantle wizard open (`true`: on Who dismantles). */
+  initialDismantle?: boolean | DismantleStep;
   /** The workbench shows the creature list ("Equip on") open. */
   initialPicking?: boolean;
+  /** The server's last error, shown in the dismantle wizard after a start that was refused. */
+  error?: string | null;
   /** Told when the creature list opens and closes: the drawer turns its flipping off while it is shown. */
   onDrill?: (open: boolean) => void;
 }) {
-  const [dismantle, setDismantle] = useState(initialDismantle);
+  const [dismantle, setDismantle] = useState(initialDismantle !== false);
   const [picking, setPicking] = useState(initialPicking);
   const heading = useRef<HTMLHeadingElement>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
+  const dismantleButton = useRef<HTMLButtonElement>(null);
   const shown = useRef(false);
   // Choosing another item starts clean and moves focus to its name.
   useEffect(() => {
@@ -164,13 +168,17 @@ export function ItemDetail({
     shown.current = true;
     if (focusName) heading.current?.focus({ preventScroll: true });
   }, [item.id]);
-  // The drawer is told while the list is shown (and when this goes away), and the trigger gets the focus back.
+  // The drawer is told while a drill-in is shown (and when this goes away), and the button that opened it gets
+  // the focus back.
   const wasPicking = useRef(false);
+  const wasDismantling = useRef(false);
   useEffect(() => {
-    onDrill?.(picking);
+    onDrill?.(picking || dismantle);
     if (!picking && wasPicking.current) trigger.current?.focus();
+    if (!dismantle && wasDismantling.current) dismantleButton.current?.focus();
     wasPicking.current = picking;
-  }, [picking]);
+    wasDismantling.current = dismantle;
+  }, [picking, dismantle]);
   useEffect(
     () => () => {
       onDrill?.(false);
@@ -180,6 +188,35 @@ export function ItemDetail({
 
   const base = gearBase(item.baseId);
   const wearer = creatures.find((c) => c.id === item.equippedOn);
+
+  if (dismantle) {
+    return (
+      <section class="item-detail dismantle-view pix-panel" aria-label="Dismantle">
+        <DismantleWizard
+          items={[item]}
+          wearers={wearer === undefined ? [] : [wearer]}
+          gear={gear}
+          creatures={creatures}
+          busy={busy}
+          error={error}
+          start={typeof initialDismantle === 'string' ? initialDismantle : undefined}
+          loadPreview={actions.previewDismantle}
+          onConfirm={async (creatureId) => {
+            const result = await actions.startJob({
+              kind: 'dismantle',
+              creatureId,
+              itemIds: [item.id],
+            });
+            if (result !== undefined) onGone();
+            return result !== undefined;
+          }}
+          onExit={() => {
+            setDismantle(false);
+          }}
+        />
+      </section>
+    );
+  }
 
   if (picking) {
     return (
@@ -236,7 +273,7 @@ export function ItemDetail({
             type="button"
             class="danger"
             disabled={busy}
-            aria-expanded={dismantle}
+            ref={dismantleButton}
             onClick={() => {
               setDismantle(true);
             }}
@@ -244,27 +281,6 @@ export function ItemDetail({
             Dismantle
           </button>
         </p>
-        {dismantle && (
-          <DismantlePanel
-            items={[item]}
-            wearers={wearer === undefined ? [] : [wearer]}
-            gear={gear}
-            creatures={creatures}
-            busy={busy}
-            loadPreview={actions.previewDismantle}
-            onConfirm={(creatureId) => {
-              void actions
-                .startJob({ kind: 'dismantle', creatureId, itemIds: [item.id] })
-                .then((result) => {
-                  if (result !== undefined) onGone();
-                  else setDismantle(false);
-                });
-            }}
-            onCancel={() => {
-              setDismantle(false);
-            }}
-          />
-        )}
       </div>
     </section>
   );
