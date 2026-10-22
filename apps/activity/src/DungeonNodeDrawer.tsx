@@ -495,7 +495,9 @@ function FoeBody({
       ) : (
         moves.map((move) => (
           <p class="dnd-trick" key={move.id}>
-            <Sprite sprite={glyphOrUnknown(gimmickGlyphKey(move))} scale={2} />
+            <span class="dnd-trick-icon">
+              <Sprite sprite={glyphOrUnknown(gimmickGlyphKey(move))} scale={2} />
+            </span>
             <span class="dnd-trick-text">
               <strong class="pix">{move.name}</strong> {gimmickShort(move, 'row')}
             </span>

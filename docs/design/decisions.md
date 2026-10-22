@@ -2701,3 +2701,9 @@ Misa found a 5% full reflect too swingy: a lucky roll ruins a good run, and most
 - **Tidepool Finery (`unreflected`)** turns a backlash aside for the creature's first reaction of the fight, as it turns Backdraft aside: its set text ("cannot be reflected") still reads true because the burn is a reflected hit. The die is still drawn, so the rest of the fight draws the same either way.
 - **Name and tag.** The glossary entry is "Backlash" (`gimmick-backlash`), distinct from Thorns' "Spikes". Not "Riposte" (a gear line already) and no longer "Reflective shield".
 - `RULES.combat.maxHitBp` stays 0 and no dungeon cap was added; the burn takes the cap if it is ever switched on (combat-rules.md 5.5.3).
+
+## 2026-10-22: Foe move lines say what a move hits; "Charged:" replaces "announced a round ahead"
+
+- **Wording** (`gimmickShort`, the pre-fight drawer, the stage's room banner and the raid's icon labels). A line says what the move does, then how often, with no comma: "Slams your strongest creature and the ones beside it every 4 rounds". A charged move starts with "Charged:" and then says what it hits ("Charged: slams your strongest creature and the ones beside it every 4 rounds"); that it is announced a round ahead is what "charged" means (Misa: implied by "charged", which may later become a keyword players can act on, for example to interrupt). A slam names its aim (strongest, best Payoff, random, left); on the dungeon's row the left creature has one neighbour, so "the one beside it".
+- **Layout.** Each drawer move row is a bullet: the glyph in its own column, centred on the first line of text (`height: 1lh`), the pixel-font name then the description inline, wrapped lines under the name.
+- **Fonts stay two.** Misa asked whether the description could use the pixel font. Jersey 10 has one weight, so the name and its description would look the same; Misa's rule was to keep the two fonts (pixel name, body-font description) in that case.

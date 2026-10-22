@@ -402,6 +402,13 @@ button.dmap-node.s-reachable {
   gap: 0 0.5rem;
 }
 
+/* The icon is the row's bullet: centred on the first line of text, however many lines follow. */
+.dnd-trick-icon {
+  display: flex;
+  align-items: center;
+  height: 1lh;
+}
+
 .dnd-trick-text {
   min-width: 0;
 }

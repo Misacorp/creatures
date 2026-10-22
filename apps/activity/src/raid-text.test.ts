@@ -71,7 +71,7 @@ describe('gimmicks in plain words', () => {
     expect(lines[0]?.text).toContain('front zone');
     expect(lines[0]).toMatchObject({
       op: 'hit_zone',
-      short: 'Hits the front zone, every 3 rounds',
+      short: 'Hits the front zone every 3 rounds',
     });
     expect(lines[1]).toEqual({
       id: 'mystery',
@@ -202,9 +202,7 @@ describe('the attack patterns in plain words', () => {
     expect(gimmickText(charge)).toBe(
       'Every 5 rounds, announced a round ahead: hits every creature in the middle row for 320% of its attack. Its victims are marked first.',
     );
-    expect(gimmickShort(charge)).toBe(
-      'Charged sweep, announced a round ahead, lands every 5 rounds',
-    );
+    expect(gimmickShort(charge)).toBe('Charged: sweeps the middle row every 5 rounds');
   });
 
   it('uses the dungeon wording for one row of three', () => {
@@ -213,10 +211,10 @@ describe('the attack patterns in plain words', () => {
     );
     expect(gimmickText(lance, 'row')).toContain('hits a random creature for 200%');
     expect(gimmickText({ ...pincer, scope: 'row' }, 'row')).toContain('both ends of the row');
-    expect(gimmickShort(sweep(['all']), 'row')).toBe('Hits every creature, every 5 rounds');
-    expect(gimmickShort(sweep(['front']), 'row')).toBe('Hits the left creature, every 5 rounds');
+    expect(gimmickShort(sweep(['all']), 'row')).toBe('Hits every creature every 5 rounds');
+    expect(gimmickShort(sweep(['front']), 'row')).toBe('Hits the left creature every 5 rounds');
     const one: Gimmick = { ...barrage, shells: { min: 1, max: 1, shareBp: 1 } };
-    expect(gimmickShort(one, 'row')).toBe('Hits one random creature, every 2 rounds');
+    expect(gimmickShort(one, 'row')).toBe('Hits one random creature every 2 rounds');
     expect(gimmickText(one, 'row')).toContain('hits one random creature for 130% of its attack.');
   });
 
@@ -258,7 +256,7 @@ describe('the attack patterns in plain words', () => {
     // Not always on: how often is said.
     const third = { ...spikes, trigger: { every: 3 } };
     expect(gimmickText(third, 'row')).toMatch(/^Every 3 rounds: every hit/);
-    expect(gimmickShort(third, 'row')).toBe('Pricks whoever hits it, every 3 rounds');
+    expect(gimmickShort(third, 'row')).toBe('Pricks whoever hits it every 3 rounds');
     expect(gimmickGlyphKey(spikes)).toBe('spikes');
     expect(gimmickGlyphKey(shield)).toBe('backlash');
   });
@@ -276,19 +274,39 @@ describe('the attack patterns in plain words', () => {
     expect(lines(7).map((l) => l.glyph)).toEqual(['chain', 'slam', 'sweep', 'slam']);
   });
 
+  it('names what a slam hits, and a charged move as "Charged:" with no announcement wording', () => {
+    expect(gimmickShort({ ...slam, aim: 'strongest' })).toBe(
+      'Slams your strongest creature and the ones beside it every 4 rounds',
+    );
+    // On the dungeon's row the left creature has one neighbour.
+    expect(gimmickShort({ ...slam, aim: 'left' }, 'row')).toBe(
+      'Slams the left creature and the one beside it every 4 rounds',
+    );
+    const charged: Gimmick = {
+      id: 'spill',
+      name: 'Spill',
+      trigger: { every: 4 },
+      op: 'charge',
+      then: { op: 'slam', aim: 'strongest', power: 24000, splashBp: 5000 },
+    };
+    expect(gimmickShort(charged, 'row')).toBe(
+      'Charged: slams your strongest creature and the ones beside it every 4 rounds',
+    );
+  });
+
   it('says a slam aimed at the Payoff and a sweep of the Payoff row, in words and in short', () => {
     const payoffSlam: Gimmick = { ...slam, aim: 'payoff' };
     expect(gimmickText(payoffSlam)).toBe(
       'Every 4 rounds: hits your highest-attack Payoff for 340% of its attack. The creatures right beside it take 45% of the hit.',
     );
     expect(gimmickShort(payoffSlam)).toBe(
-      'Slams your best Payoff and the ones beside it, every 4 rounds',
+      'Slams your best Payoff and the ones beside it every 4 rounds',
     );
     expect(gimmickText(sweep(['payoffs']))).toBe(
       'Every 5 rounds: hits every creature in the row with the most Payoffs for 320% of its attack.',
     );
     expect(gimmickShort(sweep(['payoffs']))).toBe(
-      'Sweeps the row with the most Payoffs, every 5 rounds',
+      'Sweeps the row with the most Payoffs every 5 rounds',
     );
     expect(gimmickText(sweep(['back', 'payoffs']))).toContain(
       'sweeps the back row, then the row with the most Payoffs, one each time',

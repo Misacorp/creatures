@@ -169,9 +169,9 @@ describe('the room banner names the foe trick', () => {
     expect(view.trick).toEqual({
       glyph: 'barrage',
       name: 'Flare Up',
-      line: 'Hits one random creature, every 2 rounds',
+      line: 'Hits one random creature every 2 rounds',
     });
-    expect(view.spoken).toContain('Flare Up: Hits one random creature, every 2 rounds.');
+    expect(view.spoken).toContain('Flare Up: Hits one random creature every 2 rounds.');
     expect(roomIntroView(room('puddle-imp', 'foe'), 3).trick).toBeNull();
     expect(roomIntroView(room('nobody', 'foe'), 3).trick).toBeNull();
   });
@@ -199,7 +199,9 @@ describe('the room banner names the foe trick', () => {
     expect(roomTrick(room('ember-mite', 'foe'), true)?.name).toBe('Flare Up');
     const view = roomIntroView(room('slag-tyrant', 'boss'), 3, true);
     expect(view.trick?.glyph).toBe('charge');
-    expect(view.trick?.line).toBe('Charged slam, announced a round ahead, lands every 4 rounds');
+    expect(view.trick?.line).toBe(
+      'Charged: slams your strongest creature and the ones beside it every 4 rounds',
+    );
   });
 
   it('adds the signature to the foe gimmicks only in a landmark boss room', () => {
