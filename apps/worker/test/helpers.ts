@@ -177,6 +177,8 @@ export interface CoreContext {
   clock: { t: number };
   sql: SqlStorage;
   storage: DurableObjectStorage;
+  /** The object's state, for a test that needs its sockets (`getWebSockets`, `acceptWebSocket`). */
+  state: DurableObjectState;
   request: (secret: string, path?: string, method?: string, body?: unknown) => Promise<Response>;
 }
 
@@ -187,7 +189,8 @@ export interface CoreContext {
 export async function runCore<R>(
   guildId: string,
   fn: (ctx: CoreContext) => Promise<R> | R,
-  options: GuildCoreOptions | ((clock: { t: number }) => GuildCoreOptions) = {},
+  options:
+    GuildCoreOptions | ((clock: { t: number }, state: DurableObjectState) => GuildCoreOptions) = {},
 ): Promise<R> {
   const stub = env.GUILD_WORLD.get(env.GUILD_WORLD.idFromName(guildId));
   return runInDurableObject(stub, async (_instance, state) => {
@@ -204,7 +207,7 @@ export async function runCore<R>(
       // Off by default so other features' tests keep exact trip times, loot and experience; the weather
       // tests turn it on.
       weather: false,
-      ...(typeof options === 'function' ? options(clock) : options),
+      ...(typeof options === 'function' ? options(clock, state) : options),
     });
     const request = async (secret: string, path = '/api/me', method = 'GET', body?: unknown) =>
       core.handle(
@@ -214,7 +217,15 @@ export async function runCore<R>(
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         }),
       );
-    return fn({ guildId, core, clock, sql: state.storage.sql, storage: state.storage, request });
+    return fn({
+      guildId,
+      core,
+      clock,
+      sql: state.storage.sql,
+      storage: state.storage,
+      state,
+      request,
+    });
   });
 }
 

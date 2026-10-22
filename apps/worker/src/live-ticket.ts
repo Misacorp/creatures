@@ -1,5 +1,10 @@
 /**
- * The one-time ticket that opens the lounge's live socket (`docs/design/lounge-live.md`).
+ * The one-time ticket that opens a live socket: the lounge's or the finale's (`docs/design/lounge-live.md`,
+ * `docs/design/finale-live.md`).
+ *
+ * The topic the socket will listen to (the lounge, or one party's finale) is stored with the ticket in
+ * the Durable Object, chosen by the server from the verified session and the validated request. It is
+ * not part of the ticket string, so a client cannot pick or change it.
  *
  * A browser WebSocket cannot send an `Authorization` header, and the Discord proxy's handling of
  * `Sec-WebSocket-Protocol` is undocumented. So the client first asks `POST /api/lounge/ticket` (a normal
@@ -14,6 +19,7 @@
  */
 import { derivedHmacKey, toHex } from './keys';
 import { SNOWFLAKE_RE } from './schemas';
+import type { Topic } from './live-topic';
 import { base64Url, base64UrlDecode, generateSessionSecret } from './session';
 
 /** How long a ticket can be redeemed after it is made. */
@@ -69,7 +75,14 @@ async function hashTicketSecret(secret: string): Promise<string> {
 
 interface Pending {
   userId: string;
+  topic: Topic;
   expiresAt: number;
+}
+
+/** Who a redeemed ticket was made for and what its socket may listen to. */
+export interface Redeemed {
+  userId: string;
+  topic: Topic;
 }
 
 /** The tickets of one guild, in memory: lost when the object restarts, which only costs a reconnect. */
@@ -81,8 +94,8 @@ export class TicketBook {
     private readonly now: () => number,
   ) {}
 
-  /** Makes a ticket for `userId` (who comes from the verified session). */
-  async mint(guildId: string, userId: string): Promise<string> {
+  /** Makes a ticket for `userId` (who comes from the verified session) and a topic the server chose. */
+  async mint(guildId: string, userId: string, topic: Topic): Promise<string> {
     if (!SNOWFLAKE_RE.test(guildId)) throw new Error('invalid guild id');
     const secret = generateSessionSecret();
     const mac = new Uint8Array(
@@ -95,7 +108,7 @@ export class TicketBook {
     const hash = await hashTicketSecret(secret);
     const t = this.now();
     this.dropExpired(t);
-    this.pending.set(hash, { userId, expiresAt: t + TICKET_TTL_MS });
+    this.pending.set(hash, { userId, topic, expiresAt: t + TICKET_TTL_MS });
     // A Map keeps insertion order, so the first key is the oldest.
     while (this.pending.size > TICKET_MAX_PENDING) {
       const oldest = this.pending.keys().next();
@@ -105,13 +118,13 @@ export class TicketBook {
     return `l1.${guildId}.${secret}.${base64Url(mac)}`;
   }
 
-  /** The user a ticket was made for, once: the ticket is gone after this call. Null if unknown or expired. */
-  async redeem(secret: string): Promise<string | null> {
+  /** The user and topic a ticket was made for, once: the ticket is gone after this call. Null if unknown or expired. */
+  async redeem(secret: string): Promise<Redeemed | null> {
     const hash = await hashTicketSecret(secret);
     const found = this.pending.get(hash);
     this.pending.delete(hash);
     if (found === undefined || found.expiresAt <= this.now()) return null;
-    return found.userId;
+    return { userId: found.userId, topic: found.topic };
   }
 
   size(): number {
