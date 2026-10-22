@@ -1104,6 +1104,47 @@ describe('folding worn items', () => {
     expect(onSupport.idle).toEqual(['armor', 'cover']);
   });
 
+  it("folds a Guard's reach lines into the changes on each side, and keeps a side between 0 and 3", () => {
+    const worn = (...ids: string[]) =>
+      wornEffects(guard, [
+        item(
+          'wardens-bell',
+          'epic',
+          20,
+          ids.map((id) => [id, 0]),
+        ),
+      ]).mods;
+    expect(worn('wide-stance')).toMatchObject({ reachLeft: 1, reachRight: 1 });
+    expect(worn('long-arm-left')).toMatchObject({ reachLeft: 2, reachRight: 0 });
+    expect(worn('long-arm-right')).toMatchObject({ reachLeft: 0, reachRight: 2 });
+    // Flank guard: 2 on one side and none on the other (the base is 1 each side).
+    expect(worn('flank-guard-left')).toMatchObject({ reachLeft: 1, reachRight: -1 });
+    expect(worn('flank-guard-right')).toMatchObject({ reachLeft: -1, reachRight: 1 });
+    // Sources add up, then a side's change stops at -1 (reach 0) and +2 (reach 3).
+    expect(worn('wide-stance', 'flank-guard-left')).toMatchObject({ reachLeft: 2, reachRight: 0 });
+    expect(worn('long-arm-left', 'wide-stance', 'long-arm-left')).toMatchObject({
+      reachLeft: 2,
+      reachRight: 1,
+    });
+    expect(worn('flank-guard-left', 'flank-guard-left')).toMatchObject({ reachRight: -1 });
+    // Only a Guard has a reach.
+    const onSupport = wornEffects(support, [
+      item('wardens-bell', 'epic', 20, [['wide-stance', 0]]),
+    ]);
+    expect(onSupport.mods.reachLeft).toBeUndefined();
+    expect(onSupport.idle).toContain('wide-stance');
+  });
+
+  it("a talent with a reach line folds like the line, and adds to the items' reach", () => {
+    const talent = { id: 'wide-as-a-puddle', effect: { line: 'wide-stance' }, value: 1 };
+    const fx = wornEffects(
+      guard,
+      [item('wardens-bell', 'epic', 20, [['long-arm-right', 0]])],
+      [talent],
+    );
+    expect(fx.mods).toMatchObject({ reachLeft: 1, reachRight: 2 });
+  });
+
   it('folds the trip, Workshop and dungeon lines into rules, and none into the sheet', () => {
     const compass = item('crossroads-compass', 'epic', 20, [
       ['quick-feet', 4],

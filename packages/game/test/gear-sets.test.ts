@@ -328,7 +328,9 @@ describe('the three-piece effects', () => {
     expect(three('forge-warm-kit').mods.critWindowBp).toBe(2_000);
     expect(three('hollow-weave').mods.healOnReactionBp).toBe(300);
     expect(three('ridge-copper').mods.chainMark).toBe(1);
-    expect(three('wardens-watch').mods.coverReach).toBe(1);
+    expect(three('wardens-watch').mods.reachLeft).toBe(1);
+    expect(three('wardens-watch').mods.reachRight).toBe(1);
+    expect(three('wardens-watch').mods.coverReach).toBeUndefined();
     expect(three('hearth-helpers').mods.boostReach).toBe(1);
     expect(three('first-footprints').mods.sealMark).toBe(1);
     expect(three('pounce-set').mods.firstReactionCrit).toBe(1);
@@ -350,7 +352,7 @@ describe('the three-piece effects', () => {
     ).toBeUndefined();
     // Reach is for the role that has a cover or a boost.
     expect(
-      three('wardens-watch', { role: 'support', element: 'ember' }).mods.coverReach,
+      three('wardens-watch', { role: 'support', element: 'ember' }).mods.reachLeft,
     ).toBeUndefined();
     expect(
       three('hearth-helpers', { role: 'guard', element: 'grove' }).mods.boostReach,

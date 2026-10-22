@@ -95,11 +95,11 @@
   {
     "id": "role-guard",
     "title": "Guard",
-    "short": "Tough. Takes the hits aimed at its row.",
+    "short": "Tough. Protects the creature on each side of it.",
     "lines": [
       "Armor: takes 25% less damage from every hit.",
-      "A hit aimed at one creature goes to a Guard in its row instead (dungeon: right beside it). Two Guards roll.",
-      "Creatures right beside it, in its row, take 40% less from hits on many creatures.",
+      "Protects the creature on each side of it in its row. Gear and talents can change how far.",
+      "Aimed hits on them go to it (two Guards roll). They take 40% less from hits on many creatures.",
       "A Lance stops at a Guard. A hit aimed at a Guard never goes on to another."
     ],
     "visual": {

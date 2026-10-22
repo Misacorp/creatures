@@ -195,7 +195,7 @@ export const CHANCE_RULES = ['tinkersLuck', 'secondLook'] as const;
  * What a line does. `stat` lines change Attack, HP or the crit numbers before the fight; `attune` is
  * Attack for a wearer of the line's element; `hunter`, `ward` and `reaction` are the element lines
  * (resolved to the boss's element or the reaction id); `sheet` fills a field of the fight's modifier
- * sheet (`SlotMods`); `besideRole` is a position line; `rule` is a trip, Workshop or XP rule outside
+ * sheet (`SlotMods`); `reach` changes a Guard's reach (how far it protects, left and right); `besideRole` is a position line; `rule` is a trip, Workshop or XP rule outside
  * combat; `rest` is the dungeon's between-room rest; `local` is a line of the item itself: it changes
  * one of the item's own base stats (`BASE_STAT_KINDS`), by a percentage or a flat amount, and nothing
  * else. It can only roll on an item whose base has that stat.
@@ -240,6 +240,13 @@ export const LineEffectSchema = v.variant('kind', [
       ...CHANCE_FIELDS,
       ...TRIGGER_FIELDS,
     ]),
+  }),
+  // A Guard's reach: whole numbers added to how many creatures it protects on its left and right (the base
+  // is 1 each side, so -1 takes a side to 0). Folded as `SlotMods.reachLeft` and `reachRight`.
+  v.strictObject({
+    kind: v.literal('reach'),
+    left: v.pipe(v.number(), v.integer(), v.minValue(-3), v.maxValue(3)),
+    right: v.pipe(v.number(), v.integer(), v.minValue(-3), v.maxValue(3)),
   }),
   v.strictObject({ kind: v.literal('besideRole'), role: RoleSchema }),
   v.strictObject({ kind: v.literal('position'), rule: v.picklist(POSITION_RULES) }),
@@ -382,7 +389,7 @@ export type LegacyPack = v.InferOutput<typeof LegacyPackSchema>;
  * - `critWindow`: after it sets off a reaction its crits deal `value` more crit damage (basis points) for a round.
  * - `healOnReaction`: it heals `value` (basis points of max HP) whenever it sets off a reaction.
  * - `chainMark`: after it sets off a reaction the boss keeps the creature's own mark, so a chain can follow.
- * - `coverReach`: a Guard's cover reaches the creature one slot further out.
+ * - `guardReach`: a Guard protects one more creature on each side of it in its row (+1 reach each side).
  * - `boostReach`: a Support's boost also lands on the creature two slots away.
  * - `sealMark`: the first mark it leaves each fight cannot be replaced.
  * - `firstReactionCrit`: its first reaction each fight is a critical hit.
@@ -394,7 +401,7 @@ export const SET_EFFECTS = [
   'critWindow',
   'healOnReaction',
   'chainMark',
-  'coverReach',
+  'guardReach',
   'boostReach',
   'sealMark',
   'firstReactionCrit',
