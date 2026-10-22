@@ -106,6 +106,24 @@ describe('describeEvent', () => {
     ]);
   });
 
+  it('describes spikes pricking the hitter', () => {
+    const names = { boss: 'Imp', creatures: { a: 'Ann' }, players: {} };
+    const line = (e: FightEvent) => describeEvent(e, names);
+    expect(line({ t: 'boss_hit', round: 1, source: 'spikes', target: 'a', damage: 4 })).toBe(
+      "Imp's spikes prick Ann for 4.",
+    );
+    expect(
+      line({
+        t: 'boss_hit',
+        round: 1,
+        source: 'spikes',
+        target: 'a',
+        damage: 20,
+        capped: true,
+      }),
+    ).toBe("Imp's spikes prick Ann for 20. The hit is capped.");
+  });
+
   it('falls back to ids for unknown names and shows reflected reactions', () => {
     const r = run(
       [

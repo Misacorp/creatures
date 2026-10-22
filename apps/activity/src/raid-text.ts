@@ -119,6 +119,13 @@ function percent(bp: number): string {
   return `${String(Math.round(bp / 100))}%`;
 }
 
+/** A standing effect's sentence: bare when it is always on, else with how often it is. */
+function standing(g: Gimmick, text: string): string {
+  return 'eachRound' in g.trigger
+    ? text
+    : `${when(g)}: ${text.charAt(0).toLowerCase()}${text.slice(1)}`;
+}
+
 function when(g: Gimmick): string {
   return 'eachRound' in g.trigger ? 'Every round' : `Every ${String(g.trigger.every)} rounds`;
 }
@@ -265,6 +272,16 @@ function gimmickBaseText(g: Gimmick, wording: Wording): string {
       return `${when(g)}: silences the creatures at both ends of ${g.scope === 'rows' && wording !== 'row' ? 'each row' : 'the row'} for ${String(g.turns)} turn${g.turns === 1 ? '' : 's'}.`;
     case 'reflect_first_reaction':
       return `${when(g)}: turns the first reaction of the round back on the creature that set it off.`;
+    case 'reflect_chance':
+      return standing(
+        g,
+        `Each reaction has a ${percent(g.chanceBp)} chance to bounce back at the creature that set it off.`,
+      );
+    case 'spikes':
+      return standing(
+        g,
+        `Every hit on the foe pricks the hitter for ${percent(g.bp)} of its plain damage. A reaction's bonus does not count.`,
+      );
     case 'strike_highest_atk': {
       const jumps = g.jumps ?? 0;
       const strike = `${when(g)}: strikes your highest-attack creature for ${percent(g.power)} of its attack`;
@@ -307,6 +324,14 @@ export function gimmickShort(g: Gimmick, wording: Wording = 'zones'): string {
         : `Silences the row's ends, ${every}`;
     case 'reflect_first_reaction':
       return `Reflects a reaction, ${every}`;
+    case 'reflect_chance':
+      return 'eachRound' in g.trigger
+        ? 'May reflect a reaction'
+        : `May reflect a reaction, ${every}`;
+    case 'spikes':
+      return 'eachRound' in g.trigger
+        ? 'Pricks whoever hits it'
+        : `Pricks whoever hits it, ${every}`;
     case 'strike_highest_atk':
       return (g.jumps ?? 0) > 0
         ? `Strikes your top attacker and jumps on, ${every}`

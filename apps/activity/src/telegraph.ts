@@ -29,7 +29,7 @@ import type { BossStrike } from './stage';
 /**
  * The boss with this id, or a dungeon foe as the boss it fights as: `bossWarnings` reads only the
  * gimmicks and the number of rounds, and a foe has both (its room's rounds). `added` are the
- * gimmicks the room's modifier gives the foe (Thorns' reflect), which the foe's own content does not
+ * gimmicks the room's modifier gives the foe (Thorns' spikes), which the foe's own content does not
  * list; a gimmick the foe already has is not added twice.
  */
 function bossOrFoe(
@@ -381,6 +381,10 @@ function clauseOf(w: BossWarning, name: string, look: Look): string | null {
         : `${name} strikes your strongest, then jumps ${t.jumps === 1 ? 'once' : t.jumps === 2 ? 'twice' : `${String(t.jumps)} times`}`;
     case 'reaction':
       return `${name} reflects the first reaction`;
+    case 'reflect_chance':
+      return `${name} may reflect a reaction`;
+    case 'spikes':
+      return `${name}: every hit pricks the hitter`;
     case 'charge': {
       if (t.stage === 'gathering') return `${name} is gathering`;
       // Landing: its victims were marked a round ago; the row outline comes from the content.
@@ -406,6 +410,10 @@ function clauseOf(w: BossWarning, name: string, look: Look): string | null {
 function priority(w: BossWarning): number {
   if (w.target.kind === 'charge') return 0;
   switch (w.target.kind) {
+    // Standing effects are in force every round, so they only take a clause when the moves leave room.
+    case 'reflect_chance':
+    case 'spikes':
+      return 3;
     case 'ends':
     case 'reaction':
     case 'strongest':

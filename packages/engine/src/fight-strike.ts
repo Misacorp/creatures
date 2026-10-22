@@ -1,6 +1,6 @@
 // A creature hitting the boss (`hitBoss`): turn hits and ability strikes, reactions, marks, crits, credit.
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
-import { RULES, type Element, type ReactionDef } from '@creatures/game';
+import { RULES, int, type Element, type ReactionDef } from '@creatures/game';
 import { hurt } from './fight-damage';
 import { bossDodges } from './fight-dodge';
 import { applyEffect, BOSS, bossStacks, consumeBossEffect, effectBpOf } from './fight-effects';
@@ -134,8 +134,18 @@ export function hitBoss(
     markBefore === null
       ? undefined
       : reactionByPair.get(reactionKey(markBefore.element, c.element));
-  const trapped = reaction !== undefined && c.alive && state.reflectArmed && !state.reflectUsed;
-  if (trapped) state.reflectUsed = true;
+  const armedTrap = reaction !== undefined && c.alive && state.reflectArmed && !state.reflectUsed;
+  if (armedTrap) state.reflectUsed = true;
+  // A reflective shield (`reflect_chance`): each reaction a living creature sets off that the armed
+  // trap did not take is reflected with this chance. The die is drawn here, and only when the shield
+  // is on, so a fight without one draws exactly what it always did.
+  const chanceTrap =
+    !armedTrap &&
+    reaction !== undefined &&
+    c.alive &&
+    state.reflectChanceBp > 0 &&
+    int(state.rng, 10_000) < state.reflectChanceBp;
+  const trapped = armedTrap || chanceTrap;
   // A gear set turns the trap aside for the creature's first reaction of the fight (`unreflected`).
   const proof = trapped && m.unreflected && c.cashes === 0;
   const reflected = trapped && !proof;
@@ -417,8 +427,10 @@ export function hitBoss(
       ...(m.chainMark && !reflected ? { chain: true as const } : {}),
     });
     state.mark = null;
-    if (reflected) hurt(state, c, hit.reflect, 'reflect', 'reflect');
-    else if (brambled && hit.reflect > 0) hurt(state, c, hit.reflect, 'reflect', 'reflect');
+    if (reflected) {
+      // The armed trap's hit is uncapped (the raid's Backdraft); the chance reflect's is capped.
+      hurt(state, c, hit.reflect, 'reflect', 'reflect', undefined, false, false, chanceTrap);
+    } else if (brambled && hit.reflect > 0) hurt(state, c, hit.reflect, 'reflect', 'reflect');
     if (!reflected) {
       // The reaction's riders on the boss: burn the stacks it counted (Flare), or leave an effect (Smother).
       if (reaction.consumes !== undefined && burned > 0) {
@@ -498,6 +510,14 @@ export function hitBoss(
   if (reaches) {
     state.retreated = true;
     events.push({ t: 'retreat', round: state.currentRound, bossHp: state.bossHp });
+  }
+
+  // Spiky armour (`spikes`): a share of the hit's plain damage (never the reaction's bonus) pricks the
+  // creature that made it. An ordinary turn hit or an ability's strike counts; an Echo does not (it is
+  // written below). Nothing comes back from a creature that is down, or once the foe has fallen.
+  if (state.spikesBp > 0 && c.alive && state.bossHp > 0 && !state.retreated) {
+    const back = Math.floor(((hit.damage - hit.bonus) * state.spikesBp) / 10_000);
+    if (back > 0) hurt(state, c, back, 'spikes', 'spikes');
   }
 
   // Echo: a turn hit lands again for a share of its plain damage (no state.mark, no reaction, no crit),

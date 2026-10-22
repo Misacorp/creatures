@@ -263,6 +263,11 @@ export function fireGimmick(state: FightState, g: Gimmick, gimmickIndex: number)
       resolvePlan(state, plan, false, g.applies);
       break;
     }
+    case 'reflect_chance':
+    case 'spikes':
+      // Standing effects of the round (set at round start, where their one `gimmick` event is
+      // written): nothing happens on the boss's turn.
+      break;
     case 'reflect_first_reaction':
       // Armed at round start, where the one `gimmick` event for the trap is written. Nothing
       // happens on the boss's turn, so nothing is announced again (it used to be, twice a round).

@@ -152,7 +152,7 @@ export function mineIds(row: readonly { id: string }[]): Set<string> {
 
 /**
  * The gimmicks a room gives its foe beyond the foe's own: the one its modifier adds (Thorns'
- * reflect), read from the content by the modifier's id (a modifier the content no longer has, an old
+ * spikes), read from the content by the modifier's id (a modifier the content no longer has, an old
  * run's Fog, adds none), and, in the boss room of a landmark run, the floor boss's signature move.
  */
 export function modifierGimmicks(

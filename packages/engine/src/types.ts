@@ -562,7 +562,7 @@ export type FightEvent =
       t: 'boss_hit';
       round: number;
       /** `enrage`: the enraged boss's hit on every creature (`FightInput.enrage`). */
-      source: 'attack' | 'gimmick' | 'reflect' | 'enrage';
+      source: 'attack' | 'gimmick' | 'reflect' | 'enrage' | 'spikes';
       target: string;
       damage: number;
       /** Set when a guard took the hit: the creature it was aimed at. */

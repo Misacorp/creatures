@@ -301,7 +301,7 @@ describe('room modifiers are plain folds of the room input', () => {
     expect(dark.luck?.critChanceBp).toBe(RULES.combat.luck.critChanceBp + 500);
     expect(dark.luck?.critBp).toBe(RULES.combat.luck.critBp);
     const thorns = buildWith('thorns');
-    expect(thorns.boss.gimmicks.map((g) => g.op)).toEqual(['reflect_first_reaction']);
+    expect(thorns.boss.gimmicks.map((g) => g.op)).toEqual(['spikes']);
     // No modifier overrides the order: every room's fight goes by the dungeon's rule.
     for (const m of dungeonContent.modifiers) {
       const input = buildWith(m.id);
@@ -481,8 +481,10 @@ describe('every shipped foe, floor boss and room modifier makes sense on one row
       for (const g of f.gimmicks) {
         const rounds = Array.from({ length: 12 }, (_, i) => i + 1).filter((r) => gimmickDue(g, r));
         const fired = events.filter((e) => e.t === 'gimmick' && e.gimmick === g.id);
+        // A standing effect (a reflective shield, spikes) writes no event: it works through the hits.
+        if (g.op === 'reflect_chance' || g.op === 'spikes') expect(fired, g.id).toHaveLength(0);
         // (A reflect gimmick also reports when it is spent, so it is counted at least once a round.)
-        if (g.op === 'reflect_first_reaction')
+        else if (g.op === 'reflect_first_reaction')
           expect(fired.length).toBeGreaterThanOrEqual(rounds.length);
         else expect(fired, g.id).toHaveLength(rounds.length);
         if (g.op === 'hit_zone') {

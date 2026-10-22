@@ -110,6 +110,15 @@ describe('beat timing', () => {
       damage: 4,
     };
     expect(beatTiming([reflect], 0, 1).windupMs).toBe(WINDUP_MS);
+    // Spikes pricking the hitter follow its own hit: no wind-up, no beat of their own.
+    const spikes: FightEvent = {
+      t: 'boss_hit',
+      round: 3,
+      source: 'spikes',
+      target: 'a',
+      damage: 4,
+    };
+    expect(beatTiming([spikes], 0, 1).windupMs).toBe(0);
   });
 });
 
@@ -312,6 +321,33 @@ describe('bossWarnings', () => {
       stage: 'landing',
       inner: { kind: 'zone', zone: 'back' },
     });
+  });
+
+  it('names the standing effects of the dungeon: spikes and the reflective shield', () => {
+    const standing = {
+      ...boss('cinder-wyrm'),
+      gimmicks: [
+        {
+          id: 'thorns',
+          name: 'Thorns',
+          trigger: { eachRound: true as const },
+          op: 'spikes' as const,
+          bp: 1_000,
+        },
+        {
+          id: 'shell',
+          name: 'Shell',
+          trigger: { every: 2 },
+          op: 'reflect_chance' as const,
+          chanceBp: 500,
+        },
+      ],
+    };
+    expect(bossWarnings(standing, 1).map((w) => w.target)).toEqual([{ kind: 'spikes', bp: 1_000 }]);
+    expect(bossWarnings(standing, 2).map((w) => w.target)).toEqual([
+      { kind: 'spikes', bp: 1_000 },
+      { kind: 'reflect_chance', chanceBp: 500 },
+    ]);
   });
 
   it('knows the other bosses: the strongest every round, both ends every 2nd, the reflect trap', () => {

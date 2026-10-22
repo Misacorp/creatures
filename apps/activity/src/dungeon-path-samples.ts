@@ -39,7 +39,7 @@ const MODIFIERS = {
   thorns: {
     id: 'thorns',
     name: 'Thorns',
-    description: 'The foe turns the first reaction of each round back on your team.',
+    description: 'Every hit on the foe sends some damage back at the hitter.',
   },
   brittle: {
     id: 'brittle',

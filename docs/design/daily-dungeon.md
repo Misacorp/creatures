@@ -29,7 +29,7 @@ No real-time backend is needed.
   - A short chain of **3 rooms**, generated from the seed: two encounters, then a floor boss.
   - Each room is a small fight against content-defined dungeon foes (new content type, schema-validated), with an element, gimmicks and an HP pool (no turn order: see above).
   - **Creature HP carries over between rooms**, and knocked-out creatures stay out, so order and guards matter.
-  - Each room also rolls a **room modifier** from content, shown before the run: for example "Flooded: Tide +20%", "Echoing: Guards and supports +50%", "Dark: crits +5%", "Thorns: the foe turns the first reaction of each round back on your team". There are 8, three are rolled per day, all different.
+  - Each room also rolls a **room modifier** from content, shown before the run: for example "Flooded: Tide +20%", "Echoing: Guards and supports +50%", "Dark: crits +5%", "Thorns: every hit on the foe sends some damage back at the hitter" (spiky armour: 10% of each hit's plain damage, never the reaction bonus, combat-rules.md 5.6). There are 8, three are rolled per day, all different.
   - **Any change to the normal rules must be shown before the run** (a modifier's one plain line), or, if a mystery modifier ever exists, announced in the room banner when it happens. None changes who acts when. (Fog, which set the order, was retired on 2026-10-14 and replaced by Echoing; old runs that rolled it still show its name and text.)
 - **Depth ladder (personal):**
   - Each player has a **dungeon depth**, like the raid Boss Rank but personal.

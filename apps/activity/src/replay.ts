@@ -132,7 +132,8 @@ function applyOne(s: StepState, e: FightEvent): StepState {
         acted: s.actor === null ? s.acted : [...s.acted, s.actor],
       };
     case 'boss_hit':
-      return e.source === 'reflect'
+      // A hit coming back at a creature (a reflect, spikes) is not the boss acting: it follows a creature's own hit.
+      return e.source === 'reflect' || e.source === 'spikes'
         ? s
         : {
             ...creatureTicked(s, s.actor),

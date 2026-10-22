@@ -170,7 +170,10 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
             ? 'strikes'
             : event.source === 'enrage'
               ? 'rages at'
-              : 'reflects damage onto';
+              : event.source === 'spikes'
+                ? 'prick'
+                : 'reflects damage onto';
+      const subject = event.source === 'spikes' ? `${names.boss}'s spikes` : names.boss;
       const crit = event.crit === true ? ' Critical!' : '';
       const capped = event.capped === true ? ' The hit is capped.' : '';
       const cover =
@@ -197,18 +200,18 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
         return `${creature(event.target)} sidesteps ${event.splash === true ? 'the splash' : `${names.boss}'s hit`} and takes nothing.`;
       }
       if (event.shielded === true) {
-        return `${names.boss} ${what} ${creature(event.target)}, but a Shield Wall stops it.`;
+        return `${subject} ${what} ${creature(event.target)}, but a Shield Wall stops it.`;
       }
       if (event.splash === true) {
         return `${creature(event.target)} is caught in the splash for ${event.damage}.${extra}`;
       }
       if (event.reducedBp !== undefined) {
-        return `${names.boss} ${what} ${creature(event.target)} for ${event.damage} (a Shield Wall softens it by ${event.reducedBp / 100}%).${extra}`;
+        return `${subject} ${what} ${creature(event.target)} for ${event.damage} (a Shield Wall softens it by ${event.reducedBp / 100}%).${extra}`;
       }
       if (event.from !== undefined) {
         return `${creature(event.target)} takes the hit meant for ${creature(event.from)} (${event.damage}).${extra}`;
       }
-      return `${names.boss} ${what} ${creature(event.target)} for ${event.damage}.${extra}`;
+      return `${subject} ${what} ${creature(event.target)} for ${event.damage}.${extra}`;
     }
     case 'knockout':
       return `${creature(event.creature)} is knocked out.`;

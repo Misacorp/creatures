@@ -36,7 +36,7 @@ describe('the icons of the room modifiers', () => {
     expect(modifierIcon('dark')).toEqual({ kind: 'glyph', id: 'reticle' });
     // A boost to roles shows the glyph of the first role it names (Guard: the shield).
     expect(modifierIcon('echoing')).toEqual({ kind: 'glyph', id: 'shield' });
-    expect(modifierIcon('thorns')).toEqual({ kind: 'glyph', id: 'reflect_first_reaction' });
+    expect(modifierIcon('thorns')).toEqual({ kind: 'glyph', id: 'spikes' });
     expect(modifierIcon('brittle')).toEqual({ kind: 'glyph', id: 'warning' });
     // The whole team's Speed down (Muddy) is a puddle of mud.
     expect(modifierIcon('mud')).toEqual({ kind: 'glyph', id: 'mud' });

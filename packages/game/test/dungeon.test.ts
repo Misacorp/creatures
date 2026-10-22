@@ -109,6 +109,56 @@ describe('the dungeon content', () => {
     expect(roomModifier('nothing')).toBeUndefined();
   });
 
+  it('gives Thorns spiky armour and the Slag Tyrant a reflective shield, not the old reflect', () => {
+    const thorns = roomModifier('thorns')?.effects.find((e) => e.op === 'foe_gimmick');
+    expect(thorns?.op === 'foe_gimmick' && thorns.gimmick).toMatchObject({
+      op: 'spikes',
+      trigger: { eachRound: true },
+    });
+    const shell = dungeonFoe('slag-tyrant')?.gimmicks.find((g) => g.id === 'molten-shell');
+    expect(shell).toMatchObject({ op: 'reflect_chance', trigger: { eachRound: true } });
+    // The old whole-bonus reflect is the raid's (Backdraft); no dungeon foe or modifier has it.
+    const ops = [
+      ...dungeonContent.foes.flatMap((f) => f.gimmicks.map((g) => g.op)),
+      ...dungeonContent.modifiers.flatMap((m) =>
+        m.effects.flatMap((e) => (e.op === 'foe_gimmick' ? [e.gimmick.op] : [])),
+      ),
+    ];
+    expect(ops).not.toContain('reflect_first_reaction');
+  });
+
+  it('checks the numbers of spikes and the reflective shield, and rejects unknown keys', () => {
+    const withThorns = (gimmick: Record<string, unknown>) =>
+      mods().map((m) =>
+        m.id === 'thorns'
+          ? {
+              ...m,
+              effects: [
+                { op: 'foe_gimmick', gimmick: { ...gimmick, id: 'thorns', name: 'Thorns' } },
+              ],
+            }
+          : m,
+      );
+    const spikes = { trigger: { eachRound: true }, op: 'spikes' };
+    expect(() => loadDungeon(foes(), withThorns({ ...spikes, bp: 1_000 }), rooms)).not.toThrow();
+    for (const bad of [
+      { ...spikes },
+      { ...spikes, bp: 0 },
+      { ...spikes, bp: 10_001 },
+      { ...spikes, bp: 1.5 },
+      { ...spikes, bp: 1_000, chanceBp: 500 },
+      { ...spikes, op: 'reflect_chance', bp: 500 },
+      { ...spikes, op: 'reflect_chance', chanceBp: 0 },
+      { ...spikes, op: 'reflect_chance', chanceBp: 10_001 },
+      { ...spikes, op: 'reflect_chance', chanceBp: 500, bp: 1 },
+    ]) {
+      expect(() => loadDungeon(foes(), withThorns(bad), rooms), JSON.stringify(bad)).toThrow();
+    }
+    expect(() =>
+      loadDungeon(foes(), withThorns({ ...spikes, op: 'reflect_chance', chanceBp: 10_000 }), rooms),
+    ).not.toThrow();
+  });
+
   it('rejects a Boss Rank on a foe move, a signature or a modifier move (raid bosses only)', () => {
     const withRank = (g: unknown): unknown => ({ ...(g as object), fromRank: 4 });
     const firstWith = foes().findIndex((f) => (f.gimmicks as unknown[]).length > 0);

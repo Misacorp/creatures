@@ -50,6 +50,10 @@ export type WarningTarget =
   | { kind: 'ends'; scope: 'rows' | 'row' }
   | { kind: 'strongest'; jumps: number }
   | { kind: 'reaction' }
+  /** A reflective shield: each reaction may be turned back, with this chance (basis points). */
+  | { kind: 'reflect_chance'; chanceBp: number }
+  /** Spiky armour: this share (basis points) of each creature hit's plain damage pricks the hitter. */
+  | { kind: 'spikes'; bp: number }
   | { kind: 'charge'; stage: 'gathering' | 'landing'; inner: PatternTarget };
 
 export interface BossWarning {
@@ -132,6 +136,12 @@ export function bossWarnings(boss: BossDef, round: number): BossWarning[] {
         break;
       case 'reflect_first_reaction':
         out.push({ ...base, target: { kind: 'reaction' } });
+        break;
+      case 'reflect_chance':
+        out.push({ ...base, target: { kind: 'reflect_chance', chanceBp: g.chanceBp } });
+        break;
+      case 'spikes':
+        out.push({ ...base, target: { kind: 'spikes', bp: g.bp } });
         break;
       case 'purge':
         // The boss clears its own debuffs: nobody is aimed at, so there is nothing to warn about.
