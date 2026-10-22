@@ -155,7 +155,7 @@ interface StageProps {
   phase?: RaidPhaseId;
   /** Gimmicks the foe has only in this room (the dungeon's modifier), so the forecast names them too. */
   addedGimmicks?: readonly Gimmick[];
-  /** How the boss's move track looks (the design round's four versions; default `glass`). */
+  /** How the boss's move track looks (the design round's four versions; default `countdown`). */
   trackLook?: TrackLook;
   /**
    * Something drawn over the whole stage, above the round intro (the dungeon's room banner). It sits
@@ -381,7 +381,11 @@ export function Stage({
         class={`stage-zone zone-${zone}${shaking.has(zone) ? ' shake' : ''}${warnedZone ? ' warned' : ''}${zoneCharged ? ' charged' : ''}`}
         role="group"
         aria-label={single ? zoneName : `${zoneName} zone`}
-        {...(layoutOf === null ? {} : { ref: cssVars(layoutVars(layoutOf, ROW_LAYOUT)) })}
+        // `--art`: a creature sprite's height, so its effect icons sit on the sprite, not on its name.
+        ref={cssVars({
+          ...(layoutOf === null ? {} : layoutVars(layoutOf, ROW_LAYOUT)),
+          '--art': `${String(16 * scale)}px`,
+        })}
       >
         {single && warnedZone && (
           <span class="zone-warn" aria-hidden="true">

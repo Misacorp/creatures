@@ -30,9 +30,14 @@ describe('what a boss action looks like', () => {
 
   it('plays a move by its own recipe and theme', () => {
     expect(
-      fxPlanOf(strike({ action: 'silence_ends', gimmick: 'bramble-bind', targets: ['a', 'b'] }), 'grove'),
+      fxPlanOf(
+        strike({ action: 'silence_ends', gimmick: 'bramble-bind', targets: ['a', 'b'] }),
+        'grove',
+      ),
     ).toMatchObject({ recipe: 'vines', theme: 'thorn', targets: ['a', 'b'] });
-    expect(fxPlanOf(strike({ action: 'slam', gimmick: 'bog-lob', splash: ['b'] }), 'mire')).toMatchObject({
+    expect(
+      fxPlanOf(strike({ action: 'slam', gimmick: 'bog-lob', splash: ['b'] }), 'mire'),
+    ).toMatchObject({
       recipe: 'meteor',
       theme: 'mud',
       splash: ['b'],
@@ -44,8 +49,12 @@ describe('what a boss action looks like', () => {
   });
 
   it('falls back on the kind of move and the boss element for a move it does not know', () => {
-    expect(fxPlanOf(strike({ action: 'slam', gimmick: 'new-move' }), 'spark')?.recipe).toBe('skybolt');
-    expect(fxPlanOf(strike({ action: 'slam', gimmick: 'new-move' }), 'mire')?.recipe).toBe('meteor');
+    expect(fxPlanOf(strike({ action: 'slam', gimmick: 'new-move' }), 'spark')?.recipe).toBe(
+      'skybolt',
+    );
+    expect(fxPlanOf(strike({ action: 'slam', gimmick: 'new-move' }), 'mire')?.recipe).toBe(
+      'meteor',
+    );
     expect(fxPlanOf(strike({ action: 'hit_zone', gimmick: 'new-move' }), 'tide')).toMatchObject({
       recipe: 'surge',
       rows: ['front'],
@@ -63,7 +72,10 @@ describe('what a boss action looks like', () => {
 
   it('plays a charged move bigger when it lands', () => {
     expect(
-      fxPlanOf(strike({ action: 'sweep', gimmick: 'great-wave', rows: ['middle'], charged: true }), 'tide'),
+      fxPlanOf(
+        strike({ action: 'sweep', gimmick: 'great-wave', rows: ['middle'], charged: true }),
+        'tide',
+      ),
     ).toMatchObject({ recipe: 'surge', rows: ['middle'], big: true });
   });
 });

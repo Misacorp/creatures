@@ -122,11 +122,12 @@ button.unit-face:focus-visible {
   -webkit-line-clamp: 2;
 }
 
-/* Your own creatures: a gold frame and a "you" tag, so it never rests on colour alone. */
+/*
+  Your own creatures: a soft tint and the gold "you" tag (so it never rests on colour alone), no frame:
+  the boss and the attacks are the loud things on the stage (the reviewers, 2026-10-23).
+*/
 .stage-unit.mine {
   background: var(--mine);
-  outline: var(--px) solid var(--gold);
-  outline-offset: 1px;
 }
 
 .you-pip {

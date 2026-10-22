@@ -134,7 +134,7 @@ const bossAttacks: Entry = {
     players: 4,
     from: 2,
     to: 6,
-    track: 'hitline',
+    track: 'countdown',
     loop: true,
     slow: true,
     bossOnly: false,

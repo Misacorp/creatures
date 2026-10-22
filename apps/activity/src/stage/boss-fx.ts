@@ -3,12 +3,15 @@
  * lands exactly when the hit does, and the second half from the moment it lands (the splash, the
  * shatter, the vines holding on, the row shaking). Decoration only: it makes a few small elements in
  * the stage's strike layer, moves them with the Web Animations API and removes them again; it also
- * shakes the creatures' own boxes. Shapes and colours are CSS (`styles/stage/boss-fx.css`): one
- * shape per kind of thing, tinted by a theme class. No image files, no `Math.random` (small stable
- * variations come from the action's event index).
+ * shakes the creatures' own boxes. Pixel style: hard edges, no glows. The big things that fly (the
+ * crescent, the boulder, the blob) are pixel art (`fx-sprites.ts`) drawn on a small canvas in the
+ * theme's colours; the rest are CSS shapes (`styles/stage/boss-fx.css`) tinted by a theme class. No
+ * image files, no `Math.random` (small stable variations come from the action's event index).
  */
 import type { Zone } from '@creatures/engine';
 import type { FxPlan, FxTheme } from '../move-fx';
+import { parseSprite, swapPalette, type SpriteDef } from '../sprites/sprite-data';
+import { BLOB, CRESCENT, ROCK } from './fx-sprites';
 
 /** What the player needs from the stage. */
 export interface FxStage {
@@ -121,6 +124,66 @@ class Scene {
     return el;
   }
 
+  /**
+   * A piece of pixel art in the theme's colours (read from the theme class, so the colours live in
+   * one place), centred on `at`. `ghost` also draws a faint copy behind it, `ghost` pixels back: the
+   * trail of something fast.
+   */
+  pixel(cls: string, def: SpriteDef, scale: number, at: Point, ghost = 0): HTMLElement {
+    const el = this.spawn(`fx-px ${cls}`, at);
+    const css = getComputedStyle(el);
+    const colour = (name: string, fallback: string): string => {
+      const v = css.getPropertyValue(name).trim();
+      return /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(v) ? v : fallback;
+    };
+    const sprite = parseSprite(
+      swapPalette(def, {
+        a: colour('--a', '#888888'),
+        b: colour('--b', '#333333'),
+        c: colour('--c', '#ffffff'),
+      }),
+    );
+    const w = (sprite.width + ghost) * scale;
+    const h = sprite.height * scale;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (ctx !== null) {
+      for (const [dx, alpha] of ghost > 0
+        ? ([
+            [0, 0.35],
+            [ghost, 1],
+          ] as const)
+        : ([[0, 1]] as const)) {
+        ctx.globalAlpha = alpha;
+        for (const cell of sprite.cells) {
+          ctx.fillStyle = cell.colour;
+          ctx.fillRect((cell.x + dx) * scale, cell.y * scale, scale, scale);
+        }
+      }
+    }
+    el.style.width = px(w);
+    el.style.height = px(h);
+    // Centred on its point, the trail behind (to the left: everything flies turned to face right).
+    el.style.margin = `${px(-h / 2)} 0 0 ${px(-(w + ghost * scale) / 2)}`;
+    el.append(canvas);
+    return el;
+  }
+
+  /** Small embers (or other bits) standing in a circle `d` across, in one element that can turn. */
+  orbit(at: Point, d: number, count: number, cls = 'ember'): HTMLElement {
+    const el = this.spawn('fx-orbit', at);
+    for (let k = 0; k < count; k++) {
+      const angle = (k / count) * Math.PI * 2;
+      const bit = document.createElement('i');
+      bit.className = `fx-bit bit-${cls}${k % 3 === 0 ? ' hot' : ''}`;
+      bit.style.transform = `translate(${px((Math.cos(angle) * d) / 2)}, ${px((Math.sin(angle) * d) / 2)}) rotate(45deg)`;
+      el.append(bit);
+    }
+    return el;
+  }
+
   /** A jagged bolt of lightning through `points` (an SVG line, made here, never parsed from text). */
   bolt(points: Point[], width: number): SVGSVGElement {
     const ns = 'http://www.w3.org/2000/svg';
@@ -138,7 +201,7 @@ class Scene {
       line.setAttribute('stroke-width', String(w));
       svg.append(line);
     };
-    make('bolt-glow', width * 3);
+    make('bolt-edge', width * 2.2);
     make('bolt-core', width);
     this.stage.layer.append(svg);
     this.made2.push(svg);
@@ -201,7 +264,7 @@ class Scene {
         { transform: `translate(${px(at.x)}, ${px(at.y)}) scale(0.2)`, opacity: 1 },
         { transform: `translate(${px(at.x)}, ${px(at.y)}) scale(${String(size)})`, opacity: 0 },
       ],
-      { duration: 420, delay, easing: 'ease-out' },
+      { duration: 420, delay, easing: 'steps(5, end)' },
     );
   }
 
@@ -227,9 +290,9 @@ class Scene {
     });
   }
 
-  /** Something that flies along `points`, turned to face where it goes. */
+  /** Something that flies along `points`, turned to face where it goes (a class, or a maker for pixel art). */
   fly(
-    cls: string,
+    what: string | ((at: Point) => HTMLElement),
     points: Point[],
     duration: number,
     delay: number,
@@ -237,7 +300,8 @@ class Scene {
     turn = true,
     spin = 0,
   ): void {
-    const el = this.spawn(cls, points[0]);
+    const start = points[0] as Point;
+    const el = typeof what === 'string' ? this.spawn(what, start) : what(start);
     const frames = points.map((p, k) => {
       const next = points[Math.min(k + 1, points.length - 1)] as Point;
       const prev = points[Math.max(k - 1, 0)] as Point;
@@ -292,6 +356,28 @@ function jagged(a: Point, b: Point, seed: number, roughness: number): Point[] {
   });
 }
 
+/**
+ * Water, mud or lava rising under a row: a band whose top is a stepped pixel wave (its outline cut in
+ * whole steps, so it reads as pixel art), see-through so the creatures and the numbers show.
+ */
+function surge(s: Scene, row: Box, big: boolean): HTMLElement {
+  const w = row.w + 16;
+  const h = row.h * (big ? 1.25 : 1.05);
+  const el = s.spawn('fx-surge', { x: row.x, y: row.y + row.h });
+  el.style.setProperty('--w', px(w));
+  el.style.setProperty('--h', px(h));
+  const step = 6;
+  const crest = [0, 3, 6, 9, 6, 3];
+  const points: string[] = [];
+  for (let x = 0, k = 0; x < w; x += step, k++) {
+    const y = crest[k % crest.length] ?? 0;
+    points.push(`${px(x)} ${px(y)}`, `${px(Math.min(w, x + step))} ${px(y)}`);
+  }
+  points.push(`${px(w)} ${px(h)}`, `0 ${px(h)}`);
+  el.style.clipPath = `polygon(${points.join(', ')})`;
+  return el;
+}
+
 const centre = (b: Box): Point => ({ x: b.cx, y: b.cy });
 const feet = (b: Box): Point => ({ x: b.cx, y: b.y + b.h });
 
@@ -310,11 +396,11 @@ export function playWindup(stage: FxStage, plan: FxPlan, ms: number, seed: numbe
     case 'crescent':
       targets.slice(0, 6).forEach((t, k) => {
         s.fly(
-          'fx-crescent',
+          (p) => s.pixel('fx-crescent', CRESCENT, 3, p, 4),
           curve(mouth, centre(t), (k % 2 === 0 ? 1 : -1) * 0.08, 0),
           span * 0.9,
           at + k * 40,
-          [0.6, 1.1],
+          [0.7, 1.05],
         );
       });
       break;
@@ -374,7 +460,7 @@ export function playWindup(stage: FxStage, plan: FxPlan, ms: number, seed: numbe
     case 'mortar':
       targets.slice(0, 6).forEach((t, k) => {
         s.fly(
-          'fx-blob',
+          (p) => s.pixel('fx-blob', BLOB, 3, p),
           curve(mouth, centre(t), 0, 90, 16),
           span * 0.9,
           at + k * 60,
@@ -389,11 +475,11 @@ export function playWindup(stage: FxStage, plan: FxPlan, ms: number, seed: numbe
         const end = centre(t);
         const from = { x: end.x - 140, y: -60 - k * 20 };
         s.fly(
-          'fx-meteor',
+          (p) => s.pixel('fx-meteor', ROCK, 4, p),
           curve(from, end, 0, 0, 8),
           span * 0.75,
           at + span * 0.25 + k * 60,
-          [0.7, 1.15],
+          [0.7, 1.1],
         );
       });
       break;
@@ -496,19 +582,17 @@ export function playWindup(stage: FxStage, plan: FxPlan, ms: number, seed: numbe
       break;
     case 'surge':
       s.rowBoxes().forEach((row, k) => {
-        const el = s.spawn('fx-surge', { x: row.x, y: row.y + row.h });
-        el.style.setProperty('--w', px(row.w + 16));
-        el.style.setProperty('--h', px(row.h * (plan.big ? 1.25 : 1.05)));
+        const el = surge(s, row, plan.big);
         s.run(
           el,
           [
             {
               transform: `translate(${px(row.x - 8)}, ${px(row.y + row.h)}) scaleY(0)`,
-              opacity: 0.6,
+              opacity: 0.4,
             },
             {
               transform: `translate(${px(row.x - 8)}, ${px(row.y + row.h)}) scaleY(0.7)`,
-              opacity: 0.95,
+              opacity: 0.5,
             },
           ],
           {
@@ -530,7 +614,7 @@ export function playWindup(stage: FxStage, plan: FxPlan, ms: number, seed: numbe
     case 'constrict':
       targets.slice(0, 3).forEach((t) => {
         const p = centre(t);
-        const el = s.spawn('fx-firering', p);
+        const el = s.orbit(p, Math.max(t.w, t.h) * 1.3, 12);
         s.run(
           el,
           [
@@ -668,18 +752,11 @@ export function playImpact(stage: FxStage, plan: FxPlan, seed: number): () => vo
         );
         s.run(
           bolt,
-          [
-            { opacity: 1 },
-            { opacity: 0.2 },
-            { opacity: 1 },
-            { opacity: 0.4 },
-            { opacity: 1 },
-            { opacity: 0 },
-          ],
+          [{ opacity: 1 }, { opacity: 1 }, { opacity: 0.5 }, { opacity: 1 }, { opacity: 0 }],
           {
             duration: 420,
             delay: k * 60,
-            easing: 'steps(6)',
+            easing: 'steps(4)',
           },
         );
         s.ring(p, 2.2 * big, k * 60);
@@ -718,10 +795,24 @@ export function playImpact(stage: FxStage, plan: FxPlan, seed: number): () => vo
         s.run(
           coil,
           [
-            { transform: `translate(${px(mid.x)}, ${px(mid.y + t.h * 0.4)}) scale(0.4, 0.4)`, opacity: 0 },
-            { transform: `translate(${px(mid.x)}, ${px(mid.y)}) scale(1, 1)`, opacity: 1, offset: 0.2 },
-            { transform: `translate(${px(mid.x)}, ${px(mid.y)}) scale(0.9, 1.1)`, opacity: 1, offset: 0.75 },
-            { transform: `translate(${px(mid.x)}, ${px(mid.y + t.h * 0.3)}) scale(0.5, 0.5)`, opacity: 0 },
+            {
+              transform: `translate(${px(mid.x)}, ${px(mid.y + t.h * 0.4)}) scale(0.4, 0.4)`,
+              opacity: 0,
+            },
+            {
+              transform: `translate(${px(mid.x)}, ${px(mid.y)}) scale(1, 1)`,
+              opacity: 1,
+              offset: 0.2,
+            },
+            {
+              transform: `translate(${px(mid.x)}, ${px(mid.y)}) scale(0.9, 1.1)`,
+              opacity: 1,
+              offset: 0.75,
+            },
+            {
+              transform: `translate(${px(mid.x)}, ${px(mid.y + t.h * 0.3)}) scale(0.5, 0.5)`,
+              opacity: 0,
+            },
           ],
           { duration: plan.big ? 1_500 : 1_200, delay: k * 40 + 80 },
         );
@@ -797,29 +888,27 @@ export function playImpact(stage: FxStage, plan: FxPlan, seed: number): () => vo
       break;
     case 'surge':
       s.rowBoxes().forEach((row, k) => {
-        const el = s.spawn('fx-surge', { x: row.x, y: row.y + row.h });
-        el.style.setProperty('--w', px(row.w + 16));
-        el.style.setProperty('--h', px(row.h * (plan.big ? 1.25 : 1.05)));
+        const el = surge(s, row, plan.big);
         s.run(
           el,
           [
             {
               transform: `translate(${px(row.x - 8)}, ${px(row.y + row.h)}) scaleY(0.7)`,
-              opacity: 0.95,
+              opacity: 0.5,
             },
             {
               transform: `translate(${px(row.x - 8)}, ${px(row.y + row.h)}) scaleY(1.08)`,
-              opacity: 1,
+              opacity: 0.55,
               offset: 0.18,
             },
             {
               transform: `translate(${px(row.x - 8)}, ${px(row.y + row.h)}) scaleY(0.9)`,
-              opacity: 0.9,
+              opacity: 0.45,
               offset: 0.45,
             },
             {
               transform: `translate(${px(row.x - 8)}, ${px(row.y + row.h)}) scaleY(0)`,
-              opacity: 0.4,
+              opacity: 0.3,
             },
           ],
           { duration: 1_100, delay: k * 80, easing: 'ease-in-out' },
@@ -841,8 +930,7 @@ export function playImpact(stage: FxStage, plan: FxPlan, seed: number): () => vo
       const b = s.bossBox;
       if (b === null) break;
       const p = centre(b);
-      const el = s.spawn('fx-flames', p);
-      el.style.setProperty('--d', px(Math.max(b.w, b.h) * 1.1));
+      const el = s.orbit(p, Math.max(b.w, b.h) * 1.1, 18);
       s.run(
         el,
         [

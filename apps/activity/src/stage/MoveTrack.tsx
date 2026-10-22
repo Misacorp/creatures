@@ -121,15 +121,16 @@ function TrackMove({
 
 /**
  * How the track looks (Misa's design round, 2026-10-23: fewer boxes, less noise, more meaning).
+ * - `countdown` (the default, the reviewers' pick): no column: the next few moves, each once, with the
+ *   rounds left beside it; a hard "NOW" for this round's, and the names of this round's and the next.
  * - `hitline`: no boxes at all. The moves float up a column toward a single glowing line at the top
  *   and cross it in the round they come, like notes in a rhythm game.
  * - `ribbon`: a thin timeline with a notch for each round; the moves sit on their notches and slide
  *   up a notch a round.
- * - `countdown`: no column: the next few moves, each once, with the rounds left under it.
- * - `single`: only the next move, larger, with "in 2" (or its name when it comes this round).
+ * - `single`: only the next move, with "in 2" (or "NOW") and its name.
  */
 export type TrackLook = 'hitline' | 'ribbon' | 'countdown' | 'single';
-export const TRACK_LOOKS: readonly TrackLook[] = ['hitline', 'ribbon', 'countdown', 'single'];
+export const TRACK_LOOKS: readonly TrackLook[] = ['countdown', 'hitline', 'ribbon', 'single'];
 
 /** The names of this round's moves (a charge that only marks now says so). */
 function NowLine({ track }: { track: MoveTrackView }) {
@@ -153,7 +154,7 @@ function NowLine({ track }: { track: MoveTrackView }) {
 export function MoveTrack({
   track,
   round,
-  look = 'hitline',
+  look = 'countdown',
 }: {
   track: MoveTrackView;
   round: number;
@@ -166,7 +167,8 @@ export function MoveTrack({
   const lit = track.now.length > 0;
 
   if (look === 'countdown' || look === 'single') {
-    const next = nextMoves(track, now).slice(0, look === 'single' ? 1 : 4);
+    const single = look === 'single';
+    const next = nextMoves(track, now).slice(0, single ? 1 : 4);
     return (
       <section
         class={`move-track look-${look}${lit ? ' lit' : ''}`}
@@ -177,16 +179,16 @@ export function MoveTrack({
             const d = roundsUntil(t, now);
             return (
               <li key={t.gimmick} class={d === 0 ? 'due' : d === 1 ? 'soon' : undefined}>
-                <TrackMove tile={t} now={now} scale={look === 'single' ? 3 : 2}>
+                <TrackMove tile={t} now={now} scale={3}>
                   <span class="track-when pix" aria-hidden="true">
-                    {d === 0
-                      ? look === 'single'
-                        ? t.name
-                        : 'now'
-                      : look === 'single'
-                        ? `in ${String(d)}`
-                        : String(d)}
+                    {d === 0 ? 'NOW' : single ? `in ${String(d)}` : String(d)}
                   </span>
+                  {/* The name of what comes this round or the next: the moves to plan for. */}
+                  {(d <= 1 || single) && (
+                    <span class="track-name pix" aria-hidden="true">
+                      {t.name}
+                    </span>
+                  )}
                 </TrackMove>
               </li>
             );

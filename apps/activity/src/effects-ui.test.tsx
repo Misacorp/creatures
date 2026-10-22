@@ -51,11 +51,16 @@ describe('the effect icons', () => {
     expect(text).toContain('2 turns');
   });
 
-  it('draws only glyph and stacks on a creature, and nothing without effects', () => {
+  it('draws only glyph and a bare stack count on a creature, and nothing without effects', () => {
     page = createPage();
     page.draw(<EffectIcons compact effects={[{ effect: 'mired', stacks: 4, turnsLeft: 2 }]} />);
-    expect(visibleText(page.root)).toContain('×4');
+    expect(visibleText(page.root)).toContain('4');
+    expect(visibleText(page.root)).not.toContain('×');
     expect(visibleText(page.root)).not.toContain('turns');
+    page.unmount();
+    page = createPage();
+    page.draw(<EffectIcons compact effects={[{ effect: 'mired', stacks: 1, turnsLeft: 2 }]} />);
+    expect(visibleText(page.root)).not.toMatch(/\d/);
     page.unmount();
     page = createPage();
     page.draw(<EffectIcons effects={[]} />);

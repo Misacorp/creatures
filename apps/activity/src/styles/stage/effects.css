@@ -55,15 +55,23 @@
   z-index: 3;
 }
 
-/* On a creature: a row along the top of the sprite, over it. */
+/*
+  On a creature: the buffs in a row along the top of the sprite, the debuffs along its bottom, both
+  over the sprite's left side (the ability badge and the element are on its right). `--art` is the
+  sprite's height (StageUnit); 0.875rem is the "you" row above it.
+*/
 .effect-icons.compact {
   position: absolute;
-  top: 1.125rem;
-  left: 0;
+  top: 0.875rem;
+  left: -0.125rem;
   z-index: 3;
   flex-direction: row;
   flex-wrap: wrap;
   gap: 0.125rem;
+}
+
+.effect-icons.compact.debuffs {
+  top: calc(0.875rem + var(--art, 32px) - 0.875rem);
 }
 
 .effect-icons.compact .effect-tag {
@@ -107,11 +115,21 @@
 }
 
 .effect-icons.compact .effect-sign {
-  right: -0.25rem;
-  font-size: 0.5rem;
+  right: auto;
+  left: -0.375rem;
 }
 
-/* On a creature, the debuffs sit along the bottom of its sprite, the buffs (the row above) along its top. */
-.effect-icons.compact.debuffs {
-  top: calc(var(--unit-w, 52px) - 0.75rem);
+/*
+  On a creature the mark sits on the glyph's left corner and the count on its right one, outlined so
+  it reads over any sprite.
+*/
+.effect-icons.compact .effect-top {
+  position: relative;
+}
+
+.effect-icons.compact .effect-stacks {
+  position: absolute;
+  right: -0.25rem;
+  bottom: -0.25rem;
+  text-shadow: var(--ink-outline-thin);
 }
