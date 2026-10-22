@@ -266,3 +266,92 @@ describe('the wizard pieces', () => {
     expect(bodyText(root)).toBe('body b');
   });
 });
+
+describe('a branching wizard', () => {
+  type B = 'menu' | 'left' | 'right' | 'right2';
+  const BRANCH: readonly WizardStep<B>[] = [
+    { id: 'menu', title: 'Menu', backLabel: 'to nowhere' },
+    { id: 'left', title: 'Left', backLabel: 'to the menu' },
+    { id: 'right', title: 'Right', backLabel: 'to the menu', back: 'menu', forward: 'right2' },
+    { id: 'right2', title: 'Right two', backLabel: 'to right', next: 'Done' },
+  ];
+  let branch: Wizard<B> | null = null;
+  const here = (): Wizard<B> => {
+    if (branch === null) throw new Error('nothing drawn');
+    return branch;
+  };
+  function Branchy({
+    steps = BRANCH,
+    initial,
+    disabled = false,
+  }: {
+    steps?: readonly WizardStep<B>[];
+    initial?: B;
+    disabled?: boolean;
+  }) {
+    const wizard = useWizard(steps, { initial });
+    branch = wizard;
+    return (
+      <WizardView wizard={wizard} disabled={disabled}>
+        <p class="body">{`body ${wizard.step}`}</p>
+      </WizardView>
+    );
+  }
+
+  it('goes back to the step a step names, not the one before it in the list', () => {
+    draw(<Branchy initial="right" />);
+    expect(here().canBack).toBe(true);
+    page?.update(() => {
+      here().back();
+    });
+    expect(here().step).toBe('menu');
+    expect(here().canBack).toBe(false);
+  });
+
+  it('goes forward to the step a step names, and a pick can open a branch with goTo', () => {
+    draw(<Branchy />);
+    page?.update(() => {
+      here().goTo('right');
+    });
+    page?.update(() => {
+      here().next();
+    });
+    expect(here().step).toBe('right2');
+    expect(here().last).toBe(true);
+    page?.update(() => {
+      here().back();
+    });
+    expect(here().step).toBe('right');
+  });
+
+  it('lets a step say whether it is the finish, whatever its place in the list', () => {
+    const steps: readonly WizardStep<B>[] = [
+      { id: 'menu', title: 'Menu', backLabel: 'x' },
+      { id: 'left', title: 'Left', backLabel: 'x', final: true },
+      { id: 'right', title: 'Right', backLabel: 'x' },
+    ];
+    draw(<Branchy steps={steps} initial="left" />);
+    expect(here().last).toBe(true);
+    page?.update(() => {
+      here().next();
+    });
+    expect(here().step).toBe('left');
+  });
+
+  it('keeps the current step by id when the list changes, and shows the first step when it is gone', () => {
+    const root = draw(<Branchy initial="right" />);
+    page?.draw(<Branchy steps={BRANCH.filter((s) => s.id !== 'left')} initial="right" />);
+    expect(here().step).toBe('right');
+    expect(here().index).toBe(1);
+    page?.draw(<Branchy steps={BRANCH.filter((s) => s.id !== 'right')} initial="right" />);
+    expect(here().step).toBe('menu');
+    expect(bodyText(root)).toBe('body menu');
+  });
+
+  it('turns Back and Escape off while disabled', () => {
+    const root = draw(<Branchy initial="right" disabled />);
+    expect(backButton(root).hasAttribute('disabled')).toBe(true);
+    page?.key(byClass(root, 'body')[0] as FakeElement, 'Escape');
+    expect(here().step).toBe('right');
+  });
+});

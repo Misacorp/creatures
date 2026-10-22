@@ -63,7 +63,8 @@ const PRESETS = [
     props: { scene: 'W5' },
     panels: 1,
   },
-  { name: 'Dismantle panel open', entry: 'CreaturePage', props: { scene: 'W6' }, panels: 3 },
+  { name: 'Dismantle wizard, who', entry: 'CreaturePage', props: { scene: 'W6' }, panels: 1 },
+  { name: 'Dismantle wizard, confirm', entry: 'CreaturePage', props: { scene: 'W6b' }, panels: 1 },
   {
     name: 'Item picker, better item (compare on)',
     entry: 'CreaturePage',

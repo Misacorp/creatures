@@ -255,6 +255,39 @@ describe('the creature list in choose mode and with its optional parts', () => {
     expect(byClass(page.root, 'ro-tags')).toHaveLength(0);
     expect(byClass(page.root, 'ro-detail')).toHaveLength(0);
   });
+
+  it('folds extra rows behind a FoldRow in the same radio group, listed only when open', () => {
+    const onToggle = vi.fn();
+    const draw = (open: boolean): void => {
+      page?.unmount();
+      page = createPage();
+      page.draw(
+        <CreatureList
+          options={[option('a')]}
+          selection={{ mode: 'choose', name: 'who', value: null, onChange: vi.fn(), legend: 'Who' }}
+          fold={{
+            options: [option('low', { disabled: 'Needs level 3' })],
+            label: '1 more creature needs level 3',
+            open,
+            onToggle,
+            id: 'who-folded',
+          }}
+        />,
+      );
+    };
+    draw(false);
+    expect(radiosOf(page?.root as FakeElement)).toHaveLength(1);
+    const fold = first(find(page?.root as FakeElement, (e) => e.localName === 'button'));
+    expect(fold.getAttribute('aria-expanded')).toBe('false');
+    expect(fold.getAttribute('aria-controls')).toBe('who-folded');
+    page?.event(fold, 'click');
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    draw(true);
+    const radios = radiosOf(page?.root as FakeElement);
+    expect(radios.map((r) => r.getAttribute('name'))).toEqual(['who', 'who']);
+    expect(radios.map((r) => r.hasAttribute('disabled'))).toEqual([false, true]);
+    expect(find(page?.root as FakeElement, (e) => e.localName === 'fieldset')).toHaveLength(1);
+  });
 });
 
 describe('the creature sheet that opens from a page', () => {

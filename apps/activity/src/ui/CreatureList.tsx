@@ -7,6 +7,7 @@ import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { gearName, rarityName } from '../gear-view';
 import { getSpecies } from '../game';
 import { ItemThumb } from '../GearArt';
+import { FoldRow } from './FoldRow';
 import { Tag } from './Tag';
 import { XpTrack } from './XpTrack';
 
@@ -56,6 +57,20 @@ export interface CreatureListProps<T extends PickerOption = PickerOption> {
   class?: string;
   /** Extra classes of the fieldset in `choose` mode. */
   fieldClass?: string;
+  /**
+   * Rows folded behind a quiet `FoldRow` after the list (`choose` mode only; the job wizards fold the creatures
+   * under the level). They are the same radio group in the same fieldset: when open they are listed greyed, like
+   * any row that cannot be chosen.
+   */
+  fold?: {
+    options: readonly T[];
+    /** The fold's label ("4 more creatures need Crafting level 3"). */
+    label: ComponentChildren;
+    open: boolean;
+    onToggle: () => void;
+    /** The id of the folded rows (for `aria-controls`); unique on the page. */
+    id: string;
+  };
 }
 
 /**
@@ -189,30 +204,42 @@ type Chosen = Extract<Selection, { mode: 'choose' }>;
 type Picking = Extract<Selection, { mode: 'pick' }>;
 
 function ChooseList<T extends PickerOption>(props: CreatureListProps<T> & { selection: Chosen }) {
-  const { selection } = props;
+  const { selection, fold } = props;
+  const rows = (options: readonly T[]) =>
+    options.map((o) => {
+      const selected = selection.value === o.id;
+      return (
+        <label key={o.id} class={rowClass(o, selected)}>
+          <input
+            type="radio"
+            name={selection.name}
+            value={o.id}
+            checked={selected}
+            disabled={o.disabled !== null}
+            onChange={() => {
+              selection.onChange(o.id);
+            }}
+          />
+          <RowContent o={o} props={props} />
+        </label>
+      );
+    });
   return (
     <fieldset class={`picker${props.fieldClass === undefined ? '' : ` ${props.fieldClass}`}`}>
       <legend>{selection.legend}</legend>
-      <div class={listClass(props)}>
-        {props.options.map((o) => {
-          const selected = selection.value === o.id;
-          return (
-            <label key={o.id} class={rowClass(o, selected)}>
-              <input
-                type="radio"
-                name={selection.name}
-                value={o.id}
-                checked={selected}
-                disabled={o.disabled !== null}
-                onChange={() => {
-                  selection.onChange(o.id);
-                }}
-              />
-              <RowContent o={o} props={props} />
-            </label>
-          );
-        })}
-      </div>
+      <div class={listClass(props)}>{rows(props.options)}</div>
+      {fold !== undefined && (
+        <>
+          <FoldRow open={fold.open} controls={fold.id} onToggle={fold.onToggle}>
+            {fold.label}
+          </FoldRow>
+          {fold.open && (
+            <div id={fold.id} class={listClass(props)}>
+              {rows(fold.options)}
+            </div>
+          )}
+        </>
+      )}
     </fieldset>
   );
 }

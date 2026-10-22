@@ -386,6 +386,8 @@ describe('the camp', () => {
     page?.click(button(root, /^Cindle/));
     expect(acts).toEqual([]);
     expect(visibleText(root)).toContain('Arrange your row');
+    // The next step opens with the focus on its Back, as every drill-in does.
+    expect((byName(root, 'button', /^‹ Back/)[0] as FakeElement).focused).toBeGreaterThan(0);
   });
 
   it('arranges the row after the swap, with the new creature in place and at full HP, and sends that order', () => {
