@@ -73,8 +73,9 @@ export function teamSample(): {
     skills: team.map((c, i) => ({
       creatureId: c.id,
       level: [4, 1, 7][i] ?? 1,
-      xp: [120, 30, 260][i] ?? 0,
-      nextLevelXp: [300, 100, 500][i] ?? null,
+      // Total XP and the next threshold, as the server sends them (RULES.gear.skill.xpForLevel).
+      xp: [520, 30, 1_900][i] ?? 0,
+      nextLevelXp: [700, 100, 2_500][i] ?? null,
     })),
   };
   const creatures = [...team, ...extra];

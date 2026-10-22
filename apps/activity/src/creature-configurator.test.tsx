@@ -107,9 +107,11 @@ describe('the creature configurator', () => {
 
   it('shows the explorer rank and the Crafting level as their own rows', () => {
     const { root } = drawConfigurator({ experience: true, explorer: true, crafting: true });
-    expect(tracks(root)).toEqual(['Lv 20', 'Rank 3', 'Lv 4']);
+    expect(tracks(root)).toEqual(['Lv 20', 'Rank 3', 'Craft 4']);
     expect(byClass(root, 'xp-kind-explorer')).toHaveLength(1);
     expect(byClass(root, 'xp-kind-crafting')).toHaveLength(1);
+    // The bar is the XP into level 4 (450 to 700), not the total of 520.
+    expect(visibleText(first(byClass(root, 'xp-kind-crafting')))).toContain('70 / 250');
   });
 
   it('opens the item picker from a gear slot and the Talent Book from a talent slot', () => {
