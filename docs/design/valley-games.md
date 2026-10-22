@@ -19,13 +19,13 @@ Every activity rewards sending your three best creatures (dungeon, raid, Worksho
 
 An event is **content** (`games-events.json`): an id, a name, a kind, a scene, the kind's numbers and a short line. The engine has a handful of **kinds**; each reads the same creature stats (HP, Attack, Speed and its dodge, crits, element, role, stage, gear chance and trigger lines) differently. Skins reuse a kind with other numbers and other art (a sauna and a cold plunge are one kind with the elements flipped).
 
-| Kind      | Shape                                                          | Reads                                                                                         |
-| --------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `endure`  | Everyone in one room, a rising heat; last one in wins          | HP, element vs the heat, Guards shelter neighbours, Supports fan them; reactions spill        |
-| `chase`   | Run ahead of a rolling threat over hops; distance wins         | Speed, dodge (hops), Sidestep; small creatures duck once                                      |
-| `feast`   | Rounds of random food; whoever lasts eats most                 | HP as tolerance, element, crits are a double gulp (more score, more heat)                    |
-| `swim`    | Laps of a lake with hazards picking swimmers                   | Speed, dodge, HP; Tide swims fast, Ember slow; Spark sparks its neighbours                     |
-| `shove`   | All on a shrinking floe, random shoves; last one on wins       | Attack (push), HP (grip), small creatures are slippery; Ember melts the ice near it            |
+| Kind     | Shape                                                    | Reads                                                                                  |
+| -------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `endure` | Everyone in one room, a rising heat; last one in wins    | HP, element vs the heat, Guards shelter neighbours, Supports fan them; reactions spill |
+| `chase`  | Run ahead of a rolling threat over hops; distance wins   | Speed, dodge (hops), Sidestep; small creatures duck once                               |
+| `feast`  | Rounds of random food; whoever lasts eats most           | HP as tolerance, element, crits are a double gulp (more score, more heat)              |
+| `swim`   | Laps of a lake with hazards picking swimmers             | Speed, dodge, HP; Tide swims fast, Ember slow; Spark sparks its neighbours             |
+| `shove`  | All on a shrinking floe, random shoves; last one on wins | Attack (push), HP (grip), small creatures are slippery; Ember melts the ice near it    |
 
 Team events are a kind with `team: 3`: a player sends up to three creatures as one team (Sauna Stack: stack Guards).
 
