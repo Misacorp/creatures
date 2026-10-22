@@ -49,3 +49,12 @@
     }
   }
 }
+
+/*
+  While a modal is up (a drawer, the roster sheet, How to play: anything with `aria-modal`), the page behind it
+  does not scroll and drops its scrollbar, so only the modal's own bar shows. The modal itself is fixed and
+  scrolls inside, so nothing in it moves.
+*/
+html:has([aria-modal='true']) {
+  overflow: hidden;
+}
