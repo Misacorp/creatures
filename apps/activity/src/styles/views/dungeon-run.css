@@ -442,3 +442,8 @@ button.descend-home {
 .event-treasure .reward-badges {
   justify-content: center;
 }
+
+/* A curse is a keepsake chip with the bad red at its end instead of the keepsakes' purple. */
+button.run-keepsake.run-curse {
+  box-shadow: inset calc(var(--px) * -1) 0 0 var(--bad);
+}

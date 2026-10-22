@@ -13,6 +13,7 @@ import type {
   DungeonStepLog,
   Element,
   DungeonRunGear,
+  RoomMark,
 } from './dungeon-types';
 import type { GearRarity } from './gear-types';
 import { sampleItem } from './creature-page/bag-sample';
@@ -139,6 +140,33 @@ export const SAMPLE_MAP: DungeonMapView = {
   ],
 };
 
+/** The badge the Sealed Vault puts on the fights it marked (what the server sends: `SEALED_MARK`). */
+export const VAULT_MARK: RoomMark = {
+  kind: 'sealed-vault',
+  text: 'x2',
+  label: 'Sealed Vault: epic fight, double rewards',
+};
+
+/** The room the sample vault stood in: it leads to f2l0 (an elite) and f2l1 (a fight), and both wear the mark. */
+export const VAULT_ROOM = 'f1l1';
+
+/**
+ * `SAMPLE_MAP` after a Sealed Vault broke in `f1l1`: the two rooms it leads to wear the "x2" mark, and their foes are
+ * shown with the epic fight's HP (a boost of 160% on the plain foe's HP, in place of an elite's 140%).
+ */
+export const SAMPLE_MAP_VAULT: DungeonMapView = {
+  ...SAMPLE_MAP,
+  nodes: SAMPLE_MAP.nodes.map((n) => {
+    if ((n.id !== 'f2l0' && n.id !== 'f2l1') || n.foe === undefined) return n;
+    const plain = n.foe.elite ? n.foe.hpMax / 1.4 : n.foe.hpMax;
+    return {
+      ...n,
+      foe: { ...n.foe, hpMax: Math.round(plain * 1.6), elite: true },
+      marks: [VAULT_MARK],
+    };
+  }),
+};
+
 /** An item a run's creature wears, with the game's own lines (fixture data). */
 export function runItem(
   baseId: string,
@@ -204,6 +232,8 @@ export const SAMPLE_STAGES = [
   'defeated',
   'detour-mystery',
   'detour-cache',
+  'vault-broken',
+  'vault-fought',
 ] as const;
 export type SampleStage = (typeof SAMPLE_STAGES)[number];
 
@@ -301,6 +331,24 @@ export function sampleState(stage: SampleStage): DungeonRunState | null {
         roomsCleared: 3,
         pack: { bait: 2, essence: 0, scrap: 1 },
       });
+    case 'vault-broken':
+      return state(['f0l1', VAULT_ROOM], ['f2l0', 'f2l1'], {
+        map: SAMPLE_MAP_VAULT,
+        roomsCleared: 1,
+        pack: { bait: 1, essence: 0, scrap: 0 },
+        history: vaultHistory(['f0l1', VAULT_ROOM], false),
+        lastEvent: {
+          name: 'Sealed Vault',
+          option: 'Break the seal',
+          outcome: 'The seal breaks. The next fight you enter is epic, with double rewards.',
+        },
+      });
+    case 'vault-fought':
+      return state(['f0l1', VAULT_ROOM, 'f2l1'], ['f3l1'], {
+        roomsCleared: 2,
+        pack: { bait: 3, essence: 0, scrap: 2 },
+        history: vaultHistory(['f0l1', VAULT_ROOM, 'f2l1'], true),
+      });
     case 'finished':
       return state(['f0l1', 'f1l2', 'f2l1', 'f3l1', 'f4l1', 'f5l1', 'f6l1'], [], {
         status: 'done',
@@ -309,6 +357,30 @@ export function sampleState(stage: SampleStage): DungeonRunState | null {
         pack: { bait: 6, essence: 1, scrap: 2 },
       });
   }
+}
+
+/** The history of a run that broke the sample vault, and (with `fought`) fought the marked room f2l1 as an epic fight with double loot. */
+function vaultHistory(path: readonly string[], fought: boolean): DungeonStepLog[] {
+  return sampleHistory(SAMPLE_MAP, path).map((entry) => {
+    if (entry.node === VAULT_ROOM && entry.result === 'event') {
+      return {
+        ...entry,
+        event: 'Sealed Vault',
+        option: 'Break the seal',
+        outcome: 'The seal breaks. The next fight you enter is epic, with double rewards.',
+        loot: { bait: 0, essence: 0, scrap: 0 },
+      };
+    }
+    if (fought && entry.node === 'f2l1' && entry.result === 'fight') {
+      return {
+        ...entry,
+        foeHpMax: 608,
+        loot: { bait: 2, essence: 0, scrap: 2 },
+        sealed: true as const,
+      };
+    }
+    return entry;
+  });
 }
 
 /**

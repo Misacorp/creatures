@@ -1,8 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DungeonMap } from './DungeonMap';
 import { PopoverHost } from './PopoverHost';
-import { SAMPLE_MAP, sampleHistory, sampleState } from './dungeon-map-sample';
-import { omitKey } from './dungeon-path-samples';
+import {
+  SAMPLE_MAP,
+  SAMPLE_MAP_VAULT,
+  VAULT_MARK,
+  sampleHistory,
+  sampleState,
+} from './dungeon-map-sample';
+import { SAMPLE_CURSE, omitKey } from './dungeon-path-samples';
 import { undercroftState, type UndercroftStage } from './dungeon-undercroft-sample';
 import type { DungeonRunState } from './dungeon-types';
 import {
@@ -614,5 +620,94 @@ describe('DungeonMap lost room', () => {
     expect(byClass(p.root, 'dmap-lost')).toHaveLength(0);
     // Every room but the one the run stands on (the boss) is ticked.
     expect(byClass(p.root, 'dmap-check')).toHaveLength(6);
+  });
+});
+
+describe('DungeonMap room marks', () => {
+  it('draws the badge text on a marked room and nowhere else, hidden from a screen reader', () => {
+    const p = draw(<DungeonMap map={SAMPLE_MAP_VAULT} state={stageRun('vault-broken')} />);
+    const badges = byClass(p.root, 'room-mark');
+    expect(badges).toHaveLength(2);
+    for (const badge of badges) {
+      expect(visibleText(badge)).toBe('x2');
+      expect(badge.getAttribute('class')).toContain('pix');
+    }
+    const marked = byClass(p.root, 'dmap-node').filter((n) => byClass(n, 'room-mark').length > 0);
+    expect(marked).toHaveLength(2);
+    expect(byClass(marked[0] as FakeElement, 'room-marks')[0]?.getAttribute('aria-hidden')).toBe(
+      'true',
+    );
+  });
+
+  it('says the mark in the room’s spoken label, and only for a marked room', () => {
+    const p = draw(<DungeonMap map={SAMPLE_MAP_VAULT} state={stageRun('vault-broken')} />);
+    // A marked room is told as the epic fight it will be, with the mark's own line after it.
+    const elite = first(byName(p.root, 'button', /^Fierce Moss Lurker \(epic fight\)/));
+    expect(elite.getAttribute('aria-label')).toContain(VAULT_MARK.label);
+    const fight = first(byName(p.root, 'button', /^Fierce Drift Wisp \(epic fight\)/));
+    expect(fight.getAttribute('aria-label')).toContain(VAULT_MARK.label);
+    const plain = first(byName(p.root, 'button', /^Fight: Ash Sprite/));
+    expect(plain.getAttribute('aria-label')).not.toContain('Sealed Vault');
+    const none = draw(<DungeonMap map={SAMPLE_MAP} state={stageRun('midway')} />);
+    expect(byClass(none.root, 'room-mark')).toHaveLength(0);
+  });
+
+  it('explains the badge in the room’s drawer, as an epic fight rather than an elite', () => {
+    const p = draw(
+      <DungeonMap map={SAMPLE_MAP_VAULT} state={stageRun('vault-broken')} onGo={vi.fn()} />,
+    );
+    p.click(first(byName(p.root, 'button', /^Fierce Moss Lurker/)));
+    const dialog = first(byRole(p.root, 'dialog'));
+    const text = visibleText(dialog);
+    expect(text).toContain('Epic fight');
+    expect(text).toContain('x2');
+    expect(text).toContain(VAULT_MARK.label);
+    expect(text).toContain('Epic');
+    expect(text).not.toContain('Elite');
+    expect(text).not.toContain('A fiercer fight.');
+    expect(byClass(dialog, 'dnd-mark')).toHaveLength(1);
+  });
+
+  it('lists both keepsakes of a marked elite in its drawer', () => {
+    const run = stageRun('vault-fought');
+    const history = (run.history ?? []).map((h) =>
+      h.node === 'f2l1' && h.result === 'fight'
+        ? {
+            ...h,
+            kind: 'elite' as const,
+            keepsake: { id: 'a', name: 'Lantern Moth', description: 'Your creatures crit more.' },
+            bonusKeepsake: { id: 'b', name: 'Tide Pearl', description: 'Tide hits harder.' },
+          }
+        : h,
+    );
+    const p = draw(<DungeonMap map={SAMPLE_MAP} state={{ ...run, history }} />);
+    p.click(first(byName(p.root, 'button', /^Fight: Drift Wisp/)));
+    const text = visibleText(first(byRole(p.root, 'dialog')));
+    expect(text).toContain('Lantern Moth');
+    expect(text).toContain('Tide Pearl');
+    expect(text).toContain('Tide hits harder.');
+  });
+
+  it('shows the curse a mystery room gave as a keepsake line with the curse chip', () => {
+    const path = ['f0l1', 'f1l1', 'f2l1', 'f3l1'];
+    const history = sampleHistory(SAMPLE_MAP, path).map((h) =>
+      h.result === 'event' ? { ...h, curse: SAMPLE_CURSE } : h,
+    );
+    const walked: DungeonRunState = { ...stageRun('past-camp'), path, history };
+    const p = draw(<DungeonMap map={SAMPLE_MAP} state={walked} />);
+    p.click(first(byName(p.root, 'button', /^Mystery room/)));
+    const dialog = first(byRole(p.root, 'dialog'));
+    const line = first(byClass(dialog, 'dnd-keepsake'));
+    expect(visibleText(line)).toContain(SAMPLE_CURSE.name);
+    expect(visibleText(line)).toContain(SAMPLE_CURSE.description);
+  });
+
+  it('says a fight the run fought as a sealed room was epic, from its log entry (the mark is gone)', () => {
+    const p = draw(<DungeonMap map={SAMPLE_MAP} state={stageRun('vault-fought')} />);
+    expect(byClass(p.root, 'room-mark')).toHaveLength(0);
+    p.click(first(byName(p.root, 'button', /^Fight: Drift Wisp/)));
+    const text = visibleText(first(byRole(p.root, 'dialog')));
+    expect(text).toContain(VAULT_MARK.label);
+    expect(text).toContain('Epic');
   });
 });

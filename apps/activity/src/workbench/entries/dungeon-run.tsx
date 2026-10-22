@@ -1,4 +1,5 @@
-import { dungeonEvents, dungeonKeepsakes, expToNext } from '@creatures/game';
+import { dungeonEvents, dungeonKeepsakes, eventHasTreasure, expToNext } from '@creatures/game';
+import { sampleState } from '../../dungeon-map-sample';
 import { DungeonCamp } from '../../DungeonCamp';
 import { DungeonDescend } from '../../DungeonDescend';
 import { DungeonEvent } from '../../DungeonEvent';
@@ -29,7 +30,16 @@ import {
   omitKey,
   SAMPLE_TREASURES,
   sampleChasmSummary,
+  sampleCurseSummary,
+  sampleDoorSummary,
+  SAMPLE_CURSE,
+  SAMPLE_DOOR_TREASURES,
+  sampleStateCursed,
+  sampleStateDoor,
+  doorEvent,
   sampleStateChasm,
+  sampleStateVault,
+  sampleVaultSummary,
 } from '../../dungeon-path-samples';
 import {
   undercroftLostSummary,
@@ -55,6 +65,11 @@ const TREASURE_OPTIONS = [
   'shards and glimmer',
 ] as const;
 const TREASURE_KEYS = ['gear', 'blueprint', 'supplies', 'shards'] as const;
+const DOOR_TREASURE_OPTIONS = [
+  TREASURE_OPTIONS[0],
+  TREASURE_OPTIONS[2],
+  TREASURE_OPTIONS[3],
+] as const;
 const OUTCOMES = [
   'cleared',
   'home',
@@ -66,6 +81,9 @@ const OUTCOMES = [
   'Blue Chasm: crossed, home with the treasure',
   'Blue Chasm: crossed, then lost the run',
   'Blue Chasm: the plank gave way',
+  'Sealed Vault: a marked fight, cleared',
+  'Hungry Door: fed it, home with the treasure',
+  'Cursed Idol: took it, the curse among the keepsakes',
 ] as const;
 
 /** The summary of a run's end as a real server answered it (`fixtures/dungeon-act-*.json`). */
@@ -89,6 +107,8 @@ function stripState(p: Props): DungeonRunState {
   const keepsakes = dungeonKeepsakes
     .slice(0, num(p, 'keepsakes'))
     .map((k) => ({ id: k.id, name: k.name, description: k.description }));
+  // A curse is listed with the keepsakes, marked as one.
+  if (bool(p, 'curse')) keepsakes.push(SAMPLE_CURSE);
   const at = str(p, 'at');
   return {
     ...sampleStateCamp(),
@@ -113,7 +133,7 @@ const dungeonRunStrip: Entry = {
   file: 'apps/activity/src/DungeonRunStrip.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The strip at the top of an open dungeon run (above the map, a mystery room and the camp): where the run is, the row with an HP bar and the HP in words under each creature (a knocked-out one is grey with the skull), then what the run carries on two ink panels (side by side when they fit, stacked on a phone): the Pack (a pixel backpack, a leather canvas with the title, its "?" and the loot as icons with numbers) and the Keepsakes (a gold locket, a velvet canvas with the title, its "?" and the chips you can tap), and the line about what the last mystery room did.',
+    'The strip at the top of an open dungeon run (above the map, a mystery room and the camp): where the run is, the row with an HP bar and the HP in words under each creature (a knocked-out one is grey with the skull), then what the run carries on two ink panels (side by side when they fit, stacked on a phone): the Pack (a pixel backpack, a leather canvas with the title, its "?" and the loot as icons with numbers) and the Keepsakes (a gold locket, a velvet canvas with the title, its "?" and the chips you can tap; a curse is one of them, with a cracked skull and a red edge, and opens the same sheet), and the line about what the last mystery room did.',
   controls: {
     at: { kind: 'select', options: ['entrance', 'mid-run', 'camp'] },
     hp: {
@@ -126,6 +146,7 @@ const dungeonRunStrip: Entry = {
     scrap: { kind: 'number', min: 0, max: 20 },
     lastEvent: { kind: 'toggle' },
     landmark: { kind: 'toggle' },
+    curse: { kind: 'toggle' },
   },
   defaults: {
     at: 'mid-run',
@@ -136,6 +157,7 @@ const dungeonRunStrip: Entry = {
     scrap: 1,
     lastEvent: true,
     landmark: false,
+    curse: false,
   },
   presets: [
     {
@@ -162,6 +184,10 @@ const dungeonRunStrip: Entry = {
       props: { at: 'camp', hp: 'two knocked out', lastEvent: false },
     },
     { name: 'A landmark depth', props: { landmark: true } },
+    {
+      name: 'A curse carried (the Cursed Idol): a chip in the keepsakes, tap for its effect',
+      props: { curse: true, keepsakes: 2 },
+    },
   ],
   render: (p) => <DungeonRunStrip state={stripState(p)} />,
 };
@@ -175,9 +201,15 @@ const dungeonEvent: Entry = {
   controls: {
     event: { kind: 'select', options: EVENT_IDS },
     treasure: { kind: 'select', options: TREASURE_OPTIONS },
+    oneStanding: { kind: 'toggle' },
     busy: { kind: 'toggle' },
   },
-  defaults: { event: EVENT_IDS[0] ?? '', treasure: TREASURE_OPTIONS[0], busy: false },
+  defaults: {
+    event: EVENT_IDS[0] ?? '',
+    treasure: TREASURE_OPTIONS[0],
+    oneStanding: false,
+    busy: false,
+  },
   presets: [
     ...dungeonEvents
       .filter((e) => e.rare === undefined)
@@ -187,6 +219,18 @@ const dungeonEvent: Entry = {
       name: `Blue Chasm: ${t}`,
       props: { event: 'blue-chasm', treasure: t },
     })),
+    { name: 'Sealed Vault', props: { event: 'sealed-vault' } },
+    { name: 'Training Post', props: { event: 'training-post' } },
+    { name: 'Crystal Hollow', props: { event: 'crystal-hollow' } },
+    { name: 'Cursed Idol', props: { event: 'cursed-idol' } },
+    ...DOOR_TREASURE_OPTIONS.map((t) => ({
+      name: `Hungry Door: ${t}`,
+      props: { event: 'hungry-door', treasure: t },
+    })),
+    {
+      name: 'Hungry Door with one creature standing (Feed it is off, with the reason)',
+      props: { event: 'hungry-door', oneStanding: true },
+    },
     { name: 'A step is on its way', props: { busy: true } },
   ],
   render: (p) => {
@@ -194,6 +238,20 @@ const dungeonEvent: Entry = {
     if (found === undefined) return <p class="muted">The content has no events.</p>;
     // The rare room rolls a prize when it opens: the page picks which of the four kinds it shows.
     const kind = TREASURE_KEYS[Math.max(0, TREASURE_OPTIONS.indexOf(str(p, 'treasure') as never))];
+    // The door's prize is one tier down and never a blueprint: a blueprint pick shows its gear piece.
+    if (found.id === 'hungry-door') {
+      const doorKind = kind === 'supplies' || kind === 'shards' ? kind : 'gear';
+      return (
+        <DungeonEvent
+          event={doorEvent(
+            SAMPLE_DOOR_TREASURES[doorKind],
+            bool(p, 'oneStanding') ? 'Needs two creatures standing.' : undefined,
+          )}
+          busy={bool(p, 'busy')}
+          onPick={() => undefined}
+        />
+      );
+    }
     return (
       <DungeonEvent
         event={{
@@ -201,7 +259,7 @@ const dungeonEvent: Entry = {
           name: found.name,
           text: found.text,
           options: found.options.map((o) => ({ label: o.label, description: o.description })),
-          ...(found.rare === undefined || kind === undefined
+          ...(!eventHasTreasure(found) || kind === undefined
             ? {}
             : { treasure: SAMPLE_TREASURES[kind] }),
         }}
@@ -472,9 +530,15 @@ function ResultsDemo({ p }: { p: Props }) {
             ? sampleChasmSummary('lost')
             : outcome === OUTCOMES[9]
               ? sampleChasmSummary('fell')
-              : bool(p, 'capture')
-                ? captured(kind)
-                : sampleSummary(kind);
+              : outcome === OUTCOMES[10]
+                ? sampleVaultSummary()
+                : outcome === OUTCOMES[11]
+                  ? sampleDoorSummary()
+                  : outcome === OUTCOMES[12]
+                    ? sampleCurseSummary()
+                    : bool(p, 'capture')
+                      ? captured(kind)
+                      : sampleSummary(kind);
   // A run lost in its first room paid nothing and kept an empty pack.
   const base: typeof sample = noRewards
     ? {
@@ -594,6 +658,18 @@ const dungeonResults: Entry = {
     { name: 'Blue Chasm: home with the treasure', props: { outcome: OUTCOMES[7] } },
     { name: 'Blue Chasm: the treasure was lost', props: { outcome: OUTCOMES[8] } },
     { name: 'Blue Chasm: the plank gave way', props: { outcome: OUTCOMES[9] } },
+    {
+      name: 'Sealed Vault: the end after a marked (epic, double) fight',
+      props: { outcome: OUTCOMES[10] },
+    },
+    {
+      name: 'Hungry Door: fed it, the creature went home and the treasure came back',
+      props: { outcome: OUTCOMES[11], experience: 'a creature sent home at the camp' },
+    },
+    {
+      name: 'Cursed Idol: the curse listed with the keepsakes',
+      props: { outcome: OUTCOMES[12] },
+    },
     { name: 'Home safe, the rooms', props: { outcome: 'home', view: 'rooms' } },
     {
       name: 'Defeated, the rooms (the last one Defeated)',
@@ -656,6 +732,10 @@ const SCENES = {
   'after the first fight': () => parseDungeonAct(actFight).state,
   'a mystery room': () => parseDungeonAct(actEventPending).state,
   'the Blue Chasm (a rare mystery room)': () => sampleStateChasm(SAMPLE_TREASURES.blueprint),
+  'the Sealed Vault (a rare mystery room)': () => sampleStateVault(),
+  'after the vault: the next fights wear x2': () => sampleState('vault-broken') as DungeonRunState,
+  'the Hungry Door (a rare mystery room)': () => sampleStateDoor(),
+  'a run carrying the Cursed Idol curse': () => sampleStateCursed(),
   'after the mystery room': () => parseDungeonAct(actEvent).state,
   'at the camp': () => parseDungeonAct(actCampPending).state,
   'after the camp (swapped)': () => parseDungeonAct(actCamp).state,
@@ -728,6 +808,14 @@ const dungeonRun: Entry = {
     { name: 'After the first fight', props: {} },
     { name: 'A mystery room', props: { scene: 'a mystery room' } },
     { name: 'After the mystery room', props: { scene: 'after the mystery room' } },
+    {
+      name: 'The Sealed Vault (a rare mystery room)',
+      props: { scene: 'the Sealed Vault (a rare mystery room)' },
+    },
+    {
+      name: 'After breaking the vault: the next fights wear an "x2" badge',
+      props: { scene: 'after the vault: the next fights wear x2' },
+    },
     { name: 'At the camp', props: { scene: 'at the camp' } },
     {
       name: 'After the camp (a creature swapped in)',

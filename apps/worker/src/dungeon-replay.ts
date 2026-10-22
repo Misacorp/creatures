@@ -9,7 +9,7 @@ import {
   type DungeonRoomResult,
   type DungeonRunInput,
 } from '@creatures/engine';
-import { PLAYER, keepsakeViews, parseState } from './dungeon-state';
+import { PLAYER, keepsakeViewOf, parseState } from './dungeon-state';
 import type { DungeonReplayRoom, DungeonReplayView, DungeonRunSummary } from './dungeon-types';
 import {
   type DungeonDeps,
@@ -56,7 +56,7 @@ export function replayRoom(
     ...(node === null ? {} : { node, row: rowOf(input.team) }),
     ...(spec.keepsakes === undefined || spec.keepsakes.length === 0
       ? {}
-      : { keepsakes: keepsakeViews(spec.keepsakes.map((k) => k.id)) }),
+      : { keepsakes: spec.keepsakes.map(keepsakeViewOf) }),
     foe: {
       id: spec.foe.id,
       name: spec.foe.name,

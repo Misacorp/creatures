@@ -22,8 +22,14 @@ import {
 } from './dungeon-parse';
 import {
   SAMPLE_EVENT,
+  SAMPLE_CURSE,
+  SAMPLE_DOOR_TREASURES,
   SAMPLE_TREASURES,
   chasmEvent,
+  doorEvent,
+  sampleDoorSummary,
+  sampleStateCursed,
+  sampleStateDoor,
   sampleChasmSummary,
   sampleStateChasm,
   sampleActFight,
@@ -186,6 +192,58 @@ describe('the map and the open run in today', () => {
     expect(() =>
       parseDungeonToday({ ...sampleToday(), map: { floors: 7, nodes: [node] } }),
     ).toThrow();
+  });
+});
+
+describe('room marks', () => {
+  const nodes = sampleMap().nodes;
+  const mark = {
+    kind: 'sealed-vault',
+    text: 'x2',
+    label: 'Sealed Vault: epic fight, double rewards',
+  };
+  const withMarks = (marks: unknown) =>
+    parseDungeonToday({
+      ...sampleToday(),
+      map: { floors: 7, nodes: [{ ...nodes[0], marks }] },
+    });
+
+  it('keeps the marks of a room, and a room without them has none', () => {
+    expect(withMarks([mark]).map?.nodes[0]?.marks).toEqual([mark]);
+    expect(withMarks([]).map?.nodes[0]?.marks).toEqual([]);
+    expect(parseDungeonToday(sampleToday()).map?.nodes[0]?.marks).toBeUndefined();
+  });
+
+  it('refuses a mark that is not a kind, a short text and a label', () => {
+    for (const bad of [
+      'x2',
+      [{ ...mark, text: '' }],
+      [{ ...mark, text: 'far too long' }],
+      [{ ...mark, label: '' }],
+      [{ ...mark, kind: 1 }],
+      [{ text: 'x2', label: 'no kind' }],
+    ]) {
+      expect(() => withMarks(bad), JSON.stringify(bad)).toThrow();
+    }
+  });
+
+  it('keeps the flag of a fight that was fought as a sealed room, and refuses a false one', () => {
+    const state = sampleStateMid();
+    const entry = {
+      node: 'f0l1',
+      kind: 'fight',
+      result: 'fight',
+      cleared: true,
+      rounds: 3,
+      foeHpEnd: 0,
+      foeHpMax: 40,
+      loot: { bait: 2, essence: 0, scrap: 2 },
+    };
+    const parse = (extra: Record<string, unknown>) =>
+      parseDungeonAct({ state: { ...state, history: [{ ...entry, ...extra }] } });
+    expect(parse({ sealed: true }).state.history?.[0]).toMatchObject({ sealed: true });
+    expect(() => parse({ sealed: 'yes' })).toThrow();
+    expect(() => parse({ sealed: false })).toThrow();
   });
 });
 
@@ -908,5 +966,98 @@ describe('the Blue Chasm in the answers', () => {
     expect(() =>
       parseDungeonAct({ state: sampleState(), summary: broken, today: sampleToday() }),
     ).toThrow();
+  });
+});
+
+describe('the Cursed Idol and the Hungry Door in the answers', () => {
+  const parse = (state: unknown) => parseDungeonAct({ state, today: sampleToday() }).state;
+
+  it('reads a curse as a keepsake with `curse: true`, and refuses a broken mark', () => {
+    expect(parse(sampleStateCursed()).keepsakes.at(-1)).toEqual(SAMPLE_CURSE);
+    expect(parse(sampleState()).keepsakes).toEqual([]);
+    expect(() =>
+      parse({ ...sampleStateCursed(), keepsakes: [{ ...SAMPLE_CURSE, curse: false }] }),
+    ).toThrow();
+    expect(() =>
+      parse({ ...sampleStateCursed(), keepsakes: [{ ...SAMPLE_CURSE, curse: 'yes' }] }),
+    ).toThrow();
+  });
+
+  it('reads the second keepsake of a marked elite on a fight step, and refuses a broken one', () => {
+    const run = sampleSummary('home');
+    const history = (run.route?.history ?? []).map((h) =>
+      h.result === 'fight' ? { ...h, keepsake: SAMPLE_CURSE, bonusKeepsake: SAMPLE_CURSE } : h,
+    );
+    const ok = parseDungeonAct({
+      state: sampleState(),
+      summary: { ...run, route: { ...run.route, history } },
+      today: sampleToday(),
+    }).summary;
+    const step = ok?.route?.history.find((h) => h.result === 'fight');
+    expect(step?.result === 'fight' ? step.bonusKeepsake : null).toEqual(SAMPLE_CURSE);
+    const broken = (run.route?.history ?? []).map((h) =>
+      h.result === 'fight' ? { ...h, bonusKeepsake: { id: 1 } } : h,
+    );
+    expect(() =>
+      parseDungeonAct({
+        state: sampleState(),
+        summary: { ...run, route: { ...run.route, history: broken } },
+        today: sampleToday(),
+      }),
+    ).toThrow();
+  });
+
+  it('reads the door with each treasure kind, and an option that cannot be picked with its reason', () => {
+    for (const treasure of Object.values(SAMPLE_DOOR_TREASURES)) {
+      const pending = parse(sampleStateDoor(treasure)).pending;
+      expect(pending?.kind === 'event' ? pending.event.treasure : null).toEqual(treasure);
+    }
+    const blocked = parse(
+      sampleStateDoor(SAMPLE_DOOR_TREASURES.gear, 'Needs two creatures standing.'),
+    ).pending;
+    expect(blocked?.kind === 'event' ? blocked.event.options[0]?.blocked : null).toBe(
+      'Needs two creatures standing.',
+    );
+    expect(() =>
+      parse({
+        ...sampleStateDoor(),
+        pending: {
+          kind: 'event',
+          event: {
+            ...doorEvent(),
+            options: [{ label: 'Feed it', description: 'x', blocked: 5 }, doorEvent().options[1]],
+          },
+        },
+      }),
+    ).toThrow();
+  });
+
+  it('reads the step of a fed door (the creature sent home) and of a taken curse', () => {
+    const run = sampleDoorSummary();
+    const parsed = parseDungeonAct({
+      state: sampleState(),
+      summary: run,
+      today: sampleToday(),
+    }).summary;
+    const step = parsed?.route?.history.find(
+      (h) => h.result === 'event' && h.sentHome !== undefined,
+    );
+    expect(step).toMatchObject({ option: 'Feed it', sentHome: 'Pip', treasure: { kind: 'gear' } });
+    const history = (run.route?.history ?? []).map((h) =>
+      h.result === 'event' ? { ...h, curse: SAMPLE_CURSE } : h,
+    );
+    const withCurse = {
+      ...run,
+      keepsakes: [...(run.keepsakes ?? []), SAMPLE_CURSE],
+      route: { ...run.route, history },
+    };
+    const read = parseDungeonAct({
+      state: sampleState(),
+      summary: withCurse,
+      today: sampleToday(),
+    }).summary;
+    expect(read?.keepsakes?.at(-1)).toEqual(SAMPLE_CURSE);
+    const cursed = read?.route?.history.find((h) => h.result === 'event' && h.curse !== undefined);
+    expect(cursed?.result === 'event' ? cursed.curse : null).toEqual(SAMPLE_CURSE);
   });
 });

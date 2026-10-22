@@ -65,6 +65,17 @@ export interface DungeonToday {
   active?: DungeonRunState | null;
 }
 
+/**
+ * A small badge a room of the map wears (the Sealed Vault's "x2"): `text` is the short glyph or word drawn on
+ * the badge, `label` the spoken line that also explains it in the room's drawer. Server text, drawn as text.
+ */
+export interface RoomMark {
+  /** What put it there (`sealed-vault`). */
+  kind: string;
+  text: string;
+  label: string;
+}
+
 /** What a room on the map is. */
 export type DungeonNodeKind =
   'fight' | 'elite' | 'mystery' | 'cache' | 'camp' | 'boss' | 'door' | 'epic';
@@ -96,6 +107,8 @@ export interface DungeonMapNode {
   modifier?: { id: string; name: string; description: string };
   /** A mystery room: its name only; the scene and the options show once the run steps in. */
   event?: { id: string; name: string };
+  /** Badges the room wears (absent when none): a broken Sealed Vault's "x2" on the fights it marked. */
+  marks?: RoomMark[];
 }
 
 export interface DungeonMapView {
@@ -153,6 +166,8 @@ export interface DungeonKeepsakeView {
   id: string;
   name: string;
   description: string;
+  /** Present (true) for a curse: a keepsake whose effect is a cost. It is listed with the keepsakes. */
+  curse?: true;
 }
 
 /**
@@ -177,7 +192,8 @@ export interface DungeonEventView {
   id: string;
   name: string;
   text: string;
-  options: { label: string; description: string }[];
+  /** `blocked`: why the option cannot be picked right now (absent when it can). */
+  options: { label: string; description: string; blocked?: string }[];
   /** The prize of a rare room (the Blue Chasm), rolled when the room opened. Absent in a room with none. */
   treasure?: DungeonTreasureView;
 }
@@ -271,8 +287,12 @@ export type DungeonStepLog =
       loot: DungeonPack;
       /** An elite's or an epic fight's keepsake. */
       keepsake?: DungeonKeepsakeView;
+      /** The second keepsake of a marked elite (Sealed Vault: double rewards). */
+      bonusKeepsake?: DungeonKeepsakeView;
       /** This fight earned the run's supply (the first fight cleared). */
       supply?: boolean;
+      /** The room was marked by a broken Sealed Vault: it was an epic fight and paid double. */
+      sealed?: true;
     }
   | { node: string; kind: 'cache'; result: 'cache'; loot: DungeonPack }
   | {
@@ -285,6 +305,10 @@ export type DungeonStepLog =
       outcome: string;
       loot: DungeonPack;
       keepsake?: DungeonKeepsakeView;
+      /** A curse the option put on the run. */
+      curse?: DungeonKeepsakeView;
+      /** The name of the creature the option sent home (the player's own text). */
+      sentHome?: string;
       /** The treasure the option took (paid at the run's end unless the run ended in a defeat). */
       treasure?: DungeonTreasureView;
       /** The option was a fall: the whole team fell and the run ended. */

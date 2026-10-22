@@ -9,6 +9,7 @@
  * of one kind, or a stack of shards of the team's elements with some glimmer. (A creature of a species the
  * player lacks is a planned fifth kind: granting a creature from a run is its own change.)
  */
+import { TREASURE_TABLES, type TreasureTableName } from '../content/dungeon-schema';
 import { SUPPLY_KINDS } from '../content/expedition-schema';
 import { baseMinLevel } from '../content/gear';
 import type { GearBase } from '../content/gear-schema';
@@ -24,6 +25,21 @@ import {
   type GearItem,
   type PartsBundle,
 } from './gear';
+
+/** A treasure table in `RULES.dungeon` (`treasure` for the Blue Chasm, `doorTreasure` for the Hungry Door). */
+export interface TreasureTable {
+  readonly gearRarity: 'common' | 'rare' | 'epic';
+  readonly supplies: { readonly tier: string; readonly count: number };
+  readonly shards: number;
+  readonly glimmer: number;
+  /** Whether a blueprint the player lacks can be drawn. */
+  readonly blueprints: boolean;
+}
+
+/** The table a name stands for. */
+export function treasureTable(name: TreasureTableName = TREASURE_TABLES[0]): TreasureTable {
+  return name === 'door' ? RULES.dungeon.doorTreasure : RULES.dungeon.treasure;
+}
 
 export const TREASURE_KINDS = ['gear', 'blueprint', 'supplies', 'shards'] as const;
 export type TreasureKind = (typeof TREASURE_KINDS)[number];
@@ -67,8 +83,11 @@ export function treasureBlueprintBases(known: ReadonlySet<string>): GearBase[] {
 }
 
 /** The kinds that can be drawn for this player: all of them, but a blueprint only when they lack one. */
-export function treasureKinds(ctx: TreasureContext): TreasureKind[] {
-  const blueprint = treasureBlueprintBases(ctx.knownBlueprints).length > 0;
+export function treasureKinds(
+  ctx: TreasureContext,
+  table: TreasureTable = RULES.dungeon.treasure,
+): TreasureKind[] {
+  const blueprint = table.blueprints && treasureBlueprintBases(ctx.knownBlueprints).length > 0;
   return TREASURE_KINDS.filter((k) => k !== 'blueprint' || blueprint);
 }
 
@@ -77,9 +96,12 @@ export function treasureKinds(ctx: TreasureContext): TreasureKind[] {
  * kind's own dice (gear: the team element it is tagged with, then the piece's base and lines; blueprint:
  * the base; supplies: the kind). Shards need no dice: one for each creature, by its element.
  */
-export function rollTreasure(rng: Rng, ctx: TreasureContext): Treasure {
-  const t = RULES.dungeon.treasure;
-  const kinds = treasureKinds(ctx);
+export function rollTreasure(
+  rng: Rng,
+  ctx: TreasureContext,
+  t: TreasureTable = RULES.dungeon.treasure,
+): Treasure {
+  const kinds = treasureKinds(ctx, t);
   const kind = kinds[int(rng, kinds.length)] ?? 'shards';
   const elements: readonly Element[] = ctx.elements.length > 0 ? ctx.elements : ['tide'];
   switch (kind) {

@@ -76,6 +76,7 @@
 @import './views/dungeon-results.css';
 @import './views/dungeon-run.css';
 @import './views/dungeon-map.css';
+@import './components/room-mark.css';
 @import './stage/unit-hp.css';
 @import './components/creature-pop.css';
 @import './stage/single-row.css';

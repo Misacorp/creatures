@@ -2,7 +2,14 @@ import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { creatureInfoOf, type CreatureInfo } from './creature-info';
 import { packItems, tileLabel, tileState } from './dungeon-run';
-import { lastEventText, packLine, runHpText, runStatusLine } from './dungeon-text';
+import {
+  keepsakeGlyph,
+  keepsakeLabel,
+  lastEventText,
+  packLine,
+  runHpText,
+  runStatusLine,
+} from './dungeon-text';
 import type {
   DungeonKeepsakeView,
   DungeonPack,
@@ -172,13 +179,13 @@ export function RunKeepsakes({ keepsakes }: { keepsakes: readonly DungeonKeepsak
             <li key={k.id}>
               <button
                 type="button"
-                class="chip run-keepsake"
-                aria-label={`${k.name}: ${k.description}`}
+                class={k.curse === true ? 'chip run-keepsake run-curse' : 'chip run-keepsake'}
+                aria-label={keepsakeLabel(k)}
                 onClick={() => {
                   setShown(k);
                 }}
               >
-                <Sprite sprite={glyphOrUnknown('sparkle')} scale={2} />
+                <Sprite sprite={glyphOrUnknown(keepsakeGlyph(k))} scale={2} />
                 <span>{k.name}</span>
               </button>
             </li>

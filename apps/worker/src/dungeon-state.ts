@@ -29,11 +29,15 @@ import {
   type DungeonMap,
   type DungeonRunPack,
   type Treasure,
+  type RoomMark,
+  SEALED_MARK,
   type Element,
   type Role,
   type FoldKit,
   type GearItem,
+  type CurseDef,
   type KeepsakeDef,
+  eventOptionBlock,
   type WeatherDay,
 } from '@creatures/game';
 import {
@@ -189,6 +193,15 @@ export interface RunState {
   treasures: Treasure[];
   /** The ids of the rare events the run met (one at most each run, taken or not). Absent before the chasm: none. */
   rareSeen: string[];
+  /**
+   * The rooms a broken Sealed Vault marked (node ids of the map the run stands in): the first one the run
+   * enters is fought as an epic fight with double rewards, and then all of them are cleared. Absent before the vault: none.
+   */
+  sealed: string[];
+  /** The marked fights the run cleared: each adds a gear roll and a supply to the end grant (`rollSealedBonus`). Absent before: 0. */
+  sealedWins: number;
+  /** The curses the run carries (the Cursed Idol's): folded into every later fight like a keepsake. Absent before them: none. */
+  curses: CurseDef[];
 }
 
 /** Reads a stored state, or null when it is missing or is not a state this code wrote. */
@@ -211,6 +224,11 @@ export function parseState(json: string | null): RunState | null {
     // A state stored before the Blue Chasm took no treasure and met no rare room.
     parsed.treasures ??= [];
     parsed.rareSeen ??= [];
+    // A state stored before the Sealed Vault marked no rooms.
+    parsed.sealed ??= [];
+    parsed.sealedWins ??= 0;
+    // A state stored before the Cursed Idol carries no curse.
+    parsed.curses ??= [];
     // A state stored before experience was paid per room counted the fights each creature cleared.
     if (parsed.earned === undefined || parsed.earned === null) {
       const old = (parsed as { tally?: Record<string, number> }).tally;
@@ -261,6 +279,21 @@ export function neutralRoom(keepsakes: readonly KeepsakeDef[]): DungeonRoomSpec 
   };
 }
 
+/** What a fight folds in besides the row: the keepsakes the run holds, then its curses (both are the room's number folds). */
+export function heldFolds(st: Pick<RunState, 'keepsakes' | 'curses'>): KeepsakeDef[] {
+  return [...heldKeepsakes(st.keepsakes), ...st.curses];
+}
+
+/** A curse as the client is shown it: a keepsake view marked `curse: true`. */
+export function curseViews(curses: readonly CurseDef[]): DungeonKeepsakeView[] {
+  return curses.map(keepsakeViewOf);
+}
+
+/** What the run holds, as the keepsakes list shows it: the keepsakes in the order won, then the curses. */
+export function heldViews(st: Pick<RunState, 'keepsakes' | 'curses'>): DungeonKeepsakeView[] {
+  return [...keepsakeViews(st.keepsakes), ...curseViews(st.curses)];
+}
+
 /** The row's max HP outside a fight, from its stats and the keepsakes held. */
 export function maxHpOfRow(
   input: DungeonRunInput,
@@ -286,6 +319,11 @@ export function runNode(
   return undefined;
 }
 
+/** The badges the run's rooms wear, for the map view: a room the Sealed Vault marked wears its "x2". */
+export function runMarks(st: Pick<RunState, 'sealed'>): (nodeId: string) => readonly RoomMark[] {
+  return (nodeId) => (st.sealed.includes(nodeId) ? [SEALED_MARK] : []);
+}
+
 /** The HP of every creature of the row now: what it carries, or its max when it has not fought yet. */
 export function currentHp(st: RunState): Record<string, number> {
   const out: Record<string, number> = {};
@@ -296,9 +334,19 @@ export function currentHp(st: RunState): Record<string, number> {
   return out;
 }
 
+/** A keepsake (or curse) def as the client is shown it. */
+export function keepsakeViewOf(def: KeepsakeDef): DungeonKeepsakeView {
+  return {
+    id: def.id,
+    name: def.name,
+    description: def.description,
+    ...(def.curse === true ? { curse: true as const } : {}),
+  };
+}
+
 export function keepsakeView(id: string): DungeonKeepsakeView | null {
   const def = dungeonKeepsake(id);
-  return def === undefined ? null : { id: def.id, name: def.name, description: def.description };
+  return def === undefined ? null : keepsakeViewOf(def);
 }
 
 export function keepsakeViews(ids: readonly string[]): DungeonKeepsakeView[] {
@@ -337,6 +385,7 @@ export function eventView(
   eventId: string,
   treasure?: Treasure,
   depth?: number,
+  hp?: Readonly<Record<string, number>>,
 ): DungeonEventView | null {
   const def = dungeonEvent(eventId);
   if (def === undefined) return null;
@@ -344,7 +393,15 @@ export function eventView(
     id: def.id,
     name: def.name,
     text: def.text,
-    options: def.options.map((o) => ({ label: o.label, description: o.description })),
+    options: def.options.map((o) => {
+      // An option that cannot be picked now (feeding the door needs two standing) says why.
+      const blocked = hp === undefined ? null : eventOptionBlock(o, { hp });
+      return {
+        label: o.label,
+        description: o.description,
+        ...(blocked === null ? {} : { blocked }),
+      };
+    }),
     ...(treasure === undefined ? {} : { treasure: treasureView(treasure, depth) }),
   };
 }
@@ -386,7 +443,7 @@ function pendingView(st: RunState, depth: number): DungeonPendingView {
     };
   }
   if (pending.kind === 'event') {
-    const event = eventView(pending.eventId, pending.treasure, depth);
+    const event = eventView(pending.eventId, pending.treasure, depth, currentHp(st));
     return event === null ? null : { kind: 'event', event };
   }
   return {
@@ -424,12 +481,15 @@ export function runView(meta: RunMeta, st: RunState): DungeonRunState {
     status: meta.status,
     outcome: meta.outcome,
     step: st.step,
-    map: mapView(st.map, meta.depth),
+    map: mapView(st.map, meta.depth, runMarks(st)),
     level: st.level,
     undercroft:
       st.under.length === 0 && st.marks.length === 0
         ? null
-        : { maps: st.under.map((m) => mapView(m, meta.depth)), marks: st.marks.length },
+        : {
+            maps: st.under.map((m) => mapView(m, meta.depth, runMarks(st))),
+            marks: st.marks.length,
+          },
     at: st.at,
     path: [...st.path],
     reachable: open ? reachableNodes(currentMap(st), st.at) : [],
@@ -446,7 +506,7 @@ export function runView(meta: RunMeta, st: RunState): DungeonRunState {
       treat: treated.has(slot.id),
       gear: runGearView(st.seats?.[slot.id]?.kit.items ?? []),
     })),
-    keepsakes: keepsakeViews(st.keepsakes),
+    keepsakes: heldViews(st),
     pack: { ...st.pack },
     roomsCleared: st.roomsCleared,
     supply: st.supply,

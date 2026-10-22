@@ -247,7 +247,7 @@ Notes:
 
 - **The four element keepsakes** echo the four element modifiers (Flooded, Scorched, Overgrown, Stormy): one pushes a whole room, the other is carried in a pocket `(inferred)`.
 - **Wayfarer's Charm** is the only keepsake that gives two things. It is the "all-rounder", and the other seven are sharper `(design)`.
-- Keepsakes are the dungeon's way of saying thanks. Never write one as cursed, heavy or costly `(compendium detail, not shipped)`.
+- Keepsakes are the dungeon's way of saying thanks. Never write one as cursed, heavy or costly `(compendium detail, not shipped)`. (The Cursed Idol's curse is a keepsake in the game's own terms, a "curse" kind, shown in the same bag under a cracked skull: it is the Idol's price, not a gift.)
 
 ---
 
@@ -305,17 +305,53 @@ The tone is the one of the quirks: funny, warm, never mean `(inferred)`. Nothing
 - Answers `(content)`: **Pick a few** (a little scrap) or **Dance in the ring** (a gamble: the team is refreshed, with scrap and a gift of experience, or a little worn out).
 - Compendium detail: the mushrooms sing the dungeon's lullaby, off key. Dancing along is either restful or silly, and the creatures do not mind which. When it goes well they learn the tune, and that is the experience `(inferred)`.
 
+### Training Post
+
+- Scene `(content)`: an old sparring dummy stands in the corner, stuffed with straw and very patient. Someone pinned a ribbon to it.
+- Answers `(content)`: **Spar** (every creature gains 40 experience and loses 10% of its max HP) or **Watch** (every creature gains 15 experience).
+- Compendium detail: the dummy has trained more creatures than anyone in the dungeon and has never once hit back. The ribbon is from a creature that graduated `(inferred)`. Sparring is real work and leaves a few bruises (the HP); watching is a good lesson with none, which is why it pays less `(compendium detail, not shipped)`.
+
+### Crystal Hollow
+
+- Scene `(content)`: pale blue crystals grow all over this small hollow and hum softly, like a kettle thinking about it.
+- Answers `(content)`: **Chip a crystal** (3 scrap and 1 Essence) or **Sit in the glow** (every creature heals 30% of its max HP).
+- Compendium detail: the crystals are cousins of the ones lining the Blue Chasm, the same cool light and the same hum, only small and sheltered `(compendium detail, not shipped)`. Chipping one is polite enough: it grows back by the next day. Sitting in the glow is what the hollow is for `(inferred)`.
+
+### Cursed Idol
+
+- Scene `(content)`: a little stone idol grins from a ledge. Its eyes are two chips of dark glass, and it looks very pleased to see you.
+- Answers `(content)`: **Take it** (you gain a keepsake, and foes deal 20% more damage for the rest of the run) or **Leave it** (nothing happens).
+- It shows up on the day's map like the other common rooms, and a map holds each room once, so a run meets it **at most once** and the curse never stacks `(design: dungeon-paths.md "Curses")`.
+- Compendium detail: the idol is not evil, only a very good salesperson. The keepsake is real and so is the price: every foe after it has heard that you took it, and takes it personally `(compendium detail, not shipped)`. The curse is a run's worth and no more. It never touches a creature, an item or anything the player owns, and it ends with the run `(design)`. The Idol is the one thing in the dungeon allowed to be called cursed (it is the only room that makes a later fight harder on purpose), and its keepsake stays a gift like any other.
+
 ### Blue Chasm (a rare room)
 
 - Scene `(content)`: a narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There is a valuable treasure on the other side.
 - Answers `(content)`: **Cross the plank** (a gamble: the team crosses and takes the treasure, or the whole team falls and the run ends) or **Don't risk it** (nothing happens).
-- It is **rare**: it is not drawn onto the day's map, and the other eight are. A room can turn into it as a player steps in (`rare` in `dungeon-events.json`), from a few depths down, and never twice in a run. `(design: dungeon-paths.md "The Blue Chasm")`
+- It is **rare**: it is not drawn onto the day's map, and the common ones are. A room can turn into it as a player steps in (`rare` in `dungeon-events.json`), from a few depths down, and never twice in a run (a run may meet all the rare rooms, once each). `(design: dungeon-paths.md "The Blue Chasm")`
 - The treasure is shown in the room before the choice, so the gamble is the player's with open eyes. It fits where the player is: gear of their depth, a blueprint a step above their best, two great supplies, or shards and glimmer of the team's elements. `(design)`
 - Compendium detail: the Blue Chasm is the dungeon's one honest drop. Its walls are lined with **pale blue crystals** that glow on their own, the same cool light as the Moonlit Reef's coral and the Echoing Well's voice `(inferred)`. Nobody mined them and nobody knows who laid the plank. The crystals hum when a creature steps on the wood, and the plank is old but is _not_ rotten: the chasm simply does not care whether you cross `(compendium detail, not shipped)`.
 - The fall is not a trap. Nothing in the chasm is hostile, and the team is not hurt: the dungeon carries them out the way it brought them in, tired and a little embarrassed, with half of what they had gathered `(compendium detail, not shipped)`. This is the one mystery room whose bad answer ends the run, and it is the only reason the plank is a choice at all (Misa, 2026-10-21).
+
+### Sealed Vault (a rare room)
+
+- Scene `(content)`: a round stone door, sealed with grey wax and old rope, stands in the wall. Something heavy shifts behind it.
+- Answers `(content)`: **Break the seal** (the next fight you enter is epic: a tougher foe, epic experience, and double loot, gear, supplies and keepsakes) or **Leave it sealed** (nothing happens).
+- It is **rare**, like the Blue Chasm: a mystery room can turn into it as a player steps in (`rare` in `dungeon-events.json`, from the first depth, sharing the one rare roll with the other rare rooms), never twice in a run, and only where a fight lies ahead. `(design: dungeon-paths.md "The Sealed Vault")`
+- Breaking the seal marks the fights the run can step into next with a small gold "x2". The first marked room the run enters is the vault's: the rest go back to normal. `(design)`
+- Compendium detail: the vault is where the dungeon keeps what it was keeping. Breaking the seal does not open a chest; it wakes the thing that was sleeping on the loot, and the next foe the team meets has simply been fed well and kept for years. The wax is grey, never red, and no one remembers who pressed the seal: the same hand that laid the Blue Chasm's plank, perhaps `(compendium detail, not shipped; inferred)`. Leaving it sealed is not cowardice. The door stays shut, the heavy thing goes back to sleep, and it will still be there for the next explorer `(compendium detail, not shipped)`.
+- The "x2" badge on the map is a **room mark**: a small tag a room can wear when something has changed it. It is the dungeon's way of saying "this one is not what it was". Later effects can use the same tag. `(design)`
+
+### Hungry Door (a rare room)
+
+- Scene `(content)`: a round wooden door with a wide mouth carved into it. A treasure sits on the floor in front, and the door looks hungry.
+- Answers `(content)`: **Feed it** (your highest-level creature goes home, and you take the treasure shown) or **Pry it open** (a gamble: 40% you take the treasure, 60% every creature loses 40% of its max HP).
+- It is **rare**: from depth 2 it is one of the rare rooms a mystery room can turn into (`rare` in `dungeon-events.json`; one roll decides whether a room is rare and the pick among the eligible ones is even), and a run meets it at most once `(design: dungeon-paths.md "Rare events")`.
+- The treasure is shown before the choice, one tier below the chasm's: a Rare gear piece of the run's depth, two good supplies of one kind, or a small stack of shards with some glimmer. Never a blueprint `(design)`.
+- Compendium detail: the door is hungry for company, not for creatures. Whoever it is fed does not vanish: it is walked out of the dungeon's front door, fed on a good story, and sent home with the experience it earned `(compendium detail, not shipped)`. It picks the biggest creature because it likes a big story. With one creature standing it will not take it: it would rather go hungry than leave the row empty `(design)`. Prying is rude, and the door bites back with a bruise, never worse.
 
 Notes:
 
 - **Names** are a descriptor and a noun, as for foes and bosses: Glowing Pool, Loose Stones, Old Shrine.
 - **Voice for new events:** one scene with one small oddity, one plain safe answer and one answer with a risk or a reward. The text is at most a few sentences and speaks to "you" only through the options `(compendium detail, not shipped)`.
-- **Never** make a mystery room a fight, a trap or a loss of something permanent. The worst case is HP lost for the run, never a creature, an item or a currency from the player's own stock `(design)`. **One exception, decided with Misa (2026-10-21):** the Blue Chasm's fall ends the run as a defeat. It still takes nothing from the player's own stock: a defeat keeps half the pack, and no creature is lost.
+- **Never** make a mystery room a fight, a trap or a loss of something permanent. The worst case is HP lost for the run (or, at the Cursed Idol, tougher foes for the run), never a creature, an item or a currency from the player's own stock `(design)`. Feeding the Hungry Door sends a creature home for the rest of the run only: it is back in the collection with the experience it earned. **Two exceptions, decided with Misa.** (2026-10-22) The Sealed Vault can make the next fight harder (an epic fight), on the player's own choice and with double rewards for it. (2026-10-21) The Blue Chasm's fall ends the run as a defeat. It still takes nothing from the player's own stock: a defeat keeps half the pack, and no creature is lost.

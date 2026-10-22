@@ -932,7 +932,33 @@ export const RULES = {
       supplies: { tier: 'great', count: 2 },
       shards: 6,
       glimmer: 4,
+      blueprints: true,
     },
+    /**
+     * The Hungry Door's treasure: the same table one tier down. A Rare piece at the run's depth, two good
+     * (one below great) supplies of one kind, or 3 shards and 2 glimmer. No blueprints (`blueprints: false`).
+     */
+    doorTreasure: {
+      gearRarity: 'rare',
+      supplies: { tier: 'good', count: 2 },
+      shards: 3,
+      glimmer: 2,
+      blueprints: false,
+    },
+    /**
+     * The Sealed Vault (`sealTargets`): the first marked fight the run enters fights as an epic fight (the
+     * `undercroft.epic` boost, in place of an elite's) and pays epic experience and `rewardMultiplier` times
+     * its loot in the pack (the shard chance is rolled that many times). Everything material doubles: each marked fight
+     * cleared adds one more gear roll and one more supply to the run's end grant (`rollSealedBonus`), and a marked elite
+     * gives two keepsakes. Experience stays the epic amount (not doubled).
+     */
+    seal: { rewardMultiplier: 2 },
+    /**
+     * Rare rooms, one pool (`rollRareEvent`): the chance, in basis points, that a mystery room a run steps into is
+     * a rare room instead of its own event. Which one is picked evenly among the eligible ones (`rare.fromDepth`,
+     * not met yet, and the vault only with a fight ahead). With none eligible the room stays the normal one.
+     */
+    rareRoomChanceBp: 4_000,
     /**
      * The Undercroft (docs/design/dungeon-paths.md): a deeper, optional level below the floor boss, from
      * depth `fromDepth` (the first landmark has been passed). Its foes are scaled as if the depth were

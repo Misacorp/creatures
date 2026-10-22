@@ -44,7 +44,7 @@ const FOES: [hpBp: number, atkBp: number] = [2_000, 1_000];
 
 /**
  * The pool the scenario was written against: the shipped foes and room modifiers without the Mire ones
- * (Bog Toad, Tar Leech, Fen Lurker and Muddy), and no rare room. The map draws its rooms from the whole pool, so a new foe
+ * (Bog Toad, Tar Leech, Fen Lurker and Muddy), no rare room and none of the three common rooms added on 2026-10-22. The map draws its rooms from the whole pool, so a new foe
  * moves every seeded map, and the client tests name the captured rooms (a carved door on floor 5, the
  * Slag Tyrant keeper). The Mire rooms' own wiring is proven where it belongs (`packages/game`, the
  * engine). The pool is put back when the scenario ends, so no other test sees the change.
@@ -60,8 +60,11 @@ function pinPool(): () => void {
   };
   keep(dungeonContent.foes, (f) => f.element !== 'mire');
   keep(dungeonContent.modifiers, (m) => m.id !== 'mud');
-  // A rare room (the Blue Chasm) is drawn live as a run steps into a mystery room: it would move every later draw.
-  keep(pool, (e) => e.rare === undefined);
+  // A rare room (the Blue Chasm, the Hungry Door) is drawn live as a run steps into a mystery room: it would move every later draw.
+  // The three common rooms of 2026-10-22 (Training Post, Crystal Hollow, Cursed Idol) are left out too: the map shuffles
+  // the whole event list, so each one moves every seeded map (their wiring is proven in `dungeon-rooms.test.ts`).
+  const NEWER = ['training-post', 'crystal-hollow', 'cursed-idol'];
+  keep(pool, (e) => e.rare === undefined && !NEWER.includes(e.id));
   return () => {
     pool.splice(0, pool.length, ...events);
     dungeonContent.foes.splice(0, dungeonContent.foes.length, ...foes);

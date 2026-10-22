@@ -34,6 +34,7 @@ import type {
   DungeonRewards,
   DungeonRoomSummary,
   DungeonRunCreature,
+  RoomMark,
   DungeonRunState,
   DungeonRunSummary,
   DungeonStartResponse,
@@ -163,7 +164,11 @@ const SHARD_KIND = /^(?:tide|ember|grove|spark|mire)-shard$/;
 
 function isKeepsake(value: unknown): value is DungeonKeepsakeView {
   return (
-    isRecord(value) && isStr(value['id']) && isStr(value['name']) && isStr(value['description'])
+    isRecord(value) &&
+    isStr(value['id']) &&
+    isStr(value['name']) &&
+    isStr(value['description']) &&
+    (value['curse'] === undefined || value['curse'] === true)
   );
 }
 
@@ -199,7 +204,11 @@ function isEventView(value: unknown): value is DungeonEventView {
     Array.isArray(value['options']) &&
     value['options'].length === 2 &&
     value['options'].every(
-      (o: unknown) => isRecord(o) && isStr(o['label']) && isStr(o['description']),
+      (o: unknown) =>
+        isRecord(o) &&
+        isStr(o['label']) &&
+        isStr(o['description']) &&
+        (o['blocked'] === undefined || isStr(o['blocked'])),
     )
   );
 }
@@ -254,7 +263,9 @@ function isStepLog(value: unknown): value is DungeonStepLog {
         isCount(value['foeHpMax']) &&
         isPack(value['loot']) &&
         isOptionalKeepsake(value['keepsake']) &&
-        (value['supply'] === undefined || isBool(value['supply']))
+        isOptionalKeepsake(value['bonusKeepsake']) &&
+        (value['supply'] === undefined || isBool(value['supply'])) &&
+        (value['sealed'] === undefined || value['sealed'] === true)
       );
     case 'cache':
       return kind === 'cache' && isPack(value['loot']);
@@ -266,6 +277,8 @@ function isStepLog(value: unknown): value is DungeonStepLog {
         isStr(value['outcome']) &&
         isPack(value['loot']) &&
         isOptionalKeepsake(value['keepsake']) &&
+        isOptionalKeepsake(value['curse']) &&
+        (value['sentHome'] === undefined || isStr(value['sentHome'])) &&
         (value['treasure'] === undefined || isTreasureView(value['treasure'])) &&
         (value['fell'] === undefined || value['fell'] === true)
       );
@@ -308,6 +321,16 @@ function isStepLog(value: unknown): value is DungeonStepLog {
   }
 }
 
+/** A room's badge: a kind, the short text drawn on it and the spoken label. */
+const isRoomMark = (value: unknown): value is RoomMark =>
+  isRecord(value) &&
+  isStr(value['kind']) &&
+  isStr(value['text']) &&
+  value['text'].length > 0 &&
+  value['text'].length <= 8 &&
+  isStr(value['label']) &&
+  value['label'].length > 0;
+
 function isMapNode(value: unknown): value is DungeonMapNode {
   if (!isRecord(value)) return false;
   const foe = value['foe'];
@@ -327,7 +350,8 @@ function isMapNode(value: unknown): value is DungeonMapNode {
         isCount(foe['hpMax']) &&
         isBool(foe['elite']))) &&
     (value['modifier'] === undefined || isModifierText(value['modifier'])) &&
-    (event === undefined || (isRecord(event) && isStr(event['id']) && isStr(event['name'])))
+    (event === undefined || (isRecord(event) && isStr(event['id']) && isStr(event['name']))) &&
+    (value['marks'] === undefined || isArrayOf(value['marks'], isRoomMark))
   );
 }
 

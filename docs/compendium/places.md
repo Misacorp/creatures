@@ -678,6 +678,10 @@ There is no banner in the data. This is the proposed brief.
 
 See `dungeon.md`: foes, floor bosses and the room modifiers as in-world phenomena.
 
+### The Crystal Hollow `(compendium detail, not shipped)`
+
+A small, common place inside the dungeon, met as a mystery room. A nook whose walls and floor are covered in pale blue crystals that hum quietly, kin of the Blue Chasm's. See `dungeon.md` "Crystal Hollow".
+
 ### The Blue Chasm `(compendium detail, not shipped)`
 
 A rare place inside the dungeon, met as a mystery room. A bottomless gap with pale blue crystals lining its walls, crossed by one narrow wooden plank, and a treasure on the far side. It is lit only by the crystals. See `dungeon.md` "Blue Chasm".

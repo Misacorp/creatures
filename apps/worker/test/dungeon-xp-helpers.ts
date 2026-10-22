@@ -6,6 +6,8 @@ export interface XpStep {
   kind: string;
   result: string;
   cleared?: boolean;
+  /** A fight the Sealed Vault marked: it paid as an epic fight. */
+  sealed?: boolean;
   outcome?: string;
 }
 
@@ -20,7 +22,8 @@ export function baseExperienceOf(history: readonly XpStep[]): number {
   let base = 0;
   for (const step of history) {
     if (step.result === 'fight' && step.cleared === true) {
-      if (step.kind === 'boss') base += step.node.startsWith('u') ? D.keeper : D.boss;
+      if (step.sealed === true) base += D.epic;
+      else if (step.kind === 'boss') base += step.node.startsWith('u') ? D.keeper : D.boss;
       else if (step.kind === 'elite') base += D.elite;
       else if (step.kind === 'epic') base += D.epic;
       else base += D.fight;

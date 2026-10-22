@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { campNote, roomLog } from './dungeon-route-rooms';
-import { omitKey, sampleSummary } from './dungeon-path-samples';
+import { omitKey, sampleSummary, sampleVaultSummary } from './dungeon-path-samples';
 import { undercroftLostSummary, undercroftSummary } from './dungeon-undercroft-sample';
 import type { DungeonRunSummary, DungeonStepLog } from './dungeon-types';
 
@@ -151,5 +151,20 @@ describe('what the camp did, in a few words', () => {
         keepsake: { id: 'k', name: 'Lantern Moth', description: 'x' },
       }),
     ).toBe('Took Lantern Moth');
+  });
+});
+
+describe('a room a Sealed Vault marked', () => {
+  it('is an epic fight in the recap: its header and title say epic, whatever its kind on the map', () => {
+    const plain = roomLog(sampleSummary('cleared')) ?? [];
+    const sealed = roomLog(sampleVaultSummary()) ?? [];
+    const room = sealed.find((r) => r.node === 'f2l1');
+    expect(room).toBeDefined();
+    expect(room?.epic).toBe(true);
+    expect(room?.what).toBe('Epic');
+    expect(room?.title).toContain('Epic');
+    // The same room without the vault says what it is on the map.
+    expect(plain.find((r) => r.node === 'f2l1')?.epic).toBe(false);
+    expect(plain.find((r) => r.node === 'f2l1')?.what).toBe('Elite');
   });
 });

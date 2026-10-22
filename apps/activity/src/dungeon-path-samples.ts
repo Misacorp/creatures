@@ -487,3 +487,191 @@ export function sampleChasmSummary(variant: 'won' | 'lost' | 'fell'): DungeonRun
     },
   };
 }
+
+// --- The Sealed Vault (a rare mystery room) ---
+
+/** The Sealed Vault as the server sends it while it waits: its scene and its two options. */
+export function vaultEvent(): DungeonEventView {
+  return {
+    id: 'sealed-vault',
+    name: 'Sealed Vault',
+    text: 'A round stone door, sealed with grey wax and old rope, stands in the wall. Something heavy shifts behind it.',
+    options: [
+      {
+        label: 'Break the seal',
+        description: 'The next fight is epic, with double rewards.',
+      },
+      { label: 'Leave it sealed', description: 'Nothing happens.' },
+    ],
+  };
+}
+
+/** A run standing in the Sealed Vault. */
+export function sampleStateVault(): DungeonRunState {
+  return { ...sampleStateEvent(), pending: { kind: 'event', event: vaultEvent() } };
+}
+
+/**
+ * The end of a cleared run that broke the Sealed Vault in its mystery room and fought the marked room as an epic
+ * fight: its log entry says so (`sealed`) and paid double, and its room in the summary is flagged epic.
+ */
+export function sampleVaultSummary(): DungeonRunSummary {
+  const base = sampleSummary('cleared');
+  const route = base.route;
+  if (route === undefined) throw new Error('the sample has a route');
+  const history = route.history.map((step) => {
+    if (step.node === 'f1l1' && step.result === 'event') {
+      return {
+        ...step,
+        event: 'Sealed Vault',
+        option: 'Break the seal',
+        outcome: 'The seal breaks. The next fight you enter is epic, with double rewards.',
+        loot: { bait: 0, essence: 0, scrap: 0 },
+      };
+    }
+    if (step.node === 'f2l1' && step.result === 'fight') {
+      return { ...step, loot: { bait: 2, essence: 0, scrap: 2 }, sealed: true as const };
+    }
+    return step;
+  });
+  const rooms = base.rooms.map((r, i) => (i === 1 ? { ...r, elite: true, epic: true } : r));
+  const vault = { id: 'sealed-vault', name: 'Sealed Vault' };
+  const map: DungeonMapView = {
+    ...route.map,
+    nodes: route.map.nodes.map((n) => (n.id === 'f1l1' ? { ...n, event: vault } : n)),
+  };
+  return { ...base, rooms, route: { ...route, map, history } };
+}
+
+// --- The Cursed Idol and the Hungry Door ---
+
+/** The curse the Cursed Idol puts on a run, as the server sends it: a keepsake view marked `curse` (a name and its plain effect line). */
+export const SAMPLE_CURSE: DungeonKeepsakeView = {
+  id: 'idol-curse',
+  name: "Idol's Curse",
+  description: 'Foes deal 20% more damage.',
+  curse: true,
+};
+
+/** The Hungry Door's treasure kinds, one tier below the chasm's (a Rare piece, good supplies, 3 shards and 2 glimmer). No blueprint. */
+export const SAMPLE_DOOR_TREASURES = {
+  gear: {
+    kind: 'gear',
+    baseId: 'forge-scarf',
+    rarity: 'rare',
+    itemLevel: 9,
+    card: sampleGearItem({ id: 'preview', baseId: 'forge-scarf', rarity: 'rare', itemLevel: 9 }),
+  },
+  supplies: { kind: 'supplies', supplyId: 'lantern-good', count: 2 },
+  shards: {
+    kind: 'shards',
+    parts: { 'tide-shard': 1, 'ember-shard': 1, 'grove-shard': 1, glimmer: 2 },
+  },
+} as const satisfies Record<string, DungeonTreasureView>;
+
+/** The Hungry Door as the server sends it while it waits. `blocked` is the reason "Feed it" cannot be picked (one creature standing). */
+export function doorEvent(
+  treasure: DungeonTreasureView = SAMPLE_DOOR_TREASURES.gear,
+  blocked?: string,
+): DungeonEventView {
+  return {
+    id: 'hungry-door',
+    name: 'Hungry Door',
+    text: 'A round wooden door with a wide mouth carved into it. A treasure sits on the floor in front, and the door looks hungry.',
+    options: [
+      {
+        label: 'Feed it',
+        description: 'Your highest-level creature goes home. You take the treasure shown.',
+        ...(blocked === undefined ? {} : { blocked }),
+      },
+      {
+        label: 'Pry it open',
+        description: '40%: you take the treasure shown. 60%: every creature loses 40% HP.',
+      },
+    ],
+    treasure,
+  };
+}
+
+/** A run standing at the Hungry Door with its treasure shown. */
+export function sampleStateDoor(
+  treasure: DungeonTreasureView = SAMPLE_DOOR_TREASURES.gear,
+  blocked?: string,
+): DungeonRunState {
+  return { ...sampleStateEvent(), pending: { kind: 'event', event: doorEvent(treasure, blocked) } };
+}
+
+/** A run that took the Cursed Idol: the curse is carried and listed with the keepsakes. */
+export function sampleStateCursed(): DungeonRunState {
+  const mid = sampleStateMid();
+  return { ...mid, keepsakes: [...mid.keepsakes, SAMPLE_CURSE] };
+}
+
+/**
+ * The end of a cleared run that took the Cursed Idol: the curse is listed with the keepsakes (the end screen's bag)
+ * and the idol's room in the route shows it as a keepsake line with the same chip.
+ */
+export function sampleCurseSummary(): DungeonRunSummary {
+  const base = sampleSummary('cleared');
+  const route = base.route;
+  if (route === undefined) throw new Error('the sample has a route');
+  const idol = { id: 'cursed-idol', name: 'Cursed Idol' };
+  const map: DungeonMapView = {
+    ...route.map,
+    nodes: route.map.nodes.map((n) => (n.id === 'f1l1' ? { ...n, event: idol } : n)),
+  };
+  const history = sampleHistory(map, [...route.path]).map((step) =>
+    step.node === 'f1l1' && step.result === 'event'
+      ? {
+          ...step,
+          event: idol.name,
+          option: 'Take it',
+          outcome: 'You gain a keepsake. Cursed: Foes deal 20% more damage.',
+          loot: { bait: 0, essence: 0, scrap: 0 },
+          curse: SAMPLE_CURSE,
+        }
+      : step,
+  );
+  return {
+    ...base,
+    keepsakes: [...(base.keepsakes ?? []), SAMPLE_CURSE],
+    route: { ...route, map, history },
+  };
+}
+
+/**
+ * The end of a run that fed the Hungry Door and came home with its treasure (a Rare piece in the rewards):
+ * the door's room reads "heads home", and the creature that went home is listed with "Went home" in the
+ * experience recap (the workbench pairs it with the "sent home" experience).
+ */
+export function sampleDoorSummary(): DungeonRunSummary {
+  const base = sampleSummary('home');
+  const route = base.route;
+  if (route === undefined) throw new Error('the sample has a route');
+  const door = { id: 'hungry-door', name: 'Hungry Door' };
+  const map: DungeonMapView = {
+    ...route.map,
+    nodes: route.map.nodes.map((n) => (n.id === 'f1l1' ? { ...n, event: door } : n)),
+  };
+  const history = sampleHistory(map, [...route.path]).map((step) =>
+    step.node === 'f1l1' && step.result === 'event'
+      ? {
+          ...step,
+          event: door.name,
+          option: 'Feed it',
+          outcome: 'Pip heads home. You take the treasure.',
+          loot: { bait: 0, essence: 0, scrap: 0 },
+          sentHome: 'Pip',
+          treasure: SAMPLE_DOOR_TREASURES.gear,
+        }
+      : step,
+  );
+  return {
+    ...base,
+    route: { ...route, map, history },
+    rewards: {
+      ...base.rewards,
+      gear: [{ id: 'wb-door-gear', baseId: 'forge-scarf', rarity: 'rare', itemLevel: 9 }],
+    },
+  };
+}

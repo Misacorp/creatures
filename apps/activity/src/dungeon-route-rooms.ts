@@ -188,7 +188,9 @@ export function roomLog(
       const fight = fights[next++];
       if (fight === undefined) return null;
       const state: RoomLogState = fight.state === 'defeat' ? 'defeat' : 'cleared';
-      const title = titleOf(id, kind);
+      // A room a Sealed Vault marked was fought as an epic fight, whatever its kind on the map.
+      const shown: DungeonNodeKind = fight.epic ? 'epic' : kind;
+      const title = titleOf(id, shown);
       rows.push({
         node: id,
         kind,
@@ -196,7 +198,7 @@ export function roomLog(
         state,
         banner: ROOM_BANNER[state],
         title,
-        ...headerOf(id, kind),
+        ...headerOf(id, shown),
         elite: fight.elite,
         epic: fight.epic,
         foe: {

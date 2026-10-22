@@ -1294,3 +1294,44 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
 - **Expected:** a typical full clear pays each creature about 250 base experience (it was about 235); live `collection.exp_sum` for `source=dungeon` rises a few percent and the share of dungeon experience in the weekly total stays about where B-016 set it.
 - **Outcome:**
 - **Follow-ups:** watch `collection.exp_sum` by source in the first report after this ships. The two mystery rooms that give experience are small (20 and 25, near the value of a fight); the xp amounts are content (`dungeon-events.json`), not scalars.
+
+### B-029: The Sealed Vault doubles one fight's loot and makes it epic (open)
+
+- **Opened:** 2026-10-22, from Misa's Sealed Vault room: a rare mystery room (25% of mystery rooms, from depth 1, once a run) whose "Break the seal" makes the first fight the run enters next an epic fight (160% HP, 130% Attack of its foe at the run's depth, epic experience 58) with double rewards.
+- **Changed:** new `RULES.dungeon.seal.rewardMultiplier` = 2 (the room's Bait, Essence and scrap in the pack times two, the shard chance rolled twice). No other scalar moves.
+- **Sim (`pnpm sim:quick --seed leet`, 2026-10-22, main at a514fcb), before and after:** 71 passed, 24 failed, 1 not measured both times, and the report file (`report.json`) is **byte-identical**. That is expected, not luck: the simulator plays no rare room (a rare room is never on its maps; `rollRareEvent` is live-only), and `roomSpecForNode` keeps its old result when the new `sealed` flag is off. So this change cannot move any sim target. The 24 failures are the ones main has on this seed today (the quick sim is one seed; the list differs from B-028's after-run because main moved on in between), none of them touched by this change. Seed noise: none to separate, because the two runs are the same numbers.
+- **Estimate of what the vault does on a live run (by hand, as the sim cannot):** a run walks about one mystery room, so about one run in four meets it (one in five after the Blue Chasm's own 15% from depth 3). Say seven in ten of those break the seal. The marked fight is a plain fight (+1 Bait, +1 to 2 scrap, +0.15 shard on top, from doubling) or an elite (+1 Bait, +4 scrap, +0.4 shard), and +26 experience per creature over a plain fight (58 against 32). Averaged over all runs that is about +0.2 Bait, +0.3 scrap and +0.04 shards a run (under 3% of a clear's parts) and about +2% creature experience on a typical 195. The price is the harder fight: its foe has 60% more HP and 30% more Attack, which a first-week team feels, and a lost marked fight pays nothing.
+- **Action:** none beyond the scalar. `pnpm scalars` regenerated `docs/balance/scalars.md`.
+- **Expected:** `dungeon_event` analytics shows `sealed-vault` with option 0 (break) at a clear majority; dungeon run defeat rate up by a small fraction of a point.
+- **Outcome:**
+- **Follow-ups:** if breaking the seal is picked nearly always, raise the foe's boost for a marked room (it is the Undercroft's epic numbers today) rather than lowering the reward.
+
+### B-030: Four more mystery rooms: Training Post, Crystal Hollow, Cursed Idol, Hungry Door (open)
+
+- **Opened:** 2026-10-22, from Misa (rooms approved one by one; names and numbers his).
+- **Changed:** three common events join the map pool (Training Post: spar for 40 experience and 10% HP, or watch for 15; Crystal Hollow: 3 scrap and 1 Essence, or a 30% heal; Cursed Idol: a keepsake and foes deal 20% more damage for the rest of the run, or nothing). One rare event (Hungry Door, 20% from depth 2, once a run): feed it (the highest-level creature goes home, treasure taken) or pry it open (40% treasure, 60% every creature loses 40% HP). New knob `RULES.dungeon.doorTreasure` (Rare gear at the run depth, two good supplies, or 3 shards and 2 glimmer; no blueprints; the chasm's table is unchanged). The rare roll now draws for every unmet rare room (chasm 15% from depth 3, door 20% from depth 2).
+- **Why these numbers:** the Idol's curse is a foe Attack fold of +20% (the size of an elite's Attack boost, and the opposite of the Lullaby Bell keepsake's foe cut), so a run that takes it trades a random keepsake (a gift of about +12% or a foe cut of 10%) for a harder rest of the run: not tuned to be neutral, watch it live. Spar's 40 experience is above the older rooms' (20 and 25) and a little above one fight's 32, in exchange for 10% of max HP; Watch's 15 is below them. Crystal Hollow's two options differ by about 5.5 points in the rough value test (Essence counted as 4), more than the older rooms' 3.5: Misa's numbers, kept; the test's allowance for two safe options was raised to 6.
+- **Sim comparison** (`pnpm sim:quick --seed leet`, this branch with the old event file against the new one; the economy rng stream moves because the event list is shuffled onto each map, so every seeded map and every later draw differs: expect seed noise). Targets: 71 passed, 24 failed, 1 not measured, before and after (the failing set differs only in raid and curve targets that move with the shared stream: `raid-boss-extremes` and `raid-ko-share` now fail, `longrun-win-fifteen`, `exp-casual-discovery` and `creatures-trio-level30-min-maxer` now pass; none is a dungeon target). The sim plays the three common rooms (not the door, which is rare): its policy takes the Idol's keepsake above 60% average HP and folds the curse into later fights.
+
+  | Dungeon metric (n about 250 runs per archetype) | Before | After |
+  | ----------------------------------------------- | -----: | ----: |
+  | Casual: runs cleared                            |  57.7% | 52.0% |
+  | Casual: runs defeated                           |  35.4% | 41.4% |
+  | Daily: runs cleared                             |  20.7% | 19.5% |
+  | Daily: runs defeated                            |  59.8% | 61.3% |
+  | Newcomer: runs cleared                          |  23.2% | 27.0% |
+  | Top: runs cleared                               |  21.6% | 22.7% |
+  | Daily: fights per run                           |   4.33 |  4.26 |
+  | Daily: pack found per run                       |  13.37 | 12.89 |
+  | Daily: head home at the camp                    |  19.6% | 19.2% |
+  | Undercroft: first keeper cleared (of descents)  |  31.7% | 25.4% |
+  | Undercroft: descent rate (of offers)            |  58.3% | 61.9% |
+  | Daily Essence share from the dungeon            |  4.99% | 5.13% |
+  | Daily gear share at week 8                      |  24.7% | 25.7% |
+
+  Clears move between -5.7 and +3.8 points with no pattern across archetypes (Newcomer and Top went up, Casual down), and the Undercroft's clear rate sits on 158 against 169 descents (50 against 43 clears): inside the noise of a re-drawn map set. The Idol's curse is the only rule that makes later fights harder, and a map holds 1 to 3 mystery rooms drawn from 11 events, so the Idol is on about 1 map in 5. Nothing shifted wildly; the follow-up below watches it live.
+
+- **Action:** the content and `RULES.dungeon.doorTreasure` above. `pnpm scalars` regenerated.
+- **Expected:** a run that takes the Idol clears about as often as before (keepsake against curse); the door is met by about one run in five at depth 2 or more that walks a mystery room, and pays a Rare-level prize at the cost of a creature or 40% HP.
+- **Outcome:**
+- **Follow-ups:** watch the live clear rate of runs that carry the Idol's curse against those that do not (`dungeon_event` analytics carries the event and the option). If the curse is too heavy or too light, change the `bp` in the content (2000).

@@ -8,6 +8,7 @@ import {
   dungeonEvents,
   dungeonItemLevel,
   eventHasTreasure,
+  eventTreasureTable,
   gearBase,
   resolveEvent,
   rollRareEvent,
@@ -39,26 +40,116 @@ const tier = (level: number): string[] =>
     .filter((b) => baseMinLevel(b) === level)
     .map((b) => b.id);
 
-describe('the rare event roll', () => {
-  it('turns a room into the chasm only from its depth, with its chance, and only once a run', () => {
-    expect(rollRareEvent(WIN, 2, [])).toBeUndefined();
-    expect(rollRareEvent(WIN, 3, [])?.id).toBe('blue-chasm');
-    expect(rollRareEvent(LOSE, 9, [])).toBeUndefined();
-    expect(rollRareEvent(WIN, 9, ['blue-chasm'])).toBeUndefined();
+/** A stream that answers with the given numbers in order (then 0), counting the draws. */
+function script(...values: number[]): Rng & { draws: () => number } {
+  let i = 0;
+  return {
+    nextU32: () => values[i++] ?? 0,
+    draws: () => i,
+  };
+}
+
+describe('the rare event roll: one roll, one pool', () => {
+  it('has one chance for all rare rooms, in the rules and not in the rooms', () => {
+    expect(RULES.dungeon.rareRoomChanceBp).toBe(4_000);
+    for (const e of dungeonEvents)
+      expect(e.rare === undefined || !('chanceBp' in e.rare)).toBe(true);
   });
 
-  it('comes up at about the content chance over many rooms', () => {
+  it('turns a room into a rare one only when the one roll comes up, and then picks among the eligible by a second draw', () => {
+    // The pool at depth 3 in content order: the chasm, the door, the vault. A roll of 0 is below the 40%.
+    const wins = (index: number) => script(0, index);
+    expect(rollRareEvent(wins(0), 3, [])?.id).toBe('blue-chasm');
+    expect(rollRareEvent(wins(1), 3, [])?.id).toBe('hungry-door');
+    expect(rollRareEvent(wins(2), 3, [])?.id).toBe('sealed-vault');
+    // At or above 4000 of 10000 the room stays its own.
+    expect(rollRareEvent(script(RULES.dungeon.rareRoomChanceBp - 1, 0), 3, [])).toBeDefined();
+    expect(rollRareEvent(script(RULES.dungeon.rareRoomChanceBp, 0), 3, [])).toBeUndefined();
+    expect(rollRareEvent(LOSE, 9, [])).toBeUndefined();
+  });
+
+  it('keeps each room to its depth, once a run, and never a room the caller left out', () => {
+    const pick = (depth: number, seen: string[], rooms = dungeonEvents) =>
+      rollRareEvent(script(0, 0), depth, seen, rooms)?.id;
+    // Depth gates: the vault from 1, the door from 2, the chasm from 3. The first of the pool is picked by a 0 draw.
+    expect(pick(1, [])).toBe('sealed-vault');
+    expect(pick(2, [])).toBe('hungry-door');
+    expect(pick(3, [])).toBe('blue-chasm');
+    // Met rooms leave the pool.
+    expect(pick(9, ['blue-chasm'])).toBe('hungry-door');
+    expect(pick(9, ['blue-chasm', 'hungry-door'])).toBe('sealed-vault');
+    expect(pick(2, ['hungry-door'])).toBe('sealed-vault');
+    expect(pick(9, ['blue-chasm', 'hungry-door', 'sealed-vault'])).toBeUndefined();
+    // The caller's list is the filter (the vault with no fight ahead).
+    const noVault = dungeonEvents.filter((e) => e.id !== 'sealed-vault');
+    expect(pick(1, [], noVault)).toBeUndefined();
+    expect(pick(2, [], noVault)).toBe('hungry-door');
+  });
+
+  it('stays the normal room, with no draw at all, when nothing is eligible', () => {
+    const none = script(0, 0);
+    const noVault = dungeonEvents.filter((e) => e.id !== 'sealed-vault');
+    expect(rollRareEvent(none, 1, [], noVault)).toBeUndefined();
+    expect(none.draws()).toBe(0);
+    const metAll = script(0, 0);
+    expect(rollRareEvent(metAll, 9, ['blue-chasm', 'hungry-door', 'sealed-vault'])).toBeUndefined();
+    expect(metAll.draws()).toBe(0);
+  });
+
+  it('draws once when the room stays normal and twice when it turns rare, whatever the pool size', () => {
+    const lose = script(4_294_959_999);
+    rollRareEvent(lose, 5, []);
+    expect(lose.draws()).toBe(1);
+    for (const [depth, seen] of [
+      [1, []],
+      [2, []],
+      [3, []],
+      [3, ['blue-chasm']],
+    ] as const) {
+      const win = script(0, 0);
+      rollRareEvent(win, depth, seen);
+      expect(win.draws(), `depth ${String(depth)}`).toBe(2);
+    }
+  });
+
+  it('turns about four rooms in ten rare, and the rare rooms of the pool come up evenly', () => {
     const rng = createSeededRng('rare-rate');
-    let hits = 0;
-    for (let i = 0; i < 4000; i++) if (rollRareEvent(rng, 5, []) !== undefined) hits += 1;
-    const rate = hits / 4000;
-    expect(rate).toBeGreaterThan(0.12);
-    expect(rate).toBeLessThan(0.18);
+    const n = 20_000;
+    const counts: Record<string, number> = {};
+    let rare = 0;
+    for (let i = 0; i < n; i++) {
+      const id = rollRareEvent(rng, 5, [])?.id;
+      if (id !== undefined) {
+        rare += 1;
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
+    }
+    expect(rare / n).toBeGreaterThan(0.38);
+    expect(rare / n).toBeLessThan(0.42);
+    for (const id of ['blue-chasm', 'hungry-door', 'sealed-vault']) {
+      const share = (counts[id] ?? 0) / rare;
+      expect(share, id).toBeGreaterThan(1 / 3 - 0.025);
+      expect(share, id).toBeLessThan(1 / 3 + 0.025);
+    }
+  });
+
+  it('is the same for the same stream', () => {
+    const seq = (): (string | undefined)[] => {
+      const rng = createSeededRng('rare-same');
+      return Array.from({ length: 50 }, () => rollRareEvent(rng, 5, [])?.id);
+    };
+    expect(seq()).toEqual(seq());
   });
 
   it('knows which events roll a treasure', () => {
     expect(eventHasTreasure(chasm)).toBe(true);
-    expect(dungeonEvents.filter(eventHasTreasure).map((e) => e.id)).toEqual(['blue-chasm']);
+    expect(dungeonEvents.filter(eventHasTreasure).map((e) => e.id)).toEqual([
+      'blue-chasm',
+      'hungry-door',
+    ]);
+    expect(eventTreasureTable(chasm)).toBe('chasm');
+    expect(eventTreasureTable(dungeonEvent('hungry-door') as DungeonEventDef)).toBe('door');
+    expect(eventTreasureTable(dungeonEvent('glowing-pool') as DungeonEventDef)).toBeUndefined();
   });
 });
 

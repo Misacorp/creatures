@@ -23,6 +23,7 @@ import type { DungeonMapView } from './dungeon-types';
 import { DungeonNodeDrawer } from './DungeonNodeDrawer';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
+import { RoomMarks } from './ui/RoomMark';
 
 interface Props {
   /** The day's map. */
@@ -232,6 +233,7 @@ export function DungeonMap({
                       <Sprite sprite={glyphOrUnknown('map-crack')} scale={2} />
                     </span>
                   )}
+                  <RoomMarks marks={node.marks} />
                   {down && (
                     <span class="dmap-descend" aria-hidden="true">
                       <Sprite sprite={glyphOrUnknown('map-descend')} scale={2} />

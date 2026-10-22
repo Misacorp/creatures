@@ -11,7 +11,7 @@ import {
   content,
   createSeededRng,
   dungeonKeepsake,
-  dungeonKeepsakes,
+  dungeonGifts,
   dungeonRowOrder,
   dungeonScrapPerRoom,
   dungeonEvent,
@@ -412,7 +412,8 @@ export function routeScore(
 
 /** The kind of an event option for the policy: it can hurt (a cost or a gamble), heal, or be plain. */
 export function optionKind(option: EventOptionDef): 'risky' | 'heal' | 'free' {
-  if (option.effects.some((e) => e.op === 'gamble' || e.op === 'hurt')) return 'risky';
+  if (option.effects.some((e) => e.op === 'gamble' || e.op === 'hurt' || e.op === 'curse'))
+    return 'risky';
   if (option.effects.some((e) => e.op === 'heal')) return 'heal';
   return 'free';
 }
@@ -745,7 +746,7 @@ export function walkMap(options: {
       });
       if (node.kind === 'elite' || node.kind === 'epic') {
         if (node.kind === 'elite') elites += 1;
-        const left = dungeonKeepsakes.filter((k) => !held.some((h) => h.id === k.id));
+        const left = dungeonGifts.filter((k) => !held.some((h) => h.id === k.id));
         gain(left[int(rng, left.length || 1)]);
       }
       if (node.kind === 'boss') {
@@ -801,6 +802,8 @@ export function walkMap(options: {
       pack = addPack(pack, resolved.packDelta);
       earned = addEventExperience(earned, resolved.xp);
       for (const kid of resolved.keepsakesGained) gain(dungeonKeepsake(kid));
+      // A curse is folded into every later fight like a keepsake (the idol is a normal map room).
+      for (const c of resolved.curses ?? []) gain(c);
     } else if (node.kind === 'camp' && hp !== null) {
       const offers = campOffers(
         rng,
@@ -862,7 +865,7 @@ export function walkMap(options: {
     fightsCleared,
     fights,
     elites,
-    keepsakes: held.map((k) => k.id),
+    keepsakes: held.filter((k) => dungeonKeepsake(k.id) !== undefined).map((k) => k.id),
     camp,
     atCamp,
     pack,
