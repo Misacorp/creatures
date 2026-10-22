@@ -30,6 +30,7 @@ const ALLOWED: Readonly<Record<string, number>> = {
   'components/raid-board.css': 3,
   'components/slot-cue.css': 1,
   'components/slot-row.css': 2,
+  'stage/effects.css': 2,
   'stage/units.css': 2,
   'views/how-to-play.css': 6,
   'views/living-room.css': 2,

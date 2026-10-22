@@ -42,7 +42,9 @@ import { compactPair } from './number-format';
 import { ElementChip } from './sprites/ElementChip';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
 import { roundLabel } from './stage-rounds';
-import { forecastNextRound, strikeLabel, type Wording } from './telegraph';
+import { bossOrFoe, forecastNextRound, strikeLabel, type Wording } from './telegraph';
+import { moveTrack } from './move-track';
+import { MoveTrack } from './stage/MoveTrack';
 import { Popover, popupProps } from './ui/Popover';
 import { SegmentBar } from './ui/SegmentBar';
 import { StageHead, type StageModifier } from './ui/StageHead';
@@ -297,6 +299,12 @@ export function Stage({
   const windupItem = fx.find((i) => i.cue.kind === 'windup');
   const strikeItems = fx.filter((i) => i.cue.kind === 'strike');
   const strikeItem = strikeItems.at(-1);
+  // The move track: the boss's special moves in the boxes of the rounds they come in (move-track.ts).
+  const trackBoss = bossOrFoe(boss.id, addedGimmicks ?? [], names.gimmicks);
+  const track =
+    trackBoss === undefined || trackBoss.gimmicks.length === 0
+      ? null
+      : moveTrack(trackBoss, state.round, rounds ?? trackBoss.finaleRounds, names.gimmicks ?? {});
   // One round ahead: what the boss will do next round, from its content and the round number.
   const forecast = forecastNextRound(
     boss.id,
@@ -561,45 +569,51 @@ export function Stage({
       </StageHead>
 
       <div class="stage-boss">
-        <div
-          ref={bossRef}
-          class={`stage-boss-art${hit.has(null) ? ' hit' : ''}${windupItem === undefined ? '' : ' windup'}${retreated ? ' retreated' : ''}${enraged ? ' enraged' : ''}`}
-        >
-          <FoeFace info={foe}>
-            <Sprite sprite={art.sprite} scale={art.scale} />
-          </FoeFace>
-          {state.mark !== null && (
-            <span class={`stage-mark ${elementClass(state.mark)}${markCue ? ' pop' : ''}`}>
-              {/* The boss is not a button, so the mark can be a tag without taking a tap from anything. */}
-              <GlossaryTag
-                entry={markId === undefined ? '' : GLOSSARY_IDS.mark(markId)}
-                look="chip"
-                class="mark-tag"
-                label={`Marked: ${markName ?? state.mark}. What does this mean?`}
+        <div class="stage-boss-row">
+          {track !== null && <MoveTrack track={track} round={state.round} />}
+          <div
+            ref={bossRef}
+            class={`stage-boss-art${hit.has(null) ? ' hit' : ''}${windupItem === undefined ? '' : ' windup'}${retreated ? ' retreated' : ''}${enraged ? ' enraged' : ''}`}
+          >
+            <FoeFace info={foe}>
+              <Sprite sprite={art.sprite} scale={art.scale} />
+            </FoeFace>
+            {state.mark !== null && (
+              <span class={`stage-mark ${elementClass(state.mark)}${markCue ? ' pop' : ''}`}>
+                {/* The boss is not a button, so the mark can be a tag without taking a tap from anything. */}
+                <GlossaryTag
+                  entry={markId === undefined ? '' : GLOSSARY_IDS.mark(markId)}
+                  look="chip"
+                  class="mark-tag"
+                  label={`Marked: ${markName ?? state.mark}. What does this mean?`}
+                >
+                  <Sprite
+                    sprite={markGlyph}
+                    scale={3}
+                    {...(markColours === undefined ? {} : { palette: markColours })}
+                  />
+                  {markIcon !== undefined && <Sprite sprite={markIcon} scale={2} />}
+                  <span class="stage-mark-name">{markName}</span>
+                </GlossaryTag>
+              </span>
+            )}
+            <Floats fx={fx} target={null} />
+            <Bursts fx={fx} target={null} names={names} />
+            {bannerItem?.cue.kind === 'banner' && (
+              <span
+                key={`banner-${String(bannerItem.cue.i)}`}
+                class="stage-callout banner"
+                aria-hidden="true"
+                ref={fxRef(bannerItem)}
               >
-                <Sprite
-                  sprite={markGlyph}
-                  scale={3}
-                  {...(markColours === undefined ? {} : { palette: markColours })}
-                />
-                {markIcon !== undefined && <Sprite sprite={markIcon} scale={2} />}
-                <span class="stage-mark-name">{markName}</span>
-              </GlossaryTag>
-            </span>
-          )}
-          <EffectIcons effects={state.bossEffects} names={names} />
-          <Floats fx={fx} target={null} />
-          <Bursts fx={fx} target={null} names={names} />
-          {bannerItem?.cue.kind === 'banner' && (
-            <span
-              key={`banner-${String(bannerItem.cue.i)}`}
-              class="stage-callout banner"
-              aria-hidden="true"
-              ref={fxRef(bannerItem)}
-            >
-              <span class="pix">{bannerItem.cue.text}</span>
-            </span>
-          )}
+                <span class="pix">{bannerItem.cue.text}</span>
+              </span>
+            )}
+          </div>
+          <div class="boss-effects">
+            <EffectIcons effects={state.bossEffects} names={names} only="buff" />
+            <EffectIcons effects={state.bossEffects} names={names} only="debuff" />
+          </div>
         </div>
         <div class="stage-foe-line">
           <p class="stage-foe-name pix">{boss.name}</p>

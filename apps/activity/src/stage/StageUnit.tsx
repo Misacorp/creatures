@@ -205,7 +205,10 @@ export function StageUnit(props: UnitProps) {
         </SmallCreature>
       )}
       {props.effects !== undefined && (
-        <EffectIcons compact effects={props.effects} names={props.names} />
+        <>
+          <EffectIcons compact effects={props.effects} names={props.names} only="buff" />
+          <EffectIcons compact effects={props.effects} names={props.names} only="debuff" />
+        </>
       )}
       <Floats fx={props.fx} target={c.id} />
       <Bursts fx={props.fx} target={c.id} names={props.names} />

@@ -1,0 +1,203 @@
+/*
+  The boss's move track (stage/MoveTrack.tsx): a column of boxes left of the boss, one per round, this
+  round on top. Moves sit in the box of the round they fire in and rise one box a round. The top box is
+  taller and lights up red when a move is due, with the move's name along its bottom.
+*/
+.move-track {
+  --track-box: 2.25rem;
+  --track-top: 4rem;
+  --track-lane: 2.125rem;
+  position: relative;
+  width: calc(3 * var(--track-lane) + 0.5rem);
+}
+
+.track-grid {
+  display: grid;
+  grid-template-columns: repeat(3, var(--track-lane));
+  grid-template-rows: var(--track-top);
+  grid-auto-rows: var(--track-box);
+  gap: 0.25rem 0;
+  padding: 0 0.25rem;
+}
+
+/* The boxes: a quiet frame each, drawn under the moves across the whole width. */
+.track-box {
+  position: relative;
+  grid-column: 1 / -1;
+  margin: 0 -0.25rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.track-box.now {
+  background: var(--dusk);
+  box-shadow: 0 0 0 var(--px) var(--haze);
+}
+
+.track-box.now.lit {
+  background: #4a1420;
+  box-shadow:
+    0 0 0 var(--px) var(--bad),
+    0 0 0.75rem rgb(255 95 109 / 60%);
+}
+
+.track-round {
+  position: absolute;
+  right: 0.25rem;
+  bottom: 0.125rem;
+  font-size: var(--fs-small);
+  line-height: 1;
+  color: var(--line);
+}
+
+/* A move: a small framed button with the move's glyph. */
+.track-move {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  justify-self: center;
+  width: 1.875rem;
+  height: 1.875rem;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: var(--bevel-lo);
+  box-shadow: 0 0 0 2px var(--haze);
+  cursor: pointer;
+}
+
+.track-move:active:not(:disabled) {
+  transform: none;
+}
+
+.track-move:hover,
+.track-move.open {
+  box-shadow: 0 0 0 2px var(--gold);
+}
+
+.track-box.now ~ .track-move:not(.charge) {
+  align-self: start;
+  margin-top: 0.1875rem;
+}
+
+/* A whole-round move (armed from the start of the round): a dashed edge. */
+.track-move.round {
+  box-shadow: none;
+  outline: 2px dashed var(--gold);
+  outline-offset: -2px;
+}
+
+/* A charged move: a long block over the round it marks and the round it lands, its glyph on top. */
+.track-move.charge {
+  align-self: stretch;
+  justify-content: flex-start;
+  height: auto;
+  margin: 0.1875rem 0;
+  padding-top: 0.125rem;
+  background: #1f3a63;
+  box-shadow: 0 0 0 2px var(--tide);
+}
+
+.track-charge-bar {
+  flex-grow: 1;
+  width: 0.25rem;
+  margin: 0.125rem 0 0.25rem;
+  background: var(--tide);
+}
+
+/* A block cut by the track's top or bottom edge runs on out of view. */
+.track-move.charge.cut-top {
+  margin-top: 0;
+}
+
+.track-move.charge.cut-bottom {
+  margin-bottom: -0.25rem;
+}
+
+/* The names of this round's moves, along the bottom of the top box. */
+.track-now {
+  position: absolute;
+  text-shadow:
+    1px 0 var(--ink),
+    -1px 0 var(--ink),
+    0 1px var(--ink),
+    0 -1px var(--ink);
+  top: 2.25rem;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0 0.25rem;
+  font-size: var(--fs-small);
+  line-height: 1.05;
+  color: var(--bone);
+  pointer-events: none;
+}
+
+.track-now-line {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.track-now-note {
+  color: var(--gold);
+}
+
+/* Each new round, the moves rise one box into place. */
+@media (prefers-reduced-motion: no-preference) {
+  .track-move {
+    animation: track-rise 450ms ease-out both;
+  }
+}
+
+@keyframes track-rise {
+  from {
+    transform: translateY(calc(var(--track-box) + 0.25rem));
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+/* The boss's row on the stage: the track at the left, the picture in the middle, its effects at the right. */
+.stage-boss-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: start;
+  width: 100%;
+}
+
+.stage-boss-row > .move-track {
+  grid-column: 1;
+}
+
+.stage-boss-row > .stage-boss-art {
+  grid-column: 2;
+  justify-self: center;
+}
+
+/* Buffs at the top, debuffs at the bottom, always in the same place, so no title is needed. */
+.boss-effects {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  justify-self: end;
+  align-self: stretch;
+  grid-column: 3;
+  min-width: 2.5rem;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+/* Debuffs always at the bottom of the column, even with no buff above them. */
+.boss-effects > .debuffs {
+  margin-top: auto;
+}

@@ -86,7 +86,7 @@ describe('the stage shows effects', () => {
     },
   ];
 
-  it('puts the boss’s effects beside it and a creature’s on it', () => {
+  it('puts the boss’s effects in the column at its right and a creature’s on it', () => {
     page = createPage();
     page.draw(
       <Stage
@@ -102,7 +102,7 @@ describe('the stage shows effects', () => {
         anim={null}
       />,
     );
-    const boss = byClass(page.root, 'stage-boss-art')[0];
+    const boss = byClass(page.root, 'boss-effects')[0];
     expect(boss && byClass(boss, 'effect-chip')).toHaveLength(1);
     expect(byClass(page.root, 'effect-chip')).toHaveLength(2);
     expect(byClass(page.root, 'compact')).toHaveLength(1);

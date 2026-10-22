@@ -2740,3 +2740,13 @@ Misa: "the lounge experience counting is definitely flawed in some way". The cau
 - **Every check stores what it credits.** Whole XP go to the lounger and the remainder goes to `lounge_company.carry_ms` in the same transaction, which already existed for the remainder. Nothing is held in memory, so the "flush at the player's own request" is gone too.
 - **Cost:** one small transaction per player in company per minute (at most about 15 in a guild), plus the XP row every 2 minutes. That is fine for a Durable Object's SQLite.
 - **Kept:** company is still needed at two checks in a row (a new arrival earns from their second check), and the 3 minute gap cap stays.
+
+## 2026-10-22: The boss's move track, and fixed places for buffs and debuffs
+
+Misa: boxes of moves that "come up from underneath", like notes in Guitar Hero, so players see a move coming; an empty box when the boss does nothing special; several moves side by side; tap (or hover with a mouse) for what a move does. Buffs and debuffs: no titles, always in the same place, with up and down triangles.
+
+- **The track** (`move-track.ts`, `stage/MoveTrack.tsx`) sits left of the boss in the shared stage, so the raid replay, the live finale and the dungeon all have it. Five boxes: this round on top (taller, lit red with the move's name when one is due), the next four under it. Every special move comes on a fixed schedule (`every N` rounds), so the track is exact from the content and the round number alone, like the forecast.
+- **Kinds:** a plain move is one box (it strikes at the boss's turn, after the creatures). A charged move is a long block over the round it marks and the round it lands (the engine announces it at the start of the round before). Backdraft's trap has a dashed edge (armed from the start of the round, for the whole round). A move that comes every round shows in the top box only: a copy in every box would hide the moves that do come.
+- **Timing stays as it is:** the boss acts at the end of the round, after the creatures; only charges (marked at the start) and Backdraft (armed at the start) differ. No moves strike mid-round: the engine has no such timing and the track could not show it simply.
+- **Buffs and debuffs:** the boss's effects stand in a column at its right, buffs at the top and debuffs at the bottom, with no titles; each chip has a ▲ (buff) or ▼ (debuff) in its corner, so colour is not the only cue. On a creature, buffs run along the top of the sprite and debuffs along its bottom.
+- **Kept for now:** the "Next round: ..." line under the HP bar, which says which row or creatures a move aims at; Misa to decide whether it stays.
