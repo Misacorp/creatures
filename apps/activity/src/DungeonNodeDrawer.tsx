@@ -209,6 +209,20 @@ function PrizeRow({
   );
 }
 
+/** A curse the room put on the run: a "Curse" chip (tap for what a curse is) and what it does. */
+function CurseLine({ curse }: { curse: DungeonKeepsakeView }) {
+  return (
+    <p class="dnd-keepsake">
+      <Tag kind="chip" tone="bad" entry="curse" icon={{ kind: 'glyph', id: 'skull' }}>
+        Curse
+      </Tag>
+      <span>
+        {curse.name}: {curse.description}
+      </span>
+    </p>
+  );
+}
+
 /** A keepsake the room gave: its name as a chip (tap for what keepsakes are) and what it does. */
 function KeepsakeLine({ keepsake }: { keepsake: DungeonKeepsakeView }) {
   return (
@@ -300,6 +314,7 @@ function Outcome({ entry }: { entry: DungeonStepLog }) {
       )}
       {(entry.result === 'fight' || entry.result === 'event' || entry.result === 'camp') &&
         entry.keepsake !== undefined && <KeepsakeLine keepsake={entry.keepsake} />}
+      {entry.result === 'event' && entry.curse !== undefined && <CurseLine curse={entry.curse} />}
       {entry.result === 'fight' && entry.supply === true && <p class="dnd-line">{SUPPLY_LINE}</p>}
     </div>
   );

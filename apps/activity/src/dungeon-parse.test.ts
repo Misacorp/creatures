@@ -22,8 +22,14 @@ import {
 } from './dungeon-parse';
 import {
   SAMPLE_EVENT,
+  SAMPLE_CURSE,
+  SAMPLE_DOOR_TREASURES,
   SAMPLE_TREASURES,
   chasmEvent,
+  doorEvent,
+  sampleDoorSummary,
+  sampleStateCursed,
+  sampleStateDoor,
   sampleChasmSummary,
   sampleStateChasm,
   sampleActFight,
@@ -959,6 +965,72 @@ describe('the Blue Chasm in the answers', () => {
     };
     expect(() =>
       parseDungeonAct({ state: sampleState(), summary: broken, today: sampleToday() }),
+    ).toThrow();
+  });
+});
+
+describe('the Cursed Idol and the Hungry Door in the answers', () => {
+  const parse = (state: unknown) => parseDungeonAct({ state, today: sampleToday() }).state;
+
+  it('reads the curses of a run, and refuses a run without the list or with a broken curse', () => {
+    expect(parse(sampleStateCursed()).curses).toEqual([SAMPLE_CURSE]);
+    expect(parse(sampleState()).curses).toEqual([]);
+    expect(() => parse(omitKey(sampleStateCursed(), 'curses'))).toThrow();
+    expect(() => parse({ ...sampleStateCursed(), curses: [{ id: 'x', name: 'X' }] })).toThrow();
+  });
+
+  it('reads the door with each treasure kind, and an option that cannot be picked with its reason', () => {
+    for (const treasure of Object.values(SAMPLE_DOOR_TREASURES)) {
+      const pending = parse(sampleStateDoor(treasure)).pending;
+      expect(pending?.kind === 'event' ? pending.event.treasure : null).toEqual(treasure);
+    }
+    const blocked = parse(
+      sampleStateDoor(SAMPLE_DOOR_TREASURES.gear, 'Needs two creatures standing.'),
+    ).pending;
+    expect(blocked?.kind === 'event' ? blocked.event.options[0]?.blocked : null).toBe(
+      'Needs two creatures standing.',
+    );
+    expect(() =>
+      parse({
+        ...sampleStateDoor(),
+        pending: {
+          kind: 'event',
+          event: {
+            ...doorEvent(),
+            options: [{ label: 'Feed it', description: 'x', blocked: 5 }, doorEvent().options[1]],
+          },
+        },
+      }),
+    ).toThrow();
+  });
+
+  it('reads the step of a fed door (the creature sent home) and of a taken curse', () => {
+    const run = sampleDoorSummary();
+    const parsed = parseDungeonAct({
+      state: sampleState(),
+      summary: run,
+      today: sampleToday(),
+    }).summary;
+    const step = parsed?.route?.history.find(
+      (h) => h.result === 'event' && h.sentHome !== undefined,
+    );
+    expect(step).toMatchObject({ option: 'Feed it', sentHome: 'Pip', treasure: { kind: 'gear' } });
+    const history = (run.route?.history ?? []).map((h) =>
+      h.result === 'event' ? { ...h, curse: SAMPLE_CURSE } : h,
+    );
+    const withCurse = { ...run, curses: [SAMPLE_CURSE], route: { ...run.route, history } };
+    const read = parseDungeonAct({
+      state: sampleState(),
+      summary: withCurse,
+      today: sampleToday(),
+    }).summary;
+    expect(read?.curses).toEqual([SAMPLE_CURSE]);
+    expect(() =>
+      parseDungeonAct({
+        state: sampleState(),
+        summary: { ...run, curses: [{ id: 1 }] },
+        today: sampleToday(),
+      }),
     ).toThrow();
   });
 });

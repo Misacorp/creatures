@@ -1266,8 +1266,8 @@ describe('a mystery room', () => {
       nextGuild(),
       async (ctx) => {
         const won: boolean[] = [];
-        for (let n = 1; n <= 14; n++) {
-          // A new day is a new map, with other mystery rooms.
+        for (let n = 1; n <= 30; n++) {
+          // A new day is a new map, with other mystery rooms (30 tries: only some rooms hold a gamble, and the vault takes a quarter of them).
           ctx.clock.t += DAY;
           const p = await dungeonPlayer(ctx, n, STRONG);
           const state = await begin(p);
@@ -2267,6 +2267,7 @@ describe('the run’s state', () => {
           [
             'at',
             'attempt',
+            'curses',
             'day',
             'depth',
             'history',

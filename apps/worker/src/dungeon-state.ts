@@ -35,7 +35,9 @@ import {
   type Role,
   type FoldKit,
   type GearItem,
+  type CurseDef,
   type KeepsakeDef,
+  eventOptionBlock,
   type WeatherDay,
 } from '@creatures/game';
 import {
@@ -196,6 +198,8 @@ export interface RunState {
    * enters is fought as an epic fight with double rewards, and then all of them are cleared. Absent before the vault: none.
    */
   sealed: string[];
+  /** The curses the run carries (the Cursed Idol's): folded into every later fight like a keepsake. Absent before them: none. */
+  curses: CurseDef[];
 }
 
 /** Reads a stored state, or null when it is missing or is not a state this code wrote. */
@@ -220,6 +224,8 @@ export function parseState(json: string | null): RunState | null {
     parsed.rareSeen ??= [];
     // A state stored before the Sealed Vault marked no rooms.
     parsed.sealed ??= [];
+    // A state stored before the Cursed Idol carries no curse.
+    parsed.curses ??= [];
     // A state stored before experience was paid per room counted the fights each creature cleared.
     if (parsed.earned === undefined || parsed.earned === null) {
       const old = (parsed as { tally?: Record<string, number> }).tally;
@@ -268,6 +274,16 @@ export function neutralRoom(keepsakes: readonly KeepsakeDef[]): DungeonRoomSpec 
     atk: 1,
     ...(keepsakes.length === 0 ? {} : { keepsakes: [...keepsakes] }),
   };
+}
+
+/** What a fight folds in besides the row: the keepsakes the run holds, then its curses (both are the room's number folds). */
+export function heldFolds(st: Pick<RunState, 'keepsakes' | 'curses'>): KeepsakeDef[] {
+  return [...heldKeepsakes(st.keepsakes), ...st.curses];
+}
+
+/** A curse as the client is shown it: a name and its plain effect line. */
+export function curseViews(curses: readonly CurseDef[]): DungeonKeepsakeView[] {
+  return curses.map((c) => ({ id: c.id, name: c.name, description: c.description }));
 }
 
 /** The row's max HP outside a fight, from its stats and the keepsakes held. */
@@ -351,6 +367,7 @@ export function eventView(
   eventId: string,
   treasure?: Treasure,
   depth?: number,
+  hp?: Readonly<Record<string, number>>,
 ): DungeonEventView | null {
   const def = dungeonEvent(eventId);
   if (def === undefined) return null;
@@ -358,7 +375,15 @@ export function eventView(
     id: def.id,
     name: def.name,
     text: def.text,
-    options: def.options.map((o) => ({ label: o.label, description: o.description })),
+    options: def.options.map((o) => {
+      // An option that cannot be picked now (feeding the door needs two standing) says why.
+      const blocked = hp === undefined ? null : eventOptionBlock(o, { hp });
+      return {
+        label: o.label,
+        description: o.description,
+        ...(blocked === null ? {} : { blocked }),
+      };
+    }),
     ...(treasure === undefined ? {} : { treasure: treasureView(treasure, depth) }),
   };
 }
@@ -400,7 +425,7 @@ function pendingView(st: RunState, depth: number): DungeonPendingView {
     };
   }
   if (pending.kind === 'event') {
-    const event = eventView(pending.eventId, pending.treasure, depth);
+    const event = eventView(pending.eventId, pending.treasure, depth, currentHp(st));
     return event === null ? null : { kind: 'event', event };
   }
   return {
@@ -464,6 +489,7 @@ export function runView(meta: RunMeta, st: RunState): DungeonRunState {
       gear: runGearView(st.seats?.[slot.id]?.kit.items ?? []),
     })),
     keepsakes: keepsakeViews(st.keepsakes),
+    curses: curseViews(st.curses),
     pack: { ...st.pack },
     roomsCleared: st.roomsCleared,
     supply: st.supply,

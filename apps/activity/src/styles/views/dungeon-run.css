@@ -442,3 +442,13 @@ button.descend-home {
 .event-treasure .reward-badges {
   justify-content: center;
 }
+
+/* Curses: one warning note each under the pack and keepsakes. */
+.run-curses {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

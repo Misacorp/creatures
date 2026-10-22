@@ -1392,6 +1392,16 @@
     "section": "dungeon"
   },
   {
+    "id": "curse",
+    "title": "Curse",
+    "short": "A mark that makes the rest of this run harder.",
+    "lines": [
+      "A curse changes every fight after you take it. When the run ends it is gone: it never follows you into the next run.",
+      "The Cursed Idol gives one, and a run meets the Idol once at most."
+    ],
+    "section": "dungeon"
+  },
+  {
     "id": "elite",
     "title": "Elite",
     "short": "A fiercer fight that gives a keepsake.",
@@ -1750,12 +1760,52 @@
     "section": "dungeon"
   },
   {
+    "id": "event-training-post",
+    "title": "Training Post",
+    "short": "Two choices: Spar or Watch.",
+    "lines": [
+      "Spar: Every creature gains 40 experience and loses 10% of its max HP.",
+      "Watch: Every creature gains 15 experience."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "event-crystal-hollow",
+    "title": "Crystal Hollow",
+    "short": "Two choices: Chip a crystal or Sit in the glow.",
+    "lines": [
+      "Chip a crystal: You gain 3 scrap and 1 Essence.",
+      "Sit in the glow: Every creature heals 30% of its max HP."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "event-cursed-idol",
+    "title": "Cursed Idol",
+    "short": "Two choices: Take it or Leave it.",
+    "lines": [
+      "Take it: You gain a keepsake. Foes deal 20% more damage for the rest of the run.",
+      "Leave it: Nothing happens."
+    ],
+    "section": "dungeon"
+  },
+  {
     "id": "event-blue-chasm",
     "title": "Blue Chasm",
     "short": "Two choices: Cross the plank or Don't risk it.",
     "lines": [
       "Cross the plank: 50%: you cross and take the treasure shown. 50%: the team falls and the run ends.",
       "Don't risk it: Nothing happens."
+    ],
+    "section": "dungeon"
+  },
+  {
+    "id": "event-hungry-door",
+    "title": "Hungry Door",
+    "short": "Two choices: Feed it or Pry it open.",
+    "lines": [
+      "Feed it: Your highest-level creature goes home. You take the treasure shown.",
+      "Pry it open: 40%: you take the treasure shown. 60%: every creature loses 40% HP."
     ],
     "section": "dungeon"
   },

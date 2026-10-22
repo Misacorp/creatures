@@ -107,17 +107,23 @@ describe('simulation run', () => {
     // move a little. Dice at this size: finale start share 0.3084 to 0.3044, top share 0.3015 to 0.309,
     // creature ratio 1.3802 to 1.3962, a dungeon run 5.1339 to 5.3036 fights (home rate 0.1071 to 0.1161).
     // Nothing else moved.
+    // 2026-10-22 (B-030, three more common mystery rooms): the map shuffles the event list onto each map, so
+    // every seeded map and the dice after it differ, and the Cursed Idol's curse is folded into later fights.
+    // Dice at this size: the raid finale win rate 1 to 0.8333 (4 raid weeks: one lost finale), finale start
+    // share 0.3044 to 0.3220, top share 0.309 to 0.3066, creature ratio 1.3962 to 1.2558, a dungeon run
+    // 5.3036 to 5.0446 fights (home rate 0.1161 to 0.1071). The quick sim (B-030) is
+    // the measure, not this.
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
       'raid.typical.phase1ClearRate': 1,
-      'raid.typical.finaleWinRate': 1,
-      'raid.typical.finaleStartShare': 0.3044,
-      'fair.topShareMedian': 0.309,
-      'choice.creatureRatioMax': 1.3962,
+      'raid.typical.finaleWinRate': 0.8333,
+      'raid.typical.finaleStartShare': 0.322,
+      'fair.topShareMedian': 0.3066,
+      'choice.creatureRatioMax': 1.2558,
       'econ.casualTopLevelWeek4': 14,
       'exp.rate.long': 131.3262,
-      'dungeon.meanFights': 5.3036,
-      'dungeon.dailyHomeRate': 0.1161,
+      'dungeon.meanFights': 5.0446,
+      'dungeon.dailyHomeRate': 0.1071,
       'longrun.typical.finaleWinRate': 0.8333,
       'longrun.typicalFinalRank': 4,
     };

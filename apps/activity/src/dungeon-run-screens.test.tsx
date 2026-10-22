@@ -23,8 +23,13 @@ import {
   sampleCampCreatures,
   sampleStateCamp,
   sampleStateEvent,
+  SAMPLE_CURSE,
+  SAMPLE_DOOR_TREASURES,
   SAMPLE_TREASURES,
   chasmEvent,
+  doorEvent,
+  sampleDoorSummary,
+  sampleStateCursed,
   sampleChasmSummary,
   sampleStateMid,
   sampleSummary,
@@ -1692,5 +1697,125 @@ describe('the Blue Chasm', () => {
     const text = visibleText(root);
     expect(text).toContain('Blue Chasm');
     expect(text).toContain('the whole team falls into the chasm');
+  });
+});
+
+describe('the Cursed Idol curse on the run', () => {
+  it('shows the curse as a warning note under the pack and keepsakes, with its plain line', () => {
+    const { root } = draw(<DungeonRunStrip state={sampleStateCursed()} />);
+    const notes = byClass(root, 'run-curse');
+    expect(notes).toHaveLength(1);
+    const text = visibleText(notes[0] as FakeElement);
+    expect(text).toContain('Curse');
+    expect(text).toContain("Idol's Curse.");
+    expect(text).toContain(SAMPLE_CURSE.description);
+    expect(text).toContain('Until the run ends.');
+    // A warning note (not an error), with a chip that opens the glossary entry.
+    expect(byClass(root, 'alert').length).toBeGreaterThan(0);
+    expect(glossaryEntry('curse')?.title).toBe('Curse');
+  });
+
+  it('shows no curse note on a run without one', () => {
+    const { root } = draw(<DungeonRunStrip state={sampleStateMid()} />);
+    expect(byClass(root, 'run-curse')).toHaveLength(0);
+    expect(byClass(root, 'run-curses')).toHaveLength(0);
+  });
+
+  it('shows the curse on the end screen next to the keepsakes', () => {
+    const run = { ...sampleSummary('home'), curses: [SAMPLE_CURSE] };
+    const { root } = draw(
+      <DungeonResults
+        run={run}
+        today={sampleToday()}
+        offset={0}
+        canRetry={false}
+        busy={false}
+        error={null}
+        onWatch={noop}
+        onRetry={noop}
+      />,
+    );
+    expect(visibleText(byClass(root, 'run-curse')[0] as FakeElement)).toContain(
+      'Foes deal 20% more damage.',
+    );
+  });
+});
+
+describe('the Hungry Door', () => {
+  it('shows its Rare-tier treasure between the scene and the choice, with the exact outcomes', () => {
+    for (const treasure of Object.values(SAMPLE_DOOR_TREASURES)) {
+      page?.unmount();
+      page = createPage();
+      page.draw(<DungeonEvent event={doorEvent(treasure)} busy={false} onPick={noop} />);
+      const root = page.root;
+      const text = visibleText(root);
+      expect(text).toContain('Hungry Door');
+      expect(byClass(root, 'event-treasure')).toHaveLength(1);
+      expect(text.indexOf('The treasure')).toBeLessThan(text.indexOf('Feed it'));
+      expect(visibleText(button(root, /Feed it/))).toContain('highest-level creature goes home');
+      expect(visibleText(button(root, /Pry it open/))).toContain('40%');
+      expect(visibleText(button(root, /Pry it open/))).toContain('60%');
+    }
+    expect(SAMPLE_DOOR_TREASURES.gear.rarity).toBe('rare');
+  });
+
+  it('opens the full item card of the Rare piece before choosing, with no Equip button', () => {
+    Reflect.set(globalThis, 'window', {
+      innerHeight: 800,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    });
+    const p = draw(
+      <PopoverHost onOpenHowTo={noop}>
+        <EquipHost creatures={[sampleCreature('growing')]} onEquip={noop}>
+          <DungeonEvent event={doorEvent()} busy={false} onPick={noop} />
+        </EquipHost>
+      </PopoverHost>,
+    );
+    p.click(byClass(p.root, 'find-row-button')[0] as FakeElement);
+    expect(byClass(p.root, 'idc')).toHaveLength(1);
+    const text = visibleText(byClass(p.root, 'idc')[0] as FakeElement);
+    for (const line of SAMPLE_DOOR_TREASURES.gear.card.lines) expect(text).toContain(line.text);
+    expect(byClass(p.root, 'pop-action').filter((b) => visibleText(b) === 'Equip')).toHaveLength(0);
+  });
+
+  it('turns Feed it off with the reason when only one creature stands, and Pry it open still picks', () => {
+    const picked: (0 | 1)[] = [];
+    const { root } = draw(
+      <DungeonEvent
+        event={doorEvent(undefined, 'Needs two creatures standing.')}
+        busy={false}
+        onPick={(o) => {
+          picked.push(o);
+        }}
+      />,
+    );
+    const feed = button(root, /Feed it/);
+    expect(visibleText(feed)).toContain('Needs two creatures standing.');
+    expect(feed.hasAttribute('disabled')).toBe(true);
+    expect(button(root, /Pry it open/).hasAttribute('disabled')).toBe(false);
+    page?.click(feed);
+    page?.click(button(root, /Pry it open/));
+    expect(picked).toEqual([1]);
+  });
+
+  it('says on the end screen which creature went home, with the treasure it bought', () => {
+    const run = sampleDoorSummary();
+    const { root } = draw(
+      <DungeonResults
+        run={run}
+        today={sampleToday()}
+        offset={0}
+        canRetry={false}
+        busy={false}
+        error={null}
+        onWatch={noop}
+        onRetry={noop}
+      />,
+    );
+    page?.click(button(root, /Rooms/));
+    const text = visibleText(root);
+    expect(text).toContain('Hungry Door');
+    expect(text).toContain('Pip heads home. You take the treasure.');
   });
 });

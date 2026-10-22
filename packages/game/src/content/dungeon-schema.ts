@@ -205,6 +205,23 @@ export type KeepsakeDef = v.InferOutput<typeof KeepsakeSchema>;
 /** The most experience one event effect gives each creature (`RULES.experience.dungeon.maxEvent` is the same number, tested). */
 export const MAX_EVENT_XP = 60;
 
+/** The treasure tables a `treasure` effect can name: the Blue Chasm's (the default) and the Hungry Door's. */
+export const TREASURE_TABLES = ['chasm', 'door'] as const;
+export type TreasureTableName = (typeof TREASURE_TABLES)[number];
+
+/**
+ * A curse: a run-long change to the foes, written with the foe folds of a room modifier. It is held like a
+ * keepsake (the engine folds it into every later fight of the run) but is shown as a "Curse".
+ */
+export const CurseSchema = v.strictObject({
+  id: v.pipe(IdSchema, v.maxLength(KEEPSAKE_ID_MAX)),
+  name: Name,
+  /** One plain line with the exact effect ("Foes deal 20% more damage for the rest of the run."). */
+  description: v.pipe(v.string(), v.minLength(1), v.maxLength(90)),
+  effects: v.pipe(v.array(FoeStatEffectSchema), v.minLength(1), v.maxLength(2)),
+});
+export type CurseDef = v.InferOutput<typeof CurseSchema>;
+
 const PackAmount = v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(8));
 
 const PackEffectSchema = v.strictObject({
@@ -240,7 +257,15 @@ const PLAIN_EFFECTS = [
    * The treasure the room rolled when the player came in (`rollTreasure`, shown before the choice) goes
    * into the run's pack: paid at the run's end, lost on a defeat. Only in an event that rolls one.
    */
-  v.strictObject({ op: v.literal('treasure') }),
+  v.strictObject({ op: v.literal('treasure'), table: v.optional(v.picklist(TREASURE_TABLES)) }),
+  /** A curse the run carries to its end (`CurseSchema`). A cost: it makes the rest of the run harder. */
+  v.strictObject({ op: v.literal('curse'), curse: CurseSchema }),
+  /**
+   * The team's highest-level standing creature goes home, as a camp swap sends one out: it keeps the
+   * experience it earned and leaves the row. Not offered when fewer than two creatures stand (the row
+   * must never be left empty).
+   */
+  v.strictObject({ op: v.literal('send_home'), who: v.literal('highest_level') }),
   /** The whole team falls: the run ends as a defeat (it keeps half the pack, `RULES.dungeon.defeatKeepBp`). A cost. */
   v.strictObject({ op: v.literal('fall') }),
   /**
@@ -314,15 +339,19 @@ export const DungeonRunContentSchema = v.strictObject({
 });
 export type DungeonRunContent = v.InferOutput<typeof DungeonRunContentSchema>;
 
-/** True when taking the effect can cost the player something: HP, the run (a fall), a harder fight (a seal), or the chance of any. */
+/**
+ * True when taking the effect can cost the player something: HP, the run (a fall), a harder fight (a seal), a
+ * curse, or the chance of any. Sending a creature home costs no HP and no run (it keeps what it earned), so it
+ * is not one: the Hungry Door's "Feed it" is its free option.
+ */
+const COSTLY = new Set<string>(['hurt', 'fall', 'seal', 'curse']);
 function effectCosts(e: EventEffect): boolean {
-  if (e.op === 'hurt' || e.op === 'fall' || e.op === 'seal') return true;
-  if (e.op === 'gamble')
-    return [...e.win, ...e.lose].some((x) => x.op === 'hurt' || x.op === 'fall' || x.op === 'seal');
+  if (COSTLY.has(e.op)) return true;
+  if (e.op === 'gamble') return [...e.win, ...e.lose].some((x) => COSTLY.has(x.op));
   return false;
 }
 
-/** True when picking the option can cost HP, the run or a harder fight (a `hurt`, a `fall` or a `seal`, or a gamble with one on a branch). */
+/** True when picking the option can cost HP, the run or a harder fight (a `hurt`, a `fall`, a `seal` or a `curse`, or a gamble with one on a branch). */
 export function eventOptionCosts(option: EventOptionDef): boolean {
   return option.effects.some(effectCosts);
 }
@@ -332,7 +361,7 @@ export function eventOptionCosts(option: EventOptionDef): boolean {
  * Throws an Error naming the first problem. Ids are unique across both lists and do not clash with a
  * foe or a room modifier. Every event has at least one option that costs nothing (no `hurt` or `fall`, no
  * gamble with one on a branch), so a hurt team can always walk through; an option holds at most
- * one gamble, so "did it win" has one answer. An event holds at most one `treasure` (the room rolls one prize). Shipped content is checked at module load.
+ * one gamble, so "did it win" has one answer. An option holds at most one `treasure` and an event's treasures share one table (the room rolls one prize), and an event holds at most one `curse`. Shipped content is checked at module load.
  */
 export function loadDungeonRun(
   rawKeepsakes: unknown,
@@ -376,9 +405,20 @@ export function loadDungeonRun(
     const ops = e.options.flatMap((o) =>
       o.effects.flatMap((x) => (x.op === 'gamble' ? [x, ...x.win, ...x.lose] : [x])),
     );
-    if (ops.filter((x) => x.op === 'treasure').length > 1) {
-      fail(`event "${e.id}" has more than one treasure`);
+    if (ops.filter((x) => x.op === 'curse').length > 1) {
+      fail(`event "${e.id}" has more than one curse`);
     }
+    // The room rolls one prize, so an option takes at most one treasure and every option names the same table.
+    const tables = new Set<string>();
+    for (const o of e.options) {
+      const inOption = o.effects.flatMap((x) =>
+        x.op === 'gamble' ? [x, ...x.win, ...x.lose] : [x],
+      );
+      const treasures = inOption.filter((x) => x.op === 'treasure');
+      if (treasures.length > 1) fail(`event "${e.id}" has more than one treasure in an option`);
+      for (const t of treasures) tables.add(t.table ?? 'chasm');
+    }
+    if (tables.size > 1) fail(`event "${e.id}" has treasures of different tables`);
     for (const o of e.options) {
       if (o.effects.filter((x) => x.op === 'gamble').length > 1) {
         fail(`event "${e.id}" has an option with more than one gamble`);

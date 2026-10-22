@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   RULES,
   content,
+  dungeonEvent,
   dungeonKeepsake,
   roomModifier,
   type DungeonFoeDef,
@@ -135,6 +136,24 @@ describe('keepsakes fold into a room like the modifier does, after it', () => {
     const both = withKeepsakes(['chalk-mark', 'wayfarer-charm', 'lantern-moth']);
     expect(both.bossHpPool.max).toBe(270);
     expect(hpOf(both, 'guard')).toBe(Math.floor((hpOf(plain, 'guard') * 11_200) / 10_000));
+  });
+
+  it("the Cursed Idol's curse (held like a keepsake) raises the foe's Attack and the damage the team takes", () => {
+    const idol = dungeonEvent('cursed-idol')?.options[0]?.effects.find((e) => e.op === 'curse');
+    if (idol?.op !== 'curse') throw new Error('no curse in the idol');
+    const curse: KeepsakeDef = idol.curse;
+    const cursed = buildRoomInput(run([spec(0)]), spec(0, { keepsakes: [curse] }), null);
+    expect(cursed.bossAtk).toBe(Math.floor((plain.bossAtk * 12_000) / 10_000));
+    const taken = (keepsakes: KeepsakeDef[]): number => {
+      const room = spec(0, {
+        hp: 100_000,
+        atk: 14,
+        ...(keepsakes.length > 0 ? { keepsakes } : {}),
+      });
+      const out = simulateDungeonRoom(run([room]), room, null, 'curse').result;
+      return Object.values(out.hpEnd).reduce((a, b) => a + b, 0);
+    };
+    expect(taken([curse])).toBeLessThan(taken([]));
   });
 
   it('an Attack keepsake makes the team hit harder in a real fight', () => {

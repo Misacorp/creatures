@@ -688,6 +688,7 @@ describe('the glossary covers the daily dungeon', () => {
     'dungeon-camp',
     'dungeon-pack',
     'keepsake',
+    'curse',
     'elite',
     'mystery-room',
     'cache',

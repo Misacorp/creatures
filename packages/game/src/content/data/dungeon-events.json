@@ -315,10 +315,112 @@
     ]
   },
   {
+    "id": "training-post",
+    "name": "Training Post",
+    "text": "An old sparring dummy stands in the corner, stuffed with straw and very patient. Someone pinned a ribbon to it.",
+    "options": [
+      {
+        "label": "Spar",
+        "description": "Every creature gains 40 experience and loses 10% of its max HP.",
+        "effects": [
+          {
+            "op": "hurt",
+            "bp": 1000
+          },
+          {
+            "op": "xp",
+            "amount": 40
+          }
+        ]
+      },
+      {
+        "label": "Watch",
+        "description": "Every creature gains 15 experience.",
+        "effects": [
+          {
+            "op": "xp",
+            "amount": 15
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "crystal-hollow",
+    "name": "Crystal Hollow",
+    "text": "Pale blue crystals grow all over this small hollow and hum softly, like a kettle thinking about it.",
+    "options": [
+      {
+        "label": "Chip a crystal",
+        "description": "You gain 3 scrap and 1 Essence.",
+        "effects": [
+          {
+            "op": "pack",
+            "scrap": 3,
+            "essence": 1
+          }
+        ]
+      },
+      {
+        "label": "Sit in the glow",
+        "description": "Every creature heals 30% of its max HP.",
+        "effects": [
+          {
+            "op": "heal",
+            "bp": 3000
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cursed-idol",
+    "name": "Cursed Idol",
+    "text": "A little stone idol grins from a ledge. Its eyes are two chips of dark glass, and it looks very pleased to see you.",
+    "options": [
+      {
+        "label": "Take it",
+        "description": "You gain a keepsake. Foes deal 20% more damage for the rest of the run.",
+        "effects": [
+          {
+            "op": "keepsake"
+          },
+          {
+            "op": "curse",
+            "curse": {
+              "id": "idol-curse",
+              "name": "Idol's Curse",
+              "description": "Foes deal 20% more damage.",
+              "effects": [
+                {
+                  "op": "foe_stat",
+                  "stat": "atk",
+                  "bp": 2000
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "label": "Leave it",
+        "description": "Nothing happens.",
+        "effects": [
+          {
+            "op": "nothing"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "blue-chasm",
     "name": "Blue Chasm",
     "text": "A narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There's a valuable treasure on the other side.",
-    "rare": { "chanceBp": 1500, "fromDepth": 3 },
+    "rare": {
+      "chanceBp": 1500,
+      "fromDepth": 3
+    },
     "options": [
       {
         "label": "Cross the plank",
@@ -327,15 +429,74 @@
           {
             "op": "gamble",
             "chanceBp": 5000,
-            "win": [{ "op": "treasure" }],
-            "lose": [{ "op": "fall" }]
+            "win": [
+              {
+                "op": "treasure"
+              }
+            ],
+            "lose": [
+              {
+                "op": "fall"
+              }
+            ]
           }
         ]
       },
       {
         "label": "Don't risk it",
         "description": "Nothing happens.",
-        "effects": [{ "op": "nothing" }]
+        "effects": [
+          {
+            "op": "nothing"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "hungry-door",
+    "name": "Hungry Door",
+    "text": "A round wooden door with a wide mouth carved into it. A treasure sits on the floor in front, and the door looks hungry.",
+    "rare": {
+      "chanceBp": 2000,
+      "fromDepth": 2
+    },
+    "options": [
+      {
+        "label": "Feed it",
+        "description": "Your highest-level creature goes home. You take the treasure shown.",
+        "effects": [
+          {
+            "op": "send_home",
+            "who": "highest_level"
+          },
+          {
+            "op": "treasure",
+            "table": "door"
+          }
+        ]
+      },
+      {
+        "label": "Pry it open",
+        "description": "40%: you take the treasure shown. 60%: every creature loses 40% HP.",
+        "effects": [
+          {
+            "op": "gamble",
+            "chanceBp": 4000,
+            "win": [
+              {
+                "op": "treasure",
+                "table": "door"
+              }
+            ],
+            "lose": [
+              {
+                "op": "hurt",
+                "bp": 4000
+              }
+            ]
+          }
+        ]
       }
     ]
   },

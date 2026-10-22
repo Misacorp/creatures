@@ -86,7 +86,8 @@ export interface DungeonEventView {
   id: string;
   name: string;
   text: string;
-  options: { label: string; description: string }[];
+  /** `blocked` is why the option cannot be picked right now (absent when it can). */
+  options: { label: string; description: string; blocked?: string }[];
   /** The prize of a rare room, rolled when it opened. Absent in a room with none. */
   treasure?: DungeonTreasureView;
 }
@@ -156,6 +157,10 @@ export type DungeonStepLog =
       outcome: string;
       loot: DungeonPack;
       keepsake?: DungeonKeepsakeView;
+      /** A curse the option put on the run (a name and its plain effect line). */
+      curse?: DungeonKeepsakeView;
+      /** The name of the creature the option sent home (plain text). */
+      sentHome?: string;
       /** The treasure the option took (paid at the run's end unless the run ended in a defeat). */
       treasure?: DungeonTreasureView;
       /** The option was a fall: the whole team fell and the run ended. */
@@ -236,6 +241,8 @@ export interface DungeonRunState {
   /** The row now, left to right. */
   team: DungeonRunCreature[];
   keepsakes: DungeonKeepsakeView[];
+  /** The curses the run carries (shown beside the keepsakes as "Curse"). */
+  curses: DungeonKeepsakeView[];
   /** At risk until the run goes home or clears. */
   pack: DungeonPack;
   roomsCleared: number;
@@ -361,6 +368,8 @@ export interface DungeonRunSummary {
   path?: string[];
   pack?: { found: DungeonPack; kept: DungeonPack };
   keepsakes?: DungeonKeepsakeView[];
+  /** The curses the run carried at its end (absent: none). */
+  curses?: DungeonKeepsakeView[];
   /** Map runs that ended: the run's map at its depth, the rooms visited in order and what each did. Absent in older summaries. */
   route?: {
     map: DungeonMapView;

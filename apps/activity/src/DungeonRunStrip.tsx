@@ -18,6 +18,7 @@ import { creatureSpriteOrFallback } from './sprites/creature-sprites';
 import { Bar } from './ui/Bar';
 import { CountBadgeList } from './ui/CountBadge';
 import { Drawer } from './ui/Drawer';
+import { Alert } from './ui/Alert';
 import { LandmarkChip, Tag } from './ui/Tag';
 
 /**
@@ -200,6 +201,29 @@ export function RunKeepsakes({ keepsakes }: { keepsakes: readonly DungeonKeepsak
 }
 
 /**
+ * The curses the run carries (the Cursed Idol's), one note each: a "Curse" chip (tap for what a curse is)
+ * with its name and the plain line of what it does to the foes. Nothing when there are none. Under the
+ * keepsakes, as the price of the one that came with it.
+ */
+export function RunCurses({ curses }: { curses: readonly DungeonKeepsakeView[] }) {
+  if (curses.length === 0) return null;
+  return (
+    <ul class="run-curses" aria-label="Curses">
+      {curses.map((c) => (
+        <li key={c.id}>
+          <Alert level="warning" class="run-curse">
+            <Tag kind="chip" tone="bad" entry="curse" icon={{ kind: 'glyph', id: 'skull' }}>
+              Curse
+            </Tag>{' '}
+            <strong>{c.name}.</strong> {c.description} Until the run ends.
+          </Alert>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
  * The strip above the map (and above an event or the camp): where the run is, the row with its HP,
  * the keepsakes, the pack, and what the last mystery room did. It is the state of the run at a glance.
  */
@@ -232,6 +256,7 @@ export function DungeonRunStrip({ state }: { state: DungeonRunState }) {
         <RunPack pack={state.pack} />
         <RunKeepsakes keepsakes={state.keepsakes} />
       </div>
+      <RunCurses curses={state.curses} />
       {event !== null && (
         <p class="run-event prose" role="status">
           <strong>{event.title}.</strong> {event.outcome}

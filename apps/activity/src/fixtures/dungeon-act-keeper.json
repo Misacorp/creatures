@@ -432,6 +432,7 @@
         "description": "Foes hit 10% softer."
       }
     ],
+    "curses": [],
     "pack": {
       "bait": 8,
       "essence": 5,

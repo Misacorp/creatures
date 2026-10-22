@@ -200,7 +200,11 @@ function isEventView(value: unknown): value is DungeonEventView {
     Array.isArray(value['options']) &&
     value['options'].length === 2 &&
     value['options'].every(
-      (o: unknown) => isRecord(o) && isStr(o['label']) && isStr(o['description']),
+      (o: unknown) =>
+        isRecord(o) &&
+        isStr(o['label']) &&
+        isStr(o['description']) &&
+        (o['blocked'] === undefined || isStr(o['blocked'])),
     )
   );
 }
@@ -268,6 +272,8 @@ function isStepLog(value: unknown): value is DungeonStepLog {
         isStr(value['outcome']) &&
         isPack(value['loot']) &&
         isOptionalKeepsake(value['keepsake']) &&
+        isOptionalKeepsake(value['curse']) &&
+        (value['sentHome'] === undefined || isStr(value['sentHome'])) &&
         (value['treasure'] === undefined || isTreasureView(value['treasure'])) &&
         (value['fell'] === undefined || value['fell'] === true)
       );
@@ -413,6 +419,7 @@ function isRunState(value: unknown): value is DungeonRunState {
     isPending(value['pending']) &&
     isArrayOf(value['team'], isRunCreature) &&
     isArrayOf(value['keepsakes'], isKeepsake) &&
+    isArrayOf(value['curses'], isKeepsake) &&
     isPack(value['pack']) &&
     isCount(value['roomsCleared']) &&
     isBool(value['supply']) &&
@@ -465,6 +472,7 @@ function isRunSummary(value: unknown): value is DungeonRunSummary {
         isPack(value['pack']['found']) &&
         isPack(value['pack']['kept']))) &&
     (value['keepsakes'] === undefined || isArrayOf(value['keepsakes'], isKeepsake)) &&
+    (value['curses'] === undefined || isArrayOf(value['curses'], isKeepsake)) &&
     (value['route'] === undefined || isRoute(value['route']))
   );
 }
