@@ -499,8 +499,7 @@ export function vaultEvent(): DungeonEventView {
     options: [
       {
         label: 'Break the seal',
-        description:
-          'Next fight is epic: tougher foe, epic XP, double loot, gear, supplies and keepsakes.',
+        description: 'The next fight is epic, with double rewards.',
       },
       { label: 'Leave it sealed', description: 'Nothing happens.' },
     ],
