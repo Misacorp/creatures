@@ -7,7 +7,7 @@ import {
   type TurnOrder,
 } from '@creatures/game';
 import { turnOrder } from './fight';
-import { neighbours, zoneIndices, zoneNeighbours, zoneOfIndex } from './zones';
+import { guardReachSlots, neighbours, zoneNeighbours, type GuardReach } from './zones';
 
 /**
  * Who a creature affects in its row, worked out from the engine's own rules so a screen that shades
@@ -25,6 +25,11 @@ export interface AffectSlot {
    * Missing counts as 0, so a screen that does not know the real speeds is only a guess there.
    */
   speed?: number;
+  /**
+   * A Guard's reach (`guardReachOf` of its modifier sheet), only read for a Guard. Missing counts as the
+   * base reach, one each side: a screen that does not know the gear shows the default.
+   */
+  reach?: GuardReach;
 }
 
 /** A row slot: a creature, or null for a slot nobody stands in yet. */
@@ -94,9 +99,9 @@ export function slotReactions(
  * The slots the creature at `index` affects:
  *
  * - `buff` (a Support): the slots beside it. Their next hit gets the Support's bonus.
- * - `cover` (a Guard): the slots whose hits it takes. In the raid, every other slot of its zone (the
- *   boss's hit on a creature goes to a Guard of that zone); in the dungeon, the slots right beside
- *   it. A slot with a Guard in it is never covered.
+ * - `cover` (a Guard): the slots whose hits it takes: the creatures within its reach on each side along
+ *   its row (one each side unless its gear says more; `guardReachSlots`). In the raid it stops at its
+ *   zone's edge, in the dungeon the line has no zones. A slot with a Guard in it is never covered.
  * - `reaction` (any role): the creatures it sets off a reaction with, or that set one off with it.
  *
  * Empty slots count where a creature standing there would be affected. The result is empty for an
@@ -117,13 +122,18 @@ export function affects(
     for (const slot of besides(index, length, mode)) out.push({ slot, kind: 'buff' });
   }
   if (me.role === 'guard') {
-    const reach =
-      mode.row === 'dungeon'
-        ? neighbours(index, length)
-        : zoneIndices(zoneOfIndex(index, length), length).filter((i) => i !== index);
-    for (const slot of reach) {
-      if (row[slot]?.role !== 'guard') out.push({ slot, kind: 'cover' });
-    }
+    // The slots whose hits it takes: its reach along the row (`guardReachSlots`, as the fight uses it). An
+    // empty slot breaks the reach, but is itself shaded: a creature placed there would be protected.
+    const reach = guardReachSlots({
+      length,
+      mode: mode.row === 'dungeon' ? 'line' : 'zones',
+      slot: index,
+      reach: me.reach ?? { left: 1, right: 1 },
+      occupied: (slot) => row[slot] !== null && row[slot] !== undefined,
+      withEmpty: true,
+    });
+    // A slot with a Guard in it is never covered: a hit aimed at a Guard stays on it, and cover never applies to one.
+    for (const slot of reach) if (row[slot]?.role !== 'guard') out.push({ slot, kind: 'cover' });
   }
   for (const r of slotReactions(row, mode, reactions)) {
     if (r.marker === index) {

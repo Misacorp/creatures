@@ -102,6 +102,11 @@ export interface PatternContext {
    * one (`pickGuardWith`). Absent: the first (left-most) Guard, as before.
    */
   guardDice?: readonly number[];
+  /**
+   * The Guard's reach rule is on (`FightRules.guardRule`): the plain attack's target is the front-most
+   * standing creature, not a Guard of its zone (a Guard in reach steps in when the hit lands).
+   */
+  guardRule?: 'reach';
 }
 
 function shapeOf(ctx: PatternContext): RowShape {
@@ -236,7 +241,8 @@ export function planBarrage(
 }
 
 /**
- * The creature the boss's plain attack goes for: its zone's Guard, else the front-most standing.
+ * The creature the boss's plain attack goes for: its zone's Guard, else the front-most standing (with the
+ * reach rule, `ctx.guardRule`, always the front-most standing).
  * With several Guards in that zone and `ctx.guardDice`, the die of the front-most creature's slot
  * picks one (the same pick the plain attack makes).
  */
@@ -245,6 +251,7 @@ export function frontTarget(ctx: PatternContext): PatternCreature | undefined {
     const standing = livingIn(ctx, zone);
     const first = standing[0];
     if (first === undefined) continue;
+    if (ctx.guardRule === 'reach') return first;
     return (
       pickGuardWith(
         standing.filter((c) => c.role === 'guard'),
