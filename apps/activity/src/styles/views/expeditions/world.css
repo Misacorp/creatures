@@ -181,13 +181,14 @@ button.place-panel-close:active:not(:disabled) {
 }
 
 /*
-  Desktop: the panel stays in view while the page scrolls; its body scrolls inside it when it is taller than
-  the screen, so the page does not grow far below the map, and the gold button is pinned at its bottom.
+  Desktop: the panel is no taller than the map beside it (`--exp-map-h`, set by `ExpeditionWorld`) nor the
+  screen, and stays in view while the page scrolls. Its body scrolls inside it, so a long list of explorers
+  never pushes the gold button, pinned at its bottom, below the map.
 */
 .exp-world.wide .place-panel {
   position: sticky;
   top: 0.625rem;
-  max-height: calc(100vh - 1.25rem);
+  max-height: min(var(--exp-map-h, 100vh), calc(100vh - 1.25rem));
 }
 
 .exp-world.wide .place-panel.reveal {

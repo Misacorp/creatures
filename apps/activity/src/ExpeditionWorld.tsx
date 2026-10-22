@@ -5,9 +5,11 @@ import type { Creature } from './api';
 import { destinationCards } from './destination-view';
 import type { SendRequest } from './expedition-api';
 import type { DestinationsView, Slots, Trip } from './expedition-types';
+import { cssVars } from './css-vars';
 import { useElementWidth } from './hooks';
 import { centerOn, startingPlace } from './map-start';
 import { mapPlaces, mapScale } from './map-view';
+import { MAP_SIZE } from './sprites/world-map-art';
 import { OutStrip } from './OutStrip';
 import { PlacePanel } from './PlacePanel';
 import { PlaceSheet, type SheetMode } from './PlaceSheet';
@@ -105,7 +107,7 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
   );
   const places = mapPlaces({ trips, creatures, now: serverNow, selected, rules });
   // A map that scrolls starts on the place that matters most (once, without a glide).
-  const root = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement | null>(null);
   const mapBox = useRef<HTMLDivElement>(null);
   const start = useRef(startingPlace(places, trips));
   /** Scrolls the map so the place `id` is as near its middle as the map can scroll. */
@@ -136,6 +138,10 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
   const panelOpen = wide && (selected !== null || props.reveal !== null);
   const fullWidth = useElementWidth(root, 0);
   const scale = wide && fullWidth > 0 ? mapScale(fullWidth) : undefined;
+  // The panel is no taller than the map (world.css), so its list scrolls inside it and its button stays in view.
+  const panelVars = cssVars(
+    scale === undefined ? {} : { '--exp-map-h': `${String(MAP_SIZE.height * scale)}px` },
+  );
   // When the panel opens, closes or shows another place, the map glides to the chosen (or last) place.
   const lastPlace = useRef<string | null>(selected);
   if (selected !== null) lastPlace.current = selected;
@@ -224,7 +230,10 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
 
   return (
     <div
-      ref={root}
+      ref={(el) => {
+        root.current = el;
+        panelVars(el);
+      }}
       class={wide ? (panelOpen ? 'exp-world wide with-panel' : 'exp-world wide') : 'exp-world'}
     >
       <div class="exp-world-main">
