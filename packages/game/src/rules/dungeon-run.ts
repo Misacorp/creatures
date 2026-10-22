@@ -15,9 +15,11 @@ import {
   roomModifier,
 } from '../content/dungeon';
 import type {
+  CurseDef,
   DungeonEventDef,
   DungeonFoeDef,
   EventEffect,
+  EventOptionDef,
   KeepsakeDef,
   PlainEventEffect,
   RoomModifierDef,
@@ -30,6 +32,7 @@ import { shardOf } from './gear';
 import { landmarkBossId, scaledFoe, undercroftDepth } from './dungeon';
 import { mapNode, type DungeonMap, type MapNode, type NodeKind } from './dungeon-map';
 import type { Treasure } from './dungeon-treasure';
+import type { TreasureTableName } from '../content/dungeon-schema';
 
 // --- Rooms ---
 
@@ -239,6 +242,10 @@ export interface EventContext {
   keepsakes: readonly string[];
   /** The treasure the room rolled when the player came in (a `treasure` effect that wins takes it). */
   treasure?: Treasure | undefined;
+  /** Each creature's level, by id (`send_home` picks the highest). Absent: all equal, so the leftmost goes. */
+  levels?: Readonly<Record<string, number>> | undefined;
+  /** Each creature's name, by id, for the outcome line. */
+  names?: Readonly<Record<string, string>> | undefined;
 }
 
 export interface EventResolution {
@@ -258,13 +265,19 @@ export interface EventResolution {
   treasure?: Treasure;
   /** The whole team fell: the run ends as a defeat (absent otherwise). Everyone's HP in `hp` is 0. */
   fell?: true;
+  /** The curses the event put on the run, in order (absent when none). */
+  curses?: CurseDef[];
+  /** The creature ids the event sent home (absent when none). They are no longer in `hp`. */
+  sentHome?: string[];
 }
 
 /**
- * The rare event a mystery room turns into, or undefined for the room's own event. Each rare event
- * (`rare` in the content) not in `seen` is tried in content order once the run's `depth` reaches its
- * `fromDepth`: it takes the room with `chanceBp`, drawn from `rng` (live in the worker, one draw per event
- * tried). `seen` is the ids of the rare events the run met already: one at most each run.
+ * The rare event a mystery room turns into, or undefined for the room's own event. Every rare event
+ * (`rare` in the content) the run has not met (`seen`: ids) and whose `fromDepth` the run's `depth` has
+ * reached is drawn for with its own `chanceBp`, one draw each from `rng` (live in the worker), in content
+ * order. If more than one comes up, one of them is picked evenly with a further draw, so each rare room
+ * keeps exactly its own chance and none is favoured by its place in the content. A run can meet several
+ * different rare rooms, never the same one twice.
  */
 export function rollRareEvent(
   rng: Rng,
@@ -272,10 +285,51 @@ export function rollRareEvent(
   seen: readonly string[],
   events: readonly DungeonEventDef[] = dungeonEvents,
 ): DungeonEventDef | undefined {
+  const hits: DungeonEventDef[] = [];
   for (const event of events) {
     const rare = event.rare;
     if (rare === undefined || seen.includes(event.id) || depth < rare.fromDepth) continue;
-    if (chance(rng, rare.chanceBp, 10_000)) return event;
+    if (chance(rng, rare.chanceBp, 10_000)) hits.push(event);
+  }
+  return hits.length <= 1 ? hits[0] : hits[int(rng, hits.length)];
+}
+
+/** The standing creature of the highest level (the leftmost of equals), or undefined when none stands. */
+function highestLevelStanding(ctx: Pick<EventContext, 'hp' | 'levels'>): string | undefined {
+  let best: string | undefined;
+  for (const [id, now] of Object.entries(ctx.hp)) {
+    if (now <= 0) continue;
+    if (best === undefined || (ctx.levels?.[id] ?? 0) > (ctx.levels?.[best] ?? 0)) best = id;
+  }
+  return best;
+}
+
+/** True when an option of the event sends a creature home (also on a gamble's branch). */
+function sendsHome(option: EventOptionDef): boolean {
+  return option.effects.some(
+    (e) =>
+      e.op === 'send_home' ||
+      (e.op === 'gamble' && [...e.win, ...e.lose].some((x) => x.op === 'send_home')),
+  );
+}
+
+/** Why an option cannot be picked right now, or null: sending one home needs two standing (the row is never left empty). */
+export function eventOptionBlock(
+  option: EventOptionDef,
+  ctx: Pick<EventContext, 'hp'>,
+): string | null {
+  if (!sendsHome(option)) return null;
+  const standing = Object.values(ctx.hp).filter((now) => now > 0).length;
+  return standing >= 2 ? null : 'Needs two creatures standing.';
+}
+
+/** The treasure table an event's `treasure` effect asks for (the chasm's by default), or undefined when it has none. */
+export function eventTreasureTable(event: DungeonEventDef): TreasureTableName | undefined {
+  for (const o of event.options) {
+    for (const e of o.effects) {
+      const inner = e.op === 'gamble' ? [...e.win, ...e.lose] : [e];
+      for (const x of inner) if (x.op === 'treasure') return x.table ?? 'chasm';
+    }
   }
   return undefined;
 }
@@ -322,6 +376,9 @@ export function resolveEvent(
   const chosen = event.options[option];
   if (chosen === undefined)
     throw new RangeError(`event "${event.id}" has no option ${String(option)}`);
+  const blocked = eventOptionBlock(chosen, ctx);
+  if (blocked !== null)
+    throw new RangeError(`event "${event.id}" option ${String(option)}: ${blocked}`);
   const hp: Record<string, number> = { ...ctx.hp };
   let pack = emptyPack();
   const held = new Set(ctx.keepsakes);
@@ -329,6 +386,8 @@ export function resolveEvent(
   let won: boolean | null = null;
   let treasure: Treasure | undefined;
   let fell = false;
+  const curses: CurseDef[] = [];
+  const sentHome: string[] = [];
   /** The experience each standing creature is given (the `xp` effects, added up). */
   let xpEach = 0;
   /** "Lucky!" or "No luck.", when the option has a gamble. */
@@ -385,8 +444,24 @@ export function resolveEvent(
           break;
         }
         treasure = ctx.treasure;
-        lines.push('You cross the plank and take the treasure.');
+        lines.push(
+          event.id === 'blue-chasm'
+            ? 'You cross the plank and take the treasure.'
+            : 'You take the treasure.',
+        );
         break;
+      case 'curse':
+        curses.push(effect.curse);
+        lines.push(`Cursed: ${effect.curse.description}`);
+        break;
+      case 'send_home': {
+        const id = highestLevelStanding({ hp, levels: ctx.levels });
+        if (id === undefined) break;
+        delete hp[id];
+        sentHome.push(id);
+        lines.push(`${ctx.names?.[id] ?? 'Your strongest creature'} heads home.`);
+        break;
+      }
       case 'fall':
         fell = true;
         for (const id of Object.keys(hp)) hp[id] = 0;
@@ -422,6 +497,8 @@ export function resolveEvent(
     outcome,
     ...(treasure === undefined ? {} : { treasure }),
     ...(fell ? { fell: true as const } : {}),
+    ...(curses.length === 0 ? {} : { curses }),
+    ...(sentHome.length === 0 ? {} : { sentHome }),
   };
 }
 

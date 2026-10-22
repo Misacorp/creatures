@@ -2267,6 +2267,7 @@ describe('the run’s state', () => {
           [
             'at',
             'attempt',
+            'curses',
             'day',
             'depth',
             'history',

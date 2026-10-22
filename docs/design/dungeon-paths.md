@@ -81,10 +81,15 @@ Content: `packages/game/src/content/data/dungeon-events.json`, with its schema i
   - `keepsake {}`: a random keepsake the run does not have.
   - `gamble {chanceBp, win: Effect[], lose: Effect[]}`: rolled with live randomness when picked; the description states the odds.
   - `nothing {}`.
-  - `treasure {}`: takes the treasure the room rolled when the player stepped in (see "The Blue Chasm"). One per event.
+  - `treasure {table?}`: takes the treasure the room rolled when the player stepped in (see "The Blue Chasm"). `table` is `chasm` (default) or `door` (see "The Hungry Door"). One per option; all of an event's treasures use one table.
+  - `curse {curse}`: a run-long curse (see "Curses"). It counts as a cost for "an option that costs nothing".
+  - `send_home {who: 'highest_level'}`: the standing creature of the highest level goes home (see "The Hungry Door"). It costs no HP and no run, so it is not a cost for that rule.
   - `fall {}`: the whole team falls (HP 0) and the run ends as a defeat. It counts as a cost for "an option that costs nothing".
-- **Rare events:** an event may carry `rare: {chanceBp, fromDepth}`. A rare event is **never drawn onto a map**. Each time a run steps into a mystery room it may turn into a rare event (`rollRareEvent`: `chanceBp` drawn live, once the run's depth is `fromDepth` or more, each rare event at most once a run). The map and the other players are not affected: it is the player's own dice.
-- **8 common events and 1 rare one** in the game's voice. Read `docs/compendium/` first and add the events to `docs/compendium/dungeon.md`.
+- **Rare events:** an event may carry `rare: {chanceBp, fromDepth}`. A rare event is **never drawn onto a map**. Each time a run steps into a mystery room it may turn into a rare event (`rollRareEvent`). The map and the other players are not affected: it is the player's own dice.
+  - **The rule (Misa, 2026-10-22): the more drastic a room, the rarer it is, and each rare room appears at most once a run.** Several different rare rooms in one run are fine; never two of the same (`RunState.rareSeen` holds the ids met).
+  - **How the roll picks.** Every rare event the run has not met and whose `fromDepth` the depth has reached is drawn for with its own `chanceBp` (one live draw each, in content order). If more than one comes up, one is picked evenly with one more draw. So each rare room keeps its own odds (less half the small overlap) and no room is favoured by its place in the file. Keep new rare rooms generic: add the event with `rare`, nothing else.
+  - Today: Hungry Door 20% from depth 2, Blue Chasm 15% from depth 3.
+- **11 common events and 2 rare ones** in the game's voice. Read `docs/compendium/` first and add the events to `docs/compendium/dungeon.md`.
 - The odds of every gamble are shown ("2 scrap, or a 40% chance every creature loses 15% HP"). Risky options are worth about the same as safe ones on average, so neither is always right.
 
 ### The Blue Chasm (the rare room, 2026-10-21)
@@ -100,6 +105,28 @@ Content: `packages/game/src/content/data/dungeon-events.json`, with its schema i
   - A creature of a species the player lacks is not in the table yet: granting a creature from a run needs its own grant path (collection rules, talents, server firsts) and is a follow-up.
 - **Delivery:** a won treasure is kept in the run state (`treasures`) and paid at the run's end through the run's own grant (`dungeon:<day>:<attempt>`), so a replay pays nothing twice. It is part of the pack in spirit: a run that ends in a defeat (the fall, or any later one) **does not win it** (an item cannot be halved). Heading home, a clear, or a run left open and closed pays it. The end screen shows it as finds (gear, blueprint, supplies, parts) and says when it was lost.
 - **Old runs:** a run saved before this change has no `treasures` or `rare` list and loads as having none.
+
+### Training Post, Crystal Hollow, Cursed Idol (common, 2026-10-22)
+
+Three more map events, in the same file, using the existing effects (the Idol also uses `curse`).
+
+- **Training Post.** Spar: `hurt 10%` then `xp 40` (every standing creature loses 10% of max HP, never below 1, and gains 40). Watch: `xp 15`.
+- **Crystal Hollow.** Chip a crystal: `pack` 3 scrap and 1 Essence. Sit in the glow: `heal 30%`.
+- **Cursed Idol.** Take it: a random `keepsake` and a `curse` (foes deal 20% more damage for the rest of the run). Leave it: nothing. A map holds each event once and the Undercroft's maps draw no events, so a run meets the Idol **at most once**; no flag is needed, and the curse never stacks (a curse the run already carries is not added again).
+
+### Curses
+
+A curse is a run-long change to the foes written with the room modifier's `foe_stat` fold (a keepsake-shaped `{id, name, description, effects}`; effects are `foe_stat` only). It is stored whole in the run (`RunState.curses`, absent in old runs and read as none) and folded into every later fight exactly like a keepsake (`heldFolds`: keepsakes first, then curses), so the engine needs no special case and a stored fight replays from its own room spec. It ends with the run. It is shown on the run as a warning note under the pack and keepsakes ("Curse", the curse's name, its plain line, "Until the run ends"), on the end screen the same way, and as a "Curse" line in the room's step. A curse only ever touches the foes of later fights: nothing the player owns.
+
+### The Hungry Door (the second rare room, 2026-10-22)
+
+"A round wooden door with a wide mouth carved into it. A treasure sits on the floor in front, and the door looks hungry." **Feed it**: your highest-level creature goes home and you take the treasure shown. **Pry it open**: 40% you take the treasure, 60% every creature loses 40% HP (never below 1).
+
+- **Rarity:** `rare: {chanceBp: 2000, fromDepth: 2}` (less drastic than the chasm, so a little more common), at most once a run, drawn with the rule above.
+- **Treasure.** The same machinery as the chasm (`rollTreasure`, rolled when the room opens with the live gear rng, stored in the pending state, shown before the choice with the inspectable item card for gear, paid at the run's end, lost on a defeat), with a table one tier down (`RULES.dungeon.doorTreasure`; the event's `treasure` effect names it with `table: 'door'`): a **Rare** gear piece at the item level of the run's depth, **two good supplies** of one kind (never a lure), or **3 shards and 2 glimmer** (one shard per creature of a team of three, by element). **No blueprints** (`blueprints: false`): the draw is even among gear, supplies and shards.
+- **`send_home`.** The standing creature of the highest level goes home (ties: the leftmost). It leaves the row as a camp swap-out does, with nobody coming in: out of the row, its ability picks, its rest and HP; the row is placed again for the neighbours it has left. It **keeps what it earned** (`earned`, so it is paid its experience at the end and is listed with a "Went home" tag, as a creature sent home at a camp) and stays in `everyone`. Nothing is taken from the player's stock: the creature is back in the collection.
+- **One creature standing.** "Feed it" needs **two creatures standing**: the row must never be left empty or with only knocked-out creatures. With fewer, the option is **disabled with a reason** ("Needs two creatures standing."): the event view carries `blocked` on the option, the client shows the button off with the reason after the description, and the server refuses the act (`invalid_act`) if it is sent anyway. "Pry it open" still works. (The free-option rule counts "Feed it" as free: it costs no HP and no run.)
+- **Both rare rooms in one run** are fine: each is drawn for separately and met at most once.
 
 ## Keepsakes (run buffs)
 

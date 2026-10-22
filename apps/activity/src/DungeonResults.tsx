@@ -27,7 +27,7 @@ import { resultSummary, resultTitle, resultTone } from './dungeon-text';
 import { roomLog, type RoomLogRow } from './dungeon-route-rooms';
 import { routeRun } from './dungeon-history';
 import { DungeonMap } from './DungeonMap';
-import { RunKeepsakes, TeamFace } from './DungeonRunStrip';
+import { RunCurses, RunKeepsakes, TeamFace } from './DungeonRunStrip';
 import { DungeonNext } from './DungeonNext';
 import type { DungeonRunSummary, DungeonToday } from './dungeon-types';
 import { creatureInfoOf } from './creature-info';
@@ -168,6 +168,7 @@ export function DungeonResults({
       <RouteSection run={run} initialView={initialView ?? 'map'} />
       <TeamBreakdown team={teamBreakdown(run)} recap={experienceRecap(run)} />
       {run.keepsakes !== undefined && <RunKeepsakes keepsakes={run.keepsakes} />}
+      {run.curses !== undefined && <RunCurses curses={run.curses} />}
       <DungeonNext today={today} offset={offset} />
 
       {error !== null && <Alert level="alert">{error}</Alert>}

@@ -208,6 +208,7 @@ export function sampleState(over: Partial<DungeonRunState> = {}): DungeonRunStat
     pending: null,
     team: sampleRunCreatures(),
     keepsakes: [],
+    curses: [],
     pack: { bait: 0, essence: 0, scrap: 0 },
     roomsCleared: 0,
     supply: false,
@@ -484,6 +485,105 @@ export function sampleChasmSummary(variant: 'won' | 'lost' | 'fell'): DungeonRun
         ? { blueprints: [{ baseId: SAMPLE_TREASURES.blueprint.baseId, duplicate: false }] }
         : {}),
       ...(variant === 'lost' ? { treasureLost: SAMPLE_TREASURES.gear } : {}),
+    },
+  };
+}
+
+// --- The Cursed Idol and the Hungry Door ---
+
+/** The curse the Cursed Idol puts on a run, as the server sends it (a name and its plain effect line). */
+export const SAMPLE_CURSE: DungeonKeepsakeView = {
+  id: 'idol-curse',
+  name: "Idol's Curse",
+  description: 'Foes deal 20% more damage.',
+};
+
+/** The Hungry Door's treasure kinds, one tier below the chasm's (a Rare piece, good supplies, 3 shards and 2 glimmer). No blueprint. */
+export const SAMPLE_DOOR_TREASURES = {
+  gear: {
+    kind: 'gear',
+    baseId: 'forge-scarf',
+    rarity: 'rare',
+    itemLevel: 9,
+    card: sampleGearItem({ id: 'preview', baseId: 'forge-scarf', rarity: 'rare', itemLevel: 9 }),
+  },
+  supplies: { kind: 'supplies', supplyId: 'lantern-good', count: 2 },
+  shards: {
+    kind: 'shards',
+    parts: { 'tide-shard': 1, 'ember-shard': 1, 'grove-shard': 1, glimmer: 2 },
+  },
+} as const satisfies Record<string, DungeonTreasureView>;
+
+/** The Hungry Door as the server sends it while it waits. `blocked` is the reason "Feed it" cannot be picked (one creature standing). */
+export function doorEvent(
+  treasure: DungeonTreasureView = SAMPLE_DOOR_TREASURES.gear,
+  blocked?: string,
+): DungeonEventView {
+  return {
+    id: 'hungry-door',
+    name: 'Hungry Door',
+    text: 'A round wooden door with a wide mouth carved into it. A treasure sits on the floor in front, and the door looks hungry.',
+    options: [
+      {
+        label: 'Feed it',
+        description: 'Your highest-level creature goes home. You take the treasure shown.',
+        ...(blocked === undefined ? {} : { blocked }),
+      },
+      {
+        label: 'Pry it open',
+        description: '40%: you take the treasure shown. 60%: every creature loses 40% HP.',
+      },
+    ],
+    treasure,
+  };
+}
+
+/** A run standing at the Hungry Door with its treasure shown. */
+export function sampleStateDoor(
+  treasure: DungeonTreasureView = SAMPLE_DOOR_TREASURES.gear,
+  blocked?: string,
+): DungeonRunState {
+  return { ...sampleStateEvent(), pending: { kind: 'event', event: doorEvent(treasure, blocked) } };
+}
+
+/** A run that took the Cursed Idol: the curse is carried, shown under the pack and the keepsakes. */
+export function sampleStateCursed(): DungeonRunState {
+  return sampleStateMid({ curses: [SAMPLE_CURSE] });
+}
+
+/**
+ * The end of a run that fed the Hungry Door and came home with its treasure (a Rare piece in the rewards):
+ * the door's room reads "heads home", and the creature that went home is listed with "Went home" in the
+ * experience recap (the workbench pairs it with the "sent home" experience).
+ */
+export function sampleDoorSummary(): DungeonRunSummary {
+  const base = sampleSummary('home');
+  const route = base.route;
+  if (route === undefined) throw new Error('the sample has a route');
+  const door = { id: 'hungry-door', name: 'Hungry Door' };
+  const map: DungeonMapView = {
+    ...route.map,
+    nodes: route.map.nodes.map((n) => (n.id === 'f1l1' ? { ...n, event: door } : n)),
+  };
+  const history = sampleHistory(map, [...route.path]).map((step) =>
+    step.node === 'f1l1' && step.result === 'event'
+      ? {
+          ...step,
+          event: door.name,
+          option: 'Feed it',
+          outcome: 'Pip heads home. You take the treasure.',
+          loot: { bait: 0, essence: 0, scrap: 0 },
+          sentHome: 'Pip',
+          treasure: SAMPLE_DOOR_TREASURES.gear,
+        }
+      : step,
+  );
+  return {
+    ...base,
+    route: { ...route, map, history },
+    rewards: {
+      ...base.rewards,
+      gear: [{ id: 'wb-door-gear', baseId: 'forge-scarf', rarity: 'rare', itemLevel: 9 }],
     },
   };
 }

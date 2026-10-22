@@ -177,7 +177,8 @@ export interface DungeonEventView {
   id: string;
   name: string;
   text: string;
-  options: { label: string; description: string }[];
+  /** `blocked`: why the option cannot be picked right now (absent when it can). */
+  options: { label: string; description: string; blocked?: string }[];
   /** The prize of a rare room (the Blue Chasm), rolled when the room opened. Absent in a room with none. */
   treasure?: DungeonTreasureView;
 }
@@ -243,6 +244,8 @@ export interface DungeonRunState {
   /** The row now, left to right. */
   team: DungeonRunCreature[];
   keepsakes: DungeonKeepsakeView[];
+  /** The curses the run carries (a name and its plain effect line), shown as "Curse". */
+  curses: DungeonKeepsakeView[];
   /** At risk until the run heads home or clears. */
   pack: DungeonPack;
   roomsCleared: number;
@@ -285,6 +288,10 @@ export type DungeonStepLog =
       outcome: string;
       loot: DungeonPack;
       keepsake?: DungeonKeepsakeView;
+      /** A curse the option put on the run. */
+      curse?: DungeonKeepsakeView;
+      /** The name of the creature the option sent home (the player's own text). */
+      sentHome?: string;
       /** The treasure the option took (paid at the run's end unless the run ended in a defeat). */
       treasure?: DungeonTreasureView;
       /** The option was a fall: the whole team fell and the run ended. */
@@ -500,6 +507,8 @@ export interface DungeonRunSummary {
   pack?: { found: DungeonPack; kept: DungeonPack };
   /** The keepsakes the run held at the end. Absent in older runs. */
   keepsakes?: DungeonKeepsakeView[];
+  /** The curses the run carried at its end (absent: none). */
+  curses?: DungeonKeepsakeView[];
   /**
    * The map of the run, the nodes visited in order and what each did: the results screen can show the
    * route. Absent in older runs.

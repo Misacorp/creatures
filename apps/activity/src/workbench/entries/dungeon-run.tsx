@@ -29,6 +29,12 @@ import {
   omitKey,
   SAMPLE_TREASURES,
   sampleChasmSummary,
+  sampleDoorSummary,
+  SAMPLE_CURSE,
+  SAMPLE_DOOR_TREASURES,
+  sampleStateCursed,
+  sampleStateDoor,
+  doorEvent,
   sampleStateChasm,
 } from '../../dungeon-path-samples';
 import {
@@ -55,6 +61,11 @@ const TREASURE_OPTIONS = [
   'shards and glimmer',
 ] as const;
 const TREASURE_KEYS = ['gear', 'blueprint', 'supplies', 'shards'] as const;
+const DOOR_TREASURE_OPTIONS = [
+  TREASURE_OPTIONS[0],
+  TREASURE_OPTIONS[2],
+  TREASURE_OPTIONS[3],
+] as const;
 const OUTCOMES = [
   'cleared',
   'home',
@@ -66,6 +77,7 @@ const OUTCOMES = [
   'Blue Chasm: crossed, home with the treasure',
   'Blue Chasm: crossed, then lost the run',
   'Blue Chasm: the plank gave way',
+  'Hungry Door: fed it, home with the treasure',
 ] as const;
 
 /** The summary of a run's end as a real server answered it (`fixtures/dungeon-act-*.json`). */
@@ -96,6 +108,7 @@ function stripState(p: Props): DungeonRunState {
     pending: null,
     team,
     keepsakes,
+    curses: bool(p, 'curse') ? [SAMPLE_CURSE] : [],
     pack: { bait: num(p, 'bait'), essence: num(p, 'essence'), scrap: num(p, 'scrap') },
     landmark: bool(p, 'landmark'),
     lastEvent: bool(p, 'lastEvent')
@@ -126,6 +139,7 @@ const dungeonRunStrip: Entry = {
     scrap: { kind: 'number', min: 0, max: 20 },
     lastEvent: { kind: 'toggle' },
     landmark: { kind: 'toggle' },
+    curse: { kind: 'toggle' },
   },
   defaults: {
     at: 'mid-run',
@@ -136,6 +150,7 @@ const dungeonRunStrip: Entry = {
     scrap: 1,
     lastEvent: true,
     landmark: false,
+    curse: false,
   },
   presets: [
     {
@@ -162,6 +177,10 @@ const dungeonRunStrip: Entry = {
       props: { at: 'camp', hp: 'two knocked out', lastEvent: false },
     },
     { name: 'A landmark depth', props: { landmark: true } },
+    {
+      name: 'A curse carried (the Cursed Idol): a warning note under the keepsakes',
+      props: { curse: true, keepsakes: 2 },
+    },
   ],
   render: (p) => <DungeonRunStrip state={stripState(p)} />,
 };
@@ -175,9 +194,15 @@ const dungeonEvent: Entry = {
   controls: {
     event: { kind: 'select', options: EVENT_IDS },
     treasure: { kind: 'select', options: TREASURE_OPTIONS },
+    oneStanding: { kind: 'toggle' },
     busy: { kind: 'toggle' },
   },
-  defaults: { event: EVENT_IDS[0] ?? '', treasure: TREASURE_OPTIONS[0], busy: false },
+  defaults: {
+    event: EVENT_IDS[0] ?? '',
+    treasure: TREASURE_OPTIONS[0],
+    oneStanding: false,
+    busy: false,
+  },
   presets: [
     ...dungeonEvents
       .filter((e) => e.rare === undefined)
@@ -187,6 +212,17 @@ const dungeonEvent: Entry = {
       name: `Blue Chasm: ${t}`,
       props: { event: 'blue-chasm', treasure: t },
     })),
+    { name: 'Training Post', props: { event: 'training-post' } },
+    { name: 'Crystal Hollow', props: { event: 'crystal-hollow' } },
+    { name: 'Cursed Idol', props: { event: 'cursed-idol' } },
+    ...DOOR_TREASURE_OPTIONS.map((t) => ({
+      name: `Hungry Door: ${t}`,
+      props: { event: 'hungry-door', treasure: t },
+    })),
+    {
+      name: 'Hungry Door with one creature standing (Feed it is off, with the reason)',
+      props: { event: 'hungry-door', oneStanding: true },
+    },
     { name: 'A step is on its way', props: { busy: true } },
   ],
   render: (p) => {
@@ -194,6 +230,20 @@ const dungeonEvent: Entry = {
     if (found === undefined) return <p class="muted">The content has no events.</p>;
     // The rare room rolls a prize when it opens: the page picks which of the four kinds it shows.
     const kind = TREASURE_KEYS[Math.max(0, TREASURE_OPTIONS.indexOf(str(p, 'treasure') as never))];
+    // The door's prize is one tier down and never a blueprint: a blueprint pick shows its gear piece.
+    if (found.id === 'hungry-door') {
+      const doorKind = kind === 'supplies' || kind === 'shards' ? kind : 'gear';
+      return (
+        <DungeonEvent
+          event={doorEvent(
+            SAMPLE_DOOR_TREASURES[doorKind],
+            bool(p, 'oneStanding') ? 'Needs two creatures standing.' : undefined,
+          )}
+          busy={bool(p, 'busy')}
+          onPick={() => undefined}
+        />
+      );
+    }
     return (
       <DungeonEvent
         event={{
@@ -472,9 +522,11 @@ function ResultsDemo({ p }: { p: Props }) {
             ? sampleChasmSummary('lost')
             : outcome === OUTCOMES[9]
               ? sampleChasmSummary('fell')
-              : bool(p, 'capture')
-                ? captured(kind)
-                : sampleSummary(kind);
+              : outcome === OUTCOMES[10]
+                ? sampleDoorSummary()
+                : bool(p, 'capture')
+                  ? captured(kind)
+                  : sampleSummary(kind);
   // A run lost in its first room paid nothing and kept an empty pack.
   const base: typeof sample = noRewards
     ? {
@@ -594,6 +646,10 @@ const dungeonResults: Entry = {
     { name: 'Blue Chasm: home with the treasure', props: { outcome: OUTCOMES[7] } },
     { name: 'Blue Chasm: the treasure was lost', props: { outcome: OUTCOMES[8] } },
     { name: 'Blue Chasm: the plank gave way', props: { outcome: OUTCOMES[9] } },
+    {
+      name: 'Hungry Door: fed it, the creature went home and the treasure came back',
+      props: { outcome: OUTCOMES[10], experience: 'a creature sent home at the camp' },
+    },
     { name: 'Home safe, the rooms', props: { outcome: 'home', view: 'rooms' } },
     {
       name: 'Defeated, the rooms (the last one Defeated)',
@@ -656,6 +712,8 @@ const SCENES = {
   'after the first fight': () => parseDungeonAct(actFight).state,
   'a mystery room': () => parseDungeonAct(actEventPending).state,
   'the Blue Chasm (a rare mystery room)': () => sampleStateChasm(SAMPLE_TREASURES.blueprint),
+  'the Hungry Door (a rare mystery room)': () => sampleStateDoor(),
+  'a run carrying the Cursed Idol curse': () => sampleStateCursed(),
   'after the mystery room': () => parseDungeonAct(actEvent).state,
   'at the camp': () => parseDungeonAct(actCampPending).state,
   'after the camp (swapped)': () => parseDungeonAct(actCamp).state,

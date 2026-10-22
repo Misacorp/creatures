@@ -230,6 +230,7 @@ function state(
     pending: null,
     team: TEAM,
     keepsakes: [],
+    curses: [],
     pack: { bait: 0, essence: 0, scrap: 0 },
     roomsCleared: 0,
     supply: false,

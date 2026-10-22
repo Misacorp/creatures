@@ -20,7 +20,9 @@ import {
   dungeonKeepsakes,
   dungeonScrapPerRoom,
   emptyPack,
-  eventHasTreasure,
+  eventTreasureTable,
+  treasureTable,
+  eventOptionBlock,
   generateUndercroftMap,
   int,
   isLandmark,
@@ -61,7 +63,8 @@ import {
   abilityChoices,
   currentHp,
   currentMap,
-  heldKeepsakes,
+  heldFolds,
+  curseViews,
   keepsakeView,
   maxHpOfRow,
   treasureView,
@@ -398,7 +401,7 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
     case 'elite':
     case 'epic':
     case 'boss': {
-      const held = heldKeepsakes(st.keepsakes);
+      const held = heldFolds(st);
       const base = roomSpecForNode(map, nodeId, depth, st.fights);
       const spec: DungeonRoomSpec = held.length === 0 ? base : { ...base, keepsakes: held };
       // The seed is drawn now: a client can neither know it before nor pick it.
@@ -476,13 +479,21 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       const event = rare ?? (node.eventId === undefined ? undefined : dungeonEvent(node.eventId));
       if (event !== undefined) {
         // A room with a prize rolls it now, from this player's progress, and shows it before the choice.
-        const treasure = eventHasTreasure(event)
-          ? rollTreasure(env.gearRng, {
-              depth,
-              elements: st.input.team.map((slot) => slot.element),
-              knownBlueprints: new Set(knownBlueprints(env.sql, env.userId).map((b) => b.baseId)),
-            })
-          : undefined;
+        const table = eventTreasureTable(event);
+        const treasure =
+          table === undefined
+            ? undefined
+            : rollTreasure(
+                env.gearRng,
+                {
+                  depth,
+                  elements: st.input.team.map((slot) => slot.element),
+                  knownBlueprints: new Set(
+                    knownBlueprints(env.sql, env.userId).map((b) => b.baseId),
+                  ),
+                },
+                treasureTable(table),
+              );
         st.pending = {
           kind: 'event',
           eventId: event.id,
@@ -524,24 +535,71 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
 
 // --- Event ---
 
+/**
+ * Sends creatures home from the row, as a camp swap sends one out but with nobody coming in: it leaves
+ * the row (its slot, ability picks, rest and HP), keeps what it earned (`earned`) and stays in `everyone`,
+ * so the end screen pays and lists it with a "Went home" tag. The row is placed again for the neighbours
+ * it has left. Returns the name of the first creature sent (undefined when none). A row is never left
+ * empty: the last creature is not sent (the event refuses first).
+ */
+function sendHome(st: RunState, ids: readonly string[]): string | undefined {
+  let name: string | undefined;
+  for (const id of ids) {
+    const row = st.input.team;
+    const leaving = row.find((slot) => slot.id === id);
+    if (leaving === undefined || row.length < 2) continue;
+    name ??= leaving.name;
+    const team = row.filter((slot) => slot.id !== id);
+    const rest = { ...st.input.rest };
+    delete rest[id];
+    const withoutRest = { ...st.input };
+    delete withoutRest.rest;
+    st.input = {
+      ...withoutRest,
+      team,
+      abilities: abilityChoices(team),
+      ...(Object.keys(rest).length === 0 ? {} : { rest }),
+    };
+    const max = { ...st.hpMax };
+    delete max[id];
+    st.hpMax = max;
+    if (st.hp !== null) {
+      const hp = { ...st.hp };
+      delete hp[id];
+      st.hp = hp;
+    }
+  }
+  reseat(st);
+  return name;
+}
+
 export function applyEvent(env: PathEnv, st: RunState, option: 0 | 1): ActOutcome {
   if (st.pending?.kind !== 'event') throw invalidAct('no mystery room is waiting');
   const event = dungeonEvent(st.pending.eventId);
   if (event === undefined) throw invalidAct('that scene is gone');
   const chosen = event.options[option];
   if (chosen === undefined) throw invalidAct('no such option');
+  const standing = currentHp(st);
+  const blocked = eventOptionBlock(chosen, { hp: standing });
+  if (blocked !== null) throw invalidAct(blocked);
   const resolved = resolveEvent(
     event,
     option,
     {
-      hp: currentHp(st),
+      hp: standing,
       hpMax: st.hpMax,
       keepsakes: st.keepsakes,
       treasure: st.pending.treasure,
+      levels: Object.fromEntries(st.input.team.map((slot) => [slot.id, slot.level])),
+      names: Object.fromEntries(st.input.team.map((slot) => [slot.id, slot.name])),
     },
     env.rng,
   );
   st.hp = resolved.hp;
+  // A curse the run does not carry yet goes on for the rest of the run.
+  const newCurses = (resolved.curses ?? []).filter((c) => !st.curses.some((h) => h.id === c.id));
+  st.curses.push(...newCurses);
+  const sentName = sendHome(st, resolved.sentHome ?? []);
   st.pack = addPack(st.pack, resolved.packDelta);
   st.keepsakes.push(...resolved.keepsakesGained);
   if (resolved.treasure !== undefined) st.treasures.push(resolved.treasure);
@@ -558,6 +616,8 @@ export function applyEvent(env: PathEnv, st: RunState, option: 0 | 1): ActOutcom
     outcome: resolved.outcome,
     loot: { ...resolved.packDelta },
     ...(gainedView === null ? {} : { keepsake: gainedView }),
+    ...(newCurses[0] === undefined ? {} : { curse: curseViews([newCurses[0]])[0] }),
+    ...(sentName === undefined ? {} : { sentHome: sentName }),
     ...(resolved.treasure === undefined ? {} : { treasure: treasureView(resolved.treasure) }),
     ...(resolved.fell === true ? { fell: true as const } : {}),
   });

@@ -8,6 +8,7 @@ import {
   dungeonEvents,
   dungeonItemLevel,
   eventHasTreasure,
+  eventTreasureTable,
   gearBase,
   resolveEvent,
   rollRareEvent,
@@ -40,25 +41,48 @@ const tier = (level: number): string[] =>
     .map((b) => b.id);
 
 describe('the rare event roll', () => {
-  it('turns a room into the chasm only from its depth, with its chance, and only once a run', () => {
-    expect(rollRareEvent(WIN, 2, [])).toBeUndefined();
+  it('turns a room into a rare one only from its depth, with its chance, and never one it met', () => {
+    expect(rollRareEvent(WIN, 1, [])).toBeUndefined();
+    expect(rollRareEvent(WIN, 2, [])?.id).toBe('hungry-door');
     expect(rollRareEvent(WIN, 3, [])?.id).toBe('blue-chasm');
     expect(rollRareEvent(LOSE, 9, [])).toBeUndefined();
-    expect(rollRareEvent(WIN, 9, ['blue-chasm'])).toBeUndefined();
+    expect(rollRareEvent(WIN, 9, ['blue-chasm'])?.id).toBe('hungry-door');
+    expect(rollRareEvent(WIN, 9, ['blue-chasm', 'hungry-door'])).toBeUndefined();
   });
 
-  it('comes up at about the content chance over many rooms', () => {
+  it('keeps each rare room its own chance over many rooms, and no room is favoured by its place', () => {
     const rng = createSeededRng('rare-rate');
-    let hits = 0;
-    for (let i = 0; i < 4000; i++) if (rollRareEvent(rng, 5, []) !== undefined) hits += 1;
-    const rate = hits / 4000;
-    expect(rate).toBeGreaterThan(0.12);
-    expect(rate).toBeLessThan(0.18);
+    const n = 20_000;
+    const counts: Record<string, number> = {};
+    for (let i = 0; i < n; i++) {
+      const id = rollRareEvent(rng, 5, [])?.id;
+      if (id !== undefined) counts[id] = (counts[id] ?? 0) + 1;
+    }
+    // Each hits with its own chance (15% and 20%); when both come up one is picked evenly, so the
+    // marginals are chance minus half the overlap: 15% - 1.5% and 20% - 1.5%.
+    expect((counts['blue-chasm'] ?? 0) / n).toBeGreaterThan(0.125);
+    expect((counts['blue-chasm'] ?? 0) / n).toBeLessThan(0.15);
+    expect((counts['hungry-door'] ?? 0) / n).toBeGreaterThan(0.175);
+    expect((counts['hungry-door'] ?? 0) / n).toBeLessThan(0.2);
+  });
+
+  it('is the same for the same stream', () => {
+    const seq = (): (string | undefined)[] => {
+      const rng = createSeededRng('rare-same');
+      return Array.from({ length: 50 }, () => rollRareEvent(rng, 5, [])?.id);
+    };
+    expect(seq()).toEqual(seq());
   });
 
   it('knows which events roll a treasure', () => {
     expect(eventHasTreasure(chasm)).toBe(true);
-    expect(dungeonEvents.filter(eventHasTreasure).map((e) => e.id)).toEqual(['blue-chasm']);
+    expect(dungeonEvents.filter(eventHasTreasure).map((e) => e.id)).toEqual([
+      'blue-chasm',
+      'hungry-door',
+    ]);
+    expect(eventTreasureTable(chasm)).toBe('chasm');
+    expect(eventTreasureTable(dungeonEvent('hungry-door') as DungeonEventDef)).toBe('door');
+    expect(eventTreasureTable(dungeonEvent('glowing-pool') as DungeonEventDef)).toBeUndefined();
   });
 });
 

@@ -932,6 +932,18 @@ export const RULES = {
       supplies: { tier: 'great', count: 2 },
       shards: 6,
       glimmer: 4,
+      blueprints: true,
+    },
+    /**
+     * The Hungry Door's treasure: the same table one tier down. A Rare piece at the run's depth, two good
+     * (one below great) supplies of one kind, or 3 shards and 2 glimmer. No blueprints (`blueprints: false`).
+     */
+    doorTreasure: {
+      gearRarity: 'rare',
+      supplies: { tier: 'good', count: 2 },
+      shards: 3,
+      glimmer: 2,
+      blueprints: false,
     },
     /**
      * The Undercroft (docs/design/dungeon-paths.md): a deeper, optional level below the floor boss, from

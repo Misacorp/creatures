@@ -93,7 +93,10 @@ async function toDoor(
     const map = (await p.today()).map;
     const route = routeThrough(
       map,
-      (n) => n.kind === 'mystery' && (!beforeCamp || n.floor < RULES.dungeon.campFloor),
+      (n) =>
+        n.kind === 'mystery' &&
+        n.event?.id !== 'quiet-room' &&
+        (!beforeCamp || n.floor < RULES.dungeon.campFloor),
     );
     if (route === undefined) {
       ctx.clock.t += DAY;
@@ -129,7 +132,8 @@ async function openChasm(
   target: string,
   kind: keyof typeof KIND,
 ): Promise<DungeonRunState> {
-  s.dungeonRng.queue.push(LOW); // the rare room's draw: it comes up
+  s.dungeonRng.queue.push(LOW); // the rare room's draw: the chasm comes up
+  s.dungeonRng.queue.push(HIGH); // the Hungry Door's draw (every rare room is drawn for): it does not
   s.gearRng.queue.push(KIND[kind]); // the treasure's kind
   const res = await s.p.act(state, { type: 'move', node: target });
   expect(res.status, JSON.stringify(res.body)).toBe(200);
@@ -441,7 +445,9 @@ describe('falling', () => {
       const { state, target } = await toDoor(s);
       const waiting = await openChasm(s, state, target, 'gear');
       s.dungeonRng.queue.push(LOW);
-      const crossed = (await s.p.act(waiting, { type: 'event', option: 0 })).body.state;
+      const crossRes = await s.p.act(waiting, { type: 'event', option: 0 });
+      expect(crossRes.status, JSON.stringify(crossRes.body)).toBe(200);
+      const crossed = crossRes.body.state;
       deadlyFoes();
       const res = await s.p.act(crossed, { type: 'move', node: crossed.reachable[0] as string });
       expect(res.status).toBe(200);

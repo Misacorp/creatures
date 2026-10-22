@@ -189,6 +189,7 @@ export const FIXED_GLOSSARY_IDS = [
   'dungeon-camp',
   'dungeon-pack',
   'keepsake',
+  'curse',
   'elite',
   'mystery-room',
   'cache',
