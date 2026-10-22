@@ -498,3 +498,68 @@
   padding: 0;
   list-style: none;
 }
+
+/* The Valley Games art pages (entries/games-art.tsx). */
+.wb-games {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wb-games-caption {
+  margin: 0.25rem 0 0;
+  color: var(--haze);
+  font-size: var(--fs-small);
+}
+
+.wb-games-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.wb-games-tints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.wb-games-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+  margin: 0;
+}
+
+.wb-games-cell figcaption {
+  color: var(--haze);
+  font-size: var(--fs-small);
+}
+
+.wb-games-frames {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  padding: 4px;
+  background: var(--dusk-2);
+}
+
+.wb-games-props .wb-games-frames {
+  background: #7a7098;
+}
+
+.wb-games-swatches {
+  display: inline-flex;
+}
+
+/* The Games scenes are edge to edge on a phone: break out of the preview card to the window's width. */
+.wb-games-bleed {
+  margin-inline: calc(50% - 50vw);
+}
+
+.wb-games-bleed .wb-games-caption {
+  padding-inline: 1rem;
+}

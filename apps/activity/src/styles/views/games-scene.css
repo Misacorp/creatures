@@ -1,0 +1,126 @@
+/*
+  The Valley Games scenes (`games/art/GamesScene.tsx`): a back canvas, the actors, a front canvas, at a
+  whole scale; the stage is centred in its box. Actors are placed by their sprite's top-left in CSS px
+  (`--x`, `--y`), set through `cssVars`.
+*/
+.games-scene {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  overflow: hidden;
+}
+
+.games-stage {
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  width: var(--w);
+  height: var(--h);
+  overflow: hidden;
+}
+
+canvas.games-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+canvas.games-front {
+  z-index: 2;
+  pointer-events: none;
+}
+
+.games-actors {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.games-actor {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  z-index: var(--z, 0);
+  width: calc(var(--s) * 16);
+  height: calc(var(--s) * 16);
+}
+
+.games-actor-body {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+}
+
+.games-actor-body canvas.sprite {
+  display: block;
+}
+
+.games-actor.is-flipped .games-actor-body {
+  transform: scaleX(-1);
+}
+
+.games-actor.is-flat .games-actor-body {
+  transform: scaleY(0.4);
+}
+
+.games-actor.is-flat.is-flipped .games-actor-body {
+  transform: scale(-1, 0.4);
+}
+
+.games-actor-fx {
+  position: absolute;
+  top: var(--fx-y);
+  left: var(--fx-x);
+  pointer-events: none;
+}
+
+.games-actor-fx canvas.sprite {
+  display: block;
+}
+
+/* A tiny bar over the head: two scene pixels tall with an ink edge. */
+.games-meter {
+  position: absolute;
+  bottom: calc(100% + var(--s) * 2);
+  left: calc(var(--s) * 2);
+  width: calc(var(--s) * 12);
+  height: calc(var(--s) * 2);
+  background: var(--meter-dark);
+  box-shadow: 0 0 0 calc(var(--s) * 0.5) var(--ink);
+}
+
+.games-meter-fill {
+  width: var(--pct);
+  height: 100%;
+  background: var(--meter);
+}
+
+.games-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.games-sprite {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  z-index: var(--z, 0);
+}
+
+.games-sprite canvas.sprite {
+  display: block;
+}
+
+.games-sprite.is-flipped canvas.sprite {
+  transform: scaleX(-1);
+}
+
+/* A swimmer is in the water up to its middle: the bottom rows are hidden under the ripple. */
+.games-actor[data-state='swim'] .games-actor-body {
+  clip-path: inset(0 0 30% 0);
+}

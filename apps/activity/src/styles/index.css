@@ -107,6 +107,7 @@
 @import './components/roster-picker.css';
 @import './views/raid-abilities.css';
 @import './views/living-room.css';
+@import './views/games-scene.css';
 @import './views/weather.css';
 @import './components/currency-pile.css';
 @import './components/accordion.css';
