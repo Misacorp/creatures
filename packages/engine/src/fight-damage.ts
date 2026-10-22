@@ -84,7 +84,11 @@ function coverGuardFor(state: FightState, victim: Creature): Creature | undefine
  *   less, credited to the Guard;
  * - `reflect` (a reaction's hit coming back at the hitter, not a boss attack): without `rules`
  *   nothing intercepts, covers or caps it; with `rules` a Guard takes it as an aimed hit, but it
- *   is not covered and not capped (the single-hit cap is for the boss's attacks).
+ *   is not covered and not capped (the single-hit cap is for the boss's attacks), unless `capped`
+ *   is set (the dungeon's chance reflect, combat-rules.md 5.5: it takes the single-hit cap too).
+ * - `spikes` (a creature's own hit pricking it, combat-rules.md 5.6): a reflected hit that nobody
+ *   steps in for, never dodged, never crit, not covered, and always under the single-hit cap
+ *   (with `rules`). Shield Walls, armor and the sheet's `reflectedBp` apply as for a reflected hit.
  *
  * The reductions on one hit, in this order (each works on what the one before left; every
  * division rounds down, so the damage prevented rounds down):
@@ -114,21 +118,24 @@ export function hurt(
 
   target: Creature,
   rawAmount: number,
-  source: 'attack' | 'gimmick' | 'reflect' | 'enrage',
-  mode: 'aimed' | 'area' | 'reflect',
+  source: 'attack' | 'gimmick' | 'reflect' | 'enrage' | 'spikes',
+  mode: 'aimed' | 'area' | 'reflect' | 'spikes',
   /** The boss crit die of this hit (absent: the hit cannot crit). */
   die?: number,
   /** A slam's splash. */
   splash = false,
   /** The hit is a charged move landing (`SlotMods.chargedBp`). */
   charged = false,
+  /** A reflected hit that takes the single-hit cap (the dungeon's chance reflect). */
+  capped = false,
 ): Creature {
   const { boss, shape, bossCrit, bossCritOn, rules, creatures, events, perCreature } = state;
   state.lastHitDodged = false;
   const crit = die !== undefined && bossCritOn && die < bossCrit.chanceBp;
   // The boss's own status effects (Mired) change the damage it deals; a reflected hit is a creature's
   // reaction coming back, not the boss's own damage, so they do not touch it.
-  const effectBp = mode === 'reflect' ? 0 : effectBpOf(state, BOSS, 'damageDealtBp');
+  const returning = mode === 'reflect' || mode === 'spikes';
+  const effectBp = returning ? 0 : effectBpOf(state, BOSS, 'damageDealtBp');
   let amount = Math.max(
     0,
     Math.floor(
@@ -151,7 +158,7 @@ export function hurt(
   // for every hit the taker takes, rolled or not, so the numbering never depends on the hit's kind.
   if (state.dodge !== undefined) {
     const die = nextTakenDie(state, victim);
-    if (mode !== 'reflect' && victim === target) {
+    if (!returning && victim === target) {
       const area = mode === 'area' && !charged && source !== 'enrage';
       if (die < creatureDodgeBp(state, victim, area)) {
         // Sidestep is only rolled when the dodge failed, but its die numbering still counts this area hit.
@@ -223,7 +230,7 @@ export function hurt(
   // of them applies to a hit.
   let covered: { guard: string; prevented: number } | undefined;
   let armored = 0;
-  let capped = false;
+  let wasCapped = false;
   // 5. The taker's sheet: ward, charged, shape, every hit, in this order (a no-op without one).
   const sheet = (x: number): number => {
     const m = victim.mods;
@@ -240,7 +247,7 @@ export function hurt(
   let warded: number;
   if (rules !== undefined) {
     const capAt =
-      mode !== 'reflect' && rules.maxHitBp > 0
+      (!returning || capped || mode === 'spikes') && rules.maxHitBp > 0
         ? Math.max(1, Math.floor((victim.maxHp * rules.maxHitBp) / 10_000))
         : Number.POSITIVE_INFINITY;
     let after = amount;
@@ -263,7 +270,7 @@ export function hurt(
     const afterSheet = sheet(after);
     warded = after - afterSheet;
     // 6. The single-hit cap.
-    capped = afterSheet > capAt;
+    wasCapped = afterSheet > capAt;
     const final = Math.min(afterSheet, capAt);
     // What armor or cover really saved: the hit as it would have ended without them, less the hit.
     const prevented = Math.min(sheet(amount), capAt, victim.hp) - Math.min(final, victim.hp);
@@ -314,7 +321,7 @@ export function hurt(
     ...(splash ? { splash: true as const } : {}),
     ...(covered === undefined ? {} : { covered }),
     ...(armored > 0 ? { armored } : {}),
-    ...(capped ? { capped: true as const } : {}),
+    ...(wasCapped ? { capped: true as const } : {}),
     ...(warded === 0 ? {} : { warded }),
     ...(stubborn ? { stubborn: true as const } : {}),
   });
@@ -323,7 +330,7 @@ export function hurt(
   // A passive ability on the taker (`on_hit_taken`): a hit it takes that deals damage (not
   // reflected) leaves an effect on the boss. A shielded or dodged hit returned above; a hit cut to
   // 0 (armor, cover, ward, a Shield Wall) deals none and fires nothing (combat-rules 13.10).
-  if (mode !== 'reflect' && amount > 0) {
+  if (!returning && amount > 0) {
     for (const a of victim.hitTakenApplies) {
       applyEffect(state, BOSS, a.effect, a.powerBp, victim.id, a.durationTurns ?? 0);
     }

@@ -22,6 +22,7 @@ export const PATTERN_SCENARIOS = [
   'Kind Rain (a heal for everyone)',
   'Morning Haze (first turns lost)',
   'Bramble Season (a reaction thrown back)',
+  'Thorns (spikes prick the hitter)',
   'Stubborn (stays up at 1 HP)',
   'Chance and trigger lines (Echo, Sidestep, Payback)',
   'Cover pips (Guard beside)',
@@ -264,6 +265,35 @@ export function patternFight(scenario: PatternScenario): PatternFight {
           bramble: { bp: 3_000, amount: 30 },
         },
         { t: 'boss_hit', round: 3, source: 'reflect', target: 'c1', damage: 30 },
+      ]);
+    case 'Thorns (spikes prick the hitter)':
+      // Every hit on the foe pricks the creature that made it; a reaction's bonus is not part of it.
+      return done(colossus, [
+        start(2),
+        { t: 'turn', round: 2, creature: 'c0' },
+        {
+          t: 'hit',
+          round: 2,
+          creature: 'c0',
+          damage: 60,
+          matchupBp: 10_000,
+          bonusBp: 0,
+          mark: null,
+          bossHp: 940,
+        },
+        { t: 'boss_hit', round: 2, source: 'spikes', target: 'c0', damage: 6 },
+        { t: 'turn', round: 2, creature: 'c1' },
+        {
+          t: 'hit',
+          round: 2,
+          creature: 'c1',
+          damage: 150,
+          matchupBp: 10_000,
+          bonusBp: 0,
+          mark: 'tide',
+          bossHp: 790,
+        },
+        { t: 'boss_hit', round: 2, source: 'spikes', target: 'c1', damage: 9 },
       ]);
     case 'Stubborn (stays up at 1 HP)': {
       // c1 would be knocked out by the hit (it shows its full damage), but its Stubborn line keeps it at 1 HP.

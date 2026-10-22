@@ -286,6 +286,28 @@
     "section": "raid-week"
   },
   {
+    "id": "gimmick-spikes",
+    "title": "Spikes",
+    "short": "Every hit on the foe pricks the hitter. A reaction's bonus doesn't count.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "spikes"
+    },
+    "section": "dungeon"
+  },
+  {
+    "id": "gimmick-backlash",
+    "title": "Backlash",
+    "short": "Half the time, a reaction burns who set it off for part of its bonus.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "backlash"
+    },
+    "section": "dungeon"
+  },
+  {
     "id": "gimmick-strike-highest-atk",
     "title": "Strongest strike",
     "short": "Targets your top attacker, and may jump on.",
@@ -1583,7 +1605,7 @@
   {
     "id": "modifier-thorns",
     "title": "Thorns",
-    "short": "The foe turns the first reaction of each round back on your team.",
+    "short": "Every hit on the foe sends some damage back at the hitter.",
     "lines": [],
     "section": "dungeon"
   },

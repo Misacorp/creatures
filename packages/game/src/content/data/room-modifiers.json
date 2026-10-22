@@ -32,7 +32,7 @@
   {
     "id": "thorns",
     "name": "Thorns",
-    "description": "The foe turns the first reaction of each round back on your team.",
+    "description": "Every hit on the foe sends some damage back at the hitter.",
     "effects": [
       {
         "op": "foe_gimmick",
@@ -40,7 +40,8 @@
           "id": "thorns",
           "name": "Thorns",
           "trigger": { "eachRound": true },
-          "op": "reflect_first_reaction"
+          "op": "spikes",
+          "bp": 1000
         }
       }
     ]

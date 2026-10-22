@@ -456,7 +456,11 @@ describe('raid content', () => {
 
   // docs/design/attack-patterns.md 3.1: a round stays readable and round 1 is calm. The raid bosses
   // are checked as they fight at Boss Ranks 1, 4, 7 and 10, so every rank-gated move is counted.
-  const damaging = (g: Gimmick) => g.op !== 'reflect_first_reaction' && g.op !== 'silence_ends';
+  const damaging = (g: Gimmick) =>
+    g.op !== 'reflect_first_reaction' &&
+    g.op !== 'backlash' &&
+    g.op !== 'spikes' &&
+    g.op !== 'silence_ends';
   const firesIn = (g: Gimmick, round: number) =>
     'every' in g.trigger ? round % g.trigger.every === 0 : true;
   const fighters = [

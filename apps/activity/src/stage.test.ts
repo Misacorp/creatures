@@ -249,6 +249,18 @@ describe('cuesForEvents', () => {
     expect(cues[2]).toEqual({ kind: 'shake', i: 0, zone: 'back' });
   });
 
+  it('shows the damage spikes send back as a number on the hitter, with no boss action around it', () => {
+    const events: FightEvent[] = [
+      { t: 'turn', round: 1, creature: 'e' },
+      { t: 'boss_hit', round: 1, source: 'spikes', target: 'e', damage: 12 },
+    ];
+    const cues = cuesForEvents(events, 1, 2, ROW);
+    expect(kinds(cues)).toEqual(['flash', 'float', 'shake']);
+    expect(cues[1]).toMatchObject({ target: 'e', text: '12', tone: 'hurt' });
+    expect(strikesOf(events, 0, events.length, ROW)).toEqual([]);
+    expect(windupCuesForEvents(events, 0, events.length, ROW)).toEqual([]);
+  });
+
   it('says BLOCKED and draws the shield over the zone when a Shield Wall stops a hit', () => {
     const events: FightEvent[] = [
       { t: 'boss_hit', round: 3, source: 'attack', target: 'a', damage: 0, shielded: true },

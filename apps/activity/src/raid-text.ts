@@ -119,6 +119,13 @@ function percent(bp: number): string {
   return `${String(Math.round(bp / 100))}%`;
 }
 
+/** A standing effect's sentence: bare when it is always on, else with how often it is. */
+function standing(g: Gimmick, text: string): string {
+  return 'eachRound' in g.trigger
+    ? text
+    : `${when(g)}: ${text.charAt(0).toLowerCase()}${text.slice(1)}`;
+}
+
 function when(g: Gimmick): string {
   return 'eachRound' in g.trigger ? 'Every round' : `Every ${String(g.trigger.every)} rounds`;
 }
@@ -265,6 +272,16 @@ function gimmickBaseText(g: Gimmick, wording: Wording): string {
       return `${when(g)}: silences the creatures at both ends of ${g.scope === 'rows' && wording !== 'row' ? 'each row' : 'the row'} for ${String(g.turns)} turn${g.turns === 1 ? '' : 's'}.`;
     case 'reflect_first_reaction':
       return `${when(g)}: turns the first reaction of the round back on the creature that set it off.`;
+    case 'backlash':
+      return standing(
+        g,
+        `Each reaction has a ${percent(g.chanceBp)} chance to burn the creature that set it off for ${percent(g.shareBp)} of its bonus.`,
+      );
+    case 'spikes':
+      return standing(
+        g,
+        `Every hit on the foe pricks the hitter for ${percent(g.bp)} of its plain damage. A reaction's bonus does not count.`,
+      );
     case 'strike_highest_atk': {
       const jumps = g.jumps ?? 0;
       const strike = `${when(g)}: strikes your highest-attack creature for ${percent(g.power)} of its attack`;
@@ -289,59 +306,84 @@ function gimmickBaseText(g: Gimmick, wording: Wording): string {
 }
 
 /**
- * A few words for a gimmick's icon label, for example "Hits the front zone, every 3 rounds". `row`
- * (the dungeon) names a place instead of a zone ("Hits the left creature, every 3 rounds").
+ * A few words for a gimmick's icon label, for example "Hits the front zone every 3 rounds". `row`
+ * (the dungeon) names a place instead of a zone ("Hits the left creature every 3 rounds"). A charged
+ * move says what it hits, after "Charged:" ("Charged: slams your strongest creature and the ones
+ * beside it every 4 rounds"); that it is announced a round ahead is what "charged" means.
  */
 export function gimmickShort(g: Gimmick, wording: Wording = 'zones'): string {
-  const every =
-    'eachRound' in g.trigger ? 'every round' : `every ${String(g.trigger.every)} rounds`;
+  if (g.op === 'backlash' || g.op === 'spikes') {
+    // Standing effects: due every round today, so no frequency unless content says otherwise.
+    const what = g.op === 'backlash' ? 'Reactions may burn back' : 'Pricks whoever hits it';
+    return 'eachRound' in g.trigger ? what : `${what} ${every(g)}`;
+  }
+  if (g.op === 'charge') {
+    const inner = shortWhat(g.then, wording);
+    return `Charged: ${inner.charAt(0).toLowerCase()}${inner.slice(1)} ${every(g)}`;
+  }
+  return `${shortWhat(g, wording)} ${every(g)}`;
+}
+
+function every(g: Gimmick): string {
+  return 'eachRound' in g.trigger ? 'every round' : `every ${String(g.trigger.every)} rounds`;
+}
+
+const SLAM_WHO: Record<Extract<Pattern, { op: 'slam' }>['aim'], string> = {
+  strongest: 'your strongest creature',
+  payoff: 'your best Payoff',
+  random: 'a random creature',
+  left: 'the left creature',
+  front: 'the front creature',
+};
+
+/** What a move does, in a few words, without how often (`gimmickShort` adds that). */
+function shortWhat(g: Gimmick | Pattern, wording: Wording): string {
   const row = wording === 'row';
   switch (g.op) {
     case 'hit_zone':
-      return row
-        ? `Hits the ${ROW_PLACE[g.zone]} creature, ${every}`
-        : `Hits the ${g.zone} zone, ${every}`;
+      return row ? `Hits the ${ROW_PLACE[g.zone]} creature` : `Hits the ${g.zone} zone`;
     case 'silence_ends':
       return g.scope === 'rows' && !row
-        ? `Silences the ends of each row, ${every}`
-        : `Silences the row's ends, ${every}`;
+        ? 'Silences the ends of each row'
+        : "Silences the row's ends";
     case 'reflect_first_reaction':
-      return `Reflects a reaction, ${every}`;
+      return 'Reflects a reaction';
+    case 'backlash':
+      return 'Reactions may burn back';
+    case 'spikes':
+      return 'Pricks whoever hits it';
     case 'strike_highest_atk':
       return (g.jumps ?? 0) > 0
-        ? `Strikes your top attacker and jumps on, ${every}`
-        : `Strikes your top attacker, ${every}`;
+        ? 'Strikes your top attacker and jumps on'
+        : 'Strikes your top attacker';
     case 'sweep': {
       const only = g.rows.length === 1 ? g.rows[0] : undefined;
-      if (only === 'payoffs') {
-        return `Sweeps ${PAYOFF_ROW}, ${every}`;
-      }
-      if (g.rows.every((r) => r === 'all')) {
-        return row ? `Hits every creature, ${every}` : `Sweeps every row, ${every}`;
-      }
+      if (only === 'payoffs') return `Sweeps ${PAYOFF_ROW}`;
+      if (g.rows.every((r) => r === 'all')) return row ? 'Hits every creature' : 'Sweeps every row';
       if (only !== undefined && only !== 'all') {
-        return row
-          ? `Hits the ${ROW_PLACE[only]} creature, ${every}`
-          : `Sweeps the ${only} row, ${every}`;
+        return row ? `Hits the ${ROW_PLACE[only]} creature` : `Sweeps the ${only} row`;
       }
-      return row ? `Hits one place, then the next, ${every}` : `Sweeps row by row, ${every}`;
+      return row ? 'Hits one place, then the next' : 'Sweeps row by row';
     }
     case 'barrage':
       return g.shells.max === 1
-        ? `Hits one random creature, ${every}`
-        : `Drops shells on ${shellCount(g.shells.min, g.shells.max)}, ${every}`;
-    case 'slam':
-      return g.aim === 'payoff'
-        ? `Slams your best Payoff and the ones beside it, ${every}`
-        : `Slams one creature and the ones beside it, ${every}`;
+        ? 'Hits one random creature'
+        : `Drops shells on ${shellCount(g.shells.min, g.shells.max)}`;
+    case 'slam': {
+      // On one row the front-most creature is the left one, and it has one neighbour, not two.
+      const end = row && (g.aim === 'front' || g.aim === 'left');
+      return end
+        ? 'Slams the left creature and the one beside it'
+        : `Slams ${SLAM_WHO[g.aim]} and the ones beside it`;
+    }
     case 'lance':
-      return row ? `Hits one creature, ${every}` : `Cuts one lane through every row, ${every}`;
+      return row ? 'Hits one creature' : 'Cuts one lane through every row';
     case 'pincer':
-      return row ? `Closes on both ends, ${every}` : `Closes on the ends of each row, ${every}`;
+      return row ? 'Closes on both ends' : 'Closes on the ends of each row';
     case 'charge':
-      return `Charged ${g.then.op}, announced a round ahead, lands ${every}`;
+      return `Charged: ${shortWhat(g.then, wording).toLowerCase()}`;
     case 'purge':
-      return `Shakes off its debuffs, ${every}`;
+      return 'Shakes off its debuffs';
   }
 }
 

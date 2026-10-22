@@ -537,6 +537,12 @@ export type FightEvent =
        * `bonus` is what is left). Absent otherwise.
        */
       bramble?: { bp: number; amount: number };
+      /**
+       * A backlash (the dungeon's `backlash` gimmick) burned the payoff creature: the share of the bonus
+       * in basis points and the damage that came back at it, on top of the boss taking the whole
+       * reaction (the event's `bonus` is the whole bonus). Absent otherwise.
+       */
+      backlash?: { bp: number; amount: number };
       /** The sheets' share of the reaction: per-reaction and owner's mark bonus plus the pounce, in basis points; absent if none. */
       sheetBp?: number;
       /** Set when a gear set turned the boss's reflection aside (`unreflected`). */
@@ -562,7 +568,7 @@ export type FightEvent =
       t: 'boss_hit';
       round: number;
       /** `enrage`: the enraged boss's hit on every creature (`FightInput.enrage`). */
-      source: 'attack' | 'gimmick' | 'reflect' | 'enrage';
+      source: 'attack' | 'gimmick' | 'reflect' | 'enrage' | 'spikes';
       target: string;
       damage: number;
       /** Set when a guard took the hit: the creature it was aimed at. */

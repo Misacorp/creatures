@@ -1,6 +1,6 @@
 // A creature hitting the boss (`hitBoss`): turn hits and ability strikes, reactions, marks, crits, credit.
 // Part of the fight engine split from `fight.ts`; the shared state is `FightState` (`fight-state.ts`).
-import { RULES, type Element, type ReactionDef } from '@creatures/game';
+import { RULES, int, type Element, type ReactionDef } from '@creatures/game';
 import { hurt } from './fight-damage';
 import { bossDodges } from './fight-dodge';
 import { applyEffect, BOSS, bossStacks, consumeBossEffect, effectBpOf } from './fight-effects';
@@ -134,15 +134,26 @@ export function hitBoss(
     markBefore === null
       ? undefined
       : reactionByPair.get(reactionKey(markBefore.element, c.element));
-  const trapped = reaction !== undefined && c.alive && state.reflectArmed && !state.reflectUsed;
-  if (trapped) state.reflectUsed = true;
-  // A gear set turns the trap aside for the creature's first reaction of the fight (`unreflected`).
-  const proof = trapped && m.unreflected && c.cashes === 0;
-  const reflected = trapped && !proof;
+  const armedTrap = reaction !== undefined && c.alive && state.reflectArmed && !state.reflectUsed;
+  if (armedTrap) state.reflectUsed = true;
   // Bramble Season: the first reaction each round (by a creature still standing) sends a share of
   // its bonus back. A reaction Backdraft already reflected in full uses the round's first up.
   const brambling = reaction !== undefined && c.alive && brambleBp > 0 && !state.brambleUsed;
   if (brambling) state.brambleUsed = true;
+  // Backlash (`backlash`): each reaction a living creature sets off that neither the armed trap nor
+  // Bramble Season took has this chance to burn it. The die is drawn here, and only while the
+  // backlash is up, so a fight without one draws exactly what it always did.
+  const backlashHit =
+    !armedTrap &&
+    !brambling &&
+    reaction !== undefined &&
+    c.alive &&
+    state.backlashChanceBp > 0 &&
+    int(state.rng, 10_000) < state.backlashChanceBp;
+  // A gear set turns the trap, or a backlash, aside for the creature's first reaction of the fight (`unreflected`).
+  const proof = (armedTrap || backlashHit) && m.unreflected && c.cashes === 0;
+  const reflected = armedTrap && !proof;
+  const backlashed = backlashHit && !proof;
   const brambled = brambling && !reflected;
   // A reaction that consumes a status effect on the boss (Flare burns Mired) adds its share of the bonus
   // for each stack on it. Nothing without effects on, or on a reflected reaction (no bonus lands).
@@ -293,6 +304,14 @@ export function hitBoss(
       ),
     );
     if (reflected) return { damage: plain, bonus: 0, reflect: bonus };
+    // A backlash: the foe takes the whole reaction and a share of the bonus comes back as well.
+    if (backlashed) {
+      return {
+        damage: plain + bonus,
+        bonus,
+        reflect: Math.floor((bonus * state.backlashShareBp) / 10_000),
+      };
+    }
     if (brambled) {
       const back = Math.floor((bonus * brambleBp) / 10_000);
       return { damage: plain + bonus - back, bonus: bonus - back, reflect: back };
@@ -412,13 +431,18 @@ export function hitBoss(
       bonus: reflected ? hit.reflect : hit.bonus,
       reflected,
       ...(brambled ? { bramble: { bp: brambleBp, amount: hit.reflect } } : {}),
+      ...(backlashed ? { backlash: { bp: state.backlashShareBp, amount: hit.reflect } } : {}),
       ...(reactionSheetBp + m.pounceBp === 0 ? {} : { sheetBp: reactionSheetBp + m.pounceBp }),
       ...(proof ? { proof: true as const } : {}),
       ...(m.chainMark && !reflected ? { chain: true as const } : {}),
     });
     state.mark = null;
-    if (reflected) hurt(state, c, hit.reflect, 'reflect', 'reflect');
-    else if (brambled && hit.reflect > 0) hurt(state, c, hit.reflect, 'reflect', 'reflect');
+    if (reflected) {
+      hurt(state, c, hit.reflect, 'reflect', 'reflect');
+    } else if (backlashed && hit.reflect > 0) {
+      // Capped like a boss hit (`maxHitBp`, off today); the raid's trap and Bramble Season are not.
+      hurt(state, c, hit.reflect, 'reflect', 'reflect', undefined, false, false, true);
+    } else if (brambled && hit.reflect > 0) hurt(state, c, hit.reflect, 'reflect', 'reflect');
     if (!reflected) {
       // The reaction's riders on the boss: burn the stacks it counted (Flare), or leave an effect (Smother).
       if (reaction.consumes !== undefined && burned > 0) {
@@ -498,6 +522,14 @@ export function hitBoss(
   if (reaches) {
     state.retreated = true;
     events.push({ t: 'retreat', round: state.currentRound, bossHp: state.bossHp });
+  }
+
+  // Spiky armour (`spikes`): a share of the hit's plain damage (never the reaction's bonus) pricks the
+  // creature that made it. An ordinary turn hit or an ability's strike counts; an Echo does not (it is
+  // written below). Nothing comes back from a creature that is down, or once the foe has fallen.
+  if (state.spikesBp > 0 && c.alive && state.bossHp > 0 && !state.retreated) {
+    const back = Math.floor(((hit.damage - hit.bonus) * state.spikesBp) / 10_000);
+    if (back > 0) hurt(state, c, back, 'spikes', 'spikes');
   }
 
   // Echo: a turn hit lands again for a share of its plain damage (no state.mark, no reaction, no crit),

@@ -312,6 +312,19 @@ export const GimmickSchema = v.variant('op', [
   }),
   v.strictObject({ ...gimmickBase, op: v.literal('reflect_first_reaction') }),
   /**
+   * Spiky armour (dungeon only, combat-rules.md 5.6): every creature hit that lands on the foe sends
+   * `bp` of that hit's plain damage back at the creature that made it. Any trigger; `eachRound` for
+   * a standing effect.
+   */
+  v.strictObject({ ...gimmickBase, op: v.literal('spikes'), bp: Share }),
+  /**
+   * Backlash (dungeon only, combat-rules.md 5.5): each reaction a living creature sets off has
+   * `chanceBp` chance to burn it: the foe still takes the whole reaction, and `shareBp` of the
+   * reaction's bonus comes back as a reflected hit on the payoff creature. Any trigger; `eachRound`
+   * for a standing effect.
+   */
+  v.strictObject({ ...gimmickBase, op: v.literal('backlash'), chanceBp: Share, shareBp: Share }),
+  /**
    * The strongest living creature (highest Attack, ties: lower slot), an aimed hit; then `jumps`
    * more (0 to 3, default 0) to the next strongest, each an area hit at `power x decay^k`
    * (`decayBp`, default 5500). The same creature is never hit twice. Defaults: today's strike.

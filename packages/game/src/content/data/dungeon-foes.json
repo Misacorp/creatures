@@ -196,7 +196,9 @@
         "id": "molten-shell",
         "name": "Molten Shell",
         "trigger": { "eachRound": true },
-        "op": "reflect_first_reaction"
+        "op": "backlash",
+        "chanceBp": 5000,
+        "shareBp": 2500
       },
       {
         "id": "anvil-fall",
@@ -221,7 +223,7 @@
       }
     },
     "rounds": 8,
-    "flavor": "King of a cooled forge, wearing a crown of slag. It turns your best trick back on you."
+    "flavor": "King of a cooled forge, wearing a crown of slag. Half the time, your best trick burns the one who plays it."
   },
   {
     "id": "bramble-matron",

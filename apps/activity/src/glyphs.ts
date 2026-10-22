@@ -66,6 +66,36 @@ const reflectFirstReaction: SpriteDef = {
   ],
 };
 
+/** A spiky ball: the Thorns room modifier, every hit on the foe pricks the hitter. */
+const spikes: SpriteDef = {
+  palette: { r: BAD },
+  rows: [
+    'r..r..r.',
+    '.r.rr.r.',
+    '..rrrr..',
+    'rrrrrrrr',
+    '..rrrr..',
+    '.r.rr.r.',
+    'r..r..r.',
+    '........',
+  ],
+};
+
+/** A shield with a gleam: a reaction may burn back (the Slag Tyrant's Molten Shell). */
+const backlash: SpriteDef = {
+  palette: { r: BAD },
+  rows: [
+    '.rrrrrr.',
+    'rr....rr',
+    'r..rr..r',
+    'r.rrrr.r',
+    'r..rr..r',
+    '.r....r.',
+    '..r..r..',
+    '...rr...',
+  ],
+};
+
 /** A sword: the boss goes for the strongest creature. */
 const strikeHighestAtk: SpriteDef = {
   palette: { w: BONE, g: GOLD, k: INK },
@@ -760,6 +790,8 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   hit_zone: hitZone,
   silence_ends: silenceEnds,
   reflect_first_reaction: reflectFirstReaction,
+  backlash,
+  spikes,
   strike_highest_atk: strikeHighestAtk,
   sweep,
   barrage,
@@ -833,6 +865,8 @@ export const GIMMICK_GLYPH_OPS = [
   'hit_zone',
   'silence_ends',
   'reflect_first_reaction',
+  'backlash',
+  'spikes',
   'strike_highest_atk',
   'sweep',
   'barrage',

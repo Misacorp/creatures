@@ -532,7 +532,7 @@ describe('the forecast knows what the room modifier adds to the foe', () => {
     const thorns = replay.rooms.find((r) => r.modifier.id === 'thorns');
     const plain = replay.rooms.find((r) => r.modifier.id !== 'thorns');
     if (thorns === undefined || plain === undefined) throw new Error('fixture modifiers');
-    expect(modifierGimmicks(thorns).map((g) => g.op)).toEqual(['reflect_first_reaction']);
+    expect(modifierGimmicks(thorns).map((g) => g.op)).toEqual(['spikes']);
     expect(modifierGimmicks(plain)).toEqual([]);
   });
 
@@ -543,8 +543,8 @@ describe('the forecast knows what the room modifier adds to the foe', () => {
     const without = forecastNextRound(room.foe.id, 1, 8, ids, [], room.names);
     const added = modifierGimmicks(room);
     const withThorns = forecastNextRound(room.foe.id, 1, 8, ids, [], room.names, 'row', added);
-    expect(withThorns?.text).toContain('reflects the first reaction');
-    expect(without?.text ?? '').not.toContain('reflects the first reaction');
+    expect(withThorns?.text).toContain('every hit pricks the hitter');
+    expect(without?.text ?? '').not.toContain('pricks the hitter');
   });
 });
 

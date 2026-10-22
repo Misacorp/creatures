@@ -160,6 +160,17 @@ describe('stepping', () => {
     expect(state.acted).toEqual(['a', 'b', 'x']);
   });
 
+  it('does not make the boss act when spikes prick a creature after its hit', () => {
+    const spiked: FightEvent[] = [
+      { t: 'round_start', round: 1, bossHp: 1000, mark: null },
+      { t: 'turn', round: 1, creature: 'a' },
+      { t: 'boss_hit', round: 1, source: 'spikes', target: 'a', damage: 5 },
+    ];
+    const state = stateAt(spiked, 3, 1000);
+    expect(state.bossActing).toBe(false);
+    expect(state.actor).toBe('a');
+  });
+
   it('resets the round at round start and takes the mark from it', () => {
     const state = stateAt(events, 16, 1000);
     expect(state).toMatchObject({ round: 2, bossHp: 550, mark: 'ember', actor: null, acted: [] });
