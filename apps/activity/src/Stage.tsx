@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import {
   laneOfIndex,
+  paceOfPacing,
   type EventNames,
   type FightBoard,
   type FightEvent,
@@ -824,9 +825,13 @@ export function Stage({
  * `useLiveStage`). `hold` keeps it waiting while the countdown's "FIGHT!" is on screen.
  */
 export function LiveStage(
-  props: Omit<StageProps, 'index' | 'anim' | 'fx' | 'intro'> & { hold?: boolean },
+  props: Omit<StageProps, 'index' | 'anim' | 'fx' | 'intro'> & {
+    hold?: boolean;
+    /** The fight's pacing version from the server (`paceOfPacing`). */
+    pacing: number;
+  },
 ) {
-  const { hold, ...rest } = props;
+  const { hold, pacing, ...rest } = props;
   const reduced = usePrefersReducedMotion();
   const view = useLiveStage(
     props.events,
@@ -836,6 +841,7 @@ export function LiveStage(
     reduced,
     hold === true,
     props.board,
+    paceOfPacing(pacing),
   );
   return <Stage {...rest} index={view.index} anim={view.anim} fx={view.fx} intro={view.intro} />;
 }

@@ -365,6 +365,7 @@ export function Live({
             events={fight.events}
 
             hold={countdown !== null}
+            pacing={fight.pacing}
             abilities={{
               list: fight.abilities,
               you: fight.you,

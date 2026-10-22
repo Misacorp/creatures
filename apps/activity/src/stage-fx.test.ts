@@ -3,6 +3,7 @@ import {
   INTRO_LIVE_MS as ENGINE_INTRO_LIVE_MS,
   MAX_ROUND_MS,
   MIN_ROUND_MS,
+  SLOW_PACE,
   TAIL_MS,
   WINDUP_MS,
   makeSlot,
@@ -74,6 +75,13 @@ describe('visible durations', () => {
   it('lasts as long as the engine says for a wind-up, so the telegraph ends where the hit lands', () => {
     expect(cueMs({ kind: 'windup', i: 1, strike })).toBe(WINDUP_MS);
     expect(cueMs({ kind: 'windup', i: 1, strike }, 2)).toBe(WINDUP_MS / 2);
+    expect(cueMs({ kind: 'windup', i: 1, strike }, 1, SLOW_PACE)).toBe(SLOW_PACE.windupMs);
+  });
+
+  it('keeps effects up 50% longer at the slow pace of the live finale', () => {
+    expect(cueMs(float(1, null) as FxCue, 1, SLOW_PACE)).toBe(3750);
+    expect(cueMs(burst as FxCue, 1, SLOW_PACE)).toBe(3750);
+    expect(cueMs(ko as FxCue, 1, SLOW_PACE)).toBe(2250);
   });
 
   it('shortens every duration by about 30% at 2x', () => {

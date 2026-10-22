@@ -7,7 +7,7 @@
  *   ability state.
  * - Rounds are paced by their content: round 1 starts at `started_at` and round r+1 starts
  *   `roundPlaybackMs(events of round r)` after round r (the engine's pacing, shared with the client:
- *   6 to 22 seconds). A read re-runs the engine on the stored input with the abilities known so far and
+ *   20 to 45 seconds at the slow pace of fights stored from 2026-10-22, 6 to 22 seconds before). A read re-runs the engine on the stored input with the abilities known so far and
  *   shows rounds 1..round. That is consistent because of the engine's prefix property: round r's events
  *   depend only on the abilities that fire in rounds 1..r, and Fire only ever sets a round after the
  *   current one, so the schedule up to the current round never changes. A fight stored before this
@@ -21,8 +21,10 @@
  */
 import { content, createSeededRng, type Element, type Rng } from '@creatures/game';
 import {
-  MAX_ROUND_MS,
+  PACING_SLOW,
+  SLOW_PACE,
   defaultAbilityRound,
+  paceOfPacing,
   roundPlaybackMs,
   simulateFight,
   type AbilityChoice,
@@ -37,13 +39,15 @@ import { basicKey, buildPhaseInput, drawSeed, settleParty } from './raid-resolve
 import { GameError } from './outcome';
 
 /**
- * The longest a round of the live finale can take (the engine's `MAX_ROUND_MS`): 22 seconds, so 12
- * rounds are under 4 and a half minutes. New fights store it in `round_ms` as an upper bound; their
- * real rounds are as long as their content (see `roundStartsOf`).
+ * The longest a round of the live finale can take (the slow pace's `maxRoundMs`): 45 seconds. New
+ * fights store it in `round_ms` as an upper bound; their real rounds are as long as their content (see
+ * `roundStartsOf`).
  */
-export const LIVE_ROUND_MS = MAX_ROUND_MS;
-/** The pacing of a fight stored from now on: rounds last as long as their events (`roundPlaybackMs`). */
+export const LIVE_ROUND_MS = SLOW_PACE.maxRoundMs;
+/** Pacing 1: rounds last as long as their events (`roundPlaybackMs`), at the classic pace. */
 export const PACING_CONTENT = 1;
+/** The pacing of a fight stored from now on: content pacing at the slow pace (the engine's `PACING_SLOW`). */
+export const PACING_STORED = PACING_SLOW;
 /** The lobby opens this long before the finale. */
 export const LOBBY_MS = 5 * 60_000;
 /** A finale event that runs this late or earlier starts live; later than that nobody can watch. */
@@ -94,7 +98,10 @@ export interface LiveRow {
   /** The fixed round length of a fight with `pacing` 0; an upper bound for the others. */
   roundMs: number;
   rounds: number;
-  /** 0: fixed rounds of `roundMs` (stored before content pacing). 1: rounds last as long as their content. */
+  /**
+   * 0: fixed rounds of `roundMs` (stored before content pacing). 1: rounds last as long as their
+   * content, at the classic pace. 2: the same at the slow pace (from 2026-10-22).
+   */
   pacing: number;
 }
 
@@ -307,8 +314,8 @@ function simulate(row: LiveRow): Simulated {
 
 /**
  * Where each round starts, and when the fight ends, with the abilities known so far. Content pacing
- * (`pacing` 1): round 1 starts at `startedAt` and round r+1 starts `roundPlaybackMs(events of round r)`
- * after round r; the end is the end of the last round played (the last round of the fight, or the
+ * (`pacing` 1 at the classic pace, 2 at the slow pace): round 1 starts at `startedAt` and round r+1
+ * starts `roundPlaybackMs(events of round r)` after round r; the end is the end of the last round played (the last round of the fight, or the
  * round the boss fell in). Only the starts of rounds up to the clock's round plus one are certain
  * (round r's events are fixed once r has started); later ones assume what is known now. Legacy rows
  * (`pacing` 0) have a fixed `roundMs` for every round.
@@ -323,6 +330,7 @@ export function roundStartsOf(
       endsAt: row.startedAt + row.rounds * row.roundMs,
     };
   }
+  const pace = paceOfPacing(row.pacing);
   const byRound = new Map<number, FightEvent[]>();
   for (const e of result.events) {
     const list = byRound.get(e.round);
@@ -334,7 +342,7 @@ export function roundStartsOf(
   let at = row.startedAt;
   for (let r = 1; r <= last; r++) {
     starts.push(at);
-    at += roundPlaybackMs(byRound.get(r) ?? []);
+    at += roundPlaybackMs(byRound.get(r) ?? [], { pace });
   }
   return { starts, endsAt: at };
 }
@@ -434,7 +442,7 @@ function insertLive(
     startedAt,
     LIVE_ROUND_MS,
     input.boss.finaleRounds,
-    PACING_CONTENT,
+    PACING_STORED,
   );
 }
 

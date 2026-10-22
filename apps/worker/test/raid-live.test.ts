@@ -1,7 +1,7 @@
 import { RULES, content, createSeededRng, jackpotEssenceFor } from '@creatures/game';
 import {
-  MAX_ROUND_MS,
-  MIN_ROUND_MS,
+  CLASSIC_PACE,
+  SLOW_PACE,
   roundPlaybackMs,
   simulateFight,
   type FightEvent,
@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import {
   LIVE_ROUND_MS,
   PACING_CONTENT,
+  PACING_STORED,
   PRACTICE_COOLDOWN_MS,
   PRACTICE_LOBBY_MS,
   evaluate,
@@ -56,6 +57,9 @@ type Ctx = CoreContext;
 
 const FINALE = eventTimes(W02.id, HELSINKI).finale;
 const ROUND = LIVE_ROUND_MS;
+/** New fights play at the slow pace (2026-10-22). */
+const MIN_ROUND_MS = SLOW_PACE.minRoundMs;
+const MAX_ROUND_MS = SLOW_PACE.maxRoundMs;
 const ROUNDS = 12;
 /** The unbeatable boss of these tests is never beaten and never wins: the finale runs its enrage rounds too. */
 const CLOCK_ROUNDS = ROUNDS + RULES.raid.enrage.rounds;
@@ -173,11 +177,11 @@ describe('the live finale lifecycle', () => {
       begin(ctx);
       // A new fight stores the content pacing; `round_ms` only holds the upper bound of a round.
       expect(rows(ctx.sql, 'SELECT DISTINCT round_ms, pacing FROM raid_live')).toEqual([
-        { round_ms: 22_000, pacing: PACING_CONTENT },
+        { round_ms: 45_000, pacing: PACING_STORED },
       ]);
       expect(ROUND).toBe(MAX_ROUND_MS);
-      // The 12 regular rounds of 22 s are 4:24, inside the 5 minute cap; the enrage rounds come on top.
-      expect(12 * ROUND).toBeLessThan(5 * MINUTE);
+      // The 12 regular rounds of the longest round are 9 minutes; the enrage rounds come on top.
+      expect(12 * ROUND).toBe(9 * MINUTE);
 
       // This boss is never beaten, so the clock runs through the enrage rounds as well.
       expect(scheduleOf(ctx).starts).toHaveLength(CLOCK_ROUNDS);
@@ -190,7 +194,10 @@ describe('the live finale lifecycle', () => {
         expect(s.roundStarts).toHaveLength(r);
         expect(s.roundStarts.at(-1)).toBe(start);
         // The round's own length: the engine's pacing of its events, the same function the client plays by.
-        const length = roundPlaybackMs(s.events.filter((e) => e.round === r));
+        const length = roundPlaybackMs(
+          s.events.filter((e) => e.round === r),
+          { pace: SLOW_PACE },
+        );
         expect(length).toBeGreaterThanOrEqual(MIN_ROUND_MS);
         expect(length).toBeLessThanOrEqual(MAX_ROUND_MS);
         expect(s.nextRoundAt).toBe(start + length);
@@ -242,6 +249,30 @@ describe('the live finale lifecycle', () => {
 
       // The column is added by migration 15 with the legacy value, so old rows are read as fixed.
       expect(rows(ctx.sql, 'SELECT pacing FROM raid_live')).toEqual([{ pacing: 0 }]);
+    });
+  });
+
+  it('keeps a content-paced fight stored before 2026-10-22 at the classic pace', async () => {
+    await runRaid((ctx) => {
+      const [a] = toFinale(ctx);
+      const player = a as Seeded;
+      begin(ctx);
+      ctx.sql.exec('UPDATE raid_live SET pacing = ?, round_ms = 22000', PACING_CONTENT);
+      at(ctx, 0);
+      const s = snap(ctx, player);
+      const length = roundPlaybackMs(
+        s.events.filter((e) => e.round === 1),
+        { pace: CLASSIC_PACE },
+      );
+      expect(length).toBeLessThanOrEqual(CLASSIC_PACE.maxRoundMs);
+      expect(s).toMatchObject({ pacing: PACING_CONTENT, nextRoundAt: FINALE + length });
+      // The same round at the slow pace is longer: a new fight is slower.
+      expect(
+        roundPlaybackMs(
+          s.events.filter((e) => e.round === 1),
+          { pace: SLOW_PACE },
+        ),
+      ).toBeGreaterThan(length);
     });
   });
 
@@ -1442,7 +1473,7 @@ describe('the practice finale', () => {
         // Practice is paced like the real thing: round 1 starts at t0, the rest by their content.
         expect(first.roundStarts).toEqual([t0]);
         expect(first.nextRoundAt).toBe(scheduleOf(ctx, 1, true).starts[1]);
-        expect(rows(ctx.sql, 'SELECT pacing FROM raid_live')).toEqual([{ pacing: PACING_CONTENT }]);
+        expect(rows(ctx.sql, 'SELECT pacing FROM raid_live')).toEqual([{ pacing: PACING_STORED }]);
         expect(scheduleOf(ctx, 1, true).starts[0]).toBe(t0);
         ctx.clock.t = (scheduleOf(ctx, 1, true).starts[2] as number) + 100;
         const late = await ctx.request(secret, '/api/raid/live/action', 'POST', {
@@ -1662,6 +1693,7 @@ describe('the API contract with the client', () => {
     'loot',
     'names',
     'nextRoundAt',
+    'pacing',
     'party',
     'practice',
     'round',

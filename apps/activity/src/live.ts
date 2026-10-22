@@ -5,7 +5,7 @@
  * decide what to show and which buttons to offer.
  */
 import { content, RULES, type FinaleAbilityDef } from '@creatures/game';
-import { MAX_ROUND_MS, describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
+import { SLOW_PACE, describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
 import type { LiveAbility, LiveActionRequest, LiveFight, LiveSnapshot } from './live-api';
 import type { AbilityPreview, RaidReveal, TeamCreatureView } from './raid-api';
 import { formatCountdown } from './time-format';
@@ -16,10 +16,10 @@ import { festivalGrantText, rankChangeText } from './raid-progress';
 /** The lobby opens this long before the start. */
 export const LOBBY_MS = 5 * 60_000;
 /**
- * The longest a round of a finale can take (the engine's pacing, 6 to 22 seconds, is what the server
- * schedules by): only used to know when the Raid tab can stop expecting a result.
+ * The longest a round of a finale can take (the engine's slow pace, 20 to 45 seconds, is what the
+ * server schedules new fights by): only used to know when the Raid tab can stop expecting a result.
  */
-const LONGEST_ROUND_MS = MAX_ROUND_MS;
+const LONGEST_ROUND_MS = SLOW_PACE.maxRoundMs;
 /** How long after the last round the Raid tab keeps the finale view open for a result to show up. */
 const FINISH_GRACE_MS = 30_000;
 

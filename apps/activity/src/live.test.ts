@@ -50,6 +50,7 @@ function fightOf(over: Partial<LiveRunning> = {}): LiveRunning {
     you: 'p1',
     startsAt: START,
     roundMs: null,
+    pacing: 2,
     rounds: 12,
     round: 3,
     // Rounds are as long as their content: these three are 9 s, 11 s and 10 s long.
@@ -79,6 +80,7 @@ function lobbyOf(over: Partial<LiveLobby> = {}): LiveLobby {
     you: null,
     startsAt: START,
     roundMs: null,
+    pacing: 2,
     rounds: 12,
     round: 0,
     roundStarts: [],
@@ -121,9 +123,9 @@ describe('finaleWindow', () => {
     expect(finaleWindow(finale, 12, finale - LOBBY_MS)).toBe('lobby');
     expect(finaleWindow(finale, 12, finale - 1)).toBe('lobby');
     expect(finaleWindow(finale, 12, finale)).toBe('live');
-    // The longest finale is 12 rounds of 22 s.
-    expect(finaleWindow(finale, 12, finale + 12 * 22_000)).toBe('live');
-    expect(finaleWindow(finale, 12, finale + 12 * 22_000 + 30_000)).toBe('after');
+    // The longest finale is 12 rounds of 45 s (the slow pace).
+    expect(finaleWindow(finale, 12, finale + 12 * 45_000)).toBe('live');
+    expect(finaleWindow(finale, 12, finale + 12 * 45_000 + 30_000)).toBe('after');
   });
 });
 
@@ -188,7 +190,7 @@ describe('nextPollDelay', () => {
 
   it('keeps polling after the last round until "done" arrives, then gives up after the longest finale', () => {
     const ended = fightOf({ round: 12, nextRoundAt: null });
-    const end = START + 12 * 22_000;
+    const end = START + 12 * 45_000;
     expect(nextPollDelay(ended, end - 100_000)).toBe(2000);
     expect(nextPollDelay(ended, end + 1_000)).toBe(2000);
     expect(nextPollDelay(ended, end + GIVE_UP_MS + 1)).toBeNull();

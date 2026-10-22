@@ -10,12 +10,13 @@
  *   1.5 and a boss attack's label for 2. Effects of one beat overlap the next beats, which is what
  *   keeps combos and crits readable. Effects overlap freely.
  *
- * A live round is as long as its content (the engine's `roundPlaybackMs`, 6 to 22 seconds): a 1.5
- * second "Round N" intro, the beats, and 2 seconds after the last effect appears. A replay plays the
- * same pacing with a 1 second intro; at 2x the stagger, the intro and the tail are halved and the
- * visible durations are about 30% shorter.
+ * A live round is as long as its content (the engine's `roundPlaybackMs` at the fight's pace: 20 to 45
+ * seconds at the slow pace of finales from 2026-10-22): a "Round N" intro, the beats, and a tail after
+ * the last effect appears. At the slow pace the visible durations are 50% longer (`Pace.fxBp`). A replay
+ * plays the classic pace with a 1 second intro; at 2x the stagger, the intro and the tail are halved
+ * and the visible durations are about 30% shorter.
  */
-import { INTRO_LIVE_MS, INTRO_REPLAY_MS, WINDUP_MS } from '@creatures/engine';
+import { CLASSIC_PACE, INTRO_LIVE_MS, INTRO_REPLAY_MS, type Pace } from '@creatures/engine';
 import type { Speed } from './replay';
 import type { Beat, Cue } from './stage';
 
@@ -80,11 +81,15 @@ export function isFxCue(cue: Cue): cue is FxCue {
   }
 }
 
-const scaled = (ms: number, speed: Speed): number =>
-  speed === 2 ? Math.round((ms * FAST_FX_BP) / 10_000) : ms;
-
-/** How long an effect stays visible. A wind-up lasts as long as the engine's wind-up (halved at 2x). */
-export function cueMs(cue: FxCue, speed: Speed = 1): number {
+/**
+ * How long an effect stays visible, at the fight's pace (`Pace.fxBp`; the classic pace keeps the
+ * stage's own durations). A wind-up lasts as long as the pace's wind-up (halved at 2x).
+ */
+export function cueMs(cue: FxCue, speed: Speed = 1, pace: Readonly<Pace> = CLASSIC_PACE): number {
+  const scaled = (ms: number, s: Speed): number => {
+    const paced = Math.round((ms * pace.fxBp) / 10_000);
+    return s === 2 ? Math.round((paced * FAST_FX_BP) / 10_000) : paced;
+  };
   switch (cue.kind) {
     case 'float':
       return scaled(cue.crit ? FX_MS.crit : FX_MS.float, speed);
@@ -102,7 +107,7 @@ export function cueMs(cue: FxCue, speed: Speed = 1): number {
     case 'zone':
       return scaled(FX_MS.zone, speed);
     case 'windup':
-      return speed === 2 ? Math.round(WINDUP_MS / 2) : WINDUP_MS;
+      return speed === 2 ? Math.round(pace.windupMs / 2) : pace.windupMs;
   }
 }
 
@@ -139,7 +144,7 @@ interface TimelineStep {
 
 /**
  * When everything of a live round happens, from the beats the engine planned for it: the intro, then
- * each beat starting its wind-up (if it has one) and landing 600 ms later, the next beat starting
+ * each beat starting its wind-up (if it has one) and landing the pace's wind-up later, the next beat starting
  * after the beat's stagger. `endsAt` is when the last (state-only) beat has landed: the intro plus
  * every stagger, which is the length the server gives the round (`roundPlaybackMs`; a round shorter
  * than 6 s is simply idle for the rest). Pure, so the pacing is tested without timers.
@@ -215,11 +220,12 @@ export function addFx(
   cues: readonly Cue[],
   now: number,
   speed: Speed = 1,
+  pace: Readonly<Pace> = CLASSIC_PACE,
 ): FxItem[] {
   const out = activeFx(items, now);
   for (const cue of cues) {
     if (!isFxCue(cue)) continue;
-    const ms = cueMs(cue, speed);
+    const ms = cueMs(cue, speed, pace);
     const lane = cue.kind === 'float' ? freeLane(out, cue.target) : 0;
     out.push({ cue, ms, lane, until: now + ms });
   }
