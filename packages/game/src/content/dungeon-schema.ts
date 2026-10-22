@@ -243,6 +243,11 @@ const PLAIN_EFFECTS = [
   v.strictObject({ op: v.literal('treasure') }),
   /** The whole team falls: the run ends as a defeat (it keeps half the pack, `RULES.dungeon.defeatKeepBp`). A cost. */
   v.strictObject({ op: v.literal('fall') }),
+  /**
+   * The Sealed Vault: the fight rooms the run can step into next are marked (`sealTargets`) and the first one
+   * it enters is an epic fight with double rewards (`RULES.dungeon.seal`). A cost: it adds danger.
+   */
+  v.strictObject({ op: v.literal('seal') }),
 ] as const;
 
 /** A pack effect that gives nothing is a typo, not a choice. */
@@ -309,15 +314,15 @@ export const DungeonRunContentSchema = v.strictObject({
 });
 export type DungeonRunContent = v.InferOutput<typeof DungeonRunContentSchema>;
 
-/** True when taking the effect can cost the player something: HP, the run (a fall), or the chance of either. */
+/** True when taking the effect can cost the player something: HP, the run (a fall), a harder fight (a seal), or the chance of any. */
 function effectCosts(e: EventEffect): boolean {
-  if (e.op === 'hurt' || e.op === 'fall') return true;
+  if (e.op === 'hurt' || e.op === 'fall' || e.op === 'seal') return true;
   if (e.op === 'gamble')
-    return [...e.win, ...e.lose].some((x) => x.op === 'hurt' || x.op === 'fall');
+    return [...e.win, ...e.lose].some((x) => x.op === 'hurt' || x.op === 'fall' || x.op === 'seal');
   return false;
 }
 
-/** True when picking the option can cost HP or the run (a `hurt` or a `fall`, or a gamble with one on a branch). */
+/** True when picking the option can cost HP, the run or a harder fight (a `hurt`, a `fall` or a `seal`, or a gamble with one on a branch). */
 export function eventOptionCosts(option: EventOptionDef): boolean {
   return option.effects.some(effectCosts);
 }

@@ -1,4 +1,5 @@
 import { DungeonMap } from '../../DungeonMap';
+import { RoomMarkBadge, RoomMarks } from '../../ui/RoomMark';
 import { DepthProgress } from '../../DepthProgress';
 import { SAMPLE_MAP, SAMPLE_STAGES, sampleState } from '../../dungeon-map-sample';
 import { UNDERCROFT_STAGES, undercroftState } from '../../dungeon-undercroft-sample';
@@ -33,7 +34,7 @@ function Demo({ p }: { p: Props }) {
   const stage = SAMPLE_STAGES.find((s) => s === picked) ?? 'preview';
   const run = uc === undefined ? null : undercroftState(uc);
   const state = run ?? sampleState(stage);
-  const map = run?.map ?? SAMPLE_MAP;
+  const map = run?.map ?? state?.map ?? SAMPLE_MAP;
   const open = str(p, 'open');
   return (
     <div class="dungeon-card raid-section">
@@ -87,7 +88,7 @@ const dungeonMap: Entry = {
   file: 'apps/activity/src/DungeonMap.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The daily dungeon map (the Undercroft stages are the captured runs: the floors it drew stand below the floor boss in a darker band with their labels, with a pale crown for its floor boss, a crack on a cracked floor, a carved door and the epic fight). One floor of seven rows of rooms drawn from the entrance at the top down to the floor boss at the bottom, three lanes wide, with a round button for every room (crossed blades, a horned skull, a "?", a chest, a campfire, a crown; foes tinted by their element). Rooms the run can reach glow, the one it stands in is outlined, visited ones are filled and the path taken is gold; rooms no path leads to any more are greyed out, with their paths. A room the run has been through opens its outcome (the foe HP and loot of a fight, the pick in a mystery room, the choice at the camp). Tapping a room opens a drawer with what is there, and Go when the run can go to it (DungeonNodeDrawer). A green triangle above each entrance room shows where a run starts (before the first move). From depth 8 the floor boss wears a small down-arrow badge (beating it lets the player descend), and so does a floor boss on a cracked floor; the red cross marks the room where a run was lost. Shown on the pre-run card (no run), during a run and on the results.',
+    'The daily dungeon map (the Undercroft stages are the captured runs: the floors it drew stand below the floor boss in a darker band with their labels, with a pale crown for its floor boss, a crack on a cracked floor, a carved door and the epic fight). One floor of seven rows of rooms drawn from the entrance at the top down to the floor boss at the bottom, three lanes wide, with a round button for every room (crossed blades, a horned skull, a "?", a chest, a campfire, a crown; foes tinted by their element). Rooms the run can reach glow, the one it stands in is outlined, visited ones are filled and the path taken is gold; rooms no path leads to any more are greyed out, with their paths. A room the run has been through opens its outcome (the foe HP and loot of a fight, the pick in a mystery room, the choice at the camp). Tapping a room opens a drawer with what is there, and Go when the run can go to it (DungeonNodeDrawer). A green triangle above each entrance room shows where a run starts (before the first move). From depth 8 the floor boss wears a small down-arrow badge (beating it lets the player descend), and so does a floor boss on a cracked floor; the red cross marks the room where a run was lost. A room can wear a small gold badge in the pixel font (a room mark, `ui/RoomMark`): a broken Sealed Vault puts "x2" on the fights it marked (epic fight, double rewards), with the spoken line on the room\'s button and the explanation in its drawer. Shown on the pre-run card (no run), during a run and on the results.',
   controls: {
     stage: { kind: 'select', options: STAGE_LABELS },
     open: { kind: 'select', options: NODE_IDS },
@@ -123,6 +124,22 @@ const dungeonMap: Entry = {
       props: { stage: 'defeated', withGo: false },
     },
     { name: 'Rooms out of reach greyed (mid-run)', props: { stage: 'midway' } },
+    {
+      name: 'Sealed Vault broken: the fights ahead wear an "x2" badge',
+      props: { stage: 'vault-broken' },
+    },
+    {
+      name: 'Drawer: a marked fight (the badge explained, an epic tag)',
+      props: { stage: 'vault-broken', open: 'f2l1' },
+    },
+    {
+      name: 'Drawer: a marked elite (epic, not elite)',
+      props: { stage: 'vault-broken', open: 'f2l0' },
+    },
+    {
+      name: 'Drawer: the marked fight the run fought (epic, double loot)',
+      props: { stage: 'vault-fought', open: 'f2l1', withGo: false },
+    },
     { name: 'Drawer: a reachable fight', props: { stage: 'midway', open: 'f2l1' } },
     { name: 'Drawer: an elite', props: { stage: 'after-elite', open: 'f2l0' } },
     { name: 'Drawer: a mystery room', props: { stage: 'entrance', open: 'f1l1' } },
@@ -210,4 +227,38 @@ const dungeonMap: Entry = {
   render: (p) => <Demo p={p} />,
 };
 
-export const dungeonMapEntries: readonly Entry[] = [dungeonMap, depthProgress];
+function RoomMarkDemo({ p }: { p: Props }) {
+  const mark = { kind: 'demo', text: str(p, 'text'), label: 'A room mark' };
+  return (
+    <div class="dungeon-card raid-section pix-panel">
+      <p>
+        On a room:{' '}
+        <span class="room-mark-demo">
+          <RoomMarks marks={[mark]} />
+          <span class="room-mark-demo-room">?</span>
+        </span>
+      </p>
+      <p>
+        In a line: <RoomMarkBadge mark={mark} inline /> A room mark explained.
+      </p>
+    </div>
+  );
+}
+
+const roomMark: Entry = {
+  name: 'RoomMarkBadge',
+  covers: ['RoomMarks'],
+  file: 'apps/activity/src/ui/RoomMark.tsx',
+  group: 'Tags & chips',
+  description:
+    "The generic badge a dungeon map room wears when an effect changed it (a broken Sealed Vault puts \"x2\" on the fights it marked), drawn from the server's mark data: a short text in the pixel font, gold on an ink pill. On a room it sits at the lower right of the room's button and is hidden from a screen reader (the room's own label says it); in a line of text it stands before the sentence that explains it.",
+  controls: { text: { kind: 'text', maxLength: 8 } },
+  defaults: { text: 'x2' },
+  presets: [
+    { name: 'x2 (the Sealed Vault)', props: { text: 'x2' } },
+    { name: 'Longest text (8 characters)', props: { text: 'EPIC x10' } },
+  ],
+  render: (p) => <RoomMarkDemo p={p} />,
+};
+
+export const dungeonMapEntries: readonly Entry[] = [dungeonMap, depthProgress, roomMark];

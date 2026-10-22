@@ -29,6 +29,7 @@ import type { DungeonXpSource } from './experience';
 import { shardOf } from './gear';
 import { landmarkBossId, scaledFoe, undercroftDepth } from './dungeon';
 import { mapNode, type DungeonMap, type MapNode, type NodeKind } from './dungeon-map';
+import { SEALED_MARK, type RoomMark } from './dungeon-seal';
 import type { Treasure } from './dungeon-treasure';
 
 // --- Rooms ---
@@ -80,13 +81,15 @@ export function nodeFoe(node: MapNode, depth: number, level = 0): DungeonFoeDef 
  * epic fight `RULES.dungeon.undercroft.epic`. On an Undercroft map (`map.level`) the foes are scaled at
  * `undercroftDepth(depth, level)` and the keeper (the boss node) is its own floor boss with its
  * signature. Foe and modifier are embedded in full. Throws for a node that is not a room with a foe, or
- * one the content does not know.
+ * one the content does not know. A `sealed` room (the Sealed Vault's mark; a fight or an elite) is an epic
+ * fight: the epic boost replaces an elite's, on the same foe scaled to the same depth.
  */
 export function roomSpecForNode(
   map: DungeonMap,
   nodeIdValue: string,
   depth: number,
   index: number,
+  sealed = false,
 ): DungeonRoomSpecData {
   const node = mapNode(map, nodeIdValue);
   if (node === undefined) throw new RangeError(`no node "${nodeIdValue}" on the map`);
@@ -105,7 +108,8 @@ export function roomSpecForNode(
     throw new RangeError(`node "${nodeIdValue}" holds content that is not known`);
   }
   const scaled = scaledFoe(foe, undercroftDepth(depth, level));
-  const boost = roomBoost(node.kind);
+  const epic = node.kind === 'epic' || (sealed && (node.kind === 'fight' || node.kind === 'elite'));
+  const boost = roomBoost(epic ? 'epic' : node.kind);
   return {
     index,
     foe,
@@ -113,7 +117,7 @@ export function roomSpecForNode(
     hp: boost === null ? scaled.hp : boosted(scaled.hp, boost.hpBp),
     atk: boost === null ? scaled.atk : boosted(scaled.atk, boost.atkBp),
     ...(boost === null ? {} : { elite: true }),
-    ...(node.kind === 'epic' ? { epic: true } : {}),
+    ...(epic ? { epic: true } : {}),
     ...(level > 0 && node.kind === 'boss' ? { signature: true } : {}),
   };
 }
@@ -258,6 +262,8 @@ export interface EventResolution {
   treasure?: Treasure;
   /** The whole team fell: the run ends as a defeat (absent otherwise). Everyone's HP in `hp` is 0. */
   fell?: true;
+  /** The option broke a seal: the worker marks the fights ahead (`sealTargets`; absent otherwise). */
+  sealed?: true;
 }
 
 /**
@@ -329,6 +335,7 @@ export function resolveEvent(
   let won: boolean | null = null;
   let treasure: Treasure | undefined;
   let fell = false;
+  let sealed = false;
   /** The experience each standing creature is given (the `xp` effects, added up). */
   let xpEach = 0;
   /** "Lucky!" or "No luck.", when the option has a gamble. */
@@ -392,6 +399,10 @@ export function resolveEvent(
         for (const id of Object.keys(hp)) hp[id] = 0;
         lines.push('The plank gives way and the whole team falls into the chasm.');
         break;
+      case 'seal':
+        sealed = true;
+        lines.push('The seal breaks. The next fight you enter is epic, with double rewards.');
+        break;
     }
   };
 
@@ -422,6 +433,7 @@ export function resolveEvent(
     outcome,
     ...(treasure === undefined ? {} : { treasure }),
     ...(fell ? { fell: true as const } : {}),
+    ...(sealed ? { sealed: true as const } : {}),
   };
 }
 
@@ -527,6 +539,8 @@ export interface DungeonMapNode {
   modifier?: { id: string; name: string; description: string };
   /** Only the name: the scene and the options appear once the player is in the room. */
   event?: { id: string; name: string };
+  /** Badges the room wears (the Sealed Vault's "x2"): absent when it has none. */
+  marks?: RoomMark[];
 }
 
 export interface DungeonMapView {
@@ -556,9 +570,14 @@ export const QUIET_ROOM = { id: 'quiet-room', name: 'Quiet room' } as const;
  *
  * An Undercroft map (`map.level`) is shown at `undercroftDepth(depth, level)`, labelled, with its crack.
  * The main map's carved door is shown only to a player whose depth opens the Undercroft; below it the
- * door is a mystery room named "Quiet room" that plays as nothing at all.
+ * door is a mystery room named "Quiet room" that plays as nothing at all. `marksOf` gives the badges a
+ * room wears (a run's marked rooms); the map before a run has none.
  */
-export function mapView(map: DungeonMap, depth: number): DungeonMapView {
+export function mapView(
+  map: DungeonMap,
+  depth: number,
+  marksOf?: (nodeId: string) => readonly RoomMark[],
+): DungeonMapView {
   const level = map.level ?? 0;
   const open = depth >= RULES.dungeon.undercroft.fromDepth;
   const nodes = map.nodes.map((node): DungeonMapNode => {
@@ -569,9 +588,14 @@ export function mapView(map: DungeonMap, depth: number): DungeonMapView {
       kind: node.kind === 'door' && !open ? 'mystery' : node.kind,
       next: [...node.next],
     };
+    const marks = marksOf?.(node.id) ?? [];
+    // A room the Sealed Vault marked fights as an epic fight: its foe is shown with the epic boost.
+    const sealed =
+      (node.kind === 'fight' || node.kind === 'elite') &&
+      marks.some((m) => m.kind === SEALED_MARK.kind);
     const foe = nodeFoe(node, depth, level);
     if (foe !== undefined) {
-      const boost = roomBoost(node.kind);
+      const boost = roomBoost(sealed ? 'epic' : node.kind);
       const hp = scaledFoe(foe, undercroftDepth(depth, level)).hp;
       view.foe = {
         id: foe.id,
@@ -590,6 +614,7 @@ export function mapView(map: DungeonMap, depth: number): DungeonMapView {
     if (event !== undefined) view.event = { id: event.id, name: event.name };
     // A carved door below the Undercroft's depth: a mystery room that is only a quiet room.
     if (node.kind === 'door' && !open) view.event = { id: QUIET_ROOM.id, name: QUIET_ROOM.name };
+    if (marks.length > 0) view.marks = marks.map((m) => ({ ...m }));
     return view;
   });
   return {

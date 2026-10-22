@@ -142,6 +142,8 @@ export type DungeonStepLog =
       keepsake?: DungeonKeepsakeView;
       /** This fight earned the run's supply (the first fight cleared). */
       supply?: boolean;
+      /** The room was marked by a broken Sealed Vault: it was fought as an epic fight and paid double. */
+      sealed?: true;
     }
   | { node: string; kind: 'cache'; result: 'cache'; loot: DungeonPack }
   | {

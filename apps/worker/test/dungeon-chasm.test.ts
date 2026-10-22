@@ -205,13 +205,19 @@ describe('the Blue Chasm room', () => {
   it('does not come up before depth 3, whatever the dice say', async () => {
     await withChasm(async (s) => {
       const { state, target } = await toDoor(s, 1);
+      // The Sealed Vault (also rare, from depth 1) is out of the way: met already.
+      s.ctx.sql.exec(
+        'UPDATE dungeon_runs SET state_json = ? WHERE id = ?',
+        JSON.stringify({ ...stored(s.ctx, state.id), rareSeen: ['sealed-vault'] }),
+        state.id,
+      );
       const waiting = await openChasm(s, state, target, 'gear');
       const pending = waiting.pending;
       if (pending?.kind === 'event') {
         expect(pending.event.id).not.toBe('blue-chasm');
         expect(pending.event.treasure).toBeUndefined();
       }
-      expect(stored(s.ctx, waiting.id).rareSeen).toEqual([]);
+      expect(stored(s.ctx, waiting.id).rareSeen).toEqual(['sealed-vault']);
     }, 'shallow');
   });
 
@@ -510,6 +516,12 @@ describe('a run saved before the chasm', () => {
   it('an event waiting without a treasure (a room of before) still shows and answers', async () => {
     await withChasm(async (s) => {
       const { state, target } = await toDoor(s, 1);
+      // The Sealed Vault (also rare, from depth 1) is out of the way: met already.
+      s.ctx.sql.exec(
+        'UPDATE dungeon_runs SET state_json = ? WHERE id = ?',
+        JSON.stringify({ ...stored(s.ctx, state.id), rareSeen: ['sealed-vault'] }),
+        state.id,
+      );
       const waiting = await openChasm(s, state, target, 'gear');
       const pending = waiting.pending;
       if (pending?.kind !== 'event') return;

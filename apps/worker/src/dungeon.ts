@@ -86,6 +86,7 @@ import {
   abilityChoices,
   maxHpOfRow,
   parseState,
+  runMarks,
   runView,
   type RunMeta,
   type RunState,
@@ -697,6 +698,7 @@ export class Dungeon {
       bagFull: !hasRoom(this.sql, userId),
       treasures: [],
       rareSeen: [],
+      sealed: [],
     };
     // A map run has no run-level seed (every fight draws its own when the player steps in, stored in
     // `dungeon_steps`): the NOT NULL column holds an empty string.
@@ -907,7 +909,7 @@ export class Dungeon {
     const state: DungeonRunState = {
       ...first.state,
       history: first.state.history ?? [],
-      map: mapView(st.map, row.depth),
+      map: mapView(st.map, row.depth, runMarks(st)),
     };
     const room =
       step.node !== null && step.input_json !== null && step.result_json !== null

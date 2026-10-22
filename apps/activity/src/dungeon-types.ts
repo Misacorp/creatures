@@ -65,6 +65,17 @@ export interface DungeonToday {
   active?: DungeonRunState | null;
 }
 
+/**
+ * A small badge a room of the map wears (the Sealed Vault's "x2"): `text` is the short glyph or word drawn on
+ * the badge, `label` the spoken line that also explains it in the room's drawer. Server text, drawn as text.
+ */
+export interface RoomMark {
+  /** What put it there (`sealed-vault`). */
+  kind: string;
+  text: string;
+  label: string;
+}
+
 /** What a room on the map is. */
 export type DungeonNodeKind =
   'fight' | 'elite' | 'mystery' | 'cache' | 'camp' | 'boss' | 'door' | 'epic';
@@ -96,6 +107,8 @@ export interface DungeonMapNode {
   modifier?: { id: string; name: string; description: string };
   /** A mystery room: its name only; the scene and the options show once the run steps in. */
   event?: { id: string; name: string };
+  /** Badges the room wears (absent when none): a broken Sealed Vault's "x2" on the fights it marked. */
+  marks?: RoomMark[];
 }
 
 export interface DungeonMapView {
@@ -273,6 +286,8 @@ export type DungeonStepLog =
       keepsake?: DungeonKeepsakeView;
       /** This fight earned the run's supply (the first fight cleared). */
       supply?: boolean;
+      /** The room was marked by a broken Sealed Vault: it was an epic fight and paid double. */
+      sealed?: true;
     }
   | { node: string; kind: 'cache'; result: 'cache'; loot: DungeonPack }
   | {

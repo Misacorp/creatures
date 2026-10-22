@@ -934,6 +934,12 @@ export const RULES = {
       glimmer: 4,
     },
     /**
+     * The Sealed Vault (`sealTargets`): the first marked fight the run enters fights as an epic fight (the
+     * `undercroft.epic` boost, in place of an elite's) and pays epic experience and `rewardMultiplier` times
+     * its loot in the pack (the shard chance is rolled that many times). Gear, supplies and keepsakes are not doubled.
+     */
+    seal: { rewardMultiplier: 2 },
+    /**
      * The Undercroft (docs/design/dungeon-paths.md): a deeper, optional level below the floor boss, from
      * depth `fromDepth` (the first landmark has been passed). Its foes are scaled as if the depth were
      * `depthBonus` higher for every level. It has `baseFloors` floors of two rooms, plus `perLandmark`

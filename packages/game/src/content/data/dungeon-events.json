@@ -338,5 +338,23 @@
         "effects": [{ "op": "nothing" }]
       }
     ]
+  },
+  {
+    "id": "sealed-vault",
+    "name": "Sealed Vault",
+    "text": "A round stone door, sealed with grey wax and old rope, stands in the wall. Something heavy shifts behind it.",
+    "rare": { "chanceBp": 2500, "fromDepth": 1 },
+    "options": [
+      {
+        "label": "Break the seal",
+        "description": "The next fight you enter is epic: a tougher foe, epic experience and double rewards.",
+        "effects": [{ "op": "seal" }]
+      },
+      {
+        "label": "Leave it sealed",
+        "description": "Nothing happens.",
+        "effects": [{ "op": "nothing" }]
+      }
+    ]
   }
 ]

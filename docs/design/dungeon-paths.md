@@ -84,7 +84,7 @@ Content: `packages/game/src/content/data/dungeon-events.json`, with its schema i
   - `treasure {}`: takes the treasure the room rolled when the player stepped in (see "The Blue Chasm"). One per event.
   - `fall {}`: the whole team falls (HP 0) and the run ends as a defeat. It counts as a cost for "an option that costs nothing".
 - **Rare events:** an event may carry `rare: {chanceBp, fromDepth}`. A rare event is **never drawn onto a map**. Each time a run steps into a mystery room it may turn into a rare event (`rollRareEvent`: `chanceBp` drawn live, once the run's depth is `fromDepth` or more, each rare event at most once a run). The map and the other players are not affected: it is the player's own dice.
-- **8 common events and 1 rare one** in the game's voice. Read `docs/compendium/` first and add the events to `docs/compendium/dungeon.md`.
+- **8 common events and 2 rare ones** in the game's voice. Read `docs/compendium/` first and add the events to `docs/compendium/dungeon.md`.
 - The odds of every gamble are shown ("2 scrap, or a 40% chance every creature loses 15% HP"). Risky options are worth about the same as safe ones on average, so neither is always right.
 
 ### The Blue Chasm (the rare room, 2026-10-21)
@@ -277,6 +277,20 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
 - **Left open:** a run waiting at a camp or the descent card closes with the whole pack (`home` before the main boss, `cleared` after it); anywhere else it closes as a defeat.
 - **Analytics:** `dungeon_run` gains `deepest` (number) and `marks` (room kinds the door added); new `dungeon_descend {level}`. `path` may be up to 24 kinds. Content ids and numbers only.
 
+### The Sealed Vault (the second rare room, 2026-10-22)
+
+"A round stone door, sealed with grey wax and old rope, stands in the wall. Something heavy shifts behind it." **Break the seal**: the next fight you enter is epic: a tougher foe, epic experience and double rewards. **Leave it sealed**: nothing happens. Misa's idea; it is the first room that changes a later room.
+
+- **Rarity (Misa's rule: the more drastic a room, the rarer, and each drastic room at most once a run).** Medium-drastic: `rare: { chanceBp: 2500, fromDepth: 1 }`, so each mystery room a run steps into becomes the vault one time in four (tried after the Blue Chasm's own draw), at most once a run (`rareSeen`). It is never drawn onto the day's map. A mystery room with no fight on any path ahead (only the floor boss) never turns into it (`rareEventsAt`), because it would do nothing.
+- **Which rooms are marked** (`sealTargets`, `rules/dungeon-seal.ts`, run when the seal is broken): the fights and elites among the rooms the vault leads to, all of them (branching map: two or three). If none of the next rooms is a fight or an elite (a cache, a camp, another mystery room), the nearest fight or elite on each path. A path ends at a floor boss or an Undercroft epic fight (nothing there to mark). The floor boss is never marked.
+- **The mark is used up by the first marked room the run steps into** (`RunState.sealed` is cleared by `applyMove`); the other marked rooms go back to normal. A descent into the Undercroft clears it too. Marks live in the run state (`sealed`: node ids; an older run loads as none).
+- **Epic fight on the floor.** The engine already has an epic tier: a normal foe scaled to the depth with `RULES.dungeon.undercroft.epic` (160% HP, 130% Attack) on top. A marked room uses that, on its own foe: `roomSpecForNode(..., sealed)`; an elite's boost is replaced, not stacked. No content change and no "strongest tier plus a fold" was needed. The spec is flagged `epic` (and `elite` for the display), so the fight, the replay and the end screen show an epic fight.
+- **Rewards are doubled, server side, with live dice** (`RULES.dungeon.seal.rewardMultiplier`, 2): the room's Bait, Essence and scrap (the day's per-room scrap too) in the pack are multiplied by 2, and the room's shard chance is rolled twice (live gear rng, so up to two shards). The pack is paid by the run's own grant at the end, once (a retry returns the stored result). Not doubled: the run's supply, gear, keepsakes (an elite's keepsake stays one) and the boss chest. In the Undercroft the room's own loot doubling (x2) stacks (x4).
+- **Experience:** the room pays the epic amount (`RULES.experience.dungeon.epic`, 58) in place of fight (32) or elite (48).
+- **The schema:** a new plain effect `{ op: 'seal' }` (also allowed in a gamble branch). It counts as a cost for the "every event has a free option" rule (it adds danger).
+- **The map badge, shared.** A map node view may carry `marks: [{ kind, text, label }]` (`RoomMark`, `rules/dungeon-seal.ts`; validated by the client parse): `text` is up to 8 characters drawn on the badge ("x2"), `label` the spoken line and the drawer's explanation. It is data, so a later effect only has to send a mark. `ui/RoomMark` draws it (gold pixel text on an ink pill at the lower right of the room's button), the room's accessible label adds the labels, and the drawer shows the badge and its line. A marked room is told as an epic fight ("Fierce Drift Wisp (epic fight)", title "Epic fight", Epic tag, foe HP with the epic boost). The fight's log entry carries `sealed: true`, so the drawer and the Rooms recap keep saying "Epic" once the mark is gone. `mapView(map, depth, marksOf)` takes the run's marks; the pre-run map has none.
+- **The simulator does not play the vault** (a rare room is not on its maps), so it is unchanged by construction; the estimate is in `docs/balance/log.md`, B-029.
+
 ### Shapes (the client mirrors these by hand in `dungeon-types.ts`)
 
 ```ts
@@ -287,6 +301,7 @@ interface DungeonMapNode {
   lane: number; // 0..2
   kind: NodeKind;
   next: string[]; // node ids on floor+1
+  marks?: { kind: string; text: string; label: string }[]; // badges the room wears (the Sealed Vault's "x2")
   foe?: {
     id: string;
     name: string;

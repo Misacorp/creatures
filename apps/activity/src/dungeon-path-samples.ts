@@ -487,3 +487,59 @@ export function sampleChasmSummary(variant: 'won' | 'lost' | 'fell'): DungeonRun
     },
   };
 }
+
+// --- The Sealed Vault (a rare mystery room) ---
+
+/** The Sealed Vault as the server sends it while it waits: its scene and its two options. */
+export function vaultEvent(): DungeonEventView {
+  return {
+    id: 'sealed-vault',
+    name: 'Sealed Vault',
+    text: 'A round stone door, sealed with grey wax and old rope, stands in the wall. Something heavy shifts behind it.',
+    options: [
+      {
+        label: 'Break the seal',
+        description:
+          'The next fight you enter is epic: a tougher foe, epic experience and double rewards.',
+      },
+      { label: 'Leave it sealed', description: 'Nothing happens.' },
+    ],
+  };
+}
+
+/** A run standing in the Sealed Vault. */
+export function sampleStateVault(): DungeonRunState {
+  return { ...sampleStateEvent(), pending: { kind: 'event', event: vaultEvent() } };
+}
+
+/**
+ * The end of a cleared run that broke the Sealed Vault in its mystery room and fought the marked room as an epic
+ * fight: its log entry says so (`sealed`) and paid double, and its room in the summary is flagged epic.
+ */
+export function sampleVaultSummary(): DungeonRunSummary {
+  const base = sampleSummary('cleared');
+  const route = base.route;
+  if (route === undefined) throw new Error('the sample has a route');
+  const history = route.history.map((step) => {
+    if (step.node === 'f1l1' && step.result === 'event') {
+      return {
+        ...step,
+        event: 'Sealed Vault',
+        option: 'Break the seal',
+        outcome: 'The seal breaks. The next fight you enter is epic, with double rewards.',
+        loot: { bait: 0, essence: 0, scrap: 0 },
+      };
+    }
+    if (step.node === 'f2l1' && step.result === 'fight') {
+      return { ...step, loot: { bait: 2, essence: 0, scrap: 2 }, sealed: true as const };
+    }
+    return step;
+  });
+  const rooms = base.rooms.map((r, i) => (i === 1 ? { ...r, elite: true, epic: true } : r));
+  const vault = { id: 'sealed-vault', name: 'Sealed Vault' };
+  const map: DungeonMapView = {
+    ...route.map,
+    nodes: route.map.nodes.map((n) => (n.id === 'f1l1' ? { ...n, event: vault } : n)),
+  };
+  return { ...base, rooms, route: { ...route, map, history } };
+}

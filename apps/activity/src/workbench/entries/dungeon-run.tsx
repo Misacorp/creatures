@@ -1,4 +1,5 @@
-import { dungeonEvents, dungeonKeepsakes, expToNext } from '@creatures/game';
+import { dungeonEvents, dungeonKeepsakes, eventHasTreasure, expToNext } from '@creatures/game';
+import { sampleState } from '../../dungeon-map-sample';
 import { DungeonCamp } from '../../DungeonCamp';
 import { DungeonDescend } from '../../DungeonDescend';
 import { DungeonEvent } from '../../DungeonEvent';
@@ -30,6 +31,8 @@ import {
   SAMPLE_TREASURES,
   sampleChasmSummary,
   sampleStateChasm,
+  sampleStateVault,
+  sampleVaultSummary,
 } from '../../dungeon-path-samples';
 import {
   undercroftLostSummary,
@@ -66,6 +69,7 @@ const OUTCOMES = [
   'Blue Chasm: crossed, home with the treasure',
   'Blue Chasm: crossed, then lost the run',
   'Blue Chasm: the plank gave way',
+  'Sealed Vault: a marked fight, cleared',
 ] as const;
 
 /** The summary of a run's end as a real server answered it (`fixtures/dungeon-act-*.json`). */
@@ -187,6 +191,7 @@ const dungeonEvent: Entry = {
       name: `Blue Chasm: ${t}`,
       props: { event: 'blue-chasm', treasure: t },
     })),
+    { name: 'Sealed Vault', props: { event: 'sealed-vault' } },
     { name: 'A step is on its way', props: { busy: true } },
   ],
   render: (p) => {
@@ -201,7 +206,7 @@ const dungeonEvent: Entry = {
           name: found.name,
           text: found.text,
           options: found.options.map((o) => ({ label: o.label, description: o.description })),
-          ...(found.rare === undefined || kind === undefined
+          ...(!eventHasTreasure(found) || kind === undefined
             ? {}
             : { treasure: SAMPLE_TREASURES[kind] }),
         }}
@@ -472,9 +477,11 @@ function ResultsDemo({ p }: { p: Props }) {
             ? sampleChasmSummary('lost')
             : outcome === OUTCOMES[9]
               ? sampleChasmSummary('fell')
-              : bool(p, 'capture')
-                ? captured(kind)
-                : sampleSummary(kind);
+              : outcome === OUTCOMES[10]
+                ? sampleVaultSummary()
+                : bool(p, 'capture')
+                  ? captured(kind)
+                  : sampleSummary(kind);
   // A run lost in its first room paid nothing and kept an empty pack.
   const base: typeof sample = noRewards
     ? {
@@ -594,6 +601,10 @@ const dungeonResults: Entry = {
     { name: 'Blue Chasm: home with the treasure', props: { outcome: OUTCOMES[7] } },
     { name: 'Blue Chasm: the treasure was lost', props: { outcome: OUTCOMES[8] } },
     { name: 'Blue Chasm: the plank gave way', props: { outcome: OUTCOMES[9] } },
+    {
+      name: 'Sealed Vault: the end after a marked (epic, double) fight',
+      props: { outcome: OUTCOMES[10] },
+    },
     { name: 'Home safe, the rooms', props: { outcome: 'home', view: 'rooms' } },
     {
       name: 'Defeated, the rooms (the last one Defeated)',
@@ -656,6 +667,8 @@ const SCENES = {
   'after the first fight': () => parseDungeonAct(actFight).state,
   'a mystery room': () => parseDungeonAct(actEventPending).state,
   'the Blue Chasm (a rare mystery room)': () => sampleStateChasm(SAMPLE_TREASURES.blueprint),
+  'the Sealed Vault (a rare mystery room)': () => sampleStateVault(),
+  'after the vault: the next fights wear x2': () => sampleState('vault-broken') as DungeonRunState,
   'after the mystery room': () => parseDungeonAct(actEvent).state,
   'at the camp': () => parseDungeonAct(actCampPending).state,
   'after the camp (swapped)': () => parseDungeonAct(actCamp).state,
@@ -728,6 +741,14 @@ const dungeonRun: Entry = {
     { name: 'After the first fight', props: {} },
     { name: 'A mystery room', props: { scene: 'a mystery room' } },
     { name: 'After the mystery room', props: { scene: 'after the mystery room' } },
+    {
+      name: 'The Sealed Vault (a rare mystery room)',
+      props: { scene: 'the Sealed Vault (a rare mystery room)' },
+    },
+    {
+      name: 'After breaking the vault: the next fights wear an "x2" badge',
+      props: { scene: 'after the vault: the next fights wear x2' },
+    },
     { name: 'At the camp', props: { scene: 'at the camp' } },
     {
       name: 'After the camp (a creature swapped in)',

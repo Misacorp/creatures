@@ -33,12 +33,14 @@ import {
   reachableNodes,
   resolveEvent,
   rollDungeonLoot,
+  rareEventsAt,
   rollRareEvent,
   rollTreasure,
   rollUndercroftChest,
   RULES,
   roomSpecForNode,
   roomXpSource,
+  sealTargets,
   undercroftBaseFloors,
   undercroftOpen,
   weatherSheet,
@@ -225,6 +227,7 @@ function packLoot(
   kind: Parameters<typeof nodeLoot>[0],
   fight: boolean,
   shards?: DungeonPack['shards'],
+  times = 1,
 ): DungeonPack {
   const loot = nodeLoot(kind, st.level);
   const doubled =
@@ -232,12 +235,34 @@ function packLoot(
       ? RULES.dungeon.undercroft.lootMultiplier
       : 1;
   const gained = {
-    ...loot,
-    scrap: loot.scrap + (fight ? dungeonScrapPerRoom(st.weather) * doubled : 0),
+    bait: loot.bait * times,
+    essence: loot.essence * times,
+    scrap: (loot.scrap + (fight ? dungeonScrapPerRoom(st.weather) * doubled : 0)) * times,
     ...(shards === undefined ? {} : { shards }),
   };
   st.pack = addPack(st.pack, gained);
   return gained;
+}
+
+/**
+ * The shards a cleared room drops, `rolls` times over (live dice from the gear rng, one roll each: a room the
+ * Sealed Vault marked rolls twice), added up. Undefined when none dropped.
+ */
+function rollShards(
+  rng: Rng,
+  kind: Parameters<typeof nodeLoot>[0],
+  element: Parameters<typeof rollRoomShard>[2],
+  rolls: number,
+): DungeonPack['shards'] {
+  const total: NonNullable<DungeonPack['shards']> = {};
+  for (let i = 0; i < rolls; i++) {
+    const one = rollRoomShard(rng, kind, element);
+    if (one === undefined) continue;
+    for (const [part, n] of Object.entries(one) as [keyof typeof total, number][]) {
+      total[part] = (total[part] ?? 0) + n;
+    }
+  }
+  return Object.keys(total).length === 0 ? undefined : total;
 }
 
 /**
@@ -399,7 +424,11 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
     case 'epic':
     case 'boss': {
       const held = heldKeepsakes(st.keepsakes);
-      const base = roomSpecForNode(map, nodeId, depth, st.fights);
+      // A room the Sealed Vault marked is fought as an epic fight with double rewards; the first one entered
+      // uses up the mark, and the other marked rooms go back to normal.
+      const sealed = st.sealed.includes(nodeId) && (node.kind === 'fight' || node.kind === 'elite');
+      st.sealed = [];
+      const base = roomSpecForNode(map, nodeId, depth, st.fights, sealed);
       const spec: DungeonRoomSpec = held.length === 0 ? base : { ...base, keepsakes: held };
       // The seed is drawn now: a client can neither know it before nor pick it.
       const seed = drawSeed(env.rng);
@@ -419,6 +448,7 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
         rounds: result.result.rounds,
         foeHpEnd: result.result.bossHpEnd,
         foeHpMax: result.result.bossHpStart,
+        ...(sealed ? { sealed: true as const } : {}),
       };
       if (!result.cleared) {
         st.history.push({ ...step, loot: { bait: 0, essence: 0, scrap: 0 } });
@@ -426,14 +456,16 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       }
       st.roomsCleared += 1;
       // A shard of the foe's element, by room kind (live randomness, rolled as the room is cleared).
-      const shard = rollRoomShard(
+      const rolls = sealed ? RULES.dungeon.seal.rewardMultiplier : 1;
+      const shard = rollShards(
         env.gearRng,
         node.kind,
         nodeFoe(node, depth, st.level)?.element ?? 'tide',
+        rolls,
       );
-      const loot = packLoot(st, node.kind, true, shard);
+      const loot = packLoot(st, node.kind, true, shard, rolls);
       // Experience: each creature that stood in the row for the fight earns the room's amount (a lost fight pays none).
-      const source = roomXpSource(node.kind, st.level);
+      const source = roomXpSource(sealed ? 'epic' : node.kind, st.level);
       if (source !== null) st.earned = addRoomExperience(st.earned, standing, source);
       const earnedSupply = !st.supply;
       st.supply = true;
@@ -470,7 +502,7 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       return {};
     case 'mystery': {
       // A rare room may take this room's place (live dice, drawn as the room opens, at most once a run).
-      const rare = rollRareEvent(env.rng, depth, st.rareSeen);
+      const rare = rollRareEvent(env.rng, depth, st.rareSeen, rareEventsAt(map, nodeId));
       if (rare !== undefined) st.rareSeen.push(rare.id);
       // An event the content no longer has is a quiet room: nothing waits.
       const event = rare ?? (node.eventId === undefined ? undefined : dungeonEvent(node.eventId));
@@ -545,6 +577,8 @@ export function applyEvent(env: PathEnv, st: RunState, option: 0 | 1): ActOutcom
   st.pack = addPack(st.pack, resolved.packDelta);
   st.keepsakes.push(...resolved.keepsakesGained);
   if (resolved.treasure !== undefined) st.treasures.push(resolved.treasure);
+  // A broken seal marks the fights the run can step into next (see `sealTargets`).
+  if (resolved.sealed === true) st.sealed = sealTargets(currentMap(st), st.at ?? '');
   st.earned = addEventExperience(st.earned, resolved.xp);
   st.lastEvent = { name: event.name, option: chosen.label, outcome: resolved.outcome };
   const gained = resolved.keepsakesGained[0];
@@ -750,6 +784,7 @@ export function applyDescend(env: PathEnv, st: RunState, depth: number): ActOutc
   st.hp = after;
   st.under.push(map);
   st.level = level;
+  st.sealed = [];
   settleStep(st, { node: st.at ?? '', kind: 'descend', result: 'descend', level, healed, revived });
   st.pending = null;
   st.at = null;

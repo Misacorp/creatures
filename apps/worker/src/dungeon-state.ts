@@ -29,6 +29,8 @@ import {
   type DungeonMap,
   type DungeonRunPack,
   type Treasure,
+  type RoomMark,
+  SEALED_MARK,
   type Element,
   type Role,
   type FoldKit,
@@ -189,6 +191,11 @@ export interface RunState {
   treasures: Treasure[];
   /** The ids of the rare events the run met (one at most each run, taken or not). Absent before the chasm: none. */
   rareSeen: string[];
+  /**
+   * The rooms a broken Sealed Vault marked (node ids of the map the run stands in): the first one the run
+   * enters is fought as an epic fight with double rewards, and then all of them are cleared. Absent before the vault: none.
+   */
+  sealed: string[];
 }
 
 /** Reads a stored state, or null when it is missing or is not a state this code wrote. */
@@ -211,6 +218,8 @@ export function parseState(json: string | null): RunState | null {
     // A state stored before the Blue Chasm took no treasure and met no rare room.
     parsed.treasures ??= [];
     parsed.rareSeen ??= [];
+    // A state stored before the Sealed Vault marked no rooms.
+    parsed.sealed ??= [];
     // A state stored before experience was paid per room counted the fights each creature cleared.
     if (parsed.earned === undefined || parsed.earned === null) {
       const old = (parsed as { tally?: Record<string, number> }).tally;
@@ -284,6 +293,11 @@ export function runNode(
     if (found !== undefined) return found;
   }
   return undefined;
+}
+
+/** The badges the run's rooms wear, for the map view: a room the Sealed Vault marked wears its "x2". */
+export function runMarks(st: Pick<RunState, 'sealed'>): (nodeId: string) => readonly RoomMark[] {
+  return (nodeId) => (st.sealed.includes(nodeId) ? [SEALED_MARK] : []);
 }
 
 /** The HP of every creature of the row now: what it carries, or its max when it has not fought yet. */
@@ -424,12 +438,15 @@ export function runView(meta: RunMeta, st: RunState): DungeonRunState {
     status: meta.status,
     outcome: meta.outcome,
     step: st.step,
-    map: mapView(st.map, meta.depth),
+    map: mapView(st.map, meta.depth, runMarks(st)),
     level: st.level,
     undercroft:
       st.under.length === 0 && st.marks.length === 0
         ? null
-        : { maps: st.under.map((m) => mapView(m, meta.depth)), marks: st.marks.length },
+        : {
+            maps: st.under.map((m) => mapView(m, meta.depth, runMarks(st))),
+            marks: st.marks.length,
+          },
     at: st.at,
     path: [...st.path],
     reachable: open ? reachableNodes(currentMap(st), st.at) : [],

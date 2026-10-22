@@ -23,13 +23,14 @@ const options = (list: Record<string, unknown>[], at = 0): Record<string, unknow
   (list[at] as { options: Record<string, unknown>[] }).options;
 
 describe('the shipped keepsakes and events', () => {
-  it('load, with eight keepsakes and eight common events and one rare one', () => {
+  it('load, with eight keepsakes and eight common events and two rare ones', () => {
     expect(() => load(keepsakesJson, eventsJson)).not.toThrow();
     expect(dungeonKeepsakes).toHaveLength(8);
-    expect(dungeonEvents).toHaveLength(9);
+    expect(dungeonEvents).toHaveLength(10);
     expect(dungeonEvents.filter((e) => e.rare === undefined)).toHaveLength(8);
     expect(dungeonEvents.filter((e) => e.rare !== undefined).map((e) => e.id)).toEqual([
       'blue-chasm',
+      'sealed-vault',
     ]);
   });
 
@@ -333,6 +334,23 @@ describe('the keepsake and event schemas refuse bad data', () => {
     refused(keepsakesJson, costly(fall, fall));
     refused(keepsakesJson, costly(gambleFall, gambleFall));
     expect(() => load(keepsakesJson, costly(gambleFall, { op: 'nothing' }))).not.toThrow();
+  });
+
+  it('a seal counts as a cost (it adds danger): two seals are refused, a seal beside a free option loads, and it takes no keys', () => {
+    const seal = { op: 'seal' };
+    const costly = (a: unknown, b: unknown): Record<string, unknown>[] => {
+      const e = events();
+      (options(e)[0] as Record<string, unknown>)['effects'] = [a];
+      (options(e)[1] as Record<string, unknown>)['effects'] = [b];
+      return e;
+    };
+    refused(keepsakesJson, costly(seal, seal));
+    refused(
+      keepsakesJson,
+      costly({ op: 'gamble', chanceBp: 5000, win: [seal], lose: [{ op: 'nothing' }] }, seal),
+    );
+    expect(() => load(keepsakesJson, costly(seal, { op: 'nothing' }))).not.toThrow();
+    refused(keepsakesJson, costly({ op: 'seal', amount: 2 }, { op: 'nothing' }));
   });
 
   it('an event holds at most one treasure, and a rare block has a real chance and depth', () => {

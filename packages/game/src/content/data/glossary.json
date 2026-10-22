@@ -1760,6 +1760,16 @@
     "section": "dungeon"
   },
   {
+    "id": "event-sealed-vault",
+    "title": "Sealed Vault",
+    "short": "Two choices: Break the seal or Leave it sealed.",
+    "lines": [
+      "Break the seal: The next fight you enter is epic: a tougher foe, epic experience and double rewards.",
+      "Leave it sealed: Nothing happens."
+    ],
+    "section": "dungeon"
+  },
+  {
     "id": "explorer-rank",
     "title": "Explorer rank",
     "short": "Each creature gets better at exploring.",

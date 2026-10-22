@@ -189,6 +189,58 @@ describe('the map and the open run in today', () => {
   });
 });
 
+describe('room marks', () => {
+  const nodes = sampleMap().nodes;
+  const mark = {
+    kind: 'sealed-vault',
+    text: 'x2',
+    label: 'Sealed Vault: epic fight, double rewards',
+  };
+  const withMarks = (marks: unknown) =>
+    parseDungeonToday({
+      ...sampleToday(),
+      map: { floors: 7, nodes: [{ ...nodes[0], marks }] },
+    });
+
+  it('keeps the marks of a room, and a room without them has none', () => {
+    expect(withMarks([mark]).map?.nodes[0]?.marks).toEqual([mark]);
+    expect(withMarks([]).map?.nodes[0]?.marks).toEqual([]);
+    expect(parseDungeonToday(sampleToday()).map?.nodes[0]?.marks).toBeUndefined();
+  });
+
+  it('refuses a mark that is not a kind, a short text and a label', () => {
+    for (const bad of [
+      'x2',
+      [{ ...mark, text: '' }],
+      [{ ...mark, text: 'far too long' }],
+      [{ ...mark, label: '' }],
+      [{ ...mark, kind: 1 }],
+      [{ text: 'x2', label: 'no kind' }],
+    ]) {
+      expect(() => withMarks(bad), JSON.stringify(bad)).toThrow();
+    }
+  });
+
+  it('keeps the flag of a fight that was fought as a sealed room, and refuses a false one', () => {
+    const state = sampleStateMid();
+    const entry = {
+      node: 'f0l1',
+      kind: 'fight',
+      result: 'fight',
+      cleared: true,
+      rounds: 3,
+      foeHpEnd: 0,
+      foeHpMax: 40,
+      loot: { bait: 2, essence: 0, scrap: 2 },
+    };
+    const parse = (extra: Record<string, unknown>) =>
+      parseDungeonAct({ state: { ...state, history: [{ ...entry, ...extra }] } });
+    expect(parse({ sealed: true }).state.history?.[0]).toMatchObject({ sealed: true });
+    expect(() => parse({ sealed: 'yes' })).toThrow();
+    expect(() => parse({ sealed: false })).toThrow();
+  });
+});
+
 describe('the map', () => {
   const nodes = sampleMap().nodes;
   const withNode = (change: Record<string, unknown>) =>

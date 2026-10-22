@@ -41,16 +41,24 @@ const tier = (level: number): string[] =>
 
 describe('the rare event roll', () => {
   it('turns a room into the chasm only from its depth, with its chance, and only once a run', () => {
-    expect(rollRareEvent(WIN, 2, [])).toBeUndefined();
+    // The Sealed Vault (also rare) is out of the way here: met already.
+    const vault = ['sealed-vault'];
+    expect(rollRareEvent(WIN, 2, vault)).toBeUndefined();
+    expect(rollRareEvent(WIN, 3, vault)?.id).toBe('blue-chasm');
+    expect(rollRareEvent(LOSE, 9, vault)).toBeUndefined();
+    expect(rollRareEvent(WIN, 9, ['blue-chasm', ...vault])).toBeUndefined();
+    // Each rare event is tried in content order, each with its own chance; the chasm comes first.
     expect(rollRareEvent(WIN, 3, [])?.id).toBe('blue-chasm');
-    expect(rollRareEvent(LOSE, 9, [])).toBeUndefined();
-    expect(rollRareEvent(WIN, 9, ['blue-chasm'])).toBeUndefined();
+    expect(rollRareEvent(WIN, 2, [])?.id).toBe('sealed-vault');
+    expect(rollRareEvent(WIN, 9, ['blue-chasm'])?.id).toBe('sealed-vault');
   });
 
   it('comes up at about the content chance over many rooms', () => {
     const rng = createSeededRng('rare-rate');
     let hits = 0;
-    for (let i = 0; i < 4000; i++) if (rollRareEvent(rng, 5, []) !== undefined) hits += 1;
+    for (let i = 0; i < 4000; i++) {
+      if (rollRareEvent(rng, 5, ['sealed-vault']) !== undefined) hits += 1;
+    }
     const rate = hits / 4000;
     expect(rate).toBeGreaterThan(0.12);
     expect(rate).toBeLessThan(0.18);
