@@ -145,13 +145,17 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
       const sets = `${event.proof === true ? ` Its gear set turns ${names.boss}'s reflection aside.` : ''}${
         event.chain === true ? ' Its gear set keeps the mark standing, so a chain can follow.' : ''
       }`;
+      const backlash =
+        event.backlash === undefined
+          ? ''
+          : ` It backfires: ${event.backlash.amount} of it (${event.backlash.bp / 100}%) burns ${creature(event.payoff)}.`;
       const brambles =
         event.bramble === undefined
           ? ''
           : ` Bramble Season throws ${event.bramble.amount} of it (${event.bramble.bp / 100}%) back at ${creature(event.payoff)}.`;
       return `${lookup(names.reactions, event.reaction)}! ${creature(event.payoff)} cashes in the mark${
         event.setupCreature === null ? '' : ` set by ${creature(event.setupCreature)}`
-      } for ${event.bonus} bonus damage${mods}.${sets}${brambles}`;
+      } for ${event.bonus} bonus damage${mods}.${sets}${brambles}${backlash}`;
     }
     case 'gimmick': {
       const name = lookup(names.gimmicks, event.gimmick);

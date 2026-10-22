@@ -19,7 +19,7 @@ const ALL_OPS: Record<GimmickOp, true> = {
   hit_zone: true,
   silence_ends: true,
   reflect_first_reaction: true,
-  reflect_chance: true,
+  backlash: true,
   spikes: true,
   strike_highest_atk: true,
   sweep: true,

@@ -50,8 +50,8 @@ export type WarningTarget =
   | { kind: 'ends'; scope: 'rows' | 'row' }
   | { kind: 'strongest'; jumps: number }
   | { kind: 'reaction' }
-  /** A reflective shield: each reaction may be turned back, with this chance (basis points). */
-  | { kind: 'reflect_chance'; chanceBp: number }
+  /** Backlash: each reaction may burn its payoff, with this chance, for this share of its bonus (basis points). */
+  | { kind: 'backlash'; chanceBp: number; shareBp: number }
   /** Spiky armour: this share (basis points) of each creature hit's plain damage pricks the hitter. */
   | { kind: 'spikes'; bp: number }
   | { kind: 'charge'; stage: 'gathering' | 'landing'; inner: PatternTarget };
@@ -137,8 +137,11 @@ export function bossWarnings(boss: BossDef, round: number): BossWarning[] {
       case 'reflect_first_reaction':
         out.push({ ...base, target: { kind: 'reaction' } });
         break;
-      case 'reflect_chance':
-        out.push({ ...base, target: { kind: 'reflect_chance', chanceBp: g.chanceBp } });
+      case 'backlash':
+        out.push({
+          ...base,
+          target: { kind: 'backlash', chanceBp: g.chanceBp, shareBp: g.shareBp },
+        });
         break;
       case 'spikes':
         out.push({ ...base, target: { kind: 'spikes', bp: g.bp } });

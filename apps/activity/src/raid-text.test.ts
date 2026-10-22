@@ -240,29 +240,27 @@ describe('the attack patterns in plain words', () => {
     }
   });
 
-  it('words the standing effects (spikes, the reflective shield) in plain words, with their numbers', () => {
+  it('words the standing effects (spikes, the backlash) in plain words, with their numbers', () => {
     const modifierGimmicks = dungeonContent.modifiers.flatMap((m) =>
       m.effects.flatMap((e) => (e.op === 'foe_gimmick' ? [e.gimmick] : [])),
     );
     const spikes = modifierGimmicks.find((g) => g.op === 'spikes');
-    const shield = dungeonContent.foes
-      .flatMap((f) => f.gimmicks)
-      .find((g) => g.op === 'reflect_chance');
-    if (spikes?.op !== 'spikes' || shield?.op !== 'reflect_chance') throw new Error('content');
+    const shield = dungeonContent.foes.flatMap((f) => f.gimmicks).find((g) => g.op === 'backlash');
+    if (spikes?.op !== 'spikes' || shield?.op !== 'backlash') throw new Error('content');
     expect(gimmickText(spikes, 'row')).toBe(
       `Every hit on the foe pricks the hitter for ${String(spikes.bp / 100)}% of its plain damage. A reaction's bonus does not count.`,
     );
     expect(gimmickShort(spikes, 'row')).toBe('Pricks whoever hits it');
     expect(gimmickText(shield, 'row')).toBe(
-      `Each reaction has a ${String(shield.chanceBp / 100)}% chance to bounce back at the creature that set it off.`,
+      `Each reaction has a ${String(shield.chanceBp / 100)}% chance to burn the creature that set it off for ${String(shield.shareBp / 100)}% of its bonus.`,
     );
-    expect(gimmickShort(shield, 'row')).toBe('May reflect a reaction');
+    expect(gimmickShort(shield, 'row')).toBe('Reactions may burn back');
     // Not always on: how often is said.
     const third = { ...spikes, trigger: { every: 3 } };
     expect(gimmickText(third, 'row')).toMatch(/^Every 3 rounds: every hit/);
     expect(gimmickShort(third, 'row')).toBe('Pricks whoever hits it, every 3 rounds');
     expect(gimmickGlyphKey(spikes)).toBe('spikes');
-    expect(gimmickGlyphKey(shield)).toBe('reflect_chance');
+    expect(gimmickGlyphKey(shield)).toBe('backlash');
   });
 
   it('draws a strike that jumps on as the bolt, and every other op as its own glyph', () => {

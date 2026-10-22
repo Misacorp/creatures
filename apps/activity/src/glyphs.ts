@@ -81,8 +81,8 @@ const spikes: SpriteDef = {
   ],
 };
 
-/** A shield with a gleam: a reaction may bounce off it (the Slag Tyrant's Molten Shell). */
-const reflectChance: SpriteDef = {
+/** A shield with a gleam: a reaction may burn back (the Slag Tyrant's Molten Shell). */
+const backlash: SpriteDef = {
   palette: { r: BAD },
   rows: [
     '.rrrrrr.',
@@ -790,7 +790,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   hit_zone: hitZone,
   silence_ends: silenceEnds,
   reflect_first_reaction: reflectFirstReaction,
-  reflect_chance: reflectChance,
+  backlash,
   spikes,
   strike_highest_atk: strikeHighestAtk,
   sweep,
@@ -865,7 +865,7 @@ export const GIMMICK_GLYPH_OPS = [
   'hit_zone',
   'silence_ends',
   'reflect_first_reaction',
-  'reflect_chance',
+  'backlash',
   'spikes',
   'strike_highest_atk',
   'sweep',

@@ -284,7 +284,7 @@ describe('the forecast of the attack patterns in the dungeon (one row of three)'
     const f = forecastNextRound('slag-tyrant', 2, 8, three, [], {}, 'row');
     expect(f?.lines).toEqual([
       'Next round: Anvil Fall hits the left creature and splashes the middle',
-      'Molten Shell may reflect a reaction',
+      'Molten Shell: reactions may burn back',
     ]);
     expect(f?.ends).toEqual(['a']);
     // With the left creature down it is the next one standing that is hit.
@@ -325,7 +325,7 @@ describe('the forecast of the attack patterns in the dungeon (one row of three)'
     const lands = forecastNextRound('slag-tyrant', 3, 8, three, [], {}, 'row', [signature]);
     expect(lands?.lines).toEqual([
       'Next round: Slag Spill lands on the marked creatures',
-      'Molten Shell may reflect a reaction',
+      'Molten Shell: reactions may burn back',
     ]);
   });
 });

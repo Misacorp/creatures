@@ -742,7 +742,7 @@ describe('DungeonMap room marks', () => {
       const text = open(false);
       expect(text).toContain('Anvil Fall');
       expect(text).toContain('Molten Shell');
-      expect(text).toContain('May reflect a reaction');
+      expect(text).toContain('Reactions may burn back');
       expect(text).not.toContain('Slag Spill');
     });
 

@@ -305,12 +305,11 @@ function reflectGimmick(bossId: string | undefined): string | null {
   if (boss !== undefined) {
     return boss.gimmicks.find((g) => g.op === 'reflect_first_reaction')?.id ?? null;
   }
-  // A dungeon foe reflects through its own gimmick: the reflective shield (Molten Shell).
+  // A dungeon foe reflects through its own gimmick: the backlash (Molten Shell).
   const foe = bossId === undefined ? undefined : dungeonContent.foes.find((f) => f.id === bossId);
   if (foe === undefined) return null;
   return (
-    foe.gimmicks.find((g) => g.op === 'reflect_first_reaction' || g.op === 'reflect_chance')?.id ??
-    null
+    foe.gimmicks.find((g) => g.op === 'reflect_first_reaction' || g.op === 'backlash')?.id ?? null
   );
 }
 

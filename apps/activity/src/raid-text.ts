@@ -272,10 +272,10 @@ function gimmickBaseText(g: Gimmick, wording: Wording): string {
       return `${when(g)}: silences the creatures at both ends of ${g.scope === 'rows' && wording !== 'row' ? 'each row' : 'the row'} for ${String(g.turns)} turn${g.turns === 1 ? '' : 's'}.`;
     case 'reflect_first_reaction':
       return `${when(g)}: turns the first reaction of the round back on the creature that set it off.`;
-    case 'reflect_chance':
+    case 'backlash':
       return standing(
         g,
-        `Each reaction has a ${percent(g.chanceBp)} chance to bounce back at the creature that set it off.`,
+        `Each reaction has a ${percent(g.chanceBp)} chance to burn the creature that set it off for ${percent(g.shareBp)} of its bonus.`,
       );
     case 'spikes':
       return standing(
@@ -324,10 +324,10 @@ export function gimmickShort(g: Gimmick, wording: Wording = 'zones'): string {
         : `Silences the row's ends, ${every}`;
     case 'reflect_first_reaction':
       return `Reflects a reaction, ${every}`;
-    case 'reflect_chance':
+    case 'backlash':
       return 'eachRound' in g.trigger
-        ? 'May reflect a reaction'
-        : `May reflect a reaction, ${every}`;
+        ? 'Reactions may burn back'
+        : `Reactions may burn back, ${every}`;
     case 'spikes':
       return 'eachRound' in g.trigger
         ? 'Pricks whoever hits it'

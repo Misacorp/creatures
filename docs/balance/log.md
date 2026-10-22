@@ -36,7 +36,7 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
 - **Options:** cap reflected damage at a share of the target's max HP (new scalar); make reflect interceptable by a guard.
 - **Action:** none at first, watching. Closed 2026-10-22 by B-031 (Misa: Thorns becomes spiky armour, Molten Shell a 5% reflective shield).
 - **Expected:** a run that meets Thorns or the Slag Tyrant is no longer a sure knock-out, and reacting teams clear about as well as in other rooms.
-- **Outcome:** 2026-10-22, B-031. Reacting team (Tidewing / Thornbuck / Tempestray, level = depth), depth 6 / 10 / 14 / 18: Thorns boss rooms cleared 44 / 0 / 0 / 0% and every one had a knock-out before; now 100 / 98 / 93 / 79% with 2 / 3 / 24 / 28% knock-outs (other modifiers: 100 / 99 / 96 / 85%). Slag Tyrant cleared 100 / 0 / 0 / 0% with a knock-out in every fight before; now 100 / 93 / 83 / 80% with 11 / 17 / 21 / 24% knock-outs. Worked.
+- **Outcome:** 2026-10-22, B-031. Reacting team (Tidewing / Thornbuck / Tempestray, level = depth), depth 6 / 10 / 14 / 18: Thorns boss rooms cleared 44 / 0 / 0 / 0% and every one had a knock-out before; now 100 / 98 / 93 / 79% with 2 / 3 / 24 / 28% knock-outs (other modifiers: 100 / 99 / 96 / 85%). Slag Tyrant cleared 100 / 0 / 0 / 0% with a knock-out in every fight before; now (Backlash, B-031) 100 / 100 / 96 / 83% with 2 / 21 / 37 / 44% knock-outs. Worked.
 - **Follow-ups:** the Cinder Wyrm's reflect (Backdraft) was measured with two softer rules (B-007). Misa decided 2026-10-15: Backdraft stays; a Guard takes reflected hits (decisions.md). Nothing else changed.
 
 ### B-003: Row order decides whether a team reacts at all (closed)
@@ -1336,10 +1336,10 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
 - **Outcome:**
 - **Follow-ups:** watch the live clear rate of runs that carry the Idol's curse against those that do not (`dungeon_event` analytics carries the event and the option). If the curse is too heavy or too light, change the `bp` in the content (2000).
 
-### B-031: The dungeon's reflect split: Thorns pricks every hit, Molten Shell reflects a reaction now and then (open)
+### B-031: The dungeon's reflect split: Thorns pricks every hit, Molten Shell burns back half the reactions (open)
 
 - **Opened:** 2026-10-22, from Misa (closes B-002; dungeon only, the raid's Backdraft and Bramble Season are unchanged because many players fight it).
-- **Changed:** the Thorns room modifier is now spiky armour (`spikes`): every creature hit on the foe sends back `bp` of that hit's plain damage (reaction bonus excluded) at the hitter, with no Guard step-in, dodge, crit or cover. The Slag Tyrant's Molten Shell is now a chance reflect (`reflect_chance`): each reaction is reflected like Backdraft's with `chanceBp` chance, no once-a-round limit. Both returning hits take the single-hit cap, which is off today (`RULES.combat.maxHitBp` 0), so both are uncapped for now.
+- **Changed:** the Thorns room modifier is now spiky armour (`spikes`): every creature hit on the foe sends back `bp` of that hit's plain damage (reaction bonus excluded) at the hitter, with no Guard step-in, dodge, crit or cover. The Slag Tyrant's Molten Shell is now a backlash (`backlash`): each reaction has `chanceBp` chance (5000) to backfire; the foe still takes the whole reaction and `shareBp` of the bonus (2500) comes back as a reflected hit on the payoff (Bramble Season's shape). It first shipped as a 5% full reflect (`reflect_chance`, chance 500); Misa found that too swingy and the same day it became the backlash. Both returning hits take the single-hit cap, which is off today (`RULES.combat.maxHitBp` 0), so both are uncapped for now.
 - **Tuning** (single room fights, `packages/sim` engine with the live rules, 200 to 400 seeds per cell; teams Tidewing / Thornbuck / Tempestray at level = depth, and level depth - 3 for the harder case; depths 6, 10, 14, 18; clear % / share of fights with a knock-out):
 
   | Boss room, reacting team, level = depth | d6       | d10     | d14     | d18     |
@@ -1353,21 +1353,23 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
 
   At level depth - 3 (harder teams) spikes 1000 / 1500 / 2000 at depth 18 clear 68 / 59 / 58% against 72% for other modifiers, so 1000 is the "a few points less". Normal foe rooms stay at 100% (the foe dies before the spikes add up). Reacting teams still clear far better than non-reacting ones in Thorns rooms (depth 14, level + 4: 96% against 13 to 22%).
 
-  | Slag Tyrant, reacting team, level = depth | d6        | d10     | d14                 | d18                  |
-  | ----------------------------------------- | --------- | ------- | ------------------- | -------------------- |
-  | Old reflect                               | 100 / 100 | 0 / 100 | 0 / 100             | 0 / 100              |
-  | Chance 500 (shipped), uncapped            | 100 / 11  | 93 / 17 | 83 / 21             | 80 / 24              |
-  | Chance 1000, uncapped                     | 100 / 22  | 87 / 31 | 70 / 36             | 65 / 39              |
-  | Chance 1500, uncapped                     | 100 / 29  | 81 / 41 | 60 / 48             | 52 / 51              |
-  | Chance 500, cap 50%                       | 100 / 0   | 100 / 1 | 100 / 2             | 100 / 6              |
-  | Chance 1000, cap 50%                      | 100 / 0   | 100 / 5 | 97 / 7              | 99 / 10              |
-  | Other room bosses (4)                     | 100 / 0   | 100 / 0 | 92 to 100 / 0 to 92 | 24 to 100 / 0 to 100 |
+  | Slag Tyrant, reacting team, level = depth, chance 5000 | d6        | d10      | d14       | d18                                       |
+  | ------------------------------------------------------ | --------- | -------- | --------- | ----------------------------------------- |
+  | Old whole reflect                                      | 100 / 100 | 0 / 100  | 0 / 100   | 0 / 100                                   |
+  | Rare full reflect, chance 500 (first version)          | 100 / 11  | 93 / 17  | 83 / 21   | 80 / 24                                   |
+  | Backlash, share 2000                                   | 100 / 0   | 100 / 2  | 100 / 15  | 99 / 20                                   |
+  | Backlash, share 2200                                   | 100 / 0   | 100 / 12 | 100 / 29  | 89 / 37                                   |
+  | Backlash, share 2500 (shipped)                         | 100 / 2   | 100 / 21 | 96 / 37   | 83 / 44                                   |
+  | Backlash, share 3000                                   | 100 / 2   | 100 / 21 | 96 / 38   | 83 / 44                                   |
+  | Backlash, share 4000 or 5000                           | 100 / 30  | 100 / 54 | 71 / 71   | 51 / 75                                   |
+  | Thorns, spikes 1000 (for comparison)                   | 100 / 2   | 98 / 3   | 93 / 24   | 79 / 28                                   |
+  | Other room bosses (4)                                  | 100       | 100      | 92 to 100 | 24 to 100 (Bramble Matron is the outlier) |
 
-  A reflect knocks the payoff out every time while the cap is off (the knock-out share equals the share of fights with a reflect). With the cap on, 1000 would sit level with the other bosses; with it off 500 is closest.
+  The knock-out share moves in steps: a burn only knocks out a payoff that has less HP left than the burn, so 2500 and 3000 are the same fights and 4000 and 5000 are the same fights. At level depth - 3 (harder teams), share 2500 clears 100 / 100 / 79 / 66% against Thorns 99 / 98 / 74 / 71%. Chance stays 5000 (the knob is the share). The burn is uncapped while `maxHitBp` is 0.
 
-- **How often a reflect happens:** each reaction rolls once. With about 2 to 4 reactions per Slag Tyrant fight (1.8 at depth 6 to 3.7 at depth 18) and 5% each, 1 - 0.95^n is 9% to 17% of fights; measured 11, 17, 21 and 22% (more because a reaction lost to a reflect is replaced by a later one).
-- **Full `pnpm sim`** (seed leet): main before (b0dc31a) 76 passed, 20 failed; after 79 passed, 17 failed. Every failing target was already failing on main except `exp-casual-discovery` (2.1, limit 2: an expedition target with no link to combat, seed noise at the edge); `raid-boss-spread`, `choice-creature-min`, `longrun-win-fifteen` and `exp-slot-5` failed before and pass now (the raid is unchanged: the shared economy stream moves). No dungeon target changed state.
-- **Action:** `room-modifiers.json` thorns `spikes` `bp` 1000; `dungeon-foes.json` molten-shell `reflect_chance` `chanceBp` 500. Starting values were 1500 and 1000.
+- **How often the backlash fires:** each reaction rolls once at 50%. A Slag Tyrant fight has about 1.9 (depth 6), 2.8, 3.5 and 3.8 (depth 18) reactions, so on average 0.95, 1.4, 1.75 and 1.9 backlashes a fight; measured, 74%, 88%, 94% and 96% of fights have at least one.
+- **Full `pnpm sim`** (seed leet; run with the first version of Molten Shell, the 5% full reflect, and not rerun for the backlash: it changes only the Slag Tyrant's reaction rule, and the first run moved no dungeon target): main before (b0dc31a) 76 passed, 20 failed; after 79 passed, 17 failed. Every failing target was already failing on main except `exp-casual-discovery` (2.1, limit 2: an expedition target with no link to combat, seed noise at the edge); `raid-boss-spread`, `choice-creature-min`, `longrun-win-fifteen` and `exp-slot-5` failed before and pass now (the raid is unchanged: the shared economy stream moves). No dungeon target changed state.
+- **Action:** `room-modifiers.json` thorns `spikes` `bp` 1000; `dungeon-foes.json` molten-shell `backlash` `chanceBp` 5000, `shareBp` 2500. Starting values were 1500 and a 1000 chance reflect.
 - **Expected:** live `dungeon` clear rates for runs that meet Thorns or the Slag Tyrant move to within a few points of the other rooms; knock-outs stop being near-certain.
 - **Outcome:**
-- **Follow-ups:** decide whether to switch the single-hit cap on for the dungeon (it would make Molten Shell a clear safe-ish 10%); watch live Slag Tyrant clear rates.
+- **Follow-ups:** watch live Slag Tyrant clear rates and knock-outs; the cap stays off (Misa).

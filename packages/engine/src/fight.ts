@@ -462,7 +462,8 @@ export function simulateFight(
     roundBonusBp: 0,
     reflectArmed: false,
     reflectUsed: false,
-    reflectChanceBp: 0,
+    backlashChanceBp: 0,
+    backlashShareBp: 0,
     spikesBp: 0,
     brambleUsed: false,
     swingNow: 0,
@@ -551,7 +552,8 @@ export function simulateFight(
     state.roundBonusBp = 0;
     state.reflectArmed = false;
     state.reflectUsed = false;
-    state.reflectChanceBp = 0;
+    state.backlashChanceBp = 0;
+    state.backlashShareBp = 0;
     state.spikesBp = 0;
     state.brambleUsed = false;
     if (
@@ -644,10 +646,11 @@ export function simulateFight(
       if (g.op === 'reflect_first_reaction' && gimmickDue(g, round)) {
         state.reflectArmed = true;
         events.push({ t: 'gimmick', round, gimmick: g.id, op: g.op });
-      } else if (g.op === 'reflect_chance' && gimmickDue(g, round)) {
+      } else if (g.op === 'backlash' && gimmickDue(g, round)) {
         // Standing effects change how a hit or a reaction resolves, so they write no `gimmick`
         // event and nothing happens on the boss's turn: the forecast names them, the hits show them.
-        state.reflectChanceBp = Math.min(10_000, state.reflectChanceBp + g.chanceBp);
+        state.backlashChanceBp = Math.min(10_000, state.backlashChanceBp + g.chanceBp);
+        state.backlashShareBp = g.shareBp;
       } else if (g.op === 'spikes' && gimmickDue(g, round)) {
         state.spikesBp += g.bp;
       }

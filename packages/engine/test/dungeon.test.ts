@@ -481,8 +481,8 @@ describe('every shipped foe, floor boss and room modifier makes sense on one row
       for (const g of f.gimmicks) {
         const rounds = Array.from({ length: 12 }, (_, i) => i + 1).filter((r) => gimmickDue(g, r));
         const fired = events.filter((e) => e.t === 'gimmick' && e.gimmick === g.id);
-        // A standing effect (a reflective shield, spikes) writes no event: it works through the hits.
-        if (g.op === 'reflect_chance' || g.op === 'spikes') expect(fired, g.id).toHaveLength(0);
+        // A standing effect (a backlash, spikes) writes no event: it works through the hits.
+        if (g.op === 'backlash' || g.op === 'spikes') expect(fired, g.id).toHaveLength(0);
         // (A reflect gimmick also reports when it is spent, so it is counted at least once a round.)
         else if (g.op === 'reflect_first_reaction')
           expect(fired.length).toBeGreaterThanOrEqual(rounds.length);

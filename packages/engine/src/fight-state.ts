@@ -204,8 +204,10 @@ export interface FightState {
   roundBonusBp: number;
   reflectArmed: boolean;
   reflectUsed: boolean;
-  /** Reflective shield (`reflect_chance`): this round's chance (basis points) that a reaction is reflected; 0 when none is due. */
-  reflectChanceBp: number;
+  /** Backlash (`backlash`): this round's chance (basis points) that a reaction burns its payoff; 0 when none is due. */
+  backlashChanceBp: number;
+  /** Backlash: the share (basis points) of the reaction's bonus that comes back when it does. */
+  backlashShareBp: number;
   /** Spiky armour (`spikes`): the share (basis points) of a creature hit's plain damage that comes back this round; 0 when none is due. */
   spikesBp: number;
   /** Bramble Season: this round's first reaction has been seen (a reflected one counts too). */

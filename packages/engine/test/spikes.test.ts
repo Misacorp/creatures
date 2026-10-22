@@ -4,7 +4,7 @@ import { simulateFight, type FightInput, type FightRules } from '../src/index';
 import { TEST_PACK, eventsOf, input, run, slot } from './helpers';
 
 // The dungeon's two reflect rules (combat-rules.md 5.5 and 5.6): spiky armour (`spikes`) and the
-// reflective shield (`reflect_chance`). Both are standing effects: no `gimmick` event is written.
+// backlash (`backlash`). Both are standing effects: no `gimmick` event is written.
 
 const RULES_CAP: FightRules = {
   coverBp: 0,
@@ -18,13 +18,14 @@ type Gimmicks = FightInput['boss']['gimmicks'];
 const SPIKES = (bp: number): Gimmicks => [
   { id: 'thorns', name: 'Thorns', trigger: { eachRound: true }, op: 'spikes', bp },
 ];
-const SHIELD = (chanceBp: number): Gimmicks => [
+const BACKLASH = (chanceBp: number, shareBp = 2_500): Gimmicks => [
   {
     id: 'molten-shell',
     name: 'Molten Shell',
     trigger: { eachRound: true },
-    op: 'reflect_chance',
+    op: 'backlash',
     chanceBp,
+    shareBp,
   },
 ];
 
@@ -119,46 +120,86 @@ describe('spikes (spiky armour)', () => {
   });
 });
 
-describe('reflect_chance (reflective shield)', () => {
+describe('backlash (Molten Shell)', () => {
   const row = () => [
     slot('s1', { owner: 'a', element: 'tide', role: 'setter', atk: 100, hp: 100_000 }),
     slot('p1', { owner: 'b', element: 'spark', role: 'payoff', atk: 100, hp: 100_000 }),
     slot('s2', { owner: 'c', element: 'tide', role: 'setter', atk: 100, hp: 100_000 }),
     slot('p2', { owner: 'd', element: 'spark', role: 'payoff', atk: 100, hp: 100_000 }),
   ];
-  const turns = (r: ReturnType<typeof run>, round: number) =>
-    eventsOf(r, 'reaction').filter((e) => e.round === round);
+  const round1 = (r: ReturnType<typeof run>) =>
+    eventsOf(r, 'reaction').filter((e) => e.round === 1);
 
-  it('at 100% reflects every reaction, not just the first of a round (no once-a-round limit)', () => {
-    const r = fight(row(), SHIELD(10_000), { guardReach: 'adjacent' });
-    expect(turns(r, 1)).toMatchObject([
-      { payoff: 'p1', reflected: true },
-      { payoff: 'p2', reflected: true },
-    ]);
-    // A reflected reaction deals plain damage only and earns the setup no credit.
-    expect(r.perPlayer.a?.setupCredit).toBe(0);
-    expect(r.perPlayer.c?.setupCredit).toBe(0);
+  it('at 100% every reaction backfires, none is reflected, and the foe still takes the whole reaction', () => {
+    const plain = fight(row(), []);
+    const r = fight(row(), BACKLASH(10_000), { guardReach: 'adjacent' });
+    const reactions = round1(r);
+    expect(reactions).toHaveLength(2);
+    for (const e of reactions) {
+      expect(e.reflected).toBe(false);
+      // The whole bonus is the event's bonus, and a quarter of it burns the payoff.
+      expect(e.backlash).toEqual({ bp: 2_500, amount: Math.floor((e.bonus * 2_500) / 10_000) });
+    }
+    // The foe's hits, the setup credit and the reaction bonus are exactly those of a fight without it.
+    expect(eventsOf(r, 'hit').filter((h) => h.round === 1)).toEqual(
+      eventsOf(plain, 'hit').filter((h) => h.round === 1),
+    );
+    expect(r.perPlayer.a?.setupCredit).toBe(plain.perPlayer.a?.setupCredit);
+    // The mark is used up as usual: the next setter sets it again.
+    expect(eventsOf(r, 'mark').filter((m) => m.round === 1)).toEqual(
+      eventsOf(plain, 'mark').filter((m) => m.round === 1),
+    );
   });
 
-  it('at 0 chance in the content (no op) reflects nothing', () => {
-    const r = fight(row(), []);
-    expect(eventsOf(r, 'reaction').every((e) => !e.reflected)).toBe(true);
-  });
-
-  it('puts the reflected hit on the payoff, under the single-hit cap', () => {
+  it('puts the burn on the payoff as a reflected hit with no crit, dodge or cover', () => {
     const r = fight(
       [
-        slot('s', { element: 'tide', role: 'setter', atk: 1_000, hp: 1_000_000 }),
-        slot('p', { element: 'spark', role: 'payoff', atk: 1_000, hp: 1_000 }),
+        slot('s', { element: 'tide', role: 'setter', atk: 100, hp: 100_000 }),
+        slot('p', { element: 'spark', role: 'payoff', atk: 100, hp: 100_000 }),
       ],
-      SHIELD(10_000),
+      BACKLASH(10_000),
     );
+    const reaction = eventsOf(r, 'reaction')[0];
     const hit = eventsOf(r, 'boss_hit').find((e) => e.source === 'reflect');
-    expect(hit).toMatchObject({ target: 'p', damage: 500, capped: true });
-    expect(eventsOf(r, 'reaction')[0]).toMatchObject({ reflected: true });
+    expect(hit).toMatchObject({ target: 'p', damage: reaction?.backlash?.amount });
+    expect(hit?.crit).toBeUndefined();
+    expect(hit?.dodged).toBeUndefined();
   });
 
-  it('the raid trap (reflect_first_reaction) stays uncapped', () => {
+  it('a Guard beside the payoff takes the burn instead', () => {
+    const r = fight(
+      [
+        slot('s', { element: 'tide', role: 'setter', atk: 100, hp: 100_000 }),
+        slot('p', { element: 'spark', role: 'payoff', atk: 100, hp: 100_000 }),
+        slot('g', { role: 'guard', atk: 1, hp: 100_000 }),
+      ],
+      BACKLASH(10_000),
+      { guardReach: 'adjacent' },
+    );
+    const hit = eventsOf(r, 'boss_hit').find((e) => e.source === 'reflect');
+    expect(hit).toMatchObject({ target: 'g', from: 'p' });
+  });
+
+  it('can knock the payoff out, and the share of a tiny bonus rounds to no hit', () => {
+    const weak = fight(
+      [
+        slot('s', { element: 'tide', role: 'setter', atk: 1_000, hp: 1_000_000 }),
+        slot('p', { element: 'spark', role: 'payoff', atk: 1_000, hp: 50 }),
+      ],
+      BACKLASH(10_000, 10_000),
+    );
+    expect(eventsOf(weak, 'knockout')[0]).toMatchObject({ creature: 'p' });
+    const tiny = fight(
+      [
+        slot('s', { element: 'tide', role: 'setter', atk: 1, hp: 1_000 }),
+        slot('p', { element: 'spark', role: 'payoff', atk: 1, hp: 1_000 }),
+      ],
+      BACKLASH(10_000, 1),
+    );
+    expect(eventsOf(tiny, 'boss_hit').filter((e) => e.source === 'reflect')).toHaveLength(0);
+  });
+
+  it('the raid trap (reflect_first_reaction) stays a whole, uncapped reflect', () => {
     const r = fight(
       [
         slot('s', { element: 'tide', role: 'setter', atk: 1_000, hp: 1_000_000 }),
@@ -176,36 +217,24 @@ describe('reflect_chance (reflective shield)', () => {
     const hit = eventsOf(r, 'boss_hit').find((e) => e.source === 'reflect');
     expect(hit?.capped).toBeUndefined();
     expect(hit?.damage).toBeGreaterThan(500);
+    expect(eventsOf(r, 'reaction')[0]).toMatchObject({ reflected: true });
   });
 
-  it('a Guard beside the payoff takes the reflected hit instead', () => {
-    const r = fight(
-      [
-        slot('s', { element: 'tide', role: 'setter', atk: 100, hp: 100_000 }),
-        slot('p', { element: 'spark', role: 'payoff', atk: 100, hp: 100_000 }),
-        slot('g', { role: 'guard', atk: 1, hp: 100_000 }),
-      ],
-      SHIELD(10_000),
-      { guardReach: 'adjacent' },
-    );
-    const hit = eventsOf(r, 'boss_hit').find((e) => e.source === 'reflect');
-    expect(hit).toMatchObject({ target: 'g', from: 'p' });
-  });
-
-  it('a gear set that turns reflections aside (unreflected) works against it, once', () => {
+  it('a gear set that turns reflections aside (unreflected) turns the burn aside too, once', () => {
     const proofRow = row().map((s) =>
       s.id === 'p1' ? { ...s, mods: { unreflected: 1 as const } } : s,
     );
     const r = run(proofRow, {
-      boss: { ...input([]).boss, gimmicks: SHIELD(10_000) },
+      boss: { ...input([]).boss, gimmicks: BACKLASH(10_000) },
       rules: RULES_CAP,
     });
     const own = eventsOf(r, 'reaction').filter((e) => e.payoff === 'p1');
     expect(own[0]).toMatchObject({ reflected: false, proof: true });
-    expect(own[1]).toMatchObject({ reflected: true });
+    expect(own[0]?.backlash).toBeUndefined();
+    expect(own[1]?.backlash).toBeDefined();
   });
 
-  it('draws a die only for a reaction while the shield is on: other fights draw exactly as before', () => {
+  it('draws a die only for a reaction while the backlash is on: other fights draw exactly as before', () => {
     const count = (gimmicks: Gimmicks, slots = row()) => {
       const inner = createSeededRng('count');
       let draws = 0;
@@ -218,28 +247,30 @@ describe('reflect_chance (reflective shield)', () => {
       simulateFight(
         input(slots, { boss: { ...input([]).boss, gimmicks }, rules: RULES_CAP }),
         rng,
-        {
-          pack: TEST_PACK,
-        },
+        { pack: TEST_PACK },
       );
       return draws;
     };
     const base = count([]);
     expect(count(SPIKES(1_000))).toBe(base);
-    expect(count(SHIELD(500))).toBeGreaterThan(base);
-    // No reaction in the row (one element), so no die is drawn even with the shield up.
+    expect(count(BACKLASH(5_000))).toBeGreaterThan(base);
+    // No reaction in the row (one element), so no die is drawn even with the backlash up.
     const flat = [
       slot('x', { element: 'tide', role: 'payoff', atk: 100 }),
       slot('y', { element: 'tide', role: 'payoff', atk: 100 }),
     ];
-    expect(count(SHIELD(500), flat)).toBe(count([], flat));
+    expect(count(BACKLASH(5_000), flat)).toBe(count([], flat));
   });
 
-  it('a chance in between reflects some reactions and not others, the same way every time', () => {
-    const play = () => eventsOf(fight(row(), SHIELD(5_000)), 'reaction').map((e) => e.reflected);
+  it('at 50% about half of the reactions backfire, the same way every time', () => {
+    const play = () =>
+      eventsOf(fight(row(), BACKLASH(5_000)), 'reaction').map((e) => e.backlash !== undefined);
     const a = play();
     expect(a).toEqual(play());
     expect(a).toContain(true);
     expect(a).toContain(false);
+    const share = a.filter(Boolean).length / a.length;
+    expect(share).toBeGreaterThan(0.3);
+    expect(share).toBeLessThan(0.7);
   });
 });

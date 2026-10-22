@@ -136,23 +136,24 @@ export function hitBoss(
       : reactionByPair.get(reactionKey(markBefore.element, c.element));
   const armedTrap = reaction !== undefined && c.alive && state.reflectArmed && !state.reflectUsed;
   if (armedTrap) state.reflectUsed = true;
-  // A reflective shield (`reflect_chance`): each reaction a living creature sets off that the armed
-  // trap did not take is reflected with this chance. The die is drawn here, and only when the shield
-  // is on, so a fight without one draws exactly what it always did.
-  const chanceTrap =
-    !armedTrap &&
-    reaction !== undefined &&
-    c.alive &&
-    state.reflectChanceBp > 0 &&
-    int(state.rng, 10_000) < state.reflectChanceBp;
-  const trapped = armedTrap || chanceTrap;
-  // A gear set turns the trap aside for the creature's first reaction of the fight (`unreflected`).
-  const proof = trapped && m.unreflected && c.cashes === 0;
-  const reflected = trapped && !proof;
   // Bramble Season: the first reaction each round (by a creature still standing) sends a share of
   // its bonus back. A reaction Backdraft already reflected in full uses the round's first up.
   const brambling = reaction !== undefined && c.alive && brambleBp > 0 && !state.brambleUsed;
   if (brambling) state.brambleUsed = true;
+  // Backlash (`backlash`): each reaction a living creature sets off that neither the armed trap nor
+  // Bramble Season took has this chance to burn it. The die is drawn here, and only while the
+  // backlash is up, so a fight without one draws exactly what it always did.
+  const backlashHit =
+    !armedTrap &&
+    !brambling &&
+    reaction !== undefined &&
+    c.alive &&
+    state.backlashChanceBp > 0 &&
+    int(state.rng, 10_000) < state.backlashChanceBp;
+  // A gear set turns the trap, or a backlash, aside for the creature's first reaction of the fight (`unreflected`).
+  const proof = (armedTrap || backlashHit) && m.unreflected && c.cashes === 0;
+  const reflected = armedTrap && !proof;
+  const backlashed = backlashHit && !proof;
   const brambled = brambling && !reflected;
   // A reaction that consumes a status effect on the boss (Flare burns Mired) adds its share of the bonus
   // for each stack on it. Nothing without effects on, or on a reflected reaction (no bonus lands).
@@ -303,6 +304,14 @@ export function hitBoss(
       ),
     );
     if (reflected) return { damage: plain, bonus: 0, reflect: bonus };
+    // A backlash: the foe takes the whole reaction and a share of the bonus comes back as well.
+    if (backlashed) {
+      return {
+        damage: plain + bonus,
+        bonus,
+        reflect: Math.floor((bonus * state.backlashShareBp) / 10_000),
+      };
+    }
     if (brambled) {
       const back = Math.floor((bonus * brambleBp) / 10_000);
       return { damage: plain + bonus - back, bonus: bonus - back, reflect: back };
@@ -422,14 +431,17 @@ export function hitBoss(
       bonus: reflected ? hit.reflect : hit.bonus,
       reflected,
       ...(brambled ? { bramble: { bp: brambleBp, amount: hit.reflect } } : {}),
+      ...(backlashed ? { backlash: { bp: state.backlashShareBp, amount: hit.reflect } } : {}),
       ...(reactionSheetBp + m.pounceBp === 0 ? {} : { sheetBp: reactionSheetBp + m.pounceBp }),
       ...(proof ? { proof: true as const } : {}),
       ...(m.chainMark && !reflected ? { chain: true as const } : {}),
     });
     state.mark = null;
     if (reflected) {
-      // The armed trap's hit is uncapped (the raid's Backdraft); the chance reflect's is capped.
-      hurt(state, c, hit.reflect, 'reflect', 'reflect', undefined, false, false, chanceTrap);
+      hurt(state, c, hit.reflect, 'reflect', 'reflect');
+    } else if (backlashed && hit.reflect > 0) {
+      // Capped like a boss hit (`maxHitBp`, off today); the raid's trap and Bramble Season are not.
+      hurt(state, c, hit.reflect, 'reflect', 'reflect', undefined, false, false, true);
     } else if (brambled && hit.reflect > 0) hurt(state, c, hit.reflect, 'reflect', 'reflect');
     if (!reflected) {
       // The reaction's riders on the boss: burn the stacks it counted (Flare), or leave an effect (Smother).

@@ -323,7 +323,7 @@ describe('bossWarnings', () => {
     });
   });
 
-  it('names the standing effects of the dungeon: spikes and the reflective shield', () => {
+  it('names the standing effects of the dungeon: spikes and the backlash', () => {
     const standing = {
       ...boss('cinder-wyrm'),
       gimmicks: [
@@ -338,15 +338,16 @@ describe('bossWarnings', () => {
           id: 'shell',
           name: 'Shell',
           trigger: { every: 2 },
-          op: 'reflect_chance' as const,
-          chanceBp: 500,
+          op: 'backlash' as const,
+          chanceBp: 5_000,
+          shareBp: 2_500,
         },
       ],
     };
     expect(bossWarnings(standing, 1).map((w) => w.target)).toEqual([{ kind: 'spikes', bp: 1_000 }]);
     expect(bossWarnings(standing, 2).map((w) => w.target)).toEqual([
       { kind: 'spikes', bp: 1_000 },
-      { kind: 'reflect_chance', chanceBp: 500 },
+      { kind: 'backlash', chanceBp: 5_000, shareBp: 2_500 },
     ]);
   });
 

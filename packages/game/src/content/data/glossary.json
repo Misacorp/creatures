@@ -297,13 +297,13 @@
     "section": "dungeon"
   },
   {
-    "id": "gimmick-reflect-chance",
-    "title": "Reflective shield",
-    "short": "A reaction may bounce back at who set it off, or their Guard.",
+    "id": "gimmick-backlash",
+    "title": "Backlash",
+    "short": "Half the time, a reaction burns who set it off for part of its bonus.",
     "lines": [],
     "visual": {
       "kind": "glyph",
-      "id": "reflect_chance"
+      "id": "backlash"
     },
     "section": "dungeon"
   },

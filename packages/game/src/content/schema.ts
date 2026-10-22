@@ -318,11 +318,12 @@ export const GimmickSchema = v.variant('op', [
    */
   v.strictObject({ ...gimmickBase, op: v.literal('spikes'), bp: Share }),
   /**
-   * A reflective shield (dungeon only, combat-rules.md 5.5): each reaction a living creature sets off
-   * has `chanceBp` chance to be reflected like `reflect_first_reaction` (no once-a-round limit, and
-   * the returning hit is capped like a boss hit). Any trigger; `eachRound` for a standing effect.
+   * Backlash (dungeon only, combat-rules.md 5.5): each reaction a living creature sets off has
+   * `chanceBp` chance to burn it: the foe still takes the whole reaction, and `shareBp` of the
+   * reaction's bonus comes back as a reflected hit on the payoff creature. Any trigger; `eachRound`
+   * for a standing effect.
    */
-  v.strictObject({ ...gimmickBase, op: v.literal('reflect_chance'), chanceBp: Share }),
+  v.strictObject({ ...gimmickBase, op: v.literal('backlash'), chanceBp: Share, shareBp: Share }),
   /**
    * The strongest living creature (highest Attack, ties: lower slot), an aimed hit; then `jumps`
    * more (0 to 3, default 0) to the next strongest, each an area hit at `power x decay^k`

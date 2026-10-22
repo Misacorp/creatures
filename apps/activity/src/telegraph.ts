@@ -381,8 +381,8 @@ function clauseOf(w: BossWarning, name: string, look: Look): string | null {
         : `${name} strikes your strongest, then jumps ${t.jumps === 1 ? 'once' : t.jumps === 2 ? 'twice' : `${String(t.jumps)} times`}`;
     case 'reaction':
       return `${name} reflects the first reaction`;
-    case 'reflect_chance':
-      return `${name} may reflect a reaction`;
+    case 'backlash':
+      return `${name}: reactions may burn back`;
     case 'spikes':
       return `${name}: every hit pricks the hitter`;
     case 'charge': {
@@ -411,7 +411,7 @@ function priority(w: BossWarning): number {
   if (w.target.kind === 'charge') return 0;
   switch (w.target.kind) {
     // Standing effects are in force every round, so they only take a clause when the moves leave room.
-    case 'reflect_chance':
+    case 'backlash':
     case 'spikes':
       return 3;
     case 'ends':

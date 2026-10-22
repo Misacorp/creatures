@@ -263,7 +263,7 @@ export function fireGimmick(state: FightState, g: Gimmick, gimmickIndex: number)
       resolvePlan(state, plan, false, g.applies);
       break;
     }
-    case 'reflect_chance':
+    case 'backlash':
     case 'spikes':
       // Standing effects of the round (set at round start, where their one `gimmick` event is
       // written): nothing happens on the boss's turn.

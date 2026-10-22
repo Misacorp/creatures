@@ -53,7 +53,7 @@ _Example._ 9 slots are 3 / 3 / 3. 10 slots are 3 / 4 / 3. In the dungeon the lin
 
 **1.16 Area hit.** Every other hit: a row attack, a sweep, a barrage shell, a slam's splash, a chain's jumps, a lance, a pincer, an enrage hit. No Guard steps in for an area hit, but a Guard beside the victim covers it (4.3).
 
-**1.17 Reflected hit.** Damage a reaction sends back at the creature that set it off (5.4, 5.5). It is a new hit with the boss as source, not a redirect. **Spike hit** (5.6): the damage a creature's own hit sends back at it in a dungeon room with spiky armour; it follows the rules of a reflected hit, with the differences listed there.
+**1.17 Reflected hit.** Damage a reaction sends back at the creature that set it off (5.4, 5.5, 5.4.5). It is a new hit with the boss as source, not a redirect. **Spike hit** (5.6): the damage a creature's own hit sends back at it in a dungeon room with spiky armour; it follows the rules of a reflected hit, with the differences listed there.
 
 **1.18 Redirect.** A rule that says a different creature takes a hit **instead**. A hit is redirected at most once, and never to a knocked-out creature. The only redirect is the Guard's (4.2). The creature that takes the hit is the **taker**; the creature it was aimed at is the **aimed creature**. They are the same unless a Guard stepped in.
 
@@ -155,7 +155,7 @@ The fight is checked after every creature turn: a hit that kills or retreats the
 3. **Armor**, if the taker is a Guard (4.1).
 4. **Cover**, if it is an area hit and the taker is beside a living Guard (4.3).
 5. **The taker's modifier sheet** (10.5), if it has one: the ward against the boss's element, then charged moves, then the hit's shape (area, aimed or reflected), then every hit, then (trigger lines, 12) Last stand once it has fired, and Storm warning on the landing it was marked for. Always after armor and cover.
-6. **The single-hit cap**: off (`RULES.combat.maxHitBp` 0). If it were above 0, no aimed or area hit would deal more than that share of the taker's maximum HP (never less than 1). It never limits Backdraft's reflected hit; it does limit a chance-reflected hit (5.5) and a spike hit (5.6).
+6. **The single-hit cap**: off (`RULES.combat.maxHitBp` 0). If it were above 0, no aimed or area hit would deal more than that share of the taker's maximum HP (never less than 1). It never limits Backdraft's reflected hit; it does limit a backlash burn (5.5) and a spike hit (5.6).
 7. **HP**: the damage is taken, the taker loses that much HP, but never more than it has left (1.13).
 
 3.2.1 Rounding: every step rounds the amount **down**, so each reduction prevents a rounded-down share.
@@ -256,7 +256,7 @@ _Example._ A Support in the last slot of Front is beside the slot to its left on
 
 _Example._ Cindle (Ember) hits first and leaves Scorched. Splashet (Tide) acts after it and sets off Steam. If Splashet acts first, it finds no mark and leaves Soaked; Cindle's Ember hit does nothing special, since Soaked needs Spark.
 
-**5.4 Reflect (Backdraft).** The raid's reflect move. (The dungeon has its own, rarer ones: the reflective shield, 5.5, and spiky armour, 5.6. Misa, 2026-10-22: the raid is unchanged.) A reflect move arms at round start (2.3 step 4), **every round it is due** (a reflect move due every round arms every round). The **first** reaction set off that round, by a creature that is still living, is reflected.
+**5.4 Reflect (Backdraft).** The raid's reflect move. (The dungeon has its own, milder ones: the backlash, 5.5, and spiky armour, 5.6. Misa, 2026-10-22: the raid is unchanged.) A reflect move arms at round start (2.3 step 4), **every round it is due** (a reflect move due every round arms every round). The **first** reaction set off that round, by a creature that is still living, is reflected.
 
 5.4.1 The payoff hit deals its plain damage only. The bonus does not go to the boss. It becomes a **reflected hit** on the creature that set off the reaction: source reflect, no crit, no cover, no cap (Backdraft's hit is never capped).
 
@@ -268,13 +268,13 @@ _Example._ Cindle (Ember) hits first and leaves Scorched. Splashet (Tide) acts a
 
 5.4.4 **One reflection a round.** It is armed for one round only; the next round arms it again. Only the first reaction of the round is reflected: a second reaction in the same round goes through unreflected, as an ordinary reaction. An ability's strike from a creature that is knocked out is never reflected.
 
-**5.5 Reflective shield (`reflect_chance`: the Slag Tyrant's Molten Shell; dungeon).** Standing effect, due by its trigger like any gimmick (`eachRound` for always on); it arms nothing and writes no `gimmick` event. Each reaction set off by a creature that is still living has `chanceBp` chance (basis points, `chanceBp` 500 today: 5%) to be reflected, with **no once-a-round limit**: every reaction rolls.
+**5.5 Backlash (`backlash`: the Slag Tyrant's Molten Shell; dungeon).** Standing effect, due by its trigger like any gimmick (`eachRound` for always on); it arms nothing and writes no `gimmick` event. Each reaction set off by a creature that is still living has `chanceBp` chance (basis points; 5000 today: half the time) to **backfire**. Every reaction rolls: there is no once-a-round limit. Unlike Backdraft (5.4) the reaction is **not** reflected: the foe takes the **whole** reaction, plain damage and bonus, the setup is credited as normal (5.3) and the mark is used up as normal.
 
-5.5.1 A reflected reaction is exactly 5.4.1 to 5.4.3: the payoff hit deals its plain damage only, the bonus comes back as a reflected hit on the payoff (a Guard beside takes it instead, 5.4.2), the mark is cleared, the setup earns no credit. The reaction event has `reflected: true`. The Tidepool Finery set effect (`unreflected`) works against it as against Backdraft: a reaction that was to be reflected and is the creature's first cash-in is not reflected, and the event carries `proof`.
+5.5.1 **The burn.** On top of that, `shareBp` of the reaction's bonus (2500 today: a quarter) comes back as a **reflected hit** on the payoff creature, the shape of Bramble Season's (5.4.5): aimed at that creature, a Guard that can takes it instead (5.4.2), then the taker's Shield Wall, armor and sheet (`reflectedBp`), no crit, no dodge, no cover. The share rounds down and a share of 0 writes no hit. The reaction event keeps `reflected: false` and carries `backlash: { bp, amount }`; its `bonus` is the whole bonus. The burn can knock the payoff out.
 
-5.5.2 **The die.** One die from the fight's injected RNG (`int(rng, 10000)`, reflected when it is below `chanceBp`), drawn at the moment the reaction is set off, and only when the shield is up that round and no armed trap (5.4) already took the reaction. A fight without a `reflect_chance` gimmick draws nothing for it, so every other fight draws exactly as before. A dodged creature hit sets off no reaction and so rolls nothing.
+5.5.2 **The die.** One die from the fight's injected RNG (`int(rng, 10000)`, a backfire when it is below `chanceBp`), drawn at the moment the reaction is set off, and only when the backlash is up that round and neither an armed trap (5.4) nor Bramble Season already took the reaction. A fight without a `backlash` gimmick draws nothing for it, so every other fight draws exactly as before. A creature the foe dodged sets off no reaction and so rolls nothing.
 
-5.5.3 **The single-hit cap applies to this reflected hit**, unlike Backdraft's: `RULES.combat.maxHitBp` as in 3.2 step 6. While the cap is off (`maxHitBp` 0, Misa 2026-10-15) the hit is uncapped, as Backdraft's is; the hit event has `capped: true` when the cap cut it.
+5.5.3 **Tidepool Finery (`unreflected`)** turns the backlash aside for the creature's first reaction of the fight, as it does Backdraft: the die is still drawn, nothing burns, and the event carries `proof`. **The single-hit cap** (3.2 step 6) applies to the burn, but it is off (`maxHitBp` 0, Misa 2026-10-15), so today it is uncapped.
 
 **5.6 Spiky armour (`spikes`: the Thorns room modifier; dungeon).** Standing effect, like 5.5, with `bp` (basis points, 1000 today: 10%). Every creature hit that lands on the foe sends `bp` of **that hit's plain damage** back at the creature that made it. A creature's turn hit and an ability's strike count; an Echo (chance line) does not, and neither does anything that is not a creature's hit on the foe (support and heal effects, Riposte).
 
@@ -282,7 +282,7 @@ _Example._ Cindle (Ember) hits first and leaves Scorched. Splashet (Tide) acts a
 
 5.6.2 **The spike hit** is a `boss_hit` with `source: 'spikes'` on the hitter, written right after the creature's own hit and its reaction (5.4, 5.5) and before an Echo. It is a reflected-kind hit with these rules: **no Guard steps in** (the hitter pricked itself), **no dodge, no crit, no cover**. Shield Walls on the hitter's row, a Guard's armor (when the hitter is one) and the sheet's `reflectedBp` apply as for a reflected hit (3.2 steps 2, 3 and 5). The single-hit cap applies (3.2 step 6, as 5.5.3). It can knock the hitter out; nothing waits on it (no Payback, no `on_hit_taken`). It is written in the same beat as the hit, with no wind-up.
 
-_Example._ Thorns at 10%. Splashet hits the foe for 40 and takes 4. Then Pyrelynx cashes Steam: 40 plain and 100 bonus make a hit of 140, and it takes 4, not 14. If a reflective shield (5.5) also turns that Steam back, the foe takes the 40, the payoff takes the 100 as a reflected hit and then 4 from the spikes.
+_Example._ Thorns at 10%. Splashet hits the foe for 40 and takes 4. Then Pyrelynx cashes Steam: 40 plain and 100 bonus make a hit of 140, and it takes 4, not 14. If a backlash (5.5, a quarter) also fires on that Steam, the foe still takes the whole 140, the payoff takes 25 as a reflected hit, and then 4 from the spikes.
 
 _Example._ Wyrm's Backdraft is armed. Splashet's plain hit is 100; Steam makes it 450, so the bonus is 350. The boss takes 100. A Guard stands in Splashet's row: it takes the 350 instead, armor prevents 87 (25%), so it takes 263.
 
@@ -304,7 +304,7 @@ _Example._ Undertow aims Front. Front is knocked out, Middle and Back stand. It 
 
 6.4.1 Silence is applied after the creatures act, so it first bites in the next round.
 
-**6.5 Reflect (`reflect_first_reaction`).** Not an attack. It arms the trap of 5.4. `reflect_chance` (5.5) and `spikes` (5.6) are not attacks either: they are standing effects and do nothing on the boss's turn.
+**6.5 Reflect (`reflect_first_reaction`).** Not an attack. It arms the trap of 5.4. `backlash` (5.5) and `spikes` (5.6) are not attacks either: they are standing effects and do nothing on the boss's turn.
 
 **6.6 Strike and chain (`strike_highest_atk`: Lightning Rod, Zap Dive, Arc Lash).** A first **aimed** hit on the strongest living creature (highest Attack; ties to the lower slot), at `power`. With `jumps` above 0, jump k (1 to `jumps`) is an **area** hit on the k-th next strongest creature at `power` times `decayBp` to the power k (each step rounded down; default 55%). The creatures are ranked once, before any hit lands, so a jump is not re-aimed.
 

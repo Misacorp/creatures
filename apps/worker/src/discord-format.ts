@@ -132,8 +132,8 @@ export function describeGimmick(gimmick: Gimmick): string {
       return `silences the creatures at ${gimmick.scope === 'rows' ? 'both ends of each row' : 'both ends of the row'} for ${String(gimmick.turns)} ${plural(gimmick.turns, 'turn', 'turns')}, ${when}`;
     case 'reflect_first_reaction':
       return `throws the first reaction back at your team, ${when}`;
-    case 'reflect_chance':
-      return `may turn a reaction back at your team (${percentOfBp(gimmick.chanceBp)} each), ${when}`;
+    case 'backlash':
+      return `burns the creature that sets off a reaction for ${percentOfBp(gimmick.shareBp)} of its bonus (${percentOfBp(gimmick.chanceBp)} of the time), ${when}`;
     case 'spikes':
       return `pricks every creature that hits it with ${percentOfBp(gimmick.bp)} of the damage, ${when}`;
     case 'strike_highest_atk': {

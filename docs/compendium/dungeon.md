@@ -107,9 +107,9 @@ Each floor boss is a smaller echo of a raid boss `(inferred)`. The raid bosses a
 - Echo: the Tidal Colossus's Undertow and Great Wave `(inferred)`.
 - Landmark signature, **Sluice Surge** (every fourth round, marked a round ahead): the gates open on every row at once, harder than the usual Flood Gate. `(content: dungeon-foes.json)`
 
-### Slag Tyrant (Ember; Molten Shell, a reflective shield: each reaction may bounce back at who set it off; Anvil Fall, every third round, drops on the left creature and splashes the creatures beside it)
+### Slag Tyrant (Ember; Molten Shell, a backlash: half the time a reaction burns the creature that set it off; Anvil Fall, every third round, drops on the left creature and splashes the creatures beside it)
 
-- Shipped flavour `(content)`: "King of a cooled forge, wearing a crown of slag. Now and then it turns your best trick back on you."
+- Shipped flavour `(content)`: "King of a cooled forge, wearing a crown of slag. Half the time, your best trick burns the one who plays it."
 - Compendium detail: a king who once ran a forge that has since gone cold. The crown is slag, which is what a forge leaves behind.
 - Echo: the Cinder Wyrm's Backdraft `(inferred)`.
 - Landmark signature, **Slag Spill** (every fourth round, marked a round ahead): a slam on the strongest creature, and the creatures beside it are splashed. `(content: dungeon-foes.json)`
@@ -158,7 +158,7 @@ The modifiers are **phenomena**: things the dungeon does to its rooms, the way w
 Notes:
 
 - **The four element modifiers share their names with the four raid marks** `(content)`: Scorched and Overgrown are both a mark and a modifier. The overlap is on purpose. Use it when you name new modifiers.
-- **Thorns** is the one modifier that behaves like a boss trick, applied to the whole room `(content: room-modifiers.json, foe_gimmick)`. It is spiky armour, so it pricks every hit, a reaction's bonus aside. The Slag Tyrant's Molten Shell is the other kind: a reflective shield that only ever turns a reaction back, and only now and then. The raid's Backdraft keeps the old always-reflect idea `(content: glossary.json "gimmick-spikes", "gimmick-reflect-chance")`.
+- **Thorns** is the one modifier that behaves like a boss trick, applied to the whole room `(content: room-modifiers.json, foe_gimmick)`. It is spiky armour, so it pricks every hit, a reaction's bonus aside. The Slag Tyrant's Molten Shell is the other kind: a backlash that only touches reactions, about half of them, and burns the creature that set one off for part of its bonus while the foe still takes the whole reaction. The raid's Backdraft keeps the old always-reflect idea `(content: glossary.json "gimmick-spikes", "gimmick-backlash")`.
 - **Echoing** is the one modifier that boosts roles, not an element (Guard and Support), so it rewards a team with them in it, and it leans away from Payoffs on purpose `(content: room-modifiers.json echoing)`. It took the place of **Fog** (2026-10-14).
 - **Dark** is the only modifier that changes how the room is played, not just how hard it hits `(inferred)`.
 - **Fog is retired.** It made everyone act in row order, which is now the rule in every room, so it had nothing left to do. Old runs that rolled it still show its name and text in their replays, and it is not rolled any more `(content)`. The compendium keeps the idea: a room so murky that the order is all anyone can trust.
