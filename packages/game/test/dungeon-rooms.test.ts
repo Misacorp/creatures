@@ -110,7 +110,7 @@ describe('Hungry Door', () => {
   const levels = { a: 7, b: 12, c: 9 };
 
   it('is rare, from depth 2, with its own treasure table', () => {
-    expect(door.rare).toEqual({ chanceBp: 2000, fromDepth: 2 });
+    expect(door.rare).toEqual({ fromDepth: 2 });
   });
 
   it('Feed it sends the highest-level standing creature home and takes the treasure', () => {

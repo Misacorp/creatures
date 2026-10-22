@@ -320,11 +320,11 @@ export const EventOptionSchema = v.strictObject({
 export type EventOptionDef = v.InferOutput<typeof EventOptionSchema>;
 
 /**
- * A rare event is not drawn onto a map. Each time a run steps into a mystery room it may take the room's
- * place: with `chanceBp` (basis points, drawn live), from run depth `fromDepth`, at most once a run.
+ * A rare event is not drawn onto a map. Each time a run steps into a mystery room one roll
+ * (`RULES.dungeon.rareRoomChanceBp`) decides whether it is a rare room, and then the room is picked evenly
+ * among the eligible rare events: from run depth `fromDepth`, at most once a run. No chance of its own.
  */
 export const RareEventSchema = v.strictObject({
-  chanceBp: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(10_000)),
   fromDepth: PositiveInt,
 });
 export type RareEvent = v.InferOutput<typeof RareEventSchema>;

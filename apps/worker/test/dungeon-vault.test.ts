@@ -51,7 +51,7 @@ function scripted(seed: string): Rng & { queue: number[] } {
 const LOW = 0;
 
 const STRONG = { level: 30, species: ['tidewing', 'pyrelynx', 'thornbuck'] };
-/** Depth 1: the Blue Chasm (from depth 3) is not in the way, so a LOW draw gives the vault. */
+/** Depth 1: the Hungry Door (from depth 2) and the Blue Chasm (from depth 3) are not in the pool, so a LOW roll gives the vault. */
 const DEPTH = 1;
 
 interface Setup {
@@ -125,9 +125,12 @@ async function toDoor(
   throw new Error('no map with such a mystery room in 60 days');
 }
 
-/** Steps into the mystery room with the rare draw scripted to come up. */
+/**
+ * Steps into the mystery room with the rare draws scripted to come up: the one rare roll (LOW wins) and the pick
+ * among the pool, which at depth 1 is the vault alone (the door starts at depth 2, the chasm at 3).
+ */
 async function openVault(s: Setup, state: DungeonRunState, target: string) {
-  s.dungeonRng.queue.push(LOW);
+  s.dungeonRng.queue.push(LOW, LOW);
   const res = await s.p.act(state, { type: 'move', node: target });
   expect(res.status, JSON.stringify(res.body)).toBe(200);
   return res.body.state;
@@ -435,11 +438,12 @@ describe('double rewards: gear, supplies and keepsakes', () => {
     const targets = stored(s.ctx, broke.id).sealed;
     const room =
       targets.find((id) => kinds.includes(broke.map.nodes.find((n) => n.id === id)?.kind ?? '')) ??
-      (targets[0] as string);
+      targets[0];
+    if (room === undefined) throw new Error('the seal marked nothing');
     s.gearRng.queue.push(LOW, LOW);
     const res = await s.p.act(broke, { type: 'move', node: room });
     expect(res.status, JSON.stringify(res.body)).toBe(200);
-    return { before: broke, after: res.body.state as DungeonRunState, room };
+    return { before: broke, after: res.body.state, room };
   }
 
   it('a marked elite gives two distinct keepsakes, neither already held', async () => {

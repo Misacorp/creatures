@@ -30,6 +30,7 @@ import {
   omitKey,
   SAMPLE_TREASURES,
   sampleChasmSummary,
+  sampleCurseSummary,
   sampleDoorSummary,
   SAMPLE_CURSE,
   SAMPLE_DOOR_TREASURES,
@@ -82,6 +83,7 @@ const OUTCOMES = [
   'Blue Chasm: the plank gave way',
   'Sealed Vault: a marked fight, cleared',
   'Hungry Door: fed it, home with the treasure',
+  'Cursed Idol: took it, the curse among the keepsakes',
 ] as const;
 
 /** The summary of a run's end as a real server answered it (`fixtures/dungeon-act-*.json`). */
@@ -131,7 +133,7 @@ const dungeonRunStrip: Entry = {
   file: 'apps/activity/src/DungeonRunStrip.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The strip at the top of an open dungeon run (above the map, a mystery room and the camp): where the run is, the row with an HP bar and the HP in words under each creature (a knocked-out one is grey with the skull), then what the run carries on two ink panels (side by side when they fit, stacked on a phone): the Pack (a pixel backpack, a leather canvas with the title, its "?" and the loot as icons with numbers) and the Keepsakes (a gold locket, a velvet canvas with the title, its "?" and the chips you can tap), and the line about what the last mystery room did.',
+    'The strip at the top of an open dungeon run (above the map, a mystery room and the camp): where the run is, the row with an HP bar and the HP in words under each creature (a knocked-out one is grey with the skull), then what the run carries on two ink panels (side by side when they fit, stacked on a phone): the Pack (a pixel backpack, a leather canvas with the title, its "?" and the loot as icons with numbers) and the Keepsakes (a gold locket, a velvet canvas with the title, its "?" and the chips you can tap; a curse is one of them, with a cracked skull and a red edge, and opens the same sheet), and the line about what the last mystery room did.',
   controls: {
     at: { kind: 'select', options: ['entrance', 'mid-run', 'camp'] },
     hp: {
@@ -532,9 +534,11 @@ function ResultsDemo({ p }: { p: Props }) {
                 ? sampleVaultSummary()
                 : outcome === OUTCOMES[11]
                   ? sampleDoorSummary()
-                  : bool(p, 'capture')
-                    ? captured(kind)
-                    : sampleSummary(kind);
+                  : outcome === OUTCOMES[12]
+                    ? sampleCurseSummary()
+                    : bool(p, 'capture')
+                      ? captured(kind)
+                      : sampleSummary(kind);
   // A run lost in its first room paid nothing and kept an empty pack.
   const base: typeof sample = noRewards
     ? {
@@ -661,6 +665,10 @@ const dungeonResults: Entry = {
     {
       name: 'Hungry Door: fed it, the creature went home and the treasure came back',
       props: { outcome: OUTCOMES[11], experience: 'a creature sent home at the camp' },
+    },
+    {
+      name: 'Cursed Idol: the curse listed with the keepsakes',
+      props: { outcome: OUTCOMES[12] },
     },
     { name: 'Home safe, the rooms', props: { outcome: 'home', view: 'rooms' } },
     {

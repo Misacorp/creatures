@@ -48,7 +48,7 @@ function handMap(rows: [string, MapNode['kind'], ...string[]][]): DungeonMap {
 describe('the Sealed Vault content', () => {
   it('has the words of the design, is rare (one room in four, from the first depth) and breaking the seal costs', () => {
     expect(vault.name).toBe('Sealed Vault');
-    expect(vault.rare).toEqual({ chanceBp: 2500, fromDepth: 1 });
+    expect(vault.rare).toEqual({ fromDepth: 1 });
     const [brk, leave] = vault.options;
     expect(brk?.label).toBe('Break the seal');
     expect(brk?.effects).toEqual([{ op: 'seal' }]);

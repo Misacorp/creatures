@@ -954,6 +954,12 @@ export const RULES = {
      */
     seal: { rewardMultiplier: 2 },
     /**
+     * Rare rooms, one pool (`rollRareEvent`): the chance, in basis points, that a mystery room a run steps into is
+     * a rare room instead of its own event. Which one is picked evenly among the eligible ones (`rare.fromDepth`,
+     * not met yet, and the vault only with a fight ahead). With none eligible the room stays the normal one.
+     */
+    rareRoomChanceBp: 4_000,
+    /**
      * The Undercroft (docs/design/dungeon-paths.md): a deeper, optional level below the floor boss, from
      * depth `fromDepth` (the first landmark has been passed). Its foes are scaled as if the depth were
      * `depthBonus` higher for every level. It has `baseFloors` floors of two rooms, plus `perLandmark`

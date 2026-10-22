@@ -369,10 +369,11 @@ describe('the keepsake and event schemas refuse bad data', () => {
     ];
     refused(keepsakesJson, e);
     for (const rare of [
-      { chanceBp: 0, fromDepth: 3 },
-      { chanceBp: 10_001, fromDepth: 3 },
-      { chanceBp: 1500, fromDepth: 0 },
-      { chanceBp: 1500, fromDepth: 3, extra: 1 },
+      { fromDepth: 0 },
+      { fromDepth: 3, extra: 1 },
+      // A room has no chance of its own any more: one roll in the rules decides for all of them.
+      { chanceBp: 1500, fromDepth: 3 },
+      {},
     ]) {
       const bad = events();
       (bad[0] as Record<string, unknown>)['rare'] = rare;
@@ -387,7 +388,7 @@ describe('the keepsake and event schemas refuse bad data', () => {
     expect(chasm.text).toBe(
       "A narrow wooden plank crosses a bottomless chasm whose walls are lined with pale glowing crystals. There's a valuable treasure on the other side.",
     );
-    expect(chasm.rare).toEqual({ chanceBp: 1500, fromDepth: 3 });
+    expect(chasm.rare).toEqual({ fromDepth: 3 });
     expect(chasm.options.map((o) => o.label)).toEqual(['Cross the plank', "Don't risk it"]);
     const [cross, leave] = chasm.options;
     expect(cross?.effects).toEqual([

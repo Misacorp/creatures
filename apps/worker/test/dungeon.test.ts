@@ -24,9 +24,11 @@ import { drawSeed } from '../src/raid-resolve';
 import type { RunState } from '../src/dungeon-state';
 import {
   deadlyFoes,
+  defaultEvent,
   dungeonPlayer,
   playThrough,
   easyFoes,
+  noRareRooms,
   scaleFoes,
   withDeadlyFoes,
   type DungeonPlayer,
@@ -926,9 +928,17 @@ const stockTotal = (ctx: CoreContext, userId: string): number =>
 
 /** A policy that wins the first fight and loses the next one: deadly foes from then on. */
 const winFirstThenLose = {
-  pick: (state: { roomsCleared: number; reachable: string[] }) => {
+  pick: (state: {
+    roomsCleared: number;
+    reachable: string[];
+    map: { nodes: { id: string; kind: string }[] };
+  }) => {
     if (state.roomsCleared >= 1) deadlyFoes();
-    return state.reachable[0] as string;
+    // A mystery room may turn into a rare one with a treasure drawn from the gear rng, and some tests fix that
+    // rng to one number: keep to the fights, caches and camps where there is a choice.
+    const kindOf = (id: string): string | undefined =>
+      state.map.nodes.find((n) => n.id === id)?.kind;
+    return (state.reachable.find((id) => kindOf(id) !== 'mystery') ?? state.reachable[0]) as string;
   },
 };
 
@@ -1010,7 +1020,7 @@ describe('the supply a run drops', () => {
         while (state.status === 'active') {
           const a =
             state.pending?.kind === 'event'
-              ? ({ type: 'event', option: 0 } as const)
+              ? ({ type: 'event', option: defaultEvent(state) } as const)
               : state.pending?.kind === 'camp'
                 ? ({ type: 'camp', choice: 'rest' } as const)
                 : ({ type: 'move', node: state.reachable[0] as string } as const);
@@ -1050,8 +1060,12 @@ describe('the supply a run drops', () => {
         expect(stockOf(ctx, p.id)).toEqual(stock);
         // A new day is a new key and a new supply.
         ctx.clock.t = AFTER_RESET + DAY;
-        expect((await p.run()).status).toBe(200);
-        expect(stockTotal(ctx, p.id)).toBe(2);
+        const second = await p.run();
+        expect(second.status).toBe(200);
+        // The run's own supply is granted once, with the run's own key (a rare room it met may have added more).
+        const paid = second.body.run?.rewards.supplies ?? [];
+        expect(paid.length).toBeGreaterThanOrEqual(1);
+        expect(stockTotal(ctx, p.id)).toBe(1 + paid.length);
       },
       { dungeonRng: createSeededRng('supply-run'), gearRng: gear },
     );
@@ -1084,16 +1098,22 @@ describe('the supply a run drops', () => {
       expect(supplies).toHaveLength(1);
       return supplyDef(supplies[0] as string)?.tier;
     };
-    await runCore(
-      nextGuild(),
-      async (ctx) => {
-        expect(await tierOf(ctx, 1, deep, 9_999)).toBe('great');
-        expect(await tierOf(ctx, 2, deep, odds.basic)).toBe('good');
-        // The same top roll at depth 1, where only the basic tier is open.
-        expect(await tierOf(ctx, 3, 1, 9_999)).toBe('basic');
-      },
-      { dungeonRng: createSeededRng('tiers'), gearRng: fixed },
-    );
+    // The gear rng is one fixed number: keep a rare room's treasure (also drawn from it) out of the run.
+    const back = noRareRooms();
+    try {
+      await runCore(
+        nextGuild(),
+        async (ctx) => {
+          expect(await tierOf(ctx, 1, deep, 9_999)).toBe('great');
+          expect(await tierOf(ctx, 2, deep, odds.basic)).toBe('good');
+          // The same top roll at depth 1, where only the basic tier is open.
+          expect(await tierOf(ctx, 3, 1, 9_999)).toBe('basic');
+        },
+        { dungeonRng: createSeededRng('tiers'), gearRng: fixed },
+      );
+    } finally {
+      back();
+    }
   });
 
   it('no longer sells a supply: the send refuses the old buy shape and the ledger has no expedition spend', async () => {

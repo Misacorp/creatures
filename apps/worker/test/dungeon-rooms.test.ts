@@ -116,7 +116,7 @@ async function toRoom(
     const state = res.body.state as DungeonRunState;
     expect(state.pending).toBeNull();
     // The Sealed Vault (rare, from depth 1) is out of the way here: these tests are about the four rooms,
-    // and each unmet rare room takes its own draw. dungeon-vault.test.ts covers the vault.
+    // and it would share the rare pool (so the pick draw would need to choose). dungeon-vault.test.ts covers the vault.
     const st = load(ctx, state.id);
     st.rareSeen = ['sealed-vault'];
     save(ctx, st);
@@ -148,14 +148,18 @@ const enter = async (
   return res.body.state;
 };
 
-/** Enters a rare room: depth 2, where only the door can come up (the chasm starts at 3). */
+/**
+ * Enters a rare room: depth 2 with the vault met, so the pool is the door alone (the chasm starts at 3). The one
+ * rare roll comes up (LOW) and the pick among the pool's one room is its draw.
+ */
 const enterDoor = async (
   s: Setup,
   state: DungeonRunState,
   target: string,
   kind: keyof typeof DOOR_KIND = 'supplies',
 ): Promise<DungeonRunState> => {
-  s.dungeonRng.queue.push(LOW); // the door's draw
+  s.dungeonRng.queue.push(LOW); // the one rare roll: the room turns rare
+  s.dungeonRng.queue.push(LOW); // the pick among the pool (the door alone)
   s.gearRng.queue.push(DOOR_KIND[kind]); // the treasure kind
   return enter(s, state, target);
 };
@@ -371,10 +375,12 @@ describe('Hungry Door', () => {
     }, 'door-open');
     await withRooms(async (s) => {
       const { state, target } = await toRoom(s, 1);
-      s.dungeonRng.queue.push(LOW);
+      // Depth 1 with the vault met: nothing is eligible, so the dice are not even drawn.
+      s.dungeonRng.queue.push(LOW, LOW);
       const waiting = await enter(s, state, target);
       const pending = waiting.pending;
       if (pending?.kind === 'event') expect(pending.event.id).not.toBe('hungry-door');
+      expect(load(s.ctx, state.id).rareSeen).toEqual(['sealed-vault']);
     }, 'door-shallow');
   });
 
@@ -537,28 +543,55 @@ describe('the rare roll across rooms', () => {
   it('a run can meet all the rare rooms, once each: the door is spent once met, the chasm can still come', async () => {
     await withRooms(async (s) => {
       const { state, target } = await toRoom(s, 3);
-      // The run has met the door already: only the chasm is drawn for.
+      // The run has met the door already: the chasm is the pool's only room.
       const st = load(s.ctx, state.id);
       st.rareSeen = ['sealed-vault', 'hungry-door'];
       save(s.ctx, st);
-      s.dungeonRng.queue.push(LOW);
+      s.dungeonRng.queue.push(LOW, LOW);
       const waiting = await enter(s, state, target);
       expect(waiting.pending).toMatchObject({ kind: 'event', event: { id: 'blue-chasm' } });
       expect(load(s.ctx, state.id).rareSeen).toEqual(['sealed-vault', 'hungry-door', 'blue-chasm']);
     }, 'both-rare');
   });
 
-  it('with no rare room met, every one is drawn for and one of those that come up is picked (the chasm, first in the content)', async () => {
+  it('with no rare room met, one roll decides and one draw picks among the eligible ones (the chasm, first in the content, for a low draw)', async () => {
     await withRooms(async (s) => {
       const { state, target } = await toRoom(s, 3);
       const st = load(s.ctx, state.id);
       st.rareSeen = [];
       save(s.ctx, st);
-      // The chasm, the door and the vault all come up; the pick draw (low) takes the first.
-      for (let i = 0; i < 4; i++) s.dungeonRng.queue.push(LOW);
+      // The roll comes up and the pick draw (low) takes the first of the pool.
+      s.dungeonRng.queue.push(LOW, LOW);
       const waiting = await enter(s, state, target);
       expect(waiting.pending).toMatchObject({ kind: 'event', event: { id: 'blue-chasm' } });
       expect(load(s.ctx, state.id).rareSeen).toEqual(['blue-chasm']);
     }, 'all-rare');
+  });
+
+  it('the pick draw chooses the room: index 1 of the chasm and the door is the door', async () => {
+    await withRooms(async (s) => {
+      const { state, target } = await toRoom(s, 3);
+      // The vault is met, so the pool is [chasm, door] in content order; the second draw is 1.
+      s.dungeonRng.queue.push(LOW, 1);
+      s.gearRng.queue.push(DOOR_KIND.gear);
+      const waiting = await enter(s, state, target);
+      expect(waiting.pending).toMatchObject({ kind: 'event', event: { id: 'hungry-door' } });
+      expect(load(s.ctx, state.id).rareSeen).toEqual(['sealed-vault', 'hungry-door']);
+    }, 'pick-door');
+  });
+
+  it('a roll that misses leaves the room its own, and draws no pick', async () => {
+    await withRooms(async (s) => {
+      const { state, target } = await toRoom(s, 3);
+      const before = load(s.ctx, state.id).rareSeen;
+      s.dungeonRng.queue.push(HIGH);
+      const waiting = await enter(s, state, target);
+      if (waiting.pending?.kind === 'event') {
+        expect(['blue-chasm', 'hungry-door']).not.toContain(waiting.pending.event.id);
+      }
+      expect(load(s.ctx, state.id).rareSeen).toEqual(before);
+      // The scripted queue holds nothing back: the single value was the whole rare draw.
+      expect(s.dungeonRng.queue).toHaveLength(0);
+    }, 'rare-miss');
   });
 });

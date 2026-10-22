@@ -132,8 +132,8 @@ async function openChasm(
   target: string,
   kind: keyof typeof KIND,
 ): Promise<DungeonRunState> {
-  s.dungeonRng.queue.push(LOW); // the rare room's draw: the chasm comes up
-  s.dungeonRng.queue.push(HIGH); // the Hungry Door's draw (every rare room is drawn for): it does not
+  s.dungeonRng.queue.push(LOW); // the one rare roll: the room turns rare
+  s.dungeonRng.queue.push(LOW); // the pick among the eligible rare rooms: the first in content order, the chasm
   s.gearRng.queue.push(KIND[kind]); // the treasure's kind
   const res = await s.p.act(state, { type: 'move', node: target });
   expect(res.status, JSON.stringify(res.body)).toBe(200);
@@ -541,6 +541,7 @@ describe('a run saved before the chasm', () => {
 describe('the numbers', () => {
   it('the defeat share is the run’s own rule, and the room is rare in the content', () => {
     expect(RULES.dungeon.defeatKeepBp).toBe(5_000);
-    expect(dungeonEvent('blue-chasm')?.rare?.chanceBp).toBeLessThanOrEqual(2_500);
+    expect(dungeonEvent('blue-chasm')?.rare).toEqual({ fromDepth: 3 });
+    expect(RULES.dungeon.rareRoomChanceBp).toBeLessThanOrEqual(5_000);
   });
 });

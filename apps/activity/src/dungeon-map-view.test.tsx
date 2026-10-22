@@ -8,7 +8,7 @@ import {
   sampleHistory,
   sampleState,
 } from './dungeon-map-sample';
-import { omitKey } from './dungeon-path-samples';
+import { SAMPLE_CURSE, omitKey } from './dungeon-path-samples';
 import { undercroftState, type UndercroftStage } from './dungeon-undercroft-sample';
 import type { DungeonRunState } from './dungeon-types';
 import {
@@ -686,6 +686,20 @@ describe('DungeonMap room marks', () => {
     expect(text).toContain('Lantern Moth');
     expect(text).toContain('Tide Pearl');
     expect(text).toContain('Tide hits harder.');
+  });
+
+  it('shows the curse a mystery room gave as a keepsake line with the curse chip', () => {
+    const path = ['f0l1', 'f1l1', 'f2l1', 'f3l1'];
+    const history = sampleHistory(SAMPLE_MAP, path).map((h) =>
+      h.result === 'event' ? { ...h, curse: SAMPLE_CURSE } : h,
+    );
+    const walked: DungeonRunState = { ...stageRun('past-camp'), path, history };
+    const p = draw(<DungeonMap map={SAMPLE_MAP} state={walked} />);
+    p.click(first(byName(p.root, 'button', /^Mystery room/)));
+    const dialog = first(byRole(p.root, 'dialog'));
+    const line = first(byClass(dialog, 'dnd-keepsake'));
+    expect(visibleText(line)).toContain(SAMPLE_CURSE.name);
+    expect(visibleText(line)).toContain(SAMPLE_CURSE.description);
   });
 
   it('says a fight the run fought as a sealed room was epic, from its log entry (the mark is gone)', () => {

@@ -609,6 +609,38 @@ export function sampleStateCursed(): DungeonRunState {
 }
 
 /**
+ * The end of a cleared run that took the Cursed Idol: the curse is listed with the keepsakes (the end screen's bag)
+ * and the idol's room in the route shows it as a keepsake line with the same chip.
+ */
+export function sampleCurseSummary(): DungeonRunSummary {
+  const base = sampleSummary('cleared');
+  const route = base.route;
+  if (route === undefined) throw new Error('the sample has a route');
+  const idol = { id: 'cursed-idol', name: 'Cursed Idol' };
+  const map: DungeonMapView = {
+    ...route.map,
+    nodes: route.map.nodes.map((n) => (n.id === 'f1l1' ? { ...n, event: idol } : n)),
+  };
+  const history = sampleHistory(map, [...route.path]).map((step) =>
+    step.node === 'f1l1' && step.result === 'event'
+      ? {
+          ...step,
+          event: idol.name,
+          option: 'Take it',
+          outcome: 'You gain a keepsake. Cursed: Foes deal 20% more damage.',
+          loot: { bait: 0, essence: 0, scrap: 0 },
+          curse: SAMPLE_CURSE,
+        }
+      : step,
+  );
+  return {
+    ...base,
+    keepsakes: [...(base.keepsakes ?? []), SAMPLE_CURSE],
+    route: { ...route, map, history },
+  };
+}
+
+/**
  * The end of a run that fed the Hungry Door and came home with its treasure (a Rare piece in the rewards):
  * the door's room reads "heads home", and the creature that went home is listed with "Went home" in the
  * experience recap (the workbench pairs it with the "sent home" experience).

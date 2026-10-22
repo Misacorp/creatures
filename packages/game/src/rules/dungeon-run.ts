@@ -278,12 +278,12 @@ export interface EventResolution {
 }
 
 /**
- * The rare event a mystery room turns into, or undefined for the room's own event. Every rare event
- * (`rare` in the content) the run has not met (`seen`: ids) and whose `fromDepth` the run's `depth` has
- * reached is drawn for with its own `chanceBp`, one draw each from `rng` (live in the worker), in content
- * order. If more than one comes up, one of them is picked evenly with a further draw, so each rare room
- * keeps exactly its own chance and none is favoured by its place in the content. A run can meet several
- * different rare rooms, never the same one twice.
+ * The rare event a mystery room turns into, or undefined for the room's own event. Two pools: one roll
+ * (`RULES.dungeon.rareRoomChanceBp`, live from `rng` in the worker) decides whether the room is a rare
+ * one at all; if it is, one more draw picks evenly among the rare events (`rare` in the content) that are
+ * eligible: not met by the run yet (`seen`: ids), `fromDepth` reached by the run's `depth`, and in `events`
+ * (the caller leaves out a room that could do nothing here). With none eligible the room stays the normal
+ * one and nothing is drawn. A run can meet several different rare rooms, never the same one twice.
  */
 export function rollRareEvent(
   rng: Rng,
@@ -291,13 +291,12 @@ export function rollRareEvent(
   seen: readonly string[],
   events: readonly DungeonEventDef[] = dungeonEvents,
 ): DungeonEventDef | undefined {
-  const hits: DungeonEventDef[] = [];
-  for (const event of events) {
-    const rare = event.rare;
-    if (rare === undefined || seen.includes(event.id) || depth < rare.fromDepth) continue;
-    if (chance(rng, rare.chanceBp, 10_000)) hits.push(event);
-  }
-  return hits.length <= 1 ? hits[0] : hits[int(rng, hits.length)];
+  const pool = events.filter(
+    (e) => e.rare !== undefined && !seen.includes(e.id) && depth >= e.rare.fromDepth,
+  );
+  if (pool.length === 0) return undefined;
+  if (!chance(rng, RULES.dungeon.rareRoomChanceBp, 10_000)) return undefined;
+  return pool[int(rng, pool.length)];
 }
 
 /** The standing creature of the highest level (the leftmost of equals), or undefined when none stands. */

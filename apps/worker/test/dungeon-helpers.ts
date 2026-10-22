@@ -89,6 +89,14 @@ const act = (
   });
 
 /**
+ * The default answer of a played run: the first option, except at the Sealed Vault, whose first option marks the
+ * next fight for double rewards (a rare room a test did not ask for must not change what a run pays): leave it sealed.
+ */
+export function defaultEvent(state: DungeonRunState): 0 | 1 {
+  return state.pending?.kind === 'event' && state.pending.event.id === 'sealed-vault' ? 1 : 0;
+}
+
+/**
  * Starts a run and plays it with `policy` until it ends (or `stopWhen` says stop). A refusal at any
  * point is returned as it came.
  */
@@ -115,7 +123,7 @@ export async function playFrom(
     if (policy.stopWhen?.(state) === true) break;
     let next: Act;
     if (state.pending?.kind === 'event') {
-      next = { type: 'event', option: policy.event?.(state) ?? 0 };
+      next = { type: 'event', option: (policy.event ?? defaultEvent)(state) };
     } else if (state.pending?.kind === 'camp') {
       next = policy.camp?.(state) ?? { type: 'camp', choice: 'rest' };
     } else if (state.pending?.kind === 'descend') {
@@ -220,6 +228,20 @@ export function scaleFoes(hpBp: number, atkBp: number): () => void {
   return () => {
     rules.baseHpBp = before.hp;
     rules.baseAtkBp = before.atk;
+  };
+}
+
+/**
+ * No mystery room turns into a rare one (the one rare roll never comes up) until the returned function is called.
+ * For a test that fixes the gear rng to one number: a rare room's treasure draws from it, and a number that the
+ * unbiased `int` rejects would loop for ever.
+ */
+export function noRareRooms(): () => void {
+  const dungeon = RULES.dungeon as { rareRoomChanceBp: number };
+  const before = dungeon.rareRoomChanceBp;
+  dungeon.rareRoomChanceBp = 0;
+  return () => {
+    dungeon.rareRoomChanceBp = before;
   };
 }
 
