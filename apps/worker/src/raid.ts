@@ -103,6 +103,11 @@ export interface RaidDeps {
   gearRng?: Rng;
   /** The analytics event log (see `analytics.ts`). Optional: without it nothing is logged. */
   analytics?: Analytics;
+  /**
+   * The players of a party who have the finale's live socket open (`finale-live.ts`). They count as
+   * watching without polling: a socket only gets a push when the stage moves.
+   */
+  socketWatchers?: (weekId: string, party: number) => ReadonlySet<string>;
 }
 
 export interface WeekRow {
@@ -774,7 +779,7 @@ export class Raid {
    * lobby, then a practice fight that is still visible, then the resolved real finale.
    */
   private selectLive(
-    week: WeekRow,
+    week: Pick<WeekRow, 'weekId'>,
     party: number,
     tz: string,
     now: number,
@@ -821,6 +826,35 @@ export class Raid {
     return unresolvedReal(this.sql)[0]?.endsAt ?? null;
   }
 
+  /** True when `userId` is in `party` of the week (a finale socket's ticket needs it). */
+  isPartyMember(userId: string, weekId: string, party: number): boolean {
+    return partyOf(this.sql, weekId, userId) === party;
+  }
+
+  /**
+   * The next moment the snapshot of this party changes shape, for the live socket's alarm: the lobby
+   * opening, the lobby ending (the start), the next round's start, or the end of the fight. Null when
+   * there is nothing to wait for. Read-only; always later than now.
+   */
+  nextPushAt(weekId: string, party: number, tz: string): number | null {
+    const now = this.deps.now();
+    const selected = this.selectLive({ weekId }, party, tz, now);
+    let at: number | null = null;
+    if (selected === null) {
+      const lobbyOpens = eventTimes(weekId, tz).finale - LOBBY_MS;
+      if (loadLive(this.sql, weekId, party, false) === null && !this.isDone(weekId, 'finale')) {
+        at = lobbyOpens;
+      }
+    } else if ('lobbyAt' in selected) {
+      at = selected.lobbyAt;
+    } else if (selected.row.practice && now < selected.row.startedAt) {
+      at = selected.row.startedAt;
+    } else {
+      at = evaluate(selected.row, now).nextRoundAt;
+    }
+    return at !== null && at > now ? at : null;
+  }
+
   /** Notes that the player is here and lists who is, by display name (the caller's party only). */
   private touchWatching(
     userId: string,
@@ -833,8 +867,9 @@ export class Raid {
     for (const [id, at] of this.watchers) {
       if (now - at >= WATCH_WINDOW_MS) this.watchers.delete(id);
     }
+    const sockets = this.deps.socketWatchers?.(weekId, party);
     return partyMembers(this.sql, weekId, party)
-      .filter((id) => this.watchers.has(id))
+      .filter((id) => this.watchers.has(id) || sockets?.has(id) === true)
       .map((id) => names.get(id) ?? 'Unknown');
   }
 

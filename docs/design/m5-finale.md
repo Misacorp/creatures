@@ -1,6 +1,6 @@
 # M5 design: the live Sunday finale and the loot reveal
 
-Status: **shipped** in #5, #7 and #8 (M5). WebSocket push (M5.1) is still open, roadmap item 8. Later changes live in `decisions.md` and the newer docs named there. Builds on `m3-combat.md` (engine, finale abilities), `m4-raids.md` (week, parties, resolve) and the decisions log. All times are in the guild's timezone.
+Status: **shipped** in #5, #7 and #8 (M5). WebSocket push (M5.1) was added on 2026-10-22 behind the `FINALE_LIVE` flag (`finale-live.md`; on in staging, off in production until it has been watched there). Later changes live in `decisions.md` and the newer docs named there. Builds on `m3-combat.md` (engine, finale abilities), `m4-raids.md` (week, parties, resolve) and the decisions log. All times are in the guild's timezone.
 
 ## What players see
 
@@ -58,7 +58,9 @@ The engine stays pure and unchanged. The live finale relies on one property of i
 
 `resolveParty` is split into `buildPhaseInput` (shared by phases and the live start) and `settleParty` (shared by phases and the live end). Phases 1 and 2 keep resolving instantly.
 
-## Transport: short polling (WebSocket push later)
+## Transport: short polling (and, since 2026-10-22, WebSocket push)
+
+**Update 2026-10-22:** with `FINALE_LIVE` on, the server also pushes each watcher's snapshot over the live socket at every round start, at the start and the end, and after a party member's Fire or Hold; the client then stops its 2 s poll and keeps a 15 s safety poll. Polling below is unchanged and is the fallback whenever the socket is not live. See `finale-live.md`.
 
 Discord's proxy does support WebSockets, but it documents little about them: the URL form, limits, mobile behaviour (`docs/research/platform.md`, live-finale section). Plain HTTPS through the proxy already works for everything else. So M5 uses **short polling**, which needs nothing new from the proxy:
 

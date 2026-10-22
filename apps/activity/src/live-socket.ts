@@ -1,16 +1,18 @@
 /**
- * The client end of the lounge's live socket (`docs/design/lounge-live.md`). Framework-free, with the
- * socket, the clock, the timers and the dice all injected, so the tests drive it deterministically.
+ * The client end of a live socket: the lounge's (`docs/design/lounge-live.md`) or the finale's
+ * (`docs/design/finale-live.md`); the caller says which by the ticket it fetches and the address it opens.
+ * Framework-free, with the socket, the clock, the timers and the dice all injected, so the tests drive it
+ * deterministically.
  *
  * What it does: asks for a one-time ticket, opens the socket, reports `live` once the server's `hello`
- * arrives, hands every pushed resident to the room, pings every 60 s (the server answers without waking
+ * arrives, hands every other pushed message to its owner, pings every 60 s (the server answers without waking
  * its object; the ping is the server's only sign that this player is still here, so it goes out even while
  * pushes keep arriving), and reconnects after a drop with a jittered exponential
- * backoff (1 s up to 30 s). While it is not live the room polls, as it always did; that is the fallback
+ * backoff (1 s up to 30 s). While it is not live the owner polls, as it always did; that is the fallback
  * for an unsupported browser, a proxy that refuses the upgrade, a full guild or a server with the flag
  * off. After 6 failed tries in a row it stops trying until it is started again.
  */
-import { ApiError, parseLiveMessage, type LiveMessage, type RoomResident } from './api';
+import { ApiError, parseLiveMessage, type LiveMessage } from './api';
 
 /**
  * Ping this often, whatever arrives: the server counts a socket with no ping for 150 s as gone (no lounging
@@ -43,14 +45,18 @@ export interface SocketLike {
 
 export type SocketState = 'idle' | 'connecting' | 'live' | 'backoff' | 'failed' | 'unsupported';
 
-export interface LoungeSocketDeps {
+/** A message the server pushes after its greeting. */
+export type PushedMessage = Exclude<LiveMessage, { type: 'hello' }>;
+
+export interface LiveSocketDeps {
   getTicket: () => Promise<string>;
   url: (ticket: string) => string;
   /** Null when the browser has no WebSocket. */
   createSocket: (url: string) => SocketLike | null;
-  /** True while the socket delivers: the room stops polling. False again when it drops. */
+  /** True while the socket delivers: the owner stops its fast poll. False again when it drops. */
   onLive: (live: boolean) => void;
-  onResident: (resident: RoomResident) => void;
+  /** Every message after `hello`, while live. The owner ignores the kinds that are not its own. */
+  onMessage: (message: PushedMessage) => void;
   now?: () => number;
   /** A number in [0, 1) for the backoff's jitter. */
   random?: () => number;
@@ -58,7 +64,7 @@ export interface LoungeSocketDeps {
   clearTimer?: (handle: unknown) => void;
 }
 
-export interface LoungeSocket {
+export interface LiveSocket {
   start(): void;
   stop(): void;
   state(): SocketState;
@@ -81,7 +87,7 @@ export function browserSocket(url: string): SocketLike | null {
   return typeof WebSocket === 'undefined' ? null : (new WebSocket(url) as unknown as SocketLike);
 }
 
-export function createLoungeSocket(deps: LoungeSocketDeps): LoungeSocket {
+export function createLiveSocket(deps: LiveSocketDeps): LiveSocket {
   const now = deps.now ?? Date.now;
   const random = deps.random ?? cryptoRandom;
   const setTimer = deps.setTimer ?? ((cb, ms) => setTimeout(cb, ms));
@@ -163,7 +169,7 @@ export function createLoungeSocket(deps: LoungeSocketDeps): LoungeSocket {
       setLive(true);
       return;
     }
-    if (state === 'live') deps.onResident(message.resident);
+    if (state === 'live') deps.onMessage(message);
   }
 
   function tick(thisRun: number): void {

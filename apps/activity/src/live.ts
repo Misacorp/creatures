@@ -84,6 +84,48 @@ export function nextPollDelay(snapshot: LiveSnapshot, serverNow: number): number
   return Math.max(MIN_POLL_MS, delay);
 }
 
+/**
+ * The party whose finale the live socket should listen to, or null for no socket: the server offers it
+ * (`finaleLive` of `/api/config`) and the screen shows a lobby or a fight (not "nothing soon" and not a
+ * finished fight, where nothing more will be pushed). Practice fights count.
+ */
+export function finaleSocketTarget(
+  offered: boolean,
+  snapshot: LiveSnapshot | null,
+): { week: string; party: number } | null {
+  if (!offered || snapshot === null) return null;
+  if (snapshot.status !== 'lobby' && snapshot.status !== 'live') return null;
+  return { week: snapshot.week, party: snapshot.party };
+}
+
+/** While the live socket delivers, the poll only guards against a push that never came. */
+export const SAFETY_POLL_MS = 15_000;
+/** With the socket live, a push is awaited this long after a round boundary before the poll asks. */
+export const PUSH_GRACE_MS = 2500;
+
+/**
+ * Milliseconds until the next poll while the live socket delivers, or null to stop. The server pushes
+ * a snapshot at every round start, so the poll is a slow safety net (every `SAFETY_POLL_MS`), with one
+ * earlier look `PUSH_GRACE_MS` after the next boundary: a missed alarm or push then costs a few seconds,
+ * never a frozen fight. Stops where `nextPollDelay` stops.
+ */
+export function nextLiveDelay(snapshot: LiveSnapshot, serverNow: number): number | null {
+  if (nextPollDelay(snapshot, serverNow) === null) return null;
+  let delay = SAFETY_POLL_MS;
+  if (snapshot.status !== 'none' && snapshot.status !== 'done') {
+    const boundary = nextBoundaryAt(snapshot, serverNow);
+    if (boundary === null) {
+      // The server says the fight is over but "done" has not come: the normal pace until it does.
+      delay = POLL_MS;
+    } else {
+      const wait = boundary + PUSH_GRACE_MS - serverNow;
+      // Already past the grace with no news: the safety pace, not a hammer.
+      if (wait > 0) delay = Math.min(delay, wait);
+    }
+  }
+  return Math.max(MIN_POLL_MS, delay);
+}
+
 /** Back-off after failed polls: 2 s, 4 s, 8 s, then 15 s. */
 export function errorRetryDelayMs(failures: number): number {
   const n = Math.max(1, Math.trunc(failures));

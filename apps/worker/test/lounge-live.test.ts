@@ -8,12 +8,14 @@ import {
   CLOSE_STALE,
   LIVE_PATH,
   MAX_SOCKETS_PER_GUILD,
-  LoungeLive,
+  LiveSockets,
   MAX_SOCKETS_PER_USER,
   STALE_MS,
   TICKET_PATH,
-} from '../src/lounge-live';
-import { TICKET_MAX_PENDING, TICKET_TTL_MS, TicketBook, parseTicket } from '../src/lounge-ticket';
+} from '../src/live-socket';
+import { LoungePush } from '../src/lounge-live';
+import { LOUNGE_TOPIC } from '../src/live-topic';
+import { TICKET_MAX_PENDING, TICKET_TTL_MS, TicketBook, parseTicket } from '../src/live-ticket';
 import type { GuildWorld } from '../src/guild-world';
 import wranglerText from '../wrangler.jsonc?raw';
 import { ORIGIN, callHandler, runCore, tokenFor } from './helpers';
@@ -166,22 +168,26 @@ describe('the LOUNGE_LIVE flag: configuration', () => {
     const guildId = nextGuild();
     await join(guildId, 1);
     await runInDurableObject(stubOf(guildId), async (_instance, state) => {
-      const off = new LoungeLive({
+      const sockets = new LiveSockets({
         ctx: state,
-        enabled: false,
+        enabled: { lounge: false, finale: false },
         clientSecret: 'test-only-client-secret',
         guildId: () => guildId,
         now: Date.now,
+      });
+      const off = sockets;
+      const push = new LoungePush({
+        sockets,
         residentOf: () => {
           throw new Error('must not be read');
         },
       });
-      expect(off.enabled()).toBe(false);
+      expect(off.enabled('lounge')).toBe(false);
       const res = await off.upgrade(
         new Request(`${ORIGIN}${LIVE_PATH}?ticket=x`, { headers: { Upgrade: 'websocket' } }),
       );
       expect(res.status).toBe(404);
-      off.notify('1');
+      push.notify('1');
     });
     await runCore(guildId, async (ctx) => {
       const secret = await ctx.core.createSession(guildId, { id: '1', displayName: 'A' });
@@ -257,9 +263,9 @@ describe('tickets', () => {
     const clock = { t: 1000 };
     const book = new TicketBook('test-only-client-secret', () => clock.t);
     const guildId = nextGuild();
-    const fresh = await book.mint(guildId, '1');
-    const late = await book.mint(guildId, '2');
-    expect(await book.redeem(secretOf(fresh))).toBe('1');
+    const fresh = await book.mint(guildId, '1', LOUNGE_TOPIC);
+    const late = await book.mint(guildId, '2', LOUNGE_TOPIC);
+    expect(await book.redeem(secretOf(fresh))).toEqual({ userId: '1', topic: LOUNGE_TOPIC });
     expect(await book.redeem(secretOf(fresh))).toBeNull();
     clock.t += TICKET_TTL_MS;
     expect(await book.redeem(secretOf(late))).toBeNull();
@@ -268,8 +274,8 @@ describe('tickets', () => {
   it('are bounded: the oldest are dropped', async () => {
     const book = new TicketBook('test-only-client-secret', () => 1000);
     const guildId = nextGuild();
-    const first = await book.mint(guildId, '1');
-    for (let i = 0; i < TICKET_MAX_PENDING; i++) await book.mint(guildId, '2');
+    const first = await book.mint(guildId, '1', LOUNGE_TOPIC);
+    for (let i = 0; i < TICKET_MAX_PENDING; i++) await book.mint(guildId, '2', LOUNGE_TOPIC);
     expect(book.size()).toBe(TICKET_MAX_PENDING);
     expect(await book.redeem(secretOf(first))).toBeNull();
   });
@@ -373,7 +379,7 @@ describe('the socket', () => {
       const open = async (): Promise<number> => {
         const user = String(800000000000000000n + BigInt(Math.floor(n / MAX_SOCKETS_PER_USER)));
         n++;
-        const ticket = await instance.live.mintTicket(guildId, user);
+        const ticket = await instance.live.mintTicket(guildId, user, LOUNGE_TOPIC);
         const res = await instance.live.upgrade(
           new Request(`${ORIGIN}${LIVE_PATH}?ticket=${ticket}`, {
             headers: { Upgrade: 'websocket' },
@@ -394,7 +400,7 @@ describe('the socket', () => {
     const fresh = await connect(p2);
     const closedNow = await runInDurableObject(stubOf(guildId), (instance: GuildWorld) => {
       // From a clock that far ahead neither has pinged for too long.
-      return instance.live.pruneStale(Date.now() + STALE_MS + 1);
+      return instance.live.sockets.pruneStale(Date.now() + STALE_MS + 1);
     });
     expect(closedNow).toBe(2);
     await until(() => stale.closed !== null && fresh.closed !== null);
@@ -411,7 +417,7 @@ describe('the socket', () => {
     const player = await join(guildId, 1);
     const live = await connect(player);
     const closedNow = await runInDurableObject(stubOf(guildId), (instance: GuildWorld) =>
-      instance.live.pruneStale(Date.now()),
+      instance.live.sockets.pruneStale(Date.now()),
     );
     expect(closedNow).toBe(0);
     live.ws.close(1000);

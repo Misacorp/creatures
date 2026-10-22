@@ -2,7 +2,8 @@ import { DurableObject } from 'cloudflare:workers';
 import { createGuildApi } from './discord';
 import { createPostSender, publicOrigin } from './discord-posts';
 import { createLoungeClient } from './lounge-discord';
-import { LIVE_PATH, LoungeLive } from './lounge-live';
+import { LIVE_PATH, FINALE_LIVE_PATH } from './live-socket';
+import { LiveHub } from './live-hub';
 import type { DailyRow } from './analytics-rollup';
 import { GuildCore, type SessionUser } from './guild-core';
 import { DIRECTORY_NAME } from './guild-directory';
@@ -15,20 +16,24 @@ import { LEET_BACKFILL_DAYS, createLeetSourceFromEnv } from './leet';
  */
 export class GuildWorld extends DurableObject<Env> {
   private readonly core: GuildCore;
-  /** The lounge's live sockets (Hibernation API); `LOUNGE_LIVE` turns them on. */
-  readonly live: LoungeLive;
+  /** The live sockets (Hibernation API) and their two pushes; `LOUNGE_LIVE` and `FINALE_LIVE` turn them on. */
+  readonly live: LiveHub;
   /** The UTC day this object last told the directory about its guild. */
   private directoryDay: string | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    this.live = new LoungeLive({
-      ctx,
-      enabled: env.LOUNGE_LIVE === 'on',
-      clientSecret: env.DISCORD_CLIENT_SECRET,
-      guildId: () => ctx.id.name ?? '',
-      now: Date.now,
+    this.live = new LiveHub({
+      sockets: {
+        ctx,
+        enabled: { lounge: env.LOUNGE_LIVE === 'on', finale: env.FINALE_LIVE === 'on' },
+        clientSecret: env.DISCORD_CLIENT_SECRET,
+        guildId: () => ctx.id.name ?? '',
+        now: Date.now,
+      },
       residentOf: (userId) => this.core.collection.lounge.room([userId])[0] ?? null,
+      snapshotFor: (userId, week, party) => this.core.finaleSnapshotFor(userId, week, party),
+      nextChangeAt: (week, party) => this.core.finaleNextChangeAt(week, party),
     });
     this.core = new GuildCore(ctx.storage, Date.now, {
       guildId: () => ctx.id.name,
@@ -113,9 +118,16 @@ export class GuildWorld extends DurableObject<Env> {
     }
   }
 
-  override fetch(request: Request): Promise<Response> {
-    // The socket upgrade has no Authorization header: it carries a one-time ticket (lounge-ticket.ts).
-    if (new URL(request.url).pathname === LIVE_PATH) return this.live.upgrade(request);
+  override async fetch(request: Request): Promise<Response> {
+    // The socket upgrades have no Authorization header: they carry a one-time ticket (live-ticket.ts).
+    const { pathname } = new URL(request.url);
+    if (pathname === LIVE_PATH) return this.live.upgrade(request);
+    if (pathname === FINALE_LIVE_PATH) {
+      const res = await this.live.upgrade(request);
+      // A finale socket needs the alarm at the next round start (the lounge's never touches it).
+      if (res.status === 101) await this.core.ensureAlarm();
+      return res;
+    }
     return this.core.handle(request);
   }
 

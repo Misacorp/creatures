@@ -39,6 +39,11 @@
   // socket routes exist and /api/config tells the client. Any other value makes both answer 404 and the
   // client polls as before. On everywhere since 2026-10-20 (Misa asked; a test pins it). Lounging with
   // company (lounge-company.ts) earns experience only through these sockets.
+  // FINALE_LIVE: "on" turns on the live finale's push over the same sockets (docs/design/finale-live.md):
+  // the finale ticket and socket routes exist and /api/config tells the client, which then stops its 2 s
+  // poll while the socket delivers (a slow safety poll stays). Any other value makes both answer 404 and
+  // the finale polls as before. On locally and in staging; OFF in production until Misa has watched
+  // a finale on staging (a test pins all three).
   // DISCORD_PUBLIC_KEY: the Discord app's public key (hex, not a secret). The deploy job fills it from
   // Discord's verify_key; empty (or not 64 hex characters) turns POST /api/discord/interactions off (404),
   // which also turns off /feedback (docs/design/feedback.md).
@@ -52,7 +57,8 @@
     "LEET_API_URL": "",
     "RAID_PRACTICE": "off",
     "DEV_TOOLS": "off",
-    "LOUNGE_LIVE": "on"
+    "LOUNGE_LIVE": "on",
+    "FINALE_LIVE": "on"
   },
   "env": {
     "staging": {
@@ -76,7 +82,8 @@
         "LEET_API_URL": "https://o0q1uz3be0.execute-api.eu-north-1.amazonaws.com",
         "RAID_PRACTICE": "on",
         "DEV_TOOLS": "on",
-        "LOUNGE_LIVE": "on"
+        "LOUNGE_LIVE": "on",
+        "FINALE_LIVE": "on"
       }
     },
     "production": {
@@ -100,7 +107,8 @@
         "LEET_API_URL": "https://rwozj697u0.execute-api.eu-north-1.amazonaws.com",
         "RAID_PRACTICE": "off",
         "DEV_TOOLS": "off",
-        "LOUNGE_LIVE": "on"
+        "LOUNGE_LIVE": "on",
+        "FINALE_LIVE": "off"
       }
     }
   }

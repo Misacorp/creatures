@@ -54,6 +54,16 @@ export const LiveActionBodySchema = v.strictObject({
   element: v.optional(v.picklist(ELEMENTS as [Element, ...Element[]])),
 });
 
+/** `POST /api/finale/ticket`: the party whose finale the socket will listen to. The server checks membership. */
+export const FinaleTicketBodySchema = v.strictObject({
+  week: v.pipe(
+    v.string(),
+    v.maxLength(8),
+    v.check((value) => isWeekId(value), 'not a raid week id'),
+  ),
+  party: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(999)),
+});
+
 /** `POST /api/raid/reveal-seen`: the week of the finale whose reveal was seen. */
 export const RevealSeenBodySchema = v.strictObject({
   week: v.pipe(
