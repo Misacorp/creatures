@@ -509,7 +509,7 @@
     "options": [
       {
         "label": "Break the seal",
-        "description": "The next fight you enter is epic: a tougher foe, epic experience and double rewards.",
+        "description": "Next fight is epic: tougher foe, epic XP, double loot, gear, supplies and keepsakes.",
         "effects": [{ "op": "seal" }]
       },
       {

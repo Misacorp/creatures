@@ -320,6 +320,37 @@ export function rollDungeonLoot(
   return { parts, gear, supplies };
 }
 
+/**
+ * What the marked fights of a Sealed Vault add to a run's loot: for each marked fight cleared, the extra
+ * rolls that make its material rewards `RULES.dungeon.seal.rewardMultiplier` times a plain fight's. Each
+ * extra roll is a gear drop (the full clear's chance, then rarity, base and rolls at the depth) and a
+ * supply (tier, then kind). All dice are drawn from `rng` in that order, per fight; with no marked fight
+ * nothing is drawn, so the run's own dice stay where they were.
+ */
+export function rollSealedBonus(
+  rng: Rng,
+  depth: number,
+  fights: number,
+  element: Element,
+): Pick<DungeonLoot, 'gear' | 'supplies'> {
+  const gear: GearItem[] = [];
+  const supplies: string[] = [];
+  const extra = Math.max(0, RULES.dungeon.seal.rewardMultiplier - 1);
+  for (let i = 0; i < Math.max(0, Math.floor(fights)) * extra; i++) {
+    if (chance(rng, RULES.dungeon.fullClear.gearBp, 10_000)) {
+      const odds = dungeonGearOddsBp(depth, false);
+      const rarity = pickWeighted<{ rarity: 'common' | 'rare' | 'epic'; weight: number }>(rng, [
+        { rarity: 'common', weight: odds.common },
+        { rarity: 'rare', weight: odds.rare },
+        { rarity: 'epic', weight: odds.epic },
+      ]).rarity;
+      gear.push(rollDungeonItem(rng, rarity, depth, false, element));
+    }
+    supplies.push(rollDungeonSupply(rng, depth));
+  }
+  return { gear, supplies };
+}
+
 // --- The Undercroft (docs/design/dungeon-paths.md) ---
 
 /** True when a run at `depth` may go down into the Undercroft (`RULES.dungeon.undercroft.fromDepth`). */

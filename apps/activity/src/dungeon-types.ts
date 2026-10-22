@@ -287,6 +287,8 @@ export type DungeonStepLog =
       loot: DungeonPack;
       /** An elite's or an epic fight's keepsake. */
       keepsake?: DungeonKeepsakeView;
+      /** The second keepsake of a marked elite (Sealed Vault: double rewards). */
+      bonusKeepsake?: DungeonKeepsakeView;
       /** This fight earned the run's supply (the first fight cleared). */
       supply?: boolean;
       /** The room was marked by a broken Sealed Vault: it was an epic fight and paid double. */

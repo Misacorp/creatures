@@ -668,6 +668,26 @@ describe('DungeonMap room marks', () => {
     expect(byClass(dialog, 'dnd-mark')).toHaveLength(1);
   });
 
+  it('lists both keepsakes of a marked elite in its drawer', () => {
+    const run = stageRun('vault-fought');
+    const history = (run.history ?? []).map((h) =>
+      h.node === 'f2l1' && h.result === 'fight'
+        ? {
+            ...h,
+            kind: 'elite' as const,
+            keepsake: { id: 'a', name: 'Lantern Moth', description: 'Your creatures crit more.' },
+            bonusKeepsake: { id: 'b', name: 'Tide Pearl', description: 'Tide hits harder.' },
+          }
+        : h,
+    );
+    const p = draw(<DungeonMap map={SAMPLE_MAP} state={{ ...run, history }} />);
+    p.click(first(byName(p.root, 'button', /^Fight: Drift Wisp/)));
+    const text = visibleText(first(byRole(p.root, 'dialog')));
+    expect(text).toContain('Lantern Moth');
+    expect(text).toContain('Tide Pearl');
+    expect(text).toContain('Tide hits harder.');
+  });
+
   it('says a fight the run fought as a sealed room was epic, from its log entry (the mark is gone)', () => {
     const p = draw(<DungeonMap map={SAMPLE_MAP} state={stageRun('vault-fought')} />);
     expect(byClass(p.root, 'room-mark')).toHaveLength(0);

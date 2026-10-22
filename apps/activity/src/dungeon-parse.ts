@@ -263,6 +263,7 @@ function isStepLog(value: unknown): value is DungeonStepLog {
         isCount(value['foeHpMax']) &&
         isPack(value['loot']) &&
         isOptionalKeepsake(value['keepsake']) &&
+        isOptionalKeepsake(value['bonusKeepsake']) &&
         (value['supply'] === undefined || isBool(value['supply'])) &&
         (value['sealed'] === undefined || value['sealed'] === true)
       );

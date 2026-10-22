@@ -16,6 +16,7 @@ import {
   mapView,
   nodeFoe,
   rollDungeonLoot,
+  rollSealedBonus,
   streakBonus,
   creatureXpParts,
   undercroftOpen,
@@ -276,11 +277,20 @@ function payRun(
     day,
     attempt,
     (rng) => {
+      // The run's own dice come first; the marked fights' extra rolls are drawn after them (none: nothing drawn).
+      const sealed = () => {
+        const extra = rollSealedBonus(rng, depth, st.sealedWins, bossElement);
+        return {
+          gear: extra.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
+          supplies: extra.supplies,
+        };
+      };
       if (chestPaid) {
+        const extra = sealed();
         return {
           parts: addParts(packParts, prize.parts),
-          gear: prize.gear,
-          supplies: prize.supplies,
+          gear: [...prize.gear, ...extra.gear],
+          supplies: [...prize.supplies, ...extra.supplies],
           blueprints: prize.blueprints,
         };
       }
@@ -295,13 +305,15 @@ function payRun(
         },
         bossElement,
       );
+      const extra = sealed();
       return {
         parts: addParts(addParts(packParts, loot.parts), prize.parts),
         gear: [
           ...loot.gear.map((item) => ({ item, origin: { kind: 'dungeon' as const, depth } })),
           ...prize.gear,
+          ...extra.gear,
         ],
-        supplies: [...loot.supplies, ...prize.supplies],
+        supplies: [...loot.supplies, ...prize.supplies, ...extra.supplies],
         blueprints: prize.blueprints,
       };
     },

@@ -436,9 +436,12 @@ export function isKeeper(node: Pick<DungeonMapNode, 'id' | 'kind'>): boolean {
   return node.kind === 'boss' && nodeLevel(node.id) > 0;
 }
 
-/** The glyph of a room: the keeper has a crown of its own (darker), every other room the one of its kind. */
-export function nodeGlyphOf(node: Pick<DungeonMapNode, 'id' | 'kind'>): string {
-  return isKeeper(node) ? 'map-keeper' : nodeGlyph(node.kind);
+/**
+ * The glyph of a room: the keeper has a crown of its own (darker), a fight or an elite a broken Sealed Vault marked
+ * wears the epic skull while it carries the mark (the x2 badge stays on it), every other room the one of its kind.
+ */
+export function nodeGlyphOf(node: Pick<DungeonMapNode, 'id' | 'kind' | 'marks'>): string {
+  return isKeeper(node) ? 'map-keeper' : nodeGlyph(shownKind(node));
 }
 
 /**

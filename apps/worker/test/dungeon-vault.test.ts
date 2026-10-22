@@ -2,6 +2,7 @@ import {
   RULES,
   createSeededRng,
   dungeonEvent,
+  dungeonKeepsakes,
   dungeonScrapPerRoom,
   type Rng,
 } from '@creatures/game';
@@ -84,22 +85,22 @@ const save = (ctx: CoreContext, runId: string, st: unknown): void => {
 
 /** A mystery room (on the first floors, before the camp) with a fight or an elite among the rooms it leads to. */
 const leadsToFight =
-  (map: { nodes: DungeonMapNode[] }) =>
+  (map: { nodes: DungeonMapNode[] }, kinds: readonly string[] = ['fight', 'elite']) =>
   (n: DungeonMapNode): boolean =>
     n.kind === 'mystery' &&
     n.floor < RULES.dungeon.campFloor &&
-    n.next.some((id) => {
-      const kind = map.nodes.find((x) => x.id === id)?.kind;
-      return kind === 'fight' || kind === 'elite';
-    });
+    n.next.some((id) => kinds.includes(map.nodes.find((x) => x.id === id)?.kind ?? ''));
 
 /** Starts a run and walks it to the room before such a mystery room. */
-async function toDoor({ ctx, p }: Setup): Promise<{ state: DungeonRunState; target: string }> {
+async function toDoor(
+  { ctx, p }: Setup,
+  kinds: readonly string[] = ['fight', 'elite'],
+): Promise<{ state: DungeonRunState; target: string }> {
   setDepth(ctx, p.id, DEPTH);
   for (let day = 0; day < 60; day++) {
     const map = (await p.today()).map;
     if (map === null || map === undefined) throw new Error('no map');
-    const route = routeThrough(map, leadsToFight(map));
+    const route = routeThrough(map, leadsToFight(map, kinds));
     if (route === undefined) {
       ctx.clock.t += DAY;
       continue;
@@ -399,6 +400,152 @@ describe('breaking the seal', () => {
   });
 });
 
+/** Plays a run on to its end (the camp rests, mystery rooms are left, the descent goes home). */
+async function playOut(s: Setup, from: DungeonRunState) {
+  let cur = from;
+  let last: Awaited<ReturnType<DungeonPlayer['act']>> | undefined;
+  let before = cur;
+  let act: Act = { type: 'home' };
+  let key = newKey('dungeon', 'end');
+  for (let i = 0; i < 40 && cur.status === 'active'; i++) {
+    before = cur;
+    key = newKey('dungeon', 'end');
+    act =
+      cur.pending?.kind === 'event'
+        ? { type: 'event', option: 1 }
+        : cur.pending?.kind === 'camp'
+          ? { type: 'camp', choice: 'rest' }
+          : cur.pending?.kind === 'descend'
+            ? { type: 'home' }
+            : { type: 'move', node: cur.reachable[0] as string };
+    last = await s.p.act(cur, act, key);
+    expect(last.status, JSON.stringify(last.body)).toBe(200);
+    cur = last.body.state;
+  }
+  expect(cur.status).toBe('done');
+  return { last, before, act, key, summary: last?.body.summary };
+}
+
+describe('double rewards: gear, supplies and keepsakes', () => {
+  /** Breaks the seal and steps into the first marked room; returns the state after it. */
+  async function enterMarked(s: Setup, kinds: readonly string[]) {
+    const { state, target } = await toDoor(s, kinds);
+    const waiting = await openVault(s, state, target);
+    const broke = (await s.p.act(waiting, { type: 'event', option: 0 })).body.state;
+    const targets = stored(s.ctx, broke.id).sealed;
+    const room =
+      targets.find((id) => kinds.includes(broke.map.nodes.find((n) => n.id === id)?.kind ?? '')) ??
+      (targets[0] as string);
+    s.gearRng.queue.push(LOW, LOW);
+    const res = await s.p.act(broke, { type: 'move', node: room });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    return { before: broke, after: res.body.state as DungeonRunState, room };
+  }
+
+  it('a marked elite gives two distinct keepsakes, neither already held', async () => {
+    await withVault(async (s) => {
+      const { before, after, room } = await enterMarked(s, ['elite']);
+      const kind = before.map.nodes.find((n) => n.id === room)?.kind;
+      expect(kind).toBe('elite');
+      const entry = after.history.at(-1);
+      if (entry?.result !== 'fight') throw new Error('no fight entry');
+      expect(entry.sealed).toBe(true);
+      expect(entry.keepsake).toBeDefined();
+      expect(entry.bonusKeepsake).toBeDefined();
+      expect(entry.keepsake?.id).not.toBe(entry.bonusKeepsake?.id);
+      const held = after.keepsakes.map((k) => k.id);
+      expect(held).toHaveLength(before.keepsakes.length + 2);
+      expect(new Set(held).size).toBe(held.length);
+      expect(held.slice(-2)).toEqual([entry.keepsake?.id, entry.bonusKeepsake?.id]);
+    }, 'two-keepsakes');
+  });
+
+  it('a marked elite gives as many keepsakes as are left when fewer than two are', async () => {
+    await withVault(async (s) => {
+      const { state, target } = await toDoor(s, ['elite']);
+      const waiting = await openVault(s, state, target);
+      const broke = (await s.p.act(waiting, { type: 'event', option: 0 })).body.state;
+      // The run holds every keepsake but one.
+      const all = dungeonKeepsakes.map((k) => k.id);
+      const st = stored(s.ctx, broke.id);
+      st.keepsakes = all.slice(0, -1);
+      save(s.ctx, broke.id, st);
+      const room = stored(s.ctx, broke.id).sealed.find(
+        (id) => broke.map.nodes.find((n) => n.id === id)?.kind === 'elite',
+      ) as string;
+      const res = await s.p.act(broke, { type: 'move', node: room });
+      expect(res.status, JSON.stringify(res.body)).toBe(200);
+      const entry = res.body.state.history.at(-1);
+      if (entry?.result !== 'fight') throw new Error('no fight entry');
+      expect(entry.keepsake?.id).toBe(all.at(-1));
+      expect(entry.bonusKeepsake).toBeUndefined();
+    }, 'one-left');
+  });
+
+  it('a plain elite (not marked) still gives one keepsake', async () => {
+    await withVault(async (s) => {
+      const { state, target } = await toDoor(s, ['elite']);
+      const waiting = await openVault(s, state, target);
+      const left = (await s.p.act(waiting, { type: 'event', option: 1 })).body.state;
+      const elite = left.reachable.find(
+        (id) => left.map.nodes.find((n) => n.id === id)?.kind === 'elite',
+      );
+      expect(elite).toBeDefined();
+      const res = await s.p.act(left, { type: 'move', node: elite as string });
+      const entry = res.body.state.history.at(-1);
+      if (entry?.result !== 'fight') throw new Error('no fight entry');
+      expect(entry.keepsake).toBeDefined();
+      expect(entry.bonusKeepsake).toBeUndefined();
+      expect(entry.sealed).toBeUndefined();
+    }, 'plain-elite');
+  });
+
+  it('counts the marked fight, and pays one more gear piece and one more supply at the end, once', async () => {
+    await withVault(async (s) => {
+      const { after } = await enterMarked(s, ['fight', 'elite']);
+      expect(stored(s.ctx, after.id).sealedWins).toBe(1);
+      const { before, act, key, summary } = await playOut(s, after);
+      // The run's own clear: one gear piece and the run's supply; the marked fight adds one of each.
+      const gear = (summary?.rewards.gear.length ?? 0) + (summary?.rewards.converted.length ?? 0);
+      expect(gear).toBe(2);
+      expect(summary?.rewards.supplies).toHaveLength(2);
+      const grants = (): number =>
+        rows<{ n: number }>(s.ctx.sql, 'SELECT COUNT(*) AS n FROM gear_grants')[0]?.n ?? 0;
+      const count = grants();
+      const again = await s.p.act(before, act, key);
+      expect(again.status).toBe(200);
+      expect(again.body.summary?.rewards).toEqual(summary?.rewards);
+      expect(grants()).toBe(count);
+    }, 'bonus-pay');
+  });
+
+  it('a full bag turns the extra gear into parts like any dungeon gear', async () => {
+    await withVault(async (s) => {
+      const { after } = await enterMarked(s, ['fight', 'elite']);
+      const st = stored(s.ctx, after.id);
+      st.bagFull = true;
+      save(s.ctx, after.id, st);
+      const { summary } = await playOut(s, after);
+      expect(summary?.rewards.gear).toHaveLength(0);
+      expect(summary?.rewards.converted).toHaveLength(2);
+      expect(summary?.rewards.supplies).toHaveLength(2);
+    }, 'bonus-bag');
+  });
+
+  it('a run with no marked fight pays one piece and one supply (nothing extra is drawn)', async () => {
+    await withVault(async (s) => {
+      const { state, target } = await toDoor(s);
+      const waiting = await openVault(s, state, target);
+      const left = (await s.p.act(waiting, { type: 'event', option: 1 })).body.state;
+      expect(stored(s.ctx, left.id).sealedWins).toBe(0);
+      const { summary } = await playOut(s, left);
+      const gear = (summary?.rewards.gear.length ?? 0) + (summary?.rewards.converted.length ?? 0);
+      expect(gear).toBe(1);
+      expect(summary?.rewards.supplies).toHaveLength(1);
+    }, 'no-bonus');
+  });
+});
+
 describe('a run stored before the vault', () => {
   it('reads as having no marked rooms, and still plays', async () => {
     await withVault(async (s) => {
@@ -411,6 +558,7 @@ describe('a run stored before the vault', () => {
       expect(res.status, JSON.stringify(res.body)).toBe(200);
       expect(marked(res.body.state)).toEqual([]);
       expect(Array.isArray(stored(s.ctx, state.id).sealed)).toBe(true);
+      expect(parseState(JSON.stringify(old))?.sealedWins).toBe(0);
     }, 'old');
   });
 

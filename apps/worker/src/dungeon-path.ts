@@ -472,19 +472,27 @@ export function applyMove(env: PathEnv, st: RunState, nodeId: string, depth: num
       if (source !== null) st.earned = addRoomExperience(st.earned, standing, source);
       const earnedSupply = !st.supply;
       st.supply = true;
+      // A marked fight's gear and supply are paid with the run's end grant (`rollSealedBonus`).
+      if (sealed) st.sealedWins += 1;
       let keepsake: DungeonKeepsakeView | null = null;
+      let bonusKeepsake: DungeonKeepsakeView | null = null;
       if (node.kind === 'elite' || node.kind === 'epic') {
         if (node.kind === 'elite') st.elites += 1;
-        const gift = drawKeepsake(env.rng, st.keepsakes);
-        if (gift !== null) {
+        // A marked elite gives a second keepsake (distinct, and not held): as many as are left.
+        const gifts = sealed ? RULES.dungeon.seal.rewardMultiplier : 1;
+        for (let i = 0; i < gifts; i++) {
+          const gift = drawKeepsake(env.rng, st.keepsakes);
+          if (gift === null) break;
           st.keepsakes.push(gift);
-          keepsake = keepsakeView(gift);
+          if (i === 0) keepsake = keepsakeView(gift);
+          else bonusKeepsake = keepsakeView(gift);
         }
       }
       st.history.push({
         ...step,
         loot,
         ...(keepsake === null ? {} : { keepsake }),
+        ...(bonusKeepsake === null ? {} : { bonusKeepsake }),
         ...(earnedSupply ? { supply: true } : {}),
       });
       if (node.kind === 'boss') {

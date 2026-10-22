@@ -728,6 +728,18 @@ describe('room marks', () => {
     ).toBe('fight');
   });
 
+  it('a marked room wears the epic skull while it carries the mark, and its own glyph once it is gone', () => {
+    expect(nodeGlyphOf(vaultNode('f2l0'))).toBe('map-epic');
+    expect(nodeGlyphOf(vaultNode('f2l1'))).toBe('map-epic');
+    expect(nodeGlyphOf(node('f2l0'))).toBe('map-elite');
+    expect(nodeGlyphOf(node('f2l1'))).toBe('map-fight');
+    // The floor boss and a plain badge keep their own glyph.
+    expect(nodeGlyphOf({ id: 'f6l1', kind: 'boss', marks: [VAULT_MARK] })).toBe('map-boss');
+    expect(
+      nodeGlyphOf({ id: 'f2l1', kind: 'fight', marks: [{ kind: 'other', text: '!', label: 'x' }] }),
+    ).toBe('map-fight');
+  });
+
   it('the spoken label carries the labels of every badge, before where the run stands', () => {
     expect(markLabels(vaultNode('f2l1'))).toEqual([VAULT_MARK.label]);
     expect(markLabels(node('f2l1'))).toEqual([]);

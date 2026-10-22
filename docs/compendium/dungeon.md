@@ -247,7 +247,7 @@ Notes:
 
 - **The four element keepsakes** echo the four element modifiers (Flooded, Scorched, Overgrown, Stormy): one pushes a whole room, the other is carried in a pocket `(inferred)`.
 - **Wayfarer's Charm** is the only keepsake that gives two things. It is the "all-rounder", and the other seven are sharper `(design)`.
-- Keepsakes are the dungeon's way of saying thanks. Never write one as cursed, heavy or costly `(compendium detail, not shipped)`. (The Cursed Idol's curse is not a keepsake: it is a separate, run-long mark that the Idol gives next to a real keepsake.)
+- Keepsakes are the dungeon's way of saying thanks. Never write one as cursed, heavy or costly `(compendium detail, not shipped)`. (The Cursed Idol's curse is a keepsake in the game's own terms, a "curse" kind, shown in the same bag under a cracked skull: it is the Idol's price, not a gift.)
 
 ---
 
@@ -336,7 +336,7 @@ The tone is the one of the quirks: funny, warm, never mean `(inferred)`. Nothing
 ### Sealed Vault (a rare room)
 
 - Scene `(content)`: a round stone door, sealed with grey wax and old rope, stands in the wall. Something heavy shifts behind it.
-- Answers `(content)`: **Break the seal** (the next fight you enter is epic: a tougher foe, epic experience and double rewards) or **Leave it sealed** (nothing happens).
+- Answers `(content)`: **Break the seal** (the next fight you enter is epic: a tougher foe, epic experience, and double loot, gear, supplies and keepsakes) or **Leave it sealed** (nothing happens).
 - It is **rare**, like the Blue Chasm: a mystery room can turn into it as a player steps in (`rare` in `dungeon-events.json`, one room in four from the first depth), never twice in a run, and only where a fight lies ahead. `(design: dungeon-paths.md "The Sealed Vault")`
 - Breaking the seal marks the fights the run can step into next with a small gold "x2". The first marked room the run enters is the vault's: the rest go back to normal. `(design)`
 - Compendium detail: the vault is where the dungeon keeps what it was keeping. Breaking the seal does not open a chest; it wakes the thing that was sleeping on the loot, and the next foe the team meets has simply been fed well and kept for years. The wax is grey, never red, and no one remembers who pressed the seal: the same hand that laid the Blue Chasm's plank, perhaps `(compendium detail, not shipped; inferred)`. Leaving it sealed is not cowardice. The door stays shut, the heavy thing goes back to sleep, and it will still be there for the next explorer `(compendium detail, not shipped)`.

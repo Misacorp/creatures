@@ -198,6 +198,8 @@ export interface RunState {
    * enters is fought as an epic fight with double rewards, and then all of them are cleared. Absent before the vault: none.
    */
   sealed: string[];
+  /** The marked fights the run cleared: each adds a gear roll and a supply to the end grant (`rollSealedBonus`). Absent before: 0. */
+  sealedWins: number;
   /** The curses the run carries (the Cursed Idol's): folded into every later fight like a keepsake. Absent before them: none. */
   curses: CurseDef[];
 }
@@ -224,6 +226,7 @@ export function parseState(json: string | null): RunState | null {
     parsed.rareSeen ??= [];
     // A state stored before the Sealed Vault marked no rooms.
     parsed.sealed ??= [];
+    parsed.sealedWins ??= 0;
     // A state stored before the Cursed Idol carries no curse.
     parsed.curses ??= [];
     // A state stored before experience was paid per room counted the fights each creature cleared.

@@ -311,6 +311,9 @@ function Outcome({ entry }: { entry: DungeonStepLog }) {
       )}
       {(entry.result === 'fight' || entry.result === 'event' || entry.result === 'camp') &&
         entry.keepsake !== undefined && <KeepsakeLine keepsake={entry.keepsake} />}
+      {entry.result === 'fight' && entry.bonusKeepsake !== undefined && (
+        <KeepsakeLine keepsake={entry.bonusKeepsake} />
+      )}
       {entry.result === 'event' && entry.curse !== undefined && (
         <KeepsakeLine keepsake={entry.curse} />
       )}

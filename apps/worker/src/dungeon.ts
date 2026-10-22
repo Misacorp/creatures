@@ -699,6 +699,7 @@ export class Dungeon {
       treasures: [],
       rareSeen: [],
       sealed: [],
+      sealedWins: 0,
       curses: [],
     };
     // A map run has no run-level seed (every fight draws its own when the player steps in, stored in

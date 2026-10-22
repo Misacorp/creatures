@@ -948,7 +948,9 @@ export const RULES = {
     /**
      * The Sealed Vault (`sealTargets`): the first marked fight the run enters fights as an epic fight (the
      * `undercroft.epic` boost, in place of an elite's) and pays epic experience and `rewardMultiplier` times
-     * its loot in the pack (the shard chance is rolled that many times). Gear, supplies and keepsakes are not doubled.
+     * its loot in the pack (the shard chance is rolled that many times). Everything material doubles: each marked fight
+     * cleared adds one more gear roll and one more supply to the run's end grant (`rollSealedBonus`), and a marked elite
+     * gives two keepsakes. Experience stays the epic amount (not doubled).
      */
     seal: { rewardMultiplier: 2 },
     /**

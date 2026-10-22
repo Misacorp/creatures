@@ -983,6 +983,30 @@ describe('the Cursed Idol and the Hungry Door in the answers', () => {
     ).toThrow();
   });
 
+  it('reads the second keepsake of a marked elite on a fight step, and refuses a broken one', () => {
+    const run = sampleSummary('home');
+    const history = (run.route?.history ?? []).map((h) =>
+      h.result === 'fight' ? { ...h, keepsake: SAMPLE_CURSE, bonusKeepsake: SAMPLE_CURSE } : h,
+    );
+    const ok = parseDungeonAct({
+      state: sampleState(),
+      summary: { ...run, route: { ...run.route, history } },
+      today: sampleToday(),
+    }).summary;
+    const step = ok?.route?.history.find((h) => h.result === 'fight');
+    expect(step?.result === 'fight' ? step.bonusKeepsake : null).toEqual(SAMPLE_CURSE);
+    const broken = (run.route?.history ?? []).map((h) =>
+      h.result === 'fight' ? { ...h, bonusKeepsake: { id: 1 } } : h,
+    );
+    expect(() =>
+      parseDungeonAct({
+        state: sampleState(),
+        summary: { ...run, route: { ...run.route, history: broken } },
+        today: sampleToday(),
+      }),
+    ).toThrow();
+  });
+
   it('reads the door with each treasure kind, and an option that cannot be picked with its reason', () => {
     for (const treasure of Object.values(SAMPLE_DOOR_TREASURES)) {
       const pending = parse(sampleStateDoor(treasure)).pending;
