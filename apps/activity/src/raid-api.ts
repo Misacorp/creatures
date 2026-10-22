@@ -9,6 +9,7 @@ import {
   isArrayOf,
   isBool,
   isCount,
+  isGuardReach,
   isInt,
   isNullableInt,
   isNullableStr,
@@ -48,6 +49,8 @@ export interface RowSlotView {
     movedBy?: string;
     /** Only present for the caller's own creatures and the ones the caller may move. */
     creatureId?: string;
+    /** A Guard's reach (how many creatures it protects on each side); Guards only. */
+    reach?: { left: number; right: number };
   };
 }
 
@@ -70,6 +73,8 @@ export interface TeamCreatureView {
   name: string;
   level: number;
   slot: number | null;
+  /** A Guard's reach (how many creatures it protects on each side); Guards only. */
+  reach?: { left: number; right: number };
 }
 
 /** The boss's own lines for the moment it retreats at the floor of Phase 1 and of Phase 2. */
@@ -316,7 +321,8 @@ function isRowSlot(value: unknown): value is RowSlotView {
     isBool(c['auto']) &&
     isBool(c['movable']) &&
     (c['movedBy'] === undefined || isStr(c['movedBy'])) &&
-    (c['creatureId'] === undefined || isStr(c['creatureId']))
+    (c['creatureId'] === undefined || isStr(c['creatureId'])) &&
+    (c['reach'] === undefined || isGuardReach(c['reach']))
   );
 }
 
@@ -344,7 +350,8 @@ function isTeamCreature(value: unknown): value is TeamCreatureView {
     isStr(value['species']) &&
     isStr(value['name']) &&
     isInt(value['level']) &&
-    (value['slot'] === null || isInt(value['slot']))
+    (value['slot'] === null || isInt(value['slot'])) &&
+    (value['reach'] === undefined || isGuardReach(value['reach']))
   );
 }
 

@@ -71,6 +71,8 @@ describe('the fight inputs the server builds', () => {
           maxHitBp: RULES.combat.maxHitBp,
           guardHpBp: RULES.combat.guard.hpBp,
           guardArmorBp: RULES.combat.guard.armorBp,
+          // A Guard protects the creatures within its reach (2026-10-22); a stored older fight has none.
+          guardRule: 'reach',
           supportFx: RULES.combat.supportFx,
           // Dodge is switched on (the balance pass): a new fight stores its numbers.
           dodge: {

@@ -5,6 +5,7 @@
  *
  * The user is always an argument supplied from the verified session, never from a request body.
  */
+import { guardReachOf, type GuardReach } from '@creatures/engine';
 import { loungePaidToday } from './lounge-company';
 import {
   RULES,
@@ -124,6 +125,11 @@ export interface CreatureView {
    * is none). The Speed part (`RULES.combat.dodge`) comes on top; the creature page adds the two.
    */
   dodgeBp: number;
+  /**
+   * A Guard's reach with its gear and talents (`guardReachOf`: how many creatures it protects on its left
+   * and right in a row; 1 each side with no gear). Guards only; the boards shade the slots it reaches.
+   */
+  guardReach?: GuardReach;
   /** The items the creature wears, one per slot (Hat, Scarf, Charm). The full items are in the gear view. */
   gear: WornGear[];
   /**
@@ -429,6 +435,7 @@ export class Collection {
       stats,
       statsWithGear: folded.stats,
       dodgeBp: flatDodgeBp(folded.mods),
+      ...(species.role === 'guard' ? { guardReach: guardReachOf(folded.mods) } : {}),
       gear: wornRows(worn).map(wornGearView),
       busy: away
         ? { kind: 'expedition', id: row.away_expedition_id as string }

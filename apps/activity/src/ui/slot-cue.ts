@@ -5,7 +5,7 @@
  *   pair, each with a small badge naming the reaction. The reaction names and the two elements
  *   (the mark's and the hit's, which colour the pair) come from the content, never from this file.
  * - **Influence** (what a creature affects): a soft shade on the tiles a Support buffs and a Guard
- *   covers.
+ *   protects (its reach: the creatures on each side of it in its row, more or fewer with its gear).
  *
  * Both come from `affects` and `slotReactions` of the engine, so a cue is exactly what the fight does.
  * Pure: `SlotRow` and `RaidBoard` draw the result, and the dungeon team and the raid Placement wire it.
@@ -27,6 +27,7 @@ import {
   type AffectMode,
   type AffectRow,
   type AffectSlot,
+  type GuardReach,
 } from '@creatures/engine';
 
 /** What a reaction cue says about a tile. */
@@ -197,6 +198,34 @@ export interface GuardBonus {
   armorBp: number;
 }
 
+const DEFAULT_REACH: GuardReach = { left: 1, right: 1 };
+
+/** One side of a reach in words: "the creature on its left", "the 2 creatures on its right". */
+function reachSide(count: number, side: 'left' | 'right'): string {
+  return count === 1
+    ? `the creature on its ${side}`
+    : `the ${String(count)} creatures on its ${side}`;
+}
+
+/**
+ * Whom a Guard protects, from its reach: "the creature on each side of it in its row" (the base),
+ * "the 2 creatures on its left in its row", "nobody" for no reach. `inRow` adds "in its row" (the raid).
+ */
+export function guardReachText(reach: GuardReach, inRow: boolean): string {
+  const { left, right } = reach;
+  if (left === 0 && right === 0) return 'nobody';
+  const where = inRow ? ' in its row' : '';
+  if (left === right) {
+    return left === 1
+      ? `the creature on each side of it${where}`
+      : `the ${String(left)} creatures on each side of it${where}`;
+  }
+  const parts: string[] = [];
+  if (left > 0) parts.push(reachSide(left, 'left'));
+  if (right > 0) parts.push(reachSide(right, 'right'));
+  return `${parts.join(' and ')}${where}`;
+}
+
 /**
  * The Guard's own bonus in words, from the numbers: armor ("takes 25% less damage from every hit
  * it takes") and, when a fight still gives extra HP, that too. Nothing when it has neither.
@@ -235,7 +264,7 @@ export function effectLine(args: {
   if (role === 'support') {
     parts.push(`Boosts its neighbours' next hit by ${percent(RULES.combat.supportBuffBp)}.`);
   } else if (role === 'guard') {
-    const who = mode.row === 'dungeon' ? 'the creatures beside it' : 'the others in its row';
+    const who = guardReachText(me.reach ?? DEFAULT_REACH, mode.row === 'raid');
     const bonus = guardBonusText(args.guard ?? RULES.combat.guard);
     parts.push(`Takes the boss's hits for ${who}${bonus === '' ? '' : `, and ${bonus}`}.`);
   }
@@ -260,9 +289,14 @@ export function effectLine(args: {
 export function affectSlotOf(
   species: { role: Role; element: Element } | undefined,
   speed?: number,
+  /** A Guard's reach with its gear (absent: one each side). Ignored for the other roles. */
+  reach?: GuardReach,
 ): AffectSlot | null {
   if (species === undefined) return null;
-  return speed === undefined
-    ? { role: species.role, element: species.element }
-    : { role: species.role, element: species.element, speed };
+  return {
+    role: species.role,
+    element: species.element,
+    ...(speed === undefined ? {} : { speed }),
+    ...(reach === undefined || species.role !== 'guard' ? {} : { reach }),
+  };
 }

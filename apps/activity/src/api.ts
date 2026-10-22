@@ -18,7 +18,7 @@ import { isWornGear } from './gear-parse';
 import { isCreatureTalents, isPendingCatch } from './talent-parse';
 import type { CreatureTalents, PendingCatch } from './talent-types';
 import type { CreatureGearFields, WornGear } from './gear-types';
-import { isArrayOf, isInt, isNullableInt, isRecord, isStr } from './parse-core';
+import { isArrayOf, isGuardReach, isInt, isNullableInt, isRecord, isStr } from './parse-core';
 import { createReauth, type Reauth } from './reauth';
 import { ROOM_SPOTS } from './sprites/room-art';
 
@@ -529,6 +529,7 @@ function isCreature(value: unknown): value is Creature {
   return (
     isStats(value['statsWithGear']) &&
     isInt(value['dodgeBp']) &&
+    (value['guardReach'] === undefined || isGuardReach(value['guardReach'])) &&
     isCreatureGear(value['gear']) &&
     isBusy(value['busy']) &&
     isStr(value['id']) &&

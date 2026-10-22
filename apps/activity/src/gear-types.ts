@@ -378,6 +378,8 @@ export interface CreatureGearFields {
   statsWithGear: { hp: number; atk: number; spd: number };
   /** Flat dodge from the worn gear and talents, in basis points (0 when none). */
   dodgeBp: number;
+  /** A Guard's reach with its gear and talents (how many creatures it protects on each side); Guards only. */
+  guardReach?: { left: number; right: number };
   /** The items it wears, at most one per slot. */
   gear: WornGear[];
   /** Expedition or job; null when idle. `away` stays true for expeditions only. */

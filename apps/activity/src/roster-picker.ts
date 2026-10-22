@@ -4,7 +4,7 @@
  * slot, who is already on the board, what the board refuses). Pure: `ui/RosterPicker.tsx` draws the
  * picker and `Placement.tsx` wires it to the game. The server still decides every placement.
  */
-import { affects, type AffectMode } from '@creatures/engine';
+import { affects, type AffectMode, type GuardReach } from '@creatures/engine';
 import { RULES, content, creaturePower, strongest } from '@creatures/game';
 import type { Creature } from './api';
 import type { GearRarity } from './gear-types';
@@ -51,6 +51,8 @@ export interface PickerCreature {
   power: number;
   /** When it was caught (epoch ms): of two equally strong creatures the older ranks first. */
   caughtAt: number;
+  /** A Guard's reach with its gear (how many creatures it protects on each side); Guards only. */
+  reach?: GuardReach;
 }
 
 /** A creature of the collection as the picker sees it. Its power counts the item it wears, as the server's does. */
@@ -62,6 +64,7 @@ export function toPickerCreature(c: Creature): PickerCreature {
     level: c.level,
     power: creaturePower(c.statsWithGear, c.dodgeBp),
     caughtAt: c.caughtAt,
+    ...(c.guardReach === undefined ? {} : { reach: c.guardReach }),
   };
 }
 
@@ -188,7 +191,7 @@ export function pickerTitle(place: string): string {
  */
 export function effectPreview(args: {
   keys: readonly (string | null)[];
-  known: ReadonlyMap<string, { species: string; level: number }>;
+  known: ReadonlyMap<string, { species: string; level: number; reach?: GuardReach }>;
   slot: number;
   mode: AffectMode;
 }): string | null {
@@ -217,8 +220,13 @@ export function effectPreview(args: {
         : `Buffs ${String(buffed)} neighbour${buffed === 1 ? '' : 's'}`,
     );
   }
+  const covered = list.filter((a) => a.kind === 'cover' && occupied(a.slot)).length;
   if (list.some((a) => a.kind === 'cover')) {
-    parts.push(mode.row === 'dungeon' ? 'Covers its neighbours' : 'Covers its row');
+    parts.push(
+      covered === 0
+        ? 'Protects its neighbours'
+        : `Protects ${String(covered)} neighbour${covered === 1 ? '' : 's'}`,
+    );
   }
   return parts.length === 0 ? null : parts.join(' · ');
 }
@@ -279,7 +287,7 @@ export function pickerOptions(args: {
         : [],
     ),
   );
-  const known = new Map<string, { species: string; level: number }>();
+  const known = new Map<string, { species: string; level: number; reach?: GuardReach }>();
   for (const s of row) {
     if (s.creature !== null) {
       known.set(s.creature.creatureId ?? `other:${String(s.slot)}`, s.creature);
@@ -321,7 +329,7 @@ export function dungeonPickerOptions(args: {
 function optionsFor(args: {
   creatures: readonly PickerCreature[];
   baseKeys: readonly (string | null)[];
-  known: Map<string, { species: string; level: number }>;
+  known: Map<string, { species: string; level: number; reach?: GuardReach }>;
   onBoard: ReadonlySet<string>;
   slot: number;
   mode: AffectMode;
