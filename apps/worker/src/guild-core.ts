@@ -773,8 +773,6 @@ export class GuildCore {
     // The first authenticated request of a game day pays the daily allowance (once, race-safe).
     if (this.options.dailyAllowance !== false) this.allowance.grant(user.id);
     await this.ensureAlarm();
-    // Lounging time this player has collected is paid before anything can change their lounger.
-    this.company.flush(user.id, this.realNow());
     const template = matchTemplate(ROUTE_KEYS, pathname);
     const response = await dispatch(routes, request, template?.template ?? pathname, {
       user,
