@@ -28,8 +28,8 @@ import { insertCreature } from './talent-store';
 type Body<S extends v.GenericSchema> = v.InferOutput<S>;
 
 /** Simulated players have ids that are not Discord snowflakes, so they can never be a real user. */
-const GUEST_PREFIX = 'dev-guest-';
-const guestId = (n: number): string => `${GUEST_PREFIX}${String(n)}`;
+export const GUEST_PREFIX = 'dev-guest-';
+export const guestId = (n: number): string => `${GUEST_PREFIX}${String(n)}`;
 
 const eventDone = (ctx: ToolCtx, weekId: string, event: string): boolean =>
   ctx.sql.exec('SELECT 1 FROM raid_events WHERE week_id = ? AND event = ?', weekId, event).toArray()
@@ -146,14 +146,23 @@ export function raidFestival(ctx: ToolCtx, body: Body<typeof RaidFestivalBodySch
 // --- The roster ---
 
 /** The number of the caller's team creatures' average level, or 5 for a player with no creature. */
-function referenceLevel(ctx: ToolCtx): number {
+export function referenceLevel(ctx: ToolCtx): number {
   const team = autoTeam(loadCreatures(ctx.sql, ctx.userId));
   if (team.length === 0) return 5;
   return Math.max(1, Math.floor(team.reduce((total, c) => total + c.level, 0) / team.length));
 }
 
-/** Creates one simulated player: a player row and three creatures of three different lines near `level`. */
-function createGuest(ctx: ToolCtx, n: number, level: number): void {
+/**
+ * Creates one simulated player: a player row and `creatures` creatures (default three) of different lines
+ * near `level`. A guest that already exists keeps its creatures and gets more of lines it lacks, up to
+ * `creatures` (the Games' bots need more than a raid team).
+ */
+export function createGuest(
+  ctx: ToolCtx,
+  n: number,
+  level: number,
+  creatures: number = RULES.raid.teamSize,
+): void {
   const id = guestId(n);
   ctx.sql.exec(
     `INSERT INTO players (user_id, display_name, created_at, last_seen_at) VALUES (?, ?, ?, ?)
@@ -163,7 +172,7 @@ function createGuest(ctx: ToolCtx, n: number, level: number): void {
     ctx.now,
     ctx.now,
   );
-  // Shuffle the species with the live RNG (Fisher-Yates), then take the first of three distinct lines.
+  // Shuffle the species with the live RNG (Fisher-Yates), then take the first of distinct lines.
   const pool = content.creatures.filter((c) => c.festival !== true);
   for (let i = pool.length - 1; i > 0; i--) {
     const j = int(ctx.rng, i + 1);
@@ -173,10 +182,15 @@ function createGuest(ctx: ToolCtx, n: number, level: number): void {
     pool[i] = b;
     pool[j] = a;
   }
-  const lines = new Set<string>();
+  const owned = ctx.sql
+    .exec<{ line: string }>('SELECT line FROM creatures WHERE user_id = ?', id)
+    .toArray();
+  const lines = new Set(owned.map((r) => r.line));
+  let have = owned.length;
   for (const species of pool) {
-    if (lines.size >= RULES.raid.teamSize) break;
+    if (have >= creatures) break;
     if (lines.has(species.line)) continue;
+    have += 1;
     lines.add(species.line);
     const spread = int(ctx.rng, 5) - 2;
     const made = insertCreature(
@@ -195,7 +209,7 @@ function createGuest(ctx: ToolCtx, n: number, level: number): void {
 }
 
 /** The simulated players of the guild, by number. */
-function existingGuests(ctx: ToolCtx): number[] {
+export function existingGuests(ctx: ToolCtx): number[] {
   return ctx.sql
     .exec<{ user_id: string }>(
       'SELECT user_id FROM players WHERE user_id LIKE ?',

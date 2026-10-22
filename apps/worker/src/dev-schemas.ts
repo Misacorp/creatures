@@ -47,6 +47,9 @@ export const DEV_ACTION_TOOLS = [
   'raid-roster',
   'raid-live',
   'raid-simulate',
+  'games-bots',
+  'games-run-now',
+  'games-reset',
   'analytics-rollup',
   'reset-account',
 ] as const;
@@ -270,6 +273,17 @@ export const RaidLiveBodySchema = v.strictObject({
 
 export const RaidSimulateBodySchema = v.strictObject({
   guests: v.optional(int(0, MAX_GUESTS)),
+});
+
+// --- The Valley Games ---
+
+/** Bots for the Games: the raid's guests (`dev-guest-<n>`), each with `GAMES_BOT_CREATURES` creatures, auto-entered. */
+export const MAX_GAMES_BOTS = 12;
+export const GamesBotsBodySchema = v.strictObject({ count: v.optional(int(1, MAX_GAMES_BOTS)) });
+
+/** Lock the next show day now and start its show in a few seconds (default 15). */
+export const GamesRunNowBodySchema = v.strictObject({
+  showInSeconds: v.optional(int(5, 120)),
 });
 
 // --- The account ---

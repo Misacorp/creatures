@@ -49,6 +49,7 @@ export * from './weather-schema';
 export * from './weather';
 export * from './games-schema';
 export * from './games';
+export * from './games-stall-schema';
 
 /** The shipped content pack, validated at module load. */
 export const content = loadContent({

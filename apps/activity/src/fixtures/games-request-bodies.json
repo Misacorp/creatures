@@ -1,0 +1,46 @@
+{
+  "games-entry": {
+    "path": "/api/games/entry",
+    "method": "PUT",
+    "body": {
+      "day": "2027-01-12",
+      "eventId": "melon-run",
+      "creatureIds": ["00000000-0000-4000-8600-000000000001"]
+    }
+  },
+  "games-entry-team": {
+    "path": "/api/games/entry",
+    "method": "PUT",
+    "body": {
+      "day": "2027-01-12",
+      "eventId": "sauna-stack",
+      "creatureIds": [
+        "00000000-0000-4000-8600-000000000002",
+        "00000000-0000-4000-8600-000000000003"
+      ]
+    }
+  },
+  "games-auto": {
+    "path": "/api/games/auto",
+    "method": "PUT",
+    "body": {
+      "on": true
+    }
+  },
+  "games-stall-buy": {
+    "path": "/api/games/stall/buy",
+    "method": "POST",
+    "body": {
+      "offerId": "mystery-gear",
+      "idempotencyKey": "games-00000002-key"
+    }
+  },
+  "games-stall-buy-bait": {
+    "path": "/api/games/stall/buy",
+    "method": "POST",
+    "body": {
+      "offerId": "bait-sack",
+      "idempotencyKey": "games-00000003-key"
+    }
+  }
+}

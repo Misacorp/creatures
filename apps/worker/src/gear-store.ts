@@ -63,7 +63,9 @@ export type ItemOrigin =
   | { kind: 'trip'; place: string; rank: number }
   | { kind: 'craft' }
   | { kind: 'welcome' }
-  | { kind: 'converted' };
+  | { kind: 'converted' }
+  /** Bought at the Valley Games' Prize Stall. */
+  | { kind: 'games' };
 
 const OriginSchema = v.variant('kind', [
   v.strictObject({
@@ -85,6 +87,7 @@ const OriginSchema = v.variant('kind', [
   v.strictObject({ kind: v.literal('craft') }),
   v.strictObject({ kind: v.literal('welcome') }),
   v.strictObject({ kind: v.literal('converted') }),
+  v.strictObject({ kind: v.literal('games') }),
 ]);
 
 /** The origin stored with an item, or null for `{}` (items made before it was recorded). */

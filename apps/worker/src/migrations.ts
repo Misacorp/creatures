@@ -11,6 +11,7 @@ import { dungeonMigration } from './dungeon-migration';
 import { dungeonPathMigration } from './dungeon-path-migration';
 import { expeditionsMigration } from './expedition-migration';
 import { fusionPointsMigration } from './fusion-points-migration';
+import { gamesMigration } from './games-migration';
 import { gearMigration } from './gear-migration';
 import { gearV2Migration } from './gear-v2-migration';
 import { loungeMigration } from './lounge';
@@ -280,6 +281,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   workshopConvertMigration,
   // Version 37: fusion points per creature (see fusion-points-migration.ts).
   fusionPointsMigration,
+  // Version 38: the Valley Games (see games-migration.ts).
+  gamesMigration,
 ];
 
 /** The schema version of a fresh database. */

@@ -2,6 +2,7 @@ import { RULES, createSeededRng } from '@creatures/game';
 import { expect } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
+import { GAMES_TABLES } from '../src/games-migration';
 import { GuildCore, type GuildCoreOptions } from '../src/guild-core';
 import { DiscordError, type DiscordApi, type GuildApi } from '../src/discord';
 import { createHandler } from '../src/index';
@@ -261,8 +262,15 @@ export function undoDungeonPathsMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 34');
 }
 
+/** Puts a database back to before migration 38 (the Valley Games): its tables go. */
+export function undoGamesMigration(sql: SqlStorage): void {
+  for (const table of GAMES_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  sql.exec('DELETE FROM schema_version WHERE version = 38');
+}
+
 /** Puts a database back to before migration 37 (fusion points): the column goes. */
 export function undoFusionPointsMigration(sql: SqlStorage): void {
+  undoGamesMigration(sql);
   const present = sql
     .exec("SELECT 1 FROM pragma_table_info('creatures') WHERE name = 'fusion_points'")
     .toArray();

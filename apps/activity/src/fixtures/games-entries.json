@@ -1,0 +1,160 @@
+{
+  "serverNow": 1799740800000,
+  "timezone": "Europe/Helsinki",
+  "phase": "entries",
+  "next": {
+    "day": "2027-01-12",
+    "lockAt": 1799753820000,
+    "showAt": 1799754000000,
+    "open": true,
+    "lineup": [
+      {
+        "id": "melon-run",
+        "name": "Melon Run",
+        "kind": "chase",
+        "scene": "melon-hill",
+        "team": 1,
+        "line": "A giant watermelon is rolling down the hill. Run!",
+        "favours": ["spd", "small", "spark", "setter", "dodge"]
+      },
+      {
+        "id": "pepper-panic",
+        "name": "Pepper Panic",
+        "kind": "feast",
+        "scene": "pepper-table",
+        "team": 1,
+        "line": "Mild, hot or ghost: eat what lands on your plate. Most peppers wins.",
+        "favours": ["hp", "ember", "payoff", "crit"]
+      },
+      {
+        "id": "shark-derby",
+        "name": "Shark Derby",
+        "kind": "swim",
+        "scene": "shark-lake",
+        "team": 1,
+        "line": "Two laps of the lake. The sharks are only rubber, but they bonk hard.",
+        "favours": ["spd", "tide", "small", "setter", "dodge"]
+      },
+      {
+        "id": "sauna-stack",
+        "name": "Sauna Stack",
+        "kind": "endure",
+        "scene": "sauna",
+        "team": 3,
+        "line": "Bring three friends to the bench. Your team lasts as long as its last sitter.",
+        "favours": ["guard", "hp", "ember", "small", "support"]
+      }
+    ],
+    "entries": {},
+    "joined": false,
+    "auto": true,
+    "fit": {
+      "melon-run": {
+        "00000000-0000-4000-8600-000000000001": 3,
+        "00000000-0000-4000-8600-000000000002": 2,
+        "00000000-0000-4000-8600-000000000003": 1,
+        "00000000-0000-4000-8600-000000000004": 5,
+        "00000000-0000-4000-8600-000000000005": 1,
+        "00000000-0000-4000-8600-000000000006": 2
+      },
+      "pepper-panic": {
+        "00000000-0000-4000-8600-000000000001": 2,
+        "00000000-0000-4000-8600-000000000002": 5,
+        "00000000-0000-4000-8600-000000000003": 1,
+        "00000000-0000-4000-8600-000000000004": 1,
+        "00000000-0000-4000-8600-000000000005": 2,
+        "00000000-0000-4000-8600-000000000006": 4
+      },
+      "shark-derby": {
+        "00000000-0000-4000-8600-000000000001": 5,
+        "00000000-0000-4000-8600-000000000002": 1,
+        "00000000-0000-4000-8600-000000000003": 1,
+        "00000000-0000-4000-8600-000000000004": 3,
+        "00000000-0000-4000-8600-000000000005": 3,
+        "00000000-0000-4000-8600-000000000006": 1
+      },
+      "sauna-stack": {
+        "00000000-0000-4000-8600-000000000001": 1,
+        "00000000-0000-4000-8600-000000000002": 3,
+        "00000000-0000-4000-8600-000000000003": 5,
+        "00000000-0000-4000-8600-000000000004": 1,
+        "00000000-0000-4000-8600-000000000005": 5,
+        "00000000-0000-4000-8600-000000000006": 5
+      }
+    }
+  },
+  "show": null,
+  "you": {
+    "medals": {
+      "gold": 0,
+      "silver": 0,
+      "bronze": 0,
+      "pins": 0
+    },
+    "pocket": 0
+  },
+  "stall": {
+    "open": false,
+    "week": "2027-01-13",
+    "opensAt": 1799840220000,
+    "closesAt": 1799926620000,
+    "offers": [
+      {
+        "id": "mystery-gear",
+        "kind": "gear",
+        "name": "Mystery Prize Box",
+        "price": 9,
+        "weeklyLimit": 1,
+        "left": 1,
+        "params": {
+          "rarity": "rare"
+        }
+      },
+      {
+        "id": "fine-supply",
+        "kind": "supply",
+        "name": "Fine Supply",
+        "price": 4,
+        "weeklyLimit": 2,
+        "left": 2,
+        "params": {
+          "tier": "good"
+        }
+      },
+      {
+        "id": "bait-sack",
+        "kind": "bait",
+        "name": "Sack of Bait",
+        "price": 3,
+        "weeklyLimit": 2,
+        "left": 2,
+        "params": {
+          "amount": 30
+        }
+      },
+      {
+        "id": "shard-pouch",
+        "kind": "shards",
+        "name": "Shard Pouch",
+        "price": 3,
+        "weeklyLimit": 2,
+        "left": 2,
+        "params": {
+          "amount": 3
+        }
+      },
+      {
+        "id": "glimmer-jar",
+        "kind": "glimmer",
+        "name": "Jar of Glimmer",
+        "price": 4,
+        "weeklyLimit": 1,
+        "left": 1,
+        "params": {
+          "amount": 1
+        }
+      }
+    ]
+  },
+  "board": []
+}

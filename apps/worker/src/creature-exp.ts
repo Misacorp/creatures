@@ -14,7 +14,8 @@ import { speciesOf } from './species';
  * The activities that pay creatures experience (raids take no treats), and the two things that spend what
  * a waiting creature banked (a ribbon, an evolution).
  */
-export type ExpSource = 'trip' | 'dungeon' | 'raid' | 'job' | 'lounge' | 'ribbon' | 'evolve';
+export type ExpSource =
+  'trip' | 'dungeon' | 'raid' | 'job' | 'lounge' | 'games' | 'ribbon' | 'evolve';
 
 /** What an award did to one creature: shown on the result of the activity that earned it. */
 export interface ExperienceView {

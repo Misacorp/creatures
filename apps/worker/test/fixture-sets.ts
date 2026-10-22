@@ -1,9 +1,9 @@
 /**
- * The five contract-fixture sets: the single place that says how each one is played and which files
+ * The six contract-fixture sets: the single place that says how each one is played and which files
  * of `apps/activity/src/fixtures` it owns.
  *
  *     pnpm fixtures:capture                  re-capture every set (writes the files)
- *     pnpm fixtures:capture --set gear       one set: branches, creatures, dungeon, expeditions, gear
+ *     pnpm fixtures:capture --set gear       one set: branches, creatures, dungeon, expeditions, gear, games
  *     pnpm fixtures:capture --check          write nothing; exit 1 if any file would change
  *
  * How it works. `test/capture/capture-all.test.ts` plays every set here through the real routes and
@@ -30,6 +30,7 @@ import { creaturesScenarioOptions, runCreaturesScenario } from './creatures-scen
 import { dungeonScenarioOptions, runDungeonScenario } from './dungeon-scenario';
 import { runTripsScenario, tripsScenarioOptions } from './expeditions-scenario';
 import type { Captured } from './fixture-contract';
+import { gamesScenarioOptions, runGamesScenario } from './games-scenario';
 import { runConversionScenario, runExpeditionScenario, runGearScenario } from './gear-scenario';
 import { runCore } from './helpers';
 import { nextGuild, scriptedThenSeeded } from './raid-helpers';
@@ -75,6 +76,7 @@ function seededRngs(set: string) {
     dungeonRng: seeded('dungeon'),
     loungerRng: seeded('lounger'),
     weatherRng: seeded('weather'),
+    gamesRng: seeded('games'),
   };
 }
 
@@ -318,6 +320,31 @@ export const FIXTURE_SETS: readonly FixtureSet[] = [
         'expedition-claim': 'expedition-claim',
         'gear-notice-dismiss': 'notice-dismiss',
       },
+    },
+  },
+  {
+    name: 'games',
+    nibble: '6',
+    run: () =>
+      runCore(nextGuild(), (ctx) => runGamesScenario(ctx), {
+        ...seededRngs('games'),
+        ...gamesScenarioOptions(),
+      }),
+    files: {
+      responses: named(
+        'games-entries',
+        'games-entry',
+        'games-entry-team',
+        'games-auto',
+        'games-locked',
+        'games-show',
+        'games-after',
+        'games-creature',
+        'games-stall-buy',
+        'games-stall-buy-bait',
+      ),
+      errors: 'games-errors.json',
+      requests: 'games-request-bodies.json',
     },
   },
 ];

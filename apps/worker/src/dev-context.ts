@@ -4,6 +4,7 @@
  */
 import type { Rng } from '@creatures/game';
 import type { DevState } from './dev-state';
+import type { Games } from './games';
 import type { LedgerStorage } from './ledger';
 import type { Raid } from './raid';
 import type { Weather } from './weather';
@@ -32,6 +33,8 @@ export interface ToolCtx {
   tz: string;
   state: DevState;
   raid: Raid;
+  /** The Valley Games (the `games-*` tools). */
+  games: Games;
   /** The valley's weather (the `set-weather` tool). */
   weather: Weather;
   /** Crypto randomness for the things the tools roll (guest teams, gear, the day's seed). */

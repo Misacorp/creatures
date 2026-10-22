@@ -6,8 +6,8 @@ import { nextGuild, rows, seedPlayer } from './raid-helpers';
 import { setCreature } from './kit';
 
 describe('migration 37', () => {
-  it('is the last version and gives every creature the points of the fusion level it has', async () => {
-    expect(SCHEMA_VERSION).toBe(37);
+  it('gives every creature the points of the fusion level it has', async () => {
+    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(37);
     await runCore(nextGuild(), (ctx) => {
       const levels = [0, 1, 2, 3, 4, 5];
       const p = seedPlayer(ctx, 1, { creatures: levels.length, level: 5 });

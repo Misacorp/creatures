@@ -33,6 +33,8 @@ import {
   DungeonStreakBodySchema,
   ForceGatesBodySchema,
   ForceOfferBodySchema,
+  GamesBotsBodySchema,
+  GamesRunNowBodySchema,
   GrantBlueprintsBodySchema,
   GrantCreatureBodySchema,
   GrantGearBodySchema,
@@ -60,6 +62,7 @@ import {
 import { devKey, type DevState } from './dev-state';
 import { clockState, clockTool } from './dev-tools-clock';
 import { setWeather } from './dev-tools-weather';
+import { gamesBots, gamesReset, gamesRunNow } from './dev-tools-games';
 import {
   fillBag,
   finishJobs,
@@ -106,6 +109,7 @@ import {
   type Routes,
 } from './http';
 import type { LedgerStorage } from './ledger';
+import type { Games } from './games';
 import type { Raid } from './raid';
 import type { Weather } from './weather';
 import { weekIdFor } from './raid-schedule';
@@ -130,6 +134,8 @@ export interface DevToolsDeps {
   timezone: () => string;
   analytics: Analytics;
   raid: Raid;
+  /** The Valley Games, for the `games-*` tools. */
+  games: Games;
   /** The valley's weather, for the `set-weather` tool. */
   weather: Weather;
   /** Crypto randomness for what the tools roll. */
@@ -208,6 +214,11 @@ const TOOLS: Record<DevActionTool, Tool> = {
   'raid-roster': tool(RaidRosterBodySchema, raidRoster),
   'raid-live': tool(RaidLiveBodySchema, raidLive),
   'raid-simulate': tool(RaidSimulateBodySchema, raidSimulate),
+  // The Games' tools re-arm the alarm afterwards (as a clock move does): a new bot, a show that starts in
+  // 15 s or a forgotten day changes what the alarm waits for.
+  'games-bots': tool(GamesBotsBodySchema, gamesBots, { movesClock: true }),
+  'games-run-now': tool(GamesRunNowBodySchema, gamesRunNow, { movesClock: true }),
+  'games-reset': tool(NoBodySchema, gamesReset, { movesClock: true }),
   'analytics-rollup': {
     schema: NoBodySchema,
     runAsync: async (tools) => {
@@ -245,6 +256,7 @@ export class DevTools {
       tz: d.timezone(),
       state: d.state,
       raid: d.raid,
+      games: d.games,
       weather: d.weather,
       rng: d.rng,
       gearRng: d.gearRng,
