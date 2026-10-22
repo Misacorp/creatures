@@ -25,6 +25,14 @@ export const isCount = (value: unknown): value is number => isInt(value) && valu
 /** A whole number above zero. */
 export const isPositiveInt = (value: unknown): value is number => isInt(value) && value > 0;
 
+/** A Guard's reach (`guardReachOf` of the engine): how many creatures it protects on each side, 0 to 3. */
+export const isGuardReach = (value: unknown): value is { left: number; right: number } =>
+  isRecord(value) &&
+  isCount(value['left']) &&
+  value['left'] <= 3 &&
+  isCount(value['right']) &&
+  value['right'] <= 3;
+
 export const isNullableInt = (value: unknown): value is number | null =>
   value === null || isInt(value);
 

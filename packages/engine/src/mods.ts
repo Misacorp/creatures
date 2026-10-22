@@ -37,6 +37,8 @@ export interface ResolvedMods {
   healOnReactionBp: number;
   chainMark: boolean;
   coverReach: boolean;
+  reachLeft: number;
+  reachRight: number;
   boostReach: boolean;
   sealMark: boolean;
   firstReactionCrit: boolean;
@@ -144,6 +146,8 @@ const EMPTY: ResolvedMods = Object.freeze({
   healOnReactionBp: 0,
   chainMark: false,
   coverReach: false,
+  reachLeft: 0,
+  reachRight: 0,
   boostReach: false,
   sealMark: false,
   firstReactionCrit: false,
@@ -273,6 +277,8 @@ export function resolveMods(
     healOnReactionBp: n('healOnReactionBp', SHARE),
     chainMark: flag('chainMark'),
     coverReach: flag('coverReach'),
+    reachLeft: n('reachLeft', [-3, 3]),
+    reachRight: n('reachRight', [-3, 3]),
     boostReach: flag('boostReach'),
     sealMark: flag('sealMark'),
     firstReactionCrit: flag('firstReactionCrit'),

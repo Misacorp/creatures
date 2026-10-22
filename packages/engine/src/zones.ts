@@ -176,6 +176,70 @@ export function zoneTwoAway(index: number, shape: RowShape): number[] {
   return out;
 }
 
+/** How far a Guard reaches along its row: the most it can protect on each side (attack-patterns.md section 1). */
+export const GUARD_REACH = { base: 1, max: 3 } as const;
+
+/** A Guard's reach: how many creatures it protects on its left and on its right, in its row. */
+export interface GuardReach {
+  left: number;
+  right: number;
+}
+
+/**
+ * A Guard's reach from the changes on its modifier sheet (`SlotMods.reachLeft`, `reachRight`): the base
+ * of 1 each side plus the changes, each side held between 0 and `GUARD_REACH.max`. One function for the
+ * fight and every screen, so they read the same number.
+ */
+export function guardReachOf(
+  mods: { reachLeft?: number | undefined; reachRight?: number | undefined } | undefined,
+): GuardReach {
+  const side = (change: number | undefined): number =>
+    Math.max(0, Math.min(GUARD_REACH.max, GUARD_REACH.base + (change ?? 0)));
+  return { left: side(mods?.reachLeft), right: side(mods?.reachRight) };
+}
+
+/**
+ * The board slots a Guard standing in `slot` protects, left to right. It walks out to the left
+ * `reach.left` slots and to the right `reach.right` slots; it never leaves the Guard's zone (`zones`, the
+ * raid; `line`, the dungeon's single line of three, has no zones), never leaves the board, and an empty
+ * slot breaks it: nothing past a slot that `occupied` says is empty is reached. With `withEmpty` the
+ * first empty slot is itself listed (a screen shades where a creature would be protected); the fight
+ * never passes it, as nobody stands there. The fight (`guardFor`, `coverGuardFor`) and the boards that
+ * shade a Guard's reach both use this function, so they cannot disagree.
+ */
+export function guardReachSlots(args: {
+  /** The board's full row length. */
+  length: number;
+  mode: 'zones' | 'line';
+  slot: number;
+  reach: GuardReach;
+  occupied: (slot: number) => boolean;
+  withEmpty?: boolean;
+}): number[] {
+  const { length, mode, slot, reach, occupied } = args;
+  const zone = zoneOfSlot(slot, length);
+  const out: number[] = [];
+  for (const [step, count] of [
+    [-1, reach.left],
+    [1, reach.right],
+  ] as const) {
+    const side: number[] = [];
+    for (let k = 1; k <= count; k++) {
+      const at = slot + step * k;
+      if (at < 0 || at >= length) break;
+      if (mode === 'zones' && zoneOfSlot(at, length) !== zone) break;
+      if (!occupied(at)) {
+        if (args.withEmpty === true) side.push(at);
+        break;
+      }
+      side.push(at);
+    }
+    if (step < 0) side.reverse();
+    out.push(...side);
+  }
+  return out;
+}
+
 /**
  * Where a zone attack lands: the aimed zone if anyone is standing in it, otherwise the nearest zone
  * with someone standing (one step first; on a tie Front comes before Back), or undefined when the

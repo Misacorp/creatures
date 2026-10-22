@@ -8,6 +8,7 @@ import {
   besides,
   credit,
   further,
+  guardsReaching,
   livingIn,
   rolls,
   runHook,
@@ -22,11 +23,13 @@ import { zoneOfIndex } from './zones';
 
 // ---- damage to creatures ----
 /**
- * The Guard that takes a hit aimed at `target`: by default one standing in the target's zone;
- * with `guardReach: 'adjacent'`, one standing right beside it (the left neighbour first).
+ * The Guard that takes a hit aimed at `target`. With the reach rule (`FightRules.guardRule`): one whose
+ * reach includes the target (`guardsReaching`, left to right). Otherwise one standing in the target's zone,
+ * or with `guardReach: 'adjacent'`, right beside it (the left neighbour first).
  */
 function guardFor(state: FightState, target: Creature): Creature | undefined {
   const { shape, guardReach, creatures } = state;
+  if (state.reachRule) return pickGuard(state, guardsReaching(state, target.idx), target.idx);
   const candidates =
     guardReach === 'adjacent'
       ? besides(state, target.idx)
@@ -60,11 +63,13 @@ function guardArmorFor(state: FightState, c: Creature): number {
 }
 
 /**
- * A living Guard right beside `victim` (as the Support's `besides` counts it), as it stands now:
- * the Guard whose cover softens an area hit (left neighbour first).
+ * The living Guard whose cover softens an area hit on `victim`, as it stands now. With the reach rule: the
+ * left-most Guard whose reach includes the victim. Otherwise a Guard right beside it (as the Support's
+ * `besides` counts it, left neighbour first), else, with `coverReach`, one two places away.
  */
 function coverGuardFor(state: FightState, victim: Creature): Creature | undefined {
   const { creatures } = state;
+  if (state.reachRule) return guardsReaching(state, victim.idx)[0];
   for (const i of besides(state, victim.idx)) {
     const c = creatures[i] as Creature;
     if (c.alive && c.role === 'guard') return c;

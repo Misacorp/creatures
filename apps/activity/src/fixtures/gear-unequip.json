@@ -955,6 +955,10 @@
           "spd": 29
         },
         "dodgeBp": 0,
+        "guardReach": {
+          "left": 1,
+          "right": 1
+        },
         "gear": [],
         "busy": null,
         "ability": {

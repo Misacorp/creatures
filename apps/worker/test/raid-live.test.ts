@@ -1941,7 +1941,7 @@ describe('the API contract with the client', () => {
         );
         expect(keys(raidReveal), UPDATE).toEqual(RAID_KEYS);
         expect(keys(raidReveal.party), UPDATE).toEqual(PARTY_KEYS);
-        // A board tile: the same keys, plus `creatureId` (yours, or one you may move) and `movedBy`.
+        // A board tile: the same keys, plus `creatureId` (yours, or one you may move), `movedBy` and `reach` (Guards).
         const tiles = [
           ...(raid['party'] as { row: { creature: unknown }[] }).row,
           ...raidReveal.party.row,
@@ -1949,9 +1949,20 @@ describe('the API contract with the client', () => {
         expect(tiles.length, UPDATE).toBeGreaterThan(0);
         for (const tile of tiles) {
           expect(
-            keys(tile).filter((k) => k !== 'creatureId' && k !== 'movedBy'),
+            keys(tile).filter((k) => k !== 'creatureId' && k !== 'movedBy' && k !== 'reach'),
             UPDATE,
           ).toEqual(['auto', 'level', 'mine', 'movable', 'name', 'ownerName', 'species']);
+        }
+        // A Guard's tile says how far it protects (one each side with no gear); nobody else's does.
+        const served = (
+          raid['party'] as { row: { creature: { species: string; reach?: unknown } | null }[] }
+        ).row;
+        for (const slot of served) {
+          if (slot.creature === null) continue;
+          const role = content.creatures.find((c) => c.id === slot.creature?.species)?.role;
+          expect(slot.creature.reach, UPDATE).toEqual(
+            role === 'guard' ? { left: 1, right: 1 } : undefined,
+          );
         }
         const results = (raid['party'] as { results: unknown[] }).results;
         expect(results.length, UPDATE).toBe(3);
