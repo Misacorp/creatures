@@ -78,7 +78,7 @@ function Demo({ p }: { p: Props }) {
         onPushOn={NOTHING}
         onOpenWorkshop={NOTHING}
         {...(place === NONE ? {} : { initialPlace: place })}
-        {...(place === NONE || wizard === NONE || wide
+        {...(place === NONE || wizard === NONE
           ? {}
           : { initialWizard: wizard === 'pack' || wizard === 'ready' ? wizard : 'who' })}
       />
@@ -91,7 +91,7 @@ const expeditionWorld: Entry = {
   file: 'apps/activity/src/ExpeditionWorld.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The Trips screen of the Expeditions tab: the world map with a marker per place. On a phone (under 60 rem) the trips are chips under the map and a tapped place opens a sheet (its banner and what it says, the explorers there, a gold "Send an explorer here" that opens the three send steps in the same sheet; "Decide" opens the push-on choice). On a wide screen the map has the "Out exploring" shelf under it and a side panel on the right: "Where to?" until a place is picked, then the place and the whole send form, and a claimed trip shows there. Sends do nothing here (the server decides). Use the full width for the desktop presets.',
+    'The Trips screen of the Expeditions tab: the world map with a marker per place. On a phone (under 60 rem) the trips are chips under the map and a tapped place opens a sheet (its banner and what it says, the explorers there, a gold "Send an explorer here" that opens the three send steps in the same sheet; "Decide" opens the push-on choice). On a wide screen the map is full width with the "Out exploring" shelf under it; picking a place opens a side panel on the right with the same flow as the phone sheet (the place, then the three send steps), the map glides to keep the place in its middle, and the X on the panel closes it. A claimed trip shows in the panel. A mouse can drag the map. Sends do nothing here (the server decides). Use the full width for the desktop presets.',
   controls: {
     layout: { kind: 'select', options: LAYOUTS },
     trips: { kind: 'select', options: TRIPS },
@@ -122,6 +122,10 @@ const expeditionWorld: Entry = {
     },
     { name: 'Desktop: nothing selected', props: { layout: 'desktop' } },
     { name: 'Desktop: a place selected', props: { layout: 'desktop', place: 'old-crossroads' } },
+    {
+      name: 'Desktop: wizard, pack up',
+      props: { layout: 'desktop', place: 'ember-caves', wizard: 'pack', trips: 'none' },
+    },
     {
       name: 'Desktop: claim reveal in the panel',
       props: { layout: 'desktop', place: 'ember-caves', reveal: 'shown' },

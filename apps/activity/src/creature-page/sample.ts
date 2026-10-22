@@ -281,7 +281,7 @@ export function pageScene(kind: SceneKind, options: { bait?: number } = {}): Pag
     ribbon: kind === 'ribbon ready' || kind === 'ribbon waiting' ? base.ribbon : null,
     waiting: kind === 'ribbon ready' || kind === 'ribbon waiting' || kind === 'evolve ready',
     nextUnlock: null,
-    explorer: { rank: 3, xp: 120, nextRankXp: 400, trips: 7 },
+    explorer: { rank: 3, xp: 1300, nextRankXp: 2_000, trips: 7 },
     ability:
       base.ability === null
         ? null
@@ -297,6 +297,10 @@ export function pageScene(kind: SceneKind, options: { bait?: number } = {}): Pag
     loungerId: null,
     balances: { ...SAMPLE_STATE.balances, bait: options.bait ?? 100 },
   };
-  const gear: GearState = { ...SAMPLE_GEAR, items };
+  const gear: GearState = {
+    ...SAMPLE_GEAR,
+    items,
+    skills: [{ creatureId: PAGE_SAMPLE_ID, xp: 320, level: 3, nextLevelXp: 450 }],
+  };
   return { creature, state, gear };
 }

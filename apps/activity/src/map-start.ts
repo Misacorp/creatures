@@ -12,14 +12,18 @@ export function startingPlace(
   return places.find((p) => p.home)?.id ?? trips[0]?.destination ?? HUB;
 }
 
-/** Scrolls `scroller` (no animation) so `target` is in the middle of it, as far as it can scroll. */
-export function centerOn(scroller: HTMLElement, target: HTMLElement): void {
+/** Scrolls `scroller` so `target` is in the middle of it, as far as it can scroll (no glide by default). */
+export function centerOn(
+  scroller: HTMLElement,
+  target: HTMLElement,
+  behavior: ScrollBehavior = 'instant',
+): void {
   if (typeof scroller.scrollTo !== 'function') return;
   const box = scroller.getBoundingClientRect();
   const at = target.getBoundingClientRect();
   scroller.scrollTo({
     left: scroller.scrollLeft + (at.left + at.width / 2) - (box.left + box.width / 2),
     top: scroller.scrollTop + (at.top + at.height / 2) - (box.top + box.height / 2),
-    behavior: 'instant',
+    behavior,
   });
 }

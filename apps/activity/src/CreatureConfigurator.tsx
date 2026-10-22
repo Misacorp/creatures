@@ -10,12 +10,12 @@ import { TalentSlots } from './creature-page/PageSlots';
 import { GearList } from './GearList';
 import { wornItemOf } from './gear-view';
 import { TalentBookDrawer } from './creature-page/TalentBookDrawer';
-import { creatureName } from './game';
 import type { GearItem, GearSlot, GearState } from './gear-types';
 import { GlossaryTag } from './Glossary';
 import { abilityDef } from './live';
 import { DataTable } from './ui/DataTable';
 import { XpTrack } from './ui/XpTrack';
+import { skillRows } from './creature-page/skill-rows';
 
 /**
  * What the configurator shows, part by part; a part left out is not drawn. The screen that uses it picks
@@ -85,8 +85,6 @@ export function CreatureConfigurator({
   // The slot that was tapped gets the focus back when its drawer closes.
   const opener = useRef<HTMLElement | null>(null);
   const id = `${cardDomId(creature.id)}-configure`;
-  const skill = gear?.skills.find((s) => s.creatureId === creature.id);
-  const explorer = creature.explorer;
   const ability =
     creature.ability !== null && creature.ability.unlocked
       ? abilityDef(creature.ability.id)
@@ -111,29 +109,23 @@ export function CreatureConfigurator({
             levelEntry="level"
           />
         )}
-        {parts.explorer === true && (
-          <XpTrack
-            kind="explorer"
-            unit="Rank"
-            level={explorer.rank}
-            value={explorer.xp}
-            max={explorer.nextRankXp ?? 1}
-            top={explorer.nextRankXp === null}
-            label={`${creatureName(creature)}'s explorer XP`}
-            levelEntry="explorer-rank"
-          />
-        )}
-        {parts.crafting === true && skill !== undefined && (
-          <XpTrack
-            kind="crafting"
-            level={skill.level}
-            value={skill.xp}
-            max={skill.nextLevelXp ?? 1}
-            top={skill.nextLevelXp === null}
-            label={`${creatureName(creature)}'s Crafting XP`}
-            levelEntry="skill-crafting"
-          />
-        )}
+        {/* Into the current rank or level, as on the creature page (not the cumulative XP). */}
+        {skillRows(creature, gear?.skills)
+          .filter((row) => parts[row.kind] === true)
+          .map((row) => (
+            <XpTrack
+              key={row.kind}
+              kind={row.kind}
+              unit={row.unit}
+              level={row.level}
+              value={row.value}
+              max={row.max}
+              top={row.top}
+              label={row.label}
+              text={row.text}
+              levelEntry={row.entry}
+            />
+          ))}
       </div>
 
       {parts.stats === true && (

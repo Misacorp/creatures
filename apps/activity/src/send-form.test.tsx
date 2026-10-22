@@ -7,6 +7,7 @@ import stateOffer from './fixtures/expedition-state-offer.json';
 import { PopoverHost } from './PopoverHost';
 import { SendFooter, SendForm } from './SendForm';
 import { FakeElement, byClass, createPage, find, visibleText, type Page } from './test-dom';
+import type { SendStep } from './send-view';
 import { SEND_STEP_DEFS, useSendForm } from './use-send-form';
 
 let page: Page | null = null;
@@ -31,13 +32,13 @@ const veteran: Creature[] = base.map((c, i) =>
 function Harness({
   creatures,
   destination,
-  layout,
+  initialStep,
   onSend,
   bag = null,
 }: {
   creatures: readonly Creature[];
   destination: string;
-  layout: 'steps' | 'panel';
+  initialStep?: SendStep;
   onSend: (request: SendRequest) => Promise<boolean>;
   bag?: { cap: number; used: number; reserved: number } | null;
 }) {
@@ -49,26 +50,30 @@ function Harness({
     stock: STOCK,
     bait: 0,
     timezone: 'Europe/Helsinki',
+    ...(initialStep === undefined ? {} : { initialStep }),
   });
   return (
     <PopoverHost onOpenHowTo={() => undefined}>
-      <SendForm form={form} layout={layout} busy={false} onSend={onSend} bag={bag} />
-      {layout === 'steps' && (
-        <SendFooter form={form} layout="steps" busy={false} onSend={onSend} bag={bag} />
-      )}
+      <SendForm form={form} busy={false} />
+      <SendFooter form={form} busy={false} onSend={onSend} bag={bag} />
     </PopoverHost>
   );
 }
 
 function draw(
-  layout: 'steps' | 'panel',
   destination: string,
   creatures: readonly Creature[] = base,
   onSend: (request: SendRequest) => Promise<boolean> = () => Promise.resolve(true),
+  initialStep?: SendStep,
 ): FakeElement {
   page = createPage();
   page.draw(
-    <Harness creatures={creatures} destination={destination} layout={layout} onSend={onSend} />,
+    <Harness
+      creatures={creatures}
+      destination={destination}
+      onSend={onSend}
+      {...(initialStep === undefined ? {} : { initialStep })}
+    />,
   );
   return page.root;
 }
@@ -82,7 +87,7 @@ const disabled = (el: FakeElement) => el.hasAttribute('disabled');
 
 describe('the send form in steps', () => {
   it('draws one section per step and walks Who, Pack, Ready with Next and Send', () => {
-    const root = draw('steps', 'tidepools');
+    const root = draw('tidepools');
     expect(byClass(root, 'explorer-picker')).toHaveLength(1);
     expect(byClass(root, 'supply-cell')).toHaveLength(0);
     expect(visibleText(button(root))).toBe('Next');
@@ -102,7 +107,7 @@ describe('the send form in steps', () => {
   });
 
   it('greys a creature below the place rank with its reason, and cannot go on without an explorer', () => {
-    const root = draw('steps', 'moonlit-reef');
+    const root = draw('moonlit-reef');
     const rows = byClass(root, 'roster-option');
     expect(rows.length).toBe(base.length);
     expect(rows.every((r) => (r.getAttribute('class') ?? '').includes('disabled'))).toBe(true);
@@ -118,7 +123,7 @@ describe('the send form in steps', () => {
 
 describe('who goes, compact', () => {
   it('is one short row per creature with no XP bar, and folds the rank track away', () => {
-    const root = draw('steps', 'tidepools');
+    const root = draw('tidepools');
     expect(byClass(root, 'roster-option').length).toBeGreaterThan(0);
     expect(byClass(root, 'pick-rank').length).toBeGreaterThan(0);
     expect(byClass(root, 'xpbar')).toHaveLength(0);
@@ -132,7 +137,7 @@ describe('who goes, compact', () => {
       away: true,
       busy: { kind: 'expedition' as const, id: 'x' },
     }));
-    const root = draw('steps', 'tidepools', away);
+    const root = draw('tidepools', away);
     const radios = find(root, (el) => el.localName === 'input');
     expect(radios.length).toBe(away.length);
     expect(
@@ -145,7 +150,7 @@ describe('who goes, compact', () => {
 
 describe('a place the clock shuts', () => {
   it('shows when Moonlit Reef opens next to Send, and Send is disabled by day', () => {
-    const root = draw('panel', 'moonlit-reef', veteran);
+    const root = draw('moonlit-reef', veteran, undefined, 'ready');
     expect(visibleText(root)).toContain('Opens tonight at 20:00');
     expect(disabled(button(root))).toBe(true);
     const [rule] = byClass(root, 'send-rule');
@@ -155,7 +160,7 @@ describe('a place the clock shuts', () => {
   });
 
   it('lets the steps before Send go on', () => {
-    const root = draw('steps', 'moonlit-reef', veteran);
+    const root = draw('moonlit-reef', veteran);
     expect(disabled(button(root))).toBe(false);
     page?.click(button(root));
     page?.click(button(root));
@@ -167,13 +172,13 @@ describe('a place the clock shuts', () => {
 describe('a full bag', () => {
   const full = { cap: 60, used: 61, reserved: 1 };
 
-  it('warns beside Send in the panel, and Send still works', () => {
+  it('warns beside Send on the Ready step, and Send still works', () => {
     page = createPage();
     page.draw(
       <Harness
         creatures={base}
         destination="tidepools"
-        layout="panel"
+        initialStep="ready"
         onSend={() => Promise.resolve(true)}
         bag={full}
       />,
@@ -188,7 +193,6 @@ describe('a full bag', () => {
       <Harness
         creatures={base}
         destination="tidepools"
-        layout="steps"
         onSend={() => Promise.resolve(true)}
         bag={full}
       />,
@@ -202,7 +206,7 @@ describe('a full bag', () => {
       <Harness
         creatures={base}
         destination="tidepools"
-        layout="panel"
+        initialStep="ready"
         onSend={() => Promise.resolve(true)}
         bag={{ cap: 60, used: 10, reserved: 0 }}
       />,
@@ -211,24 +215,17 @@ describe('a full bag', () => {
   });
 });
 
-describe('the send form as a panel', () => {
-  it('stacks every section with one Send button at the bottom', () => {
-    const root = draw('panel', 'tidepools');
-    expect(byClass(root, 'explorer-picker')).toHaveLength(1);
-    expect(byClass(root, 'supply-cell')).toHaveLength(12);
-    expect(byClass(root, 'trip-summary')).toHaveLength(1);
-    expect(byClass(root, 'send-button')).toHaveLength(1);
-    expect(disabled(button(root))).toBe(false);
-  });
-
+describe('sending', () => {
   it('sends the same request as the old screen for the same choices, and puts the kit down after', async () => {
     const onSend = vi.fn().mockResolvedValue(true);
-    const root = draw('panel', 'tidepools', base, onSend);
+    const root = draw('tidepools', base, onSend, 'pack');
     const lure = byClass(root, 'supply-cell').find((c) =>
       (c.getAttribute('aria-label') ?? '').includes('Plain Lure'),
     );
     if (lure === undefined) throw new Error('no lure');
     page?.click(lure);
+    // Next to Ready, then Send.
+    page?.click(button(root));
     page?.click(button(root));
     expect(onSend).toHaveBeenCalledTimes(1);
     const request = onSend.mock.calls[0]?.[0] as SendRequest;

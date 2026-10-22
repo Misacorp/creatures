@@ -32,9 +32,8 @@ const PLACES: Record<string, string> = {
 };
 const STEPS = ['who', 'pack', 'ready'] as const;
 
-/** The form as the map's sheet or side panel will draw it. */
+/** The form as the map's sheet draws it (the desktop panel draws the same steps). */
 function SendFormDemo({ p }: { p: Props }) {
-  const layout = str(p, 'layout') === 'panel' ? 'panel' : 'steps';
   const form = useSendForm({
     creatures: creatures(bool(p, 'veteran')),
     view: VIEW,
@@ -45,30 +44,16 @@ function SendFormDemo({ p }: { p: Props }) {
     timezone: 'Europe/Helsinki',
     initialStep: STEPS.find((s) => s === str(p, 'step')) ?? 'who',
   });
-  if (layout === 'panel') {
-    return (
-      <div class="send-panel-frame" style={{ maxWidth: '25rem' }}>
-        <SendForm form={form} layout="panel" busy={false} onSend={() => Promise.resolve(true)} />
-      </div>
-    );
-  }
   return (
     <div class="v3-phone">
       <Drawer
         open
         onClose={NOTHING}
         title={form.place?.name ?? 'Send an explorer'}
-        footer={
-          <SendFooter
-            form={form}
-            layout="steps"
-            busy={false}
-            onSend={() => Promise.resolve(true)}
-          />
-        }
+        footer={<SendFooter form={form} busy={false} onSend={() => Promise.resolve(true)} />}
       >
         <WizardView wizard={form.wizard}>
-          <SendForm form={form} layout="steps" busy={false} onSend={() => Promise.resolve(true)} />
+          <SendForm form={form} busy={false} />
         </WizardView>
       </Drawer>
     </div>
@@ -82,23 +67,17 @@ export const sendFormEntries: Entry[] = [
     group: 'Creatures & game pieces',
     covers: ['SendFooter'],
     description:
-      "The form that sends an explorer to the place chosen on the map. On a phone it is three steps in the place's sheet (Who goes, Pack up, Ready) with a pinned gold Next / Send button that says why it is disabled; on desktop the same sections are stacked in a side panel with one Send button at the bottom. A place the clock shuts (Moonlit Reef by day) shows when it opens next to Send and disables it. A creature below the place's explorer rank is greyed with the reason. The Send button does nothing here.",
+      "The form that sends an explorer to the place chosen on the map. On a phone it is three steps in the place's sheet (Who goes, Pack up, Ready) with a pinned gold Next / Send button that says why it is disabled; on desktop the same steps run in the map's side panel. A place the clock shuts (Moonlit Reef by day) shows when it opens next to Send and disables it. A creature below the place's explorer rank is greyed with the reason. The Send button does nothing here.",
     controls: {
-      layout: { kind: 'select', options: ['steps', 'panel'] },
       step: { kind: 'select', options: STEPS },
       place: { kind: 'select', options: Object.keys(PLACES) },
       veteran: { kind: 'toggle' },
     },
-    defaults: { layout: 'steps', step: 'who', place: 'Tidepools', veteran: false },
+    defaults: { step: 'who', place: 'Tidepools', veteran: false },
     presets: [
       { name: 'Phone: who goes', props: {} },
       { name: 'Phone: pack up', props: { step: 'pack' } },
       { name: 'Phone: ready', props: { step: 'ready' } },
-      { name: 'Desktop panel', props: { layout: 'panel' } },
-      {
-        name: 'Moonlit Reef by day, panel (an explorer who can go)',
-        props: { layout: 'panel', place: 'Moonlit Reef (night only, by day)', veteran: true },
-      },
       {
         name: 'Moonlit Reef by day, ready step',
         props: { step: 'ready', place: 'Moonlit Reef (night only, by day)', veteran: true },

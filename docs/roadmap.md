@@ -107,7 +107,7 @@ Noted while testing the expedition and Workshop rework on staging. The component
    - Drop the empty Cost heading.
    - List only the creatures that can do the job, with a short line such as "4 more need Crafting level 3".
    - Keep the time per creature.
-3. **Creature pages show Crafting level and explorer rank.** Show both with progress bars, reusing the bars from the trip claim screen. Place them next to the creature's Experience, so a player can tell who to send exploring and who to put in the Workshop.
+3. ~~**Creature pages show Crafting level and explorer rank.**~~ **Done (2026-10-22):** two bars under Experience on the creature page (Explorer "Rank", Crafting "Craft"; "Max" at the top), the same working as the trip claim bars. Before: show both with progress bars, reusing the bars from the trip claim screen. Place them next to the creature's Experience, so a player can tell who to send exploring and who to put in the Workshop.
 4. **Smaller follow-ups from the same round:**
    - The send screen's supply card shows the effect on the chosen trip length, not just the blurb.
    - Stock badges on muted supply cells are hard to read.

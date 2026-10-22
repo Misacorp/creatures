@@ -119,7 +119,6 @@ button.finder-clear {
   margin: 0.625rem -0.25rem 0;
   padding: 0.25rem 0.25rem 0.5rem;
   overflow-x: auto;
-  scrollbar-width: thin;
 }
 
 button.fchip {
