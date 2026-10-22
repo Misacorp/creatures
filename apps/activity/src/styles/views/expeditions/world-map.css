@@ -408,3 +408,19 @@
   filter: drop-shadow(2px 0 0 var(--gold)) drop-shadow(-2px 0 0 var(--gold))
     drop-shadow(0 2px 0 var(--gold)) drop-shadow(0 -2px 0 var(--gold)) brightness(1.15);
 }
+
+/* A map that pans can be dragged with a mouse (`ui/use-drag-scroll.ts`): a hand while it can, a fist while it does. */
+.world-map.pans {
+  user-select: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .world-map.pans {
+    cursor: grab;
+  }
+
+  .world-map.pans.dragging,
+  .world-map.pans.dragging .wm-marker {
+    cursor: grabbing;
+  }
+}

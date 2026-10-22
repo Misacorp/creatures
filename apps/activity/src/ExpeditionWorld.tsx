@@ -5,12 +5,14 @@ import type { Creature } from './api';
 import { destinationCards } from './destination-view';
 import type { SendRequest } from './expedition-api';
 import type { DestinationsView, Slots, Trip } from './expedition-types';
+import { useElementWidth } from './hooks';
 import { centerOn, startingPlace } from './map-start';
-import { mapPlaces } from './map-view';
+import { mapPlaces, mapScale } from './map-view';
 import { OutStrip } from './OutStrip';
 import { PlacePanel } from './PlacePanel';
 import { PlaceSheet, type SheetMode } from './PlaceSheet';
 import { markFreshReveal } from './reveal-arrive';
+import { scrollBehavior } from './scroll-to';
 import type { SendStep } from './send-view';
 import { SlotsLine } from './SlotsLine';
 import { TripShelf } from './TripShelf';
@@ -36,12 +38,12 @@ export interface ExpeditionWorldProps {
   onRetry: () => void;
   /** The guild's timezone (always explicit; null when it is not known). */
   timezone: string | null;
-  /** The valley sky, for the panel's "Where to?" and what a trip is affected by. */
+  /** The valley sky: what a trip is affected by (the Ready step's summary). */
   forecast: Forecast | null;
   /** Server time (ms), ticked by the caller. */
   serverNow: number;
   busy: boolean;
-  /** The layout: true gives the map a side panel and a shelf, false a sheet and a strip. */
+  /** The layout: true gives the map a shelf and, while a place is chosen, a side panel; false a sheet and a strip. */
   wide: boolean;
   /** The claimed trip's reveal card, to show in the side panel (wide only); null for none. */
   reveal: ComponentChildren | null;
@@ -54,7 +56,7 @@ export interface ExpeditionWorldProps {
   bag?: GearState['inventory'] | null;
   /** Starts with this place chosen (the workbench and the tests; the game starts with none). */
   initialPlace?: string | undefined;
-  /** With a place: starts in its send wizard on this step (a phone sheet). */
+  /** With a place: starts in its send wizard on this step. */
   initialWizard?: SendStep | undefined;
 }
 
@@ -72,9 +74,11 @@ function buttonAbove(target: EventTarget | null): HTMLElement | null {
  * The Trips screen of the Expeditions tab: the world map with its places as buttons and the trips that
  * are out. Choosing a place (a marker, a chip of the strip or a card of the shelf) is controlled state here.
  * Narrow: the place opens as a bottom sheet over the map (with the send wizard and the push-on choice as
- * drill-ins) and the trips are chips under the map. Wide: the map and the "Out exploring" shelf sit left,
- * a side panel with the place and the whole send form sits right, and a claimed trip's reveal shows in
- * the panel. Every place is open on the map; the rank each explorer needs is in the explorer picker, and a
+ * drill-ins) and the trips are chips under the map. Wide: the map is full width with the "Out exploring"
+ * shelf under it; choosing a place (or claiming a trip, whose reveal shows there) opens a side panel on the
+ * right with the same flow as the sheet, and the map, now narrower, glides so the place is in its middle.
+ * The panel's X closes it and the map glides back. The map keeps its scale either way, and a mouse can drag
+ * it. Every place is open on the map; the rank each explorer needs is in the explorer picker, and a
  * place's time rule is a line on its marker and in its sheet.
  */
 export function ExpeditionWorld(props: ExpeditionWorldProps) {
@@ -101,30 +105,52 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
   );
   const places = mapPlaces({ trips, creatures, now: serverNow, selected, rules });
   // A map that scrolls starts on the place that matters most (once, without a glide).
+  const root = useRef<HTMLDivElement>(null);
   const mapBox = useRef<HTMLDivElement>(null);
   const start = useRef(startingPlace(places, trips));
-  useEffect(() => {
-    const frame =
-      typeof requestAnimationFrame === 'function'
-        ? requestAnimationFrame(() => {
-            const scroller = mapBox.current?.querySelector<HTMLElement>('.world-map');
-            const target = mapBox.current?.querySelector<HTMLElement>(
-              `[data-place="${start.current}"]`,
-            );
-            if (
-              scroller !== null &&
-              scroller !== undefined &&
-              target !== null &&
-              target !== undefined
-            ) {
-              centerOn(scroller, target);
-            }
-          })
-        : null;
+  /** Scrolls the map so the place `id` is as near its middle as the map can scroll. */
+  const centerMap = (id: string, behavior: ScrollBehavior): void => {
+    const scroller = mapBox.current?.querySelector<HTMLElement>('.world-map');
+    const target = mapBox.current?.querySelector<HTMLElement>(`[data-place="${id}"]`);
+    if (scroller !== null && scroller !== undefined && target !== null && target !== undefined) {
+      centerOn(scroller, target, behavior);
+    }
+  };
+  const afterLayout = (run: () => void): (() => void) => {
+    if (typeof requestAnimationFrame !== 'function') return () => undefined;
+    const frame = requestAnimationFrame(run);
     return () => {
-      if (frame !== null) cancelAnimationFrame(frame);
+      cancelAnimationFrame(frame);
     };
-  }, []);
+  };
+  useEffect(
+    () =>
+      afterLayout(() => {
+        centerMap(start.current, 'instant');
+      }),
+    [],
+  );
+
+  // Wide: the panel is up while a place is chosen or a claimed trip's reveal shows. The map keeps the scale
+  // it has at the full width, so opening the panel narrows its window instead of shrinking the art.
+  const panelOpen = wide && (selected !== null || props.reveal !== null);
+  const fullWidth = useElementWidth(root, 0);
+  const scale = wide && fullWidth > 0 ? mapScale(fullWidth) : undefined;
+  // When the panel opens, closes or shows another place, the map glides to the chosen (or last) place.
+  const lastPlace = useRef<string | null>(selected);
+  if (selected !== null) lastPlace.current = selected;
+  const firstLayout = useRef(true);
+  useEffect(() => {
+    if (firstLayout.current) {
+      firstLayout.current = false;
+      return undefined;
+    }
+    const id = selected ?? lastPlace.current;
+    if (!wide || id === null) return undefined;
+    return afterLayout(() => {
+      centerMap(id, scrollBehavior());
+    });
+  }, [wide, panelOpen, selected]);
   const card = cards.find((c) => c.id === selected);
   const here = trips.filter((t) => t.destination === selected);
   const deciding = decideId === null ? null : (trips.find((t) => t.id === decideId) ?? null);
@@ -160,6 +186,17 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
     props.onClaim(trip);
   };
 
+  /** The panel's X: the map is full width again and the place's marker gets the focus back. */
+  const closePanel = (): void => {
+    const id = selected;
+    close();
+    if (id !== null) {
+      mapBox.current
+        ?.querySelector<HTMLElement>(`[data-place="${id}"]`)
+        ?.focus({ preventScroll: true });
+    }
+  };
+
   const mode: SheetMode =
     step === 'decide' && deciding !== null
       ? { kind: 'decide', trip: deciding }
@@ -186,7 +223,10 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
   };
 
   return (
-    <div class={wide ? 'exp-world wide' : 'exp-world'}>
+    <div
+      ref={root}
+      class={wide ? (panelOpen ? 'exp-world wide with-panel' : 'exp-world wide') : 'exp-world'}
+    >
       <div class="exp-world-main">
         <div
           class="exp-world-map"
@@ -200,6 +240,7 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
             selected={selected}
             night={view?.night ?? false}
             onPick={pick}
+            {...(scale === undefined ? {} : { scale })}
           />
           {!wide && <SlotsLine slots={props.slots} />}
           {!wide && (
@@ -219,19 +260,24 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
           />
         )}
       </div>
-      {wide && (
+      {panelOpen && (
         <PlacePanel
           {...shared}
           destination={selected}
           card={card}
-          deciding={step === 'decide' ? deciding : null}
-          onBackFromDecide={() => {
-            setStep('place');
-            setDecideId(null);
+          mode={mode}
+          onMode={(next) => {
+            setStep(next.kind);
+            setDecideId(next.kind === 'decide' ? next.trip.id : null);
           }}
+          initialStep={props.initialWizard}
           reveal={props.reveal}
-          onSend={props.onSend}
-          onDecide={decide}
+          onClose={closePanel}
+          onSend={async (request) => {
+            const started = await props.onSend(request);
+            if (started) close();
+            return started;
+          }}
         />
       )}
       {!wide && selected !== null && (

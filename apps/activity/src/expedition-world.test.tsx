@@ -80,43 +80,73 @@ function one(list: FakeElement[], what: string): FakeElement {
 const panel = (p: Page) => one(byClass(p.root, 'place-panel'), 'panel');
 
 describe('the world map on a wide screen', () => {
-  it('has the map, the shelf and a panel that asks "Where to?" while nothing is chosen', () => {
+  it('has the map full width and the shelf, and no panel while nothing is chosen', () => {
     const p = draw([home]);
     expect(byClass(p.root, 'world-map')).toHaveLength(1);
     expect(byClass(p.root, 'trip-shelf')).toHaveLength(1);
     expect(byClass(p.root, 'out-strip')).toHaveLength(0);
     expect(byRole(p.root, 'dialog')).toHaveLength(0);
-    const aside = panel(p);
-    expect(visibleText(aside)).toContain('Where to?');
-    expect(visibleText(aside)).toContain(
-      'Pick a place on the map to see who lives there and send an explorer.',
-    );
-    // Named by its heading.
-    const heading = p.document.getElementById(aside.getAttribute('aria-labelledby') ?? '');
-    expect(heading?.textContent).toBe('Where to?');
-    expect(visibleText(aside)).not.toContain('rank');
+    expect(byClass(p.root, 'place-panel')).toHaveLength(0);
+    expect(byClass(p.root, 'with-panel')).toHaveLength(0);
+    expect(visibleText(p.root)).not.toContain('Where to?');
   });
 
-  it('fills the panel with the chosen place and its whole send form, without moving the focus', () => {
+  it('opens the panel on the chosen place, as the place and its Send button, without moving the focus', () => {
     const p = draw([home]);
     const before = p.document.activeElement;
     p.click(marker(p, 'tidepools'));
+    expect(byClass(p.root, 'with-panel')).toHaveLength(1);
     const aside = panel(p);
     const text = visibleText(aside);
     expect(text).toContain('Tidepools');
     expect(text).toContain('Lives here');
     expect(byClass(aside, 'trip-row')).toHaveLength(1);
-    expect(byClass(aside, 'explorer-picker')).toHaveLength(1);
-    expect(byClass(aside, 'send-button')).toHaveLength(1);
+    // The send form is a wizard behind the button, not a long list.
+    expect(byClass(aside, 'explorer-picker')).toHaveLength(0);
+    expect(visibleText(one(byClass(aside, 'send-button'), 'button'))).toBe('Send an explorer here');
+    // Named by its heading.
+    const heading = p.document.getElementById(aside.getAttribute('aria-labelledby') ?? '');
+    expect(heading?.textContent).toBe('Tidepools');
     expect(p.document.activeElement).toBe(before);
     // A screen reader hears which place was chosen.
     expect(byRole(p.root, 'status').map((el) => el.textContent)).toContain('Tidepools chosen');
     expect(marker(p, 'tidepools').getAttribute('aria-pressed')).toBe('true');
-    // Choosing another place replaces it; choosing the same place again clears the panel.
+    // Choosing another place replaces it; choosing the same place again closes the panel.
     p.click(marker(p, 'ember-caves'));
     expect(visibleText(panel(p))).toContain('Ember Caves');
     p.click(marker(p, 'ember-caves'));
-    expect(visibleText(panel(p))).toContain('Where to?');
+    expect(byClass(p.root, 'place-panel')).toHaveLength(0);
+  });
+
+  it('runs the send wizard in the panel: Who goes, Pack up, Ready, with Back to the place', () => {
+    const p = draw([home]);
+    p.click(marker(p, 'tidepools'));
+    p.click(one(byClass(panel(p), 'send-button'), 'send button'));
+    expect(byClass(panel(p), 'explorer-picker')).toHaveLength(1);
+    expect(visibleText(panel(p))).toContain('Who goes');
+    p.click(one(byClass(panel(p), 'send-button'), 'Next'));
+    expect(byClass(panel(p), 'supply-cell').length).toBeGreaterThan(0);
+    p.click(one(byClass(panel(p), 'send-button'), 'Next'));
+    expect(byClass(panel(p), 'trip-summary')).toHaveLength(1);
+    expect(visibleText(one(byClass(panel(p), 'send-button'), 'Send'))).toMatch(
+      /^Send .+ to Tidepools/,
+    );
+    // Back, step by step, to the place.
+    for (let i = 0; i < 3; i += 1) {
+      p.click(one(byName(panel(p), 'button', /Back/), 'Back'));
+    }
+    expect(byClass(panel(p), 'explorer-picker')).toHaveLength(0);
+    expect(visibleText(panel(p))).toContain('Lives here');
+  });
+
+  it('closes the panel with its X and gives the focus to the place on the map', () => {
+    const p = draw([home]);
+    p.click(marker(p, 'ember-caves'));
+    p.click(one(byName(panel(p), 'button', 'Close'), 'X'));
+    expect(byClass(p.root, 'place-panel')).toHaveLength(0);
+    expect(byClass(p.root, 'with-panel')).toHaveLength(0);
+    expect(marker(p, 'ember-caves').getAttribute('aria-pressed')).toBe('false');
+    expect(p.document.activeElement).toBe(marker(p, 'ember-caves'));
   });
 
   it('selects the place of a shelf card', () => {
@@ -176,7 +206,6 @@ describe('the world map on a wide screen', () => {
     const aside = panel(p);
     expect(aside.getAttribute('aria-labelledby')).toBe('trip-result-heading');
     expect(visibleText(aside)).toContain('Back from the Tidepools');
-    expect(visibleText(aside)).not.toContain('Where to?');
   });
 });
 

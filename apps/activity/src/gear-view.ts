@@ -318,22 +318,6 @@ export function gearShare(
   });
 }
 
-/** Creatures that cannot go on an expedition because of a job, with the reason. */
-export function expeditionBlocked(
-  creatures: readonly Creature[],
-): { creature: Creature; reason: string }[] {
-  return creatures.flatMap((creature) =>
-    creature.busy?.kind === 'job'
-      ? [
-          {
-            creature,
-            reason: `${creatureName(creature)} is on a job in the Workshop. Claim it first.`,
-          },
-        ]
-      : [],
-  );
-}
-
 // --- The wear rule ---
 
 /**

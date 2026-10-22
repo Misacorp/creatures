@@ -21,7 +21,6 @@ import {
   rangeBadge,
   durationFor,
   equipChoices,
-  expeditionBlocked,
   gearName,
   gearShare,
   grantsForWeek,
@@ -166,13 +165,6 @@ describe('creatures, busy states and the picker', () => {
         statsWithGear: { hp: 100, atk: 50, spd: 30 },
       }),
     ).toEqual([]);
-  });
-
-  it('blocks an expedition for a creature on a job, with the reason', () => {
-    const blocked = expeditionBlocked(game.creatures);
-    expect(blocked).toHaveLength(1);
-    expect(blocked[0]?.creature.id).toBe(cindle.id);
-    expect(blocked[0]?.reason).toContain('on a job');
   });
 });
 
