@@ -88,7 +88,8 @@ export const CLASSIC_PACE: Readonly<Pace> = {
  * enrage rounds can add up to 3 more rounds.
  */
 export const SLOW_PACE: Readonly<Pace> = {
-  introMs: 2_500,
+  // The "Round N" intro plays at its own speed, not slowed (Misa, 2026-10-23).
+  introMs: 1_500,
   tailMs: 4_000,
   windupMs: 1_500,
   baseBeatMs: 2_000,

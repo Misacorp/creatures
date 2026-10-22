@@ -133,7 +133,7 @@ const stage: Entry = {
     players: 11,
     yourLane: 5,
     roundIntro: false,
-    track: 'glass',
+    track: 'hitline',
   },
   presets: [
     { name: 'Raid, third round, fourth creature acting', props: {} },

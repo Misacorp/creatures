@@ -137,9 +137,9 @@ describe('roundPlaybackMs', () => {
 
   it('plays the same round about three times slower at the slow pace (the live finale from 2026-10-22)', () => {
     const events = plainRound(8);
-    // Intro 2.5 s, the round start (600), 8 turns of 2 s, the boss attack's 1.5 s wind-up and a 4 s tail.
+    // Intro 1.5 s (not slowed), the round start (600), 8 turns of 2 s, the boss attack's 1.5 s wind-up and a 4 s tail.
     expect(roundPlaybackMs(events, { pace: SLOW_PACE })).toBe(
-      2_500 + 600 + 8 * 2_000 + 1_500 + 4_000,
+      1_500 + 600 + 8 * 2_000 + 1_500 + 4_000,
     );
     const plan = planRound(events, { pace: SLOW_PACE });
     expect(plan.introMs).toBe(SLOW_PACE.introMs);

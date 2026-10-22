@@ -114,8 +114,8 @@ function Player({
 }
 
 const bossAttacks: Entry = {
-  name: 'BossShots',
-  file: 'apps/activity/src/stage/BossShots.tsx',
+  name: 'BossFx',
+  file: 'apps/activity/src/stage/BossFx.tsx',
   group: 'Creatures & game pieces',
   description:
     "The boss's attacks in motion: a seeded raid fight plays on its own, round after round, so the shots can be watched (a glowing crescent for a plain attack, a wave across the row for a zone hit or a sweep, falling orbs for a barrage or a charge landing, a spear of light down a lane, two crescents closing in for a pincer, violet crescents for a silence), each tinted with the boss's element and ending in an impact ring, the white flash and big numbers. Pick the boss, the party size, the rounds and the move track's look.",
@@ -134,7 +134,7 @@ const bossAttacks: Entry = {
     players: 4,
     from: 2,
     to: 6,
-    track: 'glass',
+    track: 'hitline',
     loop: true,
     slow: true,
     bossOnly: false,

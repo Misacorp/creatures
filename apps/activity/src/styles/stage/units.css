@@ -1,4 +1,4 @@
-/* The boss's attacks in flight are drawn in this layer (stage/BossShots.tsx, shots.css). */
+/* The boss's attacks are drawn in this layer (stage/boss-fx.ts, boss-fx.css). */
 .stage-strikes {
   position: absolute;
   inset: 0;

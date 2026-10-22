@@ -124,3 +124,19 @@ export function moveTrack(
     }));
   return { rounds, tiles, now };
 }
+
+/**
+ * The next time each move comes, soonest first, each move once (the countdown looks): a charge by
+ * the round it lands. Moves due this round come first.
+ */
+export function nextMoves(track: MoveTrackView, now: number): TrackTile[] {
+  const at = (t: TrackTile): number => (t.kind === 'charge' && t.from <= now ? t.to : t.from);
+  const seen = new Set<string>();
+  const out: TrackTile[] = [];
+  for (const t of [...track.tiles].sort((a, b) => at(a) - at(b) || a.lane - b.lane)) {
+    if (seen.has(t.gimmick)) continue;
+    seen.add(t.gimmick);
+    out.push(t);
+  }
+  return out;
+}

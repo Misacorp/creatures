@@ -50,7 +50,7 @@ import { ToggleButton } from './ui/ToggleButton';
 import { Sprite } from './sprites/Sprite';
 import { elementIcon } from './sprites/element-icons';
 import { Bursts, Floats, RoundIntro, fxRef, nameOf } from './stage/StageFx';
-import { BossShots } from './stage/BossShots';
+import { BossFx } from './stage/BossFx';
 import { EffectIcons } from './ui/EffectIcons';
 import { AbilityBadge, CreatureTags, FoeFace, StageUnit } from './stage/StageUnit';
 import { useLiveStage, type Anim } from './use-live-stage';
@@ -766,20 +766,18 @@ export function Stage({
           {abilities.help}
         </Popover>
       )}
-      <div
-        class={`stage-strikes${foe.element === 'unknown' ? '' : ` shot-${foe.element}`}`}
-        ref={layerRef}
-        aria-hidden="true"
-      >
+      <div class="stage-strikes" ref={layerRef} aria-hidden="true">
         {fx.map((item) => {
           const { cue } = item;
-          if (cue.kind !== 'windup' || item.ms === 0) return null;
+          if ((cue.kind !== 'windup' && cue.kind !== 'strike') || item.ms === 0) return null;
           return (
-            <BossShots
-              key={`shots-${String(cue.i)}`}
+            <BossFx
+              key={`${cue.kind}-${String(cue.i)}`}
+              phase={cue.kind === 'windup' ? 'windup' : 'impact'}
               strike={cue.strike}
               seed={cue.i}
               ms={item.ms}
+              element={foe.element === 'unknown' ? null : foe.element}
               layer={layerRef}
               boss={() => bossRef.current}
               unit={(id) => boxes.current.get(id) ?? null}
