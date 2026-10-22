@@ -33,7 +33,10 @@ import {
   LOBBY_MS,
   newestRound,
   nextBoundaryAt,
+  nextLiveDelay,
   nextPollDelay,
+  PUSH_GRACE_MS,
+  SAFETY_POLL_MS,
   pickNewer,
   progressText,
   revealSummary,
@@ -192,6 +195,45 @@ describe('nextPollDelay', () => {
     expect(nextPollDelay(ended, end - 100_000)).toBe(2000);
     expect(nextPollDelay(ended, end + 1_000)).toBe(2000);
     expect(nextPollDelay(ended, end + GIVE_UP_MS + 1)).toBeNull();
+  });
+});
+
+describe('nextLiveDelay', () => {
+  const live = fightOf();
+
+  it('stops where the normal poll stops', () => {
+    expect(nextLiveDelay({ status: 'none', serverNow: 1 }, START)).toBeNull();
+    expect(nextLiveDelay(fightOf({ status: 'done' }), START + 130_000)).toBeNull();
+    const ended = fightOf({ round: 12, nextRoundAt: null });
+    expect(nextLiveDelay(ended, START + 12 * 22_000 + GIVE_UP_MS + 1)).toBeNull();
+  });
+
+  it('is a slow safety poll while no boundary is near', () => {
+    expect(nextLiveDelay(live, START + 10_500)).toBe(SAFETY_POLL_MS);
+    expect(SAFETY_POLL_MS).toBeGreaterThanOrEqual(15_000);
+    expect(SAFETY_POLL_MS).toBeLessThanOrEqual(20_000);
+  });
+
+  it('looks once, a grace after the next boundary, in case the push never came', () => {
+    // 5 s before the boundary at +30 s.
+    expect(nextLiveDelay(live, START + 25_000)).toBe(5_000 + PUSH_GRACE_MS);
+    // 1 s past it with no news: the grace is not over yet.
+    expect(nextLiveDelay(live, START + 31_000)).toBe(PUSH_GRACE_MS - 1_000);
+    expect(nextLiveDelay(live, START + 30_000 + PUSH_GRACE_MS - 400)).toBe(400);
+    // Past the grace and still nothing: the safety pace, not a hammer.
+    expect(nextLiveDelay(live, START + 30_000 + PUSH_GRACE_MS + 1)).toBe(SAFETY_POLL_MS);
+  });
+
+  it('is much slower than the normal poll, in the lobby too', () => {
+    const lobby = lobbyOf();
+    expect(nextLiveDelay(lobby, START - 60_000)).toBe(SAFETY_POLL_MS);
+    expect(nextLiveDelay(lobby, START - 1_000)).toBe(1_000 + PUSH_GRACE_MS);
+    expect(nextPollDelay(lobby, START - 60_000)).toBe(2000);
+  });
+
+  it('asks at the normal pace after the last round until "done" arrives', () => {
+    const ended = fightOf({ round: 12, nextRoundAt: null });
+    expect(nextLiveDelay(ended, START + 12 * 22_000 + 1_000)).toBe(2000);
   });
 });
 

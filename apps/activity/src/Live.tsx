@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ApiError } from './api';
+import { createFinalePoller, type FinalePoller } from './finale-poller';
+import { createFinaleSocket } from './finale-socket';
+import { finaleLiveOffered } from './live-flags';
 import { Countdown } from './Countdown';
 import { countdownView, spokenCountdown } from './countdown';
 import { clockOffset, errorText } from './game';
@@ -11,10 +14,8 @@ import {
   buildAction,
   createKeyLock,
   earlierLines,
-  errorRetryDelayMs,
   feedLines,
-  isRetryableStatus,
-  nextPollDelay,
+  finaleSocketTarget,
   noAbilityText,
   otherUsage,
   otherUsageText,
@@ -106,49 +107,43 @@ export function Live({
     setSnapshot(next);
   }
 
-  // Poll while the finale is on: every 2 s, and just after each round boundary. Stops at "done"
-  // (or "none"), and when this view is closed.
+  // Poll while the finale is on: every 2 s and just after each round boundary, or (while the live socket
+  // below delivers) only a slow safety poll. Stops at "done" (or "none"), and when this view is closed.
+  const poller = useRef<FinalePoller | null>(null);
   useEffect(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let failures = 0;
-    const schedule = (delay: number | null): void => {
-      if (cancelled || delay === null) return;
-      timer = setTimeout(poll, delay);
-    };
-    function poll(): void {
-      fetchLive().then(
-        (next) => {
-          if (cancelled) return;
-          failures = 0;
-          setPollError(null);
-          accept(next);
-          schedule(nextPollDelay(latest.current ?? next, Date.now() + offset.current));
-        },
-        (err: unknown) => {
-          if (cancelled) return;
-          failures += 1;
-          const status = err instanceof ApiError ? err.status : null;
-          if (!isRetryableStatus(status)) {
-            setPollError(errorText(err));
-            return;
-          }
-          setPollError('Connection problem. Trying again...');
-          schedule(errorRetryDelayMs(failures));
-        },
-      );
-    }
-    if (initial !== null) {
-      accept(initial);
-      schedule(nextPollDelay(initial, Date.now() + offset.current));
-    } else {
-      poll();
-    }
+    const next = createFinalePoller({
+      fetchSnapshot: fetchLive,
+      accept,
+      latest: () => latest.current,
+      serverNow: () => Date.now() + offset.current,
+      onError: (err, retrying) => {
+        setPollError(retrying ? 'Connection problem. Trying again...' : errorText(err));
+      },
+      onRecovered: () => {
+        setPollError(null);
+      },
+    });
+    poller.current = next;
+    next.start(initial);
     return () => {
-      cancelled = true;
-      if (timer !== undefined) clearTimeout(timer);
+      next.stop();
+      poller.current = null;
     };
   }, []);
+
+  // The live socket (`finaleLive` of `/api/config`): while a lobby or a fight is on, the server pushes a
+  // snapshot at every round start. Any trouble hands the screen back to the normal poll.
+  const target = finaleSocketTarget(finaleLiveOffered(), snapshot);
+  const targetKey = target === null ? null : `${target.week}:${String(target.party)}`;
+  useEffect(() => {
+    const active = poller.current;
+    if (target === null || active === null) return undefined;
+    const socket = createFinaleSocket({ week: target.week, party: target.party, poller: active });
+    socket.start();
+    return () => {
+      socket.stop();
+    };
+  }, [targetKey]);
 
   const hasLoot = snapshot !== null && snapshot.status !== 'none' && snapshot.loot !== null;
   useEffect(() => {

@@ -4,7 +4,7 @@
  * through the loader (see `room-loader.ts` for when it asks). Reacts to Discord's participant
  * updates and to the page being hidden or shown; the loader's single slow poll (every 45 s while
  * someone else is here and the page is visible) is its only timer. With the server's `loungeLive`
- * flag the room also opens the live socket (`lounge-socket.ts`) while someone else is here and the
+ * flag the room also opens the live socket (`live-socket.ts`) while someone else is here and the
  * page is visible: pushes replace the poll, and any trouble hands the room back to the poll.
  */
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
@@ -12,7 +12,7 @@ import { fetchLoungeTicket, fetchRoom, loungeSocketUrl, type GameState } from '.
 import type { GearItem } from './gear-types';
 import type { ParticipantSource } from './participants';
 import { othersOf, ownResident, roomResidents, shouldOpenSocket, type Resident } from './room-data';
-import { browserSocket, createLoungeSocket } from './lounge-socket';
+import { browserSocket, createLiveSocket } from './live-socket';
 import { createRoomLoader, type RoomLoader } from './room-loader';
 
 interface RoomInputs {
@@ -83,15 +83,15 @@ export function useRoom({
   const wantSocket = shouldOpenSocket({ enabled, offered: loungeLive, hidden }, present, selfId);
   useEffect(() => {
     if (!wantSocket) return undefined;
-    const socket = createLoungeSocket({
+    const socket = createLiveSocket({
       getTicket: fetchLoungeTicket,
       url: (ticket) => loungeSocketUrl(ticket, window.location),
       createSocket: browserSocket,
       onLive: (live) => {
         loader.current?.setLive(live);
       },
-      onResident: (resident) => {
-        loader.current?.applyResident(resident);
+      onMessage: (message) => {
+        if (message.type === 'resident') loader.current?.applyResident(message.resident);
       },
     });
     socket.start();
