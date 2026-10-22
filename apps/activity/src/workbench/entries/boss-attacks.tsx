@@ -114,7 +114,7 @@ function Player({
 }
 
 const bossAttacks: Entry = {
-  name: 'BossAttacks',
+  name: 'BossShots',
   file: 'apps/activity/src/stage/BossShots.tsx',
   group: 'Creatures & game pieces',
   description:

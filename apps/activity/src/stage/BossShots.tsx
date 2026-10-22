@@ -13,7 +13,7 @@ import { reticleTargets, strikeRows, type BossStrike } from '../stage';
  *   a strike on the strongest, a slam, a reflected hit); a chain's jumps go from one creature to the
  *   next.
  * - `wave`: a tall crescent that sweeps across a whole row (a zone hit, a sweep, the enrage round).
- * - `rain`: orbs falling from above onto each creature (a barrage, a charge landing).
+ * - `rain`: orbs falling from above onto each creature (a barrage; a charged barrage when it lands).
  * - `spear`: a long bolt from the boss straight down a lane (a lance).
  * - `pincer`: two crescents closing in from both ends of a row.
  * - `hex`: a violet crescent (a silence).
@@ -70,23 +70,8 @@ export function shotsOf(strike: BossStrike): ShotSpec[] {
         lag: Math.min(0.6, k * 0.1),
       }));
     case 'charge':
-      if (rows.length > 0) {
-        return rows.map((zone, k) => ({
-          kind: 'wave',
-          from: null,
-          to: zone,
-          row: true,
-          side: 1,
-          lag: k * 0.15,
-        }));
-      }
-      return targets.map((to, k) => ({
-        kind: 'rain',
-        from: null,
-        to,
-        side: 1,
-        lag: Math.min(0.6, k * 0.08),
-      }));
+      // The announcement: its marks say who it will hit; it flies when it lands (as its pattern).
+      return [];
     case 'lance': {
       const last = targets[targets.length - 1];
       return last === undefined ? [] : [{ kind: 'spear', from: null, to: last, side: 1, lag: 0 }];
@@ -119,15 +104,13 @@ export function shotsOf(strike: BossStrike): ShotSpec[] {
     case 'reflect_armed':
       return [];
     default:
-      return targets
-        .slice(0, 6)
-        .map((to, k) => ({
-          kind: 'arc',
-          from: null,
-          to,
-          side: k % 2 === 0 ? 1 : -1,
-          lag: Math.min(0.6, k * 0.08),
-        }));
+      return targets.slice(0, 6).map((to, k) => ({
+        kind: 'arc',
+        from: null,
+        to,
+        side: k % 2 === 0 ? 1 : -1,
+        lag: Math.min(0.6, k * 0.08),
+      }));
   }
 }
 
