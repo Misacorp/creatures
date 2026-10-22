@@ -11,7 +11,7 @@ import {
   dungeonEvent,
   dungeonEvents,
   dungeonFoe,
-  dungeonKeepsakes,
+  dungeonGifts,
   roomModifier,
 } from '../content/dungeon';
 import type {
@@ -377,7 +377,7 @@ export function resolveEvent(
   option: number,
   ctx: EventContext,
   rng: Rng,
-  keepsakePool: readonly KeepsakeDef[] = dungeonKeepsakes,
+  keepsakePool: readonly KeepsakeDef[] = dungeonGifts,
 ): EventResolution {
   const chosen = event.options[option];
   if (chosen === undefined)
@@ -524,7 +524,7 @@ export function resolveEvent(
 export function campOffers(
   rng: Rng,
   held: readonly string[],
-  pool: readonly KeepsakeDef[] = dungeonKeepsakes,
+  pool: readonly KeepsakeDef[] = dungeonGifts,
   count: number = RULES.dungeon.camp.offers,
 ): string[] {
   const left = pool.filter((k) => !held.includes(k.id)).map((k) => k.id);

@@ -30,14 +30,7 @@ import { type DungeonRoomResult } from '@creatures/engine';
 import { awardExperience } from './creature-exp';
 import { grantDungeonRun, grantDungeonStreak, type GrantDeps } from './gear-grants';
 import { SUPPLIES_PER_RUN } from './dungeon-path';
-import {
-  currentHp,
-  curseViews,
-  keepsakeViews,
-  runNode,
-  treasureView,
-  type RunState,
-} from './dungeon-state';
+import { currentHp, heldViews, runNode, treasureView, type RunState } from './dungeon-state';
 import type {
   DungeonOutcome,
   DungeonPack,
@@ -450,8 +443,7 @@ export function summarise(
       return kind === 'door' && !undercroftOpen(row.depth) ? 'mystery' : kind;
     }),
     pack: { found: { ...args.found }, kept: { ...args.kept } },
-    keepsakes: keepsakeViews(st.keepsakes),
-    ...(st.curses.length === 0 ? {} : { curses: curseViews(st.curses) }),
+    keepsakes: heldViews(st),
     ...(outcome === null
       ? {}
       : {

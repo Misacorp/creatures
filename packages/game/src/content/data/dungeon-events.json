@@ -390,6 +390,7 @@
             "curse": {
               "id": "idol-curse",
               "name": "Idol's Curse",
+              "curse": true,
               "description": "Foes deal 20% more damage.",
               "effects": [
                 {

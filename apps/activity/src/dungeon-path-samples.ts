@@ -208,7 +208,6 @@ export function sampleState(over: Partial<DungeonRunState> = {}): DungeonRunStat
     pending: null,
     team: sampleRunCreatures(),
     keepsakes: [],
-    curses: [],
     pack: { bait: 0, essence: 0, scrap: 0 },
     roomsCleared: 0,
     supply: false,
@@ -547,11 +546,12 @@ export function sampleVaultSummary(): DungeonRunSummary {
 
 // --- The Cursed Idol and the Hungry Door ---
 
-/** The curse the Cursed Idol puts on a run, as the server sends it (a name and its plain effect line). */
+/** The curse the Cursed Idol puts on a run, as the server sends it: a keepsake view marked `curse` (a name and its plain effect line). */
 export const SAMPLE_CURSE: DungeonKeepsakeView = {
   id: 'idol-curse',
   name: "Idol's Curse",
   description: 'Foes deal 20% more damage.',
+  curse: true,
 };
 
 /** The Hungry Door's treasure kinds, one tier below the chasm's (a Rare piece, good supplies, 3 shards and 2 glimmer). No blueprint. */
@@ -602,9 +602,10 @@ export function sampleStateDoor(
   return { ...sampleStateEvent(), pending: { kind: 'event', event: doorEvent(treasure, blocked) } };
 }
 
-/** A run that took the Cursed Idol: the curse is carried, shown under the pack and the keepsakes. */
+/** A run that took the Cursed Idol: the curse is carried and listed with the keepsakes. */
 export function sampleStateCursed(): DungeonRunState {
-  return sampleStateMid({ curses: [SAMPLE_CURSE] });
+  const mid = sampleStateMid();
+  return { ...mid, keepsakes: [...mid.keepsakes, SAMPLE_CURSE] };
 }
 
 /**

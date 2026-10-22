@@ -166,6 +166,8 @@ export interface DungeonKeepsakeView {
   id: string;
   name: string;
   description: string;
+  /** Present (true) for a curse: a keepsake whose effect is a cost. It is listed with the keepsakes. */
+  curse?: true;
 }
 
 /**
@@ -257,8 +259,6 @@ export interface DungeonRunState {
   /** The row now, left to right. */
   team: DungeonRunCreature[];
   keepsakes: DungeonKeepsakeView[];
-  /** The curses the run carries (a name and its plain effect line), shown as "Curse". */
-  curses: DungeonKeepsakeView[];
   /** At risk until the run heads home or clears. */
   pack: DungeonPack;
   roomsCleared: number;
@@ -522,8 +522,6 @@ export interface DungeonRunSummary {
   pack?: { found: DungeonPack; kept: DungeonPack };
   /** The keepsakes the run held at the end. Absent in older runs. */
   keepsakes?: DungeonKeepsakeView[];
-  /** The curses the run carried at its end (absent: none). */
-  curses?: DungeonKeepsakeView[];
   /**
    * The map of the run, the nodes visited in order and what each did: the results screen can show the
    * route. Absent in older runs.

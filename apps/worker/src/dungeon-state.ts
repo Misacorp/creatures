@@ -281,9 +281,14 @@ export function heldFolds(st: Pick<RunState, 'keepsakes' | 'curses'>): KeepsakeD
   return [...heldKeepsakes(st.keepsakes), ...st.curses];
 }
 
-/** A curse as the client is shown it: a name and its plain effect line. */
+/** A curse as the client is shown it: a keepsake view marked `curse: true`. */
 export function curseViews(curses: readonly CurseDef[]): DungeonKeepsakeView[] {
-  return curses.map((c) => ({ id: c.id, name: c.name, description: c.description }));
+  return curses.map(keepsakeViewOf);
+}
+
+/** What the run holds, as the keepsakes list shows it: the keepsakes in the order won, then the curses. */
+export function heldViews(st: Pick<RunState, 'keepsakes' | 'curses'>): DungeonKeepsakeView[] {
+  return [...keepsakeViews(st.keepsakes), ...curseViews(st.curses)];
 }
 
 /** The row's max HP outside a fight, from its stats and the keepsakes held. */
@@ -326,9 +331,19 @@ export function currentHp(st: RunState): Record<string, number> {
   return out;
 }
 
+/** A keepsake (or curse) def as the client is shown it. */
+export function keepsakeViewOf(def: KeepsakeDef): DungeonKeepsakeView {
+  return {
+    id: def.id,
+    name: def.name,
+    description: def.description,
+    ...(def.curse === true ? { curse: true as const } : {}),
+  };
+}
+
 export function keepsakeView(id: string): DungeonKeepsakeView | null {
   const def = dungeonKeepsake(id);
-  return def === undefined ? null : { id: def.id, name: def.name, description: def.description };
+  return def === undefined ? null : keepsakeViewOf(def);
 }
 
 export function keepsakeViews(ids: readonly string[]): DungeonKeepsakeView[] {
@@ -488,8 +503,7 @@ export function runView(meta: RunMeta, st: RunState): DungeonRunState {
       treat: treated.has(slot.id),
       gear: runGearView(st.seats?.[slot.id]?.kit.items ?? []),
     })),
-    keepsakes: keepsakeViews(st.keepsakes),
-    curses: curseViews(st.curses),
+    keepsakes: heldViews(st),
     pack: { ...st.pack },
     roomsCleared: st.roomsCleared,
     supply: st.supply,

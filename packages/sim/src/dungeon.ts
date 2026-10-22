@@ -11,7 +11,7 @@ import {
   content,
   createSeededRng,
   dungeonKeepsake,
-  dungeonKeepsakes,
+  dungeonGifts,
   dungeonRowOrder,
   dungeonScrapPerRoom,
   dungeonEvent,
@@ -746,7 +746,7 @@ export function walkMap(options: {
       });
       if (node.kind === 'elite' || node.kind === 'epic') {
         if (node.kind === 'elite') elites += 1;
-        const left = dungeonKeepsakes.filter((k) => !held.some((h) => h.id === k.id));
+        const left = dungeonGifts.filter((k) => !held.some((h) => h.id === k.id));
         gain(left[int(rng, left.length || 1)]);
       }
       if (node.kind === 'boss') {

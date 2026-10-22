@@ -17,7 +17,7 @@ import {
   catchBreath,
   drawMark,
   dungeonEvent,
-  dungeonKeepsakes,
+  dungeonGifts,
   dungeonScrapPerRoom,
   emptyPack,
   eventTreasureTable,
@@ -216,7 +216,7 @@ function someoneStands(st: RunState): boolean {
 
 /** A random keepsake the run does not hold, or null when it holds them all. */
 function drawKeepsake(rng: Rng, held: readonly string[]): string | null {
-  const left = dungeonKeepsakes.filter((k) => !held.includes(k.id));
+  const left = dungeonGifts.filter((k) => !held.includes(k.id));
   const pick = left[int(rng, left.length || 1)];
   return pick === undefined ? null : pick.id;
 }

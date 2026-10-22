@@ -403,6 +403,21 @@ const skull: SpriteDef = {
   ],
 };
 
+/** A cracked skull in dark blood red with glowing eyes: a curse (a keepsake whose effect is a cost). */
+const curse: SpriteDef = {
+  palette: { r: '#b3303f', d: '#6e1a28', k: INK, e: BAD },
+  rows: [
+    '..rrrr..',
+    '.rrkrrr.',
+    'rrkrrrrr',
+    'rkekkekr',
+    'rrrkkrrr',
+    '.rrrrrd.',
+    '..rkrkd.',
+    '..d..d..',
+  ],
+};
+
 /** A hand with a pointing finger: auto fire is off, the ability waits for its owner. */
 const hand: SpriteDef = {
   palette: { w: BONE, k: INK },
@@ -767,6 +782,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   gem,
   'shard-any': shardAny,
   skull,
+  curse,
   hand,
   check,
   tick,

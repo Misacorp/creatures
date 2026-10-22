@@ -197,6 +197,11 @@ export const KeepsakeSchema = v.strictObject({
   /** One plain line with the exact effect ("Every creature gets 12% more Attack and HP."). */
   description: v.pipe(v.string(), v.minLength(1), v.maxLength(90)),
   effects: v.pipe(v.array(KeepsakeEffectSchema), v.minLength(1), v.maxLength(3)),
+  /**
+   * A curse is a keepsake whose effect is a cost: it is held, shown and folded like any keepsake, and the
+   * client marks it as a curse. Curses are never drawn as a gift (elite, camp), only given by a room.
+   */
+  curse: v.optional(v.literal(true)),
 });
 export type KeepsakeDef = v.InferOutput<typeof KeepsakeSchema>;
 
@@ -210,8 +215,9 @@ export const TREASURE_TABLES = ['chasm', 'door'] as const;
 export type TreasureTableName = (typeof TREASURE_TABLES)[number];
 
 /**
- * A curse: a run-long change to the foes, written with the foe folds of a room modifier. It is held like a
- * keepsake (the engine folds it into every later fight of the run) but is shown as a "Curse".
+ * A curse: a keepsake (`curse: true`) whose effect is a run-long change to the foes, written with the foe
+ * folds of a room modifier. It is held and shown in the keepsakes like any other (the engine folds it into
+ * every later fight of the run); the client marks it as a curse.
  */
 export const CurseSchema = v.strictObject({
   id: v.pipe(IdSchema, v.maxLength(KEEPSAKE_ID_MAX)),
@@ -219,6 +225,7 @@ export const CurseSchema = v.strictObject({
   /** One plain line with the exact effect ("Foes deal 20% more damage for the rest of the run."). */
   description: v.pipe(v.string(), v.minLength(1), v.maxLength(90)),
   effects: v.pipe(v.array(FoeStatEffectSchema), v.minLength(1), v.maxLength(2)),
+  curse: v.literal(true),
 });
 export type CurseDef = v.InferOutput<typeof CurseSchema>;
 

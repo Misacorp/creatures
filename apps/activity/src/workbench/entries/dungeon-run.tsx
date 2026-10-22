@@ -105,6 +105,8 @@ function stripState(p: Props): DungeonRunState {
   const keepsakes = dungeonKeepsakes
     .slice(0, num(p, 'keepsakes'))
     .map((k) => ({ id: k.id, name: k.name, description: k.description }));
+  // A curse is listed with the keepsakes, marked as one.
+  if (bool(p, 'curse')) keepsakes.push(SAMPLE_CURSE);
   const at = str(p, 'at');
   return {
     ...sampleStateCamp(),
@@ -112,7 +114,6 @@ function stripState(p: Props): DungeonRunState {
     pending: null,
     team,
     keepsakes,
-    curses: bool(p, 'curse') ? [SAMPLE_CURSE] : [],
     pack: { bait: num(p, 'bait'), essence: num(p, 'essence'), scrap: num(p, 'scrap') },
     landmark: bool(p, 'landmark'),
     lastEvent: bool(p, 'lastEvent')
@@ -182,7 +183,7 @@ const dungeonRunStrip: Entry = {
     },
     { name: 'A landmark depth', props: { landmark: true } },
     {
-      name: 'A curse carried (the Cursed Idol): a warning note under the keepsakes',
+      name: 'A curse carried (the Cursed Idol): a chip in the keepsakes, tap for its effect',
       props: { curse: true, keepsakes: 2 },
     },
   ],

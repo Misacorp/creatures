@@ -4,6 +4,8 @@ import {
   createSeededRng,
   dungeonContent,
   dungeonEvent,
+  dungeonGifts,
+  dungeonKeepsakes,
   dungeonItemLevel,
   eventOptionBlock,
   eventOptionCosts,
@@ -69,11 +71,32 @@ describe('Cursed Idol', () => {
     const take = resolveEvent(event('cursed-idol'), 0, team(), WIN);
     expect(take.keepsakesGained).toHaveLength(1);
     expect(take.curses).toHaveLength(1);
+    expect(take.curses?.[0]?.curse).toBe(true);
     expect(take.curses?.[0]?.effects).toEqual([{ op: 'foe_stat', stat: 'atk', bp: 2000 }]);
     expect(take.outcome).toContain('Foes deal 20% more damage.');
     const leave = resolveEvent(event('cursed-idol'), 1, team(), WIN);
     expect(leave.curses).toBeUndefined();
     expect(leave.outcome).toBe('Nothing happens.');
+  });
+
+  it('a keepsake def can carry curse: true and is then never given as a gift', () => {
+    const withCurse = [
+      ...clone(keepsakesJson),
+      {
+        id: 'test-curse',
+        name: 'Test Curse',
+        description: 'Foes deal 10% more damage.',
+        effects: [{ op: 'foe_stat', stat: 'atk', bp: 1000 }],
+        curse: true,
+      },
+    ];
+    expect(() => loadDungeonRun(withCurse, eventsJson, dungeonContent)).not.toThrow();
+    const bad = clone(withCurse);
+    (bad[bad.length - 1] as Record<string, unknown>)['curse'] = false;
+    expect(() => loadDungeonRun(bad, eventsJson, dungeonContent)).toThrow();
+    // The shipped keepsakes are all gifts; the Idol's curse is not a keepsake of the pool.
+    expect(dungeonGifts).toHaveLength(dungeonKeepsakes.length);
+    expect(dungeonGifts.every((k) => k.curse !== true)).toBe(true);
   });
 
   it('Take it counts as costing; Leave it is the free option', () => {
@@ -231,6 +254,9 @@ describe('the schema of the new effects', () => {
     const d = base();
     curseOf(d)['description'] = 'x'.repeat(91);
     refused(d);
+    const e = base();
+    delete curseOf(e)['curse'];
+    refused(e);
   });
 
   it('refuses a send_home for anyone but the highest level, and a treasure of an unknown table', () => {

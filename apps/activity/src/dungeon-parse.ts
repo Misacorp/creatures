@@ -164,7 +164,11 @@ const SHARD_KIND = /^(?:tide|ember|grove|spark|mire)-shard$/;
 
 function isKeepsake(value: unknown): value is DungeonKeepsakeView {
   return (
-    isRecord(value) && isStr(value['id']) && isStr(value['name']) && isStr(value['description'])
+    isRecord(value) &&
+    isStr(value['id']) &&
+    isStr(value['name']) &&
+    isStr(value['description']) &&
+    (value['curse'] === undefined || value['curse'] === true)
   );
 }
 
@@ -419,7 +423,6 @@ function isRunState(value: unknown): value is DungeonRunState {
     isPending(value['pending']) &&
     isArrayOf(value['team'], isRunCreature) &&
     isArrayOf(value['keepsakes'], isKeepsake) &&
-    isArrayOf(value['curses'], isKeepsake) &&
     isPack(value['pack']) &&
     isCount(value['roomsCleared']) &&
     isBool(value['supply']) &&
@@ -472,7 +475,6 @@ function isRunSummary(value: unknown): value is DungeonRunSummary {
         isPack(value['pack']['found']) &&
         isPack(value['pack']['kept']))) &&
     (value['keepsakes'] === undefined || isArrayOf(value['keepsakes'], isKeepsake)) &&
-    (value['curses'] === undefined || isArrayOf(value['curses'], isKeepsake)) &&
     (value['route'] === undefined || isRoute(value['route']))
   );
 }

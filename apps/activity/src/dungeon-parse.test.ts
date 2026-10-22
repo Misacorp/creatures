@@ -972,11 +972,15 @@ describe('the Blue Chasm in the answers', () => {
 describe('the Cursed Idol and the Hungry Door in the answers', () => {
   const parse = (state: unknown) => parseDungeonAct({ state, today: sampleToday() }).state;
 
-  it('reads the curses of a run, and refuses a run without the list or with a broken curse', () => {
-    expect(parse(sampleStateCursed()).curses).toEqual([SAMPLE_CURSE]);
-    expect(parse(sampleState()).curses).toEqual([]);
-    expect(() => parse(omitKey(sampleStateCursed(), 'curses'))).toThrow();
-    expect(() => parse({ ...sampleStateCursed(), curses: [{ id: 'x', name: 'X' }] })).toThrow();
+  it('reads a curse as a keepsake with `curse: true`, and refuses a broken mark', () => {
+    expect(parse(sampleStateCursed()).keepsakes.at(-1)).toEqual(SAMPLE_CURSE);
+    expect(parse(sampleState()).keepsakes).toEqual([]);
+    expect(() =>
+      parse({ ...sampleStateCursed(), keepsakes: [{ ...SAMPLE_CURSE, curse: false }] }),
+    ).toThrow();
+    expect(() =>
+      parse({ ...sampleStateCursed(), keepsakes: [{ ...SAMPLE_CURSE, curse: 'yes' }] }),
+    ).toThrow();
   });
 
   it('reads the door with each treasure kind, and an option that cannot be picked with its reason', () => {
@@ -1018,19 +1022,18 @@ describe('the Cursed Idol and the Hungry Door in the answers', () => {
     const history = (run.route?.history ?? []).map((h) =>
       h.result === 'event' ? { ...h, curse: SAMPLE_CURSE } : h,
     );
-    const withCurse = { ...run, curses: [SAMPLE_CURSE], route: { ...run.route, history } };
+    const withCurse = {
+      ...run,
+      keepsakes: [...(run.keepsakes ?? []), SAMPLE_CURSE],
+      route: { ...run.route, history },
+    };
     const read = parseDungeonAct({
       state: sampleState(),
       summary: withCurse,
       today: sampleToday(),
     }).summary;
-    expect(read?.curses).toEqual([SAMPLE_CURSE]);
-    expect(() =>
-      parseDungeonAct({
-        state: sampleState(),
-        summary: { ...run, curses: [{ id: 1 }] },
-        today: sampleToday(),
-      }),
-    ).toThrow();
+    expect(read?.keepsakes?.at(-1)).toEqual(SAMPLE_CURSE);
+    const cursed = read?.route?.history.find((h) => h.result === 'event' && h.curse !== undefined);
+    expect(cursed?.result === 'event' ? cursed.curse : null).toEqual(SAMPLE_CURSE);
   });
 });

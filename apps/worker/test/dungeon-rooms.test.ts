@@ -1,6 +1,6 @@
 import { RULES, createSeededRng, type Rng } from '@creatures/game';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { parseState, type RunState } from '../src/dungeon-state';
+import { heldViews, keepsakeViewOf, parseState, type RunState } from '../src/dungeon-state';
 import type { DungeonRunState } from '../src/dungeon-types';
 import {
   dungeonPlayer,
@@ -225,22 +225,28 @@ describe('Crystal Hollow', () => {
 });
 
 describe('Cursed Idol', () => {
-  it('Take it: a keepsake and a curse shown on the run, folded into every later fight; it is gone with the run', async () => {
+  it('Take it: a keepsake and a curse listed in the keepsakes, folded into every later fight; it is gone with the run', async () => {
     await withRooms(async (s) => {
       const { state, target } = await toRoom(s, 1, (id) => id === 'cursed-idol');
       const waiting = await enter(s, state, target);
-      expect(state.curses).toEqual([]);
+      expect(state.keepsakes.filter((k) => k.curse === true)).toEqual([]);
       const res = await s.p.act(waiting, { type: 'event', option: 0 });
       expect(res.status, JSON.stringify(res.body)).toBe(200);
       const next = res.body.state;
-      expect(next.keepsakes).toHaveLength(1);
-      expect(next.curses).toEqual([
-        { id: 'idol-curse', name: "Idol's Curse", description: 'Foes deal 20% more damage.' },
-      ]);
+      // The curse is one entry of the keepsakes list, marked as a curse, after the gift.
+      expect(next.keepsakes).toHaveLength(2);
+      expect(next.keepsakes[0]?.curse).toBeUndefined();
+      expect(next.keepsakes[1]).toEqual({
+        id: 'idol-curse',
+        name: "Idol's Curse",
+        description: 'Foes deal 20% more damage.',
+        curse: true,
+      });
+      expect('curses' in next).toBe(false);
       expect(next.history.at(-1)).toMatchObject({
         result: 'event',
         option: 'Take it',
-        curse: { id: 'idol-curse' },
+        curse: { id: 'idol-curse', curse: true },
       });
       expect(load(s.ctx, state.id).curses).toHaveLength(1);
       // The next fight carries the curse among its folds, after the keepsake.
@@ -270,7 +276,6 @@ describe('Cursed Idol', () => {
       const waiting = await enter(s, state, target);
       const res = await s.p.act(waiting, { type: 'event', option: 1 });
       expect(res.status).toBe(200);
-      expect(res.body.state.curses).toEqual([]);
       expect(res.body.state.keepsakes).toEqual([]);
     }, 'idol-leave');
   });
@@ -287,12 +292,37 @@ describe('Cursed Idol', () => {
           name: "Idol's Curse",
           description: 'Foes deal 20% more damage.',
           effects: [{ op: 'foe_stat', stat: 'atk', bp: 2000 }],
+          curse: true,
         },
       ];
       save(s.ctx, st);
       const res = await s.p.act(waiting, { type: 'event', option: 0 });
-      expect(res.body.state.curses).toHaveLength(1);
+      expect(res.body.state.keepsakes.filter((k) => k.curse === true)).toHaveLength(1);
     }, 'idol-twice');
+  });
+});
+
+describe('curses in the keepsakes view', () => {
+  const idol = {
+    id: 'idol-curse',
+    name: "Idol's Curse",
+    description: 'Foes deal 20% more damage.',
+    effects: [{ op: 'foe_stat' as const, stat: 'atk' as const, bp: 2000 }],
+    curse: true as const,
+  };
+
+  it('lists the keepsakes in the order won, then the curses marked as such (the end summary uses the same list)', () => {
+    const views = heldViews({ keepsakes: ['lantern-moth'], curses: [idol] });
+    expect(views.map((v) => v.id)).toEqual(['lantern-moth', 'idol-curse']);
+    expect(views[0]).not.toHaveProperty('curse');
+    expect(views[1]).toEqual({
+      id: 'idol-curse',
+      name: "Idol's Curse",
+      description: 'Foes deal 20% more damage.',
+      curse: true,
+    });
+    // The replay of a fight lists the folds it held, a curse included.
+    expect(keepsakeViewOf(idol).curse).toBe(true);
   });
 });
 
@@ -317,7 +347,7 @@ describe('a run saved before curses', () => {
       expect(loaded?.curses).toEqual([]);
       const res = await s.p.act(state, { type: 'move', node: state.reachable[0] as string });
       expect(res.status, JSON.stringify(res.body)).toBe(200);
-      expect(res.body.state.curses).toEqual([]);
+      expect(res.body.state.keepsakes.filter((k) => k.curse === true)).toEqual([]);
     }, 'old-curses');
   });
 });

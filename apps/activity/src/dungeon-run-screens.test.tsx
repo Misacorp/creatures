@@ -1701,31 +1701,48 @@ describe('the Blue Chasm', () => {
 });
 
 describe('the Cursed Idol curse on the run', () => {
-  it('shows the curse as a warning note under the pack and keepsakes, with its plain line', () => {
+  it('lists the curse in the keepsakes like any keepsake: same chip, a curse glyph and a spoken "Curse"', () => {
     const { root } = draw(<DungeonRunStrip state={sampleStateCursed()} />);
-    const notes = byClass(root, 'run-curse');
-    expect(notes).toHaveLength(1);
-    const text = visibleText(notes[0] as FakeElement);
-    expect(text).toContain('Curse');
-    expect(text).toContain("Idol's Curse.");
-    expect(text).toContain(SAMPLE_CURSE.description);
-    expect(text).toContain('Until the run ends.');
-    // A warning note (not an error), with a chip that opens the glossary entry.
-    expect(byClass(root, 'alert').length).toBeGreaterThan(0);
+    // No separate warning note any more.
+    expect(byClass(root, 'run-curses')).toHaveLength(0);
+    expect(byClass(root, 'alert')).toHaveLength(0);
+    const list = byClass(root, 'run-keepsakes')[0] as FakeElement;
+    const chips = byClass(list, 'run-keepsake');
+    expect(chips).toHaveLength(2);
+    const chip = byName(
+      list,
+      'button',
+      `Curse, ${SAMPLE_CURSE.name}: ${SAMPLE_CURSE.description}`,
+    )[0] as FakeElement;
+    expect(chip).toBe(chips[1]);
+    expect(chip.getAttribute('class')).toContain('chip');
+    expect(chip.getAttribute('class')).toContain('run-curse');
+    // A real keepsake keeps its plain label and no curse class.
+    const plain = byName(list, 'button', /^Lantern Moth: /)[0] as FakeElement;
+    expect(plain.getAttribute('class')).not.toContain('run-curse');
     expect(glossaryEntry('curse')?.title).toBe('Curse');
   });
 
-  it('shows no curse note on a run without one', () => {
-    const { root } = draw(<DungeonRunStrip state={sampleStateMid()} />);
-    expect(byClass(root, 'run-curse')).toHaveLength(0);
-    expect(byClass(root, 'run-curses')).toHaveLength(0);
+  it("shows the curse's effect on tap, the same sheet any keepsake opens", () => {
+    const { root, document } = draw(<DungeonRunStrip state={sampleStateCursed()} />);
+    page?.click(button(root, /^Curse, Idol's Curse/));
+    const sheet = find(document.body, (e) => e.getAttribute('role') === 'dialog')[0];
+    expect(sheet).toBeDefined();
+    expect(visibleText(sheet as FakeElement)).toContain("Idol's Curse");
+    expect(visibleText(sheet as FakeElement)).toContain(SAMPLE_CURSE.description);
+    expect(visibleText(sheet as FakeElement)).toContain(KEEPSAKE_ONLY_LINE);
   });
 
-  it('shows the curse on the end screen next to the keepsakes', () => {
-    const run = { ...sampleSummary('home'), curses: [SAMPLE_CURSE] };
+  it('has no curse chip on a run without one', () => {
+    const { root } = draw(<DungeonRunStrip state={sampleStateMid()} />);
+    expect(byClass(root, 'run-curse')).toHaveLength(0);
+  });
+
+  it('lists the curse on the end screen among the keepsakes', () => {
+    const run = sampleSummary('home');
     const { root } = draw(
       <DungeonResults
-        run={run}
+        run={{ ...run, keepsakes: [...(run.keepsakes ?? []), SAMPLE_CURSE] }}
         today={sampleToday()}
         offset={0}
         canRetry={false}
@@ -1735,8 +1752,9 @@ describe('the Cursed Idol curse on the run', () => {
         onRetry={noop}
       />,
     );
-    expect(visibleText(byClass(root, 'run-curse')[0] as FakeElement)).toContain(
-      'Foes deal 20% more damage.',
+    const chip = byClass(root, 'run-curse')[0] as FakeElement;
+    expect(chip.getAttribute('aria-label')).toBe(
+      `Curse, ${SAMPLE_CURSE.name}: ${SAMPLE_CURSE.description}`,
     );
   });
 });

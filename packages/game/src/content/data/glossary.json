@@ -1387,16 +1387,18 @@
     "short": "A gift that helps for the rest of this run only.",
     "lines": [
       "A keepsake helps in every fight after you get it. When the run ends it is gone: you do not keep it for the next run.",
-      "Elites, the camp and some mystery rooms give one. You cannot hold the same one twice."
+      "Elites, the camp and some mystery rooms give one. You cannot hold the same one twice.",
+      "A curse is a keepsake that costs you something. It sits in the same list, under a cracked skull."
     ],
     "section": "dungeon"
   },
   {
     "id": "curse",
     "title": "Curse",
-    "short": "A mark that makes the rest of this run harder.",
+    "short": "A keepsake that makes the rest of this run harder.",
     "lines": [
-      "A curse changes every fight after you take it. When the run ends it is gone: it never follows you into the next run.",
+      "A curse is a keepsake with a cost. It sits with your keepsakes, under a cracked skull.",
+      "It changes every fight after you take it. When the run ends it is gone: it never follows you into the next run.",
       "The Cursed Idol gives one, and a run meets the Idol once at most."
     ],
     "section": "dungeon"

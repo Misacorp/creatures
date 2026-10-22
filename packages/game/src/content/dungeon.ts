@@ -46,5 +46,10 @@ export function dungeonEvent(id: string): DungeonEventDef | undefined {
 /** Every keepsake, in content order. */
 export const dungeonKeepsakes: readonly KeepsakeDef[] = dungeonRunContent.keepsakes;
 
+/** The keepsakes a room or the camp may give as a gift: every keepsake but a curse (a curse is only given by its own room). */
+export const dungeonGifts: readonly KeepsakeDef[] = dungeonRunContent.keepsakes.filter(
+  (k) => k.curse !== true,
+);
+
 /** Every mystery-room event, in content order. */
 export const dungeonEvents: readonly DungeonEventDef[] = dungeonRunContent.events;

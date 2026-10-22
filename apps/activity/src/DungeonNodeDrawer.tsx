@@ -40,6 +40,7 @@ import {
   stepsAt,
 } from './dungeon-history';
 import { packBadges } from './dungeon-run';
+import { keepsakeGlyph } from './dungeon-text';
 import { FindItems } from './ui/FindItem';
 import { essenceCount, partBadge } from './count-items';
 import { modifierIcon } from './dungeon-rooms';
@@ -209,27 +210,23 @@ function PrizeRow({
   );
 }
 
-/** A curse the room put on the run: a "Curse" chip (tap for what a curse is) and what it does. */
-function CurseLine({ curse }: { curse: DungeonKeepsakeView }) {
-  return (
-    <p class="dnd-keepsake">
-      <Tag kind="chip" tone="bad" entry="curse" icon={{ kind: 'glyph', id: 'skull' }}>
-        Curse
-      </Tag>
-      <span>
-        {curse.name}: {curse.description}
-      </span>
-    </p>
-  );
-}
-
-/** A keepsake the room gave: its name as a chip (tap for what keepsakes are) and what it does. */
+/**
+ * A keepsake the room gave: its name as a chip (tap for what keepsakes are) and what it does. A curse is
+ * the same line with its own glyph and tone (its help is the curse entry).
+ */
 function KeepsakeLine({ keepsake }: { keepsake: DungeonKeepsakeView }) {
+  const icon = { kind: 'glyph' as const, id: keepsakeGlyph(keepsake) };
   return (
     <p class="dnd-keepsake">
-      <Tag kind="chip" entry="keepsake" icon={{ kind: 'glyph', id: 'sparkle' }}>
-        {keepsake.name}
-      </Tag>
+      {keepsake.curse === true ? (
+        <Tag kind="chip" tone="bad" entry="curse" icon={icon} label={`Curse, ${keepsake.name}`}>
+          {keepsake.name}
+        </Tag>
+      ) : (
+        <Tag kind="chip" entry="keepsake" icon={icon}>
+          {keepsake.name}
+        </Tag>
+      )}
       <span>{keepsake.description}</span>
     </p>
   );
@@ -314,7 +311,9 @@ function Outcome({ entry }: { entry: DungeonStepLog }) {
       )}
       {(entry.result === 'fight' || entry.result === 'event' || entry.result === 'camp') &&
         entry.keepsake !== undefined && <KeepsakeLine keepsake={entry.keepsake} />}
-      {entry.result === 'event' && entry.curse !== undefined && <CurseLine curse={entry.curse} />}
+      {entry.result === 'event' && entry.curse !== undefined && (
+        <KeepsakeLine keepsake={entry.curse} />
+      )}
       {entry.result === 'fight' && entry.supply === true && <p class="dnd-line">{SUPPLY_LINE}</p>}
     </div>
   );
