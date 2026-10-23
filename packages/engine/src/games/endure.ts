@@ -24,15 +24,20 @@ const BENCHES = [60, 84] as const;
 const DOOR = { x: 186, y: 100 } as const;
 const THERMO = { x: 12, y: 24 } as const;
 const FULL = BP;
-/** A stack's next creature sits this many px higher. */
-const STACK_PX = 10;
+/**
+ * A stack's next creature sits this many px higher: a whole sprite less a pixel, so each one sits on the
+ * head of the one below and the stack reads as a totem, not a pile.
+ */
+const STACK_PX = 15;
+/** Stacks that fit side by side on the front bench; more teams start a back row on the upper bench. */
+const STACKS_PER_ROW = 10;
 
 export function runEndure(input: KindInput<Def>): KindOutcome {
   const { def, entrants, rng, show, teamOf, teams } = input;
   const p = def.params;
   const n = entrants.length;
   // Solo: everyone side by side on the two benches. Team event: each team is a stack in one seat
-  // (Guards at the bottom), the next one up 10 px higher.
+  // (Guards at the bottom), the next one up on its head (`STACK_PX`).
   const stacked = def.team === 3;
   const groups = shuffle(
     rng,
@@ -46,7 +51,7 @@ export function runEndure(input: KindInput<Def>): KindOutcome {
       : g,
   );
   const order = stacked ? groups.map((g) => g[0] as number) : groups.flat();
-  const seats = seatRows(order.length, BENCHES, 40, 17, 136);
+  const seats = stacked ? stackSeats(order.length) : seatRows(order.length, BENCHES, 40, 17, 136);
   type Seat = { x: number; y: number; row: number; col: number };
   const seatOf: Seat[] = new Array<Seat>(n);
   /** Each actor's place in its stack (0: on the bench) at the start, and now. */
@@ -285,4 +290,28 @@ export function runEndure(input: KindInput<Def>): KindOutcome {
     show.score(end + 1, a, scores[a] as number);
   }
   return { starts, scores, outAt, keys, end };
+}
+
+/**
+ * The seats of a team event's stacks: all on the front (lower) bench while they fit, so no stack grows
+ * into the bench behind it; past `STACKS_PER_ROW` teams the rest sit on the upper bench, half a seat
+ * across, so they show between the front stacks. `row` indexes `BENCHES` (1 is the front bench).
+ */
+function stackSeats(count: number): { x: number; y: number; row: number; col: number }[] {
+  const front = Math.min(count, STACKS_PER_ROW);
+  const step = (n: number): number => (n <= 1 ? 17 : Math.min(17, Math.floor(136 / (n - 1))));
+  const back = count - front;
+  const out: { x: number; y: number; row: number; col: number }[] = [];
+  for (let i = 0; i < front; i++) {
+    out.push({ x: 40 + i * step(front), y: BENCHES[1], row: 1, col: i });
+  }
+  for (let i = 0; i < back; i++) {
+    out.push({
+      x: 40 + Math.floor(step(front) / 2) + i * step(back),
+      y: BENCHES[0],
+      row: 0,
+      col: i,
+    });
+  }
+  return out;
 }

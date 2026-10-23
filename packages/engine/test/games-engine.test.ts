@@ -401,17 +401,40 @@ describe('what each kind reads', () => {
       expect([
         (ys[0] as number) - (ys[1] as number),
         (ys[1] as number) - (ys[2] as number),
-      ]).toEqual([10, 10]);
+      ]).toEqual([15, 15]);
       // The guard (index 2 of each team) is the lowest, i.e. has the biggest y.
       expect(r.actors[3 * t + 2]?.y).toBe(ys[0]);
     }
-    // Someone above a leaver moves down 10 px.
+    // Someone above a leaver moves down a step.
     const drops = r.beats.filter((b) => {
       if (b.k !== 'pos') return false;
       const start = r.actors[b.a];
       return start !== undefined && b.x === start.x && b.y > start.y && b.y < 100;
     });
     expect(drops.length).toBeGreaterThan(0);
+  });
+
+  it('Sauna Stack: up to ten stacks share the front bench; more start a back row between them', () => {
+    const def = event('sauna-stack');
+    const bottoms = (teams: number) => {
+      const r = runGamesEvent(def, teamField(teams), createSeededRng(`rows-${String(teams)}`));
+      const seats = new Map<number, number>();
+      for (let t = 0; t < teams; t++) {
+        const ys = [0, 1, 2].map((k) => r.actors[3 * t + k]);
+        const x = ys[0]?.x as number;
+        seats.set(x, Math.max(...ys.map((a) => a?.y as number)));
+      }
+      return [...seats.entries()].sort((p, q) => p[0] - q[0]);
+    };
+    const nine = bottoms(9);
+    expect(nine).toHaveLength(9);
+    expect(new Set(nine.map(([, y]) => y))).toEqual(new Set([84]));
+    for (let i = 1; i < nine.length; i++) {
+      expect((nine[i]?.[0] as number) - (nine[i - 1]?.[0] as number)).toBeGreaterThanOrEqual(15);
+    }
+    const fourteen = bottoms(14);
+    expect(fourteen.filter(([, y]) => y === 84)).toHaveLength(10);
+    expect(fourteen.filter(([, y]) => y === 60)).toHaveLength(4);
   });
 
   it('Shark Relay: one swimmer per team in the water; the others wait on the shore until tagged', () => {
