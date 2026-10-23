@@ -53,4 +53,4 @@ Session: design and build a daily activity that makes low-level creatures worth 
 | 8   | Let agents read the staging site's version (a narrow allow rule for `creatures-staging.misacorp.dev`, or a version endpoint the GitHub tools can read).                                                                           | `.claude/settings.json` (Misa's call)                                      | Asking Misa to check the footer after every deploy                                                                       |
 | 9   | Fix the retro digest: skip the `/retro` skill's own text, which it counted as one of Misa's messages.                                                                                                                             | `.claude/skills/retro/digest.mjs`                                          | A false "human message" in every retro                                                                                   |
 
-Status: proposals not applied; Misa decides.
+Status (2026-10-23): Misa approved 2, 3, 5, 6, 7 and 9 (applied in the same PR); 1, 4 and 8 not taken.
