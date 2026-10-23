@@ -229,7 +229,7 @@ Misa, 2026-10-18: runs should grow longer as players progress (more rooms mean m
   - `ALTER TABLE dungeon_days ADD COLUMN map_json TEXT`.
   - `CREATE TABLE dungeon_steps (run_id TEXT NOT NULL, step INTEGER NOT NULL, idempotency_key TEXT NOT NULL, act_json TEXT NOT NULL, node TEXT, seed TEXT, input_json TEXT, result_json TEXT, created_at INTEGER NOT NULL, PRIMARY KEY (run_id, step), UNIQUE (run_id, idempotency_key))`.
   - Old runs (status `done`, no `state_json`) still show their summary and their three-room replay.
-  - The 90-day prune also empties `dungeon_steps.input_json` and `result_json`.
+  - The daily prune deletes the steps of a run that ended 3 days ago (`RUN_RETENTION_MS`; it was 90 days and emptied them in place until 2026-10-23). A run still open keeps its steps.
 - **`POST /api/dungeon/start {team, treats?, idempotencyKey}`** (strict).
   - Same checks as today's run: allowance, team, treats spent with key `treat:dungeon:<runId>`.
   - Loads the team (gear and weather sheet frozen), copies the day's map and creates an **active** run at step 0, standing before floor 0.

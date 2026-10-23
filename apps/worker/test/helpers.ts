@@ -261,8 +261,16 @@ export function undoDungeonPathsMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 34');
 }
 
+/** Puts a database back to before migration 38 (the maintenance mark): the table and the index go. */
+export function undoMaintenanceMigration(sql: SqlStorage): void {
+  sql.exec('DROP INDEX IF EXISTS analytics_daily_metric_day');
+  sql.exec('DROP TABLE IF EXISTS maintenance');
+  sql.exec('DELETE FROM schema_version WHERE version = 38');
+}
+
 /** Puts a database back to before migration 37 (fusion points): the column goes. */
 export function undoFusionPointsMigration(sql: SqlStorage): void {
+  undoMaintenanceMigration(sql);
   const present = sql
     .exec("SELECT 1 FROM pragma_table_info('creatures') WHERE name = 'fusion_points'")
     .toArray();

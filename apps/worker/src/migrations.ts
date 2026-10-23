@@ -15,6 +15,7 @@ import { gearMigration } from './gear-migration';
 import { gearV2Migration } from './gear-v2-migration';
 import { loungeMigration } from './lounge';
 import { loungeCompanyMigration } from './lounge-company';
+import { maintenanceMigration } from './maintenance';
 import { raidAutofireMigration } from './raid-autofire-migration';
 import { raidDifficultyMigration } from './raid-difficulty-migration';
 import { raidLiveMigration } from './raid-live-migration';
@@ -280,6 +281,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   workshopConvertMigration,
   // Version 37: fusion points per creature (see fusion-points-migration.ts).
   fusionPointsMigration,
+  // Version 38: the daily maintenance mark and the rollup's metric index (see maintenance.ts).
+  maintenanceMigration,
 ];
 
 /** The schema version of a fresh database. */

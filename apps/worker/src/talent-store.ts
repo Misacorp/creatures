@@ -52,17 +52,21 @@ export function bookOf(sql: SqlStorage, creatureId: string): HeldTalent[] {
  */
 export function booksByCreature(sql: SqlStorage, userId: string): Map<string, HeldTalent[]> {
   const map = new Map<string, HeldTalent[]>();
-  const exists = sql
-    .exec("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'creature_talents'")
-    .toArray();
-  if (exists.length === 0) return map;
-  for (const row of sql
-    .exec<TalentRow>(
-      `SELECT t.* FROM creature_talents t JOIN creatures c ON c.id = t.creature_id
-       WHERE c.user_id = ? ORDER BY t.gained_at, t.rowid`,
-      userId,
-    )
-    .toArray()) {
+  let found: TalentRow[];
+  try {
+    found = sql
+      .exec<TalentRow>(
+        `SELECT t.* FROM creature_talents t JOIN creatures c ON c.id = t.creature_id
+         WHERE c.user_id = ? ORDER BY t.gained_at, t.rowid`,
+        userId,
+      )
+      .toArray();
+  } catch (err) {
+    // Asking `sqlite_master` first read the whole schema (about 150 rows) on every call.
+    if (err instanceof Error && err.message.includes('no such table')) return map;
+    throw err;
+  }
+  for (const row of found) {
     const list = map.get(row.creature_id) ?? [];
     list.push(toHeld(row));
     map.set(row.creature_id, list);
