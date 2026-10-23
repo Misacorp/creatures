@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { PlaceFlow, type PlaceFlowProps } from './PlaceFlow';
-import { CloseGlyph } from './ui/Drawer';
 import { onDrillKey } from './ui/drill-keys';
+import { SidePanel } from './ui/SidePanel';
 
 const TITLE_ID = 'place-panel-title';
 /** The id of the trip result's heading (it names the panel while the result shows). */
@@ -17,7 +17,7 @@ export interface PlacePanelProps extends Omit<PlaceFlowProps, 'frame' | 'destina
 }
 
 /**
- * The desktop side panel of the world map (about 24 rem, next to the map), shown only while a place is
+ * The desktop side panel of the world map (the shared `ui/SidePanel`, about 24 rem, next to the map), shown only while a place is
  * chosen or a claimed trip's reveal shows. It is the phone sheet's flow (`PlaceFlow`) in a panel instead of
  * a drawer: the place with "Send an explorer here", then the send wizard (Who goes, Pack up, Ready) and
  * the push-on choice as drill-ins, with the gold button pinned at the bottom. A pixel X in the heading
@@ -27,9 +27,9 @@ export interface PlacePanelProps extends Omit<PlaceFlowProps, 'frame' | 'destina
 export function PlacePanel({ reveal, onClose, destination, ...props }: PlacePanelProps) {
   if (reveal !== null || destination === null) {
     return (
-      <aside class="place-panel reveal" aria-labelledby={RESULT_ID}>
+      <SidePanel class="place-panel reveal" labelledBy={RESULT_ID}>
         {reveal}
-      </aside>
+      </SidePanel>
     );
   }
   return (
@@ -38,18 +38,16 @@ export function PlacePanel({ reveal, onClose, destination, ...props }: PlacePane
       {...props}
       destination={destination}
       frame={({ title, body, footer }) => (
-        <aside class="place-panel" aria-labelledby={TITLE_ID} onKeyDown={onDrillKey(onClose)}>
-          <div class="place-panel-head">
-            <h3 id={TITLE_ID} class="place-panel-title">
-              {title}
-            </h3>
-            <button type="button" class="place-panel-close" aria-label="Close" onClick={onClose}>
-              <CloseGlyph />
-            </button>
-          </div>
-          <div class="place-panel-body">{body}</div>
-          {footer !== undefined && <div class="place-panel-foot">{footer}</div>}
-        </aside>
+        <SidePanel
+          class="place-panel"
+          title={title}
+          titleId={TITLE_ID}
+          onClose={onClose}
+          footer={footer}
+          onKeyDown={onDrillKey(onClose)}
+        >
+          {body}
+        </SidePanel>
       )}
     />
   );

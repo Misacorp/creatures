@@ -3,13 +3,16 @@
  * with its intro card, the event on its scene and a podium. Live, everyone sees the same moment (the
  * clock seeks to `now - startsAt` on the server's clock); a replay has play, pause, 2x and "next event".
  *
- * Layout on a phone: edge to edge, the stands (the crowd, the players' creatures in the front row,
- * cheering on the big moments) and the scene stretched to the full width, one line of commentary, the
- * leaderboard as a short list (the top five and you), and the event pips; on a wide screen the scene is
- * at most 3x (576 px) and the leaderboard sits beside it. Almost no words: who leads, what happened and where your creature is are shown.
+ * Layout (the Expeditions map's, `ui/WideLayout`): the arena, that is the stands (the crowd, the players'
+ * creatures in the front row, cheering on the big moments) and the scene, fills its parent's width (at most
+ * 3x, 576 px, centred; never wider than the parent), then one line of commentary, the leaderboard as a
+ * short list (the top five and you) and the event pips. From `WIDE_QUERY` up the leaderboard is in the
+ * shared side panel beside the arena, titled with the event's name (no X: it stays while the show does).
+ * Almost no words: who leads, what happened and where your creature is are shown.
  * Self-contained: give it the stored show (`GamesEventResult[]`) and it plays.
  */
 import type { GamesEventResult } from '@creatures/engine';
+import type { ComponentChildren } from 'preact';
 import { gamesEventInfo, gamesEventName } from '@creatures/game';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { shinyPalette } from '../art';
@@ -20,7 +23,10 @@ import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { LiveRegion } from '../ui/LiveRegion';
 import { PixelHeading } from '../ui/PixelHeading';
 import { PlaybackControls } from '../ui/PlaybackControls';
+import { SidePanel } from '../ui/SidePanel';
 import { TitlePlate } from '../ui/TitlePlate';
+import { useWide } from '../ui/wide-layout';
+import { WideLayout } from '../ui/WideLayout';
 import { GamesActor, GamesScene, GamesSprite } from './art/GamesScene';
 import { propSprite } from './art/props';
 import { ACTOR_SIZE, standsSeats, type GamesSceneId } from './art/scenes';
@@ -76,9 +82,16 @@ export interface GamesShowProps {
   autoplay?: boolean | undefined;
   /** A still picture: no idle animation (the workbench's fixed moments, tests). */
   still?: boolean | undefined;
+  /**
+   * The wide layout (the leaderboard in the side panel beside the arena); absent: from `WIDE_QUERY` up, as
+   * the Expeditions map. The workbench forces it either way.
+   */
+  wide?: boolean | undefined;
 }
 
 const SEATS = 16;
+/** The id of the side panel's heading (one show on a screen at a time). */
+const PANEL_TITLE_ID = 'gs-panel-title';
 const NO_NAMES: Readonly<Record<string, string>> = {};
 
 function spanName(eventId: string): string {
@@ -508,6 +521,8 @@ function EmptyStands({ scene, still }: { scene: GamesSceneId; still: boolean }) 
 /** The Valley Games show: live (synced) or a replay. */
 export function GamesShow(props: GamesShowProps) {
   const { events, mode, youId, names, still = false } = props;
+  const wideMedia = useWide();
+  const wide = props.wide ?? wideMedia;
   const prepared = useMemo(() => events.map(prepareEvent), [events]);
   const timeline = useMemo(() => buildShowTimeline(events, props.lineup), [events, props.lineup]);
   const spoken = useMemo(
@@ -589,24 +604,37 @@ export function GamesShow(props: GamesShowProps) {
   if (p === undefined) {
     // Nobody entered this event: its intro card over an empty scene, then the next event.
     const scene = sceneOf(gamesEventInfo(span?.eventId ?? '')?.scene ?? '');
+    const board = <ol class="gs-board is-empty" aria-hidden="true" />;
     return (
-      <section class="games-show has-board pix-panel" aria-label="Valley Games">
-        <EmptyStands scene={scene} still={quiet} />
-        <div class="gs-screen">
-          <div class="gs-stage is-empty">
-            <GamesScene scene={scene} animate={!quiet} frame={still ? 0 : undefined} label={name} />
-          </div>
-          <div key={cursor.index} class="gs-title">
-            <TitlePlate as="h3" title={name} count={count} />
-          </div>
-          {liveBadge}
-        </div>
-        <p class="gs-say is-empty" aria-hidden="true" />
-        <ol class="gs-board is-empty" aria-hidden="true" />
-        <Pips prepared={prepared} timeline={timeline} cursor={cursor} youId={youId} />
-        {controls}
-        <LiveRegion>{spokenNow?.text ?? ''}</LiveRegion>
-      </section>
+      <ShowLayout
+        wide={wide}
+        title={name}
+        board={board}
+        live={spokenNow?.text ?? ''}
+        main={
+          <>
+            <EmptyStands scene={scene} still={quiet} />
+            <div class="gs-screen">
+              <div class="gs-stage is-empty">
+                <GamesScene
+                  scene={scene}
+                  animate={!quiet}
+                  frame={still ? 0 : undefined}
+                  label={name}
+                />
+              </div>
+              <div key={cursor.index} class="gs-title">
+                <TitlePlate as="h3" title={name} count={count} />
+              </div>
+              {liveBadge}
+            </div>
+            <p class="gs-say is-empty" aria-hidden="true" />
+            {!wide && board}
+            <Pips prepared={prepared} timeline={timeline} cursor={cursor} youId={youId} />
+            {controls}
+          </>
+        }
+      />
     );
   }
 
@@ -616,44 +644,91 @@ export function GamesShow(props: GamesShowProps) {
       : cursor.phase === 'event'
         ? frameAt(p, cursor.ms)
         : frameAt(p, eventMs(p.result));
+  const board = (
+    <Board p={p} frame={frame} cursor={cursor} youId={youId} names={names ?? NO_NAMES} />
+  );
   return (
-    <section class="games-show has-board pix-panel" aria-label="Valley Games">
-      <Stands
-        p={p}
-        frame={cursor.phase === 'event' ? frame : null}
-        cursor={cursor}
-        youId={youId}
-        still={quiet}
-      />
-      <div class="gs-screen">
-        <ShowStage
-          p={p}
-          phase={cursor.phase}
-          phaseMs={cursor.ms}
-          frame={frame}
-          youId={youId}
-          reduced={reduced}
-          still={still}
-          label={name}
-        />
-        {cursor.phase === 'intro' && (
-          <div key={cursor.index} class="gs-title">
-            <TitlePlate as="h3" title={name} count={count} />
+    <ShowLayout
+      wide={wide}
+      title={name}
+      board={board}
+      live={spokenNow?.text ?? ''}
+      main={
+        <>
+          <Stands
+            p={p}
+            frame={cursor.phase === 'event' ? frame : null}
+            cursor={cursor}
+            youId={youId}
+            still={quiet}
+          />
+          <div class="gs-screen">
+            <ShowStage
+              p={p}
+              phase={cursor.phase}
+              phaseMs={cursor.ms}
+              frame={frame}
+              youId={youId}
+              reduced={reduced}
+              still={still}
+              label={name}
+            />
+            {cursor.phase === 'intro' && (
+              <div key={cursor.index} class="gs-title">
+                <TitlePlate as="h3" title={name} count={count} />
+              </div>
+            )}
+            {liveBadge}
           </div>
-        )}
-        {liveBadge}
-      </div>
-      <SayLine p={p} frame={frame} cursor={cursor} youId={youId} names={names} />
-      <Board p={p} frame={frame} cursor={cursor} youId={youId} names={names ?? NO_NAMES} />
-      <Pips
-        prepared={prepared}
-        timeline={timeline}
-        cursor={cursor}
-        youId={youId}
-        left={cursor.phase === 'event' ? stillIn(p, frame) : null}
-      />
-      {controls}
-      <LiveRegion>{spokenNow?.text ?? ''}</LiveRegion>
+          <SayLine p={p} frame={frame} cursor={cursor} youId={youId} names={names} />
+          {!wide && board}
+          <Pips
+            prepared={prepared}
+            timeline={timeline}
+            cursor={cursor}
+            youId={youId}
+            left={cursor.phase === 'event' ? stillIn(p, frame) : null}
+          />
+          {controls}
+        </>
+      }
+    />
+  );
+}
+
+/**
+ * The show's frame (the Expeditions map's layout, `ui/WideLayout`): the arena and everything under it as
+ * the main area, at most 3x wide and centred; from `WIDE_QUERY` up the leaderboard is in the side panel
+ * beside it, titled with the event (no X), and on a narrower screen the caller puts it in the main area.
+ */
+function ShowLayout({
+  wide,
+  title,
+  board,
+  main,
+  live,
+}: {
+  wide: boolean;
+  title: string;
+  board: ComponentChildren;
+  main: ComponentChildren;
+  live: string;
+}) {
+  return (
+    <section class="games-show pix-panel" aria-label="Valley Games">
+      <WideLayout
+        wide={wide}
+        class="gs-layout"
+        mainClass="gs-main"
+        main={main}
+        panel={
+          <SidePanel class="gs-panel" title={title} titleId={PANEL_TITLE_ID}>
+            {board}
+          </SidePanel>
+        }
+      >
+        <LiveRegion>{live}</LiveRegion>
+      </WideLayout>
     </section>
   );
 }

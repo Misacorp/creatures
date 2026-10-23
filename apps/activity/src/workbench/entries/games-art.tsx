@@ -209,7 +209,7 @@ function ScenePage({ p, cast }: { p: Props; cast: boolean }) {
   const camera = num(p, 'cameraX');
   const world = sceneWidthFor(camera + 192);
   return (
-    <div class="wb-games wb-games-bleed">
+    <div class="wb-games">
       <GamesScene variant="stands" scene={scene} frame={frame} animate={bool(p, 'animate')} />
       <GamesScene
         scene={scene}
@@ -240,7 +240,7 @@ function StandsPage({ p }: { p: Props }) {
   const count = num(p, 'crowd');
   const fixed = num(p, 'frame');
   return (
-    <div class="wb-games wb-games-bleed">
+    <div class="wb-games">
       {GAMES_SCENE_IDS.map((id) => (
         <div key={id}>
           <Caption>{sceneLabel(id)}</Caption>
@@ -263,7 +263,7 @@ function StandsPage({ p }: { p: Props }) {
 function FloePage({ p }: { p: Props }) {
   const fixed = num(p, 'frame');
   return (
-    <div class="wb-games wb-games-bleed">
+    <div class="wb-games">
       {[80, 52, 26].map((rx, n) => (
         <div key={rx}>
           <Caption>

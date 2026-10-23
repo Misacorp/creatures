@@ -71,7 +71,7 @@ const gamesTab: Entry = {
   file: `${FILE}GamesTab.tsx`,
   group: 'Creatures & game pieces',
   description:
-    'The Games tab on the real captured server answers (fixtures/games-*.json): the title and countdown, your last show, the events of the day with their slots (tap one for the picker; picks act on the page; an entered good fit wears the "Good fit" badge; a favour icon says what it means in that event), the medal cabinet and the Prize Stall; from the lock the stands; during the show (and a replay) only the show, edge to edge on a phone. Covers GamesHeader and Lineup.',
+    'The Games tab on the real captured server answers (fixtures/games-*.json): the title and countdown, your last show, the events of the day with their slots (tap one for the picker; picks act on the page; an entered good fit wears the "Good fit" badge; a favour icon says what it means in that event), the medal cabinet and the Prize Stall; from the lock the stands; during the show (and a replay) only the show, inside the tab, with the leaderboard in the side panel from 60 rem. Covers GamesHeader and Lineup.',
   covers: ['GamesHeader', 'Lineup'],
   controls: { view: { kind: 'select', options: GAMES_VIEWS } },
   defaults: { view: 'entries: one entered' },

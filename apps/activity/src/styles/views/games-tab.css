@@ -15,23 +15,6 @@
   font-family: var(--body);
 }
 
-/* The show runs edge to edge on a phone. */
-@media (max-width: 40rem) {
-  .gt-bleed {
-    margin-inline: calc(50% - 50vw);
-  }
-}
-
-/*
-  On a wide screen the show steps out of the card a little, so the scene keeps its 3x (576 px) and the
-  leaderboard beside it has room for whole names and scores (56rem at most, 1rem from the window).
-*/
-@media (min-width: 900px) {
-  .gt-bleed {
-    margin-inline: calc(50% - min(50vw - 1rem, 28rem));
-  }
-}
-
 /* --- The title plate and the countdown chip --- */
 .gt-head {
   display: flex;

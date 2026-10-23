@@ -14,7 +14,7 @@ export function gamesEventDef(id: string): GamesEventDef | undefined {
 /** What a stored day still needs to know about an event: enough to show it, never to run it. */
 export type GamesEventInfo = Pick<
   GamesEventDef,
-  'id' | 'name' | 'kind' | 'scene' | 'team' | 'tickMs' | 'line' | 'favours' | 'favourNotes'
+  'id' | 'name' | 'kind' | 'scene' | 'team' | 'tickMs' | 'line' | 'favours'
 > & {
   teamScore?: 'best' | 'sum' | undefined;
   /** A swim's laps (a replay reads them for the finish). */
@@ -37,13 +37,6 @@ export const GAMES_RETIRED: Readonly<Record<string, GamesEventInfo>> = {
     tickMs: 400,
     line: 'Bring three friends to the bench. Your team lasts as long as its last sitter.',
     favours: ['guard', 'hp', 'ember', 'small', 'support'],
-    favourNotes: {
-      guard: 'Guards shelter the sitters stacked beside them.',
-      hp: 'Hardy sitters last longest up near the ceiling.',
-      ember: 'Ember creatures shrug off the heat.',
-      small: 'Small ones stack neatly, low and cool.',
-      support: 'Supports fan the sitters stacked around them.',
-    },
   },
   'shark-relay': {
     id: 'shark-relay',
@@ -56,13 +49,6 @@ export const GAMES_RETIRED: Readonly<Record<string, GamesEventInfo>> = {
     tickMs: 400,
     line: 'Three swimmers a team, every length counts. Keep away from the rubber sharks.',
     favours: ['spd', 'tide', 'small', 'setter', 'hp'],
-    favourNotes: {
-      spd: 'Fast swimmers bring the lap home quicker.',
-      tide: 'Tide creatures cut through the water.',
-      small: 'Small swimmers are hard for the sharks to spot.',
-      setter: 'A Setter swims first and sets the pace.',
-      hp: "Hardy swimmers shrug off a shark's bonk.",
-    },
   },
 };
 
@@ -72,12 +58,12 @@ export function gamesEventInfo(id: string): GamesEventInfo | undefined {
 }
 
 /**
- * What a favour means in one event (its `favourNotes` line, live or retired), or undefined for an
- * unknown event or a favour it does not have.
+ * What a favour means (its `favourHelp` line, the same in every event), or undefined for a tag that is
+ * not a favour.
  */
-export function gamesFavourNote(eventId: string, favour: string): string | undefined {
-  const notes = gamesEventInfo(eventId)?.favourNotes;
-  return notes !== undefined && Object.hasOwn(notes, favour) ? notes[favour] : undefined;
+export function gamesFavourHelp(favour: string): string | undefined {
+  const help: Readonly<Record<string, string>> = gamesContent.favourHelp;
+  return Object.hasOwn(help, favour) ? help[favour] : undefined;
 }
 
 /** An event's name: the live or retired event's, else the id itself. */

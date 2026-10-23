@@ -4,6 +4,7 @@ import { useMemo } from 'preact/hooks';
 import { GamesShow } from '../../games/GamesShow';
 import { buildShowTimeline } from '../../games/show-timeline';
 import { SAMPLE_DAY, SAMPLE_EVENT_IDS, sampleShow } from '../games-show-sample';
+import { useWide } from '../../ui/wide-layout';
 import { bool, num, str } from '../props';
 import type { Entry, Preset, Props } from '../types';
 import gamesShowFixture from '../../fixtures/games-show.json';
@@ -57,6 +58,9 @@ function Preview({ p }: { p: Props }) {
   // A live show "started" `at` seconds ago (negative: it starts in that long).
   const startsAt = useMemo(() => Date.now() - at, [at, live]);
   const play = bool(p, 'play');
+  const auto = useWide();
+  const layout = str(p, 'layout');
+  const wide = layout === 'desktop' || (layout === 'auto' && auto);
   // An event nobody entered, second in the lineup (its intro card only).
   const lineup =
     bool(p, 'skipped') && which === 'day'
@@ -64,7 +68,7 @@ function Preview({ p }: { p: Props }) {
       : show.lineup;
   const total = buildShowTimeline(show.events, lineup).total;
   return (
-    <div class="wb-games-show wb-games-bleed">
+    <div class="wb-games-show">
       <GamesShow
         key={`${which}|${roster}|${seed}|${String(at)}|${String(live)}|${String(play)}`}
         events={show.events}
@@ -77,6 +81,7 @@ function Preview({ p }: { p: Props }) {
         startMs={Math.max(0, Math.min(total, at))}
         autoplay={play}
         still={!play && !live}
+        wide={wide}
       />
     </div>
   );
@@ -151,7 +156,7 @@ const gamesShow: Entry = {
   file: 'apps/activity/src/games/GamesShow.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The Valley Games show player: the day’s events one after another, each with an intro card, the event on its scene and a podium, with the stands above, one line of commentary, the leaderboard as a short list (the top five and you, with names, owners and scores) and the event pips. On a phone the stands and the scene fill the width (a whole scale, zoomed the rest of the way, nearest neighbour); on a wide screen the scene is at most 3x and the list sits beside it. Live it is synced to the show’s start (a countdown before); a replay has play, 2x and next event. Every preset runs the real engine on a sample roster; "at" is seconds into the show (live: how long ago it started).',
+    'The Valley Games show player: the day’s events one after another, each with an intro card, the event on its scene and a podium, with the stands above, one line of commentary, the leaderboard as a short list (the top five and you, with names, owners and scores) and the event pips. The stands and the scene fit the width of their parent (a whole scale, zoomed the rest of the way, nearest neighbour; at most 3x, centred); from 60 rem the list is in the shared side panel beside them (the Expeditions map’s layout), below it under them. Live it is synced to the show’s start (a countdown before); a replay has play, 2x and next event. Every preset runs the real engine on a sample roster; "at" is seconds into the show (live: how long ago it started).',
   controls: {
     show: { kind: 'select', options: SHOWS },
     roster: { kind: 'select', options: ROSTERS },
@@ -161,6 +166,7 @@ const gamesShow: Entry = {
     play: { kind: 'toggle' },
     you: { kind: 'toggle' },
     skipped: { kind: 'toggle' },
+    layout: { kind: 'select', options: ['auto', 'phone', 'desktop'] },
   },
   defaults: {
     show: 'day',
@@ -171,6 +177,7 @@ const gamesShow: Entry = {
     play: true,
     you: true,
     skipped: false,
+    layout: 'auto',
   },
   presets: [
     { name: 'Full day, 8 players, replay', props: {} },

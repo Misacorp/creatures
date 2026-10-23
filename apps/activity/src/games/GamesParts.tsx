@@ -9,7 +9,7 @@
 import type { ComponentChildren } from 'preact';
 import type { Creature } from '../api';
 import { shinyPalette } from '../art';
-import { gamesEventInfo, gamesFavourNote, type GlossarySection } from '@creatures/game';
+import { gamesEventInfo, gamesFavourHelp, type GlossarySection } from '@creatures/game';
 import { creatureName, getSpecies } from '../game';
 import { GlossaryTag } from '../Glossary';
 import { MORE_LABEL, TAG_ATTRIBUTE } from '../glossary-ui';
@@ -113,13 +113,13 @@ export function MedalCountsRow({
 }
 
 /**
- * One favour as an icon. In an event it opens what that favour means there (`favourNotes`): the icon,
- * the favour's name and the event's line, with the link to the Valley Games section of How to play.
- * A favour with no note (an event the content does not know) opens its general glossary entry.
+ * One favour as an icon. In an event it opens what that favour means in the Games (`favourHelp`, one line,
+ * the same in every event): the icon, the favour's name and that line, with the link to the Valley Games
+ * section of How to play. A tag with no help line opens its general glossary entry.
  */
 function FavourIcon({ view, eventId }: { view: FavourView; eventId: string }) {
   const { host, ref, open } = usePopoverTrigger<HTMLButtonElement>();
-  const note = gamesFavourNote(eventId, view.favour);
+  const note = gamesFavourHelp(view.favour);
   if (note === undefined || host === null) {
     return (
       <GlossaryTag
@@ -153,7 +153,7 @@ function FavourIcon({ view, eventId }: { view: FavourView; eventId: string }) {
   );
 }
 
-/** The popover of a favour in an event: its icon, its name, what it means there, and the link. */
+/** The popover of a favour in an event: its icon, its name, what it means in the Games, and the link. */
 export function FavourNoteCard({
   view,
   note,
@@ -178,7 +178,7 @@ export function FavourNoteCard({
   );
 }
 
-/** What an event favours, as a row of icons; each says what it means in this event. */
+/** What an event favours, as a row of icons; each says what it means in the Games. */
 export function FavourIcons({ event }: { event: Pick<LineupEvent, 'id' | 'favours' | 'name'> }) {
   return (
     <ul class="ge-favours" aria-label={`${event.name} favours`}>

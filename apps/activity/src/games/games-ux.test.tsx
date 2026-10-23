@@ -1,4 +1,4 @@
-import { RULES, gamesFavourNote } from '@creatures/game';
+import { RULES, gamesFavourHelp } from '@creatures/game';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PopoverHost } from '../PopoverHost';
 import { gamesXpParts } from '../games-view';
@@ -63,7 +63,7 @@ describe('a favour icon in the Games', () => {
     Reflect.deleteProperty(FakeElement.prototype, 'getBoundingClientRect');
   });
 
-  it("opens the event's own line, the favour's name and a link to the Games in How to play", () => {
+  it("opens the favour's Games line, its name and a link to the Games in How to play", () => {
     const event = LINEUP[0];
     if (event === undefined) throw new Error('no event');
     const favour = event.favours[0];
@@ -84,8 +84,8 @@ describe('a favour icon in the Games', () => {
     page.click(icon);
     const dialog = byRole(page.root.parentNode ?? page.root, 'dialog')[0];
     if (dialog === undefined) throw new Error('no popover');
-    const note = gamesFavourNote(event.id, favour);
-    expect(note).toBeDefined();
+    const note = gamesFavourHelp(favour);
+    expect(note).toMatch(/have an advantage here\.$/u);
     expect(visibleText(byClass(dialog, 'pop-short')[0] ?? dialog)).toBe(note);
     // The icon is the picture; the general glossary text is not there.
     expect(byClass(dialog, 'pop-visual')).toHaveLength(1);
@@ -94,16 +94,6 @@ describe('a favour icon in the Games', () => {
     if (more === undefined) throw new Error('no link');
     page.click(more);
     expect(onHowTo).toHaveBeenCalledWith('games');
-  });
-
-  it('says something different for the same favour in two events', () => {
-    const withHp = LINEUP.filter((e) => e.favours.includes('hp')).map((e) => e.id);
-    const notes = new Set(
-      ['sauna-showdown', 'frost-bath', 'berry-bonanza', ...withHp].map((id) =>
-        gamesFavourNote(id, 'hp'),
-      ),
-    );
-    expect(notes.size).toBeGreaterThanOrEqual(3);
   });
 });
 

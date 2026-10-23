@@ -1,5 +1,6 @@
 import { parseGameState, type Creature } from '../../api';
-import { ExpeditionWorld, WIDE_QUERY } from '../../ExpeditionWorld';
+import { ExpeditionWorld } from '../../ExpeditionWorld';
+import { WIDE_QUERY } from '../../ui/wide-layout';
 import { parseDestinations } from '../../expedition-parse';
 import type { Slots } from '../../expedition-types';
 import destinationsFixture from '../../fixtures/expedition-destinations.json';

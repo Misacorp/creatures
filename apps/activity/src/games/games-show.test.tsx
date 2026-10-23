@@ -89,8 +89,15 @@ describe('GamesShow', () => {
     // Each row names its creature and whose it is; yours says "(you)".
     const mine = first(slots.filter((s) => s.classList.contains('is-mine')));
     expect(visibleText(first(byClass(mine, 'gs-owner')))).toBe('(you)');
-    // The scene and its board share the show's grid; the board goes beside it on a wide screen.
-    expect(first(byClass(root, 'games-show')).classList.contains('has-board')).toBe(true);
+    // A wide screen (matchMedia matches here): the board is in the shared side panel beside the arena,
+    // titled with the event, with no X; the arena's column holds no board.
+    const panel = first(byClass(root, 'side-panel'));
+    expect(panel.classList.contains('gs-panel')).toBe(true);
+    expect(visibleText(first(byClass(panel, 'side-panel-title')))).toBe('Sauna Showdown');
+    expect(byClass(panel, 'gs-board')).toHaveLength(1);
+    expect(byClass(panel, 'side-panel-close')).toHaveLength(0);
+    expect(byClass(first(byClass(root, 'gs-main')), 'gs-board')).toHaveLength(0);
+    expect(first(byClass(root, 'side-layout')).classList.contains('with-panel')).toBe(true);
     // The opening line of the sauna is said at the event's first tick.
     expect(visibleText(first(byClass(root, 'gs-say')))).toBe(
       'The doors close. Who can take the heat?',
@@ -99,6 +106,17 @@ describe('GamesShow', () => {
     expect(visibleText(first(byClass(root, 'visually-hidden')))).toBe(
       'Event 1 / 4: Sauna Showdown.',
     );
+  });
+
+  it('puts the board under the arena on a narrower screen, with no side panel', () => {
+    const span = TIMELINE.spans[0];
+    if (span === undefined) throw new Error('no span');
+    const { root } = draw({ startMs: span.eventStart + 1, wide: false });
+    expect(byClass(root, 'side-panel')).toHaveLength(0);
+    const main = first(byClass(root, 'gs-main'));
+    expect(byClass(main, 'gs-board')).toHaveLength(1);
+    expect(byClass(main, 'gs-slot').length).toBeGreaterThanOrEqual(5);
+    expect(first(byClass(root, 'side-layout')).classList.contains('wide')).toBe(false);
   });
 
   it('skips to the next event with the replay controls', () => {
@@ -139,9 +157,10 @@ describe('GamesShow', () => {
     expect(visibleText(first(byClass(root, 'gs-countdown')))).toBe('1:05');
     expect(byClass(root, 'gs-lineup-item')).toHaveLength(4);
     expect(byName(root, 'button', 'Play')).toHaveLength(0);
-    // No board before the show: one column.
+    // No board before the show: one column, no side panel.
     expect(first(byClass(root, 'games-show')).classList.contains('is-before')).toBe(true);
-    expect(first(byClass(root, 'games-show')).classList.contains('has-board')).toBe(false);
+    expect(byClass(root, 'side-panel')).toHaveLength(0);
+    expect(byClass(root, 'side-layout')).toHaveLength(0);
   });
 
   it('seeks a live show to the server’s now, with no controls', () => {

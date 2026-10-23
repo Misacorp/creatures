@@ -140,7 +140,8 @@ describe('the Games tab', () => {
     const { page: p } = draw(view, offset);
     expect(byClass(p.root, 'gs-live')).toHaveLength(1);
     expect(byClass(p.root, 'games-show')).toHaveLength(1);
-    expect(byClass(p.root, 'gt-bleed')).toHaveLength(1);
+    // Inside the tab (no breakout), the leaderboard in the side panel on this wide screen.
+    expect(byClass(p.root, 'gs-panel')).toHaveLength(1);
     // Tomorrow's lineup, the medals, the stall and the last show wait until it ends.
     for (const hidden of ['ge-card', 'gm-cabinet', 'gs-stall', 'gr-results', 'gt-head']) {
       expect(byClass(p.root, hidden), hidden).toHaveLength(0);

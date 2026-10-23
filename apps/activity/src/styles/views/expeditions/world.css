@@ -1,23 +1,9 @@
 /*
   The Trips screen as a world map (`ExpeditionWorld.tsx`). Narrow: the map, then the "out now" strip; a place
-  opens as a bottom sheet (`PlaceSheet`). From 60 rem (the same width `WIDE_QUERY` asks for): the app card is
-  wider while this screen shows; the map and the shelf are full width until a place is chosen, then the
-  screen is two columns, the map and the shelf on the left and the side panel (`PlacePanel`) on the right. The base width of the card is in `base/base.css`.
+  opens as a bottom sheet (`PlaceSheet`). From 60 rem (`WIDE_QUERY`): the shared wide layout
+  (`components/side-panel.css`: the wider card, the two columns, the side panel); the map and the shelf are
+  full width until a place is chosen, then the side panel (`PlacePanel`) opens on the right.
 */
-@media (min-width: 60rem) {
-  main.card:has(.exp-world) {
-    width: min(84rem, 100% - 1.25rem);
-  }
-}
-
-.exp-world {
-  min-width: 0;
-}
-
-.exp-world-main {
-  min-width: 0;
-}
-
 /* The map and, on a phone, the strip of trips right under it. */
 .exp-world-map {
   display: grid;
@@ -26,95 +12,12 @@
   min-width: 0;
 }
 
-.exp-world.wide.with-panel {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 24rem;
-  gap: 1rem;
-  align-items: start;
-}
-
 .exp-world.wide .trip-shelf {
   margin: 0.75rem 0 0;
 }
 
-/* The side panel. */
-.place-panel {
-  min-width: 0;
-  padding: 0.75rem;
-  background: var(--dusk-2);
-  box-shadow: inset 0 0 0 var(--px) var(--ink);
-}
-
-.place-panel:not(.reveal) {
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-}
-
-.place-panel-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.75rem 0.75rem 0;
-}
-
-.place-panel-head .place-panel-title {
-  flex: 1;
-  min-width: 0;
-}
-
-/* The X: the drawer's close button (`drawer.css`), in the heading row. */
-button.place-panel-close {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  min-height: 2.75rem;
-  margin: -0.5rem -0.5rem 0 0;
-  padding: 0;
-  background: none;
-  box-shadow: none;
-  color: var(--haze);
-}
-
-button.place-panel-close:hover:not(:disabled) {
-  color: var(--bone);
-}
-
-button.place-panel-close:active:not(:disabled) {
-  box-shadow: none;
-  transform: none;
-}
-
-.place-panel-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 0 0.75rem 0.75rem;
-}
-
-.place-panel-foot {
-  flex: none;
-  padding: 0.5rem 0.75rem 0.75rem;
-  box-shadow: inset 0 2px 0 0 var(--line);
-}
-
-.place-panel.reveal {
-  padding: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
 .place-panel.reveal .reveal-card {
   margin: 0;
-}
-
-.place-panel-title {
-  margin: 0 0 0.5rem;
-  color: var(--gold);
-  font-size: var(--fs-title);
 }
 
 /* A place's banner and what it says, in the sheet and the panel. */
@@ -178,20 +81,4 @@ button.place-panel-close:active:not(:disabled) {
 .slots-line-next {
   font-size: var(--fs-small);
   font-variant-numeric: tabular-nums;
-}
-
-/*
-  Desktop: the panel is no taller than the map beside it (`--exp-map-h`, set by `ExpeditionWorld`) nor the
-  screen, and stays in view while the page scrolls. Its body scrolls inside it, so a long list of explorers
-  never pushes the gold button, pinned at its bottom, below the map.
-*/
-.exp-world.wide .place-panel {
-  position: sticky;
-  top: 0.625rem;
-  max-height: min(var(--exp-map-h, 100vh), calc(100vh - 1.25rem));
-}
-
-.exp-world.wide .place-panel.reveal {
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }

@@ -8,19 +8,24 @@ import {
   gamesEventDef,
   gamesEventInfo,
   gamesEventName,
-  gamesFavourNote,
-  checkFavourNotes,
-  MAX_FAVOUR_NOTE,
+  gamesFavourHelp,
+  GAMES_FAVOURS,
+  MAX_FAVOUR_HELP,
   gamesSayTemplate,
   loadGames,
 } from '../src/index';
 import gamesJson from '../src/content/data/games-events.json';
 
 /** A deep copy of the shipped file to break on purpose. */
-function raw(): { events: Record<string, unknown>[]; say: Record<string, string> } {
+function raw(): {
+  events: Record<string, unknown>[];
+  say: Record<string, string>;
+  favourHelp: Record<string, string>;
+} {
   return JSON.parse(JSON.stringify(gamesJson)) as {
     events: Record<string, unknown>[];
     say: Record<string, string>;
+    favourHelp: Record<string, string>;
   };
 }
 
@@ -77,27 +82,24 @@ describe('the shipped Games content', () => {
     for (const e of gamesContent.events) expect(GAMES_RETIRED[e.id]).toBeUndefined();
   });
 
-  it('says what every favour of every event means there: one short plain line each', () => {
-    const all = [...gamesContent.events, ...Object.values(GAMES_RETIRED)];
-    for (const e of all) {
-      expect(Object.keys(e.favourNotes).sort(), e.id).toEqual([...e.favours].sort());
-      for (const f of e.favours) {
-        const note = gamesFavourNote(e.id, f);
-        expect(note, `${e.id} ${f}`).toBeDefined();
-        expect([...(note ?? '')].length, `${e.id} ${f}`).toBeLessThanOrEqual(MAX_FAVOUR_NOTE);
-        // One sentence in the Games' voice: no stat words, no numbers.
-        expect(note, `${e.id} ${f}`).toMatch(/^[A-Z].*\.$/u);
-        expect(note, `${e.id} ${f}`).not.toMatch(/\d|%|\b(HP|stat|stats|buff|crit|bonus)\b/u);
-      }
-      expect(() => {
-        checkFavourNotes(e);
-      }).not.toThrow();
+  it('says what every favour means in one short plain line, the same in every event', () => {
+    expect(Object.keys(gamesContent.favourHelp).sort()).toEqual([...GAMES_FAVOURS].sort());
+    for (const f of GAMES_FAVOURS) {
+      const help = gamesFavourHelp(f);
+      expect(help, f).toBeDefined();
+      expect([...(help ?? '')].length, f).toBeLessThanOrEqual(MAX_FAVOUR_HELP);
+      expect(help, f).toMatch(/^[A-Z][^.]* have an advantage here\.$/u);
     }
-    expect(gamesFavourNote('sauna-showdown', 'ember')).toBe('Ember creatures shrug off the heat.');
-    // A favour the event does not have, an unknown event, an inherited key: no note.
-    expect(gamesFavourNote('sauna-showdown', 'spd')).toBeUndefined();
-    expect(gamesFavourNote('never-was', 'hp')).toBeUndefined();
-    expect(gamesFavourNote('sauna-showdown', 'toString')).toBeUndefined();
+    expect(gamesFavourHelp('small')).toBe('Small creatures have an advantage here.');
+    expect(gamesFavourHelp('ember')).toBe('Ember creatures have an advantage here.');
+    expect(gamesFavourHelp('guard')).toBe('Guards have an advantage here.');
+    // Not a favour, or an inherited key: no help.
+    expect(gamesFavourHelp('luck')).toBeUndefined();
+    expect(gamesFavourHelp('toString')).toBeUndefined();
+    // No event carries its own notes any more.
+    for (const e of [...gamesContent.events, ...Object.values(GAMES_RETIRED)]) {
+      expect(Object.hasOwn(e, 'favourNotes'), e.id).toBe(false);
+    }
   });
 
   it('fills {a}, {b} and {n} and leaves a missing one as it is', () => {
@@ -207,37 +209,25 @@ describe('loadGames rejects broken content', () => {
     ).toThrow(/not a endure key/);
   });
 
-  it('a favour without a note, a note for no favour, a note too long', () => {
+  it('a favour without help, help for no favour, help too long, a per-event note', () => {
     expect(
       broken((d) => {
-        const notes = (d.events[0] as Record<string, unknown>)['favourNotes'] as Record<
-          string,
-          string
-        >;
-        delete notes['ember'];
+        delete d.favourHelp['ember'];
       }),
-    ).toThrow(/favour "ember" has no note/);
+    ).toThrow(/favourHelp/);
     expect(
       broken((d) => {
-        const notes = (d.events[0] as Record<string, unknown>)['favourNotes'] as Record<
-          string,
-          string
-        >;
-        notes['spd'] = 'Quick ones get out first.';
+        d.favourHelp['luck'] = 'Lucky ones have an advantage here.';
       }),
-    ).toThrow(/a note for "spd"/);
+    ).toThrow(/favourHelp/);
     expect(
       broken((d) => {
-        const notes = (d.events[0] as Record<string, unknown>)['favourNotes'] as Record<
-          string,
-          string
-        >;
-        notes['ember'] = 'x'.repeat(MAX_FAVOUR_NOTE + 1);
+        d.favourHelp['ember'] = 'x'.repeat(MAX_FAVOUR_HELP + 1);
       }),
-    ).toThrow(/favourNotes/);
+    ).toThrow(/favourHelp/);
     expect(
       broken((d) => {
-        delete (d.events[0] as Record<string, unknown>)['favourNotes'];
+        (d.events[0] as Record<string, unknown>)['favourNotes'] = { ember: 'Old note.' };
       }),
     ).toThrow(/favourNotes/);
   });

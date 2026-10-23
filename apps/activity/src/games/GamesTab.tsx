@@ -116,7 +116,7 @@ export function Lineup({
  * The Games tab (docs/design/valley-games.md). While entries are open: the title and the countdown,
  * your last show (medals, pins, experience, ▶ replays), the day's events with their slots (only what
  * you enter runs: there is no auto-entry). From the lock to the show: the stands and the countdown. While
- * the show plays (live, or a replay): only the show, edge to edge on a phone (a replay with Back). Else
+ * the show plays (live, or a replay): only the show, inside the tab (a replay with Back). Else
  * always: your medal cabinet and the Prize Stall.
  */
 export function GamesTab({
@@ -212,16 +212,14 @@ export function GamesTab({
             setReplay(null);
           }}
         />
-        <div class="gt-bleed">
-          <GamesShow
-            events={show.events}
-            lineup={show.timeline.map((s) => s.eventId)}
-            mode="replay"
-            youId={selfId}
-            names={names}
-            startMs={replay}
-          />
-        </div>
+        <GamesShow
+          events={show.events}
+          lineup={show.timeline.map((s) => s.eventId)}
+          mode="replay"
+          youId={selfId}
+          names={names}
+          startMs={replay}
+        />
       </div>
     );
   }
@@ -231,18 +229,16 @@ export function GamesTab({
     return (
       <div class="games-tab is-show">
         {errorLine}
-        <div class="gt-bleed">
-          <GamesShow
-            events={show.events}
-            lineup={show.timeline.map((s) => s.eventId)}
-            mode="live"
-            startsAt={show.showAt}
-            serverNow={serverNow}
-            youId={selfId}
-            names={names}
-            onDone={onReload}
-          />
-        </div>
+        <GamesShow
+          events={show.events}
+          lineup={show.timeline.map((s) => s.eventId)}
+          mode="live"
+          startsAt={show.showAt}
+          serverNow={serverNow}
+          youId={selfId}
+          names={names}
+          onDone={onReload}
+        />
       </div>
     );
   }
@@ -290,17 +286,15 @@ export function GamesTab({
       )}
       {errorLine}
       {screen === 'stands' && (
-        <div class="gt-bleed">
-          <GamesShow
-            events={[]}
-            lineup={current.next.lineup.map((e) => e.id)}
-            mode="live"
-            startsAt={current.next.showAt}
-            serverNow={serverNow}
-            youId={selfId}
-            onDone={onReload}
-          />
-        </div>
+        <GamesShow
+          events={[]}
+          lineup={current.next.lineup.map((e) => e.id)}
+          mode="live"
+          startsAt={current.next.showAt}
+          serverNow={serverNow}
+          youId={selfId}
+          onDone={onReload}
+        />
       )}
       {screen === 'stands' && lineup}
       {screen === 'lineup' && lineupScreen}
