@@ -1,6 +1,6 @@
 /**
  * The show player's own small pieces of art and the mapping from the engine's words to the art kit:
- * the "you" arrow and the team dot (tintable, ramp keys a to d), each effect's prop and where it sits,
+ * the marker over your creatures, the team dot (tintable, ramp keys a to d), each effect's prop and where it sits,
  * an engine state's drawn state, the pepper tiers' colours and a player's team colour.
  */
 import type { GamesActorState, GamesFx } from '@creatures/engine';
@@ -14,11 +14,28 @@ import { hashString } from './show-timeline';
 const INK = '#0d0a1a';
 const GOLD = RAMPS.gold;
 
-/** A small arrow pointing down at your creature (7x5). */
-export const YOU_ARROW: SpriteDef = {
-  rows: ['kkkkkkk', 'kabbbck', '.kbccdk', '..kdk..', '...k...'],
-  palette: { k: INK, a: GOLD[0], b: GOLD[1], c: GOLD[2], d: GOLD[3] },
+/**
+ * The marker over each of your creatures: a bright downward triangle (13x8), a white top edge over a
+ * gold fill in an ink outline. One fixed colour, not your team's, so it reads on every scene (sauna
+ * wood, snow, water, dirt, the tablecloth) and nobody else's creature has one.
+ */
+export const YOU_MARKER: SpriteDef = {
+  rows: [
+    'kkkkkkkkkkkkk',
+    'kwwwwwwwwwwwk',
+    '.kaaaaaaaaak.',
+    '..kaaaaaaak..',
+    '...kaaaaak...',
+    '....kabak....',
+    '.....kbk.....',
+    '......k......',
+  ],
+  palette: { k: INK, w: '#ffffff', a: GOLD[1], b: GOLD[2] },
 };
+
+/** How far the marker's tip sits over the top of a creature's box (scene px), and over its meter. */
+export const YOU_MARKER_GAP = 1;
+export const YOU_MARKER_METER_GAP = 5;
 
 /** A coloured patch under a creature's feet in a team event, so a team reads as one (8x3). */
 export const TEAM_DOT: SpriteDef = {
@@ -34,10 +51,6 @@ export function teamRamp(playerId: string): RampName {
 /** The CSS colour of a team's name in text (the ramp's light side, readable on the dark panels). */
 export function teamColour(playerId: string): string {
   return RAMPS[teamRamp(playerId)][1];
-}
-
-export function youArrow(ramp: RampName): SpriteDef {
-  return tintSprite(YOU_ARROW, ramp);
 }
 
 export function teamDot(ramp: RampName): SpriteDef {

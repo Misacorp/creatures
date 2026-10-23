@@ -60,14 +60,14 @@ const flush = async (): Promise<void> => {
 };
 
 describe('the Games tab', () => {
-  it('shows the title, the four events with slots and auto-entry while entries are open', () => {
+  it('shows the title, the three events with slots and auto-entry while entries are open', () => {
     const { view, offset } = gamesView('entries: one entered');
     const { page: p } = draw(view, offset);
     const text = visibleText(p.root);
     expect(text).toContain('Valley Games');
     for (const e of view.next.lineup) expect(text).toContain(e.name);
-    // Three solo slots and the team's three seats; Melon Run holds the fixture's Splashet.
-    expect(byClass(p.root, 'ge-slot')).toHaveLength(6);
+    // Two solo slots and the team's three seats; Melon Run holds the fixture's Splashet.
+    expect(byClass(p.root, 'ge-slot')).toHaveLength(5);
     expect(byName(p.root, 'button', /^Melon Run: Splashet, fit 3 \/ 5$/)).toHaveLength(1);
     expect(byRole(p.root, 'switch')).toHaveLength(1);
     expect(text).toContain('Opens');
@@ -76,12 +76,33 @@ describe('the Games tab', () => {
   it('shows the last show (medals, experience, replay) over the next lineup after a show', () => {
     const { view, offset } = gamesView('after: results and the next lineup');
     const { page: p } = draw(view, offset);
-    expect(byClass(p.root, 'gr-row')).toHaveLength(4);
+    expect(byClass(p.root, 'gr-row')).toHaveLength(3);
     expect(byName(p.root, 'button', 'Replay Melon Run')).toHaveLength(1);
-    expect(byClass(p.root, 'xp-row').length).toBeGreaterThanOrEqual(5);
+    // One row per creature that ran: two solo entrants and a team of two.
+    expect(byClass(p.root, 'xp-row')).toHaveLength(4);
+    // The next day is a Wednesday: three events and the bonus event, which wears the ribbon.
     expect(byClass(p.root, 'ge-card')).toHaveLength(4);
+    const ribbons = byClass(p.root, 'ge-bonus');
+    expect(ribbons).toHaveLength(1);
+    expect(visibleText(ribbons[0] ?? p.root)).toBe('Bonus');
+    // No bonus event in the last show (a Tuesday): no "2x" on its results.
+    expect(byClass(p.root, 'gr-bonus')).toHaveLength(0);
     // The medal table marks you.
     expect(byClass(p.root, 'mine')).toHaveLength(1);
+  });
+
+  it('marks the bonus event of the last show with a "2x" by its medal', () => {
+    const { view, offset } = gamesView('after: results and the next lineup');
+    const last = view.you.lastResults;
+    if (last === undefined) throw new Error('no results');
+    const results = last.results.map((r, i) => (i === 0 ? { ...r, bonus: true as const } : r));
+    const { page: p } = draw(
+      { ...view, you: { ...view.you, lastResults: { ...last, results } } },
+      offset,
+    );
+    const marks = byClass(p.root, 'gr-bonus');
+    expect(marks).toHaveLength(1);
+    expect(visibleText(marks[0] ?? p.root)).toBe('2x');
   });
 
   it('plays the replay from an event, with Back to the tab', () => {
@@ -142,9 +163,9 @@ describe('the Games tab', () => {
     if (splashet === undefined) throw new Error('no creature');
     api.setEntry
       .mockResolvedValueOnce({ ...view.next, entries: {} })
-      .mockResolvedValueOnce({ ...view.next, entries: { 'shark-derby': [splashet.id] } });
+      .mockResolvedValueOnce({ ...view.next, entries: { 'pepper-panic': [splashet.id] } });
     const { page: p } = draw(view, offset, api);
-    const [slot] = byName(p.root, 'button', 'Shark Derby: empty');
+    const [slot] = byName(p.root, 'button', 'Pepper Panic: empty');
     if (slot === undefined) throw new Error('no slot');
     p.click(slot);
     const option = byRole(p.root, 'option').find((o) => visibleText(o).includes('In Melon Run'));
@@ -153,7 +174,7 @@ describe('the Games tab', () => {
     await flush();
     expect(api.setEntry.mock.calls).toEqual([
       [view.next.day, 'melon-run', []],
-      [view.next.day, 'shark-derby', [splashet.id]],
+      [view.next.day, 'pepper-panic', [splashet.id]],
     ]);
   });
 
@@ -179,7 +200,7 @@ describe('the Games tab', () => {
     const { page: p, onView, props } = draw(view, offset, api);
     const buttons = byName(p.root, 'button', /^Buy/);
     expect(buttons.length).toBe(view.stall.offers.length);
-    // The prize box costs 9, the pocket holds 8: it says so and cannot be bought.
+    // The prize box costs 9, the pocket holds 7: it says so and cannot be bought.
     expect(buttons[0]?.hasAttribute('disabled')).toBe(true);
     expect(visibleText(buttons[0] ?? p.root)).toContain('Not enough');
     const bait = buttons[2];

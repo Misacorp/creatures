@@ -49,6 +49,8 @@ export interface LineupEventView {
   team: 1 | 3;
   line: string;
   favours: GamesEventDef['favours'];
+  /** The bonus day's extra event (double medal points to the pocket); absent otherwise. */
+  bonus?: true;
 }
 
 export interface GamesShowView {
@@ -75,6 +77,8 @@ export interface GamesResultView {
   pins: string[];
   /** Experience the entry's creatures earned, together. */
   xp: number;
+  /** The bonus event: its medal points went in the pocket doubled. */
+  bonus?: true;
 }
 
 export interface GamesView {
@@ -106,7 +110,8 @@ export interface GamesView {
   board: { userId: string; name: string; gold: number; silver: number; bronze: number }[];
 }
 
-export function lineupView(def: GamesEventDef): LineupEventView {
+/** An event of a day's lineup (`bonus`: the day's bonus event). */
+export function lineupView(def: GamesEventDef, bonus = false): LineupEventView {
   return {
     id: def.id,
     name: def.name,
@@ -115,7 +120,13 @@ export function lineupView(def: GamesEventDef): LineupEventView {
     team: def.team,
     line: def.line,
     favours: def.favours,
+    ...(bonus ? { bonus: true as const } : {}),
   };
+}
+
+/** A stored day's lineup as the client sees it (the bonus event marked). */
+export function lineupViews(row: DayRow): LineupEventView[] {
+  return lineupDefs(row.lineup).map((def) => lineupView(def, def.id === row.bonus));
 }
 
 /**
@@ -151,7 +162,7 @@ export function showView(sql: SqlStorage, row: DayRow): GamesShowView {
     day: row.day,
     showAt,
     endsAt: row.endsAt ?? showAt,
-    lineup: lineupDefs(row.lineup).map(lineupView),
+    lineup: lineupViews(row),
     timeline: showTimeline(timelineInputs(events)),
     events: events.flatMap((e) => (e.result === null ? [] : [e.result])),
     skipped: events.filter((e) => e.result === null).map((e) => e.eventId),
@@ -196,6 +207,7 @@ function lastResults(sql: SqlStorage, userId: string): GamesView['you']['lastRes
           pin: pins.length > 0,
           pins,
           xp: r.xp ?? 0,
+          ...(r.event_id === day.bonus ? { bonus: true as const } : {}),
         };
       }),
   };
@@ -242,7 +254,7 @@ export function nextView(deps: GamesDeps, userId: string): GamesView['next'] {
     lockAt,
     showAt: row.showAt ?? gamesShowAt(day, tz),
     open: row.lockedAt === null && now < lockAt,
-    lineup: defs.map(lineupView),
+    lineup: lineupViews(row),
     entries: playerEntries(sql, day, userId),
     joined: player.joined,
     auto: player.auto,

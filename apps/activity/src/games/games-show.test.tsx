@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { byClass, byName, createPage, visibleText, type FakeElement, type Page } from '../test-dom';
+import { FakeElement, byClass, byName, createPage, visibleText, type Page } from '../test-dom';
 import { SAMPLE_DAY, sampleShow } from '../workbench/games-show-sample';
 import { GamesShow, clockText, standsTeams } from './GamesShow';
-import { SHOW_INTRO_MS, buildShowTimeline, prepareEvent } from './show-timeline';
+import { SHOW_INTRO_MS, buildShowTimeline, prepareEvent, sayParts, sayText } from './show-timeline';
 import { clockOffsetOf, liveShowMs } from './use-show-clock';
 
 /**
@@ -136,6 +136,91 @@ describe('GamesShow', () => {
     expect(byClass(root, 'gs-title')).toHaveLength(0);
     expect(visibleText(first(byClass(root, 'gs-live')))).toContain('Watching live');
     expect(byName(root, 'button', 'Next event')).toHaveLength(0);
+  });
+});
+
+describe('the commentary’s owners', () => {
+  const show = sampleShow(['pepper-panic'], 8, 0, 'say-owners');
+  const event = show.events[0];
+  if (event === undefined) throw new Error('no event');
+  const p = prepareEvent(event);
+  const span = buildShowTimeline(show.events).spans[0];
+  if (span === undefined) throw new Error('no span');
+  // The first line that names a creature of someone else, and the first that names yours.
+  const at = (pick: (playerId: string) => boolean) => {
+    const say = p.says.find((s) => {
+      const actor = s.a === undefined ? undefined : p.result.actors[s.a];
+      return actor !== undefined && pick(actor.playerId);
+    });
+    if (say === undefined) throw new Error('no such line');
+    return { say, ms: span.eventStart + say.t * p.tickMs + 1 };
+  };
+  const long = Object.fromEntries(Object.keys(show.names).map((id) => [id, 'Kristiina Marjatta']));
+
+  function drawAt(ms: number, names: Record<string, string>): FakeElement {
+    page = createPage();
+    page.draw(
+      <GamesShow
+        events={show.events}
+        mode="replay"
+        youId={show.youId}
+        names={names}
+        autoplay={false}
+        startMs={ms}
+      />,
+    );
+    return first(byClass(page.root, 'gs-say'));
+  }
+
+  it('follows each name with its owner, and yours with "(you)"', () => {
+    const theirs = at((id) => id !== show.youId);
+    const line = drawAt(theirs.ms, show.names);
+    const owners = { youId: show.youId, names: show.names };
+    expect(visibleText(line)).toBe(sayText(sayParts(p, theirs.say, owners)));
+    const owner = show.names[p.result.actors[theirs.say.a ?? -1]?.playerId ?? ''] ?? '';
+    expect(visibleText(first(byClass(line, 'gs-owner')))).toBe(`(${owner})`);
+    page?.unmount();
+    const yours = at((id) => id === show.youId);
+    const mine = drawAt(yours.ms, show.names);
+    expect(visibleText(first(byClass(mine, 'gs-owner')))).toBe('(you)');
+    expect(first(byClass(mine, 'gs-owner')).classList.contains('is-you')).toBe(true);
+  });
+
+  it('keeps full owners when the line fits, and shortens them when it would overflow', () => {
+    const theirs = at((id) => id !== show.youId);
+    expect(visibleText(first(byClass(drawAt(theirs.ms, long), 'gs-owner')))).toBe(
+      '(Kristiina Marjatta)',
+    );
+    page?.unmount();
+    // A line wider than its box: measured after the first draw, then drawn again, shortened.
+    const proto = FakeElement.prototype as unknown as Record<string, unknown>;
+    Object.defineProperty(proto, 'scrollWidth', {
+      configurable: true,
+      get(this: FakeElement) {
+        return this.classList.contains('gs-say') && !this.classList.contains('is-short') ? 500 : 0;
+      },
+    });
+    Object.defineProperty(proto, 'clientWidth', { configurable: true, get: () => 300 });
+    try {
+      const line = drawAt(theirs.ms, long);
+      expect(line.classList.contains('is-short')).toBe(true);
+      expect(line.classList.contains('is-tight')).toBe(false);
+      expect(visibleText(first(byClass(line, 'gs-owner')))).toBe('(Kristiina)');
+      page?.unmount();
+      // Still too wide when shortened: the names drop to the line's size too (then CSS ends it "…").
+      Object.defineProperty(proto, 'scrollWidth', {
+        configurable: true,
+        get(this: FakeElement) {
+          return this.classList.contains('gs-say') ? 500 : 0;
+        },
+      });
+      const tight = drawAt(theirs.ms, long);
+      expect(tight.classList.contains('is-short')).toBe(true);
+      expect(tight.classList.contains('is-tight')).toBe(true);
+    } finally {
+      delete proto.scrollWidth;
+      delete proto.clientWidth;
+    }
   });
 });
 

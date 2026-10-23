@@ -8,7 +8,7 @@ Read `README.md` for the tags.
 
 ## The Games as a place and a habit
 
-- Every day the valley holds a show of four events. Each creature can enter one of them, and one event is for teams of three. `(design: valley-games.md)`
+- Every day the valley holds a show of three events, and on Wednesdays a fourth, the bonus event, whose medals count double at the Prize Stall. Each creature can enter one of them, and one event is for teams of three. `(design: valley-games.md)`
 - Entries close at the daily reset, and the show plays to everyone a few minutes later. Everyone watches the same moment, and the next day's events are announced at the end. `(design)`
 - Each event gives gold, silver and bronze medals. A creature that beats its own best in an event gets a pin. Medals are kept for life and can be spent at the Prize Stall on Wednesdays. `(design)`
 - What each event favours is part of its teaser (`favours`): the right element, role, size or knack counts about as much as strength. `(content: games-events.json)`

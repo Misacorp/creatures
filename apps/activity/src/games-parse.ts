@@ -39,6 +39,8 @@ const isKind = (value: unknown): value is GamesKind => KINDS.includes(value);
 const isFavour = (value: unknown): value is GamesFavour => FAVOURS.includes(value);
 const isMedal = (value: unknown): value is GamesMedal => MEDALS.includes(value);
 const isTeam = (value: unknown): value is 1 | 3 => value === 1 || value === 3;
+/** An optional `bonus` mark: absent or `true`, never `false`. */
+const isBonus = (value: unknown): boolean => value === undefined || value === true;
 const isDay = (value: unknown): value is string =>
   isStr(value) && /^\d{4}-\d{2}-\d{2}$/.test(value);
 
@@ -59,7 +61,8 @@ export function isLineupEvent(value: unknown): value is LineupEvent {
     isStr(value['scene']) &&
     isTeam(value['team']) &&
     isStr(value['line']) &&
-    isArrayOf(value['favours'], isFavour)
+    isArrayOf(value['favours'], isFavour) &&
+    isBonus(value['bonus'])
   );
 }
 
@@ -185,7 +188,8 @@ function isResult(value: unknown): value is GamesResult {
     (value['medal'] === null || isMedal(value['medal'])) &&
     isBool(value['pin']) &&
     isArrayOf(value['pins'], isStr) &&
-    isCount(value['xp'])
+    isCount(value['xp']) &&
+    isBonus(value['bonus'])
   );
 }
 

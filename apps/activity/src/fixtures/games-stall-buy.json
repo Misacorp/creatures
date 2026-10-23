@@ -5,7 +5,7 @@
     "grant": {
       "gear": [
         {
-          "id": "00000000-0000-4000-8600-000000000013",
+          "id": "00000000-0000-4000-8600-000000000012",
           "baseId": "seafoam-scarf",
           "rarity": "rare",
           "itemLevel": 1
@@ -18,8 +18,8 @@
   },
   "you": {
     "medals": {
-      "gold": 0,
-      "silver": 4,
+      "gold": 1,
+      "silver": 2,
       "bronze": 0,
       "pins": 0
     },
@@ -46,25 +46,16 @@
           "xp": 90
         },
         {
-          "eventId": "shark-derby",
-          "creatureIds": ["00000000-0000-4000-8600-000000000004"],
-          "place": 2,
-          "medal": "silver",
-          "pin": false,
-          "pins": [],
-          "xp": 90
-        },
-        {
           "eventId": "sauna-stack",
           "creatureIds": [
             "00000000-0000-4000-8600-000000000002",
             "00000000-0000-4000-8600-000000000003"
           ],
-          "place": 2,
-          "medal": "silver",
+          "place": 1,
+          "medal": "gold",
           "pin": false,
           "pins": [],
-          "xp": 180
+          "xp": 220
         }
       ]
     }

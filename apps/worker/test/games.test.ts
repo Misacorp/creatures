@@ -1,7 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call --
    These tests read parts of many response bodies (`Json.body` is `any` on purpose): typing each body
    would only repeat the server's view types. */
-import { RULES, createSeededRng, gamesEventDef, type GamesEventDef } from '@creatures/game';
+import {
+  RULES,
+  createSeededRng,
+  gamesContent,
+  gamesEventDef,
+  type GamesEventDef,
+} from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { capTeams } from '../src/games-lock';
 import type { EntryRow } from '../src/games-store';
@@ -166,7 +172,7 @@ describe('the show', () => {
       const locked = await p.call('GET', '/api/games');
       expect(locked.body.phase).toBe('locked');
       expect(locked.body.show).toBeNull();
-      expect(count(ctx.sql, 'games_results', "day = '2027-01-12'")).toBe(4);
+      expect(count(ctx.sql, 'games_results', "day = '2027-01-12'")).toBe(RULES.games.eventsPerDay);
       const entries = rows<{ user_id: string; auto: number }>(
         ctx.sql,
         "SELECT user_id, auto FROM games_entries WHERE day = '2027-01-12'",
@@ -185,8 +191,10 @@ describe('the show', () => {
       expect(day?.show_at).toBe(TUE_SHOW);
       // A second run of the schedule changes nothing.
       ctx.core.games.runDue();
-      expect(count(ctx.sql, 'games_results')).toBe(4);
-      expect(count(ctx.sql, 'games_placings', `user_id = '${p.id}'`)).toBe(4);
+      expect(count(ctx.sql, 'games_results')).toBe(RULES.games.eventsPerDay);
+      expect(count(ctx.sql, 'games_placings', `user_id = '${p.id}'`)).toBe(
+        RULES.games.eventsPerDay,
+      );
       expect(count(ctx.sql, 'discord_posts')).toBe(0);
       // The next day's entries are not open before the show: the locked day is still next.
       expect(locked.body.next.day).toBe('2027-01-12');
@@ -196,9 +204,9 @@ describe('the show', () => {
       ctx.clock.t = TUE_SHOW;
       const show = await p.call('GET', '/api/games');
       expect(show.body.phase).toBe('show');
-      expect(show.body.show.events.length).toBe(4);
+      expect(show.body.show.events.length).toBe(RULES.games.eventsPerDay);
       expect(show.body.show.endsAt).toBe(day?.ends_at);
-      expect(show.body.show.timeline).toHaveLength(4);
+      expect(show.body.show.timeline).toHaveLength(RULES.games.eventsPerDay);
       expect(show.body.show.players.map((x: { id: string }) => x.id).sort()).toEqual(
         [p.id, quiet.id].sort(),
       );
@@ -223,7 +231,7 @@ describe('the show', () => {
         xp: number;
         creatureIds: string[];
       }[];
-      expect(results).toHaveLength(4);
+      expect(results).toHaveLength(RULES.games.eventsPerDay);
       const soloResult = results.find((r) => r.eventId === solo);
       expect(soloResult?.pin).toBe(true);
       const totalXp = results.reduce((n, r) => n + r.xp, 0);
@@ -286,10 +294,110 @@ describe('the show', () => {
       const res = await p.call('GET', '/api/games');
       const next = res.body.next;
       expect(next.day).toBe('2027-01-13');
+      // Wednesday, the bonus day: one event more.
       expect(new Set((next.lineup as { id: string }[]).map((e) => e.id)).size).toBe(
-        RULES.games.eventsPerDay,
+        RULES.games.eventsPerDay + 1,
       );
       expect(count(ctx.sql, 'games_days')).toBe(2);
+    });
+  });
+});
+
+describe('the bonus day', () => {
+  /** Wednesday 2027-01-13 in Helsinki: 10:00, the lock and the show. */
+  const WED_10 = Date.parse('2027-01-13T08:00:00Z');
+  const WED_LOCK = Date.parse('2027-01-13T11:37:00Z');
+
+  /** Enters one creature (auto-entry fills the rest), locks, plays and awards Wednesday's show. */
+  async function playWednesday(ctx: CoreContext, p: Dev) {
+    ctx.clock.t = WED_10;
+    const next = await lineupOf(p);
+    expect(next.day).toBe('2027-01-13');
+    const solo = next.lineup.find((e) => e.team === 1)?.id as string;
+    await p.call('PUT', '/api/games/entry', {
+      day: next.day,
+      eventId: solo,
+      creatureIds: [p.creatureIds[0]],
+    });
+    ctx.clock.t = WED_LOCK + 5_000;
+    ctx.core.games.runDue();
+    const ends = rows<{ ends_at: number }>(
+      ctx.sql,
+      "SELECT ends_at FROM games_days WHERE day = '2027-01-13'",
+    )[0]?.ends_at;
+    ctx.clock.t = (ends ?? 0) + 1;
+    await ctx.core.alarm();
+    ctx.core.games.runDue();
+    return p.call('GET', '/api/games');
+  }
+
+  it('Wednesday has one bonus solo event more, other days none', async () => {
+    await run(async (ctx) => {
+      const p = await sixer(ctx);
+      const tuesday = await lineupOf(p);
+      expect(tuesday.lineup).toHaveLength(RULES.games.eventsPerDay);
+      expect(tuesday.lineup.some((e) => 'bonus' in e)).toBe(false);
+      ctx.clock.t = WED_10;
+      const wed = (await lineupOf(p)).lineup as { id: string; team: 1 | 3; bonus?: true }[];
+      expect(wed).toHaveLength(RULES.games.eventsPerDay + 1);
+      const bonus = wed.filter((e) => e.bonus === true);
+      expect(bonus).toHaveLength(1);
+      expect(bonus[0]?.team).toBe(1);
+      expect(wed.filter((e) => e.team === 3)).toHaveLength(1);
+      // Stored in the lineup's JSON with the ids.
+      const stored = rows<{ lineup_json: string }>(
+        ctx.sql,
+        "SELECT lineup_json FROM games_days WHERE day = '2027-01-13'",
+      )[0]?.lineup_json;
+      expect(JSON.parse(stored ?? 'null')).toEqual({
+        ids: wed.map((e) => e.id),
+        bonus: bonus[0]?.id,
+      });
+      // Thursday is an ordinary day again.
+      ctx.clock.t = Date.parse('2027-01-14T08:00:00Z');
+      expect((await lineupOf(p)).lineup).toHaveLength(RULES.games.eventsPerDay);
+    });
+  });
+
+  it("pays the bonus event's medal points to the pocket twice, the medals once", async () => {
+    await run(async (ctx) => {
+      // The only player: every event is a gold (first entries: no pins).
+      const p = await sixer(ctx);
+      const after = (await playWednesday(ctx, p)).body;
+      const results = after.you.lastResults.results as {
+        eventId: string;
+        medal: string | null;
+        pin: boolean;
+        bonus?: true;
+      }[];
+      expect(results).toHaveLength(RULES.games.eventsPerDay + 1);
+      expect(results.every((r) => r.medal === 'gold' && !r.pin)).toBe(true);
+      expect(results.filter((r) => r.bonus === true)).toHaveLength(1);
+      expect(after.show.lineup.filter((e: { bonus?: true }) => e.bonus === true)).toHaveLength(1);
+      const gold = RULES.games.medalPoints.gold;
+      expect(after.you.medals.gold).toBe(RULES.games.eventsPerDay + 1);
+      expect(after.you.pocket).toBe(RULES.games.eventsPerDay * gold + 2 * gold);
+    });
+  });
+
+  it('a day stored with four events and no bonus (before the bonus day) still plays and pays', async () => {
+    await run(async (ctx) => {
+      const p = await sixer(ctx);
+      const solos = ['sauna-showdown', 'frost-bath', 'melon-run'];
+      for (const id of solos) expect(gamesEventDef(id)?.team).toBe(1);
+      const team = gamesContent.events.find((e) => e.team === 3)?.id as string;
+      ctx.sql.exec(
+        "INSERT INTO games_days (day, lineup_json, created_at) VALUES ('2027-01-13', ?, ?)",
+        JSON.stringify([...solos, team]),
+        TUE_10,
+      );
+      const after = (await playWednesday(ctx, p)).body;
+      const results = after.you.lastResults.results as { eventId: string; bonus?: true }[];
+      expect(results.map((r) => r.eventId)).toEqual([...solos, team]);
+      expect(results.some((r) => r.bonus === true)).toBe(false);
+      expect(after.show.lineup).toHaveLength(4);
+      expect(after.you.medals.gold).toBe(4);
+      expect(after.you.pocket).toBe(4 * RULES.games.medalPoints.gold);
     });
   });
 });
@@ -451,7 +559,7 @@ describe('dev tools', () => {
         // The normal 13:37 of the same day does not lock it again.
         ctx.clock.t = TUE_LOCK + MINUTE;
         ctx.core.games.runDue();
-        expect(count(ctx.sql, 'games_results')).toBe(4);
+        expect(count(ctx.sql, 'games_results')).toBe(RULES.games.eventsPerDay);
         // The next day locks at its own reset.
         ctx.clock.t = Date.parse('2027-01-13T11:38:00Z');
         ctx.core.games.runDue();
@@ -460,7 +568,10 @@ describe('dev tools', () => {
         // Reset forgets the latest locked day; past its lock time it is locked again at once.
         const auto = count(ctx.sql, 'games_entries', "day = '2027-01-13' AND auto = 1");
         expect(await p.tool('games-reset', {})).toEqual({ day: '2027-01-13' });
-        expect(count(ctx.sql, 'games_results', "day = '2027-01-13'")).toBe(4);
+        // Wednesday is the bonus day: one event more.
+        expect(count(ctx.sql, 'games_results', "day = '2027-01-13'")).toBe(
+          RULES.games.eventsPerDay + 1,
+        );
         expect(count(ctx.sql, 'games_entries', "day = '2027-01-13' AND auto = 1")).toBe(auto);
         expect(
           rows<{ show_at: number }>(

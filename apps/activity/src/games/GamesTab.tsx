@@ -78,7 +78,7 @@ export function GamesHeader({ showAt, serverNow }: { showAt: number; serverNow: 
   );
 }
 
-/** The lineup: four event cards, and the auto-entry switch while entries are open. */
+/** The lineup: the day's event cards, and the auto-entry switch while entries are open. */
 export function Lineup({
   view,
   creatures,
@@ -125,7 +125,7 @@ export function Lineup({
 
 /**
  * The Games tab (docs/design/valley-games.md). While entries are open: the title and the countdown,
- * your last show (medals, pins, experience, ▶ replays), the four events with their slots and the
+ * your last show (medals, pins, experience, ▶ replays), the day's events with their slots and the
  * auto-entry switch. From the lock to the show: the stands and the countdown. During the show: the
  * live show, full width, then tomorrow's events. Always: your medal cabinet and the Prize Stall.
  */

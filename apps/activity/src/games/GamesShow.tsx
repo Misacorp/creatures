@@ -10,7 +10,7 @@
  */
 import type { GamesEventResult } from '@creatures/engine';
 import { gamesEventDef } from '@creatures/game';
-import { useEffect, useMemo, useRef } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { shinyPalette } from '../art';
 import { cssVars } from '../css-vars';
 import { usePrefersReducedMotion } from '../hooks';
@@ -22,8 +22,8 @@ import { PlaybackControls } from '../ui/PlaybackControls';
 import { TitlePlate } from '../ui/TitlePlate';
 import { GamesActor, GamesScene, GamesSprite } from './art/GamesScene';
 import { propSprite } from './art/props';
-import { standsSeats, type GamesSceneId } from './art/scenes';
-import { PEPPER_TIERS, teamColour, teamRamp, youArrow } from './show-art';
+import { ACTOR_SIZE, standsSeats, type GamesSceneId } from './art/scenes';
+import { PEPPER_TIERS, YOU_MARKER, YOU_MARKER_GAP, teamColour } from './show-art';
 import { ShowStage, sceneOf } from './ShowStage';
 import {
   FX_MS,
@@ -43,6 +43,7 @@ import {
   type BoardRow,
   type EventFrame,
   type PreparedEvent,
+  type SayFrame,
   type ShowCursor,
   type ShowTimeline,
 } from './show-timeline';
@@ -150,12 +151,14 @@ function Stands({
                 flip={i % 2 === 1}
               />
               {mine && (
-                <GamesSprite
-                  x={seat.x}
-                  y={seat.y - 17}
-                  sprite={youArrow(teamRamp(team.playerId))}
-                  z={99}
-                />
+                <div class="gs-you">
+                  <GamesSprite
+                    x={seat.x}
+                    y={seat.y - ACTOR_SIZE - YOU_MARKER_GAP}
+                    sprite={YOU_MARKER}
+                    z={99}
+                  />
+                </div>
               )}
             </div>
           );
@@ -169,11 +172,13 @@ function SayLine({
   p,
   frame,
   cursor,
+  youId,
   names,
 }: {
   p: PreparedEvent;
   frame: EventFrame | null;
   cursor: ShowCursor;
+  youId: string | undefined;
   names: Readonly<Record<string, string>> | undefined;
 }) {
   if (cursor.phase === 'podium') {
@@ -199,15 +204,55 @@ function SayLine({
   }
   const say = cursor.phase === 'event' ? frame?.say : null;
   if (say === null || say === undefined) return <p class="gs-say is-empty" aria-hidden="true" />;
+  // A new line is a new element (its pop-in and its own fitting).
+  return <SayText key={say.id} p={p} say={say} youId={youId} names={names} />;
+}
+
+/**
+ * One commentary line: every creature's name in its team's colour, then its owner, dimmed, in
+ * parentheses ("Pepperwick (Misa)", "(you)"). It stays on one line: if it would overflow, it is drawn
+ * again with each owner shortened to its first word (`shortOwner`), then with the names in the line's
+ * own size, before anything shows; only a line that still does not fit ends in "…".
+ */
+function SayText({
+  p,
+  say,
+  youId,
+  names,
+}: {
+  p: PreparedEvent;
+  say: Pick<SayFrame, 'line' | 'a' | 'b' | 'n'>;
+  youId: string | undefined;
+  names: Readonly<Record<string, string>> | undefined;
+}) {
+  // 0: as written; 1: owners shortened; 2: also the names in the line's size. Past that, "…".
+  const [fit, setFit] = useState(0);
+  const ref = useRef<HTMLParagraphElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (fit >= 2 || el === null) return;
+    if (el.scrollWidth > el.clientWidth + 1) setFit(fit + 1);
+  }, [fit]);
+  const parts = sayParts(p, say, { youId, names: names ?? {}, short: fit >= 1 });
+  const classes = ['gs-say'];
+  if (fit >= 1) classes.push('is-short');
+  if (fit >= 2) classes.push('is-tight');
   return (
-    <p key={say.id} class="gs-say" aria-hidden="true">
+    <p ref={ref} class={classes.join(' ')} aria-hidden="true">
       <span class="prose">
-        {sayParts(p, say).map((part, i) =>
+        {parts.map((part, i) =>
           part.k === 'name' ? (
             <span
               key={i}
               class="gs-name pix"
               ref={cssVars({ '--team': teamColour(p.result.actors[part.a]?.playerId ?? '') })}
+            >
+              {part.text}
+            </span>
+          ) : part.k === 'owner' ? (
+            <span
+              key={i}
+              class={p.result.actors[part.a]?.playerId === youId ? 'gs-owner is-you' : 'gs-owner'}
             >
               {part.text}
             </span>
@@ -270,7 +315,7 @@ function BoardSlot({
           </span>
         )
       )}
-      {mine && <Sprite sprite={youArrow(teamRamp(row.playerId))} scale={2} class="gs-slot-you" />}
+      {mine && <Sprite sprite={YOU_MARKER} scale={1} class="gs-slot-you" />}
     </li>
   );
 }
@@ -306,7 +351,7 @@ function Board({
                 {...(palette === undefined ? {} : { palette })}
               />
               <span class="gs-entrant-name">{a.name}</span>
-              <Sprite sprite={youArrow(teamRamp(a.playerId))} scale={2} class="gs-slot-you" />
+              <Sprite sprite={YOU_MARKER} scale={1} class="gs-slot-you" />
             </li>
           );
         })}
@@ -556,7 +601,7 @@ export function GamesShow(props: GamesShowProps) {
         )}
         {liveBadge}
       </div>
-      <SayLine p={p} frame={frame} cursor={cursor} names={names} />
+      <SayLine p={p} frame={frame} cursor={cursor} youId={youId} names={names} />
       <Board p={p} frame={frame} cursor={cursor} youId={youId} />
       <Pips
         prepared={prepared}

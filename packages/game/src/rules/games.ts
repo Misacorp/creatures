@@ -23,12 +23,17 @@ function shuffled<T>(items: readonly T[], rng: Rng): T[] {
   return out;
 }
 
+/** A lineup pick: the event, marked `bonus` when it is the bonus day's extra event. */
+export type LineupPick<T> = T & { bonus?: true };
+
 /**
  * The day's events from `pool`: `count` events (`RULES.games.eventsPerDay`), `teams` of them team
- * events (`RULES.games.teamEventsPerDay`) when the pool has them. No kind twice when the pool allows it
- * (that comes first), then none of yesterday's events (`previousDayIds`) when the pool allows it; the
- * rest is the luck of the draw. Solo events come first in the order drawn, the team events last (the
- * show's closer). A pool smaller than `count` gives all of it. Pure given `rng`.
+ * events (`RULES.games.teamEventsPerDay`) when the pool has them, and with `bonus` (the bonus day,
+ * `RULES.games.bonus`) one event more, marked `bonus: true`: a solo event when the pool has one left.
+ * No kind twice when the pool allows it (that comes first; the bonus event too), then none of
+ * yesterday's events (`previousDayIds`) when the pool allows it; the rest is the luck of the draw. Solo
+ * events come first in the order drawn, then the bonus event, the team events last (the show's closer).
+ * A pool smaller than that gives all of it. Pure given `rng`.
  */
 export function chooseLineup<T extends LineupCandidate>(
   pool: readonly T[],
@@ -36,7 +41,8 @@ export function chooseLineup<T extends LineupCandidate>(
   previousDayIds: readonly string[] = [],
   count: number = RULES.games.eventsPerDay,
   teams: number = RULES.games.teamEventsPerDay,
-): T[] {
+  bonus = false,
+): LineupPick<T>[] {
   if (!Number.isInteger(count) || count < 1) throw new RangeError('count must be at least 1');
   if (!Number.isInteger(teams) || teams < 0 || teams > count) {
     throw new RangeError('teams must be from 0 to count');
@@ -86,7 +92,18 @@ export function chooseLineup<T extends LineupCandidate>(
       teamPicks,
     );
   }
-  return [...soloPicks, ...teamPicks];
+  const extra: T[] = [];
+  if (bonus) {
+    const unused = order.filter((e) => !soloPicks.includes(e) && !teamPicks.includes(e));
+    pick(
+      unused.filter((e) => e.team === 1),
+      1,
+      extra,
+    );
+    // No solo event left: any event left will do.
+    if (extra.length === 0) pick(unused, 1, extra);
+  }
+  return [...soloPicks, ...extra.map((e): LineupPick<T> => ({ ...e, bonus: true })), ...teamPicks];
 }
 
 export type GamesMedal = 'gold' | 'silver' | 'bronze';
@@ -113,6 +130,15 @@ export function gamesXp(place: number | null, pin: boolean): number {
   const xp = RULES.games.xp;
   const placeXp = place === null ? 0 : (xp.place[place - 1] ?? 0);
   return xp.enter + placeXp + (pin ? xp.pin : 0);
+}
+
+/**
+ * What an entry's medal points put in the pocket: the points themselves, or in the bonus event
+ * (`bonus`) the points at `RULES.games.bonus.pocketBp` (rounded down).
+ */
+export function pocketPoints(points: number, bonus: boolean): number {
+  if (!Number.isInteger(points) || points < 0) throw new RangeError('points are whole from 0');
+  return bonus ? Math.floor((points * RULES.games.bonus.pocketBp) / 10_000) : points;
 }
 
 /** Medal points of a pocket of medals and pins (`RULES.games.medalPoints`). */

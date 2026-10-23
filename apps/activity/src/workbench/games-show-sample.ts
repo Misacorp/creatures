@@ -149,7 +149,7 @@ export function sampleEvent(
   return runGamesEvent(def, sampleEntrants(def, players, rng), rng);
 }
 
-/** The default day: three solo events and the team closer, like `chooseLineup` gives. */
+/** The default day: three solo events and the team closer, like `chooseLineup` gives on a bonus day. */
 export const SAMPLE_DAY: readonly string[] = [
   'sauna-showdown',
   'melon-run',

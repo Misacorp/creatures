@@ -1,7 +1,8 @@
 /**
  * One event of the show on its scene: the entrants (dropping in during the intro), the props and effects
- * of the kind (the melon, the sharks, the plates and peppers, the floe, the heat), your marker, and the
- * podium card at the end. Purely a view of a frame from `show-timeline`; the clock is the caller's.
+ * of the kind (the melon, the sharks, the plates and peppers, the floe, the heat), the marker over each
+ * of your creatures (above everything, following it) and the podium card at the end. Purely a view of
+ * a frame from `show-timeline`; the clock is the caller's.
  */
 import { Fragment } from 'preact';
 import { shinyPalette } from '../art';
@@ -10,7 +11,7 @@ import { cssVars } from '../css-vars';
 import { GamesActor, GamesScene, GamesSprite } from './art/GamesScene';
 import { PODIUM_HEIGHTS } from './art/drawn';
 import { propSprite, propTinted } from './art/props';
-import { PEPPER_TABLE_TOP, type GamesSceneId, GAMES_SCENE_IDS } from './art/scenes';
+import { ACTOR_SIZE, PEPPER_TABLE_TOP, type GamesSceneId, GAMES_SCENE_IDS } from './art/scenes';
 import type { RampName } from './art/tint';
 import {
   PEPPER_TIERS,
@@ -21,7 +22,9 @@ import {
   numberSprite,
   teamDot,
   teamRamp,
-  youArrow,
+  YOU_MARKER,
+  YOU_MARKER_GAP,
+  YOU_MARKER_METER_GAP,
 } from './show-art';
 import {
   FX_MS,
@@ -36,6 +39,8 @@ import {
 
 /** More entrants than this and the meters crowd each other out. */
 const CROWDED = 16;
+/** Your markers are drawn over everything in the scene (effects are 500, numbers 501). */
+const YOU_Z = 600;
 const MEDAL_RAMPS: readonly RampName[] = ['gold', 'silver', 'bronze'];
 const MEDAL_SECOND: readonly RampName[] = ['blue', 'red', 'green'];
 /** Where the podium's steps stand (their bottom-centre), in the order of the standings. */
@@ -110,6 +115,49 @@ function moveClass(state: string): string {
   }
 }
 
+/**
+ * How high an actor is lifted now (scene px): its own lift, plus the drop of the intro (`introMs`, null
+ * during the event; under reduced motion everyone has landed) or a hop effect during the event. The
+ * creature and your marker over it both read this, so the marker follows every move.
+ */
+export function liftOf(
+  frame: EventFrame,
+  f: ActorFrame,
+  introMs: number | null,
+  reduced: boolean,
+): number {
+  let lift = f.lift;
+  if (introMs !== null) {
+    lift += dropAt(f.a, frame.actors.length, reduced ? Number.POSITIVE_INFINITY : introMs).lift;
+    return lift;
+  }
+  for (const fx of frame.fx) {
+    if (fx.a !== f.a || fxMotion(fx.fx) !== 'hop') continue;
+    lift += 7 * Math.sin((Math.PI * fx.age) / FX_MS);
+  }
+  return lift;
+}
+
+/** Whether an actor's meter shows over its head (a packed room shows only your creatures' meters). */
+export function meterShown(
+  p: PreparedEvent,
+  f: ActorFrame,
+  youId: string | undefined,
+  count: number,
+): boolean {
+  const actor = p.result.actors[f.a];
+  return (
+    actor !== undefined &&
+    meterTint(p.kind, p.result.scene) !== undefined &&
+    actorLook(p.kind, f) === 'in' &&
+    !f.out &&
+    f.meter !== undefined &&
+    // A swimmer's stamina shows once a shark has had a go at it.
+    !(p.kind === 'swim' && f.meter >= 100) &&
+    (count <= CROWDED || actor.playerId === youId)
+  );
+}
+
 interface ActorsProps {
   p: PreparedEvent;
   frame: EventFrame;
@@ -131,18 +179,16 @@ function Actors({ p, frame, youId, introMs, reduced }: ActorsProps) {
         if (actor === undefined) return null;
         const look = actorLook(p.kind, f);
         if (look === 'hidden') return null;
-        let lift = f.lift;
+        const lift = liftOf(frame, f, introMs, reduced);
         const classes = ['gs-act'];
         if (introMs !== null) {
           const drop = dropAt(f.a, count, reduced ? Number.POSITIVE_INFINITY : introMs);
-          lift += drop.lift;
           if (drop.landedMs !== null && drop.landedMs < 160) classes.push('is-land');
         } else {
           for (const fx of frame.fx) {
             if (fx.a !== f.a) continue;
             const motion = fxMotion(fx.fx);
-            if (motion === 'hop') lift += 7 * Math.sin((Math.PI * fx.age) / FX_MS);
-            else if (motion !== null) classes.push(`is-${motion}`);
+            if (motion !== null && motion !== 'hop') classes.push(`is-${motion}`);
           }
           const move = moveClass(f.state);
           if (move !== '' && look === 'in') classes.push(move);
@@ -152,15 +198,7 @@ function Actors({ p, frame, youId, introMs, reduced }: ActorsProps) {
         const engineState = look === 'grey' && p.kind === 'shove' ? 'swim' : f.state;
         const x = Math.round(f.x);
         const y = Math.round(f.y);
-        // A swimmer's stamina shows once a shark has had a go at it.
-        const showMeter =
-          tint !== undefined &&
-          look === 'in' &&
-          !f.out &&
-          f.meter !== undefined &&
-          !(p.kind === 'swim' && f.meter >= 100) &&
-          // A packed room shows only your creatures' meters.
-          (count <= CROWDED || actor.playerId === youId);
+        const showMeter = meterShown(p, f, youId, count);
         const palette = actor.shiny === true ? shinyPalette(actor.speciesId) : undefined;
         return (
           <Fragment key={f.a}>
@@ -224,19 +262,21 @@ function BackProps({ p, frame, still }: { p: PreparedEvent; frame: EventFrame; s
   );
 }
 
-/** Over the front layer: plates and peppers, effects, popping numbers and your arrows. */
+/** Over the front layer: plates and peppers, effects, popping numbers and your markers. */
 function FrontProps({
   p,
   frame,
   youId,
   still,
   introMs,
+  reduced,
 }: {
   p: PreparedEvent;
   frame: EventFrame;
   youId: string | undefined;
   still: boolean;
   introMs: number | null;
+  reduced: boolean;
 }) {
   const plates =
     p.kind === 'feast'
@@ -302,15 +342,15 @@ function FrontProps({
         const actor = p.result.actors[f.a];
         if (actor === undefined || actor.playerId !== youId) return null;
         if (actorLook(p.kind, f) === 'hidden') return null;
-        const lift =
-          f.lift + (introMs === null ? 0 : dropAt(f.a, count, still ? 1e9 : introMs).lift);
+        const lift = liftOf(frame, f, introMs, reduced);
+        const gap = meterShown(p, f, youId, count) ? YOU_MARKER_METER_GAP : YOU_MARKER_GAP;
         return (
           <div key={f.a} class="gs-you">
             <GamesSprite
               x={Math.round(f.x)}
-              y={Math.round(f.y - 18 - lift)}
-              sprite={youArrow(teamRamp(actor.playerId))}
-              z={600}
+              y={Math.round(Math.round(f.y) - lift) - ACTOR_SIZE - gap}
+              sprite={YOU_MARKER}
+              z={YOU_Z}
             />
           </div>
         );
@@ -379,8 +419,15 @@ function Podium({
                 z={701}
               />
             </div>
-            {actor.playerId === youId && landed && (
-              <GamesSprite x={x} y={top - 19} sprite={youArrow(teamRamp(actor.playerId))} z={703} />
+            {actor.playerId === youId && (
+              <div class="gs-you">
+                <GamesSprite
+                  x={x}
+                  y={top - (cheer ? 2 : 0) - ACTOR_SIZE - YOU_MARKER_GAP}
+                  sprite={YOU_MARKER}
+                  z={706}
+                />
+              </div>
             )}
           </Fragment>
         );
@@ -480,6 +527,7 @@ export function ShowStage({
               youId={phase === 'podium' ? undefined : youId}
               still={quiet}
               introMs={introMs}
+              reduced={reduced}
             />
             {phase === 'podium' && (
               <Podium

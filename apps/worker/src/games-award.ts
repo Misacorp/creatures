@@ -1,11 +1,12 @@
 /**
  * The Valley Games' awards, at the end of a day's show (idempotent per day: `games_days.awarded_at`).
- * One transaction: each player's medals (lifetime and pocket), each creature's experience
+ * One transaction: each player's medals (lifetime and pocket; the bonus event's medal points go in the
+ * pocket doubled, `pocketPoints`, while the lifetime counts take one each), each creature's experience
  * (`gamesXp`), pins for beating its own record in the event, its record and its medal counts, the
  * placings' pins and experience, then the Discord podium post. Bots (the staging dev guests) take part
  * in the show but get nothing: their places keep no medal, record or experience.
  */
-import { beatsRecord, gamesXp, medalPoints, type GamesMedal } from '@creatures/game';
+import { beatsRecord, gamesXp, medalPoints, pocketPoints, type GamesMedal } from '@creatures/game';
 import { awardExperience } from './creature-exp';
 import type { GamesDeps } from './games-lock';
 import { queueGamesPost } from './games-posts';
@@ -93,7 +94,10 @@ export function awardDay(deps: GamesDeps, day: string): boolean {
       addMedals(sql, p.user_id, {
         ...counts,
         pins: pins.length,
-        pocket: medalPoints({ ...counts, pin: pins.length }),
+        pocket: pocketPoints(
+          medalPoints({ ...counts, pin: pins.length }),
+          p.event_id === row.bonus,
+        ),
       });
       sql.exec(
         'UPDATE games_placings SET pins = ?, xp = ? WHERE day = ? AND event_id = ? AND user_id = ?',

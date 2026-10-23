@@ -887,7 +887,8 @@ const MEDAL_WORDS = ['Gold', 'Silver', 'Bronze'] as const;
 
 /**
  * The show's spoken moments, in order: each event's start, each of your creatures going out, and each
- * podium. `names` gives player names by id.
+ * podium. `names` gives player names by id; every creature is said with its owner, as in the
+ * commentary ("Pip (you) is out.", "Gold: Toasty (Aino)").
  */
 export function announcements(
   prepared: readonly PreparedEvent[],
@@ -910,14 +911,13 @@ export function announcements(
       p.result.actors.forEach((actor, a) => {
         const t = p.actors[a]?.outT ?? null;
         if (actor.playerId !== youId || t === null) return;
-        out.push({ at: span.eventStart + t * p.tickMs, text: `${actor.name} is out.` });
+        out.push({ at: span.eventStart + t * p.tickMs, text: `${actor.name} (you) is out.` });
       });
     }
     const podium = podiumOf(p).rows.map((r) => {
-      const actor = p.result.actors[r.actor];
-      const who = names[r.playerId];
-      const name = actor?.name ?? '';
-      return `${MEDAL_WORDS[r.place - 1] ?? ''}: ${name}${who === undefined ? '' : ` (${who})`}`;
+      const name = p.result.actors[r.actor]?.name ?? '';
+      const who = ownerOf(p, r.actor, { youId, names });
+      return `${MEDAL_WORDS[r.place - 1] ?? ''}: ${name}${who === null ? '' : ` (${who})`}`;
     });
     if (podium.length > 0) out.push({ at: span.podiumStart, text: `${podium.join(', ')}.` });
   }
@@ -941,17 +941,58 @@ export type SayPart =
   | { k: 'text'; text: string }
   /** An actor's name (the view colours it by team). */
   | { k: 'name'; a: number; text: string }
+  /** Whose an actor is, after its name: " (Misa)", " (you)" (the view dims it). */
+  | { k: 'owner'; a: number; text: string }
   | { k: 'num'; text: string };
 
+/** Whose the creatures are: the viewer and every player's name (bots under their bot names). */
+export interface SayOwners {
+  youId: string | undefined;
+  names: Readonly<Record<string, string>>;
+  /** Owners shortened (`shortOwner`), for a line that would not fit on one line. */
+  short?: boolean | undefined;
+}
+
+/** A shortened owner's longest length, in code points ("…" included). */
+export const OWNER_SHORT_MAX = 10;
+
+/**
+ * An owner's name shortened: a name of up to `OWNER_SHORT_MAX` code points stays whole (a bot keeps
+ * "Bot 12"); a longer one becomes its first word, cut to that length with "…".
+ */
+export function shortOwner(name: string): string {
+  const whole = name.trim();
+  if ([...whole].length <= OWNER_SHORT_MAX) return whole;
+  const word = whole.split(/\s+/u)[0] ?? '';
+  const points = [...word];
+  return points.length <= OWNER_SHORT_MAX
+    ? word
+    : `${points.slice(0, OWNER_SHORT_MAX - 1).join('')}…`;
+}
+
+/** Whose an actor is, as said after its name: "you" for the viewer, else the player's name (or null). */
+export function ownerOf(p: PreparedEvent, a: number, owners: SayOwners): string | null {
+  const actor = p.result.actors[a];
+  if (actor === undefined) return null;
+  if (owners.youId !== undefined && actor.playerId === owners.youId) return 'you';
+  const name = owners.names[actor.playerId]?.trim() ?? '';
+  if (name === '') return null;
+  return owners.short === true ? shortOwner(name) : name;
+}
+
 const PLACEHOLDER = /\{([abn])\}/g;
+/** A possessive right after a name ("{b}'s paws"): the owner goes after it ("Toasty's (Aino) paws"). */
+const POSSESSIVE = /^['’]s\b/u;
 
 /**
  * A commentary line as parts: plain text, actor names and the number, from the event's template (its
  * own words, else the kind's). Names are the actors' names as plain text; an unknown key gives nothing.
+ * Given `owners`, every name is followed by its owner in parentheses ("Pepperwick (Misa)", "(you)").
  */
 export function sayParts(
   p: PreparedEvent,
   say: Pick<SayFrame, 'line' | 'a' | 'b' | 'n'>,
+  owners?: SayOwners,
 ): SayPart[] {
   const def = gamesEventDef(p.result.eventId);
   const template =
@@ -959,9 +1000,27 @@ export function sayParts(
   if (template === undefined) return [];
   const parts: SayPart[] = [];
   let last = 0;
+  /** An owner still to be said, after the possessive that follows its name. */
+  let pending: SayPart | null = null;
+  const text = (t: string): void => {
+    let rest = t;
+    if (pending !== null) {
+      const cut = POSSESSIVE.exec(t)?.[0].length ?? 0;
+      if (cut > 0) parts.push({ k: 'text', text: t.slice(0, cut) });
+      parts.push(pending);
+      pending = null;
+      rest = t.slice(cut);
+    }
+    if (rest !== '') parts.push({ k: 'text', text: rest });
+  };
+  const flush = (): void => {
+    if (pending !== null) parts.push(pending);
+    pending = null;
+  };
   for (const m of template.matchAll(PLACEHOLDER)) {
     const at = m.index;
-    if (at > last) parts.push({ k: 'text', text: template.slice(last, at) });
+    if (at > last) text(template.slice(last, at));
+    else flush();
     const which = m[1];
     const a = which === 'a' ? say.a : which === 'b' ? say.b : undefined;
     if (which === 'n') {
@@ -970,11 +1029,19 @@ export function sayParts(
       );
     } else if (a !== undefined && p.result.actors[a] !== undefined) {
       parts.push({ k: 'name', a, text: p.result.actors[a].name });
+      const owner = owners === undefined ? null : ownerOf(p, a, owners);
+      if (owner !== null) pending = { k: 'owner', a, text: ` (${owner})` };
     } else {
       parts.push({ k: 'text', text: m[0] });
     }
     last = at + m[0].length;
   }
-  if (last < template.length) parts.push({ k: 'text', text: template.slice(last) });
+  if (last < template.length) text(template.slice(last));
+  else flush();
   return parts;
+}
+
+/** A line's parts as plain text (the screen reader's words and the tests'). */
+export function sayText(parts: readonly SayPart[]): string {
+  return parts.map((part) => part.text).join('');
 }

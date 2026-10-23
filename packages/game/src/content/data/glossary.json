@@ -2270,7 +2270,7 @@
   {
     "id": "games",
     "title": "Valley Games",
-    "short": "A daily show of four silly events. Each creature can enter one.",
+    "short": "A daily show of three silly events, four on Wednesdays. A creature enters one.",
     "lines": [
       "Entries close at the daily reset. The show plays to everyone a few minutes later.",
       "One event a day is for teams of three.",
@@ -2319,6 +2319,17 @@
     "visual": {
       "kind": "glyph",
       "id": "gift"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-bonus",
+    "title": "Bonus event",
+    "short": "Wednesday's fourth event: its medals and pins are worth double medal points.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "medal-point"
     },
     "section": "games"
   },
@@ -2372,7 +2383,7 @@
   {
     "id": "games-favour-small",
     "title": "Small creatures",
-    "short": "Stage 1 creatures do well here: they duck, slip and hide.",
+    "short": "Creatures that can still evolve duck, slip and hide better here.",
     "lines": [],
     "visual": {
       "kind": "glyph",
@@ -2383,7 +2394,7 @@
   {
     "id": "games-favour-big",
     "title": "Big creatures",
-    "short": "Stage 2 creatures do well here.",
+    "short": "Evolved creatures and ones that never evolve do better here.",
     "lines": [],
     "visual": {
       "kind": "glyph",

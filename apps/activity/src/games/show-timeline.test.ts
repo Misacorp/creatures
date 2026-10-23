@@ -23,7 +23,9 @@ import {
   podiumOf,
   prepareEvent,
   sayParts,
+  sayText,
   scoreText,
+  shortOwner,
   stillIn,
 } from './show-timeline';
 
@@ -388,17 +390,59 @@ describe('the words', () => {
     expect(sayParts(p, { line: 'no.such.key' })).toEqual([]);
   });
 
+  it('follows every name with its owner, "(you)" for yours, after a possessive', () => {
+    const p = prepareEvent(tiny([], { eventId: 'frost-bath', scene: 'frost-bath' }));
+    const owners = { youId: 'p0', names: { p0: 'Misa', p1: 'Aino' } };
+    expect(sayParts(p, { line: 'endure.fan', a: 0, b: 1 }, owners)).toEqual([
+      { k: 'name', a: 0, text: 'Pip' },
+      { k: 'owner', a: 0, text: ' (you)' },
+      { k: 'text', text: ' rubs ' },
+      { k: 'name', a: 1, text: 'Toasty' },
+      { k: 'text', text: "'s" },
+      { k: 'owner', a: 1, text: ' (Aino)' },
+      { k: 'text', text: ' paws warm.' },
+    ]);
+    const sauna = prepareEvent(tiny([]));
+    expect(sayText(sayParts(sauna, { line: 'endure.duel', a: 1, b: 0 }, owners))).toBe(
+      'Last two: Toasty (Aino) and Pip (you)!',
+    );
+    // A spectator sees every owner by name; a player without a name gets no brackets.
+    expect(
+      sayText(
+        sayParts(sauna, { line: 'endure.out', a: 0 }, { youId: undefined, names: owners.names }),
+      ),
+    ).toBe('Pip (Misa) heads for the door.');
+    expect(sayText(sayParts(sauna, { line: 'endure.out', a: 1 }, { youId: 'p0', names: {} }))).toBe(
+      'Toasty heads for the door.',
+    );
+  });
+
+  it('shortens owners to their first word when a line must fit', () => {
+    expect(shortOwner('Misa')).toBe('Misa');
+    expect(shortOwner('Kaisa from the Valley')).toBe('Kaisa');
+    expect(shortOwner('Maximiliana-Josephine')).toBe('Maximilia…');
+    expect([...shortOwner('Maximiliana-Josephine')]).toHaveLength(10);
+    // A name that is already short stays whole: bots keep their bot names.
+    expect(shortOwner('Bot 12')).toBe('Bot 12');
+    expect(shortOwner('Anna Liisa')).toBe('Anna Liisa');
+    const p = prepareEvent(tiny([]));
+    const owners = { youId: 'p0', names: { p1: 'Aino Marjatta Virtanen' }, short: true };
+    expect(sayText(sayParts(p, { line: 'endure.duel', a: 1, b: 0 }, owners))).toBe(
+      'Last two: Toasty (Aino) and Pip (you)!',
+    );
+  });
+
   it('announces each event, your creatures going out and each podium', () => {
     const p = prepareEvent(tiny([{ t: 5, k: 'out', a: 0, cause: 'heat' }]));
     const tl = buildShowTimeline([p.result]);
     const list = announcements([p], tl, 'p0', { p0: 'Misa', p1: 'Aino' });
     expect(list.map((a) => a.text)).toEqual([
       'Event 1 / 1: Sauna Showdown.',
-      'Pip is out.',
-      'Gold: Toasty (Aino), Silver: Pip (Misa).',
+      'Pip (you) is out.',
+      'Gold: Toasty (Aino), Silver: Pip (you).',
     ]);
     expect(list[1]?.at).toBe(SHOW_INTRO_MS + 2_000);
-    expect(announcementAt(list, SHOW_INTRO_MS + 2_100)?.text).toBe('Pip is out.');
+    expect(announcementAt(list, SHOW_INTRO_MS + 2_100)?.text).toBe('Pip (you) is out.');
     expect(announcementAt(list, -1)).toBeNull();
     // A spectator hears no outs.
     expect(announcements([p], tl, undefined)).toHaveLength(2);

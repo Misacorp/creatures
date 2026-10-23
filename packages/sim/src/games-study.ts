@@ -6,6 +6,7 @@
  * or more often) and a few more numbers for tuning.
  */
 import {
+  RULES,
   chooseLineup,
   createSeededRng,
   fillGamesSay,
@@ -422,13 +423,24 @@ export interface PlayedEvent {
   entries: Entry[];
 }
 
-/** Plays one day for a roster: the lineup, every player's entries by its policy, every event. */
+/**
+ * Plays one day for a roster: the lineup (with the bonus event on the bonus day, `bonus`), every
+ * player's entries by its policy, every event.
+ */
 export function playDay(
   players: readonly SimPlayer[],
   rng: Rng,
   policyOf: (player: SimPlayer) => GamesPolicy,
+  bonus = false,
 ): PlayedEvent[] {
-  const lineup = chooseLineup(gamesContent.events, rng);
+  const lineup = chooseLineup(
+    gamesContent.events,
+    rng,
+    [],
+    RULES.games.eventsPerDay,
+    RULES.games.teamEventsPerDay,
+    bonus,
+  );
   const perEvent: {
     entrant: GamesEntrant;
     c: Candidate;
@@ -491,7 +503,14 @@ export function runGamesStudy(settings: GamesStudySettings): GamesStudy {
           GAMES_POLICIES[rng.nextU32() % GAMES_POLICIES.length] as GamesPolicy,
         ]),
       );
-      for (const played of playDay(roster.players, rng, (p) => policies.get(p.id) ?? 'best')) {
+      // Day 0 is a Monday: the bonus day (`RULES.games.bonus.weekday`) is one day in seven.
+      const bonus = (d % 7) + 1 === RULES.games.bonus.weekday;
+      for (const played of playDay(
+        roster.players,
+        rng,
+        (p) => policies.get(p.id) ?? 'best',
+        bonus,
+      )) {
         tallyEvent(
           tallies.get(played.def.id) as EventTally,
           played.def,

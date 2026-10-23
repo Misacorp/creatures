@@ -19,6 +19,8 @@ export interface LineupEvent {
   line: string;
   /** What helps, as tags (stats, size, roles, elements). */
   favours: GamesFavour[];
+  /** The bonus day's extra event: its medal points go in the pocket doubled. */
+  bonus?: true;
 }
 
 /** The part of a show's length one event takes (ms from the show's start). */
@@ -72,6 +74,8 @@ export interface GamesResult {
   pins: string[];
   /** Experience the entry's creatures earned, together. */
   xp: number;
+  /** The bonus event: its medal points went in the pocket doubled. */
+  bonus?: true;
 }
 
 export interface GamesYou {

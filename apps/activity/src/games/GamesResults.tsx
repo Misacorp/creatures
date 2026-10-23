@@ -6,6 +6,7 @@ import { creatureXp, gamesXpChange } from '../games-view';
 import type { GamesResult, LineupEvent } from '../games-types';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
+import { Tag } from '../ui/Tag';
 import { XpList } from '../ui/XpGain';
 import { MEDAL_NAME, MedalSprite, PinSprite } from './GamesParts';
 
@@ -26,7 +27,10 @@ export function ReplayButton({ label, onPlay }: { label: string; onPlay: () => v
   );
 }
 
-/** One event of your last show: the medal (or your place), the event, who went, a pin, ▶. */
+/**
+ * One event of your last show: the medal (or your place), the event, a "2x" for the bonus event (its
+ * medal points went in the pocket doubled), who went, a pin, ▶.
+ */
 function ResultRow({
   result,
   event,
@@ -58,6 +62,11 @@ function ResultRow({
         )}
       </span>
       <span class="gr-event">{name}</span>
+      {result.bonus === true && (
+        <Tag entry="games-bonus" class="gr-bonus" label="Bonus event: double medal points">
+          2x
+        </Tag>
+      )}
       <span class="gr-who">
         {result.creatureIds.map((id) => {
           const c = creatures.get(id);

@@ -95,7 +95,6 @@ export function gamesView(name: GamesViewName): { view: GamesView; offset: numbe
             entries: {
               'melon-run': [id(4)],
               'pepper-panic': [id(6)],
-              'shark-derby': [id(1)],
               'sauna-stack': [id(2), id(3), id(5)],
             },
           },

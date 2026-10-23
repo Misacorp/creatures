@@ -80,6 +80,8 @@ const gamesTab: Entry = {
 
 const LINEUP = GAMES_FIXTURES.entries.next.lineup;
 const EVENT_IDS = LINEUP.map((e) => e.id);
+/** The first event of the sample lineup that favours small creatures. */
+const SMALL_EVENT = LINEUP.find((e) => e.favours.includes('small'))?.id ?? EVENT_IDS[0] ?? '';
 
 function CardPreview({ p }: { p: Props }) {
   const roster = useMemo(gamesRoster, []);
@@ -169,8 +171,21 @@ const entrySlot: Entry = {
   render: (p) => <SlotPreview p={p} />,
 };
 
+/** The sample roster (all young) plus an evolved creature and a single-stage line: both sizes. */
+function mixedRoster() {
+  const roster = gamesRoster();
+  const first = roster[0];
+  if (first === undefined) return roster;
+  return [
+    ...roster,
+    { ...first, id: 'wb-evolved', species: 'tidewing', nickname: null, level: 14 },
+    { ...first, id: 'wb-single', species: 'lanternfin', nickname: null, level: 10 },
+  ];
+}
+
 function PickerPreview({ p }: { p: Props }) {
-  const roster = useMemo(gamesRoster, []);
+  const mixed = bool(p, 'mixed');
+  const roster = useMemo(() => (mixed ? mixedRoster() : gamesRoster()), [mixed]);
   const event = LINEUP.find((e) => e.id === str(p, 'event')) ?? LINEUP[0];
   if (event === undefined) return null;
   const next = {
@@ -201,16 +216,21 @@ const entryPicker: Entry = {
   file: `${FILE}EntryPicker.tsx`,
   group: 'Creatures & game pieces',
   description:
-    'The picker of a Games entry slot: a drawer with the event, its favours and teaser line, your creatures best fit first with their fit pips (one in another event says so, and a tap moves it), and Clear when the slot is filled.',
+    'The picker of a Games entry slot: a drawer with the event, its favours and teaser line, your creatures best fit first with their fit pips (one in another event says so, and a tap moves it), and Clear when the slot is filled. When the event favours small or big creatures, each creature of that size shows the favour’s glyph beside its pips ("mixed" adds an evolved creature and a single-stage line, both big).',
   controls: {
     event: { kind: 'select', options: EVENT_IDS },
     others: { kind: 'toggle' },
+    mixed: { kind: 'toggle' },
   },
-  defaults: { event: EVENT_IDS[0] ?? '', others: true },
+  defaults: { event: EVENT_IDS[0] ?? '', others: true, mixed: false },
   presets: [
     { name: 'Filled, one creature in another event', props: {} },
     { name: 'Nothing entered yet', props: { others: false } },
     { name: 'The team event', props: { event: 'sauna-stack' } },
+    {
+      name: 'Favours small, both sizes in the roster',
+      props: { event: SMALL_EVENT, others: false, mixed: true },
+    },
   ],
   render: (p) => <PickerPreview p={p} />,
 };

@@ -2,7 +2,7 @@
  * The Valley Games' lineup and lock (docs/design/valley-games.md, "Server (worker) design").
  *
  * - The lineup of a show day is drawn once, the first time it is needed (live RNG, `chooseLineup`,
- *   avoiding the day before's events), and stored.
+ *   avoiding the day before's events; the bonus day gets its bonus event), and stored.
  * - The lock (at the day's reset, or now from the dev tools) is one transaction: auto-entry fills the
  *   empty events of auto players, every entrant is snapshotted (the raid's fold: stats, crit, gear and
  *   talents), a seed is drawn from the live RNG, the events are resolved by the engine with a seeded RNG
@@ -31,7 +31,7 @@ import type { Analytics } from './analytics';
 import type { LedgerStorage } from './ledger';
 import { drawSeed } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
-import { gamesShowAt } from './games-calendar';
+import { gamesShowAt, isGamesBonusDay } from './games-calendar';
 import {
   addEntry,
   autoPlayers,
@@ -76,11 +76,19 @@ export function ensureLineup(deps: GamesDeps, day: string): DayRow {
   const have = readDay(sql, day);
   if (have !== null) return have;
   const before = readDay(sql, addDays(day, -1));
-  const picks = chooseLineup(gamesContent.events, deps.rng, before?.lineup ?? []);
+  const picks = chooseLineup(
+    gamesContent.events,
+    deps.rng,
+    before?.lineup ?? [],
+    RULES.games.eventsPerDay,
+    RULES.games.teamEventsPerDay,
+    isGamesBonusDay(day),
+  );
   insertDay(
     sql,
     day,
     picks.map((e) => e.id),
+    picks.find((e) => e.bonus === true)?.id ?? null,
     deps.now(),
   );
   return readDay(sql, day) as DayRow;

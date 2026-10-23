@@ -1,4 +1,4 @@
-import { GAMES_FAVOURS, RULES, glossaryEntry } from '@creatures/game';
+import { GAMES_FAVOURS, RULES, gamesIsSmall, glossaryEntry } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { BUNDLED_GLYPHS } from './glyphs';
 import {
@@ -10,6 +10,7 @@ import {
   gamesXpChange,
   nextRefetchAt,
   pickerRows,
+  sizeFavourOf,
   placeMedal,
   recordText,
   replayStart,
@@ -17,7 +18,8 @@ import {
   slotsOf,
   withSlot,
 } from './games-view';
-import type { GamesView } from './games-types';
+import { getSpecies } from './game';
+import type { GamesView, LineupEvent } from './games-types';
 import { ALERT_TEXT } from './tab-alerts';
 import { GAMES_FIXTURES, gamesRoster } from './workbench/games-tab-sample';
 
@@ -84,6 +86,50 @@ describe('slots and entries', () => {
   });
 });
 
+describe('the picker’s size mark', () => {
+  const base = LINEUP[0];
+  if (base === undefined) throw new Error('no lineup');
+  const withFavours = (favours: LineupEvent['favours']): LineupEvent => ({ ...base, favours });
+  const small = (speciesId: string): boolean => {
+    const species = getSpecies(speciesId);
+    if (species === undefined) throw new Error(speciesId);
+    return gamesIsSmall(species);
+  };
+
+  it('reads the size an event favours', () => {
+    expect(sizeFavourOf(withFavours(['hp', 'small']))).toBe('small');
+    expect(sizeFavourOf(withFavours(['big', 'atk']))).toBe('big');
+    expect(sizeFavourOf(withFavours(['hp', 'ember']))).toBeNull();
+  });
+
+  it('marks the creatures that have the favoured size, by the one size rule', () => {
+    // The sample roster is all young; add an evolved one and a single-stage line (big at stage 1).
+    const first = roster[0];
+    if (first === undefined) throw new Error('no roster');
+    const mixed = [
+      ...roster,
+      { ...first, id: 'c-evolved', species: 'tidewing' },
+      { ...first, id: 'c-single', species: 'lanternfin' },
+    ];
+    const smallRows = pickerRows(F.entries.next, withFavours(['small']), 0, mixed);
+    const bigRows = pickerRows(F.entries.next, withFavours(['big']), 0, mixed);
+    const speciesOf = new Map(mixed.map((c) => [c.id, c.species]));
+    expect(smallRows.find((r) => r.id === 'c-single')?.size).toBeNull();
+    expect(bigRows.find((r) => r.id === 'c-single')?.size).toBe('big');
+    expect(bigRows.find((r) => r.id === 'c-evolved')?.size).toBe('big');
+    expect(smallRows.some((r) => r.size === 'small')).toBe(true);
+    expect(bigRows.some((r) => r.size === 'big')).toBe(true);
+    for (const r of smallRows) {
+      expect(r.size, r.id).toBe(small(speciesOf.get(r.id) ?? '') ? 'small' : null);
+    }
+    for (const r of bigRows) {
+      expect(r.size, r.id).toBe(small(speciesOf.get(r.id) ?? '') ? null : 'big');
+    }
+    const plain = pickerRows(F.entries.next, withFavours(['hp']), 0, roster);
+    expect(plain.every((r) => r.size === null)).toBe(true);
+  });
+});
+
 describe('the phase, the pip and when to ask again', () => {
   it('shows the lineup, the stands after the lock and the show while it plays', () => {
     expect(screenOf(F.entries, F.entries.serverNow)).toBe('lineup');
@@ -96,7 +142,7 @@ describe('the phase, the pip and when to ask again', () => {
     expect(gamesAlert(null, roster, 0)).toBeNull();
     expect(gamesAlert(F.show, roster, F.show.serverNow)).toBe(ALERT_TEXT.gamesLive);
     expect(gamesAlert(F.entries, roster, F.entries.serverNow)).toBe(ALERT_TEXT.gamesEntries);
-    expect(emptyEvents(F.entries.next, roster)).toHaveLength(4);
+    expect(emptyEvents(F.entries.next, roster)).toHaveLength(F.entries.next.lineup.length);
     const all = at(F.entries, {
       entries: Object.fromEntries(LINEUP.map((e, i) => [e.id, [roster[i]?.id ?? '']])),
     });

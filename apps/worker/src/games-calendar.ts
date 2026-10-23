@@ -5,7 +5,7 @@
  * is always passed in.
  */
 import { RULES } from '@creatures/game';
-import { addDays, gameDay, zonedDate, zonedTimeToEpoch } from './time';
+import { addDays, gameDay, isoWeekday, zonedDate, zonedTimeToEpoch } from './time';
 
 /** When entries for show day `day` lock (its daily reset), in epoch ms. */
 export function gamesLockAt(day: string, tz: string): number {
@@ -47,3 +47,11 @@ export function nextShowDay(
 
 /** The ISO weekday of the Prize Stall's game day (Wednesday, guild time). */
 export const STALL_WEEKDAY = 3;
+
+/**
+ * Whether show day `day` (a guild-local date, so its weekday is the guild's) is the bonus day
+ * (`RULES.games.bonus.weekday`), which has one bonus event more.
+ */
+export function isGamesBonusDay(day: string): boolean {
+  return isoWeekday(day) === RULES.games.bonus.weekday;
+}

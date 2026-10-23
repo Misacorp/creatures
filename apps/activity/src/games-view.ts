@@ -4,9 +4,9 @@
  * another event), the tab's pip, when to ask the server again, the medals of a result and the units of
  * a record. Pure: the server decides every entry, placing, medal and number; this only arranges them.
  */
-import { RULES, expToNext, gamesEventDef, type GamesFavour } from '@creatures/game';
+import { RULES, expToNext, gamesEventDef, gamesIsSmall, type GamesFavour } from '@creatures/game';
 import type { Creature } from './api';
-import { creatureName } from './game';
+import { creatureName, getSpecies } from './game';
 import type {
   GamesMedal,
   GamesNext,
@@ -185,6 +185,26 @@ export interface GamesPickerOption extends PickerOption {
   fit: number;
   /** The event it is in now (picking it moves it here), or null. */
   inEvent: string | null;
+  /**
+   * The event's size favour when this creature has it (`gamesIsSmall`), shown as the favour's glyph
+   * beside the pips; null when the event favours no size or the creature is the other size.
+   */
+  size: 'small' | 'big' | null;
+}
+
+/** The size favour of an event ('small' or 'big'), or null. */
+export function sizeFavourOf(event: Pick<LineupEvent, 'favours'>): 'small' | 'big' | null {
+  if (event.favours.includes('small')) return 'small';
+  if (event.favours.includes('big')) return 'big';
+  return null;
+}
+
+/** Whether a creature has the size an event favours (one rule: `gamesIsSmall`). */
+export function fitsSize(favour: 'small' | 'big' | null, speciesId: string): boolean {
+  if (favour === null) return false;
+  const species = getSpecies(speciesId);
+  if (species === undefined) return false;
+  return gamesIsSmall(species) === (favour === 'small');
 }
 
 /**
@@ -201,6 +221,7 @@ export function pickerRows(
   const here = next.entries[event.id] ?? [];
   const fit = next.fit[event.id] ?? {};
   const names = new Map(next.lineup.map((e) => [e.id, e.name]));
+  const size = sizeFavourOf(event);
   const rows = creatures.map((c): GamesPickerOption => {
     const inEvent = entryOf(next, c.id);
     const sameTeam = inEvent === event.id && here.indexOf(c.id) !== slot;
@@ -210,6 +231,7 @@ export function pickerRows(
       ...baseOption(c),
       fit: fit[c.id] ?? 1,
       inEvent,
+      size: fitsSize(size, c.species) ? size : null,
       onBoard: elsewhere,
       disabled: sameTeam ? 'In this team' : null,
       ...(elsewhere ? { note: `In ${names.get(inEvent) ?? inEvent}` } : {}),

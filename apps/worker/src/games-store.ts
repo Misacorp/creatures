@@ -11,6 +11,8 @@ export const isBot = (userId: string): boolean => userId.startsWith(BOT_PREFIX);
 export interface DayRow {
   day: string;
   lineup: string[];
+  /** The bonus event of a bonus day (`RULES.games.bonus`), or null. */
+  bonus: string | null;
   createdAt: number;
   lockedAt: number | null;
   seed: string | null;
@@ -30,9 +32,21 @@ type RawDay = {
   awarded_at: number | null;
 };
 
+/**
+ * `lineup_json` is the event ids in show order (`["a","b","c"]`), or on a bonus day the ids with the
+ * bonus event (`{"ids":["a","b","c","d"],"bonus":"c"}`). Days stored before the bonus day existed (four
+ * events, no bonus) are the plain list.
+ */
+type StoredLineup = string[] | { ids: string[]; bonus: string };
+
+function parseLineup(json: string): { lineup: string[]; bonus: string | null } {
+  const v = JSON.parse(json) as StoredLineup;
+  return Array.isArray(v) ? { lineup: v, bonus: null } : { lineup: v.ids, bonus: v.bonus };
+}
+
 const toDay = (r: RawDay): DayRow => ({
   day: r.day,
-  lineup: JSON.parse(r.lineup_json) as string[],
+  ...parseLineup(r.lineup_json),
   createdAt: r.created_at,
   lockedAt: r.locked_at,
   seed: r.seed,
@@ -78,11 +92,20 @@ export function unawardedDays(sql: SqlStorage): DayRow[] {
     .map(toDay);
 }
 
-export function insertDay(sql: SqlStorage, day: string, lineup: readonly string[], now: number) {
+/** Stores a day's lineup (`bonus`: its bonus event, which must be in `lineup`, or null). */
+export function insertDay(
+  sql: SqlStorage,
+  day: string,
+  lineup: readonly string[],
+  bonus: string | null,
+  now: number,
+) {
+  if (bonus !== null && !lineup.includes(bonus)) throw new RangeError('bonus not in the lineup');
+  const stored: StoredLineup = bonus === null ? [...lineup] : { ids: [...lineup], bonus };
   sql.exec(
     'INSERT INTO games_days (day, lineup_json, created_at) VALUES (?, ?, ?)',
     day,
-    JSON.stringify(lineup),
+    JSON.stringify(stored),
     now,
   );
 }

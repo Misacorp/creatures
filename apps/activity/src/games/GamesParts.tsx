@@ -16,6 +16,7 @@ import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { GameIcon } from '../ui/GameIcon';
 import { PipRow } from '../ui/PipRow';
+import { Tag } from '../ui/Tag';
 import { GamesActor, GamesScene, GamesSprite } from './art/GamesScene';
 import { MELON_FRAMES } from './art/drawn';
 import type { SpriteDef } from '../sprites/sprite-data';
@@ -323,8 +324,8 @@ export function EntrySlot({
 }
 
 /**
- * One event of the lineup: its scene as a strip with the name on a plate, what it favours as icons,
- * then its slot (one, or three for a team event). `onSlot` opens the picker for a slot (entries open).
+ * One event of the lineup: its scene as a strip with the name on a plate (the bonus event with a gold
+ * "Bonus" ribbon on it), what it favours as icons, then its slot (one, or three for a team event). `onSlot` opens the picker for a slot (entries open).
  */
 export function EventCard({
   event,
@@ -348,6 +349,11 @@ export function EventCard({
   const team = slots.length > 1;
   return (
     <li class={team ? 'ge-card is-team' : 'ge-card'}>
+      {event.bonus === true && (
+        <Tag kind="badge" entry="games-bonus" class="ge-bonus" label="Bonus event">
+          Bonus
+        </Tag>
+      )}
       <EventThumb
         scene={event.scene}
         creatures={slots.flatMap((id) => {

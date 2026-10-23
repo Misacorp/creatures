@@ -47,7 +47,10 @@ const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 describe('the Games payloads', () => {
   it.each(Object.entries(VIEWS))('reads GET /api/games: %s', (_name, raw) => {
     const view = parseGamesView(raw);
-    expect(view.next.lineup).toHaveLength(4);
+    // Three events a day; Wednesday (the captures' next day after Tuesday's show) one bonus more.
+    const bonus = view.next.lineup.filter((e) => e.bonus === true).length;
+    expect(bonus).toBe(view.next.day === '2027-01-13' ? 1 : 0);
+    expect(view.next.lineup).toHaveLength(3 + bonus);
     expect(view.next.lineup.filter((e) => e.team === 3)).toHaveLength(1);
     expect(view.stall.offers.length).toBeGreaterThan(0);
   });
@@ -58,9 +61,9 @@ describe('the Games payloads', () => {
     expect(parseGamesView(gamesShow).phase).toBe('show');
     const after = parseGamesView(gamesAfter);
     expect(after.phase).toBe('after');
-    expect(after.show?.events).toHaveLength(4);
+    expect(after.show?.events).toHaveLength(3);
     expect(after.show?.events.every(isEventResult)).toBe(true);
-    expect(after.you.lastResults?.results).toHaveLength(4);
+    expect(after.you.lastResults?.results).toHaveLength(3);
   });
 
   it('reads the entry, auto-entry, purchase and creature answers', () => {
@@ -70,6 +73,18 @@ describe('the Games payloads', () => {
     expect(parseStallPurchase(gamesStallBuy).purchase.grant.gear).toHaveLength(1);
     expect(parseStallPurchase(gamesStallBuyBait).purchase.bait).toBe(30);
     expect(parseCreatureGames(gamesCreature).records[0]?.unit).toBe('m');
+  });
+
+  it('reads the bonus mark on a lineup event and a result, and only as true', () => {
+    expect(parseGamesView(gamesShow).next.lineup.find((e) => e.bonus === true)?.team).toBe(1);
+    const result = clone(gamesAfter) as {
+      you: { lastResults: { results: Record<string, unknown>[] } };
+      next: { lineup: Record<string, unknown>[] };
+    };
+    (result.you.lastResults.results[0] as Record<string, unknown>)['bonus'] = true;
+    expect(parseGamesView(result).you.lastResults?.results[0]?.bonus).toBe(true);
+    (result.next.lineup[0] as Record<string, unknown>)['bonus'] = false;
+    expect(() => parseGamesView(result)).toThrow();
   });
 
   it('refuses a payload of the wrong shape instead of drawing half a tab', () => {

@@ -1215,11 +1215,13 @@ export const RULES = {
     twilightHours: 2,
   },
   /**
-   * The Valley Games (docs/design/valley-games.md): a daily show of four events, one creature per event.
+   * The Valley Games (docs/design/valley-games.md): a daily show of three events (four on the bonus
+   * day), one creature per event.
    * Entries lock at the daily reset (`lockAt`, the same time as `daily.reset`), the server resolves the
    * day's events then, and the show plays to everyone at `showAt` (guild time), when tomorrow's lineup is
-   * revealed. An event takes at most `maxEntrants` creatures (`maxTeamEntrants` in a team event). A day has `eventsPerDay` events, `teamEventsPerDay` of them team events (a player's team of
-   * up to `teamSize`). Experience is per creature: `enter` for taking part, `place` for 1st, 2nd and 3rd,
+   * revealed. An event takes at most `maxEntrants` creatures (`maxTeamEntrants` in a team event). A day
+   * has `eventsPerDay` events, `teamEventsPerDay` of them team events (a player's team of up to
+   * `teamSize`), and the `bonus` day one bonus solo event more. Experience is per creature: `enter` for taking part, `place` for 1st, 2nd and 3rd,
    * `pin` for beating its own record in the event; a team event pays every member. `medalPoints` price
    * the Prize Stall. Commentary lines are at least `sayGapMs` apart. First numbers (2026-10-22).
    */
@@ -1228,10 +1230,17 @@ export const RULES = {
     lockAt: { hour: 13, minute: 37 },
     /** The show plays to everyone, and tomorrow's lineup is revealed (guild time). */
     showAt: { hour: 13, minute: 40 },
-    /** Events in a day's show. */
-    eventsPerDay: 4,
+    /** Events in a day's show (a bonus day has one more). */
+    eventsPerDay: 3,
     /** Team events among them. */
     teamEventsPerDay: 1,
+    /**
+     * The bonus day (ISO weekday of the show day, guild time; 3 is Wednesday, the Prize Stall's day): one
+     * more solo event, the bonus event, whose medals and pins go in the pocket at `pocketBp` (basis
+     * points; 20000 is double). Lifetime medal counts and experience are as in any event. Misa,
+     * 2026-10-23: four events every day felt like a bit much.
+     */
+    bonus: { weekday: 3, pocketBp: 20_000 },
     /** Creatures in a team. */
     teamSize: 3,
     /** Creatures in a solo event at most. */

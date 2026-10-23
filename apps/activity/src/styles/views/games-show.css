@@ -4,6 +4,9 @@
   (the art kit's `--x` / `--y`), so a frame never lays the page out again.
 */
 .games-show {
+  /* The rim of your creatures (the marker's white edge). */
+  --mine-rim: #fff;
+
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
@@ -173,6 +176,13 @@
   scale: 1.15 0.8;
 }
 
+/* Your creatures also wear a thin light rim, so they stand out in a crowd (one scene pixel). */
+.gs-act.is-mine .games-actor-body {
+  filter: drop-shadow(var(--s) 0 0 var(--mine-rim))
+    drop-shadow(calc(var(--s) * -1) 0 0 var(--mine-rim)) drop-shadow(0 var(--s) 0 var(--mine-rim))
+    drop-shadow(0 calc(var(--s) * -1) 0 var(--mine-rim));
+}
+
 .gs-act.is-out .games-actor {
   filter: grayscale(1) brightness(0.8);
   opacity: 0.6;
@@ -202,9 +212,15 @@
   }
 }
 
-/* Your creature's arrow bobs over its head. */
+/* The marker over each of your creatures bobs gently (still under reduced motion, below). */
 .gs-you .games-sprite canvas.sprite {
-  animation: gs-bob 0.6s steps(2) infinite;
+  animation: gs-mark-bob 0.9s steps(2) infinite;
+}
+
+@keyframes gs-mark-bob {
+  50% {
+    translate: 0 calc(var(--s, 2px) * -1);
+  }
 }
 
 /* One line of commentary under the scene; names in the pixel font, in their team's colour. */
@@ -237,6 +253,21 @@
 .gs-name {
   color: var(--team, var(--gold));
   font-size: var(--fs-row);
+}
+
+/* A line that would not fit on one line: names in the line's size. */
+.gs-say.is-tight :is(.gs-name, .gs-num) {
+  font-size: var(--fs-small);
+}
+
+/* Whose a creature is, after its name: quieter than the line. */
+.gs-owner {
+  color: var(--haze);
+}
+
+/* "(you)" in the marker's gold. */
+.gs-owner.is-you {
+  color: var(--gold);
 }
 
 .gs-num {
@@ -301,9 +332,10 @@
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
+/* Your row: the marker's gold ring (one colour for "yours" everywhere in the show). */
 .gs-slot.is-mine {
   background: var(--mine);
-  box-shadow: inset 0 0 0 2px var(--team, var(--gold));
+  box-shadow: inset 0 0 0 2px var(--gold);
 }
 
 .gs-slot.is-out .gs-icon {

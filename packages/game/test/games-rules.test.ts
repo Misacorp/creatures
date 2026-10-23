@@ -8,19 +8,59 @@ import {
   gamesXp,
   medalPoints,
   placesToMedals,
+  pocketPoints,
 } from '../src/index';
 
 describe('chooseLineup', () => {
   const pool = gamesContent.events;
 
-  it('picks four events, exactly one team event (last), no kind twice', () => {
+  it('picks three events, exactly one team event (last), no kind twice, no bonus', () => {
     for (let s = 0; s < 50; s++) {
       const day = chooseLineup(pool, createSeededRng(`day:${String(s)}`));
       expect(day).toHaveLength(RULES.games.eventsPerDay);
       expect(day.filter((e) => e.team === 3)).toHaveLength(1);
       expect(day[day.length - 1]?.team).toBe(3);
       expect(new Set(day.map((e) => e.kind)).size).toBe(day.length);
+      expect(day.some((e) => e.bonus === true)).toBe(false);
     }
+  });
+
+  it('a bonus day adds one solo bonus event of a new kind before the team closer', () => {
+    for (let s = 0; s < 50; s++) {
+      const day = chooseLineup(
+        pool,
+        createSeededRng(`bonus:${String(s)}`),
+        [],
+        RULES.games.eventsPerDay,
+        RULES.games.teamEventsPerDay,
+        true,
+      );
+      expect(day).toHaveLength(RULES.games.eventsPerDay + 1);
+      expect(day.filter((e) => e.team === 3)).toHaveLength(1);
+      expect(day[day.length - 1]?.team).toBe(3);
+      const bonus = day.filter((e) => e.bonus === true);
+      expect(bonus).toHaveLength(1);
+      expect(bonus[0]?.team).toBe(1);
+      expect(day[day.length - 2]?.bonus).toBe(true);
+      expect(new Set(day.map((e) => e.kind)).size).toBe(day.length);
+      expect(new Set(day.map((e) => e.id)).size).toBe(day.length);
+    }
+  });
+
+  it('the bonus draw keeps the regular draw and falls back to a team event without solos', () => {
+    const plain = chooseLineup(pool, createSeededRng('same'));
+    const withBonus = chooseLineup(pool, createSeededRng('same'), [], 3, 1, true);
+    expect(withBonus.filter((e) => e.bonus !== true).map((e) => e.id)).toEqual(
+      plain.map((e) => e.id),
+    );
+    const teamsOnly = [
+      { id: 'a', kind: 'x', team: 3 as const },
+      { id: 'b', kind: 'y', team: 3 as const },
+    ];
+    const day = chooseLineup(teamsOnly, createSeededRng('t'), [], 1, 1, true);
+    expect(day).toHaveLength(2);
+    expect(day.filter((e) => e.bonus === true)).toHaveLength(1);
+    expect(chooseLineup(teamsOnly, createSeededRng('t'), [], 2, 1, true)).toHaveLength(2);
   });
 
   it("avoids yesterday's events when the pool allows it", () => {
@@ -32,8 +72,9 @@ describe('chooseLineup', () => {
         yesterday.map((e) => e.id),
       );
       // Two team events in the pool: the team event always changes.
-      expect(today[3]?.id).not.toBe(yesterday[3]?.id);
-      expect(new Set(today.map((e) => e.kind)).size).toBe(4);
+      const last = RULES.games.eventsPerDay - 1;
+      expect(today[last]?.id).not.toBe(yesterday[last]?.id);
+      expect(new Set(today.map((e) => e.kind)).size).toBe(RULES.games.eventsPerDay);
     }
   });
 
@@ -92,6 +133,15 @@ describe('medals, experience and records', () => {
       2 * p.gold + p.silver + 3 * p.bronze + 4 * p.pin,
     );
     expect(() => medalPoints({ gold: -1, silver: 0, bronze: 0, pin: 0 })).toThrow(RangeError);
+  });
+
+  it('the bonus event puts double medal points in the pocket', () => {
+    expect(RULES.games.bonus.pocketBp).toBe(20_000);
+    expect(pocketPoints(4, false)).toBe(4);
+    expect(pocketPoints(4, true)).toBe(8);
+    expect(pocketPoints(0, true)).toBe(0);
+    expect(() => pocketPoints(-1, true)).toThrow(RangeError);
+    expect(() => pocketPoints(1.5, false)).toThrow(RangeError);
   });
 
   it('a record is beaten only by a higher score, and a first entry earns no pin', () => {
