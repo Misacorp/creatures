@@ -1,5 +1,8 @@
+import { maintenanceMigration } from './maintenance';
+
 /**
- * Migration 38: the Valley Games (docs/design/valley-games.md). Never edit a released migration.
+ * The Valley Games' tables (docs/design/valley-games.md), run by migration 39 (`gamesMigrationV39`).
+ * Staging ran this function as migration 38 before main's maintenance mark took that number. Never edit it.
  *
  * - `games_days`: one row per show day: its lineup (drawn lazily), and from the lock its seed, show time,
  *   end time and the award marker. `show_at` is stored at the lock (the dev tools can move it).
@@ -96,7 +99,7 @@ export function gamesMigration(sql: SqlStorage): void {
   )`);
 }
 
-/** The tables of migration 38, for the tests' undo. */
+/** The tables of the Valley Games, for the tests' undo. */
 export const GAMES_TABLES = [
   'games_days',
   'games_results',
@@ -108,3 +111,19 @@ export const GAMES_TABLES = [
   'games_records',
   'games_stall_buys',
 ] as const;
+
+const tableExists = (sql: SqlStorage, name: string): boolean =>
+  sql.exec("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", name).toArray().length >
+  0;
+
+/**
+ * Migration 39 (docs/design/decisions.md, 2026-10-23, "Games migration renumbered"). The Games branch was
+ * deployed to staging with its tables as migration 38; main then released the maintenance mark as 38. A
+ * staging database can therefore be at 38 with either set of tables. This step makes every database end
+ * the same: it adds the Games tables when they are missing, and the maintenance mark when a database
+ * recorded 38 for the Games instead. Production and fresh databases only ever take the first branch.
+ */
+export function gamesMigrationV39(sql: SqlStorage): void {
+  if (!tableExists(sql, 'games_days')) gamesMigration(sql);
+  if (!tableExists(sql, 'maintenance')) maintenanceMigration(sql);
+}

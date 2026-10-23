@@ -20,6 +20,7 @@ import { weatherRoutes } from './weather-routes';
 import { expeditionRoutes } from './expedition-routes';
 import { collectionRoutes } from './collection-routes';
 import { LoungeCompany, loungeDay } from './lounge-company';
+import { maintainedDay, markMaintained } from './maintenance';
 import { LIVE_QUIET_PATHS, type LiveHooks } from './lounge-live';
 import { liveRoutes } from './lounge-live-routes';
 import { DevState } from './dev-state';
@@ -98,6 +99,7 @@ import {
 } from './session';
 import {
   DEFAULT_GUILD_TIMEZONE,
+  gameDay,
   isValidTimeZone,
   nextOccurrence,
   previousOccurrence,
@@ -1316,13 +1318,24 @@ export class GuildCore {
     this.catchUpGames();
     await this.deliverPosts();
     await this.runLounge();
-    // Old analytics rows go; a long backlog is worked off over the next alarms.
-    this.pruneBacklog = this.analytics.prune();
     this.rollup.runDue();
+    this.maintain();
+    await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
+  }
+
+  /**
+   * The cleanup passes, once per game day (they read whole tables, and the alarm can run every minute):
+   * old analytics rows, gear action results and dungeon run data go, and runs left open on an earlier
+   * day are closed. A long analytics backlog keeps the day unmarked, so the next alarms work it off.
+   */
+  private maintain(): void {
+    const day = gameDay(this.now(), this.timezone(), RULES.daily.reset);
+    if (maintainedDay(this.sql) === day && !this.pruneBacklog) return;
+    this.pruneBacklog = this.analytics.prune();
     this.gear.prune();
     this.dungeon.closeStale();
     this.dungeon.prune();
-    await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
+    if (!this.pruneBacklog) markMaintained(this.sql, day);
   }
 }
 

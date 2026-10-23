@@ -13,7 +13,8 @@ import { capTeams } from '../src/games-lock';
 import type { EntryRow } from '../src/games-store';
 import { ON, player, type Dev } from './dev-helpers';
 import { SCHEMA_VERSION } from '../src/migrations';
-import { runCore, undoGamesMigration, type CoreContext } from './helpers';
+import { gamesMigration } from '../src/games-migration';
+import { runCore, undoGamesMigration, undoMaintenanceMigration, type CoreContext } from './helpers';
 import { MINUTE, newKey } from './kit';
 import { count, nextGuild, rows } from './raid-helpers';
 
@@ -55,18 +56,38 @@ const lineupOf = async (p: Dev) => {
   };
 };
 
-describe('migration 38', () => {
+describe('migration 39', () => {
+  const version = (ctx: { sql: SqlStorage }): number | undefined =>
+    rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v;
+  const has = (ctx: { sql: SqlStorage }, name: string): boolean =>
+    count(ctx.sql, 'sqlite_master', `name = '${name}'`) > 0;
+
   it('is the last version and adds the Games tables again after an undo', async () => {
-    expect(SCHEMA_VERSION).toBe(38);
+    expect(SCHEMA_VERSION).toBe(39);
     await run(async (ctx) => {
       const p = await sixer(ctx);
       undoGamesMigration(ctx.sql);
-      expect(count(ctx.sql, 'sqlite_master', "name = 'games_days'")).toBe(0);
+      expect(has(ctx, 'games_days')).toBe(false);
       ctx.core.migrate();
       ctx.core.migrate();
-      expect(
-        rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v,
-      ).toBe(38);
+      expect(version(ctx)).toBe(39);
+      expect(has(ctx, 'games_days')).toBe(true);
+      expect((await p.call('GET', '/api/games')).status).toBe(200);
+    });
+  });
+
+  it('repairs a staging database that ran the Games as migration 38: it gains the maintenance mark', async () => {
+    await run(async (ctx) => {
+      const p = await sixer(ctx);
+      // The staging shape: the Games tables at 38, no maintenance mark.
+      undoMaintenanceMigration(ctx.sql);
+      gamesMigration(ctx.sql);
+      ctx.sql.exec('INSERT INTO schema_version (version) VALUES (38)');
+      expect(has(ctx, 'maintenance')).toBe(false);
+      ctx.core.migrate();
+      expect(version(ctx)).toBe(39);
+      expect(has(ctx, 'maintenance')).toBe(true);
+      expect(has(ctx, 'games_days')).toBe(true);
       expect((await p.call('GET', '/api/games')).status).toBe(200);
     });
   });

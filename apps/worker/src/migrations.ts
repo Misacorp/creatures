@@ -11,11 +11,12 @@ import { dungeonMigration } from './dungeon-migration';
 import { dungeonPathMigration } from './dungeon-path-migration';
 import { expeditionsMigration } from './expedition-migration';
 import { fusionPointsMigration } from './fusion-points-migration';
-import { gamesMigration } from './games-migration';
+import { gamesMigrationV39 } from './games-migration';
 import { gearMigration } from './gear-migration';
 import { gearV2Migration } from './gear-v2-migration';
 import { loungeMigration } from './lounge';
 import { loungeCompanyMigration } from './lounge-company';
+import { maintenanceMigration } from './maintenance';
 import { raidAutofireMigration } from './raid-autofire-migration';
 import { raidDifficultyMigration } from './raid-difficulty-migration';
 import { raidLiveMigration } from './raid-live-migration';
@@ -281,8 +282,11 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   workshopConvertMigration,
   // Version 37: fusion points per creature (see fusion-points-migration.ts).
   fusionPointsMigration,
-  // Version 38: the Valley Games (see games-migration.ts).
-  gamesMigration,
+  // Version 38: the daily maintenance mark and the rollup's metric index (see maintenance.ts).
+  maintenanceMigration,
+  // Version 39: the Valley Games, made safe for staging databases that ran it as 38 (see
+  // games-migration.ts).
+  gamesMigrationV39,
 ];
 
 /** The schema version of a fresh database. */
