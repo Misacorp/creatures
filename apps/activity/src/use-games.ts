@@ -10,8 +10,24 @@ import type { GamesView } from './games-types';
 import { GAMES_GRACE_MS, nextRefetchAt } from './games-view';
 import { MAX_TIMER_MS } from './tab-alerts';
 
-export function useGames(enabled: boolean, offset: number) {
+/** The day of the newest awarded show in a view (null: none yet). */
+export function awardedDay(view: GamesView | null): string | null {
+  return view?.you.lastResults?.day ?? null;
+}
+
+/**
+ * True when `next` carries a show's awards that `prev` did not: the creatures' experience changed on the
+ * server, so the game state must be reloaded (or the result rows would draw stale XP bars).
+ */
+export function newAwards(prev: GamesView | null, next: GamesView): boolean {
+  const day = awardedDay(next);
+  return day !== null && prev !== null && day !== awardedDay(prev);
+}
+
+/** `onAwards` runs when a load brings a show's awards (see `newAwards`). */
+export function useGames(enabled: boolean, offset: number, onAwards?: () => void) {
   const [view, setView] = useState<GamesView | null>(null);
+  const latest = useRef<GamesView | null>(null);
   const [failed, setFailed] = useState(false);
   // Only the newest load may land (an older answer would show an older phase).
   const seq = useRef(0);
@@ -21,6 +37,8 @@ export function useGames(enabled: boolean, offset: number) {
     fetchGames().then(
       (next) => {
         if (mine !== seq.current) return;
+        if (newAwards(latest.current, next)) onAwards?.();
+        latest.current = next;
         setView(next);
         setFailed(false);
       },
@@ -33,6 +51,7 @@ export function useGames(enabled: boolean, offset: number) {
   /** Puts an action's answer on screen; a load still running would be older, so it is dropped. */
   function replace(next: GamesView): void {
     seq.current += 1;
+    latest.current = next;
     setView(next);
   }
 

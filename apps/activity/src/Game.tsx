@@ -109,7 +109,10 @@ export function Game({
   // The valley's sky for today and tomorrow (Boons and Omens); null until the first load (or when it failed).
   const { forecast, load: loadForecast } = useForecast(game.starterChosen, offset);
   // The Valley Games: the tab, its pip and the living room's trophy shelf; null until the first load.
-  const games = useGames(game.starterChosen, offset);
+  // A show's awards changed the creatures' experience: reload them, or the result rows draw old bars.
+  const games = useGames(game.starterChosen, offset, () => {
+    refreshState();
+  });
   const [tab, setTab] = useState<Tab>('collection');
   const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
     null,
