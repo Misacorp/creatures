@@ -20,6 +20,7 @@ A retro looks back at one session and turns what went wrong into small, durable 
 1. **Find the transcript.** Sessions are stored as JSON lines at `~/.claude/projects/<project>/<session-id>.jsonl` (the project folder is the working directory with `/` replaced by `-`). The current session is usually the newest file there. If Misa names another session, use that one.
 2. **Make the digest.** Run, from the repo root:
    `node .claude/skills/retro/digest.mjs <transcript.jsonl> > <scratchpad>/retro-digest.md`
+   **The window:** by default the digest covers the **current segment** (everything since the latest compaction) and skips whatever an earlier retro of the same session already covered (the `Covers:` line in `docs/retros/`). Right after a compaction, use `--segment previous` (the stretch the compaction just summarised). `--segment all`, `--since <ISO>` and `--until <ISO>` widen or narrow it. Copy the digest's `Covers:` line into the retro, so the next retro starts where this one ended.
    It lists, in order and with times: Misa's own messages (not tool results, reminders or hook output), permission denials, failed tool calls, hook feedback, compactions, subagent launches and follow-up rounds, the most edited files, and failing check output. Read the digest, not the raw transcript (the raw file can be tens of MB). Open a raw line only to check a detail.
 3. **Mark the interventions.** Go through Misa's messages and tag each one that changed course:
    - **Correction:** something was wrong or misunderstood ("that's not what I meant", a bug he found, a number he questioned).
@@ -43,6 +44,8 @@ A retro looks back at one session and turns what went wrong into small, durable 
 
 ```markdown
 # Retro: <topic> (<date>)
+
+Covers: <from the digest's Covers line>
 
 Session: <what it set out to do, one line>. Outcome: <what shipped, PRs>.
 

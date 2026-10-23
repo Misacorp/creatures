@@ -2,14 +2,28 @@
 // Retro digest: reads a Claude Code session transcript (JSON lines) and prints a short Markdown digest
 // for the `retro` skill: the human's messages, permission denials, failed tool calls, hook feedback,
 // compactions, subagent work, the most edited files and failing check output. Node only, no packages.
-// Usage: node .claude/skills/retro/digest.mjs <session.jsonl>
-import { createReadStream } from 'node:fs';
+// Usage: node .claude/skills/retro/digest.mjs <session.jsonl> [--segment current|previous|all]
+//        [--since <ISO>] [--until <ISO>] [--retros <dir>]
+// The window: `current` (default) is everything since the latest compaction, `previous` the stretch
+// between the last two compactions (what a compaction just summarised), `all` the whole transcript.
+// Whatever an earlier retro of the same session already covered (its "Covers:" line in --retros,
+// default docs/retros) is skipped, so each retro sees only what happened since the last one.
+import { createReadStream, existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 import process from 'node:process';
 
-const path = process.argv[2];
-if (path === undefined) {
-  console.error('Usage: node .claude/skills/retro/digest.mjs <session.jsonl>');
+const args = process.argv.slice(2);
+const path = args.find((a, i) => !a.startsWith('--') && !(args[i - 1] ?? '').startsWith('--'));
+const option = (name) => {
+  const i = args.indexOf(`--${name}`);
+  return i >= 0 ? args[i + 1] : undefined;
+};
+const segment = option('segment') ?? 'current';
+if (path === undefined || !['current', 'previous', 'all'].includes(segment)) {
+  console.error(
+    'Usage: node .claude/skills/retro/digest.mjs <session.jsonl> [--segment current|previous|all] [--since <ISO>] [--until <ISO>] [--retros <dir>]',
+  );
   process.exit(2);
 }
 
@@ -73,20 +87,50 @@ function classify(text) {
   return 'human';
 }
 
+// Read every timestamped entry, then cut the window.
+const entries = [];
 const lines = createInterface({ input: createReadStream(path), crlfDelay: Infinity });
 for await (const line of lines) {
-  let entry;
   try {
-    entry = JSON.parse(line);
+    const entry = JSON.parse(line);
+    if (typeof entry.timestamp === 'string') entries.push(entry);
   } catch {
-    continue;
+    // A torn last line while the session is still writing: skip it.
   }
+}
+const sessionId = entries.find((e) => typeof e.sessionId === 'string')?.sessionId ?? 'unknown';
+const boundaries = entries
+  .filter((e) => e.type === 'system' && e.subtype === 'compact_boundary')
+  .map((e) => e.timestamp);
+let since = '';
+let until = '\uffff';
+if (segment === 'current' && boundaries.length > 0) since = boundaries.at(-1);
+if (segment === 'previous' && boundaries.length > 0) {
+  until = boundaries.at(-1);
+  since = boundaries.length > 1 ? boundaries.at(-2) : '';
+}
+// Skip what an earlier retro of this session covered.
+const retros = option('retros') ?? 'docs/retros';
+if (existsSync(retros)) {
+  for (const file of readdirSync(retros)) {
+    if (!file.endsWith('.md')) continue;
+    const text = readFileSync(join(retros, file), 'utf8');
+    for (const m of text.matchAll(/Covers: (\S+) to (\S+) \(session ([\w-]+)\)/g)) {
+      if (m[3] === sessionId && m[2] > since && m[2] < until) since = m[2];
+    }
+  }
+}
+since = option('since') ?? since;
+until = option('until') ?? until;
+let compactionsInWindow = 0;
+
+for (const entry of entries) {
   const ts = entry.timestamp;
-  if (typeof ts === 'string') {
-    first ??= ts;
-    last = ts;
-  }
-  if (entry.type === 'system' && /compact/i.test(String(entry.subtype ?? ''))) {
+  if (ts < since || ts >= until) continue;
+  first ??= ts;
+  last = ts;
+  if (entry.type === 'system' && entry.subtype === 'compact_boundary') {
+    compactionsInWindow += 1;
     compactions.push(when(ts));
   }
   const content = entry.message?.content;
@@ -110,7 +154,7 @@ for await (const line of lines) {
     const kind = classify(text.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '').trim());
     if (kind === 'human') human.push(`${when(ts)} ${clip(text, 400)}`);
     else if (kind === 'hook') hooks.push(`${when(ts)} ${clip(text, 140)}`);
-    else if (kind === 'compaction') compactions.push(`${when(ts)} (summary handed over)`);
+    else if (kind === 'compaction') continue;
     else if (kind === 'agent') agentReports += 1;
   }
   if (entry.type === 'assistant' && Array.isArray(content)) {
@@ -147,8 +191,10 @@ const out = [
   `# Retro digest`,
   '',
   `Transcript: ${path}`,
-  `Span: ${first ?? '?'} to ${last ?? '?'} (UTC)`,
-  `Human messages: ${String(human.length)}; hook feedback: ${String(hooks.length)}; permission denials: ${String(denials.length)}; failed tool calls: ${String(errors.length)}; compactions: ${String(compactions.length)}; subagents launched: ${String(agents.length)}, follow-up messages to them: ${String(followUps)}, reports back: ${String(agentReports)}`,
+  `Window: ${segment}${option('since') || option('until') ? ' (with --since/--until)' : ''}; compactions in the whole transcript: ${String(boundaries.length)}`,
+  `Covers: ${first ?? since} to ${last ?? until} (session ${sessionId})`,
+  `(Copy the Covers line into the retro, so the next retro starts after it.)`,
+  `Human messages: ${String(human.length)}; hook feedback: ${String(hooks.length)}; permission denials: ${String(denials.length)}; failed tool calls: ${String(errors.length)}; compactions: ${String(compactionsInWindow)}; subagents launched: ${String(agents.length)}, follow-up messages to them: ${String(followUps)}, reports back: ${String(agentReports)}`,
   '',
   `## The human's messages (in order)`,
   ...list(human, 400),
