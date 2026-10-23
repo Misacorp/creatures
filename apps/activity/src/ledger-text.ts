@@ -23,5 +23,6 @@ export function describeEntry(entry: LedgerEntry): string {
   if (entry.source === 'allowance') return `${head} · daily allowance`;
   if (entry.source === 'gear') return `${head} · gear upgrade`;
   if (entry.source === 'rank_gift') return `${head} · explorer rank gift`;
+  if (entry.source === 'games') return `${head} · Prize Stall`;
   return `${head} · ${entry.source}`;
 }

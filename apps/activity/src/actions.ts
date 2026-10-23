@@ -114,6 +114,12 @@ export const ActionIds = {
    */
   dungeonAct: (runId: string, step: number, act: DungeonAct): ActionId =>
     `dungeon-act:${runId}:${String(step)}:${dungeonActKey(act)}`,
+  /**
+   * One purchase at the Prize Stall: the stall week, the offer and how many were left when it was tapped,
+   * so the next purchase of the same offer (fewer left) is another action with its own key.
+   */
+  gamesBuy: (week: string, offerId: string, left: number): ActionId =>
+    `games-buy:${week}:${offerId}:${String(left)}`,
 };
 
 /** What makes one dungeon act different from another, in a string. */

@@ -5,7 +5,7 @@ import { SectionArt } from './HowToPlayArt';
 
 /**
  * The How to play page: a full-screen overlay (opened by the "?" in the header, or by a popover's
- * "More in How to play" link) with the eleven sections in order, each with a small picture and a
+ * "More in How to play" link) with the twelve sections in order, each with a small picture and a
  * few short lines. All text comes from the content (`howToPlay`). Escape or the Close button
  * closes it. `section` scrolls to that section when the page opens or the link is used again
  * (`nonce` changes each time, so the same section can be asked for twice).

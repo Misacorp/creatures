@@ -23,6 +23,8 @@ export function useTabPips(input: {
   attention: Attention | null;
   /** How many duplicates wait for a choice. */
   pending: number;
+  /** The Games tab's pip (from the games state the screen holds); null: none. */
+  games?: string | null;
   /** Server clock minus local clock. */
   offset: number;
   /** Reloads the state in the background; false when it did not start because an action is running. */
@@ -32,7 +34,14 @@ export function useTabPips(input: {
   // Bumped when a trip or job runs out, so the pips are worked out again at that moment.
   const [pipTick, setPipTick] = useState(0);
   const serverNow = Date.now() + offset;
-  const alerts = tabAlerts({ expeditions, jobs, attention, pending: input.pending, serverNow });
+  const alerts = tabAlerts({
+    expeditions,
+    jobs,
+    attention,
+    pending: input.pending,
+    games: input.games ?? null,
+    serverNow,
+  });
   const changeAt = nextChangeAt({ expeditions, jobs, serverNow });
   useEffect(() => {
     if (changeAt === null) return undefined;

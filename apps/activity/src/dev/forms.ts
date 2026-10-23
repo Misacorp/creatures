@@ -40,6 +40,9 @@ export const DEV_TOOL_IDS = [
   'raid-roster',
   'raid-live',
   'raid-simulate',
+  'games-bots',
+  'games-run-now',
+  'games-reset',
   'analytics-rollup',
   'reset-account',
 ] as const;

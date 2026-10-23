@@ -5,6 +5,7 @@
  */
 import { DUNGEON_MAP_GLYPHS } from './dungeon-map-glyphs';
 import { EXPEDITION_GLYPHS } from './expedition-glyphs';
+import { GAMES_GLYPHS } from './games-glyphs';
 import type { SpriteDef } from './sprites/sprite-data';
 
 export const GLYPH_SIZE = { width: 8, height: 8 } as const;
@@ -839,6 +840,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   'slot-charm': slotCharm,
   ...EXPEDITION_GLYPHS,
   ...DUNGEON_MAP_GLYPHS,
+  ...GAMES_GLYPHS,
 };
 
 /** A glyph by id, or undefined. */

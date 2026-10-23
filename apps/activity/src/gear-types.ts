@@ -87,7 +87,9 @@ export type ItemOrigin =
   | { kind: 'trip'; place: string; rank: number }
   | { kind: 'craft' }
   | { kind: 'welcome' }
-  | { kind: 'converted' };
+  | { kind: 'converted' }
+  /** Bought at the Valley Games' Prize Stall. */
+  | { kind: 'games' };
 
 export interface GearItem {
   id: string;
@@ -214,7 +216,14 @@ export interface GrantLoot {
 export interface GrantRecord extends GrantLoot {
   key: string;
   source:
-    'raid_phase' | 'raid_finale' | 'festival' | 'expedition' | 'welcome' | 'dungeon' | 'rank_gift';
+    | 'raid_phase'
+    | 'raid_finale'
+    | 'festival'
+    | 'expedition'
+    | 'welcome'
+    | 'dungeon'
+    | 'rank_gift'
+    | 'games';
   at: number;
 }
 

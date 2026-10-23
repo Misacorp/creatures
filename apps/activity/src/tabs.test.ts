@@ -3,11 +3,12 @@ import { BUNDLED_GLYPHS } from './glyphs';
 import { TABS, tabAfterKey, tabPalette } from './tabs';
 
 describe('the tabs', () => {
-  it('has the five tabs in order of rising danger, the Raid last', () => {
+  it('has the six tabs in order of rising danger, the Raid last', () => {
     expect(TABS.map((t) => t.id)).toEqual([
       'collection',
       'workshop',
       'expeditions',
+      'games',
       'dungeon',
       'raid',
     ]);
@@ -15,7 +16,7 @@ describe('the tabs', () => {
     expect(new Set(TABS.map((t) => t.id)).size).toBe(TABS.length);
   });
 
-  it('gives every tab a picture and a word, so all five fit as picture over word', () => {
+  it('gives every tab a picture and a word, so all six fit as picture over word', () => {
     for (const tab of TABS) {
       expect(Object.hasOwn(BUNDLED_GLYPHS, tab.glyph), tab.id).toBe(true);
       expect(tab.label.length).toBeGreaterThan(2);

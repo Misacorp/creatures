@@ -280,6 +280,16 @@ const RAID_SPECS: readonly ToolSpec[] = [
   },
 ];
 
+const GAMES_SPECS: readonly ToolSpec[] = [
+  { tool: 'games-bots', label: 'Add bots', fields: [int('count', 'Bots', 1, 12, true)] },
+  {
+    tool: 'games-run-now',
+    label: 'Run show now',
+    fields: [int('showInSeconds', 'Show in (s)', 5, 120, true)],
+  },
+  { tool: 'games-reset', label: 'Reset the last show', fields: [] },
+];
+
 const ANALYTICS_SPECS: readonly ToolSpec[] = [
   { tool: 'analytics-rollup', label: 'Roll up now', fields: [] },
 ];
@@ -297,6 +307,7 @@ export const SECTIONS: readonly SectionDef[] = [
   { id: 'creatures', title: 'Creatures', tab: 'collection', specs: CREATURES_SPECS },
   { id: 'workshop', title: 'Workshop', tab: 'workshop', specs: WORKSHOP_SPECS },
   { id: 'expeditions', title: 'Expeditions', tab: 'expeditions', specs: EXPEDITIONS_SPECS },
+  { id: 'games', title: 'Games', tab: 'games', specs: GAMES_SPECS },
   { id: 'dungeon', title: 'Dungeon', tab: 'dungeon', specs: DUNGEON_SPECS },
   { id: 'raid', title: 'Raid', tab: 'raid', specs: RAID_SPECS },
   { id: 'weather', title: 'Weather', tab: null, specs: WEATHER_SPECS },

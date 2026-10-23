@@ -349,6 +349,7 @@ describe('the section order', () => {
       'creatures',
       'workshop',
       'expeditions',
+      'games',
       'raid',
       'weather',
       'analytics',

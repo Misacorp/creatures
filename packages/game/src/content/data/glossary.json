@@ -2266,5 +2266,129 @@
       "id": "ability"
     },
     "section": "finale"
+  },
+  {
+    "id": "games",
+    "title": "Valley Games",
+    "short": "A daily show of four silly events. Each creature can enter one.",
+    "lines": [
+      "Entries close at the daily reset. The show plays to everyone a few minutes later.",
+      "One event a day is for teams of three.",
+      "Every entrant earns experience, and a podium place earns more."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "trophy"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-medals",
+    "title": "Medals",
+    "short": "Gold, silver and bronze for the top three of each event. Kept for life.",
+    "lines": ["Each medal also goes in your pocket as medal points for the Prize Stall."],
+    "visual": {
+      "kind": "glyph",
+      "id": "medal-point"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-pins",
+    "title": "Pins",
+    "short": "A creature that beats its own best in an event earns a pin.",
+    "lines": ["A pin is worth medal points at the Prize Stall too."],
+    "section": "games"
+  },
+  {
+    "id": "games-medal-points",
+    "title": "Medal points",
+    "short": "Spent at the Prize Stall. Gold is 3, silver 2, bronze and pins 1.",
+    "lines": ["Spending them never lowers your medal count. Unspent points never expire."],
+    "visual": {
+      "kind": "glyph",
+      "id": "medal-point"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-prize-stall",
+    "title": "Prize Stall",
+    "short": "Open on Wednesdays: swap medal points for prizes.",
+    "lines": ["Each prize can be bought a few times a week."],
+    "visual": {
+      "kind": "glyph",
+      "id": "gift"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-auto-entry",
+    "title": "Auto-entry",
+    "short": "Fills your empty events at the daily reset, so you never miss a show.",
+    "lines": ["It sends the creature that ran the event last time, or your best fit that is free."],
+    "section": "games"
+  },
+  {
+    "id": "games-fit",
+    "title": "Fit",
+    "short": "How well a creature suits an event: 1 to 5 pips, against your own creatures.",
+    "lines": ["Each event favours something: an element, a role, a size or a stat."],
+    "section": "games"
+  },
+  {
+    "id": "games-favour-hp",
+    "title": "HP",
+    "short": "This event favours creatures with plenty of HP.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "fav-hp"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-favour-atk",
+    "title": "Attack",
+    "short": "This event favours creatures with a strong Attack.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "fav-atk"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-favour-spd",
+    "title": "Speed",
+    "short": "This event favours fast creatures.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "fav-spd"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-favour-small",
+    "title": "Small creatures",
+    "short": "Stage 1 creatures do well here: they duck, slip and hide.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "fav-small"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-favour-big",
+    "title": "Big creatures",
+    "short": "Stage 2 creatures do well here.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "fav-big"
+    },
+    "section": "games"
   }
 ]

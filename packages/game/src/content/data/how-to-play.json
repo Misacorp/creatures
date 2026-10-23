@@ -100,6 +100,17 @@
       ]
     },
     {
+      "id": "games",
+      "title": "Valley Games",
+      "lines": [
+        "Every day the valley holds a show of four silly events. Each creature enters one; one event takes a team of three.",
+        "Enter before the daily reset. The icons show what an event favours, the pips how well each creature fits.",
+        "The show plays live to everyone a few minutes after the reset, and the next day's events appear.",
+        "The top three win gold, silver and bronze, and a creature's new best earns a pin. Every entrant earns experience.",
+        "Spend medal points at the Prize Stall on Wednesdays."
+      ]
+    },
+    {
       "id": "gear",
       "title": "Gear",
       "lines": [
