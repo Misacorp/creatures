@@ -9,7 +9,6 @@
 import { beatsRecord, gamesXp, medalPoints, pocketPoints, type GamesMedal } from '@creatures/game';
 import { awardExperience } from './creature-exp';
 import type { GamesDeps } from './games-lock';
-import { queueGamesPost } from './games-posts';
 import {
   addCreatureMedals,
   addMedals,
@@ -109,7 +108,6 @@ export function awardDay(deps: GamesDeps, day: string): boolean {
       );
     }
     sql.exec('UPDATE games_days SET awarded_at = ? WHERE day = ?', now, day);
-    queueGamesPost(sql, day, events, now);
     return true;
   });
 }

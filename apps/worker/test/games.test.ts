@@ -153,7 +153,7 @@ describe('entries', () => {
 });
 
 describe('the show', () => {
-  it('locks once, hides results until the show, awards once and posts once after the end', async () => {
+  it('locks once, hides results until the show, awards once after the end, and never posts', async () => {
     await run(async (ctx) => {
       const p = await sixer(ctx, 1, '@everyone **Misa**');
       const quiet = await sixer(ctx, 2);
@@ -237,7 +237,7 @@ describe('the show', () => {
       expect(count(ctx.sql, 'discord_posts')).toBe(0);
       expect(show.body.you.lastResults).toBeUndefined();
 
-      // The end: the awards, once, and the post.
+      // The end: the awards, once.
       ctx.clock.t = (day?.ends_at ?? 0) + 1;
       await ctx.core.alarm();
       await ctx.core.alarm();
@@ -275,15 +275,8 @@ describe('the show', () => {
       expect(count(ctx.sql, 'games_records', `user_id = '${p.id}'`)).toBe(
         RULES.games.eventsPerDay - 1 + RULES.games.teamSize,
       );
-      const posts = rows<{ key: string; content: string }>(
-        ctx.sql,
-        'SELECT key, content FROM discord_posts',
-      );
-      expect(posts.map((x) => x.key)).toEqual(['games:2027-01-12:podium']);
-      const text = posts[0]?.content ?? '';
-      expect(text).not.toContain('@everyone');
-      expect(text).not.toContain('**Misa**');
-      expect(text).toContain('Valley Games');
+      // No podium post: it would spoil the replay for anyone who watches later.
+      expect(count(ctx.sql, 'discord_posts')).toBe(0);
 
       // The creature page: its medals and records, own creatures only.
       const page = await p.call('GET', `/api/games/creature/${a}`);

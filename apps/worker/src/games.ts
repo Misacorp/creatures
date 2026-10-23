@@ -12,7 +12,6 @@ import { gamesEventDef, RULES } from '@creatures/game';
 import { awardDay } from './games-award';
 import { gamesLockAt, lockedDayAt } from './games-calendar';
 import { ensureLineup, lockDay, type GamesDeps } from './games-lock';
-import { gamesPostKey } from './games-posts';
 import type { BuyBody, EntryBody } from './games-schemas';
 import { buyOffer, stallView } from './games-stall';
 import { addEntry, joinPlayer, readDay, setAuto, unawardedDays } from './games-store';
@@ -210,7 +209,6 @@ export class Games {
         this.sql.exec(`DELETE FROM ${table} WHERE day = ?`, day);
       }
       this.sql.exec('DELETE FROM games_entries WHERE day = ? AND auto = 1', day);
-      this.sql.exec('DELETE FROM discord_posts WHERE key = ?', gamesPostKey(day));
       return { day };
     });
   }

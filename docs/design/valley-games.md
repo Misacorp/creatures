@@ -12,7 +12,7 @@ Every activity rewards sending your three best creatures (dungeon, raid, Worksho
 - **Until the next reset (13:37)**: players place one creature in each event. Entries **carry over**: yesterday's entrants stay entered for any event with the same slot unless changed, so a casual player is in every show after one setup. A creature still on an expedition or a job can enter (the show takes no creature time).
 - **13:37, the lock**: the server snapshots every entrant's stats and gear, resolves all the day's events with live randomness (`crypto.getRandomValues`), and stores the show. Nothing of it is sent before 13:40.
 - **13:37 to 13:40, the stands**: everyone with the Activity open sees the stands fill (their loungers), a countdown and the day's events.
-- **The show**: about 3 minutes. Everyone sees the same moment (the client seeks to `now - showStartsAt`). Late viewers can watch the replay until the next show. A Discord post gives each event's podium.
+- **The show**: about 3 minutes. Everyone sees the same moment (the client seeks to `now - showStartsAt`). Late viewers can watch the replay until the next show. There is no Discord results post: it would spoil the replay for anyone who watches later (Misa, 2026-10-23).
 - First day on a server: the lineup is shown at once; the first show is at the next 13:40 after a lock.
 
 ## Events: a few rule kinds, many skins
@@ -61,6 +61,6 @@ Open for the Wednesday game day (from the reset to the next reset, guild time). 
 - **Entries** are per player, event and slot (a team event has three slots). One creature per show day across all events. Before the lock only, own creatures only.
 - **Auto-entry** keeps casual players in: a player who has entered once is auto-entered (on by default, a switch turns it off). At the lock, any event they left empty gets the creature that ran it last time, else their best-fitting free creature by `gamesAptitude`.
 - **Lock.** In one transaction at the reset: snapshot every entrant (the raid's fold: stats, crit, gear and talent mods), draw a seed with the live RNG, run the day's events, store the results and placings. Nothing is sent before 13:40.
-- **Awards at the show's end** (13:40 + the show's length, an alarm candidate, idempotent): creature experience (`RULES.games.xp`), medals (lifetime and pocket; the bonus event's pocket points doubled), pins for personal bests, creature records, then the Discord podium post (escaped names, no mentions).
+- **Awards at the show's end** (13:40 + the show's length, an alarm candidate, idempotent): creature experience (`RULES.games.xp`), medals (lifetime and pocket; the bonus event's pocket points doubled), pins for personal bests, creature records. No Discord post (it would spoil the replay).
 - **Bots (dev only):** the raid's dev guests (`dev-guest-*` players with creatures) are reused. They are ordinary players to the Games and auto-enter. Dev tools: add bots, run now (lock now, show in 15 s), reset today.
 - **Stall:** content offers, open on the Wednesday game day, priced in medal points, with a weekly limit per offer. Bought with an idempotency key through `runKeyed`, and granted with the existing grant helpers.

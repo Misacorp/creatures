@@ -2790,3 +2790,7 @@ Cloudflare warned that the account had used 90% of the free tier's 5,000,000 Dur
 **Decision.** Main released the daily maintenance mark as migration 38 (#68) while the Valley Games branch, already deployed to staging, had its tables as 38. The Games now run as **migration 39** (`gamesMigrationV39` in `apps/worker/src/games-migration.ts`), which adds the Games tables when they are missing and the maintenance mark when a database recorded 38 for the Games instead. Neither released migration was edited.
 
 **Why.** A migration that has run anywhere (staging counts) is frozen (2026-10-17 rule). Staging guilds can be at 38 with either set of tables, depending on which branch deployed last; this step makes every database end the same, the same order-independent approach as the dungeon and expeditions migrations (18 and 19). A worker test replays the staging shape.
+
+## 2026-10-23: No Valley Games results post
+
+**Decision (Misa).** The Games post nothing to Discord: the podium post that went out at the award is gone (`games-posts.ts` removed). **Why:** the show can be watched as a replay until the next one, and a results post spoils it for everyone who watches later. The results stay in the Games tab, for players who have watched or chose to look.
