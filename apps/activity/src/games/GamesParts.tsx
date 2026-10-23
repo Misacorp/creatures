@@ -16,7 +16,9 @@ import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { GameIcon } from '../ui/GameIcon';
 import { PipRow } from '../ui/PipRow';
-import { GamesActor, GamesScene } from './art/GamesScene';
+import { GamesActor, GamesScene, GamesSprite } from './art/GamesScene';
+import { MELON_FRAMES } from './art/drawn';
+import type { SpriteDef } from '../sprites/sprite-data';
 import { SCENE_SIZE, type GamesSceneId } from './art/scenes';
 import { cssVars } from '../css-vars';
 import { propSprite, propTinted, PROP_TINTS } from './art/props';
@@ -136,22 +138,53 @@ export function FitPips({ fit }: { fit: number }) {
   return <PipRow count={5} lit={fit} label={`Fit ${String(fit)} / 5`} />;
 }
 
-/** Where entrants stand in each scene (feet y, scene pixels): the bench, the table, the hill, the lake, the floe. */
-const THUMB_FEET_Y: Readonly<Record<GamesSceneId, number>> = {
-  sauna: 60,
-  'frost-bath': 60,
-  'pepper-table': 88,
-  'melon-hill': 70,
-  'shark-lake': 96,
-  'ice-floe': 62,
+/**
+ * How each scene's thumbnail is cropped: where entrants stand (feet y, scene pixels), the strip's top,
+ * and the scene's signature prop (the melon, a fin, the peppers), so the strip shows what the event is.
+ */
+const THUMBS: Readonly<
+  Record<GamesSceneId, { feet: number; top: number; props: readonly ThumbProp[] }>
+> = {
+  sauna: { feet: 60, top: 22, props: [] },
+  'frost-bath': { feet: 60, top: 22, props: [] },
+  'pepper-table': {
+    feet: 56,
+    top: 24,
+    props: [
+      { sprite: () => propSprite('pepper', 0, 'red'), x: 60, y: 57 },
+      { sprite: () => propSprite('pepper', 0, 'green'), x: 132, y: 57 },
+      { sprite: () => propSprite('pepper', 0, 'ghost'), x: 150, y: 57 },
+    ],
+  },
+  'melon-hill': {
+    feet: 74,
+    top: 34,
+    props: [{ sprite: () => MELON_FRAMES[0] ?? propSprite('dust'), x: 34, y: 82 }],
+  },
+  'shark-lake': {
+    feet: 74,
+    top: 38,
+    props: [
+      { sprite: () => propSprite('sharkFin'), x: 40, y: 66 },
+      { sprite: () => propSprite('sharkFin'), x: 150, y: 80 },
+    ],
+  },
+  'ice-floe': { feet: 62, top: 26, props: [] },
 };
+
+interface ThumbProp {
+  sprite: () => SpriteDef;
+  x: number;
+  /** Feet (bottom centre) in scene pixels. */
+  y: number;
+}
 
 /** The strip's height in scene pixels (the card shows it at 2x). */
 const THUMB_ROWS = 52;
 
 /**
- * An event's scene as a still strip at 2x, cropped round where its entrants stand, with your entered
- * creatures in it: who you sent is shown where they will play.
+ * An event's scene as a still strip at 2x, cropped round where its entrants stand, with its signature
+ * prop and your entered creatures in it: who you sent is shown where they will play.
  */
 export function EventThumb({
   scene,
@@ -161,9 +194,8 @@ export function EventThumb({
   creatures?: readonly Creature[];
 }) {
   const id = sceneOf(scene);
-  const feet = THUMB_FEET_Y[id];
-  // The strip's top in scene pixels: the feet a little under the middle, kept inside the scene.
-  const top = Math.max(0, Math.min(SCENE_SIZE.height - THUMB_ROWS, feet - 34));
+  const thumb = THUMBS[id];
+  const top = Math.max(0, Math.min(SCENE_SIZE.height - THUMB_ROWS, thumb.top));
   const n = creatures.length;
   return (
     <div
@@ -172,14 +204,22 @@ export function EventThumb({
       aria-hidden="true"
       ref={cssVars({ '--dy': `${String(-top * 2)}px` })}
     >
-      <GamesScene scene={id} scale={2} animate={false} frame={0}>
+      <GamesScene
+        scene={id}
+        scale={2}
+        animate={false}
+        frame={0}
+        overlay={thumb.props.map((p, i) => (
+          <GamesSprite key={i} x={p.x} y={p.y} sprite={p.sprite()} />
+        ))}
+      >
         {creatures.map((c, i) => {
           const palette = c.shiny ? shinyPalette(c.species) : undefined;
           return (
             <GamesActor
               key={c.id}
               x={SCENE_SIZE.width / 2 + Math.round((i - (n - 1) / 2) * 20)}
-              y={feet}
+              y={thumb.feet}
               sprite={creatureSpriteOrFallback(c.species)}
               palette={palette}
               flip={i % 2 === 1}

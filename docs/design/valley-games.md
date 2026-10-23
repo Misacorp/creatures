@@ -1,6 +1,6 @@
 # Valley Games: a daily wacky competition
 
-Status: **being built 2026-10-22** (overnight, Misa asleep; he asked for it to be iterated and built, and tried on staging against bot opponents). This is the agents' working spec. Misa's answers so far: medals mostly (bragging), shared events yes, four events a day, a medal display with lifetime counts, medals tradable now and then (a small time slot).
+Status: **built 2026-10-23** (overnight; Misa asked for it to be iterated and built, and tried on staging against bot opponents). Engine `packages/engine/src/games/`, content `games-events.json` and `games-stall.json`, server `apps/worker/src/games*.ts`, client `apps/activity/src/games/`, simulator `pnpm sim:games` (every target passes; the targets are in `packages/sim/src/games-study.ts`). The decisions log has the details (2026-10-22 and 2026-10-23). Misa's answers so far: medals mostly (bragging), shared events yes, four events a day, a medal display with lifetime counts, medals tradable now and then (a small time slot).
 
 ## Why
 
