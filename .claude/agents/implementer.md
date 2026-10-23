@@ -15,5 +15,6 @@ Rules:
 - Server is authoritative; never use `Math.random`; validate every payload with a schema; render user text as text only.
 - Add or update tests for every behaviour change. Before finishing, run `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test` and report the result honestly.
 - New dependencies need a reason. Exact versions only, at least 7 days old.
+- UI work: before building a component or layout, look for an existing one that does the same job (`docs/design/ux-patterns.md`, "Shared components", and the workbench) and reuse or extend it. Say in your report which ones you reused, and why if you built something new.
 
 Report back concisely: what changed (files), test results, deviations from the spec, and anything that looked suspicious.
