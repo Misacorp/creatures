@@ -2773,6 +2773,7 @@ Misa: four events every day felt like a bit much. Now three a day (`RULES.games.
 - **Stored in the lineup's JSON, no migration:** `games_days.lineup_json` is the ids in show order, or on a bonus day `{ "ids": [...], "bonus": "<event id>" }`. Days stored before (four events, a plain list) read as days with no bonus event, so staging data keeps playing and paying as it was.
 - **The view marks it** (`bonus: true` on the lineup event in `next` and `show`, and on the player's result); the client draws a gold "Bonus" ribbon on the card and a plain "2x" tag on the result row, both opening the `games-bonus` glossary entry.
 - **The simulator follows:** three events a day and the bonus event one day in seven; every target still passes.
+
 ## 2026-10-23: The alarm's cleanup runs once a game day; old dungeon steps are deleted
 
 Cloudflare warned that the account had used 90% of the free tier's 5,000,000 Durable Object `rows_read` in a day. A local probe that counted the rows each query read (a month of play for 12 players) showed where they went.
