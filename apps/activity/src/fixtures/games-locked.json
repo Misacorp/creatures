@@ -1,0 +1,127 @@
+{
+  "serverNow": 1799753825000,
+  "timezone": "Europe/Helsinki",
+  "phase": "locked",
+  "next": {
+    "day": "2027-01-12",
+    "lockAt": 1799753820000,
+    "showAt": 1799754000000,
+    "open": false,
+    "lineup": [
+      {
+        "id": "melon-run",
+        "name": "Melon Run",
+        "kind": "chase",
+        "scene": "melon-hill",
+        "team": 1,
+        "line": "A giant watermelon is rolling down the hill. Run!",
+        "favours": ["spd", "small", "spark", "setter", "dodge"]
+      },
+      {
+        "id": "pepper-panic",
+        "name": "Pepper Panic",
+        "kind": "feast",
+        "scene": "pepper-table",
+        "team": 1,
+        "line": "Mild, hot or ghost: eat what lands on your plate. Most peppers wins.",
+        "favours": ["hp", "ember", "payoff", "crit"]
+      },
+      {
+        "id": "log-carry",
+        "name": "Log Carry",
+        "kind": "haul",
+        "scene": "log-trail",
+        "team": 3,
+        "line": "Three friends, one big log, a long path. Keep in step and keep it up.",
+        "favours": ["spd", "grove", "guard", "setter", "dodge"]
+      }
+    ],
+    "entries": {
+      "log-carry": ["00000000-0000-4000-8600-000000000003", "00000000-0000-4000-8600-000000000005"],
+      "melon-run": ["00000000-0000-4000-8600-000000000001"]
+    },
+    "goodFit": {
+      "melon-run": ["00000000-0000-4000-8600-000000000001", "00000000-0000-4000-8600-000000000002"],
+      "pepper-panic": [
+        "00000000-0000-4000-8600-000000000003",
+        "00000000-0000-4000-8600-000000000004"
+      ],
+      "log-carry": ["00000000-0000-4000-8600-000000000002"]
+    },
+    "badges": {}
+  },
+  "show": null,
+  "you": {
+    "medals": {
+      "gold": 0,
+      "silver": 0,
+      "bronze": 0,
+      "pins": 0
+    },
+    "pocket": 0
+  },
+  "stall": {
+    "open": false,
+    "week": "2027-01-13",
+    "opensAt": 1799840220000,
+    "closesAt": 1799926620000,
+    "offers": [
+      {
+        "id": "mystery-gear",
+        "kind": "gear",
+        "name": "Mystery Prize Box",
+        "price": 9,
+        "weeklyLimit": 1,
+        "left": 1,
+        "params": {
+          "rarity": "rare"
+        }
+      },
+      {
+        "id": "fine-supply",
+        "kind": "supply",
+        "name": "Fine Supply",
+        "price": 4,
+        "weeklyLimit": 2,
+        "left": 2,
+        "params": {
+          "tier": "good"
+        }
+      },
+      {
+        "id": "bait-sack",
+        "kind": "bait",
+        "name": "Sack of Bait",
+        "price": 3,
+        "weeklyLimit": 2,
+        "left": 2,
+        "params": {
+          "amount": 30
+        }
+      },
+      {
+        "id": "shard-pouch",
+        "kind": "shards",
+        "name": "Shard Pouch",
+        "price": 3,
+        "weeklyLimit": 2,
+        "left": 2,
+        "params": {
+          "amount": 3
+        }
+      },
+      {
+        "id": "glimmer-jar",
+        "kind": "glimmer",
+        "name": "Jar of Glimmer",
+        "price": 4,
+        "weeklyLimit": 1,
+        "left": 1,
+        "params": {
+          "amount": 1
+        }
+      }
+    ]
+  },
+  "board": []
+}

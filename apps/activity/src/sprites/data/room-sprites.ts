@@ -35,6 +35,7 @@ export type RoomPropName =
   | 'beanbag'
   | 'beanbagFront'
   | 'clock'
+  | 'trophyShelf'
   | 'note'
   | 'daylight';
 
@@ -543,6 +544,22 @@ const clockRows: readonly string[] = [
   '.kaaccccaak.',
   '..kkaaaakk..',
   '....kkkk....',
+];
+
+/** A gold cup on a small wall shelf: the Valley Games' medal table (a button over the room). */
+const trophyShelfRows: readonly string[] = [
+  '..kkkkkkkkkk..',
+  '.kkaabbbbbckk.',
+  'kk.kabbbbck.kk',
+  'k..kabbbbck..k',
+  'kk.kabbbbck.kk',
+  '.kkkkabbckkkk.',
+  '.....kabk.....',
+  '.....kbck.....',
+  '....kkaakk....',
+  'kkkkkkkkkkkkkk',
+  'kddddddddddddk',
+  '.kk........kk.',
 ];
 
 const noteRows: readonly string[] = [
@@ -1369,6 +1386,20 @@ export const ROOM_SPRITE_DATA: Readonly<
     night: {
       rows: clockRows,
       palette: { k: '#0d0a1a', a: '#b3703f', b: '#e0a96e', c: '#f4eedc', d: '#ef6a3a' },
+    },
+  },
+  trophyShelf: {
+    day: {
+      rows: trophyShelfRows,
+      palette: { k: '#0d0a1a', a: '#fff3b0', b: '#ffd25a', c: '#c8952b', d: '#bc8050' },
+    },
+    twilight: {
+      rows: trophyShelfRows,
+      palette: { k: '#0d0a1a', a: '#ffe0a0', b: '#ffc24a', c: '#c07a2b', d: '#be7444' },
+    },
+    night: {
+      rows: trophyShelfRows,
+      palette: { k: '#0d0a1a', a: '#f4e08a', b: '#e8b84a', c: '#a8782a', d: '#b3703f' },
     },
   },
   note: {

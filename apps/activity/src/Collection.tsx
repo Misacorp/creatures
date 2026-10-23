@@ -1,3 +1,4 @@
+import type { CreatureGames } from './games-types';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { Creature, GameState } from './api';
 import { cardDomId, type PageFocus } from './creature-card-view';
@@ -35,6 +36,8 @@ interface Props extends CardActions {
   catchActions: CatchChoiceActions;
   /** Who is looking (the element and role chips are remembered per viewer); without it nothing is kept. */
   viewerId?: string;
+  /** Loads a creature's Valley Games medals and records for its page; absent: the page has no Games block. */
+  loadGames?: (creatureId: string) => Promise<CreatureGames>;
 }
 
 /** How long a card the finder chose stays marked. */
@@ -60,7 +63,15 @@ interface OpenPage {
  * drawn but hidden while a page is open, so the search text, the chips and the card state are still there
  * on return; going back also restores the scroll position and focuses the card that was opened.
  */
-export function Collection({ state, gear, busy, catchActions, viewerId, ...actions }: Props) {
+export function Collection({
+  state,
+  gear,
+  busy,
+  catchActions,
+  viewerId,
+  loadGames,
+  ...actions
+}: Props) {
   const [filters, setFilters] = useState<Filters>(() =>
     viewerId === undefined
       ? NO_FILTERS
@@ -205,6 +216,7 @@ export function Collection({ state, gear, busy, catchActions, viewerId, ...actio
           focus={page.focus}
           flip={pageFlip}
           onBack={back}
+          loadGames={loadGames}
           onAnswerCatch={() => {
             back();
             // The list is drawn again by the time this runs; the catches are at its top.

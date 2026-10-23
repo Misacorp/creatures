@@ -498,3 +498,83 @@
   padding: 0;
   list-style: none;
 }
+
+/* The Valley Games art pages (entries/games-art.tsx). */
+.wb-games {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wb-games-caption {
+  margin: 0.25rem 0 0;
+  color: var(--haze);
+  font-size: var(--fs-small);
+}
+
+.wb-games-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.wb-games-tints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.wb-games-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+  margin: 0;
+}
+
+.wb-games-cell figcaption {
+  color: var(--haze);
+  font-size: var(--fs-small);
+}
+
+.wb-games-frames {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  padding: 4px;
+  background: var(--dusk-2);
+}
+
+.wb-games-props .wb-games-frames {
+  background: #7a7098;
+}
+
+.wb-games-swatches {
+  display: inline-flex;
+}
+
+/* As the app card (`components/side-panel.css`): wider from 60 rem while a wide layout shows. */
+@media (min-width: 60rem) {
+  .wb-frame-stage:has(.side-layout.wide) {
+    width: min(84rem, 100% - 1.25rem);
+  }
+}
+
+.wb-wide-main {
+  display: grid;
+  place-items: center;
+  min-height: 16rem;
+  background: var(--night);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+}
+
+.wb-wide-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.wb-side-demo {
+  max-width: 24rem;
+}

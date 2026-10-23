@@ -4,7 +4,7 @@ import type { TabAlerts } from './tab-alerts';
 import { TABS, tabAfterKey, tabPalette, type Tab } from './tabs';
 
 /**
- * The row of main tabs (Creatures, Workshop, Expeditions, Dungeon, Raid). A tab that has something
+ * The row of main tabs (Creatures, Workshop, Expeditions, Games, Dungeon, Raid). A tab that has something
  * waiting for the player carries a small square pip at its top right corner; the reason is also
  * in the tab's name for screen readers ("Expeditions, a trip is home"), and the pip itself is
  * decoration. Arrow keys, Home and End move focus between the tabs; Enter or Space opens the focused one.

@@ -20,11 +20,9 @@ import { SlotsLine } from './SlotsLine';
 import { TripShelf } from './TripShelf';
 import { destinationName } from './trip-view';
 import { LiveRegion } from './ui/LiveRegion';
+import { WideLayout } from './ui/WideLayout';
 import type { Forecast } from './weather-types';
 import { WorldMap } from './WorldMap';
-
-/** The width from which the map has a side panel next to it (and the app card widens); below it a place opens a sheet. */
-export const WIDE_QUERY = '(min-width: 60rem)';
 
 export interface ExpeditionWorldProps {
   /** The trips that are out (running, home or waiting for a choice). */
@@ -140,7 +138,7 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
   const scale = wide && fullWidth > 0 ? mapScale(fullWidth) : undefined;
   // The panel is no taller than the map (world.css), so its list scrolls inside it and its button stays in view.
   const panelVars = cssVars(
-    scale === undefined ? {} : { '--exp-map-h': `${String(MAP_SIZE.height * scale)}px` },
+    scale === undefined ? {} : { '--side-max-h': `${String(MAP_SIZE.height * scale)}px` },
   );
   // When the panel opens, closes or shows another place, the map glides to the chosen (or last) place.
   const lastPlace = useRef<string | null>(selected);
@@ -229,66 +227,72 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
   };
 
   return (
-    <div
-      ref={(el) => {
+    <WideLayout
+      wide={wide}
+      class="exp-world"
+      mainClass="exp-world-main"
+      rootRef={(el) => {
         root.current = el;
         panelVars(el);
       }}
-      class={wide ? (panelOpen ? 'exp-world wide with-panel' : 'exp-world wide') : 'exp-world'}
-    >
-      <div class="exp-world-main">
-        <div
-          class="exp-world-map"
-          ref={mapBox}
-          onClickCapture={(event) => {
-            opener.current = buttonAbove(event.target);
-          }}
-        >
-          <WorldMap
-            places={places}
-            selected={selected}
-            night={view?.night ?? false}
-            onPick={pick}
-            {...(scale === undefined ? {} : { scale })}
-          />
-          {!wide && <SlotsLine slots={props.slots} />}
-          {!wide && (
-            <OutStrip trips={trips} creatures={creatures} serverNow={serverNow} onOpen={open} />
+      main={
+        <>
+          <div
+            class="exp-world-map"
+            ref={mapBox}
+            onClickCapture={(event) => {
+              opener.current = buttonAbove(event.target);
+            }}
+          >
+            <WorldMap
+              places={places}
+              selected={selected}
+              night={view?.night ?? false}
+              onPick={pick}
+              {...(scale === undefined ? {} : { scale })}
+            />
+            {!wide && <SlotsLine slots={props.slots} />}
+            {!wide && (
+              <OutStrip trips={trips} creatures={creatures} serverNow={serverNow} onOpen={open} />
+            )}
+          </div>
+          {wide && (
+            <TripShelf
+              trips={trips}
+              creatures={creatures}
+              slots={props.slots}
+              serverNow={serverNow}
+              busy={props.busy}
+              onClaim={claim}
+              onDecide={decide}
+              onOpen={open}
+            />
           )}
-        </div>
-        {wide && (
-          <TripShelf
-            trips={trips}
-            creatures={creatures}
-            slots={props.slots}
-            serverNow={serverNow}
-            busy={props.busy}
-            onClaim={claim}
-            onDecide={decide}
-            onOpen={open}
+        </>
+      }
+      panel={
+        panelOpen ? (
+          <PlacePanel
+            {...shared}
+            destination={selected}
+            card={card}
+            mode={mode}
+            onMode={(next) => {
+              setStep(next.kind);
+              setDecideId(next.kind === 'decide' ? next.trip.id : null);
+            }}
+            initialStep={props.initialWizard}
+            reveal={props.reveal}
+            onClose={closePanel}
+            onSend={async (request) => {
+              const started = await props.onSend(request);
+              if (started) close();
+              return started;
+            }}
           />
-        )}
-      </div>
-      {panelOpen && (
-        <PlacePanel
-          {...shared}
-          destination={selected}
-          card={card}
-          mode={mode}
-          onMode={(next) => {
-            setStep(next.kind);
-            setDecideId(next.kind === 'decide' ? next.trip.id : null);
-          }}
-          initialStep={props.initialWizard}
-          reveal={props.reveal}
-          onClose={closePanel}
-          onSend={async (request) => {
-            const started = await props.onSend(request);
-            if (started) close();
-            return started;
-          }}
-        />
-      )}
+        ) : null
+      }
+    >
       {!wide && selected !== null && (
         <PlaceSheet
           {...shared}
@@ -312,6 +316,6 @@ export function ExpeditionWorld(props: ExpeditionWorldProps) {
       {wide && (
         <LiveRegion>{selected === null ? '' : `${destinationName(selected)} chosen`}</LiveRegion>
       )}
-    </div>
+    </WideLayout>
   );
 }

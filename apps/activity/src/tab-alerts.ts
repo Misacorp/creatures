@@ -20,6 +20,7 @@ export const NO_ALERTS: TabAlerts = {
   collection: null,
   workshop: null,
   expeditions: null,
+  games: null,
   dungeon: null,
   raid: null,
 };
@@ -32,6 +33,8 @@ export const ALERT_TEXT = {
   dungeonOpen: "today's run is open",
   raidPlace: 'creatures to place',
   catchWaiting: 'a catch awaits your choice',
+  gamesLive: 'the show is on',
+  gamesEntries: 'events to enter',
 } as const;
 
 /** A waiting choice is named before a trip that is simply home: it is the one that needs a decision. */
@@ -64,6 +67,8 @@ export function tabAlerts(input: {
   attention: Attention | null;
   /** How many duplicates wait for a choice (the Collection tab holds their cards). Absent: none. */
   pending?: number;
+  /** The Games tab's pip, worked out from its own state (`gamesAlert`); absent or null: none. */
+  games?: string | null;
   serverNow: number;
 }): TabAlerts {
   const { expeditions, jobs, attention, serverNow } = input;
@@ -71,6 +76,7 @@ export function tabAlerts(input: {
     collection: (input.pending ?? 0) > 0 ? ALERT_TEXT.catchWaiting : null,
     workshop: workshopAlert(jobs, serverNow),
     expeditions: expeditionsAlert(expeditions, serverNow),
+    games: input.games ?? null,
     dungeon: attention?.dungeon === true ? ALERT_TEXT.dungeonOpen : null,
     raid: attention?.raid === true ? ALERT_TEXT.raidPlace : null,
   };

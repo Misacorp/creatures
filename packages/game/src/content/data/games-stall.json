@@ -1,0 +1,44 @@
+{
+  "offers": [
+    {
+      "id": "mystery-gear",
+      "name": "Mystery Prize Box",
+      "kind": "gear",
+      "price": 9,
+      "weeklyLimit": 1,
+      "params": { "rarity": "rare" }
+    },
+    {
+      "id": "fine-supply",
+      "name": "Fine Supply",
+      "kind": "supply",
+      "price": 4,
+      "weeklyLimit": 2,
+      "params": { "tier": "good" }
+    },
+    {
+      "id": "bait-sack",
+      "name": "Sack of Bait",
+      "kind": "bait",
+      "price": 3,
+      "weeklyLimit": 2,
+      "params": { "amount": 30 }
+    },
+    {
+      "id": "shard-pouch",
+      "name": "Shard Pouch",
+      "kind": "shards",
+      "price": 3,
+      "weeklyLimit": 2,
+      "params": { "amount": 3 }
+    },
+    {
+      "id": "glimmer-jar",
+      "name": "Jar of Glimmer",
+      "kind": "glimmer",
+      "price": 4,
+      "weeklyLimit": 1,
+      "params": { "amount": 1 }
+    }
+  ]
+}

@@ -114,6 +114,11 @@ Noted while testing the expedition and Workshop rework on staging. The component
    - The basic supply blurbs ("More creatures") read bare on their own.
 5. **Gear crafting for non-min-maxers** (balance log B-026). Engaged and regular players' gear share stays at 10–24% late in the game, under the intent that gear grows late. A crafting pass should make crafting into gear easier for them to reach, rather than loosening the targets.
 
+## After the Valley Games (Misa, 2026-10-23)
+
+- **Main menu redesign.** With Games as the sixth tab the tab bar barely fits on a phone (360 px has no spare width). Rethink the main navigation.
+- **Postponed Games ideas** (see `design/valley-games.md`, "v1 scope"): the upset badge, sky twists, crowded-element effects, a fresh-face bonus.
+
 ## After the treat box PR (Misa, 2026-10-21)
 
 Shipped together in one PR (details in `docs/design/decisions.md`, 2026-10-21):

@@ -34,6 +34,10 @@ import { LOUNGE_REFRESH_MS, loungeEarning, settleClaim } from './room-data';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
+import { GamesTab } from './games/GamesTab';
+import { gamesAlert } from './games-view';
+import { fetchCreatureGames } from './games-api';
+import { useGames } from './use-games';
 import type { Slots } from './dungeon-team';
 import { chooseCatch } from './talent-api';
 import { choiceResultText } from './talent-view';
@@ -104,6 +108,11 @@ export function Game({
   } = useGearState(game.starterChosen);
   // The valley's sky for today and tomorrow (Boons and Omens); null until the first load (or when it failed).
   const { forecast, load: loadForecast } = useForecast(game.starterChosen, offset);
+  // The Valley Games: the tab, its pip and the living room's trophy shelf; null until the first load.
+  // A show's awards changed the creatures' experience: reload them, or the result rows draw old bars.
+  const games = useGames(game.starterChosen, offset, () => {
+    refreshState();
+  });
   const [tab, setTab] = useState<Tab>('collection');
   const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
     null,
@@ -215,6 +224,7 @@ export function Game({
     jobs: gear === null ? null : gear.jobs,
     attention,
     pending: game.pending.length,
+    games: gamesAlert(games.view, game.creatures, Date.now() + offset),
     offset,
     refresh: refreshState,
   });
@@ -279,6 +289,7 @@ export function Game({
       () => undefined,
     );
     loadGear();
+    games.load();
     setDevNonce((n) => n + 1);
   }
 
@@ -349,6 +360,14 @@ export function Game({
               instanceId: participants.instanceId,
               scene: sceneOf(phase),
               forecast,
+              trophy: {
+                board: games.view?.board ?? [],
+                selfId: user.id,
+                onOpen: () => {
+                  setTab('games');
+                  games.load();
+                },
+              },
               onMove: moveLounger,
               onSwap: () => {
                 setSwapping(true);
@@ -417,6 +436,7 @@ export function Game({
           refreshState();
           room.refreshIfStale();
           loadForecast();
+          if (id === 'games') games.load();
           if (
             id === 'workshop' ||
             id === 'collection' ||
@@ -466,6 +486,7 @@ export function Game({
             gear={gear}
             busy={busy}
             viewerId={user.id}
+            loadGames={fetchCreatureGames}
             onEquip={equipOn}
             catchActions={catchActions}
             {...creatureActions}
@@ -531,6 +552,22 @@ export function Game({
             onClaimed={setJobReveal}
             onDismissReveal={() => {
               setJobReveal(null);
+            }}
+          />
+        )}
+        {tab === 'games' && (
+          <GamesTab
+            view={games.view}
+            failed={games.failed}
+            creatures={game.creatures}
+            selfId={user.id}
+            offset={offset}
+            onView={games.replace}
+            onReload={games.load}
+            onPurchased={() => {
+              // A prize pays Bait, parts, a supply or a gear piece: the balances and the bag.
+              refreshState();
+              loadGear();
             }}
           />
         )}

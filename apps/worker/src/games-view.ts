@@ -1,0 +1,370 @@
+/**
+ * What `GET /api/games` answers: one payload for the Games tab (docs/design/valley-games.md). A day's
+ * results are never in it before that day's show starts (`show_at`); the client seeks into the show with
+ * `serverNow - show.showAt`. Read-only apart from drawing the next day's lineup the first time it is
+ * needed (the caller's transaction).
+ */
+import { gamesGoodFit } from '@creatures/engine';
+import {
+  RULES,
+  gamesEventInfo,
+  showTimeline,
+  type GamesEventDef,
+  type GamesEventInfo,
+  type GamesMedal,
+  type ShowSegment,
+} from '@creatures/game';
+import type { GamesEventResult } from '@creatures/engine';
+import { gamesLockAt, gamesShowAt, nextShowDay } from './games-calendar';
+import {
+  ensureLineup,
+  gamesRoster,
+  lineupDefs,
+  timelineInputs,
+  type GamesDeps,
+} from './games-lock';
+import { stallView, type StallView } from './games-stall';
+import {
+  creatureBadges,
+  creatureRecords,
+  isBot,
+  lastAwardedDay,
+  lastShownDay,
+  playerBadges,
+  playerEntries,
+  playerNames,
+  readCreatureMedals,
+  readDay,
+  readMedals,
+  readResults,
+  type DayRow,
+  type GamesBadge,
+} from './games-store';
+
+/** How many players the medal table lists. */
+const BOARD_SIZE = 15;
+
+export interface LineupEventView {
+  id: string;
+  name: string;
+  kind: GamesEventDef['kind'];
+  scene: GamesEventDef['scene'];
+  team: 1 | 3;
+  line: string;
+  favours: GamesEventDef['favours'];
+  /** The bonus day's extra event (double medal points to the pocket); absent otherwise. */
+  bonus?: true;
+}
+
+export interface GamesShowView {
+  day: string;
+  showAt: number;
+  endsAt: number;
+  lineup: LineupEventView[];
+  timeline: ShowSegment[];
+  /** The events that played, in show order (a skipped event has none). */
+  events: GamesEventResult[];
+  /** Events nobody entered (their intro card says so). */
+  skipped: string[];
+  /** Everyone in the show, with their display name (plain text) and whether they are a bot. */
+  players: { id: string; name: string; bot: boolean }[];
+}
+
+export interface GamesResultView {
+  eventId: string;
+  creatureIds: string[];
+  place: number;
+  medal: GamesMedal | null;
+  /** True when one of the creatures beat its own record (`pins` lists them). */
+  pin: boolean;
+  pins: string[];
+  /** Experience the entry's creatures earned, together. */
+  xp: number;
+  /** The bonus event: its medal points went in the pocket doubled. */
+  bonus?: true;
+}
+
+export interface GamesView {
+  serverNow: number;
+  timezone: string;
+  phase: 'entries' | 'locked' | 'show' | 'after';
+  next: {
+    day: string;
+    lockAt: number;
+    showAt: number;
+    /** Entries can be changed now. */
+    open: boolean;
+    lineup: LineupEventView[];
+    entries: Record<string, string[]>;
+    /** Event id to the player's creatures with the "Good fit" badge for it (`gamesGoodFit`), oldest first. */
+    goodFit: Record<string, string[]>;
+    /** Event id to creature id to its wins of that event (its event badge); creatures with none are absent. */
+    badges: Record<string, Record<string, number>>;
+  };
+  show: GamesShowView | null;
+  you: {
+    medals: { gold: number; silver: number; bronze: number; pins: number };
+    pocket: number;
+    /** The player's results of the last awarded show (after it ended). */
+    lastResults?: { day: string; results: GamesResultView[] };
+  };
+  stall: StallView;
+  board: { userId: string; name: string; gold: number; silver: number; bronze: number }[];
+}
+
+/** An event of a day's lineup (`bonus`: the day's bonus event); a retired event as it was. */
+export function lineupView(def: GamesEventInfo, bonus = false): LineupEventView {
+  return {
+    id: def.id,
+    name: def.name,
+    kind: def.kind,
+    scene: def.scene,
+    team: def.team,
+    line: def.line,
+    favours: def.favours,
+    ...(bonus ? { bonus: true as const } : {}),
+  };
+}
+
+/** The next day's lineup as the client sees it (the bonus event marked; a retired event is left out). */
+export function lineupViews(row: DayRow): LineupEventView[] {
+  return lineupDefs(row.lineup).map((def) => lineupView(def, def.id === row.bonus));
+}
+
+/**
+ * A shown day's lineup: every event it played, a retired one too (a day stored before the event was
+ * retired still replays, with its name), so it lines up with the stored results and the timeline.
+ */
+export function shownLineupViews(row: DayRow): LineupEventView[] {
+  return row.lineup.flatMap((id) => {
+    const info = gamesEventInfo(id);
+    return info === undefined ? [] : [lineupView(info, id === row.bonus)];
+  });
+}
+
+/**
+ * The player's good fits per event: the creatures whose aptitude reaches the event's bar
+ * (`gamesGoodFit`; the bar comes from the species, so no creature is ranked against the roster).
+ */
+export function goodFits(
+  sql: SqlStorage,
+  userId: string,
+  defs: readonly GamesEventDef[],
+): Record<string, string[]> {
+  const roster = gamesRoster(sql, userId);
+  return Object.fromEntries(
+    defs.map((def) => [
+      def.id,
+      roster.filter((c) => gamesGoodFit(def, c.entrant)).map((c) => c.creature.id),
+    ]),
+  );
+}
+
+/** A locked day's show, for a reader at or after its start. */
+export function showView(sql: SqlStorage, row: DayRow): GamesShowView {
+  const events = readResults(sql, row.day);
+  const ids = events.flatMap((e) => e.entrants.map((x) => x.playerId));
+  const names = playerNames(sql, ids);
+  const showAt = row.showAt ?? 0;
+  return {
+    day: row.day,
+    showAt,
+    endsAt: row.endsAt ?? showAt,
+    lineup: shownLineupViews(row),
+    timeline: showTimeline(timelineInputs(events)),
+    events: events.flatMap((e) => (e.result === null ? [] : [e.result])),
+    skipped: events.filter((e) => e.result === null).map((e) => e.eventId),
+    players: [...new Set(ids)].map((id) => ({
+      id,
+      name: names.get(id) ?? 'Unknown',
+      bot: isBot(id),
+    })),
+  };
+}
+
+function lastResults(sql: SqlStorage, userId: string): GamesView['you']['lastResults'] {
+  const day = lastAwardedDay(sql);
+  if (day === null) return undefined;
+  const rows = sql
+    .exec<{
+      event_id: string;
+      creature_ids: string;
+      place: number;
+      medal: GamesMedal | null;
+      pins: string | null;
+      xp: number | null;
+    }>(
+      'SELECT event_id, creature_ids, place, medal, pins, xp FROM games_placings WHERE day = ? AND user_id = ?',
+      day.day,
+      userId,
+    )
+    .toArray();
+  if (rows.length === 0) return undefined;
+  const order = new Map(day.lineup.map((id, i) => [id, i]));
+  return {
+    day: day.day,
+    results: rows
+      .sort((a, b) => (order.get(a.event_id) ?? 0) - (order.get(b.event_id) ?? 0))
+      .map((r) => {
+        const pins = r.pins === null ? [] : (JSON.parse(r.pins) as string[]);
+        return {
+          eventId: r.event_id,
+          creatureIds: JSON.parse(r.creature_ids) as string[],
+          place: r.place,
+          medal: r.medal,
+          pin: pins.length > 0,
+          pins,
+          xp: r.xp ?? 0,
+          ...(r.event_id === day.bonus ? { bonus: true as const } : {}),
+        };
+      }),
+  };
+}
+
+function board(sql: SqlStorage): GamesView['board'] {
+  const rows = sql
+    .exec<{ user_id: string; gold: number; silver: number; bronze: number }>(
+      `SELECT user_id, gold, silver, bronze FROM games_medals WHERE gold + silver + bronze > 0
+       ORDER BY gold DESC, silver DESC, bronze DESC, user_id LIMIT ?`,
+      BOARD_SIZE,
+    )
+    .toArray();
+  const names = playerNames(
+    sql,
+    rows.map((r) => r.user_id),
+  );
+  return rows.map((r) => ({
+    userId: r.user_id,
+    name: names.get(r.user_id) ?? 'Unknown',
+    gold: r.gold,
+    silver: r.silver,
+    bronze: r.bronze,
+  }));
+}
+
+/** The show day entries are for now (stored show times count: see `nextShowDay`). */
+export function nextDay(sql: SqlStorage, now: number, tz: string): string {
+  return nextShowDay(now, tz, (day) => readDay(sql, day)?.showAt ?? null);
+}
+
+/** The next show day's part of the tab: lineup, the player's entries, good fits and event badges. */
+export function nextView(deps: GamesDeps, userId: string): GamesView['next'] {
+  const sql = deps.storage.sql;
+  const now = deps.now();
+  const tz = deps.timezone();
+  const day = nextDay(sql, now, tz);
+  const row = ensureLineup(deps, day);
+  const defs = lineupDefs(row.lineup);
+  const lockAt = gamesLockAt(day, tz);
+  return {
+    day,
+    lockAt,
+    showAt: row.showAt ?? gamesShowAt(day, tz),
+    open: row.lockedAt === null && now < lockAt,
+    lineup: lineupViews(row),
+    entries: playerEntries(sql, day, userId),
+    goodFit: goodFits(sql, userId, defs),
+    badges: playerBadges(
+      sql,
+      userId,
+      defs.map((d) => d.id),
+    ),
+  };
+}
+
+/** The player's medal counts and pocket. */
+export function youView(sql: SqlStorage, userId: string): GamesView['you'] {
+  const medals = readMedals(sql, userId);
+  const results = lastResults(sql, userId);
+  return {
+    medals: { gold: medals.gold, silver: medals.silver, bronze: medals.bronze, pins: medals.pins },
+    pocket: medals.pocket,
+    ...(results === undefined ? {} : { lastResults: results }),
+  };
+}
+
+/** The whole tab for `userId`. Call inside a transaction (it may draw the next lineup). */
+export function gamesView(deps: GamesDeps, userId: string): GamesView {
+  const sql = deps.storage.sql;
+  const now = deps.now();
+  const tz = deps.timezone();
+  const next = nextView(deps, userId);
+  const locked = readDay(sql, next.day)?.lockedAt != null;
+  const last = lastShownDay(sql, now);
+  const phase: GamesView['phase'] = locked
+    ? 'locked'
+    : last !== null && now < (last.endsAt ?? 0)
+      ? 'show'
+      : last !== null
+        ? 'after'
+        : 'entries';
+  return {
+    serverNow: now,
+    timezone: tz,
+    phase,
+    next,
+    show: last === null ? null : showView(sql, last),
+    you: youView(sql, userId),
+    stall: stallView(sql, userId, now, tz),
+    board: board(sql),
+  };
+}
+
+/**
+ * A creature's medals, event badges and records (`GET /api/games/creature/:id`). A badge is
+ * `{ eventId, wins }` (an event it has won, gold, with the count); a retired event's badge stays. Null:
+ * not the player's.
+ */
+export function creatureGamesView(
+  sql: SqlStorage,
+  userId: string,
+  creatureId: string,
+): {
+  medals: { gold: number; silver: number; bronze: number; pins: number };
+  badges: GamesBadge[];
+  records: { eventId: string; name: string; best: number; unit: string; day: string }[];
+} | null {
+  const owned = sql
+    .exec('SELECT 1 FROM creatures WHERE id = ? AND user_id = ?', creatureId, userId)
+    .toArray();
+  if (owned.length === 0) return null;
+  const medals = readCreatureMedals(sql, creatureId);
+  const records = creatureRecords(sql, creatureId).flatMap((r) => {
+    // A retired event's record stays, under its old name.
+    const info = gamesEventInfo(r.eventId);
+    if (info === undefined) return [];
+    return [
+      {
+        eventId: r.eventId,
+        name: info.name,
+        best: r.best,
+        unit: SCORE_UNITS[info.kind],
+        day: r.day,
+      },
+    ];
+  });
+  const badges = creatureBadges(sql, creatureId).filter(
+    (b) => gamesEventInfo(b.eventId) !== undefined,
+  );
+  return { medals, badges, records };
+}
+
+/**
+ * What a kind's score counts (the engine's `scores`): endure and shove the ticks lasted, chase metres,
+ * feast peppers eaten, swim hundredths of a lap, fill a barrel's percent, stack crates, kite metres.
+ */
+export const SCORE_UNITS: Record<GamesEventDef['kind'], string> = {
+  endure: 'ticks',
+  shove: 'ticks',
+  chase: 'm',
+  feast: 'peppers',
+  swim: 'centilaps',
+  haul: 'm',
+  fill: 'percent',
+  stack: 'crates',
+  kite: 'm',
+};
+
+/** The team size of an event (for the entry check). */
+export const teamSizeOf = (def: GamesEventDef): number =>
+  def.team === 3 ? RULES.games.teamSize : 1;

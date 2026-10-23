@@ -2,6 +2,7 @@ import { RULES, createSeededRng } from '@creatures/game';
 import { expect } from 'vitest';
 import { env } from 'cloudflare:workers';
 import { runInDurableObject } from 'cloudflare:test';
+import { GAMES_TABLES } from '../src/games-migration';
 import { GuildCore, type GuildCoreOptions } from '../src/guild-core';
 import { DiscordError, type DiscordApi, type GuildApi } from '../src/discord';
 import { createHandler } from '../src/index';
@@ -261,8 +262,22 @@ export function undoDungeonPathsMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 34');
 }
 
+/** Puts a database back to before migration 39 (the Valley Games): its tables go. */
+export function undoGamesMigration(sql: SqlStorage): void {
+  undoGamesBadgesMigration(sql);
+  for (const table of GAMES_TABLES) sql.exec(`DROP TABLE IF EXISTS ${table}`);
+  sql.exec('DELETE FROM schema_version WHERE version = 39');
+}
+
+/** Puts a database back to before migration 40 (the Games' event badges): the table goes. */
+export function undoGamesBadgesMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS games_badges');
+  sql.exec('DELETE FROM schema_version WHERE version = 40');
+}
+
 /** Puts a database back to before migration 38 (the maintenance mark): the table and the index go. */
 export function undoMaintenanceMigration(sql: SqlStorage): void {
+  undoGamesMigration(sql);
   sql.exec('DROP INDEX IF EXISTS analytics_daily_metric_day');
   sql.exec('DROP TABLE IF EXISTS maintenance');
   sql.exec('DELETE FROM schema_version WHERE version = 38');

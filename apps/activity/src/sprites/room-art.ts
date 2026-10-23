@@ -49,6 +49,8 @@ export interface RoomScene {
   edgeTile: SpriteDef;
   /** A small note on a cushion (16x16): shown in a spot when all of a player's creatures are out working. */
   note: SpriteDef;
+  /** The trophy on its wall shelf (at `TROPHY_SPOT`): a button over the room, like the calendar. */
+  trophy: SpriteDef;
 }
 
 /** The sprite of a prop in a phase. Every phase a prop is placed in has one (the tests check). */
@@ -125,6 +127,7 @@ export function roomScene(phase: RoomPhase): RoomScene {
     ],
     edgeTile: art('edge', phase),
     note: art('note', phase),
+    trophy: art('trophyShelf', phase),
   };
 }
 
@@ -134,6 +137,13 @@ export function roomScene(phase: RoomPhase): RoomScene {
  * spot (a test checks it). It is a button over the room, not part of the canvases, so it can pop out.
  */
 export const CALENDAR_SPOT = { x: 153, y: 15, width: 12, height: 13 } as const;
+
+/**
+ * Where the Valley Games trophy shelf hangs (top-left of its 14x12 picture, in room pixels): on the bare
+ * wall between the calendar and the fireplace, below the title band and clear of every creature's spot
+ * (a test checks it). It is a button over the room that opens the server's medal table.
+ */
+export const TROPHY_SPOT = { x: 168, y: 17, width: 14, height: 12 } as const;
 
 /** The 16 places a creature can sit, spread across the five bays. */
 export const ROOM_SPOTS: readonly RoomSpot[] = [

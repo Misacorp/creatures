@@ -26,7 +26,8 @@
     "sim:supplies": "node packages/sim/scripts/supplies.mjs",
     "sim:weather": "node packages/sim/scripts/weather.mjs",
     "sim:creatures": "node packages/sim/scripts/creatures.mjs",
-    "sim:economy": "node packages/sim/scripts/economy.mjs"
+    "sim:economy": "node packages/sim/scripts/economy.mjs",
+    "sim:games": "node packages/sim/scripts/games.mjs"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

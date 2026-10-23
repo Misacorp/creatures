@@ -2266,5 +2266,159 @@
       "id": "ability"
     },
     "section": "finale"
+  },
+  {
+    "id": "games",
+    "title": "Valley Games",
+    "short": "A daily show of three silly events, four on Wednesdays. A creature enters one.",
+    "lines": [
+      "Entries close at the daily reset. The show plays to everyone a few minutes later.",
+      "One event a day is for teams of three, who all play at once: carry, push, fill, stack or fly.",
+      "Every entrant earns experience, and a podium place earns more."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "trophy"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-medals",
+    "title": "Medals",
+    "short": "Gold, silver and bronze for the top three of each event. Kept for life.",
+    "lines": ["Each medal also goes in your pocket as medal points for the Prize Stall."],
+    "visual": {
+      "kind": "glyph",
+      "id": "medal-point"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-pins",
+    "title": "Pins",
+    "short": "A creature that beats its own best in an event earns a pin.",
+    "lines": ["A pin is worth medal points at the Prize Stall too."],
+    "section": "games"
+  },
+  {
+    "id": "games-medal-points",
+    "title": "Medal points",
+    "short": "Spent at the Prize Stall. Gold is 3, silver 2, bronze and pins 1.",
+    "lines": ["Spending them never lowers your medal count. Unspent points never expire."],
+    "visual": {
+      "kind": "glyph",
+      "id": "medal-point"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-prize-stall",
+    "title": "Prize Stall",
+    "short": "Open on Wednesdays: swap medal points for prizes.",
+    "lines": ["Each prize can be bought a few times a week."],
+    "visual": {
+      "kind": "glyph",
+      "id": "gift"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-bonus",
+    "title": "Bonus event",
+    "short": "Wednesday's fourth event: its medals and pins are worth double medal points.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "medal-point"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-team",
+    "title": "Team event",
+    "short": "One event a day is for teams of three. Every team plays at once.",
+    "lines": [
+      "Log Carry goes at its slowest carrier's pace; in Pumpkin Push, Attack adds up.",
+      "Bucket Brigade: quick feet make more trips, Tide carries more, Supports help refill.",
+      "Crate Tower: sturdy creatures and Guards hold it up, small ones climb fast, Grove roots it.",
+      "Kite Flight: quick runners and Spark lift the kite; a Guard or Mire holds it in a gust."
+    ],
+    "section": "games"
+  },
+  {
+    "id": "games-good-fit",
+    "title": "Good fit",
+    "short": "This creature suits this event: what the event favours is what it is.",
+    "lines": [
+      "Level doesn't matter in the Games; species, element, role and size do.",
+      "Gear counts only for its chance and trigger lines."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "good-fit"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-badges",
+    "title": "Event badges",
+    "short": "Win an event and the creature earns its badge. The number counts its wins.",
+    "lines": ["Every member of a winning team earns it."],
+    "section": "games"
+  },
+  {
+    "id": "games-favour-hp",
+    "title": "HP",
+    "short": "This event favours creatures with plenty of HP.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "fav-hp"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-favour-atk",
+    "title": "Attack",
+    "short": "This event favours creatures with a strong Attack.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "fav-atk"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-favour-spd",
+    "title": "Speed",
+    "short": "This event favours fast creatures.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "fav-spd"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-favour-small",
+    "title": "Small creatures",
+    "short": "Creatures that can still evolve duck, slip and hide better here.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "fav-small"
+    },
+    "section": "games"
+  },
+  {
+    "id": "games-favour-big",
+    "title": "Big creatures",
+    "short": "Evolved creatures and ones that never evolve do better here.",
+    "lines": [],
+    "visual": {
+      "kind": "glyph",
+      "id": "fav-big"
+    },
+    "section": "games"
   }
 ]

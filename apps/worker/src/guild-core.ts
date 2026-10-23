@@ -8,6 +8,8 @@ import { Collection } from './collection';
 import { Dungeon } from './dungeon';
 import { dungeonRoutes } from './dungeon-routes';
 import { Gear } from './gear';
+import { Games } from './games';
+import { gamesRoutes } from './games-routes';
 import { convertPendingGear } from './gear-convert';
 import { normaliseGearRows } from './gear-normalise';
 import { rollMissingTalents } from './talent-store';
@@ -178,6 +180,7 @@ const routes: Routes<RequestContext> = {
   ...expeditionRoutes,
   ...raidRoutes,
   ...weatherRoutes,
+  ...gamesRoutes,
   ...liveRoutes,
   ...devRoutes,
   '/api/me': {
@@ -255,6 +258,12 @@ export interface GuildCoreOptions {
    * draws and a test can script the seed of a run.
    */
   dungeonRng?: Rng;
+  /**
+   * Live randomness for the Valley Games: each day's lineup and each show's seed (drawn at the lock).
+   * Defaults to crypto.getRandomValues. Separate from the others, so a show never consumes a test's
+   * scripted draws and a test can script a show's seed.
+   */
+  gamesRng?: Rng;
   /**
    * Live randomness for picking the living room's lounger. Defaults to crypto.getRandomValues.
    * Separate from the others, so a pick never consumes a test's scripted draws.
@@ -341,6 +350,8 @@ export class GuildCore {
   readonly gear: Gear;
   readonly dungeon: Dungeon;
   readonly raid: Raid;
+  /** The Valley Games: the daily show, its entries, medals and the Prize Stall (see `games.ts`). */
+  readonly games: Games;
   /** The valley's daily Boon and Omen, drawn a day ahead (see `weather.ts`). */
   readonly weather: Weather;
   readonly analytics: Analytics;
@@ -443,6 +454,14 @@ export class GuildCore {
       gearRng,
       ...(options.readinessRng === undefined ? {} : { readinessRng: options.readinessRng }),
     });
+    this.games = new Games({
+      storage,
+      now,
+      rng: options.gamesRng ?? liveRng(),
+      gearRng,
+      timezone: () => this.timezone(),
+      analytics: this.analytics,
+    });
     this.limiter = new TokenBucketLimiter({
       capacity: RATE_CAPACITY,
       refillPerSecond: RATE_REFILL_PER_SECOND,
@@ -469,6 +488,7 @@ export class GuildCore {
             timezone: () => this.timezone(),
             analytics: this.analytics,
             raid: this.raid,
+            games: this.games,
             weather: this.weather,
             rng: options.raidRng ?? liveRng(),
             gearRng,
@@ -487,6 +507,7 @@ export class GuildCore {
               // The game catches up to the new time and the alarm is set for it (real time).
               this.weather.ensure();
               this.catchUpRaid();
+              this.catchUpGames();
               this.kickPosts();
               await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
             },
@@ -674,6 +695,7 @@ export class GuildCore {
     this.sql.exec('UPDATE guild_meta SET timezone = ? WHERE id = 1', timezone);
     this.cachedTimezone = null;
     this.catchUpRaid();
+    this.catchUpGames();
     this.kickPosts();
     await this.rearmAlarm(this.now());
     return true;
@@ -932,6 +954,12 @@ export class GuildCore {
     if (liveEndAt !== null) {
       candidates.push(liveEndAt > this.now() ? liveEndAt : this.now() + RAID_RETRY_MS);
     }
+    // The Valley Games: the next lock and the end of a show not awarded yet. One still due after the
+    // catch-up keeps failing: retry it later.
+    const gamesAt = this.games.nextEventAt();
+    if (gamesAt !== null) {
+      candidates.push(gamesAt > this.now() ? gamesAt : this.now() + RAID_RETRY_MS);
+    }
     if (this.options.postSender != null) {
       const postAt = nextPostAt(this.sql);
       // A post that is still due keeps failing to go out: look again later, not in a loop.
@@ -987,6 +1015,15 @@ export class GuildCore {
       this.raid.settleDueLive();
     } catch (err) {
       console.error('raid catch-up failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /** Runs the Valley Games' due lock and awards (missed ones run late). Failures never reach callers. */
+  private catchUpGames(): void {
+    try {
+      this.games.runDue();
+    } catch (err) {
+      console.error('games catch-up failed', err instanceof Error ? err.name : 'unknown');
     }
   }
 
@@ -1238,6 +1275,7 @@ export class GuildCore {
     // The days' weather first: a raid stage that is due now fights under the weather of its day.
     this.weather.ensure();
     this.catchUpRaid();
+    this.catchUpGames();
     this.kickPosts();
     this.kickLounge();
     const at = this.desiredAlarmAt(this.now());
@@ -1276,6 +1314,8 @@ export class GuildCore {
       }
     }
     this.catchUpRaid();
+    // The Games' lock and awards, before the posts go out (the award queues the podium post).
+    this.catchUpGames();
     await this.deliverPosts();
     await this.runLounge();
     this.rollup.runDue();

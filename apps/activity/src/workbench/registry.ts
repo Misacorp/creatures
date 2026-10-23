@@ -7,6 +7,9 @@ import { creatureEntries } from './entries/creatures';
 import { evolveEntries } from './entries/evolve';
 import { expeditionWorldEntries } from './entries/expedition-world';
 import { flipperEntries } from './entries/flipper';
+import { gamesArtEntries } from './entries/games-art';
+import { gamesShowEntries } from './entries/games-show';
+import { gamesTabEntries } from './entries/games-tab';
 import { dataTableEntries } from './entries/data-table';
 import { effectEntries } from './entries/effects';
 import { dungeonMapEntries } from './entries/dungeon-map';
@@ -22,6 +25,7 @@ import { supplyCraftingEntries } from './entries/supply-crafting';
 import { raidBoardEntries } from './entries/raid-board';
 import { raidSummaryEntries } from './entries/raid-summary';
 import { sendFormEntries } from './entries/send-form';
+import { sidePanelEntries } from './entries/side-panel';
 import { skyEntries } from './entries/sky';
 import { slotDrawerEntries } from './entries/slot-drawer';
 import { slotEntries } from './entries/slots';
@@ -53,6 +57,7 @@ export const ENTRIES: readonly Entry[] = [
   ...headingEntries,
   ...iconEntries,
   ...controlEntries,
+  ...sidePanelEntries,
   ...recipeCardEntries,
   ...supplyCraftingEntries,
   ...accordionEntries,
@@ -74,6 +79,9 @@ export const ENTRIES: readonly Entry[] = [
   ...dungeonRunEntries,
   ...worldMapEntries,
   ...expeditionWorldEntries,
+  ...gamesArtEntries,
+  ...gamesShowEntries,
+  ...gamesTabEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {

@@ -1214,6 +1214,54 @@ export const RULES = {
   room: {
     twilightHours: 2,
   },
+  /**
+   * The Valley Games (docs/design/valley-games.md): a daily show of three events (four on the bonus
+   * day), one creature per event.
+   * Entries lock at the daily reset (`lockAt`, the same time as `daily.reset`), the server resolves the
+   * day's events then, and the show plays to everyone at `showAt` (guild time), when tomorrow's lineup is
+   * revealed. An event takes at most `maxEntrants` creatures (`maxTeamEntrants` in a team event). A day
+   * has `eventsPerDay` events, `teamEventsPerDay` of them team events (a player's team of up to
+   * `teamSize`), and the `bonus` day one bonus solo event more. Experience is per creature: `enter` for taking part, `place` for 1st, 2nd and 3rd,
+   * `pin` for beating its own record in the event; a team event pays every member. `medalPoints` price
+   * the Prize Stall. Commentary lines are at least `sayGapMs` apart. First numbers (2026-10-22).
+   */
+  games: {
+    /** Entries lock and the day's events are resolved at the daily reset (guild time). */
+    lockAt: { hour: 13, minute: 37 },
+    /** The show plays to everyone, and tomorrow's lineup is revealed (guild time). */
+    showAt: { hour: 13, minute: 40 },
+    /** Events in a day's show (a bonus day has one more). */
+    eventsPerDay: 3,
+    /** Team events among them. */
+    teamEventsPerDay: 1,
+    /**
+     * The bonus day (ISO weekday of the show day, guild time; 3 is Wednesday, the Prize Stall's day): one
+     * more solo event, the bonus event, whose medals and pins go in the pocket at `pocketBp` (basis
+     * points; 20000 is double). Lifetime medal counts and experience are as in any event. Misa,
+     * 2026-10-23: four events every day felt like a bit much.
+     */
+    bonus: { weekday: 3, pocketBp: 20_000 },
+    /** Creatures in a team. */
+    teamSize: 3,
+    /** Creatures in a solo event at most. */
+    maxEntrants: 24,
+    /** Creatures in a team event at most (16 full teams). */
+    maxTeamEntrants: 48,
+    /** Experience per creature: for entering, for 1st to 3rd place, and for a pin. */
+    xp: { enter: 50, place: [60, 40, 25], pin: 15 },
+    /** Prize Stall prices: what each medal and pin is worth. */
+    medalPoints: { gold: 3, silver: 2, bronze: 1, pin: 1 },
+    /** Commentary lines at least this far apart. */
+    sayGapMs: 3_000,
+    /**
+     * The "Good fit" badge (no level in the Games, Misa 2026-10-23): a creature is a good fit for an
+     * event when its aptitude reaches that of the species at the top `topSpeciesBp` share of all
+     * species for that event (`gamesGoodFitMin` in the engine; `teamTopSpeciesBp` in a team event,
+     * which takes three). Calibrated with `pnpm sim:games` so a typical roster has 2 to 4 good fits per
+     * event.
+     */
+    goodFit: { topSpeciesBp: 2_500, teamTopSpeciesBp: 3_500 },
+  },
   nickname: {
     maxCodePoints: 20,
     /** Inputs longer than this (UTF-16 units) are refused before any normalisation work. */
