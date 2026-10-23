@@ -178,4 +178,4 @@ const out = [
   ...top(toolCounts, 25),
   '',
 ];
-process.stdout.write(out.join('\n'));
+console.log(out.join('\n'));
