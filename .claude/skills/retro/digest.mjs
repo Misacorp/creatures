@@ -83,6 +83,8 @@ function classify(text) {
     return 'skip';
   if (text.startsWith('Another Claude session sent a message')) return 'agent';
   if (text.startsWith('Tool loaded') || text.startsWith('[Image:')) return 'skip';
+  // A skill's own text, expanded into the conversation when it is invoked (for example /retro).
+  if (text.startsWith('Base directory for this skill')) return 'skip';
   if (text.trim() === '') return 'skip';
   return 'human';
 }
