@@ -64,3 +64,15 @@ Open for the Wednesday game day (from the reset to the next reset, guild time). 
 - **Awards at the show's end** (13:40 + the show's length, an alarm candidate, idempotent): creature experience (`RULES.games.xp`), medals (lifetime and pocket; the bonus event's pocket points doubled), pins for personal bests, creature records. No Discord post (it would spoil the replay).
 - **Bots (dev only):** the raid's dev guests (`dev-guest-*` players with creatures) are reused. They are ordinary players to the Games and auto-enter. Dev tools: add bots, run now (lock now, show in 15 s), reset today.
 - **Stall:** content offers, open on the Wednesday game day, priced in medal points, with a weekly limit per offer. Bought with an idempotency key through `runKeyed`, and granted with the existing grant helpers.
+
+## v1 scope (frozen 2026-10-23, Misa: "ship a version of this and then improve it in the future")
+
+In v1, and nothing else until it ships:
+
+1. The team-event rework: Sauna Stack and Shark Relay retired; the team events Log Carry, Pumpkin Push, Bucket Brigade, Crate Tower and Kite Flight, all played at once and capped in time.
+2. No level in the Games: species base strengths, role, element and size; gear keeps only its chance and trigger lines.
+3. A binary "Good fit" badge instead of fit pips; no auto-entry and no "Recommended" fill.
+4. Event badges per creature (wins per event) on the creature page and in the picker.
+5. No Discord results post (done).
+
+Postponed (after v1 ships): the upset badge, sky twists, crowded-element effects, a fresh-face bonus, and any new events or tweaks beyond bug fixes. Agents: when new feature requests or tweaks come up before v1 ships, remind Misa of this scope.
