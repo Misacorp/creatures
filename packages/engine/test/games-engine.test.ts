@@ -17,6 +17,7 @@ import {
   sayGapTicks,
   type GamesEntrant,
   type GamesEventResult,
+  HAUL_OFFSETS,
 } from '../src/index';
 
 const ELEMENTS: Element[] = ['tide', 'ember', 'grove', 'spark', 'mire'];
@@ -94,7 +95,7 @@ function checkShape(
         expect(Number.isInteger(b.x) && Number.isInteger(b.y)).toBe(true);
         expect(b.y).toBeGreaterThanOrEqual(0);
         expect(b.y).toBeLessThanOrEqual(112);
-        if (def.kind !== 'chase') {
+        if (def.kind !== 'chase' && def.kind !== 'haul') {
           expect(b.x).toBeGreaterThanOrEqual(0);
           expect(b.x).toBeLessThanOrEqual(192);
         }
@@ -188,7 +189,7 @@ describe('runGamesEvent on every shipped event', () => {
 
 describe('entrant checks', () => {
   const solo = event('melon-run');
-  const team = event('sauna-stack');
+  const team = event('log-carry');
   const play = (def: GamesEventDef, field: GamesEntrant[]) => () =>
     runGamesEvent(def, field, createSeededRng('check'));
 
@@ -386,68 +387,6 @@ describe('what each kind reads', () => {
     }
   });
 
-  it('Sauna Stack: teams sit stacked in one seat, Guards at the bottom; the ones above drop down', () => {
-    const def = event('sauna-stack');
-    const field = teamField(4).map((e, i) => ({
-      ...e,
-      role: i % 3 === 2 ? ('guard' as const) : ('setter' as const),
-    }));
-    const r = runGamesEvent(def, field, createSeededRng('stack'));
-    for (let t = 0; t < 4; t++) {
-      const team = [3 * t, 3 * t + 1, 3 * t + 2];
-      const xs = new Set(team.map((a) => r.actors[a]?.x));
-      expect(xs.size).toBe(1);
-      const ys = team.map((a) => r.actors[a]?.y as number).sort((p, q) => q - p);
-      expect([
-        (ys[0] as number) - (ys[1] as number),
-        (ys[1] as number) - (ys[2] as number),
-      ]).toEqual([15, 15]);
-      // The guard (index 2 of each team) is the lowest, i.e. has the biggest y.
-      expect(r.actors[3 * t + 2]?.y).toBe(ys[0]);
-    }
-    // Someone above a leaver moves down a step.
-    const drops = r.beats.filter((b) => {
-      if (b.k !== 'pos') return false;
-      const start = r.actors[b.a];
-      return start !== undefined && b.x === start.x && b.y > start.y && b.y < 100;
-    });
-    expect(drops.length).toBeGreaterThan(0);
-  });
-
-  it('Sauna Stack: up to ten stacks share the front bench; more start a back row between them', () => {
-    const def = event('sauna-stack');
-    const bottoms = (teams: number) => {
-      const r = runGamesEvent(def, teamField(teams), createSeededRng(`rows-${String(teams)}`));
-      const seats = new Map<number, number>();
-      for (let t = 0; t < teams; t++) {
-        const ys = [0, 1, 2].map((k) => r.actors[3 * t + k]);
-        const x = ys[0]?.x as number;
-        seats.set(x, Math.max(...ys.map((a) => a?.y as number)));
-      }
-      return [...seats.entries()].sort((p, q) => p[0] - q[0]);
-    };
-    const nine = bottoms(9);
-    expect(nine).toHaveLength(9);
-    expect(new Set(nine.map(([, y]) => y))).toEqual(new Set([84]));
-    for (let i = 1; i < nine.length; i++) {
-      expect((nine[i]?.[0] as number) - (nine[i - 1]?.[0] as number)).toBeGreaterThanOrEqual(15);
-    }
-    const fourteen = bottoms(14);
-    expect(fourteen.filter(([, y]) => y === 84)).toHaveLength(10);
-    expect(fourteen.filter(([, y]) => y === 60)).toHaveLength(4);
-  });
-
-  it('Shark Relay: one swimmer per team in the water; the others wait on the shore until tagged', () => {
-    const def = event('shark-relay');
-    const field = teamField(3);
-    const r = runGamesEvent(def, field, createSeededRng('relay-legs'));
-    for (let a = 0; a < field.length; a++) {
-      const leg = a % 3;
-      expect((r.actors[a]?.y as number) >= 100).toBe(leg > 0);
-    }
-    expect(r.beats.some((b) => b.k === 'say' && b.line === 'swim.tag')).toBe(true);
-  });
-
   it('Floe Sumo: a big field gets a bigger floe', () => {
     const def = event('floe-sumo');
     const floe = (n: number): number => {
@@ -459,22 +398,185 @@ describe('what each kind reads', () => {
     expect(floe(24)).toBeLessThanOrEqual(84);
   });
 
-  it('team events rank teams by their best member (Sauna Stack)', () => {
-    const def = event('sauna-stack');
+  it('team events rank teams by their best member (Log Carry: a team shares one score)', () => {
+    const def = event('log-carry');
     const field = teamField(4);
-    const r = runGamesEvent(def, field, createSeededRng('stack'));
+    const r = runGamesEvent(def, field, createSeededRng('teams'));
     expect(r.standings).toHaveLength(4);
     for (const s of r.standings) {
       expect(s.actors).toHaveLength(3);
       expect(s.score).toBe(Math.max(...s.actors.map((a) => r.scores[a] as number)));
+      expect(new Set(s.actors.map((a) => r.scores[a]))).toHaveProperty('size', 1);
     }
   });
 
-  it('team events with teamScore "sum" add the members up (Shark Relay)', () => {
-    const def = event('shark-relay');
-    const r = runGamesEvent(def, teamField(3), createSeededRng('relay'));
+  it('team events with teamScore "sum" add the members up', () => {
+    const def: GamesEventDef = { ...event('log-carry'), teamScore: 'sum' };
+    const r = runGamesEvent(def, teamField(3), createSeededRng('sum'));
     for (const s of r.standings) {
       expect(s.score).toBe(s.actors.reduce((n, a) => n + (r.scores[a] as number), 0));
+    }
+  });
+});
+
+describe('haul (Log Carry, Pumpkin Push)', () => {
+  const carry = event('log-carry');
+  const push = event('pumpkin-push');
+  if (carry.kind !== 'haul' || push.kind !== 'haul') throw new Error('haul events');
+  const member = (i: number, team: number, over: Partial<GamesEntrant> = {}): GamesEntrant =>
+    entrant(i, {
+      playerId: `p${String(team)}`,
+      teamId: `p${String(team)}`,
+      stage: 2,
+      role: 'payoff',
+      element: 'tide',
+      hp: 250,
+      atk: 60,
+      spd: 60,
+      dodgeBp: 500,
+      ...over,
+    });
+  const teamOf = (team: number, overs: Partial<GamesEntrant>[]): GamesEntrant[] =>
+    overs.map((o, k) => member(team * 3 + k, team, o));
+  const propsOf = (r: GamesEventResult, name: string) =>
+    r.beats.filter((b) => b.k === 'prop' && b.p.startsWith(`${name}:`));
+
+  it('a team is one lane: its members in a tight group under the log or behind the pumpkin', () => {
+    for (const def of [carry, push]) {
+      const r = runGamesEvent(def, teamField(5), createSeededRng(`lane:${def.id}`));
+      const lanes = new Set<number>();
+      for (let t = 0; t < 5; t++) {
+        const team = [0, 1, 2].map((k) => r.actors[3 * t + k] as (typeof r.actors)[number]);
+        expect(new Set(team.map((a) => a.y)).size).toBe(1);
+        lanes.add(team[0]?.y as number);
+        const xs = team.map((a) => a.x).sort((p, q) => p - q);
+        const want = [...(HAUL_OFFSETS[def.params.mode][3] ?? [])].sort((p, q) => p - q);
+        expect(xs.map((x) => x - (xs[0] as number))).toEqual(
+          want.map((dx) => dx - (want[0] as number)),
+        );
+      }
+      expect(lanes.size).toBe(5);
+      for (const y of lanes) {
+        expect(y).toBeGreaterThanOrEqual(48);
+        expect(y).toBeLessThanOrEqual(100);
+      }
+      const name = def.params.mode === 'carry' ? 'log' : 'pumpkin';
+      const ids = new Set(propsOf(r, name).map((b) => (b.k === 'prop' ? b.p : '')));
+      expect(ids.size).toBe(5);
+    }
+  });
+
+  it('members move together: every position keeps the formation around the load', () => {
+    const r = runGamesEvent(carry, teamField(3), createSeededRng('together'));
+    const at = new Map<string, number>();
+    for (const b of r.beats) {
+      if (b.k === 'prop' && b.p.startsWith('log:')) at.set(`${b.p}@${String(b.t)}`, b.x);
+    }
+    for (const b of r.beats) {
+      if (b.k !== 'pos') continue;
+      const team = Math.floor(b.a / 3);
+      const x = at.get(`log:${String(team)}@${String(b.t)}`);
+      if (x === undefined) continue;
+      expect(Math.abs(b.x - x)).toBeLessThanOrEqual(9);
+    }
+  });
+
+  it('carry: the slowest member counts most, so a matched team beats a lopsided one', () => {
+    const field = [
+      ...teamOf(0, [{ spd: 60 }, { spd: 60 }, { spd: 60 }]),
+      ...teamOf(1, [{ spd: 95 }, { spd: 95 }, { spd: 15 }]),
+    ];
+    expect(winsOf(carry, field, 0, 40, 'matched')).toBeGreaterThanOrEqual(26);
+  });
+
+  it('push: Attack adds up, so a strong team pushes faster than a weak one', () => {
+    const field = [
+      ...teamOf(0, [{ atk: 140 }, { atk: 120 }, { atk: 120 }]),
+      ...teamOf(1, [{ atk: 40 }, { atk: 40 }, { atk: 40 }]),
+    ];
+    expect(winsOf(push, field, 0, 40, 'push')).toBeGreaterThanOrEqual(26);
+  });
+
+  it('Guards steady the load: fewer drops than a team without', () => {
+    const drops = (role: 'guard' | 'payoff'): number => {
+      let n = 0;
+      for (let k = 0; k < 30; k++) {
+        const r = runGamesEvent(
+          carry,
+          teamOf(0, [{ role }, { role }, { role }]),
+          createSeededRng(`steady:${String(k)}`),
+        );
+        n += r.beats.filter((b) => b.k === 'fx' && b.fx === 'stumble').length;
+      }
+      return n;
+    };
+    expect(drops('guard')).toBeLessThan(drops('payoff'));
+  });
+
+  it('Stubborn catches the falling log once', () => {
+    let caught = 0;
+    for (let k = 0; k < 20; k++) {
+      const r = runGamesEvent(
+        { ...carry, params: { ...carry.params, wobbleChanceBp: 3_000, steadyBaseBp: 0 } },
+        teamOf(0, [{ mods: { stubborn: 1 }, dodgeBp: 0 }, { dodgeBp: 0 }, { dodgeBp: 0 }]),
+        createSeededRng(`catch:${String(k)}`),
+      );
+      // A catch is a star on its own, not the one at the finish (with the cheer).
+      const cheerAt = new Set(
+        r.beats.flatMap((b) => (b.k === 'state' && b.a === 0 && b.s === 'cheer' ? [b.t] : [])),
+      );
+      const catches = r.beats.filter(
+        (b) => b.k === 'fx' && b.fx === 'star' && b.a === 0 && !cheerAt.has(b.t),
+      );
+      expect(catches.length).toBeLessThanOrEqual(1);
+      caught += catches.length;
+    }
+    expect(caught).toBeGreaterThan(0);
+  });
+
+  it('a drop can bump the team in the next lane', () => {
+    const def = {
+      ...carry,
+      params: { ...carry.params, wobbleChanceBp: 2_000, bumpChanceBp: 10_000 },
+    };
+    const r = runGamesEvent(def, teamField(6), createSeededRng('bump'));
+    // A bump is a bonk on a creature (a drop's own bonk is on the load); its team stands still.
+    const bumps = r.beats.filter((b) => b.k === 'fx' && b.fx === 'bonk' && b.a !== undefined);
+    expect(bumps.length).toBeGreaterThan(0);
+    const said = r.beats.filter((b) => b.k === 'say' && b.line === 'haul.bump');
+    for (const b of said) {
+      if (b.k !== 'say') continue;
+      expect(Math.floor((b.a as number) / 3)).not.toBe(Math.floor((b.b as number) / 3));
+    }
+  });
+
+  it('the race ends a grace after the first team is over the line, whatever the field', () => {
+    for (const base of [carry, push]) {
+      // A short course, so someone surely finishes.
+      const def = { ...base, params: { ...base.params, finishPx: 140 } };
+      const r = runGamesEvent(def, teamField(8), createSeededRng(`grace:${def.id}`));
+      const first = r.beats.find((b) => b.k === 'say' && b.line === 'haul.finish');
+      const stars = r.beats.filter((b) => b.k === 'fx' && b.fx === 'star');
+      expect(first).toBeDefined();
+      const lastMove = Math.max(...r.beats.filter((b) => b.k === 'pos').map((b) => b.t));
+      expect(lastMove - (first?.t ?? 0)).toBeLessThanOrEqual(def.params.graceTicks);
+      expect(stars.length).toBeGreaterThan(0);
+      expect(r.standings[0]?.score).toBeGreaterThan(
+        r.standings[r.standings.length - 1]?.score ?? 0,
+      );
+    }
+  });
+
+  it('more teams do not make a longer show', () => {
+    for (const def of [carry, push]) {
+      const mean = (teams: number): number => {
+        let ticks = 0;
+        for (let k = 0; k < 20; k++) {
+          ticks += runGamesEvent(def, teamField(teams), createSeededRng(`len:${String(k)}`)).ticks;
+        }
+        return ticks / 20;
+      };
+      expect(mean(16)).toBeLessThanOrEqual(mean(4) * 1.1);
     }
   });
 });

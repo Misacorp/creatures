@@ -51,11 +51,11 @@ describe('what an event favours', () => {
 
 describe('slots and entries', () => {
   it('gives a solo event one slot and the team event three, in order', () => {
-    const next = { entries: { 'sauna-stack': ['a', 'b'], 'melon-run': ['c'] } };
-    expect(slotsOf(next, event('sauna-stack'))).toEqual(['a', 'b', null]);
+    const next = { entries: { 'log-carry': ['a', 'b'], 'melon-run': ['c'] } };
+    expect(slotsOf(next, event('log-carry'))).toEqual(['a', 'b', null]);
     expect(slotsOf(next, event('melon-run'))).toEqual(['c']);
     expect(slotsOf(next, event('pepper-panic'))).toEqual([null]);
-    expect(entryOf(next, 'b')).toBe('sauna-stack');
+    expect(entryOf(next, 'b')).toBe('log-carry');
     expect(entryOf(next, 'z')).toBeNull();
   });
 
@@ -70,9 +70,9 @@ describe('slots and entries', () => {
   it('lists the picker best fit first, then creatures in another event, then this team', () => {
     const next = {
       ...F.entries.next,
-      entries: { 'pepper-panic': [roster[5]?.id ?? ''], 'sauna-stack': [roster[1]?.id ?? ''] },
+      entries: { 'pepper-panic': [roster[5]?.id ?? ''], 'log-carry': [roster[1]?.id ?? ''] },
     };
-    const rows = pickerRows(next, event('sauna-stack'), 1, roster);
+    const rows = pickerRows(next, event('log-carry'), 1, roster);
     expect(rows).toHaveLength(roster.length);
     const last = rows[rows.length - 1];
     expect(last?.id).toBe(roster[1]?.id);

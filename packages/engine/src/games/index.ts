@@ -15,12 +15,14 @@ import {
 } from './common';
 import { runEndure } from './endure';
 import { runFeast } from './feast';
+import { runHaul } from './haul';
 import { Show } from './show';
 import { runShove } from './shove';
 import { runSwim } from './swim';
 import type { GamesEntrant, GamesEventResult, GamesStanding } from './types';
 
 export * from './types';
+export { HAUL_DOWN, HAUL_OFFSETS, HAUL_STAGGER_PX, HAUL_UP, HAUL_WOBBLE } from './haul';
 export { gamesAptitude, gamesEntrantFrom, type GamesCreatureInput } from './entrant';
 
 /** Ticks between two commentary lines at least (`RULES.games.sayGapMs`). */
@@ -87,6 +89,9 @@ export function runGamesEvent(
       break;
     case 'shove':
       out = runShove({ ...base, def });
+      break;
+    case 'haul':
+      out = runHaul({ ...base, def });
       break;
   }
   const standings = standingsOf(def, entrants, teamOf, out.keys, out.scores);

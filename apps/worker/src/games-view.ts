@@ -7,9 +7,10 @@
 import { gamesAptitude } from '@creatures/engine';
 import {
   RULES,
-  gamesEventDef,
+  gamesEventInfo,
   showTimeline,
   type GamesEventDef,
+  type GamesEventInfo,
   type GamesMedal,
   type ShowSegment,
 } from '@creatures/game';
@@ -110,8 +111,8 @@ export interface GamesView {
   board: { userId: string; name: string; gold: number; silver: number; bronze: number }[];
 }
 
-/** An event of a day's lineup (`bonus`: the day's bonus event). */
-export function lineupView(def: GamesEventDef, bonus = false): LineupEventView {
+/** An event of a day's lineup (`bonus`: the day's bonus event); a retired event as it was. */
+export function lineupView(def: GamesEventInfo, bonus = false): LineupEventView {
   return {
     id: def.id,
     name: def.name,
@@ -124,9 +125,20 @@ export function lineupView(def: GamesEventDef, bonus = false): LineupEventView {
   };
 }
 
-/** A stored day's lineup as the client sees it (the bonus event marked). */
+/** The next day's lineup as the client sees it (the bonus event marked; a retired event is left out). */
 export function lineupViews(row: DayRow): LineupEventView[] {
   return lineupDefs(row.lineup).map((def) => lineupView(def, def.id === row.bonus));
+}
+
+/**
+ * A shown day's lineup: every event it played, a retired one too (a day stored before the event was
+ * retired still replays, with its name), so it lines up with the stored results and the timeline.
+ */
+export function shownLineupViews(row: DayRow): LineupEventView[] {
+  return row.lineup.flatMap((id) => {
+    const info = gamesEventInfo(id);
+    return info === undefined ? [] : [lineupView(info, id === row.bonus)];
+  });
 }
 
 /**
@@ -162,7 +174,7 @@ export function showView(sql: SqlStorage, row: DayRow): GamesShowView {
     day: row.day,
     showAt,
     endsAt: row.endsAt ?? showAt,
-    lineup: lineupViews(row),
+    lineup: shownLineupViews(row),
     timeline: showTimeline(timelineInputs(events)),
     events: events.flatMap((e) => (e.result === null ? [] : [e.result])),
     skipped: events.filter((e) => e.result === null).map((e) => e.eventId),
@@ -315,10 +327,17 @@ export function creatureGamesView(
   if (owned.length === 0) return null;
   const medals = readCreatureMedals(sql, creatureId);
   const records = creatureRecords(sql, creatureId).flatMap((r) => {
-    const def = gamesEventDef(r.eventId);
-    if (def === undefined) return [];
+    // A retired event's record stays, under its old name.
+    const info = gamesEventInfo(r.eventId);
+    if (info === undefined) return [];
     return [
-      { eventId: r.eventId, name: def.name, best: r.best, unit: SCORE_UNITS[def.kind], day: r.day },
+      {
+        eventId: r.eventId,
+        name: info.name,
+        best: r.best,
+        unit: SCORE_UNITS[info.kind],
+        day: r.day,
+      },
     ];
   });
   return { medals, records };
@@ -334,6 +353,7 @@ export const SCORE_UNITS: Record<GamesEventDef['kind'], string> = {
   chase: 'm',
   feast: 'peppers',
   swim: 'centilaps',
+  haul: 'm',
 };
 
 /** The team size of an event (for the entry check). */

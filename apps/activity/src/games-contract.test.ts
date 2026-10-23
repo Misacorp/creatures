@@ -68,7 +68,7 @@ describe('the Games payloads', () => {
 
   it('reads the entry, auto-entry, purchase and creature answers', () => {
     expect(parseEntryAnswer(gamesEntry).entries['melon-run']).toHaveLength(1);
-    expect(parseEntryAnswer(gamesEntryTeam).entries['sauna-stack']).toHaveLength(2);
+    expect(parseEntryAnswer(gamesEntryTeam).entries['log-carry']).toHaveLength(2);
     expect(parseAutoAnswer(gamesAuto)).toEqual({ auto: true, joined: true });
     expect(parseStallPurchase(gamesStallBuy).purchase.grant.gear).toHaveLength(1);
     expect(parseStallPurchase(gamesStallBuyBait).purchase.bait).toBe(30);

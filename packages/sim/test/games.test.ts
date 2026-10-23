@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSeededRng, gamesEventDef, type GamesEventDef } from '@creatures/game';
+import { createSeededRng, gamesContent, gamesEventDef, type GamesEventDef } from '@creatures/game';
 import { runGamesEvent, type GamesEntrant } from '@creatures/engine';
 import { main, parseGamesCli } from '../src/games-cli';
 import {
@@ -11,6 +11,7 @@ import {
   gamesReport,
   gamesRows,
   runGamesStudy,
+  teamLengthPass,
   showScript,
   spearman,
   type Candidate,
@@ -60,7 +61,7 @@ describe('assignEntries', () => {
     event('sauna-showdown'),
     event('melon-run'),
     event('pepper-panic'),
-    event('sauna-stack'),
+    event('log-carry'),
   ];
   const pool = [
     candidate(0, { hp: 600, element: 'ember' }, 50),
@@ -129,6 +130,7 @@ describe('tallies', () => {
     const sum = soloSummary({
       settings: { seed: 's', sizes: [4], weeks: [1], days: 1 },
       events: [tally],
+      teamLengths: [],
     });
     expect(sum.benchWins).toBeCloseTo(0.5);
     // Level 1-9: a quarter of entries, half the wins.
@@ -183,5 +185,16 @@ describe('the study and the CLI', () => {
     const report = gamesReport(study);
     expect(report).toMatch(/PASS|FAIL/);
     expect(report).toContain('| Event |');
+    // Too small a server for the 15-team check: it plays nothing and reports zeros.
+    expect(study.teamLengths.map((t) => t.eventId)).toEqual(
+      gamesContent.events.filter((e) => e.team === 3).map((e) => e.id),
+    );
+  });
+
+  it('a team event passes the length check only when 15 teams are within 10% of 4', () => {
+    expect(teamLengthPass({ eventId: 'x', at4: 40, at15: 43.9 })).toBe(true);
+    expect(teamLengthPass({ eventId: 'x', at4: 40, at15: 36.1 })).toBe(true);
+    expect(teamLengthPass({ eventId: 'x', at4: 40, at15: 44.5 })).toBe(false);
+    expect(teamLengthPass({ eventId: 'x', at4: 40, at15: 35 })).toBe(false);
   });
 });

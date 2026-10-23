@@ -13,6 +13,8 @@
  *   18; the table fronts are on the front layer, so the eaters stand behind them.
  * - `melon-hill`: a sunny hillside path whose columns repeat sideways (`sceneWidthFor`), lanes from
  *   y 50 to 100; the melon comes from the left.
+ * - `log-trail` and `pumpkin-hill` (the hauls): the same hillside path, with spare logs stacked by the
+ *   fence or the committee's pumpkin patch on the slope behind it; the lanes run from y 48 to 100.
  * - `shark-lake`: a lake with an elliptical swim track (centre 96, 62; radii 72 x 34), sand all round
  *   and a beach at the bottom (y 104) where knocked-out swimmers land.
  * - `ice-floe`: icy water with a floe at (96, 62) drawn from its radius (`floeRadius`, ry = rx * 0.52),
@@ -50,6 +52,8 @@ export const GAMES_SCENE_IDS = [
   'melon-hill',
   'shark-lake',
   'ice-floe',
+  'log-trail',
+  'pumpkin-hill',
 ] as const;
 export type GamesSceneId = (typeof GAMES_SCENE_IDS)[number];
 
@@ -467,7 +471,14 @@ function melonMaps(): { map: Tilemap; layer: SceneLayer }[] {
   ];
 }
 
+/** What a variant of the hill adds behind the fence: nothing, stacked logs or a pumpkin patch. */
+type HillDressing = 'none' | 'logs' | 'pumpkins';
+
 function buildMelon(state: SceneState): SceneLayers {
+  return buildHill(state, 'none');
+}
+
+function buildHill(state: SceneState, dressing: HillDressing): SceneLayers {
   const frame = state.frame ?? 0;
   const width = sceneWidthFor(state.width ?? SCENE_SIZE.width);
   const back: Placement[] = [];
@@ -498,11 +509,46 @@ function buildMelon(state: SceneState): SceneLayers {
       ),
     );
   }
+  for (let x = 0, i = 0; x < width; x += MELON_PERIOD, i++) {
+    if (dressing === 'logs') {
+      // A woodpile behind the fence: two logs with one on top.
+      back.push(place({ prop: 'log', x: x + 40, y: 30, layer: 'back' }, 0));
+      back.push(
+        place({ prop: 'log', x: x + 58, y: 30, layer: 'back', tint: 'wood', tint2: 'pine' }, 0),
+      );
+      back.push(place({ prop: 'log', x: x + 49, y: 25, layer: 'back' }, 0));
+    } else if (dressing === 'pumpkins') {
+      // The pumpkin patch on the slope, half behind the fence: next year's racers.
+      back.push(
+        place(
+          {
+            prop: 'pumpkin',
+            x: x + 44,
+            y: 22,
+            layer: 'back',
+            tint: i % 2 === 0 ? 'orange' : 'yellow',
+            tint2: 'grove',
+          },
+          i % 3,
+        ),
+      );
+    }
+  }
   if (fence !== undefined) back.push(...tilemapPlacements(fence.map, { frame, width }));
   // The start: a flag at the left end, where the melon comes from.
   back.push(place({ prop: 'finishFlag', x: 2, y: 22, layer: 'back', every: 3 }, frame));
   const front: Placement[] = [];
   return { width, height: SCENE_SIZE.height, back, front };
+}
+
+/** A haul's lanes (feet y): the top and bottom lane, the engine's numbers. */
+export const HAUL_LANES = { top: 48, bottom: 100 } as const;
+
+function haulAnchors(): Record<string, ScenePoint[]> {
+  return {
+    lanes: [HAUL_LANES.top, 74, HAUL_LANES.bottom].map((y) => ({ x: 40, y })),
+    start: [{ x: 40, y: 74 }],
+  };
 }
 
 function melonAnchors(): Record<string, ScenePoint[]> {
@@ -694,6 +740,20 @@ const STANDS: Readonly<Record<GamesSceneId, StandsTheme>> = {
     crowd: TEAM_RAMPS,
     bunting: ['ghost', 'tide', 'purple'],
   },
+  'log-trail': {
+    backdrop: OUTDOOR_BACKDROP,
+    seat: 'wood',
+    riser: 'grove',
+    crowd: TEAM_RAMPS,
+    bunting: ['green', 'yellow', 'red'],
+  },
+  'pumpkin-hill': {
+    backdrop: OUTDOOR_BACKDROP,
+    seat: 'wood',
+    riser: 'orange',
+    crowd: TEAM_RAMPS,
+    bunting: ['orange', 'yellow', 'purple'],
+  },
 };
 
 function scene(
@@ -721,6 +781,10 @@ export const GAMES_SCENES: Readonly<Record<GamesSceneId, GamesSceneArt>> = {
   'melon-hill': scene('melon-hill', melonAnchors(), melonMaps(), buildMelon),
   'shark-lake': scene('shark-lake', lakeAnchors(), lakeMaps(), buildLake),
   'ice-floe': scene('ice-floe', floeAnchors(), floeMaps(), buildFloe),
+  'log-trail': scene('log-trail', haulAnchors(), melonMaps(), (s) => buildHill(s, 'logs')),
+  'pumpkin-hill': scene('pumpkin-hill', haulAnchors(), melonMaps(), (s) =>
+    buildHill(s, 'pumpkins'),
+  ),
 };
 
 /** The top-left of a 16x16 creature sprite whose feet-centre is at a point. */

@@ -414,6 +414,61 @@ describe('the bonus day', () => {
       expect(after.you.pocket).toBe(4 * RULES.games.medalPoints.gold);
     });
   });
+
+  it('a retired event in a stored day still shows, under its old name, with its result and its records', async () => {
+    await run(async (ctx) => {
+      const p = await sixer(ctx);
+      const team = gamesContent.events.find((e) => e.team === 3)?.id as string;
+      // Play a day, then make it a day stored before the team event was retired: its id becomes
+      // Sauna Stack's everywhere the day is kept.
+      await playWednesday(ctx, p);
+      for (const table of ['games_results', 'games_placings', 'games_records']) {
+        ctx.sql.exec(`UPDATE ${table} SET event_id = 'sauna-stack' WHERE event_id = ?`, team);
+      }
+      ctx.sql.exec(
+        `UPDATE games_results SET result_json = replace(result_json, ?, '"eventId":"sauna-stack"')
+         WHERE event_id = 'sauna-stack'`,
+        `"eventId":"${team}"`,
+      );
+      const day = rows<{ lineup_json: string }>(
+        ctx.sql,
+        "SELECT lineup_json FROM games_days WHERE day = '2027-01-13'",
+      )[0]?.lineup_json;
+      ctx.sql.exec(
+        "UPDATE games_days SET lineup_json = ? WHERE day = '2027-01-13'",
+        (day ?? '').replace(team, 'sauna-stack'),
+      );
+      const view = (await p.call('GET', '/api/games')).body;
+      const lineup = view.show.lineup as { id: string; name: string; team: number }[];
+      expect(lineup.find((e) => e.id === 'sauna-stack')).toMatchObject({
+        name: 'Sauna Stack',
+        team: 3,
+      });
+      // The lineup, the timeline and the played events still line up.
+      expect(lineup.map((e) => e.id)).toEqual(
+        (view.show.timeline as { eventId: string }[]).map((s) => s.eventId),
+      );
+      expect((view.show.events as { eventId: string }[]).map((e) => e.eventId)).toContain(
+        'sauna-stack',
+      );
+      expect(
+        (view.you.lastResults.results as { eventId: string }[]).map((r) => r.eventId),
+      ).toContain('sauna-stack');
+      // The next day never offers it.
+      expect((view.next.lineup as { id: string }[]).some((e) => e.id === 'sauna-stack')).toBe(
+        false,
+      );
+      const member = rows<{ creature_id: string }>(
+        ctx.sql,
+        "SELECT creature_id FROM games_records WHERE event_id = 'sauna-stack'",
+      )[0]?.creature_id;
+      if (member === undefined) throw new Error('no record');
+      const page = (await p.call('GET', `/api/games/creature/${member}`)).body;
+      expect(page.records).toContainEqual(
+        expect.objectContaining({ eventId: 'sauna-stack', name: 'Sauna Stack', unit: 'ticks' }),
+      );
+    });
+  });
 });
 
 describe('capTeams', () => {

@@ -110,56 +110,6 @@
       "smallBp": 13500
     },
     {
-      "id": "sauna-stack",
-      "name": "Sauna Stack",
-      "kind": "endure",
-      "scene": "sauna",
-      "team": 3,
-      "teamScore": "best",
-      "tickMs": 400,
-      "maxTicks": 150,
-      "params": {
-        "statBp": 5000,
-        "jitterBp": 2000,
-        "dodgeShareBp": 5000,
-        "heatStartBp": 2000,
-        "heatRiseBp": 150,
-        "intakeBp": 250,
-        "shelterBp": 1800,
-        "shelterMaxBp": 3500,
-        "fanChanceBp": 2000,
-        "fanBp": 450,
-        "ladleMinTicks": 8,
-        "ladleMaxTicks": 15,
-        "spikeElement": "tide",
-        "steamBp": 700,
-        "splashHeatBp": 300,
-        "zapElement": "spark",
-        "zapBp": 600,
-        "stokeElement": "ember",
-        "stokeChanceBp": 1000,
-        "stokeBp": 350,
-        "wildfireElement": "grove",
-        "wildfireBp": 350,
-        "stubbornBackBp": 7000,
-        "secondWindBp": 1500,
-        "heightBp": 1500
-      },
-      "elementBp": {
-        "tide": 9500,
-        "ember": 12000,
-        "grove": 9500,
-        "spark": 10000,
-        "mire": 11000
-      },
-      "roleBp": {
-        "guard": 12000
-      },
-      "line": "Bring three friends to the bench. Your team lasts as long as its last sitter.",
-      "favours": ["guard", "hp", "ember", "small", "support"],
-      "smallBp": 11000
-    },
-    {
       "id": "melon-run",
       "name": "Melon Run",
       "kind": "chase",
@@ -344,51 +294,6 @@
       "smallBp": 15500
     },
     {
-      "id": "shark-relay",
-      "name": "Shark Relay",
-      "kind": "swim",
-      "scene": "shark-lake",
-      "team": 3,
-      "tickMs": 400,
-      "maxTicks": 160,
-      "params": {
-        "statBp": 6000,
-        "jitterBp": 2500,
-        "dodgeShareBp": 30000,
-        "laps": 2,
-        "swimUnits": 80,
-        "sharkStart": 1,
-        "sharkEveryTicks": 18,
-        "sharkMax": 4,
-        "sharkUnits": 45,
-        "biteEveryTicks": 4,
-        "biteRangeUnits": 120,
-        "biteBp": 1800,
-        "zapElement": "spark",
-        "zapChanceBp": 300,
-        "zapRangePx": 12,
-        "stunTicks": 2,
-        "finishers": 3,
-        "burstBp": 15000,
-        "secondWindBp": 1500,
-        "legLaps": 1
-      },
-      "elementBp": {
-        "tide": 13000,
-        "ember": 8000,
-        "grove": 9500,
-        "spark": 10000,
-        "mire": 10500
-      },
-      "line": "Three swimmers a team, every length counts. Keep away from the rubber sharks.",
-      "favours": ["spd", "tide", "small", "setter", "hp"],
-      "teamScore": "sum",
-      "roleBp": {
-        "setter": 11500
-      },
-      "smallBp": 11500
-    },
-    {
       "id": "floe-sumo",
       "name": "Floe Sumo",
       "kind": "shove",
@@ -424,6 +329,113 @@
       "favours": ["hp", "small", "mire", "guard", "atk"],
       "roleBp": {
         "guard": 12000
+      }
+    },
+    {
+      "id": "log-carry",
+      "name": "Log Carry",
+      "kind": "haul",
+      "scene": "log-trail",
+      "team": 3,
+      "teamScore": "best",
+      "tickMs": 400,
+      "maxTicks": 110,
+      "params": {
+        "statBp": 6000,
+        "jitterBp": 2000,
+        "dodgeShareBp": 20000,
+        "mode": "carry",
+        "runCpx": 200,
+        "minWeightBp": 6000,
+        "secondBp": 0,
+        "thirdBp": 0,
+        "shortBp": 1200,
+        "leadBp": 10600,
+        "wobbleChanceBp": 500,
+        "steadyBaseBp": 4000,
+        "guardSteadyBp": 1500,
+        "dropMinTicks": 3,
+        "dropMaxTicks": 5,
+        "rollbackPx": 0,
+        "bumpChanceBp": 3500,
+        "bumpRangePx": 24,
+        "bumpTicks": 2,
+        "zapChanceBp": 150,
+        "finishPx": 225,
+        "zapElement": "spark",
+        "burstBp": 15000,
+        "graceTicks": 10,
+        "finishBonusM": 10
+      },
+      "elementBp": {
+        "tide": 10000,
+        "ember": 9500,
+        "grove": 11500,
+        "spark": 10500,
+        "mire": 9000
+      },
+      "roleBp": {
+        "setter": 11000
+      },
+      "line": "Three friends, one big log, a long path. Keep in step and keep it up.",
+      "favours": ["spd", "grove", "guard", "setter", "dodge"]
+    },
+    {
+      "id": "pumpkin-push",
+      "name": "Pumpkin Push",
+      "kind": "haul",
+      "scene": "pumpkin-hill",
+      "team": 3,
+      "teamScore": "best",
+      "tickMs": 400,
+      "maxTicks": 110,
+      "params": {
+        "statBp": 4000,
+        "jitterBp": 3500,
+        "dodgeShareBp": 10000,
+        "mode": "push",
+        "runCpx": 190,
+        "minWeightBp": 0,
+        "secondBp": 6000,
+        "thirdBp": 3500,
+        "shortBp": 0,
+        "leadBp": 10400,
+        "wobbleChanceBp": 700,
+        "steadyBaseBp": 3000,
+        "guardSteadyBp": 2000,
+        "dropMinTicks": 2,
+        "dropMaxTicks": 4,
+        "rollbackPx": 12,
+        "bumpChanceBp": 4000,
+        "bumpRangePx": 24,
+        "bumpTicks": 2,
+        "zapChanceBp": 150,
+        "finishPx": 220,
+        "zapElement": "spark",
+        "burstBp": 15000,
+        "graceTicks": 10,
+        "finishBonusM": 10
+      },
+      "elementBp": {
+        "tide": 9500,
+        "ember": 10500,
+        "grove": 10500,
+        "spark": 10000,
+        "mire": 12000
+      },
+      "roleBp": {
+        "guard": 11000
+      },
+      "smallBp": 8500,
+      "line": "A pumpkin the size of a hut, and a hill. Push together!",
+      "favours": ["atk", "mire", "guard", "big"],
+      "say": {
+        "haul.start": "Shoulders to the pumpkins... push!",
+        "haul.drop": "Oops! The pumpkin rolls back on {a}.",
+        "haul.catch": "{a} stops the pumpkin rolling back!",
+        "haul.steady": "{a} holds the pumpkin steady.",
+        "haul.bump": "Bonk! A pumpkin bumps {b}.",
+        "haul.win": "{a}'s team wins the push!"
       }
     }
   ],
@@ -499,6 +511,19 @@
     "shove.splash2": "Splash! {a} and {b}!",
     "chase.finish": "{a} crosses the line. Safe!",
     "chase.smash": "The melon smashes into the finish arch. Juice everywhere!",
+    "haul.start": "Lift on three... go!",
+    "haul.drop": "Thud! {a} drops the log.",
+    "haul.catch": "{a} catches the log just in time!",
+    "haul.steady": "{a} keeps the load steady.",
+    "haul.dodge": "{a} sidesteps a stumble.",
+    "haul.cheer": "{a} cheers the team back up.",
+    "haul.zap": "Zap! {a} jolts the team forward.",
+    "haul.bump": "Bonk! The log rolls into {b}.",
+    "haul.lead": "{a} and friends take the lead!",
+    "haul.finish": "{a}'s team crosses the line!",
+    "haul.close": "Photo finish! {a} just beats {b}.",
+    "haul.win": "{a}'s team wins the Log Carry!",
+    "haul.draw": "Dead heat! They share the win.",
     "swim.tag": "Tag! {b} dives in for {a}."
   }
 }

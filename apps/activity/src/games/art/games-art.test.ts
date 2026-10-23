@@ -146,6 +146,28 @@ describe('the props', () => {
     }
   });
 
+  it('draw the haul loads: a log that tilts and a pumpkin that rolls, both tintable', () => {
+    const logs = GAMES_PROPS.log;
+    expect(logs).toHaveLength(3);
+    const size = (d: { rows: readonly string[] }) =>
+      `${String(d.rows[0]?.length)}x${String(d.rows.length)}`;
+    expect(new Set(logs.map(size)).size).toBe(1);
+    expect(logs[1]?.rows).not.toEqual(logs[0]?.rows);
+    expect(logs[2]?.rows).not.toEqual(logs[1]?.rows);
+    const pumpkins = GAMES_PROPS.pumpkin;
+    expect(pumpkins).toHaveLength(8);
+    expect(new Set(pumpkins.map(size)).size).toBe(1);
+    expect(new Set(pumpkins.map((d) => d.rows.join('|'))).size).toBe(8);
+    for (const d of [...logs, ...pumpkins]) {
+      // Primary and secondary ramps both present, so a tint reaches the bark and the rings, the rind and the stem.
+      for (const key of ['a', 'b', 'c', 'd']) expect(d.palette[key], key).toBeDefined();
+      expect(SECONDARY_KEYS.some((key) => d.palette[key] !== undefined)).toBe(true);
+      expect(d.rows.length).toBeLessThanOrEqual(64);
+    }
+    const ghost = propSprite('pumpkin', 0, 'ghost', 'green');
+    expect(ghost.palette['c']).toBe(RAMPS.ghost[2]);
+  });
+
   it('have the ink outline (except soft effects and ground pieces)', () => {
     const soft = new Set([
       'steam',
@@ -156,6 +178,8 @@ describe('the props', () => {
       'icicles',
       'ripple',
       'dizzy',
+      // A chequered stripe painted on the path.
+      'finishBand',
     ]);
     for (const name of PROP_NAMES) {
       if (soft.has(name)) continue;

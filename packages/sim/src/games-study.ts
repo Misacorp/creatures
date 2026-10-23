@@ -390,6 +390,55 @@ export const DEFAULT_GAMES_SETTINGS: GamesStudySettings = {
 export interface GamesStudy {
   settings: GamesStudySettings;
   events: EventTally[];
+  /** Team events: the mean show length with 4 teams and with 15 (seconds), on the big server's rosters. */
+  teamLengths: TeamLength[];
+}
+
+export interface TeamLength {
+  eventId: string;
+  at4: number;
+  at15: number;
+}
+
+/** Shows per roster and field size in the team-length check. */
+const TEAM_LENGTH_RUNS = 12;
+
+/**
+ * A team event's length must not grow with the field (Misa, 2026-10-23): everyone acts at once. Plays
+ * each team event with the first 4 and the first 15 players' aptitude teams of every 15-player roster.
+ */
+function teamLengths(
+  settings: GamesStudySettings,
+  rosters: readonly { size: number; week: number; players: SimPlayer[] }[],
+): TeamLength[] {
+  return gamesContent.events
+    .filter((def) => def.team === 3)
+    .map((def) => {
+      const sum = { 4: 0, 15: 0 };
+      const runs = { 4: 0, 15: 0 };
+      for (const roster of rosters) {
+        if (roster.players.length < 15) continue;
+        for (const teams of [4, 15] as const) {
+          for (let k = 0; k < TEAM_LENGTH_RUNS; k++) {
+            const rng = createSeededRng(
+              `${settings.seed}:teamlen:${def.id}:${String(roster.week)}:${String(teams)}:${String(k)}`,
+            );
+            const entrants = roster.players
+              .slice(0, teams)
+              .flatMap((player) =>
+                (assignEntries([def], candidatesOf(player), 'aptitude', rng)[0] ?? []).map(
+                  (c) => c.entrant,
+                ),
+              );
+            if (entrants.length === 0) continue;
+            const r = runGamesEvent(def, entrants, rng);
+            sum[teams] += (r.ticks * r.tickMs) / 1000;
+            runs[teams] += 1;
+          }
+        }
+      }
+      return { eventId: def.id, at4: div(sum[4], runs[4]), at15: div(sum[15], runs[15]) };
+    });
 }
 
 /** The players of each snapshot, by server size and week. */
@@ -492,7 +541,8 @@ export function runGamesStudy(settings: GamesStudySettings): GamesStudy {
   const tallies = new Map<string, EventTally>(
     gamesContent.events.map((e) => [e.id, emptyTally(e.id)]),
   );
-  for (const roster of gamesRosters(settings)) {
+  const rosters = gamesRosters(settings);
+  for (const roster of rosters) {
     for (let d = 0; d < settings.days; d++) {
       const rng = createSeededRng(
         `${settings.seed}:day:${String(roster.size)}:${String(roster.week)}:${String(d)}`,
@@ -520,7 +570,7 @@ export function runGamesStudy(settings: GamesStudySettings): GamesStudy {
       }
     }
   }
-  return { settings, events: [...tallies.values()] };
+  return { settings, events: [...tallies.values()], teamLengths: teamLengths(settings, rosters) };
 }
 
 /** The spec's targets, and the lead's (2026-10-22, round 2: the bench must be worth entering). */
@@ -544,6 +594,8 @@ export const GAMES_TARGETS = {
   deadShows: { max: 0.1 },
   /** At most this share of shows (8+ entrants) has more than a quarter of the field leaving within 2 s. */
   burstShows: { max: 0.05 },
+  /** Team events: the mean length with 15 teams within this share of the length with 4. */
+  teamLength: { maxDiff: 0.1 },
 } as const;
 
 export interface EventRow {
@@ -725,7 +777,13 @@ export function gamesChecks(study: GamesStudy): boolean[] {
   return [
     ...gamesRows(study).flatMap((r) => Object.values(r.pass)),
     ...Object.values(soloSummary(study).pass),
+    ...study.teamLengths.map(teamLengthPass),
   ];
+}
+
+/** Whether a team event's length with 15 teams is within `teamLength.maxDiff` of its length with 4. */
+export function teamLengthPass(t: TeamLength): boolean {
+  return Math.abs(t.at15 - t.at4) <= GAMES_TARGETS.teamLength.maxDiff * Math.max(t.at4, 1e-9);
 }
 
 /** The study as a plain-text report (markdown tables). */
@@ -785,6 +843,18 @@ export function gamesReport(study: GamesStudy): string {
   for (const r of rows) {
     lines.push(
       `| ${r.eventId} | ${LEVEL_BANDS.map((b) => `${pct(r.bands[b]?.wins ?? 0)} / ${pct(r.bands[b]?.entries ?? 0)}`).join(' | ')} |`,
+    );
+  }
+  lines.push('');
+  lines.push(
+    'Team events: mean length with 4 teams and with 15 (the field must not make a show longer; within 10%):',
+  );
+  lines.push('');
+  lines.push('| Event | 4 teams | 15 teams | Difference |');
+  lines.push('| --- | ---: | ---: | ---: |');
+  for (const t of study.teamLengths) {
+    lines.push(
+      `| ${t.eventId} | ${t.at4.toFixed(1)} s | ${t.at15.toFixed(1)} s | ${pct(div(t.at15 - t.at4, t.at4))} ${mark(teamLengthPass(t))} |`,
     );
   }
   const checks = gamesChecks(study);

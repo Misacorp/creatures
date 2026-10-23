@@ -123,8 +123,8 @@ const eventCard: Entry = {
   presets: [
     { name: 'Entered', props: {} },
     { name: 'Empty', props: { filled: 0 } },
-    { name: 'Team event, two of three', props: { event: 'sauna-stack', filled: 2 } },
-    { name: 'Team event, full', props: { event: 'sauna-stack', filled: 3 } },
+    { name: 'Team event, two of three', props: { event: 'log-carry', filled: 2 } },
+    { name: 'Team event, full', props: { event: 'log-carry', filled: 3 } },
     { name: 'Locked (after 13:37)', props: { locked: true } },
     ...LINEUP.map((e) => ({ name: `Scene: ${e.name}`, props: { event: e.id } })),
   ],
@@ -226,7 +226,7 @@ const entryPicker: Entry = {
   presets: [
     { name: 'Filled, one creature in another event', props: {} },
     { name: 'Nothing entered yet', props: { others: false } },
-    { name: 'The team event', props: { event: 'sauna-stack' } },
+    { name: 'The team event', props: { event: 'log-carry' } },
     {
       name: 'Favours small, both sizes in the roster',
       props: { event: SMALL_EVENT, others: false, mixed: true },

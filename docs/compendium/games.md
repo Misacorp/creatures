@@ -1,6 +1,6 @@
 # The Valley Games
 
-Status: 2026-10-22. Covers the daily Games as an in-world tradition: the hosts, the meadow and the nine events, each as something that happens in the valley.
+Status: 2026-10-23. Covers the daily Games as an in-world tradition: the hosts, the meadow and the nine events, each as something that happens in the valley, and the two retired ones.
 
 Read `README.md` for the tags.
 
@@ -8,7 +8,7 @@ Read `README.md` for the tags.
 
 ## The Games as a place and a habit
 
-- Every day the valley holds a show of three events, and on Wednesdays a fourth, the bonus event, whose medals count double at the Prize Stall. Each creature can enter one of them, and one event is for teams of three. `(design: valley-games.md)`
+- Every day the valley holds a show of three events, and on Wednesdays a fourth, the bonus event, whose medals count double at the Prize Stall. Each creature can enter one of them, and one event is for teams of three: a real team sport, where all three carry or push one big thing together. `(design: valley-games.md)`
 - Entries close at the daily reset, and the show plays to everyone a few minutes later. Everyone watches the same moment, and the next day's events are announced at the end. `(design)`
 - Each event gives gold, silver and bronze medals. A creature that beats its own best in an event gets a pin. Medals are kept for life and can be spent at the Prize Stall on Wednesdays. `(design)`
 - What each event favours is part of its teaser (`favours`): the right element, role, size or knack counts about as much as strength. `(content: games-events.json)`
@@ -16,7 +16,7 @@ Read `README.md` for the tags.
 **Compendium detail, not shipped** (feel):
 
 - _Mood:_ a village fete with a loudspeaker. The Games are silly on purpose. Nobody is hurt, nobody is shamed, and everybody gets a cheer. Losing means a splash, a squash, a pink face or a shiver, and then a towel.
-- _Where:_ the **Games Meadow**, a sloping field just off the Old Crossroads, where the travellers' road widens and the grass is flattened every day. The signpost at the Crossroads has an extra board nailed on, pointing at the meadow: "Games, this way". The meadow has a lake at the bottom (the Shark Derby), a hill at the top (the Melon Run) and a wooden sauna hut by the water.
+- _Where:_ the **Games Meadow**, a sloping field just off the Old Crossroads, where the travellers' road widens and the grass is flattened every day. The signpost at the Crossroads has an extra board nailed on, pointing at the meadow: "Games, this way". The meadow has a lake at the bottom (the Shark Derby), a hill at the top (the Melon Run), a wooden sauna hut by the water and, along the hedge, the long path where teams carry logs and push pumpkins.
 - _Who hosts:_ the **Meadow Committee**: a few old explorers who retired from long trips and now run the show. They keep the rubber sharks, roll the melon back up the hill every evening and grow the peppers. Nobody remembers who started it. The committee say it has "always been on".
 - _The voice:_ the commentary is a cheerful announcer on a tin loudspeaker, warm, a bit breathless, never mean. It names creatures, never their numbers. It loves an upset.
 - _Why everyone enters the small ones:_ the old saying on the meadow is "every creature has one event". The Games are where the quiet creature at the back of the room gets its day.
@@ -26,7 +26,7 @@ Read `README.md` for the tags.
 
 ## Events
 
-Nine events, all live. Each is one of five shapes (`kind` in the data): a room that gets hotter, a run ahead of something rolling, a table of food, laps of a lake, a floe to stay on. `(content)`
+Nine events, all live, and two retired. Each is one of six shapes (`kind` in the data): a room that gets hotter, a run ahead of something rolling, a table of food, laps of a lake, a floe to stay on, and a big load hauled by a team. `(content)`
 
 ### Sauna Showdown
 
@@ -39,12 +39,6 @@ Nine events, all live. Each is one of five shapes (`kind` in the data): a room t
 - **Kind:** endure, the sauna's opposite. **Teaser:** "An icy pond and a brave crowd. Sit beside an Ember creature and stay toasty." `(content)`
 - **What happens:** the same contest in a cold plunge. Tide and Mire creatures shrug off the cold, Ember creatures wilt, and an Ember creature's glow warms its neighbours. Chunks of ice keep going in. `(content)`
 - **Compendium detail, not shipped:** the pond is the sauna hut's plunge pool, iced over on purpose with blocks cut from the Tidepools in the morning. Everyone who climbs out gets a towel and a cup of something hot.
-
-### Sauna Stack
-
-- **Kind:** endure, for teams of three. **Teaser:** "Bring three friends to the bench. Your team lasts as long as its last sitter." `(content)`
-- **What happens:** each team sits as a stack in one seat, one on top of the other. It is hotter higher up, a Guard at the bottom shelters everyone above it, and when one climbs down to leave the ones above drop a place. A team stays in the running while any one of them is still in the hut. `(content)`
-- **Compendium detail, not shipped:** the committee's favourite. Explorers plan their team for it at breakfast.
 
 ### Melon Run
 
@@ -70,20 +64,34 @@ Nine events, all live. Each is one of five shapes (`kind` in the data): a room t
 - **What happens:** swimmers race laps of the lake while rubber sharks glide round the other way and bonk the nearest swimmer. A nimble swimmer slips past, a tired one is tossed onto the shore. Spark swimmers zap the water and leave their neighbours dizzy. Tide creatures swim fast, Ember creatures slowly. `(content)`
 - **Compendium detail, not shipped:** the sharks are wind-up toys the size of a rowing boat, painted grey with a smile. One of the committee winds them up from a jetty. More are added as the race goes on, "to keep it lively".
 
-### Shark Relay
-
-- **Kind:** swim, for teams of three. **Teaser:** "Three swimmers a team, every length counts. Keep away from the rubber sharks." `(content)`
-- **What happens:** a real relay: one teammate swims a lap while the others wait on the shore, then tags the next one in. Every length counts for the team. A swimmer the sharks toss onto the shore ends its team's relay. `(content)`
-- **Compendium detail, not shipped:** the tag is a wet high five. The committee have given up asking teams not to cheer from the shore.
-
 ### Floe Sumo
 
 - **Kind:** shove. **Teaser:** "Everyone onto a melting ice floe. Shove, slip and stay dry." `(content)`
 - **What happens:** everyone stands on a floe of ice in the lake. It shrinks as it melts (faster with Ember creatures on it), the crowd jostles, and now and then someone shoves a neighbour. The steady keep their footing, small creatures are slippery and hard to move, and anyone over the edge goes splash. Last one on wins. `(content)`
 - **Compendium detail, not shipped:** the floe is cut fresh from the Frost Bath ice every afternoon and floated out on a rope. Mire creatures have muddy feet that grip, and they are very proud of it.
 
+### Log Carry
+
+- **Kind:** haul, for teams of three. **Teaser:** "Three friends, one big log, a long path. Keep in step and keep it up." `(content)`
+- **What happens:** every team lifts a long log onto their heads and carries it along the hill path, all teams at once, one lane each. The team goes as fast as its slowest carrier, so three who keep in step beat two sprinters and a dawdler. Now and then a log wobbles: a nimble creature keeps it up, a Guard steadies it, and a Setter at the front sets the pace. When a log drops it lands with a thud, sometimes rolling into the team in the next lane, and a Support cheers its friends back up. A Spark creature's crackle jolts the team forward. The first team over the line wins; the rest rank by how far they got. `(content: params, favours)`
+- **Compendium detail, not shipped:** the logs are birch trunks from the edge of the Verdant Hollow, stripped and sanded so nobody gets a splinter. Grove creatures say they can feel which way the grain wants to go.
+
+### Pumpkin Push
+
+- **Kind:** haul, for teams of three. **Teaser:** "A pumpkin the size of a hut, and a hill. Push together!" `(content)`
+- **What happens:** every team puts its shoulders to a giant pumpkin and pushes it up the path, one behind the other. Strength adds up, the strongest counting most. A slip lets the pumpkin roll back a little and bonk the team beside it; a Guard holds it steady, and big creatures and Mire creatures with their muddy feet push best. `(content)`
+- **Compendium detail, not shipped:** the pumpkins grow in the committee's patch next to the melons, fed on something nobody will name. After the race they are carved into lanterns for the meadow.
+
+### Retired events
+
+These were played in the first days of the Games and then taken out of the daily draw (2026-10-23): a team event must be a real team sport, where all three act at once, so a show never gets longer for a bigger team. Stored days and records that name them still show their names. `(design: decisions.md)`
+
+- **Sauna Stack** (endure, for teams of three; retired): each team sat as a stack in one seat of the sauna, one on the head of the other, hotter higher up. The committee's old favourite; the pin board in the hut still lists its records.
+- **Shark Relay** (swim, for teams of three; retired): one teammate swam a lap while the others waited on the shore, then tagged the next one in with a wet high five.
+
 ## Story hooks (compendium detail, not shipped)
 
 - Who started the Games? The committee's oldest member claims her grandmother did, "after a very boring winter".
 - The melon has a name, but only the committee know it.
+- Some say the giant pumpkins are cousins of the melon, grown from a seed that blew over the fence.
 - A pin board in the sauna hut lists every record ever set. Nobody has ever cleaned it.

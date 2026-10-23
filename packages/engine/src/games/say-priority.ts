@@ -39,6 +39,9 @@ const IMPORTANT_LINES: ReadonlySet<string> = new Set([
   'shove.splash',
   'shove.splash2',
   'shove.duel',
+  'haul.lead',
+  'haul.finish',
+  'haul.close',
 ]);
 
 /** Reactions and twists. */
@@ -65,6 +68,11 @@ const TWIST_LINES: ReadonlySet<string> = new Set([
   'shove.teeter',
   'shove.melt',
   'shove.shrink',
+  'haul.drop',
+  'haul.catch',
+  'haul.bump',
+  'haul.zap',
+  'haul.steady',
 ]);
 
 /** The priority of a line: the start, the win and the draw must be said; the rest by kind of moment. */

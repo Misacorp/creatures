@@ -154,7 +154,7 @@ export const SAMPLE_DAY: readonly string[] = [
   'sauna-showdown',
   'melon-run',
   'floe-sumo',
-  'shark-relay',
+  'log-carry',
 ];
 
 /** A show of `eventIds` for `humans` players and `bots` bots. */

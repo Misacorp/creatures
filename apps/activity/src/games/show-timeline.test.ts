@@ -1,5 +1,5 @@
 import type { GamesBeat, GamesEventResult } from '@creatures/engine';
-import { showLengthMs, showTimeline } from '@creatures/game';
+import { gamesContent, showLengthMs, showTimeline } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_DAY, sampleEvent, samplePlayers, sampleShow } from '../workbench/games-show-sample';
 import {
@@ -285,17 +285,7 @@ describe('a frame of an event', () => {
 
   it('agrees with the engine on who is out when, for every event in the pool', () => {
     const show = sampleShow(
-      [
-        'sauna-showdown',
-        'frost-bath',
-        'sauna-stack',
-        'melon-run',
-        'pepper-panic',
-        'berry-bonanza',
-        'shark-derby',
-        'shark-relay',
-        'floe-sumo',
-      ],
+      gamesContent.events.map((e) => e.id),
       8,
       0,
       'outs',
@@ -491,5 +481,69 @@ describe('the server’s show (GET /api/games, fixtures/games-show.json)', () =>
     // And it plays: every event prepares and has a frame.
     for (const e of show.events)
       expect(frameAt(prepareEvent(e), 1_000).actors.length).toBeGreaterThan(0);
+  });
+});
+
+describe('a haul (Log Carry, Pumpkin Push)', () => {
+  const players = samplePlayers(8, 0);
+
+  it('gives every team one load in its lane, and the camera follows the leading load', () => {
+    for (const id of ['log-carry', 'pumpkin-push']) {
+      const p = prepareEvent(sampleEvent(id, players, 'haul'));
+      expect(p.loads).toHaveLength(p.teams.length);
+      expect(p.loads.every((l) => l.kind === (id === 'log-carry' ? 'log' : 'pumpkin'))).toBe(true);
+      expect(p.finishes).toHaveLength(p.teams.length);
+      for (const f of p.finishes) expect(p.worldWidth).toBeGreaterThan(f.x);
+      const end = eventMs(p.result);
+      for (const ms of [0, end / 3, (2 * end) / 3, end]) {
+        const f = frameAt(p, ms);
+        expect(f.props.loads).toHaveLength(p.teams.length);
+        const lead = Math.max(...f.props.loads.map((l) => l.x));
+        expect(lead - f.cameraX).toBeGreaterThan(0);
+        expect(lead - f.cameraX).toBeLessThan(192);
+        // Each team's creatures stand round its load.
+        for (const load of f.props.loads) {
+          for (const a of p.teams[load.i]?.actors ?? []) {
+            expect(Math.abs((f.actors[a]?.y ?? 0) - load.y)).toBeLessThanOrEqual(1);
+            expect(Math.abs((f.actors[a]?.x ?? 0) - load.x)).toBeLessThanOrEqual(32);
+          }
+        }
+      }
+      expect(frameAt(p, end).cameraX).toBeGreaterThan(0);
+      expect(stillIn(p, frameAt(p, end))).toBeNull();
+    }
+  });
+
+  it('ranks teams over the line first on the live board, in finish order, and shows metres', () => {
+    const p = prepareEvent(sampleEvent('log-carry', players, 'haul-board'));
+    const end = frameAt(p, eventMs(p.result));
+    const board = liveBoard(p, end);
+    const finished = board.filter((r) => p.finishT[r.actor] !== null);
+    expect(finished.length).toBeGreaterThan(0);
+    expect(board.slice(0, finished.length)).toEqual(finished);
+    const order = finished.map((r) => p.finishT[r.actor] ?? 0);
+    expect([...order].sort((x, y) => x - y)).toEqual(order);
+    expect(board[0]?.teamId).toBe(finalBoard(p)[0]?.teamId);
+    expect(scoreText('haul', 23, 400)).toBe('23m');
+  });
+});
+
+describe('a retired event (a day stored before it left the pool)', () => {
+  it('still prepares, plays and is named', () => {
+    const played = sampleEvent('sauna-showdown', samplePlayers(6, 0), 'retired');
+    const r = { ...played, eventId: 'sauna-stack', team: 3 as const };
+    const p = prepareEvent(r);
+    expect(frameAt(p, 2_000).actors).toHaveLength(r.actors.length);
+    const timeline = buildShowTimeline([r]);
+    expect(timeline.spans[0]?.eventId).toBe('sauna-stack');
+    const said = announcements([p], timeline, undefined);
+    expect(said[0]?.text).toBe('Event 1 / 1: Sauna Stack.');
+    // Its commentary still reads (the kind's lines are still in the content).
+    const say = p.says[0];
+    if (say === undefined) throw new Error('no commentary');
+    expect(sayText(sayParts(p, say)).length).toBeGreaterThan(0);
+    const relay = prepareEvent({ ...played, eventId: 'shark-relay', kind: 'swim', team: 3 });
+    expect(relay.laps).toBe(2);
+    expect(relay.teamScore).toBe('sum');
   });
 });

@@ -19,15 +19,16 @@ Every activity rewards sending your three best creatures (dungeon, raid, Worksho
 
 An event is **content** (`games-events.json`): an id, a name, a kind, a scene, the kind's numbers and a short line. The engine has a handful of **kinds**; each reads the same creature stats (HP, Attack, Speed and its dodge, crits, element, role, stage, gear chance and trigger lines) differently. Skins reuse a kind with other numbers and other art (a sauna and a cold plunge are one kind with the elements flipped).
 
-| Kind     | Shape                                                    | Reads                                                                                  |
-| -------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `endure` | Everyone in one room, a rising heat; last one in wins    | HP, element vs the heat, Guards shelter neighbours, Supports fan them; reactions spill |
-| `chase`  | Run ahead of a rolling threat over hops; distance wins   | Speed, dodge (hops), Sidestep; small creatures duck once                               |
-| `feast`  | Rounds of random food; whoever lasts eats most           | HP as tolerance, element, crits are a double gulp (more score, more heat)              |
-| `swim`   | Laps of a lake with hazards picking swimmers             | Speed, dodge, HP; Tide swims fast, Ember slow; Spark sparks its neighbours             |
-| `shove`  | All on a shrinking floe, random shoves; last one on wins | Attack (push), HP (grip), small creatures are slippery; Ember melts the ice near it    |
+| Kind     | Shape                                                    | Reads                                                                                                        |
+| -------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `endure` | Everyone in one room, a rising heat; last one in wins    | HP, element vs the heat, Guards shelter neighbours, Supports fan them; reactions spill                       |
+| `chase`  | Run ahead of a rolling threat over hops; distance wins   | Speed, dodge (hops), Sidestep; small creatures duck once                                                     |
+| `feast`  | Rounds of random food; whoever lasts eats most           | HP as tolerance, element, crits are a double gulp (more score, more heat)                                    |
+| `swim`   | Laps of a lake with hazards picking swimmers             | Speed, dodge, HP; Tide swims fast, Ember slow; Spark sparks its neighbours                                   |
+| `shove`  | All on a shrinking floe, random shoves; last one on wins | Attack (push), HP (grip), small creatures are slippery; Ember melts the ice near it                          |
+| `haul`   | Teams carry a log or push a pumpkin; first over wins     | Speed (carry: the slowest counts most) or Attack (push: summed); Guards steady, Supports cheer, Setters lead |
 
-Team events are a kind with `team: 3`: a player sends up to three creatures as one team (Sauna Stack: stack Guards).
+**Team events are real team sports** (Misa, 2026-10-23): a player sends up to three creatures as one team, and all three act at once on one big object (the `haul` kind: Log Carry, Pumpkin Push). A team event's length never grows with the number of teammates or teams: every lane races at once and the race ends a short grace after the first team crosses, or at a fixed cap (about 40 s; `pnpm sim:games` checks 4 against 15 teams). Lanes start staggered in up to four columns, so a field of 15 teams still reads. Sauna Stack and Shark Relay are retired (stacked and sequential, so longer per teammate); stored days that name them still replay under their names (`GAMES_RETIRED`).
 
 ### Fairness without a cap
 

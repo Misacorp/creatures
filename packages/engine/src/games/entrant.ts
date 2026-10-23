@@ -107,8 +107,7 @@ export function gamesAptitude(def: GamesEventDef, e: GamesEntrant): number {
     case 'endure': {
       const p = def.params;
       f = mulBp(mulBp(sHp, elem), role);
-      if (e.role === 'guard' || e.role === 'support')
-        f = mulBp(f, def.team === 3 ? 11_500 : 10_400);
+      if (e.role === 'guard' || e.role === 'support') f = mulBp(f, 10_400);
       if (e.element === p.stokeElement && p.stokeBp < 0) f = mulBp(f, 10_300);
       f = mulBp(f, BP + mulBp(mulBp(e.dodgeBp, p.dodgeShareBp), 3_000) + (m.sidestepBp ?? 0) / 4);
       f = mulBp(f, BP + Math.floor((m.secondWindBp ?? 0) / 3) + (m.stubborn === 1 ? 800 : 0));
@@ -160,6 +159,22 @@ export function gamesAptitude(def: GamesEventDef, e: GamesEntrant): number {
       );
       f = mulBp(f, BP + (m.stubborn === 1 ? 1_200 : 0));
       if (e.element === p.meltElement) f = mulBp(f, 9_800);
+      break;
+    }
+    case 'haul': {
+      const p = def.params;
+      // The key stat (Speed to carry, Attack to push), a steady footing, the roles a team wants.
+      f = mulBp(mulBp(p.mode === 'carry' ? sSpd : sAtk, elem), role);
+      f = mulBp(
+        f,
+        BP +
+          mulBp(mulBp(e.dodgeBp, p.dodgeShareBp), mulBp(p.wobbleChanceBp, 20_000)) +
+          Math.floor((m.sidestepBp ?? 0) / 8) +
+          (m.stubborn === 1 ? 500 : 0),
+      );
+      if (e.role === 'setter') f = mulBp(f, p.leadBp);
+      if (e.role === 'guard' || e.role === 'support') f = mulBp(f, 10_300);
+      if (e.element === p.zapElement) f = mulBp(f, 10_200);
       break;
     }
   }

@@ -171,6 +171,16 @@ const THUMBS: Readonly<
     ],
   },
   'ice-floe': { feet: 62, top: 26, props: [] },
+  'log-trail': {
+    feet: 74,
+    top: 34,
+    props: [{ sprite: () => propSprite('log'), x: 96, y: 61 }],
+  },
+  'pumpkin-hill': {
+    feet: 74,
+    top: 34,
+    props: [{ sprite: () => propSprite('pumpkin'), x: 130, y: 75 }],
+  },
 };
 
 interface ThumbProp {

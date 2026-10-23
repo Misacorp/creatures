@@ -70,7 +70,8 @@ function yoursShown(p: PreparedEvent, youId: string, ms: number): number {
 const EVENTS = [
   'sauna-showdown',
   'frost-bath',
-  'sauna-stack',
+  'log-carry',
+  'pumpkin-push',
   'melon-run',
   'pepper-panic',
   'shark-derby',
@@ -80,15 +81,20 @@ const EVENTS = [
 describe('your markers on the stage', () => {
   it.each(EVENTS)('marks each of your creatures in %s, from the drop to the end', (id) => {
     const { p, youId } = prepared(id, 'markers');
-    const yours = p.result.actors.filter((a) => a.playerId === youId).length;
-    expect(yours).toBe(p.result.team === 3 ? 3 : 1);
+    const creatures = p.result.actors.filter((a) => a.playerId === youId).length;
+    expect(creatures).toBe(p.result.team === 3 ? 3 : 1);
+    // A haul's team carries one load: one marker over the group, not three.
+    const haul = p.kind === 'haul';
+    const yours = haul ? 1 : creatures;
     // The intro: before the drop (high above the scene), while falling and after landing.
     for (const ms of [0, 600, 2_800])
       expect(markers(p, youId, 'intro', ms), `intro ${ms}`).toBe(yours);
     // The event: at the start, the middle and the end, minus any of yours that have left the scene.
     const end = eventMs(p.result);
     for (const ms of [0, Math.round(end / 2), end]) {
-      expect(markers(p, youId, 'event', ms), `event ${ms}`).toBe(yoursShown(p, youId, ms));
+      expect(markers(p, youId, 'event', ms), `event ${ms}`).toBe(
+        haul ? 1 : yoursShown(p, youId, ms),
+      );
     }
     expect(markers(p, youId, 'event', 0)).toBe(yours);
   });
@@ -110,7 +116,7 @@ describe('your markers on the stage', () => {
   });
 
   it('marks nobody for a spectator', () => {
-    const { p } = prepared('sauna-stack', 'markers');
+    const { p } = prepared('log-carry', 'markers');
     expect(markers(p, 'not-a-player', 'intro', 2_800)).toBe(0);
     expect(markers(p, 'not-a-player', 'event', 1_000)).toBe(0);
     expect(markers(p, 'not-a-player', 'podium', SHOW_PODIUM_MS)).toBe(0);

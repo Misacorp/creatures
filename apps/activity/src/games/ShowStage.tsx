@@ -9,7 +9,7 @@ import { shinyPalette } from '../art';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { cssVars } from '../css-vars';
 import { GamesActor, GamesScene, GamesSprite } from './art/GamesScene';
-import { PODIUM_HEIGHTS } from './art/drawn';
+import { LOG_BODY, PODIUM_HEIGHTS, PUMPKIN_FRAMES_COUNT } from './art/drawn';
 import { propSprite, propTinted } from './art/props';
 import { ACTOR_SIZE, PEPPER_TABLE_TOP, type GamesSceneId, GAMES_SCENE_IDS } from './art/scenes';
 import type { RampName } from './art/tint';
@@ -87,6 +87,7 @@ export function actorLook(kind: PreparedEvent['kind'], f: ActorFrame): 'hidden' 
 function flipOf(p: PreparedEvent, f: ActorFrame): boolean {
   switch (p.kind) {
     case 'chase':
+    case 'haul':
       return false;
     case 'swim':
       return f.out ? false : f.y > 62;
@@ -202,7 +203,7 @@ function Actors({ p, frame, youId, introMs, reduced }: ActorsProps) {
         const palette = actor.shiny === true ? shinyPalette(actor.speciesId) : undefined;
         return (
           <Fragment key={f.a}>
-            {team && look === 'in' && (
+            {team && look === 'in' && p.kind !== 'haul' && (
               <GamesSprite x={x} y={y + 1} sprite={teamDot(teamRamp(actor.playerId))} z={y - 1} />
             )}
             <div class={classes.join(' ')}>
@@ -225,11 +226,94 @@ function Actors({ p, frame, youId, introMs, reduced }: ActorsProps) {
   );
 }
 
-/** Props that live between the layers: the melon (it rolls over the runners) and the shark fins. */
-function BackProps({ p, frame, still }: { p: PreparedEvent; frame: EventFrame; still: boolean }) {
-  const { melon, sharks } = frame.props;
+/** A carried log's bottom sits this far over the lane's feet: on the carriers' heads. */
+const LOG_ON_HEADS = 12;
+/** Where the haul's "you" marker points: over the log, or over the middle pusher. */
+const PUSH_MIDDLE = -19;
+
+/**
+ * Where a team's load is drawn: a log on the carriers' heads (on the ground in front of them when it
+ * dropped; tilted when it wobbles), a pumpkin rolling on the path ahead of its pushers.
+ */
+export function loadPlacement(
+  load: EventFrame['props']['loads'][number],
+  still: boolean,
+): { x: number; y: number; frame: number; z: number } {
+  const x = Math.round(load.x);
+  const y = Math.round(load.y);
+  if (load.kind === 'log') {
+    if (load.f === 2) return { x, y: y + 3, frame: 0, z: y + 1 };
+    return {
+      x,
+      y: y - LOG_ON_HEADS + 2,
+      frame: load.f === 1 ? 1 + (load.i % 2) : 0,
+      // Over its own carriers (z is a whole number: the creatures' is their feet's y).
+      z: y + 1,
+    };
+  }
+  const roll = still ? 0 : Math.floor(load.roll / 8);
+  return {
+    x,
+    y: y + 1,
+    frame: ((roll % PUMPKIN_FRAMES_COUNT) + PUMPKIN_FRAMES_COUNT) % PUMPKIN_FRAMES_COUNT,
+    z: y,
+  };
+}
+
+/** The lift of a team's load during the intro: it lands with the team's last creature. */
+function loadLift(
+  p: PreparedEvent,
+  frame: EventFrame,
+  i: number,
+  introMs: number | null,
+  reduced: boolean,
+): number {
+  const team = p.teams[i];
+  const last = team?.actors[team.actors.length - 1];
+  const f = last === undefined ? undefined : frame.actors[last];
+  return f === undefined ? 0 : liftOf(frame, f, introMs, reduced);
+}
+
+/** Props that live between the layers: the melon (it rolls over the runners), the shark fins, the loads. */
+function BackProps({
+  p,
+  frame,
+  still,
+  introMs,
+  reduced,
+}: {
+  p: PreparedEvent;
+  frame: EventFrame;
+  still: boolean;
+  introMs: number | null;
+  reduced: boolean;
+}) {
+  const { melon, sharks, loads } = frame.props;
   return (
     <>
+      {p.finishes.map((mark) => (
+        // Each lane's finish: a short chequered strip across the lane (the starts are staggered).
+        <GamesSprite
+          key={`finish-${String(mark.i)}`}
+          x={mark.x}
+          y={mark.y + 2}
+          sprite={propSprite('finishBand')}
+          z={mark.y - 6}
+        />
+      ))}
+      {loads.map((load) => {
+        const at = loadPlacement(load, still);
+        const lift = Math.round(loadLift(p, frame, load.i, introMs, reduced));
+        return (
+          <GamesSprite
+            key={`load-${String(load.i)}`}
+            x={at.x}
+            y={at.y - lift}
+            sprite={propSprite(load.kind, at.frame)}
+            z={at.z}
+          />
+        );
+      })}
       {melon !== null && (
         <>
           <GamesSprite
@@ -338,9 +422,29 @@ function FrontProps({
             </Fragment>
           );
         })}
+      {p.kind === 'haul' &&
+        frame.props.loads.map((load) => {
+          // One marker per team in a haul: over the log, or over the pushers.
+          const team = p.teams[load.i];
+          if (team === undefined || team.playerId !== youId) return null;
+          const lift = Math.round(loadLift(p, frame, load.i, introMs, reduced));
+          const y = Math.round(load.y) - lift;
+          const top =
+            load.kind === 'log' && load.f !== 2 ? y - LOG_ON_HEADS - LOG_BODY : y - ACTOR_SIZE;
+          return (
+            <div key={`you-${String(load.i)}`} class="gs-you">
+              <GamesSprite
+                x={Math.round(load.x) + (load.kind === 'pumpkin' ? PUSH_MIDDLE : 0)}
+                y={top - YOU_MARKER_GAP}
+                sprite={YOU_MARKER}
+                z={YOU_Z}
+              />
+            </div>
+          );
+        })}
       {frame.actors.map((f) => {
         const actor = p.result.actors[f.a];
-        if (actor === undefined || actor.playerId !== youId) return null;
+        if (actor === undefined || actor.playerId !== youId || p.kind === 'haul') return null;
         if (actorLook(p.kind, f) === 'hidden') return null;
         const lift = liftOf(frame, f, introMs, reduced);
         const gap = meterShown(p, f, youId, count) ? YOU_MARKER_METER_GAP : YOU_MARKER_GAP;
@@ -541,7 +645,7 @@ export function ShowStage({
           </>
         }
       >
-        <BackProps p={p} frame={frame} still={quiet} />
+        <BackProps p={p} frame={frame} still={quiet} introMs={introMs} reduced={reduced} />
         <Actors p={p} frame={frame} youId={youId} introMs={introMs} reduced={reduced} />
       </GamesScene>
     </div>

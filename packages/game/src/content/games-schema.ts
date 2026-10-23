@@ -1,7 +1,7 @@
 /**
  * The Valley Games content (`data/games-events.json`; docs/design/valley-games.md): the pool of daily
  * events and the commentary lines the show plays. An event is a `kind` (a rule shape the engine knows:
- * `endure`, `chase`, `feast`, `swim`, `shove`) with its own numbers (`params`), an element table and a
+ * `endure`, `chase`, `feast`, `swim`, `shove`, `haul`) with its own numbers (`params`), an element table and a
  * scene for the client to draw. Skins reuse a kind with other numbers (the Frost Bath is the sauna with
  * the elements flipped), so new events need no engine change.
  *
@@ -26,7 +26,7 @@ const Int = (min: number, max: number) =>
 const Bp = Int(0, 10_000);
 const Mult = Int(1, 40_000);
 
-export const GAMES_KINDS = ['endure', 'chase', 'feast', 'swim', 'shove'] as const;
+export const GAMES_KINDS = ['endure', 'chase', 'feast', 'swim', 'shove', 'haul'] as const;
 export type GamesKind = (typeof GAMES_KINDS)[number];
 
 /** The scenes the client can draw, and the kinds each one fits. */
@@ -34,6 +34,8 @@ export const GAMES_SCENES = {
   sauna: 'endure',
   'frost-bath': 'endure',
   'melon-hill': 'chase',
+  'log-trail': 'haul',
+  'pumpkin-hill': 'haul',
   'pepper-table': 'feast',
   'shark-lake': 'swim',
   'ice-floe': 'shove',
@@ -150,6 +152,21 @@ export const GAMES_SAY_KEYS = {
     'shove.win',
     'shove.draw',
   ],
+  haul: [
+    'haul.start',
+    'haul.drop',
+    'haul.catch',
+    'haul.steady',
+    'haul.dodge',
+    'haul.cheer',
+    'haul.zap',
+    'haul.bump',
+    'haul.lead',
+    'haul.finish',
+    'haul.close',
+    'haul.win',
+    'haul.draw',
+  ],
 } as const satisfies Record<GamesKind, readonly string[]>;
 export type GamesSayKey = (typeof GAMES_SAY_KEYS)[GamesKind][number];
 
@@ -216,11 +233,6 @@ export const EndureParamsSchema = v.strictObject({
   /** Where a Stubborn save leaves the meter, and how much a Second Wind takes off. */
   stubbornBackBp: Bp,
   secondWindBp: Bp,
-  /**
-   * Team events: each team sits stacked in one seat (Guards at the bottom shelter those above), and
-   * every level up the stack takes this much more heat. Absent: 0.
-   */
-  heightBp: v.optional(Bp),
 });
 
 /**
@@ -308,8 +320,6 @@ export const SwimParamsSchema = v.strictObject({
   stunTicks: Int(1, 10),
   /** The race ends when this many have finished (or nobody is left swimming). */
   finishers: Int(1, 24),
-  /** Team events: a relay; each member swims one leg of this many laps in turn. Absent: 1. */
-  legLaps: v.optional(Int(1, 5)),
   burstBp: Int(0, 40_000),
   secondWindBp: Bp,
 });
@@ -338,6 +348,58 @@ export const ShoveParamsSchema = v.strictObject({
   squeezeBp: Int(0, 5_000),
   /** Creatures closer than this (px) jostle apart, so a crowd fills the floe and the edge ones slip off. */
   spacePx: Int(0, 30),
+});
+
+/**
+ * Haul (Log Carry, Pumpkin Push), team events only: each team carries or pushes one big object along a
+ * course, every lane at once. The team's speed comes from its members' key stat against the field
+ * (`carry`: Speed, the slowest member counting most, so a team must match; `push`: Attack, added up
+ * with diminishing returns). Now and then a load wobbles: a member keeps it steady with a dodge roll
+ * (Guards steady it more), or it drops (the log falls, the pumpkin rolls back) and the team loses a few
+ * ticks (Supports cheer them up sooner); a drop can bump the team in the next lane. Setters lead (a
+ * little speed). The race ends `graceTicks` after the first team crosses the line, or at `maxTicks`,
+ * whatever the field: every lane races at once. Ranking: finish order, then distance.
+ */
+export const HaulParamsSchema = v.strictObject({
+  ...COMMON,
+  /** `carry`: Speed, the slowest counts most. `push`: Attack, summed with diminishing returns. */
+  mode: v.picklist(['carry', 'push'] as const),
+  /** A team's speed at x1, in hundredths of a pixel per tick. */
+  runCpx: Int(1, 2_000),
+  /** Carry: how much of the team's speed is its slowest member's (the rest is the mean). */
+  minWeightBp: Bp,
+  /** Push: the share the second and third strongest add (the strongest counts whole). */
+  secondBp: Bp,
+  thirdBp: Bp,
+  /** Speed lost per missing member (a team of fewer than three; push already counts them as 0). */
+  shortBp: Bp,
+  /** A team with a Setter goes this much faster (x1 = 10000). */
+  leadBp: Int(10_000, 20_000),
+  /** Chance per tick that a team's load wobbles. */
+  wobbleChanceBp: Bp,
+  /** A wobbling member's chance to keep it steady before its dodge, and what each Guard adds (at most two). */
+  steadyBaseBp: Bp,
+  guardSteadyBp: Bp,
+  /** Ticks a drop costs (drawn from min to max); each Support in the team takes one off (at least one left). */
+  dropMinTicks: Int(1, 20),
+  dropMaxTicks: Int(1, 20),
+  /** Push: how far the pumpkin rolls back on a drop (px). */
+  rollbackPx: Int(0, 40),
+  /** A drop bumps a team in the next lane within `bumpRangePx` with this chance; it loses `bumpTicks`. */
+  bumpChanceBp: Bp,
+  bumpRangePx: Int(1, 64),
+  bumpTicks: Int(1, 10),
+  /** A `zapElement` member jolts its team forward with this chance per tick (`burstBp` for two ticks). */
+  zapElement: ElementSchema,
+  zapChanceBp: Bp,
+  /** Momentum or Riposte after a steady wobble, and a zap: the team's next ticks go this much faster. */
+  burstBp: Int(0, 40_000),
+  /** The finish line (world x of the load's centre, px). */
+  finishPx: Int(100, 2_000),
+  /** The race goes on this many ticks after the first team crosses (then everyone stops). */
+  graceTicks: Int(1, 50),
+  /** Metres added to the first finisher's score; one less for each finisher after, at least 1. */
+  finishBonusM: Int(1, 100),
 });
 
 const Base = {
@@ -371,6 +433,7 @@ export const GamesEventDefSchema = v.variant('kind', [
   v.strictObject({ ...Base, kind: v.literal('feast'), params: FeastParamsSchema }),
   v.strictObject({ ...Base, kind: v.literal('swim'), params: SwimParamsSchema }),
   v.strictObject({ ...Base, kind: v.literal('shove'), params: ShoveParamsSchema }),
+  v.strictObject({ ...Base, kind: v.literal('haul'), params: HaulParamsSchema }),
 ]);
 export type GamesEventDef = v.InferOutput<typeof GamesEventDefSchema>;
 export type GamesEventOf<K extends GamesKind> = Extract<GamesEventDef, { kind: K }>;
@@ -451,6 +514,12 @@ export function loadGames(raw: unknown): GamesPack {
       case 'shove':
         if (e.params.floeMinPx > e.params.floeStartPx) fail(`"${e.id}": floeMinPx > floeStartPx`);
         if (e.params.slidePx > e.params.maxSlidePx) fail(`"${e.id}": slidePx > maxSlidePx`);
+        break;
+      case 'haul':
+        if (e.team !== 3) fail(`"${e.id}": a haul is a team event`);
+        if (e.params.dropMinTicks > e.params.dropMaxTicks) {
+          fail(`"${e.id}": dropMinTicks > dropMaxTicks`);
+        }
         break;
     }
   }

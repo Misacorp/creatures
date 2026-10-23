@@ -4,7 +4,7 @@
  * another event), the tab's pip, when to ask the server again, the medals of a result and the units of
  * a record. Pure: the server decides every entry, placing, medal and number; this only arranges them.
  */
-import { RULES, expToNext, gamesEventDef, gamesIsSmall, type GamesFavour } from '@creatures/game';
+import { RULES, expToNext, gamesEventInfo, gamesIsSmall, type GamesFavour } from '@creatures/game';
 import type { Creature } from './api';
 import { creatureName, getSpecies } from './game';
 import type {
@@ -301,7 +301,7 @@ export const hasMedals = (m: MedalCounts): boolean => m.gold + m.silver + m.bron
 export function recordText(record: { eventId: string; best: number; unit: string }): string {
   switch (record.unit) {
     case 'ticks': {
-      const tickMs = gamesEventDef(record.eventId)?.tickMs ?? 1000;
+      const tickMs = gamesEventInfo(record.eventId)?.tickMs ?? 1000;
       return `${trim((record.best * tickMs) / 1000)} s`;
     }
     case 'm':

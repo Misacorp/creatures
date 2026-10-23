@@ -9,7 +9,7 @@
  * Self-contained: give it the stored show (`GamesEventResult[]`) and it plays.
  */
 import type { GamesEventResult } from '@creatures/engine';
-import { gamesEventDef } from '@creatures/game';
+import { gamesEventInfo, gamesEventName } from '@creatures/game';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { shinyPalette } from '../art';
 import { cssVars } from '../css-vars';
@@ -78,7 +78,7 @@ export interface GamesShowProps {
 const SEATS = 16;
 
 function spanName(eventId: string): string {
-  return gamesEventDef(eventId)?.name ?? eventId;
+  return gamesEventName(eventId);
 }
 
 /** "2:05": minutes and seconds to go. */
@@ -432,7 +432,7 @@ function BeforeShow({
     <div class="gs-before">
       {first === undefined ? (
         <EmptyStands
-          scene={sceneOf(gamesEventDef(timeline.spans[0]?.eventId ?? '')?.scene ?? '')}
+          scene={sceneOf(gamesEventInfo(timeline.spans[0]?.eventId ?? '')?.scene ?? '')}
           still={still}
         />
       ) : (
@@ -546,7 +546,7 @@ export function GamesShow(props: GamesShowProps) {
 
   if (p === undefined) {
     // Nobody entered this event: its intro card over an empty scene, then the next event.
-    const scene = sceneOf(gamesEventDef(span?.eventId ?? '')?.scene ?? '');
+    const scene = sceneOf(gamesEventInfo(span?.eventId ?? '')?.scene ?? '');
     return (
       <section class="games-show pix-panel" aria-label="Valley Games">
         <EmptyStands scene={scene} still={quiet} />

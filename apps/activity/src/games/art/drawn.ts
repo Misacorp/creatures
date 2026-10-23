@@ -1,6 +1,6 @@
 /**
  * Games art drawn by code, where a shape is round, sized by a number or built from boxes: the rolling
- * watermelon, the podium blocks, the scoreboard, the sauna door, the host desk, the frosty window and
+ * watermelon, the hauls' birch log (tilting) and giant pumpkin (rolling) and a lane's finish strip, the podium blocks, the scoreboard, the sauna door, the host desk, the frosty window and
  * the ice block (each a `SpriteDef` of at most 64x64, made once), and the shapes that change with the
  * show (the thermometer's fill, the shrinking ice floe, the lane-rope ellipse, a sagging garland of
  * bunting), which return placements and are memoised by their numbers.
@@ -581,3 +581,137 @@ export function garland(
 export function tinted(def: SpriteDef, ramp: RampName, ramp2?: RampName): SpriteDef {
   return tintSprite(def, ramp, ramp2);
 }
+
+// ---------------------------------------------------------------------------------------------
+// The haul loads: a log (30x10, three tilts) and a giant pumpkin (18x18, eight rolling frames)
+
+export const LOG_WIDTH = 30;
+/** The log body's height (outline included); the sprite is taller by the tilt. */
+export const LOG_BODY = 6;
+const LOG_HEIGHT = LOG_BODY + 4;
+
+/**
+ * One frame of the log: a birch trunk (the compendium's), pale bark in the primary ramp (`a` lit top to
+ * `d` shadow, the cream ramp by default) with the birch's dark dashes in ink, an ink outline and a
+ * rounded left end, its sawn end on the right in the secondary ramp (rings round a dark heart), tilted
+ * `tilt` px end to end (0 level, positive: the right end up), so a wobble shows as a see-saw.
+ */
+function logFrame(tilt: number): SpriteDef {
+  const g = new PixelGrid(LOG_WIDTH, LOG_HEIGHT);
+  const w = LOG_WIDTH;
+  const lift = (x: number): number => Math.round(((x - (w - 1) / 2) / (w - 1)) * -tilt);
+  const shade = ['k', 'a', 'b', 'c', 'd', 'k'];
+  // Birch dashes: short dark marks across the bark, at fixed spots.
+  const dashes = new Set([
+    '3,2',
+    '4,2',
+    '8,3',
+    '9,3',
+    '14,2',
+    '15,2',
+    '16,2',
+    '19,3',
+    '20,4',
+    '23,2',
+  ]);
+  for (let x = 0; x < w; x++) {
+    const top = 2 + lift(x);
+    for (let y = 0; y < LOG_BODY; y++) {
+      let key = shade[y] ?? 'k';
+      // The rounded left end and the outline of the right end.
+      if (x === 0 || x === w - 1) key = y === 0 || y === LOG_BODY - 1 ? '.' : 'k';
+      else if (dashes.has(`${String(x)},${String(y)}`)) key = 'k';
+      g.set(x, top + y, key);
+    }
+  }
+  // The sawn end: rings in the secondary ramp, the heart dark.
+  for (let y = 1; y < LOG_BODY - 1; y++) {
+    const ring = y === 1 || y === LOG_BODY - 2 ? 'f' : 'e';
+    g.set(w - 4, 2 + lift(w - 4) + y, 'k');
+    g.set(w - 3, 2 + lift(w - 3) + y, ring);
+    g.set(w - 2, 2 + lift(w - 2) + y, y === 1 || y === LOG_BODY - 2 ? 'f' : 'g');
+  }
+  g.set(w - 2, 2 + lift(w - 2) + 2, 'h');
+  return g.toSprite(rampPalette(RAMPS.cream, RAMPS.pine, { k: INK }));
+}
+
+/** The log level, tilted both ways (a wobble); on the ground it is the level one, drawn lower. */
+export const LOG_FRAMES: readonly SpriteDef[] = [logFrame(0), logFrame(3), logFrame(-3)];
+
+export const PUMPKIN_SIZE = 18;
+export const PUMPKIN_FRAMES_COUNT = 8;
+
+/**
+ * One frame of the giant pumpkin: a lit, slightly squat sphere with deep ribs from the stem to the
+ * bottom (primary ramp, orange by default), its green stem (secondary ramp) on the rim, the whole
+ * turned `angle` radians clockwise as it rolls to the right.
+ */
+function pumpkinFrame(angle: number): SpriteDef {
+  const s = PUMPKIN_SIZE;
+  const g = new PixelGrid(s, s);
+  const c = s / 2;
+  const radius = 7.7;
+  const light = normalise([-0.55, -0.65, 0.55]);
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  for (let y = 0; y < s; y++) {
+    for (let x = 0; x < s; x++) {
+      const dx = x + 0.5 - c;
+      const dy = y + 0.5 - c;
+      // In the pumpkin's own frame (turned back), it is a little wider than tall.
+      const u = dx * cos + dy * sin;
+      const v = -dx * sin + dy * cos;
+      const d = Math.hypot(u / 1.06, v / 0.94);
+      if (d > radius + 1.1) continue;
+      if (d > radius) {
+        g.set(x, y, 'k');
+        continue;
+      }
+      const px = dx / (radius + 0.6);
+      const py = dy / (radius + 0.6);
+      const pz = Math.sqrt(Math.max(0, 1 - px * px - py * py));
+      const lit = px * light[0] + py * light[1] + pz * light[2];
+      // Ribs: meridians through the stem's axis (the pumpkin's own v axis).
+      const lon = Math.atan2(u / radius, Math.sqrt(Math.max(0, 1 - (v / radius) ** 2)) * 0.9 + 0.1);
+      const rib = Math.abs(Math.sin(lon * 3.2)) < 0.22;
+      let key = lit > 0.78 ? 'a' : lit > 0.42 ? 'b' : lit > 0.1 ? 'c' : 'd';
+      if (rib) key = key === 'a' ? 'b' : key === 'b' ? 'c' : 'd';
+      g.set(x, y, key);
+    }
+  }
+  // The stem on the rim (its own "up"), two pixels of green with an ink edge.
+  const stem = (k: number): [number, number] => [
+    Math.round(c - 0.5 + sin * (radius - k)),
+    Math.round(c - 0.5 - cos * (radius - k)),
+  ];
+  const [sx, sy] = stem(-0.4);
+  const [tx, ty] = stem(-1.8);
+  const [ix, iy] = stem(1);
+  g.set(ix, iy, 'k');
+  g.set(sx, sy, 'f');
+  g.set(tx, ty, 'g');
+  g.set(tx + 1, ty, 'h');
+  g.set(7, 5, 'w');
+  g.set(6, 6, 'w');
+  return g.toSprite(rampPalette(RAMPS.orange, RAMPS.grove, { k: INK, w: WHITE }));
+}
+
+export const PUMPKIN_FRAMES: readonly SpriteDef[] = Array.from(
+  { length: PUMPKIN_FRAMES_COUNT },
+  (_, i) => pumpkinFrame((i * 2 * Math.PI) / PUMPKIN_FRAMES_COUNT),
+);
+
+/** A haul lane's finish mark: a short chequered strip across the lane (4 x 10). */
+function finishBand(): SpriteDef {
+  const h = 10;
+  const g = new PixelGrid(4, h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < 4; x++) {
+      const dark = (Math.floor(y / 2) + Math.floor(x / 2)) % 2 === 0;
+      g.set(x, y, dark ? 'k' : 'w');
+    }
+  }
+  return g.toSprite({ k: '#2f2a5c', w: WHITE });
+}
+
+export const FINISH_BAND = finishBand();

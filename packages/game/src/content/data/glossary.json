@@ -2273,7 +2273,7 @@
     "short": "A daily show of three silly events, four on Wednesdays. A creature enters one.",
     "lines": [
       "Entries close at the daily reset. The show plays to everyone a few minutes later.",
-      "One event a day is for teams of three.",
+      "One event a day is for teams of three: a Log Carry or a Pumpkin Push.",
       "Every entrant earns experience, and a podium place earns more."
     ],
     "visual": {
@@ -2331,6 +2331,17 @@
       "kind": "glyph",
       "id": "medal-point"
     },
+    "section": "games"
+  },
+  {
+    "id": "games-team",
+    "title": "Team event",
+    "short": "One event a day is for three friends, who carry or push one big thing together.",
+    "lines": [
+      "Log Carry: the team goes as fast as its slowest carrier, so send three who keep in step.",
+      "Pumpkin Push: Attack adds up, the strongest counting most.",
+      "Guards keep the load steady, Supports cheer after a drop, a Setter sets the pace."
+    ],
     "section": "games"
   },
   {

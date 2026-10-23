@@ -4,7 +4,10 @@ import {
   GAMES_SAY_KEYS,
   fillGamesSay,
   gamesContent,
+  GAMES_RETIRED,
   gamesEventDef,
+  gamesEventInfo,
+  gamesEventName,
   gamesSayTemplate,
   loadGames,
 } from '../src/index';
@@ -43,6 +46,30 @@ describe('the shipped Games content', () => {
     );
   });
 
+  it('the daily team event is a real team sport: Log Carry or Pumpkin Push', () => {
+    expect(
+      gamesContent.events
+        .filter((e) => e.team === 3)
+        .map((e) => e.id)
+        .sort(),
+    ).toEqual(['log-carry', 'pumpkin-push']);
+  });
+
+  it('retired events are out of the pool but keep a name for stored days', () => {
+    for (const id of ['sauna-stack', 'shark-relay']) {
+      expect(gamesEventDef(id)).toBeUndefined();
+      expect(GAMES_RETIRED[id]?.team).toBe(3);
+      expect(gamesEventInfo(id)?.id).toBe(id);
+    }
+    expect(gamesEventName('sauna-stack')).toBe('Sauna Stack');
+    expect(gamesEventName('shark-relay')).toBe('Shark Relay');
+    expect(gamesEventName('log-carry')).toBe('Log Carry');
+    expect(gamesEventName('never-was')).toBe('never-was');
+    expect(gamesEventInfo('toString')).toBeUndefined();
+    // A retired id is never reused by a live event.
+    for (const e of gamesContent.events) expect(GAMES_RETIRED[e.id]).toBeUndefined();
+  });
+
   it('fills {a}, {b} and {n} and leaves a missing one as it is', () => {
     expect(fillGamesSay('{a} shoves {b}! {n}', { a: 'Mudlump', b: 'Zipmouse', n: 3 })).toBe(
       'Mudlump shoves Zipmouse! 3',
@@ -74,6 +101,16 @@ describe('loadGames rejects broken content', () => {
         (d.events[0] as Record<string, unknown>)['teamScore'] = 'sum';
       }),
     ).toThrow(/teamScore/);
+  });
+
+  it('a haul that is not a team event', () => {
+    expect(
+      broken((d) => {
+        const haul = d.events.find((e) => e['kind'] === 'haul') as Record<string, unknown>;
+        haul['team'] = 1;
+        delete haul['teamScore'];
+      }),
+    ).toThrow(/a haul is a team event/);
   });
 
   it('an unknown or missing number in params (strict)', () => {

@@ -11,8 +11,11 @@ import {
   HOST_DESK,
   ICE_BLOCK,
   WINDOW,
+  FINISH_BAND,
+  LOG_FRAMES,
   MELON_FRAMES,
   PODIUM_BLOCKS,
+  PUMPKIN_FRAMES,
   SCOREBOARD_FRAMES,
 } from './drawn';
 import { TEAM_RAMPS, maybeTint, type RampName } from './tint';
@@ -22,6 +25,9 @@ const P = GAMES_PROP_DATA;
 export const GAMES_PROPS = {
   ...P,
   melon: MELON_FRAMES,
+  log: LOG_FRAMES,
+  pumpkin: PUMPKIN_FRAMES,
+  finishBand: [FINISH_BAND],
   podium1: [PODIUM_BLOCKS[1]],
   podium2: [PODIUM_BLOCKS[2]],
   podium3: [PODIUM_BLOCKS[3]],
@@ -100,6 +106,17 @@ export const PROP_TINTS: Readonly<Partial<Record<PropName, readonly PropTint[]>>
   stovePipe: ['iron', 'stone'],
   pole: ['wood', 'silver'],
   duck: ['yellow', 'pink'],
+  log: [
+    ['cream', 'pine'],
+    ['wood', 'pine'],
+    ['sauna', 'cream'],
+  ],
+  pumpkin: [
+    ['orange', 'grove'],
+    ['yellow', 'grove'],
+    ['ghost', 'green'],
+    ['green', 'mire'],
+  ],
 };
 
 /** A frame of a prop (frames loop), tinted when asked. */

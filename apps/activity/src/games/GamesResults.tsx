@@ -1,3 +1,4 @@
+import { gamesEventName } from '@creatures/game';
 import type { Creature } from '../api';
 import { creatureName } from '../game';
 import { ExperienceGainRow } from '../ExperienceGainRow';
@@ -42,7 +43,7 @@ function ResultRow({
   creatures: ReadonlyMap<string, Creature>;
   onReplay?: (() => void) | undefined;
 }) {
-  const name = event?.name ?? result.eventId;
+  const name = event?.name ?? gamesEventName(result.eventId);
   return (
     <li class={result.medal === null ? 'gr-row' : `gr-row is-${result.medal}`}>
       <span class="gr-medal">

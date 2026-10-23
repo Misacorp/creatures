@@ -81,9 +81,9 @@ function Preview({ p }: { p: Props }) {
   );
 }
 
-/** Review moments of a single-event show (8 players, the default seed): seconds into the show. */
-function moments(id: string): { early: number; chaos: number; podium: number } {
-  const show = sampleShow([id], 8, 0, 'workbench');
+/** Review moments of a single-event show (8 players unless given, the default seed): seconds into the show. */
+function moments(id: string, players = 8): { early: number; chaos: number; podium: number } {
+  const show = sampleShow([id], players, 0, 'workbench');
   const event = show.events[0];
   const span = buildShowTimeline(show.events).spans[0];
   if (event === undefined || span === undefined) return { early: 6, chaos: 20, podium: 40 };
@@ -105,6 +105,24 @@ function moments(id: string): { early: number; chaos: number; podium: number } {
     podium: (span.podiumStart + 2_000) / 1000,
   };
 }
+
+/** The team events (the hauls) also at 15 teams: a full lane each, the busiest a show gets. */
+const TEAM_PRESETS: Preset[] = ['log-carry', 'pumpkin-push'].flatMap((id) => [
+  {
+    name: `${id}: 15 teams, intro`,
+    props: { show: id, roster: '15 players', at: 2.4, play: false },
+  },
+  { name: `${id}: 15 teams, mid`, props: { show: id, roster: '15 players', at: 18, play: false } },
+  {
+    name: `${id}: 15 teams, podium`,
+    props: {
+      show: id,
+      roster: '15 players',
+      at: Math.round(moments(id, 15).podium * 2) / 2,
+      play: false,
+    },
+  },
+]);
 
 const EVENT_PRESETS: Preset[] = SAMPLE_EVENT_IDS.flatMap((id) => {
   const m = moments(id);
@@ -166,6 +184,7 @@ const gamesShow: Entry = {
       props: { skipped: true, at: 55.5, play: false },
     },
     ...EVENT_PRESETS,
+    ...TEAM_PRESETS,
   ],
   render: (p) => <Preview p={p} />,
 };
