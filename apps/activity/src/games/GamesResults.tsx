@@ -3,7 +3,7 @@ import type { Creature } from '../api';
 import { creatureName } from '../game';
 import { ExperienceGainRow } from '../ExperienceGainRow';
 import { GlossaryTag } from '../Glossary';
-import { creatureXp, gamesXpChange } from '../games-view';
+import { creatureXp, gamesXpChange, gamesXpParts, type GamesXpPart } from '../games-view';
 import type { GamesResult, LineupEvent } from '../games-types';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
@@ -91,6 +91,49 @@ function ResultRow({
   );
 }
 
+/** What a reason of the gain says to assistive technology: "50 for entering", "60 for gold". */
+function partLabel(part: GamesXpPart): string {
+  const n = String(part.xp);
+  if (part.kind === 'enter') return `${n} for entering`;
+  if (part.kind === 'pin') return `${n} for a pin`;
+  return `${n} for ${MEDAL_NAME[part.medal].toLowerCase()}`;
+}
+
+/**
+ * Why a creature earned what it did, shown, not told: "+50" for entering, the medal and its "+60", the
+ * pin and its "+15"; off the podium its place ("6th") and nothing more.
+ */
+export function XpParts({ result, creatureId }: { result: GamesResult; creatureId: string }) {
+  const parts = gamesXpParts(result, creatureId);
+  return (
+    <span class="gr-xp-parts">
+      {parts.map((part) => (
+        <span
+          key={part.kind}
+          class={`gr-xp-part is-${part.kind === 'medal' ? part.medal : part.kind}`}
+          role="img"
+          aria-label={partLabel(part)}
+        >
+          {part.kind === 'medal' && <MedalSprite medal={part.medal} scale={2} />}
+          {part.kind === 'pin' && <PinSprite scale={2} />}
+          <span class="gr-xp-n" aria-hidden="true">
+            +{part.xp}
+          </span>
+        </span>
+      ))}
+      {result.medal === null && (
+        <span
+          class="gr-xp-part is-place"
+          aria-label={`${placeText(result.place)} place`}
+          role="img"
+        >
+          <span aria-hidden="true">{placeText(result.place)}</span>
+        </span>
+      )}
+    </span>
+  );
+}
+
 /**
  * Your last show: one row per event you were in (the medal or your place, who went, a pin for a
  * personal best, ▶ that event's replay), the experience each creature earned as the shared XP rows,
@@ -114,7 +157,7 @@ export function GamesResults({
     r.creatureIds.flatMap((id) => {
       const c = byId.get(id);
       const xp = creatureXp(r, id);
-      return c === undefined || xp <= 0 ? [] : [{ key: `${r.eventId}:${id}`, c, xp }];
+      return c === undefined || xp <= 0 ? [] : [{ key: `${r.eventId}:${id}`, c, xp, r }];
     }),
   );
   return (
@@ -154,11 +197,12 @@ export function GamesResults({
       </ul>
       {gains.length > 0 && (
         <XpList caption label="Experience from the show">
-          {gains.map(({ key, c, xp }) => (
+          {gains.map(({ key, c, xp, r }) => (
             <ExperienceGainRow
               key={key}
               gain={gamesXpChange(c, xp)}
               who={{ name: creatureName(c), species: c.species }}
+              extra={<XpParts result={r} creatureId={c.id} />}
             />
           ))}
         </XpList>

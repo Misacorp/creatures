@@ -265,6 +265,35 @@ export function creatureXp(result: GamesResult, creatureId: string): number {
   return base + (result.pins.includes(creatureId) ? pin : 0);
 }
 
+/** One reason a creature earned experience in an event: entering, its medal, a pin. */
+export type GamesXpPart =
+  | { kind: 'enter'; xp: number }
+  | { kind: 'medal'; medal: GamesMedal; xp: number }
+  | { kind: 'pin'; xp: number };
+
+const MEDAL_INDEX: Readonly<Record<GamesMedal, number>> = { gold: 0, silver: 1, bronze: 2 };
+
+/**
+ * Why a creature earned what it did in an event (`RULES.games.xp`, as the server pays it): the flat
+ * amount for entering, its medal's bonus (none off the podium) and a pin's when it set a personal best.
+ */
+export function gamesXpParts(
+  result: Pick<GamesResult, 'medal' | 'pins'>,
+  creatureId: string,
+): GamesXpPart[] {
+  const xp = RULES.games.xp;
+  const parts: GamesXpPart[] = [{ kind: 'enter', xp: xp.enter }];
+  if (result.medal !== null) {
+    parts.push({
+      kind: 'medal',
+      medal: result.medal,
+      xp: xp.place[MEDAL_INDEX[result.medal]] ?? 0,
+    });
+  }
+  if (result.pins.includes(creatureId)) parts.push({ kind: 'pin', xp: xp.pin });
+  return parts;
+}
+
 /**
  * A creature's Games experience as the shared "XP gained" row: the bar where the creature is now, filled
  * back by what the show paid (the level before is worked out from the level sizes).

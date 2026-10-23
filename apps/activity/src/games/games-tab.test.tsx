@@ -116,6 +116,10 @@ describe('the Games tab', () => {
     p.click(replay);
     expect(byClass(p.root, 'games-show')).toHaveLength(1);
     expect(visibleText(p.root)).toContain('Log Carry');
+    // Only the show and the way back.
+    for (const hidden of ['ge-card', 'gm-cabinet', 'gs-stall', 'gr-results', 'gt-head']) {
+      expect(byClass(p.root, hidden), hidden).toHaveLength(0);
+    }
     const [back] = byClass(p.root, 'drill-back');
     if (back === undefined) throw new Error('no back');
     p.click(back);
@@ -131,10 +135,16 @@ describe('the Games tab', () => {
     expect(byClass(p.root, 'is-locked').length).toBeGreaterThan(0);
   });
 
-  it('plays the show live while it is on', () => {
+  it('plays the show live while it is on, and nothing else on the tab', () => {
     const { view, offset } = gamesView('show: live');
     const { page: p } = draw(view, offset);
     expect(byClass(p.root, 'gs-live')).toHaveLength(1);
+    expect(byClass(p.root, 'games-show')).toHaveLength(1);
+    expect(byClass(p.root, 'gt-bleed')).toHaveLength(1);
+    // Tomorrow's lineup, the medals, the stall and the last show wait until it ends.
+    for (const hidden of ['ge-card', 'gm-cabinet', 'gs-stall', 'gr-results', 'gt-head']) {
+      expect(byClass(p.root, hidden), hidden).toHaveLength(0);
+    }
   });
 
   it('opens the picker from a slot and sends the pick, then shows the answer', async () => {

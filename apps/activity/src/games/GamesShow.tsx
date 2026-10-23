@@ -3,9 +3,10 @@
  * with its intro card, the event on its scene and a podium. Live, everyone sees the same moment (the
  * clock seeks to `now - startsAt` on the server's clock); a replay has play, pause, 2x and "next event".
  *
- * Layout at 390 px: the stands (the crowd, the players' creatures in the front row, cheering on the big
- * moments), the scene at 2x, one line of commentary, a compact leaderboard (top three and you), and the
- * event pips. Almost no words: who leads, what happened and where your creature is are shown.
+ * Layout on a phone: edge to edge, the stands (the crowd, the players' creatures in the front row,
+ * cheering on the big moments) and the scene stretched to the full width, one line of commentary, the
+ * leaderboard as a short list (the top five and you), and the event pips; on a wide screen the scene is
+ * at most 3x (576 px) and the leaderboard sits beside it. Almost no words: who leads, what happened and where your creature is are shown.
  * Self-contained: give it the stored show (`GamesEventResult[]`) and it plays.
  */
 import type { GamesEventResult } from '@creatures/engine';
@@ -29,6 +30,7 @@ import {
   FX_MS,
   announcementAt,
   announcements,
+  boardShown,
   buildShowTimeline,
   cursorAt,
   eventMs,
@@ -36,6 +38,7 @@ import {
   frameAt,
   liveBoard,
   nextSpanStart,
+  ownerOf,
   podiumOf,
   prepareEvent,
   sayParts,
@@ -76,6 +79,7 @@ export interface GamesShowProps {
 }
 
 const SEATS = 16;
+const NO_NAMES: Readonly<Record<string, string>> = {};
 
 function spanName(eventId: string): string {
   return gamesEventName(eventId);
@@ -269,15 +273,36 @@ function SayText({
   );
 }
 
+/** What a board row is called: a solo entrant's creature (and whose it is), a team's player. */
+export function boardLabel(
+  p: PreparedEvent,
+  row: Pick<BoardRow, 'actor' | 'playerId'>,
+  youId: string | undefined,
+  names: Readonly<Record<string, string>>,
+): { name: string; owner: string | null } {
+  const actor = p.result.actors[row.actor];
+  if (p.result.team === 3) {
+    return { name: names[row.playerId] ?? actor?.name ?? '', owner: null };
+  }
+  return {
+    name: actor?.name ?? '',
+    owner: ownerOf(p, row.actor, { youId, names }),
+  };
+}
+
 function BoardSlot({
   p,
   row,
+  gap,
   youId,
+  names,
   live,
 }: {
   p: PreparedEvent;
   row: BoardRow;
+  gap: boolean;
   youId: string | undefined;
+  names: Readonly<Record<string, string>>;
   live: boolean;
 }) {
   const actor = p.result.actors[row.actor];
@@ -286,9 +311,11 @@ function BoardSlot({
   const medal = !live && row.place <= 3;
   const classes = ['gs-slot', `is-place-${String(Math.min(4, row.place))}`];
   if (mine) classes.push('is-mine');
+  if (gap) classes.push('is-gap');
   if (row.out && live) classes.push('is-out');
   if (medal) classes.push('is-medal');
   const palette = actor.shiny === true ? shinyPalette(actor.speciesId) : undefined;
+  const label = boardLabel(p, row, youId, names);
   return (
     <li class={classes.join(' ')} ref={cssVars({ '--team': teamColour(row.playerId) })}>
       <span class="gs-place">{String(row.place)}</span>
@@ -298,6 +325,12 @@ function BoardSlot({
         class="gs-icon"
         {...(palette === undefined ? {} : { palette })}
       />
+      <span class="gs-who">
+        <span class="gs-name">{label.name}</span>
+        {label.owner !== null && (
+          <span class={mine ? 'gs-owner is-you' : 'gs-owner'}>({label.owner})</span>
+        )}
+      </span>
       {row.bar !== undefined ? (
         <span
           class={p.result.scene === 'frost-bath' ? 'gs-bar is-cold' : 'gs-bar'}
@@ -306,30 +339,34 @@ function BoardSlot({
           <span class="gs-bar-fill" />
         </span>
       ) : (
-        row.text !== '' && (
-          <span class="gs-score">
-            {p.kind === 'feast' && (
-              <Sprite sprite={propSprite('pepper', 0, PEPPER_TIERS[1])} scale={1} />
-            )}
-            {row.text}
-          </span>
-        )
+        <span class="gs-score">
+          {row.text !== '' && p.kind === 'feast' && (
+            <Sprite sprite={propSprite('pepper', 0, PEPPER_TIERS[1])} scale={1} />
+          )}
+          {row.text}
+        </span>
       )}
-      {mine && <Sprite sprite={YOU_MARKER} scale={1} class="gs-slot-you" />}
     </li>
   );
 }
 
+/**
+ * The leaderboard as a short vertical list (Misa, 2026-10-23: the cards cut the scores off): the top
+ * five, then your rows further down, each with its place, its creature, its name and whose it is, and
+ * the score; your rows in the gold ring. At the intro, the creatures you sent.
+ */
 function Board({
   p,
   frame,
   cursor,
   youId,
+  names,
 }: {
   p: PreparedEvent;
   frame: EventFrame | null;
   cursor: ShowCursor;
   youId: string | undefined;
+  names: Readonly<Record<string, string>>;
 }) {
   if (cursor.phase === 'intro' || frame === null) {
     // The intro shows who you sent.
@@ -360,13 +397,18 @@ function Board({
   }
   const live = cursor.phase === 'event';
   const rows = live ? liveBoard(p, frame) : finalBoard(p);
-  const top = rows.slice(0, 3);
-  const mine = rows.find((r) => r.playerId === youId);
-  const shown = mine !== undefined && !top.includes(mine) ? [...top, mine] : top;
   return (
     <ol class="gs-board" aria-hidden="true">
-      {shown.map((row) => (
-        <BoardSlot key={row.teamId} p={p} row={row} youId={youId} live={live} />
+      {boardShown(rows, youId).map(({ row, gap }) => (
+        <BoardSlot
+          key={row.teamId}
+          p={p}
+          row={row}
+          gap={gap}
+          youId={youId}
+          names={names}
+          live={live}
+        />
       ))}
     </ol>
   );
@@ -531,7 +573,7 @@ export function GamesShow(props: GamesShowProps) {
 
   if (cursor.before && mode === 'live') {
     return (
-      <section class="games-show pix-panel" aria-label="Valley Games">
+      <section class="games-show is-before pix-panel" aria-label="Valley Games">
         <BeforeShow
           prepared={prepared}
           timeline={timeline}
@@ -548,7 +590,7 @@ export function GamesShow(props: GamesShowProps) {
     // Nobody entered this event: its intro card over an empty scene, then the next event.
     const scene = sceneOf(gamesEventInfo(span?.eventId ?? '')?.scene ?? '');
     return (
-      <section class="games-show pix-panel" aria-label="Valley Games">
+      <section class="games-show has-board pix-panel" aria-label="Valley Games">
         <EmptyStands scene={scene} still={quiet} />
         <div class="gs-screen">
           <div class="gs-stage is-empty">
@@ -575,7 +617,7 @@ export function GamesShow(props: GamesShowProps) {
         ? frameAt(p, cursor.ms)
         : frameAt(p, eventMs(p.result));
   return (
-    <section class="games-show pix-panel" aria-label="Valley Games">
+    <section class="games-show has-board pix-panel" aria-label="Valley Games">
       <Stands
         p={p}
         frame={cursor.phase === 'event' ? frame : null}
@@ -602,7 +644,7 @@ export function GamesShow(props: GamesShowProps) {
         {liveBadge}
       </div>
       <SayLine p={p} frame={frame} cursor={cursor} youId={youId} names={names} />
-      <Board p={p} frame={frame} cursor={cursor} youId={youId} />
+      <Board p={p} frame={frame} cursor={cursor} youId={youId} names={names ?? NO_NAMES} />
       <Pips
         prepared={prepared}
         timeline={timeline}

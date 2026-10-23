@@ -8,7 +8,8 @@ import { MedalCabinet } from '../../games/MedalCabinet';
 import { PrizeStall } from '../../games/PrizeStall';
 import { TrophyBoard } from '../../games/RoomTrophy';
 import type { GamesView } from '../../games-types';
-import { withSlot } from '../../games-view';
+import { placeMedal, withSlot } from '../../games-view';
+import { gamesXp } from '@creatures/game';
 import {
   GAMES_FIXTURES,
   GAMES_SELF_ID,
@@ -70,7 +71,7 @@ const gamesTab: Entry = {
   file: `${FILE}GamesTab.tsx`,
   group: 'Creatures & game pieces',
   description:
-    'The Games tab on the real captured server answers (fixtures/games-*.json): the title and countdown, your last show, the events of the day with their slots (tap one for the picker; picks act on the page; an entered good fit wears the "Good fit" badge), the medal cabinet and the Prize Stall; from the lock the stands, during the show the live show. Covers GamesHeader and Lineup.',
+    'The Games tab on the real captured server answers (fixtures/games-*.json): the title and countdown, your last show, the events of the day with their slots (tap one for the picker; picks act on the page; an entered good fit wears the "Good fit" badge; a favour icon says what it means in that event), the medal cabinet and the Prize Stall; from the lock the stands; during the show (and a replay) only the show, edge to edge on a phone. Covers GamesHeader and Lineup.',
   covers: ['GamesHeader', 'Lineup'],
   controls: { view: { kind: 'select', options: GAMES_VIEWS } },
   defaults: { view: 'entries: one entered' },
@@ -114,7 +115,7 @@ const eventCard: Entry = {
   file: `${FILE}GamesParts.tsx`,
   group: 'Creatures & game pieces',
   description:
-    'One event of the Games lineup: its scene as a strip, the name, what it favours as icons (tap one), and its slot, or three for the team event, each a creature (with the "Good fit" badge when the server says it suits the event) or an empty "+". Covers FavourIcons, GoodFitMark, EventBadge and BadgeShelf (seen on the EntryPicker and CreatureGamesView pages), EventThumb and the medal pictures (MedalCountsRow, MedalSprite, PinSprite).',
+    'One event of the Games lineup: its scene as a strip, the name, what it favours as icons (tap one: the icon, the favour and what it means in this event, with a link to the Games in How to play), and its slot, or three for the team event, each a creature (with the "Good fit" badge when the server says it suits the event) or an empty "+". Covers FavourIcons, GoodFitMark, EventBadge and BadgeShelf (seen on the EntryPicker and CreatureGamesView pages), EventThumb and the medal pictures (MedalCountsRow, MedalSprite, PinSprite).',
   covers: [
     'FavourIcons',
     'GoodFitMark',
@@ -344,24 +345,31 @@ const gamesResults: Entry = {
   file: `${FILE}GamesResults.tsx`,
   group: 'Loot & reveals',
   description:
-    'Your last Valley Games show: per event the medal (or your place), who went, a pin for a personal best and ▶ its replay, then the experience each creature earned as the shared XP rows, and ▶ Watch for the whole show. Covers ReplayButton.',
-  covers: ['ReplayButton'],
-  controls: { pin: { kind: 'toggle' }, offPodium: { kind: 'toggle' } },
-  defaults: { pin: true, offPodium: true },
+    'Your last Valley Games show: per event the medal (or your place), who went, a pin for a personal best and ▶ its replay, then the experience each creature earned as the shared XP rows, each with where it came from beside the name ("+50" for entering, the medal and its "+60", the pin and its "+15", or the place off the podium, "6th"), and ▶ Watch for the whole show. Covers ReplayButton and XpParts.',
+  covers: ['ReplayButton', 'XpParts'],
+  controls: {
+    pin: { kind: 'toggle' },
+    offPodium: { kind: 'toggle' },
+    gold: { kind: 'toggle' },
+  },
+  defaults: { pin: true, offPodium: true, gold: false },
   presets: [
-    { name: 'The captured show (four silvers)', props: { pin: false, offPodium: false } },
+    { name: 'The captured show', props: { pin: false, offPodium: false } },
     { name: 'A pin and a place off the podium', props: {} },
+    { name: 'Gold and a pin, and 6th in the team event', props: { gold: true } },
   ],
   render: (p) => {
     const f = GAMES_FIXTURES.after;
     const results = (f.you.lastResults?.results ?? []).map((r, i) => {
-      const pinned = bool(p, 'pin') && i === 0;
-      const off = bool(p, 'offPodium') && i === 2;
-      return {
-        ...r,
-        ...(pinned ? { pin: true, pins: r.creatureIds.slice(0, 1), xp: r.xp + 15 } : {}),
-        ...(off ? { place: 5, medal: null } : {}),
-      };
+      const pins = bool(p, 'pin') && i === 0 ? r.creatureIds.slice(0, 1) : [];
+      const place = bool(p, 'offPodium') && i === 1 ? 6 : bool(p, 'gold') && i === 0 ? 1 : r.place;
+      const medal = placeMedal(place);
+      // The experience as the server pays it: each creature its own, the entry's together.
+      const xp = r.creatureIds.reduce(
+        (sum, id) => sum + gamesXp(medal === null ? null : place, pins.includes(id)),
+        0,
+      );
+      return { ...r, place, medal, pins, pin: pins.length > 0, xp };
     });
     return (
       <GamesResults

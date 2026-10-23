@@ -30,6 +30,26 @@ export function gamesScale(width: number): number {
   return Math.max(1, Math.floor(width / SCENE_SIZE.width));
 }
 
+/** How a scene fills a width: drawn at a whole `scale`, then stretched by `zoom` (nearest neighbour). */
+export interface GamesFit {
+  scale: number;
+  /** 1 when the width is a whole multiple of the scene (or narrower than one scene). */
+  zoom: number;
+}
+
+/**
+ * The scene stretched to the whole width (Misa, 2026-10-23: at 360 px the whole scale was 1x and the
+ * show was tiny): drawn at the largest whole scale that fits, then zoomed the rest of the way with
+ * `image-rendering: pixelated`, so actors and props, placed in the same drawn space, stay on their
+ * pixels. A width that is a whole multiple (576 px: 3x) stays whole, with no zoom.
+ */
+export function gamesFit(width: number): GamesFit {
+  const scale = gamesScale(width);
+  const exact = width / SCENE_SIZE.width;
+  if (exact <= scale) return { scale, zoom: 1 };
+  return { scale, zoom: Math.round((exact / scale) * 10_000) / 10_000 };
+}
+
 interface SceneView {
   scale: number;
   cameraX: number;
@@ -117,7 +137,7 @@ export interface GamesSceneProps {
   frame?: number | undefined;
   /** Text for screen readers; without it the scene is decorative. */
   label?: string | undefined;
-  /** A fixed whole scale instead of the one that fits the width. */
+  /** A fixed whole scale instead of filling the width (no zoom). */
   scale?: number | undefined;
   /** The actors, drawn between the back and the front layer (see `GamesActor`). */
   children?: ComponentChildren | undefined;
@@ -128,8 +148,8 @@ export interface GamesSceneProps {
 /**
  * A Valley Games scene: the back tiles and props on one canvas, the actors (`children`) over it, the
  * front props (the table fronts, steam) on a second canvas over them, like the living room's layers.
- * It takes the largest whole scale at which 192 scene pixels fit the container's width (2x at 390 px)
- * and shows a 192 px wide view at `cameraX`.
+ * It fills the container's width (`gamesFit`: the largest whole scale, then zoomed the rest of the way,
+ * nearest neighbour) and shows a 192 px wide view at `cameraX`; a fixed `scale` is drawn as it is.
  */
 export function GamesScene({
   scene,
@@ -147,7 +167,10 @@ export function GamesScene({
 }: GamesSceneProps) {
   const box = useRef<HTMLDivElement>(null);
   const width = useElementWidth(box, FALLBACK_WIDTH);
-  const scale = fixedScale === undefined ? gamesScale(width) : Math.max(1, Math.floor(fixedScale));
+  const { scale, zoom } =
+    fixedScale === undefined
+      ? gamesFit(width)
+      : { scale: Math.max(1, Math.floor(fixedScale)), zoom: 1 };
   const reduced = usePrefersReducedMotion();
   const tick = useTick(SCENE_TICK_MS, animate && !reduced && fixedFrame === undefined);
   const frame = fixedFrame ?? tick;
@@ -165,38 +188,47 @@ export function GamesScene({
   return (
     <div class="games-scene" ref={box} data-scene={scene} data-variant={variant}>
       <div
-        class="games-stage"
+        class={zoom === 1 ? 'games-fit' : 'games-fit is-zoomed'}
         ref={cssVars({
-          '--w': `${String(size.width * scale)}px`,
-          '--h': `${String(size.height * scale)}px`,
+          '--fw': `${String(size.width * scale * zoom)}px`,
+          '--fh': `${String(size.height * scale * zoom)}px`,
+          '--zoom': String(zoom),
         })}
-        role={label === undefined ? undefined : 'img'}
-        aria-label={label}
       >
-        <Layer
-          placements={layers.back}
-          scale={scale}
-          cameraX={camera}
-          width={size.width}
-          height={size.height}
-          layer="back"
-        />
-        <SceneContext.Provider value={view}>
-          <div class="games-actors">{children}</div>
-        </SceneContext.Provider>
-        <Layer
-          placements={layers.front}
-          scale={scale}
-          cameraX={camera}
-          width={size.width}
-          height={size.height}
-          layer="front"
-        />
-        {overlay !== undefined && (
+        <div
+          class="games-stage"
+          ref={cssVars({
+            '--w': `${String(size.width * scale)}px`,
+            '--h': `${String(size.height * scale)}px`,
+          })}
+          role={label === undefined ? undefined : 'img'}
+          aria-label={label}
+        >
+          <Layer
+            placements={layers.back}
+            scale={scale}
+            cameraX={camera}
+            width={size.width}
+            height={size.height}
+            layer="back"
+          />
           <SceneContext.Provider value={view}>
-            <div class="games-overlay">{overlay}</div>
+            <div class="games-actors">{children}</div>
           </SceneContext.Provider>
-        )}
+          <Layer
+            placements={layers.front}
+            scale={scale}
+            cameraX={camera}
+            width={size.width}
+            height={size.height}
+            layer="front"
+          />
+          {overlay !== undefined && (
+            <SceneContext.Provider value={view}>
+              <div class="games-overlay">{overlay}</div>
+            </SceneContext.Provider>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact';
 import { GlossaryTag } from './Glossary';
 import type { XpChange } from './xp-change';
 import { Tag } from './ui/Tag';
@@ -13,11 +14,14 @@ export function ExperienceGainRow({
   gain,
   who,
   home,
+  extra,
 }: {
   gain: XpChange;
   who?: { name: string; species: string };
   /** The creature was sent home at a camp: it keeps what it earned. */
   home?: boolean;
+  /** More beside the name, after the tags (the Games' reasons for the gain). */
+  extra?: ComponentChildren;
 }) {
   return (
     <XpGain
@@ -44,6 +48,7 @@ export function ExperienceGainRow({
               Went home
             </Tag>
           )}
+          {extra}
         </>
       }
     />

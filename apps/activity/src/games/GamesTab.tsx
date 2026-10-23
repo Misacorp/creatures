@@ -115,8 +115,9 @@ export function Lineup({
 /**
  * The Games tab (docs/design/valley-games.md). While entries are open: the title and the countdown,
  * your last show (medals, pins, experience, ▶ replays), the day's events with their slots (only what
- * you enter runs: there is no auto-entry). From the lock to the show: the stands and the countdown. During the show: the
- * live show, full width, then tomorrow's events. Always: your medal cabinet and the Prize Stall.
+ * you enter runs: there is no auto-entry). From the lock to the show: the stands and the countdown. While
+ * the show plays (live, or a replay): only the show, edge to edge on a phone (a replay with Back). Else
+ * always: your medal cabinet and the Prize Stall.
  */
 export function GamesTab({
   view,
@@ -225,6 +226,27 @@ export function GamesTab({
     );
   }
 
+  if (screen === 'show' && show !== null) {
+    // While the show plays, it is the whole tab (Misa, 2026-10-23); it ends by itself and the tab returns.
+    return (
+      <div class="games-tab is-show">
+        {errorLine}
+        <div class="gt-bleed">
+          <GamesShow
+            events={show.events}
+            lineup={show.timeline.map((s) => s.eventId)}
+            mode="live"
+            startsAt={show.showAt}
+            serverNow={serverNow}
+            youId={selfId}
+            names={names}
+            onDone={onReload}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const pickedEvent =
     picker === null ? undefined : current.next.lineup.find((e) => e.id === picker.eventId);
   const results = current.you.lastResults;
@@ -281,23 +303,6 @@ export function GamesTab({
         </div>
       )}
       {screen === 'stands' && lineup}
-      {screen === 'show' && show !== null && (
-        <>
-          <div class="gt-bleed">
-            <GamesShow
-              events={show.events}
-              lineup={show.timeline.map((s) => s.eventId)}
-              mode="live"
-              startsAt={show.showAt}
-              serverNow={serverNow}
-              youId={selfId}
-              names={names}
-              onDone={onReload}
-            />
-          </div>
-          {lineup}
-        </>
-      )}
       {screen === 'lineup' && lineupScreen}
       <MedalCabinet you={current.you} board={current.board} selfId={selfId} />
       <Ticking offset={offset}>

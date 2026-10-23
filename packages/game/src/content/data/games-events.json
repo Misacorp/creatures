@@ -43,6 +43,12 @@
       },
       "line": "The benches are warm and the stove is hungry. Last one in wins.",
       "favours": ["hp", "ember", "guard", "small"],
+      "favourNotes": {
+        "hp": "Hardy creatures sit tight while the heat climbs.",
+        "ember": "Ember creatures shrug off the heat.",
+        "guard": "Guards shelter their neighbours from the steam.",
+        "small": "Small ones sit low, where it's cooler."
+      },
       "smallBp": 14400,
       "roleBp": {
         "guard": 11000
@@ -94,6 +100,13 @@
       },
       "line": "An icy pond and a brave crowd. Sit beside an Ember creature and stay toasty.",
       "favours": ["hp", "tide", "mire", "support", "small"],
+      "favourNotes": {
+        "hp": "Hardy creatures stay in the cold the longest.",
+        "tide": "Tide creatures feel right at home in icy water.",
+        "mire": "Mire creatures wallow in the chill as if it were mud.",
+        "support": "Supports rub their neighbours' paws warm.",
+        "small": "Small ones huddle low, out of the icy wind."
+      },
       "say": {
         "endure.start": "Into the icy pond! Who can stay in longest?",
         "endure.steam": "Brr! {a} splashes ice water on everyone.",
@@ -143,6 +156,13 @@
       },
       "line": "A giant watermelon is rolling down the hill. Run!",
       "favours": ["spd", "small", "spark", "setter", "dodge"],
+      "favourNotes": {
+        "spd": "Quick feet keep you ahead of the melon.",
+        "small": "Small ones can duck under the melon once.",
+        "spark": "Spark creatures zip down the hill.",
+        "setter": "Setters find the fastest way down.",
+        "dodge": "Nimble runners hop the logs instead of tripping."
+      },
       "roleBp": {
         "setter": 11500
       },
@@ -187,6 +207,12 @@
       },
       "line": "Mild, hot or ghost: eat what lands on your plate. Most peppers wins.",
       "favours": ["hp", "ember", "payoff", "crit"],
+      "favourNotes": {
+        "hp": "Big appetites last more rounds at the table.",
+        "ember": "Ember creatures barely notice the heat.",
+        "payoff": "Payoffs never leave a pepper on the plate.",
+        "crit": "A lucky bite is a double gulp: two peppers at once."
+      },
       "roleBp": {
         "payoff": 12000
       },
@@ -231,6 +257,12 @@
       },
       "line": "Sour berries by the bowlful. Grove creatures barely pucker.",
       "favours": ["hp", "grove", "support", "small"],
+      "favourNotes": {
+        "hp": "Hardy creatures can eat bowl after bowl.",
+        "grove": "Grove creatures barely pucker.",
+        "support": "Supports share their leaves to calm sour mouths.",
+        "small": "Small mouths take small, safe bites."
+      },
       "say": {
         "feast.start": "Bowls of sour berries! Eat as many as you can.",
         "feast.gulp": "{a} pops two berries at once!",
@@ -288,6 +320,13 @@
       },
       "line": "Two laps of the lake. The sharks are only rubber, but they bonk hard.",
       "favours": ["spd", "tide", "small", "setter", "dodge"],
+      "favourNotes": {
+        "spd": "Fast swimmers stay ahead of the sharks.",
+        "tide": "Tide creatures cut through the water.",
+        "small": "Small swimmers are hard for the sharks to spot.",
+        "setter": "Setters lead the pack round the lake.",
+        "dodge": "Nimble swimmers slip past a rubber shark."
+      },
       "roleBp": {
         "setter": 11500
       },
@@ -327,6 +366,13 @@
       "smallBp": 11600,
       "line": "Everyone onto a melting ice floe. Shove, slip and stay dry.",
       "favours": ["hp", "small", "mire", "guard", "atk"],
+      "favourNotes": {
+        "hp": "Sturdy creatures keep their footing when shoved.",
+        "small": "Small ones are slippery and hard to shove.",
+        "mire": "Muddy Mire feet grip the ice.",
+        "guard": "Guards plant their feet and won't budge.",
+        "atk": "Strong shoves send rivals over the edge."
+      },
       "roleBp": {
         "guard": 12000
       }
@@ -378,7 +424,14 @@
         "setter": 11000
       },
       "line": "Three friends, one big log, a long path. Keep in step and keep it up.",
-      "favours": ["spd", "grove", "guard", "setter", "dodge"]
+      "favours": ["spd", "grove", "guard", "setter", "dodge"],
+      "favourNotes": {
+        "spd": "The log goes as fast as its slowest carrier.",
+        "grove": "Grove creatures feel which way the log wants to go.",
+        "guard": "A Guard steadies the log when it wobbles.",
+        "setter": "A Setter at the front sets the pace.",
+        "dodge": "Nimble carriers catch a wobbling log."
+      }
     },
     {
       "id": "pumpkin-push",
@@ -429,6 +482,12 @@
       "smallBp": 8500,
       "line": "A pumpkin the size of a hut, and a hill. Push together!",
       "favours": ["atk", "mire", "guard", "big"],
+      "favourNotes": {
+        "atk": "Strong shoulders roll the pumpkin uphill.",
+        "mire": "Muddy Mire feet dig in and push.",
+        "guard": "A Guard holds the pumpkin when it slips.",
+        "big": "Big creatures put their weight behind it."
+      },
       "say": {
         "haul.start": "Shoulders to the pumpkins... push!",
         "haul.drop": "Oops! The pumpkin rolls back on {a}.",
@@ -477,7 +536,13 @@
         "support": 10500
       },
       "line": "A pond, a barrel each and forty seconds. Fill it to the brim!",
-      "favours": ["spd", "tide", "support", "dodge"]
+      "favours": ["spd", "tide", "support", "dodge"],
+      "favourNotes": {
+        "spd": "Quick feet mean more trips to the barrel.",
+        "tide": "Tide creatures carry more water each trip.",
+        "support": "A Support at the pond helps fill pails faster.",
+        "dodge": "Nimble feet don't slip on the wet grass."
+      }
     },
     {
       "id": "crate-tower",
@@ -518,7 +583,13 @@
       },
       "smallBp": 11000,
       "line": "Stack the crates as high as you dare. Mind the wobble.",
-      "favours": ["small", "hp", "guard", "grove"]
+      "favours": ["small", "hp", "guard", "grove"],
+      "favourNotes": {
+        "small": "Small climbers put the crates up quickly.",
+        "hp": "Sturdy creatures hold the base steady.",
+        "guard": "A Guard at the base keeps the tower straight.",
+        "grove": "Grove creatures root the tower to the ground."
+      }
     },
     {
       "id": "kite-flight",
@@ -561,7 +632,14 @@
         "setter": 10500
       },
       "line": "Run, let the string out and ride the wind. Highest kite wins.",
-      "favours": ["spd", "spark", "mire", "guard", "dodge"]
+      "favours": ["spd", "spark", "mire", "guard", "dodge"],
+      "favourNotes": {
+        "spd": "Fast runners lift the kite higher.",
+        "spark": "Spark creatures bring their own breeze.",
+        "mire": "Muddy Mire feet hold the line in a gust.",
+        "guard": "A Guard holds the line when the wind tugs.",
+        "dodge": "Nimble creatures duck under a tangled string."
+      }
     }
   ],
   "say": {

@@ -8,6 +8,9 @@ import {
   gamesEventDef,
   gamesEventInfo,
   gamesEventName,
+  gamesFavourNote,
+  checkFavourNotes,
+  MAX_FAVOUR_NOTE,
   gamesSayTemplate,
   loadGames,
 } from '../src/index';
@@ -72,6 +75,29 @@ describe('the shipped Games content', () => {
     expect(gamesEventInfo('toString')).toBeUndefined();
     // A retired id is never reused by a live event.
     for (const e of gamesContent.events) expect(GAMES_RETIRED[e.id]).toBeUndefined();
+  });
+
+  it('says what every favour of every event means there: one short plain line each', () => {
+    const all = [...gamesContent.events, ...Object.values(GAMES_RETIRED)];
+    for (const e of all) {
+      expect(Object.keys(e.favourNotes).sort(), e.id).toEqual([...e.favours].sort());
+      for (const f of e.favours) {
+        const note = gamesFavourNote(e.id, f);
+        expect(note, `${e.id} ${f}`).toBeDefined();
+        expect([...(note ?? '')].length, `${e.id} ${f}`).toBeLessThanOrEqual(MAX_FAVOUR_NOTE);
+        // One sentence in the Games' voice: no stat words, no numbers.
+        expect(note, `${e.id} ${f}`).toMatch(/^[A-Z].*\.$/u);
+        expect(note, `${e.id} ${f}`).not.toMatch(/\d|%|\b(HP|stat|stats|buff|crit|bonus)\b/u);
+      }
+      expect(() => {
+        checkFavourNotes(e);
+      }).not.toThrow();
+    }
+    expect(gamesFavourNote('sauna-showdown', 'ember')).toBe('Ember creatures shrug off the heat.');
+    // A favour the event does not have, an unknown event, an inherited key: no note.
+    expect(gamesFavourNote('sauna-showdown', 'spd')).toBeUndefined();
+    expect(gamesFavourNote('never-was', 'hp')).toBeUndefined();
+    expect(gamesFavourNote('sauna-showdown', 'toString')).toBeUndefined();
   });
 
   it('fills {a}, {b} and {n} and leaves a missing one as it is', () => {
@@ -179,6 +205,41 @@ describe('loadGames rejects broken content', () => {
         (d.events[1] as Record<string, unknown>)['say'] = { 'chase.duck': 'wrong kind' };
       }),
     ).toThrow(/not a endure key/);
+  });
+
+  it('a favour without a note, a note for no favour, a note too long', () => {
+    expect(
+      broken((d) => {
+        const notes = (d.events[0] as Record<string, unknown>)['favourNotes'] as Record<
+          string,
+          string
+        >;
+        delete notes['ember'];
+      }),
+    ).toThrow(/favour "ember" has no note/);
+    expect(
+      broken((d) => {
+        const notes = (d.events[0] as Record<string, unknown>)['favourNotes'] as Record<
+          string,
+          string
+        >;
+        notes['spd'] = 'Quick ones get out first.';
+      }),
+    ).toThrow(/a note for "spd"/);
+    expect(
+      broken((d) => {
+        const notes = (d.events[0] as Record<string, unknown>)['favourNotes'] as Record<
+          string,
+          string
+        >;
+        notes['ember'] = 'x'.repeat(MAX_FAVOUR_NOTE + 1);
+      }),
+    ).toThrow(/favourNotes/);
+    expect(
+      broken((d) => {
+        delete (d.events[0] as Record<string, unknown>)['favourNotes'];
+      }),
+    ).toThrow(/favourNotes/);
   });
 
   it('a pool without a team event', () => {

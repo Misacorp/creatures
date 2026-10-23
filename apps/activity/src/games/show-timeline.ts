@@ -1042,6 +1042,35 @@ export function finalBoard(p: PreparedEvent): BoardRow[] {
   });
 }
 
+/** How many rows the show's board lists before the viewer's own (Misa, 2026-10-23: a short list). */
+export const BOARD_TOP = 5;
+
+/** One row of the listed board, and whether rows were left out just above it. */
+export interface ShownRow {
+  row: BoardRow;
+  /** Rows between this one and the one listed before it were left out (a "…" gap). */
+  gap: boolean;
+}
+
+/**
+ * The board as the show lists it: the first `top` rows, then the viewer's rows further down, in place
+ * order, each marked when rows were left out above it.
+ */
+export function boardShown(
+  rows: readonly BoardRow[],
+  youId: string | undefined,
+  top = BOARD_TOP,
+): ShownRow[] {
+  const out: ShownRow[] = [];
+  let last = -1;
+  rows.forEach((row, i) => {
+    if (i >= top && (youId === undefined || row.playerId !== youId)) return;
+    out.push({ row, gap: i > last + 1 });
+    last = i;
+  });
+  return out;
+}
+
 /** The podium: the first three standings (places 1 to 3; a tie shares a step) and how many more tied. */
 export function podiumOf(p: PreparedEvent): { rows: BoardRow[]; more: number } {
   const medalled = finalBoard(p).filter((r) => r.place <= 3);

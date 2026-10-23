@@ -151,7 +151,7 @@ const gamesShow: Entry = {
   file: 'apps/activity/src/games/GamesShow.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The Valley Games show player: the day’s events one after another, each with an intro card, the event on its scene and a podium, with the stands above, one line of commentary, the top three and you, and the event pips. Live it is synced to the show’s start (a countdown before); a replay has play, 2x and next event. Every preset runs the real engine on a sample roster; "at" is seconds into the show (live: how long ago it started).',
+    'The Valley Games show player: the day’s events one after another, each with an intro card, the event on its scene and a podium, with the stands above, one line of commentary, the leaderboard as a short list (the top five and you, with names, owners and scores) and the event pips. On a phone the stands and the scene fill the width (a whole scale, zoomed the rest of the way, nearest neighbour); on a wide screen the scene is at most 3x and the list sits beside it. Live it is synced to the show’s start (a countdown before); a replay has play, 2x and next event. Every preset runs the real engine on a sample roster; "at" is seconds into the show (live: how long ago it started).',
   controls: {
     show: { kind: 'select', options: SHOWS },
     roster: { kind: 'select', options: ROSTERS },

@@ -24,6 +24,9 @@ const Text = (max: number) =>
 const Int = (min: number, max: number) =>
   v.pipe(v.number(), v.integer(), v.minValue(min), v.maxValue(max));
 const Bp = Int(0, 10_000);
+
+/** The longest line a favour's note may be (code units; the popover shows it on one or two lines). */
+export const MAX_FAVOUR_NOTE = 80;
 const Mult = Int(1, 40_000);
 
 export const GAMES_KINDS = [
@@ -589,6 +592,11 @@ const Base = {
   /** One short teaser sentence. */
   line: Text(120),
   favours: v.pipe(v.array(v.picklist(GAMES_FAVOURS)), v.minLength(1), v.maxLength(5)),
+  /**
+   * What each favour means in this event, one short line in the Games' voice (the favour icon's
+   * popover): every favour has one, and only the favours do.
+   */
+  favourNotes: v.record(v.string(), Text(MAX_FAVOUR_NOTE)),
   /** Commentary templates that replace the kind's own for this event (a skin's own words). */
   say: v.optional(v.record(v.string(), Text(80))),
 };
@@ -628,6 +636,18 @@ function checkTemplate(where: string, key: string, text: string): void {
   }
 }
 
+/** Every favour of an event has a note, and every note is for one of its favours. */
+export function checkFavourNotes(e: Pick<GamesEventDef, 'id' | 'favours' | 'favourNotes'>): void {
+  for (const f of e.favours) {
+    if (!Object.hasOwn(e.favourNotes, f)) fail(`"${e.id}": favour "${f}" has no note`);
+  }
+  for (const key of Object.keys(e.favourNotes)) {
+    if (!(e.favours as readonly string[]).includes(key)) {
+      fail(`"${e.id}": a note for "${key}", which it does not favour`);
+    }
+  }
+}
+
 /**
  * Validates raw Games content (schema first, then cross-references) and returns it typed. Throws an
  * Error naming the first problem. Shipped content is checked at module load.
@@ -656,6 +676,7 @@ export function loadGames(raw: unknown): GamesPack {
       fail(`"${e.id}": scene "${e.scene}" is not a ${e.kind} scene`);
     if (e.team === 1 && e.teamScore !== undefined) fail(`"${e.id}": teamScore is for team events`);
     if (new Set(e.favours).size !== e.favours.length) fail(`"${e.id}" repeats a favour`);
+    checkFavourNotes(e);
     const own = new Set<string>(GAMES_SAY_KEYS[e.kind]);
     for (const [key, text] of Object.entries(e.say ?? {})) {
       if (!own.has(key)) fail(`"${e.id}": commentary "${key}" is not a ${e.kind} key`);

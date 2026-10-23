@@ -2,7 +2,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FakeElement, byClass, byName, createPage, visibleText, type Page } from '../test-dom';
 import { SAMPLE_DAY, sampleShow } from '../workbench/games-show-sample';
 import { GamesShow, clockText, standsTeams } from './GamesShow';
-import { SHOW_INTRO_MS, buildShowTimeline, prepareEvent, sayParts, sayText } from './show-timeline';
+import {
+  BOARD_TOP,
+  SHOW_INTRO_MS,
+  boardShown,
+  buildShowTimeline,
+  finalBoard,
+  prepareEvent,
+  sayParts,
+  sayText,
+  type BoardRow,
+} from './show-timeline';
 import { clockOffsetOf, liveShowMs } from './use-show-clock';
 
 /**
@@ -71,10 +81,16 @@ describe('GamesShow', () => {
     if (span === undefined) throw new Error('no span');
     const { root } = draw({ startMs: span.eventStart + 1 });
     expect(byClass(root, 'gs-title')).toHaveLength(0);
+    // The board is a short list: the top five, and you when you are further down.
     const slots = byClass(root, 'gs-slot');
-    expect(slots.length).toBeGreaterThanOrEqual(3);
-    expect(slots.length).toBeLessThanOrEqual(4);
+    expect(slots.length).toBeGreaterThanOrEqual(5);
+    expect(slots.length).toBeLessThanOrEqual(6);
     expect(slots.filter((s) => s.classList.contains('is-mine'))).toHaveLength(1);
+    // Each row names its creature and whose it is; yours says "(you)".
+    const mine = first(slots.filter((s) => s.classList.contains('is-mine')));
+    expect(visibleText(first(byClass(mine, 'gs-owner')))).toBe('(you)');
+    // The scene and its board share the show's grid; the board goes beside it on a wide screen.
+    expect(first(byClass(root, 'games-show')).classList.contains('has-board')).toBe(true);
     // The opening line of the sauna is said at the event's first tick.
     expect(visibleText(first(byClass(root, 'gs-say')))).toBe(
       'The doors close. Who can take the heat?',
@@ -123,6 +139,9 @@ describe('GamesShow', () => {
     expect(visibleText(first(byClass(root, 'gs-countdown')))).toBe('1:05');
     expect(byClass(root, 'gs-lineup-item')).toHaveLength(4);
     expect(byName(root, 'button', 'Play')).toHaveLength(0);
+    // No board before the show: one column.
+    expect(first(byClass(root, 'games-show')).classList.contains('is-before')).toBe(true);
+    expect(first(byClass(root, 'games-show')).classList.contains('has-board')).toBe(false);
   });
 
   it('seeks a live show to the server’s now, with no controls', () => {
@@ -136,6 +155,88 @@ describe('GamesShow', () => {
     expect(byClass(root, 'gs-title')).toHaveLength(0);
     expect(visibleText(first(byClass(root, 'gs-live')))).toContain('Watching live');
     expect(byName(root, 'button', 'Next event')).toHaveLength(0);
+  });
+});
+
+describe('the board as a list', () => {
+  const row = (place: number, playerId: string): BoardRow => ({
+    teamId: `t-${playerId}`,
+    playerId,
+    actor: 0,
+    place,
+    text: `${String(10 - place)}m`,
+    out: false,
+  });
+  const rows = Array.from({ length: 9 }, (_, i) => row(i + 1, `p${String(i + 1)}`));
+
+  it('lists the top five, then your rows further down in place order, marking the gap', () => {
+    expect(BOARD_TOP).toBe(5);
+    const shown = boardShown(rows, 'p8');
+    expect(shown.map((r) => r.row.playerId)).toEqual(['p1', 'p2', 'p3', 'p4', 'p5', 'p8']);
+    expect(shown.map((r) => r.gap)).toEqual([false, false, false, false, false, true]);
+    // Right after the top five: no gap.
+    expect(boardShown(rows, 'p6').map((r) => r.gap)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
+    // In the top five: just the five; a spectator: the five.
+    expect(boardShown(rows, 'p2')).toHaveLength(5);
+    expect(boardShown(rows, undefined)).toHaveLength(5);
+    // Two rows of yours (a stored day with two entries of one player), both listed, in order.
+    const two = [...rows.slice(0, 6), row(7, 'p9'), row(8, 'p9')];
+    expect(boardShown(two, 'p9').map((r) => r.row.place)).toEqual([1, 2, 3, 4, 5, 7, 8]);
+    expect(boardShown(two, 'p9').map((r) => r.gap)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+    ]);
+    // A short field lists everyone.
+    expect(boardShown(rows.slice(0, 3), 'p3')).toHaveLength(3);
+  });
+
+  it('draws the final board of a big field: places in order, you in gold, nobody cut off', () => {
+    const show = sampleShow(['melon-run'], 15, 0, 'board-list');
+    const event = show.events[0];
+    if (event === undefined) throw new Error('no event');
+    const p = prepareEvent(event);
+    const tl = buildShowTimeline(show.events);
+    const span = tl.spans[0];
+    if (span === undefined) throw new Error('no span');
+    // Pick a viewer who finished outside the top five.
+    const board = finalBoard(p);
+    const low = board.find((_, i) => i >= BOARD_TOP);
+    if (low === undefined) throw new Error('nobody low');
+    page = createPage();
+    page.draw(
+      <GamesShow
+        events={show.events}
+        mode="replay"
+        youId={low.playerId}
+        names={show.names}
+        autoplay={false}
+        startMs={span.podiumStart + 500}
+      />,
+    );
+    const slots = byClass(page.root, 'gs-slot');
+    expect(slots).toHaveLength(BOARD_TOP + 1);
+    const places = slots.map((s) => Number(visibleText(first(byClass(s, 'gs-place')))));
+    expect(places).toEqual([...places].sort((a, b) => a - b));
+    const last = slots.at(-1);
+    expect(last?.classList.contains('is-mine')).toBe(true);
+    expect(last?.classList.contains('is-gap')).toBe(low.place > BOARD_TOP + 1);
+    // Every row has its score.
+    for (const s of slots) expect(visibleText(first(byClass(s, 'gs-score')))).not.toBe('');
+    // A creature of someone else is followed by its owner's name.
+    const other = first(slots.filter((s) => !s.classList.contains('is-mine')));
+    expect(visibleText(first(byClass(other, 'gs-owner')))).toMatch(/^\(.+\)$/u);
   });
 });
 

@@ -12,6 +12,7 @@ Read `README.md` for the tags.
 - Entries close at the daily reset, and the show plays to everyone a few minutes later. Everyone watches the same moment, and the next day's events are announced at the end. `(design)`
 - Each event gives gold, silver and bronze medals. A creature that beats its own best in an event gets a pin. Medals are kept for life and can be spent at the Prize Stall on Wednesdays. `(design)`
 - What each event favours is part of its teaser (`favours`): the right element, role, size or knack counts about as much as strength. `(content: games-events.json)`
+- Each favour has one line of its own in each event (`favourNotes`), said in the meadow's voice and shown when a player taps the favour's icon: in the Sauna Showdown, "Ember creatures shrug off the heat." No numbers and no stat words. `(content: games-events.json)`
 - Level does not matter on the meadow: species, element, role and size do, and of a creature's gear only its knacks (the chance and trigger lines) come along. A creature the event suits wears a green **Good fit** tick in the entry list. `(design: decisions.md, 2026-10-23)`
 - A creature that wins an event (gold) earns that event's **badge**, a little medallion in the event's colours with a count of its wins ("Pepper Panic ×3"). Every member of a winning team earns it. `(design)`
 - Only creatures their explorers entered that day take part; nobody is entered for them. `(design)`

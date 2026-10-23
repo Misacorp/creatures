@@ -1,6 +1,7 @@
 /*
-  The Valley Games scenes (`games/art/GamesScene.tsx`): a back canvas, the actors, a front canvas, at a
-  whole scale; the stage is centred in its box. Actors are placed by their sprite's top-left in CSS px
+  The Valley Games scenes (`games/art/GamesScene.tsx`): a back canvas, the actors, a front canvas, drawn
+  at a whole scale; to fill its box the stage is then zoomed (`--zoom`, nearest neighbour: the canvases
+  are pixelated), and centred. Actors are placed by their sprite's top-left in CSS px
   (`--x`, `--y`), set through `cssVars`.
 */
 .games-scene {
@@ -8,6 +9,22 @@
   justify-content: center;
   width: 100%;
   overflow: hidden;
+}
+
+.games-fit {
+  position: relative;
+  flex: none;
+  width: var(--fw);
+  height: var(--fh);
+  overflow: hidden;
+}
+
+.games-fit.is-zoomed .games-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: scale(var(--zoom));
+  transform-origin: 0 0;
 }
 
 .games-stage {
