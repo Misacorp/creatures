@@ -30,5 +30,31 @@
       "mcp__github__merge_pull_request",
       "mcp__github__enable_pr_auto_merge"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "compact|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/retro-nudge.mjs",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/retro-mark.mjs",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   }
 }

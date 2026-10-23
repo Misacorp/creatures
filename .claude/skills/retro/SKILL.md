@@ -69,3 +69,12 @@ Session: <what it set out to do, one line>. Outcome: <what shipped, PRs>.
 
 Status: proposals not applied; Misa decides.
 ```
+
+## The reminder hooks
+
+`.claude/settings.json` wires two small hooks (scripts in `.claude/hooks/`). They only remind; they never run a retro or block anything.
+
+- `retro-nudge.mjs` (SessionStart, after `compact` or `clear`): adds one line of context asking Claude to offer Misa a `/retro` of the stretch that just closed, if `docs/retros/` has none for it. After a compaction it points at the same transcript with `--segment previous`; after `/clear`, at the closed session's transcript with `--segment current`.
+- `retro-mark.mjs` (SessionEnd, on `clear`): remembers the closing session's transcript path in `~/.claude/retro-pending/` (outside the repo) for the nudge.
+
+Misa's loop: finish and merge a feature, run `/retro`, then `/clear` for the next one (`/compact` only to keep going on the same feature).
