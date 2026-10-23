@@ -1,16 +1,21 @@
-/** Building an entrant from the fold the fights use, and the aptitude the client shows as pips. */
+/**
+ * Building an entrant (no level in the Games: the species' base strengths and the gear's chance and
+ * trigger lines), the aptitude the simulator checks, and the "Good fit" badge the picker shows.
+ */
 import {
   RULES,
+  content,
   dodgeChanceBp,
   gamesIsSmall,
   type CreatureSpecies,
-  type CritBonus,
   type GamesEventDef,
   type LuckConfig,
-  type Stats,
 } from '@creatures/game';
 import { creatureCritStats } from '../fight';
+import { fillAptitude } from './fill';
+import { kiteAptitude } from './kite';
 import { BP, absCurveBp, isqrt, mulBp } from './math';
+import { stackAptitude } from './stack';
 import type { GamesEntrant, GamesMods } from './types';
 
 const MOD_LINES = [
@@ -25,34 +30,47 @@ const MOD_LINES = [
   'warmHeartBp',
 ] as const satisfies readonly (keyof GamesMods)[];
 
-/** A folded creature: what the worker's `TeamCreature` and the simulator's `foldedCreature` give. */
+/** What the Games read of a species: its current form's base strengths, element, role, size and crit. */
+export type GamesSpecies = Pick<
+  CreatureSpecies,
+  'id' | 'element' | 'role' | 'stage' | 'evolvesTo' | 'baseStats' | 'crit'
+>;
+
+/**
+ * A creature as the Games see it. There is no level, no fusion and no gear stat line here on purpose
+ * (Misa, 2026-10-23: "no level in the Games"): two creatures of one species are equal apart from the
+ * gear's chance and trigger lines.
+ */
 export interface GamesCreatureInput {
   id: string;
   playerId: string;
   /** Absent: the player's own team (`playerId`). */
   teamId?: string;
   name: string;
-  species: Pick<CreatureSpecies, 'id' | 'element' | 'role' | 'stage' | 'evolvesTo'>;
-  level: number;
-  /** The fight's stats (fusion and gear included). */
-  stats: Stats;
-  crit?: CritBonus | undefined;
-  /** The gear sheet (`GearMods` or `SlotMods`); only the Games' lines and the flat dodge are read. */
-  mods?: (GamesMods & { dodgeBp?: number }) | undefined;
+  /** The creature's current species (its current form). */
+  species: GamesSpecies;
+  /**
+   * The gear sheet (`GearMods` or `SlotMods`); only the Games' chance and trigger lines are read
+   * (`GamesMods`). Stat lines, flat dodge and crit lines are ignored.
+   */
+  mods?: GamesMods | undefined;
   shiny?: boolean;
   bot?: boolean;
 }
 
 /**
- * The entrant of a folded creature: size from `gamesIsSmall` (a single-stage line counts as grown), dodge from Speed plus the sheet's flat dodge (`dodgeChanceBp`),
- * crit chance and damage from `luck` (default the shipped `RULES.combat.luck`) and the creature's bonus,
- * and the gear lines the Games read. The worker and the simulator both build entrants with this.
+ * The entrant of a creature: HP, Attack and Speed are its species' base stats (the level-1 stats of
+ * its current form: no growth, no fusion bonus, no gear); dodge from that Speed alone (`dodgeChanceBp`);
+ * crit chance and damage from `luck` (default the shipped `RULES.combat.luck`) and the species' own
+ * crit bonus (no gear crit); size from `gamesIsSmall` (a single-stage line counts as grown); and the
+ * gear's chance and trigger lines the Games read. The worker and the simulator both build entrants with this.
  */
 export function gamesEntrantFrom(
   c: GamesCreatureInput,
   luck: LuckConfig = RULES.combat.luck,
 ): GamesEntrant {
-  const crit = creatureCritStats(luck, c.crit);
+  const crit = creatureCritStats(luck, c.species.crit);
+  const base = c.species.baseStats;
   const e: GamesEntrant = {
     id: c.id,
     playerId: c.playerId,
@@ -64,11 +82,10 @@ export function gamesEntrantFrom(
     // Size (`gamesIsSmall`): only a young creature that still has growing to do is small; a line
     // with one stage is full grown at stage 1, so it counts as big.
     stage: gamesIsSmall(c.species) ? 1 : 2,
-    level: c.level,
-    hp: c.stats.hp,
-    atk: c.stats.atk,
-    spd: c.stats.spd,
-    dodgeBp: dodgeChanceBp(c.stats.spd, c.mods?.dodgeBp ?? 0),
+    hp: base.hp,
+    atk: base.atk,
+    spd: base.spd,
+    dodgeBp: dodgeChanceBp(base.spd, 0),
     critBp: crit.chanceBp,
     critDmgBp: crit.damageBp,
   };
@@ -83,13 +100,13 @@ export function gamesEntrantFrom(
   return e;
 }
 
-/** Typical stats of a mid-game creature: the aptitude's reference points. */
-const REF = { hp: 300, atk: 60, spd: 60 } as const;
+/** Typical base stats of a species (about the median of the shipped species): the aptitude's reference points. */
+const REF = { hp: 168, atk: 36, spd: 37 } as const;
 
 /**
- * How well a creature fits an event, as a whole number (about 1000 for a typical mid-game creature that
- * the event neither favours nor punishes). Deterministic, no field: the client turns a player's own
- * creatures' numbers into pips; the simulator checks it lines up with results. It reads the same
+ * How well a creature fits an event, as a whole number (about 1000 for a typical species that the
+ * event neither favours nor punishes). Deterministic, no field: the server turns it into the binary
+ * "Good fit" badge (`gamesGoodFit`); the simulator checks it lines up with results. It reads the same
  * things the kind does: the key stat on a square-root curve, the element, role and size multipliers,
  * dodge and crit where they count, and the gear lines.
  */
@@ -177,8 +194,53 @@ export function gamesAptitude(def: GamesEventDef, e: GamesEntrant): number {
       if (e.element === p.zapElement) f = mulBp(f, 10_200);
       break;
     }
+    // The at-once team events keep their aptitude next to their rules.
+    case 'fill':
+      f = fillAptitude(def, e, { hp: sHp, atk: sAtk, spd: sSpd });
+      break;
+    case 'stack':
+      f = stackAptitude(def, e, { hp: sHp, atk: sAtk, spd: sSpd });
+      break;
+    case 'kite':
+      f = kiteAptitude(def, e, { hp: sHp, atk: sAtk, spd: sSpd });
+      break;
   }
   // Size counts where the event says so (shove already has it in the grip).
   if (def.kind !== 'shove') f = mulBp(f, small);
   return Math.max(1, Math.floor(f / 10));
+}
+
+/** Threshold per event definition (content is fixed at load; the defs are the content's objects). */
+const goodFitCache = new WeakMap<GamesEventDef, number>();
+
+/**
+ * The aptitude a creature needs for the "Good fit" badge in an event: the aptitude of the species at
+ * the top `RULES.games.goodFit.topSpeciesBp` share of all species (`teamTopSpeciesBp` in a team event) (each species once, gearless, as
+ * `gamesEntrantFrom` builds it), so the bar is computed per event from the content alone and a new
+ * event or species needs no number. The share is calibrated in the simulator (`pnpm sim:games`: about
+ * 2 to 4 good fits per event in a typical roster; docs/design/decisions.md, 2026-10-23).
+ */
+export function gamesGoodFitMin(
+  def: GamesEventDef,
+  species: readonly GamesSpecies[] = content.creatures,
+): number {
+  const useCache = species === content.creatures;
+  const cached = useCache ? goodFitCache.get(def) : undefined;
+  if (cached !== undefined) return cached;
+  const apts = species
+    .map((sp) =>
+      gamesAptitude(def, gamesEntrantFrom({ id: sp.id, playerId: 'p', name: sp.id, species: sp })),
+    )
+    .sort((a, b) => b - a);
+  const { topSpeciesBp, teamTopSpeciesBp } = RULES.games.goodFit;
+  const share = def.team === 3 ? teamTopSpeciesBp : topSpeciesBp;
+  const take = Math.max(1, Math.ceil((apts.length * share) / BP));
+  const min = apts[Math.min(apts.length, take) - 1] ?? 1;
+  if (useCache) goodFitCache.set(def, min);
+  return min;
+}
+
+/** Whether a creature (its entrant: species and gear lines) is a good fit for an event. */
+export function gamesGoodFit(def: GamesEventDef, e: GamesEntrant): boolean {
+  return gamesAptitude(def, e) >= gamesGoodFitMin(def);
 }

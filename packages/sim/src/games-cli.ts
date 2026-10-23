@@ -113,7 +113,7 @@ export function parseGamesCli(argv: readonly string[]): GamesCliOptions {
     const id = str('event') ?? 'sauna-showdown';
     const event = gamesEventDef(id);
     if (event === undefined) throw new Error(`--event: unknown event "${id}"`);
-    const policy = str('policy') ?? 'best';
+    const policy = str('policy') ?? 'fit';
     if (!(GAMES_POLICIES as readonly string[]).includes(policy)) {
       throw new Error(`--policy must be one of ${GAMES_POLICIES.join(', ')}`);
     }

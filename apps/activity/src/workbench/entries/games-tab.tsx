@@ -13,6 +13,7 @@ import {
   GAMES_FIXTURES,
   GAMES_SELF_ID,
   GAMES_VIEWS,
+  SAMPLE_TEAM,
   gamesRoster,
   gamesView,
   type GamesViewName,
@@ -32,7 +33,6 @@ function fakeApi(get: () => GamesView, set: (v: GamesView) => void): GamesApi {
       set({ ...now, next });
       return Promise.resolve(next);
     },
-    setAuto: (on) => Promise.resolve({ auto: on, joined: true }),
     buy: () => Promise.resolve(GAMES_FIXTURES.stallBuy),
   };
 }
@@ -70,7 +70,7 @@ const gamesTab: Entry = {
   file: `${FILE}GamesTab.tsx`,
   group: 'Creatures & game pieces',
   description:
-    'The Games tab on the real captured server answers (fixtures/games-*.json): the title and countdown, your last show, the four events with their slots (tap one for the picker; picks act on the page), auto-entry, the medal cabinet and the Prize Stall; from the lock the stands, during the show the live show. Covers GamesHeader and Lineup.',
+    'The Games tab on the real captured server answers (fixtures/games-*.json): the title and countdown, your last show, the events of the day with their slots (tap one for the picker; picks act on the page; an entered good fit wears the "Good fit" badge), the medal cabinet and the Prize Stall; from the lock the stands, during the show the live show. Covers GamesHeader and Lineup.',
   covers: ['GamesHeader', 'Lineup'],
   controls: { view: { kind: 'select', options: GAMES_VIEWS } },
   defaults: { view: 'entries: one entered' },
@@ -94,6 +94,8 @@ function CardPreview({ p }: { p: Props }) {
     ...base,
     open: !bool(p, 'locked'),
     entries: ids.length === 0 ? {} : { [event.id]: event.team === 3 ? ids : ids.slice(0, 1) },
+    // The first entered creature is a good fit unless the preset says otherwise.
+    goodFit: { [event.id]: bool(p, 'goodFit') ? ids.slice(0, 1) : [] },
   };
   return (
     <ul class="ge-cards">
@@ -112,19 +114,30 @@ const eventCard: Entry = {
   file: `${FILE}GamesParts.tsx`,
   group: 'Creatures & game pieces',
   description:
-    'One event of the Games lineup: its scene as a strip, the name, what it favours as icons (tap one), and its slot, or three for the team event, each a creature with its fit pips or an empty "+". Covers FavourIcons, FitPips, EventThumb and the medal pictures (MedalCountsRow, MedalSprite, PinSprite).',
-  covers: ['FavourIcons', 'FitPips', 'EventThumb', 'MedalCountsRow', 'MedalSprite', 'PinSprite'],
+    'One event of the Games lineup: its scene as a strip, the name, what it favours as icons (tap one), and its slot, or three for the team event, each a creature (with the "Good fit" badge when the server says it suits the event) or an empty "+". Covers FavourIcons, GoodFitMark, EventBadge and BadgeShelf (seen on the EntryPicker and CreatureGamesView pages), EventThumb and the medal pictures (MedalCountsRow, MedalSprite, PinSprite).',
+  covers: [
+    'FavourIcons',
+    'GoodFitMark',
+    'EventBadge',
+    'BadgeShelf',
+    'EventThumb',
+    'MedalCountsRow',
+    'MedalSprite',
+    'PinSprite',
+  ],
   controls: {
     event: { kind: 'select', options: EVENT_IDS },
     filled: { kind: 'number', min: 0, max: 3 },
+    goodFit: { kind: 'toggle' },
     locked: { kind: 'toggle' },
   },
-  defaults: { event: EVENT_IDS[0] ?? '', filled: 1, locked: false },
+  defaults: { event: EVENT_IDS[0] ?? '', filled: 1, goodFit: true, locked: false },
   presets: [
-    { name: 'Entered', props: {} },
+    { name: 'Entered, a good fit', props: {} },
+    { name: 'Entered, not a good fit', props: { goodFit: false } },
     { name: 'Empty', props: { filled: 0 } },
-    { name: 'Team event, two of three', props: { event: 'log-carry', filled: 2 } },
-    { name: 'Team event, full', props: { event: 'log-carry', filled: 3 } },
+    { name: 'Team event, two of three', props: { event: SAMPLE_TEAM, filled: 2 } },
+    { name: 'Team event, full', props: { event: SAMPLE_TEAM, filled: 3 } },
     { name: 'Locked (after 13:37)', props: { locked: true } },
     ...LINEUP.map((e) => ({ name: `Scene: ${e.name}`, props: { event: e.id } })),
   ],
@@ -138,7 +151,7 @@ function SlotPreview({ p }: { p: Props }) {
     <div class="ge-slots">
       <EntrySlot
         creature={creature}
-        fit={creature === null ? null : num(p, 'fit')}
+        goodFit={creature !== null && bool(p, 'goodFit')}
         compact={bool(p, 'compact')}
         label="Melon Run"
         onOpen={bool(p, 'locked') ? undefined : () => undefined}
@@ -152,21 +165,21 @@ const entrySlot: Entry = {
   file: `${FILE}GamesParts.tsx`,
   group: 'Slots',
   description:
-    'One entry slot of a Games event: the creature, its name in its rarity colour and its fit pips (1 to 5), or a dashed "+" to fill; a button while entries are open, a plain box after the lock.',
+    'One entry slot of a Games event: the creature, its name in its rarity colour and the "Good fit" badge when it suits the event, or a dashed "+" to fill; a button while entries are open, a plain box after the lock.',
   controls: {
     empty: { kind: 'toggle' },
     creature: { kind: 'number', min: 0, max: 5 },
-    fit: { kind: 'number', min: 1, max: 5 },
+    goodFit: { kind: 'toggle' },
     compact: { kind: 'toggle' },
     locked: { kind: 'toggle' },
   },
-  defaults: { empty: false, creature: 1, fit: 4, compact: false, locked: false },
+  defaults: { empty: false, creature: 1, goodFit: true, compact: false, locked: false },
   presets: [
-    { name: 'Filled', props: {} },
+    { name: 'Filled, a good fit', props: {} },
+    { name: 'Filled, not a good fit', props: { goodFit: false } },
     { name: 'Empty', props: { empty: true } },
     { name: 'Team seat', props: { compact: true } },
     { name: 'Locked', props: { locked: true } },
-    { name: 'Poor fit', props: { fit: 1 } },
   ],
   render: (p) => <SlotPreview p={p} />,
 };
@@ -188,11 +201,20 @@ function PickerPreview({ p }: { p: Props }) {
   const roster = useMemo(() => (mixed ? mixedRoster() : gamesRoster()), [mixed]);
   const event = LINEUP.find((e) => e.id === str(p, 'event')) ?? LINEUP[0];
   if (event === undefined) return null;
+  const ids = roster.map((c) => c.id);
   const next = {
     ...GAMES_FIXTURES.entries.next,
+    // The captured good fits (two or three, as in a typical roster), and a badge or two for this event.
+    goodFit: {
+      [event.id]: [
+        ...(GAMES_FIXTURES.entries.next.goodFit[event.id] ?? []),
+        ...(mixed ? ['wb-single'] : []),
+      ],
+    },
+    badges: bool(p, 'badges') ? { [event.id]: { [ids[3] ?? '']: 3, [ids[4] ?? '']: 1 } } : {},
     entries: bool(p, 'others')
       ? {
-          'pepper-panic': [roster[5]?.id ?? ''],
+          [LINEUP.find((e) => e.id !== event.id)?.id ?? '']: [roster[5]?.id ?? ''],
           [event.id]: withSlot([], 0, roster[0]?.id ?? null),
         }
       : {},
@@ -216,17 +238,19 @@ const entryPicker: Entry = {
   file: `${FILE}EntryPicker.tsx`,
   group: 'Creatures & game pieces',
   description:
-    'The picker of a Games entry slot: a drawer with the event, its favours and teaser line, your creatures best fit first with their fit pips (one in another event says so, and a tap moves it), and Clear when the slot is filled. When the event favours small or big creatures, each creature of that size shows the favour’s glyph beside its pips ("mixed" adds an evolved creature and a single-stage line, both big).',
+    'The picker of a Games entry slot: a drawer with the event, its favours and teaser line, your creatures with the good fits first (each with the green "Good fit" badge at the right; no scores), the rest by name; a creature that has won this event shows its badge and win count beside its name; one in another event says so, and a tap moves it; Clear when the slot is filled. When the event favours small or big creatures, each creature of that size shows the favour’s glyph at the right ("mixed" adds an evolved creature and a single-stage line, both big).',
   controls: {
     event: { kind: 'select', options: EVENT_IDS },
     others: { kind: 'toggle' },
     mixed: { kind: 'toggle' },
+    badges: { kind: 'toggle' },
   },
-  defaults: { event: EVENT_IDS[0] ?? '', others: true, mixed: false },
+  defaults: { event: EVENT_IDS[0] ?? '', others: true, mixed: false, badges: true },
   presets: [
     { name: 'Filled, one creature in another event', props: {} },
     { name: 'Nothing entered yet', props: { others: false } },
-    { name: 'The team event', props: { event: 'log-carry' } },
+    { name: 'No badges won yet', props: { badges: false } },
+    { name: 'The team event', props: { event: SAMPLE_TEAM } },
     {
       name: 'Favours small, both sizes in the roster',
       props: { event: SMALL_EVENT, others: false, mixed: true },
@@ -355,19 +379,25 @@ const creatureGames: Entry = {
   file: `${FILE}CreatureGamesRow.tsx`,
   group: 'Creatures & game pieces',
   description:
-    'A creature’s Valley Games block on its page: its medals (only the kinds it has) and its best score in each event it ran, in seconds, metres, peppers or laps. Nothing at all for a creature with none.',
+    'A creature’s Valley Games block on its page: its event badges (one medallion per event it has won, tinted by the event’s scene, with the event’s name and its wins; events never won are not shown), its medals (only the kinds it has) and its best score in each event it ran, in seconds, metres, peppers or laps. Nothing at all for a creature with none.',
   controls: { more: { kind: 'toggle' } },
   defaults: { more: false },
   presets: [
-    { name: 'The captured creature (one silver, one record)', props: {} },
-    { name: 'A seasoned one', props: { more: true } },
+    { name: 'The captured creature', props: {} },
+    { name: 'A seasoned one (badges from four events)', props: { more: true } },
   ],
   render: (p) => (
     <CreatureGamesView
       games={
         bool(p, 'more')
           ? {
-              medals: { gold: 3, silver: 2, bronze: 4, pins: 5 },
+              medals: { gold: 6, silver: 2, bronze: 4, pins: 5 },
+              badges: [
+                { eventId: 'melon-run', wins: 3 },
+                { eventId: 'pepper-panic', wins: 1 },
+                { eventId: 'sauna-showdown', wins: 1 },
+                { eventId: 'log-carry', wins: 1 },
+              ],
               records: [
                 { eventId: 'melon-run', name: 'Melon Run', best: 42, unit: 'm', day: '2027-01-12' },
                 {

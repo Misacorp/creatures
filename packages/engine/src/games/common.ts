@@ -63,7 +63,6 @@ export function checkEntrants(def: GamesEventDef, entrants: readonly GamesEntran
     if (e.stage !== 1 && e.stage !== 2)
       throw new RangeError(`entrant "${e.id}": stage must be 1 or 2`);
     const stats: [string, unknown, number][] = [
-      ['level', e.level, 1_000],
       ['hp', e.hp, 10_000_000],
       ['atk', e.atk, 10_000_000],
       ['spd', e.spd, 10_000_000],

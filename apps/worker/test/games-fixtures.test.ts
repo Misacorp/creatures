@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import after from '../../activity/src/fixtures/games-after.json';
-import auto from '../../activity/src/fixtures/games-auto.json';
 import creature from '../../activity/src/fixtures/games-creature.json';
 import entries from '../../activity/src/fixtures/games-entries.json';
 import entry from '../../activity/src/fixtures/games-entry.json';
@@ -31,7 +30,6 @@ describe('the games fixtures match what the server sends', () => {
     sameShape(r['games-entries'], entries);
     sameShape(r['games-entry'], entry);
     sameShape(r['games-entry-team'], entryTeam);
-    sameShape(r['games-auto'], auto);
     sameShape(r['games-locked'], locked);
     sameShape(r['games-show'], show);
     sameShape(r['games-after'], after);
@@ -43,6 +41,9 @@ describe('the games fixtures match what the server sends', () => {
 
   it('shows what each fixture is meant to show', () => {
     expect(entries.phase).toBe('entries');
+    expect(entries.next).not.toHaveProperty('auto');
+    expect(Object.keys(entries.next.goodFit)).toEqual(entries.next.lineup.map((e) => e.id));
+    expect(Object.values(entries.next.goodFit).flat().length).toBeGreaterThan(0);
     expect(entries.show).toBeNull();
     expect(locked.phase).toBe('locked');
     expect(locked.show).toBeNull();

@@ -4,7 +4,7 @@
  * `serverNow - show.showAt`. Read-only apart from drawing the next day's lineup the first time it is
  * needed (the caller's transaction).
  */
-import { gamesAptitude } from '@creatures/engine';
+import { gamesGoodFit } from '@creatures/engine';
 import {
   RULES,
   gamesEventInfo,
@@ -25,18 +25,20 @@ import {
 } from './games-lock';
 import { stallView, type StallView } from './games-stall';
 import {
+  creatureBadges,
   creatureRecords,
   isBot,
   lastAwardedDay,
   lastShownDay,
+  playerBadges,
   playerEntries,
   playerNames,
   readCreatureMedals,
   readDay,
   readMedals,
-  readPlayer,
   readResults,
   type DayRow,
+  type GamesBadge,
 } from './games-store';
 
 /** How many players the medal table lists. */
@@ -94,11 +96,10 @@ export interface GamesView {
     open: boolean;
     lineup: LineupEventView[];
     entries: Record<string, string[]>;
-    /** The player has entered once (auto-entry acts only for a player who has). */
-    joined: boolean;
-    auto: boolean;
-    /** 1 to 5 pips per event per creature: how well it fits, against the player's own roster. */
-    fit: Record<string, Record<string, number>>;
+    /** Event id to the player's creatures with the "Good fit" badge for it (`gamesGoodFit`), oldest first. */
+    goodFit: Record<string, string[]>;
+    /** Event id to creature id to its wins of that event (its event badge); creatures with none are absent. */
+    badges: Record<string, Record<string, number>>;
   };
   show: GamesShowView | null;
   you: {
@@ -142,26 +143,21 @@ export function shownLineupViews(row: DayRow): LineupEventView[] {
 }
 
 /**
- * Pips by aptitude (`gamesAptitude`) across the player's whole roster: the best fit is 5, the worst 1,
- * the rest in between on a straight line. A roster of one (or all equal) is all 5.
+ * The player's good fits per event: the creatures whose aptitude reaches the event's bar
+ * (`gamesGoodFit`; the bar comes from the species, so no creature is ranked against the roster).
  */
-export function fitPips(
+export function goodFits(
   sql: SqlStorage,
   userId: string,
   defs: readonly GamesEventDef[],
-): Record<string, Record<string, number>> {
+): Record<string, string[]> {
   const roster = gamesRoster(sql, userId);
-  const out: Record<string, Record<string, number>> = {};
-  for (const def of defs) {
-    const apt = roster.map((c) => [c.creature.id, gamesAptitude(def, c.entrant)] as const);
-    const values = apt.map(([, a]) => a);
-    const lo = Math.min(...values);
-    const hi = Math.max(...values);
-    out[def.id] = Object.fromEntries(
-      apt.map(([id, a]) => [id, hi === lo ? 5 : 1 + Math.round((4 * (a - lo)) / (hi - lo))]),
-    );
-  }
-  return out;
+  return Object.fromEntries(
+    defs.map((def) => [
+      def.id,
+      roster.filter((c) => gamesGoodFit(def, c.entrant)).map((c) => c.creature.id),
+    ]),
+  );
 }
 
 /** A locked day's show, for a reader at or after its start. */
@@ -251,7 +247,7 @@ export function nextDay(sql: SqlStorage, now: number, tz: string): string {
   return nextShowDay(now, tz, (day) => readDay(sql, day)?.showAt ?? null);
 }
 
-/** The next show day's part of the tab: lineup, the player's entries, auto-entry and fit. */
+/** The next show day's part of the tab: lineup, the player's entries, good fits and event badges. */
 export function nextView(deps: GamesDeps, userId: string): GamesView['next'] {
   const sql = deps.storage.sql;
   const now = deps.now();
@@ -260,7 +256,6 @@ export function nextView(deps: GamesDeps, userId: string): GamesView['next'] {
   const row = ensureLineup(deps, day);
   const defs = lineupDefs(row.lineup);
   const lockAt = gamesLockAt(day, tz);
-  const player = readPlayer(sql, userId);
   return {
     day,
     lockAt,
@@ -268,9 +263,12 @@ export function nextView(deps: GamesDeps, userId: string): GamesView['next'] {
     open: row.lockedAt === null && now < lockAt,
     lineup: lineupViews(row),
     entries: playerEntries(sql, day, userId),
-    joined: player.joined,
-    auto: player.auto,
-    fit: fitPips(sql, userId, defs),
+    goodFit: goodFits(sql, userId, defs),
+    badges: playerBadges(
+      sql,
+      userId,
+      defs.map((d) => d.id),
+    ),
   };
 }
 
@@ -312,13 +310,18 @@ export function gamesView(deps: GamesDeps, userId: string): GamesView {
   };
 }
 
-/** A creature's medals and records (`GET /api/games/creature/:id`). Null: not the player's. */
+/**
+ * A creature's medals, event badges and records (`GET /api/games/creature/:id`). A badge is
+ * `{ eventId, wins }` (an event it has won, gold, with the count); a retired event's badge stays. Null:
+ * not the player's.
+ */
 export function creatureGamesView(
   sql: SqlStorage,
   userId: string,
   creatureId: string,
 ): {
   medals: { gold: number; silver: number; bronze: number; pins: number };
+  badges: GamesBadge[];
   records: { eventId: string; name: string; best: number; unit: string; day: string }[];
 } | null {
   const owned = sql
@@ -340,12 +343,15 @@ export function creatureGamesView(
       },
     ];
   });
-  return { medals, records };
+  const badges = creatureBadges(sql, creatureId).filter(
+    (b) => gamesEventInfo(b.eventId) !== undefined,
+  );
+  return { medals, badges, records };
 }
 
 /**
  * What a kind's score counts (the engine's `scores`): endure and shove the ticks lasted, chase metres,
- * feast peppers eaten, swim hundredths of a lap.
+ * feast peppers eaten, swim hundredths of a lap, fill a barrel's percent, stack crates, kite metres.
  */
 export const SCORE_UNITS: Record<GamesEventDef['kind'], string> = {
   endure: 'ticks',
@@ -354,6 +360,9 @@ export const SCORE_UNITS: Record<GamesEventDef['kind'], string> = {
   feast: 'peppers',
   swim: 'centilaps',
   haul: 'm',
+  fill: 'percent',
+  stack: 'crates',
+  kite: 'm',
 };
 
 /** The team size of an event (for the entry check). */

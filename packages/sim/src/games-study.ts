@@ -8,6 +8,7 @@
 import {
   RULES,
   chooseLineup,
+  creaturePower as statsPower,
   createSeededRng,
   fillGamesSay,
   gamesContent,
@@ -18,6 +19,7 @@ import {
 import {
   gamesAptitude,
   gamesEntrantFrom,
+  gamesGoodFit,
   runGamesEvent,
   type GamesEntrant,
   type GamesEventResult,
@@ -28,18 +30,27 @@ import { journeyRoster } from './profiles';
 import type { SimPlayer } from './state';
 import { shuffle } from './util';
 
-export const GAMES_POLICIES = ['best', 'aptitude', 'random'] as const;
+/**
+ * How a player picks (no level in the Games, 2026-10-23): `fit` picks at random among its "Good fit"
+ * creatures (`gamesGoodFit`), `best-level` sends its highest levels first, `random` anything.
+ */
+export const GAMES_POLICIES = ['fit', 'best-level', 'random'] as const;
 export type GamesPolicy = (typeof GAMES_POLICIES)[number];
 
-/** A creature as the study handles it: its entrant (no team yet), its power and its line. */
+/** A creature as the study handles it: its entrant (no team yet), its power, level and roster rank. */
 export interface Candidate {
   entrant: GamesEntrant;
+  /** Its fight power (level, fusion and gear): what its roster rank and `best-level` read. */
   power: number;
+  /** Its power as the Games see it (the species' base stats, `gamesPowerOf`). */
+  gamesPower: number;
+  /** The creature's level: the Games do not read it; the study checks it does not predict a win. */
+  level: number;
   /** Its place in its owner's roster by power: 1 is the strongest. */
   rank: number;
 }
 
-/** The candidates of a player: every creature it owns, folded the way fights fold them. */
+/** The candidates of a player: every creature it owns, its gear's chance and trigger lines folded in. */
 export function candidatesOf(player: Pick<SimPlayer, 'id' | 'creatures'>): Candidate[] {
   const list = player.creatures.map((c: OwnedCreature) => {
     const folded = foldedCreature(c);
@@ -50,12 +61,11 @@ export function candidatesOf(player: Pick<SimPlayer, 'id' | 'creatures'>): Candi
         playerId: player.id,
         name: species.name,
         species,
-        level: c.level,
-        stats: folded.stats,
-        crit: folded.crit,
         mods: folded.mods,
       }),
       power: creaturePower(c),
+      gamesPower: statsPower(species.baseStats),
+      level: c.level,
       rank: 0,
     };
   });
@@ -70,10 +80,10 @@ export function candidatesOf(player: Pick<SimPlayer, 'id' | 'creatures'>): Candi
 
 /**
  * Which creatures a player enters in each event of a lineup (index by event), one creature per event
- * (a team event takes up to three), no creature twice:
- * - `best`: strongest by power first, in lineup order;
- * - `aptitude`: the solo events greedily by the creature's aptitude relative to the player's best for
- *   that event, then the team event by aptitude;
+ * (a team event takes up to three), no creature twice, in lineup order (solo events first):
+ * - `fit`: at random among the free creatures with the event's "Good fit" badge, then at random among
+ *   the rest when it has no more;
+ * - `best-level`: highest level first (then power);
  * - `random`: a random order.
  */
 export function assignEntries(
@@ -93,8 +103,12 @@ export function assignEntries(
       }
     });
   };
-  if (policy === 'best') {
-    take([...pool].sort((a, b) => b.power - a.power || (a.entrant.id < b.entrant.id ? -1 : 1)));
+  if (policy === 'best-level') {
+    take(
+      [...pool].sort(
+        (a, b) => b.level - a.level || b.power - a.power || (a.entrant.id < b.entrant.id ? -1 : 1),
+      ),
+    );
     return out;
   }
   if (policy === 'random') {
@@ -102,51 +116,33 @@ export function assignEntries(
     return out;
   }
   const used = new Set<Candidate>();
-  const solo = lineup.flatMap((d, k) => (d.team === 1 ? [k] : []));
-  const apt = new Map<string, number>();
-  const aptOf = (k: number, c: Candidate): number => {
-    const key = `${String(k)}|${c.entrant.id}`;
-    let v = apt.get(key);
-    if (v === undefined) {
-      v = gamesAptitude(lineup[k] as GamesEventDef, c.entrant);
-      apt.set(key, v);
-    }
-    return v;
-  };
-  const bestFor = new Map<number, number>(
-    solo.map((k) => [k, Math.max(1, ...pool.map((c) => aptOf(k, c)))]),
-  );
-  const open = new Set(solo);
-  while (open.size > 0 && used.size < pool.length) {
-    let pick: { k: number; c: Candidate; v: number } | undefined;
-    for (const k of open) {
-      for (const c of pool) {
-        if (used.has(c)) continue;
-        const v = aptOf(k, c) / (bestFor.get(k) as number);
-        if (pick === undefined || v > pick.v) pick = { k, c, v };
-      }
-    }
-    if (pick === undefined) break;
-    used.add(pick.c);
-    open.delete(pick.k);
-    (out[pick.k] as Candidate[]).push(pick.c);
-  }
   lineup.forEach((def, k) => {
-    if (def.team === 1) return;
-    const left = pool
-      .filter((c) => !used.has(c))
-      .sort((a, b) => aptOf(k, b) - aptOf(k, a) || (a.entrant.id < b.entrant.id ? -1 : 1))
-      .slice(0, def.team);
-    for (const c of left) used.add(c);
-    out[k] = left;
+    const free = pool.filter((c) => !used.has(c));
+    const good = shuffle(
+      rng,
+      free.filter((c) => gamesGoodFit(def, c.entrant)),
+    );
+    const rest = shuffle(
+      rng,
+      free.filter((c) => !good.includes(c)),
+    );
+    const picks = [...good, ...rest].slice(0, def.team);
+    for (const c of picks) used.add(c);
+    out[k] = picks;
   });
   return out;
+}
+
+/** How many of a player's creatures are a good fit for an event (`gamesGoodFit`). */
+export function goodFitCount(def: GamesEventDef, pool: readonly Candidate[]): number {
+  return pool.filter((c) => gamesGoodFit(def, c.entrant)).length;
 }
 
 /** One team in one played event, for the metrics. */
 export interface Entry {
   playerId: string;
   policy: GamesPolicy;
+  /** Games power (`Candidate.gamesPower`, summed in a team): "strongest" and "bottom half" read it. */
   power: number;
   aptitude: number;
   level: number;
@@ -169,6 +165,11 @@ export interface EventTally {
   winsByPolicy: Record<GamesPolicy, number>;
   entriesByPolicy: Record<GamesPolicy, number>;
   winsByBand: Record<string, number>;
+  /**
+   * Each entry's fair chance of the win (1 over the number of teams in its run), summed by band: a
+   * band's share of these is the share of wins it would take if level made no difference, whatever
+   * the field sizes (a week-1 server's small fields make every entry likelier to win).
+   */
   entriesByBand: Record<string, number>;
   /** Solo events only: wins, podiums and entries by the creature's rank in its owner's roster. */
   winsByRank: Record<string, number>;
@@ -189,6 +190,8 @@ export interface EventTally {
   /** Runs with a stretch of more than 8 s without a moment, and the longest quiet stretch (s) summed. */
   deadRuns: number;
   quietMax: number;
+  /** Per player and day the event was in the lineup: how many of the player's creatures were a good fit. */
+  goodFits: number[];
 }
 
 export const LEVEL_BANDS = ['1-9', '10-19', '20-29', '30+'] as const;
@@ -204,7 +207,7 @@ function band(level: number): string {
 }
 
 export function emptyTally(eventId: string): EventTally {
-  const z = (): Record<GamesPolicy, number> => ({ best: 0, aptitude: 0, random: 0 });
+  const z = (): Record<GamesPolicy, number> => ({ fit: 0, 'best-level': 0, random: 0 });
   const b = (): Record<string, number> => Object.fromEntries(LEVEL_BANDS.map((x) => [x, 0]));
   const r = (): Record<string, number> => Object.fromEntries(ROSTER_RANKS.map((x) => [x, 0]));
   return {
@@ -234,6 +237,7 @@ export function emptyTally(eventId: string): EventTally {
     elimSaid: 0,
     deadRuns: 0,
     quietMax: 0,
+    goodFits: [],
   };
 }
 
@@ -301,7 +305,8 @@ export function tallyEvent(
       if (e.place === 1) tally.winsByRank[k] = (tally.winsByRank[k] ?? 0) + 1;
     }
     tally.entriesByPolicy[e.policy] += 1;
-    tally.entriesByBand[band(e.level)] = (tally.entriesByBand[band(e.level)] ?? 0) + 1;
+    tally.entriesByBand[band(e.level)] =
+      (tally.entriesByBand[band(e.level)] ?? 0) + 1 / entries.length;
     if (e.place === 1) {
       tally.winsByPolicy[e.policy] += 1;
       tally.winsByBand[band(e.level)] = (tally.winsByBand[band(e.level)] ?? 0) + 1;
@@ -426,7 +431,7 @@ function teamLengths(
             const entrants = roster.players
               .slice(0, teams)
               .flatMap((player) =>
-                (assignEntries([def], candidatesOf(player), 'aptitude', rng)[0] ?? []).map(
+                (assignEntries([def], candidatesOf(player), 'fit', rng)[0] ?? []).map(
                   (c) => c.entrant,
                 ),
               );
@@ -465,11 +470,12 @@ export function gamesRosters(
   return out;
 }
 
-/** One played day: the lineup, each event's result and its entries. */
+/** One played day: the lineup, each event's result and its entries, and each player's good-fit count. */
 export interface PlayedEvent {
   def: GamesEventDef;
   result: GamesEventResult;
   entries: Entry[];
+  goodFits: number[];
 }
 
 /**
@@ -496,9 +502,14 @@ export function playDay(
     player: SimPlayer;
     policy: GamesPolicy;
   }[][] = lineup.map(() => []);
+  const goodFits: number[][] = lineup.map(() => []);
   for (const player of players) {
     const policy = policyOf(player);
-    const picks = assignEntries(lineup, candidatesOf(player), policy, rng);
+    const pool = candidatesOf(player);
+    lineup.forEach((def, k) => {
+      (goodFits[k] as number[]).push(goodFitCount(def, pool));
+    });
+    const picks = assignEntries(lineup, pool, policy, rng);
     picks.forEach((cs, k) => {
       for (const c of cs)
         (perEvent[k] as unknown[]).push({ entrant: c.entrant, c, player, policy });
@@ -524,14 +535,14 @@ export function playDay(
       return {
         playerId: first.player.id,
         policy: first.policy,
-        power: members.reduce((n, m) => n + m.c.power, 0),
+        power: members.reduce((n, m) => n + m.c.gamesPower, 0),
         aptitude: members.reduce((n, m) => n + gamesAptitude(def, m.entrant), 0),
-        level: Math.max(...members.map((m) => m.entrant.level)),
+        level: Math.max(...members.map((m) => m.c.level)),
         rank: Math.min(...members.map((m) => m.c.rank)),
         place: s.place,
       };
     });
-    out.push({ def, result, entries });
+    out.push({ def, result, entries, goodFits: goodFits[k] as number[] });
   });
   return out;
 }
@@ -558,15 +569,12 @@ export function runGamesStudy(settings: GamesStudySettings): GamesStudy {
       for (const played of playDay(
         roster.players,
         rng,
-        (p) => policies.get(p.id) ?? 'best',
+        (p) => policies.get(p.id) ?? 'random',
         bonus,
       )) {
-        tallyEvent(
-          tallies.get(played.def.id) as EventTally,
-          played.def,
-          played.result,
-          played.entries,
-        );
+        const tally = tallies.get(played.def.id) as EventTally;
+        tallyEvent(tally, played.def, played.result, played.entries);
+        tally.goodFits.push(...played.goodFits);
       }
     }
   }
@@ -575,19 +583,41 @@ export function runGamesStudy(settings: GamesStudySettings): GamesStudy {
 
 /** The spec's targets, and the lead's (2026-10-22, round 2: the bench must be worth entering). */
 export const GAMES_TARGETS = {
+  /**
+   * The strongest entrant (by Games power: its species' base stats) wins between these shares of an
+   * event's runs; the floor is not for an event that favours small creatures (2026-10-23).
+   */
   strongestWins: { min: 0.05, max: 0.45 },
   bottomPodium: { min: 0.15 },
   seconds: { min: 20, max: 50 },
   /** Moments per second (one every 4 s). */
   momentsPerSecond: { min: 0.25 },
-  /** Results still follow the fit: aptitude against place, and aptitude picks win this many times as often as random ones. */
-  spearmanApt: { min: 0.6, byEvent: { 'floe-sumo': 0.45 } as Readonly<Record<string, number>> },
-  aptitudeOverRandom: { min: 1.5 },
+  /** Results still follow the fit: aptitude against place, and good-fit picks win this many times as often as random ones. */
+  /**
+   * Floe Sumo is the chaos event. Pepper Panic and Pumpkin Push are luck-heavy too, and with no level
+   * every creature of one species ties on aptitude, which caps the rank correlation (2026-10-23).
+   */
+  spearmanApt: {
+    min: 0.6,
+    byEvent: { 'floe-sumo': 0.45, 'pepper-panic': 0.5, 'pumpkin-push': 0.5 } as Readonly<
+      Record<string, number>
+    >,
+  },
+  fitOverRandom: { min: 1.5 },
+  /** Per event: the median number of good fits in a player's roster (the badge's calibration). */
+  goodFits: { min: 2, max: 4 },
   /** Solo events, all together: creatures 4th or lower in their own roster take this share of the wins. */
   benchWins: { min: 0.15 },
-  /** Solo events: level 1-9 creatures' share of wins over their share of entries, and level 30+'s. */
-  lowLevelRatio: { min: 0.4 },
-  highLevelRatio: { max: 1.75 },
+  /**
+   * Solo events: level no longer predicts a win (no level in the Games, 2026-10-23). Level 1-9
+   * creatures' share of wins over their fair share of entries within these bounds, and level 30+ at
+   * most this (below is fine: the old creatures are the starters' common lines, the young ones
+   * include the rare and epic catches; that is species, not level).
+   */
+  lowLevelRatio: { min: 0.8, max: 1.2 },
+  highLevelRatio: { max: 1.2 },
+  /** Solo events: highest-level-first picks win at most this many times as often as random ones. */
+  bestLevelOverRandom: { max: 1.2 },
   /** Shows of 12 or fewer: the share of eliminations the commentary names. */
   elimLines: { min: 0.7 },
   /** At most this share of shows has a stretch of more than 8 s without a moment. */
@@ -607,9 +637,13 @@ export interface EventRow {
   momentsPer10s: number;
   strongestWins: number;
   bottomPodium: number;
-  winAptitude: number;
-  winBest: number;
+  winFit: number;
+  winBestLevel: number;
   winRandom: number;
+  /** Median good fits per player's roster (`gamesGoodFit`), and the middle half (p25 to p75). */
+  goodFits: number;
+  goodFitsP25: number;
+  goodFitsP75: number;
   spearmanApt: number;
   spearmanPower: number;
   /** Solo events: the share of wins taken by creatures 4th or lower in their roster. */
@@ -628,6 +662,7 @@ export interface EventRow {
     moments: boolean;
     spearman: boolean;
     fit: boolean;
+    goodFits: boolean;
     elim: boolean;
     pacing: boolean;
     burst: boolean;
@@ -641,12 +676,26 @@ export interface SoloSummary {
   benchWins: number;
   lowLevelRatio: number;
   highLevelRatio: number;
-  pass: { bench: boolean; low: boolean; high: boolean };
+  /** Win rate of `best-level` picks over `random` ones, solo events together. */
+  bestLevelOverRandom: number;
+  pass: { bench: boolean; low: boolean; high: boolean; bestLevel: boolean };
 }
 
 const div = (a: number, b: number): number => (b === 0 ? 0 : a / b);
 const total = (r: Record<string, number>): number => Object.values(r).reduce((a, b) => a + b, 0);
 const BENCH = ['4th', '5th+'];
+
+/** Whether an event favours small creatures (its favours say so). */
+function favoursSmall(eventId: string): boolean {
+  return gamesContent.events.find((e) => e.id === eventId)?.favours.includes('small') === true;
+}
+
+/** The value at share `q` (0 to 1) of a list (nearest rank); 0 for an empty list. */
+export function quantile(values: readonly number[], q: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] as number;
+}
 
 /** The table rows of a study. */
 export function gamesRows(study: GamesStudy): EventRow[] {
@@ -660,8 +709,9 @@ export function gamesRows(study: GamesStudy): EventRow[] {
       const totalWins = total(t.winsByBand);
       const totalEntries = total(t.entriesByBand);
       const rankWins = total(t.winsByRank);
-      const winAptitude = div(t.winsByPolicy.aptitude, t.entriesByPolicy.aptitude);
+      const winFit = div(t.winsByPolicy.fit, t.entriesByPolicy.fit);
       const winRandom = div(t.winsByPolicy.random, t.entriesByPolicy.random);
+      const goodFits = quantile(t.goodFits, 0.5);
       const spearmanApt = div(t.spearmanApt, t.spearmanRuns);
       return {
         eventId: t.eventId,
@@ -672,9 +722,12 @@ export function gamesRows(study: GamesStudy): EventRow[] {
         momentsPer10s: mps * 10,
         strongestWins: strongest,
         bottomPodium: bottom,
-        winAptitude,
-        winBest: div(t.winsByPolicy.best, t.entriesByPolicy.best),
+        winFit,
+        winBestLevel: div(t.winsByPolicy['best-level'], t.entriesByPolicy['best-level']),
         winRandom,
+        goodFits,
+        goodFitsP25: quantile(t.goodFits, 0.25),
+        goodFitsP75: quantile(t.goodFits, 0.75),
         spearmanApt,
         spearmanPower: div(t.spearmanPower, t.spearmanRuns),
         benchWins:
@@ -699,8 +752,10 @@ export function gamesRows(study: GamesStudy): EventRow[] {
           ]),
         ),
         pass: {
+          // The floor is not for an event that favours small creatures: the strongest by base stats is
+          // a grown one there, and the young are meant to beat it.
           strongest:
-            strongest >= GAMES_TARGETS.strongestWins.min &&
+            (favoursSmall(t.eventId) || strongest >= GAMES_TARGETS.strongestWins.min) &&
             strongest <= GAMES_TARGETS.strongestWins.max,
           bottom: bottom >= GAMES_TARGETS.bottomPodium.min,
           length: seconds >= GAMES_TARGETS.seconds.min && seconds <= GAMES_TARGETS.seconds.max,
@@ -712,7 +767,9 @@ export function gamesRows(study: GamesStudy): EventRow[] {
           elim: t.elimOuts < 20 || t.elimSaid / t.elimOuts >= GAMES_TARGETS.elimLines.min,
           pacing: div(t.deadRuns, t.runs) <= GAMES_TARGETS.deadShows.max,
           burst: t.bigRuns === 0 || t.burstRuns / t.bigRuns <= GAMES_TARGETS.burstShows.max,
-          fit: winAptitude >= GAMES_TARGETS.aptitudeOverRandom.min * winRandom,
+          fit: winFit >= GAMES_TARGETS.fitOverRandom.min * winRandom,
+          goodFits:
+            goodFits >= GAMES_TARGETS.goodFits.min && goodFits <= GAMES_TARGETS.goodFits.max,
         },
       };
     });
@@ -755,16 +812,25 @@ export function soloSummary(study: GamesStudy): SoloSummary {
   const ratio = (b: string): number => div(bands[b]?.wins ?? 0, bands[b]?.entries ?? 0);
   const lowLevelRatio = ratio('1-9');
   const highLevelRatio = ratio('30+');
+  const rate = (p: GamesPolicy): number =>
+    div(
+      solo.reduce((n, t) => n + t.winsByPolicy[p], 0),
+      solo.reduce((n, t) => n + t.entriesByPolicy[p], 0),
+    );
+  const bestLevelOverRandom = div(rate('best-level'), rate('random'));
+  const within = (v: number, b: { min: number; max: number }): boolean => v >= b.min && v <= b.max;
   return {
     ranks,
     bands,
     benchWins,
     lowLevelRatio,
     highLevelRatio,
+    bestLevelOverRandom,
     pass: {
       bench: benchWins >= GAMES_TARGETS.benchWins.min,
-      low: lowLevelRatio >= GAMES_TARGETS.lowLevelRatio.min,
+      low: within(lowLevelRatio, GAMES_TARGETS.lowLevelRatio),
       high: highLevelRatio <= GAMES_TARGETS.highLevelRatio.max,
+      bestLevel: bestLevelOverRandom <= GAMES_TARGETS.bestLevelOverRandom.max,
     },
   };
 }
@@ -795,21 +861,21 @@ export function gamesReport(study: GamesStudy): string {
   lines.push(`# Valley Games study`);
   lines.push('');
   lines.push(
-    `Seed \`${s.seed}\`; servers of ${s.sizes.join(' and ')} players; rosters at weeks ${s.weeks.join(', ')}; ${String(s.days)} days each; every player's policy (best, aptitude, random) drawn each day.`,
+    `Seed \`${s.seed}\`; servers of ${s.sizes.join(' and ')} players; rosters at weeks ${s.weeks.join(', ')}; ${String(s.days)} days each; every player's policy (fit, best-level, random) drawn each day.`,
   );
   lines.push(
-    'Targets per event: strongest wins 5-45% (the fitting creature, often a high-HP tank, should beat the strongest by power); a bottom-half entrant on the podium in at least 15% of events (4+ teams); 20-50 s; at least 2.5 moments per 10 s; Spearman aptitude vs result at least 0.6 (Floe Sumo, the chaos event: 0.45); 70% of eliminations named by the commentary (12 or fewer entrants); at most 10% of shows with more than 8 s without a moment; at most 5% of shows (8+) with a quarter of the field out within 2 s; aptitude picks win at least 1.5x as often as random ones. Solo events together: the bench (4th or lower in its roster) takes at least 15% of wins; level 1-9 win share at least 0.4x their entry share; level 30+ at most 1.75x.',
+    'Targets per event: strongest by Games power (base stats) wins at most 45%, and at least 5% where the event does not favour small creatures; a bottom-half entrant on the podium in at least 15% of events (4+ teams); 20-50 s; at least 2.5 moments per 10 s; Spearman aptitude vs result at least 0.6 (Floe Sumo, the chaos event: 0.45); 70% of eliminations named by the commentary (12 or fewer entrants); at most 10% of shows with more than 8 s without a moment; at most 5% of shows (8+) with a quarter of the field out within 2 s; good-fit picks win at least 1.5x as often as random ones; a median of 2 to 4 good fits per roster. Solo events together: the bench (4th or lower in its roster) takes at least 15% of wins; level 1-9 and level 30+ win shares within 0.8-1.2x their entry shares; highest-level picks win at most 1.2x as often as random ones.',
   );
   lines.push('');
   lines.push(
-    '| Event | Runs | Seconds | Moments/10 s | Strongest wins | Bottom half podium | Bench wins | Win: aptitude / best / random | Spearman apt / power | Outs named | Quiet >8 s (longest) | Out spread / 25%-in-2 s |',
+    '| Event | Runs | Seconds | Moments/10 s | Strongest wins | Bottom half podium | Bench wins | Win: fit / best-level / random | Good fits (p25-p75) | Spearman apt / power | Outs named | Quiet >8 s (longest) | Out spread / 25%-in-2 s |',
   );
   lines.push(
-    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
   );
   for (const r of rows) {
     lines.push(
-      `| ${r.eventId} | ${String(r.runs)} | ${r.seconds.toFixed(1)} ${mark(r.pass.length)} | ${r.momentsPer10s.toFixed(1)} ${mark(r.pass.moments)} | ${pct(r.strongestWins)} ${mark(r.pass.strongest)} | ${pct(r.bottomPodium)} ${mark(r.pass.bottom)} | ${r.benchWins === null ? '-' : pct(r.benchWins)} | ${pct(r.winAptitude)} / ${pct(r.winBest)} / ${pct(r.winRandom)} ${mark(r.pass.fit)} | ${r.spearmanApt.toFixed(2)} ${mark(r.pass.spearman)} / ${r.spearmanPower.toFixed(2)} | ${r.elimLines === null ? '-' : pct(r.elimLines)} ${mark(r.pass.elim)} | ${pct(r.deadShows)} (${r.quietMax.toFixed(1)} s) ${mark(r.pass.pacing)} | ${r.outSpread === null ? '-' : pct(r.outSpread)} / ${r.outBurst === null ? '-' : pct(r.outBurst)} ${mark(r.pass.burst)} |`,
+      `| ${r.eventId} | ${String(r.runs)} | ${r.seconds.toFixed(1)} ${mark(r.pass.length)} | ${r.momentsPer10s.toFixed(1)} ${mark(r.pass.moments)} | ${pct(r.strongestWins)} ${mark(r.pass.strongest)} | ${pct(r.bottomPodium)} ${mark(r.pass.bottom)} | ${r.benchWins === null ? '-' : pct(r.benchWins)} | ${pct(r.winFit)} / ${pct(r.winBestLevel)} / ${pct(r.winRandom)} ${mark(r.pass.fit)} | ${String(r.goodFits)} (${String(r.goodFitsP25)}-${String(r.goodFitsP75)}) ${mark(r.pass.goodFits)} | ${r.spearmanApt.toFixed(2)} ${mark(r.pass.spearman)} / ${r.spearmanPower.toFixed(2)} | ${r.elimLines === null ? '-' : pct(r.elimLines)} ${mark(r.pass.elim)} | ${pct(r.deadShows)} (${r.quietMax.toFixed(1)} s) ${mark(r.pass.pacing)} | ${r.outSpread === null ? '-' : pct(r.outSpread)} / ${r.outBurst === null ? '-' : pct(r.outBurst)} ${mark(r.pass.burst)} |`,
     );
   }
   lines.push('');
@@ -828,7 +894,7 @@ export function gamesReport(study: GamesStudy): string {
   }
   lines.push('');
   lines.push(
-    `Bench (4th+) share of solo wins: ${pct(sum.benchWins)} ${mark(sum.pass.bench)}. Level 1-9 wins/entries: ${sum.lowLevelRatio.toFixed(2)}x ${mark(sum.pass.low)}. Level 30+: ${sum.highLevelRatio.toFixed(2)}x ${mark(sum.pass.high)}.`,
+    `Bench (4th+) share of solo wins: ${pct(sum.benchWins)} ${mark(sum.pass.bench)}. Level 1-9 wins/entries: ${sum.lowLevelRatio.toFixed(2)}x ${mark(sum.pass.low)}. Level 30+: ${sum.highLevelRatio.toFixed(2)}x ${mark(sum.pass.high)}. Highest level first wins ${sum.bestLevelOverRandom.toFixed(2)}x as often as random ${mark(sum.pass.bestLevel)}.`,
   );
   lines.push('');
   lines.push(

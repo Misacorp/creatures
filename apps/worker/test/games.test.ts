@@ -56,22 +56,23 @@ const lineupOf = async (p: Dev) => {
   };
 };
 
-describe('migration 39', () => {
+describe('migrations 39 and 40', () => {
   const version = (ctx: { sql: SqlStorage }): number | undefined =>
     rows<{ v: number }>(ctx.sql, 'SELECT MAX(version) AS v FROM schema_version')[0]?.v;
   const has = (ctx: { sql: SqlStorage }, name: string): boolean =>
     count(ctx.sql, 'sqlite_master', `name = '${name}'`) > 0;
 
-  it('is the last version and adds the Games tables again after an undo', async () => {
-    expect(SCHEMA_VERSION).toBe(39);
+  it('40 is the last version; an undo adds the Games tables and the badges again', async () => {
+    expect(SCHEMA_VERSION).toBe(40);
     await run(async (ctx) => {
       const p = await sixer(ctx);
       undoGamesMigration(ctx.sql);
       expect(has(ctx, 'games_days')).toBe(false);
       ctx.core.migrate();
       ctx.core.migrate();
-      expect(version(ctx)).toBe(39);
+      expect(version(ctx)).toBe(40);
       expect(has(ctx, 'games_days')).toBe(true);
+      expect(has(ctx, 'games_badges')).toBe(true);
       expect((await p.call('GET', '/api/games')).status).toBe(200);
     });
   });
@@ -85,10 +86,109 @@ describe('migration 39', () => {
       ctx.sql.exec('INSERT INTO schema_version (version) VALUES (38)');
       expect(has(ctx, 'maintenance')).toBe(false);
       ctx.core.migrate();
-      expect(version(ctx)).toBe(39);
+      expect(version(ctx)).toBe(40);
       expect(has(ctx, 'maintenance')).toBe(true);
       expect(has(ctx, 'games_days')).toBe(true);
       expect((await p.call('GET', '/api/games')).status).toBe(200);
+    });
+  });
+});
+
+describe('event badges', () => {
+  it('migration 40 back-fills them from awarded gold placings: each team member once per win, never bots', async () => {
+    await run(async (ctx) => {
+      const p = await sixer(ctx);
+      const [a, b, c] = p.creatureIds as [string, string, string];
+      const day = (d: string, awarded: boolean) =>
+        ctx.sql.exec(
+          'INSERT INTO games_days (day, lineup_json, created_at, locked_at, awarded_at) VALUES (?, ?, 1, 1, ?)',
+          d,
+          '[]',
+          awarded ? 2 : null,
+        );
+      const placing = (
+        d: string,
+        eventId: string,
+        userId: string,
+        ids: string[],
+        medal: string | null,
+        bot = 0,
+      ) =>
+        ctx.sql.exec(
+          `INSERT INTO games_placings (day, event_id, user_id, creature_ids, place, medal, score, bot)
+           VALUES (?, ?, ?, ?, 1, ?, 0, ?)`,
+          d,
+          eventId,
+          userId,
+          JSON.stringify(ids),
+          medal,
+          bot,
+        );
+      day('2027-01-01', true);
+      day('2027-01-02', true);
+      day('2027-01-03', false);
+      placing('2027-01-01', 'pepper-panic', p.id, [a], 'gold');
+      placing('2027-01-02', 'pepper-panic', p.id, [a], 'gold');
+      placing('2027-01-01', 'log-carry', p.id, [a, b, c], 'gold');
+      placing('2027-01-02', 'log-carry', p.id, [a, b], 'silver');
+      // Not shown yet (a spoiler) and a bot's win: neither counts.
+      placing('2027-01-03', 'melon-run', p.id, [b], 'gold');
+      placing('2027-01-01', 'melon-run', 'dev-guest-1', ['dev-guest-1-c'], 'gold', 1);
+      ctx.sql.exec('DROP TABLE games_badges');
+      ctx.sql.exec('DELETE FROM schema_version WHERE version = 40');
+      ctx.core.migrate();
+      const got = rows<{ creature_id: string; event_id: string; wins: number; user_id: string }>(
+        ctx.sql,
+        'SELECT creature_id, event_id, wins, user_id FROM games_badges ORDER BY creature_id, event_id',
+      );
+      expect(got).toEqual(
+        [
+          { creature_id: a, event_id: 'log-carry', wins: 1, user_id: p.id },
+          { creature_id: a, event_id: 'pepper-panic', wins: 2, user_id: p.id },
+          { creature_id: b, event_id: 'log-carry', wins: 1, user_id: p.id },
+          { creature_id: c, event_id: 'log-carry', wins: 1, user_id: p.id },
+        ].sort((x, y) =>
+          x.creature_id === y.creature_id
+            ? x.event_id.localeCompare(y.event_id)
+            : x.creature_id.localeCompare(y.creature_id),
+        ),
+      );
+      // The creature page lists a creature's badges; the tab lists them for the next day's events.
+      const page = await p.call('GET', `/api/games/creature/${a}`);
+      expect(page.body.badges).toEqual([
+        { eventId: 'log-carry', wins: 1 },
+        { eventId: 'pepper-panic', wins: 2 },
+      ]);
+      const next = (await p.call('GET', '/api/games')).body.next;
+      const ids = (next.lineup as { id: string }[]).map((e) => e.id);
+      ctx.sql.exec(
+        'INSERT INTO games_badges (creature_id, event_id, user_id, wins) VALUES (?, ?, ?, 3)',
+        b,
+        ids[0],
+        p.id,
+      );
+      const again = (await p.call('GET', '/api/games')).body.next;
+      expect(again.badges[ids[0] as string][b]).toBe(3);
+      const own = new Set(p.creatureIds);
+      for (const byCreature of Object.values(again.badges as Record<string, object>)) {
+        expect(Object.keys(byCreature).every((id) => own.has(id))).toBe(true);
+      }
+    });
+  });
+});
+
+describe('good fits', () => {
+  it("list, per event, only the player's own creatures that pass the event's bar", async () => {
+    await run(async (ctx) => {
+      const p = await sixer(ctx);
+      const next = (await p.call('GET', '/api/games')).body.next;
+      const own = new Set(p.creatureIds);
+      for (const e of next.lineup as { id: string }[]) {
+        const fits = next.goodFit[e.id] as string[];
+        expect(Array.isArray(fits)).toBe(true);
+        expect(fits.every((id) => own.has(id))).toBe(true);
+      }
+      expect(next).not.toHaveProperty('fit');
     });
   });
 });
@@ -133,7 +233,8 @@ describe('entries', () => {
       const ok = await put(entry(solo, [a]));
       expect(ok.status).toBe(200);
       expect(ok.body.next.entries).toEqual({ [solo]: [a] });
-      expect(ok.body.next.joined).toBe(true);
+      expect(ok.body.next).not.toHaveProperty('joined');
+      expect(ok.body.next).not.toHaveProperty('auto');
       // One event per creature per day.
       expect((await put(entry(solo2, [a]))).body.error).toBe('already_entered');
       expect((await put(entry(team, [b, c]))).body.next.entries).toEqual({
@@ -160,19 +261,17 @@ describe('the show', () => {
       ctx.sql.exec('UPDATE guild_meta SET announce_channel_id = ? WHERE id = 1', CHANNEL);
       const next = await lineupOf(p);
       const solo = next.lineup.find((e) => e.team === 1)?.id as string;
-      const [a] = p.creatureIds as [string];
-      await p.call('PUT', '/api/games/entry', { day: next.day, eventId: solo, creatureIds: [a] });
-      // The quiet player joins and turns auto-entry off: only what they set runs.
-      await quiet.call('PUT', '/api/games/entry', {
-        day: next.day,
-        eventId: solo,
-        creatureIds: [quiet.creatureIds[0]],
-      });
-      expect((await quiet.call('PUT', '/api/games/auto', { on: false })).body).toEqual({
-        auto: false,
-        joined: true,
-      });
-      expect((await quiet.call('PUT', '/api/games/auto', { on: false, x: 1 })).status).toBe(400);
+      const solo2 = next.lineup.filter((e) => e.team === 1)[1]?.id as string;
+      const team = next.lineup.find((e) => e.team === 3)?.id as string;
+      const [a, b, c, d, e] = p.creatureIds as [string, string, string, string, string];
+      const enter = (who: Dev, eventId: string, creatureIds: string[]) =>
+        who.call('PUT', '/api/games/entry', { day: next.day, eventId, creatureIds });
+      await enter(p, solo, [a]);
+      await enter(p, solo2, [e]);
+      await enter(p, team, [b, c, d]);
+      // The quiet player enters one event: only what they set runs (there is no auto-entry).
+      await enter(quiet, solo, [quiet.creatureIds[0] as string]);
+      expect((await quiet.call('PUT', '/api/games/auto', { on: false })).status).toBe(404);
       // A record from before for creature `a`, so it pins whatever it scores.
       ctx.sql.exec(
         "INSERT INTO games_records (creature_id, event_id, user_id, best, day) VALUES (?, ?, ?, -1, '2027-01-01')",
@@ -188,7 +287,7 @@ describe('the show', () => {
         );
       const before = exp();
 
-      // The lock: auto-entry fills the player's empty events (a full team in the team event).
+      // The lock: only the entries players made.
       ctx.clock.t = TUE_LOCK + 5_000;
       const locked = await p.call('GET', '/api/games');
       expect(locked.body.phase).toBe('locked');
@@ -198,10 +297,10 @@ describe('the show', () => {
         ctx.sql,
         "SELECT user_id, auto FROM games_entries WHERE day = '2027-01-12'",
       );
-      expect(entries.filter((e) => e.user_id === p.id)).toHaveLength(
+      expect(entries.filter((x) => x.user_id === p.id)).toHaveLength(
         RULES.games.eventsPerDay - 1 + RULES.games.teamSize,
       );
-      expect(entries.filter((e) => e.user_id === quiet.id)).toEqual([
+      expect(entries.filter((x) => x.user_id === quiet.id)).toEqual([
         { user_id: quiet.id, auto: 0 },
       ]);
       const day = rows<{ seed: string; show_at: number; ends_at: number }>(
@@ -278,9 +377,34 @@ describe('the show', () => {
       // No podium post: it would spoil the replay for anyone who watches later.
       expect(count(ctx.sql, 'discord_posts')).toBe(0);
 
-      // The creature page: its medals and records, own creatures only.
+      // Event badges: one win of the event for every member of each real first place, once.
+      const golds = rows<{ event_id: string; creature_ids: string }>(
+        ctx.sql,
+        "SELECT event_id, creature_ids FROM games_placings WHERE medal = 'gold' AND bot = 0",
+      );
+      const expected = new Map<string, number>();
+      for (const g of golds) {
+        for (const id of JSON.parse(g.creature_ids) as string[]) {
+          expected.set(`${id}:${g.event_id}`, (expected.get(`${id}:${g.event_id}`) ?? 0) + 1);
+        }
+      }
+      const badges = rows<{ creature_id: string; event_id: string; wins: number }>(
+        ctx.sql,
+        'SELECT creature_id, event_id, wins FROM games_badges',
+      );
+      expect(new Map(badges.map((x) => [`${x.creature_id}:${x.event_id}`, x.wins]))).toEqual(
+        expected,
+      );
+      expect(golds.length).toBeGreaterThan(0);
+
+      // The creature page: its medals, badges and records, own creatures only.
       const page = await p.call('GET', `/api/games/creature/${a}`);
       expect(page.status).toBe(200);
+      expect(page.body.badges).toEqual(
+        badges
+          .filter((x) => x.creature_id === a)
+          .map((x) => ({ eventId: x.event_id, wins: x.wins })),
+      );
       expect(page.body.records).toEqual([
         expect.objectContaining({ eventId: solo, unit: expect.any(String) }),
       ]);
@@ -294,7 +418,7 @@ describe('the show', () => {
     await run(async (ctx) => {
       const p = await sixer(ctx);
       ctx.clock.t = TUE_LOCK + MINUTE;
-      // Nobody has joined: nothing locks, and the next show day is still open after its own reset.
+      // Nobody entered: nothing locks, and the next show day is still open after its own reset.
       const view = (await p.call('GET', '/api/games')).body;
       expect(count(ctx.sql, 'games_days', 'locked_at IS NOT NULL')).toBe(0);
       expect(view.phase).toBe('entries');
@@ -322,17 +446,18 @@ describe('the bonus day', () => {
   const WED_10 = Date.parse('2027-01-13T08:00:00Z');
   const WED_LOCK = Date.parse('2027-01-13T11:37:00Z');
 
-  /** Enters one creature (auto-entry fills the rest), locks, plays and awards Wednesday's show. */
+  /** Enters a creature in every event, locks, plays and awards Wednesday's show. */
   async function playWednesday(ctx: CoreContext, p: Dev) {
     ctx.clock.t = WED_10;
     const next = await lineupOf(p);
     expect(next.day).toBe('2027-01-13');
-    const solo = next.lineup.find((e) => e.team === 1)?.id as string;
-    await p.call('PUT', '/api/games/entry', {
-      day: next.day,
-      eventId: solo,
-      creatureIds: [p.creatureIds[0]],
-    });
+    for (const [i, e] of next.lineup.entries()) {
+      await p.call('PUT', '/api/games/entry', {
+        day: next.day,
+        eventId: e.id,
+        creatureIds: [p.creatureIds[i]],
+      });
+    }
     ctx.clock.t = WED_LOCK + 5_000;
     ctx.core.games.runDue();
     const ends = rows<{ ends_at: number }>(
@@ -418,10 +543,11 @@ describe('the bonus day', () => {
   it('a retired event in a stored day still shows, under its old name, with its result and its records', async () => {
     await run(async (ctx) => {
       const p = await sixer(ctx);
-      const team = gamesContent.events.find((e) => e.team === 3)?.id as string;
       // Play a day, then make it a day stored before the team event was retired: its id becomes
       // Sauna Stack's everywhere the day is kept.
-      await playWednesday(ctx, p);
+      const played = (await playWednesday(ctx, p)).body;
+      const team = (played.show.lineup as { id: string; team: number }[]).find((e) => e.team === 3)
+        ?.id as string;
       for (const table of ['games_results', 'games_placings', 'games_records']) {
         ctx.sql.exec(`UPDATE ${table} SET event_id = 'sauna-stack' WHERE event_id = ?`, team);
       }
@@ -481,7 +607,6 @@ describe('capTeams', () => {
     eventId: 'sauna-showdown',
     slot,
     creatureId: `${userId}-${String(slot)}`,
-    auto: false,
     enteredAt: at,
   });
 
@@ -597,7 +722,15 @@ describe('dev tools', () => {
           "SELECT COUNT(*) AS n FROM creatures WHERE user_id LIKE 'dev-guest-%' GROUP BY user_id",
         );
         expect(botCreatures.map((r) => r.n)).toEqual([6, 6, 6]);
-        expect(count(ctx.sql, 'games_players', "user_id LIKE 'dev-guest-%' AND auto = 1")).toBe(3);
+        // Each bot is entered in every event of the next show day (a team event with three).
+        expect(count(ctx.sql, 'games_entries', "user_id LIKE 'dev-guest-%'")).toBe(
+          3 * (RULES.games.eventsPerDay - 1 + RULES.games.teamSize),
+        );
+        // A second call adds no entries for an event a bot already has.
+        await p.tool('games-bots', { count: 3 });
+        expect(count(ctx.sql, 'games_entries', "user_id LIKE 'dev-guest-%'")).toBe(
+          3 * (RULES.games.eventsPerDay - 1 + RULES.games.teamSize),
+        );
 
         const next = await lineupOf(p);
         const solo = next.lineup.find((e) => e.team === 1)?.id as string;
@@ -629,19 +762,20 @@ describe('dev tools', () => {
         ctx.clock.t = TUE_LOCK + MINUTE;
         ctx.core.games.runDue();
         expect(count(ctx.sql, 'games_results')).toBe(RULES.games.eventsPerDay);
-        // The next day locks at its own reset.
+        // Nobody entered the next day yet: the bots enter it (no auto-entry), and it locks at its own reset.
+        await p.tool('games-bots', { count: 3 });
         ctx.clock.t = Date.parse('2027-01-13T11:38:00Z');
         ctx.core.games.runDue();
         expect(count(ctx.sql, 'games_days', 'locked_at IS NOT NULL')).toBe(2);
 
-        // Reset forgets the latest locked day; past its lock time it is locked again at once.
-        const auto = count(ctx.sql, 'games_entries', "day = '2027-01-13' AND auto = 1");
+        // Reset forgets the latest locked day (its entries stay); past its lock time it is locked again at once.
+        const entered = count(ctx.sql, 'games_entries', "day = '2027-01-13'");
         expect(await p.tool('games-reset', {})).toEqual({ day: '2027-01-13' });
         // Wednesday is the bonus day: one event more.
         expect(count(ctx.sql, 'games_results', "day = '2027-01-13'")).toBe(
           RULES.games.eventsPerDay + 1,
         );
-        expect(count(ctx.sql, 'games_entries', "day = '2027-01-13' AND auto = 1")).toBe(auto);
+        expect(count(ctx.sql, 'games_entries', "day = '2027-01-13'")).toBe(entered);
         expect(
           rows<{ show_at: number }>(
             ctx.sql,

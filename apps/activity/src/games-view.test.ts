@@ -21,7 +21,7 @@ import {
 import { getSpecies } from './game';
 import type { GamesView, LineupEvent } from './games-types';
 import { ALERT_TEXT } from './tab-alerts';
-import { GAMES_FIXTURES, gamesRoster } from './workbench/games-tab-sample';
+import { GAMES_FIXTURES, GAMES_SELF_ID, gamesRoster } from './workbench/games-tab-sample';
 
 const F = GAMES_FIXTURES;
 const LINEUP = F.entries.next.lineup;
@@ -67,22 +67,45 @@ describe('slots and entries', () => {
     expect(withSlot(['a', 'b'], 1, 'a')).toEqual(['a']);
   });
 
-  it('lists the picker best fit first, then creatures in another event, then this team', () => {
+  it('lists the picker good fits first, then the rest, each by name; this team last', () => {
+    const ids = roster.map((c) => c.id);
     const next = {
       ...F.entries.next,
-      entries: { 'pepper-panic': [roster[5]?.id ?? ''], 'log-carry': [roster[1]?.id ?? ''] },
+      entries: { 'pepper-panic': [ids[5] ?? ''], 'log-carry': [ids[1] ?? ''] },
+      goodFit: { 'log-carry': [ids[3] ?? '', ids[4] ?? '', ids[5] ?? ''] },
+      badges: { 'log-carry': { [ids[4] ?? '']: 3 }, 'melon-run': { [ids[0] ?? '']: 1 } },
     };
     const rows = pickerRows(next, event('log-carry'), 1, roster);
     expect(rows).toHaveLength(roster.length);
     const last = rows[rows.length - 1];
-    expect(last?.id).toBe(roster[1]?.id);
+    expect(last?.id).toBe(ids[1]);
     expect(last?.disabled).toBe('In this team');
-    const moving = rows.find((r) => r.id === roster[5]?.id);
+    const moving = rows.find((r) => r.id === ids[5]);
     expect(moving?.note).toBe('In Pepper Panic');
     expect(moving?.onBoard).toBe(true);
-    const free = rows.filter((r) => !r.onBoard && r.disabled === null).map((r) => r.fit);
-    expect(free).toEqual([...free].sort((a, b) => b - a));
-    expect(rows.every((r) => r.fit >= 1 && r.fit <= 5)).toBe(true);
+    // The good fits first (the free ones before the one in another event), then the rest by name.
+    const names = (list: typeof rows) => list.map((r) => r.name);
+    const good = rows.filter((r) => r.goodFit);
+    expect(good.map((r) => r.id).sort()).toEqual([ids[3], ids[4], ids[5]].sort());
+    expect(rows.slice(0, 3)).toEqual(good);
+    expect(rows[2]?.id).toBe(ids[5]);
+    expect(names(rows.slice(0, 2))).toEqual([...names(rows.slice(0, 2))].sort());
+    const rest = rows.slice(3, -1);
+    expect(rest.every((r) => !r.goodFit)).toBe(true);
+    expect(names(rest)).toEqual([...names(rest)].sort((a, b) => a.localeCompare(b)));
+    // Only this event's badge counts; no score of any kind on a row.
+    expect(rows.find((r) => r.id === ids[4])?.wins).toBe(3);
+    expect(rows.find((r) => r.id === ids[0])?.wins).toBe(0);
+    expect(rows.every((r) => !('fit' in r))).toBe(true);
+  });
+
+  it('the sample roster has the species the capture gave each id', () => {
+    const species = new Map(roster.map((c) => [c.id, c.species]));
+    const mine = (F.show.show?.events ?? []).flatMap((e) =>
+      e.actors.filter((a) => a.playerId === GAMES_SELF_ID),
+    );
+    expect(mine.length).toBeGreaterThan(0);
+    for (const a of mine) expect(species.get(a.entrantId)).toBe(a.speciesId);
   });
 });
 
@@ -194,6 +217,10 @@ describe('results and records', () => {
     expect(recordText({ eventId: 'pepper-panic', best: 1, unit: 'peppers' })).toBe('1 pepper');
     expect(recordText({ eventId: 'pepper-panic', best: 7, unit: 'peppers' })).toBe('7 peppers');
     expect(recordText({ eventId: 'shark-derby', best: 150, unit: 'centilaps' })).toBe('1.5 laps');
+    expect(recordText({ eventId: 'bucket-brigade', best: 87, unit: 'percent' })).toBe('87%');
+    expect(recordText({ eventId: 'crate-tower', best: 1, unit: 'crates' })).toBe('1 crate');
+    expect(recordText({ eventId: 'crate-tower', best: 9, unit: 'crates' })).toBe('9 crates');
+    expect(recordText({ eventId: 'kite-flight', best: 14, unit: 'm' })).toBe('14 m');
     expect(recordText({ eventId: 'sauna-showdown', best: 50, unit: 'ticks' })).toMatch(
       /^\d+(\.\d)? s$/,
     );

@@ -1,7 +1,8 @@
 /**
- * The Valley Games of a guild (docs/design/valley-games.md): a daily show of four events, one creature
- * per event. Server-authoritative: the client sends entries and purchases only; the lineup, the lock
- * (auto-entry, snapshots, the live seed, the engine), the awards and the post are the server's.
+ * The Valley Games of a guild (docs/design/valley-games.md): a daily show of three events (four on the
+ * bonus day), one creature per event. Server-authoritative: the client sends entries and purchases
+ * only; the lineup, the lock (snapshots, the live seed, the engine) and the awards are the server's.
+ * Only what players entered runs: there is no auto-entry.
  *
  * Schedule (guild time, `games-calendar.ts`): entries for show day D are open from D-1's show to D's
  * lock (the daily reset); the lock resolves D's events; the show plays at D's `show_at`; the awards are
@@ -11,10 +12,18 @@
 import { gamesEventDef, RULES } from '@creatures/game';
 import { awardDay } from './games-award';
 import { gamesLockAt, lockedDayAt } from './games-calendar';
-import { ensureLineup, lockDay, type GamesDeps } from './games-lock';
+import { ensureLineup, gamesRoster, lineupDefs, lockDay, type GamesDeps } from './games-lock';
 import type { BuyBody, EntryBody } from './games-schemas';
 import { buyOffer, stallView } from './games-stall';
-import { addEntry, joinPlayer, readDay, setAuto, unawardedDays } from './games-store';
+import {
+  addEntry,
+  hasEntries,
+  isBot,
+  hasOpenEntries,
+  playerEntries,
+  readDay,
+  unawardedDays,
+} from './games-store';
 import {
   creatureGamesView,
   gamesView,
@@ -81,23 +90,14 @@ export class Games {
         body.eventId,
       );
       ids.forEach((creatureId, slot) => {
-        addEntry(sql, { day, userId, eventId: body.eventId, slot, creatureId }, false, now);
+        addEntry(sql, { day, userId, eventId: body.eventId, slot, creatureId }, now);
       });
-      if (ids.length > 0) joinPlayer(sql, userId, now);
       this.deps.analytics?.record(
         { kind: 'games_entry', event: body.eventId, creatures: ids.length },
         userId,
       );
       return { next: nextView(this.deps, userId) };
     });
-  }
-
-  /** `PUT /api/games/auto`: turns auto-entry on or off (and joins the player). */
-  setAuto(userId: string, on: boolean): { auto: boolean; joined: true } {
-    this.deps.storage.transactionSync(() => {
-      setAuto(this.sql, userId, on, this.deps.now());
-    });
-    return { auto: on, joined: true };
   }
 
   /** `POST /api/games/stall/buy`. */
@@ -128,10 +128,9 @@ export class Games {
     const tz = this.deps.timezone();
     const day = lockedDayAt(now, tz);
     const row = readDay(this.sql, day);
-    // A day locks only when somebody had joined before its lock (an entry joins, so a day nobody
-    // entered or was auto-entered in has no show).
+    // A day locks only when somebody entered it: a day nobody entered has no show.
     const lockAt = gamesLockAt(day, tz);
-    const due = (row === null || row.lockedAt === null) && this.joinedBefore(lockAt);
+    const due = (row === null || row.lockedAt === null) && hasEntries(this.sql, day);
     if (due && now >= lockAt) lockDay(this.deps, day);
     for (const r of unawardedDays(this.sql)) {
       if (r.endsAt !== null && r.endsAt <= now) awardDay(this.deps, r.day);
@@ -140,30 +139,52 @@ export class Games {
 
   /**
    * The next time `runDue` has something to do: the end of a show not awarded yet, and the next lock
-   * (once anybody has joined). Possibly in the past (a step that keeps failing): the caller retries later.
+   * (when a day not locked yet has entries; every authenticated request re-arms the alarm, so a new
+   * entry is seen). Possibly in the past (a step that keeps failing): the caller retries later.
    */
   nextEventAt(): number | null {
     const candidates: number[] = [];
     for (const r of unawardedDays(this.sql)) if (r.endsAt !== null) candidates.push(r.endsAt);
-    if (this.anyoneJoined()) {
+    if (hasOpenEntries(this.sql, lockedDayAt(this.deps.now(), this.deps.timezone()))) {
       const { hour, minute } = RULES.games.lockAt;
       candidates.push(nextOccurrence(this.deps.now(), hour, minute, this.deps.timezone()));
     }
     return candidates.length === 0 ? null : Math.min(...candidates);
   }
 
-  private joinedBefore(at: number): boolean {
-    return (
-      this.sql.exec('SELECT 1 FROM games_players WHERE joined_at < ? LIMIT 1', at).toArray()
-        .length > 0
-    );
-  }
-
-  private anyoneJoined(): boolean {
-    return this.sql.exec('SELECT 1 FROM games_players LIMIT 1').toArray().length > 0;
-  }
-
   // --- Dev tools (staging only; see dev-tools-games.ts) ---
+
+  /**
+   * Enters each bot (a staging dev guest) in every event of the next show day it has not entered yet:
+   * its free creatures in roster order, a team event filled to three. Players are never entered for:
+   * this is the dev tools' stand-in crowd, not auto-entry. Returns the entries made.
+   */
+  enterBots(botIds: readonly string[]): number {
+    return this.deps.storage.transactionSync(() => {
+      const sql = this.sql;
+      const now = this.deps.now();
+      const tz = this.deps.timezone();
+      const day = nextDay(sql, now, tz);
+      const row = ensureLineup(this.deps, day);
+      if (row.lockedAt !== null || now >= gamesLockAt(day, tz)) return 0;
+      let made = 0;
+      for (const botId of botIds.filter(isBot)) {
+        const entries = playerEntries(sql, day, botId);
+        const used = new Set(Object.values(entries).flat());
+        const free = gamesRoster(sql, botId)
+          .map((c) => c.creature.id)
+          .filter((id) => !used.has(id));
+        for (const def of lineupDefs(row.lineup)) {
+          if ((entries[def.id]?.length ?? 0) > 0) continue;
+          free.splice(0, teamSizeOf(def)).forEach((creatureId, slot) => {
+            addEntry(sql, { day, userId: botId, eventId: def.id, slot, creatureId }, now);
+            made += 1;
+          });
+        }
+      }
+      return made;
+    });
+  }
 
   /**
    * Locks the next show day now and starts its show in `showInMs` (a day already locked but not shown
@@ -192,8 +213,8 @@ export class Games {
   }
 
   /**
-   * Forgets the latest locked day (its show, results, placings, the entries auto-entry made and its
-   * post) so it can be played again. Medals, experience and records it paid stay. Null: nothing locked.
+   * Forgets the latest locked day (its show, results and placings) so it can be played again; its
+   * entries stay. Medals, experience, badges and records it paid stay. Null: nothing locked.
    * A day whose lock time has passed locks again at the next catch-up (its show 15 s later); a day the
    * dev tools played early is open for entries again.
    */
@@ -208,7 +229,6 @@ export class Games {
       for (const table of ['games_days', 'games_results', 'games_placings'] as const) {
         this.sql.exec(`DELETE FROM ${table} WHERE day = ?`, day);
       }
-      this.sql.exec('DELETE FROM games_entries WHERE day = ? AND auto = 1', day);
       return { day };
     });
   }

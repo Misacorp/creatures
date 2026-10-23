@@ -16,8 +16,9 @@ export type GamesMods = Pick<
 >;
 
 /**
- * One creature entered in one event, snapshotted at the lock (`gamesEntrantFrom` builds it from the
- * fold the fights use). Stats are the fight's stats, gear and fusion included.
+ * One creature entered in one event, snapshotted at the lock (`gamesEntrantFrom` builds it). No level
+ * in the Games (Misa, 2026-10-23): the stats are the species' base strengths (its current form's level-1
+ * stats, no growth, no fusion, no gear stat lines); only the gear's chance and trigger lines count.
  */
 export interface GamesEntrant {
   /** Unique within the event (the creature id). */
@@ -31,7 +32,6 @@ export interface GamesEntrant {
   element: Element;
   role: Role;
   stage: 1 | 2;
-  level: number;
   hp: number;
   atk: number;
   spd: number;

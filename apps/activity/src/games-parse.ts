@@ -1,6 +1,6 @@
 /**
- * Checks of the Valley Games payloads (`GET /api/games`, the entry, auto-entry and stall answers and a
- * creature's medals), unit-tested against the real server output in `fixtures/games-*.json`. Pure type
+ * Checks of the Valley Games payloads (`GET /api/games`, the entry and stall answers and a creature's
+ * medals, event badges and records), unit-tested against the real server output in `fixtures/games-*.json`. Pure type
  * guards: a payload that does not match is an error, never a half-drawn tab. Unknown extra keys are
  * tolerated; unknown values of a known field are not.
  *
@@ -15,6 +15,7 @@ import { isArrayOf, isBool, isCount, isInt, isNullableInt, isRecord, isStr } fro
 import type {
   BoardRow,
   CreatureGames,
+  GamesBadge,
   GamesMedal,
   GamesNext,
   GamesResult,
@@ -66,7 +67,7 @@ export function isLineupEvent(value: unknown): value is LineupEvent {
   );
 }
 
-const isPips = (value: unknown): value is number => isInt(value) && value >= 1 && value <= 5;
+const isWins = (value: unknown): value is number => isInt(value) && value >= 1;
 
 function isNext(value: unknown): value is GamesNext {
   return (
@@ -77,9 +78,8 @@ function isNext(value: unknown): value is GamesNext {
     isBool(value['open']) &&
     isArrayOf(value['lineup'], isLineupEvent) &&
     isRecordOf(value['entries'], (v): v is string[] => isArrayOf(v, isStr)) &&
-    isBool(value['joined']) &&
-    isBool(value['auto']) &&
-    isRecordOf(value['fit'], (v): v is Record<string, number> => isRecordOf(v, isPips))
+    isRecordOf(value['goodFit'], (v): v is string[] => isArrayOf(v, isStr)) &&
+    isRecordOf(value['badges'], (v): v is Record<string, number> => isRecordOf(v, isWins))
   );
 }
 
@@ -280,12 +280,6 @@ export function parseEntryAnswer(raw: unknown): GamesNext {
   return raw['next'];
 }
 
-/** `PUT /api/games/auto`. */
-export function parseAutoAnswer(raw: unknown): { auto: boolean; joined: boolean } {
-  if (!isRecord(raw) || !isBool(raw['auto']) || !isBool(raw['joined'])) fail('auto-entry answer');
-  return { auto: raw['auto'], joined: raw['joined'] };
-}
-
 /** `POST /api/games/stall/buy`. */
 export function parseStallPurchase(raw: unknown): StallPurchase {
   if (!isRecord(raw)) fail('purchase');
@@ -324,10 +318,19 @@ function isRecordRow(value: unknown): value is CreatureGames['records'][number] 
   );
 }
 
+function isBadge(value: unknown): value is GamesBadge {
+  return isRecord(value) && isStr(value['eventId']) && isWins(value['wins']);
+}
+
 /** `GET /api/games/creature/:id`. */
 export function parseCreatureGames(raw: unknown): CreatureGames {
-  if (!isRecord(raw) || !isMedalCounts(raw['medals']) || !isArrayOf(raw['records'], isRecordRow)) {
+  if (
+    !isRecord(raw) ||
+    !isMedalCounts(raw['medals']) ||
+    !isArrayOf(raw['badges'], isBadge) ||
+    !isArrayOf(raw['records'], isRecordRow)
+  ) {
     fail("creature's medals");
   }
-  return { medals: raw['medals'], records: raw['records'] };
+  return { medals: raw['medals'], badges: raw['badges'], records: raw['records'] };
 }

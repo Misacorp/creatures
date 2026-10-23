@@ -1,4 +1,5 @@
 import type { GamesEventResult } from '@creatures/engine';
+import { gamesContent } from '@creatures/game';
 import { useMemo } from 'preact/hooks';
 import { GamesShow } from '../../games/GamesShow';
 import { buildShowTimeline } from '../../games/show-timeline';
@@ -106,8 +107,12 @@ function moments(id: string, players = 8): { early: number; chaos: number; podiu
   };
 }
 
-/** The team events (the hauls) also at 15 teams: a full lane each, the busiest a show gets. */
-const TEAM_PRESETS: Preset[] = ['log-carry', 'pumpkin-push'].flatMap((id) => [
+/**
+ * Every team event also at 15 teams (8 teams are the event presets' default roster): the busiest a
+ * show gets, a lane or a column each.
+ */
+const TEAM_EVENT_IDS = gamesContent.events.filter((e) => e.team === 3).map((e) => e.id);
+const TEAM_PRESETS: Preset[] = TEAM_EVENT_IDS.flatMap((id) => [
   {
     name: `${id}: 15 teams, intro`,
     props: { show: id, roster: '15 players', at: 2.4, play: false },

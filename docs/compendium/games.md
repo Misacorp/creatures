@@ -1,6 +1,6 @@
 # The Valley Games
 
-Status: 2026-10-23. Covers the daily Games as an in-world tradition: the hosts, the meadow and the nine events, each as something that happens in the valley, and the two retired ones.
+Status: 2026-10-23. Covers the daily Games as an in-world tradition: the hosts, the meadow and the twelve events, each as something that happens in the valley, and the two retired ones.
 
 Read `README.md` for the tags.
 
@@ -8,15 +8,18 @@ Read `README.md` for the tags.
 
 ## The Games as a place and a habit
 
-- Every day the valley holds a show of three events, and on Wednesdays a fourth, the bonus event, whose medals count double at the Prize Stall. Each creature can enter one of them, and one event is for teams of three: a real team sport, where all three carry or push one big thing together. `(design: valley-games.md)`
+- Every day the valley holds a show of three events, and on Wednesdays a fourth, the bonus event, whose medals count double at the Prize Stall. Each creature can enter one of them, and one event is for teams of three: a real team sport, where all three play at once (carry a log, push a pumpkin, fill a barrel, stack a tower or fly a kite) and every team plays side by side, so a big field never makes it longer. `(design: valley-games.md)`
 - Entries close at the daily reset, and the show plays to everyone a few minutes later. Everyone watches the same moment, and the next day's events are announced at the end. `(design)`
 - Each event gives gold, silver and bronze medals. A creature that beats its own best in an event gets a pin. Medals are kept for life and can be spent at the Prize Stall on Wednesdays. `(design)`
 - What each event favours is part of its teaser (`favours`): the right element, role, size or knack counts about as much as strength. `(content: games-events.json)`
+- Level does not matter on the meadow: species, element, role and size do, and of a creature's gear only its knacks (the chance and trigger lines) come along. A creature the event suits wears a green **Good fit** tick in the entry list. `(design: decisions.md, 2026-10-23)`
+- A creature that wins an event (gold) earns that event's **badge**, a little medallion in the event's colours with a count of its wins ("Pepper Panic ×3"). Every member of a winning team earns it. `(design)`
+- Only creatures their explorers entered that day take part; nobody is entered for them. `(design)`
 
 **Compendium detail, not shipped** (feel):
 
 - _Mood:_ a village fete with a loudspeaker. The Games are silly on purpose. Nobody is hurt, nobody is shamed, and everybody gets a cheer. Losing means a splash, a squash, a pink face or a shiver, and then a towel.
-- _Where:_ the **Games Meadow**, a sloping field just off the Old Crossroads, where the travellers' road widens and the grass is flattened every day. The signpost at the Crossroads has an extra board nailed on, pointing at the meadow: "Games, this way". The meadow has a lake at the bottom (the Shark Derby), a hill at the top (the Melon Run), a wooden sauna hut by the water and, along the hedge, the long path where teams carry logs and push pumpkins.
+- _Where:_ the **Games Meadow**, a sloping field just off the Old Crossroads, where the travellers' road widens and the grass is flattened every day. The signpost at the Crossroads has an extra board nailed on, pointing at the meadow: "Games, this way". The meadow has a lake at the bottom (the Shark Derby), a hill at the top (the Melon Run), a wooden sauna hut by the water and, along the hedge, the long path where teams carry logs and push pumpkins. Beside the lake there is a pond with a row of barrels, behind the hut a yard of crates, and above the hill the open slope where the kites go up.
 - _Who hosts:_ the **Meadow Committee**: a few old explorers who retired from long trips and now run the show. They keep the rubber sharks, roll the melon back up the hill every evening and grow the peppers. Nobody remembers who started it. The committee say it has "always been on".
 - _The voice:_ the commentary is a cheerful announcer on a tin loudspeaker, warm, a bit breathless, never mean. It names creatures, never their numbers. It loves an upset.
 - _Why everyone enters the small ones:_ the old saying on the meadow is "every creature has one event". The Games are where the quiet creature at the back of the room gets its day.
@@ -26,7 +29,7 @@ Read `README.md` for the tags.
 
 ## Events
 
-Nine events, all live, and two retired. Each is one of six shapes (`kind` in the data): a room that gets hotter, a run ahead of something rolling, a table of food, laps of a lake, a floe to stay on, and a big load hauled by a team. `(content)`
+Twelve events, all live, and two retired. Each is one of nine shapes (`kind` in the data): a room that gets hotter, a run ahead of something rolling, a table of food, laps of a lake, a floe to stay on, a big load hauled by a team, a barrel a team fills, a tower a team stacks and a kite a team flies. `(content)`
 
 ### Sauna Showdown
 
@@ -81,6 +84,24 @@ Nine events, all live, and two retired. Each is one of six shapes (`kind` in the
 - **Kind:** haul, for teams of three. **Teaser:** "A pumpkin the size of a hut, and a hill. Push together!" `(content)`
 - **What happens:** every team puts its shoulders to a giant pumpkin and pushes it up the path, one behind the other. Strength adds up, the strongest counting most. A slip lets the pumpkin roll back a little and bonk the team beside it; a Guard holds it steady, and big creatures and Mire creatures with their muddy feet push best. `(content)`
 - **Compendium detail, not shipped:** the pumpkins grow in the committee's patch next to the melons, fed on something nobody will name. After the race they are carved into lanterns for the meadow.
+
+### Bucket Brigade
+
+- **Kind:** fill, for teams of three. **Teaser:** "A pond, a barrel each and forty seconds. Fill it to the brim!" `(content)`
+- **What happens:** every team has its own barrel in the row above the pond, and all three teammates shuttle at once: dip a pail, run it up, pour, run back. Quick creatures make more trips, Tide creatures carry more water, and a Support at the pond helps a teammate refill faster. A pour can slip on the wet grass (a nimble creature keeps its footing), and a big slip can splash into the next team's barrel, which they do not mind at all. An Ember creature at the barrels is hot enough that a little of the next barrel's water steams away. After forty seconds the fullest barrel wins; level barrels share. `(content: params, favours)`
+- **Compendium detail, not shipped:** the barrels are the committee's rain barrels, rolled down from the hut every morning, each with a glass front so the crowd can see the water rise. The pails are dented from years of the brigade. Afterwards the barrels water the pepper patch.
+
+### Crate Tower
+
+- **Kind:** stack, for teams of three. **Teaser:** "Stack the crates as high as you dare. Mind the wobble." `(content)`
+- **What happens:** every team builds a tower of crates at its own spot in the yard, all at once. The smallest, quickest teammate climbs up and places each crate, one holds the base and one fetches from the pile. Every tower is steady up to a point (higher with sturdy creatures and a Guard at the base, and Grove creatures root it to the ground); above that it wobbles more with every crate, and a wobble that is not held topples the top crate, sometimes onto the next tower. After forty seconds the tallest tower wins; at the same height, the one that got there first. `(content: params, favours)`
+- **Compendium detail, not shipped:** the crates are the committee's market crates, stamped with each team's colour in chalk before the start. The record tower is painted on the yard wall, a little higher every year, and nobody believes it.
+
+### Kite Flight
+
+- **Kind:** kite, for teams of three. **Teaser:** "Run, let the string out and ride the wind. Highest kite wins." `(content)`
+- **What happens:** every team runs along the slope and flies one kite, all teams side by side. Quick runners lift it higher, and Spark creatures bring their own breeze. A gust can tug a kite down unless an anchor holds the line (a Guard, or a Mire creature with its muddy feet planted). Lightning likes a Spark crew and now and then strikes the highest of their kites, and two kites flying close together can tangle unless someone ducks under the string. After forty seconds the highest kite wins. `(content: params, favours)`
+- **Compendium detail, not shipped:** the kites are sewn by the committee from old bunting, one colour per team, and the strings are the same twine that ties the melon arch. Lost kites end up in the trees of the Verdant Hollow, where the Grove creatures keep them.
 
 ### Retired events
 

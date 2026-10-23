@@ -341,12 +341,23 @@ export interface PreparedEvent {
   finishes: { i: number; x: number; y: number }[];
   /** Haul: the tick each actor's team crossed the line (null: never). */
   finishT: (number | null)[];
+  /**
+   * The at-once team events: each team's object by team index (`barrel:<i>` f = level in percent,
+   * `tower:<i>` f = crates, `kite:<i>` the kite's centre, f 1 tumbling).
+   */
+  objects: { i: number; kind: TeamObjectKind; m: Moving }[];
+  /** Each actor's team index (teams in order of first appearance). */
+  teamOfActor: number[];
   /** Chase and haul: the camera's left edge at each whole tick; the world's width. */
   camera: Float64Array | null;
   worldWidth: number;
   /** Teams in order of first appearance, with their actors. */
   teams: { teamId: string; playerId: string; actors: number[] }[];
 }
+
+/** The objects of the at-once team events, one per team. */
+export type TeamObjectKind = 'barrel' | 'tower' | 'kite';
+const TEAM_OBJECTS: readonly TeamObjectKind[] = ['barrel', 'tower', 'kite'];
 
 /** Lap progress (hundredths) of a point on the lake, in [0, 100): 0 at the start (the bottom). */
 function lapFraction(x: number, y: number): number {
@@ -388,6 +399,7 @@ export function prepareEvent(result: GamesEventResult): PreparedEvent {
   let heat: Moving | null = null;
   const loads = new Map<number, { i: number; kind: 'log' | 'pumpkin'; m: Moving }>();
   const finishes: { i: number; x: number; y: number }[] = [];
+  const objects = new Map<number, { i: number; kind: TeamObjectKind; m: Moving }>();
   let maxX = 0;
 
   for (const b of result.beats) {
@@ -477,6 +489,17 @@ export function prepareEvent(result: GamesEventResult): PreparedEvent {
           }
           load.m.push(key);
           maxX = Math.max(maxX, b.x);
+        } else if (TEAM_OBJECTS.some((o) => b.p.startsWith(`${o}:`))) {
+          const [name, index] = b.p.split(':');
+          const i = Number(index);
+          const kind = TEAM_OBJECTS.find((o) => o === name);
+          if (!Number.isInteger(i) || i < 0 || kind === undefined) break;
+          let obj = objects.get(i);
+          if (obj === undefined) {
+            obj = { i, kind, m: new Moving() };
+            objects.set(i, obj);
+          }
+          obj.m.push(key);
         } else if (b.p.startsWith('pepper:')) {
           actors[Number(b.p.slice(7))]?.peppers.push({ t: b.t, tier: b.f ?? 0 });
         }
@@ -498,7 +521,14 @@ export function prepareEvent(result: GamesEventResult): PreparedEvent {
       ticks,
     );
   }
-  for (const m of [melon, floe, heat, ...sharks.values(), ...[...loads.values()].map((l) => l.m)])
+  for (const m of [
+    melon,
+    floe,
+    heat,
+    ...sharks.values(),
+    ...[...loads.values()].map((l) => l.m),
+    ...[...objects.values()].map((o) => o.m),
+  ])
     m?.seal(ticks);
 
   const teamMap = new Map<string, { teamId: string; playerId: string; actors: number[] }>();
@@ -510,6 +540,11 @@ export function prepareEvent(result: GamesEventResult): PreparedEvent {
     }
     team.actors.push(a.a);
   }
+  const teamList = [...teamMap.values()];
+  const teamOfActor = new Array<number>(result.actors.length).fill(0);
+  teamList.forEach((team, i) => {
+    for (const a of team.actors) teamOfActor[a] = i;
+  });
 
   const prepared: PreparedEvent = {
     result,
@@ -536,9 +571,11 @@ export function prepareEvent(result: GamesEventResult): PreparedEvent {
     loads: [...loads.values()].sort((p, q) => p.i - q.i),
     finishes: finishes.sort((p, q) => p.i - q.i),
     finishT: new Array<number | null>(result.actors.length).fill(null),
+    objects: [...objects.values()].sort((p, q) => p.i - q.i),
+    teamOfActor,
     camera: null,
     worldWidth: VIEW_WIDTH,
-    teams: [...teamMap.values()],
+    teams: teamList,
   };
   if (kind === 'chase') {
     prepared.worldWidth = sceneWidthFor(maxX + 48);
@@ -693,6 +730,21 @@ export interface PropsFrame {
   peppers: PepperFrame[];
   /** Haul: each team's load (its centre, the lane's feet y and its frame: up, wobbling or down). */
   loads: { i: number; kind: 'log' | 'pumpkin'; x: number; y: number; f: number; roll: number }[];
+  /**
+   * The at-once team events: each team's object now (`x`, `y` and `f` of its last key, a kite's
+   * position blended), the `f` before its last change (`was`) and the ticks since that change.
+   */
+  objects: TeamObjectFrame[];
+}
+
+export interface TeamObjectFrame {
+  i: number;
+  kind: TeamObjectKind;
+  x: number;
+  y: number;
+  f: number;
+  was: number;
+  since: number;
 }
 
 export interface EventFrame {
@@ -790,6 +842,7 @@ export function frameAt(p: PreparedEvent, msIn: number): EventFrame {
       const f = l.m.keyAt(tick)?.f ?? 0;
       return at === null ? [] : [{ i: l.i, kind: l.kind, x: at.x, y: at.y, f, roll: at.x }];
     }),
+    objects: p.objects.flatMap((o) => objectAt(o, tick)),
   };
 
   let cameraX = 0;
@@ -799,6 +852,25 @@ export function frameAt(p: PreparedEvent, msIn: number): EventFrame {
     cameraX = c0 + (c1 - c0) * (tick - whole);
   }
   return { tick, ms, actors, fx, say, props, cameraX };
+}
+
+/** A team object at a tick: a kite glides between its keys, a barrel or a tower steps. */
+function objectAt(
+  o: { i: number; kind: TeamObjectKind; m: Moving },
+  tick: number,
+): TeamObjectFrame[] {
+  const key = o.m.keyAt(tick);
+  if (key === null) return [];
+  const index = o.m.keys.indexOf(key);
+  let wasIndex = index - 1;
+  while (wasIndex >= 0 && o.m.keys[wasIndex]?.f === key.f) wasIndex--;
+  const was = o.m.keys[wasIndex]?.f ?? key.f;
+  // When f last changed: the first key of the run of keys with this f.
+  let from = index;
+  while (from > 0 && o.m.keys[from - 1]?.f === key.f) from--;
+  const since = tick - (o.m.keys[from]?.t ?? key.t);
+  const at = o.kind === 'kite' ? (o.m.at(tick) ?? key) : key;
+  return [{ i: o.i, kind: o.kind, x: at.x, y: at.y, f: key.f, was, since }];
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -827,8 +899,12 @@ export function scoreText(kind: GamesKind, score: number, tickMs: number): strin
       return `${String(Math.round((score * tickMs) / 1000))}s`;
     case 'chase':
     case 'haul':
+    case 'kite':
       return `${String(score)}m`;
+    case 'fill':
+      return `${String(score)}%`;
     case 'feast':
+    case 'stack':
       return String(score);
     case 'swim':
       return (score / 100).toFixed(1);
@@ -873,6 +949,21 @@ function liveKey(p: PreparedEvent, f: EventFrame, a: number): { key: number; sco
       const done = p.finishT[a] ?? null;
       if (done !== null && done <= f.tick) return { key: 2e6 - done, score };
       return { key: run, score };
+    }
+    case 'fill':
+      return { key: af.score, score: af.score };
+    case 'stack': {
+      // At the same height, the tower that got there first.
+      const tower = f.props.objects.find((o) => o.i === p.teamOfActor[a]);
+      return {
+        key: af.score * 1e4 - (tower === undefined ? 0 : f.tick - tower.since),
+        score: af.score,
+      };
+    }
+    case 'kite': {
+      // The kite's height (its y counts down from the rest position).
+      const kite = f.props.objects.find((o) => o.i === p.teamOfActor[a]);
+      return { key: kite === undefined ? af.score : -kite.y, score: af.score };
     }
   }
 }
@@ -926,7 +1017,8 @@ export function liveBoard(p: PreparedEvent, f: EventFrame): BoardRow[] {
 
 /** Creatures still in, of all (kinds where creatures go out; null for a race to the finish). */
 export function stillIn(p: PreparedEvent, f: EventFrame): { in: number; of: number } | null {
-  if (p.kind === 'swim' || p.kind === 'haul') return null;
+  if (p.kind !== 'endure' && p.kind !== 'chase' && p.kind !== 'feast' && p.kind !== 'shove')
+    return null;
   return { in: f.actors.filter((a) => !a.out).length, of: f.actors.length };
 }
 

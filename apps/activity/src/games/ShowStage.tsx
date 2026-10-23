@@ -10,6 +10,14 @@ import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { cssVars } from '../css-vars';
 import { GamesActor, GamesScene, GamesSprite } from './art/GamesScene';
 import { LOG_BODY, PODIUM_HEIGHTS, PUMPKIN_FRAMES_COUNT } from './art/drawn';
+import {
+  BARREL_HEIGHT,
+  CRATE_HEIGHT,
+  KITE_HEIGHT,
+  KITE_TIE,
+  barrelFrameOf,
+  kiteString,
+} from './art/drawn-team';
 import { propSprite, propTinted } from './art/props';
 import { ACTOR_SIZE, PEPPER_TABLE_TOP, type GamesSceneId, GAMES_SCENE_IDS } from './art/scenes';
 import type { RampName } from './art/tint';
@@ -35,6 +43,7 @@ import {
   type EventFrame,
   type PreparedEvent,
   type ShowPhase,
+  type TeamObjectFrame,
 } from './show-timeline';
 
 /** More entrants than this and the meters crowd each other out. */
@@ -63,6 +72,14 @@ const CONFETTI_TINTS: readonly (readonly [RampName, RampName])[] = [
   ['red', 'green'],
 ];
 
+/** A crate's step in a tower (the engine's `STACK_CRATE_STEP`: the outlines overlap by a pixel). */
+const CRATE_STEP = CRATE_HEIGHT - 1;
+
+/** The at-once team events: one object per team (a barrel, a tower, a kite), a fixed camera. */
+export function isTeamObjectKind(kind: PreparedEvent['kind']): boolean {
+  return kind === 'fill' || kind === 'stack' || kind === 'kite';
+}
+
 export function sceneOf(id: string): GamesSceneId {
   return (GAMES_SCENE_IDS as readonly string[]).includes(id) ? (id as GamesSceneId) : 'sauna';
 }
@@ -88,6 +105,9 @@ function flipOf(p: PreparedEvent, f: ActorFrame): boolean {
   switch (p.kind) {
     case 'chase':
     case 'haul':
+    case 'fill':
+    case 'stack':
+    case 'kite':
       return false;
     case 'swim':
       return f.out ? false : f.y > 62;
@@ -219,6 +239,15 @@ function Actors({ p, frame, youId, introMs, reduced }: ActorsProps) {
                 z={y}
               />
             </div>
+            {p.kind === 'fill' && look === 'in' && introMs === null && (
+              // The pail in its paws: full on the way up, empty on the way down.
+              <GamesSprite
+                x={x + 6}
+                y={Math.round(y - lift) - 3}
+                sprite={propSprite('pail', (f.meter ?? 0) >= 50 ? 1 : 0)}
+                z={y + 1}
+              />
+            )}
           </Fragment>
         );
       })}
@@ -291,6 +320,9 @@ function BackProps({
   const { melon, sharks, loads } = frame.props;
   return (
     <>
+      {frame.props.objects.map((o) => (
+        <TeamObject key={`obj-${String(o.i)}`} p={p} frame={frame} o={o} still={still} />
+      ))}
       {p.finishes.map((mark) => (
         // Each lane's finish: a short chequered strip across the lane (the starts are staggered).
         <GamesSprite
@@ -342,6 +374,117 @@ function BackProps({
             z={s.y + 4}
           />
         ))}
+    </>
+  );
+}
+
+/** The top of a team's object (scene px): where its "you" marker points. */
+export function objectTop(o: TeamObjectFrame): number {
+  switch (o.kind) {
+    case 'barrel':
+      return o.y - BARREL_HEIGHT;
+    case 'tower':
+      // Over the climber standing on the top crate.
+      return o.y - o.f * CRATE_STEP - ACTOR_SIZE;
+    case 'kite':
+      return o.y - Math.ceil(KITE_HEIGHT / 2);
+  }
+}
+
+/**
+ * One team's object in the at-once team events, in the team's colour: a barrel with its gauge, a
+ * tower of crates (toppled crates tumble off for a moment), or a kite on its string from the holder.
+ */
+function TeamObject({
+  p,
+  frame,
+  o,
+  still,
+}: {
+  p: PreparedEvent;
+  frame: EventFrame;
+  o: TeamObjectFrame;
+  still: boolean;
+}) {
+  const team = p.teams[o.i];
+  if (team === undefined) return null;
+  const ramp = teamRamp(team.playerId);
+  const x = Math.round(o.x);
+  const y = Math.round(o.y);
+  if (o.kind === 'barrel') {
+    return (
+      <GamesSprite
+        x={x}
+        y={y}
+        sprite={propSprite('barrel', barrelFrameOf(o.f), undefined, ramp)}
+        z={y - 1}
+      />
+    );
+  }
+  if (o.kind === 'tower') {
+    const height = Math.max(0, Math.round(o.f));
+    // Behind the climber on top, in front of nothing else.
+    const z = y - height * CRATE_STEP - 1;
+    const fell = Math.max(0, Math.round(o.was) - height);
+    const tumbling = !still && fell > 0 && o.since < 2;
+    return (
+      <>
+        {Array.from({ length: height }, (_, k) => (
+          <GamesSprite
+            key={k}
+            x={x}
+            y={y - k * CRATE_STEP}
+            sprite={propSprite('teamCrate', 0, undefined, ramp)}
+            z={z}
+          />
+        ))}
+        {tumbling &&
+          Array.from({ length: fell }, (_, j) => {
+            const u = o.since;
+            const side = (o.i + j) % 2 === 0 ? 1 : -1;
+            return (
+              <GamesSprite
+                key={`fall-${String(j)}`}
+                x={Math.round(x + side * (u * 7 + j * 4))}
+                y={Math.round(y - (height + j) * CRATE_STEP + u * u * 9)}
+                sprite={propSprite('teamCrate', 0, undefined, ramp)}
+                z={499}
+              />
+            );
+          })}
+      </>
+    );
+  }
+  // A kite: its string from the holder's paws (the team's first creature), then the kite.
+  const holder = team.actors[0];
+  const h = holder === undefined ? undefined : frame.actors[holder];
+  const handX = Math.round(h?.x ?? x) + 3;
+  const handY = Math.round(h?.y ?? y + 20) - 9;
+  const top = Math.round(y - KITE_HEIGHT / 2);
+  const tieX = x - 4 + KITE_TIE.x;
+  const tieY = top + KITE_TIE.y;
+  const tumbling = o.f === 1;
+  const kiteFrame = tumbling ? 2 : still ? 0 : Math.floor(frame.ms / 300 + o.i) % 2;
+  return (
+    <>
+      {kiteString(tieX - handX, tieY - handY).map((piece, k) => (
+        <GamesSprite
+          key={k}
+          x={handX + piece.x}
+          y={handY + piece.y}
+          anchor="top-left"
+          sprite={piece.sprite}
+          z={20}
+        />
+      ))}
+      <GamesSprite
+        x={x}
+        y={y}
+        anchor="centre"
+        sprite={propSprite('kite', kiteFrame, undefined, ramp)}
+        flip={tumbling && !still && Math.floor(frame.ms / 150) % 2 === 0}
+        z={21}
+      />
     </>
   );
 }
@@ -442,9 +585,31 @@ function FrontProps({
             </div>
           );
         })}
+      {isTeamObjectKind(p.kind) &&
+        frame.props.objects.map((o) => {
+          // One marker per team: over its barrel, its tower's climber or its kite.
+          const team = p.teams[o.i];
+          if (team === undefined || team.playerId !== youId) return null;
+          return (
+            <div key={`you-${String(o.i)}`} class="gs-you">
+              <GamesSprite
+                x={Math.round(o.x)}
+                y={Math.round(objectTop(o)) - YOU_MARKER_GAP}
+                sprite={YOU_MARKER}
+                z={YOU_Z}
+              />
+            </div>
+          );
+        })}
       {frame.actors.map((f) => {
         const actor = p.result.actors[f.a];
-        if (actor === undefined || actor.playerId !== youId || p.kind === 'haul') return null;
+        if (
+          actor === undefined ||
+          actor.playerId !== youId ||
+          p.kind === 'haul' ||
+          isTeamObjectKind(p.kind)
+        )
+          return null;
         if (actorLook(p.kind, f) === 'hidden') return null;
         const lift = liftOf(frame, f, introMs, reduced);
         const gap = meterShown(p, f, youId, count) ? YOU_MARKER_METER_GAP : YOU_MARKER_GAP;

@@ -35,7 +35,7 @@ afterEach(() => {
 });
 
 function fakeApi() {
-  return { setEntry: vi.fn(), setAuto: vi.fn(), buy: vi.fn() };
+  return { setEntry: vi.fn(), buy: vi.fn() };
 }
 
 function draw(view: GamesView, offset: number, api = fakeApi(), onView = vi.fn()) {
@@ -60,26 +60,29 @@ const flush = async (): Promise<void> => {
 };
 
 describe('the Games tab', () => {
-  it('shows the title, the three events with slots and auto-entry while entries are open', () => {
+  it('shows the title and the three events with slots while entries are open, and no auto-entry', () => {
     const { view, offset } = gamesView('entries: one entered');
     const { page: p } = draw(view, offset);
     const text = visibleText(p.root);
     expect(text).toContain('Valley Games');
     for (const e of view.next.lineup) expect(text).toContain(e.name);
-    // Two solo slots and the team's three seats; Melon Run holds the fixture's Splashet.
+    // Two solo slots and the team's three seats; Melon Run holds the fixture's Splashet, a good fit.
     expect(byClass(p.root, 'ge-slot')).toHaveLength(5);
-    expect(byName(p.root, 'button', /^Melon Run: Splashet, fit 3 \/ 5$/)).toHaveLength(1);
-    expect(byRole(p.root, 'switch')).toHaveLength(1);
+    expect(byName(p.root, 'button', 'Melon Run: Splashet, good fit')).toHaveLength(1);
+    expect(byClass(p.root, 'ge-goodfit')).toHaveLength(1);
+    expect(byRole(p.root, 'switch')).toHaveLength(0);
+    expect(text).not.toContain('Auto-entry');
     expect(text).toContain('Opens');
   });
 
   it('shows the last show (medals, experience, replay) over the next lineup after a show', () => {
     const { view, offset } = gamesView('after: results and the next lineup');
     const { page: p } = draw(view, offset);
-    expect(byClass(p.root, 'gr-row')).toHaveLength(3);
+    // The player entered a solo event and the team event: two results.
+    expect(byClass(p.root, 'gr-row')).toHaveLength(2);
     expect(byName(p.root, 'button', 'Replay Melon Run')).toHaveLength(1);
-    // One row per creature that ran: two solo entrants and a team of two.
-    expect(byClass(p.root, 'xp-row')).toHaveLength(4);
+    // One row per creature that ran: the solo entrant and a team of two.
+    expect(byClass(p.root, 'xp-row')).toHaveLength(3);
     // The next day is a Wednesday: three events and the bonus event, which wears the ribbon.
     expect(byClass(p.root, 'ge-card')).toHaveLength(4);
     const ribbons = byClass(p.root, 'ge-bonus');
@@ -108,11 +111,11 @@ describe('the Games tab', () => {
   it('plays the replay from an event, with Back to the tab', () => {
     const { view, offset } = gamesView('after: results and the next lineup');
     const { page: p } = draw(view, offset);
-    const [replay] = byName(p.root, 'button', 'Replay Pepper Panic');
+    const [replay] = byName(p.root, 'button', 'Replay Log Carry');
     if (replay === undefined) throw new Error('no replay');
     p.click(replay);
     expect(byClass(p.root, 'games-show')).toHaveLength(1);
-    expect(visibleText(p.root)).toContain('Pepper Panic');
+    expect(visibleText(p.root)).toContain('Log Carry');
     const [back] = byClass(p.root, 'drill-back');
     if (back === undefined) throw new Error('no back');
     p.click(back);
@@ -137,7 +140,7 @@ describe('the Games tab', () => {
   it('opens the picker from a slot and sends the pick, then shows the answer', async () => {
     const { view, offset } = gamesView('entries: none entered');
     const api = fakeApi();
-    const zip = roster[3];
+    const zip = roster.find((c) => c.species === 'splashet');
     if (zip === undefined) throw new Error('no creature');
     const answer = { ...view.next, entries: { 'melon-run': [zip.id] } };
     api.setEntry.mockResolvedValue(answer);
@@ -147,8 +150,11 @@ describe('the Games tab', () => {
     p.click(slot);
     const options = byRole(p.root, 'option');
     expect(options).toHaveLength(roster.length);
-    // Best fit first: Zipmouse fits Melon Run 5 / 5 in the capture.
-    expect(visibleText(options[0] ?? p.root)).toContain('Zipmouse');
+    // The good fits first (Splashet and Zipmouse in the capture), by name; no scores.
+    expect(visibleText(options[0] ?? p.root)).toContain('Splashet');
+    expect(visibleText(options[0] ?? p.root)).toContain('Good fit');
+    expect(visibleText(options[1] ?? p.root)).toContain('Zipmouse');
+    expect(visibleText(options[2] ?? p.root)).not.toContain('Good fit');
     p.click(options[0] ?? p.root);
     await flush();
     expect(api.setEntry).toHaveBeenCalledWith(view.next.day, 'melon-run', [zip.id]);
@@ -228,21 +234,5 @@ describe('the Games tab', () => {
     const { page: p } = draw(view, offset);
     expect(byClass(p.root, 'gs-shutter')).toHaveLength(1);
     expect(byName(p.root, 'button', /^Buy/)).toHaveLength(0);
-  });
-
-  it('switches auto-entry', async () => {
-    const { view, offset } = gamesView('entries: one entered');
-    const api = fakeApi();
-    api.setAuto.mockResolvedValue({ auto: false, joined: true });
-    const { page: p, onView } = draw(view, offset, api);
-    const [toggle] = byRole(p.root, 'switch');
-    if (toggle === undefined) throw new Error('no switch');
-    p.click(toggle);
-    await flush();
-    expect(api.setAuto).toHaveBeenCalledWith(false);
-    expect(onView).toHaveBeenCalledWith({
-      ...view,
-      next: { ...view.next, auto: false, joined: true },
-    });
   });
 });

@@ -133,6 +133,12 @@
   font-size: var(--fs-small);
 }
 
+/* A small mark on the name's line (the Games' event badge), centred on the line. */
+.ro-beside {
+  display: inline-flex;
+  align-self: center;
+}
+
 /* Rested (the lounge swap): the card's outlined tag, at the line's height. */
 .ro-rested {
   padding: 0 0.375rem;

@@ -1,7 +1,7 @@
 /**
  * The Valley Games content (`data/games-events.json`; docs/design/valley-games.md): the pool of daily
  * events and the commentary lines the show plays. An event is a `kind` (a rule shape the engine knows:
- * `endure`, `chase`, `feast`, `swim`, `shove`, `haul`) with its own numbers (`params`), an element table and a
+ * `endure`, `chase`, `feast`, `swim`, `shove`, `haul`, `fill`, `stack`, `kite`) with its own numbers (`params`), an element table and a
  * scene for the client to draw. Skins reuse a kind with other numbers (the Frost Bath is the sauna with
  * the elements flipped), so new events need no engine change.
  *
@@ -26,7 +26,17 @@ const Int = (min: number, max: number) =>
 const Bp = Int(0, 10_000);
 const Mult = Int(1, 40_000);
 
-export const GAMES_KINDS = ['endure', 'chase', 'feast', 'swim', 'shove', 'haul'] as const;
+export const GAMES_KINDS = [
+  'endure',
+  'chase',
+  'feast',
+  'swim',
+  'shove',
+  'haul',
+  'fill',
+  'stack',
+  'kite',
+] as const;
 export type GamesKind = (typeof GAMES_KINDS)[number];
 
 /** The scenes the client can draw, and the kinds each one fits. */
@@ -36,6 +46,9 @@ export const GAMES_SCENES = {
   'melon-hill': 'chase',
   'log-trail': 'haul',
   'pumpkin-hill': 'haul',
+  'barrel-pond': 'fill',
+  'crate-yard': 'stack',
+  'kite-hill': 'kite',
   'pepper-table': 'feast',
   'shark-lake': 'swim',
   'ice-floe': 'shove',
@@ -166,6 +179,51 @@ export const GAMES_SAY_KEYS = {
     'haul.close',
     'haul.win',
     'haul.draw',
+  ],
+  fill: [
+    'fill.start',
+    'fill.pour',
+    'fill.spill',
+    'fill.splash',
+    'fill.steam',
+    'fill.help',
+    'fill.dodge',
+    'fill.catch',
+    'fill.lead',
+    'fill.half',
+    'fill.full',
+    'fill.last',
+    'fill.win',
+    'fill.draw',
+  ],
+  stack: [
+    'stack.start',
+    'stack.place',
+    'stack.steady',
+    'stack.root',
+    'stack.topple',
+    'stack.knock',
+    'stack.dodge',
+    'stack.catch',
+    'stack.lead',
+    'stack.high',
+    'stack.last',
+    'stack.win',
+    'stack.draw',
+  ],
+  kite: [
+    'kite.start',
+    'kite.gust',
+    'kite.hold',
+    'kite.zap',
+    'kite.tangle',
+    'kite.dodge',
+    'kite.catch',
+    'kite.lead',
+    'kite.high',
+    'kite.last',
+    'kite.win',
+    'kite.draw',
   ],
 } as const satisfies Record<GamesKind, readonly string[]>;
 export type GamesSayKey = (typeof GAMES_SAY_KEYS)[GamesKind][number];
@@ -402,6 +460,114 @@ export const HaulParamsSchema = v.strictObject({
   finishBonusM: Int(1, 100),
 });
 
+/**
+ * Fill (Bucket Brigade), team events only: every team fills its own barrel from the pond in a fixed
+ * time (`maxTicks`), all members at once. Each member dips a bucket at the pond (`dipTicks`, one fewer
+ * per Support in the team), runs it up to the barrel (Speed against the field, the role and size
+ * multipliers) and pours; the element multiplier is how much a bucket holds (Tide carries more). A
+ * pour may slip (a dodge roll keeps it steady): only `keepBp` of the bucket goes in, and a big slip
+ * can splash `splashBp` of it into a neighbouring barrel. A `steamElement` member pouring may steam a
+ * little of a neighbour's water away. Score: the barrel's level in percent (ties share).
+ */
+export const FillParamsSchema = v.strictObject({
+  ...COMMON,
+  /** A member's speed with a full bucket at x1, in hundredths of a pixel per tick, and empty-handed. */
+  runCpx: Int(1, 2_000),
+  returnBp: Int(10_000, 30_000),
+  /** Ticks to fill a bucket at the pond; each Support in the team takes `helpTicks` off (at least one left). */
+  dipTicks: Int(1, 20),
+  helpTicks: Int(0, 10),
+  /** A full bucket at x1, in basis points of a barrel (10000 fills it). */
+  bucketBp: Int(1, 5_000),
+  /** Chance that a pour slips unless steadied (a base chance plus the dodge), and how much of it still goes in. */
+  slipChanceBp: Bp,
+  steadyBaseBp: Bp,
+  keepBp: Bp,
+  /** A slip splashes this share of the bucket into a neighbouring barrel, with this chance. */
+  splashChanceBp: Bp,
+  splashBp: Bp,
+  /** A `steamElement` member's pour steams `steamBp` of a barrel off a neighbour, with this chance. */
+  steamElement: ElementSchema,
+  steamChanceBp: Bp,
+  steamBp: Bp,
+  /** Momentum or Riposte after a steady pour: the member's next trip goes this much faster. */
+  burstBp: Int(0, 40_000),
+});
+
+/**
+ * Stack (Crate Tower), team events only: every team stacks crates at its own spot in a fixed time.
+ * One member climbs and places, one holds the base, one fetches; the team's tempo is its members'
+ * mean climb (Speed, faster for a small creature) and its steadiness their mean hold (HP, the element
+ * and role multipliers). A crate takes `placeCt` plus `perCrateCt` for every crate already up
+ * (hundredths of a tick at x1). After each crate the tower may wobble (`wobbleBaseBp`, plus
+ * `wobblePerCrateBp` for each crate over its safe height, `safeCrates` times the steadiness; less by
+ * `rootBp` for each `rootElement` member); a failed steady roll topples the top crates, and a toppling
+ * tower may knock a neighbour's top crate off. Score: the height at the end (crates); at the same
+ * height, the tower that got there first.
+ */
+export const StackParamsSchema = v.strictObject({
+  ...COMMON,
+  /** Hundredths of a tick to place a crate at height 0, and more per crate already up (at x1). */
+  placeCt: Int(100, 5_000),
+  perCrateCt: Int(0, 2_000),
+  /** The tallest a tower can get (the art shows this many). */
+  maxCrates: Int(3, 12),
+  /** A tower is safe up to this many crates at x1 steadiness (the team's HP, element and role, the mean). */
+  safeCrates: Int(1, 12),
+  /** Chance of a wobble after a crate: always, and more per crate over the safe height. */
+  wobbleBaseBp: Bp,
+  wobblePerCrateBp: Bp,
+  /** A wobble's chance to hold before the base's steadiness (which multiplies it, x1 at the field's median). */
+  steadyBaseBp: Bp,
+  /** Each `rootElement` member cuts the wobble chance by this share (at most two). */
+  rootElement: ElementSchema,
+  rootBp: Bp,
+  /** Crates a topple takes off the top (drawn from min to max). */
+  toppleMin: Int(1, 6),
+  toppleMax: Int(1, 6),
+  /** A topple knocks a neighbour's top crate off with this chance. */
+  knockChanceBp: Bp,
+  /** Momentum or Riposte after a steady wobble: the next crate goes this much faster. */
+  burstBp: Int(0, 40_000),
+});
+
+/**
+ * Kite (Kite Flight), team events only: every team runs and flies one kite in a fixed time. Each tick
+ * the kite climbs by the team's lift (its members' Speed against the field, with the element and role
+ * multipliers: Spark brings wind) and sinks by `dragBp` of its height, so it settles where the lift
+ * holds it. A gust may pull it down unless an anchor holds the line (a base chance, `anchorBp` for each
+ * Guard or `anchorElement` member); lightning now and then strikes the highest kite of a team with a
+ * `boltElement` member; two neighbouring kites close together may tangle on a failed dodge (both drop).
+ * Score: the kite's height at the end (metres).
+ */
+export const KiteParamsSchema = v.strictObject({
+  ...COMMON,
+  /** Climb per tick at x1 and the share of the height lost per tick (hundredths of a px; basis points). */
+  liftCpx: Int(1, 2_000),
+  dragBp: Int(1, 5_000),
+  /** The highest a kite can fly (px over its start). */
+  maxHeightPx: Int(20, 90),
+  /** Chance per tick a gust hits a team's kite, and how far it pulls it down (px). */
+  gustChanceBp: Bp,
+  gustDropPx: Int(0, 60),
+  /** The anchor's chance to hold the line: a base, and `anchorBp` for each Guard or `anchorElement` member (at most two). */
+  anchorBaseBp: Bp,
+  anchorBp: Bp,
+  anchorElement: ElementSchema,
+  /** Chance per tick of lightning; it strikes the highest kite of a team with a `boltElement` member. */
+  boltChanceBp: Bp,
+  boltElement: ElementSchema,
+  boltDropPx: Int(0, 60),
+  /** Two neighbouring kites within `tangleRangePx` tangle with this chance per tick unless one dodges. */
+  tangleChanceBp: Bp,
+  tangleRangePx: Int(1, 40),
+  tangleDropPx: Int(0, 60),
+  /** Ticks a tangled or struck kite stops climbing. */
+  stunTicks: Int(0, 20),
+  /** Momentum or Riposte after a held gust: the kite climbs this much faster for two ticks. */
+  burstBp: Int(0, 40_000),
+});
+
 const Base = {
   id: IdSchema,
   name: Text(32),
@@ -434,6 +600,9 @@ export const GamesEventDefSchema = v.variant('kind', [
   v.strictObject({ ...Base, kind: v.literal('swim'), params: SwimParamsSchema }),
   v.strictObject({ ...Base, kind: v.literal('shove'), params: ShoveParamsSchema }),
   v.strictObject({ ...Base, kind: v.literal('haul'), params: HaulParamsSchema }),
+  v.strictObject({ ...Base, kind: v.literal('fill'), params: FillParamsSchema }),
+  v.strictObject({ ...Base, kind: v.literal('stack'), params: StackParamsSchema }),
+  v.strictObject({ ...Base, kind: v.literal('kite'), params: KiteParamsSchema }),
 ]);
 export type GamesEventDef = v.InferOutput<typeof GamesEventDefSchema>;
 export type GamesEventOf<K extends GamesKind> = Extract<GamesEventDef, { kind: K }>;
@@ -520,6 +689,14 @@ export function loadGames(raw: unknown): GamesPack {
         if (e.params.dropMinTicks > e.params.dropMaxTicks) {
           fail(`"${e.id}": dropMinTicks > dropMaxTicks`);
         }
+        break;
+      case 'fill':
+      case 'kite':
+        if (e.team !== 3) fail(`"${e.id}": a ${e.kind} is a team event`);
+        break;
+      case 'stack':
+        if (e.team !== 3) fail(`"${e.id}": a stack is a team event`);
+        if (e.params.toppleMin > e.params.toppleMax) fail(`"${e.id}": toppleMin > toppleMax`);
         break;
     }
   }

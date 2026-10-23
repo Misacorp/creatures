@@ -1,5 +1,5 @@
 import type { Games } from './games';
-import { AutoBodySchema, BuyBodySchema, EntryBodySchema } from './games-schemas';
+import { BuyBodySchema, EntryBodySchema } from './games-schemas';
 import {
   errorResponse,
   failure,
@@ -25,9 +25,8 @@ export interface GamesRouteContext {
  *
  * - `GET  /api/games`               the whole tab (`GamesView`).
  * - `PUT  /api/games/entry`         `{ day, eventId, creatureIds }` answers `{ next }`.
- * - `PUT  /api/games/auto`          `{ on }` answers `{ auto, joined }`.
  * - `POST /api/games/stall/buy`     `{ offerId, idempotencyKey }` answers `{ purchase, you, stall }`.
- * - `GET  /api/games/creature/:id`  the caller's creature's medals and records.
+ * - `GET  /api/games/creature/:id`  the caller's creature's medals, event badges and records.
  */
 export const gamesRoutes: Routes<GamesRouteContext> = {
   '/api/games': {
@@ -40,13 +39,6 @@ export const gamesRoutes: Routes<GamesRouteContext> = {
       const outcome = ctx.core.games.setEntry(ctx.user.id, body);
       if (!outcome.ok) return failure(outcome);
       return json(outcome.value);
-    },
-  },
-  '/api/games/auto': {
-    PUT: async (request, ctx) => {
-      const body = await parseBody(request, AutoBodySchema);
-      if (body === undefined) return invalidBody();
-      return json(ctx.core.games.setAuto(ctx.user.id, body.on));
     },
   },
   '/api/games/stall/buy': {

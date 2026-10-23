@@ -472,7 +472,7 @@ function GamesArt() {
       </ul>
       <p class="tags art-tags">
         <Sprite sprite={glyphOrUnknown('trophy')} scale={2} />
-        {['games-medals', 'games-pins', 'games-fit', 'games-auto-entry', 'games-prize-stall'].map(
+        {['games-medals', 'games-pins', 'games-good-fit', 'games-badges', 'games-prize-stall'].map(
           (id) => (
             <Tag key={id} entry={id}>
               {titleOf(id)}

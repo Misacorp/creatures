@@ -95,7 +95,8 @@ export function fxArt(kind: GamesKind, fx: GamesFx | 'out'): FxArt | null {
   switch (fx) {
     case 'steam':
     case 'burp':
-      return { prop: 'steam', dx: 0, dy: -22 };
+      // A Bucket Brigade's steam rises off a barrel's water (the beat is at its top).
+      return { prop: 'steam', dx: 0, dy: kind === 'fill' ? -4 : -22 };
     case 'splash':
       return { prop: 'splash', dx: 0, dy: kind === 'endure' ? -4 : 2 };
     case 'flame':

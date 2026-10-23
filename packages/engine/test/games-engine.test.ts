@@ -13,6 +13,8 @@ import { describe, expect, it } from 'vitest';
 import {
   gamesAptitude,
   gamesEntrantFrom,
+  gamesGoodFit,
+  gamesGoodFitMin,
   runGamesEvent,
   sayGapTicks,
   type GamesEntrant,
@@ -35,7 +37,6 @@ function entrant(i: number, over: Partial<GamesEntrant> = {}): GamesEntrant {
     element: ELEMENTS[i % 5] as Element,
     role: ROLES[i % 4] as Role,
     stage: i % 3 === 0 ? 1 : 2,
-    level: 5 + (i % 20),
     hp: 200 + 17 * (i % 13),
     atk: 40 + 7 * (i % 11),
     spd: 30 + 5 * (i % 9),
@@ -585,30 +586,75 @@ describe('gamesEntrantFrom and gamesAptitude', () => {
   const species = content.creatures.find((c) => c.id === 'splashet');
   if (species === undefined) throw new Error('no splashet');
 
-  it('maps a folded creature: dodge from Speed and flat dodge, crit from luck, only the Games lines', () => {
+  it('reads the species, never the level: base stats, dodge from base Speed, species crit, only the Games lines', () => {
     const e = gamesEntrantFrom({
       id: 'u1/splashet',
       playerId: 'u1',
       name: 'Splashet',
       species,
-      level: 7,
-      stats: { hp: 300, atk: 50, spd: 40 },
-      crit: { chanceBp: 1_000, damageBp: 2_000 },
-      mods: { dodgeBp: 200, stubborn: 1, echoBp: 0, sidestepBp: 700 },
+      mods: { stubborn: 1, echoBp: 0, sidestepBp: 700 },
     });
     expect(e).toMatchObject({
       teamId: 'u1',
       element: 'tide',
       role: 'setter',
       stage: 1,
-      hp: 300,
-      dodgeBp: 40 * RULES.combat.dodge.perSpeedBp + 200,
-      critBp: RULES.combat.luck.critChanceBp + 1_000,
-      critDmgBp: RULES.combat.luck.critBp + 2_000,
+      hp: species.baseStats.hp,
+      atk: species.baseStats.atk,
+      spd: species.baseStats.spd,
+      dodgeBp: species.baseStats.spd * RULES.combat.dodge.perSpeedBp,
+      critBp: RULES.combat.luck.critChanceBp + (species.crit?.chanceBp ?? 0),
+      critDmgBp: RULES.combat.luck.critBp + (species.crit?.damageBp ?? 0),
       mods: { stubborn: 1, sidestepBp: 700 },
     });
     expect(e.mods).not.toHaveProperty('echoBp');
     expect(e).not.toHaveProperty('shiny');
+    expect(e).not.toHaveProperty('level');
+  });
+
+  it('ignores level, fusion and gear stat lines: a fold with them gives the same entrant', () => {
+    const plain = gamesEntrantFrom({ id: 'a', playerId: 'u', name: 'A', species });
+    // What the worker passes: a whole gear sheet with stat, dodge and crit lines besides the Games' lines.
+    const sheet = { dodgeBp: 900, critChanceBp: 2_000, atkBp: 5_000, hpFlat: 80, riposteBp: 400 };
+    const geared = gamesEntrantFrom({ id: 'a', playerId: 'u', name: 'A', species, mods: sheet });
+    expect({ ...geared, mods: undefined }).toEqual({ ...plain, mods: undefined });
+    expect(geared.mods).toEqual({ riposteBp: 400 });
+    // A species' crit bonus counts (it is the species'), gear crit does not exist here.
+    const cindle = content.creatures.find((c) => c.id === 'cindle');
+    if (cindle?.crit === undefined) throw new Error('cindle has a crit bonus');
+    expect(gamesEntrantFrom({ id: 'c', playerId: 'u', name: 'C', species: cindle }).critBp).toBe(
+      RULES.combat.luck.critChanceBp + cindle.crit.chanceBp,
+    );
+  });
+
+  it('marks a good fit by a bar computed per event from the species, not the roster', () => {
+    for (const def of gamesContent.events) {
+      const all = content.creatures.map((sp) =>
+        gamesEntrantFrom({ id: sp.id, playerId: 'u', name: sp.id, species: sp }),
+      );
+      const good = all.filter((e) => gamesGoodFit(def, e));
+      const share =
+        def.team === 3 ? RULES.games.goodFit.teamTopSpeciesBp : RULES.games.goodFit.topSpeciesBp;
+      // At least the top share of species (ties at the bar all count), never all of them.
+      expect(good.length).toBeGreaterThanOrEqual(Math.ceil((all.length * share) / 10_000));
+      expect(good.length).toBeLessThan(all.length);
+      // The bar is an aptitude some species has; everyone at or above it is a good fit.
+      const min = gamesGoodFitMin(def);
+      expect(all.some((e) => gamesAptitude(def, e) === min)).toBe(true);
+      for (const e of all) expect(gamesGoodFit(def, e)).toBe(gamesAptitude(def, e) >= min);
+    }
+    // A Games gear line can lift a creature over the bar; nothing else about it can.
+    const run = gamesEventDef('melon-run') as GamesEventDef;
+    const below = content.creatures
+      .map((sp) => gamesEntrantFrom({ id: sp.id, playerId: 'u', name: sp.id, species: sp }))
+      .filter((e) => !gamesGoodFit(run, e))
+      .sort((a, b) => gamesAptitude(run, b) - gamesAptitude(run, a))[0] as GamesEntrant;
+    expect(
+      gamesGoodFit(run, {
+        ...below,
+        mods: { sidestepBp: 10_000, momentumBp: 10_000, stubborn: 1 },
+      }),
+    ).toBe(true);
   });
 
   it('rises with the stat the kind reads and with its element and size', () => {

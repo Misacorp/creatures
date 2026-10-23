@@ -26,9 +26,6 @@ export const EntryBodySchema = v.strictObject({
 });
 export type EntryBody = v.InferOutput<typeof EntryBodySchema>;
 
-/** `PUT /api/games/auto`: auto-entry on or off. */
-export const AutoBodySchema = v.strictObject({ on: v.boolean() });
-
 /** `POST /api/games/stall/buy`: one purchase at the Prize Stall. */
 export const BuyBodySchema = v.strictObject({
   offerId: ContentIdSchema,

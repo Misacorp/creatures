@@ -1,8 +1,8 @@
 /**
  * 8x8 icons of the Valley Games, in the glyph format (draw them with `<Sprite>`): the Games tab's trophy
  * (one colour, `w`, so the selected tab can tint it), what an event favours where the game had no
- * picture yet (HP, Attack, Speed, Dodge, small and big creatures), and the medal point a Prize Stall
- * price is counted in. Every icon has its own shape, so meaning never depends on colour alone. Pure
+ * picture yet (HP, Attack, Speed, Dodge, small and big creatures), the medal point a Prize Stall
+ * price is counted in, and the "Good fit" badge's tick. Every icon has its own shape, so meaning never depends on colour alone. Pure
  * data; `glyphs.ts` adds them to the bundled glyphs.
  */
 import type { SpriteDef } from './sprites/sprite-data';
@@ -16,6 +16,8 @@ const RED = '#ff5f6d';
 const ORANGE = '#ef8a3a';
 const TIDE = '#4f8fe6';
 const SKY = '#7fc4ff';
+const GOOD = '#6fdc8c';
+const GOOD_SHADE = '#3a9a5a';
 
 /** A cup with two handles on a foot: the Games tab. */
 const trophy: SpriteDef = {
@@ -137,6 +139,21 @@ const medalPoint: SpriteDef = {
   ],
 };
 
+/** A green tick on an ink badge: the "Good fit" badge (the shape reads without the colour). */
+const goodFit: SpriteDef = {
+  palette: { k: INK, g: GOOD, d: GOOD_SHADE },
+  rows: [
+    'kkkkkkkk',
+    'kkkkkkgk',
+    'kkkkkggk',
+    'kgkkggdk',
+    'kggggdkk',
+    'kkgggkkk',
+    'kkkdkkkk',
+    'kkkkkkkk',
+  ],
+};
+
 export const GAMES_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   trophy,
   'fav-hp': favHp,
@@ -146,4 +163,5 @@ export const GAMES_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   'fav-small': favSmall,
   'fav-big': favBig,
   'medal-point': medalPoint,
+  'good-fit': goodFit,
 };

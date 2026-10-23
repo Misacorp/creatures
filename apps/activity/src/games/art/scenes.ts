@@ -1,5 +1,5 @@
 /**
- * The six Valley Games scenes as data: each is 192x112 scene pixels built from tilemaps and props on a
+ * The Valley Games scenes as data: each is 192x112 scene pixels built from tilemaps and props on a
  * `back` and a `front` layer, with named anchors where the playback puts its actors. Every anchor is a
  * creature's feet-centre in scene pixels: a 16x16 creature sprite is drawn with its top-left at
  * (x - 8, y - 16), so its last row rests on the line y.
@@ -15,6 +15,10 @@
  *   y 50 to 100; the melon comes from the left.
  * - `log-trail` and `pumpkin-hill` (the hauls): the same hillside path, with spare logs stacked by the
  *   fence or the committee's pumpkin patch on the slope behind it; the lanes run from y 48 to 100.
+ * - `barrel-pond`, `crate-yard` and `kite-hill` (the at-once team events): a fixed view (no camera)
+ *   with a column per team across it, up to 16 (`TEAM_COLUMNS`): a meadow with the barrels' feet at
+ *   y 50 and a pond along the bottom (dips at y 94); a yard where the towers stand at y 94 and the
+ *   crowd at y 104; an open hillside with a wide sky, the kite holders at y 98 and their crews at 106.
  * - `shark-lake`: a lake with an elliptical swim track (centre 96, 62; radii 72 x 34), sand all round
  *   and a beach at the bottom (y 104) where knocked-out swimmers land.
  * - `ice-floe`: icy water with a floe at (96, 62) drawn from its radius (`floeRadius`, ry = rx * 0.52),
@@ -54,6 +58,9 @@ export const GAMES_SCENE_IDS = [
   'ice-floe',
   'log-trail',
   'pumpkin-hill',
+  'barrel-pond',
+  'crate-yard',
+  'kite-hill',
 ] as const;
 export type GamesSceneId = (typeof GAMES_SCENE_IDS)[number];
 
@@ -695,6 +702,188 @@ function floeAnchors(): Record<string, ScenePoint[]> {
 }
 
 // ---------------------------------------------------------------------------------------------
+// The at-once team events: the barrels by the pond, the crate yard, the kite hill (fixed views)
+
+/** Where the team columns sit: up to 16 across the scene (the engine's `columnXs`). */
+export const TEAM_COLUMNS = { left: 8, right: 184, max: 16 } as const;
+export const POND_TOP_Y = 80;
+export const BARREL_FEET_Y = 46;
+export const YARD_BASE_Y = 94;
+export const KITE_GROUND_Y = 88;
+
+function teamAnchors(feet: readonly number[]): Record<string, ScenePoint[]> {
+  return {
+    columns: [TEAM_COLUMNS.left + 5, 96, TEAM_COLUMNS.right - 5].map((x) => ({
+      x,
+      y: feet[0] ?? 90,
+    })),
+    feet: feet.map((y) => ({ x: 96, y })),
+  };
+}
+
+function skyRows(n: number): string[] {
+  return Array.from({ length: n }, (_, i) => run(i === n - 1 ? 'l' : 's', COLS));
+}
+
+function pondMaps(): { map: Tilemap; layer: SceneLayer }[] {
+  const base: Tilemap = {
+    rows: [
+      ...skyRows(2),
+      run('g', COLS),
+      run('g', COLS),
+      run('g', COLS),
+      run('n', COLS),
+      run('~', COLS),
+    ],
+    legend: {
+      s: { tile: 'sky' },
+      l: { tile: 'skyLow' },
+      g: { tile: 'grass' },
+      n: { tile: 'shoreN', tint2: 'grass' },
+      '~': { tile: 'water' },
+    },
+  };
+  const hills: Tilemap = {
+    rows: [run('ab', COLS / 2)],
+    legend: { a: { tile: 'hillsA' }, b: { tile: 'hillsB' } },
+    y: 16,
+  };
+  const fence: Tilemap = { rows: [run('f', COLS)], legend: { f: { tile: 'fence' } }, y: 24 };
+  return [
+    { map: base, layer: 'back' },
+    { map: hills, layer: 'back' },
+    { map: fence, layer: 'back' },
+  ];
+}
+
+function buildPond(state: SceneState): SceneLayers {
+  const frame = state.frame ?? 0;
+  const waterFrame = Math.floor(frame / WATER_EVERY);
+  const back: Placement[] = [];
+  const [base, hills, fence] = pondMaps();
+  if (base !== undefined) back.push(...tilemapPlacements(base.map, { frame: waterFrame }));
+  back.push(place({ prop: 'sun', x: 160, y: 1, layer: 'back' }, frame));
+  back.push(place({ prop: 'cloud', x: 20, y: 3, layer: 'back' }, frame));
+  back.push(place({ prop: 'cloud', x: 104, y: 8, layer: 'back' }, frame));
+  if (hills !== undefined) back.push(...tilemapPlacements(hills.map, { frame }));
+  if (fence !== undefined) back.push(...tilemapPlacements(fence.map, { frame }));
+  back.push(...garland(0, SCENE_SIZE.width - 1, 22, 6, ['blue', 'yellow', 'teal']));
+  const props: PropPlacement[] = [
+    { prop: 'reeds', x: 0, y: 80, layer: 'back' },
+    { prop: 'reeds', x: 182, y: 82, layer: 'back' },
+    { prop: 'duck', x: 150, y: 101, layer: 'back' },
+    { prop: 'bucket', x: 2, y: 64, layer: 'back', tint: 'wood' },
+  ];
+  for (const p of props) back.push(place(p, frame));
+  return { width: SCENE_SIZE.width, height: SCENE_SIZE.height, back, front: [] };
+}
+
+function yardMaps(): { map: Tilemap; layer: SceneLayer }[] {
+  const base: Tilemap = {
+    rows: [
+      ...skyRows(2),
+      run('g', COLS),
+      run('g', COLS),
+      run('g', COLS),
+      run('E', COLS),
+      run('D', COLS),
+    ],
+    legend: {
+      s: { tile: 'sky' },
+      l: { tile: 'skyLow' },
+      g: { tile: 'grass' },
+      E: { tile: 'grassEdge' },
+      D: { tile: 'dirt' },
+    },
+  };
+  const hills: Tilemap = {
+    rows: [run('ab', COLS / 2)],
+    legend: { a: { tile: 'hillsA', tint: 'ice' }, b: { tile: 'hillsB', tint: 'ice' } },
+    y: 14,
+  };
+  const fence: Tilemap = { rows: [run('f', COLS)], legend: { f: { tile: 'fence' } }, y: 24 };
+  return [
+    { map: base, layer: 'back' },
+    { map: hills, layer: 'back' },
+    { map: fence, layer: 'back' },
+  ];
+}
+
+function buildYard(state: SceneState): SceneLayers {
+  const frame = state.frame ?? 0;
+  const back: Placement[] = [];
+  const [base, hills, fence] = yardMaps();
+  if (base !== undefined) back.push(...tilemapPlacements(base.map, { frame }));
+  back.push(place({ prop: 'sun', x: 8, y: 2, layer: 'back' }, frame));
+  back.push(place({ prop: 'cloud', x: 120, y: 4, layer: 'back' }, frame));
+  if (hills !== undefined) back.push(...tilemapPlacements(hills.map, { frame }));
+  if (fence !== undefined) back.push(...tilemapPlacements(fence.map, { frame }));
+  back.push(...garland(0, SCENE_SIZE.width - 1, 22, 6, ['orange', 'green', 'yellow']));
+  // The committee's spare crates by the fence.
+  for (const [x, y] of [
+    [30, 34],
+    [40, 34],
+    [35, 29],
+    [150, 34],
+    [160, 34],
+  ] as const) {
+    back.push(place({ prop: 'teamCrate', x, y, layer: 'back', tint: 'pine', tint2: 'wood' }, 0));
+  }
+  return { width: SCENE_SIZE.width, height: SCENE_SIZE.height, back, front: [] };
+}
+
+function kiteHillMaps(): { map: Tilemap; layer: SceneLayer }[] {
+  const base: Tilemap = {
+    rows: [...skyRows(5), run('g', COLS), run('g', COLS)],
+    legend: { s: { tile: 'sky' }, l: { tile: 'skyLow' }, g: { tile: 'grass' } },
+  };
+  const far: Tilemap = {
+    rows: [run('ab', COLS / 2)],
+    legend: { a: { tile: 'hillsA', tint: 'ice' }, b: { tile: 'hillsB', tint: 'ice' } },
+    x: -10,
+    y: 62,
+  };
+  const hills: Tilemap = {
+    rows: [run('ab', COLS / 2 + 1)],
+    legend: { a: { tile: 'hillsA' }, b: { tile: 'hillsB' } },
+    y: 70,
+  };
+  return [
+    { map: base, layer: 'back' },
+    { map: far, layer: 'back' },
+    { map: hills, layer: 'back' },
+  ];
+}
+
+function buildKiteHill(state: SceneState): SceneLayers {
+  const frame = state.frame ?? 0;
+  const back: Placement[] = [];
+  const [base, far, hills] = kiteHillMaps();
+  if (base !== undefined) back.push(...tilemapPlacements(base.map, { frame }));
+  back.push(place({ prop: 'sun', x: 166, y: 4, layer: 'back' }, frame));
+  // Clouds drift slowly across the wide sky.
+  for (const [i, [x, y]] of (
+    [
+      [6, 6],
+      [70, 2],
+      [120, 18],
+      [30, 34],
+      [150, 44],
+    ] as const
+  ).entries()) {
+    const drift = Math.floor(frame / 8 + i * 13) % 24;
+    back.push(place({ prop: 'cloud', x: x + drift - 12, y, layer: 'back' }, frame));
+  }
+  if (far !== undefined) back.push(...tilemapPlacements(far.map, { frame }));
+  if (hills !== undefined) back.push(...tilemapPlacements(hills.map, { frame }));
+  back.push(place({ prop: 'pole', x: 2, y: 60, layer: 'back' }, frame));
+  back.push(
+    place({ prop: 'pennant', x: 6, y: 62, layer: 'back', tint: 'yellow', every: 3 }, frame),
+  );
+  return { width: SCENE_SIZE.width, height: SCENE_SIZE.height, back, front: [] };
+}
+
+// ---------------------------------------------------------------------------------------------
 // The registry
 
 const STANDS: Readonly<Record<GamesSceneId, StandsTheme>> = {
@@ -754,6 +943,27 @@ const STANDS: Readonly<Record<GamesSceneId, StandsTheme>> = {
     crowd: TEAM_RAMPS,
     bunting: ['orange', 'yellow', 'purple'],
   },
+  'barrel-pond': {
+    backdrop: OUTDOOR_BACKDROP,
+    seat: 'wood',
+    riser: 'tide',
+    crowd: TEAM_RAMPS,
+    bunting: ['blue', 'yellow', 'teal'],
+  },
+  'crate-yard': {
+    backdrop: OUTDOOR_BACKDROP,
+    seat: 'pine',
+    riser: 'mire',
+    crowd: TEAM_RAMPS,
+    bunting: ['orange', 'green', 'yellow'],
+  },
+  'kite-hill': {
+    backdrop: OUTDOOR_BACKDROP,
+    seat: 'wood',
+    riser: 'spark',
+    crowd: TEAM_RAMPS,
+    bunting: ['yellow', 'pink', 'blue'],
+  },
 };
 
 function scene(
@@ -785,6 +995,9 @@ export const GAMES_SCENES: Readonly<Record<GamesSceneId, GamesSceneArt>> = {
   'pumpkin-hill': scene('pumpkin-hill', haulAnchors(), melonMaps(), (s) =>
     buildHill(s, 'pumpkins'),
   ),
+  'barrel-pond': scene('barrel-pond', teamAnchors([BARREL_FEET_Y, 63, 94]), pondMaps(), buildPond),
+  'crate-yard': scene('crate-yard', teamAnchors([YARD_BASE_Y, 104]), yardMaps(), buildYard),
+  'kite-hill': scene('kite-hill', teamAnchors([98, 106]), kiteHillMaps(), buildKiteHill),
 };
 
 /** The top-left of a 16x16 creature sprite whose feet-centre is at a point. */

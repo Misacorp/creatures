@@ -3,8 +3,7 @@ import { useRef, useState } from 'preact/hooks';
 import type { Creature } from '../api';
 import { ActionIds } from '../actions';
 import { errorText } from '../game';
-import { GlossaryTag } from '../Glossary';
-import { buyStallOffer, setGamesAuto, setGamesEntry } from '../games-api';
+import { buyStallOffer, setGamesEntry } from '../games-api';
 import type { GamesView, LineupEvent, StallOffer, StallPurchase } from '../games-types';
 import { entryOf, replayStart, screenOf, withSlot } from '../games-view';
 import { useServerNow } from '../hooks';
@@ -13,7 +12,6 @@ import { Alert } from '../ui/Alert';
 import { DrillHead } from '../ui/DrillHead';
 import { GameIcon } from '../ui/GameIcon';
 import { PixelHeading } from '../ui/PixelHeading';
-import { Switch } from '../ui/Switch';
 import { useActionRunner } from '../use-action-runner';
 import { EntryPicker } from './EntryPicker';
 import { GamesResults } from './GamesResults';
@@ -39,11 +37,10 @@ export const GAMES_ERRORS: Readonly<Record<string, string>> = {
 /** The requests the tab makes (the workbench gives fakes). */
 export interface GamesApi {
   setEntry: typeof setGamesEntry;
-  setAuto: typeof setGamesAuto;
   buy: typeof buyStallOffer;
 }
 
-const SERVER_API: GamesApi = { setEntry: setGamesEntry, setAuto: setGamesAuto, buy: buyStallOffer };
+const SERVER_API: GamesApi = { setEntry: setGamesEntry, buy: buyStallOffer };
 
 /** A piece of the tab that follows the server's clock every second (a countdown), alone. */
 function Ticking({
@@ -78,19 +75,17 @@ export function GamesHeader({ showAt, serverNow }: { showAt: number; serverNow: 
   );
 }
 
-/** The lineup: the day's event cards, and the auto-entry switch while entries are open. */
+/** The lineup: the day's event cards. */
 export function Lineup({
   view,
   creatures,
   busy,
   onSlot,
-  onAuto,
 }: {
   view: GamesView;
   creatures: readonly Creature[];
   busy: boolean;
   onSlot?: ((event: LineupEvent, slot: number, button: HTMLButtonElement) => void) | undefined;
-  onAuto?: ((on: boolean) => void) | undefined;
 }) {
   const { next } = view;
   return (
@@ -113,20 +108,14 @@ export function Lineup({
           />
         ))}
       </ul>
-      {next.open && onAuto !== undefined && (
-        <div class="gt-auto">
-          <Switch label="Auto-entry" on={next.auto} disabled={busy} onChange={onAuto} />
-          <GlossaryTag entry="games-auto-entry" look="help" />
-        </div>
-      )}
     </section>
   );
 }
 
 /**
  * The Games tab (docs/design/valley-games.md). While entries are open: the title and the countdown,
- * your last show (medals, pins, experience, ▶ replays), the day's events with their slots and the
- * auto-entry switch. From the lock to the show: the stands and the countdown. During the show: the
+ * your last show (medals, pins, experience, ▶ replays), the day's events with their slots (only what
+ * you enter runs: there is no auto-entry). From the lock to the show: the stands and the countdown. During the show: the
  * live show, full width, then tomorrow's events. Always: your medal cabinet and the Prize Stall.
  */
 export function GamesTab({
@@ -247,11 +236,6 @@ export function GamesTab({
       onSlot={(event, slot, button) => {
         opener.current = button;
         setPicker({ eventId: event.id, slot });
-      }}
-      onAuto={(on) => {
-        void run(() => api.setAuto(on)).then((answer) => {
-          if (answer !== undefined) onView({ ...current, next: { ...current.next, ...answer } });
-        });
       }}
     />
   );

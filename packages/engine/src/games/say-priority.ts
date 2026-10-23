@@ -42,6 +42,13 @@ const IMPORTANT_LINES: ReadonlySet<string> = new Set([
   'haul.lead',
   'haul.finish',
   'haul.close',
+  'fill.lead',
+  'fill.full',
+  'fill.last',
+  'stack.lead',
+  'stack.last',
+  'kite.lead',
+  'kite.last',
 ]);
 
 /** Reactions and twists. */
@@ -73,6 +80,23 @@ const TWIST_LINES: ReadonlySet<string> = new Set([
   'haul.bump',
   'haul.zap',
   'haul.steady',
+  'fill.spill',
+  'fill.splash',
+  'fill.steam',
+  'fill.catch',
+  'fill.half',
+  'stack.steady',
+  'stack.topple',
+  'stack.root',
+  'stack.knock',
+  'stack.catch',
+  'stack.high',
+  'kite.gust',
+  'kite.tangle',
+  'kite.hold',
+  'kite.zap',
+  'kite.catch',
+  'kite.high',
 ]);
 
 /** The priority of a line: the start, the win and the draw must be said; the rest by kind of moment. */

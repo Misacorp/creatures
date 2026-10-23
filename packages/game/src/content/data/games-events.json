@@ -43,7 +43,7 @@
       },
       "line": "The benches are warm and the stove is hungry. Last one in wins.",
       "favours": ["hp", "ember", "guard", "small"],
-      "smallBp": 21000,
+      "smallBp": 14400,
       "roleBp": {
         "guard": 11000
       }
@@ -107,7 +107,7 @@
         "endure.draw": "Time! They share the ice and the win.",
         "endure.out2": "{a} and {b} climb out!"
       },
-      "smallBp": 13500
+      "smallBp": 11400
     },
     {
       "id": "melon-run",
@@ -146,7 +146,7 @@
       "roleBp": {
         "setter": 11500
       },
-      "smallBp": 13000
+      "smallBp": 11200
     },
     {
       "id": "pepper-panic",
@@ -157,8 +157,8 @@
       "tickMs": 400,
       "maxTicks": 150,
       "params": {
-        "statBp": 4000,
-        "jitterBp": 4000,
+        "statBp": 8000,
+        "jitterBp": 2500,
         "dodgeShareBp": 5000,
         "roundTicks": 4,
         "mildBp": 350,
@@ -190,7 +190,7 @@
       "roleBp": {
         "payoff": 12000
       },
-      "smallBp": 11500
+      "smallBp": 10600
     },
     {
       "id": "berry-bonanza",
@@ -248,7 +248,7 @@
       "roleBp": {
         "support": 11000
       },
-      "smallBp": 14000
+      "smallBp": 11600
     },
     {
       "id": "shark-derby",
@@ -291,7 +291,7 @@
       "roleBp": {
         "setter": 11500
       },
-      "smallBp": 15500
+      "smallBp": 12200
     },
     {
       "id": "floe-sumo",
@@ -324,7 +324,7 @@
         "spark": 9500,
         "mire": 12000
       },
-      "smallBp": 14000,
+      "smallBp": 11600,
       "line": "Everyone onto a melting ice floe. Shove, slip and stay dry.",
       "favours": ["hp", "small", "mire", "guard", "atk"],
       "roleBp": {
@@ -390,8 +390,8 @@
       "tickMs": 400,
       "maxTicks": 110,
       "params": {
-        "statBp": 4000,
-        "jitterBp": 3500,
+        "statBp": 7000,
+        "jitterBp": 2000,
         "dodgeShareBp": 10000,
         "mode": "push",
         "runCpx": 190,
@@ -437,6 +437,131 @@
         "haul.bump": "Bonk! A pumpkin bumps {b}.",
         "haul.win": "{a}'s team wins the push!"
       }
+    },
+    {
+      "id": "bucket-brigade",
+      "name": "Bucket Brigade",
+      "kind": "fill",
+      "scene": "barrel-pond",
+      "team": 3,
+      "teamScore": "best",
+      "tickMs": 400,
+      "maxTicks": 100,
+      "params": {
+        "statBp": 7000,
+        "jitterBp": 1500,
+        "dodgeShareBp": 15000,
+        "runCpx": 300,
+        "returnBp": 13000,
+        "dipTicks": 3,
+        "helpTicks": 1,
+        "bucketBp": 500,
+        "slipChanceBp": 2500,
+        "steadyBaseBp": 5000,
+        "keepBp": 3000,
+        "splashChanceBp": 4000,
+        "splashBp": 5000,
+        "steamElement": "ember",
+        "steamChanceBp": 2500,
+        "steamBp": 150,
+        "burstBp": 14000
+      },
+      "elementBp": {
+        "tide": 13000,
+        "ember": 9500,
+        "grove": 10000,
+        "spark": 10000,
+        "mire": 9500
+      },
+      "roleBp": {
+        "support": 10500
+      },
+      "line": "A pond, a barrel each and forty seconds. Fill it to the brim!",
+      "favours": ["spd", "tide", "support", "dodge"]
+    },
+    {
+      "id": "crate-tower",
+      "name": "Crate Tower",
+      "kind": "stack",
+      "scene": "crate-yard",
+      "team": 3,
+      "teamScore": "best",
+      "tickMs": 400,
+      "maxTicks": 100,
+      "params": {
+        "statBp": 14000,
+        "jitterBp": 1000,
+        "dodgeShareBp": 10000,
+        "placeCt": 450,
+        "perCrateCt": 60,
+        "maxCrates": 12,
+        "safeCrates": 7,
+        "wobbleBaseBp": 200,
+        "wobblePerCrateBp": 6000,
+        "steadyBaseBp": 3000,
+        "rootElement": "grove",
+        "rootBp": 2000,
+        "toppleMin": 1,
+        "toppleMax": 1,
+        "knockChanceBp": 800,
+        "burstBp": 15000
+      },
+      "elementBp": {
+        "tide": 10000,
+        "ember": 10000,
+        "grove": 11500,
+        "spark": 9500,
+        "mire": 10500
+      },
+      "roleBp": {
+        "guard": 12500
+      },
+      "smallBp": 11000,
+      "line": "Stack the crates as high as you dare. Mind the wobble.",
+      "favours": ["small", "hp", "guard", "grove"]
+    },
+    {
+      "id": "kite-flight",
+      "name": "Kite Flight",
+      "kind": "kite",
+      "scene": "kite-hill",
+      "team": 3,
+      "teamScore": "best",
+      "tickMs": 400,
+      "maxTicks": 100,
+      "params": {
+        "statBp": 20000,
+        "jitterBp": 2000,
+        "dodgeShareBp": 15000,
+        "liftCpx": 380,
+        "dragBp": 800,
+        "maxHeightPx": 70,
+        "gustChanceBp": 250,
+        "gustDropPx": 8,
+        "anchorBaseBp": 2000,
+        "anchorBp": 3000,
+        "anchorElement": "mire",
+        "boltChanceBp": 400,
+        "boltElement": "spark",
+        "boltDropPx": 10,
+        "tangleChanceBp": 200,
+        "tangleRangePx": 8,
+        "tangleDropPx": 6,
+        "stunTicks": 3,
+        "burstBp": 15000
+      },
+      "elementBp": {
+        "tide": 10000,
+        "ember": 10000,
+        "grove": 9500,
+        "spark": 12500,
+        "mire": 10000
+      },
+      "roleBp": {
+        "setter": 10500
+      },
+      "line": "Run, let the string out and ride the wind. Highest kite wins.",
+      "favours": ["spd", "spark", "mire", "guard", "dodge"]
     }
   ],
   "say": {
@@ -524,6 +649,45 @@
     "haul.close": "Photo finish! {a} just beats {b}.",
     "haul.win": "{a}'s team wins the Log Carry!",
     "haul.draw": "Dead heat! They share the win.",
-    "swim.tag": "Tag! {b} dives in for {a}."
+    "swim.tag": "Tag! {b} dives in for {a}.",
+    "fill.start": "Buckets ready... fill!",
+    "fill.pour": "{a} pours a full bucket in.",
+    "fill.spill": "Whoops! {a} slips and spills.",
+    "fill.splash": "Splash! {a} fills {b}'s barrel.",
+    "fill.steam": "Hiss! {a} steams {b}'s water.",
+    "fill.help": "{a} helps a teammate refill.",
+    "fill.dodge": "{a} skips round a puddle.",
+    "fill.catch": "{a} saves the bucket!",
+    "fill.lead": "{a} and friends take the lead!",
+    "fill.half": "{a}'s barrel is half full!",
+    "fill.full": "{a}'s barrel is full to the brim!",
+    "fill.last": "Ten seconds left!",
+    "fill.win": "{a}'s team fills the most!",
+    "fill.draw": "Brim to brim! They share the win.",
+    "stack.start": "Crates ready... stack!",
+    "stack.place": "{a} adds a crate on top.",
+    "stack.steady": "{a} holds the tower steady.",
+    "stack.root": "{a} roots the tower in place.",
+    "stack.topple": "Crash! {a}'s tower topples.",
+    "stack.knock": "Bonk! A crate knocks {b}'s tower.",
+    "stack.dodge": "{a} hops clear just in time.",
+    "stack.catch": "{a} catches the falling crate!",
+    "stack.lead": "{a} and friends build the tallest!",
+    "stack.high": "{a}'s tower is {n} crates high!",
+    "stack.last": "Ten seconds left!",
+    "stack.win": "{a}'s team builds the tallest!",
+    "stack.draw": "Level towers! They share the win.",
+    "kite.start": "Kites up... run!",
+    "kite.gust": "Whoosh! A gust tugs {a}'s kite.",
+    "kite.hold": "{a} holds the line in the gust.",
+    "kite.zap": "Crackle! Lightning zaps {a}'s kite.",
+    "kite.tangle": "Oh no! {a} and {b} tangle up.",
+    "kite.dodge": "{a} ducks under a string.",
+    "kite.catch": "{a} grabs the line back!",
+    "kite.lead": "{a}'s kite climbs into the lead!",
+    "kite.high": "{a}'s kite touches the clouds!",
+    "kite.last": "Ten seconds left!",
+    "kite.win": "{a}'s team flies the highest!",
+    "kite.draw": "Wing to wing! They share the win."
   }
 }

@@ -1253,6 +1253,14 @@ export const RULES = {
     medalPoints: { gold: 3, silver: 2, bronze: 1, pin: 1 },
     /** Commentary lines at least this far apart. */
     sayGapMs: 3_000,
+    /**
+     * The "Good fit" badge (no level in the Games, Misa 2026-10-23): a creature is a good fit for an
+     * event when its aptitude reaches that of the species at the top `topSpeciesBp` share of all
+     * species for that event (`gamesGoodFitMin` in the engine; `teamTopSpeciesBp` in a team event,
+     * which takes three). Calibrated with `pnpm sim:games` so a typical roster has 2 to 4 good fits per
+     * event.
+     */
+    goodFit: { topSpeciesBp: 2_500, teamTopSpeciesBp: 3_500 },
   },
   nickname: {
     maxCodePoints: 20,

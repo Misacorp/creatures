@@ -528,6 +528,65 @@ describe('a haul (Log Carry, Pumpkin Push)', () => {
   });
 });
 
+describe('the at-once team events (Bucket Brigade, Crate Tower, Kite Flight)', () => {
+  const players = samplePlayers(15, 0);
+  const KINDS = [
+    ['bucket-brigade', 'barrel'],
+    ['crate-tower', 'tower'],
+    ['kite-flight', 'kite'],
+  ] as const;
+
+  it('gives every team one object in its own column, with a fixed camera', () => {
+    for (const [id, kind] of KINDS) {
+      const p = prepareEvent(sampleEvent(id, players, 'objects'));
+      expect(p.objects).toHaveLength(p.teams.length);
+      expect(p.objects.every((o) => o.kind === kind)).toBe(true);
+      expect(p.camera).toBeNull();
+      expect(p.worldWidth).toBe(192);
+      const end = eventMs(p.result);
+      for (const ms of [0, end / 2, end]) {
+        const f = frameAt(p, ms);
+        expect(f.cameraX).toBe(0);
+        expect(f.props.objects).toHaveLength(p.teams.length);
+        const xs = f.props.objects.map((o) => Math.round(o.x));
+        if (kind !== 'kite') expect(new Set(xs).size).toBe(xs.length);
+        // Each team's creatures work in its column.
+        for (const o of f.props.objects) {
+          for (const a of p.teams[o.i]?.actors ?? []) {
+            expect(Math.abs((f.actors[a]?.x ?? 0) - o.x)).toBeLessThanOrEqual(8);
+          }
+        }
+      }
+      expect(stillIn(p, frameAt(p, end))).toBeNull();
+    }
+  });
+
+  it('remembers what an object was before its last change (a tower that toppled)', () => {
+    const p = prepareEvent(sampleEvent('crate-tower', players, 'objects'));
+    let seen = false;
+    const end = eventMs(p.result);
+    for (let ms = 0; ms <= end; ms += p.tickMs) {
+      for (const o of frameAt(p, ms).props.objects) {
+        if (o.was > o.f) seen = true;
+        expect(o.since).toBeGreaterThanOrEqual(0);
+      }
+    }
+    expect(seen).toBe(true);
+  });
+
+  it('ranks the live board by the object and ends on the standings', () => {
+    for (const [id] of KINDS) {
+      const p = prepareEvent(sampleEvent(id, players, 'board'));
+      const board = liveBoard(p, frameAt(p, eventMs(p.result)));
+      expect(board[0]?.teamId).toBe(finalBoard(p)[0]?.teamId);
+      expect(board[0]?.text).toBe(finalBoard(p)[0]?.text);
+    }
+    expect(scoreText('fill', 87, 400)).toBe('87%');
+    expect(scoreText('stack', 9, 400)).toBe('9');
+    expect(scoreText('kite', 14, 400)).toBe('14m');
+  });
+});
+
 describe('a retired event (a day stored before it left the pool)', () => {
   it('still prepares, plays and is named', () => {
     const played = sampleEvent('sauna-showdown', samplePlayers(6, 0), 'retired');

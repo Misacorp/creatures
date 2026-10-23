@@ -5,11 +5,12 @@
     "bronze": 0,
     "pins": 0
   },
+  "badges": [],
   "records": [
     {
       "eventId": "melon-run",
       "name": "Melon Run",
-      "best": 16,
+      "best": 14,
       "unit": "m",
       "day": "2027-01-12"
     }

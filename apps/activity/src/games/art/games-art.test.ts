@@ -12,6 +12,13 @@ import {
   thermometerFill,
   trackPoint,
 } from './drawn';
+import {
+  BARREL_FRAMES,
+  BARREL_GAUGE_ROWS,
+  KITE_FRAMES,
+  barrelFrameOf,
+  kiteString,
+} from './drawn-team';
 import { GAMES_PROP_DATA } from './data/games-props';
 import { GAMES_TILE_DATA } from './data/games-tiles';
 import { flipX, flipY, rotateCW, shiftX } from './pixel';
@@ -166,6 +173,43 @@ describe('the props', () => {
     }
     const ghost = propSprite('pumpkin', 0, 'ghost', 'green');
     expect(ghost.palette['c']).toBe(RAMPS.ghost[2]);
+  });
+
+  it('draw the team objects: a barrel that fills row by row, a crate and a kite, tinted per team', () => {
+    expect(BARREL_FRAMES).toHaveLength(BARREL_GAUGE_ROWS + 1);
+    expect(new Set(BARREL_FRAMES.map((d) => d.rows.join('|'))).size).toBe(BARREL_FRAMES.length);
+    expect(barrelFrameOf(0)).toBe(0);
+    expect(barrelFrameOf(1)).toBe(1);
+    expect(barrelFrameOf(100)).toBe(BARREL_GAUGE_ROWS);
+    expect(barrelFrameOf(250)).toBe(BARREL_GAUGE_ROWS);
+    expect(KITE_FRAMES).toHaveLength(3);
+    for (const name of ['barrel', 'teamCrate', 'kite'] as const) {
+      const d = GAMES_PROPS[name][0];
+      // The team's colour is the secondary ramp, so a tint reaches it.
+      expect(
+        SECONDARY_KEYS.some((key) => d.palette[key] !== undefined),
+        name,
+      ).toBe(true);
+      const blue = propSprite(name, 0, undefined, 'blue');
+      expect(Object.values(blue.palette), name).toContain(RAMPS.blue[1]);
+    }
+  });
+
+  it('draw a kite string as valid pieces that reach from the paws to the kite', () => {
+    for (const [dx, dy] of [
+      [0, -10],
+      [3, -70],
+      [-4, -90],
+    ] as const) {
+      const pieces = kiteString(dx, dy);
+      expect(pieces.length).toBeGreaterThan(0);
+      for (const piece of pieces) expectSprite(piece.sprite, `string ${String(dx)},${String(dy)}`);
+      const top = Math.min(...pieces.map((p) => p.y));
+      const bottom = Math.max(...pieces.map((p) => p.y + p.sprite.rows.length - 1));
+      expect(top).toBe(dy);
+      expect(bottom).toBe(0);
+      expect(kiteString(dx, dy)).toBe(pieces);
+    }
   });
 
   it('have the ink outline (except soft effects and ground pieces)', () => {

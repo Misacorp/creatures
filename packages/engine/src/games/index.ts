@@ -15,15 +15,35 @@ import {
 } from './common';
 import { runEndure } from './endure';
 import { runFeast } from './feast';
+import { runFill } from './fill';
 import { runHaul } from './haul';
+import { runKite } from './kite';
 import { Show } from './show';
 import { runShove } from './shove';
+import { runStack } from './stack';
 import { runSwim } from './swim';
 import type { GamesEntrant, GamesEventResult, GamesStanding } from './types';
 
 export * from './types';
 export { HAUL_DOWN, HAUL_OFFSETS, HAUL_STAGGER_PX, HAUL_UP, HAUL_WOBBLE } from './haul';
-export { gamesAptitude, gamesEntrantFrom, type GamesCreatureInput } from './entrant';
+export { FILL_BARREL_Y, FILL_DIP_Y, FILL_POUR_Y } from './fill';
+export { STACK_BASE_Y, STACK_CRATE_STEP, STACK_FOOT_Y } from './stack';
+export {
+  KITE_CREW_Y,
+  KITE_FLY,
+  KITE_HOLDER_Y,
+  KITE_PX_PER_METRE,
+  KITE_REST_Y,
+  KITE_TUMBLE,
+} from './kite';
+export {
+  gamesAptitude,
+  gamesEntrantFrom,
+  gamesGoodFit,
+  gamesGoodFitMin,
+  type GamesCreatureInput,
+  type GamesSpecies,
+} from './entrant';
 
 /** Ticks between two commentary lines at least (`RULES.games.sayGapMs`). */
 export function sayGapTicks(tickMs: number): number {
@@ -92,6 +112,15 @@ export function runGamesEvent(
       break;
     case 'haul':
       out = runHaul({ ...base, def });
+      break;
+    case 'fill':
+      out = runFill({ ...base, def });
+      break;
+    case 'stack':
+      out = runStack({ ...base, def });
+      break;
+    case 'kite':
+      out = runKite({ ...base, def });
       break;
   }
   const standings = standingsOf(def, entrants, teamOf, out.keys, out.scores);

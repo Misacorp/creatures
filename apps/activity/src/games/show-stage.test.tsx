@@ -76,6 +76,9 @@ const EVENTS = [
   'pepper-panic',
   'shark-derby',
   'floe-sumo',
+  'bucket-brigade',
+  'crate-tower',
+  'kite-flight',
 ];
 
 describe('your markers on the stage', () => {
@@ -83,8 +86,9 @@ describe('your markers on the stage', () => {
     const { p, youId } = prepared(id, 'markers');
     const creatures = p.result.actors.filter((a) => a.playerId === youId).length;
     expect(creatures).toBe(p.result.team === 3 ? 3 : 1);
-    // A haul's team carries one load: one marker over the group, not three.
-    const haul = p.kind === 'haul';
+    // A haul's team carries one load, and the at-once team events give each team one barrel, tower
+    // or kite: one marker over it, not three.
+    const haul = p.kind === 'haul' || p.kind === 'fill' || p.kind === 'stack' || p.kind === 'kite';
     const yours = haul ? 1 : creatures;
     // The intro: before the drop (high above the scene), while falling and after landing.
     for (const ms of [0, 600, 2_800])

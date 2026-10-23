@@ -6,8 +6,10 @@ import { GAMES_FIXTURES, gamesRoster } from '../workbench/games-tab-sample';
 import { EntryPicker } from './EntryPicker';
 
 /**
- * The entry picker's size mark: when an event favours small or big creatures, each creature of that
- * size shows the favour's glyph beside its fit pips (the size rule is `gamesIsSmall`); otherwise none.
+ * The entry picker: the "Good fit" badge on the server's good fits (first in the list, no scores), the
+ * creature's badge for this event beside its name, and the size mark: when an event favours small or
+ * big creatures, each creature of that size shows the favour's glyph (the size rule is
+ * `gamesIsSmall`); otherwise none.
  */
 let page: Page | null = null;
 
@@ -39,7 +41,10 @@ function mixedRoster(): Creature[] {
   ];
 }
 
-function draw(favours: LineupEvent['favours']): Page {
+function draw(
+  favours: LineupEvent['favours'],
+  extra: Partial<typeof GAMES_FIXTURES.entries.next> = {},
+): Page {
   const base = GAMES_FIXTURES.entries.next.lineup[0];
   if (base === undefined) throw new Error('no lineup');
   page = createPage();
@@ -47,7 +52,7 @@ function draw(favours: LineupEvent['favours']): Page {
     <EntryPicker
       event={{ ...base, favours }}
       slot={0}
-      next={{ ...GAMES_FIXTURES.entries.next, entries: {} }}
+      next={{ ...GAMES_FIXTURES.entries.next, entries: {}, ...extra }}
       creatures={mixedRoster()}
       busy={false}
       onPick={() => undefined}
@@ -88,5 +93,31 @@ describe('EntryPicker', () => {
   it('shows no size mark when the event favours no size', () => {
     const p = draw(['hp', 'ember']);
     expect(byClass(p.root, 'ge-size')).toHaveLength(0);
+  });
+
+  it('lists the good fits first with the "Good fit" badge, and no pips or scores', () => {
+    const eventId = GAMES_FIXTURES.entries.next.lineup[0]?.id ?? '';
+    const p = draw(['hp'], { goodFit: { [eventId]: ['c-single', 'c-evolved'] } });
+    const options = byRole(p.root, 'option');
+    const marked = options.filter((o) => byClass(o, 'ge-goodfit').length > 0);
+    expect(marked.map((o) => visibleText(o))).toEqual([
+      expect.stringContaining('Grown'),
+      expect.stringContaining('Lamp'),
+    ]);
+    expect(options.slice(0, 2)).toEqual(marked);
+    expect(visibleText(marked[0] ?? p.root)).toContain('Good fit');
+    expect(byClass(p.root, 'pips')).toHaveLength(0);
+    expect(visibleText(p.root)).not.toMatch(/\d \/ 5/);
+  });
+
+  it("shows a creature's badge for this event, with its wins, beside its name", () => {
+    const eventId = GAMES_FIXTURES.entries.next.lineup[0]?.id ?? '';
+    const p = draw(['hp'], { badges: { [eventId]: { 'c-single': 3 }, other: { 'c-evolved': 2 } } });
+    const badges = byClass(p.root, 'ge-badge');
+    expect(badges).toHaveLength(1);
+    expect(visibleText(badges[0] ?? p.root)).toBe('×3');
+    const row = byRole(p.root, 'option').find((o) => byClass(o, 'ge-badge').length > 0);
+    expect(visibleText(row ?? p.root)).toContain('Lamp');
+    expect(nameOf(badges[0] ?? p.root)).toMatch(/badge, won 3 times$/);
   });
 });

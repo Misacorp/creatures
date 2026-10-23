@@ -46,13 +46,17 @@ describe('the shipped Games content', () => {
     );
   });
 
-  it('the daily team event is a real team sport: Log Carry or Pumpkin Push', () => {
+  it('the daily team event is a real team sport, played at once: five of them', () => {
     expect(
       gamesContent.events
         .filter((e) => e.team === 3)
         .map((e) => e.id)
         .sort(),
-    ).toEqual(['log-carry', 'pumpkin-push']);
+    ).toEqual(['bucket-brigade', 'crate-tower', 'kite-flight', 'log-carry', 'pumpkin-push']);
+    // Every team event is one of the kinds that play all teams at once.
+    for (const e of gamesContent.events.filter((x) => x.team === 3)) {
+      expect(['haul', 'fill', 'stack', 'kite']).toContain(e.kind);
+    }
   });
 
   it('retired events are out of the pool but keep a name for stored days', () => {
@@ -101,6 +105,26 @@ describe('loadGames rejects broken content', () => {
         (d.events[0] as Record<string, unknown>)['teamScore'] = 'sum';
       }),
     ).toThrow(/teamScore/);
+  });
+
+  it('an at-once team kind that is not a team event, a stack that topples less than nothing', () => {
+    for (const kind of ['fill', 'stack', 'kite'] as const) {
+      expect(
+        broken((d) => {
+          const e = d.events.find((x) => x['kind'] === kind) as Record<string, unknown>;
+          e['team'] = 1;
+          delete e['teamScore'];
+        }),
+      ).toThrow(/is a team event/);
+    }
+    expect(
+      broken((d) => {
+        const e = d.events.find((x) => x['kind'] === 'stack') as Record<string, unknown>;
+        const params = e['params'] as Record<string, number>;
+        params['toppleMin'] = 3;
+        params['toppleMax'] = 2;
+      }),
+    ).toThrow(/toppleMin > toppleMax/);
   });
 
   it('a haul that is not a team event', () => {

@@ -2273,7 +2273,7 @@
     "short": "A daily show of three silly events, four on Wednesdays. A creature enters one.",
     "lines": [
       "Entries close at the daily reset. The show plays to everyone a few minutes later.",
-      "One event a day is for teams of three: a Log Carry or a Pumpkin Push.",
+      "One event a day is for teams of three, who all play at once: carry, push, fill, stack or fly.",
       "Every entrant earns experience, and a podium place earns more."
     ],
     "visual": {
@@ -2336,26 +2336,34 @@
   {
     "id": "games-team",
     "title": "Team event",
-    "short": "One event a day is for three friends, who carry or push one big thing together.",
+    "short": "One event a day is for teams of three. Every team plays at once.",
     "lines": [
-      "Log Carry: the team goes as fast as its slowest carrier, so send three who keep in step.",
-      "Pumpkin Push: Attack adds up, the strongest counting most.",
-      "Guards keep the load steady, Supports cheer after a drop, a Setter sets the pace."
+      "Log Carry goes at its slowest carrier's pace; in Pumpkin Push, Attack adds up.",
+      "Bucket Brigade: quick feet make more trips, Tide carries more, Supports help refill.",
+      "Crate Tower: sturdy creatures and Guards hold it up, small ones climb fast, Grove roots it.",
+      "Kite Flight: quick runners and Spark lift the kite; a Guard or Mire holds it in a gust."
     ],
     "section": "games"
   },
   {
-    "id": "games-auto-entry",
-    "title": "Auto-entry",
-    "short": "Fills your empty events at the daily reset, so you never miss a show.",
-    "lines": ["It sends the creature that ran the event last time, or your best fit that is free."],
+    "id": "games-good-fit",
+    "title": "Good fit",
+    "short": "This creature suits this event: what the event favours is what it is.",
+    "lines": [
+      "Level doesn't matter in the Games; species, element, role and size do.",
+      "Gear counts only for its chance and trigger lines."
+    ],
+    "visual": {
+      "kind": "glyph",
+      "id": "good-fit"
+    },
     "section": "games"
   },
   {
-    "id": "games-fit",
-    "title": "Fit",
-    "short": "How well a creature suits an event: 1 to 5 pips, against your own creatures.",
-    "lines": ["Each event favours something: an element, a role, a size or a stat."],
+    "id": "games-badges",
+    "title": "Event badges",
+    "short": "Win an event and the creature earns its badge. The number counts its wins.",
+    "lines": ["Every member of a winning team earns it."],
     "section": "games"
   },
   {

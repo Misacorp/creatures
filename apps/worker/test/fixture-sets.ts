@@ -335,7 +335,6 @@ export const FIXTURE_SETS: readonly FixtureSet[] = [
         'games-entries',
         'games-entry',
         'games-entry-team',
-        'games-auto',
         'games-locked',
         'games-show',
         'games-after',

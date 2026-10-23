@@ -2,14 +2,16 @@
  * The Valley Games' awards, at the end of a day's show (idempotent per day: `games_days.awarded_at`).
  * One transaction: each player's medals (lifetime and pocket; the bonus event's medal points go in the
  * pocket doubled, `pocketPoints`, while the lifetime counts take one each), each creature's experience
- * (`gamesXp`), pins for beating its own record in the event, its record and its medal counts, the
- * placings' pins and experience, then the Discord podium post. Bots (the staging dev guests) take part
- * in the show but get nothing: their places keep no medal, record or experience.
+ * (`gamesXp`), pins for beating its own record in the event, its record, its medal counts and its event
+ * badge (a win of that event id for each member of a first place, `games_badges`), and the placings'
+ * pins and experience. No Discord post (it would spoil the replay). Bots (the staging dev guests) take
+ * part in the show but get nothing: their places keep no medal, badge, record or experience.
  */
 import { beatsRecord, gamesXp, medalPoints, pocketPoints, type GamesMedal } from '@creatures/game';
 import { awardExperience } from './creature-exp';
 import type { GamesDeps } from './games-lock';
 import {
+  addBadgeWin,
   addCreatureMedals,
   addMedals,
   readDay,
@@ -88,6 +90,7 @@ export function awardDay(deps: GamesDeps, day: string): boolean {
           ...medalCount(p.medal),
           pins: pin ? 1 : 0,
         });
+        if (p.medal === 'gold') addBadgeWin(sql, creatureId, p.event_id, p.user_id);
       }
       const counts = medalCount(p.medal);
       addMedals(sql, p.user_id, {

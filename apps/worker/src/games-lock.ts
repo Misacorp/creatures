@@ -3,10 +3,11 @@
  *
  * - The lineup of a show day is drawn once, the first time it is needed (live RNG, `chooseLineup`,
  *   avoiding the day before's events; the bonus day gets its bonus event), and stored.
- * - The lock (at the day's reset, or now from the dev tools) is one transaction: auto-entry fills the
- *   empty events of auto players, every entrant is snapshotted (the raid's fold: stats, crit, gear and
- *   talents), a seed is drawn from the live RNG, the events are resolved by the engine with a seeded RNG
- *   from that seed, and the inputs, results and placings are stored. Nothing is sent before the show.
+ * - The lock (at the day's reset, or now from the dev tools) is one transaction: every entrant is
+ *   snapshotted (`gamesEntrantFrom`: its species' base strengths, no level, and its gear's chance and
+ *   trigger lines), a seed is drawn from the live RNG, the events are resolved by the engine with a
+ *   seeded RNG from that seed, and the inputs, results and placings are stored. Only what players
+ *   entered runs: there is no auto-entry. Nothing is sent before the show.
  */
 import {
   RULES,
@@ -21,7 +22,6 @@ import {
   type ShowTimelineInput,
 } from '@creatures/game';
 import {
-  gamesAptitude,
   gamesEntrantFrom,
   runGamesEvent,
   type GamesEntrant,
@@ -33,13 +33,9 @@ import { drawSeed } from './raid-resolve';
 import { loadCreatures, type TeamCreature } from './raid-teams';
 import { gamesShowAt, isGamesBonusDay } from './games-calendar';
 import {
-  addEntry,
-  autoPlayers,
   dayEntries,
   insertDay,
   isBot,
-  lastRunner,
-  playerEntries,
   readDay,
   type DayRow,
   type EntryRow,
@@ -100,7 +96,11 @@ export interface GamesCreature {
   entrant: GamesEntrant;
 }
 
-/** The player's creatures with their entrants (`gamesEntrantFrom` over the raid's fold), oldest first. */
+/**
+ * The player's creatures with their entrants, oldest first: `gamesEntrantFrom` reads the current
+ * species and the chance and trigger lines of the gear sheet (the raid's fold); level, fusion and the
+ * sheet's stat lines are not read.
+ */
 export function gamesRoster(sql: SqlStorage, userId: string): GamesCreature[] {
   const shiny = new Set(
     sql
@@ -116,64 +116,11 @@ export function gamesRoster(sql: SqlStorage, userId: string): GamesCreature[] {
       playerId: userId,
       name: c.nickname ?? c.species.name,
       species: c.species,
-      level: c.level,
-      stats: c.stats,
-      crit: c.crit,
       mods: c.mods,
       ...(shiny.has(c.id) ? { shiny: true } : {}),
       ...(bot ? { bot: true } : {}),
     }),
   }));
-}
-
-/** Creatures in the order auto-entry prefers them for an event: best aptitude, then the older. */
-export function byAptitude(def: GamesEventDef, roster: readonly GamesCreature[]): GamesCreature[] {
-  const score = new Map(roster.map((c) => [c.creature.id, gamesAptitude(def, c.entrant)]));
-  return [...roster].sort(
-    (a, b) =>
-      (score.get(b.creature.id) ?? 0) - (score.get(a.creature.id) ?? 0) ||
-      a.creature.caughtAt - b.creature.caughtAt ||
-      (a.creature.id < b.creature.id ? -1 : 1),
-  );
-}
-
-const slotsOf = (def: GamesEventDef): number => (def.team === 3 ? RULES.games.teamSize : 1);
-
-/**
- * Auto-entry for one player: every event of the lineup they left empty gets the creature(s) that ran it
- * last time (if still theirs and free), then their best free creatures by aptitude (a team event up to a
- * full team). Events are filled in lineup order (solo events first). Returns the entries it made.
- */
-export function autoFill(
-  sql: SqlStorage,
-  day: string,
-  defs: readonly GamesEventDef[],
-  userId: string,
-  now: number,
-): number {
-  const roster = gamesRoster(sql, userId);
-  if (roster.length === 0) return 0;
-  const owned = new Set(roster.map((c) => c.creature.id));
-  const entries = playerEntries(sql, day, userId);
-  const used = new Set(Object.values(entries).flat());
-  let made = 0;
-  for (const def of defs) {
-    if ((entries[def.id]?.length ?? 0) > 0) continue;
-    const want = slotsOf(def);
-    const picks = lastRunner(sql, userId, def.id, day)
-      .filter((id) => owned.has(id) && !used.has(id))
-      .slice(0, want);
-    for (const c of byAptitude(def, roster)) {
-      if (picks.length >= want) break;
-      if (!used.has(c.creature.id) && !picks.includes(c.creature.id)) picks.push(c.creature.id);
-    }
-    picks.forEach((creatureId, slot) => {
-      addEntry(sql, { day, userId, eventId: def.id, slot, creatureId }, true, now);
-      used.add(creatureId);
-      made += 1;
-    });
-  }
-  return made;
 }
 
 /**
@@ -232,7 +179,6 @@ export function lockDay(deps: GamesDeps, day: string, showAt?: number): boolean 
     if (row.lockedAt !== null) return false;
     const now = deps.now();
     const defs = lineupDefs(row.lineup);
-    for (const userId of autoPlayers(sql)) autoFill(sql, day, defs, userId, now);
 
     const rosters = new Map<string, Map<string, GamesEntrant>>();
     const entrantOf = (userId: string, creatureId: string): GamesEntrant | undefined => {

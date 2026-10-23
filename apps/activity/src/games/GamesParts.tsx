@@ -1,23 +1,25 @@
 /**
  * The small pieces of the Games tab, shared by its screens, the creature page and the living room: a
- * medal or a pin as the art kit draws it, a row of medal counts, an event's favours as icons, the fit
- * pips, an event's scene as a thumbnail strip, one entry slot and the event card that holds them.
+ * medal or a pin as the art kit draws it, a row of medal counts, an event's favours as icons, the
+ * "Good fit" badge, a creature's event badge (an event it has won, with the count) and the shelf of
+ * them, an event's scene as a thumbnail strip, one entry slot and the event card that holds them.
  * Pictures first, words only where a name is needed; every icon has a spoken name and taps open their
  * glossary entry.
  */
 import type { ComponentChildren } from 'preact';
 import type { Creature } from '../api';
 import { shinyPalette } from '../art';
+import { gamesEventInfo } from '@creatures/game';
 import { creatureName, getSpecies } from '../game';
 import { GlossaryTag } from '../Glossary';
 import { favourView, slotsOf, type FavourView } from '../games-view';
-import type { GamesMedal, GamesNext, LineupEvent, MedalCounts } from '../games-types';
+import type { GamesBadge, GamesMedal, GamesNext, LineupEvent, MedalCounts } from '../games-types';
 import { Sprite } from '../sprites/Sprite';
 import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { GameIcon } from '../ui/GameIcon';
-import { PipRow } from '../ui/PipRow';
 import { Tag } from '../ui/Tag';
 import { GamesActor, GamesScene, GamesSprite } from './art/GamesScene';
+import { badgeSprite } from './art/badge';
 import { MELON_FRAMES } from './art/drawn';
 import type { SpriteDef } from '../sprites/sprite-data';
 import { SCENE_SIZE, type GamesSceneId } from './art/scenes';
@@ -134,9 +136,85 @@ export function FavourIcons({ event }: { event: Pick<LineupEvent, 'favours' | 'n
   );
 }
 
-/** 1 to 5 pips: how well a creature fits an event. */
-export function FitPips({ fit }: { fit: number }) {
-  return <PipRow count={5} lit={fit} label={`Fit ${String(fit)} / 5`} />;
+/**
+ * The "Good fit" badge: a green tick and the words. `tag` makes it a glossary tag (`games-good-fit`);
+ * inside a button or a list option it is plain (the screen's help button explains it).
+ */
+export function GoodFitMark({ tag = false }: { tag?: boolean }) {
+  const body = (
+    <>
+      <GameIcon icon={{ kind: 'glyph', id: 'good-fit' }} scale={2} />
+      <span class="ge-goodfit-text">Good fit</span>
+    </>
+  );
+  if (tag) {
+    return (
+      <GlossaryTag entry="games-good-fit" look="chip" class="ge-goodfit">
+        {body}
+      </GlossaryTag>
+    );
+  }
+  return <span class="ge-goodfit">{body}</span>;
+}
+
+/** The spoken name of an event badge: "Pepper Panic badge, won 3 times". */
+export function badgeLabel(badge: GamesBadge): string {
+  const name = gamesEventInfo(badge.eventId)?.name ?? badge.eventId;
+  return `${name} badge, won ${badge.wins === 1 ? 'once' : `${String(badge.wins)} times`}`;
+}
+
+/**
+ * A creature's badge for an event it has won: the event's medallion (its scene's colour and glyph) and
+ * the count ("×3"). `tag` makes it a glossary tag (`games-badges`); `named` writes the event's name
+ * beside it (the creature page's shelf); inside a button or a list option it is plain.
+ */
+export function EventBadge({
+  badge,
+  scale = 2,
+  tag = false,
+  named = false,
+}: {
+  badge: GamesBadge;
+  scale?: number;
+  tag?: boolean;
+  named?: boolean;
+}) {
+  const info = gamesEventInfo(badge.eventId);
+  const body = (
+    <>
+      <Sprite sprite={badgeSprite(info?.scene, info?.kind)} scale={scale} />
+      {named && <span class="ge-badge-name">{info?.name ?? badge.eventId}</span>}
+      <span class="ge-badge-count pix">×{badge.wins}</span>
+    </>
+  );
+  const label = badgeLabel(badge);
+  if (tag) {
+    return (
+      <GlossaryTag entry="games-badges" look="chip" class="ge-badge" label={label}>
+        {body}
+      </GlossaryTag>
+    );
+  }
+  return (
+    <span class="ge-badge" role="img" aria-label={label}>
+      {body}
+    </span>
+  );
+}
+
+/** A creature's event badges, one per event it has won, most wins first (nothing when it has none). */
+export function BadgeShelf({ badges }: { badges: readonly GamesBadge[] }) {
+  if (badges.length === 0) return null;
+  const sorted = [...badges].sort((a, b) => b.wins - a.wins || a.eventId.localeCompare(b.eventId));
+  return (
+    <ul class="ge-shelf" aria-label="Event badges">
+      {sorted.map((b) => (
+        <li key={b.eventId}>
+          <EventBadge badge={b} tag named />
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 /**
@@ -180,6 +258,31 @@ const THUMBS: Readonly<
     feet: 74,
     top: 34,
     props: [{ sprite: () => propSprite('pumpkin'), x: 130, y: 75 }],
+  },
+  'barrel-pond': {
+    feet: 94,
+    top: 48,
+    props: [
+      { sprite: () => propSprite('barrel', 6, undefined, 'blue'), x: 40, y: 64 },
+      { sprite: () => propSprite('barrel', 3, undefined, 'red'), x: 152, y: 64 },
+    ],
+  },
+  'crate-yard': {
+    feet: 94,
+    top: 48,
+    props: [
+      { sprite: () => propSprite('teamCrate', 0, undefined, 'yellow'), x: 150, y: 94 },
+      { sprite: () => propSprite('teamCrate', 0, undefined, 'yellow'), x: 150, y: 89 },
+      { sprite: () => propSprite('teamCrate', 0, undefined, 'yellow'), x: 150, y: 84 },
+    ],
+  },
+  'kite-hill': {
+    feet: 98,
+    top: 52,
+    props: [
+      { sprite: () => propSprite('kite', 0, undefined, 'red'), x: 40, y: 64 },
+      { sprite: () => propSprite('kite', 1, undefined, 'blue'), x: 150, y: 60 },
+    ],
   },
 };
 
@@ -255,7 +358,8 @@ function CreatureSprite({ creature, scale }: { creature: Creature; scale: number
 
 export interface EntrySlotProps {
   creature: Creature | null;
-  fit: number | null;
+  /** The entered creature has the event's "Good fit" badge. */
+  goodFit: boolean;
   /** A team event's slot: smaller, three to a row. */
   compact?: boolean;
   /** Tapping opens the picker; absent while entries are closed. */
@@ -266,12 +370,12 @@ export interface EntrySlotProps {
 }
 
 /**
- * One entry slot: the creature (sprite, name in its rarity colour, fit pips) or an empty "+". A button
- * while entries are open, a plain box after the lock.
+ * One entry slot: the creature (sprite, name in its rarity colour, the "Good fit" badge when it has it)
+ * or an empty "+". A button while entries are open, a plain box after the lock.
  */
 export function EntrySlot({
   creature,
-  fit,
+  goodFit,
   compact = false,
   onOpen,
   label,
@@ -294,14 +398,14 @@ export function EntrySlot({
           >
             {creatureName(creature)}
           </span>
-          {fit !== null && <FitPips fit={fit} />}
+          {goodFit && <GoodFitMark />}
         </span>
       </>
     );
   const spoken =
     creature === null
       ? `${label}: empty`
-      : `${label}: ${creatureName(creature)}${fit === null ? '' : `, fit ${String(fit)} / 5`}`;
+      : `${label}: ${creatureName(creature)}${goodFit ? ', good fit' : ''}`;
   const classes = [
     'ge-slot',
     compact ? 'is-compact' : '',
@@ -354,7 +458,7 @@ export function EventCard({
   children?: ComponentChildren;
 }) {
   const byId = new Map(creatures.map((c) => [c.id, c]));
-  const fit = next.fit[event.id] ?? {};
+  const good = new Set(next.goodFit[event.id] ?? []);
   const slots = slotsOf(next, event);
   const team = slots.length > 1;
   return (
@@ -382,7 +486,7 @@ export function EventCard({
             <EntrySlot
               key={i}
               creature={creature}
-              fit={creature === null ? null : (fit[creature.id] ?? null)}
+              goodFit={creature !== null && good.has(creature.id)}
               compact={team}
               label={team ? `${event.name}, seat ${String(i + 1)}` : event.name}
               disabled={busy}

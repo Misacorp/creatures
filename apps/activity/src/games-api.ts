@@ -1,11 +1,10 @@
 /**
  * The Valley Games requests (`apps/worker/src/games-routes.ts`). The tab's view is a plain read; an
- * entry and auto-entry are sets (a repeat is harmless, so they carry no key); a stall purchase spends
+ * entry is a set (a repeat is harmless, so it carries no key); a stall purchase spends
  * medal points and carries the caller's idempotency key, so a retry never pays twice.
  */
 import { apiFetch, jsonRequest } from './api';
 import {
-  parseAutoAnswer,
   parseCreatureGames,
   parseEntryAnswer,
   parseGamesView,
@@ -32,11 +31,6 @@ export async function setGamesEntry(
   );
 }
 
-/** Auto-entry on or off. */
-export async function setGamesAuto(on: boolean): Promise<{ auto: boolean; joined: boolean }> {
-  return parseAutoAnswer(await apiFetch('/api/games/auto', jsonRequest('PUT', { on })));
-}
-
 /** Buys one offer of the Prize Stall. */
 export async function buyStallOffer(
   offerId: string,
@@ -47,7 +41,7 @@ export async function buyStallOffer(
   );
 }
 
-/** A creature's medals and best scores. */
+/** A creature's medals, event badges and best scores. */
 export async function fetchCreatureGames(creatureId: string): Promise<CreatureGames> {
   return parseCreatureGames(
     await apiFetch(`/api/games/creature/${encodeURIComponent(creatureId)}`),

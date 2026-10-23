@@ -1,7 +1,7 @@
 /**
  * What the Games tab shows, as plain data (docs/design/valley-games.md): the icons of what an event
- * favours, the slots of an event and who fills them, the creature picker's rows (fit pips, who is in
- * another event), the tab's pip, when to ask the server again, the medals of a result and the units of
+ * favours, the slots of an event and who fills them, the creature picker's rows (the "Good fit" badge,
+ * the event badge, who is in another event), the tab's pip, when to ask the server again, the medals of a result and the units of
  * a record. Pure: the server decides every entry, placing, medal and number; this only arranges them.
  */
 import { RULES, expToNext, gamesEventInfo, gamesIsSmall, type GamesFavour } from '@creatures/game';
@@ -179,15 +179,17 @@ export function nextRefetchAt(view: GamesView, serverNow: number): number | null
 
 // --- The picker ---
 
-/** One row of an event's picker: the creature, its fit pips and where it is entered now. */
+/** One row of an event's picker: the creature, its badges and where it is entered now. */
 export interface GamesPickerOption extends PickerOption {
-  /** 1 to 5: how well it fits the event, against the player's own roster. */
-  fit: number;
+  /** The server's "Good fit" badge for this event. */
+  goodFit: boolean;
+  /** Its wins of this event (its event badge); 0: none. */
+  wins: number;
   /** The event it is in now (picking it moves it here), or null. */
   inEvent: string | null;
   /**
    * The event's size favour when this creature has it (`gamesIsSmall`), shown as the favour's glyph
-   * beside the pips; null when the event favours no size or the creature is the other size.
+   * at the right of the row; null when the event favours no size or the creature is the other size.
    */
   size: 'small' | 'big' | null;
 }
@@ -208,9 +210,10 @@ export function fitsSize(favour: 'small' | 'big' | null, speciesId: string): boo
 }
 
 /**
- * The creatures for one slot of an event, best fit first: free ones, then those in another event (a tap
- * moves them here; the note names the event). One already in this event's other slot cannot be picked.
- * A creature on a trip or a job can enter (the show takes no creature time), so nobody else is greyed.
+ * The creatures for one slot of an event: the good fits first, then the rest, each group by name, free
+ * ones before those in another event (a tap moves them here; the note names the event). No scores: the
+ * badge says it. One already in this event's other slot cannot be picked and comes last. A creature on a
+ * trip or a job can enter (the show takes no creature time), so nobody else is greyed.
  */
 export function pickerRows(
   next: GamesNext,
@@ -219,7 +222,8 @@ export function pickerRows(
   creatures: readonly Creature[],
 ): GamesPickerOption[] {
   const here = next.entries[event.id] ?? [];
-  const fit = next.fit[event.id] ?? {};
+  const good = new Set(next.goodFit[event.id] ?? []);
+  const wins = next.badges[event.id] ?? {};
   const names = new Map(next.lineup.map((e) => [e.id, e.name]));
   const size = sizeFavourOf(event);
   const rows = creatures.map((c): GamesPickerOption => {
@@ -229,7 +233,8 @@ export function pickerRows(
     const elsewhere = inEvent !== null && inEvent !== event.id;
     return {
       ...baseOption(c),
-      fit: fit[c.id] ?? 1,
+      goodFit: good.has(c.id),
+      wins: wins[c.id] ?? 0,
       inEvent,
       size: fitsSize(size, c.species) ? size : null,
       onBoard: elsewhere,
@@ -238,8 +243,11 @@ export function pickerRows(
       ...(inSlot ? { note: 'Entered here' } : {}),
     };
   });
-  const rank = (o: GamesPickerOption): number => (o.disabled !== null ? 2 : o.onBoard ? 1 : 0);
-  return rows.sort((a, b) => rank(a) - rank(b) || b.fit - a.fit || b.level - a.level);
+  const rank = (o: GamesPickerOption): number =>
+    (o.disabled !== null ? 4 : 0) + (o.goodFit ? 0 : 2) + (o.onBoard ? 1 : 0);
+  return rows.sort(
+    (a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name) || (a.id < b.id ? -1 : 1),
+  );
 }
 
 // --- Results ---
@@ -297,7 +305,7 @@ export const hasMedals = (m: MedalCounts): boolean => m.gold + m.silver + m.bron
 
 // --- Records ---
 
-/** A record as the player reads it: "12.4 s", "18 m", "7 peppers", "1.5 laps". */
+/** A record as the player reads it: "12.4 s", "18 m", "7 peppers", "1.5 laps", "87%", "9 crates". */
 export function recordText(record: { eventId: string; best: number; unit: string }): string {
   switch (record.unit) {
     case 'ticks': {
@@ -310,6 +318,10 @@ export function recordText(record: { eventId: string; best: number; unit: string
       return `${String(record.best)} ${record.best === 1 ? 'pepper' : 'peppers'}`;
     case 'centilaps':
       return `${trim(record.best / 100)} ${record.best === 100 ? 'lap' : 'laps'}`;
+    case 'percent':
+      return `${String(record.best)}%`;
+    case 'crates':
+      return `${String(record.best)} ${record.best === 1 ? 'crate' : 'crates'}`;
     default:
       return String(record.best);
   }

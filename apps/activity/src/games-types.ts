@@ -52,10 +52,10 @@ export interface GamesNext {
   lineup: LineupEvent[];
   /** Event id to the player's creatures in it, in slot order. */
   entries: Record<string, string[]>;
-  joined: boolean;
-  auto: boolean;
-  /** Event id to creature id to 1..5 pips. */
-  fit: Record<string, Record<string, number>>;
+  /** Event id to the player's creatures with the "Good fit" badge for it (the server decides). */
+  goodFit: Record<string, string[]>;
+  /** Event id to creature id to its wins of that event (its event badge); absent: none. */
+  badges: Record<string, Record<string, number>>;
 }
 
 export interface MedalCounts {
@@ -133,8 +133,15 @@ export interface StallPurchase {
   stall: StallView;
 }
 
-/** `GET /api/games/creature/:id`: a creature's medals and best scores. */
+/** A creature's badge for an event it has won (gold), with the number of wins. */
+export interface GamesBadge {
+  eventId: string;
+  wins: number;
+}
+
+/** `GET /api/games/creature/:id`: a creature's medals, event badges and best scores. */
 export interface CreatureGames {
   medals: MedalCounts;
+  badges: GamesBadge[];
   records: { eventId: string; name: string; best: number; unit: string; day: string }[];
 }

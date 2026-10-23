@@ -18,6 +18,7 @@ import {
   PUMPKIN_FRAMES,
   SCOREBOARD_FRAMES,
 } from './drawn';
+import { BARREL_FRAMES, CRATE, KITE_FRAMES, PAIL_FRAMES } from './drawn-team';
 import { TEAM_RAMPS, maybeTint, type RampName } from './tint';
 
 const P = GAMES_PROP_DATA;
@@ -27,6 +28,10 @@ export const GAMES_PROPS = {
   melon: MELON_FRAMES,
   log: LOG_FRAMES,
   pumpkin: PUMPKIN_FRAMES,
+  barrel: BARREL_FRAMES,
+  teamCrate: [CRATE],
+  kite: KITE_FRAMES,
+  pail: PAIL_FRAMES,
   finishBand: [FINISH_BAND],
   podium1: [PODIUM_BLOCKS[1]],
   podium2: [PODIUM_BLOCKS[2]],
@@ -110,6 +115,21 @@ export const PROP_TINTS: Readonly<Partial<Record<PropName, readonly PropTint[]>>
     ['cream', 'pine'],
     ['wood', 'pine'],
     ['sauna', 'cream'],
+  ],
+  barrel: [
+    ['wood', 'red'],
+    ['wood', 'blue'],
+    ['wood', 'green'],
+  ],
+  teamCrate: [
+    ['pine', 'red'],
+    ['pine', 'blue'],
+    ['wood', 'yellow'],
+  ],
+  kite: [
+    ['cream', 'red'],
+    ['cream', 'blue'],
+    ['cream', 'yellow'],
   ],
   pumpkin: [
     ['orange', 'grove'],

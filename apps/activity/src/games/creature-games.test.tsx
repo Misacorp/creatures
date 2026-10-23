@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { byClass, byName, createPage, visibleText, type Page } from '../test-dom';
 import { GAMES_FIXTURES } from '../workbench/games-tab-sample';
+import { PopoverHost } from '../PopoverHost';
 import { CreatureGamesRow } from './CreatureGamesRow';
 import { TrophyBoard } from './RoomTrophy';
 
@@ -31,10 +32,36 @@ describe("a creature's Games block", () => {
     expect(byClass(page.root, 'gm-kind')).toHaveLength(1);
   });
 
+  it('shows a badge per event won, with its count, most wins first; events never won are not shown', async () => {
+    const games = {
+      medals: { gold: 4, silver: 0, bronze: 0, pins: 0 },
+      badges: [
+        { eventId: 'melon-run', wins: 1 },
+        { eventId: 'pepper-panic', wins: 3 },
+      ],
+      records: [],
+    };
+    page = createPage();
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <CreatureGamesRow creatureId="c1" load={() => Promise.resolve(games)} />
+      </PopoverHost>,
+    );
+    await flush();
+    page.update(() => undefined);
+    const badges = byClass(page.root, 'ge-badge');
+    expect(badges.map((b) => visibleText(b))).toEqual(['Pepper Panic×3', 'Melon Run×1']);
+    // Each is a tag for the glossary, named for assistive technology.
+    expect(byName(page.root, 'button', 'Pepper Panic badge, won 3 times')).toHaveLength(1);
+    expect(byName(page.root, 'button', 'Melon Run badge, won once')).toHaveLength(1);
+    expect(visibleText(page.root)).not.toContain('Log Carry');
+  });
+
   it('shows nothing for a creature with no medals and no records, or when the load fails', async () => {
     page = createPage();
     const empty = {
       medals: { gold: 0, silver: 0, bronze: 0, pins: 0 },
+      badges: [],
       records: [],
     };
     page.draw(<CreatureGamesRow creatureId="c1" load={() => Promise.resolve(empty)} />);

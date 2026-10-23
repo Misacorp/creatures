@@ -1,6 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { createSeededRng, gamesContent, gamesEventDef, type GamesEventDef } from '@creatures/game';
-import { runGamesEvent, type GamesEntrant } from '@creatures/engine';
+import {
+  content,
+  createSeededRng,
+  gamesContent,
+  gamesEventDef,
+  type GamesEventDef,
+} from '@creatures/game';
+import {
+  gamesEntrantFrom,
+  gamesGoodFit,
+  runGamesEvent,
+  type GamesEntrant,
+} from '@creatures/engine';
 import { main, parseGamesCli } from '../src/games-cli';
 import {
   assignEntries,
@@ -10,6 +21,8 @@ import {
   type Entry,
   gamesReport,
   gamesRows,
+  goodFitCount,
+  quantile,
   runGamesStudy,
   teamLengthPass,
   showScript,
@@ -23,9 +36,16 @@ function event(id: string): GamesEventDef {
   return def;
 }
 
-function candidate(i: number, over: Partial<GamesEntrant> = {}, power = 100 + i): Candidate {
+function candidate(
+  i: number,
+  over: Partial<GamesEntrant> = {},
+  power = 100 + i,
+  level = 10,
+): Candidate {
   return {
     power,
+    gamesPower: power,
+    level,
     rank: 1,
     entrant: {
       id: `p/${String(i)}`,
@@ -36,7 +56,6 @@ function candidate(i: number, over: Partial<GamesEntrant> = {}, power = 100 + i)
       element: 'spark',
       role: 'setter',
       stage: 2,
-      level: 10,
       hp: 300,
       atk: 60,
       spd: 50,
@@ -64,27 +83,55 @@ describe('assignEntries', () => {
     event('log-carry'),
   ];
   const pool = [
-    candidate(0, { hp: 600, element: 'ember' }, 50),
-    candidate(1, { spd: 120 }, 60),
-    candidate(2, {}, 300),
-    candidate(3, {}, 200),
-    candidate(4, {}, 90),
-    candidate(5, {}, 80),
-    candidate(6, {}, 70),
+    candidate(0, { hp: 600, element: 'ember' }, 50, 3),
+    candidate(1, { spd: 120 }, 60, 30),
+    candidate(2, {}, 300, 12),
+    candidate(3, {}, 200, 25),
+    candidate(4, {}, 90, 7),
+    candidate(5, {}, 80, 18),
+    candidate(6, {}, 70, 1),
   ];
+  /** Every shipped species once, as the Games see it (no gear). */
+  const species = (): Candidate[] =>
+    content.creatures.map((sp, i) => ({
+      ...candidate(i),
+      entrant: gamesEntrantFrom({ id: `p/${sp.id}`, playerId: 'p', name: sp.name, species: sp }),
+    }));
 
-  it('best: strongest first in lineup order, the team event takes three, no repeats', () => {
-    const picks = assignEntries(lineup, pool, 'best', createSeededRng('a'));
-    expect(picks.map((cs) => cs.map((c) => c.power))).toEqual([[300], [200], [90], [80, 70, 60]]);
+  it('best-level: highest level first in lineup order, the team event takes three, no repeats', () => {
+    const picks = assignEntries(lineup, pool, 'best-level', createSeededRng('a'));
+    expect(picks.map((cs) => cs.map((c) => c.level))).toEqual([[30], [25], [18], [12, 7, 3]]);
   });
 
-  it('aptitude: the fit goes where it fits', () => {
-    const picks = assignEntries(lineup, pool, 'aptitude', createSeededRng('a'));
-    expect(picks[0]?.[0]?.entrant.id).toBe('p/0');
-    expect(picks[1]?.[0]?.entrant.id).toBe('p/1');
-    const all = picks.flat().map((c) => c.entrant.id);
-    expect(new Set(all).size).toBe(all.length);
-    expect(picks[3]).toHaveLength(3);
+  it('fit: picks at random among the free good fits, then among the rest', () => {
+    const all = species();
+    for (const seed of ['a', 'b', 'c']) {
+      const picks = assignEntries(lineup, all, 'fit', createSeededRng(seed));
+      const used = new Set<Candidate>();
+      lineup.forEach((def, k) => {
+        const mine = picks[k] ?? [];
+        expect(mine).toHaveLength(def.team);
+        const left = all.filter((c) => !used.has(c) && gamesGoodFit(def, c.entrant));
+        // As many good fits as were still free, up to the slots.
+        expect(mine.filter((c) => gamesGoodFit(def, c.entrant))).toHaveLength(
+          Math.min(def.team, left.length),
+        );
+        for (const c of mine) used.add(c);
+      });
+    }
+    // Random among them: another seed picks other good fits.
+    const a = assignEntries(lineup, all, 'fit', createSeededRng('a')).flat();
+    const b = assignEntries(lineup, all, 'fit', createSeededRng('zz')).flat();
+    expect(a.map((c) => c.entrant.id)).not.toEqual(b.map((c) => c.entrant.id));
+  });
+
+  it('counts the good fits of a roster per event', () => {
+    const all = species();
+    const def = event('melon-run');
+    expect(goodFitCount(def, all)).toBe(all.filter((c) => gamesGoodFit(def, c.entrant)).length);
+    expect(goodFitCount(def, [])).toBe(0);
+    expect(quantile([5, 1, 3, 2, 4], 0.5)).toBe(3);
+    expect(quantile([], 0.5)).toBe(0);
   });
 
   it('a small roster enters what it can', () => {
@@ -136,7 +183,8 @@ describe('tallies', () => {
     // Level 1-9: a quarter of entries, half the wins.
     expect(sum.lowLevelRatio).toBeCloseTo(2);
     expect(sum.highLevelRatio).toBeCloseTo(2);
-    expect(sum.pass).toEqual({ bench: true, low: true, high: false });
+    // Level must not predict a win: twice the fair share is out of bounds either way.
+    expect(sum.pass).toEqual({ bench: true, low: false, high: false, bestLevel: true });
   });
 });
 

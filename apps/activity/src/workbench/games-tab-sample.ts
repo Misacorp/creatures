@@ -21,16 +21,21 @@ export const GAMES_SELF_ID = '800000000000000001';
 
 const id = (n: number): string => `00000000-0000-4000-8600-${String(n).padStart(12, '0')}`;
 
-/** The fixture player's six creatures, with the species the capture gave them. */
+/**
+ * The fixture player's six creatures, with the species the capture gave them. The capture numbers ids
+ * in order of first appearance, and the first answer lists the good fits first, so the numbers are not
+ * the roster's order: 1 Splashet (Melon Run), 3 Cindle and 5 Sproutle (Log Carry) are the entered ones,
+ * as `games-show.json`'s actors say; 2 Zipmouse and 4 Ashmole are the other good fits.
+ */
 export function gamesRoster(): Creature[] {
   const all = sampleRoster(34);
   const wanted: [number, string, number, string | null][] = [
     [1, 'splashet', 8, null],
-    [2, 'cindle', 6, 'Toasty'],
-    [3, 'sproutle', 4, null],
-    [4, 'zipmouse', 11, null],
-    [5, 'mistnewt', 3, null],
-    [6, 'ashmole', 9, 'Big Biscuit'],
+    [3, 'cindle', 6, 'Toasty'],
+    [5, 'sproutle', 4, null],
+    [2, 'zipmouse', 11, null],
+    [6, 'mistnewt', 3, null],
+    [4, 'ashmole', 9, 'Big Biscuit'],
   ];
   return wanted.map(([n, species, level, nickname]) => {
     const found = all.find((c) => c.species === species);
@@ -80,25 +85,44 @@ export const GAMES_VIEWS = [
 ] as const;
 export type GamesViewName = (typeof GAMES_VIEWS)[number];
 
+/** The captured lineup's solo events and its team event (the ids follow the content). */
+const LINEUP = GAMES_FIXTURES.entries.next.lineup;
+export const SAMPLE_SOLO = LINEUP.filter((e) => e.team === 1).map((e) => e.id);
+export const SAMPLE_TEAM = LINEUP.find((e) => e.team === 3)?.id ?? '';
+
+/**
+ * Every event of the lineup entered as a player who reads the badges would: in each solo event a good
+ * fit the capture marked (when one is still free), the team event filled to three with the rest.
+ */
+function allEntered(): Record<string, string[]> {
+  const next = GAMES_FIXTURES.entries.next;
+  const out: Record<string, string[]> = {};
+  const used = new Set<string>();
+  for (const eventId of SAMPLE_SOLO) {
+    const pick = (next.goodFit[eventId] ?? []).find((c) => !used.has(c));
+    if (pick === undefined) continue;
+    out[eventId] = [pick];
+    used.add(pick);
+  }
+  const rest = [1, 2, 3, 4, 5, 6].map(id).filter((c) => !used.has(c));
+  const good = new Set(next.goodFit[SAMPLE_TEAM] ?? []);
+  rest.sort((a, b) => Number(good.has(b)) - Number(good.has(a)));
+  if (SAMPLE_TEAM !== '') out[SAMPLE_TEAM] = rest.slice(0, 3);
+  return out;
+}
+
 /** A view by name, with its clock moved to now (so countdowns and the show read as captured). */
 export function gamesView(name: GamesViewName): { view: GamesView; offset: number } {
   const f = GAMES_FIXTURES;
   const pick = (): GamesView => {
     switch (name) {
       case 'entries: one entered':
-        return { ...f.entries, next: { ...f.entries.next, entries: { 'melon-run': [id(1)] } } };
-      case 'entries: all entered':
         return {
           ...f.entries,
-          next: {
-            ...f.entries.next,
-            entries: {
-              'melon-run': [id(4)],
-              'pepper-panic': [id(6)],
-              'log-carry': [id(2), id(3), id(5)],
-            },
-          },
+          next: { ...f.entries.next, entries: { [SAMPLE_SOLO[0] ?? '']: [id(1)] } },
         };
+      case 'entries: all entered':
+        return { ...f.entries, next: { ...f.entries.next, entries: allEntered() } };
       case 'entries: none entered':
         return { ...f.entries, next: { ...f.entries.next, entries: {} } };
       case 'after: results and the next lineup':

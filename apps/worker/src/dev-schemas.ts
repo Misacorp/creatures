@@ -277,7 +277,7 @@ export const RaidSimulateBodySchema = v.strictObject({
 
 // --- The Valley Games ---
 
-/** Bots for the Games: the raid's guests (`dev-guest-<n>`), each with `GAMES_BOT_CREATURES` creatures, auto-entered. */
+/** Bots for the Games: the raid's guests (`dev-guest-<n>`), each with `GAMES_BOT_CREATURES` creatures, entered in every event of the next show day. */
 export const MAX_GAMES_BOTS = 12;
 export const GamesBotsBodySchema = v.strictObject({ count: v.optional(int(1, MAX_GAMES_BOTS)) });
 

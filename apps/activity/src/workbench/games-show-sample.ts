@@ -12,7 +12,6 @@ import {
 import {
   content,
   createSeededRng,
-  effectiveStats,
   gamesContent,
   int,
   RULES,
@@ -91,12 +90,13 @@ export function samplePlayers(humans: number, bots: number): SamplePlayer[] {
   return out;
 }
 
-/** One creature of a player for an event: a random species at a random level, folded without gear. */
+/** One creature of a player for an event: a random species (the Games read no level), now and then a gear line. */
 function sampleEntrant(rng: Rng, player: SamplePlayer, slot: string): GamesEntrant {
   const pool = content.creatures.filter((s) => s.festival !== true);
   const species = pool[int(rng, pool.length)] ?? content.creatures[0];
   if (species === undefined) throw new Error('No species');
-  const level = 1 + int(rng, Math.min(species.levelCap, 30));
+  // The level draw stays so the samples' later draws are as they were; the Games read no level.
+  int(rng, Math.min(species.levelCap, 30));
   const nick = int(rng, 6) === 0 ? NICKNAMES[int(rng, NICKNAMES.length)] : undefined;
   const lucky = int(rng, 8);
   return gamesEntrantFrom({
@@ -104,8 +104,6 @@ function sampleEntrant(rng: Rng, player: SamplePlayer, slot: string): GamesEntra
     playerId: player.id,
     name: nick ?? species.name,
     species,
-    level,
-    stats: effectiveStats(species, level, 0),
     // A few gear lines now and then, so stars (Stubborn, Momentum) show up in the samples.
     mods:
       lucky === 0

@@ -138,7 +138,6 @@ export interface EntryRow {
   eventId: string;
   slot: number;
   creatureId: string;
-  auto: boolean;
   enteredAt: number;
 }
 
@@ -147,7 +146,6 @@ type RawEntry = {
   event_id: string;
   slot: number;
   creature_id: string;
-  auto: number;
   entered_at: number;
 };
 
@@ -156,7 +154,6 @@ const toEntry = (r: RawEntry): EntryRow => ({
   eventId: r.event_id,
   slot: r.slot,
   creatureId: r.creature_id,
-  auto: r.auto === 1,
   enteredAt: r.entered_at,
 });
 
@@ -164,7 +161,7 @@ const toEntry = (r: RawEntry): EntryRow => ({
 export function dayEntries(sql: SqlStorage, day: string): EntryRow[] {
   return sql
     .exec<RawEntry>(
-      `SELECT user_id, event_id, slot, creature_id, auto, entered_at FROM games_entries
+      `SELECT user_id, event_id, slot, creature_id, entered_at FROM games_entries
        WHERE day = ? ORDER BY entered_at, rowid`,
       day,
     )
@@ -191,92 +188,43 @@ export function playerEntries(
   return out;
 }
 
+/**
+ * Stores one entry. Only players enter (there is no auto-entry since 2026-10-23); the table's `auto`
+ * column, from migration 39, stays at its default 0.
+ */
 export function addEntry(
   sql: SqlStorage,
   e: { day: string; userId: string; eventId: string; slot: number; creatureId: string },
-  auto: boolean,
   now: number,
 ): void {
   sql.exec(
-    `INSERT INTO games_entries (day, user_id, event_id, slot, creature_id, auto, entered_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO games_entries (day, user_id, event_id, slot, creature_id, entered_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
     e.day,
     e.userId,
     e.eventId,
     e.slot,
     e.creatureId,
-    auto ? 1 : 0,
     now,
   );
 }
 
-export interface GamesPlayer {
-  joined: boolean;
-  auto: boolean;
+/** Whether anybody has entered a creature for show day `day`. */
+export function hasEntries(sql: SqlStorage, day: string): boolean {
+  return sql.exec('SELECT 1 FROM games_entries WHERE day = ? LIMIT 1', day).toArray().length > 0;
 }
 
-export function readPlayer(sql: SqlStorage, userId: string): GamesPlayer {
-  const r = sql
-    .exec<{ auto: number }>('SELECT auto FROM games_players WHERE user_id = ?', userId)
-    .toArray()[0];
-  // Auto-entry is on by default; it only acts for a player who has joined.
-  return r === undefined ? { joined: false, auto: true } : { joined: true, auto: r.auto === 1 };
-}
-
-/** Joins a player (auto on) if they had not joined yet. */
-export function joinPlayer(sql: SqlStorage, userId: string, now: number): void {
-  sql.exec(
-    'INSERT INTO games_players (user_id, auto, joined_at) VALUES (?, 1, ?) ON CONFLICT(user_id) DO NOTHING',
-    userId,
-    now,
+/** Whether anybody has entered a creature for a show day on or after `day` that is not locked yet. */
+export function hasOpenEntries(sql: SqlStorage, day: string): boolean {
+  return (
+    sql
+      .exec(
+        `SELECT 1 FROM games_entries e LEFT JOIN games_days d ON d.day = e.day
+         WHERE e.day >= ? AND d.locked_at IS NULL LIMIT 1`,
+        day,
+      )
+      .toArray().length > 0
   );
-}
-
-export function setAuto(sql: SqlStorage, userId: string, on: boolean, now: number): void {
-  sql.exec(
-    `INSERT INTO games_players (user_id, auto, joined_at) VALUES (?, ?, ?)
-     ON CONFLICT(user_id) DO UPDATE SET auto = excluded.auto`,
-    userId,
-    on ? 1 : 0,
-    now,
-  );
-}
-
-/** Players auto-entry acts for at the lock: joined with auto on, and every bot. */
-export function autoPlayers(sql: SqlStorage): string[] {
-  return sql
-    .exec<{ user_id: string }>(
-      `SELECT user_id FROM games_players WHERE auto = 1 OR user_id LIKE '${BOT_PREFIX}%' ORDER BY joined_at, user_id`,
-    )
-    .toArray()
-    .map((r) => r.user_id);
-}
-
-/** The creature that ran `eventId` most recently for the player before `day`, or null. */
-export function lastRunner(
-  sql: SqlStorage,
-  userId: string,
-  eventId: string,
-  day: string,
-): string[] {
-  const last = sql
-    .exec<{ day: string }>(
-      'SELECT MAX(day) AS day FROM games_entries WHERE user_id = ? AND event_id = ? AND day < ?',
-      userId,
-      eventId,
-      day,
-    )
-    .one().day;
-  if (last === null) return [];
-  return sql
-    .exec<{ creature_id: string }>(
-      'SELECT creature_id FROM games_entries WHERE user_id = ? AND event_id = ? AND day = ? ORDER BY slot',
-      userId,
-      eventId,
-      last,
-    )
-    .toArray()
-    .map((r) => r.creature_id);
 }
 
 export type MedalCounts = {
@@ -343,6 +291,60 @@ export function addCreatureMedals(
     add.silver,
     add.bronze,
     add.pins,
+  );
+}
+
+/** One event badge: the creature won `eventId` (gold) `wins` times. */
+export interface GamesBadge {
+  eventId: string;
+  wins: number;
+}
+
+/** A creature's event badges (migration 40), by event id. */
+export function creatureBadges(sql: SqlStorage, creatureId: string): GamesBadge[] {
+  return sql
+    .exec<{ event_id: string; wins: number }>(
+      'SELECT event_id, wins FROM games_badges WHERE creature_id = ? AND wins > 0 ORDER BY event_id',
+      creatureId,
+    )
+    .toArray()
+    .map((r) => ({ eventId: r.event_id, wins: r.wins }));
+}
+
+/** A player's creatures' wins in each of `eventIds`: event id to creature id to wins (none: absent). */
+export function playerBadges(
+  sql: SqlStorage,
+  userId: string,
+  eventIds: readonly string[],
+): Record<string, Record<string, number>> {
+  const out: Record<string, Record<string, number>> = {};
+  for (const eventId of new Set(eventIds)) {
+    for (const r of sql
+      .exec<{ creature_id: string; wins: number }>(
+        'SELECT creature_id, wins FROM games_badges WHERE user_id = ? AND event_id = ? AND wins > 0',
+        userId,
+        eventId,
+      )
+      .toArray()) {
+      (out[eventId] ??= {})[r.creature_id] = r.wins;
+    }
+  }
+  return out;
+}
+
+/** Adds one win of `eventId` to a creature's badge. */
+export function addBadgeWin(
+  sql: SqlStorage,
+  creatureId: string,
+  eventId: string,
+  userId: string,
+): void {
+  sql.exec(
+    `INSERT INTO games_badges (creature_id, event_id, user_id, wins) VALUES (?, ?, ?, 1)
+     ON CONFLICT(creature_id, event_id) DO UPDATE SET user_id = excluded.user_id, wins = wins + 1`,
+    creatureId,
+    eventId,
+    userId,
   );
 }
 

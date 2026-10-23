@@ -5,15 +5,17 @@ import { favourView, pickerRows } from '../games-view';
 import { GameIcon } from '../ui/GameIcon';
 import { CreatureList } from '../ui/CreatureList';
 import { Drawer } from '../ui/Drawer';
-import { FavourIcons, FitPips } from './GamesParts';
+import { EventBadge, FavourIcons, GoodFitMark } from './GamesParts';
 
 /**
  * The picker of one entry slot: a drawer headed by the event's name, its favours and its teaser line,
- * with the player's creatures best fit first (the shared `CreatureList`: element and role chips, the
- * fit pips at the right, "In Melon Run" under a creature entered elsewhere, which a tap moves here).
- * When the event favours small or big creatures, each creature of that size shows the favour's glyph
- * before its pips, so the link between the favour and the creature is visible. "Clear" at the bottom
- * empties the slot. A pick acts at once.
+ * with the player's creatures, the good fits first (the shared `CreatureList`: element and role chips,
+ * the creature's badge for this event, if it has won it, beside its name, the "Good fit" badge at the
+ * right, "In Melon Run" under a creature entered elsewhere, which a tap moves here). No scores and no
+ * ranking: the badge is the whole hint. When the event favours small or big creatures, each creature of
+ * that size shows the favour's glyph at the right, so the link between the favour and the creature is
+ * visible. The title's help button explains the "Good fit" badge. "Clear" at the bottom empties the
+ * slot. A pick acts at once.
  */
 export function EntryPicker({
   event,
@@ -44,7 +46,7 @@ export function EntryPicker({
       title={event.name}
       onClose={onClose}
       class="ge-picker"
-      titleHelp={<GlossaryTag entry="games-fit" look="help" />}
+      titleHelp={<GlossaryTag entry="games-good-fit" look="help" />}
       returnFocusTo={returnFocusTo}
       footer={
         filled ? (
@@ -63,12 +65,17 @@ export function EntryPicker({
         class="flat"
         placedNote=""
         selection={{ mode: 'pick', onPick, label: `Creatures for ${event.name}` }}
-        side={(o) => (
-          <span class="ge-fit">
-            {o.size !== null && <SizeMark size={o.size} />}
-            <FitPips fit={o.fit} />
-          </span>
-        )}
+        beside={(o) =>
+          o.wins > 0 ? <EventBadge badge={{ eventId: event.id, wins: o.wins }} scale={1} /> : null
+        }
+        side={(o) =>
+          o.size === null && !o.goodFit ? null : (
+            <span class="ge-fit">
+              {o.size !== null && <SizeMark size={o.size} />}
+              {o.goodFit && <GoodFitMark />}
+            </span>
+          )
+        }
       />
     </Drawer>
   );
