@@ -25,7 +25,7 @@ import {
 } from '@creatures/engine';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { giveItem } from './gear-helpers';
-import { ACT_ANSWER_RETENTION_MS } from '../src/dungeon';
+import { ACT_ANSWER_RETENTION_MS, RUN_RETENTION_MS } from '../src/dungeon';
 import { parseState, type RunState } from '../src/dungeon-state';
 import type { DungeonRunState, DungeonStepLog } from '../src/dungeon-types';
 import { drawSeed, slotFor } from '../src/raid-resolve';
@@ -895,8 +895,8 @@ describe('retrying an act', () => {
         const within = await p.act(state, move, key);
         expect(within.status).toBe(200);
         expect(within.body).toEqual(first.body);
-        // Past it the state is gone, the act stays.
-        ctx.clock.t += 3 * DAY;
+        // Past it the state is gone, the act stays (the run's own retention is not up yet).
+        ctx.clock.t += 2 * 60_000;
         ctx.core.dungeon.prune();
         expect(stateOf()).toBeNull();
         expect(
@@ -2129,6 +2129,28 @@ describe('closing a late run and pruning', () => {
           streak: number;
         };
         expect(summary).toMatchObject({ newDepth: 5, streak: 7 });
+      },
+      opts(),
+    );
+  });
+
+  it('keeps the steps of a run left open past retention: closing it reads its fights', async () => {
+    await runCore(
+      nextGuild(),
+      async (ctx) => {
+        const p = await dungeonPlayer(ctx, 1, STRONG);
+        ctx.clock.t = AFTER_RESET;
+        const state = await begin(p);
+        expect(
+          (await p.act(state, { type: 'move', node: state.reachable[0] as string })).status,
+        ).toBe(200);
+        const steps = () =>
+          rows(ctx.sql, 'SELECT step FROM dungeon_steps WHERE run_id = ?', state.id);
+        const before = steps();
+        expect(before.length).toBeGreaterThan(0);
+        ctx.clock.t += RUN_RETENTION_MS + DAY;
+        ctx.core.dungeon.prune();
+        expect(steps()).toEqual(before);
       },
       opts(),
     );

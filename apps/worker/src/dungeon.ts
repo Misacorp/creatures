@@ -134,8 +134,14 @@ export type {
   ReplayRowEntry,
 } from './dungeon-types';
 
-/** Runs (their events and inputs) are kept this long; the summary and rewards stay. */
-export const RUN_RETENTION_MS = 90 * 86_400_000;
+/**
+ * The fights of a run that ended (its inputs, events, steps and state, so its replay) are kept this long;
+ * the summary and rewards stay for good. A player can only watch the runs of the current day, so a few
+ * days covers that and a late retry (Misa, 2026-10-23: was 90 days).
+ */
+export const RUN_RETENTION_MS = 3 * 86_400_000;
+/** The day seeds and the saved team drafts are kept this long. */
+export const DAY_RETENTION_MS = 90 * 86_400_000;
 /**
  * A step's stored answer (the whole run view it left) only serves a retry of the same request, which
  * comes within minutes. After this long the state in it is emptied (the act and `ended` stay, so a late
@@ -995,8 +1001,9 @@ export class Dungeon {
   }
 
   /**
-   * Empties the inputs and events of old runs and drops their steps (the summary and rewards stay), and
-   * drops old day seeds. Runs once a game day (`GuildCore.maintain`).
+   * Empties the inputs and events of runs past `RUN_RETENTION_MS` and drops the steps of those that
+   * ended (the summary and rewards stay), and drops day seeds and drafts past `DAY_RETENTION_MS`. Runs
+   * once a game day (`GuildCore.maintain`).
    */
   prune(): void {
     const cutoff = this.deps.now() - RUN_RETENTION_MS;
@@ -1006,7 +1013,11 @@ export class Dungeon {
     );
     // Past retention a step goes altogether (its run's summary and rewards stay): emptying it in place
     // left every old row to be read again by each prune. A late retry of such a step is a `stale_step`.
-    this.sql.exec('DELETE FROM dungeon_steps WHERE created_at < ?', cutoff);
+    // Only a run that ended loses its steps: closing a run left open reads its fights.
+    this.sql.exec(
+      "DELETE FROM dungeon_steps WHERE created_at < ? AND run_id IN (SELECT id FROM dungeon_runs WHERE status = 'done')",
+      cutoff,
+    );
     // After a short window the big run view inside a step's stored answer goes (its act stays).
     this.sql.exec(
       "UPDATE dungeon_steps SET act_json = json_remove(act_json, '$.state') WHERE created_at < ? AND json_type(act_json, '$.state') IS NOT NULL",
@@ -1018,8 +1029,9 @@ export class Dungeon {
       "UPDATE dungeon_runs SET state_json = NULL WHERE created_at < ? AND status = 'done' AND state_json IS NOT NULL",
       cutoff,
     );
-    this.sql.exec('DELETE FROM dungeon_days WHERE created_at < ?', cutoff);
-    this.sql.exec('DELETE FROM dungeon_drafts WHERE updated_at < ?', cutoff);
+    const dayCutoff = this.deps.now() - DAY_RETENTION_MS;
+    this.sql.exec('DELETE FROM dungeon_days WHERE created_at < ?', dayCutoff);
+    this.sql.exec('DELETE FROM dungeon_drafts WHERE updated_at < ?', dayCutoff);
   }
 }
 
