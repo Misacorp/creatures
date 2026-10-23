@@ -2134,7 +2134,7 @@ describe('closing a late run and pruning', () => {
     );
   });
 
-  it('empties the stored answers of steps and the state of runs that ended once past retention, and keeps what is shown', async () => {
+  it('drops the steps and empties the state of runs that ended once past retention, and keeps what is shown', async () => {
     await runCore(
       nextGuild(),
       async (ctx) => {
@@ -2154,13 +2154,9 @@ describe('closing a late run and pruning', () => {
         ctx.core.dungeon.prune();
         expect(runRow(ctx, run.id)?.state_json).toBeNull();
         expect(runRow(ctx, open.id)?.state_json).not.toBeNull();
-        expect(
-          rows(
-            ctx.sql,
-            "SELECT step FROM dungeon_steps WHERE run_id = ? AND act_json != '{}'",
-            run.id,
-          ),
-        ).toEqual([]);
+        expect(rows(ctx.sql, 'SELECT step FROM dungeon_steps WHERE run_id = ?', run.id)).toEqual(
+          [],
+        );
         expect(
           rows(
             ctx.sql,

@@ -995,8 +995,8 @@ export class Dungeon {
   }
 
   /**
-   * Empties the inputs and events of old runs and their steps (the summary and rewards stay) and drops
-   * old day seeds.
+   * Empties the inputs and events of old runs and drops their steps (the summary and rewards stay), and
+   * drops old day seeds. Runs once a game day (`GuildCore.maintain`).
    */
   prune(): void {
     const cutoff = this.deps.now() - RUN_RETENTION_MS;
@@ -1004,21 +1004,16 @@ export class Dungeon {
       'UPDATE dungeon_runs SET input_json = NULL, result_json = NULL WHERE created_at < ? AND input_json IS NOT NULL',
       cutoff,
     );
-    this.sql.exec(
-      'UPDATE dungeon_steps SET input_json = NULL, result_json = NULL WHERE created_at < ? AND (input_json IS NOT NULL OR result_json IS NOT NULL)',
-      cutoff,
-    );
+    // Past retention a step goes altogether (its run's summary and rewards stay): emptying it in place
+    // left every old row to be read again by each prune. A late retry of such a step is a `stale_step`.
+    this.sql.exec('DELETE FROM dungeon_steps WHERE created_at < ?', cutoff);
     // After a short window the big run view inside a step's stored answer goes (its act stays).
     this.sql.exec(
       "UPDATE dungeon_steps SET act_json = json_remove(act_json, '$.state') WHERE created_at < ? AND json_type(act_json, '$.state') IS NOT NULL",
       this.deps.now() - ACT_ANSWER_RETENTION_MS,
     );
-    // Past retention the stored answer of a step and the state of a run that ended go too: the summary
-    // and rewards say all that is shown of it. A retry of such a step is `stale_step`.
-    this.sql.exec(
-      "UPDATE dungeon_steps SET act_json = '{}' WHERE created_at < ? AND act_json != '{}'",
-      cutoff,
-    );
+    // Past retention the state of a run that ended goes too: the summary and rewards say all that is
+    // shown of it.
     this.sql.exec(
       "UPDATE dungeon_runs SET state_json = NULL WHERE created_at < ? AND status = 'done' AND state_json IS NOT NULL",
       cutoff,
