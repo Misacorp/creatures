@@ -241,3 +241,44 @@ export function seatRows(
   }
   return out;
 }
+
+/**
+ * Paces the eliminations so a crowd never leaves all at once: at most a quarter of the field (at least
+ * one) within any 2 s, and in a field of 12 or fewer (or once four or fewer are left) at least 1.5 s
+ * between two exits, so the commentary can name everyone who leaves. A creature
+ * the gate holds back stays in at the very edge (a full meter less a sliver, a step ahead of the melon,
+ * the last of its stamina, the rim of the floe) and goes as soon as the gate allows.
+ */
+export class ExitGate {
+  private readonly outs: number[] = [];
+  private readonly window: number;
+  private readonly spacing: number;
+  private readonly cap: number;
+  private readonly small: boolean;
+
+  constructor(entrants: number, tickMs: number) {
+    this.small = entrants <= 12;
+    this.window = Math.ceil(2_000 / tickMs);
+    this.spacing = Math.ceil(1_500 / tickMs);
+    this.cap = Math.max(1, Math.floor(entrants / 4));
+  }
+
+  /** Whether one more may leave at `t`, with `left` creatures still in (it among them). */
+  allow(t: number, left: number): boolean {
+    const recent = this.outs.filter((x) => t - x < this.window).length;
+    if (recent >= this.cap) return false;
+    const last = this.outs[this.outs.length - 1];
+    if ((left <= 4 || this.small) && last !== undefined && t - last < this.spacing) return false;
+    return true;
+  }
+
+  /** Records an exit at `t`. */
+  record(t: number): void {
+    this.outs.push(t);
+  }
+}
+
+/** The last tick an event may run: `maxTicks`, or about 25 s with one or two entrants (a short show). */
+export function tickLimit(def: GamesEventDef, entrants: number): number {
+  return entrants <= 2 ? Math.min(def.maxTicks, Math.ceil(25_000 / def.tickMs)) : def.maxTicks;
+}

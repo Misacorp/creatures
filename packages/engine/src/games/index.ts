@@ -40,6 +40,7 @@ function crown(
 ): void {
   const at = Math.max(out.end + 1, show.lastTick);
   const first = standings.filter((s) => s.place === 1);
+  show.moment(at);
   for (const s of first) {
     for (const a of s.actors) {
       show.state(at, a, 'cheer');
@@ -90,6 +91,7 @@ export function runGamesEvent(
   }
   const standings = standingsOf(def, entrants, teamOf, out.keys, out.scores);
   crown(def, show, standings, out);
+  show.finish();
   const actors = entrants.map((e: GamesEntrant, a) => {
     const s = out.starts[a] as { x: number; y: number };
     const actor: GamesEventResult['actors'][number] = {
@@ -117,6 +119,7 @@ export function runGamesEvent(
     beats: show.sorted(),
     standings,
     moments: show.moments,
+    momentTicks: [...show.momentTicks].sort((p, q) => p - q),
     scores: out.scores,
     outAt: out.outAt,
   };

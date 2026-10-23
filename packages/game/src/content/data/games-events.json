@@ -9,8 +9,8 @@
       "tickMs": 400,
       "maxTicks": 150,
       "params": {
-        "statBp": 13000,
-        "jitterBp": 2000,
+        "statBp": 18000,
+        "jitterBp": 800,
         "dodgeShareBp": 5000,
         "heatStartBp": 2000,
         "heatRiseBp": 150,
@@ -36,17 +36,17 @@
       },
       "elementBp": {
         "tide": 10000,
-        "ember": 12500,
+        "ember": 11500,
         "grove": 10000,
         "spark": 10000,
         "mire": 10500
       },
-      "roleBp": {
-        "guard": 11000
-      },
       "line": "The benches are warm and the stove is hungry. Last one in wins.",
       "favours": ["hp", "ember", "guard", "small"],
-      "smallBp": 13000
+      "smallBp": 21000,
+      "roleBp": {
+        "guard": 11000
+      }
     },
     {
       "id": "frost-bath",
@@ -104,9 +104,10 @@
         "endure.shelter": "{a} keeps the cold wind off the others.",
         "endure.fan": "{a} rubs {b}'s paws warm.",
         "endure.win": "{a} is the last one in the ice!",
-        "endure.draw": "Time! They share the ice and the win."
+        "endure.draw": "Time! They share the ice and the win.",
+        "endure.out2": "{a} and {b} climb out together, shivering."
       },
-      "smallBp": 13000
+      "smallBp": 13500
     },
     {
       "id": "sauna-stack",
@@ -141,7 +142,8 @@
         "wildfireElement": "grove",
         "wildfireBp": 350,
         "stubbornBackBp": 7000,
-        "secondWindBp": 1500
+        "secondWindBp": 1500,
+        "heightBp": 1500
       },
       "elementBp": {
         "tide": 9500,
@@ -172,13 +174,15 @@
         "runCpx": 150,
         "melonStartPx": -24,
         "melonCpx": 100,
-        "melonAccelCpx": 4,
+        "melonAccelCpx": 5,
         "hopChanceBp": 700,
         "hopBaseBp": 3500,
         "stumbleMinTicks": 1,
         "stumbleMaxTicks": 2,
         "aheadPx": 10,
-        "burstBp": 15000
+        "burstBp": 15000,
+        "finishPx": 200,
+        "finishBonusM": 10
       },
       "elementBp": {
         "tide": 10000,
@@ -203,17 +207,17 @@
       "tickMs": 400,
       "maxTicks": 150,
       "params": {
-        "statBp": 3000,
-        "jitterBp": 3000,
+        "statBp": 4000,
+        "jitterBp": 4000,
         "dodgeShareBp": 5000,
         "roundTicks": 4,
-        "mildBp": 300,
+        "mildBp": 350,
         "hotBp": 600,
         "ghostBp": 1200,
         "mildWeight": 60,
         "hotWeight": 30,
         "ghostWeight": 10,
-        "rampBp": 200,
+        "rampBp": 120,
         "ghostRoundBp": 600,
         "coolElement": "tide",
         "coolBp": 150,
@@ -235,7 +239,8 @@
       "favours": ["hp", "ember", "payoff", "crit"],
       "roleBp": {
         "payoff": 12000
-      }
+      },
+      "smallBp": 11500
     },
     {
       "id": "berry-bonanza",
@@ -246,12 +251,12 @@
       "tickMs": 400,
       "maxTicks": 150,
       "params": {
-        "statBp": 11000,
+        "statBp": 20000,
         "jitterBp": 3000,
         "dodgeShareBp": 5000,
         "roundTicks": 4,
-        "mildBp": 400,
-        "hotBp": 700,
+        "mildBp": 450,
+        "hotBp": 750,
         "ghostBp": 1100,
         "mildWeight": 50,
         "hotWeight": 40,
@@ -263,14 +268,14 @@
         "scorchBp": 1200,
         "critShareBp": 10000,
         "echoShareBp": 10000,
-        "burpChanceBp": 300,
+        "burpChanceBp": 600,
         "stubbornBackBp": 7000,
         "secondWindBp": 1500
       },
       "elementBp": {
         "tide": 10000,
         "ember": 9000,
-        "grove": 13000,
+        "grove": 12000,
         "spark": 9500,
         "mire": 10500
       },
@@ -287,12 +292,13 @@
         "feast.lead": "{a} is on {n} berries!",
         "feast.win": "{a} eats the most berries!",
         "feast.draw": "Not a berry between them! They share the win.",
-        "feast.encore": "{a} is the last one munching, and keeps going!"
+        "feast.encore": "{a} is the last one munching, and keeps going!",
+        "feast.burst2": "{a} and {b} both pucker up and stop!"
       },
       "roleBp": {
-        "support": 12000
+        "support": 11000
       },
-      "smallBp": 13000
+      "smallBp": 14000
     },
     {
       "id": "shark-derby",
@@ -303,7 +309,7 @@
       "tickMs": 400,
       "maxTicks": 160,
       "params": {
-        "statBp": 6500,
+        "statBp": 9500,
         "jitterBp": 2500,
         "dodgeShareBp": 30000,
         "laps": 2,
@@ -324,8 +330,8 @@
         "secondWindBp": 1500
       },
       "elementBp": {
-        "tide": 13000,
-        "ember": 8000,
+        "tide": 11000,
+        "ember": 8500,
         "grove": 9500,
         "spark": 10000,
         "mire": 10500
@@ -335,7 +341,7 @@
       "roleBp": {
         "setter": 11500
       },
-      "smallBp": 13000
+      "smallBp": 15500
     },
     {
       "id": "shark-relay",
@@ -362,9 +368,10 @@
         "zapChanceBp": 300,
         "zapRangePx": 12,
         "stunTicks": 2,
-        "finishers": 6,
+        "finishers": 3,
         "burstBp": 15000,
-        "secondWindBp": 1500
+        "secondWindBp": 1500,
+        "legLaps": 1
       },
       "elementBp": {
         "tide": 13000,
@@ -402,7 +409,8 @@
         "slidePx": 3,
         "maxSlidePx": 8,
         "driftCpx": 40,
-        "spacePx": 8
+        "spacePx": 8,
+        "squeezeBp": 600
       },
       "elementBp": {
         "tide": 10000,
@@ -411,7 +419,7 @@
         "spark": 9500,
         "mire": 12000
       },
-      "smallBp": 15000,
+      "smallBp": 14000,
       "line": "Everyone onto a melting ice floe. Shove, slip and stay dry.",
       "favours": ["hp", "small", "mire", "guard", "atk"],
       "roleBp": {
@@ -422,7 +430,7 @@
   "say": {
     "endure.start": "The doors close. Who can take the heat?",
     "endure.steam": "Steam! {a} splashes the stones and everyone sweats.",
-    "endure.splash": "{a} ladles a little water on the stones.",
+    "endure.splash": "Tsss! {a} splashes the stones.",
     "endure.stoke": "{a} gives the stove a happy poke.",
     "endure.overload": "Overload! {b} crackles right next to the splash.",
     "endure.wildfire": "Wildfire! The heat jumps over to {b}.",
@@ -483,6 +491,14 @@
     "shove.duel": "Just {a} and {b} left on the ice!",
     "shove.win": "{a} is the last one on!",
     "shove.draw": "Time! They share the ice and the win.",
-    "feast.encore": "{a} is the last one eating, and keeps going!"
+    "feast.encore": "{a} is the last one eating, and keeps going!",
+    "endure.out2": "{a} and {b} head for the door together.",
+    "chase.squash2": "Squish, squish! The melon gets {a} and {b}.",
+    "feast.burst2": "{a} and {b} both burst into flames!",
+    "swim.out2": "{a} and {b} are tossed onto the shore.",
+    "shove.splash2": "Splash, splash! {a} and {b} are in the water.",
+    "chase.finish": "{a} crosses the line. Safe!",
+    "chase.smash": "The melon smashes into the finish arch. Juice everywhere!",
+    "swim.tag": "Tag! {b} dives in for {a}."
   }
 }

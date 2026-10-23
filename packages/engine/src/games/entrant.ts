@@ -31,7 +31,7 @@ export interface GamesCreatureInput {
   /** Absent: the player's own team (`playerId`). */
   teamId?: string;
   name: string;
-  species: Pick<CreatureSpecies, 'id' | 'element' | 'role' | 'stage'>;
+  species: Pick<CreatureSpecies, 'id' | 'element' | 'role' | 'stage' | 'evolvesTo'>;
   level: number;
   /** The fight's stats (fusion and gear included). */
   stats: Stats;
@@ -43,7 +43,7 @@ export interface GamesCreatureInput {
 }
 
 /**
- * The entrant of a folded creature: dodge from Speed plus the sheet's flat dodge (`dodgeChanceBp`),
+ * The entrant of a folded creature: size from its stage (a single-stage line counts as grown), dodge from Speed plus the sheet's flat dodge (`dodgeChanceBp`),
  * crit chance and damage from `luck` (default the shipped `RULES.combat.luck`) and the creature's bonus,
  * and the gear lines the Games read. The worker and the simulator both build entrants with this.
  */
@@ -60,7 +60,9 @@ export function gamesEntrantFrom(
     speciesId: c.species.id,
     element: c.species.element,
     role: c.species.role,
-    stage: c.species.stage === 1 ? 1 : 2,
+    // Size: only a young creature that still has growing to do is small. A line with one stage is
+    // full grown at stage 1, so it counts as big (it would otherwise be small at any level).
+    stage: c.species.stage === 1 && c.species.evolvesTo !== undefined ? 1 : 2,
     level: c.level,
     hp: c.stats.hp,
     atk: c.stats.atk,

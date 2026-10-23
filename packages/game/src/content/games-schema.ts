@@ -79,6 +79,7 @@ export const GAMES_SAY_KEYS = {
     'endure.shelter',
     'endure.stubborn',
     'endure.out',
+    'endure.out2',
     'endure.half',
     'endure.duel',
     'endure.win',
@@ -91,18 +92,22 @@ export const GAMES_SAY_KEYS = {
     'chase.duck',
     'chase.stubborn',
     'chase.squash',
+    'chase.squash2',
     'chase.burst',
     'chase.faster',
     'chase.lead',
     'chase.last',
     'chase.win',
     'chase.draw',
+    'chase.finish',
+    'chase.smash',
   ],
   feast: [
     'feast.start',
     'feast.gulp',
     'feast.ghost',
     'feast.burst',
+    'feast.burst2',
     'feast.scorch',
     'feast.cool',
     'feast.echo',
@@ -121,6 +126,7 @@ export const GAMES_SAY_KEYS = {
     'swim.slip',
     'swim.zap',
     'swim.out',
+    'swim.out2',
     'swim.lap',
     'swim.burst',
     'swim.stubborn',
@@ -128,6 +134,7 @@ export const GAMES_SAY_KEYS = {
     'swim.lead',
     'swim.win',
     'swim.draw',
+    'swim.tag',
   ],
   shove: [
     'shove.start',
@@ -135,6 +142,7 @@ export const GAMES_SAY_KEYS = {
     'shove.bounce',
     'shove.dodge',
     'shove.splash',
+    'shove.splash2',
     'shove.teeter',
     'shove.melt',
     'shove.shrink',
@@ -208,6 +216,11 @@ export const EndureParamsSchema = v.strictObject({
   /** Where a Stubborn save leaves the meter, and how much a Second Wind takes off. */
   stubbornBackBp: Bp,
   secondWindBp: Bp,
+  /**
+   * Team events: each team sits stacked in one seat (Guards at the bottom shelter those above), and
+   * every level up the stack takes this much more heat. Absent: 0.
+   */
+  heightBp: v.optional(Bp),
 });
 
 /**
@@ -232,6 +245,10 @@ export const ChaseParamsSchema = v.strictObject({
   aheadPx: Int(1, 100),
   /** Momentum or Riposte after a hop: that runner's next tick goes this much faster. */
   burstBp: Int(0, 40_000),
+  /** The finish line (world x, px): a runner across it is safe; the melon smashes into the arch there. */
+  finishPx: Int(100, 2_000),
+  /** Metres added to the first finisher's score; one less for each finisher after, at least 1. */
+  finishBonusM: Int(1, 100),
 });
 
 /**
@@ -291,6 +308,8 @@ export const SwimParamsSchema = v.strictObject({
   stunTicks: Int(1, 10),
   /** The race ends when this many have finished (or nobody is left swimming). */
   finishers: Int(1, 24),
+  /** Team events: a relay; each member swims one leg of this many laps in turn. Absent: 1. */
+  legLaps: v.optional(Int(1, 5)),
   burstBp: Int(0, 40_000),
   secondWindBp: Bp,
 });
@@ -315,6 +334,8 @@ export const ShoveParamsSchema = v.strictObject({
   maxSlidePx: Int(1, 90),
   /** Creatures waddle back towards the middle this much per tick (hundredths of a px). */
   driftCpx: Int(0, 500),
+  /** Once the floe is at its smallest it stops shrinking, and every tick there makes the shoves this much stronger. */
+  squeezeBp: Int(0, 5_000),
   /** Creatures closer than this (px) jostle apart, so a crowd fills the floe and the edge ones slip off. */
   spacePx: Int(0, 30),
 });

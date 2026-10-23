@@ -43,14 +43,14 @@ Nine events, all live. Each is one of five shapes (`kind` in the data): a room t
 ### Sauna Stack
 
 - **Kind:** endure, for teams of three. **Teaser:** "Bring three friends to the bench. Your team lasts as long as its last sitter." `(content)`
-- **What happens:** teammates sit together. A team stays in the running while any one of them is still on the bench, so a Guard in the middle shelters both friends. `(content)`
+- **What happens:** each team sits as a stack in one seat, one on top of the other. It is hotter higher up, a Guard at the bottom shelters everyone above it, and when one climbs down to leave the ones above drop a place. A team stays in the running while any one of them is still in the hut. `(content)`
 - **Compendium detail, not shipped:** the committee's favourite. Explorers plan their team for it at breakfast.
 
 ### Melon Run
 
 - **Kind:** chase. **Teaser:** "A giant watermelon is rolling down the hill. Run!" `(content)`
-- **What happens:** a watermelon taller than any creature rolls down the hill behind the runners, faster and faster. Runners hop logs and puddles or trip over them. A small creature can duck under the curve of the rind once and pop out in front. A caught runner is squashed flat (it is fine, just sticky). Furthest run wins. `(content)`
-- **Compendium detail, not shipped:** the melon grows in the committee's patch behind the meadow. It is the same melon every day, and nobody knows how it survives. Spark creatures love this one.
+- **What happens:** a watermelon taller than any creature rolls down the hill behind the runners, faster and faster. Runners hop logs and puddles or trip over them. A small creature can duck under the curve of the rind once and pop out in front. A caught runner is squashed flat (it is fine, just sticky). Runners who make it under the finish arch are safe, in the order they arrive; then the melon hits the arch and bursts into juice. `(content)`
+- **Compendium detail, not shipped:** the melon grows in the committee's patch behind the meadow. It bursts on the arch every day and is somehow whole again by the next morning; nobody asks. The arch is rebuilt each evening from bent willow. Spark creatures love this one.
 
 ### Pepper Panic
 
@@ -73,8 +73,8 @@ Nine events, all live. Each is one of five shapes (`kind` in the data): a room t
 ### Shark Relay
 
 - **Kind:** swim, for teams of three. **Teaser:** "Three swimmers a team, every length counts. Keep away from the rubber sharks." `(content)`
-- **What happens:** the Shark Derby with teams: every length any teammate swims counts for the team. `(content)`
-- **Compendium detail, not shipped:** the relay ends with the whole team jumping in together, which the committee have stopped trying to prevent.
+- **What happens:** a real relay: one teammate swims a lap while the others wait on the shore, then tags the next one in. Every length counts for the team. A swimmer the sharks toss onto the shore ends its team's relay. `(content)`
+- **Compendium detail, not shipped:** the tag is a wet high five. The committee have given up asking teams not to cheer from the shore.
 
 ### Floe Sumo
 

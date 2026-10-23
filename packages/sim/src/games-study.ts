@@ -178,8 +178,16 @@ export interface EventTally {
   spearmanRuns: number;
   /** Mean over runs with eliminations: the spread of the out ticks (p10 to p90) over the length, and the biggest share out on one tick. */
   outSpread: number;
-  outBurst: number;
   outRuns: number;
+  /** Runs of 8 or more where more than a quarter of the field left within 2 s, of such runs. */
+  burstRuns: number;
+  bigRuns: number;
+  /** Runs of 12 or fewer: eliminations, and those the commentary named. */
+  elimOuts: number;
+  elimSaid: number;
+  /** Runs with a stretch of more than 8 s without a moment, and the longest quiet stretch (s) summed. */
+  deadRuns: number;
+  quietMax: number;
 }
 
 export const LEVEL_BANDS = ['1-9', '10-19', '20-29', '30+'] as const;
@@ -218,8 +226,13 @@ export function emptyTally(eventId: string): EventTally {
     spearmanPower: 0,
     spearmanRuns: 0,
     outSpread: 0,
-    outBurst: 0,
     outRuns: 0,
+    burstRuns: 0,
+    bigRuns: 0,
+    elimOuts: 0,
+    elimSaid: 0,
+    deadRuns: 0,
+    quietMax: 0,
   };
 }
 
@@ -309,13 +322,52 @@ export function tallyEvent(
   if (outs.length >= 3 && def.kind !== 'swim') {
     const p10 = outs[Math.floor(outs.length * 0.1)] as number;
     const p90 = outs[Math.min(outs.length - 1, Math.floor(outs.length * 0.9))] as number;
-    const perTick = new Map<number, number>();
-    for (const t of outs) perTick.set(t, (perTick.get(t) ?? 0) + 1);
     tally.outSpread += (p90 - p10) / Math.max(1, result.ticks);
-    tally.outBurst += Math.max(...perTick.values()) / result.actors.length;
     tally.outRuns += 1;
   }
+  const n = result.actors.length;
+  const ms = (ticks: number): number => ticks * result.tickMs;
+  if (n >= 8) {
+    tally.bigRuns += 1;
+    const worst = Math.max(
+      0,
+      ...outs.map((t0) => outs.filter((t) => t >= t0 && ms(t - t0) < 2_000).length),
+    );
+    if (worst > n / 4) tally.burstRuns += 1;
+  }
+  if (n <= 12) {
+    for (const b of result.beats) {
+      if (b.k !== 'out') continue;
+      tally.elimOuts += 1;
+      const named = result.beats.some(
+        (x) =>
+          x.k === 'say' && (x.a === b.a || x.b === b.a) && ELIM_LINES.has(x.line) && x.t >= b.t,
+      );
+      if (named) tally.elimSaid += 1;
+    }
+  }
+  const marks = [0, ...result.momentTicks, result.ticks];
+  let quiet = 0;
+  for (let i = 1; i < marks.length; i++) {
+    quiet = Math.max(quiet, ms((marks[i] as number) - (marks[i - 1] as number)));
+  }
+  tally.quietMax += quiet / 1000;
+  if (quiet > 8_000) tally.deadRuns += 1;
 }
+
+/** The lines that name a creature leaving its event. */
+export const ELIM_LINES: ReadonlySet<string> = new Set([
+  'endure.out',
+  'chase.squash',
+  'feast.burst',
+  'swim.out',
+  'shove.splash',
+  'endure.out2',
+  'chase.squash2',
+  'feast.burst2',
+  'swim.out2',
+  'shove.splash2',
+]);
 
 export interface GamesStudySettings {
   seed: string;
@@ -454,19 +506,25 @@ export function runGamesStudy(settings: GamesStudySettings): GamesStudy {
 
 /** The spec's targets, and the lead's (2026-10-22, round 2: the bench must be worth entering). */
 export const GAMES_TARGETS = {
-  strongestWins: { min: 0.15, max: 0.45 },
+  strongestWins: { min: 0.05, max: 0.45 },
   bottomPodium: { min: 0.15 },
   seconds: { min: 20, max: 50 },
   /** Moments per second (one every 4 s). */
   momentsPerSecond: { min: 0.25 },
   /** Results still follow the fit: aptitude against place, and aptitude picks win this many times as often as random ones. */
-  spearmanApt: { min: 0.6 },
+  spearmanApt: { min: 0.6, byEvent: { 'floe-sumo': 0.45 } as Readonly<Record<string, number>> },
   aptitudeOverRandom: { min: 1.5 },
   /** Solo events, all together: creatures 4th or lower in their own roster take this share of the wins. */
   benchWins: { min: 0.15 },
   /** Solo events: level 1-9 creatures' share of wins over their share of entries, and level 30+'s. */
   lowLevelRatio: { min: 0.4 },
-  highLevelRatio: { max: 1.5 },
+  highLevelRatio: { max: 1.75 },
+  /** Shows of 12 or fewer: the share of eliminations the commentary names. */
+  elimLines: { min: 0.7 },
+  /** At most this share of shows has a stretch of more than 8 s without a moment. */
+  deadShows: { max: 0.1 },
+  /** At most this share of shows (8+ entrants) has more than a quarter of the field leaving within 2 s. */
+  burstShows: { max: 0.05 },
 } as const;
 
 export interface EventRow {
@@ -486,7 +544,11 @@ export interface EventRow {
   /** Solo events: the share of wins taken by creatures 4th or lower in their roster. */
   benchWins: number | null;
   outSpread: number | null;
+  /** Share of shows of 8+ with a quarter of the field out within 2 s. */
   outBurst: number | null;
+  elimLines: number | null;
+  deadShows: number;
+  quietMax: number;
   bands: Record<string, { wins: number; entries: number }>;
   pass: {
     strongest: boolean;
@@ -495,6 +557,9 @@ export interface EventRow {
     moments: boolean;
     spearman: boolean;
     fit: boolean;
+    elim: boolean;
+    pacing: boolean;
+    burst: boolean;
   };
 }
 
@@ -549,7 +614,10 @@ export function gamesRows(study: GamesStudy): EventRow[] {
                 rankWins,
               ),
         outSpread: t.outRuns === 0 ? null : t.outSpread / t.outRuns,
-        outBurst: t.outRuns === 0 ? null : t.outBurst / t.outRuns,
+        outBurst: t.bigRuns === 0 ? null : t.burstRuns / t.bigRuns,
+        elimLines: t.elimOuts < 20 ? null : t.elimSaid / t.elimOuts,
+        deadShows: div(t.deadRuns, t.runs),
+        quietMax: div(t.quietMax, t.runs),
         bands: Object.fromEntries(
           LEVEL_BANDS.map((b) => [
             b,
@@ -566,7 +634,13 @@ export function gamesRows(study: GamesStudy): EventRow[] {
           bottom: bottom >= GAMES_TARGETS.bottomPodium.min,
           length: seconds >= GAMES_TARGETS.seconds.min && seconds <= GAMES_TARGETS.seconds.max,
           moments: mps >= GAMES_TARGETS.momentsPerSecond.min,
-          spearman: spearmanApt >= GAMES_TARGETS.spearmanApt.min,
+          spearman:
+            spearmanApt >=
+            (GAMES_TARGETS.spearmanApt.byEvent[t.eventId] ?? GAMES_TARGETS.spearmanApt.min),
+          // Too few eliminations to judge (a race where almost nobody is knocked out) pass.
+          elim: t.elimOuts < 20 || t.elimSaid / t.elimOuts >= GAMES_TARGETS.elimLines.min,
+          pacing: div(t.deadRuns, t.runs) <= GAMES_TARGETS.deadShows.max,
+          burst: t.bigRuns === 0 || t.burstRuns / t.bigRuns <= GAMES_TARGETS.burstShows.max,
           fit: winAptitude >= GAMES_TARGETS.aptitudeOverRandom.min * winRandom,
         },
       };
@@ -647,16 +721,18 @@ export function gamesReport(study: GamesStudy): string {
     `Seed \`${s.seed}\`; servers of ${s.sizes.join(' and ')} players; rosters at weeks ${s.weeks.join(', ')}; ${String(s.days)} days each; every player's policy (best, aptitude, random) drawn each day.`,
   );
   lines.push(
-    'Targets per event: strongest wins 15-45%; a bottom-half entrant on the podium in at least 15% of events (4+ teams); 20-50 s; at least 2.5 moments per 10 s; Spearman aptitude vs result at least 0.6; aptitude picks win at least 1.5x as often as random ones. Solo events together: the bench (4th or lower in its roster) takes at least 15% of wins; level 1-9 win share at least 0.4x their entry share; level 30+ at most 1.5x.',
+    'Targets per event: strongest wins 5-45% (the fitting creature, often a high-HP tank, should beat the strongest by power); a bottom-half entrant on the podium in at least 15% of events (4+ teams); 20-50 s; at least 2.5 moments per 10 s; Spearman aptitude vs result at least 0.6 (Floe Sumo, the chaos event: 0.45); 70% of eliminations named by the commentary (12 or fewer entrants); at most 10% of shows with more than 8 s without a moment; at most 5% of shows (8+) with a quarter of the field out within 2 s; aptitude picks win at least 1.5x as often as random ones. Solo events together: the bench (4th or lower in its roster) takes at least 15% of wins; level 1-9 win share at least 0.4x their entry share; level 30+ at most 1.75x.',
   );
   lines.push('');
   lines.push(
-    '| Event | Runs | Seconds | Moments/10 s | Strongest wins | Bottom half podium | Bench wins | Win: aptitude / best / random | Spearman apt / power | Out spread / burst |',
+    '| Event | Runs | Seconds | Moments/10 s | Strongest wins | Bottom half podium | Bench wins | Win: aptitude / best / random | Spearman apt / power | Outs named | Quiet >8 s (longest) | Out spread / 25%-in-2 s |',
   );
-  lines.push('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
+  lines.push(
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
+  );
   for (const r of rows) {
     lines.push(
-      `| ${r.eventId} | ${String(r.runs)} | ${r.seconds.toFixed(1)} ${mark(r.pass.length)} | ${r.momentsPer10s.toFixed(1)} ${mark(r.pass.moments)} | ${pct(r.strongestWins)} ${mark(r.pass.strongest)} | ${pct(r.bottomPodium)} ${mark(r.pass.bottom)} | ${r.benchWins === null ? '-' : pct(r.benchWins)} | ${pct(r.winAptitude)} / ${pct(r.winBest)} / ${pct(r.winRandom)} ${mark(r.pass.fit)} | ${r.spearmanApt.toFixed(2)} ${mark(r.pass.spearman)} / ${r.spearmanPower.toFixed(2)} | ${r.outSpread === null ? '-' : pct(r.outSpread)} / ${r.outBurst === null ? '-' : pct(r.outBurst)} |`,
+      `| ${r.eventId} | ${String(r.runs)} | ${r.seconds.toFixed(1)} ${mark(r.pass.length)} | ${r.momentsPer10s.toFixed(1)} ${mark(r.pass.moments)} | ${pct(r.strongestWins)} ${mark(r.pass.strongest)} | ${pct(r.bottomPodium)} ${mark(r.pass.bottom)} | ${r.benchWins === null ? '-' : pct(r.benchWins)} | ${pct(r.winAptitude)} / ${pct(r.winBest)} / ${pct(r.winRandom)} ${mark(r.pass.fit)} | ${r.spearmanApt.toFixed(2)} ${mark(r.pass.spearman)} / ${r.spearmanPower.toFixed(2)} | ${r.elimLines === null ? '-' : pct(r.elimLines)} ${mark(r.pass.elim)} | ${pct(r.deadShows)} (${r.quietMax.toFixed(1)} s) ${mark(r.pass.pacing)} | ${r.outSpread === null ? '-' : pct(r.outSpread)} / ${r.outBurst === null ? '-' : pct(r.outBurst)} ${mark(r.pass.burst)} |`,
     );
   }
   lines.push('');

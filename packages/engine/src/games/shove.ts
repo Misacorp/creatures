@@ -7,7 +7,16 @@
  */
 import { int, type GamesEventOf } from '@creatures/game';
 import { BP, TURN, cosU, isqrt, jitter, mulBp, roll, shuffle, sinU } from './math';
-import { decided, gear, keyFactor, teamsAlive, type KindInput, type KindOutcome } from './common';
+import {
+  decided,
+  gear,
+  keyFactor,
+  teamsAlive,
+  ExitGate,
+  tickLimit,
+  type KindInput,
+  type KindOutcome,
+} from './common';
 
 type Def = GamesEventOf<'shove'>;
 
@@ -15,12 +24,18 @@ const CX = 96;
 const CY = 62;
 /** The floe's y-radius is this share of its x-radius. */
 const FLAT_BP = 5_200;
+/** The widest floe the scene can draw (px). */
+const MAX_RX = 84;
 
 export function runShove(input: KindInput<Def>): KindOutcome {
   const { def, entrants, rng, show, teamOf, teams } = input;
   const p = def.params;
   const n = entrants.length;
-  let rx = p.floeStartPx * 100;
+  // A big field gets a bigger floe (by the square root of the crowd past 16), up to the art's 84 px.
+  let rx =
+    n <= 16
+      ? p.floeStartPx * 100
+      : Math.min(MAX_RX * 100, Math.floor((p.floeStartPx * 100 * isqrt((n * BP * BP) / 16)) / BP));
   const ry = (): number => mulBp(rx, FLAT_BP);
   // A fair start: everyone the same way from the middle, on a ring at 60% of the floe, in a random order
   // (one creature alone stands in the middle).
@@ -78,17 +93,22 @@ export function runShove(input: KindInput<Def>): KindOutcome {
   };
 
   let end = 0;
+  const gate = new ExitGate(n, def.tickMs);
   let duelSaid = false;
   let meltSaid = false;
-  for (let t = 1; t <= def.maxTicks; t++) {
+  let squeeze = BP;
+  for (let t = 1; t <= tickLimit(def, n); t++) {
     end = t;
     const living = (): number[] => order.filter((a) => alive[a]);
     const melters = living().filter((a) => entrants[a]?.element === p.meltElement);
     rx = Math.max(p.floeMinPx * 100, rx - p.shrinkCpx - p.meltCpx * melters.length);
+    // At its smallest the floe holds, and the shoves get stronger instead.
+    if (rx === p.floeMinPx * 100) squeeze += p.squeezeBp;
     show.prop(t, 'floe', CX, CY, Math.floor(rx / 100));
     if (!meltSaid && melters.length > 0 && t > 15 && p.meltCpx > 0) {
-      meltSaid = show.say(t, 'shove.melt', { a: melters[0] as number });
-      if (meltSaid) show.fx(t, 'steam', { a: melters[0] as number });
+      meltSaid = true;
+      show.say(t, 'shove.melt', { a: melters[0] as number });
+      show.fx(t, 'steam', { a: melters[0] as number });
     }
     if (t % 40 === 0) show.say(t, 'shove.shrink');
 
@@ -171,13 +191,17 @@ export function runShove(input: KindInput<Def>): KindOutcome {
       const force = mulBp(pushOf[s] as number, jitter(rng, p.jitterBp));
       const grip = mulBp(gripOf[target] as number, jitter(rng, p.jitterBp));
       if (force > grip) {
-        const dist = Math.min(p.maxSlidePx * 100, Math.floor((p.slidePx * 100 * force) / grip));
+        const dist = mulBp(
+          Math.min(p.maxSlidePx * 100, Math.floor((p.slidePx * 100 * force) / grip)),
+          squeeze,
+        );
         slide(target, xc[s] as number, yc[s] as number, dist);
-        show.fx(t, 'shove', { a: target });
+        // A big shove (half as far again as the usual slide or more) is a moment.
+        show.fx(t, 'shove', { a: target }, 2 * dist >= 3 * p.slidePx * 100);
         show.say(t, 'shove.shove', { a: s, b: target });
       } else {
         slide(s, xc[target] as number, yc[target] as number, Math.floor((p.slidePx * 100) / 2));
-        show.fx(t, 'bonk', { a: s });
+        show.fx(t, 'bonk', { a: s }, true);
         show.say(t, 'shove.bounce', { a: s, b: target });
       }
     }
@@ -196,6 +220,14 @@ export function runShove(input: KindInput<Def>): KindOutcome {
         show.say(t, 'shove.teeter', { a });
         continue;
       }
+      if (!gate.allow(t, alive.filter((on) => on).length)) {
+        // Held back: it wobbles on the rim.
+        const k = isqrt(Math.floor((9_025 * BP * BP) / Math.max(1, edge(a))));
+        xc[a] = CX * 100 + mulBp((xc[a] as number) - CX * 100, k);
+        yc[a] = CY * 100 + mulBp((yc[a] as number) - CY * 100, k);
+        continue;
+      }
+      gate.record(t);
       alive[a] = false;
       outAt[a] = t;
       slide(a, CX * 100, CY * 100, 600);
@@ -213,7 +245,8 @@ export function runShove(input: KindInput<Def>): KindOutcome {
     }
     const left = living();
     if (!duelSaid && n > 2 && left.length === 2 && teamsAlive(alive, teamOf) === 2) {
-      duelSaid = show.say(t, 'shove.duel', { a: left[0] as number, b: left[1] as number });
+      duelSaid = true;
+      show.say(t, 'shove.duel', { a: left[0] as number, b: left[1] as number });
     }
     if (decided(alive, teamOf, teams)) break;
   }

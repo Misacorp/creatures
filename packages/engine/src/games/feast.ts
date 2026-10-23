@@ -13,6 +13,8 @@ import {
   keyFactor,
   seatRows,
   teamsAlive,
+  ExitGate,
+  tickLimit,
   type KindInput,
   type KindOutcome,
 } from './common';
@@ -73,9 +75,10 @@ export function runFeast(input: KindInput<Def>): KindOutcome {
 
   let end = 0;
   let round = 0;
+  const gate = new ExitGate(n, def.tickMs);
   let duelSaid = false;
   let encore = false;
-  for (let t = 1; t <= def.maxTicks; t++) {
+  for (let t = 1; t <= tickLimit(def, n); t++) {
     end = t;
     if (t % p.roundTicks !== 0) continue;
     round += 1;
@@ -83,7 +86,7 @@ export function runFeast(input: KindInput<Def>): KindOutcome {
     const ghost = round > 3 && roll(rng, p.ghostRoundBp);
     if (ghost) {
       show.say(t, 'feast.ghost');
-      show.moments += 1;
+      show.moment(t);
     }
     for (const a of order) {
       if (!alive[a]) continue;
@@ -110,7 +113,7 @@ export function runFeast(input: KindInput<Def>): KindOutcome {
       score[a] = (score[a] as number) + eaten;
       if (e.element === p.coolElement && p.coolBp > 0) {
         meter[a] = Math.max(0, (meter[a] as number) - p.coolBp);
-        if (pick.tier === 2) {
+        if (pick.tier >= 1) {
           show.fx(t, 'chill', { a }, true);
           show.say(t, 'feast.cool', { a });
         }
@@ -138,6 +141,12 @@ export function runFeast(input: KindInput<Def>): KindOutcome {
         show.say(t, 'feast.stubborn', { a: full });
         continue;
       }
+      if (!gate.allow(t, alive.filter((on) => on).length)) {
+        // Held back: it holds on, red-faced, until the next round.
+        for (const a of order) if (alive[a] && (meter[a] as number) >= FULL) meter[a] = FULL - 1;
+        break;
+      }
+      gate.record(t);
       alive[full] = false;
       outAt[full] = t;
       show.meter(t, full, FULL);
@@ -168,7 +177,8 @@ export function runFeast(input: KindInput<Def>): KindOutcome {
     }
     const living = order.filter((a) => alive[a]);
     if (!duelSaid && n > 2 && living.length === 2 && teamsAlive(alive, teamOf) === 2) {
-      duelSaid = show.say(t, 'feast.duel', { a: living[0] as number, b: living[1] as number });
+      duelSaid = true;
+      show.say(t, 'feast.duel', { a: living[0] as number, b: living[1] as number });
     }
     if (round % 6 === 0 && living.length > 0) {
       const lead = [...living].sort(
@@ -181,7 +191,7 @@ export function runFeast(input: KindInput<Def>): KindOutcome {
     if (!alive.some((on) => on)) break;
     if (!encore && decided(alive, teamOf, teams)) {
       encore = true;
-      show.sayNext(t, 'feast.encore', { a: living[0] as number });
+      show.say(t, 'feast.encore', { a: living[0] as number });
     }
   }
 

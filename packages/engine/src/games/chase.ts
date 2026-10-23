@@ -2,11 +2,13 @@
  * Chase (Melon Run): a giant watermelon rolls in from the left and speeds up. Runners advance by
  * Speed against the field (element, role, a little luck) and meet obstacles: a dodge roll hops them,
  * else a stumble costs a tick or two. A caught runner is squashed flat, unless it is small and ducks
- * under the rind (once) or is Stubborn (once). Score = metres run (8 px a metre).
+ * under the rind (once) or is Stubborn (once). Over the finish line a runner is safe; when the melon
+ * reaches the line it smashes into the arch and the race is over. Finishers rank by finish order
+ * (score: metres to the line plus a bonus by order), the squashed by metres run (8 px a metre).
  */
 import type { GamesEventOf } from '@creatures/game';
 import { between, jitter, mulBp, roll, shuffle } from './math';
-import { gear, keyFactor, type KindInput, type KindOutcome } from './common';
+import { gear, keyFactor, ExitGate, tickLimit, type KindInput, type KindOutcome } from './common';
 
 type Def = GamesEventOf<'chase'>;
 
@@ -49,16 +51,20 @@ export function runChase(input: KindInput<Def>): KindOutcome {
   const metres = (a: number): number =>
     Math.max(0, Math.floor(((xc[a] as number) - (startXc[a] as number)) / (100 * PX_PER_METRE)));
 
+  const finish = p.finishPx * 100;
+  const doneAt = new Array<number>(n).fill(0);
+  let finished = 0;
   let end = 0;
+  const gate = new ExitGate(n, def.tickMs);
   let lastSaid = false;
-  for (let t = 1; t <= def.maxTicks; t++) {
+  for (let t = 1; t <= tickLimit(def, n); t++) {
     end = t;
     melon += p.melonCpx + p.melonAccelCpx * t;
     show.prop(t, 'melon', Math.floor(melon / 100), MELON_Y, MELON_R * 2);
     if (t % 30 === 0) show.say(t, 'chase.faster');
 
     for (let a = 0; a < n; a++) {
-      if (!alive[a]) continue;
+      if (!alive[a] || doneAt[a] !== 0) continue;
       const e = entrants[a];
       if (e === undefined) continue;
       if ((stunned[a] as number) > 0) {
@@ -94,10 +100,23 @@ export function runChase(input: KindInput<Def>): KindOutcome {
       xc[a] = (xc[a] as number) + mulBp(mulBp(p.runCpx, speed[a] as number), mult);
     }
 
+    // Over the line: safe.
+    for (let a = 0; a < n; a++) {
+      if (!alive[a] || doneAt[a] !== 0 || (xc[a] as number) < finish) continue;
+      finished += 1;
+      doneAt[a] = finished;
+      xc[a] = finish + 400 + 100 * Math.min(10, finished);
+      show.pos(t, a, Math.floor((xc[a] as number) / 100), yOf[a] as number);
+      show.state(t, a, 'cheer');
+      show.fx(t, 'star', { a }, true);
+      show.say(t, 'chase.finish', { a });
+    }
+
     // The melon catches up.
     const front = melon + MELON_R * 100;
+    const smash = front >= finish;
     for (let a = 0; a < n; a++) {
-      if (!alive[a] || (xc[a] as number) > front) continue;
+      if (!alive[a] || doneAt[a] !== 0 || (xc[a] as number) > front) continue;
       const e = entrants[a];
       if (e === undefined) continue;
       if (e.stage === 1 && !ducked[a]) {
@@ -114,6 +133,12 @@ export function runChase(input: KindInput<Def>): KindOutcome {
         show.say(t, 'chase.stubborn', { a });
         continue;
       }
+      if (!gate.allow(t, alive.filter((on) => on).length)) {
+        // Held back: it scrambles along just in front of the rind.
+        xc[a] = front + 100;
+        continue;
+      }
+      gate.record(t);
       alive[a] = false;
       outAt[a] = t;
       show.pos(t, a, Math.floor((xc[a] as number) / 100), yOf[a] as number);
@@ -124,17 +149,25 @@ export function runChase(input: KindInput<Def>): KindOutcome {
       show.say(t, 'chase.squash', { a });
     }
 
+    if (smash) {
+      // The melon hits the finish arch and bursts: the race is over.
+      show.fx(t, 'squash', { x: Math.floor(front / 100), y: MELON_Y }, true);
+      // Said a beat later, once the last squash has had its line.
+      show.sayNext(t + (show.sayGapTicks >> 1), 'chase.smash');
+      break;
+    }
     const living: number[] = [];
     for (let a = 0; a < n; a++) {
-      if (!alive[a]) continue;
+      if (!alive[a] || doneAt[a] !== 0) continue;
       living.push(a);
       // Every other tick is enough for the client to move a runner smoothly.
       if (t % 2 === 0) show.pos(t, a, Math.floor((xc[a] as number) / 100), yOf[a] as number);
       if (t % 10 === 0) show.score(t, a, metres(a));
     }
-    if (living.length === 0) break;
+    // With everyone home or squashed the melon still rolls on to the arch.
     if (!lastSaid && n > 1 && living.length === 1) {
-      lastSaid = show.say(t, 'chase.last', { a: living[0] as number });
+      lastSaid = true;
+      show.say(t, 'chase.last', { a: living[0] as number });
     } else if (t % 25 === 0 && living.length > 1) {
       const byX = [...living].sort((a, b) => (xc[b] as number) - (xc[a] as number));
       const lead = Math.floor(
@@ -145,8 +178,17 @@ export function runChase(input: KindInput<Def>): KindOutcome {
     }
   }
 
-  const scores = entrants.map((_, a) => metres(a));
-  const keys = entrants.map((_, a) => [(xc[a] as number) - (startXc[a] as number)]);
+  // A finisher scores the distance to the line and a bonus by finish order; it ranks by that order.
+  const toLine = (a: number): number =>
+    Math.max(0, Math.floor((finish - (startXc[a] as number)) / (100 * PX_PER_METRE)));
+  const scores = entrants.map((_, a) => {
+    const d = doneAt[a] as number;
+    return d === 0 ? metres(a) : toLine(a) + Math.max(1, p.finishBonusM - (d - 1));
+  });
+  const keys = entrants.map((_, a) => {
+    const d = doneAt[a] as number;
+    return d === 0 ? [1, (xc[a] as number) - (startXc[a] as number)] : [2, -d];
+  });
   for (let a = 0; a < n; a++) {
     show.pos(end, a, Math.floor((xc[a] as number) / 100), yOf[a] as number);
     show.score(end, a, scores[a] as number);

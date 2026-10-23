@@ -12,6 +12,8 @@ import {
   keyFactor,
   seatRows,
   teamsAlive,
+  ExitGate,
+  tickLimit,
   type KindInput,
   type KindOutcome,
 } from './common';
@@ -22,38 +24,61 @@ const BENCHES = [60, 84] as const;
 const DOOR = { x: 186, y: 100 } as const;
 const THERMO = { x: 12, y: 24 } as const;
 const FULL = BP;
+/** A stack's next creature sits this many px higher. */
+const STACK_PX = 10;
 
 export function runEndure(input: KindInput<Def>): KindOutcome {
   const { def, entrants, rng, show, teamOf, teams } = input;
   const p = def.params;
   const n = entrants.length;
-  // Teams sit together: shuffle the teams, keep each team's creatures side by side.
-  const order = shuffle(
+  // Solo: everyone side by side on the two benches. Team event: each team is a stack in one seat
+  // (Guards at the bottom), the next one up 10 px higher.
+  const stacked = def.team === 3;
+  const groups = shuffle(
     rng,
     [...new Set(teamOf)].map((t) => teamOf.flatMap((tt, a) => (tt === t ? [a] : []))),
-  ).flat();
-  const seats = seatRows(n, BENCHES, 40, 17, 136);
-  const seatOf: { x: number; y: number; row: number; col: number }[] = new Array<{
-    x: number;
-    y: number;
-    row: number;
-    col: number;
-  }>(n);
-  order.forEach((a, i) => {
-    seatOf[a] = seats[i] as { x: number; y: number; row: number; col: number };
+  ).map((g) =>
+    stacked
+      ? [...g].sort(
+          (x, y) =>
+            Number(entrants[y]?.role === 'guard') - Number(entrants[x]?.role === 'guard') || x - y,
+        )
+      : g,
+  );
+  const order = stacked ? groups.map((g) => g[0] as number) : groups.flat();
+  const seats = seatRows(order.length, BENCHES, 40, 17, 136);
+  type Seat = { x: number; y: number; row: number; col: number };
+  const seatOf: Seat[] = new Array<Seat>(n);
+  /** Each actor's place in its stack (0: on the bench) at the start, and now. */
+  const level = new Array<number>(n).fill(0);
+  const levelNow = new Array<number>(n).fill(0);
+  const stackOf = new Array<number[]>(n);
+  groups.forEach((g, gi) => {
+    g.forEach((a, k) => {
+      const seat = (stacked ? seats[gi] : seats[order.indexOf(a)]) as Seat;
+      seatOf[a] = { ...seat, y: seat.y - (stacked ? k * STACK_PX : 0) };
+      level[a] = stacked ? k : 0;
+      levelNow[a] = level[a];
+      stackOf[a] = stacked ? g : [a];
+    });
   });
-  const at: (number | undefined)[][] = BENCHES.map(() => []);
-  order.forEach((a) => {
-    const s = seatOf[a] as { row: number; col: number };
-    (at[s.row] as (number | undefined)[])[s.col] = a;
-  });
+  const at: (number | undefined)[][][] = BENCHES.map(() => []);
+  for (let a = 0; a < n; a++) {
+    const s = seatOf[a] as Seat;
+    const col = ((at[s.row] as (number | undefined)[][])[s.col] ??= []);
+    col[level[a] as number] = a;
+  }
+  /** Who sits within `reach` of it: along the bench at its height, and (stacked) above and below it. */
   const beside = (a: number, reach: number): number[] => {
-    const s = seatOf[a] as { row: number; col: number };
+    const s = seatOf[a] as Seat;
+    const lv = level[a] as number;
     const out: number[] = [];
     for (let d = -reach; d <= reach; d++) {
       if (d === 0) continue;
-      const b = at[s.row]?.[s.col + d];
+      const b = at[s.row]?.[s.col + d]?.[lv];
       if (b !== undefined) out.push(b);
+      const c = at[s.row]?.[s.col]?.[lv + d];
+      if (c !== undefined) out.push(c);
     }
     return out;
   };
@@ -80,7 +105,11 @@ export function runEndure(input: KindInput<Def>): KindOutcome {
     meter[a] = Math.max(0, (meter[a] as number) + Math.floor((bp * BP) / (tol[a] as number)));
   };
   const shelterOf = (a: number): number => {
-    const guards = beside(a, 1).filter((b) => alive[b] && entrants[b]?.role === 'guard').length;
+    // Stacked, a Guard shelters everyone above it in its stack; on the benches, its neighbours.
+    const near = stacked
+      ? (stackOf[a] as number[]).filter((b) => (level[b] as number) < (level[a] as number))
+      : beside(a, 1);
+    const guards = near.filter((b) => alive[b] && entrants[b]?.role === 'guard').length;
     return Math.min(p.shelterMaxBp, guards * p.shelterBp);
   };
   const avoids = (a: number): boolean => {
@@ -90,10 +119,11 @@ export function runEndure(input: KindInput<Def>): KindOutcome {
   };
 
   let nextLadle = between(rng, p.ladleMinTicks, p.ladleMaxTicks);
+  const gate = new ExitGate(n, def.tickMs);
   let halfSaid = false;
   let duelSaid = false;
   let end = 0;
-  for (let t = 1; t <= def.maxTicks; t++) {
+  for (let t = 1; t <= tickLimit(def, n); t++) {
     end = t;
     hot.fill(false);
     heat = Math.min(FULL, p.heatStartBp + p.heatRiseBp * t + extra);
@@ -139,7 +169,7 @@ export function runEndure(input: KindInput<Def>): KindOutcome {
         }
       } else {
         extra += p.splashHeatBp;
-        show.fx(t, 'splash', { a: ladler });
+        show.fx(t, 'splash', { a: ladler }, true);
         show.say(t, 'endure.splash', { a: ladler });
       }
     }
@@ -171,7 +201,9 @@ export function runEndure(input: KindInput<Def>): KindOutcome {
       if (e === undefined) continue;
       // The heat itself, sheltered by the Guards beside it.
       const base = mulBp(mulBp(heat, p.intakeBp), jitter(rng, p.jitterBp));
-      add(a, mulBp(base, BP - shelterOf(a)));
+      // Higher up a stack is hotter.
+      const high = BP + (levelNow[a] as number) * (p.heightBp ?? 0);
+      add(a, mulBp(mulBp(base, high), BP - shelterOf(a)));
       // A Support fans a neighbour.
       if (e.role === 'support' && roll(rng, p.fanChanceBp)) {
         const near = beside(a, 1).filter((b) => alive[b] && (meter[b] as number) > 0);
@@ -200,6 +232,11 @@ export function runEndure(input: KindInput<Def>): KindOutcome {
         show.say(t, 'endure.stubborn', { a });
         continue;
       }
+      if (!gate.allow(t, alive.filter((on) => on).length)) {
+        meter[a] = FULL - 1;
+        continue;
+      }
+      gate.record(t);
       alive[a] = false;
       outAt[a] = t;
       scores[a] = t - 1;
@@ -208,6 +245,13 @@ export function runEndure(input: KindInput<Def>): KindOutcome {
       show.state(t, a, hot[a] ? 'flame' : 'sweat');
       show.say(t, 'endure.out', { a });
       const s = seatOf[a] as { x: number; y: number };
+      // The ones above it drop down a place.
+      for (const b of stackOf[a] as number[]) {
+        if (!alive[b] || (levelNow[b] as number) <= (levelNow[a] as number)) continue;
+        levelNow[b] = (levelNow[b] as number) - 1;
+        const sb = seatOf[b] as Seat;
+        show.pos(t + 1, b, sb.x, sb.y + ((level[b] as number) - levelNow[b]) * STACK_PX);
+      }
       show.pos(t + 2, a, s.x, DOOR.y);
       show.pos(t + 5, a, DOOR.x, DOOR.y);
       show.state(t + 5, a, 'out');
@@ -220,10 +264,12 @@ export function runEndure(input: KindInput<Def>): KindOutcome {
 
     const left = living();
     if (!halfSaid && n >= 4 && left.length * 2 <= n && left.length > 2) {
-      halfSaid = show.say(t, 'endure.half', { n: left.length });
+      halfSaid = true;
+      show.say(t, 'endure.half', { n: left.length });
     }
     if (!duelSaid && n > 2 && left.length === 2 && teamsAlive(alive, teamOf) === 2) {
-      duelSaid = show.say(t, 'endure.duel', { a: left[0] as number, b: left[1] as number });
+      duelSaid = true;
+      show.say(t, 'endure.duel', { a: left[0] as number, b: left[1] as number });
     }
     if (decided(alive, teamOf, teams)) break;
   }

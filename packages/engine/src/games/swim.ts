@@ -10,7 +10,16 @@
  */
 import { int, type GamesEventOf } from '@creatures/game';
 import { BP, TURN, cosU, fieldCurve, jitter, mulBp, roll, sinU } from './math';
-import { gear, keyFactor, type KindInput, type KindOutcome } from './common';
+import type { GamesEntrant } from './types';
+import {
+  gear,
+  keyFactor,
+  smallMult,
+  ExitGate,
+  tickLimit,
+  type KindInput,
+  type KindOutcome,
+} from './common';
 
 type Def = GamesEventOf<'swim'>;
 
@@ -37,11 +46,27 @@ function gap(a: number, b: number): number {
 }
 
 export function runSwim(input: KindInput<Def>): KindOutcome {
-  const { def, entrants, rng, show } = input;
+  const { def, entrants, rng, show, teamOf, teams } = input;
   const p = def.params;
   const n = entrants.length;
-  const goal = p.laps * TURN;
-  const laneOf = entrants.map((_, a) => (n === 1 ? 0 : -8 + Math.floor((a * 16) / (n - 1))));
+  // A team event is a relay: each member swims one leg in turn; the others wait on the shore.
+  const relay = def.team === 3;
+  const goal = (relay ? (p.legLaps ?? 1) : p.laps) * TURN;
+  const legOf = entrants.map((_, a) => teamOf.slice(0, a).filter((t) => t === teamOf[a]).length);
+  const nextOf = entrants.map((_, a) =>
+    entrants.findIndex((_e, b) => teamOf[b] === teamOf[a] && legOf[b] === (legOf[a] as number) + 1),
+  );
+  const lanes = relay ? teams : n;
+  const laneOf = entrants.map((_, a) => {
+    const i = relay ? (teamOf[a] as number) : a;
+    return lanes === 1 ? 0 : -8 + Math.floor((i * 16) / (lanes - 1));
+  });
+  const waiting = entrants.map((_, a) => relay && (legOf[a] as number) > 0);
+  const shore = (a: number): { x: number; y: number } => ({
+    x: 16 + Math.floor(((teamOf[a] as number) * 160) / Math.max(1, teams - 1)),
+    y: SHORE_Y - 4 + 2 * Math.min(2, legOf[a] as number),
+  });
+  const teamDoneAt = new Array<number | null>(teams).fill(null);
   const speed = keyFactor(def, entrants, 'spd');
   const tol = fieldCurve(
     entrants.map((e) => e.hp),
@@ -56,10 +81,10 @@ export function runSwim(input: KindInput<Def>): KindOutcome {
   const burst = new Array<number>(n).fill(0);
   const saved = new Array<boolean>(n).fill(false);
   const bittenAt = new Array<number>(n).fill(-99);
-  const starts = entrants.map((_, a) => at(START, laneOf[a] as number));
+  const starts = entrants.map((_, a) => (waiting[a] ? shore(a) : at(START, laneOf[a] as number)));
   starts.forEach((s, a) => {
     show.place(a, s.x, s.y);
-    show.state(0, a, 'swim');
+    show.state(0, a, waiting[a] ? 'idle' : 'swim');
     show.meter(0, a, BP);
   });
   const sharks: number[] = [];
@@ -72,14 +97,16 @@ export function runSwim(input: KindInput<Def>): KindOutcome {
   };
   for (let i = 0; i < p.sharkStart; i++) addShark(0);
   show.say(0, 'swim.start');
-  const swimming = (a: number): boolean => alive[a] === true && finishedAt[a] === null;
+  const swimming = (a: number): boolean =>
+    alive[a] === true && finishedAt[a] === null && waiting[a] !== true;
   const angleOf = (a: number): number => START + (progress[a] as number);
 
   let end = 0;
   let finished = 0;
   let leader = -1;
   let lapsSaid = 0;
-  for (let t = 1; t <= def.maxTicks; t++) {
+  const gate = new ExitGate(n, def.tickMs);
+  for (let t = 1; t <= tickLimit(def, n); t++) {
     end = t;
     if (t % p.sharkEveryTicks === 0 && sharks.length < p.sharkMax) {
       addShark(t);
@@ -113,10 +140,24 @@ export function runSwim(input: KindInput<Def>): KindOutcome {
         (progress[a] as number) + mulBp(mulBp(p.swimUnits, speed[a] as number), mult),
       );
       const lap = Math.floor((progress[a] as number) / TURN);
-      if ((progress[a] as number) >= goal) {
+      if ((progress[a] as number) >= goal && relay && (nextOf[a] as number) >= 0) {
+        // Tag: this leg is done, the next teammate dives in.
+        finishedAt[a] = t;
+        const b = nextOf[a] as number;
+        waiting[b] = false;
+        const s0 = at(START, laneOf[b] as number);
+        show.pos(t + 1, b, s0.x, s0.y);
+        show.state(t + 1, b, 'swim');
+        show.fx(t + 1, 'splash', { a: b }, true);
+        show.say(t, 'swim.tag', { a, b });
+        const sa = shore(a);
+        show.pos(t + 2, a, sa.x, sa.y);
+        show.state(t + 2, a, 'idle');
+      } else if ((progress[a] as number) >= goal) {
         finishedAt[a] = t;
         finished += 1;
-        show.score(t, a, p.laps);
+        if (relay) teamDoneAt[teamOf[a] as number] = t;
+        show.score(t, a, relay ? (p.legLaps ?? 1) : p.laps);
         show.state(t, a, 'idle');
         show.fx(t, 'star', { a }, true);
         // The first one home always gets its line; the others when there is room.
@@ -164,7 +205,8 @@ export function runSwim(input: KindInput<Def>): KindOutcome {
         for (let a = 0; a < n; a++) {
           // A swimmer just bitten gets a moment's peace.
           if (!swimming(a) || t - (bittenAt[a] as number) < 2 * p.biteEveryTicks) continue;
-          const d = gap(angleOf(a), angle);
+          // Small swimmers are less of a target: they count as further away.
+          const d = mulBp(gap(angleOf(a), angle), smallMult(def, entrants[a] as GamesEntrant));
           if (d < best) {
             best = d;
             target = a;
@@ -188,6 +230,9 @@ export function runSwim(input: KindInput<Def>): KindOutcome {
           (stamina[target] as number) -
           Math.floor((mulBp(p.biteBp, jitter(rng, p.jitterBp)) * BP) / (tol[target] as number));
         show.fx(t, 'bonk', { a: target }, true);
+        // A bonk sets a swimmer spinning for a moment.
+        stunned[target] = Math.max(stunned[target] as number, p.stunTicks);
+        show.state(t, target, 'dizzy');
         if ((stamina[target] as number) > 0) {
           show.say(t, 'swim.bite', { a: target });
         } else if (gear(e, 'stubborn') > 0 && !saved[target]) {
@@ -195,7 +240,11 @@ export function runSwim(input: KindInput<Def>): KindOutcome {
           stamina[target] = 1_500;
           show.fx(t, 'star', { a: target }, true);
           show.say(t, 'swim.stubborn', { a: target });
+        } else if (!gate.allow(t, alive.filter((on) => on).length)) {
+          // Held back: it struggles on with the last of its strength.
+          stamina[target] = 1;
         } else {
+          gate.record(t);
           stamina[target] = 0;
           alive[target] = false;
           outAt[target] = t;
@@ -221,9 +270,10 @@ export function runSwim(input: KindInput<Def>): KindOutcome {
     }
     const lead = bestSwimmer();
     if (lead >= 0 && lead !== leader && t > 10 && finished === 0) {
-      if (show.say(t, 'swim.lead', { a: lead })) leader = lead;
+      show.say(t, 'swim.lead', { a: lead });
+      leader = lead;
     }
-    if (finished >= Math.min(p.finishers, n)) break;
+    if (finished >= Math.min(p.finishers, relay ? teams : n)) break;
     if (!entrants.some((_, a) => swimming(a))) break;
   }
 
@@ -238,6 +288,14 @@ export function runSwim(input: KindInput<Def>): KindOutcome {
 
   const scores = progress.map((v) => Math.floor((v * 100) / TURN));
   const keys = entrants.map((_, a) => {
+    if (relay) {
+      // A relay ranks by the team's finish; a leg done does not count as a finish.
+      const done = teamDoneAt[teamOf[a] as number];
+      if (done !== null && done !== undefined) return [2, -done, 0];
+      const o = outAt[a];
+      if (o !== null && o !== undefined) return [0, o, progress[a] as number];
+      return [1, progress[a] as number, 0];
+    }
     const f = finishedAt[a];
     if (f !== null && f !== undefined) return [2, -f, 0];
     const o = outAt[a];

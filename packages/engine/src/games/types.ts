@@ -130,6 +130,8 @@ export interface GamesEventResult {
   standings: GamesStanding[];
   /** Notable beats: reactions, gulps, squashes, splashes, ducks, gear procs. */
   moments: number;
+  /** The tick of each moment, in order (the show's highlights; the simulator checks there are no long quiet stretches). */
+  momentTicks: number[];
   /** Each actor's own score and its tick of elimination (null: still in at the end), by actor index. */
   scores: number[];
   outAt: (number | null)[];

@@ -27,13 +27,16 @@ export function median(values: readonly number[]): number {
   return Math.floor(((s[mid - 1] as number) + (s[mid] as number)) / 2);
 }
 
-/** Lowest and highest stat ratio against the field the curve reads (a quarter to four times the median). */
-const RATIO_MIN = 2_500;
+/**
+ * Lowest and highest stat ratio against the field the curve reads (half to four times the median): a
+ * creature far below the field still counts as half of it, so the weakest are never hopeless.
+ */
+const RATIO_MIN = 5_000;
 const RATIO_MAX = 40_000;
 
 /**
  * Diminishing returns against the field: `sqrt(stat / median)` in basis points (10000 at the median,
- * 14142 at twice it, 7071 at half), the ratio clamped to a quarter to four times, then weighted by
+ * 14142 at twice it, 7071 at half), the ratio clamped to half to four times, then weighted by
  * `weightBp` (10000: the whole curve; 0: always 10000).
  */
 export function curveBp(stat: number, fieldMedian: number, weightBp: number): number {

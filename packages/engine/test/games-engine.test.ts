@@ -321,30 +321,119 @@ describe('what each kind reads', () => {
     expect(small).toBeGreaterThanOrEqual(28);
   });
 
+  /** A weak creature (actor 0) among two strong ones, so it is the first to go. */
+  const underdog = (over: Partial<GamesEntrant>): GamesEntrant[] => [
+    twin({ hp: 150, spd: 25, atk: 30, dodgeBp: 0, ...over }, 0),
+    twin({ hp: 500, spd: 90, atk: 120, dodgeBp: 0 }, 1),
+    twin({ hp: 500, spd: 90, atk: 120, dodgeBp: 0 }, 2),
+  ];
+  const fxOn = (r: GamesEventResult, fx: string, a: number): number =>
+    r.beats.filter((b) => b.k === 'fx' && b.fx === fx && b.a === a).length;
+
   it('chase: a small creature ducks under the rind once; a big one does not', () => {
+    // A far finish line, so the melon catches everyone in the end.
+    const run = event('melon-run');
+    if (run.kind !== 'chase') throw new Error('melon-run is a chase');
+    const def: GamesEventDef = { ...run, params: { ...run.params, finishPx: 2_000 } };
+    // Everyone else is small too, so the size bonus does not make the underdog fast.
+    const field = (stage: 1 | 2): GamesEntrant[] =>
+      underdog({ stage }).map((e, i) => (i === 0 ? e : { ...e, stage: 1 as const }));
+    const small = runGamesEvent(def, field(1), createSeededRng('duck'));
+    const big = runGamesEvent(def, field(2), createSeededRng('duck'));
+    expect(fxOn(small, 'duck', 0)).toBe(1);
+    expect(fxOn(big, 'duck', 0)).toBe(0);
+  });
+
+  it('chase: runners over the finish line are safe and rank by finish order', () => {
     const def = event('melon-run');
-    const small = runGamesEvent(def, [entrant(0, { stage: 1 })], createSeededRng('duck'));
-    const big = runGamesEvent(def, [entrant(0, { stage: 2 })], createSeededRng('duck'));
-    const ducks = (r: GamesEventResult) =>
-      r.beats.filter((b) => b.k === 'fx' && b.fx === 'duck').length;
-    expect(ducks(small)).toBe(1);
-    expect(ducks(big)).toBe(0);
-    expect(small.scores[0]).toBeGreaterThan(big.scores[0] as number);
+    const field = [0, 1, 2, 3, 4, 5].map((i) => twin({ spd: i < 2 ? 140 : 30, dodgeBp: 0 }, i));
+    const r = runGamesEvent(def, field, createSeededRng('finish'));
+    // The two fast ones finish (never squashed) and take the first two places.
+    expect(r.outAt[0]).toBeNull();
+    expect(r.outAt[1]).toBeNull();
+    expect(
+      r.standings
+        .slice(0, 2)
+        .flatMap((s) => s.actors)
+        .sort(),
+    ).toEqual([0, 1]);
+    expect(r.beats.some((b) => b.k === 'say' && b.line === 'chase.smash')).toBe(true);
   });
 
   it('Stubborn survives one elimination, once', () => {
     for (const id of ['sauna-showdown', 'pepper-panic', 'melon-run']) {
       const def = event(id);
-      const plain = runGamesEvent(def, [entrant(0, { stage: 2 })], createSeededRng(`stub:${id}`));
+      const plain = runGamesEvent(def, underdog({}), createSeededRng(`stub:${id}`));
       const stub = runGamesEvent(
         def,
-        [entrant(0, { stage: 2, mods: { stubborn: 1 } })],
+        underdog({ mods: { stubborn: 1 } }),
         createSeededRng(`stub:${id}`),
       );
-      const stars = stub.beats.filter((b) => b.k === 'fx' && b.fx === 'star').length;
-      expect(stars, id).toBe(1);
+      expect(fxOn(stub, 'star', 0), id).toBe(1);
       expect(stub.scores[0], id).toBeGreaterThan(plain.scores[0] as number);
     }
+  });
+
+  it('one or two entrants make a short show (about 25 s at most)', () => {
+    for (const def of gamesContent.events) {
+      const r = runGamesEvent(
+        def,
+        fieldFor(def, def.team === 3 ? 3 : 1).slice(0, 2),
+        createSeededRng('short'),
+      );
+      // The cap plus the walk-off and the closing line.
+      expect((r.ticks * r.tickMs) / 1_000, def.id).toBeLessThanOrEqual(25 + 8);
+    }
+  });
+
+  it('Sauna Stack: teams sit stacked in one seat, Guards at the bottom; the ones above drop down', () => {
+    const def = event('sauna-stack');
+    const field = teamField(4).map((e, i) => ({
+      ...e,
+      role: i % 3 === 2 ? ('guard' as const) : ('setter' as const),
+    }));
+    const r = runGamesEvent(def, field, createSeededRng('stack'));
+    for (let t = 0; t < 4; t++) {
+      const team = [3 * t, 3 * t + 1, 3 * t + 2];
+      const xs = new Set(team.map((a) => r.actors[a]?.x));
+      expect(xs.size).toBe(1);
+      const ys = team.map((a) => r.actors[a]?.y as number).sort((p, q) => q - p);
+      expect([
+        (ys[0] as number) - (ys[1] as number),
+        (ys[1] as number) - (ys[2] as number),
+      ]).toEqual([10, 10]);
+      // The guard (index 2 of each team) is the lowest, i.e. has the biggest y.
+      expect(r.actors[3 * t + 2]?.y).toBe(ys[0]);
+    }
+    // Someone above a leaver moves down 10 px.
+    const drops = r.beats.filter((b) => {
+      if (b.k !== 'pos') return false;
+      const start = r.actors[b.a];
+      return start !== undefined && b.x === start.x && b.y > start.y && b.y < 100;
+    });
+    expect(drops.length).toBeGreaterThan(0);
+  });
+
+  it('Shark Relay: one swimmer per team in the water; the others wait on the shore until tagged', () => {
+    const def = event('shark-relay');
+    const field = teamField(3);
+    const r = runGamesEvent(def, field, createSeededRng('relay-legs'));
+    for (let a = 0; a < field.length; a++) {
+      const leg = a % 3;
+      expect((r.actors[a]?.y as number) >= 100).toBe(leg > 0);
+    }
+    expect(r.beats.some((b) => b.k === 'say' && b.line === 'swim.tag')).toBe(true);
+  });
+
+  it('Floe Sumo: a big field gets a bigger floe', () => {
+    const def = event('floe-sumo');
+    const floe = (n: number): number => {
+      const r = runGamesEvent(def, fieldFor(def, n), createSeededRng('floe'));
+      const first = r.beats.find((b) => b.k === 'prop' && b.p === 'floe');
+      return first?.k === 'prop' ? (first.f ?? 0) : 0;
+    };
+    expect(floe(24)).toBeGreaterThan(floe(12));
+    expect(floe(24)).toBeLessThanOrEqual(84);
   });
 
   it('team events rank teams by their best member (Sauna Stack)', () => {
