@@ -2,13 +2,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { hudAmount } from './CurrencyPile';
 import { Hud } from './Hud';
 import { PopoverHost } from './PopoverHost';
-import { byClass, byName, createPage, find, type Page } from './test-dom';
+import { byClass, byName, createPage, find, visibleText, type Page } from './test-dom';
 
 let page: Page | null = null;
 
 afterEach(() => {
   page?.unmount();
   page = null;
+  vi.unstubAllGlobals();
 });
 
 describe('hudAmount', () => {
@@ -55,5 +56,64 @@ describe('Hud', () => {
     if (button === undefined) throw new Error('no help button');
     page.click(button);
     expect(onHelp).toHaveBeenCalledOnce();
+  });
+});
+
+describe('the currency popover', () => {
+  const entry = (id: number, amount: number, source: string, currency = 'bait') => ({
+    id,
+    currency,
+    amount,
+    source,
+    createdAt: id,
+    meta: null,
+  });
+
+  it('lists recent Bait income only, loaded when it opens, and warns when the leet sync fails', async () => {
+    vi.stubGlobal('window', {
+      matchMedia: () => ({ matches: false }),
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    });
+    page = createPage();
+    const loadLedger = vi
+      .fn()
+      .mockResolvedValue([
+        entry(4, 30, 'allowance'),
+        entry(3, -12, 'train'),
+        entry(2, 5, 'x', 'essence'),
+        entry(1, 20, 'rank_gift'),
+      ]);
+    page.draw(
+      <PopoverHost onOpenHowTo={() => undefined}>
+        <Hud
+          title="Home"
+          balances={{ bait: 1, essence: 2 }}
+          leetSync={{
+            source: 'http',
+            lastAttemptAt: 1,
+            lastSyncedAt: null,
+            lastError: 'timeout',
+            lastDays: null,
+          }}
+          loadLedger={loadLedger}
+          helpRef={{ current: null }}
+          onHelp={() => undefined}
+        />
+      </PopoverHost>,
+    );
+    expect(loadLedger).not.toHaveBeenCalled();
+    const [pile] = byClass(page.root, 'currency-pile');
+    if (pile === undefined) throw new Error('no pile');
+    page.click(pile);
+    expect(loadLedger).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => {
+      const items = byClass((page as Page).root, 'income-list')[0]?.textContent ?? '';
+      expect(items).toContain('+30 · daily allowance');
+      expect(items).toContain('+20 · explorer rank gift');
+      expect(items).not.toContain('train');
+      expect(items).not.toContain('-12');
+    });
+    expect(visibleText(page.root)).toContain("the leet bot didn't answer");
   });
 });

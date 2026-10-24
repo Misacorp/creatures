@@ -18,6 +18,7 @@ import {
   type DevStateView,
 } from './dev-api';
 import './dev.css';
+import { buildRows, readBuildInfo } from '../build-info';
 import { openExternalLink } from '../external-link';
 import { resetLocalFlags } from './flags';
 import type { CreatureChoice, ToolSpec } from './forms';
@@ -225,6 +226,9 @@ export default function DevPanel({ tab, creatures, onChanged }: DevPanelProps): 
             </p>
           )}
           <div class="dev-scroll">
+            <Section title="Build" open={sectionOpen('build', true)} onToggle={toggle('build')}>
+              <DataTable class="dev-clock" rows={buildRows(readBuildInfo(document))} />
+            </Section>
             <Section title="Dev clock" open={sectionOpen('clock', true)} onToggle={toggle('clock')}>
               <ClockStatus view={view} />
               {forms(CLOCK_SPECS)}

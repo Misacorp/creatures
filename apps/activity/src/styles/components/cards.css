@@ -68,18 +68,6 @@
   font-size: var(--fs-small);
 }
 
-.recent {
-  margin: 0;
-  padding-left: 1.25rem;
-  color: var(--haze);
-}
-
-footer {
-  margin-top: 1rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--ink);
-}
-
 dl {
   margin: 0.25rem 0 0;
   font-size: var(--fs-small);

@@ -2,6 +2,7 @@ import { Hud } from '../../Hud';
 import { PopoverHost } from '../../PopoverHost';
 import { TABS } from '../../tabs';
 import { LAYOUTS, MENUS, MainNavDemo } from '../main-nav-demo/MainNavDemo';
+import { INCOME_CASES, incomeLoader } from '../income-sample';
 import { bool, num, str } from '../props';
 import type { Entry } from '../types';
 
@@ -60,26 +61,29 @@ const hud: Entry = {
   file: 'apps/activity/src/Hud.tsx',
   group: 'Controls',
   description:
-    'The slim bar along the top of the game: the name of the place you are in (the page heading), the Bait and Essence balances with their numbers (tap for the exact amounts and their glossary tags) and the "?" that opens How to play. On a phone it stays at the top edge while the page scrolls. Large amounts are shortened (12.3K); the exact numbers are in the spoken label.',
+    'The slim bar along the top of the game: the name of the place you are in (the page heading), the Bait and Essence balances with their numbers (tap for the exact amounts, their glossary tags and the latest Bait income) and the "?" that opens How to play. On a phone it stays at the top edge while the page scrolls. Large amounts are shortened (12.3K); the exact numbers are in the spoken label.',
   covers: ['HelpButton'],
   controls: {
     title: { kind: 'text', maxLength: 24 },
     bait: { kind: 'number', min: 0, max: 99999999 },
     essence: { kind: 'number', min: 0, max: 99999999 },
+    income: { kind: 'select', options: INCOME_CASES },
   },
-  defaults: { title: 'Creatures', bait: 1240, essence: 36 },
+  defaults: { title: 'Creatures', bait: 1240, essence: 36, income: 'typical' },
   presets: [
     { name: 'Typical', props: {} },
     { name: 'Expeditions', props: { title: 'Expeditions' } },
     { name: 'Nothing yet', props: { bait: 0, essence: 0 } },
     { name: 'Big numbers (shortened)', props: { bait: 123456, essence: 9876 } },
     { name: 'Huge numbers', props: { bait: 48_500_000, essence: 1_200_000 } },
+    { name: 'Currency popover: no income yet', props: { income: 'nothing yet' } },
   ],
   render: (p) => (
     <PopoverHost onOpenHowTo={() => undefined}>
       <Hud
         title={str(p, 'title')}
         balances={{ bait: num(p, 'bait'), essence: num(p, 'essence') }}
+        loadLedger={incomeLoader(str(p, 'income'))}
         helpRef={NO_REF}
         onHelp={() => undefined}
       />

@@ -1,6 +1,7 @@
 import './main-nav-demo.css';
 import { useState } from 'preact/hooks';
 import { Hud } from '../../Hud';
+import { incomeLoader } from '../income-sample';
 import { MainNav } from '../../MainNav';
 import { navPlaces, type NavPlace } from '../../nav-places';
 import { ALERT_TEXT, NO_ALERTS, type TabAlerts } from '../../tab-alerts';
@@ -89,6 +90,7 @@ export function MainNavDemo({
       <Hud
         title={label}
         balances={{ bait: 1240, essence: 36 }}
+        loadLedger={incomeLoader('typical')}
         helpRef={NO_REF}
         onHelp={() => undefined}
       />

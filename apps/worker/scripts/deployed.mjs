@@ -1,4 +1,4 @@
-// What is deployed on staging (or production): the branch and commit the game's footer shows, read
+// What is deployed on staging (or production): the branch and commit the page's build meta tags carry, read
 // from the public `/api/config` of a fixed host. Read-only and narrow on purpose: it fetches one URL
 // on one of two hosts and takes no URL from its caller (the repo denies curl and wget).
 //

@@ -1,5 +1,5 @@
 import type { RefObject } from 'preact';
-import type { Balances } from './api';
+import type { Balances, LeetSyncStatus, LedgerEntry } from './api';
 import { CurrencyPile } from './CurrencyPile';
 
 /** The "?" that opens How to play (the app owns the page; `helpRef` is where the focus returns when it closes). */
@@ -32,11 +32,17 @@ export function HelpButton({
 export function Hud({
   title,
   balances,
+  leetSync,
+  loadLedger,
   helpRef,
   onHelp,
 }: {
   title: string;
   balances: Balances;
+  /** The leet sync status (the currency popover warns when it is failing). */
+  leetSync?: LeetSyncStatus | null;
+  /** Fetches the ledger for the popover's income list (default: the player's own). */
+  loadLedger?: () => Promise<LedgerEntry[]>;
   helpRef: RefObject<HTMLButtonElement | null>;
   onHelp: () => void;
 }) {
@@ -44,7 +50,11 @@ export function Hud({
     <header class="hud">
       <h1 class="hud-title pix">{title}</h1>
       <div class="hud-tools">
-        <CurrencyPile balances={balances} />
+        <CurrencyPile
+          balances={balances}
+          {...(leetSync === undefined ? {} : { leetSync })}
+          {...(loadLedger === undefined ? {} : { loadLedger })}
+        />
         <HelpButton helpRef={helpRef} onHelp={onHelp} />
       </div>
     </header>

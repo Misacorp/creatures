@@ -38,10 +38,6 @@ export interface AppConfig {
   finaleLive: boolean;
 }
 
-interface Health {
-  ok: boolean;
-}
-
 export interface SessionUser {
   id: string;
   displayName: string;
@@ -201,14 +197,6 @@ export async function fetchConfig(): Promise<AppConfig> {
     loungeLive: data['loungeLive'] === true,
     finaleLive: data['finaleLive'] === true,
   };
-}
-
-export async function fetchHealth(): Promise<Health> {
-  const data = await request('/api/health');
-  if (!isRecord(data) || typeof data['ok'] !== 'boolean') {
-    throw new Error('/api/health returned an unexpected shape');
-  }
-  return { ok: data['ok'] };
 }
 
 /** Exchanges the Discord OAuth code for a session. Stores the session token in memory. */

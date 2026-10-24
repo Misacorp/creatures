@@ -60,6 +60,8 @@ import { useGearState } from './use-gear-state';
 import { useLoungePresence } from './use-lounge-presence';
 import { useRaidGlance } from './use-raid-glance';
 import { useRoomPhase } from './use-room-phase';
+import { scrollToTop } from './scroll-to';
+import { useScrollTopOnChange } from './use-scroll-top';
 import { useTabPips } from './use-tab-pips';
 import { sceneOf, type LivingRoom } from './LivingRoom';
 import { LevelResetCard } from './LevelResetCard';
@@ -78,7 +80,6 @@ export function Game({
   participants,
   helpRef,
   onHelp,
-  onLeetSync,
   allowance,
   showPractice,
   devTools,
@@ -98,8 +99,6 @@ export function Game({
   loungeLive?: boolean;
   /** True on staging and local runs, where the server can start a practice finale. */
   showPractice: boolean;
-  /** Called with the sync status of every state this component loads, so the footer stays current. */
-  onLeetSync: (status: LeetSyncStatus) => void;
   /** The daily Bait allowance the server paid when the Activity opened; null when there is none to tell. */
   allowance: Allowance | null;
 }) {
@@ -122,6 +121,8 @@ export function Game({
   // The raid's week times for Home, loaded when the game opens (a failed load leaves the raid rows out).
   const { raid: raidGlance, load: loadRaidGlance } = useRaidGlance(game.starterChosen);
   const [tab, setTab] = useState<Place>(DEFAULT_PLACE);
+  // Every change of place (dock, tray, rail, a Home notice) starts at the top of the new page.
+  useScrollTopOnChange(tab);
   const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
     null,
   );
@@ -173,7 +174,7 @@ export function Game({
   }, []);
 
   // While the first leet sync is still running, ask again every few seconds (a few times at most)
-  // so the balance, the history and the footer update as soon as the credits land.
+  // so the balance, the history and the currency popover's warning update as soon as the credits land.
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -185,7 +186,6 @@ export function Game({
           (next) => {
             if (cancelled) return;
             if (!inFlight() && actionCount.current === startedAt) setCurrent(loaded(next));
-            if (next.leetSync !== null) onLeetSync(next.leetSync);
             schedule(next.leetSync, attempts + 1);
           },
           () => {
@@ -381,7 +381,13 @@ export function Game({
   // room at the top of the Home page instead). Before a game (choosing a starter): the title row.
   const head = game.starterChosen ? (
     <>
-      <Hud title={placeLabel} balances={game.balances} helpRef={helpRef} onHelp={onHelp} />
+      <Hud
+        title={placeLabel}
+        balances={game.balances}
+        leetSync={game.leetSync}
+        helpRef={helpRef}
+        onHelp={onHelp}
+      />
       {wide && <RoomBand room={roomProps} />}
     </>
   ) : (
@@ -440,6 +446,8 @@ export function Game({
           home
           onSelect={(id) => {
             if (!isPlace(id)) return;
+            // Tapping the place you are in also goes back to its top.
+            if (id === tab) scrollToTop();
             setTab(id);
             setError(null);
             setNotice(null);

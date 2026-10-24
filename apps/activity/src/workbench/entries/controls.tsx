@@ -11,6 +11,7 @@ import { ScrollHint } from '../../ui/ScrollHint';
 import { Switch } from '../../ui/Switch';
 import { ToggleButton } from '../../ui/ToggleButton';
 import type { Speed } from '../../replay';
+import { INCOME_CASES, incomeLoader } from '../income-sample';
 import { bool, num, str } from '../props';
 import type { Entry, Props } from '../types';
 
@@ -225,25 +226,44 @@ const liveRegion: Entry = {
   ),
 };
 
+const FAILING_SYNC = {
+  source: 'http',
+  lastAttemptAt: 1,
+  lastSyncedAt: null,
+  lastError: 'timeout',
+  lastDays: null,
+} as const;
+
 const currencyPile: Entry = {
   name: 'CurrencyPile',
   file: 'apps/activity/src/CurrencyPile.tsx',
   group: 'Controls',
   description:
-    'The currencies button in the HUD, left of "?": the Bait and Essence balances with their pictures and numbers (large ones shortened, 12.3K). Tap it for a compact popover with the exact amounts and their glossary tags. Its spoken label carries both amounts.',
+    'The currencies button in the HUD, left of "?": the Bait and Essence balances with their pictures and numbers (large ones shortened, 12.3K). Tap it for a compact popover with the exact amounts and their glossary tags, then a short list of recent Bait income (the newest five credits with their sources; spends and Essence never show), loaded each time it opens, and a warning when the leet sync is failing. Its spoken label carries both amounts. Tap the button to see the list: the "income" control picks what the sample ledger holds.',
   controls: {
     bait: { kind: 'number', min: 0, max: 999999 },
     essence: { kind: 'number', min: 0, max: 999999 },
+    income: { kind: 'select', options: INCOME_CASES },
+    syncFailing: { kind: 'toggle' },
   },
-  defaults: { bait: 52, essence: 52 },
+  defaults: { bait: 52, essence: 52, income: 'typical', syncFailing: false },
   presets: [
     { name: 'Typical', props: {} },
-    { name: 'Nothing yet', props: { bait: 0, essence: 0 } },
+    { name: 'Nothing yet', props: { bait: 0, essence: 0, income: 'nothing yet' } },
     { name: 'Rich', props: { bait: 123456, essence: 9876 } },
+    { name: 'Income: only spends in the ledger', props: { income: 'only spends' } },
+    { name: 'Income: loading', props: { income: 'loading' } },
+    { name: 'Income: failed to load', props: { income: 'failed' } },
+    { name: 'Leet sync failing', props: { syncFailing: true } },
   ],
   render: (p) => (
     <div class="wb-pop-stage">
-      <CurrencyPile balances={{ bait: num(p, 'bait'), essence: num(p, 'essence') }} />
+      <CurrencyPile
+        key={str(p, 'income')}
+        balances={{ bait: num(p, 'bait'), essence: num(p, 'essence') }}
+        loadLedger={incomeLoader(str(p, 'income'))}
+        leetSync={bool(p, 'syncFailing') ? FAILING_SYNC : null}
+      />
     </div>
   ),
 };

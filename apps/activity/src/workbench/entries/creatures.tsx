@@ -9,6 +9,7 @@ import { BossCard } from '../../BossCard';
 import { RaidTimeline } from '../../RaidTimeline';
 import { RoomBand } from '../../AppHead';
 import { Hud } from '../../Hud';
+import { incomeLoader } from '../income-sample';
 import { LivingRoom, sceneOf } from '../../LivingRoom';
 import { LoungeSwap } from '../../LoungeSwap';
 import { loungeSample } from '../../creature-card-sample';
@@ -402,6 +403,7 @@ function RoomDemo({
           <Hud
             title="Creatures"
             balances={{ bait: 52, essence: 52 }}
+            loadLedger={incomeLoader('typical')}
             helpRef={NO_REF}
             onHelp={() => undefined}
           />

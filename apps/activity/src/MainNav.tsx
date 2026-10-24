@@ -63,12 +63,21 @@ function Pip({ reason }: { reason: string | null }) {
 }
 
 /** A picture: dark on the gold of the active button, its own colours otherwise. */
-function PlaceIcon({ glyph, active }: { glyph: string; active: boolean }) {
+function PlaceIcon({
+  glyph,
+  active,
+  scale = 2,
+}: {
+  glyph: string;
+  active: boolean;
+  /** Pixels per sprite pixel: 2 for the dock, the rail and the trays, 3 for Home (the primary button). */
+  scale?: number;
+}) {
   const palette = tabPalette(active);
   return (
     <Sprite
       sprite={glyphOrUnknown(glyph)}
-      scale={3}
+      scale={scale}
       class="nav-icon"
       {...(palette === undefined ? {} : { palette })}
     />
@@ -299,7 +308,7 @@ function HomeNavButton({
       data-place={entry.id}
       onClick={onOpen}
     >
-      <PlaceIcon glyph={entry.glyph} active />
+      <PlaceIcon glyph={entry.glyph} active scale={3} />
       <span class="nav-label">{entry.label}</span>
     </button>
   );
