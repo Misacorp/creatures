@@ -19,6 +19,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - `.claude/agents/researcher.md` (Sonnet): read-only web/docs research. No shell, no write access, by design.
 - `.claude/agents/helper.md` (Haiku): boilerplate, fixtures, content data entry, doc checks.
 - Agents that read untrusted web content must never also have shell access. Keep it that way.
+- **Agents that review UX, UI, art or game feel get `docs/design/review-brief.md`** (Misa's standing priorities) in their prompt. A suggestion that trades against one of those priorities goes to Misa as a choice; it is not applied as the new default.
 - **Parallel implementers work in their own worktree** (the Agent tool's `isolation: "worktree"`), not in the lead's working tree. The lead reviews each one's branch and merges it into the session branch. Two agents editing one tree break each other's runs and leave the lead's tree dirty.
 
 ## Pull requests
