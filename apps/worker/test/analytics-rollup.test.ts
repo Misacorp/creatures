@@ -320,6 +320,14 @@ describe('rollDay', () => {
         },
         ALICE,
       );
+      log(ctx, t + 42, { kind: 'games_entry', event: 'melon-run', creatures: 3 }, ALICE);
+      log(ctx, t + 43, { kind: 'games_buy', offer: 'fine-supply', price: 12 }, ALICE);
+      log(
+        ctx,
+        t + 44,
+        { kind: 'games_show', events: 4, skipped: 1, entrants: 7, players: 5 },
+        null,
+      );
       // The ledger counts too: Bait in from leet, Bait out for an expedition.
       ctx.core.credit({
         userId: USER_ID,
@@ -342,6 +350,12 @@ describe('rollDay', () => {
       expect(value(list, 'events', { kind: 'expedition_send' })).toBe(2);
       expect(value(list, 'users', { feature: 'expeditions' })).toBe(1);
       expect(value(list, 'users', { feature: 'workshop' })).toBe(1);
+      expect(value(list, 'users', { feature: 'games' })).toBe(1);
+      expect(value(list, 'games.entry', { event: 'melon-run' })).toBe(1);
+      expect(value(list, 'games.entry_creatures_sum', { event: 'melon-run' })).toBe(3);
+      expect(value(list, 'games.buy', { offer: 'fine-supply' })).toBe(1);
+      expect(value(list, 'games.show')).toBe(1);
+      expect(value(list, 'games.show_entrants_sum')).toBe(7);
       expect(value(list, 'rolled')).toBe(1);
       expect(value(list, 'economy.allowance')).toBe(1);
 
@@ -365,6 +379,7 @@ describe('rollDay', () => {
       expect(flow('scrap', 'sink', 'workshop_craft')).toBe(18);
       expect(flow('tide-shard', 'sink', 'workshop_craft')).toBe(1);
       expect(flow('supplies', 'sink', 'expedition')).toBe(4);
+      expect(flow('medals', 'sink', 'prize_stall')).toBe(12);
       // Nothing is bought any more (new sends have no `bought`); older events still count, see below.
       expect(flow('supplies', 'source', 'buy')).toBe(0);
       expect(flow('supplies', 'source', 'dungeon')).toBe(2);
