@@ -13,6 +13,14 @@
   min-width: 0;
 }
 
+/* On a desktop Home takes the wide card, as Expeditions and the Games show do, so a big screen gets three
+   columns of notices (`components/side-panel.css`). */
+@media (min-width: 60rem) {
+  main.card:has(.home-page) {
+    width: min(84rem, 100% - 1.25rem);
+  }
+}
+
 .home-page > .app-top {
   margin: 0;
 }
@@ -303,12 +311,48 @@ button.hb-need:focus-visible {
 }
 
 /*
-  A wide board (a desktop) would show the same angle as a ~30 px shift of a paper's far end, which looks crooked
-  rather than playful: the angle scales down so the ends sit about as far off as on a phone (4 to 8 px).
+  A wide board (a desktop) keeps its papers about as narrow as on a phone, so they lean the same: the notices
+  stand in two columns (three on a wider board), and Coming up and The valley today stand side by side. Only
+  Coming up is still wider than a phone's paper, so its lean is halved.
 */
+.hb-lower {
+  display: grid;
+  gap: 0.75rem;
+}
+
 @container (min-width: 40rem) {
-  .hb-paper {
-    --tilt-scale: 0.3;
+  .hb-needs,
+  .hb-quiet-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hb-lower:has(.hb-coming) {
+    grid-template-areas:
+      'title .'
+      'coming valley';
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+
+  .hb-lower > .hb-title {
+    grid-area: title;
+  }
+
+  .hb-lower > .hb-coming {
+    --tilt-scale: 0.5;
+
+    grid-area: coming;
+  }
+
+  .hb-lower > .hb-valley {
+    grid-area: valley;
+  }
+}
+
+@container (min-width: 56rem) {
+  .hb-needs,
+  .hb-quiet-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

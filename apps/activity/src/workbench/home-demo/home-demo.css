@@ -24,3 +24,10 @@
 .nd-wide.hm .nd-body {
   padding-top: 0.25rem;
 }
+
+/* As the game's card (`views/home.css`): Home takes the wide card from 60 rem. */
+@media (min-width: 60rem) {
+  .nd-wide.hm {
+    width: min(84rem, 100% - 1.25rem);
+  }
+}

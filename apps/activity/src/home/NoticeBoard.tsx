@@ -79,23 +79,46 @@ export function NoticeBoard({
           </ul>
         )}
 
-        {board.coming.length > 0 && (
-          <>
-            <PixelHeading as="h3" tone="gold" outline="ink" class="hb-title">
-              Coming up
-            </PixelHeading>
-            <ol class="hb-paper hb-coming" ref={lean('coming')}>
-              {board.coming.map((row) => (
-                <li key={`${row.place}-${String(row.at)}`}>
-                  <span class="hb-when pix">{row.when}</span>
-                  <Sprite sprite={glyphOrUnknown(row.glyph)} scale={2} class="hb-coming-icon" />
-                  <span class="hb-coming-text">{row.text}</span>
-                  <span class="hb-rel">{row.rel}</span>
-                </li>
-              ))}
-            </ol>
-          </>
-        )}
+        <div class="hb-lower">
+          {board.coming.length > 0 && (
+            <>
+              <PixelHeading as="h3" tone="gold" outline="ink" class="hb-title">
+                Coming up
+              </PixelHeading>
+              <ol class="hb-paper hb-coming" ref={lean('coming')}>
+                {board.coming.map((row) => (
+                  <li key={`${row.place}-${String(row.at)}`}>
+                    <span class="hb-when pix">{row.when}</span>
+                    <Sprite sprite={glyphOrUnknown(row.glyph)} scale={2} class="hb-coming-icon" />
+                    <span class="hb-coming-text">{row.text}</span>
+                    <span class="hb-rel">{row.rel}</span>
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
+
+          <div class="hb-paper hb-valley" ref={lean('valley')}>
+            <span class="hb-valley-label">The valley today</span>
+            <span class="hb-valley-sky">
+              {valley.kind !== 'blank' && <Sprite sprite={SKY_GLYPHS[valley.kind]} scale={2} />}
+              <span>{valley.sky ?? 'No forecast yet'}</span>
+            </span>
+            {valley.lineup.length > 0 && (
+              <span class="hb-valley-games" role="list" aria-label="The Games today">
+                {valley.lineup.map((event) => (
+                  <span key={event.id} role="listitem" class="hb-medal">
+                    <Sprite
+                      sprite={badgeSprite(event.scene, event.kind)}
+                      scale={2}
+                      alt={event.name}
+                    />
+                  </span>
+                ))}
+              </span>
+            )}
+          </div>
+        </div>
 
         {board.quiet.length > 0 && (
           <>
@@ -115,27 +138,6 @@ export function NoticeBoard({
             </ul>
           </>
         )}
-
-        <div class="hb-paper hb-valley" ref={lean('valley')}>
-          <span class="hb-valley-label">The valley today</span>
-          <span class="hb-valley-sky">
-            {valley.kind !== 'blank' && <Sprite sprite={SKY_GLYPHS[valley.kind]} scale={2} />}
-            <span>{valley.sky ?? 'No forecast yet'}</span>
-          </span>
-          {valley.lineup.length > 0 && (
-            <span class="hb-valley-games" role="list" aria-label="The Games today">
-              {valley.lineup.map((event) => (
-                <span key={event.id} role="listitem" class="hb-medal">
-                  <Sprite
-                    sprite={badgeSprite(event.scene, event.kind)}
-                    scale={2}
-                    alt={event.name}
-                  />
-                </span>
-              ))}
-            </span>
-          )}
-        </div>
       </div>
     </section>
   );
