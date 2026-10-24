@@ -17,7 +17,7 @@
 @import './base/controls.css';
 @import './components/glossary-tag.css';
 @import './components/alert.css';
-@import './components/tabs.css';
+@import './components/main-nav.css';
 @import './components/cards.css';
 @import './base/utilities.css';
 @import './views/raid.css';

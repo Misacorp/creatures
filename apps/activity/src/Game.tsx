@@ -16,7 +16,11 @@ import {
 } from './api';
 import { ActionIds } from './actions';
 import { allowanceNotice } from './allowance-text';
-import { AppHead } from './AppHead';
+import { AppHead, RoomBand } from './AppHead';
+import { Hud } from './Hud';
+import { MainNav } from './MainNav';
+import { navPlaces } from './nav-places';
+import { useWide } from './ui/wide-layout';
 import { Collection } from './Collection';
 import { createCreatureActions } from './creature-actions';
 import { LoungeSwap } from './LoungeSwap';
@@ -43,8 +47,7 @@ import { chooseCatch } from './talent-api';
 import { choiceResultText } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
-import { TabBar } from './TabBar';
-import type { Tab } from './tabs';
+import { isTab, type Tab } from './tabs';
 import { useActionRunner } from './use-action-runner';
 import { useForecast } from './use-forecast';
 import { EquipHost } from './equip-from-card';
@@ -218,7 +221,7 @@ export function Game({
     return true;
   }
 
-  // The pips of the tab bar and the timers that keep them true.
+  // The pips of the main navigation and the timers that keep them true.
   const alerts = useTabPips({
     expeditions: game.expeditions,
     jobs: gear === null ? null : gear.jobs,
@@ -347,39 +350,41 @@ export function Game({
     };
   }, [earning]);
 
-  const head = (
-    <AppHead
-      helpRef={helpRef}
-      onHelp={onHelp}
-      {...(game.starterChosen
-        ? {
-            balances: game.balances,
-            room: {
-              residents: room.residents,
-              selfId: user.id,
-              instanceId: participants.instanceId,
-              scene: sceneOf(phase),
-              forecast,
-              trophy: {
-                board: games.view?.board ?? [],
-                selfId: user.id,
-                onOpen: () => {
-                  setTab('games');
-                  games.load();
-                },
-              },
-              onMove: moveLounger,
-              onSwap: () => {
-                setSwapping(true);
-                refreshState();
-              },
-              ...(game.loungerId === null
-                ? {}
-                : { ownLoungeXp: game.loungeXp[game.loungerId] ?? 0 }),
+  // The main navigation: the dock on a phone, the rail on a wide window. The HUD names the place you are in.
+  const wide = useWide();
+  const places = navPlaces(alerts);
+  const placeLabel = places.find((place) => place.id === tab)?.label ?? '';
+
+  // With a game on screen: the HUD and, under it, the living room. Before one (choosing a starter): the title row.
+  const head = game.starterChosen ? (
+    <>
+      <Hud title={placeLabel} balances={game.balances} helpRef={helpRef} onHelp={onHelp} />
+      <RoomBand
+        room={{
+          residents: room.residents,
+          selfId: user.id,
+          instanceId: participants.instanceId,
+          scene: sceneOf(phase),
+          forecast,
+          trophy: {
+            board: games.view?.board ?? [],
+            selfId: user.id,
+            onOpen: () => {
+              setTab('games');
+              games.load();
             },
-          }
-        : {})}
-    />
+          },
+          onMove: moveLounger,
+          onSwap: () => {
+            setSwapping(true);
+            refreshState();
+          },
+          ...(game.loungerId === null ? {} : { ownLoungeXp: game.loungeXp[game.loungerId] ?? 0 }),
+        }}
+      />
+    </>
+  ) : (
+    <AppHead helpRef={helpRef} onHelp={onHelp} />
   );
 
   const devPanel = (
@@ -426,197 +431,196 @@ export function Game({
     </>
   ) : (
     <>
-      <TabBar
-        current={tab}
-        alerts={alerts}
-        onSelect={(id) => {
-          setTab(id);
-          setError(null);
-          setNotice(null);
-          refreshState();
-          room.refreshIfStale();
-          loadForecast();
-          if (id === 'games') games.load();
-          if (
-            id === 'workshop' ||
-            id === 'collection' ||
-            id === 'dungeon' ||
-            id === 'raid' ||
-            id === 'expeditions'
-          )
-            loadGear();
-        }}
-      />
-      <WipeNotice key={devNonce} cancelled={game.cancelled} creatures={game.creatures} />
-      {game.levelReset !== null && (
-        <LevelResetCard
-          notice={game.levelReset}
-          busy={busy}
-          onDismiss={() => {
-            void run(() => dismissLevelReset()).then(showState);
+      <div class="nav-shell">
+        <MainNav
+          places={places}
+          current={tab}
+          wide={wide}
+          onSelect={(id) => {
+            if (!isTab(id)) return;
+            setTab(id);
+            setError(null);
+            setNotice(null);
+            refreshState();
+            room.refreshIfStale();
+            loadForecast();
+            if (id === 'games') games.load();
+            if (id !== 'games') loadGear();
           }}
         />
-      )}
-      {error !== null && (
-        <Alert
-          key={error}
-          level="alert"
-          onDismiss={() => {
-            setError(null);
-          }}
-        >
-          {error}
-        </Alert>
-      )}
-      {notice !== null && (
-        <Alert
-          key={notice}
-          level="success"
-          onDismiss={() => {
-            setNotice(null);
-          }}
-        >
-          {notice}
-        </Alert>
-      )}
-      <div key={devNonce} role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'collection' && (
-          <Collection
-            state={game}
-            gear={gear}
-            busy={busy}
-            viewerId={user.id}
-            loadGames={fetchCreatureGames}
-            onEquip={equipOn}
-            catchActions={catchActions}
-            {...creatureActions}
-          />
-        )}
-        {tab === 'expeditions' && (
-          <Expeditions
-            state={game}
-            forecast={forecast}
-            offset={offset}
-            busy={busy}
-            reveal={reveal}
-            catchActions={catchActions}
-            settled={settled}
-            timezone={timezone.current}
-            onSend={async (request: SendRequest) => {
-              const answer = await runKeyed(ActionIds.send(request), (key) =>
-                sendExpedition(request, key),
-              );
-              if (answer === undefined) return false;
-              setCurrent(loaded(answer.state));
-              return true;
-            }}
-            onPushOn={(trip, goalId) => {
-              void run(() => pushOn(trip.id, goalId)).then((answer) => {
-                if (answer !== undefined) setCurrent(loaded(answer.state));
-              });
-            }}
-            onClaim={(trip) => {
-              void run(() => claimExpedition(trip.id)).then((done) => {
-                if (done === undefined) return;
-                setCurrent(loaded(done.state));
-                setReveal({
-                  result: done.result,
-                  trip: done.state.expeditions.find((e) => e.id === trip.id),
-                });
-                // The trip's parts, blueprints and gear are in the Workshop now.
-                loadGear();
-              });
-            }}
-            onRefresh={refreshState}
-            onDismissReveal={() => {
-              setReveal(null);
-            }}
-            onOpenWorkshop={() => {
-              setTab('workshop');
-              loadGear();
-            }}
-            bag={gear?.inventory ?? null}
-          />
-        )}
-        {tab === 'workshop' && (
-          <Workshop
-            state={game}
-            gear={gear}
-            failed={gearFailed}
-            offset={offset}
-            busy={busy}
-            error={error}
-            reveal={jobReveal}
-            actions={gearActions}
-            onRetry={loadGear}
-            onClaimed={setJobReveal}
-            onDismissReveal={() => {
-              setJobReveal(null);
-            }}
-          />
-        )}
-        {tab === 'games' && (
-          <GamesTab
-            view={games.view}
-            failed={games.failed}
-            creatures={game.creatures}
-            selfId={user.id}
-            offset={offset}
-            onView={games.replace}
-            onReload={games.load}
-            onPurchased={() => {
-              // A prize pays Bait, parts, a supply or a gear piece: the balances and the bag.
-              refreshState();
-              loadGear();
-            }}
-          />
-        )}
-        {tab === 'raid' && (
-          <Raid
-            creatures={game.creatures}
-            forecast={forecast}
-            showPractice={showPractice}
-            onBalanceChange={refreshState}
-            onNeedsPlacementChange={(needed) => {
-              setAttention((now) => ({
-                dungeon: false,
-                recheckAt: null,
-                ...now,
-                raid: needed,
-              }));
-            }}
-            configure={teamConfigure}
-          />
-        )}
-        {tab === 'dungeon' && (
-          <Dungeon
-            creatures={game.creatures}
-            forecast={forecast}
-            bait={game.balances.bait}
-            draft={dungeonDraft.current}
-            onDraftChange={(slots) => {
-              dungeonDraft.current = slots;
-            }}
-            onRunStarted={() => {
-              // The server deleted the saved draft: the next setup starts from this run's team.
-              dungeonDraft.current = null;
-            }}
-            onCanRunChange={(canRun) => {
-              setAttention((now) => ({
-                raid: false,
-                recheckAt: null,
-                ...now,
-                dungeon: canRun,
-              }));
-            }}
-            onRunFinished={() => {
-              // A run pays Bait, Essence, parts and maybe gear: reload the balances and the bag.
-              refreshState();
-              loadGear();
-            }}
-            configure={teamConfigure}
-          />
-        )}
+        <div class="nav-screen">
+          <WipeNotice key={devNonce} cancelled={game.cancelled} creatures={game.creatures} />
+          {game.levelReset !== null && (
+            <LevelResetCard
+              notice={game.levelReset}
+              busy={busy}
+              onDismiss={() => {
+                void run(() => dismissLevelReset()).then(showState);
+              }}
+            />
+          )}
+          {error !== null && (
+            <Alert
+              key={error}
+              level="alert"
+              onDismiss={() => {
+                setError(null);
+              }}
+            >
+              {error}
+            </Alert>
+          )}
+          {notice !== null && (
+            <Alert
+              key={notice}
+              level="success"
+              onDismiss={() => {
+                setNotice(null);
+              }}
+            >
+              {notice}
+            </Alert>
+          )}
+          <div key={devNonce}>
+            {tab === 'collection' && (
+              <Collection
+                state={game}
+                gear={gear}
+                busy={busy}
+                viewerId={user.id}
+                loadGames={fetchCreatureGames}
+                onEquip={equipOn}
+                catchActions={catchActions}
+                {...creatureActions}
+              />
+            )}
+            {tab === 'expeditions' && (
+              <Expeditions
+                state={game}
+                forecast={forecast}
+                offset={offset}
+                busy={busy}
+                reveal={reveal}
+                catchActions={catchActions}
+                settled={settled}
+                timezone={timezone.current}
+                onSend={async (request: SendRequest) => {
+                  const answer = await runKeyed(ActionIds.send(request), (key) =>
+                    sendExpedition(request, key),
+                  );
+                  if (answer === undefined) return false;
+                  setCurrent(loaded(answer.state));
+                  return true;
+                }}
+                onPushOn={(trip, goalId) => {
+                  void run(() => pushOn(trip.id, goalId)).then((answer) => {
+                    if (answer !== undefined) setCurrent(loaded(answer.state));
+                  });
+                }}
+                onClaim={(trip) => {
+                  void run(() => claimExpedition(trip.id)).then((done) => {
+                    if (done === undefined) return;
+                    setCurrent(loaded(done.state));
+                    setReveal({
+                      result: done.result,
+                      trip: done.state.expeditions.find((e) => e.id === trip.id),
+                    });
+                    // The trip's parts, blueprints and gear are in the Workshop now.
+                    loadGear();
+                  });
+                }}
+                onRefresh={refreshState}
+                onDismissReveal={() => {
+                  setReveal(null);
+                }}
+                onOpenWorkshop={() => {
+                  setTab('workshop');
+                  loadGear();
+                }}
+                bag={gear?.inventory ?? null}
+              />
+            )}
+            {tab === 'workshop' && (
+              <Workshop
+                state={game}
+                gear={gear}
+                failed={gearFailed}
+                offset={offset}
+                busy={busy}
+                error={error}
+                reveal={jobReveal}
+                actions={gearActions}
+                onRetry={loadGear}
+                onClaimed={setJobReveal}
+                onDismissReveal={() => {
+                  setJobReveal(null);
+                }}
+              />
+            )}
+            {tab === 'games' && (
+              <GamesTab
+                view={games.view}
+                failed={games.failed}
+                creatures={game.creatures}
+                selfId={user.id}
+                offset={offset}
+                onView={games.replace}
+                onReload={games.load}
+                onPurchased={() => {
+                  // A prize pays Bait, parts, a supply or a gear piece: the balances and the bag.
+                  refreshState();
+                  loadGear();
+                }}
+              />
+            )}
+            {tab === 'raid' && (
+              <Raid
+                creatures={game.creatures}
+                forecast={forecast}
+                showPractice={showPractice}
+                onBalanceChange={refreshState}
+                onNeedsPlacementChange={(needed) => {
+                  setAttention((now) => ({
+                    dungeon: false,
+                    recheckAt: null,
+                    ...now,
+                    raid: needed,
+                  }));
+                }}
+                configure={teamConfigure}
+              />
+            )}
+            {tab === 'dungeon' && (
+              <Dungeon
+                creatures={game.creatures}
+                forecast={forecast}
+                bait={game.balances.bait}
+                draft={dungeonDraft.current}
+                onDraftChange={(slots) => {
+                  dungeonDraft.current = slots;
+                }}
+                onRunStarted={() => {
+                  // The server deleted the saved draft: the next setup starts from this run's team.
+                  dungeonDraft.current = null;
+                }}
+                onCanRunChange={(canRun) => {
+                  setAttention((now) => ({
+                    raid: false,
+                    recheckAt: null,
+                    ...now,
+                    dungeon: canRun,
+                  }));
+                }}
+                onRunFinished={() => {
+                  // A run pays Bait, Essence, parts and maybe gear: reload the balances and the bag.
+                  refreshState();
+                  loadGear();
+                }}
+                configure={teamConfigure}
+              />
+            )}
+          </div>
+        </div>
       </div>
     </>
   );

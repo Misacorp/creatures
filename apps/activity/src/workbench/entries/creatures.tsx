@@ -7,7 +7,8 @@ import { TreatBox } from '../../TreatBox';
 import { AbilityChip } from '../../AbilityChip';
 import { BossCard } from '../../BossCard';
 import { RaidTimeline } from '../../RaidTimeline';
-import { AppHead } from '../../AppHead';
+import { RoomBand } from '../../AppHead';
+import { Hud } from '../../Hud';
 import { LivingRoom, sceneOf } from '../../LivingRoom';
 import { LoungeSwap } from '../../LoungeSwap';
 import { loungeSample } from '../../creature-card-sample';
@@ -393,25 +394,30 @@ function RoomDemo({
         setSpot({ id: spotId, at: Date.now() });
       }
     : undefined;
-  // With the title row it is drawn as the app draws it: a band as wide as the window.
+  // With the HUD it is drawn as the app draws it: a band as wide as the window under the HUD.
   return (
     <>
       {titleRow ? (
-        <AppHead
-          helpRef={NO_REF}
-          onHelp={() => undefined}
-          balances={{ bait: 52, essence: 52 }}
-          room={{
-            residents: shown,
-            selfId: ROOM_SELF_ID,
-            instanceId: 'workbench',
-            scene,
-            onSwap,
-            ownLoungeXp: 34,
-            trophy: ROOM_TROPHY,
-            ...(onMove === undefined ? {} : { onMove }),
-          }}
-        />
+        <>
+          <Hud
+            title="Creatures"
+            balances={{ bait: 52, essence: 52 }}
+            helpRef={NO_REF}
+            onHelp={() => undefined}
+          />
+          <RoomBand
+            room={{
+              residents: shown,
+              selfId: ROOM_SELF_ID,
+              instanceId: 'workbench',
+              scene,
+              onSwap,
+              ownLoungeXp: 34,
+              trophy: ROOM_TROPHY,
+              ...(onMove === undefined ? {} : { onMove }),
+            }}
+          />
+        </>
       ) : (
         <LivingRoom
           residents={shown}
@@ -446,7 +452,7 @@ const livingRoom: Entry = {
   file: 'apps/activity/src/LivingRoom.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The pixel living room at the top of the app: every player who has the Activity open sits in a spot with their lounging creature (tap one for its popover), and the title row is laid over the wall. Use the width switcher: wide shows the whole room centred, a phone width scrolls it sideways (mouse drag, or swipe) and pans it slowly when left alone. With "movable" on, drag your own creature ("You") to an empty spot (mouse: press and move; touch: hold, then move), or open its popover and use Move to pick a spot with the keyboard.',
+    'The pixel living room at the top of the app: every player who has the Activity open sits in a spot with their lounging creature (tap one for its popover). With "titleRow" on the HUD is above it, as in the game (the place name, the currencies and "?"). Use the width switcher: wide shows the whole room centred, a phone width scrolls it sideways (mouse drag, or swipe) and pans it slowly when left alone. With "movable" on, drag your own creature ("You") to an empty spot (mouse: press and move; touch: hold, then move), or open its popover and use Move to pick a spot with the keyboard.',
   controls: {
     players: { kind: 'number', min: 1, max: 24 },
     oneBusy: { kind: 'toggle' },
@@ -471,7 +477,7 @@ const livingRoom: Entry = {
     { name: 'One all-busy note', props: { oneBusy: true } },
     { name: 'Day', props: { phase: 'day' } },
     { name: 'Twilight', props: { phase: 'twilight' } },
-    { name: 'No title row', props: { titleRow: false } },
+    { name: 'No HUD', props: { titleRow: false } },
     { name: 'Drag your own creature', props: { movable: true } },
     {
       name: 'Claims collide (older wins)',

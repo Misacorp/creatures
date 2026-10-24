@@ -95,7 +95,7 @@ Written down at Misa's request before the session's context was compacted. Nothi
 2. **Spacing.** Make the spacing between and inside the Games' sections and rows consistent with the rest of the app (`ux-patterns.md`).
 3. **The "Good fit" badge.** Its check mark sits on a black square and looks off. Redraw it so the tick sits cleanly in the tag, with no box.
 4. **Leaderboard flicker.** The live leaderboard re-sorts on every score change, so rows swap back and forth. Debounce reordering (only move a row once its new place has held for a short while, or animate the move) so it reads calmly.
-5. **Main menu redesign.** With Games as the sixth tab the tab bar barely fits on a phone (360 px has no spare width). Rethink the main navigation (also in `docs/roadmap.md`).
+5. **Main menu redesign.** With Games as the sixth tab the tab bar barely fits on a phone (360 px has no spare width). Rethink the main navigation (also in `docs/roadmap.md`). **Done 2026-10-24:** a bottom dock with a More drawer on a phone, a left rail on a desktop, a HUD on top (decisions.md, 2026-10-24).
 
 ### Seen while building, not yet fixed
 

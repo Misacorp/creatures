@@ -6,6 +6,7 @@ import { creaturePageEntries } from './entries/creature-page';
 import { creatureEntries } from './entries/creatures';
 import { evolveEntries } from './entries/evolve';
 import { expeditionWorldEntries } from './entries/expedition-world';
+import { mainNavEntries } from './entries/main-nav';
 import { flipperEntries } from './entries/flipper';
 import { gamesArtEntries } from './entries/games-art';
 import { gamesShowEntries } from './entries/games-show';
@@ -82,6 +83,7 @@ export const ENTRIES: readonly Entry[] = [
   ...gamesArtEntries,
   ...gamesShowEntries,
   ...gamesTabEntries,
+  ...mainNavEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {

@@ -1,4 +1,3 @@
-import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { shinyPalette } from './art';
 import { cssVars } from './css-vars';
@@ -225,8 +224,6 @@ interface LivingRoomProps {
    * its "Games" button does. Absent: no shelf (tests).
    */
   trophy?: { board: readonly BoardRow[]; selfId: string; onOpen: () => void };
-  /** The title row, laid over the top wall band; it does not scroll with the room. */
-  children?: ComponentChildren;
   /**
    * Moves the player's own creature to an empty spot (dragging it, or "Move" in its popover). Called
    * with the chosen spot's id; the caller saves it and puts it in the player's own resident (`spot`).
@@ -258,7 +255,6 @@ export function LivingRoom({
   scene = sceneOf('night'),
   forecast,
   trophy,
-  children,
   onMove,
   onSwap,
   ownLoungeXp,
@@ -503,7 +499,6 @@ export function LivingRoom({
           )}
         </div>
       </div>
-      {children !== undefined && <div class="room-head">{children}</div>}
       {!picks && <p class="room-count pix">{residents.length} here</p>}
       {picks && (
         <p class="room-pick pix">

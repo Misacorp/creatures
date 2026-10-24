@@ -116,7 +116,7 @@ Noted while testing the expedition and Workshop rework on staging. The component
 
 ## After the Valley Games (Misa, 2026-10-23)
 
-- **Main menu redesign.** With Games as the sixth tab the tab bar barely fits on a phone (360 px has no spare width). Rethink the main navigation.
+- **Main menu redesign.** With Games as the sixth tab the tab bar barely fits on a phone (360 px has no spare width). Rethink the main navigation. **Built 2026-10-24** (a dock and a rail with a HUD; `design/decisions.md`).
 - **Valley Games polish and fixes:** alignment, spacing, the Good fit badge's tick, a calmer live leaderboard, crowded big fields, and the postponed ideas. The full list is in `design/valley-games.md`, "After v1".
 
 ## UI audit findings (2026-10-24)

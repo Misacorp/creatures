@@ -1,0 +1,286 @@
+/*
+  The main navigation (`MainNav.tsx`, `Hud.tsx`; decisions.md 2026-10-24). Below 60 rem (`WIDE_QUERY`) it is a
+  game's dock: a bar of pixel buttons fixed to the bottom edge, under the thumb, with the HUD (the place's
+  name, the currencies, "?") stuck to the top edge. From 60 rem the dock is a rail down the left of the
+  screen, every place with its word beside the picture, and the HUD runs across the top of the card.
+*/
+:root {
+  --dock-h: 4rem; /* the dock's height: a 3.5 rem button and 0.25 rem above and below */
+  --dock-gap: 0.25rem; /* `DOCK_GAP_PX` in nav-places.ts */
+  --dock-safe: max(env(safe-area-inset-bottom, 0px), var(--discord-safe-area-inset-bottom, 0px));
+  --hud-h: 3.5rem;
+}
+
+/* --- The HUD --- */
+.hud {
+  position: sticky;
+  top: var(--discord-safe-area-inset-top, 0px);
+  z-index: 35; /* over the stage's overlays (30), under the How to play page (40) and drawers (50) */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--hud-h);
+  margin: -1rem -1rem 0;
+  padding: 0.375rem 0.75rem;
+  background: var(--dusk);
+  box-shadow:
+    0 var(--px) 0 0 var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--bevel-lo);
+}
+
+h1.hud-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--fs-title);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-shadow:
+    1px 1px 0 var(--ink),
+    2px 2px 0 var(--plum);
+  white-space: nowrap;
+}
+
+.hud-tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hud button.howto-open {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+}
+
+/* The page scrolls to a thing without hiding it under the HUD or the dock. */
+html:has(.hud) {
+  scroll-padding-top: calc(var(--hud-h) + 0.5rem);
+}
+
+html:has(.main-nav.dock) {
+  scroll-padding-bottom: calc(var(--dock-h) + var(--dock-safe) + 0.5rem);
+}
+
+/* --- The places: a button with a picture, a word and maybe a pip --- */
+.main-nav ul {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button.nav-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  background: var(--dusk-2);
+  font-size: var(--fs-small);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+button.nav-btn.active {
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--gold-shade);
+}
+
+/*
+  The focus ring sits inside the button: the dock touches the window's edges and the rail scrolls, so the usual
+  ring (6 px outside) would be cut off. Bone on the dark buttons, ink on the gold of the active one.
+*/
+button.nav-btn:focus-visible,
+button.nav-more-row:focus-visible {
+  outline-offset: calc(var(--px) * -2);
+}
+
+button.nav-btn.active:focus-visible {
+  outline-color: var(--ink);
+}
+
+.nav-icon {
+  display: block;
+  flex: none;
+}
+
+/*
+  The pip: a small square in the button's top right corner, inside its edge (the dock touches the window's
+  edges and a rail scrolls, so a pip over the edge would be cut off). It does not change the button's size, has
+  the ink outline of the other pixel chrome and a warm colour that stays readable on the gold of the active
+  button. The reason is in the button's name for screen readers.
+*/
+.nav-pip {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--attention);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+  pointer-events: none;
+}
+
+/* In a row of the More drawer the pip sits in the flow, before its reason. */
+.nav-pip.inline {
+  position: static;
+  flex: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .nav-pip {
+    animation: nav-pip-pop 300ms steps(4) both;
+  }
+}
+
+@keyframes nav-pip-pop {
+  0% {
+    transform: scale(0);
+  }
+
+  60% {
+    transform: scale(1.5);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* --- The phone's dock --- */
+.main-nav.dock {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 35;
+  padding: 0.25rem max(0.25rem, var(--discord-safe-area-inset-right, 0px))
+    calc(0.25rem + var(--dock-safe)) max(0.25rem, var(--discord-safe-area-inset-left, 0px));
+  background: var(--dusk);
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--ink),
+    inset 0 var(--px) 0 0 var(--bevel-hi);
+}
+
+.main-nav.dock ul {
+  gap: var(--dock-gap);
+}
+
+/*
+  Every place is one button, a picture over its word. The buttons keep the width of their word (never under a
+  44 px target) and share what is left, so six places fit a 360 px phone with "Expeditions" in full. `MainNav`
+  measures them and moves what does not fit into More (`use-dock-fit.ts`).
+*/
+.main-nav.dock li {
+  flex: 1 1 auto;
+  min-width: 2.75rem;
+}
+
+.main-nav.dock ul.measuring {
+  overflow: hidden;
+}
+
+.main-nav.dock ul.measuring li {
+  flex: none;
+}
+
+.main-nav.dock button.nav-btn {
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 3.5rem;
+  padding: 0.25rem 0.125rem;
+}
+
+/* The page makes room for the dock, so nothing at its end hides behind it. */
+main.card:has(.main-nav.dock) {
+  padding-bottom: calc(1rem + var(--dock-h) + var(--dock-safe));
+}
+
+/* --- The More drawer: one row per place --- */
+.nav-more {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.25rem 0 0.5rem;
+  list-style: none;
+}
+
+button.nav-more-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.375rem 0.75rem;
+  text-align: left;
+}
+
+.nav-more-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-heading);
+}
+
+.nav-more-pip {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--haze);
+}
+
+/* --- The wide window: HUD across the top, a rail on the left, the screen beside it --- */
+.nav-shell {
+  min-width: 0;
+}
+
+.nav-screen {
+  min-width: 0;
+}
+
+/* The rail: only drawn on a wide window (`MainNav`'s `wide`), so its look needs no media query. */
+.main-nav.rail {
+  position: sticky;
+  top: 0.625rem;
+  max-height: calc(100vh - 1.25rem);
+  padding: 0.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.main-nav.rail ul {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.main-nav.rail button.nav-btn {
+  justify-content: flex-start;
+  gap: 0.625rem;
+  padding: 0.375rem 0.625rem;
+}
+
+@media (min-width: 60rem) {
+  .hud {
+    position: static;
+  }
+
+  .nav-shell {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  /* The card is as wide as before plus the rail; a screen with a side panel widens it further (`side-panel.css`). */
+  main.card:has(.main-nav.rail) {
+    width: min(58rem, 100% - 1.25rem);
+  }
+}

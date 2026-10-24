@@ -1,5 +1,5 @@
 /**
- * The pips of the tab bar and the timers that keep them true. They follow the server's clock: one
+ * The pips of the main navigation (the dock and the rail) and the timers that keep them true. They follow the server's clock: one
  * timer, set for the next trip or job to run out (a long wait is capped), and set again after it
  * fires; and one check a moment after the server said something could change by itself.
  */

@@ -1,15 +1,21 @@
 /**
- * The tabs of the game screen. Six of them have to fit side by side on a phone (390 px wide, 16 px
- * gutters) with no horizontal scroll, so every tab is a small picture over a short word, and the
- * picture is part of the tab at every width. The glyphs are one-colour (`w`), so a selected tab
- * (dark on gold) can tint its picture to stay readable.
+ * The places of the game screen (the "tabs": `Tab` is the id of the current place). Each is a
+ * picture and a word in the main navigation (`MainNav`: the phone's bottom dock, the desktop's left rail,
+ * and the More drawer when a dock cannot hold them all; the list the navigation reads is `navPlaces` in
+ * `nav-places.ts`). The glyphs are one-colour (`w`), so the active place (dark on gold) can tint its
+ * picture to stay readable.
  */
 
 export type Tab = 'collection' | 'expeditions' | 'games' | 'raid' | 'workshop' | 'dungeon';
 
+/** Whether `id` is the id of a place (the navigation hands back plain strings). */
+export function isTab(id: string): id is Tab {
+  return TABS.some((t) => t.id === id);
+}
+
 interface TabDef {
   id: Tab;
-  /** The word under the picture, also the accessible name. */
+  /** The word beside or under the picture, also the accessible name. */
   label: string;
   /** The id of the glyph in `glyphs.ts`. */
   glyph: string;
@@ -34,29 +40,4 @@ const INK = '#0d0a1a';
 /** The palette change for a tab's picture: dark on the gold of the selected tab, its own colours otherwise. */
 export function tabPalette(active: boolean): Readonly<Record<string, string>> | undefined {
   return active ? { w: INK, m: INK } : undefined;
-}
-
-/** The tab a key moves to inside the tab list: arrows step (wrapping), Home and End jump. */
-export function tabAfterKey(current: Tab, key: string): Tab | null {
-  const index = TABS.findIndex((t) => t.id === current);
-  if (index < 0) return null;
-  const last = TABS.length - 1;
-  let to: number;
-  switch (key) {
-    case 'ArrowRight':
-      to = index === last ? 0 : index + 1;
-      break;
-    case 'ArrowLeft':
-      to = index === 0 ? last : index - 1;
-      break;
-    case 'Home':
-      to = 0;
-      break;
-    case 'End':
-      to = last;
-      break;
-    default:
-      return null;
-  }
-  return TABS[to]?.id ?? null;
 }

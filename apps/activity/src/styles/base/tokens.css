@@ -48,14 +48,14 @@
     raw rem, so the same kind of text is the same size everywhere. The few raw sizes left (display, art and the
     compact board labels) are listed in `type-scale.test.ts`.
     One rung smaller since 2026-10-19 (Misa, on a 360 px phone: "smaller everywhere"; it was 24 / 20 / 16 /
-    14 px, it is 20 / 16 / 14 / 12 px). Small is the tab bar's words, the smallest text a screen needs, so
+    14 px, it is 20 / 16 / 14 / 12 px). Small is the navigation's words, the smallest text a screen needs, so
     nothing on a panel goes below it. Check a change at 360 px as well as 390 px.
   */
   --drawer-pad: 0.75rem; /* the side padding of everything in a drawer: heading, body, footer, rows */
   --fs-title: 1.25rem; /* a drawer's or page's title; the creature's name */
   --fs-heading: 1rem; /* a card's name (the item card), a sheet's title */
   --fs-row: 0.875rem; /* a row: a stat, a modifier line, a picker option, a button in a panel */
-  --fs-small: 0.75rem; /* a note under a row, a badge, a reason, the tab bar's words */
+  --fs-small: 0.75rem; /* a note under a row, a badge, a reason, the navigation's words */
   --bevel-hi: #3d3570; /* the pixel bevel: the lit top edge of a raised panel or button */
   --bevel-lo: #1a1533; /* and the shadowed bottom edge */
   /* The Undercroft's palette: darker than the page, with a pale violet instead of the day's gold and haze. */
