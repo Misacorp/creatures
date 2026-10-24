@@ -317,7 +317,10 @@ describe('the commentary’s owners', () => {
     Object.defineProperty(proto, 'scrollWidth', {
       configurable: true,
       get(this: FakeElement) {
-        return this.classList.contains('gs-say') && !this.classList.contains('is-short') ? 500 : 0;
+        const line = this.parentNode;
+        return this.classList.contains('prose') && line?.classList.contains('is-short') !== true
+          ? 500
+          : 0;
       },
     });
     Object.defineProperty(proto, 'clientWidth', { configurable: true, get: () => 300 });
@@ -327,16 +330,19 @@ describe('the commentary’s owners', () => {
       expect(line.classList.contains('is-tight')).toBe(false);
       expect(visibleText(first(byClass(line, 'gs-owner')))).toBe('(Kristiina)');
       page?.unmount();
-      // Still too wide when shortened: the names drop to the line's size too (then CSS ends it "…").
+      // Still too wide when shortened: the names drop to the line's size, then the line wraps.
       Object.defineProperty(proto, 'scrollWidth', {
         configurable: true,
         get(this: FakeElement) {
-          return this.classList.contains('gs-say') ? 500 : 0;
+          return this.classList.contains('prose') ? 500 : 0;
         },
       });
-      const tight = drawAt(theirs.ms, long);
-      expect(tight.classList.contains('is-short')).toBe(true);
-      expect(tight.classList.contains('is-tight')).toBe(true);
+      const wrapped = drawAt(theirs.ms, long);
+      expect(wrapped.classList.contains('is-short')).toBe(true);
+      expect(wrapped.classList.contains('is-tight')).toBe(true);
+      expect(wrapped.classList.contains('is-wrap')).toBe(true);
+      // Wrapping keeps the owners: nothing is dropped from the line.
+      expect(visibleText(first(byClass(wrapped, 'gs-owner')))).toBe('(Kristiina)');
     } finally {
       delete proto.scrollWidth;
       delete proto.clientWidth;
