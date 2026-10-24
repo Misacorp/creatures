@@ -35,6 +35,31 @@ describe('the triangles of a barrier', () => {
     expect(shards.filter((s) => s.edge)).toHaveLength(6 * 11);
   });
 
+  it('has straight sides: every corner of the hexagon is a corner of a triangle', () => {
+    const a = 96;
+    const h = (Math.sqrt(3) / 2) * a;
+    const corners = [
+      [a, 0],
+      [a / 2, h],
+      [-a / 2, h],
+      [-a, 0],
+      [-a / 2, -h],
+      [a / 2, -h],
+    ].map(([x, y]) => [W / 2 + (x ?? 0), H / 2 + (y ?? 0)] as const);
+    const vertices = shards.flatMap((s) => [
+      [s.points[0], s.points[1]],
+      [s.points[2], s.points[3]],
+      [s.points[4], s.points[5]],
+    ]);
+    for (const [x, y] of corners) {
+      expect(vertices.some(([vx, vy]) => Math.hypot(vx - x, vy - y) < 1e-6)).toBe(true);
+    }
+    // No triangle pokes out past the hexagon: every corner of every triangle is inside or on it.
+    for (const [vx, vy] of vertices) {
+      expect(insideHexagon(vx - W / 2, vy - H / 2, a + 1e-6)).toBe(true);
+    }
+  });
+
   it('is the same every time (no randomness)', () => {
     expect(barrierShards(W, H, 16, 'glass')).toEqual(shards);
   });

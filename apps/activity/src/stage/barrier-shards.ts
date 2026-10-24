@@ -64,7 +64,9 @@ export function barrierShards(
   // Rows of the grid from the hexagon's top edge to its bottom, a corner of the grid at its middle.
   for (let r = -rings; r < rings; r++) {
     const y0 = my + r * rh;
-    const off = (Math.abs(r) % 2) * (side / 2);
+    // Shifted so a corner of the grid sits at the hexagon's middle: then its sides run along the
+    // triangles' edges and come out straight.
+    const off = ((Math.abs(r) + 1) % 2) * (side / 2);
     for (let i = -rings * 2 - 1; i <= rings * 2; i++) {
       const x = mx + i * side + off;
       for (const up of [true, false]) {
