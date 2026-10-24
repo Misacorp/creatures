@@ -5,14 +5,14 @@ import { barrierShards, shardAlpha, shardMix, shardScatter, type Shard } from '.
 
 /** How each pattern builds its shield: the triangles' side (CSS px), the shimmer's speed and strength. */
 const PATTERN: Readonly<Record<BarrierPattern, { side: number; speed: number; alpha: number }>> = {
-  glass: { side: 20, speed: 1, alpha: 0.16 },
-  plates: { side: 26, speed: 0.6, alpha: 0.22 },
-  thorns: { side: 16, speed: 1.4, alpha: 0.18 },
+  glass: { side: 16, speed: 1, alpha: 0.145 },
+  plates: { side: 21, speed: 0.6, alpha: 0.2 },
+  thorns: { side: 13, speed: 1.4, alpha: 0.16 },
 };
 
 /**
- * The room around the dome on the canvas (CSS px, each side), so the pieces of a shatter fly free
- * instead of being cut at the dome's box. barrier.css widens the canvas by the same amount.
+ * The room around the shield's box on the canvas (CSS px, each side), so the pieces of a shatter fly
+ * free instead of being cut at the box. barrier.css widens the canvas by the same amount.
  */
 const ROOM = 100;
 
@@ -48,7 +48,7 @@ function draw(
   for (const s of shards) {
     const mix = shardMix(s, t * speed);
     const rgb = colours.a.map((v, k) => Math.round(v + ((colours.c[k] ?? v) - v) * mix));
-    let a = shardAlpha(s, t * speed, alpha);
+    let a = shardAlpha(s, t, alpha, speed);
     ctx.save();
     if (shatter !== null) {
       const p = shardScatter(s, shatter);
@@ -72,8 +72,9 @@ function draw(
 /**
  * A see-through shield over the foe's picture while a lasting move is armed (Backdraft, Molten
  * Shell, the Thorns room: `BARRIER_OPS`). One component for all of them; `look` gives its colours
- * and its pattern (`barrierLookOf`). No border: it is built from small triangles whose opacity and
- * colour shift slowly, so it shimmers. When the first reaction meets it, it flashes and its
+ * and its pattern (`barrierLookOf`). No border: it is a hexagon of small triangles, a little wider
+ * than the foe, whose opacity and colour shift slowly, with a shine sweeping from the top left to the
+ * bottom right now and then. When the first reaction meets it, it flashes and its
  * triangles fly out and fade. One small canvas, redrawn while it shows (a few dozen triangles);
  * with reduced motion it is drawn once and simply goes when broken. Decoration only (the move track
  * and the move's popover say what it does), so it is hidden from assistive technology. The stage
