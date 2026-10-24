@@ -46,10 +46,10 @@ describe('the triangles of a barrier', () => {
       [-a / 2, -h],
       [a / 2, -h],
     ].map(([x, y]) => [W / 2 + (x ?? 0), H / 2 + (y ?? 0)] as const);
-    const vertices = shards.flatMap((s) => [
-      [s.points[0], s.points[1]],
-      [s.points[2], s.points[3]],
-      [s.points[4], s.points[5]],
+    const vertices: (readonly [number, number])[] = shards.flatMap((s) => [
+      [s.points[0], s.points[1]] as const,
+      [s.points[2], s.points[3]] as const,
+      [s.points[4], s.points[5]] as const,
     ]);
     for (const [x, y] of corners) {
       expect(vertices.some(([vx, vy]) => Math.hypot(vx - x, vy - y) < 1e-6)).toBe(true);
