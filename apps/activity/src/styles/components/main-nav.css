@@ -1,12 +1,13 @@
 /*
   The main navigation (`MainNav.tsx`, `Hud.tsx`; decisions.md 2026-10-24). Below 60 rem (`WIDE_QUERY`) it is a
-  game's dock: a bar of pixel buttons fixed to the bottom edge, under the thumb, with the HUD (the place's
-  name, the currencies, "?") stuck to the top edge. From 60 rem the dock is a rail down the left of the
-  screen, every place with its word beside the picture, and the HUD runs across the top of the card.
+  game's dock: three group buttons fixed to the bottom edge, under the thumb (a group with several places opens
+  a tray of big buttons upward), with the HUD (the place's name, the currencies, "?") stuck to the top edge.
+  From 60 rem the dock is a rail down the left of the screen, every place with its word beside the picture
+  under its group's heading, and the HUD runs across the top of the card.
 */
 :root {
-  --dock-h: 4rem; /* the dock's height: a 3.5 rem button and 0.25 rem above and below */
-  --dock-gap: 0.25rem; /* `DOCK_GAP_PX` in nav-places.ts */
+  --dock-h: 4rem; /* the dock's height without the safe-area inset: a 3.5 rem button and 0.25 rem above and below */
+  --dock-gap: 0.25rem;
   --dock-safe: max(env(safe-area-inset-bottom, 0px), var(--discord-safe-area-inset-bottom, 0px));
   --hud-h: 3.5rem;
 }
@@ -99,7 +100,7 @@ button.nav-btn.active {
   ring (6 px outside) would be cut off. Bone on the dark buttons, ink on the gold of the active one.
 */
 button.nav-btn:focus-visible,
-button.nav-more-row:focus-visible {
+button.nav-tray-item:focus-visible {
   outline-offset: calc(var(--px) * -2);
 }
 
@@ -129,7 +130,7 @@ button.nav-btn.active:focus-visible {
   pointer-events: none;
 }
 
-/* In a row of the More drawer the pip sits in the flow, before its reason. */
+/* In a row of the tray the pip sits in the flow, before its reason. */
 .nav-pip.inline {
   position: static;
   flex: none;
@@ -156,6 +157,16 @@ button.nav-btn.active:focus-visible {
 }
 
 /* --- The phone's dock --- */
+/*
+  The bar reaches the bottom edge of the window: the safe-area inset (the phone's rounded corners, a gesture
+  bar) is padding inside it, so the bar runs on into the corners. `--dock-safe` is the larger of the browser's
+  inset and Discord's, never their sum. The body's own bottom padding (Discord's inset again) is dropped while
+  the dock is there, so the inset is not counted twice.
+*/
+body:has(.main-nav.dock) {
+  padding-bottom: 0;
+}
+
 .main-nav.dock {
   position: fixed;
   right: 0;
@@ -174,22 +185,10 @@ button.nav-btn.active:focus-visible {
   gap: var(--dock-gap);
 }
 
-/*
-  Every place is one button, a picture over its word. The buttons keep the width of their word (never under a
-  44 px target) and share what is left, so six places fit a 360 px phone with "Expeditions" in full. `MainNav`
-  measures them and moves what does not fit into More (`use-dock-fit.ts`).
-*/
-.main-nav.dock li {
-  flex: 1 1 auto;
-  min-width: 2.75rem;
-}
-
-.main-nav.dock ul.measuring {
-  overflow: hidden;
-}
-
-.main-nav.dock ul.measuring li {
-  flex: none;
+/* Three group buttons share the width equally, each a picture over its word. */
+.main-nav.dock > ul > li {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .main-nav.dock button.nav-btn {
@@ -204,37 +203,100 @@ main.card:has(.main-nav.dock) {
   padding-bottom: calc(1rem + var(--dock-h) + var(--dock-safe));
 }
 
-/* --- The More drawer: one row per place --- */
-.nav-more {
-  display: grid;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0.25rem 0 0.5rem;
-  list-style: none;
+/* --- The sub-menu tray: big buttons above the dock, one per place --- */
+.nav-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 34; /* under the dock (35), over the page */
 }
 
-button.nav-more-row {
+.main-nav.dock ul.nav-tray {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  display: grid;
+  gap: 0.5rem;
+  width: min(17rem, 100% - 1rem);
+  padding: 0.5rem;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+}
+
+.nav-tray.start {
+  left: 0.5rem;
+}
+
+.nav-tray.mid {
+  left: 50%;
+  translate: -50% 0;
+}
+
+.nav-tray.end {
+  right: 0.5rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .nav-tray {
+    animation: nav-tray-rise 160ms steps(4) both;
+  }
+}
+
+@keyframes nav-tray-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+button.nav-tray-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  min-height: 3rem;
+  min-height: 3.5rem;
   padding: 0.375rem 0.75rem;
+  background: var(--dusk-2);
   text-align: left;
 }
 
-.nav-more-name {
-  flex: 1;
-  min-width: 0;
+button.nav-tray-item.active {
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--gold-shade);
+}
+
+button.nav-tray-item.active:focus-visible {
+  outline-color: var(--ink);
+}
+
+.nav-tray-name {
+  flex: none;
   font-size: var(--fs-heading);
 }
 
-.nav-more-pip {
+.nav-tray-pip {
   display: flex;
-  flex: none;
+  flex: 1;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: flex-end;
+  gap: 0.375rem;
+  min-width: 0;
   color: var(--haze);
+  text-align: right;
+}
+
+.nav-tray-pip > .small {
+  color: inherit;
+}
+
+.active > .nav-tray-pip {
+  color: var(--ink);
 }
 
 /* --- The wide window: HUD across the top, a rail on the left, the screen beside it --- */
@@ -259,6 +321,18 @@ button.nav-more-row {
 .main-nav.rail ul {
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.nav-group + .nav-group {
+  margin-top: 0.75rem;
+}
+
+.nav-heading {
+  margin: 0 0 0.375rem;
+  padding: 0 0.125rem;
+  color: var(--haze);
+  font-size: var(--fs-small);
+  line-height: 1.2;
 }
 
 .main-nav.rail button.nav-btn {

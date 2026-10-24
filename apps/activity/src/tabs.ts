@@ -1,8 +1,8 @@
 /**
  * The places of the game screen (the "tabs": `Tab` is the id of the current place). Each is a
- * picture and a word in the main navigation (`MainNav`: the phone's bottom dock, the desktop's left rail,
- * and the More drawer when a dock cannot hold them all; the list the navigation reads is `navPlaces` in
- * `nav-places.ts`). The glyphs are one-colour (`w`), so the active place (dark on gold) can tint its
+ * picture and a word in the main navigation (`MainNav`: the phone's bottom dock of three group buttons,
+ * the desktop's left rail grouped under headings; the list the navigation reads is `navPlaces` in
+ * `nav-places.ts`). Every place belongs to one group (`NAV_GROUPS`). The glyphs are one-colour (`w`), so the active place (dark on gold) can tint its
  * picture to stay readable.
  */
 
@@ -19,7 +19,28 @@ interface TabDef {
   label: string;
   /** The id of the glyph in `glyphs.ts`. */
   glyph: string;
+  /** The id of the group (`NAV_GROUPS`) the place belongs to. */
+  group: TabGroup;
 }
+
+export type TabGroup = 'home' | 'adventure' | 'games';
+
+interface TabGroupDef {
+  id: TabGroup;
+  label: string;
+  /** The id of the glyph in `glyphs.ts`. */
+  glyph: string;
+}
+
+/**
+ * The groups of the main navigation in their order: the three buttons of the phone dock and the headings of
+ * the desktop rail. A group with one place is a direct button. A future village or home map is one more place in Home.
+ */
+export const NAV_GROUPS: readonly TabGroupDef[] = [
+  { id: 'home', label: 'Home', glyph: 'home' },
+  { id: 'adventure', label: 'Adventure', glyph: 'peaks' },
+  { id: 'games', label: 'Games', glyph: 'trophy' },
+];
 
 /**
  * Left to right is an escalating level of danger and excitement (Misa): your creatures at home, the
@@ -27,12 +48,12 @@ interface TabDef {
  * Dungeon, and the Raid boss last.
  */
 export const TABS: readonly TabDef[] = [
-  { id: 'collection', label: 'Creatures', glyph: 'paw' },
-  { id: 'workshop', label: 'Workshop', glyph: 'anvil' },
-  { id: 'expeditions', label: 'Expeditions', glyph: 'compass' },
-  { id: 'games', label: 'Games', glyph: 'trophy' },
-  { id: 'dungeon', label: 'Dungeon', glyph: 'door' },
-  { id: 'raid', label: 'Raid', glyph: 'blade' },
+  { id: 'collection', label: 'Creatures', glyph: 'paw', group: 'home' },
+  { id: 'workshop', label: 'Workshop', glyph: 'anvil', group: 'home' },
+  { id: 'expeditions', label: 'Expeditions', glyph: 'compass', group: 'adventure' },
+  { id: 'games', label: 'Games', glyph: 'trophy', group: 'games' },
+  { id: 'dungeon', label: 'Dungeon', glyph: 'door', group: 'adventure' },
+  { id: 'raid', label: 'Raid', glyph: 'blade', group: 'adventure' },
 ];
 
 const INK = '#0d0a1a';

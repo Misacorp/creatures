@@ -46,7 +46,7 @@
 }
 
 .nd .main-nav.dock {
-  position: static;
+  position: relative; /* the tray opens above it */
   flex: none;
 }
 

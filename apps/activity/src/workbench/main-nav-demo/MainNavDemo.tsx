@@ -16,13 +16,17 @@ import { DemoScreen } from './screens';
 
 export const LAYOUTS = ['auto', 'phone', 'desktop'] as const;
 
-/** Places a future feature might add, to show the dock's More with more places than today's six. */
-const EXTRA_PLACES: readonly NavPlace[] = [
-  { id: 'market', label: 'Market', glyph: 'anvil', pip: null },
-  { id: 'camp', label: 'Camp', glyph: 'door', pip: null },
-  { id: 'garden', label: 'Garden', glyph: 'paw', pip: null },
-  { id: 'harbour', label: 'Harbour', glyph: 'compass', pip: null },
-];
+/** The groups whose sub-menu can start open (a one-place group has no menu). */
+export const MENUS = ['none', 'home', 'adventure'] as const;
+
+/** A place a future feature might add to Home (a village map, a market), to show a group growing. */
+const EXTRA_PLACE: NavPlace = {
+  id: 'market',
+  label: 'Market',
+  glyph: 'anvil',
+  group: 'home',
+  pip: null,
+};
 
 /** A busy day: a job is ready, a trip is home, the show has events to enter and today's run is open. */
 const BUSY: TabAlerts = {
@@ -34,36 +38,43 @@ const BUSY: TabAlerts = {
   raid: ALERT_TEXT.raidPlace,
 };
 
-/** Today's places and then extra ones, `count` in all (3 to 10); with `pips`, the busy day's pips (and one on the last extra). */
-export function demoPlaces(count: number, pips: boolean): NavPlace[] {
-  const all = [...navPlaces(pips ? BUSY : NO_ALERTS), ...EXTRA_PLACES];
-  const places = all.slice(0, Math.max(3, Math.min(all.length, Math.round(count))));
-  const [last] = places.slice(-1);
-  return pips && last !== undefined && last.id !== 'raid'
-    ? [...places.slice(0, -1), { ...last, pip: 'new stock' }]
-    : places;
+/** Today's places (with `pips`, the busy day's pips) and, with `extra`, one more place in Home. */
+export function demoPlaces(pips: boolean, extra: boolean): NavPlace[] {
+  const places = navPlaces(pips ? BUSY : NO_ALERTS);
+  return extra ? [...places, { ...EXTRA_PLACE, pip: pips ? 'new stock' : null }] : places;
 }
 
 const NO_REF = { current: null };
 
 export function MainNavDemo({
   place,
-  count,
+  menu,
   pips,
+  extra,
   layout,
 }: {
   place: string;
-  count: number;
+  /** The group whose sub-menu starts open on a phone ("none" for none). */
+  menu: string;
   pips: boolean;
+  extra: boolean;
   layout: string;
 }) {
   const auto = useWide();
   const wide = layout === 'desktop' || (layout === 'auto' && auto);
-  const places = demoPlaces(count, pips);
+  const places = demoPlaces(pips, extra);
   const [picked, setPicked] = useState(place);
   const current = places.some((p) => p.id === picked) ? picked : (places[0]?.id ?? 'collection');
   const label = places.find((p) => p.id === current)?.label ?? '';
-  const nav = <MainNav places={places} current={current} wide={wide} onSelect={setPicked} />;
+  const nav = (
+    <MainNav
+      places={places}
+      current={current}
+      wide={wide}
+      onSelect={setPicked}
+      openGroup={menu === 'none' ? undefined : menu}
+    />
+  );
   const screen = (
     <div class="nd-screen">
       <DemoScreen place={current} label={label} wide={wide} />

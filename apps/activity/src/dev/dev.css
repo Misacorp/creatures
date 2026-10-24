@@ -16,6 +16,11 @@
   letter-spacing: 0.05em;
 }
 
+/* On a phone the bottom dock (main-nav.css) is there: the button sits above it, not over its buttons. */
+body:has(.main-nav.dock) .dev-fab {
+  bottom: calc(var(--dock-h) + var(--dock-safe) + 0.5rem);
+}
+
 .dev-drawer {
   position: fixed;
   left: 0;

@@ -1,44 +1,46 @@
 import { Hud } from '../../Hud';
 import { PopoverHost } from '../../PopoverHost';
 import { TABS } from '../../tabs';
-import { LAYOUTS, MainNavDemo } from '../main-nav-demo/MainNavDemo';
+import { LAYOUTS, MENUS, MainNavDemo } from '../main-nav-demo/MainNavDemo';
 import { bool, num, str } from '../props';
 import type { Entry } from '../types';
 
-const PLACE_IDS = [...TABS.map((t) => t.id), 'market', 'camp', 'garden', 'harbour'];
+const PLACE_IDS = [...TABS.map((t) => t.id), 'market'];
 
 const mainNav: Entry = {
   name: 'MainNav',
   file: 'apps/activity/src/MainNav.tsx',
   group: 'Controls',
   description:
-    'The main navigation: on a phone a game-style dock of pixel buttons fixed to the bottom edge with a slim HUD on top (the place name, the currencies with numbers, "?"), on a wide window a rail down the left with a word beside each picture and the HUD across the top. A place with something waiting has a pip. When more places exist than the dock holds, the last button is More: it opens a drawer with the rest, carries a roll-up pip, and the place you are in is always in the dock. One list of places feeds the dock, the rail and More. Shown in a frame (the dock under the screen, not fixed to the window) with the real Creatures, Games and Expeditions screens on fixture data (other places show a stand-in); use 360 or 390 for the phone and the full width for the desktop; the layout control forces one (not in the presets: a desktop layout is not meant for a narrow window).',
+    'The main navigation: on a phone a game-style dock fixed to the bottom edge with three group buttons (Home, Adventure, Games; a picture over a word, the active group gold) and a slim HUD on top (the place name, the currencies with numbers, "?"); on a wide window a rail down the left with every place under its group heading and the HUD across the top. A group with several places opens a tray of big buttons above the dock (picture, word, why it has a pip, the current place gold); a group with one place (Games) goes straight there. A group carries the roll-up of its places\' pips. Tap outside, Escape or the group button again closes the tray. One list of places, each with a group, feeds the dock and the rail. Shown in a frame (the dock under the screen, not fixed to the window) with the real Creatures, Games and Expeditions screens on fixture data (other places show a stand-in); use 360 or 390 for the phone and the full width for the desktop; the layout control forces one (not in the presets: a desktop layout is not meant for a narrow window). "Open menu" starts a group\'s tray open (phone); "Extra place in Home" shows a group growing.',
   controls: {
     place: { kind: 'select', options: PLACE_IDS },
-    count: { kind: 'number', min: 3, max: 10 },
+    menu: { kind: 'select', options: MENUS },
     pips: { kind: 'toggle' },
+    extra: { kind: 'toggle' },
     layout: { kind: 'select', options: LAYOUTS },
   },
-  defaults: { place: 'collection', count: 6, pips: true, layout: 'auto' },
+  defaults: { place: 'collection', menu: 'none', pips: true, extra: false, layout: 'auto' },
   presets: [
-    { name: 'Creatures', props: {} },
-    { name: 'Workshop', props: { place: 'workshop' } },
-    { name: 'Expeditions', props: { place: 'expeditions' } },
-    { name: 'Games', props: { place: 'games' } },
-    { name: 'Dungeon', props: { place: 'dungeon' } },
-    { name: 'Raid', props: { place: 'raid' } },
+    { name: 'Home active (Creatures)', props: {} },
+    { name: 'Home active (Workshop)', props: { place: 'workshop' } },
+    { name: 'Adventure active (Expeditions)', props: { place: 'expeditions' } },
+    { name: 'Adventure active (Dungeon)', props: { place: 'dungeon' } },
+    { name: 'Adventure active (Raid)', props: { place: 'raid' } },
+    { name: 'Games active', props: { place: 'games' } },
+    { name: 'Home menu open', props: { menu: 'home' } },
+    { name: 'Adventure menu open', props: { menu: 'adventure', place: 'expeditions' } },
+    { name: 'Adventure menu open, no pips', props: { menu: 'adventure', pips: false } },
     { name: 'No pips', props: { pips: false } },
-    { name: 'Nine places: More (use 360 or 390 px)', props: { count: 9 } },
-    { name: 'Nine places, one from More is active', props: { count: 9, place: 'market' } },
-    { name: 'Nine places, no pips', props: { count: 9, pips: false } },
-    { name: 'Ten places (full width: the rail lists them all)', props: { count: 10 } },
+    { name: 'Extra place in Home, menu open', props: { menu: 'home', extra: true } },
   ],
   render: (p) => (
     <MainNavDemo
       key={JSON.stringify(p)}
       place={str(p, 'place')}
-      count={num(p, 'count')}
+      menu={str(p, 'menu')}
       pips={bool(p, 'pips')}
+      extra={bool(p, 'extra')}
       layout={str(p, 'layout')}
     />
   ),

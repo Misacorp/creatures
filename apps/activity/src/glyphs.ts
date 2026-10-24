@@ -661,17 +661,32 @@ const door: SpriteDef = {
   ],
 };
 
-/** Three dots: the dock's More button (one colour, like the tab pictures). */
-const more: SpriteDef = {
+/** A house: the Home group of the dock (one colour, like the tab pictures). */
+const home: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '...ww...',
+    '..wwww..',
+    '.wwwwww.',
+    'wwwwwwww',
+    '.wwwwww.',
+    '.ww..ww.',
+    '.ww..ww.',
+    '.ww..ww.',
+  ],
+};
+
+/** Two peaks: the Adventure group of the dock. */
+const peaks: SpriteDef = {
   palette: { w: BONE },
   rows: [
     '........',
-    '........',
-    '........',
-    'ww.ww.ww',
-    'ww.ww.ww',
-    '........',
-    '........',
+    '...w....',
+    '..ww..w.',
+    '.wwww.ww',
+    '.wwwwwww',
+    'wwwwwwww',
+    'wwwwwwww',
     '........',
   ],
 };
@@ -845,7 +860,8 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   compass,
   blade,
   door,
-  more,
+  home,
+  peaks,
   bait,
   flag,
   gift,
