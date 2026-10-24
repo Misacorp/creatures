@@ -146,6 +146,8 @@ const USER_FEATURE: Record<string, string> = {
   gear_equip: 'gear',
   gear_upgrade: 'gear',
   gear_dismantle: 'gear',
+  games_entry: 'games',
+  games_buy: 'games',
   train: 'collection',
   creature_exp: 'collection',
   treat: 'collection',
@@ -395,6 +397,23 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
       flow(tally, 'supplies', 'source', source, num(p, 'supplies'));
       break;
     }
+    // --- Valley Games ---
+    case 'games_entry':
+      tally.add('games.entry', { event: str(p, 'event') });
+      tally.add('games.entry_creatures_sum', { event: str(p, 'event') }, num(p, 'creatures'));
+      break;
+    case 'games_show':
+      tally.add('games.show', {});
+      tally.add('games.show_events_sum', {}, num(p, 'events'));
+      tally.add('games.show_skipped_sum', {}, num(p, 'skipped'));
+      tally.add('games.show_entrants_sum', {}, num(p, 'entrants'));
+      tally.add('games.show_players_sum', {}, num(p, 'players'));
+      break;
+    case 'games_buy':
+      tally.add('games.buy', { offer: str(p, 'offer') });
+      // Medal points are not a ledger currency; the Prize Stall spend is counted here.
+      flow(tally, 'medals', 'sink', 'prize_stall', num(p, 'price'));
+      break;
     case 'gear_equip':
       tally.add('gear.equip', { action: str(p, 'action'), rarity: str(p, 'rarity') });
       break;
