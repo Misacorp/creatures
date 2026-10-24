@@ -5,7 +5,7 @@
  *
  * Reading the room from left to right it has five bays: a window with a sill, a couch, a table with two
  * chairs behind it, a fireplace on a rug, and a bookshelf with a beanbag. The top `ROOM_BAND_HEIGHT`
- * rows are a plain, calm wall band: the app's title row is laid over it, so keep it low contrast.
+ * rows are a plain, calm wall band, cropped where the room is drawn under the HUD (`living-room.css`); keep it low contrast.
  * A spot is the top-left of a 16x16 creature sprite in room pixels; the creature's feet are on the
  * sprite's last row, so a spot's `y + 15` is the surface it stands or sits on.
  */
@@ -14,7 +14,7 @@ import { ROOM_SPRITE_DATA, type RoomPropName } from './data/room-sprites';
 import type { SpriteDef } from './sprite-data';
 
 export const ROOM_SIZE = { width: 288, height: 56 } as const;
-/** The calm wall band at the top that the title row is laid over. */
+/** The calm wall band at the top (cropped under the HUD). */
 export const ROOM_BAND_HEIGHT = 14;
 /** The wall-and-floor tile that repeats seamlessly; it is as tall as the room. */
 export const EDGE_TILE_WIDTH = 16;

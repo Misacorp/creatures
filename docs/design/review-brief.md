@@ -16,6 +16,7 @@ The rules behind each line are in `ux-patterns.md` and `decisions.md`; this is t
 
 - **Phone first, desktop too.** 390 px wide (and 360 px for tight spots), and 1100 px, every time.
 - **Nothing overflows its parent,** names cut with "…", nothing scrolls sideways by accident.
+- **One frame.** A new screen or feature uses the dock or rail, the HUD and Home's notices (`ux-patterns.md`, "The frame"): no second navigation, no footer, no bar of its own.
 - **Reuse what exists.** A new screen or part uses the existing component or layout for the same job (`ux-patterns.md`, "Shared components").
 - **Match the scope of Misa's examples.** "For example …" sets the size and tone of the change, not a template to repeat per case.
 - **Accessibility is not traded away:** colour is never the only cue, reduced motion is respected, and every control has a spoken name.

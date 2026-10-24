@@ -302,7 +302,7 @@ interface SectionDef {
   specs: readonly ToolSpec[];
 }
 
-/** The per-view sections, in the order of the tab bar. The panel moves the current tab's one to the top. */
+/** The per-view sections, in the order of the navigation's places. The panel moves the current place's one to the top. */
 export const SECTIONS: readonly SectionDef[] = [
   { id: 'creatures', title: 'Creatures', tab: 'collection', specs: CREATURES_SPECS },
   { id: 'workshop', title: 'Workshop', tab: 'workshop', specs: WORKSHOP_SPECS },

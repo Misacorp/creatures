@@ -97,7 +97,7 @@ export function Game({
   user: SessionUser;
   /** Who has the Activity open: the living room shows them. */
   participants: ParticipantSource;
-  /** The "?" button of the title row and what it does (the app owns the How to play page). */
+  /** Where How to play's focus returns (the title row's "?" before a game, Settings' How to play in one) and what opens it (the app owns the page). */
   helpRef: RefObject<HTMLButtonElement | null>;
   onHelp: () => void;
   /** True on staging, where the server has the dev tools on: the debug panel loads (see `dev-gate.ts`). */
