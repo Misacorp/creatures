@@ -50,10 +50,29 @@ const PLAYER_NAMES = [
 /** A few nicknames, so a show has some named creatures among the species names. */
 const NICKNAMES = ['Sir Puddle', 'Toasty', 'Mr Wobbles', 'Pip', 'Big Biscuit', 'Lady Fizz'];
 
+/** The worst case for the commentary and the board: long player names and long creature nicknames. */
+const LONG_PLAYER_NAMES = [
+  'Kristiina Marjatta',
+  'Aleksandra Heikkinen',
+  'Maximilian Virtanen',
+  'Annamaria Korhonen',
+  'Wilhelmiina Laine',
+  'Konstantinos Niemi',
+];
+const LONG_NICKNAMES = [
+  'Sir Bubbles of Wobble',
+  'Lady Marmalade Fizz',
+  'Professor Puddlesworth',
+  'Big Biscuit the Third',
+  'Captain Toastbeard',
+];
+
 export interface SamplePlayer {
   id: string;
   name: string;
   bot: boolean;
+  /** Long names (workbench worst case): the player's and the creatures'. */
+  long?: boolean;
 }
 
 export interface SampleShow {
@@ -75,13 +94,17 @@ function eventDef(id: string): GamesEventDef {
 }
 
 /** `humans` players plus `bots` dev bots (ids `dev-guest-*`, like the worker's dev guests). */
-export function samplePlayers(humans: number, bots: number): SamplePlayer[] {
+export function samplePlayers(humans: number, bots: number, long = false): SamplePlayer[] {
   const out: SamplePlayer[] = [];
   for (let i = 0; i < humans; i++) {
+    const name = long
+      ? (LONG_PLAYER_NAMES[i % LONG_PLAYER_NAMES.length] ?? 'Kristiina Marjatta')
+      : (PLAYER_NAMES[i] ?? `Player ${String(i + 1)}`);
     out.push({
       id: `player-${String(i + 1)}`,
-      name: PLAYER_NAMES[i] ?? `Player ${String(i + 1)}`,
+      name,
       bot: false,
+      ...(long ? { long: true } : {}),
     });
   }
   for (let i = 0; i < bots; i++) {
@@ -102,7 +125,12 @@ function sampleEntrant(rng: Rng, player: SamplePlayer, slot: string): GamesEntra
   return gamesEntrantFrom({
     id: `${player.id}-${slot}`,
     playerId: player.id,
-    name: nick ?? species.name,
+    name:
+      player.long === true
+        ? (LONG_NICKNAMES[
+            (slot.length + player.id.length + player.name.length) % LONG_NICKNAMES.length
+          ] ?? species.name)
+        : (nick ?? species.name),
     species,
     // A few gear lines now and then, so stars (Stubborn, Momentum) show up in the samples.
     mods:
@@ -161,8 +189,9 @@ export function sampleShow(
   humans: number,
   bots: number,
   seed: string,
+  long = false,
 ): SampleShow {
-  const players = samplePlayers(humans, bots);
+  const players = samplePlayers(humans, bots, long);
   const names = Object.fromEntries(players.map((p) => [p.id, p.name]));
   return {
     events: eventIds.map((id) => sampleEvent(id, players, seed)),

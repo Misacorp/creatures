@@ -19,6 +19,7 @@ import {
   kiteString,
 } from './art/drawn-team';
 import { propSprite, propTinted } from './art/props';
+import { SMALL_SCALE } from './show-layout';
 import { ACTOR_SIZE, PEPPER_TABLE_TOP, type GamesSceneId, GAMES_SCENE_IDS } from './art/scenes';
 import type { RampName } from './art/tint';
 import {
@@ -159,6 +160,11 @@ export function liftOf(
   return lift;
 }
 
+/** How tall a creature stands on this field (a crowded field draws them a step smaller). */
+export function actorHeight(p: Pick<PreparedEvent, 'small'>): number {
+  return p.small ? Math.round(ACTOR_SIZE * SMALL_SCALE) : ACTOR_SIZE;
+}
+
 /** Whether an actor's meter shows over its head (a packed room shows only your creatures' meters). */
 export function meterShown(
   p: PreparedEvent,
@@ -234,6 +240,7 @@ function Actors({ p, frame, youId, introMs, reduced }: ActorsProps) {
                 palette={palette}
                 state={drawnState(p.kind, engineState)}
                 flip={flipOf(p, f)}
+                small={p.small}
                 meter={showMeter ? (f.meter ?? 0) / 100 : undefined}
                 meterTint={tint}
                 z={y}
@@ -379,13 +386,13 @@ function BackProps({
 }
 
 /** The top of a team's object (scene px): where its "you" marker points. */
-export function objectTop(o: TeamObjectFrame): number {
+export function objectTop(o: TeamObjectFrame, height = ACTOR_SIZE): number {
   switch (o.kind) {
     case 'barrel':
       return o.y - BARREL_HEIGHT;
     case 'tower':
       // Over the climber standing on the top crate.
-      return o.y - o.f * CRATE_STEP - ACTOR_SIZE;
+      return o.y - o.f * CRATE_STEP - height;
     case 'kite':
       return o.y - Math.ceil(KITE_HEIGHT / 2);
   }
@@ -573,7 +580,7 @@ function FrontProps({
           const lift = Math.round(loadLift(p, frame, load.i, introMs, reduced));
           const y = Math.round(load.y) - lift;
           const top =
-            load.kind === 'log' && load.f !== 2 ? y - LOG_ON_HEADS - LOG_BODY : y - ACTOR_SIZE;
+            load.kind === 'log' && load.f !== 2 ? y - LOG_ON_HEADS - LOG_BODY : y - actorHeight(p);
           return (
             <div key={`you-${String(load.i)}`} class="gs-you">
               <GamesSprite
@@ -594,7 +601,7 @@ function FrontProps({
             <div key={`you-${String(o.i)}`} class="gs-you">
               <GamesSprite
                 x={Math.round(o.x)}
-                y={Math.round(objectTop(o)) - YOU_MARKER_GAP}
+                y={Math.round(objectTop(o, actorHeight(p))) - YOU_MARKER_GAP}
                 sprite={YOU_MARKER}
                 z={YOU_Z}
               />
@@ -617,7 +624,7 @@ function FrontProps({
           <div key={f.a} class="gs-you">
             <GamesSprite
               x={Math.round(f.x)}
-              y={Math.round(Math.round(f.y) - lift) - ACTOR_SIZE - gap}
+              y={Math.round(Math.round(f.y) - lift) - actorHeight(p) - gap}
               sprite={YOU_MARKER}
               z={YOU_Z}
             />

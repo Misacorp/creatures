@@ -75,6 +75,15 @@ canvas.games-front {
   display: block;
 }
 
+/* A crowded field draws its creatures three quarters size on the same feet (`scale` composes with the flips below). */
+.games-actor.is-small .games-actor-body {
+  scale: 0.75;
+}
+
+.games-actor.is-small .games-meter {
+  bottom: calc(100% - var(--s) * 2);
+}
+
 .games-actor.is-flipped .games-actor-body {
   transform: scaleX(-1);
 }

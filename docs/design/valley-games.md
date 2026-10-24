@@ -87,26 +87,18 @@ Postponed (after v1 ships): the upset badge, sky twists, crowded-element effects
 
 ## After v1 (shipped in #67, 2026-10-23): what is planned and what to fix
 
-Written down at Misa's request before the session's context was compacted. Nothing here is built yet.
+Written down at Misa's request before the session's context was compacted.
 
-### Misa's next polish pass
+### Misa's polish pass: done (2026-10-24)
 
-1. **Alignment.** Element and role icons, favour icons, chips and sprites do not line up consistently across the Games screens (event cards, the favour row, picker rows, XP chips, the leaderboard, the badge shelf). Align them to one baseline and grid.
-2. **Spacing.** Make the spacing between and inside the Games' sections and rows consistent with the rest of the app (`ux-patterns.md`).
-3. **The "Good fit" badge.** Its check mark sits on a black square and looks off. Redraw it so the tick sits cleanly in the tag, with no box.
-4. **Leaderboard flicker.** The live leaderboard re-sorts on every score change, so rows swap back and forth. Debounce reordering (only move a row once its new place has held for a short while, or animate the move) so it reads calmly.
-5. **Main menu redesign.** With Games as the sixth tab the tab bar barely fits on a phone (360 px has no spare width). Rethink the main navigation (also in `docs/roadmap.md`).
+Alignment, spacing, the Good fit tick, the calm leaderboard, crowded big fields, the art notes, the level in the picker, two-line commentary, the `games-team` glossary link, the analytics mapping and seeded test dice. See `decisions.md`, 2026-10-24. The main menu redesign is its own design round (`docs/roadmap.md`).
 
-### Seen while building, not yet fixed
+### Still open
 
-- **Crowded big fields.** At 15 teams Pumpkin Push and Crate Tower are busy (towers read as a wall, crews overlap); Melon Run lanes overlap with 8+ runners; Sauna Showdown with 18+ sitters squeezes the benches.
-- **Level in the picker.** The shared creature list still shows each creature's level in the Games picker, although level no longer matters there. Consider hiding it in the Games picker only.
-- **Commentary length.** A few two-name lines can still end in "…" at 390 px when both names and owners are long.
-- **Unused glossary entry.** `games-team` exists but nothing links to it.
-- **Art notes from the art pass.** The stands' risers are quite saturated, the ice cracks on the floe are subtle, and the steam puffs are small.
+- **Melon Run at 24 runners** is still a tight pack in the first seconds (everyone starts on one line), though heads read.
 - **Payload size.** `GET /api/games` carries the whole stored show (a few hundred KB with a full field). Fine for one fetch; a lighter endpoint would help if anything ever polls it.
-- **Analytics.** `games_entry`, `games_show` and `games_buy` are recorded but not mapped to a feature in the analytics rollup.
-- **Tests.** The sim's `run.test.ts` and `pipeline.test.ts` can time out when run beside the worker tests locally (CI runs them apart and passes). A dungeon dev-tool test used live dice and failed by chance once; it is now seeded, but other dev-tool tests that play dungeon runs may still use live dice and are worth an audit.
+- **Medal earnings in analytics.** The rollup counts the Prize Stall's medal spend, not per-player medal awards.
+- **Tests.** The sim's `run.test.ts` and `pipeline.test.ts` can time out when run beside the other tests locally (CI runs them apart and passes).
 
 ### Postponed ideas (decided against for v1)
 

@@ -22,7 +22,7 @@ const SERVER_SHOW = (
 const FIXTURE_YOU = SERVER_SHOW.players[0]?.id;
 
 const SHOWS = ['day', 'server fixture', ...SAMPLE_EVENT_IDS] as const;
-const ROSTERS = ['8 players', '15 players', '24 with bots', '1 player'] as const;
+const ROSTERS = ['8 players', '15 players', '24 with bots', '1 player', '15 long names'] as const;
 type Roster = (typeof ROSTERS)[number];
 
 const ROSTER_SIZES: Readonly<Record<Roster, readonly [number, number]>> = {
@@ -30,6 +30,7 @@ const ROSTER_SIZES: Readonly<Record<Roster, readonly [number, number]>> = {
   '15 players': [15, 0],
   '24 with bots': [16, 8],
   '1 player': [1, 0],
+  '15 long names': [15, 0],
 };
 
 function Preview({ p }: { p: Props }) {
@@ -49,10 +50,16 @@ function Preview({ p }: { p: Props }) {
       };
     }
     return {
-      ...sampleShow(which === 'day' ? SAMPLE_DAY : [which], humans, bots, seed || 'workbench'),
+      ...sampleShow(
+        which === 'day' ? SAMPLE_DAY : [which],
+        humans,
+        bots,
+        seed || 'workbench',
+        roster === '15 long names',
+      ),
       lineup: undefined,
     };
-  }, [which, humans, bots, seed]);
+  }, [which, humans, bots, seed, roster]);
   const live = str(p, 'mode') === 'live';
   const at = num(p, 'at') * 1000;
   // A live show "started" `at` seconds ago (negative: it starts in that long).
@@ -190,6 +197,18 @@ const gamesShow: Entry = {
     { name: 'Live, joined late (60 s in)', props: { mode: 'live', at: 60 } },
     { name: 'Full day, 24 with bots', props: { roster: '24 with bots' } },
     { name: 'One player alone', props: { roster: '1 player' } },
+    {
+      name: 'Long names, 15 players, solo event mid',
+      props: { show: 'melon-run', roster: '15 long names', at: 14, play: false },
+    },
+    {
+      name: 'Long names, 15 players, team event mid',
+      props: { show: 'log-carry', roster: '15 long names', at: 18, play: false },
+    },
+    {
+      name: 'Long names, 15 players, sauna mid',
+      props: { show: 'sauna-showdown', roster: '15 long names', at: 30, play: false },
+    },
     { name: 'Spectator (no creature of yours)', props: { you: false } },
     {
       name: 'An event nobody entered (its intro only)',

@@ -54,6 +54,8 @@ The workbench is a second Vite entry (`apps/activity/workbench.html`, code in `a
 
 `BossFx` (2026-10-22; Creatures & game pieces) plays a seeded raid fight on its own, round after round, so the boss's attacks (stage/boss-fx.ts) can be watched in motion: controls for the boss, the party size, the first and last round, the move track's look, the slow (live finale) or classic pace, a loop, and "boss only" (the creatures' turns left out, to see just the attacks). The `Stage` page has a `track` control for the move track's looks (default `rows`).
 
+`MainNavMockups` (2026-10-24; Controls; code in `src/workbench/nav-mockups/`, stylesheet imported by the workbench only) is a design round, not a component: three options for the main navigation (1 dock and rail, 2 the valley as the menu, 3 four big tabs with an Adventure switch), each a fixed-height window frame over real screens on fixture data (Creatures, Games, Expeditions) with the alert pips, as a phone (360 and 390 px) and as the wide map-and-side-panel frame. Controls: option, screen and layout; presets for each option. It is not wired to the game and can be deleted once the navigation is chosen and built.
+
 ## UI audit
 
 `apps/activity/scripts/ui-audit.mjs` finds layout overflow on every workbench page. Run it from `apps/activity`:

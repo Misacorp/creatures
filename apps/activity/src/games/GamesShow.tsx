@@ -30,6 +30,7 @@ import { WideLayout } from '../ui/WideLayout';
 import { GamesActor, GamesScene, GamesSprite } from './art/GamesScene';
 import { propSprite } from './art/props';
 import { ACTOR_SIZE, standsSeats, type GamesSceneId } from './art/scenes';
+import { calmRows, type CalmState } from './board-calm';
 import { PEPPER_TIERS, YOU_MARKER, YOU_MARKER_GAP, teamColour } from './show-art';
 import { ShowStage, sceneOf } from './ShowStage';
 import {
@@ -227,9 +228,10 @@ function SayLine({
 
 /**
  * One commentary line: every creature's name in its team's colour, then its owner, dimmed, in
- * parentheses ("Pepperwick (Misa)", "(you)"). It stays on one line: if it would overflow, it is drawn
+ * parentheses ("Pepperwick (Misa)", "(you)"). It stays on one line if it can: if it would overflow, it is drawn
  * again with each owner shortened to its first word (`shortOwner`), then with the names in the line's
- * own size, before anything shows; only a line that still does not fit ends in "…".
+ * own size, then wrapped onto a second line (the box is always two lines high), before anything
+ * shows; only a line that still does not fit in two lines ends in "…".
  */
 function SayText({
   p,
@@ -242,21 +244,24 @@ function SayText({
   youId: string | undefined;
   names: Readonly<Record<string, string>> | undefined;
 }) {
-  // 0: as written; 1: owners shortened; 2: also the names in the line's size. Past that, "…".
+  // 0: as written; 1: owners shortened; 2: also the names in the line's size; 3: the line wraps to
+  // a second line (the box is two lines high from the start, so nothing jumps). Past that, "…".
   const [fit, setFit] = useState(0);
-  const ref = useRef<HTMLParagraphElement>(null);
+  const ref = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
     const el = ref.current;
-    if (fit >= 2 || el === null) return;
+    if (fit >= 3 || el === null) return;
+    // Only the first three steps measure the width; the last one wraps.
     if (el.scrollWidth > el.clientWidth + 1) setFit(fit + 1);
   }, [fit]);
   const parts = sayParts(p, say, { youId, names: names ?? {}, short: fit >= 1 });
   const classes = ['gs-say'];
   if (fit >= 1) classes.push('is-short');
   if (fit >= 2) classes.push('is-tight');
+  if (fit >= 3) classes.push('is-wrap');
   return (
-    <p ref={ref} class={classes.join(' ')} aria-hidden="true">
-      <span class="prose">
+    <p class={classes.join(' ')} aria-hidden="true">
+      <span ref={ref} class="prose">
         {parts.map((part, i) =>
           part.k === 'name' ? (
             <span
@@ -330,7 +335,11 @@ function BoardSlot({
   const palette = actor.shiny === true ? shinyPalette(actor.speciesId) : undefined;
   const label = boardLabel(p, row, youId, names);
   return (
-    <li class={classes.join(' ')} ref={cssVars({ '--team': teamColour(row.playerId) })}>
+    <li
+      class={classes.join(' ')}
+      data-team={row.teamId}
+      ref={cssVars({ '--team': teamColour(row.playerId) })}
+    >
       <span class="gs-place">{String(row.place)}</span>
       <Sprite
         sprite={creatureSpriteOrFallback(actor.speciesId)}
@@ -374,13 +383,54 @@ function Board({
   cursor,
   youId,
   names,
+  still,
 }: {
   p: PreparedEvent;
   frame: EventFrame | null;
   cursor: ShowCursor;
   youId: string | undefined;
   names: Readonly<Record<string, string>>;
+  /** No motion: rows jump to their new place. */
+  still: boolean;
 }) {
+  const calm = useRef<CalmState | null>(null);
+  const listRef = useRef<HTMLOListElement>(null);
+  const tops = useRef(new Map<string, number>());
+  const live = cursor.phase === 'event' && frame !== null;
+  let rows: BoardRow[] = [];
+  if (frame !== null && cursor.phase !== 'intro') {
+    const now = live ? liveBoard(p, frame) : finalBoard(p);
+    // Calm while the event runs; exact once its last tick is in (and on the podium).
+    const out = calmRows(
+      calm.current,
+      `${p.result.eventId}#${String(cursor.index)}`,
+      now,
+      cursor.at,
+      !live || cursor.ms >= eventMs(p.result),
+    );
+    calm.current = out.state;
+    rows = out.rows;
+  }
+  const shown = boardShown(rows, youId);
+  // FLIP: after a re-order, each row starts from where it was and slides to its new place.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (list === null) return;
+    const next = new Map<string, number>();
+    for (const li of list.querySelectorAll<HTMLElement>('[data-team]')) {
+      const id = li.getAttribute('data-team');
+      if (id === null) continue;
+      next.set(id, li.offsetTop);
+      const was = tops.current.get(id);
+      if (still || was === undefined || was === li.offsetTop) continue;
+      li.style.transition = 'none';
+      li.style.transform = `translateY(${String(was - li.offsetTop)}px)`;
+      void li.offsetHeight;
+      li.style.transition = '';
+      li.style.transform = '';
+    }
+    tops.current = next;
+  });
   if (cursor.phase === 'intro' || frame === null) {
     // The intro shows who you sent.
     const mine = p.result.actors.filter((a) => a.playerId === youId);
@@ -408,11 +458,9 @@ function Board({
       </ol>
     );
   }
-  const live = cursor.phase === 'event';
-  const rows = live ? liveBoard(p, frame) : finalBoard(p);
   return (
-    <ol class="gs-board" aria-hidden="true">
-      {boardShown(rows, youId).map(({ row, gap }) => (
+    <ol ref={listRef} class="gs-board" aria-hidden="true">
+      {shown.map(({ row, gap }) => (
         <BoardSlot
           key={row.teamId}
           p={p}
@@ -645,7 +693,14 @@ export function GamesShow(props: GamesShowProps) {
         ? frameAt(p, cursor.ms)
         : frameAt(p, eventMs(p.result));
   const board = (
-    <Board p={p} frame={frame} cursor={cursor} youId={youId} names={names ?? NO_NAMES} />
+    <Board
+      p={p}
+      frame={frame}
+      cursor={cursor}
+      youId={youId}
+      names={names ?? NO_NAMES}
+      still={quiet}
+    />
   );
   return (
     <ShowLayout

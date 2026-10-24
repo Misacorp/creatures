@@ -203,6 +203,19 @@ export async function runCore<R>(
       // Seeded, so the talents of every creature a test makes are the same on every run (talent tests
       // pass their own `talentRng` through `options`).
       talentRng: createSeededRng('test-talents'),
+      // The same for every other live dice: dungeon fights and loot, trips, gear, raid, catches, quirks,
+      // games, weather and the lounger. A test that needs particular dice passes its own through `options`. Each has
+      // its own seed, so the streams are independent. (`readinessRng` stays live on purpose: a test
+      // checks that it is separate from the raid dice.)
+      dungeonRng: createSeededRng('test-dungeon'),
+      gearRng: createSeededRng('test-gear'),
+      tripRng: createSeededRng('test-trip'),
+      raidRng: createSeededRng('test-raid'),
+      quirkRng: createSeededRng('test-quirk'),
+      gamesRng: createSeededRng('test-games'),
+      weatherRng: createSeededRng('test-weather'),
+      loungerRng: createSeededRng('test-lounger'),
+      rng: createSeededRng('test-catch'),
       // Off by default so other features' tests keep exact Bait balances; allowance tests turn it on.
       dailyAllowance: false,
       // Off by default so other features' tests keep exact trip times, loot and experience; the weather

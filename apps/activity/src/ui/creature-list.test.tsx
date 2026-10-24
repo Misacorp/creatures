@@ -256,6 +256,28 @@ describe('the creature list in choose mode and with its optional parts', () => {
     expect(byClass(page.root, 'ro-detail')).toHaveLength(0);
   });
 
+  it('shows the level by default and leaves it out with level off', () => {
+    page = createPage();
+    page.draw(
+      <CreatureList
+        options={[option('a')]}
+        selection={{ mode: 'pick', onPick: () => undefined }}
+      />,
+    );
+    expect(byClass(page.root, 'ro-level')).toHaveLength(1);
+    page.unmount();
+    page = createPage();
+    page.draw(
+      <CreatureList
+        options={[option('a')]}
+        level={false}
+        selection={{ mode: 'pick', onPick: () => undefined }}
+      />,
+    );
+    expect(byClass(page.root, 'ro-level')).toHaveLength(0);
+    expect(visibleText(page.root)).not.toMatch(/Lv \d/);
+  });
+
   it('folds extra rows behind a FoldRow in the same radio group, listed only when open', () => {
     const onToggle = vi.fn();
     const draw = (open: boolean): void => {

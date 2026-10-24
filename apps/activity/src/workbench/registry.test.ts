@@ -17,6 +17,7 @@ const sources = import.meta.glob<string>(
     '../stage/*.tsx',
     '../games/*.tsx',
     '../games/art/*.tsx',
+    './nav-mockups/*.tsx',
   ],
   {
     query: '?raw',
@@ -74,7 +75,7 @@ describe('the entries', () => {
   it('point at a real file that exports the component they are named after', () => {
     for (const entry of ENTRIES) {
       const key = entry.file.replace('apps/activity/src/', '../');
-      const source = sources[key];
+      const source = sources[key] ?? sources[key.replace('../workbench/', './')];
       expect(source, `${entry.name}: ${entry.file} does not exist`).toBeDefined();
       for (const name of [entry.name, ...(entry.covers ?? [])]) {
         expect(
