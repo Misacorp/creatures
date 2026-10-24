@@ -104,6 +104,7 @@ import type {
 import { gearDepsOf, finishRun, lockDepth } from './dungeon-finish';
 import { replayRoom, playerName, replayRun } from './dungeon-replay';
 import {
+  liveStreak,
   progressOf,
   type DungeonDeps,
   type ProgressRow,
@@ -112,7 +113,7 @@ import {
   type StoredAct,
   type StoredFight,
 } from './dungeon-rows';
-import { addDays, gameDay, gameDayEnd } from './time';
+import { gameDay, gameDayEnd } from './time';
 
 export type {
   DungeonActResponse,
@@ -455,10 +456,6 @@ export class Dungeon {
     // While a run is open, the depth shown is the run's own: a boss cleared at depth 8 or more has locked
     // depth + 1 into the progress already, but the run (its map, its landmark boss) is still at depth d.
     const depth = open?.depth ?? progress.depth;
-    // A last day later than `day` (timezone moved west) keeps the streak, it does not break it.
-    const alive =
-      progress.last_day !== null &&
-      (progress.last_day >= day || progress.last_day === addDays(day, -1));
     return {
       serverNow: now,
       day,
@@ -467,7 +464,7 @@ export class Dungeon {
       depth,
       landmark: isLandmark(depth),
       landmarkBoss: this.landmarkBoss(depth),
-      streak: alive ? progress.streak : 0,
+      streak: liveStreak(progress, day),
       attemptsToday: runs.length,
       attemptsAllowed: allowed,
       canRun,

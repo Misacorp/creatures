@@ -17,6 +17,7 @@
  * push-on result and the journal `tripRng`; each is drawn at the moment it is needed, never earlier.
  */
 import {
+  RULES,
   destinationDef,
   expeditionContent,
   explorerRank,
@@ -75,7 +76,7 @@ import {
 } from './expedition-store';
 import { gearRulesOf, minusBp } from './gear-worn';
 import { openJobOf } from './gear-store';
-import { progressOf } from './dungeon-rows';
+import { liveStreak, progressOf } from './dungeon-rows';
 import { devKey, type DevFlags } from './dev-state';
 import { spend, type LedgerStorage } from './ledger';
 import { runKeyed, settleSpend } from './keyed-action';
@@ -83,7 +84,7 @@ import { GameError, atomically, type Outcome } from './outcome';
 import type { CatchChoices } from './catch-choices';
 import { weekIdFor, weekIndex } from './raid-schedule';
 import type { Weather } from './weather';
-import { zonedHour } from './time';
+import { gameDay, zonedHour } from './time';
 import {
   HOUR_MS,
   twistOf,
@@ -884,20 +885,21 @@ export class Expeditions {
   /**
    * The caller's dungeon record for the stats page: runs finished, runs cleared (the main boss beaten),
    * the depth their next run fights at (the deepest they have reached on their ladder) and the days-in-a-row
-   * streak. Read from the dungeon's own progress row; a player who never ran gets zeros and depth 1.
+   * streak still alive in the guild's calendar. Read from the dungeon's own progress row; a player who never ran gets zeros and depth 1.
    */
-  private dungeonStats(userId: string): ProfileView['dungeon'] {
+  private dungeonStats(userId: string, timezone: string): ProfileView['dungeon'] {
     const progress = progressOf(this.sql, userId);
+    const day = gameDay(this.deps.now(), timezone, RULES.daily.reset);
     return {
       runs: progress.runs,
       clears: progress.clears,
       depth: progress.depth,
-      streak: progress.streak,
+      streak: liveStreak(progress, day),
     };
   }
 
   /** The caller's account stats, milestones, journal, dungeon record and explorers. */
-  profile(userId: string): ProfileView {
+  profile(userId: string, timezone: string): ProfileView {
     const stats = statsOf(this.sql, userId);
     const found = journalPages(this.sql, userId);
     const foundIds = new Set(found.map((f) => f.entryId));
@@ -936,7 +938,7 @@ export class Expeditions {
           };
         }),
       },
-      dungeon: this.dungeonStats(userId),
+      dungeon: this.dungeonStats(userId, timezone),
       explorers: creatureIds.map((id) => ({
         creatureId: id,
         ...(explorers.get(id) as ExplorerView),

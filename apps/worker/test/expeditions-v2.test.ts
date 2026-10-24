@@ -21,7 +21,7 @@ import { creditParts } from '../src/gear-store';
 import { speciesOf } from '../src/species';
 import { giveItem } from './gear-helpers';
 import { weekIdFor, weekIndex } from '../src/raid-schedule';
-import { zonedHour } from '../src/time';
+import { DEFAULT_GUILD_TIMEZONE, addDays, gameDay, zonedHour } from '../src/time';
 import {
   OTHER_USER_ID,
   T0,
@@ -1280,8 +1280,17 @@ describe('the profile', () => {
           '2027-02-13',
           '2027-02-01',
         );
+        const day = gameDay(ctx.clock.t, DEFAULT_GUILD_TIMEZONE, RULES.daily.reset);
+        ctx.sql.exec('UPDATE dungeon_progress SET last_day = ?', day);
         const ran = (await p.call('GET', '/api/profile')).body as unknown as typeof body;
         expect(ran.dungeon).toEqual({ runs: 6, clears: 3, depth: 4, streak: 2 });
+        // A streak whose last run is older than yesterday is over, as the Dungeon view shows it.
+        ctx.sql.exec('UPDATE dungeon_progress SET last_day = ?', addDays(day, -2));
+        const stale = (await p.call('GET', '/api/profile')).body as unknown as typeof body;
+        expect(stale.dungeon).toEqual({ runs: 6, clears: 3, depth: 4, streak: 0 });
+        ctx.sql.exec('UPDATE dungeon_progress SET last_day = ?', addDays(day, -1));
+        const kept = (await p.call('GET', '/api/profile')).body as unknown as typeof body;
+        expect(kept.dungeon.streak).toBe(2);
         const other = await join(ctx, OTHER, 0, 'cindle');
         const theirs = (await other.call('GET', '/api/profile')).body as {
           stats: Record<string, number>;

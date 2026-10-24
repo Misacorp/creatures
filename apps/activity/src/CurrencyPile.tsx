@@ -102,7 +102,7 @@ function LeetWarning({ status }: { status: LeetSyncStatus | null | undefined }) 
 export function CurrencyPile({
   balances,
   leetSync,
-  loadLedger = () => fetchLedger(INCOME_FETCH),
+  loadLedger = () => fetchLedger(INCOME_FETCH, true),
 }: {
   balances: Balances;
   /** The leet sync status: a failure is shown in the popover ("Tell the game admin"). */

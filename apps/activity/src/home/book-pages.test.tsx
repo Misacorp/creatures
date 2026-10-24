@@ -114,7 +114,7 @@ describe('the Stats page', () => {
       'raid',
     ]);
     const dungeon = visibleText(groups[1] as FakeElement);
-    expect(dungeon).toContain('Runs attempted');
+    expect(dungeon).toContain('Runs finished');
     expect(dungeon).toContain('Runs cleared');
     for (const group of groups) expect(byClass(group, 'data-table')).toHaveLength(1);
   });

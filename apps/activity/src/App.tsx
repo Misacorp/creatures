@@ -1,4 +1,3 @@
-import type { GlossarySection } from '@creatures/game';
 import { DiscordSDK } from '@discord/embedded-app-sdk';
 import { setExternalLinkOpener } from './external-link';
 import { setFinaleLiveOffered } from './live-flags';
@@ -19,6 +18,7 @@ import { Game } from './Game';
 import { aloneParticipants, discordParticipants, type ParticipantSource } from './participants';
 import { PopoverHost } from './PopoverHost';
 import { HowToPlay } from './HowToPlay';
+import { useHowTo } from './use-how-to';
 import { publishBuildInfo } from './build-info';
 
 type Status<T> =
@@ -105,37 +105,20 @@ function useAsync<T>(load: () => Promise<T>): Status<T> {
 
 export function App() {
   const bootStatus = useAsync(boot);
-  // The How to play page: closed (null), or open at a section (null section: the top).
-  const [howTo, setHowTo] = useState<{ section: GlossarySection | null; nonce: number } | null>(
-    null,
-  );
   const mainRef = useRef<HTMLElement>(null);
   const helpButton = useRef<HTMLButtonElement>(null);
-
-  // While the page is open nothing behind it can be reached with the keyboard or a screen reader.
-  const wasOpen = useRef(false);
-  useEffect(() => {
-    const open = howTo !== null;
-    mainRef.current?.toggleAttribute('inert', open);
-    // Closing the page puts focus back on the "?" button (the page may have been opened by a tag's link).
-    if (wasOpen.current && !open) helpButton.current?.focus();
-    wasOpen.current = open;
-  }, [howTo !== null]);
-
+  // The How to play page: closed (null), or open at a section (null section: the top).
+  const { howTo, open, close } = useHowTo(mainRef, helpButton);
   const openHowTo = (): void => {
-    setHowTo((open) => ({ section: null, nonce: (open?.nonce ?? 0) + 1 }));
+    open(null);
   };
   const loadedBoot = bootStatus.state === 'ok' ? bootStatus.value : null;
   // With a game on screen, the game draws the head (over the living room).
   const gameLoaded = loadedBoot !== null && loadedBoot.me !== null && loadedBoot.game !== null;
 
   return (
-    <PopoverHost
-      onOpenHowTo={(section) => {
-        setHowTo((open) => ({ section, nonce: (open?.nonce ?? 0) + 1 }));
-      }}
-    >
-      <main class="card" ref={mainRef}>
+    <PopoverHost onOpenHowTo={open}>
+      <main class="card" ref={mainRef} tabIndex={-1}>
         {!gameLoaded && <AppHead helpRef={helpButton} onHelp={openHowTo} />}
 
         {bootStatus.state === 'loading' && <p>Loading...</p>}
@@ -165,15 +148,7 @@ export function App() {
           </>
         )}
       </main>
-      {howTo !== null && (
-        <HowToPlay
-          section={howTo.section}
-          nonce={howTo.nonce}
-          onClose={() => {
-            setHowTo(null);
-          }}
-        />
-      )}
+      {howTo !== null && <HowToPlay section={howTo.section} nonce={howTo.nonce} onClose={close} />}
     </PopoverHost>
   );
 }

@@ -33,8 +33,11 @@ export interface RaidGlance {
 export interface HomeInput {
   /** Server time now (UTC epoch ms). */
   now: number;
-  /** The guild's timezone, always passed. */
-  timezone: string;
+  /**
+   * The guild's timezone, always passed. Null while it is not known (it comes with the state only): the
+   * board then leaves out every time of day instead of guessing one.
+   */
+  timezone: string | null;
   trips: readonly Trip[];
   /** The Workshop's jobs, or null while they have not loaded. */
   jobs: readonly Job[] | null;
@@ -153,7 +156,7 @@ export function needsYou(input: HomeInput): NeedRow[] {
       add(
         'games',
         `${plural(n, 'event is', 'events are')} open to enter`,
-        `by ${whenText(now, input.games.next.lockAt, timezone)}`,
+        timezone === null ? null : `by ${whenText(now, input.games.next.lockAt, timezone)}`,
       );
     }
   }
@@ -213,6 +216,8 @@ export interface ComingRow {
 /** The next things on the clock, soonest first, at most `limit` (default five, so the raid's finale fits beside four others). One row each for trips, jobs, the Games and the raid. */
 export function comingUp(input: HomeInput, limit = 5): ComingRow[] {
   const { now, timezone } = input;
+  // Without the guild's timezone a time of day would be a guess: no rows.
+  if (timezone === null) return [];
   const rows: ComingRow[] = [];
   const add = (at: number, place: Tab, text: string): void => {
     if (at <= now) return;

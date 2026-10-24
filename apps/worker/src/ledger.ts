@@ -284,8 +284,16 @@ export function spend<T>(
   });
 }
 
-/** Newest-first ledger entries of one user. */
-export function listEntries(sql: SqlStorage, userId: string, limit: number): LedgerEntry[] {
+/**
+ * Newest-first ledger entries of one user. `creditsOf` keeps only the credits (amount above zero) of that
+ * currency, so a player whose newest entries are all spends still gets their income.
+ */
+export function listEntries(
+  sql: SqlStorage,
+  userId: string,
+  limit: number,
+  creditsOf: Currency | null = null,
+): LedgerEntry[] {
   return sql
     .exec<{
       id: number;
@@ -296,8 +304,10 @@ export function listEntries(sql: SqlStorage, userId: string, limit: number): Led
       meta: string | null;
     }>(
       `SELECT id, currency, amount, source, created_at, meta FROM ledger
-       WHERE user_id = ? ORDER BY id DESC LIMIT ?`,
+       WHERE user_id = ? AND (? IS NULL OR (currency = ? AND amount > 0)) ORDER BY id DESC LIMIT ?`,
       userId,
+      creditsOf,
+      creditsOf,
       limit,
     )
     .toArray()

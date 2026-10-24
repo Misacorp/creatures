@@ -100,6 +100,39 @@ describe('GET /api/ledger', () => {
     });
   });
 
+  it('lists only the Bait credits with credits=bait, even when the newest entries are all spends', async () => {
+    await runCore('730000000000000008', async ({ guildId, core, request }) => {
+      const secret = await core.createSession(guildId, USER);
+      credit(core, USER_ID, 1, { amount: 500 });
+      core.credit({
+        userId: USER_ID,
+        currency: 'essence',
+        amount: 3,
+        source: 'test',
+        idempotencyKey: 'e:2',
+      });
+      for (let i = 0; i < 40; i++) {
+        core.spend({
+          userId: USER_ID,
+          currency: 'bait',
+          amount: 1,
+          purpose: 'treat',
+          idempotencyKey: `spend:${String(i)}`,
+          apply: () => ({ ok: true }),
+        });
+      }
+      const newest = await (
+        await request(secret, '/api/ledger?limit=30')
+      ).json<{ entries: Entry[] }>();
+      expect(newest.entries.some((e) => e.amount > 0 && e.currency === 'bait')).toBe(false);
+      const credits = await (
+        await request(secret, '/api/ledger?limit=30&credits=bait')
+      ).json<{ entries: Entry[] }>();
+      expect(credits.entries.map((e) => [e.currency, e.amount])).toEqual([['bait', 500]]);
+      expect((await request(secret, '/api/ledger?credits=essence')).status).toBe(400);
+    });
+  });
+
   it('returns an empty list for a user with no entries', async () => {
     await runCore('730000000000000005', async ({ guildId, core, request }) => {
       const secret = await core.createSession(guildId, USER);

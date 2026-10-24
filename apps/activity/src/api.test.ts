@@ -7,6 +7,7 @@ import {
   evolveCreature,
   fetchConfig,
   fetchFinaleTicket,
+  fetchLedger,
   fetchRoom,
   finaleSocketUrl,
   loungeSocketUrl,
@@ -545,5 +546,24 @@ describe('the daily allowance of /api/me', () => {
     ]) {
       expect(parseAllowance(bad)).toBeNull();
     }
+  });
+});
+
+describe('the ledger request', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('asks the server for Bait credits only when told to, so spends never crowd out income', async () => {
+    const urls: string[] = [];
+    vi.stubGlobal('fetch', (url: string) => {
+      urls.push(url);
+      return Promise.resolve(Response.json({ entries: [] }));
+    });
+    await fetchLedger(10, true);
+    await fetchLedger(20);
+    expect(urls[0]).toContain('/api/ledger?limit=10&credits=bait');
+    expect(urls[1]).toContain('/api/ledger?limit=20');
+    expect(urls[1]).not.toContain('credits');
   });
 });

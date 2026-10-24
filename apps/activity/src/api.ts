@@ -278,9 +278,11 @@ function isLedgerEntry(value: unknown): value is LedgerEntry {
   );
 }
 
-/** The signed-in player's most recent ledger entries, newest first. */
-export async function fetchLedger(limit: number): Promise<LedgerEntry[]> {
-  const data = await apiFetch(`/api/ledger?limit=${String(limit)}`);
+/** The signed-in player's most recent ledger entries, newest first; `baitCredits`: only Bait credits (no spends). */
+export async function fetchLedger(limit: number, baitCredits = false): Promise<LedgerEntry[]> {
+  const data = await apiFetch(
+    `/api/ledger?limit=${String(limit)}${baitCredits ? '&credits=bait' : ''}`,
+  );
   if (!isRecord(data) || !Array.isArray(data['entries']) || !data['entries'].every(isLedgerEntry)) {
     throw new Error('/api/ledger returned an unexpected shape');
   }

@@ -29,8 +29,25 @@ describe('incomeLine', () => {
     expect(incomeLine(entry({ amount: 8, source: 'games' }))).toBe('+8 · Prize Stall');
   });
 
-  it('falls back to the source', () => {
+  it('names every Bait source the server writes, and the old gear one', () => {
+    const named: Record<string, string> = {
+      gear: 'gear upgrade',
+      raid_phase: 'raid phase',
+      raid_finale: 'raid finale',
+      festival: 'festival',
+      expedition: 'trip',
+      welcome: 'welcome gift',
+      dungeon: 'dungeon',
+      level_reset: 'level reset refund',
+    };
+    for (const [id, text] of Object.entries(named)) {
+      expect(incomeLine(entry({ amount: 5, source: id })), id).toBe(`+5 · ${text}`);
+    }
+  });
+
+  it('falls back to the id, without underscores', () => {
     expect(incomeLine(entry({ amount: 10, source: 'refund' }))).toBe('+10 · refund');
+    expect(incomeLine(entry({ amount: 10, source: 'new_thing' }))).toBe('+10 · new thing');
   });
 });
 

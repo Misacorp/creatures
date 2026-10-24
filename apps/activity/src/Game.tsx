@@ -56,6 +56,7 @@ import { chooseCatch } from './talent-api';
 import { choiceResultText } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
+import { navStateFor, type GoOptions } from './nav-state';
 import { DEFAULT_PLACE, NAV_HOME, homePageOf, isPlace, navPlaceOf, type Screen } from './tabs';
 import { useActionRunner } from './use-action-runner';
 import { useForecast } from './use-forecast';
@@ -125,9 +126,10 @@ export function Game({
   const games = useGames(game.starterChosen, offset, () => {
     refreshState();
   });
-  // The raid's week times for Home, loaded when the game opens (a failed load leaves the raid rows out).
-  const { raid: raidGlance, load: loadRaidGlance } = useRaidGlance(game.starterChosen);
   const [tab, setTab] = useState<Screen>(DEFAULT_PLACE);
+  // The raid's week times for Home, loaded when the game opens and whenever Home is shown (a failed load
+  // leaves the raid rows out).
+  const { raid: raidGlance } = useRaidGlance(game.starterChosen, tab === 'home', offset);
   // The Settings page (from the cog in the HUD) is drawn in place of the screen; the screen stays mounted under it,
   // so Back finds it as it was. Choosing a place closes it.
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -140,6 +142,15 @@ export function Game({
   const [backTo, setBackTo] = useState<{ place: Screen; to: Screen } | null>(null);
   // The Creatures view opens with its "Needs you" filter on when the Home notice for creatures that need you opened it.
   const [creaturesNeeds, setCreaturesNeeds] = useState(false);
+  // Every change of place goes through here: it also closes Settings, clears Back (unless one is set on purpose)
+  // and the Creatures "Needs you" filter (unless asked), so no route leaves the old page's state behind.
+  const goTo = (screen: Screen, opts?: GoOptions): void => {
+    const next = navStateFor(screen, opts);
+    setTab(next.tab);
+    setSettingsOpen(next.settingsOpen);
+    setBackTo(next.backTo);
+    setCreaturesNeeds(next.creaturesNeeds);
+  };
   // Every change of place or page (dock, tray, rail, a Home notice or pin) starts at the top of the new page.
   useScrollTopOnChange(tab);
   const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
@@ -387,7 +398,7 @@ export function Game({
       board: games.view?.board ?? [],
       selfId: user.id,
       onOpen: () => {
-        setTab('games');
+        goTo('games');
         games.load();
       },
     },
@@ -435,10 +446,10 @@ export function Game({
     busy,
     actions: { ...creatureActions, onEquip: equipOn },
     onAnswerCatch: () => {
-      setTab('collection');
+      goTo('collection');
     },
     onOpenWorkshop: () => {
-      setTab('workshop');
+      goTo('workshop');
       loadGear();
     },
   };
@@ -478,17 +489,13 @@ export function Game({
             if (!isPlace(id)) return;
             // Tapping the place you are in also goes back to its top.
             if (id === tab) scrollToTop();
-            setTab(id);
-            setSettingsOpen(false);
-            setBackTo(null);
-            setCreaturesNeeds(false);
+            goTo(id);
             setError(null);
             setNotice(null);
             refreshState();
             room.refreshIfStale();
             loadForecast();
             if (id === 'games' || id === 'home') games.load();
-            if (id === 'home') loadRaidGlance();
             if (id !== 'games') loadGear();
           }}
         />
@@ -544,7 +551,7 @@ export function Game({
             {tab === 'home' && (
               <HomeScreen
                 offset={offset}
-                timezone={timezone.current ?? 'UTC'}
+                timezone={timezone.current}
                 trips={game.expeditions}
                 jobs={gear === null ? null : gear.jobs}
                 creatures={game.creatures}
@@ -556,13 +563,11 @@ export function Game({
                 settings={boardSettings}
                 creatureState={game}
                 onOpenPage={(screen) => {
-                  setTab(screen);
                   // The Journal is a place of the Collection group; from the pin its Back returns to Home.
-                  setBackTo(screen === 'journal' ? { place: screen, to: 'home' } : null);
+                  goTo(screen, screen === 'journal' ? { backTo: 'home' } : {});
                 }}
                 onGo={(place, needsFilter) => {
-                  setTab(place);
-                  setCreaturesNeeds(place === 'collection' && needsFilter === true);
+                  goTo(place, needsFilter === true ? { needsFilter } : {});
                   refreshState();
                   loadForecast();
                   if (place === 'games') games.load();
@@ -577,7 +582,7 @@ export function Game({
                 creatures={game.creatures}
                 tripsFinished={game.slots.tripsFinished}
                 onBack={() => {
-                  setTab('home');
+                  goTo('home');
                 }}
               />
             )}
@@ -589,7 +594,7 @@ export function Game({
                 {...(backTo?.place === 'journal'
                   ? {
                       onBack: () => {
-                        setTab(backTo.to);
+                        goTo(backTo.to);
                       },
                     }
                   : {})}
@@ -648,7 +653,7 @@ export function Game({
                   setReveal(null);
                 }}
                 onOpenWorkshop={() => {
-                  setTab('workshop');
+                  goTo('workshop');
                   loadGear();
                 }}
                 bag={gear?.inventory ?? null}

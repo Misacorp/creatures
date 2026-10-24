@@ -5,8 +5,25 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 /** How many Bait credits the currency popover lists. */
 export const INCOME_LIMIT = 5;
 
-/** How many ledger entries to ask for so that spends mixed in still leave `INCOME_LIMIT` credits. */
-export const INCOME_FETCH = 30;
+/** How many Bait credits to ask for (the server leaves out the spends): a few spare over `INCOME_LIMIT`. */
+export const INCOME_FETCH = 10;
+
+/** The other places Bait comes from (ledger ids), in the game's words. Unknown ids read plainly. */
+const SOURCE_NAMES: Readonly<Record<string, string>> = {
+  allowance: 'daily allowance',
+  rank_gift: 'explorer rank gift',
+  games: 'Prize Stall',
+  gear: 'gear upgrade',
+  raid_phase: 'raid phase',
+  raid_finale: 'raid finale',
+  festival: 'festival',
+  expedition: 'trip',
+  trip: 'trip',
+  welcome: 'welcome gift',
+  dungeon: 'dungeon',
+  level_reset: 'level reset refund',
+  dev: 'dev tools',
+};
 
 /** Where a ledger entry's Bait came from, in the game's words: "leet on 2026-10-09 with 3 players". */
 function sourceText(entry: LedgerEntry): string {
@@ -23,10 +40,7 @@ function sourceText(entry: LedgerEntry): string {
       : `leet on ${meta['date']} with ${String(meta['participants'])} players`;
   }
   if (entry.source === 'leet') return 'leet';
-  if (entry.source === 'allowance') return 'daily allowance';
-  if (entry.source === 'rank_gift') return 'explorer rank gift';
-  if (entry.source === 'games') return 'Prize Stall';
-  return entry.source;
+  return SOURCE_NAMES[entry.source] ?? entry.source.replace(/_/g, ' ');
 }
 
 /**

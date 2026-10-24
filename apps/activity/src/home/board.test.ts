@@ -166,3 +166,20 @@ describe('the raid rows of the board', () => {
     expect(without.coming.some((r) => r.place === 'raid')).toBe(false);
   });
 });
+
+describe('a guild timezone that is not known yet', () => {
+  it('leaves out Coming up and every time in the notices, instead of guessing UTC', () => {
+    const known = HOME_STATES.map((state) => buildBoard(homeInput(state, true), settings()));
+    // Sanity: with the timezone known, some state does show times.
+    expect(known.some((b) => b.coming.length > 0)).toBe(true);
+    expect(known.some((b) => b.needs.some((n) => n.until !== null))).toBe(true);
+    for (const state of HOME_STATES) {
+      const board = buildBoard({ ...homeInput(state, true), timezone: null }, settings());
+      expect(board.coming, state).toEqual([]);
+      expect(
+        board.needs.map((n) => n.until),
+        state,
+      ).not.toContainEqual(expect.any(String));
+    }
+  });
+});

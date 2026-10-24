@@ -29,7 +29,8 @@ export const expeditionRoutes: Routes<ExpeditionRouteContext> = {
   },
   /** The caller's account stats, milestones, journal and explorers. */
   '/api/profile': {
-    GET: (_request, ctx) => json(ctx.core.collection.trips.profile(ctx.user.id)),
+    GET: (_request, ctx) =>
+      json(ctx.core.collection.trips.profile(ctx.user.id, ctx.core.timezone())),
   },
   /** The weekly special, what is open right now and the caller's familiarity. */
   '/api/destinations': {

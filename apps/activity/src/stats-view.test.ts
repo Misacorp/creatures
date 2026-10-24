@@ -37,19 +37,19 @@ describe('the stat sheet', () => {
     expect(value('trips_finished')).toBe(3);
     expect(value('dungeon_runs')).toBe(7);
     expect(value('dungeon_clears')).toBe(3);
-    expect(value('dungeon_depth')).toBe(4);
+    // The profile's depth 4 is where the next run fights: the deepest cleared is 3.
+    expect(value('dungeon_depth')).toBe(3);
     expect(value('dungeon_streak')).toBe(2);
     expect(value('creatures_owned')).toBe(creatures.length);
   });
 
-  it('reads a stat the server did not send as 0', () => {
+  it('reads a stat the server did not send as 0, and the deepest depth of a new player as 0', () => {
     const empty = statGroups({
       profile: { stats: {}, dungeon: { runs: 0, clears: 0, depth: 1, streak: 0 } },
       creatures: [],
     }).flatMap((g) => g.rows);
-    const nonZero = empty.filter((r) => r.value !== 0).map((r) => r.key);
-    // The dungeon's first depth is 1, not 0.
-    expect(nonZero).toEqual(['dungeon_depth']);
+    // A new player's next depth is 1, so nothing is cleared yet.
+    expect(empty.filter((r) => r.value !== 0).map((r) => r.key)).toEqual([]);
   });
 });
 

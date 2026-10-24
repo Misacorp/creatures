@@ -74,7 +74,7 @@ const GROUPS: readonly {
     rows: [
       {
         key: 'dungeon_runs',
-        label: 'Runs attempted',
+        label: 'Runs finished',
         value: ({ profile }) => profile.dungeon.runs,
       },
       {
@@ -84,8 +84,9 @@ const GROUPS: readonly {
       },
       {
         key: 'dungeon_depth',
-        label: 'Depth reached',
-        value: ({ profile }) => profile.dungeon.depth,
+        label: 'Deepest depth cleared',
+        // `depth` is where the next run fights (1 for a new player), so the deepest cleared is one less.
+        value: ({ profile }) => Math.max(0, profile.dungeon.depth - 1),
       },
       {
         key: 'dungeon_streak',
