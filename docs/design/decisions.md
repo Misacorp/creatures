@@ -2954,3 +2954,10 @@ Misa, on the triangle barrier: slightly smaller triangles, a shield big enough t
 - **A regular hexagon** (flat top and bottom) of whole triangles, its corners on the triangles' grid so the outline is clean (`barrier-shards.ts`). Its side is a whole number of triangles, sized from a box 2.5rem wider than the foe's picture on each side and centred on the sprite, so it spills well around the foe. The outer ring of triangles is a little brighter (two rings for the Thorns room's briar cage).
 - **Triangles** are 16 px a side (21 for Molten Shell's plates, 13 for the Thorns room); their strength is 10% lower.
 - **The shimmer** is a bright band that sweeps across the diagonal from the top left to the bottom right in 1.6 s with a quintic ease in and out (it gathers, rushes through the middle, settles), then rests 2.2 s. Each triangle keeps its own slow pulse of opacity and colour under it.
+
+## 2026-10-24: The raid party sits dead centre on a wide screen
+
+Misa, on desktop: the creature board stayed at the left while the boss is centred. Centre it so the grid itself is dead centre, with the row names to its left, not counted in the centring.
+
+- **Stage only, wide screens only** (`styles/stage/stage-grid.css`, from 40rem): the board is only as wide as its row names and lanes, centred, with a blank on its right as wide as the names and their gap. So the lanes are centred and the names sit right beside them. The raid board (placement) keeps its own layout.
+- **Phones keep the old layout**: the names at the left edge and the lanes scrolling from the left, because there is no room to spare. A party wider than the stage still scrolls on a wide screen too (the board never grows past the stage).

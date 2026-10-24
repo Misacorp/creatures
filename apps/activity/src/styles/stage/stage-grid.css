@@ -80,3 +80,19 @@
   position: sticky;
   left: 0.5rem;
 }
+
+/*
+  On a wide screen the party sits dead centre under the boss, its row names right beside it on the
+  left (Misa, 2026-10-24): the board is only as wide as its names and lanes, centred, with a blank on
+  its right as wide as the names and their gap, so the lanes, not the lanes plus names, are what is
+  centred. A party wider than the window still scrolls (the board never grows past the stage).
+*/
+@media (min-width: 40rem) {
+  .board-grid.stage-grid {
+    box-sizing: border-box;
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
+    padding-right: calc(var(--label-w) + 4px);
+  }
+}
