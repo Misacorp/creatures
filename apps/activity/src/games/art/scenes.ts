@@ -42,7 +42,7 @@ import {
 import type { Placement } from './pixel';
 import { propSprite, type PropName } from './props';
 import { TILE, tilemapPlacements, type Tilemap } from './tiles';
-import { TEAM_RAMPS, type RampName } from './tint';
+import { TEAM_RAMPS, mutedRamp, type RampName } from './tint';
 
 export const SCENE_SIZE = { width: 192, height: 112 } as const;
 export const STANDS_SIZE = { width: 192, height: 48 } as const;
@@ -165,7 +165,7 @@ export function standsSeats(count: number): ScenePoint[] {
 function standsMaps(theme: StandsTheme): { map: Tilemap; layer: SceneLayer }[] {
   const step: Tilemap = {
     rows: [run('B', COLS)],
-    legend: { B: { tile: 'bleacher', tint: theme.seat, tint2: theme.riser } },
+    legend: { B: { tile: 'bleacher', tint: theme.seat, tint2: mutedRamp(theme.riser) } },
   };
   return [
     { map: theme.backdrop, layer: 'back' },

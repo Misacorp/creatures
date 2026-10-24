@@ -84,6 +84,39 @@ export const TEAM_RAMPS: readonly RampName[] = [
 
 type RampArg = Ramp | RampName;
 
+/** One hex colour with its saturation cut by `amount` (0 to 1) towards its own brightness. */
+function desaturate(hex: string, amount: number): string {
+  const n = Number.parseInt(hex.slice(1), 16);
+  const rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255] as const;
+  const grey = 0.3 * rgb[0] + 0.59 * rgb[1] + 0.11 * rgb[2];
+  const part = (c: number): string =>
+    Math.round(c + (grey - c) * amount)
+      .toString(16)
+      .padStart(2, '0');
+  return `#${part(rgb[0])}${part(rgb[1])}${part(rgb[2])}`;
+}
+
+const mutedCache = new Map<string, Ramp>();
+
+/**
+ * A named ramp with its saturation cut (the stands' risers: a painted board behind the crowd, which
+ * should sit back, not shout). The same name gives back the same ramp.
+ */
+export function mutedRamp(name: RampName, amount = 0.62): Ramp {
+  const key = `${name}|${String(amount)}`;
+  const hit = mutedCache.get(key);
+  if (hit !== undefined) return hit;
+  const [a, b, c, d] = RAMPS[name];
+  const ramp: Ramp = [
+    desaturate(a, amount),
+    desaturate(b, amount),
+    desaturate(c, amount),
+    desaturate(d, amount),
+  ];
+  mutedCache.set(key, ramp);
+  return ramp;
+}
+
 function rampOf(ramp: RampArg): Ramp {
   return typeof ramp === 'string' ? RAMPS[ramp] : ramp;
 }
