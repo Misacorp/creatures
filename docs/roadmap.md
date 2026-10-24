@@ -116,7 +116,8 @@ Noted while testing the expedition and Workshop rework on staging. The component
 
 ## After the Valley Games (Misa, 2026-10-23)
 
-- **Main menu redesign.** With Games as the sixth tab the tab bar barely fits on a phone (360 px has no spare width). Rethink the main navigation.
+- **Main menu redesign.** With Games as the sixth tab the tab bar barely fits on a phone (360 px has no spare width). Rethink the main navigation. **Chosen (Misa, 2026-10-24): option 1, a bottom dock on phones and a left rail on desktop** (mock-ups: workbench `MainNavMockups`); being built. He liked the valley-as-menu map too: "explore it later".
+- **A home in the world (very long term).** A player asked "where is home on the expedition map". Misa: players might like a home or village in the game world, and "ultimately ... houses and decorations, furniture, etc. to find, craft and place". The dock's place list stays data-driven so a map home can be added later.
 - ~~**Valley Games polish and fixes**~~ **Done (2026-10-24):** alignment, spacing, the Good fit tick, a calm leaderboard, crowded big fields (see `design/valley-games.md`, "After v1"). The postponed ideas stay postponed (Misa, 2026-10-23).
 
 ## UI audit findings (2026-10-24)
