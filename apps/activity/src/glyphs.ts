@@ -661,6 +661,21 @@ const door: SpriteDef = {
   ],
 };
 
+/** Three dots: the dock's More button (one colour, like the tab pictures). */
+const more: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '........',
+    '........',
+    '........',
+    'ww.ww.ww',
+    'ww.ww.ww',
+    '........',
+    '........',
+    '........',
+  ],
+};
+
 // --- The dungeon ---
 
 /** A round lure: Bait, in the rewards. */
@@ -830,6 +845,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   compass,
   blade,
   door,
+  more,
   bait,
   flag,
   gift,

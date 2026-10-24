@@ -1,0 +1,80 @@
+/*
+  The main navigation's workbench page (`MainNavDemo`, dev only: imported by its workbench page alone, so it never
+  reaches the game). It is one fixed-height frame, like the Activity window in Discord (no browser chrome): a phone
+  is full width, a wide window is the app card. The real dock is `position: fixed` to the window; here it sits in
+  the frame's column, so the preview can show it.
+*/
+
+/* The workbench's preview stage gives way to the frame: no padding, no card, no spare room below. */
+.wb-frame-wrap:has(.nd) {
+  padding: 0;
+}
+
+.wb-frame-wrap .wb-frame-stage:has(.nd) {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.nd {
+  --nd-h: 44rem;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: var(--nd-h);
+  background-color: var(--night);
+  background-image: radial-gradient(var(--dusk) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+/* A wide window is the app card: the page's dotted ground shows round it. */
+.nd-wide {
+  width: min(58rem, 100% - 1.25rem);
+  min-height: calc(var(--nd-h) - 1.25rem);
+  margin: 0.625rem auto;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+}
+
+.wb-frame-stage .nd .hud {
+  position: static;
+  flex: none;
+  margin: 0;
+}
+
+.nd .main-nav.dock {
+  position: static;
+  flex: none;
+}
+
+.nd-body {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.nd-body .main-nav.rail {
+  position: static;
+  align-self: start;
+}
+
+.nd-screen {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.75rem;
+}
+
+.nd-wide .nd-screen {
+  padding: 0;
+}
+
+.nd-standin {
+  padding: 1rem;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+}

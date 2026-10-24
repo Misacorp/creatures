@@ -1,26 +1,27 @@
 /*
-  The currency pile: a small Bait-and-Essence button in the title row (left of "?") and the two lines of its
-  popover (Bait and Essence, each with its picture, amount and glossary tag).
+  The currency pile: the HUD's Bait-and-Essence button (left of "?"; the two amounts with their pictures) and
+  the two lines of its popover (Bait and Essence, each with its picture, amount and glossary tag).
 */
 button.currency-pile {
-  display: grid;
+  display: flex;
   flex: none;
-  place-items: center;
-  min-width: 2.5rem;
-  padding: 0.25rem;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+  background: var(--ink);
+  box-shadow: inset 0 0 0 var(--px) var(--line);
+  color: var(--gold);
 }
 
-/* The 13x10 icon at 2x fits the wall band up to scale 3; the 3x one only fits the scale-4 band. */
-button.currency-pile canvas.coin-big {
-  display: none;
-}
-
-.room[data-scale='4'] button.currency-pile canvas.coin-big {
-  display: block;
-}
-
-.room[data-scale='4'] button.currency-pile canvas.coin-small {
-  display: none;
+.currency-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--fs-row);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .currency-lines {
