@@ -91,7 +91,7 @@ Written down at Misa's request before the session's context was compacted.
 
 ### Misa's polish pass: done (2026-10-24)
 
-Alignment, spacing, the Good fit tick, the calm leaderboard, crowded big fields, the art notes, the level in the picker, two-line commentary, the `games-team` glossary link, the analytics mapping and seeded test dice. See `decisions.md`, 2026-10-24. The main menu redesign is its own design round (`docs/roadmap.md`).
+Alignment, spacing, the Good fit tick, the calm leaderboard, crowded big fields, the art notes, the level in the picker, two-line commentary, the `games-team` glossary link, the analytics mapping and seeded test dice. See `decisions.md`, 2026-10-24. The main menu redesign (item 5) is built: a dock and a rail, see `decisions.md`, 2026-10-24.
 
 ### Still open
 

@@ -661,6 +661,51 @@ const door: SpriteDef = {
   ],
 };
 
+/** A house: the Home group of the dock (one colour, like the tab pictures). */
+const home: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '...ww...',
+    '..wwww..',
+    '.wwwwww.',
+    'wwwwwwww',
+    '.wwwwww.',
+    '.ww..ww.',
+    '.ww..ww.',
+    '.ww..ww.',
+  ],
+};
+
+/** A sofa: the Lounge, the dock's middle button (one colour, like the tab pictures). */
+const couch: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '.wwwwww.',
+    '.wwwwww.',
+    'wwwwwwww',
+    'ww....ww',
+    'wwwwwwww',
+    'wwwwwwww',
+    '.w....w.',
+    '........',
+  ],
+};
+
+/** Two peaks: the Adventure group of the dock. */
+const peaks: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '........',
+    '...w....',
+    '..ww..w.',
+    '.wwww.ww',
+    '.wwwwwww',
+    'wwwwwwww',
+    'wwwwwwww',
+    '........',
+  ],
+};
+
 // --- The dungeon ---
 
 /** A round lure: Bait, in the rewards. */
@@ -830,6 +875,9 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   compass,
   blade,
   door,
+  home,
+  couch,
+  peaks,
   bait,
   flag,
   gift,

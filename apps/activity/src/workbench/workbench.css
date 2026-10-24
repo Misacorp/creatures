@@ -579,3 +579,12 @@
 .wb-side-demo {
   max-width: 24rem;
 }
+
+/*
+  The game's HUD runs to the card's edges (a negative margin, and sticks to the top of a phone window); on a
+  stage it sits inside the card's padding like every other component, so nothing steps out of the card.
+*/
+.wb-frame-stage .hud {
+  position: static;
+  margin: 0 0 0.75rem;
+}

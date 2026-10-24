@@ -3,34 +3,21 @@ import type { Balances } from './api';
 import { GlossaryTag } from './Glossary';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
-import type { SpriteDef } from './sprites/sprite-data';
+import { compactCount } from './number-format';
 import { Popover, popupProps } from './ui/Popover';
-
-/**
- * The currencies button: the Bait coin with the Essence gem laid over its top right, drawn from the
- * same two glyphs the currency popover lists, so the button reads as "my currencies". It is 13x10,
- * so it lives here and not with the 8x8 glyphs.
- */
-const CURRENCIES_ICON: SpriteDef = {
-  // The ink, bone, gold and coin-rim colours of `glyphs.ts`, and its gem teal.
-  palette: { k: '#0d0a1a', w: '#f4eedc', c: '#7fe0d0', g: '#c8952b', y: '#ffd25a' },
-  rows: [
-    '.......kkkk..',
-    '......kwccwk.',
-    '..gggkwccccwk',
-    '.gyyykcccccck',
-    'gyywwykcccck.',
-    'gywyyyykcck..',
-    'gywyyyygkk...',
-    'gyyyyyyg.....',
-    '.gyyyyg......',
-    '..gggg.......',
-  ],
-};
 
 /** What assistive technology says for the button: both amounts. */
 export function currencyLabel(balances: Balances): string {
   return `Currencies: ${String(balances.bait)} Bait, ${String(balances.essence)} Essence`;
+}
+
+/**
+ * An amount for the HUD's tight spot: whole numbers with thousands separators ("1,240") up to 9,999, then
+ * "12.3K" and so on (`compactCount`). The exact numbers are in the button's spoken label and the popover.
+ */
+export function hudAmount(n: number): string {
+  const value = Math.max(0, Math.floor(Number.isFinite(n) ? n : 0));
+  return value < 10_000 ? value.toLocaleString('en') : compactCount(value);
 }
 
 /** One line of the popover: the currency's picture, its amount and its glossary tag. */
@@ -55,9 +42,9 @@ function CurrencyLine({
 }
 
 /**
- * The currency pile: a small Bait-and-Essence button (in the top right, left of "?") that opens a compact
- * popover with the Bait and Essence balances and their glossary tags. The popover is its own, so the
- * tags can open their entries above it without closing it. Reachable from every tab.
+ * The currency pile: one button in the HUD (left of "?") that shows the Bait and Essence balances, each
+ * with its picture, and opens a compact popover with the exact amounts and their glossary tags. The popover
+ * is its own, so the tags can open their entries above it without closing it. Reachable from every tab.
  */
 export function CurrencyPile({ balances }: { balances: Balances }) {
   const ref = useRef<HTMLButtonElement>(null);
@@ -74,9 +61,14 @@ export function CurrencyPile({ balances }: { balances: Balances }) {
           setOpen((o) => !o);
         }}
       >
-        {/* Two sizes; the stylesheet shows the one that fits the wall band (the big one at scale 4). */}
-        <Sprite sprite={CURRENCIES_ICON} scale={3} class="coin-big" />
-        <Sprite sprite={CURRENCIES_ICON} scale={2} class="coin-small" />
+        <span class="currency-chip">
+          <Sprite sprite={glyphOrUnknown('bait')} scale={2} />
+          <span class="pix">{hudAmount(balances.bait)}</span>
+        </span>
+        <span class="currency-chip">
+          <Sprite sprite={glyphOrUnknown('gem')} scale={2} />
+          <span class="pix">{hudAmount(balances.essence)}</span>
+        </span>
       </button>
       {open && (
         <Popover

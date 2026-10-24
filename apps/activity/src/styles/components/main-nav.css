@@ -1,0 +1,415 @@
+/*
+  The main navigation (`MainNav.tsx`, `Hud.tsx`; decisions.md 2026-10-24). Below 60 rem (`WIDE_QUERY`) it is a
+  game's dock: a group button, the Lounge (the primary button, gold and raised, it opens the living room's
+  sheet) and a group button, fixed to the bottom edge under the thumb (a group with several places opens a
+  tray of big buttons upward), with the HUD (the place's name, the currencies, "?") stuck to the top edge.
+  From 60 rem the dock is a rail down the left of the screen, every place with its word beside the picture
+  under its group's heading, and the HUD runs across the top of the card.
+*/
+:root {
+  --dock-h: 4rem; /* the dock's height without the safe-area inset: a 3.5 rem button and 0.25 rem above and below */
+  --dock-gap: 0.25rem;
+
+  /*
+    How much of the bottom inset the dock keeps clear: a little. Discord's inset (about 48 px on Android) is
+    the whole system bar, and padding the bar by all of it read as an empty strip under the buttons
+    (Misa, 2026-10-24); the bar's own background runs to the screen's edge and the buttons sit low.
+  */
+  --dock-safe: min(
+    max(env(safe-area-inset-bottom, 0px), var(--discord-safe-area-inset-bottom, 0px)),
+    0.5rem
+  );
+  --hud-h: 3.5rem;
+}
+
+/* --- The HUD --- */
+.hud {
+  position: sticky;
+  top: var(--discord-safe-area-inset-top, 0px);
+  z-index: 35; /* over the stage's overlays (30), under the How to play page (40) and drawers (50) */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--hud-h);
+  margin: -1rem -1rem 0;
+  padding: 0.375rem 0.75rem;
+  background: var(--dusk);
+  box-shadow:
+    0 var(--px) 0 0 var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--bevel-lo);
+}
+
+h1.hud-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--fs-title);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-shadow:
+    1px 1px 0 var(--ink),
+    2px 2px 0 var(--plum);
+  white-space: nowrap;
+}
+
+.hud-tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hud button.howto-open {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+}
+
+/* The page scrolls to a thing without hiding it under the HUD or the dock. */
+html:has(.hud) {
+  scroll-padding-top: calc(var(--hud-h) + 0.5rem);
+}
+
+html:has(.main-nav.dock) {
+  scroll-padding-bottom: calc(var(--dock-h) + var(--dock-safe) + 0.5rem);
+}
+
+/* --- The places: a button with a picture, a word and maybe a pip --- */
+.main-nav ul {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button.nav-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  background: var(--dusk-2);
+  font-size: var(--fs-small);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+button.nav-btn.active {
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--gold-shade);
+}
+
+/*
+  The focus ring sits inside the button: the dock touches the window's edges and the rail scrolls, so the usual
+  ring (6 px outside) would be cut off. Bone on the dark buttons, ink on the gold of the active one.
+*/
+button.nav-btn:focus-visible,
+button.nav-tray-item:focus-visible {
+  outline-offset: calc(var(--px) * -2);
+}
+
+button.nav-btn.active:focus-visible {
+  outline-color: var(--ink);
+}
+
+.nav-icon {
+  display: block;
+  flex: none;
+}
+
+/*
+  The pip: a small square in the button's top right corner, inside its edge (the dock touches the window's
+  edges and a rail scrolls, so a pip over the edge would be cut off). It does not change the button's size, has
+  the ink outline of the other pixel chrome and a warm colour that stays readable on the gold of the active
+  button. The reason is in the button's name for screen readers.
+*/
+.nav-pip {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--attention);
+  box-shadow: 0 0 0 var(--px) var(--ink);
+  pointer-events: none;
+}
+
+/* In a row of the tray the pip sits in the flow, before its reason. */
+.nav-pip.inline {
+  position: static;
+  flex: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .nav-pip {
+    animation: nav-pip-pop 300ms steps(4) both;
+  }
+}
+
+@keyframes nav-pip-pop {
+  0% {
+    transform: scale(0);
+  }
+
+  60% {
+    transform: scale(1.5);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* --- The phone's dock --- */
+/*
+  The bar reaches the bottom edge of the window: its own background and border run to the last pixel, and only
+  a small part of the safe-area inset (`--dock-safe`, at most 0.5 rem) is padding inside it, so the buttons sit
+  low and no empty strip shows under them. The body's own bottom padding (Discord's inset again) is dropped
+  while the dock is there, so the page does not add a strip under the bar either.
+*/
+body:has(.main-nav.dock) {
+  padding-bottom: 0;
+}
+
+.main-nav.dock {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 35;
+  padding: 0.25rem max(0.25rem, var(--discord-safe-area-inset-right, 0px))
+    calc(0.25rem + var(--dock-safe)) max(0.25rem, var(--discord-safe-area-inset-left, 0px));
+  background: var(--dusk);
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--ink),
+    inset 0 var(--px) 0 0 var(--bevel-hi);
+}
+
+.main-nav.dock ul {
+  align-items: flex-end;
+  gap: var(--dock-gap);
+}
+
+/* Three buttons share the width: a group, the Lounge, a group. */
+.main-nav.dock > ul > li {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.main-nav.dock button.nav-btn {
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 3.5rem;
+  padding: 0.25rem 0.125rem;
+}
+
+/*
+  The Lounge is the primary button: always gold, a little larger and raised above the bar (its top edge sticks
+  out over the bar's), a game's "play" button. The bar is not clipped, so the raised part shows.
+*/
+.main-nav.dock > ul > li.nav-lounge {
+  flex-grow: 1.15;
+  margin-top: -0.75rem; /* the extra height sticks out above the bar instead of making it taller */
+}
+
+.main-nav.dock button.nav-btn.lounge {
+  min-height: 4.25rem;
+  padding-top: 0.375rem;
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -2) 0 0 var(--gold-shade);
+  font-size: var(--fs-row);
+}
+
+.main-nav.dock button.nav-btn.lounge.open {
+  filter: brightness(0.92);
+}
+
+button.nav-btn.lounge:focus-visible {
+  outline-color: var(--ink);
+}
+
+/*
+  The Lounge is the one gold button, so the group you are in is not gold here: it keeps its dark face and
+  shows a gold underline and a gold word instead (the rail and the trays still use the gold face).
+*/
+.main-nav.dock button.nav-btn.active {
+  background: var(--dusk-2);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -2) 0 0 var(--gold);
+  color: var(--gold);
+}
+
+.main-nav.dock button.nav-btn.active:focus-visible {
+  outline-color: var(--bone);
+}
+
+/* The page makes room for the dock, so nothing at its end hides behind it. */
+main.card:has(.main-nav.dock) {
+  padding-bottom: calc(1rem + var(--dock-h) + var(--dock-safe));
+}
+
+/* --- The sub-menu tray: big buttons above the dock, one per place --- */
+.nav-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 34; /* under the dock (35), over the page */
+}
+
+.main-nav.dock ul.nav-tray {
+  position: absolute;
+  bottom: calc(100% + 1.25rem); /* clear of the Lounge button's raised top */
+  display: grid;
+  gap: 0.5rem;
+  width: min(17rem, 100% - 1rem);
+  padding: 0.5rem;
+  background: var(--dusk);
+  box-shadow: var(--frame);
+}
+
+.nav-tray.start {
+  left: 0.5rem;
+}
+
+.nav-tray.mid {
+  left: 50%;
+  translate: -50% 0;
+}
+
+.nav-tray.end {
+  right: 0.5rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .nav-tray {
+    animation: nav-tray-rise 160ms steps(4) both;
+  }
+}
+
+@keyframes nav-tray-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+button.nav-tray-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--dusk-2);
+  text-align: left;
+}
+
+button.nav-tray-item.active {
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--gold-shade);
+}
+
+button.nav-tray-item.active:focus-visible {
+  outline-color: var(--ink);
+}
+
+.nav-tray-name {
+  flex: none;
+  font-size: var(--fs-heading);
+}
+
+.nav-tray-pip {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.375rem;
+  min-width: 0;
+  color: var(--haze);
+  text-align: right;
+}
+
+.nav-tray-pip > .small {
+  color: inherit;
+}
+
+.active > .nav-tray-pip {
+  color: var(--ink);
+}
+
+/* --- The wide window: HUD across the top, a rail on the left, the screen beside it --- */
+.nav-shell {
+  min-width: 0;
+}
+
+.nav-screen {
+  min-width: 0;
+}
+
+/* The rail: only drawn on a wide window (`MainNav`'s `wide`), so its look needs no media query. */
+.main-nav.rail {
+  position: sticky;
+  top: 0.625rem;
+  max-height: calc(100vh - 1.25rem);
+  padding: 0.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.main-nav.rail ul {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-group + .nav-group {
+  margin-top: 0.75rem;
+}
+
+.nav-heading {
+  margin: 0 0 0.375rem;
+  padding: 0 0.125rem;
+  color: var(--haze);
+  font-size: var(--fs-small);
+  line-height: 1.2;
+}
+
+.main-nav.rail button.nav-btn {
+  justify-content: flex-start;
+  gap: 0.625rem;
+  padding: 0.375rem 0.625rem;
+}
+
+@media (min-width: 60rem) {
+  .hud {
+    position: static;
+  }
+
+  .nav-shell {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  /* The card is as wide as before plus the rail; a screen with a side panel widens it further (`side-panel.css`). */
+  main.card:has(.main-nav.rail) {
+    width: min(58rem, 100% - 1.25rem);
+  }
+}

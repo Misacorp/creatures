@@ -4,7 +4,7 @@ Status: **built 2026-10-14** (planned and revised the same day: lounging choice,
 
 ## What players see
 
-- A **living room** strip at the top of the app, in pixel art. The title row ("Leet Creatures", the currency button and "?") sits on the room's top wall band, so the room costs little extra height. The tab row stays right under the room.
+- A **living room** strip at the top of the app on a wide window (on a phone it is the Lounge button's sheet since 2026-10-24), in pixel art. The title row ("Leet Creatures", the currency button and "?") sits on the room's top wall band, so the room costs little extra height. The tab row stays right under the room.
 - For every player who has the Activity open in the same Discord activity instance (see "Who counts as here"), their **lounging creature** sits in one of the room's 16 fixed spots: on the couch, on a chair behind the table, on the rug, on the window sill and so on. A player whose starter is not chosen yet does not appear. If there are more players than spots, the extra ones are not shown. A small "N here" pill counts everyone present.
 - The room is **layered**: back props (wall, window, shelf, couch back), then the creatures, then front props (table top, couch arm, a plant), so a creature on a chair sits behind the table.
 - Creatures bob gently (off under `prefers-reduced-motion`) and now and then one shows a short **speech bubble** (an emote or a two-word line from the compendium). Bubbles are local flavour only: each viewer sees their own, nothing is sent.
