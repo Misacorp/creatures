@@ -83,4 +83,32 @@ describe('the stage around the boss', () => {
     expect(byClass(draw(2), 'move-track')).toHaveLength(1);
     expect(byClass(draw(3), 'move-track')).toHaveLength(0);
   });
+
+  it('writes no acting order under the creatures (the move track says what comes)', () => {
+    const first = ROW[0];
+    if (first === undefined) throw new Error('no creature');
+    page?.unmount();
+    page = createPage();
+    const turns: FightEvent[] = [
+      { t: 'round_start', round: 1, bossHp: 1000, mark: null },
+      { t: 'turn', round: 1, creature: first.id },
+    ];
+    page.draw(
+      <Stage
+        boss={{ id: 'cinder-wyrm', name: 'Cinder Wyrm', element: 'ember' }}
+        hpMax={1000}
+        hpStart={1000}
+        rounds={12}
+        row={ROW}
+        mineIds={new Set<string>()}
+        names={NAMES}
+        events={turns}
+        // The round has begun; its order is known from its first beat.
+        index={1}
+        anim={null}
+      />,
+    );
+    expect(visibleText(page.root)).not.toMatch(/\b\d+(st|nd|rd|th)\b/);
+    expect(byClass(page.root, 'unit-slot')).toHaveLength(0);
+  });
 });

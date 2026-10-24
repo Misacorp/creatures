@@ -2961,3 +2961,10 @@ Misa, on desktop: the creature board stayed at the left while the boss is centre
 
 - **Stage only, wide screens only** (`styles/stage/stage-grid.css`, from 40rem): the board is only as wide as its row names and lanes, centred, with a blank on its right as wide as the names and their gap. So the lanes are centred and the names sit right beside them. The raid board (placement) keeps its own layout.
 - **Phones keep the old layout**: the names at the left edge and the lanes scrolling from the left, because there is no room to spare. A party wider than the stage still scrolls on a wide screen too (the board never grows past the stage).
+
+## 2026-10-24: No acting order under the creatures
+
+Misa: drop the "1st, 2nd, 3rd" under each creature on the fight stage; the move track under the boss's side already tells players what is coming, which is enough to follow the round.
+
+- The ordinal line under every creature is gone in the raid and the dungeon, and the board's rows are that line shorter (`--tile-h` 4.875rem to 4.125rem). The acting creature keeps its hop and, in the dungeon, its gold frame.
+- A screen reader still hears the order: each creature's name starts with "Acts 2nd" while the round runs.

@@ -18,15 +18,3 @@
 .unit-hp > i.gone {
   background: var(--hp-gone);
 }
-
-/*
-  The acting order under a creature: 1st, 2nd, 3rd. In the dungeon it is left to right; in the raid it
-  follows the round's real order. A creature with no turn keeps the line's height, so rows do not jump.
-*/
-.unit-slot {
-  min-height: 0.75rem;
-  margin-top: 0.125rem;
-  color: var(--haze);
-  font-size: var(--fs-small);
-  line-height: 1;
-}
