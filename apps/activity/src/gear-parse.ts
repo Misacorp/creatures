@@ -129,6 +129,7 @@ function isOrigin(value: unknown): value is ItemOrigin {
     case 'craft':
     case 'welcome':
     case 'converted':
+    case 'games':
       return true;
     default:
       return false;
@@ -302,6 +303,7 @@ const GRANT_SOURCES: readonly unknown[] = [
   'welcome',
   'dungeon',
   'rank_gift',
+  'games',
 ];
 
 function isGrantRecord(value: unknown): value is GrantRecord {

@@ -94,7 +94,7 @@ describe('how a barrier looks', () => {
     ].filter((g) => g.op === 'reflect_first_reaction');
     expect(traps.length).toBeGreaterThan(0);
     expect(traps.filter((g) => BARRIER_LOOK[g.id] === undefined).map((g) => g.id)).toEqual([]);
-    expect(barrierLookOf('backdraft', 'ember')).toEqual({ theme: 'fire', pattern: 'hex' });
-    expect(barrierLookOf('new-trap', 'tide')).toEqual({ theme: 'water', pattern: 'hex' });
+    expect(barrierLookOf('backdraft', 'ember')).toEqual({ theme: 'fire', pattern: 'glass' });
+    expect(barrierLookOf('new-trap', 'tide')).toEqual({ theme: 'water', pattern: 'glass' });
   });
 });

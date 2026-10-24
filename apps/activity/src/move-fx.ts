@@ -207,28 +207,28 @@ export function fxPlanOf(strike: BossStrike, bossElement: string | null): FxPlan
 }
 
 /**
- * How a barrier on the foe looks: a see-through pixel shield over its picture while a lasting move is
- * armed (decisions.md, 2026-10-24). One component for every such move, configured here: its colours
- * (a theme) and its pattern. Which moves raise one is `BARRIER_OPS` (`replay.ts`).
- * - `hex`: a magical lattice (the default).
- * - `shell`: heavy plates (a molten crust, a shell).
- * - `thorns`: a briar cage, spikes along its edge.
+ * How a barrier on the foe looks: a see-through shield of shimmering triangles over its picture while
+ * a lasting move is armed (decisions.md, 2026-10-24). One component for every such move, configured
+ * here: its colours (a theme) and its pattern. Which moves raise one is `BARRIER_OPS` (`replay.ts`).
+ * - `glass`: small triangles in a soft shimmer (the default).
+ * - `plates`: bigger, slower, more solid triangles (a molten crust, a shell).
+ * - `thorns`: small, quick triangles with a bright, spiky edge (a briar cage).
  */
-export type BarrierPattern = 'hex' | 'shell' | 'thorns';
+export type BarrierPattern = 'glass' | 'plates' | 'thorns';
 
 export interface BarrierLook {
   theme: FxTheme;
   pattern: BarrierPattern;
 }
 
-/** The barrier of each move that has its own; any other barrier move gets the foe's element and `hex`. */
+/** The barrier of each move that has its own; any other barrier move gets the foe's element and `glass`. */
 export const BARRIER_LOOK: Readonly<Record<string, BarrierLook>> = {
-  backdraft: { theme: 'fire', pattern: 'hex' },
-  'molten-shell': { theme: 'lava', pattern: 'shell' },
+  backdraft: { theme: 'fire', pattern: 'glass' },
+  'molten-shell': { theme: 'lava', pattern: 'plates' },
   thorns: { theme: 'thorn', pattern: 'thorns' },
 };
 
 /** The look of a move's barrier: its own, or the foe's element in the default pattern. */
 export function barrierLookOf(gimmick: string, foeElement: string | null): BarrierLook {
-  return BARRIER_LOOK[gimmick] ?? { theme: elementTheme(foeElement), pattern: 'hex' };
+  return BARRIER_LOOK[gimmick] ?? { theme: elementTheme(foeElement), pattern: 'glass' };
 }

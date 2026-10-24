@@ -19,6 +19,8 @@ import {
   dungeonEvents,
   dungeonKeepsakes,
   expeditionContent,
+  gamesContent,
+  gamesStall,
   gearContent,
   talentContent,
   weatherContent,
@@ -78,6 +80,8 @@ const GEAR_LINE_IDS: ReadonlySet<string> = new Set(gearContent.lines.map((l) => 
 const TALENT_IDS: ReadonlySet<string> = new Set(talentContent.byId.keys());
 const MODIFIER_IDS: ReadonlySet<string> = new Set(dungeonContent.modifiers.map((m) => m.id));
 const KEEPSAKE_IDS: ReadonlySet<string> = new Set(dungeonKeepsakes.map((k) => k.id));
+const GAMES_EVENT_IDS: ReadonlySet<string> = new Set(gamesContent.events.map((e) => e.id));
+const GAMES_OFFER_IDS: ReadonlySet<string> = new Set(gamesStall.map((o) => o.id));
 const DUNGEON_EVENT_IDS: ReadonlySet<string> = new Set(dungeonEvents.map((e) => e.id));
 const WEATHER_IDS: ReadonlySet<string> = new Set(weatherContent.map((d) => d.id));
 const ROLE_IDS = ['setter', 'payoff', 'support', 'guard'] as const;
@@ -229,7 +233,7 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
     case 'creature_exp':
       return {
         source: oneOf(
-          ['trip', 'dungeon', 'raid', 'job', 'lounge', 'ribbon', 'evolve'] as const,
+          ['trip', 'dungeon', 'raid', 'job', 'lounge', 'games', 'ribbon', 'evolve'] as const,
           event.source,
           'trip',
         ),
@@ -526,6 +530,17 @@ export function propsOf(event: AnalyticsEvent): Record<string, unknown> {
       };
     case 'dev_action':
       return { tool: oneOf(DEV_ACTION_TOOLS, event.tool, 'clock') };
+    case 'games_entry':
+      return { event: fromSet(GAMES_EVENT_IDS, event.event), creatures: int(event.creatures, 9) };
+    case 'games_show':
+      return {
+        events: int(event.events, 99),
+        skipped: int(event.skipped, 99),
+        entrants: int(event.entrants, 10_000),
+        players: int(event.players, 10_000),
+      };
+    case 'games_buy':
+      return { offer: fromSet(GAMES_OFFER_IDS, event.offer), price: int(event.price, 999) };
     case 'post_result':
       return {
         result: oneOf(['sent', 'retry', 'failed'] as const, event.result, 'failed'),

@@ -408,6 +408,7 @@ function RoomDemo({
             scene,
             onSwap,
             ownLoungeXp: 34,
+            trophy: ROOM_TROPHY,
             ...(onMove === undefined ? {} : { onMove }),
           }}
         />
@@ -419,6 +420,7 @@ function RoomDemo({
           scene={scene}
           onSwap={onSwap}
           ownLoungeXp={34}
+          trophy={ROOM_TROPHY}
           {...(onMove === undefined ? {} : { onMove })}
         />
       )}
@@ -426,6 +428,18 @@ function RoomDemo({
     </>
   );
 }
+
+/** The trophy shelf's medal table: a few players, the workbench viewer among them. */
+const ROOM_TROPHY = {
+  board: [
+    { userId: 'wb-aino', name: 'Aino', gold: 6, silver: 2, bronze: 3 },
+    { userId: ROOM_SELF_ID, name: 'You', gold: 4, silver: 5, bronze: 1 },
+    { userId: 'wb-eero', name: 'Eero', gold: 1, silver: 3, bronze: 6 },
+    { userId: 'wb-kaisa', name: 'Kaisa', gold: 0, silver: 1, bronze: 2 },
+  ],
+  selfId: ROOM_SELF_ID,
+  onOpen: () => undefined,
+};
 
 const livingRoom: Entry = {
   name: 'LivingRoom',

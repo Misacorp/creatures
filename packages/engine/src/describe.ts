@@ -145,13 +145,17 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
       const sets = `${event.proof === true ? ` Its gear set turns ${names.boss}'s reflection aside.` : ''}${
         event.chain === true ? ' Its gear set keeps the mark standing, so a chain can follow.' : ''
       }`;
+      const backlash =
+        event.backlash === undefined
+          ? ''
+          : ` It backfires: ${event.backlash.amount} of it (${event.backlash.bp / 100}%) burns ${creature(event.payoff)}.`;
       const brambles =
         event.bramble === undefined
           ? ''
           : ` Bramble Season throws ${event.bramble.amount} of it (${event.bramble.bp / 100}%) back at ${creature(event.payoff)}.`;
       return `${lookup(names.reactions, event.reaction)}! ${creature(event.payoff)} cashes in the mark${
         event.setupCreature === null ? '' : ` set by ${creature(event.setupCreature)}`
-      } for ${event.bonus} bonus damage${mods}.${sets}${brambles}`;
+      } for ${event.bonus} bonus damage${mods}.${sets}${brambles}${backlash}`;
     }
     case 'gimmick': {
       const name = lookup(names.gimmicks, event.gimmick);
@@ -170,7 +174,10 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
             ? 'strikes'
             : event.source === 'enrage'
               ? 'rages at'
-              : 'reflects damage onto';
+              : event.source === 'spikes'
+                ? 'prick'
+                : 'reflects damage onto';
+      const subject = event.source === 'spikes' ? `${names.boss}'s spikes` : names.boss;
       const crit = event.crit === true ? ' Critical!' : '';
       const capped = event.capped === true ? ' The hit is capped.' : '';
       const cover =
@@ -197,18 +204,18 @@ export function describeEvent(event: FightEvent, names: EventNames): string {
         return `${creature(event.target)} sidesteps ${event.splash === true ? 'the splash' : `${names.boss}'s hit`} and takes nothing.`;
       }
       if (event.shielded === true) {
-        return `${names.boss} ${what} ${creature(event.target)}, but a Shield Wall stops it.`;
+        return `${subject} ${what} ${creature(event.target)}, but a Shield Wall stops it.`;
       }
       if (event.splash === true) {
         return `${creature(event.target)} is caught in the splash for ${event.damage}.${extra}`;
       }
       if (event.reducedBp !== undefined) {
-        return `${names.boss} ${what} ${creature(event.target)} for ${event.damage} (a Shield Wall softens it by ${event.reducedBp / 100}%).${extra}`;
+        return `${subject} ${what} ${creature(event.target)} for ${event.damage} (a Shield Wall softens it by ${event.reducedBp / 100}%).${extra}`;
       }
       if (event.from !== undefined) {
         return `${creature(event.target)} takes the hit meant for ${creature(event.from)} (${event.damage}).${extra}`;
       }
-      return `${names.boss} ${what} ${creature(event.target)} for ${event.damage}.${extra}`;
+      return `${subject} ${what} ${creature(event.target)} for ${event.damage}.${extra}`;
     }
     case 'knockout':
       return `${creature(event.creature)} is knocked out.`;

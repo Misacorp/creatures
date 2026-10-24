@@ -113,23 +113,30 @@ describe('simulation run', () => {
     // share 0.3044 to 0.3220, top share 0.309 to 0.3066, creature ratio 1.3962 to 1.2558, a dungeon run
     // 5.3036 to 5.0446 fights (home rate 0.1161 to 0.1071). The quick sim (B-030) is
     // the measure, not this.
+    // 2026-10-22 (the dungeon's reflect split, B-031): Thorns and Molten Shell hit differently, so dungeon
+    // fights, HP, experience and the dice after them move. Dice at this size: the raid finale win rate
+    // 0.8333 to 1 (the lost finale is won), finale start share 0.322 to 0.2948, top share 0.3066 to 0.2977,
+    // creature ratio 1.2558 to 1.3876, a dungeon run 5.0446 to 5.3214 fights (home rate 0.1071 to 0.1339).
+    // The casual top level, Experience per hour and the long run's rank did not move.
     // 2026-10-22 (the Guard's reach): a Guard protects the creature on each side of it in its row, not its whole
     // row, and the plain attack goes for the front-most creature. Five new Guard lines also joined the
     // Charm pools. Dice at this size (and a little real change in who is protected): finale start share
     // 0.3220 to 0.3193, top share 0.3066 to 0.3055, creature ratio 1.2558 to 1.2735, a dungeon run 5.0446 to
     // 5.0179 fights (home rate 0.1071 to 0.1161). The raid win rates, the casual top level, Experience per
     // hour and the long run did not move. The quick sim is the measure: see the 2026-10-22 decision.
+    // 2026-10-24 (both of the above together, after merging main): finale start share 0.2948 to 0.2941,
+    // top share 0.2977 to 0.3033, creature ratio 1.3876 to 1.3878. Nothing else moved.
     const m = sharedTinyRun().analysis.metrics;
     const headline: Record<string, number> = {
       'raid.typical.phase1ClearRate': 1,
-      'raid.typical.finaleWinRate': 0.8333,
-      'raid.typical.finaleStartShare': 0.3193,
-      'fair.topShareMedian': 0.3055,
-      'choice.creatureRatioMax': 1.2735,
+      'raid.typical.finaleWinRate': 1,
+      'raid.typical.finaleStartShare': 0.2941,
+      'fair.topShareMedian': 0.3033,
+      'choice.creatureRatioMax': 1.3878,
       'econ.casualTopLevelWeek4': 14,
       'exp.rate.long': 131.3262,
-      'dungeon.meanFights': 5.0179,
-      'dungeon.dailyHomeRate': 0.1161,
+      'dungeon.meanFights': 5.3214,
+      'dungeon.dailyHomeRate': 0.1339,
       'longrun.typical.finaleWinRate': 0.8333,
       'longrun.typicalFinalRank': 4,
     };

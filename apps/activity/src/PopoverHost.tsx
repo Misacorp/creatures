@@ -65,6 +65,8 @@ export interface PopoverHostApi {
     anchor: HTMLElement,
     popover: { label: string; body: ComponentChildren },
   ) => void;
+  /** A popover's "More in How to play" link: closes the popover and opens the page at `section`. */
+  openHowTo: (section: GlossarySection) => void;
   close: () => void;
 }
 
@@ -358,6 +360,9 @@ export function PopoverHost({
   children: ComponentChildren;
 }) {
   const [open, setOpen] = useState<OpenPopover | null>(null);
+  // The latest `onOpenHowTo`, so the api stays the same object while only the popover changes.
+  const howTo = useRef(onOpenHowTo);
+  howTo.current = onOpenHowTo;
   const api = useMemo<PopoverHostApi>(
     () => ({
       anchor: open?.anchor ?? null,
@@ -381,16 +386,17 @@ export function PopoverHost({
       openCustom: (key, anchor, popover) => {
         setOpen((current) => toggleActive(current, { kind: 'custom', key, anchor, ...popover }));
       },
+      openHowTo: (section) => {
+        setOpen(null);
+        howTo.current(section);
+      },
       close: () => {
         setOpen(null);
       },
     }),
     [open],
   );
-  const onMore = (section: GlossarySection): void => {
-    setOpen(null);
-    onOpenHowTo(section);
-  };
+  const onMore = api.openHowTo;
   return (
     <PopoverHostContext.Provider value={api}>
       {children}

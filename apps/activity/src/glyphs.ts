@@ -5,6 +5,7 @@
  */
 import { DUNGEON_MAP_GLYPHS } from './dungeon-map-glyphs';
 import { EXPEDITION_GLYPHS } from './expedition-glyphs';
+import { GAMES_GLYPHS } from './games-glyphs';
 import type { SpriteDef } from './sprites/sprite-data';
 
 export const GLYPH_SIZE = { width: 8, height: 8 } as const;
@@ -63,6 +64,36 @@ const reflectFirstReaction: SpriteDef = {
     'r.....r.',
     '.rrrrr..',
     '........',
+  ],
+};
+
+/** A spiky ball: the Thorns room modifier, every hit on the foe pricks the hitter. */
+const spikes: SpriteDef = {
+  palette: { r: BAD },
+  rows: [
+    'r..r..r.',
+    '.r.rr.r.',
+    '..rrrr..',
+    'rrrrrrrr',
+    '..rrrr..',
+    '.r.rr.r.',
+    'r..r..r.',
+    '........',
+  ],
+};
+
+/** A shield with a gleam: a reaction may burn back (the Slag Tyrant's Molten Shell). */
+const backlash: SpriteDef = {
+  palette: { r: BAD },
+  rows: [
+    '.rrrrrr.',
+    'rr....rr',
+    'r..rr..r',
+    'r.rrrr.r',
+    'r..rr..r',
+    '.r....r.',
+    '..r..r..',
+    '...rr...',
   ],
 };
 
@@ -760,6 +791,8 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   hit_zone: hitZone,
   silence_ends: silenceEnds,
   reflect_first_reaction: reflectFirstReaction,
+  backlash,
+  spikes,
   strike_highest_atk: strikeHighestAtk,
   sweep,
   barrage,
@@ -807,6 +840,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   'slot-charm': slotCharm,
   ...EXPEDITION_GLYPHS,
   ...DUNGEON_MAP_GLYPHS,
+  ...GAMES_GLYPHS,
 };
 
 /** A glyph by id, or undefined. */
@@ -833,6 +867,8 @@ export const GIMMICK_GLYPH_OPS = [
   'hit_zone',
   'silence_ends',
   'reflect_first_reaction',
+  'backlash',
+  'spikes',
   'strike_highest_atk',
   'sweep',
   'barrage',

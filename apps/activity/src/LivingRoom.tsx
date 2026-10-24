@@ -38,6 +38,8 @@ import { useDragDrop } from './use-drag-drop';
 import { useRoomBubbles } from './use-room-bubbles';
 import { useRoomScroll } from './use-room-scroll';
 import { WeatherCalendar } from './WeatherCalendar';
+import { RoomTrophy } from './games/RoomTrophy';
+import type { BoardRow } from './games-types';
 import type { Forecast } from './weather-types';
 
 const scenes = new Map<RoomPhase, RoomScene>();
@@ -218,6 +220,11 @@ interface LivingRoomProps {
    * the room has no calendar (the workbench, tests).
    */
   forecast?: Forecast | null;
+  /**
+   * The Valley Games trophy shelf: the server's medal table (the top three show in its popover) and what
+   * its "Games" button does. Absent: no shelf (tests).
+   */
+  trophy?: { board: readonly BoardRow[]; selfId: string; onOpen: () => void };
   /** The title row, laid over the top wall band; it does not scroll with the room. */
   children?: ComponentChildren;
   /**
@@ -250,6 +257,7 @@ export function LivingRoom({
   instanceId,
   scene = sceneOf('night'),
   forecast,
+  trophy,
   children,
   onMove,
   onSwap,
@@ -458,6 +466,16 @@ export function LivingRoom({
           />
           {forecast !== undefined && (
             <WeatherCalendar forecast={forecast} scale={scale} originX={originX} />
+          )}
+          {trophy !== undefined && (
+            <RoomTrophy
+              sprite={scene.trophy}
+              scale={scale}
+              originX={originX}
+              board={trophy.board}
+              selfId={trophy.selfId}
+              onOpen={trophy.onOpen}
+            />
           )}
           {carrying &&
             ROOM_SPOTS.filter((spot) => targets.includes(spot.id)).map((spot) => (

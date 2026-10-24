@@ -1,0 +1,44 @@
+[
+  {
+    "route": "PUT /api/games/entry",
+    "status": 409,
+    "body": {
+      "error": "already_entered"
+    }
+  },
+  {
+    "route": "PUT /api/games/entry",
+    "status": 400,
+    "body": {
+      "error": "invalid_team"
+    }
+  },
+  {
+    "route": "PUT /api/games/entry",
+    "status": 400,
+    "body": {
+      "error": "invalid_body"
+    }
+  },
+  {
+    "route": "PUT /api/games/entry",
+    "status": 409,
+    "body": {
+      "error": "entries_closed"
+    }
+  },
+  {
+    "route": "POST /api/games/stall/buy",
+    "status": 409,
+    "body": {
+      "error": "stall_closed"
+    }
+  },
+  {
+    "route": "POST /api/games/stall/buy",
+    "status": 409,
+    "body": {
+      "error": "limit_reached"
+    }
+  }
+]

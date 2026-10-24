@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call --
    These tests read parts of many different response bodies (`Json.body` is `any` on purpose): typing
    each body would only repeat the server's view types. */
-import { RULES, dungeonContent, expeditionContent } from '@creatures/game';
+import { RULES, createSeededRng, dungeonContent, expeditionContent } from '@creatures/game';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   deadlyFoes,
@@ -452,7 +452,8 @@ describe('dungeon tools', () => {
         expect(count(ctx.sql, 'dungeon_steps')).toBe(0);
         expect(await today(p)).toMatchObject({ canRun: true, attemptsToday: 0, depth: landmark });
       },
-      ON,
+      // A seeded dungeon: with live dice a fight could be lost before the descend choice.
+      { ...ON, dungeonRng: createSeededRng('banked-chest') },
     );
   });
 

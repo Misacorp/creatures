@@ -6,7 +6,7 @@ import { moveTrack } from './move-track';
 import type { ReplayRowEntry } from './raid-api';
 import { Stage } from './Stage';
 import { MoveTrack } from './stage/MoveTrack';
-import { byClass, createPage, visibleText, type Page } from './test-dom';
+import { byClass, createPage, visibleText, type FakeElement, type Page } from './test-dom';
 
 let page: Page | null = null;
 afterEach(() => {
@@ -22,18 +22,25 @@ describe('the move track, a row per round', () => {
     page = createPage();
     page.draw(<MoveTrack track={moveTrack(tidal, 4, 12)} round={4} />);
     const rows = byClass(page.root, 'track-round');
-    expect(rows.map((r) => visibleText(byClass(r, 'track-round-label')[0] as Element))).toEqual([
-      'NOW',
+    const row = (k: number): FakeElement => {
+      const r = rows[k];
+      if (r === undefined) throw new Error(`no row ${String(k)}`);
+      return r;
+    };
+    const labels = rows.map((r) => byClass(r, 'track-round-label')[0]);
+    // This round: a pointer, no words; then the rounds to go.
+    expect(labels[0] && byClass(labels[0], 'track-now-mark')).toHaveLength(1);
+    expect(labels.slice(1).map((l) => (l === undefined ? '' : visibleText(l)))).toEqual([
       '1',
       '2',
       '3',
       '4',
     ]);
     // Round 4: Riptide strikes and Great Wave marks (faint); round 5: Great Wave lands.
-    expect(byClass(rows[0] as Element, 'track-move')).toHaveLength(2);
-    expect(byClass(rows[0] as Element, 'marking')).toHaveLength(1);
-    expect(byClass(rows[1] as Element, 'track-move')).toHaveLength(1);
-    expect(byClass(rows[1] as Element, 'marking')).toHaveLength(0);
+    expect(byClass(row(0), 'track-move')).toHaveLength(2);
+    expect(byClass(row(0), 'marking')).toHaveLength(1);
+    expect(byClass(row(1), 'track-move')).toHaveLength(1);
+    expect(byClass(row(1), 'marking')).toHaveLength(0);
   });
 });
 

@@ -1,0 +1,111 @@
+{
+  "purchase": {
+    "offerId": "bait-sack",
+    "price": 3,
+    "grant": {
+      "gear": [],
+      "converted": [],
+      "parts": {},
+      "blueprints": []
+    },
+    "bait": 30
+  },
+  "you": {
+    "medals": {
+      "gold": 0,
+      "silver": 2,
+      "bronze": 0,
+      "pins": 0
+    },
+    "pocket": 0,
+    "lastResults": {
+      "day": "2027-01-12",
+      "results": [
+        {
+          "eventId": "melon-run",
+          "creatureIds": ["00000000-0000-4000-8600-000000000001"],
+          "place": 2,
+          "medal": "silver",
+          "pin": false,
+          "pins": [],
+          "xp": 90
+        },
+        {
+          "eventId": "log-carry",
+          "creatureIds": [
+            "00000000-0000-4000-8600-000000000003",
+            "00000000-0000-4000-8600-000000000005"
+          ],
+          "place": 2,
+          "medal": "silver",
+          "pin": false,
+          "pins": [],
+          "xp": 180
+        }
+      ]
+    }
+  },
+  "stall": {
+    "open": true,
+    "week": "2027-01-13",
+    "opensAt": 1799840220000,
+    "closesAt": 1799926620000,
+    "offers": [
+      {
+        "id": "mystery-gear",
+        "kind": "gear",
+        "name": "Mystery Prize Box",
+        "price": 9,
+        "weeklyLimit": 1,
+        "left": 0,
+        "params": {
+          "rarity": "rare"
+        }
+      },
+      {
+        "id": "fine-supply",
+        "kind": "supply",
+        "name": "Fine Supply",
+        "price": 4,
+        "weeklyLimit": 2,
+        "left": 2,
+        "params": {
+          "tier": "good"
+        }
+      },
+      {
+        "id": "bait-sack",
+        "kind": "bait",
+        "name": "Sack of Bait",
+        "price": 3,
+        "weeklyLimit": 2,
+        "left": 1,
+        "params": {
+          "amount": 30
+        }
+      },
+      {
+        "id": "shard-pouch",
+        "kind": "shards",
+        "name": "Shard Pouch",
+        "price": 3,
+        "weeklyLimit": 2,
+        "left": 2,
+        "params": {
+          "amount": 3
+        }
+      },
+      {
+        "id": "glimmer-jar",
+        "kind": "glimmer",
+        "name": "Jar of Glimmer",
+        "price": 4,
+        "weeklyLimit": 1,
+        "left": 1,
+        "params": {
+          "amount": 1
+        }
+      }
+    ]
+  }
+}

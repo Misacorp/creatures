@@ -1,0 +1,120 @@
+/*
+  A main area with a side panel beside it on a wide screen (`ui/WideLayout.tsx`, `ui/SidePanel.tsx`): the
+  Expeditions world map and the Valley Games show. From 60 rem (`WIDE_QUERY` in `ui/wide-layout.ts`) the app
+  card is wider while such a screen shows (its base width is in `base/base.css`); the main area is full
+  width until there is a panel, then the screen is two columns, the main area on the left and the panel
+  (24 rem) on the right.
+*/
+@media (min-width: 60rem) {
+  main.card:has(.side-layout.wide) {
+    width: min(84rem, 100% - 1.25rem);
+  }
+}
+
+.side-layout {
+  min-width: 0;
+}
+
+.side-layout-main {
+  min-width: 0;
+}
+
+.side-layout.wide.with-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24rem;
+  gap: 1rem;
+  align-items: start;
+}
+
+/* The side panel. */
+.side-panel {
+  min-width: 0;
+  padding: 0.75rem;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 var(--px) var(--ink);
+}
+
+.side-panel:not(.is-bare) {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.side-panel-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 0.75rem 0;
+}
+
+.side-panel-head .side-panel-title {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The X: the drawer's close button (`drawer.css`), in the heading row. */
+button.side-panel-close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
+  margin: -0.5rem -0.5rem 0 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--haze);
+}
+
+button.side-panel-close:hover:not(:disabled) {
+  color: var(--bone);
+}
+
+button.side-panel-close:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+.side-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.side-panel-foot {
+  flex: none;
+  padding: 0.5rem 0.75rem 0.75rem;
+  box-shadow: inset 0 2px 0 0 var(--line);
+}
+
+/* A bare panel: the box for a card with its own heading (the trip reveal). */
+.side-panel.is-bare {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.side-panel-title {
+  margin: 0 0 0.5rem;
+  color: var(--gold);
+  font-size: var(--fs-title);
+}
+
+/*
+  Wide: the panel is no taller than the screen nor `--side-max-h` (the world map's height, set by
+  `ExpeditionWorld`), and stays in view while the page scrolls. Its body scrolls inside it, so a long list
+  never pushes the footer's button out of view.
+*/
+.side-layout.wide .side-panel {
+  position: sticky;
+  top: 0.625rem;
+  max-height: min(var(--side-max-h, 100vh), calc(100vh - 1.25rem));
+}
+
+.side-layout.wide .side-panel.is-bare {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

@@ -37,7 +37,7 @@ export function foeElement(id: string): string | null {
 
 /**
  * The gimmicks a foe or boss has in this fight: its own from the content, then those its room's
- * modifier adds (Thorns' reflect), each once.
+ * modifier adds (Thorns' spikes), each once.
  */
 function gimmicksOf(id: string, added: readonly Gimmick[]): Gimmick[] {
   const own =

@@ -503,12 +503,6 @@
         "mark": null
       },
       {
-        "t": "gimmick",
-        "round": 1,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
-      },
-      {
         "t": "turn",
         "round": 1,
         "creature": "00000000-0000-4000-8300-000000000020"
@@ -582,12 +576,6 @@
         "mark": "tide"
       },
       {
-        "t": "gimmick",
-        "round": 2,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
-      },
-      {
         "t": "turn",
         "round": 2,
         "creature": "00000000-0000-4000-8300-000000000020"
@@ -658,12 +646,6 @@
         "gimmick": "slag-spill",
         "op": "slam",
         "marks": ["00000000-0000-4000-8300-000000000022"]
-      },
-      {
-        "t": "gimmick",
-        "round": 3,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
       },
       {
         "t": "ability",
@@ -788,12 +770,6 @@
         "mark": "tide"
       },
       {
-        "t": "gimmick",
-        "round": 4,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
-      },
-      {
         "t": "turn",
         "round": 4,
         "creature": "00000000-0000-4000-8300-000000000020"
@@ -885,12 +861,6 @@
         "round": 5,
         "bossHp": 128,
         "mark": "tide"
-      },
-      {
-        "t": "gimmick",
-        "round": 5,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
       },
       {
         "t": "ability",

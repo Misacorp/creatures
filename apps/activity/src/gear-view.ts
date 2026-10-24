@@ -435,8 +435,13 @@ export function originText(origin: ItemOrigin | null, source: string): string {
       return 'Welcome gift';
     case 'converted':
       return 'Made from your old gear';
+    case 'games':
+      return PRIZE_STALL;
   }
 }
+
+/** Where Valley Games prizes come from, in words (an item's origin, a ledger row). */
+export const PRIZE_STALL = 'Prize Stall';
 
 const SOURCE_TEXT: Readonly<Record<string, string>> = {
   raid_finale: 'Raid finale',
@@ -447,6 +452,7 @@ const SOURCE_TEXT: Readonly<Record<string, string>> = {
   welcome: 'Welcome gift',
   dungeon: 'Daily dungeon',
   rank_gift: 'Explorer rank gift',
+  games: PRIZE_STALL,
 };
 
 /** "2027-01-12": the day as the server stored it (UTC), for the details row. */

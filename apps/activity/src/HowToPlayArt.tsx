@@ -28,6 +28,7 @@ import { partIcon } from './gear-sprites';
 import { GlossaryTag } from './Glossary';
 import { speciesName } from './game';
 import { glyphOrUnknown } from './glyphs';
+import { MedalSprite, PinSprite } from './games/GamesParts';
 import { streakPips } from './dungeon-text';
 import {
   dungeonRooms,
@@ -455,6 +456,34 @@ function WorkshopArt() {
   );
 }
 
+/** The Valley Games: the three medals and a pin, then the words the tab uses. */
+function GamesArt() {
+  return (
+    <div class="games-art">
+      <ul class="art-row" aria-label="Medals">
+        {(['gold', 'silver', 'bronze'] as const).map((medal) => (
+          <li key={medal}>
+            <MedalSprite medal={medal} scale={4} />
+          </li>
+        ))}
+        <li>
+          <PinSprite scale={4} />
+        </li>
+      </ul>
+      <p class="tags art-tags">
+        <Sprite sprite={glyphOrUnknown('trophy')} scale={2} />
+        {['games-medals', 'games-pins', 'games-good-fit', 'games-badges', 'games-prize-stall'].map(
+          (id) => (
+            <Tag key={id} entry={id}>
+              {titleOf(id)}
+            </Tag>
+          ),
+        )}
+      </p>
+    </div>
+  );
+}
+
 /** The picture of one section. */
 export function SectionArt({ id }: { id: GlossarySection }) {
   switch (id) {
@@ -480,5 +509,7 @@ export function SectionArt({ id }: { id: GlossarySection }) {
       return <GearSectionArt />;
     case 'workshop':
       return <WorkshopArt />;
+    case 'games':
+      return <GamesArt />;
   }
 }

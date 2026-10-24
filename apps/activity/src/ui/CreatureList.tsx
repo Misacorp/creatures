@@ -53,6 +53,8 @@ export interface CreatureListProps<T extends PickerOption = PickerOption> {
   side?: (option: T) => ComponentChildren;
   /** An extra block under the name and chips (the explorer's rank, XP bar and familiarity). */
   more?: (option: T) => ComponentChildren;
+  /** A small mark on the name's line, after the level (the Games' event badge). Return nothing for none. */
+  beside?: (option: T) => ComponentChildren;
   /** Extra classes of the list (`flat`: no gutter, for a list that sits in a scrolling drawer body). */
   class?: string;
   /** Extra classes of the fieldset in `choose` mode. */
@@ -107,6 +109,7 @@ function RowContent<T extends PickerOption>({ o, props }: { o: T; props: Creatur
   const chips = props.chips !== false;
   const placedNote = props.placedNote ?? '';
   const more = props.more?.(o);
+  const beside = props.beside?.(o);
   // The name is in its species' rarity colour, as on the creature card (an action row has no species).
   const rarity = o.action === true ? undefined : getSpecies(o.species)?.rarity;
   const detail = o.disabled === null ? props.side?.(o) : undefined;
@@ -120,6 +123,7 @@ function RowContent<T extends PickerOption>({ o, props }: { o: T; props: Creatur
             {rarity !== undefined && <span class="visually-hidden">, {rarity}</span>}
           </span>
           {o.action !== true && o.xpBar === undefined && <span class="ro-level">Lv {o.level}</span>}
+          {beside !== undefined && beside !== null && <span class="ro-beside">{beside}</span>}
           {o.recommended && <span class="ro-recommended">{RECOMMENDED_TAG}</span>}
           {o.rested === true && <span class="badge rested ro-rested">Rested</span>}
         </span>
@@ -177,8 +181,9 @@ function RowContent<T extends PickerOption>({ o, props }: { o: T; props: Creatur
  * - a quiet line (`note`), and the effect preview (`showEffects`);
  * - why a row cannot be picked (`disabled`; with `busy` it is the card's "On a job" / "Away" badge), under the
  *   name or, with `reasonSide`, at the right of the row; rows that cannot be picked stay in the list;
- * - two small slots for what only one screen has: `side` (right-end detail of a row that can be picked, such as
- *   a job's clock badge) and `more` (a block under the name, such as the explorer's XP bar and familiarity).
+ * - three small slots for what only one screen has: `side` (right-end detail of a row that can be picked, such
+ *   as a job's clock badge), `more` (a block under the name, such as the explorer's XP bar and familiarity) and
+ *   `beside` (a small mark on the name's line, such as the Games' event badge).
  *
  * `selection.mode` says how it is chosen from. `pick`: a listbox; Up, Down, Home and End move through the rows
  * (roving tabindex), Enter, Space or a tap picks, and the focus starts on the first row that can be picked. It is

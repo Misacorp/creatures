@@ -15,6 +15,8 @@ import { PageHeader } from './creature-page/PageHeader';
 import { TalentSlots } from './creature-page/PageSlots';
 import { CreatureIcon } from './CreatureIcon';
 import { GearList } from './GearList';
+import { CreatureGamesRow } from './games/CreatureGamesRow';
+import type { CreatureGames } from './games-types';
 import { TalentBookDrawer } from './creature-page/TalentBookDrawer';
 import type { GearItem, GearSlot, GearState } from './gear-types';
 import { gearShare, wornItemOf } from './gear-view';
@@ -168,6 +170,7 @@ export function CreaturePage({
   flip,
   backLabel = 'Creatures',
   teamAction,
+  loadGames,
 }: {
   creature: Creature;
   state: GameState;
@@ -193,6 +196,8 @@ export function CreaturePage({
   backLabel?: string;
   /** A button for the team the page was opened from ("Remove from team"), last on the page. */
   teamAction?: { label: string; onAct: () => void } | undefined;
+  /** Loads the creature's Valley Games medals and records (a block after its talents); absent: no block. */
+  loadGames?: ((creatureId: string) => Promise<CreatureGames>) | undefined;
 }) {
   const id = `${cardDomId(creature.id)}-page`;
   const rootRef = useRef<HTMLElement>(null);
@@ -360,6 +365,8 @@ export function CreaturePage({
             }}
           />
         </div>
+
+        {loadGames !== undefined && <CreatureGamesRow creatureId={creature.id} load={loadGames} />}
 
         <Accordion title="About" headingLevel={3} defaultOpen class="cp-block">
           {about !== null && (

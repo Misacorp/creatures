@@ -10,6 +10,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - Ask Misa about game feel and priorities, not implementation details. Make technical decisions yourself and record them in `docs/design/decisions.md` (newest last, with date and reasoning).
 - When Misa must do something manually (Discord portal, Cloudflare token, GitHub setting, secret), give him one short **numbered checklist** with exact names and values, and say what to send back. Batch requests. Never ask him to paste a secret into chat; secrets go straight into GitHub or Cloudflare.
 - Keep messages to him short, plain English.
+- When Misa gives an example of wording or design ("for example ..."), match its scope and tone. Don't elaborate it per case, per event or per item unless he asks.
 
 ### Agent roles
 
@@ -18,6 +19,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - `.claude/agents/researcher.md` (Sonnet): read-only web/docs research. No shell, no write access, by design.
 - `.claude/agents/helper.md` (Haiku): boilerplate, fixtures, content data entry, doc checks.
 - Agents that read untrusted web content must never also have shell access. Keep it that way.
+- **Parallel implementers work in their own worktree** (the Agent tool's `isolation: "worktree"`), not in the lead's working tree. The lead reviews each one's branch and merges it into the session branch. Two agents editing one tree break each other's runs and leave the lead's tree dirty.
 
 ## Pull requests
 
@@ -25,6 +27,7 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - **Staging** (`creatures-staging.misacorp.dev`, wired to the dev Discord app) changes only when the `deploy` workflow is run by hand on a branch: GitHub, Actions, deploy, "Run workflow". Pushing a branch deploys nothing. A manual run always deploys staging, even on `main`. The game's footer shows the deployed branch and commit.
 - Agents may start that staging run (the GitHub tools' workflow trigger, workflow `deploy.yml`, `ref` = the branch) **only when Misa asks for it in that session**. Then wait for the run, check the footer's branch and commit, and tell Misa it is ready. With several sessions open, only the one Misa asked deploys.
 - **Never push to `main` or merge a pull request.** Only Misa merges. GitHub's ruleset on `main` (PR required, no bypass) rejects direct pushes from everyone. Merges it cannot tell apart, because the GitHub connection acts as Misa's account, so `.claude/settings.json` denies the merge and auto-merge tools and `gh pr merge`.
+- **Before each staging deploy and before telling Misa a PR is ready,** merge the latest `main` into the branch and check the PR is mergeable. GitHub runs no CI on a PR with a merge conflict, so a conflicted PR looks quiet, not red. Resolve conflicts first (migrations: a released number is never reused or edited).
 - **Batch work into fewer PRs** (Misa's preference): agents may use several local branches, but merge finished work together locally and open one PR for Misa to merge into `main`. Large PRs are fine; each commit inside should still be one coherent change.
 - **Other repositories** (for example `Misacorp/leetbot-aws`): only open PRs there; Misa merges them manually. Never push to their default branch.
 - Every PR description has:

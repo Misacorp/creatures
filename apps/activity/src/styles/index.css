@@ -97,6 +97,7 @@
 @import './views/expeditions/wipe-notice.css';
 @import './views/expeditions/supply-crafting.css';
 @import './views/expeditions/world-map.css';
+@import './components/side-panel.css';
 @import './views/expeditions/world.css';
 @import './components/progress-track.css';
 @import './components/recipe-card.css';
@@ -110,6 +111,7 @@
 @import './components/roster-picker.css';
 @import './views/raid-abilities.css';
 @import './views/living-room.css';
+@import './views/games-scene.css';
 @import './views/weather.css';
 @import './components/currency-pile.css';
 @import './components/accordion.css';
@@ -121,3 +123,5 @@
 @import './components/evolve.css';
 @import './components/flip.css';
 @import './components/switch.css';
+@import './views/games-show.css';
+@import './views/games-tab.css';

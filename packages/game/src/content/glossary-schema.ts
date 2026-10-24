@@ -18,6 +18,7 @@ export const GLOSSARY_SECTIONS = [
   'dungeon',
   'ranks',
   'rewards',
+  'games',
   'gear',
   'workshop',
 ] as const;

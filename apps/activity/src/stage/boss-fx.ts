@@ -405,9 +405,8 @@ export function playWindup(stage: FxStage, plan: FxPlan, ms: number, seed: numbe
       });
       break;
     case 'backlash': {
-      // The barrier bursts (its pieces fly off the boss), and the reaction comes back as a bolt.
+      // The barrier has burst (its triangles fly off in Barrier.tsx): the reaction comes back as a bolt.
       const b = s.bossBox;
-      if (b !== null) s.shards(centre(b), 12, Math.max(b.w, b.h) * 0.7, at, seed);
       targets.slice(0, 1).forEach((t) => {
         s.fly(
           (p) => s.pixel('fx-blob', BLOB, 3, p, 3),

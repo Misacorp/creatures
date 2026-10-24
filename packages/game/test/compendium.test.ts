@@ -8,6 +8,7 @@ import {
   dungeonEvents,
   dungeonKeepsakes,
   expeditionContent,
+  gamesContent,
   gearContent,
   talentContent,
   weatherContent,
@@ -19,8 +20,8 @@ import {
  * Matching rule, one per kind:
  * - Species, destinations, raid bosses, dungeon foes and floor bosses, room modifiers, keepsakes and
  *   mystery-room events, gear bases,
- *   supplies, talents (the pools, the signatures and the held-back ones) and Boons and Omens (the
- *   planned ones too): the content's display
+ *   supplies, talents (the pools, the signatures and the held-back ones), Boons and Omens (the
+ *   planned ones too) and Valley Games events: the content's display
  *   name, as a heading, a bold name, or a table cell.
  *   (The compendium uses names for all of these. Species lines are covered by their stage 1 name.)
  * - Journal entries: the entry id in backticks (the journal key is keyed by id).
@@ -95,6 +96,11 @@ describe('compendium is in sync with shipped content', () => {
     const all = [...talentContent.byId.values(), ...talentContent.deferred];
     expect(all.length).toBeGreaterThan(100);
     expect(missingNames('talents.md', all)).toEqual([]);
+  });
+
+  it('has every Valley Games event in games.md', () => {
+    expect(gamesContent.events.length).toBeGreaterThanOrEqual(8);
+    expect(missingNames('games.md', [...gamesContent.events])).toEqual([]);
   });
 
   it('has every Boon and Omen, live and planned, in weather.md', () => {

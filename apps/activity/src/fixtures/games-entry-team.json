@@ -1,0 +1,50 @@
+{
+  "next": {
+    "day": "2027-01-12",
+    "lockAt": 1799753820000,
+    "showAt": 1799754000000,
+    "open": true,
+    "lineup": [
+      {
+        "id": "melon-run",
+        "name": "Melon Run",
+        "kind": "chase",
+        "scene": "melon-hill",
+        "team": 1,
+        "line": "A giant watermelon is rolling down the hill. Run!",
+        "favours": ["spd", "small", "spark", "setter", "dodge"]
+      },
+      {
+        "id": "pepper-panic",
+        "name": "Pepper Panic",
+        "kind": "feast",
+        "scene": "pepper-table",
+        "team": 1,
+        "line": "Mild, hot or ghost: eat what lands on your plate. Most peppers wins.",
+        "favours": ["hp", "ember", "payoff", "crit"]
+      },
+      {
+        "id": "log-carry",
+        "name": "Log Carry",
+        "kind": "haul",
+        "scene": "log-trail",
+        "team": 3,
+        "line": "Three friends, one big log, a long path. Keep in step and keep it up.",
+        "favours": ["spd", "grove", "guard", "setter", "dodge"]
+      }
+    ],
+    "entries": {
+      "log-carry": ["00000000-0000-4000-8600-000000000003", "00000000-0000-4000-8600-000000000005"],
+      "melon-run": ["00000000-0000-4000-8600-000000000001"]
+    },
+    "goodFit": {
+      "melon-run": ["00000000-0000-4000-8600-000000000001", "00000000-0000-4000-8600-000000000002"],
+      "pepper-panic": [
+        "00000000-0000-4000-8600-000000000003",
+        "00000000-0000-4000-8600-000000000004"
+      ],
+      "log-carry": ["00000000-0000-4000-8600-000000000002"]
+    },
+    "badges": {}
+  }
+}

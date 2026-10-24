@@ -27,3 +27,5 @@ export * from './xp-boost';
 export * from './conversions';
 export * from './trip-ev';
 export * from './trip-boost';
+export * from './games';
+export * from './games-show';

@@ -187,8 +187,8 @@
 
 /*
   ---- Rows (the default): a row per round, this round on top, its moves side by side ----
-  Icons first: the only words are a tiny "NOW" on this round and the rounds to go on the others. An
-  empty round is a dot. Rows further off are fainter (--depth), and each new round they rise a row.
+  Icons only: a small pointer at this round (red while a move comes) and the rounds to go on the
+  others. An empty round is a dot. Rows further off are fainter (--depth), and each new round they rise a row.
 */
 .track-rounds {
   display: flex;
@@ -218,17 +218,13 @@
 }
 
 .track-round.now .track-round-label {
-  color: var(--bone);
+  line-height: 0;
 }
 
-.look-rows.lit .track-round.now .track-round-label {
-  width: auto;
-  min-width: 1.375rem;
-  margin-right: 0.125rem;
-  padding: 0.125rem 0.1875rem;
-  background: var(--bad);
-  color: var(--bone);
-  text-align: center;
+/* This round's pointer: the Games' marker turned to point right, nudging toward the moves. */
+.track-now-mark {
+  display: inline-block;
+  rotate: -90deg;
 }
 
 .track-none {
@@ -324,6 +320,10 @@
     animation: track-rise var(--tr-glide) both;
   }
 
+  .track-now-mark {
+    animation: track-nudge 700ms steps(2, jump-none) infinite alternate;
+  }
+
   .look-hitline.lit .track-row.now::before {
     animation: track-glow 900ms ease-in-out infinite alternate;
   }
@@ -348,6 +348,16 @@
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+@keyframes track-nudge {
+  from {
+    translate: -1px 0;
+  }
+
+  to {
+    translate: 1px 0;
   }
 }
 

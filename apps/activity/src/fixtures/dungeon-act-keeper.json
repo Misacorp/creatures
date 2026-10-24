@@ -270,7 +270,7 @@
               "modifier": {
                 "id": "thorns",
                 "name": "Thorns",
-                "description": "The foe turns the first reaction of each round back on your team."
+                "description": "Every hit on the foe sends some damage back at the hitter."
               }
             },
             {
@@ -395,7 +395,7 @@
         "element": "grove",
         "role": "guard",
         "level": 15,
-        "hp": 252,
+        "hp": 251,
         "hpMax": 314,
         "treat": false,
         "gear": []
@@ -407,7 +407,7 @@
         "element": "tide",
         "role": "setter",
         "level": 15,
-        "hp": 205,
+        "hp": 180,
         "hpMax": 224,
         "treat": false,
         "gear": []
@@ -419,7 +419,7 @@
         "element": "ember",
         "role": "payoff",
         "level": 15,
-        "hp": 177,
+        "hp": 146,
         "hpMax": 194,
         "treat": false,
         "gear": []
@@ -696,9 +696,9 @@
     "cleared": true,
     "rounds": 5,
     "hpStart": {
-      "00000000-0000-4000-8300-000000000020": 268,
-      "00000000-0000-4000-8300-000000000021": 211,
-      "00000000-0000-4000-8300-000000000022": 189
+      "00000000-0000-4000-8300-000000000020": 267,
+      "00000000-0000-4000-8300-000000000021": 186,
+      "00000000-0000-4000-8300-000000000022": 158
     },
     "hpMax": {
       "00000000-0000-4000-8300-000000000020": 314,
@@ -711,12 +711,6 @@
         "round": 1,
         "bossHp": 1061,
         "mark": null
-      },
-      {
-        "t": "gimmick",
-        "round": 1,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
       },
       {
         "t": "turn",
@@ -799,12 +793,6 @@
         "mark": "tide"
       },
       {
-        "t": "gimmick",
-        "round": 2,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
-      },
-      {
         "t": "turn",
         "round": 2,
         "creature": "00000000-0000-4000-8300-000000000020"
@@ -877,12 +865,6 @@
         "gimmick": "slag-spill",
         "op": "slam",
         "marks": ["00000000-0000-4000-8300-000000000022"]
-      },
-      {
-        "t": "gimmick",
-        "round": 3,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
       },
       {
         "t": "ability",
@@ -1007,12 +989,6 @@
         "mark": "tide"
       },
       {
-        "t": "gimmick",
-        "round": 4,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
-      },
-      {
         "t": "turn",
         "round": 4,
         "creature": "00000000-0000-4000-8300-000000000020"
@@ -1106,12 +1082,6 @@
         "round": 5,
         "bossHp": 210,
         "mark": "tide"
-      },
-      {
-        "t": "gimmick",
-        "round": 5,
-        "gimmick": "molten-shell",
-        "op": "reflect_first_reaction"
       },
       {
         "t": "ability",
@@ -1274,7 +1244,7 @@
         "role": "guard",
         "level": 15,
         "hpMax": 314,
-        "hpEnd": 252
+        "hpEnd": 251
       },
       {
         "id": "00000000-0000-4000-8300-000000000021",
@@ -1284,7 +1254,7 @@
         "role": "setter",
         "level": 15,
         "hpMax": 224,
-        "hpEnd": 205
+        "hpEnd": 180
       },
       {
         "id": "00000000-0000-4000-8300-000000000022",
@@ -1294,7 +1264,7 @@
         "role": "payoff",
         "level": 15,
         "hpMax": 194,
-        "hpEnd": 177
+        "hpEnd": 146
       }
     ],
     "rooms": [
@@ -1367,7 +1337,7 @@
         "modifier": {
           "id": "thorns",
           "name": "Thorns",
-          "description": "The foe turns the first reaction of each round back on your team."
+          "description": "Every hit on the foe sends some damage back at the hitter."
         },
         "played": true,
         "cleared": true,
@@ -2029,7 +1999,7 @@
               "modifier": {
                 "id": "thorns",
                 "name": "Thorns",
-                "description": "The foe turns the first reaction of each round back on your team."
+                "description": "Every hit on the foe sends some damage back at the hitter."
               }
             },
             {
@@ -2164,7 +2134,7 @@
           "role": "guard",
           "level": 15,
           "hpMax": 314,
-          "hpEnd": 252
+          "hpEnd": 251
         },
         {
           "id": "00000000-0000-4000-8300-000000000021",
@@ -2174,7 +2144,7 @@
           "role": "setter",
           "level": 15,
           "hpMax": 224,
-          "hpEnd": 205
+          "hpEnd": 180
         },
         {
           "id": "00000000-0000-4000-8300-000000000022",
@@ -2184,7 +2154,7 @@
           "role": "payoff",
           "level": 15,
           "hpMax": 194,
-          "hpEnd": 177
+          "hpEnd": 146
         }
       ],
       "rooms": [
@@ -2257,7 +2227,7 @@
           "modifier": {
             "id": "thorns",
             "name": "Thorns",
-            "description": "The foe turns the first reaction of each round back on your team."
+            "description": "Every hit on the foe sends some damage back at the hitter."
           },
           "played": true,
           "cleared": true,
@@ -2919,7 +2889,7 @@
                 "modifier": {
                   "id": "thorns",
                   "name": "Thorns",
-                  "description": "The foe turns the first reaction of each round back on your team."
+                  "description": "Every hit on the foe sends some damage back at the hitter."
                 }
               },
               {

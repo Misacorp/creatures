@@ -1351,6 +1351,31 @@ describe('retention', () => {
     });
   });
 
+  it('cleans up on the first alarm of a game day only', async () => {
+    await runCore(nextGuild(), async ({ core, sql, clock }) => {
+      await core.alarm();
+      // Rows that turn old later the same game day wait for the next day's first alarm.
+      insert(sql, clock.t - 100 * DAY, 'old');
+      clock.t += 10 * MINUTE;
+      await core.alarm();
+      expect(kinds(sql)).toEqual(['old']);
+      clock.t += DAY;
+      await core.alarm();
+      expect(kinds(sql)).toEqual([]);
+    });
+  });
+
+  it('finds the last rolled-up day through an index, not by reading the rollup table', async () => {
+    await runCore(nextGuild(), ({ sql }) => {
+      const plan = rows<{ detail: string }>(
+        sql,
+        "EXPLAIN QUERY PLAN SELECT MAX(day) AS day FROM analytics_daily WHERE metric = 'rolled'",
+      ).map((r) => r.detail);
+      expect(plan.join(' ')).toContain('analytics_daily_metric_day');
+      return Promise.resolve();
+    });
+  });
+
   it('works through a large backlog in bounded batches and asks to continue', async () => {
     await runCore(nextGuild(), ({ core, sql, clock }) => {
       for (let i = 0; i < 10_050; i++) insert(sql, clock.t - 100 * DAY + i);

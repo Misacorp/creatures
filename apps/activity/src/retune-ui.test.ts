@@ -2,7 +2,7 @@ import { dungeonContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import { outcomeLine } from './after-action';
 import { landmarkLine } from './dungeon-text';
-import { modifierGimmicks, roomIntroView, roomTrick } from './dungeon-playback';
+import { modifierGimmicks, roomIntroView, roomMoves, roomTrick } from './dungeon-playback';
 import { parseDungeonToday } from './dungeon-parse';
 import todayFixture from './fixtures/dungeon-today.json';
 import { revealSummary } from './live';
@@ -169,11 +169,27 @@ describe('the room banner names the foe trick', () => {
     expect(view.trick).toEqual({
       glyph: 'barrage',
       name: 'Flare Up',
-      line: 'Hits one random creature, every 2 rounds',
+      line: 'Hits one random creature every 2 rounds',
     });
-    expect(view.spoken).toContain('Flare Up: Hits one random creature, every 2 rounds.');
+    expect(view.spoken).toContain('Flare Up: Hits one random creature every 2 rounds.');
     expect(roomIntroView(room('puddle-imp', 'foe'), 3).trick).toBeNull();
     expect(roomIntroView(room('nobody', 'foe'), 3).trick).toBeNull();
+  });
+
+  it('lists every move of a foe for the pre-fight drawer: the signature first at a landmark, then its own moves', () => {
+    const names = (r: ReturnType<typeof room>, landmark = false) =>
+      roomMoves(r, landmark).map((g) => g.name);
+    expect(names(room('slag-tyrant', 'boss'))).toEqual(['Molten Shell', 'Anvil Fall']);
+    expect(names(room('slag-tyrant', 'boss'), true)).toEqual([
+      'Slag Spill',
+      'Molten Shell',
+      'Anvil Fall',
+    ]);
+    expect(names(room('bramble-matron', 'boss'))).toContain('Tangle');
+    // A landmark only changes the boss room; the room modifier's gimmick is not a move of the foe.
+    expect(names(room('ember-mite', 'foe'), true)).toEqual(['Flare Up']);
+    expect(names(room('puddle-imp', 'foe'))).toEqual([]);
+    expect(names(room('nobody', 'foe'))).toEqual([]);
   });
 
   it('shows the boss pattern normally and its signature at a landmark', () => {
@@ -183,7 +199,9 @@ describe('the room banner names the foe trick', () => {
     expect(roomTrick(room('ember-mite', 'foe'), true)?.name).toBe('Flare Up');
     const view = roomIntroView(room('slag-tyrant', 'boss'), 3, true);
     expect(view.trick?.glyph).toBe('charge');
-    expect(view.trick?.line).toBe('Charged slam, announced a round ahead, lands every 4 rounds');
+    expect(view.trick?.line).toBe(
+      'Charged: slams your strongest creature and the ones beside it every 4 rounds',
+    );
   });
 
   it('adds the signature to the foe gimmicks only in a landmark boss room', () => {

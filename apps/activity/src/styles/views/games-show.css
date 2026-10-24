@@ -1,0 +1,581 @@
+/*
+  The Valley Games show player (`games/GamesShow.tsx`): the stands, the scene at 2x, one line of
+  commentary, the leaderboard and the event pips. Everything that moves is placed with transforms
+  (the art kit's `--x` / `--y`), so a frame never lays the page out again.
+*/
+.games-show {
+  /* The rim of your creatures (the marker's white edge). */
+  --mine-rim: #fff;
+
+  width: 100%;
+  min-width: 0;
+}
+
+/*
+  The arena and the rows under it: never wider than the parent, at most 3x (576 px), centred. From 60 rem
+  the leaderboard is in the shared side panel beside it (`components/side-panel.css`).
+*/
+.gs-main,
+.games-show.is-before {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.375rem;
+  width: 100%;
+  max-width: 576px;
+  margin-inline: auto;
+}
+
+.gs-panel .gs-board {
+  min-height: 0;
+}
+
+/* The art kit places actors and sprites by top/left; the show moves them with transforms instead. */
+.games-show :is(.games-actor, .games-sprite) {
+  top: 0;
+  left: 0;
+  transform: translate3d(var(--x), var(--y), 0);
+}
+
+/* The stands: the crowd and the players' creatures in the front row. */
+.gs-stands .games-stage {
+  transition: none;
+}
+
+.gs-stands.is-roar canvas.games-back {
+  animation: gs-roar 0.36s steps(2) 1;
+}
+
+@keyframes gs-roar {
+  50% {
+    translate: 0 -2px;
+  }
+}
+
+.gs-fan.is-cheer .games-actor-body {
+  animation: gs-hop 0.3s steps(2) infinite;
+}
+
+/* The screen: the scene with the intro's title and the live badge over it. */
+.gs-screen {
+  position: relative;
+}
+
+.gs-stage.is-shake .games-stage {
+  animation: gs-shake 0.2s steps(2) 1;
+}
+
+@keyframes gs-shake {
+  0% {
+    translate: -2px 0;
+  }
+
+  50% {
+    translate: 2px 1px;
+  }
+}
+
+/* The sauna's heat: a warm glow round the edges that grows with the thermometer; the cold plunge's is blue. */
+.gs-heat {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 calc(var(--heat, 0) * 48px) calc(var(--heat, 0) * 14px)
+    rgb(255 106 58 / calc(var(--heat, 0) * 55%));
+  z-index: 0;
+}
+
+.gs-stage.is-cold .gs-heat {
+  box-shadow: inset 0 0 calc(var(--heat, 0) * 48px) calc(var(--heat, 0) * 14px)
+    rgb(127 177 240 / calc(var(--heat, 0) * 55%));
+}
+
+/* Steam (a ladle by a Tide creature) washes over the room for a moment. */
+.gs-mist {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgb(255 255 255 / 0%);
+  transition: background 0.3s steps(3);
+}
+
+.gs-stage.is-steam .gs-mist {
+  background: rgb(255 255 255 / 28%);
+}
+
+/* The podium card: the scene dimmed behind the steps. */
+.gs-dim {
+  position: absolute;
+  inset: 0;
+  background: rgb(var(--ink-rgb) / 45%);
+}
+
+.gs-title {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  z-index: 10;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  translate: -50% 0;
+  animation: gs-title-in 0.4s steps(4) 1 both;
+}
+
+.gs-title .place-plate {
+  margin: 0;
+  font-size: var(--fs-heading);
+}
+
+@keyframes gs-title-in {
+  from {
+    translate: -50% -3rem;
+  }
+}
+
+.gs-live {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  z-index: 10;
+  margin: 0;
+  padding: 0 0.375rem;
+  background: rgb(var(--ink-rgb) / 75%);
+  color: var(--bone);
+  font-size: var(--fs-small);
+}
+
+.gs-live-dot {
+  margin-right: 0.25rem;
+  color: var(--bad);
+  animation: gs-blink 1.2s steps(2) infinite;
+}
+
+@keyframes gs-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Actors: the bob of what they are doing, the hop of an effect, the grey of the ones out. */
+.gs-act {
+  display: contents;
+}
+
+.gs-act.is-run .games-actor-body {
+  animation: gs-hop 0.24s steps(2) infinite;
+}
+
+.gs-act.is-swim .games-actor-body {
+  animation: gs-bob 0.8s steps(2) infinite;
+}
+
+.gs-act.is-eat .games-actor-body {
+  animation: gs-chew 0.5s steps(2) infinite;
+}
+
+.gs-act.is-cheer .games-actor-body {
+  animation: gs-hop 0.3s steps(2) infinite;
+}
+
+.gs-act.is-shiver .games-actor-body {
+  animation: gs-shiver 0.16s steps(2) infinite;
+}
+
+.gs-act.is-jolt .games-actor-body {
+  animation: gs-shiver 0.1s steps(2) infinite;
+}
+
+.gs-act.is-duck .games-actor-body {
+  scale: 1 0.55;
+}
+
+.gs-act.is-land .games-actor-body {
+  scale: 1.15 0.8;
+}
+
+/* Your creatures also wear a thin light rim, so they stand out in a crowd (one scene pixel). */
+.gs-act.is-mine .games-actor-body {
+  filter: drop-shadow(var(--s) 0 0 var(--mine-rim))
+    drop-shadow(calc(var(--s) * -1) 0 0 var(--mine-rim)) drop-shadow(0 var(--s) 0 var(--mine-rim))
+    drop-shadow(0 calc(var(--s) * -1) 0 var(--mine-rim));
+}
+
+.gs-act.is-out .games-actor {
+  filter: grayscale(1) brightness(0.8);
+  opacity: 0.6;
+}
+
+@keyframes gs-hop {
+  50% {
+    translate: 0 calc(var(--s, 2px) * -2);
+  }
+}
+
+@keyframes gs-bob {
+  50% {
+    translate: 0 var(--s, 2px);
+  }
+}
+
+@keyframes gs-chew {
+  50% {
+    scale: 1.06 0.94;
+  }
+}
+
+@keyframes gs-shiver {
+  50% {
+    translate: var(--s, 2px) 0;
+  }
+}
+
+/* The marker over each of your creatures bobs gently (still under reduced motion, below). */
+.gs-you .games-sprite canvas.sprite {
+  animation: gs-mark-bob 0.9s steps(2) infinite;
+}
+
+@keyframes gs-mark-bob {
+  50% {
+    translate: 0 calc(var(--s, 2px) * -1);
+  }
+}
+
+/* One line of commentary under the scene; names in the pixel font, in their team's colour. */
+.gs-say {
+  min-height: 1.75rem;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  overflow: hidden;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--bone);
+  font-size: var(--fs-small);
+  line-height: 1.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  animation: gs-say-in 0.2s steps(2) 1;
+}
+
+.gs-say.is-empty {
+  animation: none;
+}
+
+@keyframes gs-say-in {
+  from {
+    translate: 0 3px;
+    opacity: 0.4;
+  }
+}
+
+.gs-name {
+  color: var(--team, var(--gold));
+  font-size: var(--fs-row);
+}
+
+/* A line that would not fit on one line: names in the line's size. */
+.gs-say.is-tight :is(.gs-name, .gs-num) {
+  font-size: var(--fs-small);
+}
+
+/* Whose a creature is, after its name: quieter than the line. */
+.gs-owner {
+  color: var(--haze);
+}
+
+/* "(you)" in the marker's gold. */
+.gs-owner.is-you {
+  color: var(--gold);
+}
+
+.gs-num {
+  color: var(--gold);
+  font-size: var(--fs-row);
+}
+
+.gs-say.is-podium {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.gs-medal-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gs-medal-dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--medal);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.games-show .is-place-1 {
+  --medal: #ffd25a;
+}
+
+.games-show .is-place-2 {
+  --medal: #d4d8e8;
+}
+
+.games-show .is-place-3 {
+  --medal: #d88a4e;
+}
+
+/* The leaderboard: a short list (the top five and you), a row each: place, creature, name, score. */
+.gs-board {
+  display: grid;
+  gap: 0.125rem;
+  align-content: start;
+  min-height: 2.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gs-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  padding: 0 0.375rem 0 0.25rem;
+  background: var(--dusk);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* Rows left out above this one (you, further down the board): a dotted line over it. */
+.gs-slot.is-gap {
+  margin-top: 0.375rem;
+}
+
+.gs-slot.is-gap::before {
+  position: absolute;
+  top: -0.3125rem;
+  left: 50%;
+  width: 1.5rem;
+  border-top: 2px dotted var(--haze);
+  translate: -50% 0;
+  content: '';
+}
+
+/* Your row: the marker's gold ring (one colour for "yours" everywhere in the show). */
+.gs-slot.is-mine {
+  background: var(--mine);
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.gs-slot.is-out .gs-icon {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.gs-slot.is-out .gs-who {
+  opacity: 0.6;
+}
+
+.gs-place {
+  flex: none;
+  min-width: 1.125rem;
+  padding: 0 0.125rem;
+  background: var(--medal, var(--line));
+  box-shadow: 0 0 0 1px var(--ink);
+  color: var(--ink);
+  font-size: var(--fs-row);
+  line-height: 1.125rem;
+  text-align: center;
+}
+
+.gs-slot.is-place-4 .gs-place {
+  color: var(--bone);
+}
+
+.gs-slot.is-medal .gs-place {
+  animation: gs-hop 0.4s steps(2) 3;
+}
+
+.gs-icon {
+  flex: none;
+}
+
+/* The name in its team's colour, then whose it is, dimmed; cut with "…" before the score is. */
+.gs-who {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gs-who .gs-owner {
+  margin-left: 0.25rem;
+  font-size: var(--fs-small);
+}
+
+.gs-score {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.125rem;
+  color: var(--bone);
+  font-size: var(--fs-row);
+  white-space: nowrap;
+}
+
+.gs-slot-you {
+  position: absolute;
+  top: -0.5rem;
+  left: 1.75rem;
+}
+
+/* The four events of the day. */
+.gs-pips {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gs-pip {
+  width: 0.625rem;
+  height: 0.625rem;
+  background: var(--night);
+  box-shadow: 0 0 0 2px var(--line);
+}
+
+.gs-pip.is-done {
+  background: var(--haze);
+}
+
+.gs-pip.is-done[class*='is-place-'] {
+  background: var(--medal);
+}
+
+.gs-pip.is-now {
+  box-shadow: 0 0 0 2px var(--gold);
+}
+
+/* Before the show: the stands, a countdown and the day's events. */
+.gs-before {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.gs-countdown {
+  display: flex;
+  justify-content: center;
+}
+
+.gs-lineup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gs-lineup-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  padding: 0.25rem 0.375rem;
+  overflow: hidden;
+  background: var(--dusk-2);
+  box-shadow: inset 0 0 0 1px var(--gold);
+  color: var(--bone);
+  font-size: var(--fs-row);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gs-lineup-n {
+  color: var(--gold);
+}
+
+.games-show .controls {
+  justify-content: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .games-show *,
+  .games-show canvas.sprite {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .gs-act.is-land .games-actor-body {
+    scale: none;
+  }
+}
+
+.gs-board.is-intro {
+  justify-items: start;
+}
+
+.gs-slot.is-entrant {
+  padding-right: 0.5rem;
+}
+
+.gs-entrant-name {
+  overflow: hidden;
+  color: var(--team, var(--gold));
+  font-size: var(--fs-row);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A sitter's heat on the board: the meter, as over its head. */
+.gs-bar {
+  flex: none;
+  width: 3.5rem;
+  height: 0.375rem;
+  background: #8a2238;
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.gs-bar-fill {
+  display: block;
+  width: var(--pct);
+  height: 100%;
+  background: #ff5f6d;
+}
+
+.gs-foot {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 1rem;
+}
+
+.gs-left {
+  position: absolute;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--haze);
+  font-size: var(--fs-small);
+}
+
+.gs-before > :is(.gs-lineup, .gs-countdown) {
+  margin-inline: 0.375rem;
+}
+
+.gs-bar.is-cold {
+  background: #2a5aa8;
+}
+
+.gs-bar.is-cold .gs-bar-fill {
+  background: #7fb1f0;
+}

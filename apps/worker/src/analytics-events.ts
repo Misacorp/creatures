@@ -38,6 +38,7 @@ export const GEAR_SOURCES = [
   'welcome',
   'dungeon',
   'rank_gift',
+  'games',
 ] as const;
 export type GearSource = (typeof GEAR_SOURCES)[number];
 
@@ -131,7 +132,7 @@ export type AnalyticsEvent =
   | {
       /** An activity paid a creature experience (or a ribbon or evolution spent what it had banked). */
       kind: 'creature_exp';
-      source: 'trip' | 'dungeon' | 'raid' | 'job' | 'lounge' | 'ribbon' | 'evolve';
+      source: 'trip' | 'dungeon' | 'raid' | 'job' | 'lounge' | 'games' | 'ribbon' | 'evolve';
       species: string;
       gained: number;
       treat: boolean;
@@ -454,4 +455,10 @@ export type AnalyticsEvent =
        */
       kind: 'dev_action';
       tool: DevActionTool;
-    };
+    }
+  /** A player set their entry in a Valley Games event (`creatures` 0: cleared it). */
+  | { kind: 'games_entry'; event: string; creatures: number }
+  /** A Valley Games day locked: its events played, how many creatures and players took part. */
+  | { kind: 'games_show'; events: number; skipped: number; entrants: number; players: number }
+  /** A purchase at the Valley Games' Prize Stall. */
+  | { kind: 'games_buy'; offer: string; price: number };

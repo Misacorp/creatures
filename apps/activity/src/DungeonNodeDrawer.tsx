@@ -44,7 +44,7 @@ import { keepsakeGlyph } from './dungeon-text';
 import { FindItems } from './ui/FindItem';
 import { essenceCount, partBadge } from './count-items';
 import { modifierIcon } from './dungeon-rooms';
-import { roomTrick } from './dungeon-playback';
+import { roomMoves } from './dungeon-playback';
 import type {
   DungeonKeepsakeView,
   DungeonMapNode,
@@ -391,7 +391,7 @@ function FoeBody({
   const foe = node.foe;
   if (foe === undefined) return null;
   const art = bossArt(foe.id);
-  const trick = roomTrick({ kind: foe.kind, foe }, landmark);
+  const moves = roomMoves({ kind: foe.kind, foe }, landmark);
   const modifier = node.modifier;
   // A room a broken Sealed Vault marked fights as an epic fight; once fought, its log entry says so (the mark is gone).
   const marks: readonly RoomMark[] = node.marks ?? (entry?.sealed === true ? [SEALED_MARK] : []);
@@ -488,17 +488,22 @@ function FoeBody({
         <p class="dnd-line dnd-descend">{DESCEND_LINE}</p>
       )}
       {children}
-      <p class="dnd-trick">
-        {trick === null ? (
+      {moves.length === 0 ? (
+        <p class="dnd-trick">
           <span class="muted">{NO_TRICK_LINE}</span>
-        ) : (
-          <>
-            <Sprite sprite={glyphOrUnknown(gimmickGlyphKey(trick))} scale={2} />
-            <strong class="pix">{trick.name}</strong>
-            <span>{gimmickShort(trick, 'row')}</span>
-          </>
-        )}
-      </p>
+        </p>
+      ) : (
+        moves.map((move) => (
+          <p class="dnd-trick" key={move.id}>
+            <span class="dnd-trick-icon">
+              <Sprite sprite={glyphOrUnknown(gimmickGlyphKey(move))} scale={2} />
+            </span>
+            <span class="dnd-trick-text">
+              <strong class="pix">{move.name}</strong> {gimmickShort(move, 'row')}
+            </span>
+          </p>
+        ))
+      )}
       {modifier !== undefined && (
         <p class="dnd-mod">
           <Tag

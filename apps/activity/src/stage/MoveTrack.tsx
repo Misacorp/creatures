@@ -3,11 +3,19 @@ import { useRef } from 'preact/hooks';
 import { gimmickGlyph } from '../glyphs';
 import { nextMoves, type MoveTrackView, type TrackTile } from '../move-track';
 import { usePopoverTrigger } from '../PopoverHost';
+import { RAMPS } from '../games/art/tint';
+import { YOU_MARKER } from '../games/show-art';
 import { Sprite } from '../sprites/Sprite';
 import { PopoverCard, popupProps } from '../ui/Popover';
 
 /** A popover opened by hovering closes this long after the mouse leaves the move (or the popover). */
 const HOVER_CLOSE_MS = 200;
+
+/**
+ * This round's mark on the track: the Valley Games' "yours" marker (the same sprite, at 1x), turned to
+ * point at this round's moves. Gold, and red while a move comes this round.
+ */
+const DUE_MARKER = { a: RAMPS.red[1], b: RAMPS.red[2] } as const;
 
 const KIND_WORD: Record<TrackTile['kind'], string> = {
   move: 'Strikes at the boss turn, after the creatures.',
@@ -122,8 +130,9 @@ function TrackMove({
 /**
  * How the track looks (Misa's design rounds, 2026-10-23 and 24: fewer boxes, less noise, more meaning,
  * and less room taken from the boss).
- * - `rows` (the default): a row per round, this round on top, its moves as icons side by side and
- *   nothing but a tiny "NOW" or the rounds to go beside them; an empty round is a dot.
+ * - `rows` (the default): a row per round, this round on top, its moves as icons side by side, a
+ *   small pointer at this round (no words) and the rounds to go beside the others; an empty round is a
+ *   dot.
  * - `countdown` (the reviewers' pick of the 23rd): no column: the next few moves, each once, with the
  *   rounds left beside it; a hard "NOW" for this round's, and the names of this round's and the next.
  * - `hitline`: no boxes at all. The moves float up a column toward a single glowing line at the top
@@ -191,7 +200,16 @@ export function MoveTrack({
                 class={`track-round${k === 0 ? ' now' : ''}${moves.length === 0 ? ' quiet' : ''}`}
               >
                 <span class="track-round-label pix" aria-hidden="true">
-                  {k === 0 ? 'NOW' : String(k)}
+                  {k === 0 ? (
+                    <Sprite
+                      sprite={YOU_MARKER}
+                      scale={1}
+                      class="track-now-mark"
+                      {...(lit ? { palette: DUE_MARKER } : {})}
+                    />
+                  ) : (
+                    String(k)
+                  )}
                 </span>
                 {moves.length === 0 ? (
                   <span class="track-none" aria-hidden="true" />

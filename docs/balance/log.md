@@ -28,15 +28,15 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
 - **Outcome:**
 - **Follow-ups:** B-002, B-004.
 
-### B-002: Reflect knocks out the payoff almost every time (open)
+### B-002: Reflect knocks out the payoff almost every time (closed)
 
 - **Opened:** 2026-10-14, from the role assessment.
 - **Finding:** a run that meets reflect (the Thorns modifier, or Slag Tyrant's Molten Shell; about half of all runs) knocks out a creature in 97–100% of cases at every depth. The reflected hit is the whole reaction bonus and can't be intercepted.
 - **Hypothesis:** reflect punishes the spike so hard it deletes the payoff rather than making players think.
 - **Options:** cap reflected damage at a share of the target's max HP (new scalar); make reflect interceptable by a guard.
-- **Action:** none, watching.
-- **Expected:**
-- **Outcome:**
+- **Action:** none at first, watching. Closed 2026-10-22 by B-031 (Misa: Thorns becomes spiky armour, Molten Shell a 5% reflective shield).
+- **Expected:** a run that meets Thorns or the Slag Tyrant is no longer a sure knock-out, and reacting teams clear about as well as in other rooms.
+- **Outcome:** 2026-10-22, B-031. Reacting team (Tidewing / Thornbuck / Tempestray, level = depth), depth 6 / 10 / 14 / 18: Thorns boss rooms cleared 44 / 0 / 0 / 0% and every one had a knock-out before; now 100 / 98 / 93 / 79% with 2 / 3 / 24 / 28% knock-outs (other modifiers: 100 / 99 / 96 / 85%). Slag Tyrant cleared 100 / 0 / 0 / 0% with a knock-out in every fight before; now (Backlash, B-031) 100 / 100 / 96 / 83% with 2 / 21 / 37 / 44% knock-outs. Worked.
 - **Follow-ups:** the Cinder Wyrm's reflect (Backdraft) was measured with two softer rules (B-007). Misa decided 2026-10-15: Backdraft stays; a Guard takes reflected hits (decisions.md). Nothing else changed.
 
 ### B-003: Row order decides whether a team reacts at all (closed)
@@ -1335,3 +1335,41 @@ The process is in `docs/design/balance-loop.md`. Newest entry last. Each entry h
 - **Expected:** a run that takes the Idol clears about as often as before (keepsake against curse); the door is met by about one run in five at depth 2 or more that walks a mystery room, and pays a Rare-level prize at the cost of a creature or 40% HP.
 - **Outcome:**
 - **Follow-ups:** watch the live clear rate of runs that carry the Idol's curse against those that do not (`dungeon_event` analytics carries the event and the option). If the curse is too heavy or too light, change the `bp` in the content (2000).
+
+### B-031: The dungeon's reflect split: Thorns pricks every hit, Molten Shell burns back half the reactions (open)
+
+- **Opened:** 2026-10-22, from Misa (closes B-002; dungeon only, the raid's Backdraft and Bramble Season are unchanged because many players fight it).
+- **Changed:** the Thorns room modifier is now spiky armour (`spikes`): every creature hit on the foe sends back `bp` of that hit's plain damage (reaction bonus excluded) at the hitter, with no Guard step-in, dodge, crit or cover. The Slag Tyrant's Molten Shell is now a backlash (`backlash`): each reaction has `chanceBp` chance (5000) to backfire; the foe still takes the whole reaction and `shareBp` of the bonus (2500) comes back as a reflected hit on the payoff (Bramble Season's shape). It first shipped as a 5% full reflect (`reflect_chance`, chance 500); Misa found that too swingy and the same day it became the backlash. Both returning hits take the single-hit cap, which is off today (`RULES.combat.maxHitBp` 0), so both are uncapped for now.
+- **Tuning** (single room fights, `packages/sim` engine with the live rules, 200 to 400 seeds per cell; teams Tidewing / Thornbuck / Tempestray at level = depth, and level depth - 3 for the harder case; depths 6, 10, 14, 18; clear % / share of fights with a knock-out):
+
+  | Boss room, reacting team, level = depth | d6       | d10     | d14     | d18     |
+  | --------------------------------------- | -------- | ------- | ------- | ------- |
+  | No modifier                             | 100 / 2  | 99 / 3  | 96 / 23 | 81 / 25 |
+  | Other modifiers (mean of 8)             | 100 / 2  | 99 / 3  | 96 / 21 | 85 / 25 |
+  | Thorns, old reflect                     | 44 / 100 | 0 / 100 | 0 / 100 | 0 / 100 |
+  | Thorns, spikes 1000 (shipped)           | 100 / 2  | 98 / 3  | 93 / 24 | 79 / 28 |
+  | Thorns, spikes 1500                     | 100 / 4  | 97 / 5  | 89 / 27 | 74 / 33 |
+  | Thorns, spikes 2000                     | 100 / 4  | 97 / 5  | 88 / 27 | 68 / 40 |
+
+  At level depth - 3 (harder teams) spikes 1000 / 1500 / 2000 at depth 18 clear 68 / 59 / 58% against 72% for other modifiers, so 1000 is the "a few points less". Normal foe rooms stay at 100% (the foe dies before the spikes add up). Reacting teams still clear far better than non-reacting ones in Thorns rooms (depth 14, level + 4: 96% against 13 to 22%).
+
+  | Slag Tyrant, reacting team, level = depth, chance 5000 | d6        | d10      | d14       | d18                                       |
+  | ------------------------------------------------------ | --------- | -------- | --------- | ----------------------------------------- |
+  | Old whole reflect                                      | 100 / 100 | 0 / 100  | 0 / 100   | 0 / 100                                   |
+  | Rare full reflect, chance 500 (first version)          | 100 / 11  | 93 / 17  | 83 / 21   | 80 / 24                                   |
+  | Backlash, share 2000                                   | 100 / 0   | 100 / 2  | 100 / 15  | 99 / 20                                   |
+  | Backlash, share 2200                                   | 100 / 0   | 100 / 12 | 100 / 29  | 89 / 37                                   |
+  | Backlash, share 2500 (shipped)                         | 100 / 2   | 100 / 21 | 96 / 37   | 83 / 44                                   |
+  | Backlash, share 3000                                   | 100 / 2   | 100 / 21 | 96 / 38   | 83 / 44                                   |
+  | Backlash, share 4000 or 5000                           | 100 / 30  | 100 / 54 | 71 / 71   | 51 / 75                                   |
+  | Thorns, spikes 1000 (for comparison)                   | 100 / 2   | 98 / 3   | 93 / 24   | 79 / 28                                   |
+  | Other room bosses (4)                                  | 100       | 100      | 92 to 100 | 24 to 100 (Bramble Matron is the outlier) |
+
+  The knock-out share moves in steps: a burn only knocks out a payoff that has less HP left than the burn, so 2500 and 3000 are the same fights and 4000 and 5000 are the same fights. At level depth - 3 (harder teams), share 2500 clears 100 / 100 / 79 / 66% against Thorns 99 / 98 / 74 / 71%. Chance stays 5000 (the knob is the share). The burn is uncapped while `maxHitBp` is 0.
+
+- **How often the backlash fires:** each reaction rolls once at 50%. A Slag Tyrant fight has about 1.9 (depth 6), 2.8, 3.5 and 3.8 (depth 18) reactions, so on average 0.95, 1.4, 1.75 and 1.9 backlashes a fight; measured, 74%, 88%, 94% and 96% of fights have at least one.
+- **Full `pnpm sim`** (seed leet; run with the first version of Molten Shell, the 5% full reflect, and not rerun for the backlash: it changes only the Slag Tyrant's reaction rule, and the first run moved no dungeon target): main before (b0dc31a) 76 passed, 20 failed; after 79 passed, 17 failed. Every failing target was already failing on main except `exp-casual-discovery` (2.1, limit 2: an expedition target with no link to combat, seed noise at the edge); `raid-boss-spread`, `choice-creature-min`, `longrun-win-fifteen` and `exp-slot-5` failed before and pass now (the raid is unchanged: the shared economy stream moves). No dungeon target changed state.
+- **Action:** `room-modifiers.json` thorns `spikes` `bp` 1000; `dungeon-foes.json` molten-shell `backlash` `chanceBp` 5000, `shareBp` 2500. Starting values were 1500 and a 1000 chance reflect.
+- **Expected:** live `dungeon` clear rates for runs that meet Thorns or the Slag Tyrant move to within a few points of the other rooms; knock-outs stop being near-certain.
+- **Outcome:**
+- **Follow-ups:** watch live Slag Tyrant clear rates and knock-outs; the cap stays off (Misa).
