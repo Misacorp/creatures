@@ -39,6 +39,8 @@ export interface CreatureListProps<T extends PickerOption = PickerOption> {
   placedNote?: string;
   /** Show each option's line about what it would do in the slot (the effect preview). Default off. */
   showEffects?: boolean;
+  /** Show each creature's level ("Lv 8") after its name. Default on; the Valley Games picker turns it off (level does not matter there). */
+  level?: boolean;
   /** Show the element and role chips under the name. Default on. */
   chips?: boolean;
   /**
@@ -122,7 +124,9 @@ function RowContent<T extends PickerOption>({ o, props }: { o: T; props: Creatur
             {o.name}
             {rarity !== undefined && <span class="visually-hidden">, {rarity}</span>}
           </span>
-          {o.action !== true && o.xpBar === undefined && <span class="ro-level">Lv {o.level}</span>}
+          {o.action !== true && o.xpBar === undefined && props.level !== false && (
+            <span class="ro-level">Lv {o.level}</span>
+          )}
           {beside !== undefined && beside !== null && <span class="ro-beside">{beside}</span>}
           {o.recommended && <span class="ro-recommended">{RECOMMENDED_TAG}</span>}
           {o.rested === true && <span class="badge rested ro-rested">Rested</span>}
