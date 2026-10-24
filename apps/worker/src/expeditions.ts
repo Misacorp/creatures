@@ -75,6 +75,7 @@ import {
 } from './expedition-store';
 import { gearRulesOf, minusBp } from './gear-worn';
 import { openJobOf } from './gear-store';
+import { progressOf } from './dungeon-rows';
 import { devKey, type DevFlags } from './dev-state';
 import { spend, type LedgerStorage } from './ledger';
 import { runKeyed, settleSpend } from './keyed-action';
@@ -880,7 +881,22 @@ export class Expeditions {
 
   // --- The profile and the destinations ---
 
-  /** The caller's account stats, milestones, journal and explorers. */
+  /**
+   * The caller's dungeon record for the stats page: runs finished, runs cleared (the main boss beaten),
+   * the depth their next run fights at (the deepest they have reached on their ladder) and the days-in-a-row
+   * streak. Read from the dungeon's own progress row; a player who never ran gets zeros and depth 1.
+   */
+  private dungeonStats(userId: string): ProfileView['dungeon'] {
+    const progress = progressOf(this.sql, userId);
+    return {
+      runs: progress.runs,
+      clears: progress.clears,
+      depth: progress.depth,
+      streak: progress.streak,
+    };
+  }
+
+  /** The caller's account stats, milestones, journal, dungeon record and explorers. */
   profile(userId: string): ProfileView {
     const stats = statsOf(this.sql, userId);
     const found = journalPages(this.sql, userId);
@@ -920,6 +936,7 @@ export class Expeditions {
           };
         }),
       },
+      dungeon: this.dungeonStats(userId),
       explorers: creatureIds.map((id) => ({
         creatureId: id,
         ...(explorers.get(id) as ExplorerView),

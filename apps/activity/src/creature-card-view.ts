@@ -157,7 +157,7 @@ export function ribbonsHeldText(count: number): string {
   return ids.length === 0 ? 'None yet' : ids.map(ribbonName).join(', ');
 }
 
-/** The explorer facts of the page: rank, experience towards the next rank, and trips made. */
+/** The explorer facts of the page: rank and experience towards the next rank (the expedition count is in the Stats table). */
 export function explorerFacts(explorer: Creature['explorer']): { label: string; value: string }[] {
   return [
     { label: 'Explorer rank', value: String(explorer.rank) },
@@ -168,7 +168,6 @@ export function explorerFacts(explorer: Creature['explorer']): { label: string; 
           ? `${String(explorer.xp)} (top rank)`
           : `${String(explorer.xp)} / ${String(explorer.nextRankXp)}`,
     },
-    { label: 'Trips', value: String(explorer.trips) },
   ];
 }
 

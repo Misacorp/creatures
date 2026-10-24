@@ -105,11 +105,10 @@ describe('badges and facts', () => {
     expect(ribbonsHeldText(9)).toBe('Bronze Ribbon, Silver Ribbon, Gold Ribbon');
   });
 
-  it('give the explorer rank, experience and trips', () => {
+  it('give the explorer rank and experience (the expedition count is in the Stats table)', () => {
     expect(explorerFacts({ rank: 3, xp: 120, nextRankXp: 400, trips: 7 })).toEqual([
       { label: 'Explorer rank', value: '3' },
       { label: 'Explorer XP', value: '120 / 400' },
-      { label: 'Trips', value: '7' },
     ]);
     expect(explorerFacts({ rank: 9, xp: 5000, nextRankXp: null, trips: 90 })[1]?.value).toBe(
       '5000 (top rank)',

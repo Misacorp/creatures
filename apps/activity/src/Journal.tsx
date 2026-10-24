@@ -51,7 +51,7 @@ function PlaceGroup({ place, open }: { place: JournalPlace; open: boolean }) {
 }
 
 /**
- * The Journal: every pre-written page, grouped by place, with how many are found and which sets are
+ * The Journal (the page under the Home board's Journal pin, which supplies the title): every pre-written page, grouped by place, with how many are found and which sets are
  * complete. A page that is not found is a blank; its words are never in the page. The pages hint at how
  * the game works, so reading them is worth it.
  */
@@ -60,12 +60,11 @@ export function Journal({ profile }: { profile: Pick<Profile, 'journal'> }) {
   const found = profile.journal.found.length;
   const total = Math.max(1, profile.journal.total);
   return (
-    <section class="journal" aria-labelledby="journal-title">
-      <h3 id="journal-title">
-        <Sprite sprite={glyphOrUnknown('journal')} scale={2} class="inline-glyph" /> Journal{' '}
+    <section class="journal" aria-label="Journal">
+      <p class="muted">
+        {journalProgressText(profile)}. Trips turn up new pages.{' '}
         <GlossaryTag entry="journal" look="help" />
-      </h3>
-      <p class="muted">{journalProgressText(profile)}. Trips turn up new pages.</p>
+      </p>
       <Bar value={found} max={total} label={journalProgressText(profile)} />
       {places.map((place) => (
         <PlaceGroup key={place.place} place={place} open={place.found > 0} />

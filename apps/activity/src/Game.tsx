@@ -18,6 +18,7 @@ import { ActionIds } from './actions';
 import { allowanceNotice } from './allowance-text';
 import { AppHead, RoomBand } from './AppHead';
 import { DEFAULT_BOARD_SETTINGS } from './home/board';
+import { HomeBook } from './home/HomeBook';
 import { HomeScreen } from './home/HomeScreen';
 import { Hud } from './Hud';
 import { MainNav } from './MainNav';
@@ -49,7 +50,15 @@ import { chooseCatch } from './talent-api';
 import { choiceResultText } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
-import { DEFAULT_PLACE, NAV_HOME, isPlace, type Place } from './tabs';
+import {
+  DEFAULT_PLACE,
+  NAV_HOME,
+  homePageOf,
+  homeScreen,
+  isPlace,
+  navPlaceOf,
+  type Screen,
+} from './tabs';
 import { useActionRunner } from './use-action-runner';
 import { useForecast } from './use-forecast';
 import { EquipHost } from './equip-from-card';
@@ -121,7 +130,7 @@ export function Game({
   });
   // The raid's week times for Home, loaded when the game opens (a failed load leaves the raid rows out).
   const { raid: raidGlance, load: loadRaidGlance } = useRaidGlance(game.starterChosen);
-  const [tab, setTab] = useState<Place>(DEFAULT_PLACE);
+  const [tab, setTab] = useState<Screen>(DEFAULT_PLACE);
   const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
     null,
   );
@@ -351,8 +360,10 @@ export function Game({
   // The main navigation: the dock on a phone, the rail on a wide window. The HUD names the place you are in.
   const wide = useWide();
   const places = navPlaces(alerts);
+  // A page that opens from Home (the Journal, the Stats) counts as Home for the navigation and the HUD.
+  const place = navPlaceOf(tab);
   const placeLabel =
-    tab === NAV_HOME.id ? NAV_HOME.label : (places.find((place) => place.id === tab)?.label ?? '');
+    place === NAV_HOME.id ? NAV_HOME.label : (places.find((p) => p.id === place)?.label ?? '');
 
   // The living room's props: the same room in the desktop's band and at the top of the phone's Home page.
   const roomProps: Parameters<typeof LivingRoom>[0] = {
@@ -389,7 +400,12 @@ export function Game({
   );
 
   const devPanel = (
-    <DevPanelHost enabled={devTools} tab={tab} creatures={game.creatures} onChanged={devRefresh} />
+    <DevPanelHost
+      enabled={devTools}
+      tab={place}
+      creatures={game.creatures}
+      onChanged={devRefresh}
+    />
   );
 
   /** What the dungeon's and the raid's team screens need to get creatures ready (their configurator and page). */
@@ -435,7 +451,7 @@ export function Game({
       <div class="nav-shell">
         <MainNav
           places={places}
-          current={tab}
+          current={place}
           wide={wide}
           home
           onSelect={(id) => {
@@ -498,6 +514,9 @@ export function Game({
                 raid={raidGlance}
                 forecast={forecast}
                 settings={DEFAULT_BOARD_SETTINGS}
+                onOpenPage={(page) => {
+                  setTab(homeScreen(page));
+                }}
                 onGo={(place) => {
                   setTab(place);
                   refreshState();
@@ -506,6 +525,16 @@ export function Game({
                   else loadGear();
                 }}
                 room={wide ? undefined : <RoomBand room={roomProps} />}
+              />
+            )}
+            {homePageOf(tab) !== null && (
+              <HomeBook
+                page={homePageOf(tab) ?? 'journal'}
+                creatures={game.creatures}
+                tripsFinished={game.slots.tripsFinished}
+                onBack={() => {
+                  setTab('home');
+                }}
               />
             )}
             {tab === 'collection' && (

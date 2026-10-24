@@ -1263,18 +1263,32 @@ describe('the profile', () => {
           bonuses: Record<string, number>;
           explorers: { creatureId: string; trips: number }[];
           slots: { total: number };
+          dungeon: Record<string, number>;
         };
+        // Nobody has run the dungeon yet: zeros, and the first depth.
+        expect(body.dungeon).toEqual({ runs: 0, clears: 0, depth: 1, streak: 0 });
         expect(body.stats['trips_finished']).toBe(3);
         expect(body.stats['places_visited']).toBe(1);
         expect(body.stats['trip_hours']).toBe(3 * (lengthRules('short').ms / HOUR));
         expect(body.milestones.length).toBe(RULES.expeditions.milestones.length);
         expect(body.explorers.find((e) => e.creatureId === p.starterId)?.trips).toBe(3);
         expect(body.slots.total).toBe(2);
+        // The dungeon record is the player's own progress row.
+        ctx.sql.exec(
+          'INSERT INTO dungeon_progress (user_id, depth, streak, last_day, first_day, runs, clears) VALUES (?, 4, 2, ?, ?, 6, 3)',
+          USER_ID,
+          '2027-02-13',
+          '2027-02-01',
+        );
+        const ran = (await p.call('GET', '/api/profile')).body as unknown as typeof body;
+        expect(ran.dungeon).toEqual({ runs: 6, clears: 3, depth: 4, streak: 2 });
         const other = await join(ctx, OTHER, 0, 'cindle');
         const theirs = (await other.call('GET', '/api/profile')).body as {
           stats: Record<string, number>;
+          dungeon: Record<string, number>;
         };
         expect(theirs.stats['trips_finished']).toBe(0);
+        expect(theirs.dungeon['runs']).toBe(0);
         expect((await p.call('POST', '/api/profile', {})).status).toBe(405);
       },
       { rng: createSeededRng('profile-rng'), tripRng: createSeededRng('profile-trip') },

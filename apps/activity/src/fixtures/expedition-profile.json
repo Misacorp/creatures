@@ -190,6 +190,12 @@
       }
     ]
   },
+  "dungeon": {
+    "runs": 7,
+    "clears": 3,
+    "depth": 4,
+    "streak": 2
+  },
   "explorers": [
     {
       "creatureId": "00000000-0000-4000-8400-000000000002",

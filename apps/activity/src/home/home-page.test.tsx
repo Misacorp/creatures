@@ -1,4 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Profile } from '../expedition-types';
+import { parseProfile } from '../expedition-parse';
+import profileFixture from '../fixtures/expedition-profile.json';
 import { HOME_NOW, homeInput } from '../workbench/home-sample';
 import {
   byClass,
@@ -13,7 +16,22 @@ import { DEFAULT_BOARD_SETTINGS, buildBoard, type BoardSettings } from './board'
 import { HomePage } from './HomePage';
 import { HomeScreen } from './HomeScreen';
 
+const fetchProfile = vi.fn<() => Promise<Profile>>();
+vi.mock('../expedition-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../expedition-api')>()),
+  fetchProfile: () => fetchProfile(),
+}));
+
 let page: Page | null = null;
+
+beforeEach(() => {
+  fetchProfile.mockReset();
+  fetchProfile.mockResolvedValue(parseProfile(profileFixture));
+});
+
+const flush = async (): Promise<void> => {
+  for (let i = 0; i < 4; i += 1) await Promise.resolve();
+};
 
 afterEach(() => {
   page?.unmount();
@@ -119,6 +137,51 @@ describe('HomePage', () => {
     );
   });
 
+  it('pins the Journal and the Stats to the board, each with its teaser, and opens its page when tapped', () => {
+    const onOpenPage = vi.fn();
+    const drawn = createPage();
+    page = drawn;
+    drawn.draw(
+      <HomePage
+        input={homeInput('busy', true)}
+        settings={DEFAULT_BOARD_SETTINGS}
+        onGo={() => undefined}
+        teasers={{ journal: '3 / 45 pages found', stats: '48 trips, 9 dungeon clears' }}
+        onOpenPage={onOpenPage}
+      />,
+    );
+    const pins = byClass(drawn.root, 'hb-pin');
+    expect(pins).toHaveLength(2);
+    expect(visibleText(first(byName(drawn.root, 'button', /^Journal/)))).toContain(
+      '3 / 45 pages found',
+    );
+    expect(visibleText(first(byName(drawn.root, 'button', /^Stats/)))).toContain(
+      '48 trips, 9 dungeon clears',
+    );
+    // They lean like the other papers.
+    for (const pin of pins) expect(pin.style.getPropertyValue('--tilt')).not.toBe('');
+    drawn.click(first(byName(drawn.root, 'button', /^Journal/)));
+    drawn.click(first(byName(drawn.root, 'button', /^Stats/)));
+    expect(onOpenPage.mock.calls).toEqual([['journal'], ['stats']]);
+  });
+
+  it('keeps the pins on a calm board, and leaves them out when it cannot open pages', () => {
+    const calm = createPage();
+    page = calm;
+    calm.draw(
+      <HomePage
+        input={homeInput('nothing waiting', true)}
+        settings={DEFAULT_BOARD_SETTINGS}
+        onGo={() => undefined}
+        onOpenPage={() => undefined}
+      />,
+    );
+    // No teaser line yet (the profile has not loaded): just the names.
+    expect(byClass(calm.root, 'hb-pin')).toHaveLength(2);
+    expect(byClass(calm.root, 'hb-pin-teaser')).toHaveLength(0);
+    expect(byClass(draw('busy').root, 'hb-pin')).toHaveLength(0);
+  });
+
   it('shows no notice for quiet places by default, and a calm one-line notice each with idle shown', () => {
     const hidden = draw('nothing going on');
     expect(byClass(hidden.root, 'hb-quiet')).toHaveLength(0);
@@ -144,9 +207,49 @@ describe('HomeScreen', () => {
         offset={HOME_NOW - Date.now()}
         settings={DEFAULT_BOARD_SETTINGS}
         onGo={() => undefined}
+        onOpenPage={() => undefined}
       />,
     );
     expect(visibleText(drawn.root)).toContain('Needs you');
     expect(visibleText(drawn.root)).toContain('Games lock');
+  });
+
+  it('fills the pins’ teasers from the profile once it has loaded', async () => {
+    const input = homeInput('busy', true);
+    const drawn = createPage();
+    page = drawn;
+    drawn.draw(
+      <HomeScreen
+        {...input}
+        offset={HOME_NOW - Date.now()}
+        settings={DEFAULT_BOARD_SETTINGS}
+        onGo={() => undefined}
+        onOpenPage={() => undefined}
+      />,
+    );
+    expect(byClass(drawn.root, 'hb-pin-teaser')).toHaveLength(0);
+    await flush();
+    drawn.update(() => undefined);
+    const teasers = byClass(drawn.root, 'hb-pin-teaser').map((el) => visibleText(el));
+    expect(teasers).toEqual(['3 / 45 pages found', `3 trips, 3 dungeon clears`]);
+  });
+
+  it('shows the pins without teasers when the profile fails to load', async () => {
+    fetchProfile.mockRejectedValue(new Error('offline'));
+    const drawn = createPage();
+    page = drawn;
+    drawn.draw(
+      <HomeScreen
+        {...homeInput('busy', true)}
+        offset={HOME_NOW - Date.now()}
+        settings={DEFAULT_BOARD_SETTINGS}
+        onGo={() => undefined}
+        onOpenPage={() => undefined}
+      />,
+    );
+    await flush();
+    drawn.update(() => undefined);
+    expect(byClass(drawn.root, 'hb-pin')).toHaveLength(2);
+    expect(byClass(drawn.root, 'hb-pin-teaser')).toHaveLength(0);
   });
 });
