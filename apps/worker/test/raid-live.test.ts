@@ -335,6 +335,8 @@ describe('the live finale lifecycle', () => {
       // The lobby already shows the stage: the row as it would fight now and the caller's abilities.
       expect(lobby.row).toHaveLength(9); // two players: guests fill the row
       expect(lobby.row.filter((c) => c.owner === 'm1')).toHaveLength(3);
+      // No fight yet, so no HP: the bars come with the fight's result.
+      expect(lobby.row.every((c) => c.hp === null)).toBe(true);
       expect(lobby.names?.players?.['m1']).toBe(player.name);
       expect(lobby.abilities).toHaveLength(1); // below the unlock level: the basic ability only
       expect(lobby.abilities[0]).toMatchObject({
@@ -356,6 +358,11 @@ describe('the live finale lifecycle', () => {
       const first = snap(ctx, player);
       expect(first).toMatchObject({ status: 'live', startsAt: FINALE, round: 1, you: 'm1' });
       expect(first.row).toHaveLength(9); // two players: guests fill the row
+      // Each creature's small HP bar: it starts full, its maximum from the engine (a Guard's is bigger).
+      for (const c of first.row) {
+        expect(c.hp?.max).toBeGreaterThan(0);
+        expect(c.hp?.start).toBe(c.hp?.max);
+      }
       expect(first.events.length).toBeGreaterThan(0);
       expect(first.events.every((e) => e.round <= 1)).toBe(true);
       expect(first.events.some((e) => e.t === 'round_end' && e.round === 1)).toBe(true);
@@ -1731,7 +1738,7 @@ describe('the API contract with the client', () => {
     'unlockLevel',
     'unlocked',
   ];
-  const ROW_KEYS = ['element', 'id', 'level', 'name', 'owner', 'position', 'role', 'species'];
+  const ROW_KEYS = ['element', 'hp', 'id', 'level', 'name', 'owner', 'position', 'role', 'species'];
   const LOOT_KEYS = ['cleared', 'essence', 'festivalGrant', 'rankChange'];
   const RANK_CHANGE_KEYS = ['after', 'before', 'festival', 'serverWon'];
   const GRANT_KEYS = ['firstOnServer', 'outcome', 'species'];

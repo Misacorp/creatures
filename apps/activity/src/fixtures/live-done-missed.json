@@ -31,7 +31,8 @@
       "element": "grove",
       "role": "guard",
       "level": 10,
-      "owner": "m2"
+      "owner": "m2",
+      "hp": null
     },
     {
       "position": 1,
@@ -41,7 +42,8 @@
       "element": "ember",
       "role": "payoff",
       "level": 10,
-      "owner": "m1"
+      "owner": "m1",
+      "hp": null
     },
     {
       "position": 2,
@@ -51,7 +53,8 @@
       "element": "tide",
       "role": "guard",
       "level": 10,
-      "owner": "m2"
+      "owner": "m2",
+      "hp": null
     },
     {
       "position": 3,
@@ -61,7 +64,8 @@
       "element": "grove",
       "role": "guard",
       "level": 9,
-      "owner": null
+      "owner": null,
+      "hp": null
     },
     {
       "position": 4,
@@ -71,7 +75,8 @@
       "element": "ember",
       "role": "support",
       "level": 10,
-      "owner": "m2"
+      "owner": "m2",
+      "hp": null
     },
     {
       "position": 5,
@@ -81,7 +86,8 @@
       "element": "tide",
       "role": "setter",
       "level": 9,
-      "owner": null
+      "owner": null,
+      "hp": null
     },
     {
       "position": 6,
@@ -91,7 +97,8 @@
       "element": "spark",
       "role": "payoff",
       "level": 9,
-      "owner": null
+      "owner": null,
+      "hp": null
     },
     {
       "position": 7,
@@ -101,7 +108,8 @@
       "element": "spark",
       "role": "setter",
       "level": 7,
-      "owner": "m1"
+      "owner": "m1",
+      "hp": null
     },
     {
       "position": 8,
@@ -111,7 +119,8 @@
       "element": "spark",
       "role": "payoff",
       "level": 10,
-      "owner": "m1"
+      "owner": "m1",
+      "hp": null
     }
   ],
   "rules": {

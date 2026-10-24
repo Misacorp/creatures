@@ -16,6 +16,7 @@ import { creatureSpriteOrFallback } from '../sprites/creature-sprites';
 import { elementIcon } from '../sprites/element-icons';
 import { popupProps } from '../ui/Popover';
 import { SegmentBar } from '../ui/SegmentBar';
+import { TinyHp } from '../ui/TinyHp';
 import type { EffectView } from '../replay';
 import { EffectIcons } from '../ui/EffectIcons';
 import { Bursts, Floats, KoTags, Marks } from './StageFx';
@@ -105,8 +106,13 @@ export interface UnitProps {
   warned: boolean;
   /** The creature is marked for a charged attack that lands next round (a persistent amber mark). */
   charged: boolean;
-  /** The creature's HP now and at most (the dungeon); null when the stage shows no creature HP. */
+  /** The creature's HP now and at most; null when the stage shows no creature HP. */
   hp: { current: number; max: number } | null;
+  /**
+   * How the HP shows under the name: `segments` (the dungeon's bar) or `tiny` (the raid's crowded
+   * grid: a few pixels, `ui/TinyHp`). Default `segments`.
+   */
+  hpBar?: 'segments' | 'tiny';
   /** The status effects on the creature right now (small icons over its sprite). */
   effects?: readonly EffectView[];
   /**
@@ -172,9 +178,12 @@ export function StageUnit(props: UnitProps) {
       <span class="unit-name pix" aria-hidden="true">
         {c.name}
       </span>
-      {props.hp !== null && (
-        <SegmentBar size="unit" current={props.hp.current} max={props.hp.max} />
-      )}
+      {props.hp !== null &&
+        (props.hpBar === 'tiny' ? (
+          <TinyHp current={props.hp.current} max={props.hp.max} />
+        ) : (
+          <SegmentBar size="unit" current={props.hp.current} max={props.hp.max} />
+        ))}
     </>
   );
 

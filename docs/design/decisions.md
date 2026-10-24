@@ -2968,3 +2968,11 @@ Misa: drop the "1st, 2nd, 3rd" under each creature on the fight stage; the move 
 
 - The ordinal line under every creature is gone in the raid and the dungeon, and the board's rows are that line shorter (`--tile-h` 4.875rem to 4.125rem). The acting creature keeps its hop and, in the dungeon, its gold frame.
 - A screen reader still hears the order: each creature's name starts with "Acts 2nd" while the round runs.
+
+## 2026-10-24: Creature names on the raid board, and a tiny HP bar in the raid
+
+Misa, after a solo finale on staging: show the creatures' own names on the raid roster (a nickname a player gave is good to show), and give creatures a tiny HP bar in the raid, animated (the damage flashes white, then drains), with a new small component and clear ends so one creature's bar does not run into the next.
+
+- **Names:** the raid placement board printed each creature's species name ("a species name in the raid"); it now prints the name the server sends, which is the nickname when there is one (`raid-board.ts`; the fight stage already did). The spoken label and the board's one-line effect text ("Sets up Steam for ...") use it too.
+- **HP in the raid:** the server sends each creature's start and maximum HP with the row once the fight is known (`fightRow` in `raid-view.ts`, from the engine's result: the live finale and the replay alike; the lobby has none). Nothing about the fight's course is revealed by them. The stage works out the HP at each moment from the events, as it does for the dungeon.
+- **`ui/TinyHp`:** 4 px tall, 2.5 rem wide, a dark track in a 1 px ink edge with a faint light rim, so bars side by side (12 px apart in the grid) are clearly separate. Green, red at 30% or less, faded when knocked out. One width (`--hp`) drives two layers: the fill drops at once, the white strip under it waits 400 ms and drains in 450 ms. Under reduced motion it simply drops. It sits under the creature's name (under the sprite it collided with the boss's targeting bar). The raid grid's rows are 0.5 rem taller for it; the dungeon keeps its segmented bar.

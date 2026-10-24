@@ -8,6 +8,7 @@ import { StreakTrack } from '../../ui/StreakTrack';
 import { streakLabel, streakPips } from '../../dungeon-text';
 import { BossHp, SegmentBar } from '../../ui/SegmentBar';
 import { TimerBar } from '../../ui/TimerBar';
+import { TinyHp } from '../../ui/TinyHp';
 import { XP_SIZES, XpTrack, type XpSize } from '../../ui/XpTrack';
 import { GLYPH_IDS } from '../data';
 import { bool, num, str } from '../props';
@@ -399,10 +400,37 @@ const streakTrack: Entry = {
   ),
 };
 
+const tinyHp: Entry = {
+  name: 'TinyHp',
+  file: 'apps/activity/src/ui/TinyHp.tsx',
+  group: 'Bars',
+  description:
+    "A creature's tiny HP bar for crowded views (the raid's fight grid): 4 px tall in a hard ink edge, so bars side by side never run together. Green, red at 30% or less, faded when knocked out. When the HP drops the lost part shows white, then drains away (change the HP to see it).",
+  controls: {
+    current: { kind: 'number', min: 0, max: 1000 },
+    max: { kind: 'number', min: 1, max: 1000 },
+  },
+  defaults: { current: 700, max: 1000 },
+  presets: [
+    { name: 'Full', props: { current: 1000 } },
+    { name: 'Hurt', props: { current: 450 } },
+    { name: 'Low (red)', props: { current: 200 } },
+    { name: 'Knocked out', props: { current: 0 } },
+  ],
+  render: (p) => (
+    <div class="tiny-hp-sample">
+      {[0, 1, 2].map((k) => (
+        <TinyHp key={k} current={k === 1 ? num(p, 'current') : num(p, 'max')} max={num(p, 'max')} />
+      ))}
+    </div>
+  ),
+};
+
 export const barEntries: readonly Entry[] = [
   bar,
   timerBar,
   segmentBar,
+  tinyHp,
   bossHp,
   xpBar,
   xpTrack,
