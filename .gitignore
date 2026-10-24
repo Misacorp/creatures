@@ -19,6 +19,9 @@ coverage/
 *.key
 *.p12
 
+# Workbench screenshots from apps/activity/scripts/shoot.mjs (its default output folder)
+apps/activity/screenshots/
+
 # Simulator output (reports are generated; commit only curated ones under docs/)
 sim-out/
 

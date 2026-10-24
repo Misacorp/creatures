@@ -85,6 +85,22 @@ const HANDLERS = [
   'ontoggle',
 ];
 
+/** An element's style: what was set through `setProperty` stays readable with `getPropertyValue`. */
+function fakeStyle() {
+  const props = new Map<string, string>();
+  return {
+    setProperty: (name: string, value: string): void => {
+      props.set(name, String(value));
+    },
+    removeProperty: (name: string): string => {
+      const was = props.get(name) ?? '';
+      props.delete(name);
+      return was;
+    },
+    getPropertyValue: (name: string): string => props.get(name) ?? '',
+  };
+}
+
 export class FakeElement extends FakeNode {
   readonly nodeType = 1;
   readonly childNodes: FakeNode[] = [];
@@ -110,7 +126,8 @@ export class FakeElement extends FakeNode {
     contains: (name: string): boolean =>
       (this.getAttribute('class') ?? '').split(/\s+/).includes(name),
   };
-  readonly style = { setProperty: () => undefined, removeProperty: () => undefined };
+  /** Keeps the properties set on it, so a test can read a custom property (`cssVars`). */
+  readonly style = fakeStyle();
   /** How often `scrollIntoView` and `focus` were called, for the tests. */
   scrolled = 0;
   focused = 0;
