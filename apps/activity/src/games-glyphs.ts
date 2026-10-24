@@ -139,18 +139,18 @@ const medalPoint: SpriteDef = {
   ],
 };
 
-/** A green tick on an ink badge: the "Good fit" badge (the shape reads without the colour). */
+/** A green tick with no box behind it (clear pixels round it): the "Good fit" badge draws it on the tag. */
 const goodFit: SpriteDef = {
-  palette: { k: INK, g: GOOD, d: GOOD_SHADE },
+  palette: { g: GOOD, d: GOOD_SHADE },
   rows: [
-    'kkkkkkkk',
-    'kkkkkkgk',
-    'kkkkkggk',
-    'kgkkggdk',
-    'kggggdkk',
-    'kkgggkkk',
-    'kkkdkkkk',
-    'kkkkkkkk',
+    '........',
+    '......g.',
+    '.....gg.',
+    '.g..ggd.',
+    '.ggggd..',
+    '..ggg...',
+    '...d....',
+    '........',
   ],
 };
 
