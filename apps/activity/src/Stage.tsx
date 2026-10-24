@@ -238,8 +238,15 @@ export function Stage({
     anim === null
       ? []
       : cuesForEvents(events, anim.from, Math.min(anim.to, index), rowIds, boss.id, board);
-  const creatureHpNow =
-    creatureHp === undefined ? {} : creatureHpAt(events, index, creatureHp.start);
+  // The dungeon passes its creatures' HP; a raid's comes with its row (once the fight is known).
+  const rowHp = row.every((c) => c.hp !== undefined && c.hp !== null)
+    ? {
+        start: Object.fromEntries(row.map((c) => [c.id, c.hp?.start ?? 0])),
+        max: Object.fromEntries(row.map((c) => [c.id, c.hp?.max ?? 0])),
+      }
+    : undefined;
+  const hpOf = creatureHp ?? (row.length > 0 ? rowHp : undefined);
+  const creatureHpNow = hpOf === undefined ? {} : creatureHpAt(events, index, hpOf.start);
   // Every number shows: when a move hits a whole row, they may overlap (Misa, 2026-10-22).
   const fx = allFx;
   // Charged attacks that are announced and have not landed: their victims and rows stay marked.
@@ -464,13 +471,14 @@ export function Stage({
                 warned={forecast?.ends.includes(c.id) === true}
                 charged={chargedIds.has(c.id)}
                 hp={
-                  creatureHp === undefined
+                  hpOf === undefined
                     ? null
                     : {
                         current: creatureHpNow[c.id] ?? 0,
-                        max: creatureHp.max[c.id] ?? 0,
+                        max: hpOf.max[c.id] ?? 0,
                       }
                 }
+                hpBar={single ? 'segments' : 'tiny'}
                 slot={slots.get(c.id) ?? null}
                 effects={state.creatureEffects[c.id] ?? []}
                 onToggle={() => {

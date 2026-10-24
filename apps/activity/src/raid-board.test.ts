@@ -2,6 +2,7 @@ import { zoneSizes } from '@creatures/engine';
 import { RULES, content } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { RowSlotView } from './raid-api';
+import { speciesName } from './game';
 import {
   awayNotes,
   boardAffectRow,
@@ -231,6 +232,12 @@ describe('the tile of a creature', () => {
     expect(model.ariaLabel).toBe('Middle, lane 1, Cindle level 4, you');
   });
 
+  it("prints the creature's own name: a nickname, not its species", () => {
+    const model = boardSlot(row({ ...theirs, name: 'Pickle Pot' }), 33, names);
+    expect(model.occupant?.name).toBe('Pickle Pot');
+    expect(model.ariaLabel).toBe('Middle, lane 1, Pickle Pot level 4, Jun');
+  });
+
   it('keeps a hostile owner name as plain text', () => {
     const model = boardSlot(row({ ...theirs, ownerName: '<img onerror=x>' }), 33, names);
     expect(model.occupant?.owner?.initial).toBe('<');
@@ -274,7 +281,8 @@ describe('the placement cues', () => {
   ): NonNullable<RowSlotView['creature']> => ({
     ownerName: owner,
     species,
-    name: species,
+    // The server's name: the nickname, else the species' display name.
+    name: speciesName(species),
     level: 4,
     mine: id !== undefined,
     auto: false,

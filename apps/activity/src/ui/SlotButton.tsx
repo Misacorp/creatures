@@ -19,7 +19,7 @@ export interface SlotModel {
   selected?: boolean;
   occupant: null | {
     species: string;
-    /** The name printed in the slot (a species name in the raid, the creature's name in the dungeon). */
+    /** The name printed in the slot: the creature's own name (its nickname, else its species). */
     name: string;
     level: number;
     /** The id of one of the player's own creatures: only those can be picked up and dragged. */
