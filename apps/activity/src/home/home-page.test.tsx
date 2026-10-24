@@ -99,14 +99,14 @@ describe('HomePage', () => {
       expect(board.getAttribute('data-tilt')).toBe(tilt);
       const lean = buildBoard(homeInput('busy', true), { ...DEFAULT_BOARD_SETTINGS, tilt });
       const raid = first(find(p.root, (el) => el.getAttribute('data-place') === 'raid'));
-      expect(raid.vars.get('--tilt')).toBe(`${String(lean.tilts['need:raid'])}deg`);
-      expect(raid.vars.has('--sway-delay')).toBe(true);
+      expect(raid.style.getPropertyValue('--tilt')).toBe(`${String(lean.tilts['need:raid'])}deg`);
+      expect(raid.style.getPropertyValue('--sway-delay')).not.toBe('');
     }
   });
 
   it('keeps every paper in its lean across a redraw: nothing jumps', () => {
     const p = draw('busy');
-    const before = byClass(p.root, 'hb-paper').map((el) => el.vars.get('--tilt'));
+    const before = byClass(p.root, 'hb-paper').map((el) => el.style.getPropertyValue('--tilt'));
     p.draw(
       <HomePage
         input={homeInput('busy', true)}
@@ -114,7 +114,9 @@ describe('HomePage', () => {
         onGo={() => undefined}
       />,
     );
-    expect(byClass(p.root, 'hb-paper').map((el) => el.vars.get('--tilt'))).toEqual(before);
+    expect(byClass(p.root, 'hb-paper').map((el) => el.style.getPropertyValue('--tilt'))).toEqual(
+      before,
+    );
   });
 
   it('shows no notice for quiet places by default, and a calm one-line notice each with idle shown', () => {

@@ -69,8 +69,13 @@ describe('the raid stage with HP', () => {
       'tiny-hp',
     );
     expect(bars).toHaveLength(3);
-    // The first took 80 of its 100: red. The others are untouched.
+    // The first took 80 of its 100: red, a fifth full. The others are untouched.
     expect(bars.map((b) => b.getAttribute('class'))).toEqual(['tiny-hp low', 'tiny-hp', 'tiny-hp']);
+    expect(bars.map((b) => b.style.getPropertyValue('--hp'))).toEqual([
+      '20.00%',
+      '100.00%',
+      '100.00%',
+    ]);
   });
 
   it('draws none before the fight (no HP in the row)', () => {

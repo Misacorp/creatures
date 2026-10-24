@@ -19,13 +19,14 @@ Read this file first. Design decisions live in `docs/design/` (start with `decis
 - `.claude/agents/researcher.md` (Sonnet): read-only web/docs research. No shell, no write access, by design.
 - `.claude/agents/helper.md` (Haiku): boilerplate, fixtures, content data entry, doc checks.
 - Agents that read untrusted web content must never also have shell access. Keep it that way.
+- **Agents that review UX, UI, art or game feel get `docs/design/review-brief.md`** (Misa's standing priorities) in their prompt. A suggestion that trades against one of those priorities goes to Misa as a choice; it is not applied as the new default.
 - **Parallel implementers work in their own worktree** (the Agent tool's `isolation: "worktree"`), not in the lead's working tree. The lead reviews each one's branch and merges it into the session branch. Two agents editing one tree break each other's runs and leave the lead's tree dirty.
 
 ## Pull requests
 
 - `main` is protected; every change goes through a PR. **Merging to `main` deploys to production.**
 - **Staging** (`creatures-staging.misacorp.dev`, wired to the dev Discord app) changes only when the `deploy` workflow is run by hand on a branch: GitHub, Actions, deploy, "Run workflow". Pushing a branch deploys nothing. A manual run always deploys staging, even on `main`. The game's footer shows the deployed branch and commit.
-- Agents may start that staging run (the GitHub tools' workflow trigger, workflow `deploy.yml`, `ref` = the branch) **only when Misa asks for it in that session**. Then wait for the run, check the footer's branch and commit, and tell Misa it is ready. With several sessions open, only the one Misa asked deploys.
+- Agents may start that staging run (the GitHub tools' workflow trigger, workflow `deploy.yml`, `ref` = the branch) **only when Misa asks for it in that session**. Then wait for it to be live (`node apps/worker/scripts/deployed.mjs --expect HEAD --wait 600`, the `staging` skill) and tell Misa it is ready. With several sessions open, only the one Misa asked deploys. To see what is on staging at any time, run the same script without `--expect`.
 - **Never push to `main` or merge a pull request.** Only Misa merges. GitHub's ruleset on `main` (PR required, no bypass) rejects direct pushes from everyone. Merges it cannot tell apart, because the GitHub connection acts as Misa's account, so `.claude/settings.json` denies the merge and auto-merge tools and `gh pr merge`.
 - **Before each staging deploy and before telling Misa a PR is ready,** merge the latest `main` into the branch and check the PR is mergeable. GitHub runs no CI on a PR with a merge conflict, so a conflicted PR looks quiet, not red. Resolve conflicts first (migrations: a released number is never reused or edited).
 - **Batch work into fewer PRs** (Misa's preference): agents may use several local branches, but merge finished work together locally and open one PR for Misa to merge into `main`. Large PRs are fine; each commit inside should still be one coherent change.
@@ -75,8 +76,9 @@ Use pnpm (version pinned in `package.json`). From the repo root:
 
 - `pnpm install --frozen-lockfile`
 - `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`
+- `pnpm check`: all of the above in order (about 15 minutes). `pnpm check:changed`: the same for the packages changed since `origin/main` and those that depend on them, for iterating (a change to the worker runs the worker's API contract tests too).
 
-Run all of these before proposing a PR. CI runs the same.
+Run `pnpm check` before proposing a PR. CI runs the same. Lint runs per package with ESLint's cache, so a second run takes seconds.
 
 ## Conventions
 

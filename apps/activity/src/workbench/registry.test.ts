@@ -33,8 +33,11 @@ function exportsOf(source: string): string[] {
   );
 }
 
-/** What `src/ui/*.tsx` exports that is not a component to draw (hooks and a props helper). */
-const NOT_COMPONENTS = new Set(['popupProps', 'useRevealSequence']);
+/**
+ * A component's name is PascalCase. Hooks, helpers (`popupProps`, `useRevealSequence`) and constants
+ * (`XP_SIZES`) are not components to draw, so a `src/ui` file may export them without a page.
+ */
+const isComponentName = (name: string): boolean => /^[A-Z][a-z0-9]/.test(name);
 
 describe('every component of src/ui has a workbench page', () => {
   const uiFiles = Object.keys(sources).filter((key) => key.startsWith('../ui/'));
@@ -48,7 +51,7 @@ describe('every component of src/ui has a workbench page', () => {
     const missing: string[] = [];
     for (const file of uiFiles) {
       for (const name of exportsOf(sources[file] ?? '')) {
-        if (NOT_COMPONENTS.has(name)) continue;
+        if (!isComponentName(name)) continue;
         if (!covered.has(name)) {
           missing.push(`add a workbench entry for ${name} (src/ui/${file.slice('../ui/'.length)})`);
         }
