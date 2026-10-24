@@ -1,7 +1,7 @@
 import { RULES } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
 import type { LoungeClient } from '../src/lounge-discord';
-import { LOUNGE_FLUSH_MS, LOUNGE_MAX_GAP_MS, loungeDay } from '../src/lounge-company';
+import { LOUNGE_MAX_GAP_MS, loungeDay } from '../src/lounge-company';
 import type { ActivityInstance } from '../src/schemas';
 import { runCore, type CoreContext } from './helpers';
 import { nextGuild, seedPlayer } from './raid-helpers';
@@ -117,7 +117,6 @@ describe('lounging with company, from Discord', () => {
       const ms = await together(ctx, 10);
       // Ten minutes together: paid without anyone asking, 1 XP per 2 minutes.
       const xp = Math.floor(ms / msPerXp);
-      expect(LOUNGE_FLUSH_MS).toBe(msPerXp);
       expect(stored(ctx)).toEqual({ [loungerOf(ctx, a)]: xp, [loungerOf(ctx, b)]: xp });
     });
   });
@@ -171,6 +170,47 @@ describe('lounging with company, from Discord', () => {
         const got = (await stateOf(ctx, who)).loungeXp[lounger] ?? 0;
         expect(got).toBeLessThanOrEqual(Math.floor(total / msPerXp));
         expect(got).toBeGreaterThanOrEqual(Math.floor(total / msPerXp) - 1);
+      },
+      { lounge: discord },
+    );
+  });
+
+  it('loses nothing when the object is evicted between every two checks (hibernation)', async () => {
+    // Until 2026-10-22 the time waited in memory for a whole XP (2 minutes) while checks run a minute
+    // apart, so an object that slept between checks paid nothing at all.
+    const guildId = nextGuild();
+    const discord = fakeDiscord(guildId);
+    let clock = 0;
+    let a: Seat | undefined;
+    let lounger = '';
+    await runCore(
+      guildId,
+      async (ctx) => {
+        ctx.clock.t = loungeDay(ctx.clock.t, TZ).start + 24 * 60 * MIN + MIN;
+        a = await arrive(ctx, discord, 1);
+        await arrive(ctx, discord, 2);
+        await check(ctx, 15 * SECOND);
+        lounger = loungerOf(ctx, a);
+        clock = ctx.clock.t;
+      },
+      { lounge: discord },
+    );
+    // Twenty checks a minute apart, each on a new core over the same storage: nothing survives in memory.
+    for (let i = 0; i < 20; i++) {
+      await runCore(
+        guildId,
+        async (ctx) => {
+          ctx.clock.t = clock;
+          await check(ctx);
+          clock = ctx.clock.t;
+        },
+        { lounge: discord },
+      );
+    }
+    await runCore(
+      guildId,
+      (ctx) => {
+        expect(stored(ctx)[lounger]).toBe(Math.floor((20 * MIN) / msPerXp));
       },
       { lounge: discord },
     );

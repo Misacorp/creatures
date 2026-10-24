@@ -32,7 +32,7 @@ import type { BossStrike } from './stage';
  * gimmicks the room's modifier gives the foe (Thorns' spikes), which the foe's own content does not
  * list; a gimmick the foe already has is not added twice.
  */
-function bossOrFoe(
+export function bossOrFoe(
   bossId: string,
   added: readonly Gimmick[] = [],
   played?: Readonly<Record<string, string>>,

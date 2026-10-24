@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { content, type BossDef } from '@creatures/game';
 import {
+  CLASSIC_PACE,
   INTRO_LIVE_MS,
+  PACING_SLOW,
+  SLOW_PACE,
   INTRO_REPLAY_MS,
   MAX_ROUND_MS,
   MIN_ROUND_MS,
@@ -12,6 +15,7 @@ import {
   bossWarnings,
   isBossAction,
   needsCreature,
+  paceOfPacing,
   planRound,
   planRounds,
   roundPlaybackMs,
@@ -138,6 +142,30 @@ describe('roundPlaybackMs', () => {
     const plan = planRound(events, { introMs: INTRO_REPLAY_MS, speed: 2 });
     expect(plan.introMs).toBe(500);
     expect(plan.beats.at(-2)?.windupMs).toBe(300);
+  });
+
+  it('plays the same round about three times slower at the slow pace (the live finale from 2026-10-22)', () => {
+    const events = plainRound(8);
+    // Intro 1.5 s (not slowed), the round start (600), 8 turns of 2 s, the boss attack's 1.5 s wind-up and a 4 s tail.
+    expect(roundPlaybackMs(events, { pace: SLOW_PACE })).toBe(
+      1_500 + 600 + 8 * 2_000 + 1_500 + 4_000,
+    );
+    const plan = planRound(events, { pace: SLOW_PACE });
+    expect(plan.introMs).toBe(SLOW_PACE.introMs);
+    expect(plan.beats.at(-2)?.windupMs).toBe(SLOW_PACE.windupMs);
+    // The slow pace has its own limits: never under 20 s, never over 45 s.
+    expect(roundPlaybackMs(plainRound(0), { pace: SLOW_PACE })).toBe(SLOW_PACE.minRoundMs);
+    const crowded = roundPlaybackMs(plainRound(60), { pace: SLOW_PACE });
+    expect(crowded).toBeLessThanOrEqual(SLOW_PACE.maxRoundMs);
+    expect(crowded).toBeGreaterThan(SLOW_PACE.maxRoundMs - 100);
+    // The default stays the classic pace (replays, the dungeon, older finales).
+    expect(roundPlaybackMs(events)).toBe(roundPlaybackMs(events, { pace: CLASSIC_PACE }));
+  });
+
+  it('maps a stored pacing version to its pace', () => {
+    expect(paceOfPacing(0)).toBe(CLASSIC_PACE);
+    expect(paceOfPacing(1)).toBe(CLASSIC_PACE);
+    expect(paceOfPacing(PACING_SLOW)).toBe(SLOW_PACE);
   });
 
   it('never goes under 6 s, even for an empty round', () => {

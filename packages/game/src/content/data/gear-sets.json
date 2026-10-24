@@ -55,7 +55,7 @@
     "tag": "guard",
     "flavor": "The night watch's own kit. It asks a Guard to stand a little wider.",
     "two": { "text": "Armor +4 pt", "lines": [{ "line": "armor", "value": 400 }] },
-    "three": { "text": "Cover reaches one more slot in its row.", "effect": "coverReach" }
+    "three": { "text": "Protects one more creature on each side of it.", "effect": "guardReach" }
   },
   {
     "id": "hearth-helpers",

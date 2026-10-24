@@ -51,11 +51,16 @@ describe('the effect icons', () => {
     expect(text).toContain('2 turns');
   });
 
-  it('draws only glyph and stacks on a creature, and nothing without effects', () => {
+  it('draws only glyph and a bare stack count on a creature, and nothing without effects', () => {
     page = createPage();
     page.draw(<EffectIcons compact effects={[{ effect: 'mired', stacks: 4, turnsLeft: 2 }]} />);
-    expect(visibleText(page.root)).toContain('×4');
+    expect(visibleText(page.root)).toContain('4');
+    expect(visibleText(page.root)).not.toContain('×');
     expect(visibleText(page.root)).not.toContain('turns');
+    page.unmount();
+    page = createPage();
+    page.draw(<EffectIcons compact effects={[{ effect: 'mired', stacks: 1, turnsLeft: 2 }]} />);
+    expect(visibleText(page.root)).not.toMatch(/\d/);
     page.unmount();
     page = createPage();
     page.draw(<EffectIcons effects={[]} />);
@@ -86,7 +91,7 @@ describe('the stage shows effects', () => {
     },
   ];
 
-  it('puts the boss’s effects beside it and a creature’s on it', () => {
+  it('puts the boss’s effects in the column at its right and a creature’s on it', () => {
     page = createPage();
     page.draw(
       <Stage
@@ -102,7 +107,7 @@ describe('the stage shows effects', () => {
         anim={null}
       />,
     );
-    const boss = byClass(page.root, 'stage-boss-art')[0];
+    const boss = byClass(page.root, 'boss-effects')[0];
     expect(boss && byClass(boss, 'effect-chip')).toHaveLength(1);
     expect(byClass(page.root, 'effect-chip')).toHaveLength(2);
     expect(byClass(page.root, 'compact')).toHaveLength(1);

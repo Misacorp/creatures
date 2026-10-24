@@ -27,6 +27,8 @@ export const ROW: BoardRow = { zone: 'front', slots: ROW_PLACES.map((_, index) =
 interface RowCreature {
   id: string;
   species: string;
+  /** A Guard's reach with its gear (how many creatures it protects on each side); Guards only. */
+  guardReach?: { left: number; right: number };
 }
 
 /** What a screen reader says for an empty place: "Left slot, empty" (then what a tap does, if anything). */
@@ -89,7 +91,7 @@ export function useSingleRowBoard<C extends RowCreature>(options: Options<C>) {
   const affectRowOf = (keys: readonly (string | null)[]) =>
     keys.map((id) => {
       const c = id === null ? undefined : byId.get(id);
-      return c === undefined ? null : affectSlotOf(getSpecies(c.species));
+      return c === undefined ? null : affectSlotOf(getSpecies(c.species), undefined, c.guardReach);
     });
   const mode = { row: 'dungeon' } as const;
 

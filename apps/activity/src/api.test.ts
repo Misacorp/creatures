@@ -6,7 +6,9 @@ import {
   createSession,
   evolveCreature,
   fetchConfig,
+  fetchFinaleTicket,
   fetchRoom,
+  finaleSocketUrl,
   loungeSocketUrl,
   parseLiveMessage,
   jsonRequest,
@@ -402,6 +404,69 @@ describe('the public config', () => {
     expect((await fetchConfig()).loungeLive).toBe(false);
     vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, loungeLive: 'on' })));
     expect((await fetchConfig()).loungeLive).toBe(false);
+  });
+});
+
+describe('the finale live flag', () => {
+  it('reads finaleLive: only an explicit true counts, apart from the lounge flag', async () => {
+    const base = {
+      discordClientId: '1',
+      environment: 'local',
+      version: 'dev',
+      leetSource: 'mock',
+    };
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, finaleLive: true })));
+    const on = await fetchConfig();
+    expect(on.finaleLive).toBe(true);
+    expect(on.loungeLive).toBe(false);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json(base)));
+    expect((await fetchConfig()).finaleLive).toBe(false);
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ ...base, finaleLive: 'on' })));
+    expect((await fetchConfig()).finaleLive).toBe(false);
+  });
+});
+
+describe('the finale live socket messages', () => {
+  const snapshot = { status: 'none', serverNow: 9 };
+
+  it('reads a finale push and hands the snapshot on for its own check', () => {
+    expect(parseLiveMessage(JSON.stringify({ v: 1, type: 'finale', snapshot }))).toEqual({
+      type: 'finale',
+      snapshot,
+    });
+  });
+
+  it('allows a big snapshot (up to 1 MB, where hello and resident stop at 64 KB)', () => {
+    const big = { ...snapshot, events: 'x'.repeat(200_000) };
+    expect(
+      parseLiveMessage(JSON.stringify({ v: 1, type: 'finale', snapshot: big })),
+    ).not.toBeNull();
+    const huge = { ...snapshot, events: 'x'.repeat(1_100_000) };
+    expect(parseLiveMessage(JSON.stringify({ v: 1, type: 'finale', snapshot: huge }))).toBeNull();
+  });
+
+  it.each([
+    JSON.stringify({ v: 1, type: 'finale' }),
+    JSON.stringify({ v: 1, type: 'finale', snapshot: 'x' }),
+    JSON.stringify({ v: 1, type: 'finale', snapshot: [] }),
+    JSON.stringify({ v: 2, type: 'finale', snapshot: {} }),
+  ])('ignores %#', (text) => {
+    expect(parseLiveMessage(text)).toBeNull();
+  });
+
+  it('builds the finale address and asks for a ticket naming the party', async () => {
+    expect(finaleSocketUrl('t', { protocol: 'https:', host: 'x.discordsays.com' })).toBe(
+      'wss://x.discordsays.com/api/finale/live?ticket=t',
+    );
+    let seen: { url: string; body: unknown } | null = null;
+    vi.stubGlobal('fetch', (url: string, init: RequestInit) => {
+      seen = { url, body: JSON.parse(init.body as string) };
+      return Promise.resolve(Response.json({ ticket: 'abc' }));
+    });
+    expect(await fetchFinaleTicket('2027-W02', 3)).toBe('abc');
+    expect(seen).toEqual({ url: '/api/finale/ticket', body: { week: '2027-W02', party: 3 } });
+    vi.stubGlobal('fetch', () => Promise.resolve(Response.json({ nope: 1 })));
+    await expect(fetchFinaleTicket('2027-W02', 3)).rejects.toThrow();
   });
 });
 

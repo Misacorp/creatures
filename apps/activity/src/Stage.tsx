@@ -3,12 +3,13 @@ import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import {
   laneOfIndex,
+  paceOfPacing,
   type EventNames,
   type FightBoard,
   type FightEvent,
   type Zone,
 } from '@creatures/engine';
-import { bossArt, elementClass, markPalette } from './art';
+import { bossArt, elementClass } from './art';
 import { cssVars } from './css-vars';
 import { foeInfoOf, foeElement } from './foe-info';
 import { GlossaryTag } from './Glossary';
@@ -16,7 +17,7 @@ import { gimmickGlyph, glyphOrUnknown } from './glyphs';
 import { useElementWidth, usePrefersReducedMotion } from './hooks';
 import { abilityName, abilityTitle } from './live';
 import { scrollToLanes } from './lane-scroll';
-import type { FightGuardRules, RaidPhaseId, ReplayRowEntry } from './raid-api';
+import type { RaidPhaseId, ReplayRowEntry } from './raid-api';
 import { boardRows, laneStates, ownLaneSpan } from './raid-board';
 import { stateAt } from './replay';
 import { enrageLine, retreatLine } from './raid-text';
@@ -26,12 +27,10 @@ import {
   cuesForEvents,
   creatureHpAt,
   enragedAt,
-  estimatedMaxHp,
   creatureAtSlot,
   groupByZone,
   pendingChargesAt,
   retreatedAt,
-  showsNumber,
   stageStateAt,
   strikeRows,
   type AbilityUse,
@@ -41,23 +40,19 @@ import { compactPair } from './number-format';
 import { ElementChip } from './sprites/ElementChip';
 import { shortEffectMs, type FxItem, type IntroView } from './stage-fx';
 import { roundLabel } from './stage-rounds';
-import { forecastNextRound, strikeLabel, type Wording } from './telegraph';
+import { bossOrFoe, forecastNextRound, type Wording } from './telegraph';
+import { moveTrack } from './move-track';
+import { MoveTrack, type TrackLook } from './stage/MoveTrack';
+import { Barrier } from './stage/Barrier';
+import { barrierLookOf } from './move-fx';
 import { Popover, popupProps } from './ui/Popover';
 import { SegmentBar } from './ui/SegmentBar';
 import { StageHead, type StageModifier } from './ui/StageHead';
 import { ToggleButton } from './ui/ToggleButton';
 import { Sprite } from './sprites/Sprite';
 import { elementIcon } from './sprites/element-icons';
-import {
-  Beam,
-  Bursts,
-  Floats,
-  RoundIntro,
-  beamsOf,
-  fxRef,
-  nameOf,
-  strikeGlyph,
-} from './stage/StageFx';
+import { Bursts, Floats, RoundIntro, fxRef, nameOf } from './stage/StageFx';
+import { BossFx } from './stage/BossFx';
 import { EffectIcons } from './ui/EffectIcons';
 import { AbilityBadge, CreatureTags, FoeFace, StageUnit } from './stage/StageUnit';
 import { useLiveStage, type Anim } from './use-live-stage';
@@ -120,8 +115,6 @@ interface StageProps {
   rounds: number | null;
   /** The row, left to right. */
   row: readonly ReplayRowEntry[];
-  /** The Guard numbers of the rules the fight was played with; absent: the content's old Guard. */
-  rules?: FightGuardRules;
   /** Where the row stands on the board (the fight's own); absent: the dense row. */
   board?: FightBoard;
   /** The lobby's preview: no round yet, so the head says to get ready instead of "Round 1". */
@@ -164,6 +157,8 @@ interface StageProps {
   phase?: RaidPhaseId;
   /** Gimmicks the foe has only in this room (the dungeon's modifier), so the forecast names them too. */
   addedGimmicks?: readonly Gimmick[];
+  /** How the boss's move track looks (the design rounds' looks; default `rows`). */
+  trackLook?: TrackLook;
   /**
    * Something drawn over the whole stage, above the round intro (the dungeon's room banner). It sits
    * inside the stage's own box, so the stage keeps its size while it shows.
@@ -195,7 +190,6 @@ export function Stage({
   hpStart,
   rounds,
   row,
-  rules,
   board,
   lobby,
   mineIds,
@@ -211,6 +205,7 @@ export function Stage({
   modifiers,
   phase,
   addedGimmicks,
+  trackLook,
   overlay,
   abilities,
 }: StageProps) {
@@ -245,20 +240,8 @@ export function Stage({
       : cuesForEvents(events, anim.from, Math.min(anim.to, index), rowIds, boss.id, board);
   const creatureHpNow =
     creatureHp === undefined ? {} : creatureHpAt(events, index, creatureHp.start);
-  // A crowded action (more than eight creatures hit) shows only its big numbers, judged by each
-  // creature's max HP: the dungeon's own, or an estimate from species and level in the raid.
-  const maxHpOf = (id: string): number | null => {
-    const known = creatureHp?.max[id];
-    if (known !== undefined) return known;
-    const entry = row.find((c) => c.id === id);
-    return entry === undefined ? null : estimatedMaxHp(entry, rules);
-  };
-  const fx = allFx.filter(
-    (item) =>
-      item.cue.kind !== 'float' ||
-      item.cue.target === null ||
-      showsNumber(item.cue, maxHpOf(item.cue.target)),
-  );
+  // Every number shows: when a move hits a whole row, they may overlap (Misa, 2026-10-22).
+  const fx = allFx;
   // Charged attacks that are announced and have not landed: their victims and rows stay marked.
   const pending = pendingChargesAt(events, index);
   const chargedIds = new Set(pending.flatMap((c) => c.marks));
@@ -294,8 +277,21 @@ export function Stage({
   const bannerItem = fx.filter((i) => i.cue.kind === 'banner').at(-1);
   // The boss leans in while it winds up, and the label of its newest hit shows in the boss's line.
   const windupItem = fx.find((i) => i.cue.kind === 'windup');
-  const strikeItems = fx.filter((i) => i.cue.kind === 'strike');
-  const strikeItem = strikeItems.at(-1);
+  // The move track: the boss's special moves in the boxes of the rounds they come in (move-track.ts).
+  const trackBoss = bossOrFoe(boss.id, addedGimmicks ?? [], names.gimmicks);
+  // Nothing is coming once the fight is over: the foe is down, every creature is, or the last round ended.
+  const lastEvent = state.index > 0 ? events[state.index - 1] : undefined;
+  const over =
+    state.bossHp <= 0 ||
+    (row.length > 0 && state.knockedOut.length >= row.length) ||
+    (rounds !== undefined &&
+      rounds !== null &&
+      state.round >= rounds &&
+      lastEvent?.t === 'round_end');
+  const track =
+    over || trackBoss === undefined || trackBoss.gimmicks.length === 0
+      ? null
+      : moveTrack(trackBoss, state.round, rounds ?? trackBoss.finaleRounds, names.gimmicks ?? {});
   // One round ahead: what the boss will do next round, from its content and the round number.
   const forecast = forecastNextRound(
     boss.id,
@@ -372,8 +368,6 @@ export function Stage({
   const markName = state.mark === null ? null : nameOf(names.marks, state.mark);
   const markId = content.reactions.find((r) => r.markElement === state.mark)?.markId;
   const markIcon = state.mark === null ? undefined : elementIcon(state.mark);
-  const markColours = state.mark === null ? undefined : markPalette(state.mark);
-  const markGlyph = glyphOrUnknown('mark');
   const shieldGlyph = glyphOrUnknown('shield');
   const abilityGlyph = glyphOrUnknown('ability');
   const zoneNodes = groups.map(({ zone, items }) => {
@@ -396,7 +390,11 @@ export function Stage({
         class={`stage-zone zone-${zone}${shaking.has(zone) ? ' shake' : ''}${warnedZone ? ' warned' : ''}${zoneCharged ? ' charged' : ''}`}
         role="group"
         aria-label={single ? zoneName : `${zoneName} zone`}
-        {...(layoutOf === null ? {} : { ref: cssVars(layoutVars(layoutOf, ROW_LAYOUT)) })}
+        // `--art`: a creature sprite's height, so its effect icons sit on the sprite, not on its name.
+        ref={cssVars({
+          ...(layoutOf === null ? {} : layoutVars(layoutOf, ROW_LAYOUT)),
+          '--art': `${String(16 * scale)}px`,
+        })}
       >
         {single && warnedZone && (
           <span class="zone-warn" aria-hidden="true">
@@ -560,45 +558,63 @@ export function Stage({
       </StageHead>
 
       <div class="stage-boss">
-        <div
-          ref={bossRef}
-          class={`stage-boss-art${hit.has(null) ? ' hit' : ''}${windupItem === undefined ? '' : ' windup'}${retreated ? ' retreated' : ''}${enraged ? ' enraged' : ''}`}
-        >
-          <FoeFace info={foe}>
-            <Sprite sprite={art.sprite} scale={art.scale} />
-          </FoeFace>
-          {state.mark !== null && (
-            <span class={`stage-mark ${elementClass(state.mark)}${markCue ? ' pop' : ''}`}>
-              {/* The boss is not a button, so the mark can be a tag without taking a tap from anything. */}
-              <GlossaryTag
-                entry={markId === undefined ? '' : GLOSSARY_IDS.mark(markId)}
-                look="chip"
-                class="mark-tag"
-                label={`Marked: ${markName ?? state.mark}. What does this mean?`}
+        <div class="stage-boss-row">
+          {track !== null && (
+            <MoveTrack
+              track={track}
+              round={state.round}
+              {...(trackLook === undefined ? {} : { look: trackLook })}
+            />
+          )}
+          <div
+            ref={bossRef}
+            class={`stage-boss-art${hit.has(null) ? ' hit' : ''}${windupItem === undefined ? '' : ' windup'}${retreated ? ' retreated' : ''}${enraged ? ' enraged' : ''}`}
+          >
+            <FoeFace info={foe}>
+              <Sprite sprite={art.sprite} scale={art.scale} />
+            </FoeFace>
+            {state.barrier !== null && (
+              <Barrier
+                key={`${String(state.barrier.round)}-${state.barrier.broken === null ? 'up' : 'broken'}`}
+                barrier={state.barrier}
+                look={barrierLookOf(
+                  state.barrier.gimmick,
+                  foe.element === 'unknown' ? null : foe.element,
+                )}
+              />
+            )}
+            {state.mark !== null && (
+              <span class={`stage-mark ${elementClass(state.mark)}${markCue ? ' pop' : ''}`}>
+                {/* The boss is not a button, so the mark can be a tag without taking a tap from anything. */}
+                <GlossaryTag
+                  entry={markId === undefined ? '' : GLOSSARY_IDS.mark(markId)}
+                  look="chip"
+                  class="mark-tag"
+                  label={`Marked: ${markName ?? state.mark}. What does this mean?`}
+                >
+                  {/* The element's icon and the mark's name say it: no "marked" glyph (Misa, 2026-10-24). */}
+                  {markIcon !== undefined && <Sprite sprite={markIcon} scale={2} />}
+                  <span class="stage-mark-name">{markName}</span>
+                </GlossaryTag>
+              </span>
+            )}
+            <Floats fx={fx} target={null} />
+            <Bursts fx={fx} target={null} names={names} />
+            {bannerItem?.cue.kind === 'banner' && (
+              <span
+                key={`banner-${String(bannerItem.cue.i)}`}
+                class="stage-callout banner"
+                aria-hidden="true"
+                ref={fxRef(bannerItem)}
               >
-                <Sprite
-                  sprite={markGlyph}
-                  scale={3}
-                  {...(markColours === undefined ? {} : { palette: markColours })}
-                />
-                {markIcon !== undefined && <Sprite sprite={markIcon} scale={2} />}
-                <span class="stage-mark-name">{markName}</span>
-              </GlossaryTag>
-            </span>
-          )}
-          <EffectIcons effects={state.bossEffects} names={names} />
-          <Floats fx={fx} target={null} />
-          <Bursts fx={fx} target={null} names={names} />
-          {bannerItem?.cue.kind === 'banner' && (
-            <span
-              key={`banner-${String(bannerItem.cue.i)}`}
-              class="stage-callout banner"
-              aria-hidden="true"
-              ref={fxRef(bannerItem)}
-            >
-              <span class="pix">{bannerItem.cue.text}</span>
-            </span>
-          )}
+                <span class="pix">{bannerItem.cue.text}</span>
+              </span>
+            )}
+          </div>
+          <div class="boss-effects">
+            <EffectIcons effects={state.bossEffects} names={names} only="buff" />
+            <EffectIcons effects={state.bossEffects} names={names} only="debuff" />
+          </div>
         </div>
         <div class="stage-foe-line">
           <p class="stage-foe-name pix">{boss.name}</p>
@@ -628,31 +644,6 @@ export function Stage({
             <span>{retreatLine(boss.id, boss.name, phase, boss.retreat)}</span>
           </p>
         )}
-        <div class={`stage-line${strikeItem === undefined ? '' : ' has-strike'}`}>
-          {forecast !== null && (
-            <p class="forecast pix" role="note" aria-label={forecast.text}>
-              <Sprite sprite={glyphOrUnknown('warning')} scale={2} />
-              <span class="forecast-lines" aria-hidden="true">
-                {forecast.lines.map((line, k) => (
-                  <span key={k} class="forecast-line">
-                    {line}
-                  </span>
-                ))}
-              </span>
-            </p>
-          )}
-          {strikeItem?.cue.kind === 'strike' && (
-            <p
-              key={`strike-${String(strikeItem.cue.i)}`}
-              class={`strike-label pix act-${strikeItem.cue.strike.action}`}
-              aria-hidden="true"
-              ref={fxRef(strikeItem)}
-            >
-              <Sprite sprite={strikeGlyph(strikeItem.cue.strike)} scale={2} />
-              <span>{strikeLabel(strikeItem.cue.strike, names, wording).text}</span>
-            </p>
-          )}
-        </div>
       </div>
 
       <div class="stage-abilities-slot">
@@ -795,21 +786,27 @@ export function Stage({
         </Popover>
       )}
       <div class="stage-strikes" ref={layerRef} aria-hidden="true">
-        {strikeItems.map((item) => {
+        {fx.map((item) => {
           const { cue } = item;
-          if (cue.kind !== 'strike' || item.ms === 0) return null;
-          return beamsOf(cue.strike).map((beam) => (
-            <Beam
-              key={`beam-${String(cue.i)}-${beam.from ?? 'boss'}-${beam.to}`}
-              layer={layerRef}
-              from={() =>
-                beam.from === null ? bossRef.current : (boxes.current.get(beam.from) ?? null)
-              }
-              to={() => boxes.current.get(beam.to) ?? null}
+          if ((cue.kind !== 'windup' && cue.kind !== 'strike') || item.ms === 0) return null;
+          return (
+            <BossFx
+              key={`${cue.kind}-${String(cue.i)}`}
+              phase={cue.kind === 'windup' ? 'windup' : 'impact'}
+              strike={cue.strike}
+              seed={cue.i}
               ms={item.ms}
-              between={beam.from !== null}
+              element={foe.element === 'unknown' ? null : foe.element}
+              layer={layerRef}
+              boss={() => bossRef.current}
+              unit={(id) => boxes.current.get(id) ?? null}
+              zone={(z) =>
+                layerRef.current?.parentElement?.querySelector<HTMLElement>(
+                  `.stage-zone.zone-${z}`,
+                ) ?? null
+              }
             />
-          ));
+          );
         })}
       </div>
       {intro !== null && <RoundIntro intro={intro} />}
@@ -824,9 +821,13 @@ export function Stage({
  * `useLiveStage`). `hold` keeps it waiting while the countdown's "FIGHT!" is on screen.
  */
 export function LiveStage(
-  props: Omit<StageProps, 'index' | 'anim' | 'fx' | 'intro'> & { hold?: boolean },
+  props: Omit<StageProps, 'index' | 'anim' | 'fx' | 'intro'> & {
+    hold?: boolean;
+    /** The fight's pacing version from the server (`paceOfPacing`). */
+    pacing: number;
+  },
 ) {
-  const { hold, ...rest } = props;
+  const { hold, pacing, ...rest } = props;
   const reduced = usePrefersReducedMotion();
   const view = useLiveStage(
     props.events,
@@ -836,6 +837,7 @@ export function LiveStage(
     reduced,
     hold === true,
     props.board,
+    paceOfPacing(pacing),
   );
   return <Stage {...rest} index={view.index} anim={view.anim} fx={view.fx} intro={view.intro} />;
 }

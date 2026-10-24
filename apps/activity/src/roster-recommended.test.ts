@@ -167,7 +167,7 @@ describe('the dungeon picker options', () => {
     creature('support', 'ashmole', 5, 10),
   ];
 
-  it('says "in this slot" for the dungeon order, and a Guard covers its neighbours', () => {
+  it('says "in this slot" for the dungeon order, and a Guard protects its neighbours', () => {
     // Cindle (Ember) marks and acts first on the left; Splashet (Tide) sets off Steam in slot 1.
     const options = dungeonPickerOptions({
       creatures: owned,
@@ -176,7 +176,7 @@ describe('the dungeon picker options', () => {
       showEffects: true,
     });
     expect(options.find((o) => o.id === 'splash')?.effect).toBe('Steam with Cindle');
-    expect(options.find((o) => o.id === 'guard')?.effect).toBe('Covers its neighbours');
+    expect(options.find((o) => o.id === 'guard')?.effect).toBe('Protects 1 neighbour');
     expect(options.find((o) => o.id === 'support')?.effect).toBe('Buffs 1 neighbour');
   });
 

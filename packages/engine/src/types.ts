@@ -158,8 +158,19 @@ export interface SlotMods {
   healOnReactionBp?: number;
   /** 1: after it sets off a reaction the boss keeps the creature's own mark, so a chain can follow (Ridge Copper). */
   chainMark?: 0 | 1;
-  /** 1: a Guard's cover also reaches the creature one slot further out in its row (Warden's Watch). */
+  /**
+   * 1: a Guard's cover also reaches the creature one slot further out in its row (the Warden's Watch set
+   * before the reach rule). Read only in a fight without `rules.guardRule: 'reach'`; the reach rule uses
+   * `reachLeft` and `reachRight`.
+   */
   coverReach?: 0 | 1;
+  /**
+   * A Guard's reach (`FightRules.guardRule: 'reach'`): the change to how many creatures it protects on its
+   * left (`reachLeft`) and on its right (`reachRight`), on top of the base of 1 each side, whole numbers
+   * from -3 to 3 (a side stays between 0 and 3, `guardReachOf`). Only a Guard's sheet is read. Absent: no change.
+   */
+  reachLeft?: number;
+  reachRight?: number;
   /** 1: a Support's boost also lands on the creature two slots away (Hearth Helpers). */
   boostReach?: 0 | 1;
   /** 1: the first mark it leaves each fight cannot be replaced by another creature's hit (First Footprints). */
@@ -393,6 +404,13 @@ export interface FightRules {
    * no dodge die is drawn), so a stored fight replays as it was.
    */
   dodge?: DodgeRules;
+  /**
+   * `reach`: a Guard protects the creatures within its reach in its row (`SlotMods.reachLeft`, `reachRight`,
+   * 1 each side by default) from aimed hits and area hits, and the boss's plain attack aims at the
+   * front-most creature. Absent: a Guard covers its whole zone (the dungeon: the creatures beside it) and
+   * the plain attack goes for a Guard of the front-most zone, so a stored fight replays as it was.
+   */
+  guardRule?: 'reach';
 }
 
 /** The numbers of dodge stored with a fight (`RULES.combat.dodge` without its `enabled` switch). */

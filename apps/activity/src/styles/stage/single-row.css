@@ -65,10 +65,6 @@
   padding-bottom: 0.75rem;
 }
 
-.stage.single .stage-line {
-  min-height: 1.5rem;
-}
-
 .stage.single .stage-abilities-slot {
   height: 0.75rem;
 }
@@ -77,13 +73,7 @@
   padding-top: 0.25rem;
 }
 
-/* The creature acting now: a gold frame, and its ordinal ("1st", "2nd", "3rd") lit under it. */
+/* The creature acting now: a gold frame. */
 .stage-unit.acting .unit-art {
   outline: 2px solid var(--gold);
-}
-
-.stage-unit.acting .unit-slot {
-  padding: 0 0.25rem;
-  background: var(--gold);
-  color: var(--ink);
 }

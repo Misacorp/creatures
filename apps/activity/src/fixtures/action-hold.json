@@ -6,6 +6,7 @@
   "you": "m2",
   "startsAt": 1800208800000,
   "roundMs": 10000,
+  "pacing": 0,
   "rounds": 12,
   "round": 2,
   "roundStarts": [1800208800000, 1800208810000],

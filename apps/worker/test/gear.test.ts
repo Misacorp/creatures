@@ -674,9 +674,10 @@ describe('equip and the wear rule', () => {
           expect(view?.needs.role).toBe('guard');
           expect(view?.equippedOn).toBe(sproutle);
         }
-        // Wearing all three pieces, the Guard has the set's Armor bonus and its cover reach in a fight.
+        // Wearing all three pieces, the Guard has the set's Armor bonus and its reach in a fight.
         const worn = loadCreatures(ctx.sql, p.id).find((c) => c.id === sproutle);
-        expect(worn?.mods?.coverReach).toBe(1);
+        expect(worn?.mods?.reachLeft).toBe(1);
+        expect(worn?.mods?.reachRight).toBe(1);
         expect(worn?.mods?.armorBp).toBeGreaterThanOrEqual(400);
       },
       opts(),

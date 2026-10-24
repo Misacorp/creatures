@@ -207,6 +207,10 @@
         "spd": 23
       },
       "dodgeBp": 0,
+      "guardReach": {
+        "left": 1,
+        "right": 1
+      },
       "gear": [],
       "busy": null,
       "ability": {
@@ -302,6 +306,10 @@
         "spd": 16
       },
       "dodgeBp": 0,
+      "guardReach": {
+        "left": 1,
+        "right": 1
+      },
       "gear": [],
       "busy": null,
       "ability": {

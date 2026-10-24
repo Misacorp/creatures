@@ -31,7 +31,7 @@ Every move is shown before it happens: on the boss card before the fight, in "Ne
 
 **Two role changes make this work** (the role list stays the same):
 
-- **Guard:** keeps taking hits aimed at one creature, and now creatures standing right beside a Guard take 40% less from area attacks (sweeps, shells, splash). A Lance stops at it. A Guard protects itself and others.
+- **Guard:** keeps taking hits aimed at one creature, and now creatures standing right beside a Guard take 40% less from area attacks (sweeps, shells, splash). A Lance stops at it. A Guard protects itself and others. (Since 2026-10-22 "right beside" is the Guard's reach, one each side unless its gear says more, and aimed hits are taken only for creatures in reach.)
 - **Support:** one role, with an effect that follows its element, on top of the +15% next-hit buff every Support keeps. **Ember** stokes the buff (+25%), **Spark** overcharges reactions its neighbours cash in (+15% bonus damage), **Tide** heals its neighbours 4% a round and clears their silence, **Grove** heals them 6% a round. Today only Ember (Ashmole, Magmole), Spark (Aurorix) and Tide (Lanternfin, Festival-only) have a Support species; **Grove has none**.
 
 **What the simulator says** (section 4):
@@ -58,6 +58,8 @@ The words are the ones to use in the glossary and the UI. Every number was run i
 - **Aimed hit.** One target: the plain attack, a strike on the strongest, the first hit of a Slam or a Chain. A Guard can take it for the target.
 - **Area hit.** Every other hit: sweeps, shells, splash, the jumps of a chain, a lance, a pincer. A Guard cannot take it, but covers its neighbours.
 - **Direct hit.** Reflected damage (Backdraft). Nothing intercepts or covers it, as today.
+
+**Reach (2026-10-22).** Rule 2 below and the cover of rule 3 now use one **reach**: a Guard protects the creature directly to its left and directly to its right in its row (never across a zone edge; an empty board slot breaks it), more or fewer with gear, talents and a set (up to 3 each side, 0 at least). The plain attack no longer goes for a Guard of the front-most zone: it aims at the front-most creature, and a Guard steps in only if that creature is in its reach. A Lance still stops at a Guard in its lane. A fight stores `rules.guardRule: 'reach'`; older fights keep the whole-zone rule. See `combat-rules.md` 4.2 and 4.3 and the 2026-10-22 decision. The text below is the v2 design as first written.
 
 **Guard (v2).** Four short rules, one idea (the Guard stands in front of its friends):
 

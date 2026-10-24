@@ -89,15 +89,6 @@
 }
 
 /* A line between two creatures: a chain's jump or a lance's lane, thinner than the boss's own beam. */
-.strike-beam.between {
-  height: 4px;
-  margin-top: -2px;
-  background: var(--bone);
-  box-shadow:
-    0 0 0 2px var(--ink),
-    0 0 8px 2px var(--bad);
-}
-
 /* Numbers: a heal is green, a cleanse is small and quiet, "Immune!" is big and plain. */
 .float-heal {
   color: var(--good);
@@ -111,18 +102,6 @@
 .float-immune {
   color: var(--bone);
   font-size: 1.5rem;
-}
-
-/* The forecast says at most two clauses, one to a line. */
-.forecast-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 0.0625rem;
-  min-width: 0;
-}
-
-.stage-line {
-  min-height: 2.75rem;
 }
 
 /* The boss has enraged: a red banner with the reason in one line, for as long as the fight lasts. */

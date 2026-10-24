@@ -18,7 +18,7 @@ import { isWornGear } from './gear-parse';
 import { isCreatureTalents, isPendingCatch } from './talent-parse';
 import type { CreatureTalents, PendingCatch } from './talent-types';
 import type { CreatureGearFields, WornGear } from './gear-types';
-import { isArrayOf, isInt, isNullableInt, isRecord, isStr } from './parse-core';
+import { isArrayOf, isGuardReach, isInt, isNullableInt, isRecord, isStr } from './parse-core';
 import { createReauth, type Reauth } from './reauth';
 import { ROOM_SPOTS } from './sprites/room-art';
 
@@ -32,8 +32,10 @@ export interface AppConfig {
   leetSource: string;
   /** True only on staging, where the server has the dev tools on (the debug panel loads). */
   devTools: boolean;
-  /** True when the server offers the lounge's live socket (`LOUNGE_LIVE`; off in production for now). */
+  /** True when the server offers the lounge's live socket (`LOUNGE_LIVE`). */
   loungeLive: boolean;
+  /** True when the server offers the finale's live socket (`FINALE_LIVE`; off in production for now). */
+  finaleLive: boolean;
 }
 
 interface Health {
@@ -197,6 +199,7 @@ export async function fetchConfig(): Promise<AppConfig> {
     leetSource: data['leetSource'],
     devTools: data['devTools'] === true,
     loungeLive: data['loungeLive'] === true,
+    finaleLive: data['finaleLive'] === true,
   };
 }
 
@@ -529,6 +532,7 @@ function isCreature(value: unknown): value is Creature {
   return (
     isStats(value['statsWithGear']) &&
     isInt(value['dodgeBp']) &&
+    (value['guardReach'] === undefined || isGuardReach(value['guardReach'])) &&
     isCreatureGear(value['gear']) &&
     isBusy(value['busy']) &&
     isStr(value['id']) &&
@@ -828,13 +832,24 @@ export async function fetchRoom(userIds: readonly string[]): Promise<RoomResiden
   return parseRoom(await apiFetch('/api/room', jsonRequest('POST', { userIds })));
 }
 
-/** A message the lounge's live socket pushes (`docs/design/lounge-live.md`). */
+/**
+ * A message a live socket pushes (`docs/design/lounge-live.md`, `docs/design/finale-live.md`). The server
+ * only sends `resident` to lounge sockets and `finale` to finale sockets. A finale `snapshot` is passed on
+ * unchecked: the finale code checks its shape with `parseLiveSnapshot` (`live-api.ts`).
+ */
 export type LiveMessage =
-  { type: 'hello'; serverNow: number } | { type: 'resident'; resident: RoomResident };
+  | { type: 'hello'; serverNow: number }
+  | { type: 'resident'; resident: RoomResident }
+  | { type: 'finale'; snapshot: unknown };
+
+/** The most a pushed frame may be: a finale snapshot with every event of a long fight is the big one. */
+const MAX_FRAME_CHARS = 1024 * 1024;
+/** Everything but a finale snapshot is small. */
+const MAX_SMALL_CHARS = 64 * 1024;
 
 /** Reads one pushed text frame: null for anything that is not a message of version 1 we know. */
 export function parseLiveMessage(text: string): LiveMessage | null {
-  if (text.length > 64 * 1024) return null;
+  if (text.length > MAX_FRAME_CHARS) return null;
   let data: unknown;
   try {
     data = JSON.parse(text);
@@ -843,9 +858,13 @@ export function parseLiveMessage(text: string): LiveMessage | null {
   }
   if (!isRecord(data) || data['v'] !== 1) return null;
   if (data['type'] === 'hello') {
+    if (text.length > MAX_SMALL_CHARS) return null;
     return isInt(data['serverNow']) ? { type: 'hello', serverNow: data['serverNow'] } : null;
   }
-  if (data['type'] === 'resident') {
+  if (data['type'] === 'finale') {
+    return isRecord(data['snapshot']) ? { type: 'finale', snapshot: data['snapshot'] } : null;
+  }
+  if (data['type'] === 'resident' && text.length <= MAX_SMALL_CHARS) {
     try {
       const [resident] = parseRoom({ residents: [data['resident']] });
       return resident === undefined ? null : { type: 'resident', resident };
@@ -856,7 +875,7 @@ export function parseLiveMessage(text: string): LiveMessage | null {
   return null;
 }
 
-/** Asks for the one-time ticket that opens the live socket (an authenticated request). */
+/** Asks for the one-time ticket that opens the lounge's live socket (an authenticated request). */
 export async function fetchLoungeTicket(): Promise<string> {
   const data = await apiFetch('/api/lounge/ticket', { method: 'POST' });
   if (!isRecord(data) || typeof data['ticket'] !== 'string') {
@@ -866,13 +885,36 @@ export async function fetchLoungeTicket(): Promise<string> {
 }
 
 /**
- * The socket's address: the page's own host, so inside Discord it goes through the proxy like every
+ * Asks for the one-time ticket that opens the finale's live socket for one party (an authenticated
+ * request; the server refuses a party the player is not in).
+ */
+export async function fetchFinaleTicket(week: string, party: number): Promise<string> {
+  const data = await apiFetch('/api/finale/ticket', jsonRequest('POST', { week, party }));
+  if (!isRecord(data) || typeof data['ticket'] !== 'string') {
+    throw new Error('/api/finale/ticket returned an unexpected shape');
+  }
+  return data['ticket'];
+}
+
+/**
+ * A socket's address: the page's own host, so inside Discord it goes through the proxy like every
  * other request. The ticket is single-use and lives 30 s, so it may sit in the URL.
  */
-export function loungeSocketUrl(
+function liveSocketUrl(
+  path: string,
   ticket: string,
   location: { protocol: string; host: string },
 ): string {
   const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${scheme}//${location.host}/api/lounge/live?ticket=${encodeURIComponent(ticket)}`;
+  return `${scheme}//${location.host}${path}?ticket=${encodeURIComponent(ticket)}`;
 }
+
+export const loungeSocketUrl = (
+  ticket: string,
+  location: { protocol: string; host: string },
+): string => liveSocketUrl('/api/lounge/live', ticket, location);
+
+export const finaleSocketUrl = (
+  ticket: string,
+  location: { protocol: string; host: string },
+): string => liveSocketUrl('/api/finale/live', ticket, location);

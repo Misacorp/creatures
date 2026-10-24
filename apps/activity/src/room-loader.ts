@@ -5,7 +5,7 @@
  * when the data is over a minute old. While somebody else is here and the page is visible, one
  * `setTimeout` chain refetches everyone every 45 s (so others' moves show up); alone or hidden, no
  * timer waits at all. Failures are ignored quietly (the old data stays). While the lounge's live socket
- * delivers (`setLive(true)`, see `lounge-socket.ts`) the poll waits too, and pushed residents arrive
+ * delivers (`setLive(true)`, see `live-socket.ts`) the poll waits too, and pushed residents arrive
  * through `applyResident`; when the socket drops the poll takes over again. Framework-free;
  * `use-room.ts` wires it to Preact.
  */

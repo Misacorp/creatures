@@ -12,6 +12,9 @@ export function liveFightRules(): FightRules {
     maxHitBp: c.maxHitBp,
     guardHpBp: c.guard.hpBp,
     guardArmorBp: c.guard.armorBp,
+    // A Guard protects the creatures within its reach (attack-patterns.md section 1); a stored fight
+    // without this replays the whole-zone rule it was fought with.
+    guardRule: 'reach',
     supportFx: Object.fromEntries(Object.entries(c.supportFx).map(([k, fx]) => [k, { ...fx }])),
     // Dodge is in a new fight only while `RULES.combat.dodge.enabled`; absent means no dodge.
     ...(c.dodge.enabled

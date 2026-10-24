@@ -53,12 +53,6 @@ export type Cue =
       crit: boolean;
       /** Sideways drift in steps (-3 to 3), from the event index. */
       drift: number;
-      /**
-       * Set on a boss hit that was one of more than `CROWDED_HITS` creatures hit by one action: the
-       * damage it did, so the stage can leave out the small ones (`showsNumber`).
-       */
-      crowded?: true;
-      damage?: number;
     }
   | {
       kind: 'burst';
@@ -127,10 +121,6 @@ export interface BossStrike {
 
 /** The most reticles a boss action puts up at once; more targets than this are still hit. */
 export const MAX_RETICLES = 6;
-/** When one action hits more creatures than this, only the big hits get a number. */
-export const CROWDED_HITS = 8;
-/** "Big" for a crowded action: a hit of at least this share of the creature's max HP, in basis points. */
-export const BIG_HIT_BP = 1_000;
 
 /**
  * The rows an action covers, for the row outline: a sweep's (or a charge's, once announced), or the
@@ -573,7 +563,6 @@ export function cuesForEvents(
   const cues: Cue[] = [];
   const end = Math.min(to, events.length);
   const zoneOf = (id: string): Zone | null => zoneOfCreature(rowIds, id, board);
-  const crowded = crowdedHits(events, from, end);
   for (let i = Math.max(0, from); i < end; i++) {
     const e = events[i] as FightEvent;
     switch (e.t) {
@@ -768,7 +757,6 @@ export function cuesForEvents(
           tone: e.shielded === true ? 'blocked' : 'hurt',
           crit: e.crit === true,
           drift: driftFor(i),
-          ...(crowded.has(i) ? { crowded: true as const, damage: e.damage } : {}),
         });
         if (e.covered !== undefined) {
           cues.push({ kind: 'cover', i, creature: e.target, guard: e.covered.guard });
@@ -864,35 +852,6 @@ export function cuesForEvents(
 }
 
 /**
- * The boss hits in [from, to) that belong to an action which hit more than `CROWDED_HITS` creatures
- * (a long sweep, a pincer on a big raid, the enrage round): by event index. Their numbers are cut
- * down to the big hits (`showsNumber`), so a crowded round stays readable. A run of hits is the
- * events after a gimmick, or the enrage round's hits, up to the next boss action.
- */
-export function crowdedHits(events: readonly FightEvent[], from: number, to: number): Set<number> {
-  const out = new Set<number>();
-  const end = Math.min(to, events.length);
-  let run: { hits: number[]; targets: Set<string> } | null = null;
-  const close = (): void => {
-    if (run !== null && run.targets.size > CROWDED_HITS) for (const i of run.hits) out.add(i);
-    run = null;
-  };
-  for (let i = Math.max(0, from); i < end; i++) {
-    const e = events[i] as FightEvent;
-    const enrageHit = e.t === 'boss_hit' && e.source === 'enrage';
-    if (endsHitRun(e) && !enrageHit) close();
-    if (e.t === 'gimmick') run = { hits: [], targets: new Set() };
-    if (enrageHit && run === null) run = { hits: [], targets: new Set() };
-    if (e.t === 'boss_hit' && (e.source === 'gimmick' || enrageHit) && run !== null) {
-      run.hits.push(i);
-      run.targets.add(e.target);
-    }
-  }
-  close();
-  return out;
-}
-
-/**
  * The most HP a creature can have, as far as the stage can tell. A Guard has the extra HP of the
  * fight's own rules (`rules`; none now, its Guard has armor instead), or the content's old bonus
  * (`RULES.combat.guardHpBp`) for a fight stored without rules.
@@ -910,15 +869,6 @@ export function estimatedMaxHp(
         (hp * (10_000 + (rules === undefined ? RULES.combat.guardHpBp : rules.guardHpBp))) / 10_000,
       )
     : hp;
-}
-
-/**
- * True when a floating number should show. Only the numbers of a crowded action are ever left out,
- * and only the ones under `BIG_HIT_BP` of the creature's max HP; with no max HP to judge by, it shows.
- */
-export function showsNumber(cue: Extract<Cue, { kind: 'float' }>, maxHp: number | null): boolean {
-  if (cue.crowded !== true || maxHp === null || maxHp <= 0) return true;
-  return (cue.damage ?? 0) * 10_000 >= maxHp * BIG_HIT_BP;
 }
 
 // --- Beats ---

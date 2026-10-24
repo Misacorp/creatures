@@ -1,33 +1,10 @@
-/* Beams from the boss to the creatures a strike hits are drawn in this layer. */
+/* The boss's attacks are drawn in this layer (stage/boss-fx.ts, boss-fx.css). */
 .stage-strikes {
   position: absolute;
   inset: 0;
   z-index: 6;
   overflow: hidden;
   pointer-events: none;
-}
-
-.strike-beam {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: none;
-  width: var(--blen, 0);
-  height: 6px;
-  margin-top: -3px;
-  background: var(--bad);
-  box-shadow:
-    0 0 0 2px var(--ink),
-    0 0 8px 2px var(--bad);
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad));
-  transform-origin: 0 50%;
-  will-change: transform, opacity;
-}
-
-.strike-beam.placed {
-  display: block;
 }
 
 /*
@@ -145,11 +122,12 @@ button.unit-face:focus-visible {
   -webkit-line-clamp: 2;
 }
 
-/* Your own creatures: a gold frame and a "you" tag, so it never rests on colour alone. */
+/*
+  Your own creatures: a soft tint and the gold "you" tag (so it never rests on colour alone), no frame:
+  the boss and the attacks are the loud things on the stage (the reviewers, 2026-10-23).
+*/
 .stage-unit.mine {
   background: var(--mine);
-  outline: var(--px) solid var(--gold);
-  outline-offset: 1px;
 }
 
 .you-pip {
@@ -171,12 +149,21 @@ button.unit-face:focus-visible {
 
 .ko-mark {
   position: absolute;
-  bottom: -0.125rem;
-  left: -0.125rem;
+  bottom: 0;
+  left: 0;
   z-index: 2;
   padding: 1px;
   background: var(--ink);
   line-height: 0;
+}
+
+/* A knocked-out creature of yours: the tint and the tag fade with it, so a lost party is quiet. */
+.stage-unit.mine.ko {
+  background: color-mix(in srgb, var(--mine) 35%, transparent);
+}
+
+.stage-unit.ko .you-pip {
+  opacity: 0.5;
 }
 
 .silence-tag {

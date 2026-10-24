@@ -8,9 +8,9 @@ import {
   HELLO_TIMEOUT_MS,
   MAX_FAILURES,
   backoffDelay,
-  createLoungeSocket,
+  createLiveSocket,
   type SocketLike,
-} from './lounge-socket';
+} from './live-socket';
 
 class FakeSocket implements SocketLike {
   sent: string[] = [];
@@ -46,7 +46,8 @@ function setup(options: { tickets?: () => Promise<string>; supported?: boolean }
   const sockets: FakeSocket[] = [];
   const events: string[] = [];
   const residents: RoomResident[] = [];
-  const socket = createLoungeSocket({
+  const finales: unknown[] = [];
+  const socket = createLiveSocket({
     getTicket: options.tickets ?? (() => Promise.resolve('ticket')),
     url: (ticket) => `wss://host/api/lounge/live?ticket=${ticket}`,
     createSocket: (url) => {
@@ -56,10 +57,13 @@ function setup(options: { tickets?: () => Promise<string>; supported?: boolean }
       return s;
     },
     onLive: (live) => events.push(live ? 'live' : 'down'),
-    onResident: (r) => residents.push(r),
+    onMessage: (m) => {
+      if (m.type === 'resident') residents.push(m.resident);
+      else finales.push(m.snapshot);
+    },
     random: () => 1,
   });
-  return { socket, sockets, events, residents };
+  return { socket, sockets, events, residents, finales };
 }
 
 beforeEach(() => {
@@ -104,6 +108,21 @@ describe('connecting', () => {
     s?.push('pong');
     s?.push(residentMessage);
     expect(residents).toEqual([resident]);
+  });
+
+  it('hands pushed finale snapshots on after the hello, as they came', async () => {
+    const { socket, sockets, finales } = setup();
+    socket.start();
+    await vi.advanceTimersByTimeAsync(0);
+    const s = sockets[0];
+    const snapshot = { status: 'none', serverNow: 5 };
+    const text = JSON.stringify({ v: 1, type: 'finale', snapshot });
+    s?.push(text);
+    expect(finales).toEqual([]);
+    s?.hello();
+    s?.push(text);
+    s?.push(JSON.stringify({ v: 1, type: 'finale', snapshot: 'nope' }));
+    expect(finales).toEqual([snapshot]);
   });
 
   it('is unsupported (and never live) without a WebSocket', async () => {

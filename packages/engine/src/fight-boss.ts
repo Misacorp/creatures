@@ -31,7 +31,8 @@ import { ZONES, nearestLivingZone, zoneOfIndex } from './zones';
  *   silenced once, an empty row is skipped, nobody standing, nothing.
  * - strongest (`strike_highest_atk`): the living creature with the highest Attack, ties to the
  *   lower slot; with `jumps`, the next strongest after it.
- * - the plain attack: the front-most living creature (or the Guard of its zone), see `bossAttack`.
+ * - the plain attack: the front-most living creature (or the Guard of its zone; with the reach rule the
+ *   front-most creature, whom a Guard in reach covers), see `bossAttack`.
  * - random target: one of the living creatures.
  * - Guard intercept and Support buffs only count a living Guard or Support, and a buff only goes
  *   to a living neighbour; a Support beside a knocked-out creature simply buffs nobody there.
@@ -61,6 +62,7 @@ function patternContext(
     firing: firingIndex(g, atRound),
     dice: diceWindow(state.patternDice, gimmickIndex),
     ...(rules === undefined ? {} : { guardDice: state.guardDice }),
+    ...(state.reachRule ? { guardRule: 'reach' as const } : {}),
     ...(state.lastVolley.has(g.id)
       ? { previousVolley: state.lastVolley.get(g.id) as number[] }
       : {}),
@@ -292,8 +294,8 @@ export function fireGimmick(state: FightState, g: Gimmick, gimmickIndex: number)
 }
 
 /**
- * One plain attack: an aimed hit on the front-most row's Guard (else its leftmost creature),
- * picked from who stands right now. `dice` are this attack's boss crit dice by target slot.
+ * One plain attack: an aimed hit on the front-most row's Guard (else its leftmost creature; with the
+ * reach rule always on its leftmost creature, and a Guard in reach steps in), picked from who stands right now. `dice` are this attack's boss crit dice by target slot.
  */
 function bossAttack(state: FightState, dice: readonly number[]): void {
   const { input, randomTargetBp, creatures } = state;
@@ -316,14 +318,16 @@ function bossAttack(state: FightState, dice: readonly number[]): void {
     const living = livingIn(state, zone);
     const first = living[0];
     if (first === undefined) continue;
-    // The zone's Guard takes the plain attack (with `rules` and several, one picked by the die of
-    // the front-most slot's position).
-    const target =
-      pickGuard(
-        state,
-        living.filter((c) => c.role === 'guard'),
-        first.idx,
-      ) ?? first;
+    // Without the reach rule the zone's Guard takes the plain attack (with `rules` and several, one
+    // picked by the die of the front-most slot's position). With it the plain attack aims at the
+    // front-most creature, and a Guard steps in only if that creature is in its reach (`hurt`).
+    const target = state.reachRule
+      ? first
+      : (pickGuard(
+          state,
+          living.filter((c) => c.role === 'guard'),
+          first.idx,
+        ) ?? first);
     hurt(
       state,
       target,

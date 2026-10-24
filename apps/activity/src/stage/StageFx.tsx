@@ -1,6 +1,5 @@
 import type { EventNames } from '@creatures/engine';
-import { Fragment, type RefObject } from 'preact';
-import { useLayoutEffect, useRef } from 'preact/hooks';
+import { Fragment } from 'preact';
 import { elementClass } from '../art';
 import { cssVars } from '../css-vars';
 import { CHAIN_GLYPH, gimmickGlyph, glyphOrUnknown } from '../glyphs';
@@ -248,78 +247,4 @@ export function Marks({ fx, id }: { fx: readonly FxItem[]; id: string }) {
       })}
     </>
   );
-}
-
-/**
- * A beam from the boss to one target, drawn when a strike lands. Where it starts and ends is
- * measured once, before the first paint (the boss's and the target's boxes are read together and
- * the result is written as custom properties), and never again: the animation itself only changes
- * `transform` and `opacity`.
- */
-export function Beam({
-  layer,
-  from,
-  to,
-  ms,
-  between = false,
-}: {
-  layer: RefObject<HTMLElement | null>;
-  from: () => HTMLElement | null;
-  to: () => HTMLElement | null;
-  ms: number;
-  /** From one creature to another (a chain's jump, a lance): the beam starts at the middle of the first. */
-  between?: boolean;
-}) {
-  const ref = useRef<HTMLSpanElement>(null);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    const base = layer.current?.getBoundingClientRect();
-    const a = from()?.getBoundingClientRect();
-    const b = to()?.getBoundingClientRect();
-    if (el === null || base === undefined || a === undefined || b === undefined) return;
-    const x1 = a.left + a.width / 2 - base.left;
-    const y1 = a.top + a.height * (between ? 0.5 : 0.75) - base.top;
-    const x2 = b.left + b.width / 2 - base.left;
-    const y2 = b.top + b.height / 2 - base.top;
-    el.style.setProperty('--bx', `${String(Math.round(x1))}px`);
-    el.style.setProperty('--by', `${String(Math.round(y1))}px`);
-    el.style.setProperty('--blen', `${String(Math.round(Math.hypot(x2 - x1, y2 - y1)))}px`);
-    el.style.setProperty('--bang', `${String(Math.atan2(y2 - y1, x2 - x1))}rad`);
-    el.style.setProperty('--fx-ms', `${String(ms)}ms`);
-    el.classList.add('placed');
-  }, []);
-  return <span ref={ref} class={`strike-beam${between ? ' between' : ''}`} aria-hidden="true" />;
-}
-
-/**
- * The beams a landed boss action draws: from the boss to each creature it hit (the first four), a
- * chain's arcs from one creature to the next, and a lance's line from its first creature to its last
- * (the lane runs through them). Sweeps, barrages, pincers, charges and the enrage round draw none:
- * their outlines and marks say it.
- */
-export function beamsOf(strike: BossStrike): { from: string | null; to: string }[] {
-  const targets = reticleTargets(strike);
-  switch (strike.action) {
-    case 'sweep':
-    case 'barrage':
-    case 'pincer':
-    case 'charge':
-    case 'enrage':
-    case 'hit_zone':
-    case 'reflect_armed':
-      return [];
-    case 'lance': {
-      const first = targets[0];
-      const last = targets[targets.length - 1];
-      return first === undefined || last === undefined || first === last
-        ? []
-        : [{ from: first, to: last }];
-    }
-    case 'strike_highest_atk':
-      return targets
-        .slice(0, 4)
-        .map((to, k) => ({ from: k === 0 ? null : (targets[k - 1] ?? null), to }));
-    default:
-      return targets.slice(0, 4).map((to) => ({ from: null, to }));
-  }
 }

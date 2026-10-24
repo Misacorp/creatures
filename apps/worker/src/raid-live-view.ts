@@ -17,6 +17,7 @@ import { boardOf, bossFor, guardRulesOf, type StoredSummary } from './raid-resol
 import { totalEssenceOf } from './raid-reveal';
 import {
   PACING_CONTENT,
+  PACING_STORED,
   firedRound,
   scheduleRounds,
   type AbilityMode,
@@ -76,6 +77,12 @@ export interface LiveSnapshot {
    */
   roundMs: number | null;
   /**
+   * The fight's pacing version (`LiveRow.pacing`): the client plays its rounds at the engine's
+   * `paceOfPacing(pacing)`, the pace the server schedules them by. A lobby or no fight: the pacing a
+   * new fight gets.
+   */
+  pacing: number;
+  /**
    * The finale's regular rounds. In an enrage (`enrage` events) `round` goes past it, by up to the
    * enrage's rounds; the fight then ends on a wipe or after the last enrage round.
    */
@@ -84,7 +91,7 @@ export interface LiveSnapshot {
   round: number;
   /**
    * When each round started, for rounds 1..`round` (UTC ms). Rounds last as long as their events take
-   * to play (`roundPlaybackMs`, 6 to 22 seconds), so round r+1 starts that long after round r.
+   * to play (`roundPlaybackMs`, 20 to 45 seconds at the slow pace), so round r+1 starts that long after round r.
    */
   roundStarts: number[];
   /**
@@ -154,6 +161,7 @@ export function emptySnapshot(
     you: null,
     startsAt,
     roundMs: null,
+    pacing: PACING_STORED,
     rounds: boss.finaleRounds,
     round: 0,
     roundStarts: [],
@@ -243,6 +251,7 @@ export function lobbySnapshot(
     you: me?.alias ?? null,
     startsAt,
     roundMs: null,
+    pacing: PACING_STORED,
     rounds: input.boss.finaleRounds,
     round: 0,
     roundStarts: [],
@@ -356,6 +365,7 @@ export function liveSnapshot(
     you: me?.alias ?? null,
     startsAt: row.startedAt,
     roundMs: row.pacing < PACING_CONTENT ? row.roundMs : null,
+    pacing: row.pacing,
     rounds: row.rounds,
     round,
     roundStarts: state.roundStarts.slice(0, round),

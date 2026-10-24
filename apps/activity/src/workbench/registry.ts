@@ -31,6 +31,7 @@ import { skyEntries } from './entries/sky';
 import { slotDrawerEntries } from './entries/slot-drawer';
 import { slotEntries } from './entries/slots';
 import { stageEntries } from './entries/stage';
+import { bossAttackEntries } from './entries/boss-attacks';
 import { tagEntries } from './entries/tags';
 import { talentEntries } from './entries/talents';
 import { tripResult } from './entries/trip-result';
@@ -75,6 +76,7 @@ export const ENTRIES: readonly Entry[] = [
   ...sendFormEntries,
   ...wizardEntries,
   ...stageEntries,
+  ...bossAttackEntries,
   ...skyEntries,
   ...dungeonMapEntries,
   ...dungeonRunEntries,

@@ -6,6 +6,7 @@
   "you": null,
   "startsAt": null,
   "roundMs": null,
+  "pacing": 2,
   "rounds": 12,
   "round": 0,
   "roundStarts": [],

@@ -50,15 +50,16 @@ Each line has a pool of 7 or 8. Branch forms share their line's pool, so a Sprou
 
 Status: 2026-10-19. Shipped (`talents.json`, from `docs/design/mire-content-drafts.md`). Mudlump and Bogwarden are the Guard line, so the Mudlump pool is Guard talents. The Squelch line has a pool of its own (keyed `squelch`) that leans to debuff duration and power. The three the design asked for are marked; the rest are written in the same style. `(content, compendium detail, not shipped)`
 
-| Talent (Mudlump pool) | What it is about                                        |
-| --------------------- | ------------------------------------------------------- |
-| Mud Off Its Back      | Mud and muck slide off it. Debuffs on it are weaker.    |
-| Hard to Budge         | A lump that stays where it is put: more armor.          |
-| Stands in the Puddle  | It stands beside its neighbours and covers them.        |
-| Thick and Lumpy       | A thick, lumpy coat of peat: more health.               |
-| Shrugs It Off         | Aimed hits hurt less.                                   |
-| Naps in Warm Puddles  | Rests well between rooms of the dungeon.                |
-| Stays Calm in Storms  | Steady under pressure: it takes less from the big hits. |
+| Talent (Mudlump pool) | What it is about                                            |
+| --------------------- | ----------------------------------------------------------- |
+| Mud Off Its Back      | Mud and muck slide off it. Debuffs on it are weaker.        |
+| Hard to Budge         | A lump that stays where it is put: more armor.              |
+| Stands in the Puddle  | It stands beside its neighbours and covers them.            |
+| Thick and Lumpy       | A thick, lumpy coat of peat: more health.                   |
+| Shrugs It Off         | Aimed hits hurt less.                                       |
+| Naps in Warm Puddles  | Rests well between rooms of the dungeon.                    |
+| Stays Calm in Storms  | Steady under pressure: it takes less from the big hits.     |
+| Wide as a Puddle      | It spreads out: it protects one more creature on each side. |
 
 | Talent (Squelch pool)   | What it is about                                                   |
 | ----------------------- | ------------------------------------------------------------------ |

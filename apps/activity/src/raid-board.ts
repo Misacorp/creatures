@@ -8,6 +8,7 @@ import {
   ZONES,
   zoneIndices,
   type AffectSlot,
+  type GuardReach,
   type RowShape,
   type TurnOrder,
   type Zone,
@@ -289,7 +290,7 @@ export function parseTurnOrder(text: string): TurnOrder {
  */
 export function boardAffectRow(
   keys: readonly (string | null)[],
-  known: ReadonlyMap<string, { species: string; level: number }>,
+  known: ReadonlyMap<string, { species: string; level: number; reach?: GuardReach }>,
 ): (AffectSlot | null)[] {
   return keys.map((key) => {
     const who = key === null ? undefined : known.get(key);
@@ -299,6 +300,7 @@ export function boardAffectRow(
       : affectSlotOf(
           species,
           effectiveStats(species, Math.max(1, Math.min(who.level, species.levelCap)), 0).spd,
+          who.reach,
         );
   });
 }
@@ -314,7 +316,12 @@ export function boardAffectRow(
 export function boardCues(args: {
   row: readonly RowSlotView[];
   length: number;
-  tray: readonly { creatureId: string; species: string; level: number }[];
+  tray: readonly {
+    creatureId: string;
+    species: string;
+    level: number;
+    reach?: GuardReach;
+  }[];
   carried: string | null;
   pointer: number | null;
   inspected?: number | null;
@@ -322,7 +329,7 @@ export function boardCues(args: {
 }): { cues: RowCues; focus: number | null; noneRow: Zone | null; effect: string | null } {
   const { row, length } = args;
   const bySlot = new Map(row.map((s) => [s.slot, s]));
-  const known = new Map<string, { species: string; level: number }>();
+  const known = new Map<string, { species: string; level: number; reach?: GuardReach }>();
   for (const s of row) {
     if (s.creature !== null)
       known.set(s.creature.creatureId ?? `other:${String(s.slot)}`, s.creature);
