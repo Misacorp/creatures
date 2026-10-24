@@ -119,6 +119,19 @@ Noted while testing the expedition and Workshop rework on staging. The component
 - **Main menu redesign.** With Games as the sixth tab the tab bar barely fits on a phone (360 px has no spare width). Rethink the main navigation.
 - **Valley Games polish and fixes:** alignment, spacing, the Good fit badge's tick, a calmer live leaderboard, crowded big fields, and the postponed ideas. The full list is in `design/valley-games.md`, "After v1".
 
+## UI audit findings (2026-10-24)
+
+The first full run of `apps/activity/scripts/ui-audit.mjs` (see `design/workbench.md`, "UI audit") found pre-existing overflow outside the Games, not yet fixed (the Games pages are clean):
+
+- The item tile's level badge (`.item-lv`) is cut 1 to 3 px by its button (Slot, gear slots, item tiles, item pickers).
+- Supply counts (`.supply-count`) stick out of their cells (SupplyGrid, SupplyCrafting).
+- Compact raid party slots: the owner line (`.slot-owner`) sticks out of the slot.
+- The fight stage's strike row (`.stage-strikes`) is cut vertically.
+- A blocked item tile's wearer sprite (`.item-tile-wearer`) on the creature page.
+- At 320 px: the party strip (RaidBoard, DungeonSetup), the finder chips and the living room stand out of the card.
+- Unconfirmed: the creature page rows look cut inside the workbench's fixed-height phone frame; possibly a workbench artefact.
+- About 70 pages could not be audited (components that render nothing by default) and need presets with content.
+
 ## After the treat box PR (Misa, 2026-10-21)
 
 Shipped together in one PR (details in `docs/design/decisions.md`, 2026-10-21):

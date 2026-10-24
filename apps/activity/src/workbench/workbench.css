@@ -541,6 +541,7 @@
 
 .wb-games-frames {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   align-items: flex-end;
   padding: 4px;

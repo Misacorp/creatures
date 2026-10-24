@@ -369,6 +369,7 @@ export function EventThumb({
   return (
     <div
       class="ge-thumb"
+      data-audit-clip
       data-scene={id}
       aria-hidden="true"
       ref={cssVars({ '--dy': `${String(-top * 2)}px` })}

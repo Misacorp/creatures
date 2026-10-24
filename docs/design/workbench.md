@@ -51,3 +51,17 @@ The workbench is a second Vite entry (`apps/activity/workbench.html`, code in `a
 `JobDrawer` (2026-10-21; Creatures & game pieces) is the Workshop supply job as a wizard in a drawer (Craft, Refine, Recycle): the recipe at the top, Who crafts, Ready. Controls: the job, the creatures case (some folded, a busy one at the level, nobody free at the level, both slots busy), the step, the folded row open, a packed treat and a refused start (shows the server error in the footer after pressing the button). Presets cover each step of each job and every blocked case. Since 2026-10-22 it also drives the gear craft (jobs Craft Kelp Cap and Craft Brine Hood, steps who, reach and ready) with controls for the reach, the odds (loaded, loading, failed) and Essence (plenty, short), the bag-full creatures case, and presets for who folded, reach with odds, loading, failed, reach blocked by Essence, ready with a treat, bag full and a refused start.
 
 `WizardView` (with `WizardHead` and `WizardFooter`; 2026-10-21; Controls) is the step-by-step flow of the phone send wizard, made reusable (`ui/Wizard`, `ui/use-wizard`; decisions.md 2026-10-21). Its page uses neutral demo steps (a lantern, a snack, all set). Controls: plain or in a Drawer (head and step in the content, the footer pinned), the step, a blocked toggle (the reason shows above a disabled button), whether Back on the first step exits, the finish label and a badge on the last step. Presets: plain three steps, in a Drawer, a blocked step, the last step with a finish label and a badge, and no exit. The `flow` control switches to a branching demo (the camp's shape: a menu whose choices open a short one-pick branch or a longer one, Back following the branch taken; presets for the menu, the short branch and the long branch's last step). `DungeonCamp` is built on the same Wizard; its presets show each step. `SendForm` shows the same pieces with the real send steps.
+
+## UI audit
+
+`apps/activity/scripts/ui-audit.mjs` finds layout overflow on every workbench page. Run it from `apps/activity`:
+
+```
+node scripts/ui-audit.mjs [--only <entry name substring>] [--widths 360,1100]
+```
+
+It starts its own Vite server and the preinstalled Chromium (like the font audit; `PLAYWRIGHT_PATH` and `CHROME` override the defaults), reads the entry list from `registry.ts` and opens every entry and every preset at 320, 360, 390, 412, 768 and 1100 px (a real window per width). A new entry or preset is audited with no change to the script. A full run opens about 1,150 pages at six widths and takes about 25 minutes (three widths at a time); use `--only` while working on one component.
+
+It reports, per page and width: (a) the page scrolls sideways; (b) an element sticks out of its nearest clipping ancestor's content box, is cut off vertically by a clipping box, or shows past the viewport; (c) text spills out of its own box (unless the box truncates with an ellipsis); (d) anything steps out of the card's content box. Output is one line per page and width ("clean" or the findings with the overshoot in px), then `AUDIT CLEAN` (exit 0) or `AUDIT FAILED (n)` (exit 1).
+
+A deliberate crop (a strip of a scene, bunting cut at the card's edge, a scene canvas's inside) is marked `data-audit-clip` in the markup: everything inside it is skipped, and the marked box itself is still checked. Never put it on text. `GAMES_STATES` in the script lists Valley Games states that need a tap (picker open, favour popovers, replay); they run when the `--only` filter matches their entry.
