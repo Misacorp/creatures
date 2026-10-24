@@ -10,7 +10,7 @@
   "scripts": {
     "build": "pnpm --filter @creatures/activity build && pnpm --filter @creatures/worker build",
     "typecheck": "pnpm -r --if-present typecheck",
-    "lint": "eslint .",
+    "lint": "pnpm -r --workspace-concurrency=2 lint && eslint --cache --cache-strategy content --cache-location node_modules/.cache/eslint/root .claude eslint.config.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "pnpm -r --if-present test",
