@@ -3,8 +3,8 @@
  * lives here, in the game screen's own hooks, and none of it reads whether the living room is on screen:
  * the room's data (`useRoom`: Discord's participants, the one slow poll, the live socket, your own resident)
  * and the reload of your state once per XP while your lounger earns company XP (the server pays what you
- * collected when you make a request). On a phone the room is drawn in a sheet (`LoungeSheet`) that is open
- * only now and then; opening or closing it changes nothing here (decisions.md 2026-10-24, the Lounge button).
+ * collected when you make a request). On a phone the room is drawn only on the Home page; going there or away
+ * changes nothing here (decisions.md 2026-10-24, the Home page).
  */
 import { useEffect } from 'preact/hooks';
 import type { GameState } from './api';

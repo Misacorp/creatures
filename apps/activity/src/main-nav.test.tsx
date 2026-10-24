@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MainNav, type LoungeButton } from './MainNav';
+import { MainNav } from './MainNav';
 import { navPlaces } from './nav-places';
 import { ALERT_TEXT, NO_ALERTS } from './tab-alerts';
 import {
@@ -44,7 +44,7 @@ function nav(
     wide?: boolean;
     openGroup?: string;
     onSelect?: (id: string) => void;
-    lounge?: LoungeButton;
+    home?: boolean;
   } = {},
 ) {
   return (
@@ -53,13 +53,11 @@ function nav(
       current={props.current ?? 'collection'}
       wide={props.wide ?? false}
       openGroup={props.openGroup}
-      lounge={props.lounge}
+      home={props.home ?? false}
       onSelect={props.onSelect ?? vi.fn()}
     />
   );
 }
-
-const LOUNGE: LoungeButton = { pip: null, open: false, onOpen: () => undefined };
 
 /** The dock's group buttons (a direct group's button also has `data-place`). */
 function groupButtons(root: FakeElement): FakeElement[] {
@@ -82,14 +80,14 @@ function dockButtons(root: FakeElement): FakeElement[] {
 }
 
 describe('MainNav as the phone dock', () => {
-  it('is a nav landmark with three buttons in order: the Creatures group, the Lounge, the Adventure group', () => {
-    const p = draw(nav({ lounge: LOUNGE }));
+  it('is a nav landmark with three buttons in order: the Creatures group, Home, the Adventure group', () => {
+    const p = draw(nav({ home: true }));
     const landmark = first(find(p.root, (el) => el.localName === 'nav'));
     expect(landmark.getAttribute('aria-label')).toBe('Places');
     expect(landmark.getAttribute('class')).toContain('dock');
     expect(dockButtons(p.root).map((b) => nameOf(b))).toEqual([
       'Creatures',
-      'Lounge',
+      'Home',
       'Adventure, 2 places need you',
     ]);
     expect(
@@ -99,7 +97,7 @@ describe('MainNav as the phone dock', () => {
     expect(byRole(p.root, 'tab')).toHaveLength(0);
   });
 
-  it('has just the two group buttons when it is given no Lounge (a window that shows the room itself)', () => {
+  it('has just the two group buttons when it is not asked to draw Home', () => {
     const p = draw(nav());
     expect(dockButtons(p.root).map((b) => nameOf(b))).toEqual([
       'Creatures',
@@ -107,18 +105,18 @@ describe('MainNav as the phone dock', () => {
     ]);
   });
 
-  it('highlights the group of the current place, never the Lounge', () => {
-    const p = draw(nav({ current: 'games', lounge: LOUNGE }));
+  it('highlights the group of the current place, never Home', () => {
+    const p = draw(nav({ current: 'games', home: true }));
     const active = groupButtons(p.root).filter((b) =>
       (b.getAttribute('class') ?? '').includes('active'),
     );
     expect(active.map((b) => b.getAttribute('data-group'))).toEqual(['adventure']);
-    const lounge = first(byName(p.root, 'button', 'Lounge'));
-    expect(lounge.getAttribute('aria-current')).toBeNull();
+    const home = first(byName(p.root, 'button', 'Home'));
+    expect(home.getAttribute('aria-current')).toBeNull();
   });
 
   it('gives each group the roll-up of its pips in its name, and draws the pip as decoration', () => {
-    const p = draw(nav({ lounge: LOUNGE }));
+    const p = draw(nav({ home: true }));
     expect(byName(p.root, 'button', 'Creatures')).toHaveLength(1);
     expect(byName(p.root, 'button', 'Adventure, 2 places need you')).toHaveLength(1);
     const pips = byClass(p.root, 'nav-pip');
@@ -150,31 +148,31 @@ describe('MainNav as the phone dock', () => {
     );
   });
 
-  it('draws the Lounge as the primary button, says it opens a dialog, and carries its pip in its name', () => {
-    const p = draw(nav({ lounge: { ...LOUNGE, pip: 'someone new is here' } }));
-    const lounge = first(byName(p.root, 'button', 'Lounge, someone new is here'));
-    expect(lounge.getAttribute('class')).toContain('lounge');
-    expect(lounge.getAttribute('aria-haspopup')).toBe('dialog');
-    expect(lounge.getAttribute('aria-expanded')).toBe('false');
-    expect(byClass(p.root, 'nav-pip')).toHaveLength(2);
+  it('draws Home as the primary button, a place like the others: it is the current page while you are on it', () => {
+    const p = draw(nav({ home: true, current: 'home' }));
+    const home = first(byName(p.root, 'button', 'Home'));
+    expect(home.getAttribute('class')).toContain('home');
+    expect(home.getAttribute('aria-current')).toBe('page');
+    expect(home.getAttribute('aria-haspopup')).toBeNull();
+    expect(home.getAttribute('aria-expanded')).toBeNull();
+    // Home has no pip: the page itself says what needs you.
+    expect(byClass(home, 'nav-pip')).toHaveLength(0);
+    // No group is lit while you are on Home.
+    expect(
+      groupButtons(p.root).filter((b) => (b.getAttribute('class') ?? '').includes('active')),
+    ).toHaveLength(0);
 
-    p.draw(nav({ lounge: { ...LOUNGE, open: true } }));
-    expect(first(byName(p.root, 'button', 'Lounge')).getAttribute('aria-expanded')).toBe('true');
+    p.draw(nav({ home: true, current: 'collection' }));
+    expect(first(byName(p.root, 'button', 'Home')).getAttribute('aria-current')).toBeNull();
   });
 
-  it('can label the middle button another word (the Home design round), keeping it the primary button', () => {
-    const p = draw(nav({ lounge: { ...LOUNGE, label: 'Home', glyph: 'home' } }));
-    expect(byName(p.root, 'button', 'Lounge')).toHaveLength(0);
-    expect(first(byName(p.root, 'button', 'Home')).getAttribute('class')).toContain('lounge');
-  });
-
-  it('opens the lounge on a tap and closes an open tray', () => {
-    const onOpen = vi.fn();
-    const p = draw(nav({ lounge: { ...LOUNGE, onOpen } }));
+  it('goes Home on a tap and closes an open tray', () => {
+    const onSelect = vi.fn();
+    const p = draw(nav({ home: true, onSelect }));
     p.click(first(byName(p.root, 'button', /^Adventure/)));
     expect(trayItems(p.root).length).toBeGreaterThan(0);
-    p.click(first(byName(p.root, 'button', 'Lounge')));
-    expect(onOpen).toHaveBeenCalledTimes(1);
+    p.click(first(byName(p.root, 'button', 'Home')));
+    expect(onSelect).toHaveBeenCalledWith('home');
     expect(trayItems(p.root)).toHaveLength(0);
   });
 
@@ -306,8 +304,20 @@ describe('MainNav as the wide rail', () => {
     expect(byClass(p.root, 'nav-tray')).toHaveLength(0);
   });
 
-  it('has no Lounge button: the room is on screen', () => {
-    const p = draw(nav({ wide: true, lounge: LOUNGE }));
-    expect(byName(p.root, 'button', /^Lounge/)).toHaveLength(0);
+  it('lists Home first, above the groups, with no heading of its own', () => {
+    const p = draw(nav({ wide: true, home: true, current: 'home' }));
+    const buttons = find(p.root, (el) => el.localName === 'button');
+    expect(buttons.map((b) => nameOf(b))[0]).toBe('Home');
+    expect(buttons).toHaveLength(7);
+    expect(first(byName(p.root, 'button', 'Home')).getAttribute('aria-current')).toBe('page');
+    expect(byClass(p.root, 'nav-heading').map((h) => nameOf(h))).toEqual([
+      'Creatures',
+      'Adventure',
+    ]);
+  });
+
+  it('has no Home when it is not asked for one', () => {
+    const p = draw(nav({ wide: true }));
+    expect(byName(p.root, 'button', 'Home')).toHaveLength(0);
   });
 });

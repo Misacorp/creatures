@@ -1,12 +1,23 @@
 /**
  * The places of the game screen (the "tabs": `Tab` is the id of the current place). Each is a
- * picture and a word in the main navigation (`MainNav`: the phone's bottom dock of a group button, the Lounge and a group button,
- * the desktop's left rail grouped under headings; the list the navigation reads is `navPlaces` in
- * `nav-places.ts`). Every place belongs to one group (`NAV_GROUPS`). The glyphs are one-colour (`w`), so the active place (dark on gold) can tint its
+ * picture and a word in the main navigation (`MainNav`: the phone's bottom dock of a group button, Home and a group button,
+ * the desktop's left rail with Home first and the groups under headings; the list the navigation reads is `navPlaces` in
+ * `nav-places.ts`). Every tab belongs to one group (`NAV_GROUPS`); Home (`NAV_HOME`) is a place that is in no group. The glyphs are one-colour (`w`), so the active place (dark on gold) can tint its
  * picture to stay readable.
  */
 
 export type Tab = 'collection' | 'expeditions' | 'games' | 'raid' | 'workshop' | 'dungeon';
+
+/** Every place of the game screen: Home (the page the app opens on) and the tabs. */
+export type Place = 'home' | Tab;
+
+/** The place the app opens on: Home (Misa, 2026-10-24: the Home page is the default). */
+export const DEFAULT_PLACE: Place = 'home';
+
+/** Whether `id` is the id of a place, Home included (the navigation hands back plain strings). */
+export function isPlace(id: string): id is Place {
+  return id === NAV_HOME.id || isTab(id);
+}
 
 /** Whether `id` is the id of a place (the navigation hands back plain strings). */
 export function isTab(id: string): id is Tab {
@@ -33,8 +44,8 @@ interface TabGroupDef {
 }
 
 /**
- * The groups of the main navigation in their order: the two group buttons of the phone dock (the Lounge
- * button sits between them, see `NAV_LOUNGE`) and the headings of the desktop rail. A group with one place is
+ * The groups of the main navigation in their order: the two group buttons of the phone dock (Home
+ * sits between them, see `NAV_HOME`) and the headings of the desktop rail. A group with one place is
  * a direct button. The first group's name is a placeholder (Misa, 2026-10-24, "something that refers to
  * creatures, items, workshop"): renaming it is this one line. A future village or home map is one more place
  * in the first group.
@@ -45,11 +56,12 @@ export const NAV_GROUPS: readonly TabGroupDef[] = [
 ];
 
 /**
- * The Lounge: the dock's middle button, the primary one. It is not a place (a screen you are "in"): it opens
- * the living room in a sheet, because on a phone the room no longer sits at the top of every screen. The
- * desktop keeps the room band and has no such button.
+ * Home: the page the app opens on and the dock's middle button, the primary one (gold, raised). It is in no
+ * group: on a phone it sits between the two group buttons, on a desktop it is the first item of the rail.
+ * It shows the Today board (what needs you, what is coming up, the valley's day); on a phone the living room
+ * is drawn at the top of that page, on a desktop the room band is above every screen as before.
  */
-export const NAV_LOUNGE = { id: 'lounge', label: 'Lounge', glyph: 'couch' } as const;
+export const NAV_HOME = { id: 'home', label: 'Home', glyph: 'home' } as const;
 
 /**
  * In list order, which is the order inside a group: your creatures at home and the Workshop, then the

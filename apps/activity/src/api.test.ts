@@ -53,6 +53,7 @@ describe('the living room answers', () => {
       quirk: null,
       craftingLevel: 3,
       explorerRank: 2,
+      firstOnServer: false,
       gear: [],
     },
   };
@@ -64,6 +65,16 @@ describe('the living room answers', () => {
     expect(parsed).toHaveLength(2);
     expect(parsed[1]?.creature).toBeNull();
     expect(parseRoom({ residents: [] })).toEqual([]);
+  });
+
+  it('parses the "First on server" flag and rejects an answer without it', () => {
+    const flagged = parseRoom({
+      residents: [{ ...resident, creature: { ...resident.creature, firstOnServer: true } }],
+    });
+    expect(flagged[0]?.creature?.firstOnServer).toBe(true);
+    const without: Partial<typeof resident.creature> = { ...resident.creature };
+    delete without.firstOnServer;
+    expect(() => parseRoom({ residents: [{ ...resident, creature: without }] })).toThrow();
   });
 
   it('parses the worn items with the text of their lines', () => {

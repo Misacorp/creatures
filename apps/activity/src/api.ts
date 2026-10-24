@@ -766,6 +766,8 @@ export interface RoomCreature {
   quirk: string | null;
   craftingLevel: number;
   explorerRank: number;
+  /** Its owner holds the "first on server" record for its species or line (the server reads it from its records). */
+  firstOnServer: boolean;
   /** The items it wears (like `Creature.gear`), each with the text of its lines. */
   gear: RoomGear[];
 }
@@ -797,6 +799,7 @@ function isRoomCreature(value: unknown): value is RoomCreature {
     (value['quirk'] === null || isStr(value['quirk'])) &&
     isInt(value['craftingLevel']) &&
     isInt(value['explorerRank']) &&
+    typeof value['firstOnServer'] === 'boolean' &&
     isArrayOf(value['gear'], isRoomGear)
   );
 }

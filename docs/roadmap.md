@@ -148,6 +148,18 @@ Still open:
 - **More risk-and-reward mystery rooms** (Misa: from rooms with decent rolls for any pick to drastic ones like the chasm; bigger risks may pay bigger rewards). Claude to propose ideas.
 - Deferred, very low priority: a Blue Chasm prize of a **creature of a species the player lacks**. Misa: "a fun idea where you rescue a friend in need".
 
+## Home page: later
+
+The Home page and its Today board shipped on 2026-10-24 (decisions.md). Ideas for after it:
+
+- **Signs in the room:** small signs in the living room that point at what needs the player (a letter on the table for a trip that is home).
+- **Out and about:** show creatures that are away (on a trip, a job) as little figures or notes around the board or the room.
+- **A valley news feed:** a short feed of what happened in the valley (catches, firsts, raid results) under "The valley today".
+- **Who's here:** who has the Activity open, beside the room.
+- **Tapping "Coming up" rows:** each row opens its place.
+- **A dungeon status that says "done today"** (the quiet notice only says "No run waiting" now, because the client cannot tell done from not possible).
+- **Per-player settings for the board's tilt (none, still, sway) and for showing quiet places (hide, show):** the typed `BoardSettings` is ready, stored and saved per player.
+
 ## Upkeep
 
 - **Vitest 5 and `@cloudflare/vitest-plugin` together.** One PR: vitest 5.0.3, `@cloudflare/vitest-plugin` 1.4.0 (its peer range allows vitest 5), wrangler 4.149.0 (what the plugin pins), vite 8.3.4, typescript-eslint 8.71.1, prettier 3.9.10. Regenerate `worker-configuration.d.ts`, run the full gate, then close Dependabot #2 and #13. TypeScript 7 waits for typescript-eslint support (it allows `<6.1.0`); Preact 11 gets its own PR with a workbench check.

@@ -1,38 +1,25 @@
 /*
-  The Home page design round (`HomeDemo`, dev only: imported by its workbench page alone, so it never reaches the
-  game). Two layouts under the living room: variant A, a notice board (`.hb`), and variant B, a grid of place
-  cards (`.hc`). Everything is built from the game's tokens; the only art is the sprites already in the game.
+  The Home page (home/HomePage.tsx, home/NoticeBoard.tsx): on a phone the living room at the top and, under it, the
+  Today board, a notice board of papers pinned on cork. Built from the game's tokens; the only art is the
+  sprites already in the game. The board's option is an attribute: `data-tilt` (`none`, `still`, `sway`) leans
+  or rocks the papers (`--tilt` and `--sway-delay` are set per paper from `home/board.ts`).
 */
 
-/* The frame: a phone is a window-high column (the page scrolls inside it, the dock stays), a wide window is the card. */
-.nd.hm.nd-phone {
-  height: 46rem;
-  min-height: 0;
+/* The page: the room (phone only) and the board, one column. */
+.home-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
 }
 
-.hm .hm-screen {
-  min-height: 0;
-  padding: 0 0.75rem 1rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+.home-page > .app-top {
+  margin: 0;
 }
 
-/* On a phone the room runs edge to edge at the top of the page. */
-.hm-room {
-  margin: 0 -0.75rem 0.75rem;
-}
-
-/* On a wide window the room is the band under the HUD, like the game's. */
-.hm-band {
-  margin-bottom: 0.75rem;
-}
-
-.nd-wide.hm .nd-body {
-  padding-top: 0.25rem;
-}
-
-/* --- Variant A: the notice board --- */
 .hb {
+  container-type: inline-size; /* the papers' lean scales with the board's width (see "Leaning papers") */
+
   /* A wood frame: light edge, dark ink outline, round the cork. */
   padding: 0.5rem;
   background: var(--leather-light);
@@ -44,8 +31,9 @@
 
 .hb-cork {
   display: grid;
-  gap: 0.625rem;
-  padding: 0.75rem;
+  /* The gaps and the padding leave room for the leaning papers' corners (see "Leaning papers"). */
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
   /* Cork: the leather brown flecked with its light and dark shades. */
   background-color: var(--leather);
   background-image:
@@ -74,7 +62,7 @@
 
 .hb-needs {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 /* A paper pinned to the board: bone with an ink edge, ink text, a pin at the top. */
@@ -166,7 +154,7 @@ button.hb-need:focus-visible {
   align-items: center;
   gap: 0.75rem;
   margin: 0;
-  padding: 0.875rem 0.875rem;
+  padding: 0.875rem;
   font-size: var(--fs-row);
   line-height: 1.3;
 }
@@ -218,6 +206,33 @@ button.hb-need:focus-visible {
   text-align: right;
 }
 
+/* Quiet places (the `show` option for idle places): slim one-line papers. */
+.hb-quiet-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.hb-quiet {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 2.5rem;
+  margin: 0;
+  padding: 0.375rem 0.75rem;
+  font-size: var(--fs-row);
+  line-height: 1.2;
+}
+
+.hb-quiet-place {
+  flex: none;
+  font-weight: 400;
+}
+
+.hb-quiet-text {
+  min-width: 0;
+  color: var(--leather);
+}
+
 /* The valley today: one line, wrapping on a phone. */
 .hb-valley {
   display: flex;
@@ -256,93 +271,55 @@ button.hb-need:focus-visible {
   place-items: center;
 }
 
-/* --- Variant B: the place cards --- */
-.hc-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.625rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+/*
+  Leaning papers. Each paper hangs from its pin and leans `--tilt` (about -1.5 to 1.5 degrees). The board's gaps
+  and padding leave room for the rotated corners, so nothing overflows or touches its neighbour; `none` is flush.
+  Text stays crisp: it is a plain rotation of ordinary text, no scaling, no filters. A button you point at or
+  focus straightens, so it is easy to hit.
+*/
+.hb-paper {
+  rotate: calc(var(--tilt, 0deg) * var(--tilt-scale, 1));
+  transform-origin: 50% 0;
+  transition: rotate 0.15s ease-out;
 }
 
-@media (min-width: 60rem) {
-  .hc-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
+.hb[data-tilt='none'] .hb-paper {
+  rotate: none;
+}
+
+button.hb-need:hover,
+button.hb-need:focus-visible {
+  rotate: 0deg;
+}
+
+@keyframes hb-sway {
+  from {
+    rotate: calc(var(--tilt, 0deg) * var(--tilt-scale, 1) - 0.6deg * var(--tilt-scale, 1));
+  }
+
+  to {
+    rotate: calc(var(--tilt, 0deg) * var(--tilt-scale, 1) + 0.6deg * var(--tilt-scale, 1));
   }
 }
 
-button.hc-card {
-  position: relative;
-  display: grid;
-  grid-template-rows: auto auto 1fr;
-  gap: 0.375rem;
-  align-content: start;
-  width: 100%;
-  height: 100%;
-  padding: 0.5rem 0.5rem 0.625rem;
-  background: var(--dusk-2);
-  text-align: left;
+/*
+  A wide board (a desktop) would show the same angle as a ~30 px shift of a paper's far end, which looks crooked
+  rather than playful: the angle scales down so the ends sit about as far off as on a phone (4 to 8 px).
+*/
+@container (min-width: 40rem) {
+  .hb-paper {
+    --tilt-scale: 0.3;
+  }
 }
 
-button.hc-card.waiting {
-  box-shadow:
-    0 0 0 var(--px) var(--ink),
-    inset 0 calc(var(--px) * -2) 0 0 var(--gold);
-}
+/* Only where motion is welcome: under reduced motion `sway` is just `still`. */
+@media (prefers-reduced-motion: no-preference) {
+  .hb[data-tilt='sway'] .hb-paper {
+    animation: hb-sway 7s ease-in-out var(--sway-delay, 0s) infinite alternate;
+  }
 
-.hc-pic {
-  display: grid;
-  place-items: center;
-  height: 4.5rem;
-  box-shadow: inset 0 0 0 var(--px) var(--ink);
-}
-
-/* Each place has its own tint (the element colours and the game's own greys): the picture is the first thing read. */
-.hc-tone-expeditions {
-  background: color-mix(in srgb, var(--tide) 45%, var(--night));
-}
-
-.hc-tone-workshop {
-  background: color-mix(in srgb, var(--ember) 40%, var(--night));
-}
-
-.hc-tone-raid {
-  background: color-mix(in srgb, var(--bad) 38%, var(--night));
-}
-
-.hc-tone-games {
-  background: color-mix(in srgb, var(--gold) 32%, var(--night));
-}
-
-.hc-tone-dungeon {
-  background: var(--uc-node);
-}
-
-.hc-tone-collection {
-  background: color-mix(in srgb, var(--grove) 40%, var(--night));
-}
-
-.hc-name {
-  padding: 0 0.125rem;
-  font-size: var(--fs-heading);
-  line-height: 1.1;
-}
-
-.hc-status {
-  padding: 0 0.125rem;
-  color: var(--haze);
-  font-size: var(--fs-small);
-  line-height: 1.25;
-}
-
-.hc-pip {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  width: 0.75rem;
-  height: 0.75rem;
-  background: var(--attention);
-  box-shadow: 0 0 0 var(--px) var(--ink);
+  .hb[data-tilt='sway'] button.hb-need:hover,
+  .hb[data-tilt='sway'] button.hb-need:focus-visible {
+    animation-play-state: paused;
+  }
 }

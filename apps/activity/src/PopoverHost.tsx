@@ -236,6 +236,17 @@ function CreaturePopover({
                   Shiny
                 </button>
               )}
+              {info.firstOnServer === true && (
+                <button
+                  type="button"
+                  class="gtag gtag-chip chip badge first"
+                  onClick={() => {
+                    nav.open('first-on-server');
+                  }}
+                >
+                  First on server
+                </button>
+              )}
               {info.loungeXp !== undefined && (
                 <button
                   type="button"

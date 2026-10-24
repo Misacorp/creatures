@@ -17,7 +17,7 @@ const sources = import.meta.glob<string>(
     '../stage/*.tsx',
     '../games/*.tsx',
     '../games/art/*.tsx',
-    './home-mockups/*.tsx',
+    '../home/*.tsx',
   ],
   {
     query: '?raw',

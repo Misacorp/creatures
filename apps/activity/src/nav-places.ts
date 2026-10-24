@@ -1,12 +1,12 @@
 /**
- * The places of the main navigation as plain data, and the groups they sit in. The dock (a group button, the
- * Lounge and a group button, the groups with upward sub-menus) and the desktop rail (every place under group headings) read the one list
+ * The places of the main navigation as plain data, and the groups they sit in. The dock (a group button, Home
+ * and a group button, the groups with upward sub-menus) and the desktop rail (Home, then every place under group headings) read the one list
  * (`navPlaces`) and the one group list (`NAV_GROUPS`), so a new screen, or one day a map home, is one entry.
  * A group with one place is a direct button. Ids are plain strings here: nothing in this file knows what the
  * places are.
  */
 import type { TabAlerts } from './tab-alerts';
-import { NAV_GROUPS, NAV_LOUNGE, TABS } from './tabs';
+import { NAV_GROUPS, NAV_HOME, TABS } from './tabs';
 
 export interface NavPlace {
   id: string;
@@ -81,29 +81,27 @@ export function navGroups(
   return result;
 }
 
-/** The Lounge button of the dock: not a place but the living room's sheet. */
-export interface NavLounge {
+/** Home, the dock's middle button: a place of its own that is in no group. */
+export interface NavHome {
   id: string;
   label: string;
   glyph: string;
-  /** Why the button has a pip (the room has something to show), or null when it has none. */
-  pip: string | null;
 }
 
-/** What the dock draws, left to right: a group's button or the Lounge's. */
-export type DockItem = { kind: 'group'; group: NavGroup } | { kind: 'lounge'; lounge: NavLounge };
+/** What the dock draws, left to right: a group's button or Home's. */
+export type DockItem = { kind: 'group'; group: NavGroup } | { kind: 'home'; home: NavHome };
 
-/** The Lounge entry of the dock, with its pip (null for none). */
-export function navLounge(pip: string | null): NavLounge {
-  return { ...NAV_LOUNGE, pip };
+/** The Home entry of the dock and the rail. */
+export function navHome(): NavHome {
+  return { ...NAV_HOME };
 }
 
 /**
- * The dock's buttons in order: the groups with the Lounge in the middle of them (between the first half and
- * the second). With no `lounge` (a window that shows the room itself) it is just the groups.
+ * The dock's buttons in order: the groups with Home in the middle of them (between the first half and the
+ * second). With no `home` it is just the groups.
  */
-export function dockItems(groups: readonly NavGroup[], lounge: NavLounge | null): DockItem[] {
+export function dockItems(groups: readonly NavGroup[], home: NavHome | null): DockItem[] {
   const items: DockItem[] = groups.map((group) => ({ kind: 'group', group }));
-  if (lounge !== null) items.splice(Math.floor(groups.length / 2), 0, { kind: 'lounge', lounge });
+  if (home !== null) items.splice(Math.floor(groups.length / 2), 0, { kind: 'home', home });
   return items;
 }

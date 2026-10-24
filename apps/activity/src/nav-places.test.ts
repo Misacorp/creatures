@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BUNDLED_GLYPHS } from './glyphs';
-import {
-  dockItems,
-  groupAlert,
-  navGroups,
-  navLounge,
-  navPlaces,
-  type NavPlace,
-} from './nav-places';
+import { dockItems, groupAlert, navGroups, navHome, navPlaces, type NavPlace } from './nav-places';
 import { ALERT_TEXT, NO_ALERTS } from './tab-alerts';
 import { NAV_GROUPS, TABS } from './tabs';
 
@@ -112,32 +105,29 @@ describe('groupAlert, the roll-up pip', () => {
 
 describe('dockItems', () => {
   const groups = navGroups(navPlaces(NO_ALERTS));
+  const idOf = (item: ReturnType<typeof dockItems>[number]): string =>
+    item.kind === 'group' ? item.group.id : item.home.id;
 
-  it('puts the Lounge between the groups: left group, Lounge, right group', () => {
-    const items = dockItems(groups, navLounge(null));
-    expect(items.map((item) => (item.kind === 'group' ? item.group.id : item.lounge.id))).toEqual([
-      'creatures',
-      'lounge',
-      'adventure',
-    ]);
+  it('puts Home between the groups: left group, Home, right group', () => {
+    const items = dockItems(groups, navHome());
+    expect(items.map(idOf)).toEqual(['creatures', 'home', 'adventure']);
   });
 
-  it('is just the groups with no Lounge', () => {
+  it('is just the groups with no Home', () => {
     expect(dockItems(groups, null).map((item) => item.kind)).toEqual(['group', 'group']);
   });
 
-  it('keeps the Lounge in the middle when a group is added, by data alone', () => {
+  it('keeps Home in the middle when a group is added, by data alone', () => {
     const three = navGroups(
       [...navPlaces(NO_ALERTS), place('a', 'extra')],
       [...NAV_GROUPS, { id: 'extra', label: 'Extra', glyph: 'paw' }],
     );
-    const kinds = dockItems(three, navLounge(null)).map((item) => item.kind);
-    expect(kinds).toEqual(['group', 'lounge', 'group', 'group']);
+    const kinds = dockItems(three, navHome()).map((item) => item.kind);
+    expect(kinds).toEqual(['group', 'home', 'group', 'group']);
   });
 
-  it('carries the Lounge pip, or none', () => {
-    expect(navLounge(null).pip).toBeNull();
-    expect(navLounge('someone is here').pip).toBe('someone is here');
-    expect(navLounge(null).label).toBe('Lounge');
+  it('has a Home entry that is in no group and not in the place list', () => {
+    expect(navHome()).toEqual({ id: 'home', label: 'Home', glyph: 'home' });
+    expect(ids(navPlaces(NO_ALERTS))).not.toContain('home');
   });
 });

@@ -110,7 +110,16 @@ export class FakeElement extends FakeNode {
     contains: (name: string): boolean =>
       (this.getAttribute('class') ?? '').split(/\s+/).includes(name),
   };
-  readonly style = { setProperty: () => undefined, removeProperty: () => undefined };
+  /** The custom properties set through `style.setProperty` (what `cssVars` writes), for the tests. */
+  readonly vars = new Map<string, string>();
+  readonly style = {
+    setProperty: (name: string, value: string): void => {
+      this.vars.set(name, value);
+    },
+    removeProperty: (name: string): void => {
+      this.vars.delete(name);
+    },
+  };
   /** How often `scrollIntoView` and `focus` were called, for the tests. */
   scrolled = 0;
   focused = 0;

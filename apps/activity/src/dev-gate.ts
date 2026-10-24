@@ -10,12 +10,12 @@
  */
 import type { JSX } from 'preact';
 import type { Creature } from './api';
-import type { Tab } from './tabs';
+import type { Place } from './tabs';
 
 /** What the game gives the panel. */
 export interface DevPanelProps {
   /** The tab on screen: its section opens first. */
-  tab: Tab;
+  tab: Place;
   /** The player's creatures, for the pickers. */
   creatures: readonly Creature[];
   /** Called after a tool changed something, so the game reloads its state and views. */

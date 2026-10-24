@@ -84,7 +84,7 @@ Limit: this is per **activity instance**. People who opened the game from differ
 - Migration: `ALTER TABLE players ADD COLUMN lounger_id TEXT` (nullable).
 - `resolveLounger(userId)`: returns the stored lounger if it exists, belongs to the player and is idle; otherwise picks a new idle one at random, stores it (or null) and returns it. Used by `GET /api/state` (new field `loungerId`) and `POST /api/room`.
 - `PUT /api/lounger`, body `{ creatureId }`: 404 `creature_not_found` unless the player owns it, 409 `creature_busy` if it is on an expedition or a job. Answers `{ loungerId }`.
-- `POST /api/room` answers `{ residents: [{ userId, name, creature }] }` for the ids that are players of **this guild** with a starter; other ids are left out silently. `name` is the stored, sanitised display name. `creature` is null when everything is busy, else `{ id, species, shiny, level, nickname, quirk, craftingLevel, explorerRank }`.
+- `POST /api/room` answers `{ residents: [{ userId, name, creature }] }` for the ids that are players of **this guild** with a starter; other ids are left out silently. `name` is the stored, sanitised display name. `creature` is null when everything is busy, else `{ id, species, shiny, level, nickname, quirk, craftingLevel, explorerRank, firstOnServer, gear }` (`firstOnServer`: its owner holds the "first on server" record for its species or line; the popover shows the tag).
 - Privacy: this shows one creature of a guild-mate, which is the same kind of data the raid roster already shows to the server. A client can ask about any guild member id; that is acceptable for this data and capped at 25 ids a request.
 
 ### Activity

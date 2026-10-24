@@ -1,0 +1,26 @@
+/*
+  The Home page's workbench frame (`HomeDemo`, dev only: imported by its workbench page alone). It reuses the
+  main navigation demo's frame (`.nd`); this adds the scrolling page of a phone and the room band of a wide window.
+*/
+
+/* A phone is a window-high column: the page scrolls inside it, the dock stays. */
+.nd.hm.nd-phone {
+  height: 46rem;
+  min-height: 0;
+}
+
+.hm .hm-screen {
+  min-height: 0;
+  padding: 0 0.75rem 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* On a wide window the room is the band under the HUD, like the game's. */
+.hm-band {
+  margin-bottom: 0.75rem;
+}
+
+.nd-wide.hm .nd-body {
+  padding-top: 0.25rem;
+}

@@ -1,9 +1,9 @@
 /*
   The main navigation (`MainNav.tsx`, `Hud.tsx`; decisions.md 2026-10-24). Below 60 rem (`WIDE_QUERY`) it is a
-  game's dock: a group button, the Lounge (the primary button, gold and raised, it opens the living room's
-  sheet) and a group button, fixed to the bottom edge under the thumb (a group with several places opens a
+  game's dock: a group button, Home (the primary button, gold and raised, it opens the Home page) and a group
+  button, fixed to the bottom edge under the thumb (a group with several places opens a
   tray of big buttons upward), with the HUD (the place's name, the currencies, "?") stuck to the top edge.
-  From 60 rem the dock is a rail down the left of the screen, every place with its word beside the picture
+  From 60 rem the dock is a rail down the left of the screen, Home first, then every place with its word beside the picture
   under its group's heading, and the HUD runs across the top of the card.
 */
 :root {
@@ -196,7 +196,7 @@ body:has(.main-nav.dock) {
   gap: var(--dock-gap);
 }
 
-/* Three buttons share the width: a group, the Lounge, a group. */
+/* Three buttons share the width: a group, Home, a group. */
 .main-nav.dock > ul > li {
   flex: 1 1 0;
   min-width: 0;
@@ -210,15 +210,15 @@ body:has(.main-nav.dock) {
 }
 
 /*
-  The Lounge is the primary button: always gold, a little larger and raised above the bar (its top edge sticks
+  Home is the primary button: always gold, a little larger and raised above the bar (its top edge sticks
   out over the bar's), a game's "play" button. The bar is not clipped, so the raised part shows.
 */
-.main-nav.dock > ul > li.nav-lounge {
+.main-nav.dock > ul > li.nav-home {
   flex-grow: 1.15;
   margin-top: -0.75rem; /* the extra height sticks out above the bar instead of making it taller */
 }
 
-.main-nav.dock button.nav-btn.lounge {
+.main-nav.dock button.nav-btn.home {
   min-height: 4.25rem;
   padding-top: 0.375rem;
   background: var(--gold);
@@ -229,16 +229,16 @@ body:has(.main-nav.dock) {
   font-size: var(--fs-row);
 }
 
-.main-nav.dock button.nav-btn.lounge.open {
+.main-nav.dock button.nav-btn.home.current {
   filter: brightness(0.92);
 }
 
-button.nav-btn.lounge:focus-visible {
+.main-nav.dock button.nav-btn.home:focus-visible {
   outline-color: var(--ink);
 }
 
 /*
-  The Lounge is the one gold button, so the group you are in is not gold here: it keeps its dark face and
+  Home is the one gold button, so the group you are in is not gold here: it keeps its dark face and
   shows a gold underline and a gold word instead (the rail and the trays still use the gold face).
 */
 .main-nav.dock button.nav-btn.active {
@@ -267,7 +267,7 @@ main.card:has(.main-nav.dock) {
 
 .main-nav.dock ul.nav-tray {
   position: absolute;
-  bottom: calc(100% + 1.25rem); /* clear of the Lounge button's raised top */
+  bottom: calc(100% + 1.25rem); /* clear of the Home button's raised top */
   display: grid;
   gap: 0.5rem;
   width: min(17rem, 100% - 1rem);

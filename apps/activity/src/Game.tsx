@@ -17,13 +17,14 @@ import {
 import { ActionIds } from './actions';
 import { allowanceNotice } from './allowance-text';
 import { AppHead, RoomBand } from './AppHead';
+import { DEFAULT_BOARD_SETTINGS } from './home/board';
+import { HomeScreen } from './home/HomeScreen';
 import { Hud } from './Hud';
 import { MainNav } from './MainNav';
 import { navPlaces } from './nav-places';
 import { useWide } from './ui/wide-layout';
 import { Collection } from './Collection';
 import { createCreatureActions } from './creature-actions';
-import { LoungeSheet } from './LoungeSheet';
 import { LoungeSwap } from './LoungeSwap';
 import type { CatchChoiceActions } from './find-view';
 import { claimExpedition, pushOn, sendExpedition, type SendRequest } from './expedition-api';
@@ -48,7 +49,7 @@ import { chooseCatch } from './talent-api';
 import { choiceResultText } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
-import { isTab, type Tab } from './tabs';
+import { DEFAULT_PLACE, NAV_HOME, isPlace, type Place } from './tabs';
 import { useActionRunner } from './use-action-runner';
 import { useForecast } from './use-forecast';
 import { EquipHost } from './equip-from-card';
@@ -57,9 +58,10 @@ import type { GearItem } from './gear-types';
 import { TreatTimesContext } from './TreatBox';
 import { useGearState } from './use-gear-state';
 import { useLoungePresence } from './use-lounge-presence';
+import { useRaidGlance } from './use-raid-glance';
 import { useRoomPhase } from './use-room-phase';
 import { useTabPips } from './use-tab-pips';
-import { sceneOf } from './LivingRoom';
+import { sceneOf, type LivingRoom } from './LivingRoom';
 import { LevelResetCard } from './LevelResetCard';
 import { WipeNotice } from './WipeNotice';
 import { Workshop } from './Workshop';
@@ -117,7 +119,9 @@ export function Game({
   const games = useGames(game.starterChosen, offset, () => {
     refreshState();
   });
-  const [tab, setTab] = useState<Tab>('collection');
+  // The raid's week times for Home, loaded when the game opens (a failed load leaves the raid rows out).
+  const { raid: raidGlance, load: loadRaidGlance } = useRaidGlance(game.starterChosen);
+  const [tab, setTab] = useState<Place>(DEFAULT_PLACE);
   const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
     null,
   );
@@ -347,13 +351,11 @@ export function Game({
   // The main navigation: the dock on a phone, the rail on a wide window. The HUD names the place you are in.
   const wide = useWide();
   const places = navPlaces(alerts);
-  /** The phone's Lounge sheet (the room is not at the top of the phone layout), and the button that opens it. */
-  const [loungeOpen, setLoungeOpen] = useState(false);
-  const loungeButton = useRef<HTMLButtonElement>(null);
-  const placeLabel = places.find((place) => place.id === tab)?.label ?? '';
+  const placeLabel =
+    tab === NAV_HOME.id ? NAV_HOME.label : (places.find((place) => place.id === tab)?.label ?? '');
 
-  // The living room's props: the same room in the desktop's band and in the phone's Lounge sheet.
-  const roomProps: Parameters<typeof LoungeSheet>[0]['room'] = {
+  // The living room's props: the same room in the desktop's band and at the top of the phone's Home page.
+  const roomProps: Parameters<typeof LivingRoom>[0] = {
     residents: room.residents,
     selfId: user.id,
     instanceId: participants.instanceId,
@@ -363,7 +365,6 @@ export function Game({
       board: games.view?.board ?? [],
       selfId: user.id,
       onOpen: () => {
-        setLoungeOpen(false);
         setTab('games');
         games.load();
       },
@@ -377,7 +378,7 @@ export function Game({
   };
 
   // With a game on screen: the HUD and, on a wide window, the living room band under it (a phone has the
-  // Lounge button instead). Before a game (choosing a starter): the title row.
+  // room at the top of the Home page instead). Before a game (choosing a starter): the title row.
   const head = game.starterChosen ? (
     <>
       <Hud title={placeLabel} balances={game.balances} helpRef={helpRef} onHelp={onHelp} />
@@ -436,25 +437,17 @@ export function Game({
           places={places}
           current={tab}
           wide={wide}
-          lounge={{
-            pip: null,
-            open: loungeOpen,
-            onOpen: () => {
-              setLoungeOpen(true);
-              refreshState();
-              room.refreshIfStale();
-            },
-            buttonRef: loungeButton,
-          }}
+          home
           onSelect={(id) => {
-            if (!isTab(id)) return;
+            if (!isPlace(id)) return;
             setTab(id);
             setError(null);
             setNotice(null);
             refreshState();
             room.refreshIfStale();
             loadForecast();
-            if (id === 'games') games.load();
+            if (id === 'games' || id === 'home') games.load();
+            if (id === 'home') loadRaidGlance();
             if (id !== 'games') loadGear();
           }}
         />
@@ -492,6 +485,29 @@ export function Game({
             </Alert>
           )}
           <div key={devNonce}>
+            {tab === 'home' && (
+              <HomeScreen
+                offset={offset}
+                timezone={timezone.current ?? 'UTC'}
+                trips={game.expeditions}
+                jobs={gear === null ? null : gear.jobs}
+                creatures={game.creatures}
+                games={games.view}
+                pending={game.pending.length}
+                attention={attention}
+                raid={raidGlance}
+                forecast={forecast}
+                settings={DEFAULT_BOARD_SETTINGS}
+                onGo={(place) => {
+                  setTab(place);
+                  refreshState();
+                  loadForecast();
+                  if (place === 'games') games.load();
+                  else loadGear();
+                }}
+                room={wide ? undefined : <RoomBand room={roomProps} />}
+              />
+            )}
             {tab === 'collection' && (
               <Collection
                 state={game}
@@ -649,24 +665,12 @@ export function Game({
     />
   );
 
-  const lounge = game.starterChosen && !wide && (
-    <LoungeSheet
-      open={loungeOpen}
-      onClose={() => {
-        setLoungeOpen(false);
-      }}
-      room={roomProps}
-      returnFocusTo={loungeButton.current}
-    />
-  );
-
   return (
     <TreatTimesContext.Provider value={forecast?.today?.treatTimes ?? 2}>
       <GearItemsContext.Provider value={gear?.items ?? NO_ITEMS}>
         <EquipHost creatures={gear === null ? NO_CREATURES : game.creatures} onEquip={equipOn}>
           {head}
           {content}
-          {lounge}
           {swap}
           {devPanel}
         </EquipHost>

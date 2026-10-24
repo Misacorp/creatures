@@ -3,7 +3,7 @@
  * The body of each one has to match a strict schema in `apps/worker/src/dev-schemas.ts` (unknown keys
  * are refused with a 400), so a new field there needs a field here.
  */
-import type { Tab } from '../tabs';
+import type { Place, Tab } from '../tabs';
 import type { Field, Option, ToolSpec } from './forms';
 import {
   BASE_OPTIONS,
@@ -323,7 +323,7 @@ export const ALL_SPECS: readonly ToolSpec[] = [
 ];
 
 /** The sections with the current tab's first (the others keep their order). */
-export function orderedSections(tab: Tab): SectionDef[] {
+export function orderedSections(tab: Place): SectionDef[] {
   const here = SECTIONS.filter((s) => s.tab === tab);
   return [...here, ...SECTIONS.filter((s) => s.tab !== tab)];
 }

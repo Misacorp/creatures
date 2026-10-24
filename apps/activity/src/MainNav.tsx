@@ -1,49 +1,36 @@
-import type { RefObject } from 'preact';
 import { useEffect, useId, useRef, useState } from 'preact/hooks';
 import { glyphOrUnknown } from './glyphs';
 import {
   dockItems,
   navGroups,
-  navLounge,
-  type DockItem,
+  navHome,
   type NavGroup,
+  type NavHome,
   type NavPlace,
 } from './nav-places';
 import { Sprite } from './sprites/Sprite';
 import { tabPalette } from './tabs';
 
 /**
- * The main navigation (decisions.md 2026-10-24, reworked twice the same day): one list of places
+ * The main navigation (decisions.md 2026-10-24, reworked three times the same day): one list of places
  * (`navPlaces`), each in a group (`NAV_GROUPS`), drawn two ways. On a phone it is the dock, three wide
- * buttons (a picture over a word) fixed to the bottom edge, in thumb reach: a group, the Lounge (the primary
- * button, the only gold one, raised; it opens the living room in a sheet) and a group; the group you are in
+ * buttons (a picture over a word) fixed to the bottom edge, in thumb reach: a group, Home (the primary
+ * button, the only gold one, raised; it opens the Home page) and a group; the group you are in
  * has a gold underline and gold word. A group with several places opens
  * a sub-menu above the dock, a tray of big buttons (picture, word and why it has a pip), one per place; a
  * group with one place is a direct button. A group's pip is the roll-up of its places' pips. On a wide window
- * (`wide`) it is a rail down the left, every place under its group's heading, no sub-menus and no Lounge (the
- * room is on screen). It is a `nav` landmark of plain buttons (Tab moves between them, `aria-current` marks
- * the place you are in, a group button says `aria-expanded`). A pip's reason is in the button's name for
- * screen readers.
+ * (`wide`) it is a rail down the left: Home first, then every place under its group's heading, no sub-menus.
+ * Home has no pip: the Home page itself says what needs you. It is a `nav` landmark of plain buttons (Tab
+ * moves between them, `aria-current` marks the place you are in, a group button says `aria-expanded`). A
+ * pip's reason is in the button's name for screen readers.
  */
-/** The dock's Lounge button: its pip (why the room has something to show, or null), whether its sheet is up, and what a tap does. */
-export interface LoungeButton {
-  pip: string | null;
-  /** Another word and picture for the button (the Home design round labels it "Home"); left out, the Lounge's own. */
-  label?: string | undefined;
-  glyph?: string | undefined;
-  open: boolean;
-  onOpen: () => void;
-  /** The button's element, so the sheet can give the focus back to it when it closes. */
-  buttonRef?: RefObject<HTMLButtonElement | null> | undefined;
-}
-
 export function MainNav({
   places,
   current,
   wide,
   onSelect,
   openGroup,
-  lounge,
+  home = false,
 }: {
   places: readonly NavPlace[];
   /** The id of the place you are in. */
@@ -53,20 +40,14 @@ export function MainNav({
   onSelect: (id: string) => void;
   /** Dock only: start with this group's sub-menu open (the workbench's presets). */
   openGroup?: string | undefined;
-  /** Dock only: the Lounge button (the room is in a sheet on a phone). Left out, the dock has no such button. */
-  lounge?: LoungeButton | undefined;
+  /** Draw Home: the dock's middle button, the rail's first item. Choosing it calls `onSelect('home')`. */
+  home?: boolean;
 }) {
   const groups = navGroups(places);
   return wide ? (
-    <Rail groups={groups} current={current} onSelect={onSelect} />
+    <Rail groups={groups} current={current} onSelect={onSelect} home={home} />
   ) : (
-    <Dock
-      groups={groups}
-      current={current}
-      onSelect={onSelect}
-      openGroup={openGroup}
-      lounge={lounge}
-    />
+    <Dock groups={groups} current={current} onSelect={onSelect} openGroup={openGroup} home={home} />
   );
 }
 
@@ -126,19 +107,36 @@ function PlaceButton({
   );
 }
 
-/** The wide window's rail: every place under its group's heading, picture and word side by side. It scrolls inside itself if the window is short. */
+/** The wide window's rail: Home, then every place under its group's heading, picture and word side by side. It scrolls inside itself if the window is short. */
 function Rail({
   groups,
   current,
   onSelect,
+  home,
 }: {
   groups: readonly NavGroup[];
   current: string;
   onSelect: (id: string) => void;
+  home: boolean;
 }) {
   const prefix = useId();
+  const entry = navHome();
   return (
     <nav class="main-nav rail" aria-label="Places">
+      {home && (
+        <div class="nav-group nav-home">
+          <ul>
+            <li>
+              <PlaceButton
+                place={{ ...entry, group: '', pip: null }}
+                active={current === entry.id}
+                onSelect={onSelect}
+                extra="home"
+              />
+            </li>
+          </ul>
+        </div>
+      )}
       {groups.map((group) => (
         <div key={group.id} class="nav-group">
           <p class="nav-heading pix" id={`${prefix}-${group.id}`}>
@@ -162,24 +160,15 @@ function Dock({
   current,
   onSelect,
   openGroup,
-  lounge,
+  home,
 }: {
   groups: readonly NavGroup[];
   current: string;
   onSelect: (id: string) => void;
   openGroup: string | undefined;
-  lounge: LoungeButton | undefined;
+  home: boolean;
 }) {
-  const items = dockItems(
-    groups,
-    lounge === undefined
-      ? null
-      : {
-          ...navLounge(lounge.pip),
-          ...(lounge.label === undefined ? {} : { label: lounge.label }),
-          ...(lounge.glyph === undefined ? {} : { glyph: lounge.glyph }),
-        },
-  );
+  const items = dockItems(groups, home ? navHome() : null);
   const [open, setOpen] = useState<string | null>(openGroup ?? null);
   const buttons = useRef(new Map<string, HTMLButtonElement>());
   const prefix = useId();
@@ -214,15 +203,15 @@ function Dock({
       >
         <ul>
           {items.map((item, index) => {
-            if (item.kind === 'lounge' && lounge !== undefined) {
+            if (item.kind === 'home') {
               return (
-                <li key={item.lounge.id} class="nav-lounge">
-                  <LoungeNavButton
-                    entry={item.lounge}
-                    lounge={lounge}
+                <li key={item.home.id} class="nav-home">
+                  <HomeNavButton
+                    entry={item.home}
+                    current={current === item.home.id}
                     onOpen={() => {
                       setOpen(null);
-                      lounge.onOpen();
+                      onSelect(item.home.id);
                     }}
                   />
                 </li>
@@ -292,29 +281,26 @@ function Dock({
   );
 }
 
-/** The Lounge: the primary button of the dock. It opens the living room's sheet; the sheet is not a place, so it is never `aria-current`. */
-function LoungeNavButton({
+/** Home: the primary button of the dock. It is a place like the others (`aria-current` while you are on it), drawn gold and raised. */
+function HomeNavButton({
   entry,
-  lounge,
+  current,
   onOpen,
 }: {
-  entry: Extract<DockItem, { kind: 'lounge' }>['lounge'];
-  lounge: LoungeButton;
+  entry: NavHome;
+  current: boolean;
   onOpen: () => void;
 }) {
   return (
     <button
       type="button"
-      {...(lounge.buttonRef === undefined ? {} : { ref: lounge.buttonRef })}
-      class={`nav-btn lounge${lounge.open ? ' open' : ''}`}
-      data-lounge=""
-      aria-haspopup="dialog"
-      aria-expanded={lounge.open}
+      class={`nav-btn home${current ? ' current' : ''}`}
+      aria-current={current ? 'page' : undefined}
+      data-place={entry.id}
       onClick={onOpen}
     >
       <PlaceIcon glyph={entry.glyph} active />
       <span class="nav-label">{entry.label}</span>
-      <Pip reason={entry.pip} />
     </button>
   );
 }

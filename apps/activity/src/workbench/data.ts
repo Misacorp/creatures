@@ -227,6 +227,7 @@ export function sampleResidents(count: number, oneBusy: boolean): Resident[] {
               quirk: null,
               craftingLevel: 1 + (i % 4),
               explorerRank: 1 + (i % 3),
+              firstOnServer: i % 5 === 1,
               gear: sampleWorn(i),
             },
     };

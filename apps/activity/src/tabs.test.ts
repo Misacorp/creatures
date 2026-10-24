@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BUNDLED_GLYPHS } from './glyphs';
-import { NAV_GROUPS, NAV_LOUNGE, TABS, tabPalette } from './tabs';
+import { DEFAULT_PLACE, NAV_GROUPS, NAV_HOME, TABS, isPlace, isTab, tabPalette } from './tabs';
 
 describe('the tabs', () => {
   it('has the six tabs: your creatures, then the adventures in rising danger, the Valley Games last', () => {
@@ -31,7 +31,7 @@ describe('the tabs', () => {
   });
 });
 
-describe('the groups and the Lounge', () => {
+describe('the groups and Home', () => {
   it('has two groups, Creatures and Adventure, in the places Misa named', () => {
     expect(NAV_GROUPS.map((g) => g.id)).toEqual(['creatures', 'adventure']);
     const of = (id: string) => TABS.filter((t) => t.group === id).map((t) => t.id);
@@ -39,9 +39,21 @@ describe('the groups and the Lounge', () => {
     expect(of('adventure')).toEqual(['expeditions', 'dungeon', 'raid', 'games']);
   });
 
-  it('has a Lounge entry with a word and a picture, and it is not a place', () => {
-    expect(NAV_LOUNGE.label).toBe('Lounge');
-    expect(Object.hasOwn(BUNDLED_GLYPHS, NAV_LOUNGE.glyph)).toBe(true);
-    expect(TABS.map((t) => t.id)).not.toContain(NAV_LOUNGE.id);
+  it('has a Home entry with a word and a picture of its own, and it is a place but not a tab', () => {
+    expect(NAV_HOME.label).toBe('Home');
+    expect(Object.hasOwn(BUNDLED_GLYPHS, NAV_HOME.glyph)).toBe(true);
+    expect(TABS.map((t) => t.id)).not.toContain(NAV_HOME.id);
+    expect(TABS.map((t) => t.glyph)).not.toContain(NAV_HOME.glyph);
+    expect(isPlace('home')).toBe(true);
+    expect(isTab('home')).toBe(false);
+    expect(isPlace('raid')).toBe(true);
+    expect(isPlace('lounge')).toBe(false);
+  });
+});
+
+describe('the default place', () => {
+  it('is Home, so the app opens on the Today board', () => {
+    expect(DEFAULT_PLACE).toBe(NAV_HOME.id);
+    expect(isPlace(DEFAULT_PLACE)).toBe(true);
   });
 });

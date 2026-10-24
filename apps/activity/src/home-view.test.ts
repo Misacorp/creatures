@@ -4,11 +4,11 @@ import {
   comingUp,
   homeAlerts,
   needsYou,
-  placeCards,
+  quietRows,
   valleyToday,
   whenText,
 } from './home-view';
-import { HOME_TZ, homeInput } from './workbench/home-mockups/home-data';
+import { HOME_TZ, homeInput } from './workbench/home-sample';
 
 /** The fixture clock: Saturday 10:00 in Helsinki. Games lock 13:37, a trip back 15:20, a job ready 14:05, Phase 2 13:37, finale Sunday 20:00. */
 
@@ -81,6 +81,7 @@ describe('comingUp', () => {
       ['13:37', 'Raid: Phase 2'],
       ['14:05', 'Craft Kelp Cap is ready'],
       ['15:20', 'First of 2 trips is back'],
+      ['Sun 20:00', 'Raid finale'],
     ]);
     expect(rows[0]?.rel).toBe('in 3 h 37 m');
   });
@@ -103,47 +104,57 @@ describe('comingUp', () => {
   });
 });
 
-describe('placeCards', () => {
-  const lines = (state: string, raid: boolean) =>
-    Object.fromEntries(placeCards(homeInput(state, raid)).map((c) => [c.id, c.status]));
-
-  it('writes a status line for every place from the data the game screen holds', () => {
-    expect(lines('busy', true)).toEqual({
-      expeditions: '1 home, 2 out, next back 15:20',
-      workshop: 'Job ready, 1 running, ready 14:05',
-      raid: 'Creatures to place',
-      games: 'Enter by 13:37',
-      dungeon: 'Run open',
-      collection: '9 creatures',
-    });
-  });
-
-  it('reads calmly when nothing waits', () => {
-    expect(lines('nothing waiting', true)).toEqual({
-      expeditions: '2 out, next back 15:20',
-      workshop: '1 running, ready 14:05',
-      raid: 'Phase 2 13:37',
-      games: 'Entered, show 14:00',
-      dungeon: 'No run waiting',
-      collection: '9 creatures',
-    });
-  });
-
-  it('has no raid line beyond the attention block without the raid week', () => {
-    expect(lines('nothing waiting', false)['raid']).toBeNull();
-    expect(lines('busy', false)['raid']).toBe('Creatures to place');
-  });
-
-  it('gives the cards the pips of the navigation', () => {
-    const cards = placeCards(homeInput('busy', true));
-    expect(cards.filter((c) => c.pip !== null).map((c) => c.id)).toEqual([
-      'expeditions',
-      'workshop',
-      'raid',
-      'games',
-      'dungeon',
+describe('the raid rows', () => {
+  it('shows the next phase and the finale from the raid view, and neither without it', () => {
+    const withRaid = comingUp(homeInput('busy', true), 8).filter((r) => r.place === 'raid');
+    expect(withRaid.map((r) => [r.when, r.text])).toEqual([
+      ['13:37', 'Raid: Phase 2'],
+      ['Sun 20:00', 'Raid finale'],
     ]);
-    expect(placeCards(homeInput('nothing waiting', true)).every((c) => c.pip === null)).toBe(true);
+    const without = comingUp(homeInput('busy', false), 8);
+    expect(without.some((r) => r.place === 'raid')).toBe(false);
+  });
+
+  it('works the next phase out from the schedule and the clock, so an old load never shows a past phase', () => {
+    const input = homeInput('busy', true);
+    const later = { ...input, now: input.now + 6 * 3_600_000 };
+    const rows = comingUp(later, 8).filter((r) => r.place === 'raid');
+    expect(rows.map((r) => r.text)).toEqual(['Raid finale']);
+  });
+});
+
+describe('quietRows', () => {
+  const text = (state: string, raid = true) =>
+    Object.fromEntries(quietRows(homeInput(state, raid)).map((r) => [r.place, r.text]));
+
+  it('is empty on a busy day and while things are only running', () => {
+    expect(quietRows(homeInput('busy', true))).toEqual([]);
+    // Trips out, a job running, the show still to come: ongoing, not quiet (they are in "Coming up").
+    expect(text('nothing waiting')).toEqual({ dungeon: 'No run waiting' });
+  });
+
+  it('calls a place quiet when nothing is going on there and nothing waits', () => {
+    expect(text('nothing going on')).toEqual({
+      expeditions: 'Nobody is out',
+      workshop: 'No job running',
+      dungeon: 'No run waiting',
+      raid: "This week's raid is over",
+      games: 'Results are in',
+    });
+  });
+
+  it('leaves a place out while the client does not know about it yet', () => {
+    const input = homeInput('nothing going on', true);
+    const unknown = { ...input, jobs: null, games: null, attention: null, raid: null };
+    expect(quietRows(unknown).map((r) => r.place)).toEqual(['expeditions']);
+  });
+
+  it('never lists a place that has a row in "Needs you"', () => {
+    for (const state of ['busy', 'nothing waiting', 'nothing going on', 'crowded']) {
+      const input = homeInput(state, true);
+      const waiting = new Set(needsYou(input).map((r) => r.place));
+      expect(quietRows(input).filter((r) => waiting.has(r.place))).toEqual([]);
+    }
   });
 });
 

@@ -1,6 +1,6 @@
 /*
-  The living room strip under the HUD on a wide window (LivingRoom.tsx, RoomBand in AppHead.tsx), and in the
-  Lounge sheet on a phone (LoungeSheet.tsx). The room is a stack of
+  The living room strip under the HUD on a wide window (LivingRoom.tsx, RoomBand in AppHead.tsx), and at the top
+  of the Home page on a phone (home/HomePage.tsx). The room is a stack of
   layers: a canvas of back props, the creatures as buttons, a canvas of front props. JS sets
   --stage-w and --stage-h (the stage in CSS px)
   and each creature's --x and --y with style.setProperty; there are no inline style attributes.
@@ -15,18 +15,6 @@
   position: relative;
   left: var(--bleed-left);
   width: var(--bleed-width);
-}
-
-/*
-  In the Lounge sheet the room runs edge to edge of the sheet, and sits clear of the phone's gesture bar: the
-  full bottom inset (the larger of the browser's and Discord's) plus a little.
-*/
-.lounge-sheet .drawer-body {
-  padding-right: 0;
-  padding-bottom: calc(
-    max(env(safe-area-inset-bottom, 0px), var(--discord-safe-area-inset-bottom, 0px)) + 0.75rem
-  );
-  padding-left: 0;
 }
 
 .room {

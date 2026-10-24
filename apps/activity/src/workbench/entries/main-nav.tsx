@@ -5,20 +5,19 @@ import { LAYOUTS, MENUS, MainNavDemo } from '../main-nav-demo/MainNavDemo';
 import { bool, num, str } from '../props';
 import type { Entry } from '../types';
 
-const PLACE_IDS = [...TABS.map((t) => t.id), 'market'];
+const PLACE_IDS = ['home', ...TABS.map((t) => t.id), 'market'];
 
 const mainNav: Entry = {
   name: 'MainNav',
   file: 'apps/activity/src/MainNav.tsx',
   group: 'Controls',
   description:
-    'The main navigation: on a phone a game-style dock fixed to the bottom edge with three buttons (a group, the Lounge, a group; a picture over a word) and a slim HUD on top (the place name, the currencies with numbers, "?"); on a wide window a rail down the left with every place under its group heading and the HUD across the top. The left group (Creatures: Creatures, Workshop) and the right group (Adventure: Expeditions, Dungeon, Raid, Games) open a tray of big buttons above the dock (picture, word, why it has a pip, the current place gold) and carry the roll-up of their places\' pips; the active group is gold. The middle Lounge button is the primary one (gold, larger, raised above the bar) and opens the living room in a bottom sheet (a close button, Escape, pull down); the room is not at the top of the phone layout any more. Tap outside, Escape or the group button again closes a tray. One list of places, each with a group, feeds the dock and the rail. Shown in a frame (the dock under the screen, not fixed to the window) with the real Creatures, Games and Expeditions screens on fixture data (other places show a stand-in); use 360 or 390 for the phone and the full width for the desktop; the layout control forces one (not in the presets: a desktop layout is not meant for a narrow window). "Open" starts a tray or the Lounge sheet open (phone); "Extra place in Creatures" shows a group growing; "Lounge pip" shows the Lounge button with a pip.',
+    'The main navigation: on a phone a game-style dock fixed to the bottom edge with three buttons (a group, Home, a group; a picture over a word) and a slim HUD on top (the place name, the currencies with numbers, "?"); on a wide window a rail down the left with Home first and every other place under its group heading, and the HUD across the top. The left group (Creatures: Creatures, Workshop) and the right group (Adventure: Expeditions, Dungeon, Raid, Games) open a tray of big buttons above the dock (picture, word, why it has a pip, the current place gold) and carry the roll-up of their places\' pips; the active group is gold. The middle Home button is the primary one (gold, larger, raised above the bar; no pip) and goes to the Home page. Tap outside, Escape or the group button again closes a tray. One list of places, each with a group, feeds the dock and the rail. Shown in a frame (the dock under the screen, not fixed to the window) with the real Creatures, Games and Expeditions screens on fixture data (other places, and Home, show a stand-in; the Home page has its own workbench page); use 360 or 390 for the phone and the full width for the desktop; the layout control forces one (not in the presets: a desktop layout is not meant for a narrow window). "Open" starts a tray open (phone); "Extra place in Creatures" shows a group growing.',
   controls: {
     place: { kind: 'select', options: PLACE_IDS },
     menu: { kind: 'select', options: MENUS },
     pips: { kind: 'toggle' },
     extra: { kind: 'toggle' },
-    loungePip: { kind: 'toggle' },
     layout: { kind: 'select', options: LAYOUTS },
   },
   defaults: {
@@ -26,7 +25,6 @@ const mainNav: Entry = {
     menu: 'none',
     pips: true,
     extra: false,
-    loungePip: false,
     layout: 'auto',
   },
   presets: [
@@ -39,8 +37,7 @@ const mainNav: Entry = {
     { name: 'Creatures tray open', props: { menu: 'creatures' } },
     { name: 'Adventure tray open', props: { menu: 'adventure', place: 'expeditions' } },
     { name: 'Adventure tray open, no pips', props: { menu: 'adventure', pips: false } },
-    { name: 'Lounge sheet open', props: { menu: 'lounge' } },
-    { name: 'Lounge with a pip', props: { loungePip: true } },
+    { name: 'Home active', props: { place: 'home' } },
     { name: 'No pips', props: { pips: false } },
     { name: 'Extra place in Creatures, tray open', props: { menu: 'creatures', extra: true } },
   ],
@@ -51,7 +48,6 @@ const mainNav: Entry = {
       menu={str(p, 'menu')}
       pips={bool(p, 'pips')}
       extra={bool(p, 'extra')}
-      loungePip={bool(p, 'loungePip')}
       layout={str(p, 'layout')}
     />
   ),

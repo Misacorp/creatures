@@ -1,16 +1,16 @@
-import type { Attention, Creature } from '../../api';
-import type { Trip } from '../../expedition-types';
-import gearRunning from '../../fixtures/gear-running.json';
-import { parseGearState } from '../../gear-parse';
-import type { Job } from '../../gear-types';
-import type { GamesView } from '../../games-types';
-import type { HomeInput, RaidGlance } from '../../home-view';
-import { sampleForecast } from '../data';
-import { gamesRoster, gamesView } from '../games-tab-sample';
-import { CREATURES, tripIn } from '../entries/trips';
+import type { Attention, Creature } from '../api';
+import type { Trip } from '../expedition-types';
+import gearRunning from '../fixtures/gear-running.json';
+import { parseGearState } from '../gear-parse';
+import type { Job } from '../gear-types';
+import type { GamesView } from '../games-types';
+import type { HomeInput, RaidGlance } from '../home-view';
+import { sampleForecast } from './data';
+import { gamesRoster, gamesView } from './games-tab-sample';
+import { CREATURES, tripIn } from './entries/trips';
 
 /**
- * Fixture data for the Home page design round (dev only). One fixed "now", Saturday 13 February 2027, 10:00 in
+ * Fixture data for the Home page's workbench page and tests (dev only). One fixed "now", Saturday 13 February 2027, 10:00 in
  * Helsinki, so every screenshot reads the same: the Games lock at 13:37, a trip back at 15:20, a job ready at
  * 14:05, Phase 2 of the raid at 13:37 and its finale on Sunday at 20:00. The trips, jobs, Games view and
  * forecast are the same samples the other workbench pages use, moved to that clock.
@@ -24,7 +24,7 @@ const MINUTE = 60_000;
 /** A time of day in Helsinki (UTC+2 in February) on the fixture's Saturday. */
 const at = (hour: number, minute: number): number => Date.UTC(2027, 1, 13, hour - 2, minute);
 
-export const HOME_STATES = ['busy', 'nothing waiting', 'crowded'] as const;
+export const HOME_STATES = ['busy', 'nothing waiting', 'nothing going on', 'crowded'] as const;
 export type HomeState = (typeof HOME_STATES)[number];
 
 /** A trip of the sample explorers that ends at `endsAt` (an active trip still out). */
@@ -94,7 +94,6 @@ export const RAID: RaidGlance = {
     phase2: at(13, 37),
     finale: at(20, 0) + 24 * HOUR,
   },
-  next: { event: 'phase2', at: at(13, 37) },
 };
 
 const NO_ATTENTION: Attention = { dungeon: false, raid: false, recheckAt: null };
@@ -118,6 +117,36 @@ export function homeInput(state: string, raid: boolean): HomeInput {
       trips: [tripEnding(1, at(15, 20)), tripEnding(2, at(18, 5))],
       jobs: [job(1, at(14, 5))],
       games: games(true),
+      pending: 0,
+      attention: NO_ATTENTION,
+    };
+  }
+  if (state === 'nothing going on') {
+    // Every place is quiet: no trip out, no job, the Games show is over, no dungeon run open, the raid week is over.
+    const over = games(true);
+    return {
+      ...common,
+      raid: raid
+        ? {
+            schedule: {
+              weekStart: RAID.schedule.weekStart - 7 * 24 * HOUR,
+              phase1: RAID.schedule.phase1 - 7 * 24 * HOUR,
+              phase2: RAID.schedule.phase2 - 7 * 24 * HOUR,
+              finale: HOME_NOW - HOUR,
+            },
+          }
+        : null,
+      trips: [],
+      jobs: [],
+      games: {
+        ...over,
+        next: {
+          ...over.next,
+          open: false,
+          lockAt: HOME_NOW - 3 * HOUR,
+          showAt: HOME_NOW - 2 * HOUR,
+        },
+      },
       pending: 0,
       attention: NO_ATTENTION,
     };

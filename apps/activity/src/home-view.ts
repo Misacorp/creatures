@@ -1,17 +1,16 @@
 /**
  * What the Home page says, as plain data worked out from what the game screen already holds (the trips, the
- * Workshop's jobs, the Games view, the attention block, the forecast, the creatures). Pure: the caller passes
- * the server time and the guild's timezone. Nothing here asks the server for anything. The two layouts of the
- * design round (a "Today board" and "Place cards") both read this, so the words are the same in each.
+ * Workshop's jobs, the Games view, the attention block, the forecast, the creatures, the raid's schedule). Pure:
+ * the caller passes the server time and the guild's timezone. Nothing here asks the server for anything.
+ * `home/board.ts` turns these rows into the Today board's notices.
  *
- * The raid's schedule is the one thing the game screen does not hold today (the Raid tab loads its own view,
- * and the attention block only says "creatures to place"): it is an optional input, and every line that needs
- * it simply reads shorter, or is left out, when it is null.
+ * The raid's schedule comes from the raid view the game loads when it opens (`use-raid-glance.ts`). It is an
+ * optional input: every line that needs it is left out when it is null (the load failed or has not landed).
  */
 import type { Attention, Creature } from './api';
 import { creatureName } from './game';
 import type { GamesView } from './games-types';
-import { emptyEvents, gamesAlert, showLive } from './games-view';
+import { emptyEvents, gamesAlert } from './games-view';
 import type { Job } from './gear-types';
 import { jobProgress, jobTitle, openJobs } from './gear-view';
 import { eventTitle } from './raid-time';
@@ -25,10 +24,9 @@ import type { Trip } from './expedition-types';
 import { skyKind, skyNames, type SkyKind } from './weather-view';
 import type { Forecast } from './weather-types';
 
-/** The part of the Raid view the Home page can use (the week's times, the next one, the guild's timezone). */
+/** The part of the Raid view the Home page uses: the week's times (UTC epoch ms). */
 export interface RaidGlance {
   schedule: Readonly<Record<RaidEventId, number>>;
-  next: { event: RaidEventId; at: number } | null;
 }
 
 export interface HomeInput {
@@ -107,121 +105,7 @@ function explorerName(trip: Trip, creatures: readonly Creature[]): string {
   return creature === undefined ? 'An explorer' : creatureName(creature);
 }
 
-function expeditionsLine(input: HomeInput): string {
-  const { home, choice, out } = tripCounts(input.trips, input.now);
-  const waiting = home.length + choice.length;
-  const parts: string[] = [];
-  if (waiting > 0)
-    parts.push(choice.length > 0 && waiting === 1 ? 'Push on?' : `${String(waiting)} home`);
-  const first = out[0];
-  if (first !== undefined) {
-    const back = whenText(input.now, legEnd(first, input.now), input.timezone);
-    parts.push(
-      parts.length === 0 || out.length > 1
-        ? `${String(out.length)} out, next back ${back}`
-        : `1 out, back ${back}`,
-    );
-  }
-  return parts.length === 0 ? 'Nobody out' : parts.join(', ');
-}
-
-// --- Workshop ---
-
-function workshopLine(input: HomeInput): string | null {
-  if (input.jobs === null) return null;
-  const open = openJobs(input.jobs);
-  if (open.length === 0) return 'No job running';
-  const ready = open.filter((j) => jobProgress(j, input.now).ready).length;
-  const running = open.filter((j) => !jobProgress(j, input.now).ready);
-  const first = running[0];
-  const parts: string[] = [];
-  if (ready > 0) parts.push(ready === 1 ? 'Job ready' : `${String(ready)} jobs ready`);
-  if (first !== undefined) {
-    const at = whenText(input.now, first.endsAt, input.timezone);
-    parts.push(
-      running.length > 1
-        ? `${String(running.length)} running, next ${at}`
-        : `1 running, ready ${at}`,
-    );
-  }
-  return parts.join(', ');
-}
-
-// --- Games ---
-
-function gamesLine(input: HomeInput): string | null {
-  const view = input.games;
-  if (view === null) return null;
-  const { now, timezone } = input;
-  if (showLive(view, now)) return 'The show is on';
-  const { next } = view;
-  if (now < next.lockAt && next.open) {
-    const waiting = emptyEvents(next, input.creatures).length;
-    const lock = whenText(now, next.lockAt, timezone);
-    return waiting > 0
-      ? `Enter by ${lock}`
-      : `Entered, show ${whenText(now, next.showAt, timezone)}`;
-  }
-  if (now < next.showAt) return `Show at ${whenText(now, next.showAt, timezone)}`;
-  return 'Results are in';
-}
-
-// --- Raid and the rest ---
-
-function raidLine(input: HomeInput): string | null {
-  const place = input.attention?.raid === true;
-  const next = input.raid?.next ?? null;
-  if (place) return 'Creatures to place';
-  if (next === null) return input.raid === null ? null : 'This week is done';
-  return `${eventTitle(next.event)} ${whenText(input.now, next.at, input.timezone)}`;
-}
-
-function dungeonLine(input: HomeInput): string | null {
-  if (input.attention === null) return null;
-  return input.attention.dungeon ? 'Run open' : 'No run waiting';
-}
-
-function creaturesLine(input: HomeInput): string {
-  const count = plural(input.creatures.length, 'creature', 'creatures');
-  return input.pending > 0
-    ? `${count}, ${plural(input.pending, 'catch', 'catches')} to answer`
-    : count;
-}
-
-// --- Place cards (variant B) ---
-
-export interface PlaceCardView {
-  id: Tab;
-  label: string;
-  glyph: string;
-  /** One line of status, or null when the client does not hold what it needs. */
-  status: string | null;
-  /** The pip's reason (the words a screen reader adds), or null. */
-  pip: string | null;
-}
-
-/** The six places in the order of the card grid, each with its status line and its pip. */
-export function placeCards(input: HomeInput): PlaceCardView[] {
-  const alerts = homeAlerts(input);
-  const lines: Record<Tab, string | null> = {
-    expeditions: expeditionsLine(input),
-    workshop: workshopLine(input),
-    raid: raidLine(input),
-    games: gamesLine(input),
-    dungeon: dungeonLine(input),
-    collection: creaturesLine(input),
-  };
-  const order: Tab[] = ['expeditions', 'workshop', 'raid', 'games', 'dungeon', 'collection'];
-  return order.map((id) => ({
-    id,
-    label: placeLabel(id),
-    glyph: placeGlyph(id),
-    status: lines[id],
-    pip: alerts[id],
-  }));
-}
-
-// --- Needs you (variant A) ---
+// --- Needs you ---
 
 export interface NeedRow {
   place: Tab;
@@ -285,7 +169,7 @@ export function needsYou(input: HomeInput): NeedRow[] {
   return rows;
 }
 
-// --- Coming up (variant A) ---
+// --- Coming up ---
 
 export interface ComingRow {
   at: number;
@@ -298,8 +182,8 @@ export interface ComingRow {
   rel: string;
 }
 
-/** The next things on the clock, soonest first, at most `limit` (default four). One row each for trips, jobs, the Games and the raid. */
-export function comingUp(input: HomeInput, limit = 4): ComingRow[] {
+/** The next things on the clock, soonest first, at most `limit` (default five, so the raid's finale fits beside four others). One row each for trips, jobs, the Games and the raid. */
+export function comingUp(input: HomeInput, limit = 5): ComingRow[] {
   const { now, timezone } = input;
   const rows: ComingRow[] = [];
   const add = (at: number, place: Tab, text: string): void => {
@@ -343,15 +227,53 @@ export function comingUp(input: HomeInput, limit = 4): ComingRow[] {
   }
   const raid = input.raid;
   if (raid !== null) {
-    if (raid.next !== null && raid.next.event !== 'finale') {
-      add(raid.next.at, 'raid', `Raid: ${eventTitle(raid.next.event)}`);
-    }
+    // The next phase still to come (the schedule alone says which, so a stale load never shows a past one), then the finale.
+    const phase = (['phase1', 'phase2'] as const).find((event) => raid.schedule[event] > now);
+    if (phase !== undefined) add(raid.schedule[phase], 'raid', `Raid: ${eventTitle(phase)}`);
     add(raid.schedule.finale, 'raid', 'Raid finale');
   }
   return rows.sort((a, b) => a.at - b.at).slice(0, limit);
 }
 
-// --- The valley today (variant A) ---
+// --- Quiet places ---
+
+export interface QuietRow {
+  place: Tab;
+  label: string;
+  glyph: string;
+  /** One calm line ("No run waiting"). */
+  text: string;
+}
+
+/**
+ * The places with nothing going on and nothing waiting, one calm line each: no trip out, no job running, no
+ * dungeon run open, the raid week over, the Games show over. A place the client does not hold the data for
+ * yet (its view has not loaded) is left out, not called quiet. A place that waits for the player or is
+ * running something is not here: it has a row in "Needs you" or "Coming up".
+ */
+export function quietRows(input: HomeInput): QuietRow[] {
+  const { now } = input;
+  const alerts = homeAlerts(input);
+  const rows: QuietRow[] = [];
+  const add = (place: Tab, text: string): void => {
+    rows.push({ place, label: placeLabel(place), glyph: placeGlyph(place), text });
+  };
+  const trips = tripCounts(input.trips, now);
+  if (alerts.expeditions === null && trips.out.length === 0) add('expeditions', 'Nobody is out');
+  if (input.jobs !== null && alerts.workshop === null) {
+    if (openJobs(input.jobs).length === 0) add('workshop', 'No job running');
+  }
+  if (input.attention !== null && alerts.dungeon === null) add('dungeon', 'No run waiting');
+  if (input.raid !== null && alerts.raid === null && now >= input.raid.schedule.finale) {
+    add('raid', "This week's raid is over");
+  }
+  if (input.games !== null && alerts.games === null && now >= input.games.next.showAt) {
+    add('games', 'Results are in');
+  }
+  return rows;
+}
+
+// --- The valley today ---
 
 export interface ValleyToday {
   kind: SkyKind;
