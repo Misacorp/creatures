@@ -75,8 +75,9 @@ Use pnpm (version pinned in `package.json`). From the repo root:
 
 - `pnpm install --frozen-lockfile`
 - `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`
+- `pnpm check`: all of the above in order (about 15 minutes). `pnpm check:changed`: the same for the packages changed since `origin/main` and those that depend on them, for iterating (a change to the worker runs the worker's API contract tests too).
 
-Run all of these before proposing a PR. CI runs the same.
+Run `pnpm check` before proposing a PR. CI runs the same. Lint runs per package with ESLint's cache, so a second run takes seconds.
 
 ## Conventions
 

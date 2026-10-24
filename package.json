@@ -13,6 +13,8 @@
     "lint": "pnpm -r --workspace-concurrency=2 lint && eslint --cache --cache-strategy content --cache-location node_modules/.cache/eslint/root .claude eslint.config.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build && pnpm -r --workspace-concurrency=1 --if-present test",
+    "check:changed": "pnpm format:check && pnpm -r --filter \"...[origin/main]\" --filter \"!{.}\" --workspace-concurrency=2 --if-present lint && pnpm -r --filter \"...[origin/main]\" --filter \"!{.}\" --if-present typecheck && pnpm -r --filter \"...[origin/main]\" --filter \"!{.}\" --workspace-concurrency=1 --if-present test",
     "test": "pnpm -r --if-present test",
     "fixtures:capture": "pnpm --filter @creatures/worker exec node scripts/capture-fixtures.mjs",
     "sim": "node packages/sim/scripts/run.mjs",
