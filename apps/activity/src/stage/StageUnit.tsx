@@ -147,7 +147,7 @@ export function StageUnit(props: UnitProps) {
         )}
         {ko && (
           <span class="ko-mark">
-            <Sprite sprite={glyphOrUnknown('skull')} scale={2} />
+            <Sprite sprite={glyphOrUnknown('skull')} scale={1} />
           </span>
         )}
         {props.silenced && (

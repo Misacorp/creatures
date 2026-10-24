@@ -55,6 +55,7 @@
 @import './stage/effects.css';
 @import './stage/move-track.css';
 @import './stage/boss-fx.css';
+@import './stage/barrier.css';
 @import './stage/ability-auto.css';
 @import './stage/countdown.css';
 @import './views/app.css';

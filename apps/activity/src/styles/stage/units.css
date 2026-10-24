@@ -149,12 +149,21 @@ button.unit-face:focus-visible {
 
 .ko-mark {
   position: absolute;
-  bottom: -0.125rem;
-  left: -0.125rem;
+  bottom: 0;
+  left: 0;
   z-index: 2;
   padding: 1px;
   background: var(--ink);
   line-height: 0;
+}
+
+/* A knocked-out creature of yours: the tint and the tag fade with it, so a lost party is quiet. */
+.stage-unit.mine.ko {
+  background: color-mix(in srgb, var(--mine) 35%, transparent);
+}
+
+.stage-unit.ko .you-pip {
+  opacity: 0.5;
 }
 
 .silence-tag {

@@ -404,6 +404,21 @@ export function playWindup(stage: FxStage, plan: FxPlan, ms: number, seed: numbe
         );
       });
       break;
+    case 'backlash': {
+      // The barrier bursts (its pieces fly off the boss), and the reaction comes back as a bolt.
+      const b = s.bossBox;
+      if (b !== null) s.shards(centre(b), 12, Math.max(b.w, b.h) * 0.7, at, seed);
+      targets.slice(0, 1).forEach((t) => {
+        s.fly(
+          (p) => s.pixel('fx-blob', BLOB, 3, p, 3),
+          curve(centre(b ?? t), centre(t), 0.12, 30, 14),
+          span * 0.75,
+          at + span * 0.25,
+          [0.8, 1.2],
+        );
+      });
+      break;
+    }
     case 'whip': {
       let from = mouth;
       targets.slice(0, 4).forEach((t, k) => {
@@ -674,6 +689,13 @@ export function playImpact(stage: FxStage, plan: FxPlan, seed: number): () => vo
   const hit = plan.targets;
   const big = plan.big ? 1.4 : 1;
   switch (plan.recipe) {
+    case 'backlash':
+      targets.slice(0, 1).forEach((t) => {
+        s.ring(centre(t), 2 * big, 0);
+        s.shards(centre(t), 8, 36, 0, seed);
+      });
+      s.shake(hit, 0, 5, 500);
+      break;
     case 'crescent':
     case 'whip':
       targets.slice(0, 6).forEach((t, k) => {

@@ -120,8 +120,11 @@ function TrackMove({
 }
 
 /**
- * How the track looks (Misa's design round, 2026-10-23: fewer boxes, less noise, more meaning).
- * - `countdown` (the default, the reviewers' pick): no column: the next few moves, each once, with the
+ * How the track looks (Misa's design rounds, 2026-10-23 and 24: fewer boxes, less noise, more meaning,
+ * and less room taken from the boss).
+ * - `rows` (the default): a row per round, this round on top, its moves as icons side by side and
+ *   nothing but a tiny "NOW" or the rounds to go beside them; an empty round is a dot.
+ * - `countdown` (the reviewers' pick of the 23rd): no column: the next few moves, each once, with the
  *   rounds left beside it; a hard "NOW" for this round's, and the names of this round's and the next.
  * - `hitline`: no boxes at all. The moves float up a column toward a single glowing line at the top
  *   and cross it in the round they come, like notes in a rhythm game.
@@ -129,8 +132,14 @@ function TrackMove({
  *   up a notch a round.
  * - `single`: only the next move, with "in 2" (or "NOW") and its name.
  */
-export type TrackLook = 'hitline' | 'ribbon' | 'countdown' | 'single';
-export const TRACK_LOOKS: readonly TrackLook[] = ['countdown', 'hitline', 'ribbon', 'single'];
+export type TrackLook = 'rows' | 'hitline' | 'ribbon' | 'countdown' | 'single';
+export const TRACK_LOOKS: readonly TrackLook[] = [
+  'rows',
+  'countdown',
+  'hitline',
+  'ribbon',
+  'single',
+];
 
 /** The names of this round's moves (a charge that only marks now says so). */
 function NowLine({ track }: { track: MoveTrackView }) {
@@ -154,7 +163,7 @@ function NowLine({ track }: { track: MoveTrackView }) {
 export function MoveTrack({
   track,
   round,
-  look = 'countdown',
+  look = 'rows',
 }: {
   track: MoveTrackView;
   round: number;
@@ -165,6 +174,45 @@ export function MoveTrack({
   if (first === undefined || last === undefined) return null;
   const now = Math.max(1, round);
   const lit = track.now.length > 0;
+
+  if (look === 'rows') {
+    return (
+      <section
+        class={`move-track look-rows${lit ? ' lit' : ''}`}
+        aria-label="The boss's next moves"
+      >
+        <ol class="track-rounds" key={first}>
+          {track.rounds.map((r, k) => {
+            // A charge shows in the round it marks (faint) and the round it lands.
+            const moves = track.tiles.filter((t) => t.from <= r && r <= t.to);
+            return (
+              <li
+                key={r}
+                class={`track-round${k === 0 ? ' now' : ''}${moves.length === 0 ? ' quiet' : ''}`}
+              >
+                <span class="track-round-label pix" aria-hidden="true">
+                  {k === 0 ? 'NOW' : String(k)}
+                </span>
+                {moves.length === 0 ? (
+                  <span class="track-none" aria-hidden="true" />
+                ) : (
+                  moves.map((t) => (
+                    <TrackMove
+                      key={t.key}
+                      tile={t}
+                      now={now}
+                      class={t.kind === 'charge' && r < t.to ? 'marking' : ''}
+                      style={{ '--depth': String(k) }}
+                    />
+                  ))
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+    );
+  }
 
   if (look === 'countdown' || look === 'single') {
     const single = look === 'single';

@@ -1,0 +1,118 @@
+/*
+  A barrier over the foe (stage/Barrier.tsx): a see-through dome in its theme's colours (`th-*`, from
+  boss-fx.css) with a pattern (`pat-hex` a magical lattice, `pat-shell` heavy plates, `pat-thorns` a
+  briar cage), a hard light edge and a shine that sweeps over it in steps. It forms when its move is
+  armed and shatters when a reaction meets it.
+*/
+.barrier {
+  --glass: color-mix(in srgb, var(--a) 10%, transparent);
+  --bar-line: color-mix(in srgb, var(--c) 35%, transparent);
+  position: absolute;
+  inset: -0.375rem -0.625rem 0.25rem;
+  z-index: 2;
+  overflow: hidden;
+  border: 2px solid var(--c);
+  border-radius: 48% 48% 18% 18% / 58% 58% 14% 14%;
+  box-shadow:
+    0 0 0 1px var(--b),
+    inset 0 0 0 1px var(--b);
+  background-color: var(--glass);
+  pointer-events: none;
+}
+
+.barrier.pat-hex {
+  background-image:
+    repeating-linear-gradient(60deg, transparent 0 11px, var(--bar-line) 11px 12px),
+    repeating-linear-gradient(-60deg, transparent 0 11px, var(--bar-line) 11px 12px);
+}
+
+.barrier.pat-shell {
+  --glass: color-mix(in srgb, var(--a) 26%, transparent);
+  background-image:
+    linear-gradient(var(--bar-line) 2px, transparent 2px),
+    linear-gradient(90deg, var(--bar-line) 2px, transparent 2px);
+  background-size: 14px 10px;
+}
+
+.barrier.pat-thorns {
+  border-style: dashed;
+  border-width: 3px;
+  background-image:
+    repeating-linear-gradient(45deg, transparent 0 9px, var(--bar-line) 9px 10px),
+    repeating-linear-gradient(-45deg, transparent 0 9px, var(--bar-line) 9px 10px);
+}
+
+/* The shine: a pale band that sweeps across, a step at a time. */
+.barrier-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    color-mix(in srgb, var(--c) 40%, transparent) 42% 50%,
+    transparent 50%
+  );
+  background-size: 300% 100%;
+  background-position: 100% 0;
+}
+
+.barrier.broken {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .barrier {
+    animation: barrier-form 480ms steps(4, end) both;
+  }
+
+  .barrier-shine {
+    animation: barrier-shine 2400ms steps(12, end) infinite;
+  }
+
+  .barrier.broken {
+    animation: barrier-break 560ms steps(5, end) both;
+  }
+}
+
+@keyframes barrier-form {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes barrier-shine {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* It flashes, cracks outwards and is gone (the pieces fly in boss-fx.ts's backlash). */
+@keyframes barrier-break {
+  0% {
+    opacity: 1;
+    filter: brightness(1);
+    transform: none;
+  }
+
+  25% {
+    opacity: 1;
+    filter: brightness(2.5);
+    transform: scale(1.04);
+  }
+
+  100% {
+    opacity: 0;
+    filter: brightness(1);
+    transform: scale(1.2);
+  }
+}

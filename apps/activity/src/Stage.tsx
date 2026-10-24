@@ -9,7 +9,7 @@ import {
   type FightEvent,
   type Zone,
 } from '@creatures/engine';
-import { bossArt, elementClass, markPalette } from './art';
+import { bossArt, elementClass } from './art';
 import { cssVars } from './css-vars';
 import { foeInfoOf, foeElement } from './foe-info';
 import { GlossaryTag } from './Glossary';
@@ -43,6 +43,8 @@ import { roundLabel } from './stage-rounds';
 import { bossOrFoe, forecastNextRound, type Wording } from './telegraph';
 import { moveTrack } from './move-track';
 import { MoveTrack, type TrackLook } from './stage/MoveTrack';
+import { Barrier } from './stage/Barrier';
+import { barrierLookOf } from './move-fx';
 import { Popover, popupProps } from './ui/Popover';
 import { SegmentBar } from './ui/SegmentBar';
 import { StageHead, type StageModifier } from './ui/StageHead';
@@ -155,7 +157,7 @@ interface StageProps {
   phase?: RaidPhaseId;
   /** Gimmicks the foe has only in this room (the dungeon's modifier), so the forecast names them too. */
   addedGimmicks?: readonly Gimmick[];
-  /** How the boss's move track looks (the design round's four versions; default `countdown`). */
+  /** How the boss's move track looks (the design rounds' looks; default `rows`). */
   trackLook?: TrackLook;
   /**
    * Something drawn over the whole stage, above the round intro (the dungeon's room banner). It sits
@@ -277,8 +279,17 @@ export function Stage({
   const windupItem = fx.find((i) => i.cue.kind === 'windup');
   // The move track: the boss's special moves in the boxes of the rounds they come in (move-track.ts).
   const trackBoss = bossOrFoe(boss.id, addedGimmicks ?? [], names.gimmicks);
+  // Nothing is coming once the fight is over: the foe is down, every creature is, or the last round ended.
+  const lastEvent = state.index > 0 ? events[state.index - 1] : undefined;
+  const over =
+    state.bossHp <= 0 ||
+    (row.length > 0 && state.knockedOut.length >= row.length) ||
+    (rounds !== undefined &&
+      rounds !== null &&
+      state.round >= rounds &&
+      lastEvent?.t === 'round_end');
   const track =
-    trackBoss === undefined || trackBoss.gimmicks.length === 0
+    over || trackBoss === undefined || trackBoss.gimmicks.length === 0
       ? null
       : moveTrack(trackBoss, state.round, rounds ?? trackBoss.finaleRounds, names.gimmicks ?? {});
   // One round ahead: what the boss will do next round, from its content and the round number.
@@ -357,8 +368,6 @@ export function Stage({
   const markName = state.mark === null ? null : nameOf(names.marks, state.mark);
   const markId = content.reactions.find((r) => r.markElement === state.mark)?.markId;
   const markIcon = state.mark === null ? undefined : elementIcon(state.mark);
-  const markColours = state.mark === null ? undefined : markPalette(state.mark);
-  const markGlyph = glyphOrUnknown('mark');
   const shieldGlyph = glyphOrUnknown('shield');
   const abilityGlyph = glyphOrUnknown('ability');
   const zoneNodes = groups.map(({ zone, items }) => {
@@ -564,6 +573,16 @@ export function Stage({
             <FoeFace info={foe}>
               <Sprite sprite={art.sprite} scale={art.scale} />
             </FoeFace>
+            {state.barrier !== null && (
+              <Barrier
+                key={`${String(state.barrier.round)}-${state.barrier.broken === null ? 'up' : 'broken'}`}
+                barrier={state.barrier}
+                look={barrierLookOf(
+                  state.barrier.gimmick,
+                  foe.element === 'unknown' ? null : foe.element,
+                )}
+              />
+            )}
             {state.mark !== null && (
               <span class={`stage-mark ${elementClass(state.mark)}${markCue ? ' pop' : ''}`}>
                 {/* The boss is not a button, so the mark can be a tag without taking a tap from anything. */}
@@ -573,11 +592,7 @@ export function Stage({
                   class="mark-tag"
                   label={`Marked: ${markName ?? state.mark}. What does this mean?`}
                 >
-                  <Sprite
-                    sprite={markGlyph}
-                    scale={3}
-                    {...(markColours === undefined ? {} : { palette: markColours })}
-                  />
+                  {/* The element's icon and the mark's name say it: no "marked" glyph (Misa, 2026-10-24). */}
                   {markIcon !== undefined && <Sprite sprite={markIcon} scale={2} />}
                   <span class="stage-mark-name">{markName}</span>
                 </GlossaryTag>

@@ -28,13 +28,17 @@
   width: var(--tile-w);
 }
 
-/* An empty board slot: a quiet dashed cell, one lane wide, so the lanes line up with the placement board. */
+/*
+  An empty board slot: one lane wide, so the lanes line up with the placement board, and only a faint
+  dotted line on its floor (no box: Misa, 2026-10-24).
+*/
 .stage-grid .stage-gap {
   flex: none;
   box-sizing: border-box;
   width: var(--tile-w);
   height: var(--tile-h);
-  border: 2px dashed var(--line);
+  background: repeating-linear-gradient(90deg, var(--line) 0 2px, transparent 2px 6px) 50% 100% /
+    70% 2px no-repeat;
 }
 
 /* One line, cut with an ellipsis rather than broken mid-word (the creature's popover has its name). */

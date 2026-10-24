@@ -1,6 +1,6 @@
 import { content, dungeonContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { MOVE_FX, elementTheme, fxPlanOf } from './move-fx';
+import { BARRIER_LOOK, MOVE_FX, barrierLookOf, elementTheme, fxPlanOf } from './move-fx';
 import type { BossStrike } from './stage';
 
 const strike = (over: Partial<BossStrike>): BossStrike => ({
@@ -77,5 +77,24 @@ describe('what a boss action looks like', () => {
         'tide',
       ),
     ).toMatchObject({ recipe: 'surge', rows: ['middle'], big: true });
+  });
+
+  it("throws a reflected reaction back at the creature in the barrier move's colours", () => {
+    expect(
+      fxPlanOf(strike({ action: 'reflect', gimmick: 'backdraft', targets: ['b'] }), 'ember'),
+    ).toMatchObject({ recipe: 'backlash', theme: 'fire', targets: ['b'] });
+  });
+});
+
+describe('how a barrier looks', () => {
+  it('has a look for every move that raises one in the content, and a default for a new one', () => {
+    const traps = [
+      ...content.bosses.flatMap((b) => b.gimmicks),
+      ...dungeonContent.foes.flatMap((f) => f.gimmicks),
+    ].filter((g) => g.op === 'reflect_first_reaction');
+    expect(traps.length).toBeGreaterThan(0);
+    expect(traps.filter((g) => BARRIER_LOOK[g.id] === undefined).map((g) => g.id)).toEqual([]);
+    expect(barrierLookOf('backdraft', 'ember')).toEqual({ theme: 'fire', pattern: 'hex' });
+    expect(barrierLookOf('new-trap', 'tide')).toEqual({ theme: 'water', pattern: 'hex' });
   });
 });

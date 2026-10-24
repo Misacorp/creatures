@@ -47,7 +47,9 @@ export type FxRecipe =
   /** A ring of fire tightens around the target and bursts. */
   | 'constrict'
   /** A thorny whip lashes from the boss to its target, then on. */
-  | 'whip';
+  | 'whip'
+  /** The boss's barrier bursts and throws a reaction back: a bolt flies from the boss to the creature. */
+  | 'backlash';
 
 export type FxTheme =
   | 'water'
@@ -117,6 +119,8 @@ export const MOVE_FX: Readonly<Record<string, { recipe: FxRecipe; theme: FxTheme
   'buzz-cloud': { recipe: 'swarm', theme: 'swarm' },
   'flood-gate': { recipe: 'surge', theme: 'water' },
   'molten-shell': { recipe: 'flames', theme: 'lava' },
+  // Room modifiers that give the foe a move
+  thorns: { recipe: 'flames', theme: 'thorn' },
   'anvil-fall': { recipe: 'meteor', theme: 'metal' },
   tangle: { recipe: 'vines', theme: 'vine' },
   'thorn-rain': { recipe: 'rain', theme: 'thorn' },
@@ -178,7 +182,9 @@ export function fxPlanOf(strike: BossStrike, bossElement: string | null): FxPlan
   const own = strike.gimmick === null ? undefined : MOVE_FX[strike.gimmick];
   const theme = own?.theme ?? elementTheme(bossElement);
   if (strike.action === 'charge') return null;
-  const recipe = own?.recipe ?? recipeOfAction(strike, theme);
+  // A reflected reaction: the barrier's theme, thrown back at the creature (not the trap's arming look).
+  const recipe =
+    strike.action === 'reflect' ? 'backlash' : (own?.recipe ?? recipeOfAction(strike, theme));
   if (recipe === null) return null;
   const rows = strikeRows(strike);
   const targets = strike.targets;
@@ -198,4 +204,31 @@ export function fxPlanOf(strike: BossStrike, bossElement: string | null): FxPlan
     splash: strike.splash ?? [],
     big: own?.big === true || strike.charged === true || strike.action === 'enrage',
   };
+}
+
+/**
+ * How a barrier on the foe looks: a see-through pixel shield over its picture while a lasting move is
+ * armed (decisions.md, 2026-10-24). One component for every such move, configured here: its colours
+ * (a theme) and its pattern. Which moves raise one is `BARRIER_OPS` (`replay.ts`).
+ * - `hex`: a magical lattice (the default).
+ * - `shell`: heavy plates (a molten crust, a shell).
+ * - `thorns`: a briar cage, spikes along its edge.
+ */
+export type BarrierPattern = 'hex' | 'shell' | 'thorns';
+
+export interface BarrierLook {
+  theme: FxTheme;
+  pattern: BarrierPattern;
+}
+
+/** The barrier of each move that has its own; any other barrier move gets the foe's element and `hex`. */
+export const BARRIER_LOOK: Readonly<Record<string, BarrierLook>> = {
+  backdraft: { theme: 'fire', pattern: 'hex' },
+  'molten-shell': { theme: 'lava', pattern: 'shell' },
+  thorns: { theme: 'thorn', pattern: 'thorns' },
+};
+
+/** The look of a move's barrier: its own, or the foe's element in the default pattern. */
+export function barrierLookOf(gimmick: string, foeElement: string | null): BarrierLook {
+  return BARRIER_LOOK[gimmick] ?? { theme: elementTheme(foeElement), pattern: 'hex' };
 }
