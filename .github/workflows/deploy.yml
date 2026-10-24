@@ -116,6 +116,16 @@ jobs:
           if [[ "$DISCORD_PUBLIC_KEY" =~ ^[0-9a-f]{64}$ ]]; then key_var=(--var "DISCORD_PUBLIC_KEY:${DISCORD_PUBLIC_KEY}"); fi
           pnpm exec wrangler deploy --env "$TARGET_ENV" --var "VERSION:${GIT_SHA}" --var "BRANCH:${BRANCH}" "${key_var[@]}" --secrets-file "$secrets_file"
 
+      # Reads back what is live (the public /api/config) and fails the run unless it is this commit, so
+      # a green run means players get exactly this build. Retries for up to two minutes.
+      - name: Check the deployed commit
+        env:
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          host_flag=()
+          if [ "$TARGET_ENV" = "production" ]; then host_flag=(--prod); fi
+          node apps/worker/scripts/deployed.mjs "${host_flag[@]}" --expect "$GIT_SHA" --wait 120
+
       # Creates or updates the /feedback command. Never fails the deploy (the script only warns).
       - name: Register the /feedback command
         if: steps.discord.outputs.public_key != ''
