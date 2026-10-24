@@ -28,6 +28,9 @@ import { tabPalette } from './tabs';
 /** The dock's Lounge button: its pip (why the room has something to show, or null), whether its sheet is up, and what a tap does. */
 export interface LoungeButton {
   pip: string | null;
+  /** Another word and picture for the button (the Home design round labels it "Home"); left out, the Lounge's own. */
+  label?: string | undefined;
+  glyph?: string | undefined;
   open: boolean;
   onOpen: () => void;
   /** The button's element, so the sheet can give the focus back to it when it closes. */
@@ -167,7 +170,16 @@ function Dock({
   openGroup: string | undefined;
   lounge: LoungeButton | undefined;
 }) {
-  const items = dockItems(groups, lounge === undefined ? null : navLounge(lounge.pip));
+  const items = dockItems(
+    groups,
+    lounge === undefined
+      ? null
+      : {
+          ...navLounge(lounge.pip),
+          ...(lounge.label === undefined ? {} : { label: lounge.label }),
+          ...(lounge.glyph === undefined ? {} : { glyph: lounge.glyph }),
+        },
+  );
   const [open, setOpen] = useState<string | null>(openGroup ?? null);
   const buttons = useRef(new Map<string, HTMLButtonElement>());
   const prefix = useId();

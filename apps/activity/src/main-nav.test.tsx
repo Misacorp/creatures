@@ -162,6 +162,12 @@ describe('MainNav as the phone dock', () => {
     expect(first(byName(p.root, 'button', 'Lounge')).getAttribute('aria-expanded')).toBe('true');
   });
 
+  it('can label the middle button another word (the Home design round), keeping it the primary button', () => {
+    const p = draw(nav({ lounge: { ...LOUNGE, label: 'Home', glyph: 'home' } }));
+    expect(byName(p.root, 'button', 'Lounge')).toHaveLength(0);
+    expect(first(byName(p.root, 'button', 'Home')).getAttribute('class')).toContain('lounge');
+  });
+
   it('opens the lounge on a tap and closes an open tray', () => {
     const onOpen = vi.fn();
     const p = draw(nav({ lounge: { ...LOUNGE, onOpen } }));
