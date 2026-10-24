@@ -226,13 +226,10 @@ export function boardSlot(
   ];
   return {
     ...base,
-    ariaLabel: [
-      `${where}, ${speciesName(c.species)} level ${String(c.level)}, ${owner}`,
-      ...notes,
-    ].join(', '),
+    ariaLabel: [`${where}, ${c.name} level ${String(c.level)}, ${owner}`, ...notes].join(', '),
     occupant: {
       species: c.species,
-      name: speciesName(c.species),
+      name: c.name,
       level: c.level,
       ownId: editable && isDraggable(c) && c.creatureId !== undefined ? c.creatureId : null,
       mine: c.mine,
@@ -329,7 +326,10 @@ export function boardCues(args: {
 }): { cues: RowCues; focus: number | null; noneRow: Zone | null; effect: string | null } {
   const { row, length } = args;
   const bySlot = new Map(row.map((s) => [s.slot, s]));
-  const known = new Map<string, { species: string; level: number; reach?: GuardReach }>();
+  const known = new Map<
+    string,
+    { species: string; level: number; reach?: GuardReach; name?: string }
+  >();
   for (const s of row) {
     if (s.creature !== null)
       known.set(s.creature.creatureId ?? `other:${String(s.slot)}`, s.creature);
@@ -366,7 +366,7 @@ export function boardCues(args: {
           nameOf: (slot) => {
             const key = scene.keys[slot];
             const who = key === null || key === undefined ? undefined : known.get(key);
-            return who === undefined ? 'a creature' : speciesName(who.species);
+            return who === undefined ? 'a creature' : (who.name ?? speciesName(who.species));
           },
         });
   return { cues, focus: scene.focus, noneRow, effect };

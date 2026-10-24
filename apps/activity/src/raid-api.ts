@@ -249,6 +249,11 @@ export interface ReplayRowEntry {
   level: number;
   /** An opaque per-fight player key (see `names.players`), or null for a guest. */
   owner: string | null;
+  /**
+   * Its HP at the start of the fight and at most, for its small HP bar; null before the fight (and
+   * absent from a server older than the bar).
+   */
+  hp?: { start: number; max: number } | null;
 }
 
 /**
@@ -636,7 +641,10 @@ export function isReplayRow(value: unknown): value is ReplayRowEntry {
     isStr(value['element']) &&
     isStr(value['role']) &&
     isInt(value['level']) &&
-    isNullableStr(value['owner'])
+    isNullableStr(value['owner']) &&
+    (value['hp'] === undefined ||
+      value['hp'] === null ||
+      (isRecord(value['hp']) && isCount(value['hp']['start']) && isCount(value['hp']['max'])))
   );
 }
 

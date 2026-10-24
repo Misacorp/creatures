@@ -601,10 +601,41 @@ export interface ReplayView {
     level: number;
     /** An opaque per-fight player key (see `names.players`), or null for a guest. */
     owner: string | null;
+    /**
+     * Its HP at the start of the fight and at most (the Guard's bonus in), for its small HP bar.
+     * Null when no result is known yet (the lobby) or a stored result lacks them.
+     */
+    hp: { start: number; max: number } | null;
   }[];
   events: FightEvent[];
   /** For `describeEvent`; `players` maps the opaque owner keys to display names. */
   names: EventNames;
+}
+
+/**
+ * The fighting row as the client draws it, left to right (guests included): each creature's names and
+ * kind and, once the fight's result is known, its start and maximum HP (the result has both from the
+ * engine, so nothing here reveals what happens in the fight).
+ */
+export function fightRow(
+  input: FightInput,
+  result?: Partial<Pick<FightResult, 'hpStart' | 'hpMax'>>,
+): ReplayView['row'] {
+  return input.row.map((s, position) => {
+    const start = result?.hpStart?.[s.id];
+    const max = result?.hpMax?.[s.id];
+    return {
+      position,
+      id: s.id,
+      name: s.name,
+      species: s.speciesId,
+      element: s.element,
+      role: s.role,
+      level: s.level,
+      owner: s.ownerId,
+      hp: start === undefined || max === undefined ? null : { start, max },
+    };
+  });
 }
 
 /**
@@ -655,16 +686,7 @@ export function buildReplayView(
     rules: guardRulesOf(input),
     ...boardOf(input),
     you: summary.members.find((m) => m.userId === userId)?.alias ?? null,
-    row: input.row.map((s, position) => ({
-      position,
-      id: s.id,
-      name: s.name,
-      species: s.speciesId,
-      element: s.element,
-      role: s.role,
-      level: s.level,
-      owner: s.ownerId,
-    })),
+    row: fightRow(input, result),
     events: result.events,
     names: buildNames(input, aliasNames, content),
   };

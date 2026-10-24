@@ -24,7 +24,7 @@ import {
   type LiveRow,
   type LiveState,
 } from './raid-live';
-import type { ReplayView } from './raid-view';
+import { fightRow, type ReplayView } from './raid-view';
 
 export type LiveStatus = 'none' | 'lobby' | 'live' | 'done';
 
@@ -264,16 +264,7 @@ export function lobbySnapshot(
       hpMax: input.bossHpPool.max,
       hpStart: input.bossHpPool.current,
     },
-    row: input.row.map((s, position) => ({
-      position,
-      id: s.id,
-      name: s.name,
-      species: s.speciesId,
-      element: s.element,
-      role: s.role,
-      level: s.level,
-      owner: s.ownerId,
-    })),
+    row: fightRow(input),
     rules: guardRulesOf(input),
     board: boardOf(input).board ?? null,
     names: buildNames(input, aliasNames, content),
@@ -378,16 +369,7 @@ export function liveSnapshot(
       hpMax: row.input.bossHpPool.max,
       hpStart: row.input.bossHpPool.current,
     },
-    row: row.input.row.map((s, position) => ({
-      position,
-      id: s.id,
-      name: s.name,
-      species: s.speciesId,
-      element: s.element,
-      role: s.role,
-      level: s.level,
-      owner: s.ownerId,
-    })),
+    row: fightRow(row.input, result),
     rules: guardRulesOf(row.input),
     board: boardOf(row.input).board ?? null,
     names: buildNames(row.input, aliasNames, content),

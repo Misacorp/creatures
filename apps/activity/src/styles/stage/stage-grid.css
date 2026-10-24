@@ -7,7 +7,7 @@
 */
 .stage-grid {
   --tile-w: 3.25rem;
-  --tile-h: 4.125rem;
+  --tile-h: 4.625rem;
 }
 
 /* A creature is one lane wide, however many there are. */

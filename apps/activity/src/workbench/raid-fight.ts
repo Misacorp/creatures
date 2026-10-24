@@ -74,7 +74,8 @@ export function bigRaidFight(players: number, yourLane: number, bossId?: string)
     finaleAbilities: [],
     luck: RULES.combat.luck,
   };
-  const events = simulateFight(input, createSeededRng(`workbench-raid-${key}`)).events;
+  const result = simulateFight(input, createSeededRng(`workbench-raid-${key}`));
+  const { events } = result;
   const fight: BigRaidFight = {
     boss: { id: boss.id, name: boss.name },
     hpMax: scaled.maxHp,
@@ -88,6 +89,7 @@ export function bigRaidFight(players: number, yourLane: number, bossId?: string)
       role: s.role,
       level: s.level,
       owner: s.ownerId,
+      hp: { start: result.hpStart[s.id] ?? 0, max: result.hpMax[s.id] ?? 0 },
     })),
     mineIds: new Set(row.filter((s) => s.ownerId === `p${String(you)}`).map((s) => s.id)),
     names: buildNames(input),
