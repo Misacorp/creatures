@@ -11,6 +11,40 @@ export type Tab = 'collection' | 'expeditions' | 'games' | 'raid' | 'workshop' |
 /** Every place of the game screen: Home (the page the app opens on) and the tabs. */
 export type Place = 'home' | Tab;
 
+/**
+ * The pages that open from Home (the pins on the Today board): sub-pages of Home, not places of the navigation.
+ * The current screen is a `Place` or one of these (`Screen`); the navigation shows Home as current on both.
+ * A new page is one entry here, its view in `Game.tsx` and a pin on the board.
+ */
+export const HOME_PAGES = [
+  { id: 'journal', label: 'Journal', screen: 'home/journal' },
+  { id: 'stats', label: 'Stats', screen: 'home/stats' },
+] as const;
+
+/** The id of a page that opens from Home. */
+export type HomePage = (typeof HOME_PAGES)[number]['id'];
+
+/** The screen id of a Home page (`home/journal`). */
+export type HomeScreenId = (typeof HOME_PAGES)[number]['screen'];
+
+/** What the game screen can show: a place, or a page that opens from Home. */
+export type Screen = Place | HomeScreenId;
+
+/** The screen id of a Home page. */
+export function homeScreen(page: HomePage): HomeScreenId {
+  return HOME_PAGES.find((p) => p.id === page)?.screen ?? 'home/journal';
+}
+
+/** The Home page a screen id is (`home/journal` is the Journal), or null for a place. */
+export function homePageOf(screen: Screen): HomePage | null {
+  return HOME_PAGES.find((p) => p.screen === screen)?.id ?? null;
+}
+
+/** The place the navigation marks as current on `screen`: a Home page counts as Home. */
+export function navPlaceOf(screen: Screen): Place {
+  return HOME_PAGES.some((p) => p.screen === screen) ? 'home' : (screen as Place);
+}
+
 /** The place the app opens on: Home (Misa, 2026-10-24: the Home page is the default). */
 export const DEFAULT_PLACE: Place = 'home';
 

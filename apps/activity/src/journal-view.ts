@@ -1,13 +1,11 @@
 /**
- * The Journal and the profile as plain data. The journal groups the pre-written pages by place with
- * progress and sets (a page not found yet shows as a blank, never its text); the profile names the
- * account stats, the milestones with their tiny bonuses and the explorers. Names and texts come from the
+ * The Journal and the milestones as plain data. The journal groups the pre-written pages by place with
+ * progress and sets (a page not found yet shows as a blank, never its text); the profile side names the
+ * account stats, the milestones and their tiny bonuses. Names and texts come from the
  * shared content; what has been found, the stats and the milestones come from the server's profile.
  */
-import { ACCOUNT_STATS, JOURNAL_ANY_PLACE, expeditionContent } from '@creatures/game';
-import type { Creature } from './api';
+import { JOURNAL_ANY_PLACE, expeditionContent } from '@creatures/game';
 import type { Milestone, Profile } from './expedition-types';
-import { creatureName } from './game';
 import { destinationName, percentText } from './trip-view';
 
 interface JournalPageView {
@@ -89,7 +87,12 @@ export function journalProgressText(profile: Pick<Profile, 'journal'>): string {
   return `${String(profile.journal.found.length)} / ${String(profile.journal.total)} pages found`;
 }
 
-// --- The profile ---
+/** The Home pin's teaser for the Journal: "3 / 45 pages found". */
+export function journalTeaser(profile: Pick<Profile, 'journal'>): string {
+  return `${String(profile.journal.found.length)} / ${String(profile.journal.total)} pages found`;
+}
+
+// --- The profile (milestones and bonuses; the stat sheet is `stats-view.ts`) ---
 
 const STAT_LABELS: Readonly<Record<string, string>> = {
   trips_finished: 'Trips finished',
@@ -108,16 +111,6 @@ const STAT_LABELS: Readonly<Record<string, string>> = {
 
 export function statLabel(stat: string): string {
   return STAT_LABELS[stat] ?? stat.replaceAll('_', ' ');
-}
-
-/** The stat ids the profile lists, in the order of the rules. */
-const PROFILE_STATS: readonly string[] = ACCOUNT_STATS;
-
-/** The account stats as rows, in a fixed order; a stat the server does not send is 0. */
-export function statRows(
-  stats: Readonly<Record<string, number>>,
-): { stat: string; label: string; value: number }[] {
-  return PROFILE_STATS.map((stat) => ({ stat, label: statLabel(stat), value: stats[stat] ?? 0 }));
 }
 
 const BONUS_WORDS: Readonly<Record<string, string>> = {
@@ -193,26 +186,4 @@ export function bonusSummary(bonuses: Profile['bonuses']): string | null {
   ] as const;
   const on = parts.filter(([, bp]) => bp > 0).map(([kind, bp]) => bonusText({ kind, bp }));
   return on.length === 0 ? null : on.join(', ');
-}
-
-export interface ExplorerRow {
-  creatureId: string;
-  name: string;
-  rank: number;
-  xp: number;
-  nextRankXp: number | null;
-  trips: number;
-}
-
-/** The explorers of the profile with their names, highest rank first (then by name). */
-export function explorerRows(
-  profile: Pick<Profile, 'explorers'>,
-  creatures: readonly Creature[],
-): ExplorerRow[] {
-  return profile.explorers
-    .flatMap((e) => {
-      const creature = creatures.find((c) => c.id === e.creatureId);
-      return creature === undefined ? [] : [{ ...e, name: creatureName(creature) }];
-    })
-    .sort((a, b) => b.rank - a.rank || b.xp - a.xp || a.name.localeCompare(b.name));
 }

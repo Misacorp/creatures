@@ -289,6 +289,18 @@ describe('the creature page: order and what it leaves out', () => {
     expect(visibleText(root)).toContain('Flare Strike');
   });
 
+  it("ends the Stats table with the creature's own expedition count", () => {
+    const { root } = draw('level 15', {
+      change: (c) => ({ ...c, explorer: { ...c.explorer, trips: 7 } }),
+    });
+    const rows = byClass(root, 'data-row').map((row) => visibleText(row));
+    const index = rows.findIndex((text) => text.includes('Expeditions'));
+    expect(index).toBeGreaterThan(rows.findIndex((text) => text.includes('Speed')));
+    expect(rows[index]).toContain('7');
+    // The old "Trips" fact is gone from About: the count lives in one place.
+    expect(visibleText(root)).not.toContain('Trips');
+  });
+
   it('leaves out the finale ability until it is unlocked', () => {
     const { root } = draw('level 2');
     expect(headings(root)).toEqual(['Stats', 'Gear', 'Talents']);
@@ -729,7 +741,6 @@ describe('the creature page: About and Rename', () => {
       'Fusion 0 · 0/1',
       'Ribbons',
       'Explorer rank',
-      'Trips',
       'HP',
       'Attack',
       'Speed',

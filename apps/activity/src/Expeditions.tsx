@@ -1,53 +1,17 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import type { ClaimResult, GameState } from './api';
 import type { CatchChoiceActions } from './find-view';
 import type { GearState } from './gear-types';
-import { ExplorerProfile } from './ExplorerProfile';
-import { fetchDestinations, fetchProfile, type SendRequest } from './expedition-api';
+import { fetchDestinations, type SendRequest } from './expedition-api';
 import type { Trip } from './expedition-types';
 import { ExpeditionWorld } from './ExpeditionWorld';
 import { WIDE_QUERY } from './ui/wide-layout';
 import { useMediaQuery, useServerNow } from './hooks';
-import { Journal } from './Journal';
-import { SlotsStrip } from './SlotsStrip';
 import { TripResult } from './TripResult';
 import { tripResultView } from './trip-result-view';
-import { ToggleButton } from './ui/ToggleButton';
 import { needsOfferRefresh } from './trip-view';
 import { useLoaded } from './use-loaded';
 import type { Forecast } from './weather-types';
-import { Alert } from './ui/Alert';
-
-/** The three screens of the Expeditions tab (the Journal and the profile need no tab of their own). */
-type Screen = 'trips' | 'journal' | 'profile';
-
-const SCREENS: readonly { id: Screen; label: string }[] = [
-  { id: 'trips', label: 'Trips' },
-  { id: 'journal', label: 'Journal' },
-  { id: 'profile', label: 'Profile' },
-];
-
-/** The Journal or the profile: loads the profile when it opens and says so when that fails. */
-function Book({ screen, state }: { screen: 'journal' | 'profile'; state: GameState }) {
-  const loaded = useLoaded(fetchProfile, [state.slots.tripsFinished]);
-  if (loaded.value === null) {
-    return loaded.failed ? (
-      <Alert level="alert">
-        Could not load it.{' '}
-        <button type="button" onClick={loaded.reload}>
-          Try again
-        </button>
-      </Alert>
-    ) : (
-      <p class="muted">Opening the book...</p>
-    );
-  }
-  return screen === 'journal' ? (
-    <Journal profile={loaded.value} />
-  ) : (
-    <ExplorerProfile profile={loaded.value} creatures={state.creatures} />
-  );
-}
 
 interface Props {
   state: GameState;
@@ -94,7 +58,6 @@ export function Expeditions({
   onOpenWorkshop,
   bag = null,
 }: Props) {
-  const [screen, setScreen] = useState<Screen>('trips');
   const active = state.expeditions.filter((e) => e.status === 'active');
   const serverNow = useServerNow(offset, active.length > 0);
   const destinations = useLoaded(
@@ -141,52 +104,32 @@ export function Expeditions({
         }}
       />
     );
-  // The wide Trips screen has the reveal in its side panel; everywhere else it sits on top, as before.
-  const wideTrips = screen === 'trips' && wide;
 
   return (
     <>
-      {!wideTrips && revealCard}
-      {screen !== 'trips' && <SlotsStrip slots={state.slots} />}
-      <nav class="exp-nav" aria-label="Expeditions sections">
-        {SCREENS.map(({ id, label }) => (
-          <ToggleButton
-            key={id}
-            pressed={screen === id}
-            onToggle={() => {
-              setScreen(id);
-            }}
-          >
-            {label}
-          </ToggleButton>
-        ))}
-      </nav>
-      {screen !== 'trips' && <Book screen={screen} state={state} />}
-      {screen === 'trips' && (
-        <>
-          <ExpeditionWorld
-            trips={active}
-            creatures={state.creatures}
-            slots={state.slots}
-            stock={state.supplies}
-            bait={state.balances.bait}
-            view={destinations.value}
-            viewFailed={destinations.failed}
-            onRetry={destinations.reload}
-            timezone={timezone}
-            forecast={forecast}
-            serverNow={serverNow}
-            busy={busy}
-            wide={wide}
-            reveal={revealCard}
-            onSend={onSend}
-            onClaim={onClaim}
-            onPushOn={onPushOn}
-            {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}
-            bag={bag}
-          />
-        </>
-      )}
+      {/* The wide screen has the reveal in its side panel; a phone shows it on top. */}
+      {!wide && revealCard}
+      <ExpeditionWorld
+        trips={active}
+        creatures={state.creatures}
+        slots={state.slots}
+        stock={state.supplies}
+        bait={state.balances.bait}
+        view={destinations.value}
+        viewFailed={destinations.failed}
+        onRetry={destinations.reload}
+        timezone={timezone}
+        forecast={forecast}
+        serverNow={serverNow}
+        busy={busy}
+        wide={wide}
+        reveal={revealCard}
+        onSend={onSend}
+        onClaim={onClaim}
+        onPushOn={onPushOn}
+        {...(onOpenWorkshop === undefined ? {} : { onOpenWorkshop })}
+        bag={bag}
+      />
     </>
   );
 }

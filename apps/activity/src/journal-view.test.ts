@@ -1,21 +1,18 @@
-import { ACCOUNT_STATS, RULES, expeditionContent } from '@creatures/game';
+import { RULES, expeditionContent } from '@creatures/game';
 import { describe, expect, it } from 'vitest';
-import { parseGameState } from './api';
 import { parseProfile } from './expedition-parse';
 import profileFixture from './fixtures/expedition-profile.json';
-import stateOffer from './fixtures/expedition-state-offer.json';
 import {
   ANY_PLACE_NAME,
   bonusSummary,
   bonusText,
-  explorerRows,
   journalPlaces,
   journalProgressText,
+  journalTeaser,
   milestoneName,
   milestoneBonusText,
   milestoneViews,
   statLabel,
-  statRows,
 } from './journal-view';
 
 const profile = parseProfile(profileFixture);
@@ -82,16 +79,13 @@ describe('the journal', () => {
 });
 
 describe('the profile', () => {
-  it('names every account stat the rules record, in the order of the rules', () => {
-    const rows = statRows(profile.stats);
-    expect(rows.map((r) => r.stat)).toEqual([...ACCOUNT_STATS]);
-    for (const row of rows) {
-      expect(row.label.length, row.stat).toBeGreaterThan(4);
-      expect(row.label, row.stat).not.toContain('_');
-    }
-    expect(rows.find((r) => r.stat === 'trips_finished')?.value).toBe(3);
-    expect(statRows({}).every((r) => r.value === 0)).toBe(true);
+  it('names the account stats in words, with a fallback for a new one', () => {
+    expect(statLabel('trips_finished')).toBe('Trips finished');
     expect(statLabel('brand_new_stat')).toBe('brand new stat');
+  });
+
+  it('gives the Home pin a teaser for the Journal', () => {
+    expect(journalTeaser(profile)).toBe('3 / 45 pages found');
   });
 
   it('names every milestone of the rules, and has a fallback for a new one', () => {
@@ -141,16 +135,5 @@ describe('the profile', () => {
     expect(bonusSummary({ rarityBp: 100, partsBp: 0, offerBp: 100, xpBp: 0 })).toBe(
       '+1% rare catches, +1% chance of a push-on choice',
     );
-  });
-
-  it('lists the explorers with their names, the highest rank first', () => {
-    const creatures = parseGameState(stateOffer).creatures;
-    const rows = explorerRows(profile, creatures);
-    expect(rows.map((r) => r.name)).toEqual(
-      [...rows].sort((a, b) => b.rank - a.rank).map((r) => r.name),
-    );
-    expect(rows[0]).toMatchObject({ name: 'Cindle', rank: 4 });
-    // A creature the state does not list is left out.
-    expect(explorerRows(profile, [])).toEqual([]);
   });
 });

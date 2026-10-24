@@ -26,6 +26,8 @@ const IDS = [
   'quiet:raid',
   'quiet:games',
   'valley',
+  'pin:journal',
+  'pin:stats',
 ];
 
 describe('the board settings', () => {
@@ -102,7 +104,8 @@ describe('the idle option', () => {
     ]);
     expect(board.quiet.every((r) => r.text.length > 0 && r.text.length < 40)).toBe(true);
     expect(noticeIds(board).filter((id) => id.startsWith('quiet:'))).toHaveLength(5);
-    expect(noticeIds(board).at(-1)).toBe('valley');
+    // The two pins lean last, so every other notice keeps its lean.
+    expect(noticeIds(board).slice(-3)).toEqual(['valley', 'pin:journal', 'pin:stats']);
   });
 
   it('show: a place that is busy or waiting still gets no quiet notice', () => {
@@ -122,9 +125,9 @@ describe('the idle option', () => {
     expect(buildBoard(homeInput('busy', true), settings()).calm).toBe(false);
   });
 
-  it('with everything quiet and hidden, the board is the calm line and the valley and no more', () => {
+  it('with everything quiet and hidden, the board is the calm line, the valley and the two pins and no more', () => {
     const board = buildBoard(homeInput('nothing going on', true), settings());
-    expect(noticeIds(board)).toEqual(['calm', 'valley']);
+    expect(noticeIds(board)).toEqual(['calm', 'valley', 'pin:journal', 'pin:stats']);
   });
 });
 

@@ -21,6 +21,7 @@ import {
   type QuietRow,
   type ValleyToday,
 } from '../home-view';
+import { HOME_PAGES } from '../tabs';
 
 export type TiltMode = 'none' | 'still' | 'sway';
 export type IdleMode = 'hide' | 'show';
@@ -81,7 +82,7 @@ export interface Board {
   tilts: Readonly<Record<string, number>>;
 }
 
-/** The ids of the notices in the order they are drawn: which way each leans follows this order. */
+/** The ids of the notices in the order they lean: which way each leans follows this order (the two pins come last). */
 export function noticeIds(board: Pick<Board, 'needs' | 'calm' | 'coming' | 'quiet'>): string[] {
   return [
     ...board.needs.map((row) => `need:${row.place}`),
@@ -89,6 +90,7 @@ export function noticeIds(board: Pick<Board, 'needs' | 'calm' | 'coming' | 'quie
     ...(board.coming.length > 0 ? ['coming'] : []),
     ...board.quiet.map((row) => `quiet:${row.place}`),
     'valley',
+    ...HOME_PAGES.map((page) => `pin:${page.id}`),
   ];
 }
 

@@ -218,6 +218,8 @@ export interface Profile {
     total: number;
     sets: { id: string; found: number; total: number }[];
   };
+  /** The dungeon record: runs finished and cleared, the depth of the next run, the streak in days. */
+  dungeon: { runs: number; clears: number; depth: number; streak: number };
   explorers: ({ creatureId: string } & ExplorerView)[];
   slots: Slots;
 }

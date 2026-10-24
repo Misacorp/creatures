@@ -4,15 +4,16 @@ import { glyphOrUnknown } from '../glyphs';
 import { CALM_LINE, type HomeInput } from '../home-view';
 import { Sprite } from '../sprites/Sprite';
 import { SKY_GLYPHS } from '../sprites/data/weather-sprites';
-import type { Tab } from '../tabs';
+import type { HomePage, Tab } from '../tabs';
 import { PixelHeading } from '../ui/PixelHeading';
 import { buildBoard, swayDelay, type BoardSettings } from './board';
+import { BoardPins, type PinTeasers } from './BoardPins';
 
 /**
  * The Today board: a notice board of papers pinned on cork, under the living room (on a wide window under the
  * room band). "Needs you" has one big button per place with something waiting (its picture, the reason, a pip);
  * "Coming up" lists the next things on the clock with their real times; "The valley today" is one line (the
- * sky and the Games lineup). Nothing waiting: one calm line. With `settings.idle` `show`, places with nothing
+ * sky and the Games lineup). Two pins (`BoardPins`: the Journal, the Stats) open pages of Home. Nothing waiting: one calm line. With `settings.idle` `show`, places with nothing
  * going on get a slim one-line notice under "Quiet places" (with `hide`, the default, they get none).
  *
  * `settings.tilt` leans every paper a little (`still`, the default), rocks it slowly (`sway`, still under
@@ -20,14 +21,22 @@ import { buildBoard, swayDelay, type BoardSettings } from './board';
  * stylesheet (`styles/views/home.css`) reads it from `--tilt` and `--sway-delay`. Player text never appears
  * here: every line is the game's own wording and every name is drawn as text.
  */
+const NO_TEASERS: PinTeasers = { journal: null, stats: null };
+
 export function NoticeBoard({
   input,
   settings,
   onGo,
+  teasers = NO_TEASERS,
+  onOpenPage,
 }: {
   input: HomeInput;
   settings: BoardSettings;
   onGo: (place: Tab) => void;
+  /** The pins' one-line teasers; a teaser is null until the profile has loaded. */
+  teasers?: PinTeasers;
+  /** Opens a page of Home (the Journal or the Stats); without it the pins are not drawn. */
+  onOpenPage?: (page: HomePage) => void;
 }) {
   const board = buildBoard(input, settings);
   /** The ref that gives a paper its lean (through the CSS object model: the Activity's CSP has no inline styles). */
@@ -77,6 +86,10 @@ export function NoticeBoard({
               </li>
             ))}
           </ul>
+        )}
+
+        {onOpenPage !== undefined && (
+          <BoardPins teasers={teasers} onOpen={onOpenPage} lean={lean} />
         )}
 
         <div class="hb-lower">

@@ -246,6 +246,7 @@ export function parseProfile(data: unknown): Profile {
   const stats = data['stats'];
   const bonuses = data['bonuses'];
   const journal = data['journal'];
+  const dungeon = data['dungeon'];
   if (
     !isRecord(stats) ||
     !Object.values(stats).every(isCount) ||
@@ -267,6 +268,11 @@ export function parseProfile(data: unknown): Profile {
       (s): s is { id: string; found: number; total: number } =>
         isRecord(s) && isStr(s['id']) && isCount(s['found']) && isCount(s['total']),
     ) ||
+    !isRecord(dungeon) ||
+    !isCount(dungeon['runs']) ||
+    !isCount(dungeon['clears']) ||
+    !isCount(dungeon['depth']) ||
+    !isCount(dungeon['streak']) ||
     !isArrayOf(
       data['explorers'],
       (e): e is { creatureId: string } & ExplorerView =>

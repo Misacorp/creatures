@@ -131,6 +131,11 @@ export function statRows(creature: Creature, dodge: DodgeRules = RULES.combat.do
   ];
 }
 
+/** The creature's own count of expeditions, the last row of the page's Stats table ("Expeditions 7"). */
+export function expeditionRow(creature: Creature): DataRow {
+  return { label: 'Expeditions', value: creature.explorer.trips };
+}
+
 /** Which drawer is up: an item picker for a gear slot, the Talent Book for a talent slot, or none. */
 export type PageOpen = { kind: 'gear'; slot: GearSlot } | { kind: 'talent'; slot: number } | null;
 
@@ -319,7 +324,7 @@ export function CreaturePage({
 
         <div class="cp-block">
           <h3 class="cp-title">Stats</h3>
-          <DataTable tabular rows={statRows(creature)} />
+          <DataTable tabular rows={[...statRows(creature), expeditionRow(creature)]} />
         </div>
 
         {showAbility && (
