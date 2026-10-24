@@ -536,6 +536,8 @@ export function Game({
                 setSettingsOpen(false);
               }}
               backLabel={`to ${placeLabelBeforeSettings}`}
+              onHowTo={onHelp}
+              howToRef={helpRef}
             />
           )}
           <div key={devNonce} hidden={settingsOpen}>

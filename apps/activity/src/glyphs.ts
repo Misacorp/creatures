@@ -535,14 +535,14 @@ const stats: SpriteDef = {
 const gear: SpriteDef = {
   palette: { w: BONE },
   rows: [
-    '...ww...',
     '.w.ww.w.',
-    '..wwww..',
+    '.wwwwww.',
+    '.wwwwww.',
     'www..www',
     'www..www',
-    '..wwww..',
+    '.wwwwww.',
+    '.wwwwww.',
     '.w.ww.w.',
-    '...ww...',
   ],
 };
 

@@ -19,7 +19,9 @@ function SettingsDemo({ p }: { p: Props }) {
     tilt: TILT_MODES.find((m) => m === str(p, 'tilt')) ?? DEFAULT_BOARD_SETTINGS.tilt,
     idle: IDLE_MODES.find((m) => m === str(p, 'idle')) ?? DEFAULT_BOARD_SETTINGS.idle,
   });
-  return <SettingsPage settings={settings} onChange={setSettings} onBack={NOTHING} />;
+  return (
+    <SettingsPage settings={settings} onChange={setSettings} onBack={NOTHING} onHowTo={NOTHING} />
+  );
 }
 
 const settingsPage: Entry = {

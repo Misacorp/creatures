@@ -4,7 +4,7 @@ import { CurrencyPile } from './CurrencyPile';
 import { glyphOrUnknown } from './glyphs';
 import { Sprite } from './sprites/Sprite';
 
-/** The cog that opens Settings (a small picture button next to "?"). */
+/** The cog that opens Settings (How to play is inside Settings, so the HUD keeps one button). */
 export function SettingsButton({ onSettings }: { onSettings: () => void }) {
   return (
     <button type="button" class="hud-gear" aria-label="Settings" onClick={onSettings}>
@@ -37,7 +37,8 @@ export function HelpButton({
 
 /**
  * The HUD along the top of the game: the name of the place you are in (the page's one `h1`), the currencies
- * with their numbers, the cog (Settings, when `onSettings` is given) and "?". On a phone it stays at the top edge while the page scrolls; on a wide window
+ * with their numbers, and one button: the cog (Settings, which also opens How to play) when `onSettings` is given,
+ * else "?". On a phone it stays at the top edge while the page scrolls; on a wide window
  * it runs across the top of the card, above the rail and the screen.
  */
 export function Hud({
@@ -57,7 +58,7 @@ export function Hud({
   loadLedger?: () => Promise<LedgerEntry[]>;
   helpRef: RefObject<HTMLButtonElement | null>;
   onHelp: () => void;
-  /** Opens the Settings page; without it there is no cog. */
+  /** Opens the Settings page; with it the cog replaces "?" (How to play is inside Settings). */
   onSettings?: () => void;
 }) {
   return (
@@ -69,8 +70,11 @@ export function Hud({
           {...(leetSync === undefined ? {} : { leetSync })}
           {...(loadLedger === undefined ? {} : { loadLedger })}
         />
-        {onSettings !== undefined && <SettingsButton onSettings={onSettings} />}
-        <HelpButton helpRef={helpRef} onHelp={onHelp} />
+        {onSettings === undefined ? (
+          <HelpButton helpRef={helpRef} onHelp={onHelp} />
+        ) : (
+          <SettingsButton onSettings={onSettings} />
+        )}
       </div>
     </header>
   );

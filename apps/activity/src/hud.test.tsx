@@ -117,7 +117,7 @@ describe('the currency popover', () => {
     expect(visibleText(page.root)).toContain("the leet bot didn't answer");
   });
 
-  it('has a Settings cog next to "?" when it can open Settings, and none otherwise', () => {
+  it('has one button: the Settings cog when it can open Settings (How to play is inside), else "?"', () => {
     page = createPage();
     const onSettings = vi.fn();
     const draw = (withCog: boolean) => {
@@ -135,16 +135,18 @@ describe('the currency popover', () => {
     };
     draw(false);
     expect(byName(page.root, 'button', 'Settings')).toHaveLength(0);
+    expect(byName(page.root, 'button', 'How to play')).toHaveLength(1);
     draw(true);
+    expect(byName(page.root, 'button', 'How to play')).toHaveLength(0);
     const [cog] = byName(page.root, 'button', 'Settings');
     if (cog === undefined) throw new Error('no cog');
-    // It sits just before "?" in the tools, and is a picture (a canvas), not a word.
+    // It is the last of the tools, and a picture (a canvas), not a word.
     const tools = byClass(page.root, 'hud-tools')[0];
     if (tools === undefined) throw new Error('no tools');
     const names = find(tools, (el) => el.localName === 'button').map((b) =>
       b.getAttribute('aria-label'),
     );
-    expect(names.slice(-2)).toEqual(['Settings', 'How to play']);
+    expect(names.at(-1)).toBe('Settings');
     expect(cog.getAttribute('class')).toBe('hud-gear');
     page.click(cog);
     expect(onSettings).toHaveBeenCalledOnce();

@@ -67,6 +67,11 @@ h1.hud-title {
   padding: 0;
 }
 
+.hud button.hud-gear {
+  display: grid;
+  place-items: center;
+}
+
 /* The page scrolls to a thing without hiding it under the HUD or the dock. */
 html:has(.hud) {
   scroll-padding-top: calc(var(--hud-h) + 0.5rem);

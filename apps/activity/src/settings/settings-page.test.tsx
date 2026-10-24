@@ -91,6 +91,29 @@ describe('the Settings page', () => {
     expect(groups.map((g) => g.getAttribute('aria-label'))).toEqual(['Notices', 'Quiet places']);
   });
 
+  it('opens How to play from a Help section when it is given, and has no Help section otherwise', () => {
+    const plain = draw();
+    expect(byName(plain.root, 'button', 'Open How to play')).toHaveLength(0);
+    plain.unmount();
+    const onHowTo = vi.fn();
+    const drawn = createPage();
+    page = drawn;
+    drawn.draw(
+      <SettingsPage
+        settings={DEFAULT_BOARD_SETTINGS}
+        onChange={() => undefined}
+        onBack={() => undefined}
+        onHowTo={onHowTo}
+      />,
+    );
+    expect(find(drawn.root, (el) => el.localName === 'h4').map((h) => visibleText(h))).toEqual([
+      'Help',
+      'The notice board',
+    ]);
+    drawn.click(first(byName(drawn.root, 'button', 'Open How to play')));
+    expect(onHowTo).toHaveBeenCalledOnce();
+  });
+
   it('goes back with Back and with Escape', () => {
     const onBack = vi.fn();
     const p = draw(DEFAULT_BOARD_SETTINGS, { onBack });
