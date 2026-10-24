@@ -63,6 +63,7 @@ export function EntryPicker({
       <CreatureList
         options={rows}
         class="flat"
+        level={false}
         placedNote=""
         selection={{ mode: 'pick', onPick, label: `Creatures for ${event.name}` }}
         beside={(o) =>
@@ -71,8 +72,8 @@ export function EntryPicker({
         side={(o) =>
           o.size === null && !o.goodFit ? null : (
             <span class="ge-fit">
-              {o.size !== null && <SizeMark size={o.size} />}
               {o.goodFit && <GoodFitMark />}
+              {o.size !== null && <SizeMark size={o.size} />}
             </span>
           )
         }

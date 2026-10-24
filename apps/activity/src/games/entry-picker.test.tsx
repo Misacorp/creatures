@@ -90,6 +90,13 @@ describe('EntryPicker', () => {
     expect(byClass(p.root, 'ge-size').every((m) => m.classList.contains('is-big'))).toBe(true);
   });
 
+  it("does not show the creatures' levels (level does not matter in the Games)", () => {
+    const p = draw(['hp']);
+    expect(byRole(p.root, 'option').length).toBeGreaterThan(0);
+    expect(byClass(p.root, 'ro-level')).toHaveLength(0);
+    expect(visibleText(p.root)).not.toMatch(/Lv \d/);
+  });
+
   it('shows no size mark when the event favours no size', () => {
     const p = draw(['hp', 'ember']);
     expect(byClass(p.root, 'ge-size')).toHaveLength(0);
