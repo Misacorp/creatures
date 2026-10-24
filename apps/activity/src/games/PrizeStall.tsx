@@ -55,7 +55,7 @@ export function offerBlocked(offer: StallOffer, pocket: number, open: boolean): 
 /** A row of bunting across the stall's top: the art kit's pennants in the team colours. */
 function Bunting({ faded = false }: { faded?: boolean }) {
   return (
-    <div class={faded ? 'gs-bunting is-faded' : 'gs-bunting'} aria-hidden="true">
+    <div class={faded ? 'gs-bunting is-faded' : 'gs-bunting'} data-audit-clip aria-hidden="true">
       {Array.from({ length: 24 }, (_, i) => (
         <Sprite
           key={i}

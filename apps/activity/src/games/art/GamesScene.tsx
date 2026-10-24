@@ -189,6 +189,7 @@ export function GamesScene({
     <div class="games-scene" ref={box} data-scene={scene} data-variant={variant}>
       <div
         class={zoom === 1 ? 'games-fit' : 'games-fit is-zoomed'}
+        data-audit-clip
         ref={cssVars({
           '--fw': `${String(size.width * scale * zoom)}px`,
           '--fh': `${String(size.height * scale * zoom)}px`,

@@ -90,6 +90,7 @@ Everything is checked at 390 px wide first (Discord on a phone), in the componen
 
 ## Showing work to Misa
 
+- Before showing UI work, run the overflow audit on the components you touched: `cd apps/activity && node scripts/ui-audit.mjs --only <Component>` (six widths, 320 to 1100 px; `design/workbench.md`, "UI audit"). It must end in `AUDIT CLEAN`.
 - Screenshots at 390 px from the workbench, several side by side, each labelled, and choices marked as choices.
 - Look at every screenshot before sending it: clipped borders, misaligned edges, wrong fonts and odd states (a "waiting" with a level-up that can't happen) are caught here, not by Misa.
 - Workbench presets show real states the game can produce.
