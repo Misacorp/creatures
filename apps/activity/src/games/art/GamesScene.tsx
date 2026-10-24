@@ -272,6 +272,8 @@ export interface GamesActorProps {
   /** A tiny bar over the head, 0 to 1 (heat taken, food eaten); none when undefined. */
   meter?: number | undefined;
   meterTint?: RampName | undefined;
+  /** Drawn a step smaller (three quarters), standing on the same feet: a crowded field. */
+  small?: boolean | undefined;
   /** Draw order; higher is in front. Defaults to the feet's y. */
   z?: number | undefined;
   /** Text for screen readers (the creature's name). */
@@ -292,6 +294,7 @@ export function GamesActor({
   flip = false,
   meter,
   meterTint = 'gold',
+  small = false,
   z,
   label,
 }: GamesActorProps) {
@@ -303,6 +306,7 @@ export function GamesActor({
   const classes = ['games-actor'];
   if (state === 'flat') classes.push('is-flat');
   if (flip) classes.push('is-flipped');
+  if (small) classes.push('is-small');
   return (
     <div
       class={classes.join(' ')}

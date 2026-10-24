@@ -19,6 +19,7 @@ import {
   type GamesKind,
 } from '@creatures/game';
 import { sceneWidthFor } from './art/scenes';
+import { layoutFor } from './show-layout';
 
 /**
  * The show's pacing: the game package's (`GAMES_SHOW_TIMING`, `showTimeline`), which the server uses
@@ -223,6 +224,8 @@ interface PosKey {
   from: number;
   x: number;
   y: number;
+  /** The engine's own x (`x` is where it is drawn: a crowded field is spread, see `show-layout`). */
+  rx: number;
   /** Lap progress at this key (swim only; hundredths of a lap). */
   lap: number;
 }
@@ -348,6 +351,9 @@ export interface PreparedEvent {
   objects: { i: number; kind: TeamObjectKind; m: Moving }[];
   /** Each actor's team index (teams in order of first appearance). */
   teamOfActor: number[];
+  /** A crowded field draws its creatures a step smaller; the team events' back rank stands this much up (`show-layout`). */
+  small: boolean;
+  teamDy: number[];
   /** Chase and haul: the camera's left edge at each whole tick; the world's width. */
   camera: Float64Array | null;
   worldWidth: number;
@@ -379,8 +385,10 @@ export function prepareEvent(result: GamesEventResult): PreparedEvent {
   const info = gamesEventInfo(result.eventId);
   const laps = def?.kind === 'swim' ? def.params.laps : (info?.laps ?? 1);
   const teamScore = def?.teamScore ?? info?.teamScore ?? 'best';
+  // A crowded field is spread at display time (`show-layout`); the engine's beats stay as they are.
+  const layout = layoutFor(kind, result);
   const actors: PreparedActor[] = result.actors.map((a) => ({
-    pos: [{ t: 0, from: 0, x: a.x, y: a.y, lap: 0 }],
+    pos: [{ t: 0, from: 0, rx: a.x, ...layout.actor(a.a, a.x, a.y), lap: 0 }],
     posIndex: new Int32Array(0),
     state: new Steps<GamesActorState>('idle'),
     meter: new Steps<number | undefined>(undefined),
@@ -419,8 +427,9 @@ export function prepareEvent(result: GamesEventResult): PreparedEvent {
           const now = lapFraction(b.x, b.y);
           lap = prev.lap + ((now - was + 100) % 100);
         }
-        actor.pos.push({ t: b.t, from, x: b.x, y: b.y, lap });
-        maxX = Math.max(maxX, b.x);
+        const at = layout.actor(b.a, b.x, b.y);
+        actor.pos.push({ t: b.t, from, x: at.x, y: at.y, rx: b.x, lap });
+        maxX = Math.max(maxX, at.x);
         break;
       }
       case 'state':
@@ -448,17 +457,27 @@ export function prepareEvent(result: GamesEventResult): PreparedEvent {
         break;
       }
       case 'fx':
-        fx.push({ t: b.t, fx: b.fx, a: b.a, x: b.x, y: b.y, big: BIG_FX.has(b.fx) });
+        fx.push({
+          t: b.t,
+          fx: b.fx,
+          a: b.a,
+          // An effect with a place of its own is moved with the field; one on a creature follows it.
+          ...(b.x !== undefined && b.y !== undefined
+            ? layout.fx(b.a, b.x, b.y)
+            : { x: b.x, y: b.y }),
+          big: BIG_FX.has(b.fx),
+        });
         break;
       case 'say':
         says.push({ t: b.t, line: b.line, a: b.a, b: b.b, n: b.n });
         break;
       case 'prop': {
-        const key = { t: b.t, x: b.x, y: b.y, f: b.f ?? 0 };
+        const at = layout.prop(b.p, b.x, b.y);
+        const key = { t: b.t, x: at.x, y: at.y, f: b.f ?? 0 };
         if (b.p === 'melon') {
           melon ??= new Moving();
           melon.push(key);
-          maxX = Math.max(maxX, b.x);
+          maxX = Math.max(maxX, at.x);
         } else if (b.p === 'floe') {
           floe ??= new Moving();
           floe.push(key);
@@ -476,8 +495,8 @@ export function prepareEvent(result: GamesEventResult): PreparedEvent {
           s.push(key);
         } else if (b.p.startsWith('finish:')) {
           const i = Number(b.p.slice(7));
-          if (Number.isInteger(i) && i >= 0) finishes.push({ i, x: b.x, y: b.y });
-          maxX = Math.max(maxX, b.x);
+          if (Number.isInteger(i) && i >= 0) finishes.push({ i, x: at.x, y: at.y });
+          maxX = Math.max(maxX, at.x);
         } else if (b.p.startsWith('log:') || b.p.startsWith('pumpkin:')) {
           const [name, index] = b.p.split(':');
           const i = Number(index);
@@ -488,7 +507,7 @@ export function prepareEvent(result: GamesEventResult): PreparedEvent {
             loads.set(i, load);
           }
           load.m.push(key);
-          maxX = Math.max(maxX, b.x);
+          maxX = Math.max(maxX, at.x);
         } else if (TEAM_OBJECTS.some((o) => b.p.startsWith(`${o}:`))) {
           const [name, index] = b.p.split(':');
           const i = Number(index);
@@ -573,6 +592,8 @@ export function prepareEvent(result: GamesEventResult): PreparedEvent {
     finishT: new Array<number | null>(result.actors.length).fill(null),
     objects: [...objects.values()].sort((p, q) => p.i - q.i),
     teamOfActor,
+    small: layout.small,
+    teamDy: layout.teamDy,
     camera: null,
     worldWidth: VIEW_WIDTH,
     teams: teamList,
@@ -658,17 +679,19 @@ function actorPos(
   p: PreparedEvent,
   a: number,
   tick: number,
-): { x: number; y: number; lap: number } {
+): { x: number; y: number; rx: number; lap: number } {
   const actor = p.actors[a];
-  if (actor === undefined) return { x: 0, y: 0, lap: 0 };
+  if (actor === undefined) return { x: 0, y: 0, rx: 0, lap: 0 };
   const i = actor.posIndex[clampTick(tick, p.ticks)] ?? 0;
   const k = actor.pos[Math.max(0, i)] as PosKey;
   const n = actor.pos[i + 1];
-  if (n === undefined || tick <= n.from || n.t <= n.from) return { x: k.x, y: k.y, lap: k.lap };
+  if (n === undefined || tick <= n.from || n.t <= n.from)
+    return { x: k.x, y: k.y, rx: k.rx, lap: k.lap };
   const u = Math.min(1, (tick - n.from) / (n.t - n.from));
   return {
     x: k.x + (n.x - k.x) * u,
     y: k.y + (n.y - k.y) * u,
+    rx: k.rx + (n.rx - k.rx) * u,
     lap: k.lap + (n.lap - k.lap) * u,
   };
 }
@@ -930,7 +953,8 @@ function liveKey(p: PreparedEvent, f: EventFrame, a: number): { key: number; sco
       return { key: ticksIn * 1000 + close * 999, score: ticksIn };
     }
     case 'chase': {
-      const run = af.x - (start?.x ?? 0);
+      // The engine's own x: the drawn one may be spread (`show-layout`).
+      const run = actorPos(p, a, f.tick).rx - (start?.x ?? 0);
       return { key: run, score: Math.max(0, Math.floor(run / PX_PER_METRE)) };
     }
     case 'feast':
@@ -963,7 +987,10 @@ function liveKey(p: PreparedEvent, f: EventFrame, a: number): { key: number; sco
     case 'kite': {
       // The kite's height (its y counts down from the rest position).
       const kite = f.props.objects.find((o) => o.i === p.teamOfActor[a]);
-      return { key: kite === undefined ? af.score : -kite.y, score: af.score };
+      return {
+        key: kite === undefined ? af.score : -(kite.y - (p.teamDy[kite.i] ?? 0)),
+        score: af.score,
+      };
     }
   }
 }

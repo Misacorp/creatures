@@ -8,7 +8,7 @@
 import type { SpriteDef } from '../../sprites/sprite-data';
 import { GAMES_TILE_DATA, rampPalette, usedPalette, type BaseTileName } from './data/games-tiles';
 import { flipX, flipY, rotateCW, shiftX, type Placement } from './pixel';
-import { RAMPS, maybeTint, type RampName } from './tint';
+import { RAMPS, maybeTint, type Ramp, type RampName } from './tint';
 
 export const TILE = 16;
 
@@ -131,7 +131,7 @@ export function tileFrame(name: TileName, frame = 0): SpriteDef {
 export interface TileRef {
   tile: TileName;
   tint?: RampName;
-  tint2?: RampName;
+  tint2?: RampName | Ramp;
 }
 
 export interface Tilemap {
