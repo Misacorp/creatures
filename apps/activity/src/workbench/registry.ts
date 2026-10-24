@@ -19,6 +19,7 @@ import { iconEntries } from './entries/icons';
 import { jobRevealEntries } from './entries/job-reveal';
 import { findEntries } from './entries/find';
 import { lootEntries } from './entries/loot';
+import { mainNavEntries } from './entries/main-nav';
 import { popoverEntries } from './entries/popovers';
 import { recipeCardEntries } from './entries/recipe-card';
 import { supplyCraftingEntries } from './entries/supply-crafting';
@@ -82,6 +83,7 @@ export const ENTRIES: readonly Entry[] = [
   ...gamesArtEntries,
   ...gamesShowEntries,
   ...gamesTabEntries,
+  ...mainNavEntries,
 ];
 
 export function findEntry(name: string | null): Entry | null {
