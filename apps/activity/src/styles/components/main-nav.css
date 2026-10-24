@@ -57,10 +57,11 @@ h1.hud-title {
   display: flex;
   flex: none;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
-.hud button.howto-open {
+.hud button.howto-open,
+.hud button.hud-gear {
   min-width: 2.75rem;
   min-height: 2.75rem;
   padding: 0;

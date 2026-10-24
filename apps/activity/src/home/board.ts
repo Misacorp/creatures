@@ -21,7 +21,7 @@ import {
   type QuietRow,
   type ValleyToday,
 } from '../home-view';
-import { HOME_PAGES } from '../tabs';
+import { HOME_PINS } from '../tabs';
 
 export type TiltMode = 'none' | 'still' | 'sway';
 export type IdleMode = 'hide' | 'show';
@@ -90,7 +90,7 @@ export function noticeIds(board: Pick<Board, 'needs' | 'calm' | 'coming' | 'quie
     ...(board.coming.length > 0 ? ['coming'] : []),
     ...board.quiet.map((row) => `quiet:${row.place}`),
     'valley',
-    ...HOME_PAGES.map((page) => `pin:${page.id}`),
+    ...HOME_PINS.map((page) => `pin:${page.id}`),
   ];
 }
 

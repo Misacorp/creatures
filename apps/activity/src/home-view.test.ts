@@ -8,6 +8,8 @@ import {
   valleyToday,
   whenText,
 } from './home-view';
+import { SAMPLE_STATE, sampleCreature } from './creature-card-sample';
+import { creatureName } from './game';
 import { HOME_TZ, homeInput } from './workbench/home-sample';
 
 /** The fixture clock: Saturday 10:00 in Helsinki. Games lock 13:37, a trip back 15:20, a job ready 14:05, Phase 2 13:37, finale Sunday 20:00. */
@@ -35,13 +37,15 @@ describe('needsYou', () => {
       'expeditions',
       'workshop',
       'dungeon',
+      // The Creatures notice: the sample evolver (no pip on the dock, a notice on the board).
+      'collection',
     ]);
     expect(rows[0]).toMatchObject({ reason: '2 events are open to enter', until: 'by 13:37' });
     expect(rows[2]?.reason).toBe('Cindle is home from Tidepools');
     expect(rows[3]?.reason).toBe('Craft Kelp Cap is ready');
   });
 
-  it('has a row exactly where the navigation has a pip', () => {
+  it('has a row wherever the navigation has a pip, and only the Creatures notice has one without', () => {
     for (const state of ['busy', 'nothing waiting', 'crowded']) {
       const input = homeInput(state, true);
       const alerts = homeAlerts(input);
@@ -49,11 +53,11 @@ describe('needsYou', () => {
         .filter(([, reason]) => reason !== null)
         .map(([place]) => place)
         .sort();
-      expect(
-        needsYou(input)
-          .map((r) => r.place)
-          .sort(),
-      ).toEqual(waiting);
+      const rows = needsYou(input).map((r) => r.place);
+      expect(rows.filter((place) => place !== 'collection').sort()).toEqual(
+        waiting.filter((place) => place !== 'collection'),
+      );
+      if (waiting.includes('collection')) expect(rows).toContain('collection');
     }
   });
 
@@ -64,12 +68,67 @@ describe('needsYou', () => {
     expect(crowded.find((r) => r.place === 'expeditions')?.reason).toBe('3 trips need you');
     expect(crowded.find((r) => r.place === 'workshop')?.reason).toBe('2 jobs are ready');
     expect(crowded.find((r) => r.place === 'collection')?.reason).toBe(
-      '3 catches await your choice',
+      '3 catches await your choice; 3 creatures need you',
     );
   });
 
   it('says a calm thing in the game voice', () => {
     expect(CALM_LINE).toMatch(/quiet/);
+  });
+});
+
+describe('the Creatures notice', () => {
+  const state = { ...SAMPLE_STATE, pending: [] };
+  const evolve = { ...sampleCreature('evolve ready'), id: 'evolver' };
+  const creaturesRow = (input: ReturnType<typeof homeInput>) =>
+    needsYou(input).find((r) => r.place === 'collection');
+
+  it('has no row when nothing waits and no creature can do anything', () => {
+    const input = { ...homeInput('nothing waiting', true), creatureState: state, creatures: [] };
+    expect(creaturesRow(input)).toBeUndefined();
+  });
+
+  it('names a creature that can evolve and opens Creatures with the Needs you filter', () => {
+    const input = {
+      ...homeInput('nothing waiting', true),
+      creatureState: state,
+      creatures: [evolve],
+    };
+    expect(creaturesRow(input)).toMatchObject({
+      place: 'collection',
+      label: 'Creatures',
+      reason: `${creatureName(evolve)} can evolve`,
+      needsFilter: true,
+    });
+  });
+
+  it('counts when several creatures need you', () => {
+    const input = {
+      ...homeInput('nothing waiting', true),
+      creatureState: state,
+      creatures: [evolve, { ...sampleCreature('ribbon ready'), id: 'r' }],
+    };
+    expect(creaturesRow(input)?.reason).toBe('2 creatures need you');
+  });
+
+  it('keeps the catches reason (no filter) and joins the two when both apply', () => {
+    const catches = homeInput('crowded', true);
+    delete catches.creatureState;
+    expect(creaturesRow(catches)).toMatchObject({
+      reason: '3 catches await your choice',
+      needsFilter: false,
+    });
+    const both = { ...catches, creatureState: state, creatures: [evolve] };
+    expect(creaturesRow(both)).toMatchObject({
+      reason: `3 catches await your choice; ${creatureName(evolve)} can evolve`,
+      needsFilter: true,
+    });
+  });
+
+  it('speaks only of the catches when the screen does not hand over the state', () => {
+    const input = { ...homeInput('nothing waiting', true), creatures: [evolve] };
+    delete input.creatureState;
+    expect(creaturesRow(input)).toBeUndefined();
   });
 });
 

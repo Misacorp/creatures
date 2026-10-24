@@ -8,6 +8,7 @@
  * optional input: every line that needs it is left out when it is null (the load failed or has not landed).
  */
 import type { Attention, Creature } from './api';
+import { creaturesNeedLine, type NeedsState } from './creature-needs';
 import { creatureName } from './game';
 import type { GamesView } from './games-types';
 import { emptyEvents, gamesAlert } from './games-view';
@@ -43,6 +44,11 @@ export interface HomeInput {
   /** Duplicates waiting for a choice. */
   pending: number;
   attention: Attention | null;
+  /**
+   * What the Creatures notice reads (balances, the waiting catches, the Talent Book price), the game state itself.
+   * Absent: the notice speaks of the waiting catches only.
+   */
+  creatureState?: NeedsState;
   raid: RaidGlance | null;
   forecast: Forecast | null;
 }
@@ -115,6 +121,8 @@ export interface NeedRow {
   reason: string;
   /** A time that matters ("by 13:37"), or null. */
   until: string | null;
+  /** True when the notice opens its place with the "Needs you" filter on (the Creatures notice, for creatures that need you). */
+  needsFilter: boolean;
 }
 
 /** The rows of "Needs you": one per place that has a pip, the most pressing first (a closing door before a finished job). */
@@ -122,8 +130,20 @@ export function needsYou(input: HomeInput): NeedRow[] {
   const alerts = homeAlerts(input);
   const { now, timezone } = input;
   const rows: NeedRow[] = [];
-  const add = (place: Tab, reason: string, until: string | null = null): void => {
-    rows.push({ place, label: placeLabel(place), glyph: placeGlyph(place), reason, until });
+  const add = (
+    place: Tab,
+    reason: string,
+    until: string | null = null,
+    needsFilter = false,
+  ): void => {
+    rows.push({
+      place,
+      label: placeLabel(place),
+      glyph: placeGlyph(place),
+      reason,
+      until,
+      needsFilter,
+    });
   };
 
   if (alerts.games !== null && input.games !== null) {
@@ -163,9 +183,17 @@ export function needsYou(input: HomeInput): NeedRow[] {
     );
   }
   if (alerts.dungeon !== null) add('dungeon', "Today's run is open");
-  if (alerts.collection !== null) {
-    add('collection', `${plural(input.pending, 'catch awaits', 'catches await')} your choice`);
-  }
+  // The Creatures notice: the waiting catches (the place's pip) and the creatures that can do something now.
+  const catches =
+    alerts.collection === null
+      ? null
+      : `${plural(input.pending, 'catch awaits', 'catches await')} your choice`;
+  const creaturesLine =
+    input.creatureState === undefined
+      ? null
+      : creaturesNeedLine(input.creatures, input.creatureState);
+  const reasons = [catches, creaturesLine].filter((r): r is string => r !== null);
+  if (reasons.length > 0) add('collection', reasons.join('; '), null, creaturesLine !== null);
   return rows;
 }
 

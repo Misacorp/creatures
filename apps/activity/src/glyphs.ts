@@ -514,6 +514,38 @@ const anvil: SpriteDef = {
   ],
 };
 
+// --- Home board and HUD ---
+
+/** A bar chart on an axis: the Stats pin of the Home board (its own picture; the trophy is the Games). */
+const stats: SpriteDef = {
+  palette: { m: HAZE, w: BONE, g: GOLD },
+  rows: [
+    'm.....ww',
+    'm.....ww',
+    'm...ggww',
+    'm...ggww',
+    'm.wwggww',
+    'm.wwggww',
+    'm.wwggww',
+    'mmmmmmmm',
+  ],
+};
+
+/** A cog: the Settings button in the HUD. */
+const gear: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '...ww...',
+    '.w.ww.w.',
+    '..wwww..',
+    'www..www',
+    'www..www',
+    '..wwww..',
+    '.w.ww.w.',
+    '...ww...',
+  ],
+};
+
 // --- Creature experience ---
 
 /*
@@ -870,6 +902,8 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   alert,
   reticle,
   anvil,
+  stats,
+  gear,
   treat,
   paw,
   compass,

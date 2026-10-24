@@ -11,7 +11,7 @@ function place(id: string, group: string, pip: string | null = null): NavPlace {
 const ids = (list: readonly { id: string }[]): string[] => list.map((p) => p.id);
 
 describe('the place list', () => {
-  it('is the six tabs in their order, each with its group and its pip from the alerts', () => {
+  it('is the seven tabs in their order, each with its group and its pip from the alerts', () => {
     const places = navPlaces({ ...NO_ALERTS, workshop: ALERT_TEXT.jobReady });
     expect(ids(places)).toEqual(TABS.map((t) => t.id));
     expect(places.map((p) => p.label)).toEqual(TABS.map((t) => t.label));
@@ -33,29 +33,33 @@ describe('the place list', () => {
 describe('navGroups', () => {
   const places = navPlaces(NO_ALERTS);
 
-  it('is Creatures and Adventure with their places in list order, the Games last in Adventure', () => {
+  it('is Collection and Adventure with their places in list order, the Games last in Adventure', () => {
     const groups = navGroups(places);
-    expect(ids(groups)).toEqual(['creatures', 'adventure']);
+    expect(ids(groups)).toEqual(['collection', 'adventure']);
+    expect(groups.map((g) => g.label)).toEqual(['Collection', 'Adventure']);
     expect(groups.map((g) => ids(g.places))).toEqual([
-      ['collection', 'workshop'],
+      ['collection', 'workshop', 'journal'],
       ['expeditions', 'dungeon', 'raid', 'games'],
     ]);
   });
 
   it('makes a group with several places a menu and a group with one place a direct button', () => {
     expect(navGroups(places).map((g) => g.direct)).toEqual([false, false]);
-    expect(navGroups(places.filter((p) => p.id !== 'workshop')).map((g) => g.direct)).toEqual([
-      true,
-      false,
-    ]);
+    const lone = places.filter((p) => p.id !== 'workshop' && p.id !== 'journal');
+    expect(navGroups(lone).map((g) => g.direct)).toEqual([true, false]);
   });
 
   it('leaves out a group with no place, and a new place joins its group by data alone', () => {
-    const more = [...places, place('market', 'creatures')];
+    const more = [...places, place('market', 'collection')];
     expect(navGroups(places.filter((p) => p.group !== 'adventure')).map((g) => g.id)).toEqual([
-      'creatures',
+      'collection',
     ]);
-    expect(ids(navGroups(more)[0]?.places ?? [])).toEqual(['collection', 'workshop', 'market']);
+    expect(ids(navGroups(more)[0]?.places ?? [])).toEqual([
+      'collection',
+      'workshop',
+      'journal',
+      'market',
+    ]);
   });
 
   it('rolls the pips of a group up', () => {
@@ -69,6 +73,22 @@ describe('navGroups', () => {
     expect(creatures?.pip).toBeNull();
     // Expeditions, Raid and Games all wait: the right group counts all four of its places.
     expect(adventure?.pip).toBe('3 places need you');
+  });
+
+  it('rolls the Collection places into one pip: the Journal never has one, Creatures and Workshop count', () => {
+    const roll = (alerts: Partial<typeof NO_ALERTS>) =>
+      navGroups(navPlaces({ ...NO_ALERTS, ...alerts }))[0]?.pip;
+    expect(roll({})).toBeNull();
+    expect(roll({ collection: ALERT_TEXT.catchWaiting })).toBe(
+      `Creatures: ${ALERT_TEXT.catchWaiting}`,
+    );
+    expect(roll({ workshop: ALERT_TEXT.jobReady })).toBe(`Workshop: ${ALERT_TEXT.jobReady}`);
+    expect(roll({ collection: ALERT_TEXT.catchWaiting, workshop: ALERT_TEXT.jobReady })).toBe(
+      '2 places need you',
+    );
+    const journal = navPlaces(NO_ALERTS).find((p) => p.id === 'journal');
+    expect(journal?.group).toBe('collection');
+    expect(journal?.pip).toBeNull();
   });
 
   it('rolls the Games pip into Adventure, named when it is the only one', () => {
@@ -110,7 +130,7 @@ describe('dockItems', () => {
 
   it('puts Home between the groups: left group, Home, right group', () => {
     const items = dockItems(groups, navHome());
-    expect(items.map(idOf)).toEqual(['creatures', 'home', 'adventure']);
+    expect(items.map(idOf)).toEqual(['collection', 'home', 'adventure']);
   });
 
   it('is just the groups with no Home', () => {

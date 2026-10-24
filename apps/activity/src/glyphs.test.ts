@@ -31,6 +31,17 @@ const ALL_OPS: Record<GimmickOp, true> = {
   charge: true,
 };
 
+describe('the Stats and Settings pictures', () => {
+  it('give Stats a glyph of its own, not the trophy of the Games, and the HUD a cog', () => {
+    const stats = glyph('stats');
+    const trophy = glyph('trophy');
+    expect(stats).toBeDefined();
+    expect(trophy).toBeDefined();
+    expect(stats?.rows).not.toEqual(trophy?.rows);
+    expect(glyph('gear')).toBeDefined();
+  });
+});
+
 describe('glyph data', () => {
   it('is a well-formed 8x8 sprite for every glyph', () => {
     for (const [id, def] of Object.entries(BUNDLED_GLYPHS)) {

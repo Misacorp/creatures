@@ -38,6 +38,7 @@
 }
 
 .hb-cork {
+  position: relative;
   display: grid;
   /* The gaps and the padding leave room for the leaning papers' corners (see "Leaning papers"). */
   gap: 0.75rem;
@@ -493,4 +494,85 @@ button.hb-pin:focus-visible {
   .hb[data-tilt='sway'] button.hb-pin:focus-visible {
     animation-play-state: paused;
   }
+}
+
+/* --- The starter pin: a round pushpin badge in the board's top right corner, above the papers --- */
+button.hb-starter {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.375rem;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  filter: drop-shadow(var(--px) calc(var(--px) * 2) 0 var(--leather-dark));
+  --disc: polygon(
+    32% 0,
+    68% 0,
+    68% 8%,
+    82% 8%,
+    82% 18%,
+    92% 18%,
+    92% 32%,
+    100% 32%,
+    100% 68%,
+    92% 68%,
+    92% 82%,
+    82% 82%,
+    82% 92%,
+    68% 92%,
+    68% 100%,
+    32% 100%,
+    32% 92%,
+    18% 92%,
+    18% 82%,
+    8% 82%,
+    8% 68%,
+    0 68%,
+    0 32%,
+    8% 32%,
+    8% 18%,
+    18% 18%,
+    18% 8%,
+    32% 8%
+  );
+}
+
+button.hb-starter:active:not(:disabled) {
+  box-shadow: none;
+  transform: translate(1px, 1px);
+}
+
+/* The ink rim and the gold disc are one stepped circle each, the disc inset by one pixel of chrome. */
+button.hb-starter::before {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  clip-path: var(--disc);
+  content: '';
+}
+
+.hb-starter-disc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(100% - var(--px) * 2);
+  height: calc(100% - var(--px) * 2);
+  background: var(--gold);
+  clip-path: var(--disc);
+}
+
+/* A bone glint on the upper left of the disc: the pin's head catches the light. */
+.hb-starter-disc::after {
+  position: absolute;
+  top: 18%;
+  left: 18%;
+  width: 0.25rem;
+  height: 0.25rem;
+  background: var(--bone);
+  content: '';
 }

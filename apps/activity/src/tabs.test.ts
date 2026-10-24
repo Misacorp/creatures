@@ -1,12 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { BUNDLED_GLYPHS } from './glyphs';
-import { DEFAULT_PLACE, NAV_GROUPS, NAV_HOME, TABS, isPlace, isTab, tabPalette } from './tabs';
+import {
+  DEFAULT_PLACE,
+  HOME_PINS,
+  NAV_GROUPS,
+  NAV_HOME,
+  TABS,
+  homePageOf,
+  isPlace,
+  isTab,
+  navPlaceOf,
+  tabPalette,
+} from './tabs';
 
 describe('the tabs', () => {
-  it('has the six tabs: your creatures, then the adventures in rising danger, the Valley Games last', () => {
+  it('has the seven tabs: the Collection (creatures, Workshop, Journal), then the adventures in rising danger, the Valley Games last', () => {
     expect(TABS.map((t) => t.id)).toEqual([
       'collection',
       'workshop',
+      'journal',
       'expeditions',
       'dungeon',
       'raid',
@@ -32,10 +44,11 @@ describe('the tabs', () => {
 });
 
 describe('the groups and Home', () => {
-  it('has two groups, Creatures and Adventure, in the places Misa named', () => {
-    expect(NAV_GROUPS.map((g) => g.id)).toEqual(['creatures', 'adventure']);
+  it('has two groups, Collection and Adventure, in the places Misa named', () => {
+    expect(NAV_GROUPS.map((g) => g.id)).toEqual(['collection', 'adventure']);
+    expect(NAV_GROUPS.map((g) => g.label)).toEqual(['Collection', 'Adventure']);
     const of = (id: string) => TABS.filter((t) => t.group === id).map((t) => t.id);
-    expect(of('creatures')).toEqual(['collection', 'workshop']);
+    expect(of('collection')).toEqual(['collection', 'workshop', 'journal']);
     expect(of('adventure')).toEqual(['expeditions', 'dungeon', 'raid', 'games']);
   });
 
@@ -48,6 +61,17 @@ describe('the groups and Home', () => {
     expect(isTab('home')).toBe(false);
     expect(isPlace('raid')).toBe(true);
     expect(isPlace('lounge')).toBe(false);
+  });
+});
+
+describe('the pins and pages of Home', () => {
+  it('opens the Journal as a place and the Stats as a page of Home', () => {
+    expect(HOME_PINS.map((p) => p.screen)).toEqual(['journal', 'home/stats']);
+    expect(isTab('journal')).toBe(true);
+    expect(navPlaceOf('journal')).toBe('journal');
+    expect(navPlaceOf('home/stats')).toBe('home');
+    expect(homePageOf('journal')).toBeNull();
+    expect(homePageOf('home/stats')).toBe('stats');
   });
 });
 

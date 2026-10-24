@@ -4,7 +4,7 @@ import { useServerNow } from '../hooks';
 import type { HomeInput } from '../home-view';
 import { journalTeaser } from '../journal-view';
 import { statsTeaser } from '../stats-view';
-import type { HomePage as HomePageId, Tab } from '../tabs';
+import type { Screen, Tab } from '../tabs';
 import { useLoaded } from '../use-loaded';
 import type { BoardSettings } from './board';
 import { HomePage } from './HomePage';
@@ -26,9 +26,9 @@ export function HomeScreen({
   /** Server clock minus local clock. */
   offset: number;
   settings: BoardSettings;
-  onGo: (place: Tab) => void;
-  /** Opens the Journal or the Stats page (the pins). */
-  onOpenPage: (page: HomePageId) => void;
+  onGo: (place: Tab, needsFilter?: boolean) => void;
+  /** Opens the screen of a pin (the Journal or the Stats). */
+  onOpenPage: (screen: Screen) => void;
   /** The living room, drawn at the top of the page on a phone. */
   room?: ComponentChildren;
 }) {

@@ -69,6 +69,33 @@ describe('the Journal page', () => {
   });
 });
 
+describe('the Journal as a place', () => {
+  it('has no Back when opened from the dock, and Back to where it came from when a pin opened it', async () => {
+    fetchProfile.mockResolvedValue(profile);
+    const onBack = vi.fn();
+    page = createPage();
+    page.draw(<HomeBook page="journal" creatures={creatures} tripsFinished={0} />);
+    await flush();
+    expect(byClass(page.root, 'drill-head')).toHaveLength(0);
+    expect(byName(page.root, 'button', /^‹ Back/)).toHaveLength(0);
+    expect(visibleText(page.root)).toContain('3 / 45 pages found');
+    page.draw(<HomeBook page="journal" creatures={creatures} tripsFinished={0} onBack={onBack} />);
+    await flush();
+    page.click(first(byName(page.root, 'button', /^‹ Back/)));
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps Back (when there is one) if the profile fails to load', async () => {
+    fetchProfile.mockRejectedValue(new Error('down'));
+    page = createPage();
+    page.draw(
+      <HomeBook page="journal" creatures={creatures} tripsFinished={0} onBack={() => undefined} />,
+    );
+    await flush();
+    expect(byName(page.root, 'button', /^‹ Back/)).toHaveLength(1);
+  });
+});
+
 describe('the Stats page', () => {
   function draw(onBack = () => undefined): Page {
     const drawn = createPage();

@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import type { HomeInput } from '../home-view';
-import type { HomePage as HomePageId, Tab } from '../tabs';
+import type { Screen, Tab } from '../tabs';
 import type { BoardSettings } from './board';
 import type { PinTeasers } from './BoardPins';
 import { NoticeBoard } from './NoticeBoard';
@@ -21,12 +21,12 @@ export function HomePage({
 }: {
   input: HomeInput;
   settings: BoardSettings;
-  onGo: (place: Tab) => void;
+  onGo: (place: Tab, needsFilter?: boolean) => void;
   room?: ComponentChildren;
   /** The pins' teasers (the Journal's and the Stats'); null parts until the profile has loaded. */
   teasers?: PinTeasers;
-  /** Opens the Journal or the Stats page; without it the pins are not drawn. */
-  onOpenPage?: (page: HomePageId) => void;
+  /** Opens the screen of a pin (the Journal or the Stats); without it the pins are not drawn. */
+  onOpenPage?: (screen: Screen) => void;
 }) {
   return (
     <div class="home-page">

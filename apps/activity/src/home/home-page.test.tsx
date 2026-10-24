@@ -82,6 +82,7 @@ describe('HomePage', () => {
       'expeditions',
       'workshop',
       'dungeon',
+      'collection',
     ]);
   });
 
@@ -90,6 +91,31 @@ describe('HomePage', () => {
     const p = draw('busy', DEFAULT_BOARD_SETTINGS, { onGo });
     p.click(first(byName(p.root, 'button', /^Workshop/)));
     expect(onGo).toHaveBeenCalledWith('workshop');
+  });
+
+  it('tells the Creatures notice to open with the Needs you filter, and the others plainly', () => {
+    const onGo = vi.fn();
+    const p = draw('busy', DEFAULT_BOARD_SETTINGS, { onGo });
+    expect(
+      visibleText(
+        first(
+          byClass(p.root, 'hb-need').filter((b) => b.getAttribute('data-place') === 'collection'),
+        ),
+      ),
+    ).toContain('can evolve');
+    p.click(first(byName(p.root, 'button', /^Creatures/)));
+    expect(onGo).toHaveBeenLastCalledWith('collection', true);
+  });
+
+  it('has a round pin in the corner, named "Your creatures", that opens the Creatures view', () => {
+    const onGo = vi.fn();
+    const p = draw('nothing waiting', DEFAULT_BOARD_SETTINGS, { onGo });
+    const [pin, ...others] = byName(p.root, 'button', 'Your creatures');
+    expect(others).toEqual([]);
+    expect(pin?.getAttribute('class')).toContain('hb-starter');
+    // The pin is the first thing in the cork, drawn under the papers in the document and over them by the stylesheet.
+    p.click(first(byName(p.root, 'button', 'Your creatures')));
+    expect(onGo).toHaveBeenCalledWith('collection');
   });
 
   it('leaves the raid rows out when the raid view did not load', () => {
@@ -162,7 +188,7 @@ describe('HomePage', () => {
     for (const pin of pins) expect(pin.style.getPropertyValue('--tilt')).not.toBe('');
     drawn.click(first(byName(drawn.root, 'button', /^Journal/)));
     drawn.click(first(byName(drawn.root, 'button', /^Stats/)));
-    expect(onOpenPage.mock.calls).toEqual([['journal'], ['stats']]);
+    expect(onOpenPage.mock.calls).toEqual([['journal'], ['home/stats']]);
   });
 
   it('keeps the pins on a calm board, and leaves them out when it cannot open pages', () => {

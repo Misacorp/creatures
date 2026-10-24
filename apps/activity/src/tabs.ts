@@ -6,20 +6,31 @@
  * picture to stay readable.
  */
 
-export type Tab = 'collection' | 'expeditions' | 'games' | 'raid' | 'workshop' | 'dungeon';
+export type Tab =
+  'collection' | 'journal' | 'expeditions' | 'games' | 'raid' | 'workshop' | 'dungeon';
 
 /** Every place of the game screen: Home (the page the app opens on) and the tabs. */
 export type Place = 'home' | Tab;
 
 /**
- * The pages that open from Home (the pins on the Today board): sub-pages of Home, not places of the navigation.
- * The current screen is a `Place` or one of these (`Screen`); the navigation shows Home as current on both.
- * A new page is one entry here, its view in `Game.tsx` and a pin on the board.
+ * The pages that open from Home (a pin on the Today board) and are not places of the navigation: sub-pages of
+ * Home. The current screen is a `Place` or one of these (`Screen`); the navigation shows Home as current on
+ * them. Stats is the one today (the Journal became a place of the Collection group, 2026-10-24). A new page
+ * is one entry here, its view in `Game.tsx` and a pin in `HOME_PINS`.
  */
-export const HOME_PAGES = [
-  { id: 'journal', label: 'Journal', screen: 'home/journal' },
+export const HOME_PAGES = [{ id: 'stats', label: 'Stats', screen: 'home/stats' }] as const;
+
+/**
+ * The pins on the Today board, in order: each opens a screen. The Journal's is a place (it shows in the
+ * Collection group and the pin is just another way in), the Stats' is a sub-page of Home.
+ */
+export const HOME_PINS = [
+  { id: 'journal', label: 'Journal', screen: 'journal' },
   { id: 'stats', label: 'Stats', screen: 'home/stats' },
-] as const;
+] as const satisfies readonly { id: string; label: string; screen: Screen }[];
+
+/** The id of a pin on the board. */
+export type PinId = (typeof HOME_PINS)[number]['id'];
 
 /** The id of a page that opens from Home. */
 export type HomePage = (typeof HOME_PAGES)[number]['id'];
@@ -32,7 +43,7 @@ export type Screen = Place | HomeScreenId;
 
 /** The screen id of a Home page. */
 export function homeScreen(page: HomePage): HomeScreenId {
-  return HOME_PAGES.find((p) => p.id === page)?.screen ?? 'home/journal';
+  return HOME_PAGES.find((p) => p.id === page)?.screen ?? 'home/stats';
 }
 
 /** The Home page a screen id is (`home/journal` is the Journal), or null for a place. */
@@ -68,7 +79,7 @@ interface TabDef {
   group: TabGroup;
 }
 
-export type TabGroup = 'creatures' | 'adventure';
+export type TabGroup = 'collection' | 'adventure';
 
 interface TabGroupDef {
   id: TabGroup;
@@ -80,12 +91,12 @@ interface TabGroupDef {
 /**
  * The groups of the main navigation in their order: the two group buttons of the phone dock (Home
  * sits between them, see `NAV_HOME`) and the headings of the desktop rail. A group with one place is
- * a direct button. The first group's name is a placeholder (Misa, 2026-10-24, "something that refers to
- * creatures, items, workshop"): renaming it is this one line. A future village or home map is one more place
- * in the first group.
+ * a direct button. The first group is the Collection (Misa, 2026-10-24: Creatures, Workshop and Journal; Items will
+ * split from the Workshop later, which is one more place in this group). A future village or home map is one more
+ * place in it too.
  */
 export const NAV_GROUPS: readonly TabGroupDef[] = [
-  { id: 'creatures', label: 'Creatures', glyph: 'paw' },
+  { id: 'collection', label: 'Collection', glyph: 'paw' },
   { id: 'adventure', label: 'Adventure', glyph: 'peaks' },
 ];
 
@@ -98,13 +109,14 @@ export const NAV_GROUPS: readonly TabGroupDef[] = [
 export const NAV_HOME = { id: 'home', label: 'Home', glyph: 'home' } as const;
 
 /**
- * In list order, which is the order inside a group: your creatures at home and the Workshop, then the
+ * In list order, which is the order inside a group: your creatures, the Workshop and the Journal, then the
  * adventures in rising danger (Expeditions, Dungeon, Raid), and the Valley Games last (Misa, 2026-10-24: "the
  * current adventures button but it could include the games section too").
  */
 export const TABS: readonly TabDef[] = [
-  { id: 'collection', label: 'Creatures', glyph: 'paw', group: 'creatures' },
-  { id: 'workshop', label: 'Workshop', glyph: 'anvil', group: 'creatures' },
+  { id: 'collection', label: 'Creatures', glyph: 'paw', group: 'collection' },
+  { id: 'workshop', label: 'Workshop', glyph: 'anvil', group: 'collection' },
+  { id: 'journal', label: 'Journal', glyph: 'journal', group: 'collection' },
   { id: 'expeditions', label: 'Expeditions', glyph: 'compass', group: 'adventure' },
   { id: 'dungeon', label: 'Dungeon', glyph: 'door', group: 'adventure' },
   { id: 'raid', label: 'Raid', glyph: 'blade', group: 'adventure' },

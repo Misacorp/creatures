@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SAMPLE_STATE, sampleCreature, sampleRoster } from './creature-card-sample';
-import { creatureNeeds, needyIds } from './creature-needs';
+import { creatureNeeds, creaturesNeedLine, needyIds, noticeNeeds } from './creature-needs';
+import { creatureName } from './game';
 
 const plainState = { ...SAMPLE_STATE, pending: [] };
 
@@ -128,5 +129,62 @@ describe('who needs the player', () => {
   it('collects the ids of the creatures with any need', () => {
     const roster = sampleRoster(12);
     expect([...needyIds(roster, plainState)].sort()).toEqual(['sample-0', 'sample-2']);
+  });
+});
+
+describe('the Creatures notice line', () => {
+  const named = (kind: Parameters<typeof sampleCreature>[0], id: string) => ({
+    ...sampleCreature(kind),
+    id,
+  });
+
+  it('says nothing when no creature can do anything', () => {
+    expect(creaturesNeedLine([sampleCreature('growing')], plainState)).toBeNull();
+    expect(creaturesNeedLine([], plainState)).toBeNull();
+  });
+
+  it('names the creature and the one thing it can do', () => {
+    const evolve = named('evolve ready', 'a');
+    expect(creaturesNeedLine([evolve], plainState)).toBe(`${creatureName(evolve)} can evolve`);
+    const ribbon = named('ribbon ready', 'b');
+    expect(creaturesNeedLine([ribbon], plainState)).toBe(
+      `${creatureName(ribbon)} can earn its Bronze Ribbon`,
+    );
+    const talent = named('talent to fill', 'c');
+    expect(creaturesNeedLine([talent], plainState)).toBe(
+      `${creatureName(talent)} has a talent slot to fill`,
+    );
+  });
+
+  it('says a creature with several things to do needs you', () => {
+    const both = {
+      ...named('ribbon ready', 'd'),
+      evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: true },
+    };
+    expect(creaturesNeedLine([both], plainState)).toBe(`${creatureName(both)} needs you`);
+  });
+
+  it('counts when several creatures need you', () => {
+    const three = [
+      named('evolve ready', 'a'),
+      named('ribbon ready', 'b'),
+      named('talent to fill', 'c'),
+      named('growing', 'd'),
+    ];
+    expect(creaturesNeedLine(three, plainState)).toBe('3 creatures need you');
+  });
+
+  it('leaves out an evolve that is blocked (away or on a job), and a waiting catch (the catches say that)', () => {
+    const away = { ...named('evolve ready', 'a'), away: true };
+    expect(noticeNeeds([away], plainState)).toEqual([]);
+    expect(creaturesNeedLine([away], plainState)).toBeNull();
+    const target = named('growing', 'g');
+    const pending = SAMPLE_STATE.pending[0];
+    if (pending === undefined) throw new Error('the fixture has a waiting catch');
+    const state = {
+      ...SAMPLE_STATE,
+      pending: [{ ...pending, offered: { ...pending.offered, teach: [target.id], fuse: [] } }],
+    };
+    expect(creaturesNeedLine([target], state)).toBeNull();
   });
 });

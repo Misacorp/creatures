@@ -17,7 +17,13 @@ import {
 import { ActionIds } from './actions';
 import { allowanceNotice } from './allowance-text';
 import { AppHead, RoomBand } from './AppHead';
-import { DEFAULT_BOARD_SETTINGS } from './home/board';
+import {
+  browserSettingsStorage,
+  loadBoardSettings,
+  saveBoardSettings,
+} from './home/board-settings';
+import type { BoardSettings } from './home/board';
+import { SettingsPage } from './settings/SettingsPage';
 import { HomeBook } from './home/HomeBook';
 import { HomeScreen } from './home/HomeScreen';
 import { Hud } from './Hud';
@@ -50,15 +56,7 @@ import { chooseCatch } from './talent-api';
 import { choiceResultText } from './talent-view';
 import { DevPanelHost } from './DevPanelHost';
 import { StarterPicker } from './StarterPicker';
-import {
-  DEFAULT_PLACE,
-  NAV_HOME,
-  homePageOf,
-  homeScreen,
-  isPlace,
-  navPlaceOf,
-  type Screen,
-} from './tabs';
+import { DEFAULT_PLACE, NAV_HOME, homePageOf, isPlace, navPlaceOf, type Screen } from './tabs';
 import { useActionRunner } from './use-action-runner';
 import { useForecast } from './use-forecast';
 import { EquipHost } from './equip-from-card';
@@ -130,6 +128,18 @@ export function Game({
   // The raid's week times for Home, loaded when the game opens (a failed load leaves the raid rows out).
   const { raid: raidGlance, load: loadRaidGlance } = useRaidGlance(game.starterChosen);
   const [tab, setTab] = useState<Screen>(DEFAULT_PLACE);
+  // The Settings page (from the cog in the HUD) is drawn in place of the screen; the screen stays mounted under it,
+  // so Back finds it as it was. Choosing a place closes it.
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  // The Home board's display options, kept on this device (read once, written on every change).
+  const [boardSettings, setBoardSettings] = useState<BoardSettings>(() =>
+    loadBoardSettings(browserSettingsStorage()),
+  );
+  // Where Back goes on a place that a pin or a link opened (the Journal from Home's pin); a place opened from the
+  // dock has no Back. Cleared by every choice in the navigation.
+  const [backTo, setBackTo] = useState<{ place: Screen; to: Screen } | null>(null);
+  // The Creatures view opens with its "Needs you" filter on when the Home notice for creatures that need you opened it.
+  const [creaturesNeeds, setCreaturesNeeds] = useState(false);
   // Every change of place or page (dock, tray, rail, a Home notice or pin) starts at the top of the new page.
   useScrollTopOnChange(tab);
   const [reveal, setReveal] = useState<{ result: ClaimResult; trip: Trip | undefined } | null>(
@@ -362,8 +372,9 @@ export function Game({
   const places = navPlaces(alerts);
   // A page that opens from Home (the Journal, the Stats) counts as Home for the navigation and the HUD.
   const place = navPlaceOf(tab);
-  const placeLabel =
+  const placeLabelBeforeSettings =
     place === NAV_HOME.id ? NAV_HOME.label : (places.find((p) => p.id === place)?.label ?? '');
+  const placeLabel = settingsOpen ? 'Settings' : placeLabelBeforeSettings;
 
   // The living room's props: the same room in the desktop's band and at the top of the phone's Home page.
   const roomProps: Parameters<typeof LivingRoom>[0] = {
@@ -398,6 +409,9 @@ export function Game({
         leetSync={game.leetSync}
         helpRef={helpRef}
         onHelp={onHelp}
+        onSettings={() => {
+          setSettingsOpen(true);
+        }}
       />
       {wide && <RoomBand room={roomProps} />}
     </>
@@ -465,6 +479,9 @@ export function Game({
             // Tapping the place you are in also goes back to its top.
             if (id === tab) scrollToTop();
             setTab(id);
+            setSettingsOpen(false);
+            setBackTo(null);
+            setCreaturesNeeds(false);
             setError(null);
             setNotice(null);
             refreshState();
@@ -508,7 +525,20 @@ export function Game({
               {notice}
             </Alert>
           )}
-          <div key={devNonce}>
+          {settingsOpen && (
+            <SettingsPage
+              settings={boardSettings}
+              onChange={(next) => {
+                setBoardSettings(next);
+                saveBoardSettings(browserSettingsStorage(), next);
+              }}
+              onBack={() => {
+                setSettingsOpen(false);
+              }}
+              backLabel={`to ${placeLabelBeforeSettings}`}
+            />
+          )}
+          <div key={devNonce} hidden={settingsOpen}>
             {tab === 'home' && (
               <HomeScreen
                 offset={offset}
@@ -521,12 +551,16 @@ export function Game({
                 attention={attention}
                 raid={raidGlance}
                 forecast={forecast}
-                settings={DEFAULT_BOARD_SETTINGS}
-                onOpenPage={(page) => {
-                  setTab(homeScreen(page));
+                settings={boardSettings}
+                creatureState={game}
+                onOpenPage={(screen) => {
+                  setTab(screen);
+                  // The Journal is a place of the Collection group; from the pin its Back returns to Home.
+                  setBackTo(screen === 'journal' ? { place: screen, to: 'home' } : null);
                 }}
-                onGo={(place) => {
+                onGo={(place, needsFilter) => {
                   setTab(place);
+                  setCreaturesNeeds(place === 'collection' && needsFilter === true);
                   refreshState();
                   loadForecast();
                   if (place === 'games') games.load();
@@ -545,8 +579,23 @@ export function Game({
                 }}
               />
             )}
+            {tab === 'journal' && (
+              <HomeBook
+                page="journal"
+                creatures={game.creatures}
+                tripsFinished={game.slots.tripsFinished}
+                {...(backTo?.place === 'journal'
+                  ? {
+                      onBack: () => {
+                        setTab(backTo.to);
+                      },
+                    }
+                  : {})}
+              />
+            )}
             {tab === 'collection' && (
               <Collection
+                initialNeeds={creaturesNeeds}
                 state={game}
                 gear={gear}
                 busy={busy}

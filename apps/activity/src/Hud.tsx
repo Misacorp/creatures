@@ -1,6 +1,17 @@
 import type { RefObject } from 'preact';
 import type { Balances, LeetSyncStatus, LedgerEntry } from './api';
 import { CurrencyPile } from './CurrencyPile';
+import { glyphOrUnknown } from './glyphs';
+import { Sprite } from './sprites/Sprite';
+
+/** The cog that opens Settings (a small picture button next to "?"). */
+export function SettingsButton({ onSettings }: { onSettings: () => void }) {
+  return (
+    <button type="button" class="hud-gear" aria-label="Settings" onClick={onSettings}>
+      <Sprite sprite={glyphOrUnknown('gear')} scale={3} />
+    </button>
+  );
+}
 
 /** The "?" that opens How to play (the app owns the page; `helpRef` is where the focus returns when it closes). */
 export function HelpButton({
@@ -26,7 +37,7 @@ export function HelpButton({
 
 /**
  * The HUD along the top of the game: the name of the place you are in (the page's one `h1`), the currencies
- * with their numbers, and "?". On a phone it stays at the top edge while the page scrolls; on a wide window
+ * with their numbers, the cog (Settings, when `onSettings` is given) and "?". On a phone it stays at the top edge while the page scrolls; on a wide window
  * it runs across the top of the card, above the rail and the screen.
  */
 export function Hud({
@@ -36,6 +47,7 @@ export function Hud({
   loadLedger,
   helpRef,
   onHelp,
+  onSettings,
 }: {
   title: string;
   balances: Balances;
@@ -45,6 +57,8 @@ export function Hud({
   loadLedger?: () => Promise<LedgerEntry[]>;
   helpRef: RefObject<HTMLButtonElement | null>;
   onHelp: () => void;
+  /** Opens the Settings page; without it there is no cog. */
+  onSettings?: () => void;
 }) {
   return (
     <header class="hud">
@@ -55,6 +69,7 @@ export function Hud({
           {...(leetSync === undefined ? {} : { leetSync })}
           {...(loadLedger === undefined ? {} : { loadLedger })}
         />
+        {onSettings !== undefined && <SettingsButton onSettings={onSettings} />}
         <HelpButton helpRef={helpRef} onHelp={onHelp} />
       </div>
     </header>

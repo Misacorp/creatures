@@ -18,14 +18,14 @@ import { DemoScreen } from './screens';
 export const LAYOUTS = ['auto', 'phone', 'desktop'] as const;
 
 /** What starts open on a phone: a group's sub-menu. */
-export const MENUS = ['none', 'creatures', 'adventure'] as const;
+export const MENUS = ['none', 'collection', 'adventure'] as const;
 
 /** A place a future feature might add to Home (a village map, a market), to show a group growing. */
 const EXTRA_PLACE: NavPlace = {
   id: 'market',
   label: 'Market',
   glyph: 'anvil',
-  group: 'creatures',
+  group: 'collection',
   pip: null,
 };
 
@@ -93,6 +93,7 @@ export function MainNavDemo({
         loadLedger={incomeLoader('typical')}
         helpRef={NO_REF}
         onHelp={() => undefined}
+        onSettings={() => undefined}
       />
       {wide ? (
         <div class="nd-body">

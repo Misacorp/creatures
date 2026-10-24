@@ -4,16 +4,18 @@ import { glyphOrUnknown } from '../glyphs';
 import { CALM_LINE, type HomeInput } from '../home-view';
 import { Sprite } from '../sprites/Sprite';
 import { SKY_GLYPHS } from '../sprites/data/weather-sprites';
-import type { HomePage, Tab } from '../tabs';
+import type { Screen, Tab } from '../tabs';
 import { PixelHeading } from '../ui/PixelHeading';
 import { buildBoard, swayDelay, type BoardSettings } from './board';
 import { BoardPins, type PinTeasers } from './BoardPins';
+import { starterLook } from './starter-creature';
+import { StarterPin } from './StarterPin';
 
 /**
  * The Today board: a notice board of papers pinned on cork, under the living room (on a wide window under the
  * room band). "Needs you" has one big button per place with something waiting (its picture, the reason, a pip);
  * "Coming up" lists the next things on the clock with their real times; "The valley today" is one line (the
- * sky and the Games lineup). Two pins (`BoardPins`: the Journal, the Stats) open pages of Home. Nothing waiting: one calm line. With `settings.idle` `show`, places with nothing
+ * sky and the Games lineup). Two pins (`BoardPins`: the Journal, the Stats) open their screens, and the starter's round pin in the top right corner (`StarterPin`) opens the Creatures view. Nothing waiting: one calm line. With `settings.idle` `show`, places with nothing
  * going on get a slim one-line notice under "Quiet places" (with `hide`, the default, they get none).
  *
  * `settings.tilt` leans every paper a little (`still`, the default), rocks it slowly (`sway`, still under
@@ -32,11 +34,12 @@ export function NoticeBoard({
 }: {
   input: HomeInput;
   settings: BoardSettings;
-  onGo: (place: Tab) => void;
+  /** Opens a place; `needsFilter` asks the Creatures view to start with its "Needs you" filter on. */
+  onGo: (place: Tab, needsFilter?: boolean) => void;
   /** The pins' one-line teasers; a teaser is null until the profile has loaded. */
   teasers?: PinTeasers;
-  /** Opens a page of Home (the Journal or the Stats); without it the pins are not drawn. */
-  onOpenPage?: (page: HomePage) => void;
+  /** Opens the screen of a pin (the Journal or the Stats); without it the pins are not drawn. */
+  onOpenPage?: (screen: Screen) => void;
 }) {
   const board = buildBoard(input, settings);
   /** The ref that gives a paper its lean (through the CSS object model: the Activity's CSP has no inline styles). */
@@ -46,9 +49,17 @@ export function NoticeBoard({
       '--sway-delay': `${String(swayDelay(id))}s`,
     });
   const { valley } = board;
+  const starter = starterLook(input.creatures);
   return (
     <section class="hb pix-panel" aria-label="Today board" data-tilt={settings.tilt}>
       <div class="hb-cork">
+        <StarterPin
+          species={starter.species}
+          shiny={starter.shiny}
+          onOpen={() => {
+            onGo('collection');
+          }}
+        />
         <PixelHeading as="h3" tone="gold" outline="ink" class="hb-title">
           Needs you
         </PixelHeading>
@@ -67,7 +78,8 @@ export function NoticeBoard({
                   data-place={row.place}
                   ref={lean(`need:${row.place}`)}
                   onClick={() => {
-                    onGo(row.place);
+                    if (row.needsFilter) onGo(row.place, true);
+                    else onGo(row.place);
                   }}
                 >
                   <span class="hb-tile">

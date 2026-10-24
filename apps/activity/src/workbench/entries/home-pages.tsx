@@ -7,7 +7,7 @@ import stateOffer from '../../fixtures/expedition-state-offer.json';
 import { JournalPage } from '../../home/JournalPage';
 import { StatsPage } from '../../home/StatsPage';
 import { PopoverHost } from '../../PopoverHost';
-import { str } from '../props';
+import { bool, str } from '../props';
 import type { Entry } from '../types';
 
 const NOTHING = () => undefined;
@@ -74,11 +74,15 @@ const journalPage: Entry = {
   file: 'apps/activity/src/home/JournalPage.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The Journal page, opened from the Journal pin on the Home board: "‹ Back" to Home at the top, then the Journal as it was on the Expeditions screen (every page by place, found ones with their words, blanks for the rest). The account control shows a new player (no page found), the fixture’s early game and a long-time player.',
-  controls: { account: { kind: 'select', options: ACCOUNTS } },
-  defaults: { account: 'mid game' },
+    'The Journal, a place of the Collection group (dock tray and rail). Opened from the dock it has no Back (the navigation is on screen, as on every place) and the HUD names it; opened from the Journal pin on the Home board it has "‹ Back" to Home at the top. The page is every page by place, found ones with their words, blanks for the rest. The account control shows a new player (no page found), the fixture’s early game and a long-time player; "Back" shows the pin’s way in.',
+  controls: {
+    account: { kind: 'select', options: ACCOUNTS },
+    back: { kind: 'toggle' },
+  },
+  defaults: { account: 'mid game', back: false },
   presets: [
-    { name: 'Mid game', props: {} },
+    { name: 'Mid game, from the dock (no Back)', props: {} },
+    { name: 'Opened from the Home pin (Back to Home)', props: { back: true } },
     { name: 'New account', props: { account: 'new account' } },
   ],
   render: (p) => (
@@ -86,7 +90,7 @@ const journalPage: Entry = {
       <JournalPage
         key={str(p, 'account')}
         profile={profileOf(str(p, 'account'))}
-        onBack={NOTHING}
+        {...(bool(p, 'back') ? { onBack: NOTHING } : {})}
       />
     </PopoverHost>
   ),

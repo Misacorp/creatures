@@ -116,4 +116,37 @@ describe('the currency popover', () => {
     });
     expect(visibleText(page.root)).toContain("the leet bot didn't answer");
   });
+
+  it('has a Settings cog next to "?" when it can open Settings, and none otherwise', () => {
+    page = createPage();
+    const onSettings = vi.fn();
+    const draw = (withCog: boolean) => {
+      page?.draw(
+        <PopoverHost onOpenHowTo={() => undefined}>
+          <Hud
+            title="Home"
+            balances={{ bait: 1, essence: 2 }}
+            helpRef={{ current: null }}
+            onHelp={() => undefined}
+            {...(withCog ? { onSettings } : {})}
+          />
+        </PopoverHost>,
+      );
+    };
+    draw(false);
+    expect(byName(page.root, 'button', 'Settings')).toHaveLength(0);
+    draw(true);
+    const [cog] = byName(page.root, 'button', 'Settings');
+    if (cog === undefined) throw new Error('no cog');
+    // It sits just before "?" in the tools, and is a picture (a canvas), not a word.
+    const tools = byClass(page.root, 'hud-tools')[0];
+    if (tools === undefined) throw new Error('no tools');
+    const names = find(tools, (el) => el.localName === 'button').map((b) =>
+      b.getAttribute('aria-label'),
+    );
+    expect(names.slice(-2)).toEqual(['Settings', 'How to play']);
+    expect(cog.getAttribute('class')).toBe('hud-gear');
+    page.click(cog);
+    expect(onSettings).toHaveBeenCalledOnce();
+  });
 });

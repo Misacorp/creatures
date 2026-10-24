@@ -84,6 +84,7 @@ export function HomeDemo({
           balances={{ bait: 1240, essence: 36 }}
           helpRef={NO_REF}
           onHelp={NOTHING}
+          onSettings={NOTHING}
         />
         {wide ? (
           <>

@@ -1,5 +1,6 @@
 import type { Attention, Creature } from '../api';
 import type { Trip } from '../expedition-types';
+import { sampleCreature } from '../creature-card-sample';
 import gearRunning from '../fixtures/gear-running.json';
 import { parseGearState } from '../gear-parse';
 import type { Job } from '../gear-types';
@@ -102,12 +103,21 @@ const ALL_ATTENTION: Attention = { dungeon: true, raid: true, recheckAt: null };
 /** The nine creatures: the three explorers of the trip samples and the six of the Games roster. */
 export const HOME_CREATURES: Creature[] = [...CREATURES, ...gamesRoster()];
 
+/** What the Creatures notice reads: the server's facts about Bait, waiting catches and the Talent Book price. */
+const CREATURE_STATE = { balances: { bait: 100, essence: 50 }, pending: [], bookSlotBait: 10 };
+
+/** A creature that can evolve, one that can earn its ribbon and one with a talent slot to fill (the sample cards'). */
+const EVOLVER = { ...sampleCreature('evolve ready'), id: 'home-evolver', caughtAt: 1_000 };
+const RIBBONER = { ...sampleCreature('ribbon ready'), id: 'home-ribbon', caughtAt: 2_000 };
+const TALENTED = { ...sampleCreature('talent to fill'), id: 'home-talent', caughtAt: 3_000 };
+
 /** Everything the Home page reads, for a day. `raid` false leaves the raid's schedule out (the game screen does not hold it today). */
 export function homeInput(state: string, raid: boolean): HomeInput {
   const common = {
     now: HOME_NOW,
     timezone: HOME_TZ,
     creatures: HOME_CREATURES,
+    creatureState: CREATURE_STATE,
     raid: raid ? RAID : null,
     forecast: sampleForecast('boon and omen'),
   };
@@ -154,6 +164,7 @@ export function homeInput(state: string, raid: boolean): HomeInput {
   if (state === 'crowded') {
     return {
       ...common,
+      creatures: [...HOME_CREATURES, EVOLVER, RIBBONER, TALENTED],
       trips: [
         tripHome(0, 40 * MINUTE),
         tripChoice(1),
@@ -168,6 +179,7 @@ export function homeInput(state: string, raid: boolean): HomeInput {
   }
   return {
     ...common,
+    creatures: [...HOME_CREATURES, EVOLVER],
     trips: [tripHome(0, 40 * MINUTE), tripEnding(1, at(15, 20)), tripEnding(2, at(18, 5))],
     jobs: [job(1, HOME_NOW - 20 * MINUTE), job(2, at(14, 5))],
     games: games(false),
