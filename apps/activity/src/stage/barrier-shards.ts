@@ -19,6 +19,8 @@ export interface Shard {
   /** Where it flies when the barrier shatters: a unit direction away from the dome's middle. */
   dx: number;
   dy: number;
+  /** Its side (CSS px): bigger pieces fly further. */
+  side: number;
 }
 
 function jitter(seed: number): number {
@@ -74,11 +76,12 @@ export function barrierShards(
           points,
           cx,
           cy,
-          edge: !insideDome(cx, cy, w, h, pattern === 'plates' ? side * 0.9 : side * 1.1),
+          edge: !insideDome(cx, cy, w, h, side * (pattern === 'thorns' ? 0.8 : 0.6)),
           phase: jitter(n),
           hue: jitter(n * 7.7),
           dx: ux * Math.cos(turn) - uy * Math.sin(turn),
           dy: ux * Math.sin(turn) + uy * Math.cos(turn),
+          side,
         });
       }
     }
@@ -105,10 +108,10 @@ export function shardMix(s: Shard, t: number): number {
 /** Where a triangle is `p` (0 to 1) of the way through the shatter, and how far it has turned. */
 export function shardScatter(s: Shard, p: number): { x: number; y: number; turn: number } {
   const out = 1 - (1 - p) ** 3;
-  const reach = 18 + 34 * s.phase;
+  const reach = s.side * (1.5 + 3 * s.phase);
   return {
     x: s.cx + s.dx * reach * out,
-    y: s.cy + s.dy * reach * out + 22 * p * p,
+    y: s.cy + s.dy * reach * out + s.side * 1.5 * p * p,
     turn: (s.hue - 0.5) * 5 * out,
   };
 }

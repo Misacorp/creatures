@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { barrierShards, insideDome, shardAlpha, shardMix, shardScatter } from './barrier-shards';
 
 describe('the triangles of a barrier', () => {
-  const shards = barrierShards(120, 100, 9, 'glass');
+  const shards = barrierShards(140, 110, 20, 'glass');
 
   it('fills a dome with equilateral triangles, the edge ones marked', () => {
-    expect(shards.length).toBeGreaterThan(100);
-    expect(shards.length).toBeLessThan(400);
+    expect(shards.length).toBeGreaterThan(20);
+    expect(shards.length).toBeLessThan(120);
     for (const s of shards) {
       const [ax, ay, bx, by, cx, cy] = s.points;
       const sides = [
@@ -14,17 +14,17 @@ describe('the triangles of a barrier', () => {
         Math.hypot(cx - bx, cy - by),
         Math.hypot(ax - cx, ay - cy),
       ];
-      for (const side of sides) expect(side).toBeCloseTo(9, 5);
-      expect(insideDome(s.cx, s.cy, 120, 100)).toBe(true);
+      for (const side of sides) expect(side).toBeCloseTo(20, 5);
+      expect(insideDome(s.cx, s.cy, 140, 110)).toBe(true);
     }
     expect(shards.some((s) => s.edge)).toBe(true);
     expect(shards.some((s) => !s.edge)).toBe(true);
     // The top corners are cut away: a dome, not a box.
-    expect(insideDome(2, 2, 120, 100)).toBe(false);
+    expect(insideDome(2, 2, 140, 110)).toBe(false);
   });
 
   it('is the same every time (no randomness)', () => {
-    expect(barrierShards(120, 100, 9, 'glass')).toEqual(shards);
+    expect(barrierShards(140, 110, 20, 'glass')).toEqual(shards);
   });
 
   it('shimmers within see-through bounds', () => {
@@ -45,7 +45,7 @@ describe('the triangles of a barrier', () => {
       const start = shardScatter(s, 0);
       expect([start.x, start.y, Math.abs(start.turn)]).toEqual([s.cx, s.cy, 0]);
       const end = shardScatter(s, 1);
-      const out = (end.x - s.cx) * s.dx + (end.y - 22 - s.cy) * s.dy;
+      const out = (end.x - s.cx) * s.dx + (end.y - s.side * 1.5 - s.cy) * s.dy;
       expect(out).toBeGreaterThan(0);
     }
   });

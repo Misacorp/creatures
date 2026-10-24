@@ -5,10 +5,16 @@ import { barrierShards, shardAlpha, shardMix, shardScatter, type Shard } from '.
 
 /** How each pattern builds its shield: the triangles' side (CSS px), the shimmer's speed and strength. */
 const PATTERN: Readonly<Record<BarrierPattern, { side: number; speed: number; alpha: number }>> = {
-  glass: { side: 9, speed: 1, alpha: 0.14 },
-  plates: { side: 14, speed: 0.6, alpha: 0.2 },
-  thorns: { side: 8, speed: 1.4, alpha: 0.16 },
+  glass: { side: 20, speed: 1, alpha: 0.16 },
+  plates: { side: 26, speed: 0.6, alpha: 0.22 },
+  thorns: { side: 16, speed: 1.4, alpha: 0.18 },
 };
+
+/**
+ * The room around the dome on the canvas (CSS px, each side), so the pieces of a shatter fly free
+ * instead of being cut at the dome's box. barrier.css widens the canvas by the same amount.
+ */
+const ROOM = 100;
 
 /** How long the shatter plays: the pieces fly out and fade. */
 const SHATTER_MS = 750;
@@ -68,7 +74,7 @@ function draw(
  * Shell, the Thorns room: `BARRIER_OPS`). One component for all of them; `look` gives its colours
  * and its pattern (`barrierLookOf`). No border: it is built from small triangles whose opacity and
  * colour shift slowly, so it shimmers. When the first reaction meets it, it flashes and its
- * triangles fly out and fade. One small canvas, redrawn while it shows (a few hundred triangles);
+ * triangles fly out and fade. One small canvas, redrawn while it shows (a few dozen triangles);
  * with reduced motion it is drawn once and simply goes when broken. Decoration only (the move track
  * and the move's popover say what it does), so it is hidden from assistive technology. The stage
  * keys it by round and state, so it forms again each round and the shatter plays when it breaks.
@@ -89,13 +95,21 @@ export function Barrier({ barrier, look }: { barrier: BarrierState; look: Barrie
     const css = getComputedStyle(canvas);
     const a = rgbOf(css.getPropertyValue('--a')) ?? [255, 255, 255];
     const c = rgbOf(css.getPropertyValue('--c')) ?? [255, 255, 255];
-    const shards = barrierShards(box.width, box.height, PATTERN[look.pattern].side, look.pattern);
+    const shards = barrierShards(
+      box.width - ROOM * 2,
+      box.height - ROOM * 2,
+      PATTERN[look.pattern].side,
+      look.pattern,
+    );
     const still =
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const paint = (t: number, shatter: number | null): void => {
       ctx.clearRect(0, 0, box.width, box.height);
+      ctx.save();
+      ctx.translate(ROOM, ROOM);
       draw(ctx, shards, { a, c }, look.pattern, t, shatter);
+      ctx.restore();
     };
     if (still) {
       if (!broken) paint(0, null);

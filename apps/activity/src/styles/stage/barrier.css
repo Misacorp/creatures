@@ -4,12 +4,15 @@
   see-through dome, with no border. The script draws it, its shimmer and its shatter; this places it
   and lets it form.
 */
+/* The dome covers the picture with a little margin; the canvas reaches 100px further on every side
+   (Barrier.tsx's ROOM), so a shatter's pieces fly free. */
 .barrier {
   position: absolute;
-  inset: -0.375rem -0.625rem 0.25rem;
+  top: calc(-0.375rem - 100px);
+  left: calc(-0.625rem - 100px);
   z-index: 2;
-  width: calc(100% + 1.25rem);
-  height: calc(100% + 0.125rem);
+  width: calc(100% + 1.25rem + 200px);
+  height: calc(100% + 0.125rem + 200px);
   pointer-events: none;
 }
 
