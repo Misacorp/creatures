@@ -1,6 +1,6 @@
 /**
  * The places of the game screen (the "tabs": `Tab` is the id of the current place). Each is a
- * picture and a word in the main navigation (`MainNav`: the phone's bottom dock of three group buttons,
+ * picture and a word in the main navigation (`MainNav`: the phone's bottom dock of a group button, the Lounge and a group button,
  * the desktop's left rail grouped under headings; the list the navigation reads is `navPlaces` in
  * `nav-places.ts`). Every place belongs to one group (`NAV_GROUPS`). The glyphs are one-colour (`w`), so the active place (dark on gold) can tint its
  * picture to stay readable.
@@ -23,7 +23,7 @@ interface TabDef {
   group: TabGroup;
 }
 
-export type TabGroup = 'home' | 'adventure' | 'games';
+export type TabGroup = 'creatures' | 'adventure';
 
 interface TabGroupDef {
   id: TabGroup;
@@ -33,27 +33,36 @@ interface TabGroupDef {
 }
 
 /**
- * The groups of the main navigation in their order: the three buttons of the phone dock and the headings of
- * the desktop rail. A group with one place is a direct button. A future village or home map is one more place in Home.
+ * The groups of the main navigation in their order: the two group buttons of the phone dock (the Lounge
+ * button sits between them, see `NAV_LOUNGE`) and the headings of the desktop rail. A group with one place is
+ * a direct button. The first group's name is a placeholder (Misa, 2026-10-24, "something that refers to
+ * creatures, items, workshop"): renaming it is this one line. A future village or home map is one more place
+ * in the first group.
  */
 export const NAV_GROUPS: readonly TabGroupDef[] = [
-  { id: 'home', label: 'Home', glyph: 'home' },
+  { id: 'creatures', label: 'Creatures', glyph: 'paw' },
   { id: 'adventure', label: 'Adventure', glyph: 'peaks' },
-  { id: 'games', label: 'Games', glyph: 'trophy' },
 ];
 
 /**
- * Left to right is an escalating level of danger and excitement (Misa): your creatures at home, the
- * Workshop, Expeditions out in the world, the Valley Games (a silly show, no danger, but a crowd), the
- * Dungeon, and the Raid boss last.
+ * The Lounge: the dock's middle button, the primary one. It is not a place (a screen you are "in"): it opens
+ * the living room in a sheet, because on a phone the room no longer sits at the top of every screen. The
+ * desktop keeps the room band and has no such button.
+ */
+export const NAV_LOUNGE = { id: 'lounge', label: 'Lounge', glyph: 'couch' } as const;
+
+/**
+ * In list order, which is the order inside a group: your creatures at home and the Workshop, then the
+ * adventures in rising danger (Expeditions, Dungeon, Raid), and the Valley Games last (Misa, 2026-10-24: "the
+ * current adventures button but it could include the games section too").
  */
 export const TABS: readonly TabDef[] = [
-  { id: 'collection', label: 'Creatures', glyph: 'paw', group: 'home' },
-  { id: 'workshop', label: 'Workshop', glyph: 'anvil', group: 'home' },
+  { id: 'collection', label: 'Creatures', glyph: 'paw', group: 'creatures' },
+  { id: 'workshop', label: 'Workshop', glyph: 'anvil', group: 'creatures' },
   { id: 'expeditions', label: 'Expeditions', glyph: 'compass', group: 'adventure' },
-  { id: 'games', label: 'Games', glyph: 'trophy', group: 'games' },
   { id: 'dungeon', label: 'Dungeon', glyph: 'door', group: 'adventure' },
   { id: 'raid', label: 'Raid', glyph: 'blade', group: 'adventure' },
+  { id: 'games', label: 'Games', glyph: 'trophy', group: 'adventure' },
 ];
 
 const INK = '#0d0a1a';

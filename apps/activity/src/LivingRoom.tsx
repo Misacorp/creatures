@@ -376,7 +376,7 @@ export function LivingRoom({
         })(el);
       }}
     >
-      <div class="room-view" ref={viewRef} role="group" aria-label="Living room">
+      <div class="room-view" ref={viewRef} role="group" aria-label="Living room" data-audit-clip>
         <div
           class="room-stage"
           ref={cssVars({

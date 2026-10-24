@@ -676,6 +676,21 @@ const home: SpriteDef = {
   ],
 };
 
+/** A sofa: the Lounge, the dock's middle button (one colour, like the tab pictures). */
+const couch: SpriteDef = {
+  palette: { w: BONE },
+  rows: [
+    '.wwwwww.',
+    '.wwwwww.',
+    'wwwwwwww',
+    'ww....ww',
+    'wwwwwwww',
+    'wwwwwwww',
+    '.w....w.',
+    '........',
+  ],
+};
+
 /** Two peaks: the Adventure group of the dock. */
 const peaks: SpriteDef = {
   palette: { w: BONE },
@@ -861,6 +876,7 @@ export const BUNDLED_GLYPHS: Readonly<Record<string, SpriteDef>> = {
   blade,
   door,
   home,
+  couch,
   peaks,
   bait,
   flag,

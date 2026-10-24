@@ -1,14 +1,24 @@
 /*
   The main navigation (`MainNav.tsx`, `Hud.tsx`; decisions.md 2026-10-24). Below 60 rem (`WIDE_QUERY`) it is a
-  game's dock: three group buttons fixed to the bottom edge, under the thumb (a group with several places opens
-  a tray of big buttons upward), with the HUD (the place's name, the currencies, "?") stuck to the top edge.
+  game's dock: a group button, the Lounge (the primary button, gold and raised, it opens the living room's
+  sheet) and a group button, fixed to the bottom edge under the thumb (a group with several places opens a
+  tray of big buttons upward), with the HUD (the place's name, the currencies, "?") stuck to the top edge.
   From 60 rem the dock is a rail down the left of the screen, every place with its word beside the picture
   under its group's heading, and the HUD runs across the top of the card.
 */
 :root {
   --dock-h: 4rem; /* the dock's height without the safe-area inset: a 3.5 rem button and 0.25 rem above and below */
   --dock-gap: 0.25rem;
-  --dock-safe: max(env(safe-area-inset-bottom, 0px), var(--discord-safe-area-inset-bottom, 0px));
+
+  /*
+    How much of the bottom inset the dock keeps clear: a little. Discord's inset (about 48 px on Android) is
+    the whole system bar, and padding the bar by all of it read as an empty strip under the buttons
+    (Misa, 2026-10-24); the bar's own background runs to the screen's edge and the buttons sit low.
+  */
+  --dock-safe: min(
+    max(env(safe-area-inset-bottom, 0px), var(--discord-safe-area-inset-bottom, 0px)),
+    0.5rem
+  );
   --hud-h: 3.5rem;
 }
 
@@ -158,10 +168,10 @@ button.nav-btn.active:focus-visible {
 
 /* --- The phone's dock --- */
 /*
-  The bar reaches the bottom edge of the window: the safe-area inset (the phone's rounded corners, a gesture
-  bar) is padding inside it, so the bar runs on into the corners. `--dock-safe` is the larger of the browser's
-  inset and Discord's, never their sum. The body's own bottom padding (Discord's inset again) is dropped while
-  the dock is there, so the inset is not counted twice.
+  The bar reaches the bottom edge of the window: its own background and border run to the last pixel, and only
+  a small part of the safe-area inset (`--dock-safe`, at most 0.5 rem) is padding inside it, so the buttons sit
+  low and no empty strip shows under them. The body's own bottom padding (Discord's inset again) is dropped
+  while the dock is there, so the page does not add a strip under the bar either.
 */
 body:has(.main-nav.dock) {
   padding-bottom: 0;
@@ -182,10 +192,11 @@ body:has(.main-nav.dock) {
 }
 
 .main-nav.dock ul {
+  align-items: flex-end;
   gap: var(--dock-gap);
 }
 
-/* Three group buttons share the width equally, each a picture over its word. */
+/* Three buttons share the width: a group, the Lounge, a group. */
 .main-nav.dock > ul > li {
   flex: 1 1 0;
   min-width: 0;
@@ -196,6 +207,50 @@ body:has(.main-nav.dock) {
   gap: 0.25rem;
   min-height: 3.5rem;
   padding: 0.25rem 0.125rem;
+}
+
+/*
+  The Lounge is the primary button: always gold, a little larger and raised above the bar (its top edge sticks
+  out over the bar's), a game's "play" button. The bar is not clipped, so the raised part shows.
+*/
+.main-nav.dock > ul > li.nav-lounge {
+  flex-grow: 1.15;
+  margin-top: -0.75rem; /* the extra height sticks out above the bar instead of making it taller */
+}
+
+.main-nav.dock button.nav-btn.lounge {
+  min-height: 4.25rem;
+  padding-top: 0.375rem;
+  background: var(--gold);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -2) 0 0 var(--gold-shade);
+  font-size: var(--fs-row);
+}
+
+.main-nav.dock button.nav-btn.lounge.open {
+  filter: brightness(0.92);
+}
+
+button.nav-btn.lounge:focus-visible {
+  outline-color: var(--ink);
+}
+
+/*
+  The Lounge is the one gold button, so the group you are in is not gold here: it keeps its dark face and
+  shows a gold underline and a gold word instead (the rail and the trays still use the gold face).
+*/
+.main-nav.dock button.nav-btn.active {
+  background: var(--dusk-2);
+  box-shadow:
+    0 0 0 var(--px) var(--ink),
+    inset 0 calc(var(--px) * -2) 0 0 var(--gold);
+  color: var(--gold);
+}
+
+.main-nav.dock button.nav-btn.active:focus-visible {
+  outline-color: var(--bone);
 }
 
 /* The page makes room for the dock, so nothing at its end hides behind it. */
@@ -212,7 +267,7 @@ main.card:has(.main-nav.dock) {
 
 .main-nav.dock ul.nav-tray {
   position: absolute;
-  bottom: calc(100% + 0.5rem);
+  bottom: calc(100% + 1.25rem); /* clear of the Lounge button's raised top */
   display: grid;
   gap: 0.5rem;
   width: min(17rem, 100% - 1rem);

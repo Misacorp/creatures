@@ -12,27 +12,37 @@ const mainNav: Entry = {
   file: 'apps/activity/src/MainNav.tsx',
   group: 'Controls',
   description:
-    'The main navigation: on a phone a game-style dock fixed to the bottom edge with three group buttons (Home, Adventure, Games; a picture over a word, the active group gold) and a slim HUD on top (the place name, the currencies with numbers, "?"); on a wide window a rail down the left with every place under its group heading and the HUD across the top. A group with several places opens a tray of big buttons above the dock (picture, word, why it has a pip, the current place gold); a group with one place (Games) goes straight there. A group carries the roll-up of its places\' pips. Tap outside, Escape or the group button again closes the tray. One list of places, each with a group, feeds the dock and the rail. Shown in a frame (the dock under the screen, not fixed to the window) with the real Creatures, Games and Expeditions screens on fixture data (other places show a stand-in); use 360 or 390 for the phone and the full width for the desktop; the layout control forces one (not in the presets: a desktop layout is not meant for a narrow window). "Open menu" starts a group\'s tray open (phone); "Extra place in Home" shows a group growing.',
+    'The main navigation: on a phone a game-style dock fixed to the bottom edge with three buttons (a group, the Lounge, a group; a picture over a word) and a slim HUD on top (the place name, the currencies with numbers, "?"); on a wide window a rail down the left with every place under its group heading and the HUD across the top. The left group (Creatures: Creatures, Workshop) and the right group (Adventure: Expeditions, Dungeon, Raid, Games) open a tray of big buttons above the dock (picture, word, why it has a pip, the current place gold) and carry the roll-up of their places\' pips; the active group is gold. The middle Lounge button is the primary one (gold, larger, raised above the bar) and opens the living room in a bottom sheet (a close button, Escape, pull down); the room is not at the top of the phone layout any more. Tap outside, Escape or the group button again closes a tray. One list of places, each with a group, feeds the dock and the rail. Shown in a frame (the dock under the screen, not fixed to the window) with the real Creatures, Games and Expeditions screens on fixture data (other places show a stand-in); use 360 or 390 for the phone and the full width for the desktop; the layout control forces one (not in the presets: a desktop layout is not meant for a narrow window). "Open" starts a tray or the Lounge sheet open (phone); "Extra place in Creatures" shows a group growing; "Lounge pip" shows the Lounge button with a pip.',
   controls: {
     place: { kind: 'select', options: PLACE_IDS },
     menu: { kind: 'select', options: MENUS },
     pips: { kind: 'toggle' },
     extra: { kind: 'toggle' },
+    loungePip: { kind: 'toggle' },
     layout: { kind: 'select', options: LAYOUTS },
   },
-  defaults: { place: 'collection', menu: 'none', pips: true, extra: false, layout: 'auto' },
+  defaults: {
+    place: 'collection',
+    menu: 'none',
+    pips: true,
+    extra: false,
+    loungePip: false,
+    layout: 'auto',
+  },
   presets: [
-    { name: 'Home active (Creatures)', props: {} },
-    { name: 'Home active (Workshop)', props: { place: 'workshop' } },
-    { name: 'Adventure active (Expeditions)', props: { place: 'expeditions' } },
-    { name: 'Adventure active (Dungeon)', props: { place: 'dungeon' } },
-    { name: 'Adventure active (Raid)', props: { place: 'raid' } },
-    { name: 'Games active', props: { place: 'games' } },
-    { name: 'Home menu open', props: { menu: 'home' } },
-    { name: 'Adventure menu open', props: { menu: 'adventure', place: 'expeditions' } },
-    { name: 'Adventure menu open, no pips', props: { menu: 'adventure', pips: false } },
+    { name: 'Creatures group active (Creatures)', props: {} },
+    { name: 'Creatures group active (Workshop)', props: { place: 'workshop' } },
+    { name: 'Adventure group active (Expeditions)', props: { place: 'expeditions' } },
+    { name: 'Adventure group active (Dungeon)', props: { place: 'dungeon' } },
+    { name: 'Adventure group active (Raid)', props: { place: 'raid' } },
+    { name: 'Adventure group active (Games)', props: { place: 'games' } },
+    { name: 'Creatures tray open', props: { menu: 'creatures' } },
+    { name: 'Adventure tray open', props: { menu: 'adventure', place: 'expeditions' } },
+    { name: 'Adventure tray open, no pips', props: { menu: 'adventure', pips: false } },
+    { name: 'Lounge sheet open', props: { menu: 'lounge' } },
+    { name: 'Lounge with a pip', props: { loungePip: true } },
     { name: 'No pips', props: { pips: false } },
-    { name: 'Extra place in Home, menu open', props: { menu: 'home', extra: true } },
+    { name: 'Extra place in Creatures, tray open', props: { menu: 'creatures', extra: true } },
   ],
   render: (p) => (
     <MainNavDemo
@@ -41,6 +51,7 @@ const mainNav: Entry = {
       menu={str(p, 'menu')}
       pips={bool(p, 'pips')}
       extra={bool(p, 'extra')}
+      loungePip={bool(p, 'loungePip')}
       layout={str(p, 'layout')}
     />
   ),

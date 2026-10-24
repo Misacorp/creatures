@@ -23,6 +23,7 @@ import { navPlaces } from './nav-places';
 import { useWide } from './ui/wide-layout';
 import { Collection } from './Collection';
 import { createCreatureActions } from './creature-actions';
+import { LoungeSheet } from './LoungeSheet';
 import { LoungeSwap } from './LoungeSwap';
 import type { CatchChoiceActions } from './find-view';
 import { claimExpedition, pushOn, sendExpedition, type SendRequest } from './expedition-api';
@@ -34,7 +35,7 @@ import type { ChoiceResult } from './talent-types';
 import { errorText } from './game';
 import { loaded, type Loaded } from './loaded-state';
 import type { ParticipantSource } from './participants';
-import { LOUNGE_REFRESH_MS, loungeEarning, settleClaim } from './room-data';
+import { settleClaim } from './room-data';
 import { Raid } from './Raid';
 import { SYNC_POLL_INTERVAL_MS, shouldRefetchLeet } from './leet-status';
 import { Dungeon } from './Dungeon';
@@ -55,7 +56,7 @@ import { GearItemsContext } from './gear-items-context';
 import type { GearItem } from './gear-types';
 import { TreatTimesContext } from './TreatBox';
 import { useGearState } from './use-gear-state';
-import { useRoom } from './use-room';
+import { useLoungePresence } from './use-lounge-presence';
 import { useRoomPhase } from './use-room-phase';
 import { useTabPips } from './use-tab-pips';
 import { sceneOf } from './LivingRoom';
@@ -301,16 +302,22 @@ export function Game({
     () => new Map((gear?.skills ?? []).map((skill) => [skill.creatureId, skill.level])),
     [gear],
   );
-  const room = useRoom({
-    enabled: game.starterChosen,
-    participants,
-    selfId: user.id,
-    selfName: user.displayName,
-    state: game,
-    craftingLevels,
-    loungeLive,
-    ...(gear === null ? {} : { gearItems: gear.items }),
-  });
+  // Presence lives here, not in the room's drawing: the room is on screen only in the desktop band or in the
+  // phone's Lounge sheet, and you are in the room (and your lounger earns) whether it is drawn or not.
+  const room = useLoungePresence(
+    {
+      enabled: game.starterChosen,
+      participants,
+      selfId: user.id,
+      selfName: user.displayName,
+      state: game,
+      craftingLevels,
+      loungeLive,
+      ...(gear === null ? {} : { gearItems: gear.items }),
+    },
+    game,
+    refreshState,
+  );
   // The room's light follows the guild's local time by the server's clock; one timer swaps it.
   const offsetRef = useRef(offset);
   offsetRef.current = offset;
@@ -337,51 +344,44 @@ export function Game({
       setError(errorText(err));
     });
   }
-  // While your lounger earns, reload the state once per XP so its tag and XP bar move (the server pays what
-  // you collected when you make a request). Nothing while alone, hidden or Rested.
-  const earning = loungeEarning(room.company, false, game);
-  useEffect(() => {
-    if (!earning) return undefined;
-    const timer = setInterval(() => {
-      refreshState();
-    }, LOUNGE_REFRESH_MS);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [earning]);
-
   // The main navigation: the dock on a phone, the rail on a wide window. The HUD names the place you are in.
   const wide = useWide();
   const places = navPlaces(alerts);
+  /** The phone's Lounge sheet (the room is not at the top of the phone layout), and the button that opens it. */
+  const [loungeOpen, setLoungeOpen] = useState(false);
+  const loungeButton = useRef<HTMLButtonElement>(null);
   const placeLabel = places.find((place) => place.id === tab)?.label ?? '';
 
-  // With a game on screen: the HUD and, under it, the living room. Before one (choosing a starter): the title row.
+  // The living room's props: the same room in the desktop's band and in the phone's Lounge sheet.
+  const roomProps: Parameters<typeof LoungeSheet>[0]['room'] = {
+    residents: room.residents,
+    selfId: user.id,
+    instanceId: participants.instanceId,
+    scene: sceneOf(phase),
+    forecast,
+    trophy: {
+      board: games.view?.board ?? [],
+      selfId: user.id,
+      onOpen: () => {
+        setLoungeOpen(false);
+        setTab('games');
+        games.load();
+      },
+    },
+    onMove: moveLounger,
+    onSwap: () => {
+      setSwapping(true);
+      refreshState();
+    },
+    ...(game.loungerId === null ? {} : { ownLoungeXp: game.loungeXp[game.loungerId] ?? 0 }),
+  };
+
+  // With a game on screen: the HUD and, on a wide window, the living room band under it (a phone has the
+  // Lounge button instead). Before a game (choosing a starter): the title row.
   const head = game.starterChosen ? (
     <>
       <Hud title={placeLabel} balances={game.balances} helpRef={helpRef} onHelp={onHelp} />
-      <RoomBand
-        room={{
-          residents: room.residents,
-          selfId: user.id,
-          instanceId: participants.instanceId,
-          scene: sceneOf(phase),
-          forecast,
-          trophy: {
-            board: games.view?.board ?? [],
-            selfId: user.id,
-            onOpen: () => {
-              setTab('games');
-              games.load();
-            },
-          },
-          onMove: moveLounger,
-          onSwap: () => {
-            setSwapping(true);
-            refreshState();
-          },
-          ...(game.loungerId === null ? {} : { ownLoungeXp: game.loungeXp[game.loungerId] ?? 0 }),
-        }}
-      />
+      {wide && <RoomBand room={roomProps} />}
     </>
   ) : (
     <AppHead helpRef={helpRef} onHelp={onHelp} />
@@ -436,6 +436,16 @@ export function Game({
           places={places}
           current={tab}
           wide={wide}
+          lounge={{
+            pip: null,
+            open: loungeOpen,
+            onOpen: () => {
+              setLoungeOpen(true);
+              refreshState();
+              room.refreshIfStale();
+            },
+            buttonRef: loungeButton,
+          }}
           onSelect={(id) => {
             if (!isTab(id)) return;
             setTab(id);
@@ -639,12 +649,24 @@ export function Game({
     />
   );
 
+  const lounge = game.starterChosen && !wide && (
+    <LoungeSheet
+      open={loungeOpen}
+      onClose={() => {
+        setLoungeOpen(false);
+      }}
+      room={roomProps}
+      returnFocusTo={loungeButton.current}
+    />
+  );
+
   return (
     <TreatTimesContext.Provider value={forecast?.today?.treatTimes ?? 2}>
       <GearItemsContext.Provider value={gear?.items ?? NO_ITEMS}>
         <EquipHost creatures={gear === null ? NO_CREATURES : game.creatures} onEquip={equipOn}>
           {head}
           {content}
+          {lounge}
           {swap}
           {devPanel}
         </EquipHost>
