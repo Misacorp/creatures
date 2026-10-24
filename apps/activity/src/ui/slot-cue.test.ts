@@ -8,6 +8,7 @@ import {
   cueElementClass,
   cuesFor,
   effectLine,
+  guardReachText,
   movedKeys,
   sceneOf,
 } from './slot-cue';
@@ -182,14 +183,43 @@ describe('cuesFor: influence', () => {
     expect(guard.slots.get(2)?.cover).toBe(true);
   });
 
-  it('follows the raid rules: the buff stops at a row edge, a Guard covers its whole row', () => {
+  it('follows the raid rules: the buff stops at a row edge, a Guard protects the creature beside it in its row', () => {
     // Zones of two: Front 0-1, Middle 2-3, Back 4-5. A Support at the end of Front buffs only slot 0.
     const row = rowOf('cindle', 'ashmole', 'splashet', 'sproutle', 'zipmouse', 'cindle');
     const buff = cuesFor({ row, mode: raid('left_to_right'), focus: 1, scope: 'focus' });
     expect([...buff.slots].filter(([, c]) => c.buff === true).map(([slot]) => slot)).toEqual([0]);
-    // Sproutle (Guard) at slot 3 covers slot 2 only (the rest of its zone).
+    // Sproutle (Guard) at slot 3 covers slot 2 only (the creature beside it; slot 4 is in the next zone).
     const cover = cuesFor({ row, mode: raid('left_to_right'), focus: 3, scope: 'focus' });
     expect([...cover.slots].filter(([, c]) => c.cover === true).map(([slot]) => slot)).toEqual([2]);
+  });
+
+  it("shades exactly the slots a Guard's reach covers, on the side its gear says", () => {
+    // Zones of three: Front 0-2, Middle 3-5, Back 6-8. Sproutle (Guard) stands at slot 4.
+    const names = [
+      'cindle',
+      'splashet',
+      'ashmole',
+      'cindle',
+      'sproutle',
+      'zipmouse',
+      'cindle',
+      'splashet',
+      'ashmole',
+    ];
+    const covered = (reach?: { left: number; right: number }): number[] => {
+      const row: AffectRow = names.map((id, i) =>
+        i === 4 && reach !== undefined
+          ? affectSlotOf(getSpecies(id), undefined, reach)
+          : affectSlotOf(getSpecies(id)),
+      );
+      const cues = cuesFor({ row, mode: raid('left_to_right'), focus: 4, scope: 'focus' });
+      return [...cues.slots].filter(([, c]) => c.cover === true).map(([slot]) => slot);
+    };
+    expect(covered()).toEqual([3, 5]);
+    expect(covered({ left: 2, right: 2 })).toEqual([3, 5]);
+    expect(covered({ left: 1, right: 0 })).toEqual([3]);
+    expect(covered({ left: 0, right: 1 })).toEqual([5]);
+    expect(covered({ left: 0, right: 0 })).toEqual([]);
   });
 
   it('keeps a reaction ring and an influence shade on one tile', () => {
@@ -217,10 +247,11 @@ describe('effectLine', () => {
     expect(line).toContain('next hit');
   });
 
-  it('says what a Guard does, and for whom (beside it in the dungeon, its row in the raid)', () => {
+  it('says what a Guard does, and for whom (the creature on each side of it, in its row in the raid)', () => {
     const row = rowOf('splashet', 'sproutle', 'zipmouse');
     const dungeon = effectLine({ row, mode: DUNGEON, focus: 1, nameOf: name });
-    expect(dungeon).toContain('beside it');
+    expect(dungeon).toContain('the creature on each side of it');
+    expect(dungeon).not.toContain('in its row');
     // The live Guard has armor, not extra HP: the line says "less damage", from the number.
     expect(dungeon).toContain(`takes ${String(RULES.combat.guard.armorBp / 100)}% less damage`);
     expect(dungeon).not.toContain('more HP');
@@ -230,7 +261,29 @@ describe('effectLine', () => {
       focus: 1,
       nameOf: name,
     });
-    expect(raid).toContain('its row');
+    expect(raid).toContain('the creature on each side of it in its row');
+  });
+
+  it('says whom a Guard protects from its reach', () => {
+    expect(guardReachText({ left: 1, right: 1 }, true)).toBe(
+      'the creature on each side of it in its row',
+    );
+    expect(guardReachText({ left: 2, right: 2 }, false)).toBe('the 2 creatures on each side of it');
+    expect(guardReachText({ left: 2, right: 0 }, true)).toBe(
+      'the 2 creatures on its left in its row',
+    );
+    expect(guardReachText({ left: 1, right: 3 }, false)).toBe(
+      'the creature on its left and the 3 creatures on its right',
+    );
+    expect(guardReachText({ left: 0, right: 0 }, true)).toBe('nobody');
+    const row: AffectRow = [
+      affectSlotOf(getSpecies('splashet')),
+      affectSlotOf(getSpecies('sproutle'), undefined, { left: 2, right: 0 }),
+      affectSlotOf(getSpecies('zipmouse')),
+    ];
+    expect(effectLine({ row, mode: DUNGEON, focus: 1, nameOf: name })).toContain(
+      "Takes the boss's hits for the 2 creatures on its left",
+    );
   });
 
   it('describes the bonus from the numbers it is given: armor, extra HP, both or neither', () => {
@@ -238,16 +291,16 @@ describe('effectLine', () => {
     const line = (guard: { hpBp: number; armorBp: number }) =>
       effectLine({ row, mode: DUNGEON, focus: 1, nameOf: name, guard });
     expect(line({ hpBp: 0, armorBp: 2_500 })).toBe(
-      "Takes the boss's hits for the creatures beside it, and takes 25% less damage from every hit.",
+      "Takes the boss's hits for the creature on each side of it, and takes 25% less damage from every hit.",
     );
     expect(line({ hpBp: 3_000, armorBp: 0 })).toBe(
-      "Takes the boss's hits for the creatures beside it, and has 30% more HP.",
+      "Takes the boss's hits for the creature on each side of it, and has 30% more HP.",
     );
     expect(line({ hpBp: 1_000, armorBp: 1_000 })).toContain(
       'takes 10% less damage from every hit and has 10% more HP',
     );
     expect(line({ hpBp: 0, armorBp: 0 })).toBe(
-      "Takes the boss's hits for the creatures beside it.",
+      "Takes the boss's hits for the creature on each side of it.",
     );
   });
 

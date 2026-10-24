@@ -32,16 +32,20 @@ export interface BigRaidFight {
 
 const cache = new Map<string, BigRaidFight>();
 
-/** The fight of `players` players (1 to 15), the viewer standing in lane `yourLane` (from 0). */
-export function bigRaidFight(players: number, yourLane: number): BigRaidFight {
+/**
+ * The fight of `players` players (1 to 15), the viewer standing in lane `yourLane` (from 0), against
+ * `bossId` (default: the first boss of the content).
+ */
+export function bigRaidFight(players: number, yourLane: number, bossId?: string): BigRaidFight {
   const count = Math.max(1, Math.min(RULES.raid.maxPartySize, Math.trunc(players)));
   const you = Math.max(0, Math.min(count - 1, Math.trunc(yourLane)));
-  const key = `${String(count)}:${String(you)}`;
+  const key = `${String(count)}:${String(you)}${bossId === undefined ? '' : `:${bossId}`}`;
   const known = cache.get(key);
   if (known !== undefined) return known;
 
   const species = content.creatures.filter((c) => c.stage === 1);
-  const boss = content.bosses[0];
+  const boss =
+    bossId === undefined ? content.bosses[0] : content.bosses.find((b) => b.id === bossId);
   if (boss === undefined || species.length === 0) throw new Error('the shipped content is empty');
   const length = count * 3;
   const slots: (FightSlot | null)[] = Array.from({ length }, () => null);

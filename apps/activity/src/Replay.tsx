@@ -115,7 +115,6 @@ function Player({ data, showControls }: { data: ReplayView; showControls: boolea
         hpStart={data.bossHpStart}
         rounds={maxRounds}
         row={data.row}
-        {...(data.rules === undefined || data.rules === null ? {} : { rules: data.rules })}
         {...(data.board === undefined || data.board === null ? {} : { board: data.board })}
         mineIds={mineIds}
         names={data.names}

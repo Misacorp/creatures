@@ -1,0 +1,549 @@
+/*
+  The boss's attacks (stage/boss-fx.ts): the shapes, drawn by CSS and tinted by a theme class
+  (`th-water`, `th-fire`, ...: `--a` the main colour, `--b` its dark, `--c` its light). The script places
+  and moves them; each starts hidden at the layer's top left. No image files.
+*/
+.fx {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 6;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.th-water {
+  --a: #4f8fe6;
+  --b: #1f3a63;
+  --c: #c8e4ff;
+}
+
+.th-fire {
+  --a: #ef6a3a;
+  --b: #8a2a12;
+  --c: #ffd25a;
+}
+
+.th-lava {
+  --a: #ff7a2e;
+  --b: #5a1a0a;
+  --c: #ffe08a;
+}
+
+.th-vine {
+  --a: #5cbf5a;
+  --b: #24502a;
+  --c: #b6f0a0;
+}
+
+.th-thorn {
+  --a: #4f9a3a;
+  --b: #23401a;
+  --c: #d6ec8a;
+}
+
+.th-seed {
+  --a: #c9a24a;
+  --b: #6b5420;
+  --c: #f6e7a8;
+}
+
+.th-lightning {
+  --a: #f2d43d;
+  --b: #7a5f10;
+  --c: #ffffff;
+}
+
+.th-mud {
+  --a: #a9783f;
+  --b: #4e3219;
+  --c: #e2c48e;
+}
+
+.th-tar {
+  --a: #463a52;
+  --b: #15101a;
+  --c: #9c8cb0;
+}
+
+.th-mist {
+  --a: #cfe6f0;
+  --b: #6a8a9a;
+  --c: #ffffff;
+}
+
+.th-metal {
+  --a: #9aa0b0;
+  --b: #3f434e;
+  --c: #ffffff;
+}
+
+.th-swarm {
+  --a: #2c2a36;
+  --b: #0b0a10;
+  --c: #f2d43d;
+}
+
+.th-bubble {
+  --a: #8fd0e0;
+  --b: #2f6f80;
+  --c: #ffffff;
+}
+
+/*
+  Pixel style (the reviewers, 2026-10-23): hard edges, no soft glows or blurs, two or three theme
+  colours per shape. An outline is a hard 1px ring in the theme's dark (`--px-edge`), never a glow.
+*/
+.fx {
+  --px-edge: drop-shadow(1px 0 0 var(--b)) drop-shadow(-1px 0 0 var(--b))
+    drop-shadow(0 1px 0 var(--b)) drop-shadow(0 -1px 0 var(--b));
+}
+
+/* Pixel art drawn on a canvas (boss-fx.ts): kept sharp when it is scaled. */
+.fx-px > canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* ---- Things that fly ---- */
+
+/* A falling boulder's trail: three hard bands behind it, fading by steps (it is turned to where it falls). */
+.fx-meteor::after {
+  content: '';
+  position: absolute;
+  top: 30%;
+  right: 85%;
+  bottom: 30%;
+  width: 3rem;
+  background: linear-gradient(90deg, var(--b) 0 35%, var(--a) 35% 75%, var(--c) 75%);
+  opacity: 0.75;
+  clip-path: polygon(0 40%, 100% 0, 100% 100%, 0 60%);
+}
+
+/* A thorny whip's head: a hooked barb. */
+.fx-thornwhip {
+  width: 1.75rem;
+  height: 0.375rem;
+  margin: -0.1875rem 0 0 -1.5rem;
+  background: linear-gradient(90deg, transparent 0 20%, var(--b) 20% 50%, var(--a) 50%);
+  filter: var(--px-edge);
+}
+
+.fx-thornwhip::after {
+  content: '';
+  position: absolute;
+  top: -0.25rem;
+  right: -0.375rem;
+  width: 0.5rem;
+  height: 0.875rem;
+  background: var(--c);
+  clip-path: polygon(0 0, 100% 50%, 0 100%, 0 70%, 50% 50%, 0 30%);
+}
+
+/* A jet of water down a lane: hard bands, it grows from the boss to the last creature. */
+.fx-jet {
+  width: var(--len, 10rem);
+  height: 0.625rem;
+  margin-top: -0.3125rem;
+  background: linear-gradient(
+    var(--b) 0 2px,
+    var(--a) 2px 4px,
+    var(--c) 4px calc(100% - 4px),
+    var(--a) calc(100% - 4px) calc(100% - 2px),
+    var(--b) calc(100% - 2px)
+  );
+  opacity: 0.85;
+  transform-origin: 0 50%;
+}
+
+.fx-jet.big {
+  height: 1rem;
+  margin-top: -0.5rem;
+}
+
+/* ---- Things from the ground ---- */
+
+/*
+  Water, mud or lava rising under a row: a band with a bright crest; the script cuts its top into a
+  stepped pixel wave and keeps it see-through, so the creatures and their numbers still show.
+*/
+.fx-surge {
+  width: var(--w, 10rem);
+  height: var(--h, 4rem);
+  margin-top: calc(var(--h, 4rem) * -1);
+  background: linear-gradient(var(--c) 0 12px, var(--a) 12px 55%, var(--b) 55%);
+  transform-origin: 50% 100%;
+}
+
+/* A vine bursting from the ground: a stalk with thorns, curling over the creature. */
+.fx-vine {
+  width: 0.375rem;
+  height: var(--vh, 3rem);
+  margin: calc(var(--vh, 3rem) * -1) 0 0 -0.1875rem;
+  background: linear-gradient(90deg, var(--a) 0 60%, var(--c) 60%);
+  filter: var(--px-edge);
+  transform-origin: 50% 100%;
+}
+
+.fx-vine::before,
+.fx-vine::after {
+  content: '';
+  position: absolute;
+  left: -0.3125rem;
+  width: 0.375rem;
+  height: 0.375rem;
+  background: var(--c);
+  clip-path: polygon(100% 50%, 0 0, 0 100%);
+}
+
+.fx-vine::before {
+  top: 30%;
+  left: 0.3125rem;
+  transform: scaleX(-1);
+}
+
+.fx-vine::after {
+  top: 60%;
+}
+
+.fx-vine.tall {
+  width: 0.5rem;
+  margin-left: -0.25rem;
+}
+
+/* The coil a vine wraps around a creature it holds. */
+.fx-coil {
+  width: var(--cw, 3rem);
+  height: 0.75rem;
+  margin: -0.375rem 0 0 calc(var(--cw, 3rem) / -2);
+  border: 0.1875rem solid var(--a);
+  border-radius: 50%;
+  filter: var(--px-edge);
+}
+
+/* A thorny vine growing in from the end of a row (a pincer): a stalk with hard thorns along it. */
+.fx-vine-h {
+  width: var(--len, 6rem);
+  height: 0.375rem;
+  margin-top: -0.1875rem;
+  background:
+    linear-gradient(90deg, transparent 0 0.5rem, var(--c) 0.5rem 0.75rem) 0 0 / 0.75rem 2px repeat-x,
+    var(--a);
+  filter: var(--px-edge);
+  transform-origin: 0 50%;
+}
+
+/* The ground cracking under a creature before vines or bubbles come up: a jagged dark slit. */
+.fx-crack {
+  width: 2.75rem;
+  height: 0.375rem;
+  margin: -0.1875rem 0 0 -1.375rem;
+  background: var(--b);
+  clip-path: polygon(
+    0 50%,
+    20% 0,
+    35% 60%,
+    55% 10%,
+    70% 70%,
+    85% 20%,
+    100% 50%,
+    80% 100%,
+    50% 80%,
+    20% 100%
+  );
+}
+
+/* The shadow of something about to land on a creature. */
+.fx-shadow {
+  width: 2.5rem;
+  height: 0.5rem;
+  margin: -0.25rem 0 0 -1.25rem;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 55%);
+}
+
+/* ---- Things from the sky ---- */
+
+/* A dark cloud above a creature before the lightning strikes: three hard puffs. */
+.fx-cloud {
+  width: 2.5rem;
+  height: 0.75rem;
+  margin: 0 0 0 -1.25rem;
+  background: #2a2440;
+  border-radius: 0.375rem;
+  filter: var(--px-edge);
+}
+
+.fx-cloud::before {
+  content: '';
+  position: absolute;
+  top: -0.375rem;
+  left: 0.5rem;
+  width: 1.25rem;
+  height: 0.625rem;
+  border-radius: 0.375rem 0.375rem 0 0;
+  background: #2a2440;
+}
+
+/* A bolt of lightning: a jagged line, a bright core in a hard dark edge (an SVG the script draws). */
+.fx-bolt {
+  overflow: visible;
+  fill: none;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  shape-rendering: crispEdges;
+}
+
+.fx-bolt .bolt-edge {
+  stroke: var(--b);
+}
+
+.fx-bolt .bolt-core {
+  stroke: var(--c);
+}
+
+/* ---- Rings ---- */
+
+/* An impact: a hard ring that grows outwards in steps. */
+.fx-ring {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: -1.25rem 0 0 -1.25rem;
+  border: 2px solid var(--c);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px var(--a),
+    inset 0 0 0 1px var(--b);
+}
+
+/* Embers standing in a circle (a trap of fire around the boss, a ring tightening on a creature). */
+.fx-orbit {
+  width: 0;
+  height: 0;
+}
+
+.fx-orbit > .fx-bit {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* A splat where a lobbed blob lands: a flat puddle with a bright rim on top. */
+.fx-splat {
+  width: 2.5rem;
+  height: 1rem;
+  margin: -0.5rem 0 0 -1.25rem;
+  border-radius: 50%;
+  background: var(--a);
+  box-shadow:
+    inset 0 2px 0 var(--c),
+    inset 0 -3px 0 var(--b);
+}
+
+/* ---- Bits: what rains down, splashes and shatters, one look per theme; hard shapes, no glow ---- */
+.fx-bit {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: -0.25rem 0 0 -0.25rem;
+  background: var(--a);
+}
+
+.bit-drop {
+  border-radius: 50% 0 50% 50%;
+  background: linear-gradient(135deg, var(--c) 0 35%, var(--a) 35%);
+}
+
+.bit-ember {
+  background: var(--a);
+  box-shadow: inset 2px 2px 0 var(--c);
+  transform: rotate(45deg);
+}
+
+.bit-ember.hot {
+  background: var(--c);
+}
+
+.bit-leaf {
+  width: 0.625rem;
+  height: 0.375rem;
+  border-radius: 0 100%;
+  background: var(--a);
+}
+
+.bit-thorn {
+  width: 0.625rem;
+  background: var(--c);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.bit-seed {
+  width: 0.375rem;
+  height: 0.5rem;
+  background: linear-gradient(var(--c) 0 30%, var(--a) 30% 75%, var(--b) 75%);
+}
+
+.bit-spark {
+  width: 0.375rem;
+  height: 0.375rem;
+  background: var(--c);
+  box-shadow: 0 0 0 2px var(--a);
+}
+
+.bit-blob {
+  width: 0.625rem;
+  height: 0.5rem;
+  background: linear-gradient(var(--c) 0 25%, var(--a) 25% 70%, var(--b) 70%);
+}
+
+.bit-puff {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--c);
+  opacity: 0.6;
+}
+
+.bit-chip {
+  background: var(--a);
+  clip-path: polygon(0 20%, 70% 0, 100% 60%, 30% 100%);
+}
+
+.bit-dot {
+  width: 0.3125rem;
+  height: 0.3125rem;
+  background: var(--a);
+  box-shadow: 0 0 0 1px var(--c);
+}
+
+.bit-bubble {
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 2px solid var(--c);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--c) 0 20%, transparent 20%);
+}
+
+.bit-rock {
+  width: 0.625rem;
+  height: 0.5rem;
+  background: linear-gradient(135deg, var(--c) 0 20%, var(--a) 20% 65%, var(--b) 65%);
+  clip-path: polygon(0 30%, 40% 0, 100% 20%, 80% 100%, 15% 85%);
+}
+
+/* What rains from the sky is bigger, with a hard dark edge (embers, seeds, thorns, mud). */
+.fx-bit.falling {
+  width: 0.75rem;
+  height: 0.75rem;
+  filter: var(--px-edge);
+}
+
+/*
+  ---- The telegraph: who the boss is about to hit, without boxes ----
+  While motion is allowed, the red squares, row frames and slashes give way to marks on the ground: a
+  hard red bar under each creature about to be hit with a hollow chevron hopping over its head (a
+  different shape from the solid ▼ of a debuff), a dashed amber bar under a creature the splash will
+  catch, and a red bar along the floor of a row about to be hit. The attack itself (boss-fx.ts) shows
+  the hit. With reduced motion nothing plays, so the old static outlines stay: they are the only cue
+  then.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  .reticle {
+    inset: auto -0.125rem -0.1875rem;
+    height: 0.1875rem;
+    border: 0;
+    border-radius: 0;
+    background: var(--bad);
+    box-shadow: 0 1px 0 var(--ink);
+  }
+
+  .reticle > canvas {
+    display: none;
+  }
+
+  .reticle.windup::after {
+    content: '';
+    position: absolute;
+    bottom: calc(var(--art, 32px) + 0.375rem);
+    left: 50%;
+    width: 0.875rem;
+    height: 0.75rem;
+    margin-left: -0.4375rem;
+    background: var(--bad);
+    clip-path: polygon(0 0, 30% 0, 50% 45%, 70% 0, 100% 0, 50% 100%);
+    filter: drop-shadow(0 1px 0 var(--ink));
+    animation: aim-bob 600ms steps(2, jump-none) infinite alternate;
+  }
+
+  .reticle.windup {
+    animation: aim-pulse 500ms steps(2, jump-none) infinite alternate;
+  }
+
+  .reticle.struck,
+  .slash,
+  .zone-fx.fx-hit,
+  .strike-wave {
+    display: none;
+  }
+
+  .splash-ring {
+    inset: auto -0.125rem -0.3125rem;
+    height: 0.25rem;
+    border: 0;
+    border-radius: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--charge) 0 0.25rem,
+      transparent 0.25rem 0.5rem
+    );
+  }
+
+  .splash-ring.struck {
+    display: none;
+  }
+
+  .zone-fx.fx-windup {
+    border: 0;
+    background: linear-gradient(transparent calc(100% - 0.25rem), rgb(var(--bad-rgb) / 70%) 0);
+    animation: aim-pulse 500ms steps(2, jump-none) infinite alternate;
+  }
+
+  .stage-zone.warned {
+    outline: 0;
+    box-shadow: inset 0 -0.1875rem 0 rgb(var(--gold-rgb) / 70%);
+  }
+
+  .stage-zone.charged {
+    outline: 0;
+    box-shadow: inset 0 -0.1875rem 0 var(--charge);
+  }
+
+  .stage-unit.charged .unit-art {
+    outline: 0;
+    box-shadow: 0 0.3125rem 0 -0.125rem var(--charge);
+  }
+
+  .charge-mark {
+    box-shadow: none;
+    background: transparent;
+  }
+}
+
+@keyframes aim-bob {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-0.25rem);
+  }
+}
+
+@keyframes aim-pulse {
+  from {
+    opacity: 0.6;
+  }
+
+  to {
+    opacity: 1;
+  }
+}

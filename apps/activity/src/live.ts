@@ -5,7 +5,7 @@
  * decide what to show and which buttons to offer.
  */
 import { content, RULES, type FinaleAbilityDef } from '@creatures/game';
-import { MAX_ROUND_MS, describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
+import { SLOW_PACE, describeEvent, type EventNames, type FightEvent } from '@creatures/engine';
 import type { LiveAbility, LiveActionRequest, LiveFight, LiveSnapshot } from './live-api';
 import type { AbilityPreview, RaidReveal, TeamCreatureView } from './raid-api';
 import { formatCountdown } from './time-format';
@@ -16,10 +16,10 @@ import { festivalGrantText, rankChangeText } from './raid-progress';
 /** The lobby opens this long before the start. */
 export const LOBBY_MS = 5 * 60_000;
 /**
- * The longest a round of a finale can take (the engine's pacing, 6 to 22 seconds, is what the server
- * schedules by): only used to know when the Raid tab can stop expecting a result.
+ * The longest a round of a finale can take (the engine's slow pace, 20 to 45 seconds, is what the
+ * server schedules new fights by): only used to know when the Raid tab can stop expecting a result.
  */
-const LONGEST_ROUND_MS = MAX_ROUND_MS;
+const LONGEST_ROUND_MS = SLOW_PACE.maxRoundMs;
 /** How long after the last round the Raid tab keeps the finale view open for a result to show up. */
 const FINISH_GRACE_MS = 30_000;
 
@@ -80,6 +80,48 @@ export function nextPollDelay(snapshot: LiveSnapshot, serverNow: number): number
     // Just past the boundary and no news yet: ask again soon. Long past it, the snapshot is stale
     // (or the clock estimate is off): do not hammer, go back to the normal pace.
     else if (serverNow - boundary < POLL_MS) delay = MIN_POLL_MS;
+  }
+  return Math.max(MIN_POLL_MS, delay);
+}
+
+/**
+ * The party whose finale the live socket should listen to, or null for no socket: the server offers it
+ * (`finaleLive` of `/api/config`) and the screen shows a lobby or a fight (not "nothing soon" and not a
+ * finished fight, where nothing more will be pushed). Practice fights count.
+ */
+export function finaleSocketTarget(
+  offered: boolean,
+  snapshot: LiveSnapshot | null,
+): { week: string; party: number } | null {
+  if (!offered || snapshot === null) return null;
+  if (snapshot.status !== 'lobby' && snapshot.status !== 'live') return null;
+  return { week: snapshot.week, party: snapshot.party };
+}
+
+/** While the live socket delivers, the poll only guards against a push that never came. */
+export const SAFETY_POLL_MS = 15_000;
+/** With the socket live, a push is awaited this long after a round boundary before the poll asks. */
+export const PUSH_GRACE_MS = 2500;
+
+/**
+ * Milliseconds until the next poll while the live socket delivers, or null to stop. The server pushes
+ * a snapshot at every round start, so the poll is a slow safety net (every `SAFETY_POLL_MS`), with one
+ * earlier look `PUSH_GRACE_MS` after the next boundary: a missed alarm or push then costs a few seconds,
+ * never a frozen fight. Stops where `nextPollDelay` stops.
+ */
+export function nextLiveDelay(snapshot: LiveSnapshot, serverNow: number): number | null {
+  if (nextPollDelay(snapshot, serverNow) === null) return null;
+  let delay = SAFETY_POLL_MS;
+  if (snapshot.status !== 'none' && snapshot.status !== 'done') {
+    const boundary = nextBoundaryAt(snapshot, serverNow);
+    if (boundary === null) {
+      // The server says the fight is over but "done" has not come: the normal pace until it does.
+      delay = POLL_MS;
+    } else {
+      const wait = boundary + PUSH_GRACE_MS - serverNow;
+      // Already past the grace with no news: the safety pace, not a hammer.
+      if (wait > 0) delay = Math.min(delay, wait);
+    }
   }
   return Math.max(MIN_POLL_MS, delay);
 }

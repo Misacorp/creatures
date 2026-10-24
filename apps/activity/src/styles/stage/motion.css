@@ -65,10 +65,6 @@
     animation: callout-hold var(--fx-ms) ease-out both;
   }
 
-  .strike-label {
-    animation: label-hold var(--fx-ms) ease-out both;
-  }
-
   .crit-pop {
     animation: crit-pop var(--fx-ms) ease-out both;
   }
@@ -129,10 +125,6 @@
 
   .block-mark {
     animation: block-pop var(--fx-ms) ease-out both;
-  }
-
-  .strike-beam.placed {
-    animation: beam-fire 650ms ease-out both;
   }
 
   .warn-mark,
@@ -389,23 +381,6 @@
     }
   }
 
-  @keyframes beam-fire {
-    0% {
-      opacity: 0;
-      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(0.02);
-    }
-
-    30% {
-      opacity: 1;
-      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(1);
-    }
-
-    100% {
-      opacity: 0;
-      transform: translate(var(--bx, 0), var(--by, 0)) rotate(var(--bang, 0rad)) scaleX(1);
-    }
-  }
-
   @keyframes boss-lean {
     0% {
       transform: translateY(0) scale(1);
@@ -467,26 +442,6 @@
     100% {
       opacity: 0;
       transform: translateX(-50%) scale(1);
-    }
-  }
-
-  @keyframes label-hold {
-    0% {
-      opacity: 0;
-      transform: scale(1.35);
-    }
-
-    8% {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    82% {
-      opacity: 1;
-    }
-
-    100% {
-      opacity: 0;
     }
   }
 

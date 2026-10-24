@@ -30,6 +30,26 @@ export interface StepState {
   creatureEffects: Readonly<Record<string, readonly EffectView[]>>;
   /** The boss retreated this round: its effects do not count down at the round's end. */
   retreating: boolean;
+  /** A barrier on the foe (a lasting move armed this round, `BARRIER_OPS`), or null. */
+  barrier: BarrierState | null;
+}
+
+/**
+ * The ops that raise a barrier over the foe while armed: they last the round and the first reaction
+ * that meets them breaks them (Backdraft, Molten Shell, the Thorns room). A new lasting move joins
+ * by its op here; how its barrier looks is `barrierLookOf` (`move-fx.ts`).
+ */
+export const BARRIER_OPS: ReadonlySet<string> = new Set(['reflect_first_reaction']);
+
+export interface BarrierState {
+  /** The move that raised it (its content id). */
+  gimmick: string;
+  round: number;
+  /**
+   * Set once a reaction broke it: the event, the creature whose reaction did, and whether a gear set
+   * turned it aside (nothing thrown back). It lasts until the round ends.
+   */
+  broken: { i: number; creature: string; turned: boolean } | null;
 }
 
 /** One status effect on a fighter, as the stage shows it. */
@@ -87,10 +107,35 @@ export function initialStep(bossHpStart: number): StepState {
     bossEffects: [],
     creatureEffects: {},
     retreating: false,
+    barrier: null,
   };
 }
 
-function applyOne(s: StepState, e: FightEvent): StepState {
+function applyOne(s: StepState, e: FightEvent, i: number): StepState {
+  const next = applyEvent(s, e);
+  const barrier = barrierAfter(s.barrier, e, i);
+  return barrier === next.barrier ? next : { ...next, barrier };
+}
+
+/** The barrier after an event: raised when its move is armed, broken by the first reaction, gone at the round's end. */
+function barrierAfter(b: BarrierState | null, e: FightEvent, i: number): BarrierState | null {
+  switch (e.t) {
+    case 'gimmick':
+      // Fights stored before 2026-10 announce the trap twice a round: the second keeps the first.
+      if (!BARRIER_OPS.has(e.op) || b?.round === e.round) return b;
+      return { gimmick: e.gimmick, round: e.round, broken: null };
+    case 'reaction':
+      if (b === null || b.broken !== null || !(e.reflected || e.proof === true)) return b;
+      return { ...b, broken: { i, creature: e.payoff, turned: !e.reflected } };
+    case 'round_end':
+    case 'round_start':
+      return b === null ? b : null;
+    default:
+      return b;
+  }
+}
+
+function applyEvent(s: StepState, e: FightEvent): StepState {
   switch (e.t) {
     case 'round_start':
       return {
@@ -196,7 +241,7 @@ export function stateAt(
 ): StepState {
   const end = Math.min(Math.max(0, Math.trunc(index)), events.length);
   let state = initialStep(bossHpStart);
-  for (let i = 0; i < end; i++) state = applyOne(state, events[i] as FightEvent);
+  for (let i = 0; i < end; i++) state = applyOne(state, events[i] as FightEvent, i);
   return { ...state, index: end };
 }
 

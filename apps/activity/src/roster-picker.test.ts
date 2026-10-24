@@ -194,10 +194,10 @@ describe('the effect preview', () => {
     expect(alone.find((o) => o.id === 'splash')?.effect).toBeNull();
   });
 
-  it('says what a Guard covers and what a Support buffs', () => {
+  it('says whom a Guard protects and what a Support buffs', () => {
     const row = rowOf({ 3: theirs('cindle'), 5: theirs('zipmouse') });
     const options = pickerOptions({ ...args, row, slot: 4 });
-    expect(options.find((o) => o.id === 'guard')?.effect).toContain('Covers its row');
+    expect(options.find((o) => o.id === 'guard')?.effect).toContain('Protects 2 neighbours');
     expect(options.find((o) => o.id === 'support')?.effect).toContain('Buffs 2 neighbours');
     expect(options.find((o) => o.id === 'plain')?.effect).toBeNull();
   });
@@ -226,7 +226,7 @@ describe('the effect preview', () => {
         slot: 0,
         mode: { row: 'raid', turnOrder: 'left_to_right' },
       }),
-    ).toBe('Covers its row');
+    ).toBe('Protects its neighbours');
   });
 });
 

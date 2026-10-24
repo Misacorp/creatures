@@ -1,3 +1,4 @@
+import type { Pace } from '@creatures/engine';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Speed } from './replay';
 import { activeFx, addFx, nextFxEnd, type FxItem } from './stage-fx';
@@ -7,7 +8,7 @@ interface FxTrail {
   /** The effects on screen now. */
   items: readonly FxItem[];
   /** Starts the effects of a beat (those that outlast it stay for their own duration). */
-  push: (cues: readonly Cue[], speed?: Speed) => void;
+  push: (cues: readonly Cue[], speed?: Speed, pace?: Readonly<Pace>) => void;
   /** Drops every effect at once (the stage jumped somewhere else). */
   clear: () => void;
 }
@@ -38,8 +39,8 @@ export function useFxTrail(): FxTrail {
       }, wait + 10);
     };
     api.current = {
-      push: (cues, speed = 1) => {
-        kept.current = addFx(kept.current, cues, Date.now(), speed);
+      push: (cues, speed = 1, pace) => {
+        kept.current = addFx(kept.current, cues, Date.now(), speed, pace);
         setItems(kept.current);
         arm();
       },

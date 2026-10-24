@@ -373,7 +373,15 @@ const SHEETS: SlotMods[] = [
   },
   { takenBp: 1_000, areaBp: 1_500, aimedBp: 1_500, reflectedBp: 2_500, chargedBp: 2_000 },
   { wardBp: { tide: 2_000, ember: 1_000, spark: 1_500, grove: 500 }, healReceivedBp: 3_500 },
-  { armorBp: 1_000, coverBp: 1_500, shelterBp: 1_000, coverReach: 1, boostReach: 1 },
+  {
+    armorBp: 1_000,
+    coverBp: 1_500,
+    shelterBp: 1_000,
+    coverReach: 1,
+    reachLeft: 1,
+    reachRight: -1,
+    boostReach: 1,
+  },
   { lingerRounds: 1, ignoreSilence: 1, lastStandBp: 2_500, stubborn: 1 },
   // The six 3-piece set effects.
   { unreflected: 1, critWindowBp: 2_000, healOnReactionBp: 300 },

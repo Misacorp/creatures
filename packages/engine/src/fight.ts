@@ -437,6 +437,7 @@ export function simulateFight(
     adaptationTarget,
     reactionByPair,
     guardReach,
+    reachRule: rules?.guardRule === 'reach',
     zoneHit,
     creatures,
     order,

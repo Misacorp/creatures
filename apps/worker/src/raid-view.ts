@@ -5,7 +5,9 @@
  */
 import {
   buildNames,
+  guardReachOf,
   zoneOfIndex,
+  type GuardReach,
   type EventNames,
   type FightEvent,
   type FightInput,
@@ -128,7 +130,17 @@ export interface RowSlotView {
     movedBy?: string;
     /** Only for the caller's own creatures and the ones the caller may move. */
     creatureId?: string;
+    /** A Guard's reach (`guardReachOf`: how many creatures it protects on each side); Guards only. */
+    reach?: GuardReach;
   };
+}
+
+/** A Guard's reach for a view (absent for the other roles), from the modifier sheet its fight uses. */
+function reachField(
+  role: string,
+  mods: Parameters<typeof guardReachOf>[0],
+): { reach?: GuardReach } {
+  return role === 'guard' ? { reach: guardReachOf(mods) } : {};
 }
 
 /** A party member who has not opened the game this raid week: teammates may move their joining creatures. */
@@ -243,6 +255,8 @@ export interface RaidView {
         name: string;
         level: number;
         slot: number | null;
+        /** A Guard's reach (how many creatures it protects on each side); Guards only. */
+        reach?: GuardReach;
       }[];
     } | null;
   };
@@ -363,6 +377,7 @@ export function buildRaidView(
           movable,
           ...(movedBy === null ? {} : { movedBy: names.get(movedBy) ?? 'Unknown' }),
           ...(mine || movable ? { creatureId: fight.id } : {}),
+          ...reachField(fight.role, fight.mods),
         },
       };
     });
@@ -509,6 +524,7 @@ export function buildRaidView(
                 name: c.nickname ?? c.species.name,
                 level: c.level,
                 slot: slotOf.get(c.id) ?? null,
+                ...reachField(c.species.role, c.mods),
               })),
             },
     },

@@ -7,7 +7,7 @@
 */
 .stage-grid {
   --tile-w: 3.25rem;
-  --tile-h: 4.875rem;
+  --tile-h: 4.125rem;
 }
 
 /* A creature is one lane wide, however many there are. */
@@ -28,13 +28,17 @@
   width: var(--tile-w);
 }
 
-/* An empty board slot: a quiet dashed cell, one lane wide, so the lanes line up with the placement board. */
+/*
+  An empty board slot: one lane wide, so the lanes line up with the placement board, and only a faint
+  dotted line on its floor (no box: Misa, 2026-10-24).
+*/
 .stage-grid .stage-gap {
   flex: none;
   box-sizing: border-box;
   width: var(--tile-w);
   height: var(--tile-h);
-  border: 2px dashed var(--line);
+  background: repeating-linear-gradient(90deg, var(--line) 0 2px, transparent 2px 6px) 50% 100% /
+    70% 2px no-repeat;
 }
 
 /* One line, cut with an ellipsis rather than broken mid-word (the creature's popover has its name). */
@@ -75,4 +79,20 @@
 .stage-grid .zone-fx > canvas {
   position: sticky;
   left: 0.5rem;
+}
+
+/*
+  On a wide screen the party sits dead centre under the boss, its row names right beside it on the
+  left (Misa, 2026-10-24): the board is only as wide as its names and lanes, centred, with a blank on
+  its right as wide as the names and their gap, so the lanes, not the lanes plus names, are what is
+  centred. A party wider than the window still scrolls (the board never grows past the stage).
+*/
+@media (min-width: 40rem) {
+  .board-grid.stage-grid {
+    box-sizing: border-box;
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
+    padding-right: calc(var(--label-w) + 4px);
+  }
 }

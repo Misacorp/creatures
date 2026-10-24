@@ -110,8 +110,9 @@ export interface UnitProps {
   /** The status effects on the creature right now (small icons over its sprite). */
   effects?: readonly EffectView[];
   /**
-   * The creature's place in this round's acting order from 1 ("1st", "2nd", ...), written under it;
-   * null when it has no turn this round (knocked out, or the round has not been played yet).
+   * The creature's place in this round's acting order from 1, in its accessible name only ("Acts
+   * 2nd"; not drawn since 2026-10-24: the move track says what comes); null when it has no turn this
+   * round (knocked out, or the round has not been played yet).
    */
   slot: number | null;
   onToggle: () => void;
@@ -147,7 +148,7 @@ export function StageUnit(props: UnitProps) {
         )}
         {ko && (
           <span class="ko-mark">
-            <Sprite sprite={glyphOrUnknown('skull')} scale={2} />
+            <Sprite sprite={glyphOrUnknown('skull')} scale={1} />
           </span>
         )}
         {props.silenced && (
@@ -174,9 +175,6 @@ export function StageUnit(props: UnitProps) {
       {props.hp !== null && (
         <SegmentBar size="unit" current={props.hp.current} max={props.hp.max} />
       )}
-      <span class="unit-slot pix" aria-hidden="true">
-        {props.slot === null ? '' : ordinal(props.slot)}
-      </span>
     </>
   );
 
@@ -205,7 +203,10 @@ export function StageUnit(props: UnitProps) {
         </SmallCreature>
       )}
       {props.effects !== undefined && (
-        <EffectIcons compact effects={props.effects} names={props.names} />
+        <>
+          <EffectIcons compact effects={props.effects} names={props.names} only="buff" />
+          <EffectIcons compact effects={props.effects} names={props.names} only="debuff" />
+        </>
       )}
       <Floats fx={props.fx} target={c.id} />
       <Bursts fx={props.fx} target={c.id} names={props.names} />

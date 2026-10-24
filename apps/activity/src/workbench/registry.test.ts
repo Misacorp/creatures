@@ -14,6 +14,7 @@ const sources = import.meta.glob<string>(
     '../*.tsx',
     '../ui/*.tsx',
     '../sprites/*.tsx',
+    '../stage/*.tsx',
     '../games/*.tsx',
     '../games/art/*.tsx',
     './nav-mockups/*.tsx',

@@ -6,6 +6,8 @@ import {
   type AffectMode,
   type AffectRow,
   type AffectSlot,
+  type FightRules,
+  type GuardReach,
 } from '../src/index';
 import { eventsOf, input, run, slot } from './helpers';
 
@@ -25,15 +27,33 @@ function rowOf(seed: string, length: number): AffectSlot[] {
 
 /** The engine's fight row for it: slot ids are their indexes, owned by one player. */
 function fightRow(row: readonly AffectSlot[]) {
-  return row.map((s, i) =>
-    slot(String(i), {
-      role: s.role,
-      element: s.element,
-      spd: s.speed ?? 10,
-      atk: 100,
-    }),
-  );
+  return row
+    .map((s, i) =>
+      slot(String(i), {
+        role: s.role,
+        element: s.element,
+        spd: s.speed ?? 10,
+        atk: 100,
+      }),
+    )
+    .map((f, i) => {
+      // A Guard's reach is the base of one each side plus the sheet's change.
+      const reach = (row[i] as AffectSlot).reach;
+      return reach === undefined
+        ? f
+        : { ...f, mods: { reachLeft: reach.left - 1, reachRight: reach.right - 1 } };
+    });
 }
+
+/** The reach rule: a Guard protects the creatures within its reach (the boards shade the same slots). */
+const REACH_RULES: FightRules = {
+  coverBp: 4_000,
+  maxHitBp: 0,
+  guardHpBp: 0,
+  guardArmorBp: 0,
+  supportFx: {},
+  guardRule: 'reach',
+};
 
 function fightOptions(mode: AffectMode) {
   return mode.row === 'dungeon'
@@ -109,9 +129,10 @@ describe('affects: a Guard covers exactly the slots whose hits it takes', () => 
       const slots = fightRow(row).map((f, i) =>
         i === target ? { ...f, stats: { ...f.stats!, atk: 500 } } : f,
       );
-      const base = input(slots, { ...fightOptions(mode), bossAtk: 100 });
+      const base = input(slots, { ...fightOptions(mode), rules: REACH_RULES, bossAtk: 100 });
       const result = run(slots, {
         ...fightOptions(mode),
+        rules: REACH_RULES,
         bossAtk: 100,
         boss: { ...base.boss, gimmicks: [rod] },
       });
@@ -125,18 +146,48 @@ describe('affects: a Guard covers exactly the slots whose hits it takes', () => 
     return out;
   }
 
-  const cases: [string, AffectMode, number, number[]][] = [
+  const raid = { row: 'raid', turnOrder: 'left_to_right' } as const;
+  const cases: [string, AffectMode, number, number[], Record<number, GuardReach>?][] = [
     ['dungeon, guard in the middle', { row: 'dungeon' }, 3, [1]],
     ['dungeon, guard at the end', { row: 'dungeon' }, 3, [2]],
-    ['raid of nine, guard at a zone edge', { row: 'raid', turnOrder: 'left_to_right' }, 9, [2]],
-    ['raid of nine, guard in the middle zone', { row: 'raid', turnOrder: 'left_to_right' }, 9, [4]],
-    ['raid of twelve, guard in the back', { row: 'raid', turnOrder: 'left_to_right' }, 12, [9]],
+    [
+      'dungeon, guard at the end, two to its left',
+      { row: 'dungeon' },
+      3,
+      [2],
+      { 2: { left: 2, right: 0 } },
+    ],
+    ['raid of nine, guard at a zone edge', raid, 9, [2]],
+    ['raid of nine, guard in the middle zone', raid, 9, [4]],
+    [
+      'raid of nine, guard in the middle zone, no reach to the right',
+      raid,
+      9,
+      [4],
+      { 4: { left: 1, right: 0 } },
+    ],
+    [
+      'raid of nine, guard with a long reach stops at the zone edge',
+      raid,
+      9,
+      [4],
+      { 4: { left: 3, right: 3 } },
+    ],
+    ['raid of twelve, guard in the back', raid, 12, [9]],
+    [
+      'raid of twelve, guard in the front with two to its right',
+      raid,
+      12,
+      [0],
+      { 0: { left: 1, right: 2 } },
+    ],
   ];
-  for (const [name, mode, length, guards] of cases) {
+  for (const [name, mode, length, guards, reaches] of cases) {
     it(name, () => {
       const row: AffectSlot[] = rowOf('cover', length).map((s, i) => ({
         ...s,
         role: guards.includes(i) ? 'guard' : s.role === 'guard' ? 'setter' : s.role,
+        ...(reaches?.[i] === undefined ? {} : { reach: reaches[i] }),
       }));
       for (const guard of guards) {
         const computed = affects(row, guard, mode)
@@ -149,20 +200,37 @@ describe('affects: a Guard covers exactly the slots whose hits it takes', () => 
     });
   }
 
-  it('never covers another Guard, and an empty slot is covered', () => {
+  it('an empty slot is shaded but ends the reach, and a Guard is never covered', () => {
     const row: (AffectSlot | null)[] = [
-      { role: 'guard', element: 'tide' },
+      { role: 'guard', element: 'tide', reach: { left: 1, right: 3 } },
       null,
       { role: 'guard', element: 'ember' },
     ];
+    const cover = (mode: AffectMode, at: number) =>
+      affects(row, at, mode)
+        .filter((a) => a.kind === 'cover')
+        .map((a) => a.slot);
+    // A row of three has a zone to each slot, so the raid's Guard here has nobody in its zone.
+    expect(cover({ row: 'raid', turnOrder: 'left_to_right' }, 0)).toEqual([]);
+    const nine: (AffectSlot | null)[] = [
+      { role: 'guard', element: 'tide', reach: { left: 1, right: 3 } },
+      null,
+      { role: 'setter', element: 'ember' },
+      ...Array.from({ length: 6 }, () => null),
+    ];
     expect(
-      affects(row, 0, { row: 'raid', turnOrder: 'left_to_right' }).filter(
-        (a) => a.kind === 'cover',
-      ),
-    ).toEqual([]);
-    expect(affects(row, 0, { row: 'dungeon' }).filter((a) => a.kind === 'cover')).toEqual([
-      { slot: 1, kind: 'cover' },
-    ]);
+      affects(nine, 0, { row: 'raid', turnOrder: 'left_to_right' })
+        .filter((a) => a.kind === 'cover')
+        .map((a) => a.slot),
+    ).toEqual([1]);
+    expect(cover({ row: 'dungeon' }, 0)).toEqual([1]);
+    // The Guard at slot 2 reaches slot 1 (empty) and then slot 0 is behind a gap.
+    expect(cover({ row: 'dungeon' }, 2)).toEqual([1]);
+    const touching: AffectSlot[] = [
+      { role: 'guard', element: 'tide' },
+      { role: 'guard', element: 'ember' },
+    ];
+    expect(affects(touching, 0, { row: 'dungeon' }).filter((a) => a.kind === 'cover')).toEqual([]);
   });
 });
 

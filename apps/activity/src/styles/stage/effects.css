@@ -1,7 +1,8 @@
 /*
-  Status effect icons: a small chip for each effect on a fighter, the glyph and its stacks ("x5") and,
-  on the boss, the turns left under them. On the boss they stand in a column at the right of its
-  picture; on a creature they sit along the top of its sprite, glyph and stacks only.
+  Status effect icons: for each effect on a fighter its glyph and its stacks ("x5") and, on the boss,
+  the turns left under them, with no frame: a tiny ▲ (buff) or ▼ (debuff) and the place say which it
+  is. On the boss, buffs stand at the top of the column at its right and debuffs at the bottom; on a
+  creature, buffs along the top of its sprite and debuffs along its bottom, glyph and stacks only.
 */
 .effect-icons {
   display: flex;
@@ -14,12 +15,7 @@
 
 .effect-chip {
   display: block;
-  background: var(--ink);
-  box-shadow: 0 0 0 var(--px) var(--bad);
-}
-
-.effect-chip.buff {
-  box-shadow: 0 0 0 var(--px) var(--good);
+  filter: drop-shadow(0 1px 0 var(--ink)) drop-shadow(0 -1px 0 var(--ink));
 }
 
 .effect-chip .effect-tag {
@@ -59,23 +55,23 @@
   z-index: 3;
 }
 
-/* On a creature: a row along the top of the sprite, over it. */
+/*
+  On a creature: the buffs in a row along the top of the sprite, the debuffs along its bottom, both
+  over the sprite's left side (the ability badge and the element are on its right). `--art` is the
+  sprite's height (StageUnit); 0.875rem is the "you" row above it.
+*/
 .effect-icons.compact {
   position: absolute;
-  top: 1.125rem;
-  left: 0;
+  top: 0.875rem;
+  left: -0.125rem;
   z-index: 3;
   flex-direction: row;
   flex-wrap: wrap;
   gap: 0.125rem;
 }
 
-.effect-icons.compact .effect-chip {
-  box-shadow: 0 0 0 1px var(--bad);
-}
-
-.effect-icons.compact .effect-chip.buff {
-  box-shadow: 0 0 0 1px var(--good);
+.effect-icons.compact.debuffs {
+  top: calc(0.875rem + var(--art, 32px) - 0.875rem);
 }
 
 .effect-icons.compact .effect-tag {
@@ -93,4 +89,47 @@
 .float-purge {
   color: var(--bone);
   font-size: var(--fs-row);
+}
+
+/* The up or down mark in a chip's corner: a buff or a debuff at a glance, not by colour alone. */
+.effect-chip {
+  position: relative;
+}
+
+.effect-sign {
+  position: absolute;
+  right: -0.375rem;
+  z-index: 1;
+  font-size: 0.625rem;
+  line-height: 1;
+  color: var(--bad);
+}
+
+.effect-chip.debuff .effect-sign {
+  bottom: -0.375rem;
+}
+
+.effect-chip.buff .effect-sign {
+  top: -0.375rem;
+  color: var(--good);
+}
+
+.effect-icons.compact .effect-sign {
+  right: auto;
+  left: -0.375rem;
+}
+
+/*
+  On a creature the mark sits on the glyph's left corner and the count on its right one, outlined so
+  it reads over any sprite.
+*/
+.effect-icons.compact .effect-top {
+  position: relative;
+}
+
+.effect-icons.compact .effect-stacks {
+  position: absolute;
+  right: -0.25rem;
+  bottom: -0.25rem;
+  text-shadow: var(--ink-outline-thin);
 }

@@ -1,4 +1,4 @@
-import type { FightEvent, FightBoard } from '@creatures/engine';
+import { CLASSIC_PACE, type FightEvent, type FightBoard, type Pace } from '@creatures/engine';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { buildBeats, playStart } from './stage';
 import { liveTimeline, staticFx, type FxItem, type IntroView } from './stage-fx';
@@ -29,11 +29,12 @@ interface Position {
 }
 
 /**
- * Plays the live finale's new events. When a poll brings a new round, the stage first shows "Round N"
- * for 1.5 seconds, then steps through the round's beats with the engine's staggers (500 to 700 ms,
- * the same pacing the server schedules the round by, so the round plays in exactly as long as the
- * server gives it: its beats and then 2 seconds for the last effects to finish). A boss action is
- * telegraphed first: 600 ms of red reticles on its targets, then the hit lands. Effects stay on
+ * Plays the live finale's new events. When a poll brings a new round, the stage first shows "Round N",
+ * then steps through the round's beats with the engine's staggers at the fight's `pace` (the pace the
+ * server schedules the round by, so the round plays in exactly as long as the server gives it: its
+ * beats and then the tail for the last effects to finish; at the slow pace a beat is 2 to 2.6 seconds).
+ * A boss action is telegraphed first: red reticles on its targets for the pace's wind-up, then the hit
+ * lands. Effects stay on
  * screen for their own, longer time and overlap the following beats. Rounds that went by unseen are
  * skipped. A stage that is mounted with events already there shows them at once, and so does a player
  * who asks for reduced motion (the newest beat is then only outlined and the intro is plain text).
@@ -48,6 +49,7 @@ export function useLiveStage(
   reducedMotion: boolean,
   hold = false,
   board?: FightBoard,
+  pace: Readonly<Pace> = CLASSIC_PACE,
 ): StageView {
   const [pos, setPos] = useState<Position>({ index: events.length, anim: null });
   const [intro, setIntro] = useState<IntroView | null>(null);
@@ -55,8 +57,8 @@ export function useLiveStage(
   const trail = useFxTrail();
   const shown = useRef(events.length);
   const seq = useRef(0);
-  const latest = useRef({ events, rowIds, bossId, rounds, reducedMotion, hold, board });
-  latest.current = { events, rowIds, bossId, rounds, reducedMotion, hold, board };
+  const latest = useRef({ events, rowIds, bossId, rounds, reducedMotion, hold, board, pace });
+  latest.current = { events, rowIds, bossId, rounds, reducedMotion, hold, board, pace };
   const length = events.length;
 
   useEffect(() => {
@@ -67,6 +69,7 @@ export function useLiveStage(
       rounds: total,
       reducedMotion: calm,
       board: rowBoard,
+      pace: rowPace,
     } = latest.current;
     if (log.length <= shown.current) {
       // Nothing new (or a different, shorter log): show what there is.
@@ -78,7 +81,7 @@ export function useLiveStage(
     }
     if (latest.current.hold) return undefined;
     const start = playStart(log, shown.current);
-    const beats = buildBeats(log, start, ids, boss, {}, rowBoard);
+    const beats = buildBeats(log, start, ids, boss, { pace: rowPace }, rowBoard);
     const opening = beats[0];
     const introRound = opening !== undefined && opening.introMs > 0 ? opening.round : null;
     const introMs = opening?.introMs ?? 0;
@@ -131,7 +134,7 @@ export function useLiveStage(
               break;
             case 'windup':
               // Telegraph first: reticles on exactly the creatures the boss is about to hit.
-              trail.push(beat.windup);
+              trail.push(beat.windup, 1, rowPace);
               break;
             case 'land':
               seq.current += 1;
@@ -140,7 +143,7 @@ export function useLiveStage(
                 index: beat.to,
                 anim: { from: beat.from, to: beat.to, ms: beat.ms, seq: seq.current },
               });
-              trail.push(beat.cues);
+              trail.push(beat.cues, 1, rowPace);
               break;
           }
         }, step.at),

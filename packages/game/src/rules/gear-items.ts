@@ -531,6 +531,9 @@ export interface GearMods {
   healOnReactionBp?: number;
   chainMark?: 0 | 1;
   coverReach?: 0 | 1;
+  /** A Guard's reach: the change to how many creatures it protects on its left and right (base 1 each side). */
+  reachLeft?: number;
+  reachRight?: number;
   boostReach?: 0 | 1;
   sealMark?: 0 | 1;
   firstReactionCrit?: 0 | 1;
@@ -761,8 +764,11 @@ function setEffect(three: GearSet['three'], wearer: Wearer, out: WornEffects): v
     case 'chainMark':
       sheet.chainMark = 1;
       break;
-    case 'coverReach':
-      if (wearer.role === 'guard') sheet.coverReach = 1;
+    case 'guardReach':
+      if (wearer.role === 'guard') {
+        sheet.reachLeft = (sheet.reachLeft ?? 0) + 1;
+        sheet.reachRight = (sheet.reachRight ?? 0) + 1;
+      }
       break;
     case 'boostReach':
       if (wearer.role === 'support') sheet.boostReach = 1;
@@ -889,6 +895,10 @@ export function wornEffects(
           sheet.reactionBp = addTo(sheet.reactionBp, id, value);
         }
         break;
+      case 'reach':
+        sheet.reachLeft = (sheet.reachLeft ?? 0) + effect.left * value;
+        sheet.reachRight = (sheet.reachRight ?? 0) + effect.right * value;
+        break;
       case 'besideRole':
         sheet.besideRoleBp = addTo(sheet.besideRoleBp, effect.role, value);
         break;
@@ -992,6 +1002,11 @@ export function wornEffects(
     if (!CAPPED_SET.has(field)) continue;
     const value = sheet[field] as number;
     (sheet as Record<string, number>)[field] = Math.min(10_000, value);
+  }
+  // A side's reach is 1 plus the change and stays between 0 and 3, so the change stays between -1 and 2.
+  for (const side of ['reachLeft', 'reachRight'] as const) {
+    const change = sheet[side];
+    if (change !== undefined) sheet[side] = Math.max(-1, Math.min(2, change));
   }
   if (sheet.debuffDurationTurns !== undefined) {
     sheet.debuffDurationTurns = Math.min(10, sheet.debuffDurationTurns);

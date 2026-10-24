@@ -4,7 +4,6 @@ import { RULES } from '@creatures/game';
 import {
   creatureHpAt,
   estimatedMaxHp,
-  crowdedHits,
   cuesForEvents,
   enragedAt,
   pendingChargesAt,
@@ -130,10 +129,10 @@ describe('the hand-made boss moves of the workbench', () => {
     expect(stateAt(lines.events, lines.events.length, 1_000).bossHp).toBe(844);
   });
 
-  it('has a sweep of 15 creatures that counts as crowded', () => {
+  it('has a sweep of 15 creatures', () => {
     const fight = patternFight('Crowded sweep (15 creatures)');
     expect(fight.row).toHaveLength(15);
-    expect(crowdedHits(fight.events, 0, fight.events.length).size).toBe(15);
+    expect(fight.events.filter((e) => e.t === 'boss_hit')).toHaveLength(15);
     expect(patternRow(15).map((r) => r.id)).toHaveLength(15);
   });
 

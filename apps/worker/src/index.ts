@@ -15,8 +15,8 @@ import {
   notFound,
   type Routes,
 } from './http';
-import { LIVE_PATH } from './lounge-live';
-import { parseTicket, verifyTicketMac } from './lounge-ticket';
+import { LIVE_PATH_KINDS } from './live-socket';
+import { parseTicket, verifyTicketMac } from './live-ticket';
 import { TokenBucketLimiter } from './ratelimit';
 import { formatSessionToken, getSessionKey, parseAuthorization, verifyTokenMac } from './session';
 
@@ -88,8 +88,9 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
           leetSource: env.LEET_SOURCE,
           // Staging only: lets the client load the dev panel. Absent (not false) everywhere else.
           ...(env.DEV_TOOLS === 'on' ? { devTools: true } : {}),
-          // The lounge's live socket (LOUNGE_LIVE; off in production until Misa says so). Absent, not false.
+          // The live sockets: the lounge's (LOUNGE_LIVE) and the finale's (FINALE_LIVE). Absent, not false.
           ...(env.LOUNGE_LIVE === 'on' ? { loungeLive: true } : {}),
+          ...(env.FINALE_LIVE === 'on' ? { finaleLive: true } : {}),
         });
       },
     },
@@ -136,10 +137,12 @@ export function createHandler(overrides: Partial<HandlerDeps> = {}): ExportedHan
     if (match.kind === 'ok') return dispatch(publicRoutes, request, pathname, env);
     if (match.kind === 'method_not_allowed') return methodNotAllowed(match.allow);
 
-    // The lounge's socket upgrade: no Authorization header is possible, so it carries a one-time ticket.
-    // Strict parse and MAC check first, like a session token, so junk never wakes a Durable Object.
-    if (pathname === LIVE_PATH) {
-      if (env.LOUNGE_LIVE !== 'on') return notFound();
+    // The socket upgrades (the lounge's and the finale's): no Authorization header is possible, so they
+    // carry a one-time ticket. Strict parse and MAC check first, like a session token, so junk never
+    // wakes a Durable Object. The object checks that the ticket is of the route's kind.
+    const liveKind = LIVE_PATH_KINDS[pathname];
+    if (liveKind !== undefined) {
+      if ((liveKind === 'lounge' ? env.LOUNGE_LIVE : env.FINALE_LIVE) !== 'on') return notFound();
       if (
         request.method !== 'GET' ||
         request.headers.get('Upgrade')?.toLowerCase() !== 'websocket'

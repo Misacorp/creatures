@@ -627,6 +627,12 @@
         "name": "Stays Calm in Storms",
         "effect": { "line": "brace" },
         "value": 1000
+      },
+      {
+        "id": "wide-as-a-puddle",
+        "name": "Wide as a Puddle",
+        "effect": { "line": "wide-stance" },
+        "value": 1
       }
     ],
     "squelch": [

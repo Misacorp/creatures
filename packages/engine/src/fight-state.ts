@@ -24,7 +24,15 @@ import type {
   FightRules,
   PlayerTotals,
 } from './types';
-import { neighbours, zoneIndices, zoneNeighbours, zoneTwoAway, type fightRowShape } from './zones';
+import {
+  guardReachOf,
+  guardReachSlots,
+  neighbours,
+  zoneIndices,
+  zoneNeighbours,
+  zoneTwoAway,
+  type fightRowShape,
+} from './zones';
 
 /**
  * The state of one fight, shared by the modules that play it (`fight.ts` orchestrates; `fight-damage.ts`,
@@ -166,6 +174,12 @@ export interface FightState {
   /** The reaction of each (mark element, trigger element) pair, by `reactionKey`. */
   readonly reactionByPair: ReadonlyMap<string, ReactionDef>;
   readonly guardReach: 'zone' | 'adjacent';
+  /**
+   * The Guard's reach rule is on (`FightRules.guardRule: 'reach'`): a Guard protects the creatures within
+   * its reach in its row (`guardsReaching`) and the plain attack aims at the front-most creature. Off: a
+   * Guard covers its whole zone (or, in the dungeon, the creatures beside it), as stored fights did.
+   */
+  readonly reachRule: boolean;
   /** The first zone attack of the boss, where the default Shield Wall goes. */
   readonly zoneHit: { round: number; zone: Zone } | null;
   readonly creatures: Creature[];
@@ -375,6 +389,36 @@ export function further(state: FightState, idx: number): number[] {
   return state.guardReach === 'adjacent'
     ? [idx - 2, idx + 2].filter((i) => i >= 0 && i < state.n)
     : zoneTwoAway(idx, state.shape);
+}
+
+/**
+ * The living Guards whose reach includes the creature at `idx` (the reach rule), left to right, never the
+ * creature itself. A Guard's reach is its own (`guardReachOf`); where it stands and what an empty board
+ * slot or a zone edge breaks is `guardReachSlots`, the function the boards use to shade it. A knocked-out
+ * creature still holds its slot, so it does not break a reach.
+ */
+export function guardsReaching(state: FightState, idx: number): Creature[] {
+  const { shape, creatures } = state;
+  const slots = shape.slots;
+  const slotOfTarget = slots[idx];
+  const out: Creature[] = [];
+  if (slotOfTarget === undefined) return out;
+  const line = state.guardReach === 'adjacent';
+  const occupied = (at: number): boolean => slots.includes(at);
+  for (const g of creatures) {
+    if (!g.alive || g.role !== 'guard' || g.idx === idx) continue;
+    const slot = slots[g.idx];
+    if (slot === undefined) continue;
+    const reached = guardReachSlots({
+      length: shape.length,
+      mode: line ? 'line' : 'zones',
+      slot,
+      reach: guardReachOf(g.mods),
+      occupied,
+    });
+    if (reached.includes(slotOfTarget)) out.push(g);
+  }
+  return out;
 }
 
 /**

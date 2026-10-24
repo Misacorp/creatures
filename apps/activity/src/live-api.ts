@@ -88,9 +88,11 @@ interface LiveShared {
   you: string | null;
   /**
    * The fixed round length of a fight that was stored before content pacing; null otherwise. Rounds
-   * last as long as their events take to play (6 to 22 seconds): use `roundStarts` and `nextRoundAt`.
+   * last as long as their events take to play: use `roundStarts` and `nextRoundAt`.
    */
   roundMs: number | null;
+  /** The pacing version the server schedules the rounds by; play them at `paceOfPacing(pacing)`. */
+  pacing: number;
   rounds: number;
   /** The round being played now (0 before the start). */
   round: number;
@@ -217,6 +219,7 @@ function hasSharedShape(data: Record<string, unknown>): boolean {
     isNullableStr(data['you']) &&
     isNullableInt(data['startsAt']) &&
     (data['roundMs'] === null || isPositiveInt(data['roundMs'])) &&
+    isCount(data['pacing']) &&
     isPositiveInt(data['rounds']) &&
     isCount(data['round']) &&
     isArrayOf(data['roundStarts'], isInt) &&

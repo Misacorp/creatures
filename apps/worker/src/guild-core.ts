@@ -20,9 +20,10 @@ import { weatherRoutes } from './weather-routes';
 import { expeditionRoutes } from './expedition-routes';
 import { collectionRoutes } from './collection-routes';
 import { LoungeCompany, loungeDay } from './lounge-company';
+import { FINALE_ACTION_PATHS, LIVE_QUIET_PATHS, type LiveHooks } from './live-socket';
+import { liveRoutes } from './live-routes';
+import type { LiveSnapshot } from './raid-live-view';
 import { maintainedDay, markMaintained } from './maintenance';
-import { LIVE_QUIET_PATHS, type LiveHooks } from './lounge-live';
-import { liveRoutes } from './lounge-live-routes';
 import { DevState } from './dev-state';
 import { DevTools, devRoutes, isDevPath } from './dev-tools';
 import { DiscordError, type GuildApi } from './discord';
@@ -311,8 +312,8 @@ export interface GuildCoreOptions {
    */
   devTools?: boolean;
   /**
-   * The lounge's live socket (see `lounge-live.ts`): makes tickets and is told when a player changed
-   * something. Without it the ticket route answers 404 and nothing is pushed.
+   * The live sockets (see `live-socket.ts`): makes tickets, is told when a player changed something, and
+   * is ticked by the alarm for the finale. Without it the ticket routes answer 404 and nothing is pushed.
    */
   live?: LiveHooks;
 }
@@ -448,6 +449,7 @@ export class GuildCore {
       now,
       rng: options.raidRng ?? liveRng(),
       practice: options.raidPractice === true,
+      socketWatchers: (week, party) => this.live?.finaleWatchers(week, party) ?? new Set(),
       analytics: this.analytics,
       quirkRng,
       talentRng,
@@ -795,8 +797,6 @@ export class GuildCore {
     // The first authenticated request of a game day pays the daily allowance (once, race-safe).
     if (this.options.dailyAllowance !== false) this.allowance.grant(user.id);
     await this.ensureAlarm();
-    // Lounging time this player has collected is paid before anything can change their lounger.
-    this.company.flush(user.id, this.realNow());
     const template = matchTemplate(ROUTE_KEYS, pathname);
     const response = await dispatch(routes, request, template?.template ?? pathname, {
       user,
@@ -805,7 +805,8 @@ export class GuildCore {
       params: template?.params ?? {},
       channelId: session.channelId,
     });
-    // A change by this player may show in the living room: tell the lounge's live sockets (if any).
+    // A change by this player may show in the living room, or in their party's finale: tell the live
+    // sockets (if any).
     if (this.live !== null && request.method !== 'GET' && response.ok)
       this.pushLive(pathname, user.id);
     return response;
@@ -818,6 +819,36 @@ export class GuildCore {
       this.live.notify(userId);
     } catch (err) {
       console.error('lounge push failed', err instanceof Error ? err.name : 'unknown');
+    }
+    // Fire, Hold, Unhold (and a practice start) change what the party's other watchers see.
+    if (!FINALE_ACTION_PATHS.has(pathname)) return;
+    try {
+      this.live.notifyFinale(userId);
+    } catch (err) {
+      console.error('finale push failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /**
+   * The finale snapshot of one player for a push, built like `GET /api/raid/live` builds it. Null when
+   * the player's party or the week is not the one asked for.
+   */
+  finaleSnapshotFor(userId: string, week: string, party: number): LiveSnapshot | null {
+    const snapshot = this.raid.liveSnapshot(userId, this.timezone());
+    return snapshot.week === week && snapshot.party === party ? snapshot : null;
+  }
+
+  /** The next moment the finale of one party changes shape (see `Raid.nextPushAt`). */
+  finaleNextChangeAt(week: string, party: number): number | null {
+    return this.raid.nextPushAt(week, party, this.timezone());
+  }
+
+  /** Tells the finale's open sockets that the clock may have moved on (the alarm calls it). */
+  private tickFinale(): void {
+    try {
+      this.live?.tickFinale();
+    } catch (err) {
+      console.error('finale tick failed', err instanceof Error ? err.name : 'unknown');
     }
   }
 
@@ -954,6 +985,9 @@ export class GuildCore {
     if (liveEndAt !== null) {
       candidates.push(liveEndAt > this.now() ? liveEndAt : this.now() + RAID_RETRY_MS);
     }
+    // A finale socket is open: wake at the next round start to push it (the schedule above is untouched).
+    const finalePushAt = this.live?.nextFinaleAt() ?? null;
+    if (finalePushAt !== null) candidates.push(finalePushAt);
     // The Valley Games: the next lock and the end of a show not awarded yet. One still due after the
     // catch-up keeps failing: retry it later.
     const gamesAt = this.games.nextEventAt();
@@ -1314,6 +1348,8 @@ export class GuildCore {
       }
     }
     this.catchUpRaid();
+    // The fight moves with the clock: sockets watching it hear about a new round (or its end) now.
+    this.tickFinale();
     // The Games' lock and awards, before the posts go out (the award queues the podium post).
     this.catchUpGames();
     await this.deliverPosts();
