@@ -30,7 +30,7 @@ import { HomeScreen } from './home/HomeScreen';
 import { Hud } from './Hud';
 import { MainNav } from './MainNav';
 import { navPlaces } from './nav-places';
-import { useWide } from './ui/wide-layout';
+import { useBar, useWide } from './ui/wide-layout';
 import { Collection } from './Collection';
 import { createCreatureActions } from './creature-actions';
 import { LoungeSwap } from './LoungeSwap';
@@ -377,8 +377,11 @@ export function Game({
       setError(errorText(err));
     });
   }
-  // The main navigation: the dock on a phone, the rail on a wide window. The HUD names the place you are in.
+  // The main navigation: the dock on a phone, one bottom bar in between, the rail on a wide window. The HUD
+  // names the place you are in.
   const wide = useWide();
+  // Between the phone and the wide window: one bottom bar with every place (no sub-menus).
+  const bar = useBar();
   const places = navPlaces(alerts);
   const placeLabelBeforeSettings =
     tab === NAV_HOME.id ? NAV_HOME.label : (places.find((p) => p.id === tab)?.label ?? '');
@@ -476,6 +479,7 @@ export function Game({
           places={places}
           current={tab}
           wide={wide}
+          bar={bar}
           home
           onSelect={(id) => {
             if (!isPlace(id)) return;

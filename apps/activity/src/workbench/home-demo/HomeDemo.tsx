@@ -8,7 +8,7 @@ import type { BoardSettings } from '../../home/board';
 import { HomePage } from '../../home/HomePage';
 import { homeAlerts } from '../../home-view';
 import { navPlaces } from '../../nav-places';
-import { useWide } from '../../ui/wide-layout';
+import { useBar, useWide } from '../../ui/wide-layout';
 import type { Forecast } from '../../weather-types';
 import { ROOM_SELF_ID, sampleResidents } from '../data';
 import { homeInput } from '../home-sample';
@@ -53,12 +53,14 @@ export function HomeDemo({
 }) {
   const auto = useWide();
   const wide = layout === 'desktop' || (layout === 'auto' && auto);
+  const bar = useBar() && !wide;
   const input = homeInput(state, raid);
   const nav = (
     <MainNav
       places={navPlaces(homeAlerts(input))}
       current="home"
       wide={wide}
+      bar={bar}
       onSelect={NOTHING}
       home
     />

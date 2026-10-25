@@ -21,6 +21,8 @@ import { instantPress } from './ui/instant-press';
  * a sub-menu above the dock, a tray of big buttons (picture, word and why it has a pip), one per place; a
  * group with one place is a direct button. A group's pip is the roll-up of its places' pips. On a wide window
  * (`wide`) it is a rail down the left: Home first, then every place under its group's heading, no sub-menus.
+ * In between (`bar`, a tablet, a phone on its side, a narrow Discord panel) it is one bar fixed to the bottom
+ * edge with every place in a row, Home first (gold, not raised), no sub-menus.
  * Home has no pip: the Home page itself says what needs you. It is a `nav` landmark of plain buttons (Tab
  * moves between them, `aria-current` marks the place you are in, a group button says `aria-expanded`). A
  * pip's reason is in the button's name for screen readers.
@@ -32,6 +34,7 @@ export function MainNav({
   onSelect,
   openGroup,
   home = false,
+  bar = false,
 }: {
   places: readonly NavPlace[];
   /** The id of the place you are in. */
@@ -43,10 +46,13 @@ export function MainNav({
   openGroup?: string | undefined;
   /** Draw Home: the dock's middle button, the rail's first item. Choosing it calls `onSelect('home')`. */
   home?: boolean;
+  /** Below `wide`, from the bar breakpoint (`useBar`): one bottom bar with every place instead of the dock. */
+  bar?: boolean;
 }) {
   const groups = navGroups(places);
-  return wide ? (
-    <Rail groups={groups} current={current} onSelect={onSelect} home={home} />
+  if (wide) return <Rail groups={groups} current={current} onSelect={onSelect} home={home} />;
+  return bar ? (
+    <Bar groups={groups} current={current} onSelect={onSelect} home={home} />
   ) : (
     <Dock groups={groups} current={current} onSelect={onSelect} openGroup={openGroup} home={home} />
   );
@@ -161,6 +167,51 @@ function Rail({
           </ul>
         </div>
       ))}
+    </nav>
+  );
+}
+
+/** The in-between width's bottom bar: every place in one row, Home first. Plain buttons, no sub-menus. */
+function Bar({
+  groups,
+  current,
+  onSelect,
+  home,
+}: {
+  groups: readonly NavGroup[];
+  current: string;
+  onSelect: (id: string) => void;
+  home: boolean;
+}) {
+  const entry = navHome();
+  return (
+    <nav class="main-nav dock bar" aria-label="Places">
+      <ul>
+        {home && (
+          <li class="nav-home">
+            <HomeNavButton
+              entry={entry}
+              current={current === entry.id}
+              onOpen={() => {
+                onSelect(entry.id);
+              }}
+              scale={2}
+            />
+          </li>
+        )}
+        {groups.flatMap((group) =>
+          group.places.map((place) => (
+            <li key={place.id}>
+              <PlaceButton
+                place={place}
+                active={place.id === current}
+                onSelect={onSelect}
+                flatIcon
+              />
+            </li>
+          )),
+        )}
+      </ul>
     </nav>
   );
 }
@@ -296,10 +347,13 @@ function HomeNavButton({
   entry,
   current,
   onOpen,
+  scale = 3,
 }: {
   entry: NavHome;
   current: boolean;
   onOpen: () => void;
+  /** The picture's size: 3 on the dock (the primary button), 2 in the bar (one place among the others). */
+  scale?: number;
 }) {
   return (
     <button
@@ -309,7 +363,7 @@ function HomeNavButton({
       data-place={entry.id}
       {...instantPress(onOpen)}
     >
-      <PlaceIcon glyph={entry.glyph} active scale={3} />
+      <PlaceIcon glyph={entry.glyph} active scale={scale} />
       <span class="nav-label">{entry.label}</span>
     </button>
   );

@@ -307,6 +307,25 @@ body:has(.main-nav.dock) {
   outline-color: var(--bone);
 }
 
+/*
+  The in-between width's bar (`BAR_QUERY` to `WIDE_QUERY`): the dock's bar with every place in a row, each the
+  same share of the width. Home is the gold one but sits flat in the row (no raise, no larger picture): with nine
+  places it is one of them, first. The words stay on one line; the breakpoint is where the longest fits.
+*/
+.main-nav.dock.bar > ul > li.nav-home {
+  flex-grow: 1;
+  margin-top: 0;
+}
+
+.main-nav.dock.bar button.nav-btn.home {
+  min-height: 3rem;
+  font-size: var(--fs-small);
+}
+
+.main-nav.dock.bar .nav-label {
+  white-space: nowrap;
+}
+
 /* The page makes room for the dock, so nothing at its end hides behind it. */
 main.card:has(.main-nav.dock) {
   padding-bottom: calc(1rem + var(--dock-h) + var(--dock-safe));
