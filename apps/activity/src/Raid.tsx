@@ -114,7 +114,7 @@ export function Raid({
 
   // The tab's pip follows the raid view on screen.
   useEffect(() => {
-    if (loaded !== null) onNeedsPlacementChange(needsPlacement(loaded.view));
+    if (loaded !== null) onNeedsPlacementChange(needsPlacement(loaded.view, creatures.length));
   }, [loaded?.view]);
 
   // When the next phase is due, ask again shortly after, so the results appear by themselves.
@@ -328,6 +328,7 @@ export function Raid({
         view={view}
         serverNow={serverNow}
         finale={finaleState}
+        owned={creatures.length}
         onAct={act}
         onReplay={(phase) => {
           if (party !== null) setReplay({ week: view.weekId, party: party.party, phase });
@@ -350,7 +351,6 @@ export function Raid({
           busy={busy}
           rosterNames={rosterNames}
           turnOrder={view.boss.turnOrder}
-          next={view.next}
           onIntent={runIntent}
           configure={configure}
           owned={creatures}

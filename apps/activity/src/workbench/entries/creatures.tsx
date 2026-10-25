@@ -170,6 +170,7 @@ const raidTimeline: Entry = {
       view={timelineView(p)}
       serverNow={SAMPLE_RAID.serverNow}
       finale="before"
+      owned={9}
       onAct={() => undefined}
       onReplay={() => undefined}
     />
