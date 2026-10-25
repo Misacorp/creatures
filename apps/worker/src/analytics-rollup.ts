@@ -490,6 +490,12 @@ function tallyEvent(tally: Tally, kind: string, p: Props): void {
     case 'post_result':
       tally.add('post.result', { result: str(p, 'result'), error: str(p, 'error', 'none') });
       break;
+    case 'dm_pref':
+      tally.add('dm.pref', { which: str(p, 'which'), on: flag(p, 'on') === 1 ? 'on' : 'off' });
+      break;
+    case 'dm_result':
+      tally.add('dm.result', { result: str(p, 'result'), error: str(p, 'error', 'none') });
+      break;
     default:
       break;
   }

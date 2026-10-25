@@ -430,6 +430,19 @@ export type AnalyticsEvent =
       attempts: number;
     }
   | {
+      /** A player turned one kind of Discord DM on or off (the kind only). */
+      kind: 'dm_pref';
+      which: 'trip' | 'job' | 'finale' | 'stall';
+      on: boolean;
+    }
+  | {
+      /** One delivery attempt of a Discord DM (a guild event: no player), like `post_result`. */
+      kind: 'dm_result';
+      result: 'sent' | 'retry' | 'failed' | 'blocked';
+      error: PostFailureKind | null;
+      attempts: number;
+    }
+  | {
       /** The valley's weather of a game day was drawn, a day ahead (a guild event: no player). */
       kind: 'weather_draw';
       boon: string;

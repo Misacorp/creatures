@@ -14,7 +14,13 @@ import type { EntryRow } from '../src/games-store';
 import { ON, player, type Dev } from './dev-helpers';
 import { SCHEMA_VERSION } from '../src/migrations';
 import { gamesMigration } from '../src/games-migration';
-import { runCore, undoGamesMigration, undoMaintenanceMigration, type CoreContext } from './helpers';
+import {
+  runCore,
+  undoGamesBadgesMigration,
+  undoGamesMigration,
+  undoMaintenanceMigration,
+  type CoreContext,
+} from './helpers';
 import { MINUTE, newKey } from './kit';
 import { count, nextGuild, rows } from './raid-helpers';
 
@@ -62,15 +68,15 @@ describe('migrations 39 and 40', () => {
   const has = (ctx: { sql: SqlStorage }, name: string): boolean =>
     count(ctx.sql, 'sqlite_master', `name = '${name}'`) > 0;
 
-  it('40 is the last version; an undo adds the Games tables and the badges again', async () => {
-    expect(SCHEMA_VERSION).toBe(40);
+  it('41 is the last version; an undo adds the Games tables and the badges again', async () => {
+    expect(SCHEMA_VERSION).toBe(41);
     await run(async (ctx) => {
       const p = await sixer(ctx);
       undoGamesMigration(ctx.sql);
       expect(has(ctx, 'games_days')).toBe(false);
       ctx.core.migrate();
       ctx.core.migrate();
-      expect(version(ctx)).toBe(40);
+      expect(version(ctx)).toBe(41);
       expect(has(ctx, 'games_days')).toBe(true);
       expect(has(ctx, 'games_badges')).toBe(true);
       expect((await p.call('GET', '/api/games')).status).toBe(200);
@@ -86,7 +92,7 @@ describe('migrations 39 and 40', () => {
       ctx.sql.exec('INSERT INTO schema_version (version) VALUES (38)');
       expect(has(ctx, 'maintenance')).toBe(false);
       ctx.core.migrate();
-      expect(version(ctx)).toBe(40);
+      expect(version(ctx)).toBe(41);
       expect(has(ctx, 'maintenance')).toBe(true);
       expect(has(ctx, 'games_days')).toBe(true);
       expect((await p.call('GET', '/api/games')).status).toBe(200);
@@ -134,8 +140,7 @@ describe('event badges', () => {
       // Not shown yet (a spoiler) and a bot's win: neither counts.
       placing('2027-01-03', 'melon-run', p.id, [b], 'gold');
       placing('2027-01-01', 'melon-run', 'dev-guest-1', ['dev-guest-1-c'], 'gold', 1);
-      ctx.sql.exec('DROP TABLE games_badges');
-      ctx.sql.exec('DELETE FROM schema_version WHERE version = 40');
+      undoGamesBadgesMigration(ctx.sql);
       ctx.core.migrate();
       const got = rows<{ creature_id: string; event_id: string; wins: number; user_id: string }>(
         ctx.sql,

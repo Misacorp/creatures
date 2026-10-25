@@ -38,7 +38,35 @@ import {
   recordOutcome,
   unpinAnnounceChannel,
   type PostSender,
+  type SendOutcome,
 } from './discord-posts';
+import {
+  DM_KINDS,
+  cachedChannel,
+  markBlocked,
+  nextDmDueAt,
+  pruneSent,
+  readPrefs,
+  scanDm,
+  setPrefs,
+  storeChannel,
+  welcomeText,
+  type DmChanges,
+} from './dm-notify';
+import { dmRoutes, type NotificationsView } from './dm-routes';
+import {
+  claimNextDm,
+  enqueueDm,
+  failDm,
+  hasDueDms,
+  nextDmAt,
+  pruneOutbox,
+  recordDmOutcome,
+  welcomedSince,
+  WELCOME_GAP_MS,
+  type ClaimedDm,
+} from './dm-queue';
+import type { DmSender } from './dm-send';
 import { dispatch, errorResponse, json, matchTemplate, notFound, type Routes } from './http';
 import type { LeetSource } from './leet';
 import {
@@ -126,6 +154,8 @@ const RAID_RETRY_MS = 60 * 1000;
 const POST_RETRY_MS = 60 * 1000;
 /** Most posts one delivery run sends, so a run always ends. */
 const MAX_POSTS_PER_RUN = 20;
+/** The same for DMs. */
+const MAX_DMS_PER_RUN = 20;
 /** How long a "may this player manage the server" answer from Discord is reused. */
 const MANAGE_CACHE_MS = 60 * 1000;
 /** Bound on remembered answers: one per player who asked. */
@@ -189,6 +219,7 @@ const routes: Routes<RequestContext> = {
   ...raidRoutes,
   ...weatherRoutes,
   ...gamesRoutes,
+  ...dmRoutes,
   ...liveRoutes,
   ...devRoutes,
   '/api/me': {
@@ -301,6 +332,11 @@ export interface GuildCoreOptions {
   /** Delivers Discord posts. Without one, posts stay queued and the alarm ignores them. */
   postSender?: PostSender | null;
   /**
+   * Opens DM channels and sends the opt-in DMs (see `dm-notify.ts`). Without one, players can still see
+   * their settings (marked unavailable) but nothing is queued, delivered or scheduled.
+   */
+  dmSender?: DmSender | null;
+  /**
    * Read-only guild lookups with the bot token, to check who may manage the server. Without one,
    * the check fails as "Discord unavailable" (fail closed).
    */
@@ -367,6 +403,7 @@ export class GuildCore {
   /** The daily Bait allowance, granted on a player's first authenticated request of a game day. */
   readonly allowance: DailyAllowance;
   private postsInFlight: Promise<void> | null = null;
+  private dmsInFlight: Promise<void> | null = null;
   private loungeInFlight: Promise<void> | null = null;
   /** The last analytics prune left old rows behind: the alarm comes back soon to continue. */
   private pruneBacklog = false;
@@ -517,7 +554,9 @@ export class GuildCore {
               this.weather.ensure();
               this.catchUpRaid();
               this.catchUpGames();
+              this.scanDmDue();
               this.kickPosts();
+              this.kickDms();
               await this.rearmAlarm(this.now() + ALARM_REARM_SKEW_MS);
             },
             // Rolls up the finished game days not rolled yet, then today so far.
@@ -1007,6 +1046,14 @@ export class GuildCore {
       if (postAt !== null)
         candidates.push(postAt > this.now() ? postAt : this.now() + POST_RETRY_MS);
     }
+    if (this.options.dmSender != null) {
+      // Opted-in players' next trip end, job end, finale ping or stall opening.
+      const dueAt = nextDmDueAt(this.sql, this.now(), this.timezone());
+      if (dueAt !== null) candidates.push(dueAt);
+      // A DM that is still due keeps failing to go out: look again later, not in a loop.
+      const dmAt = nextDmAt(this.sql);
+      if (dmAt !== null) candidates.push(dmAt > this.now() ? dmAt : this.now() + POST_RETRY_MS);
+    }
     if (this.pruneBacklog) candidates.push(this.now() + POST_RETRY_MS);
     if (this.options.lounge != null) {
       // The lounge keeps real time; like the rollup it is put on the game clock here.
@@ -1113,6 +1160,152 @@ export class GuildCore {
   private kickPosts(): void {
     if (this.options.postSender == null || !hasDuePosts(this.sql, this.now())) return;
     void this.deliverPosts();
+  }
+
+  // --- Discord DMs (see `dm-notify.ts`) ---
+
+  /** A player's DM settings, and whether this server can send DMs at all. */
+  dmView(userId: string): NotificationsView {
+    return { ...readPrefs(this.sql, userId), available: this.options.dmSender != null };
+  }
+
+  /**
+   * Turns kinds of DM on or off for a player and clears any block (flipping a setting is how a blocked
+   * player tries again). Turning on the first kind queues a welcome DM, which also shows whether DMs
+   * reach them; so does trying again after a block. The welcome is sent at most once an hour per player.
+   */
+  async setDmPrefs(userId: string, changes: DmChanges): Promise<NotificationsView> {
+    const now = this.now();
+    const canSend = this.options.dmSender != null;
+    const { before, after } = this.storage.transactionSync(() => {
+      const result = setPrefs(this.sql, userId, changes, now);
+      const wasOn = DM_KINDS.some((k) => result.before.kinds[k]);
+      const isOn = DM_KINDS.some((k) => result.after.kinds[k]);
+      const retry = result.before.blocked && isOn;
+      if (
+        canSend &&
+        isOn &&
+        (retry || (!wasOn && !welcomedSince(this.sql, userId, now - WELCOME_GAP_MS)))
+      ) {
+        enqueueDm(
+          this.sql,
+          {
+            key: `welcome:${userId}:${String(now)}`,
+            userId,
+            content: welcomeText(result.after.kinds),
+          },
+          now,
+        );
+      }
+      return result;
+    });
+    for (const kind of DM_KINDS) {
+      const wanted = changes[kind];
+      if (wanted !== undefined && wanted !== before.kinds[kind]) {
+        this.analytics.record({ kind: 'dm_pref', which: kind, on: wanted }, userId);
+      }
+    }
+    // The new setting may be due sooner than the alarm: re-arm, and send the welcome.
+    await this.ensureAlarm();
+    return { ...after, available: canSend };
+  }
+
+  /** Finds the DMs that came due and queues them. Never throws: a failed scan is tried again at the next one. */
+  private scanDmDue(): void {
+    if (this.options.dmSender == null) return;
+    try {
+      this.storage.transactionSync(() =>
+        scanDm(this.sql, {
+          now: this.now(),
+          tz: this.timezone(),
+          realAt: (gameMs) => this.realAt(gameMs),
+        }),
+      );
+    } catch (err) {
+      console.error('dm scan failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /**
+   * Delivers due DMs, oldest first. Concurrent calls share one run. Never throws. Like the posts, the
+   * network calls happen outside any transaction and a 429 ends the run.
+   */
+  deliverDms(): Promise<void> {
+    if (this.dmsInFlight !== null) return this.dmsInFlight;
+    const run = this.runDmDelivery().finally(() => {
+      this.dmsInFlight = null;
+    });
+    this.dmsInFlight = run;
+    return run;
+  }
+
+  private async runDmDelivery(): Promise<void> {
+    const sender = this.options.dmSender;
+    if (sender == null) return;
+    try {
+      for (let i = 0; i < MAX_DMS_PER_RUN; i++) {
+        const dm = this.storage.transactionSync(() => claimNextDm(this.sql, this.now()));
+        if (dm === null) return;
+        // Discord refused this player already (an earlier message of this run): do not ask again.
+        if (readPrefs(this.sql, dm.userId).blocked) {
+          this.storage.transactionSync(() => {
+            failDm(this.sql, dm);
+          });
+          continue;
+        }
+        let outcome;
+        try {
+          outcome = await this.sendDm(sender, dm);
+        } catch {
+          outcome = { kind: 'retry', error: 'network', afterMs: null } as const;
+        }
+        const failure = this.storage.transactionSync(() => {
+          if (outcome.kind === 'blocked') markBlocked(this.sql, dm.userId, this.now());
+          return recordDmOutcome(this.sql, dm, outcome, this.now(), this.analytics);
+        });
+        if (failure !== null) console.error('discord dm failed', failure);
+        if (failure === 'rate_limited') return;
+      }
+    } catch (err) {
+      console.error('discord dm delivery failed', err instanceof Error ? err.name : 'unknown');
+    }
+  }
+
+  /**
+   * One attempt to deliver a DM: through the cached DM channel, or a freshly opened one. A channel that
+   * Discord no longer knows (404) is forgotten and opened again once. A refusal of DMs (403) is `blocked`.
+   */
+  private async sendDm(
+    sender: DmSender,
+    dm: ClaimedDm,
+  ): Promise<SendOutcome | { kind: 'blocked' }> {
+    let channel = cachedChannel(this.sql, dm.userId);
+    let reopened = false;
+    for (;;) {
+      if (channel === null) {
+        const opened = await sender.openChannel(dm.userId);
+        if (opened.kind === 'failed' && opened.error === 'forbidden') return { kind: 'blocked' };
+        if (opened.kind !== 'ok') return opened;
+        channel = opened.channelId;
+        reopened = true;
+        storeChannel(this.sql, dm.userId, channel);
+      }
+      const sent = await sender.send(channel, dm.content);
+      if (sent.kind === 'failed' && sent.error === 'forbidden') return { kind: 'blocked' };
+      if (sent.kind === 'failed' && sent.error === 'not_found' && !reopened) {
+        storeChannel(this.sql, dm.userId, null);
+        channel = null;
+        reopened = true;
+        continue;
+      }
+      return sent;
+    }
+  }
+
+  /** Starts DM delivery in the background when one is due; the caller does not wait for it. */
+  private kickDms(): void {
+    if (this.options.dmSender == null || !hasDueDms(this.sql, this.now())) return;
+    void this.deliverDms();
   }
 
   // --- The lounge message ---
@@ -1317,7 +1510,9 @@ export class GuildCore {
     this.weather.ensure();
     this.catchUpRaid();
     this.catchUpGames();
+    this.scanDmDue();
     this.kickPosts();
+    this.kickDms();
     this.kickLounge();
     const at = this.desiredAlarmAt(this.now());
     if (at === null) return;
@@ -1359,7 +1554,9 @@ export class GuildCore {
     this.tickFinale();
     // The Games' lock and awards, before the posts go out (the award queues the podium post).
     this.catchUpGames();
+    this.scanDmDue();
     await this.deliverPosts();
+    await this.deliverDms();
     await this.runLounge();
     this.rollup.runDue();
     this.maintain();
@@ -1376,6 +1573,8 @@ export class GuildCore {
     if (maintainedDay(this.sql) === day && !this.pruneBacklog) return;
     this.pruneBacklog = this.analytics.prune();
     this.gear.prune();
+    pruneSent(this.sql, this.now());
+    pruneOutbox(this.sql, this.now());
     this.dungeon.closeStale();
     this.dungeon.prune();
     if (!this.pruneBacklog) markMaintained(this.sql, day);
