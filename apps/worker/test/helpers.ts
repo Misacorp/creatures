@@ -315,8 +315,20 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 44 (the history indexes): the indexes go. */
+export function undoHistoryIndexMigration(sql: SqlStorage): void {
+  for (const index of [
+    'expeditions_user_claimed',
+    'expeditions_user_cancelled',
+    'gear_items_user_worn',
+  ])
+    sql.exec(`DROP INDEX IF EXISTS ${index}`);
+  sql.exec('DELETE FROM schema_version WHERE version = 44');
+}
+
 /** Puts a database back to before migration 43 (rows read per day): the table goes. */
 export function undoDbReadsMigration(sql: SqlStorage): void {
+  undoHistoryIndexMigration(sql);
   sql.exec('DROP TABLE IF EXISTS db_reads');
   sql.exec('DELETE FROM schema_version WHERE version = 43');
 }

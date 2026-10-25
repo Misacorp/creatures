@@ -6,6 +6,7 @@ import { analyticsRollupMigration } from './analytics-rollup';
 import { creatureQuirkMigration } from './creature-quirk-migration';
 import { creaturesAMigration } from './creatures-a-migration';
 import { creaturesBMigration } from './creatures-b-migration';
+import { historyIndexMigration } from './history-index-migration';
 import { gamesIndexMigration } from './games-index-migration';
 import { dmNotifyMigration } from './dm-migration';
 import { dungeonDraftMigration } from './dungeon-draft-migration';
@@ -300,6 +301,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   gamesIndexMigration,
   // Version 43: rows read per game day and source (see read-meter.ts).
   dbReadsMigration,
+  // Version 44: indexes for a player's recent trips and worn gear (see history-index-migration.ts).
+  historyIndexMigration,
 ];
 
 /** The schema version of a fresh database. */

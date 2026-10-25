@@ -263,7 +263,6 @@ const coreOptions = (build?: string): GuildCoreOptions => ({
   quirkRng: createSeededRng('f'),
   gamesRng: createSeededRng('g'),
   weatherRng: createSeededRng('h'),
-  loungerRng: createSeededRng('i'),
   rng: createSeededRng('j'),
   // As in production: weather, the allowance, DMs and posts are on; there is no lounge.
   weather: true,
@@ -286,10 +285,10 @@ const BUDGET = {
   start: 70, // measured 45 (43 of them: `MAX(version)` reads every row of schema_version, one per migration)
   alarm: 30, // measured 19
   '/api/me': 40, // measured 25
-  '/api/state': 950, // measured 610
+  '/api/state': 700, // measured 465 (610 before migration 44's trip indexes)
   '/api/room': 50, // measured 33
-  '/api/games': 400, // measured 253
-  '/api/raid': 5000, // measured 3268 (every party member's creatures, talents and gear: it scales with the roster)
+  '/api/games': 350, // measured 222
+  '/api/raid': 4200, // measured 2773 (every party member's creatures, talents and gear: it scales with the roster)
   '/api/dungeon/today': 120, // measured 78
 } as const;
 
@@ -412,7 +411,8 @@ describe('read budget', () => {
       ).toBeLessThanOrEqual(GROWTH_ROWS);
     };
     grown('alarm', first.alarm, second.alarm);
-    grown('/api/me', first.paths['/api/me'] as ReadReport, second.paths['/api/me'] as ReadReport);
+    for (const path of ['/api/me', '/api/state', '/api/raid'])
+      grown(path, first.paths[path] as ReadReport, second.paths[path] as ReadReport);
   });
 });
 
