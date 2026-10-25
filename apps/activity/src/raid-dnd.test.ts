@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveDrop, roomHint, roomText, slotStatuses } from './raid-dnd';
+import { resolveDrop, slotStatuses } from './raid-dnd';
 import { CANCEL_ANNOUNCEMENT } from './slot-outcome';
 import type { RowSlotView } from './raid-api';
 import type { TapContext } from './raid-slots';
@@ -12,8 +12,6 @@ const mine = (id: string, name: string): NonNullable<RowSlotView['creature']> =>
   name,
   level: 3,
   mine: true,
-  auto: false,
-  movable: false,
   creatureId: id,
 });
 const row: RowSlotView[] = [
@@ -28,8 +26,6 @@ const row: RowSlotView[] = [
       name: 'Jay',
       level: 4,
       mine: false,
-      auto: false,
-      movable: false,
     },
   },
   { slot: 3, zone: 'middle', creature: mine('b', 'Beta') },
@@ -109,57 +105,6 @@ describe('resolveDrop elsewhere', () => {
   });
 });
 
-describe('soft auto tiles', () => {
-  const auto = (id: string | undefined, name: string): NonNullable<RowSlotView['creature']> => ({
-    ownerName: 'Jun',
-    species: 'cindle',
-    name,
-    level: 4,
-    mine: false,
-    auto: true,
-    movable: false,
-    ...(id === undefined ? {} : { creatureId: id }),
-  });
-  const softRow: RowSlotView[] = [
-    { slot: 0, zone: 'front', creature: mine('a', 'Alpha') },
-    { slot: 1, zone: 'middle', creature: auto(undefined, 'Cinder') },
-    { slot: 2, zone: 'middle', creature: { ...auto(undefined, 'Jay'), auto: false } },
-    { slot: 3, zone: 'back', creature: null },
-  ];
-  const softCtx: TapContext = { locked: false, row: softRow };
-
-  it('lets your creature take another player’s auto tile, and says it makes room', () => {
-    expect(resolveDrop(softCtx, 'a', 'Alpha', slot(1))).toEqual({
-      status: 'valid',
-      intent: { type: 'place', creatureId: 'a', slot: 1 },
-      hint: null,
-      announce: 'Moved Alpha to Middle, lane 1. Cinder makes room.',
-    });
-  });
-
-  it('keeps a placed creature hard', () => {
-    expect(resolveDrop(softCtx, 'a', 'Alpha', slot(2))).toMatchObject({
-      status: 'invalid',
-      intent: null,
-      hint: 'That slot belongs to Jun.',
-    });
-  });
-
-  it('hints "<creature> makes room" only while carried over another player’s auto tile', () => {
-    expect(roomHint(softCtx, 'a', 1)).toBe(roomText('Cinder'));
-    expect(roomHint(softCtx, 'a', 1)).toBe('Cinder makes room.');
-    expect(roomHint(softCtx, 'a', 2)).toBeNull();
-    expect(roomHint(softCtx, 'a', 3)).toBeNull();
-    expect(roomHint(softCtx, 'a', 0)).toBeNull();
-    expect(roomHint({ ...softCtx, locked: true }, 'a', 1)).toBeNull();
-    // Over your own auto tile it is a swap, not "makes room".
-    const own = softRow.map((s) =>
-      s.slot === 1 ? { ...s, creature: { ...mine('m', 'Mine'), auto: true } } : s,
-    );
-    expect(roomHint({ locked: false, row: own }, 'a', 1)).toBeNull();
-  });
-});
-
 describe('slotStatuses', () => {
   it('marks every slot valid, invalid or none for a dragged creature', () => {
     const map = slotStatuses(ctx, 'a', 'Alpha');
@@ -169,72 +114,6 @@ describe('slotStatuses', () => {
       [2, 'invalid'],
       [3, 'valid'],
       [4, 'valid'],
-    ]);
-  });
-});
-
-describe('resolveDrop with an away teammate’s creatures', () => {
-  const jun = (
-    id: string | undefined,
-    movable: boolean,
-    name: string,
-  ): NonNullable<RowSlotView['creature']> => ({
-    ownerName: 'Jun',
-    species: 'cindle',
-    name,
-    level: 4,
-    mine: false,
-    // Only a creature that joins by itself can be moved for an away player; the rest were placed.
-    auto: movable,
-    movable,
-    ...(id === undefined ? {} : { creatureId: id }),
-  });
-  const awayRow: RowSlotView[] = [
-    { slot: 0, zone: 'front', creature: jun('j1', true, 'J1') },
-    { slot: 1, zone: 'middle', creature: null },
-    { slot: 2, zone: 'middle', creature: jun('j2', true, 'J2') },
-    { slot: 3, zone: 'middle', creature: jun(undefined, false, 'Own') },
-    { slot: 4, zone: 'back', creature: mine('a', 'Alpha') },
-  ];
-  const awayCtx: TapContext = { locked: false, row: awayRow };
-
-  it('moves a movable creature to an empty slot and swaps it with another of the same teammate’s', () => {
-    expect(resolveDrop(awayCtx, 'j1', 'J1', slot(1))).toMatchObject({
-      status: 'valid',
-      intent: { type: 'place', creatureId: 'j1', slot: 1 },
-    });
-    expect(resolveDrop(awayCtx, 'j1', 'J1', slot(2))).toMatchObject({
-      status: 'valid',
-      intent: { type: 'place', creatureId: 'j1', slot: 2 },
-      announce: 'Swapped J1 with J2.',
-    });
-  });
-
-  it('refuses a creature the teammate placed themselves, and your own tile', () => {
-    expect(resolveDrop(awayCtx, 'j1', 'J1', slot(3))).toMatchObject({
-      status: 'invalid',
-      intent: null,
-    });
-    expect(resolveDrop(awayCtx, 'j1', 'J1', slot(4))).toMatchObject({
-      status: 'invalid',
-      intent: null,
-    });
-    // And yours cannot be dropped on a creature Jun placed.
-    expect(resolveDrop(awayCtx, 'a', 'Alpha', slot(3))).toMatchObject({
-      status: 'invalid',
-      intent: null,
-      hint: 'That slot belongs to Jun.',
-    });
-  });
-
-  it('marks every slot for the carried creature', () => {
-    const statuses = slotStatuses(awayCtx, 'j1', 'J1');
-    expect([...statuses]).toEqual([
-      [0, 'none'],
-      [1, 'valid'],
-      [2, 'valid'],
-      [3, 'invalid'],
-      [4, 'invalid'],
     ]);
   });
 });

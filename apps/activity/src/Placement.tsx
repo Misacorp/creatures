@@ -7,11 +7,10 @@ import { creatureInfoOf } from './creature-info';
 import { creatureName } from './game';
 import { GlossaryTag } from './Glossary';
 import { usePopoverHost } from './PopoverHost';
-import { resolveDrop, roomHint, slotStatuses } from './raid-dnd';
+import { resolveDrop, slotStatuses } from './raid-dnd';
 import type { RaidView } from './raid-api';
 import {
   ROW_NAMES,
-  awayNotes,
   boardCreatureInfo,
   boardCues,
   boardKeyTarget,
@@ -23,7 +22,6 @@ import type { Intent } from './raid-slots';
 import {
   SHOW_PICKER_EFFECTS,
   MAX_ON_BOARD,
-  awayPickerOptions,
   boardTotalLine,
   pickerOptions,
   pickerTitle,
@@ -54,8 +52,6 @@ interface Props {
   rosterNames: readonly string[];
   /** How the boss's turn order reads (`left_to_right`, `right_to_left`, `speed` or `serpentine`): the order reactions are set off in. */
   turnOrder: string;
-  /** The week's next event: when the creatures still missing from the board join by themselves. */
-  next: RaidView['next'];
   /** What a move comes to: the screen sends it to the server, which decides. */
   onIntent: (intent: Intent) => void;
   /**
@@ -83,11 +79,11 @@ const LOCKED_PARTS: ConfiguratorParts = {
 
 /**
  * The Raid Roster: the party board, where the player places up to three creatures beside everyone
- * else's. Tapping an empty slot (or pressing Enter on it) opens the creature picker; tapping a
+ * else's. Placing the first one joins them to the week's raid; they bring exactly what they place.
+ * Tapping an empty slot (or pressing Enter on it) opens the creature picker; tapping a
  * creature opens its popover (yours, with `configure`, shows its configurator under the board instead:
  * gear, talents, its page and Remove from board); your own creatures are dragged to move
- * them (a finger needs a short press and hold, so a swipe still scrolls the board). When the board
- * locks, the player's strongest creatures fill the places still empty, by the server.
+ * them (a finger needs a short press and hold, so a swipe still scrolls the board).
  */
 export function Placement(props: Props) {
   const { party, canEdit, busy, rosterNames } = props;
@@ -97,8 +93,6 @@ export function Placement(props: Props) {
   const [hovered, setHovered] = useState<number | null>(null);
   /** The empty slot the picker is open for. */
   const [picking, setPicking] = useState<number | null>(null);
-  /** The tile of an away teammate's creature the swap picker is open for. */
-  const [swapping, setSwapping] = useState<number | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [announcement, announce] = useState('');
   /** Your creature whose configurator is shown under the board. */
@@ -110,17 +104,14 @@ export function Placement(props: Props) {
   const bySlot = new Map(party.row.map((slot) => [slot.slot, slot]));
   const ctx = { locked: !canEdit, row: party.row };
   const placed = placedCount(party.row);
-  const note = rosterNote(placed, props.next, canEdit);
+  const note = rosterNote(placed, canEdit);
 
   const nameOf = (creatureId: string): string =>
     party.row.find((s) => s.creature?.creatureId === creatureId)?.creature?.name ?? 'Creature';
 
   // The picker closes by itself when the board locks under it.
   useEffect(() => {
-    if (!canEdit) {
-      setPicking(null);
-      setSwapping(null);
-    }
+    if (!canEdit) setPicking(null);
   }, [canEdit]);
 
   // After a pick or a remove the tiles are off while the request runs; focus goes back to the slot.
@@ -158,10 +149,6 @@ export function Placement(props: Props) {
     if (dragging !== null) popovers?.close();
   }, [dragging === null]);
 
-  // Over an auto tile of someone else: it will make room (it moves to a free place).
-  const overSlot = drag?.over?.slot;
-  const overHint =
-    dragging === null || overSlot === undefined ? null : roomHint(ctx, dragging, overSlot);
   const statuses = dragging === null ? null : slotStatuses(ctx, dragging, nameOf(dragging));
   const dragged =
     dragging === null
@@ -225,7 +212,7 @@ export function Placement(props: Props) {
     }
     const id = occupant.creatureId;
     // Yours, with the configurator: a tap shows it under the board (another tap hides it), no popover.
-    if (props.configure !== undefined && occupant.mine && !occupant.auto && id !== undefined) {
+    if (props.configure !== undefined && occupant.mine && id !== undefined) {
       setHint(null);
       setSelected(selected === id ? null : id);
       return;
@@ -235,41 +222,6 @@ export function Placement(props: Props) {
     const line = boardCues({ ...cueArgs, carried: null, pointer: null, inspected: slot }).effect;
     const shown = line === null ? info : { ...info, effect: line };
     const key = `raid-slot:${String(slot)}`;
-    if (occupant.mine && occupant.auto && id !== undefined) {
-      // Joins by itself: tapping it makes the place a real placement, so it stays where it is.
-      const own = {
-        ...creatureInfoOf(shown),
-        ...(shown.effect === undefined ? {} : { effect: shown.effect }),
-      };
-      popovers.openCreature(
-        key,
-        own,
-        button,
-        canEdit
-          ? {
-              label: 'Place here',
-              onAct: () => {
-                refocus.current = slot;
-                setHint(null);
-                announce(`${occupant.name} placed in ${placeText(slot, party.rowLength)}.`);
-                props.onIntent({ type: 'place', creatureId: id, slot });
-              },
-            }
-          : undefined,
-      );
-      return;
-    }
-    if (occupant.movable && canEdit && id !== undefined) {
-      // An away teammate's: it can be dragged, or swapped for another creature they own.
-      popovers.openCreature(key, shown, button, {
-        label: 'Swap for another',
-        onAct: () => {
-          setHint(null);
-          setSwapping(slot);
-        },
-      });
-      return;
-    }
     if (occupant.mine && id !== undefined) {
       // Your own: no owner line, and a way off the board while that is still allowed.
       const own = {
@@ -310,33 +262,17 @@ export function Placement(props: Props) {
     props.onIntent({ type: 'place', creatureId, slot });
   }
 
-  const swapTile = swapping === null ? undefined : bySlot.get(swapping)?.creature;
-  const swapOwner =
-    swapTile === undefined || swapTile === null
-      ? undefined
-      : party.away.find((a) => a.ownerName === swapTile.ownerName);
-  const notes = awayNotes(party.away, party.row);
   // The selected creature, while it is still one of yours on the board.
   const shown =
     selectedSlot === undefined ? undefined : props.owned?.find((c) => c.id === selected);
-
-  function swap(creatureId: string): void {
-    if (swapping === null) return;
-    const slot = swapping;
-    const chosen = swapOwner?.creatures.find((c) => c.creatureId === creatureId);
-    refocus.current = slot;
-    setSwapping(null);
-    setHint(null);
-    announce(`${chosen?.name ?? 'Creature'} swapped in at ${placeText(slot, party.rowLength)}.`);
-    props.onIntent({ type: 'place', creatureId, slot });
-  }
 
   return (
     <div id="raid-placement" onKeyDown={onKeyDown}>
       <section class="raid-section placement pix-panel" aria-labelledby="raid-place-heading">
         <h3 id="raid-place-heading">Raid Roster</h3>
         <p class="muted small roster-help prose">
-          Pick your creatures and place them on the board alongside everyone else.
+          Place up to three creatures on the board beside everyone else's. Placing your first one
+          joins you to this week's raid, and you bring only what you place.
           {props.turnOrder === 'serpentine' &&
             ' The board shows the order of round 1; the rows flip direction each round.'}
         </p>
@@ -401,21 +337,11 @@ export function Placement(props: Props) {
             ]}
           />
         )}
-        {(overHint ?? hint) !== null && (
+        {hint !== null && (
           <p class="muted" role="status">
-            {overHint ?? hint}
+            {hint}
           </p>
         )}
-        {notes.away.map((line) => (
-          <p key={line} class="muted small roster-away">
-            {line}
-          </p>
-        ))}
-        {notes.moved.map((line) => (
-          <p key={line} class="muted small roster-moved">
-            {line}
-          </p>
-        ))}
         {party.guests && (
           <p class="muted roster-note">
             Guest creatures fill the row while fewer than 3 players are in.
@@ -425,23 +351,6 @@ export function Placement(props: Props) {
 
       <LiveRegion>{announcement}</LiveRegion>
       <DragGhost ghostRef={dragDrop.ghostRef} creature={dragged ?? undefined} />
-      {swapping !== null && swapOwner !== undefined && swapTile != null && (
-        <RosterPicker
-          title={`Swap ${swapTile.name} for another of ${swapOwner.ownerName}'s`}
-          status={`${swapOwner.ownerName} is away`}
-          options={awayPickerOptions(swapOwner.creatures)}
-          showEffects={false}
-          placedNote=""
-          anchor={() =>
-            stripRef.current?.querySelector<HTMLElement>(`[data-slot="${String(swapping)}"]`) ??
-            null
-          }
-          onPick={swap}
-          onClose={() => {
-            setSwapping(null);
-          }}
-        />
-      )}
       {picking !== null && (
         <RosterPicker
           title={pickerTitle(placeText(picking, party.rowLength))}

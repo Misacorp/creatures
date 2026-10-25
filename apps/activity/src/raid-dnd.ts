@@ -1,10 +1,10 @@
 /**
  * Drag-and-drop rules for the party row. Pure: given what the player dragged (one of their own
- * creatures on the board, or one of an away teammate's that the view marks movable) and where they let go, say what to do. The server still validates every
+ * creatures on the board) and where they let go, say what to do. The server still validates every
  * move. A creature that is not on the board yet is placed through the picker (`roster-picker.ts`),
  * never by a drag.
  */
-import { canDropOn, makesRoom, placeText } from './raid-board';
+import { canDropOn, placeText } from './raid-board';
 import { slotOfCreature, type Intent, type TapContext } from './raid-slots';
 import {
   CANCEL_ANNOUNCEMENT,
@@ -46,36 +46,16 @@ export function resolveDrop(
   }
   if (target.slot === from) return outcome('none', null, null, `${name} stays where it is.`);
   const occupant = there.creature;
-  const carried = ctx.row.find((s) => s.slot === from)?.creature ?? undefined;
-  if (occupant !== null && carried !== undefined && !canDropOn(carried, occupant)) {
-    const hint = occupant.mine
-      ? 'That one is not yours to move.'
-      : `That slot belongs to ${occupant.ownerName}.`;
+  if (occupant !== null && !canDropOn(occupant)) {
+    const hint = `That slot belongs to ${occupant.ownerName}.`;
     return outcome('invalid', null, hint, hint);
   }
   const intent: Intent = { type: 'place', creatureId, slot: target.slot };
   const text =
     occupant === null
       ? `Moved ${name} to ${placeText(target.slot, ctx.row.length)}.`
-      : makesRoom(carried, occupant)
-        ? `Moved ${name} to ${placeText(target.slot, ctx.row.length)}. ${roomText(occupant.name)}`
-        : `Swapped ${name} with ${occupant.name}.`;
+      : `Swapped ${name} with ${occupant.name}.`;
   return outcome('valid', intent, null, text);
-}
-
-/** What a creature that joins by itself says when another takes its place. */
-export const roomText = (name: string): string => `${name} makes room.`;
-
-/**
- * The hint while a creature is carried over a tile: "<creature> makes room." over another player's
- * auto tile, null over anything else. Text only; the name is the creature's own.
- */
-export function roomHint(ctx: TapContext, creatureId: string, slot: number): string | null {
-  const from = slotOfCreature(ctx.row, creatureId);
-  const carried = ctx.row.find((s) => s.slot === from)?.creature ?? undefined;
-  const occupant = ctx.row.find((s) => s.slot === slot)?.creature ?? null;
-  if (ctx.locked || carried === undefined || occupant === null || from === slot) return null;
-  return makesRoom(carried, occupant) ? roomText(occupant.name) : null;
 }
 
 /** The drop status of every slot for a creature being dragged, keyed by slot number. */

@@ -6,9 +6,7 @@ import {
   MAX_ON_BOARD,
   ON_BOARD_NOTE,
   SHOW_PICKER_EFFECTS,
-  ALREADY_JOINING,
   allPlaced,
-  awayPickerOptions,
   boardTotalLine,
   effectPreview,
   pickerOptions,
@@ -25,8 +23,6 @@ const mine = (id: string, species: string, level = 5): NonNullable<RowSlotView['
   name: species,
   level,
   mine: true,
-  auto: false,
-  movable: false,
   creatureId: id,
 });
 const theirs = (species: string): NonNullable<RowSlotView['creature']> => ({
@@ -35,8 +31,6 @@ const theirs = (species: string): NonNullable<RowSlotView['creature']> => ({
   name: species,
   level: 5,
   mine: false,
-  auto: false,
-  movable: false,
 });
 
 /** A row of nine slots (three players): Front 0-2, Middle 3-5, Back 6-8, with `at` filled in. */
@@ -64,27 +58,25 @@ describe('the count and the line under the heading', () => {
     expect(placedCount(rowOf({ 0: mine('a', 'splashet'), 1: theirs('cindle') }))).toBe(1);
   });
 
-  it('says how many are placed, and when the rest join in a note', () => {
+  it('says how many are placed, that placing joins the raid and that only what is placed fights', () => {
     expect(placedLine(1)).toBe('1 / 3 placed');
-    expect(rosterNote(1, { event: 'phase1' }, true)).toBe(
-      'The rest join automatically when Phase 1 locks.',
-    );
-    expect(rosterNote(0, { event: 'phase2' }, true)).toContain('Phase 2 locks');
-    expect(rosterNote(2, { event: 'finale' }, true)).toContain('when Finale locks');
-    expect(rosterNote(2, null, true)).toContain('when the board locks');
-    expect(rosterNote(2, { event: 'weekStart' }, true)).toContain('when the board locks');
+    // Nothing is placed for the player: the first placement joins, the rest are up to them.
+    expect(rosterNote(0, true)).toBe("Place a creature to join this week's raid.");
+    expect(rosterNote(1, true)).toBe('You bring only what you place.');
+    expect(rosterNote(2, true)).toBe('You bring only what you place.');
+    expect(rosterNote(1, true)).not.toMatch(/automatic|for you|by themselves/i);
   });
 
   it('drops the note once all three are placed, and says so with a check', () => {
     expect(allPlaced(3)).toBe(true);
     expect(allPlaced(2)).toBe(false);
     expect(placedLine(3)).toBe('3 / 3 placed');
-    expect(rosterNote(3, { event: 'phase1' }, true)).toBeNull();
-    expect(rosterNote(3, { event: 'phase1' }, false)).toBe('The board is locked.');
+    expect(rosterNote(3, true)).toBeNull();
+    expect(rosterNote(3, false)).toBe('The board is locked.');
   });
 
   it('says the board is locked once it is, and counts with a slash and spaces', () => {
-    expect(rosterNote(2, null, false)).toBe('The board is locked.');
+    expect(rosterNote(2, false)).toBe('The board is locked.');
     expect(placedLine(0)).not.toContain(' of ');
   });
 
@@ -230,16 +222,16 @@ describe('the effect preview', () => {
   });
 });
 
-describe('auto tiles and the swap picker', () => {
-  it('does not count a creature that joins by itself as placed, or as on the board', () => {
-    const auto = { ...mine('a', 'splashet'), auto: true };
-    const row = rowOf({ 0: auto, 1: mine('b', 'cindle') });
-    expect(placedCount(row)).toBe(1);
-    // It still counts among the filled team slots.
-    expect(boardTotalLine(row, 9)).toBe('2 / 9 team slots filled');
+describe('the picker and the board count', () => {
+  it('counts only your own placed creatures, and marks them on the board in the picker', () => {
+    const row = rowOf({ 0: mine('a', 'splashet'), 1: mine('b', 'cindle'), 2: theirs('sproutle') });
+    expect(placedCount(row)).toBe(2);
+    // Someone else's creature still counts among the filled team slots.
+    expect(boardTotalLine(row, 9)).toBe('3 / 9 team slots filled');
     const creatures: PickerCreature[] = [
       { id: 'a', species: 'splashet', nickname: null, level: 5, power: 10, caughtAt: 1 },
       { id: 'b', species: 'cindle', nickname: null, level: 5, power: 11, caughtAt: 2 },
+      { id: 'c', species: 'ashmole', nickname: null, level: 5, power: 12, caughtAt: 3 },
     ];
     const options = pickerOptions({
       creatures,
@@ -249,19 +241,8 @@ describe('auto tiles and the swap picker', () => {
       turnOrder: 'left_to_right',
       showEffects: false,
     });
-    expect(options.find((o) => o.id === 'a')?.onBoard).toBe(false);
+    expect(options.find((o) => o.id === 'a')?.onBoard).toBe(true);
     expect(options.find((o) => o.id === 'b')?.onBoard).toBe(true);
-  });
-
-  it('lists an away teammate’s creatures: the ones not in the fight first, the joining ones disabled', () => {
-    const options = awayPickerOptions([
-      { creatureId: 'j1', species: 'cindle', name: 'Ash', level: 9, joining: true },
-      { creatureId: 'j2', species: 'splashet', name: 'Bub', level: 3, joining: false },
-      { creatureId: 'j3', species: 'sproutle', name: 'Cob', level: 7, joining: false },
-    ]);
-    expect(options.map((o) => o.id)).toEqual(['j3', 'j2', 'j1']);
-    expect(options.map((o) => o.disabled)).toEqual([null, null, ALREADY_JOINING]);
-    expect(options.every((o) => o.effect === null && !o.recommended && !o.onBoard)).toBe(true);
-    expect(options[0]).toMatchObject({ name: 'Cob', element: expect.any(String) as string });
+    expect(options.find((o) => o.id === 'c')?.onBoard).toBe(false);
   });
 });

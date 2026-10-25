@@ -56,10 +56,8 @@
   ],
   "you": {
     "inRoster": true,
-    "optOut": false,
     "party": 1,
     "canEdit": true,
-    "canOptOut": false,
     "ability": {
       "abilityId": "shield-wall",
       "chosen": true
@@ -104,28 +102,27 @@
     ],
     "reveal": null,
     "team": {
-      "mode": "auto",
       "creatures": [
         {
           "creatureId": "079f27ab-8884-48a5-896c-b642fb211659",
           "species": "stormray",
           "name": "Stormray",
           "level": 10,
-          "slot": null
+          "slot": 0
         },
         {
           "creatureId": "4a1780bc-8c3e-4476-91cf-1fcd97cbf66c",
           "species": "cindle",
           "name": "Cindle",
           "level": 10,
-          "slot": null
+          "slot": 1
         },
         {
           "creatureId": "de06bb8a-109c-439a-bb7c-ab4040339ddb",
           "species": "zipmouse",
           "name": "Zipmouse",
           "level": 10,
-          "slot": null
+          "slot": 2
         }
       ]
     }
@@ -252,8 +249,7 @@
         "festivalGrant": null
       }
     ],
-    "readiness": "long_shot",
-    "away": []
+    "readiness": "long_shot"
   },
   "channel": {
     "pinned": false,

@@ -252,7 +252,7 @@ export interface LadderUpdate {
 
 /**
  * Moves the ladder after a week's finale, once. It runs when the finale has resolved for every party
- * that has members (the last party's settle calls it, in the same transaction). The server counts
+ * that has a fight, that is one with a placed creature (the last party's settle calls it, in the same transaction). The server counts
  * as having won when at least half of the parties that played won. Then `nextRank` gives the rank
  * for the next week, and a win in a normal week records the rank as the best cleared. `ladder_at` is
  * the done marker, so calling it again changes nothing.
@@ -267,7 +267,8 @@ export function updateLadder(sql: SqlStorage, weekId: string, now: number): Ladd
     .exec(
       `SELECT 1 FROM raid_parties p
        WHERE p.week_id = ?
-         AND EXISTS (SELECT 1 FROM raid_party_members m WHERE m.week_id = p.week_id AND m.party = p.party)
+         AND EXISTS (SELECT 1 FROM raid_placements pl JOIN creatures c ON c.id = pl.creature_id AND c.user_id = pl.user_id
+                     WHERE pl.week_id = p.week_id AND pl.party = p.party)
          AND NOT EXISTS (SELECT 1 FROM raid_results r
                          WHERE r.week_id = p.week_id AND r.party = p.party AND r.phase = 'finale')
        LIMIT 1`,

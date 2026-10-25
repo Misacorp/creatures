@@ -1,7 +1,7 @@
 import { zoneIndices, zoneOfIndex, zoneSizes, type FightBoard } from '@creatures/engine';
 import { describe, expect, it } from 'vitest';
 import { buildPhaseInput } from '../src/raid-resolve';
-import { HELSINKI, W02, runRaid, seedPlayer } from './raid-helpers';
+import { HELSINKI, W02, runRaid, seedMember, seedPlayer } from './raid-helpers';
 
 describe('the fight keeps the board rows', () => {
   it('a board with holes fights in the board rows, not the rows of the shorter line', async () => {
@@ -9,23 +9,15 @@ describe('the fight keeps the board rows', () => {
       const a = seedPlayer(ctx, 1, { level: 15 });
       const b = seedPlayer(ctx, 2, { level: 15, creatures: 1 });
       const c = seedPlayer(ctx, 3, { level: 15 });
-      ctx.core.raid.currentWeek(HELSINKI);
-      const week = ctx.core.raid.week(W02.id);
-      if (week === null) throw new Error('no week');
       // Nine slots: Front 0-2, Middle 3-5, Back 6-8. The lone creature stands in the middle, with
       // holes around it, so the seven creatures are 3 / 1 / 3 on the board (2 / 3 / 2 by length).
       const place = (slot: number, userId: string, creatureId: string) =>
-        ctx.sql.exec(
-          'INSERT INTO raid_placements (week_id, party, slot, user_id, creature_id) VALUES (?, ?, ?, ?, ?)',
-          W02.id,
-          1,
-          slot,
-          userId,
-          creatureId,
-        );
+        expect(ctx.core.raid.place(userId, HELSINKI, creatureId, slot).ok).toBe(true);
       a.creatureIds.forEach((id, k) => place(k, a.id, id));
       place(4, b.id, b.creatureIds[0] as string);
       c.creatureIds.forEach((id, k) => place(6 + k, c.id, id));
+      const week = ctx.core.raid.week(W02.id);
+      if (week === null) throw new Error('no week');
 
       const built = buildPhaseInput(ctx.sql, week, 1, 'finale');
       if (built === null) throw new Error('no input');
@@ -52,7 +44,7 @@ describe('the fight keeps the board rows', () => {
 
   it('carries the board shape for a lone player with guests, too', async () => {
     await runRaid((ctx) => {
-      seedPlayer(ctx, 1, { level: 15 });
+      seedMember(ctx, 1, { level: 15 });
       ctx.core.raid.currentWeek(HELSINKI);
       const week = ctx.core.raid.week(W02.id);
       if (week === null) throw new Error('no week');
@@ -68,7 +60,7 @@ describe('the fight keeps the board rows', () => {
 describe('Mire passives in every raid phase', () => {
   it('Phases 1 and 2 carry the passives of the row (and no finale ability); the finale carries the choice', async () => {
     await runRaid((ctx) => {
-      const a = seedPlayer(ctx, 1, { level: 15, species: ['mudlump', 'squelch', 'splashet'] });
+      const a = seedMember(ctx, 1, { level: 15, species: ['mudlump', 'squelch', 'splashet'] });
       ctx.core.raid.currentWeek(HELSINKI);
       const week = ctx.core.raid.week(W02.id);
       if (week === null) throw new Error('no week');

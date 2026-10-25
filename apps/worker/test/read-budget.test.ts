@@ -17,9 +17,20 @@ import { GuildCore, type GuildCoreOptions } from '../src/guild-core';
 import { ReadMeter, readSourceOfPath } from '../src/read-meter';
 import { rollMissingTalents } from '../src/talent-store';
 import { addDays, gameDay, zonedTimeToEpoch } from '../src/time';
-import { ORIGIN, USER_ID, runCore, tokenFor } from './helpers';
+import { ORIGIN, USER_ID, runCore, tokenFor, type CoreContext } from './helpers';
 import { captureConsole } from './kit';
-import { DAY, HELSINKI, HOUR, MINUTE, W02, nextGuild, rows, seedPlayer } from './raid-helpers';
+import {
+  DAY,
+  HELSINKI,
+  HOUR,
+  MINUTE,
+  W02,
+  joinRaid,
+  nextGuild,
+  rows,
+  seedPlayer,
+  type Seeded,
+} from './raid-helpers';
 import { describeReads, expectReadsUnder, meterStorage, type ReadReport } from './read-meter';
 
 const GUILD_ID = '555555555555555555';
@@ -30,6 +41,9 @@ const HISTORY_DAYS = 30;
 const NOW = W02.monday + DAY + HOUR;
 
 const userId = (n: number): string => `8${String(n).padStart(17, '0')}`;
+/** The seeded players as `joinRaid` wants them: each places the first three creatures they own. */
+const PLAYERS_SEEDED = (creatures: Record<string, string[]>): Seeded[] =>
+  Object.entries(creatures).map(([id, creatureIds]) => ({ id, name: id, creatureIds }));
 const EVENTS = gamesContent.events.slice(0, 3).map((e) => e.id);
 
 /** The first game-day a month of history covers, and the day of `NOW`. */
@@ -288,7 +302,7 @@ const BUDGET = {
   '/api/state': 700, // measured 465 (610 before migration 44's trip indexes)
   '/api/room': 50, // measured 33
   '/api/games': 350, // measured 222
-  '/api/raid': 1200, // measured 780 (teammates' stored teams: three creatures each, see `shownRaidTeam`)
+  '/api/raid': 950, // measured 633, 15 players joined with three placed creatures each (was 2,773, then 780; a player is loaded by id from the placements, no collection is read)
   '/api/dungeon/today': 120, // measured 78
 } as const;
 
@@ -378,6 +392,8 @@ describe('read budget', () => {
           await core.createSession(GUILD_ID, { id: userId(n), displayName: `Player ${String(n)}` }),
         );
       }
+      // Everyone has joined this week's raid by placing three creatures (one party of 15, a full board).
+      joinRaid({ core, sql: metered.sql } as unknown as CoreContext, PLAYERS_SEEDED(creatures));
       // The first alarm of the day does the daily work (the rollup catch-up, the cleanup): not measured.
       await core.alarm();
       clock.t += MINUTE;

@@ -274,7 +274,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   weatherMigration,
   (sql) => {
     // Version 32: who put each raid placement on the board. NULL is the owner; otherwise the teammate
-    // who moved it for a player who was away (see raid-assist.ts). Existing rows are the owners'.
+    // who moved it for a player who was away (the away assist is gone since 2026-10-26: the column is no
+    // longer written or read). Existing rows are the owners'.
     sql.exec('ALTER TABLE raid_placements ADD COLUMN placed_by TEXT');
   },
   // Version 33: the lounge message and the Activity instances it tracks (see lounge.ts).
@@ -306,8 +307,8 @@ export const MIGRATIONS: readonly ((sql: SqlStorage) => void)[] = [
   dbReadsMigration,
   // Version 44: indexes for a player's recent trips and worn gear (see history-index-migration.ts).
   historyIndexMigration,
-  // Version 45: the raid view's stored readiness bands and teammates' teams (see raid-readiness.ts and
-  // `shownRaidTeam` in raid-teams.ts).
+  // Version 45: the raid view's stored readiness bands (see raid-readiness.ts) and teammates' teams (the
+  // teams table is no longer used since 2026-10-26, see `raidTeamCacheMigration` in raid-teams.ts).
   (sql) => {
     raidReadinessMigration(sql);
     raidTeamCacheMigration(sql);

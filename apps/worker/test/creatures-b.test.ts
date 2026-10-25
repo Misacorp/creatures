@@ -25,6 +25,7 @@ import {
   nextGuild,
   rows,
   runRaid,
+  joinRaid,
   seedPlayer,
   storedRuns,
 } from './raid-helpers';
@@ -438,7 +439,9 @@ describe('experience from raid stages', () => {
         level: 5,
         lastSeenAt: ctx.clock.t - 30 * 86_400_000,
       });
-      ctx.core.raid.currentWeek(HELSINKI);
+      // Active but never placed a creature: not in the raid either.
+      const idler = seedPlayer(ctx, 91, { level: 5 });
+      joinRaid(ctx, players);
       forcePool(ctx.sql, 20_000);
       ctx.clock.t = W02.afterFinale;
       ctx.core.raid.runDue(HELSINKI);
@@ -473,6 +476,7 @@ describe('experience from raid stages', () => {
       ).filter((c) => !fought.has(c.id));
       expect(idle.every((c) => c.level === 5 && c.exp === 0)).toBe(true);
       expect(bystander.creatureIds.every((id) => !fought.has(id))).toBe(true);
+      expect(idler.creatureIds.every((id) => !fought.has(id))).toBe(true);
       expect(players.length).toBe(5);
       // The experience is paid once: running the week again changes nothing.
       const snapshot = JSON.stringify(

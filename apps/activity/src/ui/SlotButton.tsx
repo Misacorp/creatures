@@ -25,8 +25,6 @@ export interface SlotModel {
     /** The id of one of the player's own creatures: only those can be picked up and dragged. */
     ownId: string | null;
     mine: boolean;
-    /** Raid only: nobody placed it, it joins by itself. The tile gets a dashed outline and an "auto" tag. */
-    auto?: boolean;
     /** Raid only: whose it is, as a colour index and the initial printed on the tile (text only). */
     owner?: { colour: number; initial: string };
     /** Raid only: the creature's element id; its colour rings the tile. */
@@ -100,7 +98,6 @@ export function SlotButton(props: SlotButtonProps) {
     const element = c.element === undefined ? '' : elementClass(c.element);
     if (element !== '') classes.push(element);
     if (c.mine) classes.push('mine');
-    if (c.auto === true) classes.push('auto');
     if (c.hp?.state === 'ko') classes.push('hp-ko');
   }
   if (own !== null) classes.push('draggable');
@@ -177,7 +174,6 @@ export function SlotButton(props: SlotButtonProps) {
               <span class="slot-hp-text">{c.hp.text}</span>
             </span>
           )}
-          {c.auto === true && <span class="slot-auto">auto</span>}
           {c.owner !== undefined && (
             <span class="slot-owner" aria-hidden="true">
               {c.owner.initial}

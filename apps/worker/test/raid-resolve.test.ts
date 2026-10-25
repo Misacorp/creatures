@@ -20,8 +20,11 @@ import {
   rows,
   runRaid,
   scriptedThenSeeded,
+  seedMember,
   seedPlayer,
   storedRuns,
+  joinRaid,
+  type Seeded,
 } from './raid-helpers';
 import { setCreature } from './kit';
 
@@ -31,7 +34,7 @@ const SUNDAY = W02.afterFinale;
 /** Seeds `n` players and opens the week. */
 function openWeek(ctx: Parameters<Parameters<typeof runRaid>[0]>[0], n: number, level?: number) {
   const players = Array.from({ length: n }, (_, i) =>
-    seedPlayer(ctx, i + 1, level === undefined ? {} : { level }),
+    seedMember(ctx, i + 1, level === undefined ? {} : { level }),
   );
   ctx.core.raid.currentWeek(HELSINKI);
   return players;
@@ -41,7 +44,9 @@ describe('resolving a week', () => {
   it('pays Essence for cleared stages only, to members only, exactly once', async () => {
     await runRaid((ctx) => {
       const players = openWeek(ctx, 5, 15);
+      // Not in it: one went quiet a month ago, and one is active but never placed a creature.
       const outsider = seedPlayer(ctx, 90, { lastSeenAt: ctx.clock.t - 30 * DAY });
+      const bystander = seedPlayer(ctx, 91);
       // A pool small enough that every stage clears with these creatures.
       forcePool(ctx.sql, 20_000);
       ctx.clock.t = SUNDAY;
@@ -79,6 +84,8 @@ describe('resolving a week', () => {
       const payees = new Set(ledger.map((l) => l.user_id));
       expect([...payees].every((id) => players.some((p) => p.id === id))).toBe(true);
       expect(payees.has(outsider.id)).toBe(false);
+      expect(payees.has(bystander.id)).toBe(false);
+      expect(ctx.core.balances(bystander.id).essence).toBe(0);
 
       // Resolving again (a duplicate alarm, a retry) pays nothing more.
       const balances = players.map((p) => ctx.core.balances(p.id).essence);
@@ -182,7 +189,7 @@ describe('resolving a week', () => {
 });
 
 describe('the row', () => {
-  it('respects placements, auto-places the rest, and fills with guests below three players', async () => {
+  it('respects placements and fills with guests below three players', async () => {
     await runRaid((ctx) => {
       const [a, b] = openWeek(ctx, 2, 8);
       const A = a as { id: string; creatureIds: string[] };
@@ -209,7 +216,7 @@ describe('the row', () => {
     });
   });
 
-  it('fights with the placed creatures plus the strongest, and away creatures still fight', async () => {
+  it('fights only with the creatures that were placed: nothing is picked for the player', async () => {
     await runRaid((ctx) => {
       openWeek(ctx, 3, 6);
       const mage = seedPlayer(ctx, 20, {
@@ -217,49 +224,87 @@ describe('the row', () => {
         level: 10,
         species: ['splashet', 'sproutle', 'stormray', 'gaiadrake'],
       });
-      // Sproutle (a guard) has the lowest power of the four.
       const [, weak, strongA, strongB] = mage.creatureIds as [string, string, string, string];
-      ctx.core.raid.currentWeek(HELSINKI);
-      ctx.core.raid.syncRoster(W02.id);
-      // The automatic team is the three strongest, and an away creature is not excluded.
+      // The mage places two of the four, the weakest and one that is away on a trip.
       setCreature(ctx, strongB, { away_expedition_id: 'trip' });
-      const auto = ctx.core.raid.view(mage.id, HELSINKI).you.team;
-      expect(auto?.mode).toBe('auto');
-      expect(auto?.creatures.map((c) => c.creatureId)).toContain(strongB);
-      expect(auto?.creatures.map((c) => c.creatureId)).not.toContain(weak);
+      expect(ctx.core.raid.place(mage.id, HELSINKI, weak, 9).ok).toBe(true);
+      expect(ctx.core.raid.place(mage.id, HELSINKI, strongB, 10).ok).toBe(true);
+      const team = ctx.core.raid.view(mage.id, HELSINKI).you.team;
+      expect(new Set(team?.creatures.map((c) => c.creatureId))).toEqual(new Set([weak, strongB]));
 
       ctx.clock.t = Date.parse('2027-01-15T12:00:00Z');
       ctx.core.raid.runDue(HELSINKI);
       const first = storedRuns(ctx.sql)[0];
       const ids = (first?.input.row ?? []).map((s) => s.id);
+      // An away creature that was placed still fights; the strong ones that were not placed do not.
+      expect(ids).toContain(weak);
       expect(ids).toContain(strongB);
-      expect(ids).not.toContain(weak);
+      expect(ids).not.toContain(strongA);
+      expect(ids.filter((id) => mage.creatureIds.includes(id))).toHaveLength(2);
 
-      // Between phases the player places only the weak one: it fights, and the two strongest of the
-      // others are filled in beside it.
-      ctx.sql.exec('UPDATE players SET last_seen_at = ?', ctx.clock.t);
-      expect(ctx.core.raid.place(mage.id, HELSINKI, weak, 0).ok).toBe(true);
+      // A placed creature that is gone (released) does not fight; the player still does with the rest.
+      ctx.sql.exec('DELETE FROM creatures WHERE id = ?', strongB);
       ctx.clock.t = SATURDAY;
       ctx.core.raid.runDue(HELSINKI);
       const second = storedRuns(ctx.sql)[1];
-      const mineIn = (second?.input.row ?? [])
-        .map((s) => s.id)
-        .filter((id) => mage.creatureIds.includes(id));
-      expect(new Set(mineIn)).toEqual(new Set([weak, strongA, strongB]));
+      expect(
+        (second?.input.row ?? []).map((s) => s.id).filter((id) => mage.creatureIds.includes(id)),
+      ).toEqual([weak]);
     });
+  });
+
+  it('leaves out a member with nothing left on the board, and a party where nobody has anything', async () => {
+    await runRaid((ctx) => {
+      const [a, b, c] = openWeek(ctx, 3, 8) as [Seeded, Seeded, Seeded];
+      // All of c's creatures were released after they placed them.
+      ctx.sql.exec('DELETE FROM creatures WHERE user_id = ?', c.id);
+      ctx.clock.t = Date.parse('2027-01-15T12:00:00Z');
+      ctx.core.raid.runDue(HELSINKI);
+      const [run] = storedRuns(ctx.sql);
+      expect(run?.input.players).toEqual(['m1', 'm2']);
+      expect(run?.summary.members.map((m) => m.userId)).toEqual([a.id, b.id]);
+      expect(Object.keys(run?.summary.essence ?? {}).every((id) => id !== c.id)).toBe(true);
+
+      // Now nobody has anything: the next stage has no fight at all, and nothing is paid or posted.
+      ctx.sql.exec('DELETE FROM creatures');
+      const results = count(ctx.sql, 'raid_results');
+      const ledger = count(ctx.sql, 'ledger');
+      ctx.clock.t = SATURDAY;
+      ctx.core.raid.runDue(HELSINKI);
+      expect(count(ctx.sql, 'raid_results')).toBe(results);
+      expect(count(ctx.sql, 'ledger')).toBe(ledger);
+      expect(ctx.core.raid.week(W02.id)?.status).toBe('phase2');
+    });
+  });
+
+  it('counts only players who joined: boss HP follows them, not the active roster', async () => {
+    const poolWith = async (bystanders: number): Promise<number> =>
+      runRaid((ctx) => {
+        for (let i = 0; i < bystanders; i++) seedPlayer(ctx, 50 + i);
+        openWeek(ctx, 3, 8);
+        ctx.clock.t = Date.parse('2027-01-15T12:00:00Z');
+        ctx.core.raid.runDue(HELSINKI);
+        return (storedRuns(ctx.sql)[0] as ReturnType<typeof storedRuns>[number]).input.bossHpPool
+          .max;
+      });
+    const alone = await poolWith(0);
+    expect(alone).toBeGreaterThan(0);
+    // Six active players who never placed a creature do not make the boss harder.
+    expect(await poolWith(6)).toBe(alone);
   });
 });
 
 describe('the finale jackpot', () => {
   /** Opens a two-player week and resolves everything up to the finale, which is left for the test. */
   function toFinale(ctx: Parameters<Parameters<typeof runRaid>[0]>[0], n = 2) {
-    openWeek(ctx, n, 12);
+    const players = openWeek(ctx, n, 12);
     ctx.clock.t = SATURDAY;
     ctx.core.raid.runDue(HELSINKI);
     expect(storedRuns(ctx.sql).map((r) => r.phase)).toEqual(['phase1', 'phase2']);
     // Leave the boss one hit from death, so the finale is a win.
     ctx.sql.exec('UPDATE raid_parties SET hp_current = 1');
     ctx.clock.t = SUNDAY;
+    return players;
   }
 
   const seeds = [1, 2, 3, 4];
@@ -314,7 +359,7 @@ describe('the finale jackpot', () => {
     const rng = scriptedThenSeeded([...seeds, ...seeds, ...seeds, 0, 9_999]);
     await runRaid(
       (ctx) => {
-        toFinale(ctx);
+        const players = toFinale(ctx);
         const [m1, m2] = membersOf(ctx.sql) as [string, string];
         ctx.core.raid.runDue(HELSINKI);
         const finale = storedRuns(ctx.sql).find((r) => r.phase === 'finale');
@@ -334,10 +379,12 @@ describe('the finale jackpot', () => {
         ).toEqual([{ user_id: m1 }]);
 
         // Next week m2 hits: it is not the first jackpot on the server any more.
-        ctx.clock.t = Date.parse('2027-01-23T12:00:00Z');
+        ctx.clock.t = Date.parse('2027-01-20T12:00:00Z');
         ctx.sql.exec('UPDATE players SET last_seen_at = ?', ctx.clock.t);
         ctx.core.raid.runDue(HELSINKI);
         ctx.core.raid.currentWeek(HELSINKI);
+        // A new week: everyone places their creatures again to take part.
+        joinRaid(ctx, players);
         ctx.sql.exec("UPDATE raid_parties SET hp_current = 1 WHERE week_id = '2027-W03'");
         ctx.clock.t = Date.parse('2027-01-24T19:00:00Z');
         ctx.core.raid.runDue(HELSINKI);
