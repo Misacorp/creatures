@@ -23,7 +23,7 @@ import { LoungeCompany, loungeDay } from './lounge-company';
 import { FINALE_ACTION_PATHS, LIVE_QUIET_PATHS, type LiveHooks } from './live-socket';
 import { liveRoutes } from './live-routes';
 import type { LiveSnapshot } from './raid-live-view';
-import { maintainedDay, markMaintained } from './maintenance';
+import { maintainedDay, markMaintained, markStartupPasses, startupPassesRan } from './maintenance';
 import { DevState } from './dev-state';
 import { DevTools, devRoutes, isDevPath } from './dev-tools';
 import { DiscordError, type GuildApi } from './discord';
@@ -355,6 +355,11 @@ export interface GuildCoreOptions {
    */
   devTools?: boolean;
   /**
+   * The deployed build (the git commit). The start-up passes in `migrate` run once per build instead of
+   * on every start. Without one (local dev, tests) they run on every start.
+   */
+  build?: string;
+  /**
    * The live sockets (see `live-socket.ts`): makes tickets, is told when a player changed something, and
    * is ticked by the alarm for the finale. Without it the ticket routes answer 404 and nothing is pushed.
    */
@@ -607,6 +612,11 @@ export class GuildCore {
     this.storage.transactionSync(() => {
       loungeMigration(this.sql);
     });
+    // The passes below read whole tables, and the object starts again after every sleep (between the
+    // lounge's minute ticks while sockets are open): they run once per deployed build. Each is idempotent,
+    // and every deploy is a new build, so a branch switch on the shared staging database runs them again.
+    const build = this.options.build;
+    if (build !== undefined && startupPassesRan(this.sql, build)) return;
     // Rows of an earlier shape of gear v2 (staging ran one before its migration 27 was edited in place) are
     // brought to today's shape first, so nothing below or in a view meets an item it cannot read.
     normaliseGearRows(this.storage);
@@ -626,6 +636,7 @@ export class GuildCore {
     // The first load after the creatures A migration: every creature without a talent gets the slots its
     // level has opened rolled, once, with live randomness (idempotent: nothing is waiting later).
     rollMissingTalents(this.storage, this.talentRng, this.now(), this.analytics);
+    if (build !== undefined) markStartupPasses(this.sql, build);
   }
 
   /**
