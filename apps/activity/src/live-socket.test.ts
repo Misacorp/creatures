@@ -59,7 +59,7 @@ function setup(options: { tickets?: () => Promise<string>; supported?: boolean }
     onLive: (live) => events.push(live ? 'live' : 'down'),
     onMessage: (m) => {
       if (m.type === 'resident') residents.push(m.resident);
-      else finales.push(m.snapshot);
+      else if (m.type === 'finale') finales.push(m.snapshot);
     },
     random: () => 1,
   });

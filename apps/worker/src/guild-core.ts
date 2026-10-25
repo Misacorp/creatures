@@ -306,11 +306,6 @@ export interface GuildCoreOptions {
    */
   gamesRng?: Rng;
   /**
-   * Live randomness for picking the living room's lounger. Defaults to crypto.getRandomValues.
-   * Separate from the others, so a pick never consumes a test's scripted draws.
-   */
-  loungerRng?: Rng;
-  /**
    * Live randomness for the valley's weather: the Boon and Omen of a day, drawn a day ahead. Defaults to
    * crypto.getRandomValues. Separate from the others, so a draw never consumes a test's scripted draws.
    */
@@ -486,7 +481,6 @@ export class GuildCore {
       gearRng,
       branchesOf: options.branchesOf,
       tripRng: options.tripRng ?? liveRng(),
-      ...(options.loungerRng === undefined ? {} : { loungerRng: options.loungerRng }),
       weather: this.weather,
       gameDay: () => loungeDay(this.now(), this.timezone()).day,
     });
@@ -541,6 +535,9 @@ export class GuildCore {
       // Sockets keep real time; the game day follows the dev clock where it runs.
       gameOffset: () => this.now() - realNow(),
       loungerOf: (userId) => this.collection.lounge.resolve(userId),
+      onPaid: (userId, paid) => {
+        this.live?.notifyLoungeXp(userId, paid);
+      },
     });
     this.dev =
       this.devState === null

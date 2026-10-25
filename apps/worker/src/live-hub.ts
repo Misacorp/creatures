@@ -4,6 +4,7 @@
  * `GuildCore` sees it only as `LiveHooks`.
  */
 import { FinalePush, type FinalePushDeps } from './finale-live';
+import type { LoungePaid } from './lounge-company';
 import { LoungePush, type LoungePushDeps } from './lounge-live';
 import { LiveSockets, type LiveHooks, type LiveSocketsDeps } from './live-socket';
 import type { Topic, TopicKind } from './live-topic';
@@ -46,6 +47,10 @@ export class LiveHub implements LiveHooks {
 
   notify(userId: string): void {
     this.lounge.notify(userId);
+  }
+
+  notifyLoungeXp(userId: string, paid: LoungePaid): void {
+    this.lounge.notifyXp(userId, paid);
   }
 
   notifyFinale(userId: string): void {

@@ -18,7 +18,16 @@ import { isWornGear } from './gear-parse';
 import { isCreatureTalents, isPendingCatch } from './talent-parse';
 import type { CreatureTalents, PendingCatch } from './talent-types';
 import type { CreatureGearFields, WornGear } from './gear-types';
-import { isArrayOf, isGuardReach, isInt, isNullableInt, isRecord, isStr } from './parse-core';
+import {
+  isArrayOf,
+  isBool,
+  isCount,
+  isGuardReach,
+  isInt,
+  isNullableInt,
+  isRecord,
+  isStr,
+} from './parse-core';
 import { createReauth, type Reauth } from './reauth';
 import { ROOM_SPOTS } from './sprites/room-art';
 
@@ -833,7 +842,23 @@ export async function fetchRoom(userIds: readonly string[]): Promise<RoomResiden
 export type LiveMessage =
   | { type: 'hello'; serverNow: number }
   | { type: 'resident'; resident: RoomResident }
+  | ({ type: 'lounge-xp' } & LoungeXpPush)
   | { type: 'finale'; snapshot: unknown };
+
+/**
+ * What lounging just paid the player's own lounger (pushed to their own lounge sockets only): the
+ * creature, what lounging has paid it today, and its level and banked experience after the payment.
+ */
+export interface LoungeXpPush {
+  creatureId: string;
+  paid: number;
+  level: number;
+  exp: number;
+  /** It stands at a level it may not leave yet (a ribbon, or its evolution). */
+  waiting: boolean;
+}
+
+const LOUNGE_XP_KEYS = ['v', 'type', 'creatureId', 'paid', 'level', 'exp', 'waiting'];
 
 /** The most a pushed frame may be: a finale snapshot with every event of a long fight is the big one. */
 const MAX_FRAME_CHARS = 1024 * 1024;
@@ -856,6 +881,23 @@ export function parseLiveMessage(text: string): LiveMessage | null {
   }
   if (data['type'] === 'finale') {
     return isRecord(data['snapshot']) ? { type: 'finale', snapshot: data['snapshot'] } : null;
+  }
+  if (data['type'] === 'lounge-xp') {
+    // Exactly these keys: anything else is a shape this client does not know.
+    const keys = Object.keys(data);
+    if (text.length > MAX_SMALL_CHARS || keys.length !== LOUNGE_XP_KEYS.length) return null;
+    if (!LOUNGE_XP_KEYS.every((key) => keys.includes(key))) return null;
+    const { creatureId, paid, level, exp, waiting } = data;
+    return typeof creatureId === 'string' &&
+      creatureId.length > 0 &&
+      creatureId.length <= 64 &&
+      isCount(paid) &&
+      isCount(level) &&
+      level > 0 &&
+      isCount(exp) &&
+      isBool(waiting)
+      ? { type: 'lounge-xp', creatureId, paid, level, exp, waiting }
+      : null;
   }
   if (data['type'] === 'resident' && text.length <= MAX_SMALL_CHARS) {
     try {

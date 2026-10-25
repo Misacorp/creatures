@@ -8,7 +8,13 @@
  * page is visible: pushes replace the poll, and any trouble hands the room back to the poll.
  */
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { fetchLoungeTicket, fetchRoom, loungeSocketUrl, type GameState } from './api';
+import {
+  fetchLoungeTicket,
+  fetchRoom,
+  loungeSocketUrl,
+  type GameState,
+  type LoungeXpPush,
+} from './api';
 import type { GearItem } from './gear-types';
 import type { ParticipantSource } from './participants';
 import { othersOf, ownResident, roomResidents, shouldOpenSocket, type Resident } from './room-data';
@@ -29,6 +35,8 @@ interface RoomInputs {
   gearItems?: readonly GearItem[];
   /** The server offers the live socket (`/api/config`'s `loungeLive`). Default false. */
   loungeLive?: boolean;
+  /** Lounging just paid your lounger (pushed by the live socket to your own sockets only). */
+  onLoungeXp?: (push: LoungeXpPush) => void;
 }
 
 export interface RoomHandle {
@@ -37,6 +45,8 @@ export interface RoomHandle {
   refreshIfStale: () => void;
   /** Somebody else is here (Discord's participants) and the page is visible: your lounger can earn. */
   company: boolean;
+  /** The live socket is delivering: pushes replace the polls and the state reloads. */
+  live: boolean;
 }
 
 export function useRoom({
@@ -48,11 +58,16 @@ export function useRoom({
   craftingLevels,
   gearItems,
   loungeLive = false,
+  onLoungeXp,
 }: RoomInputs): RoomHandle {
   const [present, setPresent] = useState<readonly string[]>(() => participants.ids());
   const [known, setKnown] = useState<ReadonlyMap<string, Resident>>(() => new Map());
   const [hidden, setHidden] = useState(() => typeof document !== 'undefined' && document.hidden);
+  const [live, setLive] = useState(false);
   const loader = useRef<RoomLoader | null>(null);
+  // The latest handler, so the socket (opened once) never calls a stale one.
+  const loungeXp = useRef(onLoungeXp);
+  loungeXp.current = onLoungeXp;
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -89,14 +104,17 @@ export function useRoom({
       createSocket: browserSocket,
       onLive: (live) => {
         loader.current?.setLive(live);
+        setLive(live);
       },
       onMessage: (message) => {
         if (message.type === 'resident') loader.current?.applyResident(message.resident);
+        if (message.type === 'lounge-xp') loungeXp.current?.(message);
       },
     });
     socket.start();
     return () => {
       socket.stop();
+      setLive(false);
     };
   }, [wantSocket, selfId]);
 
@@ -138,5 +156,6 @@ export function useRoom({
       loader.current?.refreshIfStale();
     },
     company: enabled && !hidden && othersOf(present, selfId).length > 0,
+    live,
   };
 }

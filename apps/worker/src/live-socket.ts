@@ -14,6 +14,7 @@
  * sends over the socket. A socket is tagged `u:<userId>` and `t:<topic>`, and a push goes to the sockets
  * of one topic only.
  */
+import type { LoungePaid } from './lounge-company';
 import type { Resident } from './lounger';
 import type { LiveSnapshot } from './raid-live-view';
 import { TicketBook, parseTicket } from './live-ticket';
@@ -72,11 +73,13 @@ export const CLOSE_PROTOCOL = 4002;
 
 /**
  * What the server pushes. `resident` is exactly one entry of the `POST /api/room` answer (lounge sockets
+ * only); `lounge-xp` is what lounging just paid the socket's own player's lounger (their own lounge sockets
  * only); `finale` is the answer of `GET /api/raid/live` for the socket's own player (finale sockets only).
  */
 export type LiveMessage =
   | { v: 1; type: 'hello'; serverNow: number }
   | { v: 1; type: 'resident'; resident: Resident }
+  | ({ v: 1; type: 'lounge-xp' } & LoungePaid)
   | { v: 1; type: 'finale'; snapshot: LiveSnapshot };
 
 interface Attachment {
@@ -109,6 +112,8 @@ export interface LiveHooks {
   mintTicket(guildId: string, userId: string, topic: Topic): Promise<string>;
   /** `userId` just changed something: pushes their room view to the lounge's sockets if it changed. */
   notify(userId: string): void;
+  /** Lounging just paid `userId`'s lounger: their own lounge sockets (and nobody else's) are told. Never throws. */
+  notifyLoungeXp(userId: string, paid: LoungePaid): void;
   /** `userId` just acted in their party's finale: their party's other sockets get a fresh snapshot. */
   notifyFinale(userId: string): void;
   /**
