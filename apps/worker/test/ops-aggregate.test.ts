@@ -96,6 +96,24 @@ describe('buildPeriod', () => {
     expect(byGuild['g-bbbbbb']).toEqual([{ metric: 'dau', dims: {}, value: 2 }]);
   });
 
+  it('keeps the rows read by source in the per-day series', () => {
+    const { daily } = buildPeriod('2027-01-14', '2027-01-15', [
+      {
+        alias: 'g-aaaaaa',
+        rows: [
+          raw('2027-01-14', 'db.rows_read', { source: 'request:state' }, 700),
+          raw('2027-01-14', 'db.rows_read', { source: 'alarm' }, 300),
+          raw('2027-01-15', 'db.rows_read', { source: 'start' }, 5),
+        ],
+      },
+    ]);
+    expect(daily['2027-01-14']?.map((r) => [r.dims['source'], r.value])).toEqual([
+      ['alarm', 300],
+      ['request:state', 700],
+    ]);
+    expect(daily['2027-01-15']).toHaveLength(1);
+  });
+
   it('only gives a per-day series to the series metrics', () => {
     const { daily } = buildPeriod('2027-01-14', '2027-01-14', [
       {

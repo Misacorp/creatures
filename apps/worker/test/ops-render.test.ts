@@ -206,6 +206,37 @@ describe('renderMarkdown', () => {
     expect(renderMarkdown(report(current))).not.toContain('↑');
   });
 
+  it('shows the rows read per day and the top sources, and flags a day near the free limit', () => {
+    const reads = (source: string, n: number): Row => row('db.rows_read', { source }, n);
+    const totals = [
+      reads('request:state', 3_000_000),
+      reads('alarm', 1_500_000),
+      reads('start', 500),
+    ];
+    const md = renderMarkdown(
+      report(totals, {
+        daily: {
+          '2027-01-11': [reads('request:state', 1_000_000), reads('alarm', 500_000)],
+          '2027-01-12': [reads('request:state', 2_000_000), reads('alarm', 1_000_000)],
+        },
+      }),
+    );
+    const reads_ = section(md, 'Database reads');
+    expect(reads_).toContain('Rows read in total: **4,500,500**');
+    expect(reads_).toContain('| 2027-01-11 | 1,500,000 | 30.0% |');
+    expect(reads_).toContain('| 2027-01-12 | 3,000,000 | 60.0% |');
+    // The sources are listed biggest first, in code spans.
+    expect(reads_.indexOf('`request:state`')).toBeLessThan(reads_.indexOf('`alarm`'));
+    expect(reads_).toContain('| `request:state` | 3,000,000 | 66.7% |');
+    // Under 80% of the free day: no alert yet.
+    expect(section(md, 'Alerts')).not.toContain('database rows read');
+    const high = renderMarkdown(
+      report(totals, { daily: { '2027-01-12': [reads('request:state', 4_100_000)] } }),
+    );
+    expect(section(high, 'Alerts')).toContain('2027-01-12: 4,100,000 database rows read, 82.0%');
+    expect(section(renderMarkdown(report([])), 'Database reads')).toContain('No rows read');
+  });
+
   it('renders an empty report without failing', () => {
     const md = renderMarkdown(report([], { rolledDays: 0, guilds: { known: 0, reporting: 0 } }));
     expect(md).toContain('_No resource flow recorded in this range._');

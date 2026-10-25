@@ -310,9 +310,16 @@ export function undoDmNotifyMigration(sql: SqlStorage): void {
 
 /** Puts a database back to before migration 42 (the Games' day indexes): the indexes go. */
 export function undoGamesIndexMigration(sql: SqlStorage): void {
+  undoDbReadsMigration(sql);
   for (const index of ['games_days_unawarded', 'games_days_shown', 'games_days_awarded'])
     sql.exec(`DROP INDEX IF EXISTS ${index}`);
   sql.exec('DELETE FROM schema_version WHERE version = 42');
+}
+
+/** Puts a database back to before migration 43 (rows read per day): the table goes. */
+export function undoDbReadsMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS db_reads');
+  sql.exec('DELETE FROM schema_version WHERE version = 43');
 }
 
 /** Puts a database back to before migration 40 (the Games' event badges): the table goes. */

@@ -58,6 +58,7 @@ export const DAILY_SERIES: ReadonlySet<string> = new Set([
   'workshop.job_start',
   'raid.phase',
   'raid.live_join',
+  'db.rows_read',
 ]);
 
 // --- Row validation ---

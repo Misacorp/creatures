@@ -513,6 +513,25 @@ describe('rollDay', () => {
     });
   });
 
+  it('copies the rows read of the day by source, and no other day', async () => {
+    await runCore(nextGuild(), (ctx) => {
+      const put = (day: string, source: string, n: number) =>
+        ctx.sql.exec('INSERT INTO db_reads (day, source, rows) VALUES (?, ?, ?)', day, source, n);
+      put(DAY, 'alarm', 120);
+      put(DAY, 'request:state', 4500);
+      put(addDays(DAY, 1), 'alarm', 7);
+      ctx.core.rollup.rollDay(DAY, HELSINKI);
+      const day = daily(ctx, DAY).filter((r) => r.metric === 'db.rows_read');
+      expect(day.map((r) => [r.dims, r.value])).toEqual([
+        [{ source: 'alarm' }, 120],
+        [{ source: 'request:state' }, 4500],
+      ]);
+      // A day without counters (before the meter existed) has no such rows.
+      ctx.core.rollup.rollDay(addDays(DAY, 5), HELSINKI);
+      expect(daily(ctx, addDays(DAY, 5)).some((r) => r.metric === 'db.rows_read')).toBe(false);
+    });
+  });
+
   it('never counts dev_action events', async () => {
     await runCore(nextGuild(), (ctx) => {
       const t = startOf(DAY) + HOUR;
