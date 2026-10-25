@@ -315,8 +315,15 @@ export function undoGamesIndexMigration(sql: SqlStorage): void {
   sql.exec('DELETE FROM schema_version WHERE version = 42');
 }
 
+/** Puts a database back to before migration 46 (what was paid while a player was away): the table goes. */
+export function undoWhileAwayMigration(sql: SqlStorage): void {
+  sql.exec('DROP TABLE IF EXISTS away_rewards');
+  sql.exec('DELETE FROM schema_version WHERE version = 46');
+}
+
 /** Puts a database back to before migration 45 (the raid view's stored bands and teams): the tables go. */
 export function undoRaidReadinessMigration(sql: SqlStorage): void {
+  undoWhileAwayMigration(sql);
   sql.exec('DROP TABLE IF EXISTS raid_readiness');
   sql.exec('DROP TABLE IF EXISTS raid_team_cache');
   sql.exec('DELETE FROM schema_version WHERE version = 45');

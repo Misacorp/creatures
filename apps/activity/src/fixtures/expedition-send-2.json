@@ -334,6 +334,7 @@
     ],
     "cancelled": [],
     "levelReset": null,
+    "awayRewards": null,
     "slots": {
       "total": 1,
       "used": 1,

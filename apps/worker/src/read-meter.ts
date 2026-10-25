@@ -34,6 +34,7 @@ export const READ_AREAS: ReadonlySet<string> = new Set([
   'starter',
   'profile',
   'level-reset',
+  'away',
   'ledger',
   'lounge',
   'lounge-spot',

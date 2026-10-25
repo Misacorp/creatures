@@ -56,6 +56,7 @@ import {
 } from '@creatures/engine';
 import type { Analytics } from './analytics';
 import { awardExperience } from './creature-exp';
+import { awayItems, recordAway } from './while-away';
 import { bumpStat } from './expedition-store';
 import { grantFestivalGear, grantRaidFinale, grantRaidPhase, type GrantDeps } from './gear-grants';
 import { credit, type LedgerStorage } from './ledger';
@@ -656,6 +657,7 @@ export function settleParty(
         },
         now,
       );
+      recordAway(sql, userId, 'raid', { essence: amount }, now);
       essence[userId] = amount;
     }
   }
@@ -668,7 +670,16 @@ export function settleParty(
   for (const slot of input.row) {
     const userId = slot.ownerId === null ? undefined : userOf.get(slot.ownerId);
     if (userId === undefined) continue;
-    awardExperience(sql, deps.analytics, userId, slot.id, stageExperience, 'raid', false);
+    const view = awardExperience(
+      sql,
+      deps.analytics,
+      userId,
+      slot.id,
+      stageExperience,
+      'raid',
+      false,
+    );
+    if (view !== null) recordAway(sql, userId, 'raid', { xp: stageExperience }, now);
   }
 
   // --- Gear: scrap for a cleared phase, one gear roll for a won finale (members only) ---
@@ -681,7 +692,8 @@ export function settleParty(
     };
     for (const userId of memberIds) {
       if (phase === 'finale') {
-        grantRaidFinale(gearDeps, userId, week.weekId, payout.rank, input.boss.id);
+        const view = grantRaidFinale(gearDeps, userId, week.weekId, payout.rank, input.boss.id);
+        recordAway(sql, userId, 'raid', { items: awayItems(view) }, now);
       } else grantRaidPhase(gearDeps, userId, week.weekId, phase);
     }
   }
@@ -706,9 +718,10 @@ export function settleParty(
       for (const userId of memberIds) {
         // A Festival piece the player lacks (any one once they have them all), next to the creature itself.
         if (festivalSpecies !== undefined) {
-          grantFestivalGear(gearDeps, userId, week.weekId, payout.rank, input.boss.id);
+          const gift = grantFestivalGear(gearDeps, userId, week.weekId, payout.rank, input.boss.id);
+          recordAway(sql, userId, 'raid', { items: awayItems(gift) }, now);
         }
-        grantFestivalCreature(
+        const creature = grantFestivalCreature(
           storage,
           { quirk: quirkRng, talent: talentRng },
           week.weekId,
@@ -717,6 +730,7 @@ export function settleParty(
           now,
           deps.analytics,
         );
+        recordAway(sql, userId, 'raid', { creatures: creature === null ? 0 : 1 }, now);
       }
     }
   }
@@ -856,6 +870,7 @@ function rollJackpots(
           },
           now,
         );
+        recordAway(sql, userId, 'raid', { essence: jackpotEssenceFor(payout) }, now);
         recordServerFirst(sql, 'jackpot', 'jackpot', userId, `jackpot:${weekId}`, now);
       }
       sql.exec(
