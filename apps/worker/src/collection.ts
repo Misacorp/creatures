@@ -272,11 +272,6 @@ export interface CollectionDeps {
    * so none of them ever consumes the draws of a catch.
    */
   tripRng: Rng;
-  /**
-   * Live randomness for picking the lounger. Optional: defaults to crypto; tests inject a seeded one.
-   * Separate from `rng`, so a pick never consumes the draws of a catch.
-   */
-  loungerRng?: Rng;
   /** The valley's weather: trips are sent under the day's Boon and Omen. Optional: without it, none. */
   weather?: Weather | undefined;
   /** The analytics event log. Optional: without it nothing is logged. */
@@ -312,7 +307,7 @@ export class Collection {
     this.lounge = new Lounge({
       storage: deps.storage,
       now: deps.now,
-      ...(deps.loungerRng === undefined ? {} : { rng: deps.loungerRng }),
+      gameDay: () => deps.gameDay?.() ?? '',
     });
     this.choices = new CatchChoices({
       storage: deps.storage,
