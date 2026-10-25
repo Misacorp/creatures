@@ -40,7 +40,14 @@ import {
 } from './raid-resolve';
 import { latestReveal, totalEssenceOf, type RevealView } from './raid-reveal';
 import { partyMembers, partyOf } from './raid-roster';
-import { RAID_PHASES, isWeekId, weekIndex, type RaidEvent, type RaidPhase } from './raid-schedule';
+import {
+  RAID_PHASES,
+  addWeeks,
+  isWeekId,
+  weekIndex,
+  type RaidEvent,
+  type RaidPhase,
+} from './raid-schedule';
 import { awayMembers } from './raid-assist';
 import {
   loadCreatures,
@@ -511,7 +518,7 @@ export function buildRaidView(
       abilities: abilityPreview(myAbility, myIndex < 0 ? null : aliasFor(myIndex), team, (target) =>
         autofire.isOn(userId, target),
       ),
-      reveal: latestReveal(sql, userId),
+      reveal: latestReveal(sql, userId, addWeeks(week.weekId, -1)),
       team:
         team === null
           ? null
@@ -659,7 +666,8 @@ export function buildReplayView(
       phase,
     )
     .toArray()[0];
-  if (row === undefined) return null;
+  // The fight's inputs and events of a week older than last week are emptied (`old-data.ts`).
+  if (row === undefined || row.input === '') return null;
   const input = JSON.parse(row.input) as FightInput;
   const result = JSON.parse(row.result) as FightResult;
   const summary = JSON.parse(row.summary) as StoredSummary;
