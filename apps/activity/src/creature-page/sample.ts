@@ -35,6 +35,7 @@ export type SceneKind =
   | 'ribbon waiting'
   | 'nickname'
   | 'evolve ready'
+  | 'evolve short'
   | 'set: two pieces'
   | 'set: three pieces'
   | 'set: two pieces and a charm'
@@ -54,6 +55,7 @@ export const SCENE_KINDS: readonly SceneKind[] = [
   'ribbon waiting',
   'nickname',
   'evolve ready',
+  'evolve short',
   'set: two pieces',
   'set: three pieces',
   'set: two pieces and a charm',
@@ -186,6 +188,15 @@ function shapeOf(kind: SceneKind): Shape {
         exp: 825,
         expNeeded: 825,
       };
+    case 'evolve short':
+      // Just reached its evolution level, the player 8 Essence short (12 of 20).
+      return {
+        level: 15,
+        worn: { hat: 0, scarf: 0 },
+        talents: talentsOf(twoSlots(PLAIN, false)),
+        exp: 300,
+        expNeeded: 825,
+      };
     case 'set: two pieces':
       // The Forge-Warm Bonnet and Sash (the last row of the Hat and Scarf tables): two of the Kit's three.
       return {
@@ -265,7 +276,7 @@ export function pageScene(kind: SceneKind, options: { bait?: number } = {}): Pag
       ? 'ribbon ready'
       : kind === 'ribbon waiting'
         ? 'ribbon short'
-        : kind === 'evolve ready'
+        : kind === 'evolve ready' || kind === 'evolve short'
           ? 'evolve ready'
           : 'growing',
   );
@@ -281,6 +292,9 @@ export function pageScene(kind: SceneKind, options: { bait?: number } = {}): Pag
     ribbon: kind === 'ribbon ready' || kind === 'ribbon waiting' ? base.ribbon : null,
     waiting: kind === 'ribbon ready' || kind === 'ribbon waiting' || kind === 'evolve ready',
     nextUnlock: null,
+    ...(kind === 'evolve short' && base.evolution !== undefined
+      ? { evolution: { ...base.evolution, available: false } }
+      : {}),
     explorer: { rank: 3, xp: 1300, nextRankXp: 2_000, trips: 7 },
     ability:
       base.ability === null
@@ -295,7 +309,11 @@ export function pageScene(kind: SceneKind, options: { bait?: number } = {}): Pag
     creatures: [creature, OTHER],
     pending: [],
     loungerId: null,
-    balances: { ...SAMPLE_STATE.balances, bait: options.bait ?? 100 },
+    balances: {
+      ...SAMPLE_STATE.balances,
+      bait: options.bait ?? 100,
+      ...(kind === 'evolve short' ? { essence: 12 } : {}),
+    },
   };
   const gear: GearState = {
     ...SAMPLE_GEAR,

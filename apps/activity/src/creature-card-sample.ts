@@ -27,6 +27,7 @@ export const SAMPLE_KINDS = [
   'ribbon ready',
   'ribbon short',
   'evolve ready',
+  'evolve short',
   'evolve choice',
   'talent to fill',
   'talent book',
@@ -69,6 +70,16 @@ const bronze = {
   trips: 0,
   tripsDone: 0,
 } as const;
+
+/**
+ * The sample past its line's evolution level (20, 30): a stage-1 creature stops at 15 until it evolves, so
+ * one this high has no evolution left to offer.
+ */
+function grownPast(creature: Creature): Creature {
+  const { evolution: _done, ...rest } = creature;
+  void _done;
+  return rest;
+}
 
 /** The finale ability is unlocked from its level on (the server sends this flag). */
 function withAbility(creature: Creature): Creature {
@@ -139,6 +150,18 @@ function sampleOf(kind: SampleKind): Creature {
           alt: { toSpecies: 'wickat' },
         },
       };
+    case 'evolve short': {
+      // At its evolution level, the player short of Essence (the sample state holds none).
+      const ready = sampleOf('evolve ready');
+      return {
+        ...ready,
+        exp: 300,
+        waiting: false,
+        ...(ready.evolution === undefined
+          ? {}
+          : { evolution: { ...ready.evolution, available: false } }),
+      };
+    }
     case 'evolve choice':
       // A Sproutle: its line grows two ways (Thornbuck or Sunfawn), so the button asks which.
       return {
@@ -162,7 +185,7 @@ function sampleOf(kind: SampleKind): Creature {
     case 'talent to fill': {
       const filled = creature.talents.slots[0]?.talent ?? null;
       return {
-        ...creature,
+        ...grownPast(creature),
         level: 20,
         exp: 100,
         expNeeded: 1_000,
@@ -198,7 +221,14 @@ function sampleOf(kind: SampleKind): Creature {
       };
     }
     case 'top level':
-      return { ...creature, level: 30, exp: 0, expNeeded: null, nextUnlock: null, ribbons: 3 };
+      return {
+        ...grownPast(creature),
+        level: 30,
+        exp: 0,
+        expNeeded: null,
+        nextUnlock: null,
+        ribbons: 3,
+      };
     case 'nickname and badges':
       return {
         ...creature,

@@ -17,21 +17,36 @@ export interface Need {
   label: string;
   /** The small line under the label (the cost, or where to answer). */
   detail: string;
-  /** Why the button cannot be used now (the creature is away or on a job); the card shows it disabled. */
+  /**
+   * Why the button cannot be used now (the creature is away or on a job, or the player is short of what it
+   * costs); the card shows it disabled. It still counts for the "Needs you" filter (a signal to go and get
+   * the parts), not for the Home notice.
+   */
   blocked?: string;
 }
 
 /** The part of the game state the needs depend on. */
 export type NeedsState = Pick<GameState, 'balances' | 'pending' | 'bookSlotBait'>;
 
-/** Needs in the order the card puts them: the first one is the card's gold button. */
+/**
+ * Needs in the order the card puts them: the first one is the card's gold button. What can be done now
+ * comes first; a blocked need (a ribbon or evolution the player cannot pay yet, an evolve while busy)
+ * after, so the card's button is never a greyed one while something else is ready.
+ */
 export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
   const needs: Need[] = [];
-  if (creature.ribbon?.ready === true) {
+  const ribbon = creature.ribbon;
+  if (ribbon !== null) {
+    // At its ribbon level: ready, or short of trips (how many) or parts (the exact cost).
+    const tripsLeft = ribbon.trips - ribbon.tripsDone;
     needs.push({
+      ...(ribbon.ready ? {} : { blocked: tripsLeft > 0 ? 'Short of trips' : 'Short of parts' }),
       kind: 'ribbon',
-      label: `Earn ${ribbonName(creature.ribbon.id)}`,
-      detail: ribbonCostText(creature.ribbon),
+      label: `Earn ${ribbonName(ribbon.id)}`,
+      detail:
+        !ribbon.ready && tripsLeft > 0
+          ? `${String(tripsLeft)} more ${tripsLeft === 1 ? 'trip' : 'trips'}`
+          : ribbonCostText(ribbon),
     });
   }
   if (creature.evolution?.available === true) {
@@ -44,6 +59,16 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
       label: 'Evolve',
       detail: blocked ?? `${String(creature.evolution.essence)} Essence`,
     });
+  } else {
+    const short = evolveShortfall(creature, state.balances.essence);
+    if (short !== null) {
+      needs.push({
+        blocked: 'Short of Essence',
+        kind: 'evolve',
+        label: 'Evolve',
+        detail: `${String(short.have)} / ${String(short.cost)} Essence`,
+      });
+    }
   }
   const waiting = state.pending.filter(
     (card) => card.offered.teach.includes(creature.id) || card.offered.fuse.includes(creature.id),
@@ -69,7 +94,25 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
       detail: `${String(state.bookSlotBait)} Bait`,
     });
   }
-  return needs;
+  return [
+    ...needs.filter((n) => n.blocked === undefined),
+    ...needs.filter((n) => n.blocked !== undefined),
+  ];
+}
+
+/**
+ * The Essence a creature at its evolution level is short of, for the page's greyed Evolve button: the
+ * price (the server's) and what the player has. Null when it can evolve, is below the level, has no
+ * evolution, or the player has the price (then the server's `available` decides).
+ */
+export function evolveShortfall(
+  creature: Creature,
+  essence: number,
+): { cost: number; have: number } | null {
+  const evolution = creature.evolution;
+  if (evolution === undefined || evolution.available) return null;
+  if (creature.level < evolution.level || essence >= evolution.essence) return null;
+  return { cost: evolution.essence, have: essence };
 }
 
 /**
