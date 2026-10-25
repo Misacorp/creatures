@@ -6,7 +6,11 @@ import profileFixture from './fixtures/expedition-profile.json';
 import stateOffer from './fixtures/expedition-state-offer.json';
 import { statGroups, type StatsInput } from './stats-view';
 
-const profile = parseProfile(profileFixture);
+// The captured profile's player never ran the dungeon, so the test gives it a record of its own.
+const profile = {
+  ...parseProfile(profileFixture),
+  dungeon: { runs: 7, clears: 3, depth: 4, streak: 2 },
+};
 const creatures = parseGameState(stateOffer).creatures;
 const input: StatsInput = { profile, creatures };
 
