@@ -15,7 +15,7 @@ Status: **shipped** in #1 (M3), retuned in #24. Later changes live in `decisions
 - **Zones:** the row splits into three contiguous zones, **front** (left), **middle**, **back** (right). Front and back each get `floor(n / 3)` slots of an `n`-slot row; everything left goes to the middle (a row of 1 or 2 is all middle).
 - **Adjacency:** a creature's neighbours are the slots directly left and right of it.
 - **Guests:** with fewer than 3 players, the row is filled to 9 slots with NPC guest creatures (content-defined, level scaled to the players' average). Guests earn no loot.
-- **Placement conflicts:** each slot holds one creature; first come, first served. Players coordinate in Discord. A player can offer a swap, and the other player accepts it (M4 UI). Unplaced creatures of signed-up players are auto-placed into free slots by a default rule (guards front, payoffs back, setters next to payoffs) **[Misa: absent players are auto-placed]**.
+- **Placement conflicts:** each slot holds one creature; first come, first served. Players coordinate in Discord. A player can offer a swap, and the other player accepts it (M4 UI). In the raid only creatures a player placed fight; nothing is auto-placed (decisions.md, 2026-10-26). The engine's `autoPlace` default rule (guards front, payoffs back, setters next to payoffs) still places guests and is the simulator's default row.
 
 ## Turn order
 
