@@ -229,6 +229,12 @@ const SCENE_LIST: readonly SceneDef[] = [
   },
   { id: 'F4', label: 'F4 · Page, ribbon ready', kind: 'ribbon ready', show: 'page' },
   { id: 'F5', label: 'F5 · Page, ready to evolve', kind: 'evolve ready', show: 'page' },
+  {
+    id: 'F6',
+    label: 'F6 · Page, evolution level, short of Essence',
+    kind: 'evolve short',
+    show: 'page',
+  },
   { id: 'C1', label: 'C1 · Cards: rarity name colours', kind: 'level 15', show: 'cards' },
   {
     id: 'W1',

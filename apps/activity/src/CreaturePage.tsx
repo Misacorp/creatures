@@ -8,7 +8,7 @@ import {
   ribbonsHeldText,
   type PageFocus,
 } from './creature-card-view';
-import { creatureNeeds } from './creature-needs';
+import { creatureNeeds, evolveShortfall } from './creature-needs';
 import { creatureDodgeText, type DodgeRules } from './dodge-view';
 import { ItemPickerDrawer } from './creature-page/ItemPicker';
 import { PageHeader } from './creature-page/PageHeader';
@@ -215,9 +215,15 @@ export function CreaturePage({
   const needs = creatureNeeds(creature, state);
   const evolveNeed = needs.find((n) => n.kind === 'evolve');
   const waitingCatch = needs.find((n) => n.kind === 'duplicate');
+  // At its evolution level but short of Essence: the Evolve button greyed, with the price and what is had.
+  const evolveShort =
+    evolveNeed === undefined ? evolveShortfall(creature, state.balances.essence) : null;
   // The server sends a ribbon only for a creature that stands at the level that asks for one.
   const hasActions =
-    creature.ribbon !== null || evolveNeed !== undefined || waitingCatch !== undefined;
+    creature.ribbon !== null ||
+    evolveNeed !== undefined ||
+    evolveShort !== null ||
+    waitingCatch !== undefined;
   const slotOpens = gear?.slotOpens ?? RULES.gear.slotUnlockLevel;
 
   const start = initialOpen ?? startingDrawer(focus, creature, slotOpens);
@@ -307,6 +313,23 @@ export function CreaturePage({
                     actions.onEvolve(creature);
                   }}
                 />
+              )}
+              {evolveShort !== null && (
+                <div class="evolve-line">
+                  <ActionButton
+                    wide
+                    large
+                    label="Evolve"
+                    detail={`${String(evolveShort.cost)} Essence`}
+                    disabled
+                    onClick={() => undefined}
+                  />
+                  <p class="muted ribbon-note">
+                    Short of Essence: you have {String(evolveShort.have)} /{' '}
+                    {String(evolveShort.cost)}.{' '}
+                    <GlossaryTag entry="essence" look="help" class="ribbon-help" />
+                  </p>
+                </div>
               )}
               {waitingCatch !== undefined && (
                 <ActionButton

@@ -391,6 +391,22 @@ describe('the creature page: the buttons for what is ready', () => {
   });
 });
 
+describe('the creature page: evolution short of Essence', () => {
+  it('shows the Evolve button greyed with its price and the Essence the player has', () => {
+    const { root, actions, page: p } = draw('evolve short');
+    const button = first(byName(root, 'button', 'Evolve 20 Essence'));
+    expect(button.hasAttribute('disabled')).toBe(true);
+    expect(visibleText(root)).toContain('Short of Essence: you have 12 / 20.');
+    p.click(button);
+    expect(actions.onEvolve).not.toHaveBeenCalled();
+  });
+
+  it('shows no short note once the evolution is ready', () => {
+    const { root } = draw('evolve ready');
+    expect(visibleText(root)).not.toContain('Short of Essence');
+  });
+});
+
 describe('the creature page: evolving a busy creature', () => {
   it('disables the evolve button and says why while the creature is on a job', () => {
     const {

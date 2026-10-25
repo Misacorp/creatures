@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import type { Creature } from './api';
 import { SAMPLE_STATE, sampleCreature, sampleRoster } from './creature-card-sample';
-import { creatureNeeds, creaturesNeedLine, needyIds, noticeNeeds } from './creature-needs';
+import {
+  creatureNeeds,
+  creaturesNeedLine,
+  evolveShortfall,
+  needyIds,
+  noticeNeeds,
+} from './creature-needs';
 import { creatureName } from './game';
 
 const plainState = { ...SAMPLE_STATE, pending: [] };
@@ -35,6 +42,20 @@ describe('what a creature needs', () => {
       evolution: { toSpecies: 'pyrelynx', level: 15, essence: 20, available: false },
     };
     expect(creatureNeeds(notYet, plainState)).toEqual([]);
+  });
+
+  it('says how much Essence an evolution is short of, only at its level', () => {
+    const ready = sampleCreature('evolve ready');
+    const short = { ...ready, evolution: { ...ready.evolution!, available: false } };
+    expect(evolveShortfall(short, 12)).toEqual({ cost: 20, have: 12 });
+    expect(evolveShortfall(short, 0)).toEqual({ cost: 20, have: 0 });
+    // Below the level, ready, or holding the price (the server's flag decides): nothing.
+    expect(evolveShortfall({ ...short, level: 14 }, 12)).toBeNull();
+    expect(evolveShortfall(ready, 12)).toBeNull();
+    expect(evolveShortfall(short, 20)).toBeNull();
+    const single: Creature = { ...short };
+    delete single.evolution;
+    expect(evolveShortfall(single, 0)).toBeNull();
   });
 
   it('shows an evolve that is blocked while the creature is away or on a job, with the busy wording', () => {

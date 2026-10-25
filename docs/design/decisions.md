@@ -3114,3 +3114,11 @@ Misa chose four kinds of DM from the game's bot, all off by default: a trip come
 ### 2026-10-25: One bottom bar between the phone and the wide window (prototype)
 
 Misa asked whether the desktop's links, all in one bottom bar, could work on a screen that is neither a phone nor a desktop, and for the best breakpoint range per layout. Measured in a real window (Playwright, the real buttons, nine places, "Expeditions" the longest word): the words fit their equal share from about 600 px (no room left) and have about 8 px a side from 720 px; at 880 px it is roomy. Below 720 px the three-button dock stays (from about 600 px its buttons only get very wide). The rail is kept from 60 rem: at 720 px it would leave the page about 515 px, a phone page in desktop chrome; from 960 px the page gets about 760 px. So: under 45 rem the dock, 45 to 60 rem the bar (`BAR_QUERY`, `MainNav`'s `bar`), from 60 rem the rail. In the bar Home is first and gold but not raised (one place of nine), there are no trays, and its buttons answer a touch at once like the dock's (`instantPress`). The HUD stays fixed as on a phone (the bar is a dock). Each new place needs about 80 px more, so `BAR_QUERY` moves up with the list (Items splitting from the Workshop: about 50 rem). Misa may not merge it; it is a prototype to try.
+
+### 2026-10-25: Evolution short of Essence shows on the creature page
+
+A player's level 15 Cindle showed nothing about evolving: the server's `evolution.available` needs the level and the Essence, and the page drew the Evolve button only when it was true. Misa: show it greyed with the exact cost, as the ribbon does when it is short of parts.
+
+- **The creature page** now draws the Evolve button greyed ("Evolve 20 Essence") when the creature is at its evolution level and the player has less Essence than the price, with a note under it: "Short of Essence: you have 12 / 20." and the Essence help tag (`evolveShortfall` in `creature-needs.ts`; the price is the server's).
+- **Not a need.** The card's gold button, the "Needs you" filter and the Home notice stay for what the player can do now, as with a ribbon short of parts.
+- **Below the level** nothing is shown, as before.

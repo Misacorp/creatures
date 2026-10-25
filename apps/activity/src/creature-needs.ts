@@ -73,6 +73,21 @@ export function creatureNeeds(creature: Creature, state: NeedsState): Need[] {
 }
 
 /**
+ * The Essence a creature at its evolution level is short of, for the page's greyed Evolve button: the
+ * price (the server's) and what the player has. Null when it can evolve, is below the level, has no
+ * evolution, or the player has the price (then the server's `available` decides).
+ */
+export function evolveShortfall(
+  creature: Creature,
+  essence: number,
+): { cost: number; have: number } | null {
+  const evolution = creature.evolution;
+  if (evolution === undefined || evolution.available) return null;
+  if (creature.level < evolution.level || essence >= evolution.essence) return null;
+  return { cost: evolution.essence, have: essence };
+}
+
+/**
  * The creatures that need the player for something they can act on now, for the Home board's Creatures
  * notice: those with a ribbon to earn, an evolution that is not blocked (a creature away or on a job cannot
  * evolve yet), or a talent slot to fill. A waiting duplicate is left out here: the catches have their own
