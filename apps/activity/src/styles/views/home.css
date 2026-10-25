@@ -396,12 +396,12 @@ button.hb-quiet:focus-visible {
 */
 button.hb-badge {
   position: absolute;
-  top: 0.25rem;
+  top: 0.125rem;
   z-index: 3;
   display: grid;
   place-items: center;
-  width: 3rem;
-  height: 3rem;
+  width: 2.75rem; /* 44 px: the smallest tap target */
+  height: 2.75rem;
   padding: 0;
   background: none;
   box-shadow: none;
@@ -444,7 +444,7 @@ button.hb-starter {
 
 /* With the "?" drawn, the starter moves one pin to the left. */
 button.hb-starter:has(~ .hb-help) {
-  right: 3.75rem;
+  right: 3.375rem;
 }
 
 button.hb-help {
@@ -493,10 +493,10 @@ button.hb-badge::before {
   line-height: 1;
 }
 
-/* "Needs you" is the first heading: it stops short of the two pins (3rem each and a gap, from the right edge). */
+/*
+  "Needs you" is the first heading: it stops short of the two pins (2.75rem each and a gap, from the right
+  edge). The pins may hang over the top of the first notice (Misa, 2026-10-25), so the board starts high.
+*/
 .hb-cork > .hb-title:first-of-type {
-  display: flex;
-  align-items: center;
-  min-height: 2.25rem; /* the pins hang 3rem down from the corner: the first notice starts below them */
-  padding-right: 6.75rem;
+  padding-right: 6.25rem;
 }

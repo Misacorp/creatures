@@ -31,12 +31,28 @@
   align-items: center;
   gap: 0.5rem;
   min-height: var(--hud-h);
-  margin: -1rem -1rem 0;
+  margin: -1rem -1rem 0.75rem; /* the page starts a little below the bar, never flush against it */
   padding: 0.375rem 0.75rem;
   background: var(--dusk);
   box-shadow:
     0 var(--px) 0 0 var(--ink),
     inset 0 calc(var(--px) * -1) 0 0 var(--bevel-lo);
+}
+
+/*
+  The strip above the stuck HUD and the How to play page's head (Discord's safe area on a phone, behind its own
+  top bar) is covered in their colour across the whole window, so a scrolled page never shows through above the
+  bar. Zero high outside Discord's phone app.
+*/
+.hud::before,
+.howto-head::before {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--discord-safe-area-inset-top, 0px);
+  background: var(--dusk);
+  content: '';
 }
 
 h1.hud-title {
