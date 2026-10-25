@@ -5,12 +5,35 @@ import {
   TILT_MODES,
   type BoardSettings,
 } from '../../home/board';
+import type { Notifications, NotificationsApi } from '../../notifications-api';
 import { SettingsPage } from '../../settings/SettingsPage';
 import { Segmented } from '../../ui/Segmented';
 import { str } from '../props';
 import type { Entry, Props } from '../types';
 
 const NOTHING = () => undefined;
+
+const DM_STATES = ['off', 'on', 'blocked', 'unavailable'] as const;
+
+/** A sample server for the Discord DMs section: it answers what was asked, and keeps the choices. */
+function sampleNotifications(state: string): NotificationsApi {
+  let current: Notifications = {
+    kinds: { trip: state === 'on', job: state === 'on', finale: false, stall: state === 'on' },
+    blocked: state === 'blocked',
+    available: state !== 'unavailable',
+  };
+  return {
+    load: () => Promise.resolve(current),
+    save: (kinds) => {
+      current = {
+        ...current,
+        kinds: { ...current.kinds, ...kinds },
+        blocked: false,
+      };
+      return Promise.resolve(current);
+    },
+  };
+}
 
 const TILT_LABELS = ['Flat', 'Leaning'] as const;
 
@@ -19,8 +42,15 @@ function SettingsDemo({ p }: { p: Props }) {
     tilt: TILT_MODES.find((m) => m === str(p, 'tilt')) ?? DEFAULT_BOARD_SETTINGS.tilt,
     idle: IDLE_MODES.find((m) => m === str(p, 'idle')) ?? DEFAULT_BOARD_SETTINGS.idle,
   });
+  const [notifications] = useState(() => sampleNotifications(str(p, 'dms')));
   return (
-    <SettingsPage settings={settings} onChange={setSettings} onBack={NOTHING} onHowTo={NOTHING} />
+    <SettingsPage
+      settings={settings}
+      onChange={setSettings}
+      onBack={NOTHING}
+      onHowTo={NOTHING}
+      notifications={notifications}
+    />
   );
 }
 
@@ -29,15 +59,19 @@ const settingsPage: Entry = {
   file: 'apps/activity/src/settings/SettingsPage.tsx',
   group: 'Creatures & game pieces',
   description:
-    'The Settings page, opened from the cog in the HUD: a drill-in ("‹ Back" at the top left, Escape) with sections, one row per setting (its name, a line about it and its control). Today one section, "The notice board": "Notices" (Flat, Leaning) and "Quiet places" (Hide, Show), the Home board’s two display options. They are kept on this device (the browser’s storage, with the defaults as the fallback), never sent to the server. The choices work in the preview. A new setting is one more row; a new group of settings is one more section.',
+    'The Settings page, opened from the cog in the HUD: a drill-in ("‹ Back" at the top left, Escape) with sections, one row per setting (its name, a line about it and its control). Two sections besides Help. "The notice board": "Notices" (Flat, Leaning) and "Quiet places" (Hide, Show), the Home board’s two display options, kept on this device (the browser’s storage, with the defaults as the fallback). "Discord DMs": Trips home, Workshop jobs, Raid finale and Prize Stall, each Off or On; these are the server’s settings (loaded when the page opens, saved on each change, put back if the save fails), and the section shows a warning when Discord refused the bot’s DM and is hidden where the server cannot send DMs. The choices work in the preview, against a sample server. A new setting is one more row; a new group of settings is one more section.',
   controls: {
     tilt: { kind: 'select', options: TILT_MODES },
     idle: { kind: 'select', options: IDLE_MODES },
+    dms: { kind: 'select', options: DM_STATES },
   },
-  defaults: { tilt: 'none', idle: 'hide' },
+  defaults: { tilt: 'none', idle: 'hide', dms: 'off' },
   presets: [
     { name: 'Defaults (Flat, quiet places hidden)', props: {} },
     { name: 'Leaning, quiet places shown', props: { tilt: 'still', idle: 'show' } },
+    { name: 'Discord DMs on', props: { dms: 'on' } },
+    { name: 'Discord DMs blocked by the player’s privacy settings', props: { dms: 'blocked' } },
+    { name: 'Discord DMs unavailable (section hidden)', props: { dms: 'unavailable' } },
   ],
   render: (p) => <SettingsDemo key={JSON.stringify(p)} p={p} />,
 };
