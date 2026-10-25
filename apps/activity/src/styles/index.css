@@ -40,6 +40,7 @@
 @import './components/slot-cue.css';
 @import './components/creature-card.css';
 @import './components/creature-focus.css';
+@import './components/creature-honours.css';
 @import './components/action-button.css';
 @import './components/creature-finder.css';
 @import './components/talents.css';
